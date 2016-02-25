@@ -1,0 +1,16 @@
+language: cpp
+cache: apt
+compiler: gcc
+
+before_install:
+ - sudo apt-get update -qq
+ - sudo apt-get install -qq build-essential cmake git-core 
+ - sudo apt-get install -qq libboost-all-dev libssl-dev libssh2-1-dev
+ - sudo apt-get install -qq freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev
+ 
+branches:
+  only:
+    - master
+
+script: ./build_linux.sh;
+
