@@ -45,14 +45,15 @@ STRING(REGEX REPLACE "s\\-gd" "sgd" Boost_LIBRARIES_static_runtime "${Boost_LIBR
 # since we are linking statically everywhere, replace Boost_LIBRARIES with static one. 
 set(Boost_LIBRARIES ${Boost_LIBRARIES_static_runtime})
 
-add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
+    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${NPLRuntime_BINARY_DIR}/curl-7.47.1)
 else()
 	FIND_PACKAGE(CURL REQUIRED)
 endif()
+
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)
 add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${NPLRuntime_BINARY_DIR}/luabind-0.9)
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${NPLRuntime_BINARY_DIR}/sqlite-3.6.23.1)
