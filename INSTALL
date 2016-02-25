@@ -1,0 +1,8 @@
+Author: LiXizhi
+Date: 2014.1.24
+
+---++ How to Install ParaEngine DLL module
+
+1. Install Boost into Server\boost_XXXXX folder
+2. Install CMAKE (third party software)
+
