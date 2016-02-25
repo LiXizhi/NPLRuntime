@@ -41,4 +41,8 @@ Client/trunk/*
 Server/*
 !Server/trunk/
 Server/trunk/*
-# !Server/trunk/jsoncpp-0.5.0/
+!Server/trunk/lua-5.1.4/
+!Server/trunk/luabind-0.9/
+!Server/trunk/sqlite-3.6.23.1/
+!Server/trunk/jsoncpp-0.5.0/
+!Server/trunk/tinyxpath_1_3_1/

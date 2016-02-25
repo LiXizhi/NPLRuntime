@@ -60,6 +60,6 @@ add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${NPLRuntime_BINARY_DIR}/jso
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${NPLRuntime_BINARY_DIR}/tinyxpath_1_3_1)
 # add_subdirectory (${SERVER_SOURCE_DIR}ParaEngineServer  ${NPLRuntime_BINARY_DIR}/ParaEngineServer) 
 # add_subdirectory (${SERVER_SOURCE_DIR}NPLMono  ${NPLRuntime_BINARY_DIR}/NPLMono)
-add_subdirectory (${SERVER_SOURCE_DIR}luaprofiler-2.0.2  ${NPLRuntime_BINARY_DIR}/luaprofiler-2.0.2)
+#add_subdirectory (${SERVER_SOURCE_DIR}luaprofiler-2.0.2  ${NPLRuntime_BINARY_DIR}/luaprofiler-2.0.2)
 #add_subdirectory (${SERVER_SOURCE_DIR}luasql ${NPLRuntime_BINARY_DIR}/luasql)
-add_subdirectory (ParaEngineServer ${NPLRuntime_BINARY_DIR}/ParaEngineServer)
+#add_subdirectory (ParaEngineServer ${NPLRuntime_BINARY_DIR}/ParaEngineServer)
