@@ -1,6 +1,6 @@
 #!/bin/bash
 olddir=`pwd`
-mkdir bin/linux
+mkdir -p ./bin/linux
 cd bin/linux/
 cmake ../../NPLRuntime/
 make
