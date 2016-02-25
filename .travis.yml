@@ -12,5 +12,8 @@ branches:
   only:
     - master
 
-script: ./build_linux.sh;
+before_script:
+ - chmod +x ./build_linux.sh 
+
+script: ./build_linux.sh
 
