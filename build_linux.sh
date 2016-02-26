@@ -2,7 +2,7 @@
 olddir=`pwd`
 mkdir -p ./bin/linux
 cd bin/linux/
-cmake ../../NPLRuntime/ && make
+cmake ../../NPLRuntime/ && make -j3
 result=$?
 
 cd $olddir

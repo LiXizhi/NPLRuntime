@@ -115,7 +115,7 @@ void ParaEngine::AITask::DestroyMe()
 		delete pAITask_Movie;
 		break;
 	default:
-		delete pAITask;
+		// delete pAITask;
 		break;
 	}
 }

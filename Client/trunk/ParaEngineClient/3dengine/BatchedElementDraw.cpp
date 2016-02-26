@@ -209,7 +209,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	// set render state
 	{
 		// pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetTexture(0,NULL);
+		pd3dDevice->SetTexture(0, 0);
 
 		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		pd3dDevice->SetFVF(LINEVERTEX::FVF);
@@ -267,7 +267,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		pd3dDevice->SetTexture(0, NULL);
+		pd3dDevice->SetTexture(0, 0);
 
 		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		pd3dDevice->SetFVF(LINEVERTEX::FVF);

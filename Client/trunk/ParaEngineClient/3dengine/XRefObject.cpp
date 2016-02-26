@@ -128,7 +128,7 @@ bool XRefAnimInstance::SetParamsFromAsset()
 		if(((ParaXEntity*)m_pModelEntity.get())->GetPrimaryTechniqueHandle() > 0)
 		{
 			/** load the default animation */
-			if(m_pAI!=NULL)
+			if(m_pAI)
 			{
 				/** load the default animation */
 				float fSpeed=0.f;

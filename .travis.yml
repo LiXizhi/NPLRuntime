@@ -7,8 +7,8 @@ before_install:
  - sudo apt-get install -qq build-essential cmake git-core
  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
  - sudo apt-get update -qq
- - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
- - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+ - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.9; fi
+ - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
  - sudo add-apt-repository -y ppa:boost-latest/ppa && sudo apt-get update -q && sudo apt-get install -y libboost1.55-all-dev
  - sudo apt-get install -qq libssl-dev libssh2-1-dev
  - sudo apt-get install -qq freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev

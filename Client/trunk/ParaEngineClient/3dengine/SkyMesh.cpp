@@ -777,8 +777,8 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 			}
 			pEffectFile->end();
 		}
-		pd3dDevice->SetIndices(NULL);
-		pd3dDevice->SetTexture(1, NULL);
+		pd3dDevice->SetIndices(0);
+		pd3dDevice->SetTexture(1, 0);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }
