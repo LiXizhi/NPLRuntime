@@ -960,7 +960,7 @@ namespace ParaScripting
 								else if(tcolor != 0)
 								{
 									char tmp[32];
-									snprintf(tmp, 32, "%h", (tcolor&0x00ffffff));
+									snprintf(tmp, 32, "%h", (DWORD)(tcolor&0x00ffffff));
 									return string(tmp);
 								}
 								break;

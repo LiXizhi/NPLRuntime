@@ -389,6 +389,14 @@ struct HLEToken
 		DWORD dw;
 	};
 public:
+	HLEToken(){};
+	HLEToken(const char* cmd_){
+		if (cmd_){
+			for (int i = 0; i < 4; ++i)
+				cmd[i] = cmd_[i];
+		}
+	};
+
 	tokenType GetType() { return myType; }
 
 	void GetString(std::string& outValue, const char* event)
@@ -401,7 +409,7 @@ public:
 		outValue.append(event + nStart, nLength);
 	};
 
-	DWORD GetCmd()
+	DWORD GetCmd() const
 	{
 #define DWORD_TAG(x) (DWORD)(  (((DWORD)x&0x0000ff00)<<8)+(((DWORD)x&0x000000ff)<<24)+(((DWORD)x&0x00ff0000)>>8)+(((DWORD)x&0xff000000)>>24) )
 		return DWORD_TAG(dw);
@@ -4868,9 +4876,8 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 	HLEToken curToken;
 	if (GetHLEToken(sEvent.c_str(), &curToken, &nPos) && curToken.myType == HLEToken::str)
 	{
-		switch (curToken.GetCmd())
-		{
-		case 'mont':
+		DWORD curTokenCmd = curToken.GetCmd();
+		if (curTokenCmd == HLEToken("mont").GetCmd())
 		{
 			// syntax: "mount objectname slot_id" 
 			// desc: mount on another character 
@@ -4938,14 +4945,12 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 					}
 				}
 			}
-
-			break;
 		}
-		case 'umnt':
+		else if (curTokenCmd == HLEToken("umnt").GetCmd())
 		{
 			MountOn(NULL);
 		}
-		case 'walk':
+		else if (curTokenCmd == HLEToken("walk").GetCmd())
 		{
 			double x, y;
 			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos)){
@@ -4957,14 +4962,12 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 					WalkTo(v);
 				}
 			}
-			break;
 		}
-		case 'stop':
+		else if (curTokenCmd == HLEToken("stop").GetCmd())
 		{
 			ForceStop();
-			break;
 		}
-		case 'anim':
+		else if (curTokenCmd == HLEToken("anim").GetCmd())
 		{
 			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos)) {
 				if (curToken.myType == HLEToken::str){
@@ -4976,10 +4979,10 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 					PlayAnimation((int)curToken.dValue);
 				}
 			}
-			break;
 		}
-		case 'colr': // set model color
+		else if (curTokenCmd == HLEToken("colr").GetCmd())
 		{
+			// set model color
 			float value[3];
 			for (int i = 0; i < 3; i++)
 			{
@@ -4993,19 +4996,16 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 			{
 				pAI->SetModelColor(LinearColor(value[0], value[1], value[2], 1.0f));
 			}
-
-			break;
 		}
-		case 'spds': // set speed scale. default is 1.0
+		else if (curTokenCmd == HLEToken("spds").GetCmd())
 		{
+			// set speed scale. default is 1.0
 			float value;
 			if (GetHLEToken(sEvent.c_str(), &curToken, &nPos) && curToken.myType == HLEToken::value)
 			{
 				value = (float)curToken.dValue;
 				SetSpeedScale(value);
 			}
-			break;
-		}
 		}
 	}
 	return 0;

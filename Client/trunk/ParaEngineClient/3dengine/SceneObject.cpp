@@ -2372,7 +2372,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		// print the mesh report.
 		static char sMeshReport[50];
 		snprintf(sMeshReport, 50, "F->B:%d B->F:%d(%d) char:%d(%d) post:%d", 
-			(int)sceneState.listPRSolidObject.size(), (int)sceneState.listPRSmallObject.size(), nMeshRendered, sceneState.listPRBiped.size() + sceneState.listPRTransparentBiped.size(), nCharacterRendered, (int)sceneState.listPRTransparentObject.size());
+			(int)sceneState.listPRSolidObject.size(), (int)sceneState.listPRSmallObject.size(), nMeshRendered, (int)(sceneState.listPRBiped.size() + sceneState.listPRTransparentBiped.size()), nCharacterRendered, (int)sceneState.listPRTransparentObject.size());
 		sMeshReport[49] = '\0';
 		CGlobals::GetReport()->SetString("meshes", sMeshReport);
 	}
