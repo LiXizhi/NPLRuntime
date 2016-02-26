@@ -35,7 +35,7 @@ set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
-find_package( Boost REQUIRED COMPONENTS thread date_time filesystem system regex signals serialization iostreams chrono) 
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system regex signals serialization iostreams chrono) 
 
 # Note: LiXizhi 2010.3. there is a bug in FindBoost that one needs to link with ${Boost_LIBRARIES_static_runtime} in order to use static vc runtime time. 
 STRING(REGEX REPLACE "\\-mt\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES}" )
