@@ -26,7 +26,7 @@
 
 
 #if defined USE_BOOST_FILE_API || defined(USE_COCOS_FILE_API)
-#ifdef PARAENGINE_SERVER
+#if defined(PARAENGINE_SERVER) && !defined(WIN32)
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11
 	#define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif

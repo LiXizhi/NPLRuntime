@@ -25,18 +25,18 @@
 using namespace ParaEngine;
 
 BYTE ParaEngine::CBaseCamera::m_scancode_key_map[] ={
-	DIK_A,
-	DIK_D,
-	DIK_W,
-	DIK_S,
-	DIK_E,
-	DIK_Q,
-	DIK_SPACE,
-	NULL,
-	NULL,
-	DIK_INSERT,
-	DIK_DELETE,
-	DIK_X,
+	(BYTE)DIK_A,
+	(BYTE)DIK_D,
+	(BYTE)DIK_W,
+	(BYTE)DIK_S,
+	(BYTE)DIK_E,
+	(BYTE)DIK_Q,
+	(BYTE)DIK_SPACE,
+	(BYTE)NULL,
+	(BYTE)NULL,
+	(BYTE)DIK_INSERT,
+	(BYTE)DIK_DELETE,
+	(BYTE)DIK_X,
 };
 
 //-----------------------------------------------------------------------------

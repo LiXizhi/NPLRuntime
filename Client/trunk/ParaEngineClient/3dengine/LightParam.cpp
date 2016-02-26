@@ -52,9 +52,10 @@ void CLightParam::FromString(const char* str)
 {
 	try
 	{
+		int nType = 0;
 		sscanf(str, "%d %f (%f %f %f %f) %f %f %f",
-			&Type, &Range, &Diffuse.r, &Diffuse.g, &Diffuse.b, &Diffuse.a, &Attenuation0, &Attenuation1, &Attenuation2);
-
+			&nType, &Range, &Diffuse.r, &Diffuse.g, &Diffuse.b, &Diffuse.a, &Attenuation0, &Attenuation1, &Attenuation2);
+		Type = (D3DLIGHTTYPE)nType;
 		// just assume these values. 
 		Ambient = LinearColor(0,0,0,0);
 		Position = Vector3(0,0,0);

@@ -4399,7 +4399,7 @@ void CBipedObject::SetSpeedScale(float fScale)
 {
 	m_fSpeedScale = fScale;
 
-	if (m_pAI != NULL)
+	if (m_pAI)
 	{
 		m_pAI->SetSpeedScale(fScale);
 	}

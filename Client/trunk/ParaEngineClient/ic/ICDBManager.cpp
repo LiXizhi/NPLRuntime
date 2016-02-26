@@ -323,7 +323,7 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 		string sTempDiskFilename = ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_TEMP_DIR);
 		sTempDiskFilename += "tempdatabase/";
 		string sFileName = filename;
-		for(int i=0;i<filename.size(); ++i)
+		for(int i=0;i< (int)filename.size(); ++i)
 		{
 			if(filename[i] == '\\' || filename[i] == '/' || filename[i] == ':')
 				sFileName[i] = '_';
