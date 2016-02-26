@@ -1,0 +1,32 @@
+Default NameSpace Server = @Paraworld_Andy
+
+NameSpace Server Binding Pair Number = 4
+
+NameSpace Server Binding:
+	192.168.0.10:4000 @DNS-mitnick
+	192.168.0.10:4001 @DNS-ParaWorld
+	192.168.0.12:4000 @DNS-lixizhi
+	127.0.0.1:60001 @Paraworld_Andy
+
+Local Administrated NameSpace Binding Pair Number = 1
+
+Local Administrated NameSpace Binding:
+	192.168.0.12:4000 script@DNS-lixizhi
+	
+NameSpace Binding Pair Number = 12
+
+NameSpace Binding:
+	192.168.0.12:4000 script@DNS-lixizhi
+	192.168.0.10:4000 guy@DNS-mitnick
+	192.168.0.10:4000 mitnick@DNS-mitnick
+	192.168.0.10:4001 ParaWorld@DNS-mitnick
+	192.168.0.10:4002 WOW@DNS-mitnick
+	192.168.0.10:4001 lwl@DNS-mitnick
+	192.168.0.10:4000 test@DNS-mitnick
+	192.168.0.10:4000 test@DNS-ParaWorld
+	192.168.0.10:4001 ParaWorld@DNS-ParaWorld
+	192.168.0.10:4000 lxz@DNS-lxz
+	192.168.0.10:4001 lxz1@DNS-lxz
+	192.168.0.10:4002 WOW@DNS-lxz
+
+Namespace file saved at : Thu Aug 04 19:58:33 2005

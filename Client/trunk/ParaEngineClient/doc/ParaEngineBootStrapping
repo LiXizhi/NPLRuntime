@@ -1,0 +1,30 @@
+---+++ Boot Strapping in ParaEngine
+
+Boot strapping is a technique to specify the boot script and boot order of an application. 
+Bootstrapper file is a xml file to be loaded at the very beginning of the game engine. 
+It specifies the main game loop file to be used. Main game loop is a NPL script file that is being called every 0.5 seconds after the game engine is initialized. 
+	
+If we compare ParaEngine to a virtual operating system, then boot strapper file allows us to specify the first program (script) to run.
+With boot strapping, the same ParaEngine executable can be used to run any applications (such as 3D clients and server apps).  
+
+So let us first look at the boot order of ParaEngine and see how boot strapping can affect it. 
+
+---+++ Boot Order of ParaEngine
+   1. When the ParaEngine starts, it first reads all of its command line arguments as name, value pairs and save them an internal data structure for later use. 
+   1. ParaEngine recognizes several predefined command names, one of them is bootstrapper. It specifies the main game loop file used by the game engine. 
+   1. ParaEngine initializes itself. This can take several seconds, involving reading configurations, graphics initializations, script API bindings, etc. 
+   1. When everything is initialized, the majority of NPL API is available to the scripting interface and ParaEngine loads the main loop script specified by the bootstrapper and calls its activation function every 0.5 seconds.  
+   1. Any boot order thereafterwards is up to the application progammer who wrote the main loop script. For examples, please see ./script/apps folders, where each folder contains a different application. 
+   
+---+++ Boot strapper Examples
+A typical boot strapper xml file (script/apps/Taurus/bootstrapper.xml) looks like below. 
+<verbatim>   
+<?xml version="1.0" ?>
+<MainGameLoop>(gl)script/apps/Taurus/main_loop.lua</MainGameLoop>
+</verbatim>
+
+To use the bootstrapper, we can start the ParaEngine with the command line. 
+<verbatim>   
+ParaEngineClient.exe bootstrapper="script/apps/Taurus/bootstrapper.xml"
+</verbatim>
+%T%: create a bat or shell script to launch each application. 

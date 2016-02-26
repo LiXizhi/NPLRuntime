@@ -1,0 +1,30 @@
+--[[ %s character event handlers
+author: 
+date:%s]]
+if(not _character) then _character={}; end
+if(not _character.%s) then _character.%s={}; end
+
+function _character.%s.On_Load()
+	local player = ParaScene.GetObject(sensor_name);
+	if(player:IsValid() == true) then 
+		-- TODO: do your work here
+	end
+end
+
+function _character.%s.On_EnterSentientArea()
+end
+
+function _character.%s.On_LeaveSentientArea()
+end
+
+function _character.%s.On_Click()
+end
+
+function _character.%s.On_Perception()
+end
+
+function _character.%s.On_FrameMove()
+end
+
+function _character.%s.On_Event()
+end

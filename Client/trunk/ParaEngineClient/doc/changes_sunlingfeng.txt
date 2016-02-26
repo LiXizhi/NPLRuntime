@@ -1,0 +1,173 @@
+/** @page ParaScript_change	NPL script demo change history
+@author LiXizhi
+
+2007/6/18
+	- ebook can now be published and uploaded.
+	
+2007/6/16
+	- userinfo tracker is implemented in kids_db. It will display different messages when the user register or login or uses the game world for the first time. 
+
+2007/6/5
+	- both the EBook and world zip file can have a different filename than the folder name within. 
+
+2007/4/29
+	- multiline editbox
+	- server world restart enabled
+	
+2007/4/12
+	- EBook implementation
+	- web 3d explorer
+	- 2d map service
+
+2007/1/11
+	- AI game libs
+
+2007/1/5
+	- logo page can use mouse click
+	- exit page is added
+	
+2006/9/26
+	- terrain detail texture reimplemented in the kids UI.
+	
+2006/8/25
+	- Kids GUI have been completely updated.
+	
+2006/7/26
+	- canvas is added. 
+	
+2006/7/21
+	- static characters can be randomly faced when created. 
+	
+2006/7/11
+	- world editing logics from the old demo script have been moved to the IDE folder, which can be shared among many implementations of the world editing UI.
+	- object and character can now be edited in the same manner.
+	- press F3 to inspect the GUI object at current mouse position. GUI object inspector added in NPL.load("(gl)script/ide/GUI_inspector_simple.lua");
+	
+2006/7/4
+	- bug corrected for demo/object/*.* : when reset scene, UI are not displayed. 
+	
+2006/7/3
+	- source control is moved from VSS to AlienBrain
+	
+2006/6/29
+	- modifier control can now modify any kind of object.
+	- GreatView modifier added. 
+
+2006/6/24
+	- local lights can now be added. Select ObjectCreation->Other->lights
+	
+2006/6/8
+	- TODO: when derived from other world, player location and specially WOW resources are not loaded.
+	
+2006/6/8
+	- most windows are made invisible instead of deleted. 
+	- the attribute database is used when loading and saving game world, making player position persistent. see kids/loadworld and saveworld.lua
+	- a new world can be derived from another world when newing a world.
+	
+2006/6/5
+	- external editor can be used to edit script in the property window.
+
+2006/5/30
+	- both character and static mesh can now be properly managed by property window (including deletion and global/local toggling, etc).
+		supported attribute field type is boolean, string, int, float, vector3
+	- property window now uses late evaluation, which only update UI binding when it is visible or not minimized.
+	
+2006/5/29
+	- visibility group is implemented. see script/common/visibilitygroup.lua
+	- property window is implemented. see script/common/property_control.lua
+	
+2006/5/25
+	- character persistency added. All created characters will be treated as persistent objects,which will be saved to NPC database.
+	- NPC database implemented. See kids_db.lua
+	
+2006/5/8
+	- character creation is added in object manager.x files under ./character/ directory will be treated as character.
+
+2006/5/5
+	- sqlite3 interface is added. see the readme under sqlite folder. 
+
+2006/4/27
+	- object creation dialog is updated. 
+
+2006/4/24
+	- paraengine settings are added
+	- object modifier slightly updated.
+	-TODO; refresh of xmodel asset. 
+	directory listing and navigation. 
+
+2006/3/9
+	- the object creation will now enable and disable physics according to the file name. If the file name ends with _a,  such as "xxx_a.x", then 
+		the mesh will by default created without physics. Of course, the user can always add physics to any objects in the later stage.
+		see CreatePhysicsObject() in 3ddev/3ddevlib.lua
+
+2006/3/8	
+	- object rotation +-90 degrees are added. 
+	
+2006/3/6
+	- common dialog: file listing is implemented. See ide/FileDialog.lua.
+
+2006/3/4
+	- physics can now be removed or added. 
+
+2006/2/27
+	- scene saving is added.
+	- object deletion and removal is enhanced.
+
+2006/1/25
+	- object position editing is now relative to the current camera position
+
+2006/1/23
+	- right click to erase terrain textures.
+	- terrain saving is added.
+
+2006/1/2
+	- mouse ray picking added in object/main.lua. Event registering.
+		Usage: Open Object Creation Dialog, you can now left click any 3D object in the scene to edit. A missile will be fired to the selected object. 
+		Please note that one can now only edit non-biped object. 
+	
+2005/12/16
+	- radio buttons are used for all property pages and grouped check buttons.
+	- fast render is added
+	- unuseful code cleaned up
+	- terrain editor is added.
+	
+2005/11/26
+	- movie platform log created
+	- movie file will now save all global characters. For non-actor characters, they are just saved using their current status.
+		Every characters will be saved by default once they are created.
+	- some English UI have been translated to Chinese
+	- MovieUI lib is created to replace the old event system. 
+	- scene object files will be automatically backed up to filename+".bak" when saving.
+	- when recording a character, it is automatically added to the current movie's actor list if not done so.
+	- the search bar can now select object directly from the list.
+	-TODO: when the application exits, it should check if some file needs to be saved.
+	
+	
+@section  TODO_List		TODO lists	
+-------------------------------------------------------------------------------------------------------------
+	
+	地图编辑的修改：
+		地形增加 “恢复”的按钮
+		缩小了贴图示例的大小
+		增加海洋高度调节
+		增加海面高度显示
+		
+	物体管理：
+		创建物体:
+			修改按钮为:
+				增加:点击添加物体
+				撤销:点击删除最后创建的物体
+				添加并修改:点击添加物体,并转到修改物体页面
+		
+		修改物体:
+			修改"平移"按钮位置
+			增加"顺,逆"90度旋转的按钮
+			增加还原物品坐标状态的按钮
+			增加删除物体的按钮
+			频掉 物力修改 的相关功能
+			
+	人物建立中增加 感知相关设定
+	
+	修改海面高度显示，避免页面出现显示字符的溢出
+
+*/

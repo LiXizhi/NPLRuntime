@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <!--this is the main ParaEngine application settings-->
+  <appSettings>
+    <add key="IsFullScreen" value="false"/>
+  </appSettings>
+  
+  <!-- NPL Runtime settings. -->
+  <NPL>
+    <!--the listening TCP Endpoint for the npl runtime--> 
+    <Endpoint ip="127.0.0.1" port="60001">
+    </Endpoint>
+    <Threading>
+      <socketPool minPoolSize="3" maxPoolSize="10" connectionTimeout="10" deadTimeout="20"/>
+      <!--if name is main, it is the default runtime thread. All game functionalities are loaded to the main runtime state.-->
+      <RuntimeState name="main" type="glia"/>
+      <!--a user defined script runtime "runtime_1", only limited functionalities are loaded in the runtime. -->
+      <RuntimeState name="runtime_1" stacksize="1024" type="glia"/>
+      <!--a user defined script runtime "g",  it has 5 threads and may be executed concurrently. -->
+      <RuntimeState name="g" stacksize="1024" type="glia" count="5"/>
+      <!--a user defined dll runtime "runtime_dll". if type is dll, scripting interface is not toughed, and we usually associate C++ based dll files with it, so that the speed is super fast. -->
+      <RuntimeState name="runtime_dll" stacksize="1024" type="dll"/>
+      <!--a user defined dll runtime "runtime_dll_multi". it is same as runtime_dll, except a thread pool is used and the dll files associated with it must be thread-safe. -->
+      <RuntimeState name="runtime_dll_multi" stacksize="1024" type="dll" ShareThreadPool="true"/>
+    </Threading>
+    <Files>
+      <!-- file defaults to main state. -->
+      <File path="script/test/NplState.lua"/>
+      <!-- file associated with a user defined runtime. -->
+      <File path="script/test/NplStateThreaded.lua" runtime="runtime_1"/>
+      <!-- associate a dll file with the dll runtime state -->
+      <File path="script/test/NplStateThreadedDLL.dll" runtime="runtime_dll"/>
+      <!-- associate a dll file with the dll runtime state where a thread pool is used.-->
+      <File path="script/test/NplStateMultiThreadedDLL.dll" runtime="runtime_dll_multi"/>
+    </Files>
+  </NPL>
+</configuration>

@@ -1,0 +1,13 @@
+/** @page changes for ParaWorld
+@author Clayman (SunLingfeng)
+
+2008/6/20
+	- 
+	
+2008/6/19
+	- improve map road generation, road tile can link together with right texture and direction now
+	- improve random building generation,now building is consistent for given tile.
+	- make some performance improvement, add object pool to reuse tileInfo object
+
+*/ 
+v

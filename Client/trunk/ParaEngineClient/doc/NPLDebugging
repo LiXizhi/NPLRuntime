@@ -1,0 +1,32 @@
+---++ Debugging NPL scripts
+
+NPL scripts are compiled at load time; compile time and runtime errors are output to the ./log.txt file.
+Typically debugging NPL scripts is an iterative process of editing source code, restarting ParaEngine and checking log.txt.  
+
+However, the following tools can be used to debug NPL scripts more effectively.
+
+---+++ NPL plugins for Visual Studio
+This provides syntax highlighting, and NPL code completion.
+
+---+++ Visual Assist for Visual Studio
+This is a must have tool to work with thousands of scripts in a game project. You can search and open files more easily. 
+
+---+++ Build Rules for Visual Studio
+The following MSVC build rules are provided in ./script/bin folder.
+   1. NPL Build Rule: It offers compile-time error checking in the visual studio IDE. Press Ctrl+F7 to compile code in memory.
+   1. Lua Run File Rule: It allows one to quickly run pure lua code and see its output in visual studio IDE. 
+
+---+++ log(), commonlib.echo(), and log.txt file
+Litter log(str), commonlib.echo(object) all over buggy code, restart ParaEngine and check ./log.txt. 
+90% of our programmers are using this primitive way to debug. It is effective once familiarized. 
+
+---+++ Use in-game debugger
+ParaEngine has several open source debuggers written in NPL itself. They can only be used within ParaEngine. 
+Press F12 to access the default debug pannel. 
+
+---+++ Use external IDE debugger
+We recommend http://www.unknownworlds.com/decoda/
+It allows the same experience of debugging in visual studio, like setting break points at runtime, step in to and out of code, watch window, etc. 
+
+In order to use decoda, one needs to ask for the symbol (PDB) file for your version of ParaEngine executable. For each public ParaEngine release executable, we kept its symbol file.
+The most recent executable and PDB files are on ftp://192.168.0.200/ParaWorld.pdb and paraworld.exe. 

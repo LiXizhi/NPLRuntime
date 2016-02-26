@@ -1,0 +1,330 @@
+xof 0303txt 0032
+# author:Li,Xizhi
+# date: 2006.1.5
+template ParaEngine{
+ <00000000-0000-0000-0000-123456789000>
+ [...]
+}
+template ParaXHeader {
+<10000000-0000-0000-0000-123456789000>
+array CHAR id[4];
+array UCHAR version[4];
+DWORD type;
+DWORD AnimationBitwise;# boolean animBones,animTextures
+Vector minExtent;
+Vector maxExtent;
+DWORD nReserved;
+}
+template ParaXRefObject {
+<10000000-1234-0000-0000-123456789000>
+string filename;
+DWORD type;
+Matrix4x4 localTransform;
+Vector origin;
+DWORD animID;
+DWORD color;
+DWORD reserved0;
+FLOAT reserved1;
+FLOAT reserved2;
+FLOAT reserved3;
+}
+template ParaXRefSection {
+<10000000-1234-0001-0000-123456789000>
+DWORD nCount;
+array ParaXRefObject objects[nCount];
+}
+template ModelAnimation{
+<10000002-0000-0000-0000-123456789000>
+DWORD animID;
+DWORD timeStart;
+DWORD timeEnd;
+FLOAT moveSpeed;
+DWORD loopType;
+DWORD flags;
+DWORD d1;
+DWORD d2;
+DWORD playSpeed;
+Vector boxA;
+Vector boxB;
+FLOAT rad;
+array WORD s[2];
+}
+template AnimationBlock {
+<10000003-0000-0000-0000-123456789000>
+WORD type;
+WORD seq;
+DWORD nRanges;
+DWORD ofsRanges;
+DWORD nTimes;
+DWORD ofsTimes;
+DWORD nKeys;
+DWORD ofsKeys;
+}
+template ModelBoneDef {
+<10000004-0000-0000-0000-123456789000>
+DWORD animid;
+DWORD flags;
+WORD parent;
+WORD geoid;
+AnimationBlock translation;
+AnimationBlock rotation;
+AnimationBlock scaling;
+Vector pivot;
+}
+template ModelTexAnimDef {
+<10000005-0000-0000-0000-123456789000>
+AnimationBlock trans;
+AnimationBlock rot;
+AnimationBlock scale;
+}
+template ModelVertex {
+<10000006-0000-0000-0000-123456789000>
+Vector pos;
+array UCHAR weights[4];
+array UCHAR bones[4];
+Vector normal;
+Coords2d texcoords;
+DWORD color0;
+DWORD color1;
+}
+template ModelView {
+<10000007-0000-0000-0000-123456789000>
+DWORD nIndex;
+DWORD ofsIndex;
+DWORD nTris;
+DWORD ofsTris;
+DWORD nProps;
+DWORD ofsProps;
+DWORD nSub;
+DWORD ofsSub;
+DWORD nTex;
+DWORD ofsTex;
+DWORD lod;
+}
+template ModelGeoset {
+<10000008-0000-0000-0000-123456789000>
+WORD id;
+WORD d2;
+WORD vstart;
+WORD vcount;
+WORD istart;
+WORD icount;
+WORD d3;
+WORD d4;
+WORD d5;
+WORD d6;
+Vector v;
+}
+template ModelColorDef {
+<1000000b-0000-0000-0000-123456789000>
+AnimationBlock color;
+AnimationBlock opacity;
+}
+template ModelTransDef {
+<1000000c-0000-0000-0000-123456789000>
+AnimationBlock trans;
+}
+template ModelTextureDef {
+<1000000d-0000-0000-0000-123456789000>
+DWORD type;
+DWORD flags;
+STRING name;
+}
+template ModelLightDef {
+<1000000e-0000-0000-0000-123456789000>
+WORD type;
+WORD bone;
+Vector pos;
+AnimationBlock ambColor;
+AnimationBlock ambIntensity;
+AnimationBlock color;
+AnimationBlock intensity;
+AnimationBlock attStart;
+AnimationBlock attEnd;
+AnimationBlock unk1;
+}
+template ModelCameraDef {
+<1000000f-0000-0000-0000-123456789000>
+DWORD id;
+FLOAT fov;
+FLOAT farclip;
+FLOAT nearclip;
+AnimationBlock transPos;
+Vector pos;
+AnimationBlock transTarget;
+Vector target;
+AnimationBlock rot;
+}
+template ModelParticleParams {
+<10000010-0000-0000-0000-123456789000>
+FLOAT mid;
+array DWORD colors[3];
+array FLOAT sizes[3];
+array WORD d[10];
+array FLOAT unk[3];
+array FLOAT scales[3];
+FLOAT slowdown;
+FLOAT rotation;
+array FLOAT f2[16];
+}
+template ModelParticleEmitterDef {
+<10000011-0000-0000-0000-123456789000>
+DWORD id;
+DWORD flags;
+Vector pos;
+WORD bone;
+WORD texture;
+DWORD nZero1;
+DWORD ofsZero1;
+DWORD nZero2;
+DWORD ofsZero2;
+WORD blend;
+WORD type;
+WORD s1;
+WORD s2;
+WORD cols;
+WORD rows;
+array AnimationBlock params[10];
+ModelParticleParams p;
+AnimationBlock unk;
+}
+template ModelRibbonEmitterDef {
+<10000012-0000-0000-0000-123456789000>
+DWORD id;
+DWORD bone;
+Vector pos;
+DWORD nTextures;
+DWORD ofsTextures;
+DWORD nUnknown;
+DWORD ofsUnknown;
+AnimationBlock color;
+AnimationBlock opacity;
+AnimationBlock above;
+AnimationBlock below;
+FLOAT res;
+FLOAT length;
+FLOAT unk;
+WORD s1;
+WORD s2;
+AnimationBlock unk1;
+AnimationBlock unk2;
+}
+template ModelAttachmentDef {
+<10000014-0000-0000-0000-123456789000>
+DWORD id;
+DWORD bone;
+Vector pos;
+AnimationBlock unk;
+}
+template ModelRenderPass {
+<10000015-0000-0000-0000-123456789000>
+WORD indexStart;
+WORD indexCount;
+WORD vertexStart;
+WORD vertexEnd;
+DWORD tex;
+float p;
+WORD texanim;
+WORD color;
+WORD opacity;
+WORD blendmode;
+DWORD order;
+DWORD geoset;
+DWORD renderstateBitWise; # usetex2, useenvmap, cull, trans, unlit, nozwrite, swrap, twrap
+}
+## ParaXBody contains array blocks
+template ParaXBody{
+ <20000000-0000-0000-0000-123456789000>
+ [...]
+}
+####### array blocks #######
+template XVertices {
+<20000001-0000-0000-0000-123456789000>
+DWORD nType;
+DWORD nVertexBytes;
+DWORD nVertices;
+DWORD ofsVertices;
+}
+template XTextures {
+<20000002-0000-0000-0000-123456789000>
+DWORD nTextures;
+array ModelTextureDef textures[nTextures];
+}
+template XAttachments{
+<20000003-0000-0000-0000-123456789000>
+DWORD nAttachments;
+DWORD nAttachLookup;
+array ModelAttachmentDef attachments[nAttachments];
+array DWORD attLookup[nAttachLookup];
+}
+template XColors{
+<20000004-0000-0000-0000-123456789000>
+DWORD nColors;
+array ModelColorDef colors[nColors];
+}
+template XViews{
+<20000005-0000-0000-0000-123456789000>
+DWORD nView;
+array ModelView views[nView];
+}
+### XIndices0 only for view0 ###
+template XIndices0{ 
+<20000006-0000-0000-0000-123456789000>
+DWORD nIndices;
+DWORD ofsIndices;
+}
+template XGeosets{ 
+<20000007-0000-0000-0000-123456789000>
+DWORD nGeosets;
+array ModelGeoset geosets[nGeosets];
+}
+template XRenderPass{ 
+<20000008-0000-0000-0000-123456789000>
+DWORD nPasses;
+array ModelRenderPass passes[nPasses];
+}
+template XBones{ 
+<20000009-0000-0000-0000-123456789000>
+DWORD nBones;
+array ModelBoneDef bones[nBones];
+}
+template XTexAnims{ 
+<2000000a-0000-0000-0000-123456789000>
+DWORD nTexAnims;
+array ModelTexAnimDef texanims[nTexAnims];
+}
+template XParticleEmitters{ 
+<2000000b-0000-0000-0000-123456789000>
+DWORD nParticleEmitters;
+array ModelParticleEmitterDef particleSystems[nParticleEmitters];
+}
+template XRibbonEmitters{ 
+<2000000c-0000-0000-0000-123456789000>
+DWORD nRibbonEmitters;
+array ModelRibbonEmitterDef ribbons[nRibbonEmitters];
+}
+template XCameras{ 
+<2000000d-0000-0000-0000-123456789000>
+DWORD nCameras;
+array ModelCameraDef cameras[nCameras];
+}
+template XLights{ 
+<2000000e-0000-0000-0000-123456789000>
+DWORD nLights;
+array ModelLightDef lights[nLights];
+}
+template XAnimations{ 
+<2000000f-0000-0000-0000-123456789000>
+DWORD nAnimations;
+array ModelAnimation anims[nAnimations];
+}
+template XDWORDArray{ 
+<20000010-0000-0000-0000-123456789000>
+DWORD nCount;
+array DWORD dwData[nCount];
+}
+template XTransparency{ 
+<20000011-0000-0000-0000-123456789000>
+DWORD nTransparency;
+array ModelTransDef transparency[nTransparency];
+}

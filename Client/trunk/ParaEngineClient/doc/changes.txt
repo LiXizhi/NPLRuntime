@@ -1,0 +1,2606 @@
+/** @page ParaEngine_change	ParaEngine Change History
+@author LiXizhi
+Copyright 2004-2012 ParaEngine Corporation.
+
+2016.1.27
+     - FBX model info class refactored, now support <anims neck_yaw_axis="x" neck_pitch_axis="-z"> attributes
+
+2016.1.16
+	- NPL.AppendURLRequest support -I option which is headers only. 
+
+2016.1.15
+	- added vine model with 24 directions
+	- lua_pcall now support reading back lua return value in C++.
+	- BlockEngine added "OnBeforeLoadBlockRegion" callback with return values
+
+2016.1.9
+	- shellexecuteex supported to wait on process return
+	- we can now accept filename without bootstrapper=filename. 
+
+2015.12.30
+	- fix attach to 3d API with empty object names does not show up.
+	- fix depth testing for GUI object attached to 3d object.
+
+2015.12.27
+	- BMaxAnimGenerator added. 
+	
+2015.12.26
+	- fix autocamera biped states when multiple walking keys are pressed. 
+	- fix fly mode speed direction when multiple walking keys are pressed. 
+
+2015.12.25
+	- fix a animation bug when changing biped asset file in async mode
+	- removed shadow for fully transparent object.
+    - fixed biped animation speed and IK bone names for FBX files. 
+    - if fbx and bmax model bone is named "L Hand" "R Foot" "Head", etc. these bone names are recognized. 
+
+2015.12.20
+	- fixed a bug in NPL/HTTP protocol when url contains '('
+
+2015.12.18
+     - added ParaTerrain.GetBlockAttributeObject():SetField("OnSaveRegionCallbackScript", ";echo(msg);") attribute to NPL block world. 
+
+2015.12.2
+     - fix a transformation bug in painter, causing transforms not updated. 
+     - multi-frame block renderer is supported on mobile client and can be turned on via GUI setting. 
+
+2015.11.30
+	- fix fog rendering in block world
+
+2015.11.27
+	- renderable chunk is made thread safe, using thread local storage.
+	- BlockTessellators are made thread safe. 
+	- MultiFrameBlockWorldRenderer increased performance
+
+2015.11.26	
+	- MultiFrameBlockWorldRenderer added for rendering far away blocks offline and across multiple frames. 
+
+2015.11.18
+     - NPL table serialization now support number key.
+     - NPL interface now supports synchronous call in addition to asynchronous NPL.activate.
+	 - Fix NPL.NPL.AppendURLRequest sending file with binary data containing "\0". 
+     - fixed NPL url form upload for binary file format. Internally it will made a copy of the data for async calls.
+
+2015.10.22
+	- window version also support cmdline in config.txt. 
+	- touch click is optimized to auto extending click area, "FingerSizePixels" "FingerStepSizePixels"attribute added to GUIRoot
+	- fixed empty string as key can not be deserialized in NPL
+	- fix UI scaling in finger size
+	- fix mouse capturing in scene context
+	
+2015.10.16
+	- block carpet model added
+
+2015.10.11
+	 - miniscenegraph automatically redrawn when device is lost. Added IsPersistentRenderTarget attribute. 
+
+2015.10.10
+     - bmax model now support over 65535 indices / vertex per geometry. 
+	 - bmax model can be nested, i.e. you can save blocks with BlockModel blocks.  They must be under the same world directory. 
+
+2015.10.1
+	- md5 support binary output
+	- fix delete world directory in win32
+
+2015.9.30
+	- BMax's Wheel Bones support automatic moving forward and backward animation
+
+2015.9.27
+     - fix pure texture cleanup code. 
+     - fix hidden surface removal in bmax model. 
+     - fix bmax model rendering in deferred shading. Lighting is wrong. 
+
+2015.9.21
+	 - fix buffer picking crash bug by using weak_ptr for all headon display objects.
+	 - Fix metal block rendering as black when shown with a color block. 
+
+2015.9.17
+	 - 3d line width can be automatically adjusted according to current projection matrix.
+
+2015.9.15
+	 - all TileObject in C++ uses ShapeAABB internally.
+     - geometry are marked dirty and recalculated when yaw, pitch, roll, ... attributes changed. 
+     - object facing is calculated into AABB, which accelerate occlusion testing when preparing the 3d scene. 
+
+2015.9.11
+     - fix bmax model rendering for normal, AO (ambient occlusion) info are exported to color channel.
+
+2015.9.9
+     - FBX redundant keys are removed during loading. 
+     - asset file and anim instances are decoupled in bipedobject in C++,allowing us to change model without changing bone animation. 
+     - assetfile property added to base object 
+
+2015.9.2
+	- dynamic attribute set added
+
+2015.9.1
+	- local transform and pivot exposed via attribute model
+	- painter support extracting scaling
+
+2015.8.30
+    - Fix day light and time rendering when time is over 24 hours. 
+
+2015.8.23
+	- BMaxParser refactored to save memory and increase speed, at most 256*256*256 blocks are supported in size. 
+	- Fix ShapeAABB initial value. 
+	- Fix BMax render origin and rendering. 
+
+2015.8.20
+	- protocol buffer lib can be loaded from any NPL thread by calling NPL.activate("protocol/pb.cpp");
+	
+2015.8.15
+	- buffer picking for overlays and rendertargets are now supported. 
+	- multiple buffer picking objects can be created using BufferPickingManager. 
+
+2015.8.14
+	- Painter class is exposed via Attribute Model, applying single IO pattern. 
+    - Painter class added dozens of attribute fields for 3d transformations.
+    - PainterContext provide complete 2d and 3d api with mixed coordinate system.
+
+2015.8.13	     
+	- Fix painter Y downward coordinate when rendering 3d objects, which differs from 2d objects.
+    - Overlay ported to mobile with opengl support.
+	- bufferpicking supported. 
+
+2015.8.11	
+	- fix object space line sprite rendering in directX
+    - Painter class now supports drawing thick 3d lines. 
+    - Painter class now support drawing triangle list.
+
+2015.8.1
+	- fix a distance chunk removal algorithm bug.  
+	- skymesh support any number of submeshes (can be animated object)
+	- fixed snow effect when snowing heavily exceeding pool limit. 
+
+2015.7.25
+    - Refined chunk remove algorithm when memory limit is reached. 
+    - Chunk builder and light grid are exposed via attribute object. 
+    - Chunk upload can now limit the total number of bytes to upload per tick, allowing smoother frame rate. 
+	- BlockRegion memory exposed via attribute object. 
+	- BlockEngine added MaxVisibleVertexBufferBytes attribute to make cache better. 
+2015.7.21
+	- current memory usage is exposed via attribute. 
+
+2015.7.20
+	- GetLocalTransform added to base object
+	- Headon display now handles local transform, so that GUI can be transformed in any possible way in 3d scene.
+
+2015.7.19
+	- AssetEntity, ParaXEntity, NPLRuntimeState, Viewport now exposed as attribute object. 
+
+2015.7.16
+	- BlockRegion is exposed from script
+	
+2015.7.15
+	- Refactored ParaVertexBufferPool to be exposed via attribute interface. 
+	- added a few stats fields to block engine. 
+	- BMAX model now supports block lighting, and point texture sampler.
+     - Renderable chunk cache policy changed to automatically remove out of range unused device vertex buffer and memory buffer. 
+
+2015.7.14
+	- FBX embedded texture merged with c++ engine. 
+
+2015.7.9
+	- fix: transparent faces in ParaXModel loading moved from IO thread to render thread due to texture references.
+
+2015.7.7
+	- fix byte alignment issue of StringBuilder in C++, causing map chunk data to be sent mis-aligned. 
+	- fix empty chunk column map data format error. 
+
+2015.7.6
+	- refactored texture loading logics in ParaXModel, fixing a potential multi-thread crash during texture loading. 
+
+2015.7.1
+	- fix bmax model rendering in BipedObject. bmax is now a boolean property of parax model object.
+
+2015.6.24
+	- fix bmax parser mesh transform incorrect. 
+	- fix OpenAssetFile of validity.
+
+2015.6.19
+	- 64bits version support assimp and FBX
+	- BlockWorld added MinWorldPos and MaxWorldPos attribute. 
+	- add attribute MaxIPAddress
+
+2015.6.18
+	- vertex color supported in fbx export and displayed in BMax model. 
+	- fix esc key is outputed to editbox
+	- fix crash when window size is 0. a minimum of 1*1 is ensured. 
+	- ParaEngine:GetAttributeObject():SetField("LockWindowSize", true)  LockWindowSize attribute added to ParaEngine object
+
+2015.6.16-2015.6.18
+	- fbx with bone and animations 
+	- ParaX Bone calculation now support offset matrix, and static transform in addition to pivot SRT transform. this is mainly for importing FBX animation directly. 
+	- Bone's rotation matrix is moved to a post step after all bone matrix is done. and calculated from final matrix. 
+	- BMaxObject now support looped standing animation and fully support loading from FBX, ParaX files. 
+	
+2015.6.4
+	- block engine now supports a secondary color in vertex shader. 
+	- disabled alt key release to activate the system menu under win32. 
+	- add alt key down/up event to NPL script.
+
+2015.6.2
+     - Fix: clip area calculation to account for current matrix
+	 - GUIBase support "onactivate" event. 
+
+2015.6.1
+     - Fix: text size calculation is more accurate without trailing. 
+	 - Fix: painter clipping during save/restore in NPL script. 
+	 - C++ GUI object support CompositionPoint attribute for IME customization
+
+2015.5.27
+	- InputMethodEnabled attribute added to GuiBase
+	- refactored GUIIME, so that every GUIBase object can receive ime event. 
+	- GUIBase now emit "oninputmethod" event.
+	- RegisterNPL file is now part of formal core interface.
+	- Fix NPL files are loaded from dev folder first. 
+	
+2015.5.26
+	- NPL table now support index iterator
+	- HDR shader now renders transparent blocks correctly. 
+
+2015.5.23
+	- BMax shader added for both directX and opengl pipeline. 
+
+2015.5.21
+	- fix touch input under win32
+	- added assimp importer as static library supporting FBX, and STL. 
+
+2015.5.14
+	- fix shadow map in deferred shading
+
+2015.5.10
+	- refined fog effect in default block shader
+	- multiple render target can be set via script
+	- added Icon property for application. 
+
+2015.5.3-2015.5.7
+	- fix drawtext with alignment
+	- added AutoClearBackground attribute to gui base
+	- fix render target refresh issue
+
+2015.4.30
+	- fix utf8 draw text encoding error. 
+	- painter's drawTexture support 9 tile texture natively. 
+
+2015.4.21
+	- added CanHaveFocus attribute to GUI base 
+
+2015.4.15
+	- mobile version font rendering fix head on text depth value
+
+2015.4.13-2015.4.14
+	- fixed premultipled alpha for opengl version
+	- added pause/resume for entire audio engine. 
+	- ParaXStaticModel now keeps system mesh in raw vertices and indices format, thus saving memory.
+	- mobile version of ParaXStaticModel now supports cloning physical mesh.
+	- add STATIC_LIBRARY flag for cAudioEngine and physics engine to avoid name conflict under android/ios
+	- fix a render pass order bug of ParaXStaticModel, causing mesh textures to incorrectly rendered
+	
+2015.4.10-2015.4.12
+	- fix ui animation reference to unscoped stack variable
+	- disabled 3d sound in mobile version. 
+	- refactored and added TouchSessions manager in c++. 
+	- added TouchGesturePinch in c++, Pinch gestured is mapped to mouse scroll to 3d scene if there is no user defined touch handler. 
+
+2015.4.6-2015.4.7
+	- added ASSET_STATE_FAILED_TO_LOAD to texture entity. 
+	- SelfPaint UI object will correctly detect async loaded textures and repaint after asset is downloaded. 
+	- opengl font renderer now share the same shader with the standard 2d quad render. No shader switch now. 
+	- Multiple text can now be batch-rendered. Shadowed text now only takes 1/8 of draw calls in most cases. 
+	- opengl terrain shader support fog effect. 
+	- opengl shader fix alpha blending when rendering gui object
+	
+2015.4.4
+	- streaming disabled for audioengine in mobile version
+	- fix writable path when playing streamed audio in mobile version. 
+	- mobile version all blending operations are delayed until next draw call.
+	- separate alpha blending mode supported on opengl renderer. All directX blending mode supported on opengl renderer. 
+	- when rendering SelfPainted GUI, the alpha channel use add operation separately to colors. This fix a render bug for transparent overlays on render target. 
+
+2015.4.3
+	- painter implemented all blending mode
+	- opengl fix miniscene renders too dark when global lighting is off.
+	- Fix framemove event with SelfPainted ui object. 
+
+2015.4.1-2015.4.2
+	- hardware clipping moved from GUI Container to Painter class. 
+	- both scissor rect and stencil based clipping is implemented in GPU painter engine. 
+	- SelfPainted device now support hardware clipping for both directX and opengl. 
+	- improved scissor rect performance with DirectX by disabling it when no clipping is used. 
+	- GUI container no longer flush sprites, the render order is preserved, the caller is responsible to batch textures, this allows texture batching across group of ui objects. 
+	- fix unstable transform when render self painted GUI object. 
+
+2015.3.31
+	- SelfPainted gui object will automatically add its render target to delete pool once it is destroyed. 
+	- ContainerObject will remove dead objects from its children. 
+	- Rendertarget now support LifeTime, SetDead attribute.
+	- fix asset manager's DeleteEntity call crash. 
+	- CRenderTarget will delete device texture when itself is destroyed. 
+	- SelfPainted GUIContainer will automatically repaint in the next frame, if any used texture is not fully loaded.
+	- pe:container and pageCtrl now support SelfPaint attribute. 
+	- fixed clipping region of SelfPainted GUI rendering inside the flipped opengl render target.
+	- add InvalidateRect() to SelfPainted UI container object. still a naive implementation that just invalidate all. 
+	- Painter now support composition mode and auto flush previous render objects. 
+	- SelfPainted Gui Object will auto clear clipping rect with a fully transparent color. 
+
+2015.3.25- 2015.3.29
+	- fix mouse mapping of touch input. 
+	- fix transparent face display in mobile version. 
+	- fix mobile version ccs transparent color key. 
+	- mobile version added CMissileObject
+
+2015.3.20-2015.3.22
+	- fix terrain shader for mobile version
+	- asset manifest supported for mobile version
+	- support move file operation on mobile version
+	- implement auto make APK script and create a sample taurus app on mobile platform
+
+2015.3.17-2015.3.18
+	- base object added addref and release attribute method. 
+	- ParaEngineClient support command line servermode="true" to run in console mode. 
+	- 64bits windows version now uses luajit instead of lua to make same bytecode compatible for both 32/64bits system. 
+
+2015.3.12-2015.3.15
+	- refactored custom char system into multiple files for ease of editing. 
+	- added ImageEntity class
+	- mobile version render target support saving texture to file
+	- ccs face and skin now uses the new painter engine inside the new CCS based rendertarget. 
+	- fix render target clear bug and uv wrapping mode
+	- TextureComposer class and ComposerTask added. Only a single render target is created for each composer type. 
+	- fix opengl texture reference count not zero bug. 
+	- TextureComposer will automatically unload all component textures when there is no more composing tasks. 
+
+2015.3.11
+	- cleanup some unused functions in terrain engine
+	- SelfPainted gui rendertarger support non-power of 2 region. 
+	- fix opengl error in terrain shader
+	- asset manifest enabled for mobile version. accelerate parsing file speed, add "UseLocalFileFirst" attribute to manifest
+
+2015.3.10
+	- removed old graphics api from NPL and ParaEngine. dozens of files removed. 
+	- added "SelfPaint","IsDirty" attribute to GUI Object. Test case added to TestGUI
+	- standard GUI and ownerDraw GUI can coexist on SelfPainted parent device. 
+	- GUIContainer's "SelfPaint" can be turned on/off anytime anywhere. Once on, all its children including itself is painted using a private render target
+
+2015.3.8-2015.3.9
+	- rendertarget (miniscenegraph) support "On_Paint" script callback. 
+	- rendertarget can be created from script, the render pipeline will auto redraw dirty rendertarget. 
+	- render pipeline supports a new type of render queue called owner_draw_objects, which is rendered even 3d scene is disabled.
+	- rendertarget attributes exposed to scripting interface. Test case added to TestGUI.lua
+	- removed 3DCanvas interface from NPL and C++. 
+	- ParaObject now support SetScript function like ParaUIObject. Adding id property to ParaObject.
+	- fixed opengl rendertarget flip y issue in rendertarget rendering. 
+
+2015.3.3-2015.3.6
+	- added vectorpath, pen, brush, font class for painter
+	- painterstate fully implemented. 
+	- Color can convert to and from string
+	- painter state(font, pen, brush, etc) are exposed to NPL. 
+	- painter add save/restore state
+	- painter added set/get transform
+
+2015.3.1-2015.3.2
+	- EnableAnim attribute added to BaseObject. 
+	- 3d GUI object is rendered before alpha blended 3d scene object. 
+	- fix CPainter::DrawRect transform. 
+	- NPL.activate now support implicitly or explicitly registered C++ file. 
+	- GetProcAddress now support default C lib namespace. 
+
+2015.2.28
+	- NPL language service fixed hex highlighting lexer
+	- CPainter support all kinds of 2d transforms. 
+	- GUI's ownerdraw render script event now draws in local client coordinate system. 
+
+2015.2.27
+	- GUI engine refactored to use CPaintEngine. 
+	- refactored ParaUI scripting interfaces seperating into discrete files. 
+	- standard painter functions implemented in CPainter class.
+	- painter class is exposed to NPL as a shared singleton class. testcases added for OwnerDraw in NPL. 
+
+2015.2.26
+	- all boost::signal is now replaced by boost::signals2::signal
+	- Asset manager now support device callback functions, allowing writing modular device dependent object like the PaintEngineGPU. 
+	- CPaintEngineGPU use a sprite renderer to draw objects internally.
+	- CGUIRoot becomes a paint device and is refactored to use CPaintEngineGPU. 
+	- CGUIRoot is decoupled from render device objects. 
+		
+2015.2.24-2015.2.25
+	- added 2d helper struct 2d matrix, 2d transform, lines
+	- added 2d painting interface: CPainter. 
+	- added raster and gpu paintengine
+	- added OwnerDraw property for GUIBase. 
+	- added ondraw event for NPL to GUIObject. 
+
+2015.2.22-2015.2.23
+	- CRenderTarget object added. CMinisceneGraph subclass it. 
+	- opengl now support render target
+	- added 2d painting interface
+	- added 2d helper struct including ParaPoint, ParaSize, ParaRect, ParaMargins
+
+2015.2.17
+	- all camera parameter now use double instead of float. 
+	- all object position now use double instead of float. All scripting API uses double as well.
+	- fix ui rotation rendering
+	- movie codec version number increased. 
+
+2015.2.3-2015.2.9
+	- fix search in zip file
+	- fix particle spawner
+	- terrain engine can now be completely disabled. 
+	- async load opengl textures
+
+2015.2.1-2015.2.2
+	- mouse event added mobile, Touch event is fully mapped to mouse event
+	- allow zip directory searching, removing duplicated zip file in search result. 
+	- opengl scissor rect and viewport added for mobile
+
+2015.1.28-2015.1.30
+	- fix editbox enter/slash key
+	- fix ParaCharacter is reference counted, DummyInstance is not reference counted, fix multi texture mesh load error. 
+	- add default speed for invalid model
+	- fix mobile file exist api. 
+	- disabled screen resolution change API in mobile version.
+	- removed physical face rendering in static mesh model. 
+	- terrain texture uses TextureEntity internally. 
+	- fix wildcard match function
+	- ccs system ported to mobile
+
+2015.1.25-2015.1.27
+	- scene, gui, viewport, assetmanager all support attribute model
+	- cleaned up duplicated terrain engine files
+	- fix sky static mesh rendering, terrain support attribute model
+	- support command line in mobile version
+	- removed pcre regular expression, use std::regex or boost:regex instead. 
+	- fix viewclipping getradius bug
+	- terrain engine is ported to mobile version.
+
+2015.1.21-2015.1.24
+	- added custom object factroy pattern	
+	- added TileObject. CBaseObject is a more light weighted base class. 
+	- exposing all tile object via quad tree attribute models. 
+	- changing quad tree data structure to optmize speed and auto manage object memory release. 
+	- added BlockDynamicObject and BlockPieceParticle
+	- Fix Mobile IME insert/delete in Win32/Android/iOS
+	- Fix IME cursor pos rendering and calculation in mobile version
+	- All Asset Entity also derived from attribute model.
+	- All animation instance now derive from attribute model.
+	- removed unused Xfile animation class files. 
+	- biped exposing texture, paraxmodel, and animation instance
+
+2015.1.20
+	- fix weather effect physics
+	- fix IAttributeField auto class id
+
+2015.1.10
+	- supporting 64bits build under windows (all major dlls now 64bits, such as DirectX, libcurl, lua, etc. )
+
+2015.1.7
+	- added precompiled header paraengine.h and /MP. compile speed is 20 times faster than before.
+	- alpha blending fix in deferred shading
+
+2014.12.30
+	- particle element added. Weather effect added. 
+
+2014.12.24
+	- refactored block tessellation to make it 6 times faster during rendering. 
+	- Alpha blending is turned off during solid block rendering pass to be Early-Z friendly on modern graphics card. 
+
+2014.12.10
+	- fix rendering block with some opacity like half slab.  
+
+2014.12.5
+	- add ParaEngine.GetAttributeObject():GetField("AppCount");
+	- NPL download file now has progress callback. 
+	- NPL.activate now support empty filename. 
+
+2014.11.24
+	- fix numeric keyboard input
+	- fix block thread deadlock. 
+
+2014.11.22
+	- fixing 2d scaled text rendering 
+	- added api NPL.LoadObjectFromString
+
+2014.11.11
+	- win8 2in1 touch api unified with mobile version
+
+2014.11.9
+	- lighting thread and chunk rebuild thread is refactored to run in finer concurrency. 
+
+2014.11.4
+	- fix block wrapping mode in shader
+	- changed lighting algorithm
+	- custom block model from x file is supported. 
+
+2014.10.22
+	- added LightCalculationStep attribute to control how much lighting should be calculated
+
+2014.10.21
+	- sky object refactored to support mobile version. adding sunSize, cloudDensity, etc. 
+
+2014.10.16
+	- biped now support opacity attribute
+	- fix audio engine seek function
+	- many things ported to mobile version: ParaXModel, etc. 
+
+2014.10.4-2014.10.6
+	- ParaXStaticModel file parsing and rendering (opengl)
+
+2014.10.3
+	- refactored asset_ptr into RefCounted, RefCountedOne, and ref_ptr. 
+	- content loader refactored into their separate files. 
+
+2014.9.23
+	- biped added "FlyUsingCameraDir" attribute
+	- the engine is cross-platformed. mobile version is runnable from android. 
+
+2014.9.18
+	- changed block rendering vertex buffer algorithm. Use only index offset to be compatible with opengl es2
+	- porting all 3d api to opengl, see the renderer folder. 
+	- tons of refactoring to make the engine cross-platform to android.
+
+2014.8.29
+	- fix render distance algorithm. 
+	- GUI system is crossplatformed. OpenGL rendered added to replace d3dxsprite and d3dxfont in mobile platform. 
+
+2014.8.23
+	- moved MathLib to ParaMath. 
+	- fix ParaXModel scaling and particle transform. 
+
+2014.8.22
+	- dropped all d3dx math dependencies. 
+	- added *.inl inline cpp files for some math class. 
+	
+2014.8.19
+	- math lib changes from column major to row major. Adding interface for SIMD(SSE2) instruction optimization in future (such as those used by DirectXMath)
+	- GUI all uses new math. 
+
+2014.8.15
+	- fixed some boost intrusive_ptr derived class to use virtual decontructor. 
+	- NPL can be inited with external luastate
+	- NPL can set one additional search path. 
+	- fixed boost_intrusive_ptr potential bug. removed forced template initialization (otherwise not working with android compiler.)
+	- making paradebug/ crossplatform. 
+
+2014.8.14
+	- /LARGEADDRESSAWARE is added to dll and exe.  ./dumpbin /HEADERS paraengineclient.exe will show it. 
+	- fixed reflection on deferred shading shader. 
+
+2014.8.12
+	- viewportmanager support stereo layout.
+	- refactored AssetEntity to break it into several entity files and reduced dependency. 
+	- fixed shadowmap and eye pos in shader when in stereo mode. 
+
+2014.8.11
+	- Deferred Shader support viewport. Post processing is done in viewport area. 
+	- ParaEngine.GetViewportAttributeObject() added. 
+
+2014.8.7-2014.8.10
+	- refactored ParaEngineAPP
+	- Added viewport manager to support movie capturing.
+	- added IBatchedElementDraw to replaced IParaDebugDraw. 
+	- removed dependency on ID3dxLine, replaced it with IBatchedElementDraw::AddLine() which uses triangles to simulate. 
+
+2014.8.7-2014.8.8
+	- ccs is programmable. 
+	- fixing possible crash of invalid ParaXAnimInstance
+
+2014.8.4
+	- fixed TMInterface string buffer overflow bug. 
+	- mono All-In-One server in win32 is finished. The GC will crash for mono 2.10.X, so I have to use the latested mono 3.X. 
+		however, anything related to WebHttp in mono will throw type fail error, which is a bug in mono in win32. There is no such bug with mono 2.10.X
+		I will be waiting for next release to patch the mono server. 
+	- mono is compiled using CYGWin. 
+
+2014.7.29
+	- NPLMono2 plugin implemented.  It is upgraded from the old NPLMono, it uses latest mono lib and dropped compile time dependency on ParaEngine core lib.
+		Instead, everything is invoked via IParaEngineCore interface, making it compatible with both client and server executable in win32 and linux.  
+
+2014.7.24
+	- BlockWorld added IsRemote and IsServerWorld attribute. 
+	- fix db create waiting 1.5s bug. 
+
+2014.7.22
+	- NPL serialization support binary string. Add LuaObjectToString(input, nSize) is made faster and can return string size, without copying the string data. 
+
+2014.7.17
+	- fix block chunk height map. Fix FindBlock function when the top one is not a solid block. 
+
+2014.7.16
+	- fix renderable chunk vertex offset is 16 bit bug (changed to 32bits for large chunks)
+
+2014.7.13
+	- fix light calculation for unloaded chunks. we will only calculate sun light values in a chunk when all of its nearby chunks are loaded. 
+	- light chunk near the current eye position is always updated first. 
+
+2014.6.29
+	- fix lighting bug for solid and custom block models, like chest. 
+
+2014.6.27
+	- fix error: npl message out can now send empty message. 
+
+2014.6.26
+	- boost steady_timer all uses boost::chrono instead of std::chrono. For compiling for andriod. 
+
+2014.6.24
+	- block index to float conversion uses double, which is faster. 
+	- fix a bug of creating unnecessary light block chunks. 
+	- GetBlockLight works fine for non-existing block chunks.
+
+2014.6.19
+	- can read any image file as raw ARGB data using ParaIO.open("test.png", "image");
+	
+2014.6.18
+	- skymesh object added attribute "SkyMeshTexture"
+
+2014.6.8
+	- head turning angle is disabled for biped with both walk and run animation. 
+	- fixing lightgrid calculation bug when the light grid size is changed by script during light calcuation. 
+
+2014.5.30
+	- added ParaEngine.GetAttributeObject():GetField("OpenFileFolder") to show the common open folder dialog. 
+
+2014.5.29
+	- PluginAPI now supports writing log and calling IParaEngineCore interface. 
+
+2014.5.27
+	- minor fix auto camera's back ray tracing collision detection, to avoid camera rotate 180 degrees. 
+
+2014.5.26
+	- biped block physics support biped with 1 block high. it is 2 blocks high by default. 
+	- autocamera added "EnableBlockCollision" attribute. 
+
+2014.5.22
+	- MoveCodec will now capture in separate thread. 
+	- audio capture added with WSAPI (windows XP not supported in the plugin)
+		
+2014.5.20
+	- added BlendingFactor attribute for biped object. 
+	- using GDI for ffmpeg recording by default, which is faster than render target read back. 
+	- "RecordingFPS" and "VideoBitRate" is added to property of movie system.
+
+2014.5.19
+	- fix bug: ffmpeg dll is being loaded prematurely. 
+
+2014.5.14
+	- ffmpeg dll interface exposed via ParaMovie: 
+		ParaMovie.GetAttributeObject():SetField("codec", 13); -- mp4
+		ParaMovie.GetAttributeObject():SetField("video_encode_example", "D:\\test.mp4");
+
+2014.5.4
+	- touch move added for autocamera. 
+	- added new block model "plate" used for carpet block
+
+2014.4.30
+	- added GUIBase attribute UsePointTextureFiltering and implemented in GUIContainer
+	- GUIGraphics support transparent pen and write transparent textures 
+	- ice and water will now transmit light.
+
+2014.4.24
+	- fix win8.1 touch pad crash when lost focus due to directX input not available. 
+
+2014.4.22
+	- added playing midi file support from zip and disk file. 
+	- added playing a single midi note message from the scripting interface. such as ParaAudio.PlayMidiMsg(0x00403C90);
+
+2014.4.21
+	- AVI recorder will remember its last setting and uses appHWND as parent. 
+	 
+2014.4.18
+	- fix flymode WASD key not working bug
+	- added bipedobject attribute AlwaysFlying, which will not automatically switch back to land mode. 
+
+2014.4.16
+	- Fix NPL serialization with int64 or double as table index. It used to support only int32. 
+
+2014.4.3
+	- added attribute "IsControlledExternally" 
+
+2014.4.2
+	- when main player is hidden, its shadow is not rendered. 
+
+2014.3.5
+	- underwater speed reduction added. 
+	-- ParaBlockWorld.RegisterBlockTemplate now support updating an attribute. 
+
+2014.2.27
+	- when setting replaceable texture for blocks, single side and three side texture are auto switched
+
+2014.2.23
+	- fixing autocamera collision bug. 
+
+2014.2.16
+	- fixed third person camera when in corner changed to first person.
+	- FPS controller changed. 
+	- fixed mouse position jump during FPS mouse lock mode. 
+2014.2.12
+	- fixing mouse cursor lock when window focus is lost
+
+2014.2.11
+	- multi-threading and mutex added to blockworld. 
+	- light calculation is moved to a separate thread by default. 
+	- light data can now be saved to disk. (but this is usually not necessary since we have moved light calculation to a separate. it is usually very fast on a modern computer.) 
+
+2014.2.9
+	- BlockWorld is refactored and exposed in LuaJit compatible pattern. 
+
+2014.2.7
+	- BlockLightGrid is refactored to BlockLightGridClient and BlockLightGridServer
+
+2014.2.6
+	- refactored BlockWorldClient to BlockWorld class. 
+	- NPLJabberClient is removed from ParaEngineClient project. #define HAS_JABBER_CLIENT to include again. One also need to include the cmake. 
+	- ParaBlockWorld exposing multiple instance BlockWorld API to NPL
+	- BlockTerrainManager is now changed to BlockWorldClient
+2014.2.5
+	- upgraded NPL language service and debugger from vs 2010 to vs 2013
+    - open sourced NPL mini-tools on github. Source tree is used for Git version control.
+
+2014.2.4
+	- upgraded to visual studio 2013
+	- compiling boost 1.55 with vs 2013, applying manual patch for the serialization lib. 
+	- applying manual patch for boost IPC in order to compile. 
+	- adjusting cmakefile for compilation. 
+	- cmake bin folder is moved to Client/bin, such that source folder is much cleaner. correced several bugs in cmakelist.txt such as fxo compiling and include folder etc.
+2014.1.28
+	- Biped support block physics with different block height. 
+	- fix lighting bug. 
+
+2014.1.27
+	- block that is both obstruction and climbable will be treated as physical block with 0 height. 
+	- Biped now has AutoWalkupBlock attribute
+
+2014.1.25
+	- ParaEngineSDK sample added and uploaded to ParaEngineGit hud site.  
+	- ParaSandBox filename fix. supporting letter "'" in filename.
+	- ParaEngineGit/Client/ParaEngineSDK/Redist added to SVN. 
+	- fixing an error of ICDBManager.cpp. log file causing crash. 
+
+2014.1.24
+	- fixed block mesh or character lighting bug, when the block is solid. 
+
+2014.1.22
+	- ParaIO.DeleteFile() will recursively delete directory now. 
+	- ParaIO.LoadReplaceFile() support filepath pair
+
+2014.1.20
+	- only modifed region is saved and only unmodified region can be unloaded from cache regardless of region cache size. 
+
+2014.1.3
+	- AddAttachment of ParaCharacter now support replaceable texture for static mesh. 
+	- GetAttachmentAttObj() implemented for ParaCharacter
+	
+2014.1.2
+	- "FaceCullingDisabled" attribute added to d3d culling
+
+2014.1.1		
+	- fixing light update bug when eye position jumps long dist. 
+
+2013.12.30
+	- drop filename when saving all terrain related files to disk. So that users can rename folder without breaking the data
+	- all temp database file contains full path.  
+
+2013.12.28
+	- BlockModel AABB added for collision and selection rendering. 
+	- fixed Mesh aabb when max_x<0
+
+2013.12.26
+	- UI now support point texture filtering except for text. 
+	- fixed guicontainer 3d scaling
+
+2013.12.22
+	- fixing on modify event for GUIEdit when IME text is inserted. 
+	- fixed region cache and increased cache to 16. 
+
+2013.12.19
+	- boost updated to 1.55. Using steady_timer instead of deadline_timer
+
+2013.12.14
+	- refactor active renderable chunk to make the code more efficient and easy to understand. 
+	- active renderable chunks now caches chunk data correctly, and memory does not grow continuously. 
+
+2013.12.11
+	- refactored BlockLightGrid to move Lightmapdata to BlockChunk. 
+
+2013.12.3
+	- added providepower attribute to blocktemplate
+
+2013.12.2
+	- blockTemplate added associated id
+	- wire block added. block model is now refactored to class. 
+
+2013.11.24
+	- BlockChunk added. Fixed a block rendering bug at chunk boundary. 
+
+2013.11.23
+	- luajit FFI interface added for some functions
+	- Added ParaTerrain.FindFirstBlock, optimizhed for searching download
+
+2013.11.12
+	- refactored BlockRegion to drop chunkIndices but using chunk array directly.
+
+2013.11.9
+	- luajit2.0.2 /MD /MT compiled and uploaded to svn. The dll is in /bin folder. 
+		modify src/msvcbuild.bat to change from /MD to /MT(so that it will be compiled with multi-threaded CRT); then run "msvcbuild.bat"
+	
+2013.11.8
+	- vine and seed_plant and plant block model added
+	- added ladder that is non-obstructed. 
+
+2013.11.7
+	- directional lighting added to default opache block effect. 
+
+2013.11.6
+	- block shape "slab" added. we now support cubeMode customModel, so that we can render different shaped models with same block id and different block data.  
+
+2013.11.4
+	- PNG file whose path contains "blocks" will use 32bits texture and 4 mipmap levels. if filename further contains "leaves" it will only has 1 mip level. 
+	- fixed cross shaped block model's lighting and auto face removal bug. 
+	- CParaFile can now encode/decode unsigned integer. 
+	- ParaMisc.RandomLong and ParaMisc.RandomDouble is added which can take a table seed
+	- fixed water block rendering when top block is solid. 
+
+2013.11.3
+	- using custom data structure to store block data in region file, which is half in size and more extensible. 
+	- some simple compression method is used for storing block indices
+
+2013.10.31
+	- uses heightmap to quickly assign max sunlight value during initial block terrain loading for fully lit blocks. 
+	- fixed a light calculation bug when placing blocks 
+	- improved emit lighting to accelerate the initial light calculation. 
+
+2013.10.26
+	- GUIRoot exposes "UsePointTextureFiltering" and "BackBufferSize" attribtue 
+
+2013.10.22
+	- mouse_wheel event is fired
+	- character also uses pointer filter in block world.
+
+2013.10.15
+	- shadow map culling frustum for block engine is optimized. 
+	- normal map added for water block. 
+
+2013.10.14
+	- block shadow map now uses a caster aabb of the shadow radius size around the eye center. 
+	- water reflection is implemented in deferred shading shaders. 
+	
+2013.10.11
+	- shadow map size is increased to 2048. 
+	- new shadow rendering algorithm is implemented in deferred shading with fast soft shadows. 
+		 see script\apps\Aries\Creator\Game\Shaders\composite.fx
+	- normal map added
+	- terrain will now cast shadow
+
+2013.10.10
+	- reconstructing world position from view space depth value is fully implemented. 
+	- fixed render several render bugs in block engine when device is lost or leaving the scene. 
+	- fancy graphics will now check device capabilities. 
+	- block water reflection, sun shadow, device cap are exposed via scripting interface. 
+	- terrain and standard mesh shader can be replaced by custom shaders now in block engine. 
+
+2013.10.9
+	- Effect object now support SetParam to set a number of camera matrix in scripting interface
+	- Multiple render target framework is working now
+	- Block Engine now support fancy graphic mode which uses deferred shading. 
+	- shadow map is refactored and can be accessed from the scripting interface. 
+	- block can cast shadows
+	- fancy block effects HLSL is added to composite.fx and mrt_blocks.fx. 
+
+2013.10.5
+	- block category id added. 
+	- render task sorting is added for category id, so that similar id are rendered next to each other. 
+	- multiple render target shader added for block engine. 
+	- fixing a bug for chunk distance render order. 
+
+2013.10.4
+	- grass shape block model with random offset and scaling is added. 
+	- fixed line device lost bug 
+
+2013.10.3
+	- optimized renderable chunk instance group updating. 
+
+2013.10.1
+	- cross model added to block engine. 
+
+2013.9.28
+	- acceleration dist and last speed property added to bipedobject. 
+	- when MESH_USE_LIGHT is enabled, CMeshObject will use CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT); for its textures. 
+
+2013.9.27
+	- fix CParaFile eof error
+	- fixed a block ray picking distance and intersection point bug. 
+
+2013.9.26
+	- block data (16bits) is now saved to disk if exist. Some custom model like torch will save data. 
+	- Helping Taole with either game engine for async asset loading. 
+
+2013.9.14
+	- biped will now cache last block light hash value. 
+
+2013.9.10
+	- all blocks id now uses fast shift operation. 
+	- use light brightness look up table
+	- TODO: make a good architecture for chunk loading, simulation and client/server 
+	- TODO: make a faster light calculation by doing sun light first. Cache light data
+	- TODO: allow saving block data (with directions). 
+
+2013.9.8
+	- fixed a refresh light bug for point light. 
+	- character head turning enabled. 
+	- smooth block light transition for biped object. 
+	- block light value updated for non-exist blocks. 
+
+2013.9.7
+	- block ao fixed. 
+	- optimized block effect to support inverse square lighting for torches. 
+
+2013.9.5
+	- Block Terrain generator script event added. BlockWorldClient now has its own attribute object
+
+2013.8.30
+	- Biped and mesh object can now set a special mesh light attribute where block world lighting(diffuse and ambient) will be used instead of global sun light. 
+	- when block world is enabled, the global terrain rendering is also darkened. 
+	- shaders now use the same diffuse+ambient algorithm inside the vertex shader. 
+
+2013.8.20
+	- ShowMainPlayer property added to the scene object. 
+	- Terrain's onload script now uses much safer sandbox environment. 
+	- block engine fog effect added.
+
+2013.7.3
+	- fixed ocean shoreline display in block world. 
+	- fixed selection effect in block world. 
+	- Fixed searching API in zip file
+	- OpenAssetFile will search disk first
+
+2013.6.29
+	- solved block rendering problem on low end graphics card that does not support 32 bits index. 
+	
+
+2013.6.25
+	- ParaFileObject:GetText and readline api is now thread-safe. and the readline api can now read line with unlimited length instead of just 500 char. 
+
+2013.6.23
+	- optmized block dirty cell memory allocator and computing order (the same chunk is always calculated in a batch, leading to less buffer update per frame.)
+	- if there is only one climbable block it will block the character instead of auto climb it. 
+
+2013.6.21
+	- stencil shadow dropper added to block world. 
+	- since FAT32 has a limit of 65535 files per folder, and if file name is long, it can be as few as 15000 files per folder. so I separate files into 36 folders according to file md5's first letter.
+	- fixed terrain hole at 0,0
+
+2013.6.18
+	- fixed function pipeline added for all block rendering. 
+	- fixed sky and skydome z rendering error
+
+2013.6.17
+	- vertex shader const buffer we will use just 80*4 float, instead of 80*12 float 
+	- all data is cached in vertex shader instead of const shader buffer. 
+
+2013.6.16
+	- fixed ParaIO.SearchFiles in zip file with relative path.
+
+2013.6.15
+	- underwater block effect added. 
+
+2013.6.13
+	- water block rendering added
+	- transparent leave block rendering added.
+	- adjacent faces between solid non-transparent blocks are not rendered. 
+
+2013.6.10
+	- added transparent block and changed block mip filter
+	- Fixed block terrain lighting problem. 
+	- Fixed black water when render with block
+
+2013.5.13
+	TODO: 
+		optimize: BlockLightGrid::OnWorldMove() 
+			light value should be cached with region cache. 
+		optimize: BlockLightGrid::UpdateLighting()
+			chunk column should be updated from near to far. 
+			number of dirty light blocks calculation should be propotional to block-player distance. 
+		optimize:
+			RenderableChunk::UpdateInstanceData should not need to update position render offset per frame. 
+		optimize:
+			RenderableChunk::FillRenderQueue 's  SetRenderOrder should be sorted in two pass. one for close blocks, the other for far blocks. 
+		optimize:
+			BlockWorldClient::Render drop support for m_instanceData and const buffer for per block transform (unless we support vertex animation). 
+			and increase batch size. pDevice->SetVertexShaderConstantF. 
+	- MCImporter added. 
+
+2013.4.8
+	- The default IME window can be enabled with ParaUI.GetUIObject("root"):GetAttributeObject():SetField("EnableIME", false);
+
+2013.3.3
+	- NPL connection overridden implemented
+
+2013.2.26
+	- BipedObject now support new MovementStyle==1
+
+2013.2.24
+	- NPL now is fully compatible with HTTP protocol. NPL and HTTP can coexist in the same connection. NPL server can be a standard HTTP web server now. 
+	- NPL protocol can be configured to run in non-ansi mode, to prevent certain web cache intercept its requests even the port is not 80.
+
+2013.2.18
+	- MeshObject will now serialize facing correctly.
+	- batt_blockcamera added. 
+	- ParaIO.DoesAssetFileExist2(file, true) will also search zip file if any. 
+
+2013.2.8
+	- "persistent" attribute added to BaseObject
+	- fixed climbing bug when there is a block underfeet
+	- BipedObject and attached mesh object's opacity shader value can now be set and we use an animation to fade in/out character when it is very close to camera. 
+
+2013.2.1
+	- IObjectScriptingInterface added 
+	- Block Terrain Engine is implemented with OnLoadBlockRegion/OnUnLoadBlockRegion scripting inteface. 
+
+2013.1.26
+	- auto camera now support auto first person for block world
+	- bipedobject fly mode now support block physics
+	- auto camera fallback speed can not be set via script
+	- block engine implemented with point lighting
+	- mesh name that begin with "s_" can be retrieved by ParaScene.GetObject(), but does not save to file. This is good for naming mesh for run once editor session. 
+
+2012.10.31
+	- added function WebBrowser GUI field "Content" which allow us to get/set the current HTML content in the webbrowser
+
+2012.10.26
+	- fixed the webbrowser close crash error
+	- added function WebBrowser GUI method "Refresh", "Stop", "GoBack", "GoForward"
+
+2012.10.25
+	- ActiveX based webbrowser added to ParaUI. ParaUI.CreateUIObject("webbrowser", "abc", "_ct", 0, 0, 400, 300); _this.text = "www.paraengine.com"; 
+
+2012.8.1
+	Fixed biped Walkto function when y position has delta
+
+2012.7.16
+	- fixed toggle fullscreen saving to config bug fail bug.
+
+2012.7.2
+	- ParaScene.GetAttributeObject():CallField("UnLoadFlashTextures") added
+
+2012.6.1
+	- Use precalculated terrain lod. 
+
+2012.4.19
+	- WM_DESTORY added to scripting interface
+
+2012.3.13
+	- fixing zwriteenable of UI object attached to 3d object. 
+	- ParaScene and ParaObject now support UI headon display with scaling where the scaling properties can be controlled by 
+		"HeadOnZEnabled", HeadOn3DScalingEnabled,HeadOnUseGlobal3DScaling,HeadOnNearZoomDist,HeadOnFarZoomDist,HeadOnMinUIScaling,HeadOnMaxUIScaling
+	- drag and drop files API added and dropfiles://filename1;filename2; are sent to scripting interface via system commandline
+2012.3.5
+	- fixing shadow rendering when toggle shadow receiver at runtime. 
+
+2012.2.28
+	- fixing OPC movement style. 
+
+2012.2.23
+	- terrain geomip mapping rendering is added by clayman
+	- ParaTerrain.GetAttributeObject():SetField("UseGeoMipmapLod",true); can be used to dynamically toggle rendering method.
+	-  ParaEngine.GetAttributeObject():GetField("MaxMacAddress","") is implemented by clayman
+
+2012.2.11
+	- Fixed tooltip property of ParaUIObject
+	- MouseCursor is async loaded. 
+	- All textures are not async loaded, including the SystemMemoryTexture. The alpha value of cursor image is fixed, but without knowning the actual reason. 
+
+2012.2.10
+	- "PhysicsGroupMask" property is added to ParaObject and ParaScene.  The ParaScene.MousePick will use PhysicsGroupMask internally. 
+	- static mesh now supports loading a single static mesh x file with different mesh physics group id assigned to material. If the material texture1 name ends with "_pg[0-9].???", then 
+	  the physics mesh group will be [0-9]. Please note that ParaObject can only overwrite group 0 mesh physics group via scripting interface. all other physics group are hardcoded and can not be changed via editor at the moment. 
+
+2012.2.7
+	- GUIeditbox with password char will disable copy to clipboard with real text. 
+	- ParaUI.SetCursorFromFile() will only set scene cursor. Use ParaUIObject.cursor to set UI cursor. 
+	- GUIRoot will collapse redudent mouse_move events
+	
+2012.1.6
+	- GUI mouse cursor now support hot spot location
+
+2012.1.6
+	- invisible UI object that is attached to a 3d scene object will always be frame moved and lifetime counted, even the 3d object is not visible. 
+		this fixed a bug that some character headon speach lives longer when not visible.
+
+2011.12.26
+	-  please note that the paraxexporter will no longer disable alpha testing(transparent clipped texture) if there the material alpha has animation. Please note that fixed function may not work as expected. 
+
+2011.12.15
+	- fixed a bug for mounted object rendering, where the mount target changes location and the mounted object is not.
+	- added ParaEngine.GetAttributeObject():GetField("AsyncLoaderRemainingBytes", 0) for asset manifest files. 
+
+2011.12.13
+	- fixed ParaXModel.Init_fx() 's pass color animation when it is external.
+	- Fixed animation blending bug when local animation is blended with external animation. 
+	- added GetAsyncLoaderBytesReceived() function. 
+
+2011.12.9
+	- ParaCamera.SetKeyMap(name, value); ParaCamera.GetKeyMap(name); are added which allow users to change base key mapping like WASD key. 
+
+2011.11.28
+	- terrain elevation resolution can be 257 or 129. Search FORCE_256_mesh. needs to turn it to an option. 
+	
+2011.11.26
+	- biped selection effect can be changed. ParaObject:SetField("SelectionEffect", 0)
+
+2011.11.24
+	- ParaObject:SetField("SkipPicking", true) implemented
+	- ParaObject:SetField("SkipTerrainNormal", true) implemented
+	- custom animation of character is disabled and there is an upper body rotation. 
+
+2011.11.14
+	- ParaScene.GetAttributeObject():CallField("ClearParticles");
+
+2011.11.9
+	- fb is updated to latest version
+	- GUI dragging is fixed. minimum dragging distance is supported without leading to wrong dragging operation. 
+
+2011.9.27
+	- ViewTouch is called for all mini scene graphs. Fixed a bug of uninitialized aabb.  
+2011.9.15
+	- fixed biped align to normal animation. The old interpolation method is buggy. and the new method will still animate the biped even when stopped. 
+
+2011.9.14
+	- ParaUI.GetDefaultObject("tooltip") is now supported which allows us to modify default tooltip styles
+	
+2011.9.6
+	- when saving mesh object, we will use the bounding box of its view clipping object if any. 
+	- UVWrappingEnabled is added to ParaUIObject. 
+		UI objects can defaults to use wrapping instead of clamping, if one simply change the GUIRoot's  UVWrappingEnabled attribute. 
+		UVWrappingEnabled (true) will cause a flush() so use it on demand. 
+
+2011.8.31
+	- ParaUIObject:SetTextAutoTranslate() method is added, which allows us to apply machine translator to all UI text (excluding editbox).
+
+2011.8.23
+	- HasAnimation method added to ParaCharacter. 
+	- CGDIEngine now support setting render target with multiple sizes. 
+	- ParaScene.SetCharRegionCoordinates and ParaScene.SetCharTextureSize added. Making ccs fully customizable in script. 
+
+2011.8.17
+	- minor fix to NPL network layer NPL.accept is now atomic. 
+	- fixed ocean shader with ps2. Alpha blending is used. 
+
+2011.7.11
+	- fixed json double convertion exception with NPL.FromJson with int is bigger than 32bits
+	- NPL.GetCurrentQueueSize will return queue size plus 1, if it is still processing activation file(such as an lengthy operation in a dll or timer)
+
+2011.7.7
+	- a portable NPL Web HTTP Server is implemented. see WebServer.lua
+	- ParaFileObject:ReadBytes() now supports returning 8 bytes clean string instead of a table. 
+	- Fixed fog in when rendering ocean reflection. 
+
+2011.6.28
+	- a portable lua file system is added. 
+
+2011.6.24
+	- luasocket is added. 
+	- NPL now support lua's package lib. require and module functions are available. io package is also loaded by default. security should be fixed later. 
+
+2011.6.21
+	- NPL.AppendURLRequest now supports callbacks in any NPL states(thread)
+	- a missing D3DCREATE_FPU_PRESERVE is added. see previous samples. 
+
+2011.6.17
+	- some graphics card's multi-sample  quality will return 1 in CheckDeviceMultiSampleType, but actually fail when creating device.  this will somehow fix the problem. 
+
+2011.6.9
+	- fixed GUIRoot loses input problem. It is due to the lost of WM_ACTIVATEAPP where the GUIRoot->m_bActive is false. 
+	  It is fixed by emulate a WM_ACTIVATEAPP message whenever mouse up or mouse activate event is seen. 
+
+2011.6.6
+	- We will set resource error for files that do not download correctly in AsyncLoader. 
+	- bug fix: we only set resource error if file name is not "".	for some reason, if we set resource error for empty file, some models will not show up.  Empty file is considered valid. 
+
+2011.6.1
+	- CBipedObject will allow custom external shader file, even for delay loaded ParaX Models. 
+	- Biped rendering will now be sorted with "RenderImportance". It is good practice to set all custom effect to the same non-zero RenderImportance value, so that there is less cost when switching effect file. 
+	- "IsAnimPaused" attribute is added to biped. 
+	- scene picking will now taking render importance into consideration when both candidates are biped. 
+
+2011.5.19
+	- fixed unibuffer crash. when textbox is very small.
+	- Biped object's last waypoint attributes are exposed. The scripting interface can not determine whether the player is moving. by checking its GetLastWayPointType
+	
+2011.5.5
+	- this fixed a bug, when a button GUI may fail to release capture for a number of tricky reasons. 
+	- VisibleRecursive attribute added to GUIObject
+	- terrain shader now support basic reflection.
+
+2011.4.27
+	- ParaUIObject GetChild() can now retrieve scrollbar object according to its name from a container object including listbox
+
+2011.4.14
+	- "forbid_reuse" is added to NPL.AppendURLRequest. so that we can issue an request and closes its connection immediately.
+
+2011.4.3
+	- Fixed Frame rate controller in paraengine server build. 
+	- when forward key is pressed, the current biped's waypoint will be discarded. 
+
+2011.4.1
+	- when left and right mouse button is pressed, it will equal move forward action. 
+	- MinCameraObjectDistance and MaxCameraObjectDistance attributes added to AutoCamera. 
+	
+2011.3.31
+	- true transparent alpha animation is support for biped object, but is pretty costy. 
+	- GUIText font-height calculation is fixed without adding 6 pixels. and bold text will add 2 pixels. 
+	- IMEEditbox now handles onfocus in/out properly. 
+	- GetTickCount linux implementation is changed to fix a bug that makes the time warp every 49.7 days. The new logics is that for 64bits, it will never warp. For 32bits, it will warp 49.7 after process start. 
+
+2011.3.3
+	- miniscenegraphc now support GetAttributeObjectCamera() to set field of view of miniscene. 
+	- auto updater is fully refactored
+
+2011.1.11
+	- Fixed a audio loop playing bug during downloading. 
+	- audio source isPlaying() method will return true for looped sound that has not been downloaded. such as background music. 
+
+2010.12.29
+	- ParaScene.LoadNPCsByRegion is added. 
+
+2010.12.19
+	- cAudioEngine is updated to rev163. I also fixed a bug in cAudioSource.cpp to release openAL buffers on its destructor. 
+	- Bug is fixed in cAudioEngine(cAudioSource.cpp). When all buffered data is assumed before the worker thread can refill it, the audio will be stopped prematurely. Now we will force continue to refill the buffers until all stream is played. 
+
+2010.12.2
+	- when changing resoltions in windowed mode, the window position will stay in screen. 
+
+2010.12.1
+	- make NPL output/input queue size configurable. Queue overflow will always print error log. __rts__:SetMsgQueueSize(500); log(__rts__:GetMsgQueueSize());
+
+2010.11.22
+	- "RenderDistance" attribute is added for all para object. we can now specify render distance per object, which is useful for biped.
+
+2010.11.17
+	- string.format("%g", 10/0) will return "1.#INF", and string.format("%g", -10/0) will return "-1.#INF", string.format("%g", 0/0)=="-1.#IND" 
+	   - since NPL uses %.14g to convert double to string. It will sometimes generate invalid number string that is not convertible back to lua number,which may leads to syntax error. 
+	- StringHelper now support fast_dtoa() to convert double to string with my own implementation, which is fast but not accurate in special cases. It is the recommended way for doing string serialization. 
+	- Most itoa functions in PareEngine client/server are replaced with fast_itoa()
+	- NPL message and table serialization of double uses the new fast_dtoa() function with at most 5 decimals. 
+
+2010.11.15
+	- boost is updated to 1.44. Applying MSVC10 Bug Fix for boost 1.44:
+	  - boost 1.44 will generate compiler error mostly because of a vc10 bug. To fix it, one needs to declare BOOST_NO_RVALUE_REFERENCES in boost/config/compiler/visualc.hpp. 
+      // https://connect.microsoft.com/VisualStudio/feedback/details/525239/bind
+      // http://lists.boost.org/boost-users/2010/09/62542.php
+      #define BOOST_NO_RVALUE_REFERENCES
+	- FireBreath is updated to latest version, also using boost 1.44.  A lot of code is changed. Needs to test thoroughly. 
+
+2010.11.5
+	- NPL TreeView control now support scrolling with dynamic item size
+	- "ClickThrough" property is supported in all UI controls.
+	- GetObjectAtPointRecursive is added to GUI with click-through implemented properly. 
+
+2010.11.2
+	- fixed a bug, while a looping sound is stopped by the user while async loading. 
+
+2010.11.1
+	- the new GUI system now enables mouse capture, scrollbar, button, container will all implement scrolling. 
+
+2010.10.26
+	- gui button now supports Padding attribute.
+	- blender source code is studied, a similar editor framework is being created in Taurus app.
+
+2010.10.14
+	- audio file are now downloaded from a separate download queue regardless of file size. 
+	- Luajit2 beta5 compiled:  modify src/msvcbuild.bat to change from /MD to /MT(so that it will be compiled with multi-threaded CRT); then run "msvcbuild.bat amalgdll"
+
+2010.10.13
+	- dropped code dependency completely from the mdx files. 
+	- terrain mask resolution can be changed dynamically. 
+
+2010.10.12
+	- StringHelper::fast_snprintf is implemented. 
+	- terrain onload script is optimized using StringHelper::fast_snprintf. ManagedLoader is changed to avoid too many lines of code between if else end, otherwise it will give syntax error in LuaJit2(instruction jump range exceed 65535).
+	- ParaEngineClient.js will now pass on uid to the game engine via command line. 
+
+2010.10.11
+	- Terrain mask texture can have different resolutions.
+	- ParaTerrain.GetAttributeObject():SetField("TextureMaskWidth", 128) is added and made persistent when saving world.
+
+2010.10.10
+	- All NPL scripts are now lua51 and luajit2 compatible.
+	- the only optional thing to modify on the luajit3 source is to make the file outbuffer bigger, such as #define LUA_IDSIZE	120
+	- In luajit2, the max control range is 65535(16bita). Some script code with a large number of codes between if and else statement may have a syntax error. 
+
+2010.10.9
+	- NPL.Compile() implementation is moved from C++ to NPLCompiler.lua. 
+	- The lua dll is now fully compatible with the original release. Therefore, luajit dll can be used to replace the original lua dll.  
+	
+2010.10.7
+	- Reflection clip plane bug is fixed
+
+2010.10.4
+	- tinyjson is replaced by jsoncpp. 
+
+2010.9.29
+	- asset manifest will ignore 0 sized file. 
+
+2010.9.24
+	- GUI ondestroy event is always fired even UI scene is reset. 
+	- ParaUIObject:SetScript is now a pretty robust implementation without fake memory leaks when ui object is deleted. 
+
+2010.9.15
+	- shadow receiver supported by physics and its shader will be auto selected. 
+	- ParaScene.GetAttributeObject():SetField("ShadowRadius", 15); supported, the smaller the more shape the shadow, but the range of shadow is smaller. 
+	  However, I have not find a way to change the shadow constant properly, so the shader still assumes the shadow is 40 meters, no matter how big one sets in script. 
+
+2010.9.7
+	- ParaObject head on text now support multiple UI templates, so that we can display several UI on top of a object at the same times,such as a white text for character name, green text for family name on a different line, and a question mark icon on top of both. 
+
+2010.9.5
+	- ParaEngineClientApp(exe) can now update itself via command line in the similar way as the web version. see below
+		commands line: app_dir="TaoMee/Haqi" updateurl="http://update.61.com/haqi/coreupdate/;http://tm.log.pala5.cn/;http://114.80.99.134/;"
+	   So it is now possible to use the same executable in the redist directory for both web version and standalone version. 
+
+2010.9.2
+	- miniscenegraph mask texture now only takes alpha channel and multiple it with the current color and alpha in the frame buffer. 
+
+2010.9.1
+	- Fixed a lost focus bug where WM_KILLFOCUS (new focus wnd is NULL) does not deactivate the old window.
+	- BringWindowToTop (SetForegroundWindow) is called for web browser when clicking on the plugin. This fixed a bug for sougou browser, where focus is locked when clicking on the d3d window where another window is active. 
+
+2010.8.29
+	- if WM_LBUTTONUP is received for top-level window (non-external window), we will setfocus, which in turn will activate the app if not activated. This may fix a bug that focus is lost at some rare conditions. 
+
+2010.8.26
+	- PostEvent will only FireEvent to js in the window thread in a WM_timer, and it will remove dupilcated progress message, thus only 1 updt.p message is sent per tick(1 second). 
+		It appears that too many messages sent to js will crash IE6 with winXP sp2. However, all other JS and browsers works fine even with large number of messages sent per tick. 
+	- ParaEngine.GetAttributeObject():GetField("AppHasFocus", true) is added. 
+	- In web browser mode, the render frame rate will be dropped to 2 FPS; yet, script frame rate remains normal. 
+	 
+2010.8.22
+	- NPL network layer security fix: nid and tid can not be overridden in user message. They are always the correct values. If there are nid fields in the user message, they will be overridden upon receive. 
+	- full featured game server can now be started locally. 
+
+2010.8.19
+	- CMissileObject now uses double for target and current position, thus allowing for missile animation even in 10000 meanters range.
+
+2010.8.16
+	- WM_MOUSEACTIVATE is handled directly in the window thread and returns MA_ACTIVATE to prevent unknown logics by windows. This may fix a bug where focus is lost in some browser. 
+	- /DEBUG is added to CMake even for release build, otherwise we cannot debug mini-dump file. This is required only for visual studio 2010, in previous vs, debug info is auto generated when I specify to generate PDB files. /DEBUG does not increase the executable size. 
+	- The attached model now shares the same animation id (if exist) of the main character 
+
+2010.8.12
+	- NPL double accuracy fixed: There's also an issue about Direct X autonomously changing the internal FPU accuracy, leading to inconsistent calculations. Direct3D by default changes the FPU to single precision mode at program startup and does not change it back to improve speed (This means that your double variables will behave like float). To disable this behaviour, pass the D3DCREATE_FPU_PRESERVE flag to the CreateDevice call. This might adversely affect D3D performance (not much though).
+
+2010.8.10
+	- NPL now adds a new format function, which only support %d and %s and %f (always printed as %.2f). This function is to replace the super slow string.format.
+		We do not use sprintf internally, so it runs much faster than string.format which uses sprintf. Use it where performance is critical. 
+	- when render the selection yelloww border shader. zwrite is disabled globally.
+
+2010.8.9
+	 - this fixed a bug, when the user presses shift key to toggle the conversion status in Chinese language IME, the conversion status indicator is not updated. 
+	 - BaseObject 3D now has an additional attribute called "SkipRender". It defaults to false; if true, we will not insert it to the render queue. 
+		It is good practice to SkipRender for empty helper objects. e.g. obj:SetField("SkipRender", true);
+
+2010.8.5
+	- ParaMovie now support new stereo video output format, including left/right,above/below, line interlaced, frame interlaced.
+	  See VideoRecorder in NPL for demo. 
+
+2010.8.4
+	- ParaWebPlayer and ParaEngine can now install to different directory and autoupdater can specify different update urls. 
+	  This allow us to use the same redist for many separate applications in different directories. 
+
+2010.8.3
+	- DirectShow video and GUIVideo is removed from ParaEngine using a define USE_GUI_DIRECTSHOW_VIDEO. 
+	- most std::queue and std::stack in ParaEngine rendering system now switches from std::deque to std::vector container type. This improves the CPU quite a lot, since no allocation is needed. 
+	- many std::list such as IRefList, transform matrix in ParaEngine is changed to std::vector, which is faster for small pointer array.
+
+2010.8.2
+	- For most single pass effect, BeginPass is now shared accross multiple objects using the same shader. 
+	  It looks like the d3d runtime does not optimize setting SetShader multiple times.
+	- ParaEngine.GetAttributeObject():SetField("Is32bitsTextureEnabled", false) is implemented, We can disable it on low-end computers or computer with few video/system memory. It will reduce 32bits texture memory by 6 times, but images will not be rendered as sharp as 32 bits. 
+    - ParaScene.GetAttributeObjectOcean():SetField("IsAnimateFFT", false) is implemented, which consumes less CPU. 
+	- Terrain Normal can now be disabled, which consumes less system memory and less CPU, GPU. 
+
+2010.8.1
+	- effect_file's setTexture will check for duplicated calls before passing to directX runtime. 
+	- When Terrain attribute IsEditor is false, mask file and base layer texture are no longer cached in memory once loaded, which leads to smaller system memory footprint at runtime (cut by half). 
+		When device is lost, the terrain engine will reload mask file from disk once again if IsEditor is false. 
+		So it is highly advised that people should disable IsEditor on game world whose terrain does not need in-game editing. 
+
+2010.7.29
+	- ParaXModel animation is optimized for rigid body render pass. First rigid body render pass is discovered during model loading(may move to 3dsmax exporter). 
+		When rendering animated rigid body, we do not perform software skinning, instead the bone transform is loaded to world matrix, and rigid body render pass is rendered as static object. 
+
+2010.7.28
+	- IViewClippingObject is added, which implement part of the CBaseObject functions. 
+	- GetViewClippingObject() logic is changed on Mesh object,where each mesh object will cache the clipping object, resulting in slightly larger memory consumption but better performance during scene tranversing. 
+
+2010.7.27
+	- vs profiler is used to detect code with high CPU. Game programming gem 8 is read. 
+	- substance air seems a good solution for composing materials. 
+	- SceneState now uses vector instead of list for its objects, better memory locality and better sorting. Sorting the small object list takes 6.5% total CPU. can you imagine it? Using a vector eliminate it. 
+	- ObjScriptPool now uses a memory pool by default. 
+
+2010.7.24
+	- libcurl updated to 7.21.0 for client, the server still uses 7.20.1
+	- TODO: split string based NPL script callback into dynamic and static part. We will use a global table to save compiled static lua chunk. This will greatly improve the NPL script callbacks speed. 
+
+2010.7.22
+	- fixed a bug with audioengine async loading
+	- BaseObject now supports new attribute: noral, tranparent, visible, ShadowCaster,ShadowReceiver, billboarded. Biped object support new attribute: IsAlwaysAboveTerrain (which defaults to true)
+	- NULL textures of static, animated mesh or particles are not rendered, instead of rendered as black texture. 
+
+2010.7.14
+	- ParaObject:DistanceToSq(obj), ParaObject:DistanceToPlayerSq(), ParaObject:DistanceToCameraSq() added for performance.
+	- camera min near distance now does not taken lift up angle in to account. 
+	- Miniscenegraph GetObject, RemoveObject and DestroyObject support hash look up only for non-recusrive first level children. This makes get by name faster. 
+	- ParaGlobal.getAccurateTime() added for profiling in NPL. 
+
+2010.7.13
+	- cleaned up and optimized NPL scripts to take locals in to account. 
+
+2010.7.8
+	- EventBinding and EventMap now uses the new cow_ptr.hpp(copy on write constructor). It saves lots of memory and CPU on UI object creation.
+
+2010.7.7
+	- web browser plugin now receives multiple instances messages
+	- ParaObject now supports SetField, GetField, SetDynamicField£¬ GetDynamicField directly at root level for its attribute object. So instead of obj:GetAttributeObject():SetField(), we can simply call obj:SetField(). This saves us some temporay objects thus improves performance on the NPL side. 
+	- ParaObject now supports a new property called FrameMoveInterval() which allows us to control how often the On_FrameMove and On_Perception are called. A value of 0 means as fast as possible. 500 means 0.5 seconds. 
+	  The implementation is C++ and each object has its own timer origin; therefore it can distribute load to different frames more evenly and improves the scripting interface performance if slow timer is desired.  For example, the following will ensure framemove and onperception is called 0.5 seconds at most. 
+		npcChar:SetField("On_FrameMove", params.On_FrameMove or "");
+		npcChar:SetField("On_Perception", params.On_Perception or "");
+		npcChar:SetField("FrameMoveInterval", 500); -- 0.5 seconds
+
+2010.7.5
+	- when toggling from full screen mode using Alt-Tab or windows key, we will switch to windowed mode. 
+	- now adaptive timer algoritm is used for calculating next timer interval with boost deadline timer. 
+
+2010.6.29
+	- OpenAL audio engine can be used as the audio engine in addition to Xact. I used a C++ wrapper called cAudioEngine, which is compiled to cAudioEngine.dll as a ParaEngine plugin. 
+		The new audio engine supports playing back wav, mp3 and ogg(vorbis) file. Both 2D and 3D sounds are supported with streaming. Audio capturing is supported but API is not exposed yet. 
+		The reason that I moved to OpenAL is that DirectX Xact audio dll does not allow silent side by side install and requires administrator rights during installation.  This is not possible with web plugin. So I changed to OpenAL. 
+		The new cAudioEngine.dll(400KB) plugin module will at runtime look for OpenAL dlls first in the current working directory and then in windows/System directory. 
+			The dll searched is usually OpenAL32.dll(108KB) and wrap_oal.dll(400KB).  We can therefore distribute these 3 dlls in the application directory. If we can find OpenAL32.dll in windows/system dir, then we only need the cAudioEngine.dll in the app directory.
+
+2010.6.21
+	- IPCBinding framework now supports selection in 3d scene, xpath based serialization, property binding now works with the 3d window. 
+	- Dynamic XML file compilation is also supported. 
+
+2010.6.19
+    - ParaEngineClient now can be compiled using visual studio 2010 with cmake. A few minor bugs are fixed in order to compile with the more strict compiler. 
+	- boost is upgraded to 1.43.0 on the client, and 1.41.0 on the server, otherwise it will not work with vs 2010.
+	- All projects now links statically with msvc runtime, it may add 100-200KB to each dll or exe. however, we drop dependency to all MSVC dlls at runtime.  
+		this is done via a global cmake/c(xx)_flag_overrides.cmake, which overrite all c/C++ flags before the first PROJECT() is included in the source tree.
+	- parallel builds in vs 2010 freezes the computer now and then. 
+	- Client/trunk/cmake/DirectX.cmake is added and will automatically search directX SDK installed. 
+		TODO: However, one needs to manually "copy rpcsal.h from the WinSDK include folder to the DirectX SDK include", since I am using the old April 2007 SDK. 
+	- cmake and vs 2010 does not work together very well. One needs to close the solution and run cmake externally, otherwise there would be lots of popups
+
+2010.6.18
+	- particle texture UV is fixed. 
+	- ParaXExporter:  if the node name contains "lat = float_value", then it is a trail length of the particle, the facing of the trail is the current speed vector. 
+    - all ParaEngineClient dll now statically links with msvc dll. 
+
+2010.6.17
+	- ParaX Particles now support random force. If the particle node name in 3ds max does contains "fr = float_value", then it is a randome force that is applied to a particle at each frame. By default it is 0. Applying a random force will create a random path for each spawned particle.
+	- ParaX Exporter: if material name contains "_l" (meaning force Local rendering), it means that the render pass will be rendered with the character even it is transparent. This will increased the rendering spead and achieve some special effect. 
+        It is usually specified with transparent mesh to make it local with "_l_t".
+	
+2010.6.16
+	- full opacity and emissive color animation is exported for all characters. In the past, only particle opacity is exported with just 3 key values. 
+
+2010.6.13
+	- Camera now support rolling around the z axis. ParaCamera.GetAttributeObject():SetField("CameraRotZ", 0.4); so all three axis are supported, although rolling is rarely used. 
+
+2010.6.12
+	- generated IDE C# files are dynamically compiled for ParaEngineStudio IDE. 
+
+2010.6.10
+	- GUIRoot now supports several attribute fields. 
+	- Fixed: MousePicking() of the miniscenegraph and main scene now takes UI scaling in to consideration.
+	
+2010.6.9
+	- IPCBinding editors are implemented. We can now edit property either in the IDE or in the game scene. 
+	- script/ide/Display3D/SceneManager is used for managing editor rendering and events. 
+	- IPCBinding NPL table type converter added on the IDE side. 
+
+2010.6.5
+	- directory monitor now ignores last access time change notification. We mostly only care about last write notification. 
+
+2010.6.4
+	- IDE IPC framework now hosts all auto-generated IDE entity template file at "script/PETools/Buildin", such as global settings, terrain, camera, sky, ocean, etc. 
+	- WPF timeline control studied. Both adobe flash and ms expression blender has a time line control to assign various timeline based animation to objects. In expression blender, this is called Objects and Timeline View. 
+		We can hide timeline when in design mode, and we can assign multiple timeline views to the same object. This is a very good way to organize objects and for editing animated data. 
+
+2010.6.3
+	- Firebreah plugin resynced with the official source. 
+	
+2010.6.1
+	- script/ide/IPCBinding/*.* is implemented. A framework for external IDE to edit objects via NPL. Supporting bi-direction data-binding, change notification and a number of helper functions. 
+	- the NPL script project now moves from vss to SVN, and file-lock property is applied to most files. 
+
+2010.5.29	
+	- Luabind object logics changes: every object defined in ParaScripting namespace will be treated as StackObject by luabind. 
+		i.e. all objects such as ParaObject, ParaUIObject, etc are passed by value on the stack, instead of using std::auto_ptr( new ParaObject(p)). This saves lots of small new operation when object is passed between C++ and NPL. 
+		if one wants to pass by reference, overwrite get_pointer() method in ParaScripting namespace and return detail::has_get_pointer_::no_overload_tag. 	@see : see make_pointee_instance in luabind/policy.hpp, object_rep.hpp, and has_get_pointer.hpp. 
+		
+2010.5.27
+	- Fixed by getting the dev 0.9 branch from github in May 2010: luabind::object_cast in 0.9, just will not work for custom object type. Right now, there is only 2 places that used it, one is object_cast<ParaNPLRuntimeState>, the other is object_cast<ParaScripting::ParaFileObject>.  
+	- luabind is updated to 0.9. where out_value policy is replaced by pure_out_value policy. 
+	- NPL runtime state pointer now also keep the state pointer as light user data in global registry named "__rts__". This gives slightly better performance than getting the user data custom class from global table. 
+	- visual studio language service is studied again. But still does not figure out how to automatically enable variable evaluation when mouse over a variable. 
+		The only similar thing appears to be ParseRequest.reason == QuickInfo. I have figured out how to display quick info when mouse over a text, but there is never a similar place for mouse over at debugging time. 
+		however, when NPL language service is disable, mouse over text is always evaluated in the debug engine. Can it be the same ParseRequest that is shared by both the edit/debug mode?
+	
+2010.5.26	
+	- when vista or win7 is running with UAC disabled, we will use the redist dir as the download dir. Otherwise nsis will not be able to write to temp file when starting from a LocalLow(low IL) folder with UAC disabled. 
+		however, it can when UAC is enabled, the user will be prompted with a dialog. 
+		
+2010.5.25
+	- two way communications between game engine and web plugin are implemented. see app_ipc.lua. We can change plugin resolution, restart the web page, exit web page, or anything from within the game engine. 
+	- web plugin resolutions will be automatically adjusted according to the user's graphics card quality. 
+	
+2010.5.24
+	- NPL.RegisterEvent() and NPL.UnregisterEvent is implemented. Both server/client can register event handler in any runtime state (thread), whenever a user connection or disconnect. 
+	- NPL.GetStats({connection_count = true, nids_str=true, nids = true}) is implemented. 
+
+2010.5.22
+	- We implemented an alternative JabberClientManager based on NPL. please see IMServer_client.lua. It connects directly with the game server for IM and group chat as well. Now everything is tested. We have switched to to use the new NPL based jabber server/client in all of our applications. 
+	- sqlite3.lua is modified to handle the sql busy and sql locked error. The default behavior has changed to retry for 5 seconds before fail. 
+	- NPL localserver implementation now allow multiple thread(processes) to read/write the same database without much performance overhead. 
+		Sqlite3 locking mechanism is fully studied: shared lock will be kept on first select statement forever within a sqlite3 transaction(until END is called). So if two processes run a transaction "Begin, Select ..., Update..., End" at the same time, it will create a deadlock, or one of them has to rollback.  
+			To avoid it i have to use "Begin Immediate, Select ..., Update..., End", and do not batch any select statements using Begin, END. I guess all other sql implementation will be clever enough to release shared lock within a transaction when a select statement is finished. But it is not the case in sqlite3.6. 
+		    I am not sure on the performance overhead if I run select*10000,  instead of BEGIN, select*10000, END. Ideally, it is just a shared lock/unlock per select. I hope sqlite3 is not so stupid to recreate the journey file and cache for each select statement. This is something that needs to be tested. 
+
+2010.5.20
+	- mouse wheel is intercepted by the InterprocessAppClient's main window proc.
+	- WM_MOUSEACTIVATE now works properly with child windows(such as flash windows). WM_MOUSEACTIVATE will set focus to the main window if and only if mouse cursor is not over any of its child windows. 
+	- Both standalone and web plugin window will try to kill the current process, if its main window thread received WM_DESTROY message, but the main thread still does not exit. This fixed the problem that the main thread is not always properly closed such as during debugging or blocking socket operation, etc.
+	- in 64bits vista/win7 there are still 32bits/64bits IE. Our 32bits plugin can only run in 32bits IE. Even adobe flash do not support 64bits. It is not difficult to make one, but it is difficult to create compatible web pages. This is why all other browsers(FF, Opera, Chrome) provide only 32bits version. But we may give a warning in HTML page. 
+	
+2010.5.19
+	- ParaScene.GetAttributeObject():SetField("BlockInput", true); ParaCamera.GetAttributeObject():SetField("BlockInput", true)
+
+2010.5.13
+	- ParaEngine Web plugin can now be installed and run in protected mode IE of Vista and Win 7 with UAC set to normal. No manual install is needed, every install step is guided and automated, the user just need to hit OK to agree with UAC elevation. 
+		Internally, the plugin use SHGetKnownFolderPath by reading from shell32.dll, and download redist file to FolderID_local_app_data_low folder. This allow us to download and install redist from a low IL folder. 
+	- jquery ajax binder is added so that we can display intro pages during game load time. 		
+	
+2010.5.11
+	- In vista and 7, we have a problem with downloading, installing and running web redist in our web plugin. This is due to UAC and protected mode IE. By default all activeX control and sub processes only have low integrity level(low IL).
+		so we need to add an entry to HKLM\SOFTWARE\Microsoft\Internet Explorer\Low Rights\ElevationPolicy\ during redist install to elevate the redist process to medium IL. 
+	- ipc_message_queue.hpp	is written which uses windows shared memory FileMap IO, instead of real files. This allows us to use IPC even in low intergrity level process in vista and win7. 
+	- The web plugin can now work in protected mode internet explorer with UAC set to normal in vista and windows 7.
+
+2010.5.10
+	- dev/NPLDebugEngine is implemented. We now support all standard graphical debugging of NPL in visual studio 2010. Please see readme.txt in NPLDebugEngine and IPCDebugger.lua. 
+	
+2010.5.5
+	- ParaEngineClient.exe now supports single="true" even when used as embedded window process. 
+
+2010.4.28
+	- NPL scripting interface now support ParaIPC, which exposes the interprocess communication framework in ParaEngine
+	- "script/ide/IPC.lua" is implemented, which wraps the raw NPL IPC interface and provide asynchronous and synchronous programming API. To test it, see script/test/TestIPC.lua
+
+2010.4.27
+	- ParaEngineWebPlugin and redist update guide is written. Please see readme.txt of ParaEngineClientApp project for details. Fixed a few issues such as updating a dll while being used. HTTP and CDN cache is still most annoying at the moment.
+	- sqlite3 is upgraded to 3.6.23.1 and is compiled as dll in win32. This mainly decreases core update size. 
+	- libcurl 7.20.1 is now compiled as a shared library. For unknown reaons, <curl/curl.h> does not #include "../lib/curl_config.h", which generate compiler errors due to undefined HAVE_SYS_SOCKET_H macro. So i have added it. 
+		Moreover, I also fixed a bug in cmakelist.txt when building shared library: the output dll is now in separate directory and the debug version ends with _d in win32. 
+		Looks that cmake is not well supported and fully tested in current libcurl distribution. 
+		include\curl\curlbuild.h and lib\curl_config.h are now added to SVN ignore list. 
+
+2010.4.26
+	- ParaEngineClient.exe now works with ParaEngineWebPlugin using inter process communication. It is now the recommended way to run the game engine in a web browser.  
+	- Safari browser window bug is solved. The initial window creation should be positive size, at least 1x1.But in safari, the window is 0x0. 
+	- By hosting d3d in separate process, all web browsers can now run paraengine client. 
+	- IETester is free tool for debugging HTML and js code in IE 6/7/8/9. I have fixed a number of display issues in web installer HTML view. 
+	- Web browser now defaults to changing resolution without strenching the window. 
+
+2010.4.25
+	- IME now works in Interprocess 3D window. This is extremely tricky. We first create an invisible window using WS_OVERLAPPED style. 
+		This will trick the win32 to create IME context for the current thread. Then we will re-parent the window and remove the WS_OVERLAPPED style. 
+		And by resizing the window twice afterwards, we will force the win32 window to remove the window title bar. 
+		If we do not do this, and create the window using WS_CHILD | WS_VISIBLE style directly, IME messages will not be received by the child window. 
+				
+2010.4.23
+	- InterprocessQueue.hpp is implememted.
+	- ParaEngineClientApp project now support rendering in to a host application window of another process. 
+	- In ParaEngineManaged, InterprocessAppConnector is implemented. .Net can now render 3D by launching the ParaEngineClient.exe process
+	
+2010.4.14
+	- Client/ParaEngineManaged/ project is created, it is a C++/CLI project. It allows .Net app to host native ParaEngine render window. Please see the TestApp for more info. I have created test apps for both WPF and WinForms. 
+
+2010.4.12
+	- ParaGlobal.Exit(nReturnCode) is implemented on both client and server. this allows us to run test cases. 
+
+2010.4.11
+	- jquery is used on the web browser plugin in the javascript. 
+	- autoupdater is working on ParaWebPlayer. All bidirectional message types between web plugin and player redist is supported. 
+	
+2010.4.7
+	- ParaEngineWebPlugin is created and works for all browsers on all platforms. It is based on FireBreath 1.0. I have used it to create signed cab and redist file for haqi game. 
+
+2010.4.1
+	- In internet explorer plugin, absolute file is causing trouble, we should never rely on current working directory. 
+	
+2010.3.31
+	- AssetManager will now keep a case insensitive copy of the asset key. So now it ensures that all asset keys are case-insensitive, but it will preserve the first assetkey used for an entity for serialization in a case-sensitive environment. 
+		So although, asset key is now case insensitive, we should use case sensitive key as much as possible. Internally it will do a case-sensitive search and if not found followed by a case-insensitive search. 
+	- ParaAsset.Refresh() is implemented. It is now able to refresh texture, mesh, parax animated mesh with particles. 	
+	- Art Asset Tracker that automatically track file changes in a directory is implemented, supporting all know asset files. It just uses a combination of ParaAsset.Refresh and SystemFileWatcher
+	- ParticleSystemRef is implemented. When a particle system asset is refreshed, the old reference are not immediately deleted until all particles die naturally. 	
+
+2010.3.29
+	- mouse_move event is sent to the 3d scene even if mouse is locked, such as during mouse dragging. 
+	- CFileSystemWatcher is implemented, which can be used to monitor file changes. script/ide/FileSystemWatcher.lua is implemented, which provide a better interface for NPL users. 
+	- implemented a FileSystemWatcher(.NET) in C++, so that we can watch for an asset folder and refresh them as modificiations are applied, so that artists can export models from 3dsmax and preview it immediately in the game. 
+		We implement it in C++, because we want it to be a basic function, instead of just a tool at development time. 
+	- AssetKey is now std::string, which improves performance for all key queries. 
+	
+2010.3.28
+	- for CCS ParaXAnimation's body attachment object. if the attachment filename ends with *.anim.x it is treated as an animated charater mesh, otherwise it is treated as a static mesh object. 
+	
+2010.3.27
+	- cppunit is added to repository /Tests/ using CMakeLists.txt, fixing a few bugs. 
+	- TestSampleApp is added to /Tests/ which uses CMake(CTest) with CppUnit for writing cpp test cases. 
+	- Studied the gamebryo game engine framework on their official website, they have a toolbench, with a rich set of plugins, and the editor content changes, it can be immediately reflected in the game without restarting it. 
+		They also have an entity editor, which seems to be property (data) driven.
+	
+2010.3.24
+	- When a class having multiple virtual interface inheritance where one of it is IAttributeFields, the IAttributeFields must be the first in the inheritance list, such as
+			class CNPLRuntime : public ParaEngine::IAttributeFields, public INPLRuntime, otherwise IAttributeFields will not be able to cast back to class pointer correctly. 
+	- graphics and scripts of ParaTsPlayer is removed. the only dependency is modules/system and math dll, plus a few scripts. So the installer of the Player is only 2.5MB (including all versions of plugins, redist of player and ParaEngine updater dll). 
+	- When application is switched off the sound and key input are also switched off. This works in both web browser and standalone application. 
+	
+2010.3.23
+	- Flash window will be created as invisible and only visible when content is loaded. This fixed a bug when reusing the same flash window the previous flash is still there. 
+		- Note: there is a protential bug that WM_SETCURSOR of the main window will be called, causing the cursor within the flash window to flash. 
+	- We will no longer hide the mouse when the user right click the scene and drag the lock the mouse, instead we just clip the mouse cursor to its current location. 
+	
+2010.3.22
+	- Continous Integration is studied and hudson CI is studied. 
+	- luaunit xUnit test framework is added. 
+	- ActiveX Code signing is received and will be added to web plugin. 
+	
+2010.3.19
+	- studied a few image processor including the one used in "lua for windows", which contains a long list of related lua libraries and SciTE. 
+	- Text coloring is supported in IOConsole.lua which is used by the NPL debugger console. NPL debugger console now support GDB like command line. 
+	
+2010.3.18		
+	- IParaEngine::ActivateApp(bool bActivate) added, it toggles sound/key/mouse. 
+	- IParaEngine::GetCoreUsage() == PE_USAGE_WEB_BROWSER[PE_USAGE_STANDALONE][PE_USAGE_SERVICE] | PE_USAGE_OWN_D3D | PE_USAGE_OWN_WINDOW added 
+		ParaEngine.GetAttributeObject():SetField("CoreUsage"); is added
+	- IParaEngine::SetMinUIResolution() added
+	
+2010.3.16	
+	- ParaEngine.GetAttributeObject():CallField("AllocConsole"); is added
+		ParaEngine.GetAttributeObject():SetField("ConsoleTextAttribute", 0); is added
+	- ConsoleDebugger.lua is implemented as a command line debugger for NPL. It uses the lua hook functions and Console(another thread) for debugging.
+	- SciTE is a good editor that support remote debugging of lua scripts. 
+	
+2010.3.15
+	- lua.dll is compiled seperated from the game engine. 	
+	
+2010.3.14
+	- CGUIIME is implemented. The new IME system is now fully abstracted and can run in the window thread instead of the main thread. 
+		CGUIUniBuffer and CGUIEdit and CGUIIMEEditBox are separated to different files. 
+	- IME is disabled by default until the one of the IME editbox is focused. 	
+	- IME is completely fixed in both standalone and web applications. 
+	
+2010.3.12
+	- ParaEngineClientApp and AutoUpdater now links statically with msvc runtime, they also links with the static runtime version of boost.
+	- ParaTsPlayer web plugin is implemented using the new AutoUpdater. Core update is done completely via java script before the main game engine is loaded. 
+	- Google Andriod platform is reviewed, it is said that its compiler sucks with exceptions, etc. 
+		Mozilla Open Web wiki is a very good place to study online development in a real world project. 
+	- We are considering making paraengine cross platform in the end of this year. It appears that d3d, input, sound are among the major things to abstract. 	
+	
+2010.3.10
+	- Bullet Physics are by default double faced. I have changed it to single face triangle collision detection by conforming to a given triangle winding order. 
+
+2010.3.7
+	- for mounted object, the object is pre-animated, so it will not shake even with render frame rate set to non-const. 
+	- The biped object's animate function() will also animate the mount target and set the position according to mount point. 
+	- I managed to separate animate() and draw() method for all scene objects. However, it is generally different to separate them completely. 
+		currently the attachment matrix are calculated twice for mount target. But, it will allow things to render properly even the render frame timer is set to NONE(real time).
+
+2010.3.6
+	- space key does not work in the web browser version. 
+
+2010.3.4
+	- for a mathematical reason(matrix interpolation), that animation will shake if render timer uses uneven interval. So I will use a const frame rate controller even for real time. 
+	- ParaEngine.ForceRender() is reimplemented. 
+	- Render rate controller now have max interval applied even for NONE type controller. Particles will only be spawned when interval is smaller than 0.1s. 
+	- Fixed a bug when RenderMatrix is not cached when scale is 1.0. 
+
+2010.3.3
+	- attribute and npc database file will now be opened with correct attributes with read/write access if not from asset server.
+	- NPLInterface.hpp is now cross platform. 
+	- TMInterface is not linked with core lib now. The only place that NPLMono, NPLRouter still depends on core lib is the log and mutex interface. We may try to remove it as well. 
+	- Mercurial HG is studied. It is a serverless version control system, different from SVN and VSS. TortoiseSVN and (Mercuial SCC or VisualHG) have been installed and tested. They can coexist with SVN and tortoiseSVN. 
+		I like Mercurial because the repository and working copy is completely seperate, hence it does not create many hidden folders under working directoy like what SVN does. 
+		SVN is sometimes more useful, where the local storage is only 2 times of the working copy, yet mercurial generally keeps all versions. 
+		So SVN is somewhat between a centralized version control(like VSS) and a trully decentrialized version control system like (Mercurial or git)
+	
+2010.3.2
+	- ParaEngineClientApp project is created. It is a small exe file that load the ParaEngineClient.dll. 
+		The reason of doing this is for web browser plugin to share the same dll. And the updater only needs to update one dll file. 
+	- Correct a bug in NPLNetClient where some threaded objects inside static singleton class are not properly deleted, but rely on default destructor, which is dangrous. 
+	- Debug version of major dlls are now built with _d, this allows debug and release version to coexist under the same folder. such as ParaEngineClient_d.exe, ParaEngineClient_d.dll, PhysicsBT_d.dll
+	
+2010.3.1
+	- IParaDebugDraw interface is implemented in ParaEngine and physics engine. ParaEngine is now able to batch drawing any line based primitives. 
+		Bounding boxes are now drawn by the IParaDebugDraw interface. Both the main scene and mini scene graph implements their own IParaDebugDraw interface. 
+	- "PhysicsDebugDrawMode" attribute is added to ParaScene:GetAttributeObject():SetField("PhysicsDebugDrawMode", -1);
+	- we can now bootstrap using a *.lua file directly. 
+	
+2010.2.26
+	- RTTI is removed when doing the release build of ParaEngineClient. 
+	- Link time code generation is turned on during the release build of ParaEngineClient and dll. 
+	
+2010.2.25
+	- NPLInterface.hpp is implemented as a header only file, so that NPL plugin can be independent of ParaEngine library. 
+	- AutoUpdater.cpp is now independent of ParaEngine client library. So unless the INPLRuntimeState.h interface has changed, there is no need to update AutoUpdater when ParaEngineClient changed. It also does not matter whether the host is a dll or exe. 
+	- Bullet 2.75 Physics Library is added to ParaEngine. 
+	- PhysicsBT dll plugin is implemented. Physics Interface is now abstracted in IParaPhysics.h. I will support PhysX and Bullet via this interface. 
+	- PhysicsWorld.cpp in ParaEngine now uses only IParaPhysics interface, hence it is now independent of physics engine used. 
+	- TsPlayer (web plugin) IME problem is fixed. It is caused by switching WndProc after window is created. 
+	
+2010.2.24
+	- flash windows are put to separate window threads and win messages are dispatched from that thread. 
+		NPL can call flash functions and the function does not return until flash has returned (internally it post thread message to the flash window and wait for its return result before returning). 
+		Flash can also call NPL functions, but the invocation is always returned immediately, the NPL functions will process any queued messages in its next update. 
+		In both windowed and exclusive fullscreen mode, the flash window is created as child window of the main window. Only the rendering differs. In fullscreen mode, we copy from a buffer and render using d3d; in windowed mode, it is the native window rendering. 
+	- MODPATH in the visual studio command line can be used when module file is not with the mini dump file, the options menu also allows us to specify PDB files.  
+	- We can change the refresh timer at any time during the game: ParaEngine.GetAttributeObject():SetField("RefreshTimer", 0.03333);
+	- new frame rate controller type FRC_CONSTANT_OR_BELOW is used. 
+	- We will use lower frame rate when window is deactivated. 
+	
+2010.2.22
+	- PostWinThreadMessage() is implemented. Now the game thread can post messages to the window thread to perform actions like PE_WM_QUIT. 
+	
+2010.2.21
+	- CGUIDirectInput now supports both directinput and window message based mouse and key buffered events. And it is also default to use window message instead of directinput. 
+	- GUI Msg time is now assigned properly. Repeated keys now works as expected. 
+	- CD3DWindowDefault is written. It now uses a new game loop based on boost asio's deadline timer and window is created on a separate thread. The CPU usage is minimized and any refresh rate can be specified. 
+
+2010.2.20
+	- Windows message processing can now be in a separate thread than the main rendering thread. 
+	- ParaEngine can be configured to use timer instead of idle time to do the frame update. 
+
+2010.2.19
+	- ParaEngine can now run in IE/firefox web browser via ParaEngineClient.dll, tsParaEngineModule and the TSPlayer(from talansoft)
+		IPC(interprocess communication) is used between browser plugin and the TSPlayer, they are signed with the same root certificate. 
+	- Window messaging can now be in a different thread than the main thread. 	
+
+2010.2.17
+	- NPLNetworkLayer is removed from dependency list. 
+	- IParaEngineApp.h is created. CParaEngineApp now implements it. ParaWorld.h is very clean now. All game engine code is moved to ParaEngineApp.cpp. 
+
+2010.2.16
+	- tsNPLModule and tsParaEngineModule are created. Please see cmake solution for more details. 
+	- CPluginLoader.hpp implemented. We can now create header only distributed plugins. 
+
+2010.2.11
+	- _ParaMain and _ParaNPL doxygen is edited and recompiled. 
+
+2010.2.4
+	- ParaTerrain.SetAllLoadedModified(true, 65535) function is added to NPL API, which allows us to quickly mark all terrain content as modified before performing a save all operation. 
+
+2010.2.3
+	- "CompressionLevel" and "CompressionThreshold" attribute is added to NPL, so that we can specify from how big NPL will compress a message before sending it. 
+		please note, in order for it to work, one must enable compression for incoming and/or outgoing connections. Using NPL.SetUseCompression().
+	- "UseCharacterLookup"and "UseCharacterLookupWhenMounted" attributes is added to ParaCamera, this allows the camera to look in any direction. 
+	- "paraenginearies://nid=79012120" is fully supported in app_main.lua of aries project. we can now enter a user's home world from a web browser. 
+	
+2010.2.2
+	- sky color now takes effect in both simulated and static sky. Sky color is now affected by sun vector direction. 
+
+2010.2.1
+	- OBJ_BIG_STATIC_OBJECT volume attribute is supported for mesh object. We will attach big mesh to best fit terrain tile instead of leaf tile node. 
+	- Taurus SDK will not able to set physics radius and whether to save mesh as big static mesh in its object attribute viewer. 
+	- TODO: Cross-platform multi-browser plugin (ActiveX or NPAPI) architecture FireBreath is studied, it is quite useful. 
+
+2010.1.31
+	- "UseGlobalTime", "AnimFrame", "AnimID" attributes are added to CBaseObject. Both mesh and biped support them. 
+	
+2010.1.30
+	- NPL bug fixed: when a new authenticated connection is seen, we will remove the old connection from connection manager if any. 
+
+2010.1.28
+	- ParaWorld.NewWorld() will now able to inherit from files in Asset Manifest Files. ParaIO.CopyFile() will by default copy files from asset manifest files before disk file is searched. 
+	- auto reconnection is implemented in Aries
+
+2010.1.26
+	- MaxBlockSize in terrain tile config file can not be larger than 16, otherwise a log warning is given and 16 is used instead. This fixed a bug for rendering terrain texture on flat terrain. 
+	
+2010.1.23
+	- pe:gridview and pe:treeview now support new boolean attribute RememberScrollPos="true", it will remember last scroll position during page refresh. Only use it if the content of the page is not changed during refresh
+
+2010.1.22
+	- IMServer is designed but not implemented. Please see script/apps/IMServer/readme.txt. 
+	- TODO: the physics engine bullet is studied. I am considering supporting two physics engine (PhysX and Bullet) via an abstact physics layer. 
+	- Git and Mercurial version control system is studied. They seems to be more stable than SVN since they use a single clone. 
+	- Meet with Pierre from talasoft and recommended his project to Jason. 
+
+2010.1.20
+	- fixed a post processing bug when the previous shader is not properly closed before running the new one. 
+
+2010.1.19
+	- utf8 may contain special XML characters. In jabber client, we will remove invalid xml (utf8) characters before any message is sent. This may result in incomplete messages bodies. 
+
+2010.1.18
+	- attended the Dencent investor annual meeting. 
+
+2010.1.14
+	- multi user chat handler is developed for GSL_client. see GSL_muc_client.lua. 
+	- multiline edit box now support WordWrap="true" SingleLineEdit ="true"
+	- 32bits index offset is supported in ParaXModel render pass. Currently the main character has exceed 65535 indices (approx. 21000 triangles), so the index offset must be 32 bits, however the index itself is still 16 bits. 
+		there is still a limit of 65535 unique vertices in a character model. 
+
+2010.1.11
+	- both tcp level keep alive and application level keep alive is added to NPL networking attribute. We can now detect half open connections on the server side via TCP keep alive or application level timeout. 
+
+2010.1.4
+	- we character is in air, we can still play animations, while the idle animation is set to jump_in_air. 
+
+2009.12.31
+	- GlowCode 7.2 is used for profiling, which is very useful. 
+
+2009.12.29
+	- a general lua profiler is added to npl. see "script/ide/profiler.lua". 
+	- ParaEngineServer command line now supports service or non-service mode (useful for debugging and profiling under linux). like this one : ./ParaEngineServer 'bootstrapper="config/bootstrapper_emptyshell.xml"' -D
+		-D will force non-daemon
+		-d will force daemon (default)
+
+2009.12.28
+	- Biped now support "UseGlobalTime" attribute. once set to true, the animation will be looped using a global timer. 
+	
+2009.12.27
+	- Boehem's GC(garbage collection) algorithm is studied. It is the GC that mono uses. 
+	- we have discovered that mono memory usage grows 100KB/s on the server side, which may be a bug in mono. Linux has virtual memory and residential memory just like in windows.
+
+2009.12.24
+	- when CBaseObject is made unvisible, we will unload its physics as well. 
+
+2009.12.21
+	- NPL.SetCompressionKey() method is added. Default NPL network compression will now generate plain text message instead of binary.
+
+2009.12.16
+	- ParaCharacter now support SetSkinColorMask(). Aries CCS string now support color mask. 
+
+2009.12.14
+	- CCS model now support back addon attachment and slot.
+	- GDIEngine now supports draw image with color transform, therefore CCS skin and cartoon face now supports color key. However, it will be slower than non-color(white color).
+	- New attachment point and slot ATT_BACK is added. 
+
+2009.12.12
+	- NPL runtime states now support GetCurrentQueueSize() and GetProcessedMsgCount(), we can use it create monitor runtime state. 
+	- script/ide/NPLStatesMonitor.lua is implemented. we can now dispatch messages to the most free npl runtime states on server side programming. 
+	- bug fix in NPL server: all boost asio provides too sets of API, one uses exception and one uses return value. NPL code will now corrected deal with those that throw exceptions. 
+
+2009.12.11
+	- to run paraengine in win 2000, the following dlls must be in the same dir as the main executable. dbghelp.dll, x3daudio1_1.dll, gdiplus.dll, msvcr90.dll, msvcp90.dll
+
+2009.12.10
+	- windowed mode flash will now automatically use DirectX to render the window in fullscreen mode. 
+	- nsis installer will run PhysX installer 2.8.1 with quiet mode when msi 3.0 or above is available and without quiet mode if msi is 2.0, such as windows 2000/windows XP sp1
+	- BUG Fixed: paraengine does not run in windows 2000 because DnsFree function is different on different platform. 
+			we have undefined HAVE_WINDNS_H in jabber client. 
+	
+2009.12.9
+	- bootstrapper xml now supports new tag <ConfigFile>. We can specify a different config file other than config/config.txt to load at startup, such as safe mode. 
+	- NPL runtime state now supports Reset() method. It allows for soft reboot, with an optional reset script.  
+		TODO: when using Reset() on runtime state, the sqlite3 interface has memory leak detected on debug build. However, i think it is a false warning, since memory are deallocated properly. Still need to figure out why. 
+	- ParaAsset.UnloadDatabase() is implemented.
+
+2009.12.8
+	- ParaMisc.md5() is added to NPL. All password are now encoded with md5. 
+	
+2009.12.7
+	- we will automatically set the physX core path to the default installation path in the registry, if it is modified by some other 3D application 
+	
+2009.12.5
+	- boost is updated to 1.41.0. cmake is updated to 2.8.0 for both windows and linux build. 
+	- linux has file descriptor limit default to 1024. we have use ulimit -n commands to make it larger in order to accept more incoming connections. 
+
+2009.12.4	
+	- Bug fix: if users make new connections faster than NPL net server is able to handle. The server will quickly get system errno 24 (Too many open files). 
+		This is because of chaining async operation in asio design async_accept handler lead to server hang on. 
+		To fix it, I will call async_accept even handle_accept fails. 
+		Updated: the above is not true, the real reason is linux has file descriptor sets to 1024. 
+
+2009.12.2
+	- Biped::SetScale and SetSpeedScale will not be reset on async loading. We can safely set scale and then change the asset model asynchonously. 
+	- SkyMesh fod rendering with fixed function will crash on some VIA/S3G UniChrome Pro IGP video cards, so i have disabled it.
+
+2009.12.1
+	- on leave sentient area is always called when a sentient object becomes unsentient. 
+	- all OPC, pets, etc are now only sentient to player, and uses linear movement style. This saves lots of CPU time in scene simulation. 
+	- sequence controller moveto and walkto command will move a player immediately to its target location if the object is not sentient. 
+	- environment simulation logics is refined. AlwaysSentient and current player will not force other character to become sentient. 
+
+2009.11.30
+	- Improvement: Biped::GetAttachmentMatrix can have a major performance panalty in the past, now the value is calculcated on first use and during frame move, all other invocation will use the cached value. 
+
+2009.11.29
+	- NPL.SetUseCompression() is added. We can specify whether to encode(not necessarily compression) messages. 
+	- NPL network layer can now uses custom data encrption algorithm. See NPLCodec.cpp to change the custom algoritm at a regular basis. 
+	
+2009.11.28
+	- because the main thread is idle time to do rendering, the rendering and framemove will be halted if any child window like flash control is consumes all CPU. 
+	- command line flash="true" is added, and config.txt also support "flash" field, it forces the game engine to use Texture/flash.ocx. 
+		if "flash" appears in commands line or config.txt, we will use provided flash.ocx file. 
+	
+2009.11.26
+	- ParaUIObject now allow assigning invalid miniscenegraph texture to UI object. 
+
+2009.11.25
+	- fixed a bug where the mouse click test area  is 1 pixel smaller than the mouse over
+	- fixed a bug where the mouse up event will not be sent twice. However, some mouse up event may be missing if user switched windows. 
+	- fixed a bug where the ParaScene.MousePick() will not pick any object if the cursor is outside the client area. 
+	- We will force using the GUIRoot's cursor when the mouse point is not inside the client area of the main window. 
+
+2009.11.24
+	- full screen mode and windowed mode toggle is fully supported, with exclusive windowed mode flash player. 
+	- ParaUIObject.GetFont(nIndex) is supported, we can now change imeeditbox composition and candidates font.
+	- ParaScene.GetAttributeObject():SetField("persistent", false) is added, we will not mark readonly scene as modified when new objects are attached to it. 
+
+2009.11.20
+	- ParaEngineClient manifest file now uses link options to set level to /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'". This is done by cmake.
+		In windows vista and windows 7, users will be asked to promote to animistrator in order to run, since we wants right access to program files directory. 
+
+2009.11.19
+	- Bug fixed: ocean reflection is updated on demand when camera moves. 
+	- Gloox PresenceType definition changed, we have updated the scripting code. 
+	- Bug: gloox has a small memory leak due to the clone method in stanzaextension.h, fix this in future release. 
+	- DBServer will now randomly send messages to one of the router states
+
+2009.11.18
+	- Bug fix: Chinese characters in multiline editbox input now works as expected after converting to UTF8 encoding. 
+	- gloox is updated to version 1.0, a number of api are ported to the new one. 
+	- fixed a bug in NPLNetClient, where the dispatcher thread does not start under linux. This is due to default initializer of GCC are evaluated from right to left, while windows evaluate from left to right. 
+
+2009.11.17
+	- GSL_serveragent is fully implemented. This is a great feature, allowing server side objects(NPCs) to be created using server side scripts and configured in GSL.config.xml. 
+	- GameServer will now randomly send messages to one of the router states
+
+2009.11.16
+	- jabber client will be closed gracefully on application exit.
+
+2009.11.15
+	- Bug fixed: mouse cursor will not fly away when switching between game window and other windows. 
+	- ParaUI.IsMousePressed(0) is added. 
+	- Logic change: this is a special requirement, we will only pick a biped object if the camera distance is larger than 1.f (2 times camera near plane). 
+	- Line Spacing not supported by DrawText: I sincerely doubt that DrawText can be made to obey different line spacing. External leading is an attribute of a font. One cannot change it programtically. 
+		However, DirectX does provides DT_EXTERNALLEADING when drawing text, but it is not working. http://support.microsoft.com/kb/32667
+	- worldstripper mcml page now support world file normalization. 	
+
+2009.11.14
+	- ParaScene.SetMaxRenderCount(0,1) is added. And "RenderImportance" property of all renderable objects is added. 
+		They can be used to limit the total number of objects of a given render importance to render in the scene. 
+
+2009.11.13
+	- bug fixed: when entering some text in sogou, switch to ABC, and enter some text, application will crash. 
+		This is due to ImmGetCompositionString(hImc, GCS_COMPCLAUSE) will crash with winABC.ime. I have removed it from the list. 
+	- flash window now takes UI scaling into consideration. 	
+	- ParaIO.LoadReplaceFile("AssetsReplaceFile.txt", true); is implemented. we can use it change 3d or 2d theme. 
+		
+2009.11.12
+	- Rendering instancing is temporarily disabled, because it does not work well with the border shader. ParaScene now supports "UseInstancing" attribute. 
+	- script/apps/Aries/EmuUsers/StressTestPage.html is implemented. 
+	- direct3d error messages are translated to chinese for distribution of kids product. 
+	
+2009.11.11
+	- vertex shader output's colorDiffuse now uses float3 instead of half3, in terrain and mesh shader files. This fixed a bug when diffuse color is actually bigger than 1. 
+	- camera key now uses hardware key states.
+	- window size and backbuffer can now change dynamically while maintaining the correct minimum screen resolution. 
+
+2009.11.10
+	- we will automatically adjust user display settings according to shader and use ParaUI.SetMinimumScreenSize() to ensure minimum display size. 
+
+2009.11.9
+	- ParaUI.SetIMEOpenStatus(false) is implemented, which allows us to toggle IME status programmatically, such as before activating a windowed flash player in the game engine. 
+	- ParaUI.GetUIScale(x,y) and ParaUI.SetMinimumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling) are implemented. 
+		we can now change the UI scaling programmatically, so that we can display 1020*680 screen in a 800*600 backbuffer. 
+	
+2009.11.8
+	- terrain shader is causing Intel(R) 82945G Express Chipset Family to fail. Because it contains shader model 3. I removed all shader model 3 technique. Now every shader file has only one default technique. 
+		PIXEL, enable DX debug level, remote desktop are the primary ways to debug such problems. 
+	- I find that old or integreated graphics cards like Intel(R) 82945G's performance is more related to fill rate. Game can run very smooth in 800*600, but not on 1024*768. 
+		I must find a way to do scaling based UI transformation, or our game UI should work with 800*600 in order to run smoothly on older video card.  
+	- TODO: all UI can be multipled by a scaling matrix in order to make it work in 800*600 or even smaller screen resolution. 
+
+2009.11.7
+	- GUIObject (button) now supports "IsPressed" attribute field. obj:GetAttributeObject():GetField("IsPressed", false)
+	- IME input method is improved. We greatly minimized the chance that a hardware key stroke are interpreted differently than the software based IME message. http://msdn.microsoft.com/en-us/library/ee419002(VS.85).aspx
+	- TODO: HTMLLayout is a replacement to mozilla HTML rendering engine for simple pure HTML+css pages. 
+	
+2009.11.6
+	- jabber_client.lua now supports RPC style invocation. Auto reconnection is also implemented. 
+	- EventDispatcher.lua is refactored
+
+2009.11.5
+	- jabber_client, game_client, rest_client now all supports multiple instance
+	- service log in NPL supports non-append mode, etc. 
+
+2009.11.4
+	- biped now support PhysicsGroupSensorMask attribute field. Both biped and camera can specify which groups of physics object this biped will collide with. 
+	- Aries EmuUsers and stress test framework is written. rest_client now supports multiple instances.
+	- Add/Remove Attachment now supports slot id. 
+	- Aries web installer is made. 
+	- NPL.GetIP(nid) is implemented. 
+	
+2009.11.3
+	- object oriented framework in NPL is implemented.
+	- ParaAudio's 3d static sound are automatically collected when stopped. 
+	
+2009.11.2
+	- all audio functions are now async-loaded,including external wave files, sound bank, in-memory wave bank and stream wave banks.
+		ParaAudio.LoadSoundBank(), ParaAudio.LoadInMemoryWaveBank and ParaAudio.LoadStreamWaveBank() are added. ParaAudio.EnableAudioBank() is deprecated. 
+	- Graphics stats are printed at start up. ParaEngine.GetStats(0) is added.
+
+2009.11.1
+	- the object oriented programming model improved in npl: see "script/ide/oo.lua". It is fully compatible with old commonlib.inherit() interface. The new OO class improves it by providing a non-virtual C++ constructor function.
+		I also put lua object oriented programming(LOOP) code side by side for comparision with the oo.lua. 
+		For performance, NPL.load("(gl)script/ide/ObjectOriented/class.lua"); is provided. see "script/ide/ObjectOriented/readme.txt" for comparison with the default oo.lua. 
+	- Dynamic attribute fields now support saving and loading from strings. Dynamic field type can be automatically converted between string and other data types.
+	- config/config.txt now uses ParaEngine.GetAttributeObject()'s dynamic attribute fields for saving and loading. Therefore the scripting interface can save anything useful in the global config file. 
+		The config.txt file is just name value pairs where the order or occurances are no longer important. 
+	
+2009.10.31
+	- When there is only a single string passed to OUTPUT_LOG(), we shall ensure it does not contain "%". This fixed a potential buffer overflow bug. 
+		OUTPUT_LOG(string) is dangrous, one should use OUTPUT_LOG("%s", string) instead. 
+	- NPLMono dll is now 64 bits compatible.
+
+2009.10.30
+	- Thread Id is added to all service log messages
+	- Bug Fixed: Some assets are downloaded multiple times, we have prevented the same assets from being downloaded again even if they are requested at high rate. signal is used to allow multiple listeners for a single asset. 
+	
+2009.10.29
+	- texture sequence now also supports 32bits png files. So it can be used in UI animation as well, such as in smiley faces. Example: FaceXXX_32bits_fps3_a003.png
+	- SelectionManager now uses IRefObject to track selected 3d object. This fixed a bug when selected object is deleted but still exits in selection manager. 
+	- SceneObject.PickObject now returns impact normal. 
+	- AutoCamera now uses impact normal to automatically slide along the wall. It is slightly better than without normal, however, it still can not solve all camera eye positions.
+		For example, when the camera eye does not hit anything, there are still occassions where the near plane intersects with walls. 
+		to fix it, we can project another ray side ways at the eye position. 
+	- main paraengineclient will allow only one instance by default unless command line specify "single" to "false"
+
+2009.10.28
+	- ParaCamera now supports new attributes "EnableMouseRightDrag" and "EnableMouseLeftDrag"
+
+2009.10.27
+	- Bug fixed: CCS texture can now be composed in quick succession. 
+	- Bug fixed: AssetFileEntry::SyncFile_Async function is fixed, so that it will return immediately if file is already downloaded, and that it will retry if previous one failed. 
+	- AssetFileEntry now caches entity status, so that it does not need to query IO every time if the file is already downloaded. 
+	
+2009.10.26
+	- Bug fixed: unscaled images's z buffer can not be properly set when attached to 3D interface. 
+
+2009.10.25
+	- mcml div now supports css relative:screen positioning. 
+	- ParaEngine.GetAttributeObject():CallField("BringWindowToTop"); now functions as expected. 
+
+2009.10.24
+	- NPLConnection output queue bug is fixed. The old code will cause the same output message buffer to be released twice. 
+		The fixed code still use single threaded message object, but it is thread-safe for concurrent calls. 
+			
+2009.10.21
+	- from 10.21 to 10.23, I attended IDG 2009 workshop. 
+	
+2009.10.19
+	- ParaIO.CheckAssetFile() and ParaIO.SyncAssetFile_Async() are implemented. 
+	- Flash window now rescales automatically according to the client windows.
+	- bug fixed: global sun lighting is fully disabled at effect level -1.
+	- mcml radio control now supports GetUIValue() method. 
+
+2009.10.18
+	- mcml div tag now supports align and valign property, all 9 kinds of alignment is therefore supported in NPL. 
+	- logger now gracefully ignored log messages longer than 1024 bytes. 
+
+2009.10.17
+	- mcml tag pe:canvas3dui is implemented. Canvas3DUI base class is now implemented. pe:canvas3d now supports reference external miniscene. 
+	- jabber roster now supports message and presence per resource
+
+2009.10.16
+	- miniscenegraph now supports RenderPipelineOrder. We can their render into the 3d scene with many camera settings. This is very useful for rendering UI overlays.  Set 
+		miniscene.GetAttributeObject():SetField("RenderPipelineOrder", 51)  and camera to render to 3d scene after all UI objects are rendered. 
+	
+2009.10.15
+	- miniscenegraph addictive texture can now be rendered properly. 
+	- GSL_gridnode now time out properly and real time packets are sent during each frame move instead of immediately upon receive. 
+
+2009.10.14
+	- mouse over and ispressed attribute is by default only sent to UI objects that has mouse focus. 
+	- AlwaysMouseOver attribute is added for all GUI object, so that we can control whether make mouse over to true as long as it contains the mouse point, no matter it has mouse focus or not. such as uiObj.GetAttributeObject():SetField("AlwaysMouseOver", true) 
+	- object shadows are now properly rendered with selection shader.
+	- Bug fixed: when rendering instance with selection, things goes wrong. 
+
+2009.10.13
+	- Fixed bug: the flash swf files will not be played twice on load. 
+	- Fixed bug: replaceable texture can be set for non-custom characters, even model is not asynchronously loaded. However, it is only OK when there is just one replaceble texture in the model. 
+	
+2009.10.12	
+	- GUI mouse event system are completely refactored. It will fix a number of bugs like can not click at some rare conditions, etc. 
+	
+2009.10.11
+	- Bug Fixed: Due to zip archive file IO, when multiple NPL runtime are started and loading the same set of files simultaneously, precompiled lua chunks will be corrupted; Such is the game server.
+		I currently work around this problem by starting one runtime and wait 0.5 second and then start another. 
+	- Bug fixed: Refactored mouse event code,GUI objects can always be clicked.
+		
+2009.10.10
+	- NPLCompiler is implemented. 
+	- ParaScene.GetAttributeObject():SetField("ForceExportPhysics", true); -- can be used to always export physics
+	
+2009.10.9
+	- GSL_client will now ignore real time messages if there is only a single player in the scene
+	- pe_gridview's pager will now auto disable prev/next buttons by calling pe_editor_button.SetEnable() method. currently it just disables the control, one can also change background if one wants. 
+
+2009.10.8
+	- GSL_gridnode is refactored
+	- ide/STL link and linked list data structure are added and used in GSL_grid manager. 
+	- enable physics bug is corrected for async mesh models. 
+
+2009.10.7
+	- GSL_homegrid and GSL_proxy are implemented. 
+	
+2009.10.5
+	- ParaEngineServer and ParaEngineClient solutions are synced. ParaEngineServer now supports AyncLoader, timeout events and OpenAssetFile, etc. 
+
+2009.10.4
+	- db files are always opened in readonly mode when data is read from zip or remote asset. 
+	- local server now supports multiple concurrent localserver files.
+
+2009.9.27
+	- NPL now supports network event listener using the boost.signal class. It offers monitoring connection and disconnection of any given NPL connection (nid)
+	
+2009.9.26
+	- MCML page button tag now support "text-align" css attribute.
+	- camera attribute "LookAtShiftY" is added. 
+
+2009.9.25
+	- script/ide/timer.lua is refactored to support many virtual timers with a single real timer
+	- All game server REST API now supports timeout interface via the new virtual timer class. see "script/apps/GameServer/rest_webservice_wrapper.lua".
+	- "script/ide/Canvas3D.lua" canvas3d now support async loading models to view it at best camera angle.
+
+2009.9.24	
+	- ParaUIObject.textscale is implemented for text and button object. MCML <input> button now supports textscale
+	- CGUIBase attribute object are replenished. 
+	- AsyncLoaderProgressBar is implemented. Please see "AsyncLoaderProgressBar.lua"
+	- ParaScene.GetScreenPosFrom3DPoint(x,y,z,{}) is added. This can be used to display UI animation on a given 3d position.
+	- we will load all packages that matches the "main*.pkg" pattern in the order given by their name, such that "main_001.pkg" is always loaded before "main_002.pkg", and "main.pkg" is loaded before all.
+	
+2009.9.23
+	- ParaEngine.GetAttributeObject():CallField("BringWindowToTop"); is added. 
+	- ParaEngine.GetAsyncLoaderItemsLeft(-2) is added. 
+	
+2009.9.22
+	- pe:loader is implemented. 
+	- Aries NSIS installer is refactored to support auto launching of client from web browser.
+	- mini-map and terrain region editor and reviewer are implemented in SDK. 
+
+2009.9.21
+	- AssetFileEntry::SyncFile_Async() now uses boost::signal, which allows multiple event listeners to track the download status of an asset file. 
+	- we prevent the same texture to be loaded multiple times in CCS face and skin. 
+	- All content loaders now uses the new improved AssetFileEntry::SyncFile_Async interface with asset event handlers. 
+	- "att_text", "att_ground", "att_mouth" are added to ParaXModel and supported by ParaXExporter. 
+	- Terrain mask file can now be asynchronously downloaded from the asset server. If the file is very big, a separate download queue is used. 
+	
+2009.9.20
+	- Biped now supports Set/GetPhysicsHeight() method. 
+	- Now libcurl easy interface is shared among processor thread. This allows us to share the same connection to server. 
+		even OpenAssetFile() use the default shared curl interface, because it is intended to be called in any thread. 
+	- url loader interruption supported. We can now interrupt while downloading a large file during application exit
+	- All content loaders now uses the AssetFileEntry::SyncFile_Async() method. 
+	- UrlProcessor user data now use virtual destructors. 
+	- ResourceRequestID_Asset_BigFile is added. 
+	- Large asset file (larger than 1 MB) is now downloaded in a separate queue. This is useful for terrain mask file async download.
+	
+2009.9.19
+	- ParaXModel vertices are only animated once in case the same vertex is reused in multiple triangles. This is done by marking and saving calculated vertex for each frame of the model. 
+
+2009.9.17
+	- ParaIO.open() will look in asset manifest file first. 
+	- flash movies are unloaded properly without leaving the sound playing. 
+	
+2009.9.15
+	- database files are now reference counted.
+	- Biped under water will behave exactly according to their density. They will float up if density is in range (0,1)
+	- let CParaFile.OpenAssetFile now supports relative path. 
+	- terrain tile (ParaTerrain.GetAttributeObjectAt(x,y)) now supports NumOfRegions,CurrentRegionIndex, CurrentRegionName, CurrentRegionFilepath properties
+
+2009.9.13
+	- database file and terrain world files support opening files in asset manifest list. 
+	- if mesh name ends with "_e", it will not be shadow caster. 
+	
+2009.9.12
+	- CTerrainRegions are implemented. ParaTerrain.GetRegionValue(name, x, y) can be used to retrieve the value at a given terrain region. 
+	- CParaFile::OpenAssetFile and CParaFile::DoesAssetFileExist() are implemented.
+	- MD5 class added. AssetManifest will now check for md5 before writing to disk cache.  
+
+2009.9.11
+	- WM_CLOSE is added to system event, which allows the scripting interface to do post processing or cancel close window request. 
+	- ParaCamera now supports new attributes: OrthoWidth, OrthoHeight, IsPerspectiveView. 
+
+2009.9.10
+	- biped density logics are corrected. for density between (0,1), the biped will float on water surface. 
+
+2009.9.9
+	- paraworld.exe is renamed to ParaEngineClient.exe, this allows plugin dlls to load properly. During release time, the executable can not be renamed, otherwise plugin dlls will not be loaded properly. 
+	- AutoUpdater project is added and used in the kids product. 
+	
+2009.9.8
+	- ParaEngine Studio moved to a new office
+	- NPL.AsyncDownload now uses UrlLoaders interface. 
+	
+2009.9.5
+	- ParaAssetObject now supports IsLoaded() method. AssetsPreloader.lua is added which allows us to prepare asset synchrounously.
+
+2009.9.2	
+	- AssetsManifest class is implemented. All assets including ccs compositive texture now supports async remote loading to cache. 
+
+2009.9.1
+	- curl is updated to 7.19.6. cares is removed.
+	- UrlLoaders is implemented. All Url request including the REST API now uses the new curl easy interface with boost::thread and advanced message queue in NPL.  
+	- AsyncLoaders now supports 16 channels (pools) of processor thread queue. 
+	- MeshPhysics Object and BipedObject now support On_AssetLoad callback script. The script is called after its associated asset is loaded. 
+		such as obj:GetAttributeObject():SetField("On_AssetLoaded", ";Test_OnAssetLoaded();")
+	
+2009.8.30
+	- AsyncLoader will ignore all pending requests when application exits. 
+	- ParaUIObject.ondestroy event is added. FlashPlayerWindow use ondestroy event for controlling the life time of flash player object. 
+	
+2009.8.29
+	- CGDIEngine is implemented which emulate the DirectX interface using the GDI+ interface. all ccs skin and face are composed using the GDI+ interface. it works
+		perfectly well in full screen and windowed mode in another thread. 
+	- If a png texture ends with "_dxt1.png", the png is loaded as dxt1.
+	- open source FreeImage.dll is used for dds and png loading in the GDI+ thread. 
+	- FlashWindowControl.lua is added. ParaFlashPlayer now supports real activeX flash window on top of the parent window. 
+		TODO: because GDI and directX can not coexist in full screen mode(only one primary buffer),  FlashWindowControl only works in windowed directX application. 
+
+2009.8.26
+	- device lost is handled for the second d3d device. however, the second d3d device will not work under exclusive fullscreen mode. 
+		if one device is fullscreen, all other devices will be in lost state. So I have to compose textures using CPU during full-screen mode. 
+		DONE: I plan to use GDI+ in another thread for any side-by-side texture composition, such as CGDIEngine which exposes the same interface as the CDirectXEngine.
+	- External animation can now be async-loaded as well, but the first time an external animation is loaded, the head may appear to play twice within the first 1 second. 	
+	- macro TERRAIN_QUAD_TREE_BEST_FIT is added to terrain tile, static mesh is also attached to the leaf tile node, since mesh size is not unknown when mesh asset is async-loaded. 
+
+2009.8.25
+	- CCS skin and face texture composition is done in the IO thread with another d3d device object(linked to an invisible window). 
+	- CDirectXEngine is implemented which can run directX in another thread 
+
+2009.8.22
+	- MeshEntity,ParaXEntity now supports CAsyncLoader. 
+	- All texture, mesh entity and parax entity will all use lazy init during a d3d device lost. 
+	- MeshObject, MeshPhysicsObject, BipedObject, XRefObject, SkyObject can all use async mesh or parax entity now. 
+
+2009.8.21
+	- we invited 5 12 year old kids to play the demo version of the game. they like it 
+	- CParaFile will by default add one '\0' byte to the end of all opened files for ease of text reading. The final byte does not count for the file length. 
+
+2009.8.20
+	- two way function calls with flash swf textures are now supported. Flash script can now call NPL script and NPL script can call flash script as well.  Offical Flash external interface is used, where XML is used for passing return values. Please see ParaFlashPlayer interface. 
+
+2009.8.17
+	- TextureEntity now supports CAsyncLoader. All GUI objects now supports delayed texture loading automatically. When texture is not available, the layer of GUI object will not be displayed.  
+	- Texture ContentLoaders are implemented. Asset Log is written to "assets.log". All texture loading are now asynchronous no matter it is local or not. 
+	- Log service now supports append mode. 
+	- ParaTerrain.GetTexturesInCell() and ParaTerrain.RemoveTextureInCell is added to help artists to find unused textures. 
+	- Env/TerraPaintPage tool now can highlight textures in the current cell as well as showing the cell region center. 
+		it also supports deleting textures only in the cell region 
+	
+2009.8.15
+	- AsyncLoader.cpp is added. I choose to use similar architecture as the DirectX content streaming sample. 
+	-  For online CCS character skin composition, I have decided to use a different DirectX device in a worker thread to do the job, there is no way to do it with the main thread without compromising the performance. 
+	
+2009.8.13
+	- character/mesh border shader is added. all selected mesh and characters will be rendered using a yellow border of width 0.03 meters.
+
+2009.8.11
+	- for opaque character faces, culling is always enabled.
+	- ParaUIObject.zdepth attribute is added, which allows 3D UI object to specify zdepth explicitly. 
+
+2009.8.10
+	- 3D head on UI object depth is fixed. And zbuffer is enabled for UI objects attached to 3D objects.  
+	- Text with shadow and scaling can create text with boarders. Like this _this.shadow=true, _this.scalingx = 1.3, _this.scalingy = 1.3. This is perfect for rendering character headon text. 
+
+2009.8.9
+	- alpha blending is removed from all shaders, and assumed to be enabled at all times. 
+	- when composing CCS skin textures, black color will be used as the transparent color key. So black color will be replaced by transparent black when saved to file. 
+	- mipmap for ccs skin and cartoon face composition are removed. it can be turned on using parameters. 
+
+2009.8.8
+	- ParaUIObject (button) animstyle 31-39, 41-49 is added for auto rotation around the center. 
+	
+2009.8.7
+	- _guihelper.MessageBox now is completely MCML
+	- TODO: I have seen a few pipeline configuration files in the game FreeRealms. It is similar to ParaEngine's pipeline. I decide to move the pipeline sequence from C++ to XML files. The sample files are at config/pipeline_[1|2|3].xml. 
+
+2009.8.6
+	- External animation now supports non-biped bones if and only if their index and parent index are matched with the local character. 
+	- ParaCharacter.PlayAnimation() now support two animation files. This is a simple implementation of user animation sequence. 
+	
+2009.8.5
+	- ServiceLog now supports formated input
+	- ZipArchive and file interface now supports multiple threads accesses. 
+	- Real time message is supported on the game server. BBS Chat is implemented using real time message support on GSL server. 
+
+2009.7.28
+	- bootstrapper xml can not be in main.pkg file. 
+	- main thread state now runs in a separate worker thread in ParaEngineServer. This will make it more responsive. However, JGSL still runs in main frame move, which can be quite non-responsive. 
+	- the main frame move in ParaEngineServer is changed from 30ms to 1 second. 
+	
+2009.7.27
+	- all ParaWorldAPI have been ported to the new network architecture. 
+	- client wrapper function are fully tested.
+	- ParaEngineServer now runs as a daemon under linux. 
+	- d_rts bug fix in NPLRouter. 
+
+2009.7.23
+	- game server now supports webservice wrapper using the new NPL network architecture. see "rest_webservice_wrapper.lua"
+	- The new NPL network architecture (Client, GameServer, NPLRouter, DBServer) have been tested on both linux and windows. Configuration files at config/*.config.xml. DNS server is also set up for internal use. 
+	- NPL.StartNetServer("127.0.0.1", "0") will start the network layer without listening to any incoming connections. this is mostly used for pure client applications. 
+	- ParaXExporter fixed a bug that may export wrong multi-material id if id is not consecutive. 
+    - ParaXExporter fixed a bug that may export normal as -1.#IND00;-1.#IND00;-1.#IND00;, if triangle is a line instead of a face. 
+
+2009.7.22
+	- Client, GameServer, NPLRouter, DBServer have been implemented and tested. 
+	- facing sorting bug fixed in ParaXExporter.
+
+2009.7.20
+	- TODO: when I pass std:string reference across plugin dll boundary(in NPLRouter), I need to ensure 
+		exe and plugins are compiled(!!) and linked with the same options and runtime libraries.
+		This is not possible to run exe in debug,and plugin in release. It will lead to heap corruption.  I may solve this problem later by force using memory allocator in the exe. 
+
+2009.7.17
+	- NPLMonoInterface.cs now supports enough API for multi-threaded server side scripting. 
+	- NPLWriter, NPLHelper, NPLLex, NPLParser, NPLTable are ported to C# helper lib. 
+	- WebAPI/DBServer project is created. It is a C# scripting module on the database server for the kids project. 
+	- Both letter and numerical can be used to name NPL field name in NPL/lua table. When serialized to string, they will not be converted to ["..."]. This can save some bandwidth when field name contains numericals. 
+
+2009.7.15
+	- NPLMono now supports multiple thread on linux. 
+		- BUG: However, multiple mono scripting state (Mono 2.4) crashes randomly on windows. On windows, if multiple thread is used, GC will randomly throw fatal exception, saying "Collecting from unknown thread". the problem does not exist on linux. 
+		The assertion point is in mono/libgc/pthread_stop_world.c and win32_threads.c
+	- NPLMono uses a single application domain, no matter how many MonoScriptingStates are created. All assemblies are loaded to the root application domain. Activation calls, however, are asynchronous and multithreaded. 
+	
+2009.7.13
+	- PageCtrl.OnClose call back function is added. 
+	- WorldStrippedPage.html requirement is written. 
+
+2009.7.12
+	- we do not disable always sentient when player control changes, since AlwaysSentient is completely controlled by scripting interface. 
+		in other words, On_FrameMove will always be called for any game object that is AlwaysSentient and currently Sentient. 
+	
+2009.7.11
+	- commonlib.applog and commonlib.servicelog is implemented as a wrapper to LogService API interface. 
+	- ParaScene.GetAttributeObjectSunLight() is added. Attributes: TimeOfDay, TimeOfDaySTD, MaximumAngle, Ambient, Diffuse, DayLength, SunAngle, AutoSunColor are added.
+	- Settings.html in environment app can adjust above settings. 
+	- sun_color is ignored in all shaders, since it is currently used as the global material diffuse color already. 
+	- TODO: we can disable distance terrain when rendering terrain reflections.
+
+2009.7.10
+	- util/LogService.h is implemented. It is mostly suitable for advanced networking log. Scripting API is ParaGlobal.GetLogger("ServiceLog"):log(0,"this is a test message")
+
+2009.7.9
+	- NPL::NPLHelper::StringToLuaObject() is implemented natively in C++.
+	- NPLTable and serializer(NPLHelper::StringToNPLTable and NPLHelper::SerializeNPLTableToString) is implemented. it provides a way for C++ to parse lua tables in an easy way. 
+
+2009.7.8
+	- mutex implementation is changed. see util/mutex.h.  Nested lock is only supported on windows. However, the scoped_lock allows explicitly unlocking. This feature can be used to avoid using nested mutex.  
+
+2009.7.7
+	- NPLMono is a ParaEngine plugin (dll) that exposes ParaEngine API to the C# mono scripting interface. Both Linux and Windows are supported. Internally, it embeds mono runtime. 
+		- TODO: On windows, there is still a trivial exception thrown NPLMono when exiting main application. 
+	- Bug fix: recursive_mutex.hpp is added but not used since it is slightly heavier than ordinary mutex. We should try to avoid nested mutex to prevent dead lock throughout the code. 
+	
+2009.7.5
+	- http://www.unknownworlds.com/decoda/ is studied. this is a powerful debugger for lua. We only need to provide the PDB file to use it. 
+	- in CMakeLists.txt for ParaEngineClient, full PDB file and stripped PDB files are both generated at release time. /opt:ref option is turned on explicitly in order to performance size optimization even /debug is specified. 
+	- ForceExportSymbols() is added. Forcing some lua function symbols to be exported even when /opt:ref is used. This makes decoda lua debugger work for lua script debugging with PDB file. 
+
+2009.7.4
+	- support C++ dll based NPL runtime state handlers. Both linux shared library and windows dll are supported. 
+		There is a must read paper for shared libraries under linux: http://people.redhat.com/drepper/dsohowto.pdf
+		On Linux, shared libraries (*.so files) uses ELF (executable linkage format), which allows loaded shared libraries files to share the global symbol at runtime (ALLOWING unresolved symbols at link time). 
+		On windows, building a DLL results in a fully-linked executable with all of the internal functions resolved against import/export libraries
+		Their differences really surprise me. 
+	- TODO: merge identical lua_dostring(), and pass msg by struct.
+	
+2009.7.2
+	- ParaEngineServer with new boost::asio based networking module is ported to linux and tested. Please see script/test/network/*.lua. 
+
+2009.6.30
+	- NPLReadme.txt is written which contains the call graph of major NPL functions. 
+	- NPL.accept and NPL.reject is implemented. Andy custom NPL authentication can now be done via scripting 
+	- msg.nid and msg.tid mechanism is included in the messsage format. 
+	- Test file "script/test/network/TestSimpleServer(Client).lua" is written and tested with two ports. 
+
+2009.6.27
+	- view, object, shadow frustum are three frustums supporte by current camera. When culling shadow casters, shadow frustum is used, for culling scene objects(including portals) object frustum is used; view frustum is used by the terrain engine. 
+	- the terrain_normal.fx shader file now handle shadow blending using two constants, so that the shadow end is 30+20, this should match DEFAULT_SHADOW_RADIUS defined in sceneobject.cpp.
+	- terrain block occlussion testing will now treat far plane as a sphere
+	- shadow map now uses orthgonal instead of PSM, since shadow range is now fixed. 
+	
+2009.6.26
+	- TODO: when drawing distance characters or low LOD characters, we can calculate bone matrices and do skinning with a lower frame rate (10FPS), such as caching all vertex buffers in memory and reuse the memory and only rebuild if necessary.
+	- A bug in Camera Yaw, Pitch, Roll matrix calculation is fixed. The DirectX version is buggy, I used a home made version.
+	- terrain shadow is now blended at a given distance with a given range. This prevents object shadows from jumping out all of a sudden. 
+	
+2009.6.25
+	- Fog near/far and camera far planes can be fine tuned in SettingsPage.html. 
+	- near terrain and far terrain are rendered with different shader techniques. Far terrain completely in the fog are batched in a single draw call and rendered using a very simple shader. Performance is improved. 
+		Terrain engine is now very fast, we can increase the view far plane and use fog start and fog end to control the amount of distance terrain drawn. 
+	- ParaX exporter will only export meshes without skins as bones. 		
+	- PERFORMAMNCE NOTE: ParaX Matrix multiplications in bone calculation and vertex skinning are so far the most time consuming tasks in ParaEngine. 
+
+2009.6.24
+	- TODO: content streaming for CCS textures and scene assets.
+	- lua custom run rule is added to visual studio using custom build rule files. 
+	- ParaXModel weight vertex transforms are slightly optimized by using tight loop, more multiple than devide, explicit cache temp variables. The ParaX vertex buffer write stage is optimized over 20%. 
+	- quaternion math is optimized by replacing devide with multiple operation. 
+	- ParaXModel's matrix is optimized by using 4*3 matrix instead of 4*4 when multipling two matrices. bone calculation stage is optimized over 12% 
+	- ParaXModel CCS render passes are combine by textures and texture attributes. But there is not much performance improvement. The vertex buffer write stage is still the most time consuming one. 
+
+2009.6.22
+	- Terrain engine is slightly optimized, by caching const values and removed texture group lookup and triangle setups. 
+	- Fixed a terrain bug of writing to terrain vertex buffer. Performance is boosted 10 times. 
+
+2009.6.21
+	- Fog and base texture is applied to all terrain texture layers. 
+	
+2009.6.19
+	- ParaEngine::DL_Allocator is implemented. ParaEngine Memory Policies are documented in ParaMemPool.h
+	- all temporary list in SceneState has been replaced with DL_Allocator for memory allocation. 
+	- a single threaded implementation of fixed sized memory pool allocator is added. Pool_Char_alloc.
+	- fixed_string and StackString are implemented. Please see fixed_string.hpp and stack_container.hpp
+
+2009.6.17
+	- dl_malloc is added to ParaEngine for thread-local fast memory allocation. 
+	- NPL Runtime State now supports three types of memory allocator. two of them are per thread (state) lock-free memory allocator. This will avoid memory fragmentation and improve performance slightly. 
+	- TODO: find a way to improve list<void*> in the main game thread for scene rendering. At least replace them with a thread local version. 
+	- TODO: snprintf() should be replaced by faster version,since it iternally use lock and per thread system locale info. 
+	- EASTL is  paper about a custom stl-like library developed by EA. Some of its design ideas can be used to write our stl containers. 
+	
+2009.6.15
+	- I have tried hoard for memory allocation; but there is not much improvement, better use manage boost::pool in application specific code. 
+	- PoolThreadSafe is implemented for thread-safe raw memory pool. 
+	- CNPLPool_Char_alloc is implemented for array of predefined free list for memory management. see NPLMemPool.h. 
+	   NPLString is defined using CNPLPool_Char_alloc for temporary strings of fixed sizes. 
+	- ParaEngine::StringBuilder is implemented which works specially well with CNPLPool_Char_alloc.   See util/StringBuilder.h
+	- All msg data block such as NPLMessage, NPLMsgOut now use StringBuilder. There are no noticeable performance gain than with std::string. 
+		But CPU usage is slightly lower and there will be less memory fragmentation when server is running for a long time. 
+	
+2009.6.13
+	- LUABIND_NO_ERROR_CHECKING is defined in luabind/config.hpp, this will improve performance of luabind at release time, but makes mismatched functions difficult to track.
+	- Lots of performance optimization to string related functions between NPL and C++, such as SerializeToSCode, EncodeStringInQuotation.
+		The new versions of these function reuse the same buffer as much as possible without creating any temporary strings if the initial buffer has enough reserved capacity . 
+	- ParaEngine::PoolBase is implemented, it is based on boost::pool for memory management of same sized objects. 
+	- TODO: use boost::fast_pool_allocator<> for std::list and std::map for places where items frequently being added and deleted. 
+	- TODO: lua_LoadBuffer() will realloc memory quite a few times, this may be time consuming and lead to memory fragmentation with called too frequently. 
+		msg passing for activation should try to use a different version, or we need to replace the memory allocator that lua state uses. 
+	
+2009.6.12
+	- The NPL socket loopback interface is implemented and tested. 
+	- NPL message parser is fully implemented and optimized to be efficient. Message overhead is pretty low and filename string are replaced by id before transmission. 
+	- NPL.StartNetServer("127.0.0.1", "60001"); is added to start the new NPL interface, which supports over 10,000 concurrent connections in a single thread using boost asio. 
+	- NPL.AddPublicFile() is implemented to expose files to other computers. 
+	- When deleting terrain texture layer, the other layers are normalized. 
+	- TODO: improve code body parsing performance by using more efficient parser. 
+		Binary parser is not suitable for mutable tables(saving only 4%), so text encoding is used. 
+	- TODO: support binary message body format
+	- TODO: support message router interface using the message headers. This allows us to create the DB router/proxy more easily. 
+	- TODO: security and validity check on all pure NPL data table in the message body (code is part of the msg_parser interface). 
+	-		Inject message headers to msg struct to be sent to the scripting interface. 
+	- TODO: complete NPL protocol and NPL return code, including handlers for 
+		Max NPL connection reached, user canceled connection, authenticate user, string map sync, nid resolve, 
+	- TODO: limit the number of concurrent connections per NPL server. 
+	- TODO: authentication: support NID and IP/port query using jabber BUS interface. 
+	
+2009.6.8
+	- TODO: AMD Tootle triangle optimizer can be studied later. 
+
+2009.6.4
+	- intrusive_ptr is used instead of shared_ptr for NPLMessage_ptr. This has performance gain of 10% in message throughput.
+		there is no noticeable performance difference between multithreaded  ans single threaded intrusive_ptr implementation. Please see util/intrusive_ptr.h for details.
+	- "UseRightButtonBipedFacing" boolean attribute is added to ParaCamera.
+	
+2009.6.2
+	- TODO: boost::shared_ptr for NPL messages and "__rts__" hidden variable may have a performance penalty on multithreaded env, try raw pointers when I have time. Pay attention to circular ring buffer overflow situation. 
+	- only thread-safe version of EncodeStringInQuotation remains. 
+	- Local Async Procedure Call using NPL is fully tested. see "script/test/TestMultithreaded.lua"
+	
+2009.6.1
+	- multithreaded timer is now supported. timer id is unique to each NPL runtime state. All timer functions are thread safe. 
+
+2009.5.31
+	- multithreaded NPL runtime is tested using TestMultithreaded.lua
+
+2009.5.29
+	- ParaFileObject:close() method is always called when __gc is called in scripting interface. This ensures that file is closed when no reference to it. 
+	- warning C4251: needs to have dll-interface is there if ParaFileObject is declared with PE_CORE_DECL with boost or stl data member in it. So I have removed it. 
+
+2009.5.28
+	- NPLRuntime is completely refactored to support multiple NPLRuntimeState in multiple thread. New asynchronous socket IO interface is used for NPL networking. 
+		more information, please see the 1.18 NPL Network Architecture doc. 
+
+2009.5.18
+	- PhysicsGroup attribute is added to ParaObject. So that the physics engine will create object with different shape group. 
+	- AutoCamera's PhysicsGroupMask is added. the camera object can now be configured to avoid certain physics objects in the scene. 
+		ParaCamera.GetAttributeObject():SetField("PhysicsGroupMask", 15); 
+	- "walkpoint" filter is added. ParaScene.MousePick(70, "walkpoint"). "walkpoint" is a special filter that only pick walkable physics regions including the terrain. 
+
+2009.5.16
+	- boost::asio is used for jabber client. all NPL_TCPConnection (s) share a single dispatcher io service(one background thread) for 
+		DNS resolve, socket connections, and all send and receive message dispatching. 
+	- when the send message queue is full, new messages will be silently dropped. when the receive queue is full, socket connection will be closed. 
+
+2009.5.11
+	- ParaRingBuffer is added: we now use a ring buffer for input and output queue
+	- CartoonFace texture are now cached
+	- TODO: use a worker thread for composing face and body textures. all temp, skin and face textures are deleted by default on exit. 
+	
+2009.5.10
+	- TODO: "stdint.h" is added from the web for the bit lib in NPL. shall I modified lua 5.1.4 core to allow string.format("%x") to work for entire 52 bits, instead of 31 bits in the official release. 
+	- jabber client GetStatistics function is added. 
+	
+2009.5.9
+	- util/Log.cpp is now thread-safe. 
+	- jabber's activation call will return false if output queue is full. 
+	- files under ./jabber and ./util are identical for both client and server solutions. 
+
+2009.5.8
+	- NPL_TCPConnection is implemented with proper buffer size to replace the socket implementation in gloox. 
+	- each jabber socket recv function now uses a separate thread to do the job, making the main thread CPU-bound, instead of IO bound.
+	- ParaObject now support replaceable texture for ParaX Character models, so that one can set and get textures on customizable characters. 
+	- The platform.cpp is added to client ParaEngine. All Jabber files and NPL runtime is now cross platform even in Client solution. 
+	- apache performance tuning, fastcgi, mono_mono_server are investigated. 
+	- ICE messaging (from zeroc.com) is studied, it may be future solution for REST with persistent connections and high scalability. 
+
+2009.4.23
+	- Both ParaEngine's client and server side build system is moved to cmake. 
+		The client side is WIN32 only. but the server side is fully cross platform. Please see the cmakelist.txt files for more information. 
+	- SVN is used for source control with the new build system. 
+	
+2004 - 2009.4.22 
+	- previous change history is moved to changes_lixizhi.txt
+
+
+---+++ TODO list	
+	- TODO: game server grid node is subdevided into equal sized zones, each zone has a revision number on the client and server. 
+	- TODO: Player positions are broadcasted as both real time and normal update. The server only sent updates in the closest 9 zones around the player. 
+	- TODO: split terrain mask to multiple files for each layer
+
+	- TODO: Create an include directory as post build script for copying include files to include dir. 
+	- TODO: implement a logservice that log at interval or exceed buffer in a different io thread that wait on signals. 
+	- TODO: SystemServices framework within NPL, Entity Editor and Merger, SetProperty Framework on Entity, ToolsBench FrameWork in C#, Automatic file monitor, swig for cross platform
+		ParaEngine::GetServiceManager()->GetSystemServiceAs<template>() and smart pointer. The OnTick Framework of system services. 
+	- TODO: Implement a IAppService base class, and provides a OnFrameMove method, OnStart and OnStop methods,
+		it will be perfectly OK that we put all UI in a separate thread for .NET based plugin tools and use the OnFrameMove to read/write via some messaging system. 
+		In the OnStart(), an IAppService implementation can register itself with heart beat in a number of places, such as in the render, framemove, io, etc. Use boost::signal::connect(priorityID, callback) for this functionality. 
+		Then rewrite the ParaEngineServer project by sharing the same file as ParaEngineClient. 
+		ParaEngine::CGlobal is just a app service that retrieves all well known interfaces and store them in a place for handy calling. 
+	- TODO: modularize the ParaEngineClient, so that ParaEngineServer is no longer needed to mirror the source code. 
+	- TODO: Implement a single threaded message system to be used for communicating between plugin and the main game engine during the OnFrameMove method. 
+		use the message system to support as much ParaEngine API in async mode as possible, such as create/deleting entities, setting properties, calling method, etc. 
+		Note: since there will be many property changes, how to trigger the message system as efficiently as possible. 
+	- TODO: implement a debugger plugin with .net UI, using INPLDebuggerHelper interface with read and write  method to simulate the IO console in the main thread, and a UI thread for showing the code. 
+	- TODO: maybe I need to design some code inspection service or IDL, so that we can map serveral languages(npl, c#) to c++, the open source swig project seems to do the right job. 
+	- TODO: Making tool bench for artists and designers, so that that artists and designers can work on both static and interactive elements in the game world. Thus moving more aspect of the game engine available to artists and designers. 
+
+	- DUMP: effect_file line 419.m_techniques[m_nTechniqueIndex] m_nTechniqueIndex is invalid.
+	- TODO: Particle dynamic LOD: 
+	- When designing PETools: class inheritance is the one feature that i missed in previous design. Like the actor class in unreal script, inheritance is a very important feature, which saves lots of code and editor description.  
+	- Texture LOD group can be assigned on per texture basis, such as one for 3d scene, one for ui. 
+	- Use selection from content browser in an important features in various IDE ui positions. 
+	- TODO: we should save the bounding volume when saving mesh object. 
+
+	- TODO: Create a better NPL console to replace F12 with ~ key. Colored output/input window from log.txt; filter log.txt with errors, warnings; prebuild code snippet in XML file; watch for params;
+	- TODO: Path-finding algorithm,  PETools, 3D miniscene visualizer, etc. 
+	- TODO: study blender architecture and use advanced 3D gadgets(move, rotate, scale) with accurate ray picking(special physics group in mini scene graph). 
+	- TODO: XML file based scenegraph for managing scene entities. Tile based onload script should be automatically disabled by redirecting to a shared onload script
+	- TODO: refine script file structure / strong localization support / separate modules / make it a game programming environment on project basis.  
+	- TODO: terrain mask paint using artist-made mask texture.
+	- TODO: Log system should cache per line to reduce the number of fwrite() calls. there can be at most 60000 such calls per second. 
+	- TODO: game server sync timeout should be able to recover. The client side should know such an error. 
+	- TODO: Some graphics card will generate error when AA is turned on (but enumeration passed), such as on donghong's PC. 
+	- TODO: CTerrainTileRoot::GetObjectByViewBox() does not work for big object. 
+*/

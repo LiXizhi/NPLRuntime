@@ -1,0 +1,34 @@
+- if a set of codec is just installed, but the machine is not restarted as the codec installer requires, the application will crash immediately.
+  发生问题的codec，暴风影音5.05rc2, 
+  severity: minor
+
+- space key of list box should be removed --done, change to return key
+- when changing resolution, the cursor dissappears and machine is not responding. --fixed
+- terrain brush size should not be larger than the terrain size. --done
+
+
+在IBM工作站上基本可以，但有时会出错。在HP NC4010上能启动，但会闪烁，好象贴图出问题一样，但能正常运动。 
+samsand  (2006-01-23 19:45:08)
+ 我们试过了，DELL GX502，DELL Demension 5100机器上不能跑 
+
+您说的几种机器我们没测试过。不过基于directX 的程序兼容性确实是要花时间，做大量试验。就连微软自己的游戏也经常在新机型与老机型上运行不正常。所以我们会配合你们解决出现的兼容性问题。
+
+我们测试过的机型包括:
+SONY VAIO notebook (both Nvida and ATI card), 华硕笔记本 （Nvida）, Toshiba Notebook. 大机器 with Geforce 6200 and 6600 cards (AMD cpu and Intel CPU， 这是我们的开发用机型), Dell Notebook (ATI 9200 card)
+
+我会做一次DirectX 相关的代码兼容性检查。请先在能用的机器上使用。下面是我们发现的又miscrosoft自己造成的bug.
+ 华硕笔记本 : 程序非法退出：解决方案：先运行directX 9.0 June 之前的3D程序，再运行我们的程序。这个问题出现在所有使用directX 9.0 december SDK的程序中，包括microsoft自己的全部samples. 
+
+Here is a list of known problem and solution published in microsoft directX SDK. I think we have not dealt with most of them. 
+
+(1) Install latest IME (Specially Chinese)
+(2) Run an old 3D application, then run ours
+(3) Change to 32 bits color in windowed mode
+(4) allow network access for ParaWorld.exe
+(5) look at log.txt 
+(6) enable mini-dump in your operating system and send me the dumped file whenever the application crashed.
+(7) restart the application, if it flashes. 
+(8) configure your graphics card settings to default. 
+(9) I advise your developers to use Chinese windows 2003 server as the development machine. Try to work on ordinary machines with ordinary graphics card. Workstations usually have different configurations. 
+(10) install DirectX DECEMBER SDK, and try all of it samples. If the microsoft samples also crash, then we have to wait for the next version of directX SDK. 
+

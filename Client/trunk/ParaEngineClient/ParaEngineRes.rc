@@ -1,0 +1,282 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define IDC_STATIC -1
+#include <windows.h>
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (Simplified, PRC) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTFILE
+//
+
+IDR_PARAXTEMPLATE       TEXTFILE                "res/ParaXmodel.templates"
+IDR_FX_OCEANWATER       TEXTFILE                "shaders/ocean_water.fxo"
+IDR_DEFAULT_CURSOR      TEXTFILE                "res/cursor.tga"
+IDR_FX_OCCLUSION_TEST   TEXTFILE                "shaders/occlusion_test.fxo"
+IDR_FX_SIMPLE_MESH      TEXTFILE                "shaders/simple_mesh.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL TEXTFILE                "shaders/simple_mesh_normal.fxo"
+IDR_FX_SMESH_CTOR       TEXTFILE                "shaders/smesh_ctor.fxo"
+IDR_FX_TERRAIN_NORMAL   TEXTFILE                "shaders/terrain_normal.fxo"
+IDR_DB_NPC_TABLE        TEXTFILE                "res/db_create_npc_table.sql"
+IDR_FX_FULLSCREEN_GLOW  TEXTFILE                "shaders/fullscreen_glow.fxo"
+IDR_FX_SKY              TEXTFILE                "shaders/sky.fxo"
+IDR_NPL_CHARACTER_EVENTS TEXTFILE                "res/character_script_template.txt"
+IDR_FX_SIMPLE_MESH_SHADOW TEXTFILE                "shaders/simple_mesh_normal_shadow.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_TEX2 TEXTFILE                "shaders/simple_mesh_normal_tex2.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_SELECTED TEXTFILE                "shaders/simple_mesh_normal_selected.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_BORDER TEXTFILE                "shaders/simple_mesh_normal_border.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_LOW TEXTFILE                "shaders/simple_mesh_normal_low.fxo"
+IDR_FX_WATER_RIPPLE     TEXTFILE                "shaders/water_ripples.fxo"
+IDR_FX_OCEANWATER_HIGH  TEXTFILE                "shaders/ocean_water_high.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_INSTANCED TEXTFILE                "shaders/simple_mesh_normal_instanced.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_UNLIT TEXTFILE                "shaders/simple_mesh_normal_unlit.fxo"
+IDR_FX_SIMPLE_PARTICLE  TEXTFILE                "shaders/simple_particle.fxo"
+IDR_FX_SIMPLE_CAD_MODEL TEXTFILE                "shaders/simple_cad_model.fxo"
+IDR_FX_DROPSHADOW       TEXTFILE                "shaders/dropShadow.fxo"
+IDR_FX_SCREENWAVE       TEXTFILE                "shaders/screenWave.fxo"
+IDR_FX_BLOCK            TEXTFILE                "shaders/blockEffect.fxo"
+IDR_FX_SHADOWMAP_BLUR   TEXTFILE                "shaders/shadowmap_blur.fxo"
+IDR_FX_SIMPLE_MESH_VEGETATION TEXTFILE                "shaders/simple_mesh_normal_vegetation.fxo"
+IDR_FX_SIMPLE_MESH_NORMAL_SPECIALEFFECTS TEXTFILE                "shaders/simple_mesh_normal_specialeffects.fxo"
+IDR_FX_SKYDOME          TEXTFILE                "shaders/skydome.fxo"
+IDR_FX_OCEANWATER_QUAD  TEXTFILE                "shaders/ocean_water_quad.fxo"
+IDR_FX_OCEANWATER_CLOUD TEXTFILE                "shaders/ocean_water_cloud.fxo"
+IDR_FX_BMAXMODEL TEXTFILE                "shaders/BMaxModel.fxo"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_ABOUT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 288
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 151
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUT DIALOGEX 0, 0, 295, 158
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About ParaEngine Co."
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,179,137,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,238,137,50,14
+    LTEXT           "Copyright 2004-2014 ParaEngine Co.",IDC_STATIC,7,7,281,14
+    EDITTEXT        IDC_ABOUT_TEXT,7,22,281,112,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN | WS_VSCROLL | WS_HSCROLL
+END
+
+#endif    // Chinese (Simplified, PRC) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_SELECTDEVICE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 259
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 143
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_SELECTDEVICE DIALOG 0, 0, 289, 321
+STYLE DS_SETFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Direct3D Settings"
+FONT 8, "MS Shell Dlg"
+BEGIN
+    GROUPBOX        "Adapter and device",IDC_STATIC,5,5,276,47
+    LTEXT           "Display &Adapter:",IDC_STATIC,16,17,98,10,SS_CENTERIMAGE
+    COMBOBOX        IDC_ADAPTER_COMBO,124,15,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Render &Device:",IDC_STATIC,16,34,98,10,SS_CENTERIMAGE
+    COMBOBOX        IDC_DEVICE_COMBO,124,32,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Display mode settings",IDC_STATIC,5,56,276,115
+    CONTROL         "&Windowed",IDC_WINDOW,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,16,68,98,15
+    CONTROL         "&Fullscreen",IDC_FULLSCREEN,"Button",BS_AUTORADIOBUTTON,16,99,98,15
+    LTEXT           "Adapter F&ormat:",IDC_STATIC,26,119,88,8
+    COMBOBOX        IDC_ADAPTERFORMAT_COMBO,124,117,149,204,CBS_DROPDOWNLIST | WS_VSCROLL | WS_GROUP | WS_TABSTOP
+    LTEXT           "&Resolution:",IDC_STATIC,26,136,88,8
+    COMBOBOX        IDC_RESOLUTION_COMBO,124,134,149,204,CBS_DROPDOWNLIST | WS_VSCROLL | WS_GROUP | WS_TABSTOP
+    LTEXT           "R&efresh Rate:",IDC_STATIC,26,153,88,8
+    COMBOBOX        IDC_REFRESHRATE_COMBO,124,151,149,204,CBS_DROPDOWNLIST | WS_VSCROLL | WS_GROUP | WS_TABSTOP
+    GROUPBOX        "Device settings",IDC_STATIC,7,175,274,117
+    LTEXT           "&Back Buffer Format:",IDC_STATIC,24,190,90,8
+    COMBOBOX        IDC_BACKBUFFERFORMAT_COMBO,124,187,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "De&pth/Stencil Buffer Format:",IDC_STATIC,24,207,92,8
+    COMBOBOX        IDC_DEPTHSTENCILBUFFERFORMAT_COMBO,124,204,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Multisample Type:",IDC_STATIC,24,224,90,10,SS_CENTERIMAGE
+    COMBOBOX        IDC_MULTISAMPLE_COMBO,124,221,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Multisample &Quality:",IDC_STATIC,24,241,90,8
+    COMBOBOX        IDC_MULTISAMPLE_QUALITY_COMBO,124,238,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "&Vertex Processing:",IDC_STATIC,24,258,90,8
+    COMBOBOX        IDC_VERTEXPROCESSING_COMBO,124,255,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Present &Interval:",IDC_STATIC,24,275,90,8
+    COMBOBOX        IDC_PRESENTINTERVAL_COMBO,124,272,149,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,86,299,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,152,299,50,14
+    CONTROL         "Clip to device when the window spans across multiple monitors",IDC_DEVICECLIP_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,87,241,8
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#define IDC_STATIC -1\r\n"
+    "#include <windows.h>\r\n"
+    "\r\n"
+    "\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAIN_ACCEL ACCELERATORS
+BEGIN
+VK_F13, IDM_CHANGEDEVICE, VIRTKEY, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Change device...",           IDM_CHANGEDEVICE
+        MENUITEM "&View readme",                IDM_HELP
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDM_EXIT
+    END
+    POPUP "Game"
+    BEGIN
+        MENUITEM "Debug Mode",                  ID_GAME_DEBUGMODE
+        MENUITEM "Play Mode",                   ID_GAME_PLAYMODE
+        MENUITEM "Demo Mode",                   ID_GAME_DEMOMODE
+        MENUITEM "Server mode",                 ID_GAME_SERVERMODE
+        MENUITEM SEPARATOR
+        MENUITEM "change appearance",           ID_GAME_FUNCTION1
+        MENUITEM "ParaID&E ...  (F5)",          ID_GAME_FUNCTION2
+        MENUITEM "GUI Inspect  (F3)",           ID_GAME_FUNCTION3
+        MENUITEM "Log file activity",           ID_GAME_FUNCTION4
+    END
+    POPUP "Screen Shot"
+    BEGIN
+        MENUITEM "capture low-res still image    F11", ID_SCREENSHOT_CAPTURELOW
+        MENUITEM SEPARATOR
+        MENUITEM "Toggle GUI    F8",            ID_TOGGLE_GUI
+        MENUITEM SEPARATOR
+        MENUITEM "Begin Recording Video",       ID_SCREENSHOT_BEGINRECORDINGVIDEO
+        MENUITEM "End Recording Video",         ID_SCREENSHOT_STOPRECORDINGVIDEO
+        MENUITEM "Pause/Resume Recording \tF9", ID_SCREENSHOT_PAUSE_RESUME
+    END
+    POPUP "Help"
+    BEGIN
+        MENUITEM "About ...",                   ID_HELP_ABOUT
+    END
+END
+
+IDR_POPUP MENU
+BEGIN
+    POPUP "Popup"
+    BEGIN
+        MENUITEM "&Go/stop",                    IDM_TOGGLESTART
+        MENUITEM "&Single step",                IDM_SINGLESTEP
+        MENUITEM SEPARATOR
+        MENUITEM "&Change device...",           IDM_CHANGEDEVICE
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       IDM_EXIT
+    END
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

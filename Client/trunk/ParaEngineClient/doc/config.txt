@@ -1,0 +1,12 @@
+-- ParaEngine startup settings. Setting fields must appear in the given order.
+StartFullscreen = false
+ScreenWidth = 1024
+ScreenHeight = 768
+-- hardware fullscreen MultiSample AntiAliasing(AA): 0 to disable;2 to enable;4 is better
+MultiSampleType = 2
+-- 0 default quality, 1 for higher quality. the higher value, the more quality
+MultiSampleQuality = 0
+-- default is editor/notepad.exe, UltraEdit is another good choice if one has it.
+ScriptEditor = C:\Program Files\UltraEdit\uedit32.exe
+-- initial game effect set, 0 is recommended. possible value is [1024, 0,1,2,-1,-2]. 1024 means FF, otherwise the larger the better. 
+GameEffectSet = 0

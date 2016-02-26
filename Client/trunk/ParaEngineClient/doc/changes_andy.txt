@@ -1,0 +1,76 @@
+ParaEngine changes
+@author WangTian
+
+2007/7/31
+- ParaUITexture ParaUIObject::CreateTexture(const char *name,const char *texturename)
+- GUITextureElement * AddElement(const GUITextureElement *pElement,const char*  name=NULL)
+	- bind the original string from old texture element to new element, if texturemap already bind the name
+	- Add new texture element to texturemap if texture map haven't bound the name
+	
+2007/7/3
+- I'm baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaack
+
+2006/9/26
+- NPLRuntime.cpp Line 789:
+	while(m_pNetPipe && (packet = m_pNetPipe->Receive()) != NULL)
+
+2006/9/4
+- TODO: Review RakNet
+- TODO: Review NPLNetworkLayer
+- TODO: Review Last year notes
+- TODO: Continue the Audio Engine documentation
+
+2006/9/3
+- VSS add vc8 project and solution files with the postfix: _vc8
+- NOTE: if add new files to either version of the project, add the same to the other
+- TODO: Fix the warnings and error in VC8 compilation
+
+2006/9/2
+- Reinstall system, oops.
+- DON'T use JB88F-WT2Q3-DPXTT-Y8GHG-7YYQY for Windows Server 2003, SP1 will detect the stealing SN
+- Use JCGMJ-TC669-KCBG7-HB8X2-FXG7M
+
+2006/9/1
+- Add SkipDialog function in the AudioEngine.
+- Implement static 3DSound Source: play, pause, resume, stop.
+- Distance DSP support.
+- XACT DSP editing.
+
+2006/8/31
+- Design Dialog and 3DSound, details in doc.
+- Implement Dialog: play, pause, resume, stop.
+- Implement full streaming support: Dialog.
+- Cue pointer destroy. prepare --> play --> stop --> destroy.
+- Finish all Audio Engine, Background, Ambient and UI functions.
+
+2006/8/30
+- Get/Set listener's sound output format (stereo or 5.1 sound) (unsupport).
+- TODO: /// comment style to support doxygen.
+- Design 3DSound and layered backgournd ambient and friction.
+- Implement full streaming support: Background.
+
+2006/8/29
+- EnableAudioBank and DisableAudioBank to initialize and cleanup the audio bank resource.
+- Allow backgournd music playback: play, pause, resume, stop.
+- Get/Set volume of categories.
+- Category modify: play, pause, resume, stop.
+- EnableBGMusic & DisableBGMusic reorganized.
+- Allow ambient music playback: play, pause, resume, stop.
+
+2006/8/28
+- TODO: DoWork() doesn't work.
+- Full Audio Engine interface defination, see more detail in AudioEngine.doc.
+	- Audio Engine interface devided into following sections:
+		- Audio Engine, Background, Dialogue, Ambient, UI, 3DSound, Interactive.
+	- naming conventions.
+
+TODO: 2006/8/21 by LXZ
+	- drag and drop of all files in the database field interface should be implemented. See the drop code of a typical text control in TestForm.cs in ParaIDE.
+	- Item database:  
+		(1) in C# only, given an ID, show the result in the dialog, allowing user to modify and update.
+		(2) in NPL, given an category, a page size, and a page number, get a list of all items in that page. Since this is not called often, just return all data fields.
+	
+2006/8/9
+	- Add SQL script in directory: Resource Files/Kids_SQL_script/*.sql
+	- SQL script may change during the data provider coding
+	TODO: data provider

@@ -1,0 +1,44 @@
+Your unlock key is 6780fbf3-ee96-4ffe-9e6f-14b2b13afb9b
+
+This key is only for you, don't redistribute it!
+
+To protect the full version, you should use unlock key. The unlock key removes "DEMO VERSION" from the 
+center of a f-in-box window.
+
+After creating a f-in-box window, set the unlock key for the window:
+
+[ VC++ ]
+
+HWND hwnd_FPC = FPC_CreateWindow(...);
+
+FPC_SetContext(hwnd_FPC, "6780fbf3-ee96-4ffe-9e6f-14b2b13afb9b");
+
+
+[ VB6 ]
+
+' Declaration
+Private Declare Sub FPC_SetContext Lib "f_in_box.dll" _
+    (ByVal hWnd As Long, ByVal Context As String)
+
+...
+
+' Usage
+
+    'Create flash player window
+    FlashPlayerControlWnd = FPC_CreateWindow( _
+                                        hFPC, _
+                                        0, _
+                                        vbNullString, _
+                                        WS_CHILD Or WS_VISIBLE, _
+                                        PlaceHolder.Left, PlaceHolder.Top, _
+                                        PlaceHolder.Width, _
+                                        PlaceHolder.Height, _
+                                        hWnd, 0, _
+                                        App.hInstance, _
+                                        ByVal 0)
+
+    FPC_SetContext FlashPlayerControlWnd, "6780fbf3-ee96-4ffe-9e6f-14b2b13afb9b"
+
+
+If you have any questions, write to our support:
+http://www.f-in-box.com/support.html

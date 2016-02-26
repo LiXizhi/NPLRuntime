@@ -1,0 +1,123 @@
+-- ParaEngine Install file
+-- Author: LiXizhi
+-- Files used during deployment
+-- this file and "temp/filelog.txt" are used by the CFileLogger.h. 
+-- usage: 
+-- (1) define LOG_FILES_ACTIVITY in ParaEngineAPP.cpp. If it is not debug version, also define FILE_LOGGER_HOOK in FileManager.cpp 
+-- (2) run the application as many times as possible, and make sure all files have been covered at least once during these runs. The result will be at "temp/filelog.txt"
+-- (3) delete all files in ./_InstallFiles/ directory, since the extractor will not override older files. A clean rebuild requires deleting all files in this destination directory.
+-- (4) call CFileLogger::MirrorFiles("_InstallFiles/"), or define EXTRACT_INSTALL_FILE in ParaEngineAPP.cpp. All files will be copied to _InstallFiles/ directory.
+-- 
+-- Installer build procedure
+-- (1) Option1: Enable LOG_FILES_ACTIVITY in debug build and run the game as many times as possible until "temp/filelog.txt" contains all game files. 
+--	   Option2: as soon as the application starts, click menu->game->Log to file. this will log all files until the application exits. However, it will miss files before we click the menu item. Hence do it only when there is minor changes.
+-- (2) Copy release executable from release folder to root folder
+-- (3) Delete old files under./_InstallFiles/, generally they are only the script, model and texture folder.
+-- (4) Start the debug version game and exit with exporting "temp/filelog.txt" to ./_InstallFiles/.
+-- (5) Rename executable name from ./_InstallFiles/paraworld.exe to ./_InstallFiles/kidsmovie.exe or whatever.
+-- (6) copy 5 folders under ./_InstallFiles/: ./model, ./character, ./script, ./Texture, ./terrain, into main.zip file
+-- (7) copy the main.zip file to the root directory and run the debug version to generate the main.pkg file. Delete main.zip and move main.pkg to ./_InstallFiles/main.pkg
+-- (8) Start setup VS solution at ./ParaInstall/KidsMovie/KidsMovieCreator/ and rebuild. 
+-- (9) Run the NSI script to generate the final install file.
+-- (10) The all-in-one installer is at KidsMovieCreator_1.0.1.0_en.EXE, make it a zip file for CRC check at upload time.
+-- 
+-- Building Install Notes:
+-- (1) go to ./_InstallFiles/ directory, and package all read-only data files into "main.zip". (optional)Run the debug version exe to change zip to pkg file.
+-- (2) DirectX redist needs to be installed
+-- (3) Ageia PhysX needs to be installed and copyright info needs to be included in the About... section and a copy of the software needs to be sent to ageia at production time.
+--     HOW TO WITH INSTALLSHIELD: add PhysX installer file, add custom action that run the file with command /quiet, add DoAction with condition 1 at the user interface dialog SetupCompleteSuccess's OK button event
+-- (4) edit script/mainstate.lua and change ReleaseBuild = true; Edit login.ini and change to full screen mode as the default mode. 
+-- (5) xmodels/main.pkg or xmodels/main.zip files: 
+--     DONOT include: _emptyworld, database files, world files, config files, video files, root files, plugin files, audio files, temp files, etc.
+--     INCLUDE 5 folders: ./model, ./character, ./script, ./Texture, ./terrain,
+--     Sometimes, we do not encode localization files at script/lang in pkg or zip files.  
+-- (6) the following dlls are automatically added by installer: dbghelp.dll, Microsoft.DirectX.dll,msvcp71.dll,msvcr71.dll, msvcrt.dll, Xceed*.dll needs to be installed if ParaIDE are installed with the SDK
+-- (7) rename executable name from paraworld.exe to kidsmovie.exe or whatever.Use the approprite icon file at the proper index both in exe resource file and setup shotcuts. 
+--     NOTE: when creating shotcut in INSTALL SHIELD, the working directory must be the same as the executable file.  
+--     MEMO: INSTALL SHIELD: create a shotcut to product website(s), readme, copyright, exe, and uninstall in the windows menu. And shotcut to exe in desktop.
+-- (8) use proper license file. 
+------------------------------------------------------
+-----------------------
+-- Root
+-----------------------
+ParaWorld.exe
+ParaAllInOne.dll
+PhysXLoader.dll
+NPLWebServiceClient.dll
+NPLWebServiceClientLib.dll
+jabber-net.dll
+copyright.txt
+copyright_product.txt
+readme.txt
+ParaEngine.sig
+ParaEngineManaged.dll
+File MozHTMLRenderer.dll
+ParaIDE.dll
+File 2005-Wrappers.dll
+FreeImage.dll
+SQLite3.dll
+SQLite.dll
+SQLite.NET.dll
+Texture/Flash.ocx
+Texture/flvplayer.swf
+ParaEngine.sig
+script/*.lua
+-----------------------
+-- config
+-----------------------
+config/config.txt
+config/local.ini
+config/npl.syntax
+config/bootstrapper_gameserver.xml
+-----------------------
+-- Mozilla HTML renderer
+-----------------------
+xul.dll
+xpcom.dll
+plds4.dll
+plc4.dll
+nspr4.dll
+js3250.dll
+chrome/*.*
+components/*.*
+greprefs/*.*
+plugins/*.*
+res/*.*
+-----------------------
+-- databases
+-----------------------
+database/Account.db
+database/Kids.db
+database/characters.db
+database/NameSpaceBinding.db
+database/localMarks.db
+database/mapplayers.db
+-----------------------
+-- audio
+-----------------------
+Audio/Global.xgs
+Audio/Kids/Kids.xsb
+Audio/Kids/Kids-Stream.xwb
+Audio/Kids/Kids-InMemory.xwb
+-----------------------
+-- Temp
+-----------------------
+temp/test.txt
+-----------------------
+-- video files
+-----------------------
+--video/paralogo.wmv
+
+-----------------------
+-- Other necessary files
+-----------------------
+Texture\ripple.dds
+Texture\ripple\colored\*.dds
+Texture\ripple\*.dds
+
+
+-----------------------
+-- Cartoon faces
+-----------------------
+character/v3/CartoonFace/*.png
+character/v3/CartoonFace/*.dds

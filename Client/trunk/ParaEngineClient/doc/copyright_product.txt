@@ -1,0 +1,49 @@
+COPYRIGHT NOTICE and AGREEMENT to products based on ParaEngine. 
+
+Preamble:
+ParaEngine Tech Studio ("PE") and subject to all the copyright terms defined in this doc, unless otherwise declared 
+in the source code files. 
+
+Term 1 Software Retaining.
+One can only retain a copy or a partial copy of the source code and related software ("the Software"), 
+with the direct permission of ParaEngine Tech Studio ("PE"). 
+
+Term 2 Prohibitions.
+By retaining the Software, you are agreeing to be bound by the following terms. 
+You, whether directly or indirectly, shall not do any of the following acts:
+
+a.	rent the Software;
+
+b.	sell the Software;
+
+c.	lease or lend the Software;
+
+d.	in any other manner and through any medium whatsoever commercially exploit the Software or use the Software for any commercial purpose;
+
+e.	disassemble, reverse engineer, decompile, modify (except as permitted by Term 3. hereinbelow) or alter the Software;
+
+f.	translate the Software;
+
+g.	reproduce or copy the Software (except as permitted by Term 3. hereinbelow);
+
+h.	remove or alter any legal notices or other markings or legends, such as trademark and copyright notices, affixed on or within the Software; or
+
+i.	remove, alter, modify, disable or reduce any of the anti-piracy measures or components contained in the Software, including, without limitation, the license key system and the license key check.
+
+Term 3 Permitted Uses.
+a. So long as you fully comply, at all times, with this agreement, ParaEngine Tech Studio ("PE") grants to you 
+limited right to study the Software or use the Software to create applications for non-commercial purposes.
+
+Term 4.	Intellectual Property Rights.  
+The Software and all copyrights, trademarks and all other conceivable 
+intellectual property rights related to the Software are owned by PE and are protected by 
+copyright laws, international treaty provisions and all applicable law. You agree to use your best efforts to 
+see that any user of the Software complies with terms of this document.  You agree that you are receiving 
+a copy of the Software by direct permission of PE and the main author.
+
+Term 5.	NO WARRANTIES.  
+PARAENGINE TECH STUDIO ("PE") AND THE AUTHORS OF PARAENGINE DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS OR IMPLIED, INCLUDING, 
+BUT NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, WITH RESPECT TO THE SOFTWARE.  
+PE DOES NOT WARRANT THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED OR ERROR FREE OR THAT THE SOFTWARE WILL MEET 
+YOUR SPECIFIC REQUIREMENTS.  ADDITIONAL STATEMENTS, WHETHER ORAL OR WRITTEN, DO NOT CONSTITUTE WARRANTIES BY PE AND SHOULD 
+NOT BE RELIED UPON.  THIS TERM 5. SHALL SURVIVE CANCELLATION OR TERMINATION OF THIS AGREEMENT.

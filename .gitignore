@@ -8,6 +8,9 @@
 *.user
 *.ncb
 *.aps
+*.ffs_db
+*.fxo
+*.ffs_gui
 */obj/
 .DS_Store
 redist/
@@ -35,7 +38,7 @@ WebAPI/
 Client/*
 !Client/trunk/
 Client/trunk/*
-#!Client/trunk/ParaEngineClient/
+!Client/trunk/ParaEngineClient/
 
 !Server/
 Server/*

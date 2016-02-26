@@ -1,0 +1,60 @@
+/** @page ParaEngine_events	ParaEngine Events
+@author LiXizhi
+
+-- bind the event register example
+function helloworld.ReBindEventHandlers()
+	NPL.load("(gl)script/ide/event_mapping.lua");
+	-- register mouse click event handler
+	ParaScene.RegisterEvent("_mclick_helloworld_pick", ";helloworld.OnMouseClick();");
+	-- register mouse move event handler
+	ParaScene.RegisterEvent("_mmove_helloworld_pick", ";helloworld.OnMouseMove();"); 
+	-- register mouse down event handler
+	ParaScene.RegisterEvent("_mdown_helloworld_pick", ";helloworld.OnMouseDown();");
+	-- register mouse up event handler
+	ParaScene.RegisterEvent("_mup_helloworld_pick", ";helloworld.OnMouseUp();");
+	-- register key event handler
+	ParaScene.RegisterEvent("_k_helloworld_keydown", ";helloworld.OnKeyDownEvent();");
+	-- register networking event handler
+	ParaScene.RegisterEvent("_n_helloworld_net", ";helloworld.OnNetworkEvent();");
+	-- register system event handler
+	ParaScene.RegisterEvent("_s_helloworld_system", ";helloworld.OnSystemEvent();");
+end
+
+- name: mouse events
+	- desc: fired when the user clicked the mouse on some controls or 3D scene.
+	- type: mouse
+	- scode: mouse_button="{left|middle|right|}";mouse_x=X;mouse_y=Y;mouse_dx=deltaX;mouse_dy=deltaY;mouse_wheel_delta = {-1|1};
+	- param X: screen X position
+	- param Y: screen Y position
+
+- name: key events
+	- desc: never fired
+	- type: key
+	- scode: virtual_key = a value in Event_Mapping table.see NPL.load("(gl)script/ide/event_mapping.lua");
+	- scode: 
+	
+- name: UI frame move event
+	- desc: fired whenever a UI object is rendered with a elapsed time larger than 0.
+	- type: UI
+	- scode: deltatime = elapsed time in second since last call
+
+- name: editor events
+	- desc: fired when user performs a certain editing function over the scene
+	- scode: event_type = {
+			ED_SELECTION_CHANGED = 0,
+			ED_OBJECT_DELETED,
+			ED_OBJECT_CREATED,
+			ED_OBJECT_MODIFIED,
+			ED_SCENE_LOADED,
+			ED_SCENE_UNLOADED,
+			ED_SCENE_SAVING,
+			ED_SCENE_SAVED,
+		};
+	- param: more information, please see Editor_events enum in "Events_def.h"
+
+- name: network events
+	- desc: fired whenever NPL establish or closes a TCP connection 
+	- type: network
+	- scode: {code=, nid=string, msg=nil}
+	where the code can be NPL_ConnectionEstablished=9, 	NPL_ConnectionDisconnected=12
+*/

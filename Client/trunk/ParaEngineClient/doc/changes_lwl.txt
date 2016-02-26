@@ -1,0 +1,313 @@
+BUG 2006/8/1: when switching characters, the attribute window content scroll bar position changes. 
+
+2006/7/27 TODO: fix the Z-order of highlighting and what if container size does not fully contain the highlight animation
+
+//TODO:[LiXizhi]2006/5/3
+(1) I do not know if following is bug: Multiple EM_MOUSEMOVE will be generated in a single frame, where dx,dy is (0,0). 
+	Moreover, at 20-27 FPS, EM_MOUSEMOVE will lose accuracy significantly. So I resolve to the old method for getting mouse delta:GetMouseXDeltaSteps().
+(2) alpha testing is enabled for GUI control? Ask YZL for the transparency problem
+	
+	
+TODO: Implement the following modifier dialog. 
+	- DummyNPCRandomWalker: on "CRpgCharacter" : make the current NPC a dummy NPC walking randomly in a given radius. GUI Parameter: radius. 
+		Comments: Just devise long enough sequence to make it look random. Use sequence controller in the On_Load event handler. Use database field state0 and state1 to retrieve parameter.
+	- DummyNPCSimpleDialog: on "CRpgCharacter": A traditional NPC in RPG game, when clicked will talk a string to the user. 
+	- DummyNPCParaEngine: An NPC that introduces ParaEngine. 
+
+TODO: add CGUIProfile:IAttributeField: so that the script can set the default texture set for all kinds of controls. 
+	such as {button100_30, button50_10, editbox100_30, editbox50_20, etc...}
+	implement IAttributeField in CGUIProfile. CGUIProfile can be initially implemented as a singleton, 
+	but all CGUIBase may has a member pointer of this type, which always initially point to the singleton object(the default CGUIProfile).
+	This is useful in the multiple demos we will build, since most of the time, we can modify the appearance of a group of GUI by just modifying their shared CGUIProfile object. 
+2006/7/28
+- finish "NstageAnimation" effect. This effect will change displaying image from none, stage1, .... stagen, none......
+  It has parameter "speed"(time interval for changing stage to next stage, in second)
+  "size" the number of stages.
+    
+
+2006/7/27
+- finish highlight effect framework for nealy all kinds of 2d GUI objects. To use the framework, set object.highlightstyle="4outsideArrow" for a special effect or "none" for no effect.
+  use ParaUI.SetHighlightParam(effectName, paramName, paramValue) to set parameters of an effect
+- finish "4outsideArrow" effect for 2d objects. It has parameter "speed" and "range"
+  "speed" is a float and range [0,1]
+  "range" is an int and range [0, infinity);
+
+2006/7/26
+- finish GUICanvas, .background of the GUICanvas is the mask of the 3d displayed object. So artist need to provide a mask image.
+2006/7/24
+- now "_m?" alignment type work in any situation. When, for example, ctrl.alignment = "_mt", then if parent.width<ctrl.left+ctrl.right, the ctrl will display in a place
+  where left=parent.right-ctrl.right, right=parent.left+ctrl.left
+- add GUICanvas to support displaying 3d object in a gui control. Not tested, waiting for the 3d interface.
+
+2006/7/20
+- scrollbar with new property "fixedthumb"(bool) and "thumbsize"(int) available. "thumbsize" only useful when fixedthumb=true
+- scrollbar can be binded to a container as a seperate control, you only need to set "scrollbar:SetBindingObj(containerObj);"
+  Then you can use the scrollbar to scroll a container. You need to use scrollbar:SetTrackRange(start,end) scrollbar:SetPageSize(size) to 
+  make the scrollbar work properly.
+
+2006/6/23
+- refined CharacterSentientField again according to lxz's request
+- change "mod" button in property control. It now displays a list to show the modifiers
+
+2006/6/22
+- CharacterSentientField refined according to lxz's request
+- integrate DummyNPCEmpty, DummyNPCLineWalker, CharacterSentientField together
+
+2006/6/21
+- add DummyNPCEmpty and DummyNPCLineWalker
+
+2006/6/20
+- finish ModifierCtrl, ModifierItems, CSampleModifer, modified PropertyCtrl to make it compatible for displaying and updating modifiers
+- add CharacterSentientField: on "CRpgCharacter" : A GUI that set the group ID and sentient fields of the current character.
+
+
+2006/6/16
+- rewrite CommonCtrl.ModifierCtrl
+- add ModifierItems and ModifierUICtrl
+
+2006/6/14
+- add CommonCtrl.CCtrlDropdownListBox: method: setitemlist(using a lua table for items), getSelection() Index event: onselect
+
+2006/6/13
+- fullscreen mouse cursor invisible bug fixed.
+- editbox readonly bug fixed
+
+2006/6/9
+- add CommonCtrl.CCtrlPopupMenu : method: addItem(caption,script), event: onclick for each menu item  property:left, top, autodelete
+- add CommonCtrl.CCtrlFileSelector: [editbox][...] where [...] is a button, with fileexist and opendialog interface
+- add CommonCtrl.CCtrlIntegerEditor: <[editbox]> or [editbox]<>, where <,> are two arrow buttons. with increase/decrease step option and range constrain
+- fix scissor rect outside screen bug.
+- correct updaterect when visibility changes
+- add text output of the R,G,B component of the CCtrlColorEditor
+
+2006/6/8
+- add CommonCtrl.CCtrlColorEditor : event: onchange property:top, left, width, height, parent, r, g, b
+- add CommonCtrl.CCtrlVectorEditor: method: getvector(int nDimension) event: onchange property: x, y, z, w, top, left, parent
+  width and height are fixed
+
+2006/6/7
+- now the window user click on will be the toppest window. it is only for the windows that attaches to root (the top-level windows)
+- add the color_editbox, in script\ide\color_editbox.lua, see the file for usage.
+
+2006/6/6
+- add editbox.ismodified. this boolean is true whenever the editbox is changed. after the onchange event, the value will be set to false
+- onchange event will trigger only if ismodified==true
+- editbox.text property will not make ismodified true
+- add container.popup property. if a container.popup is set true, the container will automatically get input focus. when it lost focus, it will destroy itself.
+  container.candrag will be set false if popup is set true. one should first attach a container to root or other object before setting popup.
+  Example: 
+  --create a container name a
+  a:AttachToRoot();
+  a.popup=true;
+
+2006/6/5
+- onchange event now has the following behavior.
+  editbox: lost focus or pressed key ENTER will trigger the event
+  slider: any value change will trigger the event
+  other controls: never trigger the event
+
+2006/6/2
+- fix the when start with fullscreen, the gui does not response bug. 
+
+2006/5/30
+- make the scroll of container more accurate
+- make adding controls to scrollable container about 2 times faster.
+- make scrollbar of the container response to the clean of container children 
+
+2006/3/18
+- add CSingleton class for holding singleton for any class. This singleton class is designed to be thread-safe and is based on policy
+- add CObjectManager to manage and clone common objects through IObject interface.
+
+2006/3/17
+- Add CEventBinding class for event mapping and script binding. This class can map an pre-defined event to another. It can bind a script to an event
+- Add IObject interface for common object manage interface. 
+
+2006/3/16
+- update the CICConfigManager to support array type configuration
+
+2006/3/11
+- updates the SCREENSHOTSYSTEM. The new system will not need to select codec explictly by user. The default codec can be changed through SetUsingCodec method.
+- add script support for SCREENSHOTSYSTEM. the namaspace is ScreenShot. It has 5 functions: SetEncodeMethod, BeginMovieCapture, PauseResumeCapture, EndMovieCapture and TakeScreenShot
+
+2006/3/10
+- finish a GUIVideo control, which is used to play a video file in a GUI control, you can just add it as you add a button, it provides LoadFile, PlayVideo, PauseVideo, StopVideo, GetVideoPos, GetVideoDuration;
+- finish a CGraphBuilder class, which is used to provide an interface for play and control a video file
+- known problems on the above class:
+  1. The performance is bound to the codec you installed on the system.
+  2. Sometimes the output is not correct. In most cases, its your codec's fault. Try to install the correct codec and restart the system. 
+  3. All known problems on my machine are: Popping up a new window instead of playing the content in the place you want. 
+     Unable to debug when using certain kind of codec. Crash unexpectedly. 
+
+2006/3/8
+TODO: refactor the message handle process in CGUIEvent.
+TODO: Add support to keyboard and mouse replay.
+
+2006/3/3
+- finish the CICConfigManager. See the source file for detailed description
+
+2006/2/27
+- Capture of mouse cursor supported in Screen shots. Caller can choose whether to capture the mouse cursor when capturing screen shots.
+
+2006/2/24
+- change behavior of CGUIListBox, SPACE no longer triggers the dougle click event, Instead, RETURN triggers the double click event
+- Rearrange the Windows Message processing in several places to achieve a consistent Mouse behavior and cursor appearance.
+
+2006/2/21
+- Mouse cursor render updates. The mouse cursor is smooth regardless of the framerate and mouse events are all queued for the frame move.
+- Mouse cursor image format changes. The new mouse cursor image should be 32*32, with only two level of transparence--opaque or transparent.
+
+
+2006/2/20
+- new clipping method--using scissor rectangle-- introduced, results are as good as the old way of stencil buffer, but performance is much the same as rectangle clip.
+
+2006/2/16
+- disabled stencil buffer, use rectangle clip instead, greatly improved performance, especially when using a lot of not-fastrender containers.
+
+2006/2/14
+- TODO: Lua interface:
+        1. debug information must not be a block of unknown characters --done
+        2. report misuse of functions and parameters.
+- updates lua library to 5.0.2. Recompiles the lua library. Merges LuaCore.lib and LuaStdLib.lib into one file--lua50_debug.lib or lua50_release.lib. 
+  So debugging Lua functions is available.
+- Lua script errors are correctly logged, no unknown characters exists anymore.  
+
+
+2006/1/20
+- add slider support to GUI IDE
+- add listbox support to GUI IDE
+- Update some GUI IDE controls, Container properties--fastrender, scrollbarwidth, receivedrag-- can be changed using IDE. 
+
+2006/1/19
+- "GUI How to program" updated, add more detailed reference and update to response to recent change in GUI
+
+2006/1/18
+- add garbage collect support for the GUI objects, the gui object's resource now have correct reference count
+
+2006/1/16
+- finish CGUISlider, this class is a slider just as windows control
+- Adjust the event system for button, now the click responses more quickly, but it still not perfect when the framerate is low. The only solution is to
+  use seperate thread to handle mouse.
+
+2006/1/12
+- finish CGDIRegion, this class contains a point list and a edge list which are used to perform clipping on different rectangle and polygons.
+
+2006/1/10
+- finish CGDIDC, CGDIGraphics, CGDIBrush, CGDIPen, CGDIGraphicsPath, we can use GDI to draw on any target. This provides owner draw support for advance drawing
+
+
+2006/1/9 
+- New debug support, Add InternalError() function to interpret the HRESULTs, marco OUTPUT_DEFAULT_ERROR is a warpper for this function
+
+2005/12/19
+- Add highlight support to tooltip, use ParaUI.GetToolTip() to get the tooltip instance. Then use its properties "automaticdelay", "autopopdelay", "initialdelay" and "behavior".
+  Use its function "Highlight(parauiobject, text)" to highlight an object. Highlight will only appear once on an object. It is auto-deleted afterwards.
+TODO: the lua can't correctly interpert a wrong input parameter. For instance, sending a int to a char* parameter. The lua can't stop the operation and the 
+receiver function receive an int but it thinks it is a char *. So the function will go wrong and the function has nothing to do with it.
+
+2005/12/16
+- Adjust font appearance and size.
+- finish CGUIToolTip
+
+2005/12/15
+- fix bugs in ICDBManager
+
+2005/12/13
+- LifeTime for every object is enabled. use ParaUIObject.lifetime to get and set the life time value, which decrease by 1 every frame. 
+  The object will be automatically deleted when its lifetime is zero. It will be permanant if lifetime is negative
+- fastrender for container. the container will render fast if you set the container's fastrender property to true
+
+2005/12/12
+- finish CICMapTrace class, it can be used to get the past route of the player, see it's header for how to use it.
+
+2005/12/7
+- outbound scrolling and selecting in editbox and scrollbar supported
+- CGUIListBox finished
+
+2005/12/6
+- Add SetCapture() ReleaseCapture() GetCapture() to CDirectMouse which functions like the windows functions with the same name.
+- ParaUIObject.font's format change to "Arial;11;true" which means font "Arial" size in pixel "11", bold is true;
+- Fully support number pad (not tested because I don't have a number pad)
+
+2005/12/2
+- the mouse now moves nearly as fast as you are using in windows
+- default value synchronized with windows system, require windows 2000 and above to support these feature.
+
+2005/12/1
+- use property receivedrag to control whether a control can receive drag.
+- fix the n-overlapped-container-drawing problem (n>=3)
+- fix the mouse-lock problem when the program starts
+
+2005/11/30
+- editbox and imeeditbox supports double click to select all texts.
+- improve performance. if a control is completely outside a container, it will not draw.
+
+2005/11/28
+- support unlimit length of text on the mouse cursor. mouse cursor default text is Arial, size 11, BOLD(LoadGUIFont default), color is green
+
+2005/11/22
+- change the operator new and delete back, although i think there should be a way to stop user from calling new and delete directly
+
+2005/11/21
+- add several performance monitor functions. To use them, compile with _PERFORMANCE_MONITOR definition. Use PERF_BEGIN(countername) to start a counter
+  PERF_END(countername) to end a counter, the time span between BEGIN and END will be recorded. The same counter can be BEGIN and END several times and 
+  the data will be accumulated to form a final report by calling PERF_REPORT(). The report is written to perf.txt in the working directory. 
+  PERF_CLEAR(countername) can delete a counter.
+
+2005/11/20
+- finish CICRecordSet,CICDBManager, CICRecordSetItem. Now the sqlite warpper is finished. Refer to the reference for usage of these classess
+
+2005/11/18
+- finish the maptrace class. the class records player moving data and store them to database.
+
+2005/11/16
+- A sqlite warpper finished. The warpper provides easy and one line sql operation. It also supports complex and user-define sql operations
+
+2005/11/9
+- changing all internal GUI names to unicode and retains the same scripting interface
+
+2005/11/8
+- add error log to all script interface, now any incorrect calling of the gui apis will write error log in the log file
+
+2005/11/4
+- by calling GetChild(name) of a container, we can get the vertical and horizontal scrollbar of it. Then we can change the scrollbars' appearence as other objects.
+- This function also gets the direct children of a container. Name of the vertical scrollbar and horizontal scrollbar are container.name + ".vscrollbar" or ".hscrollbar"
+- now even if the background of a object is invalid. the rest of the object can still be drawn
+
+2005/10/29
+- fix bugs in direct input when it interacts with windows message system.
+
+2005/10/27
+- add support to lock and hide mouse cursor. also rewrite parts of the direct input module.with better encapsulation
+
+2005/10/22
+- update keyboard and mouse handling. new keyboard handling supports KOF required level of keyboard handling.  
+
+2005/10/20
+- add support to 3d input handling. 3d environment can now detect whether it should handle mouse or keyboard event seperately.
+- new focus strategy. now clicking on empty will make input box lose focus.
+
+2005/10/18
+- fix several bugs in the GUI
+
+2005/10/13
+- rewrite the GUI scripts to fit the new resource management strategy.
+
+2005/10/11
+- The GUI resource architecture changes. Now it is the same as what I discribe in "4.2 GUI How to program". 
+  The new architecture provides better control of fonts and texture, together with more user-friendly font 
+  and texture accessing method.
+
+2005/10/9
+- The GUIElement structure should seperate into two parts. I will do that later.
+
+2005/9/28
+- version 0.5 of GUI IDE is finished. It supports drag to move, change background image, change miscellaneous properties. 
+	Any operation is with immediately feed back (from control to IDE or from IDE to control).
+
+2005/9/26
+- add #define MAX_STRING_LENGTH 0xffff in dxstdafx.h, this is used in the safe string operation.
+
+2005/9/19
+- luabind update to 1.24
+- boost update to 1.32, directory moved to luabind/boost
+
