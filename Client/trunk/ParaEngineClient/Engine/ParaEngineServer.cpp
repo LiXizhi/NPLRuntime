@@ -22,7 +22,7 @@
 
 int main(int argc, char **argv)
 {
-	printf("            ---ParaEngine Server V%d.%d---         \n", 1, 0);
+	printf("            ---ParaEngine Server V%d.%d---         \n", 1, 1);
 	int exit_code = 0;
 
 	bool bServiceMode = false;

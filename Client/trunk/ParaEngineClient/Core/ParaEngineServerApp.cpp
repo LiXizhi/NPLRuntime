@@ -28,6 +28,11 @@ ParaEngine::CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
 	StartApp(lpCmdLine);
 }
 
+DWORD ParaEngine::CParaEngineApp::GetCoreUsage()
+{
+	return PE_USAGE_SERVICE;
+}
+
 CParaEngineApp::~CParaEngineApp()
 {
 	StopApp();
@@ -84,7 +89,6 @@ HRESULT CParaEngineApp::StopApp()
 	m_pRootScene.reset();
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
-	m_pGUIRoot.reset();
 
 	// Clean up all threads
 	CAsyncLoader::GetSingleton().CleanUp();
@@ -107,6 +111,8 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 			g_last_time = fTime;
 		}
 	}
+	OnFrameEnded();
+
 	return S_OK;
 }
 #endif

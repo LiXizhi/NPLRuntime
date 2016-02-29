@@ -245,9 +245,6 @@ namespace ParaEngine
 
 		/** return true if it is currently under windowed mode. */
 		virtual bool GetIgnoreWindowSizeChange();
-		
-		/** get the NPL runtime system associate with the application. NPL provides communication framework accross different language systems. */
-		virtual NPL::INPLRuntime* GetNPLRuntime();
 
 	public:
 		/** this function should be called when the application is created. I.e. the windows HWND is valid.
@@ -455,6 +452,9 @@ namespace ParaEngine
 		virtual int32 GetTouchPointX(){ return m_touchPointX; }
 		virtual int32 GetTouchPointY(){ return m_touchPointY; }
 
+
+		/** server mode has no user interface */
+		virtual bool IsServerMode();;
 	public:
 		/// default to false. if true, we will lower frame rate when the window is not focused. 
 		void SetAutoLowerFrameRateWhenNotFocused(bool bEnabled); 

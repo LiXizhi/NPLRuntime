@@ -69,13 +69,13 @@ namespace ParaEngine
 	typedef boost::shared_ptr<CFileSystemWatcher> CFileSystemWatcherPtr;
 
 	/** file system watcher service. this is a singleton. */
-	class CFileSystemWatcherService
+	class CFileSystemWatcherService : public CRefCounted
 	{
 	public:
 		typedef std::map<std::string, CFileSystemWatcherPtr > file_watcher_map_t;
 		
 		CFileSystemWatcherService();
-		~CFileSystemWatcherService();
+		virtual ~CFileSystemWatcherService();
 
 		static CFileSystemWatcherService* GetInstance();
 

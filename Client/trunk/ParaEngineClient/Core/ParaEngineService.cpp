@@ -66,6 +66,7 @@ void CParaEngineService::handle_timeout(const boost::system::error_code& err)
 				else if (ans == 10)
 				{
 					StopService();
+					return;
 				}
 			}
 		}

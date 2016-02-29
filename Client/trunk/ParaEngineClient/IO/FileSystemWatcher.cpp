@@ -9,12 +9,11 @@
 #include "ParaEngine.h"
 
 #ifndef PARAENGINE_MOBILE
-
+#include "CSingleton.h"
 #include "FileSystemWatcher.h"
 #include <boost/bind.hpp>
 
 using namespace ParaEngine;
-
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -30,12 +29,12 @@ ParaEngine::CFileSystemWatcherService::CFileSystemWatcherService()
 
 ParaEngine::CFileSystemWatcherService::~CFileSystemWatcherService()
 {
+	Clear();
 }
 
 CFileSystemWatcherService* ParaEngine::CFileSystemWatcherService::GetInstance()
 {
-	static CFileSystemWatcherService g_sington;
-	return &g_sington;
+	return CAppSingleton<CFileSystemWatcherService>::GetInstance();
 }
 
 CFileSystemWatcherPtr ParaEngine::CFileSystemWatcherService::GetDirWatcher( const std::string& name )
@@ -85,17 +84,22 @@ void ParaEngine::CFileSystemWatcherService::DeleteDirWatcher( const std::string&
 
 void ParaEngine::CFileSystemWatcherService::Clear()
 {
-	if(m_io_service_work)
+	try
 	{
-		m_io_service_work.reset();
-		//m_io_service.stop();
-
-		m_file_watchers.clear();
-		if(m_work_thread)
+		if(m_io_service_work)
 		{
-			m_work_thread->join();
+			m_io_service_work.reset();
+			m_file_watchers.clear();
+			if(m_work_thread)
+			{
+				m_work_thread->join();
+			}
+			m_io_service.reset();
 		}
-		m_io_service.reset();
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("warning: CFileSystemWatcherService service exit\n");
 	}
 }
 

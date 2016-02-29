@@ -242,7 +242,6 @@ IF(MSVC)
 			SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
 		endif(PARAENGINE_COMPILE_LIB)
 	endif(USE_LINK_TIME_CODE_GENERATION)
-	
 
 	# /GR- Remove RTTI to miminize the executable size
 	# /Zi generate program database (PDB symbol files even in release build)
@@ -263,13 +262,13 @@ ELSE()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF()
 
-if (PARAENGINE_COMPILE_LIB)
-	SET(ParaEngineServer_Lib_FILES
-		Engine/LibInterface.cpp
-		ParaEngineServer.def
-	)
-	list(APPEND ParaEngineServer_MISC_FILES ${ParaEngineServer_Lib_FILES})
 
+SET(ParaEngineServer_Lib_FILES
+	PEServerInstall.cmake
+)
+list(APPEND ParaEngineServer_MISC_FILES ${ParaEngineServer_Lib_FILES})
+
+if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 
 	add_library(ParaEngineServer SHARED ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS} ${ParaEngineServer_MISC_FILES})
@@ -279,6 +278,10 @@ else (PARAENGINE_COMPILE_LIB)
 	add_executable(ParaEngineServer ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS} ${ParaEngineServer_MISC_FILES})	
 	# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 	# set_target_properties(ParaEngineServer PROPERTIES WIN32_EXECUTABLE true)
+if (WIN32)
+	set_target_properties(ParaEngineServer PROPERTIES OUTPUT_NAME "ParaEngineServer")
+	set_target_properties(ParaEngineServer PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineServer_d")
+endif()
 
 endif (PARAENGINE_COMPILE_LIB)
 

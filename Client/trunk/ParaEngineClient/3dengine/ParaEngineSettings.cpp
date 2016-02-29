@@ -819,7 +819,15 @@ void ParaEngine::ParaEngineSettings::SetHasNewConfig( bool bHasNewConfig )
 		CGlobals::GetApp()->SetHasNewConfig(bHasNewConfig);
 }
 
-void ParaEngine::ParaEngineSettings::EnableProfiling( bool bEnable )
+bool ParaEngine::ParaEngineSettings::IsServerMode()
+{
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->IsServerMode();
+	else
+		return true;
+}
+
+void ParaEngine::ParaEngineSettings::EnableProfiling(bool bEnable)
 {
 	CProfiler::EnableProfiling_S(bEnable);
 }
@@ -1310,6 +1318,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AppHasFocus", FieldType_Bool, (void*)SetAppHasFocus_s, (void*)GetAppHasFocus_s, NULL, NULL, bOverride);
 
 	pClass->AddField("Is32bitsTextureEnabled", FieldType_Bool, (void*)Enable32bitsTexture_s, (void*)Is32bitsTextureEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("IsServerMode", FieldType_Bool, (void*)0, (void*)IsServerMode, NULL, NULL, bOverride);
 
 	pClass->AddField("MaxMacAddress", FieldType_String, NULL, (void*)GetMaxMacAddress_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxIPAddress", FieldType_String, NULL, (void*)GetMaxIPAddress_s, NULL, NULL, bOverride);

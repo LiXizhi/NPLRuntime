@@ -8,9 +8,9 @@
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 #include "ObjectAutoReleasePool.h"
-#include "AttributesManager.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
+#include "AttributesManager.h"
 #include "PluginManager.h"
 #include "MeshPhysicsObject.h"
 #include "MeshObject.h"
@@ -23,6 +23,9 @@
 #include "RenderTarget.h"
 #include "WeatherEffect.h"
 #include "OverlayObject.h"
+#include "NPLRuntime.h"
+#include "EventsCenter.h"
+#include "AISimulator.h"
 #include "ParaEngineAppBase.h"
 
 using namespace ParaEngine;
@@ -35,13 +38,13 @@ void ParaEngine::CParaEngineAppBase::DoTestCode()
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
-	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0)
+	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL)
 {
 	InitCommon();
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
-	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0)
+	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL)
 {
 	InitCommon();
 }
@@ -60,6 +63,7 @@ CParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 void ParaEngine::CParaEngineAppBase::DestroySingletons()
 {
 	CObjectAutoReleasePool::DestoryInstance();
+	SAFE_DELETE(m_pSingletonReleasePool);
 }
 
 void ParaEngine::CParaEngineAppBase::OnFrameEnded()
@@ -172,6 +176,38 @@ const char* ParaEngine::CParaEngineAppBase::GetAppCommandLine()
 const char* ParaEngine::CParaEngineAppBase::GetAppCommandLineByParam(const char* pParam, const char* defaultValue)
 {
 	return CCommandLineParams::GetAppCommandLineByParam(pParam, defaultValue);
+}
+
+HRESULT ParaEngine::CParaEngineAppBase::FinalCleanup()
+{
+	if (!CGlobals::GetAISim()->IsCleanedUp())
+	{
+		if (CGlobals::GetEventsCenter())
+		{
+			SystemEvent event(SystemEvent::SYS_WM_DESTROY, "");
+			// set sync mode, so that event is processed immediately, since there is no next frame move. 
+			event.SetAsyncMode(false);
+			CGlobals::GetEventsCenter()->FireEvent(event);
+		}
+	}
+	// AI simulator should be cleaned up prior to NPL runtime. 
+	CGlobals::GetAISim()->CleanUp();
+	CGlobals::GetNPLRuntime()->Cleanup();
+	
+	return S_OK;
+}
+
+NPL::INPLRuntime* ParaEngine::CParaEngineAppBase::GetNPLRuntime()
+{
+	return CGlobals::GetNPLRuntime();
+}
+
+CRefCounted* ParaEngine::CParaEngineAppBase::AddToSingletonReleasePool(CRefCounted* pObject)
+{
+	if (!m_pSingletonReleasePool)
+		m_pSingletonReleasePool = new CObjectAutoReleasePool();
+	m_pSingletonReleasePool->AddObject(pObject);
+	return pObject;
 }
 
 void ParaEngine::CParaEngineAppBase::VerifyCommandLine(const char* sCommandLine, std::string &strCmd)

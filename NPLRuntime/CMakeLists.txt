@@ -21,13 +21,11 @@ set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if (PARAENGINE_CLIENT OR WIN32)
 	set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
-	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
 	else()
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib32)
 	endif()
-else(PARAENGINE_CLIENT OR WIN32)
-	# set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
 endif(PARAENGINE_CLIENT OR WIN32)
 
 set(Boost_USE_MULTITHREADED ON)
@@ -37,16 +35,15 @@ if (WIN32)
 endif ()
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system regex signals serialization iostreams chrono) 
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
 
 if (WIN32)
     # Note: LiXizhi 2010.3. there is a bug in FindBoost that one needs to link with ${Boost_LIBRARIES_static_runtime} in order to use static vc runtime time. 
-    STRING(REGEX REPLACE "\\-mt\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES}" )
-    STRING(REGEX REPLACE "\\-mt\\-s\\-s\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
-    STRING(REGEX REPLACE "s\\-gd" "sgd" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
-
+    #STRING(REGEX REPLACE "\\-mt\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES}" )
+    #STRING(REGEX REPLACE "\\-mt\\-s\\-s\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
+    #STRING(REGEX REPLACE "s\\-gd" "sgd" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
     # since we are linking statically everywhere, replace Boost_LIBRARIES with static one. 
-    set(Boost_LIBRARIES ${Boost_LIBRARIES_static_runtime})
+    # set(Boost_LIBRARIES ${Boost_LIBRARIES_static_runtime})
 endif ()
 
 if (WIN32)

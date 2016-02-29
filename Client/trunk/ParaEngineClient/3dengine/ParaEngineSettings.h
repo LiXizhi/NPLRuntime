@@ -82,6 +82,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsSlateMode_s, bool*)	{ *p1 = cls->IsSlateMode(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, IsServerMode_s, bool*) { *p1 = cls->IsServerMode(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsEditing_s, bool*)	{*p1 = cls->IsEditing(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetEditingMode_s, bool)	{cls->SetEditingMode(p1); return S_OK;}
 		
@@ -391,6 +393,9 @@ namespace ParaEngine
 		/** set editing mode. 
 		@param bEnable: true if enable. */
 		static void SetEditingMode(bool bEnable);
+
+		/** whether we are running in server mode without GUI support */
+		static bool IsServerMode();
 
 		/**The locale is what makes it possible to know what language the interface is using 
 		* and thus determine which specific code is going to be executed

@@ -30,6 +30,7 @@ namespace ParaEngine
 		virtual HRESULT StopApp();
 		virtual HRESULT FrameMove(double fTime);
 
+		virtual DWORD GetCoreUsage();
 	protected:
 		void BootStrapAndLoadConfig();
 		void InitSystemModules();

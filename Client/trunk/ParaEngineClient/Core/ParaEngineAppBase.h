@@ -5,6 +5,7 @@
 namespace ParaEngine
 {
 	class CParaEngineApp;
+	class CObjectAutoReleasePool;
 
 	/* base implementation of ParaEngine APP, shared by both mobile and pc version.  */
 	class CParaEngineAppBase : public IParaEngineApp, public CCommandLineParams
@@ -163,7 +164,7 @@ namespace ParaEngine
 		/**
 		* This function should be called only once when the application end, one can destroy game objects here.
 		*/
-		virtual HRESULT FinalCleanup(){ return S_OK; };
+		virtual HRESULT FinalCleanup();
 
 		// following contains null implementation
 		/** set the hWnd on to which we will render and process window messages.
@@ -344,7 +345,12 @@ namespace ParaEngine
 		virtual void SetResolution(float x, float y) {};
 
 		/** get the NPL runtime system associate with the application. NPL provides communication framework across different language systems. */
-		virtual NPL::INPLRuntime* GetNPLRuntime() { return NULL; };
+		virtual NPL::INPLRuntime* GetNPLRuntime();
+
+		/**
+		* we will automatically release singleton object when app stops, in the verse order when object is added to the pool.
+		*/
+		virtual CRefCounted* AddToSingletonReleasePool(CRefCounted* pObject);
 
 	public:
 		/** managing multiple 3d views */
@@ -375,6 +381,8 @@ namespace ParaEngine
 		bool m_isTouching;
 		/** the application exit code or return code. 0 means success. otherwise means a failure. */
 		int m_nReturnCode;
+		/** a pool of registered singleton object. */
+		CObjectAutoReleasePool* m_pSingletonReleasePool;
 		/** packages/ directory path */
 		std::string m_sPackagesDir;
 		/** bin/ module path */

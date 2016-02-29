@@ -81,11 +81,7 @@ void CNPLRuntime::Init()
 
 void CNPLRuntime::Cleanup()
 {
-    #ifndef PARAENGINE_MOBILE
-	ParaEngine::CFileSystemWatcherService::GetInstance()->Clear();
-    #endif
-
-	if(m_net_server)
+ 	if(m_net_server)
 		m_net_server->stop();
 
 	// web service clients shall be cleaned up prior to the NPL runtime states. 

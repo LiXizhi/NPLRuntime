@@ -419,6 +419,15 @@ namespace ParaEngine
 		virtual void SetScreenResolution(const Vector2& vSize){};
 
 		virtual float GetFPS() { return 30.f; };
+
+		/**
+		* we will automatically release singleton object when app stops, in the verse order when object is added to the pool. 
+		*/
+		virtual CRefCounted* AddToSingletonReleasePool(CRefCounted* pObject) { return pObject; };
+
+		/** server mode has no user interface */
+		virtual bool IsServerMode() { return true; };
+		
 	};
 
 }

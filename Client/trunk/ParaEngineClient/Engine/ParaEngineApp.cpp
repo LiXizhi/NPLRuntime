@@ -203,6 +203,11 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 	CoInitialize(NULL);
 }
 
+bool CParaEngineApp::IsServerMode()
+{
+	return m_bServerMode;
+}
+
 void CParaEngineApp::InitLogger()
 {
 #ifdef LOG_FILES_ACTIVITY
@@ -871,19 +876,8 @@ HRESULT CParaEngineApp::FinalCleanup()
 {
 	CBlockWorldManager::GetSingleton()->Cleanup();
 
-	if(! CGlobals::GetAISim()->IsCleanedUp())
-	{
-		if(CGlobals::GetEventsCenter())
-		{
-			SystemEvent event(SystemEvent::SYS_WM_DESTROY, "");
-			// set sync mode, so that event is processed immediately, since there is no next frame move. 
-			event.SetAsyncMode(false);
-			CGlobals::GetEventsCenter()->FireEvent(event);
-		}
-	}
-	// AI simulator should be cleaned up prior to NPL runtime. 
-	CGlobals::GetAISim()->CleanUp();
-	CGlobals::GetNPLRuntime()->Cleanup();
+	CParaEngineAppBase::FinalCleanup();
+	
 	CGlobals::GetMoviePlatform()->Cleanup();
 	
 	m_pGUIRoot->Release();		// GUI: 2D engine
@@ -907,13 +901,6 @@ HRESULT CParaEngineApp::FinalCleanup()
 
 	return S_OK;
 }
-
-
-NPL::INPLRuntime* CParaEngineApp::GetNPLRuntime()
-{
-	return CGlobals::GetNPLRuntime();
-}
-
 
 /** set client rect. this will ensure that the left, top position is not changed. */
 void SetClientRect(HWND hwnd, RECT& rect)
