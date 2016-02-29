@@ -33,6 +33,8 @@ namespace NPL{
 namespace ParaEngine
 {
 	struct CWinRawMsg;
+	class CRefCounted;
+	class Vector2;
 
 	/** ParaEngine application state */
 	enum PEAppState
@@ -414,7 +416,7 @@ namespace ParaEngine
 
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual Vector2 GetScreenResolution(){ return Vector2::UNIT_SCALE; };
+		virtual void GetScreenResolution(Vector2* pOut){ };
 
 		virtual void SetScreenResolution(const Vector2& vSize){};
 

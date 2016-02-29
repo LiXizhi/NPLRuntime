@@ -1378,9 +1378,10 @@ void CParaEngineApp::HandleUserInput()
 	CGlobals::GetScene()->HandleUserInput();
 }
 
-Vector2 CParaEngineApp::GetScreenResolution()
+void CParaEngineApp::GetScreenResolution(Vector2* pOut)
 {
-	return Vector2((float)(m_dwCreationWidth), (float)(m_dwCreationHeight));
+	if (pOut)
+		*pOut = Vector2((float)(m_dwCreationWidth), (float)(m_dwCreationHeight));
 }
 
 void CParaEngineApp::SetScreenResolution( const Vector2& vSize )
@@ -1402,7 +1403,9 @@ void CParaEngineApp::SetScreenResolution( const Vector2& vSize )
 
 void CParaEngineApp::GetResolution(float* pX, float* pY)
 {
-	Vector2 vSize = GetScreenResolution();
+	Vector2 vSize;
+	GetScreenResolution(&vSize);
+
 	if(pX)
 	{
 		*pX = vSize.x;

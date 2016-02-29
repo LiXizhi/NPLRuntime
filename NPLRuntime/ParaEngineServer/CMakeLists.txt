@@ -2,7 +2,6 @@
 # Email: lixizhi@yeah.net
 # Date: 2009.4.10, 2016.2.21 shared source with client
 # Desc: option modify PARAENGINE_COMPILE_LIB
-
 project (ParaEngineServer)
 
 set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
@@ -263,19 +262,13 @@ ELSE()
 ENDIF()
 
 
-SET(ParaEngineServer_Lib_FILES
-	PEServerInstall.cmake
-)
-list(APPEND ParaEngineServer_MISC_FILES ${ParaEngineServer_Lib_FILES})
-
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
-
-	add_library(ParaEngineServer SHARED ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS} ${ParaEngineServer_MISC_FILES})
+	add_library(ParaEngineServer SHARED ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS})
 	
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
-	add_executable(ParaEngineServer ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS} ${ParaEngineServer_MISC_FILES})	
+	add_executable(ParaEngineServer ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS})
 	# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 	# set_target_properties(ParaEngineServer PROPERTIES WIN32_EXECUTABLE true)
 if (WIN32)
@@ -317,7 +310,9 @@ target_link_libraries (ParaEngineServer
 	${Boost_LIBRARIES} 
 )
 
-
-if (WIN32)
-include(${PROJECT_SOURCE_DIR}/PEServerInstall.cmake)
-endif (WIN32)
+ADD_CUSTOM_COMMAND(
+   TARGET ParaEngineServer
+   POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaEngineServer> ${OUTPUT_BIN_DIR}
+)

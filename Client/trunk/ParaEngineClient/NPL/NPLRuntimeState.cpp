@@ -22,13 +22,11 @@
 this is usually smaller than DEFAULT_INPUT_QUEUE_SIZE */
 #define MAX_MESSAGE_PROCESSED_PER_FRAME		5000
 
-#ifdef WIN32
 /** whether to use the new NPL mono2 interface. */
 #define USE_NPL_MONO2	
-#endif
 
 #ifdef USE_NPL_MONO2
-/** the NPL mono2 plugin dll file name. It will be translated to libNPLMono.so under linux automatically. */
+/** the NPL mono2 plugin dll file name. It will be translated to libNPLMono2.so under linux automatically. */
 #ifdef _DEBUG
 const char* NPL_MONO_DLL_FILE_PATH = "NPLMono2_d.dll";
 #else

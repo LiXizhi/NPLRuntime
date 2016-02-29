@@ -4,9 +4,6 @@
 #ifdef WIN32
 #include <windows.h>
 #else
-#ifndef POSIX
-#warning POSIX will be used (but you did not define it)
-#endif
 #include <pthread.h>
 #endif
 

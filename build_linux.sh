@@ -10,4 +10,6 @@ cmake ../../NPLRuntime/ && make -j3
 result=$?
 popd
 
+echo output file is at ./ParaWorld/bin64/
+ls ParaWorld/bin64/
 exit $result

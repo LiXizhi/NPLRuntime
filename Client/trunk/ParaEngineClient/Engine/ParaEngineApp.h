@@ -145,7 +145,7 @@ namespace ParaEngine
 		virtual void ShowMenu(bool bShow);
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual Vector2 GetScreenResolution();
+		virtual void GetScreenResolution(Vector2* pOut);
 		virtual void SetScreenResolution(const Vector2& vSize);
 
 		virtual void GetResolution(float* pX, float* pY);

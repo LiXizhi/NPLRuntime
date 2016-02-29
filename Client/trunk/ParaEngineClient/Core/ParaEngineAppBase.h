@@ -289,7 +289,7 @@ namespace ParaEngine
 		virtual void ShowMenu(bool bShow){};
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual Vector2 GetScreenResolution()  { return Vector2::ZERO; };
+		virtual void GetScreenResolution(Vector2* pOut)  { *pOut = Vector2::ZERO; };
 		virtual void SetScreenResolution(const Vector2& vSize){};
 
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/

@@ -710,10 +710,11 @@ const char* ParaEngine::ParaEngineSettings::GetAppCommandLineByParam( const char
 
 Vector2 ParaEngine::ParaEngineSettings::GetScreenResolution()
 {
-	if(CGlobals::GetApp())
-		return CGlobals::GetApp()->GetScreenResolution();
-	else
-		return Vector2(1024,768);
+	Vector2 res(1024, 768);
+	if (CGlobals::GetApp()) {
+		CGlobals::GetApp()->GetScreenResolution(&res);
+	}
+	return res;
 }
 
 void ParaEngine::ParaEngineSettings::SetScreenResolution( const Vector2& vSize )
