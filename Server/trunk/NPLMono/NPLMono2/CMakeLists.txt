@@ -50,6 +50,8 @@ else()
 	if(NOT MONO_EXECUTABLE)
 		message("Note: Could not find Mono, please install mono-runtime first! Skip building NPLMono2 plugin")
 		set(BUILD_NPLMONO2 false)
+	else()
+		message("Mono executable found, we will try to build NPLMono plugin")
 	endif()
 endif()
 
