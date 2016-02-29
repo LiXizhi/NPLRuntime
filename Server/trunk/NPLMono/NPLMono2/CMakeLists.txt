@@ -53,6 +53,38 @@ else()
 	else()
 		message("Mono executable found, we will try to build NPLMono plugin")
 	endif()
+
+	# The following is to use pkg-config to generate compile and link time flags. 
+	find_package(PkgConfig QUIET)
+	if (PKG_CONFIG_FOUND)
+		pkg_check_modules(_MONO mono-2)
+	endif()
+
+	find_path(MONO_INCLUDE_DIR
+		NAMES mono/jit/jit.h
+		HINTS
+			${_MONO_INCLUDE_DIRS}
+		PATHS
+			/usr/include /usr/local/include /opt/local/include)
+
+	find_library(MONO_LIB
+		NAMES mono-2.0
+		HINTS
+			${_MONO_LIBRARY_DIRS}
+		PATHS
+			/usr/lib /usr/local/lib /opt/local/lib)
+
+	if (MONO_INCLUDE_DIR)
+		set(MONO_INCLUDE_DIRS ${MONO_INCLUDE_DIR}
+			CACHE PATH "MONO include dir")
+		set(MONO_LIBRARIES "${MONO_LIB}"
+			CACHE STRING "MONO libraries")
+		include(FindPackageHandleStandardArgs)
+		find_package_handle_standard_args(MONO DEFAULT_MSG MONO_LIB
+			MONO_INCLUDE_DIR)
+	else()
+		set(BUILD_NPLMONO2 false)
+	endif()
 endif()
 
 
@@ -150,53 +182,8 @@ if (WIN32)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 
 else (WIN32)
-	# The following is to use pkg-config to generate compile and link time flags. 
-	find_package(PkgConfig QUIET)
-	if (PKG_CONFIG_FOUND)
-		pkg_check_modules(_MONO mono-2)
-	endif()
-
-	find_path(MONO_INCLUDE_DIR
-		NAMES mono/jit/jit.h
-		HINTS
-			${_MONO_INCLUDE_DIRS}
-		PATHS
-			/usr/include /usr/local/include /opt/local/include)
-
-	find_library(MONO_LIB
-		NAMES mono-2.0
-		HINTS
-			${_MONO_LIBRARY_DIRS}
-		PATHS
-			/usr/lib /usr/local/lib /opt/local/lib)
-
-	set(MONO_INCLUDE_DIRS ${MONO_INCLUDE_DIR}
-		CACHE PATH "MONO include dir")
-	set(MONO_LIBRARIES "${MONO_LIB}"
-		CACHE STRING "MONO libraries")
-	include(FindPackageHandleStandardArgs)
-	find_package_handle_standard_args(MONO DEFAULT_MSG MONO_LIB
-		MONO_INCLUDE_DIR)
-
 	include_directories("${MONO_INCLUDE_DIRS}")
 	set(LINK_LIBRARIES 	${MONO_LIBRARIES})
-
-	# set C_FLAGS and CXX_FLAGS
-	# execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --cflags mono-2
-	#	OUTPUT_VARIABLE LIB_MONO_C_FLAGS
-	#	OUTPUT_STRIP_TRAILING_WHITESPACE)
-	# 
-	# execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} --libs mono-2
-	# 	OUTPUT_VARIABLE LIB_MONO_LINK_FLAGS
-	# 	OUTPUT_STRIP_TRAILING_WHITESPACE)
-	# 
-    #  
-	# SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIB_MONO_C_FLAGS}")
-	# SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LIB_MONO_C_FLAGS}")
-	# 
-	# SET (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} ${LIB_MONO_LINK_FLAGS})
-	# set(LINK_LIBRARIES   		dl)
-	
 endif (WIN32)
 
 link_libraries( ${LINK_LIBRARIES})
