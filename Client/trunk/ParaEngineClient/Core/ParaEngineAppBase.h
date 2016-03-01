@@ -155,10 +155,10 @@ namespace ParaEngine
 		* this is the recommended way of exiting application.
 		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
 		*/
-		virtual void Exit(int nReturnCode = 0) {};
+		virtual void Exit(int nReturnCode = 0);
 
-		virtual ParaEngine::PEAppState GetAppState() { return PEAppState_Ready;};
-		virtual void SetAppState(ParaEngine::PEAppState state) {};
+		virtual ParaEngine::PEAppState GetAppState();
+		virtual void SetAppState(ParaEngine::PEAppState state);
 
 		virtual HRESULT FrameMove(double fTime){ return S_OK; };
 		/**
@@ -387,6 +387,8 @@ namespace ParaEngine
 		std::string m_sPackagesDir;
 		/** bin/ module path */
 		std::string m_sModuleDir;
+		/** application state */
+		PEAppState m_nAppState;
 	};
 }
 

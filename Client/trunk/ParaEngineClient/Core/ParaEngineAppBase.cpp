@@ -38,13 +38,13 @@ void ParaEngine::CParaEngineAppBase::DoTestCode()
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
-	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL)
+	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
 {
 	InitCommon();
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
-	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL)
+	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
 {
 	InitCommon();
 }
@@ -176,6 +176,23 @@ const char* ParaEngine::CParaEngineAppBase::GetAppCommandLine()
 const char* ParaEngine::CParaEngineAppBase::GetAppCommandLineByParam(const char* pParam, const char* defaultValue)
 {
 	return CCommandLineParams::GetAppCommandLineByParam(pParam, defaultValue);
+}
+
+void ParaEngine::CParaEngineAppBase::Exit(int nReturnCode /*= 0*/)
+{
+	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
+	SetReturnCode(nReturnCode);
+	SetAppState(PEAppState_Exiting);
+}
+
+ParaEngine::PEAppState ParaEngine::CParaEngineAppBase::GetAppState()
+{
+	return m_nAppState;
+}
+
+void ParaEngine::CParaEngineAppBase::SetAppState(ParaEngine::PEAppState state)
+{
+	m_nAppState = state;
 }
 
 HRESULT ParaEngine::CParaEngineAppBase::FinalCleanup()

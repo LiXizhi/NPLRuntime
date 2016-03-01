@@ -2,6 +2,13 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.3.1
+     - fixed tiled image in image entity.
+     - fix shader shadow display after porting to linux
+     - service mode is by default disabled under linux, log append is only on for service mode under linux
+	 - NPLRuntime is now fully compatible with ParaEngineServer. Fixing mono dll, added IsServerMode attribute. 
+     - NPLRuntime will automatically find and build NPLMono2 and MySQL plugins under windows and linux. 
+
 2016.1.27
      - FBX model info class refactored, now support <anims neck_yaw_axis="x" neck_pitch_axis="-z"> attributes
 

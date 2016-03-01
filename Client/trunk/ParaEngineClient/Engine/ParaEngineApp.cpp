@@ -3113,7 +3113,6 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 		SetAppState(PEAppState_Exiting);
 	}
 #else
-	SetReturnCode(nReturnCode);
 	SetAppState(PEAppState_Exiting);
 #endif
 }

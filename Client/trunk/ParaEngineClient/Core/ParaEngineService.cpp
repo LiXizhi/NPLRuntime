@@ -52,7 +52,7 @@ void CParaEngineService::handle_timeout(const boost::system::error_code& err)
 	{
 		// APP_LOG("heart beat");
 
-#if defined(LINUX) || defined(WIN32)
+#ifndef PARAENGINE_MOBILE
 		if(m_bAcceptKeyStroke)
 		{
 			if(_kbhit())

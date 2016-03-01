@@ -43,13 +43,15 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 	g_pCurrentApp = this;
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
-	
+	SetAppCommandLine(strCmd.c_str());
+
 	// loading packages 
 	LoadPackages();
 	BootStrapAndLoadConfig();
 	InitSystemModules();
 
 	OUTPUT_LOG1("ParaEngineServer started\n");
+	
 	return S_OK;
 }
 
