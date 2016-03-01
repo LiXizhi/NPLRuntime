@@ -6,7 +6,7 @@
 pushd .
 mkdir -p ./bin/linux
 cd bin/linux/
-cmake ../../NPLRuntime/ && make -j3
+cmake ../../NPLRuntime/ && make
 result=$?
 popd
 
