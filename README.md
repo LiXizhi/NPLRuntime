@@ -7,9 +7,10 @@ NPL runtime allows you to run NPL/lua script from anywhere. such as
 ```
 
 ## Build From Source
- - To install on linux, run `./build_linux.sh`. See also `.travis.xml` for installing dependencies.
+ - To install on linux, run `./build_linux.sh`. See also `.travis.yml` for installing dependencies.
  - To install on windows, [see here](https://github.com/LiXizhi/ParaCraftSDK/wiki/InstallNPLRuntime)  
-
+ - The final output is installed in `./ParaWorld/bin64` folder
+ 
 ## Usage
 To run with GUI, use:
 ``` 

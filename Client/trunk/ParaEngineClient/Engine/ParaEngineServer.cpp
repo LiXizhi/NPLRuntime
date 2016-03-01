@@ -27,9 +27,6 @@ int main(int argc, char **argv)
 
 	bool bServiceMode = false;
 
-#ifndef WIN32
-	bServiceMode = true;
-#endif
 	std::string sCmdLine;
 	
 	for(int i=1;i<argc; ++i)
@@ -43,7 +40,7 @@ int main(int argc, char **argv)
 		{
 			bServiceMode = false;
 		}
-		if (argv[i])
+		else if (argv[i])
 		{
 			if (sCmdLine.empty())
 				sCmdLine = argv[i];
@@ -54,7 +51,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	
+	ParaEngine::CLogger::GetSingleton().SetAppendMode(bServiceMode);
+
 	ParaEngine::CParaEngineApp myServerApp(sCmdLine.c_str());
 	if(bServiceMode)
 	{

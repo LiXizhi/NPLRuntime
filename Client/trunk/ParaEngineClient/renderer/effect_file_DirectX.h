@@ -58,7 +58,6 @@ namespace ParaEngine
 		{
 			D3DXHANDLE hTechnique;
 			D3DXTECHNIQUE_DESC techniqueDesc;
-			TechniqueCategory nCategory;
 		public:
 			TechniqueDescDX(){
 				memset(this, 0, sizeof(TechniqueDescDX));
