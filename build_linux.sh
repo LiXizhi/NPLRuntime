@@ -13,16 +13,15 @@ result=$?
 popd
 
 if [ $result == 0 ]; then
-    echo "output file is at ./ParaWorld/bin64/"
+    echo "build success! Output file is at ./ParaWorld/bin64/"
     
     pushd ParaWorld/bin64/
-    # install to /usr/local/bin/npl
     ls -l
     npl_exe_path=/usr/local/bin/npl
+    echo "install executable to $npl_exe_path"
     if [ -f ./ParaEngineServer ]; then
         if [ ! -e $npl_exe_path ] && [ ! -L $npl_exe_path ];  then
             ln -s $(pwd)/ParaEngineServer $npl_exe_path
-            echo "successfully installed npl runtime to $npl_exe_path"
         else
             echo "NPL runtime already exist at $npl_exe_path"
         fi
@@ -31,7 +30,7 @@ if [ $result == 0 ]; then
     popd
     
     # run all NPL tests 
-    # npl NPLRuntime/tests/helloworld.lua
+    echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua" 
 fi
 
 exit $result

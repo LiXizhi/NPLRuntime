@@ -32,6 +32,7 @@ obj/
 ParaWorld/
 temp/
 Tests/
+!NPLRuntime/tests
 WanDeploy/
 WebAPI/
 !Client/
