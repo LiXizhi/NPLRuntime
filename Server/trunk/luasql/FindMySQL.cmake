@@ -4,11 +4,17 @@
 #  MYSQL_INCLUDE_DIR, where to find mysql.h
 #  MYSQL_LIBRARIES, the libraries needed to use MySQL.
 #  MYSQL_FOUND, If false, do not try to use MySQL.
+#  MYSQL_DLL, only set under win32 in case one needs to copy library
 #
 # Copyright (c) 2006, Jaroslaw Staniek, <js@iidea.pl>
+# Copyright 2016, LiXizhi@yeah.net
 #
 # Redistribution and use is allowed according to the terms of the BSD license.
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
+
+# LiXizhi: uncomment to find dir again
+unset(MYSQL_INCLUDE_DIR CACHE)
+unset(MYSQL_LIBRARIES CACHE)
 
 if(MYSQL_INCLUDE_DIR AND MYSQL_LIBRARIES)
    set(MYSQL_FOUND TRUE)
@@ -46,6 +52,9 @@ if(WIN32 AND MSVC)
       ${PROGRAM_FILES_32}/MySQL/*/lib
       ${PROGRAM_FILES_64}/MySQL/*/lib
       )
+  GET_FILENAME_COMPONENT(MYSQL_LIBRARY_DIR ${MYSQL_LIBRARIES} PATH)
+  FIND_FILE(MYSQL_DLL libmysql.dll PATHS ${MYSQL_LIBRARY_DIR})
+
 else(WIN32 AND MSVC)
   find_library(MYSQL_LIBRARIES NAMES mysqlclient
       PATHS

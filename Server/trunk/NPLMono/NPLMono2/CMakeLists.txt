@@ -87,7 +87,6 @@ else()
 	endif()
 endif()
 
-
 if(BUILD_NPLMONO2)
 PROJECT(NPLMono2)
 

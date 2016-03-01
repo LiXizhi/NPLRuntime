@@ -13,7 +13,7 @@ PROJECT(luasql)
 # source files for luasql
 	SET(luasql_SRCS
 		src/ls_mysql.c  src/luasql.c  src/luasql.h  src/luasql.def
-		src/ls_sqlite3.c 
+		src/ls_sqlite3.c FindMySQL.cmake
 	)
 
 IF(WIN32)
@@ -29,7 +29,7 @@ include_directories("${MYSQL_INCLUDE_DIR}")
 set(LINK_LIBRARIES  ${MYSQL_LIBRARIES})
 
 IF(MSVC)
-	# statically link MSVC to reduce dependancies only in release mode
+	# statically link MSVC to reduce dependancies ONLY IN RELEASE MODE
 	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
 	 	if(${flag_var} MATCHES "/MD")
 			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
@@ -64,14 +64,18 @@ ELSE(WIN32)
 	target_link_libraries (luasql lua sqlite ${LINK_LIBRARIES})
 ENDIF(WIN32)
 
-
 set_target_properties(luasql PROPERTIES OUTPUT_NAME "luasql")
-
 
 ADD_CUSTOM_COMMAND(TARGET luasql POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:luasql> ${OUTPUT_BIN_DIR}
 )
+
+IF(WIN32)
+ADD_CUSTOM_COMMAND(TARGET luasql POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy ${MYSQL_DLL} ${OUTPUT_BIN_DIR}
+)
+ENDIF(WIN32)
 	
 else(MYSQL_FOUND)
 	message("Note: MySQL not found, NPL mysql plugin is skipped. ")
