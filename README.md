@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/LiXizhi/NPLRuntime.svg?branch=master)](https://travis-ci.org/LiXizhi/NPLRuntime)
+[![Code docs](https://codedocs.xyz/LiXizhi/NPLRuntime.svg)](https://codedocs.xyz/LiXizhi/NPLRuntime)
 
 ## NPL Runtime
 NPL runtime allows you to run NPL/lua script from anywhere. such as
