@@ -37,9 +37,6 @@ extern "C" {
 
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
-
 #include "ParaScriptingIO.h"
 
 using namespace luabind;
