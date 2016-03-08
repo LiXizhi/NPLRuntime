@@ -370,6 +370,11 @@ namespace ParaEngine
 		*/
 		bool ChunkColumnExists(uint16_t chunkX, uint16_t chunkZ);
 
+		/** whether the chunk at the given world position is locked. a locked chunk is not loaded or being loaded or saved. 
+		* when chunk is locked, all block set/get calls will take no effect. 
+		*/
+		bool IsChunkLocked(uint32 worldX, uint32 worldZ);
+
 		int32_t GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result);
 
 		/** get number of dirty chunk columns for light calculations*/

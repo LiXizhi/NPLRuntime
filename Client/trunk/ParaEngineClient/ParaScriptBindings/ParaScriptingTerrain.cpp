@@ -683,7 +683,7 @@ namespace ParaScripting
 	int32_t ParaTerrain::GetChunkColumnTimeStamp(uint32_t chunkX, uint32_t chunkZ)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
-		if (mgr)
+		if (mgr && mgr->IsChunkLocked(chunkX, chunkZ))
 			return mgr->GetChunkColumnTimeStamp((uint16_t)chunkX, (uint16_t)chunkZ);
 		else
 			return -1;
