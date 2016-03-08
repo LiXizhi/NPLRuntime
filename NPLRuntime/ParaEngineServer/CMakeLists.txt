@@ -259,6 +259,12 @@ IF(MSVC)
 	endif (PARAENGINE_COMPILE_LIB)
 ELSE()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	
+	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
+	# -Os to optimize for size. or -O3 to turn on all optimizations. 
+	# -s option to strip debug info, -g to include debug info
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti -Os -s")
+	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Os -s")
 ENDIF()
 
 
