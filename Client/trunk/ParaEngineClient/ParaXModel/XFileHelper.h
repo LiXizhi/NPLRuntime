@@ -58,9 +58,9 @@ namespace ParaEngine
 			Vector3 mEmissive;
 			std::vector<TexEntry> mTextures;
 
-			size_t sceneIndex; ///< the index under which it was stored in the scene's material list
+			int32 sceneIndex; ///< the index under which it was stored in the scene's material list
 
-			Material() { mIsReference = false; sceneIndex = SIZE_MAX; }
+			Material() { mIsReference = false; sceneIndex = -1; }
 		};
 
 		/** Helper structure to represent a bone weight */

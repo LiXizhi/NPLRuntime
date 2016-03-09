@@ -209,11 +209,8 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 	// we need to collapse all bone transform. 
 	if (pMesh->m_objNum.nBones > 0)
 	{
-		AnimIndex curAnim, blendingAnim;
-		curAnim.nAnimID = 0;
-		curAnim.nIndex = 0;
-		curAnim.nCurrentFrame = 0;
-		curAnim.nEndFrame = 0;
+		AnimIndex blendingAnim;
+		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
 		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
@@ -235,11 +232,16 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 			for (int i = 0; i < nVertexCount; ++i, ++ov)
 			{
 				Bone& bone = bones[ov->bones[0]];
-				Vector3 vPos = ov->pos * bone.mat;
-				CalculateMinMax(vPos);
+				float weight = ov->weights[0] * (1 / 255.0f);
+				Vector3 v = (ov->pos * bone.mat)*weight;
+				for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
+					weight = ov->weights[b] * (1 / 255.0f);
+					Bone& bone = bones[ov->bones[b]];
+					v += (ov->pos * bone.mat) * weight;
+				}
+				CalculateMinMax(v);
 			}
 		}
-		
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
 	}
@@ -904,12 +906,20 @@ vertex.color0 = color;
 				aiVertexWeight vertextWeight = fbxBone->mWeights[j];
 				int vertex_id = vertextWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertextWeight.mWeight * 255);
+				int nTotalWeight = 0;
 				for (int bone_index = 0; bone_index < 4; bone_index++)
 				{
-					if (m_vertices[vertex_id].weights[bone_index] == 0)
+					uint8 cur_vertex_weight = m_vertices[vertex_id].weights[bone_index];
+					nTotalWeight += cur_vertex_weight;
+					if (cur_vertex_weight == 0)
 					{
+						//if (nTotalWeight > 255)
+						//	vertex_weight -= nTotalWeight - 255;
+						if (nTotalWeight == 254)
+							vertex_weight += 1;
 						m_vertices[vertex_id].bones[bone_index] = nBoneIndex;
 						m_vertices[vertex_id].weights[bone_index] = vertex_weight;
+
 						break;
 					}
 				}
@@ -984,21 +994,30 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 					int nTime = (int)nodeChannel->mScalingKeys[k].mTime;
 					if (nTime >= tickStart && nTime <= tickEnd)
 					{
-						if (nFirstScaleSize < 0){
+						if (nFirstScaleSize < 0)
+						{
 							nFirstScaleSize = bone.scale.times.size();
 							if (nTime != tickStart)
 							{
-
-								Vector3 v1 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k == 0 ? k : k - 1].mValue);
-								Vector3 v2 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
-								if (v1 != v2)
+								if (k == 0)
 								{
 									bone.scale.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mScalingKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mScalingKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Vector3 v = v1 * fFactor + v2*(1 - fFactor);
+									Vector3 v = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
 									bone.scale.data.push_back(v);
+								}
+								else
+								{
+									Vector3 v1 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k == 0 ? k : k - 1].mValue);
+									Vector3 v2 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
+									if (v1 != v2)
+									{
+										bone.scale.times.push_back((int)(tickStart * fTimeScale));
+										float t1 = (float)nodeChannel->mScalingKeys[k - 1].mTime;
+										float t2 = (float)nodeChannel->mScalingKeys[k].mTime;
+										float fFactor = ((float)nTime - t1) / (t2 - t1);
+										Vector3 v = v1 * fFactor + v2*(1 - fFactor);
+										bone.scale.data.push_back(v);
+									}
 								}
 							}
 						}
@@ -1069,17 +1088,25 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 							nFirstRotSize = bone.rot.times.size();
 							if (nTime != tickStart)
 							{
-
-								Quaternion q1 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k == 0 ? k : k - 1].mValue);
-								Quaternion q2 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
-								if (q1 != q2)
+								if (k == 0)
 								{
 									bone.rot.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mRotationKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mRotationKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Quaternion q = Quaternion::Slerp(fFactor, q1, q2);
+									Quaternion q = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
 									bone.rot.data.push_back(q);
+								}
+								else
+								{
+									Quaternion q1 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k == 0 ? k : k - 1].mValue);
+									Quaternion q2 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
+									if (q1 != q2)
+									{
+										bone.rot.times.push_back((int)(tickStart * fTimeScale));
+										float t1 = (float)nodeChannel->mRotationKeys[k - 1].mTime;
+										float t2 = (float)nodeChannel->mRotationKeys[k].mTime;
+										float fFactor = ((float)nTime - t1) / (t2 - t1);
+										Quaternion q = Quaternion::Slerp(fFactor, q1, q2);
+										bone.rot.data.push_back(q);
+									}
 								}
 							}
 						}
@@ -1150,17 +1177,25 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 							nFirstTransSize = bone.trans.times.size();
 							if (nTime != tickStart)
 							{
-
-								Vector3 v1 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k == 0 ? k : k - 1].mValue);
-								Vector3 v2 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
-								if (v1 != v2)
+								if (k == 0)
 								{
 									bone.trans.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mPositionKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mPositionKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Vector3 v = v1 * fFactor + v2*(1 - fFactor);
+									Vector3 v = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
 									bone.trans.data.push_back(v);
+								}
+								else
+								{
+									Vector3 v1 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k - 1].mValue);
+									Vector3 v2 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
+									if (v1 != v2)
+									{
+										bone.trans.times.push_back((int)(tickStart * fTimeScale));
+										float t1 = (float)nodeChannel->mPositionKeys[k - 1].mTime;
+										float t2 = (float)nodeChannel->mPositionKeys[k].mTime;
+										float fFactor = ((float)nTime - t1) / (t2 - t1);
+										Vector3 v = v1 * fFactor + v2*(1 - fFactor);
+										bone.trans.data.push_back(v);
+									}
 								}
 							}
 						}
