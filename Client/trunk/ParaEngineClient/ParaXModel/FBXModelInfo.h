@@ -15,6 +15,8 @@ namespace ParaEngine
 		int endTick;
 		int loopType;
 		float fSpeed;
+
+		bool operator<(const AnimInfo &rhs) const { return startTick < rhs.startTick || endTick < rhs.endTick; }
 	};
 
 	/** for reading anim xml file, which is meta file when export FBX model.

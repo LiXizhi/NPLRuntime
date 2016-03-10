@@ -115,5 +115,9 @@ bool ParaEngine::FBXModelInfo::LoadFromBuffer(const char* pData, int nSize)
 		OUTPUT_LOG("error parsing xml file %s \n", m_sFilename.c_str());
 		return false;
 	}
+
+	// Shall we sort in ascending order?
+	// std::sort(m_Anims.begin(), m_Anims.end());
+
 	return m_Anims.size() > 0;
 }

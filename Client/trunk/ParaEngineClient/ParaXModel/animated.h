@@ -112,8 +112,12 @@ namespace ParaEngine
 					// there is a chance that time = times[times.size()-1]
 					//time %= times[times.size()-1]; // I think this might not be necessary?
 				}
-
-				if (range.first != range.second) {
+				if (time >= times[range.second])
+				{
+					return data[range.second];
+				}
+				else if (range.first != range.second && time > times[range.first])
+				{
 					size_t pos = range.first; // this can be 0.
 					{
 						/** by LiXizhi: use binary search for the time frame: 2005/09:
@@ -180,7 +184,7 @@ namespace ParaEngine
 						return interpolate<T>(r, data[pos], data[pos + 1]);
 					}
 				}
-				else {
+				else{
 					return data[range.first];
 				}
 			}
