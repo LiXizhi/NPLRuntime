@@ -147,6 +147,10 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 		if (fileTo.CreateNewFile(dest))
 		{
 			fileTo.write(fileFrom.getBuffer(), (int)(fileFrom.getSize()));
+
+			//Cellfy: try to restore timestamp of the file
+			if(fileFrom.GetLastModifiedTime()>0)
+				fileTo.SetLastModifiedTime(fileFrom.GetLastModifiedTime());
 			return true;
 		}
 	}

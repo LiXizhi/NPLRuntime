@@ -72,6 +72,8 @@ CParaFile::CParaFile()
 	m_bIsCompressed = false;
 	m_uncompressed_size = 0;
 
+	m_lastModifiedTime = 0;
+
 	m_bDiskFileOpened = false;
 	synchBits();
 }
@@ -491,7 +493,8 @@ bool CParaFile::UnzipMemToFile(const char* buffer, int nSize, const char* destFi
 		{
 			// skip zero length file. 
 			char * buffer = new char[nSize];
-			if (zip_file.ReadFile(file_handle, buffer, nSize, &nBytesRead))
+			DWORD lastWriteTime;
+			if (zip_file.ReadFile(file_handle, buffer, nSize, &nBytesRead, &lastWriteTime))
 			{
 				CParaFile file;
 				// save file to temp/cache directory.
@@ -650,11 +653,13 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 					{
 						DWORD s = pFileManager->GetFileSize(m_handle);
 						DWORD bytesRead = 0;
+						DWORD lastWriteTime = 0;
 						m_buffer = new char[s + 1];
 						m_buffer[s] = '\0';
-						pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead);
+						pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead, &lastWriteTime);
 						pFileManager->CloseFile(m_handle);
 						m_size = (size_t)bytesRead;
+						m_lastModifiedTime = lastWriteTime;
 						m_eof = false;
 					}
 
@@ -896,6 +901,41 @@ bool CParaFile::GetExtractFileProperty()
 const string& CParaFile::GetFileName()
 {
 	return m_filename;
+}
+
+DWORD CParaFile::GetLastModifiedTime() const
+{
+	return m_lastModifiedTime;
+}
+
+#ifdef PARAENGINE_CLIENT
+#include "zlib/zip.h"
+#endif
+
+bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
+{
+#ifdef WIN32
+	//For win32
+	bool result = false;
+	if(lastWriteTime>0)
+	{
+		m_lastModifiedTime = lastWriteTime;
+		if(m_handle.IsValid())
+		{
+			FILETIME local_ft, utc_ft;
+			WORD dosdate = lastWriteTime>>16;
+			WORD dostime = lastWriteTime&0xffff;
+			::dosdatetime2filetime(dosdate, dostime, &local_ft);
+			LocalFileTimeToFileTime(&local_ft, &utc_ft);
+
+			result = SetFileTime(m_handle.m_handle, &utc_ft, &utc_ft, &utc_ft);
+		}
+	}
+	return result;
+#else
+	//Not implemented for other platform yet
+	return false;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -587,6 +587,10 @@ namespace ParaEngine
 		PE_CORE_DECL void seekRelative(int offset);
 		PE_CORE_DECL void close();
 
+		DWORD GetLastModifiedTime() const;
+
+		bool SetLastModifiedTime(DWORD lastWriteTime);
+
 		//////////////////////////////////////////////////////////////////////////
 		//
 		// bit wise reading
@@ -633,5 +637,7 @@ namespace ParaEngine
 		//--Bit buffer..This is only used for bit wise reading
 		int m_bitBuf;
 		int m_bitPos; // a value in range [0,8]
+
+		DWORD m_lastModifiedTime;
 	};
 }

@@ -574,7 +574,7 @@ bool CZipArchive::Decompress( LPVOID lpCompressedBuffer, DWORD nCompressedSize, 
 /*
 this function is based on Nikolaus Gebhardt's CZipReader in the "Irrlicht Engine".
 */
-bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead)
+bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead,LPDWORD lpLastWriteTime)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
@@ -606,6 +606,8 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 
 			DWORD uncompressedSize = m_FileList[index].m_pEntry->UncompressedSize;			
 			DWORD compressedSize = m_FileList[index].m_pEntry->CompressedSize;
+
+			DWORD lastWriteTime = m_FileList[index].m_pEntry->LastModifiedTime;
 
 			void* pBuf = lpBuffer;
 			bool bCopyBuffer = false;
@@ -660,6 +662,8 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			{
 				if(lpNumberOfBytesRead)
 					(*lpNumberOfBytesRead) = nNumberOfBytesToRead;
+				if(lpLastWriteTime)
+					(*lpLastWriteTime) = lastWriteTime;
 				if(bCopyBuffer)
 				{
 					memcpy(lpBuffer, pBuf, nNumberOfBytesToRead);
@@ -866,6 +870,7 @@ bool CZipArchive::ReadEntries()
 		entry.CompressionMethod = CentralDir.CompressionMethod;
 		entry.UncompressedSize = CentralDir.UnPackSize;
 		entry.CompressedSize = CentralDir.PackSize;
+		entry.LastModifiedTime = CentralDir.Time;
 
 		int nExtraLength = 0;
 		if (CentralDir.ExtraSize > 0) {
