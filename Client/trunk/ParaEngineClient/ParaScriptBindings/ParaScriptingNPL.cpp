@@ -379,6 +379,14 @@ namespace ParaScripting
 		return NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState()->GetFileName().c_str();
 	}
 
+	const char* CNPL::GetNPLID()
+	{
+		//"Seer_Dev" for developer internal use
+		//"Seer" for release
+           
+		return "Seer";
+	}
+
 	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
 	{
 		NPL::CNPLRuntime::GetInstance()->AsyncDownload(url, destFolder, callbackScript, DownloaderName);

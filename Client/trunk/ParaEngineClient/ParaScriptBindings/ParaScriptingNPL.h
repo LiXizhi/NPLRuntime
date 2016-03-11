@@ -159,6 +159,11 @@ namespace ParaScripting
 		* Note: calling this function inside other functions will lead to unexpected result.
 		*/
 		static const char* GetFileName();
+                
+		/**
+		* return an id string of this npl runtime. Upper-level scripts can check this id to distinguish different npl-runtimes to stop user from arbitrary copying dlls to a different game.
+		*/
+		static const char* GetNPLID();
 
 		/**
 		* NOTE: the function name is "this" in NPL, not "this_". 
