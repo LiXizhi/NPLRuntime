@@ -2,6 +2,10 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.3.10
+     - fix AABB calculation of FBX file
+	 - FBX importor animation fix. 
+
 2016.3.1
      - fixed tiled image in image entity.
      - fix shader shadow display after porting to linux

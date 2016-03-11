@@ -209,11 +209,8 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 	// we need to collapse all bone transform. 
 	if (pMesh->m_objNum.nBones > 0)
 	{
-		AnimIndex curAnim, blendingAnim;
-		curAnim.nAnimID = 0;
-		curAnim.nIndex = 0;
-		curAnim.nCurrentFrame = 0;
-		curAnim.nEndFrame = 0;
+		AnimIndex blendingAnim;
+		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
 		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
@@ -235,11 +232,16 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 			for (int i = 0; i < nVertexCount; ++i, ++ov)
 			{
 				Bone& bone = bones[ov->bones[0]];
-				Vector3 vPos = ov->pos * bone.mat;
-				CalculateMinMax(vPos);
+				float weight = ov->weights[0] * (1 / 255.0f);
+				Vector3 v = (ov->pos * bone.mat)*weight;
+				for (int b = 1; b < 4 && ov->weights[b]>0; b++) {
+					weight = ov->weights[b] * (1 / 255.0f);
+					Bone& bone = bones[ov->bones[b]];
+					v += (ov->pos * bone.mat) * weight;
+				}
+				CalculateMinMax(v);
 			}
 		}
-		
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
 	}
@@ -904,12 +906,20 @@ vertex.color0 = color;
 				aiVertexWeight vertextWeight = fbxBone->mWeights[j];
 				int vertex_id = vertextWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertextWeight.mWeight * 255);
+				int nTotalWeight = 0;
 				for (int bone_index = 0; bone_index < 4; bone_index++)
 				{
-					if (m_vertices[vertex_id].weights[bone_index] == 0)
+					uint8 cur_vertex_weight = m_vertices[vertex_id].weights[bone_index];
+					nTotalWeight += cur_vertex_weight;
+					if (cur_vertex_weight == 0)
 					{
+						//if (nTotalWeight > 255)
+						//	vertex_weight -= nTotalWeight - 255;
+						if (nTotalWeight == 254)
+							vertex_weight += 1;
 						m_vertices[vertex_id].bones[bone_index] = nBoneIndex;
 						m_vertices[vertex_id].weights[bone_index] = vertex_weight;
+
 						break;
 					}
 				}
@@ -957,7 +967,79 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 	anim.loopType = loopType;
 	anim.moveSpeed = fMoveSpeed;
 
-	int realEndTick = tickStart;
+	for (ParaEngine::Bone & bone : m_bones)
+	{
+		// support multiple animations
+		int nAnimId = AnimIndex;
+		if (bone.scale.times.size() > 0)
+		{
+			int nCount = bone.scale.times.size();
+			bone.scale.ranges.resize(nAnimId + 1, AnimRange(0, 0));
+
+			AnimRange range(0, nCount - 1);
+			for (int i = 0; i < nCount; ++i)
+			{
+				uint32 time = (uint32)bone.scale.times[i];
+				if (time <= timeStart){
+					range.first = i;
+				}
+				else if (time >= timeEnd)
+				{
+					range.second = i;
+					break;
+				}
+			}
+			bone.scale.ranges[nAnimId] = range;
+		}
+		if (bone.trans.times.size() > 0)
+		{
+			int nCount = bone.trans.times.size();
+			bone.trans.ranges.resize(nAnimId + 1, AnimRange(0, 0));
+
+			AnimRange range(0, nCount - 1);
+			for (int i = 0; i < nCount; ++i)
+			{
+				uint32 time = (uint32)bone.trans.times[i];
+				if (time <= timeStart){
+					range.first = i;
+				}
+				else if (time >= timeEnd)
+				{
+					range.second = i;
+					break;
+				}
+			}
+			bone.trans.ranges[nAnimId] = range;
+		}
+		if (bone.rot.times.size() > 0)
+		{
+			int nCount = bone.rot.times.size();
+			bone.rot.ranges.resize(nAnimId + 1, AnimRange(0, 0));
+
+			AnimRange range(0, nCount - 1);
+			for (int i = 0; i < nCount; ++i)
+			{
+				uint32 time = (uint32)bone.rot.times[i];
+				if (time <= timeStart){
+					range.first = i;
+				}
+				else if (time >= timeEnd)
+				{
+					range.second = i;
+					break;
+				}
+			}
+			bone.rot.ranges[nAnimId] = range;
+		}
+	}
+	return anim;
+}
+
+void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nIndex, CParaXModel *pMesh)
+{
+	aiAnimation* pFbxAnim = pFbxScene->mAnimations[nIndex];
+
+	float fTimeScale = (float)(1000.f / pFbxAnim->mTicksPerSecond);
 
 	int nodeChannelNum = pFbxAnim->mNumChannels;
 
@@ -971,89 +1053,16 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 			bone.flags = ParaEngine::Bone::BONE_OFFSET_MATRIX;
 			// bone.calc is true, if there is bone animation. 
 			bone.calc = true;
-			int nFirstScaleSize = -1;
-			int nFirstTransSize = -1;
-			int nFirstRotSize = -1;
 
 			bone.scale.used = (nodeChannel->mNumScalingKeys > 0);
 			if (bone.scale.used)
 			{
 				for (int k = 0; k < (int)nodeChannel->mNumScalingKeys; k++)
 				{
-					
 					int nTime = (int)nodeChannel->mScalingKeys[k].mTime;
-					if (nTime >= tickStart && nTime <= tickEnd)
-					{
-						if (nFirstScaleSize < 0){
-							nFirstScaleSize = bone.scale.times.size();
-							if (nTime != tickStart)
-							{
-
-								Vector3 v1 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k == 0 ? k : k - 1].mValue);
-								Vector3 v2 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
-								if (v1 != v2)
-								{
-									bone.scale.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mScalingKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mScalingKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Vector3 v = v1 * fFactor + v2*(1 - fFactor);
-									bone.scale.data.push_back(v);
-								}
-							}
-						}
-
-						if (beEndAnim && (int)nodeChannel->mScalingKeys[k].mTime > realEndTick)
-						{
-							realEndTick = (int)nodeChannel->mScalingKeys[k].mTime;
-						}
-
-						bone.scale.times.push_back((int)(nTime * fTimeScale));
-						Vector3 v = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
-						bone.scale.data.push_back(v);
-					}
-					else if (nTime > tickEnd)
-					{
-						Vector3 v1 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k == 0 ? k : k - 1].mValue);
-						Vector3 v2 = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
-						if (v1 != v2)
-						{
-							bone.scale.times.push_back((int)(tickEnd * fTimeScale));
-							float t1 = (float)nodeChannel->mScalingKeys[k - 1].mTime;
-							float t2 = (float)nodeChannel->mScalingKeys[k].mTime;
-							float fFactor = ((float)nTime - t1) / (t2 - t1);
-							Vector3 v = v1 * fFactor + v2*(1 - fFactor);
-							bone.scale.data.push_back(v);
-						}
-						if (nFirstScaleSize < 0){
-							nFirstScaleSize = bone.scale.times.size();
-							bone.scale.times.push_back((int)(tickEnd * fTimeScale));
-							bone.scale.data.push_back(v1);
-						}
-						else
-						{
-							if ((int)nodeChannel->mScalingKeys[k - 1].mTime < tickStart)
-							{
-								bone.scale.times.push_back((int)(tickEnd * fTimeScale));
-								bone.scale.data.push_back(v1);
-							}
-							else if ((int)nodeChannel->mScalingKeys[k - 1].mTime > realEndTick)
-							{
-								realEndTick = (int)nodeChannel->mScalingKeys[k - 1].mTime;
-							}
-						}
-						break;
-					}
-					else if (nTime < tickStart)
-					{
-						if ((int)nodeChannel->mNumScalingKeys == 1)
-						{
-							bone.scale.times.push_back((int)(tickStart * fTimeScale));
-							Vector3 v = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
-							bone.scale.data.push_back(v);
-						}
-					}
-
+					Vector3 v = ConvertFBXVector3D(nodeChannel->mScalingKeys[k].mValue);
+					bone.scale.times.push_back((int)(nTime * fTimeScale));
+					bone.scale.data.push_back(v);
 				}
 			}
 
@@ -1063,78 +1072,9 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 				for (int k = 0; k < (int)nodeChannel->mNumRotationKeys; k++)
 				{
 					int nTime = (int)nodeChannel->mRotationKeys[k].mTime;
-					if (nTime >= tickStart && nTime <= tickEnd)
-					{
-						if (nFirstRotSize < 0){
-							nFirstRotSize = bone.rot.times.size();
-							if (nTime != tickStart)
-							{
-
-								Quaternion q1 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k == 0 ? k : k - 1].mValue);
-								Quaternion q2 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
-								if (q1 != q2)
-								{
-									bone.rot.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mRotationKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mRotationKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Quaternion q = Quaternion::Slerp(fFactor, q1, q2);
-									bone.rot.data.push_back(q);
-								}
-							}
-						}
-
-						if (beEndAnim && (int)nodeChannel->mRotationKeys[k].mTime > realEndTick)
-						{
-							realEndTick = (int)nodeChannel->mRotationKeys[k].mTime;
-						}
-
-						bone.rot.times.push_back((int)(nTime * fTimeScale));
-						Quaternion q = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
-						bone.rot.data.push_back(q);
-					}
-					else if (nTime > tickEnd)
-					{
-						Quaternion q1 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k == 0 ? k : k - 1].mValue);
-						Quaternion q2 = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
-						if (q1 != q2)
-						{
-							bone.rot.times.push_back((int)(tickEnd * fTimeScale));
-							float t1 = (float)nodeChannel->mRotationKeys[k - 1].mTime;
-							float t2 = (float)nodeChannel->mRotationKeys[k].mTime;
-							float fFactor = ((float)nTime - t1) / (t2 - t1);
-							Quaternion q = Quaternion::Slerp(fFactor, q1, q2);
-							bone.rot.data.push_back(q);
-						}
-						if (nFirstRotSize < 0){
-							nFirstRotSize = bone.rot.times.size();
-
-							bone.rot.times.push_back((int)(tickEnd * fTimeScale));
-							bone.rot.data.push_back(q1);
-						}
-						else
-						{
-							if ((int)nodeChannel->mRotationKeys[k - 1].mTime < tickStart)
-							{
-								bone.rot.times.push_back((int)(tickEnd * fTimeScale));
-								bone.rot.data.push_back(q1);
-							}
-							else if ((int)nodeChannel->mRotationKeys[k - 1].mTime > realEndTick)
-							{
-								realEndTick = (int)nodeChannel->mRotationKeys[k - 1].mTime;
-							}
-						}
-						break;
-					}
-					else if (nTime < tickStart)
-					{
-						if ((int)nodeChannel->mNumRotationKeys == 1)
-						{
-							bone.rot.times.push_back((int)(tickStart * fTimeScale));
-							Quaternion q = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
-							bone.rot.data.push_back(q);
-						}
-					}
+					Quaternion q = ConvertFBXQuaternion(nodeChannel->mRotationKeys[k].mValue);
+					bone.rot.times.push_back((int)(nTime * fTimeScale));
+					bone.rot.data.push_back(q);
 				}
 			}
 
@@ -1144,126 +1084,13 @@ ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine
 				for (int k = 0; k < (int)nodeChannel->mNumPositionKeys; k++)
 				{
 					int nTime = (int)nodeChannel->mPositionKeys[k].mTime;
-					if (nTime >= tickStart && nTime <= tickEnd)
-					{
-						if (nFirstTransSize < 0){
-							nFirstTransSize = bone.trans.times.size();
-							if (nTime != tickStart)
-							{
-
-								Vector3 v1 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k == 0 ? k : k - 1].mValue);
-								Vector3 v2 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
-								if (v1 != v2)
-								{
-									bone.trans.times.push_back((int)(tickStart * fTimeScale));
-									float t1 = (float)nodeChannel->mPositionKeys[k - 1].mTime;
-									float t2 = (float)nodeChannel->mPositionKeys[k].mTime;
-									float fFactor = ((float)nTime - t1) / (t2 - t1);
-									Vector3 v = v1 * fFactor + v2*(1 - fFactor);
-									bone.trans.data.push_back(v);
-								}
-							}
-						}
-
-						if (beEndAnim && (int)nodeChannel->mPositionKeys[k].mTime > realEndTick)
-						{
-							realEndTick = (int)nodeChannel->mPositionKeys[k].mTime;
-						}
-
-						bone.trans.times.push_back((int)(nTime * fTimeScale));
-						Vector3 v = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
-						bone.trans.data.push_back(v);
-					}
-					else if (nTime > tickEnd)
-					{
-						Vector3 v1 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k == 0 ? k : k - 1].mValue);
-						Vector3 v2 = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
-						if (v1 != v2)
-						{
-							bone.trans.times.push_back((int)(tickEnd * fTimeScale));
-							float t1 = (float)nodeChannel->mPositionKeys[k - 1].mTime;
-							float t2 = (float)nodeChannel->mPositionKeys[k].mTime;
-							float fFactor = ((float)nTime - t1) / (t2 - t1);
-							Vector3 v = v1 * fFactor + v2*(1 - fFactor);
-							bone.trans.data.push_back(v);
-						}
-						if (nFirstTransSize < 0){
-							nFirstTransSize = bone.trans.times.size();
-							bone.trans.times.push_back((int)(tickEnd * fTimeScale));
-							bone.trans.data.push_back(v1);
-						}
-						else
-						{
-							if ((int)nodeChannel->mPositionKeys[k - 1].mTime < tickStart)
-							{
-								bone.trans.times.push_back((int)(tickEnd * fTimeScale));
-								bone.trans.data.push_back(v1);
-							}
-							else if ((int)nodeChannel->mPositionKeys[k - 1].mTime > realEndTick)
-							{
-								realEndTick = (int)nodeChannel->mPositionKeys[k - 1].mTime;
-							}
-						}
-						break;
-					}
-					else if (nTime < tickStart)
-					{
-						if ((int)nodeChannel->mNumPositionKeys == 1)
-						{
-							bone.trans.times.push_back((int)(tickStart * fTimeScale));
-							Vector3 v = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
-							bone.trans.data.push_back(v);
-						}
-					}
+					Vector3 v = ConvertFBXVector3D(nodeChannel->mPositionKeys[k].mValue);
+					bone.trans.times.push_back((int)(nTime * fTimeScale));
+					bone.trans.data.push_back(v);
 				}
 			}
-
-			// support multiple animations
-			{
-				int nAnimId = AnimIndex;
-				bone.scale.ranges.resize(nAnimId + 1, AnimRange(0, 0));
-				bone.trans.ranges.resize(nAnimId + 1, AnimRange(0, 0));
-				bone.rot.ranges.resize(nAnimId + 1, AnimRange(0, 0));
-				if (nFirstScaleSize < 0)
-					nFirstScaleSize = max(0, (int)bone.scale.times.size() - 1);
-				if (nFirstTransSize < 0)
-					nFirstTransSize = max(0, (int)bone.trans.times.size() - 1);
-				if (nFirstRotSize < 0)
-					nFirstRotSize = max(0, (int)bone.rot.times.size() - 1);
-				bone.scale.ranges[nAnimId] = AnimRange(nFirstScaleSize, max(nFirstScaleSize, (int)bone.scale.times.size() - 1));
-				bone.trans.ranges[nAnimId] = AnimRange(nFirstTransSize, max(nFirstTransSize, (int)bone.trans.times.size() - 1));
-				bone.rot.ranges[nAnimId] = AnimRange(nFirstRotSize, max(nFirstRotSize, (int)bone.rot.times.size() - 1));
-			}
 		}
 	}
-	if (realEndTick != tickStart)
-	{
-		int realEndTime = (int)fTimeScale * realEndTick;
-		anim.timeEnd = (uint32)(realEndTime);
-
-		for (int i = 0; i<(int)m_bones.size(); i++)
-		{
-			ParaEngine::Bone & bone = m_bones[i];
-
-			int boneScaleSize = bone.scale.times.size();
-			if (bone.scale.times[boneScaleSize - 1] > realEndTime)
-				bone.scale.times[boneScaleSize - 1] = realEndTime;
-
-			int boneRotSize = bone.rot.times.size();
-			if (bone.rot.times[boneRotSize - 1] > realEndTime)
-				bone.rot.times[boneRotSize - 1] = realEndTime;
-
-			int boneTransSize = bone.trans.times.size();
-			if (bone.trans.times[boneTransSize - 1] > realEndTime)
-				bone.trans.times[boneTransSize - 1] = realEndTime;
-		}
-	}
-	return anim;
-}
-
-void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nIndex, CParaXModel *pMesh)
-{
-	aiAnimation* fbxAinm = pFbxScene->mAnimations[nIndex];
 
 	if (m_modelInfo.LoadFromFile(m_sAnimSplitterFilename))
 	{
@@ -1271,22 +1098,22 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 		for (int i = 0; i < animsCount;i++)
 		{
 			ParaEngine::AnimInfo &animinfo = m_modelInfo.m_Anims[i];
-			ModelAnimation anim = CreateModelAnimation(fbxAinm, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
 			m_anims.push_back(anim);
 		}
 	}
 	else
 	{
-		uint32 time = (uint32)((1000.f / fbxAinm->mTicksPerSecond) * fbxAinm->mDuration);
+		uint32 time = (uint32)((1000.f / pFbxAnim->mTicksPerSecond) * pFbxAnim->mDuration);
 		int animsCount = (int)floor(time / 10000) + 1;
 		for (int i = 0; i < animsCount; i++)
 		{
 			ParaEngine::AnimInfo animinfo;
 			animinfo.id = i;
-			animinfo.startTick = (int)(i * 10 * fbxAinm->mTicksPerSecond);
-			animinfo.endTick = (int)((i + 1) * 10 * fbxAinm->mTicksPerSecond - 1);
+			animinfo.startTick = (int)(i * 10 * pFbxAnim->mTicksPerSecond);
+			animinfo.endTick = (int)((i + 1) * 10 * pFbxAnim->mTicksPerSecond - 1);
 			animinfo.loopType = 0;
-			ModelAnimation anim = CreateModelAnimation(fbxAinm, &animinfo, (int)m_anims.size(), i == animsCount - 1);
+			ModelAnimation anim = CreateModelAnimation(pFbxAnim, &animinfo, (int)m_anims.size(), i == animsCount - 1);
 			m_anims.push_back(anim);
 		}
 	}

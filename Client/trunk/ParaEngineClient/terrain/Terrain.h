@@ -1,7 +1,5 @@
 #pragma once
 #include "IAttributeFields.h"
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
 #include "TerrainBuffer.h"
 #define INVALID_TEXTURE_ID		(1000000)
 
@@ -360,7 +358,7 @@ namespace ParaTerrain
 	class CDetailTextureFactory;
 	
 	/** terrain mask file callback data */
-	class CTerrainMaskFileCallbackData : public boost::signals::trackable
+	class CTerrainMaskFileCallbackData : public boost::signals2::trackable
 	{
 	public:
 		CTerrainMaskFileCallbackData(Terrain *pTerrain) : m_pTerrain(pTerrain){}

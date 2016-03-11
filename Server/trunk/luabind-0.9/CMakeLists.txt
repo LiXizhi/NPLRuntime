@@ -35,6 +35,9 @@ IF(MSVC)
 	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
 		endif(${flag_var} MATCHES "/MDd")
 	endforeach(flag_var)
+ELSE()
+	# suppress warnings
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
 
 ADD_LIBRARY(luabind ${luabind_SRCS})
