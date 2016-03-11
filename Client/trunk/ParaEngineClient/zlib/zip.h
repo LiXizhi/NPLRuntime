@@ -17,7 +17,7 @@ DECLARE_HANDLE(HZIP);
 typedef DWORD ZRESULT;
 // return codes from any of the zip functions. Listed later.
 
-
+void dosdatetime2filetime(WORD dosdate, WORD dostime, FILETIME *ft);
 
 HZIP CreateZip(const TCHAR *fn, const char *password);
 HZIP CreateZip(void *buf,unsigned int len, const char *password);

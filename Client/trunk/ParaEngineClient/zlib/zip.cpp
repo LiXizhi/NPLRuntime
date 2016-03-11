@@ -2152,6 +2152,27 @@ lutime_t filetime2timet(const FILETIME ft)
   return (lutime_t)((i-116444736000000000)/10000000);
 }
 
+void dosdatetime2filetime(WORD dosdate, WORD dostime, FILETIME *ft)
+{
+    SYSTEMTIME st;
+    st.wYear = (WORD)((dosdate>>9)+1980);
+    st.wMonth = (WORD)((dosdate>>5)&0xf);
+    st.wDay = (WORD)(dosdate&0x1f);
+    st.wHour = (WORD)(dostime>>11);
+    st.wMinute = (WORD)((dostime>>5)&0x3f);
+    st.wSecond = (WORD)((dostime&0x1f)*2);
+    //ignored fields
+    st.wDayOfWeek = -1;
+    st.wMilliseconds = 0;
+    BOOL result = SystemTimeToFileTime(&st, ft);
+    if(result == 0)
+    {
+        DWORD error_id = GetLastError();
+        int debug = 1;
+        debug++;
+    }
+}
+
 void filetime2dosdatetime(const FILETIME ft, WORD *dosdate,WORD *dostime)
 { // date: bits 0-4 are day of month 1-31. Bits 5-8 are month 1..12. Bits 9-15 are year-1980
   // time: bits 0-4 are seconds/2, bits 5-10 are minute 0..59. Bits 11-15 are hour 0..23
@@ -2161,7 +2182,7 @@ void filetime2dosdatetime(const FILETIME ft, WORD *dosdate,WORD *dostime)
   *dosdate |= (WORD)((st.wDay&0x1f));
   *dostime = (WORD)((st.wHour&0x1f) << 11);
   *dostime |= (WORD)((st.wMinute&0x3f) << 5);
-  *dostime |= (WORD)((st.wSecond*2)&0x1f);
+  *dostime |= (WORD)((st.wSecond/2)&0x1f);
 }
 
 
@@ -2210,7 +2231,10 @@ ZRESULT GetFileInfo(HANDLE hf, ulg *attr, long *size, iztimes *times, ulg *times
   }
   if (timestamp!=NULL)
   { WORD dosdate,dostime;
-    filetime2dosdatetime(bhi.ftLastWriteTime,&dosdate,&dostime);
+    FILETIME local_ftLastWriteTime;
+    //cellfy: bug fix, adjust UTC time to local time
+    FileTimeToLocalFileTime(&bhi.ftLastWriteTime, &local_ftLastWriteTime);
+    filetime2dosdatetime(local_ftLastWriteTime,&dosdate,&dostime);
     *timestamp = (WORD)dostime | (((DWORD)dosdate)<<16);
   }
   return ZR_OK;
