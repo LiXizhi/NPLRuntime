@@ -11,19 +11,24 @@ namespace ParaEngine
 	under windows: it uses ReadDirectoryChangesW
 	under linux: it uses inotify. 
 	*/
-	class CFileSystemWatcher : public boost::asio::dir_monitor
+	class CFileSystemWatcher
 	{
 	public:
 		typedef boost::asio::dir_monitor_event::event_type FileActionEnum;
 		typedef boost::asio::dir_monitor_event DirMonitorEvent;
 		typedef boost::signals2::signal<void(const DirMonitorEvent&)>  FileSystemEvent_t;
 		typedef boost::signals2::connection FileSystemEvent_Connection_t;
+		typedef boost::shared_ptr<boost::asio::dir_monitor> DirMonitorImpPtr;
 
 		CFileSystemWatcher(const std::string& filename);
 		CFileSystemWatcher();
 		~CFileSystemWatcher();
 
 	public:
+		/** must be called before you wait for worker thread to exit. when worker thread is existed, 
+		* You can safely delete this class.
+		*/
+		void Destroy();
 
 		/** add a directory to monitor. */
 		bool add_directory(const std::string &dirname);
@@ -53,6 +58,8 @@ namespace ParaEngine
 
 		/** get unprocessed event */
 		std::queue < DirMonitorEvent > m_msg_queue;
+
+		DirMonitorImpPtr m_monitor_imp;
 
 		/** locking the queue */
 		ParaEngine::mutex m_mutex;
