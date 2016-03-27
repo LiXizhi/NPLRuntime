@@ -494,6 +494,24 @@ DWORD CZipArchive::GetFileSize(FileHandle& handle)
 	return 0;
 }
 
+string CZipArchive::GetNameInArchive(FileHandle& handle)
+{
+	if(handle.m_index!=-1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileName;
+	}
+	return 0;
+}
+
+string CZipArchive::GetOriginalNameInArchive(FileHandle& handle)
+{
+	if(handle.m_index!=-1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileNameOriginal;
+	}
+	return 0;
+}
+
 bool CZipArchive::ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
 {
 	ParaEngine::Lock lock_(m_mutex);
@@ -853,6 +871,7 @@ bool CZipArchive::ReadEntries()
 		pReader->read(tmp, CentralDir.NameSize);
 		tmp[CentralDir.NameSize] = 0x0;
 		entry.zipFileName = tmp;
+		entry.zipFileNameOriginal = tmp;
 		if (m_bIgnoreCase)
 			StringHelper::make_lower(entry.zipFileName);
 

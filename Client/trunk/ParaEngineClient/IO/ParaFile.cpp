@@ -908,12 +908,24 @@ DWORD CParaFile::GetLastModifiedTime() const
 	return m_lastModifiedTime;
 }
 
+bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
+{
+	if (m_lastModifiedTime != lastWriteTime)
+	{
+		m_lastModifiedTime = lastWriteTime;
+		return true;
+	}
+	return false;
+}
+
 #ifdef PARAENGINE_CLIENT
 #include "zlib/zip.h"
 #endif
 
-bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
+bool CParaFile::WriteLastModifiedTime(DWORD lastWriteTime)
 {
+	SetLastModifiedTime(lastWriteTime);
+
 #ifdef WIN32
 	//For win32
 	bool result = false;
@@ -928,7 +940,7 @@ bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
 			::dosdatetime2filetime(dosdate, dostime, &local_ft);
 			LocalFileTimeToFileTime(&local_ft, &utc_ft);
 
-			result = SetFileTime(m_handle.m_handle, &utc_ft, &utc_ft, &utc_ft);
+			result = (SetFileTime(m_handle.m_handle, &utc_ft, &utc_ft, &utc_ft) != FALSE);
 		}
 	}
 	return result;

@@ -150,7 +150,7 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 
 			//Cellfy: try to restore timestamp of the file
 			if(fileFrom.GetLastModifiedTime()>0)
-				fileTo.SetLastModifiedTime(fileFrom.GetLastModifiedTime());
+				fileTo.WriteLastModifiedTime(fileFrom.GetLastModifiedTime());
 			return true;
 		}
 	}

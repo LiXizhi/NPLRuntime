@@ -591,6 +591,8 @@ namespace ParaEngine
 
 		bool SetLastModifiedTime(DWORD lastWriteTime);
 
+		bool WriteLastModifiedTime(DWORD lastWriteTime);
+
 		//////////////////////////////////////////////////////////////////////////
 		//
 		// bit wise reading
