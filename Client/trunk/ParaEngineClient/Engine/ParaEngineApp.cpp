@@ -367,6 +367,15 @@ void CParaEngineApp::InitSystemModules()
 
 HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
+	{
+		bool bLoop = false;
+		int i=0;
+		while(bLoop)
+		{
+			i=(i+1)%512;
+		}
+	}
+
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 
