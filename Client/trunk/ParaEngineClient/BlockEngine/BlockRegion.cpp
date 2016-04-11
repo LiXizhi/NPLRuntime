@@ -1362,16 +1362,24 @@ namespace ParaEngine
 												if (!bSameBlockId)
 												{
 													SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
-													if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+													if (curBlock.GetTemplate())
 													{
-														removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
-														if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
+														if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 														{
-															addQueue[i * 16 + chunkY_rs] = sBlockId[i];
-															if (sBlockData[i] != 0)
-																addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+															removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
+															if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
+															{
+																addQueue[i * 16 + chunkY_rs] = sBlockId[i];
+																if (sBlockData[i] != 0)
+																	addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+															}
 														}
 													}
+													else
+													{
+														OUTPUT_DEBUG("fatal error: apply chunk to invalid index\n");
+													}
+													
 													SetBlockUserDataByIndex(regionBlockX, regionBlockY, regionBlockZ, sBlockData[i]);
 												}
 												else
