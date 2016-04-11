@@ -44,6 +44,10 @@ namespace ParaEngine
 		g_emptySlotIndices[pRenderTask->GetInternalIndex()] = true;
 	}
 
+	BlockRenderTask::BlockRenderTask()
+	{
+		memset(this, 0, sizeof(BlockRenderTask));
+	}
 
 	void BlockRenderTask::Init(BlockTemplate *pTemplate, uint16_t nBlockData, uint32_t vertexOffset, VertexBufferDevicePtr_type pBuffer,Uint16x3& minBlockId_ws)
 	{

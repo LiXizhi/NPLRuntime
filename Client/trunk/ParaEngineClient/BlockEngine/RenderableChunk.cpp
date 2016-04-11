@@ -834,15 +834,21 @@ namespace ParaEngine
 					pBuffer->UploadMemoryBuffer(memBuffer.GetMemoryPointer());
 			}
 
+			m_renderTasks.clear();
+			m_renderTasks.reserve(m_builder_tasks.size());
 			for (BlockRenderTask* pTask : m_builder_tasks)
 			{
 				if ((int)m_vertexBuffers.size() > pTask->GetBufferIndex())
 				{
+					// transfer ownership from builder task to render task. 
 					pTask->SetVertexBuffer(m_vertexBuffers[pTask->GetBufferIndex()]->GetDevicePointer());
+					m_renderTasks.push_back(pTask);
+				}
+				else
+				{
+					pTask->SetVertexBuffer(0);
 				}
 			}
-			// transfer ownership from builder task to render task. 
-			m_renderTasks = m_builder_tasks;
 			m_builder_tasks.clear();
 			ClearBuilderBuffer();
 		}
