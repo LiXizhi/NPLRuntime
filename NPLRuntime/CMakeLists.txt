@@ -63,6 +63,7 @@ else()
 endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)
+add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${NPLRuntime_BINARY_DIR}/LuaJIT)
 add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${NPLRuntime_BINARY_DIR}/luabind-0.9)
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${NPLRuntime_BINARY_DIR}/sqlite-3.6.23.1)
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${NPLRuntime_BINARY_DIR}/jsoncpp-0.5.0)
