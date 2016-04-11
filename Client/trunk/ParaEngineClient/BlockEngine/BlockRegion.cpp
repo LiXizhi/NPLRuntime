@@ -1326,7 +1326,7 @@ namespace ParaEngine
 									{
 										// delete old block
 										Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-										if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+										if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 										{
 											removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
 										}
@@ -1361,7 +1361,6 @@ namespace ParaEngine
 
 												if (!bSameBlockId)
 												{
-													SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
 													if (curBlock.GetTemplate())
 													{
 														if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
@@ -1377,9 +1376,9 @@ namespace ParaEngine
 													}
 													else
 													{
-														OUTPUT_DEBUG("fatal error: apply chunk to invalid index\n");
+														OUTPUT_LOG("fatal error: apply chunk to invalid index\n");
 													}
-													
+													SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
 													SetBlockUserDataByIndex(regionBlockX, regionBlockY, regionBlockZ, sBlockData[i]);
 												}
 												else

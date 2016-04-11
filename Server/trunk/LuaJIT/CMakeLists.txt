@@ -311,11 +311,9 @@ add_library ( liblua SHARED ${LJCORE_C} ${DEPS} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
 
-if(DEFINED ${OUTPUT_BIN_DIR})
-	ADD_CUSTOM_COMMAND(
-	   TARGET liblua
-	   POST_BUILD
-	   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-	   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:liblua> ${OUTPUT_BIN_DIR}
-	)
-endif()
+ADD_CUSTOM_COMMAND(
+	TARGET liblua
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:liblua> ${OUTPUT_BIN_DIR}
+)

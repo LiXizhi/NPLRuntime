@@ -4,6 +4,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 
 2016.4.11
      - Heat beat will reset msg global variable to nil. 
+	 - fix a crashing issue when applying chunks
 
 2016.4.7
 	- fixed nested double brackets long string in NPL HTTP post request
