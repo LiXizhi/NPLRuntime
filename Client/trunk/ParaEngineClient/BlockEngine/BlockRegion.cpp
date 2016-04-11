@@ -346,7 +346,7 @@ namespace ParaEngine
 					if(blockIdx >= 0)
 					{
 						Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-						if(curBlock.GetTemplate()->IsMatchAttribute(matchtype))
+						if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(matchtype))
 						{
 							uint16_t rx, ry, rz;
 							UnpackBlockIndex(i,rx,ry,rz);
@@ -1446,7 +1446,7 @@ namespace ParaEngine
 									// delete old block
 									nModifiedCount++;
 									Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-									if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+									if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 									{
 										removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
 									}

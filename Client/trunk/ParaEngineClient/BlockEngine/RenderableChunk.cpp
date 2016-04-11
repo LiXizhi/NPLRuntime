@@ -313,14 +313,16 @@ namespace ParaEngine
 						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
 						pVertices += nVertexCount;
 						vertexOffset += nVertexCount;
+
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
 					}
 					else
 					{
+						// this could happen when block changes when we are still processing it
 						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
-					nFaceCountCompleted += nFaceCount;
-					pTask->AddRectFace(nFaceCount);
-					nFreeFaceCountInVertexBuffer -= nFaceCount;
 				}
 			}
 		}
@@ -787,14 +789,16 @@ namespace ParaEngine
 						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
 						pVertices += nVertexCount;
 						vertexOffset += nVertexCount;
+
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
 					}
 					else
 					{
+						// this could happen when block changes when we are still processing it. 
 						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
-					nFaceCountCompleted += nFaceCount;
-					pTask->AddRectFace(nFaceCount);
-					nFreeFaceCountInVertexBuffer -= nFaceCount;
 				}
 				CHECK_YIELD_CPU_TO_WRITER;
 			}
@@ -840,13 +844,13 @@ namespace ParaEngine
 			{
 				if ((int)m_vertexBuffers.size() > pTask->GetBufferIndex())
 				{
-					// transfer ownership from builder task to render task. 
+					// transfer render task ownership from builder task to render task. 
 					pTask->SetVertexBuffer(m_vertexBuffers[pTask->GetBufferIndex()]->GetDevicePointer());
 					m_renderTasks.push_back(pTask);
 				}
 				else
 				{
-					pTask->SetVertexBuffer(0);
+					BlockRenderTask::ReleaseTask(pTask);
 				}
 			}
 			m_builder_tasks.clear();
