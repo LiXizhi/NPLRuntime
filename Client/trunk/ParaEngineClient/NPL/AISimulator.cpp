@@ -28,6 +28,7 @@
 #include "2dengine/GUIRoot.h"
 #include "SceneObject.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "NPL/NPLWriter.h"
 #include "IEnvironmentSim.h"
 
 
@@ -135,7 +136,8 @@ void CAISimulator::FrameMove(float fElapsedTime)
 	if(g_fGameInterfaceTimer > m_fGameloopInterval ) /* activate every 0.5 seconds */
 	{
 		g_fGameInterfaceTimer = 0;
-		m_pRuntimeEnv->NPL_Activate(main_rts_state, m_sGameloop.c_str());
+		// send empty message
+		m_pRuntimeEnv->NPL_Activate(main_rts_state, m_sGameloop.c_str(), NPL::CNPLWriter::GetNilMessage().c_str(), (int)NPL::CNPLWriter::GetNilMessage().size());
 	}
 
 	// fire all unhandled events
