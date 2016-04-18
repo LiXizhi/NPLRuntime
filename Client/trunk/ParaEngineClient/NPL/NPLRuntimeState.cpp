@@ -631,6 +631,23 @@ void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, i
 	ActivateFile_any(filename.sRelativePath, sCode, nCodeLength);
 }
 
+void NPL::CNPLRuntimeState::WaitForMessage()
+{
+	m_input_queue.wait();
+}
+
+NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PeekMessage(int nIndex)
+{
+	return m_input_queue.peek(nIndex);
+}
+
+NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PopMessageAt(int nIndex)
+{
+	NPLMessage_ptr msg;
+	m_input_queue.try_pop_at(nIndex, msg);
+	return msg;
+}
+
 int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
 {
 	using namespace ParaEngine;
@@ -641,3 +658,4 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("MsgQueueSize", FieldType_Int, (void*)SetMsgQueueSize_s, (void*)GetMsgQueueSize_s, NULL, NULL, bOverride);
 	return S_OK;
 }
+

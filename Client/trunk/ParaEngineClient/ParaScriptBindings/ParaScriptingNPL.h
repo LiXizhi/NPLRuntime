@@ -82,6 +82,26 @@ namespace ParaScripting
 		* [thread safe]
 		*/
 		void SetMsgQueueSize(int nSize = 500);
+
+		/** simply wait for the next message to arrive.
+		*/
+		void WaitForMessage();
+
+		/**
+		* @param inout: this should be a table {filename=true, code=true, msg=true}, specify which part of the message to retrieve in return value. 
+		* {filename=true} will only retrieve the filename, because it is faster if code is big. 
+		* @return: msg table {filename, code, msg} if exist, or nil.
+		*/
+		object PeekMessage(int nIndex, const object& inout);
+
+		/** pop message at given index. usually we need to call peek() first.
+		* @param inout: this should be a table {filename=true, code=true, process=true}, specify which part of the message to retrieve in return value.
+		* {filename=true} will only retrieve the filename, because it is faster if code is big.
+		* if inout.process == true, we will pop and process the message via standard activation. 
+		* if inout.process == false, we will pop without processing the message, in which case the caller may need to process it manually
+		* @return: msg table {filename, code, msg, result} if exist, or filename will be false. result is only available if process is true
+		*/
+		object PopMessageAt(int nIndex, const object& inout);
 	};
 
 	/** 

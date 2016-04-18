@@ -128,6 +128,7 @@ namespace ParaEngine
 		int GetParentIndex() const { return parent; }
 		int GetBoneIndex() const { return nIndex; }
 		int GetBoneID() const { return nBoneID; }
+		int IsAttachment() const { return nBoneID < 0; }
 		void SetBoneID(int val) { nBoneID = val; }
 
 		const ParaEngine::Quaternion& GetFinalRot() const;

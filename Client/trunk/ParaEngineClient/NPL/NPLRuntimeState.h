@@ -120,6 +120,22 @@ namespace NPL
 		*/
 		void SetMsgQueueSize(int nSize = 500);
 
+
+		/** simply wait for the next message to arrive.
+		*/
+		void WaitForMessage();
+
+		/**
+		* @return: get a pointer to the object at given index, if exist, or NULL.
+		* @note this is thread safe, however the returned object may be invalid if it is popped by another thread when you use it.
+		*/
+		NPLMessage_ptr PeekMessage(int nIndex);
+		
+		/** pop message at given index. usually we need to call peek() first.
+		* @return true if popped.
+		*/
+		NPLMessage_ptr PopMessageAt(int nIndex);
+		
 	public:
 		virtual const std::string& GetIdentifier();
 
@@ -256,12 +272,12 @@ namespace NPL
 		/** signal: called when state is first loaded */
 		Signal_StateLoaded_t StateLoaded;
 
-	protected:
-
-		/** Internal function for processing a given msg
+		/** function for processing a given msg
 		* @return: if -1, we should exit the runtime state. normally it returns 0.
 		*/
 		int ProcessMsg(NPLMessage_ptr msg);
+
+	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
 		void LoadNPLState();

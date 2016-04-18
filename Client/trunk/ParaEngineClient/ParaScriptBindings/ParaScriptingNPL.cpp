@@ -1365,5 +1365,134 @@ namespace ParaScripting
 		}
 	}
 
+	void ParaNPLRuntimeState::WaitForMessage()
+	{
+		if (m_rts != 0)
+		{
+			m_rts->WaitForMessage();
+		}
+	}
+
+	luabind::object ParaNPLRuntimeState::PeekMessage(int nIndex, const object& inout)
+	{
+		if (m_rts != 0)
+		{
+			if (type(inout) == LUA_TTABLE)
+			{
+				NPL::NPLMessage_ptr msg = m_rts->PeekMessage(nIndex);
+				if (!msg)
+				{
+					inout["filename"] = false;
+				}
+				else
+				{
+					bool bFilename = false;
+					bool bCode = false;
+					bool bMsg = false;
+					for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
+					{
+						// we only serialize item with a string key
+						const object& key = itCur.key();
+						if (type(key) == LUA_TSTRING)
+						{
+							std::string sFieldName = object_cast<const char*>(key);
+							if (sFieldName == "filename")
+							{
+								bFilename = true;
+							}
+							else if (sFieldName == "code")
+							{
+								bCode = true;
+							}
+							else if (sFieldName == "msg")
+							{
+								bMsg = true;
+							}
+						}
+					}
+					if (bFilename)
+						inout["filename"] = msg->m_filename;
+					if (bCode)
+						inout["code"] = msg->m_code;
+					if (bMsg)
+					{
+						if (msg->m_code.size() > 4 && strncmp(msg->m_code.c_str(), "msg=", 4) == 0)
+						{
+							object msgTable = newtable(inout.interpreter());
+							NPL::NPLHelper::StringToLuaObject(msg->m_code.c_str() + 4, msg->m_code.size() - 4, msgTable);
+							inout["msg"] = msgTable;
+						}
+					}
+				}
+			}
+		}
+		return object(inout);
+	}
+
+	luabind::object ParaNPLRuntimeState::PopMessageAt(int nIndex, const object& inout)
+	{
+		if (m_rts != 0)
+		{
+			if (type(inout) == LUA_TTABLE)
+			{
+				NPL::NPLMessage_ptr msg = m_rts->PopMessageAt(nIndex);
+				if (!msg)
+				{
+					inout["filename"] = false;
+				}
+				else
+				{
+					bool bProcessMessage = false;
+					bool bFilename = false;
+					bool bCode = false;
+					bool bMsg = false;
+					for (luabind::iterator itCur(inout), itEnd; itCur != itEnd; ++itCur)
+					{
+						// we only serialize item with a string key
+						const object& key = itCur.key();
+						if (type(key) == LUA_TSTRING)
+						{
+							std::string sFieldName = object_cast<const char*>(key);
+							if (sFieldName == "filename")
+							{
+								bFilename = true;
+							}
+							else if (sFieldName == "code")
+							{
+								bCode = true;
+							}
+							else if (sFieldName == "msg")
+							{
+								bMsg = true;
+							}
+							else if (sFieldName == "process")
+							{
+								bProcessMessage = true;
+							}
+						}
+					}
+					if (bFilename)
+						inout["filename"] = msg->m_filename;
+					if (bCode)
+						inout["code"] = msg->m_code;
+					if (bMsg)
+					{
+						if (msg->m_code.size() > 4 && strncmp(msg->m_code.c_str(), "msg=", 4) == 0)
+						{
+							object msgTable = newtable(inout.interpreter());
+							NPL::NPLHelper::StringToLuaObject(msg->m_code.c_str() + 4, msg->m_code.size() - 4, msgTable);
+							inout["msg"] = msgTable;
+						}
+					}
+					if (bProcessMessage)
+					{
+						inout["result"] = m_rts->ProcessMsg(msg);
+					}
+				}
+			}
+		}
+		return object(inout);
+	}
+
 #pragma endregion NPL Runtime State
 }// namespace ParaScripting
