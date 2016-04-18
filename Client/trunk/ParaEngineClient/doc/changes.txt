@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.4.18
+	 - fixed fbx attachment matrix calculations
+
 2016.4.13
      - synchronous NPL message function is added for HTTP debugger
 	 - fix synchronous msg queue pop error
