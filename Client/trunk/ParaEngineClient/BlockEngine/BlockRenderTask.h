@@ -106,9 +106,7 @@ namespace ParaEngine
 		};
 		
 		
-		BlockRenderTask()
-		{
-		}
+		BlockRenderTask();
 
 		void Reset();
 

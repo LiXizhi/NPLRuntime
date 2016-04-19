@@ -277,5 +277,7 @@ BlockModel& ParaEngine::CWireModelProvider::GetBlockModel(CBlockWorld* pBlockMan
 
 BlockModel& ParaEngine::CWireModelProvider::GetBlockModel(int nIndex /*= 0*/)
 {
+	// this fixed a bug for wire model face count predication. 
+	m_block_model.SetFaceCount(5);
 	return m_block_model;
 }

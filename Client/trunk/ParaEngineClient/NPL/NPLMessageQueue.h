@@ -178,6 +178,54 @@ namespace NPL
 			m_container.pop_front();
 		}
 
+		/** simply wait for the next message to arrive. the caller may be calling try_XXX() afterwards.
+		*/
+		void wait()
+		{
+			boost::mutex::scoped_lock lock(m_mutex);
+			m_condition_variable.wait(lock);
+		}
+
+		/**
+		* @return: get a pointer to the object at given index, if exist, or NULL.
+		* @note this is thread safe, however the returned object may be invalid if it is popped by another thread when you use it.
+		*/
+		value_type peek(size_type nIndex)
+		{
+			boost::mutex::scoped_lock lock(m_mutex);
+			if (nIndex < m_container.size())
+			{
+				return m_container.at(nIndex);
+			}
+			return value_type();
+		}
+
+		/** pop message at given index. usually we need to call peek() first.
+		* @return true if popped. 
+		*/
+		bool try_pop_at(size_type nIndex, value_type& popped_value)
+		{
+			boost::mutex::scoped_lock lock(m_mutex);
+			if (nIndex < m_container.size())
+			{
+				if (nIndex == 0)
+				{
+					popped_value = m_container.front();
+				}
+				else
+				{
+					popped_value = m_container[nIndex];
+					for (size_type i = nIndex; i >= 1; i--)
+					{
+						m_container[i] = m_container[i-1];
+					}
+				}
+				m_container.pop_front();
+				return true;
+			}
+			return false;
+		}
+
 		/**
 		* @return: get a pointer to the front object if exist, or NULL. 
 		* @note this is thread safe, however the returned object may be invalid if it is popped by another thread when you use it. 

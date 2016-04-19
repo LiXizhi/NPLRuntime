@@ -1050,7 +1050,7 @@ bool ParaEngine::Bone::GetExternalScaling(IAttributeFields* pAnimInstance, Vecto
 
 void ParaEngine::Bone::PostCalculateBoneMatrix()
 {
-	if (IsOffsetMatrixBone())
+	if (IsOffsetMatrixBone() && !IsAttachment())
 	{
 		mat = matOffset * mat;
 	}

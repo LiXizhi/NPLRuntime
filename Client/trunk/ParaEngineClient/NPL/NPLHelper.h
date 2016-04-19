@@ -148,6 +148,12 @@ namespace NPL
 			EncodeStringInQuotation(output, nOutputOffset, input, (int)strlen(input));
 		}
 		
+
+		/** this function is thread-safe.
+		* Check if the given string can be encoded using lua long string, i.e.  [[]]
+		* json string usually can not be encoded in double brackets.
+		*/
+		static bool CanEncodeStringInDoubleBrackets(const char*	buffer, int nLength);
 	};
 }
 

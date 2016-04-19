@@ -52,3 +52,4 @@ Server/trunk/*
 !Server/trunk/tinyxpath_1_3_1/
 !Server/trunk/NPLMono/
 !Server/trunk/luasql/
+!Server/trunk/luaJIT/

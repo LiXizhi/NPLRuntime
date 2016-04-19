@@ -346,7 +346,7 @@ namespace ParaEngine
 					if(blockIdx >= 0)
 					{
 						Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-						if(curBlock.GetTemplate()->IsMatchAttribute(matchtype))
+						if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(matchtype))
 						{
 							uint16_t rx, ry, rz;
 							UnpackBlockIndex(i,rx,ry,rz);
@@ -1326,7 +1326,7 @@ namespace ParaEngine
 									{
 										// delete old block
 										Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-										if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+										if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 										{
 											removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
 										}
@@ -1361,17 +1361,24 @@ namespace ParaEngine
 
 												if (!bSameBlockId)
 												{
-													SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
-													if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+													if (curBlock.GetTemplate())
 													{
-														removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
-														if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
+														if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 														{
-															addQueue[i * 16 + chunkY_rs] = sBlockId[i];
-															if (sBlockData[i] != 0)
-																addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+															removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
+															if (pTemplate->IsMatchAttribute(BlockTemplate::batt_onload))
+															{
+																addQueue[i * 16 + chunkY_rs] = sBlockId[i];
+																if (sBlockData[i] != 0)
+																	addDataQueue[i * 16 + chunkY_rs] = sBlockData[i];
+															}
 														}
 													}
+													else
+													{
+														OUTPUT_LOG("fatal error: apply chunk to invalid index\n");
+													}
+													SetBlockTemplateByIndex(regionBlockX, regionBlockY, regionBlockZ, pTemplate);
 													SetBlockUserDataByIndex(regionBlockX, regionBlockY, regionBlockZ, sBlockData[i]);
 												}
 												else
@@ -1446,7 +1453,7 @@ namespace ParaEngine
 									// delete old block
 									nModifiedCount++;
 									Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
-									if (curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
+									if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(BlockTemplate::batt_onload))
 									{
 										removeQueue[i * 16 + chunkY_rs] = curBlock.GetTemplateId();
 									}

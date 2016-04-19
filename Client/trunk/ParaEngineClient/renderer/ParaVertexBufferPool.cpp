@@ -129,6 +129,8 @@ void ParaEngine::ParaVertexBufferPool::TickCache()
 
 ParaVertexBuffer* ParaEngine::ParaVertexBufferPool::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, D3DPOOL dwPool)
 {
+	if (nBufferSize == 0)
+		return NULL;
 	if (m_unusedFullSizedBuffers.size() > 0 && nBufferSize == GetFullSizedBufferSize())
 	{
 		for (auto iter = m_unusedFullSizedBuffers.begin(); iter != m_unusedFullSizedBuffers.end(); )

@@ -444,6 +444,9 @@ HRESULT CParaEngineApp::StopApp()
 
 	// Clean up all threads
 	CAsyncLoader::GetSingleton().CleanUp();
+
+	// delete all singletons
+	DestroySingletons();
 	return S_OK;
 }
 #pragma endregion CtorDtor

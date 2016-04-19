@@ -11,6 +11,7 @@
 
 #include "NPLRuntime.h"
 #include "NPLNetServer.h"
+#include "NPLHelper.h"
 #include "EventsCenter.h"
 
 NPL::CNPLDispatcher::CNPLDispatcher(CNPLNetServer* pServer)
@@ -447,9 +448,18 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::DispatchMsg( NPLMsgIn& msg )
 				}
 
 				// add body
-				msg_->m_code.append("body=[[");
-				msg_->m_code.append(msg.m_code);
-				msg_->m_code.append("]],");
+				if (NPLHelper::CanEncodeStringInDoubleBrackets(msg.m_code.c_str(), (int)msg.m_code.size()))
+				{
+					msg_->m_code.append("body=[[");
+					msg_->m_code.append(msg.m_code);
+					msg_->m_code.append("]],");
+				}
+				else
+				{
+					msg_->m_code.append("body=");
+					NPLHelper::EncodeStringInQuotation(msg_->m_code, msg_->m_code.size(), msg.m_code);
+					msg_->m_code.append(",");
+				}
 
 				// add nid or tid so that the runtime state can have access to the current connection object. 
 				// we append last to msg, so that nid or tid in the input message is overridden by the real value. 

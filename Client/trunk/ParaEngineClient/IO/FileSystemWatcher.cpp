@@ -73,6 +73,10 @@ void ParaEngine::CFileSystemWatcherService::DeleteDirWatcher( const std::string&
 	{
 		if(itCur->second.use_count() == 1)
 		{
+			itCur->second->Destroy();
+			// sleep some time for watcher to exit.
+			// TODO: poll for a signal, rather than this
+			SLEEP(100);
 			m_file_watchers.erase(itCur);
 		}
 		else
@@ -88,13 +92,22 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 	{
 		if(m_io_service_work)
 		{
+			for (auto& watcher : m_file_watchers)
+			{
+				if (watcher.second.use_count() != 1)
+				{
+					OUTPUT_LOG("error: CFileSystemWatcherService has external references\n", watcher.first.c_str());
+				}
+				watcher.second->Destroy();
+			}
 			m_io_service_work.reset();
-			m_file_watchers.clear();
+			
 			if(m_work_thread)
 			{
 				m_work_thread->join();
 			}
 			m_io_service.reset();
+			m_file_watchers.clear();
 		}
 	}
 	catch (...)
@@ -122,9 +135,10 @@ bool ParaEngine::CFileSystemWatcherService::Start()
 //////////////////////////////////////////////////////////////////////////
 
 ParaEngine::CFileSystemWatcher::CFileSystemWatcher(const std::string& filename)
-: boost::asio::dir_monitor(CFileSystemWatcherService::GetInstance()->GetIOService()), m_bDispatchInMainThread(true)
+: m_bDispatchInMainThread(true)
 {
-	async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+	m_monitor_imp.reset(new boost::asio::dir_monitor(CFileSystemWatcherService::GetInstance()->GetIOService()));
+	m_monitor_imp->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 	CFileSystemWatcherService::GetInstance()->Start();
 	SetName(filename);
 	OUTPUT_LOG("FileSystemWatcher: %s created\n", filename.c_str());
@@ -155,7 +169,7 @@ void ParaEngine::CFileSystemWatcher::FileHandler( const boost::system::error_cod
 			m_msg_queue.push(ev);
 		}
 		// continuously polling
-		async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+		m_monitor_imp->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 	}
 	else
 	{
@@ -207,7 +221,7 @@ bool ParaEngine::CFileSystemWatcher::add_directory( const std::string &dirname )
 	bool bRes = true;
 	try
 	{
-		boost::asio::dir_monitor::add_directory(dirname);
+		m_monitor_imp->add_directory(dirname);
 		OUTPUT_LOG("FileSystemWatcher %s begins monitoring all files in %s\n", m_name.c_str(), dirname.c_str());
 	}
 	catch (...)
@@ -223,7 +237,7 @@ bool ParaEngine::CFileSystemWatcher::remove_directory( const std::string &dirnam
 	bool bRes = true;
 	try
 	{
-		boost::asio::dir_monitor::remove_directory(dirname);
+		m_monitor_imp->remove_directory(dirname);
 		OUTPUT_LOG("FileSystemWatcher %s stops monitoring in %s\n", m_name.c_str(), dirname.c_str());
 	}
 	catch (...)
@@ -242,6 +256,11 @@ const std::string& ParaEngine::CFileSystemWatcher::GetName() const
 void ParaEngine::CFileSystemWatcher::SetName(const std::string& val)
 {
 	m_name = val;
+}
+
+void ParaEngine::CFileSystemWatcher::Destroy()
+{
+	m_monitor_imp.reset();
 }
 
 #endif

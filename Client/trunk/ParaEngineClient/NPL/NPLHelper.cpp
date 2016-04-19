@@ -455,6 +455,49 @@ void NPL::NPLHelper::EncodeStringInQuotation(StringType& buff, int nOutputOffset
 	PE_ASSERT(nPos == nFinalSize && (int)(buff.size()) == nFinalSize);
 }
 
+bool NPL::NPLHelper::CanEncodeStringInDoubleBrackets(const char* buffer, int nLength)
+{
+	char c = 0; 
+	int cont = 0;
+
+	for (int i = 0; i < nLength && (c = buffer[i]) != '\0'; i++)
+	{
+		if (c == '[')
+		{
+			if (buffer[i + 1] == '[')
+			{
+				cont++;
+#ifndef ALLOW_NESTED_LUA_COMPAT_LSTR
+				return false;
+#endif
+				i++;
+			}
+		}
+		else if(c== ']')
+		{
+#ifdef ALLOW_NESTED_LUA_COMPAT_LSTR
+			if (cont == 0 && (i + 1) == nLength)
+				return false;
+#endif
+			if (buffer[i + 1] == ']')
+			{
+#ifndef ALLOW_NESTED_LUA_COMPAT_LSTR
+				return false;
+#endif
+				if (cont == 0)
+					return false;
+				i++;
+				cont--;
+			}
+		}
+	}
+#if defined ALLOW_NESTED_LUA_COMPAT_LSTR
+	return cont == 0;
+#else
+	return true;
+#endif
+}
+
 bool NPL::NPLHelper::MsgStringToLuaObject(const char* input, int nLen, lua_State* pState)
 {
 	NPLLex lex;

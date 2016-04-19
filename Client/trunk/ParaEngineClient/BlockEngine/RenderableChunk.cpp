@@ -313,14 +313,16 @@ namespace ParaEngine
 						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
 						pVertices += nVertexCount;
 						vertexOffset += nVertexCount;
+
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
 					}
 					else
 					{
+						// this could happen when block changes when we are still processing it
 						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
-					nFaceCountCompleted += nFaceCount;
-					pTask->AddRectFace(nFaceCount);
-					nFreeFaceCountInVertexBuffer -= nFaceCount;
 				}
 			}
 		}
@@ -787,14 +789,16 @@ namespace ParaEngine
 						memcpy(pVertices, pBlockModelVertices, sizeof(BlockVertexCompressed)*nVertexCount);
 						pVertices += nVertexCount;
 						vertexOffset += nVertexCount;
+
+						nFaceCountCompleted += nFaceCount;
+						pTask->AddRectFace(nFaceCount);
+						nFreeFaceCountInVertexBuffer -= nFaceCount;
 					}
 					else
 					{
+						// this could happen when block changes when we are still processing it. 
 						OUTPUT_LOG("fatal error: not enough face count in vertex buffer. \n");
 					}
-					nFaceCountCompleted += nFaceCount;
-					pTask->AddRectFace(nFaceCount);
-					nFreeFaceCountInVertexBuffer -= nFaceCount;
 				}
 				CHECK_YIELD_CPU_TO_WRITER;
 			}
@@ -834,15 +838,21 @@ namespace ParaEngine
 					pBuffer->UploadMemoryBuffer(memBuffer.GetMemoryPointer());
 			}
 
+			m_renderTasks.clear();
+			m_renderTasks.reserve(m_builder_tasks.size());
 			for (BlockRenderTask* pTask : m_builder_tasks)
 			{
 				if ((int)m_vertexBuffers.size() > pTask->GetBufferIndex())
 				{
+					// transfer render task ownership from builder task to render task. 
 					pTask->SetVertexBuffer(m_vertexBuffers[pTask->GetBufferIndex()]->GetDevicePointer());
+					m_renderTasks.push_back(pTask);
+				}
+				else
+				{
+					BlockRenderTask::ReleaseTask(pTask);
 				}
 			}
-			// transfer ownership from builder task to render task. 
-			m_renderTasks = m_builder_tasks;
 			m_builder_tasks.clear();
 			ClearBuilderBuffer();
 		}
