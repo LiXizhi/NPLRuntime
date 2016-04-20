@@ -210,5 +210,8 @@ namespace ParaEngine
 		
 		bool calc;
 		bool bUsePivot;
+
+		/** max number of bones per vertex, currently this is 4. */
+		const static int s_MaxBonesPerVertex = 4;
 	};
 }
