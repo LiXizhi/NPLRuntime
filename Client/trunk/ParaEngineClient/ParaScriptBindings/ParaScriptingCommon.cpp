@@ -603,7 +603,10 @@ void ParaScripting::ParaParamBlock::SetTextureObj( int nTextureIndex, const Para
 
 bool ParaAsset::OpenArchive(const char* strFileName)
 {
-	return CGlobals::GetFileManager()->OpenArchive(strFileName);
+	if(strFileName!=NULL)
+		return CGlobals::GetFileManager()->OpenArchive(strFileName);
+	else
+		return false;
 }
 
 bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
@@ -642,12 +645,18 @@ bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
 
 bool ParaAsset::OpenArchive2(const char* strFileName, bool bUseRelativePath)
 {
-	return CGlobals::GetFileManager()->OpenArchive(strFileName, bUseRelativePath);
+	if(strFileName!=NULL)
+		return CGlobals::GetFileManager()->OpenArchive(strFileName, bUseRelativePath);
+	else
+		return false;
 }
 
 bool ParaAsset::OpenArchiveEx( const char* strFileName, const char* sRootDir )
 {
-	return CGlobals::GetFileManager()->OpenArchiveEx(strFileName, sRootDir);
+	if(strFileName!=NULL && sRootDir!=NULL)
+		return CGlobals::GetFileManager()->OpenArchiveEx(strFileName, sRootDir);
+	else
+		return false;
 }
 void ParaAsset::CloseArchive(const string&  path)
 {
