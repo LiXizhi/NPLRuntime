@@ -415,7 +415,10 @@ namespace ParaScripting
 
 	ParaSearchResult ParaIO::SearchFiles(const char* sRootPath, const char* sFilePattern, const char* sZipArchive, int nSubLevel, int nMaxFilesNum, int nFrom)
 	{
-		return ParaSearchResult(CFileManager::GetInstance()->SearchFiles(sRootPath, sFilePattern, sZipArchive, nSubLevel, nMaxFilesNum, nFrom));
+		if(sRootPath!=NULL && sFilePattern!=NULL && sZipArchive!=NULL)
+			return ParaSearchResult(CFileManager::GetInstance()->SearchFiles(sRootPath, sFilePattern, sZipArchive, nSubLevel, nMaxFilesNum, nFrom));
+		else
+			return ParaSearchResult();
 	}
 	ParaSearchResult ParaIO::SearchFiles_c(const char* sRootPath, const char* sFilePattern, const char* sZipArchive, int nSubLevel)
 	{
