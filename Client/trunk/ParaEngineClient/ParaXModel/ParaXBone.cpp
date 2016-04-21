@@ -19,7 +19,7 @@
 using namespace ParaEngine;
 
 Bone::Bone()
-	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), pivot(0.f, 0.f, 0.f), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f)
+	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), pivot(0.f, 0.f, 0.f), matTransform(Matrix4::IDENTITY), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f)
 {
 }
 
@@ -70,7 +70,10 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	if (calc)
 		return true;
 	if (!CurrentAnim.IsValid())
-		return false;
+	{
+		if (rot.used || scale.used || trans.used)
+			return false;
+	}
 
 	if (!BlendingAnim.IsValid())
 		blendingFactor = 0.f;

@@ -719,10 +719,6 @@ namespace ParaScripting
 			g_str.clear();
 		return g_str.c_str();
 	}
-	string ParaIO::GetFileOriginalName(const char* sfilename)
-	{
-		return CFileManager::GetInstance()->GetFileOriginalName(sfilename);
-	}
 
 	string ParaIO::ToCanonicalFilePath(const char* sfilename, bool bBackSlash)
 	{
