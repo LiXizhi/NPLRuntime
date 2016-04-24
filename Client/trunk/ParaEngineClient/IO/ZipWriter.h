@@ -1,5 +1,5 @@
 #pragma once
-
+#include "IAttributeFields.h"	
 #include "ZipArchive.h"
 
 namespace ParaEngine
@@ -14,11 +14,17 @@ namespace ParaEngine
 	* writer->ZipAdd("znsimple.txt", "c:\\simple.txt");
 	* writer->close();
 	*/
-	class CZipWriter
+	class CZipWriter : public IAttributeFields
 	{
 	public:
 		CZipWriter();
 		CZipWriter(void* handle);
+		~CZipWriter();
+
+		ATTRIBUTE_DEFINE_CLASS(CZipWriter);
+		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CZipWriter);
+
+	public:
 		/** 
 		* call this to start the creation of a zip file.
 		* one need to call Release()
@@ -50,9 +56,6 @@ namespace ParaEngine
 		* Note: you can't add any more after calling this.
 		*/
 		DWORD close();
-
-		/** close and delete this*/
-		void Release();
 
 	public:
 		void* m_handle;

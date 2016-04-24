@@ -6,6 +6,7 @@
 #pragma once
 #include "ParaScriptingCommon.h"
 #include "FileSystemWatcher.h"
+#include "ZipWriter.h"
 
 namespace ParaScripting
 {
@@ -219,14 +220,14 @@ namespace ParaScripting
 	* writer:ZipAdd("znsimple.txt", "c:\\simple.txt");
 	* writer:close();
 	*/
-	class PE_CORE_DECL ParaZipWriter
+	class ParaZipWriter
 	{
 	public:
 		ParaZipWriter();
-
 		ParaZipWriter(CZipWriter* writer);
 	public:
-		CZipWriter* m_writer;
+		ref_ptr<CZipWriter> m_writer;
+
 	public:
 
 		/** whether it is valid*/

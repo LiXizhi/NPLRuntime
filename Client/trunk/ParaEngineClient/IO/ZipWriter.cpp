@@ -33,6 +33,11 @@ CZipWriter::CZipWriter(void* handle)
 {
 }
 
+ParaEngine::CZipWriter::~CZipWriter()
+{
+	close();
+}
+
 CZipWriter* CZipWriter::CreateZip(const char *fn, const char *password)
 {
 #ifdef PARAENGINE_CLIENT
@@ -150,10 +155,4 @@ DWORD CZipWriter::close()
 #else
 	return 0;
 #endif
-}
-
-void CZipWriter::Release()
-{
-	close();
-	delete this;
 }
