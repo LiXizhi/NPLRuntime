@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #include "FileManager.h"
 #include "ZipArchive.h"
+#include "ZipWriter.h"
 #ifdef PARAENGINE_MOBILE
 	#include <tinyxml2.h>
 #else
