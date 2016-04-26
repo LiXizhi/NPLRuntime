@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.4.26
+	- Zip writer added. drop dependency on ziplib.
+
 2016.4.18
 	 - fixed fbx attachment matrix calculations
 	 - fix static fbx import with invalid static transform matrix

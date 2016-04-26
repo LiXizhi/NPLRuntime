@@ -151,6 +151,13 @@ SOURCE_GROUP("util" FILES ${ParaEngineServer_UTIL_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_UTIL_FILES})
 
 ##############################
+# Documentation
+file (GLOB ParaEngineClient_DOCUMENT_FILES ${CLIENT_SOURCE_DIR}/doc/*.*)
+SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
+set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_DOCUMENT_FILES})
+
+##############################
 # add the binary tree to the search path for include files
 include_directories("${CLIENT_SOURCE_DIR}")
 include_directories("${CLIENT_SOURCE_DIR}/Core")

@@ -77,9 +77,8 @@ namespace ParaEngine
 	protected:
 		int SaveAndClose();
 		void removeAllEntries();
-	protected:
-		void* m_handle;
 
+	protected:
 		vector<ZipArchiveEntry*>  m_entries;
 		std::string m_filename;
 		std::string m_password;

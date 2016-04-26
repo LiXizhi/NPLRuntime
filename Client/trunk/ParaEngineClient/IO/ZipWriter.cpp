@@ -3,7 +3,7 @@
 // Authors:	Li,Xizhi
 // Emails:	LiXizhi@yeah.net
 // Date:	2006.1.10
-// Revised: 2016.4.24
+// Revised: 2016.4.24 removed dependency on ziplib
 // Notes: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
@@ -15,10 +15,6 @@
 #include <boost/filesystem.hpp>
 #include "zlib.h"
 
-#ifdef USE_ZIPLIB
-#include "zlib/zip.h"
-#endif
-
 using namespace ParaEngine;
 
 namespace ParaEngine 
@@ -26,7 +22,9 @@ namespace ParaEngine
 
 	void filetime2dosdatetime(const time_t& ft, WORD *dosdate, WORD *dostime)
 	{
-		struct tm *st = gmtime(&ft);
+		// struct tm *st = gmtime(&ft); // convert to UTC time
+		struct tm *st = localtime(&ft); // convert to Local time
+		
 		*dosdate = (uint16_t)(((st->tm_year + 1900 - 1980) & 0x7f) << 9);
 		*dosdate |= (uint16_t)((st->tm_mon & 0xf) << 5);
 		*dosdate |= (uint16_t)((st->tm_mday & 0x1f));
@@ -56,9 +54,6 @@ namespace ParaEngine
 		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0)
 		{
 			memset(&m_localFileHeader, 0, sizeof(m_localFileHeader));
-			//SignatureConstant = 0x04034b50,
-			//DataDescriptorSignature = 0x08074b50
-			// m_localFileHeader.Sig = 0x08074b50;
 			m_localFileHeader.Sig = ZIP_CONST_LOCALHEADERSIG;
 		}
 
@@ -233,58 +228,35 @@ CZipWriter* CZipWriter::CreateZip(const char *fn, const char *password)
 
 bool CZipWriter::IsValid() 
 {
-#ifdef USE_ZIPLIB
-	return m_handle != 0;
-#else
 	return true;
-#endif
 }
 
 DWORD CZipWriter::close()
 {
-#ifdef USE_ZIPLIB
-	DWORD result = ::CloseZip((HZIP)m_handle);
-	m_handle = 0;
-	return result;
-#else
 	SaveAndClose();
 	return 0;
-#endif
 }
 
 void ParaEngine::CZipWriter::InitNewZip(const char * filename, const char * password)
 {
-#ifdef USE_ZIPLIB
-	if(m_handle == 0)
-		m_handle = new CZipWriter(::CreateZip(filename, password));
-#else
 	m_filename = filename;
 	m_password = password ? password : "";
-#endif
 }
 
 DWORD CZipWriter::ZipAdd(const char* destFilename, const char* filename)
 {
-#ifdef USE_ZIPLIB
-	return ::ZipAdd((HZIP)m_handle, destFilename, filename);
-#else
 	auto* pEntry = new ZipArchiveEntry();
 	pEntry->Init(destFilename, filename);
 	m_entries.push_back(pEntry);
 	return 0;
-#endif
 }
 
 DWORD CZipWriter::ZipAddFolder(const char* destFilename)
 {
-#ifdef USE_ZIPLIB
-	return ::ZipAddFolder((HZIP)m_handle, destFilename);
-#else
 	auto* pEntry = new ZipArchiveEntry();
 	pEntry->Init(destFilename);
 	m_entries.push_back(pEntry);
 	return 0;
-#endif
 }
 
 DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int nSubLevel)
