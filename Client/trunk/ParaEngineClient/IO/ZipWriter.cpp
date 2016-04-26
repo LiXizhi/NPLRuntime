@@ -6,26 +6,13 @@
 // Revised: 2016.4.24
 // Notes: 
 //-----------------------------------------------------------------------------
-#ifdef ZIP_STD
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#else
-#include <windows.h>
-#include <tchar.h>
-#include <ctype.h>
-#include <stdio.h>
-#endif
-
 #include "ParaEngine.h"
 #include "ZipWriter.h"
 #include "MemReadFile.h"
 #include "FileUtils.h"
 #include "ZipArchive.h"
 #include "NPLCodec.h"
+#include <boost/filesystem.hpp>
 #include "zlib.h"
 
 #ifdef USE_ZIPLIB
@@ -37,155 +24,30 @@ using namespace ParaEngine;
 namespace ParaEngine 
 {
 
-	// ----------------------------------------------------------------------
-	// some windows<->linux portability things
-#ifdef ZIP_STD
-	void filetime2dosdatetime(const FILETIME ft, WORD *dosdate, WORD *dostime)
+	void filetime2dosdatetime(const time_t& ft, WORD *dosdate, WORD *dostime)
 	{
 		struct tm *st = gmtime(&ft);
-		*dosdate = (ush)(((st->tm_year + 1900 - 1980) & 0x7f) << 9);
-		*dosdate |= (ush)((st->tm_mon & 0xf) << 5);
-		*dosdate |= (ush)((st->tm_mday & 0x1f));
-		*dostime = (ush)((st->tm_hour & 0x1f) << 11);
-		*dostime |= (ush)((st->tm_min & 0x3f) << 5);
-		*dostime |= (ush)((st->tm_sec * 2) & 0x1f);
+		*dosdate = (uint16_t)(((st->tm_year + 1900 - 1980) & 0x7f) << 9);
+		*dosdate |= (uint16_t)((st->tm_mon & 0xf) << 5);
+		*dosdate |= (uint16_t)((st->tm_mday & 0x1f));
+		*dostime = (uint16_t)((st->tm_hour & 0x1f) << 11);
+		*dostime |= (uint16_t)((st->tm_min & 0x3f) << 5);
+		*dostime |= (uint16_t)((st->tm_sec * 2) & 0x1f);
 	}
 
-	void GetNow(lutime_t *ft, WORD *dosdate, WORD *dostime)
+	void GetFileTime(const std::string& filename, WORD *dosdate, WORD *dostime)
 	{
-		time_t tm = time(0);
-		filetime2dosdatetime(tm, dosdate, dostime);
-		*ft = (lutime_t)tm;
-	}
-
-	DWORD GetFilePosZ(HANDLE hfout)
-	{
-		struct stat st; fstat(fileno(hfout), &st);
-		if ((st.st_mode&S_IFREG) == 0) return 0xFFFFFFFF;
-		return ftell(hfout);
-	}
-
-	ZRESULT GetFileInfo(FILE *hf, ulg *attr, long *size, iztimes *times, ulg *timestamp)
-	{ // The handle must be a handle to a file
-		// The date and time is returned in a long with the date most significant to allow
-		// unsigned integer comparison of absolute times. The attributes have two
-		// high bytes unix attr, and two low bytes a mapping of that to DOS attr.
-		struct stat bhi; int res = fstat(fileno(hf), &bhi); if (res == -1) return ZR_NOFILE;
-		ulg fa = bhi.st_mode; ulg a = 0;
-		// Zip uses the lower word for its interpretation of windows stuff
-		if ((fa&S_IWUSR) == 0) a |= 0x01;
-		if (S_ISDIR(fa)) a |= 0x10;
-		// It uses the upper word for standard unix attr
-		a |= ((fa & 0xFFFF) << 16);
-		//
-		if (attr != NULL) *attr = a;
-		if (size != NULL) *size = bhi.st_size;
-		if (times != NULL)
+		using namespace boost::filesystem;
+		boost::filesystem::path filePath(filename);
+		if (boost::filesystem::exists(filePath))
 		{
-			times->atime = (lutime_t)bhi.st_atime;
-			times->mtime = (lutime_t)bhi.st_mtime;
-			times->ctime = (lutime_t)bhi.st_ctime;
-		}
-		if (timestamp != NULL)
-		{
-			ush dosdate, dostime;
-			filetime2dosdatetime(bhi.st_mtime, &dosdate, &dostime);
-			*timestamp = (ush)dostime | (((ulg)dosdate) << 16);
-		}
-		return ZR_OK;
-	}
-
-
-	// ----------------------------------------------------------------------
-#else
-	void filetime2dosdatetime(const FILETIME ft, WORD *dosdate, WORD *dostime)
-	{ // date: bits 0-4 are day of month 1-31. Bits 5-8 are month 1..12. Bits 9-15 are year-1980
-		// time: bits 0-4 are seconds/2, bits 5-10 are minute 0..59. Bits 11-15 are hour 0..23
-		SYSTEMTIME st; FileTimeToSystemTime(&ft, &st);
-		*dosdate = (WORD)(((st.wYear - 1980) & 0x7f) << 9);
-		*dosdate |= (WORD)((st.wMonth & 0xf) << 5);
-		*dosdate |= (WORD)((st.wDay & 0x1f));
-		*dostime = (WORD)((st.wHour & 0x1f) << 11);
-		*dostime |= (WORD)((st.wMinute & 0x3f) << 5);
-		*dostime |= (WORD)((st.wSecond * 2) & 0x1f);
-	}
-
-	lutime_t filetime2timet(const FILETIME ft)
-	{
-		LONGLONG i = *(LONGLONG*)&ft;
-		return (lutime_t)((i - 116444736000000000LL) / 10000000LL);
-	}
-
-	void GetNow(lutime_t *pft, WORD *dosdate, WORD *dostime)
-	{
-		SYSTEMTIME st; GetLocalTime(&st);
-		FILETIME ft;   SystemTimeToFileTime(&st, &ft);
-		filetime2dosdatetime(ft, dosdate, dostime);
-		*pft = filetime2timet(ft);
-	}
-
-	DWORD GetFilePosZ(HANDLE hfout)
-	{
-		return SetFilePointer(hfout, 0, 0, FILE_CURRENT);
-	}
-
-
-	ZRESULT GetFileInfo(HANDLE hf, ulg *attr, long *size, iztimes *times, ulg *timestamp)
-	{ // The handle must be a handle to a file
-		// The date and time is returned in a long with the date most significant to allow
-		// unsigned integer comparison of absolute times. The attributes have two
-		// high bytes unix attr, and two low bytes a mapping of that to DOS attr.
-		//struct stat s; int res=stat(fn,&s); if (res!=0) return false;
-		// translate windows file attributes into zip ones.
-		BY_HANDLE_FILE_INFORMATION bhi; BOOL res = GetFileInformationByHandle(hf, &bhi);
-		if (!res) return ZR_NOFILE;
-		DWORD fa = bhi.dwFileAttributes; ulg a = 0;
-		// Zip uses the lower word for its interpretation of windows stuff
-		if (fa&FILE_ATTRIBUTE_READONLY) a |= 0x01;
-		if (fa&FILE_ATTRIBUTE_HIDDEN)   a |= 0x02;
-		if (fa&FILE_ATTRIBUTE_SYSTEM)   a |= 0x04;
-		if (fa&FILE_ATTRIBUTE_DIRECTORY)a |= 0x10;
-		if (fa&FILE_ATTRIBUTE_ARCHIVE)  a |= 0x20;
-		// It uses the upper word for standard unix attr, which we manually construct
-		if (fa&FILE_ATTRIBUTE_DIRECTORY)a |= 0x40000000;  // directory
-		else a |= 0x80000000;  // normal file
-		a |= 0x01000000;      // readable
-		if (fa&FILE_ATTRIBUTE_READONLY) {}
-		else a |= 0x00800000; // writeable
-		// now just a small heuristic to check if it's an executable:
-		DWORD red, hsize = GetFileSize(hf, NULL); if (hsize > 40)
-		{
-			SetFilePointer(hf, 0, NULL, FILE_BEGIN); unsigned short magic; ReadFile(hf, &magic, sizeof(magic), &red, NULL);
-			SetFilePointer(hf, 36, NULL, FILE_BEGIN); unsigned long hpos;  ReadFile(hf, &hpos, sizeof(hpos), &red, NULL);
-			if (magic == 0x54AD && hsize > hpos + 4 + 20 + 28)
+			time_t lastWriteTime = boost::filesystem::last_write_time(filePath);
+			if (lastWriteTime != (time_t)(-1))
 			{
-				SetFilePointer(hf, hpos, NULL, FILE_BEGIN); unsigned long signature; ReadFile(hf, &signature, sizeof(signature), &red, NULL);
-				if (signature == IMAGE_DOS_SIGNATURE || signature == IMAGE_OS2_SIGNATURE
-					|| signature == IMAGE_OS2_SIGNATURE_LE || signature == IMAGE_NT_SIGNATURE)
-				{
-					a |= 0x00400000; // executable
-				}
+				filetime2dosdatetime(lastWriteTime, dosdate, dostime);
 			}
 		}
-		//
-		if (attr != NULL) *attr = a;
-		if (size != NULL) *size = hsize;
-		if (times != NULL)
-		{ // lutime_t is 32bit number of seconds elapsed since 0:0:0GMT, Jan1, 1970.
-			// but FILETIME is 64bit number of 100-nanosecs since Jan1, 1601
-			times->atime = filetime2timet(bhi.ftLastAccessTime);
-			times->mtime = filetime2timet(bhi.ftLastWriteTime);
-			times->ctime = filetime2timet(bhi.ftCreationTime);
-		}
-		if (timestamp != NULL)
-		{
-			WORD dosdate, dostime;
-			filetime2dosdatetime(bhi.ftLastWriteTime, &dosdate, &dostime);
-			*timestamp = (WORD)dostime | (((DWORD)dosdate) << 16);
-		}
-		return ZR_OK;
 	}
-#endif
 
 	/** a single file in zip archive to be written to disk */
 	class ZipArchiveEntry : public CRefCounted 
@@ -291,6 +153,9 @@ namespace ParaEngine
 						m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
 						m_localFileHeader.DataDescriptor.UncompressedSize = input.getSize();
 						m_localFileHeader.DataDescriptor.CompressedSize = output.size();
+
+						GetFileTime(m_filename, &m_localFileHeader.LastModFileDate, &m_localFileHeader.LastModFileTime);
+
 						uint32_t crc = 0;
 						m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, input.getBuffer(), input.getSize());
 						file.WriteString(output);
