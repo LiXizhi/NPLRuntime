@@ -1313,7 +1313,7 @@ namespace ParaScripting
 
 	bool ParaZipWriter::IsValid()
 	{
-		return m_writer && (m_writer->m_handle!=0);
+		return m_writer && (m_writer->IsValid());
 	}
 
 

@@ -1,9 +1,10 @@
 #pragma once
 #include "IAttributeFields.h"	
-#include "ZipArchive.h"
 
 namespace ParaEngine
 {
+	class ZipArchiveEntry;
+
 	/**
 	* creating zip files
 	* 
@@ -24,23 +25,39 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CZipWriter);
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CZipWriter);
 
+		enum ZipResult {
+			ZIP_OK = 0,
+			ZIP_NOFILE = 0x00000200,
+		};
 	public:
 		/** 
 		* call this to start the creation of a zip file.
-		* one need to call Release()
+		* one need to call Release() or use ref_ptr<CZipWriter>
 		*/
-		static CZipWriter* CreateZip(const char *fn, const char *password);
+		static CZipWriter* CreateZip(const char *filename, const char *password = NULL);
+
+		/** whether the writer is valid.*/
+		bool IsValid();
+
+		/** create a new zip file*/
+		void InitNewZip(const char *filename, const char *password = NULL);
 
 		/**
 		* add a zip file to the zip. file call this for each file to be added to the zip.
-		* @return: 0 if succeed.
+		* It does not check for duplicates
+		* @param destFilename: destination filename as appeared in the zip file
+		* @param filename: the local disk file name to add to the zip file.
+		* @return: ZipResult enum. 0 if succeed. 
 		*/
-		DWORD ZipAdd(const char* dstzn, const char* fn);
+		DWORD ZipAdd(const char* destFilename, const char* filename);
+
 		/**
 		* add a zip folder to the zip file. call this for each folder to be added to the zip.
-		* @return: 0 if succeed.
+		* It does not check for duplicates
+		* @param destFilename: destination filename as appeared in the zip file
+		* @return: ZipResult enum. 0 if succeed. 
 		*/
-		DWORD ZipAddFolder(const char* dstzn);
+		DWORD ZipAddFolder(const char* destFilename);
 
 		/**
 		* add everything in side a directory to the zip. 
@@ -57,7 +74,14 @@ namespace ParaEngine
 		*/
 		DWORD close();
 
-	public:
+	protected:
+		int SaveAndClose();
+		void removeAllEntries();
+	protected:
 		void* m_handle;
+
+		vector<ZipArchiveEntry*>  m_entries;
+		std::string m_filename;
+		std::string m_password;
 	};
 }

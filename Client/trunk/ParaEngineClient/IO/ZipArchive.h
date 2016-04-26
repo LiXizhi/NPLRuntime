@@ -17,11 +17,12 @@ namespace ParaEngine
 	const WORD ZIP_INFO_IN_DATA_DESCRITOR =	0x0008; // the fields crc-32, compressed size
 	/// Size of end of central record (excluding variable fields)
 	const int ZIP_CONST_ENDHDR = 22;
-	/// End of central directory record signature
-	const DWORD ZIP_CONST_ENDSIG = 0x06054B50;
+	/// local file header
+	const int ZIP_CONST_LOCALHEADERSIG = 'P' | ('K' << 8) | (3 << 16) | (4 << 24);
 	/// Signature for central header
 	const int ZIP_CONST_CENSIG = 'P' | ('K' << 8) | (1 << 16) | (2 << 24);
-
+	/// End of central directory record signature
+	const DWORD ZIP_CONST_ENDSIG = 'P' | ('K' << 8) | (5 << 16) | (6 << 24);
 
 	// and uncompressed size are set to zero in the local
 	// header
@@ -32,13 +33,25 @@ namespace ParaEngine
 
 	struct ZIP_EndOfCentralDirectory
 	{
-		short thisDiskNumber;
-		short startCentralDirDisk;
-		short entriesForThisDisk;
-		short entriesForWholeCentralDir;
-		int centralDirSize;
-		int offsetOfCentralDir;
-		short commentSize;
+		uint16_t thisDiskNumber;
+		uint16_t startCentralDirDisk;
+		uint16_t entriesForThisDisk;
+		uint16_t entriesForWholeCentralDir;
+		uint32_t centralDirSize;
+		uint32_t offsetOfCentralDir;
+		uint16_t commentSize;
+	};
+
+	struct ZIP_EndOfCentralDirectoryBlock
+	{
+		DWORD sig;
+		uint16_t thisDiskNumber;
+		uint16_t startCentralDirDisk;
+		uint16_t entriesForThisDisk;
+		uint16_t entriesForWholeCentralDir;
+		uint32_t centralDirSize;
+		uint32_t offsetOfCentralDir;
+		uint16_t commentSize;
 	};
 
 	struct ZIP_CentralDirectory
@@ -48,7 +61,8 @@ namespace ParaEngine
 		WORD ExtractVersion;
 		WORD Flags;
 		WORD CompressionMethod;
-		DWORD Time;
+		WORD LastModFileTime;
+		WORD LastModFileDate;
 		DWORD FileCRC;
 		DWORD PackSize;
 		DWORD UnPackSize;

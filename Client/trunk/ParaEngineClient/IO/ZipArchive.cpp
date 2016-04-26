@@ -768,7 +768,7 @@ int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int
 				m_pFile->seek(pos, false);
 				break;
 			}
-		}
+		} 
 		delete []pBuf;
 	}
 	return pos;

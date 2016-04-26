@@ -807,8 +807,16 @@ bool CParaFile::isEof()
 
 void CParaFile::seek(int offset)
 {
-	m_curPos = offset;
-	m_eof = (m_curPos >= m_size);
+	if (m_bDiskFileOpened)
+	{
+		SetFilePointer(offset, FILE_BEGIN);
+		m_curPos = offset;
+	}
+	else
+	{
+		m_curPos = offset;
+		m_eof = (m_curPos >= m_size);
+	}
 }
 
 void CParaFile::seekRelative(int offset)

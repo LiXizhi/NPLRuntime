@@ -90,6 +90,14 @@ DWORD CMemReadFile::read(void* buffer, DWORD sizeToRead)
 	return 0;
 }
 
+byte* CMemReadFile::getBuffer()
+{
+	if (isOpen() && m_curPos >= m_CacheStartPos) {
+		return m_CacheData + (m_curPos - m_CacheStartPos);
+	}
+	return 0;
+}
+
 /// changes position in file, returns true if successful
 /// if relativeMovement==true, the pos is changed relative to current pos,
 /// otherwise from begin of file
