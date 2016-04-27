@@ -19,7 +19,6 @@ namespace ParaEngine
 	{
 	public:
 		CZipWriter();
-		CZipWriter(void* handle);
 		~CZipWriter();
 
 		ATTRIBUTE_DEFINE_CLASS(CZipWriter);

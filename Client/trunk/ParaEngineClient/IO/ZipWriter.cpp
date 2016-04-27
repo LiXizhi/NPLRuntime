@@ -26,7 +26,7 @@ namespace ParaEngine
 		struct tm *st = localtime(&ft); // convert to Local time
 		
 		*dosdate = (uint16_t)(((st->tm_year + 1900 - 1980) & 0x7f) << 9);
-		*dosdate |= (uint16_t)((st->tm_mon & 0xf) << 5);
+		*dosdate |= (uint16_t)(((st->tm_mon+1) & 0xf) << 5);
 		*dosdate |= (uint16_t)((st->tm_mday & 0x1f));
 		*dostime = (uint16_t)((st->tm_hour & 0x1f) << 11);
 		*dostime |= (uint16_t)((st->tm_min & 0x3f) << 5);
@@ -204,14 +204,8 @@ namespace ParaEngine
 /////////////////////////////////////////////
 
 CZipWriter::CZipWriter()
-	:m_handle(NULL)
 {
 
-}
-
-CZipWriter::CZipWriter(void* handle)
-	: m_handle(handle)
-{
 }
 
 ParaEngine::CZipWriter::~CZipWriter()
