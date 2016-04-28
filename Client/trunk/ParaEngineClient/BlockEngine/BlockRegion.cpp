@@ -1470,6 +1470,11 @@ namespace ParaEngine
 				}
 			}
 		}
+		if (nModifiedCount > 0)
+		{
+			// m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
+			m_pBlockWorld->GetLightGrid().AddDirtyColumn(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
+		}
 	}
 
 	bool BlockRegion::IsLocked()
