@@ -24,6 +24,9 @@
 	#endif
 #endif
 
+#ifdef _DEBUG
+// #define USE_BOOST_FILE_API
+#endif
 
 #if defined USE_BOOST_FILE_API || defined(USE_COCOS_FILE_API)
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
@@ -887,7 +890,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
-					if (!result.AddResult(iter->path().string(), fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
+					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
 						return;
 				}
 			}
