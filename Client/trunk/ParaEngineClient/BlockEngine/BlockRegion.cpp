@@ -1260,11 +1260,13 @@ namespace ParaEngine
 		uint16_t chunkX_rs = chunkX & 0x1f;
 		uint16_t chunkZ_rs = chunkZ & 0x1f;
 
+		bool IsChunkColumnFirstLoaded = GetChunkColumnTimeStamp(chunkX_rs << 4, chunkZ_rs << 4) <= 1;
 		CParaFile file((char*)(chunkData.c_str()), chunkData.size(), false);
 		char sVersion[8];
 		file.read(sVersion, 7);
 		sVersion[7] = '\0';
 		int nModifiedCount = 0;
+		bool bLightSuspended = false;
 		if (strcmp(sVersion, "chunkV1") == 0)
 		{
 			static std::vector<uint16_t> sBlockId(4096);
@@ -1280,6 +1282,15 @@ namespace ParaEngine
 			luabind::adl::object modDataQueue = luabind::newtable(L);
 			output["modData"] = modDataQueue;
 
+			if (IsChunkColumnFirstLoaded)
+			{
+				if (!GetBlockWorld()->IsLightUpdateSuspended())
+				{
+					GetBlockWorld()->SuspendLightUpdate();
+					bLightSuspended = true;
+				}
+			}
+			
 			int nChunkSize = (int)file.ReadDWORD();
 			while (!file.isEof())
 			{
@@ -1299,19 +1310,28 @@ namespace ParaEngine
 
 						uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkY_rs, chunkZ_rs);
 						BlockChunk * pChunk = GetChunk(packedChunkId_rs, false);
-						bool bLightSuspended = false;
 						if (pChunk == NULL)
 						{
-							if (!GetBlockWorld()->IsLightUpdateSuspended())
-							{
-								GetBlockWorld()->SuspendLightUpdate();
-								bLightSuspended = true;
-							}
 							pChunk = GetChunk(packedChunkId_rs, true);
-							nModifiedCount++;
 						}
-							
-						if (pChunk)
+						if (IsChunkColumnFirstLoaded && pChunk)
+						{
+							uint32_t nCount = pChunk->m_blockIndices.size();
+							pChunk->ReserveBlocks(nBlockCount);
+							for (uint32_t i = 0; i < nCount; i++)
+							{
+								if (sBlockId[i] > 0)
+								{
+									BlockTemplate* pTemplate = GetBlockWorld()->GetBlockTemplate(sBlockId[i]);
+									pChunk->LoadBlock(i, pTemplate);
+									if (sBlockData[i] != 0){
+										pChunk->SetBlockData(i, sBlockData[i]);
+									}
+									nModifiedCount++;
+								}
+							}
+						}
+						else if (pChunk)
 						{
 							uint32_t nCount = pChunk->m_blockIndices.size();
 							uint16_t chunkX_ws = (chunkX_rs << 4);
@@ -1426,10 +1446,6 @@ namespace ParaEngine
 						{
 							OUTPUT_LOG("error: ApplyMapChunkData failed because chunk does not exist.\n");
 						}
-						if (bLightSuspended)
-						{
-							GetBlockWorld()->ResumeLightUpdate();
-						}
 					}
 					else
 					{
@@ -1470,11 +1486,14 @@ namespace ParaEngine
 				}
 			}
 		}
-		if (nModifiedCount > 0)
+		if (IsChunkColumnFirstLoaded && nModifiedCount>0)
 		{
-			// m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
-			m_pBlockWorld->GetLightGrid().AddDirtyColumn(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
+			SetChunkColumnTimeStamp(chunkX_rs << 4, chunkZ_rs << 4, 2);
+			if(!m_pBlockWorld->RefreshChunkColumn(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs))
+				m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
 		}
+		if (bLightSuspended)
+			GetBlockWorld()->ResumeLightUpdate();
 	}
 
 	bool BlockRegion::IsLocked()

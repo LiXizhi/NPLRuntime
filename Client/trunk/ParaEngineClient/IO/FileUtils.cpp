@@ -899,7 +899,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 
 void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
 {
-#ifdef USE_COCOS_FILE_API
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	std::string path = GetWritableFullPathForFilename(sRootPath);
 	
 	fs::path rootPath(path);
