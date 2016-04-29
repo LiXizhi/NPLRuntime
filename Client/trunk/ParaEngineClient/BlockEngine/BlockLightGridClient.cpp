@@ -443,6 +443,13 @@ namespace ParaEngine
 						m_forced_chunks.pop_back();
 						nNumOfForceChunk++;
 					}
+
+					int nSize = (int)(m_closest_chunks.size());
+					for (int i = 0; i < nSize; ++i)
+					{
+						const ChunkLocation& curChunkId_ws = m_closest_chunks[i].first;
+						RemoveDirtyColumn(curChunkId_ws);
+					}
 				}
 
 				int nSize = (int)(m_closest_chunks.size());
@@ -470,7 +477,7 @@ namespace ParaEngine
 					SetLightingInChunkColumnInitialized(chunkX_ws, chunkZ_ws);
 
 					SetColumnPreloaded(chunkX_ws, chunkZ_ws);
-					RemoveDirtyColumn(curChunkId_ws);
+					// RemoveDirtyColumn(curChunkId_ws);
 				}
 				m_closest_chunks.clear();
 			}
