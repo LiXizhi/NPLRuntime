@@ -841,7 +841,7 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 }
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
-#ifdef USE_COCOS_FILE_API
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
 	try
