@@ -310,7 +310,7 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 			ZeroMemory(ValidFilename, sizeof(ValidFilename));
 
 			std::string date_str = ParaEngine::GetDateFormat("MMM dd yy");
-			snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt"));
+			snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt").c_str());
 			Filename = ValidFilename;
 		}
 

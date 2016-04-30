@@ -76,6 +76,7 @@ CMiniSceneGraph::CMiniSceneGraph(void)
 
 CMiniSceneGraph::~CMiniSceneGraph(void)
 {
+	SAFE_DELETE(m_pCamera);
 	SAFE_DELETE(m_pBatchedElementDraw);
 }
 

@@ -209,6 +209,7 @@ CMeshPhysicsObject::CMeshPhysicsObject(void)
 
 CMeshPhysicsObject::~CMeshPhysicsObject(void)
 {
+	SAFE_DELETE(m_pMeshObject);
 }
 
 void CMeshPhysicsObject::Cleanup()

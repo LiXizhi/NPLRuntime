@@ -39,7 +39,7 @@ Use the macro to turn on a given way of creating application.
 
 #ifdef _DEBUG
 /** @def turn on memory dump when the application exits. only for debug build.*/
-#define DETECT_MEMORY_LEAK
+// #define DETECT_MEMORY_LEAK
 #endif
 
 extern HINSTANCE g_hAppInstance;

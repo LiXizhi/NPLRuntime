@@ -18,6 +18,8 @@ endif (WIN32)
 
 if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+
 	include_directories( ${DIRECTX_INCLUDE_DIR} )
 	link_directories (${DIRECTX_LIBRARY_DIR})
 	set(GRAPHIC_LIBRARIES 
@@ -34,6 +36,8 @@ if (DIRECTX_FOUND)
 			VFW32.lib
 			SHLWAPI.lib
 			gdiplus.lib
+			
+			Psapi.lib
 	)
 	##############################
 	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.cpp)
@@ -123,6 +127,15 @@ SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
 if(DIRECTX_FOUND)
+	#####################################
+	##--------- resource file ---------##
+	# winmain.rc is the only buildable file, but the rest are all dependencies of it.
+	file (GLOB ParaEngineClient_RESOURCE_FILES ${ParaEngineClient_SOURCE_DIR}/res/*.*)
+	set_source_files_properties(${ParaEngineClient_RESOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+	set(ParaEngineClient_RESOURCE_FILES     ${ParaEngineClient_SOURCE_DIR}/ParaEngineRes.rc 	${ParaEngineClient_RESOURCE_FILES}	)
+	SOURCE_GROUP("Externals\\res" FILES ${ParaEngineClient_RESOURCE_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_RESOURCE_FILES})
+
 	##############################
 	#file (GLOB ParaEngineClient_CommonFramework_FILES ${ParaEngineClient_SOURCE_DIR}/CommonFramework/*.*)
 	#SOURCE_GROUP("util\\CommonFramework" FILES ${ParaEngineClient_CommonFramework_FILES})
@@ -136,18 +149,18 @@ if(DIRECTX_FOUND)
 	###################################
 	##------------shader-------------##
 	# Add shader files to the project.
-	file (GLOB ParaEngineClient_SHADER_FILES RELATIVE ${ParaEngineClient_SOURCE_DIR} shaders/*.fx)
+	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.fx)
 
 	# custom build rules: effect FX files
 	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 		get_filename_component(src_filename ${src_file} NAME_WE)
-		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} "shaders/${src_filename}.fxo")
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
 		add_custom_command(
 			OUTPUT "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo"
-			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${ParaEngineClient_SOURCE_DIR}/${src_file}
+			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${src_file}
 			# uncomment the following line if you want to see the text output to debug shader instructions. 
-			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${ParaEngineClient_SOURCE_DIR}/${src_file}
-			DEPENDS ${ParaEngineClient_SOURCE_DIR}/${src_file}
+			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
+			DEPENDS ${src_file}
 			COMMENT "fxc compile: ${src_file}"
 			)
 	endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
@@ -365,8 +378,10 @@ if (PARAENGINE_COMPILE_LIB)
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-	# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
-	# set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
+	if(DIRECTX_FOUND)
+		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
+		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
+	endif(DIRECTX_FOUND)
 if (WIN32)
 	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "ParaEngineClient")
 	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")

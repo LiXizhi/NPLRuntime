@@ -5,6 +5,7 @@
 // Desc: Cross platformed NPL router plugin for ParaEngine
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#if !defined(NPLRUNTIME)
 #include "PluginAPI.h"
 
 #include "NPL_imp.h"
@@ -102,3 +103,4 @@ void __attribute__ ((constructor)) DllMain()
 #endif
 }
 
+#endif
