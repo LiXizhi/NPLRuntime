@@ -37,6 +37,7 @@ WanDeploy/
 WebAPI/
 !Client/
 Client/*
+!Client/CMakeLists.txt
 !Client/trunk/
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
