@@ -35,16 +35,27 @@ if (DIRECTX_FOUND)
 			SHLWAPI.lib
 			gdiplus.lib
 	)
+	##############################
+	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.cpp)
+	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
+
+	##############################
+	file (GLOB ParaEngineClient_EngineHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.h)
+	SOURCE_GROUP("Engine\\headers" FILES ${ParaEngineClient_EngineHeader_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_EngineHeader_FILES})
+
 else()
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
 	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES} )
+
+	##############################
+	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
+	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
 endif()
 
-##############################
-file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
-SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
 
 ##############################
 #file (GLOB ParaEngineClient_EngineHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.h)
@@ -101,15 +112,48 @@ file (GLOB ParaEngineClient_IO_FILES ${ParaEngineClient_SOURCE_DIR}/IO/*.cpp ${P
 SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
-##############################
-#file (GLOB ParaEngineClient_CommonFramework_FILES ${ParaEngineClient_SOURCE_DIR}/CommonFramework/*.*)
-#SOURCE_GROUP("util\\CommonFramework" FILES ${ParaEngineClient_CommonFramework_FILES})
-#list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CommonFramework_FILES})
+if(DIRECTX_FOUND)
+	##############################
+	#file (GLOB ParaEngineClient_CommonFramework_FILES ${ParaEngineClient_SOURCE_DIR}/CommonFramework/*.*)
+	#SOURCE_GROUP("util\\CommonFramework" FILES ${ParaEngineClient_CommonFramework_FILES})
+	#list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CommonFramework_FILES})
 
-##############################
-#file (GLOB ParaEngineClient_Common_FILES ${ParaEngineClient_SOURCE_DIR}/common/*.*)
-#SOURCE_GROUP("Externals\\CommonDirectX" FILES ${ParaEngineClient_Common_FILES})
-#list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Common_FILES})
+	##############################
+	file (GLOB ParaEngineClient_Common_FILES ${ParaEngineClient_SOURCE_DIR}/common/*.*)
+	SOURCE_GROUP("Externals\\CommonDirectX" FILES ${ParaEngineClient_Common_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Common_FILES})
+
+	###################################
+	##------------shader-------------##
+	# Add shader files to the project.
+	file (GLOB ParaEngineClient_SHADER_FILES RELATIVE ${ParaEngineClient_SOURCE_DIR} shaders/*.fx)
+
+	# custom build rules: effect FX files
+	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
+		get_filename_component(src_filename ${src_file} NAME_WE)
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} "shaders/${src_filename}.fxo")
+		add_custom_command(
+			OUTPUT "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo"
+			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${ParaEngineClient_SOURCE_DIR}/${src_file}
+			# uncomment the following line if you want to see the text output to debug shader instructions. 
+			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${ParaEngineClient_SOURCE_DIR}/${src_file}
+			DEPENDS ${ParaEngineClient_SOURCE_DIR}/${src_file}
+			COMMENT "fxc compile: ${src_file}"
+			)
+	endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
+	set_source_files_properties(${ParaEngineClient_SHADER_BIN_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
+	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
+
+	# header files
+	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
+	set_source_files_properties(${ParaEngineClient_SHADER_HEADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+	SOURCE_GROUP("Shader Files" FILES ${ParaEngineClient_SHADER_FILES})
+	SOURCE_GROUP("Shader Files\\Headers Files" FILES ${ParaEngineClient_SHADER_HEADER_FILES})
+
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES} ${ParaEngineClient_SHADER_HEADER_FILES})
+
+endif(DIRECTX_FOUND)
 
 ##############################
 file (GLOB ParaEngineClient_CurlLua_FILES ${ParaEngineClient_SOURCE_DIR}/curllua/*.*)
@@ -225,7 +269,6 @@ ELSE (WIN32)
 ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
-ADD_DEFINITIONS(-DPARAENGINE_SERVER)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
 ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
 
