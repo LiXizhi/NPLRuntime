@@ -14,7 +14,7 @@
 
 using namespace ParaEngine;
 
-#ifdef PARAENGINE_CLIENT
+#if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
 #define USE_NPL_PROFILER
 #define USE_NPL_CURL
 #endif

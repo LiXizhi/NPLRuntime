@@ -268,7 +268,7 @@ namespace ParaEngine
 		{
 			m_blocks.push_back(Block());
 			pResult = &m_blocks.back();
-			m_blockIndices[nIndex] = m_blocks.size() - 1;
+			m_blockIndices[nIndex] = (int16_t)(m_blocks.size() - 1);
 		}
 		return pResult;
 	}

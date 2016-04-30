@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER)
+#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
 
 #include "XFileParser.h"
 #include "ParaXModel.h"

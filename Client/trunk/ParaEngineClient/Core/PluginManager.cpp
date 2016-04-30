@@ -335,7 +335,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 
 		sprintf(szBuf, 
 			"%s (%s) failed with error %d: %s\n", 
-			"LoadLibrary", sDLLPath.c_str(), dw, lpMsgBuf); 
+			"LoadLibrary", sDLLPath.c_str(), dw, (const char*)lpMsgBuf); 
 
 		OUTPUT_LOG("%s", szBuf);
 #else

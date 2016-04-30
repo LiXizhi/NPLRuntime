@@ -21,7 +21,7 @@
 #include "2dengine/GUIToolTip.h"
 #include "2dengine/GUISlider.h"
 #include "2dengine/GUIScrollBar.h"
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) && !defined(NPLRUNTIME)
 #include "2dengine/GUIWebBrowser.h"
 #endif
 #include "2dengine/GUIHighlight.h"
@@ -2667,7 +2667,7 @@ ParaUIObject ParaUI::CreateUIObject(const char* strType, const char * strObjectN
 		pNewObj = new CGUISlider();
 		((CGUISlider*)pNewObj)->InitObject(strObjectName, alignment, x, y, width, height);
 	}
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER ) && !defined(NPLRUNTIME)
 #ifdef USE_GUI_DIRECTSHOW_VIDEO
 	else if (strcmp(strType, "video")==0)
 	{

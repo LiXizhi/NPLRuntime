@@ -715,7 +715,7 @@ namespace ParaEngine
 
 				// prepare and pre-process data into memory
 				
-				uint16_t sizeCount = pChunk->m_blockIndices.size();
+				uint16_t sizeCount = (uint16_t)pChunk->m_blockIndices.size();
 				for(uint16_t j=0;j<sizeCount;j++)
 				{
 					int32_t blockIdx = pChunk->m_blockIndices[j];
@@ -1003,13 +1003,13 @@ namespace ParaEngine
 							{
 								blockIndices.clear();
 								CIntegerEncoder::DecodeSkipOne(*pFile, blockIndices, nBlockCount);
-								nBlockCount = blockIndices.size();
+								nBlockCount = (uint16_t)blockIndices.size();
 							}
 							else if(nCustomDataType == ChunkCustomDataType_Blocks_Delta)
 							{
 								blockIndices.clear();
 								CIntegerEncoder::DecodeIntDeltaArray(*pFile, blockIndices, nBlockCount);
-								nBlockCount = blockIndices.size();
+								nBlockCount = (uint16_t)blockIndices.size();
 							}
 							else if(nCustomDataType == ChunkCustomDataType_Blocks)
 							{

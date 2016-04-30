@@ -45,6 +45,16 @@ if (DIRECTX_FOUND)
 	SOURCE_GROUP("Engine\\headers" FILES ${ParaEngineClient_EngineHeader_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_EngineHeader_FILES})
 
+	##############################
+	file (GLOB ParaEngineClient_VoxelMesh_FILES ${ParaEngineClient_SOURCE_DIR}/VoxelMesh/*.*)
+	SOURCE_GROUP("Engine\\VoxelMesh" FILES ${ParaEngineClient_VoxelMesh_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_VoxelMesh_FILES})
+
+	##############################
+	file (GLOB ParaEngineClient_Cad_FILES ${ParaEngineClient_SOURCE_DIR}/CadModel/*.*)
+	SOURCE_GROUP("Externals\\CadModel" FILES ${ParaEngineClient_Cad_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
+
 else()
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
@@ -271,6 +281,7 @@ ENDIF(WIN32)
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
 ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 CHECK_INCLUDE_FILE(

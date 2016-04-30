@@ -75,7 +75,7 @@ HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, char* buffer, DWOR
 			auto pSysMemMesh = parser.ParseParaXStaticModel();
 			return Create(pd3dDevice, pSysMemMesh);
 		}
-#if defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER)
+#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
 		else if (nFileType == FileType_FBX)
 		{
 			FBXParser parser(m_strName);
