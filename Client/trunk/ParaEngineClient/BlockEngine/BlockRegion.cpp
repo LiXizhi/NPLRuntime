@@ -1497,8 +1497,10 @@ namespace ParaEngine
 			{
 				for (int j = -1; j <= 1; j++)
 				{
-					if (i != 0 && j != 0)
-						m_pBlockWorld->RefreshChunkColumn(m_minChunkId_ws.x + chunkX_rs + i, m_minChunkId_ws.z + chunkZ_rs + j);
+					if (i != 0 && j != 0){
+						if(!m_pBlockWorld->RefreshChunkColumn(m_minChunkId_ws.x + chunkX_rs + i, m_minChunkId_ws.z + chunkZ_rs + j))
+							m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs + i, m_minChunkId_ws.z + chunkZ_rs + j);
+					}
 				}
 			}
 		}
