@@ -211,8 +211,12 @@ namespace ParaEngine
 					nBlockLight = pLightData->GetBrightness(false);
 				if (nLightType != 0)
 				{
-					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
+					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z)) 
+					{
+						if (pLightData->GetBrightness(true) != 15)
+							pLightData->SetBrightness(15, true);
 						nSunLight = 15;
+					}
 					else
 						nSunLight = pLightData->GetBrightness(true);
 				}
@@ -244,6 +248,22 @@ namespace ParaEngine
 				brightness[i] = (nLightType == 1) ? nSunLight : nBlockLight;
 		}
 		return true;
+	}
+
+	bool CBlockLightGridClient::IsLightDirty(Uint16x3& blockId_ws)
+	{
+		uint16_t chunk_ws_x = blockId_ws.x >> 4;
+		uint16_t chunk_ws_y = blockId_ws.y >> 4;
+		uint16_t chunk_ws_z = blockId_ws.z >> 4;
+
+		uint16_t cx = blockId_ws.x & 0xf;
+		uint16_t cy = blockId_ws.y & 0xf;
+		uint16_t cz = blockId_ws.z & 0xf;
+		uint16_t packedBlockId_cs = cx + (cz << 4) + (cy << 8); // y in higher bits
+
+		uint64_t key = (((uint64_t)chunk_ws_y) << 48) + (((uint64_t)chunk_ws_x) << 32) + (((uint64_t)chunk_ws_z) << 16) + packedBlockId_cs; // chuck y in higher bits. 
+
+		return (m_dirtyCells.find(key) != m_dirtyCells.end());
 	}
 
 	void CBlockLightGridClient::SetLightDirty(Uint16x3& blockId_ws, bool isSunLight, int8 nUpdateRange)
@@ -751,16 +771,21 @@ namespace ParaEngine
 			BlockIndex blockIndex = CalcLightDataIndex(curBlockId_ws);
 			if (blockIndex.m_pChunk)
 			{
+				auto lightData = GetLightData(blockIndex);
 				if (isSunLight)
 				{
-					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z))
+					if (blockIndex.m_pChunk->CanBlockSeeTheSkyWS(curBlockId_ws.x, curBlockId_ws.y, curBlockId_ws.z)) 
+					{
+						if (lightData->GetBrightness(true) != 15)
+							lightData->SetBrightness(15, true);
 						return 15;
+					}
 					else
-						return GetLightData(blockIndex)->GetBrightness(true);
+						return lightData->GetBrightness(true);
 				}
 				else
 				{
-					return GetLightData(blockIndex)->GetBrightness(false);
+					return lightData->GetBrightness(false);
 				}
 			}
 			else
@@ -907,7 +932,8 @@ namespace ParaEngine
 							if ((lastLightValue == (lightvalue - blockOpacity)) && !(lastLightValue == 0 && blockOpacity == 15) && nQueuedCount < (int)m_blocksNeedLightRecalcuation.size())
 							{
 								Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
-								m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
+								if (!IsLightDirty(neighborPos))
+									m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 							}
 						}
 					}
@@ -953,6 +979,7 @@ namespace ParaEngine
 				{
 					SetLightValue(curBlockPos.x, curBlockPos.y, curBlockPos.z, newLightValue, isSunLight);
 					AddPointToAABB(curBlockPos, minDirtyBlockId_ws, maxDirtyBlockId_ws);
+					bUpdateNeighbor = (newLightValue > lightvalue) && curBlockPos.AbsDistanceTo(blockId_ws) < 17;
 				}
 				else if (current.brightness != newLightValue)
 				{
@@ -960,7 +987,6 @@ namespace ParaEngine
 					// in such cases, the light value is changed so add to AABB to rebuild the render buffer. 
 					AddPointToAABB(curBlockPos, minDirtyBlockId_ws, maxDirtyBlockId_ws);
 				}
-				bUpdateNeighbor = (newLightValue > lightvalue) && curBlockPos.AbsDistanceTo(blockId_ws) < 17;
 			}
 
 			if (bUpdateNeighbor && nQueuedCount < (int)(m_blocksNeedLightRecalcuation.size() - 6))
@@ -974,7 +1000,8 @@ namespace ParaEngine
 					if (lastLightValue < newLightValue)
 					{
 						Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
-						m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
+						if(!IsLightDirty(neighborPos))
+							m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 					}
 				}
 			}

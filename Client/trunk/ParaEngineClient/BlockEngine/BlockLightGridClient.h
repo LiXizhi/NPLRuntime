@@ -87,6 +87,8 @@ namespace ParaEngine
 		/** thread safe: */
 		bool IsChunkColumnLoaded(int nChunkX, int nChunkZ);
 
+		/* whether this light block is marked dirty. please note only call this functionin light thread, since there is no lock on this function. */
+		bool IsLightDirty(Uint16x3& blockId_ws);
 		
 	private:
 		/*
