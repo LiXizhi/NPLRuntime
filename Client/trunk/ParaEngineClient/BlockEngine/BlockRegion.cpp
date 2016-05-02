@@ -1490,6 +1490,7 @@ namespace ParaEngine
 		{
 			SetChunkColumnTimeStamp(chunkX_rs << 4, chunkZ_rs << 4, 2);
 			
+			/*
 			if(!m_pBlockWorld->RefreshChunkColumn(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs))
 				m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
 			// refresh nearby chunk column if any, this fix a bug of lighting 
@@ -1502,7 +1503,7 @@ namespace ParaEngine
 							m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs + i, m_minChunkId_ws.z + chunkZ_rs + j);
 					}
 				}
-			}
+			}*/
 		}
 		if (bLightSuspended)
 			GetBlockWorld()->ResumeLightUpdate();
@@ -1544,7 +1545,8 @@ namespace ParaEngine
 				{
 					for (uint16 cz = 0; cz < 512; cz+=16)
 					{
-						SetChunkColumnTimeStamp(cx, cz, 1);
+						// SetChunkColumnTimeStamp(cx, cz, 1);
+						SetChunkColumnTimeStamp(cx, cz, 0);
 					}
 				}
 				GetBlockWorld()->OnLoadBlockRegion(GetRegionX(), GetRegionZ());

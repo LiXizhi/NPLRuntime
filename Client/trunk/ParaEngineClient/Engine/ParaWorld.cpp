@@ -63,7 +63,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 #endif
 
 	CCommandLineParams cmdParams(lpCmdLine);
-	if(strcmp("true", cmdParams.GetAppCommandLineByParam("single", "true")) == 0)
+	if(strcmp("true", cmdParams.GetAppCommandLineByParam("single", "false")) == 0)
 	{
 		// only prevent multiple instance if single is true.
 		HWND hWnd = ::FindWindowW(g_sWindowClassName,NULL);
