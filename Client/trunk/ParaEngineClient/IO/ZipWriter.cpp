@@ -19,6 +19,37 @@ using namespace ParaEngine;
 
 namespace ParaEngine 
 {
+	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t *ft)
+	{
+		tm st;
+		st.tm_year = (WORD)((dosdate >> 9) + 1980 - 1900);
+		st.tm_mon = (WORD)(((dosdate >> 5) & 0xf) - 1);
+		st.tm_mday = (WORD)(dosdate & 0x1f);
+		st.tm_hour = (WORD)(dostime >> 11);
+		st.tm_min = (WORD)((dostime >> 5) & 0x3f);
+		st.tm_sec = (WORD)((dostime & 0x1f) * 2);
+		*ft = mktime( &st );
+	}
+
+#ifdef WIN32
+	void standardtime2osfiletime(time_t t, LPFILETIME pft)
+	{
+		// This function comes from MSDN:
+		// https://msdn.microsoft.com/zh-tw/library/windows/desktop/ms724228(v=vs.85).aspx
+		// Note that LONGLONG is a 64-bit value
+		LONGLONG ll;
+
+		ll = Int32x32To64(t, 10000000) + 116444736000000000;
+		pft->dwLowDateTime = (DWORD)ll;
+		pft->dwHighDateTime = ll >> 32;
+	}
+#else
+	void standardtime2osfiletime(time_t source_t, time_t* target_t)
+	{
+		if(target_t)
+			*target_t = source_t;
+	}    
+#endif
 
 	void filetime2dosdatetime(const time_t& ft, WORD *dosdate, WORD *dostime)
 	{
@@ -30,7 +61,7 @@ namespace ParaEngine
 		*dosdate |= (uint16_t)((st->tm_mday & 0x1f));
 		*dostime = (uint16_t)((st->tm_hour & 0x1f) << 11);
 		*dostime |= (uint16_t)((st->tm_min & 0x3f) << 5);
-		*dostime |= (uint16_t)((st->tm_sec * 2) & 0x1f);
+		*dostime |= (uint16_t)((st->tm_sec / 2) & 0x1f);
 	}
 
 	void GetFileTime(const std::string& filename, WORD *dosdate, WORD *dostime)
