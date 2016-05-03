@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #include "FileManager.h"
 #include "ZipArchive.h"
+#include "ZipWriter.h"
 #ifdef PARAENGINE_MOBILE
 	#include <tinyxml2.h>
 #else
@@ -1269,16 +1270,15 @@ namespace ParaScripting
 	//
 	//////////////////////////////////////////////////////////////////////////
 	ParaZipWriter::ParaZipWriter()
-		:m_writer(NULL)
 	{
 
 	}
 
-	ParaZipWriter::ParaZipWriter( CZipWriter* writer )
+	ParaZipWriter::ParaZipWriter(CZipWriter * writer)
 		:m_writer(writer)
 	{
-
 	}
+
 
 	DWORD ParaZipWriter::ZipAdd( const char* dstzn, const char* fn )
 	{
@@ -1308,7 +1308,7 @@ namespace ParaScripting
 	{
 		if(m_writer)
 		{
-			SAFE_RELEASE(m_writer);
+			m_writer.reset();
 			return 0;
 		}
 		else
@@ -1317,7 +1317,7 @@ namespace ParaScripting
 
 	bool ParaZipWriter::IsValid()
 	{
-		return (m_writer!=0) && (m_writer->m_handle!=0);
+		return m_writer && (m_writer->IsValid());
 	}
 
 

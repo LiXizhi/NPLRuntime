@@ -24,6 +24,9 @@
 	#endif
 #endif
 
+#ifdef _DEBUG
+// #define USE_BOOST_FILE_API
+#endif
 
 #if defined USE_BOOST_FILE_API || defined(USE_COCOS_FILE_API)
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
@@ -845,7 +848,7 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 }
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
-#ifdef USE_COCOS_FILE_API
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
 	try
@@ -891,7 +894,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
-					if (!result.AddResult(iter->path().string(), fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
+					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
 						return;
 				}
 			}
@@ -903,7 +906,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 
 void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
 {
-#ifdef USE_COCOS_FILE_API
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	std::string path = GetWritableFullPathForFilename(sRootPath);
 	
 	fs::path rootPath(path);

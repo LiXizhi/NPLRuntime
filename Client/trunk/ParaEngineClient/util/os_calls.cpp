@@ -280,7 +280,7 @@ int _findclose(long h)
 
 PE_CORE_DECL size_t ParaEngine::GetPeakMemoryUse()
 {
-#if defined(_WIN32) && defined(PARAENGINE_CLIENT)
+#if defined(_WIN32) && defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
 	/* Windows -------------------------------------------------- */
 	PROCESS_MEMORY_COUNTERS info;
 	GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info));
@@ -318,7 +318,7 @@ PE_CORE_DECL size_t ParaEngine::GetPeakMemoryUse()
 
 PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 {
-#if defined(_WIN32) && defined(PARAENGINE_CLIENT)
+#if defined(_WIN32) && defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
 	/* Windows -------------------------------------------------- */
 
 	PROCESS_MEMORY_COUNTERS info;

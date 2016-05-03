@@ -165,27 +165,27 @@ void CEffectFileDirectX::EnableLightMap(bool bEnable)
 /* In line Functions                                                    */
 /************************************************************************/
 //. Accessors ...................................................
-inline LPD3DXEFFECT CEffectFileDirectX::effect()const
+LPD3DXEFFECT CEffectFileDirectX::effect()const
 {
 	return m_pEffect;
 }
 
-inline bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
+bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
 {
 	return m_paramHandle[index] != 0;
 }
 
-inline bool CEffectFileDirectX::isMatrixUsed(eParameterHandles index)const
+bool CEffectFileDirectX::isMatrixUsed(eParameterHandles index)const
 {
 	return m_paramHandle[index] != 0;
 }
 
-inline bool CEffectFileDirectX::isTextureUsed(int index)const
+bool CEffectFileDirectX::isTextureUsed(int index)const
 {
 	return m_paramHandle[k_tex0 + index] != 0;
 }
 
-inline bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
+bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
 {
 	return m_paramHandle[k_tex_mat0 + index] != 0;
 }
@@ -193,7 +193,7 @@ inline bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
 
 
 
-inline bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
+bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
@@ -230,7 +230,7 @@ bool CEffectFileDirectX::setFloatArray(eParameterHandles index, const float* dat
 	return false;
 }
 
-inline bool CEffectFileDirectX::setFloatInArray(eParameterHandles index, UINT32 element, float data)const
+bool CEffectFileDirectX::setFloatInArray(eParameterHandles index, UINT32 element, float data)const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -240,7 +240,7 @@ inline bool CEffectFileDirectX::setFloatInArray(eParameterHandles index, UINT32 
 	return false;
 }
 
-inline bool CEffectFileDirectX::setTextureMatrix(int index, const Matrix4* data)const
+bool CEffectFileDirectX::setTextureMatrix(int index, const Matrix4* data)const
 {
 	if (m_pEffect && isTextureMatrixUsed(index))
 	{
@@ -249,7 +249,7 @@ inline bool CEffectFileDirectX::setTextureMatrix(int index, const Matrix4* data)
 	return false;
 }
 
-inline bool CEffectFileDirectX::setParameter(eParameterHandles index, const void* data, INT32 size)const
+bool CEffectFileDirectX::setParameter(eParameterHandles index, const void* data, INT32 size)const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -260,7 +260,7 @@ inline bool CEffectFileDirectX::setParameter(eParameterHandles index, const void
 	}
 	return false;
 }
-inline bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) const
+bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -271,7 +271,7 @@ inline bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) 
 	return false;
 }
 
-inline bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) const
+bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -282,7 +282,7 @@ inline bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) cons
 	return false;
 }
 
-inline bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
+bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -294,7 +294,7 @@ inline bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) 
 }
 
 
-inline bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)const
+bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)const
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{

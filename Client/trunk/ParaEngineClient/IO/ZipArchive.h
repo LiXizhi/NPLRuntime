@@ -8,10 +8,6 @@
 #include <vector>
 #include "util/mutex.h"
 
-#ifdef PARAENGINE_CLIENT
-#include "zlib/zip.h"
-#endif
-
 namespace ParaEngine
 {
 	using namespace std;
@@ -21,11 +17,12 @@ namespace ParaEngine
 	const WORD ZIP_INFO_IN_DATA_DESCRITOR =	0x0008; // the fields crc-32, compressed size
 	/// Size of end of central record (excluding variable fields)
 	const int ZIP_CONST_ENDHDR = 22;
-	/// End of central directory record signature
-	const DWORD ZIP_CONST_ENDSIG = 0x06054B50;
+	/// local file header
+	const int ZIP_CONST_LOCALHEADERSIG = 'P' | ('K' << 8) | (3 << 16) | (4 << 24);
 	/// Signature for central header
 	const int ZIP_CONST_CENSIG = 'P' | ('K' << 8) | (1 << 16) | (2 << 24);
-
+	/// End of central directory record signature
+	const DWORD ZIP_CONST_ENDSIG = 'P' | ('K' << 8) | (5 << 16) | (6 << 24);
 
 	// and uncompressed size are set to zero in the local
 	// header
@@ -36,13 +33,25 @@ namespace ParaEngine
 
 	struct ZIP_EndOfCentralDirectory
 	{
-		short thisDiskNumber;
-		short startCentralDirDisk;
-		short entriesForThisDisk;
-		short entriesForWholeCentralDir;
-		int centralDirSize;
-		int offsetOfCentralDir;
-		short commentSize;
+		uint16_t thisDiskNumber;
+		uint16_t startCentralDirDisk;
+		uint16_t entriesForThisDisk;
+		uint16_t entriesForWholeCentralDir;
+		uint32_t centralDirSize;
+		uint32_t offsetOfCentralDir;
+		uint16_t commentSize;
+	};
+
+	struct ZIP_EndOfCentralDirectoryBlock
+	{
+		DWORD sig;
+		uint16_t thisDiskNumber;
+		uint16_t startCentralDirDisk;
+		uint16_t entriesForThisDisk;
+		uint16_t entriesForWholeCentralDir;
+		uint32_t centralDirSize;
+		uint32_t offsetOfCentralDir;
+		uint16_t commentSize;
 	};
 
 	struct ZIP_CentralDirectory
@@ -52,7 +61,8 @@ namespace ParaEngine
 		WORD ExtractVersion;
 		WORD Flags;
 		WORD CompressionMethod;
-		DWORD Time;
+		WORD LastModFileTime;
+		WORD LastModFileDate;
 		DWORD FileCRC;
 		DWORD PackSize;
 		DWORD UnPackSize;
@@ -340,60 +350,5 @@ namespace ParaEngine
 
 		/** read pkg entry*/
 		bool ReadEntries_pkg();
-	};
-
-
-	/**
-	* creating zip files
-	* 
-	* e.g.
-	*  (1) Traditional use, creating a zipfile from existing files
-	* CZipWriter* writer = CZipWriter::CreateZip("c:\\simple1.zip","");
-	* writer->ZipAdd("znsimple.bmp", "c:\\simple.bmp");
-	* writer->ZipAdd("znsimple.txt", "c:\\simple.txt");
-	* writer->close();
-	*/
-	class CZipWriter
-	{
-	public:
-		CZipWriter();
-		CZipWriter(void* handle);
-		/** 
-		* call this to start the creation of a zip file.
-		* one need to call Release()
-		*/
-		static CZipWriter* CreateZip(const char *fn, const char *password);
-
-		/**
-		* add a zip file to the zip. file call this for each file to be added to the zip.
-		* @return: 0 if succeed.
-		*/
-		DWORD ZipAdd(const char* dstzn, const char* fn);
-		/**
-		* add a zip folder to the zip file. call this for each folder to be added to the zip.
-		* @return: 0 if succeed.
-		*/
-		DWORD ZipAddFolder(const char* dstzn);
-
-		/**
-		* add everything in side a directory to the zip. 
-		* e.g. AddDirectory("myworld/", "worlds/myworld/*.*", 10);
-		* @param dstzn: all files in fn will be appended with this string to be saved in the zip file.
-		* @param filepattern: file patterns, which can include wild characters in the file portion.
-		* @param nSubLevel: sub directory levels. 0 means only files at parent directory.
-		*/
-		DWORD AddDirectory(const char* dstzn, const char* filepattern, int nSubLevel=0);
-
-		/**
-		* call this when you have finished adding files and folders to the zip file.
-		* Note: you can't add any more after calling this.
-		*/
-		DWORD close();
-
-		/** close and delete this*/
-		void Release();
-
-	public:
-		void* m_handle;
 	};
 }

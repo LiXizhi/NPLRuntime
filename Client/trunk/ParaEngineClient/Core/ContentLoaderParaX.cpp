@@ -303,7 +303,8 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					BMaxParser p(myFile.getBuffer(), myFile.getSize());
 					lod.m_pParaXMesh = p.ParseParaXModel();
 				}
-#if defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER)
+
+#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
 				else if (sExt == "fbx")
 				{
 					// static or animated fbx model

@@ -1,0 +1,70 @@
+# Author: LiXizhi
+# Email: lixizhi@yeah.net
+# Date: 2016.4.30
+# Note: see NPLRuntime/cmakelist.txt
+
+cmake_minimum_required (VERSION 2.6)
+
+project (CLIENT)
+
+# this is the directory to keep all binary
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+	set(OUTPUT_BIN_DIR   ${CLIENT_SOURCE_DIR}/../ParaWorld/bin64/)
+else()
+	set(OUTPUT_BIN_DIR   ${CLIENT_SOURCE_DIR}/../ParaWorld/)
+endif()
+
+set(SERVER_SOURCE_DIR   ${CLIENT_SOURCE_DIR}/../Server/trunk/)
+
+# include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
+if (PARAENGINE_CLIENT OR WIN32)
+	if ("$ENV{BOOST_ROOT}" STREQUAL "")
+		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
+	endif()
+    if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
+	else()
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib32)
+	endif()
+endif(PARAENGINE_CLIENT OR WIN32)
+
+set(Boost_USE_MULTITHREADED ON)
+if (WIN32)
+    set(Boost_USE_STATIC_LIBS   ON)
+    set(Boost_USE_STATIC_RUNTIME ON)
+endif ()
+
+# Add more boost components here
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
+
+if (WIN32)
+    # Note: LiXizhi 2010.3. there is a bug in FindBoost that one needs to link with ${Boost_LIBRARIES_static_runtime} in order to use static vc runtime time. 
+    #STRING(REGEX REPLACE "\\-mt\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES}" )
+    #STRING(REGEX REPLACE "\\-mt\\-s\\-s\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
+    #STRING(REGEX REPLACE "s\\-gd" "sgd" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
+    # since we are linking statically everywhere, replace Boost_LIBRARIES with static one. 
+    # set(Boost_LIBRARIES ${Boost_LIBRARIES_static_runtime})
+endif ()
+
+if (WIN32)
+	option(BUILD_CURL_EXE OFF)
+	option(BUILD_CURL_TESTS OFF)
+    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
+	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
+else()
+	FIND_PACKAGE(CURL REQUIRED)
+endif()
+
+add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${CLIENT_BINARY_DIR}/lua-5.1.4)
+add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${CLIENT_BINARY_DIR}/LuaJIT)
+add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${CLIENT_BINARY_DIR}/luabind-0.9)
+add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${CLIENT_BINARY_DIR}/sqlite-3.6.23.1)
+add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp-0.5.0)
+add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
+add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
+
+# main NPL runtime using ParaEngineClient
+add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)
+
+# following are plugins that should be build after main runtime
+add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${CLIENT_BINARY_DIR}/NPLMono/NPLMono2)

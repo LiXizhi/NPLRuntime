@@ -34,7 +34,9 @@
 
 #ifdef PARAENGINE_CLIENT
 #include "util/CommonFileDialog.h"
-#include "util/EnumProcess.hpp"
+#if !defined(NPLRUNTIME)
+	#include "util/EnumProcess.hpp"
+#endif
 #endif
 
 #include <time.h>
@@ -1076,7 +1078,7 @@ void ParaEngine::ParaEngineSettings::SetCurrentLanguage(LanguageType lang)
 
 int ParaEngine::ParaEngineSettings::GetAppCount()
 {
-#ifdef PARAENGINE_CLIENT
+#if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
 	std::string sProcessName = "ParaEngineClient.exe";
 	CProcessIterator   itp;
 	int nCount = 0;

@@ -353,7 +353,7 @@ namespace ParaEngine
 	{
 		ModelGeoset geoset;
 		memset(&geoset, 0, sizeof(geoset));
-		geoset.id = (int)m_geosets.size();
+		geoset.id = (uint16_t)m_geosets.size();
 		m_geosets.push_back(geoset);
 		return &(m_geosets.back());
 	}

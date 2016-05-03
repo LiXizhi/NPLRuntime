@@ -42,6 +42,8 @@ namespace ParaEngine
 		/// delete this
 		virtual void Release(){delete this;};
 
+		/** get the buffer at current location*/
+		byte* getBuffer();
 	private:
 		DWORD	m_CacheStartPos;
 		DWORD	m_CacheEndPos;

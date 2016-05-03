@@ -89,6 +89,6 @@ void ParaEngine::RedirectIOToConsole()
 bool ParaEngine::SetOutputConsoleTextAttribute( WORD wAttributes )
 {
 #ifdef WIN32
-	return SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), wAttributes);
+	return !!SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), wAttributes);
 #endif
 }

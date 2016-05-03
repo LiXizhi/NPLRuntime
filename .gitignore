@@ -37,6 +37,7 @@ WanDeploy/
 WebAPI/
 !Client/
 Client/*
+!Client/CMakeLists.txt
 !Client/trunk/
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
@@ -53,3 +54,5 @@ Server/trunk/*
 !Server/trunk/NPLMono/
 !Server/trunk/luasql/
 !Server/trunk/luaJIT/
+!Server/trunk/zlib-1.2.3/
+!Server/trunk/curl-7.47.1/

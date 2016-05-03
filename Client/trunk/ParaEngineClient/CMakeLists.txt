@@ -269,11 +269,6 @@ include(${PROJECT_SOURCE_DIR}/MSVCPCHSupport.cmake)
 MSVC_PCH_SUPPORT(${PROJECT_NAME}) 
 
 ##############################
-file (GLOB ParaEngineClient_zlib_FILES ${PROJECT_SOURCE_DIR}/zlib/*.*)
-SOURCE_GROUP("Externals\\zlib" FILES ${ParaEngineClient_zlib_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_zlib_FILES})
-
-##############################
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/Core")
@@ -293,6 +288,7 @@ include_directories("${Boost_INCLUDE_DIRS}")
 include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${CLIENT_SOURCE_DIR}/FreeImage_3120/Dist")
+include_directories("${CURL_BINARY_DIR}/include/curl/")
 include_directories("${CURL_SOURCE_DIR}/include/")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${CLIENT_SOURCE_DIR}/dxsdk_feb2005_extras/DirectShow/Include")

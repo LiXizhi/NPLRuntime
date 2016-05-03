@@ -1532,7 +1532,7 @@ void CParaXModel::BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* p
 			DWORD dwNumEdges = 0;
 
 			// Allocate a temporary edge list
-			hash_set <EdgeHash, hash_compare_edge> m_edgeTable;
+			std::unordered_set <EdgeHash, hash_compare_edge> m_edgeTable;
 			if (nUseCap>0)
 				pShadowVolume->ReserveNewBlock(&pVertices, nNumFaces * 3);
 
@@ -1592,7 +1592,7 @@ void CParaXModel::BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* p
 				pShadowVolume->ReserveNewBlock(&pVertices, dwNumEdges * 3);
 				Vector3 v3 = Vector3(mxWorld->_41, mxWorld->_42, mxWorld->_43) + pLight->Direction * pLight->Range;
 
-				hash_set <EdgeHash, hash_compare_edge>::iterator itCurCP, itEndCP = m_edgeTable.end();
+				std::unordered_set <EdgeHash, hash_compare_edge>::iterator itCurCP, itEndCP = m_edgeTable.end();
 
 				// first shutdown all connections
 				for (itCurCP = m_edgeTable.begin(); itCurCP != itEndCP; ++itCurCP)

@@ -39,7 +39,7 @@ Use the macro to turn on a given way of creating application.
 
 #ifdef _DEBUG
 /** @def turn on memory dump when the application exits. only for debug build.*/
-#define DETECT_MEMORY_LEAK
+// #define DETECT_MEMORY_LEAK
 #endif
 
 extern HINSTANCE g_hAppInstance;
@@ -63,7 +63,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 #endif
 
 	CCommandLineParams cmdParams(lpCmdLine);
-	if(strcmp("true", cmdParams.GetAppCommandLineByParam("single", "true")) == 0)
+	if(strcmp("true", cmdParams.GetAppCommandLineByParam("single", "false")) == 0)
 	{
 		// only prevent multiple instance if single is true.
 		HWND hWnd = ::FindWindowW(g_sWindowClassName,NULL);

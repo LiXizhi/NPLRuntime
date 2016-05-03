@@ -1,7 +1,6 @@
 #pragma once
 
-#include <hash_set>
-using namespace stdext;
+#include <unordered_set>
 
 namespace ParaEngine
 {
@@ -51,6 +50,6 @@ public:
 	CEdgeBuilder(void);
 	~CEdgeBuilder(void);
 public:
-	static void AddEdge( hash_set <EdgeHash, hash_compare_edge> & edgeTable, DWORD& dwNumEdges, WORD v0, WORD v1 );
+	static void AddEdge( std::unordered_set <EdgeHash, hash_compare_edge> & edgeTable, DWORD& dwNumEdges, WORD v0, WORD v1 );
 };
 }

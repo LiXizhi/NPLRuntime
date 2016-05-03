@@ -48,7 +48,9 @@ The GUIRoot object contains the top level mouse focus object.
 
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
+#if !defined(NPLRUNTIME)
 #include "GUIWebBrowser.h"
+#endif
 #endif
 #include "SceneObject.h"
 #include "AutoCamera.h"
@@ -796,8 +798,10 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_LINEAR);
 	}
 
+#if !defined(NPLRUNTIME)
 	/** global frame move */
 	CGUIWebBrowser::GlobalFrameMove();
+#endif
 #endif
 
 	if (!pGUIState->listPostRenderingObjects.empty())

@@ -161,6 +161,7 @@ m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHa
 //-----------------------------------------------------------------------------
 CBipedObject::~CBipedObject()
 {
+	SAFE_DELETE(m_pBipedStateManager);
 }
 
 void CBipedObject::SetUseGlobalTime(bool bUseGlobalTime)

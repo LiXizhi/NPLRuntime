@@ -49,10 +49,10 @@ CEdgeBuilder::~CEdgeBuilder(void)
 {
 }
 
-void CEdgeBuilder::AddEdge( hash_set <EdgeHash, hash_compare_edge> & edgeTable, DWORD& dwNumEdges, WORD v0, WORD v1 )
+void CEdgeBuilder::AddEdge( unordered_set <EdgeHash, hash_compare_edge> & edgeTable, DWORD& dwNumEdges, WORD v0, WORD v1 )
 {
 	// Remove interior edges (which appear in the list twice)
-	pair<hash_set <EdgeHash, hash_compare_edge>::iterator, bool> result = edgeTable.insert(EdgeHash(v0,v1)); 
+	auto result = edgeTable.insert(EdgeHash(v0,v1));
 	
 	if(result.second)
 		dwNumEdges++;

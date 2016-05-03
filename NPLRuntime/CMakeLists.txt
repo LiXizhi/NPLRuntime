@@ -27,7 +27,9 @@ set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if (PARAENGINE_CLIENT OR WIN32)
-	set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
+	if ("$ENV{BOOST_ROOT}" STREQUAL "")
+		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
+	endif()
     if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
 	else()

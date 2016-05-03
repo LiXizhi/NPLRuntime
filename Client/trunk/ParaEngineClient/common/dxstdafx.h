@@ -65,7 +65,9 @@
 #define MAX_STRING_LENGTH 0xffff
 #endif
 
-#define PE_CORE_EXPORTING
+#ifndef PE_CORE_EXPORTING
+	#define PE_CORE_EXPORTING
+#endif
 #include "coreexport.h"
 
 #endif // !defined(DXSDK_STDAFX_H)
