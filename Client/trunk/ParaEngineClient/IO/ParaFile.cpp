@@ -12,6 +12,7 @@
 #include "AsyncLoader.h"
 #include "AssetManifest.h"
 #include "ZipArchive.h"
+#include "ZipWriter.h"
 #include "IParaEngineApp.h"
 #include "FileUtils.h"
 #include "ParaFile.h"
@@ -926,36 +927,31 @@ bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
 	return false;
 }
 
-#ifdef PARAENGINE_CLIENT
-#include "zlib/zip.h"
-#endif
-
 bool CParaFile::WriteLastModifiedTime(DWORD lastWriteTime)
 {
 	SetLastModifiedTime(lastWriteTime);
 
-#ifdef WIN32
-	//For win32
 	bool result = false;
 	if(lastWriteTime>0)
 	{
-		m_lastModifiedTime = lastWriteTime;
 		if(m_handle.IsValid())
 		{
-			FILETIME local_ft, utc_ft;
+			time_t standard_time;
 			WORD dosdate = lastWriteTime>>16;
 			WORD dostime = lastWriteTime&0xffff;
-			::dosdatetime2filetime(dosdate, dostime, &local_ft);
-			LocalFileTimeToFileTime(&local_ft, &utc_ft);
+			dosdatetime2filetime(dosdate, dostime, &standard_time);
+#ifdef WIN32
+			//For win32
+			FILETIME local_ft;
+			standardtime2osfiletime(standard_time, &local_ft);
 
-			result = (SetFileTime(m_handle.m_handle, &utc_ft, &utc_ft, &utc_ft) != FALSE);
+			result = (SetFileTime(m_handle.m_handle, &local_ft, &local_ft, &local_ft) != FALSE);
+#else
+			//Not implemented for other platform yet
+#endif
 		}
 	}
 	return result;
-#else
-	//Not implemented for other platform yet
-	return false;
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

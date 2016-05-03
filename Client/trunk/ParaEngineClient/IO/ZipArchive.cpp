@@ -889,7 +889,7 @@ bool CZipArchive::ReadEntries()
 		entry.CompressionMethod = CentralDir.CompressionMethod;
 		entry.UncompressedSize = CentralDir.UnPackSize;
 		entry.CompressedSize = CentralDir.PackSize;
-		entry.LastModifiedTime = CentralDir.Time;
+		entry.LastModifiedTime = (CentralDir.LastModFileDate << 16) + (CentralDir.LastModFileTime & 0xffff);
 
 		int nExtraLength = 0;
 		if (CentralDir.ExtraSize > 0) {
