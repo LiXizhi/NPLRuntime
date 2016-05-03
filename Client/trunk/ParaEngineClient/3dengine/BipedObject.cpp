@@ -4407,10 +4407,10 @@ void CBipedObject::SetSpeedScale(float fScale)
 {
 	m_fSpeedScale = fScale;
 
-	if (m_pAI)
-	{
-		m_pAI->SetSpeedScale(fScale);
-	}
+	//if (m_pAI)
+	//{
+	//	m_pAI->SetSpeedScale(fScale);
+	//}
 }
 
 float CBipedObject::GetSizeScale()
@@ -4537,11 +4537,11 @@ void CBipedObject::UpdateSpeed(float fNewSpeed)
 	}
 	else if (fNewSpeed != 0.f && m_fSpeed == 0.f)
 	{
-		m_fSpeed = fNewSpeed;
+		m_fSpeed = m_fSpeedScale * fNewSpeed;
 		ForceMove();
 	}
 	else
-		m_fSpeed = fNewSpeed;
+		m_fSpeed = m_fSpeedScale * fNewSpeed;
 }
 void CBipedObject::UseSpeedFromAnimation(int nIndex)
 {
