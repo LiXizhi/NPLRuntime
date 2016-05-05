@@ -374,6 +374,11 @@ int ParaEngine::CZipWriter::SaveAndClose()
 	CParaFile file;
 	if (file.OpenFile(m_filename.c_str(), false))
 	{
+		// make file to 0 size
+		file.SetFilePointer(0, FILE_BEGIN);
+		file.SetEndOfFile();
+		file.SetFilePointer(0, FILE_BEGIN);
+
 		auto startPosition = file.getPos();
 
 		for (auto* entry : m_entries)
