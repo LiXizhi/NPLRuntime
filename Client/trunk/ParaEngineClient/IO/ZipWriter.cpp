@@ -84,7 +84,7 @@ namespace ParaEngine
 	public:
 		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0)
 		{
-			memset(&m_localFileHeader, 0, sizeof(m_localFileHeader));
+			memset(&m_localFileHeader, 0, sizeof(SZIPFileHeader));
 			m_localFileHeader.Sig = ZIP_CONST_LOCALHEADERSIG;
 		}
 
@@ -102,7 +102,7 @@ namespace ParaEngine
 		static int Compress(std::string& outstring, const char* src, int nSrcSize, int compressionlevel = Z_DEFAULT_COMPRESSION)
 		{
 			z_stream zs;
-			memset(&zs, 0, sizeof(zs));
+			memset(&zs, 0, sizeof(z_stream));
 
 			if (deflateInit2(&zs, compressionlevel, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY) != Z_OK)
 			{
@@ -162,7 +162,7 @@ namespace ParaEngine
 			m_localFileHeader.DataDescriptor.CRC32 = 0;
 			
 			// serialize header
-			file.write(&m_localFileHeader, sizeof(m_localFileHeader));
+			file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
 			file.WriteString(m_destFilename);
 
 			m_offsetOfCompressedData = file.getPos();
@@ -189,7 +189,7 @@ namespace ParaEngine
 						// actualize local file header
 						auto currentPos = file.getPos();
 						file.seek(m_offsetOfSerializedLocalFileHeader);
-						file.write(&m_localFileHeader, sizeof(m_localFileHeader));
+						file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
 						file.seek(currentPos);
 					}
 				}
@@ -202,7 +202,7 @@ namespace ParaEngine
 		void SerializeCentralDirectoryFileHeader(CParaFile& file)
 		{
 			ZIP_CentralDirectory _centralDirectoryFileHeader;
-			memset(&_centralDirectoryFileHeader, 0, sizeof(_centralDirectoryFileHeader));
+			memset(&_centralDirectoryFileHeader, 0, sizeof(ZIP_CentralDirectory));
 			_centralDirectoryFileHeader.Sig = ZIP_CONST_CENSIG;
 			_centralDirectoryFileHeader.LastModFileTime = m_localFileHeader.LastModFileTime;
 			_centralDirectoryFileHeader.LastModFileDate = m_localFileHeader.LastModFileDate;
@@ -214,7 +214,7 @@ namespace ParaEngine
 
 			_centralDirectoryFileHeader.LocalHeaderOffset = static_cast<int32_t>(m_offsetOfSerializedLocalFileHeader);
 
-			file.write(&_centralDirectoryFileHeader, sizeof(_centralDirectoryFileHeader));
+			file.write(&_centralDirectoryFileHeader, sizeof(ZIP_CentralDirectory));
 			file.WriteString(m_destFilename);
 		};
 
@@ -374,6 +374,11 @@ int ParaEngine::CZipWriter::SaveAndClose()
 	CParaFile file;
 	if (file.OpenFile(m_filename.c_str(), false))
 	{
+		// make file to 0 size
+		file.SetFilePointer(0, FILE_BEGIN);
+		file.SetEndOfFile();
+		file.SetFilePointer(0, FILE_BEGIN);
+
 		auto startPosition = file.getPos();
 
 		for (auto* entry : m_entries)
@@ -398,7 +403,7 @@ int ParaEngine::CZipWriter::SaveAndClose()
 		_endOfCentralDirectoryBlock.centralDirSize = static_cast<uint32_t>(file.getPos() - offsetOfStartOfCDFH);
 		_endOfCentralDirectoryBlock.offsetOfCentralDir = static_cast<uint32_t>(offsetOfStartOfCDFH);
 		_endOfCentralDirectoryBlock.commentSize = 0;
-		file.write(&_endOfCentralDirectoryBlock, sizeof(_endOfCentralDirectoryBlock));
+		file.write(&_endOfCentralDirectoryBlock, sizeof(ZIP_EndOfCentralDirectoryBlock));
 
 		file.close();
 	}

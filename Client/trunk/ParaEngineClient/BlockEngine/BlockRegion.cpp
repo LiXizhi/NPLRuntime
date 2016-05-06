@@ -1489,10 +1489,9 @@ namespace ParaEngine
 		if (IsChunkColumnFirstLoaded && nModifiedCount>0)
 		{
 			SetChunkColumnTimeStamp(chunkX_rs << 4, chunkZ_rs << 4, 2);
-			
-			/*
 			if(!m_pBlockWorld->RefreshChunkColumn(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs))
 				m_pBlockWorld->GetLightGrid().SetColumnUnloaded(m_minChunkId_ws.x + chunkX_rs, m_minChunkId_ws.z + chunkZ_rs);
+			/* NOT needed
 			// refresh nearby chunk column if any, this fix a bug of lighting 
 			for (int i = -1; i <= 1; i++)
 			{
