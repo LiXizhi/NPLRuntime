@@ -352,6 +352,12 @@ namespace ParaEngine
 		*/
 		virtual CRefCounted* AddToSingletonReleasePool(CRefCounted* pObject);
 
+		/** whether there is closing request in the message queue. In windows, the user clicks the close button.
+		* For long running task in the main thread, it is recommended to periodically check this value to end the task prematurely if necessary.
+		*/
+		virtual bool HasClosingRequest();
+		virtual void SetHasClosingRequest(bool val);
+
 	public:
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager() { return NULL; };
@@ -379,6 +385,7 @@ namespace ParaEngine
 		static CParaEngineApp* g_pCurrentApp;
 		bool m_bEnable3DRendering;
 		bool m_isTouching;
+		bool m_hasClosingRequest;
 		/** the application exit code or return code. 0 means success. otherwise means a failure. */
 		int m_nReturnCode;
 		/** a pool of registered singleton object. */

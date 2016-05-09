@@ -112,6 +112,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsWindowClosingAllowed_s, bool*)	{*p1 = cls->IsWindowClosingAllowed(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetAllowWindowClosing_s, bool)	{cls->SetAllowWindowClosing(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, HasClosingRequest_s, bool*)	{ *p1 = cls->HasClosingRequest(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetHasClosingRequest_s, bool)	{ cls->SetHasClosingRequest(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsFullScreenMode_s, bool*)	{*p1 = cls->IsFullScreenMode(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetFullScreenMode_s, bool)	{cls->SetFullScreenMode(p1); return S_OK;}
 
@@ -647,6 +650,12 @@ namespace ParaEngine
 
 		/** get total number of bytes in vertex buffer pool for quick stats. */
 		size_t GetVertexBufferPoolTotalBytes();
+
+		/** whether there is closing request in the message queue. In windows, the user clicks the close button.
+		* For long running task in the main thread, it is recommended to periodically check this value to end the task prematurely if necessary.
+		*/
+		bool HasClosingRequest();
+		void SetHasClosingRequest(bool val);
 	protected:
 		void LoadNameIndex();
 	private:

@@ -1242,6 +1242,16 @@ size_t ParaEngine::ParaEngineSettings::GetVertexBufferPoolTotalBytes()
 	return CGlobals::GetAssetManager()->GetVertexBufferPoolManager().GetVertexBufferPoolTotalBytes();
 }
 
+bool ParaEngine::ParaEngineSettings::HasClosingRequest()
+{
+	return CGlobals::GetApp()->HasClosingRequest();
+}
+
+void ParaEngine::ParaEngineSettings::SetHasClosingRequest(bool val)
+{
+	CGlobals::GetApp()->SetHasClosingRequest(val);
+}
+
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
 {
 	CGlobals::GetApp()->SetRefreshTimer(fTimerInterval);
@@ -1286,6 +1296,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("HasNewConfig", FieldType_Bool, (void*)SetHasNewConfig_s, (void*)HasNewConfig_s, NULL, NULL, bOverride);
 
 	pClass->AddField("IsWindowClosingAllowed", FieldType_Bool, (void*)SetAllowWindowClosing_s, (void*)IsWindowClosingAllowed_s, NULL, NULL, bOverride);
+	pClass->AddField("HasClosingRequest", FieldType_Bool, (void*)SetHasClosingRequest_s, (void*)HasClosingRequest_s, NULL, NULL, bOverride);
 	pClass->AddField("IsFullScreenMode", FieldType_Bool, (void*)SetFullScreenMode_s, (void*)IsFullScreenMode_s, NULL, NULL, bOverride);
 	pClass->AddField("BringWindowToTop", FieldType_void, (void*)BringWindowToTop_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ScreenResolution", FieldType_Vector2, (void*)SetScreenResolution_s, (void*)GetScreenResolution_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);

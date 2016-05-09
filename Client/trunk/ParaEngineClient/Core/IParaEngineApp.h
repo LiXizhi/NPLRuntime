@@ -430,6 +430,12 @@ namespace ParaEngine
 		/** server mode has no user interface */
 		virtual bool IsServerMode() { return true; };
 		
+
+		/** whether there is closing request in the message queue. In windows, the user clicks the close button.
+		* For long running task in the main thread, it is recommended to periodically check this value to end the task prematurely if necessary.
+		*/
+		virtual bool HasClosingRequest() { return false; };
+		virtual void SetHasClosingRequest(bool val) {};
 	};
 
 }
