@@ -125,6 +125,9 @@ namespace ParaEngine
 		*/
 		void SetSaveToFile(const char* filename);
 		
+		/** append http headers*/
+		void AppendHTTPHeader(const char* text);
+
 		/** append form parameters */
 		CURLFORMcode AppendFormParam(const char* name, const char* value);
 
@@ -207,6 +210,8 @@ namespace ParaEngine
 	public:
 		/** CURLOPT_URL*/
 		string m_url;
+		/** http headers to send*/
+		struct curl_slist * m_pHttpHeaders;
 		/** CURLOPT_HTTPPOST */
 		struct curl_httppost* m_pFormPost;
 		struct curl_httppost* m_pFormLast;

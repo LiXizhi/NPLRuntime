@@ -415,9 +415,19 @@ namespace ParaScripting
 		return NPL::CNPLRuntime::GetInstance()->ChangeRequestPoolSize(sPoolName, nCount);
 	}
 
-	bool CNPL::AppendURLRequest1( const char * url, const char* sCallback, const object& sForm, const char* sPoolName )
+	bool CNPL::AppendURLRequest1(const object&  urlParams, const char* sCallback, const object& sForm, const char* sPoolName)
 	{
-		if(url == NULL || sCallback == NULL)
+		const char* url = NULL;
+		if (type(urlParams) == LUA_TTABLE)
+		{
+			url = object_cast<const char*>(urlParams["url"]);
+		}
+		else if(type(urlParams) == LUA_TSTRING)
+		{
+			url = object_cast<const char*>(urlParams);
+		}
+
+		if (url==NULL || sCallback == NULL)
 			return false;
 
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
@@ -441,7 +451,25 @@ namespace ParaScripting
 		ParaEngine::CUrlBuilder urlBuilder;
 		urlBuilder.SetBaseURL(url);
 
-		
+		// add headers
+		if (type(urlParams) == LUA_TTABLE)
+		{
+			auto headers = urlParams["headers"];
+			if (type(headers) == LUA_TTABLE)
+			{
+				for (int i = 0;;++i)
+				{
+					auto text = headers[i];
+					if (type(text) == LUA_TSTRING)
+					{
+						const char* headerText = object_cast<const char*>(text);
+						pProcessor->AppendHTTPHeader(headerText);
+					}
+					else
+						break;
+				}
+			}
+		}
 
 		if(type(sForm) == LUA_TTABLE)
 		{
