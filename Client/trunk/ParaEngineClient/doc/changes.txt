@@ -1,11 +1,14 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.5.11
+	- fix url encoder on C++ side, 
+	- NPL get url now support custom http headers.
 
 2016.5.9
 	- added HasClosingRequest attribute for debugger.
 	- fix a zip writer file size bug.
-
+	
 2016.4.26
 	- Zip writer added. drop dependency on ziplib.
 
