@@ -2485,6 +2485,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			{
 				result = 1;
 			}
+			SetHasClosingRequest(true);
 			SendMessageToApp(hWnd, uMsg, wParam, lParam);
 			break;
 		case WM_SETCURSOR:
@@ -3097,10 +3098,12 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				string msg="msg={type=\"WM_CLOSE\"};";
 				SystemEvent event(SystemEvent::SYS_WM_CLOSE, msg);
 				CGlobals::GetEventsCenter()->FireEvent(event);
+				SetHasClosingRequest(false);
 			}
 		}
 		else
 		{
+			SetHasClosingRequest(false);
 			if((!m_bDisableD3D))
 			{
 				Cleanup3DEnvironment();

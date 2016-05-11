@@ -666,7 +666,7 @@ namespace ParaScripting
 		*    - "r": rest pool. default size is 5, for REST like HTTP get/post calls.
 		*    - "w": web pool. default size is 5, for web based requests.
 		*/
-		static bool AppendURLRequest1(const char * url, const char* sCallback, const object& sForm, const char* sPoolName);
+		static bool AppendURLRequest1(const object& url, const char* sCallback, const object& sForm, const char* sPoolName);
 
 		/** build a use query using base url plus additional query parameters. 
 		* NPL.BuildURLQuery("paraengine.com", {"name1", "value1", "name2", "value2", })

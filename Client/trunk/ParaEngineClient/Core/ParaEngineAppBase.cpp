@@ -262,6 +262,16 @@ void ParaEngine::CParaEngineAppBase::VerifyCommandLine(const char* sCommandLine,
 	}
 }
 
+bool ParaEngine::CParaEngineAppBase::HasClosingRequest()
+{
+	return m_hasClosingRequest;
+}
+
+void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
+{
+	m_hasClosingRequest = val;
+}
+
 void CParaEngineAppBase::AutoSetLocale()
 {
 	// set locale according to current system language. 

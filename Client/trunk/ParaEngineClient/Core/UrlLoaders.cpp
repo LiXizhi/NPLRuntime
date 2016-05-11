@@ -84,7 +84,7 @@ int ParaEngine::CUrlLoader::GetEstimatedSizeInBytes()
 //
 //////////////////////////////////////////////////////////////////////////
 ParaEngine::CUrlProcessor::CUrlProcessor( )
-	:m_pFormPost(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
+	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), 
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true)
@@ -92,7 +92,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor( )
 }
 
 ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_callback)
-	:m_pFormPost(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
+	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), 
 	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true)
@@ -115,6 +115,11 @@ void ParaEngine::CUrlProcessor::CleanUp()
 		/* then cleanup the form post chain */
 		curl_formfree(m_pFormPost);
 		m_pFormPost = NULL;
+	}
+	if (m_pHttpHeaders)
+	{
+		curl_slist_free_all(m_pHttpHeaders);
+		m_pHttpHeaders = NULL;
 	}
 	SafeDeleteUserData();
 }
@@ -240,7 +245,6 @@ void ParaEngine::CUrlProcessor::SetSaveToFile(const char* filename)
 		m_sSaveToFileName = filename;
 }
 
-
 void ParaEngine::CUrlProcessor::SetUrl(const char* url)
 {
 	if(url)
@@ -326,6 +330,10 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	// The official doc says if multi-threaded use, this one should be set to 1. otherwise it may crash on certain conditions. 
 	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);
 
+	// any http headers
+	if (m_pHttpHeaders){
+		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, m_pHttpHeaders);
+	}
 	// form if any. 
 	if(m_pFormPost)
 	{
@@ -559,6 +567,11 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 	}
 }
 
+void ParaEngine::CUrlProcessor::AppendHTTPHeader(const char* text)
+{
+	if (text!=0)
+		m_pHttpHeaders = curl_slist_append(m_pHttpHeaders, text);
+}
 
 CURLFORMcode ParaEngine::CUrlProcessor::AppendFormParam( const char* name, const char* value )
 {
