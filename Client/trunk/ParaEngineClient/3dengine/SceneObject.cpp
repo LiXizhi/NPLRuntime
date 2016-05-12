@@ -2351,9 +2351,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	// deferred shading so far. 
 	BlockWorldClient::GetInstance()->DoPostRenderingProcessing(BlockRenderPass_Opaque);
 
-	// draw the head on display GUI
-	RenderHeadOnDisplay(0);
-
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
 	
@@ -2366,6 +2363,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 
 	BlockWorldClient::GetInstance()->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
+
+	// draw the head on display GUI
+	RenderHeadOnDisplay(0);
 
 	if(CGlobals::WillGenReport())
 	{
@@ -2422,6 +2422,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 			CGlobals::GetReport()->SetString("particles", sParticleReport);
 		}
 	}
+
 
 #ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
