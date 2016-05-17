@@ -1301,7 +1301,7 @@ namespace ParaEngine
 					
 					if (nBlockCount > 0)
 					{
-						assert(nBlockCount < 4096);
+						assert(nBlockCount <= 4096);
 						sBlockId.clear();
 						sBlockData.clear();
 						CSameIntegerDecoder<uint16_t>::DecodeSameIntegerOfCount(file, sBlockId, 4096);
