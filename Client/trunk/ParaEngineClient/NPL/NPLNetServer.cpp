@@ -35,7 +35,6 @@ m_resolver(m_io_service_dispatcher),
 m_idle_timer(m_io_service_dispatcher),
 m_connection_manager(),
 m_msg_dispatcher(this), // TODO: this gives a warning. find a better way to pass this pointer.
-m_new_connection(new CNPLConnection(m_io_service_dispatcher,m_connection_manager, m_msg_dispatcher)),
 m_strServer(NPL_DEFAULT_SERVER), 
 m_strPort(NPL_DEFAULT_PORT), 
 m_bTCPKeepAlive(false),m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS)
@@ -243,6 +242,8 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 			OUTPUT_LOG1("warning: unable to accept NPL connection, because unknown error\n");
 			return;
 		}
+		if (!m_new_connection)
+			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher)),
 		m_acceptor.async_accept(m_new_connection->socket(),
 			boost::bind(&CNPLNetServer::handle_accept, this,
 			boost::asio::placeholders::error));
@@ -258,15 +259,18 @@ void NPL::CNPLNetServer::handle_accept( const boost::system::error_code& err )
 {
 	if (!err)
 	{
-		m_new_connection->EnableIdleTimeout(IsIdleTimeoutEnabled());
-		m_new_connection->SetIdleTimeoutPeriod(GetIdleTimeoutPeriod());
-		m_new_connection->SetKeepAlive(IsKeepAliveEnabled());
+		if (m_new_connection)
+		{
+			m_new_connection->EnableIdleTimeout(IsIdleTimeoutEnabled());
+			m_new_connection->SetIdleTimeoutPeriod(GetIdleTimeoutPeriod());
+			m_new_connection->SetKeepAlive(IsKeepAliveEnabled());
 
-		m_connection_manager.start(m_new_connection);
-		m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher,m_connection_manager,m_msg_dispatcher));
-		m_acceptor.async_accept(m_new_connection->socket(),
-			boost::bind(&CNPLNetServer::handle_accept, this,
-			boost::asio::placeholders::error));
+			m_connection_manager.start(m_new_connection);
+			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher));
+			m_acceptor.async_accept(m_new_connection->socket(),
+				boost::bind(&CNPLNetServer::handle_accept, this,
+				boost::asio::placeholders::error));
+		}
 	}
 	else if(err == boost::asio::error::connection_aborted)
 	{
@@ -300,12 +304,19 @@ void NPL::CNPLNetServer::handle_stop()
 	// operations. Once all operations have finished the io_service::run() call
 	// will exit.
 	boost::system::error_code ec;
+	// m_acceptor.cancel(ec);
 	m_acceptor.close(ec);
 	if (ec)
 	{
 		// An error occurred.
 		OUTPUT_LOG1("warning: m_acceptor.close() failed, because %s\n", ec.message().c_str());
 	}
+	/* In some rare computer, async_accept can not be closed in any way, the following code does not help.
+	if (m_new_connection){
+		m_new_connection->stop(false);
+		m_new_connection.reset();
+	}*/
+		
 	m_connection_manager.stop_all();
 }
 
