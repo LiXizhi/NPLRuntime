@@ -308,6 +308,18 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 	{
 		// disk file exist and (disk file has priority or zip file does not contain the file).
 		ParaEngine::CAsyncLoader::GetSingleton().log(string("DBEntity.PrepareDatabaseFile using local file:") + filename + "\n");
+#ifdef WIN32
+		// remove read only file attribute. This is actually not necessary, but just leaves here for debugging purposes. 
+		DWORD dwAttrs = ::GetFileAttributes(filename.c_str());
+		if (dwAttrs == INVALID_FILE_ATTRIBUTES)
+		{
+		}
+		else if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
+		{
+			// this fixed an issue when sqlite take very long (2 seconds) when opening read-only file.
+			m_nSQLite_OpenFlags = SQLITE_OPEN_READONLY;
+		}
+#endif
 		return filename;
 	}
 	else

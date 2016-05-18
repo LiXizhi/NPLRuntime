@@ -1,6 +1,11 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.5.18
+	- fixed grid light algorithm
+	- fixed sqlite3 readonly db
+	- sqlite3 to 3.12
+
 2016.5.11
 	- fix url encoder on C++ side, 
 	- NPL get url now support custom http headers.
