@@ -210,6 +210,7 @@ bool ISearchPathManager::AddSearchPath(const char* sFile, int nPriority/*=0*/)
 			}
 		}
 		m_searchpaths.push_back(SearchPath(path.c_str(), nPriority));
+		OUTPUT_LOG("search path: %s\n", path.c_str());
 		return true;
 	}
 	return false;

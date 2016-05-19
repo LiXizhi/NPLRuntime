@@ -103,9 +103,10 @@ namespace ParaEngine
 
 		/** check file exist based on file location. similar to DoesFileExist, but gives more info on where the file is first found. 
 		* @param dwWhereToSearch: bitwise field of FileLocation, default to FILE_ON_DISK
+		* @param pDiskFilePath: if not NULL, it will contain the  actual disk file path. In case it is on search path, it is different from filename. 
 		* @return int32: enum of FileLocation. return 0 if not found. 
 		*/
-		PE_CORE_DECL static int32 DoesFileExist2(const char* filename, uint32 dwWhereToSearch = FILE_ON_DISK);
+		static int32 DoesFileExist2(const char* filename, uint32 dwWhereToSearch = FILE_ON_DISK, std::string* pDiskFilePath = NULL);
 
 		/** delete temporary file. temporary files are file in the ./temp/ directory of the ParaEngine's root dir.
 		* this function is general used to delete temporary texture file generated during the game.

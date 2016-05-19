@@ -358,6 +358,12 @@ namespace ParaEngine
 		virtual bool HasClosingRequest();
 		virtual void SetHasClosingRequest(bool val);
 
+		/** load NPL package from a disk folder.
+		* it will first search the dev folder, then the current folder, and then the executable folder and all of its parent folders,
+		* @param sFilePath: for example, "npl_packages/main/" is always loaded on start up.
+		*/
+		virtual bool LoadNPLPackage(const char* sFilePath);
+
 	public:
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager() { return NULL; };

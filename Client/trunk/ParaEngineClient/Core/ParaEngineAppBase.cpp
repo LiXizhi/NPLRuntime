@@ -272,6 +272,22 @@ void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
 	m_hasClosingRequest = val;
 }
 
+bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
+{
+	std::string sFilePath = sFilePath_;
+	std::string sPKGDir;
+	if (sFilePath[sFilePath.size() - 1] == '/'){
+		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
+		std::string sFullDir;
+		if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		{
+			sPKGDir = sFullDir;
+		}
+	}
+	
+	return CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+}
+
 void CParaEngineAppBase::AutoSetLocale()
 {
 	// set locale according to current system language. 
@@ -308,6 +324,9 @@ int CParaEngineAppBase::GetReturnCode()
 
 void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPkgFolder)
 {
+	// load main package
+	LoadNPLPackage("npl_packages/main/");
+
 	/** we will load all packages that matches the following pattern in the order given by their name,
 	* such that "main_001.pkg" is always loaded before "main_002.pkg" */
 #define MAIN_PACKAGE_FILE_PATTERN	"main*.pkg"

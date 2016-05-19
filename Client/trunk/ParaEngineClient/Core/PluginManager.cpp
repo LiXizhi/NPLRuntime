@@ -176,6 +176,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	}
 
 	// load the library.
+	CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath);
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else

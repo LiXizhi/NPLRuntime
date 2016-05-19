@@ -268,7 +268,12 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	if (filepath.empty())
 		return true;
 	int nSize = (int)filepath.size();
-	if (nSize > 5 && filepath[nSize - 3]!='l' /* skip *.lua file */ )
+	if (nSize > 2 && filepath[nSize - 1] == '/')
+	{
+		// if it is a folder, we will add as NPL module
+		return ParaEngine::CGlobals::GetApp()->AddNPLPackage(filepath.c_str());
+	}
+	else if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
 	{
 		// for dll plug-in files
 		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')

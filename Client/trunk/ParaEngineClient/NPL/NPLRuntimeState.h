@@ -308,7 +308,6 @@ namespace NPL
 
 		/** get the mono scripting state. and create one from the NPLMono plugin, if one does not exist.*/
 		IMonoScriptingState* GetMonoState();
-		
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;
