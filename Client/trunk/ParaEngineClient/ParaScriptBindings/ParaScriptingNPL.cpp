@@ -423,7 +423,7 @@ namespace ParaScripting
 		return NPL::CNPLRuntime::GetInstance()->ChangeRequestPoolSize(sPoolName, nCount);
 	}
 
-	bool CNPL::AppendURLRequest1(const object&  urlParams, const char* sCallback, const object& sForm, const char* sPoolName)
+	bool CNPL::AppendURLRequest1(const object&  urlParams, const char* sCallback, const object& sForm_, const char* sPoolName)
 	{
 		const char* url = NULL;
 		if (type(urlParams) == LUA_TTABLE)
@@ -442,6 +442,7 @@ namespace ParaScripting
 		CUrlLoader* pLoader = new CUrlLoader();
 		CUrlProcessor* pProcessor = new CUrlProcessor();
 
+		object sForm(sForm_);
 		// command line parameters
 		while (url[0] == '-')
 		{
@@ -465,17 +466,41 @@ namespace ParaScripting
 			auto headers = urlParams["headers"];
 			if (type(headers) == LUA_TTABLE)
 			{
-				for (int i = 0;;++i)
+				for (luabind::iterator itCur(headers), itEnd; itCur != itEnd; ++itCur)
 				{
-					auto text = headers[i];
-					if (type(text) == LUA_TSTRING)
+					// we only serialize item with a string key
+					const object& key = itCur.key();
+					const object& input = *itCur;
+					if (type(key) == LUA_TSTRING)
 					{
-						const char* headerText = object_cast<const char*>(text);
-						pProcessor->AppendHTTPHeader(headerText);
+						std::string sKey = object_cast<std::string>(key);
+						if (type(input) == LUA_TSTRING)
+						{
+							std::string sValue = object_cast<std::string>(input);
+							if (sValue.empty()){
+								// remove the curl header 
+								sValue = sKey + ":";
+							}
+							else{
+								sValue = sKey + ": " + sValue;
+							}
+							pProcessor->AppendHTTPHeader(sValue.c_str());
+						}
 					}
-					else
-						break;
+					else if(type(key) == LUA_TNUMBER)
+					{
+						if (type(input) == LUA_TSTRING)
+						{
+							const char* headerText = object_cast<const char*>(input);
+							pProcessor->AppendHTTPHeader(headerText);
+						}
+					}
 				}
+			}
+			auto sForm_ = urlParams["form"];
+			if (type(sForm_) == LUA_TTABLE)
+			{
+				sForm = sForm_;
 			}
 		}
 
@@ -652,10 +677,10 @@ namespace ParaScripting
 			{
 				// we only serialize item with a string key
 				const object& key = itCur.key();
+				const object& input = *itCur;
 				if(type(key) == LUA_TNUMBER)
 				{
 					int nKey = object_cast<int>(key);
-					const object& input = *itCur;
 					const char* sCode = NULL;
 					switch(type(input))
 					{
@@ -690,6 +715,36 @@ namespace ParaScripting
 								urlBuilder.InsertParam(nKey/2-1, NULL, sCode);
 							break;
 						}
+					}
+				}
+				else if (type(key) == LUA_TSTRING)
+				{
+					const char* sKey = object_cast<const char*>(key);
+					const char* sCode = NULL;
+					switch (type(input))
+					{
+					case LUA_TNUMBER:
+					{
+						double value = object_cast<double>(input);
+						char buff[40];
+						ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						sCode = buff;
+						urlBuilder.AppendParam(sKey, sCode);
+						break;
+					}
+					case LUA_TBOOLEAN:
+					{
+						bool bValue = object_cast<bool>(input);
+						sCode = bValue ? "true" : "false";
+						urlBuilder.AppendParam(sKey, sCode);
+						break;
+					}
+					case LUA_TSTRING:
+					{
+						sCode = object_cast<const char*>(input);
+						urlBuilder.AppendParam(sKey, sCode);
+						break;
+					}
 					}
 				}
 			}

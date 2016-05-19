@@ -590,6 +590,8 @@ namespace NPL
 		*/
 		void STI_DoWebServiceFile(const char* sWebserviceFile, const char * code);
 
+		/** from NPL::PacketPriority to internal priority */
+		int TranslatePriorityValue(int priority);
 	public:
 		virtual INPLRuntimeState* CreateState(const char* name, NPLRuntimeStateType type_=NPLRuntimeStateType_NPL);
 		virtual INPLRuntimeState* GetState(const char* name);

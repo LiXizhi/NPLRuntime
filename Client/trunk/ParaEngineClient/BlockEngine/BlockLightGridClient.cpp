@@ -932,7 +932,7 @@ namespace ParaEngine
 							if ((lastLightValue == (lightvalue - blockOpacity)) && !(lastLightValue == 0 && blockOpacity == 15) && nQueuedCount < (int)m_blocksNeedLightRecalcuation.size())
 							{
 								Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
-								if (!IsLightDirty(neighborPos))
+								if (!isSunLight || !IsLightDirty(neighborPos))
 									m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 							}
 						}
@@ -1000,7 +1000,7 @@ namespace ParaEngine
 					if (lastLightValue < newLightValue)
 					{
 						Uint16x3 neighborPos((uint16)neighborX, (uint16)neighborY, (uint16)neighborZ);
-						if(!IsLightDirty(neighborPos))
+						if(!isSunLight || !IsLightDirty(neighborPos))
 							m_blocksNeedLightRecalcuation[nQueuedCount++] = LightBlock(neighborPos, (uint8)lastLightValue);
 					}
 				}

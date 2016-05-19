@@ -331,22 +331,12 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);
 
 	// any http headers
-	if (m_pHttpHeaders){
-		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, m_pHttpHeaders);
-	}
+	curl_easy_setopt(handle, CURLOPT_HTTPHEADER, m_pHttpHeaders);
 	// form if any. 
-	if(m_pFormPost)
-	{
-		curl_easy_setopt(handle, CURLOPT_HTTPPOST, m_pFormPost);
-	}
-	else
-	{
-		curl_easy_setopt(handle, CURLOPT_HTTPGET, 1);
-	}
-	if (m_type == URL_REQUEST_HTTP_HEADERS_ONLY)
-		curl_easy_setopt(handle, CURLOPT_NOBODY, 1);
-	else
-		curl_easy_setopt(handle, CURLOPT_NOBODY, 0);
+	curl_easy_setopt(handle, CURLOPT_HTTPPOST, m_pFormPost);
+	curl_easy_setopt(handle, CURLOPT_HTTPGET, m_pFormPost ? 0 : 1);
+	
+	curl_easy_setopt(handle, CURLOPT_NOBODY, (m_type == URL_REQUEST_HTTP_HEADERS_ONLY) ? 1 : 0);
 }
 
 

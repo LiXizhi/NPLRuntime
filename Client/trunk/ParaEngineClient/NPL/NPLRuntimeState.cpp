@@ -440,7 +440,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::SendMessage(NPLMessage_ptr& msg, int p
 		// normal priority, push to back
 		return (m_input_queue.try_push(msg) != CNPLMessageQueue::BufferOverFlow) ? NPL_OK : NPL_QueueIsFull;
 	}
-	else if (priority >= 1)
+	else
 	{
 		// high priority, push to front
 		m_input_queue.push_front(msg);

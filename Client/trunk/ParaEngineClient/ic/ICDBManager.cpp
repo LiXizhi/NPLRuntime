@@ -308,6 +308,18 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 	{
 		// disk file exist and (disk file has priority or zip file does not contain the file).
 		ParaEngine::CAsyncLoader::GetSingleton().log(string("DBEntity.PrepareDatabaseFile using local file:") + filename + "\n");
+#ifdef WIN32
+		// remove read only file attribute. This is actually not necessary, but just leaves here for debugging purposes. 
+		DWORD dwAttrs = ::GetFileAttributes(filename.c_str());
+		if (dwAttrs == INVALID_FILE_ATTRIBUTES)
+		{
+		}
+		else if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
+		{
+			// this fixed an issue when sqlite take very long (2 seconds) when opening read-only file.
+			m_nSQLite_OpenFlags = SQLITE_OPEN_READONLY;
+		}
+#endif
 		return filename;
 	}
 	else
@@ -471,7 +483,10 @@ void DBEntity::OpenDB()
 }
 void DBEntity::CloseDB()
 {
-	if(GetRefCount() < 1)
+	if (GetRefCount() >= 1)
+	{
+		OUTPUT_LOG("warning: sql db %s is closed with %d active references\n", GetConnectionString().c_str(), GetRefCount());
+	}
 	{
 		if (m_isValid&&m_db!=NULL) {
 
@@ -485,8 +500,7 @@ void DBEntity::CloseDB()
 			}
 #endif
 			if (SQLITE_BUSY==sqlite3_close(m_db)) {
-				OUTPUT_LOG("warning: Can't close database %s because it is busy. \
-						   This is usually caused by unclosed database object in the scripts.\r\n", m_filepath.c_str());
+				OUTPUT_LOG("warning: Can't close database %s because it is busy. \r\nThis is usually caused by unclosed database object in the scripts.\r\n", m_filepath.c_str());
 			}else{
 				m_db=NULL;
 				m_stmt=NULL;
@@ -495,10 +509,6 @@ void DBEntity::CloseDB()
 		}
 		m_stmt=NULL;
 		m_isValid=false;
-	}
-	else
-	{
-		OUTPUT_LOG("warning: sql db %s is not closed, because some other module is using it\n", GetConnectionString().c_str());
 	}
 }
 void DBEntity::Release()

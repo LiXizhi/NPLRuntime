@@ -47,7 +47,6 @@ namespace NPL
 	};
 
 	NPL::NPLRuntimeStateType CNPLRuntime::m_defaultNPLStateType = NPLRuntimeStateType_NPL;
-
 }
 using namespace NPL;
 using namespace ParaScripting;
@@ -175,13 +174,15 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 		sNeuronFile = "";
 	}
 
+	priority = TranslatePriorityValue(priority);
+
 	NPLFileName FullName(sNeuronFile);
 
 	// use Dispatcher to dispatch to a proper local runtime state or a remote one. 
 	if(pRuntimeState == 0)
 	{
 		// default to main state. 
-		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength);
+		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
 	else 
 	{
@@ -193,7 +194,7 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
 				if(rts.get() != 0)
 				{
-					return rts->Activate_async(FullName.sRelativePath, code, nLength);
+					return rts->Activate_async(FullName.sRelativePath, code, nLength, priority);
 				}
 				else
 				{
@@ -203,7 +204,7 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 			}
 			else
 			{
-				return pRuntimeState->Activate_async(FullName.sRelativePath, code, nLength);
+				return pRuntimeState->Activate_async(FullName.sRelativePath, code, nLength, priority);
 			}
 		}
 		else
@@ -212,6 +213,11 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 			return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
 		}
 	}
+}
+
+int CNPLRuntime::TranslatePriorityValue(int priority)
+{
+	return (priority >= NPL::MEDIUM_PRIORITY) ? 0 : 1;
 }
 
 int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sNeuronFile, const char * code, int nLength, int channel, int priority, int reliability)
@@ -232,11 +238,14 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 
 	NPLFileName FullName(sNeuronFile);
 
+	priority = TranslatePriorityValue(priority);
+
+
 	// use Dispatcher to dispatch to a proper local runtime state or a remote one. 
 	if(runtime_state.get() == 0)
 	{
 		// default to main state. 
-		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength);
+		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
 	else 
 	{
@@ -248,7 +257,7 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
 				if(rts.get() != 0)
 				{
-					return rts->Activate_async(FullName.sRelativePath, code, nLength);
+					return rts->Activate_async(FullName.sRelativePath, code, nLength, priority);
 				}
 				else
 				{
@@ -258,7 +267,7 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 			}
 			else
 			{
-				return runtime_state->Activate_async(FullName.sRelativePath, code, nLength);
+				return runtime_state->Activate_async(FullName.sRelativePath, code, nLength, priority);
 			}
 		}
 		else
@@ -562,6 +571,7 @@ void CNPLRuntime::NPL_ResetChannelProperties()
 	0		med			RELIABLE_ORDERED		System message
 	1		med			UNRELIABLE_SEQUENCED	Character positions
 	2		med			RELIABLE_ORDERED		Large Simulation Object transmission, such as terrain height field.
+	3		high        RELIABLE_ORDERED		High order System message
 	4		med			RELIABLE_ORDERED		Chat message
 	14		med			RELIABLE				files transmission and advertisement
 	15		med			RELIABLE_SEQUENCED		Voice transmission
@@ -570,6 +580,7 @@ void CNPLRuntime::NPL_ResetChannelProperties()
 	m_channelProperties.resize(16, ChannelProperty());
 	m_channelProperties[0].Set(NPL::MEDIUM_PRIORITY, NPL::RELIABLE_ORDERED);
 	m_channelProperties[1].Set(NPL::MEDIUM_PRIORITY, NPL::UNRELIABLE_SEQUENCED);
+	m_channelProperties[3].Set(NPL::HIGH_PRIORITY, NPL::RELIABLE_ORDERED);
 	m_channelProperties[14].Set(NPL::MEDIUM_PRIORITY, NPL::RELIABLE);
 	m_channelProperties[15].Set(NPL::MEDIUM_PRIORITY, NPL::RELIABLE_SEQUENCED);
 }
