@@ -26,7 +26,8 @@ script: ./build_linux.sh
 
 deploy:
   provider: releases
-  api_key: secure: xafw00jYr9UVqFbl42oI3POGxS3UTNZAaqByeKK42bPZLEkw4hxoQM4HIIRvba0TnaTlUNwe93NdYY1g+2ScODQuECzrd4QBph17$
+  api_key: 
+    secure: xafw00jYr9UVqFbl42oI3POGxS3UTNZAaqByeKK42bPZLEkw4hxoQM4HIIRvba0TnaTlUNwe93NdYY1g+2ScODQuECzrd4QBph17$
   file: ParaWorld/bin64/ParaEngineServer
   file:
     - "ParaWorld/bin64/liblua.so"
