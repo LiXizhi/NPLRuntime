@@ -42,16 +42,17 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 if(NPL_STATIC_LINK_ALL)
-	ADD_LIBRARY(sqlite ${sqlite_SRCS})
+	ADD_LIBRARY(sqlite STATIC ${sqlite_SRCS})
 else()
 	ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
-endif()
 
-ADD_CUSTOM_COMMAND(
+	ADD_CUSTOM_COMMAND(
 	   TARGET sqlite
 	   POST_BUILD
 	   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
 	   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${OUTPUT_BIN_DIR}
 	)
+endif()
+
 
 
