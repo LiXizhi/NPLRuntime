@@ -1,6 +1,11 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+
+2016.5.19
+     - search path is fully implemented.
+     - NPL.load now support automatically load npl_packages and add search path. 
+
 2016.5.18
 	- fixed grid light algorithm
 	- fixed sqlite3 readonly db

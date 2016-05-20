@@ -7,6 +7,7 @@
 // Desc:  
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "IParaEngineApp.h"
 #include "PluginManager.h"
 #include "PluginAPI.h"
 #include "IParaWebService.h"
@@ -271,7 +272,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
-		return ParaEngine::CGlobals::GetApp()->AddNPLPackage(filepath.c_str());
+		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
 	}
 	else if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
 	{

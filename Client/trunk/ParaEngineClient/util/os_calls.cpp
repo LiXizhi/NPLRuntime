@@ -271,7 +271,7 @@ int _findclose(long h)
 
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
 #include <stdio.h>
-
+#include <limits.h>
 #endif
 
 #else
@@ -350,5 +350,22 @@ PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 #else
 	/* AIX, BSD, Solaris, and Unknown OS ------------------------ */
 	return (size_t)0L;			/* Unsupported. */
+#endif
+}
+
+PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
+{
+	char exePath[512 + 1] = { 0 };
+	memset(exePath, 0, sizeof(exePath));
+#ifdef WIN32
+	return (GetModuleFileName(NULL, exePath, 512) > 0) ? std::string(exePath) : std::string();
+#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX)
+	ssize_t len = ::readlink("/proc/self/exe", exePath, sizeof(exePath));
+	if (len == -1 || len == sizeof(exePath))
+		len = 0;
+	exePath[len] = '\0';
+	return std::string(exePath);
+#else
+	return std::string();
 #endif
 }
