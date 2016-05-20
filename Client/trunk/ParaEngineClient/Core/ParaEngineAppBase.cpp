@@ -375,18 +375,18 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 
 		if (fileList.size() == 0)
 		{
-			if (CParaFile::DoesFileExist("main.pkg", false, true) || CParaFile::DoesFileExist("main.zip", false, true))
+			if (CParaFile::DoesFileExist("main.pkg") || CParaFile::DoesFileExist("main.zip"))
 				fileList.push_back("main.zip");
-			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg", false, true))
+			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg"))
 				fileList.push_back("main_64bits.pkg");
-			else if (!bIs64Bits && CParaFile::DoesFileExist("main_32bits.pkg", false, true))
+			else if (!bIs64Bits && CParaFile::DoesFileExist("main_32bits.pkg"))
 				fileList.push_back("main_32bits.pkg");
 
-			if (CParaFile::DoesFileExist("main_full.pkg", false, true))
+			if (CParaFile::DoesFileExist("main_full.pkg"))
 				fileList.push_back("main_full.pkg");
-			if (bIs64Bits && CParaFile::DoesFileExist("main_full_64bits.pkg", false, true))
+			if (bIs64Bits && CParaFile::DoesFileExist("main_full_64bits.pkg"))
 				fileList.push_back("main_full_64bits.pkg");
-			else if (!bIs64Bits && CParaFile::DoesFileExist("main_full_32bits.pkg", false, true))
+			else if (!bIs64Bits && CParaFile::DoesFileExist("main_full_32bits.pkg"))
 				fileList.push_back("main_full_32bits.pkg");
 		}
 

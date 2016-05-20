@@ -316,6 +316,13 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			return true;
 		}
+		else if ((filepath[nSize - 3] == 'z' && filepath[nSize - 2] == 'i' && filepath[nSize - 1] == 'p') 
+			|| (filepath[nSize - 3] == 'p' && filepath[nSize - 2] == 'k' && filepath[nSize - 1] == 'g'))
+		{
+			// pkg or zip file
+			ParaEngine::CFileManager::GetInstance()->OpenArchive(filepath, bReload);
+			return true;
+		}
 	}
 	return LoadFile(filepath, bReload);
 }

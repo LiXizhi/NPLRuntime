@@ -86,7 +86,9 @@ void CReadFile::openFile()
 		return; 
 	}
 
-	m_pFile = fopen(m_Filename.c_str(), "rb");
+	std::string filename = m_Filename;
+	CParaFile::DoesFileExist2(m_Filename.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &filename);
+	m_pFile = fopen(filename.c_str(), "rb");
 
 	if (m_pFile)
 	{
