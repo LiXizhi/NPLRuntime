@@ -45,7 +45,7 @@ if(NPL_STATIC_LINK_ALL)
 	ADD_LIBRARY(sqlite ${sqlite_SRCS})
 else()
 	ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
-endif();
+endif()
 
 ADD_CUSTOM_COMMAND(
 	   TARGET sqlite
