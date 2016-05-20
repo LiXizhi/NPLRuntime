@@ -37,11 +37,15 @@ IF(WIN32)
 	
 	# To turn size optimisations on again
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref")
-	
-	ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
 ELSE(WIN32)
-	ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
+	
 ENDIF(WIN32)
+
+if(NPL_STATIC_LINK_ALL)
+	ADD_LIBRARY(sqlite ${sqlite_SRCS})
+else()
+	ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
+endif();
 
 ADD_CUSTOM_COMMAND(
 	   TARGET sqlite
