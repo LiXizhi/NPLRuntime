@@ -185,6 +185,11 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 
 	SetAppCommandLine(sCommandLine);
 
+	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
+	if (sLogFile && sLogFile[0] != 0){
+		CLogger::GetSingleton().SetLogFile(sLogFile);
+	}
+
 	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
 	bool bIsServerMode = (sServerMode && strcmp(sServerMode, "true") == 0);
 	Enable3DRendering(!bIsServerMode);

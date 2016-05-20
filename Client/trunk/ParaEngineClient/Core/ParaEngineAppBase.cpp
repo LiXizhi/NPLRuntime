@@ -78,6 +78,11 @@ void ParaEngine::CParaEngineAppBase::InitCommon()
 
 	srand((unsigned long)time(NULL));
 
+	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
+	if (sLogFile && sLogFile[0] != 0){
+		CLogger::GetSingleton().SetLogFile(sLogFile);
+	}
+
 	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
 	Enable3DRendering( !(sServerMode && strcmp(sServerMode, "true") == 0) );
 	
@@ -370,18 +375,18 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 
 		if (fileList.size() == 0)
 		{
-			if (CParaFile::DoesFileExist("main.pkg") || CParaFile::DoesFileExist("main.zip"))
+			if (CParaFile::DoesFileExist("main.pkg", false, true) || CParaFile::DoesFileExist("main.zip", false, true))
 				fileList.push_back("main.zip");
-			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg"))
+			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg", false, true))
 				fileList.push_back("main_64bits.pkg");
-			else if (!bIs64Bits && CParaFile::DoesFileExist("main_32bits.pkg"))
+			else if (!bIs64Bits && CParaFile::DoesFileExist("main_32bits.pkg", false, true))
 				fileList.push_back("main_32bits.pkg");
 
-			if (CParaFile::DoesFileExist("main_full.pkg"))
+			if (CParaFile::DoesFileExist("main_full.pkg", false, true))
 				fileList.push_back("main_full.pkg");
-			if (bIs64Bits && CParaFile::DoesFileExist("main_full_64bits.pkg"))
+			if (bIs64Bits && CParaFile::DoesFileExist("main_full_64bits.pkg", false, true))
 				fileList.push_back("main_full_64bits.pkg");
-			else if (!bIs64Bits && CParaFile::DoesFileExist("main_full_32bits.pkg"))
+			else if (!bIs64Bits && CParaFile::DoesFileExist("main_full_32bits.pkg", false, true))
 				fileList.push_back("main_full_32bits.pkg");
 		}
 
