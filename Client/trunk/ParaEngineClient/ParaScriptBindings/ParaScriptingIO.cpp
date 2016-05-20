@@ -402,13 +402,14 @@ namespace ParaScripting
 
 	bool ParaIO::DoesFileExist(const char * filename, bool bSearchZipFiles)
 	{
-		return CParaFile::DoesFileExist(filename, bSearchZipFiles);
+		return CParaFile::DoesFileExist(filename, bSearchZipFiles, true);
 	}
 
 	bool ParaIO::DoesFileExist_(const char * filename)
 	{
-		return CParaFile::DoesFileExist(filename);
+		return CParaFile::DoesFileExist(filename, false, true);
 	}
+
 	bool ParaIO::BackupFile(const char* filename)
 	{
 		return CParaFile::BackupFile(filename);

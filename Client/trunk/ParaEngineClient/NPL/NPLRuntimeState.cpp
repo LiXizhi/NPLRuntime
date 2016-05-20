@@ -7,6 +7,7 @@
 // Desc:  
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "IParaEngineApp.h"
 #include "PluginManager.h"
 #include "PluginAPI.h"
 #include "IParaWebService.h"
@@ -268,7 +269,12 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	if (filepath.empty())
 		return true;
 	int nSize = (int)filepath.size();
-	if (nSize > 5 && filepath[nSize - 3]!='l' /* skip *.lua file */ )
+	if (nSize > 2 && filepath[nSize - 1] == '/')
+	{
+		// if it is a folder, we will add as NPL module
+		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
+	}
+	else if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
 	{
 		// for dll plug-in files
 		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')
@@ -308,6 +314,13 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 				// registering by dynamically load the library. 
 				RegisterFile(filepath.c_str(), new NPL_C_Func_ActivationFile(filepath));
 			}
+			return true;
+		}
+		else if ((filepath[nSize - 3] == 'z' && filepath[nSize - 2] == 'i' && filepath[nSize - 1] == 'p') 
+			|| (filepath[nSize - 3] == 'p' && filepath[nSize - 2] == 'k' && filepath[nSize - 1] == 'g'))
+		{
+			// pkg or zip file
+			ParaEngine::CFileManager::GetInstance()->OpenArchive(filepath, bReload);
 			return true;
 		}
 	}

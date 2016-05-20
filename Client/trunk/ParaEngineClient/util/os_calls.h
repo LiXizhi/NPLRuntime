@@ -80,6 +80,10 @@ namespace ParaEngine
 	* in bytes, or zero if the value cannot be determined on this OS.
 	*/
 	PE_CORE_DECL size_t GetCurrentMemoryUse();
+
+	/** get current executable path. 
+	*/
+	PE_CORE_DECL std::string GetExecutablePath();
 }
 
 ///////////////////////////////////////////////////////

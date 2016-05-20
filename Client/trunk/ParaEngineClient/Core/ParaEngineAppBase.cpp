@@ -7,6 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
+#include "util/os_calls.h"
 #include "ObjectAutoReleasePool.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
@@ -76,6 +77,11 @@ void ParaEngine::CParaEngineAppBase::InitCommon()
 	g_pCurrentApp = (CParaEngineApp*) this;
 
 	srand((unsigned long)time(NULL));
+
+	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
+	if (sLogFile && sLogFile[0] != 0){
+		CLogger::GetSingleton().SetLogFile(sLogFile);
+	}
 
 	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
 	Enable3DRendering( !(sServerMode && strcmp(sServerMode, "true") == 0) );
@@ -272,6 +278,43 @@ void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
 	m_hasClosingRequest = val;
 }
 
+bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
+{
+	std::string sFilePath = sFilePath_;
+	std::string sPKGDir;
+	if (sFilePath[sFilePath.size() - 1] == '/')
+	{
+		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
+		std::string sFullDir;
+		if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		{
+			sPKGDir = sFullDir;
+		}
+		else
+		{
+			if (!m_sModuleDir.empty())
+			{
+				std::string workingDir = m_sModuleDir;
+				// search for all parent directory for at most 5 levels
+				for (int i = 0; i < 5 && !workingDir.empty(); ++i)
+				{
+					std::string sFullDir = workingDir + sDirName;
+					if (CParaFile::DoesFileExist(sFullDir.c_str(), false))
+					{
+						sPKGDir = sFullDir;
+						break;
+					}
+					else
+					{
+						workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+					}
+				}
+			}
+		}
+	}
+	return !sPKGDir.empty() && CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+}
+
 void CParaEngineAppBase::AutoSetLocale()
 {
 	// set locale according to current system language. 
@@ -381,6 +424,9 @@ void CParaEngineAppBase::LoadPackages()
 {
 	std::string sRootDir = CParaFile::GetCurDirectory(0);
 	OUTPUT_LOG("ParaEngine Root Dir is %s\n", sRootDir.c_str());
+	// load main package folder if exist
+	LoadNPLPackage("npl_packages/main/");
+
 	LoadPackagesInFolder(sRootDir);
 	if (m_sPackagesDir.empty())
 		m_sPackagesDir = sRootDir;
@@ -392,13 +438,10 @@ void CParaEngineAppBase::LoadPackages()
 
 bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 {
-#ifdef WIN32
-	char sWorkingDir[512 + 1] = { 0 };
-	memset(sWorkingDir, 0, sizeof(sWorkingDir));
-	
-	if (GetModuleFileName(NULL, sWorkingDir, 512) > 0)
+	std::string sModuleDir = ParaEngine::GetExecutablePath();
+	if (!sModuleDir.empty())
 	{
-		m_sModuleDir = CParaFile::GetParentDirectoryFromPath(sWorkingDir);
+		m_sModuleDir = CParaFile::GetParentDirectoryFromPath(sModuleDir);
 		OUTPUT_LOG("NPL bin dir: %s\n", m_sModuleDir.c_str());
 		std::string packagesDir = m_sModuleDir + "packages";
 		if (!CParaFile::DoesFileExist(packagesDir.c_str(), false))
@@ -415,11 +458,11 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			m_sPackagesDir = packagesDir + "\\";
 		}
 	}
-
+#ifdef WIN32
 	// ParaEngine.sig must be called first, to locate the root dir. 
 	if (!CParaFile::DoesFileExist("ParaEngine.sig", false))
 	{
-		if (GetModuleFileName(NULL, sWorkingDir, MAX_PATH)>0)
+		if (!sModuleDir.empty())
 		{
 			std::string workingDir = m_sModuleDir;
 			std::string sigPath = workingDir + "ParaEngine.sig";
@@ -453,6 +496,8 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		}*/
 	}
 	{
+		char sWorkingDir[512 + 1] = { 0 };
+		memset(sWorkingDir, 0, sizeof(sWorkingDir));
 		::GetCurrentDirectory(MAX_PATH, sWorkingDir);
 		OUTPUT_LOG("WorkingDir: %s\n", sWorkingDir);
 #ifdef PARAENGINE_MOBILE

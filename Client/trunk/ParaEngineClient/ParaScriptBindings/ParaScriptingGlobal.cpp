@@ -64,67 +64,64 @@ ParaServiceLogger::ParaServiceLogger(ParaEngine::CServiceLogger_ptr& logger) :m_
 
 void ParaServiceLogger::log(int level, const object& message)
 {
-	if (m_logger_ptr.get() != 0)
+	
+	if (type(message) == LUA_TSTRING)
 	{
-		if (type(message) == LUA_TSTRING)
-		{
-			const char * str = object_cast<const char*>(message);
+		const char * str = object_cast<const char*>(message);
+		if (m_logger_ptr.get() != 0)
 			m_logger_ptr->log(level, str);
-		}
+		else
+			CLogger::GetSingleton().log(level, str);
 	}
 }
-
 
 int ParaServiceLogger::GetLevel()
 {
 	if (m_logger_ptr.get() != 0)
-	{
 		return m_logger_ptr->GetLevel();
-	}
-	return 0;
+	else
+		return CLogger::GetSingleton().GetLevel();
 }
-
 
 void ParaServiceLogger::SetLevel(const int level1)
 {
 	if (m_logger_ptr.get() != 0)
-	{
 		m_logger_ptr->SetLevel(level1);
-	}
+	else
+		CLogger::GetSingleton().SetLevel(level1);
 }
 
 
 bool ParaServiceLogger::IsEnabledFor(int level)
 {
 	if (m_logger_ptr.get() != 0)
-	{
 		return m_logger_ptr->IsEnabledFor(level);
-	}
-	return false;
+	else 
+		return CLogger::GetSingleton().IsEnabledFor(level);
 }
 
 void ParaServiceLogger::SetForceFlush(bool bForceFlush)
 {
 	if (m_logger_ptr.get() != 0)
-	{
 		m_logger_ptr->SetForceFlush(bForceFlush);
-	}
+	else
+		CLogger::GetSingleton().SetForceFlush(bForceFlush);
 }
 
 void ParaServiceLogger::SetAppendMode(bool bAppendToExistingFile)
 {
 	if (m_logger_ptr.get() != 0)
-	{
 		m_logger_ptr->SetAppendMode(bAppendToExistingFile);
-	}
+	else
+		CLogger::GetSingleton().SetAppendMode(bAppendToExistingFile);
 }
 
 void ParaServiceLogger::SetLogFile(const char* sFileName)
 {
 	if (m_logger_ptr.get() != 0 && sFileName)
-	{
 		m_logger_ptr->SetLogFile(sFileName);
-	}
+	else if (sFileName)
+		CLogger::GetSingleton().SetLogFile(sFileName);
 }
 
 void ParaGlobal::WriteToConsole(const char* strMessage)
@@ -142,8 +139,11 @@ ParaScripting::ParaServiceLogger ParaScripting::ParaGlobal::GetLogger(const obje
 	if (type(name) == LUA_TSTRING)
 	{
 		const char * str = object_cast<const char*>(name);
-		CServiceLogger_ptr logger = ParaEngine::CServiceLogger::GetLogger(str);
-		return ParaServiceLogger(logger);
+		if (str && str[0])
+		{
+			CServiceLogger_ptr logger = ParaEngine::CServiceLogger::GetLogger(str);
+			return ParaServiceLogger(logger);
+		}
 	}
 	return ParaServiceLogger();
 }

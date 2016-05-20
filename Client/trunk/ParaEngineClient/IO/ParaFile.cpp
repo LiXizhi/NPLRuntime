@@ -240,7 +240,7 @@ bool CParaFile::DoesFileExist(const char* filename, bool bSearchZipFiles, bool b
 	return DoesFileExist2(filename, dwWhereToSearch) != 0;
 }
 
-PE_CORE_DECL int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*= FILE_ON_DISK*/)
+int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*= FILE_ON_DISK*/, std::string* pDiskFilePath /*= NULL*/)
 {
 	int32 dwFoundPlace = FILE_NOT_FOUND;
 	if ((dwWhereToSearch & FILE_ON_SEARCH_PATH) > 0)
@@ -251,17 +251,21 @@ PE_CORE_DECL int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWher
 
 		if (searchPaths.size() == 0 || filename[0] == '/' || filename[0] == '\\')
 		{
-			return DoesFileExist2(filename, dwWhereToSearch);
+			if (dwWhereToSearch != 0)
+				return DoesFileExist2(filename, dwWhereToSearch, pDiskFilePath);
+			return FILE_NOT_FOUND;
 		}
 		else
 		{
-			dwFoundPlace = DoesFileExist2(filename, dwWhereToSearch);
+			if (dwWhereToSearch!=0)
+				dwFoundPlace = DoesFileExist2(filename, dwWhereToSearch, pDiskFilePath);
 			if (!dwFoundPlace)
 			{
 				std::list<SearchPath>::iterator itCurCP, itEndCP = searchPaths.end();
 				for (itCurCP = searchPaths.begin(); !dwFoundPlace && itCurCP != itEndCP; ++itCurCP)
 				{
-					dwFoundPlace = DoesFileExist2(((*itCurCP).GetPath() + filename).c_str(), dwWhereToSearch);
+					// only search on disk
+					dwFoundPlace = DoesFileExist2(((*itCurCP).GetPath() + filename).c_str(), FILE_ON_DISK, pDiskFilePath);
 				}
 				if (dwFoundPlace)
 					dwFoundPlace |= FILE_ON_SEARCH_PATH;
@@ -275,16 +279,22 @@ PE_CORE_DECL int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWher
 
 	if ((dwWhereToSearch & FILE_ON_DISK) >0 && (dwWhereToSearch & FILE_ON_ZIP_ARCHIVE) == 0)
 	{
-		if (CFileUtils::FileExist(sFilename))
+		if (CFileUtils::FileExist(sFilename)){
 			dwFoundPlace = FILE_ON_DISK;
+			if (pDiskFilePath)
+				*pDiskFilePath = sFilename;
+		}
 	}
 	else
 	{
 		// we will use GetDiskFilePriority(), to determine which one to search first.
 		if ((dwWhereToSearch & FILE_ON_DISK) > 0 && GetDiskFilePriority() >= 0)
 		{
-			if (CFileUtils::FileExist(sFilename))
+			if (CFileUtils::FileExist(sFilename)){
 				dwFoundPlace = FILE_ON_DISK;
+				if (pDiskFilePath)
+					*pDiskFilePath = sFilename;
+			}
 		}
 
 		if (!dwFoundPlace && (dwWhereToSearch & FILE_ON_ZIP_ARCHIVE)>0)
@@ -297,8 +307,11 @@ PE_CORE_DECL int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWher
 
 		if (!dwFoundPlace && (dwWhereToSearch & FILE_ON_DISK) > 0 && GetDiskFilePriority() < 0)
 		{
-			if (CFileUtils::FileExist(sFilename))
+			if (CFileUtils::FileExist(sFilename)){
 				dwFoundPlace = FILE_ON_DISK;
+				if (pDiskFilePath)
+					*pDiskFilePath = sFilename;
+			}
 		}
 	}
 	return dwFoundPlace;
@@ -534,17 +547,19 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 
 		if (searchPaths.size() == 0 || (sfilename[0] == '/') || (sfilename[0] == '\\') || relativePath != NULL)
 		{
-			return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen);
+			if (dwWhereToOpen!=0)
+				return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen);
+			return false;
 		}
 		else
 		{
-			bool bFound = OpenFile(sfilename, bReadyOnly, relativePath, false, dwWhereToOpen);
+			bool bFound = (dwWhereToOpen!=0) && OpenFile(sfilename, bReadyOnly, relativePath, false, dwWhereToOpen);
 			if (!bFound)
 			{
 				list<SearchPath>::iterator itCurCP, itEndCP = searchPaths.end();
 				for (itCurCP = searchPaths.begin(); !bFound && itCurCP != itEndCP; ++itCurCP)
 				{
-					bFound = OpenFile(sfilename, bReadyOnly, (*itCurCP).GetPath().c_str(), bUseCompressed, dwWhereToOpen);
+					bFound = OpenFile(sfilename, bReadyOnly, (*itCurCP).GetPath().c_str(), bUseCompressed, FILE_ON_DISK);
 				}
 			}
 			return bFound;

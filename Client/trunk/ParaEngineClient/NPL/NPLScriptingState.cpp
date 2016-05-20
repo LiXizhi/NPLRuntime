@@ -349,7 +349,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 #ifdef PARAENGINE_MOBILE
 	uint32 dwFound = FILE_NOT_FOUND;
 	// for mobile version, always use source version first then compiled version in bin/ directory. 
-	if (!(dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), (FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK))))
+	if (!(dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), (FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH))))
 	{
 		// then check if there is bin/*.o in zip archive, this is NPL convention
 		sFileName = std::string("bin/") + filePath;
@@ -359,7 +359,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 			// finally, check if there *.luac file in the same directory 
 			// (this is cocos' convention)
 			sFileName = CParaFile::ChangeFileExtension(filePath, "luac");
-			if (!(dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), (FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK))))
+			if (!(dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), (FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH))))
 			{
 				sFileName = filePath;
 			}
@@ -387,11 +387,11 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 	sFileName = std::string("bin/") + filePath;
 	sFileName = CParaFile::ChangeFileExtension(sFileName, "o");
 
-	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE| FILE_ON_DISK)))
+	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
 	{
 		time_t srcTime, binTime;
 		uint32 dwFoundSrc = FILE_NOT_FOUND;
-		if ( (dwFoundSrc = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE| FILE_ON_DISK))
+		if ((dwFoundSrc = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH))
 			&& (!ParaEngine::GetLastFileWriteTime(filePath.c_str(), srcTime) || !ParaEngine::GetLastFileWriteTime(sFileName.c_str(), binTime) || (srcTime > binTime)))
 		{
 			// use src version, if source version exist and up to date. 
@@ -401,7 +401,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 	}
 	else
 	{
-		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK);
+		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH);
 		sFileName = filePath;
 	}
 #endif

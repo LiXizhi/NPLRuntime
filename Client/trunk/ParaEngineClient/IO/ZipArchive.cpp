@@ -129,14 +129,14 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 		return OpenPkgFile(tempStr);
 	}
 
-	if( CParaFile::DoesFileExist(tempStr.c_str()))
+	if( CParaFile::DoesFileExist(tempStr.c_str(), false, true))
 	{
 		m_bOpened =  OpenZipFile(tempStr);
 	}
 	else
 	{
 		string pkgFile = CParaFile::ChangeFileExtension(tempStr, "pkg");
-		if(CParaFile::DoesFileExist(pkgFile.c_str()))
+		if (CParaFile::DoesFileExist(pkgFile.c_str(), false, true))
 		{
 			m_bOpened =  OpenPkgFile(pkgFile);
 		}
