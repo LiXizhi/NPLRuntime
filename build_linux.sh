@@ -10,7 +10,7 @@ mkdir -p ./bin/linux
 cd bin/linux/
 # to build in parallel with 3 threads, use make -j3
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 
