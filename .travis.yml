@@ -22,9 +22,9 @@ script: ./build_linux.sh
 
 after_success:
  - mkdir npl_packages/main -p && git clone https://github.com/NPLPackages/main.git npl_packages/main
- - mkdir ParaWorld/npl_packages/main -p && rsync -av npl_packages/main ParaWorld/npl_packages/main --exclude='.git/'
+ - mkdir ParaWorld/npl_packages/main -p && rsync -av npl_packages/main ParaWorld/npl_packages --exclude='.git/'
  - redist_zip_name=nplruntime_${TRAVIS_TAG}_${TRAVIS_OS_NAME}_x64.zip
- - mkdir releases -p && tar -cf releases/${redist_zip_name} ./ParaWorld && ls -l releases
+ - mkdir releases -p && tar -cf releases/${redist_zip_name} -C ParaWorld . && ls -l releases
   
 deploy:
   provider: releases

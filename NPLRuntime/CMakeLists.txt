@@ -56,6 +56,9 @@ if (WIN32)
     add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 else()
 	FIND_PACKAGE(CURL REQUIRED)
+	# making executable relocatable 
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
 endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)
