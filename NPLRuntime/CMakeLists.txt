@@ -26,7 +26,7 @@ endif()
 set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 
 # static linking to all libraries, such as boost, sqlite3, curl. This will produce big executable, but easy to deploy as binary. 
-option(NPL_STATIC_LINK_ALL ON)
+option(NPL_STATIC_LINK_ALL "link statically as much as possible" ON)
 
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if (PARAENGINE_CLIENT OR WIN32)
@@ -41,10 +41,8 @@ if (PARAENGINE_CLIENT OR WIN32)
 endif(PARAENGINE_CLIENT OR WIN32)
 
 set(Boost_USE_MULTITHREADED ON)
-if (NPL_STATIC_LINK_ALL)
-    set(Boost_USE_STATIC_LIBS   ON)
-    set(Boost_USE_STATIC_RUNTIME ON)
-endif ()
+set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
 find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
