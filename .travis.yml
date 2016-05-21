@@ -24,8 +24,9 @@ before_install:
  - tar --bzip2 -xf boost_1_55_0.tar.bz2
  - cd boost_1_55_0
  - ./bootstrap.sh --help
- - sudo ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams"
- - sudo ./b2 link=static runtime-link=static threading=multi variant=release | tail -n 50
+ - sudo ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"
+ # runtime-link=static 
+ - sudo ./b2 link=static threading=multi variant=release | tail -n 50
  - sudo ./b2 install | tail -n 50
  - cd ..
  
