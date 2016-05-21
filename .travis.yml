@@ -23,7 +23,7 @@ script: ./build_linux.sh
 deploy:
   provider: releases
   api_key: 
-    secure: xafw00jYr9UVqFbl42oI3POGxS3UTNZAaqByeKK42bPZLEkw4hxoQM4HIIRvba0TnaTlUNwe93NdYY1g+2ScODQuECzrd4QBph17$
+    secure: "X35ES/AEFfkiKSjcz9SZQCaObAVHqqgcdKuKPST0NkmIvqrwob0oil2TqSGceE22bdtYJGZGGfXNV7yjnPrsHSnNEq73P2w8e2cjBqZzIlAb+NPymJl/KWf9vIts0E8AFrEC4HVC0Dsm/k6gQzMD74MlbqU35qJfGP86eQA8TNeb/5HOQzYrPze36rA1/NDYmPkE+BFgWY180FHnW1O84225YA//m8daaARClREst9c7tp8kwpvVdP4KDULZCH7Ce3ssc6VH/XCUyCXXfaXIU+moeFaMx3z/vfEgOuDx+d53r0H5juLmKb91wjnjCgl8i4mVjO5Dcf7VHgrSIxZk2mxDpV16Hki/uxXWxIBGtBrcdcEDKtap5UTMLV1HklfDoII8IGLMz2TSjUdqgFnRr0gzrWsR/HffjNQJcLgulDIY2pkENBmh00E9BQaFxiurKAW2jArEsyNUSKuS3sjanNnbo/xrdtO4tApIAvuRvXArRS+9tmAbervFu207Hc2NVOV/m2gJfBgYFpXPIBWq58YVMMBdrsxp/PqRIl7HWpGqXNYeOdptsQQ+O2vZEiC0m4oPYFo0ordmChH2Tu7jpLUbziCJyc1hEzGsDQtm9JyY5tnVBOvwCh8MXjY8UD8S0n7lsjaIdkwch5BmB7JJbQXla5EcQ3K3qSgb0ttxSTw="
   file: ParaWorld/bin64/ParaEngineServer
   file:
     - "ParaWorld/bin64/liblua.so"
