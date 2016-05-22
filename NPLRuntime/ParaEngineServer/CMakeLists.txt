@@ -323,10 +323,10 @@ endif (WIN32)
 
 # Link the executable to the libraries. 
 target_link_libraries (ParaEngineServer 
+	${Boost_LIBRARIES} 
 	sqlite lua jsoncpp tinyxpath luabind 
 	${OPENGL_LIBRARIES}
 	${EXTRA_LIBRARIES}
-	${Boost_LIBRARIES} 
 )
 
 ADD_CUSTOM_COMMAND(
