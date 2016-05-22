@@ -37,8 +37,8 @@ before_install:
  - ./bootstrap.sh --help
  - "echo 'using gcc : 4.9 : /usr/bin/g++-4.9 ; ' >> tools/build/src/user-config.jam"
  - sudo ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"
- - sudo ./b2 link=static runtime-link=static threading=multi variant=release install | head -n 100
- ### - sudo ./b2 install | tail -n 50
+ - sudo ./b2 link=static runtime-link=static threading=multi variant=release | head -n 100
+ - sudo ./b2 install | tail -n 50
  - cd ..
  
 before_script:
