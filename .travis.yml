@@ -27,8 +27,8 @@ before_install:
  - if [ "$CXX" = "g++" ]; then echo "using gcc : 4.9 : /usr/bin/g++-4.9 ; " >> tools/build/src/user-config.jam; fi
  - sudo ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"
  # runtime-link=static 
- - sudo ./b2 link=static threading=multi variant=release
- - sudo ./b2 install | tail -n 50
+ - sudo ./b2 link=static threading=multi variant=release install
+ # - sudo ./b2 install | tail -n 50
  - cd ..
  
 before_script:
