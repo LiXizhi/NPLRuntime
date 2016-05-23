@@ -987,7 +987,7 @@ string CParaFile::AutoFindParaEngineRootPath(const string& sFile)
 	while (!sRootPath.empty())
 	{
 		result.InitSearch(sRootPath);
-		CFileManager::FindDiskFiles(result, result.GetRootPath(), "ParaEngine.sig", 0);
+		CFileManager::FindDiskFiles(result, result.GetRootPath(), "PaperStar.sig", 0);
 		if (result.GetNumOfResult() >= 1)
 		{
 			string sSigFile = result.GetItem(0);
