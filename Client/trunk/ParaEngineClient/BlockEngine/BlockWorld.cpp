@@ -302,6 +302,7 @@ void CBlockWorld::SetRenderDist(int nValue)
 	GetLightGrid().SetLightGridSize((int)(m_nRenderDistance * 2 / BlockConfig::g_chunkBlockDim) + 2);
 
 	int nMinRegionCount = ((int)(m_nRenderDistance / 512) + 2) ^ 2;
+
 	if (m_maxCacheRegionCount < nMinRegionCount)
 		m_maxCacheRegionCount = nMinRegionCount;
 }
@@ -1246,9 +1247,12 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 {
 	if (!m_isInWorld)
 		return false;
-	//use 3D DDA algorithm to find hit block more detail see 
-	//http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_4_Spatial_Subdivisions.shtml
+	//////////////////////////////////////////////////////////////
 	//
+	// use 3D DDA algorithm to find hit block more detail see 
+	// http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_4_Spatial_Subdivisions.shtml
+	//
+	//////////////////////////////////////////////////////////////
 
 	Uint16x3 tempBlockId;
 	BlockCommon::ConvertToBlockIndex(rayOrig.x, rayOrig.y, rayOrig.z, tempBlockId.x, tempBlockId.y, tempBlockId.z);
@@ -1259,17 +1263,6 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	int32_t curBlockIdX = startBlockIdX;
 	int32_t curBlockIdY = startBlockIdY;
 	int32_t curBlockIdZ = startBlockIdZ;
-
-
-	float endPosX = rayOrig.x + dir.x * length;
-	float endPosY = rayOrig.y + dir.y * length;
-	float endPosZ = rayOrig.z + dir.z * length;
-	BlockCommon::ConvertToBlockIndex(rayOrig.x + dir.x * length, rayOrig.y + dir.y * length, rayOrig.z + dir.z * length,
-		tempBlockId.x, tempBlockId.y, tempBlockId.z);
-
-	int32_t endBlockIdX = tempBlockId.x;
-	int32_t endBlockIdY = tempBlockId.y;
-	int32_t endBlockIdZ = tempBlockId.z;
 
 	//ray tracing direction
 	int32_t blockStepX;
@@ -1311,9 +1304,9 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 		nextBlockPos.z = curBlockIdZ * BlockConfig::g_blockSize;
 	}
 
-	//distance we can travel along the ray before hitting a block boundary
+	// distance we can travel along the ray before hitting a block boundary, in either of the three axis.
 	Vector3 errDist;
-	//the delta when we move to next block
+	// the delta distance to travel in the three axis, before we move to next block. This is a constant;
 	Vector3 delta;
 
 	float maxRayDist = 100000;
@@ -1343,7 +1336,7 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	}
 	else
 		errDist.z = maxRayDist;
-
+	
 	int16_t curRegionX = -1;
 	int16_t curRegionZ = -1;
 	BlockRegion* curRegion = NULL;
@@ -1351,16 +1344,19 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	while (true)
 	{
 		//find the smallest value of traveledDist and going alone that direction
+		float distTraveled = 0;
 		if (errDist.x < errDist.y)
 		{
 			if (errDist.x < errDist.z)
 			{
+				distTraveled = errDist.x;
 				curBlockIdX += blockStepX;
 				errDist.x += delta.x;
 				side = 0;
 			}
 			else
 			{
+				distTraveled = errDist.z;
 				curBlockIdZ += blockStepZ;
 				errDist.z += delta.z;
 				side = 2;
@@ -1370,12 +1366,14 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 		{
 			if (errDist.y < errDist.z)
 			{
+				distTraveled = errDist.y;
 				curBlockIdY += blockStepY;
 				errDist.y += delta.y;
 				side = 4;
 			}
 			else
 			{
+				distTraveled = errDist.z;
 				curBlockIdZ += blockStepZ;
 				errDist.z += delta.z;
 				side = 2;
@@ -1401,76 +1399,19 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 			const double blockSize = BlockConfig::g_blockSize;
 			float rayLength = -1;
 
+			if (side == 0 && blockStepX <= 0)
+				side = 1;
+			if (side == 2 && blockStepZ <= 0)
+				side = 3;
+			if (side == 4 && blockStepY <= 0)
+				side = 5;
+
 			if (pBlockTemplate->GetBlockModel().IsCubeAABB() || IsCubeModePicking())
 			{
-				//side value : 0 negativeX,1 positiveX,2 NZ,3 PZ,4 NY, 5PY
-				Vector3 planeNormal(0, 0, 0);
-				double planeD;
-				if (side == 0)
-				{
-					if (blockStepX > 0)
-					{
-						planeNormal.x = -1;
-						planeD = curBlockIdX * blockSize;
-					}
-					else
-					{
-						side = 1;
-						planeNormal.x = 1;
-						planeD = (curBlockIdX + 1) * blockSize;
-					}
-				}
-				else if (side == 2)
-				{
-					if (blockStepZ > 0)
-					{
-						planeNormal.z = -1;
-						planeD = curBlockIdZ * blockSize;
-					}
-					else
-					{
-						side = 3;
-						planeNormal.z = 1;
-						planeD = (curBlockIdZ + 1) * blockSize;
-					}
-
-				}
-				else if (side == 4)
-				{
-					if (blockStepY > 0)
-					{
-						planeNormal.y = -1;
-						planeD = curBlockIdY * blockSize;
-					}
-					else
-					{
-						side = 5;
-						planeNormal.y = 1;
-						planeD = (curBlockIdY + 1) * blockSize;
-					}
-				}
-				float norDotRay = planeNormal.x * dir.x + planeNormal.y * dir.y + planeNormal.z * dir.z;
-				float norDotRayOrg = planeNormal.x * rayOrig.x + planeNormal.y * (rayOrig.y - GetVerticalOffset()) + planeNormal.z * rayOrig.z;
-
-				// LiXizhi: this is not quite a good algorithm, I wrote it myself. 
-				// it assume that planeD is positive. 
-				if (norDotRayOrg < 0)
-					rayLength = (float)((-planeD - norDotRayOrg) / norDotRay);
-				else
-					rayLength = (float)((planeD - norDotRayOrg) / norDotRay);
-
-				rayLength = fabs(rayLength);
-
+				rayLength = distTraveled;
 			}
 			else
 			{
-				if (side == 0 && blockStepX <= 0)
-					side = 1;
-				if (side == 2 && blockStepZ <= 0)
-					side = 3;
-				if (side == 4 && blockStepY <= 0)
-					side = 5;
-
 				// use AABB for non-cube model
 				CShapeAABB aabb;
 				pBlockTemplate->GetAABB(this, curBlockIdX, curBlockIdY, curBlockIdZ, &aabb);
@@ -1508,11 +1449,9 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 				return true;
 			}
 		}
-
-		if (curBlockIdX == endBlockIdX && curBlockIdY == endBlockIdY && curBlockIdZ == endBlockIdZ)
+		if (distTraveled > length)
 			return false;
 	}
-
 	return false;
 }
 

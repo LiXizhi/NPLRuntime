@@ -26,6 +26,24 @@ namespace NPL
 		}
 		else
 		{
+			/* uncomment to test "out of memory", set s_SimulateError to 1, when you want memory to fail. 
+local file = ParaIO.open("temp/mem.txt", "w");
+if(file:IsValid()) then
+	local out = {};
+	for i=1,52 do
+		out[#out+1] = "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890";
+	end
+	file:WriteString(table.concat(out)); -- this will run out of memory.
+	file:close();
+end	
+			static int s_SimulateError = 0;
+			if (nsize > 5000)
+			{
+				if (s_SimulateError == 0)
+					return mspace_realloc(ud, ptr, nsize);
+				else
+					return NULL;
+			}*/
 			return mspace_realloc(ud, ptr, nsize);
 		}
 	}
