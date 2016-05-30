@@ -314,12 +314,12 @@ void CParaEngineApp::LoadAndApplySettings()
 	if ((pField = settings.GetDynamicField("ScreenWidth")))
 		m_dwCreationWidth = (int)(*pField);
 	else
-		m_dwCreationWidth = 1020;
+		m_dwCreationWidth = 1280;
 
 	if ((pField = settings.GetDynamicField("ScreenHeight")))
 		m_dwCreationHeight = (int)(*pField);
 	else
-		m_dwCreationHeight = 680;
+		m_dwCreationHeight = 720;
 
 	if (!m_bStartFullscreen)
 	{

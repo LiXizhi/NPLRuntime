@@ -66,7 +66,7 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 		RegisterClassW( &wndClass );
 
 		// Set the window's initial style
-		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | 
+		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | //WS_THICKFRAME | disable resizing by dragging window frame
 			WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
 	#ifdef SHOW_DEFAULT_MENU
 		HMENU hMenu = LoadMenuW( hInstance, MAKEINTRESOURCEW(IDR_MENU) );
