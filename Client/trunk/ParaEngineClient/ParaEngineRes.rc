@@ -59,7 +59,7 @@ IDR_FX_SIMPLE_MESH_NORMAL_SPECIALEFFECTS TEXTFILE                "shaders/simple
 IDR_FX_SKYDOME          TEXTFILE                "shaders/skydome.fxo"
 IDR_FX_OCEANWATER_QUAD  TEXTFILE                "shaders/ocean_water_quad.fxo"
 IDR_FX_OCEANWATER_CLOUD TEXTFILE                "shaders/ocean_water_cloud.fxo"
-IDR_FX_BMAXMODEL TEXTFILE                "shaders/BMaxModel.fxo"
+IDR_FX_BMAXMODEL        TEXTFILE                "shaders/BMaxModel.fxo"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -96,6 +96,15 @@ BEGIN
     EDITTEXT        IDC_ABOUT_TEXT,7,22,281,112,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN | WS_VSCROLL | WS_HSCROLL
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_PARAWORLD_ICON               ICON                    "res\\paraworld.ico"
 #endif    // Chinese (Simplified, PRC) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -206,7 +215,7 @@ END
 
 IDR_MAIN_ACCEL ACCELERATORS
 BEGIN
-VK_F13, IDM_CHANGEDEVICE, VIRTKEY, NOINVERT
+    VK_F13,         IDM_CHANGEDEVICE,       VIRTKEY, NOINVERT
 END
 
 

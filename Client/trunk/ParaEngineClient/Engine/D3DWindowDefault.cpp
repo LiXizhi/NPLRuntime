@@ -63,6 +63,7 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 			LoadCursor( NULL, IDC_ARROW ),//LoadCursorFromFileA( "cursor.cur" ),//remember to ask artist to make the this cursor file the same as "cursor.png"
 			(HBRUSH)GetStockObject(WHITE_BRUSH),
 			NULL, g_sWindowClassName };
+                wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
 		RegisterClassW( &wndClass );
 
 		// Set the window's initial style
