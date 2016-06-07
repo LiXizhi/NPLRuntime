@@ -51,15 +51,14 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	ParaEngine::CLogger::GetSingleton().SetAppendMode(bServiceMode);
-
-	ParaEngine::CParaEngineApp myServerApp(sCmdLine.c_str());
 	if(bServiceMode)
 	{
 		// enter as system service
 		ParaEngine::CParaEngineService::InitDaemon();
 	}
 
+	ParaEngine::CLogger::GetSingleton().SetAppendMode(bServiceMode);
+	ParaEngine::CParaEngineApp myServerApp(sCmdLine.c_str());
 	ParaEngine::CParaEngineService service;
 
 	service.AcceptKeyStroke(!bServiceMode);
