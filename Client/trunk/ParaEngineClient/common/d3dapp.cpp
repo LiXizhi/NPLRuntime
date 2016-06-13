@@ -425,7 +425,7 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 		}
 		__except(GenerateDump(GetExceptionInformation()))
 		{
-			exit(0);
+			exit(777);
 		}
 		// Show the frame on the primary surface.
 	}

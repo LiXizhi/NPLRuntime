@@ -383,8 +383,12 @@ namespace ParaScripting
 	{
 		//"Seer_Dev" for developer internal use
 		//"Seer" for release
-           
-		return "Seer";
+		return "Seer_Dev";
+	}
+
+	void CNPL::Crash()
+	{
+		*((char*)-1) = 'x';
 	}
 
 	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
