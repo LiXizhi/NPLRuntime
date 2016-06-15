@@ -22,7 +22,7 @@ using namespace ParaEngine;
 
 ParaEngine::ChunkVertexBuilderManager::ChunkVertexBuilderManager()
 	:m_nMaxPendingChunks(4), m_nMaxUploadingChunks(4), m_bChunkThreadStarted(false),
-	m_nMaxChunksToUploadPerTick(8), m_nMaxBytesToUploadPerTick(1024*1024)
+	m_nMaxChunksToUploadPerTick(8), m_nMaxBytesToUploadPerTick(4*1024*1024)
 {
 
 }
@@ -46,6 +46,7 @@ bool ParaEngine::ChunkVertexBuilderManager::AddChunk(RenderableChunk* pChunk)
 	if (pChunk && !pChunk->IsBuildingBuffer())
 	{
 		pChunk->SetChunkBuildState(RenderableChunk::ChunkBuild_RequestRebuild);
+		pChunk->IsDirtyByBlockChange(pChunk->GetIsDirtyByBlockChange());
 		m_pendingChunks.push_back(pChunk);
 		Lock_.unlock();
 		m_chunk_request_signal.notify_one();
@@ -114,13 +115,57 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 		RenderableChunk* pChunk = NULL;
 		{
 			std::lock_guard<std::mutex> Lock_(m_mutex);
-			if (m_pendingUploadChunks.size() > 0)
+			for (auto iter = m_pendingUploadChunks.begin(); iter != m_pendingUploadChunks.end();)
 			{
-				pChunk = m_pendingUploadChunks.front();
-				m_pendingUploadChunks.erase(m_pendingUploadChunks.begin());
+				pChunk = *iter;
+				bool bShouldBatchLoadChunk = false;
+				int nPendingCount = m_pendingChunks.size();
+				bool bDiryBlockBlockChange = pChunk->IsDirtyByBlockChange();
+				if (!pChunk->IsDirty() && pChunk->GetChunkViewDistance()<3 && (nPendingCount > 0)
+					&& (int)m_pendingUploadChunks.size() < std::max((int)3, m_nMaxUploadingChunks) )
+				{
+					// we will handle a very special case here, where pending chunks are neighbors of the uploaded chunks.
+					// in such case, we will try to wait until neighbor chunks are also uploaded together 
+					// in the same render tick to remove possible visual defects introduced.
+					for (RenderableChunk* pPendingChunk : m_pendingChunks)
+					{
+						auto dPos = pChunk->GetChunkPosWs();
+						dPos.Subtract(pPendingChunk->GetChunkPosWs());
+						dPos.Abs();
+						if ((dPos.x + dPos.y + dPos.z) == 1 && (bDiryBlockBlockChange || pPendingChunk->IsDirtyByBlockChange()))
+						{
+							bShouldBatchLoadChunk = true;
+							break;
+						}
+					}
+					if (!bShouldBatchLoadChunk && !bDiryBlockBlockChange)
+					{
+						// also compare with current uploading chunks just in case it contains adjacent chunk with dirty blocks.
+						for (auto pChunk1 : m_pendingUploadChunks)
+						{
+							if (pChunk != pChunk1)
+							{
+								auto dPos = pChunk->GetChunkPosWs();
+								dPos.Subtract(pChunk1->GetChunkPosWs());
+								dPos.Abs();
+								if ((dPos.x + dPos.y + dPos.z) == 1 && (pChunk1->IsDirtyByBlockChange()))
+								{
+									bShouldBatchLoadChunk = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+				if (!bShouldBatchLoadChunk){
+					iter = m_pendingUploadChunks.erase(iter);
+					break;
+				}
+				else{
+					pChunk = NULL;
+					++iter;
+				}
 			}
-			else
-				break;
 		}
 		if (pChunk)
 		{
@@ -150,6 +195,8 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 			if (nChunkCount >= m_nMaxChunksToUploadPerTick || nByteCount >= m_nMaxBytesToUploadPerTick)
 				break;
 		}
+		else
+			break;
 	}
 #ifdef PRINT_CHUNK_LOG
 	if (nChunkCount > 0)
@@ -215,7 +262,7 @@ int ParaEngine::ChunkVertexBuilderManager::ProcessOneChunk(Scoped_ReadLock<Block
 #endif
 		{
 			std::lock_guard<std::mutex> Lock_(m_mutex);
-			std::remove(m_pendingChunks.begin(), m_pendingChunks.end(), pChunkToBuild);
+			m_pendingChunks.erase(std::remove(m_pendingChunks.begin(), m_pendingChunks.end(), pChunkToBuild), m_pendingChunks.end());
 			// move from pending chunks to upload chunks. 
 			pChunkToBuild->SetChunkBuildState(RenderableChunk::ChunkBuild_RequestBufferUpload);
 			m_pendingUploadChunks.push_back(pChunkToBuild);

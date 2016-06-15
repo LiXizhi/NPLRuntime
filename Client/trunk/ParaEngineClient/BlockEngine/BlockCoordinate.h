@@ -27,6 +27,14 @@ namespace ParaEngine
 		{
 		}
 
+		inline bool operator == (const Int16x3& v) const{
+			return x == v.x && y == v.y && z == v.z;
+		}
+
+		inline bool operator != (const Int16x3& v) const{
+			return x != v.x || y != v.y || z != v.z;
+		}
+
 		void SetValue(int16_t v);
 
 		void Add(Int16x3& v);

@@ -24,7 +24,7 @@ namespace ParaEngine
 	int RenderableChunk::s_nTotalRenderableChunks = 0;
 
 	RenderableChunk::RenderableChunk()
-		:m_pWorld(NULL), m_chunkBuildState(ChunkBuild_empty), m_nDelayedRebuildTick(0), m_nChunkViewDistance(0), m_nViewIndex(0), m_nRenderFrameCount(0), m_nLastVertexBufferBytes(0), m_dwShaderID(-1), m_bIsMainRenderer(true)
+		:m_pWorld(NULL), m_chunkBuildState(ChunkBuild_empty), m_nDelayedRebuildTick(0), m_nChunkViewDistance(0), m_nViewIndex(0), m_nRenderFrameCount(0), m_nLastVertexBufferBytes(0), m_dwShaderID(-1), m_bIsMainRenderer(true), m_bIsDirtyByBlockChange(true)
 	{
 		m_isDirty = true;
 		m_regionX = -1;
@@ -406,7 +406,19 @@ namespace ParaEngine
 		return GetChunk() == NULL;
 	}
 
-	bool RenderableChunk::IsIntersect( CShapeSphere& sphere )
+	bool RenderableChunk::IsDirtyByNeighbor()
+	{
+		auto pChunk = GetChunk();
+		return pChunk && pChunk->IsDirtyByNeighbor();
+	}
+
+	bool RenderableChunk::GetIsDirtyByBlockChange()
+	{
+		auto pChunk = GetChunk();
+		return pChunk && pChunk->IsDirtyByBlockChange();
+	}
+
+	bool RenderableChunk::IsIntersect(CShapeSphere& sphere)
 	{
 		return !IsEmptyChunk() && m_pShapeAABB.Intersect(sphere);
 	}
@@ -509,6 +521,16 @@ namespace ParaEngine
 		BlockGeneralTessellator& tessellator = *tls_tessellator;
 		tessellator.SetWorld(m_pWorld);
 		return tessellator;
+	}
+
+	bool RenderableChunk::IsDirtyByBlockChange() const
+	{
+		return m_bIsDirtyByBlockChange;
+	}
+
+	void RenderableChunk::IsDirtyByBlockChange(bool val)
+	{
+		m_bIsDirtyByBlockChange = val;
 	}
 
 	std::vector<RenderableChunk::InstanceGroup* >& RenderableChunk::GetInstanceGroups()
@@ -863,11 +885,11 @@ namespace ParaEngine
 		return m_chunkBuildState == ChunkBuild_Rebuilding || m_chunkBuildState == ChunkBuild_RequestRebuild;
 	}
 
-	Uint16x3 RenderableChunk::GetChunkPosWs()
+	Int16x3 RenderableChunk::GetChunkPosWs()
 	{
 		Uint16x3 curChunk;
 		UnpackChunkIndex(m_packedChunkID, curChunk.x, curChunk.y, curChunk.z);
-		return Uint16x3(((m_regionX << 5) + curChunk.x), curChunk.y, ((m_regionZ << 5) + curChunk.z));
+		return Int16x3(((m_regionX << 5) + curChunk.x), curChunk.y, ((m_regionZ << 5) + curChunk.z));
 	}
 
 	int32 RenderableChunk::GetDelayedRebuildTick() const

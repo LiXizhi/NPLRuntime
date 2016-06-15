@@ -71,7 +71,7 @@ namespace ParaEngine
 		inline uint16_t GetChunkIndex(){return m_packedChunkID;}
 
 		/** chunk position in world space.  */
-		Uint16x3 GetChunkPosWs();
+		Int16x3 GetChunkPosWs();
 
 		/** get the associated raw chunk data */
 		BlockChunk* GetChunk();
@@ -91,6 +91,10 @@ namespace ParaEngine
 		bool IsDirty() const { 
 			return m_isDirty; 
 		}
+
+		bool IsDirtyByNeighbor();
+		/** whether this chunk is made dirty by actual block changes. */
+		bool GetIsDirtyByBlockChange();
 
 		/** whether the chunk intersect with the given sphere. used in fast view culling. */
 		bool IsIntersect(CShapeSphere& sphere);
@@ -163,6 +167,9 @@ namespace ParaEngine
 		/** for main renderer (default to true), we will set chuck dirty to false, whenever the buffer is rebuilt. */
 		bool IsMainRenderer() const;
 		void SetIsMainRenderer(bool val);
+
+		bool IsDirtyByBlockChange() const;
+		void IsDirtyByBlockChange(bool val);
 	public:
 		struct InstanceGroup
 		{
@@ -258,5 +265,7 @@ namespace ParaEngine
 
 		/** for main renderer (default to true), we will set chuck dirty to false, whenever the buffer is rebuilt. */
 		bool m_bIsMainRenderer : 1;
+		/** whether dirty by block change when this chunk is added.*/
+		bool m_bIsDirtyByBlockChange : 1;
 	};
 }

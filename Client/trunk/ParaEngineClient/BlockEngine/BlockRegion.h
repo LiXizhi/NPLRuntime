@@ -114,8 +114,12 @@ namespace ParaEngine
 
 		void ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const luabind::adl::object& output);
 
-		//
+		// call this function when this chunk is modified
 		void SetChunkDirty(uint16_t packedChunkID, bool isDirty);
+		// this function is only called when neighbor block on the adjacent boundary to this chunk is dirty. 
+		// This chunk may or may not be modified. 
+		void SetChunkDirtyByNeighbor(uint16_t packedChunkID);
+		void SetChunkLightDirty(uint16_t packedChunkID);
 
 		inline uint16_t GetPackedRegionIndex()
 		{

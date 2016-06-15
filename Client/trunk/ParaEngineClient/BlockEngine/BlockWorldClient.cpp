@@ -91,13 +91,13 @@ namespace ParaEngine
 		m_damageDegree = 0;
 	
 #if defined(PARAENGINE_CLIENT) || defined(WIN32)
-		m_nMaxBufferRebuildPerTick = 3;
+		m_nMaxBufferRebuildPerTick = 4;
 		m_nNearCameraChunkDist = 8;
 		m_nMaxBufferRebuildPerTick_FarChunk = 2;
 		m_nVertexBufferSizeLimit = 200 * 1024 * 1024;
 		m_nMaxVisibleVertexBufferBytes = (100 * 1024 * 1024);
 #else
-		m_nMaxBufferRebuildPerTick = 3;
+		m_nMaxBufferRebuildPerTick = 4;
 		m_nNearCameraChunkDist = 6;
 		m_nMaxBufferRebuildPerTick_FarChunk = 2;
 		m_nVertexBufferSizeLimit = 100 * 1024 * 1024;

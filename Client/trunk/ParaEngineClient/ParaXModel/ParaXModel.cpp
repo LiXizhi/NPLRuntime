@@ -239,7 +239,8 @@ bool CParaXModel::IsValid()
 AnimIndex CParaXModel::GetAnimIndexByID(int nAnimID)
 {
 	int nAnim = (int)GetObjectNum().nAnimations;
-	for (int i = 0; i < nAnim; i++) {
+	for (int i = 0; i < nAnim; i++) 
+	{
 		if (anims[i].animID == nAnimID)
 		{
 			return AnimIndex(i, 0, anims[i].timeStart, anims[i].timeEnd, (byte)(anims[i].loopType), nAnimID);
@@ -254,6 +255,14 @@ int CParaXModel::GetAnimIDByIndex(int nAnimIndex)
 		return anims[nAnimIndex].animID;
 	else
 		return 0;
+}
+
+const ModelAnimation* CParaXModel::GetModelAnimByIndex(int nAnimIndex)
+{
+	if (nAnimIndex < (int)GetObjectNum().nAnimations && nAnimIndex >= 0)
+		return &(anims[nAnimIndex]);
+	else
+		return NULL;
 }
 
 void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)

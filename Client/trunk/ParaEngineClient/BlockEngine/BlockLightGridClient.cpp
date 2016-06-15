@@ -1330,7 +1330,7 @@ namespace ParaEngine
 				for (uint32_t z = startDirtyChunk_ws.z; z <= endDirtyChunk_ws.z; z++)
 				{
 					Uint16x3 curChunk_ws(x, y, z);
-					m_pBlockWorld->SetChunkDirty(curChunk_ws, true);
+					m_pBlockWorld->SetChunkLightDirty(curChunk_ws);
 				}
 			}
 		}

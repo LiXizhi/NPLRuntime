@@ -917,6 +917,23 @@ void CBlockWorld::SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty)
 	}
 }
 
+void ParaEngine::CBlockWorld::SetChunkLightDirty(Uint16x3& chunkId_ws)
+{
+	int16_t regionX = chunkId_ws.x >> 5;
+	int16_t regionZ = chunkId_ws.z >> 5;
+
+	BlockRegion* pRegion = GetRegion(regionX, regionZ);
+	if (pRegion)
+	{
+		int16_t chunkX_rs = chunkId_ws.x & 0x1f;
+		int16_t chunkZ_rs = chunkId_ws.z & 0x1f;
+
+		uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, chunkId_ws.y, chunkZ_rs);
+		pRegion->SetChunkLightDirty(packedChunkId_rs);
+	}
+}
+
+
 ChunkMaxHeight* CBlockWorld::GetHighestBlock(uint16_t blockX_ws, uint16_t blockZ_ws)
 {
 	uint16_t lx, ly, lz;

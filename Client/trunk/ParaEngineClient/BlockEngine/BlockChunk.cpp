@@ -678,7 +678,33 @@ namespace ParaEngine
 
 	void BlockChunk::SetDirty(bool val)
 	{
-		m_nDirty = val ? (m_nDirty==0 ? 1 : m_nDirty) : 0;
+		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty & 0x1)) : 0;
+	}
+
+
+	void BlockChunk::SetLightDirty()
+	{
+		m_nDirty |= 0x4;
+	}
+
+	void BlockChunk::SetDirtyByNeighbor()
+	{
+		m_nDirty |= 0x2;
+	}
+
+	bool BlockChunk::IsDirtyByNeighbor()
+	{
+		return (m_nDirty & 0x2) && (m_nDirty & 0x1) == 0;
+	}
+
+	bool BlockChunk::IsDirtyByLight()
+	{
+		return (m_nDirty & 0x4) && (m_nDirty & 0x1) == 0;
+	}
+
+	bool BlockChunk::IsDirtyByBlockChange()
+	{
+		return (m_nDirty & 0x1) != 0;
 	}
 
 	void BlockChunk::SetLightingInitialized(bool bInitialized)
@@ -717,7 +743,7 @@ namespace ParaEngine
 	{
 		return (sizeof(BlockChunk) + (sizeof(LightData) + sizeof(int16))*(16 * 16 * 16)) + sizeof(Block) * GetBlockCount() + sizeof(uint16) * m_lightBlockIndices.size();
 	}
-
+	
 	void LightData::SetBrightness( uint8_t value,bool isSunLight )
 	{
 		uint16_t light = (value & BlockConfig::g_maxValidLightValue);
