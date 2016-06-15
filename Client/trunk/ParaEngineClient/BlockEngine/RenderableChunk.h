@@ -104,6 +104,7 @@ namespace ParaEngine
 
 		RenderableChunk::ChunkBuildState GetChunkBuildState() const;
 		bool IsBuildingBuffer() const;
+		bool IsReadyOrEmpty() const;
 		void SetChunkBuildState(RenderableChunk::ChunkBuildState val);
 
 		static void StaticInit();
