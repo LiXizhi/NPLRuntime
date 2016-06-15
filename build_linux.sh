@@ -2,13 +2,15 @@
 # author: lixizhi@yeah.net
 # date: 2016.2.26
 # desc: to install dependencies, please see `.travis.yml` 
+# For boost: Download boost 1.55 or above and build with `./b2 link=static`
 
 # run cmake in ./NPLRuntime folder and make
 pushd .
 mkdir -p ./bin/linux
 cd bin/linux/
 # to build in parallel with 3 threads, use make -j3
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make
+
+cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 

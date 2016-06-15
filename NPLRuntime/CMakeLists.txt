@@ -25,6 +25,9 @@ endif()
 
 set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 
+# static linking to all libraries, such as boost, sqlite3, curl. This will produce big executable, but easy to deploy as binary. 
+option(NPL_STATIC_LINK_ALL "link statically as much as possible" ON)
+
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if (PARAENGINE_CLIENT OR WIN32)
 	if ("$ENV{BOOST_ROOT}" STREQUAL "")
@@ -38,30 +41,22 @@ if (PARAENGINE_CLIENT OR WIN32)
 endif(PARAENGINE_CLIENT OR WIN32)
 
 set(Boost_USE_MULTITHREADED ON)
-if (WIN32)
-    set(Boost_USE_STATIC_LIBS   ON)
-    set(Boost_USE_STATIC_RUNTIME ON)
-endif ()
+set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
-
-if (WIN32)
-    # Note: LiXizhi 2010.3. there is a bug in FindBoost that one needs to link with ${Boost_LIBRARIES_static_runtime} in order to use static vc runtime time. 
-    #STRING(REGEX REPLACE "\\-mt\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES}" )
-    #STRING(REGEX REPLACE "\\-mt\\-s\\-s\\-" "-mt-s-" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
-    #STRING(REGEX REPLACE "s\\-gd" "sgd" Boost_LIBRARIES_static_runtime "${Boost_LIBRARIES_static_runtime}" )
-    # since we are linking statically everywhere, replace Boost_LIBRARIES with static one. 
-    # set(Boost_LIBRARIES ${Boost_LIBRARIES_static_runtime})
-endif ()
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals serialization iostreams regex) 
 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
-    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${NPLRuntime_BINARY_DIR}/curl-7.47.1)
+    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 else()
 	FIND_PACKAGE(CURL REQUIRED)
+	# making executable relocatable 
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
 endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)

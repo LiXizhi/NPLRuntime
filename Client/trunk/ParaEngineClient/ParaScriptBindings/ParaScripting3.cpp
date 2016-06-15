@@ -38,8 +38,6 @@ extern "C"
 #include "ParaScriptingIPC.h"
 #include "ParaScripting.h"
 
-void Dummy_Func_Param1(const object &){}
-
 namespace ParaScripting
 {
 

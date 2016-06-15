@@ -15,6 +15,7 @@
 .DS_Store
 redist/
 published/
+/releases
 Mobile/trunk/ParaCraftMobile/frameworks/runtime-src/externals/assimp/prebuilt/win32/
 __*/
 _doc/

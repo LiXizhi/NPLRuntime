@@ -193,7 +193,18 @@ namespace ParaEngine
 		uint32 GetBlockCount();
 
 		inline bool IsDirty() const { return m_nDirty > 0; }
+		/** set dirty by block changes in this chunk */
 		void SetDirty(bool val);
+		/** set dirty by neighbor block change. */
+		void SetDirtyByNeighbor();
+		void SetLightDirty();
+		/** whether this chunk is made dirty by neighbor other than content change. */
+		bool IsDirtyByNeighbor();
+		/** whether this chunk is made dirty by light than content change. */
+		bool IsDirtyByLight();
+		/** whether this chunk is made dirty by actual block changes. */
+		bool IsDirtyByBlockChange();
+
 		void SetLightingInitialized(bool bInitialized);
 		bool IsLightingInitialized();
 		// reset all blocks

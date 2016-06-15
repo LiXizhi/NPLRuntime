@@ -1,0 +1,3 @@
+[submodule "npl_packages/main"]
+	path = npl_packages/main
+	url = https://github.com/NPLPackages/main.git

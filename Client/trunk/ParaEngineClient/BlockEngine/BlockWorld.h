@@ -343,6 +343,7 @@ namespace ParaEngine
 
 		//set chunk dirty will rebuild vertex buffer of the chunk
 		void SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty);
+		void SetChunkLightDirty(Uint16x3& chunkId_ws);
 
 		/** set chunk column time stamp. usually 0 for non-generated. 1 for generated.
 		this is usually called by world generators, so that we will not generate again next time we load the world. */

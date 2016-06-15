@@ -385,14 +385,23 @@ void CParaXAnimInstance::LoadAnimation(int nNextAnimID, float * fSpeed, bool bAp
 		if (IndexAnim.IsValid() && IndexAnim.Provider == 0)
 		{
 			// scale speed properly
-			float moveSpeed = pModel->anims[IndexAnim.nIndex].moveSpeed;
-			if (bHasWalkAnim && moveSpeed == 0.f)
+			auto pModelAnim = pModel->GetModelAnimByIndex(IndexAnim.nIndex);
+			if (pModelAnim)
 			{
-				// default to 4 meters/seconds in case walk animation is not inside the file. 
-				moveSpeed = DEFAULT_WALK_SPEED;
+				float moveSpeed = pModelAnim->moveSpeed;
+				if (bHasWalkAnim && moveSpeed == 0.f)
+				{
+					// default to 4 meters/seconds in case walk animation is not inside the file. 
+					moveSpeed = DEFAULT_WALK_SPEED;
+				}
+				if (fSpeed)
+					*fSpeed = m_fSpeedScale* m_fSizeScale * moveSpeed;
 			}
-			if (fSpeed)
-				*fSpeed = m_fSpeedScale* m_fSizeScale * moveSpeed;
+			else
+			{
+				if (fSpeed)
+					*fSpeed = (bHasWalkAnim) ? m_fSpeedScale* m_fSizeScale * DEFAULT_WALK_SPEED : 0.f;
+			}
 		}
 		else
 		{
@@ -486,7 +495,6 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 			return;
 		if (m_CurrentAnim.IsValid())
 		{
-			//ModelAnimation &animInfo = pModel->anims[nCurrentAnim];
 			if (m_CurrentAnim.nCurrentFrame<(int)m_CurrentAnim.nStartFrame)
 				m_CurrentAnim.nCurrentFrame = m_CurrentAnim.nStartFrame;
 			if (m_CurrentAnim.nCurrentFrame>(int)m_CurrentAnim.nEndFrame)
@@ -761,8 +769,11 @@ void CParaXAnimInstance::GetCurrentRadius(float* fRadius)
 		if (pModel == NULL)
 			return;
 		int nIndex = (m_CurrentAnim.Provider == 0 && (int)(pModel->GetObjectNum().nAnimations) > m_CurrentAnim.nIndex) ? m_CurrentAnim.nIndex : 0;
-		float boundsRadius = pModel->anims[nIndex].rad;
-		*fRadius = m_fSizeScale* boundsRadius;
+		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
+		if (pModelAnim){
+			float boundsRadius = pModelAnim->rad;
+			*fRadius = m_fSizeScale* boundsRadius;
+		}
 	}
 	else
 	{
@@ -780,9 +791,12 @@ void CParaXAnimInstance::GetCurrentSize(float * fWidth, float * fDepth)
 		if (pModel == NULL)
 			return;
 		int nIndex = (m_CurrentAnim.Provider == 0 && (int)(pModel->GetObjectNum().nAnimations) > m_CurrentAnim.nIndex) ? m_CurrentAnim.nIndex : 0;
-		Vector3 box = pModel->anims[nIndex].boxA - pModel->anims[nIndex].boxB;
-		*fWidth = fabs(m_fSizeScale* box.x);
-		*fDepth = fabs(m_fSizeScale* box.y);
+		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
+		if (pModelAnim){
+			Vector3 box = pModelAnim->boxA - pModelAnim->boxB;
+			*fWidth = fabs(m_fSizeScale* box.x);
+			*fDepth = fabs(m_fSizeScale* box.y);
+		}
 	}
 	else
 	{
@@ -801,8 +815,10 @@ void CParaXAnimInstance::GetCurrentSpeed(float* fSpeed)
 		if (pModel == NULL)
 			return;
 		int nIndex = (m_CurrentAnim.Provider == 0 && (int)(pModel->GetObjectNum().nAnimations) > m_CurrentAnim.nIndex) ? m_CurrentAnim.nIndex : 0;
+		auto pModelAnim = pModel->GetModelAnimByIndex(nIndex);
+		if (pModelAnim)
 		{
-			float moveSpeed = pModel->anims[nIndex].moveSpeed;
+			float moveSpeed = pModelAnim->moveSpeed;
 			if (fSpeed)
 				*fSpeed = m_fSpeedScale* m_fSizeScale* moveSpeed;
 		}
@@ -849,14 +865,18 @@ void CParaXAnimInstance::GetSpeedOf(const char * sName, float * fSpeed)
 
 		if (nAnimIndex >= 0)
 		{
-			float moveSpeed = pModel->anims[nAnimIndex].moveSpeed;
-			if (bHasWalkAnim && moveSpeed == 0.f)
+			auto pModelAnim = pModel->GetModelAnimByIndex(nAnimIndex);
+			if (pModelAnim)
 			{
-				// default to 4 meters/seconds in case walk animation is not inside the file. 
-				moveSpeed = DEFAULT_WALK_SPEED;
+				float moveSpeed = pModelAnim->moveSpeed;
+				if (bHasWalkAnim && moveSpeed == 0.f)
+				{
+					// default to 4 meters/seconds in case walk animation is not inside the file. 
+					moveSpeed = DEFAULT_WALK_SPEED;
+				}
+				if (fSpeed)
+					*fSpeed = m_fSpeedScale* m_fSizeScale* moveSpeed;
 			}
-			if (fSpeed)
-				*fSpeed = m_fSpeedScale* m_fSizeScale* moveSpeed;
 		}
 		else
 		{

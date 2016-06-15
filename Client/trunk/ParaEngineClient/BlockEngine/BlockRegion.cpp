@@ -113,7 +113,27 @@ namespace ParaEngine
 		}
 	}
 
-	Block* BlockRegion::GetBlock(uint16_t chunkId,Uint16x3& blockID_r)
+	void BlockRegion::SetChunkDirtyByNeighbor(uint16_t packedChunkID)
+	{
+		if (!IsLocked())
+		{
+			BlockChunk* pChunk = GetChunk(packedChunkID, false);
+			if (pChunk)
+				pChunk->SetDirtyByNeighbor();
+		}
+	}
+	
+	void BlockRegion::SetChunkLightDirty(uint16_t packedChunkID)
+	{
+		if (!IsLocked())
+		{
+			BlockChunk* pChunk = GetChunk(packedChunkID, false);
+			if (pChunk)
+				pChunk->SetLightDirty();
+		}
+	}
+
+	Block* BlockRegion::GetBlock(uint16_t chunkId, Uint16x3& blockID_r)
 	{
 		BlockChunk * pChunk = m_chunks[chunkId];
 		return (pChunk) ? pChunk->GetBlock(CalcPackedBlockID(blockID_r)) : NULL;
@@ -568,7 +588,7 @@ namespace ParaEngine
 			chunkId_rs.z = neighborChunkId_ws.z & 0x1f;
 
 			uint16_t packChunkId_rs = PackChunkIndex(chunkId_rs);
-			SetChunkDirty(packChunkId_rs,true);
+			SetChunkDirtyByNeighbor(packChunkId_rs);
 		}
 		else
 		{

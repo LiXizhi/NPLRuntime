@@ -810,7 +810,7 @@ bool CZipArchive::ReadEntries()
 	// search 4 bytes, if failed search 64KB
 	long locatedCentralDirOffset = LocateBlockWithSignature(ZIP_CONST_ENDSIG, m_pFile->getSize(), sizeof(ZIP_EndOfCentralDirectory), 0x4);
 	if (locatedCentralDirOffset < 0) {
-		long locatedCentralDirOffset = LocateBlockWithSignature(ZIP_CONST_ENDSIG, m_pFile->getSize(), sizeof(ZIP_EndOfCentralDirectory), 0xffff);
+		locatedCentralDirOffset = LocateBlockWithSignature(ZIP_CONST_ENDSIG, m_pFile->getSize(), sizeof(ZIP_EndOfCentralDirectory), 0xffff);
 		if (locatedCentralDirOffset < 0)
 			return false;
 	}

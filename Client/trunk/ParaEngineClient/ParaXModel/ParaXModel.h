@@ -185,6 +185,10 @@ namespace ParaEngine
 		* if there is no animation at the index, 0 (default animation ID) is returned.
 		*/
 		int GetAnimIDByIndex(int nAnimIndex);
+		
+		/** return NULL if not exist */
+		const ModelAnimation* GetModelAnimByIndex(int nAnimIndex);
+
 		/** get the mesh radius */
 		float GetBoundingRadius();
 		/** whether the model has a specified attachment point */
@@ -203,7 +207,7 @@ namespace ParaEngine
 		void ClearFaceGroups();
 		bool HasAlphaBlendedObjects();
 		friend struct ModelRenderPass;
-
+			
 	public:
 		/** model header */
 		ParaXHeaderDef	m_header;
