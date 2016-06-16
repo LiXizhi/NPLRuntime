@@ -89,7 +89,7 @@ int GenerateDump(EXCEPTION_POINTERS* pExceptionPointers)
 	ExpParam.ClientPointers = TRUE;
 
 	bMiniDumpSuccessful = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), 
-		hDumpFile, MiniDumpWithDataSegs, &ExpParam, NULL, NULL);
+                hDumpFile, MiniDumpWithFullMemory, &ExpParam, NULL, NULL);
 
 	OUTPUT_LOG("Application crash: min dump generated at %s\r\n", szFileName);
 	
