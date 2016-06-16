@@ -172,7 +172,7 @@ namespace ParaEngine
 			{
 				size = 0;
 
-				VALUE_TYPE cur_last;
+				VALUE_TYPE cur_last = last;
 				while (++i < nCount && (cur_last = data[i]) == last)
 					size++;
 
@@ -217,7 +217,7 @@ namespace ParaEngine
 			for (int i = 0; i < nCount && len<nCount;)
 			{
 				size = 0;
-				VALUE_TYPE cur_last;
+				VALUE_TYPE cur_last = last;
 				while (++i < nCount && (cur_last = data[i]) == last)
 					size++;
 				last = cur_last;
