@@ -45,8 +45,12 @@ bool ParaEngine::ChunkVertexBuilderManager::AddChunk(RenderableChunk* pChunk)
 		return false;
 	if (pChunk && !pChunk->IsBuildingBuffer())
 	{
+		bool bLastReadyOrEmpty = pChunk->IsReadyOrEmpty();
 		pChunk->SetChunkBuildState(RenderableChunk::ChunkBuild_RequestRebuild);
-		pChunk->IsDirtyByBlockChange(pChunk->GetIsDirtyByBlockChange());
+		if (bLastReadyOrEmpty)
+			pChunk->IsDirtyByBlockChange(pChunk->GetIsDirtyByBlockChange());
+		else
+			pChunk->IsDirtyByBlockChange(pChunk->IsDirtyByBlockChange() || pChunk->GetIsDirtyByBlockChange());
 		m_pendingChunks.push_back(pChunk);
 		Lock_.unlock();
 		m_chunk_request_signal.notify_one();
@@ -115,6 +119,11 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 		RenderableChunk* pChunk = NULL;
 		{
 			std::lock_guard<std::mutex> Lock_(m_mutex);
+			if (m_pendingUploadChunks.empty())
+				break;
+			std::stable_sort(m_pendingUploadChunks.begin(), m_pendingUploadChunks.end(), [](RenderableChunk* a, RenderableChunk* b){
+				return (a->IsDirtyByBlockChange() && !b->IsDirtyByBlockChange());
+			});
 			for (auto iter = m_pendingUploadChunks.begin(); iter != m_pendingUploadChunks.end();)
 			{
 				pChunk = *iter;
@@ -122,7 +131,7 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 				int nPendingCount = m_pendingChunks.size();
 				bool bDiryBlockBlockChange = pChunk->IsDirtyByBlockChange();
 				if (!pChunk->IsDirty() && pChunk->GetChunkViewDistance()<3 && (nPendingCount > 0)
-					&& (int)m_pendingUploadChunks.size() < std::max((int)3, m_nMaxUploadingChunks) )
+					&& (int)m_pendingUploadChunks.size() < std::max((int)4, m_nMaxUploadingChunks) )
 				{
 					// we will handle a very special case here, where pending chunks are neighbors of the uploaded chunks.
 					// in such case, we will try to wait until neighbor chunks are also uploaded together 
@@ -141,14 +150,15 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 					if (!bShouldBatchLoadChunk && !bDiryBlockBlockChange)
 					{
 						// also compare with current uploading chunks just in case it contains adjacent chunk with dirty blocks.
-						for (auto pChunk1 : m_pendingUploadChunks)
+						for (auto iter1 = m_pendingUploadChunks.begin(); iter1 != iter && iter1 != m_pendingUploadChunks.end(); iter1++)
 						{
-							if (pChunk != pChunk1)
+							auto pChunk1 = *iter1;
+							if (pChunk != pChunk1 && pChunk1->IsDirtyByBlockChange())
 							{
 								auto dPos = pChunk->GetChunkPosWs();
 								dPos.Subtract(pChunk1->GetChunkPosWs());
 								dPos.Abs();
-								if ((dPos.x + dPos.y + dPos.z) == 1 && (pChunk1->IsDirtyByBlockChange()))
+								if ((dPos.x + dPos.y + dPos.z) == 1)
 								{
 									bShouldBatchLoadChunk = true;
 									break;

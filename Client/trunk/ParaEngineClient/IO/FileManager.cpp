@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Class: CFileManager
-// Authors:	Li,Xizhi
+// Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
 // Date:	2005.4
 // Revised: 2005.4
@@ -9,23 +9,32 @@
 #include "ParaEngine.h"
 #include "ZipArchive.h"
 #include "FileUtils.h"
+#include "BlockEngine/BlockReadWriteLock.h"
 #include "FileManager.h"
+
 
 using namespace ParaEngine;
 
 CFileManager::CFileManager(void)
+	: m_pArchiveLock(new BlockReadWriteLock())
 {
 	m_priority = 0;
 }
 
 CFileManager::~CFileManager(void)
 {
-	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
-	for( itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++ itCurCP)
 	{
-		(*itCurCP)->Close();
-		delete (*itCurCP);
+		Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+
+		std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
+		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
+		{
+			(*itCurCP)->Close();
+			delete (*itCurCP);
+		}
 	}
+
+	SAFE_DELETE(m_pArchiveLock);
 }
 
 CFileManager * CFileManager::GetInstance()
@@ -36,14 +45,17 @@ CFileManager * CFileManager::GetInstance()
 
 bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRootDir)
 {
-	/// we will not reopen it.
-	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
-	for( itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++ itCurCP)
 	{
-		if((*itCurCP)->GetArchiveName().compare(path) == 0)
+		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+		/// we will not reopen it.
+		std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
+		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
-			// move package to back of the queue? 
-			return true;
+			if ((*itCurCP)->GetArchiveName().compare(path) == 0)
+			{
+				// move package to back of the queue? 
+				return true;
+			}
 		}
 	}
 	string sArchiveName = path;
@@ -57,10 +69,12 @@ bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRo
 			pArchive = new CZipArchive(); // TODO
 		if(pArchive != NULL)
 		{
-			m_archivers.push_back(pArchive);
 			bRes = pArchive->Open(sArchiveName, ++m_priority);
 			if(! sRootDir.empty())
 				pArchive->SetRootDirectory(sRootDir);
+
+			Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+			m_archivers.push_back(pArchive);
 		}
 		else 
 			bRes = false;
@@ -75,6 +89,8 @@ bool CFileManager::OpenArchive(const std::string&  path, bool bUseRelativePath)
 
 void CFileManager::CloseArchive(const std::string&  path)
 {
+	Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 	for( itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++ itCurCP)
 	{
@@ -97,6 +113,8 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 {
 	bool bOpened = false;
 	bool bMPQProcessed = false;
+
+	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 	for( itCurCP = m_archivers.begin(); (!bOpened) && itCurCP != itEndCP; ++ itCurCP)
 	{
@@ -186,6 +204,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 	}
 	else if (sZipArchive == "*.zip")
 	{
+		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 		// search in all currently opened zip archives
 		list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
@@ -198,6 +217,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 		// search in disk followed by zip files.
 		FindDiskFiles(result, result.GetRootPath(), sFilePattern, nSubLevel);
 
+		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 		list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
@@ -207,16 +227,19 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 	else
 	{
 		// search in the given zip file
-		list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
-		for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 		{
-			if ((*itCurCP)->GetArchiveName().compare(sZipArchive) == 0)
+			Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock); 
+			list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
+			for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
-				(*itCurCP)->FindFiles(result, sRootPath, sFilePattern, nSubLevel);
-				return &result;
+				if ((*itCurCP)->GetArchiveName().compare(sZipArchive) == 0)
+				{
+					(*itCurCP)->FindFiles(result, sRootPath, sFilePattern, nSubLevel);
+					return &result;
+				}
 			}
 		}
-
+		
 		if (CParaFile::DoesFileExist(sZipArchive.c_str()) && CParaFile::GetFileExtension(sZipArchive.c_str()) == "zip")
 		{
 			// if the zip file is not loaded before, we will just load it and then unload after the search.
@@ -239,6 +262,7 @@ int ParaEngine::CFileManager::InstallFields(CAttributeClass* pClass, bool bOverr
 
 IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(const std::string& sName)
 {
+	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	for (CArchive* pArchive : m_archivers)
 	{
 		if (pArchive->IsArchive(sName))
@@ -249,6 +273,7 @@ IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(const std::s
 
 int ParaEngine::CFileManager::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
+	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	return (int)m_archivers.size();
 }
 
@@ -256,6 +281,7 @@ IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(int nRowInde
 {
 	if (nColumnIndex == 0)
 	{
+		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 		if (nRowIndex < (int)m_archivers.size())
 		{
 			auto iter = m_archivers.begin();

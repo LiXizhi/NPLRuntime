@@ -15,6 +15,7 @@ namespace ParaEngine
 	class CArchive;
 	class CParaFile;
 	class CSearchResult;
+	class BlockReadWriteLock;
 
 	/**
 	* this is the main file interface exposed by ParaEngine.
@@ -115,7 +116,7 @@ namespace ParaEngine
 		/** a list of all archives */
 		list <CArchive*> m_archivers;
 		int m_priority;
-
+		BlockReadWriteLock* m_pArchiveLock;
 	private:
 		/** this is a recursive function. @see SearchFiles */
 		static void FindDiskFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel);

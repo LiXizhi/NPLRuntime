@@ -885,6 +885,11 @@ namespace ParaEngine
 		return m_chunkBuildState == ChunkBuild_Rebuilding || m_chunkBuildState == ChunkBuild_RequestRebuild;
 	}
 
+	bool RenderableChunk::IsReadyOrEmpty() const
+	{
+		return m_chunkBuildState == ChunkBuild_Ready || m_chunkBuildState == ChunkBuild_empty;
+	}
+
 	Int16x3 RenderableChunk::GetChunkPosWs()
 	{
 		Uint16x3 curChunk;
@@ -1027,6 +1032,7 @@ namespace ParaEngine
 			OUTPUT_LOG("warn: chunk is rebuilding when clearing it\n");
 		}
 		ReleaseVertexBuffers();
+		m_chunkBuildState = ChunkBuild_empty;
 	}
 
 	int RenderableChunk::GetRenderFrameCount() const
