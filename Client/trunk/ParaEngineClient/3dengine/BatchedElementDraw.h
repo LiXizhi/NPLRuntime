@@ -74,6 +74,8 @@ namespace ParaEngine
 
 		void ClearParticles();
 
+		/** call this before scene is reset. */
+		void ClearAll();
 	public:
 		/** clear all cached drawing. */
 		void ClearLines();
