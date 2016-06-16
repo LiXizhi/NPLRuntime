@@ -404,6 +404,12 @@ void ParaEngine::CBatchedElementDraw::ClearParticles()
 	m_ParticleRenderPasses.clear();
 }
 
+void ParaEngine::CBatchedElementDraw::ClearAll()
+{
+	ClearParticles();
+	ClearLines();
+}
+
 void ParaEngine::CBatchedElementDraw::AddParticle(CParticleElement* particle)
 {
 	if (particle)

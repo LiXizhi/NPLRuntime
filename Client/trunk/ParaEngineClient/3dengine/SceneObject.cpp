@@ -1078,6 +1078,8 @@ void CSceneObject::SetAndRestoreFog(bool bEnableFog, DWORD dwFogColor, FLOAT fFo
 //-----------------------------------------------------------------------------
 void CSceneObject::Cleanup()
 {
+	if (m_pBatchedElementDraw)
+		m_pBatchedElementDraw->ClearAll();
 	if (m_pBlockWorldClient)
 		m_pBlockWorldClient->Cleanup();
 	SetPersistent(true);
