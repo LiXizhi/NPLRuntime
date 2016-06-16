@@ -22,7 +22,7 @@ namespace ParaEngine
 	{
 	public:
 		WeatherParticle(WeatherParticleSpawner* pParent);
-		virtual ~WeatherParticle(){};
+		virtual ~WeatherParticle();
 
 		virtual WeatherType GetType() = 0;
 		virtual void Init(float x, float y, float z);

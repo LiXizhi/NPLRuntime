@@ -22,8 +22,15 @@ ParaEngine::WeatherParticle::WeatherParticle(WeatherParticleSpawner* pParent)
 	lifetime(3.f), minY(0.f),
 	width(1.f), height(1.f), gravity(9.18f), m_isDead(false)
 {
+	if (m_pWeatherSpawner)
+		m_pWeatherSpawner->addref();
 }
 
+
+ParaEngine::WeatherParticle::~WeatherParticle()
+{
+	SAFE_RELEASE(m_pWeatherSpawner);
+}
 
 WeatherParticleSpawner* ParaEngine::WeatherParticle::GetWeatherSpawner()
 {
@@ -32,21 +39,23 @@ WeatherParticleSpawner* ParaEngine::WeatherParticle::GetWeatherSpawner()
 
 void ParaEngine::WeatherParticle::Init(float x_, float y_, float z_)
 {
+	auto pSpawner = GetWeatherSpawner();
+	
 	m_isDead = false;
 	x = x_;
 	y = y_;
 	z = z_;
 
 	speed_x = 0;
-	speed_y = -(GetWeatherSpawner()->GetSpeedRand().random() * 2.f + 0.3f);
+	speed_y = -(pSpawner->GetSpeedRand().random() * 2.f + 0.3f);
 	speed_z = 0;
 
 	lifetime = 3.f;
 
 	width = height = 0.1f;
 
-	SetTexture(GetWeatherSpawner()->GetTexture());
-	tileIndex = GetWeatherSpawner()->GetRandomTileIndex();
+	SetTexture(pSpawner->GetTexture());
+	tileIndex = pSpawner->GetRandomTileIndex();
 }
 
 
