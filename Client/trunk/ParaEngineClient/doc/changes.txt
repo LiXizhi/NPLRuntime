@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.6.17
+	- math.bit is now always 32bits same under lua and luajit.
+
 2016.6.15
 	- Fixed possible missing gaps when rendering chunk boarder blocks,  the main thread will wait for nearby chunk to be ready in a batch buffer upload.
 	- opening/closing zip archives are now thread-safe.
