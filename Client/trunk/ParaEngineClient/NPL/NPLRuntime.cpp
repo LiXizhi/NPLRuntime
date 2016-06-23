@@ -778,6 +778,16 @@ void CNPLRuntime::Run(bool bToEnd)
 			{
 				m_runtime_states_with_timers.erase((*itCur));
 			}
+			// tick it here
+			(*itCur)->FrameMoveTick();
+		}
+		{
+			// TODO: framemove those that does not have a timer attached.
+			/*ParaEngine::Lock lock_(m_mutex);
+			for (auto pState : m_runtime_states)
+			{
+				pState->FrameMoveTick();
+			}*/
 		}
 		m_temp_rts_pool.clear();
 	}

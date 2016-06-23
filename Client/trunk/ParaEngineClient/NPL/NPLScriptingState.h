@@ -10,7 +10,7 @@ namespace NPL
 namespace ParaScripting
 {
 	using namespace luabind;
-	
+
 	/**
 	* a NPL scripting state (wrapper of lua State), for binding c++ classes to lua.
 	* 
@@ -59,7 +59,7 @@ namespace ParaScripting
 		void LoadParaLib();
 
 		//////////////////////////////////////////////////////////////////////////
-		// following are individule group of HAPI
+		// following are individual group of HAPI
 		//////////////////////////////////////////////////////////////////////////
 
 		/// load functions for scene management

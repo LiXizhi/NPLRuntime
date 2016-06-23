@@ -51,7 +51,7 @@ public:
 };
 
 NPL::CNPLRuntimeState::CNPLRuntimeState(const string & name, NPLRuntimeStateType type_)
-: m_bUseMessageEvent(false), m_name(name), m_type(type_),
+: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0),
 m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
 ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
 {
@@ -122,6 +122,11 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	{
 		SAFE_RELEASE(v.second);
 	}
+	for (auto v : m_neuron_files)
+	{
+		SAFE_DELETE(v.second);
+	}
+	
 	m_act_files_cpp.clear();
 	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
 }
@@ -165,6 +170,21 @@ NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
 	}
 
 	return m_pMonoScriptingState;
+}
+
+NPL::CNeuronFileState* NPL::CNPLRuntimeState::GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist)
+{
+	auto iter = m_neuron_files.find(filename);
+	if (iter != m_neuron_files.end())
+		return iter->second;
+	else if(bCreateIfNotExist)
+	{
+		auto pFileState = new CNeuronFileState();
+		pFileState->SetMaxQueueSize(GetMsgQueueSize());
+		m_neuron_files[filename] = pFileState;
+		return pFileState;
+	}
+	return NULL;
 }
 
 int NPL::CNPLRuntimeState::Stop_Async()
@@ -236,7 +256,22 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	if (msg->m_type == MSG_TYPE_FILE_ACTIVATION)
 	{
 		LoadFile_any(msg->m_filename, false);
-		ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+		auto pFileState = GetNeuronFileState(msg->m_filename);
+		if (pFileState) 
+		{
+			if (pFileState->IsProcessing())
+			{
+				if (!pFileState->PushMessage(msg))
+				{
+					// TODO: report message queue is full.
+				}
+			}
+			else
+			{
+				ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+			}
+			pFileState->Tick(m_nFrameMoveCount);
+		}
 	}
 	else if (msg->m_type == MSG_TYPE_RESET)
 	{
@@ -250,6 +285,14 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	{
 		return -1;
 	}
+	return 0;
+}
+
+int NPL::CNPLRuntimeState::FrameMoveTick()
+{
+	m_nFrameMoveCount++;
+	// TODO: tick all neuron files with pending messages here. 
+
 	return 0;
 }
 

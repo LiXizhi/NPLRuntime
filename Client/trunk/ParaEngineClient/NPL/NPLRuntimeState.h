@@ -2,6 +2,7 @@
 #include "NPLMessageQueue.h"
 #include "NPLScriptingState.h"
 #include "NPLCommon.h"
+#include "NeuronFileState.h"
 #include "INPLRuntimeState.h"
 #include "INPLScriptingState.h"
 #include "IAttributeFields.h"
@@ -13,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+
 namespace ParaEngine
 {
 	struct DLLPlugInEntity;
@@ -21,6 +23,8 @@ namespace NPL
 {
 	using namespace std;
 	class INPLActivationFile;
+	class CNeuronFileState;
+
 
 	/**
 	* A runtime state contains the scripting runtime stack and can be run in a single thread. 
@@ -277,6 +281,8 @@ namespace NPL
 		*/
 		int ProcessMsg(NPLMessage_ptr msg);
 
+		/** any cross-frame pending messages are processed. */
+		int FrameMoveTick();
 	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
@@ -308,6 +314,9 @@ namespace NPL
 
 		/** get the mono scripting state. and create one from the NPLMono plugin, if one does not exist.*/
 		IMonoScriptingState* GetMonoState();
+
+		/** get neuron file state. */
+		CNeuronFileState* GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist=true);
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;
@@ -354,6 +363,8 @@ namespace NPL
 		*/
 		int m_processed_msg_count;
 
+		/** incremented every tick. */
+		int m_nFrameMoveCount;
 		/** Mono Scripting State. this is created via the NPLMono C++ plugin DLL. This class is created on demand. 
 		i.e. whenever the NPL Runtime state contains C# file. */
 		IMonoScriptingState* m_pMonoScriptingState;
@@ -361,8 +372,11 @@ namespace NPL
 		/** this is for caching some per-state static buffers. */
 		std::vector <std::string> m_string_buffers;
 
-		/* c++ based activation files that is callable from scripting interface or NPL. */
+		/** c++ based activation files that is callable from scripting interface or NPL. */
 		std::map<std::string, INPLActivationFile*> m_act_files_cpp;
+
+		/** mapping from filename to neuron file state. */
+		std::map<std::string, CNeuronFileState*> m_neuron_files;
 		
 		friend class CNPLRuntime;
 	};
