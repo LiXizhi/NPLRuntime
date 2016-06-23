@@ -336,6 +336,57 @@ namespace ParaEngine
 		return &m_blockHeightMap[blockIdX_rs + (blockIdZ_rs << 9)];
 	}
 
+
+	void BlockRegion::GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint32_t verticalSectionFilter, uint32_t matchtype, const luabind::adl::object& luaTable, int32_t& blockCount)
+	{
+		if (IsLocked())
+			return;
+		luabind::adl::object xTable = luaTable["x"];
+		luabind::adl::object yTable = luaTable["y"];
+		luabind::adl::object zTable = luaTable["z"];
+		luabind::adl::object templateTable = luaTable["tempId"];
+		luabind::adl::object dataTable = luaTable["data"];
+
+		uint16_t chunkX_rs = chunkX_ws & 0x1f;
+		uint16_t chunkZ_rs = chunkZ_ws & 0x1f;
+
+		uint16_t startBlockIdX_ws = chunkX_ws << 4;
+		uint16_t startBlockIdZ_ws = chunkZ_ws << 4;
+
+		for (uint16_t y = 0; y <= 16; y++)
+		{
+			if ((verticalSectionFilter & (1 << y)) != 0)
+			{
+				uint16_t startBlockIdY_ws = y << 4;
+				uint16_t packedChunkId_rs = PackChunkIndex(chunkX_rs, y, chunkZ_rs);
+				BlockChunk * pChunk = m_chunks[packedChunkId_rs];
+				if (pChunk)
+				{
+					uint32_t nCount = pChunk->m_blockIndices.size();
+					for (uint32_t i = 0; i < nCount; i++)
+					{
+						int32_t blockIdx = pChunk->m_blockIndices[i];
+						if (blockIdx >= 0)
+						{
+							Block& curBlock = pChunk->GetBlockByIndex(blockIdx);
+							if (curBlock.GetTemplate() && curBlock.GetTemplate()->IsMatchAttribute(matchtype))
+							{
+								uint16_t rx, ry, rz;
+								UnpackBlockIndex(i, rx, ry, rz);
+								blockCount++;
+								xTable[blockCount] = (int32_t)rx + startBlockIdX_ws;
+								yTable[blockCount] = (int32_t)ry + startBlockIdY_ws;
+								zTable[blockCount] = (int32_t)rz + startBlockIdZ_ws;
+								templateTable[blockCount] = curBlock.GetTemplateId();
+								dataTable[blockCount] = curBlock.GetUserData();
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	void BlockRegion::GetBlocksInChunk(uint16_t chunkX_ws,uint16_t chunkZ_ws,uint16_t startChunkY,uint16_t endChunkY,
 		uint32_t matchtype,const luabind::adl::object& luaTable,int32_t& blockCount)
 	{
@@ -352,6 +403,7 @@ namespace ParaEngine
 
 		uint16_t startBlockIdX_ws = chunkX_ws << 4;
 		uint16_t startBlockIdZ_ws = chunkZ_ws << 4;
+		
 		for(uint16_t y = startChunkY;y<= endChunkY;y++)
 		{
 			uint16_t startBlockIdY_ws = y << 4;
@@ -383,7 +435,8 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockRegion::RefreshAllLightsInColumn(uint16_t chunkX_ws,uint16_t chunkZ_ws)
+
+	void BlockRegion::RefreshAllLightsInColumn(uint16_t chunkX_ws, uint16_t chunkZ_ws)
 	{
 		if (IsLocked())
 			return;

@@ -376,7 +376,10 @@ namespace ParaEngine
 		*/
 		bool IsChunkLocked(uint32 worldX, uint32 worldZ);
 
-		int32_t GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result);
+		/**
+		* @param verticalSectionFilter: if not 0, we will ignore y value in startChunk_ws and endChunk_ws, but use this as a bitwise filter to y 
+		*/
+		int32_t GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result, uint32_t verticalSectionFilter = 0);
 
 		/** get number of dirty chunk columns for light calculations*/
 		int GetDirtyColumnCount();

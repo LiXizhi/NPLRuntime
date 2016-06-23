@@ -98,6 +98,7 @@ namespace ParaScripting
 		
 		/** get block in [startChunk,endChunk]
 		* @param result: in/out containing the result. 
+		* @param startChunkY, endChunkY: if negative, and startChunkY == endChunkY, -startChunkY will be used as verticalSectionFilter (a bitwise filter).
 		* @return {count,x{},y{},z{},tempId{}}
 		*/
 		static object GetBlocksInRegion(const object& pWorld, int32_t startChunkX, int32_t startChunkY, int32_t startChunkZ, int32_t endChunkX, int32_t endChunkY, int32_t endChunkZ,

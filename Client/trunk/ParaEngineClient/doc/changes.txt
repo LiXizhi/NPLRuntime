@@ -4,6 +4,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 
 2016.6.23
 	- fixed url image loading issue
+	- Get blocks in region now support verticalSectionFilter
 
 2016.6.17
 	- math.bit is now always 32bits same under lua and luajit.

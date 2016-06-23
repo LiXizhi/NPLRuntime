@@ -499,6 +499,10 @@ namespace ParaScripting
 		{
 			if(type(result) == LUA_TTABLE)
 			{
+				uint32 verticalSectionFilter = 0;
+				// just in case startChunkY is used as verticalSectionFilter
+				if (startChunkY < 0 && startChunkY == endChunkY)
+					verticalSectionFilter = - startChunkY;
 				if(startChunkX < 0) startChunkX = 0;
 				if(startChunkY < 0) startChunkY = 0;
 				if(startChunkZ < 0) startChunkZ = 0;
@@ -535,7 +539,7 @@ namespace ParaScripting
 					result["data"] = table;
 				}
 			
-				int32_t count = mgr->GetBlocksInRegion(start,end,matchType,result);
+				int32_t count = mgr->GetBlocksInRegion(start, end, matchType, result, verticalSectionFilter);
 				result["count"] = count;
 				return object(result);
 			}
