@@ -273,6 +273,10 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 			pFileState->Tick(m_nFrameMoveCount);
 		}
 	}
+	else if (msg->m_type == MSG_TYPE_TICK)
+	{
+		return FrameMoveTick();
+	}
 	else if (msg->m_type == MSG_TYPE_RESET)
 	{
 		Reset_Imp();
@@ -288,11 +292,22 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	return 0;
 }
 
+int NPL::CNPLRuntimeState::SendTick()
+{
+	if (m_thread.get() != 0)
+	{
+		// send the quit message. 
+		NPLMessage_ptr msg(new NPLMessage());
+		msg->m_type = MSG_TYPE_TICK;
+		SendMessage(msg, 1);
+	}
+	return 0;
+}
+
 int NPL::CNPLRuntimeState::FrameMoveTick()
 {
 	m_nFrameMoveCount++;
 	// TODO: tick all neuron files with pending messages here. 
-
 	return 0;
 }
 

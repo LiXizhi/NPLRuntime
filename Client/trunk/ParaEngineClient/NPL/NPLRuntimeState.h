@@ -282,7 +282,7 @@ namespace NPL
 		int ProcessMsg(NPLMessage_ptr msg);
 
 		/** any cross-frame pending messages are processed. */
-		int FrameMoveTick();
+		int SendTick();
 	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
@@ -294,6 +294,8 @@ namespace NPL
 		* @return the number of active timers
 		*/
 		int TickTimers(DWORD nTickCount);
+
+		int FrameMoveTick();
 
 		/** construct this to ensure matching calls to SetCurrentMessage(). */
 		class CCurrentMessage
