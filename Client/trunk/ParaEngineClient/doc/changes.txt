@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.6.23
+	- fixed url image loading issue
+
 2016.6.17
 	- math.bit is now always 32bits same under lua and luajit.
 
