@@ -613,7 +613,7 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 	return nRes; // success
 }
 
-bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::object& funcActivate)
+bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::object& funcActivate, int nPreemptiveInstructionCount)
 {
 	if (type(funcActivate) == LUA_TFUNCTION)
 	{

@@ -175,10 +175,15 @@ namespace ParaScripting
 
 	void CNPL::this_(const object& funcActivate)
 	{
+		this2_(funcActivate, 0);
+	}
+
+	void CNPL::this2_(const object& funcActivate, int nPreemptiveInstructionCount)
+	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
-			runtime_state->BindFileActivateFunc(funcActivate);
+			runtime_state->BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount);
 		}
 	}
 

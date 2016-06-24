@@ -16,8 +16,21 @@
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
 #include <boost/bind.hpp>
-
 #include "NPLRuntimeState.h"
+
+/**
+for luabind, The main drawback of this approach is that the compilation time will increase for the file
+that does the registration, it is therefore recommended that you register everything in the same cpp-file.
+*/
+extern "C"
+{
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+}
+
+#include <luabind/luabind.hpp>
+
 
 /** the maximum number of messages to read from the incoming queue for processing in a single frame rate.
 this is usually smaller than DEFAULT_INPUT_QUEUE_SIZE */
@@ -754,5 +767,43 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("TimerCount", FieldType_Int, (void*)0, (void*)GetTimerCount_s, NULL, NULL, bOverride);
 	pClass->AddField("MsgQueueSize", FieldType_Int, (void*)SetMsgQueueSize_s, (void*)GetMsgQueueSize_s, NULL, NULL, bOverride);
 	return S_OK;
+}
+
+static void scheduler_hook(lua_State* L, lua_Debug* ar)
+{
+	(void)ar;
+	lua_yield(L, 0);
+}
+
+bool NPL::CNPLRuntimeState::BindFileActivateFunc(const luabind::object& funcActivate, int nPreemptiveInstructionCount)
+{
+	using namespace luabind;
+
+	if (CNPLScriptingState::BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount))
+	{
+		if (nPreemptiveInstructionCount > 0)
+		{
+			CNeuronFileState*  pFileState = GetNeuronFileState(GetFileName());
+			if (pFileState)
+			{
+				lua_State * L = funcActivate.interpreter();
+				const char* COROUTINE_NAME = "__co";
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (!lua_istable(L, -1)) {
+					lua_pop(L, 1);
+					lua_newtable(L);
+					lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
+					lua_pushstring(L, COROUTINE_NAME);
+					lua_rawget(L, LUA_REGISTRYINDEX);
+				}
+				lua_State* th = lua_newthread(L);
+				lua_setfield(L, -2, GetFileName().c_str());
+				lua_pop(L, 1);
+			}
+		}
+		return true;
+	}
+	return false;
 }
 

@@ -186,8 +186,13 @@ namespace ParaScripting
 		* add the current file name to the __act table.
 		* create the activate table, if it does not exist.
 		* @param funcActivate: the function pointer to the activation function. It can either be local or global.
+		* @param nPreemptiveInstructionCount: optional parameter. if omitted, the activate function will 
+		* run non-preemptive (it is the programmer's job to let the function finish in short time). 
+		* If a number is specified here, the activate function will be preemptive like in Erlang. 
+		* When this number of instructions are executed, the activate function will be paused. 
 		*/
 		static void this_(const object& funcActivate);
+		static void this2_(const object& funcActivate, int nPreemptiveInstructionCount);
 
 		/** get the attribute object. This function return a clone of this object. */
 		static ParaAttributeObject GetAttributeObject();
