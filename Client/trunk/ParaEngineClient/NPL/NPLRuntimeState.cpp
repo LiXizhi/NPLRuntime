@@ -126,6 +126,8 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	{
 		SAFE_DELETE(v.second);
 	}
+	m_neuron_files.clear();
+	m_active_neuron_files.clear();
 	
 	m_act_files_cpp.clear();
 	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
@@ -179,7 +181,7 @@ NPL::CNeuronFileState* NPL::CNPLRuntimeState::GetNeuronFileState(const std::stri
 		return iter->second;
 	else if(bCreateIfNotExist)
 	{
-		auto pFileState = new CNeuronFileState();
+		auto pFileState = new CNeuronFileState(filename);
 		pFileState->SetMaxQueueSize(GetMsgQueueSize());
 		m_neuron_files[filename] = pFileState;
 		return pFileState;
@@ -261,6 +263,9 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 		{
 			if (pFileState->IsProcessing())
 			{
+				// only push to active queue when it is the first message. 
+				if (pFileState->IsEmpty())
+					m_active_neuron_files.push_back(pFileState);
 				if (!pFileState->PushMessage(msg))
 				{
 					// TODO: report message queue is full.
@@ -292,24 +297,45 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	return 0;
 }
 
-int NPL::CNPLRuntimeState::SendTick()
+int NPL::CNPLRuntimeState::FrameMoveTick()
 {
-	if (m_thread.get() != 0)
+	m_nFrameMoveCount++;
+	// tick all neuron files with pending messages here. 
+	for (auto iter = m_active_neuron_files.begin(); iter != m_active_neuron_files.end(); )
 	{
-		// send the quit message. 
-		NPLMessage_ptr msg(new NPLMessage());
-		msg->m_type = MSG_TYPE_TICK;
-		SendMessage(msg, 1);
+		CNeuronFileState* pFileState = (*iter);
+		if (pFileState->IsProcessing())
+		{
+			// resume last task by activating it again. 
+			ActivateFile_any(pFileState->GetFilename(), NULL, 0);
+		}
+		else
+		{
+			NPLMessage_ptr msg;
+			while (!pFileState->IsProcessing() && pFileState->PopMessage(msg))
+			{
+				ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+				pFileState->Tick(m_nFrameMoveCount);
+			}
+		}
+		// when queue is empty, remove from the list. 
+		if (pFileState->IsEmpty())
+			m_active_neuron_files.erase(iter);
+		else
+			iter++;
 	}
 	return 0;
 }
 
-int NPL::CNPLRuntimeState::FrameMoveTick()
+int NPL::CNPLRuntimeState::SendTick()
 {
-	m_nFrameMoveCount++;
-	// TODO: tick all neuron files with pending messages here. 
+	// send the quit message. 
+	NPLMessage_ptr msg(new NPLMessage());
+	msg->m_type = MSG_TYPE_TICK;
+	SendMessage(msg, 1);
 	return 0;
 }
+
 
 int NPL::CNPLRuntimeState::GetCurrentQueueSize()
 {

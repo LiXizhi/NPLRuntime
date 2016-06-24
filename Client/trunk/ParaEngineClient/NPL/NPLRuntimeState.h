@@ -7,6 +7,7 @@
 #include "INPLScriptingState.h"
 #include "IAttributeFields.h"
 #include "util/mutex.h"
+#include "util/unordered_array.hpp"
 #include <set>
 
 #include <boost/thread.hpp>
@@ -377,9 +378,15 @@ namespace NPL
 		/** c++ based activation files that is callable from scripting interface or NPL. */
 		std::map<std::string, INPLActivationFile*> m_act_files_cpp;
 
-		/** mapping from filename to neuron file state. */
+		/** mapping from filename to neuron file state. 
+		* Not thread-safe: no lock is required, only used by local thread 
+		*/
 		std::map<std::string, CNeuronFileState*> m_neuron_files;
-		
+		/** neuron files that have pending messages. 
+		* Not thread-safe: no lock is required, only used by local thread
+		*/
+		ParaEngine::unordered_array<CNeuronFileState*> m_active_neuron_files;
+
 		friend class CNPLRuntime;
 	};
 

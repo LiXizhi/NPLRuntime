@@ -13,7 +13,7 @@ namespace NPL
 	class CNeuronFileState
 	{
 	public:
-		CNeuronFileState();
+		CNeuronFileState(const std::string& filename);
 
 		/** whether the message is still being processed in the activation function.
 		some activation will set this flag to true in case their processing is cross multiple NPL time slice (tick).*/
@@ -46,6 +46,10 @@ namespace NPL
 		*/
 		int32 GetMaxQueueSize() const;
 		void SetMaxQueueSize(int32 val);
+
+		/** neuron file name */
+		const std::string& GetFilename() const { return m_filename; }
+		
 	protected:
 		/** total number of activation calls in this/last tick. */
 		int32 m_nActivationThisTick;
@@ -62,5 +66,7 @@ namespace NPL
 		int32 m_nMaxQueueSize;
 		/** the pending message queue */
 		std::deque<NPLMessage_ptr> m_queue;
+		/** neuron file name */
+		std::string m_filename;
 	};
 }

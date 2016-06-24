@@ -11,10 +11,11 @@ using namespace NPL;
 using namespace ParaEngine;
 
 
-NPL::CNeuronFileState::CNeuronFileState() :m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0)
+NPL::CNeuronFileState::CNeuronFileState(const std::string& filename) : m_filename(filename), m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0)
 {
 
 }
+
 
 bool NPL::CNeuronFileState::IsProcessing() const
 {
