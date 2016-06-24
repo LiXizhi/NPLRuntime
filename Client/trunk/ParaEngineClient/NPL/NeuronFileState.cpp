@@ -11,7 +11,7 @@ using namespace NPL;
 using namespace ParaEngine;
 
 
-NPL::CNeuronFileState::CNeuronFileState(const std::string& filename) : m_filename(filename), m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0)
+NPL::CNeuronFileState::CNeuronFileState(const std::string& filename) : m_filename(filename), m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0), m_nPreemptiveInstructionCount(0)
 {
 
 }
@@ -41,6 +41,15 @@ bool NPL::CNeuronFileState::PopMessage(NPLMessage_ptr& msg)
 	if (!m_queue.empty()) {
 		msg = m_queue.front();
 		m_queue.pop_front();
+		return true;
+	}
+	return false;
+}
+
+bool NPL::CNeuronFileState::GetMessage(NPLMessage_ptr& msg)
+{
+	if (!m_queue.empty()) {
+		msg = m_queue.front();
 		return true;
 	}
 	return false;
@@ -78,4 +87,19 @@ int32 NPL::CNeuronFileState::GetMaxQueueSize() const
 void NPL::CNeuronFileState::SetMaxQueueSize(int32 val)
 {
 	m_nMaxQueueSize = val;
+}
+
+bool NPL::CNeuronFileState::IsPreemptive()
+{
+	return m_nPreemptiveInstructionCount > 0;
+}
+
+int32 NPL::CNeuronFileState::GetPreemptiveInstructionCount() const
+{
+	return m_nPreemptiveInstructionCount;
+}
+
+void NPL::CNeuronFileState::SetPreemptiveInstructionCount(int32 val)
+{
+	m_nPreemptiveInstructionCount = val;
 }

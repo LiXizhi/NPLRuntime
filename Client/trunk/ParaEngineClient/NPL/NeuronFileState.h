@@ -28,6 +28,9 @@ namespace NPL
 		*/
 		bool PopMessage(NPLMessage_ptr& msg);
 
+		/** get the message without removing it from the stack*/
+		bool GetMessage(NPLMessage_ptr& msg);
+
 		/** if message queue is empty. */
 		bool IsEmpty();
 
@@ -50,6 +53,11 @@ namespace NPL
 		/** neuron file name */
 		const std::string& GetFilename() const { return m_filename; }
 		
+		/** Preemptive multi-tasking is simulated by counting instructions. */
+		bool IsPreemptive();
+		/** if not 0, we will use coroutine and debug hook to simulate preemptive scheduling in user mode. */
+		int32 GetPreemptiveInstructionCount() const;
+		void SetPreemptiveInstructionCount(int32 val);
 	protected:
 		/** total number of activation calls in this/last tick. */
 		int32 m_nActivationThisTick;
@@ -57,6 +65,8 @@ namespace NPL
 		int32 m_nFrameMoveId;
 		/** total number of activations since program starts. */
 		int32 m_nTotalActivations;
+		/** if not 0, we will use coroutine and debug hook to simulate preemptive scheduling in user mode. */
+		int32 m_nPreemptiveInstructionCount;
 		/** whether the message is still being processed in the activation function.
 		some activation will set this flag to true in case their processing is cross multiple NPL time slice (tick).*/
 		bool m_isProcessing;

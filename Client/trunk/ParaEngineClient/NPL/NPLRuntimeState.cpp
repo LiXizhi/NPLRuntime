@@ -55,6 +55,9 @@ const char* NPL_MONO_DLL_FILE_PATH = "NPLMono.dll";
 #define NPL_Mono_CLASS_ID Class_ID(0x2b903b29, 0x47e409af)
 #endif
 
+/** coroutine name*/
+#define COROUTINE_NAME "__co"
+
 /** helper class to mark processing */
 class CMarkProcessing{
 public:
@@ -274,7 +277,7 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 		auto pFileState = GetNeuronFileState(msg->m_filename);
 		if (pFileState) 
 		{
-			if (pFileState->IsProcessing())
+			if (pFileState->IsProcessing() || pFileState->IsPreemptive())
 			{
 				// only push to active queue when it is the first message. 
 				if (pFileState->IsEmpty())
@@ -287,8 +290,8 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 			else
 			{
 				ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+				pFileState->Tick(m_nFrameMoveCount);
 			}
-			pFileState->Tick(m_nFrameMoveCount);
 		}
 	}
 	else if (msg->m_type == MSG_TYPE_TICK)
@@ -310,6 +313,12 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	return 0;
 }
 
+static void npl_preemptive_scheduler_hook(lua_State* L, lua_Debug* ar)
+{
+	(void)ar;
+	lua_yield(L, 0);
+}
+
 int NPL::CNPLRuntimeState::FrameMoveTick()
 {
 	m_nFrameMoveCount++;
@@ -319,16 +328,119 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 		CNeuronFileState* pFileState = (*iter);
 		if (pFileState->IsProcessing())
 		{
-			// resume last task by activating it again. 
-			ActivateFile_any(pFileState->GetFilename(), NULL, 0);
+			pFileState->SetProcessing(false);
+			if (pFileState->IsPreemptive())
+			{
+				// resume last coroutine task 
+				lua_State * L = GetLuaState();
+
+				// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (lua_istable(L, -1)) 
+				{
+					lua_getfield(L, -1, pFileState->GetFilename().c_str());
+					if (lua_isthread(L, -1)) 
+					{
+						lua_State * th = lua_tothread(L, -1);
+						int status = lua_status(th);
+						if(status == LUA_YIELD)
+						{
+							// call activate function with preemptive hook. 
+							lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
+							{
+								int top = lua_gettop(th);
+
+								int status = lua_resume(th, 0);
+								int num_results = lua_gettop(th) - top;
+								if (status == LUA_YIELD)
+								{
+									pFileState->SetProcessing(true);
+								}
+								// TODO: check return results
+								if (num_results>0)
+									lua_pop(th, num_results);
+							}
+							// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
+							// so we need to unhook it for the rest of non-preemptive code.
+							lua_sethook(th, NULL, 0, pFileState->GetPreemptiveInstructionCount());
+						}
+					}
+					lua_pop(L, 1);
+				}
+				lua_pop(L, 1);
+			}
+			else
+			{
+				pFileState->SetProcessing(false);
+			}
 		}
 		else
 		{
 			NPLMessage_ptr msg;
-			while (!pFileState->IsProcessing() && pFileState->PopMessage(msg))
+			while (!pFileState->IsProcessing() && pFileState->GetMessage(msg))
 			{
-				ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
-				pFileState->Tick(m_nFrameMoveCount);
+				pFileState->SetProcessing(false);
+				if (pFileState->IsPreemptive())
+				{
+					DoString(msg->m_code.c_str(), (int)msg->m_code.size());
+
+					lua_State * L = GetLuaState();
+					
+					// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
+					lua_pushstring(L, COROUTINE_NAME);
+					lua_rawget(L, LUA_REGISTRYINDEX);
+					if (!lua_istable(L, -1)) {
+						lua_pop(L, 1);
+						lua_newtable(L);
+						lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
+						lua_pushstring(L, COROUTINE_NAME);
+						lua_rawget(L, LUA_REGISTRYINDEX);
+					}
+					lua_State* th = lua_newthread(L);
+					lua_setfield(L, -2, pFileState->GetFilename().c_str());
+					lua_pop(L, 1);
+
+					{
+						// call activate function with preemptive hook. 
+						lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
+
+						const char actTable[] = "__act";
+						lua_pushlstring(th, actTable, sizeof(actTable) - 1);
+						lua_gettable(th, LUA_GLOBALSINDEX);
+						if (lua_istable(th, -1))
+						{
+							lua_pushlstring(th, pFileState->GetFilename().c_str(), pFileState->GetFilename().size());
+							lua_gettable(th, -2);
+							if (lua_isfunction(th, -1))
+							{
+								int top = lua_gettop(th);
+
+								int status = lua_resume(th, 0);
+								int num_results = lua_gettop(th) - top;
+								if (status == LUA_YIELD)
+								{
+									pFileState->SetProcessing(true);
+								}
+								// TODO: check return results
+								if(num_results>0)
+									lua_pop(th, num_results);
+							}
+						}
+						// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
+						// so we need to unhook it for the rest of non-preemptive code.
+						lua_sethook(th, NULL, 0, pFileState->GetPreemptiveInstructionCount());
+					}
+				}
+				else 
+				{
+					ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+				}
+				if (!pFileState->IsProcessing())
+				{
+					pFileState->PopMessage(msg);
+					pFileState->Tick(m_nFrameMoveCount);
+				}
 			}
 		}
 		// when queue is empty, remove from the list. 
@@ -338,6 +450,40 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 			iter++;
 	}
 	return 0;
+}
+
+bool NPL::CNPLRuntimeState::BindFileActivateFunc(const luabind::object& funcActivate, int nPreemptiveInstructionCount)
+{
+	using namespace luabind;
+
+	if (CNPLScriptingState::BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount))
+	{
+		if (nPreemptiveInstructionCount > 0)
+		{
+			CNeuronFileState*  pFileState = GetNeuronFileState(GetFileName());
+			if (pFileState)
+			{
+				pFileState->SetPreemptiveInstructionCount(nPreemptiveInstructionCount);
+				/*lua_State * L = funcActivate.interpreter();
+				
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (!lua_istable(L, -1)) {
+					lua_pop(L, 1);
+					lua_newtable(L);
+					lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
+					lua_pushstring(L, COROUTINE_NAME);
+					lua_rawget(L, LUA_REGISTRYINDEX);
+				}
+				lua_State* th = lua_newthread(L);
+				lua_setfield(L, -2, GetFileName().c_str());
+				lua_pop(L, 1);
+				lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, nPreemptiveInstructionCount);*/
+			}
+		}
+		return true;
+	}
+	return false;
 }
 
 int NPL::CNPLRuntimeState::SendTick()
@@ -769,41 +915,4 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	return S_OK;
 }
 
-static void scheduler_hook(lua_State* L, lua_Debug* ar)
-{
-	(void)ar;
-	lua_yield(L, 0);
-}
-
-bool NPL::CNPLRuntimeState::BindFileActivateFunc(const luabind::object& funcActivate, int nPreemptiveInstructionCount)
-{
-	using namespace luabind;
-
-	if (CNPLScriptingState::BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount))
-	{
-		if (nPreemptiveInstructionCount > 0)
-		{
-			CNeuronFileState*  pFileState = GetNeuronFileState(GetFileName());
-			if (pFileState)
-			{
-				lua_State * L = funcActivate.interpreter();
-				const char* COROUTINE_NAME = "__co";
-				lua_pushstring(L, COROUTINE_NAME);
-				lua_rawget(L, LUA_REGISTRYINDEX);
-				if (!lua_istable(L, -1)) {
-					lua_pop(L, 1);
-					lua_newtable(L);
-					lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
-					lua_pushstring(L, COROUTINE_NAME);
-					lua_rawget(L, LUA_REGISTRYINDEX);
-				}
-				lua_State* th = lua_newthread(L);
-				lua_setfield(L, -2, GetFileName().c_str());
-				lua_pop(L, 1);
-			}
-		}
-		return true;
-	}
-	return false;
-}
 
