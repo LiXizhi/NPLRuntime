@@ -378,7 +378,6 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									}
 									OUTPUT_LOG("%s", strErrorMsg.c_str());
 								}
-								// TODO: check return results
 								if (num_results>0)
 									lua_pop(th, num_results);
 							}
@@ -388,6 +387,12 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 						}
 					}
 					lua_pop(L, 1);
+					if (!pFileState->IsProcessing())
+					{
+						// clear coroutine from _REG["__co"][filename] = nil
+						lua_pushnil(L);
+						lua_setfield(L, -2, pFileState->GetFilename().c_str());
+					}
 				}
 				lua_pop(L, 1);
 			}
@@ -411,23 +416,9 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 				if (pFileState->IsPreemptive())
 				{
 					DoString(msg->m_code.c_str(), (int)msg->m_code.size());
-
 					lua_State * L = GetLuaState();
-					
-					// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
-					lua_pushstring(L, COROUTINE_NAME);
-					lua_rawget(L, LUA_REGISTRYINDEX);
-					if (!lua_istable(L, -1)) {
-						lua_pop(L, 1);
-						lua_newtable(L);
-						lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
-						lua_pushstring(L, COROUTINE_NAME);
-						lua_rawget(L, LUA_REGISTRYINDEX);
-					}
+					// use coroutine with hooks to simulate preemptive multi-tasking. 
 					lua_State* th = lua_newthread(L);
-					lua_setfield(L, -2, pFileState->GetFilename().c_str());
-					lua_pop(L, 1);
-
 					{
 						// call activate function with preemptive hook. 
 						lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
@@ -470,7 +461,6 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									}
 									OUTPUT_LOG("%s", strErrorMsg.c_str());
 								}
-								// TODO: check return results
 								if(num_results>0)
 									lua_pop(th, num_results);
 							}
@@ -478,6 +468,25 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 						// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
 						// so we need to unhook it for the rest of non-preemptive code.
 						lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
+					}
+					if (!pFileState->IsProcessing()) {
+						// pop coroutine and leave it to gc
+						lua_pop(L, 1);
+					}
+					else
+					{
+						// keep a copy of coroutine at _REG["__co"][GetFileName()] = coroutine; so that it can be resumed in the next time slice
+						lua_pushstring(L, COROUTINE_NAME);
+						lua_rawget(L, LUA_REGISTRYINDEX);
+						if (!lua_istable(L, -1)) {
+							lua_pop(L, 1);
+							lua_newtable(L);
+							lua_pushvalue(L, -1);
+							lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
+						}
+						lua_pushvalue(L, -2);
+						lua_setfield(L, -2, pFileState->GetFilename().c_str());
+						lua_pop(L, 2);
 					}
 				}
 				else 
