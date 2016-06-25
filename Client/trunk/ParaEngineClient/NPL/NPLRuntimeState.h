@@ -293,6 +293,10 @@ namespace NPL
 
 		/** any cross-frame pending messages are processed. */
 		int SendTick();
+
+		/** get neuron file state. */
+		CNeuronFileState* GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist = true);
+
 	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
@@ -326,9 +330,7 @@ namespace NPL
 
 		/** get the mono scripting state. and create one from the NPLMono plugin, if one does not exist.*/
 		IMonoScriptingState* GetMonoState();
-
-		/** get neuron file state. */
-		CNeuronFileState* GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist=true);
+		
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;

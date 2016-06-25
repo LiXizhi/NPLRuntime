@@ -175,15 +175,55 @@ namespace ParaScripting
 
 	void CNPL::this_(const object& funcActivate)
 	{
-		this2_(funcActivate, 0);
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
+		if (runtime_state.get() != 0)
+		{
+			runtime_state->BindFileActivateFunc(funcActivate, 0);
+		}
 	}
 
-	void CNPL::this2_(const object& funcActivate, int nPreemptiveInstructionCount)
+	void CNPL::this2_(const object& funcActivate, const object& params)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
 		if (runtime_state.get() != 0)
 		{
-			runtime_state->BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount);
+			if (type(params) == LUA_TTABLE)
+			{
+				int nPreemptiveCount = 0;
+				int nMsgQueueSize = -1;
+				for (luabind::iterator itCur(params), itEnd; itCur != itEnd; ++itCur)
+				{
+					// we only serialize item with a string key
+					const object& key = itCur.key();
+					const object& input = *itCur;
+					if (type(key) == LUA_TSTRING)
+					{
+						std::string sKey = object_cast<std::string>(key);
+							
+						if (type(input) == LUA_TNUMBER)
+						{
+							int value = object_cast<int>(input);
+							if (sKey == "PreemptiveCount")
+							{
+								nPreemptiveCount = value;
+							}
+							else if (sKey == "MsgQueueSize")
+							{
+								nMsgQueueSize = value;
+							}
+						}
+					}
+				}
+				auto pFileState = runtime_state->GetNeuronFileState(runtime_state->GetFileName());
+				if (pFileState)
+				{
+					if(nPreemptiveCount>0)
+						pFileState->SetPreemptiveInstructionCount(nPreemptiveCount);
+					if (nMsgQueueSize > 0)
+						pFileState->SetMaxQueueSize(nMsgQueueSize);
+				}
+			}
+			runtime_state->BindFileActivateFunc(funcActivate, 0);
 		}
 	}
 

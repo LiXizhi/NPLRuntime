@@ -357,13 +357,34 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 								{
 									pFileState->SetProcessing(true);
 								}
+								else if (status != 0)
+								{
+									// read error message on stack
+									string strErrorMsg;
+									const char* errorMsg = lua_tostring(th, -1);
+									if (errorMsg != NULL) {
+										strErrorMsg = errorMsg;
+									}
+									switch (status) {
+									case LUA_ERRSYNTAX:
+										strErrorMsg += " <Syntax error>\r\n";
+										break;
+									case LUA_ERRMEM:
+										strErrorMsg += " <Memory allocation error>\r\n";
+										break;
+									case LUA_ERRRUN:
+										strErrorMsg += " <Runtime error>\r\n";
+										break;
+									}
+									OUTPUT_LOG("%s", strErrorMsg.c_str());
+								}
 								// TODO: check return results
 								if (num_results>0)
 									lua_pop(th, num_results);
 							}
 							// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
 							// so we need to unhook it for the rest of non-preemptive code.
-							lua_sethook(th, NULL, 0, pFileState->GetPreemptiveInstructionCount());
+							lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
 						}
 					}
 					lua_pop(L, 1);
@@ -373,6 +394,12 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 			else
 			{
 				pFileState->SetProcessing(false);
+			}
+			if (!pFileState->IsProcessing())
+			{
+				NPLMessage_ptr msg;
+				pFileState->PopMessage(msg);
+				pFileState->Tick(m_nFrameMoveCount);
 			}
 		}
 		else
@@ -422,6 +449,27 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 								{
 									pFileState->SetProcessing(true);
 								}
+								else if (status != 0)
+								{
+									// read error message on stack
+									string strErrorMsg;
+									const char* errorMsg = lua_tostring(th, -1);
+									if (errorMsg != NULL) {
+										strErrorMsg = errorMsg;
+									}
+									switch (status) {
+									case LUA_ERRSYNTAX:
+										strErrorMsg += " <Syntax error>\r\n";
+										break;
+									case LUA_ERRMEM:
+										strErrorMsg += " <Memory allocation error>\r\n";
+										break;
+									case LUA_ERRRUN:
+										strErrorMsg += " <Runtime error>\r\n";
+										break;
+									}
+									OUTPUT_LOG("%s", strErrorMsg.c_str());
+								}
 								// TODO: check return results
 								if(num_results>0)
 									lua_pop(th, num_results);
@@ -429,7 +477,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 						}
 						// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
 						// so we need to unhook it for the rest of non-preemptive code.
-						lua_sethook(th, NULL, 0, pFileState->GetPreemptiveInstructionCount());
+						lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
 					}
 				}
 				else 
@@ -445,7 +493,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 		}
 		// when queue is empty, remove from the list. 
 		if (pFileState->IsEmpty())
-			m_active_neuron_files.erase(iter);
+			iter = m_active_neuron_files.erase(iter);
 		else
 			iter++;
 	}
@@ -464,21 +512,6 @@ bool NPL::CNPLRuntimeState::BindFileActivateFunc(const luabind::object& funcActi
 			if (pFileState)
 			{
 				pFileState->SetPreemptiveInstructionCount(nPreemptiveInstructionCount);
-				/*lua_State * L = funcActivate.interpreter();
-				
-				lua_pushstring(L, COROUTINE_NAME);
-				lua_rawget(L, LUA_REGISTRYINDEX);
-				if (!lua_istable(L, -1)) {
-					lua_pop(L, 1);
-					lua_newtable(L);
-					lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
-					lua_pushstring(L, COROUTINE_NAME);
-					lua_rawget(L, LUA_REGISTRYINDEX);
-				}
-				lua_State* th = lua_newthread(L);
-				lua_setfield(L, -2, GetFileName().c_str());
-				lua_pop(L, 1);
-				lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, nPreemptiveInstructionCount);*/
 			}
 		}
 		return true;

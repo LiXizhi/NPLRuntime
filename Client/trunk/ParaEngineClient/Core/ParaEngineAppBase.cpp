@@ -39,13 +39,13 @@ void ParaEngine::CParaEngineAppBase::DoTestCode()
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
-	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
+	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
 {
 	InitCommon();
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
-	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
+	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
 {
 	InitCommon();
 }
