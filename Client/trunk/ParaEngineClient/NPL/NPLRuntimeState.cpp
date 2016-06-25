@@ -273,8 +273,11 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	++m_processed_msg_count;
 	if (msg->m_type == MSG_TYPE_FILE_ACTIVATION)
 	{
-		LoadFile_any(msg->m_filename, false);
-		auto pFileState = GetNeuronFileState(msg->m_filename);
+		auto pFileState = GetNeuronFileState(msg->m_filename, false);
+		if (!pFileState) {
+			LoadFile_any(msg->m_filename, false);
+			pFileState = GetNeuronFileState(msg->m_filename);
+		}
 		if (pFileState) 
 		{
 			if (pFileState->IsProcessing() || pFileState->IsPreemptive())
@@ -365,6 +368,8 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									if (errorMsg != NULL) {
 										strErrorMsg = errorMsg;
 									}
+									strErrorMsg += " in file:";
+									strErrorMsg += pFileState->GetFilename();
 									switch (status) {
 									case LUA_ERRSYNTAX:
 										strErrorMsg += " <Syntax error>\r\n";
@@ -448,6 +453,8 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									if (errorMsg != NULL) {
 										strErrorMsg = errorMsg;
 									}
+									strErrorMsg += " in file:";
+									strErrorMsg += pFileState->GetFilename();
 									switch (status) {
 									case LUA_ERRSYNTAX:
 										strErrorMsg += " <Syntax error>\r\n";
@@ -507,25 +514,6 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 			iter++;
 	}
 	return 0;
-}
-
-bool NPL::CNPLRuntimeState::BindFileActivateFunc(const luabind::object& funcActivate, int nPreemptiveInstructionCount)
-{
-	using namespace luabind;
-
-	if (CNPLScriptingState::BindFileActivateFunc(funcActivate, nPreemptiveInstructionCount))
-	{
-		if (nPreemptiveInstructionCount > 0)
-		{
-			CNeuronFileState*  pFileState = GetNeuronFileState(GetFileName());
-			if (pFileState)
-			{
-				pFileState->SetPreemptiveInstructionCount(nPreemptiveInstructionCount);
-			}
-		}
-		return true;
-	}
-	return false;
 }
 
 int NPL::CNPLRuntimeState::SendTick()

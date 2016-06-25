@@ -178,7 +178,7 @@ namespace ParaScripting
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
 		if (runtime_state.get() != 0)
 		{
-			runtime_state->BindFileActivateFunc(funcActivate, 0);
+			runtime_state->BindFileActivateFunc(funcActivate, runtime_state->GetFileName());
 		}
 	}
 
@@ -187,6 +187,7 @@ namespace ParaScripting
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
 		if (runtime_state.get() != 0)
 		{
+			std::string filename;
 			if (type(params) == LUA_TTABLE)
 			{
 				int nPreemptiveCount = 0;
@@ -212,9 +213,22 @@ namespace ParaScripting
 								nMsgQueueSize = value;
 							}
 						}
+						else if (type(input) == LUA_TSTRING)
+						{
+							const char* sValue = object_cast<const char*>(input);
+							if (sKey == "filename" || sKey == "name") {
+								filename = sValue;
+							}
+						}
+						else if (sKey == "clear")
+						{
+							// TODO: clear data. 
+						}
 					}
 				}
-				auto pFileState = runtime_state->GetNeuronFileState(runtime_state->GetFileName());
+				if (filename.empty())
+					filename = runtime_state->GetFileName();
+				auto pFileState = runtime_state->GetNeuronFileState(filename);
 				if (pFileState)
 				{
 					if(nPreemptiveCount>0)
@@ -223,7 +237,7 @@ namespace ParaScripting
 						pFileState->SetMaxQueueSize(nMsgQueueSize);
 				}
 			}
-			runtime_state->BindFileActivateFunc(funcActivate, 0);
+			runtime_state->BindFileActivateFunc(funcActivate, filename);
 		}
 	}
 

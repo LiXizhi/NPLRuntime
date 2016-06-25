@@ -186,12 +186,16 @@ namespace ParaScripting
 		* add the current file name to the __act table.
 		* create the activate table, if it does not exist.
 		* @param funcActivate: the function pointer to the activation function. It can either be local or global.
-		* @param params: nil or a table {PreemptiveCount=number, MsgQueueSize=number}
-		* if PreemptiveCount is omitted (default), the activate function will 
+		* @param params: nil or a table {[PreemptiveCount=number,] [MsgQueueSize=number,] [filename|name=string,]}
+		* - PreemptiveCount: if PreemptiveCount is omitted (default), the activate function will 
 		* run non-preemptive (it is the programmer's job to let the function finish in short time). 
 		* If PreemptiveCount > 0, the activate function will be preemptive (yield) after this number of virtual instructions.
 		* which allows us to run tens of thousands of jobs concurrently. Each job has its own stack and but the programmer 
 		* should pay attention when making changes to shared data.
+		* - MsgQueueSize: Max message queue size of this file, if not specified it is same as the NPL thread's message queue size. 
+		* - filename|name: virtual filename, if not specified, the current file being loaded is used. 
+		* - clear: clear all memory used by the file, including its message queue. Normally one never needs to clear. 
+		*  A neuron file without messages takes less than 100 bytes of memory (mostly depending on the length's of its filename)
 		*/
 		static void this_(const object& funcActivate);
 		static void this2_(const object& funcActivate, const object& params);

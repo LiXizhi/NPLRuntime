@@ -144,7 +144,7 @@ namespace ParaScripting
 		* If a number is specified here, the activate function will be preemptive like in Erlang.
 		* When this number of instructions are executed, the activate function will be paused.
 		*/
-		virtual bool BindFileActivateFunc(const object& funcActivate, int nPreemptiveInstructionCount);
+		bool BindFileActivateFunc(const object& funcActivate, const std::string& filename);
 
 		/** get pointer to NPLRuntimeState from the lua state object. it just retrieves from a secret lua_status variable. */
 		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaObject(const object& obj);
