@@ -15,6 +15,7 @@
 #include "NPLHelper.h"
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
+#include "util/ScopedLock.h"
 #include <boost/bind.hpp>
 #include "NPLRuntimeState.h"
 
@@ -67,7 +68,7 @@ public:
 };
 
 NPL::CNPLRuntimeState::CNPLRuntimeState(const string & name, NPLRuntimeStateType type_)
-: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0),
+: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0), m_bIsPreemptive(false), m_bPauseAllPreemptiveFunction(false),
 m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
 ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
 {
@@ -205,6 +206,36 @@ NPL::CNeuronFileState* NPL::CNPLRuntimeState::GetNeuronFileState(const std::stri
 	return NULL;
 }
 
+bool NPL::CNPLRuntimeState::HasDebugHook()
+{
+	auto L = GetLuaState();
+	if (L) {
+		auto pHookFunc = lua_gethook(L);
+		return pHookFunc != 0;
+	}
+	return false;
+}
+
+bool NPL::CNPLRuntimeState::IsPreemptive()
+{
+	return m_bIsPreemptive;
+}
+
+bool NPL::CNPLRuntimeState::IsAllPreemptiveFunctionPaused() const
+{
+	return m_bPauseAllPreemptiveFunction;
+}
+
+void NPL::CNPLRuntimeState::PauseAllPreemptiveFunction(bool val)
+{
+	m_bPauseAllPreemptiveFunction = val;
+}
+
+void NPL::CNPLRuntimeState::SetPreemptive(bool val)
+{
+	m_bIsPreemptive = val;
+}
+
 int NPL::CNPLRuntimeState::Stop_Async()
 {
 	if (m_thread.get() != 0)
@@ -324,6 +355,11 @@ static void npl_preemptive_scheduler_hook(lua_State* L, lua_Debug* ar)
 
 int NPL::CNPLRuntimeState::FrameMoveTick()
 {
+	if (IsAllPreemptiveFunctionPaused())
+		return 0;
+	// if debug hook is available, all preemptive function becomes non-preemptive for debugging purposes.
+	bool bHasDebugger = HasDebugHook();
+		
 	m_nFrameMoveCount++;
 	// tick all neuron files with pending messages here. 
 	for (auto iter = m_active_neuron_files.begin(); iter != m_active_neuron_files.end(); )
@@ -352,6 +388,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 							// call activate function with preemptive hook. 
 							lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
 							{
+								ParaEngine::ScopedBoolean_Lock lock(&m_bIsPreemptive);
 								int top = lua_gettop(th);
 
 								int status = lua_resume(th, 0);
@@ -394,7 +431,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 					lua_pop(L, 1);
 					if (!pFileState->IsProcessing())
 					{
-						// clear coroutine from _REG["__co"][filename] = nil
+						// clear coroutine from _REG["__co"][filename] = nil, for garbage collection.
 						lua_pushnil(L);
 						lua_setfield(L, -2, pFileState->GetFilename().c_str());
 					}
@@ -437,6 +474,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 							lua_gettable(th, -2);
 							if (lua_isfunction(th, -1))
 							{
+								ParaEngine::ScopedBoolean_Lock lock(&m_bIsPreemptive);
 								int top = lua_gettop(th);
 
 								int status = lua_resume(th, 0);
@@ -942,6 +980,9 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("CurrentQueueSize", FieldType_Int, (void*)0, (void*)GetCurrentQueueSize_s, NULL, NULL, bOverride);
 	pClass->AddField("TimerCount", FieldType_Int, (void*)0, (void*)GetTimerCount_s, NULL, NULL, bOverride);
 	pClass->AddField("MsgQueueSize", FieldType_Int, (void*)SetMsgQueueSize_s, (void*)GetMsgQueueSize_s, NULL, NULL, bOverride);
+	pClass->AddField("HasDebugHook", FieldType_Bool, (void*)0, (void*)HasDebugHook_s, NULL, NULL, bOverride);
+	pClass->AddField("IsPreemptive", FieldType_Bool, (void*)0, (void*)IsPreemptive_s, NULL, NULL, bOverride);
+	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

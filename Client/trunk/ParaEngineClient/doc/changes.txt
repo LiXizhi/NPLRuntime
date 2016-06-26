@@ -2,6 +2,11 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.6.26
+	- implemented soft-preemptive programming to NPL like in Erlang. 
+	- NPL.this() now support second parameter for preemptive activate funciton. 
+	- add attribute IsPreemptive and HasDebugHook to NPL runtime state.
+
 2016.6.23
 	- fixed url image loading issue
 	- Get blocks in region now support verticalSectionFilter

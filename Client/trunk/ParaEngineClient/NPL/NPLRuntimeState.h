@@ -57,6 +57,10 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetTimerCount_s, int*)		{ *p1 = cls->GetTimerCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetMsgQueueSize_s, int)		{ cls->SetMsgQueueSize(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetMsgQueueSize_s, int*)		{ *p1 = cls->GetMsgQueueSize(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, HasDebugHook_s, bool*) { *p1 = cls->HasDebugHook(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsPreemptive_s, bool*) { *p1 = cls->IsPreemptive(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PauseAllPreemptiveFunction_s, bool) { cls->PauseAllPreemptiveFunction(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsAllPreemptiveFunctionPaused_s, bool*) { *p1 = cls->IsAllPreemptiveFunctionPaused(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
@@ -288,6 +292,20 @@ namespace NPL
 		/** get neuron file state. */
 		CNeuronFileState* GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist = true);
 
+		/** whether there is already a debug hook.
+		Not thread-safe: can only be called from the current thread. 
+		*/
+		bool HasDebugHook();
+
+		/** whether we are currently running in a preemptive activation function. 
+		Not thread-safe: can only be called from the current thread.
+		*/
+		bool IsPreemptive();
+	
+		/** whether all preemptive functions are paused for debugging purposes. */
+		bool IsAllPreemptiveFunctionPaused() const;
+		void PauseAllPreemptiveFunction(bool val);
+
 	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
@@ -322,6 +340,7 @@ namespace NPL
 		/** get the mono scripting state. and create one from the NPLMono plugin, if one does not exist.*/
 		IMonoScriptingState* GetMonoState();
 		
+		void SetPreemptive(bool val);
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;
@@ -356,6 +375,12 @@ namespace NPL
 
 		/** whether we are processing message. this will affect the current queue size parameter. */
 		bool m_bIsProcessing;
+
+		/** whether inside a preemptive function. */
+		bool m_bIsPreemptive;
+
+		/** whether all preemptive functions are paused for debugging purposes. */
+		bool m_bPauseAllPreemptiveFunction;
 
 		/** pointer to the current message. it is only valid during activation call. NULL will be returned */
 		const char* m_current_msg;
