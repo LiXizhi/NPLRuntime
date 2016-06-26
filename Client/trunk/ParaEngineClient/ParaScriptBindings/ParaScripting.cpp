@@ -52,24 +52,17 @@ void register_(lua_State* L){
 }
 */
 
-/**
-* @ingroup global
-* this function will be called, when there is error loading files. 
-*/
-void NPL_Alert(const object& objErr)
-{
-	return;
-	if (type(objErr) == LUA_TSTRING)
-	{
-		const char * sError = object_cast<const char*>(objErr);
-		OUTPUT_LOG("%s", sError);
-	}
+/** this function does nothing but count as one instruction in preemptive function. */
+int NPL_dummy(lua_State *L){
+	return 0;
 }
 
 void CNPLScriptingState::LoadParaScene()
 {
 	using namespace luabind;
 	lua_State* L = GetLuaState();
+
+	lua_register(L, "dummy", NPL_dummy);
 
 	module(L)
 	[

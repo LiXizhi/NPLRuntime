@@ -353,12 +353,25 @@ static void npl_preemptive_scheduler_hook(lua_State* L, lua_Debug* ar)
 	lua_yield(L, 0);
 }
 
+/*
+From Mike: http://lua-users.org/lists/lua-l/2011-06/msg00513.html
+
+[Note that lua_sethook() is the only cross-thread-safe and
+signal-safe function from the Lua API.]
+
+Also, please note that JIT-compiled code does NOT call hooks by
+default. Either disable the JIT compiler or edit src/Makefile:
+XCFLAGS= -DLUAJIT_ENABLE_CHECKHOOK
+This comes with a speed penalty even hook is not set.
+*/
 int NPL::CNPLRuntimeState::FrameMoveTick()
 {
 	if (IsAllPreemptiveFunctionPaused())
 		return 0;
-	// if debug hook is available, all preemptive function becomes non-preemptive for debugging purposes.
+	// if debug hook is available, all preemptive function are paused. 
 	bool bHasDebugger = HasDebugHook();
+	if (bHasDebugger)
+		return 0;
 		
 	m_nFrameMoveCount++;
 	// tick all neuron files with pending messages here. 
@@ -423,7 +436,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 								if (num_results>0)
 									lua_pop(th, num_results);
 							}
-							// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
+							// Lua 5.1 support per thread hook, while luajit hook is global to all. 
 							// so we need to unhook it for the rest of non-preemptive code.
 							lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
 						}
@@ -510,7 +523,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									lua_pop(th, num_results);
 							}
 						}
-						// Lua 5.1 does not support per thread hook (lua 5.2 support it), 
+						// Lua 5.1 support per thread hook, while luajit hook is global to all. 
 						// so we need to unhook it for the rest of non-preemptive code.
 						lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
 					}
