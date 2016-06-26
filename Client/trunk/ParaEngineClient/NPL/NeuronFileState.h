@@ -6,6 +6,7 @@
 namespace NPL
 {
 	using namespace std;
+	class CNPLRuntimeState;
 
 	/** each neuron file that is activated will have a CNeuronFileState structure kept. 
 	* This class is only used by the local NPL thread, so no lock is needed.
@@ -34,6 +35,13 @@ namespace NPL
 		/** if message queue is empty. */
 		bool IsEmpty();
 
+		/** clear all messages */
+		void ClearMessage();
+
+		/* check if there is clear state and unset it. 
+		* return true if there is a clear state */
+		bool PopClearState();
+
 		/** increase internal tick counter for activation. 
 		* @param nFrameMoveId: parent NPL thread's frame move id
 		*/
@@ -58,6 +66,11 @@ namespace NPL
 		/** if not 0, we will use coroutine and debug hook to simulate preemptive scheduling in user mode. */
 		int32 GetPreemptiveInstructionCount() const;
 		void SetPreemptiveInstructionCount(int32 val);
+
+	protected:
+		/* clear all messages and shrink message queue (releasing memory).*/
+		void ClearMessageImp();
+		friend class CNPLRuntimeState;
 	protected:
 		/** total number of activation calls in this/last tick. */
 		int32 m_nActivationThisTick;
@@ -67,6 +80,8 @@ namespace NPL
 		int32 m_nTotalActivations;
 		/** if not 0, we will use coroutine and debug hook to simulate preemptive scheduling in user mode. */
 		int32 m_nPreemptiveInstructionCount;
+		/** action state */
+		DWORD m_nActionState;
 		/** whether the message is still being processed in the activation function.
 		some activation will set this flag to true in case their processing is cross multiple NPL time slice (tick).*/
 		bool m_isProcessing;

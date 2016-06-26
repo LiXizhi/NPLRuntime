@@ -378,6 +378,25 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 	for (auto iter = m_active_neuron_files.begin(); iter != m_active_neuron_files.end(); )
 	{
 		CNeuronFileState* pFileState = (*iter);
+		if (pFileState->PopClearState())
+		{
+			// clear all message and quit last running coroutine
+			if (pFileState->IsProcessing())
+			{
+				pFileState->SetProcessing(false);
+				// stop last coroutine
+				lua_State * L = GetLuaState();
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (lua_istable(L, -1))
+				{
+					lua_pushnil(L);
+					lua_setfield(L, -2, pFileState->GetFilename().c_str());
+				}
+				lua_pop(L, 1);
+			}
+			pFileState->ClearMessageImp();
+		}
 		if (pFileState->IsProcessing())
 		{
 			pFileState->SetProcessing(false);

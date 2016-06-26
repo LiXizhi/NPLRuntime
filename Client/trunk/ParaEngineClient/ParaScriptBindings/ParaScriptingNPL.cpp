@@ -192,6 +192,7 @@ namespace ParaScripting
 			{
 				int nPreemptiveCount = 0;
 				int nMsgQueueSize = -1;
+				bool bClearMessage = false;
 				for (luabind::iterator itCur(params), itEnd; itCur != itEnd; ++itCur)
 				{
 					// we only serialize item with a string key
@@ -222,7 +223,7 @@ namespace ParaScripting
 						}
 						else if (sKey == "clear")
 						{
-							// TODO: clear data. 
+							bClearMessage = true;
 						}
 					}
 				}
@@ -235,6 +236,8 @@ namespace ParaScripting
 						pFileState->SetPreemptiveInstructionCount(nPreemptiveCount);
 					if (nMsgQueueSize > 0)
 						pFileState->SetMaxQueueSize(nMsgQueueSize);
+					if (bClearMessage)
+						pFileState->ClearMessage();
 				}
 			}
 			runtime_state->BindFileActivateFunc(funcActivate, filename);

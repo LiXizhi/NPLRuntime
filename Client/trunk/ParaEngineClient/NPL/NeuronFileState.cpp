@@ -10,8 +10,9 @@
 using namespace NPL;
 using namespace ParaEngine;
 
+#define ACTIONSTATE_CLEARMESSAGE  0x1
 
-NPL::CNeuronFileState::CNeuronFileState(const std::string& filename) : m_filename(filename), m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0), m_nPreemptiveInstructionCount(0)
+NPL::CNeuronFileState::CNeuronFileState(const std::string& filename) : m_filename(filename), m_isProcessing(false), m_nMaxQueueSize(1000), m_nActivationThisTick(0), m_nFrameMoveId(0), m_nTotalActivations(0), m_nPreemptiveInstructionCount(0), m_nActionState(0)
 {
 
 }
@@ -102,4 +103,25 @@ int32 NPL::CNeuronFileState::GetPreemptiveInstructionCount() const
 void NPL::CNeuronFileState::SetPreemptiveInstructionCount(int32 val)
 {
 	m_nPreemptiveInstructionCount = val;
+}
+
+void NPL::CNeuronFileState::ClearMessageImp()
+{
+	m_queue.clear();
+	m_queue.shrink_to_fit();
+}
+
+void NPL::CNeuronFileState::ClearMessage()
+{
+	m_nActionState |= ACTIONSTATE_CLEARMESSAGE;
+}
+
+bool NPL::CNeuronFileState::PopClearState()
+{
+	if ((m_nActionState & ACTIONSTATE_CLEARMESSAGE) > 0)
+	{
+		m_nActionState &= (~((DWORD)ACTIONSTATE_CLEARMESSAGE));
+		return true;
+	}
+	return false;
 }
