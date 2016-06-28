@@ -285,8 +285,22 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
 	if (sFilePath[sFilePath.size() - 1] == '/')
 	{
 		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
+		
+		if (!CParaFile::GetDevDirectory().empty())
+		{
+			std::string sFullDir;
+			sFullDir = CParaFile::GetDevDirectory() + sDirName;
+			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			{
+				sPKGDir = sFullDir;
+			}
+		}
 		std::string sFullDir;
-		if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		if (!sPKGDir.empty())
+		{
+			// found packages under dev folder
+		}
+		else if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
 		{
 			sPKGDir = sFullDir;
 		}

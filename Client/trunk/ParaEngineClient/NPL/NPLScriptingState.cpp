@@ -374,7 +374,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 
 	if (!CParaFile::GetDevDirectory().empty())
 	{
-		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_DISK);
+		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH);
 		if (dwFound)
 		{
 			sFileName = filePath;
