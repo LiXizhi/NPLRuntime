@@ -2,6 +2,10 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.6.28
+	- fixed dev path file search order. 
+	- added SlopeModelProvider.
+
 2016.6.26
 	- implemented soft-preemptive programming to NPL like in Erlang. 
 	- NPL.this() now support second parameter for preemptive activate funciton. 

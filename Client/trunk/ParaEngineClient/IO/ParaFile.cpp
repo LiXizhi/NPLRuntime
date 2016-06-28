@@ -109,6 +109,7 @@ CParaFile::CParaFile(const char* filename)
 	m_bDiskFileOpened = false;
 	m_bIsCompressed = false;
 	m_uncompressed_size = 0;
+	m_eof = true;
 	OpenFile(filename);
 	synchBits();
 }
@@ -535,6 +536,14 @@ bool CParaFile::UnzipMemToFile(const char* buffer, int nSize, const char* destFi
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
 {
 	int32 dwFoundPlace = FILE_NOT_FOUND;
+	if (!GetDevDirectory().empty() && dwWhereToOpen != FILE_ON_ZIP_ARCHIVE && ((dwWhereToOpen & FILE_ON_ZIP_ARCHIVE) > 0))
+	{
+		// in development version, find in current directory and search path and then zip archive
+		dwWhereToOpen &= (~((uint32)FILE_ON_ZIP_ARCHIVE));
+		return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen) ||
+			OpenFile(m_filename.empty() ? sfilename : m_filename.c_str(), bReadyOnly, relativePath, bUseCompressed, FILE_ON_ZIP_ARCHIVE);
+	}
+
 	if ((dwWhereToOpen & FILE_ON_SEARCH_PATH) > 0)
 	{
 		dwWhereToOpen &= (~((uint32)FILE_ON_SEARCH_PATH));
@@ -549,9 +558,12 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		}
 		else
 		{
-			bool bFound = (dwWhereToOpen!=0) && OpenFile(sfilename, bReadyOnly, relativePath, false, dwWhereToOpen);
+			// find in current directory and zip file, and then in search path
+			bool bFound = (dwWhereToOpen != 0) && OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen);
 			if (!bFound)
 			{
+				if (!m_filename.empty())
+					sfilename = m_filename.c_str();
 				list<SearchPath>::iterator itCurCP, itEndCP = searchPaths.end();
 				for (itCurCP = searchPaths.begin(); !bFound && itCurCP != itEndCP; ++itCurCP)
 				{
