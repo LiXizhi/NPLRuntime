@@ -14,9 +14,13 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	int block_index = 0;
 	for (auto& model : mEdgeBlockModels){
 		model.ClearVertices();
+		model.SetUseAmbientOcclusion(false);
+		model.SetUniformLighting(true);
 	}
 	for (auto& model : mCornerBlockModels){
 		model.ClearVertices();
+		model.SetUseAmbientOcclusion(false);
+		model.SetUniformLighting(true);
 	}
 	/*
 	                        /|
@@ -24,30 +28,55 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 						  /  |
 						 /___|
 	*/
+	auto vertex = cube_mode.GetVertices()[BlockModel::g_leftLB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRT];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[1]);
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftRT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftRT].texcoord[1]);
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_leftRB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+
+	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRT);
+	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
+	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtLB);
+	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtLB);
+
 	for (int i = 0; i < 4; ++i)
 	{
 		mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_btmLB + i);
 	}
+
+	vertex = cube_mode.GetVertices()[BlockModel::g_leftLB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRT];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[1]);
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftRT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftRT].texcoord[1]);
+	mEdgeBlockModels[block_index].AddVertex(vertex);
+	vertex = cube_mode.GetVertices()[BlockModel::g_leftRB];
+	vertex.SetNormal(Vector3(-1.0f, 1.0f, 0).normalisedCopy());
+	mEdgeBlockModels[block_index].AddVertex(vertex);
 
 	for (int i = 0; i < 4; ++i)
 	{
 		mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightLB + i);
 	}
 
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightLT);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRT);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_btmLB);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_btmRB);
-
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLT);
 	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLB);
+	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLT);
 	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkRB);
 	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkRB);
-
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRT);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtLB);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
-	mEdgeBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
 	++block_index;
 	/*
 	                     |\
@@ -59,6 +88,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[0] = 1.0f - vertex.position[0];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[0] = -vertex.normal[0];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
 	}
@@ -74,6 +104,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[1] = 1.0f - vertex.position[1];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[1] = -vertex.normal[1];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
 	}
@@ -89,6 +120,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[0] = 1.0f - vertex.position[0];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[0] = -vertex.normal[0];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
 	}
@@ -122,6 +154,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
+		vertex.position[0] = 1.0f - vertex.position[0];
 		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[2] = -vertex.normal[2];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
@@ -136,6 +169,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
+		vertex.position[0] = 1.0f - vertex.position[0];
 		vertex.position[1] = 1.0f - vertex.position[1];
 		vertex.normal[1] = -vertex.normal[1];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
@@ -150,6 +184,7 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mEdgeBlockModels[block_index - 1].GetVertices()[i];
+		vertex.position[0] = 1.0f - vertex.position[0];
 		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[2] = -vertex.normal[2];
 		mEdgeBlockModels[block_index].AddVertex(vertex);
@@ -162,31 +197,44 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 						  /__|
 						 /___|
 	*/
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftLB);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRT];
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[1]);
+	mCornerBlockModels[block_index].AddVertex(vertex);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftRB);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftRB);
+
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtLB);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRT];
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_frtRT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_frtRT].texcoord[1]);
+	mCornerBlockModels[block_index].AddVertex(vertex);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
+
 	for (int i = 0; i < 4; ++i)
 	{
 		mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_btmLB + i);
 	}
 
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRT);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightLB);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRB);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRB);
-
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRT);
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftLB);
+	vertex = cube_mode.GetVertices()[BlockModel::g_topRT];
+	vertex.SetTexcoord(cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[0], cube_mode.GetVertices()[BlockModel::g_leftLT].texcoord[1]);
+	mCornerBlockModels[block_index].AddVertex(vertex);
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftRB);
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_leftRB);
 
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLT);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightLB);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRT);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRB);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_rightRB);
+
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLB);
+	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkLT);
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkRB);
 	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_bkRB);
 
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRT);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtLB);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
-	mCornerBlockModels[block_index].AddVertex(cube_mode, BlockModel::g_frtRB);
 	++block_index;
+	//90degree is outer
 	/*
 	                     |\
 						 | \
@@ -197,10 +245,12 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	{
 		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[0] = 1.0f - vertex.position[0];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[0] = -vertex.normal[0];
 		mCornerBlockModels[block_index].AddVertex(vertex);
 	}
 	++block_index;
+	//90degree is inner
 	/*
 	                      ____
 						 |___/
@@ -212,22 +262,8 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	{
 		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[1] = 1.0f - vertex.position[1];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[1] = -vertex.normal[1];
-		mCornerBlockModels[block_index].AddVertex(vertex);
-	}
-	++block_index;
-	/*
-	                  ____ 
-					  \___|   
-					   \  |  
-						\ | 
-						 \|
-	*/
-	for (int i = 0; i < 24; ++i)
-	{
-		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
-		vertex.position[0] = 1.0f - vertex.position[0];
-		vertex.normal[0] = -vertex.normal[0];
 		mCornerBlockModels[block_index].AddVertex(vertex);
 	}
 	++block_index;
@@ -242,11 +278,47 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
+		vertex.position[0] = 1.0f - vertex.position[0];
 		vertex.position[2] = 1.0f - vertex.position[2];
+		vertex.normal[0] = -vertex.normal[0];
+		mCornerBlockModels[block_index].AddVertex(vertex);
+	}
+	++block_index;
+
+	//90degree is outer
+	/*
+	                        /|
+						   / |
+						  /__|
+						 /___|
+	*/
+	for (int i = 0; i < 24; ++i)
+	{
+		BlockVertexCompressed vertex = mCornerBlockModels[0].GetVertices()[i];
+		BlockVertexCompressed temp = vertex;
+		vertex.position[0] = temp.position[2];
+		vertex.position[2] = 1.0f - temp.position[0];
 		vertex.normal[2] = -vertex.normal[2];
 		mCornerBlockModels[block_index].AddVertex(vertex);
 	}
 	++block_index;
+	//90degree is inner
+	/*
+	                     |\
+						 | \
+						 |__\
+						 |___\
+	*/
+	for (int i = 0; i < 24; ++i)
+	{
+		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
+		vertex.position[0] = 1.0f - vertex.position[0];
+		vertex.position[2] = 1.0f - vertex.position[2];
+		vertex.normal[0] = -vertex.normal[0];
+		mCornerBlockModels[block_index].AddVertex(vertex);
+	}
+	++block_index;
+	//90degree is outer
 	/*
 	                      ____
 						 |___/
@@ -257,40 +329,30 @@ ParaEngine::CSlopeModelProvider::CSlopeModelProvider(BlockTemplate* pBlockTempla
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
-		vertex.position[0] = 1.0f - vertex.position[0];
-		vertex.normal[0] = -vertex.normal[0];
-		mCornerBlockModels[block_index].AddVertex(vertex);
-	}
-	++block_index;
-	/*
-	                     |\
-						 | \
-						 |__\
-						 |___\
-	*/
-	for (int i = 0; i < 24; ++i)
-	{
-		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[1] = 1.0f - vertex.position[1];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[1] = -vertex.normal[1];
 		mCornerBlockModels[block_index].AddVertex(vertex);
 	}
 	++block_index;
+	//90degree is inner
 	/*
-	                        /|
-						   / |
-						  /__|
-						 /___|
+	                  ____ 
+					  \___|   
+					   \  |  
+						\ | 
+						 \|
 	*/
 	for (int i = 0; i < 24; ++i)
 	{
 		BlockVertexCompressed vertex = mCornerBlockModels[block_index - 1].GetVertices()[i];
 		vertex.position[0] = 1.0f - vertex.position[0];
+		vertex.position[2] = 1.0f - vertex.position[2];
 		vertex.normal[0] = -vertex.normal[0];
 		mCornerBlockModels[block_index].AddVertex(vertex);
 	}
-	block_index=0;
-	
+	++block_index;
+
 	for (auto& model : mEdgeBlockModels){
 		model.SetFaceCount(model.Vertices().size() / 4);
 	}

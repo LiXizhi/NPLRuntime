@@ -275,6 +275,7 @@ namespace ParaEngine
 
 		/** Is disable face culling */
 		bool IsDisableFaceCulling(){return m_bDisableFaceCulling;};
+		void SetDisableFaceCulling(bool bDisabled){ m_bDisableFaceCulling = bDisabled; };
 
 		/** whether to disable block and sun lighting when rendering this block. */
 		bool IsUsingSelfLighting() {return m_bUseSelfLighting;}
