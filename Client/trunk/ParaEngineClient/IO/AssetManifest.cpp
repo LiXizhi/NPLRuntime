@@ -829,6 +829,8 @@ void CAssetManifest::AddEntry(const char* filename)
 
 bool CAssetManifest::DoesFileExist(const char* filename)
 {
+	if (!filename)
+		return false;
 	if(!IsEnabled())
 		return false;
 	string filename_ = filename;
