@@ -88,6 +88,11 @@ namespace ParaScripting
 		void WaitForMessage();
 
 		/**
+		* @param nMessageCount: if not 0, this function will immediately return when the message queue size is bigger than this value.
+		*/
+		void WaitForMessage2(int nMessageCount);
+
+		/**
 		* @param inout: this should be a table {filename=true, code=true, msg=true}, specify which part of the message to retrieve in return value. 
 		* {filename=true} will only retrieve the filename, because it is faster if code is big. 
 		* @return: msg table {filename, code, msg} if exist, or nil.

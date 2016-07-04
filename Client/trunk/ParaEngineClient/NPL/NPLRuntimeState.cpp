@@ -987,9 +987,9 @@ void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, i
 	ActivateFile_any(filename.sRelativePath, sCode, nCodeLength);
 }
 
-void NPL::CNPLRuntimeState::WaitForMessage()
+void NPL::CNPLRuntimeState::WaitForMessage(int nMessageCount)
 {
-	m_input_queue.wait();
+	m_input_queue.wait(nMessageCount);
 }
 
 NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PeekMessage(int nIndex)

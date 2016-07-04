@@ -179,10 +179,13 @@ namespace NPL
 		}
 
 		/** simply wait for the next message to arrive. the caller may be calling try_XXX() afterwards.
+		* @param nMessageCount: if not 0, this function will immediately return when the message queue size is bigger than this value.
 		*/
-		void wait()
+		void wait(int nMessageCount)
 		{
 			boost::mutex::scoped_lock lock(m_mutex);
+			if (nMessageCount > 0 && (nMessageCount < (int)m_container.size() || nMessageCount>= m_container.capacity()))
+				return;
 			m_condition_variable.wait(lock);
 		}
 

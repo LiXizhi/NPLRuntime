@@ -1518,6 +1518,14 @@ namespace ParaScripting
 		}
 	}
 
+	void ParaNPLRuntimeState::WaitForMessage2(int nMessageCount)
+	{
+		if (m_rts != 0)
+		{
+			m_rts->WaitForMessage(nMessageCount);
+		}
+	}
+
 	luabind::object ParaNPLRuntimeState::PeekMessage(int nIndex, const object& inout)
 	{
 		if (m_rts != 0)
