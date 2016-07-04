@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.7.4
+	- fixed NPL wait for messages.
+
 2016.6.28
 	- fixed dev path file search order. 
 	- added SlopeModelProvider.

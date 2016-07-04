@@ -88,7 +88,7 @@ namespace ParaScripting
 		void WaitForMessage();
 
 		/**
-		* @param nMessageCount: if not 0, this function will immediately return when the message queue size is bigger than this value.
+		* @param nMessageCount: if not negative, this function will immediately return when the message queue size is bigger than this value.
 		*/
 		void WaitForMessage2(int nMessageCount);
 

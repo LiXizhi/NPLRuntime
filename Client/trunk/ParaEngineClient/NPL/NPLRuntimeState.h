@@ -131,9 +131,9 @@ namespace NPL
 
 
 		/** simply wait for the next message to arrive.
-		* @param nMessageCount: if not 0, this function will immediately return when the message queue size is bigger than this value.
+		* @param nMessageCount: if not negative, this function will immediately return when the message queue size is bigger than this value.
 		*/
-		void WaitForMessage(int nMessageCount = 0);
+		void WaitForMessage(int nMessageCount = -1);
 
 		/**
 		* @return: get a pointer to the object at given index, if exist, or NULL.
