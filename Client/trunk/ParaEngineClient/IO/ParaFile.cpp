@@ -586,6 +586,14 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 			filename[j] = sfilename[i];
 	}
 	filename[j] = '\0';
+	
+	// remove tailing blanks if there are any
+	// (tailing whitespaces in a filename are legal but problematic which should be avoided)
+	j--;
+	for(; filename[j] == ' ' && j>=0; j--)
+	{
+		filename[j] = '\0';
+	}
 
 	/// append the relative path
 	if (relativePath != NULL)
