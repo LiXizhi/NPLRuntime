@@ -511,12 +511,15 @@ int CAsyncLoader::FileIOThreadProc()
 
 				if( FAILED( hr ) )
 				{
+					const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
+					if(keyname == 0)
+						keyname = "key not set";
 					const char * filename = ResourceRequest->m_pDataLoader->GetFileName();
 					if(filename == 0)
 						filename = "unknown file";
 					if(hr != E_PENDING)
 					{
-						OUTPUT_LOG( "FileIO Error: hr = %x; %s\n", hr, filename);
+						OUTPUT_LOG( "FileIO Error: hr = %x; key=%s; filename=%s\n", hr, keyname, filename);
 					}
 					
 					ResourceRequest->m_bError = true;

@@ -844,10 +844,10 @@ bool CParaWorldAsset::UnloadAssetByKeyName(const string& keyname)
 	if(sFileExt == "dds" || sFileExt == "png")
 	{
 		TextureEntity* pEntity = (TextureEntity*) GetTextureManager().get(keyname);
-		if(pEntity && pEntity->IsLoaded())
+		if(pEntity && (pEntity->GetState()==AssetEntity::ASSET_STATE_FAILED_TO_LOAD || pEntity->IsLoaded()))
 		{
 			pEntity->UnloadAsset();
-			pEntity->SetLocalFileName("");
+			pEntity->SetLocalFileName(pEntity->GetKey().c_str());
 			return true;
 		}
 	}

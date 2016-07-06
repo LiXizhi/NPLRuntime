@@ -18,6 +18,9 @@ namespace ParaEngine
 
 		/** get the file name */
 		virtual const char* GetFileName() {return 0;};
+
+		/** get the key name */
+		virtual const char* GetKeyName() {return 0;};
 		
 		/** Decompress is called by one of the processing threads to decompress the data.*/
 		virtual HRESULT Decompress( void** ppData, int* pcBytes ) = 0;
