@@ -158,6 +158,7 @@ const std::string& AssetEntity::GetIdentifier()
 	return m_key;
 }
 
+// this function is absoleted
 bool AssetEntity::AutoSync(bool bForceSync, bool bLazyLoading)
 {
 	bool bHasCacheVersion = false;

@@ -296,6 +296,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				.def("SetMsgQueueSize", &ParaNPLRuntimeState::SetMsgQueueSize)
 				.def("GetMsgQueueSize", &ParaNPLRuntimeState::GetMsgQueueSize)
 				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage)
+				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage2)
 				.def("PeekMessage", &ParaNPLRuntimeState::PeekMessage)
 				.def("PopMessageAt", &ParaNPLRuntimeState::PopMessageAt)
 				.def("GetStats", &ParaNPLRuntimeState::GetStats),
@@ -363,6 +364,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("GetStats",&CNPL::GetStats),
 
 				def("FromJson",&CNPL::FromJson),
+				def("this", &CNPL::this2_),
 				def("this", &CNPL::this_)
 			]
 		];

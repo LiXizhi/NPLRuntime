@@ -39,13 +39,13 @@ void ParaEngine::CParaEngineAppBase::DoTestCode()
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
-	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
+	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
 {
 	InitCommon();
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
-	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None)
+	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
 {
 	InitCommon();
 }
@@ -285,8 +285,22 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
 	if (sFilePath[sFilePath.size() - 1] == '/')
 	{
 		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
+		
+		if (!CParaFile::GetDevDirectory().empty())
+		{
+			std::string sFullDir;
+			sFullDir = CParaFile::GetDevDirectory() + sDirName;
+			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			{
+				sPKGDir = sFullDir;
+			}
+		}
 		std::string sFullDir;
-		if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		if (!sPKGDir.empty())
+		{
+			// found packages under dev folder
+		}
+		else if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
 		{
 			sPKGDir = sFullDir;
 		}

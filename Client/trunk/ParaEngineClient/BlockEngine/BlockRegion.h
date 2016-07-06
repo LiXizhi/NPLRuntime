@@ -109,6 +109,8 @@ namespace ParaEngine
 
 		void GetBlocksInChunk(uint16_t chunkX_ws,uint16_t chunkZ_ws,uint16_t startChunkY,uint16_t endChunkY,
 			uint32_t matchtype,const luabind::adl::object& result,int32_t& blockCount);
+		void GetBlocksInChunk(uint16_t chunkX_ws, uint16_t chunkZ_ws, uint32_t verticalSectionFilter,
+			uint32_t matchtype, const luabind::adl::object& result, int32_t& blockCount);
 
 		const std::string& GetMapChunkData(uint32_t chunkX, uint32_t chunkZ, bool bIncludeInit, uint32_t verticalSectionFilter = 0xffff);
 

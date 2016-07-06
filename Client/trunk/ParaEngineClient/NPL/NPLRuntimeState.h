@@ -2,16 +2,19 @@
 #include "NPLMessageQueue.h"
 #include "NPLScriptingState.h"
 #include "NPLCommon.h"
+#include "NeuronFileState.h"
 #include "INPLRuntimeState.h"
 #include "INPLScriptingState.h"
 #include "IAttributeFields.h"
 #include "util/mutex.h"
+#include "util/unordered_array.hpp"
 #include <set>
 
 #include <boost/thread.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
 
 namespace ParaEngine
 {
@@ -21,6 +24,8 @@ namespace NPL
 {
 	using namespace std;
 	class INPLActivationFile;
+	class CNeuronFileState;
+
 
 	/**
 	* A runtime state contains the scripting runtime stack and can be run in a single thread. 
@@ -52,6 +57,10 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetTimerCount_s, int*)		{ *p1 = cls->GetTimerCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, SetMsgQueueSize_s, int)		{ cls->SetMsgQueueSize(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetMsgQueueSize_s, int*)		{ *p1 = cls->GetMsgQueueSize(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, HasDebugHook_s, bool*) { *p1 = cls->HasDebugHook(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsPreemptive_s, bool*) { *p1 = cls->IsPreemptive(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, PauseAllPreemptiveFunction_s, bool) { cls->PauseAllPreemptiveFunction(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsAllPreemptiveFunctionPaused_s, bool*) { *p1 = cls->IsAllPreemptiveFunctionPaused(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
@@ -122,8 +131,9 @@ namespace NPL
 
 
 		/** simply wait for the next message to arrive.
+		* @param nMessageCount: if not negative, this function will immediately return when the message queue size is bigger than this value.
 		*/
-		void WaitForMessage();
+		void WaitForMessage(int nMessageCount = -1);
 
 		/**
 		* @return: get a pointer to the object at given index, if exist, or NULL.
@@ -277,6 +287,26 @@ namespace NPL
 		*/
 		int ProcessMsg(NPLMessage_ptr msg);
 
+		/** any cross-frame pending messages are processed. */
+		int SendTick();
+
+		/** get neuron file state. */
+		CNeuronFileState* GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist = true);
+
+		/** whether there is already a debug hook.
+		Not thread-safe: can only be called from the current thread. 
+		*/
+		bool HasDebugHook();
+
+		/** whether we are currently running in a preemptive activation function. 
+		Not thread-safe: can only be called from the current thread.
+		*/
+		bool IsPreemptive();
+	
+		/** whether all preemptive functions are paused for debugging purposes. */
+		bool IsAllPreemptiveFunctionPaused() const;
+		void PauseAllPreemptiveFunction(bool val);
+
 	protected:
 
 		/** load all NPL related functions. This function must be called for all scripting based classes. */
@@ -288,6 +318,8 @@ namespace NPL
 		* @return the number of active timers
 		*/
 		int TickTimers(DWORD nTickCount);
+
+		int FrameMoveTick();
 
 		/** construct this to ensure matching calls to SetCurrentMessage(). */
 		class CCurrentMessage
@@ -308,6 +340,8 @@ namespace NPL
 
 		/** get the mono scripting state. and create one from the NPLMono plugin, if one does not exist.*/
 		IMonoScriptingState* GetMonoState();
+		
+		void SetPreemptive(bool val);
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;
@@ -343,6 +377,12 @@ namespace NPL
 		/** whether we are processing message. this will affect the current queue size parameter. */
 		bool m_bIsProcessing;
 
+		/** whether inside a preemptive function. */
+		bool m_bIsPreemptive;
+
+		/** whether all preemptive functions are paused for debugging purposes. */
+		bool m_bPauseAllPreemptiveFunction;
+
 		/** pointer to the current message. it is only valid during activation call. NULL will be returned */
 		const char* m_current_msg;
 
@@ -354,6 +394,8 @@ namespace NPL
 		*/
 		int m_processed_msg_count;
 
+		/** incremented every tick. */
+		int m_nFrameMoveCount;
 		/** Mono Scripting State. this is created via the NPLMono C++ plugin DLL. This class is created on demand. 
 		i.e. whenever the NPL Runtime state contains C# file. */
 		IMonoScriptingState* m_pMonoScriptingState;
@@ -361,9 +403,18 @@ namespace NPL
 		/** this is for caching some per-state static buffers. */
 		std::vector <std::string> m_string_buffers;
 
-		/* c++ based activation files that is callable from scripting interface or NPL. */
+		/** c++ based activation files that is callable from scripting interface or NPL. */
 		std::map<std::string, INPLActivationFile*> m_act_files_cpp;
-		
+
+		/** mapping from filename to neuron file state. 
+		* Not thread-safe: no lock is required, only used by local thread 
+		*/
+		std::map<std::string, CNeuronFileState*> m_neuron_files;
+		/** neuron files that have pending messages. 
+		* Not thread-safe: no lock is required, only used by local thread
+		*/
+		ParaEngine::unordered_array<CNeuronFileState*> m_active_neuron_files;
+
 		friend class CNPLRuntime;
 	};
 

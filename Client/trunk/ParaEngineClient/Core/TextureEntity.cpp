@@ -291,11 +291,16 @@ void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 {
 	if(sFilename != NULL && sFilename[0] != '\0')
 	{
+		// set valid to true again, just in case the texture file is downloaded. 
 		SetLocalFileName(sFilename);
+
+		if (GetState() == AssetEntity::ASSET_STATE_REMOTE)
+			SetState(AssetEntity::ASSET_STATE_NORMAL);
 	}
 	UnloadAsset();
-	SAFE_DELETE(m_pTextureInfo);
 
+	SAFE_DELETE(m_pTextureInfo);
+	
 	if(!bLazyLoad)
 		LoadAsset();
 }

@@ -15,9 +15,23 @@
 #include "NPLHelper.h"
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
+#include "util/ScopedLock.h"
 #include <boost/bind.hpp>
-
 #include "NPLRuntimeState.h"
+
+/**
+for luabind, The main drawback of this approach is that the compilation time will increase for the file
+that does the registration, it is therefore recommended that you register everything in the same cpp-file.
+*/
+extern "C"
+{
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
+}
+
+#include <luabind/luabind.hpp>
+
 
 /** the maximum number of messages to read from the incoming queue for processing in a single frame rate.
 this is usually smaller than DEFAULT_INPUT_QUEUE_SIZE */
@@ -42,6 +56,9 @@ const char* NPL_MONO_DLL_FILE_PATH = "NPLMono.dll";
 #define NPL_Mono_CLASS_ID Class_ID(0x2b903b29, 0x47e409af)
 #endif
 
+/** coroutine name*/
+#define COROUTINE_NAME "__co"
+
 /** helper class to mark processing */
 class CMarkProcessing{
 public:
@@ -51,7 +68,7 @@ public:
 };
 
 NPL::CNPLRuntimeState::CNPLRuntimeState(const string & name, NPLRuntimeStateType type_)
-: m_bUseMessageEvent(false), m_name(name), m_type(type_),
+: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0), m_bIsPreemptive(false), m_bPauseAllPreemptiveFunction(false),
 m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
 ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
 {
@@ -122,6 +139,13 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	{
 		SAFE_RELEASE(v.second);
 	}
+	for (auto v : m_neuron_files)
+	{
+		SAFE_DELETE(v.second);
+	}
+	m_neuron_files.clear();
+	m_active_neuron_files.clear();
+	
 	m_act_files_cpp.clear();
 	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
 }
@@ -165,6 +189,51 @@ NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
 	}
 
 	return m_pMonoScriptingState;
+}
+
+NPL::CNeuronFileState* NPL::CNPLRuntimeState::GetNeuronFileState(const std::string& filename, bool bCreateIfNotExist)
+{
+	auto iter = m_neuron_files.find(filename);
+	if (iter != m_neuron_files.end())
+		return iter->second;
+	else if(bCreateIfNotExist)
+	{
+		auto pFileState = new CNeuronFileState(filename);
+		pFileState->SetMaxQueueSize(GetMsgQueueSize());
+		m_neuron_files[filename] = pFileState;
+		return pFileState;
+	}
+	return NULL;
+}
+
+bool NPL::CNPLRuntimeState::HasDebugHook()
+{
+	auto L = GetLuaState();
+	if (L) {
+		auto pHookFunc = lua_gethook(L);
+		return pHookFunc != 0;
+	}
+	return false;
+}
+
+bool NPL::CNPLRuntimeState::IsPreemptive()
+{
+	return m_bIsPreemptive;
+}
+
+bool NPL::CNPLRuntimeState::IsAllPreemptiveFunctionPaused() const
+{
+	return m_bPauseAllPreemptiveFunction;
+}
+
+void NPL::CNPLRuntimeState::PauseAllPreemptiveFunction(bool val)
+{
+	m_bPauseAllPreemptiveFunction = val;
+}
+
+void NPL::CNPLRuntimeState::SetPreemptive(bool val)
+{
+	m_bIsPreemptive = val;
 }
 
 int NPL::CNPLRuntimeState::Stop_Async()
@@ -235,8 +304,33 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	++m_processed_msg_count;
 	if (msg->m_type == MSG_TYPE_FILE_ACTIVATION)
 	{
-		LoadFile_any(msg->m_filename, false);
-		ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+		auto pFileState = GetNeuronFileState(msg->m_filename, false);
+		if (!pFileState) {
+			LoadFile_any(msg->m_filename, false);
+			pFileState = GetNeuronFileState(msg->m_filename);
+		}
+		if (pFileState) 
+		{
+			if (pFileState->IsProcessing() || pFileState->IsPreemptive())
+			{
+				// only push to active queue when it is the first message. 
+				if (pFileState->IsEmpty())
+					m_active_neuron_files.push_back(pFileState);
+				if (!pFileState->PushMessage(msg))
+				{
+					// TODO: report message queue is full.
+				}
+			}
+			else
+			{
+				ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+				pFileState->Tick(m_nFrameMoveCount);
+			}
+		}
+	}
+	else if (msg->m_type == MSG_TYPE_TICK)
+	{
+		return FrameMoveTick();
 	}
 	else if (msg->m_type == MSG_TYPE_RESET)
 	{
@@ -253,9 +347,258 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	return 0;
 }
 
+static void npl_preemptive_scheduler_hook(lua_State* L, lua_Debug* ar)
+{
+	(void)ar;
+	lua_yield(L, 0);
+}
+
+/*
+From Mike: http://lua-users.org/lists/lua-l/2011-06/msg00513.html
+
+[Note that lua_sethook() is the only cross-thread-safe and
+signal-safe function from the Lua API.]
+
+Also, please note that JIT-compiled code does NOT call hooks by
+default. Either disable the JIT compiler or edit src/Makefile:
+XCFLAGS= -DLUAJIT_ENABLE_CHECKHOOK
+This comes with a speed penalty even hook is not set.
+*/
+int NPL::CNPLRuntimeState::FrameMoveTick()
+{
+	if (IsAllPreemptiveFunctionPaused())
+		return 0;
+	// if debug hook is available, all preemptive function are paused. 
+	bool bHasDebugger = HasDebugHook();
+	if (bHasDebugger)
+		return 0;
+		
+	m_nFrameMoveCount++;
+	// tick all neuron files with pending messages here. 
+	for (auto iter = m_active_neuron_files.begin(); iter != m_active_neuron_files.end(); )
+	{
+		CNeuronFileState* pFileState = (*iter);
+		if (pFileState->PopClearState())
+		{
+			// clear all message and quit last running coroutine
+			if (pFileState->IsProcessing())
+			{
+				pFileState->SetProcessing(false);
+				// stop last coroutine
+				lua_State * L = GetLuaState();
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (lua_istable(L, -1))
+				{
+					lua_pushnil(L);
+					lua_setfield(L, -2, pFileState->GetFilename().c_str());
+				}
+				lua_pop(L, 1);
+			}
+			pFileState->ClearMessageImp();
+		}
+		if (pFileState->IsProcessing())
+		{
+			pFileState->SetProcessing(false);
+			if (pFileState->IsPreemptive())
+			{
+				// resume last coroutine task 
+				lua_State * L = GetLuaState();
+
+				// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
+				lua_pushstring(L, COROUTINE_NAME);
+				lua_rawget(L, LUA_REGISTRYINDEX);
+				if (lua_istable(L, -1)) 
+				{
+					lua_getfield(L, -1, pFileState->GetFilename().c_str());
+					if (lua_isthread(L, -1)) 
+					{
+						lua_State * th = lua_tothread(L, -1);
+						int status = lua_status(th);
+						if(status == LUA_YIELD)
+						{
+							// call activate function with preemptive hook. 
+							lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
+							{
+								ParaEngine::ScopedBoolean_Lock lock(&m_bIsPreemptive);
+								int top = lua_gettop(th);
+
+								int status = lua_resume(th, 0);
+								int num_results = lua_gettop(th) - top;
+								if (status == LUA_YIELD)
+								{
+									pFileState->SetProcessing(true);
+								}
+								else if (status != 0)
+								{
+									// read error message on stack
+									string strErrorMsg;
+									const char* errorMsg = lua_tostring(th, -1);
+									if (errorMsg != NULL) {
+										strErrorMsg = errorMsg;
+									}
+									strErrorMsg += " in file:";
+									strErrorMsg += pFileState->GetFilename();
+									switch (status) {
+									case LUA_ERRSYNTAX:
+										strErrorMsg += " <Syntax error>\r\n";
+										break;
+									case LUA_ERRMEM:
+										strErrorMsg += " <Memory allocation error>\r\n";
+										break;
+									case LUA_ERRRUN:
+										strErrorMsg += " <Runtime error>\r\n";
+										break;
+									}
+									OUTPUT_LOG("%s", strErrorMsg.c_str());
+								}
+								if (num_results>0)
+									lua_pop(th, num_results);
+							}
+							// Lua 5.1 support per thread hook, while luajit hook is global to all. 
+							// so we need to unhook it for the rest of non-preemptive code.
+							lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
+						}
+					}
+					lua_pop(L, 1);
+					if (!pFileState->IsProcessing())
+					{
+						// clear coroutine from _REG["__co"][filename] = nil, for garbage collection.
+						lua_pushnil(L);
+						lua_setfield(L, -2, pFileState->GetFilename().c_str());
+					}
+				}
+				lua_pop(L, 1);
+			}
+			else
+			{
+				pFileState->SetProcessing(false);
+			}
+			if (!pFileState->IsProcessing())
+			{
+				NPLMessage_ptr msg;
+				pFileState->PopMessage(msg);
+				pFileState->Tick(m_nFrameMoveCount);
+			}
+		}
+		else
+		{
+			NPLMessage_ptr msg;
+			while (!pFileState->IsProcessing() && pFileState->GetMessage(msg))
+			{
+				pFileState->SetProcessing(false);
+				if (pFileState->IsPreemptive())
+				{
+					DoString(msg->m_code.c_str(), (int)msg->m_code.size());
+					lua_State * L = GetLuaState();
+					// use coroutine with hooks to simulate preemptive multi-tasking. 
+					lua_State* th = lua_newthread(L);
+					{
+						// call activate function with preemptive hook. 
+						lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
+
+						const char actTable[] = "__act";
+						lua_pushlstring(th, actTable, sizeof(actTable) - 1);
+						lua_gettable(th, LUA_GLOBALSINDEX);
+						if (lua_istable(th, -1))
+						{
+							lua_pushlstring(th, pFileState->GetFilename().c_str(), pFileState->GetFilename().size());
+							lua_gettable(th, -2);
+							if (lua_isfunction(th, -1))
+							{
+								ParaEngine::ScopedBoolean_Lock lock(&m_bIsPreemptive);
+								int top = lua_gettop(th);
+
+								int status = lua_resume(th, 0);
+								int num_results = lua_gettop(th) - top;
+								if (status == LUA_YIELD)
+								{
+									pFileState->SetProcessing(true);
+								}
+								else if (status != 0)
+								{
+									// read error message on stack
+									string strErrorMsg;
+									const char* errorMsg = lua_tostring(th, -1);
+									if (errorMsg != NULL) {
+										strErrorMsg = errorMsg;
+									}
+									strErrorMsg += " in file:";
+									strErrorMsg += pFileState->GetFilename();
+									switch (status) {
+									case LUA_ERRSYNTAX:
+										strErrorMsg += " <Syntax error>\r\n";
+										break;
+									case LUA_ERRMEM:
+										strErrorMsg += " <Memory allocation error>\r\n";
+										break;
+									case LUA_ERRRUN:
+										strErrorMsg += " <Runtime error>\r\n";
+										break;
+									}
+									OUTPUT_LOG("%s", strErrorMsg.c_str());
+								}
+								if(num_results>0)
+									lua_pop(th, num_results);
+							}
+						}
+						// Lua 5.1 support per thread hook, while luajit hook is global to all. 
+						// so we need to unhook it for the rest of non-preemptive code.
+						lua_sethook(th, npl_preemptive_scheduler_hook, 0, pFileState->GetPreemptiveInstructionCount());
+					}
+					if (!pFileState->IsProcessing()) {
+						// pop coroutine and leave it to gc
+						lua_pop(L, 1);
+					}
+					else
+					{
+						// keep a copy of coroutine at _REG["__co"][GetFileName()] = coroutine; so that it can be resumed in the next time slice
+						lua_pushstring(L, COROUTINE_NAME);
+						lua_rawget(L, LUA_REGISTRYINDEX);
+						if (!lua_istable(L, -1)) {
+							lua_pop(L, 1);
+							lua_newtable(L);
+							lua_pushvalue(L, -1);
+							lua_setfield(L, LUA_REGISTRYINDEX, COROUTINE_NAME);
+						}
+						lua_pushvalue(L, -2);
+						lua_setfield(L, -2, pFileState->GetFilename().c_str());
+						lua_pop(L, 2);
+					}
+				}
+				else 
+				{
+					ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
+				}
+				if (!pFileState->IsProcessing())
+				{
+					pFileState->PopMessage(msg);
+					pFileState->Tick(m_nFrameMoveCount);
+				}
+			}
+		}
+		// when queue is empty, remove from the list. 
+		if (pFileState->IsEmpty())
+			iter = m_active_neuron_files.erase(iter);
+		else
+			iter++;
+	}
+	return 0;
+}
+
+int NPL::CNPLRuntimeState::SendTick()
+{
+	// send the quit message. 
+	NPLMessage_ptr msg(new NPLMessage());
+	msg->m_type = MSG_TYPE_TICK;
+	SendMessage(msg, 1);
+	return 0;
+}
+
+
 int NPL::CNPLRuntimeState::GetCurrentQueueSize()
 {
-	return (int)(m_input_queue.size()) + (m_bIsProcessing ? 1 : 0);
+	return (int)(m_input_queue.size());
 }
 
 int NPL::CNPLRuntimeState::GetProcessedMsgCount()
@@ -644,9 +987,9 @@ void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, i
 	ActivateFile_any(filename.sRelativePath, sCode, nCodeLength);
 }
 
-void NPL::CNPLRuntimeState::WaitForMessage()
+void NPL::CNPLRuntimeState::WaitForMessage(int nMessageCount)
 {
-	m_input_queue.wait();
+	m_input_queue.wait(nMessageCount);
 }
 
 NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PeekMessage(int nIndex)
@@ -669,6 +1012,10 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("CurrentQueueSize", FieldType_Int, (void*)0, (void*)GetCurrentQueueSize_s, NULL, NULL, bOverride);
 	pClass->AddField("TimerCount", FieldType_Int, (void*)0, (void*)GetTimerCount_s, NULL, NULL, bOverride);
 	pClass->AddField("MsgQueueSize", FieldType_Int, (void*)SetMsgQueueSize_s, (void*)GetMsgQueueSize_s, NULL, NULL, bOverride);
+	pClass->AddField("HasDebugHook", FieldType_Bool, (void*)0, (void*)HasDebugHook_s, NULL, NULL, bOverride);
+	pClass->AddField("IsPreemptive", FieldType_Bool, (void*)0, (void*)IsPreemptive_s, NULL, NULL, bOverride);
+	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
 	return S_OK;
 }
+
 

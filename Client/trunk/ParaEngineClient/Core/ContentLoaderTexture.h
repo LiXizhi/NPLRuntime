@@ -52,6 +52,10 @@ namespace ParaEngine
 	public:
 		/** get file name */
 		const char* GetFileName();
+
+		/** get key name */
+		const char* GetKeyName();
+
 		/** Decompress is called by one of the processing threads to decompress the data.*/
 		HRESULT Decompress(void** ppData, int* pcBytes);
 		/** Destroy is called by the graphics thread when it has consumed the data. */

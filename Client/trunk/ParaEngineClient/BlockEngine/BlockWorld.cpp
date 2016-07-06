@@ -1229,7 +1229,7 @@ void CBlockWorld::SetLightBlockDirty(Uint16x3& blockId_ws, bool isSunLight)
 	GetLightGrid().SetLightDirty(blockId_ws, isSunLight, 1);
 }
 
-int32_t CBlockWorld::GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result)
+int32_t CBlockWorld::GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChunk_ws, uint32_t matchType, const luabind::adl::object& result, uint32_t verticalSectionFilter)
 {
 	int32_t blockCount = 0;
 	for (uint16_t x = startChunk_ws.x; x <= endChunk_ws.x; x++)
@@ -1242,7 +1242,10 @@ int32_t CBlockWorld::GetBlocksInRegion(Uint16x3& startChunk_ws, Uint16x3& endChu
 			BlockRegion* pRegion = GetRegion(regionX, regionZ);
 			if (pRegion)
 			{
-				pRegion->GetBlocksInChunk(x, z, startChunk_ws.y, endChunk_ws.y, matchType, result, blockCount);
+				if (verticalSectionFilter==0)
+					pRegion->GetBlocksInChunk(x, z, startChunk_ws.y, endChunk_ws.y, matchType, result, blockCount);
+				else
+					pRegion->GetBlocksInChunk(x, z, verticalSectionFilter, matchType, result, blockCount);
 			}
 		}
 	}

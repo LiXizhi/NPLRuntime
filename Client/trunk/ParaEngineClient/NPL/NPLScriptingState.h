@@ -10,7 +10,7 @@ namespace NPL
 namespace ParaScripting
 {
 	using namespace luabind;
-	
+
 	/**
 	* a NPL scripting state (wrapper of lua State), for binding c++ classes to lua.
 	* 
@@ -59,7 +59,7 @@ namespace ParaScripting
 		void LoadParaLib();
 
 		//////////////////////////////////////////////////////////////////////////
-		// following are individule group of HAPI
+		// following are individual group of HAPI
 		//////////////////////////////////////////////////////////////////////////
 
 		/// load functions for scene management
@@ -139,8 +139,12 @@ namespace ParaScripting
 
 		/**
 		* bind the activation function. Usually, it is for the script function NPL.this(funcActivate).
+		* @param nPreemptiveInstructionCount: optional parameter. if omitted, the activate function will
+		* run non-preemptive (it is the programmer's job to let the function finish in short time).
+		* If a number is specified here, the activate function will be preemptive like in Erlang.
+		* When this number of instructions are executed, the activate function will be paused.
 		*/
-		bool BindFileActivateFunc(const object& funcActivate);
+		bool BindFileActivateFunc(const object& funcActivate, const std::string& filename);
 
 		/** get pointer to NPLRuntimeState from the lua state object. it just retrieves from a secret lua_status variable. */
 		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaObject(const object& obj);

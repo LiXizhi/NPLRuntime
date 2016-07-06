@@ -218,6 +218,9 @@ namespace ParaEngine
 		int AddVertex(const BlockModel& from_block, int32 nVertexIndex);
 		void CloneVertices(const BlockModel& from_block);
 		
+		/** vertices */
+		std::vector<BlockVertexCompressed>& Vertices();
+
 		void SetAOMask(uint32_t edges);
 
 		void SetVerticalScale(EdgeVertexFlag vertexId,float scale);
@@ -272,6 +275,7 @@ namespace ParaEngine
 
 		/** Is disable face culling */
 		bool IsDisableFaceCulling(){return m_bDisableFaceCulling;};
+		void SetDisableFaceCulling(bool bDisabled){ m_bDisableFaceCulling = bDisabled; };
 
 		/** whether to disable block and sun lighting when rendering this block. */
 		bool IsUsingSelfLighting() {return m_bUseSelfLighting;}
@@ -356,6 +360,7 @@ namespace ParaEngine
 		static const int32_t g_bkLT = 21;
 		static const int32_t g_bkRT = 22;
 		static const int32_t g_bkRB = 23;
+		
 	private:
 		/** all vertices */
 		std::vector<BlockVertexCompressed> m_Vertices;

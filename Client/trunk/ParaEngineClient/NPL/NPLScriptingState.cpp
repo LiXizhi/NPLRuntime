@@ -374,7 +374,7 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 
 	if (!CParaFile::GetDevDirectory().empty())
 	{
-		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_DISK);
+		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH);
 		if (dwFound)
 		{
 			sFileName = filePath;
@@ -425,7 +425,7 @@ void ParaScripting::CNPLScriptingState::PopFileName()
 
 const string& ParaScripting::CNPLScriptingState::GetFileName()
 {
-	return m_stack_current_file.top();
+	return !m_stack_current_file.empty() ? m_stack_current_file.top() : CGlobals::GetString(0);
 }
 
 bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bReload)
@@ -613,7 +613,7 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 	return nRes; // success
 }
 
-bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::object& funcActivate)
+bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::object& funcActivate, const std::string& filename)
 {
 	if (type(funcActivate) == LUA_TFUNCTION)
 	{
@@ -628,7 +628,10 @@ bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::obje
 		}
 
 		/// add the current file name to the __activate table
-		tabAct[GetFileName()] = funcActivate;
+		if (!filename.empty())
+			tabAct[filename] = funcActivate;
+		else
+			tabAct[GetFileName()] = funcActivate;
 		return true;
 	}
 	return false;

@@ -414,20 +414,19 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 		pNewEntity->SurfaceType = nSurfaceType;
 		if (bIsRemoteFile)
 		{
+			// set as remote file
+			pNewEntity->SetState(AssetEntity::ASSET_STATE_REMOTE);
 			// remote file only applies to static texture. FlashTexture automatically support remote streaming, and TextureSequence can not be remote. 
 			if (nSurfaceType == TextureEntity::StaticTexture)
 			{
 				// we will delay loading http texture, until it is used for the first time. 
-				if (!pNewEntity->AutoSync())
+				TextureEntity::TextureInfo* pInfo = (TextureEntity::TextureInfo*) (pNewEntity->GetTextureInfo());
+				if (pInfo)
 				{
-					TextureEntity::TextureInfo* pInfo = (TextureEntity::TextureInfo*) (pNewEntity->GetTextureInfo());
-					if (pInfo)
-					{
-						// TRICKY code LXZ: 2008.3.6: this works around a bug where an HTTP texture is used in a GUI control, where the GUI control can not correctly determine the image size. 
-						// by setting negative size, the GUI control will try to retrieve the size of image the next time it is called. 
-						pInfo->m_height = -1;
-						pInfo->m_width = -1;
-					}
+					// TRICKY code LXZ: 2008.3.6: this works around a bug where an HTTP texture is used in a GUI control, where the GUI control can not correctly determine the image size. 
+					// by setting negative size, the GUI control will try to retrieve the size of image the next time it is called. 
+					pInfo->m_height = -1;
+					pInfo->m_width = -1;
 				}
 
 				// this new version uses local Resource store. 
@@ -845,10 +844,10 @@ bool CParaWorldAsset::UnloadAssetByKeyName(const string& keyname)
 	if(sFileExt == "dds" || sFileExt == "png")
 	{
 		TextureEntity* pEntity = (TextureEntity*) GetTextureManager().get(keyname);
-		if(pEntity && pEntity->IsLoaded())
+		if(pEntity && (pEntity->GetState()==AssetEntity::ASSET_STATE_FAILED_TO_LOAD || pEntity->IsLoaded()))
 		{
 			pEntity->UnloadAsset();
-			pEntity->SetLocalFileName("");
+			pEntity->SetLocalFileName(pEntity->GetKey().c_str());
 			return true;
 		}
 	}

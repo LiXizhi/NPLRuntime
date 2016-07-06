@@ -453,8 +453,10 @@ namespace ParaScripting
 
 		static void SetBlockWorldYOffset(float offset);
 
-		//get block in [startChunk,endChunk]
-		//@return {count,x{},y{},z{},tempId{}}
+		/** get block in [startChunk,endChunk]
+		* @param startChunkY, endChunkY: if negative, and startChunkY == endChunkY, -startChunkY will be used as verticalSectionFilter(a bitwise filter).
+		* @return {count,x{},y{},z{},tempId{}}
+		*/
 		static object GetBlocksInRegion(int32_t startChunkX,int32_t startChunkY,int32_t startChunkZ,int32_t endChunkX,int32_t endChunkY,int32_t endChunkZ,
 			uint32_t matchType,const object& result);
 

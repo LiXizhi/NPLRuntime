@@ -1385,8 +1385,12 @@ namespace ParaEngine
 		if (m_nFaceCount>0)
 			memcpy(GetVertices(), from_block.GetVerticesConst(), sizeof(BlockVertexCompressed)*nVertexCount);
 	}
-
 	
+	std::vector<BlockVertexCompressed>& BlockModel::Vertices()
+	{
+		return m_Vertices;
+	}
+
 	// count the number of bits set in v with Brian Kernighan's way 
 	// http://graphics.stanford.edu/~seander/bithacks.html
 	inline int CountBits(uint32 v)

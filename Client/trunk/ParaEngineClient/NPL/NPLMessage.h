@@ -19,6 +19,8 @@ namespace NPL
 		MSG_TYPE_RESET,
 		/// exit the runtime state
 		MSG_TYPE_EXIT,
+		/// frame move tick
+		MSG_TYPE_TICK,
 	};
 
 	/** an NPL message in the message queue.

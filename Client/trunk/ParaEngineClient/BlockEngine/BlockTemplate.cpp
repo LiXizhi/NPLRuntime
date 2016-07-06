@@ -10,6 +10,7 @@
 #include "BlockModelProvider.h"
 #include "WireModelProvider.h"
 #include "CarpetModelProvider.h"
+#include "SlopeModelProvider.h"
 #include "BlockWorld.h"
 #include "SceneObject.h"
 
@@ -240,6 +241,12 @@ namespace ParaEngine
 			// set model filter
 			SAFE_DELETE(m_pBlockModelFilter);
 			m_pBlockModelFilter = new CWireModelProvider(this);
+		}
+		else if (sModelName == "slope")
+		{
+			// set model filter
+			SAFE_DELETE(m_pBlockModelFilter);
+			m_pBlockModelFilter = new CSlopeModelProvider(this);
 		}
 		else if(sModelName == "grass")
 		{

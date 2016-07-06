@@ -176,9 +176,71 @@ namespace ParaScripting
 	void CNPL::this_(const object& funcActivate)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
-			runtime_state->BindFileActivateFunc(funcActivate);
+			runtime_state->BindFileActivateFunc(funcActivate, runtime_state->GetFileName());
+		}
+	}
+
+	void CNPL::this2_(const object& funcActivate, const object& params)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(funcActivate);
+		if (runtime_state.get() != 0)
+		{
+			std::string filename;
+			if (type(params) == LUA_TTABLE)
+			{
+				int nPreemptiveCount = 0;
+				int nMsgQueueSize = -1;
+				bool bClearMessage = false;
+				for (luabind::iterator itCur(params), itEnd; itCur != itEnd; ++itCur)
+				{
+					// we only serialize item with a string key
+					const object& key = itCur.key();
+					const object& input = *itCur;
+					if (type(key) == LUA_TSTRING)
+					{
+						std::string sKey = object_cast<std::string>(key);
+							
+						if (type(input) == LUA_TNUMBER)
+						{
+							int value = object_cast<int>(input);
+							if (sKey == "PreemptiveCount")
+							{
+								nPreemptiveCount = value;
+							}
+							else if (sKey == "MsgQueueSize")
+							{
+								nMsgQueueSize = value;
+							}
+						}
+						else if (type(input) == LUA_TSTRING)
+						{
+							const char* sValue = object_cast<const char*>(input);
+							if (sKey == "filename" || sKey == "name") {
+								filename = sValue;
+							}
+						}
+						else if (sKey == "clear")
+						{
+							bClearMessage = true;
+						}
+					}
+				}
+				if (filename.empty())
+					filename = runtime_state->GetFileName();
+				auto pFileState = runtime_state->GetNeuronFileState(filename);
+				if (pFileState)
+				{
+					if(nPreemptiveCount>0)
+						pFileState->SetPreemptiveInstructionCount(nPreemptiveCount);
+					if (nMsgQueueSize > 0)
+						pFileState->SetMaxQueueSize(nMsgQueueSize);
+					if (bClearMessage)
+						pFileState->ClearMessage();
+				}
+			}
+			runtime_state->BindFileActivateFunc(funcActivate, filename);
 		}
 	}
 
@@ -1465,6 +1527,14 @@ namespace ParaScripting
 		if (m_rts != 0)
 		{
 			m_rts->WaitForMessage();
+		}
+	}
+
+	void ParaNPLRuntimeState::WaitForMessage2(int nMessageCount)
+	{
+		if (m_rts != 0)
+		{
+			m_rts->WaitForMessage(nMessageCount);
 		}
 	}
 

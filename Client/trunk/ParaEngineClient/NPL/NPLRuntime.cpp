@@ -779,6 +779,14 @@ void CNPLRuntime::Run(bool bToEnd)
 				m_runtime_states_with_timers.erase((*itCur));
 			}
 		}
+		{
+			// frame move ticks
+			ParaEngine::Lock lock_(m_mutex);
+			for (auto pState : m_runtime_states)
+			{
+				pState->SendTick();
+			}
+		}
 		m_temp_rts_pool.clear();
 	}
 	
