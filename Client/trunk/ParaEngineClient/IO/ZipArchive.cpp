@@ -389,6 +389,9 @@ bool CZipArchive::ReadEntries_pkg()
 		m_pFile->read(tmp, nNameSize);
 		tmp[nNameSize] = 0x0;
 		entry.zipFileName = tmp;
+#ifdef _DEBUG
+		OUTPUT_LOG("----pkg file read: %s\n", entry.zipFileName.c_str());
+#endif
 		if (m_bIgnoreCase)
 			StringHelper::make_lower(entry.zipFileName);
 
@@ -872,6 +875,9 @@ bool CZipArchive::ReadEntries()
 		tmp[CentralDir.NameSize] = 0x0;
 		entry.zipFileName = tmp;
 		entry.zipFileNameOriginal = tmp;
+#ifdef _DEBUG
+		OUTPUT_LOG("----zip file read: %s\n", entry.zipFileName.c_str());
+#endif
 		if (m_bIgnoreCase)
 			StringHelper::make_lower(entry.zipFileName);
 
