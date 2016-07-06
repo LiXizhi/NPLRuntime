@@ -2334,6 +2334,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		nCharacterRendered += RenderSelection(RENDER_CHARACTERS);
 	}
 
+	RenderSelection(RENDER_SELECTION);
+
 	//////////////////////////////////////////////////////////////////////////
 	/// Draw SkyBox : we shall render sky after terrain but before transparent meshes, to make z-buffer work better. 
 	if (!(sceneState.m_bSkipSky))
@@ -2351,7 +2353,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	m_pBlockWorldClient->Render(BlockRenderPass_ReflectedWater);
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
-	BlockWorldClient::GetInstance()->DoPostRenderingProcessing(BlockRenderPass_Opaque);
+	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
 
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
@@ -2364,7 +2366,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		nCharacterRendered += RenderSelection(RENDER_TRANSPARENT_CHARACTERS);
 	}
 
-	BlockWorldClient::GetInstance()->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
+	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);
@@ -2378,8 +2380,6 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		sMeshReport[49] = '\0';
 		CGlobals::GetReport()->SetString("meshes", sMeshReport);
 	}
-
-	RenderSelection(RENDER_SELECTION);
 
 #ifdef USE_DIRECTX_RENDERER
 	//////////////////////////////////////////////////////////////////////////
