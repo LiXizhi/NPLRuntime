@@ -847,7 +847,9 @@ bool CParaWorldAsset::UnloadAssetByKeyName(const string& keyname)
 		if(pEntity && (pEntity->GetState()==AssetEntity::ASSET_STATE_FAILED_TO_LOAD || pEntity->IsLoaded()))
 		{
 			pEntity->UnloadAsset();
-			pEntity->SetLocalFileName(pEntity->GetKey().c_str());
+			pEntity->SetLocalFileName("");
+			if(pEntity->GetState()==AssetEntity::ASSET_STATE_FAILED_TO_LOAD)
+				pEntity->SetState(AssetEntity::ASSET_STATE_NORMAL);
 			return true;
 		}
 	}
