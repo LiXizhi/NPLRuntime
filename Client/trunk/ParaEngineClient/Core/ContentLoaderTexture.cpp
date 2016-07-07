@@ -38,6 +38,15 @@ const char* ParaEngine::CTextureLoader::GetFileName()
 	return NULL;
 }
 
+const char* ParaEngine::CTextureLoader::GetKeyName()
+{
+	if (m_asset.get() != 0)
+	{
+		return m_asset->GetKey().c_str();
+	}
+	return NULL;
+}
+
 HRESULT ParaEngine::CTextureLoader::Decompress(void** ppData, int* pcBytes)
 {
 	if (!m_file.isEof() && m_file.Decompress())
