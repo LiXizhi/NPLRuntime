@@ -411,10 +411,20 @@ namespace ParaScripting
 		/** reject and close a given connection. The connection will be closed once rejected. 
 		* [thread safe]
 		* @param nid: the temporary id or NID of the connection to be rejected. usually it is from msg.tid or msg.nid. 
-		* it can also be {nid=number|string, reason=0|1}
+		* it can also be {nid=number|string, reason=0|1|-1}
+		* reason: 
+		* - 0 is normal disconnect(it will abort pending read/write). 
+		* - 1 is another user with same nid is authenticated. The server should send a message to tell the client about this. 
+		* - -1 means close the connection when all pending data has been sent.
 		*/
 		static void reject(const object& nid);
-		/** this function is used by C++ API interface. */
+
+		/** this function is used by C++ API interface. 
+		* reason:
+		* - 0 is normal disconnect(it will abort pending read/write).
+		* - 1 is another user with same nid is authenticated. The server should send a message to tell the client about this.
+		* - -1 means close the connection when all pending data has been sent.
+		*/
 		static void reject_(const char* nid, int nReason = 0);
 
 		/** whether to use compression on transport layer for incoming and outgoing connections
