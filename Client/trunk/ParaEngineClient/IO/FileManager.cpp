@@ -128,6 +128,8 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 
 bool CFileManager::DoesFileExist(const char* filename)
 {
+	if (!filename)
+		return false;
 	FileHandle handle;
 	bool bExists = OpenFile(filename, handle);
 	CloseFile(handle);

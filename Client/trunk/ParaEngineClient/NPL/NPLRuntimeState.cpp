@@ -598,7 +598,7 @@ int NPL::CNPLRuntimeState::SendTick()
 
 int NPL::CNPLRuntimeState::GetCurrentQueueSize()
 {
-	return (int)(m_input_queue.size()) + (m_bIsProcessing ? 1 : 0);
+	return (int)(m_input_queue.size());
 }
 
 int NPL::CNPLRuntimeState::GetProcessedMsgCount()

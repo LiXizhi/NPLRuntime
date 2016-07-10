@@ -233,6 +233,8 @@ void CParaFile::ToCanonicalFilePath(string& output, const string& sfilename, boo
 
 bool CParaFile::DoesFileExist(const char* filename, bool bSearchZipFiles, bool bUseSearchPath)
 {
+	if (!filename)
+		return false;
 	uint32 dwWhereToSearch = (bSearchZipFiles ? (FILE_ON_DISK | FILE_ON_ZIP_ARCHIVE) : FILE_ON_DISK);
 	dwWhereToSearch = bUseSearchPath ? (dwWhereToSearch | FILE_ON_SEARCH_PATH) : dwWhereToSearch;
 	return DoesFileExist2(filename, dwWhereToSearch) != 0;
@@ -240,6 +242,8 @@ bool CParaFile::DoesFileExist(const char* filename, bool bSearchZipFiles, bool b
 
 int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*= FILE_ON_DISK*/, std::string* pDiskFilePath /*= NULL*/)
 {
+	if (!filename)
+		return 0;
 	int32 dwFoundPlace = FILE_NOT_FOUND;
 	if ((dwWhereToSearch & FILE_ON_SEARCH_PATH) > 0)
 	{

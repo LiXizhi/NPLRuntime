@@ -2,6 +2,11 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.7.4
+	- fixed NPL wait for messages.
+	- fixed sky uv wrapping mode.
+	- fixed unload texture that is not successfully loaded last time. 
+
 2016.6.28
 	- fixed dev path file search order. 
 	- added SlopeModelProvider.

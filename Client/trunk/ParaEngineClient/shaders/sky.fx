@@ -27,6 +27,11 @@ texture tex0 : TEXTURE;
 sampler tex0Sampler : register(s0) = sampler_state 
 {
     texture = <tex0>;
+	MinFilter = Linear;
+	MipFilter = Linear;
+	MagFilter = Linear;
+	AddressU = wrap;
+	AddressV = wrap;
 };
 
 struct Interpolants
