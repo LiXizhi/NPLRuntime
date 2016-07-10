@@ -712,5 +712,16 @@ namespace ParaScripting
 		* @return true if succeed. false if parsing failed. 
 		*/
 		static bool FromJson(const char* sJson, const object& output);
+
+		/** compress using zlib/gzip, etc
+		* @param output: {method="zlib|gzip", content=string, [level=number, windowBits=number,] result=string}
+		* @return return true if success. 
+		*/
+		static bool Compress(const object& output);
+
+		/** compress using zlib/gzip, etc
+		* @param output: {method="zlib|gzip", content=string, [level=number, windowBits=number,] result=string}
+		*/
+		static bool Decompress(const object& output);
 	};
 }

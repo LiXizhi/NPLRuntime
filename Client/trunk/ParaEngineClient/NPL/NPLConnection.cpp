@@ -188,7 +188,7 @@ int NPL::CNPLConnection::CheckIdleTimeout(unsigned int nCurTime)
 {
 	if(!m_bEnableIdleTimeout || m_nIdleTimeoutMS == 0 || m_nLastActiveTime == 0)
 		return 1;
-	if((m_nLastActiveTime+m_nIdleTimeoutMS) < nCurTime && !HasUnsentData())
+	if((m_nLastActiveTime+m_nIdleTimeoutMS) < nCurTime /*&& !HasUnsentData()*/)
 	{
 		// this connection is timed out. 
 		if(m_bKeepAlive)

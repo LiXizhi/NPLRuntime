@@ -42,8 +42,14 @@ using namespace luabind;
 #include "EventsCenter.h"
 #include "NPLHelper.h"
 #include "ParaScriptingIO.h"
+#include "zlib.h"
 
 #include "memdebug.h"
+
+/**@def CHUNK is simply the buffer size for feeding data to and pulling data from the zlib routines.
+Larger buffer sizes would be more efficient, especially for inflate(). If the memory is available,
+buffers sizes on the order of 128K or 256K bytes should be used. */
+#define NPL_ZLIB_CHUNK 32768
 
 namespace ParaScripting
 {
@@ -1122,6 +1128,214 @@ namespace ParaScripting
 			return false;
 		}
 		return true;
+	}
+
+	bool CNPL::Compress(const object& output)
+	{
+		if (type(output) == LUA_TTABLE)
+		{
+			std::string sMethod, content, outstring;
+			NPL::NPLHelper::LuaObjectToString(output["method"], sMethod);
+			NPL::NPLHelper::LuaObjectToString(output["content"], content);
+
+			int windowBits = 15;
+			if (type(output["windowBits"]) == LUA_TNUMBER)
+			{
+				windowBits = object_cast<int>(output["windowBits"]);
+			}
+			int compressionlevel = Z_DEFAULT_COMPRESSION;
+			if (type(output["level"]) == LUA_TNUMBER)
+			{
+				compressionlevel = object_cast<int>(output["level"]);
+			}
+			
+
+			if (content.empty())
+				return false;
+			if (sMethod == "zlib")
+			{
+				z_stream zs;
+				memset(&zs, 0, sizeof(z_stream));
+
+				if (deflateInit2(&zs, compressionlevel, Z_DEFLATED, windowBits, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+				{
+					OUTPUT_LOG("warning: NPL::Compress deflateInit failed while compressing.\n");
+					return false;
+				}
+
+				zs.next_in = (Bytef*)content.c_str();
+				// set the z_stream's input
+				zs.avail_in = (int)content.size();
+
+				int ret;
+				char outbuffer[NPL_ZLIB_CHUNK];
+				// retrieve the compressed bytes blockwise
+				do {
+					zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+					zs.avail_out = sizeof(outbuffer);
+
+					ret = deflate(&zs, Z_FINISH);
+
+					if (outstring.size() < zs.total_out) {
+						// append the block to the output string
+						outstring.append(outbuffer,
+							zs.total_out - outstring.size());
+					}
+				} while (ret == Z_OK);
+
+				deflateEnd(&zs);
+
+				if (ret != Z_STREAM_END) {
+					OUTPUT_LOG("warning: NPL::Compress failed an error occurred that was not EOF.\n");
+					return false;
+				}
+				output["result"] = outstring;
+				return true;
+			}
+			else if (sMethod == "gzip")
+			{
+				z_stream zs;
+				memset(&zs, 0, sizeof(z_stream));
+
+				windowBits = (windowBits > 0) ? (windowBits + 16) : (windowBits - 16);
+
+				if (deflateInit2(&zs, compressionlevel, Z_DEFLATED, windowBits, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+				{
+					OUTPUT_LOG("warning: NPL::Compress deflateInit failed while compressing.\n");
+					return false;
+				}
+
+				zs.next_in = (Bytef*)content.c_str();
+				// set the z_stream's input
+				zs.avail_in = (int)content.size();
+
+				int ret;
+				char outbuffer[NPL_ZLIB_CHUNK];
+				// retrieve the compressed bytes blockwise
+				do {
+					zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+					zs.avail_out = sizeof(outbuffer);
+
+					ret = deflate(&zs, Z_FINISH);
+
+					if (outstring.size() < zs.total_out) {
+						// append the block to the output string
+						outstring.append(outbuffer,
+							zs.total_out - outstring.size());
+					}
+				} while (ret == Z_OK);
+
+				deflateEnd(&zs);
+
+				if (ret != Z_STREAM_END) {
+					OUTPUT_LOG("warning: NPL::Compress failed an error occurred that was not EOF.\n");
+					return false;
+				}
+				output["result"] = outstring;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CNPL::Decompress(const object& output)
+	{
+		if (type(output) == LUA_TTABLE)
+		{
+			std::string sMethod, content, outstring;
+			NPL::NPLHelper::LuaObjectToString(output["method"], sMethod);
+			NPL::NPLHelper::LuaObjectToString(output["content"], content);
+
+			int windowBits = 15;
+			if (type(output["windowBits"]) == LUA_TNUMBER)
+			{
+				windowBits = object_cast<int>(output["windowBits"]);
+			}
+
+			if (sMethod == "zlib")
+			{
+				z_stream zs;
+				memset(&zs, 0, sizeof(zs));
+
+				if (inflateInit2(&zs, windowBits) != Z_OK)
+				{
+					OUTPUT_LOG("warning: NPL::Decompress inflateInit failed while decompressing.\n");
+					return false;
+				}
+
+				zs.next_in = (Bytef*)content.c_str();
+				zs.avail_in = (int)content.size();
+
+				int ret;
+				char outbuffer[NPL_ZLIB_CHUNK];
+
+				// get the decompressed bytes blockwise using repeated calls to inflate
+				do {
+					zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+					zs.avail_out = sizeof(outbuffer);
+
+					ret = inflate(&zs, 0);
+
+					if (outstring.size() < zs.total_out) {
+						outstring.append(outbuffer,
+							zs.total_out - outstring.size());
+					}
+
+				} while (ret == Z_OK);
+
+				inflateEnd(&zs);
+
+				if (ret != Z_STREAM_END) {
+					OUTPUT_LOG("warning: NPL::Decompress inflateInit an error occurred that was not EOF\n");
+					return false;
+				}
+				output["result"] = outstring;
+				return true;
+			}
+			else if (sMethod == "gzip")
+			{
+				z_stream zs;
+				memset(&zs, 0, sizeof(zs));
+
+				windowBits = (windowBits > 0) ? (windowBits + 16) : (windowBits - 16);
+
+				if (inflateInit2(&zs, windowBits) != Z_OK)
+				{
+					OUTPUT_LOG("warning: NPL::Decompress inflateInit failed while decompressing.\n");
+					return false;
+				}
+
+				zs.next_in = (Bytef*)content.c_str();
+				zs.avail_in = (int)content.size();
+
+				int ret;
+				char outbuffer[NPL_ZLIB_CHUNK];
+
+				// get the decompressed bytes blockwise using repeated calls to inflate
+				do {
+					zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+					zs.avail_out = sizeof(outbuffer);
+
+					ret = inflate(&zs, 0);
+
+					if (outstring.size() < zs.total_out) {
+						outstring.append(outbuffer,
+							zs.total_out - outstring.size());
+					}
+
+				} while (ret == Z_OK);
+
+				inflateEnd(&zs);
+
+				if (ret != Z_STREAM_END) {
+					OUTPUT_LOG("warning: NPL::Decompress inflateInit an error occurred that was not EOF\n");
+					return false;
+				}
+				output["result"] = outstring;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	luabind::object CNPL::LoadTableFromString(const object& input)
