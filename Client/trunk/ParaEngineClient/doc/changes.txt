@@ -2,6 +2,11 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.7.11
+    - HTTP non-keep-alive is fully supported in NPL web server. 
+    - NPL.reject now supports gracefully closing connection after all pending data is flushed. 
+    - NPL.Compress/Decompress method added with gzip/zlib support. 
+
 2016.7.4
 	- fixed NPL wait for messages.
 	- fixed sky uv wrapping mode.
