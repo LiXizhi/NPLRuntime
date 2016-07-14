@@ -43,7 +43,7 @@ NPL::CNPLConnection::CNPLConnection( boost::asio::io_service& io_service, CNPLCo
 : m_socket(io_service),	m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn( 0 ), m_totalBytesOut( 0 ),
 m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected), 
 m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
-m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(0), m_nLastActiveTime(0)
+m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0)
 {
 	m_queueOutput.SetUseEvent(false);
 	// init common fields for input message. 
@@ -188,7 +188,7 @@ int NPL::CNPLConnection::CheckIdleTimeout(unsigned int nCurTime)
 {
 	if(!m_bEnableIdleTimeout || m_nIdleTimeoutMS == 0 || m_nLastActiveTime == 0)
 		return 1;
-	if((m_nLastActiveTime+m_nIdleTimeoutMS) < nCurTime)
+	if((m_nLastActiveTime+m_nIdleTimeoutMS) < nCurTime /*&& !HasUnsentData()*/)
 	{
 		// this connection is timed out. 
 		if(m_bKeepAlive)
@@ -212,6 +212,11 @@ int NPL::CNPLConnection::CheckIdleTimeout(unsigned int nCurTime)
 	return 1;
 }
 
+
+bool NPL::CNPLConnection::HasUnsentData()
+{
+	return m_nSendCount != m_nFinishedCount;
+}
 
 void NPL::CNPLConnection::start()
 {
@@ -276,7 +281,7 @@ void NPL::CNPLConnection::start()
 		OUTPUT_LOG1("incoming connection (%s/%s) is established and assigned a temporary id (%s). \n", 
 			host_address.c_str(), sPort.c_str(), nid.c_str());
 #endif
-		// set use compresssion. 
+		// set use compression. 
 		bool bUseCompression = m_msg_dispatcher.IsUseCompressionIncomingConnection();
 		SetUseCompression(bUseCompression);
 		if(bUseCompression) 
@@ -296,11 +301,30 @@ void NPL::CNPLConnection::start()
 		boost::asio::placeholders::bytes_transferred));
 }
 
+void NPL::CNPLConnection::CloseAfterSend()
+{
+	m_bCloseAfterSend = true;
+	if (!HasUnsentData())
+	{
+		// close connection
+		// stop(true, 0);
+
+		// Initiate graceful connection closure.
+		boost::system::error_code ignored_ec;
+		m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
+	}
+}
+
+
 void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 {
 	if(bRemoveConnection)
 	{
 		m_connection_manager.stop(shared_from_this(), nReason);
+	}
+	else if (nReason == -1)
+	{
+		CloseAfterSend();
 	}
 	else
 	{
@@ -315,9 +339,12 @@ void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 
 void NPL::CNPLConnection::handle_stop()
 {
+	if (m_state == ConnectionDisconnected)
+		return;
 	m_state = ConnectionDisconnected;
-
+	
 	boost::system::error_code ec;
+
 	m_socket.close(ec);
 	if (ec)
 	{
@@ -325,7 +352,8 @@ void NPL::CNPLConnection::handle_stop()
 		OUTPUT_LOG1("warning: m_socket.close failed in handle_stop, because %s\n", ec.message().c_str());
 	}
 
-	// TODO: give a proper reason for the disconnect, such as user cancel or stream error, etc. 
+	// give a proper reason for the disconnect, such as user cancel or stream error, etc. 
+	// inform scripting interface about it. 
 	handleDisconnect(0);
 
 	// also erase from dispatcher
@@ -378,7 +406,10 @@ void NPL::CNPLConnection::handle_read( const boost::system::error_code& e, std::
 		{
 			// there is a stream error, we shall close the connection
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
-			OUTPUT_LOG("invalid handle_read stream detected. connection will be closed. nid %s \n", GetNID().c_str());
+			if (m_state != ConnectionDisconnected)
+			{
+				OUTPUT_LOG("invalid handle_read stream detected. connection will be closed. nid %s \n", GetNID().c_str());
+			}
 #endif
 			m_connection_manager.stop(shared_from_this());
 		}
@@ -386,14 +417,21 @@ void NPL::CNPLConnection::handle_read( const boost::system::error_code& e, std::
 	else if (e == boost::asio::error::operation_aborted)
 	{
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		OUTPUT_LOG("network: handle_read operation aborted. nid %s \n", GetNID().c_str());
+		if (m_state != ConnectionDisconnected)
+		{
+			OUTPUT_LOG("network: handle_read operation aborted. nid %s \n", GetNID().c_str());
+		}
+		m_connection_manager.stop(shared_from_this());
 #endif
 	}
 	else
 	{
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		std::string msg = e.message();
-		OUTPUT_LOG("network: handle_read stopped, asio msg: %s. Connection will be closed \n", msg.c_str());
+		if (!m_bCloseAfterSend && m_state != ConnectionDisconnected)
+		{
+			std::string msg = e.message();
+			OUTPUT_LOG("network: handle_read stopped, asio msg: %s. Connection will be closed \n", msg.c_str());
+		}
 #endif
 		m_connection_manager.stop(shared_from_this());
 	}
@@ -406,6 +444,8 @@ void NPL::CNPLConnection::handle_write( const boost::system::error_code& e )
 		// update the last send/receive time
 		TickSend();
 
+		m_nFinishedCount++;
+		
 		// Initiate graceful connection closure.
 		//boost::system::error_code ignored_ec;
 		//m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
@@ -418,12 +458,20 @@ void NPL::CNPLConnection::handle_write( const boost::system::error_code& e )
 				boost::bind(&CNPLConnection::handle_write, shared_from_this(),
 				boost::asio::placeholders::error));
 		}
+		else
+		{
+			if(m_bCloseAfterSend)
+				CloseAfterSend();
+		}
 	}
 	else if (e != boost::asio::error::operation_aborted)
 	{
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		string err = e.message();
-		OUTPUT_LOG("warning: handle_write stopped. connection will be closed \n", err.c_str());
+		if (m_state != ConnectionDisconnected)
+		{
+			string err = e.message();
+			OUTPUT_LOG("warning: handle_write stopped. connection will be closed \n", err.c_str());
+		}
 #endif
 		// close the connection
 		m_connection_manager.stop(shared_from_this());
@@ -431,7 +479,10 @@ void NPL::CNPLConnection::handle_write( const boost::system::error_code& e )
 	else
 	{
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		OUTPUT_LOG("warning: handle_write operation aborted. nid %s \n", GetNID().c_str());
+		if (m_state != ConnectionDisconnected)
+		{
+			OUTPUT_LOG("warning: handle_write operation aborted. nid %s \n", GetNID().c_str());
+		}
 #endif
 	}
 }
@@ -588,6 +639,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( NPLMsgOut_ptr& msg )
 
 	int nLength = (int)msg->GetBuffer().size();
 	NPLMsgOut_ptr * pFront = NULL;
+	m_nSendCount++;
 	RingBuffer_Type::BufferStatus bufStatus =  m_queueOutput.try_push_get_front(msg, &pFront);
 
 	if(bufStatus == RingBuffer_Type::BufferFirst)
@@ -598,6 +650,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( NPLMsgOut_ptr& msg )
 		}
 
 		PE_ASSERT(pFront!=NULL);
+
 		// LXZ: very tricky code to ensure thread-safety to the buffer.
 		// only start the sending task when the buffer is empty, otherwise we will wait for previous send task. 
 		// i.e. inside handle_write handler. 
@@ -608,12 +661,14 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( NPLMsgOut_ptr& msg )
 	}
 	else if(bufStatus == RingBuffer_Type::BufferOverFlow)
 	{
+		m_nSendCount--;
 #ifdef NPL_LOG_VERBOSE_STREAM_MSG
 		OUTPUT_LOG("NPL SendMessage error because the output msg queue is full. The connection nid is %s \n", GetNID().c_str());
 #endif
 		// too many messages to send.
 		return NPL_QueueIsFull;
 	}
+		
 	m_totalBytesOut += nLength;
 	return NPL_OK;
 }

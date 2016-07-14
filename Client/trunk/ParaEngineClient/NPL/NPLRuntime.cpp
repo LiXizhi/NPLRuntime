@@ -1043,6 +1043,16 @@ int CNPLRuntime::GetIdleTimeoutPeriod()
 }
 
 
+int CNPLRuntime::GetMaxPendingConnections()
+{
+	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetMaxPendingConnections();
+}
+
+void CNPLRuntime::SetMaxPendingConnections(int val)
+{
+	NPL::CNPLRuntime::GetInstance()->GetNetServer()->SetMaxPendingConnections(val);
+}
+
 void CNPLRuntime::EnableAnsiMode( bool bEnable )
 {
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->EnableAnsiMode(bEnable);
@@ -1083,9 +1093,9 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("KeepAlive",FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeout",FieldType_Bool, (void*)EnableIdleTimeout_s, (void*)IsIdleTimeoutEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeoutPeriod",FieldType_Int, (void*)SetIdleTimeoutPeriod_s, (void*)GetIdleTimeoutPeriod_s, NULL, NULL, bOverride);
-
 	pClass->AddField("CompressionThreshold",FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);
 	pClass->AddField("CompressionLevel",FieldType_Int, (void*)SetCompressionLevel_s, (void*)GetCompressionLevel_s, NULL, NULL, bOverride);
+	pClass->AddField("MaxPendingConnections", FieldType_Int, (void*)SetMaxPendingConnections_s, (void*)GetMaxPendingConnections_s, NULL, NULL, bOverride);
 
 	pClass->AddField("EnableAnsiMode",FieldType_Bool, (void*)EnableAnsiMode_s, (void*)IsAnsiMode_s, NULL, NULL, bOverride);
 	return S_OK;

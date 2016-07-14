@@ -120,6 +120,9 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsAnsiMode_s, bool*)	{*p1 = cls->IsAnsiMode(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableAnsiMode_s, bool)	{cls->EnableAnsiMode(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetMaxPendingConnections_s, int*)	{ *p1 = cls->GetMaxPendingConnections(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetMaxPendingConnections_s, int)	{ cls->SetMaxPendingConnections(p1); return S_OK; }
+			
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
@@ -204,6 +207,10 @@ namespace NPL
 		so client side applications are encouraged to disable ansi mode. */
 		virtual void EnableAnsiMode(bool bEnable);
 		virtual bool IsAnsiMode();
+
+		/** queue size of the server acceptor's queue. */
+		virtual int GetMaxPendingConnections();
+		virtual void SetMaxPendingConnections(int val);
 
 		//////////////////////////////////////////////////////////////////////////
 		//

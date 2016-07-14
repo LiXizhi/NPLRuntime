@@ -96,6 +96,9 @@ namespace NPL
 		void EnableAnsiMode(bool bEnable);
 		bool IsAnsiMode();
 
+		/** queue size of the acceptor's queue. */
+		int GetMaxPendingConnections() const;
+		void SetMaxPendingConnections(int val);
 	public:
 		/** get extern IP address of this computer. */
 		std::string GetExternalIP();
@@ -147,6 +150,9 @@ namespace NPL
 
 		/** how many milliseconds to assume time out, default to 2 mins. */
 		int m_nIdleTimeoutMS;
+
+		/** queue size of the acceptor's queue. */
+		int m_nMaxPendingConnections;
 
 		/** a slowly ticked timer which checks if any connection should be timed out. */
 		typedef boost::asio::basic_waitable_timer<boost::chrono::steady_clock> timer_type;
