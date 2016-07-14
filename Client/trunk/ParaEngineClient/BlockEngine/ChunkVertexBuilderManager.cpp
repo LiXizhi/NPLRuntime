@@ -131,7 +131,7 @@ void ParaEngine::ChunkVertexBuilderManager::UploadPendingChunksToDevice()
 				int nPendingCount = m_pendingChunks.size();
 				bool bDiryBlockBlockChange = pChunk->IsDirtyByBlockChange();
 				if (!pChunk->IsDirty() && pChunk->GetChunkViewDistance()<3 && (nPendingCount > 0)
-					&& (int)m_pendingUploadChunks.size() < std::max((int)4, m_nMaxUploadingChunks) )
+					&& (int)m_pendingUploadChunks.size() < max((int)4, m_nMaxUploadingChunks) )
 				{
 					// we will handle a very special case here, where pending chunks are neighbors of the uploaded chunks.
 					// in such case, we will try to wait until neighbor chunks are also uploaded together 
