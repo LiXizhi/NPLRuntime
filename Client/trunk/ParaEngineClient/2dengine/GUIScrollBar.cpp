@@ -541,6 +541,7 @@ bool CGUIScrollBar::MsgProc(MSG *event)
 			m_Arrow = CLEAR;
 			newMsg.message = EM_CTRL_RELEASEMOUSE;
 			CGUIBase::MsgProc(&newMsg);
+			ReleaseMouseCapture();
 		}
 		if (m_event->IsMapTo(nEvent, EM_SB_PAGEDOWN)) {
 			Scroll(m_nPageSize);
@@ -746,6 +747,7 @@ bool CGUIScrollBar::MsgProc(MSG *event)
 				else
 					ThumbOffsetY = pt.y - m_objResource->GetDrawingRects(3).top;
 				// Check for click on track
+				CaptureMouse();
 			}
 			else {
 				if (m_ScrollType == HSCROLL) {
