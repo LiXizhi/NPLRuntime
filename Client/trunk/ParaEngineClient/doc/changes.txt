@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.7.21
+	- serialization will now check for recusive tables by default to prevent stackoverflow. 
+
 2016.7.14
 	- external animation now support bmax file. 
 
