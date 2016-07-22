@@ -256,6 +256,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CSceneObject, IsShowMainPlayer_s, bool*)	{*p1 = cls->IsShowMainPlayer(); return S_OK;}
 		ATTRIBUTE_METHOD1(CSceneObject, ShowMainPlayer_s, bool)	{cls->ShowMainPlayer(p1); return S_OK;}
+
+		ATTRIBUTE_METHOD1(CSceneObject, SetShadowMapTexelSize_s, int)	{ cls->SetShadowMapTexelSize(p1, p1); return S_OK; }
 	public:
 		/** show or hide all scene's objects' head on display*/
 		void ShowHeadOnDisplay(bool bShow){m_bShowHeadOnDisplay = bShow;};

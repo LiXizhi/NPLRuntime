@@ -249,6 +249,35 @@ namespace ParaScripting
 		return CGlobals::GetViewportManager()->GetActiveViewPort()->DrawQuad();
 	}
 
+	bool CParaEngine::DrawQuad2()
+	{
+		D3DVIEWPORT9 old_vp;
+		CGlobals::GetRenderDevice()->GetViewport(&old_vp);
+		IDirect3DSurface9 * rt = nullptr;
+		CGlobals::GetRenderDevice()->GetRenderTarget(0, &rt);
+		D3DSURFACE_DESC desc;
+		rt->GetDesc(&desc);
+		D3DVIEWPORT9 vp = { 0 };
+		vp.Height = desc.Height;
+		vp.Width = desc.Width;
+		vp.MaxZ = 1.0f;
+		CGlobals::GetRenderDevice()->SetViewport(&vp);
+		mesh_vertex_plain quadVertices[4] = {
+			{ Vector3(-1, -1, 0), Vector2(0, 1) },
+			{ Vector3(1, -1, 0), Vector2(1, 1) },
+			{ Vector3(-1, 1, 0), Vector2(0, 0) },
+			{ Vector3(1, 1, 0), Vector2(1, 0) },
+		};
+
+		bool bSucceed = false;
+#ifdef USE_DIRECTX_RENDERER
+		bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
+#endif
+		CGlobals::GetRenderDevice()->SetViewport(&old_vp);
+
+		return bSucceed;
+	}
+
 	ParaScripting::ParaAttributeObject CParaEngine::GetViewportAttributeObject(int nViewportIndex)
 	{
 		CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(nViewportIndex);
