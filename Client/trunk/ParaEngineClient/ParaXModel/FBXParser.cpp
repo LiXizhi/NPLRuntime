@@ -117,6 +117,11 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
+		//_ref_anim_file_: marker for mutual anim file
+		if (m_sFilename.find("_ref_anim_file_") != std::string::npos)
+		{
+			m_xheader.IsAnimated = 1;
+		}
 		pMesh = new CParaXModel(m_xheader);
 
 		if (pFbxScene->HasMaterials())
@@ -139,6 +144,17 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 			{
 				ProcessFBXAnimation(pFbxScene, i, pMesh);
 			}
+		}
+		else if (m_xheader.IsAnimated)
+		{
+			std::string anim_file_name = m_sFilename.substr(m_sFilename.find_last_of("_") + 1);
+			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/")+1) + anim_file_name;
+			FBXParser anim_parser(anim_file_name);
+			anim_parser.ParseParaXModel();
+			m_modelInfo.LoadFromFile(std::string(anim_parser.GetFilename().c_str(), anim_parser.GetFilename().size() - 3) + "xml");
+			m_boneMapping = anim_parser.m_boneMapping;
+			m_bones = anim_parser.m_bones;
+			m_anims = anim_parser.m_anims;
 		}
 
 		// building the parent-child relationship of the bones, and add meshes if any;
@@ -257,8 +273,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_header.maxExtent = m_maxExtent;
 	pMesh->m_vNeckYawAxis = m_modelInfo.m_vNeckYawAxis;
 	pMesh->m_vNeckPitchAxis = m_modelInfo.m_vNeckPitchAxis;
-	pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
-	pMesh->initIndices(m_indices.size(), &(m_indices[0]));
+	if (!m_vertices.empty())
+		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
+	if (!m_indices.empty())
+		pMesh->initIndices(m_indices.size(), &(m_indices[0]));
 
 	if (m_bones.size() > 0)
 	{
