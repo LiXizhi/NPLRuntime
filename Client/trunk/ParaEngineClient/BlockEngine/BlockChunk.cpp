@@ -678,7 +678,7 @@ namespace ParaEngine
 
 	void BlockChunk::SetDirty(bool val)
 	{
-		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty & 0x1)) : 0;
+		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty | 0x1)) : 0;
 	}
 
 
