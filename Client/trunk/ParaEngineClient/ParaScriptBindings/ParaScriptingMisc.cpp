@@ -257,6 +257,7 @@ namespace ParaScripting
 		CGlobals::GetRenderDevice()->GetRenderTarget(0, &rt);
 		D3DSURFACE_DESC desc;
 		rt->GetDesc(&desc);
+		SAFE_RELEASE(rt);
 		D3DVIEWPORT9 vp = { 0 };
 		vp.Height = desc.Height;
 		vp.Width = desc.Width;
