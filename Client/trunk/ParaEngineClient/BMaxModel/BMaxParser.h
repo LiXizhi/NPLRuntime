@@ -37,12 +37,19 @@ namespace ParaEngine
 			BlockModelBlockId = 254,
 		};
 
-		BMaxParser(const char* pBuffer, int32 nSize);
+		BMaxParser(const char* pBuffer, int32 nSize, const char* filename = NULL, BMaxParser* pParent = NULL);
 		virtual ~BMaxParser(void);
 		CParaXModel* ParseParaXModel();
+		
+		const std::string& GetFilename() const;
+		void SetFilename(const std::string& val);
 	protected:
+		/** check if the given filename belongs to one of its parent's filename*/
+		bool IsFileNameRecursiveLoaded(const std::string& filename);
 		void AddAnimation(const ModelAnimation& anim);
 		int GetAnimationsCount();
+		BMaxParser* GetParent() const { return m_pParent; }
+		void SetParent(BMaxParser* val) { m_pParent = val; }
 
 		void SetAutoScale(bool value);
 		bool IsAutoScale();
@@ -131,6 +138,8 @@ namespace ParaEngine
 		/* create or get the default animation generator */
 		BMaxAnimGenerator* GetAnimGenerator();
 	protected:
+		BMaxParser* m_pParent;
+		std::string m_filename;
 		std::vector<BlockModel*> m_blockModels;
 		std::map<uint32, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;

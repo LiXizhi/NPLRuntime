@@ -20,6 +20,7 @@ namespace NPL
 
 	class NPLLex;
 	struct LexState;
+	struct STableStack;
 	
 	/** a collection of helper functions. */
 	class PE_CORE_DECL NPLHelper
@@ -27,7 +28,7 @@ namespace NPL
 	public:
 		NPLHelper(void);
 		~NPLHelper(void);
-
+		
 	public:
 		static void DevideString(const string& input,string& str1,string&str2,char separator=';');
 
@@ -63,7 +64,7 @@ namespace NPL
 		* @return true if successful. 
 		*/
 		template <typename StringType>
-		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset=0);
+		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
 
 		/** safe convert the lua object to string. if the input is nil, NULL is returned. please note that the returned const char* has the same lifetime as the input object */
 		static const char* LuaObjectToString(const luabind::object& input, int* pSize = NULL);
@@ -154,6 +155,13 @@ namespace NPL
 		* json string usually can not be encoded in double brackets.
 		*/
 		static bool CanEncodeStringInDoubleBrackets(const char*	buffer, int nLength);
+	};
+
+	/** only used internally*/
+	struct STableStack
+	{
+		const luabind::object* m_pTableObj;
+		const STableStack* m_pParent;
 	};
 }
 

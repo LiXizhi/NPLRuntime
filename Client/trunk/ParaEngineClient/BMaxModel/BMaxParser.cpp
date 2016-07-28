@@ -29,10 +29,12 @@ namespace ParaEngine
 	const int BMaxParser::MaxBoneLengthHorizontal = 50;
 	const int BMaxParser::MaxBoneLengthVertical = 100;
 
-	BMaxParser::BMaxParser(const char* pBuffer, int32 nSize)
-		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL)
-		, m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f)
+	BMaxParser::BMaxParser(const char* pBuffer, int32 nSize, const char* filename, BMaxParser* pParent)
+		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL), m_pParent(pParent),
+		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f)
 	{
+		if (filename)
+			SetFilename(filename);
 		Load(pBuffer, nSize);
 	}
 
@@ -107,10 +109,17 @@ namespace ParaEngine
 							std::string sFilename = attr["filename"];
 							if (!sFilename.empty())
 							{
-								BMaxBlockModelNodePtr node(new BMaxBlockModelNode(this, x, y, z, template_id, block_data));
-								node->SetFilename(sFilename);
-								node->SetFacing((float)((double)attr["facing"]));
-								nodes.push_back(BMaxNodePtr(node.get()));
+								if (IsFileNameRecursiveLoaded(sFilename))
+								{
+									OUTPUT_LOG("warning: bmax models reference the file %s recursively\n", sFilename.c_str());
+								}
+								else
+								{
+									BMaxBlockModelNodePtr node(new BMaxBlockModelNode(this, x, y, z, template_id, block_data));
+									node->SetFilename(sFilename);
+									node->SetFacing((float)((double)attr["facing"]));
+									nodes.push_back(BMaxNodePtr(node.get()));
+								}
 							}
 						}
 					}
@@ -332,6 +341,16 @@ namespace ParaEngine
 		FillParaXModelData(pMesh);
 		pMesh->SetBmaxModel();
 		return pMesh;
+	}
+
+	const std::string& BMaxParser::GetFilename() const
+	{
+		return m_filename;
+	}
+
+	void BMaxParser::SetFilename(const std::string& val)
+	{
+		m_filename = val;
 	}
 
 	void BMaxParser::SetAutoScale(bool value)
@@ -933,6 +952,20 @@ namespace ParaEngine
 		AutoAddWalkAnimation(ANIM_WALKBACKWARDS, 13000, 14000, 4.0f, false);
 	}
 
+	bool BMaxParser::IsFileNameRecursiveLoaded(const std::string& filename)
+	{
+		if (!filename.empty())
+		{
+			if (GetFilename() == filename)
+				return true;
+			else if (GetParent())
+			{
+				return GetParent()->IsFileNameRecursiveLoaded(filename);
+			}
+		}
+		return false;
+	}
+
 	void BMaxParser::AddAnimation(const ModelAnimation& anim)
 	{
 		m_anims.push_back(anim);
@@ -1000,12 +1033,12 @@ namespace ParaEngine
 			CParaFile file;
 			if (file.OpenFile(sFullFilename.c_str()))
 			{
-				BMaxParser parser(file.getBuffer(), file.getSize());
+				BMaxParser parser(file.getBuffer(), file.getSize(), sFilename.c_str(), this);
 				pModel.reset(parser.ParseParaXModel());
 			}
 			else
 			{
-				OUTPUT_LOG("warn: can not find referenced bmax file %s \n", sFullFilename.c_str());
+				OUTPUT_LOG("warn: can not find referenced bmax file %s \n", sFilename.c_str());
 			}
 
 			m_refModels[sFilename] = pModel;

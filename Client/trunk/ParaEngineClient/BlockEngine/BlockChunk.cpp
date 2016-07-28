@@ -68,11 +68,11 @@ namespace ParaEngine
 	{
 		SetBlockTemplate(nBlockIndex, pTemplate);
 
-		if (pTemplate->IsMatchAttribute(BlockTemplate::batt_light))
+		if (pTemplate && pTemplate->IsMatchAttribute(BlockTemplate::batt_light))
 		{
 			AddLight(nBlockIndex);
 		}
-		bool isTransparent = pTemplate->IsTransparent();
+		bool isTransparent = pTemplate? pTemplate->IsTransparent() : false;
 		UpdateHeightMapAtLoadTime(nBlockIndex, isTransparent);
 	}
 
@@ -678,7 +678,7 @@ namespace ParaEngine
 
 	void BlockChunk::SetDirty(bool val)
 	{
-		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty & 0x1)) : 0;
+		m_nDirty = val ? (m_nDirty==0 ? 1 : (m_nDirty | 0x1)) : 0;
 	}
 
 

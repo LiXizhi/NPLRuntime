@@ -120,7 +120,7 @@ bool NPLHelper::NPLTableToString(const char* sStorageVar, NPLObjectProxy& input,
 }
 
 template <typename StringType>
-bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset)
+bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset, STableStack* pRecursionTable)
 {
 	sCode.resize(nCodeOffset);
 
@@ -162,6 +162,24 @@ bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object&
 	}
 	case LUA_TTABLE:
 	{
+		if (pRecursionTable)
+		{
+			// check for recursive tables
+			const STableStack* pCheckTable = pRecursionTable;
+			while (pCheckTable){
+				if ((*pCheckTable->m_pTableObj) == input)
+				{
+					if (nStorageVarLen > 0)
+					{
+						sCode.resize(nCodeOffset);
+					}
+					return false;
+				}
+				pCheckTable = pCheckTable->m_pParent;
+			}
+		}
+		STableStack thisRecursionTable = { &input, pRecursionTable};
+		
 		sCode.append("{");
 		int nNumberIndex = 1;
 		for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
@@ -188,7 +206,7 @@ bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object&
 					EncodeStringInQuotation(sCode, (int)(sCode.size()), sKey, nSKeyCount);
 					sCode.append("]=");
 				}
-				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size())))
+				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable))
 				{
 					sCode.append(",");
 				}
@@ -226,7 +244,7 @@ bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object&
 					sCode.append("]=");
 				}
 
-				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size())))
+				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable))
 				{
 					sCode.append(",");
 				}
@@ -1116,8 +1134,8 @@ bool NPL::DeserializePureNPLDataBlock(LexState *ls, NPLObjectProxy& objProxy)
 // This allows us to put template implementation code in cpp file. 
 template void NPL::NPLHelper::EncodeStringInQuotation(std::string& output, int nOutputOffset, const char* input, int nInputSize);
 template void NPL::NPLHelper::EncodeStringInQuotation(ParaEngine::StringBuilder& output, int nOutputOffset, const char* input, int nInputSize);
-template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset);
-template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset);
+template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
+template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
 
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, std::string& sCode, int nCodeOffset);
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, ParaEngine::StringBuilder& sCode, int nCodeOffset);
