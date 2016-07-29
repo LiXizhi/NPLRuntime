@@ -68,11 +68,11 @@ namespace ParaEngine
 	{
 		SetBlockTemplate(nBlockIndex, pTemplate);
 
-		if (pTemplate->IsMatchAttribute(BlockTemplate::batt_light))
+		if (pTemplate && pTemplate->IsMatchAttribute(BlockTemplate::batt_light))
 		{
 			AddLight(nBlockIndex);
 		}
-		bool isTransparent = pTemplate->IsTransparent();
+		bool isTransparent = pTemplate? pTemplate->IsTransparent() : false;
 		UpdateHeightMapAtLoadTime(nBlockIndex, isTransparent);
 	}
 
