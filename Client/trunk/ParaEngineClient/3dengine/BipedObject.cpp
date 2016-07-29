@@ -3188,7 +3188,7 @@ bool ParaEngine::CBipedObject::CheckBlockWorld(DVector3& vMovePos, Vector3& vMin
 						// stop the biped in vertical y if the terrain is obstructed
 						vMovePos.y = m_vPos.y;
 						// stop the min/max, since the character position is not changed. 
-						bUseMinMaxBox = false;
+						// bUseMinMaxBox = true;
 						// this is tricky, we should disable vertical speed, otherwise the biped may still jump over the ceiling.
 						m_fSpeedVertical = 0.f;
 						bFallDown = false;
