@@ -137,24 +137,24 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
 		// must be called before ProcessFBXBoneNodes
-		if (pFbxScene->HasAnimations())
-		{
-			int animations_num = pFbxScene->mNumAnimations;
-			for (int i = 0; i < animations_num; i++)
-			{
-				ProcessFBXAnimation(pFbxScene, i, pMesh);
-			}
-		}
-		else if (m_xheader.IsAnimated)
+		if (m_sFilename.find("_ref_anim_file_") != std::string::npos)
 		{
 			std::string anim_file_name = m_sFilename.substr(m_sFilename.find_last_of("_") + 1);
-			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/")+1) + anim_file_name;
+			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/") + 1) + anim_file_name;
 			FBXParser anim_parser(anim_file_name);
 			anim_parser.ParseParaXModel();
 			m_modelInfo.LoadFromFile(std::string(anim_parser.GetFilename().c_str(), anim_parser.GetFilename().size() - 3) + "xml");
 			m_boneMapping = anim_parser.m_boneMapping;
 			m_bones = anim_parser.m_bones;
 			m_anims = anim_parser.m_anims;
+		}
+		else if (pFbxScene->HasAnimations())
+		{
+			int animations_num = pFbxScene->mNumAnimations;
+			for (int i = 0; i < animations_num; i++)
+			{
+				ProcessFBXAnimation(pFbxScene, i, pMesh);
+			}
 		}
 
 		// building the parent-child relationship of the bones, and add meshes if any;
