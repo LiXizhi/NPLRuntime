@@ -1397,9 +1397,7 @@ namespace ParaEngine
 								{
 									BlockTemplate* pTemplate = GetBlockWorld()->GetBlockTemplate(sBlockId[i]);
 									pChunk->LoadBlock(i, pTemplate);
-									if (sBlockData[i] != 0){
-										pChunk->SetBlockData(i, sBlockData[i]);
-									}
+									pChunk->SetBlockData(i, sBlockData[i]);
 									nModifiedCount++;
 								}
 							}

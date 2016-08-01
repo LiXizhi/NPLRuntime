@@ -1,6 +1,8 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.8.1
+    - fixed apply chunk API with different meta data field. 
 
 2016.7.26-2016.7.29
 	- Fixed a low level rendering bug when neighboring blocks are set dirty in the same frame, causing one or two blocks not updated. 
