@@ -520,8 +520,12 @@ void ParaEngine::CMeshPhysicsObject::Animate( double dTimeDelta, int nRenderNumb
 
 HRESULT CMeshPhysicsObject::Draw( SceneState * sceneState)
 {
-	if (!m_pMeshObject || !IsVisible() || CheckAttribute(OBJ_CUSTOM_RENDERER))
+	if (!m_pMeshObject || !IsVisible())
 		return S_OK;
+	if (CheckAttribute(OBJ_CUSTOM_RENDERER)){
+		ViewTouch();
+		return S_OK;
+	}
 
 	bool bCheckAsset = (m_pMeshObject->GetPrimaryTechniqueHandle()<0);
 
