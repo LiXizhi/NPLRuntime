@@ -43,7 +43,7 @@ NPL::CNPLConnection::CNPLConnection( boost::asio::io_service& io_service, CNPLCo
 : m_socket(io_service),	m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn( 0 ), m_totalBytesOut( 0 ),
 m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected), 
 m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
-m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0)
+m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0)
 {
 	m_queueOutput.SetUseEvent(false);
 	// init common fields for input message. 
@@ -318,6 +318,7 @@ void NPL::CNPLConnection::CloseAfterSend()
 
 void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 {
+	m_nStopReason = nReason;
 	if(bRemoveConnection)
 	{
 		m_connection_manager.stop(shared_from_this(), nReason);
@@ -354,7 +355,7 @@ void NPL::CNPLConnection::handle_stop()
 
 	// give a proper reason for the disconnect, such as user cancel or stream error, etc. 
 	// inform scripting interface about it. 
-	handleDisconnect(0);
+	handleDisconnect(m_nStopReason);
 
 	// also erase from dispatcher
 	m_msg_dispatcher.RemoveNPLConnection(shared_from_this());
@@ -680,7 +681,9 @@ void NPL::CNPLConnection::handleConnect()
 
 void NPL::CNPLConnection::handleDisconnect( int reason )
 {
-	m_msg_dispatcher.PostNetworkEvent(NPL_ConnectionDisconnected, GetNID().c_str());
+	char msg_reason[256];
+	snprintf(msg_reason, 255, "%d", reason);
+	m_msg_dispatcher.PostNetworkEvent(NPL_ConnectionDisconnected, GetNID().c_str(), msg_reason);
 }
 
 bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )

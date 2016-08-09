@@ -345,6 +345,9 @@ namespace NPL
 
 		/** when does this connection started */
 		uint32 m_nStartTime;
+
+		/** why is this connection stopped */
+		int32 m_nStopReason;
 	};
 	
 
