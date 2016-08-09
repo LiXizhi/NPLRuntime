@@ -30,8 +30,8 @@ sampler tex0Sampler : register(s0) = sampler_state
 	MinFilter = Linear;
 	MipFilter = Linear;
 	MagFilter = Linear;
-	AddressU = wrap;
-	AddressV = wrap;
+	AddressU = clamp;
+	AddressV = clamp;
 };
 
 struct Interpolants

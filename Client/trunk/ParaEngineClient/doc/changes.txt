@@ -1,9 +1,13 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.8.1-2016.8.3
+    - fixed apply chunk API with different meta data field. 
+	- object with custom renderer will also call view touch method. 
 
-2016.7.26
+2016.7.26-2016.7.29
 	- Fixed a low level rendering bug when neighboring blocks are set dirty in the same frame, causing one or two blocks not updated. 
+	- fixed biped blockworld physics when there is ceiling blocks
 
 2016.7.21
 	- serialization will now check for recusive tables by default to prevent stackoverflow. 
