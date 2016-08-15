@@ -323,7 +323,7 @@ void NPL::CNPLConnection::stop(bool bRemoveConnection, int nReason)
 	{
 		m_connection_manager.stop(shared_from_this(), nReason);
 	}
-	else if (nReason == -1)
+	else if (nReason <= -1)
 	{
 		CloseAfterSend();
 	}
