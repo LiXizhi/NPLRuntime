@@ -342,15 +342,20 @@ void NPL::CNPLConnection::handle_stop()
 {
 	if (m_state == ConnectionDisconnected)
 		return;
-	m_state = ConnectionDisconnected;
-	
-	boost::system::error_code ec;
 
-	m_socket.close(ec);
-	if (ec)
 	{
-		// An error occurred.
-		OUTPUT_LOG1("warning: m_socket.close failed in handle_stop, because %s\n", ec.message().c_str());
+		ParaEngine::mutex::ScopedLock lock_(m_mutex);
+
+		m_state = ConnectionDisconnected;
+
+		boost::system::error_code ec;
+
+		m_socket.close(ec);
+		if (ec)
+		{
+			// An error occurred.
+			OUTPUT_LOG1("warning: m_socket.close failed in handle_stop, because %s\n", ec.message().c_str());
+		}
 	}
 
 	// give a proper reason for the disconnect, such as user cancel or stream error, etc. 
@@ -651,6 +656,13 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( NPLMsgOut_ptr& msg )
 		}
 
 		PE_ASSERT(pFront!=NULL);
+
+		// This mutex fix a tricky bug that: boost::asio::async_write may crash 
+		// if m_socket is closed by the io service thread when this function is called
+		ParaEngine::mutex::ScopedLock lock_(m_mutex);
+		if (m_state < ConnectionConnected){
+			return NPL_ConnectionNotEstablished;
+		}
 
 		// LXZ: very tricky code to ensure thread-safety to the buffer.
 		// only start the sending task when the buffer is empty, otherwise we will wait for previous send task. 
