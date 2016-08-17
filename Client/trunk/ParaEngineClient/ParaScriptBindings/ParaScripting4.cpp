@@ -195,6 +195,7 @@ namespace ParaScripting
 					def("GetBlockAttributeObject", &ParaBlockWorld::GetBlockAttributeObject),
 					def("SaveBlockWorld", &ParaBlockWorld::SaveBlockWorld),
 					def("LoadRegion", &ParaBlockWorld::LoadRegion),
+					def("UnloadRegion", &ParaBlockWorld::UnloadRegion),
 					def("RegisterBlockTemplate", &ParaBlockWorld::RegisterBlockTemplate),
 					def("SetBlockWorldYOffset", &ParaBlockWorld::SetBlockWorldYOffset),
 					def("SetBlockId", &ParaBlockWorld::SetBlockId),

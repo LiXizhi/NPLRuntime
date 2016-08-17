@@ -75,6 +75,8 @@ namespace ParaScripting
 		* one need to call load chunk before SetBlock/GetBlock api can be called in the region. 
 		*/
 		static void LoadRegion(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
+		/** unload data for a given region from memory */
+		static void UnloadRegion(const object& pWorld, uint16_t x, uint16_t y, uint16_t z);
 
 		/** set block id set the given position. 
 		* @param x,y,z: should be positive value

@@ -401,6 +401,13 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			v.y = vColor.g;
 			v.z = vColor.b;
 		}
+		else if (sValue == "vec3SunAmbient")
+		{
+			LinearColor vColor = CGlobals::GetScene()->GetSunLight().GetSunAmbient();
+			v.x = vColor.r;
+			v.y = vColor.g;
+			v.z = vColor.b;
+		}
 		else if (sValue == "vec3BlockLightColor")
 		{
 			LinearColor vColor = BlockWorldClient::GetInstance()->GetBlockLightColor();
@@ -467,6 +474,10 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		else if (sValue == "floatTimeOfDaySTD")
 		{
 			v = CGlobals::GetScene()->GetSunLight().GetTimeOfDaySTD();
+		}
+		else if (sValue == "floatShadowRadius")
+		{
+			v = CGlobals::GetScene()->GetShadowRadius();
 		}
 
 		SetParameter(sParamName, v);

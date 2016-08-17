@@ -4921,6 +4921,7 @@ int CSceneObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Save ShadowMap", FieldType_void, (void*)ScreenShotShadowMap_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("Save GlowMap", FieldType_void, (void*)ScreenShotGlowMap_s, NULL, NULL, NULL, bOverride);
 #endif
+	pClass->AddField("ShadowMapSize", FieldType_Int, (void*)SetShadowMapTexelSize_s, NULL, NULL, NULL, bOverride);
 
 	return S_OK;
 }

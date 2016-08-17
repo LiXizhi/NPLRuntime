@@ -35,7 +35,7 @@ using namespace ParaEngine;
 /** NVidia demo recommends 1536 at year 2005*/
 const int TEXDEPTH_HEIGHT_20 = 2048;
 const int TEXDEPTH_WIDTH_20 = 2048;
-const int TEXDEPTH_SIZE_11 = 2048;
+const int TEXDEPTH_SIZE_11 = 1024;
 const float W_EPSILON = 0.001f;
 
 #define DW_AS_FLT(DW) (*(FLOAT*)&(DW))
@@ -171,11 +171,9 @@ bool CShadowMap::PrepareAllSurfaces()
 	}
 	else
 		m_bSupportsHWShadowMaps = true;
-#ifdef _DEBUG
-	//#define TEST_F32_SHADOWMAP
-#endif
 
-#ifdef TEST_F32_SHADOWMAP
+#define USE_F32_SHADOWMAP
+#ifdef USE_F32_SHADOWMAP
 	m_bSupportsHWShadowMaps = false;
 #endif
 
@@ -279,6 +277,14 @@ HRESULT CShadowMap::InvalidateDeviceObjects()
 	SAFE_RELEASE(m_pSMZSurface);
 	SAFE_RELEASE(m_pSMColorSurfaceBlurredHorizontal);
 	SAFE_RELEASE(m_pSMColorSurfaceBlurredVertical);
+	if (m_pSMColorTexture)
+		m_pSMColorTexture->InvalidateDeviceObjects();
+	if (m_pSMZTexture)
+		m_pSMZTexture->InvalidateDeviceObjects();
+	if (m_pSMColorTextureBlurredHorizontal)
+		m_pSMColorTextureBlurredHorizontal->InvalidateDeviceObjects();
+	if (m_pSMColorTextureBlurredVertical)
+		m_pSMColorTextureBlurredVertical->InvalidateDeviceObjects();
 	return S_OK;
 }
 
@@ -1107,6 +1113,8 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	CBaseCamera* pCamera = CGlobals::GetScene()->GetCurrentCamera();
 	assert(pCamera!=0);
 	float fNearPlane = pCamera->GetNearPlane();
+// #define USE_SHADOW_RECEIVER_AABB
+#ifdef USE_SHADOW_RECEIVER_AABB
 	float fFarPlane = pCamera->GetShadowFrustum()->GetViewDepth();
 	m_fAspect = pCamera->GetAspectRatio();
 
@@ -1159,6 +1167,66 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 
 	ParaMatrixMultiply( &lightView, &m_View, &lightView );
 	ParaMatrixMultiply( &m_LightViewProj, &lightView, &lightProj );
+#else
+	// use the entire frustum
+	
+	//edit by devilwalk
+	const Vector3 z_vec(0.f, 0.f, 1.f);
+	const Vector3 y_vec(0.f, 1.f, 0.f);
+	const Vector3 zero_vec(0, 0, 0);
+	const Vector3 light_dir = -m_lightDir;
+	// virtual light view matrix 
+	Matrix4 fake_light_view;
+	ParaMatrixLookAtLH(&fake_light_view, &zero_vec, &light_dir, fabsf(light_dir.dotProduct(y_vec)) > 0.99f ? &z_vec : &y_vec);
+	// frustum to virtual light coordinate space 
+	Vector3 frustum_point_in_fake_light[8];
+	for (int i = 0; i < 8; ++i)
+	{
+		frustum_point_in_fake_light[i] = pCamera->GetShadowFrustum()->vecFrustum[i] * fake_light_view;
+	}
+	// compute new AABB
+	Vector3 min_pt(FLT_MAX, FLT_MAX, FLT_MAX), max_pt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+	for (int i = 0; i < 8; ++i)
+	{
+		min_pt.x = std::min(min_pt.x, frustum_point_in_fake_light[i].x);
+		min_pt.y = std::min(min_pt.y, frustum_point_in_fake_light[i].y);
+		min_pt.z = std::min(min_pt.z, frustum_point_in_fake_light[i].z);
+		max_pt.x = std::max(max_pt.x, frustum_point_in_fake_light[i].x);
+		max_pt.y = std::max(max_pt.y, frustum_point_in_fake_light[i].y);
+		max_pt.z = std::max(max_pt.z, frustum_point_in_fake_light[i].z);
+	}
+	//snap
+	Vector3 diagonal_vec = pCamera->GetShadowFrustum()->vecFrustum[0] - pCamera->GetShadowFrustum()->vecFrustum[6];
+	float diagonal_len = diagonal_vec.length();
+	diagonal_vec = diagonal_len;
+	// The offset calculated will pad the ortho projection so that it is always the same size 
+	// and big enough to cover the entire cascade interval.
+	Vector3 vBoarderOffset = (diagonal_vec -
+		(max_pt - min_pt))
+		* 0.5f;
+	vBoarderOffset.z = 0;
+	max_pt += vBoarderOffset;
+	min_pt -= vBoarderOffset;
+	float fWorldUnitsPerTexel = diagonal_len / m_shadowTexWidth;
+	min_pt.x /= fWorldUnitsPerTexel;
+	min_pt.x = floorf(min_pt.x);
+	min_pt.x *= fWorldUnitsPerTexel;
+	min_pt.y /= fWorldUnitsPerTexel;
+	min_pt.y = floorf(min_pt.y);
+	min_pt.y *= fWorldUnitsPerTexel;
+	max_pt.x /= fWorldUnitsPerTexel;
+	max_pt.x = floorf(max_pt.x);
+	max_pt.x *= fWorldUnitsPerTexel;
+	max_pt.y /= fWorldUnitsPerTexel;
+	max_pt.y = floorf(max_pt.y);
+	max_pt.y *= fWorldUnitsPerTexel;
+	// reconstruct project matrix
+	Matrix4 fake_light_proj;
+	ParaMatrixOrthoOffCenterLH(&fake_light_proj, min_pt.x, max_pt.x,
+		min_pt.y, max_pt.y,
+		min_pt.z - 100.0f, max_pt.z);
+	ParaMatrixMultiply(&m_LightViewProj, &fake_light_view, &fake_light_proj);
+#endif
 	return true;
 }
 
@@ -1249,11 +1317,16 @@ HRESULT CShadowMap::BeginShadowPass()
 	float depthBias = float(m_iDepthBias) / 16777215.f;
 
 	//  render color if it is going to be displayed (or necessary for shadow map) -- otherwise don't
-	/*if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap||m_bBlurSMColorTexture))
-		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);*/
+	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
+	{
+		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
+		pd3dDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
+	}
+	else
+	{
+		pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFFFFFFFF, 1.0f, 0L);
+	}
 
-	pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0x00FFFFFF, 1.0f, 0L);
-	
 	
 	pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 	//depth bias
@@ -1377,12 +1450,11 @@ HRESULT CShadowMap::EndShadowPass()
 	pd3dDevice->SetViewport(&oldViewport);
 
 	//re enable color writes
-	/*if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap||m_bBlurSMColorTexture))
-		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xf);*/
+	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
+		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xf);
 	//pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_ARGB(0, 60, 60, 60), 1.0f, 0L);
 	//pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 	//pd3dDevice->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-	
 	return S_OK;
 }
 
@@ -1419,8 +1491,8 @@ HRESULT CShadowMap::SetShadowTexture(CEffectFile& pEffect, int nTextureIndex, in
 	}
 	else
 	{
-		auto& pTexture = m_pSMColorTexture;
-		if(pTexture && FAILED(pEffect.setTexture(nTextureIndex, m_pSMColorTexture->GetTexture())))
+		auto& pTexture = (m_bSupportsHWShadowMaps) ? m_pSMZTexture : m_pSMColorTexture;
+		if (pTexture && FAILED(pEffect.setTexture(nTextureIndex, pTexture->GetTexture())))
 			return E_FAIL;
 	}
 

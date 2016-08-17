@@ -4,6 +4,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 2016.8.15
 	- fix a tricky bug that: boost::asio::async_write may crash
 	- merged pull request to add connection reason and file remove api. 
+	- merged a number shader related changes from papercraft project
 
 2016.8.1-2016.8.3
     - fixed apply chunk API with different meta data field. 
