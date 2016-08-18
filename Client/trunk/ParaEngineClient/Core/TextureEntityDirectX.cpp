@@ -29,6 +29,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #include <gdiplus.h>
 #include "ContentLoaders.h"
 #include "AsyncLoader.h"
+#include "ViewportManager.h"
 #include "TextureEntityDirectX.h"
 
 #ifdef PARAENGINE_CLIENT
@@ -997,6 +998,9 @@ bool TextureEntityDirectX::SetRenderTarget(int nIndex)
 	if (bReleaseSrc)
 	{
 		SAFE_RELEASE(pSrcSurface);
+	}
+	if (res && nIndex == 0){
+		CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 	}
 	return res;
 }

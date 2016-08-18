@@ -9,6 +9,7 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "ScreenShotSystem.h"
+#include <thread> 
 using namespace ScreenShot;
 #endif
 #include "VertexFVF.h"
@@ -275,7 +276,17 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 	return false;
 #endif
 }
-
+void CMoviePlatform::TakeScreenShot_Async(const string& filename, int width, int height, screenshot_callback callback)
+{
+	std::thread thread([this, filename,width,height, callback]() {
+		bool result = TakeScreenShot(filename,width, height);
+		if (callback != nullptr)
+		{
+			callback(result);
+		}
+	});
+	thread.detach();
+}
 bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int height)
 {
 	if(CMoviePlatform::TakeScreenShot(filename))
@@ -292,7 +303,17 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 	else
 		return false;
 }
-
+void CMoviePlatform::TakeScreenShot_Async(const string& filename, screenshot_callback callback)
+{
+	std::thread thread([this,filename, callback]() {
+		bool result = TakeScreenShot(filename);
+		if (callback != nullptr)
+		{
+			callback(result);
+		}
+	});
+	thread.detach();
+}
 bool CMoviePlatform::TakeScreenShot(const string& filename)
 {
 #ifdef USE_DIRECTX_RENDERER
@@ -1042,3 +1063,4 @@ int CMoviePlatform::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	return S_OK;
 }
+

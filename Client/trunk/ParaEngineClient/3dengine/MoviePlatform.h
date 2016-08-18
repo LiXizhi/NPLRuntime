@@ -2,7 +2,7 @@
 #include <vector>
 #include "IAttributeFields.h"
 #include "IMovieCodec.h"
-
+#include <mutex>
 namespace ParaEngine
 {
 	using namespace std;
@@ -88,6 +88,8 @@ namespace ParaEngine
 
 		/** get preferred codec */
 		virtual int GetCodec();
+	public:
+		typedef std::function<void(bool)>			screenshot_callback;
 
 	public:
 		/** clear all clips*/
@@ -164,6 +166,10 @@ namespace ParaEngine
 		@param filename: this is the file name without extension. It can be "".*/
 		bool TakeScreenShot(const string& filename);
 
+
+		/** use a async method to get a screenshot*/
+		void TakeScreenShot_Async(const string& filename, screenshot_callback callback = nullptr);
+
 		/** by default it save the screen shot as JPG file in the ./screenshot directory. 
 		* @param filename: this is the file name without extension. It can be "".
 		* @param width; in pixel, if 0 it will be the screen size
@@ -171,6 +177,8 @@ namespace ParaEngine
 		*/
 		bool TakeScreenShot(const string& filename, int width, int height);
 
+		/** use a async method to get a screenshot*/
+		void TakeScreenShot_Async(const string& filename, int width, int height, screenshot_callback callback = nullptr);
 		/**
 		* resize the given image
 		* @param width; in pixel
@@ -260,6 +268,9 @@ namespace ParaEngine
 		string m_beginningStr;
 		string m_endingStr;
 		float m_fLastRefreshInterval;
+
+		std::vector<std::function<void()>> m_functionsToPerform;
+		std::mutex m_performMutex;
 		
 #ifdef USE_DIRECTX_RENDERER
 		LPDIRECT3DTEXTURE9 m_pCaptureTexture;

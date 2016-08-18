@@ -207,6 +207,9 @@ namespace ParaScripting
 		{
 #ifdef USE_DIRECTX_RENDERER
 			CGlobals::GetRenderDevice()->SetRenderTarget(nIndex, NULL);
+			if (nIndex == 0){
+				CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
+			}
 #endif
 			return true;
 		}

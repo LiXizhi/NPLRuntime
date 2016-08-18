@@ -223,6 +223,20 @@ ParaViewport ParaEngine::CViewport::ApplyViewport()
 	return SetViewport(m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
 }
 
+void ParaEngine::CViewport::GetViewportTransform(Vector2* pvScale, Vector2* pvOffset /*= NULL*/)
+{
+	float fWidth = (float)m_pViewportManager->GetWidth();
+	float fHeight = (float)m_pViewportManager->GetHeight();
+	if (pvScale)
+	{
+		*pvScale = Vector2((m_rect.right - m_rect.left) / fWidth, (m_rect.bottom - m_rect.top) / fHeight);
+	}
+	if (pvOffset)
+	{
+		*pvOffset = Vector2(m_rect.left / fWidth, m_rect.top / fHeight);
+	}
+}
+
 bool ParaEngine::CViewport::DrawQuad()
 {
 	float fWidth = (float)m_pViewportManager->GetWidth();
@@ -261,6 +275,7 @@ bool ParaEngine::CViewport::DrawQuad()
 
 	return bSucceed;
 }
+
 
 void ParaEngine::CViewport::SetModified()
 {

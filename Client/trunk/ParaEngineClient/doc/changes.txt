@@ -1,6 +1,9 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.8.17
+	- fix viewport change when render target is changed
+
 2016.8.15
 	- fix a tricky bug that: boost::asio::async_write may crash
 	- merged pull request to add connection reason and file remove api. 
