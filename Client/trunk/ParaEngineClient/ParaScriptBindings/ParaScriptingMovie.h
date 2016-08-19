@@ -105,7 +105,6 @@ namespace ParaScripting
 		*/
 		static bool TakeScreenShot(const char* filename);
 
-		static void TakeScreenShot_Async(const char* filename, const char* sCallBackScript);
 
 		/** 
 		* render the current scene to texture, UI are disabled by default. Aspect ratio are changed according to width/height. 
@@ -116,8 +115,12 @@ namespace ParaScripting
 		* @param height; in pixel, if 0 it will be the screen size
 		*/
 		static bool TakeScreenShot3(const char* filename, int width, int height);
-		static void TakeScreenShot3_Async(const char* filename, int width, int height, const char* sCallBackScript);
-		static void TakeScreenShot_Async_Internal(const char* filename, int width, int height, const char* sCallBackScript);
+
+		// Use a new thread to take a screenshot.
+		static void TakeScreenShot_Async(const char* filename, const char* sCallBackScript);
+		static void TakeScreenShot2_Async(const char* filename, bool bEncode, const char* sCallBackScript);
+		static void TakeScreenShot3_Async(const char* filename, bool bEncode, int width, int height, const char* sCallBackScript);
+		static void TakeScreenShot_Async_Internal(const char* filename, bool bEncode, int width, int height, const char* sCallBackScript);
 
 		static bool RenderToTexture(const char* filename, int width, int height);
 		

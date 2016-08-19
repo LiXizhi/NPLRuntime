@@ -441,6 +441,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			// declarations
 			def("GetAttributeObject", &ParaScripting::ParaMovie::GetAttributeObject),
 			def("TakeScreenShot_Async", &ParaScripting::ParaMovie::TakeScreenShot_Async),
+			def("TakeScreenShot_Async", &ParaScripting::ParaMovie::TakeScreenShot2_Async),
 			def("TakeScreenShot_Async", &ParaScripting::ParaMovie::TakeScreenShot3_Async),
 			def("TakeScreenShot", &ParaScripting::ParaMovie::TakeScreenShot),
 			def("TakeScreenShot", &ParaScripting::ParaMovie::TakeScreenShot3),

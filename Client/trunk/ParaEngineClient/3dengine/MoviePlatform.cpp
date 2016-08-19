@@ -9,6 +9,8 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "ScreenShotSystem.h"
+#include <FreeImage.h>
+#include "util/CyoEncode.h"
 using namespace ScreenShot;
 #endif
 #include <thread>
@@ -280,17 +282,7 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 	return false;
 #endif
 }
-void CMoviePlatform::TakeScreenShot_Async(const string& filename, int width, int height, screenshot_callback callback)
-{
-	std::thread thread([this, filename,width,height, callback]() {
-		bool result = TakeScreenShot(filename,width, height);
-		if (callback != nullptr)
-		{
-			callback(result);
-		}
-	});
-	thread.detach();
-}
+
 bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int height)
 {
 	if(CMoviePlatform::TakeScreenShot(filename))
@@ -306,17 +298,6 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 	}
 	else
 		return false;
-}
-void CMoviePlatform::TakeScreenShot_Async(const string& filename, screenshot_callback callback)
-{
-	std::thread thread([this,filename, callback]() {
-		bool result = TakeScreenShot(filename);
-		if (callback != nullptr)
-		{
-			callback(result);
-		}
-	});
-	thread.detach();
 }
 bool CMoviePlatform::TakeScreenShot(const string& filename)
 {
@@ -383,7 +364,203 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 #endif
 	return false;
 }
+void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)
+{
+#ifdef USE_DIRECTX_RENDERER
+	std::thread thread([=]() {
+		std::vector<BYTE> buffers;
+		bool result = TakeScreenShot_FromGDI(filename, buffers, bEncode, width, height);
+		if (callback != nullptr)
+		{
+			callback(result,buffers);
+		}
+	});
+	thread.detach();
+#endif
+}
+bool CMoviePlatform::TakeScreenShot_FromGDI(const string& filename, std::vector<BYTE>& outBase64Buffers, bool bEncode, int width, int height)
+{
+#ifdef USE_DIRECTX_RENDERER
+	IMovieCodec* pMovieCodec = GetMovieCodec();
+	// force same resolution as current back buffer.  
+	LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
+	D3DSURFACE_DESC desc;
+	if (!pMovieCodec || !pFromSurface)
+	{
+		return false;
+	}
+	int wndWidth = 0;
+	int wndHeight = 0;
+	if (SUCCEEDED(pFromSurface->GetDesc(&desc)))
+	{
+		wndWidth = desc.Width;
+		wndHeight = desc.Height;
+	}
+	if (width <= 0 || height <= 0)
+	{
+		width = wndWidth;
+		height = wndHeight;
+	}
+	string Filename = filename;
 
+	if (filename.empty())
+	{
+		char ValidFilename[256];
+		ZeroMemory(ValidFilename, sizeof(ValidFilename));
+
+		std::string date_str = ParaEngine::GetDateFormat("MMM dd yy");
+		snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt").c_str());
+		Filename = ValidFilename;
+	}
+
+	string sExt = CParaFile::GetFileExtension(Filename);
+
+	FREE_IMAGE_FORMAT FileFormat = FIF_PNG;
+
+	if (sExt == "dds")
+	{
+		FileFormat = FIF_DDS;
+	}
+	else if (sExt == "jpg")
+	{
+		FileFormat = FIF_JPEG;
+	}
+	else if (sExt == "bmp")
+	{
+		FileFormat = FIF_BMP;
+	}
+	else if (sExt == "tga")
+	{
+		FileFormat = FIF_TARGA;
+	}
+	else // if(sExt == "png")
+	{
+		FileFormat = FIF_PNG;
+	}
+	std::vector<BYTE> buffers;
+	int fileSize = 0;
+	int infoSize = 0;
+
+	if (CaptureBitmapBuffer(CGlobals::GetAppHWND(), fileSize, infoSize, buffers, false, 0, 0, wndWidth, wndHeight) != 0)
+	{
+		return false;
+	}
+
+	FIMEMORY* sourceMemBuff = FreeImage_OpenMemory(&(buffers[0]), buffers.size());;
+	FIBITMAP* sourceImage = FreeImage_LoadFromMemory(FIF_BMP, sourceMemBuff);
+	if (width != wndWidth || height != wndHeight)
+	{
+		sourceImage = FreeImage_Rescale(sourceImage, width, height, FILTER_BOX);
+	}
+	FIMEMORY* destMemBuff = FreeImage_OpenMemory();
+	FreeImage_SaveToMemory(FileFormat, sourceImage, destMemBuff);
+
+	BYTE *mem_buffer = NULL;
+	DWORD size_in_bytes = 0;
+	FreeImage_AcquireMemory(destMemBuff, &mem_buffer, &size_in_bytes);
+
+	if (bEncode)
+	{
+		int nBufferSize = CyoEncode::Base64EncodeGetLength(size_in_bytes);
+		outBase64Buffers.resize(nBufferSize);
+		CyoEncode::Base64Encode(&(outBase64Buffers[0]), mem_buffer, size_in_bytes);
+	}
+
+	CParaFile file;
+	if (file.CreateNewFile(filename.c_str()))
+	{
+		file.write(mem_buffer, size_in_bytes);
+		file.close();
+		FreeImage_CloseMemory(sourceMemBuff);
+		FreeImage_CloseMemory(destMemBuff);
+		return true;
+	}
+#endif
+	return false;
+}
+int CMoviePlatform::CaptureBitmapBuffer(HWND nHwnd, int& outFileHeaderSize, int& outInfoHeaderSize, std::vector<BYTE>& outBuffers, bool bCaptureMouse, int nLeft /*= 0*/, int nTop /*= 0*/, int width /*= 0*/, int height /*= 0*/)
+{
+#ifdef USE_DIRECTX_RENDERER
+	//--Get the interface device context
+	HDC SourceHDC = GetDC(nHwnd);
+	//--Create a compatible device context from the interface context
+	HDC compatibleHDC = CreateCompatibleDC(SourceHDC);
+
+	BITMAP Bitmap;
+
+	// Create a compatible bitmap
+	HBITMAP bitmapHandle = CreateCompatibleBitmap(SourceHDC, width, height);
+	if (bitmapHandle == 0 || !SelectObject(compatibleHDC, bitmapHandle))
+	{
+		OUTPUT_LOG("error: can not select bitmap in MovieCodec::TakeScreenshot()\n");
+		return -1;
+	}
+	// copy the bitmap to the memory device context
+	// SRCCOPY | CAPTUREBLT: Includes any windows that are layered on top of your window in the resulting image. By default, the image only contains your window.
+	if (!BitBlt(compatibleHDC, 0, 0, width, height, SourceHDC, nLeft, nTop, SRCCOPY))
+	{
+		OUTPUT_LOG("error: bitblt failed with code %d in MovieCodec::TakeScreenshot()\n", GetLastError());
+		return -1;
+	}
+
+	// copy the mouse cursor to the bitmap
+	if (bCaptureMouse) {
+		HCURSOR hc = ::GetCursor();
+		CURSORINFO cursorinfo;
+		ICONINFO iconinfo;
+		cursorinfo.cbSize = sizeof(CURSORINFO);
+		::GetCursorInfo(&cursorinfo);
+		::GetIconInfo(cursorinfo.hCursor, &iconinfo);
+		::ScreenToClient(nHwnd, &cursorinfo.ptScreenPos);
+		::DrawIcon(m_CompatibleHDC, cursorinfo.ptScreenPos.x - iconinfo.xHotspot, cursorinfo.ptScreenPos.y - iconinfo.yHotspot, cursorinfo.hCursor);
+	}
+
+	//--Get the bitmap
+	GetObject(bitmapHandle, sizeof(BITMAP), &Bitmap);
+
+	outFileHeaderSize = sizeof(BITMAPFILEHEADER);
+	outInfoHeaderSize = sizeof(BITMAPINFOHEADER);
+	//--Compute the bitmap size
+	unsigned long BitmapSize = outFileHeaderSize + outInfoHeaderSize + (Bitmap.bmWidth  * Bitmap.bmHeight * 3);
+
+	//--Allocate a memory block for the bitmap
+	//allocate the output buffer;
+	outBuffers.resize(BitmapSize);
+	memset(&(outBuffers[0]), 0, BitmapSize);
+
+	BYTE* MemoryHandle = &(outBuffers[0]);
+
+	LPBITMAPFILEHEADER fileHeader = (LPBITMAPFILEHEADER)(MemoryHandle);
+	fileHeader->bfType = 0x4d42;
+	fileHeader->bfSize = 0;
+	fileHeader->bfReserved1 = 0;
+	fileHeader->bfReserved2 = 0;
+	fileHeader->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+	//--Setup the bitmap data
+	LPBITMAPINFOHEADER pBmpInfo = (LPBITMAPINFOHEADER)(&(outBuffers[outFileHeaderSize]));
+	pBmpInfo->biSizeImage = 0;//BitmapSize - sizeof(BITMAPINFOHEADER);
+	pBmpInfo->biSize = sizeof(BITMAPINFOHEADER);
+	pBmpInfo->biHeight = Bitmap.bmHeight;
+	pBmpInfo->biWidth = Bitmap.bmWidth;
+	pBmpInfo->biCompression = BI_RGB;
+	pBmpInfo->biBitCount = 24;
+	pBmpInfo->biPlanes = 1;
+	pBmpInfo->biXPelsPerMeter = 0;
+	pBmpInfo->biYPelsPerMeter = 0;
+	pBmpInfo->biClrUsed = 0;
+	pBmpInfo->biClrImportant = 0;
+
+	//--Get the bitmap data from memory
+	GetDIBits(compatibleHDC, bitmapHandle, 0, Bitmap.bmHeight, (unsigned char*)(&(outBuffers[outFileHeaderSize + outInfoHeaderSize])), (LPBITMAPINFO)pBmpInfo, DIB_RGB_COLORS);
+
+	::DeleteObject(bitmapHandle);
+	::DeleteDC(compatibleHDC);
+	::ReleaseDC(nHwnd, SourceHDC);
+	::ReleaseDC(nHwnd, compatibleHDC);
+#endif
+	return 0;
+}
 HRESULT CMoviePlatform::InvalidateDeviceObjects()
 {
 	IMovieCodec* pMovieCodec = GetMovieCodec(false);
