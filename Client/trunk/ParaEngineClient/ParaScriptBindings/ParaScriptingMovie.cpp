@@ -11,11 +11,11 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "ScreenShotSystem.h"
-#include "util/StringHelper.h"
-#include "AISimulator.h"
 using namespace ScreenShot;
 #endif
 
+#include "util/StringHelper.h"
+#include "AISimulator.h"
 #include "MoviePlatform.h"
 #include "ParaScriptingMovie.h"
 

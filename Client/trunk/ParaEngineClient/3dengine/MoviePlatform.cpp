@@ -154,6 +154,10 @@ void CMoviePlatform::SetStereoCaptureMode( MOVIE_CAPTURE_MODE nMode )
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_LEFT_RIGHT);
 	}
+	else if (nMode == MOVIE_CAPTURE_MODE_STEREO_RED_BLUE)
+	{
+		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_STEREO_RED_BLUE);
+	}
 	else
 	{
 		CGlobals::GetViewportManager()->SetLayout(VIEW_LAYOUT_DEFAULT);
@@ -770,7 +774,7 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 	if (GetStereoCaptureMode() == MOVIE_CAPTURE_MODE_STEREO_LEFT_RIGHT || GetStereoCaptureMode() == MOVIE_CAPTURE_MODE_STEREO_ABOVE_BELOW || GetStereoCaptureMode() == MOVIE_CAPTURE_MODE_STEREO_LINE_INTERLACED)
 	{
 		// double the FPS for special stereo mode, since we will render one frame for the left eye and one frame for the right eye, and the output video is half the actual FPS. 
-		nRefreshFPS *= 2;
+		// nRefreshFPS *= 2;
 	}
 	CGlobals::GetApp()->SetRefreshTimer(1.f/nRefreshFPS);
 	if (!pMovieCodec)

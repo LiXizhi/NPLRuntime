@@ -453,10 +453,25 @@ ParaEngine::Vector2 ParaEngine::CRenderTarget::GetRenderTargetSize()
 	return Vector2((float)nWidth, (float)nHeight);
 }
 
+const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
+{
+	if (m_sCanvasTextureName.empty()){
+		m_sCanvasTextureName = "_miniscenegraph_";
+		m_sCanvasTextureName += GetIdentifier();
+	}
+	return m_sCanvasTextureName;
+}
+
+void ParaEngine::CRenderTarget::SetCanvasTextureName(const std::string& sValue)
+{
+	if (m_sCanvasTextureName != sValue){
+		m_sCanvasTextureName = sValue;
+	}
+}
+
 bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3DFORMAT format, D3DFORMAT depthStencilFormat /*= D3DFMT_D16*/)
 {
-	string sKey = "_miniscenegraph_";
-	sKey += GetIdentifier();
+	const std::string& sKey = GetCanvasTextureName();
 
 	SetRenderTargetSize(width, height);
 

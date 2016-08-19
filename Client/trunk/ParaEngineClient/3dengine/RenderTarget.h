@@ -147,6 +147,9 @@ namespace ParaEngine
 
 		virtual bool IsDead();
 		virtual void SetDead();
+
+		const std::string& GetCanvasTextureName();
+		void SetCanvasTextureName(const std::string& sValue);
 	protected:
 		// whether device is created.
 		bool		m_bInitialized;
@@ -185,7 +188,9 @@ namespace ParaEngine
 		bool m_bActiveRendering;
 		/** whether render target is dirty and should be redraw on the next frame. */
 		bool m_bIsDirty;
-		
+		/** render target canvas name */
+		std::string m_sCanvasTextureName;
+
 		mutable CPaintEngine *engine;
 	};
 

@@ -9,6 +9,8 @@ namespace ParaEngine
 		VIEW_LAYOUT_DEFAULT,
 		VIEW_LAYOUT_STEREO_LEFT_RIGHT,
 		VIEW_LAYOUT_STEREO_UP_DOWN,
+		VIEW_LAYOUT_STEREO_RED_BLUE,
+		VIEW_LAYOUT_INVALID,
 	};
 
 	/** manager multiple viewport
@@ -22,6 +24,9 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CViewportManager);
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
 
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
@@ -49,6 +54,7 @@ namespace ParaEngine
 		/** just in case the size changed. */
 		void UpdateLayout();
 
+		int GetViewportCount();
 		void SetViewportCount(int nCount);
 
 		/** get current viewport*/

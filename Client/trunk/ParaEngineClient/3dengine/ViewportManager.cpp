@@ -7,13 +7,13 @@
 // Desc: managing all view ports
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-
+#include "SceneState.h"
 #include "ViewportManager.h"
 
 using namespace ParaEngine;
 
 CViewportManager::CViewportManager()
-:m_nWidth(1), m_nHeight(1), m_nActiveViewPortIndex(1)
+	:m_nWidth(1), m_nHeight(1), m_nActiveViewPortIndex(1), m_nLayout(VIEW_LAYOUT_INVALID)
 {
 	m_viewport.X = 0;
 	m_viewport.Y = 0;
@@ -156,6 +156,16 @@ int ParaEngine::CViewportManager::GetHeight() const
 	return m_nHeight;
 }
 
+int ParaEngine::CViewportManager::GetViewportCount()
+{
+	for (size_t i = 0; i < m_viewportList.size(); ++i)
+	{
+		if (m_viewportList[i] == 0)
+			return i;
+	}
+	return (int)m_viewportList.size();
+}
+
 void ParaEngine::CViewportManager::SetViewportCount(int nCount)
 {
 	if ((int)m_viewportList.size() >= nCount)
@@ -196,23 +206,13 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainScene = CGlobals::GetScene();
 	if (!pGUIRoot)
 		pGUIRoot = CGlobals::GetGUI();
+	if (m_nLayout == nLayout && GetViewportCount() != 0)
+		return;
+	// clear layout
+	SetViewportCount(0);
+
 	m_nLayout = nLayout;
-	if (nLayout == VIEW_LAYOUT_DEFAULT)
-	{
-		CViewport* pUIViewport = CreateGetViewPort(0);
-		pUIViewport->SetIdentifier("GUI");
-		pUIViewport->SetGUIRoot(pGUIRoot);
-		pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
-		pUIViewport->SetZOrder(100);
-		pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
-		CViewport* pMainSceneViewport = CreateGetViewPort(1);
-		pMainSceneViewport->SetIdentifier("scene");
-		pMainSceneViewport->SetScene(pMainScene);
-		pMainSceneViewport->SetPosition("_fi", 0, 0, 0, 0);
-		pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
-		SetViewportCount(2);
-	}
-	else if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
+	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
 	{
 		int nHalfWidth = (int)(GetWidth() / 2);
 		CViewport* pUIViewportLeft = CreateGetViewPort(0);
@@ -239,7 +239,54 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewportRight->SetPosition("_mr", 0, 0, nHalfWidth, 0);
 		pMainSceneViewportRight->SetZOrder(1);
 		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+
 		SetViewportCount(4);
+	}
+	else if (nLayout == VIEW_LAYOUT_STEREO_RED_BLUE)
+	{
+		CViewport* pUIViewport = CreateGetViewPort(0);
+		pUIViewport->SetIdentifier("GUI");
+		pUIViewport->SetGUIRoot(pGUIRoot);
+		pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pUIViewport->SetZOrder(100);
+		pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		CViewport* pMainSceneViewportLeft = CreateGetViewPort(1);
+		pMainSceneViewportLeft->SetIdentifier("left_scene");
+		pMainSceneViewportLeft->SetScene(pMainScene);
+		pMainSceneViewportLeft->SetPosition("_fi", 0, 0, 0, 0);
+		pMainSceneViewportLeft->SetEyeMode(STEREO_EYE_LEFT);
+		pMainSceneViewportLeft->SetRenderTargetName("_LeftViewRT"); // use private render target
+
+		CViewport* pMainSceneViewportRight = CreateGetViewPort(2);
+		pMainSceneViewportRight->SetIdentifier("right_scene");
+		pMainSceneViewportRight->SetScene(pMainScene);
+		pMainSceneViewportRight->SetPosition("_fi", 0, 0, 0, 0);
+		pMainSceneViewportRight->SetZOrder(1);
+		pMainSceneViewportRight->SetEyeMode(STEREO_EYE_RIGHT);
+
+		// final full screen quad
+		CViewport* pFinalViewPort = CreateGetViewPort(3);
+		pFinalViewPort->SetIdentifier("final_composite");
+		pFinalViewPort->SetPosition("_fi", 0, 0, 0, 0);
+		pFinalViewPort->SetEyeMode(STEREO_EYE_NORMAL);
+		pFinalViewPort->SetZOrder(99); // before GUI
+		pFinalViewPort->SetPipelineOrder(PIPELINE_3D_SCENE);
+		SetViewportCount(4);
+	}
+	else // if (nLayout == VIEW_LAYOUT_DEFAULT)
+	{
+		CViewport* pUIViewport = CreateGetViewPort(0);
+		pUIViewport->SetIdentifier("GUI");
+		pUIViewport->SetGUIRoot(pGUIRoot);
+		pUIViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pUIViewport->SetZOrder(100);
+		pUIViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		CViewport* pMainSceneViewport = CreateGetViewPort(1);
+		pMainSceneViewport->SetIdentifier("scene");
+		pMainSceneViewport->SetScene(pMainScene);
+		pMainSceneViewport->SetPosition("_fi", 0, 0, 0, 0);
+		pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
+		SetViewportCount(2);
 	}
 }
 
@@ -275,6 +322,16 @@ void ParaEngine::CViewportManager::GetCurrentViewport(ParaViewport& out)
 int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
 	return (int)m_viewportList.size();
+}
+
+IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(const std::string& sName)
+{
+	for (CViewport* viewport : m_viewportList)
+	{
+		if (viewport && viewport->GetIdentifier() == sName)
+			return viewport;
+	}
+	return NULL;
 }
 
 IAttributeFields* ParaEngine::CViewportManager::GetChildAttributeObject(int nRowIndex, int nColumnIndex /*= 0*/)
