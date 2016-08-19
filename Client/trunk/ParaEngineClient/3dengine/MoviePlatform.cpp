@@ -381,11 +381,10 @@ void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, 
 bool CMoviePlatform::TakeScreenShot_FromGDI(const string& filename, std::vector<BYTE>& outBase64Buffers, bool bEncode, int width, int height)
 {
 #ifdef USE_DIRECTX_RENDERER
-	IMovieCodec* pMovieCodec = GetMovieCodec();
 	// force same resolution as current back buffer.  
 	LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
 	D3DSURFACE_DESC desc;
-	if (!pMovieCodec || !pFromSurface)
+	if (!pFromSurface)
 	{
 		return false;
 	}
