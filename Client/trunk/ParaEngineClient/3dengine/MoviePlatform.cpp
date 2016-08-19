@@ -9,9 +9,9 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "ScreenShotSystem.h"
-#include <thread> 
 using namespace ScreenShot;
 #endif
+#include <thread>
 #include "VertexFVF.h"
 #include "SceneState.h"
 #include "SceneObject.h"
