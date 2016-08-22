@@ -441,8 +441,10 @@ void CNPLScriptingState::LoadHAPI_Globals()
 		[
 			// declarations
 			def("GetAttributeObject", &ParaScripting::ParaMovie::GetAttributeObject),
-			def("TakeScreenShot", & ParaScripting::ParaMovie::TakeScreenShot),
-			def("TakeScreenShot", & ParaScripting::ParaMovie::TakeScreenShot3),
+			def("TakeScreenShot_Async", &ParaScripting::ParaMovie::TakeScreenShot_Async),
+			def("TakeScreenShot_Async", &ParaScripting::ParaMovie::TakeScreenShot3_Async),
+			def("TakeScreenShot", &ParaScripting::ParaMovie::TakeScreenShot),
+			def("TakeScreenShot", &ParaScripting::ParaMovie::TakeScreenShot3),
 			def("RenderToTexture", & ParaScripting::ParaMovie::RenderToTexture),
 			def("ResizeImage", & ParaScripting::ParaMovie::ResizeImage),
 			def("GetImageInfo", & ParaScripting::ParaMovie::GetImageInfo, pure_out_value(_2) + pure_out_value(_3) + pure_out_value(_4)),

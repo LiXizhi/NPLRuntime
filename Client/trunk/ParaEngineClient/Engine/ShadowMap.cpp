@@ -171,10 +171,8 @@ bool CShadowMap::PrepareAllSurfaces()
 	}
 	else
 		m_bSupportsHWShadowMaps = true;
-//#ifdef _DEBUG
-#define USE_F32_SHADOWMAP
-//#endif
 
+#define USE_F32_SHADOWMAP
 #ifdef USE_F32_SHADOWMAP
 	m_bSupportsHWShadowMaps = false;
 #endif
@@ -190,11 +188,18 @@ bool CShadowMap::PrepareAllSurfaces()
 
 	if (m_bSupportsHWShadowMaps)
 	{
+		if(m_pSMColorTexture == 0)
+		{
+			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
+			m_pSMColorTexture->SetTextureInfo(tex_info);
+			m_pSMColorTexture->LoadAsset();
+			if(!m_pSMColorTexture->IsValid())
+				return false;
+		}
 		SAFE_RELEASE(m_pSMColorSurface);
-		if (FAILED(pd3dDevice->CreateRenderTarget(m_shadowTexWidth, m_shadowTexHeight, colorFormat, D3DMULTISAMPLE_NONE, 0, FALSE, &m_pSMColorSurface, NULL)))
-			return false;
+		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
 
-		//if(m_pSMZTexture == 0)
+		if(m_pSMZTexture == 0)
 		{
 			m_pSMZTexture = CGlobals::GetAssetManager()->LoadTexture("_SMZTexture", "_SMZTexture", TextureEntity::DEPTHSTENCIL);
 			m_pSMZTexture->SetTextureInfo(tex_info);
@@ -208,7 +213,7 @@ bool CShadowMap::PrepareAllSurfaces()
 	else
 	{
 		//  use R32F & shaders instead of depth textures
-		//if(m_pSMColorTexture == 0)
+		if(m_pSMColorTexture == 0)
 		{
 			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
 			m_pSMColorTexture->SetTextureInfo(tex_info);
@@ -1107,7 +1112,9 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 
 	CBaseCamera* pCamera = CGlobals::GetScene()->GetCurrentCamera();
 	assert(pCamera!=0);
-	/*float fNearPlane = pCamera->GetNearPlane();
+	float fNearPlane = pCamera->GetNearPlane();
+// #define USE_SHADOW_RECEIVER_AABB
+#ifdef USE_SHADOW_RECEIVER_AABB
 	float fFarPlane = pCamera->GetShadowFrustum()->GetViewDepth();
 	m_fAspect = pCamera->GetAspectRatio();
 
@@ -1159,24 +1166,26 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 		casterAABB.GetMin().z, frustumAABB.GetMax().z );
 
 	ParaMatrixMultiply( &lightView, &m_View, &lightView );
-	ParaMatrixMultiply( &m_LightViewProj, &lightView, &lightProj );*/
-
+	ParaMatrixMultiply( &m_LightViewProj, &lightView, &lightProj );
+#else
+	// use the entire frustum
+	
 	//edit by devilwalk
 	const Vector3 z_vec(0.f, 0.f, 1.f);
 	const Vector3 y_vec(0.f, 1.f, 0.f);
 	const Vector3 zero_vec(0, 0, 0);
 	const Vector3 light_dir = -m_lightDir;
-	//建立伪灯光视图矩阵
+	// virtual light view matrix 
 	Matrix4 fake_light_view;
 	ParaMatrixLookAtLH(&fake_light_view, &zero_vec, &light_dir, fabsf(light_dir.dotProduct(y_vec)) > 0.99f ? &z_vec : &y_vec);
-	//变换视锥8个点到伪灯光空间下
+	// frustum to virtual light coordinate space 
 	Vector3 frustum_point_in_fake_light[8];
 	for (int i = 0; i < 8; ++i)
 	{
-		frustum_point_in_fake_light[i]=pCamera->GetShadowFrustum()->vecFrustum[i] * fake_light_view;
+		frustum_point_in_fake_light[i] = pCamera->GetShadowFrustum()->vecFrustum[i] * fake_light_view;
 	}
-	//计算变换后的aabb
-	Vector3 min_pt(FLT_MAX,FLT_MAX,FLT_MAX), max_pt(-FLT_MAX,-FLT_MAX,-FLT_MAX);
+	// compute new AABB
+	Vector3 min_pt(FLT_MAX, FLT_MAX, FLT_MAX), max_pt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	for (int i = 0; i < 8; ++i)
 	{
 		min_pt.x = std::min(min_pt.x, frustum_point_in_fake_light[i].x);
@@ -1195,7 +1204,7 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	Vector3 vBoarderOffset = (diagonal_vec -
 		(max_pt - min_pt))
 		* 0.5f;
-	vBoarderOffset.z=0;
+	vBoarderOffset.z = 0;
 	max_pt += vBoarderOffset;
 	min_pt -= vBoarderOffset;
 	float fWorldUnitsPerTexel = diagonal_len / m_shadowTexWidth;
@@ -1211,12 +1220,13 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	max_pt.y /= fWorldUnitsPerTexel;
 	max_pt.y = floorf(max_pt.y);
 	max_pt.y *= fWorldUnitsPerTexel;
-	//建立伪灯光投影矩阵
+	// reconstruct project matrix
 	Matrix4 fake_light_proj;
 	ParaMatrixOrthoOffCenterLH(&fake_light_proj, min_pt.x, max_pt.x,
 		min_pt.y, max_pt.y,
-		min_pt.z-100.0f, max_pt.z);
+		min_pt.z - 100.0f, max_pt.z);
 	ParaMatrixMultiply(&m_LightViewProj, &fake_light_view, &fake_light_proj);
+#endif
 	return true;
 }
 
@@ -1310,13 +1320,13 @@ HRESULT CShadowMap::BeginShadowPass()
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
 	{
 		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
-		pd3dDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0, 1.0f, 0L);
+		pd3dDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
 	}
 	else
 	{
 		pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFFFFFFFF, 1.0f, 0L);
 	}
-	
+
 	
 	pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 	//depth bias
@@ -1334,7 +1344,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	// set the technique
 	// end the current effect, so that we may change its technique
 	CGlobals::GetEffectManager()->SetAllEffectsTechnique(EffectManager::EFFECT_GEN_SHADOWMAP);
-
+	
 	return S_OK;
 }
 
@@ -1440,12 +1450,11 @@ HRESULT CShadowMap::EndShadowPass()
 	pd3dDevice->SetViewport(&oldViewport);
 
 	//re enable color writes
-	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap||m_bBlurSMColorTexture))
+	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
 		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xf);
 	//pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_ARGB(0, 60, 60, 60), 1.0f, 0L);
 	//pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 	//pd3dDevice->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
-	
 	return S_OK;
 }
 

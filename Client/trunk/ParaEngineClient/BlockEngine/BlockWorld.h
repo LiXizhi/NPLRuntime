@@ -529,8 +529,11 @@ namespace ParaEngine
 		*/
 		RenderableChunk* GetRenderableChunk(const Int16x3& chunkPos);
 		
+		/** unload region from memory. return true if unloaded.*/
+		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
+
 	protected:
-		/** return iterator of the removed region. */
+		/** removed given region from memory. */
 		void UnloadRegion(BlockRegion* pRegion, bool bAutoSave = true);
 
 		/**

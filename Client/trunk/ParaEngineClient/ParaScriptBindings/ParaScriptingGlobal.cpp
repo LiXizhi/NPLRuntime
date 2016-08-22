@@ -326,7 +326,7 @@ ParaAttributeObject::ParaAttributeObject(IAttributeFields * pAttribute, CAttribu
 
 bool ParaAttributeObject::IsValid() const
 {
-	return (m_pAttribute);
+	return (m_pAttribute.get()!=0);
 }
 
 int  ParaAttributeObject::GetClassID() const

@@ -14,6 +14,8 @@
 using namespace ScreenShot;
 #endif
 
+#include "util/StringHelper.h"
+#include "AISimulator.h"
 #include "MoviePlatform.h"
 #include "ParaScriptingMovie.h"
 
@@ -73,11 +75,51 @@ namespace ParaScripting
 		return CGlobals::GetMoviePlatform()->TakeScreenShot(filename);
 	}
 
-	bool ParaMovie::TakeScreenShot3( const char* filename, int width, int height )
+	void ParaMovie::TakeScreenShot_Async(const char* filename, const char* sCallBackScript)
+	{
+		TakeScreenShot_Async_Internal(filename,-1,-1,sCallBackScript);
+	}
+
+	bool ParaMovie::TakeScreenShot3(const char* filename, int width, int height)
 	{
 		return CGlobals::GetMoviePlatform()->TakeScreenShot(filename, width, height);
 	}
-
+	void ParaMovie::TakeScreenShot3_Async(const char* filename, int width, int height, const char* sCallBackScript)
+	{
+		TakeScreenShot_Async_Internal(filename, width, height, sCallBackScript);
+	}
+	void ParaMovie::TakeScreenShot_Async_Internal(const char* filename, int width, int height, const char* sCallBackScript)
+	{
+		string callback_script = sCallBackScript;
+		std::function<void(bool)> callback = [=](bool bSuccessful) {
+			if (!callback_script.empty())
+			{
+				string scode, sequence;
+				ParaEngine::StringHelper::DevideString(sCallBackScript, scode, sequence);
+				if (bSuccessful)
+				{
+					scode = "msg={res = 0,s = " + sequence + "};" + scode;
+				}
+				else
+				{
+					scode = "msg={res = -1,s = " + sequence + "};" + scode;
+				}
+				ParaEngine::CGlobals::GetAISim()->NPLActivate("", scode.c_str(), (int)(scode.size()));
+			}
+		};
+		if (width > 0 && height > 0)
+		{
+			CGlobals::GetMoviePlatform()->TakeScreenShot_Async(filename, width, height, [=](bool bSuccessful) {
+					callback(bSuccessful);
+			});
+		}
+		else
+		{
+			CGlobals::GetMoviePlatform()->TakeScreenShot_Async(filename, [=](bool bSuccessful) {
+					callback(bSuccessful);
+			});
+		}
+	}
 	// this function is obsoleted, use ParaMovie::TakeScreenShot3 instead. 
 	bool ParaMovie::RenderToTexture(const char* filename, int width, int height)
 	{

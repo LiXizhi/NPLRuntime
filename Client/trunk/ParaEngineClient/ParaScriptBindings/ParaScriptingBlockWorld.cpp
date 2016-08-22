@@ -451,6 +451,12 @@ void ParaScripting::ParaBlockWorld::LoadRegion(const object& pWorld_, uint16_t x
 	pWorld->CreateGetRegion(x, y, z);
 }
 
+void ParaScripting::ParaBlockWorld::UnloadRegion(const object& pWorld_, uint16_t x, uint16_t y, uint16_t z)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+	pWorld->UnloadRegion(x, y, z, false);
+}
+
 int ParaScripting::ParaBlockWorld::GetVersion(const object& pWorld_)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);

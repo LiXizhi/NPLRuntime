@@ -390,6 +390,17 @@ BlockRegion* CBlockWorld::CreateGetRegion(uint16_t region_x, uint16_t region_z)
 		return NULL;
 }
 
+bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
+{
+	uint16_t rx, ry, rz;
+	BlockRegion* pRegion = GetRegion(block_x, block_y, block_z, rx, ry, rz);
+	if (pRegion){
+		UnloadRegion(pRegion, bAutoSave);
+		return true;
+	}
+	return false;
+}
+
 void CBlockWorld::UnloadRegion(BlockRegion* pRegion, bool bAutoSave)
 {
 	if (pRegion)

@@ -339,7 +339,10 @@ namespace NPL
 		/** reject and close a given connection. The connection will be closed once rejected. 
 		* [thread safe]
 		* @param nid: the temporary id or NID of the connection to be rejected. usually it is from msg.tid or msg.nid. 
-		* @param nReason: default to 0. if 1 it means connection overridden
+		* @param nReason: default to 0. 
+		* - 0 or positive value is forcibly reset/disconnect (it will abort pending read/write immediately).
+		* - 1 is another user with same nid is authenticated. The server should send a message to tell the client about this.
+		* - -1 or negative value means gracefully close the connection when all pending data has been sent.
 		*/
 		void NPL_reject(const char* nid, int nReason = 0);
 

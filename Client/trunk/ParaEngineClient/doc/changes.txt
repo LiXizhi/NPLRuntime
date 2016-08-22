@@ -1,6 +1,15 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.8.17
+	- fix viewport change when render target is changed
+	- viewport support render target
+
+2016.8.15
+	- fix a tricky bug that: boost::asio::async_write may crash
+	- merged pull request to add connection reason and file remove api. 
+	- merged a number shader related changes from papercraft project
+
 2016.8.1-2016.8.3
     - fixed apply chunk API with different meta data field. 
 	- object with custom renderer will also call view touch method. 

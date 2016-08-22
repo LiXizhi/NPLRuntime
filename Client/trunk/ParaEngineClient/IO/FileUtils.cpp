@@ -460,7 +460,7 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 			NULL,
 			FO_DELETE,
 			filename.c_str(),
-			"",
+			NULL,
 			FOF_NOCONFIRMATION |
 			FOF_NOERRORUI |
 			FOF_SILENT,

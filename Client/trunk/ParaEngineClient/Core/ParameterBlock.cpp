@@ -13,6 +13,7 @@
 #include "ParaWorldAsset.h"
 #include "effect_file.h"
 #include "EffectManager.h"
+#include "ViewportManager.h"
 #include "SceneObject.h"
 #include "AutoCamera.h"
 #include "BlockEngine/BlockWorldClient.h"
@@ -439,7 +440,14 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			v.x = (float)(CGlobals::GetEffectManager()->GetShadowMap()->GetShadowMapTexelSize());
 			v.y = (float)(1 / v.x);
 		}
-
+		else if (sValue == "vec2ViewportScale")
+		{
+			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(&v, NULL);
+		}
+		else if (sValue == "vec2ViewportOffset")
+		{
+			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(NULL, &v);
+		}
 		SetParameter(sParamName, v);
 	}
 	else if (sValue.find("float") != string::npos)

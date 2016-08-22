@@ -29,6 +29,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #include <gdiplus.h>
 #include "ContentLoaders.h"
 #include "AsyncLoader.h"
+#include "ViewportManager.h"
 #include "TextureEntityDirectX.h"
 
 #ifdef PARAENGINE_CLIENT
@@ -256,11 +257,20 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 				}
 				else
 				{
-					if(IsLocked() || GetTexture() == 0)
+					if (IsLocked() || (GetTexture() == 0 && GetSurface() == 0))
 					{
 						// if texture is locked (being downloaded)
 						m_pTextureInfo->m_width = -1;
 						m_pTextureInfo->m_height = -1;
+					}
+					else if (GetSurface())
+					{
+						D3DSURFACE_DESC desc;
+						if (SUCCEEDED(GetSurface()->GetDesc(&desc)))
+						{
+							m_pTextureInfo->m_width = desc.Width;
+							m_pTextureInfo->m_height = desc.Height;
+						}
 					}
 					else if(m_pTexture)
 					{
@@ -988,6 +998,9 @@ bool TextureEntityDirectX::SetRenderTarget(int nIndex)
 	if (bReleaseSrc)
 	{
 		SAFE_RELEASE(pSrcSurface);
+	}
+	if (res && nIndex == 0){
+		CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 	}
 	return res;
 }

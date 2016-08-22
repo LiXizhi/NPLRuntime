@@ -13,18 +13,21 @@
 #include "ParaWorldAsset.h"
 #include "MoviePlatform.h"
 #include "ViewportManager.h"
+#include "NPLRuntime.h"
+#include "RenderTarget.h"
 #include "Viewport.h"
 
 using namespace ParaEngine;
 
 CViewport::CViewport(CViewportManager* pViewportManager)
-:m_position(), m_pScene(NULL), m_pCamera(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL)
+	:m_position(), m_pScene(NULL), m_pCamera(NULL), m_pGUIRoot(NULL), m_pViewportManager(pViewportManager), m_fScalingX(1.f), m_fScalingY(1.f), m_fAspectRatio(1.f), m_bIsModifed(true), m_nZOrder(0), m_bIsEnabled(true), m_nEyeMode(STEREO_EYE_NORMAL), m_nPipelineOrder(-1), m_pRenderTarget(NULL)
 {
 	memset(&m_rect, 0, sizeof(m_rect));
 }
 
 CViewport::~CViewport(void)
 {
+	SAFE_DELETE(m_pRenderTarget);
 }
 
 CAutoCamera* ParaEngine::CViewport::GetCamera()
@@ -55,9 +58,47 @@ void ParaEngine::CViewport::ApplyCamera(CAutoCamera* pCamera)
 	}
 }
 
+const std::string& ParaEngine::CViewport::GetRenderScript() const
+{
+	return m_sRenderScript;
+}
+
+void ParaEngine::CViewport::SetRenderScript(const std::string&& val)
+{
+	m_sRenderScript = val;
+}
+
+int ParaEngine::CViewport::GetPipelineOrder() const
+{
+	return m_nPipelineOrder;
+}
+
+void ParaEngine::CViewport::SetPipelineOrder(int val)
+{
+	m_nPipelineOrder = val;
+}
+
+const std::string& ParaEngine::CViewport::GetRenderTargetName() const
+{
+	return m_sRenderTargetName;
+}
+
+void ParaEngine::CViewport::SetRenderTargetName(const std::string& val)
+{
+	if (m_sRenderTargetName != val)
+	{
+		m_sRenderTargetName = val;
+		SAFE_DELETE(m_pRenderTarget);
+		if (!m_sRenderTargetName.empty()){
+			m_pRenderTarget = new CRenderTarget();
+			m_pRenderTarget->SetCanvasTextureName(val);
+		}
+	}
+}
+
 HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 {
-	if (!IsEnabled())
+	if (!IsEnabled() || (GetPipelineOrder() >= 0 && GetPipelineOrder() != nPipelineOrder))
 		return S_OK;
 
 	if (GetEyeMode() == STEREO_EYE_RIGHT)
@@ -71,6 +112,17 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 		CAutoCamera* pCamera = GetCamera();
 		if (pRootScene && pCamera)
 		{
+			if (m_pRenderTarget)
+			{
+				m_pRenderTarget->SetRenderTargetSize(Vector2((float)GetWidth(), (float)GetHeight()));
+				m_pRenderTarget->GetPrimaryAsset(); // touch asset
+			}
+			ScopedPaintOnRenderTarget painter_(m_pRenderTarget);
+			if (m_pRenderTarget && nPipelineOrder == PIPELINE_3D_SCENE)
+			{
+				m_pRenderTarget->Clear(pRootScene->GetFogColor());
+			}
+
 			SetActive();
 			ApplyCamera(pCamera);
 			ApplyViewport();
@@ -113,6 +165,13 @@ HRESULT ParaEngine::CViewport::Render(double dTimeDelta, int nPipelineOrder)
 			GetGUIRoot()->AdvanceGUI((float)dTimeDelta);
 		}
 	}
+
+	if (!GetRenderScript().empty())
+	{
+		SetActive();
+		ApplyViewport();
+		CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(GetRenderScript().c_str(), (int)GetRenderScript().size());
+	}
 	return S_OK;
 }
 
@@ -128,7 +187,9 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 	pClass->AddField("width", FieldType_Int, (void*)SetWidth_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("height", FieldType_Int, (void*)SetHeight_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ApplyViewport", FieldType_void, (void*)ApplyViewport_s, NULL, NULL, NULL, bOverride);
-
+	pClass->AddField("RenderScript", FieldType_String, (void*)SetRenderScript_s, (void*)GetRenderScript_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderTargetName", FieldType_String, (void*)SetRenderTargetName_s, (void*)GetRenderTargetName_s, NULL, NULL, bOverride);
+	pClass->AddField("PipelineOrder", FieldType_Int, (void*)SetPipelineOrder_s, (void*)GetPipelineOrder_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
@@ -223,6 +284,20 @@ ParaViewport ParaEngine::CViewport::ApplyViewport()
 	return SetViewport(m_rect.left, m_rect.top, m_rect.right - m_rect.left, m_rect.bottom - m_rect.top);
 }
 
+void ParaEngine::CViewport::GetViewportTransform(Vector2* pvScale, Vector2* pvOffset /*= NULL*/)
+{
+	float fWidth = (float)m_pViewportManager->GetWidth();
+	float fHeight = (float)m_pViewportManager->GetHeight();
+	if (pvScale)
+	{
+		*pvScale = Vector2((m_rect.right - m_rect.left) / fWidth, (m_rect.bottom - m_rect.top) / fHeight);
+	}
+	if (pvOffset)
+	{
+		*pvOffset = Vector2(m_rect.left / fWidth, m_rect.top / fHeight);
+	}
+}
+
 bool ParaEngine::CViewport::DrawQuad()
 {
 	float fWidth = (float)m_pViewportManager->GetWidth();
@@ -261,6 +336,7 @@ bool ParaEngine::CViewport::DrawQuad()
 
 	return bSucceed;
 }
+
 
 void ParaEngine::CViewport::SetModified()
 {
