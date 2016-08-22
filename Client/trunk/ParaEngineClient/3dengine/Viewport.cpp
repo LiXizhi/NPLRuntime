@@ -337,7 +337,34 @@ bool ParaEngine::CViewport::DrawQuad()
 	return bSucceed;
 }
 
+bool ParaEngine::CViewport::DrawQuad2()
+{
+	bool bSucceed = false;
+#ifdef USE_DIRECTX_RENDERER
+	D3DVIEWPORT9 old_vp;
+	CGlobals::GetRenderDevice()->GetViewport(&old_vp);
+	IDirect3DSurface9 * rt = nullptr;
+	CGlobals::GetRenderDevice()->GetRenderTarget(0, &rt);
+	D3DSURFACE_DESC desc;
+	rt->GetDesc(&desc);
+	SAFE_RELEASE(rt);
+	D3DVIEWPORT9 vp = { 0 };
+	vp.Height = desc.Height;
+	vp.Width = desc.Width;
+	vp.MaxZ = 1.0f;
+	CGlobals::GetRenderDevice()->SetViewport(&vp);
+	mesh_vertex_plain quadVertices[4] = {
+		{ Vector3(-1, -1, 0), Vector2(0, 1) },
+		{ Vector3(1, -1, 0), Vector2(1, 1) },
+		{ Vector3(-1, 1, 0), Vector2(0, 0) },
+		{ Vector3(1, 1, 0), Vector2(1, 0) },
+	};
 
+	bSucceed = SUCCEEDED(RenderDevice::DrawPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
+	CGlobals::GetRenderDevice()->SetViewport(&old_vp);
+#endif      
+	return bSucceed;
+}
 void ParaEngine::CViewport::SetModified()
 {
 	m_bIsModifed = true;
