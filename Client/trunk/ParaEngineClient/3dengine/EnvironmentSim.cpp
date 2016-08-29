@@ -490,14 +490,14 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 			{
 				for (auto pObj : pTile->m_listFreespace)
 				{
-					if(pObj->GetType()==CBaseObject::MeshPhysicsObject)
+					if (pObj->CanHasPhysics())
 					{
 						IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
 						for(int j=0;j<nPointCount; ++j)
 						{
 							if(pViewClippingObject->TestCollisionSphere(&(points[j].GetCenter()), points[j].GetRadius(), 2))
 							{
-								((CMeshPhysicsObject*)pObj)->LoadPhysics();
+								pObj->LoadPhysics();
 								break;
 							}
 						}

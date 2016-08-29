@@ -7,6 +7,8 @@ namespace ParaEngine
 	class CParaXModel;
 	class BMaxModel;
 	struct SceneState;
+	struct IParaPhysicsActor;
+	class CPhysicsWorld;
 
 	/* render with color and material. */
 	class BMaxObject : public CTileObject
@@ -40,11 +42,30 @@ namespace ParaEngine
 		/** get the scaling. */
 		virtual float GetScaling();
 
+
+		virtual void LoadPhysics();
+		virtual void UnloadPhysics();
+		virtual void SetPhysicsGroup(int nGroup);
+		virtual int GetPhysicsGroup();
+		virtual void EnablePhysics(bool bEnable);
+		virtual bool IsPhysicsEnabled();
+
+		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
+		int GetStaticActorCount();;
+		
 	private:
 		/** size scale */
 		float	m_fScale;
 		AnimIndex m_CurrentAnim;
 		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
+
+		/** all static physics actors in physics engine */ 
+		vector<IParaPhysicsActor*> m_staticActors;
+
+		// any bit wise combination of PHYSICS_METHOD
+		DWORD m_dwPhysicsMethod;
+		unsigned int m_nPhysicsGroup;
+
 		/** a value between [0,1). last block light. */
 		float m_fLastBlockLight;
 		/** a hash to detect if the containing block position of this biped changed. */

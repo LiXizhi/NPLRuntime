@@ -516,7 +516,7 @@ namespace ParaEngine
 					pMesh->m_boneLookup[pBone->nBoneID] = i;
 				else if (pBone->IsAttachment())
 				{
-					pMesh->NewAttachment(true, pBone->GetAttachmentId(), i, Vector3::ZERO);
+					pMesh->NewAttachment(true, pBone->GetAttachmentId(), i, pBone->bUsePivot ? pBone->pivot : Vector3::ZERO);
 				}
 			}
 		}

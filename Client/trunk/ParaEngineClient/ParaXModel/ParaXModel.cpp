@@ -1808,6 +1808,16 @@ int CParaXModel::GetChildAttributeColumnCount()
 	return 1;
 }
 
+int CParaXModel::GetNextPhysicsGroupID(int nMeshGroup)
+{
+	return -1;
+}
+
+HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
+{
+	return E_FAIL;
+}
+
 int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.

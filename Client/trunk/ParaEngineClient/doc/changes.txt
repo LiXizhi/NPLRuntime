@@ -1,6 +1,10 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.8.29
+	- EnablePhysics property added. BMAXObject now supports full physics engine. 
+	- physics interface refactored to support ParaXModel. 
+
 2016.8.17
 	- fix viewport change when render target is changed
 	- viewport support render target

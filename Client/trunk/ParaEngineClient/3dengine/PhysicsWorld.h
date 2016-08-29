@@ -5,6 +5,7 @@
 namespace ParaEngine
 {
 	struct MeshEntity;
+	struct ParaXEntity;
 
 	/**
 	* The global physics scene (NxScene) and physics SDK is encapsulated in a member object of scene manager. 
@@ -33,7 +34,11 @@ namespace ParaEngine
 		class TriangleMeshShape
 		{
 		public:
-			MeshEntity* m_pMeshEntity;	/// the mesh entity
+			union {
+				MeshEntity* m_pMeshEntity;	/// the mesh entity
+				ParaXEntity* m_pParaXEntity;	/// the parax entity
+			};
+			
 			Vector3 m_vScale;		/// the scaling factor
 			std::vector<SubMeshPhysicsShape> m_pShapes;
 		
@@ -79,6 +84,7 @@ namespace ParaEngine
 		* @return the first physics actor that is added in ppMesh. 
 		*/
 		IParaPhysicsActor* CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData=NULL);
+		IParaPhysicsActor* CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup = 0, vector<IParaPhysicsActor*>* pOutputPhysicsActor = NULL, void* pUserData = NULL);
 
 		/** release an actor by calling this function. */
 		void ReleaseActor(IParaPhysicsActor* pActor);

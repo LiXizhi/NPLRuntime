@@ -781,15 +781,7 @@ bool CSceneObject::DeleteObject(CBaseObject * pObject)
 
 void CSceneObject::UnloadObjectResources(CBaseObject * pObject)
 {
-	//ObjectType oType = pObject->GetType();
-	//switch(oType)
-	//{
-	//case CBaseObject::MeshPhysicsObject:
-	//	((CMeshPhysicsObject*)(pObject))->UnloadPhysics();
-	//	break;
-	//default:
-	//	
-	//}
+
 }
 
 void CSceneObject::DestroyObjectByName(const char * id)

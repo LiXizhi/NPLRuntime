@@ -773,7 +773,17 @@ int ParaEngine::CMeshPhysicsObject::GetPhysicsGroup()
 	return m_nPhysicsGroup;
 }
 
-void ParaEngine::CMeshPhysicsObject::SetPhysicsGroup( int nGroup )
+int ParaEngine::CMeshPhysicsObject::GetStaticActorCount()
+{
+	return (int)m_staticActors.size();
+}
+
+bool ParaEngine::CMeshPhysicsObject::CanHasPhysics()
+{
+	return true;
+}
+
+void ParaEngine::CMeshPhysicsObject::SetPhysicsGroup(int nGroup)
 {
 	PE_ASSERT(0<=nGroup && nGroup<32);
 	if(m_nPhysicsGroup != nGroup)

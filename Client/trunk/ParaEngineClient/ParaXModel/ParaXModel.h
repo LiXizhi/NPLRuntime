@@ -206,6 +206,22 @@ namespace ParaEngine
 		/** clear all face groups. */
 		void ClearFaceGroups();
 		bool HasAlphaBlendedObjects();
+
+		/** return the physics group id that is closest to nPhysicsGroup. or -1 if there is none. */
+		int GetNextPhysicsGroupID(int nPhysicsGroup = -1);
+		
+		/**
+		* Get the physics mesh in terms of vertices and indices.
+		* @param pNumVertices [out] number of vertices
+		* @param ppVerts [out] buffer contains all vertices. The caller needs to release the buffer using delete [] buffer.
+		* @param pNumTriangles [out] number of triangles, each triangle has three indices.
+		*	Please note that if the mesh contains no physics faces, the pNumTriangles is 0. However pNumVertices might be positive.
+		* @param ppIndices [out] buffer contains all indices. The caller needs to release the buffer using delete [] buffer.
+		* @param nMeshPhysicsGroup [in|out]: the mesh physics group to get. On return it will be assigned with the next mesh group.
+		* @return S_OK, if succeed.
+		*/
+		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
+
 		friend struct ModelRenderPass;
 			
 	public:

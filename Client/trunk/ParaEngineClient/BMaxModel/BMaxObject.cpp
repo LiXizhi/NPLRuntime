@@ -15,6 +15,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockModel.h"
 #include "ParaXModel/ParaXModel.h"
+#include "PhysicsWorld.h"
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "IScene.h"
@@ -23,21 +24,20 @@
 namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
-		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0)
+		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_nPhysicsGroup(0), m_dwPhysicsMethod(0)
 	{
 			
 	}
 
 	BMaxObject::~BMaxObject()
 	{
-		
+		UnloadPhysics();
 	}
 
 	float BMaxObject::GetScaling()
 	{
 		return m_fScale;
 	}
-
 
 	void BMaxObject::SetScaling(float fScale)
 	{
@@ -53,6 +53,7 @@ namespace ParaEngine
 		auto pNewModel = CGlobals::GetAssetManager()->LoadParaX("", sFilename);
 		if (m_pAnimatedMesh != pNewModel)
 		{
+			UnloadPhysics();
 			m_pAnimatedMesh = pNewModel;
 			m_CurrentAnim.MakeInvalid();
 			SetGeometryDirty(true);
@@ -267,7 +268,77 @@ namespace ParaEngine
 		return S_OK;
 	}
 
+	void BMaxObject::LoadPhysics()
+	{
+		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && m_pAnimatedMesh)
+		{
+			CParaXModel* ppMesh = m_pAnimatedMesh->GetModel();
+			if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
+			{
+				EnablePhysics(false); // disable physics forever, if failed loading physics data
+				return;
+			}
+			const Matrix4 * pMatWorld = GetViewClippingObject()->GetWorldTransform();
+			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), *(pMatWorld), m_nPhysicsGroup, &m_staticActors, this);
+			if (m_staticActors.empty())
+			{
+				// disable physics forever, if no physics actors are loaded. 
+				EnablePhysics(false);
+			}
+		}
+	}
 
+	void BMaxObject::UnloadPhysics()
+	{
+		int nSize = (int)m_staticActors.size();
+		if (nSize > 0)
+		{
+			for (int i = 0; i < nSize; ++i)
+			{
+				CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
+			}
+			m_staticActors.clear();
+		}
+	}
+
+	void BMaxObject::SetPhysicsGroup(int nGroup)
+	{
+		PE_ASSERT(0 <= nGroup && nGroup < 32);
+		if (m_nPhysicsGroup != nGroup)
+		{
+			m_nPhysicsGroup = nGroup;
+			UnloadPhysics();
+		}
+	}
+
+	int BMaxObject::GetPhysicsGroup()
+	{
+		return m_nPhysicsGroup;
+	}
+
+	void BMaxObject::EnablePhysics(bool bEnable)
+	{
+		if (!bEnable){
+			UnloadPhysics();
+			m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
+		}
+		else
+		{
+			m_dwPhysicsMethod &= (~PHYSICS_FORCE_NO_PHYSICS);
+			if ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD)>0)
+				LoadPhysics();
+		}
+	}
+
+	bool BMaxObject::IsPhysicsEnabled()
+	{
+		return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS)>0);
+	}
+
+	int BMaxObject::GetStaticActorCount()
+	{
+		return (int)m_staticActors.size();
+	}
 
 	int BMaxObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
