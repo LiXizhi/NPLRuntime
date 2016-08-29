@@ -269,10 +269,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			pMesh->bones[i] = m_bones[i];
 			if (m_bones[i].nBoneID > 0)
 				pMesh->m_boneLookup[m_bones[i].nBoneID] = i;
-			else if (m_bones[i].nBoneID < 0)
+			else if (m_bones[i].IsAttachment())
 			{
 				// TODO: pivot point
-				pMesh->NewAttachment(true, -m_bones[i].nBoneID, i, Vector3::ZERO);
+				pMesh->NewAttachment(true, m_bones[i].GetAttachmentId(), i, Vector3::ZERO);
 			}
 		}
 	}

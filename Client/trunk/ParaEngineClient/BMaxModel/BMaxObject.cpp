@@ -59,6 +59,30 @@ namespace ParaEngine
 		}
 	}
 
+	Matrix4* BMaxObject::GetAttachmentMatrix(Matrix4& matOut, int nAttachmentID /*= 0*/, int nRenderNumber /*= 0*/)
+	{
+		if (m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
+		{
+			CParaXModel* pModel = m_pAnimatedMesh->GetModel();
+			if (pModel)
+			{
+				Matrix4* pOut = &matOut;
+				if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, AnimIndex(), 0.f))
+				{
+					Matrix4 matScale;
+					float fScaling = GetScaling();
+					if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+					{
+						ParaMatrixScaling(&matScale, fScaling, fScaling, fScaling);
+						(*pOut) = (*pOut)*matScale;
+					}
+					return pOut;
+				}
+			}
+		}
+		return NULL;
+	}
+
 	AssetEntity* BMaxObject::GetPrimaryAsset()
 	{
 		return m_pAnimatedMesh.get();

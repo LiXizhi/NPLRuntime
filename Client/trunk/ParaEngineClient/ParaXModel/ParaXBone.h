@@ -128,7 +128,9 @@ namespace ParaEngine
 		int GetParentIndex() const { return parent; }
 		int GetBoneIndex() const { return nIndex; }
 		int GetBoneID() const { return nBoneID; }
-		int IsAttachment() const { return nBoneID < 0; }
+		int IsAttachment() const;
+		/** return -1 if it is not attachment id. of it is non-negative attachment id */
+		int GetAttachmentId() const;
 		void SetBoneID(int val) { nBoneID = val; }
 
 		const ParaEngine::Quaternion& GetFinalRot() const;

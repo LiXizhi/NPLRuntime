@@ -840,8 +840,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 	else if (StringHelper::StrEndsWith(sName, "mount") || StringHelper::StrEndsWith(sName, "shield"))
 	{
 		// Default Mount or shield position
-		int nAttID = ATT_ID_SHIELD;
-		SetBoneID(-ATT_ID_SHIELD);
+		SetBoneID(-ATT_ID_MOUNT00);
 	}
 	else if (StringHelper::StrEndsWith(sName, "mount?") || StringHelper::StrEndsWith(sName, "mount??"))
 	{
@@ -854,7 +853,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		if (c >= '0' && c <= '9')
 			nMountBoneIndex = (c - '0') * 10 + nMountBoneIndex;
 
-		int nAttID = ATT_ID_SHIELD;
+		int nAttID = ATT_ID_MOUNT00;
 		if (nMountBoneIndex >= 1 && nMountBoneIndex <= 99)
 		{
 			nAttID = ATT_ID_MOUNT1 + (nMountBoneIndex - 1);
@@ -1086,6 +1085,16 @@ ParaEngine::Vector3 ParaEngine::Bone::GetAnimatedPivotPoint()
 	{
 		return Vector3(mat._41, mat._42, mat._43);
 	}
+}
+
+int ParaEngine::Bone::IsAttachment() const
+{
+	return nBoneID < 0;
+}
+
+int ParaEngine::Bone::GetAttachmentId() const
+{
+	return nBoneID < 0 ? ((-nBoneID == ATT_ID_MOUNT00) ? 0 : -nBoneID) : -1;
 }
 
 const ParaEngine::Quaternion& ParaEngine::Bone::GetFinalRot() const

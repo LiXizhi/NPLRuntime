@@ -131,7 +131,7 @@ namespace ParaEngine
 					BMaxFrameNodePtr pFrameNode(new BMaxFrameNode(this, x, y, z, template_id, block_data, nBoneIndex));
 					m_bones.push_back(pFrameNode);
 					nodes.push_back(BMaxNodePtr(pFrameNode.get()));
-
+					
 					if (block[6].GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
 					{
 						NPL::NPLObjectProxy& entityData = block[6];
@@ -154,6 +154,8 @@ namespace ParaEngine
 									}
 									else
 										pFrameNode->GetBone()->SetName(sBoneName);
+
+									pFrameNode->GetBone()->AutoSetBoneInfoFromName();
 								}
 
 								/*const std::string& sBoneName = cmd[1];
@@ -510,6 +512,12 @@ namespace ParaEngine
 					pBone->bUsePivot = true;
 				}
 				pMesh->bones[i] = *pBone;
+				if (pBone->nBoneID > 0)
+					pMesh->m_boneLookup[pBone->nBoneID] = i;
+				else if (pBone->IsAttachment())
+				{
+					pMesh->NewAttachment(true, pBone->GetAttachmentId(), i, Vector3::ZERO);
+				}
 			}
 		}
 

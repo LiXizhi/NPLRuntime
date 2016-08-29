@@ -31,6 +31,7 @@ namespace ParaEngine
 		virtual AssetEntity* GetPrimaryAsset();
 		virtual void SetAssetFileName(const std::string& sFilename);
 		
+		virtual Matrix4* GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID = 0, int nRenderNumber = 0);
 
 		/** set the scale of the object. This function takes effects on both character object and mesh object.
 		* @param s: scaling applied to all axis.1.0 means original size. */
