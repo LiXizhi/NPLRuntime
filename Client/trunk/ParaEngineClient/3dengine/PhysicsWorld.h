@@ -2,6 +2,9 @@
 #include "IParaPhysics.h"
 #include <list>
 
+/** different physics engine has different winding order. */
+// #define INVERT_PHYSICS_FACE_WINDING
+
 namespace ParaEngine
 {
 	struct MeshEntity;

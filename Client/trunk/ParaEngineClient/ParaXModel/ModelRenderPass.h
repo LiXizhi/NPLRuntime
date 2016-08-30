@@ -42,6 +42,12 @@ namespace ParaEngine
 
 		/** for deferred shading, we will render alpha blended blocks after final effect. */
 		bool IsAlphaBlended();
+
+		/** get the physics group. */
+		int GetPhysicsGroup();
+
+		bool hasPhysics();;
+
 		bool operator< (const ModelRenderPass &m) const
 		{
 			//return !trans;

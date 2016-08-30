@@ -543,6 +543,18 @@ bool ParaEngine::ModelRenderPass::IsAlphaBlended()
 	return blendmode != BM_OPAQUE && blendmode != BM_TRANSPARENT;
 }
 
+int ParaEngine::ModelRenderPass::GetPhysicsGroup()
+{
+	// TODO: support more physics group?
+	return 0;
+}
+
+bool ParaEngine::ModelRenderPass::hasPhysics()
+{
+	// TODO: use a dedicated field?
+	return !IsAlphaBlended();
+}
+
 void ParaEngine::ModelRenderPass::SetStartIndex(int32 nIndex)
 {
 	m_nIndexStart = nIndex;

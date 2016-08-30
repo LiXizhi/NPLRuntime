@@ -29,6 +29,18 @@ HRESULT CContainerObject::Draw( SceneState * sceneState)
 
 void ParaEngine::CContainerObject::Animate(double dTimeDelta, int nRenderNumber /*= 0*/)
 {
+	for (auto it = GetChildren().begin(); it != GetChildren().end();)
+	{
+		CBaseObject* pChild = (*it);
+		pChild->Animate(dTimeDelta, nRenderNumber);
+		if (!(pChild->IsDead()))
+			++it;
+		else
+		{
+			pChild->AddToDeadObjectPool();
+			it = GetChildren().erase(it);
+		}
+	}
 }
 
 int ParaEngine::CContainerObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)

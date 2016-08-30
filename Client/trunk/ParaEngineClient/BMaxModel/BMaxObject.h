@@ -43,6 +43,8 @@ namespace ParaEngine
 		virtual float GetScaling();
 
 
+		/** if the object may contain physics*/
+		virtual bool CanHasPhysics();
 		virtual void LoadPhysics();
 		virtual void UnloadPhysics();
 		virtual void SetPhysicsGroup(int nGroup);

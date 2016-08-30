@@ -24,9 +24,10 @@
 namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
-		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_nPhysicsGroup(0), m_dwPhysicsMethod(0)
+		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), 
+		m_nPhysicsGroup(0), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS)
 	{
-			
+		SetAttribute(OBJ_VOLUMN_FREESPACE);
 	}
 
 	BMaxObject::~BMaxObject()
@@ -37,6 +38,11 @@ namespace ParaEngine
 	float BMaxObject::GetScaling()
 	{
 		return m_fScale;
+	}
+
+	bool BMaxObject::CanHasPhysics()
+	{
+		return true;
 	}
 
 	void BMaxObject::SetScaling(float fScale)
@@ -104,6 +110,9 @@ namespace ParaEngine
 				minmaxBox.Extend(obb);
 				SetAABB(&minmaxBox.GetMin(), &minmaxBox.GetMax());
 			}
+
+			if (m_dwPhysicsMethod == 0)
+				m_dwPhysicsMethod = PHYSICS_LAZY_LOAD;
 		}
 	}
 
@@ -270,7 +279,7 @@ namespace ParaEngine
 
 	void BMaxObject::LoadPhysics()
 	{
-		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && m_pAnimatedMesh)
+		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
 		{
 			CParaXModel* ppMesh = m_pAnimatedMesh->GetModel();
 			if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
@@ -278,8 +287,10 @@ namespace ParaEngine
 				EnablePhysics(false); // disable physics forever, if failed loading physics data
 				return;
 			}
-			const Matrix4 * pMatWorld = GetViewClippingObject()->GetWorldTransform();
-			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), *(pMatWorld), m_nPhysicsGroup, &m_staticActors, this);
+			// get world transform matrix
+			Matrix4 mxWorld;
+			GetWorldTransform(mxWorld);
+			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
 			if (m_staticActors.empty())
 			{
 				// disable physics forever, if no physics actors are loaded. 
