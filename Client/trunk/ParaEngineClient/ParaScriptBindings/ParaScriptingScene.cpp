@@ -2286,7 +2286,7 @@ ParaObject ParaScene::MousePick(float fMaxDistance, const char* sFilterFunc)
 	{
 		static CSphereObject obj;
 		Vector3 vIntersectPos(0,0,0);
-		float fDist = CGlobals::GetScene()->PickClosest(ptCursor.x, ptCursor.y, NULL, &vIntersectPos, NULL, false, fMaxDistance, GetPhysicsGroupMaskByName(sFilterFunc));
+		float fDist = CGlobals::GetScene()->PickClosest(ptCursor.x, ptCursor.y, &pObj, &vIntersectPos, NULL, false, fMaxDistance, GetPhysicsGroupMaskByName(sFilterFunc));
 		if(fDist<0)
 		{
 			return ParaObject(NULL);
@@ -2296,6 +2296,7 @@ ParaObject ParaScene::MousePick(float fMaxDistance, const char* sFilterFunc)
 			// one can retrieve the intersection point and distance by position and scaling. 
 			obj.SetPosition(DVector3(vIntersectPos));
 			obj.SetScaling(fDist);
+			obj.SetIdentifier(pObj ? pObj->GetIdentifier() : "");
 			return ParaObject(&obj);
 		}
 	}

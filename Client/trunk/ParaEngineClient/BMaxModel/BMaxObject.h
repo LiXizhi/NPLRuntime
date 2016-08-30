@@ -27,13 +27,13 @@ namespace ParaEngine
 
 		void ApplyBlockLighting(SceneState * sceneState);
 
-		virtual void GetLocalTransform(Matrix4* localTransform);
-		virtual void UpdateGeometry();
-
 		virtual AssetEntity* GetPrimaryAsset();
 		virtual void SetAssetFileName(const std::string& sFilename);
-		
+
 		virtual Matrix4* GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID = 0, int nRenderNumber = 0);
+
+		virtual void GetLocalTransform(Matrix4* localTransform);
+		virtual void UpdateGeometry();
 
 		/** set the scale of the object. This function takes effects on both character object and mesh object.
 		* @param s: scaling applied to all axis.1.0 means original size. */
@@ -41,6 +41,16 @@ namespace ParaEngine
 
 		/** get the scaling. */
 		virtual float GetScaling();
+
+		/**
+		* return the world matrix of the object for rendering
+		* @param pOut: the output.
+		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. If 0, it will not recalculate
+		* @return: same as pOut. or NULL if not exists.
+		*/
+		virtual Matrix4* GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber = 0);
+		/** get world transform */
+		virtual Matrix4* GetWorldTransform(Matrix4& pOut, int nRenderNumber = 0);
 
 
 		/** if the object may contain physics*/
