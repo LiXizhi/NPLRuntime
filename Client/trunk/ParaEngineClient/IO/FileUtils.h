@@ -5,6 +5,33 @@ namespace ParaEngine
 {
 	class CSearchResult;
 
+	/** file information. */
+	struct CParaFileInfo
+	{
+		enum FileMode{
+			ModeNoneExist,
+			ModeFile,
+			ModeFileInZip,
+			ModeDirectory,
+			ModeLink,
+			ModeSocket,
+			ModeNamedPipe,
+			ModeCharDevice,
+			ModeBlockDevice,
+			ModeOther,
+		};
+	public:
+		CParaFileInfo();
+		
+		std::string m_sFullpath;
+		FileMode m_mode;
+		DWORD m_dwFileAttributes;
+		time_t m_ftCreationTime;
+		time_t m_ftLastAccessTime;
+		time_t m_ftLastWriteTime;
+		DWORD m_dwFileSize;
+	};
+
 	/** file platform related API and helper functions */
 	class CFileUtils
 	{
@@ -88,6 +115,9 @@ namespace ParaEngine
 		*  @return A data object.
 		*/
 		static FileData GetDataFromFile(const char* filename);
+
+		/** get file size of a disk file in bytes. */
+		static bool GetFileInfo(const char* filename, CParaFileInfo& fileInfo);
 
 		/** data need not be released, since it is from the resource file. 
 		* only supported in win32

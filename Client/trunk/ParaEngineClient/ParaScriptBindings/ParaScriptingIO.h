@@ -605,6 +605,12 @@ namespace ParaScripting
 		*/
 		static int GetFileSize(const char* sFilePath);
 
+		/**
+		* get file info
+		* @param inout: {modification, attr, access, create, size, mode="file|directoy|fileinzip|", fullpath=string}
+		*/
+		static bool GetFileInfo(const char* sFilePath, const object& inout);
+
 		/** convert a file name to canonical file path 
 		* @param sfilename: it is assumed that strlen(filename) <= MAX_PATH 
 		* @param bBackSlash: if true, the file will use '\\'; otherwise use '/'. '\\' is win32 compatible. '/' is more user friendly.

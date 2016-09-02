@@ -1,6 +1,9 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.9.2
+	- GetFileInfo
+
 2016.8.29
 	- EnablePhysics property added. BMAXObject now supports full physics engine. 
 	- physics interface refactored to support ParaXModel. 
