@@ -46,6 +46,16 @@ namespace NPL
 		"NPLWebServiceClient.dll"
 	};
 
+	int CNPLRuntime::GetLogLevel() const
+	{
+		return m_nLogLevel;
+	}
+
+	void CNPLRuntime::SetLogLevel(int val)
+	{
+		m_nLogLevel = val;
+	}
+
 	NPL::NPLRuntimeStateType CNPLRuntime::m_defaultNPLStateType = NPLRuntimeStateType_NPL;
 }
 using namespace NPL;
@@ -55,7 +65,7 @@ using namespace ParaScripting;
 * command line: local="config/local.ini"
 */
 CNPLRuntime::CNPLRuntime(void)
-:m_nDefaultChannel(0),m_pWebServiceClient(0),m_net_server(new CNPLNetServer()), m_pNetPipe(0), m_pNPLNamespaceBinding(0), m_bHostMainStatesInFrameMove(true)
+:m_nDefaultChannel(0),m_pWebServiceClient(0),m_net_server(new CNPLNetServer()), m_pNetPipe(0), m_pNPLNamespaceBinding(0), m_bHostMainStatesInFrameMove(true), m_nLogLevel(1)
 {
 	curl_global_init(CURL_GLOBAL_ALL);
 	Init();
@@ -1096,7 +1106,7 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("CompressionThreshold",FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);
 	pClass->AddField("CompressionLevel",FieldType_Int, (void*)SetCompressionLevel_s, (void*)GetCompressionLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("MaxPendingConnections", FieldType_Int, (void*)SetMaxPendingConnections_s, (void*)GetMaxPendingConnections_s, NULL, NULL, bOverride);
-
+	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableAnsiMode",FieldType_Bool, (void*)EnableAnsiMode_s, (void*)IsAnsiMode_s, NULL, NULL, bOverride);
 	return S_OK;
 }
