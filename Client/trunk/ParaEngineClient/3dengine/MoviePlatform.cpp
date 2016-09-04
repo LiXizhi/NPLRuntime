@@ -9,7 +9,9 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "ScreenShotSystem.h"
+#ifdef USE_FREEIMAGE
 #include <FreeImage.h>
+#endif
 #include "util/CyoEncode.h"
 using namespace ScreenShot;
 #endif
@@ -380,7 +382,7 @@ void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, 
 }
 bool CMoviePlatform::TakeScreenShot_FromGDI(const string& filename, std::vector<BYTE>& outBase64Buffers, bool bEncode, int width, int height)
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) && defined(USE_FREEIMAGE)
 	// force same resolution as current back buffer.  
 	LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
 	D3DSURFACE_DESC desc;
