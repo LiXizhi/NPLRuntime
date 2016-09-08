@@ -17,6 +17,11 @@
 using namespace ParaEngine;
 
 
+ParaEngine::ModelRenderPass::ModelRenderPass()
+{
+	memset(this, 0, sizeof(ModelRenderPass));
+}
+
 bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
 {
 	if (m->showGeosets[geoset] == false || indexCount == 0)
@@ -551,8 +556,7 @@ int ParaEngine::ModelRenderPass::GetPhysicsGroup()
 
 bool ParaEngine::ModelRenderPass::hasPhysics()
 {
-	// TODO: use a dedicated field?
-	return !IsAlphaBlended();
+	return force_physics || (!IsAlphaBlended() && !disable_physics);
 }
 
 void ParaEngine::ModelRenderPass::SetStartIndex(int32 nIndex)

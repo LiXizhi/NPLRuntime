@@ -1840,6 +1840,21 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		*pnTotalMeshGroupCount = nTotalMeshGroupCount;
 	}
 
+	for (ModelRenderPass& pass : passes)
+	{
+		if (pass.force_physics)
+		{
+			for (ModelRenderPass& pass : passes)
+			{
+				if (!pass.force_physics) 
+				{
+					pass.disable_physics = true;
+				}
+			}
+			break;
+		}
+	}
+	
 	DWORD dwNumFaces = 0;
 	int nVertexCount = 0;
 	for (ModelRenderPass& pass : passes)

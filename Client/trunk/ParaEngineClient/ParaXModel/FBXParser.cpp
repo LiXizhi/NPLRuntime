@@ -569,6 +569,11 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 				// added  2007.1.5 LXZ: if the material name ends with "_a", physics will be disabled. this is usually the case for leaves on a tree etc.
 				out->bDisablePhysics = true;
 			}
+			else if (symbol == 'p')
+			{
+				// added  2016.9.8 LXZ: if the material name ends with "_p", physics will be enabled. 
+				out->bForcePhysics = true;
+			}
 			else if (symbol == 'u')
 			{
 				// added  2007.11.5 LXZ: if the material name ends with "_u", it will be unlit, which means no lighting is applied to surface. 
@@ -679,12 +684,14 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 
 	int texture_index = m_textures.size() - 1;
 	ModelRenderPass pass;
-	memset(&pass, 0, sizeof(ModelRenderPass));
 	pass.tex = texture_index;
 	pass.p = 0.0f;
 	pass.texanim = -1;
 	pass.color = -1;
 	pass.opacity = -1;
+	pass.disable_physics = fbxMat.bDisablePhysics;
+	pass.force_physics = fbxMat.bForcePhysics;
+	
 	pass.blendmode = blendmode;
 	pass.cull = blendmode == BM_OPAQUE ? true : false;
 	pass.order = 0;

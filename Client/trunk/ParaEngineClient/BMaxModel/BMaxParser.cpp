@@ -382,7 +382,6 @@ namespace ParaEngine
 	ModelRenderPass* BMaxParser::AddRenderPass()
 	{
 		ModelRenderPass pass;
-		memset(&pass, 0, sizeof(ModelRenderPass));
 		pass.cull = true;
 		pass.texanim = -1;
 		pass.color = -1;
