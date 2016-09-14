@@ -1317,7 +1317,7 @@ namespace ParaEngine
 					}
 					else
 					{
-						// Note: the indices must be face1(0,1,3)  face2(1,2,3)
+						// Note: the indices must be face1(0,1,2)  face2(2,0,3) 
 						int nFaceIndex = 0;
 						for (int i = 0; i < m_nFaceCount; ++i)
 						{

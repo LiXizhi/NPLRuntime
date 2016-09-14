@@ -1,6 +1,9 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.9.14
+	- BlockModel now supports fbx file, fixed coplanar index. 
+
 2016.9.2-2016.9.8
 	- GetFileInfo added
 	- ParaXModel now supports `_p` to explicitly specify physics in additional to `_a` to explicitly remove physics from model material. 
