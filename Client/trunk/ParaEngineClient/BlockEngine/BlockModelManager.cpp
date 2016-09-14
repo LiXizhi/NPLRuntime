@@ -61,12 +61,13 @@ XFile::Scene* ParaEngine::BlockModelManager::GetXFile(const std::string& filenam
 				XFileStaticModelParser parser(file.getBuffer(), file.getSize());
 				pScene = parser.ParseParaXStaticModel();
 			}
+#ifdef SUPPORT_FBX_MODEL_FILE
 			else if (sFileExt == "fbx" || sFileExt == "FBX")
 			{
 				FBXParser parser;
 				pScene = parser.ParseFBXFile(file.getBuffer(), file.getSize());
 			}
-
+#endif
 			if (pScene)
 			{
 				RemoveUntexturedFaces(*pScene);
