@@ -16,7 +16,7 @@ CMidiMsg::CMidiMsg() :
 #ifdef PARAENGINE_CLIENT
 m_deviceMidiOut(NULL), 
 #endif
-m_bIsValid(false), m_bIsLoaded(false)
+m_bIsValid(false), m_bIsLoaded(false), m_dwVolume(0xffffffff)
 {
 }
 
@@ -38,12 +38,47 @@ bool ParaEngine::CMidiMsg::CheckLoad()
 		else
 		{
 			m_bIsValid = true;
+			midiOutSetVolume(m_deviceMidiOut, m_dwVolume);
 			OUTPUT_LOG("successfully opened default MIDI device\n");
 		}
 #endif
 		return m_bIsValid;
 	}
 
+}
+
+DWORD ParaEngine::CMidiMsg::GetVolume() const
+{
+	return m_dwVolume;
+}
+
+void ParaEngine::CMidiMsg::SetVolume(DWORD val)
+{
+	if (m_dwVolume != val)
+	{
+		m_dwVolume = val;
+
+#ifdef PARAENGINE_CLIENT
+		if (IsLoaded())
+		{
+			midiOutSetVolume(m_deviceMidiOut, m_dwVolume);
+		}
+#endif
+	}
+}
+
+void ParaEngine::CMidiMsg::SetVolumeFloat(float val)
+{
+	if (val > 1.0f)
+		val = 1.0f;
+	DWORD volume = (DWORD)(val * 0xffff);
+	volume = (volume << 16) + volume;
+	SetVolume(volume);
+}
+
+bool ParaEngine::CMidiMsg::IsLoaded() const
+{
+	return m_bIsLoaded;
 }
 
 CMidiMsg& CMidiMsg::GetSingleton()

@@ -1,6 +1,9 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.9.18
+	- audio midi api volume can now be changed with global audio settings
+
 2016.9.14
 	- BlockModel now supports fbx file, fixed coplanar index. 
 
