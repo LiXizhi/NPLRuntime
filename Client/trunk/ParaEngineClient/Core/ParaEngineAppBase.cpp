@@ -422,7 +422,6 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 			}
 			// always load by relative path first, and then by absolute path. 
 			// For example, when there is a package in current working directory, it will be used instead the one in packages/ folder.
-			OUTPUT_LOG("loading package: %s\n", filename.c_str());
 			if (!CFileManager::GetInstance()->OpenArchive(filename))
 			{
 				if (!CFileManager::GetInstance()->OpenArchive(sPkgFolder + filename))
