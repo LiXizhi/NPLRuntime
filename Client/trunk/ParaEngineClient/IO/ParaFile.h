@@ -5,6 +5,8 @@
 
 namespace ParaEngine
 {
+	struct CParaFileInfo;
+
 	using namespace std;
 	
 	/** where to search the file and where the file is found */
@@ -289,6 +291,11 @@ namespace ParaEngine
 		* @return : true if succeeded.
 		*/
 		PE_CORE_DECL bool OpenFile(const char* filename, bool bReadyOnly = true, const char* relativePath = NULL, bool bUseCompressed = false, uint32 dwWhereToOpen = FILE_ON_DISK | FILE_ON_ZIP_ARCHIVE | FILE_ON_SEARCH_PATH);
+
+		/** get file attributes like file type, where the file is found, absolute path, modification time, size, etc.
+		@param ParaFileInfo: file info.
+		*/
+		PE_CORE_DECL static bool GetFileInfo(const char* filename, CParaFileInfo& fileInfo, uint32 dwWhereToOpen = FILE_ON_DISK | FILE_ON_ZIP_ARCHIVE | FILE_ON_SEARCH_PATH);
 
 		/**
 		* This is rather similar to OpenFile() method, except that it will first look in the AssetManifest to see if the file exit.

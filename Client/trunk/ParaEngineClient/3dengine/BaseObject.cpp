@@ -751,6 +751,16 @@ TextureEntity* ParaEngine::CBaseObject::GetDefaultReplaceableTexture( int Replac
 	return NULL;
 }
 
+void ParaEngine::CBaseObject::EnablePhysics(bool bEnable)
+{
+
+}
+
+bool ParaEngine::CBaseObject::IsPhysicsEnabled()
+{
+	return false;
+}
+
 bool ParaEngine::CBaseObject::ViewTouch()
 {
 	return true;
@@ -781,7 +791,12 @@ bool ParaEngine::CBaseObject::CanPick()
 	return ! CheckAttribute(OBJ_SKIP_PICKING); // OBJ_SKIP_PICKING | OBJ_VOLUMN_INVISIBLE 
 }
 
-void ParaEngine::CBaseObject::SetSkipTerrainNormal( bool bSkip )
+bool ParaEngine::CBaseObject::CanHasPhysics()
+{
+	return false;
+}
+
+void ParaEngine::CBaseObject::SetSkipTerrainNormal(bool bSkip)
 {
 	SetAttribute(OBJ_SKIP_TERRAIN_NORMAL, bSkip);
 }
@@ -1061,6 +1076,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("showboundingbox", FieldType_Bool, (void*)SetShowBoundingBox_s, (void*)GetShowBoundingBox_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsGroup", FieldType_Int, (void*)SetPhysicsGroup_s, (void*)GetPhysicsGroup_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsGroupMask", FieldType_DWORD, (void*)SetPhysicsGroupMask_s, (void*)GetPhysicsGroupMask_s, NULL, NULL, bOverride);
+	pClass->AddField("EnablePhysics", FieldType_Bool, (void*)EnablePhysics_s, (void*)IsPhysicsEnabled_s, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderImportance", FieldType_Int, (void*)SetRenderImportance_s, (void*)GetRenderImportance_s, NULL, "", bOverride);

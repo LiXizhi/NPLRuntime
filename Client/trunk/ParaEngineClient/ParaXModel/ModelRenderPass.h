@@ -6,7 +6,11 @@ namespace ParaEngine
 	class CParameterBlock;
 	struct SceneState;
 
-	struct ModelRenderPass {
+	struct ModelRenderPass 
+	{
+	public:
+		ModelRenderPass();
+	public:
 		/** Fix LiXizhi 2010.1.14. we may run out of 65535 vertices. so if indexStart is 0xffff, then we will use m_nIndexStart instead */
 		uint16 indexStart, indexCount;
 		union {
@@ -25,8 +29,8 @@ namespace ParaEngine
 		int geoset;
 
 		// TODO: bit align to DWORD
-		bool usetex2 : 1, useenvmap : 1, cull : 1, trans : 1, unlit : 1, nozwrite : 1, swrap : 1, twrap : 1, force_local_tranparency : 1, skinningAni : 1, is_rigid_body : 1;
-	DWORD: 0;// Force alignment to next boundary.
+		bool usetex2 : 1, useenvmap : 1, cull : 1, trans : 1, unlit : 1, nozwrite : 1, swrap : 1, twrap : 1, force_local_tranparency : 1, skinningAni : 1, is_rigid_body : 1, disable_physics : 1, force_physics : 1;
+		DWORD: 0;// Force alignment to next boundary.
 
 		/// for fixed function pipeline
 		bool init(CParaXModel *m, SceneState* pSceneState);
@@ -42,11 +46,17 @@ namespace ParaEngine
 
 		/** for deferred shading, we will render alpha blended blocks after final effect. */
 		bool IsAlphaBlended();
+
+		/** get the physics group. */
+		int GetPhysicsGroup();
+
+		bool hasPhysics();
+
 		bool operator< (const ModelRenderPass &m) const
 		{
 			//return !trans;
-			if (order<m.order) return true;
-			else if (order>m.order) return false;
+			if (order < m.order) return true;
+			else if (order > m.order) return false;
 			else return blendmode == m.blendmode ? (p < m.p) : blendmode < m.blendmode;
 		}
 
@@ -60,5 +70,6 @@ namespace ParaEngine
 		int32 GetStartIndex();
 
 		int32 GetVertexStart(CParaXModel *m);
+	
 	};
 }

@@ -1808,6 +1808,140 @@ int CParaXModel::GetChildAttributeColumnCount()
 	return 1;
 }
 
+int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
+{
+	int nNextID = -1;
+	for (ModelRenderPass& pass : passes)
+	{
+		if (pass.hasPhysics() && pass.GetPhysicsGroup() > nPhysicsGroup)
+		{
+			if (nNextID > pass.GetPhysicsGroup() || nNextID == -1)
+			{
+				nNextID = pass.GetPhysicsGroup();
+			}
+		}
+	}
+	return nNextID;
+}
+
+HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
+{
+	if (m_objNum.nVertices == 0 || !m_indices)
+		return E_FAIL;
+
+	if (pnTotalMeshGroupCount)
+	{
+		int nTotalMeshGroupCount = 0;
+		int nPhysicsGroup = -1;
+		while ((nPhysicsGroup = GetNextPhysicsGroupID(nPhysicsGroup)) >= 0)
+		{
+			nTotalMeshGroupCount++;
+		}
+		*pnTotalMeshGroupCount = nTotalMeshGroupCount;
+	}
+
+	for (ModelRenderPass& pass : passes)
+	{
+		if (pass.force_physics)
+		{
+			for (ModelRenderPass& pass : passes)
+			{
+				if (!pass.force_physics) 
+				{
+					pass.disable_physics = true;
+				}
+			}
+			break;
+		}
+	}
+	
+	DWORD dwNumFaces = 0;
+	int nVertexCount = 0;
+	for (ModelRenderPass& pass : passes)
+	{
+		if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
+		{
+			dwNumFaces += pass.indexCount / 3;
+		}
+	}
+
+	if (dwNumFaces == 0)
+	{
+		// in case, there is no physics faces in the mesh, return immediately.
+		if (pNumVertices != 0)
+			*pNumVertices = 0;
+		if (pNumTriangles != 0)
+			*pNumTriangles = 0;
+		return S_OK;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// read the vertex buffer
+	//////////////////////////////////////////////////////////////////////////
+	DWORD dwNumVx = 0;
+	Vector3 * verts = NULL;
+	if (ppVerts != NULL)
+	{
+		dwNumVx = m_objNum.nVertices;
+		verts = new Vector3[dwNumVx];
+		auto pVertices = &(m_origVertices[0]);
+
+		for (DWORD i = 0; i < dwNumVx; ++i)
+		{
+			verts[i] = pVertices->pos;
+			pVertices++;
+		}
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////
+	// read the index buffer
+	//////////////////////////////////////////////////////////////////////////
+	WORD* indices = NULL;
+	if (ppIndices)
+	{
+		indices = new WORD[dwNumFaces * 3];
+		int nD = 0; // destination indices index
+
+		for (ModelRenderPass& pass : passes)
+		{
+			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
+			{
+#ifdef INVERT_PHYSICS_FACE_WINDING
+				int16* dest = (int16*)&(indices[nD]);
+				int16* src = &(m_indices[pass.indexStart]);
+				int nFaceCount = pass.indexCount / 3;
+				for (int i = 0; i < nFaceCount; ++i)
+				{
+					// change the triangle winding order
+					*dest = *src; ++src;
+					*(dest + 2) = *src; ++src;
+					*(dest + 1) = *src; ++src;
+					dest += 3;
+				}
+#else
+				memcpy(&(indices[nD]), &(m_indices[pass.indexStart]), sizeof(WORD)*pass.indexCount);
+#endif
+				nD += pass.indexCount;
+			}
+		}
+	}
+	// output result
+	if (pNumVertices != 0){
+		*pNumVertices = dwNumVx;
+	}
+	if (ppVerts != 0){
+		*ppVerts = verts;
+	}
+	if (pNumTriangles != 0){
+		*pNumTriangles = dwNumFaces;
+	}
+	if (ppIndices != 0){
+		*ppIndices = indices;
+	}
+	return S_OK;
+}
+
 int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	// install parent fields if there are any. Please replace __super with your parent class name.

@@ -17,9 +17,6 @@
 
 using namespace ParaEngine;
 
-/** different physics engine has different winding order. */
-// #define INVERT_PHYSICS_FACE_WINDING
-
 //-----------------------------------------------------------------------------
 // Name:
 // Desc:

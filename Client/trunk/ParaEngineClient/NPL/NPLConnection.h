@@ -214,6 +214,9 @@ namespace NPL
 
 		/** whether there is unsent data. */
 		bool HasUnsentData();
+
+		/** get global log level.*/
+		int GetLogLevel();
 	public:
 		//
 		// In case, one wants to use a different connection data handler,  the following interface are provided. 

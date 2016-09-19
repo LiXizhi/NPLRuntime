@@ -9,11 +9,60 @@
 #include "ParaEngine.h"
 #if defined (PARAENGINE_CLIENT) && defined(WIN32)
 	#include "ParaEngineApp.h"
-	#include <direct.h>
 #endif
 #include "FileUtils.h"
 #include "StringHelper.h"
+#include <time.h>
 #include <sys/stat.h>
+
+#ifdef WIN32
+#include <direct.h>
+#include <windows.h>
+#include <io.h>
+#include <sys/locking.h>
+#include <sys/utime.h>
+#include <fcntl.h>
+#define lfs_setmode(L,file,m)   ((void)L, _setmode(_fileno(file), m))
+#define STAT_STRUCT struct _stati64
+#define STAT_FUNC _stati64
+#define LSTAT_FUNC STAT_FUNC
+
+#ifndef S_ISDIR
+#define S_ISDIR(mode)  (mode&_S_IFDIR)
+#endif
+#ifndef S_ISREG
+#define S_ISREG(mode)  (mode&_S_IFREG)
+#endif
+#ifndef S_ISLNK
+#define S_ISLNK(mode)  (0)
+#endif
+#ifndef S_ISSOCK
+#define S_ISSOCK(mode)  (0)
+#endif
+#ifndef S_ISFIFO
+#define S_ISFIFO(mode)  (0)
+#endif
+#ifndef S_ISCHR
+#define S_ISCHR(mode)  (mode&_S_IFCHR)
+#endif
+#ifndef S_ISBLK
+#define S_ISBLK(mode)  (0)
+#endif
+
+#else
+#include <unistd.h>
+#include <dirent.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <utime.h>
+#define _O_TEXT               0
+#define _O_BINARY             0
+#define lfs_setmode(L,file,m)   0
+#define STAT_STRUCT struct stat
+#define STAT_FUNC stat
+#define LSTAT_FUNC lstat
+#endif
+
 
 
 #if defined(PARAENGINE_MOBILE)
@@ -54,10 +103,16 @@
 	typedef std::unique_lock<std::mutex> FileLock_type;
 #endif
 #endif
+
 namespace ParaEngine
 {
 	std::string ParaEngine::CFileUtils::s_writepath;
 	
+}
+
+ParaEngine::CParaFileInfo::CParaFileInfo() 
+	: m_mode(ParaEngine::CParaFileInfo::ModeNoneExist), m_dwFileSize(0), m_dwFileAttributes(0), m_ftLastWriteTime(0), m_ftCreationTime(0), m_ftLastAccessTime(0)
+{
 }
 
 void ParaEngine::CFileUtils::MakeFileNameFromRelativePath(char * output, const char* filename, const char* relativePath)
@@ -509,6 +564,61 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	}
 	return nFileCount;
 #endif
+}
+
+namespace ParaEngine
+{
+	bool _GetFileInfo_(const char* filename, CParaFileInfo& fileInfo)
+	{
+		STAT_STRUCT info;
+		if (STAT_FUNC(filename, &info)){
+			// file not found
+			return false;
+		}
+		auto mode = info.st_mode;
+		if (S_ISREG(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeFile;
+		else if (S_ISDIR(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeDirectory;
+		else if (S_ISLNK(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeLink;
+		else if (S_ISSOCK(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeSocket;
+		else if (S_ISFIFO(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeNamedPipe;
+		else if (S_ISCHR(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeCharDevice;
+		else if (S_ISBLK(mode))
+			fileInfo.m_mode = CParaFileInfo::ModeBlockDevice;
+		else
+			fileInfo.m_mode = CParaFileInfo::ModeOther;
+
+		fileInfo.m_ftLastWriteTime = info.st_mtime;
+		fileInfo.m_ftCreationTime = info.st_ctime;
+		fileInfo.m_ftLastAccessTime = info.st_atime;
+		fileInfo.m_dwFileSize = (DWORD)info.st_size;
+		fileInfo.m_dwFileAttributes = (DWORD)info.st_mode;
+		return true;
+	}
+}
+
+bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fileInfo)
+{
+	if (!CParaFile::GetDevDirectory().empty())
+	{
+		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
+		if (_GetFileInfo_(sAbsFilePath.c_str(), fileInfo))
+		{
+			fileInfo.m_sFullpath = sAbsFilePath;
+			return true;
+		}
+	}
+	if (_GetFileInfo_(filename, fileInfo))
+	{
+		fileInfo.m_sFullpath = filename;
+		return true;
+	}
+	return false;
 }
 
 ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filename)

@@ -16,6 +16,7 @@ namespace ParaEngine
 			bUseCubicMap = false;
 			bDisableZWrite = false;
 			bDisablePhysics = false;
+			bForcePhysics = false;
 			bForceLocalTranparency = false;
 			fReflectivity = 1.0f;
 			fAlphaTestingRef = 0.5f;
@@ -59,8 +60,10 @@ namespace ParaEngine
 		bool bDisableZWrite;
 		// if this is true, we will not sort transparent mesh(with bDisableZWrite) globally, instead it will only be sorted per mesh, hence greatly increased rendering speed. 
 		bool bForceLocalTranparency;
-		// if true, it contains physics of this material will be disabled.
+		// if true, physics of this material will be disabled.
 		bool bDisablePhysics;
+		// if true, we will force physics and ignore all physics from other materials 
+		bool bForcePhysics;
 		// reflection or environment map's reflectivity
 		float fReflectivity;
 		// alpha testing threshold, if this is 0, alpha testing is disabled. if this is 0.5, alpha testing is enabled. 

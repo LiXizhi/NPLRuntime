@@ -230,6 +230,9 @@ namespace ParaEngine
 		*/
 		virtual Matrix4* GetRenderMatrix( Matrix4& pOut, int nRenderNumber=0);
 
+		/** get world transform */
+		virtual Matrix4* GetWorldTransform(Matrix4& pOut, int nRenderNumber = 0);
+
 		/// -- collision detection 
 		/** 
 		* test if the sphere collides with this object in the world coordinate.

@@ -649,6 +649,31 @@ bool IViewClippingObject::TestCollisionRay(const Vector3& vPickRayOrig, const Ve
 	return bCollided;
 }
 
+const Matrix4* ParaEngine::IViewClippingObject::GetWorldTransform()
+{
+	return CGlobals::GetIdentityMatrix();
+}
+
+Matrix4* ParaEngine::IViewClippingObject::GetWorldTransform(Matrix4& matOut, int nRenderNumber /*= 0*/)
+{
+	auto vPos = GetPosition();
+	if (GetFacing() != 0.f)
+	{
+		ParaMatrixRotationY(&matOut, GetFacing());/** set facing and rotate local matrix round y axis*/
+	}
+	else
+	{
+		matOut.identity();
+	}
+
+	// world translation
+	matOut._41 += (float)vPos.x;
+	matOut._42 += (float)vPos.y;
+	matOut._43 += (float)vPos.z;
+	return &matOut;
+}
+
+
 Matrix4* IViewClippingObject::GetRenderWorldMatrix( Matrix4* pOut, int nRenderNumber)
 {
 	PE_ASSERT(pOut!=0);
@@ -669,7 +694,7 @@ Matrix4* ParaEngine::IViewClippingObject::GetRenderMatrix( Matrix4& pOut, int nR
 	return GetRenderWorldMatrix(&pOut, nRenderNumber);
 }
 
-void ParaEngine::IViewClippingObject::SetScaling( float s )
+void ParaEngine::IViewClippingObject::SetScaling(float s)
 {
 
 }
@@ -687,11 +712,6 @@ void ParaEngine::IViewClippingObject::SetTransform(Matrix4* pLocalTransform, con
 void ParaEngine::IViewClippingObject::SetTransform( Matrix4* pWorldTransform )
 {
 
-}
-
-const Matrix4* ParaEngine::IViewClippingObject::GetWorldTransform()
-{
-	return CGlobals::GetIdentityMatrix();
 }
 
 void ParaEngine::IViewClippingObject::GetFacing3D( Vector3 *pV )

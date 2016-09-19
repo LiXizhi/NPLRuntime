@@ -123,6 +123,9 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetMaxPendingConnections_s, int*)	{ *p1 = cls->GetMaxPendingConnections(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetMaxPendingConnections_s, int)	{ cls->SetMaxPendingConnections(p1); return S_OK; }
 			
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetLogLevel_s, int*) { *p1 = cls->GetLogLevel(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetLogLevel_s, int) { cls->SetLogLevel(p1); return S_OK; }
+		
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
@@ -587,7 +590,13 @@ namespace NPL
 		* This function is called automatically when a new activation occurs.So only call this function if one wants to override the old one for special code logics.
 		* @param sName This is usually "" for local activation and some kind of "name@server" for network activation.
 		*/
-		void NPL_SetSourceName(const char* sName);;
+		void NPL_SetSourceName(const char* sName);
+
+		/* default to 1, set to 0 to silence some connection verbose log. */
+		int GetLogLevel() const;
+
+		/* default to 1, set to 0 to silence some connection verbose log. */
+		void SetLogLevel(int val);
 
 	private: // methods
 		/** load the web service plug-in. */
@@ -686,6 +695,8 @@ namespace NPL
 		*/
 		bool m_bHostMainStatesInFrameMove;
 
+		/* default to 1, set to 0 to silence some connection verbose log. */
+		int m_nLogLevel;
 	private:
 		typedef std::set<NPLRuntimeState_ptr, NPLRuntimeState_PtrOps>	NPLRuntime_Pool_Type;
 		typedef std::vector<NPLRuntimeState_ptr>	NPLRuntime_Temp_Pool_Type;

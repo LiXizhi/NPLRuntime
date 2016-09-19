@@ -99,7 +99,6 @@ HRESULT ParaEngine::CBlockPieceParticle::Draw(SceneState * sceneState)
 
 int ParaEngine::CBlockPieceParticle::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 {
-	Animate(pSceneState->dTimeDelta);
 	if (TestCollision(pCamera))
 	{
 		Draw(pSceneState);

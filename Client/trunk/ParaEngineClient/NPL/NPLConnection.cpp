@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #include <boost/bind.hpp>
 #include "NPLDispatcher.h"
+#include "NPLRuntime.h"
 #include "NPLConnectionManager.h"
 #include "NPLMsgIn_parser.h"
 #include "NPLMsgOut.h"
@@ -24,13 +25,6 @@ if defined, different NPL runtime can have different local map and file id map a
 the send message function will fail (service not available), if the queue is full */
 #define DEFAULT_NPL_OUTPUT_QUEUE_SIZE		1024
 
-/** define this to log verbose, such as every incoming and out going messages. */
-#define NPL_LOG_VERBOSE
-
-#ifdef NPL_LOG_VERBOSE
-/** define this to log verbose error message.*/
-#define NPL_LOG_VERBOSE_STREAM_MSG
-#endif
 /** when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression. 
 For message smaller than the threshold, we will not compress even m_nCompressionLevel is not 0. 
 Default value is 200KB */
@@ -199,13 +193,14 @@ int NPL::CNPLConnection::CheckIdleTimeout(unsigned int nCurTime)
 		else
 		{
 			// close the timed out connection immediately
-#ifdef NPL_LOG_VERBOSE
-			if(m_address)
+			if (GetLogLevel() > 0) 
 			{
-				OUTPUT_LOG1("connection time out (%s/%s) with id (%s). \n", 
-					m_address->GetHost().c_str(), m_address->GetPort().c_str(), m_address->GetNID().c_str());
+				if (m_address)
+				{
+					OUTPUT_LOG1("connection time out (%s/%s) with id (%s). \n",
+						m_address->GetHost().c_str(), m_address->GetPort().c_str(), m_address->GetNID().c_str());
+				}
 			}
-#endif
 			return 0;
 		}
 	}
@@ -216,6 +211,11 @@ int NPL::CNPLConnection::CheckIdleTimeout(unsigned int nCurTime)
 bool NPL::CNPLConnection::HasUnsentData()
 {
 	return m_nSendCount != m_nFinishedCount;
+}
+
+int NPL::CNPLConnection::GetLogLevel()
+{
+	return CNPLRuntime::GetInstance()->GetLogLevel();
 }
 
 void NPL::CNPLConnection::start()
@@ -277,10 +277,12 @@ void NPL::CNPLConnection::start()
 		SetNPLRuntimeAddress(pAddress);
 
 
-#ifdef NPL_LOG_VERBOSE
-		OUTPUT_LOG1("incoming connection (%s/%s) is established and assigned a temporary id (%s). \n", 
-			host_address.c_str(), sPort.c_str(), nid.c_str());
-#endif
+		if (GetLogLevel() > 0)
+		{
+			OUTPUT_LOG1("incoming connection (%s/%s) is established and assigned a temporary id (%s). \n",
+				host_address.c_str(), sPort.c_str(), nid.c_str());
+		}
+
 		// set use compression. 
 		bool bUseCompression = m_msg_dispatcher.IsUseCompressionIncomingConnection();
 		SetUseCompression(bUseCompression);
@@ -365,13 +367,15 @@ void NPL::CNPLConnection::handle_stop()
 	// also erase from dispatcher
 	m_msg_dispatcher.RemoveNPLConnection(shared_from_this());
 
-#ifdef NPL_LOG_VERBOSE
-	if(m_address)
+	if (GetLogLevel() > 0) 
 	{
-		OUTPUT_LOG1("connection closed (%s/%s) with id (%s). \n", 
-			m_address->GetHost().c_str(), m_address->GetPort().c_str(), m_address->GetNID().c_str());
+		if (m_address)
+		{
+			OUTPUT_LOG1("connection closed (%s/%s) with id (%s). \n",
+				m_address->GetHost().c_str(), m_address->GetPort().c_str(), m_address->GetNID().c_str());
+		}
 	}
-#endif
+
 }
 
 void NPL::CNPLConnection::handle_read( const boost::system::error_code& e, std::size_t bytes_transferred )
@@ -411,34 +415,35 @@ void NPL::CNPLConnection::handle_read( const boost::system::error_code& e, std::
 		else
 		{
 			// there is a stream error, we shall close the connection
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-			if (m_state != ConnectionDisconnected)
+			if (GetLogLevel() > 0) 
 			{
-				OUTPUT_LOG("invalid handle_read stream detected. connection will be closed. nid %s \n", GetNID().c_str());
+				if (m_state != ConnectionDisconnected)
+				{
+					OUTPUT_LOG("invalid handle_read stream detected. connection will be closed. nid %s \n", GetNID().c_str());
+				}
 			}
-#endif
 			m_connection_manager.stop(shared_from_this());
 		}
 	}
 	else if (e == boost::asio::error::operation_aborted)
 	{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		if (m_state != ConnectionDisconnected)
-		{
-			OUTPUT_LOG("network: handle_read operation aborted. nid %s \n", GetNID().c_str());
+		if (GetLogLevel() > 0) {
+			if (m_state != ConnectionDisconnected)
+			{
+				OUTPUT_LOG("network: handle_read operation aborted. nid %s \n", GetNID().c_str());
+			}
 		}
 		m_connection_manager.stop(shared_from_this());
-#endif
 	}
 	else
 	{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		if (!m_bCloseAfterSend && m_state != ConnectionDisconnected)
-		{
-			std::string msg = e.message();
-			OUTPUT_LOG("network: handle_read stopped, asio msg: %s. Connection will be closed \n", msg.c_str());
+		if (GetLogLevel() > 0) {
+			if (!m_bCloseAfterSend && m_state != ConnectionDisconnected)
+			{
+				std::string msg = e.message();
+				OUTPUT_LOG("network: handle_read stopped, asio msg: %s. Connection will be closed \n", msg.c_str());
+			}
 		}
-#endif
 		m_connection_manager.stop(shared_from_this());
 	}
 }
@@ -472,24 +477,24 @@ void NPL::CNPLConnection::handle_write( const boost::system::error_code& e )
 	}
 	else if (e != boost::asio::error::operation_aborted)
 	{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		if (m_state != ConnectionDisconnected)
-		{
-			string err = e.message();
-			OUTPUT_LOG("warning: handle_write stopped. connection will be closed \n", err.c_str());
+		if (GetLogLevel() > 0) {
+			if (m_state != ConnectionDisconnected)
+			{
+				string err = e.message();
+				OUTPUT_LOG("warning: handle_write stopped. connection will be closed \n", err.c_str());
+			}
 		}
-#endif
 		// close the connection
 		m_connection_manager.stop(shared_from_this());
 	}
 	else
 	{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		if (m_state != ConnectionDisconnected)
-		{
-			OUTPUT_LOG("warning: handle_write operation aborted. nid %s \n", GetNID().c_str());
+		if (GetLogLevel() > 0) {
+			if (m_state != ConnectionDisconnected)
+			{
+				OUTPUT_LOG("warning: handle_write operation aborted. nid %s \n", GetNID().c_str());
+			}
 		}
-#endif
 	}
 }
 
@@ -675,9 +680,9 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( NPLMsgOut_ptr& msg )
 	else if(bufStatus == RingBuffer_Type::BufferOverFlow)
 	{
 		m_nSendCount--;
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		OUTPUT_LOG("NPL SendMessage error because the output msg queue is full. The connection nid is %s \n", GetNID().c_str());
-#endif
+		if (GetLogLevel() > 0) {
+			OUTPUT_LOG("NPL SendMessage error because the output msg queue is full. The connection nid is %s \n", GetNID().c_str());
+		}
 		// too many messages to send.
 		return NPL_QueueIsFull;
 	}
@@ -724,9 +729,9 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 	{
 		// message parsing failed. the message format is not supported. 
 		// This is a stream error, we shall close the connection
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		OUTPUT_LOG("warning: message parsing failed when received data. we will close connection. nid %s \n", GetNID().c_str());
-#endif
+		if (GetLogLevel() > 0) {
+			OUTPUT_LOG("warning: message parsing failed when received data. we will close connection. nid %s \n", GetNID().c_str());
+		}
 		m_connection_manager.stop(shared_from_this());
 		return false;
 	}
@@ -753,28 +758,29 @@ bool NPL::CNPLConnection::handleMessageIn()
 
 		if( nResult != NPL_OK)
 		{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-			if(nResult == NPL_QueueIsFull)
+			if (GetLogLevel() > 0) 
 			{
-				OUTPUT_LOG("NPL dispatcher error because NPL_QueueIsFull incoming msg from nid:%s to thread %s\n", GetNID().c_str(), m_input_msg.m_rts_name.c_str());
+				if (nResult == NPL_QueueIsFull)
+				{
+					OUTPUT_LOG("NPL dispatcher error because NPL_QueueIsFull incoming msg from nid:%s to thread %s\n", GetNID().c_str(), m_input_msg.m_rts_name.c_str());
+				}
+				else if (nResult == NPL_RuntimeState_NotExist)
+				{
+					OUTPUT_LOG("NPL dispatcher error because incoming nid:%s NPL_RuntimeState_NotExist\n", GetNID().c_str());
+				}
+				else
+				{
+					OUTPUT_LOG("NPL dispatcher error because incoming nid:%s NPLReturnCode %d.\n", GetNID().c_str(), nResult);
+				}
 			}
-			else if(nResult == NPL_RuntimeState_NotExist)
-			{
-				OUTPUT_LOG("NPL dispatcher error because incoming nid:%s NPL_RuntimeState_NotExist\n", GetNID().c_str());
-			}
-			else
-			{
-				OUTPUT_LOG("NPL dispatcher error because incoming nid:%s NPLReturnCode %d.\n", GetNID().c_str(), nResult);
-			}
-#endif
 		}
 
 	}
 	else
 	{
-#ifdef NPL_LOG_VERBOSE_STREAM_MSG
-		OUTPUT_LOG("NPL protocol version is not supported. nid %s \n", GetNID().c_str());
-#endif
+		if (GetLogLevel() > 0) {
+			OUTPUT_LOG("NPL protocol version is not supported. nid %s \n", GetNID().c_str());
+		}
 		bRes = false;
 	}
 	return bRes;

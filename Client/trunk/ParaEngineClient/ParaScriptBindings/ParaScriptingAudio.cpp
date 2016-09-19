@@ -27,6 +27,7 @@ void ParaAudio::EnableAudioEngine(bool bEnable )
 void ParaAudio::SetVolume(float fVolume)
 {
 	CAudioEngine2::GetInstance()->SetGlobalVolume(fVolume);
+	CMidiMsg::GetSingleton().SetVolumeFloat(fVolume);
 }
 
 float ParaAudio::GetVolume()

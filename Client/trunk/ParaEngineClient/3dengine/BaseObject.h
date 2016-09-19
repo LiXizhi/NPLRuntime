@@ -91,6 +91,20 @@ enum OBJECT_ATTRIBUTE
 	OBJ_CUSTOM_RENDERER = 0x1 << 17,
 };
 
+/** how physics is implemented in this object. */
+enum PHYSICS_METHOD{
+	/** only load physics when a dynamic physics object enters its bounding box.
+	* and automatically unload during a garbage collection.it is mutually exclusive with PHYSICS_ALWAYS_LOAD */
+	PHYSICS_LAZY_LOAD = 1,
+	/** load physics when this object is created. Never unload physics. it is mutually exclusive with PHYSICS_LAZY_LOAD*/
+	PHYSICS_ALWAYS_LOAD = 0x1 << 1,
+	/** this object has no physics. if this bit is on, it will override all other methods. */
+	PHYSICS_FORCE_NO_PHYSICS = 0x1 << 2,
+	/** if this bit is on, the object's physics data is read from the mesh entity (i.e. mesh faces with no textured material).
+	* if not on, the entire mesh entity is used as the physics data.*/
+	PHYSICS_LOAD_FROM_ASSET = 0x1 << 3
+};
+
 /**
 * type of the scene objects
 */
@@ -501,6 +515,8 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, SetLocalTransform_s, const Matrix4&)		{ cls->SetLocalTransform(p1); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, GetLocalTransform_s, Matrix4*)		{ cls->GetLocalTransform(p1); return S_OK; }
 	
+	ATTRIBUTE_METHOD1(CBaseObject, IsPhysicsEnabled_s, bool*)	{ *p1 = cls->IsPhysicsEnabled(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, EnablePhysics_s, bool)	{ cls->EnablePhysics(p1); return S_OK; }
 
 	/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 	virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
@@ -665,6 +681,8 @@ public:
 	/** get whether object can be picked by mouse picking. */
 	bool CanPick();
 
+	/** if the object may contain physics*/
+	virtual bool CanHasPhysics();
 	/** 
 	* load the physics objects.
 	*/
@@ -674,6 +692,11 @@ public:
 	* load the physics object
 	*/
 	virtual void UnloadPhysics();
+
+	/** this function will turn on or off the physics of the object. */
+	virtual void EnablePhysics(bool bEnable);
+
+	virtual bool IsPhysicsEnabled();
 
 	/** this function is called, when the object is in view range. we may need to load the primary asset to update the bounding box, etc. 
 	* @return true if the object is ready to be rendered. 

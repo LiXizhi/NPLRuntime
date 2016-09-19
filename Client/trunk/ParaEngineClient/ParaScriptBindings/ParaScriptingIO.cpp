@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "FileManager.h"
+#include "FileUtils.h"
 #include "ZipArchive.h"
 #include "ZipWriter.h"
 #ifdef PARAENGINE_MOBILE
@@ -785,7 +786,35 @@ namespace ParaScripting
 		return CParaFile::GetFileSize(sFilePath);
 	}
 
-	int ParaIO::DeleteFile( const char* sFilePattern )
+	bool ParaIO::GetFileInfo(const char* sFilePath, const object& inout)
+	{
+		CParaFileInfo fileInfo;
+		if (CParaFile::GetFileInfo(sFilePath, fileInfo))
+		{
+			if (type(inout) == LUA_TTABLE)
+			{
+				inout["size"] = (int)fileInfo.m_dwFileSize;
+				if (fileInfo.m_mode == CParaFileInfo::ModeFile)
+					inout["mode"] = "file";
+				else if (fileInfo.m_mode == CParaFileInfo::ModeDirectory)
+					inout["mode"] = "directory";
+				else if (fileInfo.m_mode == CParaFileInfo::ModeFileInZip)
+					inout["mode"] = "fileinzip";
+				else
+					inout["mode"] = "";
+
+				inout["modification"] = (double)((int64)fileInfo.m_ftLastWriteTime);
+				inout["create"] = (double)((int64)fileInfo.m_ftCreationTime);
+				inout["access"] = (double)((int64)fileInfo.m_ftLastAccessTime);
+				inout["fullpath"] = fileInfo.m_sFullpath;
+				inout["attr"] = (int)fileInfo.m_dwFileAttributes;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	int ParaIO::DeleteFile(const char* sFilePattern)
 	{
 		if(sFilePattern!=0)
 		{

@@ -158,6 +158,7 @@ namespace ParaEngine
 		ATT_ID_MOUNT18,
 		ATT_ID_MOUNT19,
 		ATT_ID_MOUNT20,
+		ATT_ID_MOUNT00 = 0xffff, // this is same as ATT_ID_SHIELD or MOUNT0
 	};
 
 	/**

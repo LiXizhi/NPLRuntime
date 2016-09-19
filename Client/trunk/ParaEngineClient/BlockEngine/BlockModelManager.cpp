@@ -9,6 +9,7 @@
 #include "BlockModel.h"
 #include "ParaXModel/XFileHelper.h"
 #include "ParaXModel/XFileStaticModelParser.h"
+#include "ParaXModel/FBXParser.h"
 #include "BlockModelManager.h"
 
 using namespace ParaEngine;
@@ -54,8 +55,19 @@ XFile::Scene* ParaEngine::BlockModelManager::GetXFile(const std::string& filenam
 		file.OpenAssetFile(filename.c_str());
 		if (!file.isEof())
 		{
-			XFileStaticModelParser parser(file.getBuffer(), file.getSize());
-			pScene = parser.ParseParaXStaticModel();
+			std::string sFileExt = CParaFile::GetFileExtension(filename);
+			if (sFileExt == "x")
+			{
+				XFileStaticModelParser parser(file.getBuffer(), file.getSize());
+				pScene = parser.ParseParaXStaticModel();
+			}
+#ifdef SUPPORT_FBX_MODEL_FILE
+			else if (sFileExt == "fbx" || sFileExt == "FBX")
+			{
+				FBXParser parser;
+				pScene = parser.ParseFBXFile(file.getBuffer(), file.getSize());
+			}
+#endif
 			if (pScene)
 			{
 				RemoveUntexturedFaces(*pScene);
@@ -64,15 +76,26 @@ XFile::Scene* ParaEngine::BlockModelManager::GetXFile(const std::string& filenam
 					OUTPUT_LOG("warn: model: %s is not coplanar. this will cost 4 times more memory. \n", filename.c_str());
 				}
 			}
+			else
+			{
+				OUTPUT_LOG("warn: unknown block model file extension: %s \n", filename.c_str());
+			}
 		}
 		m_Xfiles[filename] = pScene;
 		return pScene;
 	}
 }
 
-
+void ShuffleFaceIndex(Face& face, int nOffset=1)
+{
+	Face face_old = face;
+	for (int i = 0; i < 3;++i)
+	{
+		face.mIndices[i] = face_old.mIndices[(i + nOffset) % 3];
+	}
+}
 //  check if two faces are coplanar, if so return true, and arrange the two faces in correct index order. 
-// co-planer faces are repacked as face1(0,1,3)  face2(1,2,3) 
+// co-planer faces are repacked as face1(0,1,2)  face2(2,0,3) 
 bool AreFacesCoplaner(Face& face1, Face & face2, Mesh& mesh)
 {
 	auto& mNormals = mesh.mNormals;
@@ -102,18 +125,24 @@ bool AreFacesCoplaner(Face& face1, Face & face2, Mesh& mesh)
 	}
 	if (nEqualCount < 2)
 		return false;
-	// store the remaining face index in to the third position. 
-	EqualFaces1[2] = 3 - EqualFaces1[1] - EqualFaces1[0];
-	EqualFaces2[2] = 3 - EqualFaces2[1] - EqualFaces2[0];
+	// index of the non-shared vertex in each face. 
+	int nFace1NonSharedIndex = face1.mIndices[3 - EqualFaces1[1] - EqualFaces1[0]];
+	int nFace2NonSharedIndex = face2.mIndices[3 - EqualFaces2[1] - EqualFaces2[0]];
 
-	Face face1_old = face1;
-	Face face2_old = face2;
-	face1.mIndices[0] = face1_old.mIndices[2];
-	face1.mIndices[1] = face1_old.mIndices[0];
-	face1.mIndices[2] = face2_old.mIndices[2];
-	face2.mIndices[0] = face1_old.mIndices[0];
-	face2.mIndices[1] = face2_old.mIndices[2];
-	face2.mIndices[2] = face1_old.mIndices[1];
+	// make face2 to reuse index of face1
+	face2.mIndices[EqualFaces2[0]] = face1.mIndices[EqualFaces1[0]];
+	face2.mIndices[EqualFaces2[1]] = face1.mIndices[EqualFaces1[1]];
+
+	// co-planer faces are repacked as face1(0,1,2)  face2(2,0,3) 
+	while (face1.mIndices[1] != nFace1NonSharedIndex)
+	{
+		ShuffleFaceIndex(face1, 1);
+	}
+	
+	while (face2.mIndices[2] != nFace2NonSharedIndex)
+	{
+		ShuffleFaceIndex(face2, 1);
+	}
 	return true;
 }
 

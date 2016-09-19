@@ -15,6 +15,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockModel.h"
 #include "ParaXModel/ParaXModel.h"
+#include "PhysicsWorld.h"
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "IScene.h"
@@ -23,14 +24,15 @@
 namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
-		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0)
+		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), 
+		m_nPhysicsGroup(0), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS)
 	{
-			
+		SetAttribute(OBJ_VOLUMN_FREESPACE);
 	}
 
 	BMaxObject::~BMaxObject()
 	{
-		
+		UnloadPhysics();
 	}
 
 	float BMaxObject::GetScaling()
@@ -38,6 +40,112 @@ namespace ParaEngine
 		return m_fScale;
 	}
 
+	Matrix4* BMaxObject::GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber /*= 0*/)
+	{
+		PE_ASSERT(pOut != 0);
+		
+		Matrix4& mxWorld = *pOut;
+		mxWorld.identity();
+
+		// order of rotation: roll * pitch * yaw , where roll is applied first. 
+		bool bIsIdentity = true;
+
+		float fScaling = GetScaling();
+		if (fScaling != 1.f)
+		{
+			Matrix4 matScale;
+			ParaMatrixScaling((Matrix4*)&matScale, fScaling, fScaling, fScaling);
+			mxWorld = (bIsIdentity) ? matScale : matScale.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		float fYaw = GetYaw();
+		if (fYaw != 0.f)
+		{
+			Matrix4 matYaw;
+			ParaMatrixRotationY((Matrix4*)&matYaw, fYaw);
+			mxWorld = (bIsIdentity) ? matYaw : matYaw.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		if (GetPitch() != 0.f)
+		{
+			Matrix4 matPitch;
+			ParaMatrixRotationX(&matPitch, GetPitch());
+			mxWorld = (bIsIdentity) ? matPitch : matPitch.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		if (GetRoll() != 0.f)
+		{
+			Matrix4 matRoll;
+			ParaMatrixRotationZ(&matRoll, GetRoll());
+			mxWorld = (bIsIdentity) ? matRoll : matRoll.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		// world translation
+		Vector3 vPos = GetRenderOffset();
+		mxWorld._41 += vPos.x;
+		mxWorld._42 += vPos.y;
+		mxWorld._43 += vPos.z;
+
+		return &mxWorld;
+	}
+
+	Matrix4* BMaxObject::GetWorldTransform(Matrix4& mxWorld, int nRenderNumber /*= 0*/)
+	{
+		mxWorld.identity();
+
+		// order of rotation: roll * pitch * yaw , where roll is applied first. 
+		bool bIsIdentity = true;
+
+		float fScaling = GetScaling();
+		if (fScaling != 1.f)
+		{
+			Matrix4 matScale;
+			ParaMatrixScaling((Matrix4*)&matScale, fScaling, fScaling, fScaling);
+			mxWorld = (bIsIdentity) ? matScale : matScale.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		float fYaw = GetYaw();
+		if (fYaw != 0.f)
+		{
+			Matrix4 matYaw;
+			ParaMatrixRotationY((Matrix4*)&matYaw, fYaw);
+			mxWorld = (bIsIdentity) ? matYaw : matYaw.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		if (GetPitch() != 0.f)
+		{
+			Matrix4 matPitch;
+			ParaMatrixRotationX(&matPitch, GetPitch());
+			mxWorld = (bIsIdentity) ? matPitch : matPitch.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		if (GetRoll() != 0.f)
+		{
+			Matrix4 matRoll;
+			ParaMatrixRotationZ(&matRoll, GetRoll());
+			mxWorld = (bIsIdentity) ? matRoll : matRoll.Multiply4x3(mxWorld);
+			bIsIdentity = false;
+		}
+
+		// world translation
+		auto vPos = GetPosition();
+		mxWorld._41 += (float)vPos.x;
+		mxWorld._42 += (float)vPos.y;
+		mxWorld._43 += (float)vPos.z;
+		return &mxWorld;
+	}
+
+	bool BMaxObject::CanHasPhysics()
+	{
+		return true;
+	}
 
 	void BMaxObject::SetScaling(float fScale)
 	{
@@ -53,10 +161,35 @@ namespace ParaEngine
 		auto pNewModel = CGlobals::GetAssetManager()->LoadParaX("", sFilename);
 		if (m_pAnimatedMesh != pNewModel)
 		{
+			UnloadPhysics();
 			m_pAnimatedMesh = pNewModel;
 			m_CurrentAnim.MakeInvalid();
 			SetGeometryDirty(true);
 		}
+	}
+
+	Matrix4* BMaxObject::GetAttachmentMatrix(Matrix4& matOut, int nAttachmentID /*= 0*/, int nRenderNumber /*= 0*/)
+	{
+		if (m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
+		{
+			CParaXModel* pModel = m_pAnimatedMesh->GetModel();
+			if (pModel)
+			{
+				Matrix4* pOut = &matOut;
+				if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, AnimIndex(), 0.f))
+				{
+					Matrix4 matScale;
+					float fScaling = GetScaling();
+					if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+					{
+						ParaMatrixScaling(&matScale, fScaling, fScaling, fScaling);
+						(*pOut) = (*pOut)*matScale;
+					}
+					return pOut;
+				}
+			}
+		}
+		return NULL;
 	}
 
 	AssetEntity* BMaxObject::GetPrimaryAsset()
@@ -77,8 +210,15 @@ namespace ParaEngine
 				CShapeOBB obb(CShapeBox(vMin, vMax), mat);
 				CShapeBox minmaxBox;
 				minmaxBox.Extend(obb);
+				if (GetScaling()!= 1.0){
+					minmaxBox.SetMinMax(minmaxBox.GetMin() * GetScaling(), minmaxBox.GetMax() * GetScaling());
+				}
 				SetAABB(&minmaxBox.GetMin(), &minmaxBox.GetMax());
 			}
+
+			UnloadPhysics();
+			if (m_dwPhysicsMethod == 0)
+				m_dwPhysicsMethod = PHYSICS_LAZY_LOAD;
 		}
 	}
 
@@ -243,7 +383,79 @@ namespace ParaEngine
 		return S_OK;
 	}
 
+	void BMaxObject::LoadPhysics()
+	{
+		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
+		{
+			CParaXModel* ppMesh = m_pAnimatedMesh->GetModel();
+			if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
+			{
+				EnablePhysics(false); // disable physics forever, if failed loading physics data
+				return;
+			}
+			// get world transform matrix
+			Matrix4 mxWorld;
+			GetWorldTransform(mxWorld);
+			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
+			if (m_staticActors.empty())
+			{
+				// disable physics forever, if no physics actors are loaded. 
+				EnablePhysics(false);
+			}
+		}
+	}
 
+	void BMaxObject::UnloadPhysics()
+	{
+		int nSize = (int)m_staticActors.size();
+		if (nSize > 0)
+		{
+			for (int i = 0; i < nSize; ++i)
+			{
+				CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
+			}
+			m_staticActors.clear();
+		}
+	}
+
+	void BMaxObject::SetPhysicsGroup(int nGroup)
+	{
+		PE_ASSERT(0 <= nGroup && nGroup < 32);
+		if (m_nPhysicsGroup != nGroup)
+		{
+			m_nPhysicsGroup = nGroup;
+			UnloadPhysics();
+		}
+	}
+
+	int BMaxObject::GetPhysicsGroup()
+	{
+		return m_nPhysicsGroup;
+	}
+
+	void BMaxObject::EnablePhysics(bool bEnable)
+	{
+		if (!bEnable){
+			UnloadPhysics();
+			m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
+		}
+		else
+		{
+			m_dwPhysicsMethod &= (~PHYSICS_FORCE_NO_PHYSICS);
+			if ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD)>0)
+				LoadPhysics();
+		}
+	}
+
+	bool BMaxObject::IsPhysicsEnabled()
+	{
+		return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS)>0);
+	}
+
+	int BMaxObject::GetStaticActorCount()
+	{
+		return (int)m_staticActors.size();
+	}
 
 	int BMaxObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{

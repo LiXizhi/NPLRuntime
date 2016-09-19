@@ -329,9 +329,9 @@ void ParaObject::CheckLoadPhysics()
 
 void ParaObject::LoadPhysics()
 {
-	if(IsValid() && (m_pObj->GetType()==CBaseObject::MeshPhysicsObject))
+	if(IsValid())
 	{
-		((CMeshPhysicsObject*)(m_pObj))->LoadPhysics();
+		m_pObj->LoadPhysics();
 	}
 }
 
@@ -620,16 +620,16 @@ void ParaObject::AddChild(const ParaObject obj){
 };
 void ParaObject::EnablePhysics(bool bEnable)
 {
-	if(IsValid() && m_pObj->GetType() == CBaseObject::MeshPhysicsObject)
+	if(IsValid())
 	{
-		((CMeshPhysicsObject*)m_pObj)->EnablePhysics(bEnable);
+		m_pObj->EnablePhysics(bEnable);
 	}
 }
 bool ParaObject::IsPhysicsEnabled()
 {
-	if(IsValid() && m_pObj->GetType() == CBaseObject::MeshPhysicsObject)
+	if(IsValid())
 	{
-		return ((CMeshPhysicsObject*)m_pObj)->IsPhysicsEnabled();
+		return m_pObj->IsPhysicsEnabled();
 	}
 	return false;
 }
@@ -2286,7 +2286,7 @@ ParaObject ParaScene::MousePick(float fMaxDistance, const char* sFilterFunc)
 	{
 		static CSphereObject obj;
 		Vector3 vIntersectPos(0,0,0);
-		float fDist = CGlobals::GetScene()->PickClosest(ptCursor.x, ptCursor.y, NULL, &vIntersectPos, NULL, false, fMaxDistance, GetPhysicsGroupMaskByName(sFilterFunc));
+		float fDist = CGlobals::GetScene()->PickClosest(ptCursor.x, ptCursor.y, &pObj, &vIntersectPos, NULL, false, fMaxDistance, GetPhysicsGroupMaskByName(sFilterFunc));
 		if(fDist<0)
 		{
 			return ParaObject(NULL);
@@ -2296,6 +2296,7 @@ ParaObject ParaScene::MousePick(float fMaxDistance, const char* sFilterFunc)
 			// one can retrieve the intersection point and distance by position and scaling. 
 			obj.SetPosition(DVector3(vIntersectPos));
 			obj.SetScaling(fDist);
+			obj.SetIdentifier(pObj ? pObj->GetIdentifier() : "");
 			return ParaObject(&obj);
 		}
 	}
