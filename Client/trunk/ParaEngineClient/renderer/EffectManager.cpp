@@ -1075,7 +1075,7 @@ void EffectManager::applyLocalLightingData()
 void EffectManager::applyObjectLocalLighting(CBaseObject* pObj)
 {
 #ifdef USE_DIRECTX_RENDERER
-	if(IsLocalLightingEnabled() && CGlobals::GetLightManager()->GetNumLights()>0)
+	if (IsLocalLightingEnabled() && CGlobals::GetLightManager()->GetNumLights()>0)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// Do local lighting: find nearby lights, and enable them.
