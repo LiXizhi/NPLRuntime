@@ -191,8 +191,10 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 	}
 
 	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
+	const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
 	bool bIsServerMode = (sServerMode && strcmp(sServerMode, "true") == 0);
-	Enable3DRendering(!bIsServerMode);
+	bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
+	Enable3DRendering(!bIsServerMode && !bIsInterpreterMode);
 
 	CParaFile::SetDevDirectory(GetAppCommandLineByParam("dev", ""));
 

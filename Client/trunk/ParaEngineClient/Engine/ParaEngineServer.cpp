@@ -22,10 +22,10 @@
 
 int main(int argc, char **argv)
 {
-	printf("            ---ParaEngine Server V%d.%d---         \n", 1, 1);
 	int exit_code = 0;
 
 	bool bServiceMode = false;
+	bool bInterpreterMode = false;
 
 	std::string sCmdLine;
 	
@@ -40,6 +40,10 @@ int main(int argc, char **argv)
 		{
 			bServiceMode = false;
 		}
+		else if(strcmp(argv[i], "-i") == 0)
+		{
+			bInterpreterMode = true;
+		}
 		else if (argv[i])
 		{
 			if (sCmdLine.empty())
@@ -51,6 +55,11 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	if(!bInterpreterMode){
+		printf("            ---ParaEngine Server V%d.%d---         \n", 1, 1);
+	}
+	
 	if(bServiceMode)
 	{
 		// enter as system service
@@ -61,7 +70,7 @@ int main(int argc, char **argv)
 	ParaEngine::CParaEngineApp myServerApp(sCmdLine.c_str());
 	ParaEngine::CParaEngineService service;
 
-	service.AcceptKeyStroke(!bServiceMode);
+	service.AcceptKeyStroke(!bServiceMode && !bInterpreterMode);
 
 	exit_code = service.Run((argc>0) ? sCmdLine.c_str() : NULL, &myServerApp);
 

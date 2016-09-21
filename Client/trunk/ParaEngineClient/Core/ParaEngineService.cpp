@@ -190,15 +190,6 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 	if (pApp && !pCommandLine){
 		pCommandLine = pApp->GetAppCommandLine();
 	}
-	printf("            ---ParaEngine Service---               \n");
-	printf("---------------------------------------------------\n");
-	printf("Service is now running ... do not exit             \n");
-	printf("cmd line: %s \n", pCommandLine ? pCommandLine : "");
-	printf("---------------------------------------------------\n");
-	if(IsAcceptKeyStroke())
-	{
-		printf("            Press ENTER Key to exit the program    \n");
-	}
 
 	if (pApp)
 	{
@@ -208,6 +199,26 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 	{
 		m_pParaEngineApp = new CParaEngineApp(pCommandLine);
 	}
+
+	if (strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0)
+	{
+		// run in interpreter and interactive mode. io.read() can be used to read input from standard io. 
+		AcceptKeyStroke(false);
+	}
+	else
+	{
+		printf("            ---ParaEngine Service---               \n");
+		printf("---------------------------------------------------\n");
+		printf("Service is now running ... do not exit             \n");
+		printf("cmd line: %s \n", pCommandLine ? pCommandLine : "");
+		printf("---------------------------------------------------\n");
+		if (IsAcceptKeyStroke())
+		{
+			printf("            Press ENTER Key to exit the program    \n");
+		}
+	}
+	
+
 	m_pParaEngineApp->Init(0);
 
 	// this makes the server more responsive to NPL messages. However, JGSL is still lagged. 
