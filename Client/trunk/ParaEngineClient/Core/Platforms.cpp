@@ -12,7 +12,6 @@
 #include <sys/time.h> 
 #endif
 
-#include <cstdlib>
 #include <time.h>
 
 #define FAST_RAND_MAX 0x7fff

@@ -8,7 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "TerrainGeoMipmapIndices.h"
-#include <cstdlib>
 #include <math.h>
 
 namespace ParaTerrain

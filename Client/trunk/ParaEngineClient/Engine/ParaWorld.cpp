@@ -250,6 +250,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 				// API: Finally call this before process exit. 
 				pParaEngineApp->StopApp();
 				exit_code = pParaEngineApp->GetReturnCode();
+				pParaEngineApp->De
 			}
 		}
 #endif

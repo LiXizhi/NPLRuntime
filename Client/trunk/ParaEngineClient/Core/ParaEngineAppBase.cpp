@@ -33,6 +33,7 @@ using namespace ParaEngine;
 
 CParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
 
+
 // temp TEST code here
 void ParaEngine::CParaEngineAppBase::DoTestCode()
 {
@@ -53,13 +54,43 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
 {
 	DestroySingletons();
-	g_pCurrentApp = NULL;
+	SetCurrentInstance(NULL);
+}
+
+void ParaEngine::CParaEngineAppBase::DeleteInterface()
+{
+	SetCurrentInstance(NULL);
+	delete this;
+}
+
+BaseInterface* ParaEngine::CParaEngineAppBase::AcquireInterface()
+{
+	addref();
+	return(BaseInterface*)this;
+}
+
+void ParaEngine::CParaEngineAppBase::ReleaseInterface()
+{
+	if (delref()){
+		DeleteInterface();
+	}
 }
 
 CParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 {
 	return g_pCurrentApp;
 }
+
+CParaEngineAppBase::LifetimeType ParaEngine::CParaEngineAppBase::LifetimeControl()
+{
+	return wantsRelease;
+}
+
+void CParaEngineAppBase::SetCurrentInstance(CParaEngineApp* pInstance)
+{
+	g_pCurrentApp = pInstance;
+}
+
 
 void ParaEngine::CParaEngineAppBase::DestroySingletons()
 {
@@ -74,7 +105,7 @@ void ParaEngine::CParaEngineAppBase::OnFrameEnded()
 
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
-	g_pCurrentApp = (CParaEngineApp*) this;
+	SetCurrentInstance((CParaEngineApp*)this);
 
 	srand((unsigned long)time(NULL));
 

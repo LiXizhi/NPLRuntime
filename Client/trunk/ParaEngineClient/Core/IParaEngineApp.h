@@ -95,7 +95,7 @@ namespace ParaEngine
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
 	*/
-	class IParaEngineApp : BaseInterface
+	class IParaEngineApp : public BaseInterface
 	{
 	public:
 		/** This is the first function that should be called when acquiring the IParaEngineApp interface. 

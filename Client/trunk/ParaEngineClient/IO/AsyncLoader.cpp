@@ -53,7 +53,7 @@ IndirectServerAddress=http://patch.paraengine.com/assets/
 
 */
 #include "ParaEngine.h"
-
+#include "util/CSingleton.h"
 #ifdef PARAENGINE_CLIENT
 #include "DirectXEngine.h"
 #include "GDIEngine.h"
@@ -233,8 +233,7 @@ void ParaEngine::CAsyncLoader::CleanUp()
 
 CAsyncLoader& ParaEngine::CAsyncLoader::GetSingleton()
 {
-	static CAsyncLoader s_instance;
-	return s_instance;
+	return *(CAppSingleton<CAsyncLoader>::GetInstance());
 }
 
 void ParaEngine::CAsyncLoader::Interrupt() 

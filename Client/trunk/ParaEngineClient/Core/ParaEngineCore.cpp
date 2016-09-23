@@ -14,6 +14,9 @@
 
 using namespace ParaEngine;
 
+
+ParaEngine::WeakPtr ParaEngine::CParaEngineCore::m_pAppSingleton;
+
 /** @def class id*/
 #define PARAENGINE_CLASS_ID Class_ID(0x2b903b29, 0x47e409af)
 
@@ -24,8 +27,7 @@ public:
 
 	void* Create(bool loading = FALSE)
 	{
-		static CParaEngineCore g_singleton;
-		return &g_singleton;
+		return CParaEngineCore::GetInstance();
 	}
 
 	const char* ClassName()
@@ -72,6 +74,7 @@ CParaEngineCore::CParaEngineCore(void)
 
 CParaEngineCore::~CParaEngineCore(void)
 {
+	DestroySingleton();
 }
 
 IParaEngineCore* CParaEngineCore::GetStaticInterface()
@@ -144,8 +147,28 @@ IParaEngineApp* CParaEngineCore::CreateApp()
 	if (pApp == 0)
 	{
 		// we will only create app if it has not been created before. 
-		static CParaEngineApp g_app;
-		return (IParaEngineApp*)(&g_app);
+		if (!m_pAppSingleton)
+		{
+			CParaEngineApp* pApp = new CParaEngineApp();
+			m_pAppSingleton = pApp;
+			return (IParaEngineApp*)pApp;
+		}
+
 	}
 	return pApp;
+}
+
+CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
+{
+	static CParaEngineCore s_instance;
+	return &s_instance;
+}
+
+void ParaEngine::CParaEngineCore::DestroySingleton()
+{
+	if (m_pAppSingleton)
+	{
+		m_pAppSingleton->Release();
+		m_pAppSingleton.reset();
+	}
 }

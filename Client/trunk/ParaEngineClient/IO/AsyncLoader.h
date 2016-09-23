@@ -58,7 +58,7 @@ namespace ParaEngine
 		8.Then the I/O thread puts an unlock request in the lock/unlock queue.
 		9.When the render thread feels like it, it picks up the unlock request and unlocks the resource. The resource is now ready to use.
 	*/
-	class CAsyncLoader
+	class CAsyncLoader : public CRefCounted
 	{
 	public:
 		CAsyncLoader();

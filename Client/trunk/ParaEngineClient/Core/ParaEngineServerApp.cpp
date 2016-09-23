@@ -40,7 +40,7 @@ CParaEngineApp::~CParaEngineApp()
 
 HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
-	g_pCurrentApp = this;
+	SetCurrentInstance(this);
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 	SetAppCommandLine(strCmd.c_str());
@@ -91,9 +91,7 @@ HRESULT CParaEngineApp::StopApp()
 	m_pRootScene.reset();
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
-
-	// Clean up all threads
-	CAsyncLoader::GetSingleton().CleanUp();
+	
 	return S_OK;
 }
 

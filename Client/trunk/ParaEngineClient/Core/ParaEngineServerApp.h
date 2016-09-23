@@ -24,7 +24,7 @@ namespace ParaEngine
 	public:
 		CParaEngineApp(const char* lpCmdLine = NULL);
 		virtual ~CParaEngineApp();
-		
+
 	public:
 		virtual HRESULT StartApp(const char* sCommandLine = 0);
 		virtual HRESULT StopApp();

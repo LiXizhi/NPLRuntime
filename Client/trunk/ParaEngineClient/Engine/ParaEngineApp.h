@@ -99,7 +99,7 @@ namespace ParaEngine
 		*/
 		CParaEngineApp();
 		virtual ~CParaEngineApp();
-				
+		
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance);
 
@@ -469,6 +469,7 @@ namespace ParaEngine
 
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager();
+
 	private:
 		bool UpdateScreenDevice();
 		

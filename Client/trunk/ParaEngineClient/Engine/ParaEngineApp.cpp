@@ -179,7 +179,6 @@ CViewportManager* CParaEngineApp::GetViewportManager()
 
 void CParaEngineApp::InitApp(const char* sCommandLine)
 {
-	g_pCurrentApp = this;
 	if (m_pWinRawMsgQueue == 0)
 		m_pWinRawMsgQueue = new CWinRawMsgQueue();
 
@@ -374,6 +373,7 @@ void CParaEngineApp::InitSystemModules()
 
 HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
+	SetCurrentInstance(this);
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 	InitApp(strCmd.c_str());
@@ -430,9 +430,6 @@ HRESULT CParaEngineApp::StopApp()
 #endif
 
 	Gdiplus::GdiplusShutdown(g_gdiplusToken);
-
-	// Clean up all threads
-	CAsyncLoader::GetSingleton().CleanUp();
 
 	// delete all singletons
 	DestroySingletons();
@@ -1329,22 +1326,26 @@ int CParaEngineApp::Run( HINSTANCE hInstance )
 	//add a console window for debug or when in server mode. 
 	if (!Is3DRenderingEnabled() || IsDebugBuild())
 	{
-		RedirectIOToConsole();
-#ifdef _DEBUG
-		std::cout << "Start console window in " << __FILE__ << "  line:" << __LINE__ << "\n";
-#endif
+		/*const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
+		bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
+		if (!bIsInterpreterMode)*/
+		{
+			RedirectIOToConsole();
+		}
 	}
+	auto result = 0;
 	if (Is3DRenderingEnabled())
 	{
 		// create 3d window and run till exit
-		return CD3DApplication::Run(hInstance);
+		result = CD3DApplication::Run(hInstance);
 	}
 	else
 	{
 		// the console window is used. 
 		CParaEngineService service;
-		return service.Run(0, this);
+		result = service.Run(0, this);
 	}
+	return result;
 }
 
 void CParaEngineApp::GetStats(string& output, DWORD dwFields)
