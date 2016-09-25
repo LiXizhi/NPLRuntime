@@ -1,13 +1,7 @@
 #pragma once
 #include "AssetEntity.h"
 #include "ParaXModel/ParaXModel.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "StaticMesh.h"
-#elif defined(USE_OPENGL_RENDERER)
 #include "ParaXModel/ParaXStaticModel.h"
-#else
-#include "ParaXModel/ParaXStaticModel.h"
-#endif
 
 namespace ParaEngine
 {

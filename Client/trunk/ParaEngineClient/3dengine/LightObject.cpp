@@ -354,8 +354,8 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 		mxWorld._42 += vPos.y;
 		mxWorld._43 += vPos.z;
 
-		CParaXStaticMesh* pMesh = m_ppMesh->GetMesh();
-		if (pMesh == NULL)
+		CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh();
+		if (!pMesh)
 			return E_FAIL;
 
 		//CGlobals::GetEffectManager()->applyObjectLocalLighting(this);

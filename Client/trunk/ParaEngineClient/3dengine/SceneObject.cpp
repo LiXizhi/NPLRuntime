@@ -10,7 +10,6 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "SpriteObject.h"
-#include "StaticMesh.h"
 #include "ShadowMap.h"
 #include "GlowEffect.h"
 #include "DataProviderManager.h"
