@@ -24,6 +24,7 @@
 #include "RenderTarget.h"
 #include "WeatherEffect.h"
 #include "OverlayObject.h"
+#include "LightObject.h"
 #include "NPLRuntime.h"
 #include "EventsCenter.h"
 #include "AISimulator.h"
@@ -148,6 +149,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("BMaxObject", new CDefaultObjectFactory<BMaxObject>());
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
+	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
 
 	// TODO add more here: 
 }
