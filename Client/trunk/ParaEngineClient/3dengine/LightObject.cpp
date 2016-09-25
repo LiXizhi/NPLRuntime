@@ -458,12 +458,12 @@ int CLightObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	CSphereObject::InstallFields(pClass, bOverride);
 
-	pClass->AddField("LightType", FieldType_Int, SetLightType_s, GetLightType_s, NULL, NULL, bOverride);
-	pClass->AddField("Range", FieldType_Float, SetRange_s, GetRange_s, CAttributeField::GetSimpleSchemaOfFloat(1.f, 30.f), NULL, bOverride);
-	pClass->AddField("Diffuse", FieldType_Vector3, SetDiffuse_s, GetDiffuse_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
-	pClass->AddField("Attenuation0", FieldType_Float, SetAttenuation0_s, GetAttenuation0_s, NULL, NULL, bOverride);
-	pClass->AddField("Attenuation1", FieldType_Float, SetAttenuation1_s, GetAttenuation1_s, NULL, NULL, bOverride);
-	pClass->AddField("Attenuation2", FieldType_Float, SetAttenuation2_s, GetAttenuation2_s, NULL, NULL, bOverride);
-	pClass->AddField("IsDeferredLightOnly", FieldType_Bool, SetDeferredLightOnly_s, IsDeferredLightOnly_s, NULL, NULL, bOverride);
+	pClass->AddField("LightType", FieldType_Int, (void*)SetLightType_s, (void*)GetLightType_s, NULL, NULL, bOverride);
+	pClass->AddField("Range", FieldType_Float, (void*)SetRange_s, (void*)GetRange_s, CAttributeField::GetSimpleSchemaOfFloat(1.f, 30.f), NULL, bOverride);
+	pClass->AddField("Diffuse", FieldType_Vector3, (void*)SetDiffuse_s, (void*)GetDiffuse_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
+	pClass->AddField("Attenuation0", FieldType_Float, (void*)SetAttenuation0_s, (void*)GetAttenuation0_s, NULL, NULL, bOverride);
+	pClass->AddField("Attenuation1", FieldType_Float, (void*)SetAttenuation1_s, (void*)GetAttenuation1_s, NULL, NULL, bOverride);
+	pClass->AddField("Attenuation2", FieldType_Float, (void*)SetAttenuation2_s, (void*)GetAttenuation2_s, NULL, NULL, bOverride);
+	pClass->AddField("IsDeferredLightOnly", FieldType_Bool, (void*)SetDeferredLightOnly_s, (void*)IsDeferredLightOnly_s, NULL, NULL, bOverride);
 	return S_OK;
 }
