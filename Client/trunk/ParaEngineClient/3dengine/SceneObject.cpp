@@ -1301,8 +1301,6 @@ int RemoveZoneObjects(T& renderlist)
 bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, SceneState& sceneState)
 {
 	IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
-	ObjectType oType =  pObj->GetMyType();
-
 	// fNewViewRadius is usually the camera far plane distance, however, it can be set to a smaller value according to the size of the object. 
 	float fNewViewRadius;
 	float fR = pViewClippingObject->GetRadius();
@@ -1344,6 +1342,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	{
 		bDrawObj = true;
 		
+		ObjectType oType = pObj->GetMyType();
 		if(oType ==  _PC_Zone)
 		{
 			bDrawObj = false;
@@ -1480,7 +1479,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 			}
 		}
 	}
-	return true;
+	return bDrawObj;
 }
 
 void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneState)

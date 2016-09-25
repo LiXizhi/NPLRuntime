@@ -8,6 +8,7 @@
 #include "ParaWorldAsset.h"
 #include "SceneState.h"
 #include "SceneObject.h"
+#include "ParaXModel/ParaXStaticModel.h"
 #include "LightParam.h"
 #include "LightManager.h"
 #include "LightObject.h"
