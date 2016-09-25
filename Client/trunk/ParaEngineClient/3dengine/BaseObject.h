@@ -510,7 +510,7 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsLastFrameRendered_s, bool*)		{ *p1 = cls->IsLastFrameRendered(); return S_OK; }
 	ATTRIBUTE_METHOD(CBaseObject, DestroyChildren_s)		{ cls->DestroyChildren(); return S_OK; }
 
-	ATTRIBUTE_METHOD1(CBaseObject, GetRenderWorldMatrix_s, Matrix4*)		{ cls->GetRenderWorldMatrix(p1); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, GetRenderMatrix_s, Matrix4*)		{ cls->GetRenderMatrix(*p1); return S_OK; }
 
 	ATTRIBUTE_METHOD1(CBaseObject, SetLocalTransform_s, const Matrix4&)		{ cls->SetLocalTransform(p1); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, GetLocalTransform_s, Matrix4*)		{ cls->GetLocalTransform(p1); return S_OK; }

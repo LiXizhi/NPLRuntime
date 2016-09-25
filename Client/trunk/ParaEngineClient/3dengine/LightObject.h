@@ -1,9 +1,12 @@
 #pragma once
+#include "ParaXEntity.h"
 #include "SphereObject.h"
 #include <string>
 namespace ParaEngine
 {
+	class CParaXModel;
 	class CLightParam;
+
 	/** this is an independent local light scene object. 
 	* local lights are mostly contained in the mesh object. But an independent light object like this 
 	* is useful, when we want to manipulate the light object at runtime. */
@@ -87,8 +90,7 @@ namespace ParaEngine
 
 		HRESULT RenderMesh(SceneState * sceneState);
 
-		virtual AssetEntity* GetPrimaryAsset();
-
+		
 		virtual void Cleanup();
 
 		/** set local transform directly */
@@ -102,6 +104,18 @@ namespace ParaEngine
 
 		/** return the global light in render coordinate system. */
 		CLightParam* GetLightParams();
+
+		virtual AssetEntity* GetPrimaryAsset();
+		virtual void SetAssetFileName(const std::string& sFilename);
+		virtual Matrix4* GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID = 0, int nRenderNumber = 0);
+
+		/**
+		* return the world matrix of the object for rendering
+		* @param out: the output.
+		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. If 0, it will not recalculate
+		* @return: same as out. or NULL if not exists.
+		*/
+		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber = 0);
 	public:
 		/**
 		* Set type
@@ -183,11 +197,15 @@ namespace ParaEngine
 		/** local transform. usually a rotation with scaling.  */
 		Matrix4            m_mxLocalTransform;
 
+		AnimIndex m_CurrentAnim;
+
 		/** mesh geometry */
-		asset_ptr<MeshEntity>           m_ppMesh;
+		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
 
 		/** light parameters. */
 		CLightParam* m_pLightParams;
+
+		float m_fLightAmbientBrightness;
 
 		/** if true, the light object will delete the m_pLightParams object at destruction time. */
 		bool m_bDeleteLightParams;

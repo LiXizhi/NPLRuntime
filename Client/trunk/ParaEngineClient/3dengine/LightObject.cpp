@@ -8,7 +8,6 @@
 #include "ParaWorldAsset.h"
 #include "SceneState.h"
 #include "SceneObject.h"
-#include "ParaXModel/ParaXStaticModel.h"
 #include "LightParam.h"
 #include "LightManager.h"
 #include "LightObject.h"
@@ -18,11 +17,8 @@ using namespace ParaEngine;
 /**@def whether to automatically adjust light parameters by range. */
 #define AUTO_LIGHT_PARAMS_BY_RANGE
 
-/** this is the mesh path for the mesh asset CGlobals::GetAssetManager()->GetMesh("_default_light_mesh");*/
-const char g_default_light_mesh_path[] = "model/pops/lightball/lightball.x";
-
 CLightObject::CLightObject(void)
-:m_bDeleteLightParams(true), m_pLightParams(NULL)
+	:m_bDeleteLightParams(true), m_pLightParams(NULL), m_fLightAmbientBrightness(0.3f)
 {
 	SetMyType(_LocalLight);
 	m_mxLocalTransform = Matrix4::IDENTITY;
@@ -147,23 +143,6 @@ void CLightObject::Reset()
 
 HRESULT CLightObject::InitObject(CLightParam* pLight, MeshEntity* ppMesh, const Vector3& vCenter,  const Matrix4& mat,  bool bCopyParams)
 {
-	// set mesh
-	if(ppMesh == NULL)
-	{
-		ppMesh = CGlobals::GetAssetManager()->GetMesh("_default_light_mesh");
-		if(ppMesh==0 || !ppMesh->IsValid())
-		{
-			ppMesh = CGlobals::GetAssetManager()->LoadMesh("_default_light_mesh", g_default_light_mesh_path);
-		}
-	}
-	m_ppMesh = ppMesh;
-	
-	if(ppMesh!=0)
-	{
-		// use a special shader without light. 
-		SetPrimaryTechniqueHandle(TECH_SIMPLE_MESH_NORMAL_UNLIT);
-	}
-	
 	// set position
 	SetObjectCenter(vCenter);
 
@@ -192,7 +171,6 @@ HRESULT CLightObject::InitObject(CLightParam* pLight, MeshEntity* ppMesh, const 
 	// set the radius, this is for view clipping object calculation and scene attachment . 
 	// TODO: we should over write the view clipping object to calculate the light region's bounding box. 
 	SetRadius(m_pLightParams->Range);
-
 	return S_OK;
 }
 
@@ -337,62 +315,132 @@ HRESULT CLightObject::Draw(SceneState * sceneState)
 
 HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 {
-	// if(CGlobals::GetScene()->IsShowLocalLightMesh())
+	if (!m_pAnimatedMesh)
+		return E_FAIL;
+	if (GetPrimaryTechniqueHandle() < 0)
 	{
-		if (!m_ppMesh  || !(m_ppMesh->IsValid()))
-			return E_FAIL;
-
-		RenderDevicePtr pd3dDevice = sceneState->GetRenderDevice();
-
-		// world translation
-		Vector3 vPos = GetRenderOffset();
-		// render at the center
-		vPos.y += GetHeight() / 2;
-
-		Matrix4 mxWorld = m_mxLocalTransform;
-		mxWorld._41 += vPos.x;
-		mxWorld._42 += vPos.y;
-		mxWorld._43 += vPos.z;
-
-		CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh();
-		if (!pMesh)
-			return E_FAIL;
-
-		//CGlobals::GetEffectManager()->applyObjectLocalLighting(this);
-
-		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-		if (pEffectFile == 0)
+		// try loading the asset if it has not been done before. 
+		m_pAnimatedMesh->LoadAsset();
+		if (m_pAnimatedMesh->IsLoaded())
 		{
-#ifdef USE_DIRECTX_RENDERER
-			//////////////////////////////////////////////////////////////////////////
-			// fixed programming pipeline
-			CGlobals::GetWorldMatrixStack().push(mxWorld);
-
-			// render by default as non-transparent.
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			CGlobals::GetEffectManager()->SetCullingMode(true);
-
-			// Draw with mesh materials
-			pMesh->Render(sceneState, pd3dDevice, true, true, sceneState->fAlphaFactor);
-			CGlobals::GetWorldMatrixStack().pop();
-#endif
+			SetPrimaryTechniqueHandle(m_pAnimatedMesh->GetPrimaryTechniqueHandle());
+			UpdateGeometry();
 		}
-		else
-		{
-			//////////////////////////////////////////////////////////////////////////
-			// draw using effect file
-			CGlobals::GetWorldMatrixStack().push(mxWorld);
-			pMesh->Render(sceneState, pEffectFile, true, true, sceneState->fAlphaFactor);
-			CGlobals::GetWorldMatrixStack().pop();
-		}
+		return E_FAIL;
 	}
+
+	if (!CGlobals::GetEffectManager()->IsCurrentEffectValid())
+	{
+		return E_FAIL;
+	}
+
+	CParaXModel* pModel = m_pAnimatedMesh->GetModel(0);
+	if (pModel == NULL)
+		return E_FAIL;
+
+	sceneState->SetCurrentSceneObject(this);
+	SetFrameNumber(sceneState->m_nRenderCount);
+	// get world transform matrix
+	Matrix4 mxWorld;
+	GetRenderMatrix(mxWorld);
+
+	RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+	EffectManager* pEffectManager = CGlobals::GetEffectManager();
+	pEffectManager->applyObjectLocalLighting(this);
+
+	CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
+	CGlobals::GetWorldMatrixStack().push(mxWorld);
+
+	if (pEffectFile == 0)
+	{
+		// TODO: Fixed Function. 
+	}
+	else
+	{
+		// apply block space lighting for object whose size is comparable to a single block size
+		if (CheckAttribute(MESH_USE_LIGHT))
+		{
+			float fLightness = m_fLightAmbientBrightness;
+			sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
+			sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+			sceneState->EnableLocalMaterial(true);
+		}
+
+		// just a single standing animation is supported now and looped. 
+		if (!m_CurrentAnim.IsValid())
+			m_CurrentAnim = pModel->GetAnimIndexByID(0);
+		if (m_CurrentAnim.IsValid())
+		{
+			int nAnimLength = std::max(1, m_CurrentAnim.nEndFrame - m_CurrentAnim.nStartFrame);
+			int nToDoFrame = (m_CurrentAnim.nCurrentFrame + (int)(sceneState->dTimeDelta * 1000)) % nAnimLength;
+			m_CurrentAnim.nCurrentFrame = nToDoFrame;
+		}
+		pModel->m_CurrentAnim = m_CurrentAnim;
+		pModel->m_NextAnim.nIndex = 0;
+		pModel->m_BlendingAnim.MakeInvalid();
+		pModel->blendingFactor = 0;
+		pModel->animate(sceneState, NULL);
+		// force CParaXModel::BMAX_MODEL? 
+		pModel->draw(sceneState, NULL);
+	}
+
+	CGlobals::GetWorldMatrixStack().pop();
 	return S_OK;
 }
 
 AssetEntity* ParaEngine::CLightObject::GetPrimaryAsset()
 {
-	return (AssetEntity*)(m_ppMesh.get());
+	return (m_pAnimatedMesh.get());
+}
+
+void ParaEngine::CLightObject::SetAssetFileName(const std::string& sFilename)
+{
+	auto pNewModel = CGlobals::GetAssetManager()->LoadParaX("", sFilename);
+	if (m_pAnimatedMesh != pNewModel)
+	{
+		UnloadPhysics();
+		m_pAnimatedMesh = pNewModel;
+		m_CurrentAnim.MakeInvalid();
+		SetGeometryDirty(true);
+	}
+}
+
+Matrix4* ParaEngine::CLightObject::GetAttachmentMatrix(Matrix4& matOut, int nAttachmentID /*= 0*/, int nRenderNumber /*= 0*/)
+{
+	if (m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
+	{
+		CParaXModel* pModel = m_pAnimatedMesh->GetModel();
+		if (pModel)
+		{
+			Matrix4* pOut = &matOut;
+			if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, AnimIndex(), 0.f))
+			{
+				Matrix4 matScale;
+				float fScaling = GetScaling();
+				if (fabs(fScaling - 1.0f) > FLT_TOLERANCE)
+				{
+					ParaMatrixScaling(&matScale, fScaling, fScaling, fScaling);
+					(*pOut) = (*pOut)*matScale;
+				}
+				return pOut;
+			}
+		}
+	}
+	return NULL;
+}
+
+Matrix4* ParaEngine::CLightObject::GetRenderMatrix(Matrix4& out, int nRenderNumber /*= 0*/)
+{
+	// world translation
+	Vector3 vPos = GetRenderOffset();
+	// render at the center
+	vPos.y += GetHeight() / 2;
+
+	out = m_mxLocalTransform;
+	out._41 += vPos.x;
+	out._42 += vPos.y;
+	out._43 += vPos.z;
+	return &out;
 }
 
 bool ParaEngine::CLightObject::IsDeferredLightOnly() const
