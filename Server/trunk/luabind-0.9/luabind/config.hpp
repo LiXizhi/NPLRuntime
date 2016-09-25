@@ -37,6 +37,8 @@
 #define for if (false) {} else for
 
 #include <cstring>
+#include <cstdlib>
+
 
 namespace std
 {
@@ -125,4 +127,3 @@ LUABIND_API void disable_super_deprecation();
 } // namespace luabind
 
 #endif // LUABIND_CONFIG_HPP_INCLUDED
-
