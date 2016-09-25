@@ -13,7 +13,6 @@ namespace ParaEngine
 		virtual CBaseObject::_SceneObjectType GetType(){return CBaseObject::LightObject;};
 		CLightObject(void);
 		virtual ~CLightObject(void);
-
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		// implementation of IAttributeFields
@@ -40,6 +39,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CLightObject, GetAttenuation2_s, float*)	{*p1 = cls->GetAttenuation2(); return S_OK;}
 		ATTRIBUTE_METHOD1(CLightObject, SetAttenuation2_s, float)	{cls->SetAttenuation2(p1); return S_OK;}
+
+		ATTRIBUTE_METHOD1(CLightObject, IsDeferredLightOnly_s, bool*)	{ *p1 = cls->IsDeferredLightOnly(); return S_OK; }
+		ATTRIBUTE_METHOD1(CLightObject, SetDeferredLightOnly_s, bool)	{ cls->SetDeferredLightOnly(p1); return S_OK; }
 
 	public:
 		virtual std::string ToString(DWORD nMethod);
@@ -74,8 +76,17 @@ namespace ParaEngine
 		*/
 		HRESULT InitObject(CLightParam* pLight, MeshEntity* ppMesh, const Vector3& vCenter, const Matrix4& mat, bool bCopyParams = true);
 
+		/** derived class can override this function to place the object in to the render pipeline.
+		* if this function return -1, the SceneObject will automatically place the object into the render pipeline.
+		* if return 0, it means the object has already placed the object and the scene object should skip this object.
+		*/
+		virtual int PrepareRender(CBaseCamera* pCamera, SceneState * sceneState);
+
 		/** it only draws an arrow, when the scene's show local light parameter is true. */
 		virtual HRESULT Draw(SceneState * sceneState);
+
+		HRESULT RenderMesh(SceneState * sceneState);
+
 		virtual AssetEntity* GetPrimaryAsset();
 
 		virtual void Cleanup();
@@ -163,6 +174,9 @@ namespace ParaEngine
 		*/
 		float GetAttenuation2();
 
+		/** whether the light is enabled for deferred render pipeline only. */
+		bool IsDeferredLightOnly() const;
+		void SetDeferredLightOnly(bool val);
 	private:
 		/** current position in the map */
 		//Vector3           m_vPos;
@@ -177,5 +191,8 @@ namespace ParaEngine
 
 		/** if true, the light object will delete the m_pLightParams object at destruction time. */
 		bool m_bDeleteLightParams;
+
+		/** whether the light is enabled for deferred render pipeline only. */
+		bool m_bDeferredLightOnly;
 	};
 }

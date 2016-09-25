@@ -10,7 +10,6 @@
 #include "SceneObject.h"
 #include "LightParam.h"
 #include "LightManager.h"
-#include "StaticMesh.h"
 #include "LightObject.h"
 
 using namespace ParaEngine;
@@ -196,59 +195,6 @@ HRESULT CLightObject::InitObject(CLightParam* pLight, MeshEntity* ppMesh, const 
 	return S_OK;
 }
 
-HRESULT CLightObject::Draw( SceneState * sceneState)
-{
-	if(CGlobals::GetScene()->IsShowLocalLightMesh())
-	{
-		if(m_ppMesh==NULL || ! (m_ppMesh->IsValid()))
-			return E_FAIL;
-
-		RenderDevicePtr pd3dDevice = sceneState->GetRenderDevice();
-
-		// world translation
-		Vector3 vPos = GetRenderOffset();
-		// render at the center
-		vPos.y+=GetHeight()/2;
-
-		Matrix4 mxWorld = m_mxLocalTransform;
-		mxWorld._41 += vPos.x;
-		mxWorld._42 += vPos.y;
-		mxWorld._43 += vPos.z;
-
-		CParaXStaticMesh* pMesh = m_ppMesh->GetMesh();
-		if(pMesh == NULL)
-			return E_FAIL;
-
-		//CGlobals::GetEffectManager()->applyObjectLocalLighting(this);
-
-		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-		if ( pEffectFile == 0)
-		{
-			//////////////////////////////////////////////////////////////////////////
-			// fixed programming pipeline
-			CGlobals::GetWorldMatrixStack().push(mxWorld);
-
-			// render by default as non-transparent.
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-			CGlobals::GetEffectManager()->SetCullingMode(true);
-
-			// Draw with mesh materials
-			pMesh->Render(sceneState, pd3dDevice, true, true,sceneState->fAlphaFactor);
-			CGlobals::GetWorldMatrixStack().pop();
-		}
-		else
-		{
-			//////////////////////////////////////////////////////////////////////////
-			// draw using effect file
-			CGlobals::GetWorldMatrixStack().push(mxWorld);
-			pMesh->Render(sceneState, pEffectFile, true, true,sceneState->fAlphaFactor);
-			CGlobals::GetWorldMatrixStack().pop();
-		}
-	}
-	return S_OK;
-}
-
 void CLightObject::SetLightType(int nType)
 {
 	if(m_pLightParams!=0)
@@ -350,21 +296,123 @@ float CLightObject::GetAttenuation2()
 	return (m_pLightParams!=0) ? m_pLightParams->Attenuation2: 0.f;
 }
 
-int CLightObject::InstallFields(CAttributeClass* pClass, bool bOverride)
+int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
 {
-	CSphereObject::InstallFields(pClass, bOverride);
+	if (sceneState->GetScene()->PrepareRenderObject(this, pCamera, *sceneState))
+	{
+#ifdef USE_DIRECTX_RENDERER
+		// add local light to global forward pipeline light manager
+		if (IsDeferredLightOnly())
+		{
+			if (sceneState->IsDeferredShading())
+			{
+				// TODO: add to deferred shading pipeline for rendering in sceneState.
+				// sceneState->AddTpDeferredLightPool
+			}
+		}
+		else
+		{
+			CGlobals::GetLightManager()->RegisterLight(GetLightParams());
+		}
+#endif
+	}
+	return 0;
+}
 
-	pClass->AddField("LightType",FieldType_Int, SetLightType_s, GetLightType_s, NULL, NULL, bOverride);
-	pClass->AddField("Range",FieldType_Float, SetRange_s, GetRange_s, CAttributeField::GetSimpleSchemaOfFloat(1.f,30.f), NULL, bOverride);
-	pClass->AddField("Diffuse",FieldType_Vector3, SetDiffuse_s, GetDiffuse_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
-	pClass->AddField("Attenuation0",FieldType_Float, SetAttenuation0_s, GetAttenuation0_s, NULL, NULL, bOverride);
-	pClass->AddField("Attenuation1",FieldType_Float, SetAttenuation1_s, GetAttenuation1_s, NULL, NULL, bOverride);
-	pClass->AddField("Attenuation2",FieldType_Float, SetAttenuation2_s, GetAttenuation2_s, NULL, NULL, bOverride);
+HRESULT CLightObject::Draw(SceneState * sceneState)
+{
+	// if(CGlobals::GetScene()->IsShowLocalLightMesh())
+	if (IsDeferredLightOnly() && sceneState->IsDeferredShading())
+	{
+		// deferred shading
+		RenderMesh(sceneState);
+	}
+	else if( !IsDeferredLightOnly() )
+	{
+		RenderMesh(sceneState);
+	}
+	return S_OK;
+}
 
+HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
+{
+	// if(CGlobals::GetScene()->IsShowLocalLightMesh())
+	{
+		if (m_ppMesh == NULL || !(m_ppMesh->IsValid()))
+			return E_FAIL;
+
+		RenderDevicePtr pd3dDevice = sceneState->GetRenderDevice();
+
+		// world translation
+		Vector3 vPos = GetRenderOffset();
+		// render at the center
+		vPos.y += GetHeight() / 2;
+
+		Matrix4 mxWorld = m_mxLocalTransform;
+		mxWorld._41 += vPos.x;
+		mxWorld._42 += vPos.y;
+		mxWorld._43 += vPos.z;
+
+		CParaXStaticMesh* pMesh = m_ppMesh->GetMesh();
+		if (pMesh == NULL)
+			return E_FAIL;
+
+		//CGlobals::GetEffectManager()->applyObjectLocalLighting(this);
+
+		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+		if (pEffectFile == 0)
+		{
+			//////////////////////////////////////////////////////////////////////////
+			// fixed programming pipeline
+			CGlobals::GetWorldMatrixStack().push(mxWorld);
+
+			// render by default as non-transparent.
+			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+			CGlobals::GetEffectManager()->SetCullingMode(true);
+
+			// Draw with mesh materials
+			pMesh->Render(sceneState, pd3dDevice, true, true, sceneState->fAlphaFactor);
+			CGlobals::GetWorldMatrixStack().pop();
+		}
+		else
+		{
+			//////////////////////////////////////////////////////////////////////////
+			// draw using effect file
+			CGlobals::GetWorldMatrixStack().push(mxWorld);
+			pMesh->Render(sceneState, pEffectFile, true, true, sceneState->fAlphaFactor);
+			CGlobals::GetWorldMatrixStack().pop();
+		}
+	}
 	return S_OK;
 }
 
 AssetEntity* ParaEngine::CLightObject::GetPrimaryAsset()
 {
 	return (AssetEntity*)(m_ppMesh.get());
+}
+
+bool ParaEngine::CLightObject::IsDeferredLightOnly() const
+{
+	return m_bDeferredLightOnly;
+}
+
+void ParaEngine::CLightObject::SetDeferredLightOnly(bool val)
+{
+	m_bDeferredLightOnly = val;
+}
+
+
+int CLightObject::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	CSphereObject::InstallFields(pClass, bOverride);
+
+	pClass->AddField("LightType", FieldType_Int, SetLightType_s, GetLightType_s, NULL, NULL, bOverride);
+	pClass->AddField("Range", FieldType_Float, SetRange_s, GetRange_s, CAttributeField::GetSimpleSchemaOfFloat(1.f, 30.f), NULL, bOverride);
+	pClass->AddField("Diffuse", FieldType_Vector3, SetDiffuse_s, GetDiffuse_s, CAttributeField::GetSimpleSchemaOfRGB(), NULL, bOverride);
+	pClass->AddField("Attenuation0", FieldType_Float, SetAttenuation0_s, GetAttenuation0_s, NULL, NULL, bOverride);
+	pClass->AddField("Attenuation1", FieldType_Float, SetAttenuation1_s, GetAttenuation1_s, NULL, NULL, bOverride);
+	pClass->AddField("Attenuation2", FieldType_Float, SetAttenuation2_s, GetAttenuation2_s, NULL, NULL, bOverride);
+	pClass->AddField("IsDeferredLightOnly", FieldType_Bool, SetDeferredLightOnly_s, IsDeferredLightOnly_s, NULL, NULL, bOverride);
+	return S_OK;
 }

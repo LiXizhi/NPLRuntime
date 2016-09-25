@@ -1344,20 +1344,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	{
 		bDrawObj = true;
 		
-		if(oType == _LocalLight)
-		{
-			// add local light to global light manager
-#ifdef USE_DIRECTX_RENDERER
-			PE_ASSERT(pObj->GetType() == CBaseObject::LightObject);
-			CGlobals::GetLightManager()->RegisterLight(((CLightObject*)pObj)->GetLightParams());
-
-			// only draw if the global local light flag is on.
-			bDrawObj = IsShowLocalLightMesh();
-#endif
-			if (!bDrawObj)
-				return true;
-		}
-		else if(oType ==  _PC_Zone)
+		if(oType ==  _PC_Zone)
 		{
 			bDrawObj = false;
 			sceneState.listZones.push_back(PostRenderObject(pObj, 0));
