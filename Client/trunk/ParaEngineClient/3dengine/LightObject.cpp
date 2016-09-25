@@ -363,6 +363,7 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if (pEffectFile == 0)
 		{
+#ifdef USE_DIRECTX_RENDERER
 			//////////////////////////////////////////////////////////////////////////
 			// fixed programming pipeline
 			CGlobals::GetWorldMatrixStack().push(mxWorld);
@@ -375,6 +376,7 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 			// Draw with mesh materials
 			pMesh->Render(sceneState, pd3dDevice, true, true, sceneState->fAlphaFactor);
 			CGlobals::GetWorldMatrixStack().pop();
+#endif
 		}
 		else
 		{
