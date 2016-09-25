@@ -110,9 +110,9 @@ namespace ParaEngine
 		* set diffuse color of the light
 		* @param color 
 		*/
-		void SetDiffuse(const D3DCOLORVALUE& color);
+		void SetDiffuse(const LinearColor& color);
 		/** @see SetDiffuse()*/
-		const D3DCOLORVALUE& GetDiffuse();
+		const LinearColor& GetDiffuse();
 		
 		/**
 		* Cutoff range 

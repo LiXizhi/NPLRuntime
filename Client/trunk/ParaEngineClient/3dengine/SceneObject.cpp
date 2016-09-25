@@ -1354,7 +1354,8 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 			// only draw if the global local light flag is on.
 			bDrawObj = IsShowLocalLightMesh();
 #endif
-			return true;
+			if (!bDrawObj)
+				return true;
 		}
 		else if(oType ==  _PC_Zone)
 		{

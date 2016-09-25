@@ -262,7 +262,7 @@ int CLightObject::GetLightType()
 	return (int)((m_pLightParams!=0) ? m_pLightParams->Type: D3DLIGHT_POINT);
 }
 
-void CLightObject::SetDiffuse(const D3DCOLORVALUE& color)
+void CLightObject::SetDiffuse(const LinearColor& color)
 {
 	if(m_pLightParams!=0)
 	{
@@ -270,9 +270,9 @@ void CLightObject::SetDiffuse(const D3DCOLORVALUE& color)
 	}
 }
 
-const D3DCOLORVALUE& CLightObject::GetDiffuse()
+const LinearColor& CLightObject::GetDiffuse()
 {
-	static const D3DCOLORVALUE g_default = {1,1,1,1};
+	static const LinearColor g_default = { 1, 1, 1, 1 };
 	return (m_pLightParams!=0) ? m_pLightParams->Diffuse: g_default;
 }
 
