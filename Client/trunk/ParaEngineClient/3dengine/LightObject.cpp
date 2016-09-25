@@ -339,7 +339,7 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 {
 	// if(CGlobals::GetScene()->IsShowLocalLightMesh())
 	{
-		if (m_ppMesh == NULL || !(m_ppMesh->IsValid()))
+		if (!m_ppMesh  || !(m_ppMesh->IsValid()))
 			return E_FAIL;
 
 		RenderDevicePtr pd3dDevice = sceneState->GetRenderDevice();

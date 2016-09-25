@@ -8,7 +8,7 @@
 #include "ShapeAABB.h"
 
 #include "SphereObject.h"
-#include "memdebug.h"
+
 using namespace ParaEngine;
 
 CSphereObject::CSphereObject(void)

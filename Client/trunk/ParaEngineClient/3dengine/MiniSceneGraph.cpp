@@ -820,7 +820,7 @@ bool ParaEngine::CMiniSceneGraph::PrepareRenderObject(CBaseObject* pObj, CBaseCa
 			pChild->PrepareRender(pCamera, &sceneState);
 		}
 	}
-	return true;
+	return bDrawObj;
 }
 
 int CMiniSceneGraph::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
