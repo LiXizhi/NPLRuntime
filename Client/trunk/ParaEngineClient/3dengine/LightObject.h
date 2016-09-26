@@ -205,8 +205,6 @@ namespace ParaEngine
 		/** light parameters. */
 		CLightParam* m_pLightParams;
 
-		float m_fLightAmbientBrightness;
-
 		/** if true, the light object will delete the m_pLightParams object at destruction time. */
 		bool m_bDeleteLightParams;
 

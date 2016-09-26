@@ -9,6 +9,7 @@
 #include "SceneState.h"
 #include "SceneObject.h"
 #include "LightParam.h"
+#include "BlockEngine/BlockWorldClient.h"
 #include "LightManager.h"
 #include "LightObject.h"
 
@@ -18,11 +19,10 @@ using namespace ParaEngine;
 #define AUTO_LIGHT_PARAMS_BY_RANGE
 
 CLightObject::CLightObject(void)
-	:m_bDeleteLightParams(true), m_pLightParams(NULL), m_fLightAmbientBrightness(0.3f)
+	:m_bDeleteLightParams(true), m_pLightParams(NULL)
 {
 	SetMyType(_LocalLight);
-	m_mxLocalTransform = Matrix4::IDENTITY;
-	SetPrimaryTechniqueHandle(TECH_SIMPLE_MESH_NORMAL_UNLIT);
+	m_mxLocalTransform = Matrix4::IDENTITY; 
 }
 
 CLightObject::~CLightObject(void)
@@ -304,12 +304,11 @@ HRESULT CLightObject::Draw(SceneState * sceneState)
 	if (IsDeferredLightOnly() && sceneState->IsDeferredShading())
 	{
 		// deferred shading
-		RenderMesh(sceneState);
 	}
 	else if( !IsDeferredLightOnly() )
 	{
-		RenderMesh(sceneState);
 	}
+	RenderMesh(sceneState);
 	return S_OK;
 }
 
@@ -358,11 +357,28 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 	else
 	{
 		// apply block space lighting for object whose size is comparable to a single block size
-		if (CheckAttribute(MESH_USE_LIGHT))
+		BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
+		if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 		{
-			float fLightness = m_fLightAmbientBrightness;
+			uint8_t brightness[2];
+			Uint16x3 blockId_ws(0, 0, 0);
+			Vector3 vPos = GetPosition();
+			BlockCommon::ConvertToBlockIndex(vPos.x, vPos.y + 0.1f, vPos.z, blockId_ws.x, blockId_ws.y, blockId_ws.z);
+			float fLightness;
+
+			pBlockWorldClient->GetBlockMeshBrightness(blockId_ws, brightness);
+			// block light
+			float fBlockLightness = Math::Max(pBlockWorldClient->GetLightBrightnessFloat(brightness[0]), 0.1f);
+			sceneState->GetCurrentLightStrength().y = fBlockLightness;
+			// sun light
+			fLightness = Math::Max(pBlockWorldClient->GetLightBrightnessFloat(brightness[1]), 0.1f);
+			sceneState->GetCurrentLightStrength().x = fLightness;
+			fLightness *= pBlockWorldClient->GetSunIntensity();
+			fLightness = Math::Max(fLightness, fBlockLightness);
+			
 			sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
 			sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+			
 			sceneState->EnableLocalMaterial(true);
 		}
 
@@ -398,7 +414,6 @@ void ParaEngine::CLightObject::SetAssetFileName(const std::string& sFilename)
 	auto pNewModel = CGlobals::GetAssetManager()->LoadParaX("", sFilename);
 	if (m_pAnimatedMesh != pNewModel)
 	{
-		UnloadPhysics();
 		m_pAnimatedMesh = pNewModel;
 		m_CurrentAnim.MakeInvalid();
 		SetGeometryDirty(true);

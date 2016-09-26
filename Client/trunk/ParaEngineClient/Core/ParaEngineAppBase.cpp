@@ -60,7 +60,6 @@ ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
 
 void ParaEngine::CParaEngineAppBase::DeleteInterface()
 {
-	SetCurrentInstance(NULL);
 	delete this;
 }
 
