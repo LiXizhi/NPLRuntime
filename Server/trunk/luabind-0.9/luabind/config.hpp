@@ -26,6 +26,8 @@
 
 #include <boost/config.hpp>
 
+#include <cstdlib>
+
 #ifdef BOOST_MSVC
 	#define LUABIND_ANONYMOUS_FIX static
 #else
@@ -37,7 +39,7 @@
 #define for if (false) {} else for
 
 #include <cstring>
-#include <cstdlib>
+
 
 
 namespace std

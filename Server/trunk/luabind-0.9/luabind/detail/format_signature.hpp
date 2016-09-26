@@ -15,7 +15,7 @@
 
 namespace luabind {
     namespace adl
-
+    {
         class object;
         class argument;
         template <class Base>
@@ -26,7 +26,7 @@ namespace luabind {
     using adl::object;
     using adl::argument;
     using adl::table;
-    
+
 } // namespace luabind
 
 namespace luabind { namespace detail {

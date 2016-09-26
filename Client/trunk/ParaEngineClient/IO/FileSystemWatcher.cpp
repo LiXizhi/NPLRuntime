@@ -4,11 +4,13 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
 // Date:	2010.3.29
-// Desc: 
+// Desc:
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#ifndef PARAENGINE_MOBILE
+
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+
 #include "CSingleton.h"
 #include "FileSystemWatcher.h"
 #include <boost/bind.hpp>
@@ -24,7 +26,7 @@ using namespace ParaEngine;
 ParaEngine::CFileSystemWatcherService::CFileSystemWatcherService()
  : m_io_service(new boost::asio::io_service()), m_io_service_work(new boost::asio::io_service::work(*m_io_service)), m_bIsStarted(false)
 {
-	
+
 }
 
 ParaEngine::CFileSystemWatcherService::~CFileSystemWatcherService()
@@ -101,7 +103,7 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 				watcher.second->Destroy();
 			}
 			m_io_service_work.reset();
-			
+
 			if(m_work_thread)
 			{
 				m_work_thread->join();
@@ -191,7 +193,7 @@ bool ParaEngine::CFileSystemWatcher::IsDispatchInMainThread()
 int ParaEngine::CFileSystemWatcher::DispatchEvents()
 {
 	int nCount = 0;
-	
+
 	if(IsDispatchInMainThread())
 	{
 		ParaEngine::Lock lock_(m_mutex);

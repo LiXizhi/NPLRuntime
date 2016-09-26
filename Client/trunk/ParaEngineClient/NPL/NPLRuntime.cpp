@@ -40,7 +40,7 @@ namespace NPL
 /* list of files */
 #define FILE_SHARE							0
 #define FILE_NPLWEBSERVICECLIENT			1
-	const char* NPLBaseFiles[] = 
+	const char* NPLBaseFiles[] =
 	{
 		"script/share.lua",
 		"NPLWebServiceClient.dll"
@@ -93,7 +93,7 @@ void CNPLRuntime::Cleanup()
  	if(m_net_server)
 		m_net_server->stop();
 
-	// web service clients shall be cleaned up prior to the NPL runtime states. 
+	// web service clients shall be cleaned up prior to the NPL runtime states.
 	if(m_pWebServiceClient)
 	{
 		m_pWebServiceClient->DeleteThis();
@@ -121,7 +121,7 @@ void CNPLRuntime::Cleanup()
 		else
 			break;
 	}
-	
+
 	m_runtime_states_with_timers.clear();
 	m_runtime_states_main_threaded.clear();
 	m_runtime_state_main.reset();
@@ -148,7 +148,7 @@ int CNPLRuntime::ActivateLocalNow(const char * sNeuronFile, const char * code /*
 	NPLFileName FullName(sNeuronFile);
 	if (FullName.sNID.empty())
 	{
-		// local activation between local npl runtime state. 
+		// local activation between local npl runtime state.
 		if (!FullName.sRuntimeStateName.empty())
 		{
 			NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
@@ -188,17 +188,17 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 
 	NPLFileName FullName(sNeuronFile);
 
-	// use Dispatcher to dispatch to a proper local runtime state or a remote one. 
+	// use Dispatcher to dispatch to a proper local runtime state or a remote one.
 	if(pRuntimeState == 0)
 	{
-		// default to main state. 
+		// default to main state.
 		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
-	else 
+	else
 	{
 		if(FullName.sNID.empty())
 		{
-			// local activation between local npl runtime state. 
+			// local activation between local npl runtime state.
 			if(!FullName.sRuntimeStateName.empty())
 			{
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
@@ -219,7 +219,7 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 		}
 		else
 		{
-			// send via dispatcher if a (remote) NID is found in file name. 
+			// send via dispatcher if a (remote) NID is found in file name.
 			return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
 		}
 	}
@@ -251,17 +251,17 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 	priority = TranslatePriorityValue(priority);
 
 
-	// use Dispatcher to dispatch to a proper local runtime state or a remote one. 
+	// use Dispatcher to dispatch to a proper local runtime state or a remote one.
 	if(runtime_state.get() == 0)
 	{
-		// default to main state. 
+		// default to main state.
 		return m_runtime_state_main->Activate_async(FullName.sRelativePath, code, nLength, priority);
 	}
-	else 
+	else
 	{
 		if(FullName.sNID.empty())
 		{
-			// local activation between local npl runtime state. 
+			// local activation between local npl runtime state.
 			if(!FullName.sRuntimeStateName.empty())
 			{
 				NPLRuntimeState_ptr rts = GetRuntimeState(FullName.sRuntimeStateName);
@@ -282,7 +282,7 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 		}
 		else
 		{
-			// send via dispatcher if a (remote) NID is found in file name. 
+			// send via dispatcher if a (remote) NID is found in file name.
 			return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
 		}
 	}
@@ -387,7 +387,7 @@ bool CNPLRuntime::LoadWebServicePlugin()
 		DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(sFileName);
 		if(pPluginEntity==0)
 		{
-			// load the plug-in if it has never been loaded before. 
+			// load the plug-in if it has never been loaded before.
 			pPluginEntity = CGlobals::GetPluginManager()->LoadDLL("",sFileName);
 		}
 		if(pPluginEntity!=0)
@@ -418,7 +418,7 @@ bool CNPLRuntime::LoadWebServicePlugin()
 
 void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
 {
-	// we need to download from the web server. 
+	// we need to download from the web server.
 	if(url == 0)
 		return;
 	using namespace ParaEngine;
@@ -560,7 +560,7 @@ void CNPLRuntime::NPL_AddDNSRecord(const char * sDNSName, const char* sAddress)
 }
 void CNPLRuntime::NPL_EnableNetwork(bool bEnable, const char* CenterName, const char* password)
 {
-	// 
+	//
 }
 
 void CNPLRuntime::NPL_SetDefaultChannel( int channel_ID )
@@ -585,7 +585,7 @@ void CNPLRuntime::NPL_ResetChannelProperties()
 	4		med			RELIABLE_ORDERED		Chat message
 	14		med			RELIABLE				files transmission and advertisement
 	15		med			RELIABLE_SEQUENCED		Voice transmission
-	11-15	med			RELIABLE_ORDERED	
+	11-15	med			RELIABLE_ORDERED
 	*/
 	m_channelProperties.resize(16, ChannelProperty());
 	m_channelProperties[0].Set(NPL::MEDIUM_PRIORITY, NPL::RELIABLE_ORDERED);
@@ -748,7 +748,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 
 		if(!m_bHostMainStatesInFrameMove)
 		{
-			// we need to start all main states in separate threads. 
+			// we need to start all main states in separate threads.
 			ParaEngine::Lock lock_(m_mutex);
 			NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_main_threaded.end();
 			for(iter = m_runtime_states_main_threaded.begin(); iter!=iter_end; ++iter)
@@ -762,7 +762,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-    #ifndef PARAENGINE_MOBILE
+	#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
     #endif
 
@@ -771,7 +771,7 @@ void CNPLRuntime::Run(bool bToEnd)
 	*/
 	DWORD TimeTicks = ::GetTickCount();
 	{
-		// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue. 
+		// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue.
 		ParaEngine::Lock lock_(m_mutex);
 		NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_with_timers.end();
 		for(iter = m_runtime_states_with_timers.begin(); iter!=iter_end; ++iter)
@@ -799,7 +799,7 @@ void CNPLRuntime::Run(bool bToEnd)
 		}
 		m_temp_rts_pool.clear();
 	}
-	
+
 
 	/**
 	* process results from NPL web service client
@@ -816,9 +816,9 @@ void CNPLRuntime::Run(bool bToEnd)
 
 	if(m_bHostMainStatesInFrameMove)
 	{
-		// the main runtime state is processed in the main game thread. 
+		// the main runtime state is processed in the main game thread.
 		{
-			// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue. 
+			// in case the structure is modified by other threads or during processing, we will first dump to a temp queue and then process from the queue.
 			ParaEngine::Lock lock_(m_mutex);
 			NPLRuntime_Pool_Type::const_iterator iter, iter_end = m_runtime_states_main_threaded.end();
 			for(iter = m_runtime_states_main_threaded.begin(); iter!=iter_end; ++iter)
@@ -902,7 +902,7 @@ NPL::NPLRuntimeState_ptr CNPLRuntime::CreateGetRuntimeState(const string& name, 
 	NPLRuntimeState_ptr runtimestate =  GetRuntimeState(name);
 	if(runtimestate.get() == 0)
 	{
-		// create the state and run it in the main thread. 
+		// create the state and run it in the main thread.
 		runtimestate =  CreateRuntimeState(name, type_);
 		AddStateToMainThread(runtimestate);
 	}
