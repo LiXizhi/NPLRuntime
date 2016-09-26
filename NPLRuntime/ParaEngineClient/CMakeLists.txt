@@ -288,11 +288,11 @@ IF(WIN32)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 	endif(MSVC)
 ELSE (WIN32)
-	IF(LINUX)
-		ADD_DEFINITIONS(-DPLATFORM_LINUX)
-	ELSE(LINUX)
+	IF(APPLE)
 		ADD_DEFINITIONS(-DPLATFORM_MAC)
-	ENDIF(LINUX)
+	ELSE(APPLE)
+		ADD_DEFINITIONS(-DPLATFORM_LINUX)
+	ENDIF(APPLE)
 ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
@@ -407,7 +407,15 @@ if (WIN32)
 			libcurl
   )
 else (WIN32)
-	if(LINUX)
+	if(APPLE)
+		set(EXTRA_LIBRARIES			
+				dl
+				resolv
+				z
+			${CURL_LIBRARIES}
+			pthread
+		)
+	else(APPLE)
 		set(EXTRA_LIBRARIES
 				rt
 				dl
@@ -416,15 +424,7 @@ else (WIN32)
 			${CURL_LIBRARIES}
 			pthread
 		)
-	else(LINUX)
-		set(EXTRA_LIBRARIES
-				dl
-				resolv
-				z
-			${CURL_LIBRARIES}
-			pthread
-		)
-	endif(LINUX)
+	endif(APPLE)
 endif (WIN32)
 
 # Link the executable to the libraries.
