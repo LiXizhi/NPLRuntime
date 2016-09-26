@@ -57,3 +57,6 @@ Server/trunk/*
 !Server/trunk/luaJIT/
 !Server/trunk/zlib-1.2.3/
 !Server/trunk/curl-7.47.1/
+
+
+buildvm_arch.h
