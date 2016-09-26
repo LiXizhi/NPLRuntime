@@ -1,7 +1,7 @@
 # Author: LiXizhi
 # Company: ParaEngine.com
 # Date: 2009.4.10
-# Desc: option modify PARAENGINE_COMPILE_LIB, define USE_HOARD if one wants to use hoard memory allocator in windows. 
+# Desc: option modify PARAENGINE_COMPILE_LIB, define USE_HOARD if one wants to use hoard memory allocator in windows.
 
 project (ParaEngineClient)
 
@@ -16,7 +16,7 @@ endif (WIN32)
 
 # configure a header file to pass some of the CMake settings
 # to the source code
-if (WIN32) 
+if (WIN32)
 configure_file (
   "${PROJECT_SOURCE_DIR}/ParaEngineClientConfig.h.in"
   "${PROJECT_SOURCE_DIR}/ParaEngineClientConfig.win32.h"
@@ -26,15 +26,15 @@ else (WIN32)
 configure_file (
   "${PROJECT_SOURCE_DIR}/ParaEngineClientConfig.h.in"
   "${PROJECT_SOURCE_DIR}/ParaEngineClientConfig.h"
-  )  
-SET(ParaEngineClient_HEADERS  ParaEngineClientConfig.h)  
+  )
+SET(ParaEngineClient_HEADERS  ParaEngineClientConfig.h)
 endif (WIN32)
 
 ##############################
-## Interface files that are usually included by external plugin dlls. 
+## Interface files that are usually included by external plugin dlls.
 #SET(ParaEngineClient_API_FILES
 #	Core/baseinterface.h		Core/PEtypes.h		Core/PluginAPI.h		Core/coreexport.h
-#	Core/PluginLoader.hpp 
+#	Core/PluginLoader.hpp
 #	Core/IParaEngineCore.h	Core/IParaEngineApp.h
 #	Core/IParaPhysics.h
 #	Core/IParaAudioEngine.h
@@ -43,7 +43,7 @@ endif (WIN32)
 #	Core/InterprocessMsg.h Core/InterprocessQueue.hpp	Core/ipc_message_queue.hpp
 #	Core/NPLMiniRuntime.hpp Core/ParaUtils.hpp
 #	Core/IParaDebugDraw.h Core/IBatchedElementDraw.h Core/CommandLineParser.hpp
-#	Core/IMovieCodec.h 
+#	Core/IMovieCodec.h
 #	# Core/IAppService.h	Core/ILogService.h	Core/IFileSystemWatcherService.h
 #)
 #SOURCE_GROUP("API Files" FILES ${ParaEngineClient_API_FILES})
@@ -210,7 +210,7 @@ foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 	add_custom_command(
 		OUTPUT "${PROJECT_SOURCE_DIR}/shaders/${src_filename}.fxo"
 		COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${PROJECT_SOURCE_DIR}/shaders/${src_filename}.fxo" ${PROJECT_SOURCE_DIR}/${src_file}
-		# uncomment the following line if you want to see the text output to debug shader instructions. 
+		# uncomment the following line if you want to see the text output to debug shader instructions.
 		# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${PROJECT_SOURCE_DIR}/shaders/${src_filename}.txt" ${PROJECT_SOURCE_DIR}/${src_file}
 		DEPENDS ${PROJECT_SOURCE_DIR}/${src_file}
 		COMMENT "fxc compile: ${src_file}"
@@ -250,7 +250,7 @@ SET(ParaEngineClient_CONFIG_FILES
 	#${CLIENT_SOURCE_DIR}/../../ParaEngine_SDK.nsi
 )
 source_group("Config Files" FILES ${ParaEngineClient_CONFIG_FILES})
-set_source_files_properties(${ParaEngineClient_CONFIG_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)                            
+set_source_files_properties(${ParaEngineClient_CONFIG_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CONFIG_FILES})
 
 file (GLOB ParaEngineClient_Cad_FILES ${PROJECT_SOURCE_DIR}/CadModel/*.*)
@@ -260,13 +260,13 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 ##########################################################################################
 #
 #
-#   Add precompiled header support:  all files added to ParaEngineClient_SRCS 
+#   Add precompiled header support:  all files added to ParaEngineClient_SRCS
 #		after this macro will NOT have precompiled header
 #
 #
 ##########################################################################################
 include(${PROJECT_SOURCE_DIR}/MSVCPCHSupport.cmake)
-MSVC_PCH_SUPPORT(${PROJECT_NAME}) 
+MSVC_PCH_SUPPORT(${PROJECT_NAME})
 
 ##############################
 # add the binary tree to the search path for include files
@@ -322,7 +322,11 @@ IF(WIN32)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 	endif(MSVC)
 ELSE (WIN32)
-	ADD_DEFINITIONS(-DPLATFORM_LINUX)
+    IF(LINUX)
+        ADD_DEFINITIONS(-DPLATFORM_LINUX)
+    ELSE(LINUX)
+        ADD_DEFINITIONS(-DPLATFORM_MAC)
+    ENDIF(LINUX)
 ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
@@ -343,20 +347,20 @@ IF(HAVE_UNISTD_H)
 ENDIF(HAVE_UNISTD_H)
 
 IF(WIN32)
-	# Make sure the linker can find the third-party precompiled libraries. 
+	# Make sure the linker can find the third-party precompiled libraries.
 	# link_directories ("${CLIENT_SOURCE_DIR}/libs/win32/lib")
-	# link_directories (${PhysX_SOURCE_DIR}/lib/win32) 
+	# link_directories (${PhysX_SOURCE_DIR}/lib/win32)
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	# 64 bits version
 	link_directories (${PROJECT_SOURCE_DIR}/../assimp/prebuilt/win64)
 else()
 	# 32 bits version.
-	link_directories (${PROJECT_SOURCE_DIR}/flashplayer/f_in_box/lib) 
+	link_directories (${PROJECT_SOURCE_DIR}/flashplayer/f_in_box/lib)
 	link_directories("${CLIENT_SOURCE_DIR}/FreeImage_3120/Dist")
-	link_directories (${PROJECT_SOURCE_DIR}/../assimp/prebuilt/win32) 
+	link_directories (${PROJECT_SOURCE_DIR}/../assimp/prebuilt/win32)
 endif()
-	
-	link_directories (${DIRECTX_LIBRARY_DIR}) 
+
+	link_directories (${DIRECTX_LIBRARY_DIR})
 ENDIF(WIN32)
 
 
@@ -376,18 +380,18 @@ IF(MSVC)
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
 	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-			
+
 	# /GR- Remove RTTI to miminize the executable size
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 ENDIF()
 
-# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically. 
+# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically.
 option(USE_LINK_TIME_CODE_GENERATION	"true to enable link time code gen in release build" OFF)
 
 IF(MSVC)
 	if(USE_LINK_TIME_CODE_GENERATION)
-		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient. 
+		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient.
 		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
 		# /LTCG Link time code generation
 		if (PARAENGINE_COMPILE_LIB)
@@ -396,7 +400,7 @@ IF(MSVC)
 			SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
 		endif(PARAENGINE_COMPILE_LIB)
 	endif(USE_LINK_TIME_CODE_GENERATION)
-	
+
 
 	# /GR- Remove RTTI to miminize the executable size
 	# /Zi generate program database (PDB symbol files even in release build)
@@ -422,18 +426,18 @@ if (PARAENGINE_COMPILE_LIB)
 		ParaEngineClient.def
 	)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Lib_FILES})
-	
+
 	SET(CMAKE_DEBUG_POSTFIX "_d")
-	
+
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_SRCS})
-	
+
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	add_executable(ParaEngineClient ${ParaEngineClient_SRCS})
-	
+
 	# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 	set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
-	
+
 endif (PARAENGINE_COMPILE_LIB)
 
 
@@ -448,7 +452,7 @@ if (WIN32)
 			Wldap32.lib
 			zlib
 			NPLProfiler
-			
+
 			# following are client only
 			comctl32.lib
 			d3dxof.lib
@@ -467,7 +471,7 @@ if (WIN32)
 			gdiplus.lib
   )
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		# for 64bits libs 	
+		# for 64bits libs
 	else()
 		list(APPEND EXTRA_LIBRARIES f_in_box.lib)
 		list(APPEND EXTRA_LIBRARIES FreeImage.lib)
@@ -478,20 +482,28 @@ if (WIN32)
 		SET (CMAKE_EXE_LINKER_FLAGS "/FORCE:MULTIPLE")
 		list(APPEND EXTRA_LIBRARIES "hoard")
 	endif(USE_HOARD)
-		  
+
 else (WIN32)
-  set(EXTRA_LIBRARIES
-  		rt 
-  		dl
-  		resolv
-  		z
-  )
+    if(LINUX)
+        set(EXTRA_LIBRARIES
+        		rt
+        		dl
+        		resolv
+        		z
+        )
+    else(LINUX)
+        set(EXTRA_LIBRARIES
+                dl
+                resolv
+                z
+        )
+    endif(LINUX)
 endif (WIN32)
 
-# Link the executable to the libraries. 
-target_link_libraries (ParaEngineClient 
-	sqlite libcurl lua jsoncpp tinyxpath luabind  
-	${Boost_LIBRARIES} ${EXTRA_LIBRARIES} 
+# Link the executable to the libraries.
+target_link_libraries (ParaEngineClient
+	sqlite libcurl lua jsoncpp tinyxpath luabind
+	${Boost_LIBRARIES} ${EXTRA_LIBRARIES}
 	#jblib pcre pcrecpp
 )
 
@@ -513,5 +525,3 @@ endif (LINUX)
 
 include(${PROJECT_SOURCE_DIR}/PEClientInstall.cmake)
 include(${PROJECT_SOURCE_DIR}/doc/Document.cmake)
-
-
