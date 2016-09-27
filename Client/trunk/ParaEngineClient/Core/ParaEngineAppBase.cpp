@@ -8,6 +8,7 @@
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 #include "util/os_calls.h"
+#include "util/StringHelper.h"
 #include "ObjectAutoReleasePool.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
@@ -27,6 +28,8 @@
 #include "LightObject.h"
 #include "NPLRuntime.h"
 #include "EventsCenter.h"
+#include "BootStrapper.h"
+
 #include "AISimulator.h"
 #include "ParaEngineAppBase.h"
 
@@ -34,6 +37,8 @@ using namespace ParaEngine;
 
 CParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
 
+/** default bootstrapper file */
+#define NPL_CODE_WIKI_BOOTFILE "script/apps/WebServer/WebServer.lua"
 
 // temp TEST code here
 void ParaEngine::CParaEngineAppBase::DoTestCode()
@@ -103,21 +108,38 @@ void ParaEngine::CParaEngineAppBase::OnFrameEnded()
 	CObjectAutoReleasePool::GetInstance()->clear();
 }
 
-void ParaEngine::CParaEngineAppBase::InitCommon()
+bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 {
-	SetCurrentInstance((CParaEngineApp*)this);
-
-	srand((unsigned long)time(NULL));
-
 	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
 	if (sLogFile && sLogFile[0] != 0){
 		CLogger::GetSingleton().SetLogFile(sLogFile);
 	}
 
 	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
-	Enable3DRendering( !(sServerMode && strcmp(sServerMode, "true") == 0) );
-	
-	CParaFile::SetDevDirectory(GetAppCommandLineByParam("dev", ""));
+	const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
+	bool bIsServerMode = (sServerMode && strcmp(sServerMode, "true") == 0);
+	bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
+	Enable3DRendering(!bIsServerMode && !bIsInterpreterMode);
+
+	const char* sDevFolder = GetAppCommandLineByParam("dev", NULL);
+	if (sDevFolder)
+	{
+		if (sDevFolder[0] == '\0' || (sDevFolder[1] == '\0' && (sDevFolder[0] == '/' || sDevFolder[0] == '.')))
+		{
+			sDevFolder = CParaFile::GetCurDirectory(0).c_str();
+		}
+		CParaFile::SetDevDirectory(sDevFolder);
+	}
+	return true;
+}
+
+void ParaEngine::CParaEngineAppBase::InitCommon()
+{
+	SetCurrentInstance((CParaEngineApp*)this);
+
+	srand((unsigned long)time(NULL));
+
+	InitCommandLineParams();
 
 	FindParaEngineDirectory();
 	RegisterObjectClasses();
@@ -465,12 +487,46 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 	}
 }
 
+bool ParaEngine::CParaEngineAppBase::FindBootStrapper()
+{
+	const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
+	bool bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
+	if (!bHasBootstrapper)
+	{
+		if (pBootFileName && pBootFileName[0] != '\0'){
+			OUTPUT_LOG("error: can not find bootstrapper file at %s\n", pBootFileName);
+		}
+		pBootFileName = NPL_CODE_WIKI_BOOTFILE;
+		bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
+		OUTPUT_LOG("We are using default bootstrapper at %s\n", pBootFileName);
+		if (!bHasBootstrapper)
+		{
+			OUTPUT_LOG("However, we can not locate that file either. Have you installed npl_package/main? \n\n\nPlease install it at https://github.com/NPLPackages/main\n\n\n");
+		}
+	}
+	// OUTPUT_LOG("cmd line: %s \n", GetAppCommandLine());
+	OUTPUT_LOG("main loop: %s \n", CBootStrapper::GetSingleton()->GetMainLoopFile().c_str());
+	return true;
+}
+
 void CParaEngineAppBase::LoadPackages()
 {
 	std::string sRootDir = CParaFile::GetCurDirectory(0);
 	OUTPUT_LOG("ParaEngine Root Dir is %s\n", sRootDir.c_str());
-	// load main package folder if exist
+	// always load main package folder if exist
 	LoadNPLPackage("npl_packages/main/");
+
+	// load packages via command line
+	const char* sPackages = GetAppCommandLineByParam("loadpackage", NULL);
+	if (sPackages)
+	{
+		std::vector<std::string> listPackages;
+		StringHelper::split(sPackages, ",;", listPackages);
+		for (const std::string& package : listPackages)
+		{
+			LoadNPLPackage(package.c_str());
+		}
+	}
 
 	LoadPackagesInFolder(sRootDir);
 	if (m_sPackagesDir.empty())

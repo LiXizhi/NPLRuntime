@@ -369,6 +369,12 @@ namespace ParaEngine
 		*/
 		virtual bool LoadNPLPackage(const char* sFilePath);
 
+		/** check if there is bootstrapper file specified at command line, if not it will use NPL code wiki admin app. 
+		*/
+		virtual bool FindBootStrapper();
+
+		/** parse common command line parameters */
+		virtual bool InitCommandLineParams();
 	public:
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager() { return NULL; };

@@ -58,15 +58,7 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 
 void CParaEngineApp::BootStrapAndLoadConfig()
 {
-	if (!CBootStrapper::GetSingleton()->LoadFromFile(GetAppCommandLineByParam("bootstrapper", "")))
-	{
-		const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
-		if (pBootFileName && pBootFileName[0] != '\0'){
-			OUTPUT_LOG("error: can not find bootstrapper file at %s\n", pBootFileName);
-		}
-	}
-	// OUTPUT_LOG("cmd line: %s \n", GetAppCommandLine());
-	OUTPUT_LOG("main loop: %s \n", CBootStrapper::GetSingleton()->GetMainLoopFile().c_str());
+	FindBootStrapper();
 }
 
 void CParaEngineApp::InitSystemModules()

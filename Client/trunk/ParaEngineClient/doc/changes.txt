@@ -1,6 +1,11 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+2016.9.27
+	- MAC OSX supported for server version
+	- "dev" command line now supports using current directory. 
+	- "loadpackage" command line parameter supported
+
 2016.9.18
 	- audio midi api volume can now be changed with global audio settings
 
