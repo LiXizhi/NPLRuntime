@@ -1,3 +1,4 @@
 EXPORTS
 	luaopen_luasql_sqlite3
+	luaopen_luasql_postgres
 	luaopen_luasql_mysql
