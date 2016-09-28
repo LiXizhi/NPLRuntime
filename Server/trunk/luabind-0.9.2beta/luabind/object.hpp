@@ -557,6 +557,9 @@ namespace detail
       handle m_key;
   };
 
+// imfool: fix build with boost 1.57 or later
+//         see: https://github.com/rpavlik/luabind/commit/8dadb7fae02bbf415ee51f69919cd0d47831cc6c
+#if BOOST_VERSION < 105700
 // Needed because of some strange ADL issues.
 
 #define LUABIND_OPERATOR_ADL_WKND(op) \
@@ -578,7 +581,9 @@ namespace detail
   LUABIND_OPERATOR_ADL_WKND(!=)
 
 #undef LUABIND_OPERATOR_ADL_WKND
- 
+
+#endif
+
 } // namespace detail
 
 namespace adl

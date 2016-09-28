@@ -13,7 +13,7 @@
 #include <string>
 namespace ParaEngine
 {
-	using namespace std;
+	using std::vector;
 	class IObjectDrag;
 	struct CGUIPosition;
 	/*

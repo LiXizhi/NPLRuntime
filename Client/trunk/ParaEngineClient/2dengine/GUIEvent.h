@@ -140,7 +140,7 @@ namespace ParaEngine
 			//This is the translation of the original key code with the control keys.
 			//For example, NUMPAD0, if NUMLOCK is off, the nAlterKey will be INSERT key.
 			int nAlterKey;
-			vector <GUI_KEYBOARD_HOLDKEY> HoldKey;
+			std::vector <GUI_KEYBOARD_HOLDKEY> HoldKey;
 			void init()
 			{
 				//memset(KeyStates,0,sizeof(KeyStates));

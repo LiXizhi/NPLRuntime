@@ -275,10 +275,17 @@ ELSE()
 	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
 	# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti")
 
-	# -Os to optimize for size. or -O3 to turn on all optimizations.
-	# -s option to strip debug info, -g to include debug info
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
+	IF(APPLE)
+		# -Os to optimize for size. or -O3 to turn on all optimizations.
+		# no -s option since it has the same effect as gcc -s if not a single -g is provided
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+	ELSE()
+		# -Os to optimize for size. or -O3 to turn on all optimizations.
+		# -s option to strip debug info, -g to include debug info
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
+	ENDIF()
 
 	# suppress warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
