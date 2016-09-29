@@ -15,7 +15,7 @@ public:
 	// ------------------------------------------
 	// Iterators
 	// ------------------------------------------
-	typedef vector<T>  base_class_type;
+	typedef std::vector<T>	base_class_type;
 	typedef typename base_class_type::iterator iterator;
 	typedef typename base_class_type::const_iterator const_iterator;
 					 

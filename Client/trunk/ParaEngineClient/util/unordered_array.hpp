@@ -3,7 +3,7 @@
 #include <vector>
 namespace ParaEngine
 {
-	using namespace std;
+	using std::vector;
 
 	template <typename T>
 	class unordered_array : public vector<T>

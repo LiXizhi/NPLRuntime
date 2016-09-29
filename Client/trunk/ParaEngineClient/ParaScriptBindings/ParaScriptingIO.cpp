@@ -1140,7 +1140,7 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			vector<byte> data;
+			std::vector<byte> data;
 			data.resize(nSize);
 			// convert script array object to vector byte array.
 			for (int i=0; i<nSize; ++i)

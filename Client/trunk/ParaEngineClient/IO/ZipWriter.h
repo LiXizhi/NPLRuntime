@@ -86,7 +86,7 @@ namespace ParaEngine
 		void removeAllEntries();
 
 	protected:
-		vector<ZipArchiveEntry*>  m_entries;
+		std::vector<ZipArchiveEntry*>  m_entries;
 		std::string m_filename;
 		std::string m_password;
 	};
