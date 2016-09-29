@@ -7,6 +7,7 @@
 #include "ParaXModel/ParticleSystemRef.h"
 #include "BillBoardViewInfo.h"
 #include "BaseObject.h"
+
 using namespace std;
 
 namespace ParaEngine
@@ -22,6 +23,8 @@ namespace ParaEngine
 	class CEffectFile;
 	class CSortedFaceGroups;
 	class IScene;
+	class CLightObject;
+
 	struct SceneState;
 
 	enum RENDER_GROUP{
@@ -363,6 +366,8 @@ namespace ParaEngine
 		/** one of the enum RENDER_PIPELINE_ORDER */
 		void SetCurrentRenderPipeline(int val);
 
+		void AddToDeferredLightPool(CLightObject * lightObject);
+
 	public:
 		IScene* GetScene(){ return m_pScene; }
 
@@ -444,6 +449,7 @@ namespace ParaEngine
 		typedef unordered_array<ParticleSystemRef>	List_ParticleSystemPtr_Type;
 		typedef std::vector<AlphaPostRenderObject>	List_AlphaPostRenderObject_Type;
 		typedef std::vector<PostRenderObjectWeakPtr>	List_HeadOnRenderObject_Type;
+		typedef std::vector<CLightObject*>				List_LightObject_Type;
 		
 
 		/** Same as IRefObject except that it tracks references of the object. */
@@ -503,6 +509,7 @@ namespace ParaEngine
 		SceneState::List_PostRenderObject_Type		listPortals;
 		SceneState::List_PostRenderObject_Type		listBoundingBox;
 		SceneState::List_PostRenderObject_Type		listSelections;
+		SceneState::List_LightObject_Type			listDeferredLightObjects;
 		// like the render target 
 		unordered_array<WeakPtr>		listOwnerDrawObjs;
 

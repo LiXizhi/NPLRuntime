@@ -116,6 +116,7 @@ namespace ParaEngine
 		* @return: same as out. or NULL if not exists.
 		*/
 		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber = 0);
+		virtual void RenderDeferredLightMesh(SceneState * sceneState);
 	public:
 		/**
 		* Set type
@@ -191,7 +192,7 @@ namespace ParaEngine
 		/** whether the light is enabled for deferred render pipeline only. */
 		bool IsDeferredLightOnly() const;
 		void SetDeferredLightOnly(bool val);
-	private:
+	protected:
 		/** current position in the map */
 		//Vector3           m_vPos;
 		/** local transform. usually a rotation with scaling.  */
@@ -201,6 +202,7 @@ namespace ParaEngine
 
 		/** mesh geometry */
 		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
+		ref_ptr<MeshEntity>		  m_pDeferredShadingMesh;
 
 		/** light parameters. */
 		CLightParam* m_pLightParams;

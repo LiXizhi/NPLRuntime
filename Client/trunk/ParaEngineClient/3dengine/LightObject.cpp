@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Class: CLightObject
-// Authors:	Li,Xizhi
+// Authors:	LiXizhi, devilwalk
 // Emails:	LiXizhi@yeah.net
 // Date:	2006.6
 //-----------------------------------------------------------------------------
@@ -12,6 +12,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "LightManager.h"
 #include "LightObject.h"
+#include "LightGeoUtil.h"
 
 using namespace ParaEngine;
 
@@ -286,7 +287,7 @@ int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * s
 			if (sceneState->IsDeferredShading())
 			{
 				// TODO: add to deferred shading pipeline for rendering in sceneState.
-				// sceneState->AddTpDeferredLightPool
+				sceneState->AddToDeferredLightPool(this);
 			}
 		}
 		else
@@ -456,6 +457,122 @@ Matrix4* ParaEngine::CLightObject::GetRenderMatrix(Matrix4& out, int nRenderNumb
 	out._42 += vPos.y;
 	out._43 += vPos.z;
 	return &out;
+}
+
+void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
+{
+#ifdef USE_DIRECTX_RENDERER
+	if(m_pDeferredShadingMesh==NULL)
+	{
+		MeshEntity * ppMesh=nullptr;
+		std::stringstream ss;
+		switch(m_pLightParams->Type)
+		{
+		case D3DLIGHT_DIRECTIONAL:
+			if(!(ppMesh=CGlobals::GetAssetManager()->GetMesh("_default_directional_light_mesh")))
+			{
+				ppMesh=CGlobals::GetAssetManager()->LoadMesh("_default_directional_light_mesh","");
+				ppMesh->SetAABB(&Vector3(-10000000.0f,-10000000.0f,-10000000.0f),&Vector3(10000000.0f,10000000.0f,10000000.0f));
+				ppMesh->CreateMeshLODLevel(0.0f,"");
+				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ,CGlobals::GetRenderDevice(),&ppMesh->GetMesh()->m_pSysMemMesh);
+				std::vector<Vector3> pos;
+				LightGeomUtil::createQuad(pos);
+				void * data=nullptr;
+				ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+				memcpy(data,&pos[0],pos.size()*sizeof(Vector3));
+				ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
+				D3DXATTRIBUTERANGE attr;
+				attr.AttribId=0;
+				attr.FaceCount=2;
+				attr.FaceStart=0;
+				attr.VertexCount=pos.size();
+				attr.VertexStart=0;
+				ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+			}
+			break;
+		case D3DLIGHT_POINT:
+		{
+			static auto index=0;
+			ss<<index;
+			std::string name;
+			ss>>name;
+			ppMesh=CGlobals::GetAssetManager()->LoadMesh("_point_light_mesh"+name,"");
+			index++;
+			ppMesh->CreateMeshLODLevel(0.0f,"");
+			std::vector<Vector3> pos;
+			std::vector<unsigned short> indices;
+			LightGeomUtil::createSphere(pos,indices,m_pLightParams->Range,10,10);
+			void * data=nullptr;
+			ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+			memcpy(data,&pos[0],pos.size()*sizeof(pos[0]));
+			ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
+			ppMesh->GetMesh()->GetSysMemMesh()->LockIndexBuffer(0,&data);
+			memcpy(data,&indices[0],indices.size()*sizeof(indices[0]));
+			ppMesh->GetMesh()->GetSysMemMesh()->UnlockIndexBuffer();
+			D3DXATTRIBUTERANGE attr;
+			attr.AttribId=0;
+			attr.FaceCount=indices.size()/3;
+			attr.FaceStart=0;
+			attr.VertexCount=pos.size();
+			attr.VertexStart=0;
+			ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+		}
+		break;
+		case D3DLIGHT_SPOT:
+		{
+			static auto index=0;
+			ss<<index;
+			std::string name;
+			ss>>name;
+			ppMesh=CGlobals::GetAssetManager()->LoadMesh("_spot_light_mesh"+name,"");
+			index++;
+			ppMesh->CreateMeshLODLevel(0.0f,"");
+			float height=m_pLightParams->Range;
+			float coneRadiusAngle=m_pLightParams->Phi/2;
+			float rad=Math::Tan(coneRadiusAngle) * height;
+			std::vector<Vector3> pos;
+			std::vector<unsigned short> indices;
+			LightGeomUtil::createCone(pos,indices,rad,height,20);
+			//生成的cone方向为y轴正方向的，因此需要根据灯光方向进行二次变换
+			const auto yaxis=m_pLightParams->Direction;
+			Vector3 xaxis;
+			if(yaxis.y)
+				xaxis=(Vector3::UNIT_X*yaxis.y).normalisedCopy();
+			else if(yaxis.x)
+				xaxis=(-Vector3::UNIT_Y*yaxis.x).normalisedCopy();
+			else
+				xaxis=Vector3::UNIT_X;
+			const auto zaxis=xaxis.crossProduct(yaxis);
+			xaxis=yaxis.crossProduct(zaxis);
+			Quaternion init_rotate(xaxis,yaxis,zaxis);
+			for(auto & p:pos)
+				p=p*init_rotate;
+			void * data=nullptr;
+			ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+			memcpy(data,&pos[0],pos.size()*sizeof(pos[0]));
+			ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
+			ppMesh->GetMesh()->GetSysMemMesh()->LockIndexBuffer(0,&data);
+			memcpy(data,&indices[0],indices.size()*sizeof(indices[0]));
+			ppMesh->GetMesh()->GetSysMemMesh()->UnlockIndexBuffer();
+			D3DXATTRIBUTERANGE attr;
+			attr.AttribId=0;
+			attr.FaceCount=indices.size()/3;
+			attr.FaceStart=0;
+			attr.VertexCount=pos.size();
+			attr.VertexStart=0;
+			ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+		}
+		break;
+		}
+		m_pDeferredShadingMesh=ppMesh;
+	}
+	LPDIRECT3DDEVICE9 pd3dDevice=sceneState->m_pd3dDevice;
+	CParaXStaticMesh* pMesh=m_pDeferredShadingMesh->GetMesh();
+	CEffectFile* pEffectFile=CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	CGlobals::GetWorldMatrixStack().push(m_mxLocalTransform);
+	pMesh->Render(sceneState,pEffectFile,true,false);
+	CGlobals::GetWorldMatrixStack().pop();
+#endif
 }
 
 bool ParaEngine::CLightObject::IsDeferredLightOnly() const

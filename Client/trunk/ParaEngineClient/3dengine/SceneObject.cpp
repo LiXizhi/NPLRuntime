@@ -2346,6 +2346,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
 
+	m_pBlockWorldClient->RenderDeferredLights();
+
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);
 
