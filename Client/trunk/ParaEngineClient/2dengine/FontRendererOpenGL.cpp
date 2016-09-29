@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "cocos2d.h"
+#include "platform/OpenGLWarpper.h"
 #include "GUIBase.h"
 #include "TextureEntity.h"
 #include "StringHelper.h"

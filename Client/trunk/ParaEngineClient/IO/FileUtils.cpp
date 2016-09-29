@@ -92,7 +92,7 @@
 #endif
 
 #ifdef USE_COCOS_FILE_API
-	#include "cocos2d.h"
+	#include "platform/OpenGLWarpper.h"
 	USING_NS_CC;
 	/** @Note by LiXizhi: all cocos read file api are not thread safe, hence we need to use a lock. 
 	remove this when cocos no longer uses non-thread-safe file cache map. */
