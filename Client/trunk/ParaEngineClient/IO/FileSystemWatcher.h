@@ -114,6 +114,8 @@ namespace ParaEngine
 
 		/** start the io service in a different thread. this function can be called multiple times, where only the first time takes effect.  */
 		bool Start();
+	protected:
+		int fileWatcherThreadMain();
 	private:
 		file_watcher_map_t m_file_watchers;
 

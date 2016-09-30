@@ -118,6 +118,22 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 	}
 }
 
+
+int ParaEngine::CFileSystemWatcherService::fileWatcherThreadMain()
+{
+	try
+	{
+		if (m_io_service)
+			return (int)(m_io_service->run());
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("error: directory monitor throwed an exception. May be it is not supported on your platform.\n");
+	}
+	return 0;
+}
+
+
 bool ParaEngine::CFileSystemWatcherService::Start()
 {
 	if(!IsStarted())
@@ -125,11 +141,13 @@ bool ParaEngine::CFileSystemWatcherService::Start()
 		m_bIsStarted = true;
 		if(!m_work_thread)
 		{
-			m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
+			// m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
+			m_work_thread.reset(new boost::thread(boost::bind(&CFileSystemWatcherService::fileWatcherThreadMain, this)));
 		}
 	}
 	return true;
 }
+
 //////////////////////////////////////////////////////////////////////////
 //
 // CFileSystemWatcher

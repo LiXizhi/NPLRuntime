@@ -3098,8 +3098,12 @@ namespace ParaEngine
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
 
-		// TODO: setup render target here
+		// sort by light type
+		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b){
+			return (a->GetLightType() < b->GetLightType());
+		});
 
+		// TODO: setup render target here
 		// sort by type and render light geometry
 		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
 		{
