@@ -3,6 +3,7 @@
 #define PARA_GL_H
 
 
+
 #if defined(PLATFORM_MAC)
 
 #include "platform/mac/ParaGlMac.h"
