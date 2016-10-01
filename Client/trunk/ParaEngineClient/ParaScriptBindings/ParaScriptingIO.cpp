@@ -1719,9 +1719,9 @@ namespace ParaScripting
 			writer.WriteName("type");
 			writer.WriteValue((int)event.type);
 			writer.WriteName("dirname");
-			writer.WriteValue(event.dirname);
+			writer.WriteValue(event.path.parent_path().generic_string() + "/");
 			writer.WriteName("filename");
-			writer.WriteValue(event.filename);
+			writer.WriteValue(event.path.filename().generic_string());
 
 			writer.EndTable();
 			writer.WriteParamDelimiter();
