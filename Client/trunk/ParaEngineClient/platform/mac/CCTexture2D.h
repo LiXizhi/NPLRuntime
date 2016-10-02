@@ -73,6 +73,15 @@ public:
 	Texture2D();
 	virtual ~Texture2D();
 
+	bool initWithImage(Image * image);
+	bool initWithImage(Image * image, PixelFormat format);
+
+	 /** Gets the width of the texture in pixels. */
+    int getPixelsWide() const;
+    
+    /** Gets the height of the texture in pixels. */
+    int getPixelsHigh() const;
+
 	bool initWithData(const void *data, ssize_t dataLen, Texture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
 	GLuint getName() const;
 	void setTexParameters(const TexParams& texParams);

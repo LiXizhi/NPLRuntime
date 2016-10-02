@@ -7,6 +7,11 @@ bool Image::initWithRawData(const unsigned char * data, ssize_t dataLen, int wid
     return true;
 }
 
+bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
+{
+	return true;
+}
+
 bool Image::saveToFile(const std::string &filename, bool isToRGB = true);
 {
     return true;

@@ -28,6 +28,8 @@
 
 #include "ParaGLMac.h"
 
+#include <unordered_map>
+
 NS_CC_BEGIN
 
 enum GlyphCollection
@@ -55,6 +57,13 @@ class FontAtlas
 public:
 	void setAliasTexParameters();
 
+    void prepareLetterDefinitions(const std::u16string& stringToRender) {}
+    
+
+    const std::unordered_map<ssize_t, Texture2D*>& getTextures() const { return _atlasTextures; }
+
+private:
+    std::unordered_map<ssize_t, Texture2D*> _atlasTextures;
 };
 
 typedef struct _ttfConfig
@@ -94,6 +103,22 @@ typedef struct _ttfConfig
     }
 } TTFConfig;
 
+
+struct FontLetterDefinition
+{
+    float U;
+    float V;
+    float width;
+    float height;
+    float offsetX;
+    float offsetY;
+    int textureID;
+    bool validDefinition;
+    int xAdvance;
+};
+
+
+
 class Label
 {
 public:
@@ -109,9 +134,45 @@ public:
 
 	virtual void setPosition(float x, float y);
 
+    void setWidth(float width) { }
+    float getWidth() const { return _labelWidth; }
+
+
+    void setHeight(float height){  }
+    float getHeight() const { return _labelHeight; }
+
+
+    void setAlignment(TextHAlignment hAlignment) { }
+    TextHAlignment getTextAlignment() const { return _hAlignment;}
+
+    void computeStringNumLines() {}
+    void computeAlignmentOffset();
+    bool computeHorizontalKernings(const std::u16string& stringToRender);
+
+
+
+
+    int _limitShowCount;
+    std::vector<LetterInfo> _lettersInfo;
+
 private:
 	FontAtlas* _fontAtlas;
+
+    float _labelHeight;
+    float _labelWidth;
+
+    TextHAlignment  _hAlignment;
 };
+
+
+class LabelTextFormatter
+{
+public:
+    void createStringSprites(Label* label) {}
+    void multilineText(Label* label) {}
+    void alignText(Label* label) {}
+}
+
 
 NS_CC_END
 

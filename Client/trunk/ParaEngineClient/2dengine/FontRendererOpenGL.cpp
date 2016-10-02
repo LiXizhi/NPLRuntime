@@ -12,7 +12,7 @@
 #include "TextureEntity.h"
 #include "StringHelper.h"
 #include "EffectManager.h"
-#include "2d/CCLabelTextFormatter.h"
+//#include "2d/CCLabelTextFormatter.h"
 #include "SpriteRendererOpenGL.h"
 #include "FontRendererOpenGL.h"
 
