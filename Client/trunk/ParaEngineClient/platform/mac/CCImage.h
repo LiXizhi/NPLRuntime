@@ -2,10 +2,14 @@
 #ifndef __CC_IMAGE_H__
 #define __CC_IMAGE_H__
 
-#include "platform/PlatformMacro.h"
-#include <string>
+#include "ParaGLMac.h"
+
 
 NS_CC_BEGIN
+
+
+
+
 
 class Image
 {
