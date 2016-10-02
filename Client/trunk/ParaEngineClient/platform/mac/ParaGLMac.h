@@ -10,6 +10,9 @@
 
 #include "platform/PlatformMacro.h"
 
+
+#include "CCType.h"
+
 #define CC_GL_DEPTH24_STENCIL8      -1
 
 
@@ -19,6 +22,7 @@
 #define glClearDepthf                   glClearDepth
 #define glDepthRangef                   glDepthRange
 #define glReleaseShaderCompiler(xxx)
+
 
 
 

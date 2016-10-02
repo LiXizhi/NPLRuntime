@@ -3,7 +3,7 @@
 
 #ifdef PLATFORM_MAC
 
-
+#include "CCTexture2D.h"
 
 Texture2D::Texture2D()
 {

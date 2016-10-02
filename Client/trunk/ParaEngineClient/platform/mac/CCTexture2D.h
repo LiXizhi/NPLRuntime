@@ -10,7 +10,10 @@
 
 NS_CC_BEGIN
 
-class Texture2D
+class Image;
+
+
+class Texture2D : public Ref
 {
 public:
 	enum class PixelFormat
@@ -76,18 +79,25 @@ public:
 	bool initWithImage(Image * image);
 	bool initWithImage(Image * image, PixelFormat format);
 
+
+    int getNumberOfMipmaps()    { return 0; }
+
 	 /** Gets the width of the texture in pixels. */
     int getPixelsWide() const;
-    
+
     /** Gets the height of the texture in pixels. */
     int getPixelsHigh() const;
+
 
 	bool initWithData(const void *data, ssize_t dataLen, Texture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
 	GLuint getName() const;
 	void setTexParameters(const TexParams& texParams);
+    void setAliasTexParameters() {}
 
 private:
+
 	GLuint _name;
+
 
 };
 

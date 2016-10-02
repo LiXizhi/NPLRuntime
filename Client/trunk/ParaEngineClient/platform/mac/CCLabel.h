@@ -29,6 +29,8 @@
 #include "ParaGLMac.h"
 
 #include <unordered_map>
+#include <vector>
+
 
 NS_CC_BEGIN
 
@@ -37,7 +39,7 @@ enum GlyphCollection
 	DYNAMIC
 };
 
-enum TextVAlignment
+enum class TextVAlignment
 {
     TOP,
     CENTER,
@@ -45,12 +47,15 @@ enum TextVAlignment
 };
 
 
-enum TextHAlignment
+enum class TextHAlignment
 {
     LEFT,
     CENTER,
     RIGHT
 };
+
+
+class Texture2D;
 
 class FontAtlas
 {
@@ -58,7 +63,7 @@ public:
 	void setAliasTexParameters();
 
     void prepareLetterDefinitions(const std::u16string& stringToRender) {}
-    
+
 
     const std::unordered_map<ssize_t, Texture2D*>& getTextures() const { return _atlasTextures; }
 
@@ -119,9 +124,20 @@ struct FontLetterDefinition
 
 
 
-class Label
+class Label : public Ref
 {
 public:
+	struct LetterInfo
+    {
+        char16_t utf16Char;
+        bool valid;
+        float positionX;
+        float positionY;
+        int atlasIndex;
+        int lineIndex;
+    };
+
+
 	Label();
 	virtual ~Label();
 
@@ -151,7 +167,7 @@ public:
 
 
 
-
+	std::u16string _currentUTF16String;
     int _limitShowCount;
     std::vector<LetterInfo> _lettersInfo;
 
@@ -171,7 +187,7 @@ public:
     void createStringSprites(Label* label) {}
     void multilineText(Label* label) {}
     void alignText(Label* label) {}
-}
+};
 
 
 NS_CC_END

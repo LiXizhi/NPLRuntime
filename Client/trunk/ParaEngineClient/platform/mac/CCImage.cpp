@@ -1,6 +1,7 @@
 
 #ifdef PLATFORM_MAC
 
+#include "CCImage.h"
 
 bool Image::initWithRawData(const unsigned char * data, ssize_t dataLen, int width, int height, int bitsPerComponent, bool preMulti = false);
 {

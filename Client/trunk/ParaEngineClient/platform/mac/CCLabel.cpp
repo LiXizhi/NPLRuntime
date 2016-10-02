@@ -2,7 +2,7 @@
 
 #ifdef PLATFORM_MAC
 
-
+#include "CCLabel.h"
 
 
 FontAtlas:setAliasTexParameters()
