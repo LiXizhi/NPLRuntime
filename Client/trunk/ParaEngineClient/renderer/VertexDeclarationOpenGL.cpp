@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
 #ifdef PARAENGINE_MOBILE
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 #endif
 #include "VertexDeclarationOpenGL.h"

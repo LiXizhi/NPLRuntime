@@ -23,7 +23,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
 

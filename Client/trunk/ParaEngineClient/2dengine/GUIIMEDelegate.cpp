@@ -9,7 +9,7 @@
 #include "GUIIMEDelegate.h"
 
 #ifdef PARAENGINE_MOBILE
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 
 using namespace ParaEngine;

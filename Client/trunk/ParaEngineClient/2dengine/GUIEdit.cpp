@@ -28,7 +28,7 @@ using namespace ParaEngine;
 using namespace std;
 
 #ifdef PARAENGINE_MOBILE
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 #endif
 
@@ -497,7 +497,7 @@ void CGUIEditBox::StaticInit()
 string CGUIEditBox::ToScript(int option)
 {
 	string script = CGUIBase::ToScript(option);
-	//add "text:SetText("È·¶¨");"like script
+	//add "text:SetText("È·ï¿½ï¿½");"like script
 	script += "__this.text=\"";
 	std::string buf;
 	GetTextA(buf);
