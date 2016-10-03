@@ -4,6 +4,8 @@
 #define CCTYPE_H
 
 
+
+
 namespace GL {
 
 
@@ -11,10 +13,16 @@ namespace GL {
 
 }
 
+struct CCVector2
+{
+    float x;
+    float y;
+};
+
 class Ref
 {
 public:
-    void retain();
+    void retain()  {}
     void release() {}
 
     Ref* autorelease() {return this;}

@@ -1,11 +1,14 @@
 //-----------------------------------------------------------------------------
 // Class: FontRendererOpenGL
 // Authors:	LiXizhi
-// Emails:	
+// Emails:
 // Date: 2014.8.28
-// Desc: rendering a given font from TTF format. It emulates the d3dxfont class. 
+// Desc: rendering a given font from TTF format. It emulates the d3dxfont class.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+
+#include "IO/FileUtils.h"
+
 #ifdef USE_OPENGL_RENDERER
 #include "platform/OpenGLWarpper.h"
 #include "GUIBase.h"
@@ -29,7 +32,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	std::string fontFile;
 	if (sFontName == "System" || sFontName == "system")
 	{
-		// secretly replace system font with one of our own predefined font. 
+		// secretly replace system font with one of our own predefined font.
 		//fontFile = "fonts/simhei.ttf"; // 9MB
 		//fontFile = "fonts/FZYTK.TTF"; // 3MB
 		//fontFile = "fonts/SIMYOU.TTF"; // 6MB
@@ -39,7 +42,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	{
 		fontFile = sFontName;
 	}
-	// TODO: force size to be 14. font-rendering crashes on android with big font. 
+	// TODO: force size to be 14. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
 	if (pFontRenderer->m_nFontSize <= 14)
 	{
@@ -51,7 +54,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	}
 	pFontRenderer->m_fFontScaling = float(nFontSize) / pFontRenderer->m_nRealFontSize;
 
-	if (pFontRenderer && FileUtils::getInstance()->isFileExist(fontFile))
+	if (pFontRenderer && CFileUtils::FileExist(fontFile.c_str()))
 	{
 		TTFConfig ttfConfig(fontFile.c_str(), pFontRenderer->m_nRealFontSize, GlyphCollection::DYNAMIC);
 		if (pFontRenderer->setTTFConfig(ttfConfig))
@@ -105,7 +108,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	// TODO: DT_NOCLIP | DT_SINGLELINE | DT_WORDBREAK | DT_CALCRECT
 	if ((dwTextFormat & DT_NOCLIP) > 0)
 	{
-		// cocos will not render out of range text,  even if no clip is true. so we just add a very big height here. 
+		// cocos will not render out of range text,  even if no clip is true. so we just add a very big height here.
 		if (vAlignment_ == TextVAlignment::TOP && nHeight < 500)
 			nHeight = 500;
 	}
@@ -124,7 +127,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nScaledHeight = (int)(nHeight / GetFontScaling());
 		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling());
 	}
-	// we will make the height at least of a single line height to prevent cocos start a new line in the front when calculating layout. 
+	// we will make the height at least of a single line height to prevent cocos start a new line in the front when calculating layout.
 	if (_commonLineHeight > nScaledHeight)
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)
@@ -136,7 +139,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 
 	setWidth(nScaledWidth);
 	setHeight(nScaledHeight);
-	
+
 	setAlignment(hAlignment_, vAlignment_);
 
 	if (UpdateLetterSprites())
@@ -146,7 +149,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 			int nContentHeight = _contentSize.height;
 			if (vAlignment_ == TextVAlignment::CENTER && nContentHeight > nMaxScaledHeight)
 			{
-				// again preventing vertical center aligned text to exceed the total height. 
+				// again preventing vertical center aligned text to exceed the total height.
 				nContentHeight = nMaxScaledHeight;
 			}
 			if (GetFontScaling() == 1.f)
@@ -192,9 +195,9 @@ bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites()
 	{
 		computeHorizontalKernings(_currentUTF16String);
 	}
-	
+
 	_fontAtlas->prepareLetterDefinitions(_currentUTF16String);
-	
+
 	LabelTextFormatter::createStringSprites(this);
 	if (_maxLineWidth > 0 && _contentSize.width > _maxLineWidth && LabelTextFormatter::multilineText(this))
 		LabelTextFormatter::createStringSprites(this);
@@ -259,7 +262,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				rect.top = letterDef.V;
 				rect.right = rect.left + letterDef.width;
 				rect.bottom = rect.top + letterDef.height;
-				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y. 
+				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				Vector3 vPos(_lettersInfo[ctr].position.x + getPositionX(), (getHeight() - _lettersInfo[ctr].position.y) + getPositionY(), 0);
 				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
 			}
@@ -287,7 +290,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				rect.top = letterDef.V;
 				rect.right = rect.left + letterDef.width;
 				rect.bottom = rect.top + letterDef.height;
-				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y. 
+				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				Vector3 vPos(_lettersInfo[ctr].position.x, (getHeight() - _lettersInfo[ctr].position.y), 0);
 				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
 			}

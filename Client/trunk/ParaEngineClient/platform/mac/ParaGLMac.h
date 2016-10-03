@@ -13,6 +13,7 @@
 
 #include "CCType.h"
 
+
 #define CC_GL_DEPTH24_STENCIL8      -1
 
 

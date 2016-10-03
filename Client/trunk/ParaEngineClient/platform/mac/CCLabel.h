@@ -131,10 +131,11 @@ public:
     {
         char16_t utf16Char;
         bool valid;
-        float positionX;
-        float positionY;
+        CCVector2 position;
         int atlasIndex;
         int lineIndex;
+
+		FontLetterDefinition def;
     };
 
 
@@ -158,6 +159,13 @@ public:
     float getHeight() const { return _labelHeight; }
 
 
+
+
+	void setAlignment(TextHAlignment hAlignment,TextVAlignment vAlignment)
+	{
+
+	}
+
     void setAlignment(TextHAlignment hAlignment) { }
     TextHAlignment getTextAlignment() const { return _hAlignment;}
 
@@ -166,16 +174,39 @@ public:
     bool computeHorizontalKernings(const std::u16string& stringToRender);
 
 
+	float getPositionX()
+	{
+		return 0;
+	}
+
+	float getPositionY()
+	{
+		return 0;
+	}
+
+
+	// ????
+	void setFontScale(float s)
+	{
+	}
 
 	std::u16string _currentUTF16String;
     int _limitShowCount;
     std::vector<LetterInfo> _lettersInfo;
 
-private:
+	float _commonLineHeight;
+
+	float _currNumLines;
+
+	Size _contentSize;
+
+protected:
 	FontAtlas* _fontAtlas;
 
     float _labelHeight;
     float _labelWidth;
+
+	float _maxLineWidth;
 
     TextHAlignment  _hAlignment;
 };
@@ -184,9 +215,11 @@ private:
 class LabelTextFormatter
 {
 public:
-    void createStringSprites(Label* label) {}
-    void multilineText(Label* label) {}
-    void alignText(Label* label) {}
+    static void createStringSprites(Label* label) {}
+    static bool multilineText(Label* label) {
+		return true;
+	}
+    static void alignText(Label* label) {}
 };
 
 
