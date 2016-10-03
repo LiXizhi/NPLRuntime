@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWarpper.h"
+#include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 #endif
 

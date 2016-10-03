@@ -2,7 +2,7 @@
 #ifdef PARAENGINE_MOBILE
 #include "local_bridge_manual.h"
 #include "tolua_fix.h"
-#include "platform/OpenGLWarpper.h"
+#include "platform/OpenGLWrapper.h"
 #include "extensions/cocos-ext.h"
 #include "CCLuaStack.h"
 #include "CCLuaValue.h"

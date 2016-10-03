@@ -1,8 +1,8 @@
 
 
-#ifndef OPENGL_WARPPER_H
+#ifndef OPENGL_Wrapper_H
 
-#define OPENGL_WARPPER_H
+#define OPENGL_Wrapper_H
 
 #include "ParaPlatformConfig.h"
 

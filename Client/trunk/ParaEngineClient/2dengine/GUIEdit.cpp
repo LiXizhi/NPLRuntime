@@ -28,7 +28,7 @@ using namespace ParaEngine;
 using namespace std;
 
 #ifdef PARAENGINE_MOBILE
-#include "platform/OpenGLWarpper.h"
+#include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 #endif
 

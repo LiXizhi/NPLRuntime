@@ -2,7 +2,7 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "common/dxstdafx.h"
 #elif defined(USE_OPENGL_RENDERER)
-#include "platform/OpenGLWarpper.h"
+#include "platform/OpenGLWrapper.h"
 #else
 #include "PEtypes.h"
 

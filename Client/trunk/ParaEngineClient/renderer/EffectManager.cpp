@@ -23,7 +23,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWarpper.h"
+#include "platform/OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
 
