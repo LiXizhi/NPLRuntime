@@ -9,7 +9,6 @@
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
-#include "StaticMesh.h"
 #endif
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
@@ -821,7 +820,7 @@ bool ParaEngine::CMiniSceneGraph::PrepareRenderObject(CBaseObject* pObj, CBaseCa
 			pChild->PrepareRender(pCamera, &sceneState);
 		}
 	}
-	return true;
+	return bDrawObj;
 }
 
 int CMiniSceneGraph::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)

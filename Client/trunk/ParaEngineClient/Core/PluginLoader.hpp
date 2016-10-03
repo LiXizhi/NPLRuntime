@@ -19,7 +19,7 @@
 #endif
 namespace ParaEngine 
 {
-	using namespace std;
+	using std::vector;
 	// forward declarations.
 	class ClassDescriptor;
 	class IParaEngineCore;

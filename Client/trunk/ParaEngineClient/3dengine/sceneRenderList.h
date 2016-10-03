@@ -163,7 +163,7 @@ namespace ParaEngine
 								for(int i=0;i<nInstanceCount;i++)
 								{	
 									Matrix4 matrix;
-									(*itCurCP).m_pRenderObject->GetRenderWorldMatrix(&matrix);
+									(*itCurCP).m_pRenderObject->GetRenderMatrix(matrix);
 									// since no projection, encode the 4x3 part in a 3x4(shader will decode)
 									pVertices[i].r1 = Vector4(matrix._11,matrix._21,matrix._31,matrix._41);
 									pVertices[i].r2 = Vector4(matrix._12,matrix._22,matrix._32,matrix._42);
@@ -272,7 +272,7 @@ namespace ParaEngine
 								for(int i=0;i<nInstanceCount;i++)
 								{	
 									Matrix4 matrix;
-									(*itCurCP).m_pRenderObject->GetRenderWorldMatrix(&matrix);
+									(*itCurCP).m_pRenderObject->GetRenderMatrix(matrix);
 									// since no projection, encode the 4x3 part in a 3x4(shader will decode)
 									pVertices[i].r1 = Vector4(matrix._11,matrix._21,matrix._31,matrix._41);
 									pVertices[i].r2 = Vector4(matrix._12,matrix._22,matrix._32,matrix._42);

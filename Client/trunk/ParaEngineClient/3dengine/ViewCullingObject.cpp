@@ -221,6 +221,12 @@ void ParaEngine::CViewCullingObject::GetAABB( CShapeAABB* aabb )
 	}
 }
 
+Matrix4* ParaEngine::CViewCullingObject::GetWorldTransform(Matrix4& pOut, int nRenderNumber /*= 0*/)
+{
+	pOut = m_mWorldTransform;
+	return &pOut;
+}
+
 void ParaEngine::CViewCullingObject::UpdateAABB()
 {
 	if(m_pShapeAABB == 0)

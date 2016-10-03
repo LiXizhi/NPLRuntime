@@ -213,22 +213,13 @@ namespace ParaEngine
 		virtual void SetTransform(Matrix4* pLocalTransform, const DVector3& pGlobalPos, float* pRotation);
 		virtual void SetTransform(Matrix4* pWorldTransform);
 
-		/** get the world transform */
-		virtual const Matrix4* GetWorldTransform();
-
 		/**
 		* return the world matrix of the object for rendering
-		* @param pOut: the output.
+		* @param out: the output.
 		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. If 0, it will not recalculate
-		* @return: same as pOut. or NULL if not exists.
+		* @return: same as out. or NULL if not exists.
 		*/
-		virtual Matrix4* GetRenderWorldMatrix( Matrix4* pOut, int nRenderNumber=0);
-
-		/** get the world transformation matrix for the current object. 
-		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. If 0, it will not recalculate
-		* @return: return pOut
-		*/
-		virtual Matrix4* GetRenderMatrix( Matrix4& pOut, int nRenderNumber=0);
+		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber = 0);
 
 		/** get world transform */
 		virtual Matrix4* GetWorldTransform(Matrix4& pOut, int nRenderNumber = 0);

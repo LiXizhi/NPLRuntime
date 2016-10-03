@@ -41,7 +41,7 @@ namespace ParaInfoCenter
 	{
 	public:
 		~CICConfigItems();
-		vector<CICConfigItem*> items;
+		std::vector<CICConfigItem*> items;
 	};
 	/**
 	*   The CICConfigManager manages the global configurations of the program.

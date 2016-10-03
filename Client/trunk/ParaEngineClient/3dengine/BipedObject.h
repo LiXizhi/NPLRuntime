@@ -276,13 +276,6 @@ namespace ParaEngine
 
 		bool CanAnimOpacity() const;
 
-		/**
-		* return the world matrix of the object for rendering. same as GetRenderMatrix
-		* @param pOut: the output.
-		* @return: same as pOut. or NULL if not exists.
-		*/
-		virtual Matrix4* GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber = 0);;
-
 		/** get the world transformation matrix for the current object.
 		* @return: return pOut
 		*/

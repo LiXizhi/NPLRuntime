@@ -40,11 +40,8 @@ namespace ParaEngine
 		return m_fScale;
 	}
 
-	Matrix4* BMaxObject::GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber /*= 0*/)
+	Matrix4* BMaxObject::GetRenderMatrix(Matrix4& mxWorld, int nRenderNumber /*= 0*/)
 	{
-		PE_ASSERT(pOut != 0);
-		
-		Matrix4& mxWorld = *pOut;
 		mxWorld.identity();
 
 		// order of rotation: roll * pitch * yaw , where roll is applied first. 
@@ -90,55 +87,6 @@ namespace ParaEngine
 		mxWorld._42 += vPos.y;
 		mxWorld._43 += vPos.z;
 
-		return &mxWorld;
-	}
-
-	Matrix4* BMaxObject::GetWorldTransform(Matrix4& mxWorld, int nRenderNumber /*= 0*/)
-	{
-		mxWorld.identity();
-
-		// order of rotation: roll * pitch * yaw , where roll is applied first. 
-		bool bIsIdentity = true;
-
-		float fScaling = GetScaling();
-		if (fScaling != 1.f)
-		{
-			Matrix4 matScale;
-			ParaMatrixScaling((Matrix4*)&matScale, fScaling, fScaling, fScaling);
-			mxWorld = (bIsIdentity) ? matScale : matScale.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		float fYaw = GetYaw();
-		if (fYaw != 0.f)
-		{
-			Matrix4 matYaw;
-			ParaMatrixRotationY((Matrix4*)&matYaw, fYaw);
-			mxWorld = (bIsIdentity) ? matYaw : matYaw.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetPitch() != 0.f)
-		{
-			Matrix4 matPitch;
-			ParaMatrixRotationX(&matPitch, GetPitch());
-			mxWorld = (bIsIdentity) ? matPitch : matPitch.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		if (GetRoll() != 0.f)
-		{
-			Matrix4 matRoll;
-			ParaMatrixRotationZ(&matRoll, GetRoll());
-			mxWorld = (bIsIdentity) ? matRoll : matRoll.Multiply4x3(mxWorld);
-			bIsIdentity = false;
-		}
-
-		// world translation
-		auto vPos = GetPosition();
-		mxWorld._41 += (float)vPos.x;
-		mxWorld._42 += (float)vPos.y;
-		mxWorld._43 += (float)vPos.z;
 		return &mxWorld;
 	}
 
@@ -292,7 +240,7 @@ namespace ParaEngine
 		SetFrameNumber(sceneState->m_nRenderCount);
 		// get world transform matrix
 		Matrix4 mxWorld;
-		GetRenderWorldMatrix(&mxWorld);
+		GetRenderMatrix(mxWorld);
 
 
 		RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;

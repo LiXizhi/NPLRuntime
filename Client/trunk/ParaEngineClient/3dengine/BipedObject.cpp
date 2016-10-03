@@ -4646,11 +4646,6 @@ bool ParaEngine::CBipedObject::SetReplaceableTexture(int ReplaceableTextureID, T
 	return true;
 }
 
-Matrix4* ParaEngine::CBipedObject::GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber/*=0*/)
-{
-	return (pOut != 0) ? GetRenderMatrix(*pOut, nRenderNumber) : NULL;
-}
-
 void ParaEngine::CBipedObject::SetNormal(const Vector3 & pNorm)
 {
 	m_vNorm = pNorm;

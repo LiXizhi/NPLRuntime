@@ -403,9 +403,8 @@ void CMeshObject::Reset()
 }
 
 
-Matrix4* CMeshObject::GetRenderWorldMatrix( Matrix4* mxWorld, int nRenderNumber)
+Matrix4* CMeshObject::GetRenderMatrix( Matrix4& mxWorld, int nRenderNumber)
 {
-	PE_ASSERT(mxWorld!=0);
 	// render offset
 	Vector3 vPos = GetRenderOffset();
 
@@ -424,19 +423,19 @@ Matrix4* CMeshObject::GetRenderWorldMatrix( Matrix4* mxWorld, int nRenderNumber)
 	}
 	if(fFacing != 0.f)
 	{
-		ParaMatrixRotationY(mxWorld, fFacing);/** set facing and rotate local matrix round y axis*/
-		*mxWorld = m_mxLocalTransform*(*mxWorld);
+		ParaMatrixRotationY(&mxWorld, fFacing);/** set facing and rotate local matrix round y axis*/
+		mxWorld = m_mxLocalTransform*mxWorld;
 	}
 	else
 	{
-		*mxWorld = m_mxLocalTransform;
+		mxWorld = m_mxLocalTransform;
 	}
 
 	// world translation
-	mxWorld->_41 += vPos.x;
-	mxWorld->_42 += vPos.y;
-	mxWorld->_43 += vPos.z;
-	return mxWorld;
+	mxWorld._41 += vPos.x;
+	mxWorld._42 += vPos.y;
+	mxWorld._43 += vPos.z;
+	return &mxWorld;
 }
 
 HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld, float fCameraToObjectDist, CParameterBlock* materialParams)
@@ -812,7 +811,7 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 
 	// get world transform matrix
 	Matrix4 mxWorld;
-	GetRenderWorldMatrix(&mxWorld);
+	GetRenderMatrix(mxWorld);
 
 	DrawInner(sceneState, &mxWorld, sceneState->GetCameraToCurObjectDistance());
 
@@ -1032,7 +1031,7 @@ Vector3 ParaEngine::CMeshObject::GetXRefScriptPosition(int nIndex)
 					{
 						// get the parent's rotation and scaling matrix, here it is some trick to reuse the parent node's code. we actually get its world matrix and then remove the translation part.
 						Matrix4 mat;
-						GetRenderWorldMatrix(&mat);
+						GetRenderMatrix(mat);
 						mat = pXRef->m_data.localTransform*mat;
 
 						Vector3 vOut;
@@ -1065,7 +1064,7 @@ Vector3 ParaEngine::CMeshObject::GetXRefScriptScaling(int nIndex)
 					{
 						// get the parent's rotation and scaling matrix, here it is some trick to reuse the parent node's code. we actually get its world matrix and then remove the translation part.
 						Matrix4 mat;
-						GetRenderWorldMatrix(&mat);
+						GetRenderMatrix(mat);
 						Vector3 vPos = GetRenderOffset();// get render offset
 						mat._41 -= vPos.x;
 						mat._42 -= vPos.y;
@@ -1106,7 +1105,7 @@ float ParaEngine::CMeshObject::GetXRefScriptFacing(int nIndex)
 					{
 						// get the parent's rotation and scaling matrix, here it is some trick to reuse the parent node's code. we actually get its world matrix and then remove the translation part.
 						Matrix4 mat;
-						GetRenderWorldMatrix(&mat);
+						GetRenderMatrix(mat);
 						Vector3 vPos = GetRenderOffset();// get render offset
 						mat._41 -= vPos.x;
 						mat._42 -= vPos.y;
@@ -1158,7 +1157,7 @@ const char* CMeshObject::GetXRefScriptLocalMatrix( int nIndex )
 					{
 						// get the parent's rotation and scaling matrix, here it is some trick to reuse the parent node's code. we actually get its world matrix and then remove the translation part.
 						Matrix4 mat;
-						GetRenderWorldMatrix(&mat);
+						GetRenderMatrix(mat);
 						Vector3 vPos = GetRenderOffset();// get render offset
 						mat._41 -= vPos.x;
 						mat._42 -= vPos.y;

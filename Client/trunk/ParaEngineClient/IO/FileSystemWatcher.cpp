@@ -4,15 +4,18 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
 // Date:	2010.3.29
-// Desc:
+// Desc: modified on https://github.com/berkus/dir_monitor
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-
 #if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+
 
 #include "CSingleton.h"
 #include "FileSystemWatcher.h"
+// define this to enable recursive directory watch by default, default to false under windows.
+#define RECUSRIVE_DIRECTORY_MONITOR TRUE
+#include "dir_monitor/dir_monitor.hpp"
 #include <boost/bind.hpp>
 
 using namespace ParaEngine;
@@ -118,6 +121,22 @@ void ParaEngine::CFileSystemWatcherService::Clear()
 	}
 }
 
+
+int ParaEngine::CFileSystemWatcherService::fileWatcherThreadMain()
+{
+	try
+	{
+		if (m_io_service)
+			return (int)(m_io_service->run());
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("error: directory monitor throwed an exception. May be it is not supported on your platform.\n");
+	}
+	return 0;
+}
+
+
 bool ParaEngine::CFileSystemWatcherService::Start()
 {
 	if(!IsStarted())
@@ -125,11 +144,13 @@ bool ParaEngine::CFileSystemWatcherService::Start()
 		m_bIsStarted = true;
 		if(!m_work_thread)
 		{
-			m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
+			// m_work_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, m_io_service.get())));
+			m_work_thread.reset(new boost::thread(boost::bind(&CFileSystemWatcherService::fileWatcherThreadMain, this)));
 		}
 	}
 	return true;
 }
+
 //////////////////////////////////////////////////////////////////////////
 //
 // CFileSystemWatcher
@@ -137,10 +158,10 @@ bool ParaEngine::CFileSystemWatcherService::Start()
 //////////////////////////////////////////////////////////////////////////
 
 ParaEngine::CFileSystemWatcher::CFileSystemWatcher(const std::string& filename)
-: m_bDispatchInMainThread(true)
+	: m_bDispatchInMainThread(true), m_monitor_imp(NULL)
 {
-	m_monitor_imp.reset(new boost::asio::dir_monitor(CFileSystemWatcherService::GetInstance()->GetIOService()));
-	m_monitor_imp->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+	m_monitor_imp = new boost::asio::dir_monitor(CFileSystemWatcherService::GetInstance()->GetIOService());
+	((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 	CFileSystemWatcherService::GetInstance()->Start();
 	SetName(filename);
 	OUTPUT_LOG("FileSystemWatcher: %s created\n", filename.c_str());
@@ -171,7 +192,7 @@ void ParaEngine::CFileSystemWatcher::FileHandler( const boost::system::error_cod
 			m_msg_queue.push(ev);
 		}
 		// continuously polling
-		m_monitor_imp->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+		((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 	}
 	else
 	{
@@ -223,7 +244,7 @@ bool ParaEngine::CFileSystemWatcher::add_directory( const std::string &dirname )
 	bool bRes = true;
 	try
 	{
-		m_monitor_imp->add_directory(dirname);
+		((boost::asio::dir_monitor*)m_monitor_imp)->add_directory(dirname);
 		OUTPUT_LOG("FileSystemWatcher %s begins monitoring all files in %s\n", m_name.c_str(), dirname.c_str());
 	}
 	catch (...)
@@ -239,7 +260,7 @@ bool ParaEngine::CFileSystemWatcher::remove_directory( const std::string &dirnam
 	bool bRes = true;
 	try
 	{
-		m_monitor_imp->remove_directory(dirname);
+		((boost::asio::dir_monitor*)m_monitor_imp)->remove_directory(dirname);
 		OUTPUT_LOG("FileSystemWatcher %s stops monitoring in %s\n", m_name.c_str(), dirname.c_str());
 	}
 	catch (...)
@@ -262,7 +283,9 @@ void ParaEngine::CFileSystemWatcher::SetName(const std::string& val)
 
 void ParaEngine::CFileSystemWatcher::Destroy()
 {
-	m_monitor_imp.reset();
+	boost::asio::dir_monitor* pObj = (boost::asio::dir_monitor*)m_monitor_imp;
+	SAFE_DELETE(pObj);
+	m_monitor_imp = NULL;
 }
 
 #endif

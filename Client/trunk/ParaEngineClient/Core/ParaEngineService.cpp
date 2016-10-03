@@ -183,10 +183,6 @@ void CParaEngineService::InitDaemon(void)
 
 int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 {
-	m_work_lifetime.reset(new boost::asio::io_service::work(m_main_io_service));
-	m_main_timer.expires_from_now(boost::chrono::seconds(0));
-	m_main_timer.async_wait(boost::bind(&CParaEngineService::handle_timeout, this, boost::asio::placeholders::error));
-
 	if (pApp && !pCommandLine){
 		pCommandLine = pApp->GetAppCommandLine();
 	}
@@ -217,13 +213,15 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 			printf("            Press ENTER Key to exit the program    \n");
 		}
 	}
-	
 
 	m_pParaEngineApp->Init(0);
 
 	// this makes the server more responsive to NPL messages. However, JGSL is still lagged. 
 	ParaEngine::CGlobals::GetNPLRuntime()->SetHostMainStatesInFrameMove(false);
-	// ParaEngine::CGlobals::GetAISim()->NPLLoadFile("script/test.lua");
+	
+	m_work_lifetime.reset(new boost::asio::io_service::work(m_main_io_service));
+	m_main_timer.expires_from_now(boost::chrono::milliseconds(50));
+	m_main_timer.async_wait(boost::bind(&CParaEngineService::handle_timeout, this, boost::asio::placeholders::error));
 
 	// start the service now
 	m_main_io_service.run();

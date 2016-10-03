@@ -59,7 +59,6 @@
 #include "ParaEngineSettings.h"
 #include "ParaEngineInfo.h"
 
-
 #include "FileLogger.h"
 #include "BootStrapper.h"
 #include "NPLHelper.h"
@@ -184,22 +183,11 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 
 	SetAppCommandLine(sCommandLine);
 
-	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
-	if (sLogFile && sLogFile[0] != 0){
-		CLogger::GetSingleton().SetLogFile(sLogFile);
-	}
-
-	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
-	const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
-	bool bIsServerMode = (sServerMode && strcmp(sServerMode, "true") == 0);
-	bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
-	Enable3DRendering(!bIsServerMode && !bIsInterpreterMode);
-
-	CParaFile::SetDevDirectory(GetAppCommandLineByParam("dev", ""));
+	InitCommandLineParams();
 
 	COSInfo::DumpSystemInfo();
 
-	if (!bIsServerMode)
+	if (Is3DRenderingEnabled())
 	{
 		// Initialize GDI+.
 		Gdiplus::GdiplusStartup(&g_gdiplusToken, &g_gdiplusStartupInput, NULL);
@@ -230,15 +218,7 @@ void CParaEngineApp::InitLogger()
 
 void CParaEngineApp::BootStrapAndLoadConfig()
 {
-	if (!CBootStrapper::GetSingleton()->LoadFromFile(GetAppCommandLineByParam("bootstrapper", "")))
-	{
-		const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
-		if (pBootFileName && pBootFileName[0] != '\0'){
-			OUTPUT_LOG("error: can not find bootstrapper file at %s\n", pBootFileName);
-		}
-	}
-	// OUTPUT_LOG("cmd line: %s \n", GetAppCommandLine());
-	OUTPUT_LOG("main loop: %s \n", CBootStrapper::GetSingleton()->GetMainLoopFile().c_str());
+	FindBootStrapper();
 	{
 		// load settings from config/config.txt or config/config.new.txt
 		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";

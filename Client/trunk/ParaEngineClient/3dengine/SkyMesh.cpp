@@ -792,7 +792,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSkyInner(SceneState * sceneState)
 
 		// get world transform matrix
 		Matrix4 mxWorld;
-		m_pStaticMesh->GetRenderWorldMatrix(&mxWorld);
+		m_pStaticMesh->GetRenderMatrix(mxWorld);
 		m_pStaticMesh->DrawInner(sceneState, &mxWorld, sceneState->GetCameraToCurObjectDistance());
 	}
 }

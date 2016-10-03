@@ -679,10 +679,10 @@ namespace NPL
 		/** default channel. default value is 0*/
 		int m_nDefaultChannel;
 		/** an array of channel property. m_channelProperties[channelID]. The m_channelProperties is initialized with 16 channels.*/
-		vector<ChannelProperty> m_channelProperties;
+		std::vector<ChannelProperty> m_channelProperties;
 
 		/** a mapping from web service URL to its callback sCode */
-		map <string, string> m_mapWebServiceCallBacks;
+		std::map <string, string> m_mapWebServiceCallBacks;
 
 		/** a manager interface for NPL web service client.*/
 		ParaEngine::INPLWebServiceClient* m_pWebServiceClient;

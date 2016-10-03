@@ -44,15 +44,12 @@ namespace ParaEngine
 
 		/**
 		* return the world matrix of the object for rendering
-		* @param pOut: the output.
+		* @param out: the output.
 		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. If 0, it will not recalculate
-		* @return: same as pOut. or NULL if not exists.
+		* @return: same as out. or NULL if not exists.
 		*/
-		virtual Matrix4* GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber = 0);
-		/** get world transform */
-		virtual Matrix4* GetWorldTransform(Matrix4& pOut, int nRenderNumber = 0);
-
-
+		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber = 0);
+		
 		/** if the object may contain physics*/
 		virtual bool CanHasPhysics();
 		virtual void LoadPhysics();
@@ -63,7 +60,7 @@ namespace ParaEngine
 		virtual bool IsPhysicsEnabled();
 
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
-		int GetStaticActorCount();;
+		int GetStaticActorCount();
 		
 	private:
 		/** size scale */

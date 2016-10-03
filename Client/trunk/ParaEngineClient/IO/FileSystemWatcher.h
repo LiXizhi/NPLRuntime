@@ -2,14 +2,17 @@
 
 #if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 
-#include "dir_monitor/dir_monitor.hpp"
+#include "dir_monitor/basic_dir_monitor.hpp"
+#include <boost/thread.hpp>
 #include <queue>
 
 namespace ParaEngine
 {
+
 	/** monitoring file changes.
 	under windows: it uses ReadDirectoryChangesW
 	under linux: it uses inotify.
+	under macOS: kqueue
 	*/
 	class CFileSystemWatcher
 	{
@@ -18,8 +21,7 @@ namespace ParaEngine
 		typedef boost::asio::dir_monitor_event DirMonitorEvent;
 		typedef boost::signals2::signal<void(const DirMonitorEvent&)>  FileSystemEvent_t;
 		typedef boost::signals2::connection FileSystemEvent_Connection_t;
-		typedef boost::shared_ptr<boost::asio::dir_monitor> DirMonitorImpPtr;
-
+		
 		CFileSystemWatcher(const std::string& filename);
 		CFileSystemWatcher();
 		~CFileSystemWatcher();
@@ -59,7 +61,7 @@ namespace ParaEngine
 		/** get unprocessed event */
 		std::queue < DirMonitorEvent > m_msg_queue;
 
-		DirMonitorImpPtr m_monitor_imp;
+		void* m_monitor_imp;
 
 		/** locking the queue */
 		ParaEngine::mutex m_mutex;
@@ -114,6 +116,8 @@ namespace ParaEngine
 
 		/** start the io service in a different thread. this function can be called multiple times, where only the first time takes effect.  */
 		bool Start();
+	protected:
+		int fileWatcherThreadMain();
 	private:
 		file_watcher_map_t m_file_watchers;
 

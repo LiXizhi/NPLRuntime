@@ -11,6 +11,7 @@
 #include "ParaEngineCore.h"
 #include "FrameRateController.h"
 #include "ParaEngineAppImp.h"
+#include <boost/thread/tss.hpp>
 
 using namespace ParaEngine;
 
@@ -77,10 +78,18 @@ CParaEngineCore::~CParaEngineCore(void)
 	DestroySingleton();
 }
 
+
+CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
+{
+	static boost::thread_specific_ptr< CParaEngineCore > g_instance;
+	if (!g_instance.get())
+		g_instance.reset(new CParaEngineCore());
+	return (g_instance.get());
+}
+
 IParaEngineCore* CParaEngineCore::GetStaticInterface()
 {
-	static CParaEngineCore g_instance;
-	return (IParaEngineCore*)(&g_instance);
+	return (IParaEngineCore*)CParaEngineCore::GetInstance();
 }
 
 DWORD CParaEngineCore::GetVersion()
@@ -156,12 +165,6 @@ IParaEngineApp* CParaEngineCore::CreateApp()
 
 	}
 	return pApp;
-}
-
-CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
-{
-	static CParaEngineCore s_instance;
-	return &s_instance;
 }
 
 void ParaEngine::CParaEngineCore::DestroySingleton()

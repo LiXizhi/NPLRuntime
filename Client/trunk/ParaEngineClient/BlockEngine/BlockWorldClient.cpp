@@ -28,6 +28,7 @@
 #include "BlockLightGridClient.h"
 #include "ParaEngineSettings.h"
 #include "ViewportManager.h"
+#include "LightObject.h"
 #include "NPLHelper.h"
 #include "util/os_calls.h"
 #include "ChunkVertexBuilderManager.h"
@@ -903,7 +904,7 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockWorldClient::RenderWireFrameBlock(int nSelectionIndex, float fScaling,  LinearColor* pLineColor)
+	void BlockWorldClient::RenderWireFrameBlock(int nSelectionIndex, float fScaling, LinearColor* pLineColor)
 	{
 		auto& selectedBlocks = m_selectedBlockMap[nSelectionIndex];
 		auto& selectedBlockMap = selectedBlocks.m_blocks;
@@ -3088,6 +3089,26 @@ namespace ParaEngine
 	bool BlockWorldClient::DrawMultiFrameBlockWorldOnSky()
 	{
 		return m_pMultiFrameRenderer->DrawToSkybox();
+	}
+
+
+	void BlockWorldClient::RenderDeferredLights()
+	{
+		SceneState* sceneState = CGlobals::GetSceneState();
+		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
+			return;
+
+		// sort by light type
+		std::sort(sceneState->listDeferredLightObjects.begin(), sceneState->listDeferredLightObjects.end(), [](CLightObject* a, CLightObject* b){
+			return (a->GetLightType() < b->GetLightType());
+		});
+
+		// TODO: setup render target here
+		// sort by type and render light geometry
+		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
+		{
+			lightObject->RenderDeferredLightMesh(sceneState);
+		}
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

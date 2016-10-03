@@ -1116,7 +1116,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsDead", FieldType_Bool, (void*)SetDead_s, (void*)IsDead_s, NULL, "", bOverride);
 	pClass->AddField("opacity", FieldType_Float, (void*)SetOpacity_s, (void*)GetOpacity_s, NULL, "", bOverride);
 	pClass->AddField("DestroyChildren", FieldType_void, (void*)DestroyChildren_s, (void*)0, NULL, "", bOverride);
-	pClass->AddField("RenderWorldMatrix", FieldType_Matrix4, (void*)0, (void*)GetRenderWorldMatrix_s, NULL, "", bOverride);
+	pClass->AddField("RenderWorldMatrix", FieldType_Matrix4, (void*)0, (void*)GetRenderMatrix_s, NULL, "", bOverride);
 	pClass->AddField("LocalTransform", FieldType_Matrix4, (void*)SetLocalTransform_s, (void*)GetLocalTransform_s, NULL, "", bOverride);
 	return S_OK;
 }

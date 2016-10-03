@@ -649,49 +649,28 @@ bool IViewClippingObject::TestCollisionRay(const Vector3& vPickRayOrig, const Ve
 	return bCollided;
 }
 
-const Matrix4* ParaEngine::IViewClippingObject::GetWorldTransform()
-{
-	return CGlobals::GetIdentityMatrix();
-}
-
 Matrix4* ParaEngine::IViewClippingObject::GetWorldTransform(Matrix4& matOut, int nRenderNumber /*= 0*/)
 {
-	auto vPos = GetPosition();
-	if (GetFacing() != 0.f)
-	{
-		ParaMatrixRotationY(&matOut, GetFacing());/** set facing and rotate local matrix round y axis*/
-	}
-	else
-	{
-		matOut.identity();
-	}
-
-	// world translation
-	matOut._41 += (float)vPos.x;
-	matOut._42 += (float)vPos.y;
-	matOut._43 += (float)vPos.z;
+	GetRenderMatrix(matOut);
+	Vector3 vOffset = CGlobals::GetScene()->GetRenderOrigin();
+	matOut._41 += vOffset.x;
+	matOut._42 += vOffset.y;
+	matOut._43 += vOffset.z;
 	return &matOut;
 }
 
-
-Matrix4* IViewClippingObject::GetRenderWorldMatrix( Matrix4* pOut, int nRenderNumber)
+Matrix4* ParaEngine::IViewClippingObject::GetRenderMatrix( Matrix4& out, int nRenderNumber)
 {
-	PE_ASSERT(pOut!=0);
 	// render offset
 	Vector3 vPos = GetRenderOffset();
 	// get world transform matrix
-	ParaMatrixRotationY(pOut, GetFacing());/** set facing and rotate local matrix round y axis*/
+	ParaMatrixRotationY(&out, GetFacing());/** set facing and rotate local matrix round y axis*/
 
 	// world translation
-	pOut->_41 += vPos.x;
-	pOut->_42 += vPos.y;
-	pOut->_43 += vPos.z;
-	return pOut;
-}
-
-Matrix4* ParaEngine::IViewClippingObject::GetRenderMatrix( Matrix4& pOut, int nRenderNumber)
-{
-	return GetRenderWorldMatrix(&pOut, nRenderNumber);
+	out._41 += vPos.x;
+	out._42 += vPos.y;
+	out._43 += vPos.z;
+	return &out;
 }
 
 void ParaEngine::IViewClippingObject::SetScaling(float s)

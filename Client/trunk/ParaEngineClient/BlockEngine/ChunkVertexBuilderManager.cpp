@@ -10,6 +10,7 @@ ProcessOneChunk() is most time consuming. takes 20-30ms per chunk (typically 300
 */
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "util/CSingleton.h"
 #include "RenderableChunk.h"
 #include "BlockWorld.h"
 #include "ParaTime.h"
@@ -34,8 +35,7 @@ ParaEngine::ChunkVertexBuilderManager::~ChunkVertexBuilderManager()
 
 ChunkVertexBuilderManager& ParaEngine::ChunkVertexBuilderManager::GetInstance()
 {
-	static ChunkVertexBuilderManager s_singleton;
-	return s_singleton;
+	return *(CAppSingleton<ChunkVertexBuilderManager>::GetInstance());
 }
 
 bool ParaEngine::ChunkVertexBuilderManager::AddChunk(RenderableChunk* pChunk)
