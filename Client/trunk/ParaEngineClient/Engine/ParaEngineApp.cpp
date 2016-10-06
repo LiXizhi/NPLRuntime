@@ -7,11 +7,11 @@
 // Desc: Main ParaEngine Application: manage device, windows, messages and global objects.
 //-----------------------------------------------------------------------------
 
+#include "ParaEngine.h"
+
 #ifdef PLATFORM_MAC
     #include "mac/ParaEngineApp.hpp"
 #else
-
-#include "ParaEngine.h"
 
 #pragma region PE Includes
 #include "resource.h"
@@ -3195,4 +3195,4 @@ void CParaEngineApp::UpdateFrameStats(double fTime)
 
 
 
-#endif 
+#endif
