@@ -9,10 +9,6 @@
 
 #include "ParaEngine.h"
 
-#ifdef PLATFORM_MAC
-    #include "mac/ParaEngineApp.hpp"
-#else
-
 #pragma region PE Includes
 #include "resource.h"
 #include "DirectXEngine.h"
@@ -3192,7 +3188,3 @@ void CParaEngineApp::UpdateFrameStats(double fTime)
 		dwFrames = 0;
 	}
 }
-
-
-
-#endif

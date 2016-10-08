@@ -2,7 +2,7 @@
 
 
 #ifdef PLATFORM_MAC
-    #include "mac/ParaEngineApp.h"
+    #include "platform/mac/ParaEngineApp.h"
 #else
 
 
