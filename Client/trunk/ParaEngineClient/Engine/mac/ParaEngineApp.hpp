@@ -12,8 +12,9 @@
 
 #include "platform/OpenGLWrapper.h"
 
-#include "SimpleAudioEngine.h"
-#include "ParaSimpleAudioEngine.h"
+//TODO: wangpeng
+//#include "SimpleAudioEngine.h"
+//#include "ParaSimpleAudioEngine.h"
 
 #endif
 
@@ -93,7 +94,8 @@ void CParaEngineApp::applicationDidEnterBackground()
 #if defined(STATIC_PLUGIN_CAUDIOENGINE) || defined(WIN32)
 	CAudioEngine2::GetInstance()->PauseAll();
 #else
-	CocosDenshion::SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
+	//TODO: wangpeng
+	//CocosDenshion::SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
 #endif
 	m_bIsAppActive = false;
 }
@@ -103,7 +105,8 @@ void CParaEngineApp::applicationWillEnterForeground()
 #if defined(STATIC_PLUGIN_CAUDIOENGINE) || defined(WIN32)
 	CAudioEngine2::GetInstance()->ResumeAll();
 #else
-	CocosDenshion::SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
+	//TODO: wangpeng
+	// CocosDenshion::SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
 #endif
 	m_bIsAppActive = true;
 }
@@ -169,7 +172,8 @@ void CParaEngineApp::InitAudioEngine()
 	CAudioEngine2::GetInstance()->InitAudioEngine();
 #else
 	OUTPUT_LOG("native Simple AudioEngine loaded\n");
-	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)CParaSimpleAudioEngine::GetInstance());
+	//TODO: wangpeng
+	//CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)CParaSimpleAudioEngine::GetInstance());
 #endif
 }
 
@@ -231,7 +235,8 @@ void CParaEngineApp::InitSystemModules()
 HRESULT CParaEngineApp::StopApp()
 {
 #ifdef USE_OPENGL_RENDERER
-	CocosDenshion::SimpleAudioEngine::end();
+	//TODO: wangpeng
+	//CocosDenshion::SimpleAudioEngine::end();
 #endif
 	InvalidateDeviceObjects();
 	DeleteDeviceObjects();
