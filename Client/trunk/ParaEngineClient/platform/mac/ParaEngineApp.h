@@ -19,60 +19,60 @@ namespace cocos2d
 /** 
 @mainpage ParaEngine Reference
 
-* 
+*
 * @section intro_sec Introduction
-* 
+*
 [The following text is taken from my bachelor thesis proposal]\n
-In recent years, game engine related technology has drawn increasing academic attention from 
-a wide range of research areas. People come to realize that game engine may naturally evolve 
-in to the most widely used virtual reality platform in the future. The research framework 
-proposed in this paper is to exploit this possibility using established computer technologies 
-as well as newly designed ones. Current game engine framework already include solutions for a 
-large number of platform issues, such as real-time 3D visualization, physics simulation, event 
-and script system, path-finding, high-level decision making, networking, etc. However, the 
-computing paradigm behind it is usually constrained to a single platform, where a predefined 
-network topology must be explicitly constructed for cross-platform communications. My major 
-research goal is to redesign the computing paradigm to suit the need of highly dynamic networked 
-virtual environment, where intelligent entities are situated and communicate with each other 
-as well as human avatars. A complete distributed game engine framework will be proposed and 
-implemented with supporting game demos. Two areas of interest will be specialized with in-depth 
-study. One is the script programming environment and runtime for distributed game world logics; 
+In recent years, game engine related technology has drawn increasing academic attention from
+a wide range of research areas. People come to realize that game engine may naturally evolve
+in to the most widely used virtual reality platform in the future. The research framework
+proposed in this paper is to exploit this possibility using established computer technologies
+as well as newly designed ones. Current game engine framework already include solutions for a
+large number of platform issues, such as real-time 3D visualization, physics simulation, event
+and script system, path-finding, high-level decision making, networking, etc. However, the
+computing paradigm behind it is usually constrained to a single platform, where a predefined
+network topology must be explicitly constructed for cross-platform communications. My major
+research goal is to redesign the computing paradigm to suit the need of highly dynamic networked
+virtual environment, where intelligent entities are situated and communicate with each other
+as well as human avatars. A complete distributed game engine framework will be proposed and
+implemented with supporting game demos. Two areas of interest will be specialized with in-depth
+study. One is the script programming environment and runtime for distributed game world logics;
 the other is autonomous character animations in virtual game worlds.
 
 The idea of distributed computer game engine can be pictured by drawing an analog with the current
-World Wide Web. I.e. we compare web pages to 3D game worlds; hyperlinks and services in web pages 
-to active objects in 3D game worlds; and web browsers and client/server side runtime environments 
-to computer game engines. However, in distributed game world, interactions among entities will be 
-more intensive and extensive, such as several characters exchanging messages at real time; game world 
-logic will be more distributed, with each node being a potential server, and also more dynamic, 
+World Wide Web. I.e. we compare web pages to 3D game worlds; hyperlinks and services in web pages
+to active objects in 3D game worlds; and web browsers and client/server side runtime environments
+to computer game engines. However, in distributed game world, interactions among entities will be
+more intensive and extensive, such as several characters exchanging messages at real time; game world
+logic will be more distributed, with each node being a potential server, and also more dynamic,
 with different nodes forming temporary or long lasting relationships.
 * \n
 * @section copyright Copyright
-* 
+*
 I will possibly release it under GNU license when the game engine framework is stable.
 * \n
 * @section developer Developer
-* 
-- Li, Xizhi: Developer of ParaEngine. 
+*
+- Li, Xizhi: Developer of ParaEngine.
 */
 
-/** 
+/**
 * The main game engine implementations.
 * The ParaEngine namespace contains the main ParaEngine source code.
-* It includes scene objects, scene management, asset and file management, 
+* It includes scene objects, scene management, asset and file management,
 * 2D GUI, AI modules, ParaX file support, frame rate management, etc.
 */
 namespace ParaEngine
 {
 	/**
-	* This class demonstrate how to initialize, destroy and drive the game loop  
-	* of ParaEngine through the C++ programming interface. Users can derive their 
-	* main Windows application from this class. 
+	* This class demonstrate how to initialize, destroy and drive the game loop
+	* of ParaEngine through the C++ programming interface. Users can derive their
+	* main Windows application from this class.
 	* Note: ParaEngine is designed to be manipulated through the NPL scripting interface
 	* Currently,its C++ programming interface is not designed to be used from outside the core code.
-	* i.e. Users' ability to program through C++ API is restricted by the amount of 
-	* source code unvailed to them. 
-	* 
+	* i.e. Users' ability to program through C++ API is restricted by the amount of
+	* source code unvailed to them.
+	*
 	* this class can be regarded as sample code for writing your own ParaEngine games
 	* logics. This class is not engine specific, but it contains basic steps to establish
 	* a running environment of any paraEngine created games. For example: SceneObject,
@@ -91,7 +91,7 @@ namespace ParaEngine
 		*/
 		CParaEngineApp(const char*  lpCmdLine = NULL);
 		virtual ~CParaEngineApp();
-		
+
 		/** This is the first function that should be called when acquiring the IParaEngineApp interface.
 		* call this function to start the application. Rendering window and devices are not created, one need to call Create() instead.
 		* @param sCommandLine: the command line parameter
@@ -101,7 +101,7 @@ namespace ParaEngine
 		virtual void InitSystemModules();
 
 		void BootStrapAndLoadConfig();
-		
+
 		/** This is the last function that should be called. It is usually called just before process exit.
 		*/
 		virtual HRESULT StopApp();
@@ -253,10 +253,10 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar);
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText();
-		
 
-		/** write the current setting to config file. Such as graphics mode and whether full screen, etc. 
-		* config file at ./config.txt will be automatically loaded when the game engine starts. 
+
+		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
+		* config file at ./config.txt will be automatically loaded when the game engine starts.
 		* @param sFileName: if this is "", it will be the default config file at ./config.txt
 		*/
 		virtual void WriteConfigFile(const char* sFileName);
@@ -283,7 +283,7 @@ namespace ParaEngine
 		* @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size.
 		*/
 		virtual void SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) { };
-		
+
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetResolution(float* pX, float* pY);;
 		virtual void SetResolution(float x, float y);;
@@ -304,15 +304,15 @@ namespace ParaEngine
 
 		/**
 		* This function should be called only once when the application start, one can initialize game objects here.
-		* @param pHWND:a pointer to the handle of the current application window. 
+		* @param pHWND:a pointer to the handle of the current application window.
 		*/
 		HRESULT OneTimeSceneInit(HWND* pHWND);
 
 		/**
 		* This callback function will be called once at the beginning of every frame. This is the
-		* best location for your application to handle updates to the scene, but is not 
-		* intended to contain actual rendering calls, which should instead be placed in the 
-		* OnFrameRender callback.  
+		* best location for your application to handle updates to the scene, but is not
+		* intended to contain actual rendering calls, which should instead be placed in the
+		* OnFrameRender callback.
 		* @param fTime: Current time elapsed.
 		*/
 		virtual HRESULT FrameMove(double fTime);
@@ -324,10 +324,10 @@ namespace ParaEngine
 
 		/** process game input.*/
 		void HandleUserInput();
-		
-		/** Send the exit message, so that the game engine will prepare to exit in the next frame. 
-		* this is the recommended way of exiting application. 
-		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure. 
+
+		/** Send the exit message, so that the game engine will prepare to exit in the next frame.
+		* this is the recommended way of exiting application.
+		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
 		*/
 		virtual void Exit(int nReturnCode = 0);
 
@@ -368,7 +368,7 @@ namespace ParaEngine
 
 		double m_fTime;
 		float m_fFPS;
-		
+
 		bool m_bIsAppActive;
 	};
 

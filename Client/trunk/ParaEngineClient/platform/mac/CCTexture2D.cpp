@@ -5,6 +5,9 @@
 
 #include "CCTexture2D.h"
 
+
+USING_NS_CC;
+
 Texture2D::Texture2D()
 {
 }

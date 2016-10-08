@@ -33,7 +33,7 @@ THE SOFTWARE.
 #include <unordered_map>
 #include <string>
 
-#include "ParaGLMac.h"
+#include "CCType.h"
 
 /**
  * @addtogroup renderer

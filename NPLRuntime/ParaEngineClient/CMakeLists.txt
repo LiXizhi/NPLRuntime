@@ -126,6 +126,12 @@ file (GLOB ParaEngineClient_IO_FILES ${ParaEngineClient_SOURCE_DIR}/IO/*.cpp ${P
 SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
+if(APPLE)
+	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
+	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+endif(APPLE)
+
 if(DIRECTX_FOUND)
 	#####################################
 	##--------- resource file ---------##
@@ -408,7 +414,7 @@ if (WIN32)
   )
 else (WIN32)
 	if(APPLE)
-		set(EXTRA_LIBRARIES			
+		set(EXTRA_LIBRARIES
 				dl
 				resolv
 				z

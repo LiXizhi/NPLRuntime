@@ -4,8 +4,9 @@
 
 #include "CCLabel.h"
 
+USING_NS_CC;
 
-FontAtlas:setAliasTexParameters()
+void FontAtlas::setAliasTexParameters()
 {
 
 }

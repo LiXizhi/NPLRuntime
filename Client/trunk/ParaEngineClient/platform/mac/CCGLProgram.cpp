@@ -2,7 +2,9 @@
 
 #ifdef PLATFORM_MAC
 
+#include "CCGLProgram.h"
 
+USING_NS_CC;
 
 bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
 {

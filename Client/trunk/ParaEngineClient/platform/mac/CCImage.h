@@ -2,7 +2,7 @@
 #ifndef __CC_IMAGE_H__
 #define __CC_IMAGE_H__
 
-#include "ParaGLMac.h"
+#include "CCType.h"
 
 #include "CCTexture2D.h"
 
@@ -25,7 +25,7 @@ public:
 	Texture2D::PixelFormat getRenderFormat()  { return _renderFormat; }
 
 	int getNumberOfMipmaps()    { return 0; }
-	
+
 private:
 	Texture2D::PixelFormat _renderFormat;
 

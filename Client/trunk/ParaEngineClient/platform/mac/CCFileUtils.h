@@ -4,7 +4,7 @@
 #ifndef __CC_FILE_UTILS_H__
 #define __CC_FILE_UTILS_H__
 
-#include "ParaGLMac.h"
+#include "CCType.h"
 
 
 NS_CC_BEGIN

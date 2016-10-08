@@ -4,12 +4,12 @@
 #define CCTYPE_H
 
 
-
+#include "ParaGLMac.h"
 
 namespace GL {
 
 
-    void bindTexture2D(GLuint textureId) {}
+    void bindTexture2D(GLuint textureId);
 
 }
 

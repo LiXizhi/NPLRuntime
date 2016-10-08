@@ -1,7 +1,14 @@
 
 #ifdef PLATFORM_MAC
 
+#include "CCType.h"
 
+
+
+void GL::bindTexture2D(GLuint textureId)
+{
+
+}
 
 const Size Size::ZERO = Size(0, 0);
 

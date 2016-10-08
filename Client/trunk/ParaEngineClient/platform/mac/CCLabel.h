@@ -26,7 +26,7 @@
 #ifndef _COCOS2D_CCLABEL_H_
 #define _COCOS2D_CCLABEL_H_
 
-#include "ParaGLMac.h"
+#include "CCType.h"
 
 #include <unordered_map>
 #include <vector>

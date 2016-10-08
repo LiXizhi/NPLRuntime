@@ -6,7 +6,7 @@
 #define __CC_TEXTURE2d_H__
 
 
-#include "ParaGLMac.h"
+#include "CCType.h"
 
 NS_CC_BEGIN
 
