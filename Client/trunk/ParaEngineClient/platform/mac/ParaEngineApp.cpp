@@ -12,7 +12,7 @@
 
 #include "platform/OpenGLWrapper.h"
 
-//TODO: wangpeng
+#include "ParaAudioMac.h"
 //#include "SimpleAudioEngine.h"
 //#include "ParaSimpleAudioEngine.h"
 
@@ -172,8 +172,7 @@ void CParaEngineApp::InitAudioEngine()
 	CAudioEngine2::GetInstance()->InitAudioEngine();
 #else
 	OUTPUT_LOG("native Simple AudioEngine loaded\n");
-	//TODO: wangpeng
-	//CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)CParaSimpleAudioEngine::GetInstance());
+	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)MacParaAudioEngine::GetInstance());
 #endif
 }
 
