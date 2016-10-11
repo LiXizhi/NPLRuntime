@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#ifdef USE_OPENGL_RENDERER
+#ifdef PLATFORM_MAC
 
 #include "platform/OpenGLWrapper.h"
 
@@ -16,7 +16,6 @@
 //#include "SimpleAudioEngine.h"
 //#include "ParaSimpleAudioEngine.h"
 
-#endif
 
 #include "AudioEngine2.h"
 #include "ic/ICDBManager.h"
@@ -59,15 +58,15 @@ CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	StartApp(lpCmdLine);
 #ifdef USE_OPENGL_RENDERER
 	// listen the event that renderer was recreated on Android/WP8
-	m_rendererRecreatedListener = cocos2d::EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(CParaEngineApp::listenRendererRecreated, this));
-	cocos2d::Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(m_rendererRecreatedListener, -1);
+	//TODO:wangpeng m_rendererRecreatedListener = cocos2d::EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(CParaEngineApp::listenRendererRecreated, this));
+	//TODO:wangpeng cocos2d::Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(m_rendererRecreatedListener, -1);
 #endif
 }
 
 CParaEngineApp::~CParaEngineApp()
 {
 #ifdef USE_OPENGL_RENDERER
-	cocos2d::Director::getInstance()->getEventDispatcher()->removeEventListener(m_rendererRecreatedListener);
+	//TODO:wangpeng cocos2d::Director::getInstance()->getEventDispatcher()->removeEventListener(m_rendererRecreatedListener);
 #endif
 }
 
@@ -504,3 +503,5 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	}
 	return 0;
 }
+
+#endif

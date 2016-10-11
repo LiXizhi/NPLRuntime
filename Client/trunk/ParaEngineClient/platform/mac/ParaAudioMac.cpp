@@ -1,6 +1,8 @@
 
 #ifdef PLATFORM_MAC
 
+#include "ParaEngine.h"
+
 #include "ParaAudioMac.h"
 
 using namespace ParaEngine;
@@ -22,7 +24,7 @@ MacParaAudioEngine* MacParaAudioEngine::GetInstance()
 /** Interface for event handlers on Audio Sources. */
 
 /// This function is called when a source updates its buffers.
-void MacAudioSourceEventHandler::void onUpdate()
+void MacAudioSourceEventHandler::onUpdate()
 {
 
 }
@@ -65,7 +67,7 @@ bool MacParaAudioSource::play()
 No automatic attenuation or panning will take place in this mode, but using setPosition will allow you to manually pan mono audio streams.
 @param toLoop: Whether to loop (restart) the audio when the end is reached.
 @return True if the source is playing, false if not. */
-bool MacParaAudioSource::play2d(const bool& toLoop = false)
+bool MacParaAudioSource::play2d(const bool& toLoop)
 {
     return true;
 }
@@ -75,7 +77,7 @@ bool MacParaAudioSource::play2d(const bool& toLoop = false)
 @param soundstr: Affects how the source attenuates due to distance.  Higher values cause the source to stand out more over distance.
 @param toLoop: Whether to loop (restart) the audio when the end is reached.
 @return True if the source is playing, false if not. */
-bool MacParaAudioSource::play3d(const PARAVECTOR3& position, const float& soundstr = 1.0 , const bool& toLoop = false)
+bool MacParaAudioSource::play3d(const PARAVECTOR3& position, const float& soundstr, const bool& toLoop)
 {
     return true;
 }
@@ -104,7 +106,7 @@ void MacParaAudioSource::loop(const bool& toLoop)
 @param seconds: Number of seconds to seek.
 @param relative: Whether to seek from the current position or the start of the stream.
 @return True on success, False if the codec does not support seeking. */
-bool MacParaAudioSource::seek(const float& seconds, bool relative = false)
+bool MacParaAudioSource::seek(const float& seconds, bool relative)
 {
     return true;
 }
@@ -444,7 +446,7 @@ void MacParaAudioSource::unRegisterAllEventHandlers()
 /** ParaAudioEngine core interface.
 */
 
-void IParaAudioEngine::Release()
+void MacParaAudioEngine::Release()
 {
 
 }
@@ -455,19 +457,19 @@ void IParaAudioEngine::Release()
 @param outputFrequency: Frequency of the output audio or -1 for the device default.
 @param eaxEffectSlots: Number of EFX effect slots to request.  Has no effect if EFX is not supported or compiled out.
 @return True on success, False if initialization of OpenAL failed. */
-bool IParaAudioEngine::initialize(const char* deviceName = 0x0, int outputFrequency = -1, int eaxEffectSlots = 4)
+bool MacParaAudioEngine::initialize(const char* deviceName, int outputFrequency, int eaxEffectSlots)
 {
     return true;
 }
 
 /// Shuts the manager down, cleaning up audio sources in the process.  Does not clean up decoders, data sources, or event handlers.
-void IParaAudioEngine::shutDown()
+void MacParaAudioEngine::shutDown()
 {
 
 }
 
 /// If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
-void IParaAudioEngine::update()
+void MacParaAudioEngine::update()
 {
 
 }
@@ -476,20 +478,20 @@ void IParaAudioEngine::update()
 /**
 @param name: Name of the audio source to retrieve.
 @return Pointer to the audio source object or NULL if it could not be found.*/
-IParaAudioSource* IParaAudioEngine::getSoundByName(const char* name)
+IParaAudioSource* MacParaAudioEngine::getSoundByName(const char* name)
 {
     return 0;
 }
 
 /// Releases ALL Audio Sources (but does not shutdown the manager)
-void IParaAudioEngine::releaseAllSources()
+void MacParaAudioEngine::releaseAllSources()
 {
 
 }
 
 /// Releases a single Audio Source, removing it from the manager.
 /** @param source: Pointer to the source to release. */
-void IParaAudioEngine::release(IParaAudioSource* source)
+void MacParaAudioEngine::release(IParaAudioSource* source)
 {
 
 }
@@ -497,21 +499,21 @@ void IParaAudioEngine::release(IParaAudioSource* source)
 /// Returns the name of an available playback device.
 /** @param index: Specify which name to retrieve ( Range: 0 to getAvailableDeviceCount()-1 )
 @return Name of the selected device. */
-const char* IParaAudioEngine::getAvailableDeviceName(unsigned int index)
+const char* MacParaAudioEngine::getAvailableDeviceName(unsigned int index)
 {
     return 0;
 }
 
 /// Returns the number of playback devices available for use.
 /** @return Number of playback devices available. */
-unsigned int IParaAudioEngine::getAvailableDeviceCount()
+unsigned int MacParaAudioEngine::getAvailableDeviceCount()
 {
     return 1;
 }
 
 /// Returns the name of the default system playback device.
 /** @return Name of the default playback device. */
-const char* IParaAudioEngine::getDefaultDeviceName()
+const char* MacParaAudioEngine::getDefaultDeviceName()
 {
     return 0;
 }
@@ -523,7 +525,7 @@ const char* IParaAudioEngine::getDefaultDeviceName()
 @param stream: Whether to stream the audio data or load it all into a memory buffer at the start.  You should consider using streaming for really large sound files.
 @return A pointer to an Audio Source or NULL if creation failed.
 */
-IParaAudioSource* IParaAudioEngine::create(const char* name, const char* filename, bool stream = false)
+IParaAudioSource* MacParaAudioEngine::create(const char* name, const char* filename, bool stream)
 {
     return 0;
 }
@@ -536,7 +538,7 @@ IParaAudioSource* IParaAudioEngine::create(const char* name, const char* filenam
 @param extension: Extension for the audio codec of the data in the memory buffer.
 @return A pointer to an Audio Source or NULL if creation failed.
 */
-IParaAudioSource* IParaAudioEngine::createFromMemory(const char* name, const char* data, size_t length, const char* extension)
+IParaAudioSource* MacParaAudioEngine::createFromMemory(const char* name, const char* data, size_t length, const char* extension)
 {
     return 0;
 }
@@ -550,12 +552,12 @@ IParaAudioSource* IParaAudioEngine::createFromMemory(const char* name, const cha
 @param format: Format of the audio data.
 @return A pointer to an Audio Source or NULL if creation failed.
 */
-IParaAudioSource* IParaAudioEngine::createFromRaw(const char* name, const char* data, size_t length, unsigned int frequency, ParaAudioFormats format)
+IParaAudioSource* MacParaAudioEngine::createFromRaw(const char* name, const char* data, size_t length, unsigned int frequency, ParaAudioFormats format)
 {
     return 0;
 }
 
-void IParaAudioEngine::SetDistanceModel(ParaAudioDistanceModelEnum eDistModel)
+void MacParaAudioEngine::SetDistanceModel(ParaAudioDistanceModelEnum eDistModel)
 {
 
 }
@@ -568,14 +570,14 @@ void IParaAudioEngine::SetDistanceModel(ParaAudioDistanceModelEnum eDistModel)
 Note that you will still have to set velocity after this call for proper doppler effects.
 Use move() if you'd like to have cAudio automatically handle velocity for you.
 @param pos: New position for the listener. */
-void IParaAudioEngine::setPosition(const PARAVECTOR3& pos)
+void MacParaAudioEngine::setPosition(const PARAVECTOR3& pos)
 {
 
 }
 
 /** Sets the direction the listener is facing
 @param dir: New direction vector for the listener. */
-void IParaAudioEngine::setDirection(const PARAVECTOR3& dir)
+void MacParaAudioEngine::setDirection(const PARAVECTOR3& dir)
 {
 
 }
@@ -583,21 +585,21 @@ void IParaAudioEngine::setDirection(const PARAVECTOR3& dir)
 /** Sets the up vector to use for the listener
 Default up vector is Y+, same as OpenGL.
 @param up: New up vector for the listener. */
-void IParaAudioEngine::setUpVector(const PARAVECTOR3& up)
+void MacParaAudioEngine::setUpVector(const PARAVECTOR3& up)
 {
 
 }
 
 /** Sets the current velocity of the listener for doppler effects
 @param vel: New velocity for the listener. */
-void IParaAudioEngine::setVelocity(const PARAVECTOR3& vel)
+void MacParaAudioEngine::setVelocity(const PARAVECTOR3& vel)
 {
 
 }
 
 /** Sets the global volume modifier (will effect all sources)
 @param volume: Volume to scale all sources by. Range: 0.0 to +inf. */
-void IParaAudioEngine::setMasterVolume(const float& volume)
+void MacParaAudioEngine::setMasterVolume(const float& volume)
 {
 
 }
@@ -605,41 +607,41 @@ void IParaAudioEngine::setMasterVolume(const float& volume)
 /// Convenience function to automatically set the velocity and position for you in a single call
 /** Velocity will be set to new position - last position
 @param pos: New position to move the listener to. */
-void IParaAudioEngine::move(const PARAVECTOR3& pos)
+void MacParaAudioEngine::move(const PARAVECTOR3& pos)
 {
 
 }
 
 /// Returns the current position of the listener
-PARAVECTOR3 IParaAudioEngine::getPosition(void) const
+PARAVECTOR3 MacParaAudioEngine::getPosition(void) const
 {
     PARAVECTOR3 m;
     return m;
 }
 
 /// Returns the current direction of the listener
-PARAVECTOR3 IParaAudioEngine::getDirection(void) const
+PARAVECTOR3 MacParaAudioEngine::getDirection(void) const
 {
     PARAVECTOR3 m;
     return m;
 }
 
 /// Returns the current up vector of the listener
-PARAVECTOR3 IParaAudioEngine::getUpVector(void) const
+PARAVECTOR3 MacParaAudioEngine::getUpVector(void) const
 {
     PARAVECTOR3 m;
     return m;
 }
 
 /// Returns the current velocity of the listener
-PARAVECTOR3 IParaAudioEngine::getVelocity(void) const
+PARAVECTOR3 MacParaAudioEngine::getVelocity(void) const
 {
     PARAVECTOR3 m;
     return m;
 }
 
 /// Returns the global volume modifier for all sources
-float IParaAudioEngine::getMasterVolume(void) const
+float MacParaAudioEngine::getMasterVolume(void) const
 {
     return 1;
 }
@@ -649,7 +651,7 @@ float IParaAudioEngine::getMasterVolume(void) const
 * @param nLeftHand: 0 if it is left handed coordinate system, which is the one used by DirectX.
 * and 1, if it is the right handed coordinate system which is OpenAL(and OpenGL) uses.
 */
-void IParaAudioEngine::SetCoordinateSystem(int nLeftHand)
+void MacParaAudioEngine::SetCoordinateSystem(int nLeftHand)
 {
 
 }
