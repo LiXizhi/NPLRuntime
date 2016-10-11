@@ -1217,6 +1217,35 @@ void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
 #endif
 }
 
+void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
+{
+#ifdef WIN32
+	if (CGlobals::GetApp()->IsWindowedMode())
+	{
+		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
+		if (bEnabled)
+		{
+			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
+		}
+		else
+		{
+			dwAttr &= (~(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
+		}
+		SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
+	}
+#endif
+}
+
+bool ParaEngine::ParaEngineSettings::IsShowWindowTitleBar()
+{
+	if (CGlobals::GetApp()->IsWindowedMode())
+	{
+		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
+		return (dwAttr & WS_CAPTION) != 0;
+	}
+	return false;
+}
+
 const std::string& ParaEngine::ParaEngineSettings::GetMaxMacAddress()
 {
 	return NetworkAdapter::GetInstance()->GetMaxMacAddress();
@@ -1344,6 +1373,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("RecreateRenderer", FieldType_void, (void*)RecreateRenderer_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("Icon", FieldType_String, (void*)SetIcon_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("LockWindowSize", FieldType_Bool, (void*)SetLockWindowSize_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("ShowWindowTitleBar", FieldType_Bool, (void*)SetShowWindowTitleBar_s, (void*)IsShowWindowTitleBar_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FPS", FieldType_Float, NULL, (void*)GetFPS_s, NULL, NULL, bOverride);
 	pClass->AddField("TriangleCount", FieldType_Int, NULL, (void*)GetTriangleCount_s, NULL, NULL, bOverride);

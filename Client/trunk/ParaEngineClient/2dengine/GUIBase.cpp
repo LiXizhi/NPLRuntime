@@ -1003,6 +1003,16 @@ void ParaEngine::CGUIBase::SetCompositionPoint(const QPoint& point)
 	}
 }
 
+bool ParaEngine::CGUIBase::IsNonClientTestEnabled()
+{
+	return false;
+}
+
+void ParaEngine::CGUIBase::EnableNonClientTest(bool val)
+{
+
+}
+
 bool CGUIBase::OnFocusIn()
 {
 	if (m_bInputMethodEnabled)
@@ -2739,6 +2749,7 @@ int ParaEngine::CGUIBase::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("AutoClearBackground", FieldType_Bool, (void*)SetAutoClearBackground_s, (void*)IsAutoClearBackground_s, NULL, NULL, bOverride);
 	pClass->AddField("InputMethodEnabled", FieldType_Bool, (void*)SetInputMethodEnabled_s, (void*)IsInputMethodEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("CompositionPoint", FieldType_Vector2, (void*)SetCompositionPoint_s, (void*)GetCompositionPoint_s, NULL, NULL, bOverride);
+	pClass->AddField("EnableClientTest", FieldType_Bool, (void*)EnableNonClientTest_s, (void*)IsNonClientTestEnabled_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

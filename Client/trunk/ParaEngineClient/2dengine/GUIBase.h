@@ -216,6 +216,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIBase, GetCompositionPoint_s, Vector2*)	{ auto pt = cls->GetCompositionPoint(); *p1 = Vector2((float)pt.x(), (float)pt.y()); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIBase, SetCompositionPoint_s, Vector2)	{ cls->SetCompositionPoint(QPoint((int)p1.x, (int)p1.y)); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CGUIBase, IsNonClientTestEnabled_s, bool*)	{ *p1 = cls->IsNonClientTestEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIBase, EnableNonClientTest_s, bool)	{ cls->EnableNonClientTest(p1); return S_OK; }
+
 	public:
 		virtual CPaintEngine * paintEngine() const;
 
@@ -936,6 +939,9 @@ namespace ParaEngine
 		/** get composition point. default to bottom of the current bounding box. */
 		virtual QPoint  GetCompositionPoint();
 		virtual void SetCompositionPoint(const QPoint& point);
+
+		virtual bool IsNonClientTestEnabled();
+		virtual void EnableNonClientTest(bool val);
 
 		/** whether to use point texture filtering for all ui images rendered. */
 		bool GetUsePointTextureFiltering();

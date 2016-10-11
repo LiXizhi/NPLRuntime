@@ -61,6 +61,7 @@ CGUIContainer::CGUIContainer():CGUIBase(),
 	m_nPopupStyle(Popup_None),
 	m_bIsTop(false),
 	m_bBatching(false),
+	m_bEnableNonClientTest(false),
 	m_bNeedCalClientRect(false)
 {
 	// Fixed.2010.10.27: the container will not capture mouse, so it will leak messages to 3D
@@ -1463,6 +1464,16 @@ int ParaEngine::CGUIContainer::GetChildIndex(CGUIBase* pChild)
 		i++;
 	}
 	return -1;
+}
+
+bool ParaEngine::CGUIContainer::IsNonClientTestEnabled()
+{
+	return m_bEnableNonClientTest;
+}
+
+void ParaEngine::CGUIContainer::EnableNonClientTest(bool val)
+{
+	m_bEnableNonClientTest = val;
 }
 
 CRenderTarget* ParaEngine::CGUIContainer::CreateGetRenderTarget(bool bCreateIfNotExist)

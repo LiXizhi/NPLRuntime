@@ -53,6 +53,13 @@ namespace ParaEngine
 
 	inline DWORD FtoDW( FLOAT f ) { return *((DWORD*)&f); }
 
+	static VertexElement vertexdesc_pos[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		D3DDECL_END()
+	};
+
 	static VertexElement vertexdesc_simple_mesh[]=
 	{
 		// base data (stream 0)
@@ -762,6 +769,16 @@ VertexDeclarationPtr EffectManager::GetVertexDeclaration(int nIndex)
 		else
 		{
 			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_COLOR\n");
+		}
+		break;
+	case S0_POS:
+		if (SUCCEEDED(pd3dDevice->CreateVertexDeclaration(vertexdesc_pos, &pDecl)))
+		{
+			m_pVertexDeclarations[S0_POS] = pDecl;
+		}
+		else
+		{
+			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS\n");
 		}
 		break;
 	case S0_S1_OCEAN_CLOUD:
