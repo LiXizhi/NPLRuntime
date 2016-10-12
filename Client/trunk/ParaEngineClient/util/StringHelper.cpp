@@ -670,10 +670,18 @@ bool ParaEngine::StringHelper::removeInValidXMLChars(std::string& data)
 RECT* ParaEngine::StringHelper::GetImageAndRect(const string &str, string &imagefile, RECT * prect)
 {
 	string srect;
-	DevideString(str, imagefile, srect);
+	size_t pos = str.find_first_of("#;");
+	if (pos != string::npos) {
+		imagefile.assign(str.c_str(), pos);
+		srect.assign(str.c_str(), pos + 1, str.size() - pos - 1);
+	}
+	else{
+		imagefile = str;
+	}
+
 	RECT rect;
 	int width, height;
-	if (sscanf(srect.c_str(), "%d %d %d %d", &rect.left, &rect.top, &width, &height) == 4)
+	if (!srect.empty() && sscanf(srect.c_str(), "%d %d %d %d", &rect.left, &rect.top, &width, &height) == 4)
 	{
 		rect.right = rect.left + width;
 		rect.bottom = rect.top + height;
