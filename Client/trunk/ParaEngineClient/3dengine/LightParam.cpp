@@ -21,11 +21,6 @@ CLightParam::~CLightParam(void)
 {
 }
 
-CLightParam::operator Para3DLight () const
-{
-	return *((Para3DLight*)this);
-}
-
 void CLightParam::MakeWhitePointLight()
 {
 	Type = D3DLIGHT_POINT;
