@@ -42,6 +42,9 @@ Client/*
 !Client/trunk/
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
+!Client/trunk/externals/
+Client/trunk/externals/*
+!Client/trunk/externals/assimp*
 
 !Server/
 Server/*
@@ -60,3 +63,5 @@ Server/trunk/*
 
 
 buildvm_arch.h
+
+.DS_Store

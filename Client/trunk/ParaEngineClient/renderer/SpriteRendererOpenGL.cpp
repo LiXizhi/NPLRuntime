@@ -3,14 +3,14 @@
 // Authors:	LiXizhi
 // company: ParaEngine
 // Date:	2014.8
-// Desc:  code is partially based on d3dxsprite WINE implementation. 
+// Desc:  code is partially based on d3dxsprite WINE implementation.
 // https://github.com/wine-mirror/wine/blob/master/dlls/d3dx9_36/sprite.c
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 #include "TextureEntity.h"
-#include "CGUIRootLayer.h"
+//#include "CGUIRootLayer.h"
 #include "EffectManager.h"
 #include "ParaWorldAsset.h"
 #include "BaseObject.h"
@@ -42,7 +42,7 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 
 	ParaViewport viewport;
 	CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-	
+
 	m_viewport = viewport;
 
 	if (!IsUseObjectSpaceTransform())
@@ -62,7 +62,7 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::Begin(DWORD Flags)
 
 		CGlobals::GetProjectionMatrixStack().push(matProj);
 	}
-	
+
 	UpdateShader(true);
 	return S_OK;
 }
@@ -108,7 +108,7 @@ void ParaEngine::CSpriteRendererOpenGL::End()
 	Flush();
 	m_ready = FALSE;
 
-	// Not needed now, this will force update text mode uniform after next begin() function. 
+	// Not needed now, this will force update text mode uniform after next begin() function.
 	// SetTextMode(false);
 	// PrepareDraw();
 
@@ -173,9 +173,9 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::DrawQuad(TextureEntity* pTexture, con
 		newSprite.rect.right = texWidth;
 		newSprite.rect.bottom = texHeight;
 	}
-	else 
+	else
 		newSprite.rect = *rect;
-	
+
 	if (pTexture->IsFlipY())
 	{
 		int nTop = texHeight - newSprite.rect.bottom;
@@ -189,15 +189,15 @@ HRESULT ParaEngine::CSpriteRendererOpenGL::DrawQuad(TextureEntity* pTexture, con
 		newSprite.center.y = 0.0f;
 		newSprite.center.z = 0.0f;
 	}
-	else 
+	else
 		newSprite.center = *center;
-	
+
 	if (position == NULL) {
 		newSprite.pos.x = 0.0f;
 		newSprite.pos.y = 0.0f;
 		newSprite.pos.z = 0.0f;
 	}
-	else 
+	else
 		newSprite.pos = *position;
 
 	newSprite.color = color;
@@ -221,7 +221,7 @@ void ParaEngine::CSpriteRendererOpenGL::InvalidateDeviceObjects()
 
 void ParaEngine::CSpriteRendererOpenGL::DeleteDeviceObjects()
 {
-	
+
 }
 
 
@@ -235,13 +235,13 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 
 	m_vertices.resize(6 * m_sprite_count);
-	
+
 	int count = 0;
-	for (int start = 0; start < m_sprite_count; start += count, count = 0) 
+	for (int start = 0; start < m_sprite_count; start += count, count = 0)
 	{
 		int i = start;
 		while (i < m_sprite_count &&
-			(count == 0 || m_sprites[i].texture == m_sprites[i - 1].texture)) 
+			(count == 0 || m_sprites[i].texture == m_sprites[i - 1].texture))
 		{
 			SpriteQuad& curSprite = m_sprites[i];
 			float spritewidth = (float)Math::Abs(curSprite.rect.right - curSprite.rect.left);

@@ -72,13 +72,15 @@
 // check user set platform
 #if ! PARA_TARGET_PLATFORM
 #error  "Cannot recognize the target platform; are you targeting an unsupported platform?"
-#endif 
+#endif
 
 // choose renderer
 #if defined(PARAENGINE_MOBILE)
 #define USE_OPENGL_RENDERER
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_WIN32) && defined(PARAENGINE_CLIENT)
 #define USE_DIRECTX_RENDERER
+#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) && defined(PARAENGINE_CLIENT)
+#define USE_OPENGL_RENDERER
 #else
 #define USE_NULL_RENDERER
 #endif

@@ -1,5 +1,5 @@
 #pragma once
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 
 namespace ParaEngine
 {
