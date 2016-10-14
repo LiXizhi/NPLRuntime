@@ -932,7 +932,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 					UpdateVelocity( fElapsedTime );
 
 					/**
-					/* process the mouse wheel delta: changing camera-object distance
+					* process the mouse wheel delta: changing camera-object distance
 					*/
 					if( m_nMouseWheelDelta != 0)
 					{

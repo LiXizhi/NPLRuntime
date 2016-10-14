@@ -476,7 +476,7 @@ string CGlobalTerrain::GetOnloadScript(float x, float y)
 
 void CGlobalTerrain::Update(bool bForceUpdate)
 {
-	if (CGlobals::GetSceneState()->m_nRenderCount > 0 && CGlobals::GetSceneState()->m_bCameraMoved || bForceUpdate)
+	if ((CGlobals::GetSceneState()->m_nRenderCount > 0 && CGlobals::GetSceneState()->m_bCameraMoved) || bForceUpdate)
 	{
 		PERF1("terrain_tessellation");
 		g_matTerrainProjection = CGlobals::GetProjectionMatrixStack().SafeGetTop();

@@ -248,7 +248,7 @@ namespace ParaScripting
 
 		/**
 		* add everything in side a directory to the zip.
-		* e.g. AddDirectory("myworld/", "worlds/myworld/*.*", 10);
+		* e.g. AddDirectory("myworld/", "worlds/myworld/ *.*", 10);
 		* @param dstzn: all files in fn will be appended with this string to be saved in the zip file.
 		* @param filepattern: file patterns, which can include wild characters in the file portion.
 		* @param nSubLevel: sub directory levels. 0 means only files at parent directory.
@@ -488,7 +488,7 @@ namespace ParaScripting
 		* @param sFilePattern: file pattern, e.g. "*.x" (all files with x extension), "*" (any files), "*."(directories only)
 		*  if sZipArchive is non-empty, sFilePattern support both regular expression and wild card search.
 		*  it performs wild cards search by default, where "/\\" matches to directory. "* "matches to anything except "/\\.", and "." matches to "." itself.
-		*		e.g.. "*.*", "*.", "worlds/*.abc", "*abc/*.jpg", etc
+		*		e.g.. "*.*", "*.", "worlds/ *.abc", "*abc/ *.jpg", etc
 		*  it sFilePattern begins with ":", things after ":" is treated like a regular expression. It has the same syntax with the perl regular expression and uses full match.
 		*		e.g.. ":.*\\.jpg", etc.
 		* @param sZipArchive: it can be "" or a zip archive file name. . if it is not, only that archive files are saved.

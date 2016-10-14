@@ -99,7 +99,7 @@ namespace ParaEngine
 
 		/** delete a given file. It will reject any system files outside the application(or writable directory) directory.
 		* after all, this function is of high security level.
-		* @param sFilePattern: // such as "*.dds", "temp/*.*", etc
+		* @param sFilePattern: such as "*.dds", "temp/ *.*", etc
 		* @param bSecureFolderOnly: if true, we only allow user to delete allowed folders.
 		* @return: the number of files deleted.
 		*/

@@ -304,14 +304,13 @@ HRESULT CParaXStaticModel::LoadToSystemBuffer(XFile::Scene* pFileData)
 		m_passes.resize(m_passes.size() + nMaterialCount);
 		
 		int nMaterialIndex = mesh->mFaceMaterials[0];
-		int nStartFaceIndex = 0;
 		for (int i = 0; i < nMaterialCount; ++i)
 		{
 			Material& material = mesh->mMaterials[nMaterialIndex];
 
 			int nFaceCount = 0;
 			{ // calculate face count in the material group
-				for (nStartFaceIndex; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
+				for (int nStartFaceIndex=0; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
 				{
 					if (mesh->mFaceMaterials[nStartFaceIndex] == nMaterialIndex)
 						++nFaceCount;

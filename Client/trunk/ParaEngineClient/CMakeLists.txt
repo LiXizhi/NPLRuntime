@@ -242,6 +242,13 @@ set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
 ##############################
+# Platform
+file (GLOB ParaEngineClient_PLATFORM_FILES ${PROJECT_SOURCE_DIR}/platform/*.h ${PROJECT_SOURCE_DIR}/platform/*.cpp)
+SOURCE_GROUP("platform" FILES ${ParaEngineClient_PLATFORM_FILES})
+set_source_files_properties(${ParaEngineClient_PLATFORM_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_PLATFORM_FILES})
+
+##############################
 # config
 SET(ParaEngineClient_CONFIG_FILES
 	ParaEngineClientConfig.h.in

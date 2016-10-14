@@ -68,7 +68,7 @@ namespace ParaEngine
 
 		/**
 		* add everything in side a directory to the zip. 
-		* e.g. AddDirectory("myworld/", "worlds/myworld/*.*", 10);
+		* e.g. AddDirectory("myworld/", "worlds/myworld/ *.*", 10);
 		* @param dstzn: all files in fn will be appended with this string to be saved in the zip file.
 		* @param filepattern: file patterns, which can include wild characters in the file portion.
 		* @param nSubLevel: sub directory levels. 0 means only files at parent directory.

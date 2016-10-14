@@ -1238,12 +1238,14 @@ void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
 
 bool ParaEngine::ParaEngineSettings::IsShowWindowTitleBar()
 {
+#ifdef WIN32
 	if (CGlobals::GetApp()->IsWindowedMode())
 	{
 		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
 		return (dwAttr & WS_CAPTION) != 0;
 	}
-	return false;
+#endif
+	return true;
 }
 
 const std::string& ParaEngine::ParaEngineSettings::GetMaxMacAddress()

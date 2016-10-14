@@ -537,6 +537,8 @@ luabind::object ParaScripting::ParaAttributeObject::GetDynamicFieldImp(CDynamicA
 			}
 			break;
 		}
+		default:
+			break;
 		}
 	}
 	else

@@ -63,6 +63,7 @@ public:
 		TYPE_SPHERE_PARTICLE_EMITTER=2,
 	};
 	ParticleEmitter(ParticleSystem *sys): sys(sys) {}
+	virtual ~ParticleEmitter() {};
 	virtual Particle newParticle(int anim, int time) = 0;
 	virtual int GetEmitterType()=0;
 };
@@ -70,6 +71,7 @@ public:
 class PlaneParticleEmitter: public ParticleEmitter {
 public:
 	PlaneParticleEmitter(ParticleSystem *sys): ParticleEmitter(sys) {}
+	virtual ~PlaneParticleEmitter() {};
 	Particle newParticle(int anim, int time);
 	virtual int GetEmitterType(){return (int)TYPE_PLANE_PARTICLE_EMITTER;};
 };
@@ -77,6 +79,7 @@ public:
 class SphereParticleEmitter: public ParticleEmitter {
 public:
 	SphereParticleEmitter(ParticleSystem *sys): ParticleEmitter(sys) {}
+	virtual ~SphereParticleEmitter() {};
 	Particle newParticle(int anim, int time);
 	virtual int GetEmitterType(){return (int)TYPE_SPHERE_PARTICLE_EMITTER;};
 };
