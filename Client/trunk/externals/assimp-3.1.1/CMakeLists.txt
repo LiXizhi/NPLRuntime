@@ -39,6 +39,17 @@ if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX) AND NOT CMAKE_COMPILER_
 elseif(MSVC)
   # enable multi-core compilation with MSVC
   add_definitions(/MP)
+  
+	# statically link MSVC to reduce dependancies
+	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+		if(${flag_var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MD")
+		if(${flag_var} MATCHES "/MDd")
+			string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MDd")
+	endforeach(flag_var)
+
 endif()
 
 INCLUDE (FindPkgConfig)
@@ -52,18 +63,11 @@ SET( ASSIMP_INCLUDE_INSTALL_DIR "include" CACHE PATH
 	"Path the header files are installed to." )
 SET( ASSIMP_BIN_INSTALL_DIR "bin" CACHE PATH
 	"Path the tool executables are installed to." )
-SET ( ASSIMP_BUILD_STATIC_LIB OFF CACHE BOOL
+SET ( ASSIMP_BUILD_STATIC_LIB ON CACHE BOOL
     "Build a static (.a) version of the library" )
 
 SET(ASSIMP_DEBUG_POSTFIX "d" CACHE STRING "Debug Postfitx for lib, samples and tools")
 
-# Allow the user to build a static library
-option ( BUILD_SHARED_LIBS "Build a shared version of the library" ON )
-IF ( ASSIMP_BUILD_STATIC_LIB )
-    option ( BUILD_SHARED_LIBS "Build a shared version of the library" OFF )
-ELSE ( ASSIMP_BUILD_STATIC_LIB )
-    option ( BUILD_SHARED_LIBS "Build a shared version of the library" ON )
-ENDIF ( ASSIMP_BUILD_STATIC_LIB )
 
 # Generate a pkg-config .pc for the Assimp library.
 CONFIGURE_FILE( "${PROJECT_SOURCE_DIR}/assimp.pc.in" "${PROJECT_BINARY_DIR}/assimp.pc" @ONLY )

@@ -40,5 +40,5 @@ ELSE()
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
 
-ADD_LIBRARY(luabind ${luabind_SRCS})
+ADD_LIBRARY(luabind STATIC ${luabind_SRCS})
 
