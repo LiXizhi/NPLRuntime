@@ -2,17 +2,17 @@
 
 #if WIN32
 
-#include <windows.h>  
+#include <windows.h>
 
 
 #include "../../../glew-2.0.0/include/GL/glew.h"
 
-#include <GL/gl.h>  
-#include <GL/glu.h>  
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 
-#pragma comment(lib,"glu32.lib") 
-#pragma comment(lib,"opengl32.lib") 
+#pragma comment(lib,"glu32.lib")
+#pragma comment(lib,"opengl32.lib")
 
 
 
@@ -24,7 +24,7 @@
 #define CCLOG(...) do {} while (0)
 #define CCASSERT(a,b)
 
-//#define glActiveTexture(a) 
+//#define glActiveTexture(a)
 
 /*
 #define GL_CLAMP_TO_EDGE                  0x812F
@@ -48,8 +48,8 @@
 
 
 
-#define CCLOG() 
-#define CCASSERT(a,b)
+#define CCLOG(...)  do {} while (0)
+#define CCASSERT(a,b)  do {} while (0)
 
 #endif
 

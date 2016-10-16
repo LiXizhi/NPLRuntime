@@ -16,7 +16,7 @@
 #include "platform/mac/CCLabel.h"
 #include "platform/mac/CCGLProgram.h"
 #include "platform/mac/CCTexture2D.h"
-
+#include "Platform/mac/CCFontAtlas.h"
 
 #else
 

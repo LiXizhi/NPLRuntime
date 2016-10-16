@@ -7,13 +7,10 @@
 
 #include "platform/base/s3tc.h"
 
-#ifdef WIN32
-#include "include/win32/jpeglib.h"
-#include "include/win32/png.h"
-#else
-#include "include/mac/jpeglib.h"
-#include "include/mac/png.h"
-#endif
+
+#include "jpeglib.h"
+#include "png.h"
+
 
 
 #define MAX(a,b) ((a>b)?a:b)
@@ -28,7 +25,7 @@
 USING_NS_CC;
 
 
-// config 
+// config
 bool Image::supportsS3TC = false;
 bool Image::PNG_PREMULTIPLIED_ALPHA_ENABLED = true;
 int  Image::MaxTextureSize = 1024 * 8;
@@ -177,10 +174,10 @@ bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
 
 		unsigned char* unpackedData = nullptr;
 		ssize_t unpackedLen = 0;
-		
+
 		unpackedData = const_cast<unsigned char*>(data);
 		unpackedLen = dataLen;
-		
+
 
 		_fileType = detectFormat(unpackedData, unpackedLen);
 
@@ -191,11 +188,11 @@ bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
 			break;
 		case Format::JPG:
 			ret = initWithJpgData(unpackedData, unpackedLen);
-			break;	
+			break;
 		case Format::S3TC:
 			ret = initWithS3TCData(unpackedData, unpackedLen);
 			break;
-		default:		
+		default:
 			CCLOG("unsupported image format!");
 		}
 
@@ -242,7 +239,7 @@ bool Image::isS3TC(const unsigned char * data, ssize_t dataLen)
 }
 
 bool Image::isATITC(const unsigned char *data, ssize_t dataLen)
-{	
+{
 	return false;
 }
 
@@ -658,7 +655,7 @@ bool Image::initWithPngData(const unsigned char * data, ssize_t dataLen)
 		png_destroy_read_struct(&png_ptr, (info_ptr) ? &info_ptr : 0, 0);
 	}
 	return ret;
-#endif 
+#endif
 }
 
 namespace

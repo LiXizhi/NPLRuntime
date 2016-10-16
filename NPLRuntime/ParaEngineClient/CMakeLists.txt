@@ -126,20 +126,7 @@ file (GLOB ParaEngineClient_IO_FILES ${ParaEngineClient_SOURCE_DIR}/IO/*.cpp ${P
 SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
-if(APPLE)
-	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
-	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 
-
-	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
-
-
-	include_directories("${Ex_Dir}/png/include/mac")
-	include_directories("${Ex_Dir}/jpeg/include/mac")
-	include_directories("${Ex_Dir}/freetype2/include/mac")
-
-endif(APPLE)
 
 if(DIRECTX_FOUND)
 	#####################################
@@ -261,6 +248,23 @@ file (GLOB ParaEngineClient_DOCUMENT_FILES ${ParaEngineClient_SOURCE_DIR}/doc/*.
 SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
 set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
+
+
+
+if(APPLE)
+	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
+	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+
+
+	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
+
+
+	include_directories("${Ex_Dir}/png/include/mac")
+	include_directories("${Ex_Dir}/jpeg/include/mac")
+	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
+
+endif(APPLE)
 
 ##############################
 # add the binary tree to the search path for include files
