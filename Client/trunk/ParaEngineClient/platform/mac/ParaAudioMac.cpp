@@ -1,11 +1,12 @@
 
-#ifdef PLATFORM_MAC
-
 #include "ParaEngine.h"
 
-#include "ParaAudioMac.h"
+#ifdef PLATFORM_MAC
+
 
 using namespace ParaEngine;
+#include "ParaAudioMac.h"
+
 
 static MacParaAudioEngine* self = 0;
 MacParaAudioEngine* MacParaAudioEngine::GetInstance()

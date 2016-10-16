@@ -1,13 +1,18 @@
 #ifndef AUDIO_ENGINE_MAC_H
 #define AUDIO_ENGINE_MAC_H
 
+#ifdef WIN32
+#include "ParaEngine.h"
+#else
 #include "IParaAudioEngine.h"
+#endif
+
 
 namespace ParaEngine
 {
 
     /** Interface for event handlers on Audio Sources. */
-	class MacAudioSourceEventHandler
+	class MacAudioSourceEventHandler : public IAudioSourceEventHandler
 	{
 	public:
 		/// This function is called when a source updates its buffers.
@@ -27,7 +32,7 @@ namespace ParaEngine
 	};
 
 	/** an audio source */
-	class MacParaAudioSource
+	class MacParaAudioSource : public IParaAudioSource
 	{
 	public:
 		/** Plays the source with the last set parameters.
@@ -250,7 +255,7 @@ namespace ParaEngine
 
 	/** ParaAudioEngine core interface.
 	*/
-	class MacParaAudioEngine
+	class MacParaAudioEngine : public IParaAudioEngine
 	{
 	public:
 		void Release() ;

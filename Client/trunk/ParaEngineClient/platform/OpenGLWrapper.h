@@ -7,14 +7,10 @@
 #include "ParaPlatformConfig.h"
 
 
-
-
-
 #if defined(PLATFORM_MAC)
 
-#include "platform/mac/ParaGLMac.h"
-#include "platform/PlatformMacro.h"
 
+#include "platform/PlatformMacro.h"
 
 #include "platform/mac/CCImage.h"
 #include "platform/mac/CCLabel.h"

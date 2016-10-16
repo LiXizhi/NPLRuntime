@@ -32,12 +32,9 @@
 #include <vector>
 
 
+
 NS_CC_BEGIN
 
-enum GlyphCollection
-{
-	DYNAMIC
-};
 
 enum class TextVAlignment
 {
@@ -56,170 +53,186 @@ enum class TextHAlignment
 
 
 class Texture2D;
-
-class FontAtlas
-{
-public:
-	void setAliasTexParameters();
-
-    void prepareLetterDefinitions(const std::u16string& stringToRender) {}
-
-
-    const std::unordered_map<ssize_t, Texture2D*>& getTextures() const { return _atlasTextures; }
-
-private:
-    std::unordered_map<ssize_t, Texture2D*> _atlasTextures;
-};
-
-typedef struct _ttfConfig
-{
-    std::string fontFilePath;
-    float fontSize;
-
-    GlyphCollection glyphs;
-    const char *customGlyphs;
-
-    bool distanceFieldEnabled;
-    int outlineSize;
-
-    bool italics;
-    bool bold;
-    bool underline;
-    bool strikethrough;
-
-    _ttfConfig(const std::string& filePath = "",float size = 12, const GlyphCollection& glyphCollection = GlyphCollection::DYNAMIC,
-        const char *customGlyphCollection = nullptr, bool useDistanceField = false, int outline = 0,
-               bool useItalics = false, bool useBold = false, bool useUnderline = false, bool useStrikethrough = false)
-        : fontFilePath(filePath)
-        , fontSize(size)
-        , glyphs(glyphCollection)
-        , customGlyphs(customGlyphCollection)
-        , distanceFieldEnabled(useDistanceField)
-        , outlineSize(outline)
-        , italics(useItalics)
-        , bold(useBold)
-	, underline(useUnderline)
-        , strikethrough(useStrikethrough)
-    {
-        if(outline > 0)
-        {
-            distanceFieldEnabled = false;
-        }
-    }
-} TTFConfig;
-
-
-struct FontLetterDefinition
-{
-    float U;
-    float V;
-    float width;
-    float height;
-    float offsetX;
-    float offsetY;
-    int textureID;
-    bool validDefinition;
-    int xAdvance;
-};
+class FontAtlas;
 
 
 
 class Label : public Ref
 {
 public:
+	static const int DistanceFieldFontSize;
+
 	struct LetterInfo
-    {
-        char16_t utf16Char;
-        bool valid;
-        CCVector2 position;
-        int atlasIndex;
-        int lineIndex;
-
+	{
 		FontLetterDefinition def;
-    };
 
+		Vec2 position;
+		Size  contentSize;
+		int   atlasIndex;
+	};
+	enum class LabelType {
 
-	Label();
+		TTF,
+		BMFONT,
+		CHARMAP,
+		STRING_TEXTURE
+	};
+
+	Label(FontAtlas *atlas = nullptr, TextHAlignment hAlignment = TextHAlignment::LEFT,
+		TextVAlignment vAlignment = TextVAlignment::TOP, bool useDistanceField = false, bool useA8Shader = false);
 	virtual ~Label();
 
 	bool setTTFConfig(const TTFConfig& ttfConfig);
 
 	FontAtlas* getFontAtlas() { return _fontAtlas; }
 
-	void autorelease();
-
 
 	virtual void setPosition(float x, float y);
 
-    void setWidth(float width) { }
-    float getWidth() const { return _labelWidth; }
+	void setWidth(unsigned int width) { setDimensions(width, _labelHeight); }
+	unsigned int getWidth() const { return _labelWidth; }
+
+	void setHeight(unsigned int height) { setDimensions(_labelWidth, height); }
+	unsigned int getHeight() const { return _labelHeight; }
+
+	void setDimensions(unsigned int width, unsigned int height);
+	const Size& getDimensions() const { return _labelDimensions; }
 
 
-    void setHeight(float height){  }
-    float getHeight() const { return _labelHeight; }
+	int getStringLength() const;
 
 
+	virtual void setScale(float scale) ;
+	virtual void setScaleX(float scaleX) ;
+	virtual void setScaleY(float scaleY) ;
+	virtual float getScaleX() const ;
+	virtual float getScaleY() const ;
+
+	void setContentSize(const Size & var);
+
+	void setAlignment(TextHAlignment hAlignment) { setAlignment(hAlignment, _vAlignment); }
+	TextHAlignment getTextAlignment() const { return _hAlignment; }
+	
+	void setAlignment(TextHAlignment hAlignment, TextVAlignment vAlignment);
+
+	void setHorizontalAlignment(TextHAlignment hAlignment) { setAlignment(hAlignment, _vAlignment); }
+	TextHAlignment getHorizontalAlignment() const { return _hAlignment; }
+
+	void setVerticalAlignment(TextVAlignment vAlignment) { setAlignment(_hAlignment, vAlignment); }
+	TextVAlignment getVerticalAlignment() const { return _vAlignment; }
 
 
-	void setAlignment(TextHAlignment hAlignment,TextVAlignment vAlignment)
+	bool computeHorizontalKernings(const std::u16string& stringToRender);
+
+	void computeStringNumLines();	
+
+
+	inline float getPositionX() const
 	{
-
+		return _position.x;
 	}
 
-    void setAlignment(TextHAlignment hAlignment) { }
-    TextHAlignment getTextAlignment() const { return _hAlignment;}
-
-    void computeStringNumLines() {}
-    void computeAlignmentOffset();
-    bool computeHorizontalKernings(const std::u16string& stringToRender);
-
-
-	float getPositionX()
+	inline float getPositionY() const
 	{
-		return 0;
+		return _position.y;
 	}
 
-	float getPositionY()
-	{
-		return 0;
-	}
+	//TODO:wangpeng ????
+	void setFontScale(float s);
 
+	bool recordPlaceholderInfo(int spriteIndex);
+	bool recordLetterInfo(const Vec2& point, const FontLetterDefinition& letterDef, int spriteIndex);
 
-	// ????
-	void setFontScale(float s)
-	{
-	}
-
-	std::u16string _currentUTF16String;
-    int _limitShowCount;
-    std::vector<LetterInfo> _lettersInfo;
-
-	float _commonLineHeight;
-
-	float _currNumLines;
-
-	Size _contentSize;
 
 protected:
-	FontAtlas* _fontAtlas;
+	std::string _bmFontPath;
 
-    float _labelHeight;
-    float _labelWidth;
+	bool _isOpacityModifyRGB;
+	bool _contentDirty;
 
-	float _maxLineWidth;
+	bool _systemFontDirty;
+	std::string _systemFont;
+	float         _systemFontSize;
+	LabelType _currentLabelType;
 
-    TextHAlignment  _hAlignment;
+	FontAtlas *                   _fontAtlas;
+	std::vector<LetterInfo>       _lettersInfo;
+
+	TTFConfig _fontConfig;
+
+	//compatibility with older LabelTTF
+	bool  _compatibleMode;
+
+	//! used for optimization
+	Rect _reusedRect;
+	int _limitShowCount;
+
+	float _additionalKerning;
+	float _commonLineHeight;
+	bool  _lineBreakWithoutSpaces;
+	int * _horizontalKernings;
+
+	unsigned int _maxLineWidth;
+	Size         _labelDimensions;
+	unsigned int _labelWidth;
+	unsigned int _labelHeight;
+	TextHAlignment _hAlignment;
+	TextVAlignment _vAlignment;
+
+	int           _currNumLines;
+	std::u16string _currentUTF16String;
+	std::string          _originalUTF8String;
+
+	float _fontScale;
+
+	bool _useDistanceField;
+	bool _useA8Shader;
+
+	Color4B _effectColor;
+	Color4F _effectColorF;
+
+	GLuint _uniformEffectColor;
+	GLuint _uniformTextColor;
+
+	bool    _shadowDirty;
+	bool    _shadowEnabled;
+	Size    _shadowOffset;
+	int     _shadowBlurRadius;
+	Color3B _shadowColor;
+	float   _shadowOpacity;
+
+	int     _outlineSize;
+
+	Color4B _textColor;
+	Color4F _textColorF;
+
+	bool _clipEnabled;
+	bool _blendFuncDirty;
+	bool _insideBounds;
+
+
+
+	Size _contentSize;
+	Vec2 _position;
+
+	float _scaleY;
+	float _scaleX;
+
+	void reset();
+	void setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled = false, bool useA8Shader = false);
+
+
+	friend class LabelTextFormatter;
 };
+
 
 
 class LabelTextFormatter
 {
 public:
-    static void createStringSprites(Label* label) {}
-    static bool multilineText(Label* label) {
-		return true;
-	}
-    static void alignText(Label* label) {}
+	static bool createStringSprites(Label* label);
+	static bool multilineText(Label* label);
+	static bool alignText(Label* label);
 };
 
 
