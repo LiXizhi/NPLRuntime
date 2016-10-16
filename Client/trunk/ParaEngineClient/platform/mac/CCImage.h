@@ -20,7 +20,7 @@ typedef struct _MipmapInfo
 class Image : public Ref
 {
 public:
-	// config 
+	// config
 	static bool supportsS3TC;
 	static bool PNG_PREMULTIPLIED_ALPHA_ENABLED;
 	static int MaxTextureSize;
@@ -92,19 +92,19 @@ protected:
 
 
 
-	bool Image::isPng(const unsigned char * data, ssize_t dataLen);
-	bool Image::isEtc(const unsigned char * data, ssize_t dataLen);
-	bool Image::isS3TC(const unsigned char * data, ssize_t dataLen);
-	bool Image::isATITC(const unsigned char *data, ssize_t dataLen);
-	bool Image::isJpg(const unsigned char * data, ssize_t dataLen);
-	bool Image::isTiff(const unsigned char * data, ssize_t dataLen);
-	bool Image::isWebp(const unsigned char * data, ssize_t dataLen);
-	bool Image::isPvr(const unsigned char * data, ssize_t dataLen);
-	Image::Format detectFormat(const unsigned char *, ssize_t unpackedLen);
+	bool isPng(const unsigned char * data, ssize_t dataLen);
+	bool isEtc(const unsigned char * data, ssize_t dataLen);
+	bool isS3TC(const unsigned char * data, ssize_t dataLen);
+	bool isATITC(const unsigned char *data, ssize_t dataLen);
+	bool isJpg(const unsigned char * data, ssize_t dataLen);
+	bool isTiff(const unsigned char * data, ssize_t dataLen);
+	bool isWebp(const unsigned char * data, ssize_t dataLen);
+	bool isPvr(const unsigned char * data, ssize_t dataLen);
+	Format detectFormat(const unsigned char *, ssize_t unpackedLen);
 
-	bool Image::initWithJpgData(const unsigned char* unpackedData, ssize_t unpackedLen);
-	bool Image::initWithPngData(const unsigned char* unpackedData, ssize_t unpackedLen);
-	bool Image::initWithS3TCData(const unsigned char* unpackedData, ssize_t unpackedLen);
+	bool initWithJpgData(const unsigned char* unpackedData, ssize_t unpackedLen);
+	bool initWithPngData(const unsigned char* unpackedData, ssize_t unpackedLen);
+	bool initWithS3TCData(const unsigned char* unpackedData, ssize_t unpackedLen);
 
 
 	void premultipliedAlpha();

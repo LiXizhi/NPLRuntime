@@ -2,6 +2,8 @@
 #include "ParaEngine.h"
 #include "CCFileUtils.h"
 
+#include "FileUtils.h"
+
 NS_CC_BEGIN
 
 Data FileUtils::getDataFromFile(const std::string& filename)
@@ -12,10 +14,10 @@ Data FileUtils::getDataFromFile(const std::string& filename)
 
 #ifdef WIN32
 #else
-	ParaEngine::FileData data = ParaEngine::CFileUtils::GetDataFromFile(filename.c_str())
-	d.fastSet(data.GetBytes,data.GetSize());
+	ParaEngine::FileData data = ParaEngine::CFileUtils::GetDataFromFile(filename.c_str());
+	d.fastSet((unsigned char*)data.GetBytes(),data.GetSize());
 #endif
-	
+
 
 	return d;
 }

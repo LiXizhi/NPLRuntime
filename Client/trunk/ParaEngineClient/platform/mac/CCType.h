@@ -12,6 +12,14 @@
 
 #define CC_CONTENT_SCALE_FACTOR() 1
 
+
+enum class GlyphCollection {
+	DYNAMIC,
+	NEHE,
+	ASCII,
+	CUSTOM
+};
+
 class GL {
 public:
     static void bindTexture2D(GLuint textureId);
@@ -190,17 +198,12 @@ struct Color4F
 };
 
 
-enum class GlyphCollection {
-	DYNAMIC,
-	NEHE,
-	ASCII,
-	CUSTOM
-};
+
 
 class CCVector2
 {
 public:
-	
+
 
     float x;
     float y;

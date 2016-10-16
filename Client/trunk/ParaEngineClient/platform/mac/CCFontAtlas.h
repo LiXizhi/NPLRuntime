@@ -33,28 +33,28 @@ public:
      * @lua NA
      */
     virtual ~FontAtlas();
-    
+
     void addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition);
     bool getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefinition &letterDefinition);
-    
+
     bool prepareLetterDefinitions(const std::u16string& utf16String);
 
     inline const std::unordered_map<ssize_t, Texture2D*>& getTextures() const{ return _atlasTextures;}
     void  addTexture(Texture2D *texture, int slot);
     float getLineHeight() const { return _lineHeight; }
     void  setLineHeight(float newHeight);
-    
+
 
 
     Texture2D* getTexture(int slot);
     const Font* getFont() const { return _font; }
 
 
-	float FontAtlas::getCommonLineHeight() const
+	float getCommonLineHeight() const
 	{
 		return _lineHeight;
 	}
-    
+
     /** Removes textures atlas.
      It will purge the textures atlas and if multiple texture exist in the FontAtlas.
      */
@@ -74,7 +74,7 @@ public:
 
 protected:
     void reset();
-    
+
     void releaseTextures();
 
     void findNewCharacters(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap);

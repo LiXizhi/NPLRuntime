@@ -130,6 +130,15 @@ if(APPLE)
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+
+
+	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
+
+
+	include_directories("${Ex_Dir}/png/include/mac")
+	include_directories("${Ex_Dir}/jpeg/include/mac")
+	include_directories("${Ex_Dir}/freetype2/include/mac")
+
 endif(APPLE)
 
 if(DIRECTX_FOUND)

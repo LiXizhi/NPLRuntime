@@ -15,10 +15,10 @@ class FileUtils
 public:
 	static Data getDataFromFile(const std::string& filename);
 
-	static std::string FileUtils::getStringFromFile(const std::string& filename);
+	static std::string getStringFromFile(const std::string& filename);
 
 	static const std::string fullPathForFilename(const std::string& filename);
-	
+
 };
 
 NS_CC_END
