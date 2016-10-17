@@ -26,6 +26,8 @@
 
 #include <boost/config.hpp>
 
+#include <cstdlib>
+
 #ifdef BOOST_MSVC
 	#define LUABIND_ANONYMOUS_FIX static
 #else
@@ -37,6 +39,8 @@
 #define for if (false) {} else for
 
 #include <cstring>
+
+
 
 namespace std
 {
@@ -125,4 +129,3 @@ LUABIND_API void disable_super_deprecation();
 } // namespace luabind
 
 #endif // LUABIND_CONFIG_HPP_INCLUDED
-

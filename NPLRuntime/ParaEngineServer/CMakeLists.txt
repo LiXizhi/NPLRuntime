@@ -198,7 +198,11 @@ IF(WIN32)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 	endif(MSVC)
 ELSE (WIN32)
-	ADD_DEFINITIONS(-DPLATFORM_LINUX)
+	IF(APPLE)
+		ADD_DEFINITIONS(-DPLATFORM_MAC)
+	ELSE(APPLE)
+		ADD_DEFINITIONS(-DPLATFORM_LINUX)
+	ENDIF(APPLE)
 ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
@@ -229,18 +233,18 @@ IF(MSVC)
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
 	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-			
+
 	# /GR- Remove RTTI to miminize the executable size
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 ENDIF()
 
-# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically. 
+# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically.
 option(USE_LINK_TIME_CODE_GENERATION	"true to enable link time code gen in release build" OFF)
 
 IF(MSVC)
 	if(USE_LINK_TIME_CODE_GENERATION)
-		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineServer. 
+		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineServer.
 		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
 		# /LTCG Link time code generation
 		if (PARAENGINE_COMPILE_LIB)
@@ -267,15 +271,22 @@ IF(MSVC)
 	endif (PARAENGINE_COMPILE_LIB)
 ELSE()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	
+
 	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
 	# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti")
-	
-	# -Os to optimize for size. or -O3 to turn on all optimizations. 
-	# -s option to strip debug info, -g to include debug info
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
-	
+
+	IF(APPLE)
+		# -Os to optimize for size. or -O3 to turn on all optimizations.
+		# no -s option since it has the same effect as gcc -s if not a single -g is provided
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
+	ELSE()
+		# -Os to optimize for size. or -O3 to turn on all optimizations.
+		# -s option to strip debug info, -g to include debug info
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
+	ENDIF()
+
 	# suppress warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
@@ -284,7 +295,7 @@ ENDIF()
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	add_library(ParaEngineServer SHARED ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS})
-	
+
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	add_executable(ParaEngineServer ${ParaEngineServer_HEADERS} ${ParaEngineServer_SRCS})
@@ -311,20 +322,30 @@ if (WIN32)
 			libcurl
   )
 else (WIN32)
-  set(EXTRA_LIBRARIES
-  		rt 
-  		dl
-  		resolv
-  		z
-		${CURL_LIBRARIES}
-		pthread
-  )
+	if(LINUX)
+		set(EXTRA_LIBRARIES
+				rt
+				dl
+				resolv
+				z
+			${CURL_LIBRARIES}
+			pthread
+		)
+	else(LINUX)
+		set(EXTRA_LIBRARIES
+				dl
+				resolv
+				z
+			${CURL_LIBRARIES}
+			pthread
+		)
+	endif(LINUX)
 endif (WIN32)
 
-# Link the executable to the libraries. 
-target_link_libraries (ParaEngineServer 
-	${Boost_LIBRARIES} 
-	sqlite lua jsoncpp tinyxpath luabind 
+# Link the executable to the libraries.
+target_link_libraries (ParaEngineServer
+	${Boost_LIBRARIES}
+	sqlite lua jsoncpp tinyxpath luabind
 	${OPENGL_LIBRARIES}
 	${EXTRA_LIBRARIES}
 )

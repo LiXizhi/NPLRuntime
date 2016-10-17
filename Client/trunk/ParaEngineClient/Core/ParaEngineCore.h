@@ -5,6 +5,8 @@
 namespace ParaEngine
 {
 	class ClassDescriptor;
+	class CParaEngineApp;
+
 	ClassDescriptor* ParaEngine_GetClassDesc();
 
 	/**
@@ -36,6 +38,13 @@ namespace ParaEngine
 		* this function is mostly called from host application to create the application object. 
 		*/
 		virtual IParaEngineApp* CreateApp();
+
+	public:
+		static CParaEngineCore* GetInstance();
+		/** it is recommended to call this function. */
+		void DestroySingleton();
+	protected:
+		static WeakPtr m_pAppSingleton;
 	};
 
 }

@@ -72,7 +72,7 @@ HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, char* buffer, DWOR
 			auto pSysMemMesh = parser.ParseParaXStaticModel();
 			return Create(pd3dDevice, pSysMemMesh);
 		}
-#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
+#ifdef SUPPORT_FBX_MODEL_FILE
 		else if (nFileType == FileType_FBX)
 		{
 			FBXParser parser(m_strName);
@@ -304,14 +304,13 @@ HRESULT CParaXStaticModel::LoadToSystemBuffer(XFile::Scene* pFileData)
 		m_passes.resize(m_passes.size() + nMaterialCount);
 		
 		int nMaterialIndex = mesh->mFaceMaterials[0];
-		int nStartFaceIndex = 0;
 		for (int i = 0; i < nMaterialCount; ++i)
 		{
 			Material& material = mesh->mMaterials[nMaterialIndex];
 
 			int nFaceCount = 0;
 			{ // calculate face count in the material group
-				for (nStartFaceIndex; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
+				for (int nStartFaceIndex=0; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
 				{
 					if (mesh->mFaceMaterials[nStartFaceIndex] == nMaterialIndex)
 						++nFaceCount;

@@ -13,6 +13,7 @@
 #include "SortedFaceGroups.h"
 #include "BaseObject.h"
 #include "ParaXModel/particle.h"
+#include "LightObject.h"
 #include "SceneState.h"
 
 /** reference type in scene state */
@@ -84,6 +85,7 @@ namespace ParaEngine
 		listHeadonDisplayObject.clear();
 		listShadowReceivers.clear();
 		listShadowCasters.clear();
+		listDeferredLightObjects.clear();
 
 		m_SortedFaceGroups.Clear();
 		//listParticleSystems.clear();
@@ -344,6 +346,11 @@ namespace ParaEngine
 	void SceneState::SetCurrentRenderPipeline(int val)
 	{
 		m_nCurrentRenderPipeline = val;
+	}
+
+	void SceneState::AddToDeferredLightPool(CLightObject * lightObject)
+	{
+		listDeferredLightObjects.push_back(lightObject);
 	}
 
 	ParaEngine::SceneStateRenderState SceneState::GetRenderState() const

@@ -4,7 +4,7 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine Dev Studio
 // Date:	2005.11
-// Desc: partially cross platform. 
+// Desc: partially cross platform.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "FileManager.h"
@@ -161,7 +161,7 @@ namespace ParaScripting
 	{
 		return OpenAssetFile2(filename, true);
 	}
-	
+
 	ParaFileObject ParaIO::OpenAssetFile2(const char* filename, bool bDownloadIfNotUpToDate)
 	{
 		ParaFileObject file;
@@ -218,9 +218,9 @@ namespace ParaScripting
 			{
 				return 1;
 			}
-			else 
+			else
 			{
-				// download and async load the file 
+				// download and async load the file
 				if(FAILED(pEntry->SyncFile_Async(CAssetScriptCallbackData(sCallBackScript))))
 				{
 					return -1;
@@ -251,7 +251,7 @@ namespace ParaScripting
 			{
 				return -1;
 			}
-			else 
+			else
 			{
 				return 0;
 			}
@@ -274,7 +274,7 @@ namespace ParaScripting
 			string sFilename = filename;
 			if(sFilename.find_first_of(":") != string::npos)
 			{
-				// skip writable directory. 
+				// skip writable directory.
 				std::string writablePath = CParaFile::GetWritablePath();
 				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
 				{
@@ -293,7 +293,7 @@ namespace ParaScripting
 			if(mode[1] != 'w')
 			{
 				file.m_pFile.reset(new CParaFile());
-				// 'r', if we have opened an read only file, we will first look in asset manifest. 
+				// 'r', if we have opened an read only file, we will first look in asset manifest.
 				file.m_pFile->OpenAssetFile(filename);
 				if (file.m_pFile->isEof())
 				{
@@ -302,7 +302,7 @@ namespace ParaScripting
 			}
 			else
 			{
-				// read/write and file pointer at head. 
+				// read/write and file pointer at head.
 				file.m_pFile.reset(new CParaFile());
 				if (file.m_pFile->OpenFile(filename, false))
 				{
@@ -344,11 +344,11 @@ namespace ParaScripting
 		}
 		else if (strcmp(mode, "image") == 0)
 		{
-			// open the given file according to its file type. currently image files are automatically opened. 
+			// open the given file according to its file type. currently image files are automatically opened.
 			// Load the texture data.
 			CParaFile cFile;
 			cFile.OpenAssetFile(filename);
-			
+
 			if (!cFile.isEof())
 			{
 				int texWidth, texHeight, nBytesPerPixel;
@@ -480,7 +480,7 @@ namespace ParaScripting
 		return "";
 	}
 
-	// file time to 1982-11-26 type string. 
+	// file time to 1982-11-26 type string.
 	string FileTimeToDateString(const FILETIME* pTime)
 	{
 #ifdef PARAENGINE_CLIENT
@@ -557,7 +557,7 @@ namespace ParaScripting
 			g_str_.reset( new std::string());
 		}
 		std::string& g_str = *g_str_;
-		
+
 		if(sfilename != NULL)
 			g_str = CParaFile::GetParentDirectoryFromPath(sfilename, nParentCounts);
 		else
@@ -774,7 +774,7 @@ namespace ParaScripting
 		std::string& g_str = *g_str_;
 
 		g_str = CParaFile::GetCurDirectory(dwDirectoryType);
-	
+
 		return g_str.c_str();
 	}
 
@@ -973,16 +973,16 @@ namespace ParaScripting
 
 	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher( const char* filename )
 	{
-#ifndef PARAENGINE_MOBILE
-		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
-#else
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
 		return ParaFileSystemWatcher();
+#else
+		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
 #endif
 	}
 
 	void ParaIO::DeleteFileSystemWatcher( const char* name )
     {
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
         CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
@@ -1038,14 +1038,14 @@ namespace ParaScripting
 				int nFromIndex = 0;
 				while (m_pFile->GetNextLine(&(m_sTempBuffer[nFromIndex]), (int)m_sTempBuffer.size() - nFromIndex) == ((int)m_sTempBuffer.size() - nFromIndex - 1))
 				{
-					// have not finished. 
+					// have not finished.
 					if(m_pFile->isEof())
 						break;
 					char c = *m_pFile->getPointer();
 
 					if((c != '\r') || (c != '\n'))
 					{
-						// have not finished last line. 
+						// have not finished last line.
 						nFromIndex = (int)m_sTempBuffer.size() - 1;
 						m_sTempBuffer.resize(m_sTempBuffer.size() + MAX_LINE_CHARACTER_NUM);
 					}
@@ -1065,12 +1065,12 @@ namespace ParaScripting
 			const char* text = GetText2(0, -1).c_str();
 			if (text)
 			{
-				// encoding is escaped. 
+				// encoding is escaped.
 				if ((((byte)text[0]) == 0xEF) && (((byte)text[1]) == 0xBB) && (((byte)text[2]) == 0xBF))
 				{
 					text += 3;
 				}
-				else if ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE) || (((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF))
+				else if ( ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE)) || ((((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF)))
 				{
 					text += 2;
 				}
@@ -1144,9 +1144,9 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			vector<byte> data;
+			std::vector<byte> data;
 			data.resize(nSize);
-			// convert script array object to vector byte array. 
+			// convert script array object to vector byte array.
 			for (int i=0; i<nSize; ++i)
 			{
 				int value = object_cast<int>(input[i+1]);
@@ -1173,10 +1173,10 @@ namespace ParaScripting
 			data.resize(nSize);
 
 			nSize = (int)m_pFile->read(&(data[0]), nSize);
-			
+
 			if(type(output) == LUA_TTABLE)
 			{
-				// convert vector byte array to script array object. 
+				// convert vector byte array to script array object.
 				for (int i=0; i<nSize; ++i)
 				{
 					output[i+1] = (int)((byte)(data[i]));
@@ -1194,15 +1194,15 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			m_pFile->write(&data, 4); 
+			m_pFile->write(&data, 4);
 		}
 	}
 	float ParaFileObject::ReadFloat()
 	{
 		if(IsValid())
 		{
-			float data; 
-			m_pFile->read(&data, 4); 
+			float data;
+			m_pFile->read(&data, 4);
 			return data;
 		}
 		return 0.f;
@@ -1211,15 +1211,15 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			m_pFile->write(&data, 4); 
+			m_pFile->write(&data, 4);
 		}
 	}
 	int ParaFileObject::ReadInt()
 	{
 		if(IsValid())
 		{
-			int data; 
-			m_pFile->read(&data, 4); 
+			int data;
+			m_pFile->read(&data, 4);
 			return data;
 		}
 		return 0;
@@ -1353,29 +1353,29 @@ namespace ParaScripting
 
 	//////////////////////////////////////////////////////////////////////////
 	//
-	// lua xml 
+	// lua xml
 	//
 	//////////////////////////////////////////////////////////////////////////
 
-	/** Produces an XMLTree like :    
-	<paragraph justify='centered'>first child<b>bold</b>second child</paragraph> 
+	/** Produces an XMLTree like :
+	<paragraph justify='centered'>first child<b>bold</b>second child</paragraph>
 
-	{name="paragraph", attr={justify="centered"}, 
+	{name="paragraph", attr={justify="centered"},
 	"first child",
 	{name="b", "bold", n=1}
 	"second child",
 	n=3
-	} 
+	}
 
 	comments and other definitions are ignored
 	*/
 #ifdef PARAENGINE_MOBILE
-	void ParaXML::LuaXML_ParseNode(lua_State *L, void* pNode_) 
+	void ParaXML::LuaXML_ParseNode(lua_State *L, void* pNode_)
 	{
 		if (!pNode_) return;
 		using namespace tinyxml2;
 		XMLNode* pNode = (XMLNode*)pNode_;
-		
+
 		// resize stack if necessary
 		// LXZ 2008.9.6. this is changed from 5 to 10, since I have added unknown type nodes, which need some more stack.
 		luaL_checkstack(L, 10, "LuaXML_ParseNode : recursion too deep");
@@ -1395,7 +1395,7 @@ namespace ParaScripting
 				lua_newtable(L);
 				for (; pAttr; pAttr = pAttr->Next()) {
 					lua_pushstring(L, pAttr->Name());
-					// LXZ: convert UTF8 to ANSI. 
+					// LXZ: convert UTF8 to ANSI.
 					//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pAttr->ValueStr().c_str()));
 					lua_pushstring(L, pAttr->Value());
 
@@ -1412,7 +1412,7 @@ namespace ParaScripting
 		XMLNode *pChild = pNode->FirstChild();
 		if (pChild) {
 			int iChildCount = 0;
-			for (; pChild; pChild = pChild->NextSibling()) 
+			for (; pChild; pChild = pChild->NextSibling())
 			{
 				if (pChild->ToElement())
 				{
@@ -1424,7 +1424,7 @@ namespace ParaScripting
 				else if (pChild->ToText())
 				{
 					// plaintext, push raw
-					// LXZ: convert UTF8 to ANSI. 
+					// LXZ: convert UTF8 to ANSI.
 					//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
 					lua_pushstring(L, pChild->Value());
 					lua_rawseti(L, -2, ++iChildCount);
@@ -1443,7 +1443,7 @@ namespace ParaScripting
 						lua_settable(L,-3);
 
 						// output value in child[1]
-						// convert UTF8 to ANSI. 
+						// convert UTF8 to ANSI.
 						//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
 						lua_pushstring(L,pChild->Value());
 						lua_rawseti(L,-2, 1);
@@ -1465,7 +1465,7 @@ namespace ParaScripting
 		}
 	}
 #else
-	void ParaXML::LuaXML_ParseNode (lua_State *L,void* pNode_) { 
+	void ParaXML::LuaXML_ParseNode (lua_State *L,void* pNode_) {
 		if (!pNode_) return;
 
 		TiXmlNode* pNode = (TiXmlNode*)pNode_;
@@ -1489,7 +1489,7 @@ namespace ParaScripting
 				lua_newtable(L);
 				for (;pAttr;pAttr = pAttr->Next()) {
 					lua_pushstring(L,pAttr->Name());
-					// LXZ: convert UTF8 to ANSI. 
+					// LXZ: convert UTF8 to ANSI.
 					//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pAttr->ValueStr().c_str()));
 					lua_pushstring(L,pAttr->ValueStr().c_str());
 
@@ -1509,21 +1509,21 @@ namespace ParaScripting
 			for(;pChild;pChild = pChild->NextSibling()) {
 				switch (pChild->Type()) {
 					case TiXmlNode::DOCUMENT: break;
-					case TiXmlNode::ELEMENT: 
+					case TiXmlNode::ELEMENT:
 						// normal element, parse recursive
 						lua_newtable(L);
 						LuaXML_ParseNode(L,pChild);
 						lua_rawseti(L,-2,++iChildCount);
 						break;
 					case TiXmlNode::COMMENT: break;
-					case TiXmlNode::TEXT: 
+					case TiXmlNode::TEXT:
 						// plaintext, push raw
 
 #ifdef _DEBUG
 						//{
 						//	// find where the UTF8 char and convert them to default NPL encoding
 						//	bool bNeedUTF8 = false;
-						//	
+						//
 						//	int nSize = (int)pChild->ValueStr().size();
 						//	for (int i=0; i<nSize; ++i)
 						//	{
@@ -1534,7 +1534,7 @@ namespace ParaScripting
 						//			//break;
 						//		}
 						//	}
-						//	
+						//
 						//	OUTPUT_LOG("%s\n", str.c_str());
 						//	if(bNeedUTF8)
 						//	{
@@ -1544,7 +1544,7 @@ namespace ParaScripting
 						//}
 
 #endif
-						// LXZ: convert UTF8 to ANSI. 
+						// LXZ: convert UTF8 to ANSI.
 						//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
 						lua_pushstring(L,pChild->ValueStr().c_str());
 						lua_rawseti(L,-2,++iChildCount);
@@ -1564,7 +1564,7 @@ namespace ParaScripting
 								lua_settable(L,-3);
 
 								// output value in child[1]
-								// convert UTF8 to ANSI. 
+								// convert UTF8 to ANSI.
 								//lua_pushstring(L,ParaEngine::StringHelper::UTF8ToAnsi(pChild->ValueStr().c_str()));
 								lua_pushstring(L,pChild->ValueStr().c_str());
 								lua_rawseti(L,-2, 1);
@@ -1588,12 +1588,12 @@ namespace ParaScripting
 		}
 	}
 #endif
-	int ParaXML::LuaXML_ParseFile (lua_State *L) { 
+	int ParaXML::LuaXML_ParseFile (lua_State *L) {
 		const char* sFileName = luaL_checkstring(L,1);
-		
+
 		int nResult = 0;
 
-		// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data 
+		// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data
 		CParaFile file;
 		file.OpenAssetFile(sFileName);
 		if(!file.isEof())
@@ -1631,16 +1631,16 @@ namespace ParaScripting
 		return nResult;
 	}
 
-	int ParaXML::LuaXML_ParseString (lua_State *L) { 
+	int ParaXML::LuaXML_ParseString (lua_State *L) {
 		const char* sString = luaL_checkstring(L,1);
-		
+
 		int nResult = 0;
 		try
 		{
 #ifdef PARAENGINE_MOBILE
 			using namespace tinyxml2;
 			XMLDocument doc(true, IsWhiteSpaceCondensed() ? COLLAPSE_WHITESPACE : PRESERVE_WHITESPACE);
-			// Note: LiXizhi: TinyXML2 will actually change the content of input string, so we can not pass sString directly to Parse() function. 
+			// Note: LiXizhi: TinyXML2 will actually change the content of input string, so we can not pass sString directly to Parse() function.
 			std::string sTemp = sString;
 
 			// assume it is UTF-8?, or use TIXML_DEFAULT_ENCODING if one want it to be automatically determined from data
@@ -1694,7 +1694,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::AddDirectory( const char* filename )
 	{
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 		if (m_watcher)
 			m_watcher->add_directory(filename);
 #endif
@@ -1702,12 +1702,12 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::RemoveDirectory( const char* filename )
 	{
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 		if (m_watcher)
 			m_watcher->remove_directory(filename);
 #endif
 	}
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 	/** callback to npl runtime */
 	struct FileSystemWatcher_NPLCallback
 	{
@@ -1723,9 +1723,9 @@ namespace ParaScripting
 			writer.WriteName("type");
 			writer.WriteValue((int)event.type);
 			writer.WriteName("dirname");
-			writer.WriteValue(event.dirname);
+			writer.WriteValue(event.path.parent_path().generic_string() + "/");
 			writer.WriteName("filename");
-			writer.WriteValue(event.filename);
+			writer.WriteValue(event.path.filename().generic_string());
 
 			writer.EndTable();
 			writer.WriteParamDelimiter();
@@ -1738,19 +1738,19 @@ namespace ParaScripting
 #endif
 	void ParaFileSystemWatcher::AddCallback( const char* sCallbackScript )
 	{
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 		if (m_watcher)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
 	}
 
-    
+
 	ParaFileSystemWatcher::ParaFileSystemWatcher() : m_watcher(NULL)
 	{
 
 	}
-    
-#ifdef PARAENGINE_MOBILE
+
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
 	ParaFileSystemWatcher::ParaFileSystemWatcher(ParaFileSystemWatcher* watcher) : m_watcher(watcher)
 	{
 
@@ -1758,8 +1758,8 @@ namespace ParaScripting
 #else
     ParaFileSystemWatcher::ParaFileSystemWatcher(CFileSystemWatcher* watcher) : m_watcher(watcher)
     {
-        
+
     }
 #endif
-    
+
 	}//namespace ParaScripting

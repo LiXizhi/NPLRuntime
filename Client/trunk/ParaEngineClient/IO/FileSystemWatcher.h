@@ -1,15 +1,18 @@
 #pragma once
 
-#ifndef PARAENGINE_MOBILE
+#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
 
-#include "dir_monitor/dir_monitor.hpp"
+#include "dir_monitor/basic_dir_monitor.hpp"
+#include <boost/thread.hpp>
 #include <queue>
 
 namespace ParaEngine
 {
-	/** monitoring file changes. 
+
+	/** monitoring file changes.
 	under windows: it uses ReadDirectoryChangesW
-	under linux: it uses inotify. 
+	under linux: it uses inotify.
+	under macOS: kqueue
 	*/
 	class CFileSystemWatcher
 	{
@@ -18,27 +21,26 @@ namespace ParaEngine
 		typedef boost::asio::dir_monitor_event DirMonitorEvent;
 		typedef boost::signals2::signal<void(const DirMonitorEvent&)>  FileSystemEvent_t;
 		typedef boost::signals2::connection FileSystemEvent_Connection_t;
-		typedef boost::shared_ptr<boost::asio::dir_monitor> DirMonitorImpPtr;
-
+		
 		CFileSystemWatcher(const std::string& filename);
 		CFileSystemWatcher();
 		~CFileSystemWatcher();
 
 	public:
-		/** must be called before you wait for worker thread to exit. when worker thread is existed, 
+		/** must be called before you wait for worker thread to exit. when worker thread is existed,
 		* You can safely delete this class.
 		*/
 		void Destroy();
 
 		/** add a directory to monitor. */
 		bool add_directory(const std::string &dirname);
-		
+
 		/** remove a directory to monitor. */
 		bool remove_directory(const std::string &dirname);
 
-		/** this allows us to process queued messages in main thread's frame move. 
-		* this function only works when message are told to be dispatched from the main thread. 
-		* @return number of events dispatched. 
+		/** this allows us to process queued messages in main thread's frame move.
+		* this function only works when message are told to be dispatched from the main thread.
+		* @return number of events dispatched.
 		*/
 		int DispatchEvents();
 
@@ -59,7 +61,7 @@ namespace ParaEngine
 		/** get unprocessed event */
 		std::queue < DirMonitorEvent > m_msg_queue;
 
-		DirMonitorImpPtr m_monitor_imp;
+		void* m_monitor_imp;
 
 		/** locking the queue */
 		ParaEngine::mutex m_mutex;
@@ -69,7 +71,7 @@ namespace ParaEngine
 
 		/** watcher name. */
 		std::string m_name;
-		
+
 		/** if true(default), we will dispatch all callback event in the main thread. Otherwise event callback will be invoked from a IO thread created by this file watcher object*/
 		bool m_bDispatchInMainThread;
 	};
@@ -80,7 +82,7 @@ namespace ParaEngine
 	{
 	public:
 		typedef std::map<std::string, CFileSystemWatcherPtr > file_watcher_map_t;
-		
+
 		CFileSystemWatcherService();
 		virtual ~CFileSystemWatcherService();
 
@@ -89,20 +91,20 @@ namespace ParaEngine
 		/** clear all system watcher references that is created by GetDirWatcher() */
 		void Clear();
 
-		/** create get a watcher by its name. 
-		* it is good practice to use the directory name as watcher name, since it will reuse it as much as possible. 
+		/** create get a watcher by its name.
+		* it is good practice to use the directory name as watcher name, since it will reuse it as much as possible.
 		*/
 		CFileSystemWatcherPtr GetDirWatcher(const std::string& name);
 
-		/** delete a watcher, it will no longer receive callbacks. 
-		* @please note that if someone else still keeps a pointer to the directory watcher, it will not be deleted. 
+		/** delete a watcher, it will no longer receive callbacks.
+		* @please note that if someone else still keeps a pointer to the directory watcher, it will not be deleted.
 		*/
 		void DeleteDirWatcher(const std::string& name);
-		
-		/** Dispatch event for all watchers. 
-		* this allows us to process queued messages in main thread's frame move. 
-		* this function only works when message are told to be dispatched from the main thread. 
-		* @return number of events dispatched. 
+
+		/** Dispatch event for all watchers.
+		* this allows us to process queued messages in main thread's frame move.
+		* this function only works when message are told to be dispatched from the main thread.
+		* @return number of events dispatched.
 		*/
 		int DispatchEvents();
 
@@ -114,12 +116,14 @@ namespace ParaEngine
 
 		/** start the io service in a different thread. this function can be called multiple times, where only the first time takes effect.  */
 		bool Start();
+	protected:
+		int fileWatcherThreadMain();
 	private:
 		file_watcher_map_t m_file_watchers;
 
-		boost::shared_ptr<boost::asio::io_service> m_io_service; 
-		boost::scoped_ptr<boost::asio::io_service::work> m_io_service_work; 
-		boost::shared_ptr< boost::thread > m_work_thread; 
+		boost::shared_ptr<boost::asio::io_service> m_io_service;
+		boost::scoped_ptr<boost::asio::io_service::work> m_io_service_work;
+		boost::shared_ptr< boost::thread > m_work_thread;
 		bool m_bIsStarted;
 	};
 

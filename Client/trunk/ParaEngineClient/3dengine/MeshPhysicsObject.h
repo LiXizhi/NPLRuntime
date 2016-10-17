@@ -161,7 +161,7 @@ namespace ParaEngine
 		virtual void SetBoundRect(FLOAT fWidth, FLOAT fHeight, FLOAT fFacing);
 		virtual void SetRadius(FLOAT fRadius);
 
-		virtual Matrix4* GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber = 0);
+		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber = 0);
 
 		/** Get the specified attachment matrix of the current model.
 		* this is usually for getting the mount point on a certain model, such as horses. It also works for static mesh with xrefed mountable objects.

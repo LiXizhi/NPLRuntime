@@ -73,15 +73,15 @@ namespace ParaEngine
 		* Please note, that the input pointers must be valid until the ClearTransform is called
 		*/
 		virtual void SetTransform(Matrix4* pLocalTransform, const DVector3& pGlobalPos, float* pRotation);
-	
-		/** get the world transform */
-		virtual const Matrix4* GetWorldTransform(){return &m_mWorldTransform;}
 
 		/**
 		* this function is called by the game engine for rough object level clipped.
 		* We assume that the view culling object is a sphere.
 		*/
 		virtual void GetRenderVertices(Vector3 * pVertices, int* nNumber);
+
+		/** get world transform */
+		virtual Matrix4* GetWorldTransform(Matrix4& pOut, int nRenderNumber = 0);
 	private: 
 		/** update the OBB according to current transform and location. */
 		void UpdateOBB();

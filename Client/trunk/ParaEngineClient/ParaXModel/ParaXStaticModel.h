@@ -1,4 +1,8 @@
 #pragma once
+#ifdef USE_DIRECTX_RENDERER
+#include "StaticMesh.h"
+#endif
+
 #include "IAttributeFields.h"
 #include "ParaXMaterial.h"
 #include "ParaXRefObject.h"

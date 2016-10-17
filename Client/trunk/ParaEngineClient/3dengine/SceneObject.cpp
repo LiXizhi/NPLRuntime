@@ -10,7 +10,6 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "SpriteObject.h"
-#include "StaticMesh.h"
 #include "ShadowMap.h"
 #include "GlowEffect.h"
 #include "DataProviderManager.h"
@@ -1301,8 +1300,6 @@ int RemoveZoneObjects(T& renderlist)
 bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, SceneState& sceneState)
 {
 	IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
-	ObjectType oType =  pObj->GetMyType();
-
 	// fNewViewRadius is usually the camera far plane distance, however, it can be set to a smaller value according to the size of the object. 
 	float fNewViewRadius;
 	float fR = pViewClippingObject->GetRadius();
@@ -1344,19 +1341,8 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	{
 		bDrawObj = true;
 		
-		if(oType == _LocalLight)
-		{
-			// add local light to global light manager
-#ifdef USE_DIRECTX_RENDERER
-			PE_ASSERT(pObj->GetType() == CBaseObject::LightObject);
-			CGlobals::GetLightManager()->RegisterLight(((CLightObject*)pObj)->GetLightParams());
-
-			// only draw if the global local light flag is on.
-			bDrawObj = IsShowLocalLightMesh();
-#endif
-			return true;
-		}
-		else if(oType ==  _PC_Zone)
+		ObjectType oType = pObj->GetMyType();
+		if(oType ==  _PC_Zone)
 		{
 			bDrawObj = false;
 			sceneState.listZones.push_back(PostRenderObject(pObj, 0));
@@ -1492,7 +1478,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 			}
 		}
 	}
-	return true;
+	return bDrawObj;
 }
 
 void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneState)
@@ -2359,6 +2345,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	}
 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
+
+	m_pBlockWorldClient->RenderDeferredLights();
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);

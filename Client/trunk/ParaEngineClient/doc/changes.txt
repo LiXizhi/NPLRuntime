@@ -1,6 +1,20 @@
 /** @page ParaEngine_change	ParaEngine Change History
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
+
+2016.10.11
+	- non client area test is supported in GUI engine and windows title can be hidden under windows platform.
+	- ShowWindowTitleBar attribute added to toggle title bar
+
+2016.10.1	
+	- file system watcher now support mac 
+	- fixed asio steadyTimer not called under linux
+
+2016.9.27
+	- MAC OSX supported for server version
+	- "dev" command line now supports using current directory. 
+	- "loadpackage" command line parameter supported
+
 2016.9.18
 	- audio midi api volume can now be changed with global audio settings
 

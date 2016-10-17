@@ -23,7 +23,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
 
@@ -52,6 +52,13 @@ namespace ParaEngine
 	extern float g_flash;
 
 	inline DWORD FtoDW( FLOAT f ) { return *((DWORD*)&f); }
+
+	static VertexElement vertexdesc_pos[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		D3DDECL_END()
+	};
 
 	static VertexElement vertexdesc_simple_mesh[]=
 	{
@@ -764,6 +771,16 @@ VertexDeclarationPtr EffectManager::GetVertexDeclaration(int nIndex)
 			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_COLOR\n");
 		}
 		break;
+	case S0_POS:
+		if (SUCCEEDED(pd3dDevice->CreateVertexDeclaration(vertexdesc_pos, &pDecl)))
+		{
+			m_pVertexDeclarations[S0_POS] = pDecl;
+		}
+		else
+		{
+			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS\n");
+		}
+		break;
 	case S0_S1_OCEAN_CLOUD:
 		if(SUCCEEDED(pd3dDevice->CreateVertexDeclaration(vertexdesc_ocean_cloud, &pDecl)))
 		{
@@ -1075,7 +1092,7 @@ void EffectManager::applyLocalLightingData()
 void EffectManager::applyObjectLocalLighting(CBaseObject* pObj)
 {
 #ifdef USE_DIRECTX_RENDERER
-	if(IsLocalLightingEnabled() && CGlobals::GetLightManager()->GetNumLights()>0)
+	if (IsLocalLightingEnabled() && CGlobals::GetLightManager()->GetNumLights()>0)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// Do local lighting: find nearby lights, and enable them.

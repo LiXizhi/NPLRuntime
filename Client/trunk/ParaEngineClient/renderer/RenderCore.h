@@ -2,10 +2,16 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "common/dxstdafx.h"
 #elif defined(USE_OPENGL_RENDERER)
-#include "CCGL.h"
+#include "platform/OpenGLWrapper.h"
 #else
 #include "PEtypes.h"
-#include <GL/gl.h> 
+
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
+	#include <OpenGL/gl.h>
+#else
+	#include <GL/gl.h>
+#endif
+
 #endif
 
 #ifdef WIN32
@@ -21,7 +27,7 @@
 #include "RenderCoreOpenGL.h"
 #endif
 
-//  defining structures as if DirectX exist to be used with OpengGL or Null renderer. 
+//  defining structures as if DirectX exist to be used with OpengGL or Null renderer.
 
 namespace ParaEngine
 {

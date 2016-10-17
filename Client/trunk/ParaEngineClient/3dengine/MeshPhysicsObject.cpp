@@ -406,8 +406,9 @@ void CMeshPhysicsObject::LoadPhysics()
 				EnablePhysics(false); // disable physics forever, if failed loading physics data
 				return;
 			}
-			const Matrix4 * pMatWorld = (m_pMeshObject->GetViewClippingObject())->GetWorldTransform();
-			IParaPhysicsActor* pActor =  CGlobals::GetPhysicsWorld()->CreateStaticMesh( m_pMeshObject->m_ppMesh.get(), *(pMatWorld), m_nPhysicsGroup, &m_staticActors, this);
+			Matrix4 matWorld;
+			m_pMeshObject->GetViewClippingObject()->GetWorldTransform(matWorld);
+			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get(), matWorld, m_nPhysicsGroup, &m_staticActors, this);
 			if(pActor!=NULL)
 			{
 			}
@@ -444,7 +445,7 @@ void CMeshPhysicsObject::LoadPhysics()
 						if(bApplyPhysics)
 						{
 							Matrix4 mat;
-							pEntity->GetMatrix(mat, pMatWorld);
+							pEntity->GetMatrix(mat, &matWorld);
 							pActor =  CGlobals::GetPhysicsWorld()->CreateStaticMesh( ppMesh, mat, m_nPhysicsGroup, &m_staticActors, this);
 							if(pActor)
 							{
@@ -550,15 +551,15 @@ HRESULT CMeshPhysicsObject::Draw( SceneState * sceneState)
 	return hr;
 }
 
-Matrix4* CMeshPhysicsObject::GetRenderWorldMatrix( Matrix4* pOut, int nRenderNumber)
+Matrix4* CMeshPhysicsObject::GetRenderMatrix(Matrix4& out, int nRenderNumber)
 {
 	if(m_pMeshObject)
 	{
 		m_pMeshObject->SetPosition(m_vPos);
 		m_pMeshObject->SetFacing(m_fYaw);
-		return m_pMeshObject->GetRenderWorldMatrix(pOut, nRenderNumber);
+		return m_pMeshObject->GetRenderMatrix(out, nRenderNumber);
 	}
-	return pOut;
+	return &out;
 }
 
 AssetEntity* CMeshPhysicsObject::GetPrimaryAsset()

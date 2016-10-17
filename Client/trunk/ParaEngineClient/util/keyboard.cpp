@@ -4,10 +4,17 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine Corporation
 // Date:	2009.7.26
-// Desc: Cross platformed. 
+// Desc: Cross platformed.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if !defined(WIN32) && ! defined(PARAENGINE_MOBILE)
+
+#if defined(PLATFORM_MAC)
+// TODO: wangpeng for mac input
+int _kbhit()
+{
+	return 0;
+}
+#elif !defined(WIN32) && !defined(PARAENGINE_MOBILE)
 
 //  Linux emulation of kbhit
 #include <stdio.h>

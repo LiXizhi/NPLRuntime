@@ -89,7 +89,8 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	}
 
 	int exit_code = 0;
-	if(strcmp("true", cmdParams.GetAppCommandLineByParam("servermode", "false")) == 0)
+	if( strcmp("true", cmdParams.GetAppCommandLineByParam("servermode", "false")) == 0 || 
+		strcmp("true", cmdParams.GetAppCommandLineByParam("i", "false")) == 0)
 	{
 		// run as a service
 		ParaEngine::CParaEngineService service;
@@ -249,6 +250,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 				// API: Finally call this before process exit. 
 				pParaEngineApp->StopApp();
 				exit_code = pParaEngineApp->GetReturnCode();
+				pParaEngineApp->De
 			}
 		}
 #endif

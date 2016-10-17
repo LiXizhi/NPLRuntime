@@ -94,6 +94,7 @@ namespace ParaScripting
 	}
 	void ParaMovie::TakeScreenShot_Async_Internal(const char* filename, bool bEncode, int width, int height, const char* sCallBackScript)
 	{
+#ifdef WIN32
 		string callback_script = sCallBackScript;
 		std::function<void(bool, std::vector<BYTE>&)> callback = [=](bool bSuccessful, std::vector<BYTE>& base64) {
 			if (!callback_script.empty())
@@ -120,6 +121,7 @@ namespace ParaScripting
 		CGlobals::GetMoviePlatform()->TakeScreenShot_Async(filename, bEncode, width, height, [=](bool bSuccessful, std::vector<BYTE>& base64) {
 			callback(bSuccessful, base64);
 		});
+#endif
 	}
 	// this function is obsoleted, use ParaMovie::TakeScreenShot3 instead. 
 	bool ParaMovie::RenderToTexture(const char* filename, int width, int height)

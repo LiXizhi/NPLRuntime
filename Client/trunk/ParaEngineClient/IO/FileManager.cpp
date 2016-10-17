@@ -7,6 +7,7 @@
 // Notes: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "util/CSingleton.h"
 #include "ZipArchive.h"
 #include "FileUtils.h"
 #include "BlockEngine/BlockReadWriteLock.h"
@@ -39,8 +40,7 @@ CFileManager::~CFileManager(void)
 
 CFileManager * CFileManager::GetInstance()
 {
-	static CFileManager myIntance;
-	return &myIntance;
+	return CAppSingleton<CFileManager>::GetInstance();
 }
 
 bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRootDir)

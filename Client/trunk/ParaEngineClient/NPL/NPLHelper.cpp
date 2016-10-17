@@ -478,8 +478,9 @@ bool NPL::NPLHelper::CanEncodeStringInDoubleBrackets(const char* buffer, int nLe
 	char c = 0; 
 	int cont = 0;
 
-	for (int i = 0; i < nLength && (c = buffer[i]) != '\0'; i++)
+	for (int i = 0; i < nLength; i++)
 	{
+		c = buffer[i];
 		if (c == '[')
 		{
 			if (buffer[i + 1] == '[')
@@ -507,6 +508,10 @@ bool NPL::NPLHelper::CanEncodeStringInDoubleBrackets(const char* buffer, int nLe
 				i++;
 				cont--;
 			}
+		}
+		else if (c == '\0')
+		{
+			return false;
 		}
 	}
 #if defined ALLOW_NESTED_LUA_COMPAT_LSTR

@@ -11,8 +11,12 @@
 #include "ParaEngineCore.h"
 #include "FrameRateController.h"
 #include "ParaEngineAppImp.h"
+#include <boost/thread/tss.hpp>
 
 using namespace ParaEngine;
+
+
+ParaEngine::WeakPtr ParaEngine::CParaEngineCore::m_pAppSingleton;
 
 /** @def class id*/
 #define PARAENGINE_CLASS_ID Class_ID(0x2b903b29, 0x47e409af)
@@ -24,8 +28,7 @@ public:
 
 	void* Create(bool loading = FALSE)
 	{
-		static CParaEngineCore g_singleton;
-		return &g_singleton;
+		return CParaEngineCore::GetInstance();
 	}
 
 	const char* ClassName()
@@ -72,12 +75,21 @@ CParaEngineCore::CParaEngineCore(void)
 
 CParaEngineCore::~CParaEngineCore(void)
 {
+	DestroySingleton();
+}
+
+
+CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
+{
+	static boost::thread_specific_ptr< CParaEngineCore > g_instance;
+	if (!g_instance.get())
+		g_instance.reset(new CParaEngineCore());
+	return (g_instance.get());
 }
 
 IParaEngineCore* CParaEngineCore::GetStaticInterface()
 {
-	static CParaEngineCore g_instance;
-	return (IParaEngineCore*)(&g_instance);
+	return (IParaEngineCore*)CParaEngineCore::GetInstance();
 }
 
 DWORD CParaEngineCore::GetVersion()
@@ -144,8 +156,22 @@ IParaEngineApp* CParaEngineCore::CreateApp()
 	if (pApp == 0)
 	{
 		// we will only create app if it has not been created before. 
-		static CParaEngineApp g_app;
-		return (IParaEngineApp*)(&g_app);
+		if (!m_pAppSingleton)
+		{
+			CParaEngineApp* pApp = new CParaEngineApp();
+			m_pAppSingleton = pApp;
+			return (IParaEngineApp*)pApp;
+		}
+
 	}
 	return pApp;
+}
+
+void ParaEngine::CParaEngineCore::DestroySingleton()
+{
+	if (m_pAppSingleton)
+	{
+		m_pAppSingleton->Release();
+		m_pAppSingleton.reset();
+	}
 }

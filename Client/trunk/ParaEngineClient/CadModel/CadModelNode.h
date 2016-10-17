@@ -38,7 +38,7 @@ namespace ParaEngine
 
 		virtual HRESULT Draw(SceneState *sceneState);
 
-		virtual Matrix4* GetRenderWorldMatrix(Matrix4* pOut, int nRenderNumber=0);
+		virtual Matrix4* GetRenderMatrix(Matrix4& out, int nRenderNumber=0);
 
 		virtual bool IsTransparent(){return m_bIsTransparent;};
 

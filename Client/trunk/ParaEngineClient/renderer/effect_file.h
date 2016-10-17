@@ -243,7 +243,7 @@ namespace ParaEngine
 		void EndPass(bool bForceEnd = false) {};
 		void end(bool bForceEnd = false) {};
 		
-		bool LoadBuildinShader() {};
+		bool LoadBuildinShader() { return true; };
 
 		/**
 		* @param nPass: -1 to release all

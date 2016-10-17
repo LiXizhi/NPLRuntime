@@ -86,7 +86,7 @@ template void boost::intrusive_ptr_release(NPLInterface::intrusive_ptr_single_th
 
 namespace NPLInterface
 {
-	using namespace std;
+	using std::vector;
 
 	struct LexState;
 	class NPLObjectBase;

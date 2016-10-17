@@ -6,7 +6,7 @@
 // Date:	2015.6
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
+#if defined(WIN32) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
 #include "XFileHelper.h"
 #include "FBXParser.h"
 #include "assimp/Importer.hpp"

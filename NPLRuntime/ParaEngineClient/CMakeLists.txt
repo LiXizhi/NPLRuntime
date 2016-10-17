@@ -1,7 +1,7 @@
 # Author: LiXizhi
 # Email: lixizhi@yeah.net
 # Date: 2016.4.30
-# Desc: 
+# Desc:
 project (ParaEngineClient)
 
 set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
@@ -22,7 +22,7 @@ if (DIRECTX_FOUND)
 
 	include_directories( ${DIRECTX_INCLUDE_DIR} )
 	link_directories (${DIRECTX_LIBRARY_DIR})
-	set(GRAPHIC_LIBRARIES 
+	set(GRAPHIC_LIBRARIES
 			comctl32.lib
 			d3dxof.lib
 			dxguid.lib
@@ -36,7 +36,7 @@ if (DIRECTX_FOUND)
 			VFW32.lib
 			SHLWAPI.lib
 			gdiplus.lib
-			
+
 			Psapi.lib
 	)
 	##############################
@@ -158,7 +158,7 @@ if(DIRECTX_FOUND)
 		add_custom_command(
 			OUTPUT "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo"
 			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${src_file}
-			# uncomment the following line if you want to see the text output to debug shader instructions. 
+			# uncomment the following line if you want to see the text output to debug shader instructions.
 			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
 			DEPENDS ${src_file}
 			COMMENT "fxc compile: ${src_file}"
@@ -269,6 +269,7 @@ include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
+	include_directories("${Assimp_SOURCE_DIR}/include/")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
 ELSE(WIN32)
@@ -288,7 +289,11 @@ IF(WIN32)
 		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
 	endif(MSVC)
 ELSE (WIN32)
-	ADD_DEFINITIONS(-DPLATFORM_LINUX)
+	IF(APPLE)
+		ADD_DEFINITIONS(-DPLATFORM_MAC)
+	ELSE(APPLE)
+		ADD_DEFINITIONS(-DPLATFORM_LINUX)
+	ENDIF(APPLE)
 ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
@@ -319,18 +324,18 @@ IF(MSVC)
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
 	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
 	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-			
+
 	# /GR- Remove RTTI to miminize the executable size
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 ENDIF()
 
-# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically. 
+# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically.
 option(USE_LINK_TIME_CODE_GENERATION	"true to enable link time code gen in release build" OFF)
 
 IF(MSVC)
 	if(USE_LINK_TIME_CODE_GENERATION)
-		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient. 
+		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient.
 		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
 		# /LTCG Link time code generation
 		if (PARAENGINE_COMPILE_LIB)
@@ -357,15 +362,15 @@ IF(MSVC)
 	endif (PARAENGINE_COMPILE_LIB)
 ELSE()
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-	
+
 	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
 	# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti")
-	
-	# -Os to optimize for size. or -O3 to turn on all optimizations. 
+
+	# -Os to optimize for size. or -O3 to turn on all optimizations.
 	# -s option to strip debug info, -g to include debug info
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
-	
+
 	# suppress warnings
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
@@ -374,7 +379,7 @@ ENDIF()
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-	
+
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
@@ -401,24 +406,35 @@ if (WIN32)
 			Wldap32
 			zlib
 			libcurl
+			assimp
   )
 else (WIN32)
-  set(EXTRA_LIBRARIES
-  		rt 
-  		dl
-  		resolv
-  		z
-		${CURL_LIBRARIES}
-		pthread
-  )
+	if(APPLE)
+		set(EXTRA_LIBRARIES			
+				dl
+				resolv
+				z
+			${CURL_LIBRARIES}
+			pthread
+		)
+	else(APPLE)
+		set(EXTRA_LIBRARIES
+				rt
+				dl
+				resolv
+				z
+			${CURL_LIBRARIES}
+			pthread
+		)
+	endif(APPLE)
 endif (WIN32)
 
-# Link the executable to the libraries. 
-target_link_libraries (ParaEngineClient 
-	sqlite lua jsoncpp tinyxpath luabind 
+# Link the executable to the libraries.
+target_link_libraries (ParaEngineClient
+	sqlite lua jsoncpp tinyxpath luabind
 	${GRAPHIC_LIBRARIES}
 	${EXTRA_LIBRARIES}
-	${Boost_LIBRARIES} 
+	${Boost_LIBRARIES}
 )
 
 ADD_CUSTOM_COMMAND(

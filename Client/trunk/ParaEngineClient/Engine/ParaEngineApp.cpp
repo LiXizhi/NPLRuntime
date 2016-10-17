@@ -33,6 +33,7 @@
 #include "ObjectManager.h"
 #include "PredefinedEvents.h"
 #include "DynamicAttributeField.h"
+#include "EventClasses.h"
 
 #include "MoviePlatform.h"
 #include "DataProviderManager.h"
@@ -58,7 +59,6 @@
 #include "ParaScriptingGUI.h"
 #include "ParaEngineSettings.h"
 #include "ParaEngineInfo.h"
-
 
 #include "FileLogger.h"
 #include "BootStrapper.h"
@@ -179,26 +179,16 @@ CViewportManager* CParaEngineApp::GetViewportManager()
 
 void CParaEngineApp::InitApp(const char* sCommandLine)
 {
-	g_pCurrentApp = this;
 	if (m_pWinRawMsgQueue == 0)
 		m_pWinRawMsgQueue = new CWinRawMsgQueue();
 
 	SetAppCommandLine(sCommandLine);
 
-	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
-	if (sLogFile && sLogFile[0] != 0){
-		CLogger::GetSingleton().SetLogFile(sLogFile);
-	}
-
-	const char* sServerMode = GetAppCommandLineByParam("servermode", NULL);
-	bool bIsServerMode = (sServerMode && strcmp(sServerMode, "true") == 0);
-	Enable3DRendering(!bIsServerMode);
-
-	CParaFile::SetDevDirectory(GetAppCommandLineByParam("dev", ""));
+	InitCommandLineParams();
 
 	COSInfo::DumpSystemInfo();
 
-	if (!bIsServerMode)
+	if (Is3DRenderingEnabled())
 	{
 		// Initialize GDI+.
 		Gdiplus::GdiplusStartup(&g_gdiplusToken, &g_gdiplusStartupInput, NULL);
@@ -229,15 +219,7 @@ void CParaEngineApp::InitLogger()
 
 void CParaEngineApp::BootStrapAndLoadConfig()
 {
-	if (!CBootStrapper::GetSingleton()->LoadFromFile(GetAppCommandLineByParam("bootstrapper", "")))
-	{
-		const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
-		if (pBootFileName && pBootFileName[0] != '\0'){
-			OUTPUT_LOG("error: can not find bootstrapper file at %s\n", pBootFileName);
-		}
-	}
-	// OUTPUT_LOG("cmd line: %s \n", GetAppCommandLine());
-	OUTPUT_LOG("main loop: %s \n", CBootStrapper::GetSingleton()->GetMainLoopFile().c_str());
+	FindBootStrapper();
 	{
 		// load settings from config/config.txt or config/config.new.txt
 		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";
@@ -372,6 +354,7 @@ void CParaEngineApp::InitSystemModules()
 
 HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
+	SetCurrentInstance(this);
 	{
 		bool bLoop = false;
 		int i=0;
@@ -446,9 +429,6 @@ HRESULT CParaEngineApp::StopApp()
 #endif
 
 	Gdiplus::GdiplusShutdown(g_gdiplusToken);
-
-	// Clean up all threads
-	CAsyncLoader::GetSingleton().CleanUp();
 
 	// delete all singletons
 	DestroySingletons();
@@ -1345,22 +1325,26 @@ int CParaEngineApp::Run( HINSTANCE hInstance )
 	//add a console window for debug or when in server mode. 
 	if (!Is3DRenderingEnabled() || IsDebugBuild())
 	{
-		RedirectIOToConsole();
-#ifdef _DEBUG
-		std::cout << "Start console window in " << __FILE__ << "  line:" << __LINE__ << "\n";
-#endif
+		/*const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
+		bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
+		if (!bIsInterpreterMode)*/
+		{
+			RedirectIOToConsole();
+		}
 	}
+	auto result = 0;
 	if (Is3DRenderingEnabled())
 	{
 		// create 3d window and run till exit
-		return CD3DApplication::Run(hInstance);
+		result = CD3DApplication::Run(hInstance);
 	}
 	else
 	{
 		// the console window is used. 
 		CParaEngineService service;
-		return service.Run(0, this);
+		result = service.Run(0, this);
 	}
+	return result;
 }
 
 void CParaEngineApp::GetStats(string& output, DWORD dwFields)
@@ -2604,6 +2588,10 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					}
 				}
 				SendMessageToApp(hWnd, uMsg, result, 0);
+
+				CGUIRoot* pRoot = CGlobals::GetGUI();
+				if(pRoot != 0 && pRoot->IsNonClient())
+					result = HTCAPTION; // this will allow dragging
 				return result;
 		}
 		case WM_LBUTTONUP:
@@ -2650,7 +2638,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					SendMessage( hWnd, WM_CLOSE, 0, 0 );
 					break;
 				default:
-					SendMessageToApp(hWnd, WM_NCHITTEST, wParam, lParam);
+					SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
 					break;
 				}
 			}
@@ -2935,15 +2923,12 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			using namespace ParaEngine;
 			CGUIRoot::GetInstance()->SetMouseInClient(true);
 		}
-		else{
+		else
+		{
 			LRESULT result = wParam;
-			if (((LRESULT)wParam)!=HTCLIENT)  {
-				using namespace ParaEngine;
-				CGUIRoot::GetInstance()->SetMouseInClient(false);
-			}else{
-				using namespace ParaEngine;
-				CGUIRoot::GetInstance()->SetMouseInClient(true);
-			}
+			using namespace ParaEngine;
+			MouseEvent event(0, 0, 0, ((LRESULT)wParam) == HTCLIENT ? 1 : 0);
+			CGUIRoot::GetInstance()->handleNonClientTest(event);
 		}
 		break;
 	case WM_DROPFILES:

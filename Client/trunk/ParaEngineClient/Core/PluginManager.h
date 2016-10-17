@@ -154,7 +154,7 @@ namespace ParaEngine
 		/**
 		* load all dll under the given directory.
 		* [thread safe]
-		* @param sDirectory the directory to load dll. e.g. "plugin/*.dll"
+		* @param sDirectory the directory to load dll. e.g. "plugin/ *.dll"
 		* @return the number of dll loaded. 
 		*/
 		int LoadAllDLLinDirectory(const string& sDirectory);

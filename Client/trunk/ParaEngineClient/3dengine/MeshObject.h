@@ -124,11 +124,11 @@ namespace ParaEngine
 
 		/**
 		* return the world matrix of the object for rendering
-		* @param pOut: the output.
+		* @param out: the output.
 		* @param nRenderNumber: if it is bigger than current calculated render number, the value will be recalculated. 
-		* @return: same as pOut. or NULL if not exists.
+		* @return: same as out. or NULL if not exists.
 		*/
-		virtual Matrix4* GetRenderWorldMatrix( Matrix4* pOut, int nRenderNumber=0);
+		virtual Matrix4* GetRenderMatrix( Matrix4& out, int nRenderNumber=0);
 
 		/** Get the specified attachment matrix of the current model.
 		* this is usually for getting the mount point on a certain model, such as horses. It also works for static mesh with xrefed mountable objects. 

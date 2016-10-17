@@ -56,7 +56,7 @@ namespace ParaEngine
 
 		sceneState->SetCurrentSceneObject(this);
 		Matrix4 worldMat;
-		GetRenderWorldMatrix(&worldMat);
+		GetRenderMatrix(worldMat);
 		
 		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if(pEffectFile != 0)
@@ -211,9 +211,8 @@ namespace ParaEngine
 		SetLocalTransform(*CGlobals::GetIdentityMatrix());
 	}
 
-	Matrix4* CadModelNode::GetRenderWorldMatrix( Matrix4* mxWorld, int nRenderNumber)
+	Matrix4* CadModelNode::GetRenderMatrix( Matrix4& mxWorld, int nRenderNumber)
 	{
-		assert(mxWorld!=0);
 		// render offset
 		Vector3 vPos = GetRenderOffset();
 
@@ -232,19 +231,19 @@ namespace ParaEngine
 		}
 		if(fFacing != 0.f)
 		{
-			ParaMatrixRotationY(mxWorld, fFacing);/** set facing and rotate local matrix round y axis*/
-			*mxWorld = m_mxLocalTransform*(*mxWorld);
+			ParaMatrixRotationY(&mxWorld, fFacing);/** set facing and rotate local matrix round y axis*/
+			mxWorld = m_mxLocalTransform*mxWorld;
 		}
 		else
 		{
-			*mxWorld = m_mxLocalTransform;
+			mxWorld = m_mxLocalTransform;
 		}
 
 		// world translation
-		mxWorld->_41 += vPos.x;
-		mxWorld->_42 += vPos.y;
-		mxWorld->_43 += vPos.z;
-		return mxWorld;
+		mxWorld._41 += vPos.x;
+		mxWorld._42 += vPos.y;
+		mxWorld._43 += vPos.z;
+		return &mxWorld;
 	}
 
 	bool CadModelNode::SetParamsFromAsset()

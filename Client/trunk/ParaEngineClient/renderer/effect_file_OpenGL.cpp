@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "cocos2d.h"
+#include "platform/OpenGLWrapper.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
@@ -19,17 +19,17 @@ using namespace ParaEngine;
 USING_NS_CC;
 // TODO: add more buildin shaders here
 #define STRINGIFY(A)  #A
-#include "shaders/blockEffect.shader"
-#include "shaders/blockSelectEffect.shader"
-#include "shaders/singleColorEffect.shader"
-#include "shaders/meshNormalEffect.shader"
-#include "shaders/particleEffect.shader"
-#include "shaders/guiEffect.shader"
-#include "shaders/guiTextEffect.shader"
-#include "shaders/skymeshEffect.shader"
-#include "shaders/skydomeEffect.shader"
-#include "shaders/terrainEffect.shader"
-#include "shaders/blockMaxEffect.shader"
+#include "platform/shaders/blockEffect.shader"
+#include "platform/shaders/blockSelectEffect.shader"
+#include "platform/shaders/singleColorEffect.shader"
+#include "platform/shaders/meshNormalEffect.shader"
+#include "platform/shaders/particleEffect.shader"
+#include "platform/shaders/guiEffect.shader"
+#include "platform/shaders/guiTextEffect.shader"
+#include "platform/shaders/skymeshEffect.shader"
+#include "platform/shaders/skydomeEffect.shader"
+#include "platform/shaders/terrainEffect.shader"
+#include "platform/shaders/blockMaxEffect.shader"
 
 std::unordered_map<uint32, std::string> CEffectFileOpenGL::s_id_to_names = CEffectFileOpenGL::LoadStaticIdNameMap();
 
@@ -202,8 +202,8 @@ bool ParaEngine::CEffectFileOpenGL::setMatrix(eParameterHandles index, const Mat
 		Uniform* uniform = GetUniformByID(index);
 		if (uniform)
 		{
-			// transpose it, since openGL and directX packed matrix differently. 
-			// Xizhi 2014.9.16: for some reason, it does not need to be transposed, opengl already packed data in our way.  
+			// transpose it, since openGL and directX packed matrix differently.
+			// Xizhi 2014.9.16: for some reason, it does not need to be transposed, opengl already packed data in our way.
 			// Matrix4 matTranposed = data->transpose();
 			program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), 1);
 			PE_CHECK_GL_ERROR_DEBUG();
@@ -362,7 +362,7 @@ bool ParaEngine::CEffectFileOpenGL::initWithByteArrays(const char* vShaderByteAr
 	if (program && program->initWithByteArrays(vShaderByteArray, fShaderByteArray))
 		return true;
 	else
-	{ 
+	{
 		OUTPUT_LOG("error: failed to compile shader: %s \n", GetFileName().c_str());
 		if (program)
 		{
@@ -443,7 +443,7 @@ bool ParaEngine::CEffectFileOpenGL::use(int nPass)
 		if (m_nActivePassIndex != nPass)
 		{
 			m_nActivePassIndex = nPass;
-			// TODO: copy all uniforms to the new pass. 
+			// TODO: copy all uniforms to the new pass.
 		}
 		return true;
 	}
@@ -488,7 +488,7 @@ void ParaEngine::CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Ve
 	{
 		setBool(k_fogEnable, bEnableFog);
 	}
-	// unlike directx, we will apply for parameters regardless of whether fog is enabled. 
+	// unlike directx, we will apply for parameters regardless of whether fog is enabled.
 	// if (bEnableFog)
 	{
 		if (isParameterUsed(k_fogParameters) && (fogParam != 0))
@@ -718,8 +718,8 @@ bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD fla
 		{
 			// TODO: multiple pass effect in opengl is implemented as shader arrays.
 			// uniform values are currently NOT shared among different passes like directX.
-			// hence DO NOT set any uniform between begin() and beginPass(). 
-			// TODO: In future: uniform values should be cached until Commit() is called. 
+			// hence DO NOT set any uniform between begin() and beginPass().
+			// TODO: In future: uniform values should be cached until Commit() is called.
 			program->use();
 		}
 
@@ -835,8 +835,8 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
 	{
 		setTexture(index, data->GetTexture());
 
-		// ensure that sampler states matches the one used in the texture. if not, change the texture sampler 
-		// unless a texture is used with different sampler states during rendering, the glTexParameteri function is called at most once for a texture. 
+		// ensure that sampler states matches the one used in the texture. if not, change the texture sampler
+		// unless a texture is used with different sampler states during rendering, the glTexParameteri function is called at most once for a texture.
 		DWORD dwValue = 0;
 		CGlobals::GetRenderDevice()->GetSamplerState(index, D3DSAMP_MINFILTER, &dwValue);
 		if (dwValue == D3DTEXF_POINT && !data->IsSamplerStateBlocky())
@@ -956,7 +956,7 @@ bool ParaEngine::CEffectFileOpenGL::LoadBuildinShader()
 			if (link())
 			{
 				updateUniforms();
-				// set initial value, opengl does not support initial value in shader. 
+				// set initial value, opengl does not support initial value in shader.
 				SetFloat("opacity", 1.f);
 			}
 		}
@@ -980,7 +980,7 @@ bool ParaEngine::CEffectFileOpenGL::LoadBuildinShader()
 			if (link())
 			{
 				updateUniforms();
-				// set initial value, opengl does not support initial value in shader. 
+				// set initial value, opengl does not support initial value in shader.
 				SetBool("k_bBoolean0", true);
 			}
 		}
@@ -1080,4 +1080,3 @@ bool ParaEngine::CEffectFileOpenGL::SetBoolean(int nIndex, bool value)
 }
 
 #endif
-

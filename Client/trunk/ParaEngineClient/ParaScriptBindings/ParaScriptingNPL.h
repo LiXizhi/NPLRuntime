@@ -216,30 +216,25 @@ namespace ParaScripting
 		/** get the attribute object. This function return a clone of this object. */
 		static ParaAttributeObject GetAttributeObject();
 
+		
 		/**
-		* load a file (in the specified runtime state) without running it. If the file is already loaded,
+		* load a new file (in the current runtime state) without activating it. If the file is already loaded,
 		* it will not be loaded again unless bReload is true. 
 		* IMPORTANT: this function is synchronous; unlike the asynchronous activation function. 
 		* LoadFile is more like "include in C++".When the function returns, contents in the file is loaded to memory. 
-		* @note: This function must be called in the same thread that hosts the specified runtime state (pState).
-		* @param pState: In which runtime state to load the file. If pState is NULL, the main runtime state is used. 
-		* @param filePath: the local relative file path. If the file extension is ".dll", it will be treated as a plug-in. if the filepath is "*.dll", it means all DLLs in that directory.
-		* @param bReload: if true, the file will be reloaded even if it is already loaded.
-		*    otherwise, the file will only be loaded if it is not loaded yet. 
-		*/
-
-		/**
-		* load a new file (in the current runtime state) without running it. If the file is already loaded,
-		* it will not be loaded again unless bReload is true. 
-		* IMPORTANT: this function is synchronous; unlike the asynchronous activation function. 
-		* LoadFile is more like "include in C++".When the function returns, contents in the file is loaded to memory. 
+		* @note: in NPL/lua, function is first class object, so loading a file means executing the code chunk in protected mode with pcall, 
+		* in most cases,  this means injecting new code to the global table. Since there may be recursions (such as A load B, while B also load A), 
+		* your loading code should not reply on the loading order to work. You need to follow basic code injection principles.
+		* For example, commonlib.gettable("") is the the commended way to inject new code to the current thread's global table. 
+		* Be careful not to pollute the global table too much, use nested table/namespace. 
+		* Different NPL applications may have their own sandbox environments, which have their own dedicated global tables, for example all `*.page` files use a separate global table per URL request in NPL Web Server App.
 		* @note: when loading an NPL file, we will first find if there is an up to date compiled version in the bin directory. if there is, 
 		* we will load the compiled version, otherwise we will use the text version.  use bin version, if source version does not exist; use bin version, if source and bin versions are both on disk (instead of zip) and that bin version is newer than the source version. 
 		* e.g. we can compile source to bin directory with file extension ".o", e.g. "script/abc.lua" can be compiled to "bin/script/abc.o", The latter will be used if available and up-to-date. 
 		* @param filePath: the local relative file path. 
 		* If the file extension is ".dll", it will be treated as a plug-in. Examples:
 		*	"NPLRouter.dll"			-- load a C++ or C# dll. Please note that, in windows, it looks for NPLRonter.dll; in linux, it looks for ./libNPLRouter.so 
-		*	"plugin/libNPLRouter.dll"			-- almost same as above, it is recommented to remove the heading 'lib' when loading. In windows, it looks for plugin/NPLRonter.dll; in linux, it looks for ./plugin/libNPLRouter.so
+		*	"plugin/libNPLRouter.dll"			-- almost same as above, it is reformatted to remove the heading 'lib' when loading. In windows, it looks for plugin/NPLRonter.dll; in linux, it looks for ./plugin/libNPLRouter.so
 		* @param bReload: if true, the file will be reloaded even if it is already loaded.
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
 		* @remark: one should be very careful when calling with bReload set to true, since this may lead to recursive 

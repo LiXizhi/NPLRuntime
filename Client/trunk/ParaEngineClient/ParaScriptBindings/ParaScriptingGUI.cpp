@@ -2049,11 +2049,11 @@ void ParaUIObject::GetTextLineSize(int* width, int* height)
 	if (!IsValid()) 
 		return;
 	int nType = m_pObj->GetType()->GetTypeValue();
-	if ((nType == Type_GUIText))
+	if (nType == Type_GUIText)
 	{
 		((CGUIText*)m_pObj)->GetTextLineSize(width, height);
 	}
-	else if ((nType == Type_GUIEditBox))
+	else if (nType == Type_GUIEditBox)
 	{
 		((CGUIEditBox*)m_pObj)->GetTextLineSize(width, height);
 	}

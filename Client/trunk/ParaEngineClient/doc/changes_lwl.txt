@@ -196,7 +196,7 @@ TODO: Add support to keyboard and mouse replay.
 
 
 2006/1/9 
-- New debug support, Add InternalError() function to interpret the HRESULTs, marco OUTPUT_DEFAULT_ERROR is a warpper for this function
+- New debug support, Add InternalError() function to interpret the HRESULTs, marco OUTPUT_DEFAULT_ERROR is a Wrapper for this function
 
 2005/12/19
 - Add highlight support to tooltip, use ParaUI.GetToolTip() to get the tooltip instance. Then use its properties "automaticdelay", "autopopdelay", "initialdelay" and "behavior".
@@ -254,13 +254,13 @@ receiver function receive an int but it thinks it is a char *. So the function w
   PERF_CLEAR(countername) can delete a counter.
 
 2005/11/20
-- finish CICRecordSet,CICDBManager, CICRecordSetItem. Now the sqlite warpper is finished. Refer to the reference for usage of these classess
+- finish CICRecordSet,CICDBManager, CICRecordSetItem. Now the sqlite Wrapper is finished. Refer to the reference for usage of these classess
 
 2005/11/18
 - finish the maptrace class. the class records player moving data and store them to database.
 
 2005/11/16
-- A sqlite warpper finished. The warpper provides easy and one line sql operation. It also supports complex and user-define sql operations
+- A sqlite Wrapper finished. The Wrapper provides easy and one line sql operation. It also supports complex and user-define sql operations
 
 2005/11/9
 - changing all internal GUI names to unicode and retains the same scripting interface
