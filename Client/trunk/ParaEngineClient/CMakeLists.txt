@@ -313,7 +313,7 @@ include_directories("${CLIENT_SOURCE_DIR}/dxsdk_feb2005_extras/DirectShow/Includ
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
-	include_directories("${PROJECT_SOURCE_DIR}/../assimp/include")
+	include_directories("${Assimp_SOURCE_DIR}")
 ENDIF(WIN32)
 
 IF(WIN32)
@@ -359,12 +359,10 @@ IF(WIN32)
 	# link_directories (${PhysX_SOURCE_DIR}/lib/win32)
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	# 64 bits version
-	link_directories (${PROJECT_SOURCE_DIR}/../assimp/prebuilt/win64)
 else()
 	# 32 bits version.
 	link_directories (${PROJECT_SOURCE_DIR}/flashplayer/f_in_box/lib)
 	link_directories("${CLIENT_SOURCE_DIR}/FreeImage_3120/Dist")
-	link_directories (${PROJECT_SOURCE_DIR}/../assimp/prebuilt/win32)
 endif()
 
 	link_directories (${DIRECTX_LIBRARY_DIR})
@@ -509,16 +507,11 @@ endif (WIN32)
 
 # Link the executable to the libraries.
 target_link_libraries (ParaEngineClient
-	sqlite libcurl lua jsoncpp tinyxpath luabind
+	sqlite libcurl lua jsoncpp tinyxpath luabind Assimp
 	${Boost_LIBRARIES} ${EXTRA_LIBRARIES}
 	#jblib pcre pcrecpp
 )
 
-if (WIN32)
-	# assimp importer
-	target_link_libraries( ParaEngineClient debug assimpd)
-	target_link_libraries( ParaEngineClient optimized assimp)
-endif(WIN32)
 
 if (PARAENGINE_COMPILE_LIB)
 else(PARAENGINE_COMPILE_LIB)
