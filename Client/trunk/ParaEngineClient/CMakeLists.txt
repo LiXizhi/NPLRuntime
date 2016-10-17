@@ -313,7 +313,7 @@ include_directories("${CLIENT_SOURCE_DIR}/dxsdk_feb2005_extras/DirectShow/Includ
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
-	include_directories("${Assimp_SOURCE_DIR}")
+	include_directories("${Assimp_SOURCE_DIR}/include")
 ENDIF(WIN32)
 
 IF(WIN32)
@@ -507,7 +507,7 @@ endif (WIN32)
 
 # Link the executable to the libraries.
 target_link_libraries (ParaEngineClient
-	sqlite libcurl lua jsoncpp tinyxpath luabind Assimp
+	sqlite libcurl lua jsoncpp tinyxpath luabind assimp
 	${Boost_LIBRARIES} ${EXTRA_LIBRARIES}
 	#jblib pcre pcrecpp
 )
