@@ -62,7 +62,9 @@ if (DIRECTX_FOUND)
 else()
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
-	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES} )
+	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}
+
+	)
 
 	##############################
 	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
@@ -256,6 +258,14 @@ if(APPLE)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 
+	file (GLOB Platform_Base_FILES ${ParaEngineClient_SOURCE_DIR}/platform/base/*.cpp)
+	SOURCE_GROUP("Platform_Base" FILES ${Platform_Base_FILES})
+	list(APPEND ParaEngineClient_SRCS ${Platform_Base_FILES})
+
+	file (GLOB Platform_Shader_FILES ${ParaEngineClient_SOURCE_DIR}/platform/baseshaders/*.cpp)
+	SOURCE_GROUP("Platform_Base" FILES ${Platform_Shader_FILES})
+	list(APPEND ParaEngineClient_SRCS ${Platform_Shader_FILES})
+
 
 	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
 
@@ -264,6 +274,15 @@ if(APPLE)
 	include_directories("${Ex_Dir}/jpeg/include/mac")
 	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
 
+
+	link_directories("${Ex_Dir}/png/prebuilt/mac")
+	link_directories("${Ex_Dir}/jpeg/prebuilt/mac")
+	link_directories("${Ex_Dir}/freetype2/prebuilt/mac")
+	set(WRAPPER_LIB
+		libpng.a
+		libjpeg.a
+		libfreetype.a
+	)
 endif(APPLE)
 
 ##############################
@@ -427,10 +446,13 @@ if (WIN32)
   )
 else (WIN32)
 	if(APPLE)
+
 		set(EXTRA_LIBRARIES
 				dl
 				resolv
 				z
+			libiconv.dylib
+			${WRAPPER_LIB}
 			${CURL_LIBRARIES}
 			pthread
 		)

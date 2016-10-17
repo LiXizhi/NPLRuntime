@@ -2,7 +2,7 @@
 
 #include "CCFontAtlas.h"
 
-//#include <iconv.h>
+#include <iconv.h>
 
 #include "CCFont.h"
 #include "CCTexture2D.h"
@@ -18,7 +18,7 @@ const int FontAtlas::CacheTextureHeight = 512;
 const char* FontAtlas::CMD_PURGE_FONTATLAS = "__cc_PURGE_FONTATLAS";
 const char* FontAtlas::CMD_RESET_FONTATLAS = "__cc_RESET_FONTATLAS";
 
-FontAtlas::FontAtlas(Font &theFont) 
+FontAtlas::FontAtlas(Font &theFont)
 : _font(&theFont)
 , _fontFreeType(nullptr)
 , _iconv(nullptr)
@@ -43,7 +43,7 @@ FontAtlas::FontAtlas(Font &theFont)
 
         if (_fontFreeType->isDistanceFieldEnabled())
         {
-            _letterPadding += 2 * FontFreeType::DistanceMapSpread;    
+            _letterPadding += 2 * FontFreeType::DistanceMapSpread;
         }
         _currentPageDataSize = CacheTextureWidth * CacheTextureHeight;
         auto outlineSize = _fontFreeType->getOutlineSize();
@@ -56,8 +56,8 @@ FontAtlas::FontAtlas(Font &theFont)
         _currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
         memset(_currentPageData, 0, _currentPageDataSize);
 
-        auto  pixelFormat = outlineSize > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8; 
-        texture->initWithData(_currentPageData, _currentPageDataSize, 
+        auto  pixelFormat = outlineSize > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8;
+        texture->initWithData(_currentPageData, _currentPageDataSize,
             pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
 
         addTexture(texture,0);
@@ -88,7 +88,7 @@ FontAtlas::~FontAtlas()
 
     delete []_currentPageData;
 
-#if CC_TARGET_PLATFORM != CC_PLATFORM_WIN32 && CC_TARGET_PLATFORM != CC_PLATFORM_WINRT && CC_TARGET_PLATFORM != CC_PLATFORM_ANDROID
+#if PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_WINRT && PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
     if (_iconv)
     {
         iconv_close(_iconv);
@@ -100,7 +100,7 @@ FontAtlas::~FontAtlas()
 void FontAtlas::reset()
 {
     releaseTextures();
-    
+
     _currLineHeight = 0;
     _currentPage = 0;
     _currentPageOrigX = 0;
@@ -121,7 +121,7 @@ void FontAtlas::purgeTexturesAtlas()
 {
     if (_fontFreeType)
     {
-        reset();       
+        reset();
     }
 }
 
@@ -169,11 +169,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
     {
     case FT_ENCODING_GB2312:
     {
-#if CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_WINRT
-        WideCharToMultiByte(936, NULL, (LPCWCH)u16Text.c_str(), strLen, (LPSTR)gb2312Text, gb2312StrSize, NULL, NULL);
-#elif CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
-        conversionEncodingJNI((char*)u16Text.c_str(), gb2312StrSize, "UTF-16LE", gb2312Text, "GB2312");
-#else
+
         if (_iconv == nullptr)
         {
             _iconv = iconv_open("gb2312", "utf-16le");
@@ -192,7 +188,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
 
             iconv(_iconv, (char**)&pin, &inLen, &pout, &outLen);
         }
-#endif
+
     }
     break;
     default:
@@ -240,9 +236,9 @@ void FontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_
         // as `Label::_utf16Text` holds. If doing a `memset` or other memory operations, the orignal `Label::_utf16Text`
         // will be in an unknown state. Meanwhile, a bunch lots of logic which depends on `Label::_utf16Text`
         // will be broken.
-        
+
         // newChars = u16Text;
-        
+
         // Using `append` method is a workaround for this issue. So please be carefuly while using the assignment operator
         // of `std::u16string`.
         newChars.append(u16Text);
@@ -290,8 +286,8 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     if (_fontFreeType == nullptr)
     {
         return false;
-    } 
-    
+    }
+
     std::unordered_map<unsigned short, unsigned short> codeMapOfNewChar;
     findNewCharacters(utf16Text, codeMapOfNewChar);
     if (codeMapOfNewChar.empty())

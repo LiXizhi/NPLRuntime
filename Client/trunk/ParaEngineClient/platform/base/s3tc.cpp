@@ -1,18 +1,18 @@
 /****************************************************************************
  Copyright (c) 2013-2014 Chukong Technologies
- 
+
  http://www.cocos2d-x.org
- 
+
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
- 
+
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
- 
+
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,6 +26,8 @@
 
 #include "s3tc.h"
 
+#include <cstring>
+
 //Decode S3TC encode block to 4x4 RGB32 pixels
 static void s3tc_decode_block(uint8_t **blockData,
                        uint32_t *decodeBlockData,
@@ -36,16 +38,16 @@ static void s3tc_decode_block(uint8_t **blockData,
 {
     unsigned int colorValue0 = 0 , colorValue1 = 0, initAlpha = (!oneBitAlphaFlag * 255u) << 24;
     unsigned int rb0 = 0, rb1 = 0, rb2 = 0, rb3 = 0, g0 = 0, g1 = 0, g2 = 0, g3 = 0;
-    
+
     uint32_t colors[4], pixelsIndex = 0;
-    
+
     /* load the two color values*/
     memcpy((void *)&colorValue0, *blockData, 2);
     (*blockData) += 2;
-    
+
     memcpy((void *)&colorValue1, *blockData, 2);
     (*blockData) += 2;
-    
+
     /* the channel is r5g6b5 , 16 bits */
     rb0  = (colorValue0 << 19 | colorValue0 >> 8) & 0xf800f8;
     rb1  = (colorValue1 << 19 | colorValue1 >> 8) & 0xf800f8;
@@ -53,10 +55,10 @@ static void s3tc_decode_block(uint8_t **blockData,
     g1   = (colorValue1 << 5) & 0x00fc00;
     g0  += (g0 >> 6) & 0x000300;
     g1  += (g1 >> 6) & 0x000300;
-    
+
     colors[0] = rb0 + g0 + initAlpha;
     colors[1] = rb1 + g1 + initAlpha;
-    
+
     /* interpolate the other two color values */
     if (colorValue0 > colorValue1 || oneBitAlphaFlag)
     {
@@ -73,22 +75,22 @@ static void s3tc_decode_block(uint8_t **blockData,
         colors[3] = 0 ;
     }
     colors[2] = rb2 + g2 + initAlpha;
-    
+
     /*read the pixelsIndex , 2bits per pixel, 4 bytes */
     memcpy((void*)&pixelsIndex, *blockData, 4);
     (*blockData) += 4;
-    
+
     if (S3TCDecodeFlag::DXT5 == decodeFlag)
     {
         //dxt5 use interpolate alpha
         // 8-Alpha block: derive the other six alphas.
         // Bit code 000 = alpha0, 001 = alpha1, other are interpolated.
-        
+
         unsigned int alphaArray[8];
-        
+
         alphaArray[0] = (alpha ) & 0xff ;
         alphaArray[1] = (alpha >> 8) & 0xff ;
-        
+
         if (alphaArray[0] >= alphaArray[1])
         {
             alphaArray[2] = (alphaArray[0]*6 + alphaArray[1]*1) / 7;
@@ -107,10 +109,10 @@ static void s3tc_decode_block(uint8_t **blockData,
             alphaArray[6] = 0;
             alphaArray[7] = 255;
         }
-        
+
         // read the flowing 48bit indices (16*3)
         alpha >>= 16;
-        
+
         for (int y = 0; y < 4; ++y)
         {
             for (int x = 0; x < 4; ++x)
@@ -152,7 +154,7 @@ void s3tc_decode(uint8_t *encodeData,             //in_data
         for(int block_x = 0; block_x < pixelsWidth / 4; ++block_x, decodeBlockData += 4)            //skip 4 pixels
         {
             uint64_t blockAlpha = 0;
-            
+
             switch (decodeFlag)
             {
                 case S3TCDecodeFlag::DXT1:
@@ -180,5 +182,3 @@ void s3tc_decode(uint8_t *encodeData,             //in_data
         }//for block_x
     }//for block_y
 }
-
-

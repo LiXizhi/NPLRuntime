@@ -8,7 +8,7 @@
 #include "../base/uthash.h"
 #include "CCFileUtils.h"
 
-#define CHECK_GL_ERROR_DEBUG() 
+#define CHECK_GL_ERROR_DEBUG()
 
 NS_CC_BEGIN
 
@@ -281,7 +281,7 @@ void GLProgram::parseUniforms()
 					{
 						CCLOG("error: 0x%x", (int)__gl_error_code);
 					}
-					
+
 					//TODO:wangpeng assert(__gl_error_code == GL_NO_ERROR);
 
 					_userUniforms[uniform.name] = uniform;
@@ -318,7 +318,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	}
 
 	const GLchar *sources[] = {
-#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32 && CC_TARGET_PLATFORM != CC_PLATFORM_LINUX && CC_TARGET_PLATFORM != CC_PLATFORM_MAC)
+#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX && PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC)
 		(type == GL_VERTEX_SHADER ? "precision highp float;\n" : "precision mediump float;\n"),
 #endif
 		"uniform mat4 CC_PMatrix;\n"
@@ -425,7 +425,7 @@ bool GLProgram::link()
 {
 	CCASSERT(_program != 0, "Cannot link invalid program");
 
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_WINRT) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
 	if (!_hasShaderCompiler)
 	{
 		// precompiled shader program is already linked

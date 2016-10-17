@@ -78,7 +78,7 @@ bool CParaEngineApp::IsAppActive()
 #ifdef USE_OPENGL_RENDERER
 void CParaEngineApp::listenRendererRecreated(cocos2d::EventCustom* event)
 {
-//#if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID || CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+//#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID || PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
 	OUTPUT_LOG("\nInfo: opengl listenRendererRecreated \n\n");
 	// listen the event that renderer was recreated on Android/WP8
 	// all opengl related id has already become invalid at this time, no need to release them, just recreate them all.

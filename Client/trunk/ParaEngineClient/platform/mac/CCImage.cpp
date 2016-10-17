@@ -537,7 +537,7 @@ bool Image::initWithPngData(const unsigned char * data, ssize_t dataLen)
 		info_ptr = png_create_info_struct(png_ptr);
 		CC_BREAK_IF(!info_ptr);
 
-#if (CC_TARGET_PLATFORM != CC_PLATFORM_BADA && CC_TARGET_PLATFORM != CC_PLATFORM_NACL && CC_TARGET_PLATFORM != CC_PLATFORM_TIZEN)
+#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_BADA && PARA_TARGET_PLATFORM != PARA_PLATFORM_NACL && PARA_TARGET_PLATFORM != PARA_PLATFORM_TIZEN)
 		CC_BREAK_IF(setjmp(png_jmpbuf(png_ptr)));
 #endif
 

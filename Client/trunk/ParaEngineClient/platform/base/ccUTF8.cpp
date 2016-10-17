@@ -3,7 +3,7 @@
 #include "ccUTF8.h"
 
 
-#include "ConvertUTF.h"
+#include "util/ConvertUTF.h"
 
 NS_CC_BEGIN
 
@@ -12,12 +12,12 @@ namespace StringUtils {
 std::string format(const char* format, ...)
 {
 #define CC_MAX_STRING_LENGTH (1024*100)
-    
+
     std::string ret;
-    
+
     va_list ap;
     va_start(ap, format);
-    
+
     char* buf = (char*)malloc(CC_MAX_STRING_LENGTH);
     if (buf != nullptr)
     {
@@ -26,7 +26,7 @@ std::string format(const char* format, ...)
         free(buf);
     }
     va_end(ap);
-    
+
     return ret;
 }
 
@@ -188,7 +188,7 @@ bool UTF16ToUTF8(const std::u16string& utf16, std::string& outUtf8)
 {
     return utfConvert(utf16, outUtf8, ConvertUTF16toUTF8);
 }
-    
+
 bool UTF16ToUTF32(const std::u16string& utf16, std::u32string& outUtf32)
 {
     return utfConvert(utf16, outUtf32, ConvertUTF16toUTF32);
@@ -352,7 +352,7 @@ bool iscjk_unicode(unsigned short ch)
 
 
 long cc_utf8_strlen (const char * p, int max)
-{   
+{
     if (p == nullptr)
         return -1;
     return StringUtils::getCharacterCountInUTF8String(p);
@@ -365,19 +365,19 @@ unsigned int cc_utf8_find_last_not_char(const std::vector<unsigned short>& str, 
     {
         char16Vector.push_back(e);
     }
-    
+
     return StringUtils::getIndexOfLastNotChar16(char16Vector, c);
 }
 
 std::vector<unsigned short> cc_utf16_vec_from_utf16_str(const unsigned short* str)
 {
     std::vector<unsigned short> str_new;
-    
+
     if (str == nullptr)
         return str_new;
-    
+
     int len = wcslen_internal(str);
-    
+
     for (int i = 0; i < len; ++i)
     {
         str_new.push_back(str[i]);
@@ -389,13 +389,13 @@ unsigned short* cc_utf8_to_utf16(const char* str_old, int length/* = -1*/, int* 
 {
     if (str_old == nullptr)
         return nullptr;
-    
+
     unsigned short* ret = nullptr;
-    
+
     std::u16string outUtf16;
     std::string inUtf8 = length == -1 ? std::string(str_old) : std::string(str_old, length);
     bool succeed = StringUtils::UTF8ToUTF16(inUtf8, outUtf16);
-    
+
     if (succeed)
     {
         ret = new (std::nothrow) unsigned short[outUtf16.length() + 1];
@@ -406,7 +406,7 @@ unsigned short* cc_utf8_to_utf16(const char* str_old, int length/* = -1*/, int* 
             *rUtf16Size = static_cast<int>(outUtf16.length());
         }
     }
-    
+
     return ret;
 }
 
@@ -417,27 +417,27 @@ char * cc_utf16_to_utf8 (const unsigned short  *str,
 {
     if (str == nullptr)
         return nullptr;
-    
-    
+
+
     std::u16string utf16;
     int utf16Len = len < 0 ? wcslen_internal(str) : len;
-    
+
     for (int i = 0; i < utf16Len; ++i)
     {
         utf16.push_back(str[i]);
     }
-    
+
     char* ret = nullptr;
     std::string outUtf8;
     bool succeed = StringUtils::UTF16ToUTF8(utf16, outUtf8);
-    
+
     if (succeed)
     {
         ret = new (std::nothrow) char[outUtf8.length() + 1];
         ret[outUtf8.length()] = '\0';
         memcpy(ret, outUtf8.data(), outUtf8.length());
     }
-    
+
     return ret;
 }
 
