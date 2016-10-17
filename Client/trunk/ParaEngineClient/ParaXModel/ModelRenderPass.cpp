@@ -208,6 +208,12 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			//pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(0.00000f,0.242f, 0.f, 0.f));
 		}
 
+		if (GetCategoryId() > 0)
+		{
+			Vector4 v((float)GetCategoryId(), 0.f, 0.f, 0.f);
+			pEffect->setParameter(CEffectFile::k_ConstVector1, &v);
+		}
+
 		if (pEffect->isParameterUsed(CEffectFile::k_transitionFactor) && pMaterialParams != NULL)
 		{
 
@@ -286,6 +292,10 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState)
 		if (opacity != -1)
 		{
 			pEffect->setFloat(CEffectFile::k_opacity, 1.f);
+		}
+		if (GetCategoryId() > 0)
+		{
+			pEffect->setParameter(CEffectFile::k_ConstVector1, &Vector4::ZERO);
 		}
 
 		if ((blendmode & BM_TEMP_FORCEALPHABLEND) == BM_TEMP_FORCEALPHABLEND)
@@ -573,5 +583,23 @@ int32 ParaEngine::ModelRenderPass::GetStartIndex()
 int32 ParaEngine::ModelRenderPass::GetVertexStart(CParaXModel *m)
 {
 	return m->geosets[geoset].GetVertexStart();
+}
+
+int32 ParaEngine::ModelRenderPass::GetCategoryId()
+{
+	return has_category_id ? (int)m_fCategoryID : 0;
+}
+
+void ParaEngine::ModelRenderPass::SetCategoryId(int32 nCategoryID)
+{
+	if (nCategoryID == 0)
+	{
+		has_category_id = false;
+	}
+	else
+	{
+		m_fCategoryID = (float)nCategoryID;
+		has_category_id = true;
+	}
 }
 

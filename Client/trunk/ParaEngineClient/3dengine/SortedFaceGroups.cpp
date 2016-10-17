@@ -48,7 +48,7 @@ ParaEngine::CFaceGroup::CFaceGroup()
 	m_nNumTriangles = 0;
 
 	m_vCenterPos = Vector3(0.f,0.f,0.f);
-	m_stripLenght = 0;
+	m_stripLength = 0;
 }
 
 void ParaEngine::CFaceGroup::UpdateCenterPos()
@@ -455,7 +455,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 							if(vLastUVOffset != facegroup.m_vUVOffset)
 							{
 								vLastUVOffset = facegroup.m_vUVOffset;
-								if(facegroup.m_facegroup->m_stripLenght > 0)
+								if(facegroup.m_facegroup->m_stripLength > 0)
 									vLastUVOffset = Vector2(0,0);
 
 								Vector4 vOffset(vLastUVOffset.x, vLastUVOffset.y, 0.f, 0.f);
@@ -502,10 +502,10 @@ void ParaEngine::CSortedFaceGroups::Render()
 								//calc texture strip coordinate
 								float a = 0;
 								float b = 0;
-								bool enableTexStripEffect = facegroup.m_facegroup->m_stripLenght > 0;
+								bool enableTexStripEffect = facegroup.m_facegroup->m_stripLength > 0;
 								if(enableTexStripEffect)
 								{
-									float stripLen = facegroup.m_facegroup->m_stripLenght;
+									float stripLen = facegroup.m_facegroup->m_stripLength;
 									float stripOffset = facegroup.m_vUVOffset.y;
 									if(stripOffset > 0 && (stripOffset-1 < stripLen))
 									{
