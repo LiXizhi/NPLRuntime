@@ -132,7 +132,7 @@ namespace ParaScripting
 		if(IsValid())
 			nTime = (int)m_pMovieCtrler->GetTime();
 
-		if(sFormat == "")
+		if (sFormat && sFormat[0]== '\0')
 		{
 			char tmp[50];
 			itoa(nTime, tmp, 10);

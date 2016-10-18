@@ -1066,7 +1066,7 @@ namespace ParaScripting
 				{
 					text += 3;
 				}
-				else if ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE) || (((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF))
+				else if ( ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE)) || ((((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF)))
 				{
 					text += 2;
 				}

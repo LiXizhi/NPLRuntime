@@ -2485,8 +2485,7 @@ int ParaScene::GetActionMeshesBySphere(const object& inout, float x, float y, fl
 int ParaScene::GetObjectsByScreenRect( const object& inout, int left, int top, int right, int bottom, const char* sFilterFunc, float fMaxDistance )
 {
 	OBJECT_FILTER_CALLBACK pFilterFunc = GetFilterFuncByName(sFilterFunc);
-	g_fncPickingActionMesh;
-
+	
 	list<CBaseObject*> output;
 	RECT rect = {left, top, right, bottom};
 	
@@ -2507,8 +2506,7 @@ int ParaScene::GetObjectsByScreenRect( const object& inout, int left, int top, i
 int ParaScene::GetObjectsBySphere( const object& inout, float x, float y, float z, float radius, const char* sFilterFunc )
 {
 	OBJECT_FILTER_CALLBACK pFilterFunc = GetFilterFuncByName(sFilterFunc);
-	g_fncPickingActionMesh;
-
+	
 	list<CBaseObject*> output;
 	CShapeSphere sphere(Vector3(x,y,z), radius);
 	int nCount = CGlobals::GetScene()->GetObjectsBySphere(output, sphere, pFilterFunc);

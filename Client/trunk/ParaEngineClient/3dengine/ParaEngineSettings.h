@@ -89,6 +89,10 @@ namespace ParaEngine
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLockWindowSize_s, bool)	{ cls->SetLockWindowSize(p1); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(ParaEngineSettings, IsShowWindowTitleBar_s, bool*)	{ *p1 = cls->IsShowWindowTitleBar(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetShowWindowTitleBar_s, bool)	{ cls->SetShowWindowTitleBar(p1); return S_OK; }
+		
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetGameEffectSet_s, int*)	{*p1 = cls->GetGameEffectSet(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, LoadGameEffectSet_s, int)	{cls->LoadGameEffectSet(p1); return S_OK;}
 
@@ -643,6 +647,10 @@ namespace ParaEngine
 
 		/** lock window size, so that window size is totally controlled by application instead of user. both min/max/resize window is ignored.*/
 		void SetLockWindowSize(bool bEnabled);
+
+		/** show/hide title bar */
+		void SetShowWindowTitleBar(bool bEnabled);
+		bool IsShowWindowTitleBar();
 
 		const std::string& GetMaxMacAddress();
 

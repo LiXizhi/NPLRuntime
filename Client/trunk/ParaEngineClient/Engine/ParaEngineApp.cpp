@@ -33,6 +33,7 @@
 #include "ObjectManager.h"
 #include "PredefinedEvents.h"
 #include "DynamicAttributeField.h"
+#include "EventClasses.h"
 
 #include "MoviePlatform.h"
 #include "DataProviderManager.h"
@@ -2569,6 +2570,10 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					}
 				}
 				SendMessageToApp(hWnd, uMsg, result, 0);
+
+				CGUIRoot* pRoot = CGlobals::GetGUI();
+				if(pRoot != 0 && pRoot->IsNonClient())
+					result = HTCAPTION; // this will allow dragging
 				return result;
 		}
 		case WM_LBUTTONUP:
@@ -2615,7 +2620,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					SendMessage( hWnd, WM_CLOSE, 0, 0 );
 					break;
 				default:
-					SendMessageToApp(hWnd, WM_NCHITTEST, wParam, lParam);
+					SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
 					break;
 				}
 			}
@@ -2900,15 +2905,12 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			using namespace ParaEngine;
 			CGUIRoot::GetInstance()->SetMouseInClient(true);
 		}
-		else{
+		else
+		{
 			LRESULT result = wParam;
-			if (((LRESULT)wParam)!=HTCLIENT)  {
-				using namespace ParaEngine;
-				CGUIRoot::GetInstance()->SetMouseInClient(false);
-			}else{
-				using namespace ParaEngine;
-				CGUIRoot::GetInstance()->SetMouseInClient(true);
-			}
+			using namespace ParaEngine;
+			MouseEvent event(0, 0, 0, ((LRESULT)wParam) == HTCLIENT ? 1 : 0);
+			CGUIRoot::GetInstance()->handleNonClientTest(event);
 		}
 		break;
 	case WM_DROPFILES:

@@ -214,11 +214,13 @@ public:
 	bool equals(const CCVector2& v) const;
 
 	static CCVector2 ZERO;
+
 };
 
 class Ref
 {
 public:
+
 	Ref();
 
 	void retain();
@@ -233,6 +235,7 @@ protected:
 	~Ref();
 
 	int _refCount;
+
 };
 
 class Size
@@ -243,13 +246,16 @@ public:
 
 	Size(float width, float height);
 
+
 	bool equals(const Size& v) const;
+
 
     float width;
     float height;
 
     static const Size ZERO;
 };
+
 
 
 class Rect
@@ -464,5 +470,6 @@ private:
 	unsigned char* _bytes;
 	ssize_t _size;
 };
+
 
 #endif

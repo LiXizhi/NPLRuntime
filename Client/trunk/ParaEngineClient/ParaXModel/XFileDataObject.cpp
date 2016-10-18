@@ -427,7 +427,7 @@ bool XFileDataObject::ReadXRenderPass(XFileParser& parser)
 			pass.vertexStart = (uint16)parser.ReadInt();
 			pass.vertexEnd = (uint16)parser.ReadInt();
 			pass.tex = parser.ReadInt();
-			pass.p = parser.ReadFloat();
+			pass.m_fReserved0 = parser.ReadFloat();
 			pass.texanim = (int16)parser.ReadInt();
 			pass.color = (int16)parser.ReadInt();
 			pass.opacity = (int16)parser.ReadInt();

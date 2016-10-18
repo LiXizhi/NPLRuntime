@@ -1,5 +1,6 @@
 
 
+
 #if WIN32
 
 #include <windows.h>
@@ -57,14 +58,19 @@
 #include <vector>
 
 
+
+
 #define CC_GL_DEPTH24_STENCIL8      -1
+
 
 #ifdef WIN32
 #else
+
 #define glDeleteVertexArrays            glDeleteVertexArraysAPPLE
 #define glGenVertexArrays               glGenVertexArraysAPPLE
 #define glBindVertexArray               glBindVertexArrayAPPLE
 #define glClearDepthf                   glClearDepth
 #define glDepthRangef                   glDepthRange
 #define glReleaseShaderCompiler(xxx)
+
 #endif

@@ -37,5 +37,5 @@ IF(MSVC)
 	endforeach(flag_var)
 ENDIF()
 
-ADD_LIBRARY(jsoncpp ${jsoncpp_SRCS})
+ADD_LIBRARY(jsoncpp STATIC ${jsoncpp_SRCS})
 

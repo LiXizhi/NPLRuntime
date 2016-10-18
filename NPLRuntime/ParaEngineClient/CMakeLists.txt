@@ -307,6 +307,7 @@ include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
+	include_directories("${Assimp_SOURCE_DIR}/include/")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
 ELSE(WIN32)
@@ -443,6 +444,7 @@ if (WIN32)
 			Wldap32
 			zlib
 			libcurl
+			assimp
   )
 else (WIN32)
 	if(APPLE)

@@ -2,11 +2,14 @@
 #ifndef __CC_IMAGE_H__
 #define __CC_IMAGE_H__
 
+
 #include "CCType.h"
+
 
 #include "CCTexture2D.h"
 
 NS_CC_BEGIN
+
 
 
 
@@ -17,9 +20,11 @@ typedef struct _MipmapInfo
 	_MipmapInfo() :address(NULL), len(0) {}
 }MipmapInfo;
 
+
 class Image : public Ref
 {
 public:
+
 	// config
 	static bool supportsS3TC;
 	static bool PNG_PREMULTIPLIED_ALPHA_ENABLED;
@@ -54,9 +59,11 @@ public:
 	};
 
 public:
+
 	bool initWithImageData(const unsigned char * data, ssize_t dataLen);
     bool initWithRawData(const unsigned char * data, ssize_t dataLen, int width, int height, int bitsPerComponent, bool preMulti = false);
     bool saveToFile(const std::string &filename, bool isToRGB = true);
+
 
 	float               getWidth()              { return _width; }
 	float               getHeight()             { return _height; }
@@ -108,6 +115,7 @@ protected:
 
 
 	void premultipliedAlpha();
+
 
 };
 

@@ -6,15 +6,20 @@
 #define __CC_TEXTURE2d_H__
 
 
+
 #include "CCType.h"
 
 #include <map>
 
+
+
 NS_CC_BEGIN
 
 class Image;
+
 class GLProgram;
 typedef struct _MipmapInfo MipmapInfo;
+
 
 
 class Texture2D : public Ref
@@ -70,6 +75,7 @@ public:
 	        NONE = -1
 	    };
 
+
 	struct PixelFormatInfo {
 
 		PixelFormatInfo(GLenum anInternalFormat, GLenum aFormat, GLenum aType, int aBpp, bool aCompressed, bool anAlpha)
@@ -91,6 +97,7 @@ public:
 
 	typedef std::map<Texture2D::PixelFormat, const PixelFormatInfo> PixelFormatInfoMap;
 
+
 	typedef struct _TexParams {
 	        GLuint    minFilter;
 	        GLuint    magFilter;
@@ -105,7 +112,9 @@ public:
 	bool initWithImage(Image * image, PixelFormat format);
 
 
+
 	int getNumberOfMipmaps();
+
 
 	 /** Gets the width of the texture in pixels. */
     int getPixelsWide() const;
@@ -115,6 +124,7 @@ public:
 
 
 	bool initWithData(const void *data, ssize_t dataLen, Texture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
+
 	bool updateWithData(const void *data, int offsetX, int offsetY, int width, int height);
 
 	GLuint getName() const;
@@ -213,6 +223,7 @@ private:
 	static void convertRGBA8888ToAI88(const unsigned char* data, ssize_t dataLen, unsigned char* outData);
 	static void convertRGBA8888ToRGBA4444(const unsigned char* data, ssize_t dataLen, unsigned char* outData);
 	static void convertRGBA8888ToRGB5A1(const unsigned char* data, ssize_t dataLen, unsigned char* outData);
+
 };
 
 NS_CC_END

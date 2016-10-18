@@ -1,6 +1,8 @@
 
+
 #ifndef __CCGLPROGRAM_H__
 #define __CCGLPROGRAM_H__
+
 
 
 
@@ -321,5 +323,6 @@ protected:
 };
 
 NS_CC_END
+
 
 #endif /* __CCGLPROGRAM_H__ */

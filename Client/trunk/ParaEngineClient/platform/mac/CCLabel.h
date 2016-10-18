@@ -26,14 +26,18 @@
 #ifndef _COCOS2D_CCLABEL_H_
 #define _COCOS2D_CCLABEL_H_
 
+
 #include "CCType.h"
+
 
 #include <unordered_map>
 #include <vector>
 
 
 
+
 NS_CC_BEGIN
+
 
 
 enum class TextVAlignment
@@ -57,9 +61,11 @@ class FontAtlas;
 
 
 
+
 class Label : public Ref
 {
 public:
+
 	static const int DistanceFieldFontSize;
 
 	struct LetterInfo
@@ -80,11 +86,13 @@ public:
 
 	Label(FontAtlas *atlas = nullptr, TextHAlignment hAlignment = TextHAlignment::LEFT,
 		TextVAlignment vAlignment = TextVAlignment::TOP, bool useDistanceField = false, bool useA8Shader = false);
+
 	virtual ~Label();
 
 	bool setTTFConfig(const TTFConfig& ttfConfig);
 
 	FontAtlas* getFontAtlas() { return _fontAtlas; }
+
 
 
 	virtual void setPosition(float x, float y);
@@ -112,7 +120,7 @@ public:
 
 	void setAlignment(TextHAlignment hAlignment) { setAlignment(hAlignment, _vAlignment); }
 	TextHAlignment getTextAlignment() const { return _hAlignment; }
-	
+
 	void setAlignment(TextHAlignment hAlignment, TextVAlignment vAlignment);
 
 	void setHorizontalAlignment(TextHAlignment hAlignment) { setAlignment(hAlignment, _vAlignment); }
@@ -124,7 +132,7 @@ public:
 
 	bool computeHorizontalKernings(const std::u16string& stringToRender);
 
-	void computeStringNumLines();	
+	void computeStringNumLines();
 
 
 	inline float getPositionX() const

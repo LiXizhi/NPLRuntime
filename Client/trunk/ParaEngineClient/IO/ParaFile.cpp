@@ -1185,7 +1185,7 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 		
 	ParaEngine::Lock lock_(g_file_mutex);
 
-	if (dwDirectoryType >= 0 && dwDirectoryType<APP_SH_DESKTOP_DIR)
+	if (dwDirectoryType<APP_SH_DESKTOP_DIR)
 	{
 		if (!g_CurDirs[dwDirectoryType].empty())
 			return g_CurDirs[dwDirectoryType];

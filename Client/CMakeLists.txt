@@ -38,7 +38,13 @@ find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
+	
     add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
+	set(ZLIB_FOUND 1)
+	set(ZLIB_LIBRARY zlib)
+	set(ZLIB_LIBRARIES zlib)
+	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.3)
+  
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
 else()
 	FIND_PACKAGE(CURL REQUIRED)
@@ -54,6 +60,8 @@ add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${CLIENT_BINARY_DIR}/sqlit
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
 add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-3.1.1 ${CLIENT_BINARY_DIR}/assimp-3.1.1)
 
 # main NPL runtime using ParaEngineClient
 add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)

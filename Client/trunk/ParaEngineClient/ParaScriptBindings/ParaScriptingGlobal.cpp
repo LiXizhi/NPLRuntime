@@ -537,6 +537,8 @@ luabind::object ParaScripting::ParaAttributeObject::GetDynamicFieldImp(CDynamicA
 			}
 			break;
 		}
+		default:
+			break;
 		}
 	}
 	else
@@ -630,6 +632,8 @@ luabind::object ParaScripting::ParaAttributeObject::GetFieldKeyValue(const char*
 			}
 			break;
 		}
+		default:
+			break;
 		}
 	}
 	return object(output);
@@ -693,6 +697,8 @@ void ParaScripting::ParaAttributeObject::SetFieldKeyValue(const char* sFieldname
 					}
 					break;
 				}
+				default:
+					break;
 				}
 			}
 		}
@@ -766,6 +772,8 @@ int ParaScripting::ParaAttributeObject::SetDynamicField(const char* sFieldname, 
 				}
 				break;
 			}
+			default:
+				break;
 			}
 			if (!isKeyExist)
 				nResult = 1;
@@ -840,6 +848,8 @@ int ParaScripting::ParaAttributeObject::SetDynamicField_(int nFieldIndex, const 
 				}
 				break;
 			}
+			default:
+				break;
 			}
 			if (!isKeyExist)
 				nResult = 1;

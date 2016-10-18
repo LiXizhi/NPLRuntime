@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
+#if defined(WIN32) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
 #ifndef SUPPORT_FBX_MODEL_FILE
 #define SUPPORT_FBX_MODEL_FILE
 #endif

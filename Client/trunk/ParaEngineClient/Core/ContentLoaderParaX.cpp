@@ -304,7 +304,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					lod.m_pParaXMesh = p.ParseParaXModel();
 				}
 
-#if !defined(NPLRUNTIME) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
+#ifdef SUPPORT_FBX_MODEL_FILE
 				else if (sExt == "fbx")
 				{
 					// static or animated fbx model

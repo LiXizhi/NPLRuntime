@@ -29,5 +29,5 @@ IF(MSVC)
 	endforeach(flag_var)
 ENDIF()
 
-ADD_LIBRARY(tinyxpath ${tinyxpath_SRCS})
+ADD_LIBRARY(tinyxpath STATIC ${tinyxpath_SRCS})
 

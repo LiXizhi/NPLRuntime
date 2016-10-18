@@ -1,4 +1,5 @@
 
+
 #include "ParaEngine.h"
 
 
@@ -16,7 +17,7 @@ CCVector2::CCVector2() : x(0), y(0)
 }
 
 CCVector2::CCVector2(float vx, float vy) : x(vx), y(vy)
-{	
+{
 }
 
 bool CCVector2::equals(const CCVector2& v) const
@@ -89,6 +90,7 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 #endif
 }
 
+
 const Size Size::ZERO = Size(0, 0);
 
 Size::Size(void) : width(0), height(0)
@@ -98,6 +100,7 @@ Size::Size(void) : width(0), height(0)
 Size::Size(float w, float h) : width(w), height(h)
 {
 }
+
 
 bool Size::equals(const Size& v) const
 {
@@ -124,7 +127,7 @@ void Ref::retain()
 }
 
 void Ref::release()
-{	
+{
 	if (_refCount > 0)
 	{
 		--_refCount;
@@ -136,30 +139,30 @@ void Ref::release()
 }
 
 Ref* Ref::autorelease()
-{ 
-	return this; 
+{
+	return this;
 }
 
 
 
 Rect::Rect(void) : origin(0.0f, 0.0f), size(0.0f, 0.0f)
-{	
+{
 }
 
 Rect::Rect(float x, float y, float width, float height)
 	: origin(x, y), size(width, height)
-{	
+{
 }
 
 Rect::Rect(const CCVector2& pos, const Size& dimension)
 	: origin(pos), size(dimension)
 {
-	
+
 }
 
 Rect::Rect(const Rect& other)
 	: origin(other.origin), size(other.size)
-{	
+{
 }
 
 Rect& Rect::operator= (const Rect& other)
@@ -334,13 +337,13 @@ Data::Data() :
 	_bytes(nullptr),
 	_size(0)
 {
-	
+
 }
 
 Data::Data(Data&& other) :
 	_bytes(nullptr),
 	_size(0)
-{	
+{
 	move(other);
 }
 
@@ -348,23 +351,23 @@ Data::Data(const Data& other) :
 	_bytes(nullptr),
 	_size(0)
 {
-	
+
 	copy(other._bytes, other._size);
 }
 
 Data::~Data()
-{	
+{
 	clear();
 }
 
 Data& Data::operator= (const Data& other)
-{	
+{
 	copy(other._bytes, other._size);
 	return *this;
 }
 
 Data& Data::operator= (Data&& other)
-{	
+{
 	move(other);
 	return *this;
 }
@@ -646,6 +649,7 @@ const Color4F Color4F::MAGENTA(1, 0, 1, 1);
 const Color4F Color4F::BLACK(0, 0, 0, 1);
 const Color4F Color4F::ORANGE(1, 0.5f, 0, 1);
 const Color4F Color4F::GRAY(0.65f, 0.65f, 0.65f, 1);
+
 
 
 #endif

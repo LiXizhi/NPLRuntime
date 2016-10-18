@@ -9,8 +9,7 @@ namespace ParaEngine
 		CLightParam(void);
 		~CLightParam(void);
 	public:
-		// casting
-		operator Para3DLight () const;
+		
 		// Return whether first element is greater than the second
 		bool static IsGreater ( const CLightParam& elem1, const CLightParam& elem2 )
 		{

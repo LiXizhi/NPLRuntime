@@ -1,9 +1,12 @@
 
+
 #include "ParaEngine.h"
+
 
 #ifdef PLATFORM_MAC
 
 #include "CCImage.h"
+
 
 #include "platform/base/s3tc.h"
 
@@ -162,10 +165,12 @@ bool Image::initWithRawData(const unsigned char * data, ssize_t dataLen, int wid
 	} while (0);
 
 	return ret;
+
 }
 
 bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
 {
+
 	bool ret = false;
 
 	do
@@ -794,6 +799,7 @@ bool Image::initWithS3TCData(const unsigned char * data, ssize_t dataLen)
 }
 
 bool Image::saveToFile(const std::string &filename, bool isToRGB)
+
 {
     return true;
 }
@@ -817,5 +823,6 @@ void Image::premultipliedAlpha()
 	_hasPremultipliedAlpha = true;
 #endif
 }
+
 
 #endif

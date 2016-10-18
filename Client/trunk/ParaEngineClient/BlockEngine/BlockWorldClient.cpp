@@ -3094,6 +3094,7 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderDeferredLights()
 	{
+#ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
@@ -3103,12 +3104,59 @@ namespace ParaEngine
 			return (a->GetLightType() < b->GetLightType());
 		});
 
+		// setup shader here
+		for (int i = 0; i < 3; i++)
+		{
+			if (m_lightgeometry_effects[i] == 0)
+			{
+				if (i == 0)
+					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingPointLighting.fxo");
+				else if (i == 2)
+					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+				else 
+					m_lightgeometry_effects[i] = CGlobals::GetAssetManager()->LoadEffectFile("blockFancy", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingDirectionalLighting.fxo");
+				
+				m_lightgeometry_effects[i]->LoadAsset();
+			}
+			if (!m_lightgeometry_effects[i] || ! m_lightgeometry_effects[i]->IsValid())
+				return;
+		}
+
 		// TODO: setup render target here
+		{
+
+
+		}
+
 		// sort by type and render light geometry
+		int nLastType = -1;
+
+		CGlobals::GetEffectManager()->EndEffect();
+		CEffectFile* pEffectFile = NULL;
 		for (CLightObject* lightObject : sceneState->listDeferredLightObjects)
 		{
+			if (lightObject->GetLightType() != nLastType)
+			{
+				if (pEffectFile) 
+				{
+					pEffectFile->end();
+				}
+				else 
+				{
+					// first time, we will switch to declaration
+					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
+					if (pDecl)
+						CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
+				}
+				pEffectFile = m_lightgeometry_effects[lightObject->GetLightType() - 1].get();
+				pEffectFile->begin();
+			}
 			lightObject->RenderDeferredLightMesh(sceneState);
 		}
+		if (pEffectFile) {
+			pEffectFile->end();
+		}
+#endif
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

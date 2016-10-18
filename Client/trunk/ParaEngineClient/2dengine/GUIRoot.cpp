@@ -124,7 +124,7 @@ for CGUIRoot
 CGUIRoot::CGUIRoot(void)
 	: engine(NULL),
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
-	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000),
+	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false)
 {
 	if (!m_type){
@@ -935,6 +935,16 @@ bool ParaEngine::CGUIRoot::IsKeyboardProcessed()
 bool ParaEngine::CGUIRoot::IsMouseProcessed()
 {
 	return m_bMouseProcessed;
+}
+
+bool ParaEngine::CGUIRoot::IsNonClient() const
+{
+	return m_bIsNonClient;
+}
+
+void ParaEngine::CGUIRoot::SetIsNonClient(bool val)
+{
+	m_bIsNonClient = val;
 }
 
 void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
@@ -2542,6 +2552,23 @@ bool ParaEngine::CGUIRoot::handleTouchEvent(const TouchEvent& touch_)
 	return true;
 }
 
+bool ParaEngine::CGUIRoot::handleNonClientTest(const MouseEvent& mouseEvent)
+{
+	bool bIsInClient = (mouseEvent.m_nEventType == 1);
+	SetMouseInClient(bIsInClient);
+	bool bIsNonClient = false;
+	if (bIsInClient)
+	{
+		CGUIBase* pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+		if (pMouseTarget && pMouseTarget->IsNonClientTestEnabled())
+		{
+			bIsNonClient = true;
+		}
+	}
+	SetIsNonClient(bIsNonClient);
+	return bIsInClient;
+}
+
 CGUIBase* ParaEngine::CGUIRoot::GetIMEFocus() const
 {
 	return m_IMEFocus;
@@ -2663,10 +2690,9 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
+	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerStepSizePixels", FieldType_Int, (void*)SetFingerStepSizePixels_s, (void*)GetFingerStepSizePixels_s, NULL, NULL, bOverride);
-
 	pClass->AddField("MinimumScreenSize", FieldType_Vector2, (void*)SetMinimumScreenSize_s, NULL, NULL, NULL, bOverride);
-
 	return S_OK;
 }

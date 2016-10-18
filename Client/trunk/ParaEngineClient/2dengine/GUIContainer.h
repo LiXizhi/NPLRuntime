@@ -288,6 +288,10 @@ namespace ParaEngine
 
 		/** get the index of the given child. */
 		int GetChildIndex(CGUIBase* pChild);
+
+		virtual bool IsNonClientTestEnabled();
+		virtual void EnableNonClientTest(bool val);
+
 	protected:
 		/** a render target will be created with the same name as this object. */
 		virtual CRenderTarget* CreateGetRenderTarget(bool bCreateIfNotExist = true);
@@ -323,9 +327,10 @@ namespace ParaEngine
 		QPoint				m_compositionPoint;
 		int					m_nPopupStyle;//obsolete
 		bool				m_bIsTop;
-
 		bool				m_bBatching;//if a Batching operation is on the way
 		bool				m_bNeedCalClientRect;//if the child rect needs to be recalculate
+		/** default to false. if true, we will set GUIRoot's non-client attribute. */
+		bool				m_bEnableNonClientTest;
 		friend class CGUIRoot;
 	};
 }

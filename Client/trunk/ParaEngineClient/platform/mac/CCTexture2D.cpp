@@ -1,10 +1,13 @@
 
+
 #include "ParaEngine.h"
+
 
 
 #ifdef PLATFORM_MAC
 
 #include "CCTexture2D.h"
+
 #include "CCImage.h"
 #include "CCGLProgram.h"
 #include "CCGLProgramCache.h"
@@ -110,6 +113,7 @@ Texture2D::Texture2D()
 
 Texture2D::~Texture2D()
 {
+
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	VolatileTextureMgr::removeTexture(this);
 #endif
@@ -141,7 +145,7 @@ bool Texture2D::initWithImage(Image *image, PixelFormat format)
 	int imageWidth = image->getWidth();
 	int imageHeight = image->getHeight();
 	this->_filePath = image->getFilePath();
-	
+
 
 	int maxTextureSize = Image::MaxTextureSize;
 	if (imageWidth > maxTextureSize || imageHeight > maxTextureSize)
@@ -284,25 +288,30 @@ Texture2D::PixelFormat Texture2D::convertDataToFormat(const unsigned char* data,
 
 int Texture2D::getNumberOfMipmaps()
 {
-	return 0; 
+	return 0;
 }
 
  /** Gets the width of the texture in pixels. */
 int Texture2D::getPixelsWide() const
 {
+
 	return _pixelsWide;
+
 }
 
 /** Gets the height of the texture in pixels. */
 int  Texture2D::getPixelsHigh() const
 {
+
 	return _pixelsHigh;
+
 }
 
 
 
 bool Texture2D::initWithData(const void *data, ssize_t dataLen, Texture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize)
 {
+
 	CCASSERT(dataLen>0 && pixelsWide>0 && pixelsHigh>0, "Invalid size");
 
 	//if data has no mipmaps, we will consider it has only one mipmap
@@ -315,7 +324,7 @@ bool Texture2D::initWithData(const void *data, ssize_t dataLen, Texture2D::Pixel
 bool Texture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh)
 {
 
-	//the pixelFormat must be a certain value 
+	//the pixelFormat must be a certain value
 	CCASSERT(pixelFormat != PixelFormat::NONE && pixelFormat != PixelFormat::AUTO, "the \"pixelFormat\" param must be a certain value!");
 	CCASSERT(pixelsWide>0 && pixelsHigh>0, "Invalid size");
 
@@ -332,7 +341,7 @@ bool Texture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat
 		return false;
 	}
 
-	const PixelFormatInfo& info = _pixelFormatInfoTables.at(pixelFormat);	
+	const PixelFormatInfo& info = _pixelFormatInfoTables.at(pixelFormat);
 
 	//Set the row align only when mipmapsNum == 1 and the data is uncompressed
 	if (mipmapsNum == 1 && !info.compressed)
@@ -460,6 +469,7 @@ void Texture2D::setGLProgram(GLProgram* shaderProgram)
 	_shaderProgram = shaderProgram;
 }
 
+
 GLuint Texture2D::getName() const
 {
     return _name;
@@ -467,6 +477,7 @@ GLuint Texture2D::getName() const
 
 void Texture2D::setTexParameters(const TexParams& texParams)
 {
+
 	GL::bindTexture2D(_name);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texParams.minFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texParams.magFilter);

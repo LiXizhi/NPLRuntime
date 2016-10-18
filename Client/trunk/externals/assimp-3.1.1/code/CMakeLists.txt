@@ -751,7 +751,7 @@ SET( assimp_src
 )
 #ADD_MSVC_PRECOMPILED_HEADER("AssimpPCH.h" "AssimpPCH.cpp" assimp_src)
 
-ADD_LIBRARY( assimp ${assimp_src} )
+ADD_LIBRARY( assimp STATIC ${assimp_src} )
 
 SET_PROPERTY(TARGET assimp PROPERTY DEBUG_POSTFIX ${ASSIMP_DEBUG_POSTFIX})
 

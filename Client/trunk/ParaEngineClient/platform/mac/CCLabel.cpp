@@ -1,9 +1,11 @@
 
 #include "ParaEngine.h"
 
+
 #ifdef PLATFORM_MAC
 
 #include "CCLabel.h"
+
 #include "CCType.h"
 
 #include "../base/ccUTF8.h"
@@ -367,7 +369,7 @@ bool LabelTextFormatter::createStringSprites(Label *theLabel)
 		letterPosition.y = (nextFontPositionY - charYOffset) / contentScaleFactor;
 
 		if (theLabel->recordLetterInfo(letterPosition, tempDefinition, i) == false)
-		{			
+		{
 			continue;
 		}
 
@@ -422,7 +424,7 @@ bool LabelTextFormatter::createStringSprites(Label *theLabel)
 
 Label::Label(FontAtlas *atlas /* = nullptr */, TextHAlignment hAlignment /* = TextHAlignment::LEFT */,
 	TextVAlignment vAlignment /* = TextVAlignment::TOP */, bool useDistanceField /* = false */, bool useA8Shader /* = false */)
-	: 
+	:
 	_commonLineHeight(0.0f)
 	, _additionalKerning(0.0f)
 	, _lineBreakWithoutSpaces(false)
@@ -448,11 +450,12 @@ Label::Label(FontAtlas *atlas /* = nullptr */, TextHAlignment hAlignment /* = Te
 	, _effectColorF(Color4F::BLACK)
 {
 	//TODO:wangpeng maybe dont need: setAnchorPoint(Vec2::ANCHOR_MIDDLE);
-	reset();	
+	reset();
 }
 
 Label::~Label()
 {
+
 	delete[] _horizontalKernings;
 
 	if (_fontAtlas)
@@ -464,6 +467,7 @@ Label::~Label()
 
 bool Label::setTTFConfig(const TTFConfig& ttfConfig)
 {
+
 	FontAtlas *newAtlas = FontAtlasCache::getFontAtlasTTF(ttfConfig);
 
 	if (!newAtlas)
@@ -509,8 +513,8 @@ void Label::setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled /* = false 
 	}
 
 	_fontAtlas = atlas;
-	
-	
+
+
 	if (_fontAtlas)
 	{
 		_commonLineHeight = _fontAtlas->getCommonLineHeight();
@@ -518,7 +522,7 @@ void Label::setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled /* = false 
 	}
 
 	_useDistanceField = distanceFieldEnabled;
-	_useA8Shader = useA8Shader;	
+	_useA8Shader = useA8Shader;
 }
 
 void Label::reset()
@@ -528,7 +532,7 @@ void Label::reset()
 
 	_systemFontDirty = false;
 	_systemFont = "Helvetica";
-	_systemFontSize = 12;	
+	_systemFontSize = 12;
 
 	if (_fontAtlas)
 	{
@@ -590,7 +594,7 @@ bool Label::recordPlaceholderInfo(int spriteIndex)
 //TODO: wangpleng scale for font ....
 void Label::setFontScale(float fontScale)
 {
-	_fontScale = fontScale * CC_CONTENT_SCALE_FACTOR();	
+	_fontScale = fontScale * CC_CONTENT_SCALE_FACTOR();
 }
 
 
@@ -725,5 +729,6 @@ void Label::setDimensions(unsigned int width, unsigned int height)
 }
 
 NS_CC_END
+
 
 #endif
