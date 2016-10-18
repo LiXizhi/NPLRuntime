@@ -217,9 +217,9 @@ DWORD ParaEngine::CParaEngineAppBase::GetCoreUsage()
 
 void ParaEngine::CParaEngineAppBase::SystemMessageBox(const std::string& msg)
 {
-#ifdef WIN32
 	OUTPUT_LOG("System Message: %s \n", msg.c_str());
-	::MessageBox(CGlobals::GetAppHWND(), msg.c_str(), "System Message", MB_OK);
+#ifdef WIN32
+	//::MessageBox(CGlobals::GetAppHWND(), msg.c_str(), "System Message", MB_OK);
 #endif
 }
 

@@ -71,8 +71,8 @@ bool ParaEngine::FBXModelInfo::LoadFromBuffer(const char* pData, int nSize)
 	try
 	{
 #ifdef PARAENGINE_MOBILE
-		using namespace tinyxml2;
-		XMLDocument doc(true, COLLAPSE_WHITESPACE);
+		namespace TXML = tinyxml2;
+		TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 		doc.Parse(pData, nSize);
 #else
 		TiXmlDocument doc;
