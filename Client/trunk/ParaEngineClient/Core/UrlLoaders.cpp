@@ -196,6 +196,10 @@ HRESULT ParaEngine::CUrlProcessor::Process( void* pData, int cBytes )
 			/* always cleanup */
 			curl_easy_cleanup(curl);
 		}
+		else
+		{
+			curl_easy_reset(curl);
+		}
 		return S_OK;
 	}
 	return E_FAIL;
@@ -335,7 +339,11 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	// form if any. 
 	curl_easy_setopt(handle, CURLOPT_HTTPPOST, m_pFormPost);
 	curl_easy_setopt(handle, CURLOPT_HTTPGET, m_pFormPost ? 0 : 1);
-	
+	if (m_pFormPost == 0 && !m_sRequestData.empty())
+	{
+		curl_easy_setopt(handle, CURLOPT_POSTFIELDS, m_sRequestData.c_str());
+		curl_easy_setopt(handle, CURLOPT_POSTFIELDSIZE, m_sRequestData.size());
+	}
 	curl_easy_setopt(handle, CURLOPT_NOBODY, (m_type == URL_REQUEST_HTTP_HEADERS_ONLY) ? 1 : 0);
 }
 

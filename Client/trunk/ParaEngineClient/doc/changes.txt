@@ -4,6 +4,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 
 2016.10.17
 	- fbx material class now support category id.  
+	- postfields supported in url request
 
 2016.10.11
 	- non client area test is supported in GUI engine and windows title can be hidden under windows platform.

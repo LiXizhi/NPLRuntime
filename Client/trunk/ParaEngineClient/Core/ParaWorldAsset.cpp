@@ -388,8 +388,8 @@ TextureEntity* CParaWorldAsset::LoadTexture(const string&  sIdentifier, const st
 						}
 					}
 				}
-				// it is a remote file if the filename starts with "http:" or "ftp:"
-				bIsRemoteFile = ((fileName[0] == 'h' && fileName[1] == 't' && fileName[2] == 't' && fileName[3] == 'p' && fileName[4] == ':') ||
+				// it is a remote file if the filename starts with "http:", or "https:" or "ftp:"
+				bIsRemoteFile = ((fileName[0] == 'h' && fileName[1] == 't' && fileName[2] == 't' && fileName[3] == 'p' && (fileName[4] == ':' || fileName[5] == ':')) ||
 					(fileName[0] == 'f' && fileName[1] == 't' && fileName[2] == 'p' && fileName[3] == ':'));
 			}
 			if (!bIsRemoteFile && nTotalTextureSequence > 0)

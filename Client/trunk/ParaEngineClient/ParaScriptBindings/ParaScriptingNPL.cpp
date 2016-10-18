@@ -557,10 +557,19 @@ namespace ParaScripting
 					}
 				}
 			}
-			auto sForm_ = urlParams["form"];
-			if (type(sForm_) == LUA_TTABLE)
+			auto postfields = urlParams["postfields"];
+			if (type(postfields) == LUA_TSTRING)
 			{
-				sForm = sForm_;
+				std::string request_body = object_cast<std::string>(postfields);
+				pProcessor->CopyRequestData(request_body.c_str(), request_body.size());
+			}
+			else
+			{
+				auto sForm_ = urlParams["form"];
+				if (type(sForm_) == LUA_TTABLE)
+				{
+					sForm = sForm_;
+				}
 			}
 		}
 
