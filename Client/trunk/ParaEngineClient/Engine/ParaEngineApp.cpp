@@ -4,7 +4,7 @@
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine Co.
 // Date:	2006.1.15, revised to multi-threaded 2010.2.22
-// Desc: Main ParaEngine Application: manage device, windows, messages and global objects. 
+// Desc: Main ParaEngine Application: manage device, windows, messages and global objects.
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
@@ -83,7 +83,7 @@
 
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)                (wParam & 0xFFFF)
-#endif 
+#endif
 
 #ifndef WM_POINTERUPDATE
 #define WM_POINTERUPDATE	0x245
@@ -92,11 +92,11 @@
 #define WM_POINTERUP 0x0247
 #define WM_POINTERLEAVE	0x24a
 #define WM_POINTERCAPTURECHANGED	0x24c
-#endif 
+#endif
 
 #ifndef SM_CONVERTIBLESLATEMODE
 #define SM_CONVERTIBLESLATEMODE	0x2003
-#endif 
+#endif
 
 
 using namespace std;
@@ -110,14 +110,14 @@ HINSTANCE g_hAppInstance;
 #endif
 
 #ifdef _DEBUG
-/** if this is defined. CFileLogger will be used. it first checks for ./InstallFiles.txt, 
-* and load it if it exists; then it checks for log file at temp/filelog.txt and load it if it exists. 
-* Then it hooks the CParaFile interface and record each read file operation. Once deactivated, 
+/** if this is defined. CFileLogger will be used. it first checks for ./InstallFiles.txt,
+* and load it if it exists; then it checks for log file at temp/filelog.txt and load it if it exists.
+* Then it hooks the CParaFile interface and record each read file operation. Once deactivated,
 * it wrote the file log to temp/filelog.txt.
 */
 //#define LOG_FILES_ACTIVITY
 /**
-* if this is defined, All files will be copied to _InstallFiles/ directory when application exits. 
+* if this is defined, All files will be copied to _InstallFiles/ directory when application exits.
 * this function is also available from the scripting interface called ParaIO.UpdateMirrorFiles("_InstallFiles/", true)
 */
 //#define EXTRACT_INSTALL_FILE
@@ -134,10 +134,10 @@ namespace ParaEngine
 {
 	/** this value changes from 0 to 1, and back to 0 in one second.*/
 	float g_flash = 0.f;
-	
+
 	/** the main rendering window. */
 	HWND* g_pHwndHWND = NULL;
-	
+
 	INT_PTR CALLBACK DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
 
 	Gdiplus::GdiplusStartupInput g_gdiplusStartupInput;
@@ -152,7 +152,7 @@ extern "C" BOOL ( STDAPICALLTYPE *pChangeWindowMessageFilter )( UINT,DWORD ) = N
 #pragma region CtorDtor
 CParaEngineApp::CParaEngineApp()
 : m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
-	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false), 
+	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
 	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_fFPS(0.f)
 {
@@ -162,7 +162,7 @@ CParaEngineApp::CParaEngineApp()
 
 CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
-	m_dwCoreUsage(PE_USAGE_STANDALONE),  m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false), 
+	m_dwCoreUsage(PE_USAGE_STANDALONE),  m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
 	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL)
 {
@@ -282,7 +282,7 @@ bool CParaEngineApp::CheckClientLicense()
 
 void CParaEngineApp::LoadAndApplySettings()
 {
-	// load from settings. 
+	// load from settings.
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 
 	CDynamicAttributeField* pField = NULL;
@@ -358,7 +358,7 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 	InitApp(strCmd.c_str());
-	// loading packages 
+	// loading packages
 	LoadPackages();
 	BootStrapAndLoadConfig();
 	InitSystemModules();
@@ -395,7 +395,7 @@ HRESULT CParaEngineApp::StopApp()
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
 	m_pGUIRoot.reset();
-	
+
 	// delete m_pAudioEngine;
 	CoUninitialize();
 
@@ -506,7 +506,7 @@ HRESULT CParaEngineApp::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD 
 
 	/// Need to support post-pixel processing (for alpha blending)
 	if( FAILED( pD3d->CheckDeviceFormat( pCaps->AdapterOrdinal, pCaps->DeviceType,
-		adapterFormat, D3DUSAGE_RENDERTARGET | D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING, 
+		adapterFormat, D3DUSAGE_RENDERTARGET | D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING,
 		D3DRTYPE_SURFACE, backBufferFormat ) ) )
 	{
 		return E_FAIL;
@@ -519,8 +519,8 @@ HRESULT CParaEngineApp::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD 
 	if( pCaps->TextureCaps & D3DPTEXTURECAPS_ALPHA )
 		return S_OK;
 
-	/// Debugging vertex shaders requires either REF or software vertex processing 
-	/// and debugging pixel shaders requires REF.  
+	/// Debugging vertex shaders requires either REF or software vertex processing
+	/// and debugging pixel shaders requires REF.
 #ifdef DEBUG_VS
 	if( pCaps->DeviceType != D3DDEVTYPE_REF &&
 		(dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING) == 0 )
@@ -533,7 +533,7 @@ HRESULT CParaEngineApp::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD 
 
 	/// Need to support vs 1.1 or use software vertex processing
 	if( pCaps->VertexShaderVersion < D3DVS_VERSION( 1, 1 ) )
-	{                                                     
+	{
 		if( (dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING ) == 0 )
 			return E_FAIL;
 	}
@@ -580,23 +580,23 @@ HRESULT CParaEngineApp::Init(HWND* pHWND)
 			if(COSInfo::GetOSMajorVersion() > 5)
 			{
 				/** fixing win vista or win 7 security filters. */
-				HMODULE hMod = 0; 
+				HMODULE hMod = 0;
 
-				if ( ( hMod = ::LoadLibrary( _T( "user32.dll" ) ) ) != 0 ) 
-				{ 
-					pChangeWindowMessageFilter = (BOOL (__stdcall *)( UINT,DWORD ) )::GetProcAddress( hMod, "ChangeWindowMessageFilter" ); 
-				} 
-				if ( pChangeWindowMessageFilter ) 
-				{ 
-					pChangeWindowMessageFilter (WM_DROPFILES, MSGFLT_ADD); 
-					pChangeWindowMessageFilter (WM_COPYDATA, MSGFLT_ADD); 
+				if ( ( hMod = ::LoadLibrary( _T( "user32.dll" ) ) ) != 0 )
+				{
+					pChangeWindowMessageFilter = (BOOL (__stdcall *)( UINT,DWORD ) )::GetProcAddress( hMod, "ChangeWindowMessageFilter" );
+				}
+				if ( pChangeWindowMessageFilter )
+				{
+					pChangeWindowMessageFilter (WM_DROPFILES, MSGFLT_ADD);
+					pChangeWindowMessageFilter (WM_COPYDATA, MSGFLT_ADD);
 					pChangeWindowMessageFilter (0x0049, MSGFLT_ADD);
 				}
 			}
 		}
-		
-	
-			
+
+
+
 		HMENU hMenu = GetMenu(*pHWND);
 
 		if(hMenu != 0)
@@ -604,7 +604,7 @@ HRESULT CParaEngineApp::Init(HWND* pHWND)
 #ifdef _DEBUG
 			UINT menustate = MF_ENABLED;
 #else
-			UINT menustate = MF_GRAYED;	
+			UINT menustate = MF_GRAYED;
 #endif
 
 			EnableMenuItem(hMenu,ID_GAME_DEBUGMODE,menustate);
@@ -728,18 +728,18 @@ HRESULT CParaEngineApp::OneTimeSceneInit()
 
 //-----------------------------------------------------------------------------
 // Name: InitDeviceObjects()
-/// Initialize scene objects. 
+/// Initialize scene objects.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
 HRESULT CParaEngineApp::InitDeviceObjects()
 {
 	LPDIRECT3DDEVICE9 pd3dDevice = m_pd3dDevice;
 	HRESULT hr = S_OK;
-	
+
 	// stage b.1
 	CGlobals::GetDirectXEngine().InitDeviceObjects(m_pD3D,pd3dDevice, m_pd3dSwapChain);
 
-	// print stats when device is initialized. 
+	// print stats when device is initialized.
 	string stats;
 	GetStats(stats, 0);
 	OUTPUT_LOG("Graphics Stats:\n%s\n", stats.c_str());
@@ -788,7 +788,7 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 	pd3dDevice->SetRenderState( D3DRS_ZENABLE, TRUE );
 	pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
 
-	/// these render state is just for point occlusion testing. 
+	/// these render state is just for point occlusion testing.
 	/// See also CBaseObject::DrawOcclusionObject()
 	//#define POINT_OCCLUSION_OBJECT
 #ifdef POINT_OCCLUSION_OBJECT
@@ -865,9 +865,9 @@ HRESULT CParaEngineApp::FinalCleanup()
 	CBlockWorldManager::GetSingleton()->Cleanup();
 
 	CParaEngineAppBase::FinalCleanup();
-	
+
 	CGlobals::GetMoviePlatform()->Cleanup();
-	
+
 	m_pGUIRoot->Release();		// GUI: 2D engine
 	m_pRootScene->Cleanup();
 	CSingleton<CObjectManager>::Instance().Finalize();
@@ -919,8 +919,8 @@ HRESULT CParaEngineApp::FrameMove()
 /// Called once per frame, the call is the entry point for animating
 ///       the scene.
 /// ParaEngine fixed code: must call these functions as given below
-/** TODO: I have no idea whether we should simulate before calling IO functions or vice versa.  
-* since, some IO actions will not be validated by the simulator before it is rendered. 
+/** TODO: I have no idea whether we should simulate before calling IO functions or vice versa.
+* since, some IO actions will not be validated by the simulator before it is rendered.
 * However, the camera IO need to get the biped position that is being rendered for the current frame.
 * hence the current order is changed to SIM->SCRIPT->IO(camera and biped control)->RENDER
 * the old order is IO(camera and biped control)->SIM->SCRIPT->RENDER */
@@ -946,7 +946,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	PERF_BEGIN("Main FrameMove");
-	/** 
+	/**
 	* <<fElapsedEnvSimTime>>
 	* in worst case, it might be half of 60.f, that is only 1/30secs.
 	* Animate the environment, remote script and network module
@@ -957,15 +957,15 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	* are feedback by the physical environment
 	*/
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
-	
+
 	if( bIOExecuted || (fElapsedEnvSimTime > 0) )
 	{
 		/*static int i=0;
 		OUTPUT_LOG("%d: %f, %f\n", ++i, fTime, fElapsedEnvSimTime);*/
-		/// -- Call AI script and remote scripts as well as some simulation in the form of 
+		/// -- Call AI script and remote scripts as well as some simulation in the form of
 		/// triggering scripts. It is important for this script to come before m_pEnvironmentSim->Animate()
 		/// because the latter may add objects which may be deleted to the visiting biped list.
-		/// Hence, when m_pEnvironmentSim->Animate() is called, the scene can no longer drop objects. 
+		/// Hence, when m_pEnvironmentSim->Animate() is called, the scene can no longer drop objects.
 		PERF_BEGIN("Script&Net FrameMove");
 		CAISimulator::GetSingleton()->FrameMove((float)fElapsedEnvSimTime);
 		PERF_END("Script&Net FrameMove");
@@ -977,7 +977,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		PERF_BEGIN("EnvironmentSim");
 		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime );  // generate valid LLE from HLE
 		PERF_END("EnvironmentSim");
-		
+
 #ifdef USE_OPENAL_AUDIO_ENGINE
 		CAudioEngine2::GetInstance()->Update();
 #endif
@@ -995,30 +995,30 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		}
 	}
 
-	/** 
+	/**
 	* <<fElapsedIOTime>>
 	* in worst case, it might be half of 60.f, that is only 1/30secs.
-	* handle mouse and key board I/O events 
+	* handle mouse and key board I/O events
 	* Faster than the user input <= 1/30 sec
 	*/
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
 	if( fElapsedIOTime > 0.f )
 	{
 		bIOExecuted = true;
-		
+
 		//PERF_BEGIN("IC");
 		////call the information center's frame move method
 		//CICRoot *m_icroot=CICRoot::Instance();
 		//m_icroot->FrameMove();
 		//PERF_END("IC");
-		
+
 		if(m_bActive)
 		{
 			/**
 			* process all user key and mouse messages
 			*/
 			HandleUserInput(); // user input.
-			
+
 			// we update the mouse position after dispatch to ensure the correct begin position for next FrameMove;
 			/**
 			* Engine required: Camera control
@@ -1039,8 +1039,8 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		}
 	}
 #endif
-	
-	//// drop render frame rate to 2 FPS when in web browser mode and losing focus, this will save us lots of CPU cycles when user is not playing the game. 
+
+	//// drop render frame rate to 2 FPS when in web browser mode and losing focus, this will save us lots of CPU cycles when user is not playing the game.
 	//if((GetCoreUsage() & PE_USAGE_WEB_BROWSER)!=0)
 	//{
 	//	if(AppHasFocus())
@@ -1051,7 +1051,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	//	else
 	//	{
 	//		static CFrameRateController frcWebBrowser(CFrameRateController::FRC_BELOW);
-	//		// 1 FPS per seconds when in web browser mode.Height 
+	//		// 1 FPS per seconds when in web browser mode.Height
 	//		frcWebBrowser.SetConstDeltaTime(1/1.f);
 	//		bool bEnable = (frcWebBrowser.FrameMove(fTime) > 0);
 	//		// OUTPUT_LOG("Time: %f, %s\n", (float)fTime, bEnable ? "true":"false");
@@ -1064,7 +1064,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	* with m_fElapsedTime as its time advances
 	*/
 	PERF_END("Main FrameMove");
-	
+
 	UpdateScreenDevice();
 
 	OnFrameEnded();
@@ -1085,8 +1085,8 @@ bool CParaEngineApp::UpdateScreenDevice()
 		if(IsWindowedMode() && (m_nWindowedDesired!=0))
 		{
 			OUTPUT_LOG("Window size adjust in windowed mode\n");
-			
-			// if only windowed mode resolution and back buffer size is changed. 
+
+			// if only windowed mode resolution and back buffer size is changed.
 			if(!m_bIsExternalWindow)
 			{
 				RECT rect;
@@ -1096,13 +1096,13 @@ bool CParaEngineApp::UpdateScreenDevice()
 				rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
 				SetAppWndRect(rect);
 			}
-			
+
 			bool  bOldValue = m_bIgnoreSizeChange;
 			m_bIgnoreSizeChange = false;
 			HandlePossibleSizeChange();
 			m_bIgnoreSizeChange = bOldValue;
-			 
-			// ensure minimum screen size, with largest UI scaling 
+
+			// ensure minimum screen size, with largest UI scaling
 			CGlobals::GetGUI()->SetUIScale(1,1,true);
 			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
 		}
@@ -1115,7 +1115,7 @@ bool CParaEngineApp::UpdateScreenDevice()
 				FindBestFullscreenMode( false, false );
 				if(IsFullScreenMode())
 				{
-					// in case we are changing full screen resolution in the full screen mode. 
+					// in case we are changing full screen resolution in the full screen mode.
 					m_bWindowed = !m_bWindowed;
 				}
 			}
@@ -1127,7 +1127,7 @@ bool CParaEngineApp::UpdateScreenDevice()
 				DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
 				return false;
 			}
-			// ensure minimum screen size, with largest UI scaling 
+			// ensure minimum screen size, with largest UI scaling
 			CGlobals::GetGUI()->SetUIScale(1,1,true);
 			Pause( false );
 			if(IsWindowedMode())
@@ -1242,7 +1242,7 @@ HRESULT CParaEngineApp::Render()
 	if(m_bServerMode)
 		return E_FAIL;
 	RenderDevice::ClearAllPerfCount();
-	
+
 	CMoviePlatform* pMoviePlatform = CGlobals::GetMoviePlatform();
 	pMoviePlatform->BeginCaptureFrame();
 
@@ -1255,12 +1255,12 @@ HRESULT CParaEngineApp::Render()
 	if( SUCCEEDED( pd3dDevice->BeginScene() ) )
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime); // for asset manager
-		// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device. 
-		// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size. 
-		// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well. 
-		pd3dDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and 
+		// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
+		// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
+		// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
+		pd3dDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 
-		/// clear all render targets 
+		/// clear all render targets
 		pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER |D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
 
 		/// force using less equal
@@ -1280,7 +1280,7 @@ HRESULT CParaEngineApp::Render()
 		}
 #ifdef USE_FLASH_MANAGER
 		//////////////////////////////////////////////////////////////////////////
-		// render flash windows under full screen mode. 
+		// render flash windows under full screen mode.
 		if(!IsWindowedMode())
 			CGlobals::GetAssetManager()->GetFlashManager().RenderFlashWindows(*(m_pRootScene->GetSceneState()));
 #endif
@@ -1304,7 +1304,7 @@ bool CParaEngineApp::IsDebugBuild()
 
 int CParaEngineApp::Run( HINSTANCE hInstance )
 {
-	//add a console window for debug or when in server mode. 
+	//add a console window for debug or when in server mode.
 	if (!Is3DRenderingEnabled() || IsDebugBuild())
 	{
 		/*const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
@@ -1322,7 +1322,7 @@ int CParaEngineApp::Run( HINSTANCE hInstance )
 	}
 	else
 	{
-		// the console window is used. 
+		// the console window is used.
 		CParaEngineService service;
 		result = service.Run(0, this);
 	}
@@ -1492,12 +1492,12 @@ void CParaEngineApp::ShowMenu( bool bShow )
 			RECT afterClient;
 			GetClientRect(m_hWnd, &afterClient);
 
-			MoveWindow(m_hWnd, 
-				afterRect.left, 
-				afterRect.top, 
-				afterRect.right-afterRect.left, 
-				afterRect.bottom-afterRect.top - (afterClient.bottom - oldClient.bottom), 
-				TRUE); 
+			MoveWindow(m_hWnd,
+				afterRect.left,
+				afterRect.top,
+				afterRect.right-afterRect.left,
+				afterRect.bottom-afterRect.top - (afterClient.bottom - oldClient.bottom),
+				TRUE);
 		}
 
 	}
@@ -1538,14 +1538,14 @@ void CParaEngineApp::WriteConfigFile(const char* FileName)
 		sFileName = FileName;
 
 	{
-		// remove the read-only file attribute 
-		DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str()); 
+		// remove the read-only file attribute
+		DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
 		if (dwAttrs!=INVALID_FILE_ATTRIBUTES)
 		{
-			if ((dwAttrs & FILE_ATTRIBUTE_READONLY)) 
-			{ 
-				::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY)); 
-			} 
+			if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
+			{
+				::SetFileAttributes(sFileName.c_str(), dwAttrs & (~FILE_ATTRIBUTE_READONLY));
+			}
 		}
 	}
 
@@ -1620,7 +1620,7 @@ void CParaEngineApp::GetCursorPosition( int* pX,int * pY, bool bInBackbuffer /*=
 {
 	if (IsTouchInputting())
 	{
-		// tricky, since the touch input may change the virtual mouse position when it is near a click-able UI object. 
+		// tricky, since the touch input may change the virtual mouse position when it is near a click-able UI object.
 		CGUIRoot::GetInstance()->GetMouse()->GetDeviceCursorPos(*pX, *pY);
 	}
 	else
@@ -1642,7 +1642,7 @@ void CParaEngineApp::GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer
 {
 	if(bInBackbuffer && IsWindowedMode())
 	{
-		// we need to scale cursor position according to backbuffer. 
+		// we need to scale cursor position according to backbuffer.
 		RECT rcWindowClient;
 		::GetClientRect(CGlobals::GetAppHWND(), &rcWindowClient);
 		int width = (rcWindowClient.right - rcWindowClient.left);
@@ -1660,7 +1660,7 @@ void CParaEngineApp::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer
 {
 	if(bInBackbuffer && IsWindowedMode())
 	{
-		// we need to scale cursor position according to backbuffer. 
+		// we need to scale cursor position according to backbuffer.
 		RECT rcWindowClient;
 		::GetClientRect(CGlobals::GetAppHWND(), &rcWindowClient);
 		int width = (rcWindowClient.right - rcWindowClient.left);
@@ -1675,8 +1675,8 @@ void CParaEngineApp::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer
 }
 
 /* Using SetForegroundWindow on Windows Owned by Other Processes
-In modern versions of Windows (XP, Vista, and beyond), the API call SetForegroundWindow() will bring 
-the specified window to the foreground only if it's owned by the calling thread. 
+In modern versions of Windows (XP, Vista, and beyond), the API call SetForegroundWindow() will bring
+the specified window to the foreground only if it's owned by the calling thread.
 The following code removes this limitation and provides a workaround:
 */
 void NewSetForegroundWindow(HWND hWnd)
@@ -1685,7 +1685,7 @@ void NewSetForegroundWindow(HWND hWnd)
 
 		DWORD dwMyThreadID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
 		DWORD dwOtherThreadID = GetWindowThreadProcessId(hWnd, NULL);
-		if (dwMyThreadID != dwOtherThreadID) 
+		if (dwMyThreadID != dwOtherThreadID)
 		{
 			AttachThreadInput(dwMyThreadID, dwOtherThreadID, TRUE);
 			SetForegroundWindow(hWnd);
@@ -1711,7 +1711,7 @@ void CParaEngineApp::BringWindowToTop()
 		}
 		else
 		{
-			// only bring to front if it is not from a web browser 
+			// only bring to front if it is not from a web browser
 			::SetForegroundWindow(CGlobals::GetAppHWND());
 			// ::SetWindowPos(CGlobals::GetAppHWND(),HWND_TOP,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE);
 			// this does not work
@@ -1735,7 +1735,7 @@ HKEY GetHKeyByName(const string& root_key)
 }
 
 /** get hkey by path
-* one needs to close the key if it is not zero. 
+* one needs to close the key if it is not zero.
 */
 HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRights = KEY_QUERY_VALUE, bool bCreateGet = false)
 {
@@ -1771,16 +1771,16 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 				path_.c_str(),
 				0,
 				NULL,
-				REG_OPTION_NON_VOLATILE, 
+				REG_OPTION_NON_VOLATILE,
 				dwOpenRights,
-				NULL, 
+				NULL,
 				&hKey, &dwDisposition);
-			if(dwDisposition == REG_CREATED_NEW_KEY) 
+			if(dwDisposition == REG_CREATED_NEW_KEY)
 			{
 				OUTPUT_LOG("created the registry key %s \n", sSubKey.c_str());
 			}
 		}
-		
+
 
 		if(nFrom != std::string::npos && i>0)
 		{
@@ -1813,8 +1813,8 @@ bool CParaEngineApp::WriteRegStr( const string& root_key, const string& sSubKey,
 	HKEY  hKey = GetHKeyByPath(root_key, sSubKey, KEY_WRITE, true);
 	if(hKey == NULL)
 		return NULL;
-	
-	lRet = ::RegSetValueEx(hKey, 
+
+	lRet = ::RegSetValueEx(hKey,
 		name.c_str(),
 		0,
 		REG_SZ,
@@ -1847,7 +1847,7 @@ const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sS
 			return NULL;
 
 		// Call once RegQueryValueEx to retrieve the necessary buffer size
-		::RegQueryValueEx(hKey, 
+		::RegQueryValueEx(hKey,
 			name.c_str(),
 			0,
 			&dwDataType,
@@ -1860,14 +1860,14 @@ const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sS
 			lpValue = (LPBYTE)malloc(dwSize);
 
 			// Call twice RegQueryValueEx to get the value
-			lRet = ::RegQueryValueEx(hKey, 
+			lRet = ::RegQueryValueEx(hKey,
 				name.c_str(),
 				0,
 				&dwDataType,
 				lpValue,
 				&dwSize);
 		}
-	
+
 		::RegCloseKey(hKey);
 
 		if(ERROR_SUCCESS != lRet)
@@ -1876,7 +1876,7 @@ const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sS
 			OUTPUT_LOG("can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
 			return NULL;
 		}
-		
+
 		if(dwDataType == REG_SZ)
 		{
 			if(lpValue!=NULL)
@@ -1895,7 +1895,7 @@ const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sS
 				g_tmp = temp;
 			}
 		}
-	
+
 		// free the buffer when no more necessary
 		if(lpValue!=NULL)
 			free(lpValue);
@@ -1947,7 +1947,7 @@ DWORD CParaEngineApp::ReadRegDWORD( const string& root_key, const string& sSubKe
 	LONG lRet = NULL;
 	DWORD dwSize     = 0;
 	DWORD dwDataType = 0;
-	
+
 	try
 	{
 		HKEY  hKey = GetHKeyByPath(root_key, sSubKey);
@@ -1998,7 +1998,7 @@ DWORD CParaEngineApp::ReadRegDWORD( const string& root_key, const string& sSubKe
 
 //-----------------------------------------------------------------------------
 // Name: DialogProcHelper
-// Desc: 
+// Desc:
 //-----------------------------------------------------------------------------
 INT_PTR CALLBACK ParaEngine::DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
 {
@@ -2039,21 +2039,21 @@ INT_PTR CALLBACK ParaEngine::DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam
 }
 
 /**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-void    CParaEngineApp::EnablePassiveRendering( bool bEnable ) { 
+void    CParaEngineApp::EnablePassiveRendering( bool bEnable ) {
 	CD3DApplication::EnablePassiveRendering(bEnable);
 };
 /**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-bool	CParaEngineApp::IsPassiveRenderingEnabled( ) { 
+bool	CParaEngineApp::IsPassiveRenderingEnabled( ) {
 	return CD3DApplication::IsPassiveRenderingEnabled();
 };
-/** disable 3D rendering, do not present the scene. 
+/** disable 3D rendering, do not present the scene.
 * This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
 void CParaEngineApp::Enable3DRendering(bool bEnable)
 {
 	CD3DApplication::Enable3DRendering(bEnable);
 }
 
-/** whether 3D rendering is enabled, do not present the scene. 
+/** whether 3D rendering is enabled, do not present the scene.
 * This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
 bool CParaEngineApp::Is3DRenderingEnabled()
 {
@@ -2124,24 +2124,24 @@ void CParaEngineApp::ActivateApp( bool bActivate )
 		CGlobals::GetGUI()->ActivateRoot();
 	else
 		CGlobals::GetGUI()->InactivateRoot();
-	
+
 	if(m_bAutoLowerFrameRateWhenNotFocused)
 	{
 		float fIdealInterval = (GetRefreshTimer() <= 0) ? IDEAL_FRAME_RATE : GetRefreshTimer();
 		static float s_fLastRefreshRate = fIdealInterval;
 
-		if (!bActivate) 
+		if (!bActivate)
 		{
-			// set to a lower frame rate when app is switched away. 
+			// set to a lower frame rate when app is switched away.
 			const float fLowTimer = 1/20.f;
 			if(fIdealInterval < fLowTimer)
 			{
 				s_fLastRefreshRate = fIdealInterval;
-				SetRefreshTimer(fLowTimer); 
+				SetRefreshTimer(fLowTimer);
 			}
-		}else 
+		}else
 		{
-			// restore to original frame rate. 
+			// restore to original frame rate.
 			if(s_fLastRefreshRate > 0.f && s_fLastRefreshRate<fIdealInterval)
 			{
 				SetRefreshTimer(s_fLastRefreshRate);
@@ -2180,7 +2180,7 @@ bool CParaEngineApp::IsSlateMode()
 	return m_isSlateMode;
 }
 
-// obsoleted: since the parent window is not in the same thread,  GetFocus() will always return NULL even a child window is having the focus. 
+// obsoleted: since the parent window is not in the same thread,  GetFocus() will always return NULL even a child window is having the focus.
 bool CParaEngineApp::HasFocus(HWND hWnd)
 {
 	if(hWnd ==0)
@@ -2255,7 +2255,7 @@ bool CParaEngineApp::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lPara
 	return false;
 }
 
-// return 1 if we do not want default window procedure or other message handler to process the message. 
+// return 1 if we do not want default window procedure or other message handler to process the message.
 LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT result = 0;
@@ -2270,8 +2270,8 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 			}
 		case PE_WM_SHOWCURSOR:
 			{
-				// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function 
-				// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread. 
+				// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
+				// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
 				if(CGlobals::GetRenderDevice())
 				{
 					// ::SetCursor( NULL );
@@ -2331,7 +2331,7 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 					// inject WM_ACTIVATEAPP to simulate activate APP
 					MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)FALSE, 0, false);
 				}
-				
+
 				break;
 			}
 		default:
@@ -2342,7 +2342,7 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 	return result;
 }
 
-// return 1 if we do not want default window procedure or other message handler to process the message. 
+// return 1 if we do not want default window procedure or other message handler to process the message.
 LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
 {
 	LRESULT result = 0;
@@ -2357,7 +2357,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 		if (uMsg == WM_LBUTTONDOWN)			{
 			// 2014.5.14 andy: check input source using message info along with WM_LBUTTONDOWN instead of WM_POINTERCAPTURECHANGED
-			// 
+			//
 			//GetMessageExtraInfo() returns the extra info associated with a message
 			//	Mouse up and down messages are tagged with a special signature indicating they came from touch or pen :
 			//Mask extra info against 0xFFFFFF80
@@ -2397,8 +2397,8 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			WM_LBUTTONUP
 
 			Current input system(which based on DXInput) return wrong "mouse" position in touch mode,we add a quick fix here:
-			use WM_POINTERENTER and WM_POINTERLEAVE to check if we're in touch mode and update "mouse position" when 
-			WM_POINTERDOWN and WM_POINTERUPDATE message come.Be ware touch input is very sensitive, sometimes you may get <10 
+			use WM_POINTERENTER and WM_POINTERLEAVE to check if we're in touch mode and update "mouse position" when
+			WM_POINTERDOWN and WM_POINTERUPDATE message come.Be ware touch input is very sensitive, sometimes you may get <10
 			pixel offset even when you feel you don't move at all.       --clayman
 			*/
 		case WM_POINTERENTER:
@@ -2433,7 +2433,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		}
 		case WM_DISPLAYCHANGE:
 		{
-			// In desktop environment, OS broadcasts WM_DISPLAYCHANGE message to the windows when it detects orientation changes.lParam¡¯s low word is the width and high word is the height of the new orientation.
+			// In desktop environment, OS broadcasts WM_DISPLAYCHANGE message to the windows when it detects orientation changes.lParamï¿½ï¿½s low word is the width and high word is the height of the new orientation.
 
 			break;
 		}
@@ -2493,7 +2493,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			break;
 
 		case WM_IME_SETCONTEXT:
-			
+
 			if(CGUIIME::IsEnableImeSystem())
 			{
 				// We don't want anything to display, so we have to clear this
@@ -2503,8 +2503,8 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 			else
 			{
 				lParam =  ISC_SHOWUICOMPOSITIONWINDOW | ISC_SHOWUICANDIDATEWINDOW ;
-				// let windows draw the IME. 
-				// TODO: we need to set the candidate window position. 
+				// let windows draw the IME.
+				// TODO: we need to set the candidate window position.
 			}
 			//OUTPUT_LOG("WM_IME_SETCONTEXT: fset:%d, %d\n", wParam, lParam);
 			break;
@@ -2579,18 +2579,18 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		case WM_LBUTTONUP:
 			if(m_bIsExternalWindow)
 				break;
-			// fall through to WM_MOUSEACTIVATE if this is the top level window, since WM_MOUSEACTIVATE is not called for top-level window, but always called on mouse click for child windows. 
+			// fall through to WM_MOUSEACTIVATE if this is the top level window, since WM_MOUSEACTIVATE is not called for top-level window, but always called on mouse click for child windows.
 		case WM_MOUSEACTIVATE:
 			{
-				// This fixed a issue that in some buggy browser like(sougou), Foreground window can not be set back by clicking on the plugin window. 
+				// This fixed a issue that in some buggy browser like(sougou), Foreground window can not be set back by clicking on the plugin window.
 				BringWindowToTop();
 
 				// this message is received whenever the user clicks on the window, even if there is child window.
-				// 
-				// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may 
-				// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time, 
-				// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undetermined ordered. 
-				// if the render process calls first, then the final result of focus window is wrong. 
+				//
+				// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may
+				// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
+				// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undetermined ordered.
+				// if the render process calls first, then the final result of focus window is wrong.
 				//
 				// To fix above problem, we will handle mouse activate in the window process and SetFocus to the window.
 				HWND hWndMain = GetMainWindow();
@@ -2606,7 +2606,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 						// result = MA_NOACTIVATE;
 					}
 				}
-				// very tricky here: we will simulate activate app message when clicked. 
+				// very tricky here: we will simulate activate app message when clicked.
 				SendMessageToApp(hWnd, WM_ACTIVATEAPP, TRUE, 0);
 				break;
 			}
@@ -2640,7 +2640,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					}
 					n++;
 				}
-				// TODO: make m_cmd thread safe by using a lock. 
+				// TODO: make m_cmd thread safe by using a lock.
 				m_cmd = cmds;
 				SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
 				DragFinish( query );
@@ -2655,7 +2655,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 
 					if(pMyCDS->lpData)
 					{
-						// TODO: make m_cmd thread safe by using a lock. 
+						// TODO: make m_cmd thread safe by using a lock.
 						m_cmd = (const char*)(pMyCDS->lpData);
 					}
 					SendMessageToApp(hWnd, WM_COMMAND, ID_GAME_COMMANDLINE, (LPARAM)(LPSTR)(m_cmd.c_str()));
@@ -2679,19 +2679,19 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 					break;
 				}
 				/*
-				When you release the Alt key, the system generates a WM_SYSCOMMAND/SC_KEYMENU message. 
-				Futhermore, unless you press a key to open a specific popup menu, the lparam will be 0. 
-				DefWindowProc, upon receiving this, will enter the menu loop. So, all you have to do is 
+				When you release the Alt key, the system generates a WM_SYSCOMMAND/SC_KEYMENU message.
+				Futhermore, unless you press a key to open a specific popup menu, the lparam will be 0.
+				DefWindowProc, upon receiving this, will enter the menu loop. So, all you have to do is
 				detect this message and prevent it from getting to DefWindowProc:
 				*/
 				if (wParam == SC_KEYMENU)
 				{
 					return 0;
 				}
-					
+
 			}
 			break;
-		
+
 		/*case WM_IME_CHAR:
 			{
 				OUTPUT_LOG("WM_IME_CHAR:%d\n",wParam);
@@ -2710,7 +2710,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 				// OUTPUT_LOG("WM_CHAR:%d\n",wParam);
 			}
 			break;
-		
+
 		}
 	}
 	if(result == 0)
@@ -2751,26 +2751,26 @@ const char* CParaEngineApp::GetTouchEventSCodeFromMessage(const char * event_typ
 	return g_msg.c_str();
 }
 
-// return 0 if not processed, 1 if processed, 2 if no further messages in the queue should ever be processed. 
+// return 0 if not processed, 1 if processed, 2 if no further messages in the queue should ever be processed.
 LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	bool bIsSceneEnabled = !(m_pRootScene==NULL || !m_pRootScene->IsInitialized());
 	if(bIsSceneEnabled)
 	{
-		// let the GUI system to process the message first. 
+		// let the GUI system to process the message first.
 		bool bNoFurtherProcess = false;
 		LRESULT result=m_pGUIRoot->MsgProc(hWnd, uMsg, wParam, lParam,bNoFurtherProcess);
 		if (bNoFurtherProcess) {
 			return 1;
 		}
 	}
-	 
+
 	switch( uMsg )
 	{
 	case WM_PAINT:
 		// Handle paint messages when the app is paused
-		// this may lead to problems, so do nothing with WM_PAINT, especially during initialization. 
-		/*if( bIsSceneEnabled && (!m_bDisableD3D) && m_pd3dDevice && !m_bActive && 
+		// this may lead to problems, so do nothing with WM_PAINT, especially during initialization.
+		/*if( bIsSceneEnabled && (!m_bDisableD3D) && m_pd3dDevice && !m_bActive &&
 			m_bDeviceObjectsInited && m_bDeviceObjectsRestored )
 		{
 			if(Is3DRenderingEnabled())
@@ -2802,7 +2802,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			if(bIsSceneEnabled)
 			{
 #ifdef USE_FLASH_MANAGER
-				// Flash Window Size changes. 
+				// Flash Window Size changes.
 				CGlobals::GetAssetManager()->GetFlashManager().OnSizeChange();
 #endif
 				// Pick up possible changes to window style due to maximize, etc.
@@ -2839,9 +2839,9 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 					}
 					else
 					{
-						// If we're neither maximized nor minimized, the window size 
-						// is changing by the user dragging the window edges.  In this 
-						// case, we don't reset the device yet -- we wait until the 
+						// If we're neither maximized nor minimized, the window size
+						// is changing by the user dragging the window edges.  In this
+						// case, we don't reset the device yet -- we wait until the
 						// user stops dragging, and a WM_EXITSIZEMOVE message comes.
 						if(!IsPaused())
 						{
@@ -2851,7 +2851,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 					}
 				}
 			}
-			
+
 			break;
 		}
 	case WM_ENTERMENULOOP:
@@ -2889,10 +2889,10 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			//	HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE|CWP_SKIPDISABLED);
 			//	if(hMouseOverWnd == hWndMain)
 			//	{
-			//		// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may set 
-			//		// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time, 
-			//		// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undertermined ordered. 
-			//		// if the render process calls first, then the final result of focus window is wrong. 
+			//		// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may set
+			//		// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
+			//		// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undertermined ordered.
+			//		// if the render process calls first, then the final result of focus window is wrong.
 			//		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETFOCUS, (WPARAM)(hWndMain), 0);
 			//		ActivateApp(true);
 			//	}
@@ -2985,7 +2985,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				Pause( true );
 				if( FAILED( ToggleFullscreen() ) )
 					DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
-				Pause( false );                        
+				Pause( false );
 				break;
 
 			case IDM_HELP:
@@ -3033,7 +3033,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				}
 			case ID_HELP_ABOUT:
 				{
-					return DialogBox( NULL, MAKEINTRESOURCE( IDD_ABOUT ), 
+					return DialogBox( NULL, MAKEINTRESOURCE( IDD_ABOUT ),
 						hWnd, DialogProcAbout );
 					break;
 				}
@@ -3042,7 +3042,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		break;
 	case PE_APP_SHOW_ERROR_MSG:
 		{
-			// show error message. 
+			// show error message.
 			break;
 		}
 	case WM_POINTERDOWN:
@@ -3067,7 +3067,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				nEventType = TouchEvent::TouchEvent_POINTER_UP;
 			else if (uMsg == WM_POINTERDOWN)
 				nEventType = TouchEvent::TouchEvent_POINTER_DOWN;
-			
+
 			if (nEventType >= 0)
 			{
 				TouchEvent event(EH_TOUCH, (TouchEvent::TouchEventMsgType)nEventType, id, (float)x, (float)y, GetTickCount());
@@ -3078,12 +3078,12 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	case WM_POINTERCAPTURECHANGED:
 		{
 			//delay actual state change until game thread start because mouse msg come after POINT msg.
-			
+
 		}
 		break;
 
 	case WM_CLOSE:
-		// WM_CLOSE indicates a request to close a window, such as by clicking on the x. This is a good time to ask the user if they want to save their work, etc. 
+		// WM_CLOSE indicates a request to close a window, such as by clicking on the x. This is a good time to ask the user if they want to save their work, etc.
 		// Calling DefWindowProc will destroy the window, while returning zero will leave the window intact.
 
 		// if the user prohibit closing, then we will return 0.
@@ -3107,10 +3107,10 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 				SAFE_RELEASE( m_pD3D );
 			}
 			FinalCleanup();
-			// this will prevent render to be called. 
+			// this will prevent render to be called.
 			SetAppState(PEAppState_Stopped);
 
-			// tell the window to destroy itself and Post WM_QUIT message. 
+			// tell the window to destroy itself and Post WM_QUIT message.
 			PostWinThreadMessage(PE_WM_QUIT, 0, 0);
 			m_hWnd = NULL;
 			return 2; // this will stop processing any other messages in the pool
