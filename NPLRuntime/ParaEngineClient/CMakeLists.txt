@@ -12,7 +12,11 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	set(PARAENGINE_COMPILE_LIB    false)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
@@ -128,8 +132,6 @@ file (GLOB ParaEngineClient_IO_FILES ${ParaEngineClient_SOURCE_DIR}/IO/*.cpp ${P
 SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
-
-
 if(DIRECTX_FOUND)
 	#####################################
 	##--------- resource file ---------##
@@ -197,6 +199,12 @@ file (GLOB ParaEngineClient_InfoCenter_FILES ${ParaEngineClient_SOURCE_DIR}/ic/*
 SOURCE_GROUP("Externals\\InfoCenter" FILES ${ParaEngineClient_InfoCenter_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_InfoCenter_FILES})
 
+##############################
+if(PARAENGINE_CLIENT_DLL)
+	file (GLOB ParaEngineClient_WebBrowser_FILES ${ParaEngineClient_SOURCE_DIR}/WebBrowser/*.*)
+	SOURCE_GROUP("Externals\\WebBrowser" FILES ${ParaEngineClient_WebBrowser_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebBrowser_FILES})
+endif()
 
 ##############################
 file (GLOB ParaEngineClient_TERRAIN_FILES ${ParaEngineClient_SOURCE_DIR}/terrain/*.h ${ParaEngineClient_SOURCE_DIR}/terrain/*.cpp)
@@ -250,8 +258,6 @@ file (GLOB ParaEngineClient_DOCUMENT_FILES ${ParaEngineClient_SOURCE_DIR}/doc/*.
 SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
 set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
-
-
 
 if(APPLE)
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
@@ -310,6 +316,9 @@ IF(WIN32)
 	include_directories("${Assimp_SOURCE_DIR}/include/")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
+	if(PARAENGINE_CLIENT_DLL)
+		include_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
+	endif()
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
@@ -337,7 +346,6 @@ ENDIF(WIN32)
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
 ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
-ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 CHECK_INCLUDE_FILE(
@@ -345,6 +353,21 @@ CHECK_INCLUDE_FILE(
 IF(HAVE_UNISTD_H)
   ADD_DEFINITIONS(-DHAVE_UNISTD_H)
 ENDIF(HAVE_UNISTD_H)
+
+IF(PARAENGINE_CLIENT_DLL)
+	# Make sure the linker can find the third-party precompiled libraries. 
+	# link_directories ("${CLIENT_SOURCE_DIR}/libs/win32/lib")
+	# link_directories (${PhysX_SOURCE_DIR}/lib/win32) 
+	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		# 64 bits version
+		link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win64)
+	else()
+		# 32 bits version.
+		link_directories (${ParaEngineClient_SOURCE_DIR}/flashplayer/f_in_box/lib) 
+		link_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
+		# link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win32) 
+	endif()
+ENDIF(PARAENGINE_CLIENT_DLL)
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
@@ -415,11 +438,18 @@ ENDIF()
 
 
 if (PARAENGINE_COMPILE_LIB)
+	SET(ParaEngineClient_Lib_FILES
+		${ParaEngineClient_SOURCE_DIR}/Engine/LibInterface.cpp
+		${ParaEngineClient_SOURCE_DIR}/ParaEngineClient.def
+	)
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Lib_FILES})
+
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
+	ADD_DEFINITIONS(-DNPLRUNTIME)
 	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 	if(DIRECTX_FOUND)
 		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
@@ -434,7 +464,7 @@ endif (PARAENGINE_COMPILE_LIB)
 
 
 if (WIN32)
-  set(EXTRA_LIBRARIES
+	set(EXTRA_LIBRARIES
 			Ws2_32
 			winmm
 			wsock32
@@ -445,14 +475,21 @@ if (WIN32)
 			zlib
 			libcurl
 			assimp
-  )
+	)
+	if(PARAENGINE_CLIENT_DLL)
+		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+			# for 64bits libs	
+		else()
+			list(APPEND EXTRA_LIBRARIES f_in_box.lib)
+			list(APPEND EXTRA_LIBRARIES FreeImage.lib)
+		endif()
+	endif(PARAENGINE_CLIENT_DLL)
 else (WIN32)
 	if(APPLE)
-
-		set(EXTRA_LIBRARIES
-				dl
-				resolv
-				z
+		set(EXTRA_LIBRARIES			
+			dl
+			resolv
+			z
 			libiconv.dylib
 			${WRAPPER_LIB}
 			${CURL_LIBRARIES}
@@ -460,10 +497,10 @@ else (WIN32)
 		)
 	else(APPLE)
 		set(EXTRA_LIBRARIES
-				rt
-				dl
-				resolv
-				z
+			rt
+			dl
+			resolv
+			z
 			${CURL_LIBRARIES}
 			pthread
 		)
