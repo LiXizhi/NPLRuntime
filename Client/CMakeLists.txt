@@ -38,7 +38,7 @@ find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
-        option(PARAENGINE_CLIENT_DLL)
+	option(PARAENGINE_CLIENT_DLL OFF)
 	
 	add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
 	set(ZLIB_FOUND 1)
