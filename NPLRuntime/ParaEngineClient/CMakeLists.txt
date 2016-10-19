@@ -12,7 +12,11 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	set(PARAENGINE_COMPILE_LIB    true)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
@@ -194,9 +198,11 @@ SOURCE_GROUP("Externals\\InfoCenter" FILES ${ParaEngineClient_InfoCenter_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_InfoCenter_FILES})
 
 ##############################
-file (GLOB ParaEngineClient_WebBrowser_FILES ${ParaEngineClient_SOURCE_DIR}/WebBrowser/*.*)
-SOURCE_GROUP("Externals\\WebBrowser" FILES ${ParaEngineClient_WebBrowser_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebBrowser_FILES})
+if(PARAENGINE_CLIENT_DLL)
+	file (GLOB ParaEngineClient_WebBrowser_FILES ${ParaEngineClient_SOURCE_DIR}/WebBrowser/*.*)
+	SOURCE_GROUP("Externals\\WebBrowser" FILES ${ParaEngineClient_WebBrowser_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebBrowser_FILES})
+endif()
 
 ##############################
 file (GLOB ParaEngineClient_TERRAIN_FILES ${ParaEngineClient_SOURCE_DIR}/terrain/*.h ${ParaEngineClient_SOURCE_DIR}/terrain/*.cpp)
@@ -269,7 +275,6 @@ include_directories("${sqlite_SOURCE_DIR}")
 include_directories("${Boost_INCLUDE_DIRS}")
 include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
-include_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
@@ -277,6 +282,9 @@ IF(WIN32)
 	include_directories("${Assimp_SOURCE_DIR}/include/")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
+	if(PARAENGINE_CLIENT_DLL)
+		include_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
+	endif()
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
@@ -312,22 +320,20 @@ IF(HAVE_UNISTD_H)
   ADD_DEFINITIONS(-DHAVE_UNISTD_H)
 ENDIF(HAVE_UNISTD_H)
 
-IF(WIN32)
+IF(PARAENGINE_CLIENT_DLL)
 	# Make sure the linker can find the third-party precompiled libraries. 
 	# link_directories ("${CLIENT_SOURCE_DIR}/libs/win32/lib")
 	# link_directories (${PhysX_SOURCE_DIR}/lib/win32) 
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-	# 64 bits version
-	link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win64)
-else()
-	# 32 bits version.
-	link_directories (${ParaEngineClient_SOURCE_DIR}/flashplayer/f_in_box/lib) 
-	link_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
-	# link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win32) 
-endif()
-	
-	# link_directories (${DIRECTX_LIBRARY_DIR}) 
-ENDIF(WIN32)
+	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		# 64 bits version
+		link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win64)
+	else()
+		# 32 bits version.
+		link_directories (${ParaEngineClient_SOURCE_DIR}/flashplayer/f_in_box/lib) 
+		link_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
+		# link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win32) 
+	endif()
+ENDIF(PARAENGINE_CLIENT_DLL)
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
@@ -436,13 +442,14 @@ if (WIN32)
 			libcurl
 			assimp
 	)
-	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		# for 64bits libs 	
-	else()
-		list(APPEND EXTRA_LIBRARIES f_in_box.lib)
-		list(APPEND EXTRA_LIBRARIES FreeImage.lib)
-	endif()
-
+	if(PARAENGINE_CLIENT_DLL)
+		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+			# for 64bits libs	
+		else()
+			list(APPEND EXTRA_LIBRARIES f_in_box.lib)
+			list(APPEND EXTRA_LIBRARIES FreeImage.lib)
+		endif()
+	endif(PARAENGINE_CLIENT_DLL)
 else (WIN32)
 	if(APPLE)
 		set(EXTRA_LIBRARIES			
