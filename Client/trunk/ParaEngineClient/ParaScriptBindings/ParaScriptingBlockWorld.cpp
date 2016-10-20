@@ -97,6 +97,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bIsUpdating = false;
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
+	Color under_water_color = 0;
 	if (type(params) == LUA_TNUMBER)
 	{
 		attFlag = (uint32_t)(object_cast<double> (params));
@@ -137,6 +138,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			dwMapColor = Color::FromString(object_cast<const char*>(params["mapcolor"]));
 		if (type(params["opacity"]) == LUA_TNUMBER)
 			nOpacity = (int)(object_cast<double> (params["opacity"]));
+		if (type(params["under_water_color"]) == LUA_TSTRING)
+			under_water_color = Color::FromString(object_cast<const char*>(params["under_water_color"]));
 		
 	}
 
@@ -163,6 +166,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor !=0)
 				pTemplate->SetMapColor(dwMapColor);
+			if ((DWORD)under_water_color != 0)
+				pTemplate->setUnderWaterColor(under_water_color);
 			return true;
 		}
 	}
@@ -206,6 +211,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor != 0)
 				pTemplate->SetMapColor(dwMapColor);
+			if ((DWORD)under_water_color != 0)
+				pTemplate->setUnderWaterColor(under_water_color);
 
 			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
 			{

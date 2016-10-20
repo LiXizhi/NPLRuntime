@@ -20,7 +20,7 @@ namespace ParaEngine
 
 	BlockTemplate::BlockTemplate( uint16_t id,uint32_t attFlag, uint16_t category_id) :m_id(id),m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f),
 		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0), 
-		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White)
+		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White), m_UnderWaterColor(Color::Black)
 	{
 		Init(attFlag, category_id);
 	}
@@ -549,4 +549,13 @@ namespace ParaEngine
 		return IsMatchAttribute(batt_solid);
 	}
 
+	void BlockTemplate::setUnderWaterColor(const Color & val)
+	{
+		m_UnderWaterColor = val;
+	}
+
+	const Color & BlockTemplate::getUnderWaterColor()const
+	{
+		return m_UnderWaterColor;
+	}
 }

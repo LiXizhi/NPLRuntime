@@ -242,6 +242,8 @@ namespace ParaEngine
 		void SetMapColor(Color val);
 		DWORD GetBlockColor(int32_t blockData);
 		DWORD GetDiffuseColor(int32_t blockData);
+		void setUnderWaterColor(const Color & val);
+		const Color & getUnderWaterColor()const;
 		private:
 			/** unique id */
 			uint16_t m_id;
@@ -280,6 +282,7 @@ namespace ParaEngine
 			IBlockModelProvider* m_pBlockModelFilter;
 			/** color as shown on the map*/
 			Color m_dwMapColor;
+			Color m_UnderWaterColor;
 			
 			friend class IBlockModelProvider;
 		};
