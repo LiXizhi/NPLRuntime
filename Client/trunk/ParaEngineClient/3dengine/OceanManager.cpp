@@ -318,6 +318,8 @@ namespace ParaEngine
 		m_ReflectionItems[R_SKY_BOX] = true;
 
 		m_useScreenSpaceFog = true;
+
+		m_CustomUnderWaterColor = 0;
 	}
 
 	COceanManager* COceanManager::GetInstance()
@@ -2085,11 +2087,14 @@ namespace ParaEngine
 				v[3].p = Vector4( sx,  0, 0.0f, 1.0f );
 
 				LinearColor underwaterColor = CGlobals::GetScene()->GetFogColor();
+				const Color & color_ocean = ((DWORD)m_CustomUnderWaterColor == 0) ? m_colorOcean : m_CustomUnderWaterColor;
+				float alpha = ((DWORD)m_CustomUnderWaterColor == 0) ? 0.6f : (m_CustomUnderWaterColor.a / 255.0f);
+
 				// make it a little blue than the fog color.
-				underwaterColor.r *= 0.8f*m_colorOcean.r;
-				underwaterColor.g *= m_colorOcean.g;
-				underwaterColor.b *= 1.1f*m_colorOcean.b;
-				underwaterColor.a = 0.6f;
+				underwaterColor.r *= 0.8f*color_ocean.r;
+				underwaterColor.g *= color_ocean.g;
+				underwaterColor.b *= 1.1f*color_ocean.b;
+				underwaterColor.a = alpha;
 				DWORD dwColor = underwaterColor;
 
 				for(int i=0;i<4;i++)
@@ -2165,6 +2170,10 @@ namespace ParaEngine
 
 		BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 		m_underwater = pBlockWorldClient->IsPointUnderWater(vEye);
+		if (m_underwater)
+		{
+			m_CustomUnderWaterColor = pBlockWorldClient->GetBlockTemplate(pBlockWorldClient->GetBlockTemplateId(vEye.x, vEye.y, vEye.z))->getUnderWaterColor();
+		}
 		
 		//
 		// Render ocean surface

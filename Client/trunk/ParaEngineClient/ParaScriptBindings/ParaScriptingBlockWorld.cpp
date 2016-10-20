@@ -98,6 +98,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
 	bool bIsVisible = true;
+	Color under_water_color = 0;
 	if (type(params) == LUA_TNUMBER)
 	{
 		attFlag = (uint32_t)(object_cast<double> (params));
@@ -140,6 +141,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			nOpacity = (int)(object_cast<double> (params["opacity"]));
 		if (type(params["isVisible"]) == LUA_TBOOLEAN)
 			bIsVisible = object_cast<bool> (params["isVisible"]);	
+		if (type(params["under_water_color"]) == LUA_TSTRING)
+			under_water_color = Color::FromString(object_cast<const char*>(params["under_water_color"]));
 	}
 
 	if (bIsUpdating)
@@ -169,6 +172,9 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 			if (mgr)
 				mgr->SetBlockVisible(templateId, bIsVisible);
+
+			if ((DWORD)under_water_color != 0)
+				pTemplate->setUnderWaterColor(under_water_color);
 			return true;
 		}
 	}
@@ -212,6 +218,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor != 0)
 				pTemplate->SetMapColor(dwMapColor);
+			if ((DWORD)under_water_color != 0)
+				pTemplate->setUnderWaterColor(under_water_color);
 
 			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
 			{
