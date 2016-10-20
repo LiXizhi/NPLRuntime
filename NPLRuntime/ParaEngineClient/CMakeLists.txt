@@ -446,7 +446,10 @@ if (PARAENGINE_COMPILE_LIB)
 
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-
+	if (WIN32)
+		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "PaperStar")
+		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar_d")
+	endif()
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	ADD_DEFINITIONS(-DNPLRUNTIME)
@@ -456,8 +459,8 @@ else (PARAENGINE_COMPILE_LIB)
 		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
 	endif(DIRECTX_FOUND)
 if (WIN32)
-	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "ParaEngineClient")
-	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
+	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "PaperStar")
+	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar_d")
 endif()
 
 endif (PARAENGINE_COMPILE_LIB)
