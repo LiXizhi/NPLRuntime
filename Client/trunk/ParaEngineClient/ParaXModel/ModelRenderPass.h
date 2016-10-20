@@ -22,14 +22,20 @@ namespace ParaEngine
 		};
 
 		//TextureID texture, texture2;
-		int tex;
-		float p;
+		int32 tex;
+		union{
+			float m_fStripLength;
+			float m_fCategoryID;
+			float m_fReserved0;
+		};
+		
+		
 		int16 texanim, color, opacity, blendmode;
-		int order;
-		int geoset;
+		int32 order;
+		int32 geoset;
 
 		// TODO: bit align to DWORD
-		bool usetex2 : 1, useenvmap : 1, cull : 1, trans : 1, unlit : 1, nozwrite : 1, swrap : 1, twrap : 1, force_local_tranparency : 1, skinningAni : 1, is_rigid_body : 1, disable_physics : 1, force_physics : 1;
+		bool usetex2 : 1, useenvmap : 1, cull : 1, trans : 1, unlit : 1, nozwrite : 1, swrap : 1, twrap : 1, force_local_tranparency : 1, skinningAni : 1, is_rigid_body : 1, disable_physics : 1, force_physics : 1, has_category_id : 1;
 		DWORD: 0;// Force alignment to next boundary.
 
 		/// for fixed function pipeline
@@ -57,7 +63,7 @@ namespace ParaEngine
 			//return !trans;
 			if (order < m.order) return true;
 			else if (order > m.order) return false;
-			else return blendmode == m.blendmode ? (p < m.p) : blendmode < m.blendmode;
+			else return blendmode == m.blendmode ? (m_fReserved0 < m.m_fReserved0) : blendmode < m.blendmode;
 		}
 
 		inline bool operator == (const ModelRenderPass &m) const
@@ -71,5 +77,8 @@ namespace ParaEngine
 
 		int32 GetVertexStart(CParaXModel *m);
 	
+		/** used in some shader parameter */
+		int32 GetCategoryId();
+		void SetCategoryId(int32 nCategoryID);
 	};
 }

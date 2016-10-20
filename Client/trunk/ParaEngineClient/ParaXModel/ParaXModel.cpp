@@ -406,7 +406,7 @@ void CParaXModel::initTranslucentFaceGroups()
 			pFaceGroup->m_bHasLighting = !(p.unlit);
 			pFaceGroup->m_disableZWrite = p.nozwrite;
 			pFaceGroup->m_bAdditive = (p.blendmode == BM_ADDITIVE) || (p.blendmode == BM_ADDITIVE_ALPHA);
-			pFaceGroup->m_stripLenght = p.p;
+			pFaceGroup->m_stripLength = p.m_fStripLength;
 			pFaceGroup->m_bSkinningAni = p.skinningAni;
 			// any material is ok. 
 			ParaMaterial mat = CGlobals::GetSceneState()->GetCurrentMaterial();

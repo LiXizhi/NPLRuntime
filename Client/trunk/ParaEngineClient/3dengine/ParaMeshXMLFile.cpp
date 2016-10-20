@@ -68,12 +68,12 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromFile(const string& filename, const st
 bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 {
 #ifdef PARAENGINE_MOBILE
-	using namespace tinyxml2;
+	namespace TXML = tinyxml2;
 	try
 	{
-		XMLDocument doc(true, COLLAPSE_WHITESPACE);
+		TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 		doc.Parse(pData, nSize);
-		XMLElement* pRoot = doc.RootElement();
+		TXML::XMLElement* pRoot = doc.RootElement();
 		if (pRoot)
 		{
 			pRoot->QueryIntAttribute("version", &m_nVersion);
@@ -85,9 +85,9 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 			pRoot->QueryIntAttribute("type", &nType);
 			m_nType = (ParaMeshXMLType)nType;
 
-			for (XMLNode* pChild = pRoot->FirstChild(); pChild != 0; pChild = pChild->NextSibling())
+			for (TXML::XMLNode* pChild = pRoot->FirstChild(); pChild != 0; pChild = pChild->NextSibling())
 			{
-				XMLElement* pElement = pChild->ToElement();
+				TXML::XMLElement* pElement = pChild->ToElement();
 				if (pElement)
 				{
 					std::string tagName = pElement->Name();
@@ -104,9 +104,9 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 					{
 						pElement->QueryIntAttribute("index", &m_nPrimaryShader);
 						// TODO: for shader parameters
-						for (XMLNode* pSubChild = pElement->FirstChild(); pSubChild != 0; pSubChild = pSubChild->NextSibling())
+						for (TXML::XMLNode* pSubChild = pElement->FirstChild(); pSubChild != 0; pSubChild = pSubChild->NextSibling())
 						{
-							XMLElement* pParamElement = pSubChild->ToElement();
+							TXML::XMLElement* pParamElement = pSubChild->ToElement();
 							if (pParamElement)
 							{
 								std::string tagName = pParamElement->Name();

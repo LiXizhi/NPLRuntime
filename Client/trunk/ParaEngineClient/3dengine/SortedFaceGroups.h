@@ -48,7 +48,7 @@ namespace ParaEngine
 		vector <uint32> m_vertexWeights;
 		vector <uint32> m_boneIndices;
 
-		float m_stripLenght;
+		float m_stripLength;
 	public:
 		/** update the center position based on the vertices in the groups. */
 		void UpdateCenterPos();

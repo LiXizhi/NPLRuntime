@@ -53,7 +53,7 @@ public:
 			m_typeConstraint = CameraConstraintNone;
 		};
 	};
-
+	
 public:
 	//////////////////////////////////////////////////////////////////////////
 	// implementation of IAttributeFields
@@ -173,6 +173,9 @@ public:
 
 	ATTRIBUTE_METHOD1(CAutoCamera, IsEnableBlockCollision_s, bool*)	{ *p1 = cls->IsEnableBlockCollision(); return S_OK; }
 	ATTRIBUTE_METHOD1(CAutoCamera, SetEnableBlockCollision_s, bool)	{ cls->SetEnableBlockCollision(p1); return S_OK; }
+
+	ATTRIBUTE_METHOD1(CAutoCamera, IsIgnoreEyeBlockCollisionInSunlight_s, bool*)	{ *p1 = cls->IsIgnoreEyeBlockCollisionInSunlight(); return S_OK; }
+	ATTRIBUTE_METHOD1(CAutoCamera, SetIgnoreEyeBlockCollisionInSunlight_s, bool)	{ cls->SetIgnoreEyeBlockCollisionInSunlight(p1); return S_OK; }
 
 	ATTRIBUTE_METHOD1(CAutoCamera, GetRenderOrigin_s, Vector3*)	{ *p1 = cls->GetRenderOrigin(); return S_OK; }
 	ATTRIBUTE_METHOD1(CAutoCamera, GetViewProjMatrix_s, Matrix4*)	{ *p1 = *(cls->GetViewProjMatrix()); return S_OK; }
@@ -420,6 +423,12 @@ public:
 	bool IsEnableBlockCollision() const;
 	void SetEnableBlockCollision(bool val);
 
+	/** enabled by default. if enabled, we will ignore camera-block collision,
+	* when both eye and the look-at point are in sunlight.
+	*/
+	bool IsIgnoreEyeBlockCollisionInSunlight() const { return m_bIgnoreEyeBlockCollisionInSunlight; }
+	void SetIgnoreEyeBlockCollisionInSunlight(bool val) { m_bIgnoreEyeBlockCollisionInSunlight = val; }
+
 	virtual Vector3 GetRenderEyePosition();
 
 private:
@@ -575,6 +584,11 @@ private:
 
 	/** enabled by default. otherwise camera will pass through blocks*/
 	bool m_bEnableBlockCollision;
+
+	/** enabled by default. if enabled, we will ignore camera-block collision, 
+	* when both eye and the look-at point are in sunlight. 
+	*/
+	bool m_bIgnoreEyeBlockCollisionInSunlight;
 	
 	Vector3 m_bipedFlyNormal;
 

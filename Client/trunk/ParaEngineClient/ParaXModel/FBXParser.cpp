@@ -131,7 +131,6 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 			{
 				ProcessFBXMaterial(pFbxScene, i, pMesh);
 			}
-			std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
 		}
 		// get root node
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
@@ -260,6 +259,8 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
 	}
+
+	std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
 }
 
 void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
@@ -538,97 +539,117 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 
 void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBXMaterial* out)
 {
-	int nSize = sMatName.size();
-	int nMarkIndex = nSize - 2;// Index of the character '_'
-
-	if ((sMatName == "r"))
-		out->nIsReplaceableIndex = 2;
-	else if (nSize >= 2 && sMatName[nSize - 2] == 'r' && sMatName[nSize - 1] >= '0' && sMatName[nSize - 1] <= '9')
+	int nMarkIndex = sMatName.size() - 1;
+	for (; nMarkIndex > 0; nMarkIndex -= 2)
 	{
-		out->nIsReplaceableIndex = sMatName[nSize - 1] - '0';
-		if (nSize >= 3 && sMatName[nSize - 3] == '_')
+		int nID = -1;
+		char symbol = '\0';
+		if (nMarkIndex >= 0 && sMatName[nMarkIndex] >= '0' && sMatName[nMarkIndex] <= '9')
 		{
-			nMarkIndex = nSize - 3 - 2;
+			nID = sMatName[nMarkIndex] - '0';
+			nMarkIndex--;
+			if (nMarkIndex >= 0 && sMatName[nMarkIndex] >= '0' && sMatName[nMarkIndex] <= '9')
+			{
+				nID += (sMatName[nMarkIndex] - '0') * 10;
+				nMarkIndex--;
+				if (nMarkIndex >= 0 && sMatName[nMarkIndex] >= '0' && sMatName[nMarkIndex] <= '9')
+				{
+					nID += (sMatName[nMarkIndex] - '0') * 100;
+					nMarkIndex--;
+					if (nMarkIndex >= 0 && sMatName[nMarkIndex] >= '0' && sMatName[nMarkIndex] <= '9')
+					{
+						nID += (sMatName[nMarkIndex] - '0') * 1000;
+						nMarkIndex--;
+					}
+				}
+			}
 		}
-	}
-	else
-		out->nIsReplaceableIndex = -1;
 
-	for (int i = 0; i < 7; ++i)
-	{
-		if (nMarkIndex >= 0 && sMatName[nMarkIndex] == '_')
+		if (nMarkIndex == 0 || sMatName[nMarkIndex - 1] == '_')
 		{
-			char symbol = sMatName[nMarkIndex + 1];
-			if (symbol == 'b')
+			symbol = sMatName[nMarkIndex];
+			switch (symbol)
 			{
-				// if the material name ends with "_b", alpha testing will be disabled. this is usually the case for fully blended textures with alpha channels, such as fire and effects, etc.
-				// 2006.12.21 LXZ: for textures without alpha testing. 
-				out->fAlphaTestingRef = 0.f;
-			}
-			else if (symbol == 't')
-			{
-				// if the material name ends with "_t", z buffer write will be disabled. this is usually the case for particle meshes, etc.
-				// 2006.12.29 LXZ: for textures without z buffer disabled. 
-				out->bDisableZWrite = true;
-			}
-			else if (symbol == 'l')
-			{
-				// if the material name ends with "_l", z buffer write will be disabled. However, the material will be rendered with the mesh even it is transparent. 
-				// 2006.12.29 LXZ: for textures without z buffer disabled. 
-				out->bForceLocalTranparency = true;
-			}
-			else if (symbol == 'r')
+			case 'b':
+				{
+					// if the material name ends with "_b", alpha testing will be disabled. this is usually the case for fully blended textures with alpha channels, such as fire and effects, etc.
+					// 2006.12.21 LXZ: for textures without alpha testing. 
+					out->fAlphaTestingRef = 0.f;
+					break;
+				}
+			case 't':
+				{
+					// if the material name ends with "_t", z buffer write will be disabled. this is usually the case for particle meshes, etc.
+					// 2006.12.29 LXZ: for textures without z buffer disabled. 
+					out->bDisableZWrite = true;
+					break;
+				}
+			case 'l':
+				{
+					// if the material name ends with "_l", z buffer write will be disabled. However, the material will be rendered with the mesh even it is transparent. 
+					// 2006.12.29 LXZ: for textures without z buffer disabled. 
+					out->bForceLocalTranparency = true;
+					break;
+				}
+			case 'a':
+				{
+					// added  2007.1.5 LXZ: if the material name ends with "_a", physics will be disabled. this is usually the case for leaves on a tree etc.
+					out->bDisablePhysics = true;
+					break;
+				}
+			case 'p':
+				{
+					// added  2016.9.8 LXZ: if the material name ends with "_p", physics will be enabled. 
+					out->bForcePhysics = true;
+					break;
+				}
+			case 'u':
+				{
+					// added  2007.11.5 LXZ: if the material name ends with "_u", it will be unlit, which means no lighting is applied to surface. 
+					out->bUnlit = true;
+					break;
+				}
+			case 'd':
+				{
+					// added  2008.12.1 LXZ: if the material name ends with "_d", it will be additive blending.
+					out->bAddictive = true;
+					break;
+				}
+			case 'c':
+				{
+					if (nID < 0)
+					{
+						// added  2008.12.4 LXZ: if the material name ends with "_c", it will face the camera.Note, it only works with static mesh. 
+						// For animated model, use "_b" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
+						out->bBillboard = true;
+						out->nForceUnique = ++m_unique_id;
+					}
+					else
+					{
+						out->SetCategoryID(nID);
+					}
+					break;
+				}
+			case 'y':
+				{
+					// added  2008.12.4 LXZ: if the material name ends with "_y", it will face the camera but UP axis aligned. Note, it only works with static mesh. 
+					// For animated model, use "_u" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
+					out->bAABillboard = true;
+					out->nForceUnique = ++m_unique_id;
+					break;
+				}
+			case 'r':
 			{
 				// if "_r", it is replaceable texture "_r2"
-				out->nIsReplaceableIndex = 2;
+				out->nIsReplaceableIndex = nID >= 0 ? nID : 2;
+				break;
 			}
-			else if (symbol == 'a')
-			{
-				// added  2007.1.5 LXZ: if the material name ends with "_a", physics will be disabled. this is usually the case for leaves on a tree etc.
-				out->bDisablePhysics = true;
+			default:
+				break;
 			}
-			else if (symbol == 'p')
-			{
-				// added  2016.9.8 LXZ: if the material name ends with "_p", physics will be enabled. 
-				out->bForcePhysics = true;
-			}
-			else if (symbol == 'u')
-			{
-				// added  2007.11.5 LXZ: if the material name ends with "_u", it will be unlit, which means no lighting is applied to surface. 
-				out->bUnlit = true;
-			}
-			else if (symbol == 'd')
-			{
-				// added  2008.12.1 LXZ: if the material name ends with "_d", it will be additive blending.
-				out->bAddictive = true;
-			}
-			else if (symbol == 'c')
-			{
-				// added  2008.12.4 LXZ: if the material name ends with "_c", it will face the camera.Note, it only works with static mesh. 
-				// For animated model, use "_b" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
-				out->bBillboard = true;
-				out->nForceUnique = ++m_unique_id;
-			}
-			else if (symbol == 'y')
-			{
-				// added  2008.12.4 LXZ: if the material name ends with "_y", it will face the camera but UP axis aligned. Note, it only works with static mesh. 
-				// For animated model, use "_u" bone names.  Also note that the engine will use the center of the sub mesh as pivot point. If u have several billboarded faces in a single mesh, please name their materials differently, such as mat0_c, mat1_c, mat2_c.
-				out->bAABillboard = true;
-				out->nForceUnique = ++m_unique_id;
-			}
-		}
-		else if ((nMarkIndex - 1) >= 0 && sMatName[nMarkIndex - 1] == '_')
-		{
-			if (sMatName[nMarkIndex] == 'r' && sMatName[nMarkIndex + 1] >= '0' && sMatName[nMarkIndex + 1] <= '9')
-			{
-				// if "_r[0-9]", it is replaceable texture
-				out->nIsReplaceableIndex = sMatName[nMarkIndex + 1] - '0';
-			}
-			nMarkIndex -= 1;
 		}
 		else
-			break;
-		nMarkIndex -= 2;
+			nMarkIndex = 0;
 	}
 }
 
@@ -703,7 +724,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	int texture_index = m_textures.size() - 1;
 	ModelRenderPass pass;
 	pass.tex = texture_index;
-	pass.p = 0.0f;
+	pass.SetCategoryId(fbxMat.GetCategoryID());
 	pass.texanim = -1;
 	pass.color = -1;
 	pass.opacity = -1;
