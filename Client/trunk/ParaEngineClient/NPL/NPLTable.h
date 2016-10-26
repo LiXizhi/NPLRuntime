@@ -45,6 +45,12 @@ namespace NPL
 
 		inline NPLObjectType GetType(){return m_type;}
 
+		bool isTable() { return GetType() == NPLObjectType_Table; }
+		bool isNumber() { return GetType() == NPLObjectType_Number; }
+		bool isString() { return GetType() == NPLObjectType_String; }
+		bool isNil() { return GetType() == NPLObjectType_Nil; }
+		bool isBool() { return GetType() == NPLObjectType_Bool; }
+
 	protected:
 		NPLObjectType m_type;
 	};
@@ -68,7 +74,7 @@ namespace NPL
 	{
 	public:
 		NPLObjectProxy() {};
-		NPLObjectProxy( NPLObjectBase* pObject);;
+		NPLObjectProxy( NPLObjectBase* pObject);
 
 		operator double ();
 
@@ -79,6 +85,8 @@ namespace NPL
 		void operator = (bool value);
 
 		operator const string& ();
+		const char* c_str();
+		int toInt();
 
 		bool operator == (const string& value);
 		bool operator == (const char* value);
@@ -98,6 +106,15 @@ namespace NPL
 
 		/** get a field. It may return null if not found.*/
 		NPLObjectProxy GetField(const char* sName);
+
+		
+		/** Set the field.
+		* @param sName: the field name
+		* @param pObject: if NULL, it will remove the field, as if nil in lua.
+		*/
+		void SetField(const string& sName, const NPLObjectProxy& pObject);
+
+		void SetField(int nIndex, const NPLObjectProxy& pObject);
 
 		/** make the object invalid */
 		void MakeNil();
