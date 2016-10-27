@@ -66,6 +66,14 @@ else()
 
 	)
 
+
+	if(APPLE)
+		find_package(GLUT REQUIRED)
+		include_directories(${GLUT_INCLUDE_DIR})
+		set(CMAKE_CXX_FLAGS "-g -Wall")
+	else()
+	endif()
+
 	##############################
 	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
 	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
@@ -254,6 +262,9 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
 
 if(APPLE)
+	ADD_DEFINITIONS(-DMAC_CLIENT)
+
+
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
@@ -283,6 +294,8 @@ if(APPLE)
 		libjpeg.a
 		libfreetype.a
 	)
+
+
 endif(APPLE)
 
 ##############################
@@ -456,6 +469,8 @@ else (WIN32)
 			libiconv.dylib
 			${WRAPPER_LIB}
 			${CURL_LIBRARIES}
+			${GLUT_LIBRARY}
+			${OPENGL_LIBRARY}
 			pthread
 		)
 	else(APPLE)
