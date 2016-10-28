@@ -689,6 +689,52 @@ NPLObjectProxy NPL::NPLHelper::MsgStringToNPLTable(const char* input, int nLen)
 	return NPLObjectProxy();
 }
 
+bool NPL::NPLHelper::LuaObjectToNPLObject(const luabind::object& inputObj, NPLObjectProxy& out)
+{
+	if (type(inputObj) == LUA_TTABLE)
+	{
+		for (luabind::iterator itCur(inputObj), itEnd; itCur != itEnd; ++itCur)
+		{
+			// we only serialize item with a string key
+			const object& key = itCur.key();
+			const object& input = *itCur;
+			if (type(key) == LUA_TSTRING)
+			{
+				NPLObjectProxy v;
+				if (LuaObjectToNPLObject(input, v))
+				{
+					out[object_cast<std::string>(key)] = v;
+				}
+			}
+			else if (type(key) == LUA_TNUMBER)
+			{
+				NPLObjectProxy v;
+				if (LuaObjectToNPLObject(input, v))
+				{
+					out[object_cast<int>(key)] = v;
+				}
+			}
+		}
+	}
+	else if (type(inputObj) == LUA_TSTRING)
+	{
+		out = object_cast<std::string>(inputObj);
+	}
+	else if (type(inputObj) == LUA_TNUMBER)
+	{
+		out = object_cast<double>(inputObj);
+	}
+	else if (type(inputObj) == LUA_TBOOLEAN)
+	{
+		out = object_cast<bool>(inputObj);
+	}
+	else
+	{
+		return false;
+	}
+	return true;
+}
+
 NPLObjectProxy NPL::NPLHelper::StringToNPLTable(const char* input, int nLen)
 {
 	NPLLex lex;

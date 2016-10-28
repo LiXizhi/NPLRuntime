@@ -82,6 +82,7 @@
 
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) && defined(DMAC_CLIENT)
 
+
 #define USE_OPENGL_RENDERER
 #else
 #define USE_NULL_RENDERER

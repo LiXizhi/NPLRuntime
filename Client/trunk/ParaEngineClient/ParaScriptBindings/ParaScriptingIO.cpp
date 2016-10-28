@@ -1603,8 +1603,8 @@ namespace ParaScripting
 					memcpy(&(sCode[0]), file.getBuffer(), (int)file.getSize());
 				}
 #ifdef PARAENGINE_MOBILE
-				using namespace tinyxml2;
-				XMLDocument doc(true, COLLAPSE_WHITESPACE);
+				namespace TXML = tinyxml2;
+				TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 				doc.Parse(sCode.c_str(), (int)sCode.size());
 				if(doc.Error())
 				{
@@ -1634,8 +1634,8 @@ namespace ParaScripting
 		try
 		{
 #ifdef PARAENGINE_MOBILE
-			using namespace tinyxml2;
-			XMLDocument doc(true, IsWhiteSpaceCondensed() ? COLLAPSE_WHITESPACE : PRESERVE_WHITESPACE);
+			namespace TXML = tinyxml2;
+			TXML::XMLDocument doc(true, IsWhiteSpaceCondensed() ? TXML::COLLAPSE_WHITESPACE : TXML::PRESERVE_WHITESPACE);
 			// Note: LiXizhi: TinyXML2 will actually change the content of input string, so we can not pass sString directly to Parse() function.
 			std::string sTemp = sString;
 

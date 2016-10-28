@@ -74,6 +74,7 @@ else()
 	else()
 	endif()
 
+
 	##############################
 	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
 	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
@@ -262,7 +263,9 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
 
 if(APPLE)
+
 	ADD_DEFINITIONS(-DMAC_CLIENT)
+
 
 
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
@@ -294,7 +297,6 @@ if(APPLE)
 		libjpeg.a
 		libfreetype.a
 	)
-
 
 endif(APPLE)
 

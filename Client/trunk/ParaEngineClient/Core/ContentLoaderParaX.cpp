@@ -17,7 +17,7 @@
 #include "ParaXSerializer.h"
 #include "ParaMeshXMLFile.h"
 #include "AsyncLoader.h"
-
+#include "util/StringHelper.h"
 #include "ContentLoaderParaX.h"
 
 using namespace ParaEngine;
@@ -297,6 +297,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				}
 
 				std::string sExt = CParaFile::GetFileExtension(lod.m_sMeshFileName);
+				StringHelper::make_lower(sExt);
 				if (sExt == "bmax")
 				{
 					// block max model. 

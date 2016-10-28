@@ -4,11 +4,17 @@
 /* curl specific */
 #include <curl/curl.h>
 #include "util/mutex.h"
+
+namespace NPL
+{
+	class NPLObjectProxy;
+}
+
 namespace ParaEngine
 {
 	class CUrlProcessor;
 	class IProcessorWorkerData;
-	
+
 	/**
 	* CTextureLoader implementation of IDataLoader
 	* it will first search locally. If not found or version expired (as indicated in the assets_manifest file), 
@@ -59,6 +65,15 @@ namespace ParaEngine
 	};
 
 	typedef DWORD (*URL_LOADER_CALLBACK)(int nResult, CUrlProcessor* pRequest, CUrlProcessorUserData* pUserData);
+
+	/** for read function */
+	struct upload_context
+	{
+		upload_context(const char* data, int nDataSize = 0);
+		const char* m_pData;
+		int m_nDataSize;
+		int m_nBytesSent;
+	};
 
 	/**
 	* CUrlProcessor implementation of IDataProcessor
@@ -150,6 +165,7 @@ namespace ParaEngine
 		static size_t CUrl_write_data_callback(void *buffer, size_t size, size_t nmemb, void *stream);
 		static size_t CUrl_write_header_callback(void *buffer, size_t size, size_t nmemb, void *stream);
 		static int CUrl_progress_callback(void *clientp,double dltotal,double dlnow,double ultotal, double ulnow);
+		static size_t CUrl_read_email_payload(void *ptr, size_t size, size_t nmemb, void *userp);
 
 		size_t write_data_callback(void *buffer, size_t size, size_t nmemb);
 		size_t write_header_callback(void *buffer, size_t size, size_t nmemb);
@@ -207,6 +223,9 @@ namespace ParaEngine
 		void SetEnableProgressUpdate(bool val);
 
 		const char* CopyRequestData(const char* pData, int nLength);
+
+		/** get options as NPL table object. */
+		NPL::NPLObjectProxy& GetOptions();
 	public:
 		/** CURLOPT_URL*/
 		string m_url;
@@ -260,6 +279,7 @@ namespace ParaEngine
 		
 		int m_nBytesReceived;
 		int m_nTotalBytes;
+		
 		vector<char> m_data;
 		vector<char> m_header;
 		std::string m_sResponseData;
@@ -270,6 +290,11 @@ namespace ParaEngine
 		CURLcode m_returnCode;   
 		// the last received HTTP or FTP code. We will expect 200 for successful HTTP response
 		long m_responseCode;  
+
+		upload_context* m_pUploadContext;
+
+		/** all lib curl options */
+		std::unique_ptr<NPL::NPLObjectProxy> m_options;
 
 		/** this mutex is only used for determine the state. */
 		//ParaEngine::mutex m_mutex;
