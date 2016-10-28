@@ -270,6 +270,11 @@ IF(MSVC)
 		SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /PDBSTRIPPED:Release/ParaEngineServer.stripped.pdb")
 	endif (PARAENGINE_COMPILE_LIB)
 ELSE()
+
+	# set debug
+	# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+
+
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
@@ -307,6 +312,12 @@ if (WIN32)
 endif()
 
 endif (PARAENGINE_COMPILE_LIB)
+
+
+if(APPLE)
+	# for luajit & mac
+	SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+endif()
 
 
 if (WIN32)
