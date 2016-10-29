@@ -426,7 +426,7 @@ ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey
 
 void ParaEngine::CRenderTarget::SetRenderTargetSize(int nWidth, int nHeight)
 {
-	if (m_nTextureWidth != nWidth || m_nTextureHeight != m_nTextureHeight)
+	if (m_nTextureWidth != nWidth || m_nTextureHeight != nHeight)
 	{
 		SetDirty(true);
 		Cleanup();

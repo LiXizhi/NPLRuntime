@@ -19,7 +19,7 @@
 
 using namespace ParaEngine;
 
-ParaEngine::CRefCounted::CRefCounted() 
+ParaEngine::CRefCounted::CRefCounted()
 	: m_refcount(0)
 {
 
@@ -53,12 +53,13 @@ ParaEngine::CRefCountedOne::CRefCountedOne()
 
 void ParaEngine::IObject::Clone(IObject* obj) const
 {
-	if (obj != NULL)memcpy(obj, this, sizeof(IObject));
 }
 
 IObject* ParaEngine::IObject::Clone() const
 {
-	IObject *obj = new IObject(); Clone(obj); return obj;
+	IObject *obj = new IObject();
+	Clone(obj);
+	return obj;
 }
 
 bool ParaEngine::IObject::Equals(const IObject *obj) const

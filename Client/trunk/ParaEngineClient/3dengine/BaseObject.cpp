@@ -1039,14 +1039,14 @@ void CBaseObject::Clone(CBaseObject* obj)
 {
 	if(obj!=NULL)
 	{
-		memcpy(obj,this,sizeof(CBaseObject));
+		memcpy(obj, (CBaseObject*)this,sizeof(CBaseObject));
 		obj->m_refcount = 0;
 	}
 }
 
 CBaseObject* CBaseObject::Clone()
 {
-	CBaseObject *obj=new CBaseObject();
+	CBaseObject *obj = new CBaseObject();
 	Clone(obj);
 	return obj;
 }

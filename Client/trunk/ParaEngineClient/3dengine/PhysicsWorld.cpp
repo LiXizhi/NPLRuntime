@@ -9,9 +9,9 @@
 /** 
 current PhysX version is 2.8.1
 Ageia now uses a free licence for commercial use of its physics engine since version 2.6.2 in Nov,2006. Below are SDK installation guide and application release notes.
-- copy [AgeiaDir]/SDKs/*.* to [paraengine]/Physics/ : One can skip ./Docs directory.
+- copy [AgeiaDir]/SDKs/XXX.* to [paraengine]/Physics/ : One can skip ./Docs directory.
 - copy [AgeiaDir]/Bin/Win32/PhysXLoader.dll to [paraengine]/
-- Some helper cooking files at [paraengine]/Physics/*.cpp(h) 
+- Some helper cooking files at [paraengine]/Physics/XXX.cpp(h) 
 - [NX_SUPPORT_MESH_SCALE is not working. This step is skipped] in Nxp.h at the ageia include folder, uncomment a line to define NX_SUPPORT_MESH_SCALE
 Release:
 - During End User installation. Run the [AgeiaDir]/Redistributable/ in slient mode to install all necessary DLLs to the user's computer.

@@ -658,13 +658,13 @@ namespace ParaEngine
 
 	void BlockChunk::SetBlockEmpty(uint16_t nBlockIndex, Block& block)
 	{
-		uint16 nIndex = m_blockIndices[nBlockIndex];
+		int16 nIndex = m_blockIndices[nBlockIndex];
 		if (nIndex != -1)
 		{
 			m_blockIndices[nBlockIndex] = -1;
 			if (block.DecreaseInstanceCount() == 0)
 			{
-				RecycleBlock(nIndex, block);
+				RecycleBlock((uint16)nIndex, block);
 			}
 		}
 	}

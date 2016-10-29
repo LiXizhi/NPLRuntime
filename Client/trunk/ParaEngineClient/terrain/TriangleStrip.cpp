@@ -65,7 +65,7 @@ int TriangleStrip::BuildTriangles(Terrain * pTerrain, terrain_vertex * pIndices,
 	bool bCCW = false;
 	for(int i=3;i<m_NumberOfVertices;++i)
 	{
-		if(bCCW = !bCCW)
+		if((bCCW = !bCCW))
 		{
 			pV = pIndices+(nCur++);
 			*pV = verMinor1;
@@ -113,7 +113,7 @@ int TriangleStrip::BuildTriangles(Terrain * pTerrain, terrain_vertex_normal * pI
 	bool bCCW = false;
 	for(int i=3;i<m_NumberOfVertices;++i)
 	{
-		if(bCCW = !bCCW)
+		if((bCCW = !bCCW))
 		{
 			pV = pIndices+(nCur++);
 			*pV = verMinor1;
