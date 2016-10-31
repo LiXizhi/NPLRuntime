@@ -612,7 +612,7 @@ namespace ParaEngine
 	private:
 		bool m_useScreenSpaceFog;
 
-		Color m_CustomUnderWaterColor;
+		LinearColor m_CustomUnderWaterColor;
 	public:
 		void EnableScreenSpaceFog(bool value){
 			m_useScreenSpaceFog = value;

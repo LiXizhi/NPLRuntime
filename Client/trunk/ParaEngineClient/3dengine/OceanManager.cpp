@@ -2087,8 +2087,8 @@ namespace ParaEngine
 				v[3].p = Vector4( sx,  0, 0.0f, 1.0f );
 
 				LinearColor underwaterColor = CGlobals::GetScene()->GetFogColor();
-				const Color & color_ocean = ((DWORD)m_CustomUnderWaterColor == 0) ? m_colorOcean : m_CustomUnderWaterColor;
-				float alpha = ((DWORD)m_CustomUnderWaterColor == 0) ? 0.6f : (m_CustomUnderWaterColor.a / 255.0f);
+				const LinearColor & color_ocean = ((DWORD)m_CustomUnderWaterColor == 0) ? m_colorOcean : m_CustomUnderWaterColor;
+				float alpha = ((DWORD)m_CustomUnderWaterColor == 0) ? 0.6f : m_CustomUnderWaterColor.a;
 
 				// make it a little blue than the fog color.
 				underwaterColor.r *= 0.8f*color_ocean.r;
@@ -2173,6 +2173,7 @@ namespace ParaEngine
 		if (m_underwater)
 		{
 			m_CustomUnderWaterColor = pBlockWorldClient->GetBlockTemplate(pBlockWorldClient->GetBlockTemplateId(vEye.x, vEye.y, vEye.z))->getUnderWaterColor();
+			m_CustomUnderWaterColor /= 255.0f;
 		}
 		
 		//
