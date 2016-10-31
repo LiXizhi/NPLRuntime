@@ -460,6 +460,21 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 
 		if (fileList.size() == 0)
 		{
+#ifdef PARAENGINE_MOBILE
+			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
+			if (CParaFile::DoesFileExist("paperbox103.pkg") || CParaFile::DoesFileExist("paperbox103.zip"))
+				fileList.push_back("paperbox103.zip");
+			if (CParaFile::DoesFileExist("paperbox102.pkg") || CParaFile::DoesFileExist("paperbox102.zip"))
+				fileList.push_back("paperbox102.zip");
+			if (CParaFile::DoesFileExist("paperbox101.pkg") || CParaFile::DoesFileExist("paperbox101.zip"))
+				fileList.push_back("paperbox101.zip");
+			if (CParaFile::DoesFileExist("paperbox003.pkg") || CParaFile::DoesFileExist("paperbox003.zip"))
+				fileList.push_back("paperbox003.zip");
+			if (CParaFile::DoesFileExist("paperbox002.pkg") || CParaFile::DoesFileExist("paperbox002.zip"))
+				fileList.push_back("paperbox002.zip");
+			if (CParaFile::DoesFileExist("paperbox001.pkg") || CParaFile::DoesFileExist("paperbox001.zip"))
+				fileList.push_back("paperbox001.zip");
+#endif
 			if (CParaFile::DoesFileExist("main.pkg") || CParaFile::DoesFileExist("main.zip"))
 				fileList.push_back("main.zip");
 			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg"))
