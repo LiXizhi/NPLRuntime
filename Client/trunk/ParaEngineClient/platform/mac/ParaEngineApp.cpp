@@ -12,6 +12,8 @@
 
 #include "platform/OpenGLWrapper.h"
 
+#include "fssimplewindow.h"
+
 #include "ParaAudioMac.h"
 //#include "SimpleAudioEngine.h"
 //#include "ParaSimpleAudioEngine.h"
@@ -56,11 +58,14 @@ CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	g_pCurrentApp = this;
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
-#ifdef USE_OPENGL_RENDERER
-	// listen the event that renderer was recreated on Android/WP8
-	//TODO:wangpeng m_rendererRecreatedListener = cocos2d::EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(CParaEngineApp::listenRendererRecreated, this));
-	//TODO:wangpeng cocos2d::Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(m_rendererRecreatedListener, -1);
-#endif
+
+
+	FsOpenWindow(32,32,800,600,1); // 800x600 pixels, useDoubleBuffer=1
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glDepthFunc(GL_LESS);
+
 }
 
 CParaEngineApp::~CParaEngineApp()
@@ -307,6 +312,33 @@ HRESULT CParaEngineApp::DeleteDeviceObjects()
 
 HRESULT CParaEngineApp::FrameMove(double fTime)
 {
+
+
+	int mx,my,lb,mb,rb,passed;
+	double spinX,spinY;
+
+	FsPollDevice();
+	FsGetMouseState(lb,mb,rb,mx,my);
+
+	int wid,hei,cx,cy;
+	FsGetWindowSize(wid,hei);
+	cx=wid/2;
+	cy=hei/2;
+
+	spinX=(double)((mx-cx)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
+	spinY=(double)((my-cy)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
+
+	glClearColor(0.0,0.0,0.0,0.0);
+	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+	glViewport(0,0,wid,hei);
+	glMatrixMode(GL_PROJECTION);
+	//glLoadIdentity();
+	//gluPerspective(45.0,(double)wid/(double)hei,1.0,20.0);
+	//glTranslated(0.0,0.0,-10.0);
+
+
+
 	m_fTime = fTime;
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
@@ -334,6 +366,9 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		// on ParaEngineClient, this is not necessary.
 		m_pRootScene->Animate((float)fElapsedEnvSimTime);
 	}
+
+	FsSwapBuffers();
+	
 	OnFrameEnded();
 	return S_OK;
 }

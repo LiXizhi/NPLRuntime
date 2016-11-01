@@ -267,6 +267,10 @@ if(APPLE)
 	ADD_DEFINITIONS(-DMAC_CLIENT)
 
 
+    file (GLOB ParaEngineClient_Platform_m_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.m)
+	SOURCE_GROUP("Platform_m" FILES ${ParaEngineClient_Platform_m_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_m_FILES})
+
 
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
