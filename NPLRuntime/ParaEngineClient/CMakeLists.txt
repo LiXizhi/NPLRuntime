@@ -70,7 +70,8 @@ else()
 	if(APPLE)
 		find_package(GLUT REQUIRED)
 		include_directories(${GLUT_INCLUDE_DIR})
-		set(CMAKE_CXX_FLAGS "-g -Wall")
+		# set(CMAKE_CXX_FLAGS "-g -Wall")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 	else()
 	endif()
 
@@ -467,6 +468,11 @@ if (WIN32)
   )
 else (WIN32)
 	if(APPLE)
+
+
+        # for luajit & mac
+        SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+
 
 		set(EXTRA_LIBRARIES
 				dl

@@ -9,16 +9,9 @@
 //-----------------------------------------------------------------------------
 // ParaEngineServer.cpp : Defines the entry point for the console application.
 //
-#include "ParaEngine.h"
 
-#include "util/ParaTime.h"
-#include "NPLRuntime.h"
-#include "AISimulator.h"
-#include "ParaEngineAppImp.h"
-#include "FrameRateController.h"
-#include "ParaEngineService.h"
-
-#include "util/keyboard.h"
+#include "AppDelegate.h"
+#include <string>
 
 int main(int argc, char **argv)
 {
@@ -58,23 +51,12 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(!bInterpreterMode){
-		printf("            ---ParaEngine Server V%d.%d---         \n", 1, 1);
-	}
+    AppDelegate app;
+    app.SetMacCommandLine(sCmdLine);
 
-	if(bServiceMode)
-	{
-		// enter as system service
-		ParaEngine::CParaEngineService::InitDaemon();
-	}
+    printf("run...\n");
 
-	ParaEngine::CLogger::GetSingleton().SetAppendMode(bServiceMode);
-	ParaEngine::CParaEngineApp myServerApp(sCmdLine.c_str());
-	ParaEngine::CParaEngineService service;
+    app.Run();
 
-	service.AcceptKeyStroke(!bServiceMode && !bInterpreterMode);
-
-	exit_code = service.Run((argc>0) ? sCmdLine.c_str() : NULL, &myServerApp);
-
-	return exit_code;
+    return 0;
 }

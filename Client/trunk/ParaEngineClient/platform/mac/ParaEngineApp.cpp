@@ -12,11 +12,10 @@
 
 #include "platform/OpenGLWrapper.h"
 
-#include "fssimplewindow.h"
 
-#include "ParaAudioMac.h"
+//#include "ParaAudioMac.h"
 //#include "SimpleAudioEngine.h"
-//#include "ParaSimpleAudioEngine.h"
+#include "ParaSimpleAudioEngine.h"
 
 
 #include "AudioEngine2.h"
@@ -47,6 +46,8 @@
 #include "ParaEngineApp.h"
 #include <time.h>
 
+#include "fssimplewindow.h"
+
 using namespace std;
 using namespace ParaEngine;
 
@@ -58,13 +59,6 @@ CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	g_pCurrentApp = this;
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
-
-
-	FsOpenWindow(32,32,800,600,1); // 800x600 pixels, useDoubleBuffer=1
-
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glDepthFunc(GL_LESS);
 
 }
 
@@ -176,7 +170,7 @@ void CParaEngineApp::InitAudioEngine()
 	CAudioEngine2::GetInstance()->InitAudioEngine();
 #else
 	OUTPUT_LOG("native Simple AudioEngine loaded\n");
-	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)MacParaAudioEngine::GetInstance());
+	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)CParaSimpleAudioEngine::GetInstance());
 #endif
 }
 
@@ -314,28 +308,6 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 {
 
 
-	int mx,my,lb,mb,rb,passed;
-	double spinX,spinY;
-
-	FsPollDevice();
-	FsGetMouseState(lb,mb,rb,mx,my);
-
-	int wid,hei,cx,cy;
-	FsGetWindowSize(wid,hei);
-	cx=wid/2;
-	cy=hei/2;
-
-	spinX=(double)((mx-cx)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
-	spinY=(double)((my-cy)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
-
-	glClearColor(0.0,0.0,0.0,0.0);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-	glViewport(0,0,wid,hei);
-	glMatrixMode(GL_PROJECTION);
-	//glLoadIdentity();
-	//gluPerspective(45.0,(double)wid/(double)hei,1.0,20.0);
-	//glTranslated(0.0,0.0,-10.0);
 
 
 
@@ -367,8 +339,6 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		m_pRootScene->Animate((float)fElapsedEnvSimTime);
 	}
 
-	FsSwapBuffers();
-	
 	OnFrameEnded();
 	return S_OK;
 }
@@ -519,24 +489,66 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
-	if (!Is3DRenderingEnabled())
-	{
-		// this is server mode
-		auto nStartTime = GetTickCount();
-		while (GetAppState() != PEAppState_Exiting)
-		{
-			auto nCurTickCount = GetTickCount() - nStartTime;
-			FrameMove(nCurTickCount / 1000.f);
-			// 30FPS
-			SLEEP(33);
-		}
-		return GetReturnCode();
-	}
-	else
-	{
 
+	FsPassedTime();  // Reset the timer
+
+	// this is server mode
+	auto nStartTime = GetTickCount();
+	while (GetAppState() != PEAppState_Exiting)
+	{
+		auto nCurTickCount = GetTickCount() - nStartTime;
+		FrameMove(nCurTickCount / 1000.f);
+
+
+
+
+
+
+		int mx,my,lb,mb,rb,passed;
+		double spinX,spinY;
+
+		passed=FsPassedTime();
+
+		FsPollDevice();
+		FsGetMouseState(lb,mb,rb,mx,my);
+
+		int wid,hei,cx,cy;
+		FsGetWindowSize(wid,hei);
+		cx=wid/2;
+		cy=hei/2;
+
+		spinX=(double)((mx-cx)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
+		spinY=(double)((my-cy)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
+
+		glClearColor(0.0,0.0,0.0,0.0);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+		glViewport(0,0,wid,hei);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(45.0,(double)wid/(double)hei,1.0,20.0);
+		glTranslated(0.0,0.0,-10.0);
+
+		// glMatrixMode(GL_MODELVIEW);
+		// glLoadIdentity();
+		// glRotated(spinX,0.0,1.0,0.0);
+		// glRotated(spinY,1.0,0.0,0.0);
+		// glMultMatrixd(cubeMatrix);
+		// glGetDoublev(GL_MODELVIEW_MATRIX,cubeMatrix);
+
+
+		Render3DEnvironment(true);
+
+
+		FsSwapBuffers();
+
+		FsSleep(33-passed);
+
+		// 30FPS
+		//SLEEP(33);
 	}
-	return 0;
+	return GetReturnCode();
+
 }
 
 #endif
