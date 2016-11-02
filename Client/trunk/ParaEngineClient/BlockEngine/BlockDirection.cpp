@@ -46,6 +46,8 @@ namespace ParaEngine
 		case BlockDirection::bottom:
 			dy = -1;
 			break;
+		default:
+			break;
 		}
 		return Int32x3(dx, dy, dz);
 	}

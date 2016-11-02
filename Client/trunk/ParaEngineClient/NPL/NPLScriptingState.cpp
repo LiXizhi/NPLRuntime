@@ -329,7 +329,7 @@ int ParaScripting::CNPLScriptingState::GetNPLCodeFromFile(ParaEngine::CParaFile*
 				nSize -= 3;
 				nEncodingCode = CP_UTF8;
 			}
-			else if ((((byte)buf[0]) == 0xFF) && (((byte)buf[1]) == 0xFE) || (((byte)buf[0]) == 0xFE) && (((byte)buf[1]) == 0xFF))
+			else if (((((byte)buf[0]) == 0xFF) && (((byte)buf[1]) == 0xFE)) || ((((byte)buf[0]) == 0xFE) && (((byte)buf[1]) == 0xFF)))
 			{
 				buf += 2;
 				nSize -= 2;

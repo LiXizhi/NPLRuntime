@@ -2,6 +2,14 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.10.31
+	- CParaFile now support memory file. 
+
+2016.10.26
+	- fbx material class now support unlit, no z write attribute just like parax file format. 
+	- sky sub mesh with unlit material will be rendered as it is 
+	- SMTP protocol is supported. 
+
 2016.10.17
 	- fbx material class now support category id.  
 	- postfields supported in url request

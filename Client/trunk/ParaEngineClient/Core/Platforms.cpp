@@ -235,6 +235,7 @@ BOOL SetRect(RECT* lprc, int xLeft, int yTop, int xRight, int yBottom)
 		lprc->right = xRight;
 		lprc->bottom = yBottom;
 	}
+	return TRUE;
 }
 
 #endif

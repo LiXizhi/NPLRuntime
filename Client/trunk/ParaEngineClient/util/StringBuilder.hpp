@@ -288,6 +288,22 @@ namespace ParaEngine
 		m_size += len;
 	}
 
+	template <typename UserAllocator>
+	void StringBuilderT<UserAllocator>::WriteAt(int nIndex, const Char* sz, size_t len)
+	{
+		if (sz == NULL || len == 0) return;
+		
+		if ((len + nIndex) > m_size)
+		{
+			if ((len + nIndex) >= m_reserved)
+			{
+				enlarge(max((size_t)32, nIndex + len + 1));
+			}
+			m_size = nIndex + len;
+		}
+		memcpy(m_buffer + nIndex, sz, len);
+	}
+
 
 	template <typename UserAllocator>
 	void StringBuilderT<UserAllocator>::append(const StringBuilderT& b)

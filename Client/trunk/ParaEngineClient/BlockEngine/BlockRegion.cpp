@@ -573,57 +573,105 @@ namespace ParaEngine
 			neighborChunkY_ws = BlockConfig::g_regionChunkDimY - 1;
 
 		Uint16x3 curNeighbor_ws;
-		curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
-		curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
-		curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
-		SetNeighborChunkDirty(curNeighbor_ws);
 
 		if (neighborChunkX_ws != chunkIdX_ws)
 		{
-			curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
-			curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
-			curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
-		}
+			if (neighborChunkY_ws != chunkIdY_ws)
+			{
+				if (neighborChunkZ_ws != chunkIdZ_ws)
+				{
+					// xyz
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
 
-		if (neighborChunkX_ws != chunkIdX_ws && neighborChunkY_ws != chunkIdY_ws)
-		{
-			curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
-			curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
-			curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
-		}
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
 
-		if (neighborChunkY_ws != chunkIdY_ws && neighborChunkZ_ws != chunkIdZ_ws)
-		{
-			curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
-			curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
-			curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
-		}
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+				else
+				{
+					//xy
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
 
-		if (neighborChunkZ_ws != chunkIdZ_ws)
-		{
-			curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
-			curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
-			curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+			}
+			else
+			{
+				if (neighborChunkZ_ws != chunkIdZ_ws)
+				{
+					//xz
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+				else
+				{
+					//x
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+			}
+				
 		}
-
-		if (neighborChunkX_ws != chunkIdX_ws && neighborChunkZ_ws != chunkIdZ_ws)
+		else
 		{
-			curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
-			curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
-			curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
-		}
+			if (neighborChunkY_ws != chunkIdY_ws)
+			{
+				if (neighborChunkZ_ws != chunkIdZ_ws)
+				{
+					// yz
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
 
-		if (neighborChunkX_ws != chunkIdX_ws && neighborChunkY_ws != chunkIdY_ws)
-		{
-			curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
-			curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
-			curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
-			SetNeighborChunkDirty(curNeighbor_ws);
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+				else
+				{
+					//y
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+			}
+			else
+			{
+				if (neighborChunkZ_ws != chunkIdZ_ws)
+				{
+					//z
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+				}
+			}
 		}
 #endif
 	}

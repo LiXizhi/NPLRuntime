@@ -1515,7 +1515,7 @@ void Terrain::Paint(int detailTextureIndex, float brushRadius, float brushIntens
 
 uint8 *Terrain::GetMaskBits(int textureCellX, int textureCellY, int detailIndex, int &maskWidth, int &maskHeight)
 {
-	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= (uint32)textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
+	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
 	{
 		TextureCell *pCell = GetTextureCell(textureCellX, textureCellY);
 		DetailTexture *pDet = pCell->GetDetail(GetTextureSet()->GetTexture(detailIndex));
@@ -1540,7 +1540,7 @@ uint8 *Terrain::GetMaskBits(int textureCellX, int textureCellY, int detailIndex,
 
 void Terrain::ReloadMask(int textureCellX, int textureCellY, int detailIndex)
 {
-	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= (uint32)textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
+	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
 	{
 		TextureCell *pCell = GetTextureCell(textureCellX, textureCellY);
 		DetailTexture *pDet = pCell->GetDetail(GetTextureSet()->GetTexture(detailIndex));
@@ -1558,7 +1558,7 @@ void Terrain::ReloadMask(int textureCellX, int textureCellY, int detailIndex)
 
 int Terrain::NormalizeMask( int textureCellX, int textureCellY, int detailIndex, bool bReload)
 {
-	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= (uint32)textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
+	if (0 <= textureCellX && (uint32)textureCellX < m_NumberOfTextureTilesWidth && 0 <= textureCellY && (uint32)textureCellY < m_NumberOfTextureTilesHeight)
 	{
 		TextureCell *pCell = GetTextureCell(textureCellX, textureCellY);
 		if(pCell)
