@@ -1039,7 +1039,8 @@ void CBaseObject::Clone(CBaseObject* obj)
 {
 	if(obj!=NULL)
 	{
-		memcpy(obj, (CBaseObject*)this,sizeof(CBaseObject));
+		// *obj = *this;
+		memcpy((void*)obj, (void*)this,sizeof(CBaseObject));
 		obj->m_refcount = 0;
 	}
 }

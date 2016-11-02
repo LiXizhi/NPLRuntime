@@ -157,10 +157,10 @@ namespace ParaScripting
 		*/
 		object ReadBytes(int nSize, const object& output);
 
-		/** float is 32 bites*/
+		/** float is 32 bits*/
 		void WriteFloat(float value);
 		float ReadFloat();
-		/** integer is 32 bites*/
+		/** integer is 32 bits*/
 		void WriteInt(int value);
 		int ReadInt();
 
@@ -418,7 +418,7 @@ namespace ParaScripting
 		static int CheckAssetFile(const char* filename);
 
 		/* load a replace file mapping. it is just file to file pairs. If the file is requested on the left during GetFile(filename), file on the right is returned instead.
-		* This function is very useful to temperarily change the 3D and 2D theme of the entire game world, in which only a text file needs to be updated.
+		* This function is very useful to temporarily change the 3D and 2D theme of the entire game world, in which only a text file needs to be updated.
 		* The following API are also aware of replace file: DoesFileExist(), OpenFile(), OpenAssetFile(), etc.
 		* @param filename: the file map file.
 		* @param bReplaceExistingOnes: whether we will overwrite any previous calls to this function.
@@ -428,7 +428,7 @@ namespace ParaScripting
 		/**
 		* Open or create a file
 		* e.g. ParaIO.open("temp/test.txt", "w");
-		* @param filename
+		* @param filename: the file name to open. if it is "<memory>" and mode is "w". it is a memory buffer. 
 		* @param mode : access mode
 		*  - "r" Opens for reading. If the file does not exist or cannot be found, the call fails.
 		*  - "w" Opens an empty file for writing. If the given file exists, its contents are destroyed.If not, file will be created.

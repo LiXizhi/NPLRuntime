@@ -8,6 +8,7 @@
 namespace ParaEngine
 {
 	class CArchive;
+
 	/** a file handle in a Archive */
 	struct FileHandle
 	{
@@ -15,6 +16,7 @@ namespace ParaEngine
 			HANDLE	m_handle;
 			DWORD	m_index;
 			FILE*	m_pFile;
+			void* m_pVoidPtr;
 		};
 		CArchive* m_pArchive;
 		FileHandle(HANDLE handle);
