@@ -23,7 +23,7 @@ using namespace boost;
 /** 
 #include <pcrecpp.h> // test pcre lib
 
-more doc can be found in /pcre/contributes/*.chm, below are some examples. 
+more doc can be found in /pcre/contributes/xxx.chm, below are some examples. 
 
 The "FullMatch" operation checks that supplied text matches a supplied pattern exactly. If pointer arguments are supplied, it copies matched sub-strings that match sub-patterns into them. 
 ------------------------------

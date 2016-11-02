@@ -2567,6 +2567,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 		case WM_SYSKEYUP:
 		case WM_PAINT:
 		case WM_ENTERSIZEMOVE:
+		case WM_STYLECHANGED:
 		case WM_SIZE:
 		case WM_EXITSIZEMOVE:
 		case WM_ENTERMENULOOP:
@@ -2814,6 +2815,12 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 		if(bIsSceneEnabled)
 		{
 			//Pause(false);
+			HandlePossibleSizeChange();
+		}
+		break;
+	case WM_STYLECHANGED:
+		if (bIsSceneEnabled)
+		{
 			HandlePossibleSizeChange();
 		}
 		break;

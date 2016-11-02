@@ -239,7 +239,7 @@ bool CParaXModel::IsValid()
 AnimIndex CParaXModel::GetAnimIndexByID(int nAnimID)
 {
 	int nAnim = (int)GetObjectNum().nAnimations;
-	for (int i = 0; i < nAnim; i++) 
+	for (int i = 0; i < nAnim; i++)
 	{
 		if (anims[i].animID == nAnimID)
 		{
@@ -572,7 +572,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	{
 		// TODO: check if this is an valid character model.
 
-		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis!=Vector3::ZERO)
+		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
 			if (nHeadAttachmentIndex >= 0)
@@ -698,10 +698,7 @@ void CParaXModel::animate(SceneState * pSceneState, CharacterPose* pPose, IAttri
 void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 {
 	int nPasses = (int)passes.size();
-	if (nPasses <= 0)if (animated)
-		m_RenderMethod = SOFT_ANIM;
-	else
-		m_RenderMethod = NO_ANIM;
+	if (nPasses <= 0)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
@@ -1268,7 +1265,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 					}
 				}
 			}
-			
+
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
@@ -1327,7 +1324,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 #endif
 				mesh_vertex_normal  vertex;
 				int nIndexOffset = p.m_nIndexStart + nNumFinishedVertice;
-				for(int i=0;i<nLockedNum;++i)
+				for (int i = 0; i < nLockedNum; ++i)
 				{
 					int nVB = 3 * i;
 					for (int k = 0; k < 3; ++k, ++nVB)
@@ -1336,7 +1333,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						mesh_vertex_normal& out_vertex = vb_vertices[nVB];
 						// weighted vertex
 						ov = m_origVertices + a;
-						
+
 						// uncomment to detect incorrect index. 
 						// assert(a < m_objNum.nVertices, "index overflow");
 
@@ -1368,9 +1365,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						}
 						out_vertex.uv = ov->texcoords;
 					}
-			}
+				}
 #ifdef DO_PERFORMANCE_TEST
-		}
+			}
 #endif
 			pBufEntity->Unlock();
 
@@ -1385,10 +1382,10 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 			}
 			else
 				break;
-	}
+		}
 		else
 			break;
-}while (1);
+	} while (1);
 }
 
 void CParaXModel::RenderShaderAnim(SceneState* pSceneState)
@@ -1846,7 +1843,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		{
 			for (ModelRenderPass& pass : passes)
 			{
-				if (!pass.force_physics) 
+				if (!pass.force_physics)
 				{
 					pass.disable_physics = true;
 				}
@@ -1854,7 +1851,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			break;
 		}
 	}
-	
+
 	DWORD dwNumFaces = 0;
 	int nVertexCount = 0;
 	for (ModelRenderPass& pass : passes)

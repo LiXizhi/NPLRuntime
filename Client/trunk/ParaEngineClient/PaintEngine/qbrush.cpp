@@ -89,6 +89,8 @@ void ParaEngine::QBrush::init(const Color &color, BrushStyle style)
 		return;
 	case TexturePattern:
 		break;
+	default:
+		break;
 	}
 	m_style = style;
 	m_color = color;

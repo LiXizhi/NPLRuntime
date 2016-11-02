@@ -109,11 +109,18 @@ NPL::NPLObjectProxy::NPLObjectProxy( NPLObjectBase* pObject ) : NPLObjectBase_pt
 
 }
 
-NPLObjectProxy::operator double ()
+NPLObjectProxy::operator double()
 {
 	if(get()==0 ||   GetType() != NPLObjectBase::NPLObjectType_Number)
 		*this = NPLObjectProxy(new NPLNumberObject());
 	return ((NPLNumberObject*)get())->GetValue();
+}
+
+int NPL::NPLObjectProxy::toInt()
+{
+	if (get() == 0 || GetType() != NPLObjectBase::NPLObjectType_Number)
+		*this = NPLObjectProxy(new NPLNumberObject());
+	return (int)((NPLNumberObject*)get())->GetValue();
 }
 
 void NPLObjectProxy::operator = (double value) 
@@ -145,7 +152,14 @@ NPLObjectProxy::operator const string& ()
 	return (((NPLStringObject*)get())->GetValue());
 }
 
-bool NPLObjectProxy::operator == (const string& value) 
+const char* NPL::NPLObjectProxy::c_str()
+{
+	if (get() == 0 || GetType() != NPLObjectBase::NPLObjectType_String)
+		*this = NPLObjectProxy(new NPLStringObject());
+	return (((NPLStringObject*)get())->GetValue().c_str());
+}
+
+bool NPLObjectProxy::operator == (const string& value)
 {
 	if(get()==0 ||   GetType() != NPLObjectBase::NPLObjectType_String)
 		return false;
@@ -196,6 +210,20 @@ NPLObjectProxy& NPLObjectProxy::operator [](int nIndex)
 	return ((NPLTable*)get())->CreateGetField(nIndex);
 };
 
+void NPL::NPLObjectProxy::SetField(const string& sName, const NPLObjectProxy& pObject)
+{
+	if (get() == 0 || GetType() != NPLObjectBase::NPLObjectType_Table)
+		*this = NPLObjectProxy(new NPLTable());
+	((NPLTable*)get())->SetField(sName, pObject);
+}
+
+void NPL::NPLObjectProxy::SetField(int nIndex, const NPLObjectProxy& pObject)
+{
+	if (get() == 0 || GetType() != NPLObjectBase::NPLObjectType_Table)
+		*this = NPLObjectProxy(new NPLTable());
+	((NPLTable*)get())->SetField(nIndex, pObject);
+}
+
 NPLObjectProxy NPLObjectProxy::GetField(const string& sName)
 {
 	if(get()==0 ||  GetType() != NPLObjectBase::NPLObjectType_Table)
@@ -239,7 +267,6 @@ NPLObjectBase::Iterator_Type NPLObjectProxy::end()
 		*this = NPLObjectProxy(new NPLTable());
 	return ((NPLTable*)get())->end();
 }; 
-
 
 NPLObjectBase::IndexIterator_Type NPL::NPLObjectProxy::index_begin()
 {

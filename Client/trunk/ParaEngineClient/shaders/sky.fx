@@ -2,6 +2,7 @@
 // Desc: 2006/4
 /** define this for the sky fog to be accurate*/
 #define NODISTORTION_FOG
+#define ALPHA_TESTING_REF  0.5
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
 float4x4 mWorldViewProj: worldviewprojection;
@@ -21,6 +22,8 @@ float4  g_fogColor : fogColor;
 float4 g_skycolorfactor: ConstVector0;
 // static branch boolean constants
 bool g_bEnableFog		:fogenable;
+bool g_bEnableSunLight : sunlightenable;
+bool g_bAlphaTesting : alphatesting;
 
 // texture 0
 texture tex0 : TEXTURE; 
@@ -60,7 +63,15 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 	//o.positionSS.z = o.positionSS.w * 0.9999;
 	//o.positionSS.z = o.positionSS.w - 0.00001; -- special fix for far-clipping plane to make final z bigger than 1. not tested.
 
-	o.colorDiffuse = colorDiffuse*dot( sun_vec, half3(0,1,0) ) + colorAmbient;
+	if (g_bEnableSunLight)
+	{
+		o.colorDiffuse = colorDiffuse*dot(sun_vec, half3(0, 1, 0)) + colorAmbient;
+	}
+	else
+	{
+		o.colorDiffuse = half3(1,1,1);
+	}
+
 	o.colorDiffuse *= g_skycolorfactor;
 	o.colorDiffuse = min(1, o.colorDiffuse);
 	
@@ -90,6 +101,12 @@ half4 pixelShader(Interpolants i) : COLOR
 	half4 normalColor = tex2D(tex0Sampler, i.tex.xy);
 	normalColor.xyz = normalColor.xyz*i.colorDiffuse;
 	
+	if (g_bAlphaTesting)
+	{
+		// alpha testing and blending
+		clip(normalColor.w - ALPHA_TESTING_REF);
+	}
+
 	if(g_bEnableFog)
 	{
 		//calculate the fog factor
@@ -100,7 +117,7 @@ half4 pixelShader(Interpolants i) : COLOR
 		#endif
 		
 		o.xyz = lerp(g_fogColor.xyz, normalColor.xyz, fog);
-		o.w = 1.f;//lerp(normalColor.w, 0, fog);
+		o.w = normalColor.w;
 	}
 	else
 	{

@@ -15,6 +15,7 @@
 #include "ZipWriter.h"
 #include "IParaEngineApp.h"
 #include "FileUtils.h"
+#include "util/StringBuilder.h"
 #include "ParaFile.h"
 
 #if defined (WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
@@ -64,7 +65,13 @@ std::string ParaEngine::CParaFile::m_strExtractRootPath = "_EXTRACT\\";
 bool ParaEngine::CParaFile::m_bExtractFileToDisk = false;
 int ParaEngine::CParaFile::m_nDiskFilePriority = 0;
 
+StringBuilder* ToStringBuilder(CParaFile* pThis)
+{
+	return (StringBuilder*)(pThis->GetHandlePtr());
+}
+
 CParaFile::CParaFile()
+	:m_bMemoryFile(false), m_size(0)
 {
 	m_buffer = 0;
 	m_eof = true;
@@ -83,6 +90,7 @@ CParaFile::CParaFile(const CParaFile &f)
 	// disable copying
 }
 CParaFile::CParaFile(char* buf, int nBufferSize, bool bCopyBuffer)
+	:m_bMemoryFile(false), m_size(0)
 {
 	m_buffer = buf;
 	m_size = nBufferSize;
@@ -105,6 +113,7 @@ CParaFile::CParaFile(char* buf, int nBufferSize, bool bCopyBuffer)
 }
 
 CParaFile::CParaFile(const char* filename)
+	:m_bMemoryFile(false), m_size(0)
 {
 	m_curPos = 0;
 	m_buffer = 0;
@@ -118,6 +127,7 @@ CParaFile::CParaFile(const char* filename)
 }
 
 CParaFile::CParaFile(const char* filename, const char* relativePath)
+	:m_bMemoryFile(false), m_size(0)
 {
 	m_curPos = 0;
 	m_buffer = 0;
@@ -642,6 +652,11 @@ bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fi
 }
 
 
+void* ParaEngine::CParaFile::GetHandlePtr()
+{
+	return m_handle.m_pVoidPtr;
+}
+
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
 {
 	int32 dwFoundPlace = FILE_NOT_FOUND;
@@ -854,16 +869,27 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		/// for write-only file, we will save file handle.
 		m_eof = true; /// set end of file to prevent read access.
 
-		FileHandle fileHandle = CFileUtils::OpenFile(filename, false, true);
-		
-		if (fileHandle.IsValid())
+		if (m_filename == "<memory>")
 		{
-			m_handle = fileHandle;
-			m_bDiskFileOpened = true;
+			m_bMemoryFile = true;
+			m_bIsOwner = false;
+			m_handle.m_pVoidPtr = new StringBuilder();
 			return true;
 		}
 		else
-			m_bDiskFileOpened = false;
+		{
+
+			FileHandle fileHandle = CFileUtils::OpenFile(filename, false, true);
+
+			if (fileHandle.IsValid())
+			{
+				m_handle = fileHandle;
+				m_bDiskFileOpened = true;
+				return true;
+			}
+			else
+				m_bDiskFileOpened = false;
+		}
 		return false;
 	}
 #ifdef FILE_LOGGER_HOOK
@@ -884,6 +910,10 @@ bool CParaFile::SetEndOfFile()
 	{
 		return CFileUtils::SetEndOfFile(m_handle);
 	}
+	else if (m_bMemoryFile)
+	{
+		m_curPos = ToStringBuilder(this)->size();
+	}
 	return false;
 }
 
@@ -893,6 +923,21 @@ void CParaFile::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 	if (m_bDiskFileOpened)
 	{
 		CFileUtils::SetFilePointer(m_handle, lDistanceToMove, dwMoveMethod);
+	}
+	else if (m_bMemoryFile)
+	{
+		if (dwMoveMethod == FILE_BEGIN)
+		{
+			m_curPos = lDistanceToMove;
+		}
+		else if (dwMoveMethod == FILE_END)
+		{
+			m_curPos = ToStringBuilder(this)->size() - lDistanceToMove;
+		}
+		else if (dwMoveMethod == FILE_CURRENT)
+		{
+			m_curPos += lDistanceToMove;
+		}
 	}
 }
 
@@ -920,6 +965,22 @@ int CParaFile::write(const void* src, int bytes)
 		DWORD bytesWritten = CFileUtils::WriteBytes(m_handle, src, bytes);
 		m_curPos += bytesWritten;
 		return bytesWritten;
+	}
+	else if (m_bMemoryFile)
+	{
+		auto pBuilder = ToStringBuilder(this);
+		if (m_curPos == m_size)
+		{
+			pBuilder->append((const char*)src, bytes);
+			m_curPos += bytes;
+		}
+		else
+		{
+			pBuilder->WriteAt(m_curPos, (const char*)src, bytes);
+			m_curPos += bytes;
+		}
+		m_size = pBuilder->size();
+		m_buffer = pBuilder->str();
 	}
 	return 0;
 }
@@ -976,6 +1037,11 @@ void CParaFile::close()
 	if (m_bDiskFileOpened)
 	{
 		CFileUtils::CloseFile(m_handle);
+	}
+	else if (m_bMemoryFile && m_handle.m_pVoidPtr!=NULL)
+	{
+		delete ToStringBuilder(this);
+		m_handle.m_pVoidPtr = NULL;
 	}
 	if (m_bIsOwner && m_buffer)
 		delete[] m_buffer;

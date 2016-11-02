@@ -589,6 +589,10 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 					// if the material name ends with "_l", z buffer write will be disabled. However, the material will be rendered with the mesh even it is transparent. 
 					// 2006.12.29 LXZ: for textures without z buffer disabled. 
 					out->bForceLocalTranparency = true;
+
+					// layer order. 
+					if (nID > 0)
+						out->m_nOrder = nID;
 					break;
 				}
 			case 'a':
@@ -713,6 +717,8 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 				blendmode = BM_TRANSPARENT;
 		}
 	}
+	if (fbxMat.bAddictive)
+		blendmode = BM_ADDITIVE;
 
 	if (m_beUsedVertexColor)
 	{
@@ -728,12 +734,14 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.texanim = -1;
 	pass.color = -1;
 	pass.opacity = -1;
+	pass.unlit = fbxMat.bUnlit;
+	pass.nozwrite = fbxMat.bDisableZWrite;
 	pass.disable_physics = fbxMat.bDisablePhysics;
 	pass.force_physics = fbxMat.bForcePhysics;
 	
 	pass.blendmode = blendmode;
 	pass.cull = blendmode == BM_OPAQUE ? true : false;
-	pass.order = 0;
+	pass.order = fbxMat.m_nOrder;
 	pass.geoset = 0;
 	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 	pMesh->passes.push_back(pass);

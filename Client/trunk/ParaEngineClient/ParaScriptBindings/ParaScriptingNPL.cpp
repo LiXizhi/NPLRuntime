@@ -583,6 +583,11 @@ namespace ParaScripting
 					sForm = sForm_;
 				}
 			}
+			auto options = urlParams["options"];
+			if (type(options) == LUA_TTABLE)
+			{
+				NPL::NPLHelper::LuaObjectToNPLObject(options, pProcessor->GetOptions());
+			}
 		}
 
 		if(type(sForm) == LUA_TTABLE)

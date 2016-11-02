@@ -32,6 +32,7 @@ namespace ParaEngine
 			fStripLenght = 0;
 			bFacegroupSknningAni = false;
 			nIndex = -1;
+			m_nOrder = 0;
 		}
 	public:
 		bool isAlphaBlended() {return fAlphaTestingRef == 0.f; }
@@ -100,6 +101,7 @@ namespace ParaEngine
 
 		/* material category id, may be used by some deferred shading shader. default to 0*/
 		int32 m_nCategoryID;
+		int32 m_nOrder;
 		
 		int nIndex; // index of the material, -1 means no texture associated. 
 
