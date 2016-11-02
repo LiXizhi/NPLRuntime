@@ -44,11 +44,11 @@ void ParaEngine::AppDelegate::Run()
 	glDisable(GL_LIGHTING);
 	glDepthFunc(GL_LESS);
 
-	printf("init ...\n");
+
 
 	InitApp();
 
-	printf("init ok...\n");
+
 
 	m_pParaEngineApp->Run(0);
 

@@ -15,7 +15,6 @@
 
 int main(int argc, char **argv)
 {
-    printf("mac client...\n");
 
 	int exit_code = 0;
 
@@ -53,8 +52,6 @@ int main(int argc, char **argv)
 
     AppDelegate app;
     app.SetMacCommandLine(sCmdLine);
-
-    printf("run...\n");
 
     app.Run();
 
