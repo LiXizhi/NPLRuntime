@@ -88,7 +88,7 @@ FontAtlas::~FontAtlas()
 
     delete []_currentPageData;
 
-#if PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_WINRT && PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
+#if PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
     if (_iconv)
     {
         iconv_close(_iconv);

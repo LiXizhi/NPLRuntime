@@ -426,7 +426,8 @@ bool GLProgram::link()
 {
 	CCASSERT(_program != 0, "Cannot link invalid program");
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_WINRT) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
+
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
 	if (!_hasShaderCompiler)
 	{
 		// precompiled shader program is already linked
