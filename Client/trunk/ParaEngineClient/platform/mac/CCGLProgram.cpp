@@ -427,17 +427,7 @@ bool GLProgram::link()
 	CCASSERT(_program != 0, "Cannot link invalid program");
 
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
-	if (!_hasShaderCompiler)
-	{
-		// precompiled shader program is already linked
 
-		//bindPredefinedVertexAttribs();
-		parseVertexAttribs();
-		parseUniforms();
-		return true;
-	}
-#endif
 
 	GLint status = GL_TRUE;
 
