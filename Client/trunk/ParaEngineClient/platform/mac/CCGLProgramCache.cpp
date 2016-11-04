@@ -6,6 +6,8 @@
 
 #include "../baseshaders/ccShaders.h"
 
+#include "ParaEngine.h"
+
 NS_CC_BEGIN
 
 enum {
@@ -73,7 +75,7 @@ GLProgramCache::~GLProgramCache()
         (it->second)->release();
     }
 
-    //CCLOGINFO("deallocing GLProgramCache: %p", this);
+    //OUTPUT_LOGINFO("deallocing GLProgramCache: %p", this);
 }
 
 bool GLProgramCache::init()
@@ -342,7 +344,7 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
             p->initWithByteArrays(cc3D_SkinPositionTex_vert, cc3D_ColorTex_frag);
             break;
         default:
-            CCLOG("cocos2d: %s:%d, error shader type", __FUNCTION__, __LINE__);
+            OUTPUT_LOG("cocos2d: %s:%d, error shader type", __FUNCTION__, __LINE__);
             return;
     }
     

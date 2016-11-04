@@ -198,7 +198,7 @@ bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
 			ret = initWithS3TCData(unpackedData, unpackedLen);
 			break;
 		default:
-			CCLOG("unsupported image format!");
+			OUTPUT_LOG("unsupported image format!");
 		}
 
 		if (unpackedData != data)
@@ -386,7 +386,7 @@ namespace
 		//(*cinfo->err->output_message) (cinfo);
 		char buffer[JMSG_LENGTH_MAX];
 		(*cinfo->err->format_message) (cinfo, buffer);
-		CCLOG("jpeg error: %s", buffer);
+		OUTPUT_LOG("jpeg error: %s", buffer);
 
 		/* Return control to the setjmp point */
 		longjmp(myerr->setjmp_buffer, 1);
@@ -563,7 +563,7 @@ bool Image::initWithPngData(const unsigned char * data, ssize_t dataLen)
 		png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 		png_uint_32 color_type = png_get_color_type(png_ptr, info_ptr);
 
-		//CCLOG("color type %u", color_type);
+		//OUTPUT_LOG("color type %u", color_type);
 
 		// force palette images to be expanded to 24-bit RGB
 		// it may include alpha channel
@@ -758,7 +758,7 @@ bool Image::initWithS3TCData(const unsigned char * data, ssize_t dataLen)
 		else
 		{   //if it is not gles or device do not support S3TC, decode texture by software
 
-			CCLOG("cocos2d: Hardware S3TC decoder not present. Using software decoder");
+			OUTPUT_LOG("cocos2d: Hardware S3TC decoder not present. Using software decoder");
 
 			int bytePerPixel = 4;
 			unsigned int stride = width * bytePerPixel;
