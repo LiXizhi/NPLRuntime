@@ -703,6 +703,9 @@ namespace ParaScripting
 		*/
 		static bool FromJson(const char* sJson, const object& output);
 
+		/** convert from NPL/lua table object to json string. /uXXXX encoding is recognized in string. */
+		static const string& ToJson(const object& output);
+
 		/** compress using zlib/gzip, etc
 		* @param output: {method="zlib|gzip", content=string, [level=number, windowBits=number,] result=string}
 		* @return return true if success. 

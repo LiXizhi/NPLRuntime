@@ -12,6 +12,7 @@
 #include "NPLHelper.h"
 #include "NPLTable.h"
 #include "util/StringHelper.h"
+#include "json/json.h"
 #ifdef PARAENGINE_CLIENT
 // #include "memdebug.h"
 #endif
@@ -117,6 +118,13 @@ bool NPLHelper::LuaObjectToString(const luabind::object& input, string& output)
 bool NPLHelper::NPLTableToString(const char* sStorageVar, NPLObjectProxy& input, std::string& sCode, int nCodeOffset)
 {
 	return SerializeNPLTableToString(sStorageVar, input, sCode, nCodeOffset);
+}
+
+
+template <typename StringType>
+bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset /*= 0*/, STableStack* pRecursionTable /*= NULL*/)
+{
+	return false;
 }
 
 template <typename StringType>
@@ -1187,6 +1195,9 @@ template void NPL::NPLHelper::EncodeStringInQuotation(std::string& output, int n
 template void NPL::NPLHelper::EncodeStringInQuotation(ParaEngine::StringBuilder& output, int nOutputOffset, const char* input, int nInputSize);
 template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
 template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
+
+template bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
+template bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
 
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, std::string& sCode, int nCodeOffset);
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, ParaEngine::StringBuilder& sCode, int nCodeOffset);

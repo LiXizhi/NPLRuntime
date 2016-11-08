@@ -1144,6 +1144,23 @@ namespace ParaScripting
 		return true;
 	}
 
+
+	const string& CNPL::ToJson(const object& input)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(input);
+		if (runtime_state.get() != 0)
+		{
+			std::string& sCode = runtime_state->GetStringBuffer(0);
+			sCode.clear();
+			NPL::NPLHelper::SerializeToJson("", input, sCode);
+			return sCode;
+		}
+		else
+		{
+			return CGlobals::GetString();
+		}
+	}
+
 	bool CNPL::Compress(const object& output)
 	{
 		if (type(output) == LUA_TTABLE)

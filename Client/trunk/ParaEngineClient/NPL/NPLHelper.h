@@ -66,6 +66,9 @@ namespace NPL
 		template <typename StringType>
 		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
 
+		template <typename StringType>
+		static bool SerializeToJson(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
+
 		/** safe convert the lua object to string. if the input is nil, NULL is returned. please note that the returned const char* has the same lifetime as the input object */
 		static const char* LuaObjectToString(const luabind::object& input, int* pSize = NULL);
 
