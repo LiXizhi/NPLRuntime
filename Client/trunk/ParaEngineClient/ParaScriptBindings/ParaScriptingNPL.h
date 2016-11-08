@@ -705,6 +705,7 @@ namespace ParaScripting
 
 		/** convert from NPL/lua table object to json string. /uXXXX encoding is recognized in string. */
 		static const string& ToJson(const object& output);
+		static const string& ToJson2(const object& output, bool bUseEmptyArray);
 
 		/** compress using zlib/gzip, etc
 		* @param output: {method="zlib|gzip", content=string, [level=number, windowBits=number,] result=string}

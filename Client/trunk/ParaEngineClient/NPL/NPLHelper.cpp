@@ -122,8 +122,177 @@ bool NPLHelper::NPLTableToString(const char* sStorageVar, NPLObjectProxy& input,
 
 
 template <typename StringType>
-bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset /*= 0*/, STableStack* pRecursionTable /*= NULL*/)
+bool NPL::NPLHelper::SerializeToJson(const luabind::object& input, StringType& sCode, int nCodeOffset /*= 0*/, STableStack* pRecursionTable /*= NULL*/, bool bUseEmptyArray)
 {
+	sCode.resize(nCodeOffset);
+
+	int nType = type(input);
+	switch (nType)
+	{
+	case LUA_TNIL:
+	{
+		sCode.append("null");
+		break;
+	}
+	case LUA_TNUMBER:
+	{
+		double value = object_cast<double>(input);
+		char buff[40];
+		int nLen = ParaEngine::StringHelper::fast_dtoa(value, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+		sCode.append(buff, nLen);
+		break;
+	}
+	case LUA_TBOOLEAN:
+	{
+		bool bValue = object_cast<bool>(input);
+		sCode.append(bValue ? "true" : "false");
+		break;
+	}
+	case LUA_TSTRING:
+	{
+		// this is something like string.format("%q") in NPL.
+		int nSize = 0;
+		const char* pStr = LuaObjectToString(input, &nSize);
+		EncodeJsonStringInQuotation(sCode, (int)(sCode.size()), pStr, nSize);
+		break;
+	}
+	case LUA_TTABLE:
+	{
+		if (pRecursionTable)
+		{
+			// check for recursive tables
+			const STableStack* pCheckTable = pRecursionTable;
+			while (pCheckTable)
+			{
+				if ((*pCheckTable->m_pTableObj) == input)
+				{
+					return false;
+				}
+				pCheckTable = pCheckTable->m_pParent;
+			}
+		}
+		STableStack thisRecursionTable = { &input, pRecursionTable };
+
+		int nTableStartIndex = sCode.size();
+		sCode.append("{");
+		int nNumberIndex = 1;
+		// -1 unset, 0 object, 1 array
+		int nIsArrayTable = -1; 
+		for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
+		{
+			// we only serialize item with a string key
+			const object& key = itCur.key();
+			if (type(key) == LUA_TSTRING && nIsArrayTable!=1)
+			{
+				nIsArrayTable = 0;
+				const char* sKey = object_cast<const char*>(key);
+				const object& value = *itCur;
+				int nOldSize = (int)(sCode.size());
+				// if sKey contains only alphabetic letters, we will use sKey=data,otherwise, we go the safer one ["sKey"]=data.
+				// the first is more efficient in disk space. 
+				int nSKeyCount = (int)strlen(sKey);
+				EncodeJsonStringInQuotation(sCode, (int)(sCode.size()), sKey, nSKeyCount);
+				sCode.append(":");
+				if (SerializeToJson(value, sCode, (int)(sCode.size()), &thisRecursionTable, bUseEmptyArray))
+				{
+					sCode.append(",");
+				}
+				else
+				{
+					sCode.resize(nOldSize);
+				}
+			}
+			else if (type(key) == LUA_TNUMBER)
+			{
+				double dKey = object_cast<double>(key);
+				int64_t nKey = (int64_t)(dKey);
+				const object& value = *itCur;
+				int nOldSize = (int)(sCode.size());
+
+				// for number index, we will serialize without square brackets. 
+				if (nIsArrayTable != 0 && nNumberIndex == nKey && dKey == nKey)
+				{
+					nIsArrayTable = 1;
+					++nNumberIndex;
+				}
+				else if (nIsArrayTable != 1)
+				{
+					nIsArrayTable = 0;
+					char buff[40];
+					sCode.append("\"");
+					int nLen = 0;
+					if (dKey == nKey)
+					{
+						nLen = ParaEngine::StringHelper::fast_itoa(nKey, buff, 40);
+					}
+					else
+					{
+						nLen = ParaEngine::StringHelper::fast_dtoa(dKey, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+					}
+					sCode.append(buff, nLen);
+					sCode.append("\":");
+				}
+				else
+				{
+					// mixing array with string key will be skipped 
+					sCode.resize(nOldSize);
+					break;
+				}
+
+				if (SerializeToJson(value, sCode, (int)(sCode.size()), &thisRecursionTable, bUseEmptyArray))
+				{
+					sCode.append(",");
+				}
+				else
+				{
+					nNumberIndex = -1;
+					sCode.resize(nOldSize);
+				}
+			}
+		}
+		if (nIsArrayTable == -1)
+		{
+			// for empty table
+			if (bUseEmptyArray)
+			{
+				sCode[nTableStartIndex] = '[';
+				sCode.append("]");
+			}
+			else
+				sCode.append("}");
+		}
+		else
+		{
+			if (nIsArrayTable == 1)
+			{
+				sCode[nTableStartIndex] = '[';
+				sCode[sCode.size() - 1] = ']';
+			}
+			else
+				sCode[sCode.size() - 1] = '}';
+		}
+		break;
+	}
+	default:
+		// we will escape any functions, etc. 
+		return false;
+		break;
+	}
+	return true;
+}
+
+bool NPL::NPLHelper::isControlCharacter(char ch)
+{
+	return ch > 0 && ch <= 0x1F;
+}
+
+bool NPL::NPLHelper::containsControlCharacter(const char* str)
+{
+	while (*str)
+	{
+		if (isControlCharacter(*(str++)))
+			return true;
+	}
 	return false;
 }
 
@@ -415,6 +584,105 @@ bool NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPLObjectProx
 		break;
 	}
 	return true;
+}
+
+// Thread-safe version
+template <typename StringType>
+void NPL::NPLHelper::EncodeJsonStringInQuotation(StringType& buff, int nOutputOffset, const char* str, int nSize)
+{
+	// this is something like string.format("%q") in NPL.
+	// estimate the size. 
+	if (nSize < 0)
+		nSize = (int)strlen(str);
+	int nFinalSize = nOutputOffset + nSize + 2;
+	buff.resize(nFinalSize);
+
+	// replace quotation mark in string. 
+	int nPos = nOutputOffset;
+	buff[nPos++] = '"';
+	for (int i = 0; i < nSize; ++i)
+	{
+		char c = str[i];
+		switch (c)
+		{
+		case '\"': case '\\': {
+			nFinalSize += 1;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = c;
+
+			break;
+		}
+		case '\b': {
+			nFinalSize += 1;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = 'b';
+			break;
+		}
+		case '\n': {
+			nFinalSize += 1;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = 'n';
+			break;
+		}
+		case '\r': {
+			nFinalSize += 1;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = 'r';
+			break;
+		}
+		case '\t': {
+			nFinalSize += 1;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = 't';
+			break;
+		}
+		case '\0': {
+			nFinalSize += 5;
+			buff.resize(nFinalSize);
+
+			buff[nPos++] = '\\';
+			buff[nPos++] = 'u';
+			buff[nPos++] = '0';
+			buff[nPos++] = '0';
+			buff[nPos++] = '0';
+			buff[nPos++] = '0';
+			break;
+		}
+		default: 
+		{
+			if (isControlCharacter(c))
+			{
+				nFinalSize += 5;
+				buff.resize(nFinalSize);
+				buff[nPos++] = '\\';
+				buff[nPos++] = 'u';
+				buff[nPos++] = '0';
+				buff[nPos++] = '0';
+				char buff_[5];
+				int nLen = ParaEngine::StringHelper::fast_itoa((WORD)c, buff_, 5, 16);
+				buff[nPos++] = nLen > 1 ? buff_[nLen - 2] : '0';
+				buff[nPos++] = nLen > 0 ? buff_[nLen - 1] : '0';
+			}
+			else
+			{
+				buff[nPos++] = c;
+			}
+			break;
+		}
+		}
+	}
+	buff[nPos++] = '"';
+	PE_ASSERT(nPos == nFinalSize && (int)(buff.size()) == nFinalSize);
 }
 
 // Thread-safe version
@@ -1193,11 +1461,15 @@ bool NPL::DeserializePureNPLDataBlock(LexState *ls, NPLObjectProxy& objProxy)
 // This allows us to put template implementation code in cpp file. 
 template void NPL::NPLHelper::EncodeStringInQuotation(std::string& output, int nOutputOffset, const char* input, int nInputSize);
 template void NPL::NPLHelper::EncodeStringInQuotation(ParaEngine::StringBuilder& output, int nOutputOffset, const char* input, int nInputSize);
+
+template void NPL::NPLHelper::EncodeJsonStringInQuotation(std::string& output, int nOutputOffset, const char* input, int nInputSize);
+template void NPL::NPLHelper::EncodeJsonStringInQuotation(ParaEngine::StringBuilder& output, int nOutputOffset, const char* input, int nInputSize);
+
 template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
 template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
 
-template bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
-template bool NPL::NPLHelper::SerializeToJson(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
+template bool NPL::NPLHelper::SerializeToJson(const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable, bool bUseEmptyArray);
+template bool NPL::NPLHelper::SerializeToJson(const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable, bool bUseEmptyArray);
 
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, std::string& sCode, int nCodeOffset);
 template bool NPL::NPLHelper::SerializeNPLTableToString(const char* sStorageVar, NPL::NPLObjectProxy& input, ParaEngine::StringBuilder& sCode, int nCodeOffset);

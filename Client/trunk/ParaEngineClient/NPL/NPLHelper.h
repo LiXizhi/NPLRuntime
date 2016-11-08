@@ -67,7 +67,11 @@ namespace NPL
 		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
 
 		template <typename StringType>
-		static bool SerializeToJson(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
+		static bool SerializeToJson(const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL, bool bUseEmptyArray = false);
+
+		static bool isControlCharacter(char ch);
+
+		static bool containsControlCharacter(const char* str);
 
 		/** safe convert the lua object to string. if the input is nil, NULL is returned. please note that the returned const char* has the same lifetime as the input object */
 		static const char* LuaObjectToString(const luabind::object& input, int* pSize = NULL);
@@ -155,6 +159,20 @@ namespace NPL
 			EncodeStringInQuotation(output, nOutputOffset, input, (int)strlen(input));
 		}
 		
+
+		template <typename StringType>
+		static void EncodeJsonStringInQuotation(StringType& output, int nOutputOffset, const char* input, int nInputSize);
+
+		template <typename StringType>
+		static void EncodeJsonStringInQuotation(StringType& output, int nOutputOffset, const std::string& input)
+		{
+			EncodeJsonStringInQuotation(output, nOutputOffset, input.c_str(), (int)input.size());
+		}
+		template <typename StringType>
+		static void EncodeJsonStringInQuotation(StringType& output, int nOutputOffset, const char* input)
+		{
+			EncodeJsonStringInQuotation(output, nOutputOffset, input, (int)strlen(input));
+		}
 
 		/** this function is thread-safe.
 		* Check if the given string can be encoded using lua long string, i.e.  [[]]
