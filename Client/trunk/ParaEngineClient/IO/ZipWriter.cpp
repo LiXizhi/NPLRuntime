@@ -31,7 +31,7 @@ namespace ParaEngine
 		*ft = mktime( &st );
 	}
 
-#ifdef WIN32
+#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
 	void standardtime2osfiletime(time_t t, LPFILETIME pft)
 	{
 		// This function comes from MSDN:

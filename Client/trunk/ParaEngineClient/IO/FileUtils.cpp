@@ -12,6 +12,7 @@
 #endif
 #include "FileUtils.h"
 #include "StringHelper.h"
+#include "ZipWriter.h"
 #include <time.h>
 #include <sys/stat.h>
 
@@ -447,8 +448,7 @@ bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 		return false;
 	}
 #else
-	::DeleteFile(filename);
-	return true;
+	return (::DeleteFile(filename) != 0);
 #endif
 }
 
@@ -1127,3 +1127,40 @@ bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nF
 #endif
 }
 
+bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle, const std::string& fileName, const time_t& lastModifiedTime)
+{
+	bool op_result = false;
+	if (fileHandle.IsValid())
+	{
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
+		//platform: mobile
+		time_t platform_time;
+		standardtime2osfiletime(lastModifiedTime, &platform_time);
+		std::string sFilePath;
+		if (IsAbsolutePath(fileName))
+		{
+			sFilePath = GetFullPathForFilename(fileName);
+		}
+		else
+		{
+			sFilePath = GetWritablePath() + fileName;
+			sFilePath = GetFullPathForFilename(sFilePath);
+		}
+		fs::path filePath(sFilePath.c_str());
+		boost::system::error_code err_code;
+		fs::last_write_time(filePath, platform_time, err_code);
+		op_result = (err_code.value() == boost::system::errc::success);
+#else
+	#if defined(WIN32)
+		//platform: win32
+		FILETIME platform_time;
+		standardtime2osfiletime(lastModifiedTime, &platform_time);
+
+		op_result = (SetFileTime(m_handle.m_handle, &platform_time, &platform_time, &platform_time) != FALSE);
+	#else
+		//other platform : not implemented for now
+	#endif
+#endif
+	}
+	return op_result;
+}

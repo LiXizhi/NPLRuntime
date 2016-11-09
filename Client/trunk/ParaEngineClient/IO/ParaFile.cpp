@@ -1138,7 +1138,7 @@ bool CParaFile::WriteLastModifiedTime(DWORD lastWriteTime)
 	SetLastModifiedTime(lastWriteTime);
 
 	bool result = false;
-	if(lastWriteTime>0)
+	if(lastWriteTime>0 && m_bDiskFileOpened)
 	{
 		if(m_handle.IsValid())
 		{
@@ -1146,15 +1146,7 @@ bool CParaFile::WriteLastModifiedTime(DWORD lastWriteTime)
 			WORD dosdate = lastWriteTime>>16;
 			WORD dostime = lastWriteTime&0xffff;
 			dosdatetime2filetime(dosdate, dostime, &standard_time);
-#ifdef WIN32
-			//For win32
-			FILETIME local_ft;
-			standardtime2osfiletime(standard_time, &local_ft);
-
-			result = (SetFileTime(m_handle.m_handle, &local_ft, &local_ft, &local_ft) != FALSE);
-#else
-			//Not implemented for other platform yet
-#endif
+			result = CFileUtils::WriteLastModifiedTimeToDisk(m_handle, m_filename, standard_time);
 		}
 	}
 	return result;
