@@ -1130,9 +1130,9 @@ bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nF
 bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle, const std::string& fileName, const time_t& lastModifiedTime)
 {
 	bool op_result = false;
-	if (fileHandle.IsValid())
-	{
 #if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
+	if (!fileName.empty())
+	{
 		//platform: mobile
 		time_t platform_time;
 		standardtime2osfiletime(lastModifiedTime, &platform_time);
@@ -1150,17 +1150,21 @@ bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle,
 		boost::system::error_code err_code;
 		fs::last_write_time(filePath, platform_time, err_code);
 		op_result = (err_code.value() == boost::system::errc::success);
+	}
 #else
 	#if defined(WIN32)
+	if (fileHandle.IsValid())
+	{
+
 		//platform: win32
 		FILETIME platform_time;
 		standardtime2osfiletime(lastModifiedTime, &platform_time);
 
-		op_result = (SetFileTime(m_handle.m_handle, &platform_time, &platform_time, &platform_time) != FALSE);
+		op_result = (SetFileTime(fileHandle.m_handle, &platform_time, &platform_time, &platform_time) != FALSE);
 	#else
 		//other platform : not implemented for now
 	#endif
-#endif
 	}
+#endif
 	return op_result;
 }

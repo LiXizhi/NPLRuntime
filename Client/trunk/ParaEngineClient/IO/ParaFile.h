@@ -602,6 +602,10 @@ namespace ParaEngine
 
 		bool WriteLastModifiedTime(DWORD lastWriteTime);
 
+		bool GetRestoreLastModifiedTimeAfterClose() const;
+
+		void SetRestoreLastModifiedTimeAfterClose(bool shouldRestore);
+
 		//////////////////////////////////////////////////////////////////////////
 		//
 		// bit wise reading
@@ -656,5 +660,6 @@ namespace ParaEngine
 		int m_bitPos; // a value in range [0,8]
 
 		DWORD m_lastModifiedTime;
+		bool m_restoreLastModifiedTimeAfterClose;
 	};
 }
