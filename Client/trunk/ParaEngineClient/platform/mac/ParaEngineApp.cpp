@@ -393,7 +393,7 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
 	SetAppState(PEAppState_Exiting);
 
-	//??? need : wangpeng FontFreeType::shutdownFreeType();
+	FontFreeType::shutdownFreeType_exit();
 }
 
 ParaEngine::PEAppState CParaEngineApp::GetAppState()
@@ -498,6 +498,8 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 
 	// this is server mode
 	auto nStartTime = GetTickCount();
+
+
 	while (GetAppState() != PEAppState_Exiting)
 	{
 
@@ -538,7 +540,7 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 
 
 
-	StopApp();
+	//StopApp();
 
 	return GetReturnCode();
 

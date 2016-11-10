@@ -50,10 +50,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-    AppDelegate app;
-    app.SetMacCommandLine(sCmdLine);
+    AppDelegate* app = new AppDelegate();
+    app->SetMacCommandLine(sCmdLine);
 
-    app.Run();
+    app->Run();
 
     return 0;
 }
