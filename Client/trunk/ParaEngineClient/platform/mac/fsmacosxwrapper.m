@@ -580,6 +580,8 @@ static int exposure=0;
 
 
 
+extern void FsOnClosed();
+
 @interface YsOpenGLWindow : NSWindow
 {
 }
@@ -616,6 +618,8 @@ static int exposure=0;
 - (void) windowWillClose: (NSNotification *)notification
 {
 	[NSApp terminate:nil];	// This can also be exit(0);
+
+	FsOnClosed();
 }
 
 @end
@@ -1260,6 +1264,7 @@ int FsCheckExposureC(void)
 	exposure=0;
 	return ret;
 }
+
 
 /* int main(int argc, char *argv[])
 {

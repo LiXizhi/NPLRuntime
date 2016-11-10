@@ -22,8 +22,9 @@ namespace ParaEngine
 		virtual ~AppDelegate();
 
 		void StopApp();
+    void Run();
 
-        void Run();
+		static void Exit();
 
 		/**
 		@brief    Implement Director and Scene init code here.

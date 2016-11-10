@@ -10,7 +10,13 @@
 #include "../base/uthash.h"
 #include "CCFileUtils.h"
 
-#define CHECK_GL_ERROR_DEBUG()
+#define CHECK_GL_ERROR_DEBUG() \
+do { \
+GLenum __error = glGetError(); \
+if(__error) { \
+OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, __FILE__, __FUNCTION__, __LINE__); \
+} \
+} while (false)
 
 NS_CC_BEGIN
 

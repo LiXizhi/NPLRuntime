@@ -234,7 +234,7 @@ HRESULT RenderDevice::SetIndices(IndexBufferDevicePtr_type pIndexData)
 	if (pIndexData != s_currentIndexBuffer)
 	{
 		s_currentIndexBuffer = pIndexData;
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
 		PE_CHECK_GL_ERROR_DEBUG();
 #endif
@@ -248,7 +248,7 @@ HRESULT RenderDevice::SetStreamSource(UINT StreamNumber, VertexBufferDevicePtr_t
 	if (pStreamData != s_currentVertexBuffer)
 	{
 		s_currentVertexBuffer = pStreamData;
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
 		PE_CHECK_GL_ERROR_DEBUG();
 		if (pStreamData && s_currentVertexDeclaration)
@@ -266,7 +266,7 @@ HRESULT ParaEngine::RenderDevice::SetVertexDeclaration(VertexDeclarationPtr pDec
 {
 	if (pDecl != 0)
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		GL::bindVAO(0);
 #endif
 		// TODO: we should use VAO for vertex declaration.
@@ -678,7 +678,7 @@ void ParaEngine::RenderDevice::ApplyBlendingModeChange()
 			if (s_bEnableSeparateAlphaBlending)
 			{
 				glEnable(GL_BLEND);
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 				glBlendFuncSeparate(s_blendingSource, s_blendingDest, s_blendingAlphaSource, s_blendingAlphaDest);
 #endif
 			}

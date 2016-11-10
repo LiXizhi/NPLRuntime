@@ -51,6 +51,8 @@
 using namespace std;
 using namespace ParaEngine;
 
+#include "CCFontFreeType.h"
+USING_NS_CC;
 
 CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bServerMode(false), m_bIsAppActive(true), m_bHasNewConfig(false), m_nAppState(PEAppState_None), m_nScreenWidth(960), m_nScreenHeight(640), m_fTime(0), m_fFPS(0.f)
@@ -390,6 +392,8 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 	SetReturnCode(nReturnCode);
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
 	SetAppState(PEAppState_Exiting);
+
+	//??? need : wangpeng FontFreeType::shutdownFreeType();
 }
 
 ParaEngine::PEAppState CParaEngineApp::GetAppState()
@@ -496,12 +500,10 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	auto nStartTime = GetTickCount();
 	while (GetAppState() != PEAppState_Exiting)
 	{
+
+
 		auto nCurTickCount = GetTickCount() - nStartTime;
 		FrameMove(nCurTickCount / 1000.f);
-
-
-
-
 
 
 		int mx,my,lb,mb,rb,passed;
@@ -510,43 +512,34 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 		passed=FsPassedTime();
 
 		FsPollDevice();
+
+
 		FsGetMouseState(lb,mb,rb,mx,my);
 
-		int wid,hei,cx,cy;
-		FsGetWindowSize(wid,hei);
-		cx=wid/2;
-		cy=hei/2;
+		// int wid,hei,cx,cy;
+		// FsGetWindowSize(wid,hei);
+		// cx=wid/2;
+		// cy=hei/2;
 
-		spinX=(double)((mx-cx)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
-		spinY=(double)((my-cy)/10)*(double)passed/1000.0;  // 1 pixel = degrees/sec
-
-		glClearColor(0.0,0.0,0.0,0.0);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-		glViewport(0,0,wid,hei);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluPerspective(45.0,(double)wid/(double)hei,1.0,20.0);
-		glTranslated(0.0,0.0,-10.0);
-
-		// glMatrixMode(GL_MODELVIEW);
-		// glLoadIdentity();
-		// glRotated(spinX,0.0,1.0,0.0);
-		// glRotated(spinY,1.0,0.0,0.0);
-		// glMultMatrixd(cubeMatrix);
-		// glGetDoublev(GL_MODELVIEW_MATRIX,cubeMatrix);
+        glClear(GL_COLOR_BUFFER_BIT);
 
 
-		Render3DEnvironment(true);
+
+		    Render3DEnvironment(true);
 
 
-		FsSwapBuffers();
+        FsSwapBuffers();
+        FsSleep(33-passed);
 
-		FsSleep(33-passed);
 
-		// 30FPS
+        // 30FPS
 		//SLEEP(33);
 	}
+
+
+
+	StopApp();
+
 	return GetReturnCode();
 
 }

@@ -25,10 +25,21 @@ using namespace NPL;
 
 #include "fssimplewindow.h"
 
+static  AppDelegate* Instance = NULL;
+
 AppDelegate::AppDelegate()
 	:m_sScriptSearchPath("src")
 {
+	Instance = this;
+}
 
+void AppDelegate::Exit()
+{
+	if ( Instance != NULL )
+	{
+		Instance->m_pParaEngineApp->Exit(0);
+		Instance = NULL;
+	}
 }
 
 AppDelegate::~AppDelegate()
@@ -38,19 +49,21 @@ AppDelegate::~AppDelegate()
 
 void ParaEngine::AppDelegate::Run()
 {
-	FsOpenWindow(32,32,800,600,1); // 800x600 pixels, useDoubleBuffer=1
-
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glDepthFunc(GL_LESS);
+    FsOpenWindow(32,32,800,600,1); // 800x600 pixels, useDoubleBuffer=1
 
 
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDepthFunc(GL_ALWAYS);
 
-	InitApp();
+    glClear(GL_COLOR_BUFFER_BIT);
 
 
+    FsPollDevice();
 
-	m_pParaEngineApp->Run(0);
+    InitApp();
+
+    m_pParaEngineApp->Run(0);
 
 }
 
@@ -138,11 +151,9 @@ void ParaEngine::AppDelegate::FrameMove(float fElapsedTime)
 
 	if (m_pParaEngineApp->GetAppState() == PEAppState_Exiting)
 	{
-#if PARA_TARGET_PLATFORM != PARA_PLATFORM_IOS
 		StopApp();
 		//TODO: Director::getInstance()->end();
 		exit(0);
-#endif
 	}
 }
 

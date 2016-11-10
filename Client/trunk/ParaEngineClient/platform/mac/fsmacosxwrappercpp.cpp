@@ -19,6 +19,16 @@ extern "C" int FsKeyStateC(int fsKeyCode);
 extern "C" void FsChangeToProgramDirC(void);
 extern "C" void FsCheckExposureC(void);
 
+#include "AppDelegate.h"
+
+extern "C" void FsOnClosed();
+
+void FsOnClosed()
+{
+    ParaEngine::AppDelegate::Exit();
+}
+
+
 void FsOpenWindow(int x0,int y0,int wid,int hei,int useDoubleBuffer)
 {
 	FsOpenWindowC(x0,y0,wid,hei,useDoubleBuffer);
@@ -83,4 +93,3 @@ void FsChangeToProgramDir(void)
 {
 	FsChangeToProgramDirC();
 }
-
