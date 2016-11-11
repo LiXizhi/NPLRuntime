@@ -491,6 +491,51 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 	return S_OK;
 }
 
+
+void CParaEngineApp::UpdateMouse()
+{
+	static int oldX = 0;
+	static int oldY = 0;
+	static int oldBtnLeft = 0;
+	static int oldBtnRight = 0;
+	static int oldBtnMiddle = 0;
+
+	int x,y,btnLeft,btnRight,btnMiddle;
+	FsGetMouseState(btnLeft,btnMiddle,btnRight,x,y);
+
+	//MSG msg;
+    //POINT pt;
+    //pt.x = x;
+    //pt.y = y;
+    //CEventBinding::InitMsg(&msg, GetTickCount(), EM_NONE, pt);
+
+
+	if ( oldBtnLeft != btnLeft )
+	{
+		if ( btnLeft == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(x, y));
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(x, y));
+			//msg.message = EM_MOUSE_LEFTUP;
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(x, y));
+			//msg.message = EM_MOUSE_LEFTDOWN;
+		}
+		//m_pGUIRoot->PushEvent(msg);
+		oldBtnLeft = btnLeft;
+	}
+	else if ( (oldX != x) ||  (oldY != y) )
+	{
+		//msg.message = EM_MOUSE_MOVE;
+		//m_pGUIRoot->PushEvent(msg);
+	}
+
+	oldX = x;
+	oldY = y;
+}
+
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
 
@@ -499,7 +544,11 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	// this is server mode
 	auto nStartTime = GetTickCount();
 
-
+	int old_lb = 0;
+	int old_mb = 0;
+	int old_rb = 0;
+	int old_mx = 0;
+	int old_my = 0;
 	while (GetAppState() != PEAppState_Exiting)
 	{
 
@@ -507,28 +556,18 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 		auto nCurTickCount = GetTickCount() - nStartTime;
 		FrameMove(nCurTickCount / 1000.f);
 
-
-		int mx,my,lb,mb,rb,passed;
-		double spinX,spinY;
-
-		passed=FsPassedTime();
+		int passed = FsPassedTime();
 
 		FsPollDevice();
 
+		FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
 
-		FsGetMouseState(lb,mb,rb,mx,my);
+		UpdateMouse();
 
-		// int wid,hei,cx,cy;
-		// FsGetWindowSize(wid,hei);
-		// cx=wid/2;
-		// cy=hei/2;
 
         glClear(GL_COLOR_BUFFER_BIT);
 
-
-
-		    Render3DEnvironment(true);
-
+		Render3DEnvironment(true);
 
         FsSwapBuffers();
         FsSleep(33-passed);
