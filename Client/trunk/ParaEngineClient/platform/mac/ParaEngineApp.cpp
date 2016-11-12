@@ -503,33 +503,48 @@ void CParaEngineApp::UpdateMouse()
 	int x,y,btnLeft,btnRight,btnMiddle;
 	FsGetMouseState(btnLeft,btnMiddle,btnRight,x,y);
 
-	//MSG msg;
-    //POINT pt;
-    //pt.x = x;
-    //pt.y = y;
-    //CEventBinding::InitMsg(&msg, GetTickCount(), EM_NONE, pt);
-
-
 	if ( oldBtnLeft != btnLeft )
 	{
+		this->SetTouchInputting(false);
 		if ( btnLeft == 0 )
 		{
-            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(x, y));
             CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(x, y));
-			//msg.message = EM_MOUSE_LEFTUP;
 		}
 		else
 		{
             CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(x, y));
-			//msg.message = EM_MOUSE_LEFTDOWN;
 		}
-		//m_pGUIRoot->PushEvent(msg);
 		oldBtnLeft = btnLeft;
+	}
+	else if ( oldBtnRight != btnRight )
+	{
+		this->SetTouchInputting(false);
+		if ( btnRight == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(x, y));
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(x, y));
+		}
+		oldBtnRight = btnRight;
+	}
+	else if ( oldBtnMiddle != btnMiddle )
+	{
+		this->SetTouchInputting(false);
+		if ( btnMiddle == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MBUTTONUP, 0, MAKELPARAM(x, y));
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MBUTTONDOWN, 0, MAKELPARAM(x, y));
+		}
+		oldBtnMiddle = btnMiddle;
 	}
 	else if ( (oldX != x) ||  (oldY != y) )
 	{
-		//msg.message = EM_MOUSE_MOVE;
-		//m_pGUIRoot->PushEvent(msg);
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(x, y));
 	}
 
 	oldX = x;
@@ -544,25 +559,19 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	// this is server mode
 	auto nStartTime = GetTickCount();
 
-	int old_lb = 0;
-	int old_mb = 0;
-	int old_rb = 0;
-	int old_mx = 0;
-	int old_my = 0;
 	while (GetAppState() != PEAppState_Exiting)
 	{
 
+        FsPollDevice();
+
+        FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
+
+        UpdateMouse();
 
 		auto nCurTickCount = GetTickCount() - nStartTime;
 		FrameMove(nCurTickCount / 1000.f);
 
 		int passed = FsPassedTime();
-
-		FsPollDevice();
-
-		FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
-
-		UpdateMouse();
 
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -572,9 +581,6 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
         FsSwapBuffers();
         FsSleep(33-passed);
 
-
-        // 30FPS
-		//SLEEP(33);
 	}
 
 
