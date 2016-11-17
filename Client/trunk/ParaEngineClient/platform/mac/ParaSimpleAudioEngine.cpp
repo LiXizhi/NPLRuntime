@@ -13,7 +13,7 @@
 #include "FileUtils.h"
 #include "ParaSimpleAudioSource.h"
 #include "ParaSimpleAudioEngine.h"
-//#include "SimpleAudioEngine.h"
+#include "SimpleAudioEngine.h"
 
 
 //using namespace CocosDenshion;
@@ -95,7 +95,7 @@ void ParaEngine::CParaSimpleAudioEngine::releaseAllSources()
 		SAFE_DELETE(pSrc);
 	}
 	m_audio_source_map.clear();
-	//TODO:wangpeng SimpleAudioEngine::getInstance()->stopAllEffects();
+	SimpleAudioEngine::getInstance()->stopAllEffects();
 }
 
 void ParaEngine::CParaSimpleAudioEngine::release(IParaAudioSource* source)
@@ -160,7 +160,7 @@ IParaAudioSource* ParaEngine::CParaSimpleAudioEngine::create(const char* name, c
 		else
 		{
 			CParaSimpleAudioSource* pSrc = new CParaSimpleAudioSource(filename.c_str());
-			//TODO:wangpeng SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
+			SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
 			m_audio_source_map[name] = pSrc;
 			return (IParaAudioSource*)pSrc;
 		}
@@ -206,7 +206,7 @@ IParaAudioSource* ParaEngine::CParaSimpleAudioEngine::createFromMemory(const cha
 	if (bFileExist)
 	{
 		CParaSimpleAudioSource* pSrc = new CParaSimpleAudioSource(filename.c_str());
-		//TODO:wangpeng SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
+		SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
 		m_audio_source_map[name] = pSrc;
 		return (IParaAudioSource*)pSrc;
 	}
@@ -219,7 +219,7 @@ IParaAudioSource* ParaEngine::CParaSimpleAudioEngine::createFromMemory(const cha
 			file.close();
 
 			CParaSimpleAudioSource* pSrc = new CParaSimpleAudioSource(filename.c_str());
-			//TODO:wangpeng SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
+			SimpleAudioEngine::getInstance()->preloadEffect(filename.c_str());
 			m_audio_source_map[name] = pSrc;
 			return (IParaAudioSource*)pSrc;
 		}
@@ -265,8 +265,8 @@ void ParaEngine::CParaSimpleAudioEngine::setVelocity(const PARAVECTOR3& vel)
 
 void ParaEngine::CParaSimpleAudioEngine::setMasterVolume(const float& volume)
 {
-	//TODO:wangpeng SimpleAudioEngine::getInstance()->setBackgroundMusicVolume(volume);
-	//TODO:wangpeng SimpleAudioEngine::getInstance()->setEffectsVolume(volume);
+	SimpleAudioEngine::getInstance()->setBackgroundMusicVolume(volume);
+	SimpleAudioEngine::getInstance()->setEffectsVolume(volume);
 }
 
 void ParaEngine::CParaSimpleAudioEngine::move(const PARAVECTOR3& pos)
@@ -296,7 +296,7 @@ ParaEngine::PARAVECTOR3 ParaEngine::CParaSimpleAudioEngine::getVelocity(void) co
 
 float ParaEngine::CParaSimpleAudioEngine::getMasterVolume(void) const
 {
-	//TODO: return SimpleAudioEngine::getInstance()->getBackgroundMusicVolume();
+	SimpleAudioEngine::getInstance()->getBackgroundMusicVolume();
 	return 1;
 }
 

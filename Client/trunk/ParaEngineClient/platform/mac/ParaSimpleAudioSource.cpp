@@ -10,7 +10,7 @@
 //#include "cocos2d.h"
 #include "ParaSimpleAudioEngine.h"
 #include "ParaSimpleAudioSource.h"
-//#include "SimpleAudioEngine.h"
+#include "SimpleAudioEngine.h"
 //using namespace CocosDenshion;
 //USING_NS_CC;
 using namespace ParaEngine;
@@ -48,14 +48,14 @@ bool ParaEngine::CParaSimpleAudioSource::play2d(const bool& toLoop /*= false*/)
 	if (!m_bLoop)
 	{
 
-		//TODO: wangpeng m_pSource = SimpleAudioEngine::getInstance()->playEffect(GetFileName().c_str(), m_bLoop);
+		m_pSource = SimpleAudioEngine::getInstance()->playEffect(GetFileName().c_str(), m_bLoop);
 		//OUTPUT_LOG("playing audio %s id : %d\n", GetFileName().c_str(), (unsigned int)m_pSource);
 	}
 	else
 	{
 		// loop music is always a background music
 		m_pSource = 0;
-		//TODO: wangpeng SimpleAudioEngine::getInstance()->playBackgroundMusic(GetFileName().c_str(), m_bLoop);
+		SimpleAudioEngine::getInstance()->playBackgroundMusic(GetFileName().c_str(), m_bLoop);
 		// SimpleAudioEngine::getInstance()->rewindBackgroundMusic();
 	}
 
@@ -80,16 +80,13 @@ void ParaEngine::CParaSimpleAudioSource::stop()
 {
 	if (m_pSource != 0)
 	{
-		//TODO: wangpeng
-		//SimpleAudioEngine::getInstance()->pauseEffect(m_pSource);
+		SimpleAudioEngine::getInstance()->pauseEffect(m_pSource);
 	}
 	else
 	{
 		if (IsBackgroundMusic())
 		{
-			//TODO: wangpeng
-
-			//SimpleAudioEngine::getInstance()->stopBackgroundMusic();
+			SimpleAudioEngine::getInstance()->stopBackgroundMusic();
 		}
 	}
 	m_bPlaying = false;
@@ -108,8 +105,7 @@ bool ParaEngine::CParaSimpleAudioSource::seek(const float& seconds, bool relativ
 		{
 			if (isPlaying())
 			{
-				//TODO: wangpeng
-				// SimpleAudioEngine::getInstance()->rewindBackgroundMusic();
+				SimpleAudioEngine::getInstance()->rewindBackgroundMusic();
 			}
 
 		}
@@ -157,8 +153,7 @@ bool ParaEngine::CParaSimpleAudioSource::update()
 			if (m_pSource == 0 && (m_nCurTick % 10) == 0)
 			{
 				// just in case the audio is not preloaded well.
-				// TODO: wangpeng
-				//m_pSource = SimpleAudioEngine::getInstance()->playEffect(GetFileName().c_str(), m_bLoop);
+				m_pSource = SimpleAudioEngine::getInstance()->playEffect(GetFileName().c_str(), m_bLoop);
 
 				if (m_pSource != 0)
 					m_nCurTick = 0;
