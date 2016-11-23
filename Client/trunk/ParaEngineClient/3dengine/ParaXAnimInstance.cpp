@@ -726,27 +726,37 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 	return false;
 }
 
-HRESULT CParaXAnimInstance::Draw(SceneState * sceneState, const Matrix4* mxWorld, CParameterBlock* materialParams)
+
+bool CParaXAnimInstance::UpdateWorldTransform(SceneState * sceneState, Matrix4& out, const Matrix4& mxWorld)
 {
 	if (m_modelType == CharacterModel)
 	{
 		if (UpdateModel(sceneState))
 		{
-			// push transform
 			// scale the model
-			Matrix4 mat, matScale;
 			if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
 			{
+				Matrix4 matScale;
 				ParaMatrixScaling(&matScale, m_fSizeScale, m_fSizeScale, m_fSizeScale);
-				mat = matScale * (*mxWorld);
+				out = matScale * mxWorld;
 			}
 			else
-				mat = (*mxWorld);
+				out = mxWorld;
+			return true;
+		}
+	}
+	return false;
+}
 
+HRESULT CParaXAnimInstance::Draw(SceneState * sceneState, const Matrix4* mxWorld, CParameterBlock* materialParams)
+{
+	if (m_modelType == CharacterModel)
+	{
+		Matrix4 mat;
+		if(UpdateWorldTransform(sceneState, mat, *mxWorld))
+		{
 			CGlobals::GetWorldMatrixStack().push(mat);
-
 			m_pCharModel->Draw(sceneState, materialParams);
-			// pop matrix
 			CGlobals::GetWorldMatrixStack().pop();
 		}
 	}
@@ -754,7 +764,6 @@ HRESULT CParaXAnimInstance::Draw(SceneState * sceneState, const Matrix4* mxWorld
 	{
 		// TODO: other model type goes here
 	}
-
 	return S_OK;
 }
 
