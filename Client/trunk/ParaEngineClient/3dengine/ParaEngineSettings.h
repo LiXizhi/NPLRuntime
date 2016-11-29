@@ -209,7 +209,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCurrentMemoryUse_s, int*)	{ *p1 = cls->GetCurrentMemoryUse(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexBufferPoolTotalBytes_s, int*)	{ *p1 = (int)cls->GetVertexBufferPoolTotalBytes(); return S_OK; }
 
-		
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, int*) { *p1 = cls->GetAppHWND(); return S_OK; }
+
 	public:
 		/** 
 		* @param dwTechnique: 0 for basic, the higher the more advanced. up to 3. */
@@ -664,6 +665,8 @@ namespace ParaEngine
 		*/
 		bool HasClosingRequest();
 		void SetHasClosingRequest(bool val);
+
+		static int GetAppHWND();
 	protected:
 		void LoadNameIndex();
 	private:

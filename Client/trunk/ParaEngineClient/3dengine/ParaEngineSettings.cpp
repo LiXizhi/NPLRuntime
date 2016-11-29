@@ -1283,6 +1283,11 @@ void ParaEngine::ParaEngineSettings::SetHasClosingRequest(bool val)
 	CGlobals::GetApp()->SetHasClosingRequest(val);
 }
 
+int ParaEngine::ParaEngineSettings::GetAppHWND()
+{
+	return (int)CGlobals::GetAppHWND();
+}
+
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
 {
 	CGlobals::GetApp()->SetRefreshTimer(fTimerInterval);
@@ -1384,5 +1389,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("CurrentMemoryUse", FieldType_Int, NULL, (void*)GetCurrentMemoryUse_s, NULL, NULL, bOverride);
 	pClass->AddField("PeakMemoryUse", FieldType_Int, NULL, (void*)GetPeakMemoryUse_s, NULL, NULL, bOverride);
 	pClass->AddField("VertexBufferPoolTotalBytes", FieldType_Int, NULL, (void*)GetVertexBufferPoolTotalBytes_s, NULL, NULL, bOverride);
+
+	pClass->AddField("AppHWND", FieldType_Int, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
 	return S_OK;
 }
