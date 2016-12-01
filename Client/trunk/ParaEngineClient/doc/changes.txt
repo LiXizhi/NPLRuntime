@@ -2,6 +2,15 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.11.23
+	- biped object now support baking static physics.
+
+2016.11.17
+	- paraengine plugins can now be loaded in a zip archive.
+
+2016.11.8
+	- NPL.ToJson encoder implemented with unicode char support. 
+
 2016.10.31
 	- CParaFile now support memory file. 
 

@@ -73,7 +73,7 @@ namespace ParaEngine
 
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;
-		unsigned int m_nPhysicsGroup;
+		uint32 m_nPhysicsGroup;
 
 		/** a value between [0,1). last block light. */
 		float m_fLastBlockLight;

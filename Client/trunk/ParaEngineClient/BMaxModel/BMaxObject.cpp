@@ -92,7 +92,7 @@ namespace ParaEngine
 
 	bool BMaxObject::CanHasPhysics()
 	{
-		return true;
+		return IsPhysicsEnabled();
 	}
 
 	void BMaxObject::SetScaling(float fScale)

@@ -788,7 +788,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 							pBiped->SetHeadTurningAngle(0.f);
 							pBiped->SetHeadUpdownAngle(0.f);
 							pState->AddAction(CBipedStateManager::S_TURNING);
-							pState->SetAngleDelta(SPEED_TURN*fElapsedTime);	
+							pState->SetAngleDelta(CBipedObject::SPEED_TURN*fElapsedTime);	
 						}
 						else
 						{
@@ -801,16 +801,16 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 								if(pBiped->IsStanding())
 								{
 									pState->AddAction(CBipedStateManager::S_TURNING);
-									pState->SetAngleDelta(SPEED_TURN*fElapsedTime);	
+									pState->SetAngleDelta(CBipedObject::SPEED_TURN*fElapsedTime);	
 								}
 								else
 								{
-									pState->SetAngleDelta(pState->GetAngleDelta()+SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(pState->GetAngleDelta()+CBipedObject::SPEED_TURN*fElapsedTime);
 								}
 							}
 							else
 							{
-								m_fCameraRotY += SPEED_TURN*fElapsedTime;
+								m_fCameraRotY += CBipedObject::SPEED_TURN*fElapsedTime;
 								m_fCameraRotY = Math::ToStandardAngle(m_fCameraRotY);
 								cameraMoved = true;
 							}
@@ -832,7 +832,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 							pBiped->SetHeadTurningAngle(0.f);
 							pBiped->SetHeadUpdownAngle(0.f);
 							pState->AddAction(CBipedStateManager::S_TURNING);
-							pState->SetAngleDelta(-SPEED_TURN*fElapsedTime);	
+							pState->SetAngleDelta(-CBipedObject::SPEED_TURN*fElapsedTime);	
 						}
 						else
 						{
@@ -845,16 +845,16 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 								if(pBiped->IsStanding())
 								{
 									pState->AddAction(CBipedStateManager::S_TURNING);
-									pState->SetAngleDelta(-SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(-CBipedObject::SPEED_TURN*fElapsedTime);
 								}
 								else
 								{
-									pState->SetAngleDelta(pState->GetAngleDelta()-SPEED_TURN*fElapsedTime);
+									pState->SetAngleDelta(pState->GetAngleDelta()-CBipedObject::SPEED_TURN*fElapsedTime);
 								}
 							}
 							else
 							{
-								m_fCameraRotY -= SPEED_TURN*fElapsedTime;
+								m_fCameraRotY -= CBipedObject::SPEED_TURN*fElapsedTime;
 								m_fCameraRotY = Math::ToStandardAngle(m_fCameraRotY);
 
 								cameraMoved = true;

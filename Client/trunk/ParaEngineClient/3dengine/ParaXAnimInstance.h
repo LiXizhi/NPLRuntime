@@ -82,6 +82,12 @@ namespace ParaEngine
 		*/
 		virtual void Animate( double dTimeDelta, int nRenderNumber=0 );
 
+
+		/** update world transform by applying local size scale. 
+		* return true if succeed
+		*/
+		virtual bool UpdateWorldTransform(SceneState * sceneState, Matrix4& out, const Matrix4& mxWorld);
+
 		/** update model according to current animation data and time*/
 		bool UpdateModel(SceneState * sceneState = NULL);
 

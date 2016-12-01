@@ -362,6 +362,8 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("GetStats",&CNPL::GetStats),
 
 				def("FromJson",&CNPL::FromJson),
+				def("ToJson", &CNPL::ToJson),
+				def("ToJson", &CNPL::ToJson2),
 				def("Compress", &CNPL::Compress),
 				def("Decompress", &CNPL::Decompress),
 				def("this", &CNPL::this2_),
