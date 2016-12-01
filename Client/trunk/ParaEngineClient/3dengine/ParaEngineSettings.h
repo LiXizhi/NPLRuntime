@@ -210,6 +210,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexBufferPoolTotalBytes_s, int*)	{ *p1 = (int)cls->GetVertexBufferPoolTotalBytes(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, int*) { *p1 = cls->GetAppHWND(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetModuleHandle_s, int*) { *p1 = cls->GetModuleHandle(); return S_OK; }
 
 	public:
 		/** 
@@ -667,6 +668,7 @@ namespace ParaEngine
 		void SetHasClosingRequest(bool val);
 
 		static int GetAppHWND();
+		static int GetModuleHandle();
 	protected:
 		void LoadNameIndex();
 	private:

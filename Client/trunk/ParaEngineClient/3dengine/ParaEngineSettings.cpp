@@ -1288,6 +1288,12 @@ int ParaEngine::ParaEngineSettings::GetAppHWND()
 	return (int)CGlobals::GetAppHWND();
 }
 
+int ParaEngine::ParaEngineSettings::GetModuleHandle()
+{
+	HINSTANCE instance = CGlobals::GetApp()->GetModuleHandle();
+	return (int)instance;
+}
+
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
 {
 	CGlobals::GetApp()->SetRefreshTimer(fTimerInterval);
@@ -1391,5 +1397,6 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("VertexBufferPoolTotalBytes", FieldType_Int, NULL, (void*)GetVertexBufferPoolTotalBytes_s, NULL, NULL, bOverride);
 
 	pClass->AddField("AppHWND", FieldType_Int, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
+	pClass->AddField("ModuleHandle", FieldType_Int, NULL, (void*)GetModuleHandle_s, NULL, NULL, bOverride);
 	return S_OK;
 }
