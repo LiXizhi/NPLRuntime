@@ -1888,6 +1888,13 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			verts[i] = pVertices->pos;
 			pVertices++;
 		}
+		if (m_RenderMethod == SOFT_ANIM)
+		{
+			for (DWORD i = 0; i < dwNumVx; ++i)
+			{
+				m_frame_number_vertices[i] = 0;
+			}
+		}
 	}
 
 
@@ -1904,6 +1911,30 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		{
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
+				if(m_RenderMethod == SOFT_ANIM)
+				{
+					int nIndexOffset = pass.m_nIndexStart;
+					for (int i = 0; i < pass.indexCount; ++i)
+					{
+						int a = m_indices[nIndexOffset + i];
+						if (m_frame_number_vertices[a] != 1)
+						{
+							m_frame_number_vertices[a] = 1;
+							auto ov = m_origVertices + a;
+							float weight = ov->weights[0] * (1 / 255.0f);
+							Bone& bone = bones[ov->bones[0]];
+							Vector3 v = (ov->pos * bone.mat)*weight;
+							for (int b = 1; b < 4 && ov->weights[b]>0; b++)
+							{
+								weight = ov->weights[b] * (1 / 255.0f);
+								Bone& bone = bones[ov->bones[b]];
+								v += (ov->pos * bone.mat) * weight;
+							}
+							verts[a] = v;
+						}
+					}
+				}
+
 #ifdef INVERT_PHYSICS_FACE_WINDING
 				int16* dest = (int16*)&(indices[nD]);
 				int16* src = &(m_indices[pass.indexStart]);

@@ -339,7 +339,6 @@ void IGameObject::UpdateTileContainer()
 	SetTileContainer(pTile);
 }
 
-// TODO: untested
 void IGameObject::MakeGlobal(bool bGlobal)
 {
 	if(IsGlobal()!=bGlobal)
