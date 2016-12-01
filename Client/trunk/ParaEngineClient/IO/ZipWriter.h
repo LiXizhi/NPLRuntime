@@ -4,7 +4,7 @@
 namespace ParaEngine
 {
 	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t *ft);
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
+#if defined(WIN32) && defined(PARAENGINE_CLIENT)
 	void standardtime2osfiletime(time_t t, LPFILETIME pft);
 #else
 	void standardtime2osfiletime(time_t source_t, time_t* target_t);
