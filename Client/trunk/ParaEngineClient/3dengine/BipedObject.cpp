@@ -31,8 +31,9 @@
 #include "BipedObject.h"
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
+#include "PhysicsWorld.h"
 #include <algorithm>
-#include "memdebug.h"
+
 using namespace ParaEngine;
 
 /** @def whether to use smooth mounting facing angle */
@@ -109,11 +110,18 @@ using namespace ParaEngine;
 /** @def the default character jump up speed.*/
 #define JUMPUP_SPEED 5.0f
 
+
 namespace ParaEngine{
 	extern int globalTime;
 
 	static const int g_MountIDs[] = { 0, ATT_ID_MOUNT1, ATT_ID_MOUNT2, ATT_ID_MOUNT3, ATT_ID_MOUNT4, ATT_ID_MOUNT5, ATT_ID_MOUNT6, ATT_ID_MOUNT7, ATT_ID_MOUNT8, ATT_ID_MOUNT9,
 		ATT_ID_MOUNT10, ATT_ID_MOUNT11, ATT_ID_MOUNT12, ATT_ID_MOUNT13, ATT_ID_MOUNT14, ATT_ID_MOUNT15, ATT_ID_MOUNT16, ATT_ID_MOUNT17, ATT_ID_MOUNT18, ATT_ID_MOUNT19, ATT_ID_MOUNT20, };
+
+	const float CBipedObject::SPEED_TURN = 2.7f;
+	/**@def default biped walking speed. */
+	const float CBipedObject::SPEED_WALK = 0.9f;
+	/**@def default biped normal turning speed. */
+	const float CBipedObject::SPEED_NORM_TURN = 0.7f;
 }
 
 
@@ -145,6 +153,7 @@ m_isFlyUsingCameraDir(true),
 #endif
 m_nMovementStyle(MOVESTYLE_SLIDINGWALL),
 m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
+m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
 m_fBootHeight(0.f),
 m_fSizeScale(1.0f),
 m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
@@ -460,25 +469,6 @@ bool GetHLEToken(const char * event, HLEToken* pToken, int* nStart)
 	}
 	return true;
 }
-
-void GetToken(const string s, string& sToken)
-{
-	int len = (int)s.length();
-	TCHAR token[10];
-	for (int i = 0; i < len; i++)
-	{
-		if (s[i] != ' ')
-			token[i] = s[i];
-		else
-		{
-			token[i] = '\0';
-			sToken.assign(token);
-			return;
-		}
-	}
-	sToken = s;
-}
-
 
 // return false if there is no way point in the way point queue
 bool CBipedObject::GetWayPoint(BipedWayPoint* pOut)
@@ -1229,6 +1219,15 @@ void ParaEngine::CBipedObject::SetPrimaryTechniqueHandle(int nHandle)
 	}
 }
 
+void ParaEngine::CBipedObject::SetPosition(const DVector3& v)
+{
+	if (m_vPos != v)
+	{
+		m_vPos = v;
+		UnloadPhysics();
+	}
+}
+
 bool CBipedObject::SetParamsFromAsset()
 {
 	// in case the asset is loaded successfully, we shall set the primary asset. 
@@ -1917,6 +1916,7 @@ bool ParaEngine::CBipedObject::MoveTowards_Linear(double dTimeDelta, const DVect
 
 bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall)
 {
+	UnloadPhysics();
 	if (m_nMovementStyle == MOVESTYLE_OPC)
 	{
 		m_fLastSpeed = 0;
@@ -4279,6 +4279,10 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 		}
 		/** uncomment to let the physics radius automatically scales */
 		// SetPhysicsRadius(GetPhysicsRadius()*fScale/fOldScale);
+
+		UnloadPhysics();
+		if (m_dwPhysicsMethod == 0)
+			m_dwPhysicsMethod = PHYSICS_LAZY_LOAD;
 	}
 	else
 	{
@@ -4661,6 +4665,102 @@ ParaEngine::Vector3 ParaEngine::CBipedObject::GetNormal()
 DWORD ParaEngine::CBipedObject::GetPhysicsGroupMask()
 {
 	return m_dwPhysicsGroupMask;
+}
+
+bool ParaEngine::CBipedObject::CanHasPhysics()
+{
+	return IsPhysicsEnabled();
+}
+
+void ParaEngine::CBipedObject::LoadPhysics()
+{
+	if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && GetParaXEntity() && GetParaXEntity()->IsLoaded())
+	{
+		CParaXModel* ppMesh = GetParaXEntity()->GetModel();
+		if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
+		{
+			EnablePhysics(false); // disable physics forever, if failed loading physics data
+			return;
+		}
+
+		// get world transform matrix
+		Matrix4 mxWorld;
+		GetWorldTransform(mxWorld);
+		auto pAI = GetParaXAnimInstance();
+		if (pAI)
+		{
+			pAI->UpdateWorldTransform(CGlobals::GetSceneState(), mxWorld, mxWorld);
+		}
+
+		IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
+		if (m_staticActors.empty())
+		{
+			// disable physics forever, if no physics actors are loaded. 
+			EnablePhysics(false);
+		}
+	}
+}
+
+void ParaEngine::CBipedObject::UnloadPhysics()
+{
+	int nSize = (int)m_staticActors.size();
+	if (nSize > 0)
+	{
+		for (int i = 0; i < nSize; ++i)
+		{
+			CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
+		}
+		m_staticActors.clear();
+	}
+}
+
+void ParaEngine::CBipedObject::SetPhysicsGroup(int nGroup)
+{
+	PE_ASSERT(0 <= nGroup && nGroup < 32);
+	if (m_nPhysicsGroup != nGroup)
+	{
+		m_nPhysicsGroup = nGroup;
+		UnloadPhysics();
+	}
+}
+
+int ParaEngine::CBipedObject::GetPhysicsGroup()
+{
+	return m_nPhysicsGroup;
+}
+
+void ParaEngine::CBipedObject::EnablePhysics(bool bEnable)
+{
+	if (!bEnable){
+		UnloadPhysics();
+		m_dwPhysicsMethod |= PHYSICS_FORCE_NO_PHYSICS;
+	}
+	else
+	{
+		m_dwPhysicsMethod &= (~PHYSICS_FORCE_NO_PHYSICS);
+		if ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD) > 0)
+			LoadPhysics();
+	}
+}
+
+bool ParaEngine::CBipedObject::IsPhysicsEnabled()
+{
+	return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS)>0);
+}
+
+int ParaEngine::CBipedObject::GetStaticActorCount()
+{
+	return (int)m_staticActors.size();
+}
+
+ParaEngine::ParaXEntity* ParaEngine::CBipedObject::GetParaXEntity()
+{
+	auto pAsset = GetPrimaryAsset();
+	if (pAsset && pAsset->GetType() == AssetEntity::parax)
+	{
+		return (ParaXEntity*)pAsset;
+	}
+	return NULL;
 }
 
 void ParaEngine::CBipedObject::SetPhysicsGroupMask(DWORD dwValue)

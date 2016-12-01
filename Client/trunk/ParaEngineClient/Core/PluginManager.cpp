@@ -176,7 +176,28 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	}
 
 	// load the library.
-	CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath);
+	if ( CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath) == 0)
+	{
+		// If dll file is Not found, search in zip archive, if there it is, unpack to a temp position.  
+		if(CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_ZIP_ARCHIVE))
+		{
+			CParaFile file;
+			if (file.OpenFile(sDLLPath.c_str(), true, 0, false, FILE_ON_ZIP_ARCHIVE))
+			{
+				std::string sTargetFile = CParaFile::GetWritablePath() + "temp/plugins/" + CParaFile::GetFileName(sDLLPath);
+				CParaFile::CreateDirectory(sTargetFile.c_str());
+				CParaFile fileTarget;
+				if (fileTarget.OpenFile(sTargetFile.c_str(), false))
+				{
+					fileTarget.SetEndOfFile();
+					fileTarget.write(file.getBuffer(), file.getSize());
+					
+					OUTPUT_LOG("Security warning: dll file %s is deployed from zip archive to %s \n", sDLLPath.c_str(), sTargetFile.c_str());
+					sDLLPath = sTargetFile;
+				}
+			}
+		}
+	}
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
