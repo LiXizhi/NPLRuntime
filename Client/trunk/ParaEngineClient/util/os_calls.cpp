@@ -28,6 +28,16 @@ int ParaEngine::GetThisThreadID()
     return (int)pthread_self();
 #endif
 }
+
+int ParaEngine::GetProcessID()
+{
+#ifdef WIN32
+	return (int)GetCurrentProcessId();
+#else
+	return (int)::getpid();
+#endif
+}
+
 ///////////////////////////////////////////////////////
 //
 // cross platform Load Library

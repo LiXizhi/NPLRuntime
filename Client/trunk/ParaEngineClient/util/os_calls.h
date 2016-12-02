@@ -67,6 +67,8 @@ namespace ParaEngine
 	/** get the id of the calling thread. */
 	PE_CORE_DECL int GetThisThreadID();
 
+	/** get the process id */
+	PE_CORE_DECL int GetProcessID();
 
 	/**
 	* Returns the peak (maximum so far) resident set size (physical
