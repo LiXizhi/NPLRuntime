@@ -316,51 +316,60 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	{
 		// smtp protocol for sending email
 		bIsSMTP = true;
+	}
 
-		if (m_options)
+	if (m_options)
+	{
+		for (auto iter = m_options->begin(); iter != m_options->end(); iter++)
 		{
-			for (auto iter = m_options->begin(); iter != m_options->end(); iter ++)
+			const std::string& sKey = iter->first;
+			if (sKey == "CURLOPT_USERNAME"){
+				curl_easy_setopt(handle, CURLOPT_USERNAME, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_PASSWORD"){
+				curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_SSLCERT"){
+				curl_easy_setopt(handle, CURLOPT_SSLCERT, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_SSLKEY"){
+				curl_easy_setopt(handle, CURLOPT_SSLKEY, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_SSLCERTPASSWD"){
+				curl_easy_setopt(handle, CURLOPT_SSLCERTPASSWD, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_CAINFO"){
+				curl_easy_setopt(handle, CURLOPT_CAINFO, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_CAPATH"){
+				curl_easy_setopt(handle, CURLOPT_CAPATH, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_MAIL_FROM"){
+				curl_easy_setopt(handle, CURLOPT_MAIL_FROM, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_VERBOSE"){
+				curl_easy_setopt(handle, CURLOPT_VERBOSE, iter->second.toInt());
+			}
+			else if (sKey == "CURLOPT_READDATA")
 			{
-				const std::string& sKey = iter->first;
-				if (sKey == "CURLOPT_USERNAME"){
-					curl_easy_setopt(handle, CURLOPT_USERNAME, iter->second.c_str());
-				}
-				else if (sKey == "CURLOPT_PASSWORD"){
-					curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
-				}
-				else if (sKey == "CURLOPT_CAINFO"){
-					curl_easy_setopt(handle, CURLOPT_CAINFO, iter->second.c_str());
-				}
-				else if (sKey == "CURLOPT_CAPATH"){
-					curl_easy_setopt(handle, CURLOPT_CAPATH, iter->second.c_str());
-				}
-				else if (sKey == "CURLOPT_MAIL_FROM"){
-					curl_easy_setopt(handle, CURLOPT_MAIL_FROM, iter->second.c_str());
-				}
-				else if (sKey == "CURLOPT_VERBOSE"){
-					curl_easy_setopt(handle, CURLOPT_VERBOSE, iter->second.toInt());
-				}
-				else if (sKey == "CURLOPT_READDATA")
+				m_pUploadContext = new upload_context(iter->second.c_str(), ((const std::string&)(iter->second)).size());
+				curl_easy_setopt(handle, CURLOPT_READFUNCTION, &CUrl_read_email_payload);
+				curl_easy_setopt(handle, CURLOPT_READDATA, m_pUploadContext);
+			}
+			else if (sKey == "CURLOPT_UPLOAD"){
+				curl_easy_setopt(handle, CURLOPT_UPLOAD, iter->second.toInt());
+			}
+			else if (sKey == "CURLOPT_MAIL_RCPT"){
+				if (iter->second->isString())
+					AppendHTTPHeader(iter->second.c_str());
+				else if (iter->second->isTable())
 				{
-					m_pUploadContext = new upload_context(iter->second.c_str(), ((const std::string&)(iter->second)).size());
-					curl_easy_setopt(handle, CURLOPT_READFUNCTION, &CUrl_read_email_payload);
-					curl_easy_setopt(handle, CURLOPT_READDATA, m_pUploadContext);
-				}
-				else if (sKey == "CURLOPT_UPLOAD"){
-					curl_easy_setopt(handle, CURLOPT_UPLOAD, iter->second.toInt());
-				}
-				else if (sKey == "CURLOPT_MAIL_RCPT"){
-					if (iter->second->isString())
-						AppendHTTPHeader(iter->second.c_str());
-					else if (iter->second->isTable())
+					for (auto iter2 = iter->second.index_begin(); iter2 != iter->second.index_end(); iter2++)
 					{
-						for (auto iter2 = iter->second.index_begin(); iter2 != iter->second.index_end(); iter2++)
-						{
-							AppendHTTPHeader(iter2->second.c_str());
-						}
+						AppendHTTPHeader(iter2->second.c_str());
 					}
-					curl_easy_setopt(handle, CURLOPT_MAIL_RCPT, m_pHttpHeaders);
 				}
+				curl_easy_setopt(handle, CURLOPT_MAIL_RCPT, m_pHttpHeaders);
 			}
 		}
 	}
