@@ -5,6 +5,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 2016.12.9
 	- suppressed warning NPL.FromJson with empty data
 	- certificate supported via options in NPL.AppendUrlRequest();
+	- NPL.AppendUrlRequest now support http PUT/DELETE ,etc. 
 
 2016.12.1
 	- ParaEngine attribute "ProcessId" added. 

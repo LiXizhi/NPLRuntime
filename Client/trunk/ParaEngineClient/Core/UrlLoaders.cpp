@@ -312,6 +312,7 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_URL, m_url.c_str());
 
 	bool bIsSMTP = false;
+	bool bIsCustomRequest = false;
 	if (m_url.size() > 5 && m_url[0] == 's' && m_url[1] == 'm' && m_url[2] == 't' && m_url[3] == 'p')
 	{
 		// smtp protocol for sending email
@@ -328,6 +329,10 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 			}
 			else if (sKey == "CURLOPT_PASSWORD"){
 				curl_easy_setopt(handle, CURLOPT_PASSWORD, iter->second.c_str());
+			}
+			else if (sKey == "CURLOPT_CUSTOMREQUEST") {
+				bIsCustomRequest = true;
+				curl_easy_setopt(handle, CURLOPT_CUSTOMREQUEST, iter->second.c_str());
 			}
 			else if (sKey == "CURLOPT_SSLCERT"){
 				curl_easy_setopt(handle, CURLOPT_SSLCERT, iter->second.c_str());
@@ -419,7 +424,10 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 		curl_easy_setopt(handle, CURLOPT_HTTPHEADER, m_pHttpHeaders);
 		// form if any. 
 		curl_easy_setopt(handle, CURLOPT_HTTPPOST, m_pFormPost);
-		curl_easy_setopt(handle, CURLOPT_HTTPGET, m_pFormPost ? 0 : 1);
+		if (!bIsCustomRequest) {
+			curl_easy_setopt(handle, CURLOPT_HTTPGET, m_pFormPost ? 0 : 1);
+		}
+			
 		if (m_pFormPost == 0 && !m_sRequestData.empty())
 		{
 			curl_easy_setopt(handle, CURLOPT_POSTFIELDS, m_sRequestData.c_str());
