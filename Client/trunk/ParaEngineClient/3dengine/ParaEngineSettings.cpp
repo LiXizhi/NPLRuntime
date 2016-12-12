@@ -712,7 +712,11 @@ const char* ParaEngine::ParaEngineSettings::GetAppCommandLineByParam( const char
 
 Vector2 ParaEngine::ParaEngineSettings::GetScreenResolution()
 {
+#ifdef PARAENGINE_MOBILE
+	Vector2 res(1920, 1080);
+#else
 	Vector2 res(1280, 720);
+#endif
 	if (CGlobals::GetApp()) {
 		CGlobals::GetApp()->GetScreenResolution(&res);
 	}
