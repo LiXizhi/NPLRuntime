@@ -756,6 +756,11 @@ void ParaEngine::CBaseObject::EnablePhysics(bool bEnable)
 
 }
 
+void ParaEngine::CBaseObject::SetAlwaysLoadPhysics(bool bEnable)
+{
+	EnablePhysics(bEnable);
+}
+
 bool ParaEngine::CBaseObject::IsPhysicsEnabled()
 {
 	return false;

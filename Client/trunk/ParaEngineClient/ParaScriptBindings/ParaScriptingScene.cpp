@@ -331,6 +331,7 @@ void ParaObject::LoadPhysics()
 {
 	if(IsValid())
 	{
+		m_pObj->SetAlwaysLoadPhysics(true);
 		m_pObj->LoadPhysics();
 	}
 }

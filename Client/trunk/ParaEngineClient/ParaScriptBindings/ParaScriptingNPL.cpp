@@ -1107,7 +1107,7 @@ namespace ParaScripting
 #endif
 	bool CNPL::FromJson( const char* sJson, const object& output )
 	{
-		if(sJson == NULL || type(output) != LUA_TTABLE )
+		if (sJson == NULL || sJson[0] == '\0' || type(output) != LUA_TTABLE)
 			return false;
 		try
 		{
