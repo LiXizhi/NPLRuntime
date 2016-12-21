@@ -9,8 +9,10 @@
 // Cross-platform type definitions
 #ifdef WIN32
 #ifndef PARAENGINE_CLIENT
+#ifndef WIN32_LEAN_AND_MEAN
 /* Prevent inclusion of winsock.h in windows.h, otherwise boost::Asio will produce error in ParaEngineServer project: WinSock.h has already been included*/ 
 #define WIN32_LEAN_AND_MEAN    
+#endif
 #endif
 #include <windows.h>
 #include <stdio.h>

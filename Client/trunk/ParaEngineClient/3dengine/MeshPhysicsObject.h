@@ -208,6 +208,11 @@ namespace ParaEngine
 		*/
 		virtual void UnloadPhysics();
 
+		/** by default physics is lazy-load when player walk into its bounding box, setting this to false will always load the physics.
+		* Please note, one must EnablePhysics(true) before this one takes effect.
+		*/
+		virtual void SetAlwaysLoadPhysics(bool bEnable);
+
 		/** this function is called, when the object is in view range. we may need to load the primary asset to update the bounding box, etc.
 		* @return true if the object is ready to be rendered.
 		*/

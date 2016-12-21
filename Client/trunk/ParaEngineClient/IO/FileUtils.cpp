@@ -901,7 +901,7 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #elif defined(USE_BOOST_FILE_API)
 	fs::path sWorkingDir = fs::initial_path();
 #ifndef WIN32
-	sWorkingDir = fs::path("/"+sWorkingDir.string());
+	sWorkingDir = fs::path(sWorkingDir.string());
 #endif
 	std::string sRootDir;
 	CParaFile::ToCanonicalFilePath(sRootDir, sWorkingDir.string(), false);

@@ -304,6 +304,10 @@ void CMeshPhysicsObject::SetParamsFromAsset()
 			else
 				m_dwPhysicsMethod = PHYSICS_FORCE_NO_PHYSICS;
 		}
+		else if (IsPhysicsEnabled() && ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD) > 0))
+		{
+			LoadPhysics();
+		}
 
 		//if(GetTileContainer())
 		//{
@@ -813,6 +817,18 @@ void ParaEngine::CMeshPhysicsObject::SetRadius( FLOAT fRadius )
 	CTileObject::SetRadius(fRadius);
 	if(m_pMeshObject)
 		m_pMeshObject->SetRadius(fRadius);
+}
+
+void ParaEngine::CMeshPhysicsObject::SetAlwaysLoadPhysics(bool bEnable)
+{
+	if (bEnable)
+	{
+		m_dwPhysicsMethod |= PHYSICS_ALWAYS_LOAD;
+	}
+	else
+	{
+		m_dwPhysicsMethod &= (~PHYSICS_ALWAYS_LOAD);
+	}
 }
 
 bool ParaEngine::CMeshPhysicsObject::ViewTouch()

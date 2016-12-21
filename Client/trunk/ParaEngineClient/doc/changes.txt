@@ -2,9 +2,20 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.12.13
+	- force physics added for mesh and bmax model.
+
+2016.12.9
+	- suppressed warning NPL.FromJson with empty data
+	- certificate supported via options in NPL.AppendUrlRequest();
+	- NPL.AppendUrlRequest now support http PUT/DELETE ,etc. 
+
+2016.12.1
+	- ParaEngine attribute "ProcessId" added. 
+
 2016.11.23
 	- biped object now support baking static physics.
-
+	
 2016.11.17
 	- paraengine plugins can now be loaded in a zip archive.
 
