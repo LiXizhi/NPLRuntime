@@ -97,6 +97,8 @@ namespace ParaScripting
 		*/
 		void seek(int offset);
 		void seekRelative(int offset);
+		/** get current reader or writer cursor position offset in bytes*/
+		int getpos();
 
 		/**
 		* The SetFilePointer function moves the file pointer of an open file.
@@ -118,8 +120,6 @@ namespace ParaScripting
 		*/
 		bool SetEndOfFile();
 
-		/** write a string to the current file. */
-		void WriteString(const char* str);
 		void writeline(const char* str);
 		/** read line as a string. The string is guaranteed to be ended with '\0'.
 		* if end of file is reached, it will return NULL. which is nil in the script.
@@ -131,11 +131,21 @@ namespace ParaScripting
 		/** get the content of the file as text. Text encoding is escaped. If you want to get the raw file text with the heading BOM, such as utf8 (EE BB BF), use GetText2(0,-1)*/
 		const char* GetText();
 
-		/** get the content of the file as text between two Log positions.
+		/** get the content of the file as text between two positions.
 		* @param fromPos: position in bytes.
-		* @param nCount: nCount in bytes. if -1, it defaults to end of log file.
+		* @param nCount: nCount in bytes. if -1, it defaults to end of file.
 		*/
 		const std::string& GetText2(int fromPos, int nCount);
+
+		/** read a binary string of length nCount from current position. 
+		* @param nCount: nCount in bytes. if -1, it defaults to end of file.
+		*/
+		const std::string& ReadString(int nCount);
+
+		/** write a string to the current file. */
+		void WriteString(const char* str);
+		/** write a buffer to the current file. */
+		void WriteString2(const char* buffer, int nSize);
 
 		/** write a buffer to the current file. */
 		void write(const char* buffer, int nSize);
@@ -171,6 +181,14 @@ namespace ParaScripting
 		/** integer is 32 bits*/
 		void WriteInt(int value);
 		int ReadInt();
+
+		/** integer is 16 bits signed int*/
+		void WriteShort(int value);
+		int ReadShort();
+
+		/** integer is 32 bits unsigned*/
+		void WriteUInt(unsigned int value);
+		unsigned int ReadUInt();
 
 		/** get the file size in bytes. */
 		int GetFileSize();
