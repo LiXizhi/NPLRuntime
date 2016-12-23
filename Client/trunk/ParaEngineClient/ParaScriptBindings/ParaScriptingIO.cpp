@@ -1203,6 +1203,46 @@ namespace ParaScripting
 		}
 		return 0.f;
 	}
+
+	void ParaFileObject::WriteWord(int value)
+	{
+		if (IsValid())
+		{
+			uint16 data_ = value;
+			m_pFile->write(&data_, 2);
+		}
+	}
+
+	int ParaFileObject::ReadWord()
+	{
+		if (IsValid())
+		{
+			uint16 data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteDouble(double data)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&data, 8);
+		}
+	}
+
+	double ParaFileObject::ReadDouble()
+	{
+		if (IsValid())
+		{
+			double data;
+			m_pFile->read(&data, 8);
+			return data;
+		}
+		return 0;
+	}
+
 	void ParaFileObject::WriteInt(int data)
 	{
 		if(IsValid())

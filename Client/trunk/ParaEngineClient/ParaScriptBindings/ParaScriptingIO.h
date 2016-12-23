@@ -160,6 +160,14 @@ namespace ParaScripting
 		/** float is 32 bits*/
 		void WriteFloat(float value);
 		float ReadFloat();
+
+		/** integer is converted 16 bits unsigned word*/
+		void WriteWord(int value);
+		int ReadWord();
+
+		void WriteDouble(double value);
+		double ReadDouble();
+
 		/** integer is 32 bits*/
 		void WriteInt(int value);
 		int ReadInt();
