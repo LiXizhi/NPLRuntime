@@ -713,7 +713,9 @@ const char* ParaEngine::ParaEngineSettings::GetAppCommandLineByParam( const char
 Vector2 ParaEngine::ParaEngineSettings::GetScreenResolution()
 {
 #ifdef PARAENGINE_MOBILE
-	Vector2 res(1920, 1080);
+	//cellfy: this setting has no effect on real mobile devices, it only affects the emulator program
+	//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
+	Vector2 res(1600, 900);
 #else
 	Vector2 res(1280, 720);
 #endif

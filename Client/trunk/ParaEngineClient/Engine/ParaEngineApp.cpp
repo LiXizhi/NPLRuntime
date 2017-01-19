@@ -298,7 +298,9 @@ void CParaEngineApp::LoadAndApplySettings()
 	else
 	{
 #ifdef PARAENGINE_MOBILE
-		m_dwCreationWidth = 1920;
+		//cellfy: this setting has no effect on real mobile devices, it only affects the emulator program
+		//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
+		m_dwCreationWidth = 1600;
 #else
 		m_dwCreationWidth = 1280;
 #endif
@@ -309,7 +311,7 @@ void CParaEngineApp::LoadAndApplySettings()
 	else
 	{
 #ifdef PARAENGINE_MOBILE
-		m_dwCreationHeight = 1080;
+		m_dwCreationHeight = 900;
 #else
 		m_dwCreationHeight = 720;
 #endif
