@@ -1095,7 +1095,33 @@ namespace ParaScripting
 		return m_sTempBuffer;
 	}
 
-	void ParaFileObject::write( const char* buffer, int nSize )
+	const std::string& ParaFileObject::ReadString(int nCount)
+	{
+		// this is now thread-safe and multiple instance can be used at the same time
+		m_sTempBuffer.clear();
+		if (IsValid())
+		{
+			int fromPos = (int)m_pFile->getPos();
+
+			int nSize = (int)m_pFile->getSize();
+			if (nCount < 0)
+				nCount = nSize - fromPos;
+			if (nCount > 0)
+			{
+				m_sTempBuffer.resize(nCount);
+				memcpy((char*)(&(m_sTempBuffer[0])), m_pFile->getBuffer() + fromPos, nCount);
+				m_pFile->seekRelative(nCount);
+			}
+		}
+		return m_sTempBuffer;
+	}
+
+	void ParaFileObject::WriteString2(const char* buffer, int nSize)
+	{
+		return write(buffer, nSize);
+	}
+
+	void ParaFileObject::write(const char* buffer, int nSize)
 	{
 		if(IsValid())
 		{
@@ -1119,7 +1145,16 @@ namespace ParaScripting
 		}
 	}
 
-	void ParaFileObject::SetFilePointer( int lDistanceToMove,int dwMoveMethod )
+	int ParaFileObject::getpos()
+	{
+		if (IsValid())
+		{
+			return m_pFile->getPos();
+		}
+		return 0;
+	}
+
+	void ParaFileObject::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 	{
 		if(IsValid())
 		{
@@ -1203,18 +1238,107 @@ namespace ParaScripting
 		}
 		return 0.f;
 	}
+
+	void ParaFileObject::WriteWord(int value)
+	{
+		if (IsValid())
+		{
+			if (value >= 0)
+			{
+				uint16 data_ = value;
+				m_pFile->write(&data_, 2);
+			}
+			else
+			{
+				int16 data_ = (int16)value;
+				m_pFile->write(&data_, 2);
+			}
+		}
+	}
+
+	int ParaFileObject::ReadWord()
+	{
+		if (IsValid())
+		{
+			uint16 data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteDouble(double data)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&data, 8);
+		}
+	}
+
+	double ParaFileObject::ReadDouble()
+	{
+		if (IsValid())
+		{
+			double data;
+			m_pFile->read(&data, 8);
+			return data;
+		}
+		return 0;
+	}
+
 	void ParaFileObject::WriteInt(int data)
 	{
 		if(IsValid())
 		{
-			m_pFile->write(&data, 4);
+			int32 data_ = (int32)data;
+			m_pFile->write(&data_, 4);
 		}
 	}
 	int ParaFileObject::ReadInt()
 	{
 		if(IsValid())
 		{
-			int data;
+			int32 data;
+			m_pFile->read(&data, 4);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteShort(int value)
+	{
+		if (IsValid())
+		{
+			int16 data_ = (int16)value;
+			m_pFile->write(&data_, 2);
+		}
+	}
+
+	int ParaFileObject::ReadShort()
+	{
+		if (IsValid())
+		{
+			int16 data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteUInt(unsigned int value)
+	{
+		if (IsValid())
+		{
+			uint32 data_ = (uint32)value;
+			m_pFile->write(&data_, 4);
+		}
+	}
+
+	unsigned int ParaFileObject::ReadUInt()
+	{
+		if (IsValid())
+		{
+			uint32 data;
 			m_pFile->read(&data, 4);
 			return data;
 		}

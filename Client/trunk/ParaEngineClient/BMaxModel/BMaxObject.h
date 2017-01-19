@@ -53,6 +53,10 @@ namespace ParaEngine
 		/** if the object may contain physics*/
 		virtual bool CanHasPhysics();
 		virtual void LoadPhysics();
+		/** by default physics is lazy-load when player walk into its bounding box, setting this to false will always load the physics.
+		* Please note, one must EnablePhysics(true) before this one takes effect.
+		*/
+		virtual void SetAlwaysLoadPhysics(bool bEnable);
 		virtual void UnloadPhysics();
 		virtual void SetPhysicsGroup(int nGroup);
 		virtual int GetPhysicsGroup();
