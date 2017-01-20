@@ -462,6 +462,8 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 		{
 #ifdef PARAENGINE_MOBILE
 			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
+			if (CParaFile::DoesFileExist("paperbox900.pkg") || CParaFile::DoesFileExist("paperbox900.zip"))
+				fileList.push_back("paperbox900.zip");
 			if (CParaFile::DoesFileExist("paperbox006.pkg") || CParaFile::DoesFileExist("paperbox006.zip"))
 				fileList.push_back("paperbox006.zip");
 			if (CParaFile::DoesFileExist("paperbox005.pkg") || CParaFile::DoesFileExist("paperbox005.zip"))
