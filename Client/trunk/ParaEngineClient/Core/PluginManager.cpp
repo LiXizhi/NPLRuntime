@@ -159,19 +159,15 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	// replace sDLLPath's file extension with 'dll', it is 'so'. remove the heading 'lib' if there is one
 	if(sDLLPath.size()>5)
 	{
+#ifdef WIN32
 		// remove the heading 'lib' if there is one
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		// replace sDLLPath's file extension with 'dll', it is 'so'
 		sDLLPath = regex_replace(sDLLPath, regex("so$"), "dll");
-
-#ifndef	WIN32
-		// if there is no slash in the file name, add './' to load only from the current directory. 
-		if( sDLLPath.find("\\/") == string::npos)
-		{
-			sDLLPath = std::string("./")+sDLLPath;
-		}
-		fs::path filenamePath(sDLLPath);
-		sDLLPath = filenamePath.string();
+#else
+		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
+		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]*)$"), "lib$1");
+		sDLLPath = regex_replace(sDLLPath, regex("dll$"), "so");
 #endif
 	}
 
@@ -201,6 +197,13 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
+	// if there is no slash in the file name, add './' to load only from the current directory. 
+	if (sDLLPath.find("\\/") == string::npos)
+	{
+		sDLLPath = std::string("./") + sDLLPath;
+	}
+	fs::path filenamePath(sDLLPath);
+	sDLLPath = filenamePath.string();
 	m_hDLL = ParaEngine::LoadLibrary(sDLLPath.c_str(), RTLD_LOCAL | RTLD_LAZY);
 #endif
 
