@@ -166,7 +166,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		sDLLPath = regex_replace(sDLLPath, regex("so$"), "dll");
 #else
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
-		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]*)$"), "lib$1");
+		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
 		sDLLPath = regex_replace(sDLLPath, regex("dll$"), "so");
 #endif
 	}
