@@ -617,11 +617,12 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 		// if it is a folder, we will add as NPL module
 		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
 	}
-	else if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
+	else if (nSize > 5 && (filepath[nSize - 3] != 'l' && filepath[nSize - 3] != 'n') /* skip *.lua (npl) file */)
 	{
-		// for dll plug-in files
-		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')
+		if ((filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l') ||
+			(filepath[nSize - 3] == '.' && filepath[nSize - 2] == 's' && filepath[nSize - 1] == 'o'))
 		{
+			// for *.dll and *.so plug-in files
 			if (filepath[nSize - 5] != '*')
 			{
 				DLL_Plugin_Map_Type::iterator iter = m_dll_plugins_map.find(filepath);
