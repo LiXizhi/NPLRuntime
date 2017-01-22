@@ -676,11 +676,12 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& fil
 	CMarkProcessing is_processing_(&m_bIsProcessing);
 
 	int nSize = (int)filepath.size();
-	if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
+	if (nSize > 5 && (filepath[nSize - 3] != 'l' && filepath[nSize - 3] != 'n') /* skip *.lua (npl) file */)
 	{
-		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')
+		if ( (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l') || 
+			 (filepath[nSize - 3] == '.' && filepath[nSize - 2] == 's' && filepath[nSize - 1] == 'o'))
 		{
-			// for *.dll plug-in files
+			// for *.dll and *.so plug-in files
 			ParaEngine::DLLPlugInEntity* pPluginEntity = NULL;
 			DLL_Plugin_Map_Type::iterator iter = m_dll_plugins_map.find(filepath);
 			if (iter == m_dll_plugins_map.end())

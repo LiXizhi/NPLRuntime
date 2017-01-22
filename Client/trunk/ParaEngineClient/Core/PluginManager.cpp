@@ -20,6 +20,8 @@
 namespace fs = boost::filesystem;
 
 using namespace ParaEngine;
+/*@def undefine this if all dll interface function must be defined.  */
+#define NONE_STRICT_NPL_DLL_INTERFACE
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -233,6 +235,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibDescription method\r\n", sDLLPath.c_str());
 #else
@@ -243,6 +246,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 
 		lpFnLibVersion pLibVersion = (lpFnLibVersion)ParaEngine::GetProcAddress(m_hDLL, "LibVersion");
@@ -260,6 +264,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibVersion method\r\n", sDLLPath.c_str());
 #else
@@ -270,6 +275,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 		int nClassNum=0;
 
@@ -283,6 +289,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibNumberClasses method\r\n", sDLLPath.c_str());
 #else
@@ -293,6 +300,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 		lpFnLibClassDesc pLibClassDesc = (lpFnLibClassDesc)ParaEngine::GetProcAddress(m_hDLL, "LibClassDesc");
 		if (pLibDescription != 0)
@@ -313,6 +321,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibClassDesc method\r\n", sDLLPath.c_str());
 #else
@@ -323,6 +332,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 
 #ifdef WIN32

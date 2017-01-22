@@ -21,6 +21,9 @@
 /** @def if defined. we will use the luajit recommended way to open lua states and load library. */
 // #define USE_LUAJIT
 
+/** @def this file is loaded before compiling */
+#define NPL_META_COMPILER_SRC  "script/ide/System/Compiler/nplc.lua"
+
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.
@@ -458,14 +461,65 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			if (codesize>0)
 			{
 				CFileNameStack pushStack(this, filePath);
-				/** Load and execute the a buffer of code in protected mode ( lua_pcall() )
-				Output messages through log interface */
+				int nSize = (int)sFileName.size();
+				if (nSize > 5 && sFileName[nSize - 4] == '.' && sFileName[nSize - 3] == 'n' && sFileName[nSize - 2] == 'p' && sFileName[nSize - 1] == 'l')
+				{
+					// for *.npl file, invoke meta-compiler NPL.loadstring(code, filename) first. 
+					if (!IsScriptFileLoaded(NPL_META_COMPILER_SRC))
+					{
+						if (!LoadFile(NPL_META_COMPILER_SRC, false))
+						{
+							OUTPUT_LOG("warning: NPL meta compiler not found. \n");
+							return false;
+						}
+					}
 
-				int nResult = luaL_loadbuffer(m_pState, codebuf, codesize, filePath.c_str());
-				if (nResult == 0) {
-					nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+					const char actTable[] = "NPL";
+					lua_pushlstring(m_pState, actTable, sizeof(actTable) - 1);
+					lua_gettable(m_pState, LUA_GLOBALSINDEX);
+					if (lua_istable(m_pState, -1))
+					{
+						std::string funcName = "loadstring";
+						lua_pushlstring(m_pState, funcName.c_str(), funcName.size());
+						lua_gettable(m_pState, -2);
+						if (lua_isfunction(m_pState, -1))
+						{
+							int top = lua_gettop(m_pState);
+							lua_pushlstring(m_pState, codebuf, codesize);
+							lua_pushlstring(m_pState, filePath.c_str(), filePath.size());
+							// call the function with 2 arguments and multi result, with no error handling routine
+							int nResult = lua_pcall(m_pState, 2, LUA_MULTRET, 0);
+							int num_results = lua_gettop(m_pState) - top + 1;
+							if (nResult == 0 && num_results > 0)
+							{
+								if (lua_isfunction(m_pState, -1)) 
+								{
+									nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+								}
+								lua_pop(m_pState, num_results);
+							}
+							ProcessResult(nResult);
+						}
+						else
+						{
+							OUTPUT_LOG("warning: no NPL.loadstring function not found when compiling %s\n", filePath.c_str());
+							lua_pop(m_pState, 1);
+						}
+					}
+					// pops the element, so that the stack is balanced.
+					lua_pop(m_pState, 1);
 				}
-				ProcessResult(nResult);
+				else
+				{
+					/** for standard lua file, Load and execute the a buffer of code in protected mode ( lua_pcall() )
+					Output messages through log interface */
+
+					int nResult = luaL_loadbuffer(m_pState, codebuf, codesize, filePath.c_str());
+					if (nResult == 0) {
+						nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+					}
+					ProcessResult(nResult);
+				}
 			}
 		}
 		else
