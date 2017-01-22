@@ -1521,7 +1521,19 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 			{
 				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, false);
 				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, true);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(3);
+				ClearBlockRenderCache();
+			}
+		}
+		else if (sTextureName.find("_four") != std::string::npos)
+		{
+			if (pTemplate->IsMatchAttribute(BlockTemplate::batt_singleSideTex))
+			{
+				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, true);
+				pTemplate->GetBlockModel().LoadModelByTexture(4);
 				ClearBlockRenderCache();
 			}
 		}
@@ -1531,6 +1543,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 			{
 				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, true);
 				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(0);
 				ClearBlockRenderCache();
 			}

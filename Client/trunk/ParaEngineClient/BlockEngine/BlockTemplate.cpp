@@ -116,6 +116,8 @@ namespace ParaEngine
 
 		if (IsMatchAttribute(BlockTemplate::batt_threeSideTex))
 			uvPattern = 3;
+		else if (IsMatchAttribute(BlockTemplate::batt_fourSideTex))
+			uvPattern = 4;
 		else if (IsMatchAttribute(BlockTemplate::batt_sixSideTex))
 			uvPattern = 6;
 
