@@ -1007,8 +1007,15 @@ bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 			xmesh.showGeosets[i] = true;
 
 		xmesh.geosets.resize(nGeosets);
-		if(nGeosets>0)
-			memcpy(&xmesh.geosets[0],pGeosets, sizeof(ModelGeoset)*nGeosets);
+		if (nGeosets > 0) {
+			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
+			// disable vertex start for parax file, since we only support uint16 indices. 
+			for (int i = 1; i < nGeosets;++i)
+			{
+				xmesh.geosets[i].SetVertexStart(0);
+			}
+		}
+			
 	}
 	else
 		return false;

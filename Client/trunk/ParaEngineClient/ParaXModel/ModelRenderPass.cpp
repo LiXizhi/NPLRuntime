@@ -234,7 +234,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	if(is_rigid_body)
 	{
 		Matrix4 mat, mat1;
-		mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart]]).bones[0]].mat;
+		mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart]+GetVertexStart(m)]).bones[0]].mat;
 		mat = mat1 * CGlobals::GetWorldMatrixStack().SafeGetTop();
 		CGlobals::GetWorldMatrixStack().push(mat);
 		pEffect->applyWorldMatrices();
@@ -485,7 +485,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	if(is_rigid_body)
 	{
 		Matrix4 mat, mat1;
-		mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart]]).bones[0]].mat;
+		mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart]+GetVertexStart(m)]).bones[0]].mat;
 		mat = mat1 * CGlobals::GetWorldMatrixStack().SafeGetTop();
 		CGlobals::GetWorldMatrixStack().push(mat);
 		pd3dDevice->SetTransform(D3DTS_WORLD, mat.GetConstPointer());
