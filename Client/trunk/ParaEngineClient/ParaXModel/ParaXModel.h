@@ -196,7 +196,7 @@ namespace ParaEngine
 	
 		void RenderNoAnim(SceneState* pSceneState);
 		void RenderSoftAnim(SceneState* pSceneState,CParameterBlock* pMaterialParams=NULL);
-		void RenderSoftNoAnim(SceneState* pSceneState);
+		void RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderShaderAnim(SceneState* pSceneState);
 		void RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		/** only called inside Render* function*/

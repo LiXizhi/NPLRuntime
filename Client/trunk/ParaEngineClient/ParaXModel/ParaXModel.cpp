@@ -750,7 +750,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	pd3dDevice->SetIndices(0);
 }
 
-void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
+void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
 {
 	int nPasses = (int)passes.size();
 	if (nPasses <= 0)
@@ -875,7 +875,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
 						}
 #else
 						// do not combine render pass. this appears to be faster than combined render passes. 
-						if (p.init_FX(this, pSceneState))
+						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
 							pEffect->CommitChanges();
 							DrawPass_NoAnim(p);
@@ -1437,7 +1437,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-		RenderSoftNoAnim(pSceneState);
+		RenderSoftNoAnim(pSceneState, pMaterialParam);
 		break;
 	case BMAX_MODEL:
 		RenderBMaxModel(pSceneState, pMaterialParam);
