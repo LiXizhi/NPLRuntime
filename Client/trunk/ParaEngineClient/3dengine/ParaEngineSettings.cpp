@@ -1290,7 +1290,11 @@ void ParaEngine::ParaEngineSettings::SetHasClosingRequest(bool val)
 
 int ParaEngine::ParaEngineSettings::GetAppHWND()
 {
+#if defined (PLATFORM_WINDOWS)
 	return (int)CGlobals::GetAppHWND();
+#else
+	return 0;
+#endif
 }
 
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
