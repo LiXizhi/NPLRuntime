@@ -492,11 +492,20 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 							int num_results = lua_gettop(m_pState) - top + 1;
 							if (nResult == 0 && num_results > 0)
 							{
+								int top = lua_gettop(m_pState);
 								if (lua_isfunction(m_pState, -1)) 
 								{
 									nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+									int num_results = lua_gettop(m_pState) - top + 1;
+									if (nResult == 0 && num_results > 0)
+									{
+										lua_pop(m_pState, num_results);
+									}
 								}
-								lua_pop(m_pState, num_results);
+								else 
+								{
+									lua_pop(m_pState, num_results);
+								}
 							}
 							ProcessResult(nResult);
 						}

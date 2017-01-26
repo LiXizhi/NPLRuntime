@@ -6,6 +6,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 	- npl extension and meta compiler integrated. 
 	- FBX parser now support unlimited vertices provided they are in increasing order. 
 	- fixed transparency of static fbx model
+	- fixed npl compiler with nested npl load
 
 2016.12.13
 	- force physics added for mesh and bmax model.
