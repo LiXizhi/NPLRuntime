@@ -11,6 +11,7 @@
 #include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
 #include "util/bitlib_lua.h"
+#include "util/lua_pack.h"
 
 using namespace ParaEngine;
 
@@ -240,6 +241,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	lua_register(L, "luaopen_sqlite3", luaopen_sqlite3);
 	// load bit lib
 	lua_register(L, "luaopen_bit", luaopen_bit_local);
+	// load string.pack
+	lua_register(L, "luaopen_lua_pack", luaopen_lua_pack);
 
 #if defined(USE_NPL_CURL)
 	// load cURL
