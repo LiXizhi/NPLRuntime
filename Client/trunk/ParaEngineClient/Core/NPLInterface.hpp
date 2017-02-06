@@ -11,7 +11,6 @@
 * this is usually required by C++/CLI project, where no static variable can be used.
 */
 // #define DISABLE_STATIC_VARIABLE
-
 #include <boost/intrusive_ptr.hpp>
 #include "PEtypes.h"
 #include "NPLTypes.h"
@@ -40,23 +39,7 @@
 #define snprintf _snprintf
 #endif
 
-namespace boost
-{
-	template <typename T>
-	void intrusive_ptr_add_ref(T* ref)
-	{
-		// increment reference count of object *ref
-		++(ref->m_ref_count);
-	}
 
-	template <typename T>
-	void intrusive_ptr_release(T* ref)
-	{
-		// decrement reference count, and delete object when reference count reaches 0
-		if (--(ref->m_ref_count) == 0)
-			delete ref;
-	}
-}
 namespace NPLInterface
 {
 	/** single-threaded reference counted base class for boost::intrusive_ptr
@@ -78,10 +61,25 @@ namespace NPLInterface
 		intrusive_ptr_single_thread_base() : m_ref_count(0){};
 		virtual ~intrusive_ptr_single_thread_base(){};
 	};
-}
-template void boost::intrusive_ptr_add_ref(NPLInterface::intrusive_ptr_single_thread_base*);
-template void boost::intrusive_ptr_release(NPLInterface::intrusive_ptr_single_thread_base*);
 
+	/** Here we defined these two functions in NPLInterface namespace other than boost namespace, 
+	this requires a modern compiler with dependency name lookup*/
+
+	template <typename T>
+	void intrusive_ptr_add_ref(T* ref)
+	{
+		// increment reference count of object *ref
+		++(ref->m_ref_count);
+	}
+
+	template <typename T>
+	void intrusive_ptr_release(T* ref)
+	{
+		// decrement reference count, and delete object when reference count reaches 0
+		if (--(ref->m_ref_count) == 0)
+			delete ref;
+	}
+}
 #pragma endregion CommonHeaders
 
 namespace NPLInterface

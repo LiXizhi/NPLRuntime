@@ -2765,7 +2765,14 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			float fLastSpeedVertical = m_fSpeedVertical;
 			m_fSpeedVertical -= fGravity*(float)dTimeDelta;
 			float dY = (float)dTimeDelta*(m_fSpeedVertical + fLastSpeedVertical) / 2.f;
-			m_vPos.y += dY;
+			if (dY > 0.f)
+			{
+				m_vPos.y += dY;
+			}
+			else
+			{
+				m_fSpeedVertical = 0.f;
+			}
 		}
 		else
 		{
@@ -2832,6 +2839,9 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	}
 	if (bUseMinMaxBox)
 	{
+		// this fixed a bug for walking on slab blocks
+		if (m_vPos.y < vMinPos.y && m_fSpeedVertical < 0)
+			m_fSpeedVertical = 0.f;
 		BlockCommon::ConstrainPos(m_vPos, vMinPos, vMaxPos);
 	}
 	return bReachPos;

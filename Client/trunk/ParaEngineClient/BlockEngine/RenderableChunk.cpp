@@ -571,7 +571,7 @@ namespace ParaEngine
 	{
 		int32 totalFaceCount = 0;
 		int32 cachedGroupIdx = 0;
-		uint16_t nSize = pChunk->m_blockIndices.size();
+		uint16_t nSize = (uint16_t)pChunk->m_blockIndices.size();
 		std::map < int32_t, int > & instance_map = GetInstanceMap();
 		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
 

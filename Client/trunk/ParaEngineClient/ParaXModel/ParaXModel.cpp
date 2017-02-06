@@ -750,7 +750,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	pd3dDevice->SetIndices(0);
 }
 
-void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
+void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
 {
 	int nPasses = (int)passes.size();
 	if (nPasses <= 0)
@@ -875,7 +875,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
 						}
 #else
 						// do not combine render pass. this appears to be faster than combined render passes. 
-						if (p.init_FX(this, pSceneState))
+						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
 							pEffect->CommitChanges();
 							DrawPass_NoAnim(p);
@@ -1153,6 +1153,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
+	int nVertexOffset = p.GetVertexStart(this);
 	ModelVertex *ov = m_origVertices;
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
@@ -1170,7 +1171,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 				int nVB = 3 * i;
 				for (int k = 0; k < 3; ++k, ++nVB)
 				{
-					int a = m_indices[nIndexOffset + nVB];
+					int a = m_indices[nIndexOffset + nVB] + nVertexOffset;
 					mesh_vertex_normal& out_vertex = vb_vertices[nVB];
 					// weighted vertex
 					ov = m_origVertices + a;
@@ -1221,6 +1222,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			bmax_vertex  vertex;
 			int nIndexOffset = p.m_nIndexStart + nNumFinishedVertice;
 			int nVertexOffset = p.GetVertexStart(this);
+			ModelVertex* origVertices = m_origVertices + nVertexOffset;
 			if (HasAnimation())
 			{
 				for (int i = 0; i < nLockedNum; ++i)
@@ -1231,7 +1233,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 						int a = m_indices[nIndexOffset + nVB];
 						bmax_vertex& out_vertex = vb_vertices[nVB];
 						// weighted vertex
-						ov = m_origVertices + nVertexOffset + a;
+						ov = origVertices + a;
 
 						float weight = ov->weights[0] * (1 / 255.0f);
 						Bone& bone = bones[ov->bones[0]];
@@ -1258,7 +1260,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 					{
 						uint16 a = m_indices[nIndexOffset + nVB];
 						bmax_vertex& out_vertex = vb_vertices[nVB];
-						ov = m_origVertices + a;
+						ov = origVertices + a;
 						out_vertex.p = ov->pos;
 						out_vertex.n = ov->normal;
 						out_vertex.color = ov->color0;
@@ -1306,6 +1308,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
+	int nVertexOffset = p.GetVertexStart(this);
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
@@ -1329,7 +1332,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 					int nVB = 3 * i;
 					for (int k = 0; k < 3; ++k, ++nVB)
 					{
-						int a = m_indices[nIndexOffset + nVB];
+						int a = m_indices[nIndexOffset + nVB] + nVertexOffset;
 						mesh_vertex_normal& out_vertex = vb_vertices[nVB];
 						// weighted vertex
 						ov = m_origVertices + a;
@@ -1434,7 +1437,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-		RenderSoftNoAnim(pSceneState);
+		RenderSoftNoAnim(pSceneState, pMaterialParam);
 		break;
 	case BMAX_MODEL:
 		RenderBMaxModel(pSceneState, pMaterialParam);
