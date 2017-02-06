@@ -11,6 +11,7 @@
 #include "ParaEngineSettings.h"
 #include "util/StringHelper.h"
 #include "util/bitlib_lua.h"
+#include "util/lua_pack.h"
 
 using namespace ParaEngine;
 
@@ -240,6 +241,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	lua_register(L, "luaopen_sqlite3", luaopen_sqlite3);
 	// load bit lib
 	lua_register(L, "luaopen_bit", luaopen_bit_local);
+	// load string.pack
+	lua_register(L, "luaopen_lua_pack", luaopen_lua_pack);
 
 #if defined(USE_NPL_CURL)
 	// load cURL
@@ -490,6 +493,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 				.def("IsValid", &ParaFileObject::IsValid)
 				.def("seek", &ParaFileObject::seek)
 				.def("seekRelative", &ParaFileObject::seekRelative)
+				.def("getpos", &ParaFileObject::getpos)
 				.def("SetFilePointer", &ParaFileObject::SetFilePointer)
 				.def("SetEndOfFile", &ParaFileObject::SetEndOfFile)
 				.def("GetText", &ParaFileObject::GetText)
@@ -501,8 +505,18 @@ void CNPLScriptingState::LoadHAPI_Globals()
 				.def("ReadFloat", &ParaFileObject::ReadFloat)
 				.def("WriteInt", &ParaFileObject::WriteInt)
 				.def("ReadInt", &ParaFileObject::ReadInt)
+				.def("WriteUInt", &ParaFileObject::WriteUInt)
+				.def("ReadUInt", &ParaFileObject::ReadUInt)
+				.def("WriteShort", &ParaFileObject::WriteShort)
+				.def("ReadShort", &ParaFileObject::ReadShort)
+				.def("WriteWord", &ParaFileObject::WriteWord)
+				.def("ReadWord", &ParaFileObject::ReadWord)
+				.def("WriteDouble", &ParaFileObject::WriteDouble)
+				.def("ReadDouble", &ParaFileObject::ReadDouble)
 				.def("GetFileSize", &ParaFileObject::GetFileSize)
+				.def("ReadString", &ParaFileObject::ReadString)
 				.def("WriteString", &ParaFileObject::WriteString)
+				.def("WriteString", &ParaFileObject::WriteString2)
 				.def("writeline", &ParaFileObject::writeline)
 				.def("readline", &ParaFileObject::readline)
 				.def("GetBase64String", &ParaFileObject::GetBase64String)

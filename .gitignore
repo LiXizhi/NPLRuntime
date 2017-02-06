@@ -12,6 +12,7 @@
 *.fxo
 *.ffs_gui
 */obj/
+.vs/
 .DS_Store
 redist/
 published/

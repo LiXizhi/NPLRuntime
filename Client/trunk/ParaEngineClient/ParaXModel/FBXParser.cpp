@@ -908,31 +908,78 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 	// add geoset (faces & indices)
 	{
-		ModelGeoset geoset;
-		geoset.id = pMesh->geosets.size();
-		for (int i = 0; i < numFaces; i++)
+		const int maxFaceCount = (int)(0xffff / 3);
+		int nFaceStart = 0;
+		int nVertexOffset = vertex_start;
+		int nSplitCount = 0;
+		while (numFaces > 0 && (++nSplitCount)<100)
 		{
-			const aiFace& fbxFace = pFbxMesh->mFaces[i];
-			assert(fbxFace.mNumIndices == 3);
-			for (int j = 0; j < 3; j++)
+			ModelGeoset geoset;
+			geoset.id = (uint16)pMesh->geosets.size();
+			vertex_start = 0;
+			int nFaceCount = numFaces;
+			if (m_vertices.size() > maxFaceCount)
 			{
-				m_indices.push_back(fbxFace.mIndices[j] + vertex_start);
+				// get vertex offset and max number of vertex
+				
+				unsigned int nMinIndex = 0xffffffff;
+				unsigned int nMaxIndex = 0;
+				for (int i = 0; i < nFaceCount; i++)
+				{
+					const aiFace& fbxFace = pFbxMesh->mFaces[i + nFaceStart];
+					assert(fbxFace.mNumIndices == 3);
+					for (int j = 0; j < 3; j++)
+					{
+						auto nIndex = fbxFace.mIndices[j] + nVertexOffset;
+						if (nIndex < nMinIndex)
+							nMinIndex = nIndex;
+						if (nIndex > nMaxIndex)
+							nMaxIndex = nIndex;
+						if ((nMaxIndex - nMinIndex) > 0xffff)
+						{
+							nFaceCount = i;
+							break;
+						}
+					}
+				}
+				vertex_start = nMinIndex;
 			}
+			if (nFaceCount == 0) 
+			{
+				// warning: skip this face, if we can not easily split large mesh without reordering index. 
+				numFaces -= 1;
+				nFaceStart += 1;
+				continue;
+			}
+			numFaces -= nFaceCount;
+			for (int i = 0; i < nFaceCount; i++)
+			{
+				const aiFace& fbxFace = pFbxMesh->mFaces[i+ nFaceStart];
+				assert(fbxFace.mNumIndices == 3);
+				for (int j = 0; j < 3; j++)
+				{
+					m_indices.push_back(fbxFace.mIndices[j] + nVertexOffset - vertex_start);
+				}
+			}
+			nFaceStart += nFaceCount;
+			geoset.istart = index_start;
+			geoset.icount = nFaceCount * 3;
+			geoset.vstart = vertex_start;
+			geoset.vcount = numVertices;
+			geoset.SetVertexStart(vertex_start);
+
+			pMesh->geosets.push_back(geoset);
+
+			ModelRenderPass* pPass = &(pMesh->passes[pFbxMesh->mMaterialIndex]);
+			if (nSplitCount > 1) {
+				pMesh->passes.push_back(*pPass);
+				pPass = &(pMesh->passes[pMesh->passes.size() - 1]);
+			}
+			pPass->indexStart = index_start;
+			pPass->indexCount = nFaceCount * 3;
+			pPass->SetStartIndex(index_start);
+			pPass->geoset = pMesh->geosets.size() - 1;
 		}
-		geoset.istart = index_start;
-		geoset.icount = numFaces * 3;
-		geoset.vstart = vertex_start;
-		geoset.vcount = numVertices;
-
-		pMesh->geosets.push_back(geoset);
-
-		ModelRenderPass& pass = pMesh->passes[pFbxMesh->mMaterialIndex];
-		pass.indexStart = index_start;
-		pass.indexCount = numFaces * 3;
-		//pass.vertexStart = vertex_start;
-		//pass.vertexEnd = vertex_start + numVertices - 1;
-		pass.m_nIndexStart = pass.indexStart;
-		pass.geoset = pMesh->geosets.size() - 1;
 	}
 
 	// add bones and vertex weight
