@@ -33,13 +33,14 @@ namespace ParaEngine
 
 			batt_singleSideTex  = 0x0000800,
 			batt_threeSideTex	= 0x0001000,
-			batt_sixSideTex		= 0x0002000,
-			batt_climbable		= 0x0004000,		// whether a biped can climb up/down vertically using this block. 
-			batt_blockcamera	= 0x0008000,	// whether the block will block camera line of sight. 
+			batt_fourSideTex	= 0x0002000,
+			batt_sixSideTex		= 0x0004000,
+			batt_climbable		= 0x0008000,		// whether a biped can climb up/down vertically using this block. 
+			batt_blockcamera	= 0x0010000,	// whether the block will block camera line of sight. 
 
-			batt_framemove		= 0x0010000,	// whether the block has a frame move function.
-			batt_onload			= 0x0020000,	// whether the block has a OnBlockLoaded function.
-			batt_color_data	    = 0x0040000,	// whether the block contains color in its block data.
+			batt_framemove		= 0x0020000,	// whether the block has a frame move function.
+			batt_onload		= 0x0040000,	// whether the block has a OnBlockLoaded function.
+			batt_color_data		= 0x0080000,	// whether the block contains color in its block data.
 		};
 
 		BlockTemplate(uint16_t id,uint32_t attFlag, uint16_t category_id);
