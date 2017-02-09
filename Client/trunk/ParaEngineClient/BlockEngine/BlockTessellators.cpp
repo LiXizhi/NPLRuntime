@@ -20,7 +20,7 @@ using namespace ParaEngine;
 ParaEngine::BlockTessellatorBase::BlockTessellatorBase(CBlockWorld* pWorld) 
 	: m_pWorld(pWorld), m_pCurBlockTemplate(0), m_pCurBlockModel(0), m_blockId_ws(0, 0, 0), m_nBlockData(0), m_pChunk(0), m_blockId_cs(0,0,0)
 {
-
+	memset(neighborBlocks, 0, sizeof(neighborBlocks));
 }
 
 void ParaEngine::BlockTessellatorBase::SetWorld(CBlockWorld* pWorld)
