@@ -209,13 +209,6 @@ SOURCE_GROUP("Externals\\InfoCenter" FILES ${ParaEngineClient_InfoCenter_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_InfoCenter_FILES})
 
 ##############################
-if(PARAENGINE_CLIENT_DLL)
-	file (GLOB ParaEngineClient_WebBrowser_FILES ${ParaEngineClient_SOURCE_DIR}/WebBrowser/*.*)
-	SOURCE_GROUP("Externals\\WebBrowser" FILES ${ParaEngineClient_WebBrowser_FILES})
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebBrowser_FILES})
-endif()
-
-##############################
 file (GLOB ParaEngineClient_TERRAIN_FILES ${ParaEngineClient_SOURCE_DIR}/terrain/*.h ${ParaEngineClient_SOURCE_DIR}/terrain/*.cpp)
 SOURCE_GROUP("terrain" FILES ${ParaEngineClient_TERRAIN_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_TERRAIN_FILES})
@@ -331,9 +324,6 @@ IF(WIN32)
 	include_directories("${Assimp_SOURCE_DIR}/include/")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
-	if(PARAENGINE_CLIENT_DLL)
-		include_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
-	endif()
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
@@ -368,21 +358,6 @@ CHECK_INCLUDE_FILE(
 IF(HAVE_UNISTD_H)
   ADD_DEFINITIONS(-DHAVE_UNISTD_H)
 ENDIF(HAVE_UNISTD_H)
-
-IF(PARAENGINE_CLIENT_DLL)
-	# Make sure the linker can find the third-party precompiled libraries. 
-	# link_directories ("${CLIENT_SOURCE_DIR}/libs/win32/lib")
-	# link_directories (${PhysX_SOURCE_DIR}/lib/win32) 
-	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		# 64 bits version
-		link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win64)
-	else()
-		# 32 bits version.
-		link_directories (${ParaEngineClient_SOURCE_DIR}/flashplayer/f_in_box/lib) 
-		link_directories("${ParaEngineClient_SOURCE_DIR}/../FreeImage_3120/Dist")
-		# link_directories (${ParaEngineClient_SOURCE_DIR}/../assimp/prebuilt/win32) 
-	endif()
-ENDIF(PARAENGINE_CLIENT_DLL)
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
@@ -491,14 +466,6 @@ if (WIN32)
 			libcurl
 			assimp
 	)
-	if(PARAENGINE_CLIENT_DLL)
-		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-			# for 64bits libs	
-		else()
-			list(APPEND EXTRA_LIBRARIES f_in_box.lib)
-			list(APPEND EXTRA_LIBRARIES FreeImage.lib)
-		endif()
-	endif(PARAENGINE_CLIENT_DLL)
 else (WIN32)
 	if(APPLE)
 		set(EXTRA_LIBRARIES			
