@@ -38,7 +38,7 @@ find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
-	
+	option(PARAENGINE_CLIENT_DLL OFF)
     add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)
@@ -65,6 +65,9 @@ add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-3.1.1 ${CLIENT_BIN
 
 # main NPL runtime using ParaEngineClient
 add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)
-
+if(PARAENGINE_CLIENT_DLL)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/ParaEngineClientApp ${CLIENT_BINARY_DIR}/ParaEngineClientApp)
+endif()
+	
 # following are plugins that should be build after main runtime
 add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${CLIENT_BINARY_DIR}/NPLMono/NPLMono2)
