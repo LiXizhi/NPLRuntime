@@ -11,7 +11,7 @@
 #include "FileUtils.h"
 #include "ZipArchive.h"
 #include "ZipWriter.h"
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	#include <tinyxml2.h>
 #else
 	#include <tinyxml.h>
@@ -1489,7 +1489,7 @@ namespace ParaScripting
 
 	comments and other definitions are ignored
 	*/
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	void ParaXML::LuaXML_ParseNode(lua_State *L, void* pNode_)
 	{
 		if (!pNode_) return;
@@ -1726,7 +1726,7 @@ namespace ParaScripting
 					sCode.resize((int)file.getSize());
 					memcpy(&(sCode[0]), file.getBuffer(), (int)file.getSize());
 				}
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 				namespace TXML = tinyxml2;
 				TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 				doc.Parse(sCode.c_str(), (int)sCode.size());
@@ -1757,7 +1757,7 @@ namespace ParaScripting
 		int nResult = 0;
 		try
 		{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 			namespace TXML = tinyxml2;
 			TXML::XMLDocument doc(true, IsWhiteSpaceCondensed() ? TXML::COLLAPSE_WHITESPACE : TXML::PRESERVE_WHITESPACE);
 			// Note: LiXizhi: TinyXML2 will actually change the content of input string, so we can not pass sString directly to Parse() function.
@@ -1790,7 +1790,7 @@ namespace ParaScripting
 	static bool s_bIsWhiteSpaceCollapsed = true;
 	void ParaXML::SetCondenseWhiteSpace( bool condense )
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		s_bIsWhiteSpaceCollapsed = condense;
 #else
 		TiXmlBase::SetCondenseWhiteSpace(condense);
@@ -1799,7 +1799,7 @@ namespace ParaScripting
 
 	bool ParaXML::IsWhiteSpaceCondensed()
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		return s_bIsWhiteSpaceCollapsed;
 #else
 		return TiXmlBase::IsWhiteSpaceCondensed();

@@ -13,6 +13,7 @@ tinyxml.cpp            tinyxmlerror.cpp       tinyxmlparser.cpp
 tokenlist.cpp          xml_util.cpp           xpath_expression.cpp
 xpath_processor.cpp    xpath_stack.cpp        xpath_static.cpp
 xpath_stream.cpp       xpath_syntax.cpp 
+tinyxml.h
 )
 
 ADD_DEFINITIONS(-DTIXML_USE_STL)
