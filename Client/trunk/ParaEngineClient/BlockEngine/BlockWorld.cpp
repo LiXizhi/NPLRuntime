@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #include "ShapeAABB.h"
 #include "ShapeSphere.h"
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 #include <tinyxml2.h>
 #else
 #include <tinyxml.h>
@@ -505,7 +505,7 @@ void ParaEngine::CBlockWorld::ClearAllBlockTemplates()
 
 void CBlockWorld::SaveBlockTemplateData()
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	using namespace tinyxml2;
 	tinyxml2::XMLDocument doc;
 
@@ -608,7 +608,7 @@ void CBlockWorld::LoadBlockTemplateData()
 
 	try
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		using namespace tinyxml2;
 		tinyxml2::XMLDocument doc(true, COLLAPSE_WHITESPACE);
 		doc.Parse(pFile->getBuffer(), (int)(pFile->getSize()));
