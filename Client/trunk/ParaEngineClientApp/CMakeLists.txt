@@ -97,7 +97,7 @@ set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "ParaEngi
 
 
 # Link the executable to the libraries. 
-target_link_libraries (ParaEngineClientApp Psapi.lib ${Boost_LIBRARIES_static_runtime}) 
+target_link_libraries (ParaEngineClientApp Psapi.lib ${Boost_LIBRARIES}) 
 
 # Copy files Link the executable to the libraries. 
 ADD_CUSTOM_COMMAND(

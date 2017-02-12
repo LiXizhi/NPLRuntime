@@ -65,6 +65,10 @@ add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-3.1.1 ${CLIENT_BIN
 
 # main NPL runtime using ParaEngineClient
 add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)
+
+# expose the core include directory 
+set (ParaEngineClient_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient)
+
 if(PARAENGINE_CLIENT_DLL)
 	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/ParaEngineClientApp ${CLIENT_BINARY_DIR}/ParaEngineClientApp)
 endif()

@@ -12,7 +12,12 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	set(PARAENGINE_COMPILE_LIB    false)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
