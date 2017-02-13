@@ -14,6 +14,7 @@ if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
 	if(PARAENGINE_CLIENT_DLL)
 		set(PARAENGINE_COMPILE_LIB    true)
+		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
 	else()
 		set(PARAENGINE_COMPILE_LIB    false)
 	endif()
@@ -141,6 +142,8 @@ file (GLOB ParaEngineClient_IO_FILES ${ParaEngineClient_SOURCE_DIR}/IO/*.cpp ${P
 SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
+
+
 if(DIRECTX_FOUND)
 	#####################################
 	##--------- resource file ---------##
@@ -208,6 +211,7 @@ file (GLOB ParaEngineClient_InfoCenter_FILES ${ParaEngineClient_SOURCE_DIR}/ic/*
 SOURCE_GROUP("Externals\\InfoCenter" FILES ${ParaEngineClient_InfoCenter_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_InfoCenter_FILES})
 
+
 ##############################
 file (GLOB ParaEngineClient_TERRAIN_FILES ${ParaEngineClient_SOURCE_DIR}/terrain/*.h ${ParaEngineClient_SOURCE_DIR}/terrain/*.cpp)
 SOURCE_GROUP("terrain" FILES ${ParaEngineClient_TERRAIN_FILES})
@@ -260,6 +264,8 @@ file (GLOB ParaEngineClient_DOCUMENT_FILES ${ParaEngineClient_SOURCE_DIR}/doc/*.
 SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
 set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
+
+
 
 if(APPLE)
 
@@ -351,6 +357,7 @@ ENDIF(WIN32)
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
 ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 CHECK_INCLUDE_FILE(
@@ -428,18 +435,11 @@ ENDIF()
 
 
 if (PARAENGINE_COMPILE_LIB)
-	SET(ParaEngineClient_Lib_FILES
-		${ParaEngineClient_SOURCE_DIR}/Engine/LibInterface.cpp
-		${ParaEngineClient_SOURCE_DIR}/ParaEngineClient.def
-	)
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Lib_FILES})
-
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
-	ADD_DEFINITIONS(-DNPLRUNTIME)
 	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 	if(DIRECTX_FOUND)
 		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
