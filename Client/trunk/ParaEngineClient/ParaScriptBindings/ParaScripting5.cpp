@@ -16,8 +16,8 @@
 using namespace ParaEngine;
 
 #if defined(PARAENGINE_CLIENT) && !defined(NPLRUNTIME)
-//#define USE_NPL_PROFILER
-//#define USE_NPL_CURL
+#define USE_NPL_PROFILER
+#define USE_NPL_CURL
 #endif
 /** 
 for luabind, The main drawback of this approach is that the compilation time will increase for the file 
