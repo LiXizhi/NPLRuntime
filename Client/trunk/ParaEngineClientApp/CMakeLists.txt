@@ -57,8 +57,12 @@ list(APPEND ParaEngineClientApp_SRCS ${ParaEngineClientApp_Haqi_FILES})
 # add the binary tree to the search path for include files
 include_directories("${Boost_INCLUDE_DIRS}")
 include_directories("${PROJECT_BINARY_DIR}")
-include_directories("${ParaEngineClient_SOURCE_DIR}/../../Client/trunk/ParaEngineClient")
-include_directories("${ParaEngineClient_SOURCE_DIR}/../../Client/trunk/ParaEngineClient/Core")
+include_directories("${ParaEngineClient_SOURCE_DIR}")
+include_directories("${ParaEngineClient_SOURCE_DIR}/Core")
+
+IF(WIN32)
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+ENDIF(WIN32)
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
@@ -96,24 +100,10 @@ set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "ParaEngi
 target_link_libraries (ParaEngineClientApp Psapi.lib ${Boost_LIBRARIES}) 
 
 # Copy files Link the executable to the libraries. 
-if(MSVC)
-
-get_target_property(DEBUG_EXE_PATH ParaEngineClientApp DEBUG_LOCATION)
-STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" DEBUG_EXE_NAME "${DEBUG_EXE_PATH}" )
-
-get_target_property(RELEASE_EXE_PATH ParaEngineClientApp RELEASE_LOCATION)
-STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" RELEASE_EXE_NAME "${RELEASE_EXE_PATH}" )
-
-if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-	set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/bin64/" )
-else()
-	set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/" )
-endif()
-
 ADD_CUSTOM_COMMAND(
    TARGET ParaEngineClientApp
    POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy ${DEBUG_EXE_PATH} ${PARAWORLD_BIN_DIR}${DEBUG_EXE_NAME}
-   COMMAND ${CMAKE_COMMAND} -E copy ${RELEASE_EXE_PATH} ${PARAWORLD_BIN_DIR}${RELEASE_EXE_NAME}
+   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaEngineClientApp> ${OUTPUT_BIN_DIR}
 )
 endif(MSVC)
