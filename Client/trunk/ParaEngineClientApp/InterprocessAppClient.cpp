@@ -284,9 +284,9 @@ bool ParaEngine::CInterprocessAppClient::CheckLoad()
 	}
 #ifdef _DEBUG
 	// post_fix with _d
-	m_ParaEngine_plugin.Init("ParaEngineClient_d.dll"); 
+	m_ParaEngine_plugin.Init("PaperStar_d.dll"); 
 #else
-	m_ParaEngine_plugin.Init("ParaEngineClient.dll");
+	m_ParaEngine_plugin.Init("PaperStar.dll");
 #endif
 
 	int nClassCount = m_ParaEngine_plugin.GetNumberOfClasses();
