@@ -1,7 +1,8 @@
 # Author: LiXizhi
 # Company: ParaEngine.com
 # Date: 2010.3.2
-# Desc: The client exe application for ParaEngine. It is just a small exe that uses ParaEngineClient.dll 
+# Updated: 2017.Feb.15 by Cellfy
+# Desc: The client exe application for ParaEngine. It is just a small exe that uses PaperStar(_d).dll 
 
 project (ParaEngineClientApp)
 
@@ -92,8 +93,8 @@ set_target_properties(ParaEngineClientApp PROPERTIES WIN32_EXECUTABLE true)
 # Since we are installing to local app data dir from now on, we will only need medium integrity level to run the app, however protected mode IE only gives use low IL, in which we need to write to registry to promote this process to medium IL. 
 # set_target_properties(ParaEngineClientApp PROPERTIES LINK_FLAGS /MANIFESTUAC:"level='highestAvailable' uiAccess='false'")
 
-set_target_properties(ParaEngineClientApp PROPERTIES OUTPUT_NAME "ParaEngineClient")
-set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
+set_target_properties(ParaEngineClientApp PROPERTIES OUTPUT_NAME "PaperStar")
+set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "PaperStar_d")
 
 
 # Link the executable to the libraries. 
@@ -106,4 +107,3 @@ ADD_CUSTOM_COMMAND(
    COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaEngineClientApp> ${OUTPUT_BIN_DIR}
 )
-endif(MSVC)
