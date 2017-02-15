@@ -1,0 +1,32 @@
+version: 1.0.{build}
+clone_folder: c:\projects\nplruntime
+install:
+- cmd: >-
+    rmdir "C:/Program Files/MySQL" /s /q
+
+    rmdir "C:/Program Files/PostgreSQL" /s /q
+
+    dir "C:/Program Files/"
+
+    appveyor DownloadFile https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.zip/download -FileName "C:\projects\nplruntime\Server\trunk\boost.zip"
+
+    7z x C:\projects\nplruntime\Server\trunk\boost.zip -oC:\projects\nplruntime\Server\trunk\
+
+    cd C:\projects\nplruntime\Server\trunk\boost_1_61_0\
+
+    bootstrap.bat
+
+    b2 runtime-link=static --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+
+    cd C:\projects\nplruntime
+
+    mkdir bin\win32
+
+    cd bin\win32
+
+    cmake ../../NPLRuntime
+
+    dir .
+build:
+  project: bin\win32\NPLRuntime.sln
+  verbosity: minimal
