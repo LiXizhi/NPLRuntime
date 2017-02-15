@@ -1010,6 +1010,16 @@ void ParaEngine::CBaseObject::SetLocalTransform(const Matrix4& mXForm)
 
 }
 
+const std::string& ParaEngine::CBaseObject::GetTextureFileName()
+{
+	return CGlobals::GetString(0);
+}
+
+void ParaEngine::CBaseObject::SetTextureFileName(const std::string& sFilename)
+{
+
+}
+
 bool ParaEngine::CBaseObject::AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex /*= -1*/, int nColumnIndex /*= 0*/)
 {
 	if (pChild)
@@ -1101,6 +1111,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SelectionEffect", FieldType_Int, (void*)SetSelectionEffect_s, (void*)GetSelectionEffect_s, NULL, "", bOverride);
 	pClass->AddField("persistent", FieldType_Bool, (void*)SetPersistent_s, (void*)IsPersistent_s, NULL, "whether object is persistent", bOverride);
 	pClass->AddField("IsTileObject", FieldType_Bool, (void*)SetTileObject_s, (void*)IsTileObject_s, NULL, "whether object is persistent", bOverride);
+	pClass->AddField("TextureFile", FieldType_String, (void*)SetTextureFileName_s, (void*)GetTextureFileName_s, NULL, NULL, bOverride);
 
 	pClass->AddField("AnimID", FieldType_Int, (void*)SetAnimation_s, (void*)GetAnimation_s, NULL, "", bOverride);
 	pClass->AddField("AnimFrame", FieldType_Int, (void*)SetAnimFrame_s, (void*)GetAnimFrame_s, NULL, "", bOverride);

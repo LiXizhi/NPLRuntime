@@ -240,6 +240,20 @@ namespace ParaEngine
 		if (pModel == NULL)
 			return E_FAIL;
 
+		if (!mReplaceTextures.empty())
+		{
+			for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
+			{
+				m_pAnimatedMesh->GetModel()->specialTextures[i] = -1;
+				m_pAnimatedMesh->GetModel()->replaceTextures[i] = nullptr;
+			}
+			for (auto const & tex : mReplaceTextures)
+			{
+				m_pAnimatedMesh->GetModel()->specialTextures[tex.first] = tex.first;
+				m_pAnimatedMesh->GetModel()->replaceTextures[tex.first] = tex.second;
+			}
+		}
+
 		sceneState->SetCurrentSceneObject(this);
 		SetFrameNumber(sceneState->m_nRenderCount);
 		// get world transform matrix
@@ -417,6 +431,34 @@ namespace ParaEngine
 	bool BMaxObject::IsPhysicsEnabled()
 	{
 		return !((m_dwPhysicsMethod & PHYSICS_FORCE_NO_PHYSICS)>0);
+	}
+
+	const std::string& BMaxObject::GetTextureFileName()
+	{
+		return mReplaceTexturesName;
+	}
+
+	void BMaxObject::SetTextureFileName(const std::string& sFilename)
+	{
+		mReplaceTexturesName = sFilename;
+		mReplaceTextures.clear();
+		auto temp = mReplaceTexturesName;
+		std::stringstream ss;
+		do
+		{
+			auto split_begin = temp.find(':');
+			auto split_end = temp.find(';');
+			if (std::string::npos == split_end)
+			{
+				break;
+			}
+			uint32 tex_index;
+			ss << temp.substr(0, split_begin);
+			ss >> tex_index;
+			auto tex_name=(temp.substr(split_begin + 1, split_end - split_begin - 1));
+			mReplaceTextures[tex_index] = CGlobals::GetAssetManager()->LoadTexture(tex_name.c_str(), tex_name.c_str(), TextureEntity::StaticTexture);
+			temp = temp.substr(split_end + 1);
+		} while (true);
 	}
 
 	int BMaxObject::GetStaticActorCount()

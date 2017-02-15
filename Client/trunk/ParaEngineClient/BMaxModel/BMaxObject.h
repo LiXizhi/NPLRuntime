@@ -62,6 +62,8 @@ namespace ParaEngine
 		virtual int GetPhysicsGroup();
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
+		virtual const std::string& GetTextureFileName()override;
+		virtual void SetTextureFileName(const std::string& sFilename)override;
 
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
@@ -83,5 +85,8 @@ namespace ParaEngine
 		float m_fLastBlockLight;
 		/** a hash to detect if the containing block position of this biped changed. */
 		DWORD m_dwLastBlockHash;
+
+		std::string mReplaceTexturesName;
+		std::map<uint32, TextureEntity*> mReplaceTextures;
 	};
 }

@@ -518,6 +518,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsPhysicsEnabled_s, bool*)	{ *p1 = cls->IsPhysicsEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnablePhysics_s, bool)	{ cls->EnablePhysics(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetTextureFileName_s, const char**)	{ *p1 = cls->GetTextureFileName().c_str(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetTextureFileName_s, const char*)	{ cls->SetTextureFileName(p1); return S_OK; }
+
 	/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 	virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
 	/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
@@ -1213,6 +1216,12 @@ public:
 	virtual void SetLocalTransform(const Matrix4& mXForm);
 	/** get local transform*/
 	virtual void GetLocalTransform(Matrix4* localTransform);
+
+	/** get texture file name */
+	virtual const std::string& GetTextureFileName();
+
+	/** set texture file name */
+	virtual void SetTextureFileName(const std::string& sFilename);
 
 protected:
 	/** the ID of the object. default to 0. it is regenerated automatically when GetID() is called and that the id is 0. */
