@@ -20,13 +20,23 @@ install:
 
     cd C:\projects\nplruntime
 
-    mkdir bin\win32
+    mkdir bin\Server
 
-    cd bin\win32
+    cd bin\Server
 
     cmake ../../NPLRuntime
 
     dir .
-build:
-  project: bin\win32\NPLRuntime.sln
-  verbosity: minimal
+
+    mkdir ../bin/Client
+
+    cd ../bin/Client
+
+    cmake ../../Client
+
+    dir .
+build_script:
+- cmd: >-
+    msbuild "c:\projects\nplruntime\bin\Server\NPLRuntime.sln" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+    msbuild "c:\projects\nplruntime\bin\Client\CLIENT.sln" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
