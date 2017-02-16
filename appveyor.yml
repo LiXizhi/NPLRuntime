@@ -28,13 +28,13 @@ install:
 
     dir .
 
-    mkdir ../bin/Client
+    cd ..\..
 
-    cd ../bin/Client
+    mkdir bin\Client
+
+    cd bin\Client
 
     cmake ../../Client
-
-    dir .
 build_script:
 - cmd: >-
     msbuild "c:\projects\nplruntime\bin\Server\NPLRuntime.sln" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
