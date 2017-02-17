@@ -724,7 +724,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.blendmode = blendmode;
 	pass.cull = blendmode == BM_OPAQUE ? true : false;
 	pass.order = fbxMat.m_nOrder;
-	pass.geoset = 0;
+	pass.geoset = -1; // make its geoset uninitialized
 	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 	pMesh->passes.push_back(pass);
 }
@@ -898,9 +898,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		{
 			ModelGeoset geoset;
 			geoset.id = (uint16)pMesh->geosets.size();
-			vertex_start = 0;
-			int nFaceCount = numFaces;
-			if (m_vertices.size() > maxFaceCount)
+			vertex_start = nVertexOffset;
+			int nFaceCount = std::min(maxFaceCount, numFaces);
+			if ((m_vertices.size()- nVertexOffset) > maxFaceCount)
 			{
 				// get vertex offset and max number of vertex
 				
@@ -926,6 +926,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				}
 				vertex_start = nMinIndex;
 			}
+			
 			if (nFaceCount == 0) 
 			{
 				// warning: skip this face, if we can not easily split large mesh without reordering index. 
@@ -934,13 +935,16 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				continue;
 			}
 			numFaces -= nFaceCount;
+			int nIndexOffset = nVertexOffset - vertex_start;
 			for (int i = 0; i < nFaceCount; i++)
 			{
 				const aiFace& fbxFace = pFbxMesh->mFaces[i+ nFaceStart];
 				assert(fbxFace.mNumIndices == 3);
 				for (int j = 0; j < 3; j++)
 				{
-					m_indices.push_back(fbxFace.mIndices[j] + nVertexOffset - vertex_start);
+					int index_ = fbxFace.mIndices[j] + nIndexOffset;
+					assert(index_ >= 0);
+					m_indices.push_back((uint16)index_);
 				}
 			}
 			nFaceStart += nFaceCount;
@@ -953,7 +957,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			pMesh->geosets.push_back(geoset);
 
 			ModelRenderPass* pPass = &(pMesh->passes[pFbxMesh->mMaterialIndex]);
-			if (nSplitCount > 1) {
+			if (pPass->geoset >= 0) {
+				// if there is already a render pass due to mesh split, create a new render pass that inherit the unsplited pass.
 				pMesh->passes.push_back(*pPass);
 				pPass = &(pMesh->passes[pMesh->passes.size() - 1]);
 			}
