@@ -900,10 +900,10 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			geoset.id = (uint16)pMesh->geosets.size();
 			vertex_start = nVertexOffset;
 			int nFaceCount = std::min(maxFaceCount, numFaces);
-			if ((m_vertices.size()- nVertexOffset) > maxFaceCount)
+			if (numFaces > maxFaceCount || nSplitCount>1)
 			{
 				// get vertex offset and max number of vertex
-				
+				vertex_start = 0;
 				unsigned int nMinIndex = 0xffffffff;
 				unsigned int nMaxIndex = 0;
 				for (int i = 0; i < nFaceCount; i++)
@@ -912,7 +912,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 					assert(fbxFace.mNumIndices == 3);
 					for (int j = 0; j < 3; j++)
 					{
-						auto nIndex = fbxFace.mIndices[j] + nVertexOffset;
+						auto nIndex = fbxFace.mIndices[j];
 						if (nIndex < nMinIndex)
 							nMinIndex = nIndex;
 						if (nIndex > nMaxIndex)
@@ -923,8 +923,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 							break;
 						}
 					}
+					vertex_start = nMinIndex;
 				}
-				vertex_start = nMinIndex;
+				vertex_start += nVertexOffset;
 			}
 			
 			if (nFaceCount == 0) 
@@ -947,7 +948,6 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 					m_indices.push_back((uint16)index_);
 				}
 			}
-			nFaceStart += nFaceCount;
 			geoset.istart = index_start;
 			geoset.icount = nFaceCount * 3;
 			geoset.vstart = vertex_start;
@@ -966,6 +966,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			pPass->indexCount = nFaceCount * 3;
 			pPass->SetStartIndex(index_start);
 			pPass->geoset = pMesh->geosets.size() - 1;
+
+			nFaceStart += nFaceCount;
+			index_start += nFaceCount * 3;
 		}
 	}
 
