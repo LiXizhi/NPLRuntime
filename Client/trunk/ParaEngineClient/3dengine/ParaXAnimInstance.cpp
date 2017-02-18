@@ -923,7 +923,7 @@ IAttributeFields* CParaXAnimInstance::GetChildAttributeObject(int nRowIndex, int
 		if (pModel)
 		{
 			CParaXModel* pXModel = pModel->GetModel();
-			if (pXModel && pXModel->HasAnimation() && nRowIndex < (int)pXModel->GetObjectNum().nBones)
+			if (pXModel && nRowIndex < (int)pXModel->GetObjectNum().nBones)
 			{
 				return &(pXModel->bones[nRowIndex]);
 			}
@@ -945,10 +945,7 @@ int CParaXAnimInstance::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 		ParaXEntity* pModel = GetAnimModel();
 		if (pModel && pModel->GetModel())
 		{
-			if (pModel->GetModel()->HasAnimation())
-			{
-				return pModel->GetModel()->GetObjectNum().nBones;
-			}
+			return pModel->GetModel()->GetObjectNum().nBones;
 		}
 	}
 	return 0;

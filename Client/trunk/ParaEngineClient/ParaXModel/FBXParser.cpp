@@ -252,7 +252,6 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_objNum.nVertices = m_vertices.size();
 	pMesh->m_objNum.nBones = m_bones.size();
 	pMesh->m_objNum.nTextures = m_textures.size();
-	pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 	pMesh->m_objNum.nIndices = m_indices.size();
 	pMesh->m_header.minExtent = m_minExtent;
 	pMesh->m_header.maxExtent = m_maxExtent;
@@ -278,6 +277,17 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
+	if (pMesh->animated && m_anims.size() == 0) 
+	{
+		// static animation 0, just in case there are skinned mesh without any animation
+		ModelAnimation anim;
+		memset(&anim, 0, sizeof(ModelAnimation));
+		anim.timeStart = 0;
+		anim.timeEnd = 0;
+		anim.animID = 0;
+		m_anims.push_back(anim);
+	}
+
 	if (m_anims.size() > 0 && m_bones.size() > 0)
 	{
 		pMesh->anims = new ModelAnimation[m_anims.size()];
@@ -290,6 +300,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		pMesh->animBones = false;
 		pMesh->animated = false;
 	}
+	pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 
 	if (m_textures.size() > 0)
 	{
@@ -335,6 +346,8 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	// only enable bmax model, if there are vertex color channel.
 	if (m_beUsedVertexColor)
 		pMesh->SetBmaxModel();
+
+	
 }
 
 XFile::Scene* FBXParser::ParseFBXFile()
@@ -976,6 +989,12 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	if (pFbxMesh->HasBones())
 	{
 		int numBones = pFbxMesh->mNumBones;
+
+		if (!pMesh->animated && numBones > 1)
+		{
+			// always regard as animated if there are skinned mesh
+			pMesh->animated = true; 
+		}
 
 		for (int i = 0; i < numBones; i++)
 		{
