@@ -2,11 +2,15 @@ version: 1.0.{build}
 clone_folder: c:\projects\nplruntime
 install:
 - cmd: >-
+    git submodule init
+
+    git submodule update
+	
+	del C:\projects\nplruntime\npl_packages\main\*
+
     rmdir "C:/Program Files/MySQL" /s /q
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
-
-    dir "C:/Program Files/"
 
     appveyor DownloadFile https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.zip/download -FileName "C:\projects\nplruntime\Server\trunk\boost.zip"
 
@@ -18,25 +22,66 @@ install:
 
     b2 runtime-link=static --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
 
+    cd stage
+
+    rename lib lib32
+
+    cd ..
+
+    b2 runtime-link=static address-model=64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+
+    cd stage
+
+    rename lib lib64
+
     cd C:\projects\nplruntime
 
-    mkdir bin\Server
+    mkdir bin\client_32bit
 
-    cd bin\Server
+    cd bin\client_32bit
 
-    cmake ../../NPLRuntime
+    cmake ../../Client
 
     dir .
 
     cd ..\..
 
-    mkdir bin\Client
+    mkdir bin\client_64bit
 
-    cd bin\Client
+    cd bin\client_64bit
 
-    cmake ../../Client
+    cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
 build_script:
 - cmd: >-
-    msbuild "c:\projects\nplruntime\bin\Server\NPLRuntime.sln" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild "c:\projects\nplruntime\bin\client_32bit\CLIENT.sln" /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-    msbuild "c:\projects\nplruntime\bin\Client\CLIENT.sln" /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild "c:\projects\nplruntime\bin\client_64bit\CLIENT.sln" /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+    cd C:\projects\nplruntime\
+
+    7z a NPLRuntime_32bit.zip C:\projects\nplruntime\ParaWorld\bin32
+
+    7z a NPLRuntime_64bit.zip C:\projects\nplruntime\ParaWorld\bin64
+
+    "C:/Program Files (x86)/NSIS/makensis" C:\projects\nplruntime\installer\nplruntime_x86.nsi
+
+    "C:/Program Files (x86)/NSIS/makensis" C:\projects\nplruntime\installer\nplruntime_x64.nsi
+artifacts:
+- path: NPLRuntime_32bit.zip
+  name: binary_32
+- path: installer\nplruntime_v1.0-alpha.10_x86.exe
+  name: execute_32
+- path: installer\nplruntime_v1.0-alpha.10_x64.exe
+  name: execute_64
+- path: NPLRuntime_64bit.zip
+  name: binary_64
+deploy:
+- provider: GitHub
+  tag: v1.0-alpha.10
+  release: v1.0-alpha.10(Windows)
+  auth_token:
+    secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
+  artifact: execute_32, execute_64, binary_32, binary_64
+  prerelease: true
+on_finish:
+- cmd: 
