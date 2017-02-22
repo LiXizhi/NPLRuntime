@@ -921,9 +921,29 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 		width = pInfo->biWidth;
 		height = pInfo->biHeight;
 		nBytesPerPixel = pInfo->biBitCount / 8;
+
+		if (nBytesPerPixel == 1 && FreeImage_GetColorType(dib) == FIC_PALETTE)
+		{
+			auto oldDib = dib;
+			if (nFormat == PixelFormat24bppRGB){
+				dib = FreeImage_ConvertTo24Bits(dib);
+			}
+			else{
+				dib = FreeImage_ConvertTo32Bits(dib);
+			}
+			FreeImage_Unload(oldDib);
+			pInfo = FreeImage_GetInfoHeader(dib);
+			if (pInfo)
+			{
+				width = pInfo->biWidth;
+				height = pInfo->biHeight;
+				nBytesPerPixel = pInfo->biBitCount / 8;
+			}
+		}
 	}
 	else
 		return false;
+
 
 	BYTE* pPixels = FreeImage_GetBits(dib);
 	if (pPixels)

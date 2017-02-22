@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2016.2.22
+	- open image with 8 bits png indexed color supported. updated test file and wiki doc.
+
 2017.2.18
 	- skinned fbx file always has default animation
 	- fixed fbx with too many vertices
