@@ -5,8 +5,8 @@ install:
     git submodule init
 
     git submodule update
-	
-	del C:\projects\nplruntime\npl_packages\main\*
+
+    del C:\projects\nplruntime\npl_packages\main\*
 
     rmdir "C:/Program Files/MySQL" /s /q
 
