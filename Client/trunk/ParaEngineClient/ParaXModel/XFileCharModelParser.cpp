@@ -5,7 +5,7 @@
 // desc: 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
+
 #include "util/StringHelper.h"
 #include "ParaWorldAsset.h"
 #include "ParaXModel.h"
@@ -896,4 +896,3 @@ bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPt
 		return false;
 	return true;
 }
-#endif

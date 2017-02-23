@@ -78,7 +78,7 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 		pMesh = LoadParaX_Body(p);
 		LoadParaX_Finalize(p);
 	}
-#elif defined(USE_OPENGL_RENDERER)
+#else
 	try
 	{
 		XFileCharModelParser p(f.getBuffer(), f.getSize());
@@ -88,7 +88,6 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	{
 		OUTPUT_LOG("warn: LoadParaXMesh error:%s\n", e->what());
 	}
-	
 #endif
 	return pMesh;
 }
