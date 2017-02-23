@@ -66,6 +66,7 @@ build_script:
     "C:/Program Files (x86)/NSIS/makensis" C:\projects\nplruntime\installer\nplruntime_x86.nsi
 
     "C:/Program Files (x86)/NSIS/makensis" C:\projects\nplruntime\installer\nplruntime_x64.nsi
+test: off
 artifacts:
 - path: NPLRuntime_32bit.zip
   name: binary_32
