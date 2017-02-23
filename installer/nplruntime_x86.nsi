@@ -25,7 +25,7 @@ InstallDir $PROGRAMFILES32\npl
 !insertmacro DriveSpace
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the installation of nplruntime. It is recommended that you close all other applications before starting Setup.Note to Win2k/XP users: You may require administrator privileges to install Aries successfully."  
-!define MUI_WELCOMEFINISHPAGE_BITMAP "installer.bmp"
+!define MUI_WELCOMEFINISHPAGE_BITMAP "sidebar.bmp"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP  "header.bmp"
 ; Pages
