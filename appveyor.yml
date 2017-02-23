@@ -53,9 +53,9 @@ install:
     cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
 build_script:
 - cmd: >-
-    msbuild "c:\projects\nplruntime\bin\client_32bit\CLIENT.sln" /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild "c:\projects\nplruntime\bin\client_32bit\CLIENT.sln" /m /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
-    msbuild "c:\projects\nplruntime\bin\client_64bit\CLIENT.sln" /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild "c:\projects\nplruntime\bin\client_64bit\CLIENT.sln" /m /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
     cd C:\projects\nplruntime\
 
