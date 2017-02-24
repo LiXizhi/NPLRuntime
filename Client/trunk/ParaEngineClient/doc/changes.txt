@@ -4,6 +4,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 
 2016.2.22
 	- open image with 8 bits png indexed color supported. updated test file and wiki doc.
+	- NPL.load will now return cached file object. 
 
 2017.2.18
 	- skinned fbx file always has default animation

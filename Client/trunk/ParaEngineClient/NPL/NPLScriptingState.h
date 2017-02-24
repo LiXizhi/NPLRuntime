@@ -1,5 +1,5 @@
 #pragma once
-#include <set>
+#include <map>
 #include "NPLCommon.h"
 
 namespace NPL
@@ -181,6 +181,12 @@ namespace ParaScripting
 		*/
 		void ProcessResult(int nResult);
 
+		/** save nResult objects on stack to file modules 
+		*/
+		void CacheFileModule(const std::string& filename, int nResult);
+
+		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not. */
+		bool PopFileModule(const std::string& filename);
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack
@@ -235,12 +241,12 @@ namespace ParaScripting
 		};
 
 		/** all loaded files */
-		std::set <string> m_loaded_files;
+		std::map <std::string, int32> m_loaded_files;
 
 		/** a stack of files being loaded. */
-		std::stack <string> m_stack_current_file;
+		std::stack <std::string> m_stack_current_file;
 
 		/* currently only a single search path is supported. */
-		static string m_searchpath;
+		static std::string m_searchpath;
 	};
 }

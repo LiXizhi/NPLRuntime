@@ -452,7 +452,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			// this is done before the file is actually loaded to prevent recursive loading, which may lead to C stack overflow.
 			if (!bLoadedBefore)
 			{
-				m_loaded_files.insert(filePath);
+				m_loaded_files[filePath] = 0;
 			}
 			char* codebuf = NULL;
 			int codesize = 0;
@@ -499,7 +499,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 									int num_results = lua_gettop(m_pState) - top + 1;
 									if (nResult == 0 && num_results > 0)
 									{
-										lua_pop(m_pState, num_results);
+										// lua_pop(m_pState, num_results);
+										CacheFileModule(filePath, num_results);
 									}
 								}
 								else 
@@ -525,7 +526,14 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 
 					int nResult = luaL_loadbuffer(m_pState, codebuf, codesize, filePath.c_str());
 					if (nResult == 0) {
+						int top = lua_gettop(m_pState);
 						nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
+						int num_results = lua_gettop(m_pState) - top + 1;
+						if (nResult == 0 && num_results > 0)
+						{
+							// lua_pop(m_pState, num_results);
+							CacheFileModule(filePath, num_results);
+						}
 					}
 					ProcessResult(nResult);
 				}
@@ -535,6 +543,84 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		{
 			OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
 			return false;
+		}
+	}
+	else
+	{
+		PopFileModule(filePath);
+	}
+
+	return true;
+}
+
+const char _file_mod_[] = "_file_mod_";
+
+void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult)
+{
+	if (nResult > 0)
+	{
+		m_loaded_files[filename] = nResult;
+
+		auto L = m_pState;
+
+		int nLastResultIndex = lua_gettop(L);
+		// create the _file_mod_ table if not. 
+		lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
+		lua_rawget(L, LUA_GLOBALSINDEX);
+
+		if (lua_isnil(L, -1))
+		{
+			lua_pop(L, 1);
+			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
+			lua_newtable(L);
+			lua_rawset(L, LUA_GLOBALSINDEX);
+
+			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
+			lua_rawget(L, LUA_GLOBALSINDEX);
+		}
+		if (lua_istable(L, -1))
+		{
+			if (nResult == 1)
+			{
+				// cache the object on top of the stack directly
+				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushvalue(L, nLastResultIndex);
+				lua_rawset(L, -3);
+			}
+			else
+			{
+				// TODO: save to a table{result1, result2, ...}. currently only the first result is cached. 
+				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushvalue(L, nLastResultIndex - nResult + 1);
+				lua_rawset(L, -3);
+			}
+			lua_pop(L, 1);
+		}
+	}
+}
+
+bool ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename)
+{
+	auto obj = m_loaded_files.find(filename);
+	if (obj != m_loaded_files.end() && obj->second > 0)
+	{
+		int nResultNum = obj->second;
+
+		auto L = m_pState;
+
+		// create the _file_mod_ table if not. 
+		lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
+		lua_rawget(L, LUA_GLOBALSINDEX);
+		if (lua_istable(L, -1))
+		{
+			lua_pushlstring(L, filename.c_str(), filename.size());
+			lua_rawget(L, -2);
+			lua_remove(L, -2);
+
+			if (nResultNum > 1)
+			{
+				// TODO: unpack the table. currently only first result is returned. 
+			}
 		}
 	}
 	return true;
