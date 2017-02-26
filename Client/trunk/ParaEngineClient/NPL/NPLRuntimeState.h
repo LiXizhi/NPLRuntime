@@ -61,7 +61,7 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsPreemptive_s, bool*) { *p1 = cls->IsPreemptive(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, PauseAllPreemptiveFunction_s, bool) { cls->PauseAllPreemptiveFunction(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsAllPreemptiveFunctionPaused_s, bool*) { *p1 = cls->IsAllPreemptiveFunctionPaused(); return S_OK; }
-		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetFileName_s, const char**) { *p1 = cls->GetCurrentFilename().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetFileName_s, const char**) { *p1 = cls->GetCurrentFileName(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
@@ -146,9 +146,7 @@ namespace NPL
 		* @return true if popped.
 		*/
 		NPLMessage_ptr PopMessageAt(int nIndex);
-		
-		/* get the current npl script filename that is being loaded. */
-		const std::string& GetCurrentFilename();
+				
 	public:
 		virtual const std::string& GetIdentifier();
 

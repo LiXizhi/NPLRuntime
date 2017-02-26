@@ -24,6 +24,9 @@
 /** @def this file is loaded before compiling */
 #define NPL_META_COMPILER_SRC  "script/ide/System/Compiler/nplc.lua"
 
+/** #def file module is just started being loaded to prevent cyclic reference. */
+#define NPL_FILE_MODULE_START_LOADING  -1000
+
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.
@@ -431,6 +434,23 @@ const string& ParaScripting::CNPLScriptingState::GetFileName()
 	return !m_stack_current_file.empty() ? m_stack_current_file.top() : CGlobals::GetString(0);
 }
 
+const char* ParaScripting::CNPLScriptingState::GetCurrentFileName()
+{
+	if (!m_stack_current_file.empty()) 
+	{
+		return m_stack_current_file.top().c_str();
+	}
+	else
+	{
+		auto L = m_pState;
+		lua_Debug ar;
+		if (lua_getinfo(L, "S", &ar) != 0)
+			return ar.source;
+		else
+			return NULL;
+	}
+}
+
 bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bReload)
 {
 	if (m_pState == NULL)
@@ -451,7 +471,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		{
 			// if the file is not loaded before, add a new GliaFile with the name filePath to the loaded glia file list.
 			// this is done before the file is actually loaded to prevent recursive loading, which may lead to C stack overflow.
-			m_loaded_files[filePath] = -1; // -1 means file is about to be loaded. 
+			m_loaded_files[filePath] = NPL_FILE_MODULE_START_LOADING; 
 			
 			char* codebuf = NULL;
 			int codesize = 0;
@@ -556,6 +576,13 @@ const char _file_mod_[] = "_file_mod_";
 
 void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult)
 {
+	auto it = m_loaded_files.find(filename);
+	if (nResult == 0 && it != m_loaded_files.end() && it->second > 0) 
+	{
+		// this could happen when user used NPL.export() instead of return for file module.
+		PopFileModule(filename);
+		return;
+	}
 	m_loaded_files[filename] = nResult;
 	if (nResult > 0 || nResult == -1)
 	{
@@ -591,8 +618,6 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 				lua_pushlstring(L, filename.c_str(), filename.size());
 				lua_newtable(L);
 				lua_rawset(L, -3);
-				// as if it is returning one variable.
-				m_loaded_files[filename] = 1;
 			}
 			else
 			{
@@ -612,12 +637,17 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 	if (obj != m_loaded_files.end())
 	{
 		int nResultNum = obj->second;
-		if (nResultNum == -1)
+		if (nResultNum == NPL_FILE_MODULE_START_LOADING)
 		{
 			// if cyclic dependency is detected, we will cache an empty table instead. 
 			CacheFileModule(filename, -1);
 			nResultNum = 1;
 		}
+		else if (nResultNum == -1)
+		{
+			nResultNum = 1;
+		}
+
 		if (nResultNum > 0)
 		{
 			auto L = m_pState;

@@ -152,6 +152,8 @@ namespace ParaScripting
 
 		/** get current file name which is being processed now.*/
 		const string& GetFileName();
+		/** get current file that is being loaded or where the current code is defined. */
+		const char* GetCurrentFileName();
 
 		/**
 		* load or restore the runtime state

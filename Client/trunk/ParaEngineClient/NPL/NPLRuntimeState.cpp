@@ -672,7 +672,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	else if (nSize > 3 && filepath[0] == '.' && filepath[1] == '/')
 	{
 		// load using relative path to current file path. 
-		std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFilename(), 0);
+		std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(), 0);
 		fullPath.append(filepath.c_str() + 2);
 		return LoadFile(fullPath, bReload);
 	}
@@ -1012,11 +1012,6 @@ NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PopMessageAt(int nIndex)
 	NPLMessage_ptr msg;
 	m_input_queue.try_pop_at(nIndex, msg);
 	return msg;
-}
-
-const std::string& NPL::CNPLRuntimeState::GetCurrentFilename()
-{
-	return CNPLScriptingState::GetFileName();
 }
 
 int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
