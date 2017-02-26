@@ -437,6 +437,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		return false;
 	if (filePath.empty())
 		return true;
+
 	bool bLoadedBefore = IsScriptFileLoaded(filePath);
 	if (!bLoadedBefore || bReload)
 	{

@@ -21,6 +21,7 @@ using namespace luabind;
 #include "NPLHelper.h"
 #include "NPLCompiler.h"
 #include "ParaScriptingNPL.h"
+#include "ParaScriptingGlobal.h"
 #ifdef PARAENGINE_CLIENT
 #include "EditorHelper.h"
 #endif
@@ -1708,6 +1709,18 @@ namespace ParaScripting
 			return m_rts->GetName().c_str();
 		}
 		return NULL;
+	}
+
+	luabind::object ParaNPLRuntimeState::GetField(const char* sFieldname, const object& output)
+	{
+		ParaAttributeObject att(m_rts);
+		return att.GetField(sFieldname, output);
+	}
+
+	void ParaNPLRuntimeState::SetField(const char* sFieldname, const object& input)
+	{
+		ParaAttributeObject att(m_rts);
+		att.SetField(sFieldname, input);
 	}
 
 	void ParaNPLRuntimeState::Reset()

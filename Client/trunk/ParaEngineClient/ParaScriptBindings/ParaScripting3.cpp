@@ -297,6 +297,8 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				.def("GetMsgQueueSize", &ParaNPLRuntimeState::GetMsgQueueSize)
 				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage)
 				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage2)
+				.def("GetField", &ParaNPLRuntimeState::GetField)
+				.def("SetField", &ParaNPLRuntimeState::SetField)
 				.def("PeekMessage", &ParaNPLRuntimeState::PeekMessage)
 				.def("PopMessageAt", &ParaNPLRuntimeState::PopMessageAt)
 				.def("GetStats", &ParaNPLRuntimeState::GetStats),

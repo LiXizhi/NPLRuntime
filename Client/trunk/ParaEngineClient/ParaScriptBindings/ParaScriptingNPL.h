@@ -7,6 +7,15 @@
 #include <boost/shared_ptr.hpp>
 #include "ParaScriptingGlobal.h"
 
+
+namespace luabind
+{
+	namespace adl {
+		class object;
+	}
+	using adl::object;
+}
+
 namespace ParaScripting
 {
 	using namespace luabind;
@@ -34,6 +43,9 @@ namespace ParaScripting
 
 		/** return the name of this runtime state. if "", it is considered an anonymous name */
 		const char* GetName() const;
+
+		object GetField(const char*  sFieldname, const object& output);
+		void SetField(const char*  sFieldname, const object& input);
 
 		/** start this runtime state in a worker thread 
 		* @return the number of threads that are currently working on the runtime state. normally this is 1. 

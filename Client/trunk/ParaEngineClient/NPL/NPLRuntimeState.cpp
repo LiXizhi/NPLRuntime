@@ -12,6 +12,7 @@
 #include "PluginAPI.h"
 #include "IParaWebService.h"
 #include "NPLActivationFile.h"
+#include "FileManager.h"
 #include "NPLHelper.h"
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
@@ -668,6 +669,13 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			return true;
 		}
 	}
+	else if (nSize > 3 && filepath[0] == '.' && filepath[1] == '/')
+	{
+		// load using relative path to current file path. 
+		std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFilename(), 0);
+		fullPath.append(filepath.c_str() + 2);
+		return LoadFile(fullPath, bReload);
+	}
 	return LoadFile(filepath, bReload);
 }
 
@@ -1006,6 +1014,11 @@ NPL::NPLMessage_ptr NPL::CNPLRuntimeState::PopMessageAt(int nIndex)
 	return msg;
 }
 
+const std::string& NPL::CNPLRuntimeState::GetCurrentFilename()
+{
+	return CNPLScriptingState::GetFileName();
+}
+
 int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
 {
 	using namespace ParaEngine;
@@ -1017,6 +1030,7 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("HasDebugHook", FieldType_Bool, (void*)0, (void*)HasDebugHook_s, NULL, NULL, bOverride);
 	pClass->AddField("IsPreemptive", FieldType_Bool, (void*)0, (void*)IsPreemptive_s, NULL, NULL, bOverride);
 	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
+	pClass->AddField("filename", FieldType_String, (void*)0, (void*)GetFileName_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
