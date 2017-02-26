@@ -16,6 +16,8 @@ namespace luabind
 	using adl::object;
 }
 
+struct lua_State;
+
 namespace ParaScripting
 {
 	using namespace luabind;
@@ -250,6 +252,9 @@ namespace ParaScripting
 		/** same as NPL.load(filepath, false); */
 		static void load1(const object& filePath);
 
+		/** set/get exported file module*/
+		static int export_(lua_State* L);
+		
 		/**
 		* execute a given string immediately in protected mode. 
 		* @param sCode : the code to run. the code can not be longer than some internally defined value. 

@@ -280,7 +280,17 @@ namespace ParaScripting
 		CNPL::load(filePath, false);
 	}
 
-	void CNPL::EnableNetwork( bool bEnable, const char* CenterName, const char* password )
+	int CNPL::export_(lua_State* L)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaState(L);
+		if (runtime_state.get() != 0)
+		{
+			return runtime_state->NPL_export();
+		}
+		return 0;
+	}
+
+	void CNPL::EnableNetwork(bool bEnable, const char* CenterName, const char* password)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_EnableNetwork(bEnable, CenterName, password);
 	}

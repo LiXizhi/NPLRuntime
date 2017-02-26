@@ -273,10 +273,16 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 
 }
 
+
+int NPL_export_capi(lua_State *L){
+	return ParaScripting::CNPL::export_(L);
+}
+
 void CNPLScriptingState::LoadHAPI_NPL()
 {
 	using namespace luabind;
 	lua_State* L = GetLuaState();
+
 	module(L)
 		[
 			//		def("_ALERT", (void (*) (const object& ))&NPL_Alert),
@@ -372,6 +378,20 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("this", &CNPL::this_)
 			]
 		];
+
+	{
+		lua_pushlstring(L, "NPL", 3);
+		lua_rawget(L, LUA_GLOBALSINDEX);
+		if (lua_istable(L, -1))
+		{
+			// register NPL.export function
+			lua_pushlstring(L, "export", 6);
+			lua_pushcfunction(L, NPL_export_capi);
+			lua_rawset(L, -3);
+			lua_pop(L, 1);
+		}
+	}
+
 #ifdef PARAENGINE_CLIENT
 	module(L)
 		[

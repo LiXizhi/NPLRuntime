@@ -148,6 +148,7 @@ namespace ParaScripting
 
 		/** get pointer to NPLRuntimeState from the lua state object. it just retrieves from a secret lua_status variable. */
 		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaObject(const object& obj);
+		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaState(lua_State* L);
 
 		/** get current file name which is being processed now.*/
 		const string& GetFileName();
@@ -162,6 +163,9 @@ namespace ParaScripting
 		/** if true, we will delete the luastate when this class is destroyed. This function should rarely be called. 
 		*/
 		void SetOwnLuaState(bool bOwn);
+
+		/** set/get exported file module. */
+		int NPL_export();
 	protected:
 
 		/** destroy the runtime state
@@ -185,8 +189,10 @@ namespace ParaScripting
 		*/
 		void CacheFileModule(const std::string& filename, int nResult);
 
-		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not. */
-		bool PopFileModule(const std::string& filename);
+		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not. 
+		* @return the number of result. usually 1 or 0
+		*/
+		int PopFileModule(const std::string& filename);
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack
@@ -240,7 +246,9 @@ namespace ParaScripting
 			void* m_mspace;
 		};
 
-		/** all loaded files */
+		/** all loaded files mapping from filename to number of cached objects. 
+		* If -1, it means that file is being loaded or something went wrong. 0 means no cached object.  
+		*/
 		std::map <std::string, int32> m_loaded_files;
 
 		/** a stack of files being loaded. */
