@@ -21,7 +21,7 @@
 /** define this to enable testing saving. See SaveParaXMesh() 
 * text encoding is enforced when the macro is on. */
 // #define TEST_NODE
-#elif defined(USE_OPENGL_RENDERER)
+#elif
 #include "ParaXModel/XFileCharModelParser.h"
 #endif
 

@@ -444,10 +444,13 @@ const char* ParaScripting::CNPLScriptingState::GetCurrentFileName()
 	{
 		auto L = m_pState;
 		lua_Debug ar;
-		if (lua_getinfo(L, "S", &ar) != 0)
-			return ar.source;
-		else
-			return NULL;
+		if (lua_getstack(L, 1, &ar)) 
+		{  
+			/* check function at level */
+			if (lua_getinfo(L, "S", &ar) != 0)
+				return ar.source;
+		}
+		return NULL;
 	}
 }
 
@@ -577,7 +580,7 @@ const char _file_mod_[] = "_file_mod_";
 void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult)
 {
 	auto it = m_loaded_files.find(filename);
-	if (nResult == 0 && it != m_loaded_files.end() && it->second > 0) 
+	if (nResult == 0 && it != m_loaded_files.end() && (it->second > 0 || it->second == -1))
 	{
 		// this could happen when user used NPL.export() instead of return for file module.
 		PopFileModule(filename);
