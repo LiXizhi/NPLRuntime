@@ -27,6 +27,9 @@
 /** #def file module is just started being loaded to prevent cyclic reference. */
 #define NPL_FILE_MODULE_START_LOADING  -1000
 
+/** global npl table to cache all file modules */
+const char _file_mod_[] = "_file_mod_";
+
 /**
 for luabind, The main drawback of this approach is that the compilation time will increase for the file
 that does the registration, it is therefore recommended that you register everything in the same cpp-file.
@@ -283,9 +286,10 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 }
 
 
-void ParaScripting::CNPLScriptingState::ProcessResult(int nResult)
+void ParaScripting::CNPLScriptingState::ProcessResult(int nResult, lua_State* L)
 {
-	lua_State* L = m_pState;
+	if (L == 0)
+		L = m_pState;
 	if (nResult != 0)
 	{
 		// read error message on stack
@@ -434,7 +438,7 @@ const string& ParaScripting::CNPLScriptingState::GetFileName()
 	return !m_stack_current_file.empty() ? m_stack_current_file.top() : CGlobals::GetString(0);
 }
 
-const char* ParaScripting::CNPLScriptingState::GetCurrentFileName()
+const char* ParaScripting::CNPLScriptingState::GetCurrentFileName(lua_State* L)
 {
 	if (!m_stack_current_file.empty()) 
 	{
@@ -442,7 +446,9 @@ const char* ParaScripting::CNPLScriptingState::GetCurrentFileName()
 	}
 	else
 	{
-		auto L = m_pState;
+		if (L == 0)
+			L = m_pState;
+
 		lua_Debug ar;
 		if (lua_getstack(L, 1, &ar)) 
 		{  
@@ -454,13 +460,13 @@ const char* ParaScripting::CNPLScriptingState::GetCurrentFileName()
 	}
 }
 
-bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bReload)
+bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bReload, lua_State* L, bool bNoReturn)
 {
 	if (m_pState == NULL)
 		return false;
 	if (filePath.empty())
 		return true;
-
+	
 	bool bLoadedBefore = IsScriptFileLoaded(filePath);
 	if (!bLoadedBefore || bReload)
 	{
@@ -489,75 +495,82 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 					// for *.npl file, invoke meta-compiler NPL.loadstring(code, filename) first. 
 					if (!IsScriptFileLoaded(NPL_META_COMPILER_SRC))
 					{
-						if (!LoadFile(NPL_META_COMPILER_SRC, false))
+						if (!LoadFile(NPL_META_COMPILER_SRC, false, L))
 						{
 							OUTPUT_LOG("warning: NPL meta compiler not found. \n");
 							return false;
 						}
 					}
 
+					if (L == 0)
+						L = m_pState;
 					const char actTable[] = "NPL";
-					lua_pushlstring(m_pState, actTable, sizeof(actTable) - 1);
-					lua_gettable(m_pState, LUA_GLOBALSINDEX);
-					if (lua_istable(m_pState, -1))
+					lua_pushlstring(L, actTable, sizeof(actTable) - 1);
+					lua_gettable(L, LUA_GLOBALSINDEX);
+					if (lua_istable(L, -1))
 					{
 						std::string funcName = "loadstring";
-						lua_pushlstring(m_pState, funcName.c_str(), funcName.size());
-						lua_gettable(m_pState, -2);
-						if (lua_isfunction(m_pState, -1))
+						lua_pushlstring(L, funcName.c_str(), funcName.size());
+						lua_gettable(L, -2);
+						if (lua_isfunction(L, -1))
 						{
-							int top = lua_gettop(m_pState);
-							lua_pushlstring(m_pState, codebuf, codesize);
-							lua_pushlstring(m_pState, filePath.c_str(), filePath.size());
+							int top = lua_gettop(L);
+							lua_pushlstring(L, codebuf, codesize);
+							lua_pushlstring(L, filePath.c_str(), filePath.size());
 							// call the function with 2 arguments and multi result, with no error handling routine
-							int nResult = lua_pcall(m_pState, 2, LUA_MULTRET, 0);
-							int num_results = lua_gettop(m_pState) - top + 1;
+							int nResult = lua_pcall(L, 2, LUA_MULTRET, 0);
+							int num_results = lua_gettop(L) - top + 1;
 							if (nResult == 0 && num_results > 0)
 							{
-								int top = lua_gettop(m_pState);
-								if (lua_isfunction(m_pState, -1)) 
+								int top = lua_gettop(L);
+								if (lua_isfunction(L, -1))
 								{
-									nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
-									int num_results = lua_gettop(m_pState) - top + 1;
+									nResult = lua_pcall(L, 0, LUA_MULTRET, 0);
+									int num_results = lua_gettop(L) - top + 1;
 									if (nResult == 0)
 									{
-										// lua_pop(m_pState, num_results);
-										CacheFileModule(filePath, num_results);
+										CacheFileModule(filePath, num_results, L);
+										if (bNoReturn && num_results > 0){
+											lua_pop(L, num_results);
+										}
 									}
 								}
 								else 
 								{
-									lua_pop(m_pState, num_results);
+									lua_pop(L, num_results);
 								}
 							}
-							ProcessResult(nResult);
+							ProcessResult(nResult, L);
 						}
 						else
 						{
 							OUTPUT_LOG("warning: no NPL.loadstring function not found when compiling %s\n", filePath.c_str());
-							lua_pop(m_pState, 1);
+							lua_pop(L, 1);
 						}
 					}
 					// pops the element, so that the stack is balanced.
-					lua_pop(m_pState, 1);
+					lua_pop(L, 1);
 				}
 				else
 				{
 					/** for standard lua file, Load and execute the a buffer of code in protected mode ( lua_pcall() )
 					Output messages through log interface */
-
-					int nResult = luaL_loadbuffer(m_pState, codebuf, codesize, filePath.c_str());
+					if (L == 0)
+						L = m_pState;
+					int nResult = luaL_loadbuffer(L, codebuf, codesize, filePath.c_str());
 					if (nResult == 0) {
-						int top = lua_gettop(m_pState);
-						nResult = lua_pcall(m_pState, 0, LUA_MULTRET, 0);
-						int num_results = lua_gettop(m_pState) - top + 1;
+						int top = lua_gettop(L);
+						nResult = lua_pcall(L, 0, LUA_MULTRET, 0);
+						int num_results = lua_gettop(L) - top + 1;
 						if (nResult == 0)
 						{
-							// lua_pop(m_pState, num_results);
-							CacheFileModule(filePath, num_results);
+							CacheFileModule(filePath, num_results, L);
+							if (bNoReturn && num_results > 0){
+								lua_pop(L, num_results);
+							}
 						}
 					}
-					ProcessResult(nResult);
+					ProcessResult(nResult, L);
 				}
 			}
 		}
@@ -569,27 +582,29 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 	}
 	else
 	{
-		PopFileModule(filePath);
+		if (!bNoReturn){
+			PopFileModule(filePath, L);
+		}
 	}
 
 	return true;
 }
 
-const char _file_mod_[] = "_file_mod_";
 
-void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult)
+void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult, lua_State* L)
 {
 	auto it = m_loaded_files.find(filename);
 	if (nResult == 0 && it != m_loaded_files.end() && (it->second > 0 || it->second == -1))
 	{
 		// this could happen when user used NPL.export() instead of return for file module.
-		PopFileModule(filename);
+		PopFileModule(filename, L);
 		return;
 	}
 	m_loaded_files[filename] = nResult;
 	if (nResult > 0 || nResult == -1)
 	{
-		auto L = m_pState;
+		if(L==0)
+			L = m_pState;
 
 		int nLastResultIndex = lua_gettop(L);
 		// create the _file_mod_ table if not. 
@@ -634,7 +649,7 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 	}
 }
 
-int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename)
+int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename, lua_State* L)
 {
 	auto obj = m_loaded_files.find(filename);
 	if (obj != m_loaded_files.end())
@@ -643,7 +658,7 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 		if (nResultNum == NPL_FILE_MODULE_START_LOADING)
 		{
 			// if cyclic dependency is detected, we will cache an empty table instead. 
-			CacheFileModule(filename, -1);
+			CacheFileModule(filename, -1, L);
 			nResultNum = 1;
 		}
 		else if (nResultNum == -1)
@@ -653,7 +668,8 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 
 		if (nResultNum > 0)
 		{
-			auto L = m_pState;
+			if (L == 0)
+				L = m_pState;
 
 			// create the _file_mod_ table if not. 
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
@@ -675,25 +691,26 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 	return 0;
 }
 
-int ParaScripting::CNPLScriptingState::NPL_export()
+int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 {
-	auto L = m_pState;
+	if (L == 0)
+		L = m_pState;
 	// number of arguments
 	int n = lua_gettop(L);
 	if (n == 0)
 	{
 		// create or get the file module
-		return PopFileModule(GetFileName());
+		return PopFileModule(GetCurrentFileName(L), L);
 	}
 	else if (n == 1)
 	{
-		CacheFileModule(GetFileName(), n);
+		CacheFileModule(GetCurrentFileName(L), n, L);
 		return n;
 	}
 	else if (n > 1)
 	{
 		// TODO: cache to an array table. 
-		CacheFileModule(GetFileName(), n);
+		CacheFileModule(GetCurrentFileName(L), n, L);
 		return n;
 	}
 	return 0;
@@ -751,7 +768,7 @@ int ParaScripting::CNPLScriptingState::DoString(const char* sCall, int nLength, 
 				}
 			}
 
-			ProcessResult(nResult);
+			ProcessResult(nResult, m_pState);
 		}
 #else
 		// Note: use loadbuffer and pcall instead of lua_dostring() is safer.
@@ -814,7 +831,7 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 				
 				lua_pop(L, num_results);
 			}
-			ProcessResult(nResult);
+			ProcessResult(nResult, L);
 
 			if (nResult != 0){
 				// error

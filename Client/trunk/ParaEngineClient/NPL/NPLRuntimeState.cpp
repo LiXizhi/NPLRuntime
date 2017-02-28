@@ -307,7 +307,7 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	{
 		auto pFileState = GetNeuronFileState(msg->m_filename, false);
 		if (!pFileState) {
-			LoadFile_any(msg->m_filename, false);
+			LoadFile_any(msg->m_filename, false, 0, true);
 			pFileState = GetNeuronFileState(msg->m_filename);
 		}
 		if (pFileState) 
@@ -608,7 +608,7 @@ int NPL::CNPLRuntimeState::GetProcessedMsgCount()
 }
 
 template <typename StringType>
-bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bReload)
+bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bReload, lua_State* L, bool bNoReturn)
 {
 	if (filepath.empty())
 		return true;
@@ -672,11 +672,11 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	else if (nSize > 3 && filepath[0] == '.' && filepath[1] == '/')
 	{
 		// load using relative path to current file path. 
-		std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(), 0);
+		std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 0);
 		fullPath.append(filepath.c_str() + 2);
-		return LoadFile(fullPath, bReload);
+		return LoadFile(fullPath, bReload, L, bNoReturn);
 	}
-	return LoadFile(filepath, bReload);
+	return LoadFile(filepath, bReload, L, bNoReturn);
 }
 
 template <typename StringType>
@@ -993,7 +993,7 @@ const std::string& NPL::CNPLRuntimeState::GetIdentifier()
 void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, int nCodeLength /*= 0*/)
 {
 	NPL::NPLFileName filename(sNPLFilename);
-	LoadFile_any(filename.sRelativePath, false);
+	LoadFile_any(filename.sRelativePath, false, 0, true);
 	ActivateFile_any(filename.sRelativePath, sCode, nCodeLength);
 }
 
