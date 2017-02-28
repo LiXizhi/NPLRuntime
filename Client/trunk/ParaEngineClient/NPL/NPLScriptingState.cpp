@@ -695,22 +695,32 @@ int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 {
 	if (L == 0)
 		L = m_pState;
+	std::string filename(GetCurrentFileName(L));
 	// number of arguments
 	int n = lua_gettop(L);
 	if (n == 0)
 	{
+		auto obj = m_loaded_files.find(filename);
+		if (obj != m_loaded_files.end())
+		{
+			int nResultNum = obj->second;
+			if (nResultNum == 0)
+			{
+				CacheFileModule(filename, -1, L);
+			}
+		}
 		// create or get the file module
-		return PopFileModule(GetCurrentFileName(L), L);
+		return PopFileModule(filename, L);
 	}
 	else if (n == 1)
 	{
-		CacheFileModule(GetCurrentFileName(L), n, L);
+		CacheFileModule(filename, n, L);
 		return n;
 	}
 	else if (n > 1)
 	{
 		// TODO: cache to an array table. 
-		CacheFileModule(GetCurrentFileName(L), n, L);
+		CacheFileModule(filename, n, L);
 		return n;
 	}
 	return 0;
