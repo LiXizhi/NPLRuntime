@@ -13,11 +13,11 @@
 Name "NPLRuntime"
 Var  StartMenuFolder
 ; The file to write
-OutFile "nplruntime_v1.0-alpha.10_x64.exe"
+OutFile "nplruntime_v1.0-alpha.10_Windows_x64.exe"
 RequestExecutionLevel admin
 
 ; The default installation directory
-InstallDir $PROGRAMFILES32\npl
+InstallDir $PROGRAMFILES64\npl
 !define INSTDIR "$PROGRAMFILES64\npl"
 ; Request application privileges for Windows Vista
 ;RequestExecutionLevel user
@@ -112,17 +112,20 @@ Section "" ;No components page, name is not important
 	SetOutPath "$INSTDIR"
   
 	; Put file there
-	File "..\ParaWorld\bin32\ParaEngineClient.exe"
-	File "..\ParaWorld\bin32\libcurl.dll"
-	File "..\ParaWorld\bin32\lua.dll"
-	File "..\ParaWorld\bin32\luasql.dll"
-	File "..\ParaWorld\bin32\sqlite.dll"
+	File "..\ParaWorld\bin64\ParaEngineClient.exe"
+	File "..\ParaWorld\bin64\libcurl.dll"
+	File "..\ParaWorld\bin64\lua.dll"
+	File "..\ParaWorld\bin64\luasql.dll"
+	File "..\ParaWorld\bin64\sqlite.dll"
   
-	FileOpen $9 apachesrvin.bat w ;Opens a Empty File an fills it
-	FileWrite $9 "cd $INSTDIR\apache$\r$\n"
-	FileWrite $9 "apache -n Apache -k install$\r$\n"
-	FileWrite $9 "net start Apache$\r$\n"
-	FileWrite $9 "exit$\r$\n"
+	FileOpen $9 npl.bat w ;Opens a Empty File an fills it
+	FileWrite $9 "@echo off $\n"
+	FileWrite $9 '"%~dp0\paraengineclient.exe" %*'
+	FileClose $9 ;Closes the filled file
+	
+	FileOpen $9 npls.bat w ;Opens a Empty File an fills it
+	FileWrite $9 "@echo off $\n"
+	FileWrite $9 '"%~dp0\paraengineclient.exe" %* servermode=true'
 	FileClose $9 ;Closes the filled file
   
 	SetOutPath "$INSTDIR\npl_packages"

@@ -70,9 +70,9 @@ test: off
 artifacts:
 - path: NPLRuntime_32bit.zip
   name: binary_32
-- path: installer\nplruntime_v1.0-alpha.10_x86.exe
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
   name: execute_32
-- path: installer\nplruntime_v1.0-alpha.10_x64.exe
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
   name: execute_64
 - path: NPLRuntime_64bit.zip
   name: binary_64

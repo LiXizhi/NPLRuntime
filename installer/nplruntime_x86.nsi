@@ -13,7 +13,7 @@
 Name "NPLRuntime"
 Var  StartMenuFolder
 ; The file to write
-OutFile "nplruntime_v1.0-alpha.10_x86.exe"
+OutFile "nplruntime_v1.0-alpha.10_Windows_x86.exe"
 RequestExecutionLevel admin
 
 ; The default installation directory
@@ -117,6 +117,17 @@ Section "" ;No components page, name is not important
   File "..\ParaWorld\bin32\lua.dll"
   File "..\ParaWorld\bin32\luasql.dll"
   File "..\ParaWorld\bin32\sqlite.dll"
+  
+    FileOpen $9 npl.bat w ;Opens a Empty File an fills it
+	FileWrite $9 "@echo off $\n"
+	FileWrite $9 '"%~dp0\paraengineclient.exe" %*'
+	FileClose $9 ;Closes the filled file
+	
+	FileOpen $9 npls.bat w ;Opens a Empty File an fills it
+	FileWrite $9 "@echo off $\n"
+	FileWrite $9 '"%~dp0\paraengineclient.exe" %* servermode=true'
+	FileClose $9 ;Closes the filled file
+  
   SetOutPath "$INSTDIR\npl_packages"
   File /nonfatal /a /r "..\npl_packages\"
   ${EnvVarUpdate} $0 "PATH" "A" "HKCU" $INSTDIR
