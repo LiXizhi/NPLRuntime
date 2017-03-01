@@ -16,7 +16,9 @@
 #include "NPLStateMemAllocator.h"
 #include "ParaScriptingNPL.h"
 #include "NPLScriptingState.h"
+#include "util/regularexpression.h"
 #include "NPLRuntimeState.h"
+
 
 /** @def if defined. we will use the luajit recommended way to open lua states and load library. */
 // #define USE_LUAJIT
@@ -24,8 +26,10 @@
 /** @def this file is loaded before compiling */
 #define NPL_META_COMPILER_SRC  "script/ide/System/Compiler/nplc.lua"
 
-/** #def file module is just started being loaded to prevent cyclic reference. */
+/** @def file module is just started being loaded to prevent cyclic reference. */
 #define NPL_FILE_MODULE_START_LOADING  -1000
+/** @def the given file module is not loaded. */
+#define NPL_FILE_MODULE_NOT_LOADED  -999
 
 /** global npl table to cache all file modules */
 const char _file_mod_[] = "_file_mod_";
@@ -423,6 +427,26 @@ bool ParaScripting::CNPLScriptingState::IsScriptFileLoaded(const string& filepat
 	return (m_loaded_files.find(filepath) != m_loaded_files.end());
 }
 
+int ParaScripting::CNPLScriptingState::GetFileLoadStatus(const string& filepath)
+{
+	auto obj = m_loaded_files.find(filepath);
+	return (obj != m_loaded_files.end()) ? obj->second : NPL_FILE_MODULE_NOT_LOADED;
+}
+
+void ParaScripting::CNPLScriptingState::SetFileLoadStatus(const string& filepath, int nStatus)
+{
+	m_loaded_files[filepath] = nStatus;
+	std::string sExt = CParaFile::GetFileExtension(filepath);
+	if (sExt == "lua")
+	{
+		m_loaded_files[CParaFile::ChangeFileExtension(filepath, "npl")] = nStatus;
+	}
+	else if (sExt == "npl")
+	{
+		m_loaded_files[CParaFile::ChangeFileExtension(filepath, "lua")] = nStatus;
+	}
+}
+
 void ParaScripting::CNPLScriptingState::PushFileName(const string& filename)
 {
 	m_stack_current_file.push(filename);
@@ -480,7 +504,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		{
 			// if the file is not loaded before, add a new GliaFile with the name filePath to the loaded glia file list.
 			// this is done before the file is actually loaded to prevent recursive loading, which may lead to C stack overflow.
-			m_loaded_files[filePath] = NPL_FILE_MODULE_START_LOADING; 
+			SetFileLoadStatus(filePath, NPL_FILE_MODULE_START_LOADING);
+				
 			
 			char* codebuf = NULL;
 			int codesize = 0;
@@ -593,14 +618,14 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 
 void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult, lua_State* L)
 {
-	auto it = m_loaded_files.find(filename);
-	if (nResult == 0 && it != m_loaded_files.end() && (it->second > 0 || it->second == -1))
+	int nFileStatus = GetFileLoadStatus(filename);
+	if (nResult == 0 && (nFileStatus > 0 || nFileStatus == -1))
 	{
 		// this could happen when user used NPL.export() instead of return for file module.
 		PopFileModule(filename, L);
 		return;
 	}
-	m_loaded_files[filename] = nResult;
+	SetFileLoadStatus(filename, nResult);
 	if (nResult > 0 || nResult == -1)
 	{
 		if(L==0)
@@ -609,38 +634,40 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 		int nLastResultIndex = lua_gettop(L);
 		// create the _file_mod_ table if not. 
 		lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-		lua_rawget(L, LUA_GLOBALSINDEX);
+		lua_rawget(L, LUA_REGISTRYINDEX);
 
 		if (lua_isnil(L, -1))
 		{
 			lua_pop(L, 1);
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
 			lua_newtable(L);
-			lua_rawset(L, LUA_GLOBALSINDEX);
+			lua_rawset(L, LUA_REGISTRYINDEX);
 
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-			lua_rawget(L, LUA_GLOBALSINDEX);
+			lua_rawget(L, LUA_REGISTRYINDEX);
 		}
 		if (lua_istable(L, -1))
 		{
+			int nFilenameLength = filename.size() - ((filename.size() > 4 && filename[filename.size() - 4] == '.') ? 4 : 0);
+			
 			if (nResult == 1)
 			{
 				// cache the object on top of the stack directly
-				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushlstring(L, filename.c_str(), nFilenameLength);
 				lua_pushvalue(L, nLastResultIndex);
 				lua_rawset(L, -3);
 			}
 			else if (nResult == -1)
 			{
 				// to resolve cyclic dependency, we will create an empty table 
-				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushlstring(L, filename.c_str(), nFilenameLength);
 				lua_newtable(L);
 				lua_rawset(L, -3);
 			}
 			else
 			{
 				// TODO: save to a table{result1, result2, ...}. currently only the first result is cached. 
-				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushlstring(L, filename.c_str(), nFilenameLength);
 				lua_pushvalue(L, nLastResultIndex - nResult + 1);
 				lua_rawset(L, -3);
 			}
@@ -651,10 +678,10 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 
 int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename, lua_State* L)
 {
-	auto obj = m_loaded_files.find(filename);
-	if (obj != m_loaded_files.end())
+	int nFileStatus = GetFileLoadStatus(filename);
+	if (nFileStatus != NPL_FILE_MODULE_NOT_LOADED)
 	{
-		int nResultNum = obj->second;
+		int nResultNum = nFileStatus;
 		if (nResultNum == NPL_FILE_MODULE_START_LOADING)
 		{
 			// if cyclic dependency is detected, we will cache an empty table instead. 
@@ -670,13 +697,14 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 		{
 			if (L == 0)
 				L = m_pState;
+			int nFilenameLength = filename.size() - ((filename.size() > 4 && filename[filename.size() - 4] == '.') ? 4 : 0);
 
-			// create the _file_mod_ table if not. 
+			// get from the _file_mod_ table
 			lua_pushlstring(L, _file_mod_, sizeof(_file_mod_) - 1);
-			lua_rawget(L, LUA_GLOBALSINDEX);
+			lua_rawget(L, LUA_REGISTRYINDEX);
 			if (lua_istable(L, -1))
 			{
-				lua_pushlstring(L, filename.c_str(), filename.size());
+				lua_pushlstring(L, filename.c_str(), nFilenameLength);
 				lua_rawget(L, -2);
 				lua_remove(L, -2);
 
@@ -691,6 +719,88 @@ int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename
 	return 0;
 }
 
+std::string ParaScripting::CNPLScriptingState::GetModuleFilePath(const std::string& modulename, lua_State* L /*= 0*/)
+{
+	std::string fileExt = CParaFile::GetFileExtension(modulename);
+	if (fileExt == "npl" || fileExt == "lua")
+	{
+		return modulename;
+	}
+	else
+	{
+		if (L == 0)
+			L = m_pState;
+
+		std::string filename = regex_replace(modulename, regex("\\."), "/");
+
+		std::string parentModName;
+		std::string subModPath;
+		std::string testPath;
+		smatch result;
+		if (regex_search(filename, result, regex("^([^/]+)/?(.*)$")))
+		{
+			parentModName = result.str(1);
+			subModPath = result.str(2);
+			if (subModPath.empty())
+				subModPath = parentModName;
+
+			std::string currentFilename(GetCurrentFileName(L));
+			std::string output;
+			// Test1: if the current file is from npl_packages/[foldername], we will first try
+			// npl_packages/[foldername]/npl_mod/[modulename]
+			if (regex_search(currentFilename, result, regex("^(npl_packages/[\\w_]+/)")))
+			{
+				testPath = result.str(1) + "npl_mod/" + parentModName + "/" + subModPath;
+				std::string out;
+				output = testPath + ".lua";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+				output = testPath + ".npl";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+				// Test 1.1: if the current file is from npl_packages/[foldername], we will try again for 
+				// npl_packages/[foldername]/npl_packages/[modulename]/npl_mod/[modulename]
+				{
+					testPath = result.str(1) + std::string("npl_packages/") + parentModName + "/npl_mod/" + parentModName + "/" + subModPath;
+					std::string out;
+					output = testPath + ".lua";
+					if (GetScriptDiskPath(output, out) != 0)
+						return output;
+					output = testPath + ".npl";
+					if (GetScriptDiskPath(output, out) != 0)
+						return output;
+				}
+			}
+
+			// Test2: we will try npl_mod/[modulename]
+			{
+				testPath = std::string("npl_mod/") + parentModName + "/" + subModPath;
+				std::string out;
+				output = testPath + ".lua";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+				output = testPath + ".npl";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+			}
+
+			// finally, we will try npl_packages/[modulename]/npl_mod/[modulename]
+			{
+				testPath = std::string("npl_packages/") + parentModName + "/npl_mod/" + parentModName + "/" + subModPath;
+				std::string out;
+				output = testPath + ".lua";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+				output = testPath + ".npl";
+				if (GetScriptDiskPath(output, out) != 0)
+					return output;
+			}
+		}
+	}
+	return modulename;
+}
+
+
 int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 {
 	if (L == 0)
@@ -700,15 +810,12 @@ int ParaScripting::CNPLScriptingState::NPL_export(lua_State* L)
 	int n = lua_gettop(L);
 	if (n == 0)
 	{
-		auto obj = m_loaded_files.find(filename);
-		if (obj != m_loaded_files.end())
+		int nResultNum = GetFileLoadStatus(filename);
+		if (nResultNum == 0)
 		{
-			int nResultNum = obj->second;
-			if (nResultNum == 0)
-			{
-				CacheFileModule(filename, -1, L);
-			}
+			CacheFileModule(filename, -1, L);
 		}
+		
 		// create or get the file module
 		return PopFileModule(filename, L);
 	}

@@ -5,6 +5,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 2016.2.27
 	- NPL.export implemented with test cases that support cyclic dependency. 
 	- filename attribute added for NPL runtime state.
+	- NPL file module fully implemented
 
 2016.2.22
 	- open image with 8 bits png indexed color supported. updated test file and wiki doc.

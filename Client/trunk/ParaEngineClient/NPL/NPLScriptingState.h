@@ -200,6 +200,15 @@ namespace ParaScripting
 		* @return the number of result. usually 1 or 0
 		*/
 		int PopFileModule(const std::string& filename, lua_State* L = 0);
+
+		/** get module file path by module name */
+		std::string GetModuleFilePath(const std::string& modulename, lua_State* L = 0);
+
+		/** wrapping the m_loaded_files
+		*/
+		int GetFileLoadStatus(const string& filepath);
+		void SetFileLoadStatus(const string& filepath, int nStatus);
+
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
 		class CFileNameStack

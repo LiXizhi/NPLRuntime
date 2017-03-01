@@ -63,8 +63,9 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
 
-
-	if (animated)
+	if(IsBmaxModel())
+		m_RenderMethod = BMAX_MODEL;
+	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
 	else
 		m_RenderMethod = NO_ANIM;

@@ -613,12 +613,16 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	if (filepath.empty())
 		return true;
 	int nSize = (int)filepath.size();
+	bool bHasScriptFileExtension = nSize > 5 && filepath[nSize - 4] == '.' &&
+		((filepath[nSize - 3] == 'l' && filepath[nSize - 2] == 'u' && filepath[nSize - 1] == 'a') ||
+		(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
+		
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
 		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
 	}
-	else if (nSize > 5 && (filepath[nSize - 3] != 'l' && filepath[nSize - 3] != 'n') /* skip *.lua (npl) file */)
+	else if (nSize > 5 && !bHasScriptFileExtension)
 	{
 		if ((filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l') ||
 			(filepath[nSize - 3] == '.' && filepath[nSize - 2] == 's' && filepath[nSize - 1] == 'o'))
@@ -669,27 +673,58 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			return true;
 		}
 	}
-	else if (nSize > 3 && filepath[0] == '.')
+	if (filepath[0] == '.' && nSize > 3)
 	{
+		std::string fullPath;
 		// load using relative path to current file path. 
 		if (filepath[1] == '/')
 		{
-			std::string fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 0);
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 0);
 			fullPath.append(filepath.c_str() + 2);
-			return LoadFile(fullPath, bReload, L, bNoReturn);
 		}
-		else if(filepath[1] == '.' && filepath[2] == '/')
+		else if (filepath[1] == '.' && filepath[2] == '/')
 		{
 			// such as ../../
-			std::string parentDir = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 1);
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 1);
 			int nOffset = 3;
-			while (filepath[nOffset] == '.' && filepath[nOffset+1] == '.' && filepath[nOffset + 2] == '/')
+			while (filepath[nOffset] == '.' && filepath[nOffset + 1] == '.' && filepath[nOffset + 2] == '/')
 			{
-				parentDir = ParaEngine::CParaFile::GetParentDirectoryFromPath(parentDir, 1);
+				fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
 				nOffset += 3;
 			}
-			parentDir.append(filepath.c_str() + nOffset);
-			return LoadFile(parentDir, bReload, L, bNoReturn);
+			fullPath.append(filepath.c_str() + nOffset);
+		}
+		
+		if (!fullPath.empty())
+		{
+			// automatically add file extension if not. 
+			if (!bHasScriptFileExtension)
+			{
+				std::string output, out;
+				output = fullPath + ".lua";
+				if (GetScriptDiskPath(output, out) != 0)
+					fullPath = output;
+				else
+				{
+					output = fullPath + ".npl";
+					if (GetScriptDiskPath(output, out) != 0)
+						fullPath = output;
+				}
+			}
+			return LoadFile(fullPath, bReload, L, bNoReturn);
+		}
+	}
+	if (!bHasScriptFileExtension)
+	{
+		// this is file module, we need to use search path
+		std::string fileFullPath = GetModuleFilePath(filepath, L);
+		if (fileFullPath != filepath)
+		{
+			return LoadFile(fileFullPath, bReload, L, bNoReturn);
+		}
+		else
+		{
+			// file module not found
 		}
 	}
 	return LoadFile(filepath, bReload, L, bNoReturn);
