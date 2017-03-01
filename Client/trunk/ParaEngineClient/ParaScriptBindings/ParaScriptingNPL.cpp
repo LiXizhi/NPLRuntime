@@ -169,7 +169,7 @@ namespace ParaScripting
 		{
 			NPL::NPLFileName filename(sNPLFileName);
 			
-			runtime_state->LoadFile_any(filename.sRelativePath, false);
+			runtime_state->LoadFile_any(filename.sRelativePath, false, strNPLFileName.interpreter(), true);
 			runtime_state->ActivateFile_any(filename.sRelativePath, sCode.c_str(), (int)sCode.size());
 		}
 	}
@@ -265,7 +265,7 @@ namespace ParaScripting
 			if(nType == LUA_TSTRING)
 			{
 				NPL::NPLFileName filename(object_cast<const char*>(filePath));
-				runtime_state->LoadFile_any(filename.sRelativePath, bReload);
+				runtime_state->LoadFile_any(filename.sRelativePath, bReload, filePath.interpreter());
 			}
 		}
 	}
@@ -285,7 +285,17 @@ namespace ParaScripting
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaState(L);
 		if (runtime_state.get() != 0)
 		{
-			return runtime_state->NPL_export();
+			return runtime_state->NPL_export(L);
+		}
+		return 0;
+	}
+
+	const char* CNPL::GetFileName(lua_State* L)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaState(L);
+		if (runtime_state.get() != 0)
+		{
+			return runtime_state->GetCurrentFileName(L);
 		}
 		return 0;
 	}
@@ -450,12 +460,6 @@ namespace ParaScripting
 	void CNPL::UnregisterWSCallBack( const char * sWebServiceFile )
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_UnregisterWSCallBack(sWebServiceFile);
-	}
-
-	const char* CNPL::GetFileName()
-	{
-		// TODO:: 
-		return NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState()->GetFileName().c_str();
 	}
 
 	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )

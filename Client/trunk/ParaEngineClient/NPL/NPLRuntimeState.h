@@ -162,10 +162,11 @@ namespace NPL
 		* @param filePath: the local file path, it can be StringBuilder or std::string. 
 		* @param bReload: if true, the file will be reloaded even if it is already loaded.
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
+		* @param bNoReturn: generate no return on lua_state's stack.
 		* @return: return true if file is loaded.
 		*/
 		template <typename StringType>
-		bool LoadFile_any(const StringType & filepath, bool bReload=false);
+		bool LoadFile_any(const StringType & filepath, bool bReload = false, lua_State* L = 0, bool bNoReturn = false);
 		/**
 		* Activate a file(script or dll) in this runtime state. The file should be loaded already.
 		* @param filepath: pointer to the file path. it can be StringBuilder or std::string. 

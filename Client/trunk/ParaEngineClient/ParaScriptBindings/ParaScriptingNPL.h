@@ -194,12 +194,6 @@ namespace ParaScripting
 		static void call_(const char * sNPLFilename, const char* sCode);
 
 		/**
-		* return the NPL file name that is being loaded. Only call this function when the file is being initialized. i.e. at the root level. 
-		* Note: calling this function inside other functions will lead to unexpected result.
-		*/
-		static const char* GetFileName();
-
-		/**
 		* NOTE: the function name is "this" in NPL, not "this_". 
 		* associate a user defined function as the activation function of this file.
 		* add the current file name to the __act table.
@@ -254,6 +248,8 @@ namespace ParaScripting
 
 		/** set/get exported file module*/
 		static int export_(lua_State* L);
+		/** get filename of the file where the calling function is defined. */
+		static const char* GetFileName(lua_State* L = 0);
 		
 		/**
 		* execute a given string immediately in protected mode. 
