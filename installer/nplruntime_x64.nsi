@@ -31,6 +31,7 @@ InstallDir $PROGRAMFILES64\npl
 ; Pages
 
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE $(myLicenseData)
 Page directory dir_pre "" ""
 !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
 !insertmacro MUI_PAGE_INSTFILES
@@ -43,6 +44,8 @@ BrandingText "http://www.paracraft.cn"
 
 LangString DskCText ${LANG_ENGLISH} "The installer is already running."
 LangString DskCText ${LANG_SIMPCHINESE} "安装程序已经在运行"
+LicenseLangString myLicenseData ${LANG_ENGLISH} "LICENSE"
+LicenseLangString myLicenseData ${LANG_SIMPCHINESE} "LICENSE"
 
 ;--------------------------------
 ; Test if Disk C free space is more than 10MB, if yes, donot disply directory choose page, if no give user the choice
