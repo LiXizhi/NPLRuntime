@@ -972,13 +972,13 @@ NPL::NPLReturnCode ParaScripting::CNPLScriptingState::ActivateFile(const string&
 
 bool ParaScripting::CNPLScriptingState::BindFileActivateFunc(const luabind::object& funcActivate, const std::string& filename)
 {
-	if (type(funcActivate) == LUA_TFUNCTION)
+	if (luabind::type(funcActivate) == LUA_TFUNCTION)
 	{
 		object tabGlobal = luabind::globals(funcActivate.interpreter());
 		object tabAct = tabGlobal["__act"];
 
 		/// create the activate table, if it does not exist
-		if (!(tabAct.is_valid()) || (type(tabAct) != LUA_TTABLE))
+		if (!(tabAct.is_valid()) || (luabind::type(tabAct) != LUA_TTABLE))
 		{
 			tabAct = newtable(funcActivate.interpreter());
 			tabGlobal["__act"] = tabAct;
