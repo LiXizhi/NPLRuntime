@@ -30,6 +30,8 @@
 #define NPL_FILE_MODULE_START_LOADING  -1000
 /** @def the given file module is not loaded. */
 #define NPL_FILE_MODULE_NOT_LOADED  -999
+/** @def the given file module is not found. */
+#define NPL_FILE_MODULE_NOT_FOUND  -998
 
 /** global npl table to cache all file modules */
 const char _file_mod_[] = "_file_mod_";
@@ -490,8 +492,8 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		return false;
 	if (filePath.empty())
 		return true;
-	
-	bool bLoadedBefore = IsScriptFileLoaded(filePath);
+	int nFileStatus = GetFileLoadStatus(filePath);
+	bool bLoadedBefore = nFileStatus != NPL_FILE_MODULE_NOT_LOADED;
 	if (!bLoadedBefore || bReload)
 	{
 		// if the file is not loaded or reload it true, try loading the glia file first.
@@ -601,8 +603,13 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		}
 		else
 		{
-			OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
-			return false;
+			std::string sExt = CParaFile::GetFileExtension(sFileName);
+			if (sExt == "npl" || sExt == "lua")
+			{
+				OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
+			}
+			SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
+			nFileStatus = NPL_FILE_MODULE_NOT_FOUND;
 		}
 	}
 	else
@@ -612,6 +619,17 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 		}
 	}
 
+	if (nFileStatus == NPL_FILE_MODULE_NOT_FOUND)
+	{
+		if (!bNoReturn)
+		{
+			// return false to scripting environment if module is not found. 
+			if (L == 0)
+				L = m_pState;
+			lua_pushboolean(L, 0);
+		}
+		return false;
+	}
 	return true;
 }
 
@@ -679,7 +697,7 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename, lua_State* L)
 {
 	int nFileStatus = GetFileLoadStatus(filename);
-	if (nFileStatus != NPL_FILE_MODULE_NOT_LOADED)
+	if (nFileStatus != NPL_FILE_MODULE_NOT_LOADED && nFileStatus != NPL_FILE_MODULE_NOT_FOUND)
 	{
 		int nResultNum = nFileStatus;
 		if (nResultNum == NPL_FILE_MODULE_START_LOADING)

@@ -231,7 +231,7 @@ namespace ParaScripting
 		* @note: when loading an NPL file, we will first find if there is an up to date compiled version in the bin directory. if there is, 
 		* we will load the compiled version, otherwise we will use the text version.  use bin version, if source version does not exist; use bin version, if source and bin versions are both on disk (instead of zip) and that bin version is newer than the source version. 
 		* e.g. we can compile source to bin directory with file extension ".o", e.g. "script/abc.lua" can be compiled to "bin/script/abc.o", The latter will be used if available and up-to-date. 
-		* @param filePath: the local relative file path. 
+		* @param filePath: the relative to working directory file path like "script/abc.lua", or relative to calling script with "./abc.npl". 
 		* If the file extension is ".dll", it will be treated as a plug-in. Examples:
 		*	"NPLRouter.dll"			-- load a C++ or C# dll. Please note that, in windows, it looks for NPLRonter.dll; in linux, it looks for ./libNPLRouter.so 
 		*	"plugin/libNPLRouter.dll"			-- almost same as above, it is reformatted to remove the heading 'lib' when loading. In windows, it looks for plugin/NPLRonter.dll; in linux, it looks for ./plugin/libNPLRouter.so
@@ -239,6 +239,7 @@ namespace ParaScripting
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
 		* @remark: one should be very careful when calling with bReload set to true, since this may lead to recursive 
 		*	reloading of the same file. If this occurs, it will generate C Stack overflow error message.
+		* @return false if file is not found. it may also return the cached(exported) object. 
 		*/
 		static void load(const object& filePath, bool bReload);
 		/** for NPL managed only.*/
