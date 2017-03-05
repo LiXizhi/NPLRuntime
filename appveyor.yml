@@ -6,12 +6,12 @@ environment:
     installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
     zip_name: NPLRuntime_32bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin32
-	exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
+    exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
   - solution_name: c:\projects\nplruntime\bin\client_64bit\CLIENT.sln
     installer_name: C:\projects\nplruntime\installer\nplruntime_x64.nsi
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
-	exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+    exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
 install:
 - cmd: >-
     git submodule init
@@ -72,17 +72,21 @@ build_script:
     "C:/Program Files (x86)/NSIS/makensis" %installer_name%
 test: off
 artifacts:
-- path: %zip_name%
-  name: binary
-- path: %exe_path%
-  name: execute
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
+  name: execute_32
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+  name: execute_64
+- path: NPLRuntime_32bit
+  name: binary_32
+- path: NPLRuntime_64bit
+  name: binary_64
 deploy:
 - provider: GitHub
   tag: v1.0-alpha.10
   release: v1.0-alpha.10(Windows)
   auth_token:
     secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
-  artifact: execute, binary
+  artifact: execute_32, binary_32, execute_64, binary_64
   prerelease: true
 on_finish:
 - cmd: 
