@@ -544,8 +544,11 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 					if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 					{
 						// Note: do this if one wants point light
-						CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-						CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+						if (pBlockWorldClient->GetUsePointTextureFiltering())
+						{
+							CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+							CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+						}
 					}
 				}
 			}
@@ -568,8 +571,11 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 						if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 						{
 							// Note: do this if one wants point light
-							CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-							CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+							if (pBlockWorldClient->GetUsePointTextureFiltering())
+							{
+								CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+								CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+							}
 						}
 					}
 
@@ -771,8 +777,11 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 	SetFrameNumber(sceneState->m_nRenderCount);
 
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
+
+	bool bUsePointTextureFilter = false;
+
 	// apply block space lighting for object whose size is comparable to a single block size
-	if ((CheckAttribute(MESH_USE_LIGHT) || sceneState->IsDeferredShading()) && !(sceneState->IsShadowPass()))
+	if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 	{
 		BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 		if(pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
@@ -798,10 +807,14 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 			
 			sceneState->EnableLocalMaterial(true);
 			
-			// Note: do this if one wants point light
-			pEffectManager->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT);
-			pEffectManager->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_POINT);
+			bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 		}
+	}
+	
+	if (bUsePointTextureFilter)
+	{
+		pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
+		pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 	}
 	else
 	{
