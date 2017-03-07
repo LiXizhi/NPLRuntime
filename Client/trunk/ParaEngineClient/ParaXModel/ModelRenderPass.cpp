@@ -27,11 +27,15 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 	if (m->showGeosets[geoset] == false || indexCount == 0)
 		return false;
 	float materialAlpha = 1.f;
+	bool nozwrite_ = nozwrite;
 	if (pMaterialParams != NULL)
 	{
 		CParameter* pParams = pMaterialParams->GetParameter("g_opacity");
 		if (pParams)
 			materialAlpha = (float)(*pParams);
+		pParams = pMaterialParams->GetParameter("zwrite");
+		if (pParams && (bool)(*pParams) == false)
+			nozwrite_ = true;
 	}
 	if (materialAlpha <= 0.f)
 		return false;
@@ -52,7 +56,7 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 	return true;
 }
 
-void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState)
+void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
 {
 	if ((blendmode & BM_TEMP_FORCEALPHABLEND) == BM_TEMP_FORCEALPHABLEND)
 	{
@@ -93,11 +97,15 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	}
 
 	float materialAlpha = 1.f;
+	bool nozwrite_ = nozwrite;
 	if(pMaterialParams != NULL)
 	{
 		CParameter* pParams = pMaterialParams->GetParameter("g_opacity");
 		if(pParams)
 			materialAlpha = (float)(*pParams);
+		pParams = pMaterialParams->GetParameter("zwrite");
+		if (pParams && (bool)(*pParams) == false)
+			nozwrite_ = true;
 	}
 	ocol.w *= materialAlpha;
 
@@ -158,7 +166,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			break;
 		}
 
-		if (nozwrite) {
+		if (nozwrite_) {
 			CGlobals::GetEffectManager()->EnableZWrite(false);
 		}
 
@@ -242,7 +250,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 
 	return true;
 }
-void ModelRenderPass::deinit_FX(SceneState* pSceneState)
+void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
 {
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
@@ -251,6 +259,14 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState)
 	{
 		CGlobals::GetWorldMatrixStack().pop();
 		pEffect->applyWorldMatrices();
+	}
+	bool nozwrite_ = nozwrite;
+	if (pMaterialParams != NULL)
+	{
+		CParameter* pParams = NULL;
+		pParams = pMaterialParams->GetParameter("zwrite");
+		if (pParams && (bool)(*pParams) == false)
+			nozwrite_ = true;
 	}
 	if (!pSceneState->IsShadowPass())
 	{
@@ -275,7 +291,7 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState)
 		default:
 			break;
 		}
-		if (nozwrite) {
+		if (nozwrite_) {
 			CGlobals::GetEffectManager()->EnableZWrite(true);
 		}
 

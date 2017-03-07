@@ -487,6 +487,8 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 	bool bIsRendered = false;
 	CGlobals::GetEffectManager()->applyObjectLocalLighting(this);
 
+	CApplyObjectLevelParamBlock p(materialParams);
+
 	if(GetSelectGroupIndex() >= 0 && !sceneState->IsShadowPass())
 	{
 		if((sceneState->m_nCurRenderGroup & RENDER_SELECTION) == 0)
@@ -780,6 +782,7 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 
 	bool bUsePointTextureFilter = false;
 
+	CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 	// apply block space lighting for object whose size is comparable to a single block size
 	if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 	{
@@ -826,7 +829,7 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 	Matrix4 mxWorld;
 	GetRenderMatrix(mxWorld);
 
-	DrawInner(sceneState, &mxWorld, sceneState->GetCameraToCurObjectDistance());
+	DrawInner(sceneState, &mxWorld, sceneState->GetCameraToCurObjectDistance(), p.GetParamsBlock());
 
 	sceneState->EnableLocalMaterial(false);
 

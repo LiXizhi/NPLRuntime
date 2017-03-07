@@ -257,6 +257,8 @@ namespace ParaEngine
 		ApplyBlockLighting(sceneState);
 
 		
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
+
 		if (pEffectFile == 0)
 		{
 			// TODO: Fixed Function. 
@@ -334,7 +336,7 @@ namespace ParaEngine
 			pModel->blendingFactor = 0;
 			pModel->animate(sceneState, NULL);
 			// force CParaXModel::BMAX_MODEL? 
-			pModel->draw(sceneState, NULL); 
+			pModel->draw(sceneState, p.GetParamsBlock()); 
 		}
 
 		CGlobals::GetWorldMatrixStack().pop();

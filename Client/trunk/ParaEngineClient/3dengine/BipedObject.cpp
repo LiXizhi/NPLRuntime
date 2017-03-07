@@ -1528,7 +1528,8 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, pEffectManager->GetDefaultSamplerState(0, D3DSAMP_MAGFILTER));
 		}
 
-		pAI->Draw(sceneState, mat, GetEffectParamBlock());
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
+		pAI->Draw(sceneState, mat, p.GetParamsBlock());
 
 		sceneState->EnableLocalMaterial(false);
 	}

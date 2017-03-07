@@ -21,7 +21,9 @@
 /** define this to enable testing saving. See SaveParaXMesh() 
 * text encoding is enforced when the macro is on. */
 // #define TEST_NODE
-#else
+#endif
+
+#if !defined(USE_DIRECTX_RENDERER) || defined(_DEBUG)
 #include "ParaXModel/XFileCharModelParser.h"
 #endif
 
@@ -72,7 +74,7 @@ CParaXSerializer::~CParaXSerializer(void)
 void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 {
 	void* pMesh=NULL;
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 	ParaXParser p(f);
 	if(LoadParaX_Header(p)){
 		pMesh = LoadParaX_Body(p);

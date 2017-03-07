@@ -865,8 +865,8 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
-								if (p.init_FX(this))
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
+								if (p.init_FX(this, pMaterialParams))
 								{
 									pLastPass = &p;
 									pEffect->CommitChanges();
@@ -880,7 +880,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 						{
 							pEffect->CommitChanges();
 							DrawPass_NoAnim(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 
@@ -889,7 +889,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
@@ -1115,7 +1115,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
 								if (p.init_FX(this))
 								{
 									pLastPass = &p;
@@ -1130,7 +1130,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						{
 							pEffect->CommitChanges();
 							DrawPass(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 					}
@@ -1138,7 +1138,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
