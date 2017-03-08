@@ -1434,8 +1434,10 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 				pObj->AutoSelectTechnique();
 				if(bDrawObj)
 				{
-					if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder)
-						sceneState.listPostRenderingObjects.push_back(PostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
+					if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+						PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
+						sceneState.listPostRenderingObjects.push_back(o);
+					}
 					else if(!pObj->HasAlphaBlendedObjects())
 						sceneState.listPRSolidObject.push_back(PostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
 					else
@@ -1466,8 +1468,10 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 					fAlpha = 0.5f;
 				// TODO: fAlpha animation should be enabled, according to whether a object is drawn in last frame.
 				pObj->AutoSelectTechnique();
-				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder)
-					sceneState.listPostRenderingObjects.push_back(PostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
+				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+					PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
+					sceneState.listPostRenderingObjects.push_back(o);
+				}
 				else
 					sceneState.listPRSmallObject.push_back(AlphaPostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded, fAlpha));
 				//nPostRenderType = 2;
