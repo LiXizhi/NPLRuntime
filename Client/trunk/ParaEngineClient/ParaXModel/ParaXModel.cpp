@@ -63,8 +63,9 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
 
-
-	if (animated)
+	if(IsBmaxModel())
+		m_RenderMethod = BMAX_MODEL;
+	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
 	else
 		m_RenderMethod = NO_ANIM;
@@ -239,7 +240,7 @@ bool CParaXModel::IsValid()
 AnimIndex CParaXModel::GetAnimIndexByID(int nAnimID)
 {
 	int nAnim = (int)GetObjectNum().nAnimations;
-	for (int i = 0; i < nAnim; i++) 
+	for (int i = 0; i < nAnim; i++)
 	{
 		if (anims[i].animID == nAnimID)
 		{
@@ -572,7 +573,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	{
 		// TODO: check if this is an valid character model.
 
-		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis!=Vector3::ZERO)
+		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
 			if (nHeadAttachmentIndex >= 0)
@@ -698,10 +699,7 @@ void CParaXModel::animate(SceneState * pSceneState, CharacterPose* pPose, IAttri
 void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 {
 	int nPasses = (int)passes.size();
-	if (nPasses <= 0)if (animated)
-		m_RenderMethod = SOFT_ANIM;
-	else
-		m_RenderMethod = NO_ANIM;
+	if (nPasses <= 0)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
@@ -753,7 +751,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	pd3dDevice->SetIndices(0);
 }
 
-void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
+void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
 {
 	int nPasses = (int)passes.size();
 	if (nPasses <= 0)
@@ -867,8 +865,8 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
-								if (p.init_FX(this))
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
+								if (p.init_FX(this, pMaterialParams))
 								{
 									pLastPass = &p;
 									pEffect->CommitChanges();
@@ -878,11 +876,11 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
 						}
 #else
 						// do not combine render pass. this appears to be faster than combined render passes. 
-						if (p.init_FX(this, pSceneState))
+						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
 							pEffect->CommitChanges();
 							DrawPass_NoAnim(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 
@@ -891,7 +889,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState)
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
@@ -1117,7 +1115,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
 								if (p.init_FX(this))
 								{
 									pLastPass = &p;
@@ -1132,7 +1130,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						{
 							pEffect->CommitChanges();
 							DrawPass(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 					}
@@ -1140,7 +1138,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
@@ -1156,6 +1154,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
+	int nVertexOffset = p.GetVertexStart(this);
 	ModelVertex *ov = m_origVertices;
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
@@ -1173,7 +1172,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 				int nVB = 3 * i;
 				for (int k = 0; k < 3; ++k, ++nVB)
 				{
-					int a = m_indices[nIndexOffset + nVB];
+					int a = m_indices[nIndexOffset + nVB] + nVertexOffset;
 					mesh_vertex_normal& out_vertex = vb_vertices[nVB];
 					// weighted vertex
 					ov = m_origVertices + a;
@@ -1224,6 +1223,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			bmax_vertex  vertex;
 			int nIndexOffset = p.m_nIndexStart + nNumFinishedVertice;
 			int nVertexOffset = p.GetVertexStart(this);
+			ModelVertex* origVertices = m_origVertices + nVertexOffset;
 			if (HasAnimation())
 			{
 				for (int i = 0; i < nLockedNum; ++i)
@@ -1234,7 +1234,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 						int a = m_indices[nIndexOffset + nVB];
 						bmax_vertex& out_vertex = vb_vertices[nVB];
 						// weighted vertex
-						ov = m_origVertices + nVertexOffset + a;
+						ov = origVertices + a;
 
 						float weight = ov->weights[0] * (1 / 255.0f);
 						Bone& bone = bones[ov->bones[0]];
@@ -1261,14 +1261,14 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 					{
 						uint16 a = m_indices[nIndexOffset + nVB];
 						bmax_vertex& out_vertex = vb_vertices[nVB];
-						ov = m_origVertices + a;
+						ov = origVertices + a;
 						out_vertex.p = ov->pos;
 						out_vertex.n = ov->normal;
 						out_vertex.color = ov->color0;
 					}
 				}
 			}
-			
+
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
@@ -1309,6 +1309,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
+	int nVertexOffset = p.GetVertexStart(this);
 	int nNumLockedVertice;
 	int nNumFinishedVertice = 0;
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
@@ -1327,16 +1328,16 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 #endif
 				mesh_vertex_normal  vertex;
 				int nIndexOffset = p.m_nIndexStart + nNumFinishedVertice;
-				for(int i=0;i<nLockedNum;++i)
+				for (int i = 0; i < nLockedNum; ++i)
 				{
 					int nVB = 3 * i;
 					for (int k = 0; k < 3; ++k, ++nVB)
 					{
-						int a = m_indices[nIndexOffset + nVB];
+						int a = m_indices[nIndexOffset + nVB] + nVertexOffset;
 						mesh_vertex_normal& out_vertex = vb_vertices[nVB];
 						// weighted vertex
 						ov = m_origVertices + a;
-						
+
 						// uncomment to detect incorrect index. 
 						// assert(a < m_objNum.nVertices, "index overflow");
 
@@ -1368,9 +1369,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						}
 						out_vertex.uv = ov->texcoords;
 					}
-			}
+				}
 #ifdef DO_PERFORMANCE_TEST
-		}
+			}
 #endif
 			pBufEntity->Unlock();
 
@@ -1385,10 +1386,10 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 			}
 			else
 				break;
-	}
+		}
 		else
 			break;
-}while (1);
+	} while (1);
 }
 
 void CParaXModel::RenderShaderAnim(SceneState* pSceneState)
@@ -1437,7 +1438,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-		RenderSoftNoAnim(pSceneState);
+		RenderSoftNoAnim(pSceneState, pMaterialParam);
 		break;
 	case BMAX_MODEL:
 		RenderBMaxModel(pSceneState, pMaterialParam);
@@ -1846,7 +1847,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		{
 			for (ModelRenderPass& pass : passes)
 			{
-				if (!pass.force_physics) 
+				if (!pass.force_physics)
 				{
 					pass.disable_physics = true;
 				}
@@ -1854,7 +1855,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			break;
 		}
 	}
-	
+
 	DWORD dwNumFaces = 0;
 	int nVertexCount = 0;
 	for (ModelRenderPass& pass : passes)
@@ -1891,6 +1892,13 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			verts[i] = pVertices->pos;
 			pVertices++;
 		}
+		if (m_RenderMethod == SOFT_ANIM)
+		{
+			for (DWORD i = 0; i < dwNumVx; ++i)
+			{
+				m_frame_number_vertices[i] = 0;
+			}
+		}
 	}
 
 
@@ -1907,6 +1915,30 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		{
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
+				if(m_RenderMethod == SOFT_ANIM)
+				{
+					int nIndexOffset = pass.m_nIndexStart;
+					for (int i = 0; i < pass.indexCount; ++i)
+					{
+						int a = m_indices[nIndexOffset + i];
+						if (m_frame_number_vertices[a] != 1)
+						{
+							m_frame_number_vertices[a] = 1;
+							auto ov = m_origVertices + a;
+							float weight = ov->weights[0] * (1 / 255.0f);
+							Bone& bone = bones[ov->bones[0]];
+							Vector3 v = (ov->pos * bone.mat)*weight;
+							for (int b = 1; b < 4 && ov->weights[b]>0; b++)
+							{
+								weight = ov->weights[b] * (1 / 255.0f);
+								Bone& bone = bones[ov->bones[b]];
+								v += (ov->pos * bone.mat) * weight;
+							}
+							verts[a] = v;
+						}
+					}
+				}
+
 #ifdef INVERT_PHYSICS_FACE_WINDING
 				int16* dest = (int16*)&(indices[nD]);
 				int16* src = &(m_indices[pass.indexStart]);

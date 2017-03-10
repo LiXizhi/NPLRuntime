@@ -12,7 +12,12 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	set(PARAENGINE_COMPILE_LIB    false)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
@@ -70,8 +75,10 @@ else()
 	if(APPLE)
 		find_package(GLUT REQUIRED)
 		include_directories(${GLUT_INCLUDE_DIR})
+
 		# set(CMAKE_CXX_FLAGS "-g -Wall")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+
 	else()
 	endif()
 
@@ -266,6 +273,7 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 if(APPLE)
 
 	ADD_DEFINITIONS(-DMAC_CLIENT)
+
 
 
     file (GLOB ParaEngineClient_Platform_m_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.m)

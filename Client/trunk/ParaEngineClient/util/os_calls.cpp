@@ -6,6 +6,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "os_calls.h"
+#include "FileUtils.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -28,6 +29,16 @@ int ParaEngine::GetThisThreadID()
     return (int)pthread_self();
 #endif
 }
+
+int ParaEngine::GetProcessID()
+{
+#ifdef WIN32
+	return (int)GetCurrentProcessId();
+#else
+	return (int)::getpid();
+#endif
+}
+
 ///////////////////////////////////////////////////////
 //
 // cross platform Load Library
@@ -40,7 +51,33 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #ifdef WIN32 // Microsoft compiler
 	if(sDllName.find(".") == string::npos)
 		sDllName += ".dll";
-	return (void*)::LoadLibrary(pcDllname);
+#define USE_ABS_DLL_PATH
+#ifdef USE_ABS_DLL_PATH
+	// convert relative path to absolute path, just in case some dev folder or writable folder is used
+	if (!(CFileUtils::IsAbsolutePath(sDllName)) && sDllName.find_first_of("/\\"))
+	{
+		string sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_ROOT_DIR));
+		if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
+		{
+			sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetCurDirectory(CParaFile::APP_DEV_DIR));
+			if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
+			{
+				sDllFullpath = CParaFile::GetAbsolutePath(sDllName, CParaFile::GetWritablePath());
+				if (!CParaFile::DoesFileExist(sDllFullpath.c_str()))
+				{
+					sDllFullpath.clear();
+				}
+			}
+		}
+		if (!sDllFullpath.empty())
+			sDllName = sDllFullpath;
+		CParaFile::ToCanonicalFilePath(sDllName, sDllName);
+		OUTPUT_LOG("Absolute path is used for dll: %s\n", sDllName.c_str());
+	}
+#endif	
+	
+	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 
+		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
 #else
 	if(sDllName.find(".") == string::npos)
 		sDllName += ".so";

@@ -493,3 +493,36 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 #endif
 }
 
+CApplyObjectLevelParamBlock::CApplyObjectLevelParamBlock(CParameterBlock* pBlock) :m_pBlock(pBlock)
+{
+	if (m_pBlock)
+	{
+		CParameter* pParam = NULL;
+		pParam = m_pBlock->GetParameter("ztest");
+		if (pParam)
+		{
+			bool bZTest = (bool)(*pParam);
+			m_bLastZEnabled = CGlobals::GetEffectManager()->IsZTestEnabled();
+			CGlobals::GetEffectManager()->EnableZTest(bZTest);
+		}
+	}
+}
+
+CApplyObjectLevelParamBlock::~CApplyObjectLevelParamBlock()
+{
+	if (m_pBlock)
+	{
+		CParameter* pParam = NULL;
+		pParam = m_pBlock->GetParameter("ztest");
+		if (pParam)
+		{
+			CGlobals::GetEffectManager()->EnableZTest(m_bLastZEnabled);
+		}
+	}
+}
+
+ParaEngine::CParameterBlock* CApplyObjectLevelParamBlock::GetParamsBlock()
+{
+	return m_pBlock;
+}
+

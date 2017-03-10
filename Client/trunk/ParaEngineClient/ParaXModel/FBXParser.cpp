@@ -252,7 +252,6 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_objNum.nVertices = m_vertices.size();
 	pMesh->m_objNum.nBones = m_bones.size();
 	pMesh->m_objNum.nTextures = m_textures.size();
-	pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 	pMesh->m_objNum.nIndices = m_indices.size();
 	pMesh->m_header.minExtent = m_minExtent;
 	pMesh->m_header.maxExtent = m_maxExtent;
@@ -278,6 +277,17 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
+	if (pMesh->animated && m_anims.size() == 0) 
+	{
+		// static animation 0, just in case there are skinned mesh without any animation
+		ModelAnimation anim;
+		memset(&anim, 0, sizeof(ModelAnimation));
+		anim.timeStart = 0;
+		anim.timeEnd = 0;
+		anim.animID = 0;
+		m_anims.push_back(anim);
+	}
+
 	if (m_anims.size() > 0 && m_bones.size() > 0)
 	{
 		pMesh->anims = new ModelAnimation[m_anims.size()];
@@ -290,6 +300,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		pMesh->animBones = false;
 		pMesh->animated = false;
 	}
+	pMesh->m_objNum.nAnimations = m_bones.size() > 0 ? m_anims.size() : 0;
 
 	if (m_textures.size() > 0)
 	{
@@ -335,6 +346,8 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	// only enable bmax model, if there are vertex color channel.
 	if (m_beUsedVertexColor)
 		pMesh->SetBmaxModel();
+
+	
 }
 
 XFile::Scene* FBXParser::ParseFBXFile()
@@ -724,7 +737,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.blendmode = blendmode;
 	pass.cull = blendmode == BM_OPAQUE ? true : false;
 	pass.order = fbxMat.m_nOrder;
-	pass.geoset = 0;
+	pass.geoset = -1; // make its geoset uninitialized
 	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 	pMesh->passes.push_back(pass);
 }
@@ -890,37 +903,98 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 	// add geoset (faces & indices)
 	{
-		ModelGeoset geoset;
-		geoset.id = pMesh->geosets.size();
-		for (int i = 0; i < numFaces; i++)
+		const int maxFaceCount = (int)(0xffff / 3);
+		int nFaceStart = 0;
+		int nVertexOffset = vertex_start;
+		int nSplitCount = 0;
+		while (numFaces > 0 && (++nSplitCount)<100)
 		{
-			const aiFace& fbxFace = pFbxMesh->mFaces[i];
-			assert(fbxFace.mNumIndices == 3);
-			for (int j = 0; j < 3; j++)
+			ModelGeoset geoset;
+			geoset.id = (uint16)pMesh->geosets.size();
+			vertex_start = nVertexOffset;
+			int nFaceCount = std::min(maxFaceCount, numFaces);
+			if (numFaces > maxFaceCount || nSplitCount>1)
 			{
-				m_indices.push_back(fbxFace.mIndices[j] + vertex_start);
+				// get vertex offset and max number of vertex
+				vertex_start = 0;
+				unsigned int nMinIndex = 0xffffffff;
+				unsigned int nMaxIndex = 0;
+				for (int i = 0; i < nFaceCount; i++)
+				{
+					const aiFace& fbxFace = pFbxMesh->mFaces[i + nFaceStart];
+					assert(fbxFace.mNumIndices == 3);
+					for (int j = 0; j < 3; j++)
+					{
+						auto nIndex = fbxFace.mIndices[j];
+						if (nIndex < nMinIndex)
+							nMinIndex = nIndex;
+						if (nIndex > nMaxIndex)
+							nMaxIndex = nIndex;
+						if ((nMaxIndex - nMinIndex) > 0xffff)
+						{
+							nFaceCount = i;
+							break;
+						}
+					}
+					vertex_start = nMinIndex;
+				}
+				vertex_start += nVertexOffset;
 			}
+			
+			if (nFaceCount == 0) 
+			{
+				// warning: skip this face, if we can not easily split large mesh without reordering index. 
+				numFaces -= 1;
+				nFaceStart += 1;
+				continue;
+			}
+			numFaces -= nFaceCount;
+			int nIndexOffset = nVertexOffset - vertex_start;
+			for (int i = 0; i < nFaceCount; i++)
+			{
+				const aiFace& fbxFace = pFbxMesh->mFaces[i+ nFaceStart];
+				assert(fbxFace.mNumIndices == 3);
+				for (int j = 0; j < 3; j++)
+				{
+					int index_ = fbxFace.mIndices[j] + nIndexOffset;
+					assert(index_ >= 0);
+					m_indices.push_back((uint16)index_);
+				}
+			}
+			geoset.istart = index_start;
+			geoset.icount = nFaceCount * 3;
+			geoset.vstart = vertex_start;
+			geoset.vcount = numVertices;
+			geoset.SetVertexStart(vertex_start);
+
+			pMesh->geosets.push_back(geoset);
+
+			ModelRenderPass* pPass = &(pMesh->passes[pFbxMesh->mMaterialIndex]);
+			if (pPass->geoset >= 0) {
+				// if there is already a render pass due to mesh split, create a new render pass that inherit the unsplited pass.
+				pMesh->passes.push_back(*pPass);
+				pPass = &(pMesh->passes[pMesh->passes.size() - 1]);
+			}
+			pPass->indexStart = index_start;
+			pPass->indexCount = nFaceCount * 3;
+			pPass->SetStartIndex(index_start);
+			pPass->geoset = pMesh->geosets.size() - 1;
+
+			nFaceStart += nFaceCount;
+			index_start += nFaceCount * 3;
 		}
-		geoset.istart = index_start;
-		geoset.icount = numFaces * 3;
-		geoset.vstart = vertex_start;
-		geoset.vcount = numVertices;
-
-		pMesh->geosets.push_back(geoset);
-
-		ModelRenderPass& pass = pMesh->passes[pFbxMesh->mMaterialIndex];
-		pass.indexStart = index_start;
-		pass.indexCount = numFaces * 3;
-		//pass.vertexStart = vertex_start;
-		//pass.vertexEnd = vertex_start + numVertices - 1;
-		pass.m_nIndexStart = pass.indexStart;
-		pass.geoset = pMesh->geosets.size() - 1;
 	}
 
 	// add bones and vertex weight
 	if (pFbxMesh->HasBones())
 	{
 		int numBones = pFbxMesh->mNumBones;
+
+		if (!pMesh->animated && numBones > 1)
+		{
+			// always regard as animated if there are skinned mesh
+			pMesh->animated = true; 
+		}
 
 		for (int i = 0; i < numBones; i++)
 		{

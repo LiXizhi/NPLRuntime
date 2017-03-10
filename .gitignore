@@ -12,6 +12,7 @@
 *.fxo
 *.ffs_gui
 */obj/
+.vs/
 .DS_Store
 redist/
 published/
@@ -42,6 +43,7 @@ Client/*
 !Client/trunk/
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
+!Client/trunk/ParaEngineClientApp/
 !Client/trunk/externals/
 Client/trunk/externals/*
 !Client/trunk/externals/assimp*

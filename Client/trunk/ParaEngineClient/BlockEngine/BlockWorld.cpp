@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #include "ShapeAABB.h"
 #include "ShapeSphere.h"
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 #include <tinyxml2.h>
 #else
 #include <tinyxml.h>
@@ -505,7 +505,7 @@ void ParaEngine::CBlockWorld::ClearAllBlockTemplates()
 
 void CBlockWorld::SaveBlockTemplateData()
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	using namespace tinyxml2;
 	tinyxml2::XMLDocument doc;
 
@@ -608,7 +608,7 @@ void CBlockWorld::LoadBlockTemplateData()
 
 	try
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		using namespace tinyxml2;
 		tinyxml2::XMLDocument doc(true, COLLAPSE_WHITESPACE);
 		doc.Parse(pFile->getBuffer(), (int)(pFile->getSize()));
@@ -1521,7 +1521,19 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 			{
 				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, false);
 				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, true);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(3);
+				ClearBlockRenderCache();
+			}
+		}
+		else if (sTextureName.find("_four") != std::string::npos)
+		{
+			if (pTemplate->IsMatchAttribute(BlockTemplate::batt_singleSideTex))
+			{
+				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, true);
+				pTemplate->GetBlockModel().LoadModelByTexture(4);
 				ClearBlockRenderCache();
 			}
 		}
@@ -1531,6 +1543,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 			{
 				pTemplate->SetAttribute(BlockTemplate::batt_singleSideTex, true);
 				pTemplate->SetAttribute(BlockTemplate::batt_threeSideTex, false);
+				pTemplate->SetAttribute(BlockTemplate::batt_fourSideTex, false);
 				pTemplate->GetBlockModel().LoadModelByTexture(0);
 				ClearBlockRenderCache();
 			}

@@ -92,7 +92,7 @@ namespace ParaEngine
 		}
 	protected:
 		int m_etype;//TYPE_ENUMERATION
-		~IType(){}
+		virtual ~IType(){}
 	};
 	class CDataInt32;
 	class CDataFloat;
@@ -112,7 +112,7 @@ namespace ParaEngine
 			return input==NULL?Verify_Unknown:Verify_Success;
 		}
 	protected:
-		~CVoid(){}
+		virtual ~CVoid(){}
 	};
 
 	class CBool:public IType
@@ -127,7 +127,7 @@ namespace ParaEngine
 		static bool Parse(const char* input);
 		virtual int Verify(const char* input)const;
 	protected:
-		~CBool(){}
+		virtual ~CBool(){}
 	};
 
 	class CInt32:public IType
@@ -144,7 +144,7 @@ namespace ParaEngine
 		}
 		virtual int Verify(const char* input)const;
 	protected:
-		~CInt32(){}
+		virtual ~CInt32(){}
 	};
 
 	class CFloat:public IType
@@ -161,7 +161,7 @@ namespace ParaEngine
 		static float Parse(const char* input);
 		virtual int Verify(const char* input)const;
 	protected:
-		~CFloat(){}
+		virtual ~CFloat(){}
 	};
 
 	class CDouble:public IType
@@ -178,7 +178,7 @@ namespace ParaEngine
 		static double Parse(const char* input);
 		virtual int Verify(const char* input)const;
 	protected:
-		~CDouble(){}
+		virtual ~CDouble(){}
 	};
 
 	class CStr:public IType
@@ -192,10 +192,10 @@ namespace ParaEngine
 		}
 		virtual int Verify(const char* input)const;
 	protected:
-		~CStr(){}
+		virtual ~CStr(){}
 	};
 
-	class CDataInt32:public IObject
+	class CDataInt32 : public IObject
 	{
 	public:
 		CDataInt32():m_data(0)
@@ -210,6 +210,7 @@ namespace ParaEngine
 				m_type=IType::GetType("int");
 			}
 		}
+		virtual ~CDataInt32(){};
 		IObject* Clone()const{return new CDataInt32(m_data);}
 		void Clone(IObject* obj)const{((CDataInt32*)obj)->m_data=m_data;}
 		operator int(){return m_data;}
@@ -237,6 +238,7 @@ namespace ParaEngine
 				m_type=IType::GetType("bool");
 			}
 		};
+		virtual ~CDataBool(){};
 		IObject* Clone()const{return new CDataBool(m_data);}
 		void Clone(IObject* obj)const{((CDataBool*)obj)->m_data=m_data;}
 		operator bool(){return m_data;}
@@ -264,6 +266,7 @@ namespace ParaEngine
 				m_type=IType::GetType("float");
 			}
 		};
+		virtual ~CDataFloat(){};
 		IObject* Clone()const{return new CDataFloat(m_data);}
 		void Clone(IObject* obj)const{((CDataFloat*)obj)->m_data=m_data;}
 		operator float(){return m_data;}
@@ -291,6 +294,7 @@ namespace ParaEngine
 				m_type=IType::GetType("double");
 			}
 		};
+		virtual ~CDataDouble(){};
 		IObject* Clone()const{return new CDataDouble(m_data);}
 		void Clone(IObject* obj)const{((CDataDouble*)obj)->m_data=m_data;}
 		operator double(){return m_data;}
@@ -318,6 +322,7 @@ namespace ParaEngine
 				m_type=IType::GetType("string");
 			}
 		};
+		virtual ~CDataString(){};
 		IObject* Clone()const{return new CDataString(m_data);}
 		void Clone(IObject* obj)const{((CDataString*)obj)->m_data=m_data;}
 		operator const string()const{return m_data;}
@@ -335,6 +340,7 @@ namespace ParaEngine
 	protected:
 		static const IType* m_type;
 		string m_data;
+		
 	};
 	//////////////////////////////////////////////////////////////////////////
 	// GUI types

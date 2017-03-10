@@ -6,11 +6,10 @@
 // Desc:    read split the animtion info from xml file;
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 #include <tinyxml2.h>
 #else
 #include <tinyxml.h>
-#include <xpath_processor.h>
 #endif
 
 #include "FBXModelInfo.h"
@@ -70,7 +69,7 @@ bool ParaEngine::FBXModelInfo::LoadFromBuffer(const char* pData, int nSize)
 {
 	try
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		namespace TXML = tinyxml2;
 		TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 		doc.Parse(pData, nSize);

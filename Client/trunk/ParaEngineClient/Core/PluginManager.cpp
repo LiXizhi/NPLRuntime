@@ -20,6 +20,8 @@
 namespace fs = boost::filesystem;
 
 using namespace ParaEngine;
+/*@def undefine this if all dll interface function must be defined.  */
+#define NONE_STRICT_NPL_DLL_INTERFACE
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -159,27 +161,51 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	// replace sDLLPath's file extension with 'dll', it is 'so'. remove the heading 'lib' if there is one
 	if(sDLLPath.size()>5)
 	{
+#ifdef WIN32
 		// remove the heading 'lib' if there is one
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		// replace sDLLPath's file extension with 'dll', it is 'so'
 		sDLLPath = regex_replace(sDLLPath, regex("so$"), "dll");
-
-#ifndef	WIN32
-		// if there is no slash in the file name, add './' to load only from the current directory. 
-		if( sDLLPath.find("\\/") == string::npos)
-		{
-			sDLLPath = std::string("./")+sDLLPath;
-		}
-		fs::path filenamePath(sDLLPath);
-		sDLLPath = filenamePath.string();
+#else
+		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
+		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
+		sDLLPath = regex_replace(sDLLPath, regex("dll$"), "so");
 #endif
 	}
 
 	// load the library.
-	CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath);
+	if ( CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH, &sDLLPath) == 0)
+	{
+		// If dll file is Not found, search in zip archive, if there it is, unpack to a temp position.  
+		if(CParaFile::DoesFileExist2(sDLLPath.c_str(), FILE_ON_ZIP_ARCHIVE))
+		{
+			CParaFile file;
+			if (file.OpenFile(sDLLPath.c_str(), true, 0, false, FILE_ON_ZIP_ARCHIVE))
+			{
+				std::string sTargetFile = CParaFile::GetWritablePath() + "temp/plugins/" + CParaFile::GetFileName(sDLLPath);
+				CParaFile::CreateDirectory(sTargetFile.c_str());
+				CParaFile fileTarget;
+				if (fileTarget.OpenFile(sTargetFile.c_str(), false))
+				{
+					fileTarget.SetEndOfFile();
+					fileTarget.write(file.getBuffer(), file.getSize());
+					
+					OUTPUT_LOG("Security warning: dll file %s is deployed from zip archive to %s \n", sDLLPath.c_str(), sTargetFile.c_str());
+					sDLLPath = sTargetFile;
+				}
+			}
+		}
+	}
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
+	// if there is no slash in the file name, add './' to load only from the current directory. 
+	if (sDLLPath.find("\\/") == string::npos)
+	{
+		sDLLPath = std::string("./") + sDLLPath;
+	}
+	fs::path filenamePath(sDLLPath);
+	sDLLPath = filenamePath.string();
 	m_hDLL = ParaEngine::LoadLibrary(sDLLPath.c_str(), RTLD_LOCAL | RTLD_LAZY);
 #endif
 
@@ -209,6 +235,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibDescription method\r\n", sDLLPath.c_str());
 #else
@@ -219,6 +246,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 
 		lpFnLibVersion pLibVersion = (lpFnLibVersion)ParaEngine::GetProcAddress(m_hDLL, "LibVersion");
@@ -236,6 +264,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibVersion method\r\n", sDLLPath.c_str());
 #else
@@ -246,6 +275,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 		int nClassNum=0;
 
@@ -259,6 +289,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibNumberClasses method\r\n", sDLLPath.c_str());
 #else
@@ -269,6 +300,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 		lpFnLibClassDesc pLibClassDesc = (lpFnLibClassDesc)ParaEngine::GetProcAddress(m_hDLL, "LibClassDesc");
 		if (pLibDescription != 0)
@@ -289,6 +321,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 		}
 		else
 		{
+#if !defined(NONE_STRICT_NPL_DLL_INTERFACE)
 #ifdef	WIN32
 			OUTPUT_LOG("failed loading %s : because it does not expose the LibClassDesc method\r\n", sDLLPath.c_str());
 #else
@@ -299,6 +332,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #endif
 			// handle the error
 			FreeLibrary();
+#endif
 		}
 
 #ifdef WIN32

@@ -1268,6 +1268,11 @@ int ParaEngine::ParaEngineSettings::GetCurrentMemoryUse()
 	return (int)ParaEngine::GetCurrentMemoryUse();
 }
 
+int ParaEngine::ParaEngineSettings::GetProcessId()
+{
+	return ParaEngine::GetProcessID();
+}
+
 size_t ParaEngine::ParaEngineSettings::GetVertexBufferPoolTotalBytes()
 {
 	return CGlobals::GetAssetManager()->GetVertexBufferPoolManager().GetVertexBufferPoolTotalBytes();
@@ -1281,6 +1286,15 @@ bool ParaEngine::ParaEngineSettings::HasClosingRequest()
 void ParaEngine::ParaEngineSettings::SetHasClosingRequest(bool val)
 {
 	CGlobals::GetApp()->SetHasClosingRequest(val);
+}
+
+int ParaEngine::ParaEngineSettings::GetAppHWND()
+{
+#if defined (PLATFORM_WINDOWS)
+	return (int)CGlobals::GetAppHWND();
+#else
+	return 0;
+#endif
 }
 
 void ParaEngineSettings::SetRefreshTimer(float fTimerInterval)
@@ -1370,6 +1384,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("OpenFileFolder", FieldType_String, (void*)SetDefaultOpenFileFolder_s, (void*)GetOpenFolder_s, CAttributeField::GetSimpleSchema(SCHEMA_DIALOG), NULL, bOverride);
 	pClass->AddField("Platform", FieldType_Int, NULL, (void*)GetPlatform_s, NULL, NULL, bOverride);
+	pClass->AddField("ProcessId", FieldType_Int, NULL, (void*)GetProcessId_s, NULL, NULL, bOverride);
 	pClass->AddField("IsMobilePlatform", FieldType_Bool, NULL, (void*)IsMobilePlatform_s, NULL, NULL, bOverride);
 	pClass->AddField("Is64BitsSystem", FieldType_Bool, NULL, (void*)Is64BitsSystem_s, NULL, NULL, bOverride);
 	pClass->AddField("RecreateRenderer", FieldType_void, (void*)RecreateRenderer_s, NULL, NULL, NULL, bOverride);
@@ -1384,5 +1399,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("CurrentMemoryUse", FieldType_Int, NULL, (void*)GetCurrentMemoryUse_s, NULL, NULL, bOverride);
 	pClass->AddField("PeakMemoryUse", FieldType_Int, NULL, (void*)GetPeakMemoryUse_s, NULL, NULL, bOverride);
 	pClass->AddField("VertexBufferPoolTotalBytes", FieldType_Int, NULL, (void*)GetVertexBufferPoolTotalBytes_s, NULL, NULL, bOverride);
+
+	pClass->AddField("AppHWND", FieldType_Int, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
 	return S_OK;
 }

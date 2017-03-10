@@ -67,7 +67,8 @@ bool CBootStrapper::LoadFromFile(const string& sXMLfile)
 		sFileName = DEFAULT_XML_PATH;
 
 	int nSize = (int)(sXMLfile.size());
-	if (nSize > 4 && (sXMLfile[nSize - 4] == '.') && (sXMLfile[nSize - 3] == 'l') && (sXMLfile[nSize - 2] == 'u') && (sXMLfile[nSize - 1] == 'a'))
+	if (nSize > 4 && (sXMLfile[nSize - 4] == '.') && (((sXMLfile[nSize - 3] == 'l') && (sXMLfile[nSize - 2] == 'u') && (sXMLfile[nSize - 1] == 'a'))
+		|| ((sXMLfile[nSize - 3] == 'n') && (sXMLfile[nSize - 2] == 'p') && (sXMLfile[nSize - 1] == 'l'))))
 	{
 		// if the file extension is "lua", we will use it directly. 
 		SetMainLoopFile(sXMLfile);
@@ -152,9 +153,10 @@ bool CBootStrapper::LoadFromFile( const string& sXMLfile )
 		sFileName = DEFAULT_XML_PATH;
 
 	int nSize = (int)(sXMLfile.size());
-	if(nSize>4 && (sXMLfile[nSize-4] == '.') && (sXMLfile[nSize-3] == 'l') && (sXMLfile[nSize-2] == 'u') && (sXMLfile[nSize-1] == 'a'))
+	if(nSize>4 && (sXMLfile[nSize-4] == '.') && (((sXMLfile[nSize-3] == 'l') && (sXMLfile[nSize-2] == 'u') && (sXMLfile[nSize-1] == 'a')) 
+		|| ((sXMLfile[nSize - 3] == 'n') && (sXMLfile[nSize - 2] == 'p') && (sXMLfile[nSize - 1] == 'l'))))
 	{
-		// if the file extension is "lua", we will use it directly. 
+		// if the file extension is "lua" or "npl", we will use it directly. 
 		SetMainLoopFile(sXMLfile);
 		return true;
 	}

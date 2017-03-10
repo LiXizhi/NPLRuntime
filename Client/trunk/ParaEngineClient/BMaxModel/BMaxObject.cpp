@@ -92,7 +92,7 @@ namespace ParaEngine
 
 	bool BMaxObject::CanHasPhysics()
 	{
-		return true;
+		return IsPhysicsEnabled();
 	}
 
 	void BMaxObject::SetScaling(float fScale)
@@ -167,6 +167,10 @@ namespace ParaEngine
 			UnloadPhysics();
 			if (m_dwPhysicsMethod == 0)
 				m_dwPhysicsMethod = PHYSICS_LAZY_LOAD;
+			else if (IsPhysicsEnabled() && ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD)>0))
+			{
+				LoadPhysics();
+			}
 		}
 	}
 
@@ -253,14 +257,18 @@ namespace ParaEngine
 		ApplyBlockLighting(sceneState);
 
 		
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
+
 		if (pEffectFile == 0)
 		{
 			// TODO: Fixed Function. 
 		}
 		else
 		{
+			bool bUsePointTextureFilter = false;
+
 			// apply block space lighting for object whose size is comparable to a single block size
-			if (CheckAttribute(MESH_USE_LIGHT) || sceneState->IsDeferredShading())
+			if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 			{
 				BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 				if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
@@ -298,8 +306,12 @@ namespace ParaEngine
 					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
 
 					sceneState->EnableLocalMaterial(true);
+					bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 				}
-				// Note: do this if one wants point light
+			}
+
+			if (bUsePointTextureFilter)
+			{
 				pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 				pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 			}
@@ -324,7 +336,7 @@ namespace ParaEngine
 			pModel->blendingFactor = 0;
 			pModel->animate(sceneState, NULL);
 			// force CParaXModel::BMAX_MODEL? 
-			pModel->draw(sceneState, NULL); 
+			pModel->draw(sceneState, p.GetParamsBlock()); 
 		}
 
 		CGlobals::GetWorldMatrixStack().pop();
@@ -333,23 +345,38 @@ namespace ParaEngine
 
 	void BMaxObject::LoadPhysics()
 	{
-		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0) && m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
+		if (m_dwPhysicsMethod > 0 && IsPhysicsEnabled() && (GetStaticActorCount() == 0))
 		{
-			CParaXModel* ppMesh = m_pAnimatedMesh->GetModel();
-			if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
+			if (m_pAnimatedMesh && m_pAnimatedMesh->IsLoaded())
 			{
-				EnablePhysics(false); // disable physics forever, if failed loading physics data
-				return;
+				CParaXModel* ppMesh = m_pAnimatedMesh->GetModel();
+				if (ppMesh == 0 || ppMesh->GetHeader().maxExtent.x <= 0.f)
+				{
+					EnablePhysics(false); // disable physics forever, if failed loading physics data
+					return;
+				}
+				// get world transform matrix
+				Matrix4 mxWorld;
+				GetWorldTransform(mxWorld);
+				IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
+				if (m_staticActors.empty())
+				{
+					// disable physics forever, if no physics actors are loaded. 
+					EnablePhysics(false);
+				}
 			}
-			// get world transform matrix
-			Matrix4 mxWorld;
-			GetWorldTransform(mxWorld);
-			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
-			if (m_staticActors.empty())
-			{
-				// disable physics forever, if no physics actors are loaded. 
-				EnablePhysics(false);
-			}
+		}
+	}
+
+	void BMaxObject::SetAlwaysLoadPhysics(bool bEnable)
+	{
+		if (bEnable)
+		{
+			m_dwPhysicsMethod |= PHYSICS_ALWAYS_LOAD;
+		}
+		else
+		{
+			m_dwPhysicsMethod &= (~PHYSICS_ALWAYS_LOAD);
 		}
 	}
 

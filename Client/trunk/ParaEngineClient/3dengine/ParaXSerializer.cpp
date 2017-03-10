@@ -21,7 +21,9 @@
 /** define this to enable testing saving. See SaveParaXMesh() 
 * text encoding is enforced when the macro is on. */
 // #define TEST_NODE
-#elif defined(USE_OPENGL_RENDERER)
+#endif
+
+#if !defined(USE_DIRECTX_RENDERER) || defined(_DEBUG)
 #include "ParaXModel/XFileCharModelParser.h"
 #endif
 
@@ -72,13 +74,13 @@ CParaXSerializer::~CParaXSerializer(void)
 void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 {
 	void* pMesh=NULL;
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 	ParaXParser p(f);
 	if(LoadParaX_Header(p)){
 		pMesh = LoadParaX_Body(p);
 		LoadParaX_Finalize(p);
 	}
-#elif defined(USE_OPENGL_RENDERER)
+#else
 	try
 	{
 		XFileCharModelParser p(f.getBuffer(), f.getSize());
@@ -88,7 +90,6 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	{
 		OUTPUT_LOG("warn: LoadParaXMesh error:%s\n", e->what());
 	}
-	
 #endif
 	return pMesh;
 }
@@ -1007,8 +1008,15 @@ bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 			xmesh.showGeosets[i] = true;
 
 		xmesh.geosets.resize(nGeosets);
-		if(nGeosets>0)
-			memcpy(&xmesh.geosets[0],pGeosets, sizeof(ModelGeoset)*nGeosets);
+		if (nGeosets > 0) {
+			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
+			// disable vertex start for parax file, since we only support uint16 indices. 
+			for (int i = 1; i < nGeosets;++i)
+			{
+				xmesh.geosets[i].SetVertexStart(0);
+			}
+		}
+			
 	}
 	else
 		return false;

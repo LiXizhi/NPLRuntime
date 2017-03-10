@@ -21,6 +21,7 @@ using namespace luabind;
 #include "NPLHelper.h"
 #include "NPLCompiler.h"
 #include "ParaScriptingNPL.h"
+#include "ParaScriptingGlobal.h"
 #ifdef PARAENGINE_CLIENT
 #include "EditorHelper.h"
 #endif
@@ -168,7 +169,7 @@ namespace ParaScripting
 		{
 			NPL::NPLFileName filename(sNPLFileName);
 			
-			runtime_state->LoadFile_any(filename.sRelativePath, false);
+			runtime_state->LoadFile_any(filename.sRelativePath, false, strNPLFileName.interpreter(), true);
 			runtime_state->ActivateFile_any(filename.sRelativePath, sCode.c_str(), (int)sCode.size());
 		}
 	}
@@ -264,7 +265,7 @@ namespace ParaScripting
 			if(nType == LUA_TSTRING)
 			{
 				NPL::NPLFileName filename(object_cast<const char*>(filePath));
-				runtime_state->LoadFile_any(filename.sRelativePath, bReload);
+				runtime_state->LoadFile_any(filename.sRelativePath, bReload, filePath.interpreter());
 			}
 		}
 	}
@@ -279,7 +280,27 @@ namespace ParaScripting
 		CNPL::load(filePath, false);
 	}
 
-	void CNPL::EnableNetwork( bool bEnable, const char* CenterName, const char* password )
+	int CNPL::export_(lua_State* L)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaState(L);
+		if (runtime_state.get() != 0)
+		{
+			return runtime_state->NPL_export(L);
+		}
+		return 0;
+	}
+
+	const char* CNPL::GetFileName(lua_State* L)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaState(L);
+		if (runtime_state.get() != 0)
+		{
+			return runtime_state->GetCurrentFileName(L);
+		}
+		return 0;
+	}
+
+	void CNPL::EnableNetwork(bool bEnable, const char* CenterName, const char* password)
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_EnableNetwork(bEnable, CenterName, password);
 	}
@@ -439,12 +460,6 @@ namespace ParaScripting
 	void CNPL::UnregisterWSCallBack( const char * sWebServiceFile )
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_UnregisterWSCallBack(sWebServiceFile);
-	}
-
-	const char* CNPL::GetFileName()
-	{
-		// TODO:: 
-		return NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState()->GetFileName().c_str();
 	}
 
 	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
@@ -1095,7 +1110,7 @@ namespace ParaScripting
 #endif
 	bool CNPL::FromJson( const char* sJson, const object& output )
 	{
-		if(sJson == NULL || type(output) != LUA_TTABLE )
+		if (sJson == NULL || sJson[0] == '\0' || type(output) != LUA_TTABLE)
 			return false;
 		try
 		{
@@ -1142,6 +1157,28 @@ namespace ParaScripting
 			return false;
 		}
 		return true;
+	}
+
+
+	const string& CNPL::ToJson2(const object& input, bool bUseEmptyArray)
+	{
+		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(input);
+		if (runtime_state.get() != 0)
+		{
+			std::string& sCode = runtime_state->GetStringBuffer(0);
+			sCode.clear();
+			NPL::NPLHelper::SerializeToJson(input, sCode, 0, NULL, bUseEmptyArray);
+			return sCode;
+		}
+		else
+		{
+			return CGlobals::GetString();
+		}
+	}
+
+	const string& CNPL::ToJson(const object& output)
+	{
+		return ToJson2(output, false);
 	}
 
 	bool CNPL::Compress(const object& output)
@@ -1686,6 +1723,18 @@ namespace ParaScripting
 			return m_rts->GetName().c_str();
 		}
 		return NULL;
+	}
+
+	luabind::object ParaNPLRuntimeState::GetField(const char* sFieldname, const object& output)
+	{
+		ParaAttributeObject att(m_rts);
+		return att.GetField(sFieldname, output);
+	}
+
+	void ParaNPLRuntimeState::SetField(const char* sFieldname, const object& input)
+	{
+		ParaAttributeObject att(m_rts);
+		att.SetField(sFieldname, input);
 	}
 
 	void ParaNPLRuntimeState::Reset()

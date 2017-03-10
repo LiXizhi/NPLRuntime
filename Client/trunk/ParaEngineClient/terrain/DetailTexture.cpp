@@ -287,14 +287,14 @@ void DetailTexture::ReadMask(CParaFile& file, Terrain * pTerrain)
 			SAFE_DELETE(m_pMask);
 		}
 		else
-			m_bOwnMask = NULL;
+			m_bOwnMask = false;
 		
 		if(m_bOwnTexture)
 		{
 			SAFE_DELETE(m_pTexture);
 		}
 		else
-			m_bOwnTexture = NULL;
+			m_bOwnTexture = false;
 
 		return;
 	}

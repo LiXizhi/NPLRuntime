@@ -273,7 +273,7 @@ namespace ParaEngine
 		* Open a file for immediate reading.If the file name begins with ':', it is treated as a win32 resource.
 		* e.g.":IDR_FX_OCEANWATER". loads data from a resource of type "TEXTFILE". See MSDN for more information about Windows resources.
 		* Caller calls getBuffer() to retrieval the data
-		* @param filename: the file name to open
+		* @param filename: the file name to open. if it is "<memory>" and bReadOnly is false. it is a memory file. 
 		* @param bReadyOnly: if true, the file is loaded for read-only access.
 		*	The disk file is searched, then the ZIP files are searched. If false,
 		*	only the disk file is searched, and that the file is a write-only file.
@@ -616,6 +616,8 @@ namespace ParaEngine
 		PE_CORE_DECL int readSBits(int numBits);
 
 	
+		/** get handle ptr */
+		void* GetHandlePtr();
 	private:
 		/// file handle
 		FileHandle m_handle;
@@ -627,6 +629,10 @@ namespace ParaEngine
 		bool m_bDiskFileOpened : 1;
 		/** whether the m_buffer is compressed data. when this is true, m_size is the compressed file size and m_uncompressed_size is the uncompressed file size. */
 		bool m_bIsCompressed : 1;
+		/** memory file opened */
+		bool m_bMemoryFile : 1;
+		// Force alignment to next boundary.
+		DWORD: 0;
 		/// file buffer
 		char *m_buffer;
 		/// current file position

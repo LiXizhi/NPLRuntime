@@ -316,10 +316,10 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				else
 				{
 					CParaXSerializer serializer;
-#ifdef USE_DIRECTX_RENDERER
+#if  defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 					ParaXParser parser(myFile, CAsyncLoader::GetSingleton().GetFileParser());
 					lod.m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile, parser);
-#elif defined(USE_OPENGL_RENDERER)
+#else
 					lod.m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile);
 #endif
 				}

@@ -1603,7 +1603,7 @@ namespace ParaScripting
 		* 	- Do not duplicate identical vertices! If you have two triangles sharing a vertex,
 		* 	this vertex should only occur once in the vertex list, and both triangles should
 		* 	index it in the index list. If you create two copies of the vertex, the collision
-		* 	detection code won¡¯t know that it is actually the same vertex, which leads to a
+		* 	detection code won't know that it is actually the same vertex, which leads to a
 		* 	decreased performance and unreliable results.
 		* 	- Also avoid t-joints and non-manifold edges for the same reason. (A t-joint is a
 		* 	vertex of one triangle that is placed right on top of an edge of another triangle, but

@@ -304,6 +304,10 @@ void CMeshPhysicsObject::SetParamsFromAsset()
 			else
 				m_dwPhysicsMethod = PHYSICS_FORCE_NO_PHYSICS;
 		}
+		else if (IsPhysicsEnabled() && ((m_dwPhysicsMethod&PHYSICS_ALWAYS_LOAD) > 0))
+		{
+			LoadPhysics();
+		}
 
 		//if(GetTileContainer())
 		//{
@@ -539,6 +543,7 @@ HRESULT CMeshPhysicsObject::Draw( SceneState * sceneState)
 		m_pMeshObject->SetAttribute(MESH_USE_LIGHT, true);
 
 	SetFrameNumber(sceneState->m_nRenderCount);
+
 	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
 	HRESULT hr = m_pMeshObject->Draw(sceneState);
 	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
@@ -813,6 +818,18 @@ void ParaEngine::CMeshPhysicsObject::SetRadius( FLOAT fRadius )
 	CTileObject::SetRadius(fRadius);
 	if(m_pMeshObject)
 		m_pMeshObject->SetRadius(fRadius);
+}
+
+void ParaEngine::CMeshPhysicsObject::SetAlwaysLoadPhysics(bool bEnable)
+{
+	if (bEnable)
+	{
+		m_dwPhysicsMethod |= PHYSICS_ALWAYS_LOAD;
+	}
+	else
+	{
+		m_dwPhysicsMethod &= (~PHYSICS_ALWAYS_LOAD);
+	}
 }
 
 bool ParaEngine::CMeshPhysicsObject::ViewTouch()

@@ -503,7 +503,7 @@ bool CNPLRuntime::CloseJabberClient( const char* sJID )
 	{
 		if(!LoadWebServicePlugin())
 		{
-			return NULL;
+			return false;
 		}
 	}
 	return m_pWebServiceClient->CloseJabberClient(sJID);

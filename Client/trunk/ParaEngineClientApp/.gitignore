@@ -1,0 +1,6 @@
+haqifiles/
+js/
+res/*
+!res/paraworld.ico
+*.bat
+*.html

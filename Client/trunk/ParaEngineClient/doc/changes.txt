@@ -2,6 +2,51 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.3.7
+	- RenderOrder attribute added and implemented to pipeline
+	- "zwrite" and "ztest" effect params added to ParaObject. 
+
+2017.2.27
+	- NPL.export implemented with test cases that support cyclic dependency. 
+	- filename attribute added for NPL runtime state.
+	- NPL file module fully implemented
+
+2017.2.22
+	- open image with 8 bits png indexed color supported. updated test file and wiki doc.
+	- NPL.load will now return cached file object. 
+
+2017.2.18
+	- skinned fbx file always has default animation
+	- fixed fbx with too many vertices
+
+2017.1.24
+	- npl extension and meta compiler integrated. 
+	- FBX parser now support unlimited vertices provided they are in increasing order. 
+	- fixed transparency of static fbx model
+	- fixed npl compiler with nested npl load
+
+2016.12.13
+	- force physics added for mesh and bmax model.
+
+2016.12.9
+	- suppressed warning NPL.FromJson with empty data
+	- certificate supported via options in NPL.AppendUrlRequest();
+	- NPL.AppendUrlRequest now support http PUT/DELETE ,etc. 
+
+2016.12.1
+	- ParaEngine attribute "ProcessId" added. 
+
+2016.11.23
+	- biped object now support baking static physics.
+	
+2016.11.17
+	- paraengine plugins can now be loaded in a zip archive.
+
+2016.11.8
+	- NPL.ToJson encoder implemented with unicode char support. 
+
+2016.10.31
+	- CParaFile now support memory file. 
 
 2016.10.26
 	- fbx material class now support unlit, no z write attribute just like parax file format. 

@@ -18,6 +18,7 @@ EXAMPLE_PATH =
 # Use relative paths with respect to the repository root directory.
 EXCLUDE = ParaWorld \
     NPLRuntime \
+    Client/trunk/externals/ \
     Server/trunk/lua-5.1.4/ \
     Server/trunk/luabind-0.9/ \
     Server/trunk/sqlite-3.6.23.1/ \

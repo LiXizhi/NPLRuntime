@@ -153,6 +153,9 @@ namespace ParaEngine
 			memcpy(m_buffer + nIndex, &val, sizeof(TYPE)); // fix byte alignment issue
 		}
 
+		void WriteAt(int nIndex, const Char* data, size_t nSize);
+
+
 		/** Appends a value to the content of the builder.
 		This is a shortcut for the append function.
 		@see append
@@ -198,6 +201,9 @@ namespace ParaEngine
 		do not keep it around. This character array should not be modified. */
 		const Char* c_str() const;
 		inline operator const Char*() const { return c_str(); } /**< See above. */
+
+		/** get raw string */
+		Char* str() { return m_buffer; };
 
 		/** overload the operator []. You are at your own risk if nIndex is out of risk. There is no check for performance reasons.*/
 		Char& operator[] (const int nIndex) { return *(m_buffer+nIndex); }; 
