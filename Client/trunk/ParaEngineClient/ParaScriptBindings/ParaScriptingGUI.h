@@ -820,7 +820,7 @@ namespace ParaScripting
 	* ParaUI namespace contains a list of HAPI functions to create user interface controls, such as
 	* windows, buttons, as well as event triggers.
 	* The main difference between the two is that (1) 2D GUI object are not tested against view frustum, 
-	* instead it¡¯s controlled by visibility tag automatically or through user input. (2) 2D GUI object
+	* instead it's controlled by visibility tag automatically or through user input. (2) 2D GUI object
 	* generally does not obey the physical law of 3D world. (3) GUI object are generally specified by screen 
 	* coordinates, instead of 3D position. (4) GUI object may be frequently created and discarded. 
 	* If a object is discarded, so will its child objects. E.g. if one delete a window, all buttons, sensors, etc
