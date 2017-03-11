@@ -8,8 +8,8 @@
 
 #ifdef WIN32
 #else
-#include <sys/times.h> 
-#include <sys/time.h> 
+#include <sys/times.h>
+#include <sys/time.h>
 #endif
 
 #include <time.h>
@@ -82,7 +82,7 @@ static int64 g_initialTime;
 static double orwl_timebase = 0.0;
 static uint64_t orwl_timestart = 0;
 
-int clock_gettime(int nUnUsedType, timespec * ts) {
+int clock_gettime_ex(int nUnUsedType, timespec * ts) {
     // be more careful in a multithreaded environement
     if (!orwl_timestart) {
         mach_timebase_info_data_t tb = { 0 };
@@ -96,11 +96,13 @@ int clock_gettime(int nUnUsedType, timespec * ts) {
     ts->tv_nsec = diff - (ts->tv_sec * ORWL_GIGA);
     return 0;
 }
+#else
+#define clock_gettime_ex clock_gettime
 #endif
 
 
-// 
-/** Linux implementation of GetTickCount: it will return the milliseconds since first call. 
+//
+/** Linux implementation of GetTickCount: it will return the milliseconds since first call.
 */
 unsigned int GetTickCount(void)
 {
@@ -112,7 +114,7 @@ unsigned int GetTickCount(void)
 	** in any case the time starting point does not change once that the
 	** system has started up.
 	*/
-	if(0 == clock_gettime(CLOCK_MONOTONIC, &tsnow))
+	if(0 == clock_gettime_ex(CLOCK_MONOTONIC, &tsnow))
 	{
 		int64 curTime =	((int64)(tsnow.tv_sec) * (int64)1000L + (tsnow.tv_nsec / 1000000L));
 
@@ -216,7 +218,7 @@ char *_gcvt( double value,	int digits,	char *buffer )
 wchar_t * _itow(int value,	wchar_t *str,	int radix)
 {
 	PE_ASSERT(radix == 10);
-	// assume buffer is smaller than 100. This is not full port. 
+	// assume buffer is smaller than 100. This is not full port.
 	swprintf(str, 100, L"%d", value);
 	return str;
 }

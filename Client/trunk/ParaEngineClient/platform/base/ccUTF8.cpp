@@ -1,4 +1,4 @@
-
+#include "ParaEngine.h"
 
 #include "ccUTF8.h"
 
@@ -248,7 +248,7 @@ void StringUTF8::replace(const std::string& newStr)
 
         if (lengthString == 0)
         {
-            CCLOG("Bad utf-8 set string: %s", newStr.c_str());
+            OUTPUT_LOG("Bad utf-8 set string: %s", newStr.c_str());
             return;
         }
 

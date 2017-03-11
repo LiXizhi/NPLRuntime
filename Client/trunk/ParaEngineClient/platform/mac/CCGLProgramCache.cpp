@@ -6,6 +6,16 @@
 
 #include "../baseshaders/ccShaders.h"
 
+#include "ParaEngine.h"
+
+#define CHECK_GL_ERROR_DEBUG() \
+do { \
+GLenum __error = glGetError(); \
+if(__error) { \
+OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, __FILE__, __FUNCTION__, __LINE__); \
+} \
+} while (false)
+
 NS_CC_BEGIN
 
 enum {
@@ -73,11 +83,11 @@ GLProgramCache::~GLProgramCache()
         (it->second)->release();
     }
 
-    //CCLOGINFO("deallocing GLProgramCache: %p", this);
+    //OUTPUT_LOGINFO("deallocing GLProgramCache: %p", this);
 }
 
 bool GLProgramCache::init()
-{    
+{
     loadDefaultGLPrograms();
     return true;
 }
@@ -144,7 +154,7 @@ void GLProgramCache::loadDefaultGLPrograms()
     p = new GLProgram();
     loadDefaultGLProgram(p, kShaderType_Position_uColor);
     _programs.insert( std::make_pair(GLProgram::SHADER_NAME_POSITION_U_COLOR, p) );
-    
+
     //
 	// Position, Legth(TexCoords, Color (used by Draw Node basically )
 	//
@@ -167,7 +177,7 @@ void GLProgramCache::loadDefaultGLPrograms()
     p = new GLProgram();
     loadDefaultGLProgram(p, kShaderType_LabelOutline);
     _programs.insert( std::make_pair(GLProgram::SHADER_NAME_LABEL_OUTLINE, p) );
-    
+
     p = new GLProgram();
     loadDefaultGLProgram(p, kShaderType_3DPosition);
     _programs.insert( std::make_pair(GLProgram::SHADER_3D_POSITION, p) );
@@ -175,7 +185,7 @@ void GLProgramCache::loadDefaultGLPrograms()
     p = new GLProgram();
     loadDefaultGLProgram(p, kShaderType_3DPositionTex);
     _programs.insert( std::make_pair(GLProgram::SHADER_3D_POSITION_TEXTURE, p) );
-    
+
     p = new GLProgram();
     loadDefaultGLProgram(p, kShaderType_3DSkinPositionTex);
     _programs.insert(std::make_pair(GLProgram::SHADER_3D_SKINPOSITION_TEXTURE, p));
@@ -184,25 +194,25 @@ void GLProgramCache::loadDefaultGLPrograms()
 void GLProgramCache::reloadDefaultGLPrograms()
 {
     // reset all programs and reload them
-    
+
     // Position Texture Color shader
-    GLProgram *p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_COLOR);    
+    GLProgram *p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_COLOR);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTextureColor);
 
     // Position Texture Color without MVP shader
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_COLOR_NO_MVP);
-    p->reset();    
+    p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTextureColor_noMVP);
 
     // Position Texture Color alpha test
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_ALPHA_TEST);
-    p->reset();    
+    p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTextureColorAlphaTest);
-    
+
     // Position Texture Color alpha test
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_ALPHA_TEST_NO_MV);
-    p->reset();    
+    p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTextureColorAlphaTestNoMV);
     //
     // Position, Color shader
@@ -210,7 +220,7 @@ void GLProgramCache::reloadDefaultGLPrograms()
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_COLOR);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionColor);
-    
+
     //
     // Position, Color shader no MVP
     //
@@ -223,28 +233,28 @@ void GLProgramCache::reloadDefaultGLPrograms()
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTexture);
-    
+
     //
     // Position, Texture attribs, 1 Color as uniform shader
     //
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_U_COLOR);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTexture_uColor);
-    
+
     //
     // Position Texture A8 Color shader
     //
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_TEXTURE_A8_COLOR);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_PositionTextureA8Color);
-    
+
     //
     // Position and 1 color passed as a uniform (to simulate glColor4ub )
     //
     p = getGLProgram(GLProgram::SHADER_NAME_POSITION_U_COLOR);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_Position_uColor);
-    
+
     //
 	// Position, Legth(TexCoords, Color (used by Draw Node basically )
 	//
@@ -267,15 +277,15 @@ void GLProgramCache::reloadDefaultGLPrograms()
     p = getGLProgram(GLProgram::SHADER_NAME_LABEL_OUTLINE);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_LabelOutline);
-    
+
     p = getGLProgram(GLProgram::SHADER_3D_POSITION);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_3DPosition);
-    
+
     p = getGLProgram(GLProgram::SHADER_3D_POSITION_TEXTURE);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_3DPositionTex);
-    
+
     p = getGLProgram(GLProgram::SHADER_3D_SKINPOSITION_TEXTURE);
     p->reset();
     loadDefaultGLProgram(p, kShaderType_3DSkinPositionTex);
@@ -298,7 +308,7 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
             p->initWithByteArrays(ccPositionTextureColor_noMVP_vert, ccPositionTextureColorAlphaTest_frag);
             break;
 
-        case kShaderType_PositionColor:  
+        case kShaderType_PositionColor:
             p->initWithByteArrays(ccPositionColor_vert ,ccPositionColor_frag);
             break;
         case kShaderType_PositionColor_noMVP:
@@ -342,14 +352,14 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
             p->initWithByteArrays(cc3D_SkinPositionTex_vert, cc3D_ColorTex_frag);
             break;
         default:
-            CCLOG("cocos2d: %s:%d, error shader type", __FUNCTION__, __LINE__);
+            OUTPUT_LOG("cocos2d: %s:%d, error shader type", __FUNCTION__, __LINE__);
             return;
     }
-    
+
     p->link();
     p->updateUniforms();
-    
-    //TODO:wangpeng CHECK_GL_ERROR_DEBUG();
+
+    CHECK_GL_ERROR_DEBUG();
 }
 
 GLProgram* GLProgramCache::getGLProgram(const std::string &key)
@@ -364,7 +374,7 @@ void GLProgramCache::addGLProgram(GLProgram* program, const std::string &key)
 {
     if (program)
         program->retain();
-    
+
     _programs[key] = program;
 }
 

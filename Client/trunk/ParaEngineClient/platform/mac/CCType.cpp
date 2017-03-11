@@ -1,5 +1,6 @@
 
 
+
 #include "ParaEngine.h"
 
 
@@ -28,6 +29,10 @@ bool CCVector2::equals(const CCVector2& v) const
 	return true;
 }
 
+static const int MAX_ATTRIBUTES = 16;
+static const int MAX_ACTIVE_TEXTURE = 16;
+
+static uint32_t s_attributeFlags = 0;  // 32 attributes max
 
 void  GL::deleteProgram(GLuint program)
 {
@@ -90,6 +95,48 @@ void GL::bindTexture2DN(GLuint textureUnit, GLuint textureId)
 #endif
 }
 
+
+void GL::bindVAO(GLuint vaoId)
+{
+    //if (Configuration::getInstance()->supportsShareableVAO())
+		if ( false ) //TODO: wangepng
+		{
+
+#if CC_ENABLE_GL_STATE_CACHE
+        if (s_VAO != vaoId)
+        {
+            s_VAO = vaoId;
+            glBindVertexArray(vaoId);
+        }
+#else
+        glBindVertexArray(vaoId);
+#endif // CC_ENABLE_GL_STATE_CACHE
+
+    }
+}
+
+// GL Vertex Attrib functions
+
+void GL::enableVertexAttribs(uint32_t flags)
+{
+    bindVAO(0);
+
+    // hardcoded!
+    for(int i=0; i < MAX_ATTRIBUTES; i++) {
+        unsigned int bit = 1 << i;
+        //FIXME:Cache is disabled, try to enable cache as before
+        bool enabled = (flags & bit) != 0;
+        bool enabledBefore = (s_attributeFlags & bit) != 0;
+        if(enabled != enabledBefore)
+        {
+            if( enabled )
+                glEnableVertexAttribArray(i);
+            else
+                glDisableVertexAttribArray(i);
+        }
+    }
+    s_attributeFlags = flags;
+}
 
 const Size Size::ZERO = Size(0, 0);
 
@@ -418,7 +465,10 @@ void Data::fastSet(unsigned char* bytes, const ssize_t size)
 
 void Data::clear()
 {
-	free(_bytes);
+    if ( _bytes != nullptr)
+    {
+        free(_bytes);
+    }
 	_bytes = nullptr;
 	_size = 0;
 }
