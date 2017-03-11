@@ -12,9 +12,10 @@
 
 #include "platform/OpenGLWrapper.h"
 
-#include "ParaAudioMac.h"
+
+//#include "ParaAudioMac.h"
 //#include "SimpleAudioEngine.h"
-//#include "ParaSimpleAudioEngine.h"
+#include "ParaSimpleAudioEngine.h"
 
 
 #include "AudioEngine2.h"
@@ -45,9 +46,13 @@
 #include "ParaEngineApp.h"
 #include <time.h>
 
+#include "fssimplewindow.h"
+
 using namespace std;
 using namespace ParaEngine;
 
+#include "CCFontFreeType.h"
+USING_NS_CC;
 
 CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bServerMode(false), m_bIsAppActive(true), m_bHasNewConfig(false), m_nAppState(PEAppState_None), m_nScreenWidth(960), m_nScreenHeight(640), m_fTime(0), m_fFPS(0.f)
@@ -56,11 +61,7 @@ CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	g_pCurrentApp = this;
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
-#ifdef USE_OPENGL_RENDERER
-	// listen the event that renderer was recreated on Android/WP8
-	//TODO:wangpeng m_rendererRecreatedListener = cocos2d::EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(CParaEngineApp::listenRendererRecreated, this));
-	//TODO:wangpeng cocos2d::Director::getInstance()->getEventDispatcher()->addEventListenerWithFixedPriority(m_rendererRecreatedListener, -1);
-#endif
+
 }
 
 CParaEngineApp::~CParaEngineApp()
@@ -171,7 +172,7 @@ void CParaEngineApp::InitAudioEngine()
 	CAudioEngine2::GetInstance()->InitAudioEngine();
 #else
 	OUTPUT_LOG("native Simple AudioEngine loaded\n");
-	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)MacParaAudioEngine::GetInstance());
+	CAudioEngine2::GetInstance()->InitAudioEngine((IParaAudioEngine*)CParaSimpleAudioEngine::GetInstance());
 #endif
 }
 
@@ -307,6 +308,11 @@ HRESULT CParaEngineApp::DeleteDeviceObjects()
 
 HRESULT CParaEngineApp::FrameMove(double fTime)
 {
+
+
+
+
+
 	m_fTime = fTime;
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
@@ -334,6 +340,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 		// on ParaEngineClient, this is not necessary.
 		m_pRootScene->Animate((float)fElapsedEnvSimTime);
 	}
+
 	OnFrameEnded();
 	return S_OK;
 }
@@ -385,6 +392,8 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 	SetReturnCode(nReturnCode);
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
 	SetAppState(PEAppState_Exiting);
+
+	FontFreeType::shutdownFreeType_exit();
 }
 
 ParaEngine::PEAppState CParaEngineApp::GetAppState()
@@ -482,26 +491,104 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 	return S_OK;
 }
 
+
+void CParaEngineApp::UpdateMouse()
+{
+	static int oldX = 0;
+	static int oldY = 0;
+	static int oldBtnLeft = 0;
+	static int oldBtnRight = 0;
+	static int oldBtnMiddle = 0;
+
+	int x,y,btnLeft,btnRight,btnMiddle;
+	FsGetMouseState(btnLeft,btnMiddle,btnRight,x,y);
+
+	if ( oldBtnLeft != btnLeft )
+	{
+		this->SetTouchInputting(false);
+		if ( btnLeft == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(x, y));
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(x, y));
+		}
+		oldBtnLeft = btnLeft;
+	}
+	else if ( oldBtnRight != btnRight )
+	{
+		this->SetTouchInputting(false);
+		if ( btnRight == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(x, y));
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(x, y));
+		}
+		oldBtnRight = btnRight;
+	}
+	else if ( oldBtnMiddle != btnMiddle )
+	{
+		this->SetTouchInputting(false);
+		if ( btnMiddle == 0 )
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MBUTTONUP, 0, MAKELPARAM(x, y));
+		}
+		else
+		{
+            CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MBUTTONDOWN, 0, MAKELPARAM(x, y));
+		}
+		oldBtnMiddle = btnMiddle;
+	}
+	else if ( (oldX != x) ||  (oldY != y) )
+	{
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(x, y));
+	}
+
+	oldX = x;
+	oldY = y;
+}
+
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
-	if (!Is3DRenderingEnabled())
-	{
-		// this is server mode
-		auto nStartTime = GetTickCount();
-		while (GetAppState() != PEAppState_Exiting)
-		{
-			auto nCurTickCount = GetTickCount() - nStartTime;
-			FrameMove(nCurTickCount / 1000.f);
-			// 30FPS
-			SLEEP(33);
-		}
-		return GetReturnCode();
-	}
-	else
+
+	FsPassedTime();  // Reset the timer
+
+	// this is server mode
+	auto nStartTime = GetTickCount();
+
+	while (GetAppState() != PEAppState_Exiting)
 	{
 
+        FsPollDevice();
+
+        FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
+
+        UpdateMouse();
+
+		auto nCurTickCount = GetTickCount() - nStartTime;
+		FrameMove(nCurTickCount / 1000.f);
+
+		int passed = FsPassedTime();
+
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+		Render3DEnvironment(true);
+
+        FsSwapBuffers();
+        FsSleep(33-passed);
+
 	}
-	return 0;
+
+
+
+	//StopApp();
+
+	return GetReturnCode();
+
 }
 
 #endif

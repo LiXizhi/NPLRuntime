@@ -27,6 +27,7 @@ public:
         const char *customGlyphs,bool distanceFieldEnabled = false,int outline = 0);
 
     static void shutdownFreeType();
+    static void shutdownFreeType_exit();
 
     bool isDistanceFieldEnabled() const { return _distanceFieldEnabled;}
 
