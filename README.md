@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/LiXizhi/NPLRuntime.svg?branch=master)](https://travis-ci.org/LiXizhi/NPLRuntime)
 [![Build status](https://ci.appveyor.com/api/projects/status/k9e19sceq859bt4p?svg=true)](https://ci.appveyor.com/project/DarrenGZY/nplruntime-e8wud)
 [![Code docs](https://codedocs.xyz/LiXizhi/NPLRuntime.svg)](https://codedocs.xyz/LiXizhi/NPLRuntime)
-[![Documentation Status](https://readthedocs.org/projects/tatfook-npldocs/badge/?version=latest)](https://readthedocs.org/projects/tatfook-npldocs/)
+[![Documentation Status](https://readthedocs.org/projects/tatfook-npldocs/badge/?version=master)](http://docs.paraengine.com/en/master/?badge=master)
 
 
 Welcome to the NPL Runtime!
