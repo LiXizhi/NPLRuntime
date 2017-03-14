@@ -97,6 +97,10 @@ namespace ParaEngine
 		/** update model according to current animation data and time*/
 		bool UpdateModel(SceneState * sceneState = NULL);
 
+		/** ignore selected state for bmaxobject
+		virtual void OnSelect(int nGroupID)override{}
+		virtual void OnDeSelect()override{}
+
 	private:
 		/** size scale */
 		float	m_fScale;
