@@ -69,6 +69,7 @@ using namespace ParaEngine;
 
 /** default resource queue size */
 #define DEFAULT_RESOURCE_QUEUE_SIZE		1000
+#define MAX_RESOURCE_QUEUE_SIZE		100000
 
 #ifdef PARAENGINE_CLIENT
 #define DEFAULT_LOCAL_THREAD_COUNT		1
@@ -186,6 +187,16 @@ CResourceRequestQueue::CResourceRequestQueue(int capacity)
 
 CResourceRequestQueue::~CResourceRequestQueue()
 {
+}
+
+CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequest_ptr& item)
+{
+	if (full())
+	{
+		if (capacity() < MAX_RESOURCE_QUEUE_SIZE)
+			set_capacity(std::min((int)capacity() + DEFAULT_RESOURCE_QUEUE_SIZE, MAX_RESOURCE_QUEUE_SIZE));
+	}
+	return concurrent_ptr_queue<ResourceRequest_ptr>::try_push(item);
 }
 
 ///////////////////////////////////////////////////////

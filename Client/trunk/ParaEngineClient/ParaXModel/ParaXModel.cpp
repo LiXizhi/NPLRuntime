@@ -1786,6 +1786,9 @@ int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 	if (nColumnIndex == 0){
 		return (int)GetObjectNum().nBones;
 	}
+	else if (nColumnIndex == 1){
+		return (int)GetObjectNum().nTextures;
+	}
 	return 0;
 }
 
@@ -1795,6 +1798,16 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(int nRowIndex, int nColum
 	{
 		if (nRowIndex < (int)GetObjectNum().nBones)
 			return &(bones[nRowIndex]);
+	}
+	else if (nColumnIndex == 1)
+	{
+		if (nRowIndex < (int)GetObjectNum().nTextures)
+		{
+			if (textures[nRowIndex])
+			{
+				return textures[nRowIndex].get();
+			}
+		}
 	}
 	return 0;
 }
@@ -1806,7 +1819,7 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(const std::string& sName)
 
 int CParaXModel::GetChildAttributeColumnCount()
 {
-	return 1;
+	return 2;
 }
 
 int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
@@ -1983,6 +1996,11 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("TextureUsage", FieldType_String, (void*)0, (void*)DumpTextureUsage_s, NULL, NULL, bOverride);
 	pClass->AddField("PolyCount", FieldType_Int, (void*)0, (void*)GetPolyCount_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsCount", FieldType_Int, (void*)0, (void*)GetPhysicsCount_s, NULL, NULL, bOverride);
+	pClass->AddField("ObjectNum", FieldType_void_pointer, (void*)0, (void*)GetObjectNum_s, NULL, NULL, bOverride);
+	pClass->AddField("Vertices", FieldType_void_pointer, (void*)0, (void*)GetVertices_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderPasses", FieldType_void_pointer, (void*)0, (void*)GetRenderPasses_s, NULL, NULL, bOverride);
+	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
+	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 
