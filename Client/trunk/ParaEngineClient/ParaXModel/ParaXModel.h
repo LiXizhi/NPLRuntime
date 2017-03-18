@@ -68,6 +68,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CParaXModel, DumpTextureUsage_s, const char**)	{*p1 = cls->DumpTextureUsage(); return S_OK;}
 		ATTRIBUTE_METHOD1(CParaXModel, GetPolyCount_s, int*)	{*p1 = cls->GetPolyCount(); return S_OK;}
 		ATTRIBUTE_METHOD1(CParaXModel, GetPhysicsCount_s, int*)	{*p1 = cls->GetPhysicsCount(); return S_OK;}
+		ATTRIBUTE_METHOD1(CParaXModel, GetGeosetsCount_s, int*)	{ *p1 = (int)cls->geosets.size(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPassesCount_s, int*)	{ *p1 = (int)cls->passes.size(); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetObjectNum_s, void**)	{ *p1 = (void*)(&(cls->GetObjectNum())); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetVertices_s, void**)	{ *p1 = (void*)(cls->m_origVertices); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPasses_s, void**)	{ *p1 = (void*)(&(cls->passes[0])); return S_OK; }

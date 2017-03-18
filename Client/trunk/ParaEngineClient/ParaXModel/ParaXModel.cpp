@@ -1996,6 +1996,10 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("TextureUsage", FieldType_String, (void*)0, (void*)DumpTextureUsage_s, NULL, NULL, bOverride);
 	pClass->AddField("PolyCount", FieldType_Int, (void*)0, (void*)GetPolyCount_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsCount", FieldType_Int, (void*)0, (void*)GetPhysicsCount_s, NULL, NULL, bOverride);
+
+	pClass->AddField("GeosetsCount", FieldType_Int, (void*)0, (void*)GetGeosetsCount_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderPassesCount", FieldType_Int, (void*)0, (void*)GetRenderPassesCount_s, NULL, NULL, bOverride);
+
 	pClass->AddField("ObjectNum", FieldType_void_pointer, (void*)0, (void*)GetObjectNum_s, NULL, NULL, bOverride);
 	pClass->AddField("Vertices", FieldType_void_pointer, (void*)0, (void*)GetVertices_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderPasses", FieldType_void_pointer, (void*)0, (void*)GetRenderPasses_s, NULL, NULL, bOverride);
