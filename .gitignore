@@ -44,6 +44,7 @@ Client/*
 Client/trunk/*
 !Client/trunk/ParaEngineClient/
 !Client/trunk/ParaEngineClientApp/
+!Client/trunk/PhysicsBT/
 !Client/trunk/externals/
 Client/trunk/externals/*
 !Client/trunk/externals/assimp*
