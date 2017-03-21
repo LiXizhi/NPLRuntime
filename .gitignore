@@ -47,7 +47,7 @@ Client/trunk/*
 !Client/trunk/externals/
 Client/trunk/externals/*
 !Client/trunk/externals/assimp*
-
+!Client/trunk/externals/bullet*
 !Client/trunk/externals/png*
 !Client/trunk/externals/jpeg*
 !Client/trunk/externals/freetype2*
