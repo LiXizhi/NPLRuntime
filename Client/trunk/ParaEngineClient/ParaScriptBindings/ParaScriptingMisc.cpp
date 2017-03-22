@@ -155,7 +155,8 @@ namespace ParaScripting
 	}
 	bool CParaEngine::Sleep(float fSeconds)
 	{
-		return ParaEngine::CParaEngineCore::GetStaticInterface()->Sleep(fSeconds);
+		SLEEP(static_cast<DWORD>(fSeconds * 1000));
+		return true;
 	}
 
 	bool CParaEngine::SaveParaXMesh(const char* filename, ParaAssetObject& xmesh, bool bBinaryEncoding)
