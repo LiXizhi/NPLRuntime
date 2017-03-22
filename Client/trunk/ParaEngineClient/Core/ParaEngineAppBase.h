@@ -375,6 +375,11 @@ namespace ParaEngine
 
 		/** parse common command line parameters */
 		virtual bool InitCommandLineParams();
+
+
+		/** render the current frame and does not return until everything is presented to screen.
+		* this function is usually used to draw the animated loading screen. */
+		virtual bool ForceRender();
 	public:
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager() { return NULL; };

@@ -322,11 +322,6 @@ void CFlashPlayer::MoveWindow(int x, int y, int width, int height, bool bRepaint
 	m_nWindowWidth = width;
 	m_nWindowHeight = height;
 	::MoveWindow(m_hwndFlashPlayerControl, x, y, width, height, bRepaint ? TRUE : FALSE);
-	
-	/*if(!CParaEngineApp::GetInstance()->IsWindowedMode())
-	{
-		ParaEngine::CParaEngineCore::GetStaticInterface()->ForceRender();
-	}*/
 }
 
 void CFlashPlayer::Repaint()

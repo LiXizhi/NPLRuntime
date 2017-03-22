@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.3.23
+	- fixed a bug in ForceRender avoiding all static core interface calls. 
+
 2017.3.17
 	- Async resource queue can now automatically grow when full
 	- Set/GetFieldCData supported for accessing big C++ data structure via ffi. 
