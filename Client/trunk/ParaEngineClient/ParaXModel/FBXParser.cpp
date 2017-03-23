@@ -652,7 +652,6 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 	}
 }
 
-
 void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh)
 {
 	aiMaterial* pfbxMaterial = pFbxScene->mMaterials[iIndex];
@@ -852,14 +851,6 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	int numFaces = pFbxMesh->mNumFaces;
 	int numVertices = pFbxMesh->mNumVertices;
 
-	aiTextureOp eOp;
-	aiString szPath;
-	char* content_begin = NULL;
-	int content_len = -1;
-	unsigned int iUV;
-	float fBlend;
-	bool bUseTexture = true;
-
 	// add vertices
 	m_vertices.reserve(m_vertices.size() + numVertices);
 	aiVector3D* uvs = NULL;
@@ -867,17 +858,24 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		uvs = pFbxMesh->mTextureCoords[0];
 	int nBoneIndex = CreateGetBoneIndex(pFbxNode->mName.C_Str());
 
-
+	// check diffuse color
+	DWORD dwDiffuseColor = Color::White;
 	aiMaterial* useMaterial = pFbxScene->mMaterials[pFbxMesh->mMaterialIndex];
+	aiTextureOp eOp;
+	aiString szPath;
+	char* content_begin = NULL;
+	int content_len = -1;
+	unsigned int iUV;
+	float fBlend;
 	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
 		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
-
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName == "")
 	{
-		bUseTexture = false;
+		aiColor4D diffuseColor;
+		aiGetMaterialColor(useMaterial, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+		dwDiffuseColor = LinearColor(diffuseColor.r, diffuseColor.g , diffuseColor.b, 1.0f);
 	}
-
 
 	for (int i = 0; i < numVertices; i++)
 	{
@@ -890,16 +888,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		else
 			vertex.texcoords = Vector2(0.f, 0.f);
 
-		if (!bUseTexture)
-		{
-			aiColor4D diffuseColor;
-			aiGetMaterialColor(useMaterial, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
-			vertex.color0 = Color(diffuseColor.r * 255, diffuseColor.g * 255, diffuseColor.b * 255);
-		}
-		else
-		{
-			vertex.color0 = Color::White;
-		}
+		vertex.color0 = dwDiffuseColor;
 
 		// remember the vertex' bone index, but do not assign any weight at the moment
 		vertex.bones[0] = nBoneIndex;
