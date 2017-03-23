@@ -4,6 +4,8 @@ Copyright 2004-2012 ParaEngine Corporation.
 
 2017.3.23
 	- fixed a bug in ForceRender avoiding all static core interface calls. 
+	- fixed NPL.load return value with npl extension 
+	- fbx diffuse color is exported. 
 
 2017.3.17
 	- Async resource queue can now automatically grow when full
