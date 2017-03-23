@@ -22,13 +22,13 @@ See [Install Guide](https://github.com/LiXizhi/NPLRuntime/wiki/InstallGuide) for
 
 ### Example code
 ```lua
-local function activate()
+-- this is from `helloworld.npl`
+NPL.activate("(gl)helloworld.npl", {data="hello world!"})
+this(msg){
    if(msg) then
       print(msg.data or "");
    end
-   NPL.activate("(gl)helloworld.lua", {data="hello world!"})
-end
-NPL.this(activate); 
+}
 ```
 
 ### Why a New Programming Language?
@@ -46,5 +46,5 @@ To run in server mode, use:
 ```    
 For example:
 ```	
-	npls hello.lua
+	npls hello.npl
 ```    
