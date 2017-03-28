@@ -1838,7 +1838,7 @@ int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
 	return nNextID;
 }
 
-HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
+HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
 {
 	if (m_objNum.nVertices == 0 || !m_indices)
 		return E_FAIL;
@@ -1918,22 +1918,23 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 	//////////////////////////////////////////////////////////////////////////
 	// read the index buffer
 	//////////////////////////////////////////////////////////////////////////
-	WORD* indices = NULL;
+	DWORD* indices = NULL;
 	if (ppIndices)
 	{
-		indices = new WORD[dwNumFaces * 3];
+		indices = new DWORD[dwNumFaces * 3];
 		int nD = 0; // destination indices index
 
 		for (ModelRenderPass& pass : passes)
 		{
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
+				int nVertexOffset = pass.GetVertexStart(this);
 				if(m_RenderMethod == SOFT_ANIM)
 				{
 					int nIndexOffset = pass.m_nIndexStart;
 					for (int i = 0; i < pass.indexCount; ++i)
 					{
-						int a = m_indices[nIndexOffset + i];
+						int a = m_indices[nIndexOffset + i] + nVertexOffset;
 						if (m_frame_number_vertices[a] != 1)
 						{
 							m_frame_number_vertices[a] = 1;
@@ -1953,19 +1954,22 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 				}
 
 #ifdef INVERT_PHYSICS_FACE_WINDING
-				int16* dest = (int16*)&(indices[nD]);
+				int32* dest = (int32*)&(indices[nD]);
 				int16* src = &(m_indices[pass.indexStart]);
 				int nFaceCount = pass.indexCount / 3;
 				for (int i = 0; i < nFaceCount; ++i)
 				{
 					// change the triangle winding order
-					*dest = *src; ++src;
-					*(dest + 2) = *src; ++src;
-					*(dest + 1) = *src; ++src;
+					*dest = *src + nVertexOffset; ++src;
+					*(dest + 2) = *src + nVertexOffset; ++src;
+					*(dest + 1) = *src + nVertexOffset; ++src;
 					dest += 3;
 				}
 #else
-				memcpy(&(indices[nD]), &(m_indices[pass.indexStart]), sizeof(WORD)*pass.indexCount);
+				for (int i = 0; i < pass.indexCount; ++i)
+				{
+					indices[nD + i] = m_indices[pass.indexStart + i] + nVertexOffset;
+				}
 #endif
 				nD += pass.indexCount;
 			}
