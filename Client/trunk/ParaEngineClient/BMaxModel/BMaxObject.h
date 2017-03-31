@@ -67,7 +67,9 @@ namespace ParaEngine
 
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
-		
+		virtual void OnSelect(int nGroupID)override{}
+		virtual void OnDeSelect()override{}
+
 	private:
 		/** size scale */
 		float	m_fScale;

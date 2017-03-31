@@ -240,18 +240,15 @@ namespace ParaEngine
 		if (pModel == NULL)
 			return E_FAIL;
 
-		if (!mReplaceTextures.empty())
+		for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 		{
-			for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
-			{
-				m_pAnimatedMesh->GetModel()->specialTextures[i] = -1;
-				m_pAnimatedMesh->GetModel()->replaceTextures[i] = nullptr;
-			}
-			for (auto const & tex : mReplaceTextures)
-			{
-				m_pAnimatedMesh->GetModel()->specialTextures[tex.first] = tex.first;
-				m_pAnimatedMesh->GetModel()->replaceTextures[tex.first] = tex.second;
-			}
+			m_pAnimatedMesh->GetModel()->specialTextures[i] = -1;
+			m_pAnimatedMesh->GetModel()->replaceTextures[i] = nullptr;
+		}
+		for (auto const & tex : mReplaceTextures)
+		{
+			m_pAnimatedMesh->GetModel()->specialTextures[tex.first] = tex.first;
+			m_pAnimatedMesh->GetModel()->replaceTextures[tex.first] = tex.second;
 		}
 
 		sceneState->SetCurrentSceneObject(this);
