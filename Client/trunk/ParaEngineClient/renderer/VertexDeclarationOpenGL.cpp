@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 #include "platform/OpenGLWrapper.h"
 USING_NS_CC;
 #endif
@@ -61,7 +61,7 @@ void ParaEngine::CVertexDeclaration::Release()
 
 void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZeroData)
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 	int nTextureIndex = 0;
 	int nColorIndex = 0;
 	for (auto elem : m_elements)
@@ -74,7 +74,7 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 		else if (elem.Usage == D3DDECLUSAGE_COLOR)
 		{
 			// Please note: opengl packed color as RGBA in original byte ordering
-			// however directX packed color as BGRA, we will need to swizzle the B and R in color component. 
+			// however directX packed color as BGRA, we will need to swizzle the B and R in color component.
 			if (elem.Type == D3DDECLTYPE_D3DCOLOR)
 			{
 				if (nColorIndex == 0)
@@ -102,14 +102,14 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 
 void ParaEngine::CVertexDeclaration::EnableAttribute()
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 	GL::enableVertexAttribs(m_dwAttributes);
 #endif
 }
 
 void ParaEngine::CVertexDeclaration::SetVertexElement(const VertexElement* elems)
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 	m_nSize = 0;
 	m_dwAttributes = 0;
 	m_elements.clear();

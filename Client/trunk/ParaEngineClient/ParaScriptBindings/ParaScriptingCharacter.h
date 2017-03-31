@@ -50,9 +50,9 @@ namespace ParaScripting
 		*   Formated: The format argument consists of one or more codes; as in printf, 
 		*	the formatting codes are preceded by a percent sign (%). Characters that do not 
 		*	begin with % are copied unchanged. 
-		*  %H : Hour in 24-hour format (00 ¨C 23) 
-		*  %M : Minute as decimal number (00 ¨C 59) 
-		*  %S : Second as decimal number (00 ¨C 59) 
+		*  %H : Hour in 24-hour format (00 "C 23) 
+		*  %M : Minute as decimal number (00 "C 59) 
+		*  %S : Second as decimal number (00 "C 59) 
 		* e.g.: GetTime("movie", "time elapsed: %H:%M:%S");
 		*/
 		string GetTime(const char* sFormat);

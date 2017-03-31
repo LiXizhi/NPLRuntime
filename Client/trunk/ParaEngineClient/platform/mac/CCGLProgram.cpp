@@ -1,4 +1,5 @@
 
+#include "ParaEngine.h"
 
 #include "CCGLProgram.h"
 
@@ -9,7 +10,13 @@
 #include "../base/uthash.h"
 #include "CCFileUtils.h"
 
-#define CHECK_GL_ERROR_DEBUG()
+#define CHECK_GL_ERROR_DEBUG() \
+do { \
+GLenum __error = glGetError(); \
+if(__error) { \
+OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, __FILE__, __FUNCTION__, __LINE__); \
+} \
+} while (false)
 
 NS_CC_BEGIN
 
@@ -104,7 +111,7 @@ GLProgram::GLProgram()
 
 GLProgram::~GLProgram()
 {
-	//CCLOGINFO("%s %d deallocing GLProgram: %p", __FUNCTION__, __LINE__, this);
+	OUTPUT_LOG("%s %d deallocing GLProgram: %p", __FUNCTION__, __LINE__, this);
 
 	if (_vertShader)
 	{
@@ -146,7 +153,7 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	{
 		if (!compileShader(&_vertShader, GL_VERTEX_SHADER, vShaderByteArray))
 		{
-			CCLOG("cocos2d: ERROR: Failed to compile vertex shader");
+			OUTPUT_LOG("cocos2d: ERROR: Failed to compile vertex shader");
 			return false;
 		}
 	}
@@ -156,7 +163,7 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	{
 		if (!compileShader(&_fragShader, GL_FRAGMENT_SHADER, fShaderByteArray))
 		{
-			CCLOG("cocos2d: ERROR: Failed to compile fragment shader");
+			OUTPUT_LOG("cocos2d: ERROR: Failed to compile fragment shader");
 			return false;
 		}
 	}
@@ -280,7 +287,7 @@ void GLProgram::parseUniforms()
 					GLenum __gl_error_code = glGetError();
 					if (__gl_error_code != GL_NO_ERROR)
 					{
-						CCLOG("error: 0x%x", (int)__gl_error_code);
+						OUTPUT_LOG("error: 0x%x", (int)__gl_error_code);
 					}
 
 					//TODO:wangpeng assert(__gl_error_code == GL_NO_ERROR);
@@ -350,15 +357,15 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 		GLchar* src = (GLchar *)malloc(sizeof(GLchar) * length);
 
 		glGetShaderSource(*shader, length, nullptr, src);
-		CCLOG("cocos2d: ERROR: Failed to compile shader:\n%s", src);
+		OUTPUT_LOG("cocos2d: ERROR: Failed to compile shader:\n%s", src);
 
 		if (type == GL_VERTEX_SHADER)
 		{
-			CCLOG("cocos2d: %s", getVertexShaderLog().c_str());
+			OUTPUT_LOG("cocos2d: %s", getVertexShaderLog().c_str());
 		}
 		else
 		{
-			CCLOG("cocos2d: %s", getFragmentShaderLog().c_str());
+			OUTPUT_LOG("cocos2d: %s", getFragmentShaderLog().c_str());
 		}
 		free(src);
 
@@ -426,17 +433,8 @@ bool GLProgram::link()
 {
 	CCASSERT(_program != 0, "Cannot link invalid program");
 
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_WINRT) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
-	if (!_hasShaderCompiler)
-	{
-		// precompiled shader program is already linked
 
-		//bindPredefinedVertexAttribs();
-		parseVertexAttribs();
-		parseUniforms();
-		return true;
-	}
-#endif
+
 
 	GLint status = GL_TRUE;
 

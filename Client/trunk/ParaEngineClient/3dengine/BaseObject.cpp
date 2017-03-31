@@ -36,7 +36,7 @@ int ParaEngine::CBaseObject::g_nObjectSelectionEffect = ParaEngine::RenderSelect
 //-------------------------------------------------------------------
 CBaseObject::CBaseObject()
 	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false),
-m_dwAttribute(0),m_pEffectParamBlock(NULL), m_nFrameNumber(0),m_nID(0),m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f)
+	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f)
 {
 }
 //-----------------------------------------------------------------------------
@@ -771,6 +771,11 @@ bool ParaEngine::CBaseObject::ViewTouch()
 	return true;
 }
 
+void ParaEngine::CBaseObject::SetRenderOrder(float val)
+{
+	m_fRenderOrder = val;
+}
+
 void ParaEngine::CBaseObject::SetRenderDistance( float fDist )
 {
 	m_fRenderDistance = fDist;
@@ -1095,6 +1100,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnablePhysics", FieldType_Bool, (void*)EnablePhysics_s, (void*)IsPhysicsEnabled_s, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderOrder", FieldType_Float, (void*)SetRenderOrder_s, (void*)GetRenderOrder_s, NULL, "", bOverride);
 	pClass->AddField("RenderImportance", FieldType_Int, (void*)SetRenderImportance_s, (void*)GetRenderImportance_s, NULL, "", bOverride);
 	pClass->AddField("RenderDistance", FieldType_Float, (void*)SetRenderDistance_s, (void*)GetRenderDistance_s, NULL, "", bOverride);
 	pClass->AddField("reset", FieldType_void, (void*)Reset_s, NULL, NULL, "reset object", bOverride);

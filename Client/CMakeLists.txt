@@ -11,7 +11,7 @@ project (CLIENT)
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	set(OUTPUT_BIN_DIR   ${CLIENT_SOURCE_DIR}/../ParaWorld/bin64/)
 else()
-	set(OUTPUT_BIN_DIR   ${CLIENT_SOURCE_DIR}/../ParaWorld/)
+	set(OUTPUT_BIN_DIR   ${CLIENT_SOURCE_DIR}/../ParaWorld/bin32/)
 endif()
 
 set(SERVER_SOURCE_DIR   ${CLIENT_SOURCE_DIR}/../Server/trunk/)
@@ -19,7 +19,7 @@ set(SERVER_SOURCE_DIR   ${CLIENT_SOURCE_DIR}/../Server/trunk/)
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if (PARAENGINE_CLIENT OR WIN32)
 	if ("$ENV{BOOST_ROOT}" STREQUAL "")
-		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_55_0)
+		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_61_0)
 	endif()
     if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
@@ -33,7 +33,7 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
+find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
@@ -70,6 +70,8 @@ add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_B
 set (ParaEngineClient_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient)
 
 if(PARAENGINE_CLIENT_DLL)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet-2.75 ${CLIENT_BINARY_DIR}/bullet-2.75)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
 	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/ParaEngineClientApp ${CLIENT_BINARY_DIR}/ParaEngineClientApp)
 endif()
 	

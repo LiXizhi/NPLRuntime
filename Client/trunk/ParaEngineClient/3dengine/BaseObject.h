@@ -415,8 +415,11 @@ public:
 	DEFINE_SCRIPT_EVENT_GET(CBaseObject, OnAssetLoaded);
 	ATTRIBUTE_METHOD1(CBaseObject, SetOnAssetLoaded_s, const char*)	{cls->SetOnAssetLoaded(p1); return S_OK;}
 
-	ATTRIBUTE_METHOD1(CBaseObject, GetRenderImportance_s, int*)			{*p1 = cls->GetRenderImportance(); return S_OK;}
-	ATTRIBUTE_METHOD1(CBaseObject, SetRenderImportance_s, int)		{cls->SetRenderImportance(p1); return S_OK;}
+	ATTRIBUTE_METHOD1(CBaseObject, GetRenderOrder_s, float*)			{ *p1 = cls->GetRenderOrder(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetRenderOrder_s, float)		{ cls->SetRenderOrder(p1); return S_OK; }
+
+	ATTRIBUTE_METHOD1(CBaseObject, GetRenderImportance_s, int*)			{ *p1 = cls->GetRenderImportance(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetRenderImportance_s, int)		{ cls->SetRenderImportance(p1); return S_OK; }
 
 	ATTRIBUTE_METHOD1(CBaseObject, GetRenderDistance_s, float*)			{*p1 = cls->GetRenderDistance(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetRenderDistance_s, float)		{cls->SetRenderDistance(p1); return S_OK;}
@@ -717,6 +720,18 @@ public:
 	*/
 	inline void SetRenderImportance(int nRenderImportance) {m_nRenderImportance = nRenderImportance;}
 	inline int GetRenderImportance() {return m_nRenderImportance;}
+
+	/** 0 if automatic, larger number renders after smaller numbered object. The following numbers are fixed in the pipeline and may subject to changes in later versions.
+	[1.0-2.0): solid big objects
+	[2.0-3.0): solid small objects
+	[3.0-3.0): sprites
+	[4.0-4.0): characters
+	[5.0-5.0): selection
+	[6.0-7.0): transparent object
+	[100.0, ...): rendered last and sorted by m_fRenderOrder
+	*/
+	float GetRenderOrder() const { return m_fRenderOrder; }
+	void SetRenderOrder(float val);
 
 	/// -- Base object functions
 	CChildObjectList_Type&		GetChildren(){ return m_children;};
@@ -1254,6 +1269,17 @@ protected:
 	* we can limit the max number of objects drawn of a given render importance by calling SceneObject::SetMaxRenderCount() function 
 	*/
 	int m_nRenderImportance;
+
+	/** 0 if automatic, larger number renders after smaller numbered object. The following numbers are fixed in the pipeline and may subject to changes in later versions.
+	[1.0-2.0): solid big objects
+	[2.0-3.0): solid small objects
+	[3.0-3.0): sprites
+	[4.0-4.0): characters
+	[5.0-5.0): selection
+	[6.0-7.0): transparent object
+	[100.0, ...): rendered last and sorted by m_fRenderOrder
+	*/
+	float m_fRenderOrder;
 
 	/** we will not render this object if the object's position to camera eye position is further than this value. 
 	If this is 0 of negative, the global view clipping rule is applied. default to 0.f */

@@ -133,6 +133,11 @@ bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 	return true;
 }
 
+bool ParaEngine::CParaEngineAppBase::ForceRender()
+{
+	return false;
+}
+
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
 	SetCurrentInstance((CParaEngineApp*)this);

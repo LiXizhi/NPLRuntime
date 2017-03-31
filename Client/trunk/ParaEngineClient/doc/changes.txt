@@ -2,6 +2,32 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.3.23
+	- fixed a bug in ForceRender avoiding all static core interface calls. 
+	- fixed NPL.load return value with npl extension 
+	- fbx diffuse color is exported. 
+
+2017.3.17
+	- Async resource queue can now automatically grow when full
+	- Set/GetFieldCData supported for accessing big C++ data structure via ffi. 
+
+2017.3.7
+	- RenderOrder attribute added and implemented to pipeline
+	- "zwrite" and "ztest" effect params added to ParaObject. 
+
+2017.2.27
+	- NPL.export implemented with test cases that support cyclic dependency. 
+	- filename attribute added for NPL runtime state.
+	- NPL file module fully implemented
+
+2017.2.22
+	- open image with 8 bits png indexed color supported. updated test file and wiki doc.
+	- NPL.load will now return cached file object. 
+
+2017.2.18
+	- skinned fbx file always has default animation
+	- fixed fbx with too many vertices
+
 2017.1.24
 	- npl extension and meta compiler integrated. 
 	- FBX parser now support unlimited vertices provided they are in increasing order. 

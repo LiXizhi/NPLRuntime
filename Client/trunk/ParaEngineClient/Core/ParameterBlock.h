@@ -164,4 +164,19 @@ namespace ParaEngine
 		/** apply to effect file. */
 		bool ApplyToEffect( CEffectFile* pEffectFile );
 	};
+
+	/** apply object-level params and restore to default value. */
+	class CApplyObjectLevelParamBlock
+	{
+	private:
+		CApplyObjectLevelParamBlock(){};
+	public:
+		CApplyObjectLevelParamBlock(CParameterBlock* pBlock);
+		~CApplyObjectLevelParamBlock();
+
+		CParameterBlock* GetParamsBlock();
+	private:
+		CParameterBlock* m_pBlock;
+		bool m_bLastZEnabled;
+	};
 }

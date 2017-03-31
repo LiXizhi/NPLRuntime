@@ -63,8 +63,9 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
 
-
-	if (animated)
+	if(IsBmaxModel())
+		m_RenderMethod = BMAX_MODEL;
+	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
 	else
 		m_RenderMethod = NO_ANIM;
@@ -864,8 +865,8 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
-								if (p.init_FX(this))
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
+								if (p.init_FX(this, pMaterialParams))
 								{
 									pLastPass = &p;
 									pEffect->CommitChanges();
@@ -879,7 +880,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 						{
 							pEffect->CommitChanges();
 							DrawPass_NoAnim(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 
@@ -888,7 +889,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
@@ -1114,7 +1115,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 							}
 							else
 							{
-								pLastPass->deinit_FX(pSceneState);
+								pLastPass->deinit_FX(pSceneState, pMaterialParams);
 								if (p.init_FX(this))
 								{
 									pLastPass = &p;
@@ -1129,7 +1130,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						{
 							pEffect->CommitChanges();
 							DrawPass(p);
-							p.deinit_FX(pSceneState);
+							p.deinit_FX(pSceneState, pMaterialParams);
 						}
 #endif
 					}
@@ -1137,7 +1138,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 #ifdef COMBINE_RENDER_PASS
 				if(pLastPass != NULL)
 				{
-					pLastPass->deinit_FX(pSceneState);
+					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
 #endif
 				pEffect->EndPass(0);
@@ -1785,6 +1786,9 @@ int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 	if (nColumnIndex == 0){
 		return (int)GetObjectNum().nBones;
 	}
+	else if (nColumnIndex == 1){
+		return (int)GetObjectNum().nTextures;
+	}
 	return 0;
 }
 
@@ -1794,6 +1798,16 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(int nRowIndex, int nColum
 	{
 		if (nRowIndex < (int)GetObjectNum().nBones)
 			return &(bones[nRowIndex]);
+	}
+	else if (nColumnIndex == 1)
+	{
+		if (nRowIndex < (int)GetObjectNum().nTextures)
+		{
+			if (textures[nRowIndex])
+			{
+				return textures[nRowIndex].get();
+			}
+		}
 	}
 	return 0;
 }
@@ -1805,7 +1819,7 @@ IAttributeFields* CParaXModel::GetChildAttributeObject(const std::string& sName)
 
 int CParaXModel::GetChildAttributeColumnCount()
 {
-	return 1;
+	return 2;
 }
 
 int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
@@ -1824,7 +1838,7 @@ int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
 	return nNextID;
 }
 
-HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
+HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
 {
 	if (m_objNum.nVertices == 0 || !m_indices)
 		return E_FAIL;
@@ -1904,22 +1918,23 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 	//////////////////////////////////////////////////////////////////////////
 	// read the index buffer
 	//////////////////////////////////////////////////////////////////////////
-	WORD* indices = NULL;
+	DWORD* indices = NULL;
 	if (ppIndices)
 	{
-		indices = new WORD[dwNumFaces * 3];
+		indices = new DWORD[dwNumFaces * 3];
 		int nD = 0; // destination indices index
 
 		for (ModelRenderPass& pass : passes)
 		{
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
+				int nVertexOffset = pass.GetVertexStart(this);
 				if(m_RenderMethod == SOFT_ANIM)
 				{
 					int nIndexOffset = pass.m_nIndexStart;
 					for (int i = 0; i < pass.indexCount; ++i)
 					{
-						int a = m_indices[nIndexOffset + i];
+						int a = m_indices[nIndexOffset + i] + nVertexOffset;
 						if (m_frame_number_vertices[a] != 1)
 						{
 							m_frame_number_vertices[a] = 1;
@@ -1939,19 +1954,22 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 				}
 
 #ifdef INVERT_PHYSICS_FACE_WINDING
-				int16* dest = (int16*)&(indices[nD]);
+				int32* dest = (int32*)&(indices[nD]);
 				int16* src = &(m_indices[pass.indexStart]);
 				int nFaceCount = pass.indexCount / 3;
 				for (int i = 0; i < nFaceCount; ++i)
 				{
 					// change the triangle winding order
-					*dest = *src; ++src;
-					*(dest + 2) = *src; ++src;
-					*(dest + 1) = *src; ++src;
+					*dest = *src + nVertexOffset; ++src;
+					*(dest + 2) = *src + nVertexOffset; ++src;
+					*(dest + 1) = *src + nVertexOffset; ++src;
 					dest += 3;
 				}
 #else
-				memcpy(&(indices[nD]), &(m_indices[pass.indexStart]), sizeof(WORD)*pass.indexCount);
+				for (int i = 0; i < pass.indexCount; ++i)
+				{
+					indices[nD + i] = m_indices[pass.indexStart + i] + nVertexOffset;
+				}
 #endif
 				nD += pass.indexCount;
 			}
@@ -1982,6 +2000,15 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("TextureUsage", FieldType_String, (void*)0, (void*)DumpTextureUsage_s, NULL, NULL, bOverride);
 	pClass->AddField("PolyCount", FieldType_Int, (void*)0, (void*)GetPolyCount_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsCount", FieldType_Int, (void*)0, (void*)GetPhysicsCount_s, NULL, NULL, bOverride);
+
+	pClass->AddField("GeosetsCount", FieldType_Int, (void*)0, (void*)GetGeosetsCount_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderPassesCount", FieldType_Int, (void*)0, (void*)GetRenderPassesCount_s, NULL, NULL, bOverride);
+
+	pClass->AddField("ObjectNum", FieldType_void_pointer, (void*)0, (void*)GetObjectNum_s, NULL, NULL, bOverride);
+	pClass->AddField("Vertices", FieldType_void_pointer, (void*)0, (void*)GetVertices_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderPasses", FieldType_void_pointer, (void*)0, (void*)GetRenderPasses_s, NULL, NULL, bOverride);
+	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
+	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

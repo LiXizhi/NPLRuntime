@@ -316,6 +316,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("ReadRegStr", & ParaGlobal::ReadRegStr), 
 			def("ReadRegDWORD", & ParaGlobal::ReadRegDWORD), 
 			def("WriteRegDWORD", & ParaGlobal::WriteRegDWORD), 
+			
+			def("SelectAttributeObject", &ParaGlobal::SelectAttributeObject),
 
 			def("log", & ParaGlobal::WriteToLogFile)
 		]

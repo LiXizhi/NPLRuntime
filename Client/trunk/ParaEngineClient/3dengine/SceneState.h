@@ -46,6 +46,7 @@ namespace ParaEngine
 		RENDER_SHADOWMAP = 0x1 << 15,
 		RENDER_TRANSPARENT_CHARACTERS = 0x1 << 16,
 		RENDER_OWNER_DRAW = 0x1 << 17,
+		RENDER_POST_RENDER_LIST = 0x1 << 18,
 	};
 
 #define CHECK_SELECTION(x) ((dwSelection&(x))>0)
@@ -176,6 +177,22 @@ namespace ParaEngine
 			int nRightRenderImportance = _Right.m_pRenderObject->GetRenderImportance();
 			return (nLeftRenderImportance > nRightRenderImportance) ||
 				((nLeftRenderImportance == nRightRenderImportance) && ((_Left.m_fObjectToCameraDistance) < (_Right.m_fObjectToCameraDistance)));
+		};
+	};
+
+	/** first sort from large to small by render importance and if render importance are same from near camera to far from camera.*/
+	template<class Type>
+	struct GreaterPostRenderObj_ByOrder
+	{
+		inline bool operator()(
+			const Type& _Left,
+			const Type& _Right
+			) const
+		{
+			float leftOrder = _Left.m_pRenderObject->GetRenderOrder();
+			float rightOrder = _Right.m_pRenderObject->GetRenderOrder();
+			return (leftOrder < rightOrder) ||
+				((leftOrder == rightOrder) && ((_Left.m_pRenderObject->GetPrimaryTechniqueHandle()) < (_Right.m_pRenderObject->GetPrimaryTechniqueHandle())));
 		};
 	};
 
@@ -483,7 +500,7 @@ namespace ParaEngine
 		listPRBiped: biped, sorted by primary asset entity, this is always the MA asset.
 		Note: post rendering are performed in the order listed above.
 		*/
-		SceneState::List_PostRenderObject_Type		listPostRenderingObjects;   /// list of general post rendering object
+		SceneState::List_PostRenderObject_TrackRef_Type		listPostRenderingObjects;   /// list of general post rendering object
 #ifdef USE_DIRECTX_RENDERER
 		SceneState::List_CSpriteObjectPtr_Type	listPRSprite;				/// list of Post Rendering object: Sprite
 #endif

@@ -78,7 +78,7 @@ namespace ParaEngine
 	//////////////////////////////////////////////////////////////////////////
 	BlockWorldClient::BlockWorldClient()
 		:m_maxSelectBlockPerBatch(80), m_isUnderLiquid(false), m_vBlockLightColor(DEFAULT_BLOCK_LIGHT_COLOR), 
-		m_nBufferRebuildCountThisTick(0), 
+		m_nBufferRebuildCountThisTick(0), m_bUsePointTextureFiltering(true),
 		m_nVertexBufferSizeLimit(100 * 1024 * 1024), 
 		m_nMaxVisibleVertexBufferBytes(100 * 1024 * 1024),
 		m_nAlwaysInVertexBufferChunkRadius(2),
@@ -2133,6 +2133,16 @@ namespace ParaEngine
 		return (v0->GetRenderOrder() < v1->GetRenderOrder());
 	}
 
+	bool BlockWorldClient::GetUsePointTextureFiltering()
+	{
+		return m_bUsePointTextureFiltering;
+	}
+
+	void BlockWorldClient::SetUsePointTextureFiltering(bool bUse)
+	{
+		m_bUsePointTextureFiltering = bUse;
+	}
+
 	void BlockWorldClient::InitDeviceObjects()
 	{
 
@@ -3183,7 +3193,7 @@ namespace ParaEngine
 		pClass->AddField("NearCameraChunkDist", FieldType_Int, (void*)SetNearCameraChunkDist_s, (void*)GetNearCameraChunkDist_s, NULL, NULL, bOverride);
 		pClass->AddField("MaxBufferRebuildPerTick", FieldType_Int, (void*)SetMaxBufferRebuildPerTick_s, (void*)GetMaxBufferRebuildPerTick_s, NULL, NULL, bOverride);
 		pClass->AddField("MaxBufferRebuildPerTick_FarChunk", FieldType_Int, (void*)SetMaxBufferRebuildPerTick_FarChunk_s, (void*)GetMaxBufferRebuildPerTick_FarChunk_s, NULL, NULL, bOverride);
-		
+		pClass->AddField("UsePointTextureFiltering", FieldType_Bool, (void*)SetUsePointTextureFiltering_s, (void*)GetUsePointTextureFiltering_s, NULL, NULL, bOverride);
 		return S_OK;
 	}
 

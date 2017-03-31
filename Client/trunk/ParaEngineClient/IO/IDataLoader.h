@@ -153,5 +153,7 @@ namespace ParaEngine
 		CResourceRequestQueue();
 		CResourceRequestQueue(int capacity);
 		~CResourceRequestQueue();
+
+		BufferStatus try_push(ResourceRequest_ptr& item);
 	};
 }

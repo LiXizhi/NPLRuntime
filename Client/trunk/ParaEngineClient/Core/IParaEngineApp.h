@@ -443,6 +443,10 @@ namespace ParaEngine
 		* @param sFilePath: for example, "npl_packages/main/" is always loaded on start up.
 		*/
 		virtual bool LoadNPLPackage(const char* sFilePath) { return false; };
+
+		/** render the current frame and does not return until everything is presented to screen.
+		* this function is usually used to draw the animated loading screen. */
+		virtual bool ForceRender() { return false; };
 	};
 
 }

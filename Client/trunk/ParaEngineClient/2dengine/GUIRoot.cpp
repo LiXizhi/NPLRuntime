@@ -2619,13 +2619,13 @@ CPaintEngine * ParaEngine::CGUIRoot::paintEngine() const
 	if (engine)
 		return engine;
 
-	CPaintEngine *engine = CPaintEngineGPU::GetInstance();
-	if (engine->isActive() && engine->paintDevice() != this) {
+	CPaintEngine *engine_ = CPaintEngineGPU::GetInstance();
+	if (engine_ && engine_->isActive() && engine_->paintDevice() != this) {
 		OUTPUT_LOG("warning: multiple active GPU paint engine. normally there should only be one active one\n");
-		engine = new CPaintEngineGPU();
-		return engine;
+		engine_ = new CPaintEngineGPU();
+		return engine_;
 	}
-	return engine;
+	return engine_;
 }
 
 int ParaEngine::CGUIRoot::metric(PaintDeviceMetric metric) const

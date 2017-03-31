@@ -9,6 +9,8 @@
 
 #include "CCFontFreeType.h"
 
+#include "ParaEngine.h"
+
 USING_NS_CC;
 
 NS_CC_BEGIN
@@ -88,7 +90,7 @@ FontAtlas::~FontAtlas()
 
     delete []_currentPageData;
 
-#if PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_WINRT && PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
+#if PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
     if (_iconv)
     {
         iconv_close(_iconv);
@@ -177,7 +179,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
 
         if (_iconv == (iconv_t)-1)
         {
-            CCLOG("conversion from utf16 to gb2312 not available");
+            OUTPUT_LOG("conversion from utf16 to gb2312 not available");
         }
         else
         {
@@ -192,7 +194,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
     }
     break;
     default:
-        CCLOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
+        OUTPUT_LOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
         break;
     }
 
@@ -275,7 +277,7 @@ void FontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_
             break;
         }
         default:
-            CCLOG("FontAtlas::findNewCharacters: Unsupported encoding:%d", charEncoding);
+            OUTPUT_LOG("FontAtlas::findNewCharacters: Unsupported encoding:%d", charEncoding);
             break;
         }
     }

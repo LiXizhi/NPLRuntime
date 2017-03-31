@@ -1062,17 +1062,31 @@ namespace ParaScripting
 	{
 		if (IsValid())
 		{
-			const char* text = GetText2(0, -1).c_str();
+			const std::string& output = GetText2(0, -1);
+			const char* text = output.c_str();
 			if (text)
 			{
+				// https://en.wikipedia.org/wiki/Byte_order_mark
 				// encoding is escaped.
 				if ((((byte)text[0]) == 0xEF) && (((byte)text[1]) == 0xBB) && (((byte)text[2]) == 0xBF))
 				{
+					// UTF-8[t 1]	EF BB BF
 					text += 3;
 				}
 				else if ( ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE)) || ((((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF)))
 				{
+					// UTF - 16 (BigEndian)    FE FF
+					// UTF - 16 (LittleEndian) FF FE
 					text += 2;
+					std::u16string input;
+					input.resize((output.size() - 2) / 2);
+					memcpy((char*)(&(input[0])), text, input.size() * 2);
+					
+					m_sTempBuffer.clear();
+					if (StringHelper::UTF16ToUTF8(input, m_sTempBuffer))
+					{
+						return m_sTempBuffer.c_str();
+					}
 				}
 			}
 			return text;
