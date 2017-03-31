@@ -61,6 +61,7 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsPreemptive_s, bool*) { *p1 = cls->IsPreemptive(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, PauseAllPreemptiveFunction_s, bool) { cls->PauseAllPreemptiveFunction(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntimeState, IsAllPreemptiveFunctionPaused_s, bool*) { *p1 = cls->IsAllPreemptiveFunctionPaused(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntimeState, GetFileName_s, const char**) { *p1 = cls->GetCurrentFileName(); return S_OK; }
 
 		/** call this function before calling anything else. It will load all NPL modules into the runtime state. */
 		void Init();
@@ -145,7 +146,7 @@ namespace NPL
 		* @return true if popped.
 		*/
 		NPLMessage_ptr PopMessageAt(int nIndex);
-		
+				
 	public:
 		virtual const std::string& GetIdentifier();
 
@@ -161,10 +162,11 @@ namespace NPL
 		* @param filePath: the local file path, it can be StringBuilder or std::string. 
 		* @param bReload: if true, the file will be reloaded even if it is already loaded.
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
+		* @param bNoReturn: generate no return on lua_state's stack.
 		* @return: return true if file is loaded.
 		*/
 		template <typename StringType>
-		bool LoadFile_any(const StringType & filepath, bool bReload=false);
+		bool LoadFile_any(const StringType & filepath, bool bReload = false, lua_State* L = 0, bool bNoReturn = false);
 		/**
 		* Activate a file(script or dll) in this runtime state. The file should be loaded already.
 		* @param filepath: pointer to the file path. it can be StringBuilder or std::string. 

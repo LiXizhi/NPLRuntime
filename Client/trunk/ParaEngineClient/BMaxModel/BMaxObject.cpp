@@ -257,14 +257,18 @@ namespace ParaEngine
 		ApplyBlockLighting(sceneState);
 
 		
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
+
 		if (pEffectFile == 0)
 		{
 			// TODO: Fixed Function. 
 		}
 		else
 		{
+			bool bUsePointTextureFilter = false;
+
 			// apply block space lighting for object whose size is comparable to a single block size
-			if (CheckAttribute(MESH_USE_LIGHT) || sceneState->IsDeferredShading())
+			if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 			{
 				BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 				if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
@@ -302,8 +306,12 @@ namespace ParaEngine
 					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
 
 					sceneState->EnableLocalMaterial(true);
+					bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 				}
-				// Note: do this if one wants point light
+			}
+
+			if (bUsePointTextureFilter)
+			{
 				pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 				pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 			}
@@ -328,7 +336,7 @@ namespace ParaEngine
 			pModel->blendingFactor = 0;
 			pModel->animate(sceneState, NULL);
 			// force CParaXModel::BMAX_MODEL? 
-			pModel->draw(sceneState, NULL); 
+			pModel->draw(sceneState, p.GetParamsBlock()); 
 		}
 
 		CGlobals::GetWorldMatrixStack().pop();

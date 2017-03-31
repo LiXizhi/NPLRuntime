@@ -543,6 +543,7 @@ HRESULT CMeshPhysicsObject::Draw( SceneState * sceneState)
 		m_pMeshObject->SetAttribute(MESH_USE_LIGHT, true);
 
 	SetFrameNumber(sceneState->m_nRenderCount);
+
 	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
 	HRESULT hr = m_pMeshObject->Draw(sceneState);
 	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );

@@ -2968,7 +2968,7 @@ void ParaMiniSceneGraph::Draw( float fDeltaTime )
 {
 	if(IsValid())
 	{
-		if( SUCCEEDED( CGlobals::GetRenderDevice()->BeginScene() ) )
+		if(CGlobals::GetRenderDevice() && SUCCEEDED( CGlobals::GetRenderDevice()->BeginScene() ) )
 		{
 			m_pSceneGraph->Draw(fDeltaTime);
 

@@ -7,6 +7,17 @@
 #include <boost/shared_ptr.hpp>
 #include "ParaScriptingGlobal.h"
 
+
+namespace luabind
+{
+	namespace adl {
+		class object;
+	}
+	using adl::object;
+}
+
+struct lua_State;
+
 namespace ParaScripting
 {
 	using namespace luabind;
@@ -34,6 +45,9 @@ namespace ParaScripting
 
 		/** return the name of this runtime state. if "", it is considered an anonymous name */
 		const char* GetName() const;
+
+		object GetField(const char*  sFieldname, const object& output);
+		void SetField(const char*  sFieldname, const object& input);
 
 		/** start this runtime state in a worker thread 
 		* @return the number of threads that are currently working on the runtime state. normally this is 1. 
@@ -180,12 +194,6 @@ namespace ParaScripting
 		static void call_(const char * sNPLFilename, const char* sCode);
 
 		/**
-		* return the NPL file name that is being loaded. Only call this function when the file is being initialized. i.e. at the root level. 
-		* Note: calling this function inside other functions will lead to unexpected result.
-		*/
-		static const char* GetFileName();
-
-		/**
 		* NOTE: the function name is "this" in NPL, not "this_". 
 		* associate a user defined function as the activation function of this file.
 		* add the current file name to the __act table.
@@ -223,7 +231,7 @@ namespace ParaScripting
 		* @note: when loading an NPL file, we will first find if there is an up to date compiled version in the bin directory. if there is, 
 		* we will load the compiled version, otherwise we will use the text version.  use bin version, if source version does not exist; use bin version, if source and bin versions are both on disk (instead of zip) and that bin version is newer than the source version. 
 		* e.g. we can compile source to bin directory with file extension ".o", e.g. "script/abc.lua" can be compiled to "bin/script/abc.o", The latter will be used if available and up-to-date. 
-		* @param filePath: the local relative file path. 
+		* @param filePath: the relative to working directory file path like "script/abc.lua", or relative to calling script with "./abc.npl". 
 		* If the file extension is ".dll", it will be treated as a plug-in. Examples:
 		*	"NPLRouter.dll"			-- load a C++ or C# dll. Please note that, in windows, it looks for NPLRonter.dll; in linux, it looks for ./libNPLRouter.so 
 		*	"plugin/libNPLRouter.dll"			-- almost same as above, it is reformatted to remove the heading 'lib' when loading. In windows, it looks for plugin/NPLRonter.dll; in linux, it looks for ./plugin/libNPLRouter.so
@@ -231,6 +239,7 @@ namespace ParaScripting
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
 		* @remark: one should be very careful when calling with bReload set to true, since this may lead to recursive 
 		*	reloading of the same file. If this occurs, it will generate C Stack overflow error message.
+		* @return false if file is not found. it may also return the cached(exported) object. 
 		*/
 		static void load(const object& filePath, bool bReload);
 		/** for NPL managed only.*/
@@ -238,6 +247,11 @@ namespace ParaScripting
 		/** same as NPL.load(filepath, false); */
 		static void load1(const object& filePath);
 
+		/** set/get exported file module*/
+		static int export_(lua_State* L);
+		/** get filename of the file where the calling function is defined. */
+		static const char* GetFileName(lua_State* L = 0);
+		
 		/**
 		* execute a given string immediately in protected mode. 
 		* @param sCode : the code to run. the code can not be longer than some internally defined value. 
@@ -477,13 +491,13 @@ namespace ParaScripting
 		static void AddDNSRecord(const char * sDNSName, const char* sAddress);
 
 		/**
-		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call's does not contain the channel property.
 		* @param channel_ID It can be a number in [0,15].default is 0
 		*/
 		static void SetDefaultChannel(int channel_ID);
 
 		/**
-		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call's does not contain the channel property.
 		* @return channel_ID It can be a number in [0,15].default is 0
 		*/
 		static int GetDefaultChannel();
@@ -545,7 +559,7 @@ namespace ParaScripting
 		end
 		end
 		NPL.RegisterWSCallBack("http://paraengine.com/login.aspx",callbackFunc1);
-		NPL.activate("http://paraengine.com/login.aspx", {username=¡±lxz¡±});
+		NPL.activate("http://paraengine.com/login.aspx", {username=lxz});
 		* @param sWebServiceFile URL of the web service
 		* @param sCode code to be executed when the web service is called. When a two-way web service call is invoked; 
 		*  it internally will create a thread for the returning message. Please refer to .Net 3.0 network communication architecture.

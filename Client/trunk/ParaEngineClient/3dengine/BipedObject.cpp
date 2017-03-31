@@ -1471,8 +1471,10 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 #endif
 		}
 
+		bool bUsePointTextureFilter = false;
+		
 		// apply block space lighting for object whose size is comparable to a single block size
-		if (CheckAttribute(MESH_USE_LIGHT) || sceneState->IsDeferredShading())
+		if (CheckAttribute(MESH_USE_LIGHT) && !(sceneState->IsShadowPass()))
 		{
 			BlockWorldClient* pBlockWorldClient = BlockWorldClient::GetInstance();
 			if (pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
@@ -1510,8 +1512,13 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 				sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
 
 				sceneState->EnableLocalMaterial(true);
+				
+				bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 			}
-			// Note: do this if one wants point light
+		}
+		
+		if (bUsePointTextureFilter)
+		{
 			pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
 			pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
 		}
@@ -1521,7 +1528,8 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, pEffectManager->GetDefaultSamplerState(0, D3DSAMP_MAGFILTER));
 		}
 
-		pAI->Draw(sceneState, mat, GetEffectParamBlock());
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
+		pAI->Draw(sceneState, mat, p.GetParamsBlock());
 
 		sceneState->EnableLocalMaterial(false);
 	}

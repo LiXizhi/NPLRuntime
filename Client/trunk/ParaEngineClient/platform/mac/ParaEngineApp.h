@@ -16,7 +16,7 @@ namespace cocos2d
 	class EventListenerCustom;
 }
 
-/** 
+/**
 @mainpage ParaEngine Reference
 
 *
@@ -370,6 +370,8 @@ namespace ParaEngine
 		float m_fFPS;
 
 		bool m_bIsAppActive;
+
+		void UpdateMouse();
 	};
 
 }

@@ -80,7 +80,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockWorldClient, GetMaxBufferRebuildPerTick_FarChunk_s, int*)		{ *p1 = cls->GetMaxBufferRebuildPerTick_FarChunk(); return S_OK; }
 		ATTRIBUTE_METHOD1(BlockWorldClient, SetMaxBufferRebuildPerTick_FarChunk_s, int)	{ cls->SetMaxBufferRebuildPerTick_FarChunk(p1); return S_OK; }
 
-		
+		ATTRIBUTE_METHOD1(BlockWorldClient, GetUsePointTextureFiltering_s, bool*)	{ *p1 = cls->GetUsePointTextureFiltering(); return S_OK; }
+		ATTRIBUTE_METHOD1(BlockWorldClient, SetUsePointTextureFiltering_s, bool)	{ cls->SetUsePointTextureFiltering(p1); return S_OK; }
+
 		//////////////////////////////////////////////////////////////////////////
 		//static functions
 		//////////////////////////////////////////////////////////////////////////
@@ -266,7 +268,9 @@ namespace ParaEngine
 		//helper function to compare render order
 		static bool CompareRenderOrder(BlockRenderTask* v0, BlockRenderTask* v1);
 
-		
+		/** whether to use point texture filtering for all ui images rendered. */
+		bool GetUsePointTextureFiltering();
+		void SetUsePointTextureFiltering(bool bUse);
 	protected:
 		virtual void UpdateActiveChunk();
 
@@ -396,6 +400,9 @@ namespace ParaEngine
 		/** if true, if we want to use a separate thread to fill the chunk buffer.
 		*/
 		bool m_bAsyncChunkMode;
+
+		/** default to false for all UI images rendered. */
+		bool m_bUsePointTextureFiltering;
 	};
 }
 

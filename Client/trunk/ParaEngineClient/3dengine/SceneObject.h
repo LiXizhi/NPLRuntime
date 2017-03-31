@@ -1310,6 +1310,9 @@ namespace ParaEngine
 
 		/** groups Mask used to filter physics objects, default to 0xffffffff*/
 		DWORD m_dwPhysicsGroupMask;
+
+		/** this is always 100.f*/
+		float m_fPostRenderQueueOrder;
 		/** attribute models in the second column*/
 		unordered_ref_array<IAttributeFields*> m_attribute_models;
 		friend class CParaEngineApp;

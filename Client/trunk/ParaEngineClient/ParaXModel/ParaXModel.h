@@ -68,6 +68,13 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CParaXModel, DumpTextureUsage_s, const char**)	{*p1 = cls->DumpTextureUsage(); return S_OK;}
 		ATTRIBUTE_METHOD1(CParaXModel, GetPolyCount_s, int*)	{*p1 = cls->GetPolyCount(); return S_OK;}
 		ATTRIBUTE_METHOD1(CParaXModel, GetPhysicsCount_s, int*)	{*p1 = cls->GetPhysicsCount(); return S_OK;}
+		ATTRIBUTE_METHOD1(CParaXModel, GetGeosetsCount_s, int*)	{ *p1 = (int)cls->geosets.size(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPassesCount_s, int*)	{ *p1 = (int)cls->passes.size(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetObjectNum_s, void**)	{ *p1 = (void*)(&(cls->GetObjectNum())); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetVertices_s, void**)	{ *p1 = (void*)(cls->m_origVertices); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPasses_s, void**)	{ *p1 = (void*)(&(cls->passes[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetGeosets_s, void**)	{ *p1 = (void*)(&(cls->geosets[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetIndices_s, void**)	{ *p1 = (void*)(&(cls->m_indices[0])); return S_OK; }
 	public:
 		/** get polycount of this mesh object */
 		int GetPolyCount();
@@ -220,7 +227,7 @@ namespace ParaEngine
 		* @param nMeshPhysicsGroup [in|out]: the mesh physics group to get. On return it will be assigned with the next mesh group.
 		* @return S_OK, if succeed.
 		*/
-		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
+		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
 
 		friend struct ModelRenderPass;
 			

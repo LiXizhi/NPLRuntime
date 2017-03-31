@@ -252,6 +252,9 @@ namespace ParaEngine
 		/** return true if it is currently under windowed mode. */
 		virtual bool GetIgnoreWindowSizeChange();
 
+		/** render the current frame and does not return until everything is presented to screen.
+		* this function is usually used to draw the animated loading screen. */
+		virtual bool ForceRender();
 	public:
 		/** this function should be called when the application is created. I.e. the windows HWND is valid.
 		*/
