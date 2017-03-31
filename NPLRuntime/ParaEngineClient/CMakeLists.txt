@@ -450,7 +450,7 @@ else (PARAENGINE_COMPILE_LIB)
 	endif(DIRECTX_FOUND)
 if (WIN32)
 	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "PaperStar")
-	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar_d")
+	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar")
 endif()
 
 endif (PARAENGINE_COMPILE_LIB)
