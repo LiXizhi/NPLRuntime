@@ -7,7 +7,7 @@ namespace ParaEngine
 	class CRenderTarget;
 
 	/** picking from frame buffer (back buffer)
-	* When there is picking query, it it will render scene again (if out dated) with a special shader and read pixels from the back buffer. 
+	* When there is picking query, it will render scene again (if out dated) with a special shader and read pixels from the back buffer. 
 	* We can query a single point or we can query a rectangle region in the current viewport and see if have hit anything. 
 	* Please note: in order for buffer picking to work, each pickable object/component should assign a different picking id in its draw method. 
 	* In other words, picking and drawing are done using the same draw function. 
@@ -120,6 +120,13 @@ namespace ParaEngine
 		WeakPtr m_renderTarget;
 	};
 
+	/** all picking buffers
+	* There is a default one called `BufferPickingManager::GetInstance().GetEntity("backbuffer");` which is the current backbuffer 
+	* Some predefined picking object can be retrieved via NPL script using
+	*
+	* ParaEngine.GetAttributeObject():GetChild("BufferPicking")
+	* ParaEngine.GetAttributeObject():GetChild("OverlayPicking")
+	*/
 	class BufferPickingManager : public AssetManager <CBufferPicking>
 	{
 	public:

@@ -11,6 +11,7 @@
 #include "PaintDevice.h"
 #include "PainterState.h"
 #include "ParaScriptBindings/ParaScriptingPainter.h"
+#include "BipedObject.h"
 #include "Painter.h"
 
 using namespace ParaEngine;
@@ -269,6 +270,20 @@ void ParaEngine::CPainter::Flush()
 {
 	if (engine)
 		engine->Flush();
+}
+
+void ParaEngine::CPainter::DrawSceneObject(CBaseObject * pObj, int nOption)
+{
+	if (pObj)
+	{
+		static std::vector<Vector3> output;
+		output.clear();
+		int nTriangleCount = pObj->GetMeshTriangleList(output, nOption);
+		if (nTriangleCount > 0)
+		{
+			drawTriangles(&(output[0]), nTriangleCount);
+		}
+	}
 }
 
 void ParaEngine::CPainter::SetSpriteTransform(const Matrix4 * pMatrix /*= NULL*/)
@@ -884,7 +899,6 @@ void ParaEngine::CPainter::drawPoints(const QPoint *points, int pointCount)
 		engine->DrawRect(&rect, color, 0.f);
 	}
 }
-
 
 
 void ParaEngine::CPainter::drawTriangles(const Vector3* vertices, int nTriangleCount)

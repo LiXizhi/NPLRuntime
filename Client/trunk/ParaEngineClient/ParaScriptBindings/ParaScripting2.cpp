@@ -211,6 +211,7 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("DrawTexture", &ParaPainter::DrawTexture2),
 				def("DrawText", &ParaPainter::DrawText),
 				def("DrawText", &ParaPainter::DrawText2),
+				def("DrawSceneObject", &ParaPainter::DrawSceneObject),
 				def("End", &ParaPainter::End)
 			]
 		];
