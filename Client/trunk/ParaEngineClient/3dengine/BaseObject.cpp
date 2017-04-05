@@ -1005,7 +1005,7 @@ void ParaEngine::CBaseObject::GetLocalTransform(Matrix4* localTransform)
 	}
 }
 
-int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3> output, int nOption)
+int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3>& output, int nOption)
 {
 	output.clear();
 	auto pAsset = GetPrimaryAsset();
@@ -1034,7 +1034,7 @@ int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3> output, int nOp
 							int nVB = 3 * i;
 							for (int k = 0; k < 3; ++k)
 							{
-								auto a = indices[nIndexOffset + nVB];
+								auto a = indices[nIndexOffset + nVB + k];
 								auto vert = origVertices[a];
 								output.push_back(vert.pos);
 							}
@@ -1048,7 +1048,7 @@ int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3> output, int nOp
 
 		}
 	}
-	return 0;
+	return (int)(output.size() / 3);
 }
 
 void ParaEngine::CBaseObject::UpdateGeometry()

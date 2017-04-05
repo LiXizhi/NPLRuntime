@@ -1231,7 +1231,7 @@ public:
 	virtual void GetLocalTransform(Matrix4* localTransform);
 
 	/** return triangle list */
-	virtual int GetMeshTriangleList(std::vector<Vector3> output, int nOption = 0);
+	virtual int GetMeshTriangleList(std::vector<Vector3>& output, int nOption = 0);
 
 protected:
 	/** the ID of the object. default to 0. it is regenerated automatically when GetID() is called and that the id is 0. */
