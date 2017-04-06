@@ -447,7 +447,7 @@ if (PARAENGINE_COMPILE_LIB)
 	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 	if (WIN32)
 		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "PaperStar")
-		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar_d")
+		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "PaperStar")
 	endif()
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
