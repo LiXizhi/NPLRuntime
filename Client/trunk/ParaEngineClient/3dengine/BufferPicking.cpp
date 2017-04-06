@@ -197,6 +197,39 @@ int ParaEngine::CBufferPicking::InstallFields(CAttributeClass* pClass, bool bOve
 	return S_OK;
 }
 
+IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(const std::string & sName)
+{
+	if (sName == "rendertarget")
+	{
+		return GetChildAttributeObject(0, 0);
+	}
+	return NULL;
+}
+
+int ParaEngine::CBufferPicking::GetChildAttributeObjectCount(int nColumnIndex)
+{
+	return 1;
+}
+
+int ParaEngine::CBufferPicking::GetChildAttributeColumnCount()
+{
+	return 1;
+}
+
+IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
+{
+	if (nRowIndex == 0 && nColumnIndex == 0)
+	{
+		if (GetIdentifier() == "backbuffer")
+			return NULL;
+		else
+		{
+			return CreateGetRenderTarget();
+		}
+	}
+	return NULL;
+}
+
 CRenderTarget* ParaEngine::CBufferPicking::CreateGetRenderTarget(bool bCreateIfNotExist /*= true*/)
 {
 	if (m_renderTarget)
@@ -294,14 +327,25 @@ void ParaEngine::CBufferPicking::DrawObjects()
 	// draw objects
 	if (GetIdentifier() == "overlay")
 	{
-		// draw overlays
+		// "overlay" is a special built-in buffer, it will draw using overlays in current scene, 
+		// but with PIPELINE_COLOR_PICKING enabled.
 		pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
 		// Note: This will lead to potential crash if drawing non-overlay without week references.
 		CGlobals::GetScene()->RenderHeadOnDisplay(1);
 	}
+	else if (GetIdentifier() == "backbuffer")
+	{
+		// internal buffer, do not draw anything
+	}
 	else
 	{
-		// TODO: other objects?
+		// for all other picking buffer, just call the render target's owner draw method. 
+		CRenderTarget* pRenderTarget = CreateGetRenderTarget();
+		if (pRenderTarget)
+		{
+			pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
+			pRenderTarget->Draw(pScene->GetSceneState());
+		}
 	}
 	pScene->GetSceneState()->SetCurrentRenderPipeline(nLastRenderPipeline);
 }

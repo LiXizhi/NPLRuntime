@@ -1907,10 +1907,9 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 		if (m_RenderMethod == SOFT_ANIM)
 		{
-			for (DWORD i = 0; i < dwNumVx; ++i)
-			{
-				m_frame_number_vertices[i] = 0;
-			}
+			if(m_frame_number_vertices == 0)
+				m_frame_number_vertices = new int[dwNumVx];
+			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
 	}
 

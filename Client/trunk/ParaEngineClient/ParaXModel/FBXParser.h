@@ -113,7 +113,8 @@ namespace ParaEngine
 		Vector3 m_maxExtent, m_minExtent;
 		int m_nRootNodeIndex;
 		int m_unique_id;
-		bool m_beUsedVertexColor;
+		bool m_bUsedVertexColor;
+		bool m_bHasSkinnedMesh;
 		std::string m_sAnimSplitterFilename;
 	};
 }
