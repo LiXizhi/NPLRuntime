@@ -13,6 +13,7 @@ namespace ParaScripting
 	using namespace ParaEngine;
 	using namespace luabind;
 	class ParaAttributeObject;
+	class ParaObject;
 	
 	/**
 	* @ingroup ParaUI
@@ -114,6 +115,12 @@ namespace ParaScripting
 		static void DrawTexture2(int x, int y, int w, int h, const object& pTexture, int sx, int sy, int sw, int sh);
 		static void DrawText(float x, float y, const std::string &s);
 		static void DrawText2(float x, float y, float w, float h, const std::string &s, int textOption);
+
+		/** draw a scene object 
+		* @param obj: can be a character or model object. 
+		* @param nOption: default to 0, which renders using the transform of the scene object. 
+		*/
+		static void DrawSceneObject(ParaObject& obj, int nOption);
 
 	public:
 		// do not call from scripting interface

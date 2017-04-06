@@ -1005,6 +1005,52 @@ void ParaEngine::CBaseObject::GetLocalTransform(Matrix4* localTransform)
 	}
 }
 
+int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3>& output, int nOption)
+{
+	output.clear();
+	auto pAsset = GetPrimaryAsset();
+	if (pAsset && pAsset->IsValid())
+	{
+		pAsset->LoadAsset();
+		if (pAsset->GetType() == AssetEntity::parax)
+		{
+			ParaXEntity* pParaXEntity = (ParaXEntity*)pAsset;
+			CParaXModel* pModel = pParaXEntity->GetModel();
+			if (pModel)
+			{
+				int nPass = (int)pModel->passes.size();
+				auto origVertices = pModel->m_origVertices;
+				auto indices = pModel->m_indices;
+				for (auto& p : pModel->passes)
+				{
+					if (p.indexCount > 0)
+					{
+						int nIndexOffset = p.GetStartIndex();
+						int numFaces = p.indexCount / 3;
+						if(output.capacity() < (output.size() + p.indexCount))
+							output.reserve(output.size() + p.indexCount);
+						for (int i= 0; i< numFaces; ++i)
+						{
+							int nVB = 3 * i;
+							for (int k = 0; k < 3; ++k)
+							{
+								auto a = indices[nIndexOffset + nVB + k];
+								auto vert = origVertices[a];
+								output.push_back(vert.pos);
+							}
+						}
+					}
+				}
+			}
+		}
+		else if (pAsset->GetType() == AssetEntity::mesh)
+		{
+
+		}
+	}
+	return (int)(output.size() / 3);
+}
+
 void ParaEngine::CBaseObject::UpdateGeometry()
 {
 	SetGeometryDirty(false);

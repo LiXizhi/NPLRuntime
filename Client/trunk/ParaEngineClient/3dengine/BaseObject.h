@@ -5,6 +5,7 @@
 #include "IHeadOn3D.h"
 #include "IObjectScriptingInterface.h"
 #include <list>
+#include <vector>
 #include "unordered_ref_array.h"
 #include "EffectFileHandles.h"
 #include "ObjectEvent.h"
@@ -1231,6 +1232,9 @@ public:
 	virtual void SetLocalTransform(const Matrix4& mXForm);
 	/** get local transform*/
 	virtual void GetLocalTransform(Matrix4* localTransform);
+
+	/** return triangle list */
+	virtual int GetMeshTriangleList(std::vector<Vector3>& output, int nOption = 0);
 
 	/** get texture file name */
 	virtual const std::string& GetTextureFileName();

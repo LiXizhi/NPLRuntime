@@ -10,10 +10,12 @@
 #include "ParaWorldAsset.h"
 #include "ParaScriptingPainter.h"
 #include "ParaScriptingGlobal.h"
+#include "ParaScriptingScene.h"
 #include "PaintEngine/Painter.h"
 #include "util/StringHelper.h"
 #include "2dengine/TextureParams.h"
 #include "NPL/NPLHelper.h"
+
 
 #include <luabind/luabind.hpp>
 
@@ -151,6 +153,12 @@ void ParaScripting::ParaPainter::DrawText2(float x, float y, float w, float h, c
 {
 	if (m_pPainter)
 		m_pPainter->drawText(QRectF(x, y, w, h), s, QTextOption(textOption));
+}
+
+void ParaScripting::ParaPainter::DrawSceneObject(ParaObject & obj, int nOption)
+{
+	if (m_pPainter && obj.IsValid())
+		m_pPainter->DrawSceneObject(obj.m_pObj, nOption);
 }
 
 void ParaScripting::ParaPainter::Save()
