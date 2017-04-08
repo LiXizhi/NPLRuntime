@@ -11,6 +11,7 @@
 #include "EffectManager.h"
 #include "SceneObject.h"
 #include "RenderTarget.h"
+#include "PaintEngine/Painter.h"
 #include "BufferPicking.h"
 
 using namespace ParaEngine;
@@ -181,22 +182,6 @@ BufferPickingManager& ParaEngine::BufferPickingManager::GetInstance()
 	return s_instance;
 }
 
-int ParaEngine::CBufferPicking::InstallFields(CAttributeClass* pClass, bool bOverride)
-{
-	AssetEntity::InstallFields(pClass, bOverride);
-
-	pClass->AddField("PickingCount", FieldType_Int, (void*)0, (void*)GetPickingCount_s, NULL, "", bOverride);
-	pClass->AddField("PickingID", FieldType_DWORD, (void*)0, (void*)GetPickingID_s, NULL, "", bOverride);
-	pClass->AddField("ClearPickingResult", FieldType_void, (void*)ClearPickingResult_s, (void*)0, NULL, "", bOverride);
-	pClass->AddField("CheckDoPick", FieldType_void, (void*)CheckDoPick_s, (void*)0, NULL, "", bOverride);
-	pClass->AddField("PickLeftTop", FieldType_Vector2, (void*)SetPickLeftTop_s, (void*)GetPickLeftTop_s, NULL, "", bOverride);
-	pClass->AddField("PickWidthHeight", FieldType_Vector2, (void*)SetPickWidthHeight_s, (void*)GetPickWidthHeight_s, NULL, "", bOverride);
-	pClass->AddField("ResultDirty", FieldType_Bool, (void*)SetResultDirty_s, (void*)IsResultDirty_s, NULL, "", bOverride);
-	pClass->AddField("PickIndex", FieldType_Int, (void*)SetPickIndex_s, (void*)GetPickIndex_s, NULL, "", bOverride);
-	pClass->AddField("Viewport", FieldType_Int, (void*)SetViewport_s, (void*)GetViewport_s, NULL, "", bOverride);
-	return S_OK;
-}
-
 IAttributeFields * ParaEngine::CBufferPicking::GetChildAttributeObject(const std::string & sName)
 {
 	if (sName == "rendertarget")
@@ -344,8 +329,40 @@ void ParaEngine::CBufferPicking::DrawObjects()
 		if (pRenderTarget)
 		{
 			pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
-			pRenderTarget->Draw(pScene->GetSceneState());
+			CPainter painter;
+			painter.SetUse3DTransform(true);
+			if(painter.begin(pRenderTarget))
+			{
+				// use GUI shader and enable 3d world transform by enable 3d text. 
+				RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+				pD3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				
+				painter.SetSpriteUseWorldMatrix(true);
+				pRenderTarget->DoPaint(&painter);
+				painter.SetSpriteUseWorldMatrix(false);
+
+				pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				painter.end();
+			}
 		}
 	}
 	pScene->GetSceneState()->SetCurrentRenderPipeline(nLastRenderPipeline);
+}
+
+int ParaEngine::CBufferPicking::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	AssetEntity::InstallFields(pClass, bOverride);
+
+	pClass->AddField("PickingCount", FieldType_Int, (void*)0, (void*)GetPickingCount_s, NULL, "", bOverride);
+	pClass->AddField("PickingID", FieldType_DWORD, (void*)0, (void*)GetPickingID_s, NULL, "", bOverride);
+	pClass->AddField("ClearPickingResult", FieldType_void, (void*)ClearPickingResult_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("CheckDoPick", FieldType_void, (void*)CheckDoPick_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("PickLeftTop", FieldType_Vector2, (void*)SetPickLeftTop_s, (void*)GetPickLeftTop_s, NULL, "", bOverride);
+	pClass->AddField("PickWidthHeight", FieldType_Vector2, (void*)SetPickWidthHeight_s, (void*)GetPickWidthHeight_s, NULL, "", bOverride);
+	pClass->AddField("ResultDirty", FieldType_Bool, (void*)SetResultDirty_s, (void*)IsResultDirty_s, NULL, "", bOverride);
+	pClass->AddField("PickIndex", FieldType_Int, (void*)SetPickIndex_s, (void*)GetPickIndex_s, NULL, "", bOverride);
+	pClass->AddField("Viewport", FieldType_Int, (void*)SetViewport_s, (void*)GetViewport_s, NULL, "", bOverride);
+	return S_OK;
 }

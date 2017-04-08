@@ -1573,7 +1573,7 @@ int ParaEngine::CPainter::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("CurrentMatrix", FieldType_Matrix4, (void*)0, (void*)GetCurrentMatrix_s, NULL, "", bOverride);
 	pClass->AddField("Scaling", FieldType_Vector3, (void*)0, (void*)GetScaling_s, NULL, "", bOverride);
 	pClass->AddField("AutoLineWidth", FieldType_Bool, (void*)EnableAutoLineWidth_s, (void*)IsAutoLineWidth_s, NULL, "", bOverride);
-
+	pClass->AddField("UseWorldMatrix", FieldType_Bool, (void*)SetSpriteUseWorldMatrix_s, (void*)IsSpriteUseWorldMatrix_s, NULL, "", bOverride);
 	return S_OK;
 }
 

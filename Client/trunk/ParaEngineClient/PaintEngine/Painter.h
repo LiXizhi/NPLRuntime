@@ -55,6 +55,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CPainter, IsAutoLineWidth_s, bool*)	{ *p1 = cls->IsAutoLineWidth(); return S_OK; }
 		ATTRIBUTE_METHOD1(CPainter, EnableAutoLineWidth_s, bool)	{ cls->EnableAutoLineWidth(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CPainter, IsSpriteUseWorldMatrix_s, bool*) { *p1 = cls->IsSpriteUseWorldMatrix(); return S_OK; }
+		ATTRIBUTE_METHOD1(CPainter, SetSpriteUseWorldMatrix_s, bool) { cls->SetSpriteUseWorldMatrix(p1); return S_OK; }
+		
 		ATTRIBUTE_METHOD(CPainter, Save_s)	{ cls->save(); return S_OK; }
 		ATTRIBUTE_METHOD(CPainter, Restore_s)	{ cls->restore(); return S_OK; }
 		ATTRIBUTE_METHOD(CPainter, Flush_s)	{ cls->Flush(); return S_OK; }
