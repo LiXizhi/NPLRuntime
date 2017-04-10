@@ -343,7 +343,7 @@ void ParaEngine::CBufferPicking::DrawObjects()
 				painter.SetSpriteUseWorldMatrix(false);
 
 				pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 				painter.end();
 			}
 		}
