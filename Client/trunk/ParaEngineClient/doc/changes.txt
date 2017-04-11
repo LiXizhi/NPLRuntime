@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.4.11
+	- BufferPicking fully implemented
+
 2017.3.23
 	- fixed a bug in ForceRender avoiding all static core interface calls. 
 	- fixed NPL.load return value with npl extension 

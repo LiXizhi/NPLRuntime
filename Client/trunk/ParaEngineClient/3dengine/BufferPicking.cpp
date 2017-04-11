@@ -326,7 +326,7 @@ void ParaEngine::CBufferPicking::DrawObjects()
 	{
 		// for all other picking buffer, just call the render target's owner draw method. 
 		CRenderTarget* pRenderTarget = CreateGetRenderTarget();
-		if (pRenderTarget)
+		if (pRenderTarget && pRenderTarget->IsDirty())
 		{
 			pScene->GetSceneState()->SetCurrentRenderPipeline(PIPELINE_COLOR_PICKING);
 			CPainter painter;
@@ -346,6 +346,7 @@ void ParaEngine::CBufferPicking::DrawObjects()
 				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 				painter.end();
 			}
+			pRenderTarget->SetDirty(false);
 		}
 	}
 	pScene->GetSceneState()->SetCurrentRenderPipeline(nLastRenderPipeline);
