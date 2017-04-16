@@ -29,7 +29,7 @@
 #include "NPLRuntime.h"
 #include "EventsCenter.h"
 #include "BootStrapper.h"
-
+#include "NPL/NPLHelper.h"
 #include "AISimulator.h"
 #include "ParaEngineAppBase.h"
 
@@ -338,10 +338,11 @@ void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
 	m_hasClosingRequest = val;
 }
 
-bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
+bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std::string * pOutMainFile)
 {
 	std::string sFilePath = sFilePath_;
 	std::string sPKGDir;
+	bool bHasOutputMainFile = false;
 	if (sFilePath[sFilePath.size() - 1] == '/')
 	{
 		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
@@ -386,7 +387,61 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
 			}
 		}
 	}
-	return !sPKGDir.empty() && CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+	if (!sPKGDir.empty())
+	{
+		bool bIsSearchPath = true;
+		std::string packageFile = sPKGDir + "/package.npl";
+		CParaFile file;
+		if (file.OpenFile(packageFile.c_str(), true, 0, false, FILE_ON_DISK))
+		{
+			NPL::NPLObjectProxy packageConfig = NPL::NPLHelper::StringToNPLTable(file.getBuffer(), file.getSize());
+			if (packageConfig.GetType() == NPL::NPLObjectBase::NPLObjectType_Table)
+			{
+				auto isSearchPath = packageConfig.GetField("searchpath");
+				if (isSearchPath.GetType() == NPL::NPLObjectBase::NPLObjectType_Bool)
+				{
+					bIsSearchPath = (bool)isSearchPath;
+				}
+
+				// change bootstrapper if none. 
+				if (CBootStrapper::GetSingleton()->IsEmpty())
+				{
+					auto sBootstrapper = packageConfig.GetField("bootstrapper");
+					if (sBootstrapper.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+					{
+						CBootStrapper::GetSingleton()->LoadFromFile(sBootstrapper);
+					}
+				}
+
+				// output main file
+				if (pOutMainFile)
+				{
+					auto sMainFile = packageConfig.GetField("main");
+					if (sMainFile.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
+					{
+						bHasOutputMainFile = true;
+						*pOutMainFile = sMainFile;
+						if (!pOutMainFile->empty())
+						{
+							if(!bIsSearchPath)
+								*pOutMainFile = sFilePath + (*pOutMainFile);
+						}
+					}
+				}
+			}
+		}
+		
+		if (! bHasOutputMainFile && pOutMainFile && bIsSearchPath)
+		{
+			// bHasOutputMainFile = true;
+			// *pOutMainFile = sPKGDir + "/";
+		}
+		if (bIsSearchPath) 
+			return CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+		else
+			return true;
+	}
+	return false;
 }
 
 void CParaEngineAppBase::AutoSetLocale()

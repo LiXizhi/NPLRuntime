@@ -620,7 +620,16 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
-		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
+		std::string sOutputFile;
+		if (ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str(), &sOutputFile))
+		{
+			if (!sOutputFile.empty())
+			{
+				return LoadFile_any(sOutputFile, false, L, bNoReturn);
+			}
+			return true;
+		}
+		return false;
 	}
 	else if (nSize > 5 && !bHasScriptFileExtension)
 	{
