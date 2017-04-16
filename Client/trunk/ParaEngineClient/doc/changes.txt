@@ -2,6 +2,10 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.4.16
+	- paraxmodel animations exposed
+	- NPLRuntime support PCH under windows
+
 2017.4.11
 	- BufferPicking fully implemented
 

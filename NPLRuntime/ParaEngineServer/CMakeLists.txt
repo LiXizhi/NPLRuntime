@@ -157,6 +157,28 @@ SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
 set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
+
+#######################################
+# PCH: precompiled header under msvc
+if (MSVC)
+	set_source_files_properties(${CLIENT_SOURCE_DIR}/Core/ParaEngine.cxx
+		PROPERTIES
+		COMPILE_FLAGS "/YcParaEngine.h"
+		)
+	foreach( src_file ${ParaEngineServer_SRCS} )
+		if(${src_file} MATCHES "cpp")
+			set_source_files_properties(
+				${src_file}
+				PROPERTIES
+				COMPILE_FLAGS "/YuParaEngine.h"
+				)
+		endif(${src_file} MATCHES "cpp")
+	endforeach( src_file ${ParaEngineServer_SRCS} )
+	
+	list(APPEND ParaEngineServer_SRCS ${CLIENT_SOURCE_DIR}/Core/ParaEngine.cxx)
+endif (MSVC)
+
+
 ##############################
 # add the binary tree to the search path for include files
 include_directories("${CLIENT_SOURCE_DIR}")
