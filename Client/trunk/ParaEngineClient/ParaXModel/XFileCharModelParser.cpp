@@ -111,7 +111,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		if (m_pParaXRawData && (m_pParaXRawData->Lock(&dwSize, &pBuffer)))
 			m_pRaw = pBuffer + 4;
 
-		if (m_xheader.type == PARAX_MODEL_ANIMATED)
+		if (m_xheader.type == PARAX_MODEL_ANIMATED || m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(m_xheader);
 

@@ -6,6 +6,7 @@ Copyright 2004-2012 ParaEngine Corporation.
 	- paraxmodel animations exposed
 	- NPLRuntime support PCH under windows
 	- NPL.load now support package.npl with main script.
+	- sqlite online backup api added.
 
 2017.4.11
 	- BufferPicking fully implemented
