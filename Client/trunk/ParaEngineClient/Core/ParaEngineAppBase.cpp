@@ -409,7 +409,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					auto sBootstrapper = packageConfig.GetField("bootstrapper");
 					if (sBootstrapper.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
 					{
-						CBootStrapper::GetSingleton()->LoadFromFile(sBootstrapper);
+						CBootStrapper::GetSingleton()->LoadFromFile((const std::string&)sBootstrapper);
 					}
 				}
 
@@ -420,7 +420,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					if (sMainFile.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
 					{
 						bHasOutputMainFile = true;
-						*pOutMainFile = sMainFile;
+						*pOutMainFile = (const std::string&)sMainFile;
 						if (!pOutMainFile->empty())
 						{
 							if(!bIsSearchPath)
