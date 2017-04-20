@@ -95,15 +95,6 @@ void CAISimulator::SetGameLoop(const string& scriptName)
 	{
 		m_sGameloop = scriptName;
 	}
-	if (!m_sGameloop.empty())
-	{
-		std::string tmp;
-		if (ParaScripting::CNPLScriptingState::GetScriptDiskPath(m_sGameloop, tmp) == 0)
-		{
-			OUTPUT_LOG("warning: main loop file %s not found\n", m_sGameloop.c_str());
-			m_sGameloop = "";
-		}
-	}
 }
 
 void CAISimulator::SetGameLoopInterval(float fInterval)
