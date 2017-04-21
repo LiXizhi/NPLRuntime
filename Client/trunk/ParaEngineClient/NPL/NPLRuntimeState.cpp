@@ -629,6 +629,11 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			return true;
 		}
+		if (!bNoReturn && L!=0)
+		{
+			// return false to scripting environment if module is not found. 
+			lua_pushboolean(L, 0);
+		}
 		return false;
 	}
 	else if (nSize > 5 && !bHasScriptFileExtension)

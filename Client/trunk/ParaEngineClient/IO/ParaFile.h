@@ -195,8 +195,8 @@ namespace ParaEngine
 
 		/** Get the absolute file path by appending the root path before the relative path.
 		* please note that all paths should uses slash "/", instead of backslash "\", in the path name. letter case is ignored
-		* @param sRelativePath: the absolute path from which to obtain the relative path. It should not begin with "/"
-		* @param sRootPath: the parent root path, which will be removed from the absolute path. It should end with "/"
+		* @param sRelativePath: the relative path. it also begin with "../../", "./", etc. 
+		* @param sRootPath: the parent root path, it may end with "/". 
 		* @return: the relative path is returned. If the absolute path does not math the root path, the absolute path
 		*		is returned unchanged.
 		* e.g. "c:/lxzsrc/a/b.x" = GetAbsolutePath("a/b.x", "c:/lxzsrc/");

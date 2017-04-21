@@ -1170,7 +1170,38 @@ string CParaFile::GetFileExtension(const string& sfilename)
 
 string CParaFile::GetAbsolutePath(const string& sRelativePath, const string& sRootPath)
 {
-	return sRootPath + sRelativePath;
+	std::string fullPath = sRootPath;
+	if (fullPath.size() > 0 && fullPath.back() != '/' && fullPath.back() != '\\')
+		fullPath += "/";
+
+	if (sRelativePath[0] == '.' && sRelativePath.size() > 3)
+	{
+		if (sRelativePath[1] == '/')
+		{
+			fullPath.append(sRelativePath.c_str() + 2);
+		}
+		else if (sRelativePath[1] == '.' && sRelativePath[2] == '/')
+		{
+			// such as ../../
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+			int nOffset = 3;
+			while (sRelativePath[nOffset] == '.' && sRelativePath[nOffset + 1] == '.' && sRelativePath[nOffset + 2] == '/')
+			{
+				fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+				nOffset += 3;
+			}
+			fullPath.append(sRelativePath.c_str() + nOffset);
+		}
+		else
+		{
+			fullPath += sRelativePath;
+		}
+	}
+	else
+	{
+		fullPath += sRelativePath;
+	}
+	return fullPath;
 }
 
 string CParaFile::GetRelativePath(const string& sAbsolutePath, const string& sRootPath)

@@ -349,8 +349,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 		
 		if (!CParaFile::GetDevDirectory().empty())
 		{
-			std::string sFullDir;
-			sFullDir = CParaFile::GetDevDirectory() + sDirName;
+			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetDevDirectory());
 			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 			{
 				sPKGDir = sFullDir;
@@ -367,14 +366,20 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 		}
 		else
 		{
-			if (!m_sModuleDir.empty())
+			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
+			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			{
+				sPKGDir = sFullDir;
+			}
+
+			if (sPKGDir.empty() && !m_sModuleDir.empty())
 			{
 				std::string workingDir = m_sModuleDir;
 				// search for all parent directory for at most 5 levels
 				for (int i = 0; i < 5 && !workingDir.empty(); ++i)
 				{
-					std::string sFullDir = workingDir + sDirName;
-					if (CParaFile::DoesFileExist(sFullDir.c_str(), false))
+					std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
+					if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 					{
 						sPKGDir = sFullDir;
 						break;
@@ -423,8 +428,19 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 						*pOutMainFile = (const std::string&)sMainFile;
 						if (!pOutMainFile->empty())
 						{
-							if(!bIsSearchPath)
-								*pOutMainFile = sFilePath + (*pOutMainFile);
+							if (!bIsSearchPath)
+							{
+								if (sFilePath.size() > 3 && sFilePath[0] == '.' && ((sFilePath[1] == '.' && sFilePath[2] == '/') || (sFilePath[1] == '/'))) 
+								{
+									// use absolute path if folder begins with ../ or ./
+									*pOutMainFile = CParaFile::GetAbsolutePath((*pOutMainFile), sPKGDir);
+								}
+								else 
+								{
+									// relative to root path
+									*pOutMainFile = CParaFile::GetAbsolutePath((*pOutMainFile), sFilePath);
+								}
+							}
 						}
 					}
 				}
