@@ -6,7 +6,8 @@
 namespace ParaEngine
 {
 	struct CParaFileInfo;
-
+	class CArchive;
+	
 	using namespace std;
 	
 	/** where to search the file and where the file is found */
@@ -290,6 +291,9 @@ namespace ParaEngine
 		* @return : true if succeeded.
 		*/
 		PE_CORE_DECL bool OpenFile(const char* filename, bool bReadyOnly = true, const char* relativePath = NULL, bool bUseCompressed = false, uint32 dwWhereToOpen = FILE_ON_DISK | FILE_ON_ZIP_ARCHIVE | FILE_ON_SEARCH_PATH);
+
+		/** mostly used for reading from an archive file handle */
+		PE_CORE_DECL bool OpenFile(CArchive* pArchive, const char* filename, bool bUseCompressed = false);
 
 		/** get file attributes like file type, where the file is found, absolute path, modification time, size, etc.
 		@param ParaFileInfo: file info.

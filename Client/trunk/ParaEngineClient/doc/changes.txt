@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.4.21
+	- NPL.load folder now support zip package file and package.npl configuration inside package file is honored
+
 2017.4.16
 	- paraxmodel animations exposed
 	- NPLRuntime support PCH under windows

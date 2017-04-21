@@ -284,7 +284,7 @@ namespace ParaEngine
 		virtual void SetRootDirectory(const string& filename);
 
 		/** get root directory. all relative file path in zip files is regarded as relative to this directory. */
-		const std::string& GetRootDirectory();;
+		const std::string& GetRootDirectory();
 
 		/** set the base directory to be removed from the relative path of all files in the zip file. 
 		* call this function only once, it will actually modify the relative file path.
