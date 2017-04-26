@@ -460,6 +460,15 @@ namespace ParaEngine
 		}
 	}
 
+    void BlockModel::SetVerticalScale(float scale)
+    {
+        std::vector<BlockVertexCompressed>::iterator i, iend = m_Vertices.end();
+        for(i = m_Vertices.begin(); i != iend; ++i)
+        {
+            (*i).SetScale(scale);
+        }
+    }
+    
 	void BlockModel::SetVertexHeightScale(int nIndex, float scale)
 	{
 		m_Vertices[nIndex].SetHeightScale(scale);
@@ -1208,6 +1217,10 @@ namespace ParaEngine
 			m_Vertices[g_bkRB].SetPosition(0,0,1-fPosOffset);
 
 			SetAABB(Vector3(fPosOffset*BlockConfig::g_blockSize,0,fPosOffset*BlockConfig::g_blockSize), Vector3((1-fPosOffset)*BlockConfig::g_blockSize,BlockConfig::g_blockSize,(1-fPosOffset)*BlockConfig::g_blockSize));
+		}
+		else if (sModelName == "split")
+		{
+
 		}
 	}
 

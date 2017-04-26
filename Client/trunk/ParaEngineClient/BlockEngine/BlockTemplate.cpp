@@ -11,6 +11,7 @@
 #include "WireModelProvider.h"
 #include "CarpetModelProvider.h"
 #include "SlopeModelProvider.h"
+#include "SplitModelProvider.h"
 #include "BlockWorld.h"
 #include "SceneObject.h"
 
@@ -231,6 +232,30 @@ namespace ParaEngine
 		}
 	}
 
+	bool BlockTemplate::isComBlock() const
+	{ 
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->isComBlock();
+		else
+			return false; 
+	}
+
+	int BlockTemplate::getComFaceCount(Block * src) const
+	{ 
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->getComFaceCount(src);
+		else
+			return 0;
+	}
+
+	int BlockTemplate::getComModelList(Block * src, BlockModelList & dst) const
+	{ 
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->getComModelList(src, dst);
+		else
+			return 0; 
+	}
+
 	void BlockTemplate::LoadModel( const std::string& sModelName )
 	{
 		GetBlockModel().LoadModel(sModelName);
@@ -372,6 +397,12 @@ namespace ParaEngine
 			m_block_models[2].LoadModel("cross2/4");
 			m_block_models[3].LoadModel("seed3/4"); // this is flat seed here
 		}
+        else if(sModelName.find("split") ==0)
+        {
+            SAFE_DELETE(m_pBlockModelFilter);
+			m_lightOpacity = 14;
+            m_pBlockModelFilter = new CSplitModelProvider(this);
+        }
 	}
 
 	void BlockTemplate::SetAssociatedBlock( uint16_t associated_blockid )

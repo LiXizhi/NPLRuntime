@@ -16,7 +16,7 @@ namespace ParaEngine
 	public:
 		friend class BlockChunk;
 
-		Block() :m_pTemplate(nullptr), m_blockData(0), m_nInstanceCount(0)
+		Block() :m_pTemplate(nullptr), m_blockExtData(0), m_blockData(0), m_nInstanceCount(0)
 		{
 		}
 		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
@@ -37,6 +37,24 @@ namespace ParaEngine
 
 		/* get the texture index into the main block template. */
 		int32 GetTextureIndex();
+
+		/** 通过当前鼠标分裂方块
+		@note 可分裂方块专用
+		@data 2017.4.25
+		*/
+		void splitByCurrentCursor();
+
+		/** 通过当前鼠标删除分裂出的方块
+		@note 可分裂方块专用
+		@data 2017.4.25
+		*/
+		void destroyByCurrentCursor();
+
+		/** 通过当前鼠标获取当前选中的分裂方块
+		@note 可分裂方块专用
+		@data 2017.4.25
+		*/
+		void getModelByCurrentCursor(BlockModel & out);
 	protected:
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			m_pTemplate = pTemplate;
@@ -74,6 +92,7 @@ namespace ParaEngine
 		}
 	protected:
 		BlockTemplate* m_pTemplate;
+        void* m_blockExtData;   ///< 复杂方块用2017.4.18
 		uint16 m_blockData;
 		uint16 m_nInstanceCount;
 	};

@@ -11,6 +11,11 @@
 #include "BlockWorld.h"
 #include "BlockChunk.h"
 
+#include "2dengine/GUIRoot.h"
+#include "SceneObject.h"
+#include "BaseCamera.h"
+#include "ViewportManager.h"
+
 #define INVALID_BLOCK_INDEX		0xffff
 
 namespace ParaEngine
@@ -791,4 +796,70 @@ namespace ParaEngine
 			return 0;
 	}
 
+	void Block::splitByCurrentCursor()
+	{
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+
+		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+
+	}
+
+	void Block::destroyByCurrentCursor()
+	{
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+
+		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+	}
+
+	void Block::getModelByCurrentCursor(BlockModel & out)
+	{
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+
+		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+	}
 }

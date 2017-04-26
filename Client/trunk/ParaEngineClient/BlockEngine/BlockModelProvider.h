@@ -27,7 +27,24 @@ namespace ParaEngine
 		/** get block model index 
 		*/
 		virtual int GetModelIndex(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks=NULL){return 0;};
-	protected:
+        
+        /** 是否是复合结构体
+        @data 2017.4.18
+        */
+        virtual bool isComBlock() const {return false;}
+        
+        /** 获取复合结构的数量
+        @note 仅在 isComBlock 为真时使用
+        @data 2017.4.18
+        */
+        virtual int getComFaceCount(Block *) const {return 0;}
+        
+        /** 获取复合结构模型数量
+        @note 仅在 isComBlock 为真时使用
+        @data 2017.4.18
+        */
+		virtual int getComModelList(Block *, BlockModelList &) const { return 0; }
+    protected:
 		BlockTemplate* m_pBlockTemplate;
 	};
 
