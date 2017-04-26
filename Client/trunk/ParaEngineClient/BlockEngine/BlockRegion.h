@@ -36,43 +36,63 @@ namespace ParaEngine
 	public:
 		SplitBlock()
 		{
-			Init();
-		}
-
-		SplitBlock(SplitBlockType type)
-		{
-			index = (char)type;
-		}
-
-		~SplitBlock()
-		{
-			Init();
-		}
-
-
-		// 初始化
-		void Init()
-		{
 			index = -1;
 			parent = 0;
 			memset(childs, 0, sizeof(SplitBlock *) * 8);
 		}
 
+		SplitBlock(SplitBlock* parent, SplitBlockType type)
+		{
+			index = (char)type;
+			parent = parent;
+			memset(childs, 0, sizeof(SplitBlock *) * 8);
+		}
+
+		SplitBlock(SplitBlockType type)
+		{
+			index = (char)type;
+			parent = 0;
+			memset(childs, 0, sizeof(SplitBlock *) * 8);
+		}
+
+		~SplitBlock()
+		{
+			int i, iend = 8;
+			for (i = 0; i < iend; ++i)
+			{
+				if (childs[i])
+				{
+					delete childs[i];
+					childs[i] = 0;
+				}
+			}
+		}
 
 		// 添加子树
-		void AddChild(SplitBlock *childBlock, unsigned int index)
+		SplitBlock * add(unsigned int index)
 		{
-			if (childBlock && index < 8 && !childs[index])
+			if(index < 8 && !childs[index])
 			{
+				SplitBlock * childBlock = new SplitBlock();
 				childs[index] = childBlock;
 				childBlock->parent = this;
 				childBlock->index = index;
 			}
+			return childs[index];
 		}
 
+		void remove(unsigned int index)
+		{
+			if (index < 8 && childs[index])
+			{
+				delete childs[index];
+				childs[index] = 0;
+			}
+		}
+	public:
 		char index;							// 0-7 索引
 		SplitBlock *parent;					// 父块
-		SplitBlock *childs[8];				// 子方块
+		SplitBlock *childs[8]{};				// 子方块
 	};
 
 

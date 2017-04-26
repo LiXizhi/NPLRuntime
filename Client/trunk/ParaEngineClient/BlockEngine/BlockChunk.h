@@ -39,6 +39,11 @@ namespace ParaEngine
 
 		inline uint32_t GetUserData(){return m_blockData;}
 
+		inline void setExtData(void * data)
+		{
+			m_blockExtData = data;
+		}
+
 		inline void * getExtData() const
 		{
 			return m_blockExtData;

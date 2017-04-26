@@ -770,7 +770,7 @@ namespace ParaEngine
 
 		SetModified(false);
 
-
+		/*
 		CParaFile splitFile;
 		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);
 		if (splitFile.CreateNewFile(splitFileName.c_str(), true))
@@ -783,16 +783,23 @@ namespace ParaEngine
 			SplitBlock *splitBlock0 = new SplitBlock();
 			SplitBlock *splitBlock4 = new SplitBlock();
 			SplitBlock *splitBlock7 = new SplitBlock();
-			splitBlockRoot->AddChild(splitBlock0, 0);
-			splitBlockRoot->AddChild(splitBlock4, 4);
-			splitBlockRoot->AddChild(splitBlock7, 7);
+			splitBlockRoot->add(0);
+			splitBlockRoot->add(4);
+			splitBlockRoot->add(7);
 
 			SplitBlock *splitBlock1 = new SplitBlock();
 			SplitBlock *splitBlock2 = new SplitBlock();
 			SplitBlock *splitBlock3 = new SplitBlock();
-			splitBlock7->AddChild(splitBlock1, 1);
-			splitBlock7->AddChild(splitBlock2, 2);
-			splitBlock7->AddChild(splitBlock3, 3);
+			splitBlock7->add(1);
+			splitBlock7->add(2);
+			splitBlock7->add(3);
+
+			SplitBlock *splitBlock20 = new SplitBlock();
+			SplitBlock *splitBlock24 = new SplitBlock();
+			SplitBlock *splitBlock25 = new SplitBlock();
+			splitBlock2->add(0);
+			splitBlock2->add(4);
+			splitBlock2->add(5);
 
 			vector<SplitBlock *> blocks;
 			blocks.push_back(splitBlockRoot);
@@ -800,18 +807,27 @@ namespace ParaEngine
 			for (int idx = 0; idx < blocks.size(); ++idx)
 			{
 				SplitBlock *temp = blocks[idx];
-				splitFile.WriteByte(temp->index);
 
+				vector<SplitBlock *> vecChilds;
 				for (int k = 0; k < 8; ++k)
 				{
 					if (temp->childs[k])
 					{
-						blocks.push_back(temp->childs[k]);
+						vecChilds.push_back(temp->childs[k]);
 					}
 				}
+
+				if (vecChilds.size() > 0)
+				{
+					splitFile.WriteByte(temp->index);
+				}
+
+				for (int t = 0; t < vecChilds.size(); ++t)
+				{
+					splitFile.WriteByte(vecChilds[t]->index);
+					blocks.push_back(vecChilds[t]);
+				}
 			}
-
-
 			uint32_t nCount = GetChunksCount();
 			for (uint32_t i = 0; i < nCount; i++)
 			{
@@ -841,8 +857,7 @@ namespace ParaEngine
 			splitFile.close();
 		}
 
-
-
+		*/
 
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX,m_regionZ,true);
 		
