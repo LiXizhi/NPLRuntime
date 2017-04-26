@@ -794,20 +794,40 @@ namespace ParaEngine
 			splitBlock7->AddChild(splitBlock2, 2);
 			splitBlock7->AddChild(splitBlock3, 3);
 
+			SplitBlock *splitBlock20 = new SplitBlock();
+			SplitBlock *splitBlock24 = new SplitBlock();
+			SplitBlock *splitBlock25 = new SplitBlock();
+			splitBlock2->AddChild(splitBlock20, 0);
+			splitBlock2->AddChild(splitBlock24, 4);
+			splitBlock2->AddChild(splitBlock25, 5);
+
+
+
 			vector<SplitBlock *> blocks;
 			blocks.push_back(splitBlockRoot);
 
 			for (int idx = 0; idx < blocks.size(); ++idx)
 			{
 				SplitBlock *temp = blocks[idx];
-				splitFile.WriteByte(temp->index);
 
+				vector<SplitBlock *> vecChilds;
 				for (int k = 0; k < 8; ++k)
 				{
 					if (temp->childs[k])
 					{
-						blocks.push_back(temp->childs[k]);
+						vecChilds.push_back(temp->childs[k]);
 					}
+				}
+
+				if (vecChilds.size() > 0)
+				{
+					splitFile.WriteByte(temp->index);
+				}
+
+				for (int t = 0; t < vecChilds.size(); ++t)
+				{
+					splitFile.WriteByte(vecChilds[t]->index);
+					blocks.push_back(vecChilds[t]);
 				}
 			}
 
