@@ -44,8 +44,14 @@ namespace ParaEngine
         @data 2017.4.18
         */
 		virtual int getComModelList(Block *, BlockModelList &) const { return 0; }
+
+		/** 释放复合结构数据
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.4.18
+		*/
+		virtual void freeComBlockData(Block *) const {}
     protected:
-		BlockTemplate* m_pBlockTemplate;
+		BlockTemplate * m_pBlockTemplate;
 	};
 
 	/** for grass cross model only. */

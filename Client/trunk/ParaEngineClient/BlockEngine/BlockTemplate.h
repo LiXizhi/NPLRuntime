@@ -166,6 +166,11 @@ namespace ParaEngine
 		*/
 		int getComModelList(Block * src, BlockModelList & dst) const;
 
+		/** 释放复合结构数据
+		@data 2017.4.18
+		*/
+		void freeComBlockData(Block * src) const;
+
 		/** get AABB in local space */
 		void GetAABB(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB);
 

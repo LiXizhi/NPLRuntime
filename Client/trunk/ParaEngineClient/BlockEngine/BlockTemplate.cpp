@@ -256,6 +256,12 @@ namespace ParaEngine
 			return 0; 
 	}
 
+	void BlockTemplate::freeComBlockData(Block * src) const
+	{
+		if (m_pBlockModelFilter != 0)
+			m_pBlockModelFilter->freeComBlockData(src);
+	}
+
 	void BlockTemplate::LoadModel( const std::string& sModelName )
 	{
 		GetBlockModel().LoadModel(sModelName);

@@ -22,7 +22,11 @@ namespace ParaEngine
 		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
 		{
 		}
-
+		~Block()
+		{
+			if (m_pTemplate)
+				m_pTemplate->freeComBlockData(this);
+		}
 		inline BlockTemplate* GetTemplate()
 		{
 			return m_pTemplate;
@@ -34,6 +38,11 @@ namespace ParaEngine
 		}
 
 		inline uint32_t GetUserData(){return m_blockData;}
+
+		inline void * getExtData() const
+		{
+			return m_blockExtData;
+		}
 
 		/* get the texture index into the main block template. */
 		int32 GetTextureIndex();

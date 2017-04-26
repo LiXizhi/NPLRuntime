@@ -6,6 +6,7 @@
 #include "ParaEngine.h"
 #include "BlockConfig.h"
 #include "BlockCommon.h"
+#include "BlockRegion.h"
 #include "BlockChunk.h"
 #include "BlockTemplate.h"
 #include "SplitModelProvider.h"
@@ -86,20 +87,88 @@ namespace ParaEngine
         return true;
     }
     //-----------------------------------------------------
-    int CSplitModelProvider::getComFaceCount(Block *) const 
+    int CSplitModelProvider::getComFaceCount(Block * src) const 
     {
-        return 48;
+		assert(src);
+		int cnt = 0;
+		if(src->getExtData())
+		{
+			SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+			if(stemp->childs[0])
+				++cnt;
+			if (stemp->childs[1])
+				++cnt;
+			if (stemp->childs[2])
+				++cnt;
+			if (stemp->childs[3])
+				++cnt;
+			if (stemp->childs[4])
+				++cnt;
+			if (stemp->childs[5])
+				++cnt;
+			if (stemp->childs[6])
+				++cnt;
+			if (stemp->childs[7])
+				++cnt;
+		}
+		return cnt * 6;
     }
     //-----------------------------------------------------
-    int CSplitModelProvider::getComModelList(Block *, BlockModelList & out) const
+    int CSplitModelProvider::getComModelList(Block * src, BlockModelList & out) const
     {
-		int i, iend = 7;
-		for (i = 0; i < iend; ++i)
+		assert(src);
+		int cnt = 0;
+		if (src->getExtData())
 		{
-			out.push_back(mSplitModel[i]);
+			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+			if (stemp->childs[0])
+			{
+				out.push_back(mSplitModel[0]);
+				++cnt;
+			}
+			if (stemp->childs[1])
+			{
+				out.push_back(mSplitModel[1]);
+				++cnt;
+			}
+			if (stemp->childs[2])
+			{
+				out.push_back(mSplitModel[2]);
+				++cnt;
+			}
+			if (stemp->childs[3])
+			{
+				out.push_back(mSplitModel[3]);
+				++cnt;
+			}
+			if (stemp->childs[4])
+			{
+				out.push_back(mSplitModel[4]);
+				++cnt;
+			}
+			if (stemp->childs[5])
+			{
+				out.push_back(mSplitModel[5]);
+				++cnt;
+			}
+			if (stemp->childs[6])
+			{
+				out.push_back(mSplitModel[6]);
+				++cnt;
+			}
+			if (stemp->childs[7])
+			{
+				out.push_back(mSplitModel[7]);
+				++cnt;
+			}
 		}
-		return 8;
+		return cnt;
     }
+	//-----------------------------------------------------
+	void CSplitModelProvider::freeComBlockData(Block * src) const 
+	{
+
+	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)
     {

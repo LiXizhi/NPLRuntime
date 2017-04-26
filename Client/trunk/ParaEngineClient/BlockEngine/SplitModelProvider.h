@@ -10,6 +10,7 @@
 
 namespace ParaEngine
 {
+	class SplitBlock;
     /** 用于描述可分割正方形
     @remark 
         描述可分割正方形,把自身平均成四份同等面积的正方形,这四份也
@@ -43,6 +44,9 @@ namespace ParaEngine
         
         /// @copydetails IBlockModelProvider::getComModelList
         virtual int getComModelList(Block * src, BlockModelList & out) const;
+
+		/// @copydetails IBlockModelProvider::freeComBlockData
+		virtual void freeComBlockData(Block * src) const;
     protected:
         /** 坐标系统
         */
@@ -98,13 +102,13 @@ namespace ParaEngine
             unsigned char subBlockData; ///< 子方块状态
             SubBlock * subBlocks;       ///< 子方块链
         };
-        */
+   
 		struct SplitBlock
 		{
 			unsigned char id;
 			SplitBlock * sub[8];
 			SplitBlock * parent;
-		};
+		}; 
         /** 块链结构
         */
         struct VariableBlockModel
