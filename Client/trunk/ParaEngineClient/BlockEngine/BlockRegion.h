@@ -15,6 +15,67 @@ namespace ParaEngine
 	class VerticalChunkIterator;
 	class BlockRegion;
 	class BlockChunk;
+
+
+	enum SplitBlockType
+	{
+		SplitBlockType_root = -1,
+		SplitBlockType_0 = 0,
+		SplitBlockType_1,
+		SplitBlockType_2,
+		SplitBlockType_3,
+		SplitBlockType_4,
+		SplitBlockType_5,
+		SplitBlockType_6,
+		SplitBlockType_7,
+	};
+
+
+	class SplitBlock
+	{
+	public:
+		SplitBlock()
+		{
+			Init();
+		}
+
+		SplitBlock(SplitBlockType type)
+		{
+			index = (char)type;
+		}
+
+		~SplitBlock()
+		{
+			Init();
+		}
+
+
+		// 初始化
+		void Init()
+		{
+			index = -1;
+			parent = 0;
+			memset(childs, 0, sizeof(SplitBlock *) * 8);
+		}
+
+
+		// 添加子树
+		void AddChild(SplitBlock *childBlock, unsigned int index)
+		{
+			if (childBlock && index < 8 && !childs[index])
+			{
+				childs[index] = childBlock;
+				childBlock->parent = this;
+				childBlock->index = index;
+			}
+		}
+
+		char index;							// 0-7 索引
+		SplitBlock *parent;					// 父块
+		SplitBlock *childs[8]{};				// 子方块
+	};
+
+
 	
 	/** 
 	* 512*512 region 

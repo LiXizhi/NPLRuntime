@@ -69,6 +69,9 @@ namespace ParaTerrain
 		/**get block region data file name*/
 		string GetBlockRegionFileName(int x,int y,bool usingTempFile);
 
+		/** 获取block region细分文件名 */
+		string GetBlockRegionSplipFileName(int x, int y);
+
 		string GetBlockGameSaveDir(bool usingTempFile);
 
 		/**get block template file name*/

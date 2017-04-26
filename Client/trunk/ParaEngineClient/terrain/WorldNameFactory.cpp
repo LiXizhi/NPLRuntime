@@ -177,6 +177,15 @@ string CWorldNameFactory::GetBlockRegionFileName(int x,int y,bool usingTempFile)
 	return string(tmp);
 }
 
+/** 获取block region细分文件名 */
+string CWorldNameFactory::GetBlockRegionSplipFileName(int x, int y)
+{
+	char tmp[MAX_PATH+1];
+	snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/%d_%d.vbm", m_strWorldPath.c_str(), x, y);
+
+	return string(tmp);
+}
+
 string CWorldNameFactory::GetBlockGameSaveDir(bool usingTempFile)
 {
 	char tmp[MAX_PATH+1];

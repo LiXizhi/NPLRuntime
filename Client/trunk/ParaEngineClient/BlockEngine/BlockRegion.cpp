@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------
+﻿//-----------------------------------------------------------------------------
 // Class:	BlockRegion
 // Authors:	Li,Xizhi
 // Emails:	LiXizhi@yeah.net
@@ -770,6 +770,80 @@ namespace ParaEngine
 
 		SetModified(false);
 
+
+		CParaFile splitFile;
+		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);
+		if (splitFile.CreateNewFile(splitFileName.c_str(), true))
+		{
+			string identify = "vbm";
+			splitFile.WriteString(identify);
+
+			SplitBlock *splitBlockRoot = new SplitBlock(SplitBlockType_root);
+
+			SplitBlock *splitBlock0 = new SplitBlock();
+			SplitBlock *splitBlock4 = new SplitBlock();
+			SplitBlock *splitBlock7 = new SplitBlock();
+			splitBlockRoot->AddChild(splitBlock0, 0);
+			splitBlockRoot->AddChild(splitBlock4, 4);
+			splitBlockRoot->AddChild(splitBlock7, 7);
+
+			SplitBlock *splitBlock1 = new SplitBlock();
+			SplitBlock *splitBlock2 = new SplitBlock();
+			SplitBlock *splitBlock3 = new SplitBlock();
+			splitBlock7->AddChild(splitBlock1, 1);
+			splitBlock7->AddChild(splitBlock2, 2);
+			splitBlock7->AddChild(splitBlock3, 3);
+
+			vector<SplitBlock *> blocks;
+			blocks.push_back(splitBlockRoot);
+
+			for (int idx = 0; idx < blocks.size(); ++idx)
+			{
+				SplitBlock *temp = blocks[idx];
+				splitFile.WriteByte(temp->index);
+
+				for (int k = 0; k < 8; ++k)
+				{
+					if (temp->childs[k])
+					{
+						blocks.push_back(temp->childs[k]);
+					}
+				}
+			}
+
+
+			uint32_t nCount = GetChunksCount();
+			for (uint32_t i = 0; i < nCount; i++)
+			{
+				BlockChunk * pChunk = m_chunks[i];
+				if (!pChunk)
+					continue;
+
+				uint16_t sizeCount = (uint16_t)pChunk->m_blockIndices.size();
+				for (uint16_t j = 0; j < sizeCount; j++)
+				{
+					int32_t blockIdx = pChunk->m_blockIndices[j];
+					if (blockIdx > -1)
+					{
+						Block& block = pChunk->GetBlockByIndex(blockIdx);
+
+						// 可分裂方块
+						if (block.GetTemplate() && block.GetTemplate()->isComBlock())
+						{
+
+
+							OUTPUT_LOG("fenfenfnnnnfenfnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\n");
+						}
+					}
+				}
+			}
+
+			splitFile.close();
+		}
+
+
+
+
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX,m_regionZ,true);
 		
 		CParaFile cfile;
@@ -843,7 +917,15 @@ namespace ParaEngine
 					if(blockIdx > -1)
 					{
 						Block& block = pChunk->GetBlockByIndex(blockIdx);
+
+						// 如果是可裂变方块，直接跳过,可裂变放开另外存储在另一个文件里面
+						if (block.GetTemplate() && block.GetTemplate()->isComBlock())
+						{
+							continue;
+						}
+
 						auto& block_indices = blockIDToIndex[block.GetTemplateId()];
+
 						block_indices.push_back(j);
 						
 						if (block.GetUserData() != 0)
