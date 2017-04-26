@@ -18,7 +18,6 @@
 #include "VertexFVF.h"
 #include "ChunkVertexBuilderManager.h"
 
-
 namespace ParaEngine
 {
 	int RenderableChunk::s_nTotalRenderableChunks = 0;
@@ -304,8 +303,16 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-				if (nFaceCount > 0)
+                int32 nFaceCount;
+                if(pTemplate->isComBlock())
+                {
+                    nFaceCount = tessellator.TessellateSplitBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				}
+                else
+                {
+                    nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				}
+                if (nFaceCount > 0)
 				{
 					int32 nVertexCount = nFaceCount * 4;
 					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
@@ -588,7 +595,7 @@ namespace ParaEngine
 				//compare it with current group first.
 				uint32 nBlockID = pBlock->GetTemplate()->GetID();
 				uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
-				BlockModel& blockmodel = pBlock->GetTemplate()->GetBlockModelByData(nBlockData);
+
 				if (nBlockData > 0)
 					nBlockID = ((nBlockData << 12) | nBlockID);
 				auto curIndex = instance_map.find(nBlockID);
@@ -624,10 +631,18 @@ namespace ParaEngine
 					}
 					instance_map[nBlockID] = cachedGroupIdx;
 				}
-
-				uint32 nFaceCount = blockmodel.GetFaceCount();
-				instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
-				totalFaceCount += nFaceCount;
+                uint32 nFaceCount;
+                if(pBlock->GetTemplate()->isComBlock())
+                {
+					nFaceCount = pBlock->GetTemplate()->getComFaceCount(pBlock);
+                }
+                else
+                {
+					BlockModel& blockmodel = pBlock->GetTemplate()->GetBlockModelByData(nBlockData);
+					nFaceCount = blockmodel.GetFaceCount();
+                }
+                instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
+                totalFaceCount += nFaceCount;                
 			}
 		}	
 		return totalFaceCount;
@@ -802,8 +817,13 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-				if (nFaceCount > 0)
+				int32 nFaceCount;
+                if(pTemplate->isComBlock())
+                    nFaceCount = tessellator.TessellateSplitBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+                else
+                    nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+
+                if (nFaceCount > 0)
 				{
 					int32 nVertexCount = nFaceCount * 4;
 					if (nFreeFaceCountInVertexBuffer >= nFaceCount)

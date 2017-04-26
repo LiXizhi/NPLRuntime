@@ -149,6 +149,23 @@ namespace ParaEngine
 		*/
 		BlockModel& GetBlockModel(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData = 0, Block** neighborBlocks = NULL);
 
+		/** 是否是复合结构体
+		@data 2017.4.18
+		*/
+		bool isComBlock() const;
+
+		/** 获取复合结构的数量
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.4.18
+		*/
+		int getComFaceCount(Block * src) const;
+
+		/** 获取复合结构模型数量
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.4.18
+		*/
+		int getComModelList(Block * src, BlockModelList & dst) const;
+
 		/** get AABB in local space */
 		void GetAABB(CBlockWorld* pBlockManager, uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB* pOutAABB);
 
@@ -243,7 +260,7 @@ namespace ParaEngine
 		void SetMapColor(Color val);
 		DWORD GetBlockColor(int32_t blockData);
 		DWORD GetDiffuseColor(int32_t blockData);
-		private:
+	private:
 			/** unique id */
 			uint16_t m_id;
 			/** category id is non-unique. it usually match to mc id. */
@@ -283,5 +300,5 @@ namespace ParaEngine
 			Color m_dwMapColor;
 			
 			friend class IBlockModelProvider;
-		};
+	};
 }

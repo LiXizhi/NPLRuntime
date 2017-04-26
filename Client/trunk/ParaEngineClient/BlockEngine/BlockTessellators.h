@@ -39,6 +39,10 @@ namespace ParaEngine
 		*/
 		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
 
+        /** 合成分裂方块
+        @data 2017.4.24
+        */
+        virtual int32 TessellateSplitBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
 	public:
 		Block* neighborBlocks[27];
 		uint8_t blockBrightness[27 * 3];
@@ -76,10 +80,12 @@ namespace ParaEngine
 		/** generate triangles for a given block in a block world, taking all nearby blocks into consideration. */
 		virtual int32 TessellateBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
 
-
+        /// @copydetails BlockTessellatorBase::TessellateSplitBlock
+        virtual int32 TessellateSplitBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
 	protected:
 		void TessellateLiquidOrIce(BlockRenderMethod dwShaderID);
 		void TessellateStdCube(BlockRenderMethod dwShaderID);
+        void TessellateSplitBlock(Block * dst, BlockRenderMethod dwShaderID);
 		void TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID);
 		void TessellateSelfLightingCustomModel(BlockRenderMethod dwShaderID);
 

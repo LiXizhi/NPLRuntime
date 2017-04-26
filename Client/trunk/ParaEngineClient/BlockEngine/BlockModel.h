@@ -101,6 +101,13 @@ namespace ParaEngine
 			position[1] *= scale;
 		}
 
+        inline void SetScale(float scale)
+        {
+            position[0] *= scale;
+            position[1] *= scale;
+            position[2] *= scale;
+        }
+        
 		inline void SetTexcoord(float u,float v)
 		{
 			texcoord[0] = u;
@@ -223,8 +230,10 @@ namespace ParaEngine
 
 		void SetAOMask(uint32_t edges);
 
+		void SetVerticalScale(float scale);        
+        
 		void SetVerticalScale(EdgeVertexFlag vertexId,float scale);
-
+        
 		/** offset the vertices */
 		void TranslateVertices(float dx, float dy, float dz);
 
@@ -388,5 +397,6 @@ namespace ParaEngine
 
 		friend class IBlockModelProvider;
 	};
+    typedef std::vector<BlockModel> BlockModelList;
 }
 
