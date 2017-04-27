@@ -16,7 +16,6 @@ namespace ParaEngine
 	class BlockRegion;
 	class BlockChunk;
 
-
 	enum SplitBlockType
 	{
 		SplitBlockType_root = -1,

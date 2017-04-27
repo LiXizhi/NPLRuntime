@@ -53,22 +53,22 @@ namespace ParaEngine
 		int32 GetTextureIndex();
 
 		/** 通过当前鼠标分裂方块
-		@note 可分裂方块专�?
+		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void splitByCurrentCursor();
+		void split(const std::string & level);
 
 		/** 通过当前鼠标删除分裂出的方块
-		@note 可分裂方块专�?
+		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void destroyByCurrentCursor();
+		void destroy(const std::string & level);
 
-		/** 通过当前鼠标获取当前选中的分裂方�?
-		@note 可分裂方块专�?
+		/** 通过当前鼠标获取当前选中的分裂方块
+		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void getModelByCurrentCursor(BlockModel & out);
+		const std::string & getComByCursor() const;
 	protected:
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			m_pTemplate = pTemplate;
@@ -106,7 +106,7 @@ namespace ParaEngine
 		}
 	protected:
 		BlockTemplate* m_pTemplate;
-        void* m_blockExtData;   ///< 复杂方块�?017.4.18
+        void* m_blockExtData;   ///< 复杂方块�?017.4.18
 		uint16 m_blockData;
 		uint16 m_nInstanceCount;
 	};
@@ -268,7 +268,7 @@ namespace ParaEngine
 		/** set block template and data */
 		void SetBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate, uint32 nData);
 
-		// ϸ�ַ���
+		// ϸ�ַ���
 		void SetSplitBlock(uint16_t nBlockIndex, void *extenData, BlockTemplate *pTemp);
 
 		/** get container block world */

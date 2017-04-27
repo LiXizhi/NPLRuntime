@@ -20,7 +20,7 @@ namespace ParaEngine
         IBlockModelProvider(pBlockTemplate)
     {
         mFrameModel.LoadModelByTexture(0);
-        
+
         mSplitModel[0].LoadModelByTexture(3);
         mSplitModel[0].SetVerticalScale(0.5f);
         mSplitModel[0].TranslateVertices(0, 0, 0);
@@ -60,8 +60,6 @@ namespace ParaEngine
 		mSplitModel[7].SetVerticalScale(0.5f);
 		mSplitModel[7].TranslateVertices(0.5, 0.5, 0.5);
 		mSplitModel[7].SetColor(0x000000ff);
-
-
     }
 	//-----------------------------------------------------
 	BlockModel & CSplitModelProvider::GetBlockModel(int nIndex)
@@ -99,11 +97,6 @@ namespace ParaEngine
 			temp->add(0);
 			temp->add(1);
 			temp->add(2);
-			temp->add(3);
-			temp->add(4);
-			temp->add(5);
-			temp->add(6);
-			temp->add(7);
 			src->setExtData(temp);
 		}
 		if(src->getExtData())
@@ -138,11 +131,6 @@ namespace ParaEngine
 			temp->add(0);
 			temp->add(1);
 			temp->add(2);
-			temp->add(3);
-			temp->add(4);
-			temp->add(5);
-			temp->add(6);
-			temp->add(7);
 			src->setExtData(temp);
 		}
 		int cnt = 0;

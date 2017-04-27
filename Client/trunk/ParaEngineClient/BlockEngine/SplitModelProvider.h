@@ -167,6 +167,8 @@ namespace ParaEngine
         @version 1.0.0
         */
         static void InportBinary(const char * in, int32 size, VariableBlockModel * out);
+	protected:
+
     private:
 		BlockModel mFrameModel;
         BlockModel mSplitModel[8]; // ≤‚ ‘

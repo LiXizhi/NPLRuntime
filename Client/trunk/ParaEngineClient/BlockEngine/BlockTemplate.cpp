@@ -406,6 +406,7 @@ namespace ParaEngine
         else if(sModelName.find("split") ==0)
         {
             SAFE_DELETE(m_pBlockModelFilter);
+			SetAttribute(batt_transparent);
 			m_lightOpacity = 14;
             m_pBlockModelFilter = new CSplitModelProvider(this);
         }
