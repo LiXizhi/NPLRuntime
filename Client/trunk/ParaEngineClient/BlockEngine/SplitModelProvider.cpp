@@ -62,6 +62,10 @@ namespace ParaEngine
 		mSplitModel[7].SetColor(0x000000ff);
     }
 	//-----------------------------------------------------
+	CSplitModelProvider::~CSplitModelProvider()
+	{
+	}
+	//-----------------------------------------------------
 	BlockModel & CSplitModelProvider::GetBlockModel(int nIndex)
 	{
 		return mFrameModel;
@@ -210,7 +214,6 @@ namespace ParaEngine
     void CSplitModelProvider::InportXML(const char * in, int32 size, VariableBlockModel * out)
     {
     }
-*/    
 	//-----------------------------------------------------
     void CSplitModelProvider::ExportBinary(const std::string & out, VariableBlockModel * in)
     {
@@ -233,4 +236,5 @@ namespace ParaEngine
     {
     }
     //-----------------------------------------------------
+	*/
 }

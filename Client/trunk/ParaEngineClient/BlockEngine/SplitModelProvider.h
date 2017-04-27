@@ -22,7 +22,7 @@ namespace ParaEngine
     {
     public:
 		CSplitModelProvider(BlockTemplate* pBlockTemplate);
-		virtual ~CSplitModelProvider(){};
+		virtual ~CSplitModelProvider();
         
 		/// @copydetails IBlockModelProvider::GetBlockModel
 		virtual BlockModel& GetBlockModel(int nIndex = 0);
@@ -148,25 +148,25 @@ namespace ParaEngine
         @note 二进制结构
         @version 1.0.0
         */
-        static void ExportBinary(const std::string & out, VariableBlockModel * in);
+//        static void ExportBinary(const std::string & out, VariableBlockModel * in);
         
         /** 导出到数据流中(Bin)
         @note 二进制结构
         @version 1.0.0
         */
-        static void ExportBinary(const char * out, int32 & size, VariableBlockModel * in);
+//        static void ExportBinary(const char * out, int32 & size, VariableBlockModel * in);
         
         /** 从文件中导入(Bin)
         @note 二进制结构
         @version 1.0.0
         */
-        static void InportBinary(const std::string & in, VariableBlockModel * out);
+//        static void InportBinary(const std::string & in, VariableBlockModel * out);
 
         /** 从数据流中导入(Bin)
         @note 二进制结构
         @version 1.0.0
         */
-        static void InportBinary(const char * in, int32 size, VariableBlockModel * out);
+//        static void InportBinary(const char * in, int32 size, VariableBlockModel * out);
 	protected:
 
     private:
