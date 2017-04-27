@@ -92,9 +92,9 @@ namespace ParaEngine
 	public:
 		char index;							// 0-7 索引
 		SplitBlock *parent;					// 父块
-		SplitBlock *childs[8]{};				// 子方块
+		SplitBlock *childs[8]{};			// 子方块
 	};
-	
+
 	/** 
 	* 512*512 region 
 	*/
