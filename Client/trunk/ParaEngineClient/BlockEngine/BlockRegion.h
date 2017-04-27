@@ -94,8 +94,6 @@ namespace ParaEngine
 		SplitBlock *parent;					// ¸¸¿é
 		SplitBlock *childs[8]{};				// ×Ó·½¿é
 	};
-
-
 	
 	/** 
 	* 512*512 region 
