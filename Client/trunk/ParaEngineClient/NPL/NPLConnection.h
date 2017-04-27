@@ -5,7 +5,7 @@
 #include "NPLMsgOut.h"
 #include "NPLMsgIn_parser.h"
 #include "NPLMessageQueue.h"
-
+#include "WebSocket/WebSocketReader.h"
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
 #include <boost/noncopyable.hpp>
@@ -351,6 +351,8 @@ namespace NPL
 
 		/** why is this connection stopped */
 		int32 m_nStopReason;
+
+		WebSocket::WebSocketReader m_websocket_reader;
 	};
 	
 

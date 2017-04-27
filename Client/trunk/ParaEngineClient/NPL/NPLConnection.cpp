@@ -15,7 +15,7 @@
 #include "NPLMsgOut.h"
 
 #include "NPLConnection.h"
-
+#include "WebSocket/ByteBuffer.h"
 /** @def if not defined, we expect all remote NPL runtime's public file list mapping to be identical 
 if defined, different NPL runtime can have different local map and file id map are established dynamically. 
 */
@@ -708,7 +708,8 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 	boost::tribool result = true;
 	Buffer_Type::iterator curIt = m_buffer.begin(); 
 	Buffer_Type::iterator curEnd = m_buffer.begin() + bytes_transferred; 
-
+	WebSocket::ByteBuffer b = WebSocket::WebSocketReader::load(&m_buffer, bytes_transferred);
+	m_websocket_reader.parse(b);
 	while (curIt!=curEnd)
 	{
 		boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);
