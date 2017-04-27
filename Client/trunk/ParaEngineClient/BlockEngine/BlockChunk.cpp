@@ -229,6 +229,16 @@ namespace ParaEngine
 		}
 	}
 
+	void BlockChunk::SetSplitBlock(uint16_t nBlockIndex, void *extenData)
+	{
+		Block* pBlock = GetBlock(nBlockIndex);
+		if (pBlock)
+		{
+			pBlock->setExtData(extenData);
+		}
+	}
+	
+
 	BlockTemplate* BlockChunk::GetBlockTemplate(uint16_t nBlockIndex)
 	{
 		Block* pBlock = GetBlock(nBlockIndex);

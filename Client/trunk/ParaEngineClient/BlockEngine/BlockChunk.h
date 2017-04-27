@@ -39,6 +39,12 @@ namespace ParaEngine
 
 		inline uint32_t GetUserData(){return m_blockData;}
 
+
+		inline void setExtData(void *p)
+		{
+			m_blockExtData = p;
+		}
+
 		inline void * getExtData() const
 		{
 			return m_blockExtData;
@@ -48,19 +54,19 @@ namespace ParaEngine
 		int32 GetTextureIndex();
 
 		/** 通过当前鼠标分裂方块
-		@note 可分裂方块专用
+		@note 可分裂方块专�?
 		@data 2017.4.25
 		*/
 		void splitByCurrentCursor();
 
 		/** 通过当前鼠标删除分裂出的方块
-		@note 可分裂方块专用
+		@note 可分裂方块专�?
 		@data 2017.4.25
 		*/
 		void destroyByCurrentCursor();
 
-		/** 通过当前鼠标获取当前选中的分裂方块
-		@note 可分裂方块专用
+		/** 通过当前鼠标获取当前选中的分裂方�?
+		@note 可分裂方块专�?
 		@data 2017.4.25
 		*/
 		void getModelByCurrentCursor(BlockModel & out);
@@ -101,7 +107,7 @@ namespace ParaEngine
 		}
 	protected:
 		BlockTemplate* m_pTemplate;
-        void* m_blockExtData;   ///< 复杂方块用2017.4.18
+        void* m_blockExtData;   ///< 复杂方块�?017.4.18
 		uint16 m_blockData;
 		uint16 m_nInstanceCount;
 	};
@@ -262,6 +268,9 @@ namespace ParaEngine
 		void SetBlockData(uint16_t nBlockIndex, uint32 nData);
 		/** set block template and data */
 		void SetBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate, uint32 nData);
+
+		// ϸ�ַ���
+		void SetSplitBlock(uint16_t nBlockIndex, void *extenData);
 
 		/** get container block world */
 		CBlockWorld* GetBlockWorld();
