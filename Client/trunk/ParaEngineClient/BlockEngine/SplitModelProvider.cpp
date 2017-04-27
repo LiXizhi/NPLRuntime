@@ -60,19 +60,21 @@ namespace ParaEngine
 		mSplitModel[7].SetVerticalScale(0.5f);
 		mSplitModel[7].TranslateVertices(0.5, 0.5, 0.5);
 		mSplitModel[7].SetColor(0x000000ff);
+
+
     }
 	//-----------------------------------------------------
-	BlockModel& CSplitModelProvider::GetBlockModel(int nIndex)
+	BlockModel & CSplitModelProvider::GetBlockModel(int nIndex)
 	{
 		return mFrameModel;
 	}
     //-----------------------------------------------------
-	BlockModel& CSplitModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData, Block** neighborBlocks)
+	BlockModel & CSplitModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData, Block** neighborBlocks)
     {
         return mFrameModel;
     }
 	//-----------------------------------------------------
-	BlockModel& CSplitModelProvider::GetBlockModelByData(uint32 nData)
+	BlockModel & CSplitModelProvider::GetBlockModelByData(uint32 nData)
 	{
 		return mFrameModel;
 	}
@@ -91,6 +93,19 @@ namespace ParaEngine
     {
 		assert(src);
 		int cnt = 0;
+		if (!src->getExtData())
+		{
+			SplitBlock * temp = new SplitBlock();
+			temp->add(0);
+			temp->add(1);
+			temp->add(2);
+			temp->add(3);
+			temp->add(4);
+			temp->add(5);
+			temp->add(6);
+			temp->add(7);
+			src->setExtData(temp);
+		}
 		if(src->getExtData())
 		{
 			SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
@@ -117,6 +132,19 @@ namespace ParaEngine
     int CSplitModelProvider::getComModelList(Block * src, BlockModelList & out) const
     {
 		assert(src);
+		if (!src->getExtData())
+		{
+			SplitBlock * temp = new SplitBlock();
+			temp->add(0);
+			temp->add(1);
+			temp->add(2);
+			temp->add(3);
+			temp->add(4);
+			temp->add(5);
+			temp->add(6);
+			temp->add(7);
+			src->setExtData(temp);
+		}
 		int cnt = 0;
 		if (src->getExtData())
 		{
@@ -167,7 +195,11 @@ namespace ParaEngine
 	//-----------------------------------------------------
 	void CSplitModelProvider::freeComBlockData(Block * src) const 
 	{
-
+		if (src->getExtData())
+		{
+			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+			delete stemp;
+		}
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)

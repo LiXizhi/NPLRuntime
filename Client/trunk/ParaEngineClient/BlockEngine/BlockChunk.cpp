@@ -229,13 +229,12 @@ namespace ParaEngine
 		}
 	}
 
-	void BlockChunk::SetSplitBlock(uint16_t nBlockIndex, void *extenData)
+	void BlockChunk::SetSplitBlock(uint16_t nBlockIndex, void *extenData, BlockTemplate *pTemp)
 	{
-		Block* pBlock = GetBlock(nBlockIndex);
-		if (pBlock)
-		{
-			pBlock->setExtData(extenData);
-		}
+		Block* pBlock = CreateBlock(nBlockIndex);;
+		SetBlockTemplate(nBlockIndex, pTemp);
+
+		pBlock->setExtData(extenData);
 	}
 	
 
@@ -826,7 +825,6 @@ namespace ParaEngine
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
 		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
-
 	}
 
 	void Block::destroyByCurrentCursor()

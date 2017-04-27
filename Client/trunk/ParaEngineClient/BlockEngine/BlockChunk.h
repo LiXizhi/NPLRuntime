@@ -39,10 +39,9 @@ namespace ParaEngine
 
 		inline uint32_t GetUserData(){return m_blockData;}
 
-
-		inline void setExtData(void *p)
+		inline void setExtData(void * data)
 		{
-			m_blockExtData = p;
+			m_blockExtData = data;
 		}
 
 		inline void * getExtData() const
@@ -270,7 +269,7 @@ namespace ParaEngine
 		void SetBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate, uint32 nData);
 
 		// Ï¸·Ö·½¿é
-		void SetSplitBlock(uint16_t nBlockIndex, void *extenData);
+		void SetSplitBlock(uint16_t nBlockIndex, void *extenData, BlockTemplate *pTemp);
 
 		/** get container block world */
 		CBlockWorld* GetBlockWorld();

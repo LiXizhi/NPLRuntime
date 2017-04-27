@@ -770,7 +770,7 @@ namespace ParaEngine
 
 		SetModified(false);
 
-
+	
 		CParaFile splitFile;
 		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);
 		if (splitFile.CreateNewFile(splitFileName.c_str(), true))
@@ -795,30 +795,7 @@ namespace ParaEngine
 						// 可分裂方块
 						if (block.GetTemplate() && block.GetTemplate()->isComBlock())
 						{
-							void *p = block.getExtData();
-							SplitBlock *splitBlockRoot = new SplitBlock(SplitBlockType_root);
-
-							SplitBlock *splitBlock0 = new SplitBlock();
-							SplitBlock *splitBlock4 = new SplitBlock();
-							SplitBlock *splitBlock7 = new SplitBlock();
-							splitBlockRoot->AddChild(splitBlock0, 0);
-							splitBlockRoot->AddChild(splitBlock4, 4);
-							splitBlockRoot->AddChild(splitBlock7, 7);
-
-							SplitBlock *splitBlock1 = new SplitBlock();
-							SplitBlock *splitBlock2 = new SplitBlock();
-							SplitBlock *splitBlock3 = new SplitBlock();
-							splitBlock7->AddChild(splitBlock1, 1);
-							splitBlock7->AddChild(splitBlock2, 2);
-							splitBlock7->AddChild(splitBlock3, 3);
-
-							SplitBlock *splitBlock20 = new SplitBlock();
-							SplitBlock *splitBlock24 = new SplitBlock();
-							SplitBlock *splitBlock25 = new SplitBlock();
-							splitBlock2->AddChild(splitBlock20, 0);
-							splitBlock2->AddChild(splitBlock24, 4);
-							splitBlock2->AddChild(splitBlock25, 5);
-
+							SplitBlock * splitBlockRoot = static_cast<SplitBlock *>(block.getExtData());
 
 							vector<SplitBlock *> blocks;
 							vector<char> blocksIndex;
@@ -851,7 +828,7 @@ namespace ParaEngine
 
 
 							splitFile.WriteDWORD(i);
-							splitFile.WriteDWORD(blockIdx);
+							splitFile.WriteDWORD(j);
 							splitFile.WriteDWORD(blocksIndex.size());
 							for (int z = 0; z < blocksIndex.size(); ++z)
 							{
@@ -865,8 +842,7 @@ namespace ParaEngine
 			splitFile.close();
 		}
 
-
-
+	
 
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX,m_regionZ,true);
 		
@@ -1360,7 +1336,7 @@ namespace ParaEngine
 				}
 				else if(index > lastIndex)
 				{
-					temp->AddChild(splitBlock, index);
+					temp->add(index);
 					lastIndex = index;
 				}
 				else
@@ -1374,7 +1350,8 @@ namespace ParaEngine
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
 			if (pChunk)
 			{
-				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root));
+				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(520);
+				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
 			}
 		}
 
