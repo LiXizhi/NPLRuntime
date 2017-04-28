@@ -21,42 +21,42 @@ namespace ParaEngine
     {
         mFrameModel.LoadModelByTexture(0);
 
-        mSplitModel[0].LoadModelByTexture(3);
+        mSplitModel[0].LoadModelByTexture(1);
         mSplitModel[0].SetVerticalScale(0.5f);
         mSplitModel[0].TranslateVertices(0, 0, 0);
-		mSplitModel[0].SetColor(0x000000ff);
+		mSplitModel[0].SetColor(0x00000000);
 
-        mSplitModel[1].LoadModelByTexture(3);
+        mSplitModel[1].LoadModelByTexture(1);
         mSplitModel[1].SetVerticalScale(0.5f);
         mSplitModel[1].TranslateVertices(0.5, 0, 0);
-		mSplitModel[1].SetColor(0xffff0000);
+		mSplitModel[1].SetColor(0xffffffff);
 
-        mSplitModel[2].LoadModelByTexture(3);
+        mSplitModel[2].LoadModelByTexture(1);
         mSplitModel[2].SetVerticalScale(0.5f);
         mSplitModel[2].TranslateVertices(0, 0, 0.5);
-		mSplitModel[2].SetColor(0xffffff00);
+		mSplitModel[2].SetColor(0xffff0000);
 
-        mSplitModel[3].LoadModelByTexture(3);
+        mSplitModel[3].LoadModelByTexture(1);
         mSplitModel[3].SetVerticalScale(0.5f);
         mSplitModel[3].TranslateVertices(0.5, 0, 0.5);
 		mSplitModel[3].SetColor(0x0000ffff);
 
-		mSplitModel[4].LoadModelByTexture(3);
+		mSplitModel[4].LoadModelByTexture(1);
 		mSplitModel[4].SetVerticalScale(0.5f);
 		mSplitModel[4].TranslateVertices(0, 0.5, 0);
 		mSplitModel[4].SetColor(0xffff0000);
 
-		mSplitModel[5].LoadModelByTexture(3);
+		mSplitModel[5].LoadModelByTexture(1);
 		mSplitModel[5].SetVerticalScale(0.5f);
 		mSplitModel[5].TranslateVertices(0.5, 0.5, 0);
 		mSplitModel[5].SetColor(0xffffff00);
 
-		mSplitModel[6].LoadModelByTexture(3);
+		mSplitModel[6].LoadModelByTexture(1);
 		mSplitModel[6].SetVerticalScale(0.5f);
 		mSplitModel[6].TranslateVertices(0, 0.5, 0.5);
 		mSplitModel[6].SetColor(0x0000ffff);
 
-		mSplitModel[7].LoadModelByTexture(3);
+		mSplitModel[7].LoadModelByTexture(1);
 		mSplitModel[7].SetVerticalScale(0.5f);
 		mSplitModel[7].TranslateVertices(0.5, 0.5, 0.5);
 		mSplitModel[7].SetColor(0x000000ff);

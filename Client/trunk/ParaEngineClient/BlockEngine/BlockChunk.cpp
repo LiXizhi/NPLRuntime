@@ -805,18 +805,31 @@ namespace ParaEngine
 			return 0;
 	}
 
-	void Block::split(const std::string & level)
+	void Block::splitCom(const std::string & level)
 	{
+		assert(m_blockExtData);
 
 	}
 
-	void Block::destroy(const std::string & level)
+	void Block::destroyCom(const std::string & level)
 	{
+		assert(m_blockExtData);
+	}
 
+	void Block::setComColour(const std::string & level, DWORD colour)
+	{
+		assert(m_blockExtData);
+	}
+
+	void Block::setComTexture(const std::string & level, const char* texture)
+	{
+		assert(m_blockExtData);
 	}
 
 	const std::string & Block::getComByCursor() const
 	{
+		assert(m_blockExtData);
+
 		Vector3 vPickRayOrig, vPickRayDir;
 		POINT ptCursor;
 		Matrix4 matWorld = Matrix4::IDENTITY;
@@ -835,6 +848,10 @@ namespace ParaEngine
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
 		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+		return std::string();
+	}
+	const std::string & Block::getLastSelectCom()const
+	{
 		return std::string();
 	}
 }

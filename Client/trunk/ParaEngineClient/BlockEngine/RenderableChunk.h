@@ -177,10 +177,11 @@ namespace ParaEngine
 			BlockTemplate* m_pTemplate;
 			uint32_t m_blockData;
 			uint32_t m_nFaceCount;
+			uint32_t m_maxInstanceFace;
 
 			//packedBlockId
 			std::vector<uint16_t> instances;
-			InstanceGroup() :m_pTemplate(NULL), m_blockData(0), m_nFaceCount(0){}
+			InstanceGroup() :m_pTemplate(NULL), m_blockData(0), m_nFaceCount(0) , m_maxInstanceFace(0){}
 			inline void reset(){
 				m_pTemplate = 0;
 				m_nFaceCount = 0;
@@ -195,6 +196,8 @@ namespace ParaEngine
 			inline void AddInstance(uint16_t nIndex, uint32_t nFaceCount = 0){
 				instances.push_back(nIndex);
 				AddFace(nFaceCount);
+				if (m_maxInstanceFace > nFaceCount)
+					m_maxInstanceFace = nFaceCount;
 			}
 			inline uint32_t GetFaceCount() const { return m_nFaceCount; }
 			void operator+=(InstanceGroup& right){

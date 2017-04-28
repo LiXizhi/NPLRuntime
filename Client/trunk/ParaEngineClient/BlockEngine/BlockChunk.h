@@ -56,19 +56,37 @@ namespace ParaEngine
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void split(const std::string & level);
+		void splitCom(const std::string & level);
 
 		/** 通过当前鼠标删除分裂出的方块
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void destroy(const std::string & level);
+		void destroyCom(const std::string & level);
+
+		/** 通过当前制定层次设置颜色
+		@note 可分裂方块专用
+		@data 2017.4.28
+		*/
+		void setComColour(const std::string & level, DWORD colour);
+
+		/** 通过当前制定层次设置颜色
+		@note 可分裂方块专用
+		@data 2017.4.28
+		*/
+		void setComTexture(const std::string & level, const char* texture);
 
 		/** 通过当前鼠标获取当前选中的分裂方块
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
 		const std::string & getComByCursor() const;
+
+		/** 通过最后一次选中的分裂方块
+		@note 可分裂方块专用
+		@data 2017.4.28
+		*/
+		const std::string & getLastSelectCom()const;
 	protected:
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			m_pTemplate = pTemplate;
