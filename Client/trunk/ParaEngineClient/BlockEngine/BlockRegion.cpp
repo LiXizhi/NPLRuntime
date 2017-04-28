@@ -830,10 +830,7 @@ namespace ParaEngine
 							splitFile.WriteDWORD(i);
 							splitFile.WriteDWORD(j);
 							splitFile.WriteDWORD(blocksIndex.size());
-							for (int z = 0; z < blocksIndex.size(); ++z)
-							{
-								splitFile.WriteByte(blocksIndex[z]);
-							}
+							splitFile.write(blocksIndex.data(), blocksIndex.size());
 						}
 					}
 				}
@@ -1350,7 +1347,7 @@ namespace ParaEngine
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
 			if (pChunk)
 			{
-				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(520);
+				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(123);
 				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
 			}
 		}
