@@ -12,7 +12,7 @@ namespace NPL
 			WebSocketReader();
 			~WebSocketReader();
 			//void load(Buffer_Type* buffer);
-			void parse(ByteBuffer& buffer);
+			bool parse(ByteBuffer& buffer);
 			bool parseFrame(ByteBuffer& buffer);
 
 			bool isRsv1InUse() { return (flagsInUse & 0x40) != 0; };

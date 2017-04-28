@@ -44,16 +44,17 @@ ByteBuffer WebSocketReader::load(Buffer_Type* buffer, int bytes_transferred)
 
 	return b;
 }
-void WebSocketReader::parse(ByteBuffer& buffer)
+bool WebSocketReader::parse(ByteBuffer& buffer)
 {
 	if (buffer.bytesRemaining() <= 0)
 	{
-		return;
+		return false;
 	}
 	while (parseFrame(buffer))
 	{
-
+		return true;
 	}
+	return false;
 }
 bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 {

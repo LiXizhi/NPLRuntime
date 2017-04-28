@@ -708,8 +708,14 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 	boost::tribool result = true;
 	Buffer_Type::iterator curIt = m_buffer.begin(); 
 	Buffer_Type::iterator curEnd = m_buffer.begin() + bytes_transferred; 
+
 	WebSocket::ByteBuffer b = WebSocket::WebSocketReader::load(&m_buffer, bytes_transferred);
-	m_websocket_reader.parse(b);
+	// first try to parse websocket protocol
+	if (m_websocket_reader.parse(b))
+	{
+		return true;
+	}
+	// second parse npl protocol
 	while (curIt!=curEnd)
 	{
 		boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);

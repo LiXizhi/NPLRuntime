@@ -5,3 +5,5 @@
  - [The WebSocket Handshake](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API/Writing_WebSocket_servers)
  - [Minimal header-only WebSocket handshake library](https://github.com/alexhultman/libwshandshake)
  - [uWebSockets](https://github.com/uWebSockets/uWebSockets/blob/master/src/WebSocketProtocol.h)
+ - [websockets test](http://websocketstest.com/)
+ - [WebSocket Echo Tes](http://www.websocket.org/echo.html)
