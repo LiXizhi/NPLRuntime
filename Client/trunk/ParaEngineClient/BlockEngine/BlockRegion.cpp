@@ -830,10 +830,7 @@ namespace ParaEngine
 							splitFile.WriteDWORD(i);
 							splitFile.WriteDWORD(j);
 							splitFile.WriteDWORD(blocksIndex.size());
-							for (int z = 0; z < blocksIndex.size(); ++z)
-							{
-								splitFile.WriteByte(blocksIndex[z]);
-							}
+							splitFile.write(blocksIndex.data(), blocksIndex.size());
 						}
 					}
 				}
@@ -1320,13 +1317,16 @@ namespace ParaEngine
 			int32_t blockIdx = splitFile.ReadDWORD();
 			int32_t count = splitFile.ReadDWORD();
 
+			byte *readBuffer = new byte[count];
+			splitFile.read(readBuffer, count);
+
 			char lastIndex = SplitBlockType_root;
 			SplitBlock *temp = 0;
 			SplitBlock *root = 0;
 
 			for (int k = 0; k < count; ++k)
 			{
-				char index = splitFile.ReadByte();
+				char index = readBuffer[k];
 				SplitBlock *splitBlock = new SplitBlock();
 
 				if (index == SplitBlockType_root)
@@ -1347,10 +1347,12 @@ namespace ParaEngine
 				}
 			}
 
+			delete readBuffer;
+
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
 			if (pChunk)
 			{
-				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(520);
+				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(123);
 				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
 			}
 		}
