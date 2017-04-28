@@ -1317,13 +1317,16 @@ namespace ParaEngine
 			int32_t blockIdx = splitFile.ReadDWORD();
 			int32_t count = splitFile.ReadDWORD();
 
+			byte *readBuffer = new byte[count];
+			splitFile.read(readBuffer, count);
+
 			char lastIndex = SplitBlockType_root;
 			SplitBlock *temp = 0;
 			SplitBlock *root = 0;
 
 			for (int k = 0; k < count; ++k)
 			{
-				char index = splitFile.ReadByte();
+				char index = readBuffer[k];
 				SplitBlock *splitBlock = new SplitBlock();
 
 				if (index == SplitBlockType_root)
@@ -1343,6 +1346,8 @@ namespace ParaEngine
 					delete splitBlock;
 				}
 			}
+
+			delete readBuffer;
 
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
 			if (pChunk)
