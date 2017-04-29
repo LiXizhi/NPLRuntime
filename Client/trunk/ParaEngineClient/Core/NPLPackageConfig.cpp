@@ -72,7 +72,7 @@ void ParaEngine::CNPLPackageConfig::open(const char* pBuffer, int nSize)
 			auto sBootstrapper = packageConfig.GetField("bootstrapper");
 			if (sBootstrapper.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
 			{
-				m_sBootstrapper = sBootstrapper;
+				m_sBootstrapper = (const std::string&)sBootstrapper;
 			}
 		}
 
