@@ -18,8 +18,10 @@
 #include "PluginAPI.h"
 #include "IParaEngineCore.h"
 #include "IParaEngineApp.h"
+#include "guicon.h"
 
 #include "memdebug.h"
+
 
 using namespace ParaEngine;
 
@@ -93,8 +95,10 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 		strcmp("true", cmdParams.GetAppCommandLineByParam("i", "false")) == 0)
 	{
 		// run as a service
+		RedirectIOToConsole();
 		ParaEngine::CParaEngineService service;
 		exit_code = service.Run(lpCmdLine);
+
 	}
 	else
 	{
