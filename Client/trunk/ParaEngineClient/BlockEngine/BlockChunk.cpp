@@ -852,6 +852,6 @@ namespace ParaEngine
 	}
 	const std::string & Block::getLastSelectCom()const
 	{
-		return ;
+		return std::string();
 	}
 }
