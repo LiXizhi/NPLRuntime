@@ -58,7 +58,8 @@ bool WebSocketReader::parse(ByteBuffer& buffer)
 }
 bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 {
-	while (buffer.bytesRemaining() > 0)
+	int len = buffer.bytesRemaining();
+	while ( len > 0)
 	{
 		switch (state)
 		{
@@ -187,11 +188,11 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		case NPL::WebSocket::State::MASK:
 		{
 			byte m[4];
-			std::vector<byte> mm(m,m+4);
-			frame->setMask(mm);
 			if (buffer.bytesRemaining() >= 4)
 			{
 				buffer.getBytes(m, 4);
+				std::vector<byte> mm(m, m + 4);
+				frame->setMask(mm);
 				// special case for empty payloads (no more bytes left in buffer)
 				if (payloadLength == 0)
 				{
@@ -263,51 +264,16 @@ bool WebSocketReader::parsePayload(ByteBuffer& buffer)
 	if ( len > 0)
 	{
 
-		byte b[1024];
-		buffer.getBytes(b, len);
-		// Create a small window of the incoming buffer to work with.
-		// this should only show the payload itself, and not any more
-		// bytes that could belong to the start of the next frame.
-		//int bytesSoFar = payload == null ? 0 : payload.position();
-		//int bytesExpected = payloadLength - bytesSoFar;
-		//int bytesAvailable = buffer.remaining();
-		//int windowBytes = Math.min(bytesAvailable, bytesExpected);
-		//int limit = buffer.limit();
-		//buffer.limit(buffer.position() + windowBytes);
-		//ByteBuffer window = buffer.slice();
-		//buffer.limit(limit);
-		//buffer.position(buffer.position() + window.remaining());
-
-		//if (LOG.isDebugEnabled()) {
-		//	LOG.debug("{} Window: {}", policy.getBehavior(), BufferUtil.toDetailString(window));
-		//}
-
-		//maskProcessor.process(window);
-
-		//if (window.remaining() == payloadLength)
-		//{
-		//	// We have the whole content, no need to copy.
-		//	frame.setPayload(window);
-		//	return true;
-		//}
-		//else
-		//{
-		//	if (payload == null)
-		//	{
-		//		payload = bufferPool.acquire(payloadLength, false);
-		//		BufferUtil.clearToFill(payload);
-		//	}
-		//	// Copy the payload.
-		//	payload.put(window);
-
-		//	if (payload.position() == payloadLength)
-		//	{
-		//		BufferUtil.flipToFlush(payload, 0);
-		//		frame.setPayload(payload);
-		//		return true;
-		//	}
-		//}
+		frame->setPayload(buffer);
+		
+		return true;
+		
 	}
 	return false;
+}
+
+WebSocketFrame* WebSocketReader::getFrame()
+{
+	return frame;
 }
 

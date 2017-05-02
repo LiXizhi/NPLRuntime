@@ -16,6 +16,7 @@
 
 #include "NPLConnection.h"
 #include "WebSocket/ByteBuffer.h"
+#include "WebSocket/WebSocketFrame.h"
 /** @def if not defined, we expect all remote NPL runtime's public file list mapping to be identical 
 if defined, different NPL runtime can have different local map and file id map are established dynamically. 
 */
@@ -713,6 +714,17 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 	// first try to parse websocket protocol
 	if (m_websocket_reader.parse(b))
 	{
+		NPL::WebSocket::WebSocketFrame* frame = m_websocket_reader.getFrame();
+
+		vector<byte> data = frame->getData();
+		int len = data.size();
+		string code(data.begin(), data.end());
+		int index = m_input_msg.m_filename.find_first_of("?");
+		string filename = m_input_msg.m_filename.substr(0,index);
+		m_input_msg.m_filename = filename + "?action=websocketmsg";
+		m_input_msg.m_nLength = len;
+		m_input_msg.m_code = code;
+		handleMessageIn();
 		return true;
 	}
 	// second parse npl protocol
@@ -748,7 +760,6 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 		return true;
 	}
 }
-
 bool NPL::CNPLConnection::handleMessageIn()
 {
 	bool bRes = true;

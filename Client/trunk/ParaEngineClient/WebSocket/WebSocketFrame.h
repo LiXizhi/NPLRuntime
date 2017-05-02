@@ -38,7 +38,7 @@ namespace NPL
 			};
 			void setMask(vector<byte> maskingKey) {
 				mask = maskingKey;
-				masked = mask.empty();
+				masked = !mask.empty();
 			};
 			void setMasked(bool mask) {
 				masked = mask;
@@ -46,9 +46,13 @@ namespace NPL
 			void setOpCode(byte op) {
 				finRsvOp = (byte)((finRsvOp & 0xF0) | (op & 0x0F));
 			};
-			void setPayload(ByteBuffer buffer) {
+			void setPayload(ByteBuffer& buffer) {
 				data.clear();
-				data.put(&buffer);
+				int len = buffer.bytesRemaining();
+				for (int i = 0; i< len; i++)
+				{
+					data.put(buffer.get());
+				}
 			};
 			void setRsv1(bool rsv1) {
 				// set bit 2
@@ -71,6 +75,9 @@ namespace NPL
 				mask.clear();
 			};
 			void assertValid();
+
+			vector<byte> getData();
+			string getPayloadAsUTF8();
 		private:
 			/**
 			* Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.

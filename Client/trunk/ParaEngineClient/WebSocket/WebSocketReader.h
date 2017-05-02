@@ -20,6 +20,10 @@ namespace NPL
 			bool isRsv3InUse() { return (flagsInUse & 0x10) != 0; };
 
 			static ByteBuffer load(Buffer_Type* buffer, int bytes_transferred);
+
+
+			WebSocketFrame* getFrame();
+
 		private:
 			void assertSanePayloadLength(int length);
 			/**
