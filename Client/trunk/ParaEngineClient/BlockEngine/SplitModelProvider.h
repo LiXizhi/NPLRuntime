@@ -45,8 +45,11 @@ namespace ParaEngine
         /// @copydetails IBlockModelProvider::getComModelList
         virtual int getComModelList(Block * src, BlockModelList & out) const;
 
-		/// @copydetails IBlockModelProvider::freeComBlockData
-		virtual void freeComBlockData(Block * src) const;
+		/// @copydetails IBlockModelProvider::intBlockData
+		virtual void initBlockData(Block * src) const;
+
+		/// @copydetails IBlockModelProvider::destroyBlockData
+		virtual void destroyBlockData(Block * src) const;
     protected:
         /** ×ø±êÏµÍ³
         */

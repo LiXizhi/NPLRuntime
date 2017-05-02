@@ -21,11 +21,13 @@ namespace ParaEngine
 		}
 		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
 		{
+			if(m_pTemplate)
+				m_pTemplate->initBlockData(this);
 		}
 		~Block()
 		{
 			if (m_pTemplate)
-				m_pTemplate->freeComBlockData(this);
+				m_pTemplate->destroyBlockData(this);
 		}
 		inline BlockTemplate* GetTemplate()
 		{
@@ -89,13 +91,24 @@ namespace ParaEngine
 		const std::string & getLastSelectCom()const;
 	protected:
 		inline void SetTemplate(BlockTemplate *pTemplate){
-			m_pTemplate = pTemplate;
+			if (m_pTemplate)
+				m_pTemplate->destroyBlockData(this);
+			
+			if (pTemplate)
+			{
+				m_pTemplate = pTemplate;
+				m_pTemplate->initBlockData(this);
+			}
 		}
 		inline void SetUserData(uint32_t data){ 
 			m_blockData = (uint16)data; 
 		}
 		void PushEmptySlotIndex(uint16 nIndex){
-			m_pTemplate = NULL;
+			if (m_pTemplate)
+			{
+				m_pTemplate->destroyBlockData(this);
+				m_pTemplate = NULL;
+			}
 			m_blockData = nIndex;
 			m_nInstanceCount = 0;
 		}
@@ -124,8 +137,8 @@ namespace ParaEngine
 		}
 	protected:
 		BlockTemplate* m_pTemplate;
-        void* m_blockExtData;   ///< 复杂方块�?017.4.18
-		uint16 m_blockData;
+        void* m_blockExtData;   ///< 复杂方块用2017.4.18
+		uint16 m_blockData;		///< 建议直接使用 m_blockExtData 代替
 		uint16 m_nInstanceCount;
 	};
 

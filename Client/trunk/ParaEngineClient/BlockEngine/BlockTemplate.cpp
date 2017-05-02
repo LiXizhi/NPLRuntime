@@ -256,10 +256,16 @@ namespace ParaEngine
 			return 0; 
 	}
 
-	void BlockTemplate::freeComBlockData(Block * src) const
+	void BlockTemplate::initBlockData(Block * src) const
 	{
 		if (m_pBlockModelFilter != 0)
-			m_pBlockModelFilter->freeComBlockData(src);
+			m_pBlockModelFilter->destroyBlockData(src);
+	}
+
+	void BlockTemplate::destroyBlockData(Block * src) const
+	{
+		if (m_pBlockModelFilter != 0)
+			m_pBlockModelFilter->destroyBlockData(src);
 	}
 
 	void BlockTemplate::LoadModel( const std::string& sModelName )

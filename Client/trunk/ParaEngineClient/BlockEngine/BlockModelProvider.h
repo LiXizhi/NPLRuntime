@@ -45,11 +45,16 @@ namespace ParaEngine
         */
 		virtual int getComModelList(Block *, BlockModelList &) const { return 0; }
 
+		/** 初始化结构数据
+		@data 2017.5.2
+		*/
+		virtual void initBlockData(Block *) const {}
+
 		/** 释放复合结构数据
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.4.18
 		*/
-		virtual void freeComBlockData(Block *) const {}
+		virtual void destroyBlockData(Block *) const {}
     protected:
 		BlockTemplate * m_pBlockTemplate;
 	};

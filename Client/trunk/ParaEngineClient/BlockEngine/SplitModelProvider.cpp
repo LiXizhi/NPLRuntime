@@ -185,13 +185,16 @@ namespace ParaEngine
 		return cnt;
     }
 	//-----------------------------------------------------
-	void CSplitModelProvider::freeComBlockData(Block * src) const 
+	void CSplitModelProvider::initBlockData(Block * src) const
 	{
-		if (src->getExtData())
-		{
-			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
-			delete stemp;
-		}
+		SplitBlock * stemp = new SplitBlock();
+		src->setExtData(stemp);
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::destroyBlockData(Block * src) const 
+	{
+		SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+		delete stemp;
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)
