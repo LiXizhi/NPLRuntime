@@ -1,4 +1,4 @@
-# ubuntu-nplruntime by 2017-04-12
+# npl-runtime by 2017-05-02
 FROM ubuntu:latest
 MAINTAINER xuntian "li.zq@foxmail.com"
 
