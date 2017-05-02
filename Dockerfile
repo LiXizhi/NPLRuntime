@@ -16,3 +16,6 @@ RUN cd /opt/NPLRuntime && chmod +x npl_boost_install.sh; sync; ./npl_boost_insta
 
 # 4
 RUN cd /opt/NPLRuntime && chmod +x build_linux.sh; sync; ./build_linux.sh
+
+# 5 
+RUN rm -rf /opt/NPLRuntime/bin
