@@ -84,7 +84,7 @@ namespace ParaEngine
 		*/
 		const std::string & getComByCursor() const;
 
-		/** 通过最后一次选中的分裂方块
+		/** 获取最后一次选中的分裂方块
 		@note 可分裂方块专用
 		@data 2017.4.28
 		*/
