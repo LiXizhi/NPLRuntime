@@ -19,7 +19,7 @@ namespace ParaEngine
 		Block() :m_pTemplate(nullptr), m_blockExtData(0), m_blockData(0), m_nInstanceCount(0)
 		{
 		}
-		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockData(nData), m_nInstanceCount(0)
+		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockExtData(0), m_blockData(nData), m_nInstanceCount(0)
 		{
 			if(m_pTemplate)
 				m_pTemplate->initBlockData(this);
@@ -93,12 +93,9 @@ namespace ParaEngine
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			if (m_pTemplate)
 				m_pTemplate->destroyBlockData(this);
-			
 			if (pTemplate)
-			{
-				m_pTemplate = pTemplate;
-				m_pTemplate->initBlockData(this);
-			}
+				pTemplate->initBlockData(this);
+			m_pTemplate = pTemplate;
 		}
 		inline void SetUserData(uint32_t data){ 
 			m_blockData = (uint16)data; 

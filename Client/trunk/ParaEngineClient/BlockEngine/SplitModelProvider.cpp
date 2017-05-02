@@ -19,7 +19,7 @@ namespace ParaEngine
 	CSplitModelProvider::CSplitModelProvider(BlockTemplate* pBlockTemplate):
         IBlockModelProvider(pBlockTemplate)
     {
-        mFrameModel.LoadModelByTexture(0);
+        mFrameModel.LoadModelByTexture(1);
 
         mSplitModel[0].LoadModelByTexture(1);
         mSplitModel[0].SetVerticalScale(0.5f);
@@ -95,33 +95,19 @@ namespace ParaEngine
     {
 		assert(src);
 		int cnt = 0;
-		if (!src->getExtData())
-		{
-			SplitBlock * temp = new SplitBlock();
-			temp->add(0);
-			temp->add(1);
-			temp->add(2);
-			src->setExtData(temp);
-		}
 		if(src->getExtData())
 		{
 			SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-			if(stemp->childs[0])
+			int i, iend = 8;
+			for (i = 0; i < iend; ++i)
+			{
+				if(stemp->childs[i])
+					++cnt;
+			}
+			if(cnt == 0)
+			{
 				++cnt;
-			if (stemp->childs[1])
-				++cnt;
-			if (stemp->childs[2])
-				++cnt;
-			if (stemp->childs[3])
-				++cnt;
-			if (stemp->childs[4])
-				++cnt;
-			if (stemp->childs[5])
-				++cnt;
-			if (stemp->childs[6])
-				++cnt;
-			if (stemp->childs[7])
-				++cnt;
+			}
 		}
 		return cnt * 6;
     }
@@ -129,56 +115,22 @@ namespace ParaEngine
     int CSplitModelProvider::getComModelList(Block * src, BlockModelList & out) const
     {
 		assert(src);
-		if (!src->getExtData())
-		{
-			SplitBlock * temp = new SplitBlock();
-			temp->add(0);
-			temp->add(1);
-			temp->add(2);
-			src->setExtData(temp);
-		}
 		int cnt = 0;
 		if (src->getExtData())
 		{
 			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
-			if (stemp->childs[0])
+			int i, iend = 8;
+			for (i = 0; i < iend; ++i)
 			{
-				out.push_back(mSplitModel[0]);
-				++cnt;
+				if (stemp->childs[i])
+				{
+					out.push_back(mSplitModel[i]);
+					++cnt;
+				}
 			}
-			if (stemp->childs[1])
+			if (cnt == 0)
 			{
-				out.push_back(mSplitModel[1]);
-				++cnt;
-			}
-			if (stemp->childs[2])
-			{
-				out.push_back(mSplitModel[2]);
-				++cnt;
-			}
-			if (stemp->childs[3])
-			{
-				out.push_back(mSplitModel[3]);
-				++cnt;
-			}
-			if (stemp->childs[4])
-			{
-				out.push_back(mSplitModel[4]);
-				++cnt;
-			}
-			if (stemp->childs[5])
-			{
-				out.push_back(mSplitModel[5]);
-				++cnt;
-			}
-			if (stemp->childs[6])
-			{
-				out.push_back(mSplitModel[6]);
-				++cnt;
-			}
-			if (stemp->childs[7])
-			{
-				out.push_back(mSplitModel[7]);
+				out.push_back(mFrameModel);
 				++cnt;
 			}
 		}
@@ -187,14 +139,20 @@ namespace ParaEngine
 	//-----------------------------------------------------
 	void CSplitModelProvider::initBlockData(Block * src) const
 	{
+		assert(src);
 		SplitBlock * stemp = new SplitBlock();
 		src->setExtData(stemp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::destroyBlockData(Block * src) const 
 	{
-		SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
-		delete stemp;
+		assert(src);
+		if (src->getExtData())
+		{
+			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+			delete stemp;
+			src->setExtData(0);
+		}
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)

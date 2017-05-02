@@ -139,7 +139,7 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate);
-			if (nIndex > 0){
+			if (nIndex > 0 && !pTemplate->isComBlock()){
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;
@@ -172,7 +172,7 @@ namespace ParaEngine
 				if (pTemplate)
 				{
 					int16 nIndex = FindBlock(pTemplate, nData);
-					if (nIndex > 0){
+					if (nIndex > 0 && !pTemplate->isComBlock()){
 						m_blockIndices[nBlockIndex] = nIndex;
 						m_blocks[nIndex].IncreaseInstanceCount();
 						return;
@@ -208,7 +208,7 @@ namespace ParaEngine
 		if (pTemplate)
 		{
 			int16 nIndex = FindBlock(pTemplate, nData);
-			if (nIndex > 0){
+			if (nIndex > 0 && !pTemplate->isComBlock()){
 				m_blockIndices[nBlockIndex] = nIndex;
 				m_blocks[nIndex].IncreaseInstanceCount();
 				return;

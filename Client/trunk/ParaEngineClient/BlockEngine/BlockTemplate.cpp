@@ -259,7 +259,7 @@ namespace ParaEngine
 	void BlockTemplate::initBlockData(Block * src) const
 	{
 		if (m_pBlockModelFilter != 0)
-			m_pBlockModelFilter->destroyBlockData(src);
+			m_pBlockModelFilter->initBlockData(src);
 	}
 
 	void BlockTemplate::destroyBlockData(Block * src) const
