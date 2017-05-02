@@ -313,6 +313,26 @@ if(APPLE)
 
 endif(APPLE)
 
+#######################################
+# PCH: precompiled header under msvc
+if (MSVC)
+	set_source_files_properties(${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx
+		PROPERTIES
+		COMPILE_FLAGS "/YcParaEngine.h"
+		)
+	foreach( src_file ${ParaEngineClient_SRCS} )
+		if(${src_file} MATCHES "cpp")
+			set_source_files_properties(
+				${src_file}
+				PROPERTIES
+				COMPILE_FLAGS "/YuParaEngine.h"
+				)
+		endif(${src_file} MATCHES "cpp")
+	endforeach( src_file ${ParaEngineClient_SRCS} )
+	
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx)
+endif (MSVC)
+
 ##############################
 # add the binary tree to the search path for include files
 include_directories("${ParaEngineClient_SOURCE_DIR}")

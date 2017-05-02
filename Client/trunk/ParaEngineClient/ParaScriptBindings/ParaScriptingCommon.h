@@ -435,6 +435,9 @@ namespace ParaScripting
 		*/
 		static ParaAssetObject LoadStaticMesh(const char* strAssetName, const char* strFilePath);
 
+		/** get or load picking buffer */
+		static ParaAssetObject LoadPickingBuffer(const char* strAssetName);
+
 		/**
 		* @note: we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
 		* If one wants to ensure high resolution texture, use TGA format instead.

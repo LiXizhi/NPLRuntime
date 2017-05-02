@@ -108,8 +108,8 @@ void NPLFileName::FromString(const char* sFilePath)
 		nNIDIndex = i;
 	}
 
-	/// get namespace
-	while( (sFilePath[i]!=':') && (sFilePath[i]!='\0'))
+	/// get namespace, skip windows folder like "e:\\temp"
+	while((sFilePath[i] != '\0') && (sFilePath[i]!=':' || sFilePath[i + 1] == '\\'))
 		i++;
 	
 	if(sFilePath[i]=='\0')

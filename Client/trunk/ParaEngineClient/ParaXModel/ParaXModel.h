@@ -75,6 +75,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPasses_s, void**)	{ *p1 = (void*)(&(cls->passes[0])); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetGeosets_s, void**)	{ *p1 = (void*)(&(cls->geosets[0])); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetIndices_s, void**)	{ *p1 = (void*)(&(cls->m_indices[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetAnimations_s, void**) { *p1 = (void*)(cls->anims); return S_OK; }
 	public:
 		/** get polycount of this mesh object */
 		int GetPolyCount();
@@ -227,7 +228,7 @@ namespace ParaEngine
 		* @param nMeshPhysicsGroup [in|out]: the mesh physics group to get. On return it will be assigned with the next mesh group.
 		* @return S_OK, if succeed.
 		*/
-		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, WORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
+		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
 
 		friend struct ModelRenderPass;
 			

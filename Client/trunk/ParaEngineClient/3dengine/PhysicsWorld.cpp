@@ -310,7 +310,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 		DWORD dwNumVx = 0;
 		Vector3 * verts = NULL;
 		DWORD dwNumFaces = 0;
-		WORD* indices = NULL;
+		DWORD* indices = NULL;
 		if (ppMesh->GetModel() == 0)
 			return NULL;
 		int nMeshGroup = -1;
@@ -358,7 +358,7 @@ IParaPhysicsActor* ParaEngine::CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMe
 			trimeshDesc.m_numVertices = dwNumVx;
 			trimeshDesc.m_numTriangles = dwNumFaces;
 			trimeshDesc.m_pointStrideBytes = sizeof(PARAVECTOR3);
-			trimeshDesc.m_triangleStrideBytes = 3 * sizeof(int16);
+			trimeshDesc.m_triangleStrideBytes = 3 * sizeof(int32);
 			trimeshDesc.m_points = verts;
 			trimeshDesc.m_triangles = indices;
 			trimeshDesc.m_flags = 0;

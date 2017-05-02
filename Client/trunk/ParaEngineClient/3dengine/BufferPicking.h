@@ -1,13 +1,14 @@
 #pragma once
 #include "math/ParaRect.h"
 #include "AssetEntity.h"
+#include "IObjectScriptingInterface.h"
 
 namespace ParaEngine
 {
 	class CRenderTarget;
 
 	/** picking from frame buffer (back buffer)
-	* When there is picking query, it it will render scene again (if out dated) with a special shader and read pixels from the back buffer. 
+	* When there is picking query, it will render scene again (if out dated) with a special shader and read pixels from the back buffer. 
 	* We can query a single point or we can query a rectangle region in the current viewport and see if have hit anything. 
 	* Please note: in order for buffer picking to work, each pickable object/component should assign a different picking id in its draw method. 
 	* In other words, picking and drawing are done using the same draw function. 
@@ -22,6 +23,14 @@ namespace ParaEngine
 
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		/** we support multi-dimensional child object. by default objects have only one column. */
+		virtual int GetChildAttributeColumnCount();
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingCount_s, int*)	{ *p1 = cls->GetPickingCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingID_s, DWORD*)	{ *p1 = cls->GetPickingID(-1); return S_OK; }
@@ -120,6 +129,13 @@ namespace ParaEngine
 		WeakPtr m_renderTarget;
 	};
 
+	/** all picking buffers
+	* There is a default one called `BufferPickingManager::GetInstance().GetEntity("backbuffer");` which is the current backbuffer 
+	* Some predefined picking object can be retrieved via NPL script using
+	*
+	* ParaEngine.GetAttributeObject():GetChild("BufferPicking")
+	* ParaEngine.GetAttributeObject():GetChild("OverlayPicking")
+	*/
 	class BufferPickingManager : public AssetManager <CBufferPicking>
 	{
 	public:

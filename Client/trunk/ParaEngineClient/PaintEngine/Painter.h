@@ -20,6 +20,7 @@ namespace ParaEngine
 	class QBrush;
 	class QPen;
 	class QPainterPath;
+	class CBaseObject;
 	
 	/** base class for a surface to paint to. The CRenderTarget subclass this. 
 	* 
@@ -54,6 +55,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CPainter, IsAutoLineWidth_s, bool*)	{ *p1 = cls->IsAutoLineWidth(); return S_OK; }
 		ATTRIBUTE_METHOD1(CPainter, EnableAutoLineWidth_s, bool)	{ cls->EnableAutoLineWidth(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CPainter, IsSpriteUseWorldMatrix_s, bool*) { *p1 = cls->IsSpriteUseWorldMatrix(); return S_OK; }
+		ATTRIBUTE_METHOD1(CPainter, SetSpriteUseWorldMatrix_s, bool) { cls->SetSpriteUseWorldMatrix(p1); return S_OK; }
+		
 		ATTRIBUTE_METHOD(CPainter, Save_s)	{ cls->save(); return S_OK; }
 		ATTRIBUTE_METHOD(CPainter, Restore_s)	{ cls->restore(); return S_OK; }
 		ATTRIBUTE_METHOD(CPainter, Flush_s)	{ cls->Flush(); return S_OK; }
@@ -314,6 +318,17 @@ namespace ParaEngine
 
 		inline void drawText(const QPoint &p, const std::string &s);
 		inline void drawText(int x, int y, const std::string &s);
+
+		// 
+		// scene object
+		// 
+
+		/** draw a scene object
+		* @param obj: can be a character or model object.
+		* @param nOption: default to 0, which renders using the transform of the scene object.
+		*/
+		void DrawSceneObject(CBaseObject* pObj, int nOption = 0);
+
 	public:
 		///////////////////////////////////////////
 		// following is for backward compatibility with old GUIResource API, which is only used by system drawing of GUIBase controls.

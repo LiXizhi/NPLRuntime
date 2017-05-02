@@ -38,13 +38,13 @@ NPL prototype was designed in 2004, which was then called 'parallel oriented lan
 ### Usage
 To run with GUI, use:
 ``` 
-    npl [parameters...]
+npl [filename] [parameters...]
 ```    
 To run in server mode, use:
 ```	
-	npls [filename] [parameters...]
+npls [filename] [parameters...]
 ```    
 For example:
 ```	
-	npls hello.npl
+npls hello.npl
 ```    

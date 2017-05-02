@@ -1661,7 +1661,7 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 		if(Parser.m_pParaXRawData && SUCCEEDED(Parser.m_pParaXRawData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 			m_pRaw = pBuffer+4;
 
-		if(Parser.m_xheader.type == PARAX_MODEL_ANIMATED)
+		if(Parser.m_xheader.type == PARAX_MODEL_ANIMATED || Parser.m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(Parser.m_xheader);
 			

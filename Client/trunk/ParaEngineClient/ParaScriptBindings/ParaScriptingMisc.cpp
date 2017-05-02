@@ -58,7 +58,22 @@ namespace ParaScripting
 		return ParaEngine::StringHelper::UniSubString(szText, nFrom, nTo);
 	}
 
-	const char* ParaMisc::SimpleEncode( const char* source )
+	std::string ParaMisc::UTF8ToUTF16(const std::string& utf8)
+	{
+		std::u16string outUtf16;
+		ParaEngine::StringHelper::UTF8ToUTF16_Safe(utf8, outUtf16);
+		return std::string((const char*)outUtf16.c_str(), outUtf16.size() * 2);
+	}
+
+	std::string ParaMisc::UTF16ToUTF8(const std::string& utf16_)
+	{
+		std::string utf8;
+		std::u16string utf16((const char16_t*)utf16_.c_str(), utf16_.size()/2);
+		bool ret = ParaEngine::StringHelper::UTF16ToUTF8(utf16, utf8);
+		return utf8;
+	}
+
+	const char* ParaMisc::SimpleEncode(const char* source)
 	{
 		return ParaEngine::StringHelper::SimpleEncode(source);
 	}

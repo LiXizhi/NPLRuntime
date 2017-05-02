@@ -255,6 +255,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("LoadStaticMesh", &ParaAsset::LoadStaticMesh),
 				def("LoadTexture", &ParaAsset::LoadTexture),
 				def("LoadRenderTarget", &ParaAsset::LoadRenderTarget),
+				def("LoadPickingBuffer", &ParaAsset::LoadPickingBuffer),
 				def("LoadSpriteFrame", &ParaAsset::LoadSpriteFrame),
 				def("LoadFont", &ParaAsset::LoadFont),
 				def("LoadImageFont", &ParaAsset::LoadImageFont),
