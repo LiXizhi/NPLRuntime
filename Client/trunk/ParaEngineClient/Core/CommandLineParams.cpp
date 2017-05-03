@@ -9,10 +9,6 @@
 #include "ParaEngine.h"
 #include "CommandLineParams.h"
 
-#include <boost/algorithm/string.hpp>
-#include <string>
-#include <vector>
-
 using namespace ParaEngine;
 
 CCommandLineParams::CCommandLineParams()
@@ -39,33 +35,50 @@ void CCommandLineParams::SetAppCommandLine( const char* pCommandLine )
 
 	/// extract parameters
 
-	auto bHaveBootstrapper = m_sAppCmdLine.find("bootstrapper") != string::npos;
-
-	std::vector<std::string> fields;
-	boost::split(fields, m_sAppCmdLine, boost::is_any_of(" "));
-
-	for (auto it = fields.begin(); it != fields.end(); it++)
+	size_t nPos = 0;
+	size_t nBegin = 0;
+	while((nPos = m_sAppCmdLine.find('=', nBegin))!=string::npos)
 	{
-		if (it->find('=') != string::npos)
-		{
-			std::vector<std::string> keyValue;
-			boost::split(keyValue, *it, boost::is_any_of("="));
-			m_commandParams[keyValue[0]] = keyValue[1];
-		}
+		auto nFromPosName = m_sAppCmdLine.rfind(" ", nPos);
+		if (nFromPosName == string::npos)
+			nFromPosName = 0;
 		else
+			nFromPosName++;
+		int i = nPos - 1;
+		int nFromPos = m_sAppCmdLine.find('\"', nFromPosName + 1);
+		if (nFromPos != string::npos)
 		{
-			if (it->front() == '-')
+			auto nToPos = m_sAppCmdLine.find('\"', nFromPos + 1);
+			if (nToPos != string::npos)
 			{
-				m_commandParams[it->substr(1)] = "true";
-			}
-			else
-			{
-				if (!bHaveBootstrapper)
+				if (nPos > nFromPosName)
 				{
-					m_commandParams["bootstrapper"] = *it;
+					// remove heading and trailing spaces
+					for (; (m_sAppCmdLine[nFromPosName] == ' ' || m_sAppCmdLine[nFromPosName] == '\t' || m_sAppCmdLine[nFromPosName] == '\n' || m_sAppCmdLine[nFromPosName] == '\r'); nFromPosName++)
+						;
+					for (; nPos >= 1 && (m_sAppCmdLine[nPos - 1] == ' ' || m_sAppCmdLine[nPos - 1] == '\t' || m_sAppCmdLine[nPos - 1] == '\n' || m_sAppCmdLine[nPos - 1] == '\r'); nPos--)
+						;
+					if (nPos > nFromPosName)
+					{
+						m_commandParams[m_sAppCmdLine.substr(nFromPosName, nPos - nFromPosName)] = m_sAppCmdLine.substr(nFromPos + 1, nToPos - nFromPos - 1);
+						nBegin = nToPos + 1;
+						continue;
+					}
 				}
 			}
 		}
+		else
+		{
+			// this will parse parameter without ""
+			nFromPos = nPos + 1;
+			auto nToPos = m_sAppCmdLine.find(' ', nFromPos);
+			if (nToPos == std::string::npos)
+				nToPos = m_sAppCmdLine.size();
+			m_commandParams[m_sAppCmdLine.substr(nFromPosName, nPos - nFromPosName)] = m_sAppCmdLine.substr(nFromPos, nToPos - nFromPos);
+			nBegin = nToPos + 1;
+			continue;
+		}
+		nBegin = nPos+1;
 	}
 }
 
