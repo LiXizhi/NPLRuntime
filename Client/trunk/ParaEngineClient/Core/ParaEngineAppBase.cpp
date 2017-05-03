@@ -300,19 +300,13 @@ void ParaEngine::CParaEngineAppBase::VerifyCommandLine(const char* sCommandLine,
 {
 	if (sCommandLine)
 		strCmd = sCommandLine;
+
 	if (strCmd.find("bootstrapper") == string::npos)
 	{
-		auto nPos = string::npos;
-		if ( (((nPos=strCmd.rfind(".npl")) != string::npos) || ((nPos = strCmd.rfind(".lua")) != string::npos)) 
-			&& (nPos == (strCmd.size() - 4)) )
+		auto pScriptFile = GetAppCommandLineByParam("bootstrapper", nullptr);
+		if (pScriptFile && pScriptFile[0] != 0)
 		{
-			// just in case, user has specified XXX.lua instead of bootstrapper=XXX.lua || .npl in the command line. 
-			auto nFilenameFromPos = strCmd.rfind(" ", nPos);
-			if (nPos != string::npos)
-			{
-				strCmd = strCmd.substr(0, nFilenameFromPos + 1) + std::string("bootstrapper=") +
-					strCmd.substr(nFilenameFromPos + 1, nPos - nFilenameFromPos + 3) + strCmd.substr(nPos + 4);
-			}
+			
 		}
 		else
 		{
