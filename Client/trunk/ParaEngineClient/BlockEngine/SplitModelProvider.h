@@ -77,7 +77,7 @@ namespace ParaEngine
         @param[in] parent
         @data 2017.5.2
         */
-		void splitLevel(BlockModelList & out, const BlockModel * parent);
+		void getSplitLevel(BlockModelList & out, BlockModel * parent, int i) const;
     protected:
 /*
         /// ×ø±êÏµÍ³
