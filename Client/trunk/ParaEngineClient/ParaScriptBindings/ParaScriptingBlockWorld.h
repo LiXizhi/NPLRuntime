@@ -126,7 +126,7 @@ namespace ParaScripting
 
 
 		// 分裂方块
-		static bool SplitBlock(const object& pWorld, uint16_t regionX, uint16_t regionY, uint16_t regionZ, const string& level);
+		static bool SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 删除分裂方块
 		static bool DestroyBlock(const object& pWorld, const string& level);

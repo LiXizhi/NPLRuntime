@@ -465,20 +465,15 @@ int ParaScripting::ParaBlockWorld::GetVersion(const object& pWorld_)
 	return 0;
 }
 
-bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t regionX, uint16_t regionY, uint16_t regionZ, const string& level)
+bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	bool ret = false;
-	uint16_t rs_x, rs_y, rs_z;
-
 	GETBLOCKWORLD(pWorld, pWorld_);
-	BlockRegion* region = pWorld->GetRegion(regionX, regionY, regionZ, rs_x, rs_y, rs_z);
-	if (region)
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
 	{
-		Block *block = region->GetBlock(rs_x, rs_y, rs_z);
-		if (block)
-		{
-			block->splitCom(level);
-		}
+		ret = true;
+		block->splitCom(level);
 	}
 
 	return ret;
