@@ -21,13 +21,13 @@ namespace ParaEngine
 		}
 		Block(BlockTemplate *pTemplate, uint32_t nData = 0) :m_pTemplate(pTemplate), m_blockExtData(0), m_blockData(nData), m_nInstanceCount(0)
 		{
-			if(m_pTemplate)
-				m_pTemplate->initBlockData(this);
+			//if(m_pTemplate)
+			//	m_pTemplate->initBlockData(this);
 		}
 		~Block()
 		{
-			if (m_pTemplate)
-				m_pTemplate->destroyBlockData(this);
+			//if (m_pTemplate)
+			//	m_pTemplate->destroyBlockData(this);
 		}
 		inline BlockTemplate* GetTemplate()
 		{
