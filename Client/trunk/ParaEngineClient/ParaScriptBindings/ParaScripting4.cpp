@@ -216,7 +216,14 @@ namespace ParaScripting
 					def("DeselectAllBlock1", &ParaBlockWorld::DeselectAllBlock1),
 					def("DeselectAllBlock", &ParaBlockWorld::DeselectAllBlock),
 					def("SetDamagedBlock", &ParaBlockWorld::SetDamagedBlock),
-					def("SetDamageDegree", &ParaBlockWorld::SetDamageDegree)
+					def("SetDamageDegree", &ParaBlockWorld::SetDamageDegree),
+
+					// 可分裂方块操作
+					def("SplitBlock", &ParaBlockWorld::SplitBlock),
+					def("DestroyBlock", &ParaBlockWorld::DestroyBlock),
+					def("SetBlockColor", &ParaBlockWorld::SetBlockColor),
+					def("SetBlockTexture", &ParaBlockWorld::SetBlockTexture),
+					def("GetBlockByCursor", &ParaBlockWorld::GetBlockByCursor)
 				]
 			];
 

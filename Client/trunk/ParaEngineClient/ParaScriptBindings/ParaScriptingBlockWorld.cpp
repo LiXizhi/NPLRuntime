@@ -463,6 +463,38 @@ int ParaScripting::ParaBlockWorld::GetVersion(const object& pWorld_)
 	return 0;
 }
 
+bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t regionX, uint16_t regionY, uint16_t regionZ, const string& level)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+
+	return true;
+}
+
+bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, const string& level)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+
+	return true;
+}
+
+void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, const string& level, DWORD colour)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+}
+
+void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, const string& level, const string& texture)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+}
+
+const string& ParaScripting::ParaBlockWorld::GetBlockByCursor(const object& pWorld_)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+
+	return "123123";
+}
+
+
 void ParaScripting::ParaBlockWorld::SaveBlockWorld(const object& pWorld_, bool saveToTemp)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);

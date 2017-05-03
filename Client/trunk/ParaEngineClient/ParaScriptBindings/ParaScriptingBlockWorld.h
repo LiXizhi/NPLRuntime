@@ -45,6 +45,8 @@ namespace ParaScripting
 		/** get version */
 		static int GetVersion(const object& pWorld);
 
+
+
 		/** get block terrain manager's attribute object. */
 		static ParaAttributeObject GetBlockAttributeObject(const object& pWorld);
 
@@ -121,6 +123,24 @@ namespace ParaScripting
 		/** get the y pos of the first block of nBlockID, start searching from x, y, z in the side direction
 		*/
 		static int GetFirstBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
+
+
+		// 分裂方块
+		static bool SplitBlock(const object& pWorld, uint16_t regionX, uint16_t regionY, uint16_t regionZ, const string& level);
+
+		// 删除分裂方块
+		static bool DestroyBlock(const object& pWorld, const string& level);
+
+		// 设置颜色
+		static void SetBlockColor(const object& pWorld, const string& level, DWORD colour);
+
+		// 设置贴图
+		static void SetBlockTexture(const object& pWorld, const string& level, const string& texture);
+
+		// 获取当前的块
+		static const string& GetBlockByCursor(const object& pWorld);
+
+
 
 	// following are client only functions. 
 	public: 
