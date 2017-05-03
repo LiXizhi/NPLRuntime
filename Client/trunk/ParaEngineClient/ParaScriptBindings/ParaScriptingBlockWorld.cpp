@@ -12,6 +12,8 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "ParaScriptingBlockWorld.h"
 
+#include "BlockEngine/BlockRegion.h"
+
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
 
@@ -465,9 +467,21 @@ int ParaScripting::ParaBlockWorld::GetVersion(const object& pWorld_)
 
 bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t regionX, uint16_t regionY, uint16_t regionZ, const string& level)
 {
-	GETBLOCKWORLD(pWorld, pWorld_);
+	bool ret = false;
+	uint16_t rs_x, rs_y, rs_z;
 
-	return true;
+	GETBLOCKWORLD(pWorld, pWorld_);
+	BlockRegion* region = pWorld->GetRegion(regionX, regionY, regionZ, rs_x, rs_y, rs_z);
+	if (region)
+	{
+		Block *block = region->GetBlock(rs_x, rs_y, rs_z);
+		if (block)
+		{
+			block->splitCom(level);
+		}
+	}
+
+	return ret;
 }
 
 bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, const string& level)
