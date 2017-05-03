@@ -240,6 +240,37 @@ namespace ParaEngine
 			return false; 
 	}
 
+    void BlockTemplate::splitCom(Block * src, const std::string & level)
+    {
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->splitCom(src, level);
+    }
+
+    void BlockTemplate::destroyCom(Block * src, const std::string & level)
+    {
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->destroyCom(src, level);
+    }
+
+    void BlockTemplate::setComColour(Block * src, const std::string & level, DWORD colour)
+    {
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->setComColour(src, level, colour);
+    }
+
+    void BlockTemplate::setComTexture(Block * src, const std::string & level, const char* texture)
+    {
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->setComTexture(src, level, texture);
+    }
+        
+    std::string BlockTemplate::getComByCursor(const Block * src) const
+    {
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->getComByCursor(src);
+        return std::string();
+    }
+    
 	int BlockTemplate::getComFaceCount(Block * src) const
 	{ 
 		if (m_pBlockModelFilter != 0)

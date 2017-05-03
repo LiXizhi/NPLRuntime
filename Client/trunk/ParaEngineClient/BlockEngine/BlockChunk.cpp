@@ -807,51 +807,40 @@ namespace ParaEngine
 
 	void Block::splitCom(const std::string & level)
 	{
-		assert(m_blockExtData);
-
+		if (m_pTemplate)
+			return m_pTemplate->splitCom(this, level);
 	}
 
 	void Block::destroyCom(const std::string & level)
 	{
-		assert(m_blockExtData);
+		if (m_pTemplate)
+			return m_pTemplate->destroyCom(this, level);
 	}
 
 	void Block::setComColour(const std::string & level, DWORD colour)
 	{
-		assert(m_blockExtData);
+		if (m_pTemplate)
+			return m_pTemplate->setComColour(this, level, colour);
 	}
 
 	void Block::setComTexture(const std::string & level, const char* texture)
 	{
-		assert(m_blockExtData);
+		if (m_pTemplate)
+			return m_pTemplate->setComTexture(this, level, texture);
 	}
 
 	const std::string & Block::getComByCursor() const
 	{
-		assert(m_blockExtData);
-
-		Vector3 vPickRayOrig, vPickRayDir;
-		POINT ptCursor;
-		Matrix4 matWorld = Matrix4::IDENTITY;
-		int cursorpx, cursorpy;
-		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-		float fScaleX = 1.f, fScaleY = 1.f;
-		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-		cursorpx = ptCursor.x;
-		cursorpy = ptCursor.y;
-		int nWidth, nHeight;
-		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-		ptCursor.x = cursorpx;
-		ptCursor.y = cursorpy;
-		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-
-		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+		if (m_pTemplate)
+        {
+            SplitBlock::last = m_pTemplate->getComByCursor(this);
+			return SplitBlock::last;
+        }
 		return std::string();
 	}
+    
 	const std::string & Block::getLastSelectCom()const
 	{
-		return std::string();
+		return SplitBlock::last;
 	}
 }
