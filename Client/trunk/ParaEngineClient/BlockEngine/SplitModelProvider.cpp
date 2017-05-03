@@ -60,14 +60,7 @@ namespace ParaEngine
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		stemp->add(0);
-		stemp->add(1);
-		stemp->add(2);
-		stemp->add(3);
-		stemp->add(4);
-		stemp->add(5);
-		stemp->add(6);
-		stemp->add(7);
+		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::destroyCom(Block * src, const std::string & level)
@@ -177,6 +170,19 @@ namespace ParaEngine
         SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
 		delete stemp;
 		src->setExtData(0);
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::splitLevel(SplitBlock * parent)
+	{
+		assert(parent);
+		parent->add(0);
+		parent->add(1);
+		parent->add(2);
+		parent->add(3);
+		parent->add(4);
+		parent->add(5);
+		parent->add(6);
+		parent->add(7);
 	}
     //-----------------------------------------------------
 	void CSplitModelProvider::splitLevel(BlockModelList & out, const BlockModel * parent)
