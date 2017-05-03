@@ -66,14 +66,13 @@ namespace ParaEngine
 		/// @copydetails IBlockModelProvider::destroyBlockData
 		virtual void destroyBlockData(Block * src) const;
     protected:
-
         /** 生成指定等级位置的方块模型
         @param[in] out
         @param[in] level
         @param[in] posmark
         @data 2017.5.2
         */
-		void splitLevel(BlockModelList & out, const BlockModel * parent, int type);
+		void splitLevel(BlockModelList & out, const BlockModel * parent);
     protected:
 /*
         /// 坐标系统

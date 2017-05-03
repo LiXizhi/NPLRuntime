@@ -60,7 +60,14 @@ namespace ParaEngine
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-        
+		stemp->add(0);
+		stemp->add(1);
+		stemp->add(2);
+		stemp->add(3);
+		stemp->add(4);
+		stemp->add(5);
+		stemp->add(6);
+		stemp->add(7);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::destroyCom(Block * src, const std::string & level)
@@ -172,51 +179,55 @@ namespace ParaEngine
 		src->setExtData(0);
 	}
     //-----------------------------------------------------
-	void CSplitModelProvider::splitLevel(BlockModelList & out, const BlockModel * parent, int type)
+	void CSplitModelProvider::splitLevel(BlockModelList & out, const BlockModel * parent)
     {
-		switch(type)
-		{
-		default:
-			mSplitModel[0].LoadModelByTexture(1);
-			mSplitModel[0].SetVerticalScale(0.5f);
-			mSplitModel[0].TranslateVertices(0, 0, 0);
-			mSplitModel[0].SetColor(0x00000000);
+		mSplitModel[0].Clone(*parent);
+		mSplitModel[0].SetVerticalScale(0.5f);
+		mSplitModel[0].TranslateVertices(0, 0, 0);
+		mSplitModel[0].SetColor(0x00000000);
+		out.push_back(mSplitModel[0]);
 
-			mSplitModel[1].LoadModelByTexture(1);
-			mSplitModel[1].SetVerticalScale(0.5f);
-			mSplitModel[1].TranslateVertices(0.5, 0, 0);
-			mSplitModel[1].SetColor(0xffffffff);
+		mSplitModel[1].Clone(*parent);
+		mSplitModel[1].SetVerticalScale(0.5f);
+		mSplitModel[1].TranslateVertices(0.5, 0, 0);
+		mSplitModel[1].SetColor(0xffffffff);
+		out.push_back(mSplitModel[1]);
 
-			mSplitModel[2].LoadModelByTexture(1);
-			mSplitModel[2].SetVerticalScale(0.5f);
-			mSplitModel[2].TranslateVertices(0, 0, 0.5);
-			mSplitModel[2].SetColor(0xffff0000);
+		mSplitModel[2].Clone(*parent);
+		mSplitModel[2].SetVerticalScale(0.5f);
+		mSplitModel[2].TranslateVertices(0, 0, 0.5);
+		mSplitModel[2].SetColor(0xffff0000);
+		out.push_back(mSplitModel[2]);
 
-			mSplitModel[3].LoadModelByTexture(1);
-			mSplitModel[3].SetVerticalScale(0.5f);
-			mSplitModel[3].TranslateVertices(0.5, 0, 0.5);
-			mSplitModel[3].SetColor(0x0000ffff);
+		mSplitModel[3].Clone(*parent);
+		mSplitModel[3].SetVerticalScale(0.5f);
+		mSplitModel[3].TranslateVertices(0.5, 0, 0.5);
+		mSplitModel[3].SetColor(0x0000ffff);
+		out.push_back(mSplitModel[3]);
 
-			mSplitModel[4].LoadModelByTexture(1);
-			mSplitModel[4].SetVerticalScale(0.5f);
-			mSplitModel[4].TranslateVertices(0, 0.5, 0);
-			mSplitModel[4].SetColor(0xffff0000);
+		mSplitModel[4].Clone(*parent);
+		mSplitModel[4].SetVerticalScale(0.5f);
+		mSplitModel[4].TranslateVertices(0, 0.5, 0);
+		mSplitModel[4].SetColor(0xffff0000);
+		out.push_back(mSplitModel[4]);
 
-			mSplitModel[5].LoadModelByTexture(1);
-			mSplitModel[5].SetVerticalScale(0.5f);
-			mSplitModel[5].TranslateVertices(0.5, 0.5, 0);
-			mSplitModel[5].SetColor(0xffffff00);
+		mSplitModel[5].Clone(*parent);
+		mSplitModel[5].SetVerticalScale(0.5f);
+		mSplitModel[5].TranslateVertices(0.5, 0.5, 0);
+		mSplitModel[5].SetColor(0xffffff00);
+		out.push_back(mSplitModel[5]);
 
-			mSplitModel[6].LoadModelByTexture(1);
-			mSplitModel[6].SetVerticalScale(0.5f);
-			mSplitModel[6].TranslateVertices(0, 0.5, 0.5);
-			mSplitModel[6].SetColor(0x0000ffff);
+		mSplitModel[6].Clone(*parent);
+		mSplitModel[6].SetVerticalScale(0.5f);
+		mSplitModel[6].TranslateVertices(0, 0.5, 0.5);
+		mSplitModel[6].SetColor(0x0000ffff);
+		out.push_back(mSplitModel[6]);
 
-			mSplitModel[7].LoadModelByTexture(1);
-			mSplitModel[7].SetVerticalScale(0.5f);
-			mSplitModel[7].TranslateVertices(0.5, 0.5, 0.5);
-			mSplitModel[7].SetColor(0x000000ff);
-		}
+		mSplitModel[7].Clone(*parent);
+		mSplitModel[7].SetVerticalScale(0.5f);
+		mSplitModel[7].TranslateVertices(0.5, 0.5, 0.5);
+		mSplitModel[7].SetColor(0x000000ff);
+		out.push_back(mSplitModel[7]);
     }
 	//-----------------------------------------------------
 
