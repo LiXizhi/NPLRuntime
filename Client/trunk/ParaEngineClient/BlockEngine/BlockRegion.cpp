@@ -800,6 +800,7 @@ namespace ParaEngine
 							vector<SplitBlock *> blocks;
 							vector<SplitBlock *> blockSave;
 							blocks.push_back(splitBlockRoot);
+							blockSave.push_back(splitBlockRoot);
 
 							for (int idx = 0; idx < blocks.size(); ++idx)
 							{
