@@ -194,7 +194,7 @@ CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequ
 	if (full())
 	{
 		if (capacity() < MAX_RESOURCE_QUEUE_SIZE)
-			set_capacity(std::min((int)capacity() + DEFAULT_RESOURCE_QUEUE_SIZE, MAX_RESOURCE_QUEUE_SIZE));
+			set_capacity((std::min)((int)capacity() + DEFAULT_RESOURCE_QUEUE_SIZE, MAX_RESOURCE_QUEUE_SIZE));
 	}
 	return concurrent_ptr_queue<ResourceRequest_ptr>::try_push(item);
 }
