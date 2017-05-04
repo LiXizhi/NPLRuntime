@@ -223,7 +223,7 @@ namespace ParaScripting
 					def("DestroyBlock", &ParaBlockWorld::DestroyBlock),
 					def("SetBlockColor", &ParaBlockWorld::SetBlockColor),
 					def("SetBlockTexture", &ParaBlockWorld::SetBlockTexture),
-					def("GetBlockByCursor", &ParaBlockWorld::GetBlockByCursor)
+					def("GetBlockSplitLevel", &ParaBlockWorld::GetBlockSplitLevel)
 				]
 			];
 
