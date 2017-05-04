@@ -60,18 +60,36 @@ namespace ParaEngine
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		int i, iend = 8;
-		for (i = 0; i < iend; ++i)
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
 		{
-			splitLevel(stemp);
+			num = getLevelNum(*i);
+			if (num != -1 && stemp->childs[num])
+				stemp = stemp->childs[num];
+			else
+				return;
 		}
+		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::destroyCom(Block * src, const std::string & level)
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		comLevel(stemp);
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (num != -1 && stemp->childs[num])
+			{
+				stemp = stemp->childs[num];
+			}
+			else
+				return;
+		}
+
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
@@ -305,6 +323,32 @@ namespace ParaEngine
 			++cnt;
 		}
 		return cnt;
+	}
+	//-----------------------------------------------------
+	int CSplitModelProvider::getLevelNum(char num) const
+	{
+		switch (num)
+		{
+		case '0':
+			return 0;
+		case '1':
+			return 1;
+		case '2':
+			return 2;
+		case '3':
+			return 3;
+		case '4':
+			return 4;
+		case '5':
+			return 5;
+		case '6':
+			return 6;
+		case '7':
+			return 7;
+		default:
+			return -1;
+		}
+		return -1;
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)

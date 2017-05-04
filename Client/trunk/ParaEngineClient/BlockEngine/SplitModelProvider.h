@@ -96,6 +96,11 @@ namespace ParaEngine
 		@data 2017.5.2
 		*/
 		int getBlockModelCount(SplitBlock * parent) const;
+
+		/**
+		@data 2017.5.3
+		*/
+		int getLevelNum(char num) const;
     protected:
 /*
         /// ×ø±êÏµÍ³
@@ -212,8 +217,6 @@ namespace ParaEngine
         @version 1.0.0
         */
 //        static void InportBinary(const char * in, int32 size, VariableBlockModel * out);
-	protected:
-
     private:
 		BlockModel mFrameModel;
         //BlockModel mSplitModel[8]; // ²âÊÔ
