@@ -470,10 +470,22 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+
 	if (block)
 	{
 		ret = true;
 		block->splitCom(level);
+
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			if (pChunk)
+			{
+				pChunk->SetDirty(true);
+			}
+		}
 	}
 
 	return ret;

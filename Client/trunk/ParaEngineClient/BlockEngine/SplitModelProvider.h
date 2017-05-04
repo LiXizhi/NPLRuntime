@@ -66,18 +66,36 @@ namespace ParaEngine
 		/// @copydetails IBlockModelProvider::destroyBlockData
 		virtual void destroyBlockData(Block * src) const;
     protected:
-		/** 分裂等级数据模型
+		/** 分裂
 		@param[in] parent
 		@data 2017.5.2
 		*/
-		void CSplitModelProvider::splitLevel(SplitBlock * parent);
+		void splitLevel(SplitBlock * parent);
+
+		/** 合并
+		@param[in] parent
+		@data 2017.5.2
+		*/
+		void comLevel(SplitBlock * parent);
 
         /** 获取分裂等级方块模型
         @param[in] out
         @param[in] parent
         @data 2017.5.2
         */
-		void getSplitLevel(BlockModelList & out, BlockModel * parent, int i) const;
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, bool & nochild) const;
+        
+        /** 获取分裂等级方块模型
+        @param[in] out
+        @param[in] parent
+        @data 2017.5.2
+        */
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent,  int i) const;
+
+		/**
+		@data 2017.5.2
+		*/
+		int getBlockModelCount(SplitBlock * parent) const;
     protected:
 /*
         /// 坐标系统
@@ -198,7 +216,7 @@ namespace ParaEngine
 
     private:
 		BlockModel mFrameModel;
-        BlockModel mSplitModel[8]; // 测试
+        //BlockModel mSplitModel[8]; // 测试
     };
 }
 
