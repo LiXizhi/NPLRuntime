@@ -1317,6 +1317,11 @@ namespace ParaEngine
 			int32_t blockIdx = splitFile.ReadDWORD();
 			int32_t count = splitFile.ReadDWORD();
 
+			if (count < 0)
+			{
+				break;
+			}
+
 			byte *readBuffer = new byte[count];
 			splitFile.read(readBuffer, count);
 
