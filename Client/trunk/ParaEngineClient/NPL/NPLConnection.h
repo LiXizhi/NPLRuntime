@@ -248,6 +248,8 @@ namespace NPL
 		virtual bool handleMessageIn();
 
 	private:
+		/// try to parse websocket protocol
+		bool handle_websocket_data(int bytes_transferred);
 		//
 		// boost io service call backs. 
 		//
