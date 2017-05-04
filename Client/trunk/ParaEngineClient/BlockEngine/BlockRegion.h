@@ -92,6 +92,7 @@ namespace ParaEngine
 		char index;							// 0-7 Ë÷Òý
 		SplitBlock *parent;					// ¸¸¿é
 		SplitBlock *childs[8]{};			// ×Ó·½¿é
+        static std::string last;
 	};
 
 	/** 

@@ -33,6 +33,36 @@ namespace ParaEngine
         */
         virtual bool isComBlock() const {return false;}
         
+		/** 通过当前鼠标分裂方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void splitCom(Block *, const std::string &){}
+
+		/** 通过当前鼠标删除分裂出的方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void destroyCom(Block *, const std::string &){}
+
+		/** 通过当前制定层次设置颜色
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void setComColour(Block *, const std::string &, DWORD){}
+
+		/** 通过当前制定层次设置颜色
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void setComTexture(Block *, const std::string &, const char*){}
+        
+		/** 通过当前鼠标获取当前选中的分裂方块
+		@note 可分裂方块专用
+		@data 2017.4.25
+		*/
+        virtual std::string getComByCursor(const Block *) const { return std::string();};
+        
         /** 获取复合结构的数量
         @note 仅在 isComBlock 为真时使用
         @data 2017.4.18

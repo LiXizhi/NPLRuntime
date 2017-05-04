@@ -39,6 +39,21 @@ namespace ParaEngine
         /// @copydetails IBlockModelProvider::isComBlock
         virtual bool isComBlock() const;
         
+		/// @copydetails IBlockModelProvider::splitCom
+		virtual void splitCom(Block * src, const std::string & level);
+
+		/// @copydetails IBlockModelProvider::destroyCom
+		virtual void destroyCom(Block * src, const std::string & level);
+
+		/// @copydetails IBlockModelProvider::setComColour
+		virtual void setComColour(Block * src, const std::string & level, DWORD colour);
+
+		/// @copydetails IBlockModelProvider::setComTexture
+		virtual void setComTexture(Block * src, const std::string & level, const char* texture);
+        
+        /// @copydetails IBlockModelProvider::getComByCursor
+        virtual std::string getComByCursor(const Block * src) const;
+        
         /// @copydetails IBlockModelProvider::getComCount
         virtual int getComFaceCount(Block * src) const;
         
@@ -51,16 +66,28 @@ namespace ParaEngine
 		/// @copydetails IBlockModelProvider::destroyBlockData
 		virtual void destroyBlockData(Block * src) const;
     protected:
-        /** 坐标系统
+		/** 分裂等级数据模型
+		@param[in] parent
+		@data 2017.5.2
+		*/
+		void CSplitModelProvider::splitLevel(SplitBlock * parent);
+
+        /** 获取分裂等级方块模型
+        @param[in] out
+        @param[in] parent
+        @data 2017.5.2
         */
+		void getSplitLevel(BlockModelList & out, BlockModel * parent, int i) const;
+    protected:
+/*
+        /// 坐标系统
         enum CoordSystem
         {
             CS_LeftHand = 0,
             CS_RightHand = 1
         };
         
-        /** 距离类型
-        */
+        /// 距离类型
         enum BaseUnit
         {
             BU_NM = 0,
@@ -70,17 +97,15 @@ namespace ParaEngine
             BU_KM = 4
         };
         
-        /** 分割类型
-        */
+        /// 分割类型
         enum BlockState
         {
             BS_Unsplit = 0,
             BS_Split   = 1
         };
 
-        /** 子方块结构
-        */
-/*        struct SubBlock
+        /// 子方块结构
+        struct SubBlock
         {
             unsigned int id;            ///< 唯一标识
             unsigned int parentid;      ///< 父方块id
@@ -90,10 +115,8 @@ namespace ParaEngine
             unsigned char subBlockData; ///< 子方块状态
             SubBlock * subBlocks;       ///< 子方块链
         };
-		*/
-        /** 基础块结构
-        */
-		/*
+
+        /// 基础块结构
         struct BaseBlock
         {
             unsigned int id;            ///< 唯一标识
@@ -112,8 +135,8 @@ namespace ParaEngine
 			SplitBlock * sub[8];
 			SplitBlock * parent;
 		}; 
-        /** 块链结构
-        */
+      
+        /// 块链结构
         struct VariableBlockModel
         {
             CoordSystem coordSystem;    ///< 使用的坐标系
@@ -121,6 +144,7 @@ namespace ParaEngine
             unsigned short baseLength;  ///< 单位长度
             SplitBlock * baseBlocks;     ///< 所有基础块
         };
+        */          
     public:
         /** 导出到文件中(like BMax)
         @param[in] out 输出到文件
