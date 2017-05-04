@@ -129,16 +129,16 @@ namespace ParaScripting
 		static bool SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 删除分裂方块
-		static bool DestroyBlock(const object& pWorld, const string& level);
+		static bool DestroyBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 设置颜色
-		static void SetBlockColor(const object& pWorld, const string& level, DWORD colour);
+		static void SetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, DWORD colour);
 
 		// 设置贴图
-		static void SetBlockTexture(const object& pWorld, const string& level, const string& texture);
+		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture);
 
 		// 获取当前的块
-		static const string& GetBlockByCursor(const object& pWorld);
+		static const string& GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);
 
 
 

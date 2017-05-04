@@ -12,7 +12,6 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "ParaScriptingBlockWorld.h"
 
-#include "BlockEngine/BlockRegion.h"
 
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
@@ -491,28 +490,51 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	return ret;
 }
 
-bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, const string& level)
+bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
+	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		ret = true;
+		block->destroyCom(level);
+	}
 
-	return true;
+	return ret;
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, const string& level, DWORD colour)
+void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, DWORD colour)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		block->setComColour(level, colour);
+	}
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, const string& level, const string& texture)
+void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		block->setComTexture(level, texture.c_str());
+	}
 }
 
-const string& ParaScripting::ParaBlockWorld::GetBlockByCursor(const object& pWorld_)
+const string& ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 {
+	string ret;
 	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		ret = block->getComByCursor();
+	}
 
-	return "123123";
+	return ret;
 }
 
 
