@@ -798,7 +798,7 @@ namespace ParaEngine
 							SplitBlock * splitBlockRoot = static_cast<SplitBlock *>(block.getExtData());
 
 							vector<SplitBlock *> blocks;
-							vector<char> blocksIndex;
+							vector<SplitBlock *> blockSave;
 							blocks.push_back(splitBlockRoot);
 
 							for (int idx = 0; idx < blocks.size(); ++idx)
@@ -816,21 +816,26 @@ namespace ParaEngine
 
 								if (vecChilds.size() > 0)
 								{
-									blocksIndex.push_back(temp->index);
+									blockSave.push_back(temp);
 								}
 
 								for (int t = 0; t < vecChilds.size(); ++t)
 								{
-									blocksIndex.push_back(vecChilds[t]->index);
 									blocks.push_back(vecChilds[t]);
+									blockSave.push_back(vecChilds[t]);
 								}
 							}
 
 
-							splitFile.WriteDWORD(i);
-							splitFile.WriteDWORD(j);
-							splitFile.WriteDWORD(blocksIndex.size());
-							splitFile.write(blocksIndex.data(), blocksIndex.size());
+							splitFile.WriteDWORD(i);									// chunk ID
+							splitFile.WriteDWORD(j);									// block 索引
+							splitFile.WriteDWORD(blockSave.size());					// 后面数据个数
+							for (int idx = 0; idx < blockSave.size(); ++idx)			// 对应数据
+							{
+								splitFile.WriteByte(blockSave[idx]->index);
+								splitFile.WriteDWORD(blockSave[idx]->color);
+								splitFile.WriteDWORD(blockSave[idx]->templateId);
+							}
 						}
 					}
 				}
@@ -1317,22 +1322,22 @@ namespace ParaEngine
 			int32_t blockIdx = splitFile.ReadDWORD();
 			int32_t count = splitFile.ReadDWORD();
 
-			if (count < 0)
-			{
-				break;
-			}
-
-			byte *readBuffer = new byte[count];
-			splitFile.read(readBuffer, count);
-
 			char lastIndex = SplitBlockType_root;
 			SplitBlock *temp = 0;
 			SplitBlock *root = 0;
 
+			uint16_t tempId;
 			for (int k = 0; k < count; ++k)
 			{
-				char index = readBuffer[k];
+				char index = splitFile.ReadByte();
+				DWORD color = splitFile.ReadDWORD();
+				uint16_t templateId = splitFile.ReadDWORD();
+
 				SplitBlock *splitBlock = new SplitBlock();
+				splitBlock->index = index;
+				splitBlock->color = color;
+				splitBlock->templateId = templateId;
+				tempId = templateId;
 
 				if (index == SplitBlockType_root)
 				{
@@ -1352,12 +1357,11 @@ namespace ParaEngine
 				}
 			}
 
-			delete readBuffer;
 
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
-			if (pChunk)
+			if (count > 0 && pChunk)
 			{
-				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(123);
+				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(tempId);
 				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
 			}
 		}

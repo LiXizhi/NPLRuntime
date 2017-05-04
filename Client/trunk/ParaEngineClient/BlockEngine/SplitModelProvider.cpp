@@ -164,7 +164,10 @@ namespace ParaEngine
 		assert(src);
         assert(!src->getExtData());
         
+		uint16_t templateId = src->GetTemplate()->GetID();
 		SplitBlock * stemp = new SplitBlock();
+		stemp->templateId = templateId;
+
 		src->setExtData(stemp);
 	}
 	//-----------------------------------------------------

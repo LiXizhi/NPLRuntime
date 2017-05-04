@@ -10,6 +10,7 @@
 #include "BlockEngine/BlockWorld.h"
 #include "BlockEngine/BlockWorldManager.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "BlockEngine/BlockRegion.h"
 #include "ParaScriptingBlockWorld.h"
 
 

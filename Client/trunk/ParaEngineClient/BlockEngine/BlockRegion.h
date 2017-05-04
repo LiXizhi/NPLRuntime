@@ -16,43 +16,25 @@ namespace ParaEngine
 	class BlockRegion;
 	class BlockChunk;
 
-	enum SplitBlockType
-	{
-		SplitBlockType_root = -1,
-		SplitBlockType_0 = 0,
-		SplitBlockType_1,
-		SplitBlockType_2,
-		SplitBlockType_3,
-		SplitBlockType_4,
-		SplitBlockType_5,
-		SplitBlockType_6,
-		SplitBlockType_7,
-	};
-
+	#define SplitBlockType_root -1
 
 	class SplitBlock
 	{
 	public:
 		SplitBlock()
 		{
-			index = -1;
-			parent = 0;
-			memset(childs, 0, sizeof(SplitBlock *) * 8);
+			Init();
 		}
 
-		SplitBlock(SplitBlock* parent, SplitBlockType type)
+		// -1代表最上层
+		SplitBlock(SplitBlock* parent, char type = SplitBlockType_root, DWORD blockColor = ~0, uint16_t tempid = 0)
 		{
-			index = (char)type;
+			Init();
+			index = type;
 			parent = parent;
-			memset(childs, 0, sizeof(SplitBlock *) * 8);
+			color = blockColor;
 		}
 
-		SplitBlock(SplitBlockType type)
-		{
-			index = (char)type;
-			parent = 0;
-			memset(childs, 0, sizeof(SplitBlock *) * 8);
-		}
 
 		~SplitBlock()
 		{
@@ -66,7 +48,14 @@ namespace ParaEngine
 				}
 			}
 		}
-
+		void Init()
+		{
+			index = -1;
+			parent = 0;
+			color = ~0;
+			templateId = 0;
+			memset(childs, 0, sizeof(SplitBlock *) * 8);
+		}
 
 		// 添加子树
 		SplitBlock * add(unsigned int index)
@@ -77,6 +66,8 @@ namespace ParaEngine
 				childs[index] = childBlock;
 				childBlock->parent = this;
 				childBlock->index = index;
+				childBlock->color = color;
+				childBlock->templateId = templateId;
 			}
 			return childs[index];
 		}
@@ -90,16 +81,12 @@ namespace ParaEngine
 			}
 		}
 
-		bool isNoChild() const
-		{
-			if(childs[0] || childs[1] || childs[2] || childs[3]|| childs[4]|| childs[5] || childs[6] || childs[7])
-			{
-				return false;
-			}
-			return true;
-		}
+
 	public:
 		char index;							// 0-7 索引
+		DWORD color;						// 颜色
+		uint16_t templateId;		        // template id
+
 		SplitBlock *parent;					// 父块
 		SplitBlock *childs[8]{};			// 子方块
         static std::string last;
