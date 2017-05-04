@@ -468,6 +468,7 @@ int ParaScripting::ParaBlockWorld::GetVersion(const object& pWorld_)
 bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	bool ret = false;
+
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 
