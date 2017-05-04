@@ -48,7 +48,6 @@ namespace ParaEngine
 				}
 			}
 		}
-
 		void Init()
 		{
 			index = -1;
