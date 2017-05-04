@@ -59,7 +59,7 @@ namespace ParaEngine
 	void CSplitModelProvider::splitCom(Block * src, const std::string & level)
 	{
 		assert(src);
-        SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+        SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData()); /*
 		int num = -1;
 		std::string::const_iterator i, iend = level.end();
 		for (i = level.begin(); i != iend; ++i)
@@ -70,6 +70,7 @@ namespace ParaEngine
 			else
 				return;
 		}
+		*/
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
@@ -185,13 +186,21 @@ namespace ParaEngine
 	{
 		assert(parent);
 		parent->add(0);
+		parent->set(0, 0x00000000);
 		parent->add(1);
+		parent->set(1, 0xffffffff);
 		parent->add(2);
+		parent->set(2, 0xffff0000);
 		parent->add(3);
+		parent->set(3, 0x0000ffff);
 		parent->add(4);
+		parent->set(4, 0xffff0000);
 		parent->add(5);
+		parent->set(5, 0xffffff00);
 		parent->add(6);
+		parent->set(6, 0x0000ffff);
 		parent->add(7);
+		parent->set(7, 0x000000ff);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::comLevel(SplitBlock * parent)
@@ -233,7 +242,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 0, 0);
-			temp.SetColor(0x00000000);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if(nochild)
 				out.push_back(temp);
@@ -242,7 +251,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0.5, 0, 0);
-			temp.SetColor(0xffffffff);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -251,7 +260,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 0, 0.5);
-			temp.SetColor(0xffff0000);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -260,7 +269,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0.5, 0, 0.5);
-			temp.SetColor(0x0000ffff);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -269,7 +278,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 0.5, 0);
-			temp.SetColor(0xffff0000);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -278,7 +287,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0.5, 0.5, 0);
-			temp.SetColor(0xffffff00);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -287,7 +296,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 0.5, 0.5);
-			temp.SetColor(0x0000ffff);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);
@@ -296,7 +305,7 @@ namespace ParaEngine
 			temp.Clone(*bparent);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0.5, 0.5, 0.5);
-			temp.SetColor(0x000000ff);
+			temp.SetColor(sparent->color);
 			cnt += getSplitLevel(out, sparent, &temp, nochild);
 			if (nochild)
 				out.push_back(temp);

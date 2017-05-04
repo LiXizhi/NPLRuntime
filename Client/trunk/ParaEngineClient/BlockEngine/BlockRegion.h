@@ -81,7 +81,13 @@ namespace ParaEngine
 			}
 		}
 
-
+		void set(unsigned int index, DWORD color)
+		{
+			if (index < 8 && childs[index])
+			{
+				childs[index]->color = color;
+			}
+		}
 	public:
 		char index;							// 0-7 Ë÷Òý
 		DWORD color;						// ÑÕÉ«
