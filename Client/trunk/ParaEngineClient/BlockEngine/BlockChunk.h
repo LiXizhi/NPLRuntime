@@ -93,9 +93,9 @@ namespace ParaEngine
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			if (m_pTemplate)
 				m_pTemplate->destroyBlockData(this);
+			m_pTemplate = pTemplate;
 			if (pTemplate)
 				pTemplate->initBlockData(this);
-			m_pTemplate = pTemplate;
 		}
 		inline void SetUserData(uint32_t data){ 
 			m_blockData = (uint16)data; 
