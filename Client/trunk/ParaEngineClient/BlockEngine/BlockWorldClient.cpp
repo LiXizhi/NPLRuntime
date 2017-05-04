@@ -939,11 +939,12 @@ namespace ParaEngine
 
 		if (pBatchedElementDraw)
 		{
-			PARAVECTOR4 color(0.2f,0.2f,0.2f, 0.7f);
+//			PARAVECTOR4 color(0.2f,0.2f,0.2f, 0.7f);
+			PARAVECTOR4 color(1.0f, 0.0f, 0.0f, 0.7f);
 
 			if (pLineColor)
 			{
-				color = *((PARAVECTOR4*)pLineColor);
+//				color = *((PARAVECTOR4*)pLineColor);
 			}
 			const float fLineWidth = -2.f;
 
@@ -968,8 +969,22 @@ namespace ParaEngine
 					Vector3 vOffset((x  - renderBlockOfs_x) * fBlockSize, (y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (z  - renderBlockOfs_z) * fBlockSize);
 					vOffset -= renderBlockOfs_remain;
 					
-					aabb.GetCenter() += vOffset;
-					aabb.GetExtents() *= fScaling;
+					
+					string level = "0";									// 细分方块
+					float splitScale = 1.0f;							// 细分缩放
+					Vector3 splitOffset = Vector3(0.0f, 0.0f, 0.0f);	// 细分偏移
+
+					if (pBlockTemplate->isComBlock())
+					{
+						splitScale = 0.5f;
+						splitOffset.x = fBlockSize / 4.0f;
+						splitOffset.y = fBlockSize / 4.0f;
+						splitOffset.z = fBlockSize / 4.0f;
+					}
+
+
+					aabb.GetCenter() += vOffset + splitOffset;
+					aabb.GetExtents() *= fScaling * splitScale;
 
 					BlockModel::GetBoundingBoxVertices(aabb, pVecBounds, &nNumVertices);
 					{
