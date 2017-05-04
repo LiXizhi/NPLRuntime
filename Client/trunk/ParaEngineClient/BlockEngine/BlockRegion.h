@@ -82,6 +82,7 @@ namespace ParaEngine
 			}
 		}
 
+
 	public:
 		char index;							// 0-7 Ë÷Òý
 		DWORD color;						// ÑÕÉ«

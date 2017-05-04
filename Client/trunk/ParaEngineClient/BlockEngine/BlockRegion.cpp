@@ -1322,12 +1322,6 @@ namespace ParaEngine
 			int32_t blockIdx = splitFile.ReadDWORD();
 			int32_t count = splitFile.ReadDWORD();
 
-			if (count < 0)
-			{
-				break;
-			}
-
-
 			char lastIndex = SplitBlockType_root;
 			SplitBlock *temp = 0;
 			SplitBlock *root = 0;
@@ -1365,7 +1359,7 @@ namespace ParaEngine
 
 
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
-			if (pChunk)
+			if (count > 0 && pChunk)
 			{
 				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(tempId);
 				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);

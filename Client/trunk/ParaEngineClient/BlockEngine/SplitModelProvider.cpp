@@ -60,13 +60,18 @@ namespace ParaEngine
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		splitLevel(stemp);
+		int i, iend = 8;
+		for (i = 0; i < iend; ++i)
+		{
+			splitLevel(stemp);
+		}
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::destroyCom(Block * src, const std::string & level)
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		comLevel(stemp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
@@ -114,44 +119,25 @@ namespace ParaEngine
 		if(src->getExtData())
 		{
 			SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-			int i, iend = 8;
-			for (i = 0; i < iend; ++i)
-			{
-				if(stemp->childs[i])
-					++cnt;
-			}
-			if(cnt == 0)
-			{
-				++cnt;
-			}
+			cnt += getBlockModelCount(stemp);
 		}
 		return cnt * 6;
     }
     //-----------------------------------------------------
     int CSplitModelProvider::getComModelList(Block * src, BlockModelList & out) const
     {
-		static BlockModel mFrameModel1;
-		mFrameModel1.LoadModelByTexture(1);
-		assert(src);
-		int cnt = 0;
+		assert(src); 
+        BlockModel temp;
+        temp.LoadModelByTexture(1);
+        int cnt = 0;
+		bool nochild = true;
 		if (src->getExtData())
 		{
 			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
-			int i, iend = 8;
-			for (i = 0; i < iend; ++i)
-			{
-				if (stemp->childs[i])
-				{
-					getSplitLevel(out, &mFrameModel1, i);
-					++cnt;
-				}
-			}
-			if (cnt == 0)
-			{
-				out.push_back(mFrameModel);
-				++cnt;
-			}
+            cnt += getSplitLevel(out, stemp, &temp, nochild);
 		}
+		if (nochild)
+			out.push_back(temp);
 		return cnt;
     }
 	//-----------------------------------------------------
@@ -189,74 +175,140 @@ namespace ParaEngine
 		parent->add(6);
 		parent->add(7);
 	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::comLevel(SplitBlock * parent)
+	{
+		assert(parent);
+		parent->remove(0);
+		parent->remove(1);
+		parent->remove(2);
+		parent->remove(3);
+		parent->remove(4);
+		parent->remove(5);
+		parent->remove(6);
+		parent->remove(7);
+	}
     //-----------------------------------------------------
-	void CSplitModelProvider::getSplitLevel(BlockModelList & out, BlockModel * parent, int i) const
+    int CSplitModelProvider::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, bool & nochild) const
     {
-		static BlockModel mSplitModel;
+        int cnt = 0;
+        int i, iend = 8;
+        for (i = 0; i < iend; ++i)
+        {
+            if(sparent->childs[i])
+            {
+                cnt += getSplitLevel(out, sparent->childs[i], bparent, i);
+				nochild = false;
+            }
+        }
+        return cnt;
+    }
+    //-----------------------------------------------------
+	int CSplitModelProvider::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int i) const
+    {
+        int cnt = 0;
+		bool nochild = true;
+		BlockModel temp;
 		switch (i)
 		{
 		case 0:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0, 0, 0);
-			mSplitModel.SetColor(0x00000000);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0, 0, 0);
+			temp.SetColor(0x00000000);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if(nochild)
+				out.push_back(temp);
 			break;
 		case 1:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0.5, 0, 0);
-			mSplitModel.SetColor(0xffffffff);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0.5, 0, 0);
+			temp.SetColor(0xffffffff);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 2:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0, 0, 0.5);
-			mSplitModel.SetColor(0xffff0000);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0, 0, 0.5);
+			temp.SetColor(0xffff0000);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 3:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0.5, 0, 0.5);
-			mSplitModel.SetColor(0x0000ffff);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0.5, 0, 0.5);
+			temp.SetColor(0x0000ffff);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 4:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0, 0.5, 0);
-			mSplitModel.SetColor(0xffff0000);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0, 0.5, 0);
+			temp.SetColor(0xffff0000);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 5:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0.5, 0.5, 0);
-			mSplitModel.SetColor(0xffffff00);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0.5, 0.5, 0);
+			temp.SetColor(0xffffff00);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 6:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0, 0.5, 0.5);
-			mSplitModel.SetColor(0x0000ffff);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0, 0.5, 0.5);
+			temp.SetColor(0x0000ffff);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		case 7:
-			mSplitModel.Clone(*parent);
-			mSplitModel.SetVerticalScale(0.5f);
-			mSplitModel.TranslateVertices(0.5, 0.5, 0.5);
-			mSplitModel.SetColor(0x000000ff);
-			out.push_back(mSplitModel);
+			temp.Clone(*bparent);
+			temp.SetVerticalScale(0.5f);
+			temp.TranslateVertices(0.5, 0.5, 0.5);
+			temp.SetColor(0x000000ff);
+			cnt += getSplitLevel(out, sparent, &temp, nochild);
+			if (nochild)
+				out.push_back(temp);
 			break;
 		default:
 			break;
 		}
+		return cnt;
     }
 	//-----------------------------------------------------
+	int CSplitModelProvider::getBlockModelCount(SplitBlock * parent) const
+	{
+		int cnt = 0;
+		int i, iend = 8;
+		bool nochild = true;
+		for (i = 0; i < iend; ++i)
+		{
+			if (parent->childs[i])
+			{
+				cnt += getBlockModelCount(parent->childs[i]);
+				nochild = false;
+			}
+		}
 
+		if (nochild)
+		{
+			++cnt;
+		}
+		return cnt;
+	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)
     {
