@@ -141,7 +141,7 @@ m_dropShadowRenderer(new DropShadowRenderer()),
 #endif
 m_globalTerrain(new ParaTerrain::CGlobalTerrain()),
 m_sceneState(new ParaTerrain::SceneState()),
-m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_bShowMainPlayer(true), m_bCanShowMainPlayer(true)
+m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_bShowMainPlayer(true), m_bCanShowMainPlayer(true), m_fPostRenderQueueOrder(100.f)
 {
 #ifdef _DEBUG
 	// test local light
@@ -1400,7 +1400,9 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 			if(bDrawObj)
 			{
 				PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
-				if (!pObj->HasAlphaBlendedObjects())
+				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder)
+					sceneState.listPostRenderingObjects.push_back(o);
+				else if (!pObj->HasAlphaBlendedObjects())
 					sceneState.listPRBiped.push_back(o);
 				else
 					sceneState.listPRTransparentBiped.push_back(o); 
@@ -1432,7 +1434,11 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 				pObj->AutoSelectTechnique();
 				if(bDrawObj)
 				{
-					if(!pObj->HasAlphaBlendedObjects())
+					if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+						PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
+						sceneState.listPostRenderingObjects.push_back(o);
+					}
+					else if(!pObj->HasAlphaBlendedObjects())
 						sceneState.listPRSolidObject.push_back(PostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded));
 					else
 					{
@@ -1462,7 +1468,12 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 					fAlpha = 0.5f;
 				// TODO: fAlpha animation should be enabled, according to whether a object is drawn in last frame.
 				pObj->AutoSelectTechnique();
-				sceneState.listPRSmallObject.push_back(AlphaPostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded, fAlpha));
+				if (pObj->GetRenderOrder() >= m_fPostRenderQueueOrder){
+					PostRenderObject o(pObj, fObjectToCameraDist, sceneState.m_nOccluded);
+					sceneState.listPostRenderingObjects.push_back(o);
+				}
+				else
+					sceneState.listPRSmallObject.push_back(AlphaPostRenderObject(pObj, fObjectToCameraDist, sceneState.m_nOccluded, fAlpha));
 				//nPostRenderType = 2;
 			}
 		}
@@ -1905,6 +1916,9 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	/** sort by the camera-object distance: back to front*/
 	std::sort(sceneState.listPRMissiles.begin(), sceneState.listPRMissiles.end(), GreaterPostRenderObj<AlphaPostRenderObject>());
 	sceneState.bIsBatchRender = true;
+
+	std::sort(sceneState.listPostRenderingObjects.begin(), sceneState.listPostRenderingObjects.end(), GreaterPostRenderObj_ByOrder<PostRenderObject>());
+	
 
 	if(CGlobals::WillGenReport())
 	{
@@ -2388,6 +2402,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	{
 		RenderSelection(RENDER_TRANSLUCENT_FACE_GROUPS);
 		sceneState.GetFaceGroups()->Clear();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// render post rendering with render order
+	if (!sceneState.listPostRenderingObjects.empty())
+	{
+		RenderSelection(RENDER_POST_RENDER_LIST);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -3607,6 +3628,14 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					++nObjCount;
 				}
 			}
+		}
+	}
+	if (CHECK_SELECTION(RENDER_POST_RENDER_LIST))
+	{
+		/// post rendering objects
+		if (!sceneState.listPostRenderingObjects.empty())
+		{
+			nObjCount += RenderList(sceneState.listPostRenderingObjects, sceneState);
 		}
 	}
 	// end the effect anyway.

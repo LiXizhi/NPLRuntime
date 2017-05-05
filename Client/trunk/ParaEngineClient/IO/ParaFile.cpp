@@ -547,6 +547,7 @@ bool CParaFile::UnzipMemToFile(const char* buffer, int nSize, const char* destFi
 	return bRes;
 }
 
+
 bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fileInfo, uint32 dwWhereToOpen /*= FILE_ON_DISK | FILE_ON_ZIP_ARCHIVE | FILE_ON_SEARCH_PATH*/)
 {
 	int32 dwFoundPlace = FILE_NOT_FOUND;
@@ -651,6 +652,52 @@ bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fi
 void* ParaEngine::CParaFile::GetHandlePtr()
 {
 	return m_handle.m_pVoidPtr;
+}
+
+bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, bool bUseCompressed)
+{
+	m_eof = true;
+	if (pArchive->OpenFile(filename, m_handle))
+	{
+		CFileManager* pFileManager = CFileManager::GetInstance();
+		m_curPos = 0;
+		if (bUseCompressed)
+		{
+			DWORD compressedSize = 0;
+			DWORD uncompressedSize = 0;
+			if (pFileManager->ReadFileRaw(m_handle, (LPVOID*)(&m_buffer), &compressedSize, &uncompressedSize))
+			{
+				m_size = compressedSize;
+				m_uncompressed_size = uncompressedSize;
+				// this fix a bug for non-compressed files
+				if (m_uncompressed_size > 0)
+					SetIsCompressed(true);
+				m_eof = false;
+			}
+			else
+			{
+				m_buffer = 0;
+				m_eof = true;
+			}
+		}
+		else
+		{
+			DWORD s = pFileManager->GetFileSize(m_handle);
+			DWORD bytesRead = 0;
+			m_buffer = new char[s + 1];
+			m_buffer[s] = '\0';
+			pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead);
+			pFileManager->CloseFile(m_handle);
+			m_size = (size_t)bytesRead;
+			m_eof = false;
+		}
+	}
+	else
+	{
+		m_eof = true;
+		m_buffer = 0;
+	}
+	return !m_eof;
 }
 
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
@@ -1170,7 +1217,38 @@ string CParaFile::GetFileExtension(const string& sfilename)
 
 string CParaFile::GetAbsolutePath(const string& sRelativePath, const string& sRootPath)
 {
-	return sRootPath + sRelativePath;
+	std::string fullPath = sRootPath;
+	if (fullPath.size() > 0 && fullPath.back() != '/' && fullPath.back() != '\\')
+		fullPath += "/";
+
+	if (sRelativePath[0] == '.' && sRelativePath.size() > 3)
+	{
+		if (sRelativePath[1] == '/')
+		{
+			fullPath.append(sRelativePath.c_str() + 2);
+		}
+		else if (sRelativePath[1] == '.' && sRelativePath[2] == '/')
+		{
+			// such as ../../
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+			int nOffset = 3;
+			while (sRelativePath[nOffset] == '.' && sRelativePath[nOffset + 1] == '.' && sRelativePath[nOffset + 2] == '/')
+			{
+				fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+				nOffset += 3;
+			}
+			fullPath.append(sRelativePath.c_str() + nOffset);
+		}
+		else
+		{
+			fullPath += sRelativePath;
+		}
+	}
+	else
+	{
+		fullPath += sRelativePath;
+	}
+	return fullPath;
 }
 
 string CParaFile::GetRelativePath(const string& sAbsolutePath, const string& sRootPath)

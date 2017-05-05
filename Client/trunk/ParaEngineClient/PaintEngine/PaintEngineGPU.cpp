@@ -50,6 +50,8 @@ CPaintEngineGPU* ParaEngine::CPaintEngineGPU::GetInstance()
 		return s_singleton;
 	else
 	{
+		if (!CGlobals::GetRenderDevice())
+			return NULL;
 		s_singleton = new CPaintEngineGPU();
 		return s_singleton;
 	}

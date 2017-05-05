@@ -22,13 +22,15 @@ enum class GlyphCollection {
 
 class GL {
 public:
-    static void bindTexture2D(GLuint textureId);
+	static void bindTexture2D(GLuint textureId);
 	static void bindTexture2DN(GLuint textureUnit, GLuint textureId);
 
 	static void deleteTexture(GLuint textureId);
 
 	static void deleteProgram(GLuint program);
 	static void useProgram(GLuint program);
+	static void bindVAO(GLuint vaoId);
+	static void enableVertexAttribs(uint32_t flags);
 };
 
 typedef struct _ttfConfig

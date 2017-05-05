@@ -164,6 +164,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCoreUsage_s, int*)	{*p1 = cls->GetCoreUsage(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetCoreUsage_s, int)	{cls->SetCoreUsage(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetProcessId_s, int*)	{ *p1 = cls->GetProcessId(); return S_OK; }
+		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetSystemInfoString_s, const char**)	{*p1 = cls->GetSystemInfoString().c_str(); return S_OK;}
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMaxMacAddress_s, const char**)	{*p1 = cls->GetMaxMacAddress().c_str(); return S_OK;}
@@ -210,8 +212,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexBufferPoolTotalBytes_s, int*)	{ *p1 = (int)cls->GetVertexBufferPoolTotalBytes(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, int*) { *p1 = cls->GetAppHWND(); return S_OK; }
-		ATTRIBUTE_METHOD1(ParaEngineSettings, GetModuleHandle_s, int*) { *p1 = cls->GetModuleHandle(); return S_OK; }
-
 	public:
 		/** 
 		* @param dwTechnique: 0 for basic, the higher the more advanced. up to 3. */
@@ -261,6 +261,9 @@ namespace ParaEngine
 		* @param dwUsage: bitwise of PE_USAGE
 		*/
 		void SetCoreUsage(DWORD dwUsage);
+
+		/** get current process id*/
+		int GetProcessId();
 
 		/** get the selection color. */
 		LinearColor GetSelectionColor(int nGroupID=0);
@@ -668,7 +671,6 @@ namespace ParaEngine
 		void SetHasClosingRequest(bool val);
 
 		static int GetAppHWND();
-		static int GetModuleHandle();
 	protected:
 		void LoadNameIndex();
 	private:

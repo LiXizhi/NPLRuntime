@@ -12,6 +12,7 @@
 #include "PluginAPI.h"
 #include "IParaWebService.h"
 #include "NPLActivationFile.h"
+#include "FileManager.h"
 #include "NPLHelper.h"
 #include "NPLCommon.h"
 #include "NPLRuntime.h"
@@ -60,17 +61,17 @@ const char* NPL_MONO_DLL_FILE_PATH = "NPLMono.dll";
 #define COROUTINE_NAME "__co"
 
 /** helper class to mark processing */
-class CMarkProcessing{
+class CMarkProcessing {
 public:
-	CMarkProcessing(bool * pValueBool) :m_pValueBool(pValueBool){ if (m_pValueBool){ *m_pValueBool = true; } }
-	~CMarkProcessing(){ if (m_pValueBool){ *m_pValueBool = false; } }
+	CMarkProcessing(bool * pValueBool) :m_pValueBool(pValueBool) { if (m_pValueBool) { *m_pValueBool = true; } }
+	~CMarkProcessing() { if (m_pValueBool) { *m_pValueBool = false; } }
 	bool * m_pValueBool;
 };
 
 NPL::CNPLRuntimeState::CNPLRuntimeState(const string & name, NPLRuntimeStateType type_)
-: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0), m_bIsPreemptive(false), m_bPauseAllPreemptiveFunction(false),
-m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
-ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
+	: m_bUseMessageEvent(false), m_name(name), m_type(type_), m_nFrameMoveCount(0), m_bIsPreemptive(false), m_bPauseAllPreemptiveFunction(false),
+	m_current_msg(NULL), m_current_msg_length(0), m_pMonoScriptingState(NULL), m_processed_msg_count(0), m_bIsProcessing(false),
+	ParaScripting::CNPLScriptingState(type_ != NPLRuntimeStateType_DLL && type_ != NPLRuntimeStateType_NPL_ExternalLuaState)
 {
 }
 
@@ -145,7 +146,7 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	}
 	m_neuron_files.clear();
 	m_active_neuron_files.clear();
-	
+
 	m_act_files_cpp.clear();
 	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
 }
@@ -196,7 +197,7 @@ NPL::CNeuronFileState* NPL::CNPLRuntimeState::GetNeuronFileState(const std::stri
 	auto iter = m_neuron_files.find(filename);
 	if (iter != m_neuron_files.end())
 		return iter->second;
-	else if(bCreateIfNotExist)
+	else if (bCreateIfNotExist)
 	{
 		auto pFileState = new CNeuronFileState(filename);
 		pFileState->SetMaxQueueSize(GetMsgQueueSize());
@@ -289,7 +290,7 @@ int NPL::CNPLRuntimeState::Process()
 {
 	// process as many as possible. 
 	NPLMessage_ptr msg;
-	for (int i = 0; i<MAX_MESSAGE_PROCESSED_PER_FRAME && m_input_queue.try_pop(msg); ++i)
+	for (int i = 0; i < MAX_MESSAGE_PROCESSED_PER_FRAME && m_input_queue.try_pop(msg); ++i)
 	{
 		ProcessMsg(msg);
 	}
@@ -306,10 +307,10 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	{
 		auto pFileState = GetNeuronFileState(msg->m_filename, false);
 		if (!pFileState) {
-			LoadFile_any(msg->m_filename, false);
+			LoadFile_any(msg->m_filename, false, 0, true);
 			pFileState = GetNeuronFileState(msg->m_filename);
 		}
-		if (pFileState) 
+		if (pFileState)
 		{
 			if (pFileState->IsProcessing() || pFileState->IsPreemptive())
 			{
@@ -372,7 +373,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 	bool bHasDebugger = HasDebugHook();
 	if (bHasDebugger)
 		return 0;
-		
+
 	m_nFrameMoveCount++;
 	// tick all neuron files with pending messages here. 
 	for (auto iter = m_active_neuron_files.begin(); iter != m_active_neuron_files.end(); )
@@ -408,14 +409,14 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 				// create coroutine object such that _G["__co"][GetFileName()] = coroutine.create();
 				lua_pushstring(L, COROUTINE_NAME);
 				lua_rawget(L, LUA_REGISTRYINDEX);
-				if (lua_istable(L, -1)) 
+				if (lua_istable(L, -1))
 				{
 					lua_getfield(L, -1, pFileState->GetFilename().c_str());
-					if (lua_isthread(L, -1)) 
+					if (lua_isthread(L, -1))
 					{
 						lua_State * th = lua_tothread(L, -1);
 						int status = lua_status(th);
-						if(status == LUA_YIELD)
+						if (status == LUA_YIELD)
 						{
 							// call activate function with preemptive hook. 
 							lua_sethook(th, npl_preemptive_scheduler_hook, LUA_MASKCOUNT, pFileState->GetPreemptiveInstructionCount());
@@ -452,7 +453,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									}
 									OUTPUT_LOG("%s", strErrorMsg.c_str());
 								}
-								if (num_results>0)
+								if (num_results > 0)
 									lua_pop(th, num_results);
 							}
 							// Lua 5.1 support per thread hook, while luajit hook is global to all. 
@@ -538,7 +539,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 									}
 									OUTPUT_LOG("%s", strErrorMsg.c_str());
 								}
-								if(num_results>0)
+								if (num_results > 0)
 									lua_pop(th, num_results);
 							}
 						}
@@ -566,7 +567,7 @@ int NPL::CNPLRuntimeState::FrameMoveTick()
 						lua_pop(L, 2);
 					}
 				}
-				else 
+				else
 				{
 					ActivateFile_any(msg->m_filename, msg->m_code.c_str(), (int)msg->m_code.size());
 				}
@@ -607,21 +608,40 @@ int NPL::CNPLRuntimeState::GetProcessedMsgCount()
 }
 
 template <typename StringType>
-bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bReload)
+bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bReload, lua_State* L, bool bNoReturn)
 {
 	if (filepath.empty())
 		return true;
 	int nSize = (int)filepath.size();
+	bool bHasScriptFileExtension = nSize > 5 && filepath[nSize - 4] == '.' &&
+		((filepath[nSize - 3] == 'l' && filepath[nSize - 2] == 'u' && filepath[nSize - 1] == 'a') ||
+		(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
+		
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
-		return ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str());
-	}
-	else if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
-	{
-		// for dll plug-in files
-		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')
+		std::string sOutputFile;
+		if (ParaEngine::CGlobals::GetApp()->LoadNPLPackage(filepath.c_str(), &sOutputFile))
 		{
+			if (!sOutputFile.empty())
+			{
+				return LoadFile_any(sOutputFile, false, L, bNoReturn);
+			}
+			return true;
+		}
+		if (!bNoReturn && L!=0)
+		{
+			// return false to scripting environment if module is not found. 
+			lua_pushboolean(L, 0);
+		}
+		return false;
+	}
+	else if (nSize > 5 && !bHasScriptFileExtension)
+	{
+		if ((filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l') ||
+			(filepath[nSize - 3] == '.' && filepath[nSize - 2] == 's' && filepath[nSize - 1] == 'o'))
+		{
+			// for *.dll and *.so plug-in files
 			if (filepath[nSize - 5] != '*')
 			{
 				DLL_Plugin_Map_Type::iterator iter = m_dll_plugins_map.find(filepath);
@@ -659,7 +679,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			return true;
 		}
-		else if ((filepath[nSize - 3] == 'z' && filepath[nSize - 2] == 'i' && filepath[nSize - 1] == 'p') 
+		else if ((filepath[nSize - 3] == 'z' && filepath[nSize - 2] == 'i' && filepath[nSize - 1] == 'p')
 			|| (filepath[nSize - 3] == 'p' && filepath[nSize - 2] == 'k' && filepath[nSize - 1] == 'g'))
 		{
 			// pkg or zip file
@@ -667,7 +687,61 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			return true;
 		}
 	}
-	return LoadFile(filepath, bReload);
+	if (filepath[0] == '.' && nSize > 3)
+	{
+		std::string fullPath;
+		// load using relative path to current file path. 
+		if (filepath[1] == '/')
+		{
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 0);
+			fullPath.append(filepath.c_str() + 2);
+		}
+		else if (filepath[1] == '.' && filepath[2] == '/')
+		{
+			// such as ../../
+			fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(GetCurrentFileName(L), 1);
+			int nOffset = 3;
+			while (filepath[nOffset] == '.' && filepath[nOffset + 1] == '.' && filepath[nOffset + 2] == '/')
+			{
+				fullPath = ParaEngine::CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+				nOffset += 3;
+			}
+			fullPath.append(filepath.c_str() + nOffset);
+		}
+		
+		if (!fullPath.empty())
+		{
+			// automatically add file extension if not. 
+			if (!bHasScriptFileExtension)
+			{
+				std::string output, out;
+				output = fullPath + ".lua";
+				if (GetScriptDiskPath(output, out) != 0)
+					fullPath = output;
+				else
+				{
+					output = fullPath + ".npl";
+					if (GetScriptDiskPath(output, out) != 0)
+						fullPath = output;
+				}
+			}
+			return LoadFile(fullPath, bReload, L, bNoReturn);
+		}
+	}
+	if (!bHasScriptFileExtension)
+	{
+		// this is file module, we need to use search path
+		std::string fileFullPath = GetModuleFilePath(filepath, L);
+		if (fileFullPath != filepath)
+		{
+			return LoadFile(fileFullPath, bReload, L, bNoReturn);
+		}
+		else
+		{
+			// file module not found
+		}
+	}
+	return LoadFile(filepath, bReload, L, bNoReturn);
 }
 
 template <typename StringType>
@@ -676,11 +750,12 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& fil
 	CMarkProcessing is_processing_(&m_bIsProcessing);
 
 	int nSize = (int)filepath.size();
-	if (nSize > 5 && filepath[nSize - 3] != 'l' /* skip *.lua file */)
+	if (nSize > 5 && (filepath[nSize - 3] != 'l' && filepath[nSize - 3] != 'n') /* skip *.lua (npl) file */)
 	{
-		if (filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l')
+		if ((filepath[nSize - 3] == 'd' && filepath[nSize - 2] == 'l' && filepath[nSize - 1] == 'l') ||
+			(filepath[nSize - 3] == '.' && filepath[nSize - 2] == 's' && filepath[nSize - 1] == 'o'))
 		{
-			// for *.dll plug-in files
+			// for *.dll and *.so plug-in files
 			ParaEngine::DLLPlugInEntity* pPluginEntity = NULL;
 			DLL_Plugin_Map_Type::iterator iter = m_dll_plugins_map.find(filepath);
 			if (iter == m_dll_plugins_map.end())
@@ -724,7 +799,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateFile_any(const StringType& fil
 			auto iter = m_act_files_cpp.find(filepath);
 			if (iter != m_act_files_cpp.end())
 			{
-				if (iter->second){
+				if (iter->second) {
 					CCurrentMessage  push_msg(this, code, nLength);
 					return iter->second->OnActivate(GetNPLStateInterface());
 				}
@@ -740,7 +815,7 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string & filepath
 	msg->m_filename = filepath;
 	if (code != 0)
 	{
-		if (nLength>0)
+		if (nLength > 0)
 		{
 			msg->m_code.clear();
 			msg->m_code.append(code, nLength);
@@ -757,13 +832,13 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string & filepath
 NPL::NPLReturnCode NPL::CNPLRuntimeState::ActivateLocal(const char* filepath, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 {
 	NPLMessage_ptr msg(new NPLMessage());
-	if (filepath != 0){
+	if (filepath != 0) {
 		msg->m_filename = filepath;
 	}
 
 	if (code != 0)
 	{
-		if (nLength>0)
+		if (nLength > 0)
 		{
 			msg->m_code.clear();
 			msg->m_code.append(code, nLength);
@@ -830,7 +905,7 @@ int NPL::CNPLRuntimeState::GetTimerCount()
 
 bool NPL::CNPLRuntimeState::SetTimer(int nIDEvent, float fElapse, const char* sNeuronFile)
 {
-	if (nIDEvent>0 && sNeuronFile != NULL)
+	if (nIDEvent > 0 && sNeuronFile != NULL)
 	{
 		string sFileName, sCode;
 		NPLHelper::DevideString(sNeuronFile, sFileName, sCode);
@@ -844,7 +919,7 @@ bool NPL::CNPLRuntimeState::SetTimer(int nIDEvent, float fElapse, const char* sN
 bool NPL::CNPLRuntimeState::KillTimer(int nIDEvent)
 {
 	ParaEngine::Lock lock(m_mutex);
-	if (nIDEvent>0)
+	if (nIDEvent > 0)
 	{
 		m_activeTimers.erase(nIDEvent);
 		return true;
@@ -859,7 +934,7 @@ bool NPL::CNPLRuntimeState::KillTimer(int nIDEvent)
 
 bool NPL::CNPLRuntimeState::ChangeTimer(int nIDEvent, int dueTime, int period)
 {
-	if (nIDEvent>0)
+	if (nIDEvent > 0)
 	{
 		ParaEngine::Lock lock(m_mutex);
 		NPLTimer_Pool_Type::iterator it = m_activeTimers.find(nIDEvent);
@@ -886,7 +961,7 @@ int NPL::CNPLRuntimeState::TickTimers(DWORD nTickCount)
 	}
 
 	int nCount = (int)(m_temp_timer_pool.size());
-	if (nCount>0)
+	if (nCount > 0)
 	{
 		NPLTimer_TempPool_Type::iterator itCur, itEnd = m_temp_timer_pool.end();
 		for (itCur = m_temp_timer_pool.begin(); itCur != itEnd; ++itCur)
@@ -948,7 +1023,7 @@ int NPL::CNPLRuntimeState::GetMsgQueueSize()
 
 void NPL::CNPLRuntimeState::SetMsgQueueSize(int nSize /*= 500*/)
 {
-	if (nSize>0)
+	if (nSize > 0)
 	{
 		m_input_queue.set_capacity(nSize);
 	}
@@ -962,7 +1037,7 @@ void NPL::CNPLRuntimeState::RegisterFile(const char* sFilename_, INPLActivationF
 	{
 		if (iter->second == pFileHandler)
 			return;
-		else{
+		else {
 			SAFE_RELEASE(iter->second);
 			m_act_files_cpp.erase(iter);
 		}
@@ -983,7 +1058,7 @@ const std::string& NPL::CNPLRuntimeState::GetIdentifier()
 void NPL::CNPLRuntimeState::call(const char * sNPLFilename, const char* sCode, int nCodeLength /*= 0*/)
 {
 	NPL::NPLFileName filename(sNPLFilename);
-	LoadFile_any(filename.sRelativePath, false);
+	LoadFile_any(filename.sRelativePath, false, 0, true);
 	ActivateFile_any(filename.sRelativePath, sCode, nCodeLength);
 }
 
@@ -1015,6 +1090,7 @@ int NPL::CNPLRuntimeState::InstallFields(ParaEngine::CAttributeClass* pClass, bo
 	pClass->AddField("HasDebugHook", FieldType_Bool, (void*)0, (void*)HasDebugHook_s, NULL, NULL, bOverride);
 	pClass->AddField("IsPreemptive", FieldType_Bool, (void*)0, (void*)IsPreemptive_s, NULL, NULL, bOverride);
 	pClass->AddField("PauseAllPreemptiveFunction", FieldType_Bool, (void*)PauseAllPreemptiveFunction_s, (void*)IsAllPreemptiveFunctionPaused_s, NULL, NULL, bOverride);
+	pClass->AddField("filename", FieldType_String, (void*)0, (void*)GetFileName_s, NULL, NULL, bOverride);
 	return S_OK;
 }
 

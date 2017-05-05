@@ -68,7 +68,8 @@ IndirectServerAddress=http://patch.paraengine.com/assets/
 using namespace ParaEngine;
 
 /** default resource queue size */
-#define DEFAULT_RESOURCE_QUEUE_SIZE		500
+#define DEFAULT_RESOURCE_QUEUE_SIZE		1000
+#define MAX_RESOURCE_QUEUE_SIZE		100000
 
 #ifdef PARAENGINE_CLIENT
 #define DEFAULT_LOCAL_THREAD_COUNT		1
@@ -186,6 +187,16 @@ CResourceRequestQueue::CResourceRequestQueue(int capacity)
 
 CResourceRequestQueue::~CResourceRequestQueue()
 {
+}
+
+CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequest_ptr& item)
+{
+	if (full())
+	{
+		if (capacity() < MAX_RESOURCE_QUEUE_SIZE)
+			set_capacity((std::min)((int)capacity() + DEFAULT_RESOURCE_QUEUE_SIZE, MAX_RESOURCE_QUEUE_SIZE));
+	}
+	return concurrent_ptr_queue<ResourceRequest_ptr>::try_push(item);
 }
 
 ///////////////////////////////////////////////////////
@@ -532,7 +543,7 @@ int CAsyncLoader::FileIOThreadProc()
 			// Add it to the ProcessQueue
 			if(m_ProcessQueues[ResourceRequest->m_nProcessorQueueID].try_push( ResourceRequest ) == CResourceRequestQueue::BufferOverFlow)
 			{
-				ASSETS_LOG("ERROR: IO msg(to proc) failed push to queue for %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+				OUTPUT_LOG("ERROR: AsyncLoader IO msg(to proc) failed push to m_ProcessQueues because queue is full\n");
 			}
 		}
 
@@ -568,7 +579,7 @@ int CAsyncLoader::FileIOThreadProc()
 			ResourceRequest->m_bLock = false;
 			if(m_RenderThreadQueue.try_push( ResourceRequest ) == m_RenderThreadQueue.BufferOverFlow)
 			{
-				ASSETS_LOG("ERROR: IO msg(COPY) failed push to queue for %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+				OUTPUT_LOG("ERROR: AsyncLoader IO msg(COPY) failed push to m_RenderThreadQueue because queue is full\n");
 			}
 		}
 	}
@@ -650,7 +661,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 		ResourceRequest->m_bLock = true;
 		if(m_RenderThreadQueue.try_push( ResourceRequest ) == m_RenderThreadQueue.BufferOverFlow)
 		{
-			ASSETS_LOG("ERROR: process msg failed push to queue for %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+			OUTPUT_LOG("ERROR: AsyncLoader process msg failed push to m_RenderThreadQueue because queue is full \n");
 		}
 	}
 	return 0;
@@ -777,7 +788,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItems( int CurrentNumResourcesTo
 			ResourceRequest->m_bCopy = true;
 			if(m_IOQueue.try_push( ResourceRequest ) == m_IOQueue.BufferOverFlow)
 			{
-				ASSETS_LOG("ERROR: render msg(lock) failed push to queue for %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+				OUTPUT_LOG("ERROR: AsyncLoader render msg(lock) failed push to m_IOQueue because queue is full\n");
 			}
 		}
 		else

@@ -3,7 +3,7 @@
 // Authors:	LiXizhi
 // Emails:	lixizhi@yeah.net
 // Date: 2014.9.11
-// Desc: 
+// Desc:
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifndef USE_DIRECTX_RENDERER
@@ -25,7 +25,7 @@ using namespace ParaEngine;
 /** define this to draw only one triangle in each draw calls to find program bottleneck. If defined, but FPS is still low, it is CPU-GPU bus bottleneck, just reduce draw call count. */
 // #define DEBUG_DRAW_CALL_SINGLE_TRIANGLE
 
-/** define this will enable error check in debug mode. yet breaks parallelism between CPU and GPU. 
+/** define this will enable error check in debug mode. yet breaks parallelism between CPU and GPU.
 you may notice a significant drop of FPS when issuing many draw calls, such as 500-1000 calls. */
 // #define ALLOW_RENDER_ERROR_CHECK
 
@@ -84,6 +84,8 @@ RenderDevice* RenderDevice::GetInstance()
 HRESULT RenderDevice::DrawPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
 {
 	ApplyBlendingModeChange();
+
+
 	// NOT tested code!!!!
 	if (PrimitiveType == D3DPT_TRIANGLELIST)
 		glDrawArrays(GL_TRIANGLES, StartVertex, PrimitiveCount * 3);
@@ -91,6 +93,10 @@ HRESULT RenderDevice::DrawPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsT
 		glDrawArrays(GL_TRIANGLE_STRIP, StartVertex, PrimitiveCount + 2);
 	else if (PrimitiveType == D3DPT_TRIANGLEFAN)
 		glDrawArrays(GL_TRIANGLE_FAN, StartVertex, PrimitiveCount + 2);
+
+
+
+
 	PE_CHECK_GL_ERROR_DEBUG();
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
 	return S_OK;
@@ -112,7 +118,7 @@ HRESULT RenderDevice::DrawPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatistic
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, PrimitiveCount + 2);
 	else if (PrimitiveType == D3DPT_TRIANGLEFAN)
 		glDrawArrays(GL_TRIANGLE_FAN, 0, PrimitiveCount + 2);
-	
+
 	PE_CHECK_GL_ERROR_DEBUG();
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
 	return S_OK;
@@ -147,8 +153,8 @@ HRESULT RenderDevice::DrawIndexedPrimitive(RenderDevicePtr pd3dDevice, int nStat
 		else if (PrimitiveType == D3DPT_TRIANGLEFAN)
 			glDrawElementsBaseVertex(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart), BaseVertexIndex);
 #else
-		// OpenGL ES2.0 Fix: glDrawElementsBaseVertex not supported in opengl es. 
-		// inform the developer to avoid using vertex offset, instead one should only use index offset. 
+		// OpenGL ES2.0 Fix: glDrawElementsBaseVertex not supported in opengl es.
+		// inform the developer to avoid using vertex offset, instead one should only use index offset.
 		OUTPUT_LOG("error: glDrawElementsBaseVertex not supported in opengl es.");
 		PE_ASSERT(false);
 #endif
@@ -187,7 +193,8 @@ HRESULT RenderDevice::SetClipPlane(DWORD Index, const float* pPlane)
 }
 HRESULT RenderDevice::SetTexture(DWORD Stage, DeviceTexturePtr_type pTexture)
 {
-#ifdef PARAENGINE_MOBILE
+//#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 	GL::bindTexture2DN(Stage, pTexture);
 #endif
 	return S_OK;
@@ -227,11 +234,11 @@ HRESULT RenderDevice::SetIndices(IndexBufferDevicePtr_type pIndexData)
 	if (pIndexData != s_currentIndexBuffer)
 	{
 		s_currentIndexBuffer = pIndexData;
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
 		PE_CHECK_GL_ERROR_DEBUG();
 #endif
-	
+
 	}
 	return S_OK;
 }
@@ -241,7 +248,7 @@ HRESULT RenderDevice::SetStreamSource(UINT StreamNumber, VertexBufferDevicePtr_t
 	if (pStreamData != s_currentVertexBuffer)
 	{
 		s_currentVertexBuffer = pStreamData;
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
 		PE_CHECK_GL_ERROR_DEBUG();
 		if (pStreamData && s_currentVertexDeclaration)
@@ -259,13 +266,13 @@ HRESULT ParaEngine::RenderDevice::SetVertexDeclaration(VertexDeclarationPtr pDec
 {
 	if (pDecl != 0)
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 		GL::bindVAO(0);
 #endif
-		// TODO: we should use VAO for vertex declaration. 
+		// TODO: we should use VAO for vertex declaration.
 		pDecl->EnableAttribute();
 		pDecl->ApplyAttribute();
-	
+
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 	s_currentVertexDeclaration = pDecl;
@@ -309,8 +316,8 @@ HRESULT ParaEngine::RenderDevice::Clear(DWORD Count, const void* pRects, DWORD F
 		glClearStencil(Stencil);
 		fields |= GL_STENCIL_BUFFER_BIT;
 	}
-	PE_CHECK_GL_ERROR_DEBUG(); 
-	
+	PE_CHECK_GL_ERROR_DEBUG();
+
 	if (IsUsingRenderTarget())
 	{
 		if ((Flags & D3DCLEAR_ZBUFFER) != 0)
@@ -319,7 +326,7 @@ HRESULT ParaEngine::RenderDevice::Clear(DWORD Count, const void* pRects, DWORD F
 	}
 	else
 	{
-		// this is done by cocos at the beginning of each tick, we just set default values. 
+		// this is done by cocos at the beginning of each tick, we just set default values.
 		// glClear(fields);
 		if (Flags == D3DCLEAR_STENCIL)
 			glClear(GL_STENCIL_BUFFER_BIT);
@@ -394,7 +401,7 @@ void ParaEngine::RenderDevice::GetScreenSize(int &nScreenWidth, int &nScreenHeig
 	}
 	else
 	{
-		// back buffer size. 
+		// back buffer size.
 		CGlobals::GetApp()->GetWindowCreationSize(&nScreenWidth, &nScreenHeight);
 	}
 }
@@ -496,7 +503,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 			glEnable(GL_DEPTH_TEST);
 		else
 			glDisable(GL_DEPTH_TEST);
-		
+
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
@@ -594,7 +601,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 				s_bAlphaBlendingChanged = true;
 			}
 		}
-		// blending mode is delayed until the next draw call. 
+		// blending mode is delayed until the next draw call.
 		// ApplyBlendingModeChange();
 		break;
 	}
@@ -671,7 +678,7 @@ void ParaEngine::RenderDevice::ApplyBlendingModeChange()
 			if (s_bEnableSeparateAlphaBlending)
 			{
 				glEnable(GL_BLEND);
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 				glBlendFuncSeparate(s_blendingSource, s_blendingDest, s_blendingAlphaSource, s_blendingAlphaDest);
 #endif
 			}
@@ -699,7 +706,7 @@ void ParaEngine::RenderDevice::ApplyBlendingModeChange()
 
 bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, DWORD nDataFormat, DWORD nDataType)
 {
-	// needs to invert Y, since opengl use upward Y. 
+	// needs to invert Y, since opengl use upward Y.
 	ParaViewport viewport;
 	CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
 	glReadPixels(nLeft, viewport.Height-nTop, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));

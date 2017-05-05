@@ -1,5 +1,5 @@
 #pragma once
-#include <set>
+#include <map>
 #include "NPLCommon.h"
 
 namespace NPL
@@ -117,9 +117,11 @@ namespace ParaScripting
 		* @param filePath: the local NPL script file path
 		* @param bReload: if true, the file will be reloaded even if it is already loaded.
 		*    otherwise, the file will only be loaded if it is not loaded yet. 
+		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one. 
+		* @param bNoReturn: generate no return on lua_state's stack.
 		* @return: return the GliaFile reference.
 		*/
-		bool LoadFile(const string& filePath, bool bReload);
+		bool LoadFile(const string& filePath, bool bReload, lua_State* L = 0, bool bNoReturn = false);
 
 		/** do string in the current state. This function is usually called from the scripting interface.
 		* @param sCode: the string to executed. 
@@ -148,9 +150,14 @@ namespace ParaScripting
 
 		/** get pointer to NPLRuntimeState from the lua state object. it just retrieves from a secret lua_status variable. */
 		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaObject(const object& obj);
+		static NPL::NPLRuntimeState_ptr GetRuntimeStateFromLuaState(lua_State* L);
 
 		/** get current file name which is being processed now.*/
 		const string& GetFileName();
+		/** get current file that is being loaded or where the current code is defined. 
+		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one.
+		*/
+		const char* GetCurrentFileName(lua_State* L = 0);
 
 		/**
 		* load or restore the runtime state
@@ -162,6 +169,9 @@ namespace ParaScripting
 		/** if true, we will delete the luastate when this class is destroyed. This function should rarely be called. 
 		*/
 		void SetOwnLuaState(bool bOwn);
+
+		/** set/get exported file module. */
+		int NPL_export(lua_State* L = 0);
 	protected:
 
 		/** destroy the runtime state
@@ -176,10 +186,29 @@ namespace ParaScripting
 		void SetRuntimeState(NPL::NPLRuntimeState_ptr runtime_state);
 
 		/**
-		Process return result after calling a function or loading a file in Lua.
-		@param nResult: return result returned by luaL_loadbuffer() or lua_pcall().
+		* Process return result after calling a function or loading a file in Lua.
+		* @param nResult: return result returned by luaL_loadbuffer() or lua_pcall().
+		* @param L: just in case the NPL.load is called from a different coroutine thread, which is different lua_state(stack) than the default one.
 		*/
-		void ProcessResult(int nResult);
+		void ProcessResult(int nResult, lua_State* L = 0);
+
+		/** save nResult objects on stack to file modules 
+		* @return the number of new result pushed on stack. usually 1 or 0
+		*/
+		int CacheFileModule(const std::string& filename, int nResult, lua_State* L = 0);
+
+		/** pop file module to stack for a given file. Return true, if file is loaded before or false if not. 
+		* @return the number of result pushed on stack. usually 1 or 0
+		*/
+		int PopFileModule(const std::string& filename, lua_State* L = 0);
+
+		/** get module file path by module name */
+		std::string GetModuleFilePath(const std::string& modulename, lua_State* L = 0);
+
+		/** wrapping the m_loaded_files
+		*/
+		int GetFileLoadStatus(const string& filepath);
+		void SetFileLoadStatus(const string& filepath, int nStatus);
 
 	private:
 		/** construct this to ensure matching calls to push and pop file name. */
@@ -234,13 +263,15 @@ namespace ParaScripting
 			void* m_mspace;
 		};
 
-		/** all loaded files */
-		std::set <string> m_loaded_files;
+		/** all loaded files mapping from filename to number of cached objects. 
+		* If -1, it means that file is being loaded or something went wrong. 0 means no cached object.  
+		*/
+		std::map <std::string, int32> m_loaded_files;
 
 		/** a stack of files being loaded. */
-		std::stack <string> m_stack_current_file;
+		std::stack <std::string> m_stack_current_file;
 
 		/* currently only a single search path is supported. */
-		static string m_searchpath;
+		static std::string m_searchpath;
 	};
 }

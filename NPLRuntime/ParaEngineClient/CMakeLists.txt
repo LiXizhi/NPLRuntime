@@ -12,7 +12,12 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	set(PARAENGINE_COMPILE_LIB    false)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
@@ -70,7 +75,10 @@ else()
 	if(APPLE)
 		find_package(GLUT REQUIRED)
 		include_directories(${GLUT_INCLUDE_DIR})
-		set(CMAKE_CXX_FLAGS "-g -Wall")
+
+		# set(CMAKE_CXX_FLAGS "-g -Wall")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+
 	else()
 	endif()
 
@@ -268,6 +276,11 @@ if(APPLE)
 
 
 
+    file (GLOB ParaEngineClient_Platform_m_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.m)
+	SOURCE_GROUP("Platform_m" FILES ${ParaEngineClient_Platform_m_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_m_FILES})
+
+
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
@@ -299,6 +312,26 @@ if(APPLE)
 	)
 
 endif(APPLE)
+
+#######################################
+# PCH: precompiled header under msvc
+if (MSVC)
+	set_source_files_properties(${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx
+		PROPERTIES
+		COMPILE_FLAGS "/YcParaEngine.h"
+		)
+	foreach( src_file ${ParaEngineClient_SRCS} )
+		if(${src_file} MATCHES "cpp")
+			set_source_files_properties(
+				${src_file}
+				PROPERTIES
+				COMPILE_FLAGS "/YuParaEngine.h"
+				)
+		endif(${src_file} MATCHES "cpp")
+	endforeach( src_file ${ParaEngineClient_SRCS} )
+	
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx)
+endif (MSVC)
 
 ##############################
 # add the binary tree to the search path for include files
@@ -463,6 +496,11 @@ if (WIN32)
   )
 else (WIN32)
 	if(APPLE)
+
+
+        # for luajit & mac
+        SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+
 
 		set(EXTRA_LIBRARIES
 				dl

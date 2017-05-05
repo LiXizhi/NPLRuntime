@@ -1,0 +1,92 @@
+version: 1.0.{build}
+clone_folder: c:\projects\nplruntime
+environment:
+  matrix:
+  - solution_name: c:\projects\nplruntime\bin\client_32bit\CLIENT.sln
+    installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
+    zip_name: NPLRuntime_32bit.zip
+    zip_path: C:\projects\nplruntime\ParaWorld\bin32
+    exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
+  - solution_name: c:\projects\nplruntime\bin\client_64bit\CLIENT.sln
+    installer_name: C:\projects\nplruntime\installer\nplruntime_x64.nsi
+    zip_name: NPLRuntime_64bit.zip
+    zip_path: C:\projects\nplruntime\ParaWorld\bin64
+    exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+install:
+- cmd: >-
+    git submodule init
+
+    git submodule update
+
+    del C:\projects\nplruntime\npl_packages\main\* /q
+
+    rmdir "C:/Program Files/MySQL" /s /q
+
+    rmdir "C:/Program Files/PostgreSQL" /s /q
+
+    appveyor DownloadFile https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.zip/download -FileName "C:\projects\nplruntime\Server\trunk\boost.zip"
+
+    7z x C:\projects\nplruntime\Server\trunk\boost.zip -oC:\projects\nplruntime\Server\trunk\
+
+    cd C:\projects\nplruntime\Server\trunk\boost_1_61_0\
+
+    bootstrap.bat
+
+    b2 runtime-link=static --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+
+    cd stage
+
+    rename lib lib32
+
+    cd ..
+
+    b2 runtime-link=static address-model=64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+
+    cd stage
+
+    rename lib lib64
+
+    cd C:\projects\nplruntime
+
+    mkdir bin\client_32bit
+
+    cd bin\client_32bit
+
+    cmake ../../Client
+
+    dir .
+
+    cd ..\..
+
+    mkdir bin\client_64bit
+
+    cd bin\client_64bit
+
+    cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
+build_script:
+- cmd: >-
+    msbuild  %solution_name% /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+
+    7z a %zip_name% %zip_path%
+
+    "C:/Program Files (x86)/NSIS/makensis" %installer_name%
+test: off
+artifacts:
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
+  name: execute_32
+- path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+  name: execute_64
+- path: NPLRuntime_32bit.zip
+  name: binary_32
+- path: NPLRuntime_64bit.zip
+  name: binary_64
+deploy:
+- provider: GitHub
+  tag: v1.0-alpha.10
+  release: v1.0-alpha.10(Windows)
+  auth_token:
+    secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
+  artifact: execute_32, binary_32, execute_64, binary_64
+  prerelease: true
+on_finish:
+- cmd: 

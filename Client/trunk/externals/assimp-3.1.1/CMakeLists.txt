@@ -92,8 +92,9 @@ SET ( ASSIMP_NO_EXPORT OFF CACHE BOOL
 
 # Search for external dependencies, and build them from source if not found
 # Search for zlib
-find_package(ZLIB)
-INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
+if (ZLIB_FOUND)
+	INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
+endif (ZLIB_FOUND)
 ADD_DEFINITIONS( -DASSIMP_BUILD_NO_OWN_ZLIB)
 
 # Search for unzip

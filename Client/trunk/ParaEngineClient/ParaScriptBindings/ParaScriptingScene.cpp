@@ -331,6 +331,7 @@ void ParaObject::LoadPhysics()
 {
 	if(IsValid())
 	{
+		m_pObj->SetAlwaysLoadPhysics(true);
 		m_pObj->LoadPhysics();
 	}
 }
@@ -2967,7 +2968,7 @@ void ParaMiniSceneGraph::Draw( float fDeltaTime )
 {
 	if(IsValid())
 	{
-		if( SUCCEEDED( CGlobals::GetRenderDevice()->BeginScene() ) )
+		if(CGlobals::GetRenderDevice() && SUCCEEDED( CGlobals::GetRenderDevice()->BeginScene() ) )
 		{
 			m_pSceneGraph->Draw(fDeltaTime);
 

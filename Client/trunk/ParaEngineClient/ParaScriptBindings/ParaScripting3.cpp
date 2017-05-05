@@ -255,6 +255,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				def("LoadStaticMesh", &ParaAsset::LoadStaticMesh),
 				def("LoadTexture", &ParaAsset::LoadTexture),
 				def("LoadRenderTarget", &ParaAsset::LoadRenderTarget),
+				def("LoadPickingBuffer", &ParaAsset::LoadPickingBuffer),
 				def("LoadSpriteFrame", &ParaAsset::LoadSpriteFrame),
 				def("LoadFont", &ParaAsset::LoadFont),
 				def("LoadImageFont", &ParaAsset::LoadImageFont),
@@ -273,10 +274,26 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 
 }
 
+
+int NPL_export_capi(lua_State *L){
+	return ParaScripting::CNPL::export_(L);
+}
+
+int NPL_filename_capi(lua_State *L){
+	const char* filename = ParaScripting::CNPL::GetFileName(L);
+	if (filename != 0)
+	{
+		lua_pushlstring(L, filename, strlen(filename));
+		return 1;
+	}
+	return 0;
+}
+
 void CNPLScriptingState::LoadHAPI_NPL()
 {
 	using namespace luabind;
 	lua_State* L = GetLuaState();
+
 	module(L)
 		[
 			//		def("_ALERT", (void (*) (const object& ))&NPL_Alert),
@@ -297,6 +314,8 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				.def("GetMsgQueueSize", &ParaNPLRuntimeState::GetMsgQueueSize)
 				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage)
 				.def("WaitForMessage", &ParaNPLRuntimeState::WaitForMessage2)
+				.def("GetField", &ParaNPLRuntimeState::GetField)
+				.def("SetField", &ParaNPLRuntimeState::SetField)
 				.def("PeekMessage", &ParaNPLRuntimeState::PeekMessage)
 				.def("PopMessageAt", &ParaNPLRuntimeState::PopMessageAt)
 				.def("GetStats", &ParaNPLRuntimeState::GetStats),
@@ -307,7 +326,6 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("activate", &CNPL::activate5),
 				def("activate", &CNPL::activate1),
 				def("call",&CNPL::call),
-				def("GetFileName",&CNPL::GetFileName),
 				def("load", &CNPL::load1),
 				def("load", &CNPL::load),
 				def("StartNetServer", &CNPL::StartNetServer),
@@ -370,6 +388,26 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("this", &CNPL::this_)
 			]
 		];
+
+	{
+		// register a number of NPL C API. 
+		lua_pushlstring(L, "NPL", 3);
+		lua_rawget(L, LUA_GLOBALSINDEX);
+		if (lua_istable(L, -1))
+		{
+			// NPL.export function
+			lua_pushlstring(L, "export", 6);
+			lua_pushcfunction(L, NPL_export_capi);
+			lua_rawset(L, -3);
+			// NPL.filename function
+			lua_pushlstring(L, "filename", 8);
+			lua_pushcfunction(L, NPL_filename_capi);
+			lua_rawset(L, -3);
+
+			lua_pop(L, 1);
+		}
+	}
+
 #ifdef PARAENGINE_CLIENT
 	module(L)
 		[

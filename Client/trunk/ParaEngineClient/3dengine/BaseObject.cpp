@@ -36,7 +36,7 @@ int ParaEngine::CBaseObject::g_nObjectSelectionEffect = ParaEngine::RenderSelect
 //-------------------------------------------------------------------
 CBaseObject::CBaseObject()
 	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false),
-m_dwAttribute(0),m_pEffectParamBlock(NULL), m_nFrameNumber(0),m_nID(0),m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f)
+	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f)
 {
 }
 //-----------------------------------------------------------------------------
@@ -756,6 +756,11 @@ void ParaEngine::CBaseObject::EnablePhysics(bool bEnable)
 
 }
 
+void ParaEngine::CBaseObject::SetAlwaysLoadPhysics(bool bEnable)
+{
+	EnablePhysics(bEnable);
+}
+
 bool ParaEngine::CBaseObject::IsPhysicsEnabled()
 {
 	return false;
@@ -764,6 +769,11 @@ bool ParaEngine::CBaseObject::IsPhysicsEnabled()
 bool ParaEngine::CBaseObject::ViewTouch()
 {
 	return true;
+}
+
+void ParaEngine::CBaseObject::SetRenderOrder(float val)
+{
+	m_fRenderOrder = val;
 }
 
 void ParaEngine::CBaseObject::SetRenderDistance( float fDist )
@@ -995,6 +1005,52 @@ void ParaEngine::CBaseObject::GetLocalTransform(Matrix4* localTransform)
 	}
 }
 
+int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3>& output, int nOption)
+{
+	output.clear();
+	auto pAsset = GetPrimaryAsset();
+	if (pAsset && pAsset->IsValid())
+	{
+		pAsset->LoadAsset();
+		if (pAsset->GetType() == AssetEntity::parax)
+		{
+			ParaXEntity* pParaXEntity = (ParaXEntity*)pAsset;
+			CParaXModel* pModel = pParaXEntity->GetModel();
+			if (pModel)
+			{
+				int nPass = (int)pModel->passes.size();
+				auto origVertices = pModel->m_origVertices;
+				auto indices = pModel->m_indices;
+				for (auto& p : pModel->passes)
+				{
+					if (p.indexCount > 0)
+					{
+						int nIndexOffset = p.GetStartIndex();
+						int numFaces = p.indexCount / 3;
+						if(output.capacity() < (output.size() + p.indexCount))
+							output.reserve(output.size() + p.indexCount);
+						for (int i= 0; i< numFaces; ++i)
+						{
+							int nVB = 3 * i;
+							for (int k = 0; k < 3; ++k)
+							{
+								auto a = indices[nIndexOffset + nVB + k];
+								auto vert = origVertices[a];
+								output.push_back(vert.pos);
+							}
+						}
+					}
+				}
+			}
+		}
+		else if (pAsset->GetType() == AssetEntity::mesh)
+		{
+
+		}
+	}
+	return (int)(output.size() / 3);
+}
+
 void ParaEngine::CBaseObject::UpdateGeometry()
 {
 	SetGeometryDirty(false);
@@ -1080,6 +1136,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnablePhysics", FieldType_Bool, (void*)EnablePhysics_s, (void*)IsPhysicsEnabled_s, NULL, "", bOverride);
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
+	pClass->AddField("RenderOrder", FieldType_Float, (void*)SetRenderOrder_s, (void*)GetRenderOrder_s, NULL, "", bOverride);
 	pClass->AddField("RenderImportance", FieldType_Int, (void*)SetRenderImportance_s, (void*)GetRenderImportance_s, NULL, "", bOverride);
 	pClass->AddField("RenderDistance", FieldType_Float, (void*)SetRenderDistance_s, (void*)GetRenderDistance_s, NULL, "", bOverride);
 	pClass->AddField("reset", FieldType_void, (void*)Reset_s, NULL, NULL, "reset object", bOverride);

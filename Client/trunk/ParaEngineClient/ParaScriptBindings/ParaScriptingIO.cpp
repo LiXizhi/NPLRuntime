@@ -11,7 +11,7 @@
 #include "FileUtils.h"
 #include "ZipArchive.h"
 #include "ZipWriter.h"
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	#include <tinyxml2.h>
 #else
 	#include <tinyxml.h>
@@ -1058,17 +1058,31 @@ namespace ParaScripting
 	{
 		if (IsValid())
 		{
-			const char* text = GetText2(0, -1).c_str();
+			const std::string& output = GetText2(0, -1);
+			const char* text = output.c_str();
 			if (text)
 			{
+				// https://en.wikipedia.org/wiki/Byte_order_mark
 				// encoding is escaped.
 				if ((((byte)text[0]) == 0xEF) && (((byte)text[1]) == 0xBB) && (((byte)text[2]) == 0xBF))
 				{
+					// UTF-8[t 1]	EF BB BF
 					text += 3;
 				}
 				else if ( ((((byte)text[0]) == 0xFF) && (((byte)text[1]) == 0xFE)) || ((((byte)text[0]) == 0xFE) && (((byte)text[1]) == 0xFF)))
 				{
+					// UTF - 16 (BigEndian)    FE FF
+					// UTF - 16 (LittleEndian) FF FE
 					text += 2;
+					std::u16string input;
+					input.resize((output.size() - 2) / 2);
+					memcpy((char*)(&(input[0])), text, input.size() * 2);
+					
+					m_sTempBuffer.clear();
+					if (StringHelper::UTF16ToUTF8(input, m_sTempBuffer))
+					{
+						return m_sTempBuffer.c_str();
+					}
 				}
 			}
 			return text;
@@ -1095,7 +1109,33 @@ namespace ParaScripting
 		return m_sTempBuffer;
 	}
 
-	void ParaFileObject::write( const char* buffer, int nSize )
+	const std::string& ParaFileObject::ReadString(int nCount)
+	{
+		// this is now thread-safe and multiple instance can be used at the same time
+		m_sTempBuffer.clear();
+		if (IsValid())
+		{
+			int fromPos = (int)m_pFile->getPos();
+
+			int nSize = (int)m_pFile->getSize();
+			if (nCount < 0)
+				nCount = nSize - fromPos;
+			if (nCount > 0)
+			{
+				m_sTempBuffer.resize(nCount);
+				memcpy((char*)(&(m_sTempBuffer[0])), m_pFile->getBuffer() + fromPos, nCount);
+				m_pFile->seekRelative(nCount);
+			}
+		}
+		return m_sTempBuffer;
+	}
+
+	void ParaFileObject::WriteString2(const char* buffer, int nSize)
+	{
+		return write(buffer, nSize);
+	}
+
+	void ParaFileObject::write(const char* buffer, int nSize)
 	{
 		if(IsValid())
 		{
@@ -1119,7 +1159,16 @@ namespace ParaScripting
 		}
 	}
 
-	void ParaFileObject::SetFilePointer( int lDistanceToMove,int dwMoveMethod )
+	int ParaFileObject::getpos()
+	{
+		if (IsValid())
+		{
+			return m_pFile->getPos();
+		}
+		return 0;
+	}
+
+	void ParaFileObject::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 	{
 		if(IsValid())
 		{
@@ -1203,18 +1252,107 @@ namespace ParaScripting
 		}
 		return 0.f;
 	}
+
+	void ParaFileObject::WriteWord(int value)
+	{
+		if (IsValid())
+		{
+			if (value >= 0)
+			{
+				uint16 data_ = value;
+				m_pFile->write(&data_, 2);
+			}
+			else
+			{
+				int16 data_ = (int16)value;
+				m_pFile->write(&data_, 2);
+			}
+		}
+	}
+
+	int ParaFileObject::ReadWord()
+	{
+		if (IsValid())
+		{
+			uint16 data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteDouble(double data)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&data, 8);
+		}
+	}
+
+	double ParaFileObject::ReadDouble()
+	{
+		if (IsValid())
+		{
+			double data;
+			m_pFile->read(&data, 8);
+			return data;
+		}
+		return 0;
+	}
+
 	void ParaFileObject::WriteInt(int data)
 	{
 		if(IsValid())
 		{
-			m_pFile->write(&data, 4);
+			int32 data_ = (int32)data;
+			m_pFile->write(&data_, 4);
 		}
 	}
 	int ParaFileObject::ReadInt()
 	{
 		if(IsValid())
 		{
-			int data;
+			int32 data;
+			m_pFile->read(&data, 4);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteShort(int value)
+	{
+		if (IsValid())
+		{
+			int16 data_ = (int16)value;
+			m_pFile->write(&data_, 2);
+		}
+	}
+
+	int ParaFileObject::ReadShort()
+	{
+		if (IsValid())
+		{
+			int16 data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteUInt(unsigned int value)
+	{
+		if (IsValid())
+		{
+			uint32 data_ = (uint32)value;
+			m_pFile->write(&data_, 4);
+		}
+	}
+
+	unsigned int ParaFileObject::ReadUInt()
+	{
+		if (IsValid())
+		{
+			uint32 data;
 			m_pFile->read(&data, 4);
 			return data;
 		}
@@ -1365,7 +1503,7 @@ namespace ParaScripting
 
 	comments and other definitions are ignored
 	*/
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 	void ParaXML::LuaXML_ParseNode(lua_State *L, void* pNode_)
 	{
 		if (!pNode_) return;
@@ -1602,7 +1740,7 @@ namespace ParaScripting
 					sCode.resize((int)file.getSize());
 					memcpy(&(sCode[0]), file.getBuffer(), (int)file.getSize());
 				}
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 				namespace TXML = tinyxml2;
 				TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
 				doc.Parse(sCode.c_str(), (int)sCode.size());
@@ -1633,7 +1771,7 @@ namespace ParaScripting
 		int nResult = 0;
 		try
 		{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 			namespace TXML = tinyxml2;
 			TXML::XMLDocument doc(true, IsWhiteSpaceCondensed() ? TXML::COLLAPSE_WHITESPACE : TXML::PRESERVE_WHITESPACE);
 			// Note: LiXizhi: TinyXML2 will actually change the content of input string, so we can not pass sString directly to Parse() function.
@@ -1666,7 +1804,7 @@ namespace ParaScripting
 	static bool s_bIsWhiteSpaceCollapsed = true;
 	void ParaXML::SetCondenseWhiteSpace( bool condense )
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		s_bIsWhiteSpaceCollapsed = condense;
 #else
 		TiXmlBase::SetCondenseWhiteSpace(condense);
@@ -1675,7 +1813,7 @@ namespace ParaScripting
 
 	bool ParaXML::IsWhiteSpaceCondensed()
 	{
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_TINYXML2
 		return s_bIsWhiteSpaceCollapsed;
 #else
 		return TiXmlBase::IsWhiteSpaceCondensed();

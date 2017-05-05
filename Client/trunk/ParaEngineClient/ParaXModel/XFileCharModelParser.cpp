@@ -5,7 +5,7 @@
 // desc: 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
+
 #include "util/StringHelper.h"
 #include "ParaWorldAsset.h"
 #include "ParaXModel.h"
@@ -111,7 +111,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		if (m_pParaXRawData && (m_pParaXRawData->Lock(&dwSize, &pBuffer)))
 			m_pRaw = pBuffer + 4;
 
-		if (m_xheader.type == PARAX_MODEL_ANIMATED)
+		if (m_xheader.type == PARAX_MODEL_ANIMATED || m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(m_xheader);
 
@@ -561,8 +561,15 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 			xmesh.showGeosets[i] = true;
 
 		xmesh.geosets.resize(nGeosets);
-		if (nGeosets>0)
+		if (nGeosets > 0)
+		{
 			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
+			// disable vertex start for parax file, since we only support uint16 indices. 
+			for (int i = 1; i < nGeosets; ++i)
+			{
+				xmesh.geosets[i].SetVertexStart(0);
+			}
+		}
 	}
 	else
 		return false;
@@ -889,4 +896,3 @@ bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPt
 		return false;
 	return true;
 }
-#endif

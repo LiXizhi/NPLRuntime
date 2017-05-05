@@ -256,6 +256,17 @@ IAttributeFields* ParaEngine::CFileManager::GetChildAttributeObject(const std::s
 	return NULL;
 }
 
+PE_CORE_DECL CArchive* ParaEngine::CFileManager::GetArchive(const string& path)
+{
+	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+	for (CArchive* pArchive : m_archivers)
+	{
+		if (pArchive->IsArchive(path))
+			return pArchive;
+	}
+	return NULL;
+}
+
 int ParaEngine::CFileManager::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
 	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);

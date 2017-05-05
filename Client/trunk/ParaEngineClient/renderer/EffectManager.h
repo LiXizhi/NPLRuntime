@@ -292,6 +292,11 @@ namespace ParaEngine
 		/** enable the D3D device's blending state*/
 		void EnableD3DAlphaBlending(bool bEnable);
 
+		/** enable ztest */
+		void EnableZTest(bool bEnable, bool bForceSet = false);
+		/** return true, if the alpha testing have been disabled.*/
+		bool IsZTestEnabled();
+
 		/** set the culling mode of the current effect file or the fixed function pipeline. 
 		*@param dwCullMode: D3DCULL_NONE, D3DCULL_CW, D3DCULL_CCW
 		*/
@@ -398,6 +403,8 @@ namespace ParaEngine
 		bool m_bDisableD3DAlphaTesting;
 		/** whether zwrite should be disabled. so that any EnableZWrite call will not take effect. */
 		bool m_bDisableZWrite;
+		/** whether enable z test */
+		bool m_bZEnable;
 		/** whether using shadow map */
 		bool m_bUsingShadowMap;
 		/** whether full screen glow effect is used. */

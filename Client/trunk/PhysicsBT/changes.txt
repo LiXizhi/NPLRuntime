@@ -1,0 +1,8 @@
+Author: LiXizhi
+Company: ParaEngine.com
+Date: 2010.2.25
+
+TODO: replace Rigid body with btCollisionObject (which may be more light weighted)
+
+2010.2.25
+	- Initial version is implemented 

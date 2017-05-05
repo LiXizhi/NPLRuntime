@@ -75,8 +75,7 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 		OUTPUT_LOG("Absolute path is used for dll: %s\n", sDllName.c_str());
 	}
 #endif	
-
-	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL,
+	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 
 		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
 #else
 	if (sDllName.find(".") == string::npos)

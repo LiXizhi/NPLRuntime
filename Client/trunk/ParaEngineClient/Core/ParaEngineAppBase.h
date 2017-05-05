@@ -366,8 +366,9 @@ namespace ParaEngine
 		* it will first search the dev folder, then the current folder, and then the executable folder and all of its parent folders.
 		* Once the folder is found, it is added to the global search path.
 		* @param sFilePath: for example, "npl_packages/main/" is always loaded on start up.
+		* @param pOutMainFile: output of the actual folder name or a main loader file path in the main loader. 
 		*/
-		virtual bool LoadNPLPackage(const char* sFilePath);
+		virtual bool LoadNPLPackage(const char* sFilePath, std::string * pOutMainFile = NULL);
 
 		/** check if there is bootstrapper file specified at command line, if not it will use NPL code wiki admin app. 
 		*/
@@ -375,6 +376,11 @@ namespace ParaEngine
 
 		/** parse common command line parameters */
 		virtual bool InitCommandLineParams();
+
+
+		/** render the current frame and does not return until everything is presented to screen.
+		* this function is usually used to draw the animated loading screen. */
+		virtual bool ForceRender();
 	public:
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager() { return NULL; };

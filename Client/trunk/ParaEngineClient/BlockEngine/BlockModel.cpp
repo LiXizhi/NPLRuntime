@@ -157,6 +157,44 @@ namespace ParaEngine
 			m_Vertices[g_bkRT].SetTexcoord(0.5f,0.5f);
 			m_Vertices[g_bkRB].SetTexcoord(0.5f,1);
 		}
+		else if(texFaceNum == 4)
+		{
+			//top face
+			m_Vertices[g_topLB].SetTexcoord(0,0.5f);
+			m_Vertices[g_topLT].SetTexcoord(0,0);
+			m_Vertices[g_topRT].SetTexcoord(0.5f,0);
+			m_Vertices[g_topRB].SetTexcoord(0.5f,0.5f);
+
+			//front face
+			m_Vertices[g_frtLB].SetTexcoord(0,1);
+			m_Vertices[g_frtLT].SetTexcoord(0,0.5f);
+			m_Vertices[g_frtRT].SetTexcoord(0.5f,0.5f);
+			m_Vertices[g_frtRB].SetTexcoord(0.5f,1);
+
+			//bottom face
+			m_Vertices[g_btmLB].SetTexcoord(0.5f,0.5f);
+			m_Vertices[g_btmLT].SetTexcoord(0.5,0);
+			m_Vertices[g_btmRT].SetTexcoord(1,0);
+			m_Vertices[g_btmRB].SetTexcoord(1,0.5);
+
+			//left face
+			m_Vertices[g_leftLB].SetTexcoord(0.5f,1);
+			m_Vertices[g_leftLT].SetTexcoord(0.5f,0.5f);
+			m_Vertices[g_leftRT].SetTexcoord(1,0.5f);
+			m_Vertices[g_leftRB].SetTexcoord(1,1);
+
+			//right face
+			m_Vertices[g_rightLB].SetTexcoord(0.5f,1);
+			m_Vertices[g_rightLT].SetTexcoord(0.5f,0.5f);
+			m_Vertices[g_rightRT].SetTexcoord(1,0.5f);
+			m_Vertices[g_rightRB].SetTexcoord(1,1);
+
+			//back face
+			m_Vertices[g_bkLB].SetTexcoord(0,1);
+			m_Vertices[g_bkLT].SetTexcoord(0,0.5f);
+			m_Vertices[g_bkRT].SetTexcoord(0.5f,0.5f);
+			m_Vertices[g_bkRB].SetTexcoord(0.5f,1);
+		}
 		else if(texFaceNum == 6)
 		{
 			//top face
