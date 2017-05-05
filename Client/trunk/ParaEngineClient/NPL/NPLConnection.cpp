@@ -15,7 +15,10 @@
 #include "NPLMsgOut.h"
 
 #include "NPLConnection.h"
-
+#include "WebSocket/ByteBuffer.h"
+#include "WebSocket/WebSocketFrame.h"
+#include "json/json.h"
+#include "NPLHelper.h"
 /** @def if not defined, we expect all remote NPL runtime's public file list mapping to be identical 
 if defined, different NPL runtime can have different local map and file id map are established dynamically. 
 */
@@ -599,6 +602,11 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( const NPLFileName& file_nam
 		if(nLength<0)
 			nLength = strlen(code);
 		writer.Append(code, nLength);
+	}else if (file_name.sRelativePath == "websocket")
+	{
+		vector<byte> out_data;
+		NPL::WebSocket::WebSocketWriter::generate(m_websocket_writer, code, nLength, out_data);
+		writer.Append(string(out_data.begin(),out_data.end()));
 	}
 	else
 	{
@@ -702,13 +710,73 @@ void NPL::CNPLConnection::handleDisconnect( int reason )
 	snprintf(msg_reason, 255, "%d", reason);
 	m_msg_dispatcher.PostNetworkEvent(NPL_ConnectionDisconnected, GetNID().c_str(), msg_reason);
 }
+bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
+{
+	WebSocket::ByteBuffer b = WebSocket::WebSocketReader::load(&m_buffer, bytes_transferred);
+	if (m_websocket_reader.parse(b))
+	{
+		NPL::WebSocket::WebSocketFrame* frame = m_websocket_reader.getFrame();
+
+		vector<byte> data = frame->getData();
+		
+
+		NPL::WebSocket::OpCode opcode = (NPL::WebSocket::OpCode)frame->getOpCode();
+		switch (opcode)
+		{
+		case NPL::WebSocket::TEXT:
+		{
+			string code(data.begin(), data.end());
+
+			Json::Value root;
+			Json::Reader reader;
+			Json::FastWriter writer;
+			bool parsingSuccessful = reader.parse(code, root);     //parse process
+			if (!parsingSuccessful)
+			{
+				return false;
+			}
+			int server_id = root["s_id"].asInt();
+			Json::Value msg = root["msg"];
+			string msg_str = writer.write(msg);
+			m_input_msg.method = "A";
+			m_input_msg.m_n_filename = server_id;
+
+			string m_code;
+			NPL::NPLHelper::EncodeJsonStringInQuotation(m_code,0, msg_str);
+			m_input_msg.m_code = m_code;
+			handleMessageIn();
+			break;
+		}
+		case NPL::WebSocket::BINARY:
+			break;
+		case NPL::WebSocket::CLOSE:
+			stop();
+			break;
+		case NPL::WebSocket::PING:
+			break;
+		case NPL::WebSocket::PONG:
+			break;
+		default:
+			break;
+		}
+		return true;
+	}
+	return false;
+}
 
 bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 {
+	// first try to parse websocket protocol
+	if (handle_websocket_data(bytes_transferred))
+	{
+		return true;
+	}
+
 	boost::tribool result = true;
 	Buffer_Type::iterator curIt = m_buffer.begin(); 
 	Buffer_Type::iterator curEnd = m_buffer.begin() + bytes_transferred; 
 
+	// second parse npl protocol
 	while (curIt!=curEnd)
 	{
 		boost::tie(result, curIt) = m_parser.parse(m_input_msg, curIt, curEnd);
@@ -741,7 +809,6 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 		return true;
 	}
 }
-
 bool NPL::CNPLConnection::handleMessageIn()
 {
 	bool bRes = true;
