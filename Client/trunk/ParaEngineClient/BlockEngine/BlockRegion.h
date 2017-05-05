@@ -48,6 +48,7 @@ namespace ParaEngine
 				}
 			}
 		}
+
 		void Init()
 		{
 			index = -1;
@@ -58,16 +59,13 @@ namespace ParaEngine
 		}
 
 		// 添加子树
-		SplitBlock * add(unsigned int index)
+		SplitBlock * add(unsigned int index, SplitBlock * childNode)
 		{
 			if(index < 8 && !childs[index])
 			{
-				SplitBlock * childBlock = new SplitBlock();
-				childs[index] = childBlock;
-				childBlock->parent = this;
-				childBlock->index = index;
-				childBlock->color = color;
-				childBlock->templateId = templateId;
+				childs[index] = childNode;
+				childNode->parent = this;
+				childNode->index = index;
 			}
 			return childs[index];
 		}
@@ -81,13 +79,11 @@ namespace ParaEngine
 			}
 		}
 
-		void set(unsigned int index, DWORD color)
+		void set(DWORD col)
 		{
-			if (index < 8 && childs[index])
-			{
-				childs[index]->color = color;
-			}
+			color = col;
 		}
+
 	public:
 		char index;							// 0-7 索引
 		DWORD color;						// 颜色

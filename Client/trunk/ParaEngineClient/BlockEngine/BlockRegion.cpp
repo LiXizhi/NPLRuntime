@@ -796,6 +796,12 @@ namespace ParaEngine
 						if (block.GetTemplate() && block.GetTemplate()->isComBlock())
 						{
 							SplitBlock * splitBlockRoot = static_cast<SplitBlock *>(block.getExtData());
+							if (!splitBlockRoot)
+							{
+								continue;
+							}
+
+							uint16_t templateId = splitBlockRoot->templateId;
 
 							vector<SplitBlock *> blocks;
 							vector<SplitBlock *> blockSave;
@@ -815,7 +821,7 @@ namespace ParaEngine
 									}
 								}
 
-								if (vecChilds.size() > 0)
+								if (vecChilds.size() > 0 && temp->index != -1)
 								{
 									blockSave.push_back(temp);
 								}
@@ -830,12 +836,12 @@ namespace ParaEngine
 
 							splitFile.WriteDWORD(i);									// chunk ID
 							splitFile.WriteDWORD(j);									// block 索引
-							splitFile.WriteDWORD(blockSave.size());					// 后面数据个数
+							splitFile.WriteDWORD(templateId);						    //	templateId 
+							splitFile.WriteDWORD(blockSave.size());						// 后面数据个数
 							for (int idx = 0; idx < blockSave.size(); ++idx)			// 对应数据
 							{
 								splitFile.WriteByte(blockSave[idx]->index);
 								splitFile.WriteDWORD(blockSave[idx]->color);
-								splitFile.WriteDWORD(blockSave[idx]->templateId);
 							}
 						}
 					}
@@ -1319,26 +1325,24 @@ namespace ParaEngine
 		splitFile.OpenAssetFile(splitFileName.c_str(), true);
 		while (!splitFile.isEof())
 		{
-			DWORD dwChunkID = splitFile.ReadDWORD();
-			int32_t blockIdx = splitFile.ReadDWORD();
-			int32_t count = splitFile.ReadDWORD();
+			DWORD dwChunkID = splitFile.ReadDWORD();			// chunk Id
+			int32_t blockIdx = splitFile.ReadDWORD();			// block 索引
+			uint16_t templateId = splitFile.ReadDWORD();		// templateId
+			int32_t count = splitFile.ReadDWORD();				
 
 			char lastIndex = SplitBlockType_root;
 			SplitBlock *temp = 0;
 			SplitBlock *root = 0;
 
-			uint16_t tempId;
 			for (int k = 0; k < count; ++k)
 			{
 				char index = splitFile.ReadByte();
 				DWORD color = splitFile.ReadDWORD();
-				uint16_t templateId = splitFile.ReadDWORD();
 
 				SplitBlock *splitBlock = new SplitBlock();
 				splitBlock->index = index;
 				splitBlock->color = color;
 				splitBlock->templateId = templateId;
-				tempId = templateId;
 
 				if (index == SplitBlockType_root)
 				{
@@ -1347,7 +1351,7 @@ namespace ParaEngine
 				}
 				else if(index > lastIndex)
 				{
-					temp->add(index);
+					temp->add(index, splitBlock);
 					lastIndex = index;
 				}
 				else
@@ -1362,8 +1366,11 @@ namespace ParaEngine
 			BlockChunk* pChunk = GetChunk(dwChunkID, true);
 			if (count > 0 && pChunk)
 			{
-				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(tempId);
-				pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
+				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(templateId);
+				if (pTemplate)
+				{
+					pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
+				}
 			}
 		}
 
