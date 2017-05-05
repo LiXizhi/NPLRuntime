@@ -48,8 +48,10 @@ namespace ParaEngine
 				}
 			}
 		}
+
 		void Init()
 		{
+			level = 0;
 			index = -1;
 			parent = 0;
 			color = ~0;
@@ -58,16 +60,14 @@ namespace ParaEngine
 		}
 
 		// 添加子树
-		SplitBlock * add(unsigned int index)
+		SplitBlock * add(unsigned int index, SplitBlock * childNode)
 		{
-			if(index < 8 && !childs[index])
+			if (index < 8 && !childs[index])
 			{
-				SplitBlock * childBlock = new SplitBlock();
-				childs[index] = childBlock;
-				childBlock->parent = this;
-				childBlock->index = index;
-				childBlock->color = color;
-				childBlock->templateId = templateId;
+				childs[index] = childNode;
+				childNode->parent = this;
+				childNode->index = index;
+				childNode->level += 1;
 			}
 			return childs[index];
 		}
@@ -81,12 +81,9 @@ namespace ParaEngine
 			}
 		}
 
-		void set(unsigned int index, DWORD color)
+		void set(DWORD col)
 		{
-			if (index < 8 && childs[index])
-			{
-				childs[index]->color = color;
-			}
+			color = col;
 		}
 
 		bool isNoChild() const
@@ -96,13 +93,14 @@ namespace ParaEngine
 			return true;
 		}
 	public:
+		int level;
 		char index;							// 0-7 索引
 		DWORD color;						// 颜色
 		uint16_t templateId;		        // template id
 
 		SplitBlock *parent;					// 父块
 		SplitBlock *childs[8]{};			// 子方块
-        static std::string last;
+		static std::string last;
 	};
 
 	/** 

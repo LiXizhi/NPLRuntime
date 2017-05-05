@@ -231,9 +231,9 @@ namespace ParaEngine
 
 	void BlockChunk::SetSplitBlock(uint16_t nBlockIndex, void *extenData, BlockTemplate *pTemp)
 	{
-		Block* pBlock = CreateBlock(nBlockIndex);;
 		SetBlockTemplate(nBlockIndex, pTemp);
 
+		Block* pBlock = GetBlock(nBlockIndex);
 		pBlock->setExtData(extenData);
 	}
 	

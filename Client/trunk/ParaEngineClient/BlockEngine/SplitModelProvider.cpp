@@ -225,43 +225,48 @@ namespace ParaEngine
 	void CSplitModelProvider::splitLevel(SplitBlock * parent)
 	{
 		assert(parent);
-		SplitBlock * p0 = parent->add(0);
-		parent->set(0, 0x00000000);
-		SplitBlock * p00 = p0->add(0);
-		p00->add(1);
-		p00->set(1, 0xffff0000);
-		p00->add(2);
-		p00->set(2, 0xffffff00);
-		p0->set(1, 0x0000ffff);
-		p0->add(1);
-		p0->set(1, 0xffff0000);
-		p0->add(2);
-		p0->set(2, 0x00ffffff);
-		p0->add(3);
-		p0->set(3, 0xffffff00);
+		SplitBlock *sp0 = new SplitBlock();
+		sp0->set(0x00000000);
+		parent->add(0, sp0);
 
-		parent->add(1);
-		parent->set(1, 0xffffffff);
-		parent->add(2);
-		parent->set(2, 0xffff0000);
-		parent->add(3);
-		parent->set(3, 0x0000ffff);
-		/*
-		parent->add(4);
-		parent->set(4, 0xffff0000);
-		parent->add(5);
-		parent->set(5, 0xffffff00);
+		SplitBlock *sp1 = new SplitBlock();
+		sp1->set(0xffffffff);
+		parent->add(1, sp1);
 
-		SplitBlock * p6 = parent->add(6);
-		parent->set(6, 0x0000ffff);
-		p6->add(1);
-		p6->set(1, 0x00000000);
-		p6->add(2);
-		p6->set(2, 0x0000ffff);
+		SplitBlock *sp2 = new SplitBlock();
+		sp2->set(0xffff0000);
+		parent->add(2, sp2);
 
-		SplitBlock * p7 = parent->add(7);
-		parent->set(7, 0x000000ff);
+		SplitBlock *sp3 = new SplitBlock();
+		sp3->set(0x0000ffff);
+		parent->add(3, sp3);
+
+		SplitBlock *sp4 = new SplitBlock();
+		sp4->set(0xffff0000);
+		parent->add(4, sp4);
+
+		SplitBlock *sp5 = new SplitBlock();
+		sp5->set(0xffffff00);
+		parent->add(5, sp5);
+
+		SplitBlock *sp6 = new SplitBlock();
+		sp6->set(0x0000ffff);
+		parent->add(6, sp6);
+
+		//
+/*		SplitBlock *sp60 = new SplitBlock();
+		sp60->set(0x0000ffff);
+		sp6->add(0, sp60);
+
+		//
+		SplitBlock *sp61 = new SplitBlock();
+		sp61->set(0x0000ffff);
+		sp6->add(1, sp61);
 		*/
+
+		SplitBlock *sp7 = new SplitBlock();
+		sp7->set(0x000000ff);
+		parent->add(7, sp7);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::comLevel(SplitBlock * parent)
