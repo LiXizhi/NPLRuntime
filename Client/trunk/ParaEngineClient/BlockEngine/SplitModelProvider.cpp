@@ -167,6 +167,8 @@ namespace ParaEngine
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
 		CShapeRay(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir);
+
+
 		return std::string();
     };
     //-----------------------------------------------------

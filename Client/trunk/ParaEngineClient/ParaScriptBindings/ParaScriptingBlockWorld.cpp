@@ -501,7 +501,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	{
 		ret = true;
 		bool no = block->destroyCom(level);
-
+/*
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
 		if (pRegion)
@@ -518,7 +518,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 					pChunk->SetDirty(true);
 				}
 			}
-		}
+		}*/
 	}
 
 	return ret;
