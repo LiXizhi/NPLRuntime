@@ -11,7 +11,6 @@ namespace NPL
 		public:
 			WebSocketReader();
 			~WebSocketReader();
-			//void load(Buffer_Type* buffer);
 			bool parse(ByteBuffer& buffer);
 			bool parseFrame(ByteBuffer& buffer);
 

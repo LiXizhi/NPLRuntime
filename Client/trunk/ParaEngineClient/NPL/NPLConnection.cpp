@@ -602,6 +602,11 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( const NPLFileName& file_nam
 		if(nLength<0)
 			nLength = strlen(code);
 		writer.Append(code, nLength);
+	}else if (file_name.sRelativePath == "websocket")
+	{
+		vector<byte> out_data;
+		NPL::WebSocket::WebSocketWriter::generate(m_websocket_writer, code, nLength, out_data);
+		writer.Append(string(out_data.begin(),out_data.end()));
 	}
 	else
 	{
@@ -745,6 +750,7 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 		case NPL::WebSocket::BINARY:
 			break;
 		case NPL::WebSocket::CLOSE:
+			stop();
 			break;
 		case NPL::WebSocket::PING:
 			break;

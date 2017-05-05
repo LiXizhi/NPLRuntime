@@ -66,8 +66,18 @@ namespace NPL
 				// set bit 4
 				finRsvOp = (byte)((finRsvOp & 0xEF) | (rsv3 ? 0x10 : 0x00));
 			};
-			
-			
+			bool isRsv1() {
+				return (byte)(finRsvOp & 0x40) != 0;
+			};
+			bool isRsv2() {
+				return (byte)(finRsvOp & 0x20) != 0;
+			};
+			bool isRsv3() {
+				return (byte)(finRsvOp & 0x10) != 0;
+			};
+			bool hasPayload() {
+				return getPayloadLength() > 0;
+			};
 			void reset() {
 				finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
 				masked = false;
