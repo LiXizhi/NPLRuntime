@@ -43,7 +43,7 @@ namespace ParaEngine
 		virtual void splitCom(Block * src, const std::string & level);
 
 		/// @copydetails IBlockModelProvider::destroyCom
-		virtual void destroyCom(Block * src, const std::string & level);
+		virtual bool destroyCom(Block * src, const std::string & level);
 
 		/// @copydetails IBlockModelProvider::setComColour
 		virtual void setComColour(Block * src, const std::string & level, DWORD colour);
@@ -77,6 +77,11 @@ namespace ParaEngine
 		@data 2017.5.2
 		*/
 		void comLevel(SplitBlock * parent);
+
+		/**
+		@data 2017.5.4
+		*/
+		void getCom(const BlockModel * parent, const BlockModel & out, int i);
 
         /** 获取分裂等级方块模型
         @param[in] out

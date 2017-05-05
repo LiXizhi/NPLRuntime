@@ -811,10 +811,11 @@ namespace ParaEngine
 			return m_pTemplate->splitCom(this, level);
 	}
 
-	void Block::destroyCom(const std::string & level)
+	bool Block::destroyCom(const std::string & level)
 	{
 		if (m_pTemplate)
 			return m_pTemplate->destroyCom(this, level);
+		return true;
 	}
 
 	void Block::setComColour(const std::string & level, DWORD colour)

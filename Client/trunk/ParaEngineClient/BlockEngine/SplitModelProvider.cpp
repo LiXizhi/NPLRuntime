@@ -74,7 +74,7 @@ namespace ParaEngine
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
-	void CSplitModelProvider::destroyCom(Block * src, const std::string & level)
+	bool CSplitModelProvider::destroyCom(Block * src, const std::string & level)
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
@@ -90,7 +90,7 @@ namespace ParaEngine
 				lnum = num;
 			}
 			else
-				return;
+				return true;
 		}
 		assert(stemp);
 		SplitBlock * stemp2 = stemp->parent;
@@ -101,8 +101,10 @@ namespace ParaEngine
 		}
 		else
 		{
-			comLevel(stemp);
+			if (stemp2->isNoChild())
+				return true;
 		}
+		return false;
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
@@ -128,7 +130,6 @@ namespace ParaEngine
 	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, const char* texture)
 	{
 		// 保留到后期
-		/*
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
@@ -141,8 +142,6 @@ namespace ParaEngine
 			else
 				return;
 		}
-		splitLevel(stemp); 
-		*/
 	}
     //-----------------------------------------------------
     std::string CSplitModelProvider::getComByCursor(const Block * src) const 
@@ -194,9 +193,12 @@ namespace ParaEngine
 		{
 			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
             cnt += getSplitLevel(out, stemp, &temp, 0, nochild);
+			if (nochild)
+			{
+				temp.SetColor(stemp->color);
+				out.push_back(temp);
+			}
 		}
-		if (nochild)
-			out.push_back(temp);
 		return cnt;
     }
 	//-----------------------------------------------------
@@ -225,48 +227,63 @@ namespace ParaEngine
 	void CSplitModelProvider::splitLevel(SplitBlock * parent)
 	{
 		assert(parent);
-		SplitBlock *sp0 = new SplitBlock();
-		sp0->set(0x00000000);
-		parent->add(0, sp0);
+		SplitBlock *temp = new SplitBlock();
+		temp->set(0x0000ffff);
+		parent->add(0, temp);
 
-		SplitBlock *sp1 = new SplitBlock();
-		sp1->set(0xffffffff);
-		parent->add(1, sp1);
+		SplitBlock *temp2 = new SplitBlock();
+		temp->set(0xffff0000);
+		temp->add(0,temp2);
+		temp2 = new SplitBlock();
+		temp->set(0x0000ffff);
+		temp->add(1, temp2);
 
-		SplitBlock *sp2 = new SplitBlock();
-		sp2->set(0xffff0000);
-		parent->add(2, sp2);
+		SplitBlock *temp3 = new SplitBlock();
+		temp3->set(0xffff0000);
+		temp2->add(0, temp3);
 
-		SplitBlock *sp3 = new SplitBlock();
-		sp3->set(0x0000ffff);
-		parent->add(3, sp3);
+		temp = new SplitBlock();
+		temp->set(0xffffffff);
+		parent->add(1, temp);
 
-		SplitBlock *sp4 = new SplitBlock();
-		sp4->set(0xffff0000);
-		parent->add(4, sp4);
+		temp = new SplitBlock();
+		temp->set(0xffff0000);
+		parent->add(2, temp);
 
-		SplitBlock *sp5 = new SplitBlock();
-		sp5->set(0xffffff00);
-		parent->add(5, sp5);
+		temp = new SplitBlock();
+		temp->set(0x0000ffff);
+		parent->add(3, temp);
 
-		SplitBlock *sp6 = new SplitBlock();
-		sp6->set(0x0000ffff);
-		parent->add(6, sp6);
+	
+		temp = new SplitBlock();
+		temp->set(0xffff0000);
+		parent->add(4, temp);
 
-		//
-/*		SplitBlock *sp60 = new SplitBlock();
-		sp60->set(0x0000ffff);
-		sp6->add(0, sp60);
+		temp2 = new SplitBlock();
+		temp2->set(0xffff0000);
+		temp->add(0, temp2);
+		temp2 = new SplitBlock();
+		temp2->set(0x0000ffff);
+		temp->add(1, temp2); 
 
-		//
-		SplitBlock *sp61 = new SplitBlock();
-		sp61->set(0x0000ffff);
-		sp6->add(1, sp61);
-		*/
+		temp = new SplitBlock();
+		temp->set(0xffffff00);
+		parent->add(5, temp);
 
-		SplitBlock *sp7 = new SplitBlock();
-		sp7->set(0x000000ff);
-		parent->add(7, sp7);
+		temp2 = new SplitBlock();
+		temp2->set(0xffff0000);
+		temp->add(0, temp2);
+		temp2 = new SplitBlock();
+		temp2->set(0x0000ffff);
+		temp->add(1, temp2);
+
+		temp = new SplitBlock();
+		temp->set(0x0000ffff);
+		parent->add(6, temp);
+
+		temp = new SplitBlock();
+		temp->set(0x000000ff);
+		parent->add(7, temp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::comLevel(SplitBlock * parent)
@@ -296,6 +313,29 @@ namespace ParaEngine
         }
         return cnt;
     }
+	//-----------------------------------------------------
+	void CSplitModelProvider::getCom(const BlockModel * parent, const BlockModel & out, int i)
+	{
+		switch (i)
+		{
+		case 0:
+			break;
+		case 1:
+			break;
+		case 2:
+			break;
+		case 3:
+			break;
+		case 4:
+			break;
+		case 5:
+			break;
+		case 6:
+			break;
+		case 7:
+			break;
+		}
+	}
     //-----------------------------------------------------
 	int CSplitModelProvider::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, int i) const
     {
@@ -307,99 +347,123 @@ namespace ParaEngine
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
-			temp.TranslateVertices(0, 0, 0);
+			temp.TranslateVertices(0.0f, 0.0f, 0.0f);
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 1:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(1.0f / (level * 2), 0, 0);
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 2:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 0, 1.0f / (level * 2));
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 3:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(1.0f / (level * 2), 0, 1.0f / (level * 2));
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 4:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 1.0f / (level * 2), 0);
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 5:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(1.0f / (level * 2), 1.0f / (level * 2), 0);
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 6:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(0, 1.0f / (level * 2), 1.0f / (level * 2));
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		case 7:
 		{
 			BlockModel temp;
 			temp.Clone(*bparent);
+			temp.TranslateByVertex(4);
 			temp.SetVerticalScale(0.5f);
 			temp.TranslateVertices(1.0f / (level * 2), 1.0f / (level * 2), 1.0f / (level * 2));
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
-			temp.SetColor(sparent->color);
 			if (nochild)
+			{
+				temp.SetColor(sparent->color);
 				out.push_back(temp);
+			}
 		}
-			break;
+		break;
 		default:
 			break;
 		}
