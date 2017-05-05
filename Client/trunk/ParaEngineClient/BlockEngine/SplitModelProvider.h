@@ -83,14 +83,14 @@ namespace ParaEngine
         @param[in] parent
         @data 2017.5.2
         */
-		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, bool & nochild) const;
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, bool & nochild) const;
         
         /** 获取分裂等级方块模型
         @param[in] out
         @param[in] parent
         @data 2017.5.2
         */
-		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent,  int i) const;
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent,  int level, int i) const;
 
 		/**
 		@data 2017.5.2

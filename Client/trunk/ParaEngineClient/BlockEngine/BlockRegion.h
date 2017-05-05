@@ -88,6 +88,13 @@ namespace ParaEngine
 				childs[index]->color = color;
 			}
 		}
+
+		bool isNoChild() const
+		{
+			if (childs[0] || childs[1] || childs[2] || childs[3] || childs[4] || childs[5] || childs[6] || childs[7])
+				return false;
+			return true;
+		}
 	public:
 		char index;							// 0-7 Ë÷Òý
 		DWORD color;						// ÑÕÉ«
