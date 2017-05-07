@@ -15,7 +15,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 */
-
+#include "ParaEngine.h"
 #include "ByteBuffer.h"
 using namespace NPL::WebSocket;
 /**

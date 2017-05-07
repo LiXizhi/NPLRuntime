@@ -5,6 +5,7 @@
 // Desc:  Parse WebSocket protocol
 // based on: http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-websocket/websocket-common/src/main/java/org/eclipse/jetty/websocket/common/Parser.java
 //-----------------------------------------------------------------------------
+#include "ParaEngine.h"
 #include "WebSocketReader.h"
 #include <vector>
 using namespace NPL::WebSocket;

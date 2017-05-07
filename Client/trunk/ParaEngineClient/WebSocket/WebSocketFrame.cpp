@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "WebSocketFrame.h"
 using namespace NPL::WebSocket;
 	WebSocketFrame::WebSocketFrame()
