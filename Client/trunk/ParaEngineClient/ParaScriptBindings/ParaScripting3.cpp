@@ -335,6 +335,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("AddNPLRuntimeAddress", &CNPL::AddNPLRuntimeAddress),
 				def("GetIP", &CNPL::GetIP),
 				def("accept", &CNPL::accept),
+				def("SetProtocol", &CNPL::SetProtocol),
 				def("reject", &CNPL::reject),
 				def("SetUseCompression", &CNPL::SetUseCompression),
 				def("SetCompressionKey", &CNPL::SetCompressionKey),

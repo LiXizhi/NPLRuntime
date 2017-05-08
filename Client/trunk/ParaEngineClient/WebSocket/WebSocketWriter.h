@@ -29,9 +29,8 @@ namespace NPL
 			void generateHeaderBytes(WebSocketFrame& frame, ByteBuffer& buffer);
 		 	void generateWholeFrame(WebSocketFrame& frame, ByteBuffer& buffer);
 
-			static void generate(WebSocketWriter& writer, const char * code, int nLength, vector<byte>& outData);
-
-		private:
+			void generate(const char * code, int nLength, vector<byte>& outData);
+			void reset();
 		private:
 			/**
 			* Are any flags in use
@@ -44,6 +43,9 @@ namespace NPL
 			* </pre>
 			*/
 			byte flagsInUse;
+			WebSocketFrame frame;
+			WebSocket::ByteBuffer input_buff;
+			WebSocket::ByteBuffer out_buff;
 		};
 	}
 }

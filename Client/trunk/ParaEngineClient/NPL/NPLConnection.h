@@ -32,6 +32,11 @@ namespace NPL
 		private boost::noncopyable
 	{
 	public:
+		enum ProtocolType
+		{
+			NPL = 0,
+			WEBSOCKET
+		};
 		friend class CNPLDispatcher;
 		typedef concurrent_ptr_queue<NPLMsgOut_ptr, dummy_condition_variable> RingBuffer_Type;
 		typedef std::map<std::string, int>	StringMap_Type;
@@ -219,6 +224,9 @@ namespace NPL
 
 		/** get global log level.*/
 		int GetLogLevel();
+
+		/** set transmission protocol, default value is 0. */
+		void SetProtocol(ProtocolType protocolType = ProtocolType::NPL);
 	public:
 		//
 		// In case, one wants to use a different connection data handler,  the following interface are provided. 
@@ -358,6 +366,10 @@ namespace NPL
 
 		WebSocket::WebSocketReader m_websocket_reader;
 		WebSocket::WebSocketWriter m_websocket_writer;
+		vector<byte> m_websocket_input_data;
+		vector<byte> m_websocket_out_data;
+
+		ProtocolType m_protocolType;
 	};
 	
 

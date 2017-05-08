@@ -40,7 +40,8 @@ NPL::CNPLConnection::CNPLConnection( boost::asio::io_service& io_service, CNPLCo
 : m_socket(io_service),	m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn( 0 ), m_totalBytesOut( 0 ),
 m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected), 
 m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
-m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0)
+m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0),
+m_protocolType(NPL)
 {
 	m_queueOutput.SetUseEvent(false);
 	// init common fields for input message. 
@@ -604,9 +605,9 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( const NPLFileName& file_nam
 		writer.Append(code, nLength);
 	}else if (file_name.sRelativePath == "websocket")
 	{
-		vector<byte> out_data;
-		NPL::WebSocket::WebSocketWriter::generate(m_websocket_writer, code, nLength, out_data);
-		writer.Append(string(out_data.begin(),out_data.end()));
+		m_websocket_out_data.clear();
+		m_websocket_writer.generate(code, nLength, m_websocket_out_data);
+		writer.Append(string(m_websocket_out_data.begin(), m_websocket_out_data.end()));
 	}
 	else
 	{
@@ -717,7 +718,8 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 	{
 		NPL::WebSocket::WebSocketFrame* frame = m_websocket_reader.getFrame();
 
-		vector<byte> data = frame->getData();
+		m_websocket_input_data.clear();
+		frame->loadData(m_websocket_input_data);
 		
 
 		NPL::WebSocket::OpCode opcode = (NPL::WebSocket::OpCode)frame->getOpCode();
@@ -725,12 +727,13 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 		{
 		case NPL::WebSocket::TEXT:
 		{
-			string code(data.begin(), data.end());
 
 			Json::Value root;
 			Json::Reader reader;
 			Json::FastWriter writer;
-			bool parsingSuccessful = reader.parse(code, root);     //parse process
+			const char *begin = (char*)&m_websocket_input_data[0];
+			const char *end = begin + m_websocket_input_data.size();
+			bool parsingSuccessful = reader.parse(begin, end, root);     //parse process
 			if (!parsingSuccessful)
 			{
 				return false;
@@ -766,10 +769,13 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 
 bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 {
-	// first try to parse websocket protocol
-	if (handle_websocket_data(bytes_transferred))
+	if (m_protocolType == WEBSOCKET)
 	{
-		return true;
+		// first try to parse websocket protocol
+		if (handle_websocket_data(bytes_transferred))
+		{
+			return true;
+		}
 	}
 
 	boost::tribool result = true;
@@ -890,5 +896,10 @@ bool NPL::CNPLConnection::SetNID( const char* sNID )
 		m_msg_dispatcher.RenameConnection(shared_from_this(), sNID);
 	}
 	return true;
+}
+
+void NPL::CNPLConnection::SetProtocol(ProtocolType protocolType)
+{
+	m_protocolType = protocolType;
 }
 
