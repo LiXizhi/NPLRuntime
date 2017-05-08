@@ -5,6 +5,8 @@
 #include "NPLMsgOut.h"
 #include "NPLMsgIn_parser.h"
 #include "NPLMessageQueue.h"
+#include "WebSocket/WebSocketReader.h"
+#include "WebSocket/WebSocketWriter.h"
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -248,6 +250,8 @@ namespace NPL
 		virtual bool handleMessageIn();
 
 	private:
+		/// try to parse websocket protocol
+		bool handle_websocket_data(int bytes_transferred);
 		//
 		// boost io service call backs. 
 		//
@@ -351,6 +355,9 @@ namespace NPL
 
 		/** why is this connection stopped */
 		int32 m_nStopReason;
+
+		WebSocket::WebSocketReader m_websocket_reader;
+		WebSocket::WebSocketWriter m_websocket_writer;
 	};
 	
 

@@ -157,6 +157,11 @@ SOURCE_GROUP("doc" FILES ${ParaEngineClient_DOCUMENT_FILES})
 set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
+##############################
+# WebSocket
+file (GLOB ParaEngineServer_WebSocket_FILES ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp ${CLIENT_SOURCE_DIR}/WebSocket/*.h ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp)
+SOURCE_GROUP("WebSocket" FILES ${ParaEngineServer_WebSocket_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_WebSocket_FILES})
 
 #######################################
 # PCH: precompiled header under msvc

@@ -25,8 +25,8 @@ int ParaEngine::GetThisThreadID()
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
 	return (int)pthread_mach_thread_np(pthread_self());
 #else
-    //return (int)gettid();
-    return (int)pthread_self();
+	//return (int)gettid();
+	return (int)pthread_self();
 #endif
 }
 
@@ -49,7 +49,7 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 {
 	std::string sDllName = pcDllname;
 #ifdef WIN32 // Microsoft compiler
-	if(sDllName.find(".") == string::npos)
+	if (sDllName.find(".") == string::npos)
 		sDllName += ".dll";
 #define USE_ABS_DLL_PATH
 #ifdef USE_ABS_DLL_PATH
@@ -75,13 +75,12 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 		OUTPUT_LOG("Absolute path is used for dll: %s\n", sDllName.c_str());
 	}
 #endif	
-	
 	return (void*)::LoadLibraryEx(sDllName.c_str(), NULL, 
 		LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
 #else
-	if(sDllName.find(".") == string::npos)
+	if (sDllName.find(".") == string::npos)
 		sDllName += ".so";
-	return dlopen(sDllName.c_str(),iMode);
+	return dlopen(sDllName.c_str(), iMode);
 #endif
 
 
@@ -98,15 +97,15 @@ void * ParaEngine::GetProcAddress(void *Lib, const char *Fnname)
 			CLIB_HANDLE_DLL, // ParaEngineClient(_d).dll
 			CLIB_HANDLE_MAX,
 		};
-		static void *clib_def_handle[CLIB_HANDLE_MAX] = {0,0};
+		static void *clib_def_handle[CLIB_HANDLE_MAX] = { 0,0 };
 
-		for (int i = 0; i < CLIB_HANDLE_MAX; i++) 
+		for (int i = 0; i < CLIB_HANDLE_MAX; i++)
 		{
 			HINSTANCE h = (HINSTANCE)clib_def_handle[i];
 			if (!(void *)h) {  /* Resolve default library handles (once). */
 				switch (i) {
-				case CLIB_HANDLE_EXE: 
-					GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, NULL, &h); 
+				case CLIB_HANDLE_EXE:
+					GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, NULL, &h);
 					break;
 				case CLIB_HANDLE_DLL:
 					GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (const char *)clib_def_handle, &h);
@@ -116,15 +115,15 @@ void * ParaEngine::GetProcAddress(void *Lib, const char *Fnname)
 				clib_def_handle[i] = (void *)h;
 			}
 			p = (void *)::GetProcAddress(h, Fnname);
-			if (p) 
+			if (p)
 				break;
 		}
 		return p;
 	}
 	else
-		return (void*)::GetProcAddress((HINSTANCE)Lib,Fnname);
+		return (void*)::GetProcAddress((HINSTANCE)Lib, Fnname);
 #else
-	return dlsym(Lib,Fnname);
+	return dlsym(Lib, Fnname);
 #endif
 }
 
@@ -177,32 +176,33 @@ long _findfirst(const char *name, _finddata_t *f)
 	std::string filter;
 
 	// This is linux only, so don't bother with '\'
-	const char* lastSep = strrchr(name,'/');
-	if(!lastSep)
+	const char* lastSep = strrchr(name, '/');
+	if (!lastSep)
 	{
 		// filter pattern only is given, search current directory.
 		filter = nameCopy;
 		nameCopy = ".";
-	} else
+	}
+	else
 	{
 		// strip filter pattern from directory name, leave
 		// trailing '/' intact.
-		filter = lastSep+1;
+		filter = lastSep + 1;
 		unsigned sepIndex = lastSep - name;
-		nameCopy.erase(sepIndex+1, nameCopy.size() - sepIndex-1);
+		nameCopy.erase(sepIndex + 1, nameCopy.size() - sepIndex - 1);
 	}
 
 	DIR* dir = opendir(nameCopy.c_str());
 
-	if(!dir) return -1;
+	if (!dir) return -1;
 
 	_findinfo_t* fi = new _findinfo_t();
-	fi->filter    = filter;
-	fi->dirName   = nameCopy;  // we need to remember this for stat()
+	fi->filter = filter;
+	fi->dirName = nameCopy;  // we need to remember this for stat()
 	fi->openedDir = dir;
 	fileInfo.push_back(fi);
 
-	long ret = fileInfo.size()-1;
+	long ret = fileInfo.size() - 1;
 
 	// Retrieve the first file. We cannot rely on the first item
 	// being '.'
@@ -217,10 +217,10 @@ int _findnext(long h, _finddata_t *f)
 
 	_findinfo_t* fi = fileInfo[h];
 
-	while(true)
+	while (true)
 	{
 		dirent* entry = readdir(fi->openedDir);
-		if(entry == 0) return -1;
+		if (entry == 0) return -1;
 
 		// Only report stuff matching our filter
 		if (fnmatch(fi->filter.c_str(), entry->d_name, FNM_PATHNAME) != 0) continue;
@@ -229,7 +229,7 @@ int _findnext(long h, _finddata_t *f)
 		// a stat...  don't rely on entry->d_type, as this
 		// might be unavailable!
 		struct stat filestat;
-		std::string fullPath = fi->dirName + entry->d_name;             
+		std::string fullPath = fi->dirName + entry->d_name;
 		if (stat(fullPath.c_str(), &filestat) != 0)
 		{
 			OUTPUT_LOG("Cannot stat %s\n", fullPath.c_str());
@@ -239,12 +239,14 @@ int _findnext(long h, _finddata_t *f)
 		if (S_ISREG(filestat.st_mode))
 		{
 			f->attrib = _A_NORMAL;
-		} else if (S_ISDIR(filestat.st_mode))
+		}
+		else if (S_ISDIR(filestat.st_mode))
 		{
-			f->attrib = _A_SUBDIR;                    
-		} else continue; // We are interested in files and
-		// directories only. Links currently
-		// are not supported.
+			f->attrib = _A_SUBDIR;
+		}
+		else continue; // We are interested in files and
+					   // directories only. Links currently
+					   // are not supported.
 
 		f->size = filestat.st_size;
 		strncpy(f->name, entry->d_name, STRING_BUFFER_SIZE);
@@ -261,7 +263,7 @@ int _findnext(long h, _finddata_t *f)
 */
 int _findclose(long h)
 {
-	if (h==-1) return 0;
+	if (h == -1) return 0;
 
 	if (h < 0 || h >= (long)fileInfo.size())
 	{
@@ -273,7 +275,7 @@ int _findclose(long h)
 	closedir(fi->openedDir);
 	fileInfo.clear();
 	delete fi;
-	return 0;   
+	return 0;
 }
 
 #endif // #ifndef WIN32
