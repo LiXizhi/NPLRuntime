@@ -398,7 +398,7 @@ namespace ParaEngine
 		/** 分裂方块专用
 		@data 2017.5.8
 		*/
-		bool PickSplit(const Vector3& rayOrig, const Vector3& dir, float length, std::string& result);
+		bool PickSplit(uint16_t x, uint16_t y, uint16_t z, const Vector3& rayOrig, const Vector3& dir, float length, std::string& result);
 
 		/** find a block in the side direction that matched filter from block(x,y,z)
 		* this function can be used to check for free space upward or download

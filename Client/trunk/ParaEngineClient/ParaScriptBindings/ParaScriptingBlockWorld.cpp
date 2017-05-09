@@ -478,7 +478,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	std::string result;
 	if (block)
 	{
-		/*
+
 		Vector3 vPickRayOrig, vPickRayDir;
 		POINT ptCursor;
 		Matrix4 matWorld = Matrix4::IDENTITY;
@@ -496,7 +496,8 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 		ptCursor.y = cursorpy;
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-		pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result); */
+		// pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result); 
+		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig /*+ CGlobals::GetScene()->GetRenderOrigin()*/, vPickRayDir, 50, result);
 
 		ret = true;
 		block->splitCom(result);
@@ -541,7 +542,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		ptCursor.y = cursorpy;
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-		pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result);
+		//pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result);
 
 		ret = true;
 		bool no = block->destroyCom(level);

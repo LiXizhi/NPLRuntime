@@ -21,6 +21,7 @@
 #include "TextureEntity.h"
 #include "BlockWorld.h"
 
+#include "SceneObject.h"
 using namespace ParaEngine;
 
 /** default render distance in blocks */
@@ -1486,8 +1487,89 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	return false;
 }
 
-bool CBlockWorld::PickSplit(const Vector3& rayOrig, const Vector3& dir, float length, std::string& result)
+bool CBlockWorld::PickSplit(uint16_t bx, uint16_t by, uint16_t bz, const Vector3& rayOrig, const Vector3& dir, float length, std::string& result)
 {
+	float fScaling = 1.0f;
+	const float fBlockSize = BlockConfig::g_blockSize;
+	Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
+	float verticalOffset = GetVerticalOffset();
+
+	int32_t renderBlockOfs_x = (int32_t)(renderOfs.x / fBlockSize);
+	int32_t renderBlockOfs_y = (int32_t)(renderOfs.y / fBlockSize);
+	int32_t renderBlockOfs_z = (int32_t)(renderOfs.z / fBlockSize);
+
+	Vector3 renderBlockOfs_remain;
+	renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs_x * fBlockSize;
+	renderBlockOfs_remain.y = renderOfs.y - renderBlockOfs_y * fBlockSize;
+	renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs_z * fBlockSize;
+
+	// scale the block a little to avoid z fighting. 
+	float fScaledBlockSize = BlockConfig::g_blockSize*fScaling;
+
+	BlockTemplate* pBlockTemplate = GetBlockTemplate(bx, by, bz);
+	Block *block = GetBlock(bx, by, bz);
+	if (pBlockTemplate == 0)
+		pBlockTemplate = GetBlockTemplate(1);
+	if (pBlockTemplate)
+	{
+		int nLenCount = 12;
+		CShapeAABB aabb;
+		CShapeRay ray(rayOrig, dir);
+		std::pair<bool, float> intersect1;
+		pBlockTemplate->GetAABB(this, bx, by, bz, &aabb);
+
+		Vector3 vOffset((bx - renderBlockOfs_x) * fBlockSize, (by - renderBlockOfs_y) * fBlockSize + verticalOffset, (bz - renderBlockOfs_z) * fBlockSize);
+		vOffset -= renderBlockOfs_remain;
+
+		aabb.GetCenter() += vOffset;
+		aabb.GetExtents() *= fScaling;
+
+		// use AABB for non-cube model
+		float fHitDist = -1;
+		bool forcego = true;
+		intersect1 = ray.intersects(aabb);
+		if (intersect1.first)
+		{
+			int tempidx, currentidx;
+			fHitDist = intersect1.second;
+			CShapeAABB aabb2 = aabb;
+			ShapeAABBList maabblist;
+			assert(pBlockTemplate->isComBlock());
+			SplitBlock * sblock = static_cast<SplitBlock * >(block->getExtData());
+			SplitBlock * sblock2 = sblock;
+		iteratoraabb:
+			getSplitAABB(aabb2, maabblist, sblock);
+			ShapeAABBList::iterator i, iend = maabblist.end();
+			for (tempidx = 0, i = maabblist.begin(); i != iend; ++i, ++tempidx)
+			{
+				if ((*i).IsValid())
+				{
+					intersect1 = ray.intersects(*i);
+					if (intersect1.first)
+					{
+						if (intersect1.second <= fHitDist || forcego)
+						{
+							forcego = false;
+							fHitDist = intersect1.second;
+							sblock2 = sblock->childs[tempidx];
+							currentidx = tempidx;
+							aabb2 = *i;
+						}
+					}
+				}
+			}
+			if (sblock2 != sblock)
+			{
+				sblock = sblock2;
+				result.push_back(toLevelChar(currentidx));
+				forcego = true;
+				goto iteratoraabb;
+			}
+		}
+		return true;
+	}
+return false;
+	/*
 	if (!m_isInWorld)
 		return false;
 	//////////////////////////////////////////////////////////////
@@ -1724,6 +1806,7 @@ bool CBlockWorld::PickSplit(const Vector3& rayOrig, const Vector3& dir, float le
 	}
 	return false;
 //	GetOnClickDistance();
+*/
 }
 
 bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)

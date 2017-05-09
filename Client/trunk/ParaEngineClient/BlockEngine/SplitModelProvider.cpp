@@ -60,7 +60,7 @@ namespace ParaEngine
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		int num = -1;/*
+		int num = -1;
 		std::string::const_iterator i, iend = level.end();
 		for (i = level.begin(); i != iend; ++i)
 		{
@@ -70,7 +70,7 @@ namespace ParaEngine
 			else
 				return;
 		}
-		assert(stemp);*/
+		assert(stemp);
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
@@ -211,83 +211,37 @@ namespace ParaEngine
 	void CSplitModelProvider::splitLevel(SplitBlock * parent)
 	{
 		assert(parent);
-		SplitBlock *sp0 = new SplitBlock();
-		sp0->set(0x00000000);
-		parent->add(0, sp0);
+		SplitBlock * temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(0, temp);
 
-		SplitBlock *sp00 = new SplitBlock();
-		sp00->set(0x52148785);
-		sp0->add(0, sp00);
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(1, temp);
 
-		SplitBlock *sp01 = new SplitBlock();
-		sp01->set(0x12532462);
-		sp0->add(1, sp01);
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(2, temp);
 
-		// 01---- 3, 4
-		SplitBlock *sp013 = new SplitBlock();
-		sp013->set(0x45522462);
-		sp01->add(3, sp013);
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(3, temp);
 
-		SplitBlock *sp014 = new SplitBlock();
-		sp014->set(0x32532462);
-		sp01->add(4, sp014);
-		//
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(4, temp);
 
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(5, temp);
 
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(6, temp);
 
-		SplitBlock *sp1 = new SplitBlock();
-		sp1->set(0xffffffff);
-		parent->add(1, sp1);
-
-		SplitBlock *sp2 = new SplitBlock();
-		sp2->set(0xffff0000);
-		parent->add(2, sp2);
-
-		SplitBlock *sp3 = new SplitBlock();
-		sp3->set(0x0000ffff);
-		parent->add(3, sp3);
-
-
-		//
-		SplitBlock *sp35 = new SplitBlock();
-		sp35->set(0x0000ffff);
-		sp3->add(5, sp35);
-
-		SplitBlock *sp356 = new SplitBlock();
-		sp356->set(0x0230ffff);
-		sp35->add(6, sp356);
-
-		SplitBlock *sp357 = new SplitBlock();
-		sp357->set(0x1200ffff);
-		sp35->add(7, sp357);
-
-
-
-		SplitBlock *sp4 = new SplitBlock();
-		sp4->set(0xffff0000);
-		parent->add(4, sp4);
-
-		SplitBlock *sp5 = new SplitBlock();
-		sp5->set(0xffffff00);
-		parent->add(5, sp5);
-
-		SplitBlock *sp6 = new SplitBlock();
-		sp6->set(0x0000ffff);
-		parent->add(6, sp6);
-
-		//
-		SplitBlock *sp60 = new SplitBlock();
-		sp60->set(0x0000ffff);
-		sp6->add(0, sp60);
-
-		//
-		SplitBlock *sp61 = new SplitBlock();
-		sp61->set(0x0000ffff);
-		sp6->add(1, sp61);
-
-		SplitBlock *sp7 = new SplitBlock();
-		sp7->set(0x000000ff);
-		parent->add(7, sp7);
+		temp = new SplitBlock();
+		temp->set(parent->color);
+		parent->add(7, temp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::comLevel(SplitBlock * parent)
