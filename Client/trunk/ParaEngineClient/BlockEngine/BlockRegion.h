@@ -51,6 +51,7 @@ namespace ParaEngine
 
 		void Init()
 		{
+			level = 0;
 			index = -1;
 			parent = 0;
 			color = ~0;
@@ -66,6 +67,7 @@ namespace ParaEngine
 				childs[index] = childNode;
 				childNode->parent = this;
 				childNode->index = index;
+				childNode->level = level + 1;
 			}
 			return childs[index];
 		}
@@ -84,7 +86,54 @@ namespace ParaEngine
 			color = col;
 		}
 
+		// 获取带子节点的数量
+		static int GetNonLeafNode(SplitBlock *tree)
+		{
+			int cnt = 0;
+			if (tree)
+			{
+				vector<SplitBlock *> blockSave;
+				std::list<int>	nodeWrite;
+				blockSave.push_back(tree);
+
+				for (int idx = 0; idx < blockSave.size(); ++idx)
+				{
+					SplitBlock *temp = blockSave[idx];
+
+					std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp);
+					if (it != nodeWrite.end())
+					{
+						continue;
+					}
+
+					bool bHasChilds = false;
+					for (int k = 0; k < 8; ++k)
+					{
+						if (temp->childs[k])
+						{
+							bHasChilds = true;
+							blockSave.push_back(temp->childs[k]);
+						}
+					}
+
+					if (bHasChilds)
+					{
+						if (temp->index != -1)
+						{
+							blockSave.push_back(temp);
+							nodeWrite.push_back((int)temp);
+						}
+					}
+				}
+
+				cnt = nodeWrite.size() + 1;
+			}
+
+			return cnt;
+		}
+
 	public:
+		int level;
 		char index;							// 0-7 索引
 		DWORD color;						// 颜色
 		uint16_t templateId;		        // template id

@@ -17,6 +17,8 @@
 #include "NPLRuntime.h"
 #include "WorldInfo.h"
 
+#include<list>
+
 namespace ParaEngine
 {
 	/**	we will not use custom data for blocks that has very few instances(less than this value),
@@ -802,16 +804,29 @@ namespace ParaEngine
 							}
 
 							uint16_t templateId = splitBlockRoot->templateId;
+							int nonLeafNodeCnt = SplitBlock::GetNonLeafNode(splitBlockRoot);
 
-							vector<SplitBlock *> blocks;
+							splitFile.WriteDWORD(i);									// chunk ID
+							splitFile.WriteDWORD(j);									// block 索引
+							splitFile.WriteDWORD(templateId);						    //	templateId 
+							splitFile.WriteDWORD(nonLeafNodeCnt);						// 保存所有非叶子节点
+
 							vector<SplitBlock *> blockSave;
-							blocks.push_back(splitBlockRoot);
+							std::list<int>	nodeWrite;
 							blockSave.push_back(splitBlockRoot);
+							int level = 0;
 
-							for (int idx = 0; idx < blocks.size(); ++idx)
+							for (int idx = 0; idx < blockSave.size(); ++idx)
 							{
-								SplitBlock *temp = blocks[idx];
+								SplitBlock *temp = blockSave[idx];
 
+								std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp); 
+								if (it != nodeWrite.end())
+								{
+									continue;
+								}
+
+								// 保存所有的子节点
 								vector<SplitBlock *> vecChilds;
 								for (int k = 0; k < 8; ++k)
 								{
@@ -821,27 +836,32 @@ namespace ParaEngine
 									}
 								}
 
-								if (vecChilds.size() > 0 && temp->index != -1)
+								// 当有子节点，写入当前节点
+								if (vecChilds.size() > 0)
 								{
-									blockSave.push_back(temp);
+									// 连续写入个数
+									int writeCnt = vecChilds.size() + 1;
+									splitFile.WriteDWORD(writeCnt);
+									splitFile.WriteDWORD(temp->level + 1);
+
+									// 写入当前节点
+									splitFile.WriteDWORD(temp->index);
+									splitFile.WriteDWORD(temp->color);
+
+									if (temp->index != -1)
+									{
+										blockSave.push_back(temp);
+										nodeWrite.push_back((int)temp);
+									}
 								}
 
 								for (int t = 0; t < vecChilds.size(); ++t)
 								{
-									blocks.push_back(vecChilds[t]);
+									// 写入子节点
 									blockSave.push_back(vecChilds[t]);
+									splitFile.WriteDWORD(vecChilds[t]->index);
+									splitFile.WriteDWORD(vecChilds[t]->color);
 								}
-							}
-
-
-							splitFile.WriteDWORD(i);									// chunk ID
-							splitFile.WriteDWORD(j);									// block 索引
-							splitFile.WriteDWORD(templateId);						    //	templateId 
-							splitFile.WriteDWORD(blockSave.size());						// 后面数据个数
-							for (int idx = 0; idx < blockSave.size(); ++idx)			// 对应数据
-							{
-								splitFile.WriteByte(blockSave[idx]->index);
-								splitFile.WriteDWORD(blockSave[idx]->color);
 							}
 						}
 					}
@@ -1323,20 +1343,39 @@ namespace ParaEngine
 		CParaFile splitFile;
 		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);
 		splitFile.OpenAssetFile(splitFileName.c_str(), true);
+		SplitBlock *root;
+		SplitBlock *temp;
+		vector<SplitBlock *> nonLeafNodeVec;
+		DWORD dwChunkID = 0;			// chunk Id
+		int32_t blockIdx;			// block 索引
+		uint16_t templateId = 0;	// templateId
+		int nonLeafNodeCnt = -1;
+		int nonLeafNodeIdx = 0;
+
 		while (!splitFile.isEof())
 		{
-			DWORD dwChunkID = splitFile.ReadDWORD();			// chunk Id
-			int32_t blockIdx = splitFile.ReadDWORD();			// block 索引
-			uint16_t templateId = splitFile.ReadDWORD();		// templateId
-			int32_t count = splitFile.ReadDWORD();				
+			if (nonLeafNodeIdx >= nonLeafNodeCnt)
+			{
+				root = temp = 0;
+				nonLeafNodeIdx = 0;
+			}
 
-			char lastIndex = SplitBlockType_root;
-			SplitBlock *temp = 0;
-			SplitBlock *root = 0;
+			if (nonLeafNodeIdx == 0)
+			{
+				nonLeafNodeVec.clear();
+				dwChunkID = splitFile.ReadDWORD();			// chunk Id
+				blockIdx = splitFile.ReadDWORD();			// block 索引
+				templateId = splitFile.ReadDWORD();		// templateId
+				nonLeafNodeCnt = splitFile.ReadDWORD();
+			}
+
+			int count = splitFile.ReadDWORD();
+			int level = splitFile.ReadDWORD();
+			++nonLeafNodeIdx;
 
 			for (int k = 0; k < count; ++k)
 			{
-				char index = splitFile.ReadByte();
+				char index = splitFile.ReadDWORD();
 				DWORD color = splitFile.ReadDWORD();
 
 				SplitBlock *splitBlock = new SplitBlock();
@@ -1349,27 +1388,42 @@ namespace ParaEngine
 					temp = splitBlock;
 					root = splitBlock;
 				}
-				else if(index > lastIndex)
+
+				if (k == 0)
 				{
-					temp->add(index, splitBlock);
-					lastIndex = index;
+					splitBlock->level = level - 1;
+					nonLeafNodeVec.push_back(splitBlock);
+					for (int t = 0; t < nonLeafNodeVec.size(); ++t)
+					{
+						SplitBlock *sp = nonLeafNodeVec[t];
+						if (sp && sp->level == level - 2 && sp->childs[index])
+						{
+							temp = sp->childs[index];
+							delete splitBlock;
+							splitBlock = 0;
+							nonLeafNodeVec.pop_back();
+							nonLeafNodeVec.push_back(temp);
+							break;
+						}
+					}
 				}
 				else
 				{
-					temp = temp->childs[index];
-					lastIndex = SplitBlockType_root;
-					delete splitBlock;
+					temp->add(index, splitBlock);
 				}
 			}
 
 
-			BlockChunk* pChunk = GetChunk(dwChunkID, true);
-			if (count > 0 && pChunk)
+			if (nonLeafNodeIdx >= nonLeafNodeCnt)
 			{
-				BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(templateId);
-				if (pTemplate)
+				BlockChunk* pChunk = GetChunk(dwChunkID, true);
+				if (root && pChunk)
 				{
-					pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
+					BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(templateId);
+					if (pTemplate)
+					{
+						pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
+					}
 				}
 			}
 		}
