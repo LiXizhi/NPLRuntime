@@ -352,6 +352,9 @@ namespace NPL
 		*/
 		void NPL_accept(const char* tid, const char* nid = NULL);
 
+		/** set transmission protocol, default value is 0. */
+		void NPL_SetProtocol(const char* nid, int protocolType = 0);
+
 		/** reject and close a given connection. The connection will be closed once rejected. 
 		* [thread safe]
 		* @param nid: the temporary id or NID of the connection to be rejected. usually it is from msg.tid or msg.nid. 
