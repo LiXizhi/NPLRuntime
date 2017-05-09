@@ -151,7 +151,7 @@ namespace NPL
 		*/
 		virtual void SetCompressionKey(const byte* sKey=0, int nSize=0, int nUsePlainTextEncoding = 0);
 
-		/** Set the zlib compression level to use in case compresssion is enabled. 
+		/** Set the zlib compression level to use in case compression is enabled. 
 		* default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9. 
 		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression, 
 		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression 

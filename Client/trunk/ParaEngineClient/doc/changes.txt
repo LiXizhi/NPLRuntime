@@ -2,6 +2,9 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.5.9
+	- web socket protocol added to NPL tcp connection
+
 2017.5.3
 	- console will inherit paraent console if any. 
 	- add property "HostIP, HostPort, IsServerStarted" to NPLRuntime
