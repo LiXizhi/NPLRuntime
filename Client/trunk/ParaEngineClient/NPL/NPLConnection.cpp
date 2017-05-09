@@ -607,7 +607,7 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( const NPLFileName& file_nam
 	{
 		m_websocket_out_data.clear();
 		m_websocket_writer.generate(code, nLength, m_websocket_out_data);
-		writer.Append(string(m_websocket_out_data.begin(), m_websocket_out_data.end()));
+		writer.Append((char*)&m_websocket_out_data[0], m_websocket_out_data.size());
 	}
 	else
 	{

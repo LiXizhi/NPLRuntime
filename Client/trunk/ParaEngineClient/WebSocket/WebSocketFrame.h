@@ -1,5 +1,4 @@
 #pragma once
-#include "util/StringBuilder.h"
 #include "WebSocketCommon.h"
 #include "ByteBuffer.h"
 #include <vector>
@@ -88,7 +87,6 @@ namespace NPL
 			void assertValid();
 
 			void loadData(vector<byte>& outData);
-			void loadData(ParaEngine::StringBuilder& outData);
 		private:
 			/**
 			* Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
