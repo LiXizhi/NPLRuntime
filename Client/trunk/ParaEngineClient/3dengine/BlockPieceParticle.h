@@ -10,6 +10,8 @@ namespace ParaEngine
 	class CBlockPieceParticleElement : public CParticleElement
 	{
 	public:
+		typedef ParaEngine::weak_ptr<IObject, CBlockPieceParticle> WeakPtr_type;
+
 		CBlockPieceParticleElement(CBlockPieceParticle* pParent);
 		virtual ~CBlockPieceParticleElement();
 
@@ -22,7 +24,7 @@ namespace ParaEngine
 		virtual bool IsAlphaTested() { return false; }
 
 	protected:
-		CBlockPieceParticle* m_pParent;
+		WeakPtr_type m_pParent;
 	};
 
 	/** a single particle object */
