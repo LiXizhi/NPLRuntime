@@ -16,6 +16,7 @@
 #include "BlockTemplate.h"
 #include "BlockCommon.h"
 #include "BlockChunk.h"
+#include "BlockRegion.h"
 #include "RenderableChunk.h"
 #include "BlockRenderTask.h"
 #include "WorldInfo.h"
@@ -394,6 +395,11 @@ namespace ParaEngine
 		/** picking in block world */
 		bool Pick(const Vector3& rayOrig, const Vector3& dir, float length, PickResult& result, uint32_t filter = 0xffffffff);
 
+		/** 分裂方块专用
+		@data 2017.5.8
+		*/
+		bool PickSplit(const Vector3& rayOrig, const Vector3& dir, float length, std::string& result);
+
 		/** find a block in the side direction that matched filter from block(x,y,z)
 		* this function can be used to check for free space upward or download
 		* @param side: 4 is top.  5 is bottom.
@@ -555,6 +561,16 @@ namespace ParaEngine
 		virtual void UpdateActiveChunk();
 
 		virtual void ClearOutOfRangeActiveChunkData();
+
+		/** 分裂方块专用
+		@data 2017.5.8
+		*/
+		void getSplitAABB(const CShapeAABB & in, ShapeAABBList & out, const SplitBlock * src) const;
+
+		/**
+		@data 2017.5.3
+		*/
+		char toLevelChar(int i) const;
 	protected:
 		std::string m_sName;
 		int32_t m_activeChunkDim;

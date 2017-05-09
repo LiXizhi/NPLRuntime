@@ -1238,6 +1238,14 @@ namespace ParaEngine
 		}
 	}
 
+	void BlockModel::reflushAABB()
+	{
+		Vector3 min, max;
+		m_Vertices[g_frtLB].GetPosition(min);
+		m_Vertices[g_topRT].GetPosition(max);
+		m_shapeAABB.SetMinMax(min, max);
+	}
+
 	void BlockModel::GetAABB( CShapeAABB* pOut ) const
 	{
 		*pOut = m_shapeAABB;

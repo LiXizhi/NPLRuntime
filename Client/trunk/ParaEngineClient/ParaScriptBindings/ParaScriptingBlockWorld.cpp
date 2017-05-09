@@ -13,6 +13,10 @@
 #include "BlockEngine/BlockRegion.h"
 #include "ParaScriptingBlockWorld.h"
 
+#include "2dengine/GUIRoot.h"
+#include "SceneObject.h"
+#include "BaseCamera.h"
+#include "ViewportManager.h"
 
 /**@define  user defined block index */
 #define CUSTOM_BLOCK_ID_BEGIN 2000
@@ -471,11 +475,31 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
-
+	std::string result;
 	if (block)
 	{
+		/*
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+
+		pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result); */
+
 		ret = true;
-		block->splitCom(level);
+		block->splitCom(result);
 
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
@@ -497,8 +521,28 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	std::string result;
 	if (block)
 	{
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+
+		pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result);
+
 		ret = true;
 		bool no = block->destroyCom(level);
 /*

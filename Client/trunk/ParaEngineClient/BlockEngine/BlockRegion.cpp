@@ -1317,8 +1317,6 @@ namespace ParaEngine
 		
 		m_nEventAsyncLoadWorldFinished = 1;
 
-
-
 		//-------------------zzw-----------//
 		CParaFile splitFile;
 		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);

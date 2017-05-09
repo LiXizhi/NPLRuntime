@@ -1486,6 +1486,246 @@ bool CBlockWorld::Pick(const Vector3& rayOrig, const Vector3& dir, float length,
 	return false;
 }
 
+bool CBlockWorld::PickSplit(const Vector3& rayOrig, const Vector3& dir, float length, std::string& result)
+{
+	if (!m_isInWorld)
+		return false;
+	//////////////////////////////////////////////////////////////
+	//
+	// use 3D DDA algorithm to find hit block more detail see 
+	// http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_4_Spatial_Subdivisions.shtml
+	//
+	//////////////////////////////////////////////////////////////
+
+	Uint16x3 tempBlockId;
+	BlockCommon::ConvertToBlockIndex(rayOrig.x, rayOrig.y, rayOrig.z, tempBlockId.x, tempBlockId.y, tempBlockId.z);
+	int32_t startBlockIdX = tempBlockId.x;
+	int32_t startBlockIdY = tempBlockId.y;
+	int32_t startBlockIdZ = tempBlockId.z;
+
+	int32_t curBlockIdX = startBlockIdX;
+	int32_t curBlockIdY = startBlockIdY;
+	int32_t curBlockIdZ = startBlockIdZ;
+
+	//ray tracing direction
+	int32_t blockStepX;
+	int32_t blockStepY;
+	int32_t blockStepZ;
+
+	//setup 3d dda init value
+	Vector3 nextBlockPos;
+	if (dir.x > 0)
+	{
+		blockStepX = 1;
+		nextBlockPos.x = (curBlockIdX + 1) * BlockConfig::g_blockSize;
+	}
+	else
+	{
+		blockStepX = -1;
+		nextBlockPos.x = curBlockIdX * BlockConfig::g_blockSize;
+	}
+
+	if (dir.y > 0)
+	{
+		blockStepY = 1;
+		nextBlockPos.y = (curBlockIdY + 1) * BlockConfig::g_blockSize;
+	}
+	else
+	{
+		blockStepY = -1;
+		nextBlockPos.y = curBlockIdY * BlockConfig::g_blockSize;
+	}
+
+	if (dir.z > 0)
+	{
+		blockStepZ = 1;
+		nextBlockPos.z = (curBlockIdZ + 1) * BlockConfig::g_blockSize;
+	}
+	else
+	{
+		blockStepZ = -1;
+		nextBlockPos.z = curBlockIdZ * BlockConfig::g_blockSize;
+	}
+
+	// distance we can travel along the ray before hitting a block boundary, in either of the three axis.
+	Vector3 errDist;
+	// the delta distance to travel in the three axis, before we move to next block. This is a constant;
+	Vector3 delta;
+
+	float maxRayDist = 100000;
+	if (dir.x != 0)
+	{
+		float invX = 1.0f / dir.x;
+		errDist.x = (nextBlockPos.x - rayOrig.x) * invX;
+		delta.x = BlockConfig::g_blockSize * blockStepX * invX;
+	}
+	else
+		errDist.x = maxRayDist;
+
+	if (dir.y != 0)
+	{
+		float invY = 1.0f / dir.y;
+		errDist.y = (nextBlockPos.y - rayOrig.y + GetVerticalOffset()) * invY;
+		delta.y = BlockConfig::g_blockSize * blockStepY * invY;
+	}
+	else
+		errDist.y = maxRayDist;
+
+	if (dir.z != 0)
+	{
+		float invZ = 1.0f / dir.z;
+		errDist.z = (nextBlockPos.z - rayOrig.z) * invZ;
+		delta.z = BlockConfig::g_blockSize * blockStepZ * invZ;
+	}
+	else
+		errDist.z = maxRayDist;
+
+	int16_t curRegionX = -1;
+	int16_t curRegionZ = -1;
+	BlockRegion* curRegion = NULL;
+	int32_t side;
+	while (true)
+	{
+		//find the smallest value of traveledDist and going alone that direction
+		float distTraveled = 0;
+		if (errDist.x < errDist.y)
+		{
+			if (errDist.x < errDist.z)
+			{
+				distTraveled = errDist.x;
+				curBlockIdX += blockStepX;
+				errDist.x += delta.x;
+				side = 0;
+			}
+			else
+			{
+				distTraveled = errDist.z;
+				curBlockIdZ += blockStepZ;
+				errDist.z += delta.z;
+				side = 2;
+			}
+		}
+		else
+		{
+			if (errDist.y < errDist.z)
+			{
+				distTraveled = errDist.y;
+				curBlockIdY += blockStepY;
+				errDist.y += delta.y;
+				side = 4;
+			}
+			else
+			{
+				distTraveled = errDist.z;
+				curBlockIdZ += blockStepZ;
+				errDist.z += delta.z;
+				side = 2;
+			}
+		}
+
+		uint16_t regionX = curBlockIdX >> 9;
+		uint16_t regionZ = curBlockIdZ >> 9;
+		if (regionX != curRegionX || regionZ != curRegionZ)
+		{
+			curRegionX = regionX;
+			curRegionZ = regionZ;
+			curRegion = GetRegion(curRegionX, curRegionZ);
+		}
+
+		if (curRegion == NULL || curBlockIdX < 0 || curBlockIdY < 0 || curBlockIdZ < 0)
+			return false;
+
+		Block* pBlock = curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY & 0xff, curBlockIdZ & 0x1ff);
+		BlockTemplate* pBlockTemplate = NULL;
+		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0)
+		{
+			const double blockSize = BlockConfig::g_blockSize;
+			float rayLength = -1;
+
+			if (side == 0 && blockStepX <= 0)
+				side = 1;
+			if (side == 2 && blockStepZ <= 0)
+				side = 3;
+			if (side == 4 && blockStepY <= 0)
+				side = 5;
+
+			{
+				// use AABB for non-cube model
+				CShapeAABB aabb;
+				pBlockTemplate->GetAABB(this, curBlockIdX, curBlockIdY, curBlockIdZ, &aabb);
+				Vector3 vOrig = rayOrig - Vector3((float)(blockSize*curBlockIdX), (float)(blockSize*curBlockIdY + GetVerticalOffset()), (float)(blockSize*curBlockIdZ));
+				float fHitDist = -1;
+				int nHitSide = 0;
+
+				if (aabb.IntersectOutside(&fHitDist, &vOrig, &dir, &nHitSide))
+				{
+					rayLength = fHitDist;
+					float fHitDist2 = -1;
+					int tempidx, currentidx;
+					CShapeAABB aabb2 = aabb;
+					ShapeAABBList maabblist;
+					assert(pBlockTemplate->isComBlock());
+					SplitBlock * sblock = static_cast<SplitBlock * >(pBlock->getExtData());
+					SplitBlock * sblock2 = sblock;
+				iteratoraabb:
+					getSplitAABB(aabb2, maabblist, sblock);
+					ShapeAABBList::iterator i, iend = maabblist.end();
+					for (tempidx = 0, i = maabblist.begin(); i != iend; ++i, ++tempidx)
+					{
+						if ((*i).IsValid())
+						{
+							if ((*i).IntersectOutside(&fHitDist2, &vOrig, &dir, &nHitSide))
+							{
+								if (fHitDist2 < fHitDist)
+								{
+									fHitDist = fHitDist2;
+									side = nHitSide;
+									sblock2 = sblock->childs[tempidx];
+									currentidx = tempidx;
+									aabb2 = *i;
+								}
+							}
+						}
+					}
+					if (sblock2 != sblock)
+					{
+						sblock = sblock2;
+						result.push_back(toLevelChar(currentidx));
+						goto iteratoraabb;
+					}
+				}
+			}
+
+			if (rayLength >= 0)
+			{
+//				m_selectBlockIdW.x = curBlockIdX;
+//				m_selectBlockIdW.y = curBlockIdY;
+//				m_selectBlockIdW.z = curBlockIdZ; 
+
+//				float collsionX = rayOrig.x + rayLength * dir.x;
+//				float collsionY = rayOrig.y + rayLength * dir.y;
+//				float collsionZ = rayOrig.z + rayLength * dir.z;
+
+//				result.X = collsionX;
+//				result.Y = collsionY;
+//				result.Z = collsionZ;
+
+//				result.BlockX = curBlockIdX;
+//				result.BlockY = curBlockIdY;
+//				result.BlockZ = curBlockIdZ;
+
+//				result.Side = side;
+//				result.Distance = rayLength;
+				return true;
+			}
+		}
+		if(distTraveled > length)
+			return false;
+	}
+	return false;
+//	GetOnClickDistance();
+}
+
 bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)
 {
 	if (!m_isInWorld)
@@ -2333,6 +2573,131 @@ void ParaEngine::CBlockWorld::ClearOutOfRangeActiveChunkData()
 	{
 		// OUTPUT_LOG1("nChunkColumnRemoved: %d\n", nChunkColumnRemoved);
 	}
+}
+
+void ParaEngine::CBlockWorld::getSplitAABB(const CShapeAABB & in, ShapeAABBList & out, const SplitBlock * src) const
+{
+	out.clear();
+	CShapeAABB temp;
+	Vector3 half = in.GetExtents() / 2;
+	if (src->childs[0])
+	{
+		temp.SetCenterExtents(in.GetCenter() - half, half); // 0
+		//temp.TranslateVertices(0.0f, 0.0f, 0.0f);
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+	if (src->childs[1])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(half.x, -half.y, -half.z), half);//1
+		//temp.TranslateVertices(1.0f / (level * 2), 0, 0);
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+	if (src->childs[2])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(half.x, -half.y, half.z), half);//2
+		//temp.TranslateVertices(1.0f / (level * 2), 0, 1.0f / (level * 2));
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+	if (src->childs[3])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(-half.x, -half.y, half.z), half);//3
+		//temp.TranslateVertices(0, 0, 1.0f / (level * 2));
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+	if (src->childs[4])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(-half.x, half.y, -half.z), half);//4
+		//temp.TranslateVertices(0, 1.0f / (level * 2), 0);
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+	if (src->childs[5])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(half.x, half.y, -half.z), half);//5
+		//temp.TranslateVertices(1.0f / (level * 2), 1.0f / (level * 2), 0);
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+
+	if (src->childs[6])
+	{
+		temp.SetCenterExtents(in.GetCenter() + half, half);//6
+		//temp.TranslateVertices(1.0f / (level * 2), 1.0f / (level * 2), 1.0f / (level * 2));
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+
+	if (src->childs[7])
+	{
+		temp.SetCenterExtents(in.GetCenter() + Vector3(-half.x, half.y, half.z), half);//7
+		//temp.TranslateVertices(0, 1.0f / (level * 2), 1.0f / (level * 2));
+		out.push_back(temp);
+	}
+	else
+	{
+		temp.SetInvalid();
+		out.push_back(temp);
+	}
+}
+
+char ParaEngine::CBlockWorld::toLevelChar(int i) const
+{
+	switch (i)
+	{
+	case 0:
+		return '0';
+	case 1:
+		return '1';
+	case 2:
+		return '2';
+	case 3:
+		return '3';
+	case 4:
+		return '4';
+	case 5:
+		return '5';
+	case 6:
+		return '6';
+	case 7:
+		return '7';
+	default:
+		assert(false);
+		break;
+	}
+	assert(false);
+	return '0';
 }
 
 IAttributeFields* ParaEngine::CBlockWorld::GetChildAttributeObject(const std::string& sName)

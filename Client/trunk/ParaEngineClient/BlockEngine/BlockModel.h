@@ -268,6 +268,8 @@ namespace ParaEngine
 		bool IsCubeAABB();
 		void SetIsCubeAABB(bool bIsCube);
 
+		void reflushAABB();
+
 		/** get axis aligned bounding box for the model.*/
 		void GetAABB(CShapeAABB* pOut) const;
 		const CShapeAABB& GetAABB() const;

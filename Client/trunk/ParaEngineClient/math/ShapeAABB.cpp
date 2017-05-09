@@ -20,6 +20,10 @@ CShapeAABB::CShapeAABB(const CShapeBox& box)
 	SetMinMax(box.m_Min, box.m_Max);
 }
 
+CShapeAABB::CShapeAABB(float minx, float miny, float minz, float maxx, float maxy, float maxz)
+{
+	SetMinMax(Vector3(minx, miny, minz), Vector3(maxx, maxy, maxz));
+}
 
 CShapeAABB::CShapeAABB(const Vector3& center, const Vector3& extents)
 :mCenter(center), mExtents(extents)

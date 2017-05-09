@@ -13,7 +13,9 @@ namespace ParaEngine
 	public:
 		CShapeAABB() : mCenter(0.f, 0.f, 0.f), mExtents(-1e33f, -1e33f, -1e33f){};
 		CShapeAABB(const CShapeBox& box);
+		CShapeAABB(float minx, float miny, float minz, float maxx, float maxy, float maxz);
 		CShapeAABB(const Vector3& center, const Vector3& extents);
+
 		CShapeAABB(const CShapeAABB* boxes, int nSize);
 		CShapeAABB( const Vector3* points, int nSize);
 		~CShapeAABB(void);
@@ -101,10 +103,11 @@ namespace ParaEngine
 		//! Get component of the box's center along a given axis
 		float		GetCenter(DWORD axis)					const		{ return mCenter[axis];						}
 		inline Vector3&		GetCenter()					{ return mCenter;						}
+		inline const Vector3&		GetCenter() const { return mCenter; }
 		//! Get component of the box's extents along a given axis
 		float		GetExtents(DWORD axis)					const		{ return mExtents[axis];					}
 		inline Vector3&		GetExtents()					{ return mExtents;						}
-
+		inline const Vector3&		GetExtents() const { return mExtents; }
 		//! Get box diagonal
 		void		GetDiagonal(Vector3& diagonal)			const		{ diagonal = mExtents * 2.0f;				}
 		float		GetWidth()								const		{ return mExtents.x * 2.0f;					}
@@ -269,6 +272,6 @@ namespace ParaEngine
 		Vector3 Point(int i) const { return Vector3( (i&1)?m_Min.x:m_Max.x, (i&2)?m_Min.y:m_Max.y, (i&4)?m_Min.z:m_Max.z );  }
 
 	};
-
+	typedef std::vector<CShapeAABB> ShapeAABBList;
 }
 

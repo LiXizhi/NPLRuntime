@@ -969,7 +969,7 @@ namespace ParaEngine
 					Vector3 vOffset((x  - renderBlockOfs_x) * fBlockSize, (y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (z  - renderBlockOfs_z) * fBlockSize);
 					vOffset -= renderBlockOfs_remain;
 					
-					
+					/*
 					string level = "0";									// 细分方块
 					float splitScale = 1.0f;							// 细分缩放
 					Vector3 splitOffset = Vector3(0.0f, 0.0f, 0.0f);	// 细分偏移
@@ -981,10 +981,10 @@ namespace ParaEngine
 						splitOffset.y = fBlockSize / 4.0f;
 						splitOffset.z = fBlockSize / 4.0f;
 					}
+					*/
 
-
-					aabb.GetCenter() += vOffset + splitOffset;
-					aabb.GetExtents() *= fScaling * splitScale;
+					aabb.GetCenter() += vOffset; //+ splitOffset;
+					aabb.GetExtents() *= fScaling; //* splitScale;
 
 					BlockModel::GetBoundingBoxVertices(aabb, pVecBounds, &nNumVertices);
 					{
