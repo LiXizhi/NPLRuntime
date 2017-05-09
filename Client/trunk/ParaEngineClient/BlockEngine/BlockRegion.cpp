@@ -1369,47 +1369,56 @@ namespace ParaEngine
 				nonLeafNodeCnt = splitFile.ReadDWORD();
 			}
 
-			int count = splitFile.ReadDWORD();
-			int level = splitFile.ReadDWORD();
-			++nonLeafNodeIdx;
-
-			for (int k = 0; k < count; ++k)
+			if (nonLeafNodeCnt == 1)
 			{
-				char index = splitFile.ReadDWORD();
-				DWORD color = splitFile.ReadDWORD();
+				root = new SplitBlock();
+				root->templateId = templateId;
+				++nonLeafNodeIdx;
+			}
+			else
+			{
+				int count = splitFile.ReadDWORD();
+				int level = splitFile.ReadDWORD();
+				++nonLeafNodeIdx;
 
-				SplitBlock *splitBlock = new SplitBlock();
-				splitBlock->index = index;
-				splitBlock->color = color;
-				splitBlock->templateId = templateId;
-
-				if (index == SplitBlockType_root)
+				for (int k = 0; k < count; ++k)
 				{
-					temp = splitBlock;
-					root = splitBlock;
-				}
+					char index = splitFile.ReadDWORD();
+					DWORD color = splitFile.ReadDWORD();
 
-				if (k == 0)
-				{
-					splitBlock->level = level - 1;
-					nonLeafNodeVec.push_back(splitBlock);
-					for (int t = 0; t < nonLeafNodeVec.size(); ++t)
+					SplitBlock *splitBlock = new SplitBlock();
+					splitBlock->index = index;
+					splitBlock->color = color;
+					splitBlock->templateId = templateId;
+
+					if (index == SplitBlockType_root)
 					{
-						SplitBlock *sp = nonLeafNodeVec[t];
-						if (sp && sp->level == level - 2 && sp->childs[index])
+						temp = splitBlock;
+						root = splitBlock;
+					}
+
+					if (k == 0)
+					{
+						splitBlock->level = level - 1;
+						nonLeafNodeVec.push_back(splitBlock);
+						for (int t = 0; t < nonLeafNodeVec.size(); ++t)
 						{
-							temp = sp->childs[index];
-							delete splitBlock;
-							splitBlock = 0;
-							nonLeafNodeVec.pop_back();
-							nonLeafNodeVec.push_back(temp);
-							break;
+							SplitBlock *sp = nonLeafNodeVec[t];
+							if (sp && sp->level == level - 2 && sp->childs[index])
+							{
+								temp = sp->childs[index];
+								delete splitBlock;
+								splitBlock = 0;
+								nonLeafNodeVec.pop_back();
+								nonLeafNodeVec.push_back(temp);
+								break;
+							}
 						}
 					}
-				}
-				else
-				{
-					temp->add(index, splitBlock);
+					else
+					{
+						temp->add(index, splitBlock);
+					}
 				}
 			}
 
