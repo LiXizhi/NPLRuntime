@@ -237,6 +237,9 @@ namespace ParaEngine
 		/** offset the vertices */
 		void TranslateVertices(float dx, float dy, float dz);
 
+		/** offset the vertices */
+		void TranslateByVertex(uint32_t i);
+
 		/** only used for fixed function pipeline. 
 		*/
 		inline void SetLightIntensity(uint32_t vertexId,float value)

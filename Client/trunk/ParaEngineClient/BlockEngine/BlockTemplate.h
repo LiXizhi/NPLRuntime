@@ -164,7 +164,7 @@ namespace ParaEngine
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
-		void destroyCom(Block * src, const std::string & level);
+		bool destroyCom(Block * src, const std::string & level);
 
 		/** 通过当前制定层次设置颜色
 		@note 仅在 isComBlock 为真时使用

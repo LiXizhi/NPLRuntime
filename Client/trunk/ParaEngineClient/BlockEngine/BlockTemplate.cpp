@@ -246,10 +246,11 @@ namespace ParaEngine
 			return m_pBlockModelFilter->splitCom(src, level);
     }
 
-    void BlockTemplate::destroyCom(Block * src, const std::string & level)
+    bool BlockTemplate::destroyCom(Block * src, const std::string & level)
     {
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->destroyCom(src, level);
+		return true;
     }
 
     void BlockTemplate::setComColour(Block * src, const std::string & level, DWORD colour)

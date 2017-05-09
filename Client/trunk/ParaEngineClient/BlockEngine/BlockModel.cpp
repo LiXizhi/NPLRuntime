@@ -503,10 +503,24 @@ namespace ParaEngine
 
 	void BlockModel::TranslateVertices( float dx, float dy, float dz )
 	{
-		int nVertexCount = GetVerticesCount();
-		for (int i = 0; i<nVertexCount; ++i)
+		std::vector<BlockVertexCompressed>::iterator i, iend = m_Vertices.end();
+		for (i = m_Vertices.begin(); i != iend; ++i)
 		{
-			m_Vertices[i].OffsetPosition(dx, dy, dz);
+			(*i).OffsetPosition(dx, dy, dz);
+		}
+	}
+
+	void BlockModel::TranslateByVertex(uint32_t idx)
+	{
+		assert(idx < 24);
+		float x = m_Vertices[idx].position[0];
+		float y = m_Vertices[idx].position[1];
+		float z = m_Vertices[idx].position[2];
+
+		std::vector<BlockVertexCompressed>::iterator i, iend = m_Vertices.end();
+		for (i = m_Vertices.begin(); i != iend; ++i)
+		{
+			(*i).OffsetPosition(x, y, z);
 		}
 	}
 

@@ -500,7 +500,25 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	if (block)
 	{
 		ret = true;
-		block->destroyCom(level);
+		bool no = block->destroyCom(level);
+/*
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			if (pChunk)
+			{
+				if (no)
+				{
+					pChunk->SetBlockToAir(Uint16x3(x_ws, y_ws, z_ws));
+				}
+				else
+				{
+					pChunk->SetDirty(true);
+				}
+			}
+		}*/
 	}
 
 	return ret;
@@ -513,6 +531,17 @@ void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, uint16_
 	if (block)
 	{
 		block->setComColour(level, colour);
+
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			if (pChunk)
+			{
+				pChunk->SetDirty(true);
+			}
+		}
 	}
 }
 

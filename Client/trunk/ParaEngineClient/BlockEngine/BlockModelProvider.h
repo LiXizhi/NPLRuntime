@@ -43,7 +43,7 @@ namespace ParaEngine
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
-		virtual void destroyCom(Block *, const std::string &){}
+		virtual bool destroyCom(Block *, const std::string &) { return true; }
 
 		/** 通过当前制定层次设置颜色
 		@note 仅在 isComBlock 为真时使用

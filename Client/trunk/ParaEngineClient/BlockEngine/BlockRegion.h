@@ -62,7 +62,7 @@ namespace ParaEngine
 		// 添加子树
 		SplitBlock * add(unsigned int index, SplitBlock * childNode)
 		{
-			if(index < 8 && !childs[index])
+			if (index < 8 && !childs[index])
 			{
 				childs[index] = childNode;
 				childNode->parent = this;
@@ -132,6 +132,13 @@ namespace ParaEngine
 			return cnt;
 		}
 
+		bool isNoChild() const
+		{
+			if (childs[0] || childs[1] || childs[2] || childs[3] || childs[4] || childs[5] || childs[6] || childs[7])
+				return false;
+			return true;
+		}
+
 	public:
 		int level;
 		char index;							// 0-7 索引
@@ -140,7 +147,7 @@ namespace ParaEngine
 
 		SplitBlock *parent;					// 父块
 		SplitBlock *childs[8]{};			// 子方块
-        static std::string last;
+		static std::string last;
 	};
 
 	/** 
