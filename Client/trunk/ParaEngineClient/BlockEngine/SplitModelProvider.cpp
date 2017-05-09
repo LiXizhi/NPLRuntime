@@ -216,26 +216,28 @@ namespace ParaEngine
 		parent->add(0, sp0);
 
 		SplitBlock *sp00 = new SplitBlock();
-		sp00->set(0xffff8785);
+		sp00->set(0x52148785);
 		sp0->add(0, sp00);
 
 		SplitBlock *sp01 = new SplitBlock();
-		sp01->set(0xffff0000);
+		sp01->set(0x12532462);
 		sp0->add(1, sp01);
 
 		// 01---- 3, 4
 		SplitBlock *sp013 = new SplitBlock();
-		sp013->set(0xff00ffff);
+		sp013->set(0x45522462);
 		sp01->add(3, sp013);
 
 		SplitBlock *sp014 = new SplitBlock();
-		sp014->set(0xffff0000);
+		sp014->set(0x32532462);
 		sp01->add(4, sp014);
 		//
 
+
+
 		SplitBlock *sp1 = new SplitBlock();
 		sp1->set(0xffffffff);
-		parent->add(1, sp1); 
+		parent->add(1, sp1);
 
 		SplitBlock *sp2 = new SplitBlock();
 		sp2->set(0xffff0000);
@@ -245,17 +247,21 @@ namespace ParaEngine
 		sp3->set(0x0000ffff);
 		parent->add(3, sp3);
 
+
+		//
 		SplitBlock *sp35 = new SplitBlock();
 		sp35->set(0x0000ffff);
 		sp3->add(5, sp35);
 
 		SplitBlock *sp356 = new SplitBlock();
-		sp356->set(0x0000ffff);
+		sp356->set(0x0230ffff);
 		sp35->add(6, sp356);
 
 		SplitBlock *sp357 = new SplitBlock();
-		sp357->set(0xfffffffff);
+		sp357->set(0x1200ffff);
 		sp35->add(7, sp357);
+
+
 
 		SplitBlock *sp4 = new SplitBlock();
 		sp4->set(0xffff0000);
@@ -276,7 +282,7 @@ namespace ParaEngine
 
 		//
 		SplitBlock *sp61 = new SplitBlock();
-		sp61->set(0x00ffffff);
+		sp61->set(0x0000ffff);
 		sp6->add(1, sp61);
 
 		SplitBlock *sp7 = new SplitBlock();
