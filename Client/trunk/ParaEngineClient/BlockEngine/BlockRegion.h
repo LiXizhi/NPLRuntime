@@ -16,7 +16,8 @@ namespace ParaEngine
 	class BlockRegion;
 	class BlockChunk;
 
-	#define SplitBlockType_root -1
+#define SplitBlockType_root -1
+#define MAXSPLITBLOCKNUM 8
 
 	class SplitBlock
 	{
@@ -38,7 +39,7 @@ namespace ParaEngine
 
 		~SplitBlock()
 		{
-			int i, iend = 8;
+			int i, iend = MAXSPLITBLOCKNUM;
 			for (i = 0; i < iend; ++i)
 			{
 				if (childs[i])
@@ -56,13 +57,13 @@ namespace ParaEngine
 			parent = 0;
 			color = ~0;
 			templateId = 0;
-			memset(childs, 0, sizeof(SplitBlock *) * 8);
+			memset(childs, 0, sizeof(SplitBlock *) * MAXSPLITBLOCKNUM);
 		}
 
 		// 添加子树
 		SplitBlock * add(unsigned int index, SplitBlock * childNode)
 		{
-			if (index < 8 && !childs[index])
+			if (index < MAXSPLITBLOCKNUM && !childs[index])
 			{
 				childs[index] = childNode;
 				childNode->parent = this;
@@ -74,7 +75,7 @@ namespace ParaEngine
 
 		void remove(unsigned int index)
 		{
-			if (index < 8 && childs[index])
+			if (index < MAXSPLITBLOCKNUM && childs[index])
 			{
 				delete childs[index];
 				childs[index] = 0;
@@ -107,7 +108,7 @@ namespace ParaEngine
 					}
 
 					bool bHasChilds = false;
-					for (int k = 0; k < 8; ++k)
+					for (int k = 0; k < MAXSPLITBLOCKNUM; ++k)
 					{
 						if (temp->childs[k])
 						{
@@ -139,11 +140,19 @@ namespace ParaEngine
 			return cnt;
 		}
 
-		bool isNoChild() const
+		bool isNoChild() 
 		{
-			if (childs[0] || childs[1] || childs[2] || childs[3] || childs[4] || childs[5] || childs[6] || childs[7])
-				return false;
-			return true;
+			bool ret = true;
+			for (int i = 0; i < MAXSPLITBLOCKNUM; ++i)
+			{
+				if (childs[i])
+				{
+					ret = false;
+					break;
+				}
+			}
+
+			return ret;
 		}
 
 	public:
@@ -153,7 +162,7 @@ namespace ParaEngine
 		uint16_t templateId;		        // template id
 
 		SplitBlock *parent;					// 父块
-		SplitBlock *childs[8]{};			// 子方块
+		SplitBlock *childs[MAXSPLITBLOCKNUM]{};			// 子方块
 		static std::string last;
 	};
 
