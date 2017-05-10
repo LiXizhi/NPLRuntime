@@ -99,6 +99,7 @@ namespace ParaEngine
 				for (int idx = 0; idx < blockSave.size(); ++idx)
 				{
 					SplitBlock *temp = blockSave[idx];
+
 					std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp);
 					if (it != nodeWrite.end())
 					{
@@ -125,7 +126,14 @@ namespace ParaEngine
 					}
 				}
 
-				cnt = nodeWrite.size() + 1;
+				if (tree->isNoChild())
+				{
+					cnt = 0;
+				}
+				else
+				{
+					cnt = nodeWrite.size() + 1;
+				}
 			}
 
 			return cnt;

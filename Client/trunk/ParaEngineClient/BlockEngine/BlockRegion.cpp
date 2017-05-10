@@ -1390,7 +1390,7 @@ namespace ParaEngine
 
 			++nonLeafNodeIdx;
 
-			if (nonLeafNodeCnt > 1)
+			if (nonLeafNodeCnt > 0)
 			{
 				int count = splitFile.ReadDWORD();
 				int level = splitFile.ReadDWORD();
