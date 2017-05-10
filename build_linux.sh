@@ -8,7 +8,12 @@
 pushd .
 mkdir -p ./bin/linux
 cd bin/linux/
-# to build in parallel with 3 threads, use make -j3
+
+# to build in parallel with 3 threads, use make -j3 or `./build_linux.sh 3`
+if [ $# -gt 0 ]; then
+   JOBS="$1"
+fi
+echo "parallel build with ${JOBS:-1} jobs, you can set JOBS=6 or ./build_linux.sh 6"
 
 cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
@@ -16,7 +21,7 @@ popd
 
 if [ $result == 0 ]; then
     echo "build success! Output file is at ./ParaWorld/bin64/"
-    
+
     pushd ParaWorld/bin64/
     ls -l
     npl_exe_path=/usr/local/bin/npl
@@ -30,7 +35,7 @@ if [ $result == 0 ]; then
         ls -l $npl_exe_path
     fi
     popd
-    
+
     # run all NPL tests 
     echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua" 
 fi

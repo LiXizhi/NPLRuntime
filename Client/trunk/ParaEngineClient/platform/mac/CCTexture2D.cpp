@@ -138,7 +138,7 @@ bool Texture2D::initWithImage(Image *image, PixelFormat format)
 {
 	if (image == nullptr)
 	{
-		CCLOG("Texture2D. Can't create Texture. UIImage is nil");
+		OUTPUT_LOG("Texture2D. Can't create Texture. UIImage is nil");
 		return false;
 	}
 
@@ -150,7 +150,7 @@ bool Texture2D::initWithImage(Image *image, PixelFormat format)
 	int maxTextureSize = Image::MaxTextureSize;
 	if (imageWidth > maxTextureSize || imageHeight > maxTextureSize)
 	{
-		CCLOG("WARNING: Image (%u x %u) is bigger than the supported %u x %u", imageWidth, imageHeight, maxTextureSize, maxTextureSize);
+		OUTPUT_LOG("WARNING: Image (%u x %u) is bigger than the supported %u x %u", imageWidth, imageHeight, maxTextureSize, maxTextureSize);
 		return false;
 	}
 
@@ -165,7 +165,7 @@ bool Texture2D::initWithImage(Image *image, PixelFormat format)
 	{
 		if (pixelFormat != image->getRenderFormat())
 		{
-			CCLOG("WARNING: This image has more than 1 mipmaps and we will not convert the data format");
+			OUTPUT_LOG("WARNING: This image has more than 1 mipmaps and we will not convert the data format");
 		}
 
 		initWithMipmaps(image->getMipmaps(), image->getNumberOfMipmaps(), image->getRenderFormat(), imageWidth, imageHeight);
@@ -179,7 +179,7 @@ bool Texture2D::initWithImage(Image *image, PixelFormat format)
 	{
 		if (pixelFormat != image->getRenderFormat())
 		{
-			CCLOG("WARNING: This image is compressed and we can't convert it for now");
+			OUTPUT_LOG("WARNING: This image is compressed and we can't convert it for now");
 		}
 
 		initWithData(tempData, tempDataLen, image->getRenderFormat(), imageWidth, imageHeight, imageSize);
@@ -279,7 +279,7 @@ Texture2D::PixelFormat Texture2D::convertDataToFormat(const unsigned char* data,
 	case PixelFormat::RGBA8888:
 		return convertRGBA8888ToFormat(data, dataLen, format, outData, outDataLen);
 	default:
-		CCLOG("unsupported conversion from format %d to format %d", static_cast<int>(originFormat), static_cast<int>(format));
+		OUTPUT_LOG("unsupported conversion from format %d to format %d", static_cast<int>(originFormat), static_cast<int>(format));
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
 		return originFormat;
@@ -330,14 +330,14 @@ bool Texture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat
 
 	if (mipmapsNum <= 0)
 	{
-		CCLOG("WARNING: mipmap number is less than 1");
+		OUTPUT_LOG("WARNING: mipmap number is less than 1");
 		return false;
 	}
 
 
 	if (_pixelFormatInfoTables.find(pixelFormat) == _pixelFormatInfoTables.end())
 	{
-		CCLOG("WARNING: unsupported pixelformat: %lx", (unsigned long)pixelFormat);
+		OUTPUT_LOG("WARNING: unsupported pixelformat: %lx", (unsigned long)pixelFormat);
 		return false;
 	}
 
@@ -409,7 +409,7 @@ bool Texture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat
 	GLenum err = glGetError();
 	if (err != GL_NO_ERROR)
 	{
-		CCLOG("OpenGL error 0x%04X in %s %s %d\n", err, __FILE__, __FUNCTION__, __LINE__);
+		OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", err, __FILE__, __FUNCTION__, __LINE__);
 	}
 
 	// Specify OpenGL texture image
@@ -433,13 +433,13 @@ bool Texture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat
 
 		if (i > 0 && (width != height || ccNextPOT(width) != width))
 		{
-			CCLOG("Texture2D. WARNING. Mipmap level %u is not squared. Texture won't render correctly. width=%d != height=%d", i, width, height);
+			OUTPUT_LOG("Texture2D. WARNING. Mipmap level %u is not squared. Texture won't render correctly. width=%d != height=%d", i, width, height);
 		}
 
 		err = glGetError();
 		if (err != GL_NO_ERROR)
 		{
-			CCLOG("Texture2D: Error uploading compressed texture level: %u . glError: 0x%04X", i, err);
+			OUTPUT_LOG("Texture2D: Error uploading compressed texture level: %u . glError: 0x%04X", i, err);
 			return false;
 		}
 
@@ -559,7 +559,7 @@ Texture2D::PixelFormat Texture2D::convertI8ToFormat(const unsigned char* data, s
 		// unsupported conversion or don't need to convert
 		if (format != PixelFormat::AUTO && format != PixelFormat::I8)
 		{
-			CCLOG("Can not convert image format PixelFormat::I8 to format ID:%d, we will use it's origin format PixelFormat::I8", static_cast<int>(format));
+			OUTPUT_LOG("Can not convert image format PixelFormat::I8 to format ID:%d, we will use it's origin format PixelFormat::I8", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
@@ -613,7 +613,7 @@ Texture2D::PixelFormat Texture2D::convertAI88ToFormat(const unsigned char* data,
 		// unsupported conversion or don't need to convert
 		if (format != PixelFormat::AUTO && format != PixelFormat::AI88)
 		{
-			CCLOG("Can not convert image format PixelFormat::AI88 to format ID:%d, we will use it's origin format PixelFormat::AI88", static_cast<int>(format));
+			OUTPUT_LOG("Can not convert image format PixelFormat::AI88 to format ID:%d, we will use it's origin format PixelFormat::AI88", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
@@ -668,7 +668,7 @@ Texture2D::PixelFormat Texture2D::convertRGB888ToFormat(const unsigned char* dat
 		// unsupported conversion or don't need to convert
 		if (format != PixelFormat::AUTO && format != PixelFormat::RGB888)
 		{
-			CCLOG("Can not convert image format PixelFormat::RGB888 to format ID:%d, we will use it's origin format PixelFormat::RGB888", static_cast<int>(format));
+			OUTPUT_LOG("Can not convert image format PixelFormat::RGB888 to format ID:%d, we will use it's origin format PixelFormat::RGB888", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
@@ -722,7 +722,7 @@ Texture2D::PixelFormat Texture2D::convertRGBA8888ToFormat(const unsigned char* d
 		// unsupported conversion or don't need to convert
 		if (format != PixelFormat::AUTO && format != PixelFormat::RGBA8888)
 		{
-			CCLOG("Can not convert image format PixelFormat::RGBA8888 to format ID:%d, we will use it's origin format PixelFormat::RGBA8888", static_cast<int>(format));
+			OUTPUT_LOG("Can not convert image format PixelFormat::RGBA8888 to format ID:%d, we will use it's origin format PixelFormat::RGBA8888", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;

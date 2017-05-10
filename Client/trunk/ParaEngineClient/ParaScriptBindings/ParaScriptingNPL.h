@@ -491,13 +491,13 @@ namespace ParaScripting
 		static void AddDNSRecord(const char * sDNSName, const char* sAddress);
 
 		/**
-		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Set the default channel ID, default value is 0. Default channel is used when NPL.activate() call's does not contain the channel property.
 		* @param channel_ID It can be a number in [0,15].default is 0
 		*/
 		static void SetDefaultChannel(int channel_ID);
 
 		/**
-		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call¡¯s does not contain the channel property.
+		* Get the default channel ID, default value is 0. Default channel is used when NPL.activate() call's does not contain the channel property.
 		* @return channel_ID It can be a number in [0,15].default is 0
 		*/
 		static int GetDefaultChannel();
@@ -559,7 +559,7 @@ namespace ParaScripting
 		end
 		end
 		NPL.RegisterWSCallBack("http://paraengine.com/login.aspx",callbackFunc1);
-		NPL.activate("http://paraengine.com/login.aspx", {username=¡±lxz¡±});
+		NPL.activate("http://paraengine.com/login.aspx", {username=lxz});
 		* @param sWebServiceFile URL of the web service
 		* @param sCode code to be executed when the web service is called. When a two-way web service call is invoked; 
 		*  it internally will create a thread for the returning message. Please refer to .Net 3.0 network communication architecture.

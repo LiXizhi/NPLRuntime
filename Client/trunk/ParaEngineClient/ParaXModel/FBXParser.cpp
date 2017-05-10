@@ -652,7 +652,6 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 	}
 }
 
-
 void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh)
 {
 	aiMaterial* pfbxMaterial = pFbxScene->mMaterials[iIndex];
@@ -858,6 +857,26 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	if (pFbxMesh->HasTextureCoords(0))
 		uvs = pFbxMesh->mTextureCoords[0];
 	int nBoneIndex = CreateGetBoneIndex(pFbxNode->mName.C_Str());
+
+	// check diffuse color
+	DWORD dwDiffuseColor = Color::White;
+	aiMaterial* useMaterial = pFbxScene->mMaterials[pFbxMesh->mMaterialIndex];
+	aiTextureOp eOp;
+	aiString szPath;
+	char* content_begin = NULL;
+	int content_len = -1;
+	unsigned int iUV;
+	float fBlend;
+	aiGetMaterialTexture(useMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
+		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+	std::string diffuseTexName(szPath.C_Str());
+	if (diffuseTexName == "")
+	{
+		aiColor4D diffuseColor;
+		aiGetMaterialColor(useMaterial, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
+		dwDiffuseColor = LinearColor(diffuseColor.r, diffuseColor.g , diffuseColor.b, 1.0f);
+	}
+
 	for (int i = 0; i < numVertices; i++)
 	{
 		ModelVertex vertex;
@@ -868,7 +887,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			vertex.texcoords = Vector2(uvs[i].x, uvs[i].y);
 		else
 			vertex.texcoords = Vector2(0.f, 0.f);
-		vertex.color0 = Color::White;
+
+		vertex.color0 = dwDiffuseColor;
+
 		// remember the vertex' bone index, but do not assign any weight at the moment
 		vertex.bones[0] = nBoneIndex;
 		m_vertices.push_back(vertex);
@@ -1051,6 +1072,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		}
 	}
 }
+
 
 ModelAnimation FBXParser::CreateModelAnimation(aiAnimation* pFbxAnim, ParaEngine::AnimInfo* pAnimInfo, int AnimIndex, bool beEndAnim)
 {

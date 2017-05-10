@@ -922,7 +922,8 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 		height = pInfo->biHeight;
 		nBytesPerPixel = pInfo->biBitCount / 8;
 
-		if (nBytesPerPixel == 1 && FreeImage_GetColorType(dib) == FIC_PALETTE)
+		if (((nFormat == PixelFormat32bppARGB && pInfo->biBitCount != 32) || (nFormat == PixelFormat24bppRGB && pInfo->biBitCount != 24) || pInfo->biBitCount < 8)
+			&& FreeImage_GetColorType(dib) == FIC_PALETTE)
 		{
 			auto oldDib = dib;
 			if (nFormat == PixelFormat24bppRGB){

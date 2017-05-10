@@ -9,7 +9,7 @@
 #include "ParaEngine.h"
 
 #include "ParaEngineInfo.h"
-#include "ParaEngineCore.h"
+#include "IParaEngineApp.h"
 #include "ParaEngineSettings.h"
 #include "ParaWorldAsset.h"
 #include "ParaScriptingCommon.h"
@@ -35,7 +35,6 @@ using namespace luabind;
 #include "DirectXEngine.h"
 #include "EffectManager.h"
 #endif
-#include "memdebug.h"
 
 namespace ParaScripting
 {
@@ -151,11 +150,12 @@ namespace ParaScripting
 	}
 	bool CParaEngine::ForceRender()
 	{
-		return ParaEngine::CParaEngineCore::GetStaticInterface()->ForceRender();
+		return ParaEngine::CGlobals::GetApp()->ForceRender();
 	}
 	bool CParaEngine::Sleep(float fSeconds)
 	{
-		return ParaEngine::CParaEngineCore::GetStaticInterface()->Sleep(fSeconds);
+		SLEEP(static_cast<DWORD>(fSeconds * 1000));
+		return true;
 	}
 
 	bool CParaEngine::SaveParaXMesh(const char* filename, ParaAssetObject& xmesh, bool bBinaryEncoding)

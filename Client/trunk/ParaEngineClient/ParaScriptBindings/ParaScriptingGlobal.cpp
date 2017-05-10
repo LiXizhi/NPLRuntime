@@ -175,6 +175,14 @@ void ParaScripting::ParaGlobal::Exit(int nReturnCode)
 	CGlobals::GetApp()->Exit(nReturnCode);
 }
 
+// current selected object
+ParaAttributeObject g_selected_attr_obj;
+
+void ParaScripting::ParaGlobal::SelectAttributeObject(const ParaAttributeObject& obj)
+{
+	g_selected_attr_obj = obj;
+}
+
 bool ParaGlobal::WriteToFile(const char* filename, const char* strMessage)
 {
 	FILE *file;
@@ -1729,5 +1737,36 @@ extern "C" {
 	PE_CORE_DECL void ParaGlobal_WriteToLogFile(const char* strMessage)
 	{
 		ParaScripting::ParaGlobal::WriteToLogFile(strMessage);
+	}
+
+	PE_CORE_DECL bool ParaGlobal_SetFieldCData(const char* sFieldname, void* pValue)
+	{
+		if (g_selected_attr_obj.IsValid())
+		{
+			if (g_selected_attr_obj.IsValid())
+			{
+				CAttributeField* pField = g_selected_attr_obj.m_pAttClass->GetField(sFieldname);
+				if (pField != 0 && pField->HasSetFunction())
+				{
+					pField->Set(g_selected_attr_obj.m_pAttribute.get(), pValue);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	PE_CORE_DECL bool ParaGlobal_GetFieldCData(const char* sFieldname, void* pValueOut)
+	{
+		if (g_selected_attr_obj.IsValid())
+		{
+			CAttributeField* pField = g_selected_attr_obj.m_pAttClass->GetField(sFieldname);
+			if (pField != 0 && pField->HasGetFunction())
+			{
+				pField->Get(g_selected_attr_obj.m_pAttribute.get(), pValueOut);
+				return true;
+			}
+		}
+		return false;
 	}
 };

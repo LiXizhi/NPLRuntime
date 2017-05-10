@@ -539,6 +539,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 						std::string funcName = "loadstring";
 						lua_pushlstring(L, funcName.c_str(), funcName.size());
 						lua_gettable(L, -2);
+						lua_remove(L, -2);
 						if (lua_isfunction(L, -1))
 						{
 							int top = lua_gettop(L);
@@ -557,6 +558,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 									if (nResult == 0)
 									{
 										CacheFileModule(filePath, num_results, L);
+										num_results = lua_gettop(L) - top + 1;
 										if (bNoReturn && num_results > 0){
 											lua_pop(L, num_results);
 										}
@@ -571,12 +573,14 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 						}
 						else
 						{
-							OUTPUT_LOG("warning: no NPL.loadstring function not found when compiling %s\n", filePath.c_str());
 							lua_pop(L, 1);
+							OUTPUT_LOG("warning: no NPL.loadstring function not found when compiling %s\n", filePath.c_str());
 						}
 					}
-					// pops the element, so that the stack is balanced.
-					lua_pop(L, 1);
+					else
+					{
+						lua_pop(L, 1);
+					}
 				}
 				else
 				{
@@ -592,6 +596,7 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 						if (nResult == 0)
 						{
 							CacheFileModule(filePath, num_results, L);
+							num_results = lua_gettop(L) - top + 1;
 							if (bNoReturn && num_results > 0){
 								lua_pop(L, num_results);
 							}
@@ -634,14 +639,13 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 }
 
 
-void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult, lua_State* L)
+int ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filename, int nResult, lua_State* L)
 {
 	int nFileStatus = GetFileLoadStatus(filename);
 	if (nResult == 0 && (nFileStatus > 0 || nFileStatus == -1))
 	{
 		// this could happen when user used NPL.export() instead of return for file module.
-		PopFileModule(filename, L);
-		return;
+		return PopFileModule(filename, L);
 	}
 	SetFileLoadStatus(filename, nResult);
 	if (nResult > 0 || nResult == -1)
@@ -692,6 +696,7 @@ void ParaScripting::CNPLScriptingState::CacheFileModule(const std::string& filen
 			lua_pop(L, 1);
 		}
 	}
+	return 0;
 }
 
 int ParaScripting::CNPLScriptingState::PopFileModule(const std::string& filename, lua_State* L)
