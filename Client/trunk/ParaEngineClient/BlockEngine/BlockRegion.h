@@ -162,7 +162,7 @@ namespace ParaEngine
 		uint16_t templateId;		        // template id
 
 		SplitBlock *parent;					// 父块
-		SplitBlock *childs[MAXSPLITBLOCKNUM]{};			// 子方块
+		SplitBlock *childs[MAXSPLITBLOCKNUM];			// 子方块
 		static std::string last;
 	};
 
