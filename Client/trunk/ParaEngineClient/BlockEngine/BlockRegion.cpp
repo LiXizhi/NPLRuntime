@@ -811,56 +811,73 @@ namespace ParaEngine
 							splitFile.WriteDWORD(templateId);						    //	templateId 
 							splitFile.WriteDWORD(nonLeafNodeCnt);						// 保存所有非叶子节点
 
-							vector<SplitBlock *> blockSave;
-							std::list<int>	nodeWrite;
-							blockSave.push_back(splitBlockRoot);
-							int level = 0;
-
-							for (int idx = 0; idx < blockSave.size(); ++idx)
+							if (splitBlockRoot->isNoChild())
 							{
-								SplitBlock *temp = blockSave[idx];
+								splitFile.WriteDWORD(splitBlockRoot->index);
+								splitFile.WriteDWORD(splitBlockRoot->color);
+							}
+							else
+							{
+								vector<SplitBlock *> blockSave;
+								std::list<int>	nodeWrite;
+								blockSave.push_back(splitBlockRoot);
+								int level = 0;
 
-								std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp); 
-								if (it != nodeWrite.end())
+								for (int idx = 0; idx < blockSave.size(); ++idx)
 								{
-									continue;
-								}
+									SplitBlock *temp = blockSave[idx];
 
-								// 保存所有的子节点
-								vector<SplitBlock *> vecChilds;
-								for (int k = 0; k < 8; ++k)
-								{
-									if (temp->childs[k])
+									std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp);
+									if (it != nodeWrite.end())
 									{
-										vecChilds.push_back(temp->childs[k]);
+										continue;
 									}
-								}
 
-								// 当有子节点，写入当前节点
-								if (vecChilds.size() > 0)
-								{
-									// 连续写入个数
-									int writeCnt = vecChilds.size() + 1;
-									splitFile.WriteDWORD(writeCnt);
-									splitFile.WriteDWORD(temp->level + 1);
-
-									// 写入当前节点
-									splitFile.WriteDWORD(temp->index);
-									splitFile.WriteDWORD(temp->color);
-
-									if (temp->index != -1)
+									// 保存所有的子节点
+									vector<SplitBlock *> vecChilds;
+									for (int k = 0; k < 8; ++k)
 									{
-										blockSave.push_back(temp);
-										nodeWrite.push_back((int)temp);
+										if (temp->childs[k])
+										{
+											vecChilds.push_back(temp->childs[k]);
+										}
 									}
-								}
 
-								for (int t = 0; t < vecChilds.size(); ++t)
-								{
-									// 写入子节点
-									blockSave.push_back(vecChilds[t]);
-									splitFile.WriteDWORD(vecChilds[t]->index);
-									splitFile.WriteDWORD(vecChilds[t]->color);
+									// 当有子节点，写入当前节点
+									if (vecChilds.size() > 0)
+									{
+										// 连续写入个数
+										int writeCnt = vecChilds.size();
+										splitFile.WriteDWORD(writeCnt);
+										splitFile.WriteDWORD(temp->level + 1);
+
+										SplitBlock *tempSp = temp;
+										vector<char> parentIndexSave;
+										while (tempSp)
+										{
+											parentIndexSave.push_back(tempSp->index);
+											tempSp = tempSp->parent;
+										}
+
+										for (int x = 0; x < parentIndexSave.size(); ++x)
+										{
+											splitFile.WriteDWORD(parentIndexSave[parentIndexSave.size() - 1 - x]);
+										}
+
+										if (temp->index != -1)
+										{
+											blockSave.push_back(temp);
+											nodeWrite.push_back((int)temp);
+										}
+									}
+
+									for (int t = 0; t < vecChilds.size(); ++t)
+									{
+										// 写入子节点
+										blockSave.push_back(vecChilds[t]);
+										splitFile.WriteDWORD(vecChilds[t]->index);
+										splitFile.WriteDWORD(vecChilds[t]->color);
+									}
 								}
 							}
 						}
@@ -1337,6 +1354,7 @@ namespace ParaEngine
 		
 		m_nEventAsyncLoadWorldFinished = 1;
 
+
 		//-------------------zzw-----------//
 		CParaFile splitFile;
 		std::string splitFileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionSplipFileName(m_regionX, m_regionZ);
@@ -1365,59 +1383,54 @@ namespace ParaEngine
 				blockIdx = splitFile.ReadDWORD();			// block 索引
 				templateId = splitFile.ReadDWORD();		// templateId
 				nonLeafNodeCnt = splitFile.ReadDWORD();
-			}
-
-			if (nonLeafNodeCnt == 1)
-			{
 				root = new SplitBlock();
 				root->templateId = templateId;
-				++nonLeafNodeIdx;
 			}
-			else
+
+
+			++nonLeafNodeIdx;
+
+			if (nonLeafNodeCnt > 1)
 			{
 				int count = splitFile.ReadDWORD();
 				int level = splitFile.ReadDWORD();
-				++nonLeafNodeIdx;
 
 				for (int k = 0; k < count; ++k)
 				{
+					SplitBlock *splitBlock = new SplitBlock();
+
+					if (k == 0)
+					{
+						for (int x = 0; x < level; ++x)
+						{
+							int idx = splitFile.ReadDWORD();
+							if (idx == -1)
+							{
+								temp = root;
+							}
+							else
+							{
+								temp = temp->childs[idx];
+							}
+						}
+					}
+
 					char index = splitFile.ReadDWORD();
 					DWORD color = splitFile.ReadDWORD();
 
-					SplitBlock *splitBlock = new SplitBlock();
 					splitBlock->index = index;
 					splitBlock->color = color;
 					splitBlock->templateId = templateId;
 
-					if (index == SplitBlockType_root)
-					{
-						temp = splitBlock;
-						root = splitBlock;
-					}
-
-					if (k == 0)
-					{
-						splitBlock->level = level - 1;
-						nonLeafNodeVec.push_back(splitBlock);
-						for (int t = 0; t < nonLeafNodeVec.size(); ++t)
-						{
-							SplitBlock *sp = nonLeafNodeVec[t];
-							if (sp && sp->level == level - 2 && sp->childs[index])
-							{
-								temp = sp->childs[index];
-								delete splitBlock;
-								splitBlock = 0;
-								nonLeafNodeVec.pop_back();
-								nonLeafNodeVec.push_back(temp);
-								break;
-							}
-						}
-					}
-					else
-					{
-						temp->add(index, splitBlock);
-					}
+					temp->add(index, splitBlock);
 				}
+			}
+			else
+			{
+				char index = splitFile.ReadDWORD();
+				DWORD color = splitFile.ReadDWORD();
+				root->index = index;
+				root->color = color;
 			}
 
 

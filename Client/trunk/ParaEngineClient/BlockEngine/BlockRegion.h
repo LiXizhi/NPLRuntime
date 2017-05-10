@@ -99,7 +99,6 @@ namespace ParaEngine
 				for (int idx = 0; idx < blockSave.size(); ++idx)
 				{
 					SplitBlock *temp = blockSave[idx];
-
 					std::list<int>::iterator it = find(nodeWrite.begin(), nodeWrite.end(), (int)temp);
 					if (it != nodeWrite.end())
 					{
