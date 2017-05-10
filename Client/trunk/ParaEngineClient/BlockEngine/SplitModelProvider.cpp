@@ -92,19 +92,7 @@ namespace ParaEngine
 			else
 				return true;
 		}
-		assert(stemp);
-		SplitBlock * stemp2 = stemp->parent;
-		if(stemp2)
-		{
-			assert(lnum != -1);
-			stemp2->remove(lnum);
-		}
-		else
-		{
-			if (stemp2->isNoChild())
-				return true;
-		}
-		return false;
+		return destroyLevel(stemp);
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
@@ -244,17 +232,26 @@ namespace ParaEngine
 		parent->add(7, temp);
 	}
 	//-----------------------------------------------------
-	void CSplitModelProvider::comLevel(SplitBlock * parent)
+	bool CSplitModelProvider::destroyLevel(SplitBlock * level)
 	{
-		assert(parent);
-		parent->remove(0);
-		parent->remove(1);
-		parent->remove(2);
-		parent->remove(3);
-		parent->remove(4);
-		parent->remove(5);
-		parent->remove(6);
-		parent->remove(7);
+		assert(level);
+		SplitBlock * temp = level->parent;
+		if (temp)
+		{
+			int i, iend = 8;
+			for(i = 0; i < iend; ++i)
+			{
+				if (temp->childs[i] == level)
+				{
+					temp->remove(i);
+					if (temp->isNoChild())
+						return destroyLevel(temp);
+					else
+						return false;
+				}
+			}
+		}
+		return true;
 	}
     //-----------------------------------------------------
     int CSplitModelProvider::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, bool & nochild) const

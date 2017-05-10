@@ -21,7 +21,10 @@
 #include "TextureEntity.h"
 #include "BlockWorld.h"
 
+#include "2dengine/GUIRoot.h"
 #include "SceneObject.h"
+#include "BaseCamera.h"
+#include "ViewportManager.h"
 using namespace ParaEngine;
 
 /** default render distance in blocks */
@@ -1569,244 +1572,108 @@ bool CBlockWorld::PickSplit(uint16_t bx, uint16_t by, uint16_t bz, const Vector3
 		return true;
 	}
 return false;
-	/*
-	if (!m_isInWorld)
-		return false;
-	//////////////////////////////////////////////////////////////
-	//
-	// use 3D DDA algorithm to find hit block more detail see 
-	// http://www.flipcode.com/archives/Raytracing_Topics_Techniques-Part_4_Spatial_Subdivisions.shtml
-	//
-	//////////////////////////////////////////////////////////////
+}
 
-	Uint16x3 tempBlockId;
-	BlockCommon::ConvertToBlockIndex(rayOrig.x, rayOrig.y, rayOrig.z, tempBlockId.x, tempBlockId.y, tempBlockId.z);
-	int32_t startBlockIdX = tempBlockId.x;
-	int32_t startBlockIdY = tempBlockId.y;
-	int32_t startBlockIdZ = tempBlockId.z;
+void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB & out)
+{
+	Vector3 vPickRayOrig, vPickRayDir;
+	POINT ptCursor;
+	Matrix4 matWorld = Matrix4::IDENTITY;
+	int cursorpx, cursorpy;
+	CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+	float fScaleX = 1.f, fScaleY = 1.f;
+	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+	ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+	ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+	cursorpx = ptCursor.x;
+	cursorpy = ptCursor.y;
+	int nWidth, nHeight;
+	CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+	ptCursor.x = cursorpx;
+	ptCursor.y = cursorpy;
+	CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-	int32_t curBlockIdX = startBlockIdX;
-	int32_t curBlockIdY = startBlockIdY;
-	int32_t curBlockIdZ = startBlockIdZ;
+	float fScaling = 1.0f;
+	const float fBlockSize = BlockConfig::g_blockSize;
+	Vector3 renderOfs = CGlobals::GetScene()->GetRenderOrigin();
+	float verticalOffset = GetVerticalOffset();
 
-	//ray tracing direction
-	int32_t blockStepX;
-	int32_t blockStepY;
-	int32_t blockStepZ;
+	int32_t renderBlockOfs_x = (int32_t)(renderOfs.x / fBlockSize);
+	int32_t renderBlockOfs_y = (int32_t)(renderOfs.y / fBlockSize);
+	int32_t renderBlockOfs_z = (int32_t)(renderOfs.z / fBlockSize);
 
-	//setup 3d dda init value
-	Vector3 nextBlockPos;
-	if (dir.x > 0)
+	Vector3 renderBlockOfs_remain;
+	renderBlockOfs_remain.x = renderOfs.x - renderBlockOfs_x * fBlockSize;
+	renderBlockOfs_remain.y = renderOfs.y - renderBlockOfs_y * fBlockSize;
+	renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs_z * fBlockSize;
+
+	// scale the block a little to avoid z fighting. 
+	float fScaledBlockSize = BlockConfig::g_blockSize*fScaling;
+
+	BlockTemplate* pBlockTemplate = GetBlockTemplate(bx, by, bz);
+	Block *block = GetBlock(bx, by, bz);
+	if (pBlockTemplate == 0)
+		pBlockTemplate = GetBlockTemplate(1);
+	if (pBlockTemplate)
 	{
-		blockStepX = 1;
-		nextBlockPos.x = (curBlockIdX + 1) * BlockConfig::g_blockSize;
-	}
-	else
-	{
-		blockStepX = -1;
-		nextBlockPos.x = curBlockIdX * BlockConfig::g_blockSize;
-	}
+		int nLenCount = 12;
+		CShapeAABB aabb;
+		CShapeRay ray(vPickRayOrig, vPickRayDir);
+		std::pair<bool, float> intersect1;
+		pBlockTemplate->GetAABB(this, bx, by, bz, &aabb);
 
-	if (dir.y > 0)
-	{
-		blockStepY = 1;
-		nextBlockPos.y = (curBlockIdY + 1) * BlockConfig::g_blockSize;
-	}
-	else
-	{
-		blockStepY = -1;
-		nextBlockPos.y = curBlockIdY * BlockConfig::g_blockSize;
-	}
+		Vector3 vOffset((bx - renderBlockOfs_x) * fBlockSize, (by - renderBlockOfs_y) * fBlockSize + verticalOffset, (bz - renderBlockOfs_z) * fBlockSize);
+		vOffset -= renderBlockOfs_remain;
 
-	if (dir.z > 0)
-	{
-		blockStepZ = 1;
-		nextBlockPos.z = (curBlockIdZ + 1) * BlockConfig::g_blockSize;
-	}
-	else
-	{
-		blockStepZ = -1;
-		nextBlockPos.z = curBlockIdZ * BlockConfig::g_blockSize;
-	}
+		aabb.GetCenter() += vOffset;
+		aabb.GetExtents() *= fScaling;
 
-	// distance we can travel along the ray before hitting a block boundary, in either of the three axis.
-	Vector3 errDist;
-	// the delta distance to travel in the three axis, before we move to next block. This is a constant;
-	Vector3 delta;
-
-	float maxRayDist = 100000;
-	if (dir.x != 0)
-	{
-		float invX = 1.0f / dir.x;
-		errDist.x = (nextBlockPos.x - rayOrig.x) * invX;
-		delta.x = BlockConfig::g_blockSize * blockStepX * invX;
-	}
-	else
-		errDist.x = maxRayDist;
-
-	if (dir.y != 0)
-	{
-		float invY = 1.0f / dir.y;
-		errDist.y = (nextBlockPos.y - rayOrig.y + GetVerticalOffset()) * invY;
-		delta.y = BlockConfig::g_blockSize * blockStepY * invY;
-	}
-	else
-		errDist.y = maxRayDist;
-
-	if (dir.z != 0)
-	{
-		float invZ = 1.0f / dir.z;
-		errDist.z = (nextBlockPos.z - rayOrig.z) * invZ;
-		delta.z = BlockConfig::g_blockSize * blockStepZ * invZ;
-	}
-	else
-		errDist.z = maxRayDist;
-
-	int16_t curRegionX = -1;
-	int16_t curRegionZ = -1;
-	BlockRegion* curRegion = NULL;
-	int32_t side;
-	while (true)
-	{
-		//find the smallest value of traveledDist and going alone that direction
-		float distTraveled = 0;
-		if (errDist.x < errDist.y)
+		// use AABB for non-cube model
+		float fHitDist = -1;
+		bool forcego = true;
+		intersect1 = ray.intersects(aabb);
+		if (intersect1.first)
 		{
-			if (errDist.x < errDist.z)
+			int tempidx, currentidx;
+			fHitDist = intersect1.second;
+			CShapeAABB aabb2 = aabb;
+			ShapeAABBList maabblist;
+			assert(pBlockTemplate->isComBlock());
+			SplitBlock * sblock = static_cast<SplitBlock * >(block->getExtData());
+			SplitBlock * sblock2 = sblock;
+		iteratoraabb:
+			getSplitAABB(aabb2, maabblist, sblock);
+			ShapeAABBList::iterator i, iend = maabblist.end();
+			for (tempidx = 0, i = maabblist.begin(); i != iend; ++i, ++tempidx)
 			{
-				distTraveled = errDist.x;
-				curBlockIdX += blockStepX;
-				errDist.x += delta.x;
-				side = 0;
-			}
-			else
-			{
-				distTraveled = errDist.z;
-				curBlockIdZ += blockStepZ;
-				errDist.z += delta.z;
-				side = 2;
-			}
-		}
-		else
-		{
-			if (errDist.y < errDist.z)
-			{
-				distTraveled = errDist.y;
-				curBlockIdY += blockStepY;
-				errDist.y += delta.y;
-				side = 4;
-			}
-			else
-			{
-				distTraveled = errDist.z;
-				curBlockIdZ += blockStepZ;
-				errDist.z += delta.z;
-				side = 2;
-			}
-		}
-
-		uint16_t regionX = curBlockIdX >> 9;
-		uint16_t regionZ = curBlockIdZ >> 9;
-		if (regionX != curRegionX || regionZ != curRegionZ)
-		{
-			curRegionX = regionX;
-			curRegionZ = regionZ;
-			curRegion = GetRegion(curRegionX, curRegionZ);
-		}
-
-		if (curRegion == NULL || curBlockIdX < 0 || curBlockIdY < 0 || curBlockIdZ < 0)
-			return false;
-
-		Block* pBlock = curRegion->GetBlock(curBlockIdX & 0x1ff, curBlockIdY & 0xff, curBlockIdZ & 0x1ff);
-		BlockTemplate* pBlockTemplate = NULL;
-		if (pBlock != 0 && (pBlockTemplate = pBlock->GetTemplate()) != 0)
-		{
-			const double blockSize = BlockConfig::g_blockSize;
-			float rayLength = -1;
-
-			if (side == 0 && blockStepX <= 0)
-				side = 1;
-			if (side == 2 && blockStepZ <= 0)
-				side = 3;
-			if (side == 4 && blockStepY <= 0)
-				side = 5;
-
-			{
-				// use AABB for non-cube model
-				CShapeAABB aabb;
-				pBlockTemplate->GetAABB(this, curBlockIdX, curBlockIdY, curBlockIdZ, &aabb);
-				Vector3 vOrig = rayOrig - Vector3((float)(blockSize*curBlockIdX), (float)(blockSize*curBlockIdY + GetVerticalOffset()), (float)(blockSize*curBlockIdZ));
-				float fHitDist = -1;
-				int nHitSide = 0;
-
-				if (aabb.IntersectOutside(&fHitDist, &vOrig, &dir, &nHitSide))
+				if ((*i).IsValid())
 				{
-					rayLength = fHitDist;
-					float fHitDist2 = -1;
-					int tempidx, currentidx;
-					CShapeAABB aabb2 = aabb;
-					ShapeAABBList maabblist;
-					assert(pBlockTemplate->isComBlock());
-					SplitBlock * sblock = static_cast<SplitBlock * >(pBlock->getExtData());
-					SplitBlock * sblock2 = sblock;
-				iteratoraabb:
-					getSplitAABB(aabb2, maabblist, sblock);
-					ShapeAABBList::iterator i, iend = maabblist.end();
-					for (tempidx = 0, i = maabblist.begin(); i != iend; ++i, ++tempidx)
+					intersect1 = ray.intersects(*i);
+					if (intersect1.first)
 					{
-						if ((*i).IsValid())
+						if (intersect1.second <= fHitDist || forcego)
 						{
-							if ((*i).IntersectOutside(&fHitDist2, &vOrig, &dir, &nHitSide))
-							{
-								if (fHitDist2 < fHitDist)
-								{
-									fHitDist = fHitDist2;
-									side = nHitSide;
-									sblock2 = sblock->childs[tempidx];
-									currentidx = tempidx;
-									aabb2 = *i;
-								}
-							}
+							forcego = false;
+							fHitDist = intersect1.second;
+							sblock2 = sblock->childs[tempidx];
+							currentidx = tempidx;
+							aabb2 = *i;
 						}
-					}
-					if (sblock2 != sblock)
-					{
-						sblock = sblock2;
-						result.push_back(toLevelChar(currentidx));
-						goto iteratoraabb;
 					}
 				}
 			}
-
-			if (rayLength >= 0)
+			if (sblock2 != sblock)
 			{
-//				m_selectBlockIdW.x = curBlockIdX;
-//				m_selectBlockIdW.y = curBlockIdY;
-//				m_selectBlockIdW.z = curBlockIdZ; 
-
-//				float collsionX = rayOrig.x + rayLength * dir.x;
-//				float collsionY = rayOrig.y + rayLength * dir.y;
-//				float collsionZ = rayOrig.z + rayLength * dir.z;
-
-//				result.X = collsionX;
-//				result.Y = collsionY;
-//				result.Z = collsionZ;
-
-//				result.BlockX = curBlockIdX;
-//				result.BlockY = curBlockIdY;
-//				result.BlockZ = curBlockIdZ;
-
-//				result.Side = side;
-//				result.Distance = rayLength;
-				return true;
+				sblock = sblock2;
+				//result.push_back(toLevelChar(currentidx));
+				forcego = true;
+				goto iteratoraabb;
 			}
+			out = aabb2;
 		}
-		if(distTraveled > length)
-			return false;
+		//return true;
 	}
-	return false;
-//	GetOnClickDistance();
-*/
+	//return false;
 }
 
 bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)

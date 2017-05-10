@@ -70,13 +70,13 @@ namespace ParaEngine
 		@param[in] parent
 		@data 2017.5.2
 		*/
-		void splitLevel(SplitBlock * parent);
+		void splitLevel(SplitBlock * level);
 
 		/** ºÏ²¢
 		@param[in] parent
 		@data 2017.5.2
 		*/
-		void comLevel(SplitBlock * parent);
+		bool destroyLevel(SplitBlock * level);
 
 		/**
 		@data 2017.5.4

@@ -496,8 +496,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 		ptCursor.y = cursorpy;
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-		// pWorld->PickSplit(vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result); 
-		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig /*+ CGlobals::GetScene()->GetRenderOrigin()*/, vPickRayDir, 50, result);
+		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 
 		ret = true;
 		block->splitCom(result);
@@ -523,7 +522,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
-	if (block)
+	if (block && block->GetTemplate()->isComBlock())
 	{
 		Vector3 vPickRayOrig, vPickRayDir;
 		POINT ptCursor;
@@ -542,28 +541,30 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		ptCursor.y = cursorpy;
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-		//pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig + CGlobals::GetScene()->GetRenderOrigin(), vPickRayDir, 50, result);
+		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 
 		ret = true;
-		bool no = block->destroyCom(level);
-/*
-		uint16_t lx, ly, lz;
-		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
-		if (pRegion)
+		bool no = block->destroyCom(result);
+
+		if(no)
+			pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
+		else
 		{
-			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
-			if (pChunk)
+			uint16_t lx, ly, lz;
+			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+			if (pRegion)
 			{
-				if (no)
-				{
-					pChunk->SetBlockToAir(Uint16x3(x_ws, y_ws, z_ws));
-				}
-				else
+				BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+				if (pChunk)
 				{
 					pChunk->SetDirty(true);
 				}
 			}
-		}*/
+		}
+	}
+	else
+	{
+		pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 	}
 
 	return ret;
