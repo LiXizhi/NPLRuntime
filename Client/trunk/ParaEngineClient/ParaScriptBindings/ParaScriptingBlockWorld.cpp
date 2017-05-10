@@ -505,6 +505,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 		if (pRegion)
 		{
 			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			pRegion->SetModified(true);
 			if (pChunk)
 			{
 				pChunk->SetDirty(true);
@@ -550,6 +551,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+			pRegion->SetModified(true);
 			if (pRegion)
 			{
 				BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
@@ -589,8 +591,14 @@ void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, uint16_
 	}
 }
 
-DWORD ParaScripting::ParaBlockWorld::GetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+DWORD ParaScripting::ParaBlockWorld::GetBlockColor(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		return block->getComColour(level);
+	}
 	return 0;
 }
 
@@ -600,8 +608,19 @@ void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint1
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	if (block)
 	{
-		block->setComTexture(level, texture.c_str());
+		block->setComTexture(level, texture);
 	}
+}
+
+string ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block)
+	{
+		return block->getComTexture(level);
+	}
+	return std::string();
 }
 
 string ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
@@ -616,12 +635,6 @@ string ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, 
 
 	return ret;
 }
-
-const string& ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
-{
-	return std::string();
-}
-
 
 void ParaScripting::ParaBlockWorld::SaveBlockWorld(const object& pWorld_, bool saveToTemp)
 {

@@ -141,7 +141,7 @@ namespace ParaScripting
 		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture);
 
 		// 获取贴图
-		static const string& GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+		static string GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 获取当前的块
 		static string GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);

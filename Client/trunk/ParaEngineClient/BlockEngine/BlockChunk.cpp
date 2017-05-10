@@ -824,10 +824,24 @@ namespace ParaEngine
 			return m_pTemplate->setComColour(this, level, colour);
 	}
 
-	void Block::setComTexture(const std::string & level, const char* texture)
+	DWORD Block::getComColour(const std::string & level) const
+	{
+		if (m_pTemplate)
+			return m_pTemplate->getComColour(this, level);
+		return 0;
+	}
+
+	void Block::setComTexture(const std::string & level, const std::string & texture)
 	{
 		if (m_pTemplate)
 			return m_pTemplate->setComTexture(this, level, texture);
+	}
+
+	std::string Block::getComTexture(const std::string & level) const
+	{
+		if (m_pTemplate)
+			return m_pTemplate->getComTexture(this, level);
+		return std::string();
 	}
 
 	const std::string & Block::getComByCursor() const

@@ -115,7 +115,27 @@ namespace ParaEngine
 		stemp->color = colour;
 	}
 	//-----------------------------------------------------
-	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, const char* texture)
+	DWORD CSplitModelProvider::getComColour(const Block * src, const std::string & level) const
+	{
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (stemp->childs[num])
+			{
+				stemp = stemp->childs[num];
+			}
+			else
+				return 0;
+		}
+		assert(stemp);
+		return stemp->color;
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, const std::string & texture)
 	{
 		// 保留到后期
 		assert(src);
@@ -130,6 +150,24 @@ namespace ParaEngine
 			else
 				return;
 		}
+	}
+	//-----------------------------------------------------
+	std::string CSplitModelProvider::getComTexture(const Block * src, const std::string & level) const
+	{
+		// 保留到后期
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (num != -1 && stemp->childs[num])
+				stemp = stemp->childs[num];
+			else
+				return std::string();
+		}
+		return std::string();
 	}
     //-----------------------------------------------------
     std::string CSplitModelProvider::getComByCursor(const Block * src) const 
