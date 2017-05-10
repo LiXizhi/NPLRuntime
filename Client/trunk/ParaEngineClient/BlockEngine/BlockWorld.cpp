@@ -1580,6 +1580,7 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 	POINT ptCursor;
 	Matrix4 matWorld = Matrix4::IDENTITY;
 	int cursorpx, cursorpy;
+	SplitBlock::last.clear();
 	CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
 	float fScaleX = 1.f, fScaleY = 1.f;
 	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
@@ -1665,7 +1666,7 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 			if (sblock2 != sblock)
 			{
 				sblock = sblock2;
-				//result.push_back(toLevelChar(currentidx));
+				SplitBlock::last.push_back(toLevelChar(currentidx));
 				forcego = true;
 				goto iteratoraabb;
 			}

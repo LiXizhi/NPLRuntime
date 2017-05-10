@@ -966,11 +966,6 @@ namespace ParaEngine
 					CShapeAABB aabb;
 					pBlockTemplate->GetAABB(this, x, y, z, &aabb);
 					
-					/*
-					string level = "0";									// 细分方块
-					float splitScale = 1.0f;							// 细分缩放
-					Vector3 splitOffset = Vector3(0.0f, 0.0f, 0.0f);	// 细分偏移
-					*/
 					if (pBlockTemplate->isComBlock())
 					{
 						getSplitAABB(x, y, z, aabb);

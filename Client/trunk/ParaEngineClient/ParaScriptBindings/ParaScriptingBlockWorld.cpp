@@ -497,7 +497,6 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
 		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
-
 		ret = true;
 		block->splitCom(result);
 
@@ -540,7 +539,6 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		ptCursor.x = cursorpx;
 		ptCursor.y = cursorpy;
 		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-
 		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 
 		ret = true;
@@ -591,6 +589,11 @@ void ParaScripting::ParaBlockWorld::SetBlockColor(const object& pWorld_, uint16_
 	}
 }
 
+DWORD ParaScripting::ParaBlockWorld::GetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	return 0;
+}
+
 void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
@@ -612,6 +615,11 @@ const string& ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pW
 	}
 
 	return ret;
+}
+
+const string& ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	return std::string();
 }
 
 

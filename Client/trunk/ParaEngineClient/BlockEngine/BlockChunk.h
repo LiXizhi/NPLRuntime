@@ -83,12 +83,6 @@ namespace ParaEngine
 		@data 2017.4.25
 		*/
 		const std::string & getComByCursor() const;
-
-		/** 获取最后一次选中的分裂方块
-		@note 可分裂方块专用
-		@data 2017.4.28
-		*/
-		const std::string & getLastSelectCom()const;
 	protected:
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			if (m_pTemplate)

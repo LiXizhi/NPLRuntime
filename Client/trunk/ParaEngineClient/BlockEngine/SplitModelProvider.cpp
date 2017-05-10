@@ -135,11 +135,7 @@ namespace ParaEngine
     std::string CSplitModelProvider::getComByCursor(const Block * src) const 
     {
 		assert(src);
-        SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-        
-
-
-		return std::string();
+		return SplitBlock::last;
     };
     //-----------------------------------------------------
     int CSplitModelProvider::getComFaceCount(Block * src) const 

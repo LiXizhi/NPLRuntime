@@ -134,13 +134,17 @@ namespace ParaScripting
 		// 设置颜色
 		static void SetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, DWORD colour);
 
+		// 获取颜色
+		static DWORD GetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+
 		// 设置贴图
 		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture);
 
+		// 获取贴图
+		static const string& GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+
 		// 获取当前的块
-		static const string& GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);
-
-
+		static const string & GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);
 
 	// following are client only functions. 
 	public: 

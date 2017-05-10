@@ -839,9 +839,4 @@ namespace ParaEngine
         }
 		return std::string();
 	}
-    
-	const std::string & Block::getLastSelectCom()const
-	{
-		return SplitBlock::last;
-	}
 }
