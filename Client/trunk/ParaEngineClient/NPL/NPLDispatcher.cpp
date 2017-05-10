@@ -518,7 +518,16 @@ void NPL::CNPLDispatcher::NPL_accept( const char* sTID, const char* sNID /*= NUL
 	}
 }
 
-void NPL::CNPLDispatcher::RenameConnection( NPLConnection_ptr pConnection, const char* sNID )
+void NPL::CNPLDispatcher::NPL_SetProtocol(const char* nid, CNPLConnection::ProtocolType protocolType)
+{
+	NPLConnection_ptr conn = GetNPLConnectionByNID(nid);
+	if (conn)
+	{
+		conn->SetProtocol(protocolType);
+	}
+}
+
+void NPL::CNPLDispatcher::RenameConnection(NPLConnection_ptr pConnection, const char* sNID)
 {
 	ParaEngine::Lock lock_(m_mutex);
 	RenameConnectionImp(pConnection, sNID);

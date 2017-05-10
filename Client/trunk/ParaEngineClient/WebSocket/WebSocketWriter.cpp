@@ -11,9 +11,8 @@
 using namespace NPL::WebSocket;
 
 NPL::WebSocket::WebSocketWriter::WebSocketWriter()
-	: flagsInUse(0x00)
 {
-
+	reset();
 }
 
 NPL::WebSocket::WebSocketWriter::~WebSocketWriter()
@@ -156,18 +155,16 @@ void NPL::WebSocket::WebSocketWriter::generateWholeFrame(WebSocketFrame& frame, 
 	}
 }
 
-void NPL::WebSocket::WebSocketWriter::generate(WebSocketWriter& writer, const char * code, int nLength,vector<byte>& outData)
+void NPL::WebSocket::WebSocketWriter::generate(const char * code, int nLength,vector<byte>& outData)
 {
-	WebSocket::WebSocketFrame frame;
+	reset();
 	frame.setOpCode(WebSocket::OpCode::TEXT);
-	WebSocket::ByteBuffer payload;
 	for (int i = 0; i < nLength; i++)
 	{
-		payload.putChar(code[i]);
+		input_buff.putChar(code[i]);
 	}
-	frame.setPayload(payload);
-	NPL::WebSocket::ByteBuffer out_buff;
-	writer.generateWholeFrame(frame, out_buff);
+	frame.setPayload(input_buff);
+	generateWholeFrame(frame, out_buff);
 
 	int len = out_buff.bytesRemaining();
 	for (int i = 0; i < len; i++)
@@ -176,4 +173,12 @@ void NPL::WebSocket::WebSocketWriter::generate(WebSocketWriter& writer, const ch
 		outData.push_back(b);
 	}
 
+}
+
+void NPL::WebSocket::WebSocketWriter::reset()
+{
+	flagsInUse = 0x00;
+	frame.reset();
+	input_buff.clear();
+	out_buff.clear();
 }

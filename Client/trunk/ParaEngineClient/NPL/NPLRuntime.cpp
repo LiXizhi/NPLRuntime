@@ -673,6 +673,12 @@ string CNPLRuntime::NPL_GetIP(const char* nid)
 	return "";
 }
 
+void CNPLRuntime::NPL_SetProtocol(const char* nid, int protocolType /*= 0*/)
+{
+	NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().NPL_SetProtocol(nid, (NPL::CNPLConnection::ProtocolType)protocolType);
+
+}
+
 void CNPLRuntime::NPL_accept(const char* sTID, const char* sNID)
 {
 	if(sTID!=0)
