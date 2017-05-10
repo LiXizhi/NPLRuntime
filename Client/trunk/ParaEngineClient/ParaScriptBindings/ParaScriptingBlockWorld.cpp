@@ -476,7 +476,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
-	if (block)
+	if (block&& block->GetTemplate()->isComBlock())
 	{
 
 		Vector3 vPickRayOrig, vPickRayDir;
@@ -604,7 +604,7 @@ void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint1
 	}
 }
 
-const string& ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
+string ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 {
 	string ret;
 	GETBLOCKWORLD(pWorld, pWorld_);
