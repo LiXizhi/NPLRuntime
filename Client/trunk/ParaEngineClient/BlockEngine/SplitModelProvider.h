@@ -48,9 +48,15 @@ namespace ParaEngine
 		/// @copydetails IBlockModelProvider::setComColour
 		virtual void setComColour(Block * src, const std::string & level, DWORD colour);
 
+		/// @copydetails IBlockModelProvider::getComColour
+		virtual DWORD getComColour(const Block * src, const std::string & level) const;
+
 		/// @copydetails IBlockModelProvider::setComTexture
-		virtual void setComTexture(Block * src, const std::string & level, const char* texture);
+		virtual void setComTexture(Block * src, const std::string & level, const std::string & texture);
         
+		/// @copydetails IBlockModelProvider::getComTexture
+		virtual std::string getComTexture(const Block * src, const std::string & level) const;
+
         /// @copydetails IBlockModelProvider::getComByCursor
         virtual std::string getComByCursor(const Block * src) const;
         

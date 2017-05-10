@@ -259,11 +259,25 @@ namespace ParaEngine
 			return m_pBlockModelFilter->setComColour(src, level, colour);
     }
 
-    void BlockTemplate::setComTexture(Block * src, const std::string & level, const char* texture)
+	DWORD BlockTemplate::getComColour(const Block * src, const std::string & level) const
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->getComColour(src, level);
+		return 0;
+	}
+
+    void BlockTemplate::setComTexture(Block * src, const std::string & level, const std::string & texture)
     {
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->setComTexture(src, level, texture);
     }
+
+	std::string BlockTemplate::getComTexture(const Block * src, const std::string & level) const
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->getComTexture(src, level);
+		return std::string();
+	}
         
     std::string BlockTemplate::getComByCursor(const Block * src) const
     {

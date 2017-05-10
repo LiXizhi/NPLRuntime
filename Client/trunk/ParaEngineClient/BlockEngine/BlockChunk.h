@@ -76,7 +76,19 @@ namespace ParaEngine
 		@note 可分裂方块专用
 		@data 2017.4.28
 		*/
-		void setComTexture(const std::string & level, const char* texture);
+		DWORD getComColour(const std::string & level) const;
+
+		/** 通过当前制定层次设置颜色
+		@note 可分裂方块专用
+		@data 2017.4.28
+		*/
+		void setComTexture(const std::string & level, const std::string & texture);
+
+		/** 通过当前制定层次设置颜色
+		@note 可分裂方块专用
+		@data 2017.4.28
+		*/
+		std::string getComTexture(const std::string & level) const;
 
 		/** 通过当前鼠标获取当前选中的分裂方块
 		@note 可分裂方块专用
