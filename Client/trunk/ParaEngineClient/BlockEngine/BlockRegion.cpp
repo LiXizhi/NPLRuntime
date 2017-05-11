@@ -835,7 +835,7 @@ namespace ParaEngine
 
 									// 保存所有的子节点
 									vector<SplitBlock *> vecChilds;
-									for (int k = 0; k < 8; ++k)
+									for (int k = 0; k < MAXSPLITBLOCKNUM; ++k)
 									{
 										if (temp->childs[k])
 										{
@@ -1390,7 +1390,7 @@ namespace ParaEngine
 
 			++nonLeafNodeIdx;
 
-			if (nonLeafNodeCnt > 1)
+			if (nonLeafNodeCnt > 0)
 			{
 				int count = splitFile.ReadDWORD();
 				int level = splitFile.ReadDWORD();
