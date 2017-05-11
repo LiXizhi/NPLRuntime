@@ -1069,6 +1069,21 @@ void CNPLRuntime::SetMaxPendingConnections(int val)
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->SetMaxPendingConnections(val);
 }
 
+const std::string& NPL::CNPLRuntime::GetHostPort()
+{
+	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetHostPort();
+}
+
+const std::string& NPL::CNPLRuntime::GetHostIP()
+{
+	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetHostIP();
+}
+
+bool NPL::CNPLRuntime::IsServerStarted()
+{
+	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->IsServerStarted();
+}
+
 void CNPLRuntime::EnableAnsiMode( bool bEnable )
 {
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->EnableAnsiMode(bEnable);
@@ -1114,5 +1129,8 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("MaxPendingConnections", FieldType_Int, (void*)SetMaxPendingConnections_s, (void*)GetMaxPendingConnections_s, NULL, NULL, bOverride);
 	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableAnsiMode",FieldType_Bool, (void*)EnableAnsiMode_s, (void*)IsAnsiMode_s, NULL, NULL, bOverride);
+	pClass->AddField("IsServerStarted", FieldType_Bool, (void*)0, (void*)IsServerStarted_s, NULL, NULL, bOverride);
+	pClass->AddField("HostIP", FieldType_String, (void*)0, (void*)GetHostIP_s, NULL, NULL, bOverride);
+	pClass->AddField("HostPort", FieldType_String, (void*)0, (void*)GetHostPort_s, NULL, NULL, bOverride);
 	return S_OK;
 }

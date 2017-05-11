@@ -29,17 +29,4 @@ using namespace NPL::WebSocket;
 			outData.push_back(b);
 		}
 	}
-
-	void NPL::WebSocket::WebSocketFrame::loadData(ParaEngine::StringBuilder& outData)
-	{
-		int len = data.bytesRemaining();
-		for (int i = 0; i < len; i++)
-		{
-			byte b = data.get();
-			if (isMasked())
-			{
-				b = b ^ mask[i % 4];
-			}
-			outData.append(b);
-		}
-	}
+	

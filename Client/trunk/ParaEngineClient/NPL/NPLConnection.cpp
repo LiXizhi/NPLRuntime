@@ -605,9 +605,17 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage( const NPLFileName& file_nam
 		writer.Append(code, nLength);
 	}else if (file_name.sRelativePath == "websocket")
 	{
-		m_websocket_out_data.clear();
-		m_websocket_writer.generate(code, nLength, m_websocket_out_data);
-		writer.Append(string(m_websocket_out_data.begin(), m_websocket_out_data.end()));
+		if (m_protocolType == WEBSOCKET)
+		{
+			m_websocket_out_data.clear();
+			m_websocket_writer.generate(code, nLength, m_websocket_out_data);
+			writer.Append((char*)&m_websocket_out_data[0], m_websocket_out_data.size());
+		}
+		else
+		{
+			OUTPUT_LOG("NPL can't send websocket message with a wrong protocol,The connection nid is %s, current protocol is %d. \n", GetNID().c_str(), m_protocolType);
+			return NPL_WrongProtocol;
+		}
 	}
 	else
 	{
@@ -747,8 +755,7 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 			string m_code;
 			NPL::NPLHelper::EncodeJsonStringInQuotation(m_code,0, msg_str);
 			m_input_msg.m_code = m_code;
-			handleMessageIn();
-			break;
+			return handleMessageIn();
 		}
 		case NPL::WebSocket::BINARY:
 			break;
@@ -775,6 +782,11 @@ bool NPL::CNPLConnection::handleReceivedData( int bytes_transferred )
 		if (handle_websocket_data(bytes_transferred))
 		{
 			return true;
+		}
+		else
+		{
+			OUTPUT_LOG("warning: websocket message parsing failed when received data. we will close connection. nid %s \n", GetNID().c_str());
+			return false;
 		}
 	}
 
