@@ -37,7 +37,7 @@ m_connection_manager(),
 m_msg_dispatcher(this), // TODO: this gives a warning. find a better way to pass this pointer.
 m_strServer(NPL_DEFAULT_SERVER), 
 m_strPort(NPL_DEFAULT_PORT), 
-m_nMaxPendingConnections(DEFAULT_MAX_PENDING_CONNECTIONS),
+m_nMaxPendingConnections(DEFAULT_MAX_PENDING_CONNECTIONS), m_bIsServerStarted(false),
 m_bTCPKeepAlive(false),m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS)
 {
 }
@@ -228,6 +228,7 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 
 			// QUESTION: shall we set the maximum length of the queue of pending connections. 
 			m_acceptor.listen(m_nMaxPendingConnections);
+			m_bIsServerStarted = true;
 
 			OUTPUT_LOG("NPL max pending incoming connections allowed is %d\n", m_nMaxPendingConnections);
 			// m_acceptor.listen();
@@ -343,6 +344,21 @@ std::string NPL::CNPLNetServer::GetExternalIP()
 		OUTPUT_LOG1("warning: failed getting external ip in CNPLNetServer::GetExternalIP()\n");
 	}
 	return "NOT SUPPORTED YET, CHECK LOG";
+}
+
+const std::string& NPL::CNPLNetServer::GetHostPort()
+{
+	return m_strServer;
+}
+
+const std::string& NPL::CNPLNetServer::GetHostIP()
+{
+	return m_strPort;
+}
+
+bool NPL::CNPLNetServer::IsServerStarted()
+{
+	return m_bIsServerStarted;
 }
 
 void NPL::CNPLNetServer::Cleanup()

@@ -78,6 +78,9 @@ namespace NPL
 		*/
 		void NPL_accept(const char* tid, const char* nid = NULL);
 
+		/** set transmission protocol, default value is 0. */
+		void NPL_SetProtocol(const char* nid, CNPLConnection::ProtocolType protocolType = CNPLConnection::ProtocolType::NPL);
+
 		/** rename a given connection. this is called by SetNid() and its function is same as NPL_accept.
 		* [thread safe]
 		* @param tid: the temporary id or NID of the connection to be accepted. usually it is from msg.tid or msg.nid. 
