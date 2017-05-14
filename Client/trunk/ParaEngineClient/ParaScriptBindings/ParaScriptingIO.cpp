@@ -1103,7 +1103,10 @@ namespace ParaScripting
 			if(nCount>0)
 			{
 				m_sTempBuffer.resize(nCount);
-				memcpy((char*)(&(m_sTempBuffer[0])), m_pFile->getBuffer()+fromPos, nCount);
+				int nOldPos = m_pFile->getPos();
+				m_pFile->seek(fromPos);
+				m_pFile->read((char*)(&(m_sTempBuffer[0])), nCount);
+				m_pFile->seek(nOldPos);
 			}
 		}
 		return m_sTempBuffer;
@@ -1123,8 +1126,7 @@ namespace ParaScripting
 			if (nCount > 0)
 			{
 				m_sTempBuffer.resize(nCount);
-				memcpy((char*)(&(m_sTempBuffer[0])), m_pFile->getBuffer() + fromPos, nCount);
-				m_pFile->seekRelative(nCount);
+				m_pFile->read((char*)(&(m_sTempBuffer[0])), nCount);
 			}
 		}
 		return m_sTempBuffer;
@@ -1155,7 +1157,7 @@ namespace ParaScripting
 	{
 		if(IsValid())
 		{
-			m_pFile->seek(offset);
+			m_pFile->seekRelative(offset);
 		}
 	}
 
@@ -1738,7 +1740,7 @@ namespace ParaScripting
 				if((int)file.getSize()> 0)
 				{
 					sCode.resize((int)file.getSize());
-					memcpy(&(sCode[0]), file.getBuffer(), (int)file.getSize());
+					file.read(&(sCode[0]), (int)file.getSize());
 				}
 #ifdef USE_TINYXML2
 				namespace TXML = tinyxml2;

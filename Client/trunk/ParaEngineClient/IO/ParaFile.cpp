@@ -912,7 +912,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		else
 		{
 
-			FileHandle fileHandle = CFileUtils::OpenFile(filename, false, true);
+			FileHandle fileHandle = CFileUtils::OpenFile(filename, true, true);
 
 			if (fileHandle.IsValid())
 			{
@@ -956,6 +956,18 @@ void CParaFile::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 	if (m_bDiskFileOpened)
 	{
 		CFileUtils::SetFilePointer(m_handle, lDistanceToMove, dwMoveMethod);
+		if (dwMoveMethod == FILE_BEGIN)
+		{
+			m_curPos = lDistanceToMove;
+		}
+		else if (dwMoveMethod == FILE_END)
+		{
+			m_curPos = getPos();
+		}
+		else if (dwMoveMethod == FILE_CURRENT)
+		{
+			m_curPos += lDistanceToMove;
+		}
 	}
 	else if (m_bMemoryFile)
 	{
@@ -976,19 +988,28 @@ void CParaFile::SetFilePointer(int lDistanceToMove, int dwMoveMethod)
 
 size_t CParaFile::read(void* dest, size_t bytes)
 {
-	if (m_eof) return 0;
+	if (!m_bDiskFileOpened)
+	{
+		if (m_eof) return 0;
 
-	size_t rpos = m_curPos + bytes;
-	if (rpos >= m_size) {
-		bytes = m_size - m_curPos;
-		m_eof = true;
+		size_t rpos = m_curPos + bytes;
+		if (rpos >= m_size) {
+			bytes = m_size - m_curPos;
+			m_eof = true;
+		}
+
+		memcpy(dest, &(m_buffer[m_curPos]), bytes);
+
+		m_curPos = rpos;
+
+		return bytes;
 	}
-
-	memcpy(dest, &(m_buffer[m_curPos]), bytes);
-
-	m_curPos = rpos;
-
-	return bytes;
+	else
+	{
+		int bytesRead = CFileUtils::ReadBytes(m_handle, dest, bytes);
+		m_curPos += bytesRead;
+		return bytesRead;
+	}
 }
 
 int CParaFile::write(const void* src, int bytes)
@@ -1050,7 +1071,6 @@ void CParaFile::seek(int offset)
 	if (m_bDiskFileOpened)
 	{
 		SetFilePointer(offset, FILE_BEGIN);
-		m_curPos = offset;
 	}
 	else
 	{
@@ -1061,8 +1081,15 @@ void CParaFile::seek(int offset)
 
 void CParaFile::seekRelative(int offset)
 {
-	m_curPos += offset;
-	m_eof = (m_curPos >= m_size);
+	if (! m_bDiskFileOpened)
+	{
+		m_curPos += offset;
+		m_eof = (m_curPos >= m_size);
+	}
+	else
+	{
+		SetFilePointer(offset, FILE_CURRENT);
+	}
 }
 
 void CParaFile::close()
@@ -1085,12 +1112,26 @@ void CParaFile::close()
 
 size_t CParaFile::getSize()
 {
-	return m_size;
+	if(!m_bDiskFileOpened)
+		return m_size;
+	else
+	{
+		int nPos = getPos();
+		SetFilePointer(0, FILE_END);
+		int nSize = getPos();
+		SetFilePointer(nPos, FILE_BEGIN);
+		return nSize;
+	}
 }
 
 size_t CParaFile::getPos()
 {
-	return m_curPos;
+	if(!m_bDiskFileOpened)
+		return m_curPos;
+	else
+	{
+		return CFileUtils::GetFilePosition(m_handle);
+	}
 }
 
 char* CParaFile::getBuffer()

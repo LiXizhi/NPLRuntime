@@ -837,6 +837,22 @@ bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanc
 	return false;
 }
 
+int ParaEngine::CFileUtils::GetFilePosition(FileHandle& fileHandle)
+{
+	if (fileHandle.IsValid())
+	{
+#ifdef USE_COCOS_FILE_API
+		return ftell(fileHandle.m_pFile);
+#elif defined USE_BOOST_FILE_API
+		return ftell(fileHandle.m_pFile);
+#else
+		int nPos = ::SetFilePointer(fileHandle.m_handle, 0, NULL, FILE_CURRENT);
+		return nPos != INVALID_SET_FILE_POINTER ? nPos : 0;
+#endif
+	}
+	return 0;
+}
+
 bool ParaEngine::CFileUtils::SetEndOfFile(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
@@ -866,6 +882,23 @@ int ParaEngine::CFileUtils::WriteBytes(FileHandle& fileHandle, const void* src, 
 		DWORD bytesWritten;
 		::WriteFile(fileHandle.m_handle, src, bytes, &bytesWritten, NULL);
 		return bytesWritten;
+#endif
+	}
+	return 0;
+}
+
+int ParaEngine::CFileUtils::ReadBytes(FileHandle& fileHandle, void* dest, int bytes)
+{
+	if (fileHandle.IsValid())
+	{
+#ifdef USE_COCOS_FILE_API
+		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
+#elif defined USE_BOOST_FILE_API
+		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
+#else
+		DWORD bytesRead = 0;
+		::ReadFile(fileHandle.m_handle, dest, bytes, &bytesRead, NULL);
+		return bytesRead;
 #endif
 	}
 	return 0;
