@@ -157,6 +157,9 @@ namespace ParaEngine
 		*/
 		static bool SetFilePointer(FileHandle& fileHandle, int lDistanceToMove, int dwMoveMethod);
 
+		/** get the current file pointer position.*/
+		static int GetFilePosition(FileHandle& fileHandle);
+
 		/**
 		* The SetEndOfFile function moves the end-of-file (EOF) position for the specified file to
 		* the current position of the file pointer.This function can be used to truncate or extend a file.
@@ -164,11 +167,16 @@ namespace ParaEngine
 		* @return
 		*/
 		static bool SetEndOfFile(FileHandle& fileHandle);
-
+		
 		/** Write byte stream to file
 		* the file must be opened with write access.
 		*/
 		static int WriteBytes(FileHandle& fileHandle, const void* src, int bytes);
+
+		/** read byte stream from file
+		* the file must be opened with read access.
+		*/
+		static int ReadBytes(FileHandle& fileHandle, void* dest, int bytes);
 
 		/** close the given file*/
 		static void CloseFile(FileHandle& fileHandle);

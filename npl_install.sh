@@ -18,8 +18,12 @@ apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mes
 # install boost from latest source url. boost version should be 1.55.0 or above
 mkdir ./bin -p
 pushd ./bin
-wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 --no-check-certificate
-tar --bzip2 -xf boost_1_61_0.tar.bz2
+if [ ! -d ./boost_1_61_0 ]; then
+	if [ ! -f ./boost_1_61_0.tar.bz2 ]; then
+		wget http://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.tar.bz2 --no-check-certificate
+	fi
+	tar --bzip2 -xf boost_1_61_0.tar.bz2
+fi
 cd boost_1_61_0
 ./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"
 ./b2 link=static threading=multi variant=release
