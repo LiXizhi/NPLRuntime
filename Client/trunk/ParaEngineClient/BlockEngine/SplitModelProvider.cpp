@@ -74,6 +74,24 @@ namespace ParaEngine
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
+	void CSplitModelProvider::mergeCom(Block * src, const std::string & level)
+	{
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (stemp->childs[num])
+				stemp = stemp->childs[num];
+			else
+				return;
+		}
+		assert(stemp);
+		mergeLevel(stemp);
+	}
+	//-----------------------------------------------------
 	bool CSplitModelProvider::destroyCom(Block * src, const std::string & level)
 	{
 		assert(src);
@@ -93,6 +111,28 @@ namespace ParaEngine
 				return true;
 		}
 		return destroyLevel(stemp);
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::restoreCom(Block * src, const std::string & level)
+	{
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_iterator i, iend = level.end();
+		for (i = level.begin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (stemp->childs[num])
+			{
+				stemp = stemp->childs[num];
+			}
+			else
+			{
+				assert((i + 1) == level.end());
+				SplitBlock * temp = new SplitBlock();
+				stemp->add(num, temp);
+			}
+		}
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
@@ -236,35 +276,55 @@ namespace ParaEngine
 		assert(parent);
 		SplitBlock * temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(0, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(1, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(2, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(3, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(4, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(5, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(6, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->textureIdx = parent->textureIdx;
 		parent->add(7, temp);
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::mergeLevel(SplitBlock * level)
+	{
+		level->remove(0);
+		level->remove(1);
+		level->remove(2);
+		level->remove(3);
+		level->remove(4);
+		level->remove(5);
+		level->remove(6);
+		level->remove(7);
 	}
 	//-----------------------------------------------------
 	bool CSplitModelProvider::destroyLevel(SplitBlock * level)

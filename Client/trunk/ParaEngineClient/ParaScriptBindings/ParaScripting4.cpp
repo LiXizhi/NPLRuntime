@@ -221,6 +221,8 @@ namespace ParaScripting
 					// 可分裂方块操作
 					def("SplitBlock", &ParaBlockWorld::SplitBlock),
 					def("DestroyBlock", &ParaBlockWorld::DestroyBlock),
+					def("MergeBlock", &ParaBlockWorld::MergeBlock),
+					def("RestoreBlock", &ParaBlockWorld::RestoreBlock),
 					def("SetBlockColor", &ParaBlockWorld::SetBlockColor),
 					def("GetBlockColor", &ParaBlockWorld::GetBlockColor),
 					def("SetBlockTexture", &ParaBlockWorld::SetBlockTexture),

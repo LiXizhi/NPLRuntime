@@ -552,6 +552,33 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	return ret;
 }
 
+bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	bool ret = false;
+
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	std::string result;
+	if (block&& block->GetTemplate()->isComBlock())
+	{
+		block->mergeCom(level);
+
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			pRegion->SetModified(true);
+			if (pChunk)
+			{
+				pChunk->SetDirty(true);
+			}
+		}
+	}
+
+	return ret;
+}
+
 bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	bool ret = false;
@@ -584,6 +611,38 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		if(no)
 			pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 		else
+		{
+			uint16_t lx, ly, lz;
+			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+			pRegion->SetModified(true);
+			if (pRegion)
+			{
+				BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+				if (pChunk)
+				{
+					pChunk->SetDirty(true);
+				}
+			}
+		}
+	}
+	else
+	{
+		pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
+	}
+
+	return ret;
+}
+bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	bool ret = false;
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	std::string result;
+	if (block && block->GetTemplate()->isComBlock())
+	{
+		ret = true;
+		block->restoreCom(result);
+
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);

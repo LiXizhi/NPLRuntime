@@ -246,12 +246,24 @@ namespace ParaEngine
 			return m_pBlockModelFilter->splitCom(src, level);
     }
 
+	void BlockTemplate::mergeCom(Block * src, const std::string & level)
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->mergeCom(src, level);
+	}
+
     bool BlockTemplate::destroyCom(Block * src, const std::string & level)
     {
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->destroyCom(src, level);
 		return true;
     }
+
+	void BlockTemplate::restoreCom(Block * src, const std::string & level)
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->restoreCom(src, level);
+	}
 
     void BlockTemplate::setComColour(Block * src, const std::string & level, DWORD colour)
     {

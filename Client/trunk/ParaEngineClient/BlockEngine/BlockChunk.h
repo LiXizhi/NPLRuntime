@@ -54,17 +54,29 @@ namespace ParaEngine
 		/* get the texture index into the main block template. */
 		int32 GetTextureIndex();
 
-		/** 通过当前鼠标分裂方块
+		/** 分裂指定等级方块
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
 		void splitCom(const std::string & level);
+
+		/** 回复指定等级方块
+		@note 可分裂方块专用
+		@data 2017.4.25
+		*/
+		void mergeCom(const std::string & level);
 
 		/** 通过当前鼠标删除分裂出的方块
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
 		bool destroyCom(const std::string & level);
+
+		/** 回复指定方块
+		@note 可分裂方块专用
+		@data 2017.5.17
+		*/
+		void restoreCom(const std::string & level);
 
 		/** 通过当前制定层次设置颜色
 		@note 可分裂方块专用

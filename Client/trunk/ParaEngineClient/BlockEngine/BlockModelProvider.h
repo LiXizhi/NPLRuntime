@@ -33,17 +33,29 @@ namespace ParaEngine
         */
         virtual bool isComBlock() const {return false;}
         
-		/** 通过当前鼠标分裂方块
+		/** 通过指定层次分裂方块
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		virtual void splitCom(Block *, const std::string &){}
 
-		/** 通过当前鼠标删除分裂出的方块
+		/** 通过指定层次合并方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void mergeCom(Block *, const std::string &) {}
+
+		/** 通过指定层次删除方块
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		virtual bool destroyCom(Block *, const std::string &) { return true; }
+
+		/** 通过指定层次恢复方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		virtual void restoreCom(Block *, const std::string &) { }
 
 		/** 通过当前制定层次设置颜色
 		@note 仅在 isComBlock 为真时使用

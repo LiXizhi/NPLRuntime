@@ -154,31 +154,43 @@ namespace ParaEngine
 		*/
 		bool isComBlock() const;
 
-		/** 通过当前鼠标分裂方块
+		/** 通过当前指定层次分裂方块
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		void splitCom(Block * src, const std::string & level);
 
-		/** 通过当前鼠标删除分裂出的方块
+		/** 通过当前指定层次合并方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		void mergeCom(Block * src, const std::string & level);
+
+		/** 通过当前指定层次删除方块
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		bool destroyCom(Block * src, const std::string & level);
 
-		/** 通过当前制定层次设置颜色
+		/** 通过当前指定层次分恢复方块
+		@note 仅在 isComBlock 为真时使用
+		@data 2017.5.2
+		*/
+		void restoreCom(Block * src, const std::string & level);
+
+		/** 通过当前指定层次设置颜色
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		void setComColour(Block * src, const std::string & level, DWORD colour);
 
-		/** 通过当前制定层次获取颜色
+		/** 通过当前指定层次获取颜色
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
 		DWORD getComColour(const Block * src, const std::string & level) const;
         
-		/** 通过当前制定层次设置颜色
+		/** 通过当前指定层次设置颜色
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
