@@ -595,7 +595,7 @@ namespace ParaEngine
 				//compare it with current group first.
 				uint32 nBlockID = pBlock->GetTemplate()->GetID();
 				uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
-
+				void * nBlockExtData = pBlock->getExtData();
 				if (nBlockData > 0)
 					nBlockID = ((nBlockData << 12) | nBlockID);
 				auto curIndex = instance_map.find(nBlockID);

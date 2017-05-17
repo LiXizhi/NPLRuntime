@@ -399,6 +399,7 @@ void CNPLScriptingState::LoadParaScene()
 				.def("IsValid", &ParaMiniSceneGraph::IsValid),
 
 			// function declarations
+			def("SetBackGroundColor", &ParaScene::SetBackGroundColor),
 			def("GetActor",&ParaScene::GetCurrentActor),
 			def("SetActor",&ParaScene::SetCurrentActor),
 			def("GetObject", &ParaScene::GetObject),

@@ -94,7 +94,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 {
 	uint32_t attFlag = 0;
 	uint16_t category_id = 0;
-	std::string sModelName, sNormalMap, sTexture0, sTexture2, sTexture3, sTexture4;
+	std::string sModelName, sNormalMap, sTexture0, sTexture2, sTexture3, sTexture4, sTexture5, sTexture6, sTexture7, sTexture8, sTexture9, sTexture10;
 	Color dwMapColor = 0;
 	int nOpacity = -1;
 	uint16_t associated_blockid = 0;
@@ -139,6 +139,18 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			sTexture3 = object_cast<const char*>(params["texture3"]);
 		if (type(params["texture4"]) == LUA_TSTRING)
 			sTexture4 = object_cast<const char*>(params["texture4"]);
+		if (type(params["texture5"]) == LUA_TSTRING)
+			sTexture5 = object_cast<const char*>(params["texture5"]);
+		if (type(params["texture6"]) == LUA_TSTRING)
+			sTexture6 = object_cast<const char*>(params["texture6"]);
+		if (type(params["texture7"]) == LUA_TSTRING)
+			sTexture7 = object_cast<const char*>(params["texture7"]);
+		if (type(params["texture8"]) == LUA_TSTRING)
+			sTexture8 = object_cast<const char*>(params["texture8"]);
+		if (type(params["texture9"]) == LUA_TSTRING)
+			sTexture9 = object_cast<const char*>(params["texture9"]);
+		if (type(params["texture10"]) == LUA_TSTRING)
+			sTexture10 = object_cast<const char*>(params["texture10"]);
 		if (type(params["mapcolor"]) == LUA_TSTRING)
 			dwMapColor = Color::FromString(object_cast<const char*>(params["mapcolor"]));
 		if (type(params["opacity"]) == LUA_TNUMBER)
@@ -158,11 +170,23 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
 			if (!sTexture2.empty())
-				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+				pTemplate->SetTexture0(sTexture2.c_str(), 1);
 			if (!sTexture3.empty())
-				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+				pTemplate->SetTexture0(sTexture3.c_str(), 2);
 			if (!sTexture4.empty())
-				pTemplate->SetTexture0(sTexture4.c_str(), 4);
+				pTemplate->SetTexture0(sTexture4.c_str(), 3);
+			if (!sTexture5.empty())
+				pTemplate->SetTexture0(sTexture5.c_str(), 4);
+			if (!sTexture6.empty())
+				pTemplate->SetTexture0(sTexture6.c_str(), 5);
+			if (!sTexture7.empty())
+				pTemplate->SetTexture0(sTexture7.c_str(), 6);
+			if (!sTexture8.empty())
+				pTemplate->SetTexture0(sTexture8.c_str(), 7);
+			if (!sTexture9.empty())
+				pTemplate->SetTexture0(sTexture9.c_str(), 8);
+			if (!sTexture10.empty())
+				pTemplate->SetTexture0(sTexture10.c_str(), 9);
 			if (fSpeedReduction < 1.f)
 				pTemplate->SetSpeedReductionPercent(fSpeedReduction);
 			if (nOpacity>0)
@@ -195,11 +219,23 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
 			if (!sTexture2.empty())
-				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+				pTemplate->SetTexture0(sTexture2.c_str(), 1);
 			if (!sTexture3.empty())
-				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+				pTemplate->SetTexture0(sTexture3.c_str(), 2);
 			if (!sTexture4.empty())
-				pTemplate->SetTexture0(sTexture4.c_str(), 4);
+				pTemplate->SetTexture0(sTexture4.c_str(), 3);
+			if (!sTexture5.empty())
+				pTemplate->SetTexture0(sTexture5.c_str(), 4);
+			if (!sTexture6.empty())
+				pTemplate->SetTexture0(sTexture6.c_str(), 5);
+			if (!sTexture7.empty())
+				pTemplate->SetTexture0(sTexture7.c_str(), 6);
+			if (!sTexture8.empty())
+				pTemplate->SetTexture0(sTexture8.c_str(), 7);
+			if (!sTexture9.empty())
+				pTemplate->SetTexture0(sTexture9.c_str(), 8);
+			if (!sTexture10.empty())
+				pTemplate->SetTexture0(sTexture10.c_str(), 9);
 			if (associated_blockid > 0)
 				pTemplate->SetAssociatedBlock(associated_blockid);
 			if (bProvidePower)
@@ -602,17 +638,17 @@ DWORD ParaScripting::ParaBlockWorld::GetBlockColor(const object& pWorld_, uint16
 	return 0;
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture)
+void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int i)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	if (block)
 	{
-		block->setComTexture(level, texture);
+		block->setComTexture(level, i);
 	}
 }
 
-string ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+int ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
@@ -620,7 +656,7 @@ string ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uin
 	{
 		return block->getComTexture(level);
 	}
-	return std::string();
+	return -1;
 }
 
 string ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)

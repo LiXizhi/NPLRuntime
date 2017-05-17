@@ -266,17 +266,17 @@ namespace ParaEngine
 		return 0;
 	}
 
-    void BlockTemplate::setComTexture(Block * src, const std::string & level, const std::string & texture)
-    {
+	void BlockTemplate::setComTexture(Block * src, const std::string & level, int textureidx)
+	{
 		if (m_pBlockModelFilter != 0)
-			return m_pBlockModelFilter->setComTexture(src, level, texture);
-    }
+			return m_pBlockModelFilter->setComTexture(src, level, textureidx);
+	}
 
-	std::string BlockTemplate::getComTexture(const Block * src, const std::string & level) const
+	int BlockTemplate::getComTexture(const Block * src, const std::string & level) const
 	{
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->getComTexture(src, level);
-		return std::string();
+		return -1;
 	}
         
     std::string BlockTemplate::getComByCursor(const Block * src) const

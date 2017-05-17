@@ -54,6 +54,7 @@ namespace ParaEngine
 		{
 			level = 0;
 			index = -1;
+			textureIdx = -1;
 			parent = 0;
 			color = ~0;
 			templateId = 0;
@@ -159,6 +160,7 @@ namespace ParaEngine
 		int level;
 		char index;							// 0-7 Ë÷Òý
 		DWORD color;						// ÑÕÉ«
+		int textureIdx;						// ²ÄÖÊ id
 		uint16_t templateId;		        // template id
 
 		SplitBlock *parent;					// ¸¸¿é

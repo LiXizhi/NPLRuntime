@@ -138,10 +138,10 @@ namespace ParaScripting
 		static DWORD GetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 设置贴图
-		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture);
+		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int i);
 
 		// 获取贴图
-		static string GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+		static int GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 获取当前的块
 		static string GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);

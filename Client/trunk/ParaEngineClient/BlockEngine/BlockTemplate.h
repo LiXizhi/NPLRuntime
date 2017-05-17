@@ -177,18 +177,18 @@ namespace ParaEngine
 		@data 2017.5.2
 		*/
 		DWORD getComColour(const Block * src, const std::string & level) const;
-
+        
 		/** 通过当前制定层次设置颜色
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
-		void setComTexture(Block * src, const std::string & level, const std::string& texture);
-        
+		void setComTexture(Block * src, const std::string & level, int textureidx);
+
 		/** 通过当前制定层次获取颜色
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
-		std::string getComTexture(const Block * src, const std::string & level) const;
+		int getComTexture(const Block * src, const std::string & level) const;
 
 		/** 通过当前鼠标获取当前选中的分裂方块
 		@note 可分裂方块专用

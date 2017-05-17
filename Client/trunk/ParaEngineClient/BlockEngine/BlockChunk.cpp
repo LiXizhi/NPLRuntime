@@ -831,17 +831,17 @@ namespace ParaEngine
 		return 0;
 	}
 
-	void Block::setComTexture(const std::string & level, const std::string & texture)
+	void Block::setComTexture(const std::string & level, int textureidx)
 	{
 		if (m_pTemplate)
-			return m_pTemplate->setComTexture(this, level, texture);
+			return m_pTemplate->setComTexture(this, level, textureidx);
 	}
 
-	std::string Block::getComTexture(const std::string & level) const
+	int Block::getComTexture(const std::string & level) const
 	{
 		if (m_pTemplate)
 			return m_pTemplate->getComTexture(this, level);
-		return std::string();
+		return -1;
 	}
 
 	const std::string & Block::getComByCursor() const
