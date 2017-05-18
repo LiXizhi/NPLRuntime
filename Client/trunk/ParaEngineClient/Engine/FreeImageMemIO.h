@@ -10,7 +10,7 @@
 class MemIO : public FreeImageIO 
 {
 public :
-	MemIO( BYTE *data ) : _start(data), _cp(data) {
+	MemIO( BYTE *data, size_t size) : _start(data), _cp(data), _size(size) {
 		read_proc  = _ReadProc;
 		write_proc = _WriteProc;
 		tell_proc  = _TellProc;
@@ -29,4 +29,5 @@ public :
 private:
 	BYTE * const _start;
 	BYTE *_cp;
+	size_t _size;
 };

@@ -907,7 +907,7 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 		nFormat = PixelFormat32bppARGB;
 
 	int nBytesPerPixel = 0;
-	MemIO memIO((BYTE*)sBufMemFile);
+	MemIO memIO((BYTE*)sBufMemFile, sizeBuf);
 	FIBITMAP *dib = FreeImage_LoadFromHandle((FREE_IMAGE_FORMAT)GetFormatByFileName(sTextureFileName), &memIO, (fi_handle)&memIO);
 	if (dib == 0)
 	{

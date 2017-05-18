@@ -46,9 +46,10 @@ Client/trunk/*
 !Client/trunk/ParaEngineClientApp/
 !Client/trunk/PhysicsBT/
 !Client/trunk/externals/
-!Client/trunk/externals/*
+Client/trunk/externals/*
 !Client/trunk/externals/assimp*
 !Client/trunk/externals/bullet-2.75/
+!Client/trunk/externals/bullet3/
 !Client/trunk/externals/png*
 !Client/trunk/externals/jpeg*
 !Client/trunk/externals/freetype2*
