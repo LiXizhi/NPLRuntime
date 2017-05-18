@@ -754,17 +754,16 @@ void ParaEngine::BlockGeneralTessellator::TessellateSplitBlock(Block * dst, Bloc
 	{
 		aoFlags = CalculateCubeAO();
 	}
-	int32_t max_light = blockBrightness[rbp_center] + 9;
-	Block * pCurBlock1 = neighborBlocks[rbp_center];
+	int32_t max_light = 10;
 
-    BlockModelList templist;
-    m_pCurBlockTemplate->getComModelList(dst, templist);
-	if (pCurBlock1 && pCurBlock1->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) && neighborBlocks[7] && neighborBlocks[11])
+	if (dst && dst->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) && neighborBlocks[7] && neighborBlocks[11])
 	{
 		// simulate ao but not render completely dark. 
 		max_light -= 3;
 	}
 
+    BlockModelList templist;
+    m_pCurBlockTemplate->getComModelList(dst, templist);
     BlockModelList::iterator tb, tbend = templist.end();
     for(tb = templist.begin(); tb != tbend; ++tb)
     {
