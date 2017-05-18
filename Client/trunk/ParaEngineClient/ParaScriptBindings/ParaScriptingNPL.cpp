@@ -1529,6 +1529,12 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_accept(tid, nid);
 	}
 
+	void CNPL::SetProtocol(const char* nid, int protocolType)
+	{
+		NPL::CNPLRuntime::GetInstance()->NPL_SetProtocol(nid, protocolType);
+
+	}
+
 	void CNPL::reject(const object& nid)
 	{
 		const char * sNID = NULL;

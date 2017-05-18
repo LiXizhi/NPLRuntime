@@ -103,6 +103,12 @@ namespace NPL
 		/** get extern IP address of this computer. */
 		std::string GetExternalIP();
 
+		/** get the host port of this NPL runtime */
+		virtual const std::string& GetHostPort();
+		/** get the host IP of this NPL runtime */
+		virtual const std::string& GetHostIP();
+		/** whether the NPL runtime's http server is started. */
+		virtual bool IsServerStarted();
 	private:
 		/// handle resolve the current server address. 
 		void handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator);
@@ -147,6 +153,9 @@ namespace NPL
 
 		/** whether idle timeout is enabled. */
 		bool m_bEnableIdleTimeout;
+
+		/** whether we are listening to a port.*/
+		bool m_bIsServerStarted;
 
 		/** how many milliseconds to assume time out, default to 2 mins. */
 		int m_nIdleTimeoutMS;

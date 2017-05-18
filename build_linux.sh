@@ -34,6 +34,10 @@ if [ $result == 0 ]; then
         fi
         ls -l $npl_exe_path
     fi
+    if [ -f ./libluajit21.so ]; then
+        echo "Force using LJ_GC64 in 64bits system"
+        cp -f libluajit21.so liblua.so
+    fi
     popd
 
     # run all NPL tests 

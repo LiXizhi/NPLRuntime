@@ -46,7 +46,7 @@ Client/trunk/*
 !Client/trunk/ParaEngineClientApp/
 !Client/trunk/PhysicsBT/
 !Client/trunk/externals/
-Client/trunk/externals/*
+!Client/trunk/externals/*
 !Client/trunk/externals/assimp*
 !Client/trunk/externals/bullet-2.75/
 !Client/trunk/externals/png*
@@ -65,6 +65,7 @@ Server/trunk/*
 !Server/trunk/NPLMono/
 !Server/trunk/luasql/
 !Server/trunk/luaJIT/
+!Server/trunk/luaJIT-2.1/
 !Server/trunk/zlib-1.2.3/
 !Server/trunk/curl-7.47.1/
 

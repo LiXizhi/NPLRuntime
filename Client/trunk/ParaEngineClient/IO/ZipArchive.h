@@ -222,8 +222,8 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CZipArchive);
 		ATTRIBUTE_METHOD1(CZipArchive, SetBaseDirectory_s, const char*)	{ cls->SetBaseDirectory(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CZipArchive, SetRootDirectory_s, const char**) { *p1 = cls->GetRootDirectory().c_str(); return S_OK; }
-		ATTRIBUTE_METHOD1(CZipArchive, GetRootDirectory_s, const char*) { cls->SetRootDirectory(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, GetRootDirectory_s, const char**) { *p1 = cls->GetRootDirectory().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, SetRootDirectory_s, const char*) { cls->SetRootDirectory(p1); return S_OK; }
 
 
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
