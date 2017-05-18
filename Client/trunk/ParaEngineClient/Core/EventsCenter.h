@@ -102,7 +102,7 @@ namespace ParaEngine
 		* @param sID ID
 		* @return NULL if not found.
 		*/
-		CEventHandler* GetEventHandlerByID(string sID);
+		CEventHandler* GetEventHandlerByID(const string& sID);
 		void InvalidateEventCounts();
 	private:
 		typedef std::vector<Event> EventHandler_Pool_t;
