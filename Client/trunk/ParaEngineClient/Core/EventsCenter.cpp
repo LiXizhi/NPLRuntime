@@ -146,7 +146,7 @@ void CEventsCenter::Reset()
 	m_unhandledEventPool.clear();
 }
 
-CEventHandler* CEventsCenter::GetEventHandlerByID(string sID)
+CEventHandler* CEventsCenter::GetEventHandlerByID(const string& sID)
 {
 	EventHandler_List_t::iterator itCurCP, itEndCP = m_sEventHandlerList.end();
 

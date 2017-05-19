@@ -366,6 +366,10 @@ namespace ParaScripting
 					memcpy(pData, pTextureImage, nSize);
 
 					file.m_pFile.reset(new CParaFile((char*)pFileBuffer, nSize + nHeaderSize, true));
+
+					// must be to delete, because bCopyBuffer is true
+					delete[] pFileBuffer;
+
 					file.m_pFile->SetFilePointer(0, FILE_BEGIN);
 					file.m_pFile->TakeBufferOwnership();
 					SAFE_DELETE_ARRAY(pTextureImage);
