@@ -754,7 +754,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateSplitBlock(Block * dst, Bloc
 	{
 		aoFlags = CalculateCubeAO();
 	}
-	int32_t max_light = 10;
+	int32_t max_light = 9;
 
 	if (dst && dst->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) && neighborBlocks[7] && neighborBlocks[11])
 	{
