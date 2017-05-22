@@ -155,6 +155,8 @@ namespace ParaEngine
 		bool isComBlock() const;
 
 		/** 通过当前指定层次分裂方块
+		@param[in] src 具体方块
+		@param[in] level 方块等级
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/

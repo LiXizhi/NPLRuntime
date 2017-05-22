@@ -61,11 +61,13 @@ namespace ParaEngine
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if(stemp->childs[num])
+			if (num == 8)
+				return;
+			else if(stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return;
@@ -79,11 +81,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (stemp->childs[num])
+			if (num == 8)
+				return;
+			else if (stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return;
@@ -98,10 +102,12 @@ namespace ParaEngine
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
 		int lnum = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
+			if (num == 8)
+				return false;
 			if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
@@ -118,19 +124,21 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
+			if (num == 8)
+				return;
 			if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
 			}
 			else
 			{
-				assert((i + 1) == level.end());
 				SplitBlock * temp = new SplitBlock();
 				stemp->add(num, temp);
+				stemp = temp;
 			}
 		}
 	}
@@ -140,11 +148,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (stemp->childs[num])
+			if (num == 8)
+				return;
+			else if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
 			}
@@ -160,11 +170,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (stemp->childs[num])
+			if (num == 8)
+				return 0;
+			else if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
 			}
@@ -180,11 +192,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (num != -1 && stemp->childs[num])
+			if (num == 8)
+				return;
+			else if (num != -1 && stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return;
@@ -198,11 +212,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (num != -1 && stemp->childs[num])
+			if (num == 8)
+				return -1;
+			else if (num != -1 && stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return -1;
@@ -542,11 +558,9 @@ namespace ParaEngine
 		case '7':
 			return 7;
 		default:
-			assert(false && "节点错误");
-			return -1;
+			return 8;
 		}
-		assert(false && "节点错误");
-		return -1;
+		return 8;
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)

@@ -20,6 +20,7 @@ namespace ParaEngine
 		CShapeAABB( const Vector3* points, int nSize);
 		~CShapeAABB(void);
 		
+		CShapeAABB & operator= (const CShapeAABB & o) { mCenter = o.mCenter; mExtents = o.mExtents; return *this; }
 		/**
 		*	Setups an AABB from min & max vectors.
 		*	\param		min			[in] the min point

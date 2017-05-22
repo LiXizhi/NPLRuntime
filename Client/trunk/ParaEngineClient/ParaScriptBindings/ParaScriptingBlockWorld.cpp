@@ -637,12 +637,11 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
-	std::string result;
+
 	if (block && block->GetTemplate()->isComBlock())
 	{
 		ret = true;
-		block->restoreCom(result);
-
+		block->restoreCom(level);
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
