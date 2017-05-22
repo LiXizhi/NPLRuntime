@@ -207,6 +207,26 @@ namespace ParaEngine
 		}
 		return cnt;
     }
+
+	void CSplitModelProvider::getComModel(Block * src, BlockModel & out, const std::string level)
+	{
+		assert(src); 
+        out.LoadModelByTexture(1);
+		bool nochild = true;
+		SplitBlock * pSplitBlock = static_cast<SplitBlock *>(src->getExtData());
+		SplitBlock * pTempBlock = pSplitBlock;
+		if (pSplitBlock)
+		{
+			for (int i = 0; i < level.size(); ++i)
+			{
+				int num = getLevelNum(level[i]);
+				pTempBlock = pTempBlock->childs[num];
+				getSplitLevel(out, pTempBlock, i + 1, num);
+			}
+		}
+	}
+
+
 	//-----------------------------------------------------
 	void CSplitModelProvider::initBlockData(Block * src) const
 	{
@@ -331,16 +351,20 @@ namespace ParaEngine
         int cnt = 0;
 		bool nochild = true;
 		float levelf = pow(2, level);
+
 		BlockModel temp;
 		temp.Clone(*bparent);
 		temp.TranslateByVertex(4);
 		temp.SetVerticalScale(0.5f);
+
+
 		switch (i)
 		{
 		case 0:
 		{
 			temp.TranslateVertices(0.0f, 0.0f, 0.0f);
 			temp.reflushAABB();
+			temp.AddString("0");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -353,6 +377,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(1.0f / levelf, 0, 0);
 			temp.reflushAABB();
+			temp.AddString("1");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -365,6 +390,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(1.0f / levelf, 0, 1.0f / levelf);
 			temp.reflushAABB();
+			temp.AddString("2");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -377,6 +403,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(0, 0, 1.0f / levelf);
 			temp.reflushAABB();
+			temp.AddString("3");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -389,6 +416,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(0, 1.0f / levelf, 0);
 			temp.reflushAABB();
+			temp.AddString("4");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -401,6 +429,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 0);
 			temp.reflushAABB();
+			temp.AddString("5");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -413,6 +442,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 1.0f / levelf);
 			temp.reflushAABB();
+			temp.AddString("6");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -425,6 +455,7 @@ namespace ParaEngine
 		{
 			temp.TranslateVertices(0, 1.0f / levelf, 1.0f / levelf);
 			temp.reflushAABB();
+			temp.AddString("7");
 			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
 			if (nochild)
 			{
@@ -438,6 +469,79 @@ namespace ParaEngine
 		}
 		return cnt;
     }
+
+	void CSplitModelProvider::getSplitLevel(BlockModel & temp, SplitBlock *pSplitBlock, int level, int i)
+    {
+		assert(pSplitBlock);
+		float levelf = pow(2, level);
+		temp.TranslateByVertex(4);
+		temp.SetVerticalScale(0.5f);
+
+		switch (i)
+		{
+		case 0:
+		{
+			temp.TranslateVertices(0.0f, 0.0f, 0.0f);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 1:
+		{
+			temp.TranslateVertices(1.0f / levelf, 0, 0);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 2:
+		{
+			temp.TranslateVertices(1.0f / levelf, 0, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 3:
+		{
+			temp.TranslateVertices(0, 0, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 4:
+		{
+			temp.TranslateVertices(0, 1.0f / levelf, 0);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 5:
+		{
+			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 0);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 6:
+		{
+			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		case 7:
+		{
+			temp.TranslateVertices(0, 1.0f / levelf, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.SetColor(pSplitBlock->color);
+		}
+		break;
+		default:
+			break;
+		}
+    }
+
+
+
 	//-----------------------------------------------------
 	int CSplitModelProvider::getBlockModelCount(SplitBlock * parent) const
 	{

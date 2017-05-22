@@ -87,6 +87,8 @@ namespace ParaEngine
         */
 		virtual int getComModelList(Block *, BlockModelList &) const { return 0; }
 
+		virtual void getComModel(Block *, BlockModel &, const string) { }
+
 		/** 初始化结构数据
 		@data 2017.5.2
 		*/

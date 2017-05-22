@@ -47,6 +47,7 @@ namespace ParaEngine
 		CloneRenderData(from_block);
 		m_shapeAABB = from_block.m_shapeAABB;
 		m_nTextureIndex = from_block.m_nTextureIndex;
+		m_level = from_block.m_level;
 	}
 
 
@@ -532,6 +533,33 @@ namespace ParaEngine
 			m_Vertices[i].SetCategoryID(nCategoryID);
 		}
 	}
+
+	void BlockModel::SetTemplateID(uint16_t tempID)
+	{
+		m_templateID = tempID;
+	}
+
+	uint16_t BlockModel::GetTemplateID()
+	{
+		return m_templateID;
+	}
+
+	void BlockModel::SetLevel(string level)
+	{
+		m_level = level;
+	}
+
+	string BlockModel::GetLevel()
+	{
+		return m_level;
+	}
+
+	void BlockModel::AddString(string str)
+	{
+		m_level += str;
+	}
+
+
 
 	void BlockModel::SetFaceCount( int nFaceCount )
 	{

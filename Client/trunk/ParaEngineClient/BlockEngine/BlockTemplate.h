@@ -154,6 +154,8 @@ namespace ParaEngine
 		*/
 		bool isComBlock() const;
 
+		void SetComBlock(bool value);
+
 		/** 通过当前鼠标分裂方块
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
@@ -207,6 +209,8 @@ namespace ParaEngine
 		@data 2017.4.18
 		*/
 		int getComModelList(Block * src, BlockModelList & dst) const;
+
+		void getComModel(Block * src, BlockModel & out, const std::string level);
         
 		/** 初始化结构数据
 		@data 2017.5.2
@@ -339,6 +343,8 @@ namespace ParaEngine
 			
 			bool m_bIsShadowCaster;
 			bool m_bProvidePower;
+
+			bool m_bSplitBlock;			// 是否是可分裂方块
 		
 			std::vector<TextureEntity*> m_textures0;
 			std::vector<TextureEntity*> m_textures1;

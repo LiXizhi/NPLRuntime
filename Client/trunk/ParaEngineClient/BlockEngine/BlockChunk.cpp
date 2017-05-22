@@ -805,6 +805,166 @@ namespace ParaEngine
 			return 0;
 	}
 
+	int Block::getComModelList(Block * src, BlockModelList & dst) const
+	{
+		assert(src);
+		BlockModel temp;
+		temp.LoadModelByTexture(1);
+		int cnt = 0;
+		bool nochild = true;
+		if (src->getExtData())
+		{
+			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+			cnt += getSplitLevel(dst, stemp, &temp, 0, nochild);
+			if (nochild)
+			{
+				temp.SetColor(stemp->color);
+				dst.push_back(temp);
+			}
+		}
+		return cnt;
+	}
+
+	int Block::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, bool & nochild) const
+	{
+		int cnt = 0;
+		int i, iend = 8;
+		for (i = 0; i < iend; ++i)
+		{
+			if (sparent->childs[i])
+			{
+				cnt += getSplitLevel(out, sparent->childs[i], bparent, level + 1, i);
+				nochild = false;
+			}
+		}
+		return cnt;
+	}
+
+	int Block::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, int i) const
+	{
+		int cnt = 0;
+		bool nochild = true;
+		float levelf = pow(2, level);
+
+		BlockModel temp;
+		temp.Clone(*bparent);
+		temp.TranslateByVertex(4);
+		temp.SetVerticalScale(0.5f);
+
+
+		switch (i)
+		{
+		case 0:
+		{
+			temp.TranslateVertices(0.0f, 0.0f, 0.0f);
+			temp.reflushAABB();
+			temp.AddString("0");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 1:
+		{
+			temp.TranslateVertices(1.0f / levelf, 0, 0);
+			temp.reflushAABB();
+			temp.AddString("1");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 2:
+		{
+			temp.TranslateVertices(1.0f / levelf, 0, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.AddString("2");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 3:
+		{
+			temp.TranslateVertices(0, 0, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.AddString("3");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 4:
+		{
+			temp.TranslateVertices(0, 1.0f / levelf, 0);
+			temp.reflushAABB();
+			temp.AddString("4");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 5:
+		{
+			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 0);
+			temp.reflushAABB();
+			temp.AddString("5");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 6:
+		{
+			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.AddString("6");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		case 7:
+		{
+			temp.TranslateVertices(0, 1.0f / levelf, 1.0f / levelf);
+			temp.reflushAABB();
+			temp.AddString("7");
+			cnt += getSplitLevel(out, sparent, &temp, level, nochild);
+			if (nochild)
+			{
+				temp.SetColor(sparent->color);
+				out.push_back(temp);
+			}
+		}
+		break;
+		default:
+			break;
+		}
+		return cnt;
+	}
+
+
 	void Block::splitCom(const std::string & level)
 	{
 		if (m_pTemplate)

@@ -82,6 +82,7 @@ namespace ParaEngine
 
         /// @copydetails BlockTessellatorBase::TessellateSplitBlock
         virtual int32 TessellateSplitBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
+		virtual int TessellateSplitBlock2(BlockChunk* pChunk, uint16 packedBlockId, string level, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData);
 	protected:
 		void TessellateLiquidOrIce(BlockRenderMethod dwShaderID);
 		void TessellateStdCube(BlockRenderMethod dwShaderID);

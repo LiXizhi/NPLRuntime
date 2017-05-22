@@ -21,7 +21,7 @@ namespace ParaEngine
 
 	BlockTemplate::BlockTemplate( uint16_t id,uint32_t attFlag, uint16_t category_id) :m_id(id),m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f),
 		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0), 
-		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White)
+		m_bProvidePower(false), m_bSplitBlock(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White)
 	{
 		Init(attFlag, category_id);
 	}
@@ -234,10 +234,7 @@ namespace ParaEngine
 
 	bool BlockTemplate::isComBlock() const
 	{ 
-		if (m_pBlockModelFilter != 0)
-			return m_pBlockModelFilter->isComBlock();
-		else
-			return false; 
+		return m_bSplitBlock;
 	}
 
     void BlockTemplate::splitCom(Block * src, const std::string & level)
@@ -302,6 +299,12 @@ namespace ParaEngine
 			return 0; 
 	}
 
+	void BlockTemplate::getComModel(Block * src, BlockModel & out, const std::string level)
+	{
+		if (m_pBlockModelFilter != 0)
+			m_pBlockModelFilter->getComModel(src, out, level);
+	}
+
 	void BlockTemplate::initBlockData(Block * src) const
 	{
 		if (m_pBlockModelFilter != 0)
@@ -316,6 +319,7 @@ namespace ParaEngine
 
 	void BlockTemplate::LoadModel( const std::string& sModelName )
 	{
+		m_bSplitBlock = false;
 		GetBlockModel().LoadModel(sModelName);
 		
 		if (IsMatchAttribute(BlockTemplate::batt_customModel))
@@ -461,6 +465,8 @@ namespace ParaEngine
 			SetAttribute(batt_transparent);
 			m_lightOpacity = 14;
             m_pBlockModelFilter = new CSplitModelProvider(this);
+
+			m_bSplitBlock = true;
         }
 	}
 

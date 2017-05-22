@@ -309,6 +309,84 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 	return nFaceCount;
 }
 
+int ParaEngine::BlockGeneralTessellator::TessellateSplitBlock2(BlockChunk* pChunk, uint16 packedBlockId, string level, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
+{
+	bool bNeedTessellate = false;
+	Block * pCurBlock = pChunk->GetBlock(packedBlockId);
+	if (pCurBlock)
+	{
+		m_pCurBlockTemplate = pCurBlock->GetTemplate();
+		if (m_pCurBlockTemplate)
+		{
+			bNeedTessellate = true;
+			m_pChunk = pChunk;
+			UnpackBlockIndex(packedBlockId, m_blockId_cs.x, m_blockId_cs.y, m_blockId_cs.z);
+			m_blockId_ws.x = pChunk->m_minBlockId_ws.x + m_blockId_cs.x;
+			m_blockId_ws.y = pChunk->m_minBlockId_ws.y + m_blockId_cs.y;
+			m_blockId_ws.z = pChunk->m_minBlockId_ws.z + m_blockId_cs.z;
+
+			neighborBlocks[rbp_center] = pCurBlock;
+			m_nBlockData = pCurBlock->GetUserData();
+			m_pCurBlockModel = &(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
+			tessellatedModel.ClearVertices();
+		}
+	}
+
+	if (!bNeedTessellate)
+	{
+		return 0;
+	}
+
+	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
+
+	uint32 aoFlags = 0;
+	if (m_pCurBlockModel->IsUseAmbientOcclusion())
+	{
+		aoFlags = CalculateCubeAO();
+	}
+
+	BlockModel blockModel;
+    m_pCurBlockTemplate->getComModel(pCurBlock, blockModel, level);
+
+	const uint16_t nFaceCount = blockModel.GetFaceCount();
+	PE_ASSERT(nFaceCount <= 6);
+	for (int face = 0; face < nFaceCount; ++face)
+	{
+		int nFirstVertex = face * 4;
+
+		for (int v = 0; v < 4; ++v)
+		{
+			int i = nFirstVertex + v;
+			int32_t baseIdx = i * 4;
+
+			int32_t max_light = blockBrightness[rbp_center];
+
+			Block * pCurBlock1 = neighborBlocks[rbp_center];
+			if (pCurBlock1 && pCurBlock1->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+			{
+				// simulate ao but not render completely dark. 
+				max_light -= 3;
+			}
+
+			int nIndex = tessellatedModel.AddVertex(blockModel, i);
+			max_light = Math::Max(max_light, 10);
+			tessellatedModel.SetLightIntensity(nIndex, m_pWorld->GetLightBrightnessLinearFloat(max_light));
+
+			tessellatedModel.SetVertexShadowFromAOFlags(nIndex, i, aoFlags);
+		}
+		tessellatedModel.IncrementFaceCount(1);
+	}
+
+	int cnt = tessellatedModel.GetFaceCount();
+	if (cnt > 0 )
+	{ 
+		tessellatedModel.TranslateVertices(m_blockId_cs.x, m_blockId_cs.y, m_blockId_cs.z);
+		*pOutputData = tessellatedModel.GetVertices();
+	}
+
+	return cnt;
+}
+
 int32 ParaEngine::BlockGeneralTessellator::TessellateSplitBlock(BlockChunk* pChunk, uint16 packedBlockId, BlockRenderMethod dwShaderID, BlockVertexCompressed** pOutputData)
 {
 	Block * pCurBlock = pChunk->GetBlock(packedBlockId);
@@ -337,32 +415,7 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateSplitBlock(BlockChunk* pChu
     {
         return 0;
     }
-/*
-	if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_liquid))
-	{
-		// water, ice or other transparent cube blocks
-		// adjacent faces of the same liquid type will be removed. 
-        TessellateLiquidOrIce(dwShaderID);
-	}
-	else
-	{
-		if (m_pCurBlockModel->IsUsingSelfLighting())
-		{
-			// like wires, etc. 
-            TessellateSelfLightingCustomModel(dwShaderID);
-		}
-		else if (m_pCurBlockModel->IsUniformLighting())
-		{
-			// custom models like stairs, slabs, button, torch light, grass, etc. 
-            TessellateUniformLightingCustomModel(dwShaderID);
-		}
-		else
-		{
-			// standard cube including tree leaves. 
-			TessellateStdCube(dwShaderID);
-		}
-	}
-*/
+
     TessellateSplitBlock(pCurBlock, dwShaderID);
     
 	int nFaceCount = tessellatedModel.GetFaceCount();
@@ -373,6 +426,8 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateSplitBlock(BlockChunk* pChu
 	}
 	return nFaceCount;
 }
+
+
 
 void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(BlockRenderMethod dwShaderID)
 {

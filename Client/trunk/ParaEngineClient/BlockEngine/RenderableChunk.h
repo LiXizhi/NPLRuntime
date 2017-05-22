@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "BlockRenderTask.h"
 #include "BlockCommon.h"
 #include "ShapeAABB.h"
@@ -13,6 +13,23 @@ namespace ParaEngine
 	class CBlockWorld;
 	class ParaVertexBufferPool;
 	class BlockGeneralTessellator;
+
+	struct InstanceGroupIndex
+	{
+		int m_index;
+		string m_level;
+
+		InstanceGroupIndex()
+		{
+			m_index = 0;
+			m_level = "";
+		}
+
+		bool operator < (const InstanceGroupIndex &ins) const
+		{
+			return m_index < ins.m_index;
+		}
+	};
 
 	class RenderableChunk
 	{
@@ -175,46 +192,74 @@ namespace ParaEngine
 		struct InstanceGroup
 		{
 			BlockTemplate* m_pTemplate;
+			uint16_t m_templateId;
 			uint32_t m_blockData;
 			uint32_t m_nFaceCount;
 			uint32_t m_maxInstanceFace;
 
 			//packedBlockId
 			std::vector<uint16_t> instances;
-			InstanceGroup() :m_pTemplate(NULL), m_blockData(0), m_nFaceCount(0) , m_maxInstanceFace(0){}
-			inline void reset(){
+			std::vector<string> levels;
+			InstanceGroup() :m_pTemplate(NULL), m_templateId(0), m_blockData(0), m_nFaceCount(0) , m_maxInstanceFace(0){}
+
+			inline void reset()
+			{
+				m_templateId = 0;
 				m_pTemplate = 0;
 				m_nFaceCount = 0;
 				instances.clear();
+				levels.clear();
 			}
-			inline bool isEmpty() const {
+
+			inline bool isEmpty() const 
+			{
 				return !(m_pTemplate || instances.size() > 0);
 			}
-			inline void AddFace(uint32_t nCount){
+
+			inline void AddFace(uint32_t nCount)
+			{
 				m_nFaceCount += nCount;
 			}
-			inline void AddInstance(uint16_t nIndex, uint32_t nFaceCount = 0){
+
+			inline void AddInstance(uint16_t nIndex, uint32_t nFaceCount = 0, std::string level = "")
+			{
 				instances.push_back(nIndex);
+				levels.push_back(level);
+
 				AddFace(nFaceCount);
 				if (m_maxInstanceFace > nFaceCount)
 					m_maxInstanceFace = nFaceCount;
 			}
-			inline uint32_t GetFaceCount() const { return m_nFaceCount; }
-			void operator+=(InstanceGroup& right){
+
+			inline uint32_t GetFaceCount() const 
+			{ 
+				return m_nFaceCount; 
+			}
+
+			void operator+=(InstanceGroup& right)
+			{
 				AddFace(right.GetFaceCount());
 				instances.insert(instances.end(), right.instances.begin(), right.instances.end());
+				levels.insert(levels.end(), right.levels.begin(), right.levels.end());
 			}
+
 			/** whether this instance group can share vertex buffer with the other instance, providing that both instance are from the same chunk.
 			* this allows us to batch different blocks sharing same texture(altas) into one draw call.
 			* @param pOther: if NULL, it always return false;
 			*/
-			bool CanShareRenderBufferWith(InstanceGroup* pOther = NULL);
+			bool CanShareRenderBufferWith(CBlockWorld *pWord, InstanceGroup* pOther = NULL);
 		};
+
+
+
+
+
+
 		/** this function returns thread local data */
 		std::vector<InstanceGroup* >& GetInstanceGroups();
 
 		/** mapping from a hashed value of block_template id and template data if any. */
-		std::map<int32_t, int>& GetInstanceMap();
+		std::map<int32_t, InstanceGroupIndex>& GetInstanceGroupIndexMap();
 		
 		static void StaticReleaseInstGroup(std::vector<RenderableChunk::InstanceGroup* >* pInstances);
 
@@ -227,6 +272,7 @@ namespace ParaEngine
 		void ResetInstanceGroups();
 
 		int32 BuildInstanceGroupsByIdAndData(BlockChunk* pChunk);
+		int32 BuildInstanceGroupsByIdAndData2(BlockChunk* pChunk);
 		void SortAndMergeInstanceGroupsByTexture();
 
 		/** each rectangle face is 2 triangles or 4 vertices. */

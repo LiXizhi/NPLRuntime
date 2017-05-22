@@ -227,7 +227,10 @@ namespace ParaEngine
 		BlockRenderTask *pTask = NULL;
 		for (int i = 0; (i < nSize && (pInstGroup = instanceGroups[i])->instances.size()>0); i++)
 		{
-			BlockTemplate* pTemplate = pInstGroup->m_pTemplate;
+//			BlockTemplate* pTemplate = pInstGroup->m_pTemplate;
+
+			BlockTemplate* pTemplate = m_pWorld->GetBlockTemplate(pInstGroup->m_templateId);
+
 			uint32_t nBlockData = pInstGroup->m_blockData;
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
@@ -258,7 +261,7 @@ namespace ParaEngine
 			}
 
 			//add render task
-			if (!pTask || !(pInstGroup->CanShareRenderBufferWith(pLastInstGroup)))
+			if (!pTask || !(pInstGroup->CanShareRenderBufferWith(m_pWorld,pLastInstGroup)))
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pVertexBuffer->GetDevicePointer(), pChunk->m_minBlockId_ws);
@@ -548,12 +551,12 @@ namespace ParaEngine
 		return *tls_instanceGroups;
 	}
 
-	std::map<int32_t, int>& RenderableChunk::GetInstanceMap()
+	std::map<int, InstanceGroupIndex>& RenderableChunk::GetInstanceGroupIndexMap()
 	{
-		static boost::thread_specific_ptr <std::map<int32_t, int>> tls_instance_map;
-		if (!tls_instance_map.get())
-			tls_instance_map.reset(new std::map<int32_t, int>());
-		return *tls_instance_map;
+		static boost::thread_specific_ptr <std::map<int, InstanceGroupIndex>> tls_instanceGroupIndex_map;
+		if (!tls_instanceGroupIndex_map.get())
+			tls_instanceGroupIndex_map.reset(new std::map<int, InstanceGroupIndex>());
+		return *tls_instanceGroupIndex_map;
 	}
 
 	void RenderableChunk::ResetInstanceGroups()
@@ -571,10 +574,162 @@ namespace ParaEngine
 		if (nInstanceSize == 0)
 			instanceGroups.push_back(new InstanceGroup());
 
-		GetInstanceMap().clear();
+		GetInstanceGroupIndexMap().clear();
 	}
 
 	int32 RenderableChunk::BuildInstanceGroupsByIdAndData(BlockChunk* pChunk)
+	{
+		int32 totalFaceCount = 0;
+		int32 cachedGroupIdx = 0;
+		uint16_t nSize = (uint16_t)pChunk->m_blockIndices.size();
+		std::vector<InstanceGroup* >& instanceGroups = GetInstanceGroups();
+		std::map<int, InstanceGroupIndex>& instanceIndexMap = GetInstanceGroupIndexMap();
+
+
+		int value = 520;
+		for (uint16_t i = 0; i < nSize; i++)
+		{
+			Block* pBlock = pChunk->GetBlock(i);
+			if (!pBlock)
+				continue;
+
+			if (pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_cubeModel)
+				&& pChunk->IsVisibleBlock(i, pBlock))
+			{
+//				BlockTemplate* pBlockTemp = pBlock->GetTemplate();
+				if (value == 520)
+				{
+					value = 26;
+				}
+				else
+				{
+					value = 520;
+				}
+
+				value = pBlock->GetTemplateId();
+
+				BlockTemplate *pBlockTemp = m_pWorld->GetBlockTemplate(value);
+//				pBlock->SetTemplate(pBlockTemp);
+
+				if (pBlockTemp->isComBlock())
+				{
+					BlockModelList templist;
+					pBlock->getComModelList(pBlock, templist);
+
+					for (int x = 0; x < templist.size(); ++x)
+					{
+//						uint32 nBlockID = templist[x].GetTemplateID();
+						uint32 nBlockID = value;
+
+						uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
+						uint32 nBlockIdAndData = 0;
+
+						if (nBlockData > 0)
+							nBlockIdAndData = ((nBlockData << 12) | nBlockID);
+
+						auto curIndex = instanceIndexMap.find(nBlockIdAndData);
+						if (curIndex != instanceIndexMap.end())
+						{
+							cachedGroupIdx = curIndex->second.m_index;
+						}
+						else // if(m_instanceGroups[cachedGroupIdx].m_pTemplate != pBlock->GetTemplate())
+						{
+							for (uint32_t j = 0; j < instanceGroups.size(); j++)
+							{
+								if (instanceGroups[j]->m_templateId == nBlockID && instanceGroups[j]->m_blockData == nBlockData)
+								{
+									cachedGroupIdx = j;
+									break;
+								}
+								else if (instanceGroups[j]->m_templateId == 0)
+								{
+									//template doesn't match any group 
+//									instanceGroups[j]->m_pTemplate = pBlockTemp;
+									instanceGroups[j]->m_blockData = nBlockData;
+									instanceGroups[j]->m_templateId = nBlockID;
+									cachedGroupIdx = j;
+									break;
+								}
+							}
+
+							if (instanceGroups[cachedGroupIdx]->m_templateId != nBlockID || instanceGroups[cachedGroupIdx]->m_blockData != nBlockData)
+							{
+								instanceGroups.push_back(new InstanceGroup());
+								cachedGroupIdx = instanceGroups.size() - 1;
+//								instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
+								instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
+								instanceGroups[cachedGroupIdx]->m_templateId = nBlockID;
+							}
+							instanceIndexMap[nBlockID].m_index = cachedGroupIdx;
+						}
+
+						uint32 nFaceCount = templist[x].GetFaceCount();
+						instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount, templist[x].GetLevel());
+						totalFaceCount += nFaceCount;
+					}
+				}
+				else
+				{
+					//find correct group,nearby blocks may use the same template,so we 
+					//compare it with current group first.
+//					uint32 nBlockID = pBlock->GetTemplate()->GetID();
+					uint32 nBlockID = value;
+
+					uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
+					uint32 nBlockIdAndData = 0;
+
+					if (nBlockData > 0)
+						nBlockIdAndData = ((nBlockData << 12) | nBlockID);
+
+
+					auto curIndex = instanceIndexMap.find(nBlockIdAndData);
+					if (curIndex != instanceIndexMap.end())
+					{
+						cachedGroupIdx = curIndex->second.m_index;
+					}
+					else // if(m_instanceGroups[cachedGroupIdx].m_pTemplate != pBlock->GetTemplate())
+					{
+						for (uint32_t j = 0; j < instanceGroups.size(); j++)
+						{
+							if (instanceGroups[j]->m_templateId == nBlockID && instanceGroups[j]->m_blockData == nBlockData)
+							{
+								cachedGroupIdx = j;
+								break;
+							}
+							else if (instanceGroups[j]->m_templateId == 0)
+							{
+								//template doesn't match any group 
+//								instanceGroups[j]->m_pTemplate = pBlock->GetTemplate();
+								instanceGroups[j]->m_blockData = nBlockData;
+								instanceGroups[j]->m_templateId = nBlockID;
+								cachedGroupIdx = j;
+								break;
+							}
+						}
+
+						if (instanceGroups[cachedGroupIdx]->m_templateId != nBlockID || instanceGroups[cachedGroupIdx]->m_blockData != nBlockData)
+						{
+							instanceGroups.push_back(new InstanceGroup());
+							cachedGroupIdx = instanceGroups.size() - 1;
+//							instanceGroups[cachedGroupIdx]->m_pTemplate = pBlock->GetTemplate();
+							instanceGroups[cachedGroupIdx]->m_blockData = nBlockData;
+							instanceGroups[cachedGroupIdx]->m_templateId = nBlockID;
+						}
+						instanceIndexMap[nBlockID].m_index = cachedGroupIdx;
+					}
+
+					uint32 nFaceCount;
+					BlockModel& blockmodel = pBlockTemp->GetBlockModelByData(nBlockData);
+					nFaceCount = blockmodel.GetFaceCount();
+					instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount);
+					totalFaceCount += nFaceCount;
+				}
+			}
+		}	
+		return totalFaceCount;
+	}
+
+/*	int32 RenderableChunk::BuildInstanceGroupsByIdAndData(BlockChunk* pChunk)
 	{
 		int32 totalFaceCount = 0;
 		int32 cachedGroupIdx = 0;
@@ -647,6 +802,7 @@ namespace ParaEngine
 		}	
 		return totalFaceCount;
 	}
+	*/
 
 	RenderableChunk::ChunkBuildState RenderableChunk::GetChunkBuildState() const
 	{
@@ -745,11 +901,16 @@ namespace ParaEngine
 		BlockRenderTask *pTask = NULL;
 		for (int i = 0; (i < nSize && (pInstGroup = instanceGroups[i])->instances.size()>0); i++)
 		{
-			BlockTemplate* pTemplate = pInstGroup->m_pTemplate;
+//			BlockTemplate* pTemplate = pInstGroup->m_pTemplate;
+			BlockTemplate *pTemplate = m_pWorld->GetBlockTemplate(pInstGroup->m_templateId);
 			uint32_t nBlockData = pInstGroup->m_blockData;
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
+
+			std::vector<string> levels = pInstGroup->levels;
+
+
 			//int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 			int nMaxFaceCountPerInstance = pInstGroup->m_maxInstanceFace;
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
@@ -774,7 +935,7 @@ namespace ParaEngine
 			}
 
 			//add render task
-			if (!pTask || !(pInstGroup->CanShareRenderBufferWith(pLastInstGroup)))
+			if (!pTask || !(pInstGroup->CanShareRenderBufferWith(m_pWorld, pLastInstGroup)))
 			{
 				pTask = BlockRenderTask::CreateTask();
 				pTask->Init(pTemplate, nBlockData, vertexOffset, pChunk->m_minBlockId_ws, nMemoryBufferIndex);
@@ -817,13 +978,18 @@ namespace ParaEngine
 				//--------------------------------------------------------------
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
-				int32 nFaceCount;
-                if(pTemplate->isComBlock())
-                    nFaceCount = tessellator.TessellateSplitBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
-                else
-                    nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				int32 nFaceCount = 0;
+				if (pTemplate->isComBlock())
+				{
+					nFaceCount = tessellator.TessellateSplitBlock2(pChunk, instanceGroup[inst], levels[inst], dwShaderID, &pBlockModelVertices);
+//					nFaceCount = tessellator.TessellateSplitBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				}
+				else
+				{
+					nFaceCount = tessellator.TessellateBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
+				}
 
-                if (nFaceCount > 0)
+				if (nFaceCount > 0)
 				{
 					int32 nVertexCount = nFaceCount * 4;
 					if (nFreeFaceCountInVertexBuffer >= nFaceCount)
@@ -1085,19 +1251,22 @@ namespace ParaEngine
 		return m_nLastVertexBufferBytes;
 	}
 
-	bool RenderableChunk::InstanceGroup::CanShareRenderBufferWith(InstanceGroup* pOther /*= NULL*/)
+	bool RenderableChunk::InstanceGroup::CanShareRenderBufferWith(CBlockWorld *pWord, InstanceGroup* pOther /*= NULL*/)
 	{
+		BlockTemplate *pTemplate = pWord->GetBlockTemplate(m_templateId);
+		BlockTemplate *pOtherTemplate = pWord->GetBlockTemplate(pOther->m_templateId);
+
 		if (pOther == NULL)
 			return false;
 		else
 		{
-			if (m_pTemplate->GetRenderPass() != pOther->m_pTemplate->GetRenderPass())
+			if (pTemplate->GetRenderPass() != pOtherTemplate->GetRenderPass())
 				return false;
 			else
 			{
 				// TODO: further test textures and categories, etc. 
-				return (m_pTemplate->GetTexture0(m_blockData) == pOther->m_pTemplate->GetTexture0(pOther->m_blockData))
-					&& (m_pTemplate->GetNormalMap() == pOther->m_pTemplate->GetNormalMap());
+				return (pTemplate->GetTexture0(m_blockData) == pOtherTemplate->GetTexture0(pOther->m_blockData))
+					&& (pTemplate->GetNormalMap() == pOtherTemplate->GetNormalMap());
 			}
 		}
 	}

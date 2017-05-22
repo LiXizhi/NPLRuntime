@@ -66,6 +66,8 @@ namespace ParaEngine
         /// @copydetails IBlockModelProvider::getComModelList
         virtual int getComModelList(Block * src, BlockModelList & out) const;
 
+		virtual void getComModel(Block * src, BlockModel & out, const std::string level);
+
 		/// @copydetails IBlockModelProvider::intBlockData
 		virtual void initBlockData(Block * src) const;
 
@@ -102,6 +104,8 @@ namespace ParaEngine
         @data 2017.5.2
         */
 		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent,  int level, int i) const;
+
+		void getSplitLevel(BlockModel & temp,  SplitBlock *pSplitBlock, int level, int i);
 
 		/**
 		@data 2017.5.2

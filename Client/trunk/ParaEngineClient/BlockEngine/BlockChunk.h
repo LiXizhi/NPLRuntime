@@ -10,6 +10,7 @@ namespace ParaEngine
 	class BlockChunk;
 	class BlockTemplate;
 	class CBlockWorld;
+	class SplitBlock;
 
 	class Block
 	{
@@ -50,6 +51,10 @@ namespace ParaEngine
 		{
 			return m_blockExtData;
 		}
+
+		int getComModelList(Block * src, BlockModelList & dst) const;
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, bool & nochild) const;
+		int getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, int i) const;
 
 		/* get the texture index into the main block template. */
 		int32 GetTextureIndex();
@@ -95,7 +100,7 @@ namespace ParaEngine
 		@data 2017.4.25
 		*/
 		const std::string & getComByCursor() const;
-	protected:
+
 		inline void SetTemplate(BlockTemplate *pTemplate){
 			if (m_pTemplate)
 				m_pTemplate->destroyBlockData(this);
@@ -103,6 +108,8 @@ namespace ParaEngine
 			if (pTemplate)
 				pTemplate->initBlockData(this);
 		}
+	protected:
+
 		inline void SetUserData(uint32_t data){ 
 			m_blockData = (uint16)data; 
 		}

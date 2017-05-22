@@ -259,6 +259,21 @@ namespace ParaEngine
 		/** set category id. */
 		void SetCategoryID(DWORD nCategoryID);
 
+		/** 设置TemplateID **/
+		void SetTemplateID(uint16_t tempID);
+
+		/** 获取TemplateID **/
+		uint16_t GetTemplateID();
+
+		/** 设置blockModel level **/
+		void SetLevel(string level);
+
+		/** 获取blockModel level **/
+		string GetLevel();
+
+		void AddString(string str);
+
+
 
 		/** get bounding box vertices */
 		void GetBoundingBoxVertices(Vector3 * pVertices, int* pNumber);
@@ -396,9 +411,16 @@ namespace ParaEngine
 		int m_nFaceCount;
 		/** index to the parent block template's texture array */
 		int m_nTextureIndex;
+
+		/** templateID **/
+		uint16_t m_templateID;
+
+		/** level **/
+		string m_level;
 		
 		/** the aabb bounding box */
 		CShapeAABB m_shapeAABB;
+
 
 		friend class IBlockModelProvider;
 	};
