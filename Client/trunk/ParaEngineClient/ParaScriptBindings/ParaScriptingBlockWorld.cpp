@@ -515,6 +515,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 
 	if (block&& block->GetTemplate()->isComBlock())
 	{
+		/*
 		if (level.empty())
 		{
 			Vector3 vPickRayOrig, vPickRayDir;
@@ -536,7 +537,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 
 			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 		}
-		else
+		else */
 		{
 			result = level;
 		}
@@ -595,6 +596,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 
 	if (block && block->GetTemplate()->isComBlock())
 	{
+		/*
 		if (level.empty())
 		{
 			Vector3 vPickRayOrig, vPickRayDir;
@@ -616,6 +618,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 		}
 		else
+		*/
 		{
 			result = level;
 		}
