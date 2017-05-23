@@ -189,22 +189,24 @@ namespace ParaEngine
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, int texture)
 	{
-		assert(src && texture >= 0);
-		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
-		int num = -1;
-		std::string::const_reverse_iterator i, iend = level.rend();
-		for (i = level.rbegin(); i != iend; ++i)
+		if (src && texture >= 0)
 		{
-			num = getLevelNum(*i);
-			if (num == 8)
-				return;
-			else if (num != -1 && stemp->childs[num])
-				stemp = stemp->childs[num];
-			else
-				return;
+			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+			int num = -1;
+			std::string::const_reverse_iterator i, iend = level.rend();
+			for (i = level.rbegin(); i != iend; ++i)
+			{
+				num = getLevelNum(*i);
+				if (num == 8)
+					return;
+				else if (num != -1 && stemp->childs[num])
+					stemp = stemp->childs[num];
+				else
+					return;
+			}
+
+			stemp->templateId = texture;
 		}
-		assert(stemp);
-		stemp->templateId = texture;
 	}
 	//-----------------------------------------------------
 	int CSplitModelProvider::getComTexture(const Block * src, const std::string & level) const
