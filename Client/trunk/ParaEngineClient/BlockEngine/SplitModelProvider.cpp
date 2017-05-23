@@ -189,7 +189,7 @@ namespace ParaEngine
 	//-----------------------------------------------------
 	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, int texture)
 	{
-		assert(src);
+		assert(src && texture >= 0);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
 		std::string::const_reverse_iterator i, iend = level.rend();
