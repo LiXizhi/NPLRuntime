@@ -1019,11 +1019,33 @@ namespace ParaEngine
 			return m_pTemplate->setComTexture(this, level, textureidx);
 	}
 
+	int Block::getLevelNum(char num) const
+	{
+		int ret = 8;
+		if (num >= '0' && num < '8')
+		{
+			ret = num - '0';
+		}
+
+		return ret;
+	}
+
 	int Block::getComTexture(const std::string & level) const
 	{
-		if (m_pTemplate)
-			return m_pTemplate->getComTexture(this, level);
-		return -1;
+		SplitBlock * stemp = static_cast<SplitBlock *>(m_blockExtData);
+		int num = -1;
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (num == 8)
+				return -1;
+			else if (num != -1 && stemp->childs[num])
+				stemp = stemp->childs[num];
+			else
+				return -1;
+		}
+		return stemp->templateId;
 	}
 
 	const std::string & Block::getComByCursor() const

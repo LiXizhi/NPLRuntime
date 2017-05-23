@@ -109,6 +109,8 @@ namespace ParaEngine
 		*/
 		int getComTexture(const std::string & level) const;
 
+		int getLevelNum(char num) const;
+
 		/** 通过当前鼠标获取当前选中的分裂方块
 		@note 可分裂方块专用
 		@data 2017.4.25
