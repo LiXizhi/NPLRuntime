@@ -795,7 +795,7 @@ namespace ParaEngine
 						Block& block = pChunk->GetBlockByIndex(blockIdx);
 
 						// 可分裂方块
-						if (block.GetTemplate() && block.GetTemplate()->isComBlock())
+						if (block.GetTemplate() && block.IsComBlock())
 						{
 							SplitBlock * splitBlockRoot = static_cast<SplitBlock *>(block.getExtData());
 							if (!splitBlockRoot)
@@ -808,7 +808,7 @@ namespace ParaEngine
 
 							splitFile.WriteDWORD(i);									// chunk ID
 							splitFile.WriteDWORD(j);									// block 索引
-							splitFile.WriteDWORD(templateId);						    //	templateId 
+							splitFile.WriteDWORD(520);						    //	templateId 
 							splitFile.WriteDWORD(nonLeafNodeCnt);						// 保存所有非叶子节点
 
 							if (splitBlockRoot->isNoChild())
