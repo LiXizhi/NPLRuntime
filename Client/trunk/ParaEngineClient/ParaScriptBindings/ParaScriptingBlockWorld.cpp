@@ -94,7 +94,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 {
 	uint32_t attFlag = 0;
 	uint16_t category_id = 0;
-	std::string sModelName, sNormalMap, sTexture0, sTexture2, sTexture3, sTexture4;
+	std::string sModelName, sNormalMap, sTexture0, sTexture2, sTexture3, sTexture4, sTexture5, sTexture6, sTexture7, sTexture8, sTexture9, sTexture10;
 	Color dwMapColor = 0;
 	int nOpacity = -1;
 	uint16_t associated_blockid = 0;
@@ -139,6 +139,18 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			sTexture3 = object_cast<const char*>(params["texture3"]);
 		if (type(params["texture4"]) == LUA_TSTRING)
 			sTexture4 = object_cast<const char*>(params["texture4"]);
+		if (type(params["texture5"]) == LUA_TSTRING)
+			sTexture5 = object_cast<const char*>(params["texture5"]);
+		if (type(params["texture6"]) == LUA_TSTRING)
+			sTexture6 = object_cast<const char*>(params["texture6"]);
+		if (type(params["texture7"]) == LUA_TSTRING)
+			sTexture7 = object_cast<const char*>(params["texture7"]);
+		if (type(params["texture8"]) == LUA_TSTRING)
+			sTexture8 = object_cast<const char*>(params["texture8"]);
+		if (type(params["texture9"]) == LUA_TSTRING)
+			sTexture9 = object_cast<const char*>(params["texture9"]);
+		if (type(params["texture10"]) == LUA_TSTRING)
+			sTexture10 = object_cast<const char*>(params["texture10"]);
 		if (type(params["mapcolor"]) == LUA_TSTRING)
 			dwMapColor = Color::FromString(object_cast<const char*>(params["mapcolor"]));
 		if (type(params["opacity"]) == LUA_TNUMBER)
@@ -158,11 +170,23 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
 			if (!sTexture2.empty())
-				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+				pTemplate->SetTexture0(sTexture2.c_str(), 1);
 			if (!sTexture3.empty())
-				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+				pTemplate->SetTexture0(sTexture3.c_str(), 2);
 			if (!sTexture4.empty())
-				pTemplate->SetTexture0(sTexture4.c_str(), 4);
+				pTemplate->SetTexture0(sTexture4.c_str(), 3);
+			if (!sTexture5.empty())
+				pTemplate->SetTexture0(sTexture5.c_str(), 4);
+			if (!sTexture6.empty())
+				pTemplate->SetTexture0(sTexture6.c_str(), 5);
+			if (!sTexture7.empty())
+				pTemplate->SetTexture0(sTexture7.c_str(), 6);
+			if (!sTexture8.empty())
+				pTemplate->SetTexture0(sTexture8.c_str(), 7);
+			if (!sTexture9.empty())
+				pTemplate->SetTexture0(sTexture9.c_str(), 8);
+			if (!sTexture10.empty())
+				pTemplate->SetTexture0(sTexture10.c_str(), 9);
 			if (fSpeedReduction < 1.f)
 				pTemplate->SetSpeedReductionPercent(fSpeedReduction);
 			if (nOpacity>0)
@@ -195,11 +219,23 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
 			if (!sTexture2.empty())
-				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+				pTemplate->SetTexture0(sTexture2.c_str(), 1);
 			if (!sTexture3.empty())
-				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+				pTemplate->SetTexture0(sTexture3.c_str(), 2);
 			if (!sTexture4.empty())
-				pTemplate->SetTexture0(sTexture4.c_str(), 4);
+				pTemplate->SetTexture0(sTexture4.c_str(), 3);
+			if (!sTexture5.empty())
+				pTemplate->SetTexture0(sTexture5.c_str(), 4);
+			if (!sTexture6.empty())
+				pTemplate->SetTexture0(sTexture6.c_str(), 5);
+			if (!sTexture7.empty())
+				pTemplate->SetTexture0(sTexture7.c_str(), 6);
+			if (!sTexture8.empty())
+				pTemplate->SetTexture0(sTexture8.c_str(), 7);
+			if (!sTexture9.empty())
+				pTemplate->SetTexture0(sTexture9.c_str(), 8);
+			if (!sTexture10.empty())
+				pTemplate->SetTexture0(sTexture10.c_str(), 9);
 			if (associated_blockid > 0)
 				pTemplate->SetAssociatedBlock(associated_blockid);
 			if (bProvidePower)
@@ -476,29 +512,64 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
+
 	if (block&& block->GetTemplate()->isComBlock())
 	{
+		/*
+		if (level.empty())
+		{
+			Vector3 vPickRayOrig, vPickRayDir;
+			POINT ptCursor;
+			Matrix4 matWorld = Matrix4::IDENTITY;
+			int cursorpx, cursorpy;
+			CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+			float fScaleX = 1.f, fScaleY = 1.f;
+			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+			ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+			ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+			cursorpx = ptCursor.x;
+			cursorpy = ptCursor.y;
+			int nWidth, nHeight;
+			CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+			ptCursor.x = cursorpx;
+			ptCursor.y = cursorpy;
+			CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
 
-		Vector3 vPickRayOrig, vPickRayDir;
-		POINT ptCursor;
-		Matrix4 matWorld = Matrix4::IDENTITY;
-		int cursorpx, cursorpy;
-		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-		float fScaleX = 1.f, fScaleY = 1.f;
-		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-		cursorpx = ptCursor.x;
-		cursorpy = ptCursor.y;
-		int nWidth, nHeight;
-		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-		ptCursor.x = cursorpx;
-		ptCursor.y = cursorpy;
-		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-
-		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
+			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
+		}
+		else */
+		{
+			result = level;
+		}
 		ret = true;
 		block->splitCom(result);
+
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			pRegion->SetModified(true);
+			if (pChunk)
+			{
+				pChunk->SetDirty(true);
+			}
+		}
+	}
+
+	return ret;
+}
+
+bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	bool ret = false;
+
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	std::string result;
+	if (block&& block->GetTemplate()->isComBlock())
+	{
+		block->mergeCom(level);
 
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
@@ -522,32 +593,72 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
+
 	if (block && block->GetTemplate()->isComBlock())
 	{
-		Vector3 vPickRayOrig, vPickRayDir;
-		POINT ptCursor;
-		Matrix4 matWorld = Matrix4::IDENTITY;
-		int cursorpx, cursorpy;
-		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-		float fScaleX = 1.f, fScaleY = 1.f;
-		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-		cursorpx = ptCursor.x;
-		cursorpy = ptCursor.y;
-		int nWidth, nHeight;
-		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-		ptCursor.x = cursorpx;
-		ptCursor.y = cursorpy;
-		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
-
+		/*
+		if (level.empty())
+		{
+			Vector3 vPickRayOrig, vPickRayDir;
+			POINT ptCursor;
+			Matrix4 matWorld = Matrix4::IDENTITY;
+			int cursorpx, cursorpy;
+			CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+			float fScaleX = 1.f, fScaleY = 1.f;
+			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+			ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+			ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+			cursorpx = ptCursor.x;
+			cursorpy = ptCursor.y;
+			int nWidth, nHeight;
+			CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+			ptCursor.x = cursorpx;
+			ptCursor.y = cursorpy;
+			CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
+		}
+		else
+		*/
+		{
+			result = level;
+		}
 		ret = true;
 		bool no = block->destroyCom(result);
 
 		if(no)
 			pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 		else
+		{
+			uint16_t lx, ly, lz;
+			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+			pRegion->SetModified(true);
+			if (pRegion)
+			{
+				BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+				if (pChunk)
+				{
+					pChunk->SetDirty(true);
+				}
+			}
+		}
+	}
+	else
+	{
+		pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
+	}
+
+	return ret;
+}
+bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+{
+	bool ret = false;
+	GETBLOCKWORLD(pWorld, pWorld_);
+	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+
+	if (block && block->GetTemplate()->isComBlock())
+	{
+		ret = true;
+		block->restoreCom(level);
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
@@ -602,17 +713,29 @@ DWORD ParaScripting::ParaBlockWorld::GetBlockColor(const object& pWorld_, uint16
 	return 0;
 }
 
-void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture)
+void ParaScripting::ParaBlockWorld::SetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int i)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	if (block)
 	{
-		block->setComTexture(level, texture);
+		block->setComTexture(level, i);
+
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
+		if (pRegion)
+		{
+			BlockChunk* pChunk = pRegion->GetChunk(CalcPackedChunkID(lx, ly, lz), false);
+			pRegion->SetModified(true);
+			if (pChunk)
+			{
+				pChunk->SetDirty(true);
+			}
+		}
 	}
 }
 
-string ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+int ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
@@ -620,7 +743,7 @@ string ParaScripting::ParaBlockWorld::GetBlockTexture(const object& pWorld_, uin
 	{
 		return block->getComTexture(level);
 	}
-	return std::string();
+	return -1;
 }
 
 string ParaScripting::ParaBlockWorld::GetBlockSplitLevel(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)

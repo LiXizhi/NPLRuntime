@@ -200,6 +200,7 @@ namespace ParaEngine
 			//packedBlockId
 			std::vector<uint16_t> instances;
 			std::vector<string> levels;
+			std::vector<bool> bComBlocks;
 			InstanceGroup() :m_pTemplate(NULL), m_templateId(0), m_blockData(0), m_nFaceCount(0) , m_maxInstanceFace(0){}
 
 			inline void reset()
@@ -209,6 +210,7 @@ namespace ParaEngine
 				m_nFaceCount = 0;
 				instances.clear();
 				levels.clear();
+				bComBlocks.clear();
 			}
 
 			inline bool isEmpty() const 
@@ -221,10 +223,11 @@ namespace ParaEngine
 				m_nFaceCount += nCount;
 			}
 
-			inline void AddInstance(uint16_t nIndex, uint32_t nFaceCount = 0, std::string level = "")
+			inline void AddInstance(uint16_t nIndex, uint32_t nFaceCount = 0, std::string level = "", bool bComBlock = false)
 			{
 				instances.push_back(nIndex);
 				levels.push_back(level);
+				bComBlocks.push_back(bComBlock);
 
 				AddFace(nFaceCount);
 				if (m_maxInstanceFace > nFaceCount)

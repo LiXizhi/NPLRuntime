@@ -805,6 +805,12 @@ namespace ParaEngine
 			return 0;
 	}
 
+	bool Block::IsComBlock()
+	{
+		SplitBlock *pSplitBlock = static_cast<SplitBlock *>(m_blockExtData);
+		return pSplitBlock;
+	}
+
 	int Block::getComModelList(Block * src, BlockModelList & dst) const
 	{
 		assert(src);
@@ -812,16 +818,19 @@ namespace ParaEngine
 		temp.LoadModelByTexture(1);
 		int cnt = 0;
 		bool nochild = true;
-		if (src->getExtData())
+		SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
+
+		if (stemp)
 		{
-			SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
 			cnt += getSplitLevel(dst, stemp, &temp, 0, nochild);
 			if (nochild)
 			{
 				temp.SetColor(stemp->color);
+				temp.SetTemplateID(stemp->templateId);
 				dst.push_back(temp);
 			}
 		}
+
 		return cnt;
 	}
 
@@ -850,6 +859,7 @@ namespace ParaEngine
 		temp.Clone(*bparent);
 		temp.TranslateByVertex(4);
 		temp.SetVerticalScale(0.5f);
+		temp.SetTemplateID(sparent->templateId);
 
 
 		switch (i)
@@ -971,11 +981,23 @@ namespace ParaEngine
 			return m_pTemplate->splitCom(this, level);
 	}
 
+	void Block::mergeCom(const std::string & level)
+	{
+		if (m_pTemplate)
+			return m_pTemplate->mergeCom(this, level);
+	}
+
 	bool Block::destroyCom(const std::string & level)
 	{
 		if (m_pTemplate)
 			return m_pTemplate->destroyCom(this, level);
 		return true;
+	}
+
+	void Block::restoreCom(const std::string & level)
+	{
+		if (m_pTemplate)
+			return m_pTemplate->restoreCom(this, level);
 	}
 
 	void Block::setComColour(const std::string & level, DWORD colour)
@@ -991,17 +1013,17 @@ namespace ParaEngine
 		return 0;
 	}
 
-	void Block::setComTexture(const std::string & level, const std::string & texture)
+	void Block::setComTexture(const std::string & level, int textureidx)
 	{
 		if (m_pTemplate)
-			return m_pTemplate->setComTexture(this, level, texture);
+			return m_pTemplate->setComTexture(this, level, textureidx);
 	}
 
-	std::string Block::getComTexture(const std::string & level) const
+	int Block::getComTexture(const std::string & level) const
 	{
 		if (m_pTemplate)
 			return m_pTemplate->getComTexture(this, level);
-		return std::string();
+		return -1;
 	}
 
 	const std::string & Block::getComByCursor() const

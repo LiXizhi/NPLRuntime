@@ -61,11 +61,13 @@ namespace ParaEngine
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if(stemp->childs[num])
+			if (num == 8)
+				return;
+			else if(stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return;
@@ -74,16 +76,38 @@ namespace ParaEngine
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
+	void CSplitModelProvider::mergeCom(Block * src, const std::string & level)
+	{
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (num == 8)
+				return;
+			else if (stemp->childs[num])
+				stemp = stemp->childs[num];
+			else
+				return;
+		}
+		assert(stemp);
+		mergeLevel(stemp);
+	}
+	//-----------------------------------------------------
 	bool CSplitModelProvider::destroyCom(Block * src, const std::string & level)
 	{
 		assert(src);
         SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
 		int lnum = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
+			if (num == 8)
+				return false;
 			if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
@@ -95,16 +119,42 @@ namespace ParaEngine
 		return destroyLevel(stemp);
 	}
 	//-----------------------------------------------------
+	void CSplitModelProvider::restoreCom(Block * src, const std::string & level)
+	{
+		assert(src);
+		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
+		int num = -1;
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
+		{
+			num = getLevelNum(*i);
+			if (num == 8)
+				return;
+			if (stemp->childs[num])
+			{
+				stemp = stemp->childs[num];
+			}
+			else
+			{
+				SplitBlock * temp = new SplitBlock();
+				stemp->add(num, temp);
+				stemp = temp;
+			}
+		}
+	}
+	//-----------------------------------------------------
 	void CSplitModelProvider::setComColour(Block * src, const std::string & level, DWORD colour)
 	{
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (stemp->childs[num])
+			if (num == 8)
+				return;
+			else if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
 			}
@@ -120,11 +170,13 @@ namespace ParaEngine
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (stemp->childs[num])
+			if (num == 8)
+				return 0;
+			else if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];
 			}
@@ -135,39 +187,43 @@ namespace ParaEngine
 		return stemp->color;
 	}
 	//-----------------------------------------------------
-	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, const std::string & texture)
+	void CSplitModelProvider::setComTexture(Block * src, const std::string & level, int texture)
 	{
-		// 保留到后期
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (num != -1 && stemp->childs[num])
+			if (num == 8)
+				return;
+			else if (num != -1 && stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
 				return;
 		}
+		assert(stemp);
+		stemp->templateId = texture;
 	}
 	//-----------------------------------------------------
-	std::string CSplitModelProvider::getComTexture(const Block * src, const std::string & level) const
+	int CSplitModelProvider::getComTexture(const Block * src, const std::string & level) const
 	{
-		// 保留到后期
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
 		int num = -1;
-		std::string::const_iterator i, iend = level.end();
-		for (i = level.begin(); i != iend; ++i)
+		std::string::const_reverse_iterator i, iend = level.rend();
+		for (i = level.rbegin(); i != iend; ++i)
 		{
 			num = getLevelNum(*i);
-			if (num != -1 && stemp->childs[num])
+			if (num == 8)
+				return -1;
+			else if (num != -1 && stemp->childs[num])
 				stemp = stemp->childs[num];
 			else
-				return std::string();
+				return -1;
 		}
-		return std::string();
+		return stemp->templateId;
 	}
     //-----------------------------------------------------
     std::string CSplitModelProvider::getComByCursor(const Block * src) const 
@@ -202,6 +258,7 @@ namespace ParaEngine
 			if (nochild)
 			{
 				temp.SetColor(stemp->color);
+				temp.SetTextureIndex(stemp->textureIdx);
 				out.push_back(temp);
 			}
 		}
@@ -255,35 +312,63 @@ namespace ParaEngine
 		assert(parent);
 		SplitBlock * temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(0, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(1, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(2, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(3, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(4, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(5, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(6, temp);
 
 		temp = new SplitBlock();
 		temp->set(parent->color);
+		temp->templateId = parent->templateId;
+		temp->textureIdx = parent->textureIdx;
 		parent->add(7, temp);
+	}
+	//-----------------------------------------------------
+	void CSplitModelProvider::mergeLevel(SplitBlock * level)
+	{
+		level->remove(0);
+		level->remove(1);
+		level->remove(2);
+		level->remove(3);
+		level->remove(4);
+		level->remove(5);
+		level->remove(6);
+		level->remove(7);
 	}
 	//-----------------------------------------------------
 	bool CSplitModelProvider::destroyLevel(SplitBlock * level)
@@ -566,30 +651,13 @@ namespace ParaEngine
 	//-----------------------------------------------------
 	int CSplitModelProvider::getLevelNum(char num) const
 	{
-		switch (num)
+		int ret = 8;
+		if (num >= '0' && num < '8')
 		{
-		case '0':
-			return 0;
-		case '1':
-			return 1;
-		case '2':
-			return 2;
-		case '3':
-			return 3;
-		case '4':
-			return 4;
-		case '5':
-			return 5;
-		case '6':
-			return 6;
-		case '7':
-			return 7;
-		default:
-			assert(false && "节点错误");
-			return -1;
+			ret = num - '0';
 		}
-		assert(false && "节点错误");
-		return -1;
+
+		return ret;
 	}
 	//-----------------------------------------------------
 /*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)

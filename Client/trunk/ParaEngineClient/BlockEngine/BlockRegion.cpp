@@ -815,6 +815,7 @@ namespace ParaEngine
 							{
 								splitFile.WriteDWORD(splitBlockRoot->index);
 								splitFile.WriteDWORD(splitBlockRoot->color);
+								splitFile.WriteDWORD(splitBlockRoot->templateId);
 							}
 							else
 							{
@@ -877,6 +878,7 @@ namespace ParaEngine
 										blockSave.push_back(vecChilds[t]);
 										splitFile.WriteDWORD(vecChilds[t]->index);
 										splitFile.WriteDWORD(vecChilds[t]->color);
+										splitFile.WriteDWORD(vecChilds[t]->templateId);
 									}
 								}
 							}
@@ -1417,10 +1419,11 @@ namespace ParaEngine
 
 					char index = splitFile.ReadDWORD();
 					DWORD color = splitFile.ReadDWORD();
+					uint16_t tempId = splitFile.ReadDWORD();
 
 					splitBlock->index = index;
 					splitBlock->color = color;
-					splitBlock->templateId = templateId;
+					splitBlock->templateId = tempId;
 
 					temp->add(index, splitBlock);
 				}
@@ -1429,8 +1432,10 @@ namespace ParaEngine
 			{
 				char index = splitFile.ReadDWORD();
 				DWORD color = splitFile.ReadDWORD();
+				templateId = splitFile.ReadDWORD();
 				root->index = index;
 				root->color = color;
+				root->templateId = templateId;
 			}
 
 

@@ -2373,6 +2373,14 @@ float ParaScene::GetDayLength()
 	return CGlobals::GetScene()->GetSunLight().GetDayLength();
 }
 
+void ParaScene::SetBackGroundColor(const char* rgba)
+{
+	int r = 255, g = 255, b = 255, a = 255;
+	int nCount = sscanf(rgba, "%d %d %d %d", &r, &g, &b, &a);
+	LinearColor color = COLOR_ARGB(a, r, g, b);
+
+	CGlobals::GetScene()->SetBackGroundColor(color);
+}
 ParaObject ParaScene::GetCurrentActor()
 {
 	return ParaObject(CGlobals::GetScene()->GetCurrentActor());

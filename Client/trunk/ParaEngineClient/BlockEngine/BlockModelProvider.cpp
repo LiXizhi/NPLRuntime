@@ -20,7 +20,7 @@ BlockModel& ParaEngine::IBlockModelProvider::GetBlockModel( int nIndex /*= 0*/ )
 	return m_pBlockTemplate->m_block_models[nIndex];
 }
 
-BlockModel& ParaEngine::IBlockModelProvider::GetBlockModelByData(uint32 nData /*= 0*/)
+BlockModel& ParaEngine::IBlockModelProvider::GetBlockModelByData(uint32)
 {
 	return GetBlockModel(0);
 }

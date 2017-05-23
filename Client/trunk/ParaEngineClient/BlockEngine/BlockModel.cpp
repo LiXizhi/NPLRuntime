@@ -47,6 +47,7 @@ namespace ParaEngine
 		CloneRenderData(from_block);
 		m_shapeAABB = from_block.m_shapeAABB;
 		m_nTextureIndex = from_block.m_nTextureIndex;
+		m_templateID = from_block.m_templateID;
 		m_level = from_block.m_level;
 	}
 

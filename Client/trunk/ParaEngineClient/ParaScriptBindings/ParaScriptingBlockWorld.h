@@ -124,12 +124,17 @@ namespace ParaScripting
 		*/
 		static int GetFirstBlock(const object& pWorld, uint16_t x, uint16_t y, uint16_t z, int nBlockId, uint16_t nSide = 4, uint32_t max_dist = 32);
 
-
 		// 分裂方块
 		static bool SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
+		// 合并方块
+		static bool MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+
 		// 删除分裂方块
 		static bool DestroyBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+
+		// 删除分裂方块
+		static bool RestoreBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 设置颜色
 		static void SetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, DWORD colour);
@@ -138,10 +143,10 @@ namespace ParaScripting
 		static DWORD GetBlockColor(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 设置贴图
-		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, const string& texture);
+		static void SetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int i);
 
 		// 获取贴图
-		static string GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+		static int GetBlockTexture(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 获取当前的块
 		static string GetBlockSplitLevel(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws);

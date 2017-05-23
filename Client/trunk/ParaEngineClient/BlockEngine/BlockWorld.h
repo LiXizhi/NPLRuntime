@@ -21,6 +21,7 @@
 #include "BlockRenderTask.h"
 #include "WorldInfo.h"
 #include "BlockReadWriteLock.h"
+#include "ShapeRay.h"
 
 namespace ParaEngine
 {
@@ -544,6 +545,10 @@ namespace ParaEngine
 		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
 
 	protected:
+		typedef std::vector<std::pair<CShapeAABB, std::string> > ShapeAABBStringList;
+
+		bool collectAABB(SplitBlock * l, const CShapeAABB & laabb, const CShapeRay & ray, std::string & out, float & dis, CShapeAABB & outaabb);
+
 		/** removed given region from memory. */
 		void UnloadRegion(BlockRegion* pRegion, bool bAutoSave = true);
 

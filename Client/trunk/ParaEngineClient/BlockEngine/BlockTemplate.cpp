@@ -243,12 +243,24 @@ namespace ParaEngine
 			return m_pBlockModelFilter->splitCom(src, level);
     }
 
+	void BlockTemplate::mergeCom(Block * src, const std::string & level)
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->mergeCom(src, level);
+	}
+
     bool BlockTemplate::destroyCom(Block * src, const std::string & level)
     {
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->destroyCom(src, level);
 		return true;
     }
+
+	void BlockTemplate::restoreCom(Block * src, const std::string & level)
+	{
+		if (m_pBlockModelFilter != 0)
+			return m_pBlockModelFilter->restoreCom(src, level);
+	}
 
     void BlockTemplate::setComColour(Block * src, const std::string & level, DWORD colour)
     {
@@ -263,17 +275,17 @@ namespace ParaEngine
 		return 0;
 	}
 
-    void BlockTemplate::setComTexture(Block * src, const std::string & level, const std::string & texture)
-    {
+	void BlockTemplate::setComTexture(Block * src, const std::string & level, int textureidx)
+	{
 		if (m_pBlockModelFilter != 0)
-			return m_pBlockModelFilter->setComTexture(src, level, texture);
-    }
+			return m_pBlockModelFilter->setComTexture(src, level, textureidx);
+	}
 
-	std::string BlockTemplate::getComTexture(const Block * src, const std::string & level) const
+	int BlockTemplate::getComTexture(const Block * src, const std::string & level) const
 	{
 		if (m_pBlockModelFilter != 0)
 			return m_pBlockModelFilter->getComTexture(src, level);
-		return std::string();
+		return -1;
 	}
         
     std::string BlockTemplate::getComByCursor(const Block * src) const

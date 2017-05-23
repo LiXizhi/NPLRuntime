@@ -586,7 +586,6 @@ namespace ParaEngine
 		std::map<int, InstanceGroupIndex>& instanceIndexMap = GetInstanceGroupIndexMap();
 
 
-		int value = 520;
 		for (uint16_t i = 0; i < nSize; i++)
 		{
 			Block* pBlock = pChunk->GetBlock(i);
@@ -596,30 +595,17 @@ namespace ParaEngine
 			if (pBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_cubeModel)
 				&& pChunk->IsVisibleBlock(i, pBlock))
 			{
-//				BlockTemplate* pBlockTemp = pBlock->GetTemplate();
-				if (value == 520)
-				{
-					value = 26;
-				}
-				else
-				{
-					value = 520;
-				}
-
-				value = pBlock->GetTemplateId();
-
-				BlockTemplate *pBlockTemp = m_pWorld->GetBlockTemplate(value);
+				BlockTemplate* pBlockTemp = pBlock->GetTemplate();
 //				pBlock->SetTemplate(pBlockTemp);
 
-				if (pBlockTemp->isComBlock())
+				if (pBlock->IsComBlock())
 				{
 					BlockModelList templist;
 					pBlock->getComModelList(pBlock, templist);
 
 					for (int x = 0; x < templist.size(); ++x)
 					{
-//						uint32 nBlockID = templist[x].GetTemplateID();
-						uint32 nBlockID = value;
+						uint32 nBlockID = templist[x].GetTemplateID();
 
 						uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
 						uint32 nBlockIdAndData = 0;
@@ -664,7 +650,7 @@ namespace ParaEngine
 						}
 
 						uint32 nFaceCount = templist[x].GetFaceCount();
-						instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount, templist[x].GetLevel());
+						instanceGroups[cachedGroupIdx]->AddInstance(i, nFaceCount, templist[x].GetLevel(), true);
 						totalFaceCount += nFaceCount;
 					}
 				}
@@ -672,9 +658,7 @@ namespace ParaEngine
 				{
 					//find correct group,nearby blocks may use the same template,so we 
 					//compare it with current group first.
-//					uint32 nBlockID = pBlock->GetTemplate()->GetID();
-					uint32 nBlockID = value;
-
+					uint32 nBlockID = pBlock->GetTemplate()->GetID();
 					uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
 					uint32 nBlockIdAndData = 0;
 
@@ -750,7 +734,7 @@ namespace ParaEngine
 				//compare it with current group first.
 				uint32 nBlockID = pBlock->GetTemplate()->GetID();
 				uint32 nBlockData = pBlock->GetTemplate()->HasColorData() ? 0 : pBlock->GetUserData();
-
+				void * nBlockExtData = pBlock->getExtData();
 				if (nBlockData > 0)
 					nBlockID = ((nBlockData << 12) | nBlockID);
 				auto curIndex = instance_map.find(nBlockID);
@@ -908,7 +892,8 @@ namespace ParaEngine
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
 
-			std::vector<string> levels = pInstGroup->levels;
+			std::vector<string> levelVec = pInstGroup->levels;
+			std::vector<bool> bComBlockVec = pInstGroup->bComBlocks;
 
 
 			//int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
@@ -979,9 +964,9 @@ namespace ParaEngine
 				BlockVertexCompressed* pBlockModelVertices = NULL;
 				unprocessedInstCount--;
 				int32 nFaceCount = 0;
-				if (pTemplate->isComBlock())
+				if (bComBlockVec[inst])
 				{
-					nFaceCount = tessellator.TessellateSplitBlock2(pChunk, instanceGroup[inst], levels[inst], dwShaderID, &pBlockModelVertices);
+					nFaceCount = tessellator.TessellateSplitBlock2(pChunk, instanceGroup[inst], levelVec[inst], dwShaderID, &pBlockModelVertices);
 //					nFaceCount = tessellator.TessellateSplitBlock(pChunk, instanceGroup[inst], dwShaderID, &pBlockModelVertices);
 				}
 				else
@@ -1256,7 +1241,7 @@ namespace ParaEngine
 		BlockTemplate *pTemplate = pWord->GetBlockTemplate(m_templateId);
 		BlockTemplate *pOtherTemplate = pWord->GetBlockTemplate(pOther->m_templateId);
 
-		if (pOther == NULL)
+		if (!pOther || !pTemplate || !pOtherTemplate)
 			return false;
 		else
 		{

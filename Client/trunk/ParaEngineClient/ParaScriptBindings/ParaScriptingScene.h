@@ -1823,6 +1823,7 @@ namespace ParaScripting
 		* be automatically called whenever there is a mouse click. */
 		static void EnableMouseClick(bool bEnable);
 		
+		static void SetBackGroundColor(const char* rgba);
 		/** get the actor that is being processed by the AI module or a script call back. The validity of the pointer is not guaranteed. */
 		static ParaObject GetCurrentActor();
 		/** Set the actor that is being processed by the AI module or a script call back. The pointer can be NULL. */

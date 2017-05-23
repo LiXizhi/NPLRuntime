@@ -394,6 +394,64 @@ BlockRegion* CBlockWorld::CreateGetRegion(uint16_t region_x, uint16_t region_z)
 		return NULL;
 }
 
+bool ParaEngine::CBlockWorld::collectAABB(SplitBlock * l, const CShapeAABB & laabb, const CShapeRay & ray, std::string & out, float & dis, CShapeAABB & outaabb)
+{
+	int tempidx, currentidx = 0;
+	std::pair<bool, float> intersect1;
+	bool first = true;
+	intersect1 = ray.intersects(laabb);
+	std::string temp = out;
+	if (intersect1.first)
+	{
+		if (l->isNoChild())
+		{
+			if (intersect1.second <= dis)
+			{
+				outaabb = laabb;
+				dis = intersect1.second;
+				return true;
+			}
+			return false;
+		}
+		else
+		{
+			ShapeAABBList maabblist;
+			getSplitAABB(laabb, maabblist, l);
+			ShapeAABBList::const_iterator i, iend = maabblist.end();
+			for (tempidx = 0, i = maabblist.begin(); i != iend; ++i, ++tempidx)
+			{
+				if ((*i).IsValid())
+				{
+					intersect1 = ray.intersects(*i);
+					if (intersect1.first)
+					{
+						if (intersect1.second <= dis)
+						{
+							temp = out;
+							if (collectAABB(l->childs[tempidx], *i, ray, temp, dis, outaabb))
+							{
+								first = false;
+								currentidx = tempidx;
+							}
+						}
+					}
+				}
+			}
+			if(!first)
+			{
+				if (temp.empty())
+				{
+					outaabb = maabblist[currentidx];
+				}
+				temp.push_back(toLevelChar(currentidx));
+				out = temp;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
 {
 	uint16_t rx, ry, rz;
@@ -1517,6 +1575,7 @@ bool CBlockWorld::PickSplit(uint16_t bx, uint16_t by, uint16_t bz, const Vector3
 	{
 		int nLenCount = 12;
 		CShapeAABB aabb;
+		CShapeAABB out;
 		CShapeRay ray(rayOrig, dir);
 		std::pair<bool, float> intersect1;
 		pBlockTemplate->GetAABB(this, bx, by, bz, &aabb);
@@ -1528,7 +1587,12 @@ bool CBlockWorld::PickSplit(uint16_t bx, uint16_t by, uint16_t bz, const Vector3
 		aabb.GetExtents() *= fScaling;
 
 		// use AABB for non-cube model
-		float fHitDist = -1;
+		float fHitDist = FLT_MAX;
+		SplitBlock * sblock = static_cast<SplitBlock * >(block->getExtData());
+		bool test = collectAABB(sblock, aabb, ray, result, fHitDist, out);
+		if (!test)
+			result = "8";
+		/*
 		bool forcego = true;
 		intersect1 = ray.intersects(aabb);
 		if (intersect1.first)
@@ -1568,10 +1632,10 @@ bool CBlockWorld::PickSplit(uint16_t bx, uint16_t by, uint16_t bz, const Vector3
 				forcego = true;
 				goto iteratoraabb;
 			}
-		}
-		return true;
+			return true;
+		}*/
 	}
-return false;
+	return false;
 }
 
 void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB & out)
@@ -1619,6 +1683,7 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 	{
 		int nLenCount = 12;
 		CShapeAABB aabb;
+		std::string result;
 		CShapeRay ray(vPickRayOrig, vPickRayDir);
 		std::pair<bool, float> intersect1;
 		pBlockTemplate->GetAABB(this, bx, by, bz, &aabb);
@@ -1630,7 +1695,14 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 		aabb.GetExtents() *= fScaling;
 
 		// use AABB for non-cube model
-		float fHitDist = -1;
+		float fHitDist = FLT_MAX;
+		SplitBlock * sblock = static_cast<SplitBlock * >(block->getExtData());
+		bool test = collectAABB(sblock, aabb, ray, result, fHitDist, out);
+		if (!test)
+			result = "8";
+		else
+			SplitBlock::last = result;
+		/*
 		bool forcego = true;
 		intersect1 = ray.intersects(aabb);
 		if (intersect1.first)
@@ -1672,9 +1744,8 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 			}
 			out = aabb2;
 		}
-		//return true;
+		*/
 	}
-	//return false;
 }
 
 bool CBlockWorld::IsObstructionBlock(uint16_t x, uint16_t y, uint16_t z)

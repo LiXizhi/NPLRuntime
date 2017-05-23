@@ -78,9 +78,9 @@ namespace ParaEngine
 		void AddRectFace(int32 nFaceCount);
 
 		void Init(BlockTemplate* pTemplate, uint16_t nBlockData, uint32_t vertexOffset,
-			VertexBufferDevicePtr_type pBuffer, Uint16x3& minBlockId_ws);
+			VertexBufferDevicePtr_type pBuffer, Uint16x3& minBlockId_ws, int textureidx = -1);
 		void Init(BlockTemplate* pTemplate, uint16_t nBlockData, uint32_t vertexOffset,
-			Uint16x3& minBlockId_ws, int32 nBufferIndex);
+			Uint16x3& minBlockId_ws, int32 nBufferIndex, int textureidx = -1);
 
 		int32 GetBufferIndex() const { return m_pBufferIndex; }
 		void SetBufferIndex(int32 val) { m_pBufferIndex = val; }
@@ -93,7 +93,7 @@ namespace ParaEngine
 		uint32_t m_nVertexOffset;
 		uint16_t m_nRectFaceCount;
 		int16_t m_internalIndex;
-		
+		int32_t m_textureIndex;
 		Uint16x3 m_minBlockId_ws;
 
 		BlockTemplate* m_pTemplate;
