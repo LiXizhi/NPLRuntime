@@ -513,7 +513,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
 
-	if (block&& block->GetTemplate()->isComBlock())
+	if (block&& block->IsComBlock())
 	{
 		/*
 		if (level.empty())

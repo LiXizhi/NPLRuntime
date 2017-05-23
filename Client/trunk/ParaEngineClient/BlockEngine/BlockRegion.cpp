@@ -1444,7 +1444,8 @@ namespace ParaEngine
 				BlockChunk* pChunk = GetChunk(dwChunkID, true);
 				if (root && pChunk)
 				{
-					BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(templateId);
+					BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(520);
+//					BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(templateId);
 					if (pTemplate)
 					{
 						pChunk->SetSplitBlock(blockIdx, static_cast<void *>(root), pTemplate);
