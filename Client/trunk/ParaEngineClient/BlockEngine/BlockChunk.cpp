@@ -996,7 +996,7 @@ namespace ParaEngine
 		return true;
 	}
 
-	bool Block::restoreCom(const std::string & level, uint16_t templateId, DWORD color)
+	bool Block::restoreCom(const std::string & level, int templateId, DWORD color)
 	{
 		bool ret = false;
 		SplitBlock * stemp = static_cast<SplitBlock * >(m_blockExtData);
