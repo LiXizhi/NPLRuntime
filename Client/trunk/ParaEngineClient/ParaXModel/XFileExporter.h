@@ -26,8 +26,6 @@ namespace ParaEngine
 		//binary format functions:
 	protected:
 
-		void WriteTemplates(ofstream& strm);
-
 		void WriteHeader(ofstream& strm);
 
 #pragma region +[继续写入内容需要检查m_vecInt和m_vecFloat的操作]
@@ -35,8 +33,7 @@ namespace ParaEngine
 		void WriteBinDWord(ofstream& strm, uint32 nDWord);
 		void WriteString(ofstream& strm, const string& str);
 		void WriteName(ofstream& strm, const string& name);
-		//void WriteBinGUID(ofstream& strm);
-		void WriteToken(ofstream& strm, const string& token);
+		bool WriteToken(ofstream& strm, const string& token);
 		void WriteToken(ofstream& strm, XFileToken enToken);
 #pragma endregion
 

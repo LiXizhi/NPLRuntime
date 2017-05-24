@@ -4,6 +4,36 @@
 #include "ParaXModel.h"
 namespace ParaEngine
 {
+	struct XFileTemplateMember_t
+	{
+		string name;
+		string type;
+		string count;
+		XFileTemplateMember_t(string _name, string _type, string _count = "") :name(_name), type(_type), count(_count) {}
+	};
+
+	struct XFileTemplate_t
+	{
+		string name;
+		GUID guid;
+		vector<XFileTemplateMember_t> members;
+		bool beExtend;
+		XFileTemplate_t(string _name, GUID _guid, bool _beExtend = false) :name(_name), guid(_guid), beExtend(_beExtend) {}
+		void Init(string _name, GUID _guid, bool _beExtend = false)
+		{
+			name = _name;
+			guid = _guid;
+			beExtend = _beExtend;
+		}
+		void clear()
+		{
+			name = "";
+			guid = { 0x00000000, 0x0000, 0x0000,{ 0x00, 0x00,  0x0,  0x00,  0x00,  0x00,  0x00,  0x00 } };
+			beExtend = false;
+			members.clear();
+		}
+	};
+
 	struct CParaRawData;
 	class XFileCharModelExporter :
 		public XFileExporter
@@ -16,6 +46,19 @@ namespace ParaEngine
 
 		void ExportParaXModel(ofstream& strm);
 	private:
+
+		void InitTemplates();
+
+		void WriteTemplates(ofstream& strm);
+
+		string GUIDToString(GUID guid);
+		void GUIDToBin(GUID guid,char* bin);
+
+		void WriteTemplate(ofstream& strm, const XFileTemplate_t& stTem);
+		void WriteGUID(ofstream& strm, GUID guid);
+		void WriteTemplateMember(ofstream& strm, const XFileTemplateMember_t& memeber);
+
+
 		XFileDataObjectPtr Translate();
 
 		void Release(XFileDataObjectPtr pData);
@@ -58,5 +101,6 @@ namespace ParaEngine
 	private:
 		CParaXModel* m_pMesh;
 		CParaRawData* m_pRawData;
+		vector<XFileTemplate_t> m_vecTemplates;
 	};
 }

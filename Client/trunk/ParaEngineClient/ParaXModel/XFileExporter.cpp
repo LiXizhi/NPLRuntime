@@ -58,20 +58,6 @@ void XFileExporter::WriteHeader(ofstream& strm)
 	strm.write((char*)&num, 1);
 }
 
-//void XFileExporter::WriteBinGUID(ofstream& strm)
-//{
-//	WriteIntAndFloatArray(strm);
-//
-//	string guid = GetBinGUID();
-//	strm.write(guid.c_str(), guid.length());
-//}
-
-void XFileExporter::WriteTemplates(ofstream& strm)
-{
-	/*CParaXTemplateWriter writer;
-	writer.WriteVectorTemplate(strm);*/
-}
-
 void XFileExporter::WriteName(ofstream& strm, const string& name)
 {
 	if (name.empty())
@@ -94,7 +80,7 @@ void XFileExporter::WriteToken(ofstream& strm, XFileToken enToken)
 }
 
 // 把字符串token转换成一个uint16长度的数值,写入x文件，作为读取时的标示
-void XFileExporter::WriteToken(ofstream& strm, const string& token)
+bool XFileExporter::WriteToken(ofstream& strm, const string& token)
 {
 	static map<string, XFileToken> mapToken{
 		/*{ "",TOKEN_NONE },
@@ -116,7 +102,7 @@ void XFileExporter::WriteToken(ofstream& strm, const string& token)
 		{ ".",TOKEN_DOT },
 		{ ",",TOKEN_COMMA },
 		{ ";",TOKEN_SEMICOLON },
-		/*{ "template",TOKEN_TEMPLATE },
+		//{ "template",TOKEN_TEMPLATE },
 		{ "WORD",TOKEN_WORD },
 		{ "DWORD",TOKEN_DWORD },
 		{ "FLOAT",TOKEN_FLOAT },
@@ -125,9 +111,9 @@ void XFileExporter::WriteToken(ofstream& strm, const string& token)
 		{ "UCHAR",TOKEN_UCHAR },
 		{ "SWORD",TOKEN_SWORD },
 		{ "SDWORD",TOKEN_SDWORD },
-		{ "void",TOKEN_VOID },
-		{ "string",TOKEN_LPSTR },
-		{ "unicode",TOKEN_UNICODE },
+		//{ "void",TOKEN_VOID },
+		{ "STRING",TOKEN_LPSTR },
+		/*{ "unicode",TOKEN_UNICODE },
 		{ "cstring",TOKEN_CSTRING },
 		{ "array",TOKEN_ARRAY },*/
 		/*{"",TOKEN_ERROR = 0xffff,*/
@@ -137,7 +123,9 @@ void XFileExporter::WriteToken(ofstream& strm, const string& token)
 	{
 		auto enToken = iter->second;
 		WriteToken(strm, enToken);
+		return true;
 	}
+	return false;
 }
 
 
