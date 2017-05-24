@@ -1045,7 +1045,10 @@ namespace ParaEngine
 			else
 				return -1;
 		}
-		return stemp->templateId;
+
+		num = (stemp->templateId == 520) ? -1 : stemp->templateId;
+
+		return num;
 	}
 
 	const std::string & Block::getComByCursor() const
