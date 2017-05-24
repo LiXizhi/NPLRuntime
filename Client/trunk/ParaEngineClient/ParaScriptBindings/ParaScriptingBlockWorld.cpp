@@ -658,8 +658,7 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 
 	if (block && block->IsComBlock())
 	{
-		ret = true;
-		block->restoreCom(level, templateId, color);
+		ret = block->restoreCom(level, templateId, color);
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);

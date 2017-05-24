@@ -996,8 +996,9 @@ namespace ParaEngine
 		return true;
 	}
 
-	void Block::restoreCom(const std::string & level, uint16_t templateId, DWORD color)
+	bool Block::restoreCom(const std::string & level, uint16_t templateId, DWORD color)
 	{
+		bool ret = false;
 		SplitBlock * stemp = static_cast<SplitBlock * >(m_blockExtData);
 		int num = -1;
 		std::string::const_reverse_iterator i, iend = level.rend();
@@ -1014,6 +1015,7 @@ namespace ParaEngine
 			{
 				if (templateId >= 0)
 				{
+					ret = true;
 					SplitBlock * temp = new SplitBlock();
 					stemp->add(num, temp);
 					stemp->templateId = templateId;
@@ -1022,6 +1024,8 @@ namespace ParaEngine
 				}
 			}
 		}
+
+		return ret;
 	}
 
 	void Block::setComColour(const std::string & level, DWORD colour)
