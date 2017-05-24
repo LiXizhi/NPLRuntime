@@ -566,76 +566,76 @@ namespace ParaEngine
 
 	void CSplitModelProvider::getSplitLevel(BlockModel & temp, SplitBlock *pSplitBlock, int level, int i)
     {
-		assert(pSplitBlock);
-		float levelf = pow(2, level);
-		temp.TranslateByVertex(4);
-		temp.SetVerticalScale(0.5f);
+		//assert(pSplitBlock);
+		if(pSplitBlock)
+		{
+			float levelf = pow(2, level);
+			temp.TranslateByVertex(4);
+			temp.SetVerticalScale(0.5f);
 
-		switch (i)
-		{
-		case 0:
-		{
-			temp.TranslateVertices(0.0f, 0.0f, 0.0f);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 1:
-		{
-			temp.TranslateVertices(1.0f / levelf, 0, 0);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 2:
-		{
-			temp.TranslateVertices(1.0f / levelf, 0, 1.0f / levelf);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 3:
-		{
-			temp.TranslateVertices(0, 0, 1.0f / levelf);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 4:
-		{
-			temp.TranslateVertices(0, 1.0f / levelf, 0);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 5:
-		{
-			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 0);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 6:
-		{
-			temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 1.0f / levelf);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		case 7:
-		{
-			temp.TranslateVertices(0, 1.0f / levelf, 1.0f / levelf);
-			temp.reflushAABB();
-			temp.SetColor(pSplitBlock->color);
-		}
-		break;
-		default:
+			switch (i)
+			{
+			case 0:
+			{
+				temp.TranslateVertices(0.0f, 0.0f, 0.0f);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
 			break;
+			case 1:
+			{
+				temp.TranslateVertices(1.0f / levelf, 0, 0);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 2:
+			{
+				temp.TranslateVertices(1.0f / levelf, 0, 1.0f / levelf);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 3:
+			{
+				temp.TranslateVertices(0, 0, 1.0f / levelf);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 4:
+			{
+				temp.TranslateVertices(0, 1.0f / levelf, 0);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 5:
+			{
+				temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 0);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 6:
+			{
+				temp.TranslateVertices(1.0f / levelf, 1.0f / levelf, 1.0f / levelf);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			case 7:
+			{
+				temp.TranslateVertices(0, 1.0f / levelf, 1.0f / levelf);
+				temp.reflushAABB();
+				temp.SetColor(pSplitBlock->color);
+			}
+			break;
+			default:
+				break;
+			}
 		}
     }
-
-
-
 	//-----------------------------------------------------
 	int CSplitModelProvider::getBlockModelCount(SplitBlock * parent) const
 	{

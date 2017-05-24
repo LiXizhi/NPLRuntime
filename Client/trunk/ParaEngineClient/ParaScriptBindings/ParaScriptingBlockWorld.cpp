@@ -656,7 +656,11 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 
-	if (block && block->IsComBlock())
+	if (!block)
+	{
+		pWorld->SetBlockTemplateIdByIdx(x_ws, y_ws, z_ws, 520);
+	}
+	if (block && block->GetTemplate()->isComBlock())
 	{
 		ret = block->restoreCom(level, templateId, color);
 		{
@@ -672,10 +676,6 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 				}
 			}
 		}
-	}
-	else
-	{
-		pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 	}
 
 	return ret;
