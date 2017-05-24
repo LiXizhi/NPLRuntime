@@ -1013,15 +1013,12 @@ namespace ParaEngine
 			}
 			else
 			{
-				if (templateId >= 0)
-				{
-					ret = true;
-					SplitBlock * temp = new SplitBlock();
-					stemp->add(num, temp);
-					temp->templateId = templateId;
-					temp->color = color;
-					break;
-				}
+				ret = true;
+				SplitBlock * temp = new SplitBlock();
+				stemp->add(num, temp);
+				temp->templateId = (templateId == -1) ? 520 : templateId;
+				temp->color = color;
+				break;
 			}
 		}
 
