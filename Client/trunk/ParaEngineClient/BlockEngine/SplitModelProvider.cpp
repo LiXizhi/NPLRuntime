@@ -276,11 +276,18 @@ namespace ParaEngine
 		SplitBlock * pTempBlock = pSplitBlock;
 		if (pSplitBlock)
 		{
-			for (int i = 0; i < level.size(); ++i)
+			if (level.empty())
 			{
-				int num = getLevelNum(level[i]);
-				pTempBlock = pTempBlock->childs[num];
-				getSplitLevel(out, pTempBlock, i + 1, num);
+				out.SetColor(pSplitBlock->color);
+			}
+			else
+			{
+				for (int i = 0; i < level.size(); ++i)
+				{
+					int num = getLevelNum(level[i]);
+					pTempBlock = pTempBlock->childs[num];
+					getSplitLevel(out, pTempBlock, i + 1, num);
+				}
 			}
 		}
 	}

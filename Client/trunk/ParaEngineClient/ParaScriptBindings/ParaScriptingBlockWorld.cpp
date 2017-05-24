@@ -589,7 +589,7 @@ bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x
 
 bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
-	bool ret = false;
+	bool no = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 	std::string result;
@@ -599,33 +599,33 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		/*
 		if (level.empty())
 		{
-			Vector3 vPickRayOrig, vPickRayDir;
-			POINT ptCursor;
-			Matrix4 matWorld = Matrix4::IDENTITY;
-			int cursorpx, cursorpy;
-			CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-			float fScaleX = 1.f, fScaleY = 1.f;
-			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-			ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-			ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-			cursorpx = ptCursor.x;
-			cursorpy = ptCursor.y;
-			int nWidth, nHeight;
-			CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-			ptCursor.x = cursorpx;
-			ptCursor.y = cursorpy;
-			CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
+		Vector3 vPickRayOrig, vPickRayDir;
+		POINT ptCursor;
+		Matrix4 matWorld = Matrix4::IDENTITY;
+		int cursorpx, cursorpy;
+		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
+		float fScaleX = 1.f, fScaleY = 1.f;
+		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
+		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
+		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
+		cursorpx = ptCursor.x;
+		cursorpy = ptCursor.y;
+		int nWidth, nHeight;
+		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
+		ptCursor.x = cursorpx;
+		ptCursor.y = cursorpy;
+		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
+		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
 		}
 		else
 		*/
 		{
 			result = level;
 		}
-		ret = true;
-		bool no = block->destroyCom(result);
 
-		if(no)
+		no = block->destroyCom(result);
+
+		if (no)
 			pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 		else
 		{
@@ -647,8 +647,9 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 		pWorld->SetBlockId(x_ws, y_ws, z_ws, 0);
 	}
 
-	return ret;
+	return no;
 }
+
 bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
 {
 	bool ret = false;

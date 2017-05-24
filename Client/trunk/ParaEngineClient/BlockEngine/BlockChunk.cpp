@@ -822,11 +822,13 @@ namespace ParaEngine
 
 		if (stemp)
 		{
+			temp.SetColor(stemp->color);
+			temp.SetTemplateID(stemp->templateId);
+
 			cnt += getSplitLevel(dst, stemp, &temp, 0, nochild);
+
 			if (nochild)
 			{
-				temp.SetColor(stemp->color);
-				temp.SetTemplateID(stemp->templateId);
 				dst.push_back(temp);
 			}
 		}

@@ -1699,9 +1699,14 @@ void CBlockWorld::getSplitAABB(uint16_t bx, uint16_t by, uint16_t bz, CShapeAABB
 		SplitBlock * sblock = static_cast<SplitBlock * >(block->getExtData());
 		bool test = collectAABB(sblock, aabb, ray, result, fHitDist, out);
 		if (!test)
+		{
 			result = "8";
+			SplitBlock::last = "8";
+		}
 		else
+		{
 			SplitBlock::last = result;
+		}
 		/*
 		bool forcego = true;
 		intersect1 = ray.intersects(aabb);
