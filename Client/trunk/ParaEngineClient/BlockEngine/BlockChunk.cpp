@@ -1018,8 +1018,8 @@ namespace ParaEngine
 					ret = true;
 					SplitBlock * temp = new SplitBlock();
 					stemp->add(num, temp);
-					stemp->templateId = templateId;
-					stemp->color = color;
+					temp->templateId = templateId;
+					temp->color = color;
 					break;
 				}
 			}
