@@ -1006,7 +1006,7 @@ namespace ParaEngine
 		{
 			num = getLevelNum(*i);
 			if (num == 8)
-				return;
+				return false;
 			if (stemp->childs[num])
 			{
 				stemp = stemp->childs[num];

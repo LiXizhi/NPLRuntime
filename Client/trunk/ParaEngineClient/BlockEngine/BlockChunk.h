@@ -85,6 +85,7 @@ namespace ParaEngine
 		*/
 		bool restoreCom(const std::string & level, uint16_t templateId, DWORD color);
 
+
 		/** 通过当前制定层次设置颜色
 		@note 可分裂方块专用
 		@data 2017.4.28
