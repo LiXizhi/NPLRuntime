@@ -650,16 +650,16 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	return no;
 }
 
-bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, uint16_t templateId, DWORD color)
 {
 	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
 	Block *block = pWorld->GetBlock(x_ws, y_ws, z_ws);
 
-	if (block && block->GetTemplate()->isComBlock())
+	if (block && block->IsComBlock())
 	{
 		ret = true;
-		block->restoreCom(level);
+		block->restoreCom(level, templateId, color);
 		{
 			uint16_t lx, ly, lz;
 			BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);
