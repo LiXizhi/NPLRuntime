@@ -134,7 +134,7 @@ namespace ParaScripting
 		static bool DestroyBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 删除分裂方块
-		static bool RestoreBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, uint16_t templateId, DWORD color);
+		static bool RestoreBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int templateId, DWORD color);
 
 
 		// 设置颜色

@@ -650,7 +650,7 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 	return no;
 }
 
-bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, uint16_t templateId, DWORD color)
+bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int templateId, DWORD color)
 {
 	bool ret = false;
 	GETBLOCKWORLD(pWorld, pWorld_);
