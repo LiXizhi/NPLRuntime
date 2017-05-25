@@ -391,23 +391,23 @@ void DBEntity::OpenDB(const char* dbname)
 	}
 	int errcode;
 
-	string diskfileName = PrepareDatabaseFile(dbname);
+	// dbname is utf8 string, see line 124
+	string sDBName = ParaEngine::StringHelper::UTF8ToAnsi(dbname);
+	string diskfileName = PrepareDatabaseFile(sDBName.c_str());
 	if(diskfileName=="")
 	{
 		// the database file can not be found anywhere, we will try create the database anyway. 
 #ifdef PARAENGINE_MOBILE
 		diskfileName = ParaEngine::CParaFile::GetWritablePath() + dbname;
 #else
-		diskfileName = dbname;
+		diskfileName = sDBName;
 #endif
 		ParaEngine::CParaFile::CreateDirectory(diskfileName.c_str());
 		OUTPUT_LOG("try create database file %s\n", diskfileName.c_str());
 		SetCreateFile(true);
 	}
 
-	// diskfileName is utf8 string, see line 124
-	//string UTF8_Name = ::ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
-	string& UTF8_Name = diskfileName;
+	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
 	
 	int nMaxRetryTimes = IsCreateFile() ? 1 : 3;
 
@@ -415,10 +415,10 @@ void DBEntity::OpenDB(const char* dbname)
 	{
 		if (SQLITE_OK != (errcode = sqlite3_open_v2(UTF8_Name.c_str(), &m_db, m_nSQLite_OpenFlags, NULL)))
 		{
-			OUTPUT_LOG("warn: can not open database %d times: %s, because %s\r\n", i, dbname, sqlite3_errmsg(m_db));
+			OUTPUT_LOG("warn: can not open database %d times: %s, because %s\r\n", i, sDBName.c_str(), sqlite3_errmsg(m_db));
 			if (nMaxRetryTimes == i)
 			{
-				OUTPUT_LOG("warn: can not open database: %s\r\n", dbname);
+				OUTPUT_LOG("warn: can not open database: %s\r\n", sDBName.c_str());
 				return;
 			}
 			else
