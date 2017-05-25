@@ -94,7 +94,7 @@ namespace ParaEngine
 		}
 		assert(stemp);
 		mergeLevel(stemp);
-		stemp->templateId = templateId;
+		stemp->templateId = (templateId == -1) ? 520 : templateId;
 		stemp->color = color;
 	}
 	//-----------------------------------------------------
