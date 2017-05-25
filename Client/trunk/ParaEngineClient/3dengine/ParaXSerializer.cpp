@@ -769,6 +769,7 @@ bool CParaXSerializer::ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData
 		int nAttachments = *(DWORD*)(pBuffer);
 		int nAttachmentLookup = *(((DWORD*)(pBuffer))+1);
 		xmesh.m_objNum.nAttachments = nAttachments;
+		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 		
 		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pBuffer+8);
 		int32 * attLookup = (int32 *)(pBuffer+8+sizeof(ModelAttachmentDef)*nAttachments);

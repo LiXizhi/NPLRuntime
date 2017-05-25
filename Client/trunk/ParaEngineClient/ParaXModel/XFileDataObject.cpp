@@ -775,6 +775,8 @@ void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm,XFileExporter& export
 	{
 		WriteXAnimations(strm,exporter);
 	}
+
+	exporter.WriteIntAndFloatArray(strm);
 }
 
 void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm,XFileExporter& exporter)
@@ -787,6 +789,7 @@ void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm,XFileExporter&
 	exporter.WriteInt(strm, xheader->IsAnimated);
 	exporter.WriteVector3(strm, xheader->minExtent);
 	exporter.WriteVector3(strm, xheader->maxExtent);
+	exporter.WriteInt(strm, xheader->nModelFormat);
 }
 
 void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm,XFileExporter& exporter)
@@ -884,6 +887,26 @@ void ParaEngine::XFileDataObject::WriteXTransparency(ofstream& strm,XFileExporte
 void ParaEngine::XFileDataObject::WriteXViews(ofstream& strm,XFileExporter& exporter)
 {
 	// no need to do anything, since there is only one view. all view 0 information are duplicated in other nodes.
+	int nView = *((DWORD*)GetBuffer());
+	if (nView > 0)
+	{
+		exporter.WriteInt(strm, nView);
+		ModelView *pView = (ModelView*)(GetBuffer() + 4);
+		for (int i = 0; i < nView; ++i)
+		{
+			exporter.WriteInt(strm, pView->nIndex);
+			exporter.WriteInt(strm, pView->ofsIndex);
+			exporter.WriteInt(strm, pView->nTris);
+			exporter.WriteInt(strm, pView->ofsTris);
+			exporter.WriteInt(strm, pView->nProps);
+			exporter.WriteInt(strm, pView->ofsProps);
+			exporter.WriteInt(strm, pView->nSub);
+			exporter.WriteInt(strm, pView->ofsSub);
+			exporter.WriteInt(strm, pView->nTex);
+			exporter.WriteInt(strm, pView->ofsTex);
+			exporter.WriteInt(strm, pView->lod);
+		}
+	}
 }
 
 void ParaEngine::XFileDataObject::WriteXIndices0(ofstream& strm,XFileExporter& exporter)
@@ -957,8 +980,8 @@ void ParaEngine::XFileDataObject::WriteXBones(ofstream& strm,XFileExporter& expo
 			ModelBoneDef& bone = mb[i];
 			exporter.WriteInt(strm, bone.animid);
 			exporter.WriteInt(strm, bone.flags);
-			exporter.WriteInt(strm, bone.parent);
-			exporter.WriteInt(strm, bone.boneid);
+			exporter.WriteShort(strm, bone.parent);
+			exporter.WriteShort(strm, bone.boneid);
 			WriteAnimationBlock(strm,exporter, bone.translation);
 			WriteAnimationBlock(strm,exporter, bone.rotation);
 			WriteAnimationBlock(strm,exporter, bone.scaling);
@@ -1159,8 +1182,8 @@ void ParaEngine::XFileDataObject::WriteXAnimations(ofstream& strm,XFileExporter&
 
 void ParaEngine::XFileDataObject::WriteAnimationBlock(ofstream& strm,XFileExporter& exporter, AnimationBlock& unk)
 {
-	exporter.WriteInt(strm, unk.type);
-	exporter.WriteInt(strm, unk.seq);
+	exporter.WriteShort(strm, unk.type);
+	exporter.WriteShort(strm, unk.seq);
 	exporter.WriteInt(strm, unk.nRanges);
 	exporter.WriteInt(strm, unk.ofsRanges);
 	exporter.WriteInt(strm, unk.nTimes);

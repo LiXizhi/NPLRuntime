@@ -42,6 +42,7 @@ namespace ParaEngine
 #pragma region +[数据暂时保存到m_vecInt和m_vecFloat的中，如果后续没有同类数据后，在一次性按照数组格式写入文件]
 		void WriteCharArray(ofstream& strm, char* cInput, int nCount);
 		void WriteInt(ofstream& strm, uint32 nInt);
+		void WriteShort(ofstream& strm, uint16 nInt);
 		void WriteIntArray(ofstream& strm);
 		void WriteFloat(ofstream& strm, float f);
 		void WriteFloatArray(ofstream& strm);

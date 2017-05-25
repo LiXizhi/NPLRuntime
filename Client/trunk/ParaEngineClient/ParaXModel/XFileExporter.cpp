@@ -177,6 +177,12 @@ void ParaEngine::XFileExporter::WriteCharArray(ofstream& strm, char* cInput, int
 	}
 }
 
+void ParaEngine::XFileExporter::WriteShort(ofstream& strm, uint16 nInt)
+{
+	uint32 value = nInt & 0x0000ffff;
+	WriteInt(strm, value);
+}
+
 void ParaEngine::XFileExporter::WriteInt(ofstream& strm, uint32 nInt)
 {
 	WriteFloatArray(strm);

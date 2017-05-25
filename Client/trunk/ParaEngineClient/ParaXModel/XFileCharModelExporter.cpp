@@ -718,8 +718,23 @@ bool ParaEngine::XFileCharModelExporter::WriteXTransparency(XFileDataObjectPtr p
 bool ParaEngine::XFileCharModelExporter::WriteXViews(XFileDataObjectPtr pData, const string& strName /*= ""*/)
 {
 	// no need to do anything, since there is only one view. all view 0 information are duplicated in other nodes.
-	//pData->m_sTemplateName = "XViews";
-	//pData->m_sName = strName;
+	pData->m_sTemplateName = "XViews";
+	pData->m_sName = strName;
+
+	int nView = 1;
+	{
+		int nSize = 4 + sizeof(ModelView)*nView;
+		pData->ResizeBuffer(nSize);
+		*(DWORD*)(pData->GetBuffer()) = (DWORD)nView;
+		ModelView* view = (ModelView*)(pData->GetBuffer() + 4);
+		for (int i = 0; i < nView; i++) {
+			memset(&view[i], 0, sizeof(ModelView));
+			view[i].nTris = (uint32)m_pMesh->GetObjectNum().nIndices; // TODO:rename nTris to nIndices
+			view[i].nSub = (uint32)m_pMesh->geosets.size();
+			view[i].nTex = (uint32)m_pMesh->passes.size(); // TODO: rename nTex to render pass
+		}
+	}
+
 	return true;
 }
 
