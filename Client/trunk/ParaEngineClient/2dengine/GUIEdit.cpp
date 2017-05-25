@@ -1429,29 +1429,46 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 
 	const char16_t* texBuffer = NULL;
 	static std::u16string strPassword;
-	if (m_PasswordChar == '\0')
+	bool bIsEmptyText = false;
+	LinearColor oldColor;
+	if (m_Buffer.IsEmpty() && !m_bHasFocus) 
 	{
-		if (m_Buffer.IsEmpty() && !m_bHasFocus)
-			texBuffer = m_empty_text.c_str();
-		else
-			texBuffer = m_Buffer.GetBuffer();
+		texBuffer = m_empty_text.c_str();
+		if (!m_empty_text.empty())
+		{
+			bIsEmptyText = true;
+			oldColor = pFontElement->FontColor;
+			pFontElement->FontColor.a *= 0.25f;
+		}
 	}
 	else
 	{
-		// in case a password character is specified, we will display it.
-		int nSize = m_Buffer.GetTextSize();
-		strPassword.resize(nSize, (char16_t)m_PasswordChar);
-		if (!strPassword.empty() && strPassword[0] != ((char16_t)m_PasswordChar))
+		if (m_PasswordChar == '\0')
 		{
-			for (int i = 0; i < nSize; ++i)
-			{
-				strPassword[i] = (char16_t)m_PasswordChar;
-			}
+			texBuffer = m_Buffer.GetBuffer();
 		}
-		texBuffer = strPassword.c_str();
+		else
+		{
+			// in case a password character is specified, we will display it.
+			int nSize = m_Buffer.GetTextSize();
+			strPassword.resize(nSize, (char16_t)m_PasswordChar);
+			if (!strPassword.empty() && strPassword[0] != ((char16_t)m_PasswordChar))
+			{
+				for (int i = 0; i < nSize; ++i)
+				{
+					strPassword[i] = (char16_t)m_PasswordChar;
+				}
+			}
+			texBuffer = strPassword.c_str();
+		}
 	}
 
 	DrawText(texBuffer + m_nFirstVisible, pFontElement, &rcText, &rcWindow, m_bUseTextShadow, -1, m_textShadowQuality, m_textShadowColor);
+
+	if (bIsEmptyText)
+	{
+		pFontElement->FontColor = oldColor;
+	}
 
 	// Render the selected text
 	if (m_nCaret != m_nSelStart)
