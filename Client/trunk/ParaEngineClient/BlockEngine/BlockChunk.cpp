@@ -983,10 +983,10 @@ namespace ParaEngine
 			return m_pTemplate->splitCom(this, level);
 	}
 
-	void Block::mergeCom(const std::string & level)
+	void Block::mergeCom(const std::string & level, int templateId, DWORD color)
 	{
 		if (m_pTemplate)
-			return m_pTemplate->mergeCom(this, level);
+			return m_pTemplate->mergeCom(this, level, templateId, color);
 	}
 
 	bool Block::destroyCom(const std::string & level)

@@ -537,7 +537,7 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 	return ret;
 }
 
-bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level)
+bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int templateId, DWORD color)
 {
 	bool ret = false;
 
@@ -546,7 +546,7 @@ bool ParaScripting::ParaBlockWorld::MergeBlock(const object& pWorld_, uint16_t x
 	std::string result;
 	if (block&& block->GetTemplate()->isComBlock())
 	{
-		block->mergeCom(level);
+		block->mergeCom(level, templateId, color);
 
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = pWorld->GetRegion(x_ws, y_ws, z_ws, lx, ly, lz);

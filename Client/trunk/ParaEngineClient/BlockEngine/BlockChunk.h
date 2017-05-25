@@ -71,7 +71,7 @@ namespace ParaEngine
 		@note 可分裂方块专用
 		@data 2017.4.25
 		*/
-		void mergeCom(const std::string & level);
+		void mergeCom(const std::string & level, int templateId, DWORD color);
 
 		/** 通过当前鼠标删除分裂出的方块
 		@note 可分裂方块专用

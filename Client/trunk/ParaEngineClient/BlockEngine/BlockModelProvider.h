@@ -43,7 +43,7 @@ namespace ParaEngine
 		@note 仅在 isComBlock 为真时使用
 		@data 2017.5.2
 		*/
-		virtual void mergeCom(Block *, const std::string &) {}
+		virtual void mergeCom(Block *, const std::string &, int templateId, DWORD color) {}
 
 		/** 通过指定层次删除方块
 		@note 仅在 isComBlock 为真时使用

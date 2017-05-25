@@ -43,7 +43,7 @@ namespace ParaEngine
 		virtual void splitCom(Block * src, const std::string & level);
 
 		/// @copydetails IBlockModelProvider::mergeCom
-		virtual void mergeCom(Block * src, const std::string & level);
+		virtual void mergeCom(Block * src, const std::string & level, int templateId, DWORD color);
 
 		/// @copydetails IBlockModelProvider::destroyCom
 		virtual bool destroyCom(Block * src, const std::string & level);

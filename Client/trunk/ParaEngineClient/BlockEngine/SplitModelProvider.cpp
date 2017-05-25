@@ -76,7 +76,7 @@ namespace ParaEngine
 		splitLevel(stemp);
 	}
 	//-----------------------------------------------------
-	void CSplitModelProvider::mergeCom(Block * src, const std::string & level)
+	void CSplitModelProvider::mergeCom(Block * src, const std::string & level, int templateId, DWORD color)
 	{
 		assert(src);
 		SplitBlock * stemp = static_cast<SplitBlock * >(src->getExtData());
@@ -94,6 +94,8 @@ namespace ParaEngine
 		}
 		assert(stemp);
 		mergeLevel(stemp);
+		stemp->templateId = templateId;
+		stemp->color = color;
 	}
 	//-----------------------------------------------------
 	bool CSplitModelProvider::destroyCom(Block * src, const std::string & level)

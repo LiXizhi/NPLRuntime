@@ -128,7 +128,7 @@ namespace ParaScripting
 		static bool SplitBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
 
 		// 合并方块
-		static bool MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
+		static bool MergeBlock(const object& pWorld_, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level, int templateId, DWORD color);
 
 		// 删除分裂方块
 		static bool DestroyBlock(const object& pWorld, uint16_t x_ws, uint16_t y_ws, uint16_t z_ws, const string& level);
