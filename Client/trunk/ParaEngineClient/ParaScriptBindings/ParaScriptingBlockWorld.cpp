@@ -515,29 +515,6 @@ bool ParaScripting::ParaBlockWorld::SplitBlock(const object& pWorld_, uint16_t x
 
 	if (block&& block->IsComBlock())
 	{
-		/*
-		if (level.empty())
-		{
-			Vector3 vPickRayOrig, vPickRayDir;
-			POINT ptCursor;
-			Matrix4 matWorld = Matrix4::IDENTITY;
-			int cursorpx, cursorpy;
-			CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-			float fScaleX = 1.f, fScaleY = 1.f;
-			CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-			ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-			ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-			cursorpx = ptCursor.x;
-			cursorpy = ptCursor.y;
-			int nWidth, nHeight;
-			CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-			ptCursor.x = cursorpx;
-			ptCursor.y = cursorpy;
-			CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-
-			pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
-		}
-		else */
 		{
 			result = level;
 		}
@@ -596,29 +573,6 @@ bool ParaScripting::ParaBlockWorld::DestroyBlock(const object& pWorld_, uint16_t
 
 	if (block && block->GetTemplate()->isComBlock())
 	{
-		/*
-		if (level.empty())
-		{
-		Vector3 vPickRayOrig, vPickRayDir;
-		POINT ptCursor;
-		Matrix4 matWorld = Matrix4::IDENTITY;
-		int cursorpx, cursorpy;
-		CGlobals::GetGUI()->GetMousePosition(&cursorpx, &cursorpy);
-		float fScaleX = 1.f, fScaleY = 1.f;
-		CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
-		ptCursor.x = (fScaleX == 1.f) ? cursorpx : (int)(cursorpx*fScaleX);
-		ptCursor.y = (fScaleY == 1.f) ? cursorpy : (int)(cursorpy*fScaleY);
-		cursorpx = ptCursor.x;
-		cursorpy = ptCursor.y;
-		int nWidth, nHeight;
-		CGlobals::GetViewportManager()->GetPointOnViewport(cursorpx, cursorpy, &nWidth, &nHeight);
-		ptCursor.x = cursorpx;
-		ptCursor.y = cursorpy;
-		CGlobals::GetScene()->GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor, nWidth, nHeight, &matWorld);
-		pWorld->PickSplit(x_ws, y_ws, z_ws, vPickRayOrig, vPickRayDir, 50, result);
-		}
-		else
-		*/
 		{
 			result = level;
 		}
@@ -660,7 +614,8 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 	{
 		pWorld->SetBlockTemplateIdByIdx(x_ws, y_ws, z_ws, 520);
 	}
-	if (block && block->GetTemplate()->isComBlock())
+	block = pWorld->GetBlock(x_ws, y_ws, z_ws);
+	if (block->GetTemplate()->isComBlock())
 	{
 		ret = block->restoreCom(level, templateId, color);
 		{
@@ -677,7 +632,6 @@ bool ParaScripting::ParaBlockWorld::RestoreBlock(const object& pWorld_, uint16_t
 			}
 		}
 	}
-
 	return ret;
 }
 
