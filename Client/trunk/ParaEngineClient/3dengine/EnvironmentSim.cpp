@@ -89,7 +89,7 @@ CEnvironmentSim::Simulate(dTimeDelta){
 #include "TerrainTile.h"
 #include "AIBase.h"
 #include "FrameRateController.h"
-#include "PhysicsWorld.h"
+#include "Physics/PhysicsWorld.h"
 #include "TerrainTile.h"
 #include "AutoCamera.h"
 #include "MeshPhysicsObject.h"
