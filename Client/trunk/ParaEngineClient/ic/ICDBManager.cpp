@@ -405,9 +405,7 @@ void DBEntity::OpenDB(const char* dbname)
 		SetCreateFile(true);
 	}
 
-	// diskfileName is utf8 string, see line 124
-	//string UTF8_Name = ::ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
-	string& UTF8_Name = diskfileName;
+	string UTF8_Name = ::ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
 	
 	int nMaxRetryTimes = IsCreateFile() ? 1 : 3;
 
