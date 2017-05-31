@@ -4,6 +4,7 @@
 #include "ParaXModel.h"
 namespace ParaEngine
 {
+#if defined(USE_DIRECTX_RENDERER)
 	struct XFileTemplateMember_t
 	{
 		string name;
@@ -33,6 +34,7 @@ namespace ParaEngine
 			members.clear();
 		}
 	};
+#endif
 
 	struct CParaRawData;
 	class XFileCharModelExporter :
@@ -46,8 +48,8 @@ namespace ParaEngine
 
 		void ExportParaXModel(ofstream& strm);
 	private:
-
-		void InitTemplates();
+#if defined(USE_DIRECTX_RENDERER)
+		static void InitTemplates();
 
 		void WriteTemplates(ofstream& strm);
 
@@ -57,7 +59,7 @@ namespace ParaEngine
 		void WriteTemplate(ofstream& strm, const XFileTemplate_t& stTem);
 		void WriteGUID(ofstream& strm, GUID guid);
 		void WriteTemplateMember(ofstream& strm, const XFileTemplateMember_t& memeber);
-
+#endif
 
 		XFileDataObjectPtr Translate();
 
@@ -101,6 +103,6 @@ namespace ParaEngine
 	private:
 		CParaXModel* m_pMesh;
 		CParaRawData* m_pRawData;
-		vector<XFileTemplate_t> m_vecTemplates;
+		static vector<XFileTemplate_t> m_vecTemplates;
 	};
 }

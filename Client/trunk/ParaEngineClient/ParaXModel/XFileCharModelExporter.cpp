@@ -10,12 +10,16 @@
 
 using namespace ParaEngine;
 
+vector<XFileTemplate_t> XFileCharModelExporter::m_vecTemplates = vector<XFileTemplate_t>();
+
 XFileCharModelExporter::XFileCharModelExporter(ofstream& strm, CParaXModel* pMesh)
 	: XFileExporter(strm)
 	, m_pMesh(pMesh)
 	, m_pRawData(new CParaRawData())
 {
+#if defined(USE_DIRECTX_RENDERER)
 	WriteTemplates(strm);
+#endif
 }
 
 
@@ -25,8 +29,6 @@ XFileCharModelExporter::~XFileCharModelExporter()
 	m_pRawData = nullptr;
 
 	m_pMesh = nullptr;
-
-	m_vecTemplates.clear();
 }
 
 void XFileCharModelExporter::ExportParaXModel(ofstream& strm)
@@ -48,12 +50,12 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 	}
 	return false;
 }
-
+#if defined(USE_DIRECTX_RENDERER)
 void ParaEngine::XFileCharModelExporter::InitTemplates()
 {
-	if (m_vecTemplates.empty())
+	if (XFileCharModelExporter::m_vecTemplates.empty())
 	{
-		auto& vec = m_vecTemplates;
+		auto& vec = XFileCharModelExporter::m_vecTemplates;
 
 		GUID guid = { 0x3d82ab5e, 0x62da, 0x11cf,{ 0xab, 0x39, 0x00, 0x20, 0xaf, 0x71, 0xe4, 0x33 } };
 		XFileTemplate_t stTemplate("Vector", guid);
@@ -358,7 +360,7 @@ void ParaEngine::XFileCharModelExporter::WriteTemplate(ofstream& strm, const XFi
 
 	WriteToken(strm, TOKEN_CBRACE);
 }
-
+#endif
 
 ParaEngine::XFileDataObjectPtr ParaEngine::XFileCharModelExporter::Translate()
 {
