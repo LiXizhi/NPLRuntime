@@ -4,8 +4,9 @@
 #include "Core/TextureEntity.h"
 #include "ParaXBone.h"
 #include "particle.h"
+#if defined(USE_DIRECTX_RENDERER)
 #include "./mdxfile/ParaXFileGUID.h"
-
+#endif
 #include <fstream>
 
 using namespace ParaEngine;
