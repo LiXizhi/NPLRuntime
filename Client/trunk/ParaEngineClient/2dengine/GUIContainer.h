@@ -7,6 +7,7 @@ namespace ParaEngine
 {
 	class CGUIButton;
 	class CGUIScrollBar;
+	class CGUIEditBox;
 	struct GUITextureElement;
 
 	/**
@@ -211,8 +212,15 @@ namespace ParaEngine
 		/** click the default button inside this container. If no default button is found, this function will return false. */
 		virtual bool			ActivateDefaultButton();
 
+
 		/** get the default button inside this container. If no default button is found, this function will return NULL. */
 		virtual CGUIButton*		GetDefaultButton();
+
+		/* the next editbox inside this container will get focus. If no next editbox is found, this function will return false. */
+		virtual bool			ActivateNextEdit(CGUIEditBox* curCtrl = nullptr);
+
+		/** get the next editbox inside this container. If no default button is found, this function will return nullptr. */
+		virtual CGUIEditBox*		GetNextEdit(CGUIEditBox* curCtrl = nullptr);
 
  		/**
 		* Get the texture element.
