@@ -4,21 +4,22 @@
 #include "Core/TextureEntity.h"
 #include "ParaXBone.h"
 #include "particle.h"
-#if defined(USE_DIRECTX_RENDERER)
+#ifdef USE_DIRECTX_RENDERER
 #include "./mdxfile/ParaXFileGUID.h"
 #endif
 #include <fstream>
 
 using namespace ParaEngine;
-
+#ifdef USE_DIRECTX_RENDERER
 vector<XFileTemplate_t> XFileCharModelExporter::m_vecTemplates = vector<XFileTemplate_t>();
+#endif
 
 XFileCharModelExporter::XFileCharModelExporter(ofstream& strm, CParaXModel* pMesh)
 	: XFileExporter(strm)
 	, m_pMesh(pMesh)
 	, m_pRawData(new CParaRawData())
 {
-#if defined(USE_DIRECTX_RENDERER)
+#ifdef USE_DIRECTX_RENDERER
 	WriteTemplates(strm);
 #endif
 }
@@ -51,7 +52,7 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 	}
 	return false;
 }
-#if defined(USE_DIRECTX_RENDERER)
+#ifdef USE_DIRECTX_RENDERER
 void ParaEngine::XFileCharModelExporter::InitTemplates()
 {
 	if (XFileCharModelExporter::m_vecTemplates.empty())
