@@ -76,6 +76,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CParaXModel, GetGeosets_s, void**)	{ *p1 = (void*)(&(cls->geosets[0])); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetIndices_s, void**)	{ *p1 = (void*)(&(cls->m_indices[0])); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetAnimations_s, void**) { *p1 = (void*)(cls->anims); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, SaveToDisk_s, char*) { cls->SaveToDisk(p1); return S_OK; }
 	public:
 		/** get polycount of this mesh object */
 		int GetPolyCount();
@@ -229,6 +230,8 @@ namespace ParaEngine
 		* @return S_OK, if succeed.
 		*/
 		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
+
+		void SaveToDisk(const char* path);
 
 		friend struct ModelRenderPass;
 			
