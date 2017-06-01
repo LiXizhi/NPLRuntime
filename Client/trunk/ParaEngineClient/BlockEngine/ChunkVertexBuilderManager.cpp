@@ -292,8 +292,13 @@ void ParaEngine::ChunkVertexBuilderManager::ChunkBuildThreadProc()
 			if (m_pendingChunks.empty())
 			{
 				lock_.unlock();
-				std::unique_lock<std::mutex> QueueLock_(m_queueMutex);
-				m_chunk_request_signal.wait(QueueLock_);
+				{
+					std::unique_lock<std::mutex> QueueLock_(m_queueMutex);
+					if (m_pendingChunks.empty())
+					{
+						m_chunk_request_signal.wait(QueueLock_);
+					}
+				}
 				lock_.lock();
 			}
 		}
