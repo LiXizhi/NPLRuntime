@@ -3,12 +3,15 @@
 namespace ParaEngine
 {
 	class XFileParser;
+	class XFileExporter;
 	struct AnimationBlock;
 
 	/** data object in binary format */
 	class XFileDataObject : public CRefCounted
 	{
 	public:
+		friend class XFileCharModelExporter;
+
 		typedef std::vector< ref_ptr<XFileDataObject> > XFileDataObject_list_type;
 
 		std::string m_sTemplateName;
@@ -59,6 +62,34 @@ namespace ParaEngine
 		
 		bool ReadUnknownDataObject(XFileParser& parser);
 		void ReadAnimationBlock(AnimationBlock& unk, XFileParser& parser);
+	public:
+		void Write(ofstream& strm, XFileExporter& exporter);
+	protected:
+		inline size_t GetSize() { return m_buffer.size(); };
+
+		void WriteChildren(ofstream& strm,XFileExporter& exporter);
+		void WriteInfo(ofstream& strm,XFileExporter& exporter);
+
+		void WriteParaXHeader(ofstream& strm,XFileExporter& exporter);
+		void WriteParaXBody(ofstream& strm,XFileExporter& exporter);
+		void WriteXDWORDArray(ofstream& strm,XFileExporter& exporter);
+		void WriteXVertices(ofstream& strm,XFileExporter& exporter);
+		void WriteXTextures(ofstream& strm,XFileExporter& exporter);
+		void WriteXAttachments(ofstream& strm,XFileExporter& exporter);
+		void WriteXTransparency(ofstream& strm,XFileExporter& exporter);
+		void WriteXViews(ofstream& strm,XFileExporter& exporter);
+		void WriteXIndices0(ofstream& strm,XFileExporter& exporter);
+		void WriteXGeosets(ofstream& strm,XFileExporter& exporter);
+		void WriteXRenderPass(ofstream& strm,XFileExporter& exporter);
+		void WriteXBones(ofstream& strm,XFileExporter& exporter);
+		void WriteXTexAnims(ofstream& strm,XFileExporter& exporter);
+		void WriteXParticleEmitters(ofstream& strm,XFileExporter& exporter);
+		void WriteXRibbonEmitters(ofstream& strm,XFileExporter& exporter);
+		void WriteXColors(ofstream& strm,XFileExporter& exporter);
+		void WriteXCameras(ofstream& strm,XFileExporter& exporter);
+		void WriteXLights(ofstream& strm,XFileExporter& exporter);
+		void WriteXAnimations(ofstream& strm,XFileExporter& exporter);
+		void WriteAnimationBlock(ofstream& strm,XFileExporter& exporter, AnimationBlock& unk);
 	};
 	typedef ref_ptr<XFileDataObject> XFileDataObjectPtr;
 }
