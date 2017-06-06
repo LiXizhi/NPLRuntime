@@ -4,24 +4,17 @@
 #include "Core/TextureEntity.h"
 #include "ParaXBone.h"
 #include "particle.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "./mdxfile/ParaXFileGUID.h"
-#endif
 #include <fstream>
 
 using namespace ParaEngine;
-#ifdef USE_DIRECTX_RENDERER
 vector<XFileTemplate_t> XFileCharModelExporter::m_vecTemplates = vector<XFileTemplate_t>();
-#endif
 
 XFileCharModelExporter::XFileCharModelExporter(ofstream& strm, CParaXModel* pMesh)
 	: XFileExporter(strm)
 	, m_pMesh(pMesh)
 	, m_pRawData(new CParaRawData())
 {
-#ifdef USE_DIRECTX_RENDERER
 	WriteTemplates(strm);
-#endif
 }
 
 
@@ -52,14 +45,14 @@ bool ParaEngine::XFileCharModelExporter::Export(const string& filepath, CParaXMo
 	}
 	return false;
 }
-#ifdef USE_DIRECTX_RENDERER
+
 void ParaEngine::XFileCharModelExporter::InitTemplates()
 {
 	if (XFileCharModelExporter::m_vecTemplates.empty())
 	{
 		auto& vec = XFileCharModelExporter::m_vecTemplates;
 
-		GUID guid = { 0x3d82ab5e, 0x62da, 0x11cf,{ 0xab, 0x39, 0x00, 0x20, 0xaf, 0x71, 0xe4, 0x33 } };
+		UUID_t guid = { 0x3d82ab5e, 0x62da, 0x11cf,{ 0xab, 0x39, 0x00, 0x20, 0xaf, 0x71, 0xe4, 0x33 } };
 		XFileTemplate_t stTemplate("Vector", guid);
 		stTemplate.members.push_back(XFileTemplateMember_t("x", "FLOAT"));
 		stTemplate.members.push_back(XFileTemplateMember_t("y", "FLOAT"));
@@ -67,7 +60,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ParaXHeader", TID_ParaXHeader);
+		stTemplate.Init("ParaXHeader", UUID_ParaXHeader);
 		stTemplate.members.push_back(XFileTemplateMember_t("id", "CHAR","4"));
 		stTemplate.members.push_back(XFileTemplateMember_t("version", "UCHAR", "4"));
 		stTemplate.members.push_back(XFileTemplateMember_t("type", "DWORD"));
@@ -78,11 +71,11 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ParaXBody", TID_ParaXBody, true);
+		stTemplate.Init("ParaXBody", UUID_ParaXBody, true);
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelView", TID_ModelView);
+		stTemplate.Init("ModelView", UUID_ModelView);
 		stTemplate.members.push_back(XFileTemplateMember_t("nIndex", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("ofsIndex", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nTris", "DWORD"));
@@ -97,26 +90,26 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XViews", TID_XViews);
+		stTemplate.Init("XViews", UUID_XViews);
 		stTemplate.members.push_back(XFileTemplateMember_t("nView", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("views", "ModelView","nView"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelTextureDef", TID_ModelTextureDef);
+		stTemplate.Init("ModelTextureDef", UUID_ModelTextureDef);
 		stTemplate.members.push_back(XFileTemplateMember_t("type", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("flags", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("name", "STRING"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XTextures", TID_XTextures);
+		stTemplate.Init("XTextures", UUID_XTextures);
 		stTemplate.members.push_back(XFileTemplateMember_t("nTextures", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("textures", "ModelTextureDef","nTextures"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("AnimationBlock", TID_AnimationBlock);
+		stTemplate.Init("AnimationBlock", UUID_AnimationBlock);
 		stTemplate.members.push_back(XFileTemplateMember_t("type", "WORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("seq", "WORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nRanges", "DWORD"));
@@ -128,7 +121,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelAttachmentDef", TID_ModelAttachmentDef);
+		stTemplate.Init("ModelAttachmentDef", UUID_ModelAttachmentDef);
 		stTemplate.members.push_back(XFileTemplateMember_t("id", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("bone", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("pos", "Vector"));
@@ -136,7 +129,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XAttachments", TID_XAttachments);
+		stTemplate.Init("XAttachments", UUID_XAttachments);
 		stTemplate.members.push_back(XFileTemplateMember_t("nAttachments", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nAttachLookup", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("attachments", "ModelAttachmentDef","nAttachments"));
@@ -144,7 +137,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XVertices", TID_XVertices);
+		stTemplate.Init("XVertices", UUID_XVertices);
 		stTemplate.members.push_back(XFileTemplateMember_t("nType", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nVertexBytes", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nVertices", "DWORD"));
@@ -152,13 +145,13 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XIndices0", TID_XIndices0);
+		stTemplate.Init("XIndices0", UUID_XIndices0);
 		stTemplate.members.push_back(XFileTemplateMember_t("nIndices", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("ofsIndices", "DWORD"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelGeoset", TID_ModelGeoset);
+		stTemplate.Init("ModelGeoset", UUID_ModelGeoset);
 		stTemplate.members.push_back(XFileTemplateMember_t("id", "WORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("d2", "WORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("vstart", "WORD"));
@@ -173,7 +166,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XGeosets", TID_XGeosets);
+		stTemplate.Init("XGeosets", UUID_XGeosets);
 		stTemplate.members.push_back(XFileTemplateMember_t("nGeosets", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("geosets", "ModelGeoset","nGeosets"));
 		vec.push_back(stTemplate);
@@ -197,13 +190,13 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XRenderPass", TID_XRenderPass);
+		stTemplate.Init("XRenderPass", UUID_XRenderPass);
 		stTemplate.members.push_back(XFileTemplateMember_t("nPasses", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("passes", "ModelRenderPass", "nPasses"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelBoneDef", TID_ModelBoneDef);
+		stTemplate.Init("ModelBoneDef", UUID_ModelBoneDef);
 		stTemplate.members.push_back(XFileTemplateMember_t("animid", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("flags", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("parent", "WORD"));
@@ -215,13 +208,13 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XBones", TID_XBones);
+		stTemplate.Init("XBones", UUID_XBones);
 		stTemplate.members.push_back(XFileTemplateMember_t("nBones", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("bones", "ModelBoneDef", "nBones"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("ModelAnimation", TID_ModelAnimation);
+		stTemplate.Init("ModelAnimation", UUID_ModelAnimation);
 		stTemplate.members.push_back(XFileTemplateMember_t("animID", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("timeStart", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("timeEnd", "DWORD"));
@@ -238,37 +231,20 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XAnimations", TID_XAnimations);
+		stTemplate.Init("XAnimations", UUID_XAnimations);
 		stTemplate.members.push_back(XFileTemplateMember_t("nAnimations", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("anims", "ModelAnimation", "nAnimations"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
-		stTemplate.Init("XDWORDArray", TID_XDWORDArray);
+		stTemplate.Init("XDWORDArray", UUID_XDWORDArray);
 		stTemplate.members.push_back(XFileTemplateMember_t("nCount", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("dwData", "DWORD", "nCount"));
 		vec.push_back(stTemplate);
 	}
 }
 
-string ParaEngine::XFileCharModelExporter::GUIDToString(GUID guid)
-{
-	char szGuid[128] = { 0 };
-
-	_snprintf_s(szGuid, sizeof(szGuid)
-		, "%08X%04X%04x%02X%02X%02X%02X%02X%02X%02X%02X"
-		, guid.Data1
-		, guid.Data2
-		, guid.Data3
-		, guid.Data4[0], guid.Data4[1]
-		, guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5]
-		, guid.Data4[6], guid.Data4[7]
-		);
-	string str(szGuid);
-	return str;
-}
-
-void ParaEngine::XFileCharModelExporter::GUIDToBin(GUID guid,char* bin)
+void ParaEngine::XFileCharModelExporter::UUIDToBin(UUID_t guid,char* bin)
 {
 	for (int i = 0; i < 4; ++i)
 	{
@@ -288,14 +264,14 @@ void ParaEngine::XFileCharModelExporter::GUIDToBin(GUID guid,char* bin)
 	memcpy(bin, guid.Data4, 8);
 }
 
-void ParaEngine::XFileCharModelExporter::WriteGUID(ofstream& strm, GUID guid)
+void ParaEngine::XFileCharModelExporter::WriteUUID(ofstream& strm, UUID_t uuid)
 {
 	WriteIntAndFloatArray(strm);
 
 	WriteToken(strm, TOKEN_GUID);
-	char binGUID[16] = { 0 };
-	GUIDToBin(guid, binGUID);
-	strm.write(binGUID, 16);
+	char binUUID[16] = { 0 };
+	UUIDToBin(uuid, binUUID);
+	strm.write(binUUID, 16);
 }
 
 void ParaEngine::XFileCharModelExporter::WriteTemplates(ofstream& strm)
@@ -342,7 +318,7 @@ void ParaEngine::XFileCharModelExporter::WriteTemplate(ofstream& strm, const XFi
 	WriteName(strm, stTem.name);
 	WriteToken(strm, TOKEN_OBRACE);
 
-	WriteGUID(strm, stTem.guid);
+	WriteUUID(strm, stTem.uuid);
 
 	auto& members = stTem.members;
 
@@ -362,7 +338,6 @@ void ParaEngine::XFileCharModelExporter::WriteTemplate(ofstream& strm, const XFi
 
 	WriteToken(strm, TOKEN_CBRACE);
 }
-#endif
 
 ParaEngine::XFileDataObjectPtr ParaEngine::XFileCharModelExporter::Translate()
 {
