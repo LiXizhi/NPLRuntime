@@ -600,7 +600,8 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			if(lpNumberOfBytesRead)
 				*lpNumberOfBytesRead = nBytesRead;
 
-			break;
+			//break;
+			return true;
 		}
 	case 8:
 		{
