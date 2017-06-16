@@ -269,7 +269,6 @@ namespace ParaEngine
 		void SetBlendingFactor(float fBlendingFactor);
 
 		bool FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall);
-
 	public:
 		/** how the character reacts to physics in the MoveTowards() functions*/
 		void SetMovementStyle(PhysicsMoveStyle nValue){ m_nMovementStyle = nValue; };

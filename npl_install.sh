@@ -32,4 +32,5 @@ popd
 
 # Build with cmake 
 chmod +x ./build_linux.sh 
+sync
 ./build_linux.sh
