@@ -109,6 +109,10 @@ file (GLOB ParaEngineClient_CoreHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Core
 SOURCE_GROUP("Core\\Headers" FILES ${ParaEngineClient_CoreHeader_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CoreHeader_FILES})
 
+file (GLOB ParaEngineClient_CoreHeaderPhysics_FILES ${ParaEngineClient_SOURCE_DIR}/Core/Physics/*.h ${ParaEngineClient_SOURCE_DIR}/Core/Physics/*.hpp)
+SOURCE_GROUP("Core\\Headers\\Physics" FILES ${ParaEngineClient_CoreHeaderPhysics_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CoreHeaderPhysics_FILES})
+
 ##############################
 #file (GLOB ParaEngineClient_MDXModel_FILES ${ParaEngineClient_SOURCE_DIR}/mdxfile/*.*)
 #SOURCE_GROUP("Engine\\mdxfile" FILES ${ParaEngineClient_MDXModel_FILES})
@@ -254,6 +258,12 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_painting_FILES})
 file (GLOB ParaEngineClient_3D_FILES ${ParaEngineClient_SOURCE_DIR}/3dengine/*.cpp ${ParaEngineClient_SOURCE_DIR}/3dengine/*.h ${ParaEngineClient_SOURCE_DIR}/3dengine/*.cpp)
 SOURCE_GROUP("3dengine" FILES ${ParaEngineClient_3D_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_3D_FILES})
+
+##############################
+
+file (GLOB ParaEngineClient_3DPhysics_FILES ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.cpp ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.h ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.hpp)
+SOURCE_GROUP("3dengine\\Physics" FILES ${ParaEngineClient_3DPhysics_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_3DPhysics_FILES})
 
 ##############################
 # util files
