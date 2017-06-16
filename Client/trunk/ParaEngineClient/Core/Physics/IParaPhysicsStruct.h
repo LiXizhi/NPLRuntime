@@ -127,8 +127,12 @@ namespace ParaEngine {
 		virtual void* GetUserData() = 0;
 		virtual void SetUserData(void* pData) = 0;
 
-
 		virtual int GetInternalType() const = 0;
+
+		// don't remove any body in this callback, because it will be called any times in one tick
+		typedef std::function<void(IParaPhysicsBody* bodyA, IParaPhysicsBody* bodyB, float dis, const PARAVECTOR3& posA, const PARAVECTOR3& posB, const PARAVECTOR3& normalOnB)> ContactCallBack;
+		virtual void SetContactCallBack(const ContactCallBack& cb) = 0;
+		virtual void OnContact(IParaPhysicsBody* bodyA, IParaPhysicsBody* bodyB, float dis, const PARAVECTOR3& posA, const PARAVECTOR3& posB, const PARAVECTOR3& normalOnB) = 0;
 	};
 
 	struct IParaPhysicsRigidbody : public IParaPhysicsBody

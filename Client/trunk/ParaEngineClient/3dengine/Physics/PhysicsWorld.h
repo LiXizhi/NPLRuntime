@@ -182,6 +182,10 @@ namespace ParaEngine {
 	
 		/* get current world, if not call InitPhysics it will return nullptr*/
 		CPhysicsDynamicsWorld* GetCurrentWorld();
+
+	private:
+		// 
+		void onAfterCheckContact();
 	private:
 
 		struct SubMeshPhysicsShape
