@@ -29,6 +29,7 @@
 #include "util/StringHelper.h"
 #include "Type.h"
 #include "GUIButton.h"
+#include "GUIEdit.h"
 #include "GUIScrollBar.h"
 #include "RenderTarget.h"
 #include "PaintEngine/Painter.h"
@@ -1278,6 +1279,77 @@ CGUIButton* ParaEngine::CGUIContainer::GetDefaultButton()
 		}
 	}
 	return NULL;
+}
+
+bool CGUIContainer::ActivateNextEdit(CGUIEditBox* curCtrl)
+{
+	auto pNextCtrl = GetNextEdit(curCtrl);
+	if (pNextCtrl)
+	{
+		SetKeyFocus(pNextCtrl);
+		return true;
+	}
+
+	return false;
+}
+
+CGUIEditBox* CGUIContainer::GetNextEdit(CGUIEditBox* curCtrl)
+{
+	GUIBase_List_Type::iterator it;
+
+	if (curCtrl)
+	{
+		it = std::find(m_children.begin(), m_children.end(), (CGUIBase*)curCtrl);
+		auto nextIt = it;
+		nextIt++;
+		for (; nextIt != m_children.end(); nextIt++)
+		{
+			auto type = (*nextIt)->GetType()->GetTypeValue();
+			if (type == Type_GUIEditBox || type == Type_GUIIMEEditBox)
+			{
+				break;
+			}
+		}
+		
+		if (nextIt == m_children.end())
+		{
+			bool bFind = false;
+			for (nextIt = m_children.begin(); nextIt != it; nextIt++)
+			{
+				auto type = (*nextIt)->GetType()->GetTypeValue();
+				if (type == Type_GUIEditBox || type == Type_GUIIMEEditBox)
+				{
+					bFind = true;
+					break;
+				}
+			}
+
+			if (!bFind)
+			{
+				nextIt = m_children.end();
+			}
+		}
+
+		it = nextIt;
+	}
+	else
+	{
+		for (it = m_children.begin(); it != m_children.end(); it++)
+		{
+			auto type = (*it)->GetType()->GetTypeValue();
+			if (type == Type_GUIEditBox || type == Type_GUIIMEEditBox)
+			{
+				break;
+			}
+		}
+	}
+
+	if (it != m_children.end())
+	{
+		return static_cast<CGUIEditBox*>(*it);
+	}
+
+	return nullptr;
 }
 
 void CGUIContainer::SetVisible(bool visible)

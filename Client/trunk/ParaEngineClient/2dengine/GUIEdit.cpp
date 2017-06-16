@@ -1114,6 +1114,14 @@ bool CGUIEditBox::MsgProc(MSG *event)
 					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_DOWN)){
 						bHandled = true;
 					}
+					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_TAB) && !m_bMultipleLine) {
+						if (m_parent) {
+							m_parent->ActivateNextEdit(this);
+						}
+
+						bHandled = true;
+					}
+
 					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_RETURN)){
 						if (!m_bMultipleLine) {
 							newMsg.message = EM_CTRL_CHANGE;
@@ -1663,7 +1671,7 @@ int ParaEngine::CGUIEditBox::OnHandleWinMsgChars(const std::wstring& sChars)
 	for (size_t i = 0; i < sChars.size(); ++i)
 	{
 		WCHAR temp = sChars[i];
-		if (temp == L'\t')
+		if (temp == L'\t' && m_bMultipleLine)
 		{
 			temp = L' ';
 		}

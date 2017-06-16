@@ -23,6 +23,8 @@
 #include "ParaXModel.h"
 #include "BoneChain.h"
 #include "memdebug.h"
+#include "XFileCharModelExporter.h"
+#include "./IO/FileUtils.h"
 
 
 
@@ -2009,6 +2011,15 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
 	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
 	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
+	//pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, (void*)SaveToDisk_s, NULL, NULL, bOverride);
+	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
+
 	return S_OK;
 }
 
+void CParaXModel::SaveToDisk(const char* path)
+{
+	string sRootDir = CFileUtils::GetInitialDirectory();
+	string filepath(path);
+	XFileCharModelExporter::Export(sRootDir + filepath, this);
+}
