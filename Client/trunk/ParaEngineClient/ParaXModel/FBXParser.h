@@ -10,6 +10,7 @@
 #include "modelheaders.h"
 #include "FBXModelInfo.h"
 #include "FBXMaterial.h"
+#include "NPLCommon.h"
 
 // assimp declare
 struct aiScene;
@@ -17,6 +18,7 @@ struct aiMesh;
 struct aiNode;
 struct aiBone;
 struct aiAnimation;
+struct aiMaterial;
 
 namespace ParaEngine
 {
@@ -75,6 +77,10 @@ namespace ParaEngine
 		void ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, int parentBoneIndex, CParaXModel *pMesh);
 		void ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNode* pFbxNode, CParaXModel *pMesh);
 		void ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh);
+		void ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh);
+		void ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index);
+		lua_State* ParseScriptString(const char* str);
+		void ParseParticleParam(ParticleSystem& ps, lua_State* L);
 		void ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh);
 
 		void AddDefaultColors(CParaXModel *pMesh);
@@ -105,6 +111,9 @@ namespace ParaEngine
 		vector<ParaEngine::Bone> m_bones;
 		vector<uint16> m_indices;
 		vector<FBXMaterial> m_textures;
+		vector<TextureAnim> m_texAnims;
+		std::map<std::string, ParticleSystem> m_particleSystem;
+		lua_State* m_pLuaState;
 		/** embedded texture filename and its binary data */
 		map<string, string> m_textureContentMapping;
 		vector<ModelAnimation> m_anims;
