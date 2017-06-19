@@ -15,7 +15,6 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockModel.h"
 #include "ParaXModel/ParaXModel.h"
-#include "PhysicsWorld.h"
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "IScene.h"
@@ -405,7 +404,7 @@ namespace ParaEngine
 				// get world transform matrix
 				Matrix4 mxWorld;
 				GetWorldTransform(mxWorld);
-				IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
+				auto pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
 				if (m_staticActors.empty())
 				{
 					// disable physics forever, if no physics actors are loaded. 
@@ -429,15 +428,16 @@ namespace ParaEngine
 
 	void BMaxObject::UnloadPhysics()
 	{
-		int nSize = (int)m_staticActors.size();
-		if (nSize > 0)
+		for (auto it = m_staticActors.begin(); it != m_staticActors.end(); it++)
 		{
-			for (int i = 0; i < nSize; ++i)
+			auto pActor = (*it).get();
+			if (pActor)
 			{
-				CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
+				CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RemoveRigidBody(pActor);
 			}
-			m_staticActors.clear();
 		}
+		 
+		m_staticActors.clear();
 	}
 
 	void BMaxObject::SetPhysicsGroup(int nGroup)

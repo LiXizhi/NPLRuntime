@@ -2,6 +2,7 @@
 #include "IGameObject.h"
 #include "ShadowVolume.h"
 #include "BipedWayPoint.h"
+#include "Physics/PhysicsWorld.h"
 
 namespace ParaEngine
 {
@@ -946,7 +947,9 @@ namespace ParaEngine
 		DWORD m_dwPhysicsGroupMask;
 
 		/** all static physics actors in physics engine */
-		vector<IParaPhysicsActor*> m_staticActors;
+		//vector<IParaPhysicsActor*> m_staticActors;
+		vector<CPhysicsRigidBody::WeakPtr> m_staticActors;
+
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;
 		uint32 m_nPhysicsGroup;

@@ -1,358 +1,691 @@
-//-----------------------------------------------------------------------------
-// Class:	ParaEngine physics wrapper for the bullet physics engine DLL
-// Authors:	LiXizhi
-// Company: ParaEngine
-// Date:	2010.2.24
-//-----------------------------------------------------------------------------
 #include "stdafx.h"
 #include "ParaPhysicsWorld.h"
+#include "IParaDebugDraw.h"
+#include "ParaPhysicsShape.hpp"
+#include "ParaPhysicsBody.hpp"
+#include "ParaPhysicsConstraint.hpp"
 
-/// @def using motion state is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-#define USE_MOTIONSTATE 1
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
 
-using namespace ParaEngine;
-
-BulletPhysicsShape::BulletPhysicsShape()
-	:m_pShape(NULL), m_indexVertexArrays(NULL), m_triangleIndices(NULL), m_vertices(NULL)
-{
-}
-
-BulletPhysicsShape::~BulletPhysicsShape()
-{
-	SAFE_DELETE(m_pShape);
-	SAFE_DELETE(m_indexVertexArrays);
-	SAFE_DELETE_ARRAY(m_triangleIndices);
-	SAFE_DELETE_ARRAY(m_vertices);
-}
-
-void ParaEngine::BulletPhysicsShape::Release()
-{
-	delete this;
-}
-
-ParaEngine::BulletPhysicsActor::BulletPhysicsActor(btRigidBody* pActor) : m_pActor(pActor)
-{
-
-}
-
-ParaEngine::BulletPhysicsActor::~BulletPhysicsActor()
-{
-	if (m_pActor && m_pActor->getMotionState())
+namespace ParaEngine {
+	CParaPhysicsWorld::CParaPhysicsWorld()
+		: m_bInvertFaceWinding(false)
 	{
-		delete m_pActor->getMotionState();
-	}
-	SAFE_DELETE(m_pActor);
-}
-
-void ParaEngine::BulletPhysicsActor::Release()
-{
-	delete this;
-}
-//
-// Physics World
-//
-CParaPhysicsWorld::CParaPhysicsWorld()
-	: m_dynamicsWorld(NULL), m_collisionWorld(NULL), m_broadphase(NULL), m_dispatcher(NULL), m_solver(NULL), m_collisionConfiguration(NULL), m_bInvertFaceWinding(false)
-{
 #ifdef WIN32
-	m_bInvertFaceWinding = true;
+		m_bInvertFaceWinding = true;
 #endif
-}
-
-CParaPhysicsWorld::~CParaPhysicsWorld()
-{
-
-}
-
-void CParaPhysicsWorld::Release()
-{
-	delete this;
-}
-
-bool CParaPhysicsWorld::InitPhysics()
-{
-	m_collisionConfiguration = new btDefaultCollisionConfiguration();
-	m_dispatcher = new	btCollisionDispatcher(m_collisionConfiguration);
-
-	/*btVector3 worldMin(0,-1000.f,0);
-	btVector3 worldMax(40000.f,1000.f,40000.f);
-	m_broadphase = new btAxisSweep3(worldMin,worldMax);*/
-
-	m_broadphase = new btDbvtBroadphase();
-
-	m_solver = new btSequentialImpulseConstraintSolver();
-	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_broadphase, m_solver, m_collisionConfiguration);
-
-	if (m_dynamicsWorld)
-	{
-		m_dynamicsWorld->setDebugDrawer(&m_physics_debug_draw);
-	}
-	return true;
-}
-
-bool CParaPhysicsWorld::StepSimulation(float fDeltaTime)
-{
-	m_dynamicsWorld->stepSimulation(fDeltaTime);
-	return true;
-}
-
-bool CParaPhysicsWorld::ExitPhysics()
-{
-	if (m_dynamicsWorld == 0)
-		return true;
-
-	//cleanup in the reverse order of creation/initialization
-	while (!m_actors.empty())
-	{
-		ReleaseActor(*(m_actors.begin()));
 	}
 
-	//remove the rigid bodies from the dynamics world and delete them
-	int i;
-	for (i = m_dynamicsWorld->getNumCollisionObjects() - 1; i >= 0; i--)
+	CParaPhysicsWorld::~CParaPhysicsWorld()
 	{
-		btCollisionObject* obj = m_dynamicsWorld->getCollisionObjectArray()[i];
-		btRigidBody* body = btRigidBody::upcast(obj);
-		if (body && body->getMotionState())
+
+	}
+
+	void CParaPhysicsWorld::Release()
+	{
+		delete this;
+	}
+
+	IParaPhysicsWorld* CParaPhysicsWorld::InitPhysics(ParaPhysicsWorldType ppwt)
+	{
+		auto pWorld = new BulletWorld();
+
+		pWorld->m_collisionConfiguration = new btDefaultCollisionConfiguration();
+		pWorld->m_dispatcher = new	btCollisionDispatcher(pWorld->m_collisionConfiguration);
+		pWorld->m_broadphase = new btDbvtBroadphase();
+		pWorld->m_solver = new btSequentialImpulseConstraintSolver();
+
+		btDiscreteDynamicsWorld* dynamicsWorld;
+
+		switch (ppwt)
 		{
-			delete body->getMotionState();
+		case ParaEngine::PPWT_Dynamics:
+			dynamicsWorld = new btDiscreteDynamicsWorld(pWorld->m_dispatcher, pWorld->m_broadphase, pWorld->m_solver, pWorld->m_collisionConfiguration);
+			break;
+		case ParaEngine::PPWT_SoftRigidDynamics:
+			dynamicsWorld = new btSoftRigidDynamicsWorld(pWorld->m_dispatcher, pWorld->m_broadphase, pWorld->m_solver, pWorld->m_collisionConfiguration);
+			break;
+		default:
+			dynamicsWorld = new btDiscreteDynamicsWorld(pWorld->m_dispatcher, pWorld->m_broadphase, pWorld->m_solver, pWorld->m_collisionConfiguration);
+			break;
 		}
-		m_dynamicsWorld->removeCollisionObject(obj);
-		delete obj;
-	}
 
-	//delete collision shapes
-	{
-		BulletPhysicsShape_Array_Type::iterator itCur, itEnd = m_collisionShapes.end();
-		for (itCur = m_collisionShapes.begin(); itCur != itEnd; ++itCur)
+		if (dynamicsWorld)
 		{
-			BulletPhysicsShape* shape = (*itCur);
-			shape->Release();
+			m_physics_debug_draw.setDebugMode(PhysicsDebugDrawModes::PDDM_MAX_DEBUG_DRAW_MODE);
+			dynamicsWorld->setDebugDrawer(&m_physics_debug_draw);
 		}
-		m_collisionShapes.clear();
+		
+		pWorld->m_pWorld = dynamicsWorld;
+		
+		return pWorld;
 	}
 
-	//delete dynamics world
-	SAFE_DELETE(m_dynamicsWorld);
 
-	//delete solver
-	SAFE_DELETE(m_solver);
-
-	//delete broad phase
-	SAFE_DELETE(m_broadphase);
-
-	//delete dispatcher
-	SAFE_DELETE(m_dispatcher);
-
-	SAFE_DELETE(m_collisionConfiguration);
-
-	return true;
-}
-
-
-IParaPhysicsShape* CParaPhysicsWorld::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
-{
-	BulletPhysicsShape*  pShape = new BulletPhysicsShape();
-
-	pShape->m_triangleIndices = new int32[12 * meshDesc.m_numTriangles];
-	if (meshDesc.m_triangleStrideBytes == 12)
+	void CParaPhysicsWorld::SetDebugDrawer(IParaDebugDraw* debugDrawer)
 	{
-		// 32 bits index
-		int32* dest = pShape->m_triangleIndices;
-		int32* src = (int32*)(meshDesc.m_triangles);
-		if (m_bInvertFaceWinding)
+		m_physics_debug_draw.SetParaDebugDrawInterface(debugDrawer);
+	}
+
+	IParaDebugDraw* CParaPhysicsWorld::GetDebugDrawer()
+	{
+		return m_physics_debug_draw.GetParaDebugDrawInterface();
+	}
+
+	void CParaPhysicsWorld::DebugDrawObject(const PARAVECTOR3& vOrigin, const PARAMATRIX3x3& vRotation, const IParaPhysicsShape* pShape, const PARAVECTOR3& color)
+	{
+
+	}
+
+	void CParaPhysicsWorld::SetDebugDrawMode(int debugMode)
+	{
+		m_physics_debug_draw.setDebugMode(debugMode);
+	}
+
+	int CParaPhysicsWorld::GetDebugDrawMode()
+	{
+		return m_physics_debug_draw.getDebugMode();
+	}
+
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateBoxShape(const PARAVECTOR3& boxHalfExtents)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btBoxShape(btVector3(btScalar(boxHalfExtents.x)
+			, btScalar(boxHalfExtents.y)
+			, btScalar(boxHalfExtents.z)));
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateSphereShape(float radius)
+	{
+		auto pShape = new BulletShape();
+
+		pShape->m_pShape = new btSphereShape(btScalar(radius));
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCapsuleShapeY(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCapsuleShape(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCapsuleShapeX(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCapsuleShapeX(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCapsuleShapeZ(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCapsuleShapeZ(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCylinderShapeY(const PARAVECTOR3& halfExtents)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCylinderShape(btVector3(btScalar(halfExtents.x)
+			, btScalar(halfExtents.y)
+			, btScalar(halfExtents.z)));
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCylinderShapeX(const PARAVECTOR3& halfExtents)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCylinderShapeX(btVector3(btScalar(halfExtents.x)
+			, btScalar(halfExtents.y)
+			, btScalar(halfExtents.z)));
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateCylinderShapeZ(const PARAVECTOR3& halfExtents)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btCylinderShapeZ(btVector3(btScalar(halfExtents.x)
+			, btScalar(halfExtents.y)
+			, btScalar(halfExtents.z)));
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateConeShapeY(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btConeShape(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateConeShapeX(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btConeShapeX(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateConeShapeZ(float radius, float height)
+	{
+		auto pShape = new BulletShape();
+		pShape->m_pShape = new btConeShapeZ(btScalar(radius), btScalar(height));
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateMultiSphereShape(const PARAVECTOR3* positions, const float* radi, int numSpheres)
+	{
+		assert(positions && radi && numSpheres > 0);
+
+		btVector3* pPositions = nullptr;
+		btScalar* pRadi = nullptr;
+
+		auto pShape = new BulletShape();
+
+		if (sizeof(btScalar) == sizeof(float))
 		{
-			int nFaceCount = meshDesc.m_numTriangles;
-			for (int i = 0; i < nFaceCount; ++i)
+			pRadi = (btScalar*)radi;
+			pPositions = new btVector3[numSpheres];
+
+			for (int i = 0; i < numSpheres; i++)
 			{
-				// change the triangle winding order
-				*dest = *src; ++src;
-				*(dest + 2) = *src; ++src;
-				*(dest + 1) = *src; ++src;
-				dest += 3;
+				auto& dstPos = pPositions[i];
+				auto& srcPos = positions[i];
+				dstPos = btVector3(btScalar(srcPos.x), btScalar(srcPos.y), btScalar(srcPos.z));
 			}
+
+			pShape->m_pShape = new btMultiSphereShape(pPositions, pRadi, numSpheres);
+
+			delete[] pPositions;
 		}
 		else
 		{
-			memcpy(dest, src, sizeof(int32) * meshDesc.m_numTriangles * 3);
-		}
-	}
-	else
-	{
-		// 16 bits index
-		int32* dest = pShape->m_triangleIndices;
-		int16* src = (int16*)(meshDesc.m_triangles);
-		if (m_bInvertFaceWinding)
-		{
-			int nFaceCount = meshDesc.m_numTriangles;
-			for (int i = 0; i < nFaceCount; ++i)
+			pRadi = new btScalar[numSpheres];
+			pPositions = new btVector3[numSpheres];
+
+			for (int i = 0; i < numSpheres; i++)
 			{
-				*dest = *src; ++src;
-				*(dest + 2) = *src; ++src;
-				*(dest + 1) = *src; ++src;
-				dest += 3;
+				auto& dstPos = pPositions[i];
+				auto& srcPos = positions[i];
+				dstPos = btVector3(btScalar(srcPos.x), btScalar(srcPos.y), btScalar(srcPos.z));
+
+				pRadi[i] = btScalar(radi[i]);
 			}
+
+			delete[] pPositions;
+			delete[] pRadi;
+		}
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+
+	IParaPhysicsCompoundShape* CParaPhysicsWorld::CreateCompoundShape(bool enableDynamicAabbTree)
+	{
+		auto pShape = new BulletCompoundShape();
+		pShape->m_pShape = new btCompoundShape(enableDynamicAabbTree);
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
+	}
+
+	IParaPhysicsShape* CParaPhysicsWorld::CreateConvexHullShape(const PARAVECTOR3* points, int numPoints)
+	{
+		auto pShape = new BulletShape();
+
+		if (!points || numPoints == 0)
+		{
+			pShape->m_pShape = new btConvexHullShape();
 		}
 		else
 		{
-			int nFaceCount = meshDesc.m_numTriangles;
-			for (int i = 0; i < nFaceCount; ++i)
+			if (sizeof(btScalar) == sizeof(float))
 			{
-				*dest = *src; ++src;
-				*(dest + 1) = *src; ++src;
-				*(dest + 2) = *src; ++src;
-				dest += 3;
+				const int stride = sizeof(PARAVECTOR3);
+				pShape->m_pShape = new btConvexHullShape((btScalar*)points, numPoints, stride);
+			}
+			else
+			{
+				const int stride = sizeof(btVector3);
+				auto btPoints = new btVector3[numPoints];
+				for (int i = 0; i < numPoints; i++)
+				{
+					btPoints[i].setX(btScalar(points[i].x));
+					btPoints[i].setY(btScalar(points[i].y));
+					btPoints[i].setZ(btScalar(points[i].z));
+				}
+
+				pShape->m_pShape = new btConvexHullShape((btScalar*)btPoints, numPoints, stride);
+
+				delete[] btPoints;
 			}
 		}
+
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
 	}
 
-	pShape->m_vertices = new btScalar[meshDesc.m_pointStrideBytes * meshDesc.m_numVertices / sizeof(btScalar)];
-	memcpy(pShape->m_vertices, meshDesc.m_points, meshDesc.m_pointStrideBytes * meshDesc.m_numVertices);
+	IParaPhysicsShape* CParaPhysicsWorld::CreateStaticPlaneShape(const PARAVECTOR3& planeNormal, float planeConstant)
+	{
+		auto pShape = new BulletShape();
 
-	pShape->m_indexVertexArrays = new btTriangleIndexVertexArray(meshDesc.m_numTriangles,
-		(int*)(pShape->m_triangleIndices),
-		12,
-		meshDesc.m_numVertices, pShape->m_vertices, meshDesc.m_pointStrideBytes);
+		pShape->m_pShape = new btStaticPlaneShape(btVector3(btScalar(planeNormal.x), btScalar(planeNormal.y), btScalar(planeNormal.z))
+			, btScalar(planeConstant));
 
-	bool useQuantizedAabbCompression = true;
+		pShape->m_pShape->setUserPointer(pShape);
 
-	pShape->m_pShape = new btBvhTriangleMeshShape(pShape->m_indexVertexArrays, useQuantizedAabbCompression);
-	pShape->m_pShape->setUserPointer(pShape);
+		return pShape;
+	}
 
-	m_collisionShapes.insert(pShape);
+	IParaPhysicsRigidbody* CParaPhysicsWorld::CreateRigidbody(const ParaPhysicsRigidbodyDesc& desc, ParaPhysicsMotionStateDesc* motionStateDesc)
+	{
+		//rigid body is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (desc.m_mass != 0.f);
 
-	return pShape;
-}
+		btCollisionShape* shape = static_cast<btCollisionShape*>(desc.m_pShape->get());
+		assert(shape != nullptr);
 
-void CParaPhysicsWorld::ReleaseShape(IParaPhysicsShape* pShape)
-{
-	m_collisionShapes.erase((BulletPhysicsShape*)pShape);
-	pShape->Release();
-}
+		btVector3 localInertia(0.f, 0.f, 0.f);
+		if (isDynamic)
+		{
+			if (desc.m_pInertia)
+			{
+				const auto& inertia = *desc.m_pInertia;
+				localInertia = btVector3(btScalar(inertia.x), btScalar(inertia.y), btScalar(inertia.z));
+			}
+			else
+			{
+				shape->calculateLocalInertia(desc.m_mass, localInertia);
+			}
+		}
 
-IParaPhysicsActor* CParaPhysicsWorld::CreateActor(const ParaPhysicsActorDesc& actorDesc)
-{
-	//rigid body is dynamic if and only if mass is non zero, otherwise static
-	bool isDynamic = (actorDesc.m_mass != 0.f);
-
-	btCollisionShape* shape = (static_cast<BulletPhysicsShape*>(actorDesc.m_pShape))->m_pShape;
-	btVector3 localInertia(0, 0, 0);
-	if (isDynamic)
-		shape->calculateLocalInertia(actorDesc.m_mass, localInertia);
-
-	btMatrix3x3 matRot(
-		actorDesc.m_rotation._11, actorDesc.m_rotation._21, actorDesc.m_rotation._31,
-		actorDesc.m_rotation._12, actorDesc.m_rotation._22, actorDesc.m_rotation._32,
-		actorDesc.m_rotation._13, actorDesc.m_rotation._23, actorDesc.m_rotation._33
+		btMatrix3x3 matRot(
+			btScalar(desc.m_rotation._11), btScalar(desc.m_rotation._21), btScalar(desc.m_rotation._31),
+			btScalar(desc.m_rotation._12), btScalar(desc.m_rotation._22), btScalar(desc.m_rotation._32),
+			btScalar(desc.m_rotation._13), btScalar(desc.m_rotation._23), btScalar(desc.m_rotation._33)
 		);
-	btVector3 vOrigin(actorDesc.m_origin.x, actorDesc.m_origin.y, actorDesc.m_origin.z);
-	btTransform startTransform(matRot, vOrigin);
+		btVector3 vOrigin(btScalar(desc.m_origin.x), btScalar(desc.m_origin.y), btScalar(desc.m_origin.z));
+		btTransform startTransform(matRot, vOrigin);
 
-#ifdef USE_MOTIONSTATE
-	btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
+		btTransform centerOfMassOffset;
+		if (desc.m_pCenterOfMassOffset)
+		{
+			const auto& offset = *desc.m_pCenterOfMassOffset;
+			matRot = btMatrix3x3(
+				btScalar(offset.m_offset_rotation._11), btScalar(offset.m_offset_rotation._21), btScalar(offset.m_offset_rotation._31),
+				btScalar(offset.m_offset_rotation._12), btScalar(offset.m_offset_rotation._22), btScalar(offset.m_offset_rotation._32),
+				btScalar(offset.m_offset_rotation._13), btScalar(offset.m_offset_rotation._23), btScalar(offset.m_offset_rotation._33)
+			);
 
-	btRigidBody::btRigidBodyConstructionInfo cInfo(actorDesc.m_mass,myMotionState,shape,localInertia);
+			vOrigin = btVector3(btScalar(offset.m_offset_origin.x), btScalar(offset.m_offset_origin.y), btScalar(offset.m_offset_origin.z));
+			centerOfMassOffset = btTransform(matRot, vOrigin);
+		}
+		else
+		{
+			centerOfMassOffset = btTransform::getIdentity();
+		}
 
-	btRigidBody* body = new btRigidBody(cInfo);
+		btRigidBody* body = nullptr;
+		if (motionStateDesc)
+		{
+			auto pMotionState = new ParaPhysicsMotionState(startTransform, centerOfMassOffset, motionStateDesc->cb);
 
-#else
-	btRigidBody* body = new btRigidBody(actorDesc.m_mass, 0, shape, localInertia);
-	body->setWorldTransform(startTransform);
-#endif
+			motionStateDesc->setTransform = [pMotionState](const PARAMATRIX3x3& rotation, const PARAVECTOR3& origin)
+			{
+				pMotionState->setWorldTransform(rotation, origin);
+			};
 
-	// create as static object
-	if (!isDynamic){
-		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_STATIC_OBJECT);
+			body = new btRigidBody(desc.m_mass, pMotionState, shape, localInertia);
+		}
+		else
+		{
+			body = new btRigidBody(desc.m_mass, nullptr, shape, localInertia);
+			body->setWorldTransform(startTransform);
+
+			if (desc.m_pCenterOfMassOffset)
+				body->setCenterOfMassTransform(centerOfMassOffset);
+		}
+
+		BulletRigidbody* pBody = new BulletRigidbody();
+		pBody->m_pBody = body;
+		body->setUserPointer(pBody);
+
+		return pBody;
 	}
 
-	// short collisionFilterGroup = isDynamic? short(btBroadphaseProxy::DefaultFilter) : short(btBroadphaseProxy::StaticFilter);
-	// short collisionFilterMask = isDynamic? 	short(btBroadphaseProxy::AllFilter) : 	short(btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::StaticFilter);
-
-	// please note: group_mask is 2^group_id secretly
-	short nGroupMask = 1;
-	for (int i = 0; i < actorDesc.m_group; ++i)
+	IParaPhysicsTriangleMeshShape* CParaPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 	{
-		nGroupMask *= 2;
+		BulletTriangleMeshShape* pShape = new BulletTriangleMeshShape();
+
+		pShape->m_triangleIndices = new int32[12 * meshDesc.m_numTriangles];
+		if (meshDesc.m_triangleStrideBytes == 12)
+		{
+			// 32 bits index
+			int32* dest = pShape->m_triangleIndices;
+			int32* src = (int32*)(meshDesc.m_triangles);
+			if (m_bInvertFaceWinding)
+			{
+				int nFaceCount = meshDesc.m_numTriangles;
+				for (int i = 0; i < nFaceCount; ++i)
+				{
+					// change the triangle winding order
+					*dest = *src; ++src;
+					*(dest + 2) = *src; ++src;
+					*(dest + 1) = *src; ++src;
+					dest += 3;
+				}
+			}
+			else
+			{
+				memcpy(dest, src, sizeof(int32) * meshDesc.m_numTriangles * 3);
+			}
+		}
+		else
+		{
+			// 16 bits index
+			int32* dest = pShape->m_triangleIndices;
+			int16* src = (int16*)(meshDesc.m_triangles);
+			if (m_bInvertFaceWinding)
+			{
+				int nFaceCount = meshDesc.m_numTriangles;
+				for (int i = 0; i < nFaceCount; ++i)
+				{
+					*dest = *src; ++src;
+					*(dest + 2) = *src; ++src;
+					*(dest + 1) = *src; ++src;
+					dest += 3;
+				}
+			}
+			else
+			{
+				int nFaceCount = meshDesc.m_numTriangles;
+				for (int i = 0; i < nFaceCount; ++i)
+				{
+					*dest = *src; ++src;
+					*(dest + 1) = *src; ++src;
+					*(dest + 2) = *src; ++src;
+					dest += 3;
+				}
+			}
+		}
+
+		pShape->m_vertices = new btScalar[meshDesc.m_pointStrideBytes * meshDesc.m_numVertices / sizeof(btScalar)];
+		memcpy(pShape->m_vertices, meshDesc.m_points, meshDesc.m_pointStrideBytes * meshDesc.m_numVertices);
+
+		pShape->m_indexVertexArrays = new btTriangleIndexVertexArray(meshDesc.m_numTriangles,
+			(int*)(pShape->m_triangleIndices),
+			12,
+			meshDesc.m_numVertices, pShape->m_vertices, meshDesc.m_pointStrideBytes);
+
+		bool useQuantizedAabbCompression = true;
+
+		pShape->m_pShape = new btBvhTriangleMeshShape(pShape->m_indexVertexArrays, useQuantizedAabbCompression);
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
 	}
 
-	m_dynamicsWorld->addRigidBody(body, nGroupMask, actorDesc.m_mask);
-
-	BulletPhysicsActor* pActor = new BulletPhysicsActor(body);
-	body->setUserPointer(pActor);
-
-	m_actors.insert(pActor);
-
-	return pActor;
-}
-
-void CParaPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
-{
-	m_dynamicsWorld->removeCollisionObject((btCollisionObject*)(pActor->get()));
-	pActor->Release();
-	m_actors.erase((BulletPhysicsActor*)pActor);
-}
-
-IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange)
-{
-	btVector3 vFrom(vOrigin.x, vOrigin.y, vOrigin.z);
-	btVector3 vTo(vDirection.x, vDirection.y, vDirection.z);
-
-	if (fSensorRange < 0.f)
-		fSensorRange = 200.f;
-	vTo = vFrom + vTo * fSensorRange;
-
-	btCollisionWorld::ClosestRayResultCallback cb(vFrom, vTo);
-	// cb.m_collisionFilterGroup = 0;
-	cb.m_collisionFilterMask = dwGroupMask;
-	// filter back faces. Added by LiXizhi 2010.3. In bullet, triangle seems to be double sided by default.  
-	cb.m_flags = 1;// btTriangleRaycastCallback::kF_FilterBackfaces;
-
-	m_dynamicsWorld->rayTest(vFrom, vTo, cb);
-	if (cb.hasHit())
+	IParaPhysicsScalingTriangleMeshShape* CParaPhysicsWorld::CreateScaledTriangleMeshShape(IParaPhysicsTriangleMeshShape* pTriangleMeshShape, const PARAVECTOR3& localScaling)
 	{
-		hit.m_vHitPointWorld = CONVERT_PARAVECTOR3(cb.m_hitPointWorld);
-		hit.m_vHitNormalWorld = CONVERT_PARAVECTOR3(cb.m_hitNormalWorld.normalize());
-		hit.m_fDistance = cb.m_hitPointWorld.distance(cb.m_rayFromWorld);
-		return (IParaPhysicsActor*)(cb.m_collisionObject->getUserPointer());
+		auto pbtTriangleMeshShape = static_cast<btBvhTriangleMeshShape*>(pTriangleMeshShape->get());
+
+		if (!pbtTriangleMeshShape)
+			return nullptr;
+
+		BulletScalingTriangleMeshShape* pShape = new BulletScalingTriangleMeshShape();
+
+		btVector3 scaling = CONVERT_BTVECTOR3(localScaling);
+
+		pShape->m_pShape = new btScaledBvhTriangleMeshShape(pbtTriangleMeshShape, scaling);
+		pShape->m_pShape->setUserPointer(pShape);
+
+		return pShape;
 	}
-	else
+
+	IParaPhysicsPoint2PointConstraint* CParaPhysicsWorld::CreatePoint2PointConstraint(IParaPhysicsRigidbody* rbA, const PARAVECTOR3& pivotInA)
 	{
-		hit.m_vHitPointWorld = CONVERT_PARAVECTOR3(vTo);
-		hit.m_vHitNormalWorld = CONVERT_PARAVECTOR3(btVector3(1.0, 0.0, 0.0));
-		return NULL;
+		auto pConstraint = new BulletPoint2PointConstraint();
+
+		pConstraint->m_pConstraint = new btPoint2PointConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, CONVERT_BTVECTOR3(pivotInA));
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
 	}
-}
 
-void ParaEngine::CParaPhysicsWorld::SetDebugDrawer(IParaDebugDraw* debugDrawer)
-{
-	m_physics_debug_draw.SetParaDebugDrawInterface(debugDrawer);
-}
-
-
-IParaDebugDraw* ParaEngine::CParaPhysicsWorld::GetDebugDrawer()
-{
-	return m_physics_debug_draw.GetParaDebugDrawInterface();
-}
-
-void ParaEngine::CParaPhysicsWorld::DebugDrawObject(const PARAVECTOR3& vOrigin, const PARAMATRIX3x3& vRotation, const IParaPhysicsShape* pShape, const PARAVECTOR3& color)
-{
-
-}
-
-void ParaEngine::CParaPhysicsWorld::DebugDrawWorld()
-{
-	if (m_dynamicsWorld)
+	IParaPhysicsPoint2PointConstraint* CParaPhysicsWorld::CreatePoint2PointConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& pivotInA
+		, const PARAVECTOR3& pivotInB)
 	{
-		m_dynamicsWorld->debugDrawWorld();
+		auto pConstraint = new BulletPoint2PointConstraint();
+
+		pConstraint->m_pConstraint = new btPoint2PointConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_BTVECTOR3(pivotInA)
+			, CONVERT_BTVECTOR3(pivotInB));
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
 	}
-}
 
-void ParaEngine::CParaPhysicsWorld::SetDebugDrawMode(int debugMode)
-{
-	m_physics_debug_draw.setDebugMode(debugMode);
-}
+	IParaPhysicsHingeConstraint* CParaPhysicsWorld::CreateHingeConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& pivotInA
+		, const PARAVECTOR3& pivotInB
+		, const PARAVECTOR3& axisInA
+		, const PARAVECTOR3& axisInB
+		, bool useReferenceFrameA)
+	{
+		auto pConstraint = new BulletHingeConstraint();
 
-int ParaEngine::CParaPhysicsWorld::GetDebugDrawMode()
-{
-	return m_physics_debug_draw.getDebugMode();
+		pConstraint->m_pConstraint = new btHingeConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_BTVECTOR3(pivotInA)
+			, CONVERT_BTVECTOR3(pivotInB)
+			, CONVERT_BTVECTOR3(axisInA)
+			, CONVERT_BTVECTOR3(axisInB)
+			, useReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsHingeConstraint* CParaPhysicsWorld::CreateHingeConstraint(IParaPhysicsRigidbody* rbA
+		, const PARAVECTOR3& pivotInA
+		, const PARAVECTOR3& axisInA
+		, bool useReferenceFrameA)
+	{
+		auto pConstraint = new BulletHingeConstraint();
+
+		pConstraint->m_pConstraint = new btHingeConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, CONVERT_BTVECTOR3(pivotInA)
+			, CONVERT_BTVECTOR3(axisInA)
+			, useReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsHingeConstraint* CParaPhysicsWorld::CreateHingeConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation
+		, bool useReferenceFrameA)
+	{
+		auto pConstraint = new BulletHingeConstraint();
+
+		pConstraint->m_pConstraint = new btHingeConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin)
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin)
+			, useReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsHingeConstraint* CParaPhysicsWorld::CreateHingeConstraint(IParaPhysicsRigidbody* rbA
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation
+		, bool useReferenceFrameA)
+	{
+		auto pConstraint = new BulletHingeConstraint();
+
+		pConstraint->m_pConstraint = new btHingeConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin)
+			, useReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsSliderConstraint* CParaPhysicsWorld::CreateSliderConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation
+		, bool useLinearReferenceFrameA)
+	{
+		auto pConstraint = new BulletSliderConstraint();
+
+		pConstraint->m_pConstraint = new btSliderConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin)
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin)
+			, useLinearReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsSliderConstraint* CParaPhysicsWorld::CreateSliderConstraint(IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation
+		, bool useLinearReferenceFrameA)
+	{
+		auto pConstraint = new BulletSliderConstraint();
+
+		pConstraint->m_pConstraint = new btSliderConstraint(*static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin)
+			, useLinearReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsConeTwistConstraint* CParaPhysicsWorld::CreateConeTwistConstraint(IParaPhysicsRigidbody* rbA
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation)
+	{
+		auto pConstraint = new BulletConeTwistConstraint();
+
+		pConstraint->m_pConstraint = new btConeTwistConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin));
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsConeTwistConstraint* CParaPhysicsWorld::CreateConeTwistConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation)
+	{
+		auto pConstraint = new BulletConeTwistConstraint();
+
+		pConstraint->m_pConstraint = new btConeTwistConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin)
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin));
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsGeneric6DofSpringConstraint* CParaPhysicsWorld::CreateGeneric6DofSpringConstraint(IParaPhysicsRigidbody* rbA
+		, IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbAOrigin
+		, const PARAMATRIX3x3& rbARotation
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation
+		, bool useLinearReferenceFrameA)
+	{
+		auto pConstraint = new BulletGeneric6DofSpringConstraint();
+
+		pConstraint->m_pConstraint = new btGeneric6DofSpringConstraint(*static_cast<btRigidBody*>(rbA->get())
+			, *static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbARotation, rbAOrigin)
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin)
+			, useLinearReferenceFrameA);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
+
+	IParaPhysicsGeneric6DofSpringConstraint* CParaPhysicsWorld::CreateGeneric6DofSpringConstraint(IParaPhysicsRigidbody* rbB
+		, const PARAVECTOR3& rbBOrigin
+		, const PARAMATRIX3x3& rbBRotation
+		, bool useLinearReferenceFrameB)
+	{
+		auto pConstraint = new BulletGeneric6DofSpringConstraint();
+		pConstraint->m_pConstraint = new btGeneric6DofSpringConstraint(*static_cast<btRigidBody*>(rbB->get())
+			, CONVERT_TO_TRANSFORM(rbBRotation, rbBOrigin)
+			, useLinearReferenceFrameB);
+
+		pConstraint->m_pConstraint->setUserConstraintPtr(pConstraint);
+
+		return pConstraint;
+	}
 }
