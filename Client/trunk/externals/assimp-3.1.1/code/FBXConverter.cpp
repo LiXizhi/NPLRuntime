@@ -1438,10 +1438,45 @@ private:
 
 		// shading stuff and colors
 		SetShadingPropertiesCommon(out_mat,props);
-	
+
+			
 		// texture assignments
 		SetTextureProperties(out_mat,material.Textures(), mesh);
 		SetTextureProperties(out_mat,material.LayeredTextures(), mesh);
+
+		// tex animation
+		{
+			DirectPropertyMap unparsedProperties = props.GetUnparsedProperties();
+			int index = 0;
+
+			aiMetadata* data = new aiMetadata();
+			data->mNumProperties = unparsedProperties.size();
+			data->mKeys = new aiString[data->mNumProperties]();
+			data->mValues = new aiMetadataEntry[data->mNumProperties]();
+			out_mat->mMetaData = data;
+
+			BOOST_FOREACH(const DirectPropertyMap::value_type& prop, unparsedProperties) 
+			{
+				//if (prop.first.find("TexAnims_") == 0)
+				{
+					// Interpret the property as a concrete type
+					if (const TypedProperty<bool>* interpreted = prop.second->As<TypedProperty<bool> >())
+						data->Set(index++, prop.first, interpreted->Value());
+					else if (const TypedProperty<int>* interpreted = prop.second->As<TypedProperty<int> >())
+						data->Set(index++, prop.first, interpreted->Value());
+					else if (const TypedProperty<uint64_t>* interpreted = prop.second->As<TypedProperty<uint64_t> >())
+						data->Set(index++, prop.first, interpreted->Value());
+					else if (const TypedProperty<float>* interpreted = prop.second->As<TypedProperty<float> >())
+						data->Set(index++, prop.first, interpreted->Value());
+					else if (const TypedProperty<std::string>* interpreted = prop.second->As<TypedProperty<std::string> >())
+						data->Set(index++, prop.first, aiString(interpreted->Value()));
+					else if (const TypedProperty<aiVector3D>* interpreted = prop.second->As<TypedProperty<aiVector3D> >())
+						data->Set(index++, prop.first, interpreted->Value());
+					else
+						assert(false);
+				}
+			}
+		}
 
 		return static_cast<unsigned int>(materials.size() - 1);
 	}
