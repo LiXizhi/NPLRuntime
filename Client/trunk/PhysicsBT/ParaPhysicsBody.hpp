@@ -34,19 +34,6 @@ namespace ParaEngine {
 			return m_pBody->getInternalType();
 		}
 
-		virtual void SetContactCallBack(const IParaPhysicsBody::ContactCallBack& cb)
-		{
-			m_cb = cb;
-		}
-
-		virtual void OnContact(IParaPhysicsBody* bodyA, IParaPhysicsBody* bodyB, float dis, const PARAVECTOR3& posA, const PARAVECTOR3& posB, const PARAVECTOR3& normalOnB)
-		{
-			if (m_cb)
-			{
-				m_cb(bodyA, bodyB, dis, posA, posB, normalOnB);
-			}
-		}
-
 		_BulletBody()
 			: m_pBody(nullptr)
 			, m_userData(nullptr)
@@ -60,7 +47,6 @@ namespace ParaEngine {
 		};
 
 		btCollisionObject* m_pBody;
-		IParaPhysicsBody::ContactCallBack m_cb;
 		void* m_userData;
 	};
 

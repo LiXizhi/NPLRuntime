@@ -27,26 +27,6 @@ namespace ParaEngine {
 		return m_pBody;
 	}
 
-	void CPhysicsBody::SetContactCallBack(const ContactCallBack& cb)
-	{
-		if (cb)
-		{
-			m_pBody->SetContactCallBack([&cb](IParaPhysicsBody* bodyObjA, IParaPhysicsBody* bodyObjB, float dis, const PARAVECTOR3& posA, const PARAVECTOR3& posB, const PARAVECTOR3& normalOnB)
-			{
-				auto bodyA = static_cast<CPhysicsBody*>(bodyObjA->GetUserData());
-				auto bodyB = static_cast<CPhysicsBody*>(bodyObjB->GetUserData());
-
-				assert(bodyA && bodyB);
-
-				cb(bodyA, bodyB, dis, posA, posB, normalOnB);
-			});
-		}
-		else
-		{
-			m_pBody->SetContactCallBack(nullptr);
-		}
-	}
-
 	CPhysicsRigidBody::CPhysicsRigidBody(IParaPhysicsRigidbody* pBody, CPhysicsShape* pShape)
 		: CPhysicsBody(pBody)
 		, m_pShape(pShape)

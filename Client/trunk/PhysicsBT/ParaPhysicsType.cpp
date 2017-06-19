@@ -42,41 +42,6 @@ namespace ParaEngine {
 	bool BulletWorld::StepSimulation(float fDeltaTime, int maxSubSteps, float fixedTimeStep)
 	{
 		m_pWorld->stepSimulation(fDeltaTime, maxSubSteps, btScalar(fixedTimeStep));
-
-
-		auto numManifolds = m_dispatcher->getNumManifolds();
-		for (decltype(numManifolds) i = 0; i < numManifolds; i++)
-		{
-			auto contactManifold = m_dispatcher->getManifoldByIndexInternal(i);
-			auto objA = contactManifold->getBody0();
-			auto objB = contactManifold->getBody1();
-
-			auto numContacts = contactManifold->getNumContacts();
-			for (decltype(numContacts) j = 0; j < numContacts; j++)
-			{
-				auto& pt = contactManifold->getContactPoint(j);
-				auto dis = pt.getDistance();
-				if (dis < 0.0f)
-				{
-					const  btVector3& ptA = pt.getPositionWorldOnA();
-					const  btVector3& ptB = pt.getPositionWorldOnB();
-					const  btVector3& normalOnB = pt.m_normalWorldOnB;
-
-					PARAVECTOR3 posA = CONVERT_PARAVECTOR3(ptA);
-					PARAVECTOR3 posB = CONVERT_PARAVECTOR3(ptB);
-					PARAVECTOR3 normal = CONVERT_PARAVECTOR3(normalOnB);
-
-					auto bodyA = static_cast<IParaPhysicsBody*>(objA->getUserPointer());
-					auto bodyB = static_cast<IParaPhysicsBody*>(objB->getUserPointer());
-
-					assert(bodyA && bodyB);
-
-					bodyA->OnContact(bodyA, bodyB, dis, posA, posB, normal);
-					bodyB->OnContact(bodyA, bodyB, dis, posA, posB, normal);
-				}
-			}
-		}
-
 		return true;
 	}
 
@@ -170,9 +135,6 @@ namespace ParaEngine {
 		if (fSensorRange < 0.f)
 			fSensorRange = 200.f;
 		vTo = vFrom + vTo * fSensorRange;
-
-		if ((vFrom - vTo).fuzzyZero())
-			return nullptr;
 
 		btCollisionWorld::ClosestRayResultCallback cb(vFrom, vTo);
 

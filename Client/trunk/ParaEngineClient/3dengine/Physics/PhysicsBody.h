@@ -21,13 +21,8 @@ namespace ParaEngine {
 
 		int GetInternalType() const;
 
-		// don't remove any body in this callback, because it will be called any times in one tick
-		typedef std::function<void(CPhysicsBody* bodyA, CPhysicsBody* bodyB, float dis, const PARAVECTOR3& posA, const PARAVECTOR3& posB, const PARAVECTOR3& normalOnB)> ContactCallBack;
-		void SetContactCallBack(const ContactCallBack& cb);
-
 	protected:
 		IParaPhysicsBody* m_pBody;
-		ContactCallBack m_cb;
 	};
 
 	class CPhysicsRigidBody : public CPhysicsBody

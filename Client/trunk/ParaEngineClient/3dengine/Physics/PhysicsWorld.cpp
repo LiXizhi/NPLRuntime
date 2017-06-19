@@ -107,13 +107,8 @@ namespace ParaEngine {
 			{
 				PERF1("Dynamic Physics");
 				m_pWorld->StepSimulation((float)dTime);
-				onAfterCheckContact();
 			}
 		}
-	}
-
-	void CPhysicsWorld::onAfterCheckContact()
-	{
 	}
 
 	void CPhysicsWorld::SetDynamicsSimulationEnabled(bool bEnable)
