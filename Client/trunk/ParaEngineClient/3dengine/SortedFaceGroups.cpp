@@ -66,13 +66,13 @@ void ParaEngine::CFaceGroup::UpdateCenterPos()
 }
 
 ParaEngine::CFaceGroupInstance::CFaceGroupInstance()
-	:m_vUVOffset(0.f, 0.f), m_fToCameraDistSq(0.f), m_facegroup(NULL), m_fAlpha(1.f),m_UVRgbAnim(false),
+	:m_vUVOffset(0.f, 0.f), m_fToCameraDistSq(0.f), m_facegroup(NULL), m_fAlpha(1.f),m_UVRgbAnim(false), m_vUVRotate(0.0f, 0.f, 0.f), m_vUVScale(1.0f, 1.0f),
 	m_bones(NULL)
 {
 }
 
 ParaEngine::CFaceGroupInstance::CFaceGroupInstance( const Matrix4* pMat, CFaceGroup* faceGroup )
-	:m_vUVOffset(0.f, 0.f), m_fToCameraDistSq(0.f), m_facegroup(faceGroup), m_fAlpha(1.f),m_UVRgbAnim(false),
+	:m_vUVOffset(0.f, 0.f), m_fToCameraDistSq(0.f), m_facegroup(faceGroup), m_fAlpha(1.f),m_UVRgbAnim(false), m_vUVRotate(0.0f, 0.f, 0.f), m_vUVScale(1.0f, 1.0f),
 	m_bones(NULL)
 {
 	if(pMat)
@@ -152,6 +152,9 @@ void ParaEngine::CSortedFaceGroups::Render()
 		bool bHasLighting = true;
 		bool bAdditive = false;
 		Vector2 vLastUVOffset(0.f,0.f);
+		Vector2 vLastUVScale(1.f, 1.f);
+		Vector3 vLastUVRotate(0.f, 0.f, 0.f);
+
 
 
 		mesh_vertex_normal* vb_vertices = NULL;
@@ -256,15 +259,42 @@ void ParaEngine::CSortedFaceGroups::Render()
 					}
 
 					/** uv offset */
-					if(vLastUVOffset != facegroup.m_vUVOffset)
+					if(vLastUVOffset != facegroup.m_vUVOffset
+						|| vLastUVRotate != facegroup.m_vUVRotate
+						|| vLastUVScale != facegroup.m_vUVScale)
 					{
 						vLastUVOffset = facegroup.m_vUVOffset;
+						vLastUVRotate = facegroup.m_vUVRotate;
+						vLastUVScale = facegroup.m_vUVScale;
+
+						auto sina = sinf(vLastUVRotate.x);
+						auto cosa = cosf(vLastUVRotate.y);
 
 						Matrix4 texMat;
+						Matrix4 tmp;
+
 						// interesting that it uses _31 and _32 instead of _41, _42 for the UV translation.
 						texMat = Matrix4::IDENTITY;
-						texMat._31 = vLastUVOffset.x;
-						texMat._32 = vLastUVOffset.y;
+						tmp.identity();
+
+						texMat._31 = -vLastUVRotate.y;
+						texMat._32 = -vLastUVRotate.z;
+
+						tmp._11 = vLastUVScale.x * cosa;
+						tmp._12 = sina;
+						tmp._21 = -sina;
+						tmp._22 = vLastUVScale.y * cosa;
+						tmp._31 = vLastUVOffset.x;
+						tmp._32 = vLastUVOffset.y;
+
+						texMat = texMat * tmp;
+
+						tmp.identity();
+						tmp._31 = vLastUVRotate.y;
+						tmp._32 = vLastUVRotate.z;
+
+						texMat = texMat * tmp;
+
 						pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
 						pd3dDevice->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
 					}
@@ -325,7 +355,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 		}
 		//if(!bHasLighting)
 			//CGlobals::GetEffectManager()->EnableSunLight(true);
-		if(vLastUVOffset != Vector2(0.f, 0.f))
+		if(vLastUVOffset != Vector2(0.f, 0.f) || vLastUVRotate != Vector3(0.f, 0.f, 0.f) || vLastUVScale != Vector2(0.f, 0.f))
 		{
 			// disable texture transformation in fixed function.
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
@@ -341,6 +371,8 @@ void ParaEngine::CSortedFaceGroups::Render()
 		bool bEnvMap = false, bReflectionMap = false, bNormalMap = false, bHasLightMap = false, bHasLighting = true;
 		bool bAdditive = false;
 		Vector2 vLastUVOffset(0.f,0.f);
+		Vector2 vLastUVScale(1.f, 1.f);
+		Vector3 vLastUVRotate(0.f, 0.f, 0.f);
 		bool restoreUVRgbAnim = false;
 		float fLastAlpha = 1.f;
 
@@ -467,6 +499,21 @@ void ParaEngine::CSortedFaceGroups::Render()
 									pEffect->setBool(CEffectFile::k_bBoolean7,TRUE);
 									restoreUVRgbAnim = true;
 								}
+							}
+
+							if (vLastUVRotate != facegroup.m_vUVRotate)
+							{
+								vLastUVRotate = facegroup.m_vUVRotate;
+								Vector4 vOffset(vLastUVRotate.x, vLastUVRotate.y, vLastUVRotate.z, 0.f);
+								pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&vOffset);
+							}
+
+							if (vLastUVScale != facegroup.m_vUVScale)
+							{
+								vLastUVScale = facegroup.m_vUVScale;
+
+								Vector4 vOffset(vLastUVScale.x, vLastUVScale.y, 0.f, 0.f);
+								pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vOffset);
 							}
 
 							//alpha value   --clayman
@@ -611,6 +658,18 @@ void ParaEngine::CSortedFaceGroups::Render()
 			{
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4::ZERO);
 			}
+
+			if (vLastUVRotate != Vector3(0.f, 0.f, 0.f))
+			{
+				pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4::ZERO);
+			}
+
+			if (vLastUVScale != Vector2(1.f, 1.f))
+			{
+				Vector4 vec4(1.f, 1.f, 1.f, 1.f);
+				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vec4);
+			}
+
 			if(restoreUVRgbAnim)
 			{
 				pEffect->setBool(CEffectFile::k_bBoolean7,FALSE);

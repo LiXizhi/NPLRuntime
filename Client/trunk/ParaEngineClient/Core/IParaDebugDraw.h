@@ -27,6 +27,8 @@ namespace ParaEngine
 			DDM_DrawConstraints = (1 << 11),
 			DDM_DrawConstraintLimits = (1 << 12),
 			DDM_FastWireframe = (1<<13),
+			DDM_DrawNormals = (1 << 14),
+			DDM_DrawFrames = (1 << 15),
 			DDM_MAX_DEBUG_DRAW_MODE
 		};
 
