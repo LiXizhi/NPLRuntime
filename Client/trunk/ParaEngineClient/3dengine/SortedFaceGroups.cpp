@@ -666,8 +666,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 			if (vLastUVScale != Vector2(1.f, 1.f))
 			{
-				Vector4 vec4(1.f, 1.f, 1.f, 1.f);
-				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vec4);
+				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&Vector4(1.f, 1.f, 1.f, 1.f));
 			}
 
 			if(restoreUVRgbAnim)
