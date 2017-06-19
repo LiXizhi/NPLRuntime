@@ -1218,8 +1218,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 			if(fDesiredLineOfSightLen < fMinLineOfSightLen )
 				fDesiredLineOfSightLen = fMinLineOfSightLen;
 
-			//ParaVec3Normalize(&vReverseLineOfSight, &vReverseLineOfSight);
-			vReverseLineOfSight.normalise();
+			ParaVec3Normalize(&vReverseLineOfSight, &vReverseLineOfSight);
 			
 			Vector3 vHitPoint, vHitNormal(0.f,0.f,0.f);
 			float fLineOfSightLen;

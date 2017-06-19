@@ -47,7 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_MATERIAL_H_INC
 
 #include "types.h"
-#include "metadata.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -892,8 +891,6 @@ public:
 
     /** List of all material properties loaded. */
     C_STRUCT aiMaterialProperty** mProperties;
-
-	C_STRUCT aiMetadata* mMetaData;
 
     /** Number of properties in the data base */
     unsigned int mNumProperties;

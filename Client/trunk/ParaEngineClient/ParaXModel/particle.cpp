@@ -165,18 +165,18 @@ void ParticleSystem::update(SceneState * pSceneState, float dt)
 			int tospawn = (int)ftospawn;
 			instancePS->m_rem = ftospawn - (float)tospawn;
 			for (int i=0; i<tospawn; i++) {
-				if (particles.size() >= MAX_PARTICLES)
-					break;
-				particles.resize(particles.size() + 1, emitter->newParticle(manim, mtime));
-				if (instancePS->m_bUseAbsCord)
-				{
-					Particle& p = particles.back();
+				Particle p = emitter->newParticle(manim, mtime);
+				if(instancePS->m_bUseAbsCord)
+				{ 
 					// Very tricky: apply the outer world transform: to change the pos, origin and speed(direction) into absolute world space. 
 					// transform to world coordinate system, suppose that the world transform is in device already
 					p.pos = p.pos*mWorld;
 					p.origin = p.origin * mWorld;
 					p.speed = p.speed.TransformNormal(mWorld);
 				}
+				// sanity check:
+				if (particles.size() < MAX_PARTICLES) 
+					particles.push_back(p);
 			}
 		}
 	}

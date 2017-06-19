@@ -28,9 +28,7 @@ bool g_bEnableFog		:fogenable;
 bool g_bRGBOnlyTexturAnim  :boolean7;
 float g_bReflectFactor	:reflectfactor;
 float3 g_EyePositionW	:worldcamerapos;
-float2 g_TexOffset		:ConstVector0; // TODO: for testing texture animation: x,y for translation
-float3 g_TexRot			:ConstVector1;
-float2 g_TexScale		:ConstVector2 = { 1.0f, 1.0f };
+float2 g_TexAnim		:ConstVector0; // TODO: for testing texture animation: x,y for translation
 //bool g_bNormalMap		:boolean6;
 float g_opacity			:opacity = 1.f; 
 
@@ -93,23 +91,8 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 	{
 		o.colorDiffuse.xyz = min(1, colorDiffuse+colorAmbient).xyz;
 	}
-
-	// uv offset
-	float2 uv = Tex + g_TexOffset.xy;
-
-	// uv scale
-	uv.x *= g_TexScale.x;
-	uv.y *= g_TexScale.y;
-
-	// uv rotate
-	float sinNum = sin(g_TexRot.x);
-	float cosNum = cos(g_TexRot.x);
-	uv -= float2(g_TexRot.y, g_TexRot.z);
-	uv = mul(uv, float2x2(cosNum, -sinNum, sinNum, cosNum));
-	uv += float2(g_TexRot.y, g_TexRot.z);
-
-	o.tex.xy = uv;
-
+	
+	o.tex.xy = Tex+g_TexAnim.xy;
 	o.tex.zw = Tex;
 	//save the fog distance
     //o.tex.z = CalcFogFactor(cameraPos.z);

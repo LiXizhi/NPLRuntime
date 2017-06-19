@@ -15,17 +15,9 @@
 #include "TextureEntity.h"
 #include "ParaWorldAsset.h"
 #include "ParaXBone.h"
-#include "particle.h"
 #include <math.h>
 
 #include "assimp/scene.h"
-
-extern "C"
-{
-#include "lua.h"
-#include "lualib.h"
-#include "lauxlib.h"
-}
 
 using namespace ParaEngine;
 using namespace ParaEngine::XFile;
@@ -46,33 +38,18 @@ namespace ParaEngine
 }
 
 FBXParser::FBXParser()
-	: m_pScene(NULL)
-	, m_nMaterialIndex(0)
-	, m_nRootNodeIndex(0)
-	, m_bUsedVertexColor(true)
-	, m_bHasSkinnedMesh(false)
-	, m_unique_id(0)
-	, m_pLuaState(nullptr)
+	:m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0)
 {
 }
 
 FBXParser::FBXParser(const string& filename)
-	: m_sFilename(filename)
-	, m_pScene(NULL)
-	, m_nMaterialIndex(0)
-	, m_nRootNodeIndex(0)
-	, m_bUsedVertexColor(true)
-	, m_bHasSkinnedMesh(false)
-	, m_unique_id(0)
-	, m_pLuaState(nullptr)
+	: m_sFilename(filename),
+	m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0)
 {
-	m_texAnims.reserve(10);
 }
 
 FBXParser::~FBXParser()
 {
-	if (m_pLuaState)
-		lua_close(m_pLuaState);
 }
 
 XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
@@ -151,7 +128,6 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 				ProcessFBXMaterial(pFbxScene, i, pMesh);
 			}
 		}
-
 		// get root node
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
@@ -174,7 +150,6 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 
 		PostProcessParaXModelData(pMesh);
 
-		
 #ifdef _DEBUG
 		//PrintDebug(pFbxScene);
 #endif
@@ -283,24 +258,6 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_header.maxExtent = m_maxExtent;
 	pMesh->m_vNeckYawAxis = m_modelInfo.m_vNeckYawAxis;
 	pMesh->m_vNeckPitchAxis = m_modelInfo.m_vNeckPitchAxis;
-
-	
-	auto nTexAnims = this->m_texAnims.size();
-	if (nTexAnims > 0)
-	{
-		//pMesh->animated = true;
-		pMesh->animTextures = true;
-
-		pMesh->texanims = new TextureAnim[nTexAnims];
-		pMesh->m_objNum.nTexAnims = nTexAnims;
-
-		for (size_t i = 0; i < nTexAnims; i++)
-		{
-			pMesh->texanims[i] = m_texAnims[i];
-		}
-
-		m_texAnims.clear();
-	}
 	
 	if (m_bones.size() > 0)
 	{
@@ -319,34 +276,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
-	auto psSize = m_particleSystem.size();
-	{
-		if (psSize > 0)
-		{
-			pMesh->m_objNum.nParticleEmitters = psSize;
-			pMesh->particleSystems = new ParticleSystem[psSize];
-			int index = 0;
-			for (auto it = m_particleSystem.begin(); it != m_particleSystem.end(); it++)
-			{
-				ParticleSystem& ps = it->second;
-				auto offset = (size_t)ps.parent;
-				ps.parent = pMesh->bones + offset;
-				auto& curPs = pMesh->particleSystems[index++];
-				curPs = ps;
-				ps.emitter = nullptr;
-				
-				if ((int)curPs.emitter == ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER)
-					curPs.emitter = new SphereParticleEmitter(&curPs);
-				else
-					curPs.emitter = new PlaneParticleEmitter(&curPs);
-				
-			}
-
-			m_particleSystem.clear();
-		}
-	}
-
-	if ((m_bHasSkinnedMesh && pMesh->animated && m_anims.size() == 0) || nTexAnims > 0 || psSize > 0)
+	if (m_bHasSkinnedMesh && pMesh->animated && m_anims.size() == 0)
 	{
 		// static animation 0, just in case there are skinned mesh without any animation
 		// we need to animate bones just in case external animations are used outside. 
@@ -406,10 +336,8 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	if (m_bUsedVertexColor)
 		pMesh->SetBmaxModel();
 
-	if (m_vertices.size() > 0)
-		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
-	if (m_indices.size() > 0)
-		pMesh->initIndices(m_indices.size(), &(m_indices[0]));
+	pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
+	pMesh->initIndices(m_indices.size(), &(m_indices[0]));
 
 	if (pMesh->geosets.size() > 0)
 	{
@@ -733,6 +661,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	aiTextureOp eOp;
 	aiString szPath;
 	char* content_begin = NULL;
+
 	int content_len = -1;
 
 	std::string sMatName;
@@ -740,7 +669,6 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 		aiString sMaterialName;
 		if (AI_SUCCESS == aiGetMaterialString(pfbxMaterial, AI_MATKEY_NAME, &sMaterialName))
 			sMatName = sMaterialName.C_Str();
-
 	}
 
 	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
@@ -771,7 +699,6 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	FBXMaterial fbxMat;
 	ParseMaterialByName(sMatName, &fbxMat);
 
-
 	int16 blendmode = BM_OPAQUE;
 	if (!diffuseTexName.empty())
 	{
@@ -795,9 +722,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	m_textures.push_back(fbxMat);
 
 	int texture_index = m_textures.size() - 1;
-
-	pMesh->passes.resize(pMesh->passes.size() + 1);
-	ModelRenderPass& pass = pMesh->passes[pMesh->passes.size() - 1];
+	ModelRenderPass pass;
 	pass.tex = texture_index;
 	pass.SetCategoryId(fbxMat.GetCategoryID());
 	pass.texanim = -1;
@@ -813,870 +738,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.order = fbxMat.m_nOrder;
 	pass.geoset = -1; // make its geoset uninitialized
 	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
-
-	ParseUVAnimation(pass, pfbxMaterial, pMesh);
-	ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);
-}
-
-lua_State* FBXParser::ParseScriptString(const char* str)
-{
-	if (!str)
-		return nullptr;
-
-	if (!m_pLuaState)
-		m_pLuaState = luaL_newstate();
-
-	int error = luaL_dostring(m_pLuaState, str);
-
-	if (error == 0)
-	{
-		return m_pLuaState;
-	}
-	else
-	{
-		auto errString = lua_tostring(m_pLuaState, -1);
-		OUTPUT_LOG("Error parsing: %s.\n %s", str, errString);
-		lua_pop(m_pLuaState, 1); // remove error message from stack
-		return nullptr;
-	}
-}
-
-void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index)
-{
-	auto metaData = pfbxMaterial->mMetaData;
-	if (!metaData || metaData->mNumProperties == 0)
-		return;
-
-	for (unsigned int i = 0; i < metaData->mNumProperties; i++)
-	{
-		auto& key = metaData->mKeys[i];
-		auto& value = metaData->mValues[i];
-
-		if (strcmp(key.C_Str(), "ps_param") != 0)
-			continue;
-
-		PE_ASSERT(value.mType == AI_AISTRING);
-
-		auto aiParam = static_cast<aiString*>(value.mData);
-
-		if (!aiParam || aiParam->length == 0)
-			continue;
-
-		std::string paramString(aiParam->C_Str());
-		paramString = "return {" + paramString;
-		paramString += "}";
-
-		
-		auto L = ParseScriptString(paramString.c_str());
-		if (!L)
-			continue;
-
-		PE_ASSERT(m_particleSystem.find(sMatName) == m_particleSystem.end());
-
-		m_particleSystem.insert(std::pair<std::string, ParticleSystem>(sMatName, ParticleSystem()));
-		ParticleSystem& ps = m_particleSystem[sMatName];
-
-		ParseParticleParam(ps, L);
-		lua_pop(L, 1); // remove return value from stack
-
-		ps.order = 0; // triangle winding order is fixed for all types.
-		ps.model = pMesh;
-
-		ps.grav2.globals = ps.areaw.globals = ps.areal.globals = ps.rate.globals = ps.lifespan.globals = ps.gravity.globals = ps.lat.globals = ps.spread.globals = ps.variation.globals = ps.speed.globals = pMesh->globalSequences;
-		
-		ps.tofs = frand();
-		ps.m_texture_index = texture_index;
-
-		break;
-	}
-}
-
-void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
-{
-	const float ticksPerSample = 1000.f / 30.f; // 30fps
-	const float fEpsilon = 0.01f;
-
-	
-
-	// read mid
-	{
-		lua_pushstring(L, "mid");
-		lua_gettable(L, -2);
-		ps.mid = lua_isnil(L, -1) ? 0.5f : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-	}
-	
-	// read color
-	{
-		lua_pushstring(L, "color");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			size_t len = lua_objlen(L, -1);
-
-			PE_ASSERT(len <= 3);
-
-			for (size_t i = 0; i < len; i++)
-			{
-				auto& color = ps.colors[i];
-				lua_pushnumber(L, i + 1);
-				lua_gettable(L, -2);
-				if (lua_istable(L, -1))
-				{
-					// read R
-					lua_pushnumber(L, 1);
-					lua_gettable(L, -2);
-					color.x = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-					lua_pop(L, 1);
-
-					// read G
-					lua_pushnumber(L, 2);
-					lua_gettable(L, -2);
-					color.y = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-					lua_pop(L, 1);
-
-					// read B
-					lua_pushnumber(L, 3);
-					lua_gettable(L, -2);
-					color.z = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-					lua_pop(L, 1);
-				}
-	
-				lua_pop(L, 1);
-			}
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: color must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read alpha
-	{
-		lua_pushstring(L, "alpha");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			size_t len = lua_objlen(L, -1);
-			PE_ASSERT(len <= 3);
-			for (size_t i = 0; i < len; i++)
-			{
-				auto& alpha = ps.colors[i].w;
-
-				lua_pushnumber(L, i + 1);
-				lua_gettable(L, -2);
-				alpha = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-				lua_pop(L, 1);
-			}
-
-		}
-		else if (lua_isnil(L, -1))
-		{
-			 
-		}
-		else
-		{
-			OUTPUT_LOG("warning: alpha must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read size
-	{
-		lua_pushstring(L, "size");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			size_t len = lua_objlen(L, -1);
-			PE_ASSERT(len <= 3);
-			for (size_t i = 0; i < len; i++)
-			{
-				auto& size = ps.sizes[i];
-
-				lua_pushnumber(L, i + 1);
-				lua_gettable(L, -2);
-				size = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-				lua_pop(L, 1);
-			}
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: size must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read rate 
-	{
-		lua_pushstring(L, "rate");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-				
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.rate.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.rate.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.rate.CompressKeyLinear(fEpsilon);
-				ps.rate.used = true;
-				ps.rate.seq = -2;
-			}
-			else
-			{
-				ps.rate.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-
-			
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: rate must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read speed
-	{
-		lua_pushstring(L, "speed");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.speed.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.speed.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.speed.CompressKeyLinear(fEpsilon);
-				ps.speed.used = true;
-				ps.speed.seq = -2;
-			}
-			else
-			{
-				ps.speed.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-
-			
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: speed must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read variation
-	{
-		lua_pushstring(L, "variation");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.variation.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.variation.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.variation.CompressKeyLinear(fEpsilon);
-				ps.variation.used = true;
-				ps.variation.seq = -2;
-			}
-			else
-			{
-				ps.variation.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-
-			
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: variation must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-
-	// read lifeTime
-	{
-		lua_pushstring(L, "lifeTime");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.lifespan.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.lifespan.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.lifespan.CompressKeyLinear(fEpsilon);
-				ps.lifespan.used = true;
-				ps.lifespan.seq = -2;
-			}
-			else
-			{
-				ps.lifespan.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-
-			
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: lifeTime must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read emitterWidth
-	{
-		lua_pushstring(L, "emitterWidth");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.areaw.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.areaw.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.areaw.CompressKeyLinear(fEpsilon);
-				ps.areaw.used = true;
-				ps.areaw.seq = -2;
-			}
-			else
-			{
-				ps.areaw.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: emitterWidth must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read emitterHeight
-	{
-		lua_pushstring(L, "emitterHeight");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			std::vector<std::pair<int, float>> values;
-			
-			lua_pushnil(L);
-			while (lua_next(L, -2) != 0)
-			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
-				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-
-				values.push_back(std::pair<int, float>(key, value));
-
-				lua_pop(L, 1);
-			}
-
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
-			{
-				return a.first < b.first;
-			});
-
-			auto size = values.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				auto& one = values[i];
-				ps.areal.AppendKey((int)(one.first * ticksPerSample), one.second);
-			}
-
-			if (size > 0)
-			{
-				ps.areal.SetRangeByAnimIndex(0, AnimRange(0, values[size - 1].first));
-				ps.areal.CompressKeyLinear(fEpsilon);
-				ps.areal.used = true;
-				ps.areal.seq = -2;
-			}
-			else
-			{
-				ps.areal.SetRangeByAnimIndex(0, AnimRange(0, 0));
-			}
-		}
-		else if (lua_isnil(L, -1))
-		{
-
-		}
-		else
-		{
-			OUTPUT_LOG("warning: emitterHeight must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read pos
-	{
-		lua_pushstring(L, "pos");
-		lua_gettable(L, -2);
-		if (lua_istable(L, -1))
-		{
-			// read x
-			lua_pushstring(L, "x");
-			lua_gettable(L, -2);
-			ps.pos.x = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-			lua_pop(L, 1);
-
-			lua_pushstring(L, "y");
-			lua_gettable(L, -2);
-			ps.pos.y = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-			lua_pop(L, 1);
-
-			lua_pushstring(L, "z");
-			lua_gettable(L, -2);
-			ps.pos.z = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-			lua_pop(L, 1);
-		}
-		else if (lua_isnil(L, -1))
-		{
-			memset(&ps.pos, sizeof(ps.pos), 0);
-		}
-		else
-		{
-			OUTPUT_LOG("warning: emitterHeight must be table");
-		}
-		lua_pop(L, 1);
-	}
-
-	// read texRotateSpeed
-	{
-		lua_pushstring(L, "texRotateSpeed");
-		lua_gettable(L, -2);
-		float texRotateSpeed = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-
-		ps.grav2.AppendKey(0, texRotateSpeed);
-		ps.grav2.SetRangeByAnimIndex(0, AnimRange(0, 0));
-		ps.grav2.used = true;
-		ps.grav2.seq = -2;
-	}
-
-	// read row & cos
-	{
-		lua_pushstring(L, "row");
-		lua_gettable(L, -2);
-		ps.cols = lua_isnil(L, -1) ? 1 : lua_tointeger(L, -1);
-		lua_pop(L, 1);
-
-		lua_pushstring(L, "col");
-		lua_gettable(L, -2);
-		ps.rows = lua_isnil(L, -1) ? 1 : lua_tointeger(L, -1);
-		lua_pop(L, 1);
-
-		PE_ASSERT(ps.cols >= 1 && ps.rows >= 1);
-
-		ps.SetTextureRowsCols(ps.rows, ps.cols);
-	}
-
-	// read displayType 
-	{
-		lua_pushstring(L, "displayType");
-		lua_gettable(L, -2);
-		ps.type = lua_isnil(L, -1) ? 0 : lua_tointeger(L, -1);
-		lua_pop(L, 1);
-	}
-
-	// read emitterType 
-	{
-		lua_pushstring(L, "emitterType");
-		lua_gettable(L, -2);
-		auto typeString = lua_isnil(L, -1) ? "" : lua_tostring(L, -1);
-
-		if (strcmp(typeString, "sphere") == 0)
-		{
-			//ps.type = (int)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
-			//ps.emitter = new SphereParticleEmitter(&ps);
-			ps.emitter = (ParticleEmitter*)ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER;
-		}
-		else
-		{
-			//ps.type = (int)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
-			//ps.emitter = new PlaneParticleEmitter(&ps);
-			ps.emitter = (ParticleEmitter*)ParticleEmitter::TYPE_PLANE_PARTICLE_EMITTER;
-		}
-
-		lua_pop(L, 1);
-	}
-
-	// read gravity 
-	{
-		lua_pushstring(L, "gravity");
-		lua_gettable(L, -2);
-		auto gravity = lua_isnil(L, -1) ? 9.8f : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-
-		ps.gravity.AppendKey(0, gravity);
-		ps.gravity.SetRangeByAnimIndex(0, AnimRange(0, 0));
-		ps.gravity.used = true;
-		ps.gravity.seq = -2;
-	}
-
-	// read forceRandom
-	{
-		lua_pushstring(L, "forceRandom");
-		lua_gettable(L, -2);
-		auto forceRandom = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-
-		ps.spread.AppendKey(0, forceRandom);
-		ps.spread.SetRangeByAnimIndex(0, AnimRange(0, 0));
-		ps.spread.used = true;
-		ps.spread.seq = -2;
-	}
-
-	// read latitude
-	{
-		lua_pushstring(L, "latitude");
-		lua_gettable(L, -2);
-		auto latitude = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-
-		ps.lat.AppendKey(0, latitude);
-		ps.lat.SetRangeByAnimIndex(0, AnimRange(0, 0));
-		ps.lat.used = true;
-		ps.lat.seq = -2;
-	}
-
-	// read slowdown
-	{
-		lua_pushstring(L, "slowdown");
-		lua_gettable(L, -2);
-		ps.slowdown = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-	}
-
-	// read billboard
-	{
-		lua_pushstring(L, "billboard");
-		lua_gettable(L, -2);
-		ps.billboard = lua_toboolean(L, -1) != 0;
-		lua_pop(L, 1);
-	}
-
-	// read blend 
-	{
-		lua_pushstring(L, "blend");
-		lua_gettable(L, -2);
-		ps.blend = lua_isnil(L, -1) ? 0 : lua_tointeger(L, -1);
-		lua_pop(L, 1);
-	}
-
-	// read rotation 
-	{
-		lua_pushstring(L, "rotation");
-		lua_gettable(L, -2);
-		ps.rotation = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
-		lua_pop(L, 1);
-	}
-
-	// read rotate2SpeedDirection 
-	{
-		lua_pushstring(L, "rotate2SpeedDirection");
-		lua_gettable(L, -2);
-		ps.rotate2SpeedDirection = lua_toboolean(L, -1) != 0;
-		lua_pop(L, 1);
-	}
-}
-
-void FBXParser::ParseUVAnimation(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh)
-{
-	auto metaData = pfbxMaterial->mMetaData;
-	if (!metaData || metaData->mNumProperties == 0)
-		return;
-
-	const float error_trans = 0.00001f;
-	const float error_scale = error_trans * 10;
-	const float error_rot = 0.0001f;
-
-	const float ticksPerSample = 1000.f / 30.f; // 30fps
-
-	std::vector<std::pair<int, Vector3>> trans;
-	std::vector<std::pair<int, Vector3>> scales;
-	std::vector<std::pair<int, Vector3>> rots;
-	
-	for (unsigned int i = 0; i < metaData->mNumProperties; i++)
-	{
-		auto& key = metaData->mKeys[i];
-		auto& value = metaData->mValues[i];
-
-		auto keyFrame = strstr(key.C_Str(), "TexAnims_key");
-		if (!keyFrame)
-			continue;
-
-		PE_ASSERT((key.length == strlen("TexAnims_key000_r")));
-		PE_ASSERT(value.mType == AI_AIVECTOR3D);
-		
-		keyFrame += strlen("TexAnims_key");
-	
-		int keyIndex = (keyFrame[0] - '0') * 100 + (keyFrame[1] - '0') * 10 + (keyFrame[2] - '0');
-		char type = keyFrame[4];
-		PE_ASSERT(type == 't' || type == 'r' || type == 's');
-
-		auto aiVec3 = static_cast<aiVector3D*>(value.mData);
-		//auto time = ticksPerSample * keyIndex;
-		
-		switch (type)
-		{
-		case 't':
-		{
-			// translation
-			trans.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x, aiVec3->y, aiVec3->z)));
-			break;
-		}
-		case 'r':
-		{
-			// rotation
-			rots.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x * 3.1415926f / 180
-				, aiVec3->y
-				, aiVec3->z)));
-			break;
-		}
-		case 's':
-		{
-			// scaling
-			scales.push_back(std::pair<int, Vector3>(keyIndex, Vector3(aiVec3->x, aiVec3->y, aiVec3->z)));
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
-	if (trans.size() == 0 && rots.size() == 0 && scales.size() == 0)
-		return;
-
-	auto index = m_texAnims.size();
-	m_texAnims.resize(index + 1);
-	TextureAnim& anim = m_texAnims[index];
-	pass.texanim = (int16)index;
-
-	anim.rot.globals = anim.scale.globals = anim.trans.globals = pMesh->globalSequences;
-
-	auto sortFunc = [](const std::pair<int, Vector3>& a, const std::pair<int, Vector3>& b)
-	{
-		return a.first < b.first;
-	};
-
-	std::sort(trans.begin(), trans.end(), sortFunc);
-	std::sort(rots.begin(), rots.end(), sortFunc);
-	std::sort(scales.begin(), scales.end(), sortFunc);
-
-	std::vector<std::pair<int, Vector3>> *pVec[3] = { &trans, &rots, &scales };
-	Animated<Vector3> *pAnimated[3] = { &anim.trans, &anim.rot, &anim.scale };
-	float errorValues[3] = { error_trans , error_rot, error_scale};
-	for (int times = 0; times < 3; times++)
-	{
-		auto& vec = *pVec[times];
-		auto& animated = *pAnimated[times];
-		auto& errorValue = errorValues[times];
-
-		if (vec.size() > 0)
-		{
-			// In ParaX Model, UV animations are always global sequence with seq id equal to -2.
-			// There is only one animation range at index 0, hence nCurAnimIndex=0
-			animated.seq = -2;
-			animated.used = true;
-
-			int nKeyCount, nFirstKeyIndex, nLastKeyIndex, i;
-			nKeyCount = (int)vec.size();
-			nLastKeyIndex = nFirstKeyIndex = 0;
-
-			int timeStart = (int)(vec[0].first * ticksPerSample);
-			auto lastRotKey = vec[0].second;
-			auto lastlastRotKey = lastRotKey;
-
-			animated.AppendKey(timeStart, lastRotKey);
-
-			for (i = 1; i < nKeyCount; i++)
-			{
-				auto& rotationKey = vec[i].second;
-				auto predicatedKey = lastRotKey * 2 - lastlastRotKey;
-				auto delta = rotationKey - predicatedKey;
-
-				int time = (int)(vec[i].first * ticksPerSample);
-
-				/*2006.9.6 we must export every translation key. even a very small delta will cause large error in the exported animation.
-				e.g. //if(fabs(delta.x)>0.00001f || fabs(delta.y)>0.00001f || fabs(delta.z)>0.00001f || fabs(delta.w)>0.00001f) can cause large displacement of the mesh.
-				*/
-				if (fabs(delta.x) > errorValue || fabs(delta.y) > errorValue || fabs(delta.z) > errorValue)
-				{
-					// add new key
-					if (nLastKeyIndex == nFirstKeyIndex)
-					{
-						// if this is the second key, modify the first key's time to animSequence.timeStart, and insert a constant key if necessary.
-						int nKeyIndex = animated.GetKeyNum() - 1;
-						int nTime = animated.times[nKeyIndex];
-						animated.times[nKeyIndex] = timeStart;
-
-						if (i > 2)
-						{
-							animated.AppendKey(nTime, lastRotKey);
-						}
-
-					}
-					
-					animated.AppendKey(time, rotationKey);
-					predicatedKey = rotationKey;
-					++nLastKeyIndex;
-				}
-				else
-				{
-					// override the last key
-					animated.UpdateLastKey(time, predicatedKey);
-				}
-
-				lastlastRotKey = lastRotKey;
-				lastRotKey = predicatedKey;
-			}
-
-			if (nFirstKeyIndex == nLastKeyIndex)
-				animated.UpdateLastKey(timeStart, lastRotKey);
-			animated.SetRangeByAnimIndex(index, AnimRange(nFirstKeyIndex, nLastKeyIndex));
-		}
-	}
+	pMesh->passes.push_back(pass);
 }
 
 void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
@@ -1790,9 +852,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	int numVertices = pFbxMesh->mNumVertices;
 
 	// add vertices
-	if (numVertices > 0)
-		m_vertices.reserve(m_vertices.size() + numVertices);
-
+	m_vertices.reserve(m_vertices.size() + numVertices);
 	aiVector3D* uvs = NULL;
 	if (pFbxMesh->HasTextureCoords(0))
 		uvs = pFbxMesh->mTextureCoords[0];
@@ -1936,8 +996,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				pMesh->passes.push_back(*pPass);
 				pPass = &(pMesh->passes[pMesh->passes.size() - 1]);
 			}
-			pPass->indexStart = index_start ;
-			pPass->indexCount = nFaceCount * 3 ;
+			pPass->indexStart = index_start;
+			pPass->indexCount = nFaceCount * 3;
 			pPass->SetStartIndex(index_start);
 			pPass->geoset = pMesh->geosets.size() - 1;
 
@@ -2225,48 +1285,12 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 	}
 	m_bones[bone_index].parent = parentBoneIndex;
 
-	bool bVisible = true;
-	auto metaData = pFbxNode->mMetaData;
-	if (metaData)
+	// process any mesh on the node
+	int numMeshes = pFbxNode->mNumMeshes;
+	for (int i = 0; i < numMeshes; i++)
 	{
-		for (unsigned int i = 0; i < metaData->mNumProperties; i++)
-		{
-			auto& key = metaData->mKeys[i];
-			auto& value = metaData->mValues[i];
-			const char* pKeyStr = key.C_Str();
-			if (strcmp(pKeyStr, "Show") == 0)
-			{
-				PE_ASSERT(value.mType == AI_BOOL);
-				bVisible = *static_cast<bool*>(value.mData);
-				continue;
-			}
-
-			//ps_material
-			if (strstr(pKeyStr, "ps_material") == nullptr)
-				continue;
-
-			PE_ASSERT(value.mType == AI_AISTRING);
-
-			auto matName = static_cast<aiString*>(value.mData)->C_Str();
-			auto it = m_particleSystem.find(matName);
-			if (it == m_particleSystem.end())
-				continue;
-
-			ParticleSystem& ps = it->second;
-			ps.parent = (Bone*)bone_index;
-		}
+		ProcessFBXMesh(pFbxScene, pFbxScene->mMeshes[pFbxNode->mMeshes[i]], pFbxNode, pMesh);
 	}
-
-	if (bVisible)
-	{
-		// process any mesh on the node
-		int numMeshes = pFbxNode->mNumMeshes;
-		for (int i = 0; i < numMeshes; i++)
-		{
-			ProcessFBXMesh(pFbxScene, pFbxScene->mMeshes[pFbxNode->mMeshes[i]], pFbxNode, pMesh);
-		}
-	}
-	
 
 	// for children 
 	for (int i = 0; i < (int)pFbxNode->mNumChildren; i++)

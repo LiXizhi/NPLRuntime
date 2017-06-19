@@ -260,7 +260,7 @@ namespace ParaEngine
 			CPhysicsRigidBody* closestShape = nullptr;
 			if (pWorld)
 			{
-				closestShape = pWorld->RaycastClosestShape((const PARAVECTOR3&)(vPickRayOrig)
+				closestShape = CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RaycastClosestShape((const PARAVECTOR3&)(vPickRayOrig)
 					, (const PARAVECTOR3&)(vPickRayDir)
 					, 0
 					, hit
