@@ -1,21 +1,106 @@
 #pragma once
 
-#include "ParaPhysicsType.h"
+#include "btBulletDynamicsCommon.h"
+#include "IParaPhysics.h"
 #include "PhysicsDebugDraw.h"
 
-namespace ParaEngine {
+#include <set>
+#include <list>
+
+#define CONVERT_BTVECTOR3(x) *((btVector3*)&(x))
+
+#define CONVERT_PARAVECTOR3(x) *((PARAVECTOR3*)&(x))
+
+
+
+/**
+NxScene <--------> m_dynamicsWorld, m_collisionWorld
+NxTriangleMeshDesc  <--------> btCollisionShape
+NxActor  <--------> btRigidBody
+*/
+namespace ParaEngine
+{
+	/** it is represent a shape that can be used to create various actors in the scene. */
+	struct BulletPhysicsShape : public IParaPhysicsShape
+	{
+		BulletPhysicsShape();
+		~BulletPhysicsShape();
+
+		virtual void* GetUserData() {return m_pUserData;};
+		virtual void SetUserData(void* pData) {m_pUserData = pData;};
+
+		virtual void* get() {return m_pShape;};
+		virtual void Release();
+
+		/// pointer to the low level physics engine shape object. 
+		btCollisionShape* m_pShape;
+		btTriangleIndexVertexArray* m_indexVertexArrays;
+		int32* m_triangleIndices;
+		btScalar* m_vertices;
+
+		/// keep some user data here
+		void* m_pUserData;
+	};
+
+	/** it is represent a shape that can be used to create various actors in the scene. */
+	struct BulletPhysicsActor :IParaPhysicsActor
+	{
+		BulletPhysicsActor(btRigidBody* pActor);
+		~BulletPhysicsActor();
+		virtual void* GetUserData() {return m_pUserData;};
+		virtual void SetUserData(void* pData) {m_pUserData = pData;};
+		virtual void* get() {return m_pActor;};
+		virtual void Release();
+
+		/// pointer to the low level physics engine actor(rigid body). 
+		btRigidBody* m_pActor;
+		/// keep some user data here
+		void* m_pUserData;
+	};
+
+	using namespace std;
+
 	class CParaPhysicsWorld :public IParaPhysics
 	{
 	public:
+		typedef std::set<BulletPhysicsActor*> BulletPhysicsActor_Map_Type;
+		typedef std::set<BulletPhysicsShape*> BulletPhysicsShape_Array_Type;
 		CParaPhysicsWorld();
 		virtual ~CParaPhysicsWorld();
 
 		/** create and initialize all physics lib and create the default scene(world) */
-		virtual IParaPhysicsWorld* InitPhysics(ParaPhysicsWorldType ppwt = ParaPhysicsWorldType::PPWT_Dynamics);
+		virtual bool InitPhysics();
+
+		/** step simulation 
+		* @param fDeltaTime: in seconds. 
+		*/
+		virtual bool StepSimulation(float fDeltaTime);
+
+		/** cleanup all physics entities. 
+		*/
+		virtual bool ExitPhysics();
 
 		/** all this to unload the IPhysics. Pointer to this class will be invalid after the call
 		*/
 		virtual void Release();
+
+		/** create a triangle shape.
+		* @return: the triangle shape pointer is returned. 
+		*/
+		virtual IParaPhysicsShape* CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc);
+
+		/** release a physics shape */
+		virtual void ReleaseShape(IParaPhysicsShape* pShape);
+
+		/** create an physics actor(rigid body) in the current world.*/
+		virtual IParaPhysicsActor* CreateActor(const ParaPhysicsActorDesc& meshDesc);
+
+		/** release a physics actor. */
+		virtual void ReleaseActor(IParaPhysicsActor* pActor);
+		
+
+		/** ray cast a given group. */
+		virtual IParaPhysicsActor* RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange);
 
 		/** set the debug draw object for debugging physics world. */
 		virtual void	SetDebugDrawer(IParaDebugDraw*	debugDrawer);
@@ -26,128 +111,35 @@ namespace ParaEngine {
 		/** draw a given object. */
 		virtual void DebugDrawObject(const PARAVECTOR3& vOrigin, const PARAMATRIX3x3& vRotation, const IParaPhysicsShape* pShape, const PARAVECTOR3& color);
 
+		/** draw the entire physics debug world.*/
+		virtual void DebugDrawWorld();
+
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual void	SetDebugDrawMode(int debugMode);
 
 		/** bitwise of PhysicsDebugDrawModes */
 		virtual int		GetDebugDrawMode();
+	public:
+		/** get a pointer to physics scene object */
+		virtual btDynamicsWorld* GetScene()
+		{
+			return m_dynamicsWorld;
+		}
 
-		/* create a box shape*/
-		virtual IParaPhysicsShape* CreateBoxShape(const PARAVECTOR3& boxHalfExtents);
+	protected:
+		btBroadphaseInterface*	m_broadphase;
+		btCollisionDispatcher*	m_dispatcher;
+		btConstraintSolver*	m_solver;
+		btDefaultCollisionConfiguration* m_collisionConfiguration;
 
-		/* create a sphere shape*/
-		virtual IParaPhysicsShape* CreateSphereShape(float radius);
+		btDiscreteDynamicsWorld* m_dynamicsWorld;
+		btCollisionWorld* m_collisionWorld;
 
-		/* create a Capsule shape*/
-		virtual IParaPhysicsShape* CreateCapsuleShapeY(float radius, float height);
-		virtual IParaPhysicsShape* CreateCapsuleShapeX(float radius, float height);
-		virtual IParaPhysicsShape* CreateCapsuleShapeZ(float radius, float height);
+		///keep the collision shapes, for deletion/cleanup
+		BulletPhysicsShape_Array_Type	m_collisionShapes;
 
-		/* create a cylinder shape*/
-		virtual IParaPhysicsShape* CreateCylinderShapeY(const PARAVECTOR3& halfExtents);
-		virtual IParaPhysicsShape* CreateCylinderShapeX(const PARAVECTOR3& halfExtents);
-		virtual IParaPhysicsShape* CreateCylinderShapeZ(const PARAVECTOR3& halfExtents);
-
-		/* create a Cone shape*/
-		virtual IParaPhysicsShape* CreateConeShapeY(float radius, float height);
-		virtual IParaPhysicsShape* CreateConeShapeX(float radius, float height);
-		virtual IParaPhysicsShape* CreateConeShapeZ(float radius, float height);
-
-		/* create a MultiSphere shape*/
-		IParaPhysicsShape* CreateMultiSphereShape(const PARAVECTOR3* positions, const float* radi, int numSpheres);
-
-		/* create a Compound shape*/
-		virtual IParaPhysicsCompoundShape* CreateCompoundShape(bool enableDynamicAabbTree);
-
-		/* create a Convex Hull shape*/
-		virtual IParaPhysicsShape* CreateConvexHullShape(const PARAVECTOR3* points, int numPoints);
-
-		/* create a static plane shape*/
-		virtual IParaPhysicsShape* CreateStaticPlaneShape(const PARAVECTOR3& planeNormal, float planeConstant);
-
-		/** create a triangle shape.
-		* @return: the triangle shape pointer is returned.
-		*/
-		virtual IParaPhysicsTriangleMeshShape* CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc);
-
-		// The ScaledTriangleMeshShape allows to instance a scaled version of an existing TriangleMeshShape
-		virtual IParaPhysicsScalingTriangleMeshShape* CreateScaledTriangleMeshShape(IParaPhysicsTriangleMeshShape* pTriangleMeshShape, const PARAVECTOR3& localScaling);
-
-		/*  create a rigid body */
-		virtual IParaPhysicsRigidbody* CreateRigidbody(const ParaPhysicsRigidbodyDesc& desc, ParaPhysicsMotionStateDesc* motionStateDesc = nullptr);
-
-		
-		/* create a Point to Point Constraint */
-		virtual IParaPhysicsPoint2PointConstraint* CreatePoint2PointConstraint(IParaPhysicsRigidbody* rbA, const PARAVECTOR3& pivotInA);
-		virtual IParaPhysicsPoint2PointConstraint* CreatePoint2PointConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& pivotInA
-			, const PARAVECTOR3& pivotInB);
-
-		/* create a Hinge Constraint */
-		virtual IParaPhysicsHingeConstraint* CreateHingeConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& pivotInA
-			, const PARAVECTOR3& pivotInB
-			, const PARAVECTOR3& axisInA
-			, const PARAVECTOR3& axisInB
-			, bool useReferenceFrameA = false);
-		virtual IParaPhysicsHingeConstraint* CreateHingeConstraint(IParaPhysicsRigidbody* rbA
-			, const PARAVECTOR3& pivotInA
-			, const PARAVECTOR3& axisInA
-			, bool useReferenceFrameA = false);
-		virtual IParaPhysicsHingeConstraint* CreateHingeConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation
-			, bool useReferenceFrameA = false);
-		virtual IParaPhysicsHingeConstraint* CreateHingeConstraint(IParaPhysicsRigidbody* rbA
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation
-			, bool useReferenceFrameA = false);
-
-		/* create a Slider Constraint */
-		virtual IParaPhysicsSliderConstraint* CreateSliderConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation
-			, bool useLinearReferenceFrameA);
-		virtual IParaPhysicsSliderConstraint* CreateSliderConstraint(IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation
-			, bool useLinearReferenceFrameA);
-
-		/* can be used to simulate ragdoll joints */
-		virtual IParaPhysicsConeTwistConstraint* CreateConeTwistConstraint(IParaPhysicsRigidbody* rbA
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation);
-		virtual IParaPhysicsConeTwistConstraint* CreateConeTwistConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation);
-
-		/* Generic 6 DOF constraint that allows to set spring motors to any translational and rotational DOF. */
-		virtual IParaPhysicsGeneric6DofSpringConstraint* CreateGeneric6DofSpringConstraint(IParaPhysicsRigidbody* rbA
-			, IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbAOrigin
-			, const PARAMATRIX3x3& rbARotation
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation
-			, bool useLinearReferenceFrameA);
-		virtual IParaPhysicsGeneric6DofSpringConstraint* CreateGeneric6DofSpringConstraint(IParaPhysicsRigidbody* rbB
-			, const PARAVECTOR3& rbBOrigin
-			, const PARAMATRIX3x3& rbBRotation
-			, bool useLinearReferenceFrameB);
-		
-		/* get current world, if not call InitPhysics it will return nullptr*/
-		//virtual IParaPhysicsWorld* GetCurrentWorld();
-	private:
+		// keep all actors
+		BulletPhysicsActor_Map_Type m_actors;
 
 		CPhysicsDebugDraw m_physics_debug_draw;
 		bool m_bInvertFaceWinding;

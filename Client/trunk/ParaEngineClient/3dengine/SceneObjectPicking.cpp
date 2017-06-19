@@ -14,7 +14,7 @@
 #include "AutoCamera.h"
 #include "SelectionManager.h"
 #include "terrain/GlobalTerrain.h"
-#include "Physics/PhysicsWorld.h"
+#include "PhysicsWorld.h"
 #include "MeshPhysicsObject.h"
 #include "MeshObject.h"
 #include "RayCollider.h"
@@ -250,24 +250,8 @@ namespace ParaEngine
 		{
 			RayCastHitResult hit;
 			//OUTPUT_LOG("scene pick: raycastClosestShape %f %f %f", vPickRayDir.x, vPickRayDir.y, vPickRayDir.z);
-
-			/*
 			IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
 				(const PARAVECTOR3&)(vPickRayOrig), (const PARAVECTOR3&)(vPickRayDir), 0, hit, (int16)dwGroupMask, fMaxDistance);
-				*/
-
-			auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
-			CPhysicsRigidBody* closestShape = nullptr;
-			if (pWorld)
-			{
-				closestShape = CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RaycastClosestShape((const PARAVECTOR3&)(vPickRayOrig)
-					, (const PARAVECTOR3&)(vPickRayDir)
-					, 0
-					, hit
-					, (int16)dwGroupMask
-					, fMaxDistance);
-			}
-
 			//OUTPUT_LOG(" end\n");
 			if (closestShape)
 			{

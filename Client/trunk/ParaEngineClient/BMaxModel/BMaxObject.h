@@ -2,13 +2,13 @@
 #include "MeshEntity.h"
 #include "ParaXEntity.h"
 #include "TileObject.h"
-#include "Physics/PhysicsWorld.h"
-
 namespace ParaEngine
 {
 	class CParaXModel;
 	class BMaxModel;
 	struct SceneState;
+	struct IParaPhysicsActor;
+	class CPhysicsWorld;
 
 	/* render with color and material. */
 	class BMaxObject : public CTileObject
@@ -102,8 +102,7 @@ namespace ParaEngine
 		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
 
 		/** all static physics actors in physics engine */ 
-		//vector<IParaPhysicsActor*> m_staticActors;
-		vector<CPhysicsRigidBody::WeakPtr> m_staticActors;
+		vector<IParaPhysicsActor*> m_staticActors;
 
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;

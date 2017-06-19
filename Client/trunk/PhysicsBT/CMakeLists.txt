@@ -13,11 +13,6 @@ project (PhysicsBT)
 #set (Bullet_INCLUDE_DIR ${Bullet_Root}/src)
 
 SET(PhysicsBT_SRCS
-	ParaPhysicsBody.hpp
-	ParaPhysicsConstraint.hpp
-	ParaPhysicsShape.hpp
-	ParaPhysicsType.cpp
-	ParaPhysicsType.h
 	stdafx.cpp
 	stdafx.h
 	ParaPhysicsWorld.cpp

@@ -35,7 +35,7 @@
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
 #include "terrain/GlobalTerrain.h"
-#include "Physics/PhysicsWorld.h"
+#include "PhysicsWorld.h"
 #include "ManagedLoader.h"
 #include "MissileObject.h"
 #include "ParaXModel/particle.h"
@@ -162,7 +162,7 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_b
 	m_bInitialized = false;
 	m_bGameEnabled = false;
 
-	m_dwBackGroundColor = 0xffffffff; 
+	m_dwBackGroundColor = 0xffffffff;
 	m_bEnableOcclusionQuery = false;
 	m_bUseInstancing = false;
 	m_dwEnableMouseEvent = 0; //0 to disable all and 0xffff to enable all.
@@ -281,11 +281,8 @@ void CSceneObject::ResetScene()
 {
 	Cleanup();
 
-	if (m_pPhysicsWorld)
-	{
+	if(m_pPhysicsWorld)
 		m_pPhysicsWorld->ResetPhysics();
-	}
-
 
 	m_currentplayer = NULL;
 	
@@ -2477,11 +2474,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	{
 		PARAVECTOR3 vOffset( -m_vRenderOrigin.x, -m_vRenderOrigin.y, -m_vRenderOrigin.z);
 		GetBatchedElementDrawer()->SetRenderOffset(vOffset);
-		//CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->DebugDrawWorld();
-		auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
-		if (pWorld)
-			pWorld->DebugDrawWorld();
-
+		CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->DebugDrawWorld();
 		GetBatchedElementDrawer()->SetRenderOffset(PARAVECTOR3(0,0,0));
 	}
 

@@ -9,83 +9,84 @@
 #include "ParaEngine.h"
 #include "ParaPhysics.h"
 
-namespace ParaEngine {
+using namespace ParaEngine;
 
 
-	CParaPhysicsImp::CParaPhysicsImp()
-		:m_pDebugDrawer(nullptr)
-	{
+ParaEngine::CParaPhysicsImp::CParaPhysicsImp()
+:m_pDebugDrawer(NULL)
+{
 
-	}
+}
 
-	void CParaPhysicsImp::Release()
-	{
-		delete this;
-	}
+bool ParaEngine::CParaPhysicsImp::InitPhysics()
+{
+	return true;
+}
 
-	IParaPhysicsWorld* CParaPhysicsImp::InitPhysics(ParaPhysicsWorldType ppwt)
-	{
-		return nullptr;
-	}
+bool ParaEngine::CParaPhysicsImp::StepSimulation(float fDeltaTime)
+{
+	return true;
+}
 
-	IParaPhysicsTriangleMeshShape* CParaPhysicsImp::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
-	{
-		return nullptr;
-	}
+bool ParaEngine::CParaPhysicsImp::ExitPhysics()
+{
+	return true;
+}
 
-	IParaPhysicsShape * CParaPhysicsImp::CreateBoxShape(const PARAVECTOR3 & boxHalfExtents)
-	{
-		return nullptr;
-	}
+void ParaEngine::CParaPhysicsImp::Release()
+{
+	delete this;
+}
 
-	IParaPhysicsShape * CParaPhysicsImp::CreateCylinderShape(const PARAVECTOR3 & boxHalfExtents)
-	{
-		return nullptr;
-	}
+IParaPhysicsShape* ParaEngine::CParaPhysicsImp::CreateTriangleMeshShap(const ParaPhysicsTriangleMeshDesc& meshDesc)
+{
+	return NULL;
+}
 
-	IParaPhysicsShape* CParaPhysicsImp::CreateSphereShape(float radius)
-	{
-		return nullptr;
-	}
+void ParaEngine::CParaPhysicsImp::ReleaseShape(IParaPhysicsShape *pShape)
+{
+	
+}
 
-	IParaPhysicsShape* CParaPhysicsImp::CreateCapsuleShapeY(float radius, float height)
-	{
-		return nullptr;
-	}
+IParaPhysicsActor* ParaEngine::CParaPhysicsImp::CreateActor(const ParaPhysicsActorDesc& meshDesc)
+{
+	return NULL;
+}
 
-	IParaPhysicsShape* CParaPhysicsImp::CreateCapsuleShapeX(float radius, float height)
-	{
-		return nullptr;
-	}
+void ParaEngine::CParaPhysicsImp::ReleaseActor(IParaPhysicsActor* pActor)
+{
+	
+}
 
-	IParaPhysicsShape* CParaPhysicsImp::CreateCapsuleShapeZ(float radius, float height)
-	{
-		return nullptr;
-	}
+IParaPhysicsActor* ParaEngine::CParaPhysicsImp::RaycastClosestShape(const PARAVECTOR3& vOrigin, const PARAVECTOR3& vDirection, DWORD dwType, RayCastHitResult& hit, short dwGroupMask, float fSensorRange)
+{
+	return NULL;
+}
 
-	void CParaPhysicsImp::SetDebugDrawer(IParaDebugDraw* debugDrawer)
-	{
-		m_pDebugDrawer = debugDrawer;
-	}
+void ParaEngine::CParaPhysicsImp::SetDebugDrawer(IParaDebugDraw* debugDrawer)
+{
+	m_pDebugDrawer = debugDrawer;
+}
 
-	IParaDebugDraw* CParaPhysicsImp::GetDebugDrawer()
-	{
-		return m_pDebugDrawer;
-	}
+IParaDebugDraw* ParaEngine::CParaPhysicsImp::GetDebugDrawer()
+{
+	return m_pDebugDrawer;
+}
 
-	void CParaPhysicsImp::DebugDrawObject(const PARAVECTOR3& vOrigin, const PARAMATRIX3x3& vRotation, const IParaPhysicsShape* pShape, const PARAVECTOR3& color)
-	{
-	}
+void ParaEngine::CParaPhysicsImp::DebugDrawObject(const PARAVECTOR3& vOrigin, const PARAMATRIX3x3& vRotation, const IParaPhysicsShape* pShape, const PARAVECTOR3& color)
+{
+}
 
+void ParaEngine::CParaPhysicsImp::DebugDrawWorld()
+{
+}
 
-	void CParaPhysicsImp::SetDebugDrawMode(int debugMode)
-	{
-		m_nDebugMode = debugMode;
-	}
+void ParaEngine::CParaPhysicsImp::SetDebugDrawMode(int debugMode)
+{
+	m_nDebugMode = debugMode;
+}
 
-	int CParaPhysicsImp::GetDebugDrawMode()
-	{
-		return m_nDebugMode;
-	}
-
+int ParaEngine::CParaPhysicsImp::GetDebugDrawMode()
+{
+	return m_nDebugMode;
 }

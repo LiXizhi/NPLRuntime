@@ -9,6 +9,7 @@
 #include "ParaWorldAsset.h"
 #include "MeshObject.h"
 #include "MeshEntity.h"
+#include "PhysicsWorld.h"
 #include "XRefObject.h"
 #include "SceneState.h"
 #include "SceneObject.h"
@@ -411,14 +412,8 @@ void CMeshPhysicsObject::LoadPhysics()
 			}
 			Matrix4 matWorld;
 			m_pMeshObject->GetViewClippingObject()->GetWorldTransform(matWorld);
-			//IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get(), matWorld, m_nPhysicsGroup, &m_staticActors, this);
-			auto pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get()
-				, matWorld
-				, m_nPhysicsGroup
-				, &m_staticActors
-				, this);
-			
-			if(pActor != nullptr)
+			IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get(), matWorld, m_nPhysicsGroup, &m_staticActors, this);
+			if(pActor!=NULL)
 			{
 			}
 			{
@@ -474,16 +469,15 @@ void CMeshPhysicsObject::LoadPhysics()
 
 void CMeshPhysicsObject::UnloadPhysics()
 {
-	for (auto it = m_staticActors.begin(); it != m_staticActors.end(); it++)
+	int nSize = (int)m_staticActors.size();
+	if(nSize>0)
 	{
-		auto pActor = (*it).get();
-		if (pActor)
+		for (int i=0;i<nSize;++i)
 		{
-			CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RemoveRigidBody(pActor);
+			CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
 		}
+		m_staticActors.clear();
 	}
-
-	m_staticActors.clear();
 }
 
 void CMeshPhysicsObject::CompressObject(CompressOption option)
