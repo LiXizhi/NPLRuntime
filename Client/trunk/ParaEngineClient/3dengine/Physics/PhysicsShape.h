@@ -5,7 +5,7 @@
 namespace ParaEngine {
 	class CPhysicsShape : public CPhysicsObject
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	public:
 		virtual ~CPhysicsShape();
 
@@ -24,7 +24,7 @@ namespace ParaEngine {
 
 	class CPhysicsCompoundShape : public CPhysicsShape
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsCompoundShape(IParaPhysicsCompoundShape* pShape);
 	public:
@@ -62,7 +62,7 @@ namespace ParaEngine {
 
 	class CPhysicsTriangleMeshShape : public CPhysicsShape
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	public:
 		virtual ~CPhysicsTriangleMeshShape();
 
@@ -75,7 +75,7 @@ namespace ParaEngine {
 
 	class CPhysicsScaledTriangleMeshShape : public CPhysicsShape
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	public:
 		virtual ~CPhysicsScaledTriangleMeshShape();
 

@@ -404,7 +404,7 @@ namespace ParaEngine
 				// get world transform matrix
 				Matrix4 mxWorld;
 				GetWorldTransform(mxWorld);
-				auto pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
+				auto pActor = CGlobals::GetPhysicsFactory()->CreateStaticMesh(m_pAnimatedMesh.get(), mxWorld, m_nPhysicsGroup, &m_staticActors, this);
 				if (m_staticActors.empty())
 				{
 					// disable physics forever, if no physics actors are loaded. 
@@ -433,7 +433,7 @@ namespace ParaEngine
 			auto pActor = (*it).get();
 			if (pActor)
 			{
-				CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RemoveRigidBody(pActor);
+				CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RemoveRigidBody(pActor);
 			}
 		}
 		 

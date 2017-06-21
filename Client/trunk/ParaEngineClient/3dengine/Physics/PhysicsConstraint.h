@@ -8,7 +8,7 @@ namespace ParaEngine {
 
 	class CPhysicsConstraint : public CPhysicsObject
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsConstraint(IParaPhysicsConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:
@@ -31,7 +31,7 @@ namespace ParaEngine {
 
 	class CPhysicsP2PConstraint : public CPhysicsConstraint
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsP2PConstraint(IParaPhysicsPoint2PointConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:
@@ -41,7 +41,7 @@ namespace ParaEngine {
 
 	class CPhysicsHingeConstraint : public CPhysicsConstraint
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsHingeConstraint(IParaPhysicsHingeConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:
@@ -51,7 +51,7 @@ namespace ParaEngine {
 
 	class CPhysicsSliderConstraint : public CPhysicsConstraint
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsSliderConstraint(IParaPhysicsSliderConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:
@@ -61,7 +61,7 @@ namespace ParaEngine {
 
 	class CPhysicsConeTwistConstraint : public CPhysicsConstraint
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsConeTwistConstraint(IParaPhysicsConeTwistConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:
@@ -71,7 +71,7 @@ namespace ParaEngine {
 	
 	class CPhysicsGeneric6DofSpringConstraint : public CPhysicsConstraint
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsGeneric6DofSpringConstraint(IParaPhysicsGeneric6DofSpringConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB);
 	public:

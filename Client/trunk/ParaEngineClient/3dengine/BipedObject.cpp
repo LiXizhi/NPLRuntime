@@ -1747,7 +1747,7 @@ public:
 			// Get the closest shape
 			//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
 			//	CONVERT_PARAVECTOR3(m_vOrig), CONVERT_PARAVECTOR3(sensor.vDir), 0, hit, (int16)dwGroupMask, m_fSensorRange);
-			auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
+			auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
 			CPhysicsRigidBody* closestShape = nullptr;
 			if (pWorld)
 			{
@@ -2514,12 +2514,12 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 	float dist;
 	//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
 	//	CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
-	auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
+	auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
 	CPhysicsRigidBody* closestShape = nullptr;
 
 	if (pWorld)
 	{
-		closestShape = CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
+		closestShape = CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
 			, PARAVECTOR3(0, -1.f, 0)
 			, 0
 			, hit
@@ -3822,12 +3822,12 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 	float dist;
 	//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
 	//	CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
-	auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
+	auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
 	CPhysicsRigidBody* closestShape = nullptr;
 
 	if (pWorld)
 	{
-		closestShape = CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
+		closestShape = pWorld->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
 			, PARAVECTOR3(0, -1.f, 0)
 			, 0
 			, hit
@@ -4753,7 +4753,7 @@ void ParaEngine::CBipedObject::LoadPhysics()
 		}
 		
 
-		auto pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
+		auto pActor = CGlobals::GetPhysicsFactory()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
 		
 		if (m_staticActors.empty())
 		{
@@ -4780,7 +4780,7 @@ void ParaEngine::CBipedObject::UnloadPhysics()
 		auto pActor = (*it).get();
 		if (pActor)
 		{
-			CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RemoveRigidBody(pActor);
+			CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RemoveRigidBody(pActor);
 		}
 	}
 

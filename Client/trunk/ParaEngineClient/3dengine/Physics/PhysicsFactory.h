@@ -12,16 +12,16 @@ namespace ParaEngine {
 
 	/**
 	* The global physics scene (NxScene) and physics SDK is encapsulated in a member object of scene manager.
-	* It is called CPhysicsWorld. The environment simulator can retrieve the physics scene from this object.
+	* It is called CPhysicsFactory. The environment simulator can retrieve the physics scene from this object.
 	* Other physics actor scene object can access this global physics objects via the scene manager.
 	*/
-	class CPhysicsWorld : public IAttributeFields
+	class CPhysicsFactory : public IAttributeFields
 	{
 	public:
-		CPhysicsWorld(void);
-		virtual ~CPhysicsWorld(void);
+		CPhysicsFactory(void);
+		virtual ~CPhysicsFactory(void);
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsWorld);
+		ATTRIBUTE_DEFINE_CLASS(CPhysicsFactory);
 
 		/** get the physics interface. create one if one does not exist. */
 		IParaPhysics* GetPhysicsInterface();

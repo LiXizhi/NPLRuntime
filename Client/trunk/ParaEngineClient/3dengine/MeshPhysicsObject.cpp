@@ -412,7 +412,7 @@ void CMeshPhysicsObject::LoadPhysics()
 			Matrix4 matWorld;
 			m_pMeshObject->GetViewClippingObject()->GetWorldTransform(matWorld);
 			//IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get(), matWorld, m_nPhysicsGroup, &m_staticActors, this);
-			auto pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get()
+			auto pActor = CGlobals::GetPhysicsFactory()->CreateStaticMesh(m_pMeshObject->m_ppMesh.get()
 				, matWorld
 				, m_nPhysicsGroup
 				, &m_staticActors
@@ -455,7 +455,7 @@ void CMeshPhysicsObject::LoadPhysics()
 						{
 							Matrix4 mat;
 							pEntity->GetMatrix(mat, &matWorld);
-							pActor =  CGlobals::GetPhysicsWorld()->CreateStaticMesh( ppMesh, mat, m_nPhysicsGroup, &m_staticActors, this);
+							pActor =  CGlobals::GetPhysicsFactory()->CreateStaticMesh( ppMesh, mat, m_nPhysicsGroup, &m_staticActors, this);
 							if(pActor)
 							{
 							}
@@ -479,7 +479,7 @@ void CMeshPhysicsObject::UnloadPhysics()
 		auto pActor = (*it).get();
 		if (pActor)
 		{
-			CGlobals::GetPhysicsWorld()->GetCurrentWorld()->RemoveRigidBody(pActor);
+			CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RemoveRigidBody(pActor);
 		}
 	}
 

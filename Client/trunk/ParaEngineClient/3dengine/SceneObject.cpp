@@ -35,7 +35,7 @@
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
 #include "terrain/GlobalTerrain.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 #include "ManagedLoader.h"
 #include "MissileObject.h"
 #include "ParaXModel/particle.h"
@@ -151,7 +151,7 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), m_renderDropShadow(false), m_b
 	g_pRootscene = this;
 
 	m_pBatchedElementDraw = new CBatchedElementDraw();
-	m_pPhysicsWorld = new CPhysicsWorld();		/// physics world
+	m_pPhysicsFactory = new CPhysicsFactory();		/// physics world
 	m_pSunLight = new CSunLight();
 	SetEnvironmentSim(new CEnvironmentSim());
 	m_pBlockWorldClient = new BlockWorldClient();
@@ -252,7 +252,7 @@ void CSceneObject::CreateAttributeModels()
 	// BLOCK_WORLD_INDEX = 1
 	m_attribute_models.push_back(m_pBlockWorldClient.get());
 	// PHYSICS_WORLD_INDEX = 2
-	m_attribute_models.push_back(m_pPhysicsWorld.get());
+	m_attribute_models.push_back(m_pPhysicsFactory.get());
 	// SUNLIGHT_INDEX = 3
 	m_attribute_models.push_back(m_pSunLight.get());
 	// GLOBALTERRAIN_INDEX = 4
@@ -281,9 +281,9 @@ void CSceneObject::ResetScene()
 {
 	Cleanup();
 
-	if (m_pPhysicsWorld)
+	if (m_pPhysicsFactory)
 	{
-		m_pPhysicsWorld->ResetPhysics();
+		m_pPhysicsFactory->ResetPhysics();
 	}
 
 
@@ -1165,8 +1165,8 @@ void CSceneObject::Cleanup()
 	}
 
 	/// reset physics environment
-	if(m_pPhysicsWorld)
-		m_pPhysicsWorld->ExitPhysics();
+	if(m_pPhysicsFactory)
+		m_pPhysicsFactory->ExitPhysics();
 #ifdef USE_DIRECTX_RENDERER
 	for (int i=0;i<(int)m_mirrorSurfaces.size();++i)
 	{
@@ -2478,7 +2478,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		PARAVECTOR3 vOffset( -m_vRenderOrigin.x, -m_vRenderOrigin.y, -m_vRenderOrigin.z);
 		GetBatchedElementDrawer()->SetRenderOffset(vOffset);
 		//CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->DebugDrawWorld();
-		auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
+		auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
 		if (pWorld)
 			pWorld->DebugDrawWorld();
 
@@ -4686,13 +4686,13 @@ void CSceneObject::SetPhysicsDebugDrawMode( int nMode )
 {
 	if(GetBatchedElementDrawer())
 	{
-		CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->SetDebugDrawMode(nMode);
+		CGlobals::GetPhysicsFactory()->GetPhysicsInterface()->SetDebugDrawMode(nMode);
 	}
 }
 
 int CSceneObject::GetPhysicsDebugDrawMode()
 {
-	return (GetBatchedElementDrawer()) ? CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->GetDebugDrawMode() : 0;
+	return (GetBatchedElementDrawer()) ? CGlobals::GetPhysicsFactory()->GetPhysicsInterface()->GetDebugDrawMode() : 0;
 }
 
 void CSceneObject::SetShadowRadius( float fShadowRadius /*= 50.f*/ )

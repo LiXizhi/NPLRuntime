@@ -8,7 +8,7 @@ namespace ParaEngine {
 
 	class CPhysicsBody : public CPhysicsObject
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsBody(IParaPhysicsBody* pBody);
 
@@ -32,7 +32,7 @@ namespace ParaEngine {
 
 	class CPhysicsRigidBody : public CPhysicsBody
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsRigidBody(IParaPhysicsRigidbody* pBody, CPhysicsShape* pShape);
 	public:

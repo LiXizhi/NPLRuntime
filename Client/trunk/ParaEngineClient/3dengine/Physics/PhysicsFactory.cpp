@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Class:	CPhysicsWorld
+// Class:	CPhysicsFactory
 // Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
@@ -40,7 +40,7 @@ ray collision		<-> dSpaceCollide2(...);
 
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 #include "Physics/PhysicsDynamicsWorld.h"
 #include "Physics/PhysicsBody.h"
 #include "Physics/PhysicsShape.h"
@@ -57,18 +57,18 @@ namespace ParaEngine {
 	const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT.dll";
 #endif
 
-	CPhysicsWorld::CPhysicsWorld()
+	CPhysicsFactory::CPhysicsFactory()
 		: m_bRunDynamicSimulation(false)
 		, m_pPhysicsInstance(nullptr)
 	{
 	}
 
-	CPhysicsWorld::~CPhysicsWorld(void)
+	CPhysicsFactory::~CPhysicsFactory(void)
 	{
 		SAFE_RELEASE(m_pPhysicsInstance);
 	}
 
-	void CPhysicsWorld::InitPhysics()
+	void CPhysicsFactory::InitPhysics()
 	{
 		IParaPhysics* pPhysics = GetPhysicsInterface();
 		if (pPhysics == nullptr)
@@ -87,19 +87,19 @@ namespace ParaEngine {
 		pPhysics->SetDebugDrawer(CGlobals::GetScene()->GetDebugDrawer());
 	}
 
-	void CPhysicsWorld::ResetPhysics()
+	void CPhysicsFactory::ResetPhysics()
 	{
 		ExitPhysics();
 		InitPhysics();
 	}
 
-	void CPhysicsWorld::ExitPhysics()
+	void CPhysicsFactory::ExitPhysics()
 	{
 		m_pWorld.reset();
 		m_meshShapesCache.clear();
 	}
 
-	void CPhysicsWorld::StepSimulation(double dTime)
+	void CPhysicsFactory::StepSimulation(double dTime)
 	{
 		if (IsDynamicsSimulationEnabled())
 		{
@@ -112,16 +112,16 @@ namespace ParaEngine {
 		}
 	}
 
-	void CPhysicsWorld::onAfterCheckContact()
+	void CPhysicsFactory::onAfterCheckContact()
 	{
 	}
 
-	void CPhysicsWorld::SetDynamicsSimulationEnabled(bool bEnable)
+	void CPhysicsFactory::SetDynamicsSimulationEnabled(bool bEnable)
 	{
 		m_bRunDynamicSimulation = bEnable;
 	}
 
-	bool CPhysicsWorld::IsDynamicsSimulationEnabled() const
+	bool CPhysicsFactory::IsDynamicsSimulationEnabled() const
 	{
 		return m_bRunDynamicSimulation;
 	}
@@ -131,7 +131,7 @@ namespace ParaEngine {
 	extern ClassDescriptor* PhysicsBT_GetClassDesc();
 #endif
 
-	IParaPhysics* CPhysicsWorld::GetPhysicsInterface()
+	IParaPhysics* CPhysicsFactory::GetPhysicsInterface()
 	{
 		if (m_pPhysicsInstance)
 			return m_pPhysicsInstance;
@@ -173,7 +173,7 @@ namespace ParaEngine {
 	}
 
 
-	CPhysicsShape* CPhysicsWorld::CreateBoxShape(const PARAVECTOR3& boxHalfExtents)
+	CPhysicsShape* CPhysicsFactory::CreateBoxShape(const PARAVECTOR3& boxHalfExtents)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateBoxShape(boxHalfExtents);
 		if (!pShapeObj)
@@ -185,7 +185,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateSphereShape(float radius)
+	CPhysicsShape* CPhysicsFactory::CreateSphereShape(float radius)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateSphereShape(radius);
 		if (!pShapeObj)
@@ -196,7 +196,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCapsuleShapeY(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateCapsuleShapeY(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCapsuleShapeY(radius, height);
 		if (!pShapeObj)
@@ -207,7 +207,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCapsuleShapeX(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateCapsuleShapeX(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCapsuleShapeX(radius, height);
 		if (!pShapeObj)
@@ -218,7 +218,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCapsuleShapeZ(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateCapsuleShapeZ(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCapsuleShapeZ(radius, height);
 		if (!pShapeObj)
@@ -229,7 +229,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCylinderShapeY(const PARAVECTOR3& halfExtents)
+	CPhysicsShape* CPhysicsFactory::CreateCylinderShapeY(const PARAVECTOR3& halfExtents)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCylinderShapeY(halfExtents);
 		if (!pShapeObj)
@@ -240,7 +240,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCylinderShapeX(const PARAVECTOR3& halfExtents)
+	CPhysicsShape* CPhysicsFactory::CreateCylinderShapeX(const PARAVECTOR3& halfExtents)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCylinderShapeX(halfExtents);
 		if (!pShapeObj)
@@ -251,7 +251,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateCylinderShapeZ(const PARAVECTOR3& halfExtents)
+	CPhysicsShape* CPhysicsFactory::CreateCylinderShapeZ(const PARAVECTOR3& halfExtents)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCylinderShapeZ(halfExtents);
 		if (!pShapeObj)
@@ -262,7 +262,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateConeShapeY(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateConeShapeY(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateConeShapeY(radius, height);
 		if (!pShapeObj)
@@ -273,7 +273,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateConeShapeX(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateConeShapeX(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateConeShapeX(radius, height);
 		if (!pShapeObj)
@@ -284,7 +284,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateConeShapeZ(float radius, float height)
+	CPhysicsShape* CPhysicsFactory::CreateConeShapeZ(float radius, float height)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateConeShapeZ(radius, height);
 		if (!pShapeObj)
@@ -295,7 +295,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateConvexHullShape(const PARAVECTOR3* points, int numPoints)
+	CPhysicsShape* CPhysicsFactory::CreateConvexHullShape(const PARAVECTOR3* points, int numPoints)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateConvexHullShape(points, numPoints);
 		if (!pShapeObj)
@@ -306,7 +306,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateMultiSphereShape(const PARAVECTOR3* positions, const float* radi, int numSpheres)
+	CPhysicsShape* CPhysicsFactory::CreateMultiSphereShape(const PARAVECTOR3* positions, const float* radi, int numSpheres)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateMultiSphereShape(positions, radi, numSpheres);
 		if (!pShapeObj)
@@ -317,7 +317,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsCompoundShape* CPhysicsWorld::CreateCompoundShape(bool enableDynamicAabbTree)
+	CPhysicsCompoundShape* CPhysicsFactory::CreateCompoundShape(bool enableDynamicAabbTree)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateCompoundShape(enableDynamicAabbTree);
 		if (!pShapeObj)
@@ -328,7 +328,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsShape* CPhysicsWorld::CreateStaticPlaneShape(const PARAVECTOR3& planeNormal, float planeConstant)
+	CPhysicsShape* CPhysicsFactory::CreateStaticPlaneShape(const PARAVECTOR3& planeNormal, float planeConstant)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateStaticPlaneShape(planeNormal, planeConstant);
 		if (!pShapeObj)
@@ -339,7 +339,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsTriangleMeshShape* CPhysicsWorld::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
+	CPhysicsTriangleMeshShape* CPhysicsFactory::CreateTriangleMeshShape(const ParaPhysicsTriangleMeshDesc& meshDesc)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateTriangleMeshShape(meshDesc);
 		if (!pShapeObj)
@@ -350,7 +350,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsScaledTriangleMeshShape* CPhysicsWorld::CreateScaledTriangleMeshShape(CPhysicsTriangleMeshShape* pTriangleMeshShape, const PARAVECTOR3& localScaling)
+	CPhysicsScaledTriangleMeshShape* CPhysicsFactory::CreateScaledTriangleMeshShape(CPhysicsTriangleMeshShape* pTriangleMeshShape, const PARAVECTOR3& localScaling)
 	{
 		auto pShapeObj = m_pPhysicsInstance->CreateScaledTriangleMeshShape(static_cast<IParaPhysicsTriangleMeshShape*>(pTriangleMeshShape->get()), localScaling);
 		if (!pShapeObj)
@@ -361,7 +361,7 @@ namespace ParaEngine {
 		return pShape;
 	}
 
-	CPhysicsRigidBody* CPhysicsWorld::CreateRigidbody(const ParaPhysicsRigidbodyDesc& desc, ParaPhysicsMotionStateDesc* motionStateDesc)
+	CPhysicsRigidBody* CPhysicsFactory::CreateRigidbody(const ParaPhysicsRigidbodyDesc& desc, ParaPhysicsMotionStateDesc* motionStateDesc)
 	{
 		CPhysicsShape* pShape = nullptr;
 
@@ -383,12 +383,12 @@ namespace ParaEngine {
 		return pBody;
 	}
 
-	CPhysicsDynamicsWorld* CPhysicsWorld::GetCurrentWorld()
+	CPhysicsDynamicsWorld* CPhysicsFactory::GetCurrentWorld()
 	{
 		return m_pWorld.get();
 	}
 
-	CPhysicsWorld::TriangleMeshShape* CPhysicsWorld::GetShapsInCache(void* p)
+	CPhysicsFactory::TriangleMeshShape* CPhysicsFactory::GetShapsInCache(void* p)
 	{
 		auto mapIt = m_meshShapesCache.find(p);
 		if (mapIt == m_meshShapesCache.end())
@@ -408,13 +408,13 @@ namespace ParaEngine {
 		return &mapIt->second;
 	}
 
-	CPhysicsWorld::TriangleMeshShape& CPhysicsWorld::BuildCache(void* p)
+	CPhysicsFactory::TriangleMeshShape& CPhysicsFactory::BuildCache(void* p)
 	{
 		m_meshShapesCache.insert(std::pair<void*, TriangleMeshShape>(p, TriangleMeshShape()));
 		return m_meshShapesCache[p];
 	}
 
-	CPhysicsRigidBody* CPhysicsWorld::CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
+	CPhysicsRigidBody* CPhysicsFactory::CreateStaticMesh(MeshEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
 	{
 		if (!ppMesh->IsValid() || ppMesh->GetMesh() == nullptr || m_pWorld == 0)
 			return nullptr;
@@ -614,7 +614,7 @@ namespace ParaEngine {
 		return pFirstBody;
 	}
 
-	CPhysicsRigidBody* CPhysicsWorld::CreateBoundsBody(CBaseObject* pObject, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
+	CPhysicsRigidBody* CPhysicsFactory::CreateBoundsBody(CBaseObject* pObject, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
 	{
 		if (m_pWorld == 0 || pObject == nullptr)
 			return nullptr;
@@ -674,7 +674,7 @@ namespace ParaEngine {
 		return body;
 	}
 
-	CPhysicsRigidBody* CPhysicsWorld::CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
+	CPhysicsRigidBody* CPhysicsFactory::CreateStaticMesh(ParaXEntity* ppMesh, const Matrix4& globalMat, uint32 nShapeGroup, vector<CPhysicsRigidBody::WeakPtr>* pOutputPhysicsActor, void* pUserData)
 	{
 		if (!ppMesh->IsValid() || ppMesh->GetModel() == nullptr || m_pWorld == 0)
 			return nullptr;
@@ -873,7 +873,7 @@ namespace ParaEngine {
 		return pFirstBody;
 	}
 
-	CPhysicsP2PConstraint* CPhysicsWorld::CreatePoint2PointConstraint(CPhysicsRigidBody* rbA, const PARAVECTOR3& pivotInA)
+	CPhysicsP2PConstraint* CPhysicsFactory::CreatePoint2PointConstraint(CPhysicsRigidBody* rbA, const PARAVECTOR3& pivotInA)
 	{
 		auto pBodyObjA = static_cast<IParaPhysicsRigidbody*>(rbA->get());
 		auto pConstraintObj = m_pPhysicsInstance->CreatePoint2PointConstraint(pBodyObjA, pivotInA);
@@ -886,7 +886,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsP2PConstraint* CPhysicsWorld::CreatePoint2PointConstraint(CPhysicsRigidBody* rbA
+	CPhysicsP2PConstraint* CPhysicsFactory::CreatePoint2PointConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& pivotInA
 		, const PARAVECTOR3& pivotInB)
@@ -903,7 +903,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsHingeConstraint* CPhysicsWorld::CreateHingeConstraint(CPhysicsRigidBody* rbA
+	CPhysicsHingeConstraint* CPhysicsFactory::CreateHingeConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& pivotInA
 		, const PARAVECTOR3& pivotInB
@@ -923,7 +923,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsHingeConstraint* CPhysicsWorld::CreateHingeConstraint(CPhysicsRigidBody* rbA
+	CPhysicsHingeConstraint* CPhysicsFactory::CreateHingeConstraint(CPhysicsRigidBody* rbA
 		, const PARAVECTOR3& pivotInA
 		, const PARAVECTOR3& axisInA
 		, bool useReferenceFrameA)
@@ -939,7 +939,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsHingeConstraint* CPhysicsWorld::CreateHingeConstraint(CPhysicsRigidBody* rbA
+	CPhysicsHingeConstraint* CPhysicsFactory::CreateHingeConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation
@@ -959,7 +959,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsHingeConstraint* CPhysicsWorld::CreateHingeConstraint(CPhysicsRigidBody* rbA
+	CPhysicsHingeConstraint* CPhysicsFactory::CreateHingeConstraint(CPhysicsRigidBody* rbA
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation
 		, bool useReferenceFrameA)
@@ -975,7 +975,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsSliderConstraint* CPhysicsWorld::CreateSliderConstraint(CPhysicsRigidBody* rbA
+	CPhysicsSliderConstraint* CPhysicsFactory::CreateSliderConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation
@@ -995,7 +995,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsSliderConstraint* CPhysicsWorld::CreateSliderConstraint(CPhysicsRigidBody* rbB
+	CPhysicsSliderConstraint* CPhysicsFactory::CreateSliderConstraint(CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbBOrigin
 		, const PARAMATRIX3x3& rbBRotation
 		, bool useLinearReferenceFrameA)
@@ -1011,7 +1011,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsConeTwistConstraint* CPhysicsWorld::CreateConeTwistConstraint(CPhysicsRigidBody* rbA
+	CPhysicsConeTwistConstraint* CPhysicsFactory::CreateConeTwistConstraint(CPhysicsRigidBody* rbA
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation)
 	{
@@ -1026,7 +1026,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsConeTwistConstraint* CPhysicsWorld::CreateConeTwistConstraint(CPhysicsRigidBody* rbA
+	CPhysicsConeTwistConstraint* CPhysicsFactory::CreateConeTwistConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation
@@ -1045,7 +1045,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsGeneric6DofSpringConstraint* CPhysicsWorld::CreateGeneric6DofSpringConstraint(CPhysicsRigidBody* rbA
+	CPhysicsGeneric6DofSpringConstraint* CPhysicsFactory::CreateGeneric6DofSpringConstraint(CPhysicsRigidBody* rbA
 		, CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbAOrigin
 		, const PARAMATRIX3x3& rbARotation
@@ -1065,7 +1065,7 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
-	CPhysicsGeneric6DofSpringConstraint* CPhysicsWorld::CreateGeneric6DofSpringConstraint(CPhysicsRigidBody* rbB
+	CPhysicsGeneric6DofSpringConstraint* CPhysicsFactory::CreateGeneric6DofSpringConstraint(CPhysicsRigidBody* rbB
 		, const PARAVECTOR3& rbBOrigin
 		, const PARAMATRIX3x3& rbBRotation
 		, bool useLinearReferenceFrameB)

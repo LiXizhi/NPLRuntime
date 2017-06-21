@@ -89,7 +89,7 @@ CEnvironmentSim::Simulate(dTimeDelta){
 #include "TerrainTile.h"
 #include "AIBase.h"
 #include "FrameRateController.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 #include "TerrainTile.h"
 #include "AutoCamera.h"
 #include "MeshPhysicsObject.h"
@@ -327,7 +327,7 @@ void CEnvironmentSim::Simulate(double dTimeDelta)
 		return;
 
 	// physics engine frame move. 
-	CGlobals::GetPhysicsWorld()->StepSimulation(dTimeDelta);
+	CGlobals::GetPhysicsFactory()->StepSimulation(dTimeDelta);
 
 	/** advance the game time */
 	g_gameTime.FrameMoveDelta((float)dTimeDelta);

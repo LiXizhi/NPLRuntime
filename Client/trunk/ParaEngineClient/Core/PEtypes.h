@@ -422,7 +422,7 @@ namespace ParaEngine
 	class CParameterBlock;
 	class CParaWorldAsset;
 	class CParaXAnimInstance;
-	class CPhysicsWorld;
+	class CPhysicsFactory;
 	class CPluginManager;
 	class CPortalNode;
 	class CReport;

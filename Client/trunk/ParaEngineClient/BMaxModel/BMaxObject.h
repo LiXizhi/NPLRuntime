@@ -2,7 +2,7 @@
 #include "MeshEntity.h"
 #include "ParaXEntity.h"
 #include "TileObject.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 
 namespace ParaEngine
 {

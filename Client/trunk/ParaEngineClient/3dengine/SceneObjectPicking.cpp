@@ -14,7 +14,7 @@
 #include "AutoCamera.h"
 #include "SelectionManager.h"
 #include "terrain/GlobalTerrain.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 #include "MeshPhysicsObject.h"
 #include "MeshObject.h"
 #include "RayCollider.h"
@@ -256,7 +256,7 @@ namespace ParaEngine
 				(const PARAVECTOR3&)(vPickRayOrig), (const PARAVECTOR3&)(vPickRayDir), 0, hit, (int16)dwGroupMask, fMaxDistance);
 				*/
 
-			auto pWorld = CGlobals::GetPhysicsWorld()->GetCurrentWorld();
+			auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
 			CPhysicsRigidBody* closestShape = nullptr;
 			if (pWorld)
 			{

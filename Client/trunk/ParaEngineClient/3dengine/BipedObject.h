@@ -2,7 +2,7 @@
 #include "IGameObject.h"
 #include "ShadowVolume.h"
 #include "BipedWayPoint.h"
-#include "Physics/PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 
 namespace ParaEngine
 {

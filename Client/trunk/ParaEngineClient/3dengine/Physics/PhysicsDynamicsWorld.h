@@ -9,7 +9,7 @@ namespace ParaEngine {
 
 	class CPhysicsDynamicsWorld : public CPhysicsObject
 	{
-		friend class CPhysicsWorld;
+		friend class CPhysicsFactory;
 	protected:
 		CPhysicsDynamicsWorld(IParaPhysicsWorld* pWorld);
 	public:
