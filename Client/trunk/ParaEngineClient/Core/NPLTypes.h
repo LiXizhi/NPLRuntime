@@ -70,6 +70,7 @@ namespace NPL
 		NPL_ConnectionDisconnected,
 		NPL_ConnectionAborted,
 		NPL_Command,
+		NPL_WrongProtocol
 	};
 
 	/**

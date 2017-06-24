@@ -495,9 +495,9 @@ namespace ParaEngine
 
 		if (m_vertices.size() == 0)
 			return;
+		pMesh->m_RenderMethod = CParaXModel::BMAX_MODEL;
 		pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
 		pMesh->initIndices(m_indices.size(), &(m_indices[0]));
-		pMesh->m_RenderMethod = CParaXModel::BMAX_MODEL;
 
 		if (m_bones.size() > 0)
 		{

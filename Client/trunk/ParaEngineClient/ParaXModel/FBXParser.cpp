@@ -38,13 +38,13 @@ namespace ParaEngine
 }
 
 FBXParser::FBXParser()
-	:m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_beUsedVertexColor(true), m_unique_id(0)
+	:m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0)
 {
 }
 
 FBXParser::FBXParser(const string& filename)
 	: m_sFilename(filename),
-	m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_beUsedVertexColor(true), m_unique_id(0)
+	m_pScene(NULL), m_nMaterialIndex(0), m_nRootNodeIndex(0), m_bUsedVertexColor(true), m_bHasSkinnedMesh(false), m_unique_id(0)
 {
 }
 
@@ -98,6 +98,7 @@ XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
 void ParaEngine::FBXParser::Reset()
 {
 	ResetAABB();
+	m_bHasSkinnedMesh = false;
 	m_unique_id = 0;
 }
 
@@ -257,9 +258,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	pMesh->m_header.maxExtent = m_maxExtent;
 	pMesh->m_vNeckYawAxis = m_modelInfo.m_vNeckYawAxis;
 	pMesh->m_vNeckPitchAxis = m_modelInfo.m_vNeckPitchAxis;
-	pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
-	pMesh->initIndices(m_indices.size(), &(m_indices[0]));
-
+	
 	if (m_bones.size() > 0)
 	{
 		pMesh->bones = new ParaEngine::Bone[m_bones.size()];
@@ -277,9 +276,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
-	if (pMesh->animated && m_anims.size() == 0) 
+	if (m_bHasSkinnedMesh && pMesh->animated && m_anims.size() == 0)
 	{
 		// static animation 0, just in case there are skinned mesh without any animation
+		// we need to animate bones just in case external animations are used outside. 
 		ModelAnimation anim;
 		memset(&anim, 0, sizeof(ModelAnimation));
 		anim.timeStart = 0;
@@ -331,6 +331,14 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
+	pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	// only enable bmax model, if there are vertex color channel.
+	if (m_bUsedVertexColor)
+		pMesh->SetBmaxModel();
+
+	pMesh->initVertices(m_vertices.size(), &(m_vertices[0]));
+	pMesh->initIndices(m_indices.size(), &(m_indices[0]));
+
 	if (pMesh->geosets.size() > 0)
 	{
 		pMesh->showGeosets = new bool[pMesh->geosets.size()];
@@ -340,14 +348,6 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 
 	AddDefaultColors(pMesh);
 	AddDefaultTransparency(pMesh);
-
-	pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
-
-	// only enable bmax model, if there are vertex color channel.
-	if (m_beUsedVertexColor)
-		pMesh->SetBmaxModel();
-
-	
 }
 
 XFile::Scene* FBXParser::ParseFBXFile()
@@ -693,7 +693,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 			diffuseTexName = "";
 		}
 	}
-	m_beUsedVertexColor = diffuseTexName.empty() && m_beUsedVertexColor;
+	m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;
 
 	// parse material name
 	FBXMaterial fbxMat;
@@ -714,7 +714,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	if (fbxMat.bAddictive)
 		blendmode = BM_ADDITIVE;
 
-	if (m_beUsedVertexColor)
+	if (m_bUsedVertexColor)
 	{
 		diffuseTexName = std::string(g_sDefaultTexture);
 	}
@@ -1011,6 +1011,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	{
 		int numBones = pFbxMesh->mNumBones;
 
+		m_bHasSkinnedMesh = true;
 		if (!pMesh->animated && numBones > 1)
 		{
 			// always regard as animated if there are skinned mesh
@@ -1033,9 +1034,9 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
 			{
-				aiVertexWeight vertextWeight = fbxBone->mWeights[j];
-				int vertex_id = vertextWeight.mVertexId + vertex_start;
-				uint8 vertex_weight = (uint8)(vertextWeight.mWeight * 255);
+				aiVertexWeight vertexWeight = fbxBone->mWeights[j];
+				int vertex_id = vertexWeight.mVertexId + vertex_start;
+				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
 				int nTotalWeight = 0;
 				int bone_index = 0;
 				ModelVertex & vertex = m_vertices[vertex_id];
@@ -1051,10 +1052,10 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 							vertex_weight += 1;
 						vertex.bones[bone_index] = nBoneIndex;
 						vertex.weights[bone_index] = vertex_weight;
-
 						break;
 					}
 				}
+
 				if (bone_index >= ParaEngine::Bone::s_MaxBonesPerVertex)
 				{
 					OUTPUT_LOG("warn: %s vertex %d has more than 4 bones affecting it. overwrite the smallest one\n", m_modelInfo.m_sFilename.c_str(), vertex_id);

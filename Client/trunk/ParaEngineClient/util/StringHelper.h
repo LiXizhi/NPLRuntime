@@ -40,7 +40,7 @@ namespace ParaEngine
 		*  e.g.
 		*  @code
 		*    std::string utf8;
-		*    bool ret = StringHelper::UTF16ToUTF8(u"\u4f60\u597d", utf16);
+		*    bool ret = StringHelper::UTF16ToUTF8(u"\u4f60\u597d", utf8);
 		*    if (ret) {
 		*        do_some_thing_with_utf8(utf8);
 		*    }

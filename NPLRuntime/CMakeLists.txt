@@ -61,6 +61,8 @@ endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)
 add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${NPLRuntime_BINARY_DIR}/LuaJIT)
+add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT-2.1 ${NPLRuntime_BINARY_DIR}/LuaJIT-2.1)
+
 if (APPLE)  # only use the latest luabind on macosx/macos-sierra
     add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9.2beta ${NPLRuntime_BINARY_DIR}/luabind-0.9.2beta)
 else()

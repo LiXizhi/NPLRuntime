@@ -599,6 +599,9 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			nBytesRead = m_pFile->read(lpBuffer, nNumberOfBytesToRead);
 			if(lpNumberOfBytesRead)
 				*lpNumberOfBytesRead = nBytesRead;
+
+			//break;
+			return true;
 		}
 	case 8:
 		{
@@ -1073,6 +1076,11 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 
 }
 
+const std::string& ParaEngine::CZipArchive::GetRootDirectory()
+{
+	return m_sRootPath;
+}
+
 void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
 {
 	std::string sBaseDir = sBaseDir_;
@@ -1110,5 +1118,6 @@ int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverri
 	CArchive::InstallFields(pClass, bOverride);
 
 	pClass->AddField("SetBaseDirectory", FieldType_String, (void*)SetBaseDirectory_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("RootDirectory", FieldType_String, (void*)SetRootDirectory_s, (void*)GetRootDirectory_s, NULL, NULL, bOverride);
 	return S_OK;
 }

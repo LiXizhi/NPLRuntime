@@ -29,9 +29,13 @@
 #include "NPLRuntime.h"
 #include "EventsCenter.h"
 #include "BootStrapper.h"
-
+#include "NPL/NPLHelper.h"
 #include "AISimulator.h"
+#include "FileManager.h"
+#include "Archive.h"
 #include "ParaEngineAppBase.h"
+#include "NPLPackageConfig.h"
+
 
 using namespace ParaEngine;
 
@@ -338,18 +342,20 @@ void ParaEngine::CParaEngineAppBase::SetHasClosingRequest(bool val)
 	m_hasClosingRequest = val;
 }
 
-bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
+
+bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std::string * pOutMainFile)
 {
 	std::string sFilePath = sFilePath_;
 	std::string sPKGDir;
+	bool bHasOutputMainFile = false;
+	CNPLPackageConfig config;
 	if (sFilePath[sFilePath.size() - 1] == '/')
 	{
 		std::string sDirName = sFilePath.substr(0, sFilePath.size() - 1);
 		
 		if (!CParaFile::GetDevDirectory().empty())
 		{
-			std::string sFullDir;
-			sFullDir = CParaFile::GetDevDirectory() + sDirName;
+			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetDevDirectory());
 			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 			{
 				sPKGDir = sFullDir;
@@ -366,14 +372,20 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
 		}
 		else
 		{
-			if (!m_sModuleDir.empty())
+			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
+			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			{
+				sPKGDir = sFullDir;
+			}
+
+			if (sPKGDir.empty() && !m_sModuleDir.empty())
 			{
 				std::string workingDir = m_sModuleDir;
 				// search for all parent directory for at most 5 levels
 				for (int i = 0; i < 5 && !workingDir.empty(); ++i)
 				{
-					std::string sFullDir = workingDir + sDirName;
-					if (CParaFile::DoesFileExist(sFullDir.c_str(), false))
+					std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
+					if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 					{
 						sPKGDir = sFullDir;
 						break;
@@ -385,8 +397,91 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_)
 				}
 			}
 		}
+		if (sPKGDir.empty())
+		{
+			// if package folder is not found, we will search for zip and pkg file with the same name as the folder name.
+			std::string pkgFile = sDirName + ".zip";
+			CArchive* pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
+			if (pArchive == 0)
+			{
+				if (CFileManager::GetInstance()->OpenArchive(pkgFile, false))
+				{
+					pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
+				}
+			}
+			if (pArchive!=0)
+			{
+				// locate "package.npl" in root folder of zip file
+				CParaFile file;
+				if (file.OpenFile(pArchive, "package.npl"))
+				{
+					config.open(file.getBuffer(), file.getSize());
+				}
+				else
+				{
+					static CSearchResult result;
+					result.InitSearch(sDirName + "/", 0, 1, 0);
+					pArchive->FindFiles(result, "", "*/package.npl", 0);
+					if (result.GetNumOfResult() > 0)
+					{
+						// "*/package" just in case we zipped data in a subfolder.
+						CParaFile file;
+						if (file.OpenFile(pArchive, result.GetItem(0).c_str()))
+						{
+							std::string sBaseDir = result.GetItem(0).substr(0, result.GetItem(0).size() - 12);
+							pArchive->SetBaseDirectory(sBaseDir.c_str());
+							config.open(file.getBuffer(), file.getSize());
+						}
+					}
+				}
+			}
+			if (config.IsOpened())
+			{
+				sPKGDir = pkgFile;
+
+				if (!config.IsSearchPath())
+				{
+					pArchive->SetRootDirectory(sFilePath);
+					config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sFilePath));
+				}
+				if (pOutMainFile)
+					*pOutMainFile = config.GetMainFile();
+			}
+		}
 	}
-	return !sPKGDir.empty() && CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+	if (!sPKGDir.empty())
+	{
+		if (!config.IsOpened())
+		{
+			// disk file based package
+			std::string packageFile = sPKGDir + "/package.npl";
+			CParaFile file;
+			if (file.OpenFile(packageFile.c_str(), true, 0, false, FILE_ON_DISK))
+			{
+				config.open(file.getBuffer(), file.getSize());
+				// output main file
+				if (!config.IsSearchPath())
+				{
+					if (sFilePath.size() > 3 && sFilePath[0] == '.' && ((sFilePath[1] == '.' && sFilePath[2] == '/') || (sFilePath[1] == '/')))
+					{
+						// use absolute path if folder begins with ../ or ./
+						config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sPKGDir));
+					}
+					else
+					{
+						// relative to root path
+						config.SetMainFile(CParaFile::GetAbsolutePath(config.GetMainFile(), sFilePath));
+					}
+				}
+			}
+			if (pOutMainFile)
+				*pOutMainFile = config.GetMainFile();
+			if (config.IsSearchPath())
+				return CFileManager::GetInstance()->AddSearchPath(sPKGDir.c_str());
+		}
+		return true;
+	}
+	return false;
 }
 
 void CParaEngineAppBase::AutoSetLocale()

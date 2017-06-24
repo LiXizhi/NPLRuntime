@@ -57,7 +57,7 @@ ENDIF(MSVC)
 
 SET(CMAKE_DEBUG_POSTFIX "_d")
 
-link_libraries(PhysicsBT  BulletDynamics BulletCollision LinearMath)
+link_libraries(PhysicsBT  BulletDynamics BulletCollision LinearMath BulletSoftBody)
 
 # add the executable
 add_library(PhysicsBT SHARED ${PhysicsBT_SRCS})
@@ -70,15 +70,19 @@ if(MSVC)
 	STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" RELEASE_EXE_NAME "${RELEASE_EXE_PATH}" )
 
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
 		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/bin64/" )
 	else()
+		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
 		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/" )
 	endif()
+
 
 	ADD_CUSTOM_COMMAND(
 	   TARGET PhysicsBT
 	   POST_BUILD
-	   COMMAND ${CMAKE_COMMAND} -E copy ${DEBUG_EXE_PATH} ${PARAWORLD_BIN_DIR}${DEBUG_EXE_NAME}
-	   COMMAND ${CMAKE_COMMAND} -E copy ${RELEASE_EXE_PATH} ${PARAWORLD_BIN_DIR}${RELEASE_EXE_NAME}
+
+	   COMMAND ${CMAKE_COMMAND} -E make_directory ${PARAWORLD_BIN_DIR}
+	   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:PhysicsBT> ${PARAWORLD_BIN_DIR}
 	)
 endif(MSVC)

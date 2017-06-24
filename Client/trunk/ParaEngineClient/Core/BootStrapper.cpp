@@ -45,6 +45,10 @@ void CBootStrapper::SetMainLoopFile( const string& sMainFile )
 	m_sMainLoopFile = sMainFile;
 }
 
+bool ParaEngine::CBootStrapper::IsEmpty()
+{
+	return m_sMainLoopFile == DEFAULT_GAME_LOOP_FILE;
+}
 
 const string& CBootStrapper::GetConfigFile()
 {
@@ -229,4 +233,6 @@ bool CBootStrapper::SaveToFile( const string& sXMLfile )
 
 	return doc.SaveFile( sFileName );
 }
+
+
 #endif

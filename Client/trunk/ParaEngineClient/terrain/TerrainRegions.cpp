@@ -85,7 +85,7 @@ void CRegionLayer::LoadFromFile(const char* filename, int nBytesPerPixel)
 		return;
 	}
 
-	MemIO memIO((BYTE*)(file.getBuffer()));
+	MemIO memIO((BYTE*)(file.getBuffer()), file.getSize());
 	FIBITMAP *dib = FreeImage_LoadFromHandle( (FREE_IMAGE_FORMAT) TextureEntity::GetFormatByFileName(sTextureFileName), &memIO, (fi_handle)&memIO );
 	if(dib == 0)
 	{

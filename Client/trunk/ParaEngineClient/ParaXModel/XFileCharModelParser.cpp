@@ -111,7 +111,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		if (m_pParaXRawData && (m_pParaXRawData->Lock(&dwSize, &pBuffer)))
 			m_pRaw = pBuffer + 4;
 
-		if (m_xheader.type == PARAX_MODEL_ANIMATED)
+		if (m_xheader.type == PARAX_MODEL_ANIMATED || m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(m_xheader);
 
@@ -450,6 +450,7 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		int nAttachments = *(DWORD*)(pBuffer);
 		int nAttachmentLookup = *(((DWORD*)(pBuffer)) + 1);
 		xmesh.m_objNum.nAttachments = nAttachments;
+		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 
 		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pBuffer + 8);
 		int32 * attLookup = (int32 *)(pBuffer + 8 + sizeof(ModelAttachmentDef)*nAttachments);
@@ -639,8 +640,9 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 				if (b.boneid>0 && b.boneid < MAX_KNOWN_BONE_NODE)
 				{
 					xmesh.m_boneLookup[b.boneid] = i;
-					bone.nBoneID = b.boneid;
+					//bone.nBoneID = b.boneid;
 				}
+				bone.nBoneID = b.boneid;
 
 				ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
 				ReadAnimationBlock(&b.rotation, bone.rot, xmesh.globalSequences);

@@ -36,8 +36,36 @@ void RedirectIOToConsole()
 	FILE *fp;
 
 	// allocate a console for this app
+	{
+		const UINT ProcessBasicInformation = 0;
+		typedef LONG(WINAPI *PROCNTQSIP)(HANDLE, UINT, PVOID, ULONG, PULONG);
+		PROCNTQSIP NtQueryInformationProcess;
+		NtQueryInformationProcess = (PROCNTQSIP)GetProcAddress(GetModuleHandle("ntdll.dll"),
+			"NtQueryInformationProcess");
 
-	AllocConsole();
+		typedef struct
+		{
+			DWORD ExitStatus;
+			DWORD PebBaseAddress;
+			DWORD AffinityMask;
+			DWORD BasePriority;
+			ULONG UniqueProcessId;
+			ULONG InheritedFromUniqueProcessId;
+		} PROCESS_BASIC_INFORMATION;
+
+		PROCESS_BASIC_INFORMATION pbi;
+		auto hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, GetCurrentProcessId());
+		NtQueryInformationProcess(hProcess, ProcessBasicInformation, (PVOID)&pbi,
+			sizeof(PROCESS_BASIC_INFORMATION), NULL);
+
+		CloseHandle(hProcess);
+
+		if (!AttachConsole(pbi.InheritedFromUniqueProcessId))
+		{
+			AllocConsole();
+		}
+	}
+
 
 	// set the screen buffer to be big enough to let us scroll text
 
@@ -93,6 +121,10 @@ void RedirectIOToConsole()
 	// point to console as well
 
 	ios::sync_with_stdio();
+
+	freopen("CONIN$", "r", stdin);
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONOUT$", "w", stderr);
 
 }
 

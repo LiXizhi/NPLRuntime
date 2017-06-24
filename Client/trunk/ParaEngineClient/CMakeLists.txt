@@ -242,6 +242,12 @@ set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
 ##############################
+# WebSocket
+file (GLOB ParaEngineClient_WebSocket_FILES ${ParaEngineClient_SOURCE_DIR}/WebSocket/*.cpp ${ParaEngineClient_SOURCE_DIR}/WebSocket/*.h)
+SOURCE_GROUP("NPL\\WebSocket" FILES ${ParaEngineClient_WebSocket_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebSocket_FILES})
+
+##############################
 # Platform
 file (GLOB ParaEngineClient_PLATFORM_FILES ${PROJECT_SOURCE_DIR}/platform/*.h ${PROJECT_SOURCE_DIR}/platform/*.cpp)
 SOURCE_GROUP("platform" FILES ${ParaEngineClient_PLATFORM_FILES})

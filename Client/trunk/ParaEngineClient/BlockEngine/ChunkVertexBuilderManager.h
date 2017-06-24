@@ -66,6 +66,7 @@ namespace ParaEngine
 		// chunks that needing uploading to device
 		std::vector<RenderableChunk*> m_pendingUploadChunks;
 		std::mutex m_mutex;
+		std::mutex m_queueMutex;
 		std::thread m_chunk_build_thread;
 		std::condition_variable m_chunk_request_signal;
 		bool m_bChunkThreadStarted;
