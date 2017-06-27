@@ -976,6 +976,140 @@ const ParaUIObject& ParaScripting::ParaAttributeObject::QueryUIObject()
 	return s_obj;
 }
 
+object ParaAttributeObject::GetField2(const char* sFieldname, lua_State* L)
+{
+	if (!IsValid())
+	{
+		// return nil
+		return object();
+	}
+
+	CAttributeField* pField = m_pAttClass->GetField(sFieldname);
+	if (pField == 0 || !pField->HasGetFunction())
+		// return nil
+		return object();
+
+	switch (pField->m_type)
+	{
+	case FieldType_Bool:
+	{
+		bool value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_Int:
+	case FieldType_Enum:
+	{
+		int value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_DWORD:
+	{
+		DWORD value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_Float:
+	{
+		float value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_Double:
+	{
+		double value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_String:
+	{
+		const char* value;
+		pField->Get(m_pAttribute.get(), &value);
+		return object(L, value);
+		break;
+	}
+	case FieldType_Vector2:
+	{
+		Vector2 value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		out[1] = value.x;
+		out[2] = value.y;
+		return out;
+		break;
+	}
+	case FieldType_Vector3:
+	{
+		Vector3 value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		out[1] = value.x;
+		out[2] = value.y;
+		out[3] = value.z;
+		return out;
+		break;
+	}
+	case FieldType_DVector3:
+	{
+		DVector3 value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		out[1] = value.x;
+		out[2] = value.y;
+		out[3] = value.z;
+		return out;
+		break;
+	}
+	case FieldType_Vector4:
+	{
+		Vector4 value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		out[1] = value.x;
+		out[2] = value.y;
+		out[3] = value.z;
+		out[4] = value.w;
+		return out;
+		break;
+	}
+	case FieldType_Quaternion:
+	{
+		Quaternion value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		out[1] = value.x;
+		out[2] = value.y;
+		out[3] = value.z;
+		out[4] = value.w;
+		return out;
+		break;
+	}
+	case FieldType_Matrix4:
+	{
+		Matrix4 value;
+		pField->Get(m_pAttribute.get(), &value);
+		object out = newtable(L);
+		for (int i = 0; i < 16; i++) {
+			out[i + 1] = value._m[i];
+		}
+		return out;
+		break;
+	}
+	default:
+		break;
+	}
+
+
+	// return nil
+	return object();
+}
+
 object  ParaAttributeObject::GetField(const char*  sFieldname, const object& output)
 {
 	if (!IsValid()){
