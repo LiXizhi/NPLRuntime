@@ -362,10 +362,6 @@ ParaEngine::XFileDataObjectPtr ParaEngine::XFileCharModelExporter::Translate()
 	return node;
 }
 
-
-
-#pragma region +[从CParaXModel读取数据到XFileDataObject对象]
-
 void ParaEngine::XFileCharModelExporter::Release(XFileDataObjectPtr pData)
 {
 	if (pData->GetChildCount() > 0)
@@ -1134,5 +1130,3 @@ bool ParaEngine::XFileCharModelExporter::WriteAnimationBlock(AnimationBlock* b, 
 		b->ofsKeys = m_pRawData->AddRawData((const Vector4*)(&anims.data[0]), b->nKeys);
 	return true;
 }
-
-#pragma endregion
