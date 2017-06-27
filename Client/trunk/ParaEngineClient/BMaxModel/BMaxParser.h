@@ -3,6 +3,7 @@
 #include "math/ShapeAABB.h"
 #include "BMaxFrameNode.h"
 #include "ParaXModel/ParaXModel.h"
+#include "Rectangle.h"
 
 class TiXmlDocument;
 class TiXmlElement;
@@ -54,6 +55,10 @@ namespace ParaEngine
 		void SetAutoScale(bool value);
 		bool IsAutoScale();
 		const Vector3& GetCenterPos() const;
+
+		vector<RectanglePtr> MergeCoplanerBlockFace();
+		void FindCoplanerFace(vector<RectanglePtr> retangles, BMaxNode* node, uint32 nFaceIndex);
+		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
 	
 		inline uint32 GetNodeIndex(uint16 x, uint16 y, uint16 z)
 		{
@@ -143,6 +148,7 @@ namespace ParaEngine
 		std::vector<BlockModel*> m_blockModels;
 		std::map<uint32, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;
+		std::map<uint16, vector<RectanglePtr>>m_rectangles;
 		
 		/// array of bone nodes, array index is the bone index. 
 		vector<BMaxFrameNodePtr> m_bones;

@@ -224,6 +224,7 @@ namespace ParaEngine
 
 	void BMaxParser::ParseVisibleBlocks()
 	{
+		m_blockModels.clear();
 		for (auto& item : m_nodes)
 		{
 			BMaxNode* node = item.second.get();
@@ -368,6 +369,103 @@ namespace ParaEngine
 	const Vector3& BMaxParser::GetCenterPos() const
 	{
 		return m_centerPos;
+	}
+
+
+
+	vector<RectanglePtr> BMaxParser::MergeCoplanerBlockFace()
+	{
+		vector<RectanglePtr> pRectangles;
+
+		ParseVisibleBlocks();
+		for (uint32 i = 0; i < m_blockModels.size(); i++)
+		{
+			BlockModel* model = m_blockModels.at(i);
+			BMaxNode* node = m_blockModelsMapping[model];
+
+			for (uint32 j = 0; j < 6; j++)
+			{
+				if (model->IsFaceNotUse(i))
+				{
+					FindCoplanerFace(pRectangles, node, i);
+				}
+			}
+		}
+		return pRectangles;
+	}
+
+
+	void BMaxParser::FindCoplanerFace(vector<RectanglePtr> retangles, BMaxNode* node, uint32 nFaceIndex)
+	{
+		const uint16 nVertexCount = 4;
+
+		auto* nodes = new BMaxNodePtr[nVertexCount];
+		for (int i = 0; i < nVertexCount; i++)
+		{
+			nodes[i] = node;
+		}
+
+		RectanglePtr rectangle(new Rectangle(nodes, nFaceIndex));
+		for (uint32 i = 0; i < nVertexCount; i++)
+		{
+			FindNeighbourFace(rectangle.get(), i, nFaceIndex);
+			BlockModel *model = node->GetCube();
+			model->SetFaceUsed(nFaceIndex);
+		}
+
+		rectangle->CloneNodes();
+		retangles.push_back(rectangle);
+	}
+
+	void BMaxParser::FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex)
+	{
+		int nIndex = nFaceIndex * 4 + i;
+		Vector3 offset = rectangle->GetOffsetByIndex(nIndex);
+
+		int nextI;
+		if (i == 3) 
+			nextI = nIndex - 3;
+		else
+			nextI = nIndex + 1;
+		
+		BMaxNode *fromNode = rectangle->GetFromNode(nextI);
+		BMaxNode *toNode = rectangle->GetToNode(nextI);
+
+		Vector3 nextOffset = rectangle->GetOffsetByIndex(nextI);
+		BMaxNode *currentNode = fromNode;
+
+		std::vector<BMaxNodePtr>nodes;
+		
+		if (fromNode)
+		{
+			do
+			{
+				BMaxNode *neighbourNode = currentNode->GetNeighbourByOffset(offset);
+				if (neighbourNode == NULL || currentNode->GetColor() != neighbourNode->GetColor() || currentNode->GetBoneIndex() != neighbourNode->GetBoneIndex())
+					return;
+				BlockModel* neighbourCube = neighbourNode->GetCube();
+
+				if (neighbourCube->IsFaceNotUse(nFaceIndex))
+					nodes.push_back(BMaxNodePtr(neighbourNode));
+				else
+					return;
+
+				if (currentNode == toNode)
+					break;
+				currentNode = currentNode->GetNeighbourByOffset(nextOffset);
+			} while (currentNode);
+		}
+
+		BMaxNode *newFromNode = toNode->GetNeighbourByOffset(offset);
+		BMaxNode *newToNode = toNode->GetNeighbourByOffset(offset);
+
+		for (BMaxNodePtr nodePtr : nodes)
+		{
+			BlockModel *model = nodePtr.get()->GetCube();
+			model->SetFaceUsed(nFaceIndex);
+		}
+		rectangle->UpdateNode(BMaxNodePtr(newFromNode), BMaxNodePtr(newToNode), nextI);
+		FindNeighbourFace(rectangle, i, nFaceIndex);
 	}
 
 	ModelGeoset* BMaxParser::AddGeoset()
