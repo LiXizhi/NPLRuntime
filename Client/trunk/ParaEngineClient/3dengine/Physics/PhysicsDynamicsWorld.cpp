@@ -174,4 +174,20 @@ namespace ParaEngine {
 
 		return nullptr;
 	}
+
+	int CPhysicsDynamicsWorld::InstallFields(CAttributeClass* pClass, bool bOverride)
+	{
+		CPhysicsObject::InstallFields(pClass, bOverride);
+
+		PE_ASSERT(pClass != NULL);
+
+		pClass->AddField("gravity"
+			, FieldType_Vector3
+			, SetGravity_s
+			, GetGravity_s
+			, nullptr, nullptr, bOverride);
+
+
+		return S_OK;
+	}
 }

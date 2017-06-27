@@ -23,6 +23,13 @@ namespace ParaEngine {
 
 		ATTRIBUTE_DEFINE_CLASS(CPhysicsFactory);
 
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		ATTRIBUTE_METHOD1(CPhysicsFactory, IsDynamicsSimulationEnabled_s, bool*) { *p1 = cls->IsDynamicsSimulationEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CPhysicsFactory, SetDynamicsSimulationEnabled_s, bool) { cls->SetDynamicsSimulationEnabled(p1); return S_OK; }
+
+
 		/** get the physics interface. create one if one does not exist. */
 		IParaPhysics* GetPhysicsInterface();
 

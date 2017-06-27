@@ -19,6 +19,12 @@ namespace ParaEngine {
 
 		ATTRIBUTE_DEFINE_CLASS(CPhysicsDynamicsWorld);
 
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		ATTRIBUTE_METHOD1(CPhysicsDynamicsWorld, GetGravity_s, Vector3*) { cls->GetGravity(*((PARAVECTOR3*)p1)); return S_OK; }
+		ATTRIBUTE_METHOD1(CPhysicsDynamicsWorld, SetGravity_s, Vector3) { cls->SetGravity(*((PARAVECTOR3*)&p1)); return S_OK; }
+
 		/** step simulation
 		* @param fDeltaTime: in seconds.
 		*/

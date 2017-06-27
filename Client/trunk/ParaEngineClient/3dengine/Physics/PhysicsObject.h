@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ParaEngine.h"
+#include "IAttributeFields.h"
 #include "Physics/IParaPhysics.h"
 
 namespace ParaEngine {

@@ -1081,5 +1081,23 @@ namespace ParaEngine {
 		return pConstraint;
 	}
 
+
+	int CPhysicsFactory::InstallFields(CAttributeClass* pClass, bool bOverride)
+	{
+		IAttributeFields::InstallFields(pClass, bOverride);
+
+		PE_ASSERT(pClass != NULL);
+
+		pClass->AddField("dynamicsSimulationEnabled"
+			, FieldType_Bool
+			, SetDynamicsSimulationEnabled_s
+			, IsDynamicsSimulationEnabled_s
+			, nullptr, nullptr, bOverride);
+
+
+
+		return S_OK;
+	}
+
 	
 }
