@@ -49,6 +49,7 @@
 #include "SelectionManager.h"
 #include "ParaXAnimInstance.h"
 #include <time.h>
+#include "ParaScriptingPhysics.h"
 
 extern "C"
 {
@@ -1652,6 +1653,12 @@ void ParaScene::GetPlayer_(ParaObject* pOut)
 {
 	*pOut = GetPlayer();
 }
+
+ParaPhysicsFactory ParaScene::GetPhysicsFactor()
+{
+	return ParaPhysicsFactory(CGlobals::GetScene()->GetPhysicsFactory());
+}
+
 void ParaScene::CreateWorld(const char * sWorldName, float fWorldSize, const char* sConfigFile)
 {
 	CGlobals::GetScene()->SetIdentifier(sWorldName);

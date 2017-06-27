@@ -38,6 +38,7 @@ namespace ParaScripting
 	using namespace ParaEngine;
 	using namespace luabind;
 
+	class ParaPhysicsFactory;
 	/**
 	* @ingroup ParaScene
 	* ParaObject class:
@@ -2070,5 +2071,8 @@ namespace ParaScripting
 		* @param nCount: the max number to set for the above render importance. 
 		*/
 		static int GetMaxRenderCount(int nRenderImportance);
+
+		//
+		static ParaPhysicsFactory GetPhysicsFactor();
 	};
 };
