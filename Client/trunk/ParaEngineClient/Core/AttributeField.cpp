@@ -13,8 +13,11 @@
 
 using namespace ParaEngine;
 
+std::hash<string> CAttributeField::HashFunc;
+
 CAttributeField::CAttributeField()
 	:m_type(FieldType_Deprecated)
+	, m_hash((size_t)-1)
 {
 	m_offsetSetFunc.ptr_fun = NULL;
 	m_offsetGetFunc.ptr_fun = NULL;
@@ -40,6 +43,22 @@ const char g_schemaType[][20] = {
 	":float",
 	":dialog",
 };
+
+void CAttributeField::SetFieldname(const string& sFieldname)
+{
+	m_sFieldname = sFieldname;
+	m_hash = HashFunc(sFieldname);
+}
+
+const string& CAttributeField::GetFieldname() const
+{
+	return m_sFieldname;
+}
+
+size_t CAttributeField::GetHash() const
+{
+	return m_hash;
+}
 
 const char* CAttributeField::GetSimpleSchema(SIMPLE_SCHEMA schema)
 {

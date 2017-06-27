@@ -378,7 +378,7 @@ const char* ParaAttributeObject::GetFieldName(int nIndex)
 		CAttributeField* pField = m_pAttClass->GetField(nIndex);
 		if (pField != 0)
 		{
-			return pField->m_sFieldname.c_str();
+			return pField->GetFieldname().c_str();
 		}
 	}
 	return CGlobals::GetString(G_STR_EMPTY).c_str();
