@@ -69,17 +69,12 @@ void CNPLScriptingState::LoadParaScene()
 	[
 		namespace_("ParaScene")
 		[
-			class_<ParaPhysicsWorld>("ParaPhysicsWorld")
-				.def(constructor<>())
-				.def("IsValid", &ParaPhysicsWorld::IsValid)
-				.def("GetAttributeObject", &ParaPhysicsWorld::GetAttributeObject)
-				,
-
 			class_<ParaPhysicsFactory>("ParaPhysicsFactory")
 				.def(constructor<>())
 				.def("IsValid", &ParaPhysicsFactory::IsValid)
 				.def("GetAttributeObject", &ParaPhysicsFactory::GetAttributeObject)
 				.def("GetCurrentWorld", &ParaPhysicsFactory::GetCurrentWorld)
+				.def("CreateShape", &ParaPhysicsFactory::CreateShape)
 				,
 
 			// ParaObject class declarations
