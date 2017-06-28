@@ -47,7 +47,7 @@ ParaEngine::CFaceGroup::CFaceGroup()
 	m_pTexture = NULL;
 	m_nNumTriangles = 0;
 
-	m_vCenterPos = Vector3(0.f,0.f,0.f);
+	m_vCenterPos = Vector3::ZERO;
 	m_stripLength = 0;
 }
 
@@ -56,7 +56,7 @@ void ParaEngine::CFaceGroup::UpdateCenterPos()
 	int nCount = (int) m_vertices.size();
 	if(nCount>0)
 	{
-		m_vCenterPos = Vector3(0,0,0);
+		m_vCenterPos = Vector3::ZERO;
 		for (int i=0; i<nCount; ++i)
 		{
 			m_vCenterPos += m_vertices[i];
@@ -355,7 +355,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 		}
 		//if(!bHasLighting)
 			//CGlobals::GetEffectManager()->EnableSunLight(true);
-		if(vLastUVOffset != Vector2(0.f, 0.f) || vLastUVRotate != Vector3(0.f, 0.f, 0.f) || vLastUVScale != Vector2(0.f, 0.f))
+		if(vLastUVOffset != Vector2::ZERO || vLastUVRotate != Vector3::ZERO || vLastUVScale != Vector2::ZERO)
 		{
 			// disable texture transformation in fixed function.
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
@@ -488,7 +488,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 							{
 								vLastUVOffset = facegroup.m_vUVOffset;
 								if(facegroup.m_facegroup->m_stripLength > 0)
-									vLastUVOffset = Vector2(0,0);
+									vLastUVOffset = Vector2::ZERO;
 
 								Vector4 vOffset(vLastUVOffset.x, vLastUVOffset.y, 0.f, 0.f);
 								pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&vOffset);
@@ -654,17 +654,17 @@ void ParaEngine::CSortedFaceGroups::Render()
 			if(!bHasLighting)
 				pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 
-			if(vLastUVOffset != Vector2(0.f, 0.f))
+			if(vLastUVOffset != Vector2::ZERO)
 			{
 				pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4::ZERO);
 			}
 
-			if (vLastUVRotate != Vector3(0.f, 0.f, 0.f))
+			if (vLastUVRotate != Vector3::ZERO)
 			{
 				pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4::ZERO);
 			}
 
-			if (vLastUVScale != Vector2(1.f, 1.f))
+			if (vLastUVScale != Vector2::UNIT_SCALE)
 			{
 				Vector4 vec4(1.f, 1.f, 1.f, 1.f);
 				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vec4);
