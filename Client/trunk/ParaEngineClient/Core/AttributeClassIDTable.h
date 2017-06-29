@@ -45,6 +45,20 @@ namespace ParaEngine
 		ATTRIBUTE_CLASSID_CParaXStaticModel,
 		ATTRIBUTE_CLASSID_WeatherEffect,
 		ATTRIBUTE_CLASSID_CTerrainTileRoot,
+
+		ATTRIBUTE_CLASSID_CPhysicsObject,
+		ATTRIBUTE_CLASSID_CPhysicsShapeMin,
+		ATTRIBUTE_CLASSID_CPhysicsShape = ATTRIBUTE_CLASSID_CPhysicsShapeMin,
+		ATTRIBUTE_CLASSID_CPhysicsCompoundShape,
+		ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape,
+		ATTRIBUTE_CLASSID_CPhysicsScaledTriangleMeshShape,
+		ATTRIBUTE_CLASSID_CPhysicsShapeMax = ATTRIBUTE_CLASSID_CPhysicsScaledTriangleMeshShape,
+
+		ATTRIBUTE_CLASSID_CPhysicsBodyMin,
+		ATTRIBUTE_CLASSID_CPhysicsBody = ATTRIBUTE_CLASSID_CPhysicsBodyMin,
+		ATTRIBUTE_CLASSID_CPhysicsRigidBody,
+		ATTRIBUTE_CLASSID_CPhysicsBodyMax = ATTRIBUTE_CLASSID_CPhysicsRigidBody,
+
 		ATTRIBUTE_CLASSID_Last,
 	};
 }

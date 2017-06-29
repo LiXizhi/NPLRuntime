@@ -79,7 +79,11 @@ namespace luabind
 					rhs.m_called = true;
 				}
 
-				~proxy_function_caller()
+#ifndef LUABIND_NO_EXCEPTIONS
+				~proxy_function_caller() throw(luabind::error)
+#else
+				~proxy_function_caller() 
+#endif
 				{
 					if (m_called) return;
 
@@ -249,7 +253,11 @@ namespace luabind
 					rhs.m_called = true;
 				}
 
+#ifndef LUABIND_NO_EXCEPTIONS
+				~proxy_function_void_caller()  throw(luabind::error)
+#else
 				~proxy_function_void_caller()
+#endif
 				{
 					if (m_called) return;
 

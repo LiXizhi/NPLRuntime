@@ -956,10 +956,19 @@ int ParaScripting::ParaAttributeObject::GetColumnCount()
 	return IsValid() ? m_pAttribute->GetChildAttributeColumnCount() : 0;
 }
 
+bool ParaScripting::ParaAttributeObject::AddChild2(ParaAttributeObject& obj, int nRowIndex, int nColumnIndex)
+{
+	return ((IsValid() && obj.IsValid()) ? m_pAttribute->AddChildAttributeObject(obj.m_pAttribute, nRowIndex, nColumnIndex) : false);
+}
 
 bool ParaScripting::ParaAttributeObject::AddChild(ParaAttributeObject& obj)
 {
 	return ((IsValid() && obj.IsValid()) ? m_pAttribute->AddChildAttributeObject(obj.m_pAttribute) : false);
+}
+
+bool ParaScripting::ParaAttributeObject::RemoveChild(ParaAttributeObject& obj)
+{
+	return ((IsValid() && obj.IsValid()) ? m_pAttribute->RemoveChildAttributeObjcet(obj.m_pAttribute) : false);
 }
 
 const ParaObject& ParaScripting::ParaAttributeObject::QueryObject()

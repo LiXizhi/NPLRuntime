@@ -187,7 +187,59 @@ namespace ParaEngine {
 			, GetGravity_s
 			, nullptr, nullptr, bOverride);
 
-
 		return S_OK;
+	}
+
+	int CPhysicsDynamicsWorld::GetChildAttributeObjectCount(int nColumnIndex)
+	{
+		return 0;
+	}
+
+	IAttributeFields* CPhysicsDynamicsWorld::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
+	{
+		return nullptr;
+	}
+
+	IAttributeFields* CPhysicsDynamicsWorld::GetChildAttributeObject(const std::string& sName)
+	{
+		return nullptr;
+	}
+
+	/* remove child object*/
+	bool CPhysicsDynamicsWorld::RemoveChildAttributeObjcet(IAttributeFields* pChild)
+	{
+		if (!pChild)
+			return false;
+
+		auto classId = pChild->GetAttributeClassID();
+		if (classId == ATTRIBUTE_CLASSID_CPhysicsRigidBody)
+		{
+			auto pBody = static_cast<CPhysicsRigidBody*>(pChild);
+			RemoveRigidBody(pBody);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool CPhysicsDynamicsWorld::AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex, int nColumnIndex)
+	{
+		(void)nRowIndex;
+		(void)nColumnIndex;
+
+		if (!pChild)
+			return false;
+
+		auto classId = pChild->GetAttributeClassID();
+		if (classId == ATTRIBUTE_CLASSID_CPhysicsRigidBody)
+		{
+			auto pBody = static_cast<CPhysicsRigidBody*>(pChild);
+			AddRigidBody(pBody);
+
+			return true;
+		}
+
+		return false;
 	}
 }

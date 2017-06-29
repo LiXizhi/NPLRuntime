@@ -17,7 +17,13 @@ namespace ParaEngine {
 
 		IParaPhysicsBody* get();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsBody);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsBody);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsBody; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsBody"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 		int GetInternalType() const;
 
@@ -38,7 +44,13 @@ namespace ParaEngine {
 	public:
 		virtual ~CPhysicsRigidBody();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsRigidBody);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsRigidBody);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsRigidBody; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsRigidBody"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 		void SetConstraint(CPhysicsConstraint* p);
 		bool isConstrainted();

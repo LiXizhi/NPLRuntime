@@ -133,6 +133,9 @@ namespace ParaEngine
 		/** add child object. */
 		virtual bool AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex = -1, int nColumnIndex = 0);
 
+		/* remove child object*/
+		virtual bool RemoveChildAttributeObjcet(IAttributeFields* pChild);
+
 		/** convert to object of a given type. 
 		* @param sObjectType: 
 		*/

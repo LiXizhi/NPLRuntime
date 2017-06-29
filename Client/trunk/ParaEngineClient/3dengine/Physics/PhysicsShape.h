@@ -11,7 +11,13 @@ namespace ParaEngine {
 
 		IParaPhysicsShape* get();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsShape);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsShape);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsShape; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsShape"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 
 		typedef weak_ptr<IObject, CPhysicsShape>  WeakPtr;
@@ -30,7 +36,13 @@ namespace ParaEngine {
 	public:
 		virtual ~CPhysicsCompoundShape();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsCompoundShape);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsCompoundShape);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsCompoundShape; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsCompoundShape"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 		/* add */
 		void AddChildShape(const PARAMATRIX3x3& rotation
@@ -66,7 +78,13 @@ namespace ParaEngine {
 	public:
 		virtual ~CPhysicsTriangleMeshShape();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsScaledTriangleMeshShape);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsScaledTriangleMeshShape);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsTriangleMeshShape"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 	protected:
 		CPhysicsTriangleMeshShape(IParaPhysicsTriangleMeshShape* pShape);
@@ -79,7 +97,13 @@ namespace ParaEngine {
 	public:
 		virtual ~CPhysicsScaledTriangleMeshShape();
 
-		ATTRIBUTE_DEFINE_CLASS(CPhysicsScaledTriangleMeshShape);
+		//ATTRIBUTE_DEFINE_CLASS(CPhysicsScaledTriangleMeshShape);
+		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CPhysicsScaledTriangleMeshShape; }
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsScaledTriangleMeshShape"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
 
 		CPhysicsTriangleMeshShape* GetChildShape();

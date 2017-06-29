@@ -276,6 +276,11 @@ bool ParaEngine::IAttributeFields::AddChildAttributeObject(IAttributeFields* pCh
 	return false;
 }
 
+bool ParaEngine::IAttributeFields::RemoveChildAttributeObjcet(IAttributeFields* pChild)
+{
+	return false;
+}
+
 void* ParaEngine::IAttributeFields::QueryObjectByName(const std::string& sObjectType)
 {
 	if (sObjectType == "IAttributeFields")

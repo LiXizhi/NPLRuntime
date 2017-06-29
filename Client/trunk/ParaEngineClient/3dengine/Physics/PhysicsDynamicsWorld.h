@@ -25,6 +25,17 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD1(CPhysicsDynamicsWorld, GetGravity_s, Vector3*) { cls->GetGravity(*((PARAVECTOR3*)p1)); return S_OK; }
 		ATTRIBUTE_METHOD1(CPhysicsDynamicsWorld, SetGravity_s, Vector3) { cls->SetGravity(*((PARAVECTOR3*)&p1)); return S_OK; }
 
+		/** add child object. */
+		virtual bool AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex = -1, int nColumnIndex = 0);
+		/* remove child object*/
+		virtual bool RemoveChildAttributeObjcet(IAttributeFields* pChild);
+
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+
 		/** step simulation
 		* @param fDeltaTime: in seconds.
 		*/

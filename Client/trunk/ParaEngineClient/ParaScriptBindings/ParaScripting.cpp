@@ -75,6 +75,8 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetAttributeObject", &ParaPhysicsFactory::GetAttributeObject)
 				.def("GetCurrentWorld", &ParaPhysicsFactory::GetCurrentWorld)
 				.def("CreateShape", &ParaPhysicsFactory::CreateShape)
+				.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody)
+				.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody2)
 				,
 
 			// ParaObject class declarations

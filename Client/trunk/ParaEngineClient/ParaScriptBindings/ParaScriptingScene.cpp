@@ -1654,9 +1654,9 @@ void ParaScene::GetPlayer_(ParaObject* pOut)
 	*pOut = GetPlayer();
 }
 
-ParaPhysicsFactory ParaScene::GetPhysicsFactor()
+ParaPhysicsFactory* ParaScene::GetPhysicsFactor()
 {
-	return ParaPhysicsFactory(CGlobals::GetScene()->GetPhysicsFactory());
+	return new ParaPhysicsFactory(CGlobals::GetScene()->GetPhysicsFactory());
 }
 
 void ParaScene::CreateWorld(const char * sWorldName, float fWorldSize, const char* sConfigFile)

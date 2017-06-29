@@ -487,6 +487,10 @@ namespace ParaScripting
 
 		/** add a child object*/
 		bool AddChild(ParaAttributeObject& obj);
+		bool AddChild2(ParaAttributeObject& obj, int nRowIndex, int nColumnIndex);
+
+		/* remove a child object */
+		bool RemoveChild(ParaAttributeObject& obj);
 
 		/** query object */
 		const ParaObject& QueryObject();

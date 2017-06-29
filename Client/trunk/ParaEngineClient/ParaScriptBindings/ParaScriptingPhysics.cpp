@@ -14,6 +14,56 @@ extern "C"
 
 namespace ParaScripting
 {
+#define Vector32Object(v, o) {\
+(o)[1] = (v).x; (o)[2] = (v).y; (o)[3] = (v).z; \
+}
+
+#define Matrix3x32Object(matrix, o) {\
+	for (int x = 0; x < 3; x++)\
+		for (int y = 0; y < 3; y++)\
+	{\
+		int index = x * 3 + y + 1;\
+		(o)[index] = (matrix).m[x][y];\
+	}\
+}
+
+	static bool Object2Vector3(const object& o, PARAVECTOR3& output)
+	{
+		if (type(o) == LUA_TTABLE
+			&& type(o[1]) == LUA_TNUMBER 
+			&& type(o[2]) == LUA_TNUMBER 
+			&& type(o[3]) == LUA_TNUMBER)
+		{
+			output.x = object_cast<float>(o[1]);
+			output.y = object_cast<float>(o[2]);
+			output.z = object_cast<float>(o[3]);
+
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	static bool Object2Matrix3x3(const object& o, PARAMATRIX3x3& output)
+	{
+		if (type(o) != LUA_TTABLE)
+			return false;
+
+		for (int x = 0; x < 3; x++)
+			for (int y = 0; y < 3; y++)
+			{
+				int index = x * 3 + y + 1;
+				if (type(o[index]) != LUA_TNUMBER)
+					return false;
+
+				output.m[x][y] = object_cast<float>(o[index]);
+			}
+
+		return true;
+	}
+
 	ParaPhysicsFactory::ParaPhysicsFactory(ParaEngine::CPhysicsFactory* pObj)
 		: m_pObj(pObj)
 	{
@@ -25,26 +75,30 @@ namespace ParaScripting
 	}
 
 	/** get the attribute object associated with an object. */
-	ParaAttributeObject ParaPhysicsFactory::GetAttributeObject()
+	ParaAttributeObject* ParaPhysicsFactory::GetAttributeObject()
 	{
-		return ParaAttributeObject(m_pObj);
+		if (IsValid())
+			return new ParaAttributeObject(m_pObj);
+		else
+			return nullptr;
 	}
 
 	/** for API exportation*/
 	void ParaPhysicsFactory::GetAttributeObject_(ParaAttributeObject& output)
 	{
-		output = GetAttributeObject();
+		output = *GetAttributeObject();
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::GetCurrentWorld()
+	ParaAttributeObject* ParaPhysicsFactory::GetCurrentWorld()
 	{
 		if (IsValid())
 		{
-			return ParaAttributeObject(m_pObj->GetCurrentWorld());
+			return new ParaAttributeObject(m_pObj->GetCurrentWorld());
 		}
 		else
 		{
-			return ParaAttributeObject();
+			//return new ParaAttributeObject();
+			return nullptr;
 		}
 	}
 
@@ -70,189 +124,471 @@ namespace ParaScripting
 		, &ParaPhysicsFactory::CreateCompoundShape
 
 		, &ParaPhysicsFactory::CreateStaticPlaneShape
+
+		, &ParaPhysicsFactory::CreateTriangleMeshShape
+
+		, &ParaPhysicsFactory::CreateScaledTriangleMeshShape
 	};
 
-	ParaAttributeObject ParaPhysicsFactory::CreateStaticPlaneShape(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateScaledTriangleMeshShape(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		return ParaAttributeObject();
+		auto& triangleMeshShape = params["triangleMeshShape"];
+		if (type(triangleMeshShape) != LUA_TUSERDATA)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto shapeObj = object_cast<ParaAttributeObject*>(triangleMeshShape);
+		if (shapeObj->GetClassID() != ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto& localScaling = params["localScaling"];
+		PARAVECTOR3 v3;
+		if (!Object2Vector3(localScaling, v3))
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto pShape = static_cast<CPhysicsTriangleMeshShape*>(shapeObj->m_pAttribute.get());
+		auto obj = m_pObj->CreateScaledTriangleMeshShape(pShape, v3);
+
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCompoundShape(const object& enableDynamicAabbTree)
+	ParaAttributeObject* ParaPhysicsFactory::CreateTriangleMeshShape(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto& flags = params["flags"];
+		if (type(flags) != LUA_TNUMBER)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto& points = params["points"];
+		if (type(points) != LUA_TTABLE)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto& triangles = params["triangles"];
+		if (type(triangles) != LUA_TTABLE)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		DWORD dwFlag = object_cast<DWORD>(flags);
+
+		std::vector<PARAVECTOR3> vecPoints;
+		for (luabind::iterator itCur(points), itEnd; itCur != itEnd; ++itCur)
+		{
+			const object& item = *itCur;
+
+			auto size = vecPoints.size();
+			vecPoints.resize(size + 1);
+			if (!Object2Vector3(item, vecPoints[size]))
+				//return ParaAttributeObject();
+				return nullptr;
+		}
+
+		std::vector<WORD> vecIndices;
+		for (luabind::iterator itCur(points), itEnd; itCur != itEnd; ++itCur)
+		{
+			const object& item = *itCur;
+			if (type(item) == LUA_TNUMBER)
+			{
+				vecIndices.push_back(object_cast<WORD>(item));
+			}
+		}
+
+		if (vecIndices.size() % 3 != 0)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		ParaPhysicsTriangleMeshDesc trimeshDesc;
+		trimeshDesc.m_numVertices = vecPoints.size();
+		trimeshDesc.m_numTriangles = vecIndices.size() / 3;
+		trimeshDesc.m_pointStrideBytes = sizeof(PARAVECTOR3);
+		trimeshDesc.m_triangleStrideBytes = 3 * sizeof(int16);
+		trimeshDesc.m_points = &vecPoints[0];
+		trimeshDesc.m_triangles = &vecIndices[0];
+		trimeshDesc.m_flags = 0;
+
+		auto obj = m_pObj->CreateTriangleMeshShape(trimeshDesc);
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateStaticPlaneShape(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto& planeNormal = params["planeNormal"];
+		PARAVECTOR3 v3;
+		if (!Object2Vector3(planeNormal, v3))
+			//return ParaAttributeObject();
+			return nullptr;
+
+
+		auto& planeConstant = params["planeConstant"];
+		if (type(planeConstant) != LUA_TNUMBER)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		auto obj = m_pObj->CreateStaticPlaneShape(v3, object_cast<float>(planeConstant));
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateCompoundShape(const object& enableDynamicAabbTree)
 	{
 		if (type(enableDynamicAabbTree) != LUA_TBOOLEAN)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
 		auto obj = m_pObj->CreateCompoundShape(object_cast<bool>(enableDynamicAabbTree));
-		return ParaAttributeObject(obj);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateConvexHullShape(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateConvexHullShape(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
 		std::vector<PARAVECTOR3> positions;
 		for (luabind::iterator itCur(params), itEnd; itCur != itEnd; ++itCur)
 		{
 			const object& item = *itCur;
-			if (type(item) == LUA_TTABLE)
-			{
-				float x = object_cast<float>(item[1]);
-				float y = object_cast<float>(item[2]);
-				float z = object_cast<float>(item[3]);
-				positions.push_back(PARAVECTOR3(x, y, z));
-			}
+			auto size = positions.size();
+			positions.resize(size + 1);
+			if (!Object2Vector3(item, positions[size]))
+				//return ParaAttributeObject();
+				return nullptr;
 		}
 
 		auto obj = m_pObj->CreateConvexHullShape(&positions[0], positions.size());
-		return ParaAttributeObject(obj);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateShape(ShapeType shapeType, const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateShape(ShapeType shapeType, const object& params)
 	{
 		if (!IsValid())
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
 		if (shapeType >= ShapeType::MIN && shapeType < ShapeType::MAX)
 			return (this->*(m_pCrateShapeFunc[shapeType]))(params);
 		else
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCylinderShapeY(const object& halfExtents)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeY(const object& halfExtents)
 	{
-		if (type(halfExtents) != LUA_TTABLE)
-			return ParaAttributeObject();
+		PARAVECTOR3 v3;
 
-		float x = object_cast<float>(halfExtents[1]);
-		float y = object_cast<float>(halfExtents[2]);
-		float z = object_cast<float>(halfExtents[3]);
+		if (!Object2Vector3(halfExtents, v3))
+			//return ParaAttributeObject();
+			return nullptr;
 
-		auto obj = m_pObj->CreateCylinderShapeY(PARAVECTOR3(x, y, z));
-		return ParaAttributeObject(obj);
+		auto obj = m_pObj->CreateCylinderShapeY(v3);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCylinderShapeX(const object& halfExtents)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeX(const object& halfExtents)
 	{
-		if (type(halfExtents) != LUA_TTABLE)
-			return ParaAttributeObject();
+		PARAVECTOR3 v3;
 
-		float x = object_cast<float>(halfExtents[1]);
-		float y = object_cast<float>(halfExtents[2]);
-		float z = object_cast<float>(halfExtents[3]);
+		if (!Object2Vector3(halfExtents, v3))
+			//return ParaAttributeObject();
+			return nullptr;
 
-		auto obj = m_pObj->CreateCylinderShapeX(PARAVECTOR3(x, y, z));
-		return ParaAttributeObject(obj);
+		auto obj = m_pObj->CreateCylinderShapeX(v3);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCylinderShapeZ(const object& halfExtents)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeZ(const object& halfExtents)
 	{
-		if (type(halfExtents) != LUA_TTABLE)
-			return ParaAttributeObject();
+		PARAVECTOR3 v3;
 
-		float x = object_cast<float>(halfExtents[1]);
-		float y = object_cast<float>(halfExtents[2]);
-		float z = object_cast<float>(halfExtents[3]);
+		if (!Object2Vector3(halfExtents, v3))
+			//return ParaAttributeObject();
+			return nullptr;
 
-		auto obj = m_pObj->CreateCylinderShapeZ(PARAVECTOR3(x, y, z));
-		return ParaAttributeObject(obj);
+		auto obj = m_pObj->CreateCylinderShapeZ(v3);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateBoxShape(const object& boxHalfExtents)
+	ParaAttributeObject* ParaPhysicsFactory::CreateBoxShape(const object& boxHalfExtents)
 	{
-		if (type(boxHalfExtents) != LUA_TTABLE)
-			return ParaAttributeObject();
+		PARAVECTOR3 v3;
 
-		float x = object_cast<float>(boxHalfExtents[1]);
-		float y = object_cast<float>(boxHalfExtents[2]);
-		float z = object_cast<float>(boxHalfExtents[3]);
+		if (!Object2Vector3(boxHalfExtents, v3))
+			//return ParaAttributeObject();
+			return nullptr;
 
-		auto obj = m_pObj->CreateBoxShape(PARAVECTOR3(x, y, z));
-		return ParaAttributeObject(obj);
+		auto obj = m_pObj->CreateBoxShape(v3);
+		return new ParaAttributeObject(obj);
 	}
 	
-	ParaAttributeObject ParaPhysicsFactory::CreateSphereShape(const object& radius)
+	ParaAttributeObject* ParaPhysicsFactory::CreateSphereShape(const object& radius)
 	{
 		if (type(radius) != LUA_TNUMBER)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
 		auto obj = m_pObj->CreateSphereShape(object_cast<float>(radius));
-		return ParaAttributeObject(obj);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCapsuleShapeY(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeY(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateCapsuleShapeY(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+
+		auto obj = m_pObj->CreateCapsuleShapeY(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCapsuleShapeX(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeX(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateCapsuleShapeX(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+		auto obj = m_pObj->CreateCapsuleShapeX(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateCapsuleShapeZ(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeZ(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateCapsuleShapeZ(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+		auto obj = m_pObj->CreateCapsuleShapeZ(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateConeShapeY(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeY(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateConeShapeY(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+		auto obj = m_pObj->CreateConeShapeY(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
 	}
 
 
-	ParaAttributeObject ParaPhysicsFactory::CreateConeShapeX(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeX(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateConeShapeX(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+		auto obj = m_pObj->CreateConeShapeX(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
 	}
 
-	ParaAttributeObject ParaPhysicsFactory::CreateConeShapeZ(const object& params)
+	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeZ(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			return ParaAttributeObject();
+			//return ParaAttributeObject();
+			return nullptr;
 
-		float radius = object_cast<float>(params["radius"]);
-		float height = object_cast<float>(params["height"]);
+		float fRadius = 0.f, fHeight = 0.f;
 
-		auto obj = m_pObj->CreateConeShapeZ(radius, height);
-		return ParaAttributeObject(obj);
+		auto& radius = params["radius"];
+		if (type(radius) == LUA_TNUMBER)
+			fRadius = object_cast<float>(radius);
+
+		auto& height = params["height"];
+		if (type(height) == LUA_TNUMBER)
+			fHeight = object_cast<float>(height);
+
+		auto obj = m_pObj->CreateConeShapeZ(fRadius, fHeight);
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody_(const object& params, ParaPhysicsMotionStateDesc* motionStateDesc)
+	{
+		if (!IsValid())
+			//return ParaAttributeObject();
+			return nullptr;
+
+		if (type(params) != LUA_TTABLE)
+			//return ParaAttributeObject();
+			return nullptr;
+
+		// check shape
+		ParaAttributeObject* shapeObj = nullptr;
+		{
+			auto& shape = params["shape"];
+			if (type(shape) != LUA_TUSERDATA)
+				//return ParaAttributeObject();
+				return nullptr;
+
+			shapeObj = object_cast<ParaAttributeObject*>(shape);
+			auto classId = shapeObj->GetClassID();
+			if (!(classId >= ATTRIBUTE_CLASSID_CPhysicsShapeMin && classId <= ATTRIBUTE_CLASSID_CPhysicsShapeMax))
+				//return ParaAttributeObject();
+				return nullptr;
+		}
+
+
+		float fMass = 0.0f;
+		auto& mass = params["mass"];
+		if (type(mass) == LUA_TNUMBER)
+			fMass = object_cast<float>(mass);
+
+		PARAVECTOR3 vOrigin;
+		auto& origin = params["origin"];
+		Object2Vector3(origin, vOrigin);
+
+		PARAVECTOR3 vInertia;
+		auto& inertia = params["inertia"];
+		bool bUseInertia = Object2Vector3(inertia, vInertia);
+
+
+		PARAMATRIX3x3 mRotation;
+		auto& rotation = params["rotation"];
+		Object2Matrix3x3(rotation, mRotation);
+
+		short nGroup = 0;
+		auto& group = params["group"];
+		if (type(group) == LUA_TNUMBER)
+			nGroup = object_cast<short>(group);
+
+		int nMask = -1;
+		auto& mask = params["mask"];
+		if (type(mask) == LUA_TNUMBER)
+			nMask = object_cast<int>(mask);
+
+
+		bool bUseCenterOfMassOffset = false;
+		auto& centerOfMassOffset = params["centerOfMassOffset"];
+		PARAVECTOR3 vCenterOfMassOffsetOrigin;
+		PARAMATRIX3x3 mCenterOfMassOffsetRotation;
+		if (type(centerOfMassOffset) == LUA_TTABLE)
+		{
+			bUseCenterOfMassOffset = true;
+			auto& origin = centerOfMassOffset["origin"];
+			bUseCenterOfMassOffset &= Object2Vector3(origin, vCenterOfMassOffsetOrigin);
+
+			if (bUseCenterOfMassOffset)
+			{
+				auto& rotation = params["rotation"];
+				bUseCenterOfMassOffset &= Object2Matrix3x3(rotation, mCenterOfMassOffsetRotation);
+			}
+		}
+
+		ParaPhysicsRigidbodyDesc desc;
+		desc.m_group = nGroup;
+		desc.m_mask = nMask;
+		desc.m_mass = fMass;
+		desc.m_origin = vOrigin;
+		desc.m_rotation = mRotation;
+
+		if (bUseInertia)
+			desc.setLocalInertia(vInertia);
+		if (bUseCenterOfMassOffset)
+			desc.setCenterOfMassOffset(vCenterOfMassOffsetOrigin, mCenterOfMassOffsetRotation);
+
+		auto pShape = static_cast<CPhysicsShape*>(shapeObj->m_pAttribute.get());
+		desc.m_pShape = pShape->get();
+
+		return new ParaAttributeObject(m_pObj->CreateRigidbody(desc, motionStateDesc));
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody(const object& params)
+	{
+		return CreateRigidbody_(params, nullptr);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody2(const object& params, const object& callback)
+	{
+		if (type(callback) == LUA_TFUNCTION)
+		{
+			ParaPhysicsMotionStateDesc motionStateDesc;
+			motionStateDesc.cb = [callback](const PARAMATRIX3x3& rotation, const PARAVECTOR3& origin)
+			{
+				object oRotation = newtable(callback.interpreter());
+				Matrix3x32Object(rotation, oRotation);
+
+				object oOrigin = newtable(callback.interpreter());
+				Vector32Object(origin, oOrigin);
+
+				try 
+				{
+					call_function<void>(callback, boost::ref(oRotation), boost::ref(oOrigin));
+				}
+				catch (luabind::error& e)
+				{
+					OUTPUT_LOG("LUA throw error: err_msg[%s]\n", lua_tostring(e.state(), -1));
+				}
+			};
+
+			return CreateRigidbody_(params, &motionStateDesc);
+		}
+		else
+		{
+			return CreateRigidbody_(params, nullptr);
+		}
 	}
 }

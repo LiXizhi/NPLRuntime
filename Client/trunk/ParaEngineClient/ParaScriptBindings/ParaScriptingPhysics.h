@@ -7,6 +7,7 @@ namespace ParaEngine
 {
 	class CPhysicsDynamicsWorld;
 	class CPhysicsFactory;
+	struct ParaPhysicsMotionStateDesc;
 }
 
 namespace ParaScripting
@@ -32,11 +33,11 @@ namespace ParaScripting
 		bool IsValid() const { return m_pObj; };
 
 		/** get the attribute object associated with an object. */
-		ParaAttributeObject GetAttributeObject();
+		ParaAttributeObject* GetAttributeObject();
 		/** for API exportation*/
 		void GetAttributeObject_(ParaAttributeObject& output);
 
-		ParaAttributeObject GetCurrentWorld();
+		ParaAttributeObject* GetCurrentWorld();
 
 
 		enum ShapeType
@@ -56,45 +57,59 @@ namespace ParaScripting
 			ConvexHull,
 			Compound,
 			StaticPlane,
+			TriangleMesh,
+			ScaledTriangleMesh,
 			Invalid,
 			MAX = Invalid,
 		};
 
-		ParaAttributeObject CreateShape(ShapeType shapeType, const object& params);
+		ParaAttributeObject* CreateShape(ShapeType shapeType, const object& params);
 
-
+		ParaAttributeObject* CreateRigidbody(const object& params);
+		ParaAttributeObject* CreateRigidbody2(const object& params, const object& callback);
 	private:
+		ParaAttributeObject* CreateRigidbody_(const object& params, ParaPhysicsMotionStateDesc* motionStateDesc);
+
+
 		/* create a box shape*/
-		ParaAttributeObject CreateBoxShape(const object& boxHalfExtents);
+		ParaAttributeObject* CreateBoxShape(const object& boxHalfExtents);
 
 		/* create a sphere shape*/
-		ParaAttributeObject CreateSphereShape(const object& radius);
+		ParaAttributeObject* CreateSphereShape(const object& radius);
 
 		/* create a capsule shape*/
-		ParaAttributeObject CreateCapsuleShapeY(const object& params);
-		ParaAttributeObject CreateCapsuleShapeX(const object& params);
-		ParaAttributeObject CreateCapsuleShapeZ(const object& params);
+		ParaAttributeObject* CreateCapsuleShapeY(const object& params);
+		ParaAttributeObject* CreateCapsuleShapeX(const object& params);
+		ParaAttributeObject* CreateCapsuleShapeZ(const object& params);
 
 		/* create a cylinder shape*/
-		ParaAttributeObject CreateCylinderShapeY(const object& halfExtents);
-		ParaAttributeObject CreateCylinderShapeX(const object& halfExtents);
-		ParaAttributeObject CreateCylinderShapeZ(const object& halfExtents);
+		ParaAttributeObject* CreateCylinderShapeY(const object& halfExtents);
+		ParaAttributeObject* CreateCylinderShapeX(const object& halfExtents);
+		ParaAttributeObject* CreateCylinderShapeZ(const object& halfExtents);
 
 		/* create a cone shape*/
-		ParaAttributeObject CreateConeShapeY(const object& params);
-		ParaAttributeObject CreateConeShapeX(const object& params);
-		ParaAttributeObject CreateConeShapeZ(const object& params);
+		ParaAttributeObject* CreateConeShapeY(const object& params);
+		ParaAttributeObject* CreateConeShapeX(const object& params);
+		ParaAttributeObject* CreateConeShapeZ(const object& params);
 
 		/* create a Convex Hull shape*/
-		ParaAttributeObject CreateConvexHullShape(const object& params);
+		ParaAttributeObject* CreateConvexHullShape(const object& params);
 
 		/* create a Compound shape*/
-		ParaAttributeObject CreateCompoundShape(const object& enableDynamicAabbTree);
+		ParaAttributeObject* CreateCompoundShape(const object& enableDynamicAabbTree);
 
 		/* create a static plane shape*/
-		ParaAttributeObject CreateStaticPlaneShape(const object& params);
+		ParaAttributeObject* CreateStaticPlaneShape(const object& params);
 
-		typedef ParaAttributeObject (ParaPhysicsFactory::*CreateShapeFunc)(const object& params);
+		/** create a triangle shape.
+		* @return: the triangle shape pointer is returned.
+		*/
+		ParaAttributeObject* CreateTriangleMeshShape(const object& params);
+
+		// The ScaledTriangleMeshShape allows to instance a scaled version of an existing TriangleMeshShape
+		ParaAttributeObject* CreateScaledTriangleMeshShape(const object& params);
+
+		typedef ParaAttributeObject* (ParaPhysicsFactory::*CreateShapeFunc)(const object& params);
 		static CreateShapeFunc m_pCrateShapeFunc[ShapeType::MAX];
 	};
 }

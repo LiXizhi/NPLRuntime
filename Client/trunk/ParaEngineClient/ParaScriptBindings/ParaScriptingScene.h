@@ -2073,6 +2073,6 @@ namespace ParaScripting
 		static int GetMaxRenderCount(int nRenderImportance);
 
 		//
-		static ParaPhysicsFactory GetPhysicsFactor();
+		static ParaPhysicsFactory* GetPhysicsFactor();
 	};
 };
