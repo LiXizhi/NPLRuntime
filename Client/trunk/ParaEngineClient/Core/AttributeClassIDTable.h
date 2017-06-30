@@ -47,6 +47,7 @@ namespace ParaEngine
 		ATTRIBUTE_CLASSID_CTerrainTileRoot,
 
 		ATTRIBUTE_CLASSID_CPhysicsObject,
+
 		ATTRIBUTE_CLASSID_CPhysicsShapeMin,
 		ATTRIBUTE_CLASSID_CPhysicsShape = ATTRIBUTE_CLASSID_CPhysicsShapeMin,
 		ATTRIBUTE_CLASSID_CPhysicsCompoundShape,
@@ -54,6 +55,15 @@ namespace ParaEngine
 		ATTRIBUTE_CLASSID_CPhysicsScaledTriangleMeshShape,
 		ATTRIBUTE_CLASSID_CPhysicsShapeMax = ATTRIBUTE_CLASSID_CPhysicsScaledTriangleMeshShape,
 
+		ATTRIBUTE_CLASSID_CPhysicsConstraintMin,
+		ATTRIBUTE_CLASSID_CPhysicsConstraint = ATTRIBUTE_CLASSID_CPhysicsConstraintMin,
+		ATTRIBUTE_CLASSID_CPhysicsP2PConstraint,
+		ATTRIBUTE_CLASSID_CPhysicsHingeConstraint,
+		ATTRIBUTE_CLASSID_CPhysicsSliderConstraint,
+		ATTRIBUTE_CLASSID_CPhysicsConeTwistConstraint,
+		ATTRIBUTE_CLASSID_CPhysicsGeneric6DofSpringConstraint,
+		ATTRIBUTE_CLASSID_CPhysicsConstraintMax = ATTRIBUTE_CLASSID_CPhysicsGeneric6DofSpringConstraint,
+	
 		ATTRIBUTE_CLASSID_CPhysicsBodyMin,
 		ATTRIBUTE_CLASSID_CPhysicsBody = ATTRIBUTE_CLASSID_CPhysicsBodyMin,
 		ATTRIBUTE_CLASSID_CPhysicsRigidBody,
