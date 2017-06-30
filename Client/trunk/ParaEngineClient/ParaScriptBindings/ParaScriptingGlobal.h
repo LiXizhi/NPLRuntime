@@ -126,7 +126,6 @@ namespace ParaScripting
 	} CStringCompare;
 
 	typedef pair <const char *, ParaObjectNode> ParaObject_Pair;
-	
 
 	/** 
 	* @ingroup ParaGlobal
@@ -615,6 +614,8 @@ namespace ParaScripting
 		It simply calls the function associated with the field name. */
 		void CallField(const char*  sFieldname);
 
+		object CallField2(const char* sFieldname, const object& params);
+
 		/** print attribute to file 
 		@param file: file name to save the manual to.
 		*/
@@ -691,6 +692,13 @@ namespace ParaScripting
 		* @param dwType: type of ATTRIBUTE_FIELDTYPE
 		*/
 		int AddDynamicField(const std::string& sName, int dwType);
+
+		/*
+		static IAttributeFields* Object2AttributeFields(const object& o, ATTRIBUTE_CLASSID_TABLE classType);
+		//typedef bool (*CheckClassFunc)(ATTRIBUTE_CLASSID_TABLE classType);
+		typedef std::function<bool(ATTRIBUTE_CLASSID_TABLE classType)> CheckClassFunc;
+		static IAttributeFields* Object2AttributeFields(const object& o, CheckClassFunc f);
+		*/
 	};
 
 	/**

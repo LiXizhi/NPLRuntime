@@ -57,10 +57,36 @@ namespace ParaEngine
 			if (m_offsetSetFunc.ptr_fun != 0)
 				return ((HRESULT(*)(void* obj))m_offsetSetFunc.ptr_fun)(obj);
 			else if (m_offsetGetFunc.ptr_fun != 0)
-				return ((HRESULT(*)(void* obj))m_offsetSetFunc.ptr_fun)(obj);
+				return ((HRESULT(*)(void* obj))m_offsetGetFunc.ptr_fun)(obj);
 			else
 				return E_FAIL;
 		};
+
+		/*
+		inline HRESULT Call(void* obj, const std::map<CVariable, CVariable>& in, std::map<CVariable, CVariable>& out)
+		{
+			if (m_offsetSetFunc.ptr_fun != 0)
+				//return ((HRESULT(*)(void* obj))m_offsetSetFunc.ptr_fun)(obj);
+				return ((HRESULT(*)(void* obj, const std::map<CVariable, CVariable>& in, std::map<CVariable, CVariable>& out))m_offsetSetFunc.ptr_fun)(obj, in, out);
+			else if (m_offsetGetFunc.ptr_fun != 0)
+				//return ((HRESULT(*)(void* obj))m_offsetSetFunc.ptr_fun)(obj);
+				return ((HRESULT(*)(void* obj, const std::map<CVariable, CVariable>& in, std::map<CVariable, CVariable>& out))m_offsetGetFunc.ptr_fun)(obj, in, out);
+			else
+				return E_FAIL;
+		}
+		*/
+
+		inline HRESULT Call(void* obj, const luabind::object& in, luabind::object& out)
+		{
+			if (m_offsetSetFunc.ptr_fun != 0)
+				return ((HRESULT(*)(void* obj, const luabind::object& in, luabind::object& out))m_offsetSetFunc.ptr_fun)(obj, in, out);
+			else if (m_offsetGetFunc.ptr_fun != 0)
+				//return ((HRESULT(*)(void* obj))m_offsetSetFunc.ptr_fun)(obj);
+				return ((HRESULT(*)(void* obj, const luabind::object& in, luabind::object& out))m_offsetGetFunc.ptr_fun)(obj, in, out);
+			else
+				return E_FAIL;
+		}
+
 		inline HRESULT Get(void* obj)
 		{
 			if (m_offsetGetFunc.ptr_fun != 0)

@@ -44,6 +44,16 @@ namespace ParaEngine {
 		/** a static string, describing the attribute class object */
 		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
+		ATTRIBUTE_METHOD1(CPhysicsCompoundShape, GetNumChild_s, int*) { *p1 = cls->GetNumChild(); return S_OK; }
+		static HRESULT AddChildShape_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT RemoveChildShape_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT RemoveChildByIndex_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT GetChildShape_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT GetChildTransform_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT UpdateChildTransform_s(CPhysicsCompoundShape* cls, const luabind::object& in, luabind::object& out);
+
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
 		/* add */
 		void AddChildShape(const PARAMATRIX3x3& rotation
 			, const PARAVECTOR3& origin

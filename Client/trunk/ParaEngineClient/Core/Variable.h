@@ -64,6 +64,7 @@ namespace ParaEngine
 
 		// this is for custom void pointer
 		FieldType_void_pointer,
+		FieldType_function,
 		FieldType_Deprecated = 0xffffffff
 	};
 

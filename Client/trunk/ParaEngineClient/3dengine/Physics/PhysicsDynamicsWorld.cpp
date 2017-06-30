@@ -4,6 +4,9 @@
 #include "Physics/PhysicsBody.h"
 #include "Physics/PhysicsConstraint.h"
 
+#include <luabind/object.hpp>
+#include "ParaScriptingPhysics.h"
+
 namespace ParaEngine {
 	CPhysicsDynamicsWorld::CPhysicsDynamicsWorld(IParaPhysicsWorld* pWorld)
 		: m_pWorld(pWorld)
@@ -187,23 +190,27 @@ namespace ParaEngine {
 			, GetGravity_s
 			, nullptr, nullptr, bOverride);
 
+		pClass->AddField("numBodies"
+			, FieldType_Int
+			, nullptr
+			, GetNumBodies_s
+			, nullptr, nullptr, bOverride);
+
+		pClass->AddField("numConstraints"
+			, FieldType_Int
+			, nullptr
+			, GetNumConstraints_s
+			, nullptr, nullptr, bOverride);
+
+		pClass->AddField("AddConstraint"
+			, FieldType_function
+			, AddConstraint_s
+			, nullptr
+			, nullptr, nullptr, bOverride);
+
 		return S_OK;
 	}
 
-	int CPhysicsDynamicsWorld::GetChildAttributeObjectCount(int nColumnIndex)
-	{
-		return 0;
-	}
-
-	IAttributeFields* CPhysicsDynamicsWorld::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
-	{
-		return nullptr;
-	}
-
-	IAttributeFields* CPhysicsDynamicsWorld::GetChildAttributeObject(const std::string& sName)
-	{
-		return nullptr;
-	}
 
 	/* remove child object*/
 	bool CPhysicsDynamicsWorld::RemoveChildAttributeObjcet(IAttributeFields* pChild)
@@ -216,7 +223,13 @@ namespace ParaEngine {
 		{
 			auto pBody = static_cast<CPhysicsRigidBody*>(pChild);
 			RemoveRigidBody(pBody);
+			return true;
+		}
 
+		if (classId >= ATTRIBUTE_CLASSID_CPhysicsConstraintMin && classId <= ATTRIBUTE_CLASSID_CPhysicsConstraintMax)
+		{
+			auto constraint = static_cast<CPhysicsConstraint*>(pChild);
+			RemoveConstraint(constraint);
 			return true;
 		}
 
@@ -240,6 +253,70 @@ namespace ParaEngine {
 			return true;
 		}
 
+		if (classId >= ATTRIBUTE_CLASSID_CPhysicsConstraintMin && classId <= ATTRIBUTE_CLASSID_CPhysicsConstraintMax)
+		{
+			auto constraint = static_cast<CPhysicsConstraint*>(pChild);
+			AddConstraint(constraint);
+			return true;
+		}
+
 		return false;
+	}
+
+	int CPhysicsDynamicsWorld::GetChildAttributeColumnCount()
+	{
+		return 2;
+	}
+
+	int CPhysicsDynamicsWorld::GetChildAttributeObjectCount(int nColumnIndex)
+	{
+		switch (nColumnIndex)
+		{
+		case 0:
+			return GetNumBodies();
+			break;
+		case 1:
+			return GetNumConstraints();
+			break;
+		default:
+			return 0;
+			break;
+		}
+	}
+
+	IAttributeFields* CPhysicsDynamicsWorld::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
+	{
+		switch (nColumnIndex)
+		{
+		case 0:
+			return GetBodyByIndex(nRowIndex);
+			break;
+		case 1:
+			return GetConstraint(nRowIndex);
+			break;
+		default:
+			return nullptr;
+			break;
+		}
+	}
+
+
+	HRESULT CPhysicsDynamicsWorld::AddConstraint_s(CPhysicsDynamicsWorld* cls, const luabind::object& in, luabind::object& out)
+	{
+		if (luabind::type(in) != LUA_TTABLE)
+			return S_FALSE;
+
+		CPhysicsConstraint* pConstraint = nullptr;
+		ParaScripting::ReadLuaTablePhysicsConstraint(in, "constraint", pConstraint);
+		if (!pConstraint)
+			return S_FALSE;
+		
+		bool disableCollisionsBetweenLinkedBodies = false;
+		ParaScripting::ReadLuaTableBoolean(in, "disableCollisionsBetweenLinkedBodies", disableCollisionsBetweenLinkedBodies);
+
+		cls->AddConstraint(pConstraint
+			, disableCollisionsBetweenLinkedBodies);
+
+		return S_OK;
 	}
 }

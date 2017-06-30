@@ -72,11 +72,12 @@ void CNPLScriptingState::LoadParaScene()
 			class_<ParaPhysicsFactory>("ParaPhysicsFactory")
 				.def(constructor<>())
 				.def("IsValid", &ParaPhysicsFactory::IsValid)
-				.def("GetAttributeObject", &ParaPhysicsFactory::GetAttributeObject)
-				.def("GetCurrentWorld", &ParaPhysicsFactory::GetCurrentWorld)
-				.def("CreateShape", &ParaPhysicsFactory::CreateShape)
-				.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody)
-				.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody2)
+				.def("GetAttributeObject", &ParaPhysicsFactory::GetAttributeObject, adopt(result))
+				.def("GetCurrentWorld", &ParaPhysicsFactory::GetCurrentWorld, adopt(result))
+				.def("CreatePhysicsObject", &ParaPhysicsFactory::CreatePhysicsObject, adopt(result))
+				//.def("CreateShape", &ParaPhysicsFactory::CreateShape, adopt(result))
+				//.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody, adopt(result))
+				//.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody2, adopt(result))
 				,
 
 			// ParaObject class declarations
@@ -442,7 +443,7 @@ void CNPLScriptingState::LoadParaScene()
 			def("CreateMeshPhysicsObject", (ParaObject(*)(const char*, const char* , float , float , float , bool ,const char* localMatrix)) & ParaScene::CreateMeshPhysicsObject),
 			def("CreateMeshPhysicsObject", (ParaObject(*)(const char*, ParaAssetObject& , float , float , float , bool ,const char* localMatrix)) & ParaScene::CreateMeshPhysicsObject),
 			def("CreateDynamicPhysicsObject", & ParaScene::CreateDynamicPhysicsObject),
-			def("GetPhysicsFactor", &ParaScene::GetPhysicsFactor),
+			def("GetPhysicsFactor", &ParaScene::GetPhysicsFactor, adopt(result)),
 			def("CreateCharacter", (ParaObject(*)(const char*, ParaAssetObject&, const char*, bool, float, float, float))& ParaScene::CreateCharacter),
 			def("CreateCharacter", (ParaObject(*)(const char*, const char*, const char*, bool, float, float, float))& ParaScene::CreateCharacter),
 			def("CreateLightObject", & ParaScene::CreateLightObject),

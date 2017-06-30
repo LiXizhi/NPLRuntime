@@ -460,6 +460,38 @@ const char* ParaAttributeObject::GetSchematicsType(int nIndex)
 	return CGlobals::GetString(G_STR_EMPTY).c_str();
 }
 
+
+object ParaAttributeObject::CallField2(const char* sFieldname, const object& params)
+{
+	if (!IsValid())
+		return object();
+
+	CAttributeField* pField = m_pAttClass->GetField(sFieldname);
+	if (pField != 0)
+	{
+		if (pField->m_type == FieldType_void)
+		{
+			pField->Call(m_pAttribute.get());
+			return object();
+		}
+		else if (pField->m_type == FieldType_function)
+		{
+			object out;
+			auto ret = pField->Call(m_pAttribute.get(), params, out);
+			if (SUCCEEDED(ret))
+			{
+				return out;
+			}
+			else
+			{
+				return object();
+			}
+		}
+	}
+
+	return object();
+}
+
 void ParaAttributeObject::CallField(const char*  sFieldname)
 {
 	if (!IsValid())

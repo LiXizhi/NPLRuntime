@@ -25,6 +25,10 @@ namespace ParaEngine {
 		/** a static string, describing the attribute class object */
 		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 
+		ATTRIBUTE_METHOD1(CPhysicsBody, GetInternalType_s, int*) { *p1 = cls->GetInternalType(); return S_OK; }
+
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
 		int GetInternalType() const;
 
 		// don't remove any body in this callback, because it will be called any times in one tick
@@ -51,6 +55,13 @@ namespace ParaEngine {
 		virtual const char* GetAttributeClassName() { static const char name[] = "CPhysicsRigidBody"; return name; }
 		/** a static string, describing the attribute class object */
 		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
+
+		ATTRIBUTE_METHOD1(CPhysicsRigidBody, isConstrainted_s, bool*) { *p1 = cls->isConstrainted(); return S_OK; }
+		ATTRIBUTE_METHOD1(CPhysicsRigidBody, isInWorld_s, bool*) { *p1 = cls->isInWorld(); return S_OK; }
+		ATTRIBUTE_METHOD(CPhysicsRigidBody, Convert2Kinematic_s) { cls->Convert2Kinematic(); return S_OK; }
+
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		void SetConstraint(CPhysicsConstraint* p);
 		bool isConstrainted();

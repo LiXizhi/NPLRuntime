@@ -4,66 +4,9 @@
 #include "Physics/PhysicsObject.h"
 #include "Physics/PhysicsDynamicsWorld.h"
 
-extern "C"
-{
-	#include <lua.h>
-}
-
-#include <luabind/luabind.hpp>
-#include <luabind/object.hpp>
 
 namespace ParaScripting
 {
-#define Vector32Object(v, o) {\
-(o)[1] = (v).x; (o)[2] = (v).y; (o)[3] = (v).z; \
-}
-
-#define Matrix3x32Object(matrix, o) {\
-	for (int x = 0; x < 3; x++)\
-		for (int y = 0; y < 3; y++)\
-	{\
-		int index = x * 3 + y + 1;\
-		(o)[index] = (matrix).m[x][y];\
-	}\
-}
-
-	static bool Object2Vector3(const object& o, PARAVECTOR3& output)
-	{
-		if (type(o) == LUA_TTABLE
-			&& type(o[1]) == LUA_TNUMBER 
-			&& type(o[2]) == LUA_TNUMBER 
-			&& type(o[3]) == LUA_TNUMBER)
-		{
-			output.x = object_cast<float>(o[1]);
-			output.y = object_cast<float>(o[2]);
-			output.z = object_cast<float>(o[3]);
-
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	static bool Object2Matrix3x3(const object& o, PARAMATRIX3x3& output)
-	{
-		if (type(o) != LUA_TTABLE)
-			return false;
-
-		for (int x = 0; x < 3; x++)
-			for (int y = 0; y < 3; y++)
-			{
-				int index = x * 3 + y + 1;
-				if (type(o[index]) != LUA_TNUMBER)
-					return false;
-
-				output.m[x][y] = object_cast<float>(o[index]);
-			}
-
-		return true;
-	}
-
 	ParaPhysicsFactory::ParaPhysicsFactory(ParaEngine::CPhysicsFactory* pObj)
 		: m_pObj(pObj)
 	{
@@ -97,12 +40,385 @@ namespace ParaScripting
 		}
 		else
 		{
-			//return new ParaAttributeObject();
 			return nullptr;
 		}
 	}
 
-	ParaPhysicsFactory::CreateShapeFunc ParaPhysicsFactory::m_pCrateShapeFunc[ParaPhysicsFactory::ShapeType::MAX] =
+	ParaAttributeObject* ParaPhysicsFactory::CreatePhysicsObject(ObjectType oType, int subType, const object& params)
+	{
+		if (!IsValid())
+			return nullptr;
+
+		switch (oType)
+		{
+		case ObjectType::OT_Shape:
+			return CreateShape((ShapeType)subType, params);
+			break;
+		case ObjectType::OT_Rigidbody:
+			return CreateRigidbody(params);
+			break;
+		case ObjectType::OT_Constraint:
+			return CreateConstraint((ConstraintType)subType, params);
+			break;
+		default:
+			return nullptr;
+			break;
+		}
+	}
+
+	ParaPhysicsFactory::CreateConstraintFunc ParaPhysicsFactory::m_pCreateConstraintFunc[ParaPhysicsFactory::ConstraintType::CT_MAX] =
+	{
+		&ParaPhysicsFactory::CreatePoint2PointConstraint
+		, &ParaPhysicsFactory::CreateHingeConstraint
+		, &ParaPhysicsFactory::CreateSliderConstraint
+		, &ParaPhysicsFactory::CreateConeTwistConstraint
+		, &ParaPhysicsFactory::CreateGeneric6DofSpringConstraint
+	};
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateGeneric6DofSpringConstraint(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			return nullptr;
+
+		CPhysicsGeneric6DofSpringConstraint* obj = nullptr;
+
+		auto& rbA = params["rbA"];
+		ParaAttributeObject* rigidBodyA;
+		Object2RigidBody(rbA, rigidBodyA);
+		if (!rigidBodyA)
+			return nullptr;
+
+		auto& useLinearReferenceFrameA = params["useLinearReferenceFrameA"];
+		if (type(useLinearReferenceFrameA) != LUA_TBOOLEAN)
+			return nullptr;
+		auto bUseLinearReferenceFrameA = object_cast<bool>(useLinearReferenceFrameA);
+
+		auto& rbAOrigin = params["rbAOrigin"];
+		PARAVECTOR3 v3RbAOrigin;
+		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+			return nullptr;
+
+		auto& rbARotation = params["rbARotation"];
+		PARAMATRIX3x3 mRbARotation;
+		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+			return nullptr;
+
+		auto& rbB = params["rbB"];
+		ParaAttributeObject* rigidBodyB;
+		Object2RigidBody(rbB, rigidBodyB);
+
+		if (rigidBodyB)
+		{
+			auto& rbBOrigin = params["rbBOrigin"];
+			PARAVECTOR3 v3RbBOrigin;
+			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+				return nullptr;
+
+			auto& rbBRotation = params["rbBRotation"];
+			PARAMATRIX3x3 mRbBRotation;
+			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+				return nullptr;
+
+			obj = m_pObj->CreateGeneric6DofSpringConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation
+				, v3RbBOrigin
+				, mRbBRotation
+				, bUseLinearReferenceFrameA);
+		}
+		else
+		{
+			obj = m_pObj->CreateGeneric6DofSpringConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation
+				, bUseLinearReferenceFrameA);
+		}
+
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateConeTwistConstraint(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			return nullptr;
+
+		CPhysicsConeTwistConstraint* obj = nullptr;
+
+		auto& rbA = params["rbA"];
+		ParaAttributeObject* rigidBodyA;
+		Object2RigidBody(rbA, rigidBodyA);
+		if (!rigidBodyA)
+			return nullptr;
+
+		auto& rbAOrigin = params["rbAOrigin"];
+		PARAVECTOR3 v3RbAOrigin;
+		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+			return nullptr;
+
+		auto& rbARotation = params["rbARotation"];
+		PARAMATRIX3x3 mRbARotation;
+		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+			return nullptr;
+
+		auto& rbB = params["rbB"];
+		ParaAttributeObject* rigidBodyB;
+		Object2RigidBody(rbB, rigidBodyB);
+
+		if (rigidBodyB)
+		{
+			auto& rbBOrigin = params["rbBOrigin"];
+			PARAVECTOR3 v3RbBOrigin;
+			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+				return nullptr;
+
+			auto& rbBRotation = params["rbBRotation"];
+			PARAMATRIX3x3 mRbBRotation;
+			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+				return nullptr;
+
+			obj = m_pObj->CreateConeTwistConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation
+				, v3RbBOrigin
+				, mRbBRotation);
+		}
+		else
+		{
+			obj = m_pObj->CreateConeTwistConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation);
+		}
+
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateSliderConstraint(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			return nullptr;
+
+		CPhysicsSliderConstraint* obj = nullptr;
+
+		auto& rbA = params["rbA"];
+		ParaAttributeObject* rigidBodyA;
+		Object2RigidBody(rbA, rigidBodyA);
+		if (!rigidBodyA)
+			return nullptr;
+
+		auto& useLinearReferenceFrameA = params["useLinearReferenceFrameA"];
+		if (type(useLinearReferenceFrameA) != LUA_TBOOLEAN)
+			return nullptr;
+		auto bUseLinearReferenceFrameA = object_cast<bool>(useLinearReferenceFrameA);
+
+		auto& rbAOrigin = params["rbAOrigin"];
+		PARAVECTOR3 v3RbAOrigin;
+		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+			return nullptr;
+
+		auto& rbARotation = params["rbARotation"];
+		PARAMATRIX3x3 mRbARotation;
+		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+			return nullptr;
+
+		auto& rbB = params["rbB"];
+		ParaAttributeObject* rigidBodyB;
+		Object2RigidBody(rbB, rigidBodyB);
+
+		if (rigidBodyB)
+		{
+			auto& rbBOrigin = params["rbBOrigin"];
+			PARAVECTOR3 v3RbBOrigin;
+			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+				return nullptr;
+
+			auto& rbBRotation = params["rbBRotation"];
+			PARAMATRIX3x3 mRbBRotation;
+			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+				return nullptr;
+
+			obj = m_pObj->CreateSliderConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation
+				, v3RbBOrigin
+				, mRbBRotation
+				, bUseLinearReferenceFrameA);
+		}
+		else
+		{
+			obj = m_pObj->CreateSliderConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, v3RbAOrigin
+				, mRbARotation
+				, bUseLinearReferenceFrameA);
+		}
+
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateHingeConstraint(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			return nullptr;
+
+		CPhysicsHingeConstraint* obj = nullptr;
+
+		auto& rbA = params["rbA"];
+		ParaAttributeObject* rigidBodyA;
+		Object2RigidBody(rbA, rigidBodyA);
+		if (!rigidBodyA)
+			return nullptr;
+
+		auto& useReferenceFrameA = params["useReferenceFrameA"];
+		bool bUseReferenceFrameA = false;
+		if (type(useReferenceFrameA) == LUA_TBOOLEAN)
+			bUseReferenceFrameA = object_cast<bool>(useReferenceFrameA);
+
+		auto& rbB = params["rbB"];
+		ParaAttributeObject* rigidBodyB;
+		Object2RigidBody(rbB, rigidBodyB);
+
+		auto& pivotInA = params["pivotInA"];
+		PARAVECTOR3 v3PivotInA;
+		bool bUsePivotInA = Object2Vector3(pivotInA, v3PivotInA);
+
+		if (bUsePivotInA)
+		{
+			auto& axisInA = params["axisInA"];
+			PARAVECTOR3 v3AxisInA;
+			if (!Object2Vector3(axisInA, v3AxisInA))
+				return nullptr;
+
+			if (rigidBodyB)
+			{
+				auto& pivotInB = params["pivotInB"];
+				PARAVECTOR3 v3PivotInB;
+				bool bUsePivotInB = Object2Vector3(pivotInB, v3PivotInB);
+
+				if (bUsePivotInB)
+				{
+					auto& axisInB = params["axisInB"];
+					PARAVECTOR3 v3AxisInB;
+					if (!Object2Vector3(axisInB, v3AxisInB))
+						return nullptr;
+
+					obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+						, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+						, v3PivotInA
+						, v3PivotInB
+						, v3AxisInA
+						, v3PivotInB
+						, bUseReferenceFrameA);
+				}
+				else
+				{
+					return nullptr;
+				}
+			}
+			else
+			{
+				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+					, v3PivotInA
+					, v3AxisInA
+					, bUseReferenceFrameA);
+			}
+		}
+		else
+		{
+			auto& rbAOrigin = params["rbAOrigin"];
+			PARAVECTOR3 v3RbAOrigin;
+			if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+				return nullptr;
+
+			auto& rbARotation = params["rbARotation"];
+			PARAMATRIX3x3 mRbARotation;
+			if (!Object2Matrix3x3(rbARotation, mRbARotation))
+				return nullptr;
+
+			if (rigidBodyB)
+			{
+				auto& rbBOrigin = params["rbBOrigin"];
+				PARAVECTOR3 v3RbBOrigin;
+				if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+					return nullptr;
+
+				auto& rbBRotation = params["rbBRotation"];
+				PARAMATRIX3x3 mRbBRotation;
+				if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+					return nullptr;
+
+				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+					, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+					, v3RbAOrigin
+					, mRbARotation
+					, v3RbBOrigin
+					, mRbBRotation
+					, bUseReferenceFrameA);
+			}
+			else
+			{
+				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+					, v3RbAOrigin
+					, mRbARotation
+					, bUseReferenceFrameA);
+			}
+		}
+		
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreatePoint2PointConstraint(const object& params)
+	{
+		if (type(params) != LUA_TTABLE)
+			return nullptr;
+
+		auto& rbA = params["rbA"];
+		ParaAttributeObject* rigidBodyA;
+		Object2RigidBody(rbA, rigidBodyA);
+		if (!rigidBodyA)
+			return nullptr;
+
+		auto& pivotInA = params["pivotInA"];
+		PARAVECTOR3 v3PivotInA;
+		if (!Object2Vector3(pivotInA, v3PivotInA))
+			return nullptr;
+
+		CPhysicsP2PConstraint* obj = nullptr;
+
+		auto& rbB = params["rbB"];
+		ParaAttributeObject* rigidBodyB;
+		Object2RigidBody(rbB, rigidBodyB);
+		if (rigidBodyB)
+		{
+			auto& pivotInB = params["pivotInB"];
+			PARAVECTOR3 v3PivotInB;
+			if (!Object2Vector3(pivotInB, v3PivotInB))
+				return nullptr;
+
+			obj = m_pObj->CreatePoint2PointConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+				, v3PivotInA
+				, v3PivotInB);
+		}	
+		else
+		{
+			obj = m_pObj->CreatePoint2PointConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				, v3PivotInA);
+		}
+
+		return new ParaAttributeObject(obj);
+	}
+
+	ParaAttributeObject* ParaPhysicsFactory::CreateConstraint(ConstraintType cType, const object& params)
+	{
+		if (cType >= ConstraintType::CT_MIN && cType < ConstraintType::CT_MAX)
+			return (this->*(m_pCreateConstraintFunc[cType]))(params);
+		else
+			return nullptr;
+	}
+
+	ParaPhysicsFactory::CreateShapeFunc ParaPhysicsFactory::m_pCrateShapeFunc[ParaPhysicsFactory::ShapeType::ST_MAX] =
 	{
 		&ParaPhysicsFactory::CreateBoxShape
 		, &ParaPhysicsFactory::CreateSphereShape
@@ -142,7 +458,7 @@ namespace ParaScripting
 			return nullptr;
 
 		auto shapeObj = object_cast<ParaAttributeObject*>(triangleMeshShape);
-		if (shapeObj->GetClassID() != ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape)
+		if (!shapeObj->IsValid() || shapeObj->GetClassID() != ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape)
 			//return ParaAttributeObject();
 			return nullptr;
 
@@ -275,14 +591,10 @@ namespace ParaScripting
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateShape(ShapeType shapeType, const object& params)
 	{
-		if (!IsValid())
-			//return ParaAttributeObject();
-			return nullptr;
 
-		if (shapeType >= ShapeType::MIN && shapeType < ShapeType::MAX)
+		if (shapeType >= ShapeType::ST_MIN && shapeType < ShapeType::ST_MAX)
 			return (this->*(m_pCrateShapeFunc[shapeType]))(params);
 		else
-			//return ParaAttributeObject();
 			return nullptr;
 	}
 
@@ -468,10 +780,6 @@ namespace ParaScripting
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody_(const object& params, ParaPhysicsMotionStateDesc* motionStateDesc)
 	{
-		if (!IsValid())
-			//return ParaAttributeObject();
-			return nullptr;
-
 		if (type(params) != LUA_TTABLE)
 			//return ParaAttributeObject();
 			return nullptr;
@@ -558,7 +866,9 @@ namespace ParaScripting
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody(const object& params)
 	{
-		return CreateRigidbody_(params, nullptr);
+		auto& callback = params["callback"];
+
+		return CreateRigidbody2(params, callback);
 	}
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody2(const object& params, const object& callback)

@@ -49,6 +49,19 @@ namespace ParaEngine {
 		m_pConstraint->setEnabled(enabled);
 	}
 
+	int CPhysicsConstraint::InstallFields(CAttributeClass* pClass, bool bOverride)
+	{
+		CPhysicsObject::InstallFields(pClass, bOverride);
+
+		pClass->AddField("Enabled"
+			, FieldType_Bool
+			, setEnabled_s
+			, isEnabled_s
+			, nullptr, nullptr, bOverride);
+
+		return S_OK;
+	}
+
 	CPhysicsP2PConstraint::CPhysicsP2PConstraint(IParaPhysicsPoint2PointConstraint* pConstraint, CPhysicsRigidBody* rbA, CPhysicsRigidBody* rbB)
 		: CPhysicsConstraint(pConstraint, rbA, rbB)
 	{

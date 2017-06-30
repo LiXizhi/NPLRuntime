@@ -47,6 +47,19 @@ namespace ParaEngine {
 		}
 	}
 
+	int CPhysicsBody::InstallFields(CAttributeClass* pClass, bool bOverride)
+	{
+		CPhysicsObject::InstallFields(pClass, bOverride);
+
+		pClass->AddField("InternalType"
+			, FieldType_Int
+			, nullptr
+			, GetInternalType_s
+			, nullptr, nullptr, bOverride);
+
+		return S_OK;
+	}
+
 	CPhysicsRigidBody::CPhysicsRigidBody(IParaPhysicsRigidbody* pBody, CPhysicsShape* pShape)
 		: CPhysicsBody(pBody)
 		, m_pShape(pShape)
@@ -58,6 +71,33 @@ namespace ParaEngine {
 	CPhysicsRigidBody::~CPhysicsRigidBody()
 	{
 		
+	}
+
+	int CPhysicsRigidBody::InstallFields(CAttributeClass* pClass, bool bOverride)
+	{
+		CPhysicsBody::InstallFields(pClass, bOverride);
+
+		PE_ASSERT(pClass != NULL);
+
+		pClass->AddField("isConstrainted"
+			, FieldType_Bool
+			, nullptr
+			, isConstrainted_s
+			, nullptr, nullptr, bOverride);
+
+		pClass->AddField("isInWorld"
+			, FieldType_Bool
+			, nullptr
+			, isInWorld_s
+			, nullptr, nullptr, bOverride);
+
+		pClass->AddField("Convert2Kinematic"
+			, FieldType_void
+			, Convert2Kinematic_s
+			, nullptr
+			, nullptr, nullptr, bOverride);
+
+		return S_OK;
 	}
 
 	void CPhysicsRigidBody::SetConstraint(CPhysicsConstraint* p)
