@@ -34,11 +34,11 @@ namespace ParaEngine
 	private:
 		void InitOffsetTable();
 
-	private:
+	private: 
 		BMaxNodePtr* m_nodes;
 		uint32 faceIndex;
 		BlockVertexCompressed m_retangleVertices[4];
-		std::vector<Vector3> m_directionOffsetTable;
+		Vector3 m_directionOffsetTable[24];
 	};
 
 	typedef ref_ptr<Rectangle> RectanglePtr;

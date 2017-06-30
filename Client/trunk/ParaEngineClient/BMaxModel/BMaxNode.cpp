@@ -316,10 +316,11 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			tessellatedModel->SetFaceVisiable(face);
 		}
 	}
-
-	if (tessellatedModel->GetVerticesCount())
-	{
+	
+	if (tessellatedModel->GetVerticesCount() > 0)
 		m_cube = tessellatedModel;
-	}
+	else
+		m_cube = NULL;
+	
 	return tessellatedModel->GetVerticesCount();
 }

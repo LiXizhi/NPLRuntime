@@ -400,7 +400,7 @@ namespace ParaEngine
 
 		friend class IBlockModelProvider;
 
-		FaceStatus m_faces[6];
+		FaceStatus m_faces[6] = {faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable};
 	};
 }
 

@@ -73,7 +73,7 @@ namespace ParaEngine
 	void Rectangle::CloneNodes()
 	{
 		int startVertex = faceIndex * 4;
-		for(int i = 0; i <= 3; i++)
+		for(int i = 0; i < 4; i++)
 		{
 			BlockModel *cube = m_nodes[i]->GetCube();
 			BlockVertexCompressed *vertice = cube->GetVertices();

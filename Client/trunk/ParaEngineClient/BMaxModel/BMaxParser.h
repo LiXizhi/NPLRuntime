@@ -57,8 +57,13 @@ namespace ParaEngine
 		const Vector3& GetCenterPos() const;
 
 		vector<RectanglePtr> MergeCoplanerBlockFace();
-		void FindCoplanerFace(vector<RectanglePtr> retangles, BMaxNode* node, uint32 nFaceIndex);
+		void FindCoplanerFace(vector<RectanglePtr> &retangles, BMaxNode* node, uint32 nFaceIndex);
 		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
+
+		void CalculateLod();
+		vector<uint32> GetLodTable(uint32 faceCount);
+		void PerformLod();
+		BMaxNode* CalculateLodNode(int x, int y, int z);
 	
 		inline uint32 GetNodeIndex(uint16 x, uint16 y, uint16 z)
 		{
@@ -148,7 +153,8 @@ namespace ParaEngine
 		std::vector<BlockModel*> m_blockModels;
 		std::map<uint32, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;
-		std::map<uint16, vector<RectanglePtr>>m_rectangles;
+		std::vector<RectanglePtr>m_originRectangles;
+		std::map<uint16, vector<RectanglePtr>>m_lodRectangles;
 		
 		/// array of bone nodes, array index is the bone index. 
 		vector<BMaxFrameNodePtr> m_bones;
