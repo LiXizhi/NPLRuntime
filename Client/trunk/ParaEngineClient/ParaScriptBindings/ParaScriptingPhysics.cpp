@@ -82,45 +82,39 @@ namespace ParaScripting
 
 		CPhysicsGeneric6DofSpringConstraint* obj = nullptr;
 
-		auto& rbA = params["rbA"];
-		ParaAttributeObject* rigidBodyA;
-		Object2RigidBody(rbA, rigidBodyA);
+		CPhysicsRigidBody* rigidBodyA = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbA", rigidBodyA);
 		if (!rigidBodyA)
 			return nullptr;
 
-		auto& useLinearReferenceFrameA = params["useLinearReferenceFrameA"];
-		if (type(useLinearReferenceFrameA) != LUA_TBOOLEAN)
+		bool bUseLinearReferenceFrameA;
+		if (!ReadLuaTableBoolean(params, "useLinearReferenceFrameA", bUseLinearReferenceFrameA))
 			return nullptr;
-		auto bUseLinearReferenceFrameA = object_cast<bool>(useLinearReferenceFrameA);
 
-		auto& rbAOrigin = params["rbAOrigin"];
 		PARAVECTOR3 v3RbAOrigin;
-		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+		if (!ReadLuaTableVector3(params, "rbAOrigin", v3RbAOrigin))
 			return nullptr;
 
-		auto& rbARotation = params["rbARotation"];
 		PARAMATRIX3x3 mRbARotation;
-		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+		if (!ReadLuaTableMatrix3x3(params, "rbARotation", mRbARotation))
 			return nullptr;
 
-		auto& rbB = params["rbB"];
-		ParaAttributeObject* rigidBodyB;
-		Object2RigidBody(rbB, rigidBodyB);
+		CPhysicsRigidBody* rigidBodyB = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbB", rigidBodyB);
 
 		if (rigidBodyB)
 		{
-			auto& rbBOrigin = params["rbBOrigin"];
+
 			PARAVECTOR3 v3RbBOrigin;
-			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+			if (!ReadLuaTableVector3(params, "rbBOrigin", v3RbBOrigin))
 				return nullptr;
 
-			auto& rbBRotation = params["rbBRotation"];
 			PARAMATRIX3x3 mRbBRotation;
-			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+			if (!ReadLuaTableMatrix3x3(params, "rbBRotation", mRbBRotation))
 				return nullptr;
 
-			obj = m_pObj->CreateGeneric6DofSpringConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+			obj = m_pObj->CreateGeneric6DofSpringConstraint(rigidBodyA
+				, rigidBodyB
 				, v3RbAOrigin
 				, mRbARotation
 				, v3RbBOrigin
@@ -129,7 +123,7 @@ namespace ParaScripting
 		}
 		else
 		{
-			obj = m_pObj->CreateGeneric6DofSpringConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+			obj = m_pObj->CreateGeneric6DofSpringConstraint(rigidBodyA
 				, v3RbAOrigin
 				, mRbARotation
 				, bUseLinearReferenceFrameA);
@@ -145,40 +139,34 @@ namespace ParaScripting
 
 		CPhysicsConeTwistConstraint* obj = nullptr;
 
-		auto& rbA = params["rbA"];
-		ParaAttributeObject* rigidBodyA;
-		Object2RigidBody(rbA, rigidBodyA);
+		CPhysicsRigidBody* rigidBodyA = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbA", rigidBodyA);
 		if (!rigidBodyA)
 			return nullptr;
 
-		auto& rbAOrigin = params["rbAOrigin"];
 		PARAVECTOR3 v3RbAOrigin;
-		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+		if (!ReadLuaTableVector3(params, "rbAOrigin", v3RbAOrigin))
 			return nullptr;
 
-		auto& rbARotation = params["rbARotation"];
 		PARAMATRIX3x3 mRbARotation;
-		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+		if (!ReadLuaTableMatrix3x3(params, "rbARotation", mRbARotation))
 			return nullptr;
 
-		auto& rbB = params["rbB"];
-		ParaAttributeObject* rigidBodyB;
-		Object2RigidBody(rbB, rigidBodyB);
+		CPhysicsRigidBody* rigidBodyB = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbB", rigidBodyB);
 
 		if (rigidBodyB)
 		{
-			auto& rbBOrigin = params["rbBOrigin"];
 			PARAVECTOR3 v3RbBOrigin;
-			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+			if (!ReadLuaTableVector3(params, "rbBOrigin", v3RbBOrigin))
 				return nullptr;
 
-			auto& rbBRotation = params["rbBRotation"];
 			PARAMATRIX3x3 mRbBRotation;
-			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+			if (!ReadLuaTableMatrix3x3(params, "rbBRotation", mRbBRotation))
 				return nullptr;
 
-			obj = m_pObj->CreateConeTwistConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+			obj = m_pObj->CreateConeTwistConstraint(rigidBodyA
+				, rigidBodyB
 				, v3RbAOrigin
 				, mRbARotation
 				, v3RbBOrigin
@@ -186,7 +174,7 @@ namespace ParaScripting
 		}
 		else
 		{
-			obj = m_pObj->CreateConeTwistConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+			obj = m_pObj->CreateConeTwistConstraint(rigidBodyA
 				, v3RbAOrigin
 				, mRbARotation);
 		}
@@ -201,45 +189,38 @@ namespace ParaScripting
 
 		CPhysicsSliderConstraint* obj = nullptr;
 
-		auto& rbA = params["rbA"];
-		ParaAttributeObject* rigidBodyA;
-		Object2RigidBody(rbA, rigidBodyA);
+		CPhysicsRigidBody* rigidBodyA = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbA", rigidBodyA);
 		if (!rigidBodyA)
 			return nullptr;
 
-		auto& useLinearReferenceFrameA = params["useLinearReferenceFrameA"];
-		if (type(useLinearReferenceFrameA) != LUA_TBOOLEAN)
+		bool bUseLinearReferenceFrameA;
+		if (!ReadLuaTableBoolean(params, "useLinearReferenceFrameA", bUseLinearReferenceFrameA))
 			return nullptr;
-		auto bUseLinearReferenceFrameA = object_cast<bool>(useLinearReferenceFrameA);
 
-		auto& rbAOrigin = params["rbAOrigin"];
 		PARAVECTOR3 v3RbAOrigin;
-		if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+		if (!ReadLuaTableVector3(params, "rbAOrigin", v3RbAOrigin))
 			return nullptr;
 
-		auto& rbARotation = params["rbARotation"];
 		PARAMATRIX3x3 mRbARotation;
-		if (!Object2Matrix3x3(rbARotation, mRbARotation))
+		if (!ReadLuaTableMatrix3x3(params, "rbARotation", mRbARotation))
 			return nullptr;
 
-		auto& rbB = params["rbB"];
-		ParaAttributeObject* rigidBodyB;
-		Object2RigidBody(rbB, rigidBodyB);
+		CPhysicsRigidBody* rigidBodyB = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbB", rigidBodyB);
 
 		if (rigidBodyB)
 		{
-			auto& rbBOrigin = params["rbBOrigin"];
 			PARAVECTOR3 v3RbBOrigin;
-			if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+			if (!ReadLuaTableVector3(params, "rbBOrigin", v3RbBOrigin))
 				return nullptr;
 
-			auto& rbBRotation = params["rbBRotation"];
 			PARAMATRIX3x3 mRbBRotation;
-			if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+			if (!ReadLuaTableMatrix3x3(params, "rbBRotation", mRbBRotation))
 				return nullptr;
 
-			obj = m_pObj->CreateSliderConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+			obj = m_pObj->CreateSliderConstraint(rigidBodyA
+				, rigidBodyB
 				, v3RbAOrigin
 				, mRbARotation
 				, v3RbBOrigin
@@ -248,7 +229,7 @@ namespace ParaScripting
 		}
 		else
 		{
-			obj = m_pObj->CreateSliderConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+			obj = m_pObj->CreateSliderConstraint(rigidBodyA
 				, v3RbAOrigin
 				, mRbARotation
 				, bUseLinearReferenceFrameA);
@@ -264,47 +245,43 @@ namespace ParaScripting
 
 		CPhysicsHingeConstraint* obj = nullptr;
 
-		auto& rbA = params["rbA"];
-		ParaAttributeObject* rigidBodyA;
-		Object2RigidBody(rbA, rigidBodyA);
+		CPhysicsRigidBody* rigidBodyA = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbA", rigidBodyA);
 		if (!rigidBodyA)
 			return nullptr;
 
-		auto& useReferenceFrameA = params["useReferenceFrameA"];
-		bool bUseReferenceFrameA = false;
-		if (type(useReferenceFrameA) == LUA_TBOOLEAN)
-			bUseReferenceFrameA = object_cast<bool>(useReferenceFrameA);
+		bool bUseReferenceFrameA;
+		if (!ReadLuaTableBoolean(params, "useReferenceFrameA", bUseReferenceFrameA))
+			bUseReferenceFrameA = false;
 
-		auto& rbB = params["rbB"];
-		ParaAttributeObject* rigidBodyB;
-		Object2RigidBody(rbB, rigidBodyB);
+		CPhysicsRigidBody* rigidBodyB = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbB", rigidBodyB);
 
-		auto& pivotInA = params["pivotInA"];
+
 		PARAVECTOR3 v3PivotInA;
-		bool bUsePivotInA = Object2Vector3(pivotInA, v3PivotInA);
+		bool bUsePivotInA = ReadLuaTableVector3(params, "pivotInA", v3PivotInA);
 
 		if (bUsePivotInA)
 		{
-			auto& axisInA = params["axisInA"];
 			PARAVECTOR3 v3AxisInA;
-			if (!Object2Vector3(axisInA, v3AxisInA))
+			if (!ReadLuaTableVector3(params, "axisInA", v3AxisInA))
 				return nullptr;
+
 
 			if (rigidBodyB)
 			{
-				auto& pivotInB = params["pivotInB"];
 				PARAVECTOR3 v3PivotInB;
-				bool bUsePivotInB = Object2Vector3(pivotInB, v3PivotInB);
+				bool bUsePivotInB = ReadLuaTableVector3(params, "pivotInB", v3PivotInB);
+
 
 				if (bUsePivotInB)
 				{
-					auto& axisInB = params["axisInB"];
 					PARAVECTOR3 v3AxisInB;
-					if (!Object2Vector3(axisInB, v3AxisInB))
+					if (!ReadLuaTableVector3(params, "axisInB", v3AxisInB))
 						return nullptr;
 
-					obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-						, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+					obj = m_pObj->CreateHingeConstraint(rigidBodyA
+						, rigidBodyB
 						, v3PivotInA
 						, v3PivotInB
 						, v3AxisInA
@@ -318,7 +295,7 @@ namespace ParaScripting
 			}
 			else
 			{
-				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				obj = m_pObj->CreateHingeConstraint(rigidBodyA
 					, v3PivotInA
 					, v3AxisInA
 					, bUseReferenceFrameA);
@@ -326,30 +303,26 @@ namespace ParaScripting
 		}
 		else
 		{
-			auto& rbAOrigin = params["rbAOrigin"];
 			PARAVECTOR3 v3RbAOrigin;
-			if (!Object2Vector3(rbAOrigin, v3RbAOrigin))
+			if (!ReadLuaTableVector3(params, "rbAOrigin", v3RbAOrigin))
 				return nullptr;
 
-			auto& rbARotation = params["rbARotation"];
 			PARAMATRIX3x3 mRbARotation;
-			if (!Object2Matrix3x3(rbARotation, mRbARotation))
+			if (!ReadLuaTableMatrix3x3(params, "rbARotation", mRbARotation))
 				return nullptr;
 
 			if (rigidBodyB)
 			{
-				auto& rbBOrigin = params["rbBOrigin"];
 				PARAVECTOR3 v3RbBOrigin;
-				if (!Object2Vector3(rbBOrigin, v3RbBOrigin))
+				if (!ReadLuaTableVector3(params, "rbBOrigin", v3RbBOrigin))
 					return nullptr;
 
-				auto& rbBRotation = params["rbBRotation"];
 				PARAMATRIX3x3 mRbBRotation;
-				if (!Object2Matrix3x3(rbBRotation, mRbBRotation))
+				if (!ReadLuaTableMatrix3x3(params, "rbBRotation", mRbBRotation))
 					return nullptr;
 
-				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-					, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+				obj = m_pObj->CreateHingeConstraint(rigidBodyA
+					, rigidBodyB
 					, v3RbAOrigin
 					, mRbARotation
 					, v3RbBOrigin
@@ -358,7 +331,7 @@ namespace ParaScripting
 			}
 			else
 			{
-				obj = m_pObj->CreateHingeConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+				obj = m_pObj->CreateHingeConstraint(rigidBodyA
 					, v3RbAOrigin
 					, mRbARotation
 					, bUseReferenceFrameA);
@@ -373,37 +346,34 @@ namespace ParaScripting
 		if (type(params) != LUA_TTABLE)
 			return nullptr;
 
-		auto& rbA = params["rbA"];
-		ParaAttributeObject* rigidBodyA;
-		Object2RigidBody(rbA, rigidBodyA);
+		CPhysicsP2PConstraint* obj = nullptr;
+
+		CPhysicsRigidBody* rigidBodyA = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbA", rigidBodyA);
 		if (!rigidBodyA)
 			return nullptr;
 
-		auto& pivotInA = params["pivotInA"];
 		PARAVECTOR3 v3PivotInA;
-		if (!Object2Vector3(pivotInA, v3PivotInA))
+		if (ReadLuaTableVector3(params, "pivotInA", v3PivotInA))
 			return nullptr;
 
-		CPhysicsP2PConstraint* obj = nullptr;
+		CPhysicsRigidBody* rigidBodyB = nullptr;
+		ReadLuaTablePhysicsRigidBody(params, "rbB", rigidBodyB);
 
-		auto& rbB = params["rbB"];
-		ParaAttributeObject* rigidBodyB;
-		Object2RigidBody(rbB, rigidBodyB);
 		if (rigidBodyB)
 		{
-			auto& pivotInB = params["pivotInB"];
 			PARAVECTOR3 v3PivotInB;
-			if (!Object2Vector3(pivotInB, v3PivotInB))
+			if (ReadLuaTableVector3(params, "pivotInB", v3PivotInB))
 				return nullptr;
 
-			obj = m_pObj->CreatePoint2PointConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
-				, static_cast<CPhysicsRigidBody*>(rigidBodyB->m_pAttribute.get())
+			obj = m_pObj->CreatePoint2PointConstraint(rigidBodyA
+				, rigidBodyB
 				, v3PivotInA
 				, v3PivotInB);
 		}	
 		else
 		{
-			obj = m_pObj->CreatePoint2PointConstraint(static_cast<CPhysicsRigidBody*>(rigidBodyA->m_pAttribute.get())
+			obj = m_pObj->CreatePoint2PointConstraint(rigidBodyA
 				, v3PivotInA);
 		}
 
@@ -449,26 +419,16 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateScaledTriangleMeshShape(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
-		auto& triangleMeshShape = params["triangleMeshShape"];
-		if (type(triangleMeshShape) != LUA_TUSERDATA)
-			//return ParaAttributeObject();
+		CPhysicsTriangleMeshShape* pShape = nullptr;
+		if (!ReadLuaTablePhysicsTriangleMeshShape(params, "triangleMeshShape", pShape))
 			return nullptr;
 
-		auto shapeObj = object_cast<ParaAttributeObject*>(triangleMeshShape);
-		if (!shapeObj->IsValid() || shapeObj->GetClassID() != ATTRIBUTE_CLASSID_CPhysicsTriangleMeshShape)
-			//return ParaAttributeObject();
-			return nullptr;
-
-		auto& localScaling = params["localScaling"];
 		PARAVECTOR3 v3;
-		if (!Object2Vector3(localScaling, v3))
-			//return ParaAttributeObject();
+		if (!ReadLuaTableVector3(params, "localScaling", v3))
 			return nullptr;
 
-		auto pShape = static_cast<CPhysicsTriangleMeshShape*>(shapeObj->m_pAttribute.get());
 		auto obj = m_pObj->CreateScaledTriangleMeshShape(pShape, v3);
 
 		return new ParaAttributeObject(obj);
@@ -477,50 +437,22 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateTriangleMeshShape(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
-		auto& flags = params["flags"];
-		if (type(flags) != LUA_TNUMBER)
-			//return ParaAttributeObject();
+		DWORD flags;
+		if (!ReadLuaTableDWORD(params, "flags", flags))
 			return nullptr;
-
-		auto& points = params["points"];
-		if (type(points) != LUA_TTABLE)
-			//return ParaAttributeObject();
-			return nullptr;
-
-		auto& triangles = params["triangles"];
-		if (type(triangles) != LUA_TTABLE)
-			//return ParaAttributeObject();
-			return nullptr;
-
-		DWORD dwFlag = object_cast<DWORD>(flags);
 
 		std::vector<PARAVECTOR3> vecPoints;
-		for (luabind::iterator itCur(points), itEnd; itCur != itEnd; ++itCur)
-		{
-			const object& item = *itCur;
-
-			auto size = vecPoints.size();
-			vecPoints.resize(size + 1);
-			if (!Object2Vector3(item, vecPoints[size]))
-				//return ParaAttributeObject();
-				return nullptr;
-		}
+		if (!ReadLuaTableVector3Array(params, "points", vecPoints))
+			return nullptr;
+	
 
 		std::vector<WORD> vecIndices;
-		for (luabind::iterator itCur(points), itEnd; itCur != itEnd; ++itCur)
-		{
-			const object& item = *itCur;
-			if (type(item) == LUA_TNUMBER)
-			{
-				vecIndices.push_back(object_cast<WORD>(item));
-			}
-		}
+		if (!ReadLuaTableWordArray(params, "triangles", vecIndices))
+			return nullptr;
 
 		if (vecIndices.size() % 3 != 0)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		ParaPhysicsTriangleMeshDesc trimeshDesc;
@@ -530,7 +462,7 @@ namespace ParaScripting
 		trimeshDesc.m_triangleStrideBytes = 3 * sizeof(int16);
 		trimeshDesc.m_points = &vecPoints[0];
 		trimeshDesc.m_triangles = &vecIndices[0];
-		trimeshDesc.m_flags = 0;
+		trimeshDesc.m_flags = flags;
 
 		auto obj = m_pObj->CreateTriangleMeshShape(trimeshDesc);
 		return new ParaAttributeObject(obj);
@@ -539,51 +471,35 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateStaticPlaneShape(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
-		auto& planeNormal = params["planeNormal"];
 		PARAVECTOR3 v3;
-		if (!Object2Vector3(planeNormal, v3))
-			//return ParaAttributeObject();
+		if (!ReadLuaTableVector3(params, "planeNormal", v3))
 			return nullptr;
 
-
-		auto& planeConstant = params["planeConstant"];
-		if (type(planeConstant) != LUA_TNUMBER)
-			//return ParaAttributeObject();
+		float planeConstant;
+		if (!ReadLuaTableFloat(params, "planeConstant", planeConstant))
 			return nullptr;
 
-		auto obj = m_pObj->CreateStaticPlaneShape(v3, object_cast<float>(planeConstant));
+		auto obj = m_pObj->CreateStaticPlaneShape(v3, planeConstant);
 		return new ParaAttributeObject(obj);
 	}
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateCompoundShape(const object& enableDynamicAabbTree)
 	{
-		if (type(enableDynamicAabbTree) != LUA_TBOOLEAN)
-			//return ParaAttributeObject();
+		bool bEnableDynamicAabbTree;
+		if (!ReadLuaBoolean(enableDynamicAabbTree, bEnableDynamicAabbTree))
 			return nullptr;
 
-		auto obj = m_pObj->CreateCompoundShape(object_cast<bool>(enableDynamicAabbTree));
+		auto obj = m_pObj->CreateCompoundShape(bEnableDynamicAabbTree);
 		return new ParaAttributeObject(obj);
 	}
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateConvexHullShape(const object& params)
 	{
-		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
-			return nullptr;
-
 		std::vector<PARAVECTOR3> positions;
-		for (luabind::iterator itCur(params), itEnd; itCur != itEnd; ++itCur)
-		{
-			const object& item = *itCur;
-			auto size = positions.size();
-			positions.resize(size + 1);
-			if (!Object2Vector3(item, positions[size]))
-				//return ParaAttributeObject();
-				return nullptr;
-		}
+		if (!ReadLuaVector3Array(params, positions) || positions.size() == 0)
+			return nullptr;
 
 		auto obj = m_pObj->CreateConvexHullShape(&positions[0], positions.size());
 		return new ParaAttributeObject(obj);
@@ -601,9 +517,7 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeY(const object& halfExtents)
 	{
 		PARAVECTOR3 v3;
-
 		if (!Object2Vector3(halfExtents, v3))
-			//return ParaAttributeObject();
 			return nullptr;
 
 		auto obj = m_pObj->CreateCylinderShapeY(v3);
@@ -613,9 +527,7 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeX(const object& halfExtents)
 	{
 		PARAVECTOR3 v3;
-
 		if (!Object2Vector3(halfExtents, v3))
-			//return ParaAttributeObject();
 			return nullptr;
 
 		auto obj = m_pObj->CreateCylinderShapeX(v3);
@@ -625,9 +537,7 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateCylinderShapeZ(const object& halfExtents)
 	{
 		PARAVECTOR3 v3;
-
 		if (!Object2Vector3(halfExtents, v3))
-			//return ParaAttributeObject();
 			return nullptr;
 
 		auto obj = m_pObj->CreateCylinderShapeZ(v3);
@@ -637,9 +547,7 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateBoxShape(const object& boxHalfExtents)
 	{
 		PARAVECTOR3 v3;
-
 		if (!Object2Vector3(boxHalfExtents, v3))
-			//return ParaAttributeObject();
 			return nullptr;
 
 		auto obj = m_pObj->CreateBoxShape(v3);
@@ -648,29 +556,24 @@ namespace ParaScripting
 	
 	ParaAttributeObject* ParaPhysicsFactory::CreateSphereShape(const object& radius)
 	{
-		if (type(radius) != LUA_TNUMBER)
-			//return ParaAttributeObject();
+
+		float fRadius;
+		if (!ReadLuaFloat(radius, fRadius))
 			return nullptr;
 
-		auto obj = m_pObj->CreateSphereShape(object_cast<float>(radius));
+		auto obj = m_pObj->CreateSphereShape(fRadius);
 		return new ParaAttributeObject(obj);
 	}
 
 	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeY(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 
 		auto obj = m_pObj->CreateCapsuleShapeY(fRadius, fHeight);
@@ -680,18 +583,12 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeX(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 		auto obj = m_pObj->CreateCapsuleShapeX(fRadius, fHeight);
 		return new ParaAttributeObject(obj);
@@ -700,18 +597,12 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateCapsuleShapeZ(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 		auto obj = m_pObj->CreateCapsuleShapeZ(fRadius, fHeight);
 		return new ParaAttributeObject(obj);
@@ -720,18 +611,12 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeY(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 		auto obj = m_pObj->CreateConeShapeY(fRadius, fHeight);
 		return new ParaAttributeObject(obj);
@@ -741,18 +626,12 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeX(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 		auto obj = m_pObj->CreateConeShapeX(fRadius, fHeight);
 		return new ParaAttributeObject(obj);
@@ -761,18 +640,12 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateConeShapeZ(const object& params)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		float fRadius = 0.f, fHeight = 0.f;
 
-		auto& radius = params["radius"];
-		if (type(radius) == LUA_TNUMBER)
-			fRadius = object_cast<float>(radius);
-
-		auto& height = params["height"];
-		if (type(height) == LUA_TNUMBER)
-			fHeight = object_cast<float>(height);
+		ReadLuaTableFloat(params, "radius", fRadius);
+		ReadLuaTableFloat(params, "height", fHeight);
 
 		auto obj = m_pObj->CreateConeShapeZ(fRadius, fHeight);
 		return new ParaAttributeObject(obj);
@@ -781,53 +654,34 @@ namespace ParaScripting
 	ParaAttributeObject* ParaPhysicsFactory::CreateRigidbody_(const object& params, ParaPhysicsMotionStateDesc* motionStateDesc)
 	{
 		if (type(params) != LUA_TTABLE)
-			//return ParaAttributeObject();
 			return nullptr;
 
 		// check shape
-		ParaAttributeObject* shapeObj = nullptr;
-		{
-			auto& shape = params["shape"];
-			if (type(shape) != LUA_TUSERDATA)
-				//return ParaAttributeObject();
-				return nullptr;
-
-			shapeObj = object_cast<ParaAttributeObject*>(shape);
-			auto classId = shapeObj->GetClassID();
-			if (!(classId >= ATTRIBUTE_CLASSID_CPhysicsShapeMin && classId <= ATTRIBUTE_CLASSID_CPhysicsShapeMax))
-				//return ParaAttributeObject();
-				return nullptr;
-		}
-
+		CPhysicsShape* pShape = nullptr;
+		if (!ReadLuaTablePhysicsShape(params, "shape", pShape))
+			return nullptr;
 
 		float fMass = 0.0f;
-		auto& mass = params["mass"];
-		if (type(mass) == LUA_TNUMBER)
-			fMass = object_cast<float>(mass);
+		ReadLuaTableFloat(params, "mass", fMass);
 
 		PARAVECTOR3 vOrigin;
-		auto& origin = params["origin"];
-		Object2Vector3(origin, vOrigin);
+		ReadLuaTableVector3(params, "origin", vOrigin);
+
 
 		PARAVECTOR3 vInertia;
-		auto& inertia = params["inertia"];
-		bool bUseInertia = Object2Vector3(inertia, vInertia);
+		bool bUseInertia = ReadLuaTableVector3(params, "inertia", vInertia);
 
 
 		PARAMATRIX3x3 mRotation;
-		auto& rotation = params["rotation"];
-		Object2Matrix3x3(rotation, mRotation);
+		ReadLuaTableMatrix3x3(params, "rotation", mRotation);
+
 
 		short nGroup = 0;
-		auto& group = params["group"];
-		if (type(group) == LUA_TNUMBER)
-			nGroup = object_cast<short>(group);
-
+		ReadLuaTableShort(params, "group", nGroup);
+	
 		int nMask = -1;
-		auto& mask = params["mask"];
-		if (type(mask) == LUA_TNUMBER)
-			nMask = object_cast<int>(mask);
-
+		ReadLuaTableInt(params, "mask", nMask);
+	
 
 		bool bUseCenterOfMassOffset = false;
 		auto& centerOfMassOffset = params["centerOfMassOffset"];
@@ -836,15 +690,15 @@ namespace ParaScripting
 		if (type(centerOfMassOffset) == LUA_TTABLE)
 		{
 			bUseCenterOfMassOffset = true;
-			auto& origin = centerOfMassOffset["origin"];
-			bUseCenterOfMassOffset &= Object2Vector3(origin, vCenterOfMassOffsetOrigin);
+			bUseCenterOfMassOffset &= ReadLuaTableVector3(centerOfMassOffset, "origin", vCenterOfMassOffsetOrigin);
 
 			if (bUseCenterOfMassOffset)
 			{
-				auto& rotation = params["rotation"];
-				bUseCenterOfMassOffset &= Object2Matrix3x3(rotation, mCenterOfMassOffsetRotation);
+				bUseCenterOfMassOffset &= ReadLuaTableMatrix3x3(centerOfMassOffset, "rotation", mCenterOfMassOffsetRotation);
 			}
 		}
+
+
 
 		ParaPhysicsRigidbodyDesc desc;
 		desc.m_group = nGroup;
@@ -858,7 +712,6 @@ namespace ParaScripting
 		if (bUseCenterOfMassOffset)
 			desc.setCenterOfMassOffset(vCenterOfMassOffsetOrigin, mCenterOfMassOffsetRotation);
 
-		auto pShape = static_cast<CPhysicsShape*>(shapeObj->m_pAttribute.get());
 		desc.m_pShape = pShape->get();
 
 		return new ParaAttributeObject(m_pObj->CreateRigidbody(desc, motionStateDesc));
