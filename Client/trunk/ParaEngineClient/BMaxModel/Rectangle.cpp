@@ -4,7 +4,7 @@
 namespace ParaEngine
 {
 
-	Rectangle::Rectangle(BMaxNodePtr *nodes_, uint32 faceIndex_) : m_nodes(nodes_), faceIndex(faceIndex_)
+	Rectangle::Rectangle(vector<BMaxNodePtr> nodes_, uint32 faceIndex_) : m_nodes(nodes_), faceIndex(faceIndex_)
 	{
 		InitOffsetTable();
 	}
@@ -57,7 +57,7 @@ namespace ParaEngine
 		m_directionOffsetTable[23] = Vector3(1, 0, 0);
 	}
 
-	void Rectangle::UpdateNode(BMaxNodePtr& fromNode, BMaxNodePtr& toNode, uint32 index)
+	void Rectangle::UpdateNode(BMaxNode* fromNode, BMaxNode* toNode, uint32 index)
 	{
 		if (fromNode)
 		{

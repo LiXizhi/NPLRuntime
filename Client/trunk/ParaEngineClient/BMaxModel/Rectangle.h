@@ -7,9 +7,9 @@ namespace ParaEngine
 	class Rectangle : public CRefCounted
 	{
 	public:
-		Rectangle(BMaxNodePtr *nodes_, uint32 faceIndex_);
+		Rectangle(vector<BMaxNodePtr> nodes_, uint32 faceIndex_);
 		~Rectangle();
-		void UpdateNode(BMaxNodePtr& fromNode, BMaxNodePtr&toNode, uint32 index);
+		void UpdateNode(BMaxNode* fromNode, BMaxNode* toNode, uint32 index);
 		void CloneNodes();
 		void ScaleVertices(float scale);
 
@@ -35,7 +35,7 @@ namespace ParaEngine
 		void InitOffsetTable();
 
 	private: 
-		BMaxNodePtr* m_nodes;
+		std::vector<BMaxNodePtr> m_nodes;
 		uint32 faceIndex;
 		BlockVertexCompressed m_retangleVertices[4];
 		Vector3 m_directionOffsetTable[24];

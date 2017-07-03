@@ -408,10 +408,10 @@ namespace ParaEngine
 	{
 		const uint16 nVertexCount = 4;
 
-		auto* nodes = new BMaxNodePtr[nVertexCount];
+		vector<BMaxNodePtr> nodes;
 		for (int i = 0; i < nVertexCount; i++)
 		{
-			nodes[i] = node;
+			nodes.push_back(BMaxNodePtr(node));
 		}
 
 		RectanglePtr rectangle(new Rectangle(nodes, nFaceIndex));
@@ -478,7 +478,7 @@ namespace ParaEngine
 			BlockModel *model = node->GetCube();
 			model->SetFaceUsed(nFaceIndex);
 		}
-		rectangle->UpdateNode(BMaxNodePtr(newFromNode), BMaxNodePtr(newToNode), nextI);
+		rectangle->UpdateNode(newFromNode, newToNode, nextI);
 		FindNeighbourFace(rectangle, i, nFaceIndex);
 	}
 
