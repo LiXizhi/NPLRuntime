@@ -731,12 +731,32 @@ namespace ParaScripting
 			ParaPhysicsMotionStateDesc motionStateDesc;
 			motionStateDesc.cb = [callback](const PARAMATRIX3x3& rotation, const PARAVECTOR3& origin)
 			{
-				object oRotation = newtable(callback.interpreter());
+				auto L = callback.interpreter();
+				object oRotation = newtable(L);
 				Matrix3x32Object(rotation, oRotation);
 
-				object oOrigin = newtable(callback.interpreter());
+				object oOrigin = newtable(L);
 				Vector32Object(origin, oOrigin);
+				
+				callback.push(L);
+				int top = lua_gettop(L);
+				oRotation.push(L);
+				oOrigin.push(L);
+				
+				int nResult = lua_pcall(L, 2, LUA_MULTRET, 0);
+				if (nResult != 0)
+				{
+					OUTPUT_LOG("LUA throw error: err_msg[%s]\n", lua_tostring(L, -1));
+					lua_pop(L, 1);
+				}
+				else
+				{
+					int num_results = lua_gettop(L) - top + 1;
+					if (num_results > 0)
+						lua_pop(L, num_results);
+				}
 
+				/*
 				try 
 				{
 					call_function<void>(callback, boost::ref(oRotation), boost::ref(oOrigin));
@@ -745,6 +765,7 @@ namespace ParaScripting
 				{
 					OUTPUT_LOG("LUA throw error: err_msg[%s]\n", lua_tostring(e.state(), -1));
 				}
+				*/
 			};
 
 			return CreateRigidbody_(params, &motionStateDesc);
