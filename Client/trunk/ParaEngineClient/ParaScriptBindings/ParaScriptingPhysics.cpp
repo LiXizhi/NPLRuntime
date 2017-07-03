@@ -354,7 +354,7 @@ namespace ParaScripting
 			return nullptr;
 
 		PARAVECTOR3 v3PivotInA;
-		if (ReadLuaTableVector3(params, "pivotInA", v3PivotInA))
+		if (!ReadLuaTableVector3(params, "pivotInA", v3PivotInA))
 			return nullptr;
 
 		CPhysicsRigidBody* rigidBodyB = nullptr;
@@ -363,7 +363,7 @@ namespace ParaScripting
 		if (rigidBodyB)
 		{
 			PARAVECTOR3 v3PivotInB;
-			if (ReadLuaTableVector3(params, "pivotInB", v3PivotInB))
+			if (!ReadLuaTableVector3(params, "pivotInB", v3PivotInB))
 				return nullptr;
 
 			obj = m_pObj->CreatePoint2PointConstraint(rigidBodyA
