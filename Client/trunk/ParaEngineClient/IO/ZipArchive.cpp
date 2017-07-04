@@ -56,6 +56,7 @@ const SZIPFileHeader* ParaEngine::GetFirstFileInfo(const char* src, std::string*
 		if (filename != nullptr)
 		{
 			filename->operator=(std::string(src + sizeof(SZIPFileHeader), p->FilenameLength));
+			filename->operator+=('\0');
 		}
 		return p;
 	}
