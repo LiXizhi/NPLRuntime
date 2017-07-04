@@ -7,6 +7,7 @@ namespace ParaEngine
 	struct TextureEntity;
 	class ImageEntity;
 	class CPaintEngine;
+	class CPainter;
 
 	/** a render target scene object. 
 	* render target is not initialized until the first Begin() End() pair is called. 
@@ -85,7 +86,7 @@ namespace ParaEngine
 		/** invoke the On_Paint script event handler if any. Normally this is called between Begin() and End(). 
 		* subclass can also inherit this method, to provide its own custom drawing functions. 
 		*/
-		virtual void DoPaint();
+		virtual void DoPaint(CPainter* painter = NULL);
 
 		/** set the color of the scene ground when it is not enabled.When scene is enabled, the background color is always the fog color. */
 		void SetClearColor(const LinearColor& bgColor);

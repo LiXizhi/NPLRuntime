@@ -222,6 +222,10 @@ namespace ParaEngine
 		ATTRIBUTE_DEFINE_CLASS(CZipArchive);
 		ATTRIBUTE_METHOD1(CZipArchive, SetBaseDirectory_s, const char*)	{ cls->SetBaseDirectory(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CZipArchive, GetRootDirectory_s, const char**) { *p1 = cls->GetRootDirectory().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, SetRootDirectory_s, const char*) { cls->SetRootDirectory(p1); return S_OK; }
+
+
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 		
 	public:
@@ -279,7 +283,11 @@ namespace ParaEngine
 		*/
 		virtual void SetRootDirectory(const string& filename);
 
+		/** get root directory. all relative file path in zip files is regarded as relative to this directory. */
+		const std::string& GetRootDirectory();
+
 		/** set the base directory to be removed from the relative path of all files in the zip file. 
+		* call this function only once, it will actually modify the relative file path.
 		*/
 		virtual void SetBaseDirectory(const char * filename);
 
@@ -304,6 +312,7 @@ namespace ParaEngine
 
 		/** get total file count. */
 		int GetFileCount();
+
 	private:
 		IReadFile* m_pFile;
 		array<SZipFileEntryPtr> m_FileList;

@@ -23,6 +23,16 @@ namespace ParaEngine
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		/** we support multi-dimensional child object. by default objects have only one column. */
+		virtual int GetChildAttributeColumnCount();
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
+
+		ATTRIBUTE_METHOD(BMaxObject, UpdateModel_s) { cls->UpdateModel(); return S_OK; }
+	public:
+		IAttributeFields* GetAnimInstanceFields();
+
 		virtual HRESULT Draw(SceneState * sceneState);
 
 		void ApplyBlockLighting(SceneState * sceneState);
@@ -63,9 +73,28 @@ namespace ParaEngine
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
 
+		/** whether animation is enabled. by default this is true. During movie editing, we may disable animation, set animation frame explicitly by editor logics. */
+		virtual void EnableAnim(bool bAnimated);
+		virtual bool IsAnimEnabled();
+
+		/** get the current local time in case it is animated in milli seconds frames. */
+		virtual int GetTime();
+		virtual void SetTime(int nTime);
+
+		/** set the current animation frame number relative to the beginning of current animation.
+		* @param nFrame: 0 means beginning. if nFrame is longer than the current animation length, it will wrap (modulate the length).
+		*/
+		virtual void SetAnimFrame(int nFrame);
+
+		/** get the current animation frame number relative to the beginning of current animation.  */
+		virtual int GetAnimFrame();
+
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
 		
+		/** update model according to current animation data and time*/
+		bool UpdateModel(SceneState * sceneState = NULL);
+
 	private:
 		/** size scale */
 		float	m_fScale;
@@ -83,5 +112,10 @@ namespace ParaEngine
 		float m_fLastBlockLight;
 		/** a hash to detect if the containing block position of this biped changed. */
 		DWORD m_dwLastBlockHash;
+
+		/** current time for dynamic fields. */
+		int m_curTime;
+		/** whether to enable animation in asset file. */
+		bool m_bEnableAnim;
 	};
 }

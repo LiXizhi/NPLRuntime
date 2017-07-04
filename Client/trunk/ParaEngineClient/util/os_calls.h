@@ -22,7 +22,7 @@ namespace ParaEngine
 #define CLIB_DEFHANDLE	RTLD_DEFAULT
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS)
 #if defined(RTLD_MAIN_ONLY)
-// this is mostly for iOS?
+	// this is mostly for iOS?
 #define CLIB_DEFHANDLE	RTLD_MAIN_ONLY
 #else
 #define CLIB_DEFHANDLE	((void *)(intptr_t)-2)
@@ -83,7 +83,7 @@ namespace ParaEngine
 	*/
 	PE_CORE_DECL size_t GetCurrentMemoryUse();
 
-	/** get current executable path. 
+	/** get current executable path.
 	*/
 	PE_CORE_DECL std::string GetExecutablePath();
 }
@@ -127,7 +127,7 @@ typedef struct _finddata_t
 typedef struct _findinfo_t
 {
 	DIR*	openedDir;
-	std::string filter;    
+	std::string filter;
 	std::string dirName;
 } _findinfo;
 

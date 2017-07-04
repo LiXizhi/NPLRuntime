@@ -284,7 +284,7 @@ Gdiplus::Bitmap* CGDIEngine::LoadTexture(const string& filename, int nFileFormat
 		return NULL;
 	}
 
-	MemIO memIO((BYTE*)(file.getBuffer()));
+	MemIO memIO((BYTE*)(file.getBuffer()), file.getSize());
 	FIBITMAP *dib = FreeImage_LoadFromHandle( dwTextureFormat, &memIO, (fi_handle)&memIO );
 	if(dib == 0)
 	{

@@ -1,6 +1,7 @@
 #pragma once
 #include "math/ParaRect.h"
 #include "AssetEntity.h"
+#include "IObjectScriptingInterface.h"
 
 namespace ParaEngine
 {
@@ -22,6 +23,14 @@ namespace ParaEngine
 
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		/** we support multi-dimensional child object. by default objects have only one column. */
+		virtual int GetChildAttributeColumnCount();
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingCount_s, int*)	{ *p1 = cls->GetPickingCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingID_s, DWORD*)	{ *p1 = cls->GetPickingID(-1); return S_OK; }

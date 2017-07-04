@@ -117,7 +117,7 @@ namespace ParaEngine
 
 		/** if there is already a parameter with the same name, it will be overridden. */
 		template <class t>
-		void SetParameter(string sName, const t& value)
+		void SetParameter(const string& sName, const t& value)
 		{
 			map <string, CParameter>::iterator it = m_params.find(sName);
 			if(it!=m_params.end())
@@ -136,7 +136,7 @@ namespace ParaEngine
 		bool AddParameter(const CParameter& p);
 
 		/** get parameter by its name, NULL will be returned if parameter is not found. */
-		CParameter* GetParameter(string sName)
+		CParameter* GetParameter(const string& sName)
 		{
 			map <string, CParameter>::iterator it = m_params.find(sName);
 			if(it!=m_params.end())

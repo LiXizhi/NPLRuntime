@@ -42,6 +42,7 @@ extern "C"
 
 #include <luabind/luabind.hpp>
 #include <luabind/out_value_policy.hpp>
+#include <luabind/raw_policy.hpp>
 
 #include "ParaScriptingIO.h"
 #include "ParaScriptingIC.h"
@@ -363,6 +364,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 		.def("GetSchematicsMinMax", &ParaAttributeObject::GetSchematicsMinMax, pure_out_value(_5) + pure_out_value(_6))
 		.def("GetSchematicsType", &ParaAttributeObject::GetSchematicsType)
 		.def("GetField", &ParaAttributeObject::GetField)
+		.def("GetField", &ParaAttributeObject::GetField2, raw(_3))
 		.def("SetField", &ParaAttributeObject::SetField)
 		.def("CallField", &ParaAttributeObject::CallField)
 		.def("ResetField", &ParaAttributeObject::ResetField)

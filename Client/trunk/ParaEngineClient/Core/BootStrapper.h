@@ -44,6 +44,8 @@ namespace ParaEngine
 		/** load the default setting. this function is called at the constructor.*/
 		void LoadDefault();
 
+		/** whether it is the default one. */
+		bool IsEmpty();
 	public:
 		/** get the game loop file. the game loop file provides the heart beat of the application. 
 		* It is also the very first(entry) script to be activated when the application starts up.

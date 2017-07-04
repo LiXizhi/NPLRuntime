@@ -12,6 +12,7 @@
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/particle.h"
 #include "ParaXModel/ParaXBone.h"
+#include "ParaXModel/XFileCharModelExporter.h"
 #include "ParaXSerializer.h"
 #ifdef USE_DIRECTX_RENDERER
 // for ParaEngine x file template registration
@@ -31,6 +32,12 @@ namespace ParaEngine
 {
 	extern float frand();
 	SerializerOptions CParaXSerializer::g_pDefaultOption;
+
+	void CParaXSerializer::ExportParaXMesh(const string& filePath, CParaXModel* pMesh)
+	{
+		XFileCharModelExporter::Export(filePath, pMesh);
+	}
+
 }
 
 using namespace ParaEngine;
@@ -762,6 +769,7 @@ bool CParaXSerializer::ReadXAttachments(CParaXModel& xmesh, LPFileData pFileData
 		int nAttachments = *(DWORD*)(pBuffer);
 		int nAttachmentLookup = *(((DWORD*)(pBuffer))+1);
 		xmesh.m_objNum.nAttachments = nAttachments;
+		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 		
 		ModelAttachmentDef *attachments = (ModelAttachmentDef *)(pBuffer+8);
 		int32 * attLookup = (int32 *)(pBuffer+8+sizeof(ModelAttachmentDef)*nAttachments);
@@ -1661,7 +1669,7 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 		if(Parser.m_pParaXRawData && SUCCEEDED(Parser.m_pParaXRawData->Lock(&dwSize, (LPCVOID*)(&pBuffer))))
 			m_pRaw = pBuffer+4;
 
-		if(Parser.m_xheader.type == PARAX_MODEL_ANIMATED)
+		if(Parser.m_xheader.type == PARAX_MODEL_ANIMATED || Parser.m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(Parser.m_xheader);
 			

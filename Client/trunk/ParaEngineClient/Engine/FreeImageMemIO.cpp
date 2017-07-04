@@ -21,15 +21,35 @@ unsigned STDCALL MemIO::_ReadProc(void *buffer, unsigned size, unsigned count, f
 
 	BYTE *tmp = (BYTE *)buffer;
 
-	for (unsigned c = 0; c < count; c++) {
-		memcpy(tmp, memIO->_cp, size);
+	/*
+	unsigned readCount = 0;
+	unsigned curSize = memIO->_size - (memIO->_cp - memIO->_start);
 
-		memIO->_cp = memIO->_cp + size;
+	for (readCount = 0; readCount < count && curSize > 0; readCount++) {
 
-		tmp += size;
+		unsigned r = (std::min)(curSize, size);
+
+		memcpy(tmp, memIO->_cp, r);
+
+		memIO->_cp = memIO->_cp + r;
+
+		tmp += r;
+
+		curSize -= r;
 	}
 
-	return count;
+	return readCount;
+	*/
+
+	// faster version
+	unsigned readSize = size * count;
+	unsigned curSize = memIO->_size - (memIO->_cp - memIO->_start);
+	readSize = (std::min)(curSize, readSize);
+
+	memcpy(tmp, memIO->_cp, readSize);
+	memIO->_cp += readSize;
+
+	return (readSize + (size - 1)) / size;
 }
 
 unsigned STDCALL MemIO::_WriteProc(void *buffer, unsigned size, unsigned count, fi_handle handle) {
@@ -43,9 +63,21 @@ int STDCALL MemIO::_SeekProc(fi_handle handle, long offset, int origin) {
 	MemIO *memIO = (MemIO*)handle;
 
 	if (origin == SEEK_SET) 
-		memIO->_cp = memIO->_start + offset;
+		memIO->_cp = memIO->_start + (std::min)((size_t)offset, memIO->_size);
 	else
-		memIO->_cp = memIO->_cp + offset;
+	{
+		 memIO->_cp += offset;
+		 if (memIO->_cp < memIO->_start)
+		 {
+			 memIO->_cp = memIO->_start;
+		 }
+
+		 if (memIO->_cp > memIO->_start + memIO->_size)
+		 {
+			 memIO->_cp = memIO->_start + memIO->_size;
+		 }
+
+	}
 
 	return 0;
 }

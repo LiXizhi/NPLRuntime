@@ -22,23 +22,24 @@ using namespace ParaEngine;
 /////////////////////////////////////////////////
 ParaEngine::CBlockPieceParticleElement::CBlockPieceParticleElement(CBlockPieceParticle* pParent) : m_pParent(pParent)
 {
-	if (m_pParent)
-		m_pParent->addref();
+	
 }
 
 ParaEngine::CBlockPieceParticleElement::~CBlockPieceParticleElement()
 {
-	SAFE_RELEASE(m_pParent);
+	
 }
 
 int ParaEngine::CBlockPieceParticleElement::RenderParticle(SPRITEVERTEX** pVertexBuffer, SceneState* pSceneState)
 {
-	return m_pParent ? m_pParent->RenderParticle(pVertexBuffer, pSceneState) : 0;
+	auto parent = m_pParent.get();
+	return parent ? parent->RenderParticle(pVertexBuffer, pSceneState) : 0;
 }
 
 TextureEntity* ParaEngine::CBlockPieceParticleElement::GetTexture()
 {
-	return m_pParent ? m_pParent->GetTexture() : NULL;
+	auto parent = m_pParent.get();
+	return parent ? parent->GetTexture() : NULL;
 }
 
 

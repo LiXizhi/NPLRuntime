@@ -15,6 +15,7 @@
 #include "FileManager.h"
 #include "NPL/NPLHelper.h"
 #include "ParaWorldAsset.h"
+#include "BufferPicking.h"
 #include "ParaXModel/BoneAnimProvider.h"
 
 #ifdef PARAENGINE_CLIENT
@@ -735,8 +736,15 @@ ParaAssetObject ParaAsset::LoadStaticMesh(const char* strAssetName, const char* 
 	{
 		return ParaAssetObject();
 	}
-
 }
+
+
+ParaScripting::ParaAssetObject ParaScripting::ParaAsset::LoadPickingBuffer(const char* strAssetName)
+{
+	AssetEntity* pAssetEntity = CGlobals::GetAssetManager()->LoadBufferPick(strAssetName);
+	return ParaAssetObject(pAssetEntity);
+}
+
 ParaAssetObject ParaAsset::LoadTexture(const char* strAssetName, const char* strFilePath, int nSurfaceType)
 {
 	if(nSurfaceType<0)
@@ -887,4 +895,5 @@ bool ParaAsset::Refresh( const char* filename )
 {
 	return CGlobals::GetAssetManager()->RefreshAsset(filename);
 }
+
 #pragma endregion ParaAssets

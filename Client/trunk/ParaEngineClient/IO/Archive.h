@@ -80,6 +80,11 @@ namespace ParaEngine
 		*/
 		virtual void SetRootDirectory(const string& filename){};
 
+		/** set the base directory to be removed from the relative path of all files in the zip file.
+		* call this function only once, it will actually modify the relative file path.
+		*/
+		virtual void SetBaseDirectory(const char * filename) {};
+
 		/** 
 		* this is a recursive function. Finding a file inside the zip. 
 		* search files at once. @see CSearchResult

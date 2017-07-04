@@ -95,7 +95,6 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(IAttributeFields, GetTime_s, int*)	{ *p1 = cls->GetTime(); return S_OK; }
 
 		ATTRIBUTE_METHOD(IAttributeFields, Release_s){ cls->Release(); return S_OK; }
-
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -188,7 +187,7 @@ namespace ParaEngine
 		/** remove all dynamic fields*/
 		virtual void RemoveAllDynamicFields();
 
-		/** save only text dynamic fields to fieldname = value text strings. one on each line. line seperator is \n.
+		/** save only text dynamic fields to fieldname = value text strings. one on each line. line separator is \n.
 		* @return the number of fields saved. or -1 if failed.
 		*/
 		virtual int SaveDynamicFieldsToString(std::string& output);

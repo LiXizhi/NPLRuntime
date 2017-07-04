@@ -1114,6 +1114,14 @@ bool CGUIEditBox::MsgProc(MSG *event)
 					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_DOWN)){
 						bHandled = true;
 					}
+					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_TAB) && !m_bMultipleLine) {
+						if (m_parent) {
+							m_parent->ActivateNextEdit(this);
+						}
+
+						bHandled = true;
+					}
+
 					else if (m_event->IsMapTo(m_event->m_keyboard.nAlterKey, EM_KEY_RETURN)){
 						if (!m_bMultipleLine) {
 							newMsg.message = EM_CTRL_CHANGE;
@@ -1429,29 +1437,46 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 
 	const char16_t* texBuffer = NULL;
 	static std::u16string strPassword;
-	if (m_PasswordChar == '\0')
+	bool bIsEmptyText = false;
+	LinearColor oldColor;
+	if (m_Buffer.IsEmpty() && !m_bHasFocus) 
 	{
-		if (m_Buffer.IsEmpty() && !m_bHasFocus)
-			texBuffer = m_empty_text.c_str();
-		else
-			texBuffer = m_Buffer.GetBuffer();
+		texBuffer = m_empty_text.c_str();
+		if (!m_empty_text.empty())
+		{
+			bIsEmptyText = true;
+			oldColor = pFontElement->FontColor;
+			pFontElement->FontColor.a *= 0.25f;
+		}
 	}
 	else
 	{
-		// in case a password character is specified, we will display it.
-		int nSize = m_Buffer.GetTextSize();
-		strPassword.resize(nSize, (char16_t)m_PasswordChar);
-		if (!strPassword.empty() && strPassword[0] != ((char16_t)m_PasswordChar))
+		if (m_PasswordChar == '\0')
 		{
-			for (int i = 0; i < nSize; ++i)
-			{
-				strPassword[i] = (char16_t)m_PasswordChar;
-			}
+			texBuffer = m_Buffer.GetBuffer();
 		}
-		texBuffer = strPassword.c_str();
+		else
+		{
+			// in case a password character is specified, we will display it.
+			int nSize = m_Buffer.GetTextSize();
+			strPassword.resize(nSize, (char16_t)m_PasswordChar);
+			if (!strPassword.empty() && strPassword[0] != ((char16_t)m_PasswordChar))
+			{
+				for (int i = 0; i < nSize; ++i)
+				{
+					strPassword[i] = (char16_t)m_PasswordChar;
+				}
+			}
+			texBuffer = strPassword.c_str();
+		}
 	}
 
 	DrawText(texBuffer + m_nFirstVisible, pFontElement, &rcText, &rcWindow, m_bUseTextShadow, -1, m_textShadowQuality, m_textShadowColor);
+
+	if (bIsEmptyText)
+	{
+		pFontElement->FontColor = oldColor;
+	}
 
 	// Render the selected text
 	if (m_nCaret != m_nSelStart)
@@ -1646,7 +1671,7 @@ int ParaEngine::CGUIEditBox::OnHandleWinMsgChars(const std::wstring& sChars)
 	for (size_t i = 0; i < sChars.size(); ++i)
 	{
 		WCHAR temp = sChars[i];
-		if (temp == L'\t')
+		if (temp == L'\t' && m_bMultipleLine)
 		{
 			temp = L' ';
 		}
