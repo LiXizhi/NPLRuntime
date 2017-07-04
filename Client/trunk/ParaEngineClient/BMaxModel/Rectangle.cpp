@@ -89,7 +89,7 @@ namespace ParaEngine
 			pos[0] *= scale;
 			pos[1] *= scale;
 			pos[2] *= scale;
-			vertice.SetPosition(pos[1], pos[2], pos[3]);
+			vertice.SetPosition(pos[0], pos[1], pos[2]);
 		}
 	}
 }

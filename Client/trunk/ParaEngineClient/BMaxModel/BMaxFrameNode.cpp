@@ -49,6 +49,11 @@ int BMaxFrameNode::GetParentBoneIndex()
 	return (pParent) ? pParent->GetBoneIndex() : -1;
 }
 
+void ParaEngine::BMaxFrameNode::SetIndex(int nIndex)
+{
+	m_pBone->nIndex = nIndex;
+}
+
 BMaxFrameNode* BMaxFrameNode::GetParent()
 {
 	if (m_nParentIndex >= 0)
@@ -151,6 +156,8 @@ void ParaEngine::BMaxFrameNode::AutoSetBoneName()
 		pBone->SetName(sName);
 	}
 }
+
+
 
 ParaEngine::Bone* ParaEngine::BMaxFrameNode::GetBone()
 {
@@ -324,6 +331,7 @@ ParaEngine::Bone* BMaxFrameNode::GetParentBone(bool bRefresh)
 					// prevent acyclic links
 					if (!IsAncestorOf(parent_node))
 					{
+						OUTPUT_LOG("boneIndex %d %d %d %d %d %d %d %d\n", GetBoneIndex(), parent_node->GetBoneIndex(), this->x, this->y, this->z, parent_node->x, parent_node->y, parent_node->z);
 						SetParentIndex(parent_node->GetIndex());
 					}
 				}

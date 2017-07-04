@@ -33,6 +33,7 @@ namespace ParaEngine
 		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL), m_pParent(pParent),
 		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f)
 	{
+		m_bHasBoneBlock = false;
 		if (filename)
 			SetFilename(filename);
 		Load(pBuffer, nSize);
@@ -71,6 +72,7 @@ namespace ParaEngine
 				ParseBlockFrames();
 				CalculateBoneWeights();
 				//ParseVisibleBlocks();
+				CalculateLod();
 				MergeCoplanerBlockFace();
 				if (m_bAutoScale)
 					ScaleModels();
@@ -84,7 +86,6 @@ namespace ParaEngine
 		vector<BMaxNodePtr> nodes;
 		CShapeBox aabb;
 		NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(value);
-		bool bHasBoneBlock = false;
 		for (NPL::NPLTable::IndexIterator_Type itCur = msg.index_begin(); itCur != msg.index_end(); ++itCur)
 		{
 			NPL::NPLObjectProxy& block = itCur->second;
@@ -127,7 +128,8 @@ namespace ParaEngine
 				}
 				else if (template_id == BoneBlockId)
 				{
-					bHasBoneBlock = true;
+					
+					m_bHasBoneBlock = true;
 					int nBoneIndex = (int)m_bones.size();
 					BMaxFrameNodePtr pFrameNode(new BMaxFrameNode(this, x, y, z, template_id, block_data, nBoneIndex));
 					m_bones.push_back(pFrameNode);
@@ -191,8 +193,9 @@ namespace ParaEngine
 			}
 		}
 
+		CalculateAABB(nodes);
 		// set AABB and center
-		m_blockAABB = aabb;
+		/*m_blockAABB = aabb;
 		m_centerPos = m_blockAABB.GetCenter();
 		m_centerPos.y = 0;
 		m_centerPos.x = (m_blockAABB.GetWidth() + 1.f) * 0.5f;
@@ -208,19 +211,10 @@ namespace ParaEngine
 			node->y -= offset_y;
 			node->z -= offset_z;
 			InsertNode(node);
-		}
+		}*/
 
 		// set scaling;
-		if (m_bAutoScale)
-		{
-			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
-			m_fScale = CalculateScale(fMaxLength);
-			if (bHasBoneBlock)
-			{
-				// for animated models, it is by default 1-2 blocks high, for static models, it is 0-1 block high. 
-				m_fScale *= 2.f;
-			}
-		}
+		
 	}
 
 	void BMaxParser::ParseVisibleBlocks()
@@ -382,20 +376,16 @@ namespace ParaEngine
 		for (auto& item : m_nodes)
 		{
 			BMaxNode *node = item.second.get();
-			if (node->x == 43 && node->y == 5 && node->z == 5)
-			{
-				int s = 1;
-			}
 			BlockModel *model = node->GetCube();
 			if (!model)
 			{
 				continue;
 			}
-			for (uint32 j = 0; j < 6; j++)
+			for (uint32 i = 0; i < 6; i++)
 			{
-				if (model->IsFaceNotUse(j))
+				if (model->IsFaceNotUse(i))
 				{
-					FindCoplanerFace(pRectangles, node, j);
+					FindCoplanerFace(pRectangles, node, i);
 				}
 			}
 		}
@@ -415,7 +405,6 @@ namespace ParaEngine
 		}
 
 		RectanglePtr rectangle(new Rectangle(nodes, nFaceIndex));
-		//OUTPUT_LOG("1node %d %d %d %d \n", node->x, node->y, node->z, nFaceIndex);
 		for (uint32 i = 0; i < nVertexCount; i++)
 		{
 			FindNeighbourFace(rectangle.get(), i, nFaceIndex);
@@ -493,7 +482,7 @@ namespace ParaEngine
 		}
 
 		vector<uint32> lodTable = GetLodTable(rectangles.size());
-		for (int i = 0;i < lodTable.size();i++)
+		for (uint16 i = 0;i < lodTable.size();i++)
 		{
 			uint32 nextFaceCount = lodTable[i];
 			while (rectangles.size() > nextFaceCount)
@@ -524,7 +513,7 @@ namespace ParaEngine
 	void BMaxParser::PerformLod()
 	{
 		CShapeAABB aabb;
-		vector<BMaxNodePtr>nodes;
+		map<int32, BMaxNodePtr>nodesMap;
 
 		int width = (int)m_blockAABB.GetWidth();
 		int height = (int)m_blockAABB.GetHeight();
@@ -532,17 +521,145 @@ namespace ParaEngine
 
 		for (int direction = 0; direction <= 3; direction++)
 		{
-			int x = (int)m_centerPos[1];
+			int x = (int)m_centerPos[0];
 			while (x >= -1 && x <= width)
 			{
 				for (int y = 0; y <= height; y += 2)
 				{
-					int z = (int)m_centerPos[3];
+					int z = (int)m_centerPos[2];
 					while (z >= -1 && z <= depth)
 					{
-						BMaxNode *node = CalculateLodNode(x, y, z);
+						CalculateLodNode(nodesMap, x, y, z);
+						(direction & 1) == 0 ? z += 2 : z -= 2;
+					}
+				}
+				if (direction >= 2)
+					x += 2;
+				else
+					x -= 2;
+			}
+		}
+		vector<BMaxNodePtr>nodes;
+
+		for (auto iter = nodesMap.begin();iter != nodesMap.end();iter++)
+		{
+			nodes.push_back(iter->second);
+		}
+		CalculateAABB(nodes);
+	}
+
+	void BMaxParser::CalculateAABB(vector<BMaxNodePtr>nodes)
+	{
+		CShapeAABB aabb;
+
+		for (auto item : nodes)
+		{
+			BMaxNode *node = item.get();
+			aabb.Extend(Vector3((float)node->x, (float)node->y, (float)node->z));
+		}
+
+		m_blockAABB = aabb;
+
+		m_centerPos = m_blockAABB.GetCenter();
+		m_centerPos.y = 0;
+		m_centerPos.x = (m_blockAABB.GetWidth() + 1.f) * 0.5f;
+		m_centerPos.z = (m_blockAABB.GetDepth() + 1.f) * 0.5f;
+
+		OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
+		int offset_x = (int)m_blockAABB.GetMin().x;
+		int offset_y = (int)m_blockAABB.GetMin().y;
+		int offset_z = (int)m_blockAABB.GetMin().z;
+
+		m_nodes.clear();
+		for (auto node : nodes)
+		{
+			node->x -= offset_x;
+			node->y -= offset_y;
+			node->z -= offset_z;
+			InsertNode(node);
+		}
+
+		if (m_bAutoScale)
+		{
+			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
+			m_fScale = CalculateScale(fMaxLength);
+			if (m_bHasBoneBlock)
+			{
+				// for animated models, it is by default 1-2 blocks high, for static models, it is 0-1 block high. 
+				m_fScale *= 2.f;
+			}
+		}
+	}
+
+	void BMaxParser::CalculateLodNode(map<int32, BMaxNodePtr> &nodeMap, int x, int y, int z)
+	{
+		int32 cnt = 0;
+
+		map<int32, int32> colorMap;
+		map<int32, int32> boneMap;
+
+		map<int32, int32>::iterator iter;
+
+		for (int16 dx = 0; dx <= 1; dx++)
+		{
+			for (int16 dy = 0; dy <= 1; dy++)
+			{
+				for (int16 dz = 0; dz <= 1; dz++)
+				{
+					int32 cx = x + dx;
+					int32 cy = y + dy;
+					int32 cz = z + dz;
+
+					if (cx >= 0 && cy >= 0 && cx >= 0)
+					{
+						BMaxNode *node = GetNode(cx, cy, cz);
 						if (node)
 						{
+							cnt++;
+							bool hasFind = false;
+							int32 boneIndex = node->GetBoneIndex();
+							if (boneIndex >= 0)
+							{
+								BMaxFrameNode *myBone = m_bones[boneIndex].get();
+								for (iter = boneMap.begin(); iter != boneMap.end(); iter++)
+								{
+									BMaxFrameNode *bone = m_bones[iter->first].get();
+									if (boneIndex == iter->first || bone->IsAncestorOf(myBone))
+									{
+										boneMap[iter->first] = iter->second + 1;
+										hasFind = true;
+										break;
+									}
+									else if (myBone->IsAncestorOf(bone))
+									{
+										boneMap[boneIndex] = iter->second + 1;
+										boneMap.erase(iter);
+										hasFind = true;
+										break;
+									}
+								}
+								if (!hasFind)
+								{
+									boneMap.insert(make_pair(boneIndex, 1));
+								}
+							}
+
+							hasFind = false;
+							int32 myColor = node->GetColor();
+							for (iter = colorMap.begin(); iter != colorMap.end(); iter++)
+							{
+								if (iter->first == myColor)
+								{
+									colorMap[iter->first] = iter->second + 1;
+									hasFind = true;
+									break;
+								}
+							}
+
+							if (!hasFind)
+							{
+								colorMap.insert(make_pair(myColor, 1));
+							}
 							
 						}
 					}
@@ -550,58 +667,46 @@ namespace ParaEngine
 			}
 		}
 
-		/*
-function BMaxModel:PerformLod()
-	local aabb = ShapeAABB:new();
-	local width, height, depth = self:GetModelFrame();
+		if (cnt >= 4)
+		{
+			uint16 newX = x / 2 + 1;
+			uint16 newY = y / 2;
+			uint16 newZ = z / 2 + 1;
+			uint32 index = GetNodeIndex(newX, newY, newZ);
 
-	local nodes = {};
-	local nodeIndexes = {};
-	local pos;
-	for direction = 0, 3 do
-		local x = math.floor(self.m_centerPos[1]);
-		while x >= -1 and x <= width do
-			for y = 0, height, 2 do
-				local z = math.floor(self.m_centerPos[3]);
-				while z >= -1 and z <= depth do
-					local node = self:CalculateLodNode(x, y, z);
-					if node then
-						local hasFind = false;
-						for _, node in ipairs(node) do
-							if node.x == x and node.y == y and node.z == z then
-								hasFind = true;
-								break
-							end
-						end
+			int maxNum = 0;
+			BMaxNodePtr node(new BMaxNode(this, newX, newY, newZ, 0, 0));
+			int32 color = 0;
 
-						if not hasFind then
-							aabb:Extend(node.x,node.y,node.z);
-							table.insert(nodes, node);
-						end
+			for (iter = colorMap.begin(); iter != colorMap.end(); iter++)
+			{
+				if (iter->second > maxNum)
+				{
+					color = iter->first;
+					maxNum = iter->second;
+				}
+			}
+			node->SetColor(color);
 
-					end
+			int32 boneIndex = 0;
+			maxNum = 0;
 
-					if direction % 2 == 0 then
-						z = z + 2;
-					else
-						z = z - 2;
-					end
-				end
-			end
-			if direction >= 2 then
-				x = x + 2;
-			else
-				x = x - 2;
-			end
-		end
-	end
+			for (iter = boneMap.begin(); iter != boneMap.end(); iter++)
+			{
+				if (iter->second > maxNum)
+				{
+					boneIndex = iter->first;
+					maxNum = iter->second;
+				}
+			}
+			node->SetBoneIndex(boneIndex);
 
-	self:CalculateAABB(nodes);*/
-	}
-
-	BMaxNode* BMaxParser::CalculateLodNode(int x, int y, int z)
-	{
-		return nullptr;
+			if (nodeMap.find(index) == nodeMap.end())
+			{
+				//("node1 %d %d %d %d \n", node->x, node->y, node->z, node->GetBoneIndex());
+				nodeMap.insert(make_pair(index, node));
+			}
+		}
 	}
 
 	ModelGeoset* BMaxParser::AddGeoset()

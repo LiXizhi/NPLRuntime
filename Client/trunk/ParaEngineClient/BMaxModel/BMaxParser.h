@@ -63,7 +63,8 @@ namespace ParaEngine
 		void CalculateLod();
 		vector<uint32> GetLodTable(uint32 faceCount);
 		void PerformLod();
-		BMaxNode* CalculateLodNode(int x, int y, int z);
+		void CalculateAABB(vector<BMaxNodePtr>nodes);
+		void CalculateLodNode(map<int32, BMaxNodePtr> &nodeMap, int x, int y, int z);
 	
 		inline uint32 GetNodeIndex(uint16 x, uint16 y, uint16 z)
 		{
@@ -161,6 +162,7 @@ namespace ParaEngine
 		// how many times that a given name has appeared. 
 		std::map<std::string, int> m_name_occurances;
 		bool m_bAutoScale;
+		bool m_bHasBoneBlock;
 		float m_fScale;
 		map<BlockModel*, BMaxNode*> m_blockModelsMapping;
 		vector<ModelAnimation> m_anims;
