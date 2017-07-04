@@ -82,7 +82,7 @@ namespace ParaEngine
 	class ZipArchiveEntry : public CRefCounted 
 	{
 	public:
-		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0)
+		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0), m_isMemFile(false)
 		{
 			memset(&m_localFileHeader, 0, sizeof(SZIPFileHeader));
 			m_localFileHeader.Sig = ZIP_CONST_LOCALHEADERSIG;
@@ -90,6 +90,8 @@ namespace ParaEngine
 
 		virtual ~ZipArchiveEntry() 
 		{
+			if (m_isMemFile && m_pFile)
+				delete m_pFile;
 		}
 	public:
 
@@ -150,6 +152,22 @@ namespace ParaEngine
 				m_filename = filename;
 			}
 			m_localFileHeader.FilenameLength = static_cast<uint16_t>(m_destFilename.length());
+
+			m_isMemFile = false;
+		}
+
+		/**
+		* @param destFilename: filename in zip file
+		* @param pFile: file data reader.
+		*/
+		void Init(const char* destFilename, CParaFile* pFile)
+		{
+			m_destFilename = destFilename;
+			m_localFileHeader.FilenameLength = static_cast<uint16_t>(m_destFilename.length());
+
+			m_pFile = pFile;
+
+			m_isMemFile = true;
 		}
 
 		void SerializeLocalFileHeader(CParaFile& file) 
@@ -169,33 +187,62 @@ namespace ParaEngine
 			// serialize body of compressed file
 			if (!IsDirectory()) 
 			{
-				CMemReadFile input(m_filename.c_str());
-				if (input.isOpen())
+				if (m_isMemFile)
 				{
-					std::string output;
-					output.reserve(input.getSize());
-					if (Compress(output, (const char*)input.getBuffer(), input.getSize()) == 1) 
+					if (m_pFile)
 					{
-						m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
-						m_localFileHeader.DataDescriptor.UncompressedSize = input.getSize();
-						m_localFileHeader.DataDescriptor.CompressedSize = output.size();
+						std::string output;
+						output.reserve(m_pFile->getSize());
+						if (Compress(output, (const char*)m_pFile->getBuffer(), m_pFile->getSize()) == 1)
+						{
+							m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
+							m_localFileHeader.DataDescriptor.UncompressedSize = m_pFile->getSize();
+							m_localFileHeader.DataDescriptor.CompressedSize = output.size();
 
-						GetFileTime(m_filename, &m_localFileHeader.LastModFileDate, &m_localFileHeader.LastModFileTime);
+							m_localFileHeader.LastModFileDate = m_localFileHeader.LastModFileTime = 0;
 
-						uint32_t crc = 0;
-						m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, input.getBuffer(), input.getSize());
-						file.WriteString(output);
+							uint32_t crc = 0;
+							m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, (const Bytef*)m_pFile->getBuffer(), m_pFile->getSize());
+							file.WriteString(output);
 
-						// actualize local file header
-						auto currentPos = file.getPos();
-						file.seek(m_offsetOfSerializedLocalFileHeader);
-						file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
-						file.seek(currentPos);
+							// actualize local file header
+							auto currentPos = file.getPos();
+							file.seek(m_offsetOfSerializedLocalFileHeader);
+							file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
+							file.seek(currentPos);
+						}
 					}
 				}
-				else 
+				else
 				{
-					OUTPUT_LOG("warning: failed to add file: %s to zip archive\n", m_filename.c_str());
+					CMemReadFile input(m_filename.c_str());
+					if (input.isOpen())
+					{
+						std::string output;
+						output.reserve(input.getSize());
+						if (Compress(output, (const char*)input.getBuffer(), input.getSize()) == 1)
+						{
+							m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
+							m_localFileHeader.DataDescriptor.UncompressedSize = input.getSize();
+							m_localFileHeader.DataDescriptor.CompressedSize = output.size();
+
+							GetFileTime(m_filename, &m_localFileHeader.LastModFileDate, &m_localFileHeader.LastModFileTime);
+
+							uint32_t crc = 0;
+							m_localFileHeader.DataDescriptor.CRC32 = crc32(crc, input.getBuffer(), input.getSize());
+							file.WriteString(output);
+
+							// actualize local file header
+							auto currentPos = file.getPos();
+							file.seek(m_offsetOfSerializedLocalFileHeader);
+							file.write(&m_localFileHeader, sizeof(SZIPFileHeader));
+							file.seek(currentPos);
+						}
+					}
+					else
+					{
+						OUTPUT_LOG("warning: failed to add file: %s to zip archive\n", m_filename.c_str());
+					}
 				}
 			}
 		};
@@ -223,8 +270,15 @@ namespace ParaEngine
 		SZIPFileHeader m_localFileHeader;
 		size_t m_offsetOfCompressedData;
 		size_t m_offsetOfSerializedLocalFileHeader;
+
 		std::string m_destFilename;
-		std::string m_filename;
+		union 
+		{
+			std::string m_filename;
+			CParaFile* m_pFile;
+		};
+
+		bool m_isMemFile;
 	};
 }
 
@@ -266,6 +320,15 @@ void ParaEngine::CZipWriter::InitNewZip(const char * filename, const char * pass
 {
 	m_filename = filename;
 	m_password = password ? password : "";
+}
+
+
+DWORD CZipWriter::ZipAdd(const char* destFilename, CParaFile* pFile)
+{
+	auto* pEntry = new ZipArchiveEntry();
+	pEntry->Init(destFilename, pFile);
+	m_entries.push_back(pEntry);
+	return 0;
 }
 
 DWORD CZipWriter::ZipAdd(const char* destFilename, const char* filename)

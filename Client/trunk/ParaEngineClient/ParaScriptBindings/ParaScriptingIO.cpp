@@ -1449,6 +1449,16 @@ namespace ParaScripting
 	{
 	}
 
+	DWORD ParaZipWriter::ZipAddData(const char* dstzn, const std::string& buff)
+	{
+		if (m_writer)
+		{
+			auto pFile = new ParaEngine::CParaFile((char*)buff.c_str(), buff.size(), true);
+			return m_writer->ZipAdd(dstzn, pFile);
+		}
+		else
+			return -1;
+	}
 
 	DWORD ParaZipWriter::ZipAdd( const char* dstzn, const char* fn )
 	{
