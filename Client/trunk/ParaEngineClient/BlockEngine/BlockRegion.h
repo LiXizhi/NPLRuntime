@@ -175,6 +175,11 @@ namespace ParaEngine
 		void LoadFromFile();
 		
 	private:
+		void ParserFile(CParaFile* pFile);
+		void ParserFile1_0(CParaFile* pFile);
+
+
+
 		friend class BlockChunk;
 		friend class RenderableChunk;
 
