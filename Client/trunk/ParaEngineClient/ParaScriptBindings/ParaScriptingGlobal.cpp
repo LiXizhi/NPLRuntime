@@ -477,9 +477,14 @@ object ParaAttributeObject::CallField2(const char* sFieldname, const object& par
 		else if (pField->m_type == FieldType_function)
 		{
 			object out;
-			auto ret = pField->Call(m_pAttribute.get(), params, out);
+
+			NPL::NPLObjectProxy nplObjectIn, nplObjectOut;
+			NPL::NPLHelper::LuaObjectToNPLObject(params, nplObjectIn);
+			auto ret = pField->Call(m_pAttribute.get(), nplObjectIn, nplObjectOut);
+			
 			if (SUCCEEDED(ret))
 			{
+				NPL::NPLHelper::NPLObjectToLuaObject(nplObjectOut, out);
 				return out;
 			}
 			else

@@ -737,7 +737,7 @@ namespace ParaScripting
 
 				object oOrigin = newtable(L);
 				Vector32Object(origin, oOrigin);
-				
+
 				callback.push(L);
 				int top = lua_gettop(L);
 				oRotation.push(L);

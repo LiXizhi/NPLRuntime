@@ -965,16 +965,24 @@ NPLObjectProxy NPL::NPLHelper::MsgStringToNPLTable(const char* input, int nLen)
 	return NPLObjectProxy();
 }
 
+bool NPL::NPLHelper::NPLObjectToLuaObject(const NPLObjectProxy& input, luabind::object& out)
+{
+	return true;
+}
+
 bool NPL::NPLHelper::LuaObjectToNPLObject(const luabind::object& inputObj, NPLObjectProxy& out)
 {
-	if (type(inputObj) == LUA_TTABLE)
+	auto inputType = type(inputObj);
+	if (inputType == LUA_TTABLE)
 	{
 		for (luabind::iterator itCur(inputObj), itEnd; itCur != itEnd; ++itCur)
 		{
 			// we only serialize item with a string key
 			const object& key = itCur.key();
 			const object& input = *itCur;
-			if (type(key) == LUA_TSTRING)
+
+			auto keyType = type(key);
+			if (keyType == LUA_TSTRING)
 			{
 				NPLObjectProxy v;
 				if (LuaObjectToNPLObject(input, v))
@@ -982,7 +990,7 @@ bool NPL::NPLHelper::LuaObjectToNPLObject(const luabind::object& inputObj, NPLOb
 					out[object_cast<std::string>(key)] = v;
 				}
 			}
-			else if (type(key) == LUA_TNUMBER)
+			else if (keyType == LUA_TNUMBER)
 			{
 				NPLObjectProxy v;
 				if (LuaObjectToNPLObject(input, v))
@@ -992,17 +1000,21 @@ bool NPL::NPLHelper::LuaObjectToNPLObject(const luabind::object& inputObj, NPLOb
 			}
 		}
 	}
-	else if (type(inputObj) == LUA_TSTRING)
+	else if (inputType == LUA_TSTRING)
 	{
 		out = object_cast<std::string>(inputObj);
 	}
-	else if (type(inputObj) == LUA_TNUMBER)
+	else if (inputType == LUA_TNUMBER)
 	{
 		out = object_cast<double>(inputObj);
 	}
-	else if (type(inputObj) == LUA_TBOOLEAN)
+	else if (inputType == LUA_TBOOLEAN)
 	{
 		out = object_cast<bool>(inputObj);
+	}
+	else if (inputType == LUA_TFUNCTION || inputType == LUA_TUSERDATA || inputType == LUA_TTHREAD || inputType == LUA_TLIGHTUSERDATA)
+	{
+		out = inputObj;
 	}
 	else
 	{

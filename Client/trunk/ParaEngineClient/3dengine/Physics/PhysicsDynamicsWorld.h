@@ -28,6 +28,7 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD1(CPhysicsDynamicsWorld, GetNumConstraints_s, int) { p1 = cls->GetNumConstraints(); return S_OK; }
 
 		static HRESULT AddConstraint_s(CPhysicsDynamicsWorld* cls, const luabind::object& in, luabind::object& out);
+		static HRESULT RaycastClosestShape_s(CPhysicsDynamicsWorld* cls, const luabind::object& in, luabind::object& out);
 
 		/** add child object. */
 		virtual bool AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex = -1, int nColumnIndex = 0);
@@ -39,8 +40,6 @@ namespace ParaEngine {
 		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
-
-
 
 		/** step simulation
 		* @param fDeltaTime: in seconds.

@@ -208,6 +208,12 @@ namespace ParaEngine {
 			, nullptr
 			, nullptr, nullptr, bOverride);
 
+		pClass->AddField("RaycastClosestShape"
+			, FieldType_function
+			, RaycastClosestShape_s
+			, nullptr
+			, nullptr, nullptr, bOverride);
+
 		return S_OK;
 	}
 
@@ -316,6 +322,45 @@ namespace ParaEngine {
 
 		cls->AddConstraint(pConstraint
 			, disableCollisionsBetweenLinkedBodies);
+
+		return S_OK;
+	}
+
+	HRESULT CPhysicsDynamicsWorld::RaycastClosestShape_s(CPhysicsDynamicsWorld* cls, const luabind::object& in, luabind::object& out)
+	{
+		if (luabind::type(in) != LUA_TTABLE)
+			return S_FALSE;
+
+		PARAVECTOR3 vOrigin;
+		if (!ParaScripting::ReadLuaTableVector3(in, "origin", vOrigin))
+			return S_FALSE;
+
+		PARAVECTOR3 vDirection;
+		if (!ParaScripting::ReadLuaTableVector3(in, "dir", vDirection))
+				return S_FALSE;
+
+		DWORD dwType;
+		if (!ParaScripting::ReadLuaTableDWORD(in, "type", dwType))
+			return S_FALSE;
+
+		int dwGroupMask;
+		if (!ParaScripting::ReadLuaTableInt(in, "mask", dwGroupMask))
+			return S_FALSE;
+
+		float fSensorRange;
+		if (!ParaScripting::ReadLuaTableFloat(in, "sensorRange", fSensorRange))
+			return S_FALSE;
+
+		RayCastHitResult hit;
+		auto pBody = cls->RaycastClosestShape(vOrigin, vDirection, dwType, hit, dwGroupMask, fSensorRange);
+		if (pBody)
+		{
+
+		}
+		else
+		{
+
+		}
 
 		return S_OK;
 	}
