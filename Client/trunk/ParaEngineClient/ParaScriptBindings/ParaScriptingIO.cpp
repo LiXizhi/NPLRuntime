@@ -1741,15 +1741,30 @@ namespace ParaScripting
 			try
 			{
 				std::string sCode;
+				std::string* pData = &sCode;
+				std::string uncompressedData;
 				if((int)file.getSize()> 0)
 				{
 					sCode.resize((int)file.getSize());
 					file.read(&(sCode[0]), (int)file.getSize());
 				}
+
+				if (ParaEngine::IsZipData(sCode.c_str(), sCode.size()))
+				{
+					if (ParaEngine::GetFirstFileData(sCode.c_str(), uncompressedData))
+					{
+						pData = &uncompressedData;
+					}
+					else
+					{
+						return nResult;
+					}
+				}
+
 #ifdef USE_TINYXML2
 				namespace TXML = tinyxml2;
 				TXML::XMLDocument doc(true, TXML::COLLAPSE_WHITESPACE);
-				doc.Parse(sCode.c_str(), (int)sCode.size());
+				doc.Parse(pData->c_str(), (int)pData->size());
 				if(doc.Error())
 				{
 					OUTPUT_LOG("error: failed parsing xml file : %s. error %d msg:%s, %s \n", sFileName, (int)doc.ErrorID(), doc.GetErrorStr1(), doc.GetErrorStr2());
@@ -1757,7 +1772,7 @@ namespace ParaScripting
 				}
 #else
 				TiXmlDocument doc;
-				doc.Parse(sCode.c_str(), 0, TIXML_ENCODING_UTF8);
+				doc.Parse(pData->c_str(), 0, TIXML_ENCODING_UTF8);
 #endif
 				lua_newtable(L);
 				LuaXML_ParseNode(L,&doc);
@@ -1772,11 +1787,37 @@ namespace ParaScripting
 	}
 
 	int ParaXML::LuaXML_ParseString (lua_State *L) {
-		const char* sString = luaL_checkstring(L,1);
+		const char* sString = nullptr;
+		int len = -1;
 
+		if (lua_isstring(L, 1))
+		{
+			sString = lua_tostring(L, 1);
+			len = lua_strlen(L, 1);
+		}
+		else
+		{
+			return 0;
+		}
+
+		std::string uncompressedData;
 		int nResult = 0;
+
 		try
 		{
+			if (len > 0 && ParaEngine::IsZipData(sString, len))
+			{
+				if (ParaEngine::GetFirstFileData(sString, uncompressedData))
+				{
+					sString = uncompressedData.c_str();
+				}
+				else
+				{
+					return nResult;
+				}
+			}
+
+
 #ifdef USE_TINYXML2
 			namespace TXML = tinyxml2;
 			TXML::XMLDocument doc(true, IsWhiteSpaceCondensed() ? TXML::COLLAPSE_WHITESPACE : TXML::PRESERVE_WHITESPACE);
