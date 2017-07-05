@@ -24,6 +24,8 @@
 #include "BMaxAnimGenerator.h"
 #include "BMaxParser.h"
 
+#include "ZipArchive.h"
+
 namespace ParaEngine
 {
 	const int BMaxParser::MaxBoneLengthHorizontal = 50;
@@ -52,6 +54,18 @@ namespace ParaEngine
 	void BMaxParser::Load(const char* pBuffer, int32 nSize)
 	{
 		BMaxXMLDocument doc;
+
+		std::string uncompressedData;
+
+		if (IsZipData(pBuffer, nSize))
+		{
+			if (GetFirstFileData(pBuffer, uncompressedData))
+			{
+				pBuffer = uncompressedData.c_str();
+			}
+		}
+
+
 		doc.Parse(pBuffer);
 		ParseHead(doc);
 		ParseBlocks(doc);
