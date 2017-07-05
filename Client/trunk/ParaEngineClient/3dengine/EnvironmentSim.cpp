@@ -89,7 +89,7 @@ CEnvironmentSim::Simulate(dTimeDelta){
 #include "TerrainTile.h"
 #include "AIBase.h"
 #include "FrameRateController.h"
-#include "PhysicsWorld.h"
+#include "Physics/PhysicsFactory.h"
 #include "TerrainTile.h"
 #include "AutoCamera.h"
 #include "MeshPhysicsObject.h"
@@ -327,7 +327,7 @@ void CEnvironmentSim::Simulate(double dTimeDelta)
 		return;
 
 	// physics engine frame move. 
-	CGlobals::GetPhysicsWorld()->StepSimulation(dTimeDelta);
+	CGlobals::GetPhysicsFactory()->StepSimulation(dTimeDelta);
 
 	/** advance the game time */
 	g_gameTime.FrameMoveDelta((float)dTimeDelta);
@@ -491,7 +491,7 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 				// For each mesh physics object in the tile, load its physics.
 				for (auto pObj : pTile->m_listFreespace)
 				{
-					if (pObj->CanHasPhysics())
+					if (pObj && pObj->CanHasPhysics())
 					{
 						IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
 						for(int j=0;j<nPointCount; ++j)
@@ -508,7 +508,7 @@ void CEnvironmentSim::CheckLoadPhysics(CShapeSphere* points, int nPointCount)
 				// for visiting bipeds
 				for (auto pObj : pTile->m_listVisitors)
 				{
-					if (pObj->CanHasPhysics())
+					if (pObj && pObj->CanHasPhysics())
 					{
 						IViewClippingObject* pViewClippingObject = pObj->GetViewClippingObject();
 						for (int j = 0; j < nPointCount; ++j)

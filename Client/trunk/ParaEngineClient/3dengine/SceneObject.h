@@ -1002,7 +1002,7 @@ namespace ParaEngine
 		/** get the scene state information. The scene state contains information about the current simulation
 		* and render states.Such as which scene object is being animated or rendered, etc*/
 		SceneState* GetSceneState(){return m_sceneState.get();};
-		inline CPhysicsWorld* GetPhysicsWorld() {return m_pPhysicsWorld.get();} ;
+		inline CPhysicsFactory* GetPhysicsFactory() {return m_pPhysicsFactory.get();} ;
 		inline IEnvironmentSim* GetEnvSim() {return m_pEnvironmentSim;};
 
 		/** deprecated: use GetBatchedElementDrawer() */
@@ -1253,7 +1253,7 @@ namespace ParaEngine
 		
 	protected:
 		IEnvironmentSim*		m_pEnvironmentSim;		/// current physics engine and simulation engine
-		ref_ptr<CPhysicsWorld>			m_pPhysicsWorld;		/// physics world
+		ref_ptr<CPhysicsFactory>			m_pPhysicsFactory;		/// physics world
 		/** for drawing line based debug object. */
 		CBatchedElementDraw*			m_pBatchedElementDraw;
 

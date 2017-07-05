@@ -126,6 +126,9 @@ namespace NPL
 		/** lua object to npl object. */
 		static bool LuaObjectToNPLObject(const luabind::object& input, NPLObjectProxy& out);
 
+		/* npl object to lua object */
+		static bool NPLObjectToLuaObject(const NPLObjectProxy& input, luabind::object& out);
+
 		/** safe convert the lua object to string. if the input is nil, output is not assigned. 
 		* return true if input is a string object and value is written to output. 
 		* @param bUseMsg: if true, the table will be inside msg={...}, it default to false. 

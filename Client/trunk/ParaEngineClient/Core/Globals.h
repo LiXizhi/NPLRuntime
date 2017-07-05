@@ -78,7 +78,7 @@ namespace ParaEngine
 		static TransformStack& GetWorldMatrixStack();
 		static TransformStack& GetViewMatrixStack();
 		static TransformStack& GetProjectionMatrixStack();
-		static CPhysicsWorld* GetPhysicsWorld();
+		static CPhysicsFactory* GetPhysicsFactory();
 		static CViewportManager* GetViewportManager();
 		static CSelectionManager* GetSelectionManager();
 		static COceanManager* GetOceanManager();

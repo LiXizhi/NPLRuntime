@@ -1,11 +1,10 @@
 #pragma once
 #include "TileObject.h"
+#include "Physics/PhysicsFactory.h"
 
 namespace ParaEngine
 {
 	class CMeshObject;
-	struct IParaPhysicsActor;
-	class CPhysicsWorld;
 	struct MeshEntity;
 
 	/**
@@ -28,7 +27,8 @@ namespace ParaEngine
 		void SetParamsFromAsset();
 
 		/// Pointer to the static physics actor in physics engine
-		vector<IParaPhysicsActor*> m_staticActors;
+		//vector<IParaPhysicsActor*> m_staticActors;
+		vector<CPhysicsRigidBody::WeakPtr> m_staticActors;
 
 		/** whether it is persistent in the world. If an object is persistent, it will be saved to the world's database.
 		if it is not persistent it will not be saved when the world closes. Player, OPC, some temporary movie actors may

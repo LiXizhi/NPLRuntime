@@ -42,6 +42,7 @@ extern "C"
 
 #include <luabind/luabind.hpp>
 #include <luabind/out_value_policy.hpp>
+#include <luabind/raw_policy.hpp>
 
 #include "ParaScriptingIO.h"
 #include "ParaScriptingIC.h"
@@ -349,6 +350,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 		.def("QueryObject", &ParaAttributeObject::QueryObject)
 		.def("QueryUIObject", &ParaAttributeObject::QueryUIObject)
 		.def("AddChild", &ParaAttributeObject::AddChild)
+		.def("AddChild", &ParaAttributeObject::AddChild2)
+		.def("RemoveChild", &ParaAttributeObject::RemoveChild)
 		.def("GetClassID", &ParaAttributeObject::GetClassID)
 		.def("GetClassName", &ParaAttributeObject::GetClassName)
 		.def("GetClassDescription", &ParaAttributeObject::GetClassDescription)
@@ -363,8 +366,10 @@ void CNPLScriptingState::LoadHAPI_Globals()
 		.def("GetSchematicsMinMax", &ParaAttributeObject::GetSchematicsMinMax, pure_out_value(_5) + pure_out_value(_6))
 		.def("GetSchematicsType", &ParaAttributeObject::GetSchematicsType)
 		.def("GetField", &ParaAttributeObject::GetField)
+		.def("GetField", &ParaAttributeObject::GetField2, raw(_3))
 		.def("SetField", &ParaAttributeObject::SetField)
 		.def("CallField", &ParaAttributeObject::CallField)
+		.def("CallField", &ParaAttributeObject::CallField2)
 		.def("ResetField", &ParaAttributeObject::ResetField)
 		.def("InvokeEditor", &ParaAttributeObject::InvokeEditor)
 		.def("PrintObject", &ParaAttributeObject::PrintObject)
@@ -527,6 +532,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 				.def(constructor<>())
 				.def("IsValid", &ParaZipWriter::IsValid)
 				.def("ZipAdd", &ParaZipWriter::ZipAdd)
+				.def("ZipAddData", &ParaZipWriter::ZipAddData)
 				.def("ZipAddFolder", &ParaZipWriter::ZipAddFolder)
 				.def("AddDirectory", &ParaZipWriter::AddDirectory)
 				.def("close", &ParaZipWriter::close),

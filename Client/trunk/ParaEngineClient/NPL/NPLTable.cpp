@@ -13,6 +13,11 @@
 #include "memdebug.h"	
 #endif
 
+extern "C"
+{
+#include <lua.h>
+}
+
 using namespace NPL;
 using namespace std;
 
@@ -188,6 +193,14 @@ void NPLObjectProxy::operator = (const char* value)
 	((NPLStringObject*)get())->SetValue(value);
 }
 
+void NPLObjectProxy::operator = (const luabind::object& value)
+{
+	if (get() == 0 || GetType() != NPLObjectBase::NPLObjectType_LuaObject)
+		*this = NPLObjectProxy(new NPLLuaObject(value));
+	else
+		((NPLLuaObject*)get())->SetValue(value);
+}
+
 NPLObjectProxy& NPLObjectProxy::operator [] (const string& sName) 
 {
 	if(get()==0 ||  GetType() != NPLObjectBase::NPLObjectType_Table)
@@ -287,3 +300,4 @@ NPLObjectBase::NPLObjectType  NPLObjectProxy::GetType()
 {
 	return (get() != 0) ? get()->GetType() : NPLObjectBase::NPLObjectType_Nil;
 }
+

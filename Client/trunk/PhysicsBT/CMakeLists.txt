@@ -13,6 +13,11 @@ project (PhysicsBT)
 #set (Bullet_INCLUDE_DIR ${Bullet_Root}/src)
 
 SET(PhysicsBT_SRCS
+	ParaPhysicsBody.hpp
+	ParaPhysicsConstraint.hpp
+	ParaPhysicsShape.hpp
+	ParaPhysicsType.cpp
+	ParaPhysicsType.h
 	stdafx.cpp
 	stdafx.h
 	ParaPhysicsWorld.cpp
@@ -70,11 +75,11 @@ if(MSVC)
 	STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" RELEASE_EXE_NAME "${RELEASE_EXE_PATH}" )
 
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
-		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/bin64/" )
+		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
+		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/bin64/" )
 	else()
-		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
-		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/" )
+		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
+		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/" )
 	endif()
 
 

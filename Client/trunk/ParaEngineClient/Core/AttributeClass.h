@@ -60,9 +60,11 @@ namespace ParaEngine
 		* @return
 		*/
 		int GetFieldIndex(const char*  sFieldname);
+		int GetFieldIndex(const std::string& sFieldname);
 
 		/** return NULL, if the field does not exists */
 		CAttributeField* GetField(const char*  sFieldname);
+		CAttributeField* GetField(const std::string& sFieldname);
 
 		/** create an instance of this class object */
 		virtual IAttributeFields* Create();
@@ -72,12 +74,15 @@ namespace ParaEngine
 		const char* m_sClassDescription;
 		vector<CAttributeField> m_attributes;
 		Field_Order m_nCurrentOrder;
+		bool m_bSort;
 	private:
 		/** insert a new field. return true if succeeded.
 		@param bOverride: true to override existing field if any. This is usually set to true, so that inherited class can
 		override the fields installed previously by the base class.
 		*/
 		bool InsertField(CAttributeField& item, bool bOverride);
+
+		void SortField();
 	};
 
 	/** derived attribute class.

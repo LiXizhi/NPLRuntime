@@ -223,9 +223,9 @@ SceneState* CGlobals::GetSceneState()
 	return GetScene()->GetSceneState();
 }
 
-CPhysicsWorld* CGlobals::GetPhysicsWorld()
+CPhysicsFactory* CGlobals::GetPhysicsFactory()
 {
-	return GetScene()->GetPhysicsWorld();
+	return GetScene()->GetPhysicsFactory();
 }
 
 CViewportManager* CGlobals::GetViewportManager()

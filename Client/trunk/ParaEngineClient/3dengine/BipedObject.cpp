@@ -13,7 +13,6 @@
 #include "DummyAnimInstance.h"
 #include "SceneObject.h"
 #include "AutoCamera.h"
-#include "PhysicsWorld.h"
 #include "IEnvironmentSim.h"
 #include "terrain/GlobalTerrain.h"
 #include "AIModuleNPC.h"
@@ -31,7 +30,6 @@
 #include "BipedObject.h"
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
-#include "PhysicsWorld.h"
 #include <algorithm>
 
 using namespace ParaEngine;
@@ -1747,8 +1745,22 @@ public:
 			// Some times this could cause : "invalid parameter : NxRay direction not valid: must be unit vector" error by the physics engine. 
 			// but the input normal appears as legal as  -0.559834 0.000000 0.828605. and even the same input may be OK on the second call. 
 			// Get the closest shape
-			IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
-				CONVERT_PARAVECTOR3(m_vOrig), CONVERT_PARAVECTOR3(sensor.vDir), 0, hit, (int16)dwGroupMask, m_fSensorRange);
+			//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
+			//	CONVERT_PARAVECTOR3(m_vOrig), CONVERT_PARAVECTOR3(sensor.vDir), 0, hit, (int16)dwGroupMask, m_fSensorRange);
+			auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
+			CPhysicsRigidBody* closestShape = nullptr;
+			if (pWorld)
+			{
+				closestShape = pWorld->RaycastClosestShape(CONVERT_PARAVECTOR3(m_vOrig)
+					, CONVERT_PARAVECTOR3(sensor.vDir)
+					, 0
+					, hit
+					, (int16)dwGroupMask
+					, m_fSensorRange);
+			}
+			
+
+
 			//OUTPUT_LOG(" end\n");
 			if (closestShape && m_fSensorRange >= hit.m_fDistance)
 			{
@@ -2500,8 +2512,22 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 
 	// Get the closest shape
 	float dist;
-	IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
-		CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
+	//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
+	//	CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
+	auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
+	CPhysicsRigidBody* closestShape = nullptr;
+
+	if (pWorld)
+	{
+		closestShape = CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
+			, PARAVECTOR3(0, -1.f, 0)
+			, 0
+			, hit
+			, (int16)GetPhysicsGroupMask()
+			, 10 * OBJ_UNIT);
+	}
+	
+
 	if (closestShape)
 	{
 		dist = hit.m_fDistance;
@@ -3794,8 +3820,24 @@ bool CBipedObject::FlyTowards(double dTimeDelta, const DVector3& vPosTarget, flo
 
 	// Get the closest shape
 	float dist;
-	IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
-		CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
+	//IParaPhysicsActor* closestShape = CGlobals::GetPhysicsWorld()->GetPhysicsInterface()->RaycastClosestShape(
+	//	CONVERT_PARAVECTOR3(orig), PARAVECTOR3(0, -1.f, 0), 0, hit, (int16)GetPhysicsGroupMask(), 10 * OBJ_UNIT);
+	auto pWorld = CGlobals::GetPhysicsFactory()->GetCurrentWorld();
+	CPhysicsRigidBody* closestShape = nullptr;
+
+	if (pWorld)
+	{
+		closestShape = pWorld->RaycastClosestShape(CONVERT_PARAVECTOR3(orig)
+			, PARAVECTOR3(0, -1.f, 0)
+			, 0
+			, hit
+			, (int16)GetPhysicsGroupMask()
+			, 10 * OBJ_UNIT);
+	}
+
+	
+
+
 	if (closestShape)
 	{
 		dist = hit.m_fDistance;
@@ -4709,27 +4751,40 @@ void ParaEngine::CBipedObject::LoadPhysics()
 		{
 			pAI->UpdateWorldTransform(CGlobals::GetSceneState(), mxWorld, mxWorld);
 		}
+		
 
-		IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
+		auto pActor = CGlobals::GetPhysicsFactory()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
+		
 		if (m_staticActors.empty())
 		{
 			// disable physics forever, if no physics actors are loaded. 
 			EnablePhysics(false);
 		}
+		
+		
+		/*
+		auto pActor = CGlobals::GetPhysicsWorld()->CreateBoundsBody(this, mxWorld, GetPhysicsGroup(), &m_staticActors, this);
+		if (m_staticActors.empty())
+		{
+			// disable physics forever, if no physics actors are loaded. 
+			EnablePhysics(false);
+		}
+		*/
 	}
 }
 
 void ParaEngine::CBipedObject::UnloadPhysics()
 {
-	int nSize = (int)m_staticActors.size();
-	if (nSize > 0)
+	for (auto it = m_staticActors.begin(); it != m_staticActors.end(); it++)
 	{
-		for (int i = 0; i < nSize; ++i)
+		auto pActor = (*it).get();
+		if (pActor)
 		{
-			CGlobals::GetPhysicsWorld()->ReleaseActor(m_staticActors[i]);
+			CGlobals::GetPhysicsFactory()->GetCurrentWorld()->RemoveRigidBody(pActor);
 		}
-		m_staticActors.clear();
 	}
+
+	m_staticActors.clear();
 }
 
 void ParaEngine::CBipedObject::SetPhysicsGroup(int nGroup)

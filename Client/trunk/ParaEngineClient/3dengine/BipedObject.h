@@ -2,6 +2,7 @@
 #include "IGameObject.h"
 #include "ShadowVolume.h"
 #include "BipedWayPoint.h"
+#include "Physics/PhysicsFactory.h"
 
 namespace ParaEngine
 {
@@ -268,7 +269,6 @@ namespace ParaEngine
 		void SetBlendingFactor(float fBlendingFactor);
 
 		bool FlyTowards(double dTimeDelta, const DVector3& vPosTarget, float fStopDistance, bool * pIsSlidingWall);
-
 	public:
 		/** how the character reacts to physics in the MoveTowards() functions*/
 		void SetMovementStyle(PhysicsMoveStyle nValue){ m_nMovementStyle = nValue; };
@@ -947,7 +947,9 @@ namespace ParaEngine
 		DWORD m_dwPhysicsGroupMask;
 
 		/** all static physics actors in physics engine */
-		vector<IParaPhysicsActor*> m_staticActors;
+		//vector<IParaPhysicsActor*> m_staticActors;
+		vector<CPhysicsRigidBody::WeakPtr> m_staticActors;
+
 		// any bit wise combination of PHYSICS_METHOD
 		DWORD m_dwPhysicsMethod;
 		uint32 m_nPhysicsGroup;

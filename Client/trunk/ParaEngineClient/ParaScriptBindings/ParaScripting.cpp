@@ -12,6 +12,7 @@
 #include "NPLRuntime.h"
 
 #include "ParaScriptingScene.h"
+#include "ParaScriptingPhysics.h"
 #include "ParaScriptingCharacter.h"
 #include "ParaXModel/ParaXModelExporter.h"
 using namespace ParaEngine;
@@ -68,6 +69,17 @@ void CNPLScriptingState::LoadParaScene()
 	[
 		namespace_("ParaScene")
 		[
+			class_<ParaPhysicsFactory>("ParaPhysicsFactory")
+				.def(constructor<>())
+				.def("IsValid", &ParaPhysicsFactory::IsValid)
+				.def("GetAttributeObject", &ParaPhysicsFactory::GetAttributeObject, adopt(result))
+				.def("GetCurrentWorld", &ParaPhysicsFactory::GetCurrentWorld, adopt(result))
+				.def("CreatePhysicsObject", &ParaPhysicsFactory::CreatePhysicsObject, adopt(result))
+				//.def("CreateShape", &ParaPhysicsFactory::CreateShape, adopt(result))
+				//.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody, adopt(result))
+				//.def("CreateRigidbody", &ParaPhysicsFactory::CreateRigidbody2, adopt(result))
+				,
+
 			// ParaObject class declarations
 			class_<ParaObject>("ParaObject")
 			//class_<ParaObject>("ParaObject")
@@ -431,6 +443,7 @@ void CNPLScriptingState::LoadParaScene()
 			def("CreateMeshPhysicsObject", (ParaObject(*)(const char*, const char* , float , float , float , bool ,const char* localMatrix)) & ParaScene::CreateMeshPhysicsObject),
 			def("CreateMeshPhysicsObject", (ParaObject(*)(const char*, ParaAssetObject& , float , float , float , bool ,const char* localMatrix)) & ParaScene::CreateMeshPhysicsObject),
 			def("CreateDynamicPhysicsObject", & ParaScene::CreateDynamicPhysicsObject),
+			def("GetPhysicsFactor", &ParaScene::GetPhysicsFactor, adopt(result)),
 			def("CreateCharacter", (ParaObject(*)(const char*, ParaAssetObject&, const char*, bool, float, float, float))& ParaScene::CreateCharacter),
 			def("CreateCharacter", (ParaObject(*)(const char*, const char*, const char*, bool, float, float, float))& ParaScene::CreateCharacter),
 			def("CreateLightObject", & ParaScene::CreateLightObject),

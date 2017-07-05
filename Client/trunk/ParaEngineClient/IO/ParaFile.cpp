@@ -710,11 +710,39 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen) ||
 			OpenFile(m_filename.empty() ? sfilename : m_filename.c_str(), bReadyOnly, relativePath, bUseCompressed, FILE_ON_ZIP_ARCHIVE);
 	}
-
+#ifdef ANDROID
 	if ((dwWhereToOpen & FILE_ON_SEARCH_PATH) > 0)
 	{
 		dwWhereToOpen &= (~((uint32)FILE_ON_SEARCH_PATH));
+		std::vector<std::string> searchPaths = cocos2d::FileUtils::getInstance()->getSearchPaths();
 
+		if (searchPaths.size() == 0 || (sfilename[0] == '/') || (sfilename[0] == '\\') || relativePath != NULL)
+		{
+			if (dwWhereToOpen != 0)
+				return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen);
+			return false;
+		}
+		else
+		{
+			// find in current directory and zip file, and then in search path
+			bool bFound = (dwWhereToOpen != 0) && OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen);
+			if (!bFound)
+			{
+				if (!m_filename.empty())
+					sfilename = m_filename.c_str();
+				vector<string>::iterator itCurCP, itEndCP = searchPaths.end();
+				for (itCurCP = searchPaths.begin(); !bFound && itCurCP != itEndCP; ++itCurCP)
+				{
+					bFound = OpenFile(sfilename, bReadyOnly, (*itCurCP).c_str(), bUseCompressed, FILE_ON_DISK);
+				}
+			}
+			return bFound;
+		}
+	}
+#else
+	if ((dwWhereToOpen & FILE_ON_SEARCH_PATH) > 0)
+	{
+		dwWhereToOpen &= (~((uint32)FILE_ON_SEARCH_PATH));
 		std::list<SearchPath>& searchPaths = CFileManager::GetInstance()->GetSearchPaths();
 
 		if (searchPaths.size() == 0 || (sfilename[0] == '/') || (sfilename[0] == '\\') || relativePath != NULL)
@@ -740,7 +768,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 			return bFound;
 		}
 	}
-
+#endif
 	m_bIsOwner = true;
 	char filename[MAX_PATH];
 
@@ -911,7 +939,6 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		}
 		else
 		{
-
 			FileHandle fileHandle = CFileUtils::OpenFile(filename, true, true);
 
 			if (fileHandle.IsValid())

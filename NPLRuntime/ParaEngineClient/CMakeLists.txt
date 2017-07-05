@@ -63,7 +63,7 @@ if (DIRECTX_FOUND)
 	file (GLOB ParaEngineClient_Cad_FILES ${ParaEngineClient_SOURCE_DIR}/CadModel/*.*)
 	SOURCE_GROUP("Externals\\CadModel" FILES ${ParaEngineClient_Cad_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
-
+	 
 else()
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
@@ -108,6 +108,10 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Core_FILES})
 file (GLOB ParaEngineClient_CoreHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Core/*.h ${ParaEngineClient_SOURCE_DIR}/Core/*.hpp)
 SOURCE_GROUP("Core\\Headers" FILES ${ParaEngineClient_CoreHeader_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CoreHeader_FILES})
+
+file (GLOB ParaEngineClient_CoreHeaderPhysics_FILES ${ParaEngineClient_SOURCE_DIR}/Core/Physics/*.h ${ParaEngineClient_SOURCE_DIR}/Core/Physics/*.hpp)
+SOURCE_GROUP("Core\\Headers\\Physics" FILES ${ParaEngineClient_CoreHeaderPhysics_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CoreHeaderPhysics_FILES})
 
 ##############################
 #file (GLOB ParaEngineClient_MDXModel_FILES ${ParaEngineClient_SOURCE_DIR}/mdxfile/*.*)
@@ -255,6 +259,12 @@ file (GLOB ParaEngineClient_3D_FILES ${ParaEngineClient_SOURCE_DIR}/3dengine/*.c
 SOURCE_GROUP("3dengine" FILES ${ParaEngineClient_3D_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_3D_FILES})
 
+############################## 
+
+file (GLOB ParaEngineClient_3DPhysics_FILES ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.cpp ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.h ${ParaEngineClient_SOURCE_DIR}/3dengine/Physics/*.hpp)
+SOURCE_GROUP("3dengine\\Physics" FILES ${ParaEngineClient_3DPhysics_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_3DPhysics_FILES})
+ 
 ##############################
 # util files
 file (GLOB ParaEngineClient_UTIL_FILES ${ParaEngineClient_SOURCE_DIR}/util/*.h ${ParaEngineClient_SOURCE_DIR}/util/*.cpp ${ParaEngineClient_SOURCE_DIR}/util/*.hpp ${ParaEngineClient_SOURCE_DIR}/util/*.c)

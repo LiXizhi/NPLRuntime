@@ -9,6 +9,9 @@
 #pragma warning( disable:4251 )
 #endif
 
+#include <luabind/luabind.hpp>
+#include <luabind/object.hpp>
+
 namespace NPL
 {
 	class NPLObjectBase;
@@ -39,6 +42,7 @@ namespace NPL
 			NPLObjectType_Number, 
 			NPLObjectType_String, 
 			NPLObjectType_Bool,
+			NPLObjectType_LuaObject,
 		};
 		NPLObjectBase():m_type(NPLObjectType_Nil){};
 		virtual ~NPLObjectBase(){};
@@ -50,6 +54,7 @@ namespace NPL
 		bool isString() { return GetType() == NPLObjectType_String; }
 		bool isNil() { return GetType() == NPLObjectType_Nil; }
 		bool isBool() { return GetType() == NPLObjectType_Bool; }
+		bool isLuaObject() { return GetType() == NPLObjectType_LuaObject; }
 
 	protected:
 		NPLObjectType m_type;
@@ -93,6 +98,7 @@ namespace NPL
 
 		void operator = (const std::string& value);
 		void operator = (const char* value);
+		void operator = (const luabind::object& value);
 
 		/** get field by name. It will create an empty field if it does not exist. Use GetField() if you only want to find if a field exist of not. */
 		NPLObjectProxy& operator [] (const string& sName);
@@ -189,6 +195,22 @@ namespace NPL
 		std::string m_value;
 	};
 
+	class PE_CORE_DECL NPLLuaObject : public NPLObjectBase
+	{
+	public:
+		NPLLuaObject() { m_type = NPLObjectType_LuaObject; }
+		NPLLuaObject(const luabind::object& o) : m_object(o) { m_type = NPLObjectType_LuaObject;}
+
+		virtual ~NPLLuaObject() {};
+
+		void SetValue(const luabind::object& value) { m_object = value; };
+
+		lua_State* GetState() { return m_object.interpreter(); };
+		void Push(lua_State* L) { m_object.push(L); };
+
+	private:
+		luabind::object m_object;
+	};
 
 	/** this is a pure c++ implementation of lua table. it can convert back and force from string. 
 	* only data members are supported. This class is mostly used by C++ plugin modules. 

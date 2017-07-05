@@ -378,7 +378,7 @@ const char* ParaAttributeObject::GetFieldName(int nIndex)
 		CAttributeField* pField = m_pAttClass->GetField(nIndex);
 		if (pField != 0)
 		{
-			return pField->m_sFieldname.c_str();
+			return pField->GetFieldname().c_str();
 		}
 	}
 	return CGlobals::GetString(G_STR_EMPTY).c_str();
@@ -458,6 +458,43 @@ const char* ParaAttributeObject::GetSchematicsType(int nIndex)
 		}
 	}
 	return CGlobals::GetString(G_STR_EMPTY).c_str();
+}
+
+
+object ParaAttributeObject::CallField2(const char* sFieldname, const object& params)
+{
+	if (!IsValid())
+		return object();
+
+	CAttributeField* pField = m_pAttClass->GetField(sFieldname);
+	if (pField != 0)
+	{
+		if (pField->m_type == FieldType_void)
+		{
+			pField->Call(m_pAttribute.get());
+			return object();
+		}
+		else if (pField->m_type == FieldType_function)
+		{
+			object out;
+
+			NPL::NPLObjectProxy nplObjectIn, nplObjectOut;
+			NPL::NPLHelper::LuaObjectToNPLObject(params, nplObjectIn);
+			auto ret = pField->Call(m_pAttribute.get(), nplObjectIn, nplObjectOut);
+			
+			if (SUCCEEDED(ret))
+			{
+				NPL::NPLHelper::NPLObjectToLuaObject(nplObjectOut, out);
+				return out;
+			}
+			else
+			{
+				return object();
+			}
+		}
+	}
+
+	return object();
 }
 
 void ParaAttributeObject::CallField(const char*  sFieldname)
@@ -956,10 +993,19 @@ int ParaScripting::ParaAttributeObject::GetColumnCount()
 	return IsValid() ? m_pAttribute->GetChildAttributeColumnCount() : 0;
 }
 
+bool ParaScripting::ParaAttributeObject::AddChild2(ParaAttributeObject& obj, int nRowIndex, int nColumnIndex)
+{
+	return ((IsValid() && obj.IsValid()) ? m_pAttribute->AddChildAttributeObject(obj.m_pAttribute, nRowIndex, nColumnIndex) : false);
+}
 
 bool ParaScripting::ParaAttributeObject::AddChild(ParaAttributeObject& obj)
 {
 	return ((IsValid() && obj.IsValid()) ? m_pAttribute->AddChildAttributeObject(obj.m_pAttribute) : false);
+}
+
+bool ParaScripting::ParaAttributeObject::RemoveChild(ParaAttributeObject& obj)
+{
+	return ((IsValid() && obj.IsValid()) ? m_pAttribute->RemoveChildAttributeObjcet(obj.m_pAttribute) : false);
 }
 
 const ParaObject& ParaScripting::ParaAttributeObject::QueryObject()
@@ -974,6 +1020,199 @@ const ParaUIObject& ParaScripting::ParaAttributeObject::QueryUIObject()
 	static ParaUIObject s_obj;
 	s_obj.m_pObj = IsValid() ? ((CGUIBase*)(m_pAttribute->QueryObject(ATTRIBUTE_CLASSID_CGUIBase))) : NULL;
 	return s_obj;
+}
+
+object ParaAttributeObject::GetField2(const char* sFieldname, lua_State* L)
+{
+	if (!IsValid())
+	{
+		// return nil
+		return object();
+	}
+
+	CAttributeField* pField = m_pAttClass->GetField(sFieldname);
+	if (pField == 0 || !pField->HasGetFunction())
+		// return nil
+		return object();
+
+	switch (pField->m_type)
+	{
+	case FieldType_Bool:
+	{
+		bool value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_Int:
+	case FieldType_Enum:
+	{
+		int value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_DWORD:
+	{
+		DWORD value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_Float:
+	{
+		float value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_Double:
+	{
+		double value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_String:
+	{
+		const char* value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+			return object(L, value);
+		else
+			// return nil;
+			return object();
+		break;
+	}
+	case FieldType_Vector2:
+	{
+		Vector2 value;
+
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			out[1] = value.x;
+			out[2] = value.y;
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+		
+		break;
+	}
+	case FieldType_Vector3:
+	{
+		Vector3 value;
+
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			out[1] = value.x;
+			out[2] = value.y;
+			out[3] = value.z;
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+		
+		break;
+	}
+	case FieldType_DVector3:
+	{
+		DVector3 value;
+
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			out[1] = value.x;
+			out[2] = value.y;
+			out[3] = value.z;
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+		
+		break;
+	}
+	case FieldType_Vector4:
+	{
+		Vector4 value;
+
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			out[1] = value.x;
+			out[2] = value.y;
+			out[3] = value.z;
+			out[4] = value.w;
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+	
+		break;
+	}
+	case FieldType_Quaternion:
+	{
+		Quaternion value;
+
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			out[1] = value.x;
+			out[2] = value.y;
+			out[3] = value.z;
+			out[4] = value.w;
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+		
+		break;
+	}
+	case FieldType_Matrix4:
+	{
+		Matrix4 value;
+		if (SUCCEEDED(pField->Get(m_pAttribute.get(), &value)))
+		{
+			object out = newtable(L);
+			for (int i = 0; i < 16; i++) {
+				out[i + 1] = value._m[i];
+			}
+			return out;
+		}
+		else
+			// return nil;
+			return object();
+
+		break;
+	}
+	default:
+		break;
+	}
+
+
+	// return nil
+	return object();
 }
 
 object  ParaAttributeObject::GetField(const char*  sFieldname, const object& output)
