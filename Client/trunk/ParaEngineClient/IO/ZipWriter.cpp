@@ -162,7 +162,7 @@ namespace ParaEngine
 		{
 			m_destFilename = destFilename;
 			m_localFileHeader.FilenameLength = static_cast<uint16_t>(m_destFilename.length());
-			m_filename = "_";
+			m_filename = m_destFilename;
 			m_pFile = pFile;
 		}
 
