@@ -582,6 +582,8 @@ namespace ParaScripting
 			if field type is vectorN, return a table with N items.Please note table index start from 1
 		*/
 		object GetField(const char*  sFieldname, const object& output);
+
+		object GetField2(const char* sFieldname, lua_State* L);
 		/** similar to GetField(). except that the output is a string. 
 		Used for API exporting. not thread safe. */
 		const char* GetStringField(const char*  sFieldname);

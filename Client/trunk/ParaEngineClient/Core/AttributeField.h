@@ -29,8 +29,7 @@ namespace ParaEngine
 		any_offset m_offsetSetFunc;
 		any_offset m_offsetGetFunc;
 
-		/** field name: e.g. "base.position" */
-		string		m_sFieldname;
+		
 		/** see ATTRIBUTE_FIELDTYPE */
 		DWORD		m_type;
 
@@ -39,7 +38,20 @@ namespace ParaEngine
 		string		m_sSchematics;
 		/** a help string.*/
 		string		m_sHelpString;
+
+	protected:
+		/** field name: e.g. "base.position" */
+		string		m_sFieldname;
+		/* hash of filed name, used to fast query*/
+		size_t		m_hash;
 	public:
+		void SetFieldname(const string& sFieldname);
+
+		const string& GetFieldname() const;
+
+		size_t GetHash() const;
+
+		static std::hash<string> HashFunc;
 		/**
 		* get the field type as string
 		* @return one of the following type may be returned
