@@ -82,7 +82,7 @@ namespace ParaEngine
 	class ZipArchiveEntry : public CRefCounted 
 	{
 	public:
-		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0), m_isMemFile(false)
+		ZipArchiveEntry() : m_offsetOfCompressedData(0), m_offsetOfSerializedLocalFileHeader(0), m_pFile(nullptr)
 		{
 			memset(&m_localFileHeader, 0, sizeof(SZIPFileHeader));
 			m_localFileHeader.Sig = ZIP_CONST_LOCALHEADERSIG;
@@ -90,7 +90,7 @@ namespace ParaEngine
 
 		virtual ~ZipArchiveEntry() 
 		{
-			if (m_isMemFile && m_pFile)
+			if (m_pFile)
 				delete m_pFile;
 		}
 	public:
@@ -152,8 +152,6 @@ namespace ParaEngine
 				m_filename = filename;
 			}
 			m_localFileHeader.FilenameLength = static_cast<uint16_t>(m_destFilename.length());
-
-			m_isMemFile = false;
 		}
 
 		/**
@@ -166,8 +164,6 @@ namespace ParaEngine
 			m_localFileHeader.FilenameLength = static_cast<uint16_t>(m_destFilename.length());
 
 			m_pFile = pFile;
-
-			m_isMemFile = true;
 		}
 
 		void SerializeLocalFileHeader(CParaFile& file) 
@@ -187,9 +183,8 @@ namespace ParaEngine
 			// serialize body of compressed file
 			if (!IsDirectory()) 
 			{
-				if (m_isMemFile)
+				if (m_pFile)
 				{
-					if (m_pFile)
 					{
 						std::string output;
 						output.reserve(m_pFile->getSize());
@@ -272,13 +267,8 @@ namespace ParaEngine
 		size_t m_offsetOfSerializedLocalFileHeader;
 
 		std::string m_destFilename;
-		union 
-		{
-			std::string m_filename;
-			CParaFile* m_pFile;
-		};
-
-		bool m_isMemFile;
+		std::string m_filename;
+		CParaFile* m_pFile;
 	};
 }
 
