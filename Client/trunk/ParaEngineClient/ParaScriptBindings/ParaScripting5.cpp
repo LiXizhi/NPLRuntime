@@ -532,6 +532,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 				.def(constructor<>())
 				.def("IsValid", &ParaZipWriter::IsValid)
 				.def("ZipAdd", &ParaZipWriter::ZipAdd)
+				.def("ZipAddData", &ParaZipWriter::ZipAddData)
 				.def("ZipAddFolder", &ParaZipWriter::ZipAddFolder)
 				.def("AddDirectory", &ParaZipWriter::AddDirectory)
 				.def("close", &ParaZipWriter::close),

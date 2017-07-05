@@ -37,6 +37,91 @@ so there is no need to use it. */
 
 using namespace ParaEngine;
 
+bool ParaEngine::IsZipData(const char* src, size_t size)
+{
+	if (size < sizeof(ZIP_EndOfCentralDirectoryBlock))
+		return false;
+	src += size - sizeof(ZIP_EndOfCentralDirectoryBlock);
+
+	ZIP_EndOfCentralDirectoryBlock* p = (ZIP_EndOfCentralDirectoryBlock*)src;
+
+	return p->sig == ZIP_CONST_ENDSIG;
+}
+
+const SZIPFileHeader* ParaEngine::GetFirstFileInfo(const char* src, std::string* filename)
+{
+	const SZIPFileHeader* p = (const SZIPFileHeader*)src;
+	if (p->Sig == ZIP_CONST_LOCALHEADERSIG)
+	{
+		if (filename != nullptr)
+		{
+			filename->operator=(std::string(src + sizeof(SZIPFileHeader), p->FilenameLength));
+			filename->operator+=('\0');
+		}
+		return p;
+	}
+	else
+		return nullptr;
+}
+
+bool ParaEngine::GetFirstFileData(const char* src, std::string& out)
+{
+	const SZIPFileHeader* info = (const SZIPFileHeader*)src;
+	if (info->Sig != ZIP_CONST_LOCALHEADERSIG)
+		return nullptr;
+
+	auto filedata = src + sizeof(SZIPFileHeader) + info->FilenameLength + info->ExtraFieldLength;
+	if (info->CompressionMethod == 0)  // 8 for zip, 0 for no compression.
+	{
+		out = std::string(filedata, info->DataDescriptor.UncompressedSize);
+		return true;
+	}
+	else if (info->CompressionMethod == 8)
+	{
+		out.resize(info->DataDescriptor.UncompressedSize);
+
+		z_stream stream;
+		int err;
+
+		stream.next_in = (Bytef*)filedata;
+		stream.avail_in = (uInt)info->DataDescriptor.CompressedSize;
+		stream.next_out = (Bytef*)(&*out.begin());
+		stream.avail_out = info->DataDescriptor.UncompressedSize;
+		stream.zalloc = (alloc_func)0;
+		stream.zfree = (free_func)0;
+
+		err = inflateInit2(&stream, -MAX_WBITS);
+		if (err == Z_OK)
+		{
+			err = inflate(&stream, Z_FINISH);
+			inflateEnd(&stream);
+			if (err == Z_STREAM_END)
+				err = Z_OK;
+
+			err = Z_OK;
+			inflateEnd(&stream);
+		}
+
+
+		if (err == Z_OK)
+		{
+			return true;
+		}
+		else
+		{
+			std::string filename;
+			filename = (std::string(src + sizeof(SZIPFileHeader), info->FilenameLength));
+			filename += '\0';
+			OUTPUT_LOG("Error decompressing %s\n", filename.c_str());
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
 CZipArchive::CZipArchive(void)
 :m_pFile(NULL),m_bIgnoreCase(true),m_zipComment(NULL),m_pEntries(NULL),m_bRelativePath(false)
 {
