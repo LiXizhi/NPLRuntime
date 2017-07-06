@@ -56,14 +56,14 @@ namespace ParaEngine
 		bool IsAutoScale();
 		const Vector3& GetCenterPos() const;
 
-		vector<RectanglePtr> MergeCoplanerBlockFace();
+		void MergeCoplanerBlockFace(vector<RectanglePtr> &pRectangles);
 		void FindCoplanerFace(vector<RectanglePtr> &retangles, BMaxNode* node, uint32 nFaceIndex);
 		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
 
 		void CalculateLod();
-		vector<uint32> GetLodTable(uint32 faceCount);
+		void GetLodTable(uint32 faceCount, vector<uint32>&lodTable);
 		void PerformLod();
-		void CalculateAABB(vector<BMaxNodePtr>nodes);
+		void CalculateAABB(vector<BMaxNodePtr>&nodes);
 		void CalculateLodNode(map<int32, BMaxNodePtr> &nodeMap, int x, int y, int z);
 	
 		inline uint32 GetNodeIndex(uint16 x, uint16 y, uint16 z)

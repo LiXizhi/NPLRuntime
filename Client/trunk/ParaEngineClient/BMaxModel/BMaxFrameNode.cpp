@@ -56,7 +56,7 @@ void ParaEngine::BMaxFrameNode::SetIndex(int nIndex)
 
 BMaxFrameNode* BMaxFrameNode::GetParent()
 {
-	if (m_nParentIndex >= 0)
+	if (m_nParentIndex >= 0 && m_pParser->m_nodes.find(m_nParentIndex) != m_pParser->m_nodes.end())
 	{
 		auto pParent = m_pParser->m_nodes[m_nParentIndex];
 		if (pParent)
@@ -331,7 +331,6 @@ ParaEngine::Bone* BMaxFrameNode::GetParentBone(bool bRefresh)
 					// prevent acyclic links
 					if (!IsAncestorOf(parent_node))
 					{
-						OUTPUT_LOG("boneIndex %d %d %d %d %d %d %d %d\n", GetBoneIndex(), parent_node->GetBoneIndex(), this->x, this->y, this->z, parent_node->x, parent_node->y, parent_node->z);
 						SetParentIndex(parent_node->GetIndex());
 					}
 				}

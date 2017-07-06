@@ -7,7 +7,7 @@ namespace ParaEngine
 	class Rectangle : public CRefCounted
 	{
 	public:
-		Rectangle(vector<BMaxNodePtr> nodes_, uint32 faceIndex_);
+		Rectangle(vector<BMaxNodePtr> &nodes_, uint32 faceIndex_);
 		~Rectangle();
 		void UpdateNode(BMaxNode* fromNode, BMaxNode* toNode, uint32 index);
 		void CloneNodes();
@@ -30,9 +30,11 @@ namespace ParaEngine
 			return iter.get();
 		}
 
-		Vector3 GetOffsetByIndex(int nIndex);
 	private:
 		void InitOffsetTable();
+
+	public:
+		static const Vector3 DirectionOffsetTable[24];
 
 	private: 
 		std::vector<BMaxNodePtr> m_nodes;

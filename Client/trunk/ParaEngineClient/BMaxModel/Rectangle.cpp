@@ -3,58 +3,59 @@
 
 namespace ParaEngine
 {
-
-	Rectangle::Rectangle(vector<BMaxNodePtr> nodes_, uint32 faceIndex_) : m_nodes(nodes_), faceIndex(faceIndex_)
+	const Vector3 Rectangle::DirectionOffsetTable[24] =
 	{
-		InitOffsetTable();
+		//top face
+		Vector3(0, 0, 1),
+		Vector3(1, 0, 0),
+		Vector3(0, 0, -1),
+		Vector3(-1, 0, 0),
+
+		//front face
+		Vector3(0, 1, 0),
+		Vector3(1, 0, 0),
+		Vector3(0, -1, 0),
+		Vector3(-1, 0, 0),
+
+		//bottom face
+		Vector3(0, 0, -1),
+		Vector3(1, 0, 0),
+		Vector3(0, 0, 1),
+		Vector3(-1, 0, 0),
+
+		//left face
+		Vector3(0, 1, 0),
+		Vector3(0, 0, -1),
+		Vector3(0, -1, 0),
+		Vector3(0, 0, 1),
+
+		//right face
+		Vector3(0, 1, 0),
+		Vector3(0, 0, 1),
+		Vector3(0, -1, 0),
+		Vector3(0, 0, -1),
+
+		//back face
+		Vector3(0, 1, 0),
+		Vector3(-1, 0, 0),
+		Vector3(0, -1, 0),
+		Vector3(1, 0, 0),
+	};
+
+	Rectangle::Rectangle(vector<BMaxNodePtr> &nodes_, uint32 faceIndex_) : m_nodes(nodes_), faceIndex(faceIndex_)
+	{
+		
 	}
+
+
 
 	Rectangle::~Rectangle()
 	{
 	}
 
-	Vector3 Rectangle::GetOffsetByIndex(int nIndex)
-	{
-		return m_directionOffsetTable[nIndex];
-	}
-
 	void Rectangle::InitOffsetTable()
 	{
-		//top face
-		m_directionOffsetTable[0] = Vector3(0, 0, 1);
-		m_directionOffsetTable[1] = Vector3(1, 0, 0);
-		m_directionOffsetTable[2] = Vector3(0, 0, -1);
-		m_directionOffsetTable[3] = Vector3(-1, 0, 0);
-
-		//front face
-		m_directionOffsetTable[4] = Vector3(0, 1, 0);
-		m_directionOffsetTable[5] = Vector3(1, 0, 0);
-		m_directionOffsetTable[6] = Vector3(0, -1, 0);
-		m_directionOffsetTable[7] = Vector3(-1, 0, 0);
-
-		//bottom face
-		m_directionOffsetTable[8] = Vector3(0, 0, -1);
-		m_directionOffsetTable[9] = Vector3(1, 0, 0);
-		m_directionOffsetTable[10] = Vector3(0, 0, 1);
-		m_directionOffsetTable[11] = Vector3(-1, 0, 0);
-
-		//left face
-		m_directionOffsetTable[12] = Vector3(0, 1, 0);
-		m_directionOffsetTable[13] = Vector3(0, 0, -1);
-		m_directionOffsetTable[14] = Vector3(0, -1, 0);
-		m_directionOffsetTable[15] = Vector3(0, 0, 1);
-
-		//right face
-		m_directionOffsetTable[16] = Vector3(0, 1, 0);
-		m_directionOffsetTable[17] = Vector3(0, 0, 1);
-		m_directionOffsetTable[18] = Vector3(0, -1, 0);
-		m_directionOffsetTable[19] = Vector3(0, 0, -1);
-
-		//back face
-		m_directionOffsetTable[20] = Vector3(0, 1, 0);
-		m_directionOffsetTable[21] = Vector3(-1, 0, 0);
-		m_directionOffsetTable[22] = Vector3(0, -1, 0);
-		m_directionOffsetTable[23] = Vector3(1, 0, 0);
+		
 	}
 
 	void Rectangle::UpdateNode(BMaxNode* fromNode, BMaxNode* toNode, uint32 index)

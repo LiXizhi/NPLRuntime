@@ -73,7 +73,6 @@ namespace ParaEngine
 				CalculateBoneWeights();
 				//ParseVisibleBlocks();
 				CalculateLod();
-				MergeCoplanerBlockFace();
 				if (m_bAutoScale)
 					ScaleModels();
 			}
@@ -368,10 +367,8 @@ namespace ParaEngine
 
 
 
-	vector<RectanglePtr> BMaxParser::MergeCoplanerBlockFace()
+	void BMaxParser::MergeCoplanerBlockFace(vector<RectanglePtr> &pRectangles)
 	{
-		vector<RectanglePtr> pRectangles;
-
 		ParseVisibleBlocks();
 		for (auto& item : m_nodes)
 		{
@@ -390,7 +387,6 @@ namespace ParaEngine
 			}
 		}
 		OUTPUT_LOG("rect count %d \n", pRectangles.size());
-		return pRectangles;
 	}
 
 
@@ -421,8 +417,9 @@ namespace ParaEngine
 
 	void BMaxParser::FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex)
 	{
+		const Vector3 *directionOffsetTable = Rectangle::DirectionOffsetTable;
 		int nIndex = nFaceIndex * 4 + i;
-		Vector3 offset = rectangle->GetOffsetByIndex(nIndex);
+		Vector3 offset = directionOffsetTable[nIndex];
 
 		int nextI;
 		if (i == 3) 
@@ -433,10 +430,10 @@ namespace ParaEngine
 		BMaxNode *fromNode = rectangle->GetFromNode(nextI);
 		BMaxNode *toNode = rectangle->GetToNode(nextI);
 
-		Vector3 nextOffset = rectangle->GetOffsetByIndex(nextI);
+		Vector3 nextOffset = directionOffsetTable[nextI];
 		BMaxNode *currentNode = fromNode;
 
-		std::vector<BMaxNodePtr>nodes;
+		vector<BMaxNodePtr>nodes;
 		
 		if (fromNode)
 		{
@@ -473,22 +470,25 @@ namespace ParaEngine
 
 	void BMaxParser::CalculateLod()
 	{
-		m_originRectangles = MergeCoplanerBlockFace();
-		vector<RectanglePtr>rectangles = m_originRectangles;
+		vector<RectanglePtr>rectangles;
+		MergeCoplanerBlockFace(rectangles);
+		m_originRectangles = rectangles;
 
 		for (RectanglePtr rectangle : rectangles)
 		{
 			rectangle->ScaleVertices(m_fScale);
 		}
 
-		vector<uint32> lodTable = GetLodTable(rectangles.size());
+		vector<uint32> lodTable;
+		GetLodTable(m_originRectangles.size(), lodTable);
 		for (uint16 i = 0;i < lodTable.size();i++)
 		{
 			uint32 nextFaceCount = lodTable[i];
 			while (rectangles.size() > nextFaceCount)
 			{
 				PerformLod();
-				rectangles = MergeCoplanerBlockFace();
+				rectangles.clear();
+				MergeCoplanerBlockFace(rectangles);
 			}
 			for (RectanglePtr rectangle : rectangles)
 			{
@@ -498,23 +498,21 @@ namespace ParaEngine
 		}
 	}
 
-	vector<uint32> BMaxParser::GetLodTable(uint32 faceCount)
+	void BMaxParser::GetLodTable(uint32 faceCount, vector<uint32>&lodTable)
 	{
 		if (faceCount >= 4000)
-			return vector<uint32> { 4000, 2000, 500 };
-		else if (faceCount >= 2000)
-			return vector<uint32> {2000, 500};
-		else if (faceCount >= 500)
-			return vector<uint32> {500};
-		else
-			return vector<uint32>{};
+			lodTable.push_back(4000);
+		if (faceCount >= 2000)
+			lodTable.push_back(2000);
+		if (faceCount >= 500)
+			lodTable.push_back(500);
 	}
 
 	void BMaxParser::PerformLod()
 	{
 		CShapeAABB aabb;
 		map<int32, BMaxNodePtr>nodesMap;
-
+		
 		int width = (int)m_blockAABB.GetWidth();
 		int height = (int)m_blockAABB.GetHeight();
 		int depth = (int)m_blockAABB.GetDepth();
@@ -541,17 +539,17 @@ namespace ParaEngine
 		}
 		vector<BMaxNodePtr>nodes;
 
-		for (auto iter = nodesMap.begin();iter != nodesMap.end();iter++)
+		for (map<int32, BMaxNodePtr>::iterator iter = nodesMap.begin();iter != nodesMap.end();iter++)
 		{
 			nodes.push_back(iter->second);
 		}
 		CalculateAABB(nodes);
 	}
 
-	void BMaxParser::CalculateAABB(vector<BMaxNodePtr>nodes)
+	void BMaxParser::CalculateAABB(vector<BMaxNodePtr>&nodes)
 	{
+		OUTPUT_LOG("nodes %d\n", nodes.size());
 		CShapeAABB aabb;
-
 		for (auto item : nodes)
 		{
 			BMaxNode *node = item.get();
@@ -566,9 +564,10 @@ namespace ParaEngine
 		m_centerPos.z = (m_blockAABB.GetDepth() + 1.f) * 0.5f;
 
 		OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
-		int offset_x = (int)m_blockAABB.GetMin().x;
-		int offset_y = (int)m_blockAABB.GetMin().y;
-		int offset_z = (int)m_blockAABB.GetMin().z;
+		auto vMin = m_blockAABB.GetMin();
+		int offset_x = (int)vMin.x;
+		int offset_y = (int)vMin.y;
+		int offset_z = (int)vMin.z;
 
 		m_nodes.clear();
 		for (auto node : nodes)
@@ -579,6 +578,7 @@ namespace ParaEngine
 			InsertNode(node);
 		}
 
+		OUTPUT_LOG("nodes2 %d\n", m_nodes.size());
 		if (m_bAutoScale)
 		{
 			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
@@ -610,7 +610,7 @@ namespace ParaEngine
 					int32 cy = y + dy;
 					int32 cz = z + dz;
 
-					if (cx >= 0 && cy >= 0 && cx >= 0)
+					if (cx >= 0 && cy >= 0 && cz >= 0)
 					{
 						BMaxNode *node = GetNode(cx, cy, cz);
 						if (node)
@@ -626,13 +626,13 @@ namespace ParaEngine
 									BMaxFrameNode *bone = m_bones[iter->first].get();
 									if (boneIndex == iter->first || bone->IsAncestorOf(myBone))
 									{
-										boneMap[iter->first] = iter->second + 1;
+										iter->second++;
 										hasFind = true;
 										break;
 									}
 									else if (myBone->IsAncestorOf(bone))
 									{
-										boneMap[boneIndex] = iter->second + 1;
+										boneMap.insert(make_pair(boneIndex, iter->second + 1));
 										boneMap.erase(iter);
 										hasFind = true;
 										break;
@@ -650,7 +650,7 @@ namespace ParaEngine
 							{
 								if (iter->first == myColor)
 								{
-									colorMap[iter->first] = iter->second + 1;
+									iter->second++;
 									hasFind = true;
 									break;
 								}
@@ -669,9 +669,9 @@ namespace ParaEngine
 
 		if (cnt >= 4)
 		{
-			uint16 newX = x / 2 + 1;
+			uint16 newX = (x + 1) / 2;
 			uint16 newY = y / 2;
-			uint16 newZ = z / 2 + 1;
+			uint16 newZ = (z + 1) / 2;
 			uint32 index = GetNodeIndex(newX, newY, newZ);
 
 			int maxNum = 0;
@@ -703,7 +703,6 @@ namespace ParaEngine
 
 			if (nodeMap.find(index) == nodeMap.end())
 			{
-				//("node1 %d %d %d %d \n", node->x, node->y, node->z, node->GetBoneIndex());
 				nodeMap.insert(make_pair(index, node));
 			}
 		}
