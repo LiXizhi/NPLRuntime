@@ -1101,10 +1101,9 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 				else
 					result.AddResult(entry.m_pEntry->zipFileName, entry.m_pEntry->CompressedSize);
 			}
-			}
 		}
-
 	}
+}
 
 const std::string& ParaEngine::CZipArchive::GetRootDirectory()
 {
