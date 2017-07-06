@@ -373,10 +373,14 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
 
 			const unsigned int istart = mapping_offsets[i], iend = istart + mapping_counts[i];
 			for (unsigned int j = istart; j < iend; ++j) {
-				if(static_cast<size_t>(uvIndices[i]) >= tempUV.size()) {
+
+				auto index = uvIndices[i];
+				if (index < 0)
+					index = tempUV.size() + index;
+				if(static_cast<size_t>(index) >= tempUV.size()) {
 					DOMError("index out of range",&GetRequiredElement(source,indexDataElementName));
 				}
-				data_out[mappings[j]] = tempUV[uvIndices[i]];
+				data_out[mappings[j]] = tempUV[index];
 			}
 		}
 	}
@@ -403,10 +407,13 @@ void ResolveVertexDataArray(std::vector<T>& data_out, const Scope& source,
 
 		unsigned int next = 0;
 		BOOST_FOREACH(int i, uvIndices) {
+			
+			if (i < 0)
+				i = tempUV.size() + i;
+
 			if(static_cast<size_t>(i) >= tempUV.size()) {
 				DOMError("index out of range",&GetRequiredElement(source,indexDataElementName));
 			}
-
 			data_out[next++] = tempUV[i];
 		}
 	}
