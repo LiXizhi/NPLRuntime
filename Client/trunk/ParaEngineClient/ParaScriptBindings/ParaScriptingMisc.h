@@ -30,7 +30,21 @@ namespace ParaScripting
 		* @param str: the string to use
 		* @param nFrom: character index beginning from 1. 
 		*/
-		static string UniSubString(const char* str, int nFrom, int nTo);
+		static std::string UniSubString(const char* str, int nFrom, int nTo);
+
+		/**
+		*  Converts utf8 string to utf16 string
+		*  @param utf8 The utf8 string to be converted
+		*  @return outUtf16 string
+		*/
+		static std::string UTF8ToUTF16(const std::string& utf8);
+
+		/**
+		*  Converts utf16 string to utf8 string
+		*  @param utf16 The utf16 string to be converted
+		*  @return The output utf8 string
+		*/
+		static std::string UTF16ToUTF8(const std::string& utf16);
 
 		/** encode a string using really simple algorithm. it just makes the source ineligible. It is still not immune to crackers.
 		* str = SimpleDecode(SimpleEncode(str)) 
@@ -64,6 +78,7 @@ namespace ParaScripting
 		  | 950   |  big5   |
 		  | 936   |  gb2312 |
 		  | 65001 |  utf-8  |
+		  |       |  utf-16  |
 		  | 65005 |  utf-32  |
 		* There is one special code name called "HTML", which contains HTML special characters in ascii code page. This is usually true for most "iso8859-15" encoding in western worlds. 
 		* It just writes the unicode number\U+XXXX in ascii character "&#XXXX;" where & is optional. 

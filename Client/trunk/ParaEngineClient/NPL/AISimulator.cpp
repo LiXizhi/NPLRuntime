@@ -91,7 +91,10 @@ void CAISimulator::CleanUp()
 }
 void CAISimulator::SetGameLoop(const string& scriptName)
 {
-	m_sGameloop = scriptName;
+	if (m_sGameloop != scriptName)
+	{
+		m_sGameloop = scriptName;
+	}
 }
 
 void CAISimulator::SetGameLoopInterval(float fInterval)
@@ -137,7 +140,9 @@ void CAISimulator::FrameMove(float fElapsedTime)
 	{
 		g_fGameInterfaceTimer = 0;
 		// send empty message
-		m_pRuntimeEnv->NPL_Activate(main_rts_state, m_sGameloop.c_str(), NPL::CNPLWriter::GetNilMessage().c_str(), (int)NPL::CNPLWriter::GetNilMessage().size());
+		if (!m_sGameloop.empty()) {
+			m_pRuntimeEnv->NPL_Activate(main_rts_state, m_sGameloop.c_str(), NPL::CNPLWriter::GetNilMessage().c_str(), (int)NPL::CNPLWriter::GetNilMessage().size());
+		}
 	}
 
 	// fire all unhandled events

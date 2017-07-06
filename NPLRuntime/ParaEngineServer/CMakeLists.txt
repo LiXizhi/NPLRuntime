@@ -158,6 +158,33 @@ set_source_files_properties(${ParaEngineClient_DOCUMENT_FILES} PROPERTIES HEADER
 list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_DOCUMENT_FILES})
 
 ##############################
+# WebSocket
+file (GLOB ParaEngineServer_WebSocket_FILES ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp ${CLIENT_SOURCE_DIR}/WebSocket/*.h ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp)
+SOURCE_GROUP("WebSocket" FILES ${ParaEngineServer_WebSocket_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_WebSocket_FILES})
+
+#######################################
+# PCH: precompiled header under msvc
+if (MSVC)
+	set_source_files_properties(${CLIENT_SOURCE_DIR}/Core/ParaEngine.cxx
+		PROPERTIES
+		COMPILE_FLAGS "/YcParaEngine.h"
+		)
+	foreach( src_file ${ParaEngineServer_SRCS} )
+		if(${src_file} MATCHES "cpp")
+			set_source_files_properties(
+				${src_file}
+				PROPERTIES
+				COMPILE_FLAGS "/YuParaEngine.h"
+				)
+		endif(${src_file} MATCHES "cpp")
+	endforeach( src_file ${ParaEngineServer_SRCS} )
+	
+	list(APPEND ParaEngineServer_SRCS ${CLIENT_SOURCE_DIR}/Core/ParaEngine.cxx)
+endif (MSVC)
+
+
+##############################
 # add the binary tree to the search path for include files
 include_directories("${CLIENT_SOURCE_DIR}")
 include_directories("${CLIENT_SOURCE_DIR}/Core")

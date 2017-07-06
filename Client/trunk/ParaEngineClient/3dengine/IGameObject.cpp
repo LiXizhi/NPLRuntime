@@ -395,7 +395,7 @@ bool IGameObject::ResetField(int nFieldID)
 	if(pField!=0)
 	{
 		bFound = true;
-		if (pField->m_sFieldname.substr(0, 3) == "On_")
+		if (pField->GetFieldname().substr(0, 3) == "On_")
 		{
 			/* suppose world name is sample, character name  is ABC, then the default value is 
 			[[;NPL.load("sample/character/ABC.lua");_character.ABC.On_Click();]]
@@ -406,7 +406,7 @@ bool IGameObject::ResetField(int nFieldID)
 			{
 				CPathReplaceables::GetSingleton().EncodePath(sFileName, sFileName, "WORLD");
 			}*/
-			snprintf(tmp, MAX_FIELD_LENGTH, ";NPL.load(\"(gl)%s\");_character.%s.%s();", sFileName.c_str(), GetIdentifier().c_str(), pField->m_sFieldname.c_str());
+			snprintf(tmp, MAX_FIELD_LENGTH, ";NPL.load(\"(gl)%s\");_character.%s.%s();", sFileName.c_str(), GetIdentifier().c_str(), pField->GetFieldname().c_str());
 			string sValue(tmp);
 			pField->Set(this, sValue.c_str());
 
@@ -419,7 +419,7 @@ bool IGameObject::ResetField(int nFieldID)
 			}
 #endif
 		}
-		else if(pField->m_sFieldname == "OnLoadScript")
+		else if(pField->GetFieldname() == "OnLoadScript")
 		{
 			/* suppose world name is sample, character name  is ABC, then the default value is 
 			[[;NPL.load("sample/character/ABC.lua");_character.ABC.On_Click();]]
@@ -496,7 +496,7 @@ bool IGameObject::InvokeEditor(int nFieldID, const string& sParameters)
 	if(pField!=0)
 	{
 		bFound = true;
-		if (pField->m_sFieldname.substr(0, 2) == "On")
+		if (pField->GetFieldname().substr(0, 2) == "On")
 		{
 			///////////////////////////////////////////////////////////////////////////
 			// get the script file name from the field value

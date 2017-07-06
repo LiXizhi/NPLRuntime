@@ -619,13 +619,20 @@ CPaintEngine * ParaEngine::CRenderTarget::paintEngine() const
 	return engine_;
 }
 
-void ParaEngine::CRenderTarget::DoPaint()
+void ParaEngine::CRenderTarget::DoPaint(CPainter* painter)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_Paint);
 	if (pCallback)
 	{
-		CPainter painter(this);
-		pCallback->ActivateLocalNow(pCallback->GetCode());
+		if (painter)
+		{
+			pCallback->ActivateLocalNow(pCallback->GetCode());
+		}
+		else
+		{
+			CPainter painter(this);
+			pCallback->ActivateLocalNow(pCallback->GetCode());
+		}
 	}
 }
 

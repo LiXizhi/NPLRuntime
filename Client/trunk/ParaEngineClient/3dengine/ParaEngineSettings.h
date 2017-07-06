@@ -671,7 +671,6 @@ namespace ParaEngine
 		void SetHasClosingRequest(bool val);
 
 		static int GetAppHWND();
-
 	protected:
 		void LoadNameIndex();
 	private:

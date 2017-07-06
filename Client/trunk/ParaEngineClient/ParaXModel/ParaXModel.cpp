@@ -23,6 +23,8 @@
 #include "ParaXModel.h"
 #include "BoneChain.h"
 #include "memdebug.h"
+#include "XFileCharModelExporter.h"
+#include "./IO/FileUtils.h"
 
 
 
@@ -786,6 +788,14 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 							const TextureAnim& texAnim = texanims[p.texanim];
 							faceGroup.m_vUVOffset.x = texAnim.tval.x;
 							faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+							faceGroup.m_vUVRotate = texAnim.rval;
+
+							if (texAnim.scale.used)
+							{
+								faceGroup.m_vUVScale.x = texAnim.sval.x;
+								faceGroup.m_vUVScale.y = texAnim.sval.y;
+							}
 						}
 						pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
 					}
@@ -836,6 +846,16 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 									const TextureAnim& texAnim = texanims[p.texanim];
 									faceGroup.m_vUVOffset.x = texAnim.tval.x;
 									faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+									faceGroup.m_vUVRotate = texAnim.rval;
+
+									if (texAnim.scale.used)
+									{
+										faceGroup.m_vUVScale.x = texAnim.sval.x;
+										faceGroup.m_vUVScale.y = texAnim.sval.y;
+									}
+									
+
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
 										faceGroup.m_UVRgbAnim = true;
@@ -1012,6 +1032,14 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 							const TextureAnim& texAnim = texanims[p.texanim];
 							faceGroup.m_vUVOffset.x = texAnim.tval.x;
 							faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+							faceGroup.m_vUVRotate = texAnim.rval;
+
+							if (texAnim.scale.used)
+							{
+								faceGroup.m_vUVScale.x = texAnim.sval.x;
+								faceGroup.m_vUVScale.y = texAnim.sval.y;
+							}
 						}
 						pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
 					}
@@ -1083,6 +1111,14 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 									const TextureAnim& texAnim = texanims[p.texanim];
 									faceGroup.m_vUVOffset.x = texAnim.tval.x;
 									faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+									faceGroup.m_vUVRotate = texAnim.rval;
+
+									if (texAnim.scale.used)
+									{
+										faceGroup.m_vUVScale.x = texAnim.sval.x;
+										faceGroup.m_vUVScale.y = texAnim.sval.y;
+									}
 
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
@@ -1907,10 +1943,9 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 		if (m_RenderMethod == SOFT_ANIM)
 		{
-			for (DWORD i = 0; i < dwNumVx; ++i)
-			{
-				m_frame_number_vertices[i] = 0;
-			}
+			if(m_frame_number_vertices == 0)
+				m_frame_number_vertices = new int[dwNumVx];
+			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
 	}
 
@@ -2009,6 +2044,16 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("RenderPasses", FieldType_void_pointer, (void*)0, (void*)GetRenderPasses_s, NULL, NULL, bOverride);
 	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
 	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
+	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
+	//pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, (void*)SaveToDisk_s, NULL, NULL, bOverride);
+	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
+
 	return S_OK;
 }
 
+void CParaXModel::SaveToDisk(const char* path)
+{
+	string sRootDir = CFileUtils::GetInitialDirectory();
+	string filepath(path);
+	XFileCharModelExporter::Export(sRootDir + filepath, this);
+}

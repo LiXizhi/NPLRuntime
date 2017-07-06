@@ -2,6 +2,25 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.5.9
+	- web socket protocol added to NPL tcp connection
+
+2017.5.3
+	- console will inherit paraent console if any. 
+	- add property "HostIP, HostPort, IsServerStarted" to NPLRuntime
+
+2017.4.21
+	- NPL.load folder now support zip package file and package.npl configuration inside package file is honored
+
+2017.4.16
+	- paraxmodel animations exposed
+	- NPLRuntime support PCH under windows
+	- NPL.load now support package.npl with main script.
+	- sqlite online backup api added.
+
+2017.4.11
+	- BufferPicking fully implemented
+
 2017.3.23
 	- fixed a bug in ForceRender avoiding all static core interface calls. 
 	- fixed NPL.load return value with npl extension 

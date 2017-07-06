@@ -172,7 +172,7 @@ DBEntity* CICDBManager::OpenDBEntity(const char16_t* name, const char16_t* dbnam
 
 DBEntity* CICDBManager::OpenDBEntity(const char* dbname)
 {
-	return OpenDBEntity(dbname, dbname);
+	return OpenDBEntity(ParaEngine::StringHelper::AnsiToUTF8(dbname), dbname);
 }
 
 DBEntity* CICDBManager::OpenDBEntity(const char16_t* dbname)
@@ -391,6 +391,7 @@ void DBEntity::OpenDB(const char* dbname)
 	}
 	int errcode;
 
+
 	string diskfileName = PrepareDatabaseFile(dbname);
 	if(diskfileName=="")
 	{
@@ -405,7 +406,7 @@ void DBEntity::OpenDB(const char* dbname)
 		SetCreateFile(true);
 	}
 
-	string UTF8_Name = ::ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
+	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
 	
 	int nMaxRetryTimes = IsCreateFile() ? 1 : 3;
 

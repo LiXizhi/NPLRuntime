@@ -136,6 +136,8 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("UniSubString", &ParaMisc::UniSubString),
 				def("GetUnicodeCharNum", &ParaMisc::GetUnicodeCharNum),
 				def("EncodingConvert", &ParaMisc::EncodingConvert),
+				def("UTF16ToUTF8", &ParaMisc::UTF16ToUTF8),
+				def("UTF8ToUTF16", &ParaMisc::UTF8ToUTF16),
 				def("SimpleEncode", &ParaMisc::SimpleEncode),
 				def("SimpleDecode", &ParaMisc::SimpleDecode),
 				def("GetTextFromClipboard", &ParaMisc::GetTextFromClipboard),

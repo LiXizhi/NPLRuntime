@@ -58,6 +58,9 @@ namespace ParaEngine
 		Too many opened archives will compromise the IO performances. */
 		PE_CORE_DECL void CloseArchive(const string&  path);
 
+		/** get archive by filename */
+		PE_CORE_DECL CArchive* GetArchive(const string&  path);
+
 		/**
 		* load a file by name.
 		* delete the pFile object when u does not need it. This is because, if the file

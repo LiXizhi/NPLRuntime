@@ -157,6 +157,8 @@ namespace ParaEngine
 		*/
 		void* LoadParaXMesh(CParaFile &f);
 
+		static void ExportParaXMesh(const string& filePath, CParaXModel* pMesh);
+
 #ifdef USE_DIRECTX_RENDERER
 		/** ParaX parser */
 		void* LoadParaXMesh(CParaFile &f, ParaXParser& Parser);

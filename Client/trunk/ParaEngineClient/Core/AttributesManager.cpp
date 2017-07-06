@@ -170,7 +170,7 @@ void CAttributesManager::PrintField(CParaFile& file, CAttributeField* pField, vo
 {
 	if(pField==0)
 		return;
-	file.WriteFormated("%-20s%s\r\n\t", pField->m_sFieldname.c_str(), pField->m_sHelpString.c_str());
+	file.WriteFormated("%-20s%s\r\n\t", pField->GetFieldname().c_str(), pField->m_sHelpString.c_str());
 	switch(pField->m_type)
 	{
 	case FieldType_void:

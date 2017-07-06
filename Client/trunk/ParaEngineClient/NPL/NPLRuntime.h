@@ -99,6 +99,10 @@ namespace NPL
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual ParaEngine::IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsServerStarted_s, bool*) { *p1 = cls->IsServerStarted(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetHostIP_s, const char**) { *p1 = cls->GetHostIP().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetHostPort_s, const char**) { *p1 = cls->GetHostPort().c_str(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPKeepAliveEnabled_s, bool*)	{*p1 = cls->IsTCPKeepAliveEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPKeepAlive_s, bool)	{cls->SetTCPKeepAlive(p1); return S_OK;}
 
@@ -147,7 +151,7 @@ namespace NPL
 		*/
 		virtual void SetCompressionKey(const byte* sKey=0, int nSize=0, int nUsePlainTextEncoding = 0);
 
-		/** Set the zlib compression level to use in case compresssion is enabled. 
+		/** Set the zlib compression level to use in case compression is enabled. 
 		* default to 0, which means no compression. Compression level, which is an integer in the range of -1 to 9. 
 		* Lower compression levels result in faster execution, but less compression. Higher levels result in greater compression, 
 		* but slower execution. The zlib constant Z_DEFAULT_COMPRESSION, equal to -1, provides a good compromise between compression 
@@ -214,6 +218,15 @@ namespace NPL
 		/** queue size of the server acceptor's queue. */
 		virtual int GetMaxPendingConnections();
 		virtual void SetMaxPendingConnections(int val);
+
+
+		/** get the host port of this NPL runtime */
+		virtual const std::string& GetHostPort();
+		/** get the host IP of this NPL runtime */
+		virtual const std::string& GetHostIP();
+		/** whether the NPL runtime's http server is started. */
+		virtual bool IsServerStarted();
+		
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -338,6 +351,9 @@ namespace NPL
 		* @param nid: if this is not nil, tid will be renamed to nid after accepted. 
 		*/
 		void NPL_accept(const char* tid, const char* nid = NULL);
+
+		/** set transmission protocol, default value is 0. */
+		void NPL_SetProtocol(const char* nid, int protocolType = 0);
 
 		/** reject and close a given connection. The connection will be closed once rejected. 
 		* [thread safe]
