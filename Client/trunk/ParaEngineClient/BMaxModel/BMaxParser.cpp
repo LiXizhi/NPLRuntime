@@ -422,11 +422,7 @@ namespace ParaEngine
 		PE_ASSERT(nIndex < 24);
 		const Vector3& offset = directionOffsetTable[nIndex];
 
-		int nextI;
-		if (i == 3) 
-			nextI = nIndex - 3;
-		else
-			nextI = nIndex + 1;
+		int nextI = nIndex + ((i == 3) ? -3 : 1);	
 		
 		PE_ASSERT(nextI < 24);
 		BMaxNode *fromNode = rectangle->GetFromNode(nextI);
@@ -673,32 +669,25 @@ namespace ParaEngine
 			uint16 newZ = (z + 1) / 2;
 			uint32 index = GetNodeIndex(newX, newY, newZ);
 
-			int maxNum = 0;
 			BMaxNodePtr node(new BMaxNode(this, newX, newY, newZ, 0, 0));
-			int32 color = 0;
 
-			for (iter = colorMap.begin(); iter != colorMap.end(); iter++)
+			auto it = std::max_element(boneMap.begin(), boneMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
 			{
-				if (iter->second > maxNum)
-				{
-					color = iter->first;
-					maxNum = iter->second;
-				}
-			}
-			node->SetColor(color);
-
+				return a.second < b.second;
+			});
 			int32 boneIndex = 0;
-			maxNum = 0;
-
-			for (iter = boneMap.begin(); iter != boneMap.end(); iter++)
-			{
-				if (iter->second > maxNum)
-				{
-					boneIndex = iter->first;
-					maxNum = iter->second;
-				}
-			}
+			if (it != boneMap.end())
+				boneIndex = it->first;
 			node->SetBoneIndex(boneIndex);
+
+			it = std::max_element(colorMap.begin(), colorMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
+			{
+				return a.second < b.second;
+			});
+			int32 color = 0;
+			if (it != colorMap.end())
+				color = it->first;
+			node->SetColor(color);
 
 			if (nodeMap.find(index) == nodeMap.end())
 			{
