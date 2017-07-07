@@ -56,9 +56,10 @@ void ParaEngine::BMaxFrameNode::SetIndex(int nIndex)
 
 BMaxFrameNode* BMaxFrameNode::GetParent()
 {
-	if (m_nParentIndex >= 0 && m_pParser->m_nodes.find(m_nParentIndex) != m_pParser->m_nodes.end())
+	auto iter = m_pParser->m_nodes.find(m_nParentIndex);
+	if (m_nParentIndex >= 0 && iter != m_pParser->m_nodes.end())
 	{
-		auto pParent = m_pParser->m_nodes[m_nParentIndex];
+		auto pParent = iter->second;
 		if (pParent)
 			return pParent->ToBoneNode();
 	}

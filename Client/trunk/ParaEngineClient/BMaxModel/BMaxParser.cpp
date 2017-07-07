@@ -419,7 +419,8 @@ namespace ParaEngine
 	{
 		const Vector3 *directionOffsetTable = Rectangle::DirectionOffsetTable;
 		int nIndex = nFaceIndex * 4 + i;
-		Vector3 offset = directionOffsetTable[nIndex];
+		PE_ASSERT(nIndex < 24);
+		const Vector3& offset = directionOffsetTable[nIndex];
 
 		int nextI;
 		if (i == 3) 
@@ -427,10 +428,11 @@ namespace ParaEngine
 		else
 			nextI = nIndex + 1;
 		
+		PE_ASSERT(nextI < 24);
 		BMaxNode *fromNode = rectangle->GetFromNode(nextI);
 		BMaxNode *toNode = rectangle->GetToNode(nextI);
 
-		Vector3 nextOffset = directionOffsetTable[nextI];
+		const Vector3& nextOffset = directionOffsetTable[nextI];
 		BMaxNode *currentNode = fromNode;
 
 		vector<BMaxNodePtr>nodes;
@@ -548,15 +550,12 @@ namespace ParaEngine
 
 	void BMaxParser::CalculateAABB(vector<BMaxNodePtr>&nodes)
 	{
-		OUTPUT_LOG("nodes %d\n", nodes.size());
-		CShapeAABB aabb;
+		m_blockAABB.SetEmpty();
 		for (auto item : nodes)
 		{
 			BMaxNode *node = item.get();
-			aabb.Extend(Vector3((float)node->x, (float)node->y, (float)node->z));
+			m_blockAABB.Extend(Vector3((float)node->x, (float)node->y, (float)node->z));
 		}
-
-		m_blockAABB = aabb;
 
 		m_centerPos = m_blockAABB.GetCenter();
 		m_centerPos.y = 0;
@@ -578,7 +577,7 @@ namespace ParaEngine
 			InsertNode(node);
 		}
 
-		OUTPUT_LOG("nodes2 %d\n", m_nodes.size());
+		OUTPUT_LOG("nodes count %d\n", m_nodes.size());
 		if (m_bAutoScale)
 		{
 			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
