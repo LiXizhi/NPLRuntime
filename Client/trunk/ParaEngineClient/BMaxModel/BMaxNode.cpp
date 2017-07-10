@@ -44,6 +44,11 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	return m_color;
 }
 
+BlockModel * ParaEngine::BMaxNode::GetCube()
+{
+	return m_cube;
+}
+
 BMaxFrameNode* ParaEngine::BMaxNode::ToBoneNode()
 {
 	return NULL;
@@ -70,6 +75,14 @@ BMaxNode* ParaEngine::BMaxNode::GetNeighbour(BlockDirection::Side side)
 	int nX = x + offset.x;
 	int nY = y + offset.y;
 	int nZ = z + offset.z;
+	return m_pParser->GetBMaxNode(nX, nY, nZ);
+}
+
+BMaxNode* ParaEngine::BMaxNode::GetNeighbourByOffset(Vector3 offset)
+{
+	int nX = x + (int)offset.x;
+	int nY = y + (int)offset.y;
+	int nZ = z + (int)offset.z;
 	return m_pParser->GetBMaxNode(nX, nY, nZ);
 }
 
@@ -300,7 +313,14 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 				}
 			}
 			tessellatedModel->IncrementFaceCount(1);
+			tessellatedModel->SetFaceVisiable(face);
 		}
 	}
+	
+	if (tessellatedModel->GetVerticesCount() > 0)
+		m_cube = tessellatedModel;
+	else
+		m_cube = NULL;
+	
 	return tessellatedModel->GetVerticesCount();
 }

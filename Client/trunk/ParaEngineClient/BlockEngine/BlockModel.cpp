@@ -464,6 +464,18 @@ namespace ParaEngine
 	{
 		m_Vertices[nIndex].SetHeightScale(scale);
 	}
+	void BlockModel::SetFaceVisiable(int nIndex)
+	{
+		m_faces[nIndex] = faceVisiableNotSign;
+	}
+	void BlockModel::SetFaceUsed(int nIndex)
+	{
+		m_faces[nIndex] = faceVisiableSigned;
+	}
+	bool BlockModel::IsFaceNotUse(int nIndex)
+	{
+		return m_faces[nIndex] == faceVisiableNotSign;
+	}
 	void BlockModel::SetVerticalScale(EdgeVertexFlag vertex,float scale)
 	{
 		if(vertex == evf_xyz)

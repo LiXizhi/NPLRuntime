@@ -22,6 +22,7 @@ namespace ParaEngine
 			return (DWORD)x + ((DWORD)z << 8) + ((DWORD)y << 16);
 		}
 		virtual DWORD GetColor();
+		BlockModel *GetCube();
 		virtual void SetColor(DWORD val);
 		/** get the bone node interface if it is*/
 		virtual BMaxFrameNode* ToBoneNode();
@@ -35,6 +36,7 @@ namespace ParaEngine
 		* @param nSize:
 		*/
 		BMaxNode* GetNeighbour(BlockDirection::Side nSize);
+		BMaxNode* GetNeighbourByOffset(Vector3 offset);
 		virtual bool isSolid();
 
 		/** 
@@ -58,6 +60,7 @@ namespace ParaEngine
 	protected:
 		BMaxParser* m_pParser;
 		DWORD m_color;
+		BlockModel *m_cube;
 	};
 	typedef ref_ptr<BMaxNode> BMaxNodePtr;
 }
