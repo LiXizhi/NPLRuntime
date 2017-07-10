@@ -408,11 +408,10 @@ namespace ParaEngine
 	{
 		const uint16 nVertexCount = 4;
 
-		vector<BMaxNodePtr> nodes;
-		for (int i = 0; i < nVertexCount; i++)
+		BMaxNodePtr nodes[nVertexCount] =
 		{
-			nodes.push_back(BMaxNodePtr(node));
-		}
+			BMaxNodePtr(node), BMaxNodePtr(node), BMaxNodePtr(node), BMaxNodePtr(node)
+		};
 
 		RectanglePtr rectangle(new Rectangle(nodes, nFaceIndex));
 		for (uint32 i = 0; i < nVertexCount; i++)
@@ -484,15 +483,18 @@ namespace ParaEngine
 	{
 		vector<RectanglePtr>rectangles;
 		MergeCoplanerBlockFace(rectangles);
-		m_originRectangles = rectangles;
+		//m_originRectangles = rectangles;
 
-		for (RectanglePtr rectangle : rectangles)
+		if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
 		{
-			rectangle->ScaleVertices(m_fScale);
+			for (RectanglePtr& rectangle : rectangles)
+			{
+				rectangle->ScaleVertices(m_fScale);
+			}
 		}
 
 		vector<uint32> lodTable;
-		GetLodTable(m_originRectangles.size(), lodTable);
+		GetLodTable(rectangles.size(), lodTable);
 		for (uint16 i = 0;i < lodTable.size();i++)
 		{
 			uint32 nextFaceCount = lodTable[i];
@@ -502,9 +504,12 @@ namespace ParaEngine
 				rectangles.clear();
 				MergeCoplanerBlockFace(rectangles);
 			}
-			for (RectanglePtr rectangle : rectangles)
+			if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
 			{
-				rectangle->ScaleVertices(m_fScale);
+				for (RectanglePtr& rectangle : rectangles)
+				{
+					rectangle->ScaleVertices(m_fScale);
+				}
 			}
 			m_lodRectangles[i] = rectangles;
 		}
@@ -573,7 +578,7 @@ namespace ParaEngine
 		m_centerPos.z = (m_blockAABB.GetDepth() + 1.f) * 0.5f;
 
 		OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
-		auto vMin = m_blockAABB.GetMin();
+		const auto& vMin = m_blockAABB.GetMin();
 		int offset_x = (int)vMin.x;
 		int offset_y = (int)vMin.y;
 		int offset_z = (int)vMin.z;
@@ -653,23 +658,16 @@ namespace ParaEngine
 								}
 							}
 
-							hasFind = false;
 							int32 myColor = node->GetColor();
-							for (iter = colorMap.begin(); iter != colorMap.end(); iter++)
+							auto iter = colorMap.find(myColor);
+							if (iter != colorMap.end())
 							{
-								if (iter->first == myColor)
-								{
-									iter->second++;
-									hasFind = true;
-									break;
-								}
+								iter->second++;
 							}
-
-							if (!hasFind)
+							else
 							{
 								colorMap.insert(make_pair(myColor, 1));
 							}
-							
 						}
 					}
 				}
@@ -685,23 +683,24 @@ namespace ParaEngine
 
 			BMaxNodePtr node(new BMaxNode(this, newX, newY, newZ, 0, 0));
 
-			auto it = std::max_element(boneMap.begin(), boneMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
-			{
-				return a.second < b.second;
-			});
-			int32 boneIndex = 0;
-			if (it != boneMap.end())
-				boneIndex = it->first;
-			node->SetBoneIndex(boneIndex);
-
-			it = std::max_element(colorMap.begin(), colorMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
-			{
-				return a.second < b.second;
-			});
 			int32 color = 0;
-			if (it != colorMap.end())
-				color = it->first;
+			auto itColor = std::max_element(colorMap.begin(), colorMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
+			{
+				return a.second < b.second;
+			});
+
+			if (itColor != colorMap.end())
+				color = itColor->first;
 			node->SetColor(color);
+
+			int32 boneIndex = -1;
+			auto itBone = std::max_element(boneMap.begin(), boneMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
+			{
+				return a.second < b.second;
+			});
+			if (itBone != boneMap.end())
+				boneIndex = itBone->first;
+			node->SetBoneIndex(boneIndex);
 
 			if (nodeMap.find(index) == nodeMap.end())
 			{

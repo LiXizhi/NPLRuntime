@@ -42,9 +42,9 @@ namespace ParaEngine
 		Vector3(1, 0, 0),
 	};
 
-	Rectangle::Rectangle(vector<BMaxNodePtr> &nodes_, uint32 faceIndex_) : m_nodes(nodes_), faceIndex(faceIndex_)
+	Rectangle::Rectangle(BMaxNodePtr nodes_[4], uint32 faceIndex_) : faceIndex(faceIndex_)
 	{
-		
+		std::copy(nodes_, nodes_ + 4, m_nodes);
 	}
 
 
