@@ -12,6 +12,7 @@ using namespace ParaEngine;
 
 CAttributeClass::CAttributeClass(int nClassID, const char* sClassName, const char* sClassDescription)
 	:m_nClassID(nClassID), m_sClassName(sClassName), m_sClassDescription(sClassDescription)
+	, m_bSort(false)
 {
 
 }
@@ -32,60 +33,83 @@ const char* CAttributeClass::GetClassDescription() const
 
 void CAttributeClass::AddField(const char*  sFieldname, DWORD Type, void* offsetSetFunc, void* offsetGetFunc, const char* sSchematics, const char* sHelpString, bool bOverride)
 {
-	CAttributeField field;
-	field.m_sFieldname = sFieldname;
-	field.m_type = Type;
+	auto index = this->GetFieldIndex(sFieldname);
+	CAttributeField* pField = nullptr;
+	if (index == -1)
+	{
+		auto size = m_attributes.size();
+		m_attributes.resize(size + 1);
+		pField = &m_attributes[size];
+	}
+	else
+	{
+		if (bOverride)
+		{
+			pField = &m_attributes[index];
+		}
+	}
 
-	field.m_offsetSetFunc.ptr_fun = offsetSetFunc;
-	field.m_offsetGetFunc.ptr_fun = offsetGetFunc;
+	if (pField)
+	{
+		pField->SetFieldname(sFieldname);
+		pField->m_type = Type;
 
-	if (sSchematics != NULL)
-		field.m_sSchematics = sSchematics;
-	if (sHelpString != NULL)
-		field.m_sHelpString = sHelpString;
+		pField->m_offsetSetFunc.ptr_fun = offsetSetFunc;
+		pField->m_offsetGetFunc.ptr_fun = offsetGetFunc;
 
-	InsertField(field, bOverride);
+		if (sSchematics != NULL)
+			pField->m_sSchematics = sSchematics;
+		if (sHelpString != NULL)
+			pField->m_sHelpString = sHelpString;
+
+		m_bSort = false;
+	}
+
 }
 void CAttributeClass::AddField_Deprecated(const char *sFieldname, bool bOverride)
 {
 	CAttributeField field;
-	field.m_sFieldname = sFieldname;
+	field.SetFieldname(sFieldname);
 	field.m_type = FieldType_Deprecated;
 	m_attributes.push_back(field);
+	m_bSort = false;
 }
 
 bool CAttributeClass::RemoveField(const char* sFieldname)
 {
-	vector<CAttributeField>::iterator itCur;
-	for (itCur = m_attributes.begin(); itCur != m_attributes.end();)
-	{
-		if ((*itCur).m_sFieldname == sFieldname){
-			itCur = m_attributes.erase(itCur);
-			return true;
-		}
-		else
-			++itCur;
-	}
-	return false; // not found matching field
+	auto index = this->GetFieldIndex(sFieldname);
+	if (index == -1)
+		return false;
+
+	m_attributes.erase(m_attributes.begin() + index);
+	m_bSort = false;
+	return true;
 }
 
 void CAttributeClass::RemoveAllFields()
 {
 	m_attributes.clear();
+	m_bSort = false;
 }
 
 bool CAttributeClass::InsertField(CAttributeField& item, bool bOverride)
 {
-	CAttributeField* pField = GetField(item.m_sFieldname.c_str());
+	CAttributeField* pField = GetField(item.GetFieldname());
 	if (pField != 0)
 	{
 		if (bOverride)
+		{
 			*pField = item;
+			m_bSort = false;
+		}
 		else
 			return false;
 	}
 	else
+	{
 		m_attributes.push_back(item);
+		m_bSort = false;
+	}
 	return true;
 }
 
@@ -97,27 +121,58 @@ void CAttributeClass::SetOrder(Field_Order order)
 		// TODO: sort by order.
 	}
 }
+
+
+void CAttributeClass::SortField()
+{
+	if (m_bSort && m_attributes.size() > 2)
+		return;
+
+	std::sort(m_attributes.begin(), m_attributes.end(), [](const CAttributeField& a, const CAttributeField& b)
+	{
+		return a.GetHash() < b.GetHash();
+	});
+
+	m_bSort = true;
+}
+
+int CAttributeClass::GetFieldIndex(const std::string& sFieldname)
+{
+	SortField();
+
+	auto hash = CAttributeField::HashFunc(sFieldname);
+
+	auto it = std::lower_bound(m_attributes.begin(), m_attributes.end(), hash, [](const CAttributeField& a, size_t hash)
+	{
+		return a.GetHash() < hash;
+	});
+
+	for (; it != m_attributes.end() && it->GetHash() == hash; it++)
+	{
+		if (it->GetFieldname() == sFieldname)
+			return it - m_attributes.begin();
+	}
+
+	return -1;
+}
+
 int CAttributeClass::GetFieldIndex(const char*  sFieldname)
 {
-	int i = 0;
-	vector<CAttributeField>::iterator itCur, itEnd = m_attributes.end();
-	for (itCur = m_attributes.begin(); itCur != itEnd; ++itCur, ++i)
-	{
-		if ((*itCur).m_sFieldname == sFieldname)
-			return i;
-	}
-	return -1;
+	return GetFieldIndex(std::string(sFieldname));
+}
+
+CAttributeField* CAttributeClass::GetField(const std::string& sFieldname)
+{
+	int index = GetFieldIndex(sFieldname);
+	if (index == -1)
+		return nullptr;
+
+	return &m_attributes[index];
 }
 
 CAttributeField* CAttributeClass::GetField(const char*  sFieldname)
 {
-	vector<CAttributeField>::iterator itCur, itEnd = m_attributes.end();
-	for (itCur = m_attributes.begin(); itCur != itEnd; ++itCur)
-	{
-		if ((*itCur).m_sFieldname == sFieldname)
-			return &(*itCur);
-	}
-	return NULL;
+	return GetField(std::string(sFieldname));
 }
 CAttributeClass::Field_Order CAttributeClass::GetOrder()
 {
