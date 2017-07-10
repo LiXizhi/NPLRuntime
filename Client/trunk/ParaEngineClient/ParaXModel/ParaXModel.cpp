@@ -788,6 +788,14 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 							const TextureAnim& texAnim = texanims[p.texanim];
 							faceGroup.m_vUVOffset.x = texAnim.tval.x;
 							faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+							faceGroup.m_vUVRotate = texAnim.rval;
+
+							if (texAnim.scale.used)
+							{
+								faceGroup.m_vUVScale.x = texAnim.sval.x;
+								faceGroup.m_vUVScale.y = texAnim.sval.y;
+							}
 						}
 						pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
 					}
@@ -838,6 +846,16 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 									const TextureAnim& texAnim = texanims[p.texanim];
 									faceGroup.m_vUVOffset.x = texAnim.tval.x;
 									faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+									faceGroup.m_vUVRotate = texAnim.rval;
+
+									if (texAnim.scale.used)
+									{
+										faceGroup.m_vUVScale.x = texAnim.sval.x;
+										faceGroup.m_vUVScale.y = texAnim.sval.y;
+									}
+									
+
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
 										faceGroup.m_UVRgbAnim = true;
@@ -1014,6 +1032,14 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 							const TextureAnim& texAnim = texanims[p.texanim];
 							faceGroup.m_vUVOffset.x = texAnim.tval.x;
 							faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+							faceGroup.m_vUVRotate = texAnim.rval;
+
+							if (texAnim.scale.used)
+							{
+								faceGroup.m_vUVScale.x = texAnim.sval.x;
+								faceGroup.m_vUVScale.y = texAnim.sval.y;
+							}
 						}
 						pSceneState->GetFaceGroups()->AddFaceGroup(faceGroup);
 					}
@@ -1085,6 +1111,14 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 									const TextureAnim& texAnim = texanims[p.texanim];
 									faceGroup.m_vUVOffset.x = texAnim.tval.x;
 									faceGroup.m_vUVOffset.y = texAnim.tval.y;
+
+									faceGroup.m_vUVRotate = texAnim.rval;
+
+									if (texAnim.scale.used)
+									{
+										faceGroup.m_vUVScale.x = texAnim.sval.x;
+										faceGroup.m_vUVScale.y = texAnim.sval.y;
+									}
 
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)

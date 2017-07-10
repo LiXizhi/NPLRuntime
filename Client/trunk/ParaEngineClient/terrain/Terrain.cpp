@@ -3934,7 +3934,7 @@ bool Terrain::InvokeEditor(int nFieldID, const string& sParameters)
 	if(pField!=0)
 	{
 		bFound = true;
-		if (pField->m_sFieldname.substr(0, 2) == "On" || pField->m_sFieldname == "ConfigFile")
+		if (pField->GetFieldname().substr(0, 2) == "On" || pField->GetFieldname() == "ConfigFile")
 		{
 			///////////////////////////////////////////////////////////////////////////
 			// get the script file name from the field value

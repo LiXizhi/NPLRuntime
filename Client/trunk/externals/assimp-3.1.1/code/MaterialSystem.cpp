@@ -409,6 +409,7 @@ aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
 // ------------------------------------------------------------------------------------------------
 // Construction. Actually the one and only way to get an aiMaterial instance
 aiMaterial::aiMaterial()
+	: mMetaData(NULL)
 {
 	// Allocate 5 entries by default
 	mNumProperties = 0;
@@ -422,6 +423,7 @@ aiMaterial::~aiMaterial()
 	Clear();
 
 	delete[] mProperties;
+	delete mMetaData;
 }
 
 // ------------------------------------------------------------------------------------------------
