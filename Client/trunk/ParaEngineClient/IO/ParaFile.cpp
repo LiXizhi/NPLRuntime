@@ -689,9 +689,12 @@ bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, b
 		{
 			DWORD s = pFileManager->GetFileSize(m_handle);
 			DWORD bytesRead = 0;
+			DWORD lastWriteTime = 0;
+
 			m_buffer = new char[s + 1];
 			m_buffer[s] = '\0';
-			pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead);
+
+			pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead, &lastWriteTime);
 			pFileManager->CloseFile(m_handle);
 			m_size = (size_t)bytesRead;
 			m_eof = false;
