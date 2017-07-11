@@ -250,7 +250,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
 	//clear vertices
-	tessellatedModel->ClearVertices();
+	//tessellatedModel->ClearVertices();
 
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
 	DWORD dwBlockColor = GetColor();
@@ -273,9 +273,9 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	uint32 aoFlags = CalculateCubeAO(neighborBlocks);
 
 	//model position offset
-	BlockModel model;
-	BlockVertexCompressed* pVertices = model.GetVertices();
-	int count = model.GetVerticesCount();
+	//BlockModel model;
+	BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
+	int count = tessellatedModel->GetVerticesCount();
 	const Vector3& vCenter = m_pParser->GetCenterPos();
 	Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
 	for (int k = 0; k < count; k++)
@@ -284,7 +284,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 		pVertices[k].SetBlockColor(dwBlockColor);
 	}
 
-	const uint16_t nFaceCount = model.GetFaceCount();
+	const uint16_t nFaceCount = tessellatedModel->GetFaceCount();
 	PE_ASSERT(nFaceCount <= 6);
 
 	for (int face = 0; face < nFaceCount; ++face)
@@ -299,7 +299,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			for (int v = 0; v < 4; ++v)
 			{
 				int i = nFirstVertex + v;
-				int nIndex = tessellatedModel->AddVertex(model, i);
+				//int nIndex = tessellatedModel->AddVertex(model, i);
 
 				int nShadowLevel = 0;
 				if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
@@ -309,7 +309,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 					color.r = (uint8)(color.r * fShadow);
 					color.g = (uint8)(color.g * fShadow);
 					color.b = (uint8)(color.b * fShadow);
-					tessellatedModel->SetVertexColor(nIndex, (DWORD)color);
+					tessellatedModel->SetVertexColor(i, (DWORD)color);
 				}
 			}
 			tessellatedModel->IncrementFaceCount(1);

@@ -12,6 +12,7 @@ namespace ParaEngine
 		void UpdateNode(BMaxNode* fromNode, BMaxNode* toNode, uint32 index);
 		void CloneNodes();
 		void ScaleVertices(float scale);
+		int32 GetBoneIndexAt(int index);
 
 		BlockVertexCompressed *GetVertices()
 		{

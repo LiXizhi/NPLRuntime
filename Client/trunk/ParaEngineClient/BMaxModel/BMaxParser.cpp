@@ -85,10 +85,10 @@ namespace ParaEngine
 				ParseBlocks_Internal(value);
 				ParseBlockFrames();
 				CalculateBoneWeights();
-				//ParseVisibleBlocks();
-				CalculateLod();
-				if (m_bAutoScale)
+				MergeCoplanerBlockFace();
+				/*if (m_bAutoScale)
 					ScaleModels();
+					*/
 			}
 		}
 	}
@@ -354,6 +354,18 @@ namespace ParaEngine
 		return pMesh;
 	}
 
+	CParaXModel * BMaxParser::ParseParaXModel(uint32 nMaxTriangleCount)
+	{
+		CalculateLod(nMaxTriangleCount);
+
+		CParaXModel* pMesh = NULL;
+		ParaXHeaderDef m_xheader;
+		pMesh = new CParaXModel(m_xheader);
+		FillParaXModelData(pMesh);
+		pMesh->SetBmaxModel();
+		return pMesh;
+	}
+
 	const std::string& BMaxParser::GetFilename() const
 	{
 		return m_filename;
@@ -381,9 +393,11 @@ namespace ParaEngine
 
 
 
-	void BMaxParser::MergeCoplanerBlockFace(vector<RectanglePtr> &pRectangles)
+	void BMaxParser::MergeCoplanerBlockFace()
 	{
 		ParseVisibleBlocks();
+
+		m_rectangles.clear();
 		for (auto& item : m_nodes)
 		{
 			BMaxNode *node = item.second.get();
@@ -396,15 +410,20 @@ namespace ParaEngine
 			{
 				if (model->IsFaceNotUse(i))
 				{
-					FindCoplanerFace(pRectangles, node, i);
+					FindCoplanerFace(node, i);
 				}
 			}
 		}
-		OUTPUT_LOG("rect count %d \n", pRectangles.size());
+
+		for (RectanglePtr& rectangle : m_rectangles)
+		{
+			rectangle->ScaleVertices(m_fScale);
+		}
+		OUTPUT_LOG("rect count %d \n", m_rectangles.size());
 	}
 
 
-	void BMaxParser::FindCoplanerFace(vector<RectanglePtr> &rectangles, BMaxNode* node, uint32 nFaceIndex)
+	void BMaxParser::FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex)
 	{
 		const uint16 nVertexCount = 4;
 
@@ -425,7 +444,7 @@ namespace ParaEngine
 		}
 
 		rectangle->CloneNodes();
-		rectangles.push_back(rectangle);
+		m_rectangles.push_back(rectangle);
 	}
 
 	void BMaxParser::FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex)
@@ -479,10 +498,10 @@ namespace ParaEngine
 		FindNeighbourFace(rectangle, i, nFaceIndex);
 	}
 
-	void BMaxParser::CalculateLod()
+	void BMaxParser::CalculateLod(int32 nMaxTriangleCount)
 	{
-		vector<RectanglePtr>rectangles;
-		MergeCoplanerBlockFace(rectangles);
+		/*
+		MergeCoplanerBlockFace(m_rectangles);
 		//m_originRectangles = rectangles;
 
 		if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
@@ -513,6 +532,15 @@ namespace ParaEngine
 			}
 			m_lodRectangles[i] = rectangles;
 		}
+		*/
+
+		//a rectangle generate two triangles
+		while (m_rectangles.size() * 2 > nMaxTriangleCount)
+		{
+			PerformLod();
+			MergeCoplanerBlockFace();
+		}
+
 	}
 
 	void BMaxParser::GetLodTable(uint32 faceCount, vector<uint32>&lodTable)
@@ -748,10 +776,64 @@ namespace ParaEngine
 
 		int32 nStartIndex = 0;
 
-		int nRootBoneIndex = FindRootBoneIndex();
 		CShapeAABB aabb;
 		int total_count = 0;
 		int nStartVertex = 0;
+
+		for (uint32 i = 0; i < m_rectangles.size(); i++)
+		{
+			Rectangle *rectangle = m_rectangles[i].get();
+			BlockVertexCompressed* pVertices = rectangle->GetVertices();
+
+			int nVertices = 4;
+			int nIndexCount = 6;
+
+			if ((nIndexCount + geoset->icount) >= 0xffff)
+			{
+				// break geoset, if it is too big
+				nStartIndex = (int32)m_indices.size();
+				geoset = AddGeoset();
+				pass = AddRenderPass();
+				pass->geoset = geoset->id;
+				pass->SetStartIndex(nStartIndex);
+				geoset->SetVertexStart(total_count);
+				nStartVertex = 0;
+			}
+
+			geoset->vstart += nVertices;
+			geoset->icount += nIndexCount;
+			pass->indexCount += nIndexCount;
+
+			uint8 vertex_weight = 0xff;
+
+			for (int k = 0; k < nVertices; k++, pVertices++)
+			{
+				ModelVertex modelVertex;
+				memset(&modelVertex, 0, sizeof(ModelVertex));
+				pVertices->GetPosition(modelVertex.pos);
+				pVertices->GetNormal(modelVertex.normal);
+		
+				modelVertex.color0 = pVertices->color2;
+				//set bone and weight, only a single bone
+				modelVertex.bones[0] = rectangle->GetBoneIndexAt(k);
+				modelVertex.weights[0] = vertex_weight;
+
+				m_vertices.push_back(modelVertex);
+				aabb.Extend(modelVertex.pos);
+			}
+
+			int start_index = nStartVertex;
+			m_indices.push_back(start_index + 0);
+			m_indices.push_back(start_index + 1);
+			m_indices.push_back(start_index + 2);
+			m_indices.push_back(start_index + 0);
+			m_indices.push_back(start_index + 2);
+			m_indices.push_back(start_index + 3);
+			total_count += nVertices;
+			nStartVertex += nVertices;
+		}
+
+		/*
 		for (uint32 i = 0; i < m_blockModels.size(); i++)
 		{
 			BlockModel* model = m_blockModels.at(i);
@@ -776,7 +858,7 @@ namespace ParaEngine
 				geoset->SetVertexStart(total_count);
 				nStartVertex = 0;
 			}
-			
+
 			geoset->vstart += nVertices;
 			geoset->icount += nIndexCount;
 			pass->indexCount += nIndexCount;
@@ -797,7 +879,7 @@ namespace ParaEngine
 				//set bone and weight, only a single bone
 				modelVertex.bones[0] = nBoneIndex;
 				modelVertex.weights[0] = vertex_weight;
-				
+
 				m_vertices.push_back(modelVertex);
 				aabb.Extend(modelVertex.pos);
 			}
@@ -815,9 +897,11 @@ namespace ParaEngine
 			total_count += nVertices;
 			nStartVertex += nVertices;
 		}
+		*/
 		aabb.GetMin(m_minExtent);
 		aabb.GetMax(m_maxExtent);
 	}
+
 	void BMaxParser::FillParaXModelData(CParaXModel *pMesh)
 	{
 		if (pMesh == NULL)

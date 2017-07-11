@@ -83,14 +83,15 @@ namespace ParaEngine
 	}
 	void Rectangle::ScaleVertices(float scale)
 	{
-		for (BlockVertexCompressed vertice : m_retangleVertices)
+		for (BlockVertexCompressed &vertice : m_retangleVertices)
 		{
-			Vector3 pos;
-			vertice.GetPosition(pos);
-			pos[0] *= scale;
-			pos[1] *= scale;
-			pos[2] *= scale;
-			vertice.SetPosition(pos[0], pos[1], pos[2]);
+			vertice.position[0] *= scale;
+			vertice.position[1] *= scale;
+			vertice.position[2] *= scale;
 		}
+	}
+	int32 Rectangle::GetBoneIndexAt(int index)
+	{
+		return m_nodes[index]->GetBoneIndex();
 	}
 }
