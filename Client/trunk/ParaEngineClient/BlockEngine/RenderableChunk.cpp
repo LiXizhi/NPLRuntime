@@ -235,8 +235,7 @@ namespace ParaEngine
 			std::vector<uint16_t>& instanceGroup = pInstGroup->instances;
 			uint32 groupSize = instanceGroup.size();
 			uint32 instCount = groupSize;
-//			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
-			int nMaxFaceCountPerInstance = pInstGroup->m_maxInstanceFace;
+			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
 			{
 				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1) )
@@ -596,7 +595,6 @@ namespace ParaEngine
 				&& pChunk->IsVisibleBlock(i, pBlock))
 			{
 				BlockTemplate* pBlockTemp = pBlock->GetTemplate();
-//				pBlock->SetTemplate(pBlockTemp);
 
 				if (pBlock->IsComBlock())
 				{
@@ -896,8 +894,7 @@ namespace ParaEngine
 			std::vector<bool> bComBlockVec = pInstGroup->bComBlocks;
 
 
-			//int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
-			int nMaxFaceCountPerInstance = pInstGroup->m_maxInstanceFace;
+			int nMaxFaceCountPerInstance = pTemplate->GetBlockModelByData(nBlockData).GetFaceCount();
 			if (nFreeFaceCountInVertexBuffer < (int32)pInstGroup->GetFaceCount())
 			{
 				if (nFreeFaceCountInVertexBuffer < (maxFaceCountPerBatch*0.1))

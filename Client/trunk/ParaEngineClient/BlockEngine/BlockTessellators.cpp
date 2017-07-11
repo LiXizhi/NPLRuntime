@@ -345,6 +345,15 @@ int ParaEngine::BlockGeneralTessellator::TessellateSplitBlock2(BlockChunk* pChun
 		aoFlags = CalculateCubeAO();
 	}
 
+	/// 修订显示阴影色调
+	int32_t max_light = 9;
+
+	if (pCurBlock && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) && neighborBlocks[7] && neighborBlocks[11])
+	{
+		// simulate ao but not render completely dark. 
+		max_light -= 3;
+	}
+
 	BlockModel blockModel;
     m_pCurBlockTemplate->getComModel(pCurBlock, blockModel, level);
 
@@ -359,6 +368,7 @@ int ParaEngine::BlockGeneralTessellator::TessellateSplitBlock2(BlockChunk* pChun
 			int i = nFirstVertex + v;
 			int32_t baseIdx = i * 4;
 
+			/*
 			int32_t max_light = blockBrightness[rbp_center];
 
 			Block * pCurBlock1 = neighborBlocks[rbp_center];
@@ -367,12 +377,12 @@ int ParaEngine::BlockGeneralTessellator::TessellateSplitBlock2(BlockChunk* pChun
 				// simulate ao but not render completely dark. 
 				max_light -= 3;
 			}
-
+			*/
 			int nIndex = tessellatedModel.AddVertex(blockModel, i);
-			max_light = Math::Max(max_light, 10);
+			//max_light = Math::Max(max_light, 10);
 			tessellatedModel.SetLightIntensity(nIndex, m_pWorld->GetLightBrightnessLinearFloat(max_light));
 
-			tessellatedModel.SetVertexShadowFromAOFlags(nIndex, i, aoFlags);
+			//tessellatedModel.SetVertexShadowFromAOFlags(nIndex, i, aoFlags);
 		}
 		tessellatedModel.IncrementFaceCount(1);
 	}

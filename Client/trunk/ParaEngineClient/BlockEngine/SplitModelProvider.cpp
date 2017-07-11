@@ -268,7 +268,7 @@ namespace ParaEngine
 		}
 		return cnt;
     }
-
+	//-----------------------------------------------------
 	void CSplitModelProvider::getComModel(Block * src, BlockModel & out, const std::string level)
 	{
 		assert(src); 
@@ -293,8 +293,6 @@ namespace ParaEngine
 			}
 		}
 	}
-
-
 	//-----------------------------------------------------
 	void CSplitModelProvider::initBlockData(Block * src) const
 	{
@@ -315,7 +313,7 @@ namespace ParaEngine
         
         SplitBlock * stemp = static_cast<SplitBlock *>(src->getExtData());
 		delete stemp;
-		src->setExtData(0);
+		src->setNullData();
 	}
 	//-----------------------------------------------------
 	void CSplitModelProvider::splitLevel(SplitBlock * parent)
@@ -418,29 +416,6 @@ namespace ParaEngine
         }
         return cnt;
     }
-	//-----------------------------------------------------
-	void CSplitModelProvider::getCom(const BlockModel * parent, const BlockModel & out, int i)
-	{
-		switch (i)
-		{
-		case 0:
-			break;
-		case 1:
-			break;
-		case 2:
-			break;
-		case 3:
-			break;
-		case 4:
-			break;
-		case 5:
-			break;
-		case 6:
-			break;
-		case 7:
-			break;
-		}
-	}
     //-----------------------------------------------------
 	int CSplitModelProvider::getSplitLevel(BlockModelList & out, const SplitBlock * sparent, const BlockModel * bparent, int level, int i) const
     {
@@ -452,7 +427,6 @@ namespace ParaEngine
 		temp.Clone(*bparent);
 		temp.TranslateByVertex(4);
 		temp.SetVerticalScale(0.5f);
-
 
 		switch (i)
 		{
@@ -565,7 +539,7 @@ namespace ParaEngine
 		}
 		return cnt;
     }
-
+	//-----------------------------------------------------
 	void CSplitModelProvider::getSplitLevel(BlockModel & temp, SplitBlock *pSplitBlock, int level, int i)
     {
 		//assert(pSplitBlock);
@@ -671,47 +645,4 @@ namespace ParaEngine
 		return ret;
 	}
 	//-----------------------------------------------------
-/*    void CSplitModelProvider::ExportXML(const std::string & out, VariableBlockModel * in)
-    {
-		CParaFile file(out.c_str());
-		ExportXML(file.getBuffer(), file.getSize());
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::ExportXML(const char * out, int32 & size, VariableBlockModel * in)
-    {
-        
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::InportXML(const std::string & in, VariableBlockModel * out)
-    {
-		CParaFile file(in.c_str());
-		InportXML(file.getBuffer(), file.getSize());
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::InportXML(const char * in, int32 size, VariableBlockModel * out)
-    {
-    }
-	//-----------------------------------------------------
-    void CSplitModelProvider::ExportBinary(const std::string & out, VariableBlockModel * in)
-    {
-		CParaFile file(out.c_str());
-		//BMaxParser p(file.getBuffer(), file.getSize());
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::ExportBinary(const char * out, int32 & size, VariableBlockModel * in)
-    {
-        
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::InportBinary(const std::string & in, VariableBlockModel * out)
-    {
-		CParaFile file(in.c_str());
-		//BMaxParser p(file.getBuffer(), file.getSize());
-    }
-    //-----------------------------------------------------
-    void CSplitModelProvider::InportBinary(const char * in, int32 size, VariableBlockModel * out)
-    {
-    }
-    //-----------------------------------------------------
-	*/
 }

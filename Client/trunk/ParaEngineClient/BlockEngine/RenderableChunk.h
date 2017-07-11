@@ -195,13 +195,12 @@ namespace ParaEngine
 			uint16_t m_templateId;
 			uint32_t m_blockData;
 			uint32_t m_nFaceCount;
-			uint32_t m_maxInstanceFace;
 
 			//packedBlockId
 			std::vector<uint16_t> instances;
 			std::vector<string> levels;
 			std::vector<bool> bComBlocks;
-			InstanceGroup() :m_pTemplate(NULL), m_templateId(0), m_blockData(0), m_nFaceCount(0) , m_maxInstanceFace(0){}
+			InstanceGroup() :m_pTemplate(NULL), m_templateId(0), m_blockData(0), m_nFaceCount(0) {}
 
 			inline void reset()
 			{
@@ -230,8 +229,6 @@ namespace ParaEngine
 				bComBlocks.push_back(bComBlock);
 
 				AddFace(nFaceCount);
-				if (m_maxInstanceFace > nFaceCount)
-					m_maxInstanceFace = nFaceCount;
 			}
 
 			inline uint32_t GetFaceCount() const 
