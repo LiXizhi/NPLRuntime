@@ -498,7 +498,7 @@ namespace ParaEngine
 		FindNeighbourFace(rectangle, i, nFaceIndex);
 	}
 
-	void BMaxParser::CalculateLod(int32 nMaxTriangleCount)
+	void BMaxParser::CalculateLod(uint32 nMaxTriangleCount)
 	{
 		/*
 		MergeCoplanerBlockFace(m_rectangles);
@@ -648,9 +648,9 @@ namespace ParaEngine
 			{
 				for (int16 dz = 0; dz <= 1; dz++)
 				{
-					int32 cx = x + dx;
-					int32 cy = y + dy;
-					int32 cz = z + dz;
+					int16 cx = x + dx;
+					int16 cy = y + dy;
+					int16 cz = z + dz;
 
 					if (cx >= 0 && cy >= 0 && cz >= 0)
 					{

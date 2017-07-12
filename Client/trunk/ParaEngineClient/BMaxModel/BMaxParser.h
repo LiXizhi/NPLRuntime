@@ -61,7 +61,7 @@ namespace ParaEngine
 		void FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex);
 		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
 
-		void CalculateLod(int32 nMaxTriangleCount);
+		void CalculateLod(uint32 nMaxTriangleCount);
 		void GetLodTable(uint32 faceCount, vector<uint32>&lodTable);
 		void PerformLod();
 		void CalculateAABB(vector<BMaxNodePtr>&nodes);

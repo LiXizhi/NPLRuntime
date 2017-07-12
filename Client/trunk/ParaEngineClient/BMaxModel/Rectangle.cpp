@@ -90,7 +90,7 @@ namespace ParaEngine
 			vertice.position[2] *= scale;
 		}
 	}
-	int32 Rectangle::GetBoneIndexAt(int index)
+	int Rectangle::GetBoneIndexAt(int index)
 	{
 		return m_nodes[index]->GetBoneIndex();
 	}
