@@ -174,7 +174,9 @@ namespace ParaEngine
 	public:
 		enum FaceStatus
 		{
-			faceInvisiable, faceVisiableNotSign, faceVisiableSigned
+			faceInvisiable = 0, 
+			faceVisiableNotSign, 
+			faceVisiableSigned
 		};
 
 		friend class BlockModelManager;
@@ -400,7 +402,7 @@ namespace ParaEngine
 
 		friend class IBlockModelProvider;
 
-		FaceStatus m_faces[6] = {faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable, faceInvisiable};
+		FaceStatus m_faces[6];
 	};
 }
 
