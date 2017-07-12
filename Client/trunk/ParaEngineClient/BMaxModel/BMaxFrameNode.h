@@ -27,6 +27,7 @@ namespace ParaEngine
 		virtual BMaxFrameNode* ToBoneNode();
 
 		int GetParentBoneIndex();
+		void SetIndex(int nIndex);
 		
 		 /** Returns true if this object is a parent, (or grandparent and so on to any level), of the given child. */
 		bool IsAncestorOf(BMaxFrameNode* pChild);

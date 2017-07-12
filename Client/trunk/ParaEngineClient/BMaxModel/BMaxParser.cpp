@@ -35,6 +35,7 @@ namespace ParaEngine
 		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL), m_pParent(pParent),
 		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f)
 	{
+		m_bHasBoneBlock = false;
 		if (filename)
 			SetFilename(filename);
 		Load(pBuffer, nSize);
@@ -84,9 +85,10 @@ namespace ParaEngine
 				ParseBlocks_Internal(value);
 				ParseBlockFrames();
 				CalculateBoneWeights();
-				ParseVisibleBlocks();
-				if (m_bAutoScale)
+				MergeCoplanerBlockFace();
+				/*if (m_bAutoScale)
 					ScaleModels();
+					*/
 			}
 		}
 	}
@@ -97,7 +99,6 @@ namespace ParaEngine
 		vector<BMaxNodePtr> nodes;
 		CShapeBox aabb;
 		NPL::NPLObjectProxy msg = NPL::NPLHelper::StringToNPLTable(value);
-		bool bHasBoneBlock = false;
 		for (NPL::NPLTable::IndexIterator_Type itCur = msg.index_begin(); itCur != msg.index_end(); ++itCur)
 		{
 			NPL::NPLObjectProxy& block = itCur->second;
@@ -140,7 +141,8 @@ namespace ParaEngine
 				}
 				else if (template_id == BoneBlockId)
 				{
-					bHasBoneBlock = true;
+					
+					m_bHasBoneBlock = true;
 					int nBoneIndex = (int)m_bones.size();
 					BMaxFrameNodePtr pFrameNode(new BMaxFrameNode(this, x, y, z, template_id, block_data, nBoneIndex));
 					m_bones.push_back(pFrameNode);
@@ -204,8 +206,9 @@ namespace ParaEngine
 			}
 		}
 
+		CalculateAABB(nodes);
 		// set AABB and center
-		m_blockAABB = aabb;
+		/*m_blockAABB = aabb;
 		m_centerPos = m_blockAABB.GetCenter();
 		m_centerPos.y = 0;
 		m_centerPos.x = (m_blockAABB.GetWidth() + 1.f) * 0.5f;
@@ -221,23 +224,15 @@ namespace ParaEngine
 			node->y -= offset_y;
 			node->z -= offset_z;
 			InsertNode(node);
-		}
+		}*/
 
 		// set scaling;
-		if (m_bAutoScale)
-		{
-			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
-			m_fScale = CalculateScale(fMaxLength);
-			if (bHasBoneBlock)
-			{
-				// for animated models, it is by default 1-2 blocks high, for static models, it is 0-1 block high. 
-				m_fScale *= 2.f;
-			}
-		}
+		
 	}
 
 	void BMaxParser::ParseVisibleBlocks()
 	{
+		m_blockModels.clear();
 		for (auto& item : m_nodes)
 		{
 			BMaxNode* node = item.second.get();
@@ -359,6 +354,18 @@ namespace ParaEngine
 		return pMesh;
 	}
 
+	CParaXModel * BMaxParser::ParseParaXModel(uint32 nMaxTriangleCount)
+	{
+		CalculateLod(nMaxTriangleCount);
+
+		CParaXModel* pMesh = NULL;
+		ParaXHeaderDef m_xheader;
+		pMesh = new CParaXModel(m_xheader);
+		FillParaXModelData(pMesh);
+		pMesh->SetBmaxModel();
+		return pMesh;
+	}
+
 	const std::string& BMaxParser::GetFilename() const
 	{
 		return m_filename;
@@ -382,6 +389,352 @@ namespace ParaEngine
 	const Vector3& BMaxParser::GetCenterPos() const
 	{
 		return m_centerPos;
+	}
+
+
+
+	void BMaxParser::MergeCoplanerBlockFace()
+	{
+		ParseVisibleBlocks();
+
+		m_rectangles.clear();
+		for (auto& item : m_nodes)
+		{
+			BMaxNode *node = item.second.get();
+			BlockModel *model = node->GetCube();
+			if (!model)
+			{
+				continue;
+			}
+			for (uint32 i = 0; i < 6; i++)
+			{
+				if (model->IsFaceNotUse(i))
+				{
+					FindCoplanerFace(node, i);
+				}
+			}
+		}
+
+		for (RectanglePtr& rectangle : m_rectangles)
+		{
+			rectangle->ScaleVertices(m_fScale);
+		}
+		OUTPUT_LOG("rect count %d \n", m_rectangles.size());
+	}
+
+
+	void BMaxParser::FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex)
+	{
+		const uint16 nVertexCount = 4;
+
+		BMaxNodePtr nodes[nVertexCount] =
+		{
+			BMaxNodePtr(node), BMaxNodePtr(node), BMaxNodePtr(node), BMaxNodePtr(node)
+		};
+
+		RectanglePtr rectangle(new Rectangle(nodes, nFaceIndex));
+		for (uint32 i = 0; i < nVertexCount; i++)
+		{
+			FindNeighbourFace(rectangle.get(), i, nFaceIndex);
+			BlockModel *model = node->GetCube();
+			if (model)
+			{
+				model->SetFaceUsed(nFaceIndex);
+			}
+		}
+
+		rectangle->CloneNodes();
+		m_rectangles.push_back(rectangle);
+	}
+
+	void BMaxParser::FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex)
+	{
+		const Vector3 *directionOffsetTable = Rectangle::DirectionOffsetTable;
+		int nIndex = nFaceIndex * 4 + i;
+		PE_ASSERT(nIndex < 24);
+		const Vector3& offset = directionOffsetTable[nIndex];
+
+		int nextI = nIndex + ((i == 3) ? -3 : 1);	
+		
+		PE_ASSERT(nextI < 24);
+		BMaxNode *fromNode = rectangle->GetFromNode(nextI);
+		BMaxNode *toNode = rectangle->GetToNode(nextI);
+
+		const Vector3& nextOffset = directionOffsetTable[nextI];
+		BMaxNode *currentNode = fromNode;
+
+		vector<BMaxNodePtr>nodes;
+		
+		if (fromNode)
+		{
+			do
+			{
+				BMaxNode *neighbourNode = currentNode->GetNeighbourByOffset(offset);
+				if (neighbourNode == NULL || currentNode->GetColor() != neighbourNode->GetColor() || currentNode->GetBoneIndex() != neighbourNode->GetBoneIndex())
+					return;
+				BlockModel* neighbourCube = neighbourNode->GetCube();
+
+				if (neighbourCube && neighbourCube->GetVerticesCount() > 0 && neighbourCube->IsFaceNotUse(nFaceIndex))
+					nodes.push_back(BMaxNodePtr(neighbourNode));
+				else
+					return;
+
+				if (currentNode == toNode)
+					break;
+				currentNode = currentNode->GetNeighbourByOffset(nextOffset);
+			} while (currentNode);
+		}
+
+		BMaxNode *newFromNode = fromNode->GetNeighbourByOffset(offset);
+		BMaxNode *newToNode = toNode->GetNeighbourByOffset(offset);
+
+		for (BMaxNodePtr nodePtr : nodes)
+		{
+			BMaxNode *node = nodePtr.get();
+			BlockModel *model = node->GetCube();
+			model->SetFaceUsed(nFaceIndex);
+		}
+		rectangle->UpdateNode(newFromNode, newToNode, nextI);
+		FindNeighbourFace(rectangle, i, nFaceIndex);
+	}
+
+	void BMaxParser::CalculateLod(uint32 nMaxTriangleCount)
+	{
+		/*
+		MergeCoplanerBlockFace(m_rectangles);
+		//m_originRectangles = rectangles;
+
+		if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
+		{
+			for (RectanglePtr& rectangle : rectangles)
+			{
+				rectangle->ScaleVertices(m_fScale);
+			}
+		}
+
+		vector<uint32> lodTable;
+		GetLodTable(rectangles.size(), lodTable);
+		for (uint16 i = 0;i < lodTable.size();i++)
+		{
+			uint32 nextFaceCount = lodTable[i];
+			while (rectangles.size() > nextFaceCount)
+			{
+				PerformLod();
+				rectangles.clear();
+				MergeCoplanerBlockFace(rectangles);
+			}
+			if (fabs(m_fScale - 1.0f) > FLT_EPSILON)
+			{
+				for (RectanglePtr& rectangle : rectangles)
+				{
+					rectangle->ScaleVertices(m_fScale);
+				}
+			}
+			m_lodRectangles[i] = rectangles;
+		}
+		*/
+
+		//a rectangle generate two triangles
+		while (m_rectangles.size() * 2 > nMaxTriangleCount)
+		{
+			PerformLod();
+			MergeCoplanerBlockFace();
+		}
+
+	}
+
+	void BMaxParser::GetLodTable(uint32 faceCount, vector<uint32>&lodTable)
+	{
+		if (faceCount >= 4000)
+			lodTable.push_back(4000);
+		if (faceCount >= 2000)
+			lodTable.push_back(2000);
+		if (faceCount >= 500)
+			lodTable.push_back(500);
+	}
+
+	void BMaxParser::PerformLod()
+	{
+		CShapeAABB aabb;
+		map<int32, BMaxNodePtr>nodesMap;
+		
+		int width = (int)m_blockAABB.GetWidth();
+		int height = (int)m_blockAABB.GetHeight();
+		int depth = (int)m_blockAABB.GetDepth();
+
+		for (int direction = 0; direction <= 3; direction++)
+		{
+			int x = (int)m_centerPos[0];
+			while (x >= -1 && x <= width)
+			{
+				for (int y = 0; y <= height; y += 2)
+				{
+					int z = (int)m_centerPos[2];
+					while (z >= -1 && z <= depth)
+					{
+						CalculateLodNode(nodesMap, x, y, z);
+						(direction & 1) == 0 ? z += 2 : z -= 2;
+					}
+				}
+				if (direction >= 2)
+					x += 2;
+				else
+					x -= 2;
+			}
+		}
+		vector<BMaxNodePtr>nodes;
+
+		for (map<int32, BMaxNodePtr>::iterator iter = nodesMap.begin();iter != nodesMap.end();iter++)
+		{
+			nodes.push_back(iter->second);
+		}
+		CalculateAABB(nodes);
+	}
+
+	void BMaxParser::CalculateAABB(vector<BMaxNodePtr>&nodes)
+	{
+		m_blockAABB.SetEmpty();
+		for (auto item : nodes)
+		{
+			BMaxNode *node = item.get();
+			m_blockAABB.Extend(Vector3((float)node->x, (float)node->y, (float)node->z));
+		}
+
+		m_centerPos = m_blockAABB.GetCenter();
+		m_centerPos.y = 0;
+		m_centerPos.x = (m_blockAABB.GetWidth() + 1.f) * 0.5f;
+		m_centerPos.z = (m_blockAABB.GetDepth() + 1.f) * 0.5f;
+
+		OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
+		const auto& vMin = m_blockAABB.GetMin();
+		int offset_x = (int)vMin.x;
+		int offset_y = (int)vMin.y;
+		int offset_z = (int)vMin.z;
+
+		m_nodes.clear();
+		for (auto node : nodes)
+		{
+			node->x -= offset_x;
+			node->y -= offset_y;
+			node->z -= offset_z;
+			InsertNode(node);
+		}
+
+		OUTPUT_LOG("nodes count %d\n", m_nodes.size());
+		if (m_bAutoScale)
+		{
+			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
+			m_fScale = CalculateScale(fMaxLength);
+			if (m_bHasBoneBlock)
+			{
+				// for animated models, it is by default 1-2 blocks high, for static models, it is 0-1 block high. 
+				m_fScale *= 2.f;
+			}
+		}
+	}
+
+	void BMaxParser::CalculateLodNode(map<int32, BMaxNodePtr> &nodeMap, int x, int y, int z)
+	{
+		int32 cnt = 0;
+
+		map<int32, int32> colorMap;
+		map<int32, int32> boneMap;
+
+		map<int32, int32>::iterator iter;
+
+		for (int16 dx = 0; dx <= 1; dx++)
+		{
+			for (int16 dy = 0; dy <= 1; dy++)
+			{
+				for (int16 dz = 0; dz <= 1; dz++)
+				{
+					int16 cx = x + dx;
+					int16 cy = y + dy;
+					int16 cz = z + dz;
+
+					if (cx >= 0 && cy >= 0 && cz >= 0)
+					{
+						BMaxNode *node = GetNode(cx, cy, cz);
+						if (node)
+						{
+							cnt++;
+							bool hasFind = false;
+							int32 boneIndex = node->GetBoneIndex();
+							if (boneIndex >= 0)
+							{
+								BMaxFrameNode *myBone = m_bones[boneIndex].get();
+								for (iter = boneMap.begin(); iter != boneMap.end(); iter++)
+								{
+									BMaxFrameNode *bone = m_bones[iter->first].get();
+									if (boneIndex == iter->first || bone->IsAncestorOf(myBone))
+									{
+										iter->second++;
+										hasFind = true;
+										break;
+									}
+									else if (myBone->IsAncestorOf(bone))
+									{
+										boneMap.insert(make_pair(boneIndex, iter->second + 1));
+										boneMap.erase(iter);
+										hasFind = true;
+										break;
+									}
+								}
+								if (!hasFind)
+								{
+									boneMap.insert(make_pair(boneIndex, 1));
+								}
+							}
+
+							int32 myColor = node->GetColor();
+							auto iter = colorMap.find(myColor);
+							if (iter != colorMap.end())
+							{
+								iter->second++;
+							}
+							else
+							{
+								colorMap.insert(make_pair(myColor, 1));
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (cnt >= 4)
+		{
+			uint16 newX = (x + 1) / 2;
+			uint16 newY = y / 2;
+			uint16 newZ = (z + 1) / 2;
+			uint32 index = GetNodeIndex(newX, newY, newZ);
+
+			BMaxNodePtr node(new BMaxNode(this, newX, newY, newZ, 0, 0));
+
+			int32 color = 0;
+			auto itColor = std::max_element(colorMap.begin(), colorMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
+			{
+				return a.second < b.second;
+			});
+
+			if (itColor != colorMap.end())
+				color = itColor->first;
+			node->SetColor(color);
+
+			int32 boneIndex = -1;
+			auto itBone = std::max_element(boneMap.begin(), boneMap.end(), [](const std::pair<int32, int32>& a, const std::pair<int32, int32>& b)
+			{
+				return a.second < b.second;
+			});
+			if (itBone != boneMap.end())
+				boneIndex = itBone->first;
+			node->SetBoneIndex(boneIndex);
+
+			if (nodeMap.find(index) == nodeMap.end())
+			{
+				nodeMap.insert(make_pair(index, node));
+			}
+		}
 	}
 
 	ModelGeoset* BMaxParser::AddGeoset()
@@ -423,10 +776,64 @@ namespace ParaEngine
 
 		int32 nStartIndex = 0;
 
-		int nRootBoneIndex = FindRootBoneIndex();
 		CShapeAABB aabb;
 		int total_count = 0;
 		int nStartVertex = 0;
+
+		for (uint32 i = 0; i < m_rectangles.size(); i++)
+		{
+			Rectangle *rectangle = m_rectangles[i].get();
+			BlockVertexCompressed* pVertices = rectangle->GetVertices();
+
+			int nVertices = 4;
+			int nIndexCount = 6;
+
+			if ((nIndexCount + geoset->icount) >= 0xffff)
+			{
+				// break geoset, if it is too big
+				nStartIndex = (int32)m_indices.size();
+				geoset = AddGeoset();
+				pass = AddRenderPass();
+				pass->geoset = geoset->id;
+				pass->SetStartIndex(nStartIndex);
+				geoset->SetVertexStart(total_count);
+				nStartVertex = 0;
+			}
+
+			geoset->vstart += nVertices;
+			geoset->icount += nIndexCount;
+			pass->indexCount += nIndexCount;
+
+			uint8 vertex_weight = 0xff;
+
+			for (int k = 0; k < nVertices; k++, pVertices++)
+			{
+				ModelVertex modelVertex;
+				memset(&modelVertex, 0, sizeof(ModelVertex));
+				pVertices->GetPosition(modelVertex.pos);
+				pVertices->GetNormal(modelVertex.normal);
+		
+				modelVertex.color0 = pVertices->color2;
+				//set bone and weight, only a single bone
+				modelVertex.bones[0] = rectangle->GetBoneIndexAt(k);
+				modelVertex.weights[0] = vertex_weight;
+
+				m_vertices.push_back(modelVertex);
+				aabb.Extend(modelVertex.pos);
+			}
+
+			int start_index = nStartVertex;
+			m_indices.push_back(start_index + 0);
+			m_indices.push_back(start_index + 1);
+			m_indices.push_back(start_index + 2);
+			m_indices.push_back(start_index + 0);
+			m_indices.push_back(start_index + 2);
+			m_indices.push_back(start_index + 3);
+			total_count += nVertices;
+			nStartVertex += nVertices;
+		}
+
+		/*
 		for (uint32 i = 0; i < m_blockModels.size(); i++)
 		{
 			BlockModel* model = m_blockModels.at(i);
@@ -451,7 +858,7 @@ namespace ParaEngine
 				geoset->SetVertexStart(total_count);
 				nStartVertex = 0;
 			}
-			
+
 			geoset->vstart += nVertices;
 			geoset->icount += nIndexCount;
 			pass->indexCount += nIndexCount;
@@ -472,7 +879,7 @@ namespace ParaEngine
 				//set bone and weight, only a single bone
 				modelVertex.bones[0] = nBoneIndex;
 				modelVertex.weights[0] = vertex_weight;
-				
+
 				m_vertices.push_back(modelVertex);
 				aabb.Extend(modelVertex.pos);
 			}
@@ -490,9 +897,11 @@ namespace ParaEngine
 			total_count += nVertices;
 			nStartVertex += nVertices;
 		}
+		*/
 		aabb.GetMin(m_minExtent);
 		aabb.GetMax(m_maxExtent);
 	}
+
 	void BMaxParser::FillParaXModelData(CParaXModel *pMesh)
 	{
 		if (pMesh == NULL)
