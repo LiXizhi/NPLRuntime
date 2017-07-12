@@ -74,3 +74,5 @@ Server/trunk/*
 buildvm_arch.h
 
 .DS_Store
+
+settings.json
