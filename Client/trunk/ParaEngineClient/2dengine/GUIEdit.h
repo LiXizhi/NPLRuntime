@@ -109,10 +109,10 @@ namespace ParaEngine
 		void GetNextWordPos( int nCP, int *pNext );
 
 		/** Character position to X,Y in pixel*/
-		HRESULT CPtoXY( int nCP, BOOL bTrail, int *pX, int *pY);
+		HRESULT CPtoXY( int nCP, BOOL bTrail, int *pX, int *pY, bool absolute = false);
 
 		/** X,Y in pixel to character position*/
-		HRESULT XYtoCP( int nX, int nY, int *pCP,int *pnTrail);
+		HRESULT XYtoCP( int nX, int nY, int *pCP,int *pnTrail, bool absolute = false);
 
 		void GetTextLineSize(int* width, int* height);
 
