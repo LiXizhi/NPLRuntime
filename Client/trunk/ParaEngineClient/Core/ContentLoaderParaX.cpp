@@ -302,7 +302,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				{
 					// block max model. 
 					BMaxParser p(myFile.getBuffer(), myFile.getSize());
-					lod.m_pParaXMesh = p.ParseParaXModel(2000);
+					lod.m_pParaXMesh = p.ParseParaXModel();
 				}
 
 #ifdef SUPPORT_FBX_MODEL_FILE
