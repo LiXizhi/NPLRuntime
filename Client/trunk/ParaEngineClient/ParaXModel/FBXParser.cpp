@@ -34,7 +34,7 @@ static const char* g_sDefaultTexture = "Texture/whitedot.png";
 
 namespace ParaEngine
 {
-	inline Vector3 ConvertFBXVector3D(aiVector3D fbxVector3D)
+	inline Vector3 ConvertFBXVector3D(const aiVector3D& fbxVector3D)
 	{
 		return Vector3(fbxVector3D.x, fbxVector3D.y, fbxVector3D.z);
 	}
@@ -189,6 +189,8 @@ void FBXParser::AddDefaultColors(CParaXModel *pMesh)
 {
 	pMesh->m_objNum.nColors = 1;
 
+	
+
 	pMesh->colors = new ModelColor[1];
 	ModelColor &color = pMesh->colors[0];
 	color.color.used = false;
@@ -197,9 +199,9 @@ void FBXParser::AddDefaultColors(CParaXModel *pMesh)
 	color.color.globals = NULL;
 	color.color.ranges.push_back(AnimRange(0, 0));
 	color.color.times.push_back(0);
-	color.color.data.push_back(Vector3(0, 0, 0));
-	color.color.in.push_back(Vector3(0, 0, 0));
-	color.color.out.push_back(Vector3(0, 0, 0));
+	color.color.data.push_back(Vector3::ZERO);
+	color.color.in.push_back(Vector3::ZERO);
+	color.color.out.push_back(Vector3::ZERO);
 
 	color.opacity.used = false;
 	color.opacity.type = 0;
@@ -786,6 +788,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	}
 	if (fbxMat.bAddictive)
 		blendmode = BM_ADDITIVE;
+
 
 	if (m_bUsedVertexColor)
 	{
@@ -1814,7 +1817,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 	{
 		aiColor4D diffuseColor;
 		aiGetMaterialColor(useMaterial, AI_MATKEY_COLOR_DIFFUSE, &diffuseColor);
-		dwDiffuseColor = LinearColor(diffuseColor.r, diffuseColor.g , diffuseColor.b, 1.0f);
+
+		dwDiffuseColor = LinearColor(diffuseColor.r, diffuseColor.g, diffuseColor.b, 1.0f);
 	}
 
 	for (int i = 0; i < numVertices; i++)

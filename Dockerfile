@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:latest
 MAINTAINER xuntian "li.zq@foxmail.com"
 
 RUN apt-get -y update && apt-get -y install git wget build-essential cmake libcurl4-openssl-dev \
