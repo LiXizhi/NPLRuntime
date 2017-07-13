@@ -770,6 +770,9 @@ namespace ParaEngine
 		{
 			return;
 		}
+
+		m_vertices.clear();
+
 		ModelGeoset* geoset = AddGeoset();
 		ModelRenderPass* pass = AddRenderPass();
 		pass->geoset = geoset->id;
