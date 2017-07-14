@@ -23,10 +23,7 @@
 * text encoding is enforced when the macro is on. */
 // #define TEST_NODE
 #endif
-
-#if !defined(USE_DIRECTX_RENDERER) || defined(_DEBUG)
 #include "ParaXModel/XFileCharModelParser.h"
-#endif
 
 namespace ParaEngine
 {
