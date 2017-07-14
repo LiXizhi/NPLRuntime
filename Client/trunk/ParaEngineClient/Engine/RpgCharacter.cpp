@@ -182,8 +182,8 @@ void CRpgCharacter::SetTool(int nIndex, int nToolID)
 
 bool CRpgCharacter::ToNpcDbItem(CNpcDbItem& npc)
 {
-	CharModelInstance* pChar =  GetCharModelInstance();
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CharModelInstance* pChar =  GetCharModelInstance(0);
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	if(pChar && pAI)
 	{
 		if(pChar->GetBaseModel())
@@ -302,7 +302,7 @@ bool CRpgCharacter::UpdateFromNPCDbItem(const CNpcDbItem& npc, DWORD dwFields)
 			InitObject(pMAE);
 			if(!npc.m_binCustomAppearance.empty())
 			{
-				CharModelInstance* pChar =  GetCharModelInstance();
+				CharModelInstance* pChar =  GetCharModelInstance(0);
 				if(pChar!=NULL)
 				{
 					// pChar->load(&npc.m_binCustomAppearance[0], (int)npc.m_binCustomAppearance.size());

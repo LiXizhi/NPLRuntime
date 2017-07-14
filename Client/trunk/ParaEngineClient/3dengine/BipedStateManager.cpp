@@ -583,7 +583,7 @@ void  CBipedStateManager::Update(float fTimeDelta)
 	bool bIsSwimming = IsSwimming();
 	BipedState stateAnim = bIsSwimming ? STATE_IN_WATER : STATE_STANDING;
 	
-	CParaXAnimInstance* pAI = pBiped->GetParaXAnimInstance();
+	//CParaXAnimInstance* pAI = pBiped->GetParaXAnimInstance();
 	
 	bool bIsJumpEnding = false; // whether the biped is ending the jump
 	bool bIsJumping=false;  // whether the biped is starting|ending|during a jump
@@ -937,24 +937,28 @@ void  CBipedStateManager::Update(float fTimeDelta)
 
 	//////////////////////////////////////////////////////////////////////////
 	// set the default idle animation. 
-	if(pAI != 0)
+	for(int i=0;i<static_cast<int>(pBiped->getAvatarEntities().size());++i)
 	{
-		if(stateAnim == STATE_IN_WATER || stateAnim == STATE_STANDING || stateAnim == STATE_JUMP_IN_AIR)
+		CParaXAnimInstance* pAI=pBiped->GetParaXAnimInstance(i);
+		if(pAI!=0)
 		{
-			int nIdleAnimID = ANIM_STAND;
-			if(stateAnim == STATE_IN_WATER)
-				nIdleAnimID = ANIM_SWIMIDLE;
-			else if(stateAnim == STATE_JUMP_IN_AIR)
-				nIdleAnimID = ANIM_JUMP;
-
-			if(pAI->GetIdleAnimationID() != nIdleAnimID)
+			if(stateAnim==STATE_IN_WATER||stateAnim==STATE_STANDING||stateAnim==STATE_JUMP_IN_AIR)
 			{
-				pAI->SetIdleAnimationID(nIdleAnimID);
-				// force playing the animation
-				if(stateAnim == STATE_STANDING)
-					stateAnim = STATE_STAND;
-				else if(stateAnim == STATE_IN_WATER)
-					stateAnim = STATE_SWIM;
+				int nIdleAnimID=ANIM_STAND;
+				if(stateAnim==STATE_IN_WATER)
+					nIdleAnimID=ANIM_SWIMIDLE;
+				else if(stateAnim==STATE_JUMP_IN_AIR)
+					nIdleAnimID=ANIM_JUMP;
+
+				if(pAI->GetIdleAnimationID()!=nIdleAnimID)
+				{
+					pAI->SetIdleAnimationID(nIdleAnimID);
+					// force playing the animation
+					if(stateAnim==STATE_STANDING)
+						stateAnim=STATE_STAND;
+					else if(stateAnim==STATE_IN_WATER)
+						stateAnim=STATE_SWIM;
+				}
 			}
 		}
 	}

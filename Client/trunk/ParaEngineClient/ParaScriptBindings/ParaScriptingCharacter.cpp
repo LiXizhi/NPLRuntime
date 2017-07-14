@@ -226,10 +226,13 @@ namespace ParaScripting
 	void ParaCharacter::SetSkin(int nIndex)
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pChar->SetSkin(nIndex);
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
+				{
+					pChar->SetSkin(nIndex);
+				}
 			}
 		}
 	}
@@ -237,7 +240,7 @@ namespace ParaScripting
 	int ParaCharacter::GetSkin()
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->GetSkin();
@@ -257,7 +260,7 @@ namespace ParaScripting
 	void ParaCharacter::LoadFromFile(const char* filename)
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				//pChar->load(filename);
@@ -269,7 +272,7 @@ namespace ParaScripting
 	void ParaCharacter::SaveToFile(const char* filename)
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				//pChar->save(filename);
@@ -280,10 +283,13 @@ namespace ParaScripting
 	void ParaCharacter::SetBodyParams(int skinColor, int faceType, int hairColor, int hairStyle, int facialHair)
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pChar->SetBodyParams(skinColor, faceType, hairColor, hairStyle, facialHair);
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
+				{
+					pChar->SetBodyParams(skinColor,faceType,hairColor,hairStyle,facialHair);
+				}
 			}
 		}
 	}
@@ -292,7 +298,7 @@ namespace ParaScripting
 	{
 		if (m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->GetBodyParams(type);
@@ -304,10 +310,13 @@ namespace ParaScripting
 	void ParaCharacter::SetDisplayOptions(int bShowUnderwear, int bShowEars, int bShowHair)
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pChar->SetDisplayOptions(bShowUnderwear, bShowEars, bShowHair);
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
+				{
+					pChar->SetDisplayOptions(bShowUnderwear,bShowEars,bShowHair);
+				}
 			}
 		}
 	}
@@ -316,7 +325,7 @@ namespace ParaScripting
 	{
 		if (m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->GetDisplayOptions(type);
@@ -329,10 +338,13 @@ namespace ParaScripting
 	{
 		if (m_pCharacter) 
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pChar->SetCharacterSlot(nSlotID, nItemID);
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
+				{
+					pChar->SetCharacterSlot(nSlotID,nItemID);
+				}
 			}
 		}
 	}
@@ -341,7 +353,7 @@ namespace ParaScripting
 	{
 		if (m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->GetCharacterSlot(nSlotID);
@@ -353,10 +365,13 @@ namespace ParaScripting
 	void ParaCharacter::RefreshModel()
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pChar->SetModified();
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
+				{
+					pChar->SetModified();
+				}
 			}
 		}
 	}
@@ -622,7 +637,7 @@ namespace ParaScripting
 	{
 		if (m_pCharacter) 
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar!=0)
 			{
 				return ParaAttributeObject(pChar->GetAttachmentAttObj(nAttachmentID));
@@ -633,7 +648,7 @@ namespace ParaScripting
 
 	void ParaCharacter::AddAttachment5( ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture )
 	{
-		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 		if(pChar!=0)
 		{
 			TextureEntity* pTex = NULL;
@@ -674,7 +689,7 @@ namespace ParaScripting
 
 	void ParaCharacter::RemoveAttachment2(int nAttachmentID, int nSlotID)
 	{
-		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 		if(pChar!=0)
 		{
 			pChar->AddAttachment((ParaXEntity*)NULL, nAttachmentID, nSlotID);
@@ -701,7 +716,7 @@ namespace ParaScripting
 			if(sTarget=="")
 			{
 				// if there is no target, just attach it to the character model's hand attachment by default.
-				CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+				CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 				if(pChar)
 				{
 					pChar->CastEffect(nEffectID);
@@ -722,7 +737,7 @@ namespace ParaScripting
 						nAttachmentID=0; // default to 0
 					}
 					// if there is no target, just attach it to the character model
-					CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+					CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 					if(pChar)
 					{
 						pChar->CastEffect(nEffectID, nAttachmentID);
@@ -862,7 +877,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CParaXAnimInstance* pParaXAI = m_pCharacter->GetParaXAnimInstance();
+			CParaXAnimInstance* pParaXAI = m_pCharacter->GetParaXAnimInstance(0);
 			return (pParaXAI && pParaXAI->HasMountPoint(nMountPointID));
 		}
 		return false;
@@ -883,20 +898,23 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				DWORD dwColor = 0;
-				if(strColor[0] == 'F' || (strColor[1] == '\0'))
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
 				{
-					dwColor = 0xffffffff;
+					DWORD dwColor=0;
+					if(strColor[0]=='F'||(strColor[1]=='\0'))
+					{
+						dwColor=0xffffffff;
+					}
+					else
+					{
+						sscanf(strColor,"%x",&dwColor);
+						dwColor|=0xff000000;
+					}
+					pChar->SetSkinColorMask(dwColor);
 				}
-				else
-				{
-					sscanf(strColor, "%x", &dwColor);
-					dwColor |= 0xff000000;
-				}
-				pChar->SetSkinColorMask(dwColor);
 			}
 		}
 	}
@@ -905,7 +923,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				DWORD dwColor = (pChar->GetSkinColorMask());
@@ -928,7 +946,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				CartoonFace* pCartoonFace =  pChar->GetCartoonFace();
@@ -1034,7 +1052,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				CartoonFace* pCartoonFace =  pChar->GetCartoonFace();
@@ -1079,68 +1097,71 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-			if(pChar)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				CartoonFace* pCartoonFace =  pChar->GetCartoonFace();
-				if(pCartoonFace)
+				CharModelInstance* pChar=m_pCharacter->GetCharModelInstance(i);
+				if(pChar)
 				{
-					if(nComponentID>=0 && nComponentID<=CFS_TOTAL_NUM)
+					CartoonFace* pCartoonFace=pChar->GetCartoonFace();
+					if(pCartoonFace)
 					{
-						FaceComponent& component = pCartoonFace->GetComponent(nComponentID);
-						switch(SubType)
+						if(nComponentID>=0&&nComponentID<=CFS_TOTAL_NUM)
 						{
-						case 0:
-							if(component.GetStyle() != ((int)value))
+							FaceComponent& component=pCartoonFace->GetComponent(nComponentID);
+							switch(SubType)
 							{
-								component.SetStyle((int)value);
-								pCartoonFace->SetModified(true);
-							}
-							break;
-						case 1:
-							if(component.GetColor()!=((DWORD)((unsigned long long)value)))
+							case 0:
+								if(component.GetStyle()!=((int)value))
+								{
+									component.SetStyle((int)value);
+									pCartoonFace->SetModified(true);
+								}
+								break;
+							case 1:
+								if(component.GetColor()!=((DWORD)((unsigned long long)value)))
+								{
+									component.SetColor((DWORD)((unsigned long long)value));
+									pCartoonFace->SetModified(true);
+								}
+								break;
+							case 2:
+								if(component.GetScaling()!=((float)value))
+								{
+									component.SetScaling((float)value);
+									pCartoonFace->SetModified(true);
+								}
+								break;
+							case 3:
+								if(component.GetRotation()!=((float)value))
+								{
+									component.SetRotation((float)value);
+									pCartoonFace->SetModified(true);
+								}
+								break;
+							case 4:
 							{
-								component.SetColor((DWORD)((unsigned long long)value));
-								pCartoonFace->SetModified(true);
-							}
-							break;
-						case 2:
-							if(component.GetScaling() != ((float)value))
-							{
-								component.SetScaling((float)value);
-								pCartoonFace->SetModified(true);
-							}
-							break;
-						case 3:
-							if(component.GetRotation() != ((float)value))
-							{
-								component.SetRotation((float)value);
-								pCartoonFace->SetModified(true);
-							}
-							break;
-						case 4:
-							{
-								int x = (int)value;
-								int oldX = 0;
+								int x=(int)value;
+								int oldX=0;
 								component.GetPosition(&oldX,NULL);
-								if(oldX != x)
+								if(oldX!=x)
 								{
-									component.SetPosition(&x, NULL);
+									component.SetPosition(&x,NULL);
 									pCartoonFace->SetModified(true);
 								}
 								break;
 							}
-						case 5:
+							case 5:
 							{
-								int y = (int)value;
-								int oldY = 0;
-								component.GetPosition(NULL, &oldY);
-								if(oldY != y)
+								int y=(int)value;
+								int oldY=0;
+								component.GetPosition(NULL,&oldY);
+								if(oldY!=y)
 								{
-									component.SetPosition(NULL, &y);
+									component.SetPosition(NULL,&y);
 									pCartoonFace->SetModified(true);
 								}
 								break;
+							}
 							}
 						}
 					}
@@ -1153,7 +1174,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->IsSupportCartoonFace();
@@ -1166,7 +1187,7 @@ namespace ParaScripting
 	{
 		if(m_pCharacter)
 		{
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->IsCustomModel();
@@ -1179,7 +1200,7 @@ namespace ParaScripting
 	int ParaCharacter::GetGender()
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->gender;
@@ -1191,7 +1212,7 @@ namespace ParaScripting
 	int ParaCharacter::GetRaceID()
 	{
 		if (m_pCharacter) {
-			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
+			CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance(0);
 			if(pChar)
 			{
 				return pChar->race;
@@ -1200,17 +1221,38 @@ namespace ParaScripting
 		return -1;
 	}
 
+	void ParaCharacter::SetAvatar(int avatarIndex,ParaAssetObject assetCharModel)
+	{
+		if(m_pCharacter && assetCharModel.m_pAsset)
+		{
+			m_pCharacter->setAvatar(avatarIndex,assetCharModel.m_pAsset);
+			RefreshModel();
+		}
+	}
+
+	ParaAssetObject ParaCharacter::GetAvatar(int avatarIndex) const
+	{
+		if(m_pCharacter)
+			return ParaAssetObject(m_pCharacter->getAvatarEntity(avatarIndex));
+		else
+			return ParaAssetObject();
+	}
+
 	void ParaCharacter::EnableAnimIDMap( bool bEnable )
 	{
 		if (m_pCharacter) {
-			m_pCharacter->GetAnimInstance()->EnableAnimIDMap(bEnable);
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
+			{
+				if(m_pCharacter->GetAnimInstance(i))
+					m_pCharacter->GetAnimInstance(i)->EnableAnimIDMap(bEnable);
+			}
 		}
 	}
 
 	bool ParaCharacter::IsAnimIDMapEnabled()
 	{
 		if (m_pCharacter) {
-			return m_pCharacter->GetAnimInstance()->IsAnimIDMapEnabled();
+			return m_pCharacter->GetAnimInstance(0)->IsAnimIDMapEnabled();
 		}
 		return false;
 	}
@@ -1220,26 +1262,32 @@ namespace ParaScripting
 	{
 		if (m_pCharacter) 
 		{
-			map<int, int>* pMap = m_pCharacter->GetAnimInstance()->GetAnimIDMap();
-			if (pMap)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				map<int, int>::iterator it = pMap->find(nFromID);
-				if(it!=pMap->end())
+				if(m_pCharacter->GetAnimInstance(i))
 				{
-					if(nToID<0)
+					map<int,int>* pMap=m_pCharacter->GetAnimInstance(i)->GetAnimIDMap();
+					if(pMap)
 					{
-						pMap->erase(it);
-					}
-					else
-					{
-						(*it).second = nToID;
-					}
-				}
-				else
-				{
-					if(nToID>=0)
-					{
-						(*pMap)[nFromID] = nToID;
+						map<int,int>::iterator it=pMap->find(nFromID);
+						if(it!=pMap->end())
+						{
+							if(nToID<0)
+							{
+								pMap->erase(it);
+							}
+							else
+							{
+								(*it).second=nToID;
+							}
+						}
+						else
+						{
+							if(nToID>=0)
+							{
+								(*pMap)[nFromID]=nToID;
+							}
+						}
 					}
 				}
 			}
@@ -1252,10 +1300,16 @@ namespace ParaScripting
 	{
 		if (m_pCharacter) 
 		{
-			map<int, int>* pMap = m_pCharacter->GetAnimInstance()->GetAnimIDMap();
-			if (pMap)
+			for(int i=0;i<static_cast<int>(m_pCharacter->getAvatarEntities().size());++i)
 			{
-				pMap->clear();
+				if(m_pCharacter->GetAnimInstance(i))
+				{
+					map<int,int>* pMap=m_pCharacter->GetAnimInstance(i)->GetAnimIDMap();
+					if(pMap)
+					{
+						pMap->clear();
+					}
+				}
 			}
 		}
 	}

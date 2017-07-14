@@ -700,5 +700,9 @@ namespace ParaScripting
 		* @return: race ID, -1 if error*/
 		int GetRaceID();
 
+		void SetAvatar(int avatarIndex,ParaAssetObject assetCharModel);
+
+		ParaAssetObject GetAvatar(int avatarIndex)const;
+
 	};
 }
