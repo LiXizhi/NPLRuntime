@@ -68,7 +68,7 @@ bool ParaEngine::GetFirstFileData(const char* src, std::string& out)
 {
 	const SZIPFileHeader* info = (const SZIPFileHeader*)src;
 	if (info->Sig != ZIP_CONST_LOCALHEADERSIG)
-		return nullptr;
+		return false;
 
 	auto filedata = src + sizeof(SZIPFileHeader) + info->FilenameLength + info->ExtraFieldLength;
 	if (info->CompressionMethod == 0)  // 8 for zip, 0 for no compression.
