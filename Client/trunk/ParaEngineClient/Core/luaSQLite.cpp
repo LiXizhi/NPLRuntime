@@ -1334,7 +1334,7 @@ FUNC( l_sqlite3_commit_hook )
 
 	int (*xcommit)(void *);
 
-	if ( checknilornoneorfunc(L, 1) )
+	if ( checknilornoneorfunc(L, 2) )
 		xcommit = xcommit_callback_wrapper;
 	else
 		xcommit = 0;
@@ -1371,7 +1371,7 @@ FUNC( l_sqlite3_progress_handler )
 
 	int (*xprogress)(void *);
 
-	if ( checknilornoneorfunc(L, 1) )
+	if ( checknilornoneorfunc(L, 3) )
 		xprogress = xprogress_callback_wrapper;
 	else
 		xprogress = 0;
