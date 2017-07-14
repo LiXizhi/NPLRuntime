@@ -24,6 +24,7 @@ namespace ParaEngine
 	BlockModel::BlockModel(int32_t texFaceNum)
 		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false)
 	{
+		memset(m_faces, faceInvisiable, sizeof(m_faces));
 		m_Vertices.resize(24);
 		LoadModelByTexture(texFaceNum);
 		m_shapeAABB.SetMinMax(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize,BlockConfig::g_blockSize,BlockConfig::g_blockSize));
