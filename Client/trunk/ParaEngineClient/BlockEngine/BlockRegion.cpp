@@ -1839,6 +1839,21 @@ namespace ParaEngine
 		m_nChunksLoaded = val;
 	}
 
+	void BlockRegion::ClearAllLight()
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i < nCount; i++)
+		{
+			BlockChunk * pChunk = m_chunks[i];
+			if (pChunk)
+			{
+				pChunk->ClearAllLight();
+			}
+		}
+	}
+
+	
+
 	uint32 BlockRegion::GetChunksLoaded() const
 	{
 		return m_nChunksLoaded;
@@ -1977,6 +1992,9 @@ namespace ParaEngine
 		pClass->AddField("ChunksLoaded", FieldType_Int, (void*)SetChunksLoaded_s, (void*)GetChunksLoaded_s, NULL, NULL, bOverride);
 		pClass->AddField("TotalBytes", FieldType_Int, (void*)0, (void*)GetTotalBytes_s, NULL, NULL, bOverride);
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
+		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);
+
+
 		return S_OK;
 	}
 

@@ -277,5 +277,8 @@ namespace ParaEngine
 
 		/** return true if the nearby 4 chunk columns have been generated (and loaded) */
 		bool IsNearbyChunksLoaded();
+
+
+		void ClearAllLight();
 	};
 }
