@@ -766,15 +766,15 @@ namespace ParaEngine
 
 	void BMaxParser::FillVerticesAndIndices()
 	{
-		if (m_blockModels.size() == 0)
-		{
-			return;
-		}
-
 		m_geosets.clear();
 		m_renderPasses.clear();
 		m_indices.clear();
 		m_vertices.clear();
+
+		if (m_blockModels.size() == 0)
+		{
+			return;
+		}
 
 		ModelGeoset* geoset = AddGeoset();
 		ModelRenderPass* pass = AddRenderPass();

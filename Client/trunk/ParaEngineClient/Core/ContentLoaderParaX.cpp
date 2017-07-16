@@ -23,7 +23,9 @@
 using namespace ParaEngine;
 
 /**@def enable automatic lod calculation for bmax model */
+#ifdef _DEBUG
 #define ENABLE_BMAX_AUTO_LOD
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 //
@@ -310,21 +312,24 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					if (m_MeshLODs.size() == 1)
 					{
 						// each LOD at least cut triangle count in half and no bigger than a given count. 
-						const int nLodsMaxTriangleCounts[] = { 2000, 500, 100};
+						// by default, generate lod in range 30, 60, 90, 120 meters;
+						const int nLodsMaxTriangleCounts[] = { 1500, 500, 100};
 						
 						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts)/sizeof(int); i++)
 						{
 							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i])
 							{
 								MeshLOD lod;
-								// TODO: following line should be removed, when ParseParaXModel is fixed
-								BMaxParser p(myFile.getBuffer(), myFile.getSize());
-								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i], (int)(pParaXMesh->GetObjectNum().nVertices / 2)));
-								lod.m_fromDepthSquared = (float)(((30+i)*30) ^ 2);
+								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i], (int)(pParaXMesh->GetPolyCount() / 2) - 4));
+								lod.m_fromDepthSquared = Math::Sqr((2 + i) * 30.f);
 								if (lod.m_pParaXMesh)
 								{
+									if (pMeshLODs.size() == 1)
+									{
+										iCur->m_fromDepthSquared = Math::Sqr(30.f);
+									}
 									pParaXMesh = lod.m_pParaXMesh;
-									pMeshLODs.insert(pMeshLODs.begin(), lod);
+									pMeshLODs.push_back(lod);
 									iCur = pMeshLODs.end() - 1;
 								}
 							}
