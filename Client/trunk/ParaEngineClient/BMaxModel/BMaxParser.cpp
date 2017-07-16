@@ -361,10 +361,10 @@ namespace ParaEngine
 		CParaXModel* pMesh = NULL;
 		ParaXHeaderDef m_xheader;
 		pMesh = new CParaXModel(m_xheader);
-		FillParaXModelData(pMesh);
-		if (pMesh->GetPolyCount() == 0)
-			return NULL;
 		pMesh->SetBmaxModel();
+		if (m_rectangles.size() == 0)
+			return pMesh;
+		FillParaXModelData(pMesh);
 		return pMesh;
 	}
 
