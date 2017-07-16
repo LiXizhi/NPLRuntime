@@ -361,8 +361,10 @@ namespace ParaEngine
 		CParaXModel* pMesh = NULL;
 		ParaXHeaderDef m_xheader;
 		pMesh = new CParaXModel(m_xheader);
-		FillParaXModelData(pMesh);
 		pMesh->SetBmaxModel();
+		if (m_rectangles.size() == 0)
+			return pMesh;
+		FillParaXModelData(pMesh);
 		return pMesh;
 	}
 
@@ -766,15 +768,14 @@ namespace ParaEngine
 
 	void BMaxParser::FillVerticesAndIndices()
 	{
-		if (m_blockModels.size() == 0)
-		{
-			return;
-		}
-
 		m_geosets.clear();
 		m_renderPasses.clear();
 		m_indices.clear();
 		m_vertices.clear();
+		if (m_blockModels.size() == 0)
+		{
+			return;
+		}
 
 		ModelGeoset* geoset = AddGeoset();
 		ModelRenderPass* pass = AddRenderPass();
