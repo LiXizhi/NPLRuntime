@@ -23,9 +23,7 @@
 using namespace ParaEngine;
 
 /**@def enable automatic lod calculation for bmax model */
-#ifdef _DEBUG
 #define ENABLE_BMAX_AUTO_LOD
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //
