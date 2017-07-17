@@ -203,22 +203,36 @@ void ParaXEntity::UpdateManualLodLevel( int index, const string& sFilename )
 	}
 }
 
-int ParaXEntity::GetLodIndex( float depth ) const
+int ParaXEntity::GetLodIndex( float fCameraObjectDist, float fScaling) const
 {
-	return GetLodIndexSquaredDepth(depth * depth);
+	return GetLodIndexSquaredDepth(fCameraObjectDist * fCameraObjectDist, fScaling);
 }
 
-int ParaXEntity::GetLodIndexSquaredDepth( float squaredDepth ) const
+int ParaXEntity::GetLodIndexSquaredDepth( float squaredDepth, float fScaling) const
 {
 	if(m_MeshLODs.size()>1)
 	{
 		std::vector<MeshLOD>::const_iterator i, iend = m_MeshLODs.end();
 		int index = 0;
-		for (i = m_MeshLODs.begin(); i != iend; ++i, ++index)
+		if (fScaling == 1.0f)
 		{
-			if (i->m_fromDepthSquared > squaredDepth)
+			for (i = m_MeshLODs.begin(); i != iend; ++i, ++index)
 			{
-				return index;
+				if (i->m_fromDepthSquared > squaredDepth)
+				{
+					return index;
+				}
+			}
+		}
+		else
+		{
+			float fScalingSq = fScaling* fScaling;
+			for (i = m_MeshLODs.begin(); i != iend; ++i, ++index)
+			{
+				if (i->m_fromDepthSquared * fScalingSq > squaredDepth)
+				{
+					return index;
+				}
 			}
 		}
 	}
