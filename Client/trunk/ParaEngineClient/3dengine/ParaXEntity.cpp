@@ -222,7 +222,7 @@ int ParaXEntity::GetLodIndexSquaredDepth( float squaredDepth ) const
 			}
 		}
 	}
-	// If we fall all the way through, use the highest value
+	// If we fall all the way through, use the lowest lod
 	return (int)(m_MeshLODs.size() - 1);
 }
 
