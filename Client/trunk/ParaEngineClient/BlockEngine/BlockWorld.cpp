@@ -390,6 +390,18 @@ BlockRegion* CBlockWorld::CreateGetRegion(uint16_t region_x, uint16_t region_z)
 		return NULL;
 }
 
+void ParaEngine::CBlockWorld::ResetAllLight()
+{
+	for (auto& item : m_regionCache)
+	{
+		item.second->ClearAllLight();
+	}
+
+	auto& lightGrid = GetLightGrid();
+
+	lightGrid.OnEnterWorld();
+}
+
 bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
 {
 	uint16_t rx, ry, rz;
@@ -2382,6 +2394,8 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 
 	pClass->AddField("ResumeLightUpdate", FieldType_void, (void*)ResumeLightUpdate_s, NULL, NULL, "", bOverride);
 	pClass->AddField("SuspendLightUpdate", FieldType_void, (void*)SuspendLightUpdate_s, NULL, NULL, "", bOverride);
+
+	pClass->AddField("ResetAllLight", FieldType_void, (void*)ResetAllLight_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("LockWorld", FieldType_void, (void*)LockWorld_s, NULL, NULL, "", bOverride);
 	pClass->AddField("UnlockWorld", FieldType_void, (void*)UnlockWorld_s, NULL, NULL, "", bOverride);
