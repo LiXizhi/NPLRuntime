@@ -519,6 +519,9 @@ namespace ParaScripting
 
 		static object ApplyMapChunkData(uint32_t chunkX, uint32_t chunkZ, uint32_t verticalSectionFilter, const std::string& chunkData, const object& out);
 
+		/** get block id and userdata at the given block position. */
+		static void ParaTerrain::GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData);
+
 	};
 
 }

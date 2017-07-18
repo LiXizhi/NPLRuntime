@@ -907,6 +907,19 @@ Block* CBlockWorld::GetBlock(uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 	return NULL;
 }
 
+
+Block* CBlockWorld::GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z)
+{
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion && !pRegion->IsLocked())
+	{
+		return pRegion->GetBlock(lx, ly, lz);
+	}
+	return nullptr;
+}
+
 BlockTemplate* CBlockWorld::GetBlockTemplate(uint16_t x, uint16_t y, uint16_t z)
 {
 	uint16_t lx, ly, lz;
