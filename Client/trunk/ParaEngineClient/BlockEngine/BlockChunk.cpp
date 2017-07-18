@@ -352,6 +352,13 @@ namespace ParaEngine
 				return false;
 			}
 		}
+
+		auto blockTemplate = pBlock->GetTemplate();
+		if (blockTemplate->IsMatchAttribute(BlockTemplate::batt_invisible))
+		{
+			return false;
+		}
+
 		uint16_t blockIdX_cs,blockIdY_cs,blockIdZ_cs;
 		UnpackBlockIndex(index,blockIdX_cs,blockIdY_cs,blockIdZ_cs);
 		const int16_t maxIndex = BlockConfig::g_chunkBlockDim - 1;

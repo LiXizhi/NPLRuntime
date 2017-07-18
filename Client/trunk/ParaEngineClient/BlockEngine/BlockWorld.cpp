@@ -20,6 +20,8 @@
 #include "BlockLightGridBase.h"
 #include "TextureEntity.h"
 #include "BlockWorld.h"
+#include "SceneObject.h"
+#include "BipedObject.h"
 
 using namespace ParaEngine;
 
@@ -829,6 +831,47 @@ uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
 	return GetBlockData(x, y, z);
 }
 
+void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
+{
+	BlockTemplate* pTemp = GetBlockTemplate(templateId);
+
+	if (pTemp)
+	{
+		if (!value)
+		{
+			BlockTemplateVisibleData visibleData;
+			visibleData.lightOpyValue = pTemp->GetLightOpacity();
+			visibleData.isTransparent = pTemp->IsMatchAttribute(BlockTemplate::batt_transparent);
+			m_blockTemplateVisibleDatas[templateId] = visibleData;
+
+			pTemp->SetAttribute(BlockTemplate::batt_transparent, true);
+			pTemp->SetAttribute(BlockTemplate::batt_invisible, true);
+			pTemp->SetLightOpacity(0);
+		}
+		else
+		{
+			pTemp->SetAttribute(BlockTemplate::batt_invisible, false);
+			auto visibleDataItr = m_blockTemplateVisibleDatas.find(templateId);
+			if (visibleDataItr != m_blockTemplateVisibleDatas.end())
+			{
+				pTemp->SetAttribute(BlockTemplate::batt_transparent, visibleDataItr->second.isTransparent);
+				pTemp->SetLightOpacity(visibleDataItr->second.lightOpyValue);
+				m_blockTemplateVisibleDatas.erase(templateId);
+			}
+		}
+
+		// refresh player region
+		CBipedObject* currentPlayer = CGlobals::GetScene()->GetCurrentPlayer();
+		auto v3 = currentPlayer->GetPosition();
+		uint16_t blockX_rs(0), blockY_rs(0), blockZ_rs(0);
+		BlockCommon::ConvertToBlockIndex(v3.x, v3.y, v3.z, blockX_rs, blockY_rs, blockZ_rs);
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
+		if (pRegion)
+			pRegion->SetAllChunksDirty();
+	}
+
+}
 
 uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID)
 {

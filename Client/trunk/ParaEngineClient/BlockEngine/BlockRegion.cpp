@@ -158,6 +158,17 @@ namespace ParaEngine
 		return false;
 	}
 
+	void BlockRegion::SetAllChunksDirty()
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i<nCount; i++)
+		{
+			BlockChunk* pChunk = m_chunks[i];
+			if(pChunk)
+				pChunk->SetDirty(true);
+		}
+	}
+
 	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs,uint16_t blockY_rs,uint16_t blockZ_rs,BlockTemplate* pTemplate)
 	{
 		if (IsLocked())
