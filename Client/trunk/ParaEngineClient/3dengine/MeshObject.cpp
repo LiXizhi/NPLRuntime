@@ -458,7 +458,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 		return E_FAIL;
 	}
 
-	int nIndex = m_ppMesh->GetLodIndex(fCameraToObjectDist);
+	int nIndex = (sceneState && IsLODEnabled()) ? m_ppMesh->GetLodIndex(fCameraToObjectDist) : 0;
 	CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh(nIndex);
 
 	if(pMesh == NULL)

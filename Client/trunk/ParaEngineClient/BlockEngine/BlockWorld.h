@@ -61,6 +61,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD(CBlockWorld, ResumeLightUpdate_s)	{ cls->ResumeLightUpdate(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s)	{ cls->SuspendLightUpdate(); return S_OK; }
 
+		ATTRIBUTE_METHOD(CBlockWorld, ResetAllLight_s) { cls->ResetAllLight(); return S_OK; }
+
 		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s)	{ cls->LockWorld(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s)	{ cls->UnlockWorld(); return S_OK; }
 
@@ -532,6 +534,9 @@ namespace ParaEngine
 		/** unload region from memory. return true if unloaded.*/
 		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
 
+
+
+		void ResetAllLight();
 	protected:
 		/** removed given region from memory. */
 		void UnloadRegion(BlockRegion* pRegion, bool bAutoSave = true);

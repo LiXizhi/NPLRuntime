@@ -63,6 +63,14 @@ namespace ParaEngine
 		std::fill(m_lightmapArray.begin(),m_lightmapArray.end(),LightData());
 	}
 
+	void BlockChunk::ClearAllLight()
+	{
+		SetDirty(true);
+		m_lightBlockIndices.clear();
+		SetLightingInitialized(false);
+		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
+	}
+
 
 	void BlockChunk::LoadBlock(uint16_t nBlockIndex, BlockTemplate* pTemplate)
 	{

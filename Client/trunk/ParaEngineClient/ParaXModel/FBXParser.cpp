@@ -185,49 +185,84 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	return pMesh;
 }
 
-void FBXParser::AddDefaultColors(CParaXModel *pMesh)
+void FBXParser::AddColors(CParaXModel *pMesh)
 {
-	pMesh->m_objNum.nColors = 1;
+	auto size = m_colors.size();
+	if (size == 0)
+	{
+		// addDefault colors
+
+		pMesh->m_objNum.nColors = 1;
+
+		pMesh->colors = new ModelColor[1];
+		ModelColor &color = pMesh->colors[0];
+		color.color.used = false;
+		color.color.type = 0;
+		color.color.seq = 0;
+		color.color.globals = NULL;
+		color.color.ranges.push_back(AnimRange(0, 0));
+		color.color.times.push_back(0);
+		color.color.data.push_back(Vector3::ZERO);
+		color.color.in.push_back(Vector3::ZERO);
+		color.color.out.push_back(Vector3::ZERO);
+
+		color.opacity.used = false;
+		color.opacity.type = 0;
+		color.opacity.seq = 0;
+		color.opacity.globals = NULL;
+		color.opacity.ranges.push_back(AnimRange(0, 0));
+		color.opacity.times.push_back(0);
+		color.opacity.data.push_back(-1.0f);
+		color.opacity.in.push_back(0.0f);
+		color.opacity.out.push_back(0.0f);
+	}
+	else
+	{
+		pMesh->m_objNum.nColors = size;
+		pMesh->colors = new ModelColor[size];
+
+		for (size_t i = 0; i < size; i++)
+		{
+			pMesh->colors[i] = m_colors[i];
+		}
+	}
 
 	
-
-	pMesh->colors = new ModelColor[1];
-	ModelColor &color = pMesh->colors[0];
-	color.color.used = false;
-	color.color.type = 0;
-	color.color.seq = 0;
-	color.color.globals = NULL;
-	color.color.ranges.push_back(AnimRange(0, 0));
-	color.color.times.push_back(0);
-	color.color.data.push_back(Vector3::ZERO);
-	color.color.in.push_back(Vector3::ZERO);
-	color.color.out.push_back(Vector3::ZERO);
-
-	color.opacity.used = false;
-	color.opacity.type = 0;
-	color.opacity.seq = 0;
-	color.opacity.globals = NULL;
-	color.opacity.ranges.push_back(AnimRange(0, 0));
-	color.opacity.times.push_back(0);
-	color.opacity.data.push_back(-1.0f);
-	color.opacity.in.push_back(0.0f);
-	color.opacity.out.push_back(0.0f);
 }
 
-void FBXParser::AddDefaultTransparency(CParaXModel *pMesh)
+void FBXParser::AddTransparency(CParaXModel *pMesh)
 {
-	pMesh->transparency = new ModelTransparency[1];
-	ModelTransparency &tran = pMesh->transparency[0];
+	auto size = m_transparencys.size();
 
-	tran.trans.used = false;
-	tran.trans.type = 0;
-	tran.trans.seq = 0;
-	tran.trans.globals = NULL;
-	tran.trans.ranges.push_back(AnimRange(0, 0));
-	tran.trans.times.push_back(0);
-	tran.trans.data.push_back(-1.0f);
-	tran.trans.in.push_back(0.0f);
-	tran.trans.out.push_back(0.0f);
+	if (size == 0)
+	{
+		// add default transparency
+
+		pMesh->m_objNum.nTransparency = 1;
+		pMesh->transparency = new ModelTransparency[1];
+		ModelTransparency &tran = pMesh->transparency[0];
+
+		tran.trans.used = false;
+		tran.trans.type = 0;
+		tran.trans.seq = 0;
+		tran.trans.globals = NULL;
+		tran.trans.ranges.push_back(AnimRange(0, 0));
+		tran.trans.times.push_back(0);
+		tran.trans.data.push_back(-1.0f);
+		tran.trans.in.push_back(0.0f);
+		tran.trans.out.push_back(0.0f);
+	}
+	else
+	{
+		pMesh->m_objNum.nTransparency = size;
+		pMesh->transparency = new ModelTransparency[size];
+
+		for (size_t i = 0; i < size; i++)
+		{
+			pMesh->transparency[i] = m_transparencys[i];
+		}
+	}
+	
 }
 
 void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
@@ -420,8 +455,8 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 	}
 	pMesh->m_radius = (m_maxExtent - m_minExtent).length() / 2;
 
-	AddDefaultColors(pMesh);
-	AddDefaultTransparency(pMesh);
+	AddColors(pMesh);
+	AddTransparency(pMesh);
 }
 
 XFile::Scene* FBXParser::ParseFBXFile()
@@ -736,6 +771,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	aiString szPath;
 	char* content_begin = NULL;
 	int content_len = -1;
+	int16 opacity = -1;
 
 	std::string sMatName;
 	{
@@ -789,6 +825,28 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	if (fbxMat.bAddictive)
 		blendmode = BM_ADDITIVE;
 
+	{
+		float opacityValue;
+		if (AI_SUCCESS == aiGetMaterialFloat(pfbxMaterial, AI_MATKEY_OPACITY, &opacityValue) && fabs(opacityValue - 1.0f) > FLT_EPSILON)
+		{
+			auto size = m_transparencys.size();
+			opacity = (int16)size;
+			m_transparencys.resize(size + 1);
+			auto& tran = m_transparencys[size];
+
+
+			tran.trans.used = false;
+			tran.trans.type = 0;
+			tran.trans.seq = 0;
+			tran.trans.globals = NULL;
+			tran.trans.ranges.push_back(AnimRange(0, 0));
+			tran.trans.times.push_back(0);
+			tran.trans.data.push_back(opacityValue);
+			tran.trans.in.push_back(0.0f);
+			tran.trans.out.push_back(0.0f);
+		}
+	}
+
 
 	if (m_bUsedVertexColor)
 	{
@@ -805,7 +863,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.SetCategoryId(fbxMat.GetCategoryID());
 	pass.texanim = -1;
 	pass.color = -1;
-	pass.opacity = -1;
+	pass.opacity = opacity;
 	pass.unlit = fbxMat.bUnlit;
 	pass.nozwrite = fbxMat.bDisableZWrite;
 	pass.disable_physics = fbxMat.bDisablePhysics;
