@@ -1095,7 +1095,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
@@ -1151,7 +1151,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
@@ -1207,7 +1207,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
@@ -1264,7 +1264,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
@@ -1320,7 +1320,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
@@ -1374,7 +1374,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 				lua_pop(L, 1);
 			}
 
-			std::sort(values.begin(), values.end(), [](std::pair<int, float>& a, std::pair<int, float>& b)
+			std::sort(values.begin(), values.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b)
 			{
 				return a.first < b.first;
 			});
