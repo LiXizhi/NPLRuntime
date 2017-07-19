@@ -36,7 +36,7 @@ using namespace ParaEngine;
 #ifdef _DEBUG
 	const char* MOVIE_CODEC_DLL_FILE_PATH = "Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll";
 #else
-	const char* MOVIE_CODEC_DLL_FILE_PATH = "MovieCodecPlugin.dll";
+	const char* MOVIE_CODEC_DLL_FILE_PATH = "Mod/MovieCodecPlugin/MovieCodecPlugin.dll";
 #endif
 
 /** the MOVIE_CODEC class interface id. */
