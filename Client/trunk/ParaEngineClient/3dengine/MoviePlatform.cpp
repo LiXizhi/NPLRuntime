@@ -32,9 +32,9 @@ using namespace ScreenShot;
 
 using namespace ParaEngine;
 
-/** the movie codec plugin dll file name. It will be translated to libNPLMono.so under linux automatically. */
+/** the movie codec plugin dll file name. */
 #ifdef _DEBUG
-	const char* MOVIE_CODEC_DLL_FILE_PATH = "MovieCodecPlugin_d.dll";
+	const char* MOVIE_CODEC_DLL_FILE_PATH = "Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll";
 #else
 	const char* MOVIE_CODEC_DLL_FILE_PATH = "MovieCodecPlugin.dll";
 #endif
