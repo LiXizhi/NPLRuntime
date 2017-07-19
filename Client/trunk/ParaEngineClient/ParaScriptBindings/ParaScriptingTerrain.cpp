@@ -732,10 +732,36 @@ namespace ParaScripting
 		return out;
 	}
 
+
+	void ParaTerrain::GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
+	{
+		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+		if (mgr)
+		{
+			auto pBlock = mgr->GetUnlockBlock(x, y, z);
+			if (pBlock)
+			{
+				*pId = pBlock->GetTemplateId();
+				*pUserData = pBlock->GetUserData();
+			}
+			else
+			{
+				*pId = 0;
+				*pUserData = 0;
+			}
+		}
+	}
+
 }
 
 // for LuaJit, only for function that maybe called millions of time per second
 extern "C" {
+
+	PE_CORE_DECL void ParaTerrain_GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
+	{
+		ParaScripting::ParaTerrain::GetBlockFullData(x, y, z, pId, pUserData);
+	}
+
 
 	PE_CORE_DECL float ParaTerrain_GetElevation(float x, float y)
 	{
