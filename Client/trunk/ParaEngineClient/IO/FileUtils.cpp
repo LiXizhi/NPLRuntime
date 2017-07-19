@@ -988,8 +988,16 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 {
 #ifdef USE_COCOS_FILE_API
 	FileLock_type lock_(s_cocos_file_io_mutex);
+#ifdef WIN32
+	std::string sRootDir = cocos2d::FileUtils::getInstance()->getSearchPaths()[0];
+	if(sRootDir.size()>0 && (sRootDir[sRootDir.size()-1] != '/' && sRootDir[sRootDir.size()-1] != '\\'))
+	{
+		sRootDir += "/";
+	}
+#else
 	// Provide empty initial directory here
 	std::string sRootDir = "";
+#endif
 	return sRootDir;
 #elif defined(USE_BOOST_FILE_API)
 	fs::path sWorkingDir = fs::initial_path();
