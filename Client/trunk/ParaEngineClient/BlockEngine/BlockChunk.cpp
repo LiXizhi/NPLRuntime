@@ -66,7 +66,8 @@ namespace ParaEngine
 	void BlockChunk::ClearAllLight()
 	{
 		SetDirty(true);
-		m_lightBlockIndices.clear();
+		if (m_lightBlockIndices.size() > 0)
+			m_lightBlockIndices.clear();
 		SetLightingInitialized(false);
 		std::fill(m_lightmapArray.begin(), m_lightmapArray.end(), LightData());
 	}
@@ -689,6 +690,33 @@ namespace ParaEngine
 		Uint16x3 blockId_rs;
 		UnpackBlockIndex(nBlockIndex, blockId_rs.x, blockId_rs.y, blockId_rs.z);
 		return m_minBlockId_rs + blockId_rs;
+	}
+
+	std::vector<Uint16x3> BlockChunk::refreshBlockVisible(uint16_t blockTemplateId)
+	{
+		for (auto iter = m_blocks.begin(); iter != m_blocks.end(); ++iter)
+		{
+			if (iter->GetTemplate() && iter->GetTemplate()->GetID() == blockTemplateId)
+			{
+				SetDirty(true);
+				break;
+			}
+		}
+
+		std::vector<Uint16x3> rets;
+		for (auto iter = m_lightBlockIndices.begin(); iter != m_lightBlockIndices.end(); ++iter)
+		{
+			uint16_t nIndex = *iter;
+			int32_t blockIndex = m_blockIndices[nIndex];
+			Block& block = m_blocks[blockIndex];
+
+			if (block.GetTemplate()->GetID() == blockTemplateId)
+			{
+				Uint16x3 blockId_rs = GetBlockPosRs(nIndex);
+				rets.push_back(blockId_rs);	
+			}
+		}
+		return rets;
 	}
 
 	void BlockChunk::SetDirty(bool val)

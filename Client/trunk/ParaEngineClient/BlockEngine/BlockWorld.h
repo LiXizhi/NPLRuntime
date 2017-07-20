@@ -674,6 +674,7 @@ namespace ParaEngine
 		//save old data to revert
 		struct BlockTemplateVisibleData
 		{
+			uint8_t torchLight;
 			int32_t lightOpyValue;
 			bool isTransparent;
 		};

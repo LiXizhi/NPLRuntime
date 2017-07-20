@@ -837,16 +837,22 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 
 	if (pTemp)
 	{
+		if (!value == pTemp->IsMatchAttribute(BlockTemplate::batt_invisible))
+			return;
+
 		if (!value)
 		{
 			BlockTemplateVisibleData visibleData;
 			visibleData.lightOpyValue = pTemp->GetLightOpacity();
 			visibleData.isTransparent = pTemp->IsMatchAttribute(BlockTemplate::batt_transparent);
+			visibleData.torchLight = pTemp->GetTorchLight();
+
 			m_blockTemplateVisibleDatas[templateId] = visibleData;
 
 			pTemp->SetAttribute(BlockTemplate::batt_transparent, true);
 			pTemp->SetAttribute(BlockTemplate::batt_invisible, true);
 			pTemp->SetLightOpacity(0);
+			pTemp->SetTorchLight(0);
 		}
 		else
 		{
@@ -856,6 +862,8 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 			{
 				pTemp->SetAttribute(BlockTemplate::batt_transparent, visibleDataItr->second.isTransparent);
 				pTemp->SetLightOpacity(visibleDataItr->second.lightOpyValue);
+				pTemp->SetTorchLight(visibleDataItr->second.torchLight);
+
 				m_blockTemplateVisibleDatas.erase(templateId);
 			}
 		}
@@ -868,7 +876,9 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
 		if (pRegion)
-			pRegion->SetAllChunksDirty();
+		{
+			pRegion->SetChunksDirtyByBlockTemplate(templateId);
+		}
 	}
 
 }

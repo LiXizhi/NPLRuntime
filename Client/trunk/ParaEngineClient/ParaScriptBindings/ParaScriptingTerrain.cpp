@@ -442,13 +442,6 @@ namespace ParaScripting
 		return 0;
 	}
 
-	void ParaTerrain::SetBlockVisible(uint16_t id, bool value)
-	{
-		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
-		if (mgr)
-			mgr->SetBlockVisible(id, value);
-	}
-
 	bool ParaTerrain::RegisterBlockTemplate(uint16_t templateId, const object& params)
 	{
 		return ParaBlockWorld::RegisterBlockTemplate_(BlockWorldClient::GetInstance(), templateId, params);

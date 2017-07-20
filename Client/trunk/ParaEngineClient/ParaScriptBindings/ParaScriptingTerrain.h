@@ -427,8 +427,6 @@ namespace ParaScripting
 		static uint32_t GetBlockUserData(float x,float y,float z);
 
 		static uint32_t GetBlockUserDataByIdx(uint16_t x,uint16_t y,uint16_t z);
-
-		static void SetBlockVisible(uint16_t id, bool value);
 		
 		//ray orignial should be positive value
 		//ray direction should be normalized value

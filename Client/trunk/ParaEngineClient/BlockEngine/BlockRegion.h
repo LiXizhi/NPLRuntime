@@ -153,8 +153,8 @@ namespace ParaEngine
 		
 		void ClearAllLight();
 		
-		/** refresh all chunks */
-		void SetAllChunksDirty();		
+		/** refresh chunks include one type block*/
+		void SetChunksDirtyByBlockTemplate(uint16_t templateId);
 	private:
 		Block* CreateBlock(Uint16x3& blockID_r);
 
