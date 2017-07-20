@@ -184,7 +184,7 @@ namespace ParaEngine
 
 		/** the block id used to extend AABB. */
 		int m_nHelperBlockId;
-		
+		int m_nLodLevel;
 		BMaxAnimGenerator* m_pAnimGenerator;
 
 		static const int  MaxBoneLengthHorizontal;

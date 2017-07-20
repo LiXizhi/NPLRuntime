@@ -311,20 +311,27 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					{
 						// each LOD at least cut triangle count in half and no bigger than a given count. 
 						// by default, generate lod in range 30, 60, 90, 120 meters;
-						const int nLodsMaxTriangleCounts[] = { 1500, 500, 100};
+						// TODO: currently it is hard-coded, shall we read LOD settings from bmax file, so that users
+						// have find-control on the settings. 
+						struct LODSetting {
+							int nMaxTriangleCount;
+							float fMaxDistance;
+						};
+						const LODSetting nLodsMaxTriangleCounts[] = { {2000, 60.f}, {500, 90.f}, {100, 120.f} };
 						
-						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts)/sizeof(int); i++)
+						// from second lod
+						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts)/sizeof(LODSetting); i++)
 						{
-							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i])
+							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i].nMaxTriangleCount)
 							{
 								MeshLOD lod;
-								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i], (int)(pParaXMesh->GetPolyCount() / 2) - 4));
-								lod.m_fromDepthSquared = Math::Sqr((2 + i) * 30.f);
+								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i].nMaxTriangleCount, (int)(pParaXMesh->GetPolyCount() / 2) - 4));
+								lod.m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[i].fMaxDistance);
 								if (lod.m_pParaXMesh)
 								{
 									if (pMeshLODs.size() == 1)
 									{
-										iCur->m_fromDepthSquared = Math::Sqr(30.f);
+										iCur->m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[0].fMaxDistance*0.5f);
 									}
 									pParaXMesh = lod.m_pParaXMesh;
 									pMeshLODs.push_back(lod);
