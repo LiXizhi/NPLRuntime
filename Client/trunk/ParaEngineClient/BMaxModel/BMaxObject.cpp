@@ -255,7 +255,7 @@ namespace ParaEngine
 	{
 		if (!m_pAnimatedMesh)
 			return false;
-		int nIndex = (sceneState && IsLODEnabled()) ? m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), GetScaling()) : 0;
+		int nIndex = (sceneState && IsLODEnabled()) ? m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		
 		if (pModel == NULL)
@@ -299,7 +299,7 @@ namespace ParaEngine
 		}
 
 		int nIndex = (sceneState && IsLODEnabled()) ? 
-			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance(), GetScaling()) : 0;
+			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		if (pModel == NULL)
 			return E_FAIL;

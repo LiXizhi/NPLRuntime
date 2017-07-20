@@ -344,6 +344,7 @@ namespace ParaEngine
 		//note:do *not* hold a permanent reference of the return value,underlying
 		//block address may change after SetBlockTemplate()!
 		Block* GetBlock(uint16_t x, uint16_t y, uint16_t z);
+		Block* GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z);
 
 		//set chunk dirty will rebuild vertex buffer of the chunk
 		void SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty);

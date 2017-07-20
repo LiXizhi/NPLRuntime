@@ -32,11 +32,11 @@ using namespace ScreenShot;
 
 using namespace ParaEngine;
 
-/** the movie codec plugin dll file name. It will be translated to libNPLMono.so under linux automatically. */
+/** the movie codec plugin dll file name. We will try these location in order */
 #ifdef _DEBUG
-	const char* MOVIE_CODEC_DLL_FILE_PATH = "MovieCodecPlugin_d.dll";
+	const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin_d.dll",  "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin_d.dll" };
 #else
-	const char* MOVIE_CODEC_DLL_FILE_PATH = "MovieCodecPlugin.dll";
+	const char* MOVIE_CODEC_DLL_FILE_PATHS[] = { "Mod/MovieCodecPlugin/MovieCodecPlugin.dll", "MovieCodecPlugin.dll" };
 #endif
 
 /** the MOVIE_CODEC class interface id. */
@@ -105,32 +105,38 @@ IMovieCodec* CMoviePlatform::GetMovieCodec(bool bCreateIfNotExist)
 		{
 			s_bIsLoaded = true;
 
-			ParaEngine::DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(MOVIE_CODEC_DLL_FILE_PATH);
-
-			if (pPluginEntity == 0)
+			ParaEngine::DLLPlugInEntity* pPluginEntity = NULL;
+			for (int i = 0; m_pMovieCodec == 0 && i < sizeof(MOVIE_CODEC_DLL_FILE_PATHS) / sizeof(const char*); ++i)
 			{
-				// load the plug-in if it has never been loaded before. 
-				pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", MOVIE_CODEC_DLL_FILE_PATH);
-			}
+				const char* sFilename = MOVIE_CODEC_DLL_FILE_PATHS[i];
 
-			if (pPluginEntity != 0)
-			{
-				if (pPluginEntity->GetLibVersion() >= 3)
+				pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(sFilename);
+
+				if (pPluginEntity == 0)
 				{
-					for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
-					{
-						ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
+					// load the plug-in if it has never been loaded before. 
+					pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", sFilename);
+				}
 
-						if (pClassDesc && pClassDesc->ClassID() == MovieCodec_CLASS_ID)
+				if (pPluginEntity != 0 && pPluginEntity->IsValid())
+				{
+					if (pPluginEntity->GetLibVersion() >= 3)
+					{
+						for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
 						{
-							m_pMovieCodec = (IMovieCodec*)pClassDesc->Create();
+							ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
+
+							if (pClassDesc && pClassDesc->ClassID() == MovieCodec_CLASS_ID)
+							{
+								m_pMovieCodec = (IMovieCodec*)pClassDesc->Create();
+							}
 						}
 					}
-				}
-				else
-				{
-					OUTPUT_LOG("movie codec require at least version 3 but you only have version %d\n", pPluginEntity->GetLibVersion());
-					CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 3. Please update from official website!");
+					else
+					{
+						OUTPUT_LOG("movie codec require at least version 3 but you only have version %d\n", pPluginEntity->GetLibVersion());
+						CGlobals::GetApp()->SystemMessageBox("MovieCodec plugin needs at least version 3. Please update from official website!");
+					}
 				}
 			}
 		}
