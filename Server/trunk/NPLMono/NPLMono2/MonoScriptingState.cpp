@@ -318,7 +318,8 @@ void CMonoScriptingState::CreateAppDomain()
 
 #ifdef WIN32
 		// const char* mono_jit_version_ = "3.5";  // 4.0
-		const char* mono_jit_version_ = "v2.0.50727";
+		// const char* mono_jit_version_ = "v2.0.50727";
+		const char* mono_jit_version_ = "4.0.30319";
 #else
 		const char* mono_jit_version_ = "v2.0.50727";
 #endif
@@ -331,7 +332,12 @@ void CMonoScriptingState::CreateAppDomain()
 
 		// Set root mono domain in to which all assemblies are loaded. 
 		m_global_assemblies_pool->SetMonoDomain(s_mono_domain);
-
+#ifdef WIN32
+		/** in 3.8 which fixed following configuration exception under win32.
+		System.ArgumentException: The 'ExeConfigFilename' argument cannot be null.
+		*/
+		mono_domain_set_config(s_mono_domain, ".", "NPLRuntime.dll.config"); 
+#endif
 		// add all internal calls 
 		Init();
 
