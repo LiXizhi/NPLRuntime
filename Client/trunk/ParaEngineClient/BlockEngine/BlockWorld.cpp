@@ -872,7 +872,7 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 		CBipedObject* currentPlayer = CGlobals::GetScene()->GetCurrentPlayer();
 		auto v3 = currentPlayer->GetPosition();
 		uint16_t blockX_rs(0), blockY_rs(0), blockZ_rs(0);
-		BlockCommon::ConvertToBlockIndex(v3.x, v3.y, v3.z, blockX_rs, blockY_rs, blockZ_rs);
+		BlockCommon::ConvertToBlockIndex((float)v3.x, (float)v3.y, (float)v3.z, blockX_rs, blockY_rs, blockZ_rs);
 		uint16_t lx, ly, lz;
 		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
 		if (pRegion)

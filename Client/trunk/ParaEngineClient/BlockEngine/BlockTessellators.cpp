@@ -118,140 +118,140 @@ uint32_t ParaEngine::BlockTessellatorBase::CalculateCubeAO()
 	Block* pCurBlock = neighborBlocks[rbp_pXpYpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_xyz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXpYpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_Nxyz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXpYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_xyNz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXpYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_NxyNz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_topFront;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXpY];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_topLeft;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXpY];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_topRight;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pYpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_topBack;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_LeftFront;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_leftBack;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_rightFont;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_rightBack;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXnYPz];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_xNyz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXnYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_xNyNz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXnYPz];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_NxNyz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXnYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_NxNyNz;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nYnZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_bottomFront;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nXnY];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_bottomLeft;
 	}
 
 	pCurBlock = neighborBlocks[rbp_pXnY];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_bottomRight;
 	}
 
 	pCurBlock = neighborBlocks[rbp_nYpZ];
 	if (pCurBlock)
 	{
-		if (!pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible) && pCurBlock->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid))
+		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_bottomBack;
 	}	
 	return aoFlags;
@@ -645,7 +645,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 				}
 
 				Block* pCurBlock1 = neighborBlocks[BlockCommon::NeighborLightOrder[baseIdx]];
-				if (pCurBlock1 && pCurBlock1->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid) && !pCurBlock1->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_invisible))
+				if (pCurBlock1 && pCurBlock1->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 				{
 					// simulate ao but not render completely dark. 
 					max_light -= 3;

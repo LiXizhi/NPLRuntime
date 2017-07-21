@@ -72,6 +72,12 @@ namespace ParaEngine
 			return ((m_attFlag & attFlags) > 0);
 		}
 
+		/** all attributes as specified in dwMask must match the value of attFlags*/
+		inline bool IsMatchAttributes(uint32_t dwMask, uint32_t attFlags) const
+		{
+			return ((m_attFlag & dwMask) == attFlags);
+		}
+
 		/** if match all of the given attributes */
 		inline bool IsMatchAttributeAll(uint32_t attFlags) const
 		{
