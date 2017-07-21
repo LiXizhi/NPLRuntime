@@ -318,8 +318,7 @@ void CMonoScriptingState::CreateAppDomain()
 
 #ifdef WIN32
 		// const char* mono_jit_version_ = "3.5";  // 4.0
-		// const char* mono_jit_version_ = "v2.0.50727";
-		const char* mono_jit_version_ = "4.0.30319";
+		const char* mono_jit_version_ = "v2.0.50727";
 #else
 		const char* mono_jit_version_ = "v2.0.50727";
 #endif
