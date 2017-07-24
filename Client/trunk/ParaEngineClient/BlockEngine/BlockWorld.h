@@ -272,6 +272,8 @@ namespace ParaEngine
 		//template related function
 		BlockTemplate* RegisterTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id);
 
+		void SetBlockVisible(uint16_t templateId, bool value);
+
 		//set/get block id/data
 		uint32_t SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID);
 		uint32_t GetBlockId(uint16_t x, uint16_t y, uint16_t z);
@@ -668,6 +670,15 @@ namespace ParaEngine
 		//Block templates
 		std::map<uint16_t, BlockTemplate*> m_blockTemplates;
 		std::vector<BlockTemplate*> m_blockTemplatesArray;
+
+		//save old data to revert
+		struct BlockTemplateVisibleData
+		{
+			uint8_t torchLight;
+			int32_t lightOpyValue;
+			bool isTransparent;
+		};
+		std::map<uint16_t, BlockTemplateVisibleData> m_blockTemplateVisibleDatas;
 
 		/* directory information about the world. */
 		CWorldInfo m_worldInfo;

@@ -121,7 +121,7 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 
 				def("SetBlockUserData",&ParaTerrain::SetBlockUserData),
 				def("SetBlockUserDataByIdx",&ParaTerrain::SetBlockUserDataByIdx),
-				
+		
 				def("GetBlockUserData",&ParaTerrain::GetBlockUserData),
 				def("GetBlockUserDataByIdx",&ParaTerrain::GetBlockUserDataByIdx),
 

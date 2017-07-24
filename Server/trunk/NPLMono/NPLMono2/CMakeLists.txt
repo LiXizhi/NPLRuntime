@@ -27,11 +27,11 @@ set(BUILD_NPLMONO2 true)
 
 if(WIN32)
 	# the mono installation directory in windows, modify this to match yours
-	set(MONO_ROOT "D:/Program Files (x86)/Mono-3.2.3")
-	#set(MONO_ROOT "D:/Program Files (x86)/Mono-2.10.9")
+	set(MONO_ROOT "C:/Program Files (x86)/Mono")  # this is mono 5.0 in mine
+	# set(MONO_ROOT "D:/Program Files (x86)/Mono-3.2.3")
+	# set(MONO_ROOT "D:/Program Files (x86)/Mono-2.10.9")
 	# 3.4.0 from source
-	#set(MONO_ROOT "D:/cygwin/opt/mymono")
-	
+	# set(MONO_ROOT "D:/cygwin/opt/mymono")
 	
 	# we can locate the mono root by following command in windows
 	FIND_PROGRAM (MONO_EXECUTABLE mono

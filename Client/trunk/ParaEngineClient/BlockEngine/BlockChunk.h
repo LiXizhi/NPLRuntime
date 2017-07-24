@@ -278,6 +278,8 @@ namespace ParaEngine
 		/** return true if the nearby 4 chunk columns have been generated (and loaded) */
 		bool IsNearbyChunksLoaded();
 
+		/** return the blocks need to re notification */
+		std::vector<Uint16x3> refreshBlockVisible(uint16_t blockTemplateId);
 
 		void ClearAllLight();
 	};
