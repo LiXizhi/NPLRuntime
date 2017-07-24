@@ -61,6 +61,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD(CBlockWorld, ResumeLightUpdate_s)	{ cls->ResumeLightUpdate(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, SuspendLightUpdate_s)	{ cls->SuspendLightUpdate(); return S_OK; }
 
+		ATTRIBUTE_METHOD(CBlockWorld, ResetAllLight_s) { cls->ResetAllLight(); return S_OK; }
+
 		ATTRIBUTE_METHOD(CBlockWorld, LockWorld_s)	{ cls->LockWorld(); return S_OK; }
 		ATTRIBUTE_METHOD(CBlockWorld, UnlockWorld_s)	{ cls->UnlockWorld(); return S_OK; }
 
@@ -270,6 +272,8 @@ namespace ParaEngine
 		//template related function
 		BlockTemplate* RegisterTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id);
 
+		void SetBlockVisible(uint16_t templateId, bool value);
+
 		//set/get block id/data
 		uint32_t SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID);
 		uint32_t GetBlockId(uint16_t x, uint16_t y, uint16_t z);
@@ -340,6 +344,7 @@ namespace ParaEngine
 		//note:do *not* hold a permanent reference of the return value,underlying
 		//block address may change after SetBlockTemplate()!
 		Block* GetBlock(uint16_t x, uint16_t y, uint16_t z);
+		Block* GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z);
 
 		//set chunk dirty will rebuild vertex buffer of the chunk
 		void SetChunkDirty(Uint16x3& chunkId_ws, bool isDirty);
@@ -532,6 +537,9 @@ namespace ParaEngine
 		/** unload region from memory. return true if unloaded.*/
 		bool UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave = true);
 
+
+
+		void ResetAllLight();
 	protected:
 		/** removed given region from memory. */
 		void UnloadRegion(BlockRegion* pRegion, bool bAutoSave = true);
@@ -662,6 +670,15 @@ namespace ParaEngine
 		//Block templates
 		std::map<uint16_t, BlockTemplate*> m_blockTemplates;
 		std::vector<BlockTemplate*> m_blockTemplatesArray;
+
+		//save old data to revert
+		struct BlockTemplateVisibleData
+		{
+			uint8_t torchLight;
+			int32_t lightOpyValue;
+			bool isTransparent;
+		};
+		std::map<uint16_t, BlockTemplateVisibleData> m_blockTemplateVisibleDatas;
 
 		/* directory information about the world. */
 		CWorldInfo m_worldInfo;

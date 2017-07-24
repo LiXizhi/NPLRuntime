@@ -35,7 +35,7 @@ int ParaEngine::CBaseObject::g_nObjectSelectionEffect = ParaEngine::RenderSelect
 // Class CBaseObject
 //-------------------------------------------------------------------
 CBaseObject::CBaseObject()
-	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false),
+	:m_tileContainer(NULL), m_nTechniqueHandle(-1), m_objType(_undefined), m_bGeometryDirty(false), m_bEnableLOD(true),
 	m_dwAttribute(0), m_pEffectParamBlock(NULL), m_nFrameNumber(0), m_nID(0), m_nSelectGroupIndex(-1), m_nRenderImportance(0), m_fRenderDistance(0.f), m_fRenderOrder(0.f)
 {
 }
@@ -889,6 +889,16 @@ void ParaEngine::CBaseObject::SetGeometryDirty(bool bDirty /*= true*/)
 	m_bGeometryDirty = bDirty;
 }
 
+bool ParaEngine::CBaseObject::IsLODEnabled() const
+{
+	return m_bEnableLOD;
+}
+
+void ParaEngine::CBaseObject::EnableLOD(bool val)
+{
+	m_bEnableLOD = val;
+}
+
 IAttributeFields* ParaEngine::CBaseObject::GetChildAttributeObject(int nRowIndex, int nColumnIndex)
 {
 	if (nRowIndex < (int)m_children.size())
@@ -1176,6 +1186,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("DestroyChildren", FieldType_void, (void*)DestroyChildren_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("RenderWorldMatrix", FieldType_Matrix4, (void*)0, (void*)GetRenderMatrix_s, NULL, "", bOverride);
 	pClass->AddField("LocalTransform", FieldType_Matrix4, (void*)SetLocalTransform_s, (void*)GetLocalTransform_s, NULL, "", bOverride);
+	pClass->AddField("IsLodEnabled", FieldType_Bool, (void*)EnableLOD_s, (void*)IsLODEnabled_s, NULL, "", bOverride);
 	return S_OK;
 }
 

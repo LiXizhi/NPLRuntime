@@ -33,7 +33,7 @@ namespace ParaEngine
 
 	BMaxParser::BMaxParser(const char* pBuffer, int32 nSize, const char* filename, BMaxParser* pParent)
 		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL), m_pParent(pParent),
-		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f)
+		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f), m_nLodLevel(0)
 	{
 		m_bHasBoneBlock = false;
 		if (filename)
@@ -54,10 +54,12 @@ namespace ParaEngine
 
 	void BMaxParser::Load(const char* pBuffer, int32 nSize)
 	{
+		m_nLodLevel = 0;
+
 		BMaxXMLDocument doc;
 
 		std::string uncompressedData;
-
+		
 		if (IsZipData(pBuffer, nSize))
 		{
 			if (GetFirstFileData(pBuffer, uncompressedData))
@@ -86,9 +88,6 @@ namespace ParaEngine
 				ParseBlockFrames();
 				CalculateBoneWeights();
 				MergeCoplanerBlockFace();
-				/*if (m_bAutoScale)
-					ScaleModels();
-					*/
 			}
 		}
 	}
@@ -417,11 +416,16 @@ namespace ParaEngine
 			}
 		}
 
+		float fScale = m_fScale;
+		if (m_nLodLevel > 0) {
+			fScale *= (float)pow(2, m_nLodLevel);
+		}
+
 		for (RectanglePtr& rectangle : m_rectangles)
 		{
-			rectangle->ScaleVertices(m_fScale);
+			rectangle->ScaleVertices(fScale);
 		}
-		OUTPUT_LOG("rect count %d \n", m_rectangles.size());
+		// OUTPUT_LOG("rect count %d \n", m_rectangles.size());
 	}
 
 
@@ -557,6 +561,8 @@ namespace ParaEngine
 
 	void BMaxParser::PerformLod()
 	{
+		m_nLodLevel ++;
+
 		CShapeAABB aabb;
 		map<int32, BMaxNodePtr>nodesMap;
 		
@@ -607,7 +613,7 @@ namespace ParaEngine
 		m_centerPos.x = (m_blockAABB.GetWidth() + 1.f) * 0.5f;
 		m_centerPos.z = (m_blockAABB.GetDepth() + 1.f) * 0.5f;
 
-		OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
+		// OUTPUT_LOG("center %f %f %f\n", m_centerPos[0], m_centerPos[1], m_centerPos[2]);
 		const auto& vMin = m_blockAABB.GetMin();
 		int offset_x = (int)vMin.x;
 		int offset_y = (int)vMin.y;
@@ -622,8 +628,8 @@ namespace ParaEngine
 			InsertNode(node);
 		}
 
-		OUTPUT_LOG("nodes count %d\n", m_nodes.size());
-		if (m_bAutoScale)
+		// OUTPUT_LOG("nodes count %d\n", m_nodes.size());
+		if (m_bAutoScale && m_nLodLevel == 0)
 		{
 			float fMaxLength = Math::Max(Math::Max(m_blockAABB.GetHeight(), m_blockAABB.GetWidth()), m_blockAABB.GetDepth()) + 1.f;
 			m_fScale = CalculateScale(fMaxLength);
@@ -772,6 +778,7 @@ namespace ParaEngine
 		m_renderPasses.clear();
 		m_indices.clear();
 		m_vertices.clear();
+
 		if (m_blockModels.size() == 0)
 		{
 			return;
