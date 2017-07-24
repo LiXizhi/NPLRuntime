@@ -1,27 +1,27 @@
 # Author: LiXizhi
 # Company: ParaEngine.com
 # Date: 2014.7.29
-# Note: NPLMono2 is a ParaEngine plugin (dll) that exposes ParaEngine API to the C# mono scripting interface. It is upgraded version for NPLMono. 
-# Desc: 
-# ---+++ Build in Windows: 
+# Note: NPLMono2 is a ParaEngine plugin (dll) that exposes ParaEngine API to the C# mono scripting interface. It is upgraded version for NPLMono.
+# Desc:
+# ---+++ Build in Windows:
 
 # see http://www.mono-project.com/Embedding_Mono
 
-# NPLMono2 needs mono in order to compile. In windows, please install mono binary(default is D:/Program Files (x86)/Mono-3.2.3) and Set MONO_ROOT variable, please use forward slash / in file name. 
-# Currently mono path is hard coded in source code using mono_set_dirs() function during compilation in MSVC. 
-# One can deploy as follow and use mono_set_dirs("mono\\lib", "mono\\etc");  if one wants to deploy mono with the game engine. NPLMono can be used with both client and server. However it is not recommended to use on client, because one needs to redistribute mono runtime which is pretty big.  
+# NPLMono2 needs mono in order to compile. In windows, please install mono binary(default is D:/Program Files (x86)/Mono-3.2.3) and Set MONO_ROOT variable, please use forward slash / in file name.
+# Currently mono path is hard coded in source code using mono_set_dirs() function during compilation in MSVC.
+# One can deploy as follow and use mono_set_dirs("mono\\lib", "mono\\etc");  if one wants to deploy mono with the game engine. NPLMono can be used with both client and server. However it is not recommended to use on client, because one needs to redistribute mono runtime which is pretty big.
 # NPLMono2.dll
 # mono-2.0.dll (rename from bin/libmonosgen-2.0.dll)
-# libglib-2.0-0.dll 
-# libgthread-2.0-0.dll 
+# libglib-2.0-0.dll
+# libgthread-2.0-0.dll
 # mono\etc  <- copy of MONO_ROOT\etc
 # mono\lib  <- copy of MONO_ROOT\lib
 #
-# Upgrade Note: One needs to upgrade \trunk\NPLMono\NPLMono\lib\mono.def(lib) if mono api changes, this is only required on windows. Linux uses ELF and this step is not needed. 
+# Upgrade Note: One needs to upgrade \trunk\NPLMono\NPLMono\lib\mono.def(lib) if mono api changes, this is only required on windows. Linux uses ELF and this step is not needed.
 #
-# ---+++ Build in Linux: 
-# it is much easier to build on linux and NPLMono is currently recommended to use only on server side. Install Mono from source in the official way.  Make sure pkg-config is installed. 
-# Run the default cmake, the NPLMono2 will automatically find all mono libraries installed on the machine. 
+# ---+++ Build in Linux:
+# it is much easier to build on linux and NPLMono is currently recommended to use only on server side. Install Mono from source in the official way.  Make sure pkg-config is installed.
+# Run the default cmake, the NPLMono2 will automatically find all mono libraries installed on the machine.
 
 set(BUILD_NPLMONO2 true)
 
@@ -32,16 +32,16 @@ if(WIN32)
 	# set(MONO_ROOT "D:/Program Files (x86)/Mono-2.10.9")
 	# 3.4.0 from source
 	# set(MONO_ROOT "D:/cygwin/opt/mymono")
-	
+
 	# we can locate the mono root by following command in windows
 	FIND_PROGRAM (MONO_EXECUTABLE mono
 		"${MONO_ROOT}/bin"
 	)
 
-	# if mono is not found, remove this project from build. 
+	# if mono is not found, remove this project from build.
 	IF(EXISTS ${MONO_ROOT})
 		set(BUILD_NPLMONO2 true)
-	ELSE()	
+	ELSE()
 		set(BUILD_NPLMONO2 false)
 	ENDIF()
 else()
@@ -54,11 +54,10 @@ else()
 		message("Mono executable found, we will try to build NPLMono plugin")
 	endif()
 
-	# The following is to use pkg-config to generate compile and link time flags. 
+	# The following is to use pkg-config to generate compile and link time flags.
 	find_package(PkgConfig QUIET)
 	if (PKG_CONFIG_FOUND)
-		PKG_CHECK_MODULES(MONO, mono >= 3.8)
-		# pkg_check_modules(_MONO mono-2)
+		pkg_check_modules(_MONO mono-2)
 	endif()
 
 	find_path(MONO_INCLUDE_DIR
@@ -86,6 +85,32 @@ else()
 	else()
 		set(BUILD_NPLMONO2 false)
 	endif()
+
+    if(BUILD_NPLMONO2)
+        SET(MONO_VERSION_MAJOR)
+        SET(MONO_VERSION_MINOR)
+        SET(MONO_VERSION_PATCH)
+
+        EXEC_PROGRAM("mono" ARGS --version OUTPUT_VARIABLE MONO_VERSION)
+        STRING(REGEX REPLACE "[^\\.]+([0-9]+)\\.([0-9]+)\\.([0-9]+).*" "\\1 \\2 \\3" MONO_VERSION ${MONO_VERSION})
+        SEPARATE_ARGUMENTS(MONO_VERSION)
+        LIST(LENGTH MONO_VERSION MONO_VERSION_LENGTH)
+
+        IF(MONO_VERSION_LENGTH EQUAL 3)
+            LIST(GET MONO_VERSION 0 MONO_VERSION_MAJOR)
+            LIST(GET MONO_VERSION 1 MONO_VERSION_MINOR)
+            LIST(GET MONO_VERSION 2 MONO_VERSION_PATCH)
+
+            MESSAGE(STATUS "MONO version: " ${MONO_VERSION})
+            if (MONO_VERSION_MAJOR GREATER 3)
+                MESSAGE(STATUS "MAJOR:" ${MONO_VERSION_MAJOR})
+            else()
+                MESSAGE(STATUS "MONO version 5.0 or above is required")
+                set(BUILD_NPLMONO2 false)
+            endif()
+        ENDIF(MONO_VERSION_LENGTH EQUAL 3)
+
+    endif()
 endif()
 
 if(BUILD_NPLMONO2)
@@ -99,10 +124,10 @@ SET(NPLMono2_SRCS
 	MonoClassDesc.cpp
 	MonoScriptingState.cpp
 	MonoScriptingState.h
-	NPLMonoInterface.h		NPLMonoInterface.cpp		
+	NPLMonoInterface.h		NPLMonoInterface.cpp
 	NPLMonoInterface_Bind.h NPLMonoInterface_Bind.cpp
 	marshal_wrapper.h		marshal_wrapper.cpp
-	NPLMono.cpp	
+	NPLMono.cpp
 	NPLMono.h
 	NPLMono2.def
 	readme.txt
@@ -164,7 +189,7 @@ IF(MSVC)
 	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
 		endif(${flag_var} MATCHES "/MDd")
 	endforeach(flag_var)
-	
+
 	# generate program database (PDB symbol files even in release build)
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
@@ -176,9 +201,9 @@ if (WIN32)
 	include_directories("${MONO_ROOT}\\include\\mono-2.0")
 	add_definitions(-DMONO_ROOT="${MONO_ROOT}")
 	link_directories ("${PROJECT_SOURCE_DIR}/lib")
-	link_directories ("${MONO_ROOT}/lib") 
+	link_directories ("${MONO_ROOT}/lib")
 	set(LINK_LIBRARIES 	mono)
-  
+
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 
 else (WIN32)
