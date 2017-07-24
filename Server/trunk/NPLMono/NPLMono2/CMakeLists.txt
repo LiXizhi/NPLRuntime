@@ -57,7 +57,8 @@ else()
 	# The following is to use pkg-config to generate compile and link time flags. 
 	find_package(PkgConfig QUIET)
 	if (PKG_CONFIG_FOUND)
-		pkg_check_modules(_MONO mono-2)
+		PKG_CHECK_MODULES(MONO, mono >= 3.8)
+		# pkg_check_modules(_MONO mono-2)
 	endif()
 
 	find_path(MONO_INCLUDE_DIR
