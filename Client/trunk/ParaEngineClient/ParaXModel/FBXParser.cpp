@@ -606,6 +606,17 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	char* content_begin = NULL;
 	int content_len = -1;
 
+	//ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
+	//	aiTextureType type,
+	//	unsigned int  index,
+	//	aiString* path,
+	//	aiTextureMapping* mapping = NULL,
+	//	unsigned int* uvindex = NULL,
+	//	ai_real* blend = NULL,
+	//	aiTextureOp* op = NULL,
+	//	aiTextureMapMode* mapmode = NULL,
+	//	unsigned int* flags = NULL);
+
 	bool bNoOpacity = true;
 	for (unsigned int i = 0; i <= AI_TEXTURE_TYPE_MAX; ++i)
 	{

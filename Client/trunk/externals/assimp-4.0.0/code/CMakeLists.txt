@@ -192,12 +192,12 @@ ENDIF ( ASSIMP_BUILD_NONFREE_C4D_IMPORTER )
 # ASSIMP_BUILD_XXX_IMPORTER to FALSE for each importer
 # if this variable is set to FALSE, the user can manually enable importers by setting
 # ASSIMP_BUILD_XXX_IMPORTER to TRUE for each importer
-OPTION(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_IMPORTER value" TRUE)
+OPTION(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_IMPORTER value" FALSE)
 
 # macro to add the CMake Option ADD_ASSIMP_IMPORTER_<name> which enables compile of loader
 # this way selective loaders can be compiled (reduces filesize + compile time)
-MACRO(ADD_ASSIMP_IMPORTER name)
-  OPTION(ASSIMP_BUILD_${name}_IMPORTER "build the ${name} importer" ${ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT})
+MACRO(ADD_ASSIMP_IMPORTER name onoff)
+  OPTION(ASSIMP_BUILD_${name}_IMPORTER "build the ${name} importer" (${ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT} AND onoff))
   IF(ASSIMP_BUILD_${name}_IMPORTER)
     LIST(APPEND ASSIMP_LOADER_SRCS ${ARGN})
     SET(ASSIMP_IMPORTERS_ENABLED "${ASSIMP_IMPORTERS_ENABLED} ${name}")
@@ -215,7 +215,7 @@ SET(ASSIMP_LOADER_SRCS "")
 SET(ASSIMP_IMPORTERS_ENABLED "") # list of enabled importers
 SET(ASSIMP_IMPORTERS_DISABLED "") # disabled list (used to print)
 
-ADD_ASSIMP_IMPORTER( AMF
+ADD_ASSIMP_IMPORTER( AMF FALSE
   AMFImporter.hpp
   AMFImporter_Macro.hpp
   AMFImporter_Node.hpp
@@ -225,7 +225,7 @@ ADD_ASSIMP_IMPORTER( AMF
   AMFImporter_Postprocess.cpp
 )
 
-ADD_ASSIMP_IMPORTER( 3DS
+ADD_ASSIMP_IMPORTER( 3DS FALSE
   3DSConverter.cpp
   3DSHelper.h
   3DSLoader.cpp
@@ -234,41 +234,41 @@ ADD_ASSIMP_IMPORTER( 3DS
   3DSExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( AC
+ADD_ASSIMP_IMPORTER( AC FALSE
   ACLoader.cpp
   ACLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( ASE
+ADD_ASSIMP_IMPORTER( ASE FALSE
   ASELoader.cpp
   ASELoader.h
   ASEParser.cpp
   ASEParser.h
 )
 
-ADD_ASSIMP_IMPORTER( ASSBIN
+ADD_ASSIMP_IMPORTER( ASSBIN FALSE
   AssbinExporter.h
   AssbinExporter.cpp
   AssbinLoader.h
   AssbinLoader.cpp
 )
 
-ADD_ASSIMP_IMPORTER( ASSXML
+ADD_ASSIMP_IMPORTER( ASSXML FALSE
   AssxmlExporter.h
   AssxmlExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( B3D
+ADD_ASSIMP_IMPORTER( B3D FALSE
   B3DImporter.cpp
   B3DImporter.h
 )
 
-ADD_ASSIMP_IMPORTER( BVH
+ADD_ASSIMP_IMPORTER( BVH FALSE
   BVHLoader.cpp
   BVHLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( COLLADA
+ADD_ASSIMP_IMPORTER( COLLADA FALSE
   ColladaHelper.h
   ColladaLoader.cpp
   ColladaLoader.h
@@ -278,39 +278,39 @@ ADD_ASSIMP_IMPORTER( COLLADA
   ColladaExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( DXF
+ADD_ASSIMP_IMPORTER( DXF FALSE
   DXFLoader.cpp
   DXFLoader.h
   DXFHelper.h
 )
 
-ADD_ASSIMP_IMPORTER( CSM
+ADD_ASSIMP_IMPORTER( CSM FALSE
   CSMLoader.cpp
   CSMLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( HMP
+ADD_ASSIMP_IMPORTER( HMP FALSE
   HMPFileData.h
   HMPLoader.cpp
   HMPLoader.h
   HalfLifeFileData.h
 )
 
-ADD_ASSIMP_IMPORTER( IRRMESH
+ADD_ASSIMP_IMPORTER( IRRMESH FALSE
   IRRMeshLoader.cpp
   IRRMeshLoader.h
   IRRShared.cpp
   IRRShared.h
 )
 
-ADD_ASSIMP_IMPORTER( IRR
+ADD_ASSIMP_IMPORTER( IRR FALSE
   IRRLoader.cpp
   IRRLoader.h
   IRRShared.cpp
   IRRShared.h
 )
 
-ADD_ASSIMP_IMPORTER( LWO
+ADD_ASSIMP_IMPORTER( LWO FALSE
   LWOAnimation.cpp
   LWOAnimation.h
   LWOBLoader.cpp
@@ -320,39 +320,39 @@ ADD_ASSIMP_IMPORTER( LWO
   LWOMaterial.cpp
 )
 
-ADD_ASSIMP_IMPORTER( LWS
+ADD_ASSIMP_IMPORTER( LWS FALSE
   LWSLoader.cpp
   LWSLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( MD2
+ADD_ASSIMP_IMPORTER( MD2 FALSE
   MD2FileData.h
   MD2Loader.cpp
   MD2Loader.h
   MD2NormalTable.h
 )
 
-ADD_ASSIMP_IMPORTER( MD3
+ADD_ASSIMP_IMPORTER( MD3 FALSE
   MD3FileData.h
   MD3Loader.cpp
   MD3Loader.h
 )
 
-ADD_ASSIMP_IMPORTER( MD5
+ADD_ASSIMP_IMPORTER( MD5 FALSE
   MD5Loader.cpp
   MD5Loader.h
   MD5Parser.cpp
   MD5Parser.h
 )
 
-ADD_ASSIMP_IMPORTER( MDC
+ADD_ASSIMP_IMPORTER( MDC FALSE
   MDCFileData.h
   MDCLoader.cpp
   MDCLoader.h
   MDCNormalTable.h
 )
 
-ADD_ASSIMP_IMPORTER( MDL
+ADD_ASSIMP_IMPORTER( MDL FALSE
   MDLDefaultColorMap.h
   MDLFileData.h
   MDLLoader.cpp
@@ -366,22 +366,22 @@ SET( MaterialSystem_SRCS
 )
 SOURCE_GROUP( MaterialSystem FILES ${MaterialSystem_SRCS})
 
-ADD_ASSIMP_IMPORTER( NFF
+ADD_ASSIMP_IMPORTER( NFF FALSE
   NFFLoader.cpp
   NFFLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( NDO
+ADD_ASSIMP_IMPORTER( NDO FALSE
   NDOLoader.cpp
   NDOLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( OFF
+ADD_ASSIMP_IMPORTER( OFF FALSE
   OFFLoader.cpp
   OFFLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( OBJ
+ADD_ASSIMP_IMPORTER( OBJ FALSE
   ObjFileData.h
   ObjFileImporter.cpp
   ObjFileImporter.h
@@ -394,7 +394,7 @@ ADD_ASSIMP_IMPORTER( OBJ
   ObjExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( OGRE
+ADD_ASSIMP_IMPORTER( OGRE FALSE
   OgreImporter.h
   OgreStructs.h
   OgreParsingUtils.h
@@ -407,7 +407,7 @@ ADD_ASSIMP_IMPORTER( OGRE
   OgreMaterial.cpp
 )
 
-ADD_ASSIMP_IMPORTER( OPENGEX
+ADD_ASSIMP_IMPORTER( OPENGEX FALSE
   OpenGEXExporter.cpp
   OpenGEXExporter.h
   OpenGEXImporter.cpp
@@ -415,7 +415,7 @@ ADD_ASSIMP_IMPORTER( OPENGEX
   OpenGEXStructs.h
 )
 
-ADD_ASSIMP_IMPORTER( PLY
+ADD_ASSIMP_IMPORTER( PLY FALSE
   PlyLoader.cpp
   PlyLoader.h
   PlyParser.cpp
@@ -424,18 +424,18 @@ ADD_ASSIMP_IMPORTER( PLY
   PlyExporter.h
 )
 
-ADD_ASSIMP_IMPORTER( MS3D
+ADD_ASSIMP_IMPORTER( MS3D FALSE
   MS3DLoader.cpp
   MS3DLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( COB
+ADD_ASSIMP_IMPORTER( COB FALSE
   COBLoader.cpp
   COBLoader.h
   COBScene.h
 )
 
-ADD_ASSIMP_IMPORTER( BLEND
+ADD_ASSIMP_IMPORTER( BLEND FALSE
   BlenderLoader.cpp
   BlenderLoader.h
   BlenderDNA.cpp
@@ -453,7 +453,7 @@ ADD_ASSIMP_IMPORTER( BLEND
   BlenderTessellator.cpp
 )
 
-ADD_ASSIMP_IMPORTER( IFC
+ADD_ASSIMP_IMPORTER( IFC FALSE
   IFCLoader.cpp
   IFCLoader.h
   IFCReaderGen1.cpp
@@ -481,13 +481,13 @@ if (ASSIMP_BUILD_IFC_IMPORTER)
   endif()
 endif (ASSIMP_BUILD_IFC_IMPORTER)
 
-ADD_ASSIMP_IMPORTER( XGL
+ADD_ASSIMP_IMPORTER( XGL FALSE
   XGLLoader.cpp
   XGLLoader.h
 )
 
 
-ADD_ASSIMP_IMPORTER( FBX
+ADD_ASSIMP_IMPORTER( FBX TRUE
   FBXImporter.cpp
   FBXCompileConfig.h
   FBXImporter.h
@@ -573,12 +573,12 @@ SOURCE_GROUP( PostProcessing FILES ${PostProcessing_SRCS})
 SET( IrrXML_SRCS irrXMLWrapper.h )
 SOURCE_GROUP( IrrXML FILES ${IrrXML_SRCS})
 
-ADD_ASSIMP_IMPORTER( Q3D
+ADD_ASSIMP_IMPORTER( Q3D FALSE
   Q3DLoader.cpp
   Q3DLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( Q3BSP
+ADD_ASSIMP_IMPORTER( Q3BSP FALSE
   Q3BSPFileData.h
   Q3BSPFileParser.h
   Q3BSPFileParser.cpp
@@ -588,39 +588,39 @@ ADD_ASSIMP_IMPORTER( Q3BSP
   Q3BSPZipArchive.cpp
 )
 
-ADD_ASSIMP_IMPORTER( RAW
+ADD_ASSIMP_IMPORTER( RAW FALSE
   RawLoader.cpp
   RawLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( SIB
+ADD_ASSIMP_IMPORTER( SIB FALSE
   SIBImporter.cpp
   SIBImporter.h
 )
 
-ADD_ASSIMP_IMPORTER( SMD
+ADD_ASSIMP_IMPORTER( SMD FALSE
   SMDLoader.cpp
   SMDLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( STL
+ADD_ASSIMP_IMPORTER( STL FALSE
   STLLoader.cpp
   STLLoader.h
   STLExporter.h
   STLExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( TERRAGEN
+ADD_ASSIMP_IMPORTER( TERRAGEN FALSE
   TerragenLoader.cpp
   TerragenLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( 3D
+ADD_ASSIMP_IMPORTER( 3D FALSE
   UnrealLoader.cpp
   UnrealLoader.h
 )
 
-ADD_ASSIMP_IMPORTER( X
+ADD_ASSIMP_IMPORTER( X FALSE
   XFileHelper.h
   XFileImporter.cpp
   XFileImporter.h
@@ -630,7 +630,7 @@ ADD_ASSIMP_IMPORTER( X
   XFileExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER(X3D
+ADD_ASSIMP_IMPORTER(X3D FALSE
   X3DExporter.cpp
   X3DExporter.hpp
   X3DImporter.cpp
@@ -652,7 +652,7 @@ ADD_ASSIMP_IMPORTER(X3D
   X3DVocabulary.cpp
 )
 
-ADD_ASSIMP_IMPORTER( GLTF
+ADD_ASSIMP_IMPORTER( GLTF FALSE
   glTFAsset.h
   glTFAsset.inl
   glTFAssetWriter.h
@@ -663,14 +663,14 @@ ADD_ASSIMP_IMPORTER( GLTF
   glTFExporter.cpp
 )
 
-ADD_ASSIMP_IMPORTER( 3MF
+ADD_ASSIMP_IMPORTER( 3MF FALSE
     D3MFImporter.h
     D3MFImporter.cpp
     D3MFOpcPackage.h
     D3MFOpcPackage.cpp
 )
 
-ADD_ASSIMP_IMPORTER( MMD
+ADD_ASSIMP_IMPORTER( MMD FALSE
   MMDCpp14.h
   MMDImporter.cpp
   MMDImporter.h

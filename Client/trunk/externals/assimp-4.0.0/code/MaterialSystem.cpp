@@ -172,6 +172,45 @@ aiReturn aiGetMaterialFloatArray(const aiMaterial* pMat,
     return AI_SUCCESS;
 }
 
+
+// ------------------------------------------------------------------------------------------------
+// Get an array of char-point values from the material.
+aiReturn aiGetMaterialCharArray(const aiMaterial* pMat, 
+	const char* pKey,
+	unsigned int type,
+	unsigned int index,
+	char** pOut,
+	int* pMax)
+{
+	ai_assert (pOut != NULL);
+	ai_assert (pMat != NULL);
+
+	const aiMaterialProperty* prop = NULL;
+	aiGetMaterialProperty(pMat,pKey,type,index, &prop);
+	if (!prop) {
+		return AI_FAILURE;
+	}
+	unsigned int iWrite = 0;
+	if( aiPTI_Buffer == prop->mType)	
+	{
+		iWrite = prop->mDataLength / sizeof(char);
+		/*if (pMax && *pMax != -1) {
+			iWrite = std::min((unsigned int)*pMax,iWrite);
+		}*/
+		*pOut = prop->mData;
+		
+		if (pMax) {
+			*pMax = iWrite;
+		}
+	}
+	else
+	{
+		return AI_FAILURE;
+	}
+	return AI_SUCCESS;
+
+}
+
 // ------------------------------------------------------------------------------------------------
 // Get an array if integers from the material
 aiReturn aiGetMaterialIntegerArray(const aiMaterial* pMat,
@@ -343,7 +382,9 @@ aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     ai_real* blend              /*= NULL*/,
     aiTextureOp* op             /*= NULL*/,
     aiTextureMapMode* mapmode   /*= NULL*/,
-    unsigned int* flags         /*= NULL*/
+    unsigned int* flags         /*= NULL*/,
+    char** content				/*= NULL*/,
+    int* content_len	        /*= NULL*/
     )
 {
     ai_assert(NULL != mat && NULL != path);
@@ -352,6 +393,8 @@ aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     if (AI_SUCCESS != aiGetMaterialString(mat,AI_MATKEY_TEXTURE(type,index),path))  {
         return AI_FAILURE;
     }
+	if(content_len) 
+		aiGetMaterialCharArray(mat,_AI_MATKEY_CONTENT(type,index),content,content_len);
     // Determine mapping type
     aiTextureMapping mapping = aiTextureMapping_UV;
     aiGetMaterialInteger(mat,AI_MATKEY_MAPPING(type,index),(int*)&mapping);
@@ -388,6 +431,7 @@ static const unsigned int DefaultNumAllocated = 5;
 // Construction. Actually the one and only way to get an aiMaterial instance
 aiMaterial::aiMaterial() 
 : mProperties( NULL )
+, mMetaData(NULL)
 , mNumProperties( 0 )
 , mNumAllocated( DefaultNumAllocated ) {
     // Allocate 5 entries by default
@@ -400,6 +444,7 @@ aiMaterial::~aiMaterial()
     Clear();
 
     delete[] mProperties;
+	delete mMetaData;
 }
 
 // ------------------------------------------------------------------------------------------------

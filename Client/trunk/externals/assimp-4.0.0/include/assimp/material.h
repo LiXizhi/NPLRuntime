@@ -48,6 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_MATERIAL_H_INC
 
 #include "types.h"
+#include "metadata.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -873,6 +874,8 @@ public:
     /** List of all material properties loaded. */
     C_STRUCT aiMaterialProperty** mProperties;
 
+	C_STRUCT aiMetadata* mMetaData;
+
     /** Number of properties in the data base */
     unsigned int mNumProperties;
 
@@ -908,16 +911,17 @@ extern "C" {
 // ---------------------------------------------------------------------------
 // Pure key names for all texture-related properties
 //! @cond MATS_DOC_FULL
-#define _AI_MATKEY_TEXTURE_BASE         "$tex.file"
-#define _AI_MATKEY_UVWSRC_BASE          "$tex.uvwsrc"
-#define _AI_MATKEY_TEXOP_BASE           "$tex.op"
-#define _AI_MATKEY_MAPPING_BASE         "$tex.mapping"
-#define _AI_MATKEY_TEXBLEND_BASE        "$tex.blend"
-#define _AI_MATKEY_MAPPINGMODE_U_BASE   "$tex.mapmodeu"
-#define _AI_MATKEY_MAPPINGMODE_V_BASE   "$tex.mapmodev"
-#define _AI_MATKEY_TEXMAP_AXIS_BASE     "$tex.mapaxis"
-#define _AI_MATKEY_UVTRANSFORM_BASE     "$tex.uvtrafo"
-#define _AI_MATKEY_TEXFLAGS_BASE        "$tex.flags"
+#define _AI_MATKEY_TEXTURE_BASE			"$tex.file"
+#define _AI_MATKEY_UVWSRC_BASE			"$tex.uvwsrc"
+#define _AI_MATKEY_TEXOP_BASE			"$tex.op"
+#define _AI_MATKEY_MAPPING_BASE			"$tex.mapping"
+#define _AI_MATKEY_TEXBLEND_BASE		"$tex.blend"
+#define _AI_MATKEY_MAPPINGMODE_U_BASE	"$tex.mapmodeu"
+#define _AI_MATKEY_MAPPINGMODE_V_BASE	"$tex.mapmodev"
+#define _AI_MATKEY_TEXMAP_AXIS_BASE		"$tex.mapaxis"
+#define _AI_MATKEY_UVTRANSFORM_BASE		"$tex.uvtrafo"
+#define _AI_MATKEY_TEXFLAGS_BASE		"$tex.flags"
+#define _AI_MATKEY_CONTENT_BASE			"$tex.content"
 //! @endcond
 
 // ---------------------------------------------------------------------------
@@ -1315,6 +1319,8 @@ extern "C" {
 
 #define AI_MATKEY_TEXFLAGS_UNKNOWN(N)   \
     AI_MATKEY_TEXFLAGS(aiTextureType_UNKNOWN,N)
+	
+#define _AI_MATKEY_CONTENT(type, N) _AI_MATKEY_CONTENT_BASE,type,N
 
 //! @endcond
 //!
@@ -1421,6 +1427,17 @@ ASSIMP_API C_ENUM aiReturn aiGetMaterialIntegerArray(const C_STRUCT aiMaterial* 
      unsigned int  index,
      int* pOut,
      unsigned int* pMax);
+// ---------------------------------------------------------------------------
+/** @brief Retrieve an array of char values with a specific key 
+ *  from a material
+ *
+ * See the sample for aiGetMaterialFloatArray for more information.*/
+ASSIMP_API C_ENUM aiReturn aiGetMaterialCharArray(const C_STRUCT aiMaterial* pMat, 
+    const char* pKey,
+	 unsigned int  type,
+	 unsigned int  index,
+    char** pOut,
+    int* pMax);
 
 
 #ifdef __cplusplus
@@ -1541,7 +1558,9 @@ ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     ai_real* blend              = NULL,
     aiTextureOp* op             = NULL,
     aiTextureMapMode* mapmode   = NULL,
-    unsigned int* flags         = NULL);
+    unsigned int* flags         = NULL,
+    char** content              = NULL,
+    int* content_len            = NULL);
 #else
 C_ENUM aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     C_ENUM aiTextureType type,
@@ -1552,7 +1571,9 @@ C_ENUM aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     ai_real* blend                      /*= NULL*/,
     C_ENUM aiTextureOp* op              /*= NULL*/,
     C_ENUM aiTextureMapMode* mapmode    /*= NULL*/,
-    unsigned int* flags                 /*= NULL*/);
+    unsigned int* flags                 /*= NULL*/,
+    char** content                      /* = NULL*/,
+    int* content_len                   /* = NULL*/);
 #endif // !#ifdef __cplusplus
 
 #ifdef __cplusplus
