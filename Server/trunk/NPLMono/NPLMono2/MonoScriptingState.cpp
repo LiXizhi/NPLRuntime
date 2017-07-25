@@ -320,7 +320,7 @@ void CMonoScriptingState::CreateAppDomain()
 		* mono_jit_init() creates a domain: each assembly is
 		* loaded and run in a MonoDomain with version 2.0.
 		*/
-		s_mono_domain = mono_jit_init_version ("NPLMono_Root", mono_jit_version_);
+		s_mono_domain = mono_jit_init_version("NPLMono_Root", mono_jit_version_);
 		//s_mono_domain = mono_jit_init("NPLMono_Root");
 
 		// Set root mono domain in to which all assemblies are loaded. 
