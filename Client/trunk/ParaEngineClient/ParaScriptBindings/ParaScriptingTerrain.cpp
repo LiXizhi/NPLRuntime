@@ -736,6 +736,10 @@ namespace ParaScripting
 	void ParaTerrain::GetBlockFullData(uint16_t x, uint16_t y, uint16_t z, uint16_t* pId, uint32_t* pUserData)
 	{
 		BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+
+		*pId = 0;
+		*pUserData = 0;
+
 		if (mgr)
 		{
 			auto pBlock = mgr->GetUnlockBlock(x, y, z);
@@ -743,11 +747,9 @@ namespace ParaScripting
 			{
 				*pId = pBlock->GetTemplateId();
 				*pUserData = pBlock->GetUserData();
-				return;
 			}
 		}
-		*pId = 0;
-		*pUserData = 0;
+		
 	}
 
 }
