@@ -743,13 +743,11 @@ namespace ParaScripting
 			{
 				*pId = pBlock->GetTemplateId();
 				*pUserData = pBlock->GetUserData();
+				return;
 			}
 		}
-		else
-		{
-			*pId = 0;
-			*pUserData = 0;
-		}
+		*pId = 0;
+		*pUserData = 0;
 	}
 
 }
