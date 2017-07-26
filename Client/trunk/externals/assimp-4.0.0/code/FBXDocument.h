@@ -660,6 +660,13 @@ public:
 
     uint8_t* RelinquishContent() {
         uint8_t* ptr = content;
+        if (content)
+        {
+            ptr = new uint8_t[contentLength];
+            memcpy(ptr, content, contentLength);
+        }
+
+        
         content = 0;
         return ptr;
     }
@@ -669,6 +676,7 @@ private:
     std::string relativeFileName;
     std::string fileName;
     std::shared_ptr<const PropertyTable> props;
+
 
     uint32_t contentLength;
     uint8_t* content;
@@ -1148,6 +1156,18 @@ public:
 
     const std::vector<const AnimationStack*>& AnimationStacks() const;
 
+    struct ContentInfo
+    {
+        ContentInfo(uint8_t* _content, uint32_t _contentLength) : content(_content), contentLength(_contentLength) {};
+        ContentInfo() : content(nullptr), contentLength(0) {};
+
+        uint8_t* content;
+        uint32_t contentLength;
+    };
+
+    bool FindContentInfo(const std::string& filename) const;
+    ContentInfo& GetContentInfo(const std::string& filename);
+    void AddContentInfo(const std::string& filename, const ContentInfo& contentInfo);
 private:
     std::vector<const Connection*> GetConnectionsSequenced(uint64_t id, const ConnectionMap&) const;
     std::vector<const Connection*> GetConnectionsSequenced(uint64_t id, bool is_src,
@@ -1180,6 +1200,11 @@ private:
     mutable std::vector<const AnimationStack*> animationStacksResolved;
 
     std::unique_ptr<FileGlobalSettings> globals;
+    
+    
+    std::map<std::string, ContentInfo> contentCache;
+
+  
 };
 
 } // Namespace FBX

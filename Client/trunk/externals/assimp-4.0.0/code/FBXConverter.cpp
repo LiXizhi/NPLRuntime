@@ -1760,7 +1760,7 @@ unsigned int Converter::ConvertMaterial( const Material& material, const MeshGeo
 			data->mValues = new aiMetadataEntry[data->mNumProperties]();
 			out_mat->mMetaData = data;
 
-			BOOST_FOREACH(const DirectPropertyMap::value_type& prop, unparsedProperties) 
+			for (const DirectPropertyMap::value_type& prop : unparsedProperties) 
 			{
 				//if (prop.first.find("TexAnims_") == 0)
 				{
@@ -1778,7 +1778,7 @@ unsigned int Converter::ConvertMaterial( const Material& material, const MeshGeo
 					else if (const TypedProperty<aiVector3D>* interpreted = prop.second->As<TypedProperty<aiVector3D> >())
 						data->Set(index++, prop.first, interpreted->Value());
 					else
-						assert(false);
+                        ai_assert(false);
 				}
 			}
 		}
@@ -1829,6 +1829,16 @@ void Converter::TrySetTextureProperties( aiMaterial* out_mat, const TextureMap& 
         path.Set( tex->RelativeFilename() );
 
         const Video* media = tex->Media();
+
+
+        {
+            if (media && media->ContentLength() > 0)
+            {
+                out_mat->AddProperty(media->Content(), media->ContentLength(), _AI_MATKEY_CONTENT_BASE, target, 0);
+            }
+        }
+
+
         if (media != 0) {
 			bool textureReady = false; //tells if our texture is ready (if it was loaded or if it was found)
 			unsigned int index;
@@ -1984,6 +1994,7 @@ void Converter::TrySetTextureProperties( aiMaterial* out_mat, const LayeredTextu
         path.Set( tex->RelativeFilename() );
 
         out_mat->AddProperty( &path, _AI_MATKEY_TEXTURE_BASE, target, texIndex );
+
 
         aiUVTransform uvTrafo;
         // XXX handle all kinds of UV transformations

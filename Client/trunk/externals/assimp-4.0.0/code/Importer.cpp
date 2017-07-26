@@ -608,7 +608,7 @@ const aiScene* Importer::ReadFile( const char* _pFile, unsigned int pFlags)
             FreeScene();
         }
 
-        // First check if the file is accessible at all
+        // First check if the file is accessible at all 
         if( !pimpl->mIOHandler->Exists( pFile)) {
 
             pimpl->mErrorString = "Unable to open file \"" + pFile + "\".";

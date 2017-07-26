@@ -289,6 +289,12 @@ Document::~Document()
         delete v.second;
     }
     // |dest_connections| contain the same Connection objects as the |src_connections|
+
+    for (auto it = contentCache.begin(); it != contentCache.end(); it++)
+    {
+        if (it->second.content)
+            delete[] it->second.content;
+    }
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -672,6 +678,22 @@ std::vector<const Connection*> Document::GetConnectionsByDestinationSequenced(ui
     return GetConnectionsSequenced(dest, false, ConnectionsByDestination(),classnames, count);
 }
 
+
+
+bool Document::FindContentInfo(const std::string& filename) const
+{
+    return contentCache.find(filename) != contentCache.end();
+}
+
+Document::ContentInfo& Document::GetContentInfo(const std::string& filename)
+{
+    return contentCache[filename];
+}
+
+void Document::AddContentInfo(const std::string& filename, const Document::ContentInfo& contentInfo)
+{
+    contentCache.insert(std::make_pair(filename, contentInfo));
+}
 
 // ------------------------------------------------------------------------------------------------
 Connection::Connection(uint64_t insertionOrder,  uint64_t src, uint64_t dest, const std::string& prop,

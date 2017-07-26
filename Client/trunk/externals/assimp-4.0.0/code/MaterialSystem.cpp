@@ -387,7 +387,7 @@ aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
     int* content_len	        /*= NULL*/
     )
 {
-    ai_assert(NULL != mat && NULL != path);
+    ai_assert(NULL != mat && NULL != path); 
 
     // Get the path to the texture
     if (AI_SUCCESS != aiGetMaterialString(mat,AI_MATKEY_TEXTURE(type,index),path))  {

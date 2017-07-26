@@ -172,4 +172,5 @@ ASSIMP_API aiScene::~aiScene()
     delete [] mCameras;
 
     delete static_cast<Assimp::ScenePrivateData*>( mPrivate );
+
 }

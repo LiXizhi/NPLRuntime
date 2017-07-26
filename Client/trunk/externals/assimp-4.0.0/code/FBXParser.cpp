@@ -144,7 +144,7 @@ Element::Element(const Token& key_token, Parser& parser)
                 ParseError("unexpected token; expected bracket, comma or key",n);
             }
         }
-
+        
         if (n->Type() == TokenType_OPEN_BRACKET) {
             compound.reset(new Scope(parser));
 
@@ -191,6 +191,8 @@ Scope::Scope(Parser& parser,bool topLevel)
         }
 
         const std::string& str = n->StringContents();
+
+
         elements.insert(ElementMap::value_type(str,new_Element(*n,parser)));
 
         // Element() should stop at the next Key token (or right after a Close token)

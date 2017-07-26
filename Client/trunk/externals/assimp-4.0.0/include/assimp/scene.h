@@ -55,6 +55,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "material.h"
 #include "anim.h"
 #include "metadata.h"
+#include <map>
 
 #ifdef __cplusplus
 extern "C" {

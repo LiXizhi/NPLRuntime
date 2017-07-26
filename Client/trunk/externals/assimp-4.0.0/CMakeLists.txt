@@ -40,7 +40,7 @@ PROJECT( Assimp )
 # All supported options ###############################################
 OPTION( BUILD_SHARED_LIBS
   "Build package with shared libraries."
-  ON
+  OFF
 )
 OPTION( ASSIMP_DOUBLE_PRECISION
   "Set to ON to enable double precision processing"
@@ -100,7 +100,11 @@ IF(MSVC)
 ENDIF(MSVC)
 
 IF(NOT BUILD_SHARED_LIBS)
-  SET(LINK_SEARCH_START_STATIC TRUE)
+	SET(LINK_SEARCH_START_STATIC TRUE)
+	IF(MSVC)
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_RELEASE} /MTd")
+	ENDIF()	
 ENDIF(NOT BUILD_SHARED_LIBS)
 
 # Define here the needed parameters
@@ -192,6 +196,8 @@ IF ((CMAKE_C_COMPILER_ID MATCHES "GNU") AND NOT CMAKE_COMPILER_IS_MINGW)
 ELSEIF(MSVC)
   # enable multi-core compilation with MSVC
   add_compile_options(/MP)
+  
+  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zi")
 ELSEIF ( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -fvisibility=hidden -fPIC -Wall -Wno-long-long -pedantic -std=c++11" )
 ELSEIF( CMAKE_COMPILER_IS_MINGW )
