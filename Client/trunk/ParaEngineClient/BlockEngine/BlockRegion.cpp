@@ -158,6 +158,33 @@ namespace ParaEngine
 		return false;
 	}
 
+	void BlockRegion::SetChunksDirtyByBlockTemplate(uint16_t templateId)
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i<nCount; i++)
+		{
+			BlockChunk* pChunk = m_chunks[i];
+			if (pChunk)
+			{
+				
+				std::vector<Uint16x3> rets = pChunk->refreshBlockVisible(templateId);
+				for (auto itr = rets.begin(); itr != rets.end(); ++itr)
+				{
+					Uint16x3 blockId_rs = *itr;
+					ChunkMaxHeight& blockHeight = m_blockHeightMap[blockId_rs.x + (blockId_rs.z << 9)];
+					ChunkMaxHeight prevHeight = blockHeight;
+
+					blockId_rs.x += m_minBlockId_ws.x;
+					blockId_rs.y += m_minBlockId_ws.y;
+					blockId_rs.z += m_minBlockId_ws.z;
+
+					m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
+					m_pBlockWorld->NotifyBlockHeightMapChanged(blockId_rs.x, blockId_rs.z, prevHeight);
+				}
+			}
+		}
+	}
+
 	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs,uint16_t blockY_rs,uint16_t blockZ_rs,BlockTemplate* pTemplate)
 	{
 		if (IsLocked())
@@ -1839,6 +1866,21 @@ namespace ParaEngine
 		m_nChunksLoaded = val;
 	}
 
+	void BlockRegion::ClearAllLight()
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i < nCount; i++)
+		{
+			BlockChunk * pChunk = m_chunks[i];
+			if (pChunk)
+			{
+				pChunk->ClearAllLight();
+			}
+		}
+	}
+
+	
+
 	uint32 BlockRegion::GetChunksLoaded() const
 	{
 		return m_nChunksLoaded;
@@ -1977,6 +2019,9 @@ namespace ParaEngine
 		pClass->AddField("ChunksLoaded", FieldType_Int, (void*)SetChunksLoaded_s, (void*)GetChunksLoaded_s, NULL, NULL, bOverride);
 		pClass->AddField("TotalBytes", FieldType_Int, (void*)0, (void*)GetTotalBytes_s, NULL, NULL, bOverride);
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
+		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);
+
+
 		return S_OK;
 	}
 

@@ -554,7 +554,7 @@ namespace ParaEngine
 					m_nDirtyBlocksCount = 0;
 					SLEEP(10);
 				}
-				while (IsLightUpdateSuspended()){
+				while (IsLightUpdateSuspended() && m_pBlockWorld->IsInBlockWorld()){
 					SLEEP(1);
 				}
 				// since we are using our own read/write lock, this function will block until writers are freed. 

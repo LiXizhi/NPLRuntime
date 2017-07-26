@@ -91,7 +91,7 @@ namespace ParaEngine
 
 		/** Retrieves the level of detail index for the given depth value. 
 		*/
-		int GetLodIndex(float depth) const;
+		int GetLodIndex(float fCameraObjectDist, float fScaling = 1.f) const;
 
 		/** Retrieves the level of detail index for the given squared depth value. 
 		@remarks
@@ -99,7 +99,7 @@ namespace ParaEngine
 		square roots when determining the lod. This method allows you to provide a
 		squared length depth value to avoid having to do your own square roots.
 		*/
-		int GetLodIndexSquaredDepth(float squaredDepth) const;
+		int GetLodIndexSquaredDepth(float squaredDepth, float fScaling = 1.f) const;
 
 		/** Removes all LOD data from this Mesh. only the lowest level remains */
 		void RemoveLodLevels(void);

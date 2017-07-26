@@ -255,7 +255,9 @@ namespace ParaEngine
 	{
 		if (!m_pAnimatedMesh)
 			return false;
-		CParaXModel* pModel = m_pAnimatedMesh->GetModel(0);
+		int nIndex = (sceneState && IsLODEnabled()) ? m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
+		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
+		
 		if (pModel == NULL)
 			return false;
 		// just a single standing animation is supported now and looped. 
@@ -296,7 +298,9 @@ namespace ParaEngine
 			return E_FAIL;
 		}
 
-		CParaXModel* pModel = m_pAnimatedMesh->GetModel(0);
+		int nIndex = (sceneState && IsLODEnabled()) ? 
+			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
+		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		if (pModel == NULL)
 			return E_FAIL;
 

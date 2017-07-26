@@ -20,6 +20,8 @@
 #include "BlockLightGridBase.h"
 #include "TextureEntity.h"
 #include "BlockWorld.h"
+#include "SceneObject.h"
+#include "BipedObject.h"
 
 using namespace ParaEngine;
 
@@ -388,6 +390,18 @@ BlockRegion* CBlockWorld::CreateGetRegion(uint16_t region_x, uint16_t region_z)
 	}
 	else
 		return NULL;
+}
+
+void ParaEngine::CBlockWorld::ResetAllLight()
+{
+	for (auto& item : m_regionCache)
+	{
+		item.second->ClearAllLight();
+	}
+
+	auto& lightGrid = GetLightGrid();
+
+	lightGrid.OnEnterWorld();
 }
 
 bool ParaEngine::CBlockWorld::UnloadRegion(uint16_t block_x, uint16_t block_y, uint16_t block_z, bool bAutoSave /*= true*/)
@@ -817,6 +831,57 @@ uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
 	return GetBlockData(x, y, z);
 }
 
+void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
+{
+	BlockTemplate* pTemp = GetBlockTemplate(templateId);
+
+	if (pTemp)
+	{
+		if (!value == pTemp->IsMatchAttribute(BlockTemplate::batt_invisible))
+			return;
+
+		if (!value)
+		{
+			BlockTemplateVisibleData visibleData;
+			visibleData.lightOpyValue = pTemp->GetLightOpacity();
+			visibleData.isTransparent = pTemp->IsMatchAttribute(BlockTemplate::batt_transparent);
+			visibleData.torchLight = pTemp->GetTorchLight();
+
+			m_blockTemplateVisibleDatas[templateId] = visibleData;
+
+			pTemp->SetAttribute(BlockTemplate::batt_transparent, true);
+			pTemp->SetAttribute(BlockTemplate::batt_invisible, true);
+			pTemp->SetLightOpacity(0);
+			pTemp->SetTorchLight(0);
+		}
+		else
+		{
+			pTemp->SetAttribute(BlockTemplate::batt_invisible, false);
+			auto visibleDataItr = m_blockTemplateVisibleDatas.find(templateId);
+			if (visibleDataItr != m_blockTemplateVisibleDatas.end())
+			{
+				pTemp->SetAttribute(BlockTemplate::batt_transparent, visibleDataItr->second.isTransparent);
+				pTemp->SetLightOpacity(visibleDataItr->second.lightOpyValue);
+				pTemp->SetTorchLight(visibleDataItr->second.torchLight);
+
+				m_blockTemplateVisibleDatas.erase(templateId);
+			}
+		}
+
+		// refresh player region
+		CBipedObject* currentPlayer = CGlobals::GetScene()->GetCurrentPlayer();
+		auto v3 = currentPlayer->GetPosition();
+		uint16_t blockX_rs(0), blockY_rs(0), blockZ_rs(0);
+		BlockCommon::ConvertToBlockIndex((float)v3.x, (float)v3.y, (float)v3.z, blockX_rs, blockY_rs, blockZ_rs);
+		uint16_t lx, ly, lz;
+		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
+		if (pRegion)
+		{
+			pRegion->SetChunksDirtyByBlockTemplate(templateId);
+		}
+	}
+
+}
 
 uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID)
 {
@@ -893,6 +958,19 @@ Block* CBlockWorld::GetBlock(uint16_t x_ws, uint16_t y_ws, uint16_t z_ws)
 		return pRegion->GetBlock(lx, ly, lz);
 	}
 	return NULL;
+}
+
+
+Block* CBlockWorld::GetUnlockBlock(uint16_t x, uint16_t y, uint16_t z)
+{
+	uint16_t lx, ly, lz;
+	BlockRegion* pRegion = GetRegion(x, y, z, lx, ly, lz);
+
+	if (pRegion && !pRegion->IsLocked())
+	{
+		return pRegion->GetBlock(lx, ly, lz);
+	}
+	return nullptr;
 }
 
 BlockTemplate* CBlockWorld::GetBlockTemplate(uint16_t x, uint16_t y, uint16_t z)
@@ -2382,6 +2460,8 @@ int ParaEngine::CBlockWorld::InstallFields(CAttributeClass* pClass, bool bOverri
 
 	pClass->AddField("ResumeLightUpdate", FieldType_void, (void*)ResumeLightUpdate_s, NULL, NULL, "", bOverride);
 	pClass->AddField("SuspendLightUpdate", FieldType_void, (void*)SuspendLightUpdate_s, NULL, NULL, "", bOverride);
+
+	pClass->AddField("ResetAllLight", FieldType_void, (void*)ResetAllLight_s, NULL, NULL, "", bOverride);
 
 	pClass->AddField("LockWorld", FieldType_void, (void*)LockWorld_s, NULL, NULL, "", bOverride);
 	pClass->AddField("UnlockWorld", FieldType_void, (void*)UnlockWorld_s, NULL, NULL, "", bOverride);
