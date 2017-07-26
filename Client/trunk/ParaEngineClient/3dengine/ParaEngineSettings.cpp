@@ -300,7 +300,11 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 		break;
 	}
 #elif defined(USE_OPENGL_RENDERER)
-	CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
+	//CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
+	CGlobals::GetEffectManager()->SetDefaultEffectMapping(20);
+	ParaScripting::ParaScene::EnableLighting(true);
+	ParaScripting::ParaScene::SetShadowMethod(0);
+	CGlobals::GetScene()->EnableFullScreenGlow(false);
 #endif
 }
 
