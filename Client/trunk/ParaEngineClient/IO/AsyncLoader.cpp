@@ -281,6 +281,7 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 
 int ParaEngine::CAsyncLoader::GetEstimatedSizeInBytes()
 {
+	ParaEngine::Lock lock_(m_request_stats);
 	return m_nRemainingBytes;
 }
 
@@ -288,6 +289,7 @@ int ParaEngine::CAsyncLoader::GetItemsLeft(int nItemType)
 {
 	if(nItemType == -1)
 	{
+		ParaEngine::Lock lock_(m_request_stats);
 		// total requests in the queue
 		return m_NumOutstandingResources;
 	}
@@ -340,25 +342,25 @@ int ParaEngine::CAsyncLoader::GetBytesProcessed( int nItemType /*= -1*/ )
 
 void ParaEngine::CAsyncLoader::WaitForAllItems()
 {
-	if(m_NumOutstandingResources > 0)
+	if(GetItemsLeft()> 0)
 	{
-		OUTPUT_LOG("CAsyncLoader waiting for %d pending resources. \n", m_NumOutstandingResources);
+		OUTPUT_LOG("CAsyncLoader waiting for %d pending resources. \n", GetItemsLeft());
 		ProcessDeviceWorkItems( 100000, false );
 
 		// let us wait only limited time. 30*100 = 3000ms 
 		for(int i=0; i<30; ++i)
 		{
 			// Only exit when all resources are loaded
-			if( 0 == m_NumOutstandingResources )
+			if( 0 == GetItemsLeft())
 				return;
 
 			// Service Queues
 			ProcessDeviceWorkItems( 100000, false );
 			SLEEP( 100);
 		}
-		if(m_NumOutstandingResources != 0)
+		if(GetItemsLeft() != 0)
 		{
-			OUTPUT_LOG("warning: CAsyncLoader still have %d pending resources, but we will not wait for their completion. \n", m_NumOutstandingResources);
+			OUTPUT_LOG("warning: CAsyncLoader still have %d pending resources, but we will not wait for their completion. \n", GetItemsLeft());
 		}
 	}
 }
@@ -494,6 +496,94 @@ CGDIEngine* CAsyncLoader::GetGDIEngine()
 	return m_pGDIEngine;
 }
 #endif
+
+int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRequest)
+{
+	HRESULT hr = S_OK;
+
+	// Handle a read request
+	if (!ResourceRequest->m_bCopy)
+	{
+		// ASSETS_LOG("DEBUG: IO msg(to proc) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+
+		if (!ResourceRequest->m_bError)
+		{
+			// Load the data
+			hr = ResourceRequest->m_pDataLoader->Load();
+
+			if (FAILED(hr))
+			{
+				const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
+				if (keyname == 0)
+					keyname = "key not set";
+				const char * filename = ResourceRequest->m_pDataLoader->GetFileName();
+				if (filename == 0)
+					filename = "unknown file";
+				if (hr != E_PENDING)
+				{
+					OUTPUT_LOG("FileIO Error: hr = %x; key=%s; filename=%s\n", hr, keyname, filename);
+				}
+
+				ResourceRequest->m_bError = true;
+				ResourceRequest->m_last_error_code = hr;
+				if (ResourceRequest->m_pHR)
+					*ResourceRequest->m_pHR = hr;
+				ResourceRequest->m_pDataProcessor->SetResourceError();
+			}
+		}
+
+		// Add it to the ProcessQueue
+		if (m_ProcessQueues[ResourceRequest->m_nProcessorQueueID].try_push(ResourceRequest) == CResourceRequestQueue::BufferOverFlow)
+		{
+			OUTPUT_LOG("ERROR: AsyncLoader IO msg(to proc) failed push to m_ProcessQueues because queue is full\n");
+		}
+	}
+
+	// Handle a copy request
+	else
+	{
+		// ASSETS_LOG("DEBUG: IO msg(COPY) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+
+		if (!ResourceRequest->m_bError)
+		{
+			// Create the data
+			hr = ResourceRequest->m_pDataProcessor->CopyToResource();
+
+			if (FAILED(hr))
+			{
+				if (hr != E_PENDING)
+				{
+					OUTPUT_LOG("Failed to Copy Data to Device Object:hr = %x; %s\n", hr, ResourceRequest->m_pDataLoader->GetFileName());
+				}
+
+				ResourceRequest->m_bError = true;
+				ResourceRequest->m_last_error_code = hr;
+				if (ResourceRequest->m_pHR)
+					*ResourceRequest->m_pHR = hr;
+			}
+		}
+		else
+		{
+			ResourceRequest->m_pDataProcessor->SetResourceError();
+		}
+
+		// send an unlock request
+		ResourceRequest->m_bLock = false;
+		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
+		{
+			if (m_RenderThreadQueue.try_push(ResourceRequest) == m_RenderThreadQueue.BufferOverFlow)
+			{
+				OUTPUT_LOG("ERROR: AsyncLoader IO msg(COPY) failed push to m_RenderThreadQueue because queue is full\n");
+			}
+		}
+		else
+		{
+			ProcessDeviceWorkItemImp(ResourceRequest);
+		}
+	}
+	return hr;
+}
+
 int CAsyncLoader::FileIOThreadProc()
 {
 	ResourceRequest_ptr ResourceRequest;
@@ -509,79 +599,7 @@ int CAsyncLoader::FileIOThreadProc()
 		{
 			break;
 		}
-		// Handle a read request
-		if( !ResourceRequest->m_bCopy )
-		{
-			// ASSETS_LOG("DEBUG: IO msg(to proc) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
-
-			if( !ResourceRequest->m_bError )
-			{
-				// Load the data
-				hr = ResourceRequest->m_pDataLoader->Load();
-
-				if( FAILED( hr ) )
-				{
-					const char * keyname = ResourceRequest->m_pDataLoader->GetKeyName();
-					if(keyname == 0)
-						keyname = "key not set";
-					const char * filename = ResourceRequest->m_pDataLoader->GetFileName();
-					if(filename == 0)
-						filename = "unknown file";
-					if(hr != E_PENDING)
-					{
-						OUTPUT_LOG( "FileIO Error: hr = %x; key=%s; filename=%s\n", hr, keyname, filename);
-					}
-					
-					ResourceRequest->m_bError = true;
-					ResourceRequest->m_last_error_code = hr;
-					if( ResourceRequest->m_pHR )
-						*ResourceRequest->m_pHR = hr;
-					ResourceRequest->m_pDataProcessor->SetResourceError();
-				}
-			}
-
-			// Add it to the ProcessQueue
-			if(m_ProcessQueues[ResourceRequest->m_nProcessorQueueID].try_push( ResourceRequest ) == CResourceRequestQueue::BufferOverFlow)
-			{
-				OUTPUT_LOG("ERROR: AsyncLoader IO msg(to proc) failed push to m_ProcessQueues because queue is full\n");
-			}
-		}
-
-		// Handle a copy request
-		else
-		{
-			// ASSETS_LOG("DEBUG: IO msg(COPY) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
-
-			if( !ResourceRequest->m_bError )
-			{
-				// Create the data
-				hr = ResourceRequest->m_pDataProcessor->CopyToResource();
-
-				if( FAILED( hr ) )
-				{
-					if(hr != E_PENDING)
-					{
-						OUTPUT_LOG( "Failed to Copy Data to Device Object:hr = %x; %s\n", hr, ResourceRequest->m_pDataLoader->GetFileName());
-					}
-
-					ResourceRequest->m_bError = true;
-					ResourceRequest->m_last_error_code = hr;
-					if( ResourceRequest->m_pHR )
-						*ResourceRequest->m_pHR = hr;
-				}
-			}
-			else
-			{
-				ResourceRequest->m_pDataProcessor->SetResourceError();
-			}
-
-			// send an unlock request
-			ResourceRequest->m_bLock = false;
-			if(m_RenderThreadQueue.try_push( ResourceRequest ) == m_RenderThreadQueue.BufferOverFlow)
-			{
-				OUTPUT_LOG("ERROR: AsyncLoader IO msg(COPY) failed push to m_RenderThreadQueue because queue is full\n");
-			}
-		}
+		hr = FileIOThreadProc_HandleRequest(ResourceRequest);
 	}
 	return 0;
 }
@@ -657,11 +675,19 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 				*ResourceRequest->m_pHR = hr;
 		}
 
-		// Add it to the RenderThreadQueue
+		
 		ResourceRequest->m_bLock = true;
-		if(m_RenderThreadQueue.try_push( ResourceRequest ) == m_RenderThreadQueue.BufferOverFlow)
+		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
 		{
-			OUTPUT_LOG("ERROR: AsyncLoader process msg failed push to m_RenderThreadQueue because queue is full \n");
+			// Add it to the RenderThreadQueue
+			if (m_RenderThreadQueue.try_push(ResourceRequest) == m_RenderThreadQueue.BufferOverFlow)
+			{
+				OUTPUT_LOG("ERROR: AsyncLoader process msg failed push to m_RenderThreadQueue because queue is full \n");
+			}
+		}
+		else
+		{
+			ProcessDeviceWorkItemImp(ResourceRequest);
 		}
 	}
 	return 0;
@@ -744,6 +770,7 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 
 	if(m_IOQueue.try_push(msg) != m_IOQueue.BufferOverFlow)
 	{
+		ParaEngine::Lock lock_(m_request_stats);
 		m_nRemainingBytes += nSizeBytes;
 		m_NumOutstandingResources ++;
 	}
@@ -754,6 +781,96 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 	return S_OK;
 }
 
+void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& ResourceRequest, bool bRetryLoads)
+{
+	HRESULT hr = S_OK;
+	if (ResourceRequest->m_bLock)
+	{
+		// ASSETS_LOG("DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+
+		if (!ResourceRequest->m_bError)
+		{
+			hr = ResourceRequest->m_pDataProcessor->LockDeviceObject();
+			if (E_TRYAGAIN == hr && bRetryLoads && ResourceRequest->m_pDataProcessor->IsDeviceObject())
+			{
+				// add it back to the list
+				m_RenderThreadQueue.push(ResourceRequest);
+
+				// move on to the next guy
+				return;
+			}
+			else if (FAILED(hr))
+			{
+				ResourceRequest->m_bError = true;
+				ResourceRequest->m_last_error_code = hr;
+				if (ResourceRequest->m_pHR)
+					*ResourceRequest->m_pHR = hr;
+			}
+		}
+
+		ResourceRequest->m_bCopy = true;
+		if (ResourceRequest->m_pDataProcessor->IsDeviceObject())
+		{
+			if (m_IOQueue.try_push(ResourceRequest) == m_IOQueue.BufferOverFlow)
+			{
+				OUTPUT_LOG("ERROR: AsyncLoader render msg(lock) failed push to m_IOQueue because queue is full\n");
+			}
+		}
+		else
+		{
+			FileIOThreadProc_HandleRequest(ResourceRequest);
+		}
+	}
+	else
+	{
+		// ASSETS_LOG("DEBUG: render msg(unlock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+
+		if (!ResourceRequest->m_bError)
+		{
+			HRESULT hr = ResourceRequest->m_pDataProcessor->UnLockDeviceObject();
+			ResourceRequest->m_last_error_code = hr;
+			if (ResourceRequest->m_pHR)
+				*ResourceRequest->m_pHR = hr;
+
+			const char* name = ResourceRequest->m_pDataLoader->GetFileName();
+			if (name == 0)
+				name = "unknown";
+			ASSETS_LOG("AssetLoaded %s\n", name);
+		}
+		else
+		{
+			if (ResourceRequest->m_last_error_code != E_PENDING)
+			{
+				const char* sFileName = ResourceRequest->m_pDataLoader->GetFileName();
+				if (sFileName && sFileName[0] != '\0')
+				{
+					// bug fix: we only set resource error if file name is not ""
+					// for some reason, if we set resource error for empty file, some models will not show up.  Empty file is considered valid. 
+					ASSETS_LOG("ERROR: AssetFailed (%d)%s\n", ResourceRequest->m_last_error_code, sFileName);
+					ResourceRequest->m_pDataProcessor->SetResourceError();
+				}
+			}
+		}
+
+		{
+			ParaEngine::Lock lock_(m_request_stats);
+			m_nRemainingBytes -= ResourceRequest->m_pDataLoader->GetEstimatedSizeInBytes();
+		}
+
+		ResourceRequest->m_pDataLoader->Destroy();
+		ResourceRequest->m_pDataProcessor->Destroy();
+
+		SAFE_DELETE(ResourceRequest->m_pDataLoader);
+		SAFE_DELETE(ResourceRequest->m_pDataProcessor);
+
+		{
+			ParaEngine::Lock lock_(m_request_stats);
+			// Decrement num outstanding resources
+			m_NumOutstandingResources--;
+		}
+	}
+}
+
 void ParaEngine::CAsyncLoader::ProcessDeviceWorkItems( int CurrentNumResourcesToService, bool bRetryLoads )
 {
 	HRESULT hr = S_OK;
@@ -761,78 +878,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItems( int CurrentNumResourcesTo
 
 	for( int i = 0; (i<CurrentNumResourcesToService) && m_RenderThreadQueue.try_pop(ResourceRequest); i++ )
 	{
-		if( ResourceRequest->m_bLock )
-		{
-			// ASSETS_LOG("DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
-
-			if( !ResourceRequest->m_bError )
-			{
-				hr = ResourceRequest->m_pDataProcessor->LockDeviceObject();
-				if( E_TRYAGAIN == hr && bRetryLoads )
-				{
-					// add it back to the list
-					m_RenderThreadQueue.push( ResourceRequest );
-					
-					// move on to the next guy
-					continue;
-				}
-				else if( FAILED( hr ) )
-				{
-					ResourceRequest->m_bError = true;
-					ResourceRequest->m_last_error_code = hr;
-					if( ResourceRequest->m_pHR )
-						*ResourceRequest->m_pHR = hr;
-				}
-			}
-
-			ResourceRequest->m_bCopy = true;
-			if(m_IOQueue.try_push( ResourceRequest ) == m_IOQueue.BufferOverFlow)
-			{
-				OUTPUT_LOG("ERROR: AsyncLoader render msg(lock) failed push to m_IOQueue because queue is full\n");
-			}
-		}
-		else
-		{
-			// ASSETS_LOG("DEBUG: render msg(unlock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
-
-			if( !ResourceRequest->m_bError )
-			{
-				HRESULT hr = ResourceRequest->m_pDataProcessor->UnLockDeviceObject();
-				ResourceRequest->m_last_error_code = hr;
-				if( ResourceRequest->m_pHR )
-					*ResourceRequest->m_pHR = hr;
-
-				const char* name = ResourceRequest->m_pDataLoader->GetFileName();
-				if(name == 0)
-					name = "unknown";
-				ASSETS_LOG("AssetLoaded %s\n", name);
-			}
-			else
-			{
-				if(ResourceRequest->m_last_error_code != E_PENDING)
-				{
-					const char* sFileName = ResourceRequest->m_pDataLoader->GetFileName();
-					if(sFileName && sFileName[0] != '\0')
-					{
-						// bug fix: we only set resource error if file name is not ""
-						// for some reason, if we set resource error for empty file, some models will not show up.  Empty file is considered valid. 
-						ASSETS_LOG("ERROR: AssetFailed (%d)%s\n", ResourceRequest->m_last_error_code, sFileName);
-						ResourceRequest->m_pDataProcessor->SetResourceError();
-					}
-				}
-			}
-
-			m_nRemainingBytes -= ResourceRequest->m_pDataLoader->GetEstimatedSizeInBytes();
-
-			ResourceRequest->m_pDataLoader->Destroy();
-			ResourceRequest->m_pDataProcessor->Destroy();
-
-			SAFE_DELETE( ResourceRequest->m_pDataLoader );
-			SAFE_DELETE( ResourceRequest->m_pDataProcessor );
-
-			// Decrement num outstanding resources
-			m_NumOutstandingResources --;
-		}
+		ProcessDeviceWorkItemImp(ResourceRequest, bRetryLoads);
 	}
 }
 

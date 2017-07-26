@@ -112,6 +112,8 @@ namespace ParaEngine
 		* @param bRetryLoads: if true, we will retry if failed and retry is requested by the loader. 
 		*/
 		void ProcessDeviceWorkItems( int CurrentNumResourcesToService=100, bool bRetryLoads = false );
+		/* this function is usually called by the render thread, but it may also be called in IO or worker thread is IsDeviceObject() is false. */
+		void ProcessDeviceWorkItemImp(ResourceRequest_ptr& pResourceRequest, bool bRetryLoads = false);
 
 		/** make sure that there are nMaxCount workers threads processing the queue at nProcessorQueueID. 
 		* @note: worker threads of internal queues are created internally. 
@@ -212,6 +214,8 @@ namespace ParaEngine
 		// the locked data of the resource.
 		*/
 		int FileIOThreadProc();
+		/** this is usually called by FileIOThreadProc(), but may be called by other thread as well if IsDeviceObject() is false.*/
+		int FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRequest);
 
 		/**
 		This is the threadproc for the processing thread.  There are multiple processing
@@ -333,6 +337,8 @@ namespace ParaEngine
 #endif
 		// only for pending request. 
 		ParaEngine::mutex m_pending_request_mutex;
+		// for statistics of request
+		ParaEngine::mutex m_request_stats;
 
 		// all pending url, this could prevent the same url to be request multiple times. 
 		std::set <std::string> m_pending_requests;
