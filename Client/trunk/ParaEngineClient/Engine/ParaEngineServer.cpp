@@ -56,9 +56,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(!bInterpreterMode){
-		printf("            ---ParaEngine Server V%d.%d---         \n", 1, 1);
-	}
 	
 	if(bServiceMode)
 	{
