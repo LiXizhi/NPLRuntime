@@ -204,7 +204,7 @@ std::string CBaseObject::ToString(DWORD nMethod)
 	string sScript;
 	sScript = "-- ";
 	sScript.append(m_sIdentifer);
-	sScript.append("\r\n");
+	sScript.append("\n");
 	return sScript;
 }
 

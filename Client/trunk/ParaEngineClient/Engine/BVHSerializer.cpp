@@ -221,7 +221,7 @@ bool CBVHSerializer::DumpParaXBones(int nLevel, int nBoneIndex,CParaFile* pFile)
 			m_bones[nBoneIndex].m_nSubLevels, vAbsOffset.x, vAbsOffset.y, vAbsOffset.z, m_bones[nBoneIndex].GetBoneLength());
 	}
 	else{
-		pFile->WriteFormated("ChildCount %d SubBones %d SubLevel %d vAbsPos(%.1f %.1f %.1f) BoneLength:%4.2f\r\n", nChildCount, m_bones[nBoneIndex].m_nSubBones, 
+		pFile->WriteFormated("ChildCount %d SubBones %d SubLevel %d vAbsPos(%.1f %.1f %.1f) BoneLength:%4.2f\n", nChildCount, m_bones[nBoneIndex].m_nSubBones, 
 			m_bones[nBoneIndex].m_nSubLevels, vAbsOffset.x, vAbsOffset.y, vAbsOffset.z, m_bones[nBoneIndex].GetBoneLength());
 	}
 	for (int i=0;i<nChildCount;++i)
@@ -777,36 +777,36 @@ bool CBVHSerializer::WriteBVHNode(int nLevel, int nBoneIndex, CParaFile* pFile,b
 		if(nChildCount == 0)
 		{
 			// end site
-			pFile->WriteFormated("End Site\r\n");
+			pFile->WriteFormated("End Site\n");
 		}
 		else if(nLevel == 0)
 		{
 			// root 
 			if(!m_bones[nBoneIndex].m_sMarkerName.empty())
-				pFile->WriteFormated("HIERARCHY\r\nROOT %s\r\n", m_bones[nBoneIndex].m_sMarkerName.c_str());
+				pFile->WriteFormated("HIERARCHY\nROOT %s\n", m_bones[nBoneIndex].m_sMarkerName.c_str());
 			else
 			{
 				char sID[MAX_PATH];
 				sprintf(sID, "%d", nBoneIndex);
-				pFile->WriteFormated("HIERARCHY\r\nROOT %s\r\n", sID);
+				pFile->WriteFormated("HIERARCHY\nROOT %s\n", sID);
 			}
 		}
 		else
 		{
 			// joint
 			if(!m_bones[nBoneIndex].m_sMarkerName.empty())
-				pFile->WriteFormated("JOINT %s\r\n", m_bones[nBoneIndex].m_sMarkerName.c_str());
+				pFile->WriteFormated("JOINT %s\n", m_bones[nBoneIndex].m_sMarkerName.c_str());
 			else
 			{
 				char sID[MAX_PATH];
 				sprintf(sID, "%d", nBoneIndex);
-				pFile->WriteFormated("JOINT %s\r\n", sID);
+				pFile->WriteFormated("JOINT %s\n", sID);
 			}
 		}
 		// left curly brace
 		for (int i=0;i<nLevel;++i)
 			pFile->WriteFormated("\t");
-		pFile->WriteFormated("{\r\n");
+		pFile->WriteFormated("{\n");
 
 
 		// write offset relative to parent
@@ -820,8 +820,8 @@ bool CBVHSerializer::WriteBVHNode(int nLevel, int nBoneIndex, CParaFile* pFile,b
 			if(nIndex >=0 )
 				vOffset = m_bones[nBoneIndex].m_vAbsOffset - m_bones[nIndex].m_vAbsOffset;
 		}
-		pFile->WriteFormated("OFFSET \t\t%f %f %f\r\n", vOffset.z, vOffset.y, vOffset.x);
-		//pFile->WriteFormated("OFFSET \t\t%f %f %f\r\n", vOffset.x, vOffset.y, vOffset.z);
+		pFile->WriteFormated("OFFSET \t\t%f %f %f\n", vOffset.z, vOffset.y, vOffset.x);
+		//pFile->WriteFormated("OFFSET \t\t%f %f %f\n", vOffset.x, vOffset.y, vOffset.z);
 
 		// write channels 
 		if(nChildCount != 0)
@@ -829,9 +829,9 @@ bool CBVHSerializer::WriteBVHNode(int nLevel, int nBoneIndex, CParaFile* pFile,b
 			for (int i=0;i<nLevel+1;++i)
 				pFile->WriteFormated("\t");
 			if(nLevel==0 || m_bExportBVHPosition)
-				pFile->WriteFormated("CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation\r\n");
+				pFile->WriteFormated("CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation\n");
 			else
-				pFile->WriteFormated("CHANNELS 3 Zrotation Xrotation Yrotation\r\n");
+				pFile->WriteFormated("CHANNELS 3 Zrotation Xrotation Yrotation\n");
 		}
 	}
 
@@ -853,7 +853,7 @@ bool CBVHSerializer::WriteBVHNode(int nLevel, int nBoneIndex, CParaFile* pFile,b
 		// right curly brace
 		for (int i=0;i<nLevel;++i)
 			pFile->WriteFormated("\t");
-		pFile->WriteFormated("}\r\n");
+		pFile->WriteFormated("}\n");
 	}
 	
 	return true;
@@ -954,7 +954,7 @@ bool CBVHSerializer::WriteBVHNodeAnimation(int nLevel, int nBoneIndex, CParaFile
 		// end this frame
 		if(nLevel==0)
 		{
-			pFile->WriteFormated("\r\n");
+			pFile->WriteFormated("\n");
 		}
 	}
 	return true;
@@ -1000,28 +1000,28 @@ bool CBVHSerializer::BeginBVHNode(CParaFile* pFile, int nLevel, const string& sM
 	if(sMarker == "End")
 	{
 		// end site
-		pFile->WriteFormated("End Site\r\n");
+		pFile->WriteFormated("End Site\n");
 	}
 	else if(sMarker == "Hips")
 	{
-		pFile->WriteFormated("HIERARCHY\r\nROOT %s\r\n", sMarker.c_str());
+		pFile->WriteFormated("HIERARCHY\nROOT %s\n", sMarker.c_str());
 	}
 	else
 	{
-		pFile->WriteFormated("JOINT %s\r\n", sMarker.c_str());
+		pFile->WriteFormated("JOINT %s\n", sMarker.c_str());
 	}
 
 	// left curly brace
 	for (int i=0;i<nLevel;++i)
 		pFile->WriteFormated("\t");
-	pFile->WriteFormated("{\r\n");
+	pFile->WriteFormated("{\n");
 
 
 	// write offset relative to parent
 	for (int i=0;i<nLevel+1;++i)
 		pFile->WriteFormated("\t");
 
-	pFile->WriteFormated("OFFSET \t\t%f %f %f\r\n", vOffset.z, vOffset.y, vOffset.x);
+	pFile->WriteFormated("OFFSET \t\t%f %f %f\n", vOffset.z, vOffset.y, vOffset.x);
 
 	if(sMarker != "End")
 	{
@@ -1029,9 +1029,9 @@ bool CBVHSerializer::BeginBVHNode(CParaFile* pFile, int nLevel, const string& sM
 			pFile->WriteFormated("\t");
 
 		if(bExportPos && bExportRot)
-			pFile->WriteFormated("CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation\r\n");
+			pFile->WriteFormated("CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation\n");
 		else if(bExportRot)
-			pFile->WriteFormated("CHANNELS 3 Zrotation Xrotation Yrotation\r\n");
+			pFile->WriteFormated("CHANNELS 3 Zrotation Xrotation Yrotation\n");
 	}
 	return true;
 }
@@ -1041,7 +1041,7 @@ bool CBVHSerializer::EndBVHNode(CParaFile* pFile, int nLevel,const string& sMark
 	// right curly brace
 	for (int i=0;i<nLevel;++i)
 		pFile->WriteFormated("\t");
-	pFile->WriteFormated("}\r\n");
+	pFile->WriteFormated("}\n");
 	return true;
 }
 
@@ -1091,7 +1091,7 @@ bool CBVHSerializer::WriteHips(int nLevel, bool bHierachy, CParaFile* pFile)
 		WriteRightHip(nLevel+1, bHierachy, pFile);
 		
 
-		pFile->WriteFormated("\r\n");
+		pFile->WriteFormated("\n");
 	}
 	return true;
 }
@@ -1867,11 +1867,11 @@ bool CBVHSerializer::SaveBVH(const string& sFileName, const string& sMarkerNameF
 
 			if(bResult)
 			{
-				file.WriteString("MOTION\r\n");
+				file.WriteString("MOTION\n");
 				int nTotalFrames = (int)((animInfo.timeEnd - animInfo.timeStart)*m_nFPS/1000.f);
 				float fFrameDuration = 1.0f/m_nFPS;
-				file.WriteFormated("Frames: %d\r\n", nTotalFrames);
-				file.WriteFormated("Frame Time: %f\r\n", fFrameDuration);
+				file.WriteFormated("Frames: %d\n", nTotalFrames);
+				file.WriteFormated("Frame Time: %f\n", fFrameDuration);
 
 				for (int i=0; i< nTotalFrames; ++i)
 				{
