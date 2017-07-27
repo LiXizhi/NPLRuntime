@@ -297,14 +297,15 @@ namespace ParaEngine
 		{
 			return E_FAIL;
 		}
+		sceneState->SetCurrentSceneObject(this);
 
-		int nIndex = (sceneState && IsLODEnabled()) ? 
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ?
 			m_pAnimatedMesh->GetLodIndex(sceneState->GetCameraToCurObjectDistance()/*, GetScaling()*/) : 0;
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		if (pModel == NULL)
 			return E_FAIL;
 
-		sceneState->SetCurrentSceneObject(this);
+		
 		SetFrameNumber(sceneState->m_nRenderCount);
 		// get world transform matrix
 		Matrix4 mxWorld;

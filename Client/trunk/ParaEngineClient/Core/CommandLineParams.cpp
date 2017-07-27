@@ -45,7 +45,7 @@ void CCommandLineParams::SetAppCommandLine( const char* pCommandLine )
 		else
 			nFromPosName++;
 		int i = nPos - 1;
-		auto nFromPos = nFromPosName + 1;
+		auto nFromPos = nPos + 1;
 		while(m_sAppCmdLine.size() > nFromPos && m_sAppCmdLine[nFromPos] == ' ')
 		{
 			// skip all spaces
