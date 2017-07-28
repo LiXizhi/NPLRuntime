@@ -578,6 +578,11 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 			if (CParaFile::DoesFileExist("paperbox001.pkg") || CParaFile::DoesFileExist("paperbox001.zip"))
 				fileList.push_back("paperbox001.zip");
 #endif
+			if (CParaFile::DoesFileExist("main_mobile_res.pkg") || CParaFile::DoesFileExist("main_mobile_res.zip"))
+				fileList.push_back("main_mobile_res.zip");
+			if (CParaFile::DoesFileExist("main150727.pkg") || CParaFile::DoesFileExist("main150727.zip"))
+				fileList.push_back("main150727.zip");
+
 			if (CParaFile::DoesFileExist("main.pkg") || CParaFile::DoesFileExist("main.zip"))
 				fileList.push_back("main.zip");
 			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg"))
