@@ -303,10 +303,10 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 }
 bool CMoviePlatform::TakeScreenShot(const string& filename)
 {
-#ifdef USE_DIRECTX_RENDERER
+//#ifdef USE_DIRECTX_RENDERER
 #define SCREENSHOT_FROM_BACKBUFFER
 #ifdef SCREENSHOT_FROM_BACKBUFFER
-
+#ifdef USE_DIRECTX_RENDERER
 	LPDIRECT3DSURFACE9  pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
 	if(pBackBuffer)
 	{
@@ -358,12 +358,45 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		}
 	}
 #else
+	string Filename = filename;
+
+	if (filename.empty())
+	{
+		char ValidFilename[256];
+		ZeroMemory(ValidFilename, sizeof(ValidFilename));
+
+		std::string date_str = ParaEngine::GetDateFormat("MMM dd yy");
+		snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt").c_str());
+		Filename = ValidFilename;
+	}
+	Filename = CParaFile::GetWritablePath() + Filename;
+	if (CParaFile::CreateDirectory(Filename.c_str()))
+	{
+		int width=cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().width;
+		int height = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().height;
+		std::vector<unsigned int> pixels;
+		pixels.resize(width*height);
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+		CHECK_GL_ERROR_DEBUG();
+		std::vector<unsigned int> img_pixels;
+		img_pixels.resize(pixels.size());
+		for (int row = 0; row < height; ++row)
+		{
+			memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width*sizeof(unsigned int));
+		}
+		cocos2d::CCImage img;
+		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size()*sizeof(unsigned int), width, height, 32);
+		img.saveToFile(Filename);
+		return true;
+	}
+#endif
+#else
 	if(filename.empty())
 		GSSHOTSYSTEM->TakeScreenShot(NULL);
 	else
 		GSSHOTSYSTEM->TakeScreenShot(filename.c_str());
 #endif
-#endif
+//#endif
 	return false;
 }
 void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)
