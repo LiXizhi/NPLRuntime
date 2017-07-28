@@ -97,6 +97,9 @@ namespace ParaEngine
 		/** delete a given file*/
 		static bool DeleteFile(const char* filename);
 
+		/** delete a given directory, regardless of whether it's empty or not*/
+		static int DeleteDirectory(const char* dirname);
+
 		/** delete a given file. It will reject any system files outside the application(or writable directory) directory.
 		* after all, this function is of high security level.
 		* @param sFilePattern: such as "*.dds", "temp/ *.*", etc

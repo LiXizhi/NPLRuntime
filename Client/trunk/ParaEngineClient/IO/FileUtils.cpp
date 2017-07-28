@@ -479,29 +479,63 @@ bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 #endif
 }
 
+int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
+{
+#ifdef USE_COCOS_FILE_API
+	std::string sFilePath = GetWritableFullPathForFilename(filename);
+	try
+	{
+		return fs::remove_all(sFilePath);
+	}
+	catch (...)
+	{
+		return 0;
+	}
+#elif defined(USE_BOOST_FILE_API)
+	try
+	{
+		return fs::remove_all(filename);
+	}
+	catch (...)
+	{
+		return 0;
+	}
+#else
+	return ::DeleteFile(filename);
+#endif
+}
+
 int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bSecureFolderOnly /*= true*/, int nSubFolderCount)
 {
 #if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	// search in writable disk files
-	// Note: bSecureFolderOnly is ignore, since it is guaranteed by the OS's writable path. 
+	// Note: bSecureFolderOnly is ignore, since it is guaranteed by the OS's writable path.
+	int nCount = 0;
 	std::string sRootPath = GetParentDirectoryFromPath(sFilePattern);
 	std::string sPattern = GetFileName(sFilePattern);
 	sRootPath = GetWritableFullPathForFilename(sRootPath);
-	CSearchResult result;
-	result.InitSearch(sRootPath, 0, 10000, 0);
-	FindDiskFiles(result, result.GetRootPath(), sPattern, nSubFolderCount);
-
-	int nCount = result.GetNumOfResult();
-	for (int i = 0; i < nCount; ++i)
+	if (fs::is_directory(sRootPath))
 	{
-		const CFileFindData* pFileDesc = result.GetItemData(i);
-		if (pFileDesc)
-		{
-			std::string sFilePath = sRootPath + result.GetItem(i);
-			CFileUtils::DeleteFile(sFilePath.c_str());
-		}
+		nCount = CFileUtils::DeleteDirectory(sRootPath.c_str());
 	}
-	OUTPUT_LOG("%d files removed from directory %s\n", nCount, sFilePattern.c_str());
+	else
+	{
+		CSearchResult result;
+		result.InitSearch(sRootPath, 0, 10000, 0);
+		FindDiskFiles(result, result.GetRootPath(), sPattern, nSubFolderCount);
+
+		nCount = result.GetNumOfResult();
+		for (int i = 0; i < nCount; ++i)
+		{
+			const CFileFindData* pFileDesc = result.GetItemData(i);
+			if (pFileDesc)
+			{
+				std::string sFilePath = sRootPath + result.GetItem(i);
+				CFileUtils::DeleteFile(sFilePath.c_str());
+			}
+		}
+		OUTPUT_LOG("%d files removed from directory %s\n", nCount, sFilePattern.c_str());
+	}
 	if (nCount > 0){
 #if defined(USE_COCOS_FILE_API)
 		cocos2d::FileUtils::getInstance()->purgeCachedEntries();
@@ -1048,7 +1082,13 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
-					if (!result.AddResult(iter->path().string(), 0, 0, &fileLastWriteTime, 0, 0))
+					//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
+					DWORD file_attr = 0;
+					if (fs::is_directory(iter->status()))
+						file_attr = 16;
+					else if(fs::is_regular_file(iter->status()))
+						file_attr = 32;
+					if (!result.AddResult(iter->path().string(), 0, file_attr, &fileLastWriteTime, 0, 0))
 						return;
 				}
 				else if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
