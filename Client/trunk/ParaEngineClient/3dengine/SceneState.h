@@ -319,6 +319,9 @@ namespace ParaEngine
 		/** get camera to current object distance. this is automatically set by the pipeline before drawing a certain object.  */
 		float GetCameraToCurObjectDistance();
 
+		/** is lod enabled*/
+		bool IsLODEnabled();
+
 		/** set shadow map camera to current object distance. This is usually a fixed value for all shadow casters, such as 500 meters */
 		void SetShadowMapCameraToCurObjectDistance(float fDist);
 
@@ -385,6 +388,9 @@ namespace ParaEngine
 
 		void AddToDeferredLightPool(CLightObject * lightObject);
 
+		bool IsGlobalLODEnabled() const;
+		void EnableGlobalLOD(bool val);
+
 	public:
 		IScene* GetScene(){ return m_pScene; }
 
@@ -408,6 +414,8 @@ namespace ParaEngine
 		/// true if the it's currently performing batch rendering
 		bool			bIsBatchRender : 1;
 		bool			m_bCameraMoved : 1;
+		bool			m_bGlobalLOD : 1;
+		
 		/// translucent face sorting is enabled. 
 		bool			m_bEnableTranslucentFaceSorting;
 		/** how many times the scene has been rendered since its creation. If this is 0, we may be pre-render stage or rendering is disabled.*/

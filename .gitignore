@@ -76,3 +76,4 @@ buildvm_arch.h
 .DS_Store
 
 settings.json
+core

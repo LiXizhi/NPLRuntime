@@ -149,10 +149,10 @@ void CAttributesManager::PrintClass(CParaFile& file, CAttributeClass* pClass, vo
 		return;
 	int nCount = pClass->GetFieldNum();
 	file.WriteFormated("\
-================================\r\n\
-%s\r\n\
-================================\r\n\
-# field num:%d\r\n", pClass->GetClassName(), nCount);
+================================\n\
+%s\n\
+================================\n\
+# field num:%d\n", pClass->GetClassName(), nCount);
 	try
 	{
 		for (int i=0;i<nCount;++i)
@@ -163,14 +163,14 @@ void CAttributesManager::PrintClass(CParaFile& file, CAttributeClass* pClass, vo
 	}
 	catch (...)
 	{
-		OUTPUT_LOG("error exposing attributes for %s\r\n", pClass->GetClassName());
+		OUTPUT_LOG("error exposing attributes for %s\n", pClass->GetClassName());
 	}
 }
 void CAttributesManager::PrintField(CParaFile& file, CAttributeField* pField, void* pObj)
 {
 	if(pField==0)
 		return;
-	file.WriteFormated("%-20s%s\r\n\t", pField->GetFieldname().c_str(), pField->m_sHelpString.c_str());
+	file.WriteFormated("%-20s%s\n\t", pField->GetFieldname().c_str(), pField->m_sHelpString.c_str());
 	switch(pField->m_type)
 	{
 	case FieldType_void:
@@ -311,5 +311,5 @@ void CAttributesManager::PrintField(CParaFile& file, CAttributeField* pField, vo
 		break;
 	}
 	
-	file.WriteString("\r\n");
+	file.WriteString("\n");
 }

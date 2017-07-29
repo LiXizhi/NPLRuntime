@@ -10,6 +10,8 @@
 #include "CyoEncode.h"
 #include "CyoDecode.h"
 #include "util/MD5.h"
+#include "util/sha1.h"
+#include "util/CyoEncode.h"
 #include "StringHelper.h"
 #include <boost/thread/tss.hpp>
 #include "ConvertUTF.h"
@@ -238,7 +240,7 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 	return "";
 }
 
-const char* StringHelper::SimpleEncode(const char* source)
+std::string StringHelper::SimpleEncode(const std::string& source)
 {
 	static boost::thread_specific_ptr< std::string > g_code_;
 	if (!g_code_.get()) {
@@ -253,7 +255,7 @@ const char* StringHelper::SimpleEncode(const char* source)
 	}
 	std::string& g_code = *g_code_;
 
-	int nSize = (int)strlen(source);
+	size_t nSize = source.size();
 	int nBufferSize = CyoEncode::Base64EncodeGetLength((unsigned long)nSize);
 	const int MAX_BINARY_DATA_SIZE = 102400000;
 	if (nBufferSize < MAX_BINARY_DATA_SIZE)
@@ -269,7 +271,7 @@ const char* StringHelper::SimpleEncode(const char* source)
 			//////////////////////////////////////////////////////////////////////////
 			int nKeySize = sizeof(g_simpleXOR_key);
 			int nKeyIndex = 0;
-			for (int i = 0; i < nSize; ++i, ++nKeyIndex)
+			for (size_t i = 0; i < nSize; ++i, ++nKeyIndex)
 			{
 				if (nKeyIndex >= nKeySize)
 					nKeyIndex = 0;
@@ -281,17 +283,17 @@ const char* StringHelper::SimpleEncode(const char* source)
 			g_code = buff;
 			delete[] buff;
 			delete[] buffSrc;
-			return g_code.c_str();
+			return g_code;
 		}
 	}
 	else
 	{
 		OUTPUT_LOG("error: SimpleEncode max length exceeded: %d \n", nBufferSize);
 	}
-	return NULL;
+	return "";
 }
 
-const char* StringHelper::SimpleDecode(const char* source)
+std::string StringHelper::SimpleDecode(const std::string& source)
 {
 	static boost::thread_specific_ptr< std::string > g_code_;
 	if (!g_code_.get()) {
@@ -306,7 +308,7 @@ const char* StringHelper::SimpleDecode(const char* source)
 	}
 	std::string& g_code = *g_code_;
 
-	int nSize = (int)strlen(source);
+	size_t nSize = source.size();
 	int nBufferSize = 0;
 	try
 	{
@@ -316,7 +318,7 @@ const char* StringHelper::SimpleDecode(const char* source)
 	{
 		g_code = "";
 		OUTPUT_LOG("invalid source length when calling ParaMisc.SimpleDecode()\n");
-		return g_code.c_str();
+		return g_code;
 	}
 
 	const int MAX_BINARY_DATA_SIZE = 102400000;
@@ -331,7 +333,7 @@ const char* StringHelper::SimpleDecode(const char* source)
 			//////////////////////////////////////////////////////////////////////////
 			try
 			{
-				int filledsize = (int)CyoDecode::Base64Decode(buff, source, nSize);
+				int filledsize = (int)CyoDecode::Base64Decode(buff, (const unsigned char*)source.c_str(), nSize);
 				buff[filledsize] = '\0';
 
 				int nKeySize = sizeof(g_simpleXOR_key);
@@ -342,7 +344,9 @@ const char* StringHelper::SimpleDecode(const char* source)
 						nKeyIndex = 0;
 					buff[i] = buff[i] ^ g_simpleXOR_key[nKeyIndex];
 				}
-				g_code = buff;
+				//g_code = buff;
+				g_code.clear();
+				g_code.append(buff, filledsize);
 			}
 			catch (...)
 			{
@@ -351,7 +355,7 @@ const char* StringHelper::SimpleDecode(const char* source)
 			}
 
 			delete[] buff;
-			return g_code.c_str();
+			return g_code;
 		}
 	}
 	return NULL;
@@ -753,10 +757,10 @@ bool ParaEngine::StringHelper::RegularMatch(const char *input, const char *expre
 	return false;
 }
 
-string ParaEngine::StringHelper::md5(const char* source, bool bBinary)
+string ParaEngine::StringHelper::md5(const std::string& source, bool bBinary)
 {
 	ParaEngine::MD5 md5_hash;
-	md5_hash.feed(source);
+	md5_hash.feed((const unsigned char*)source.c_str(), source.size());
 	if (!bBinary)
 		return md5_hash.hex();
 	else
@@ -1227,4 +1231,57 @@ bool ParaEngine::StringHelper::UTF8ToUTF16_Safe(const std::string& utf8, std::u1
 		}
 		return false;
 	}
+}
+
+
+std::string ParaEngine::StringHelper::sha1(const std::string& source, bool bBinary)
+{
+	SHA1Context sha;
+	int err = SHA1Reset(&sha);
+	uint8_t hash[SHA1HashSize];
+
+	if (!err)
+		err = SHA1Input(&sha, (const unsigned char *)source.c_str(), source.size());
+
+	if (!err)
+		err = SHA1Result(&sha, hash);
+
+
+	if (!err)
+	{
+		if (bBinary)
+		{
+			return string((char*)hash, SHA1HashSize);
+		}
+		else
+		{
+			char hashString[SHA1HashSize * 2 + 1];
+			SHA1ConvertMessageToString(hash, hashString);
+			return hashString;
+		}
+	}
+	else
+	{
+		return "";
+	}
+}
+
+
+std::string ParaEngine::StringHelper::base64(const std::string& source)
+{
+	auto size = source.size();
+	if (size > 0)
+	{
+		int nBufferSize = CyoEncode::Base64EncodeGetLength(size);
+		std::string outBase64Buffers;
+		outBase64Buffers.resize(nBufferSize);
+		CyoEncode::Base64Encode(&(outBase64Buffers[0]), source.c_str(), size);
+
+		return outBase64Buffers;
+	}
+	else
+	{
+		return "";
+	}
+	
 }

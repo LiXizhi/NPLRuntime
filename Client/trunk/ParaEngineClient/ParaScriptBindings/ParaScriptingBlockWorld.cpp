@@ -97,6 +97,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bIsUpdating = false;
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
+	bool bIsVisible = true;
 	if (type(params) == LUA_TNUMBER)
 	{
 		attFlag = (uint32_t)(object_cast<double> (params));
@@ -137,7 +138,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			dwMapColor = Color::FromString(object_cast<const char*>(params["mapcolor"]));
 		if (type(params["opacity"]) == LUA_TNUMBER)
 			nOpacity = (int)(object_cast<double> (params["opacity"]));
-		
+		if (type(params["isVisible"]) == LUA_TBOOLEAN)
+			bIsVisible = object_cast<bool> (params["isVisible"]);	
 	}
 
 	if (bIsUpdating)
@@ -163,6 +165,10 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor !=0)
 				pTemplate->SetMapColor(dwMapColor);
+
+			BlockWorldClient* mgr = BlockWorldClient::GetInstance();
+			if (mgr)
+				mgr->SetBlockVisible(templateId, bIsVisible);
 			return true;
 		}
 	}

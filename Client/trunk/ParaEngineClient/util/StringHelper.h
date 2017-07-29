@@ -80,13 +80,13 @@ namespace ParaEngine
 		* str = SimpleDecode(SimpleEncode(str)) 
 		* @return: it may return NULL if input invalid
 		*/
-		static const char* SimpleEncode(const char* source);
+		static string SimpleEncode(const string& source);
 
 		/** decode a string using really simple algorithm.  
 		* str = SimpleDecode(SimpleEncode(str)) 
 		* @return: it may return NULL if input invalid
 		*/
-		static const char* SimpleDecode(const char* source);
+		static string SimpleDecode(const string& source);
 
 		/**
 		* Converts an entire byte array from one encoding to another.
@@ -152,7 +152,20 @@ namespace ParaEngine
 		/** convert the md5 of the input source string. 
 		* @param bBinary: if false (default), result is 32 hex number chars. if true, result is 16 bytes binary string. 
 		*/
-		static std::string md5(const char* source, bool bBinary = false);
+		static std::string md5(const std::string& source, bool bBinary = false);
+
+		/*
+			convert the sha1 of the input source string.
+			* @param bBinary: if false (default), result is 32 hex number chars. if true, result is 16 bytes binary string.
+		*/
+		static std::string sha1(const std::string& source, bool bBinary = false);
+
+		/*
+			convert the base64 of the input source string.
+		*/
+		static std::string base64(const std::string& source);
+
+
 
 		/** a fast printf function that support limited functions. 
 		The formats supported by this implementation are: 'd' 'u' 'c' 's' 'x' 'X' 'f'.

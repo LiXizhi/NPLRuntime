@@ -60,16 +60,22 @@ IF(WIN32)
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /PDBSTRIPPED:Release/lua.stripped.pdb")
 	
 	ADD_LIBRARY(lua SHARED ${lua_SRCS})
+
+	SET(output_luafilename "lua51.dll")
 ELSE(WIN32)
 	add_definitions(-DLUA_USE_LINUX)
 	ADD_LIBRARY(lua SHARED ${lua_SRCS})
+
+	SET(output_luafilename "liblua51.so")
 ENDIF(WIN32)
 
-# ADD_CUSTOM_COMMAND(
-# 	TARGET lua
-# 	POST_BUILD
-# 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-# 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lua> ${OUTPUT_BIN_DIR}
-# )
+# SET_TARGET_PROPERTIES(lua PROPERTIES OUTPUT_NAME "lua51")
+
+ ADD_CUSTOM_COMMAND(
+ 	TARGET lua
+ 	POST_BUILD
+ 	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+ 	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lua> ${OUTPUT_BIN_DIR}/${output_luafilename}
+)
 
 
