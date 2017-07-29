@@ -7814,6 +7814,19 @@ SQLITE_API void *sqlite3_wal_hook(
   void*
 );
 
+SQLITE_API void *sqlite3_wal_page_hook(
+  sqlite3*, 
+  int(*)(void *,const char*,int, unsigned int, unsigned int, int),
+  void*
+);
+
+SQLITE_API int sqlite3_wal_inject_page(
+  sqlite3*, 
+  const char*,
+  unsigned int,
+  unsigned int,
+  int
+);
 /*
 ** CAPI3REF: Configure an auto-checkpoint
 ** METHOD: sqlite3
