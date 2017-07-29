@@ -500,6 +500,7 @@ typedef int (*sqlite3_loadext_entry)(
 #define sqlite3_wal_hook               sqlite3_api->wal_hook
 #define sqlite3_wal_page_hook          sqlite3_api->wal_page_hook
 #define sqlite3_wal_inject_page        sqlite3_api->wal_inject_page
+#define sqlite3_wal_checkpoint_hook    sqlite3_api->wal_checkpoint_hook
 #define sqlite3_blob_reopen            sqlite3_api->blob_reopen
 #define sqlite3_vtab_config            sqlite3_api->vtab_config
 #define sqlite3_vtab_on_conflict       sqlite3_api->vtab_on_conflict

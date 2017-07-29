@@ -71,7 +71,8 @@ extern "C"
 #define KEY_TRACE_DATA(p)	KEY((p), 7)
 #define KEY_BUSY_DATA(p)	KEY((p), 8)
 #define KEY_COMMIT_DATA(p)	KEY((p), 9)
-#define KEY_WAL_PAGE_DATA(p)	KEY((p), 9)
+#define KEY_WAL_PAGE_DATA(p)	KEY((p), 10)
+#define KEY_WAL_CHECKPOINT_DATA(p)	KEY((p), 11)
 
 #define KEY_XFUNC(p)		KEY((p), 1)
 #define KEY_XSTEP(p)		KEY((p), 2)
@@ -84,6 +85,7 @@ extern "C"
 #define KEY_XBUSY(p)		KEY((p), 1)
 #define KEY_XCOMMIT(p)		KEY((p), 1)
 #define KEY_XWAL_PAGE(p)		KEY((p), 1)
+#define KEY_XWAL_CHECKPOINT(p)		KEY((p), 1)
 
 
 using namespace ParaEngine;
@@ -151,6 +153,7 @@ static CB_Data * get_named_cb_data(lua_State * L, DB * db, void * table_key, int
 #define get_commit_cb_data(L, db)		get_cb_data((L), (db), KEY_COMMIT_DATA(db))
 // for wal page hook
 #define get_wal_page_cb_data(L, db)		get_cb_data((L), (db), KEY_WAL_PAGE_DATA(db))
+#define get_wal_checkpoint_cb_data(L, db)		get_cb_data((L), (db), KEY_WAL_CHECKPOINT_DATA(db))
 
 static void register_callback(lua_State * L, DB * db, void * cb_key, int callback_pos);
 static void init_callback_usage(lua_State * L, DB * db);
@@ -527,6 +530,8 @@ FUNC( l_sqlite3_close )
 	delete_private_value(L, KEY_TRACE_DATA(db));
 	delete_private_value(L, KEY_BUSY_DATA(db));
 	delete_private_value(L, KEY_COMMIT_DATA(db));
+	delete_private_value(L, KEY_WAL_PAGE_DATA(db));
+	delete_private_value(L, KEY_WAL_CHECKPOINT_DATA(db));
 
 	int result = SQLITE_OK;
 
@@ -1443,6 +1448,52 @@ FUNC( l_sqlite3_wal_inject_page )
 
 
 
+int xwal_checkpoint_callback_wrapper(void * cb_data)
+{
+	DB *		db = CB_DATA(cb_data)->db;
+	lua_State *	L  = db->L;
+
+	push_callback(L, db, KEY_XWAL_CHECKPOINT(cb_data));
+
+	if ( lua_pcall(L, 0, 1, 0) )
+	{
+		lua_pop(L, 1);
+		return 1;		/* on errors, rollback */
+	}
+
+	return pop_break_condition(L);
+}
+
+FUNC( l_sqlite3_wal_checkpoint_hook )
+{
+	DB * db = checkdb(L, 1);
+	CB_Data * cb_data = get_wal_checkpoint_cb_data(L, db);
+
+	int (*xwal_checkpoint)(void *);
+
+	if ( checknilornoneorfunc(L, 2) )
+		xwal_checkpoint = xwal_checkpoint_callback_wrapper;
+	else
+		xwal_checkpoint = 0;
+
+	register_callback(L, db, KEY_XWAL_CHECKPOINT(cb_data), 2);
+	sqlite3_wal_checkpoint_hook(db->GetSqlite3(), xwal_checkpoint, cb_data);
+
+	lua_pushnumber(L, sqlite3_errcode(db->GetSqlite3()) );
+	return 1;
+}
+
+FUNC( l_sqlite3_wal_checkpoint )
+{
+	DB * db = checkdb(L, 1);
+
+	const char *zDb 	= checkstr(L, 2);
+
+	lua_pushnumber(L, sqlite3_wal_checkpoint(db->GetSqlite3(), zDb));
+	
+	return 1;
+}
+
 int xprogress_callback_wrapper(void * cb_data)
 {
 	DB *		db = CB_DATA(cb_data)->db;
@@ -1825,6 +1876,8 @@ f_entry api_entries[] = {
 	{ "commit_hook",		l_sqlite3_commit_hook },
 	{ "wal_page_hook",		l_sqlite3_wal_page_hook },
 	{ "wal_inject_page",		l_sqlite3_wal_inject_page },
+	{ "wal_checkpoint_hook",		l_sqlite3_wal_checkpoint_hook },
+	{ "wal_checkpoint",		l_sqlite3_wal_checkpoint },
 	{ "progress_handler",		l_sqlite3_progress_handler },
 	{ "busy_handler",		l_sqlite3_busy_handler },
 	{ "set_authorizer",		l_sqlite3_set_authorizer },

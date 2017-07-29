@@ -1952,6 +1952,10 @@ int sqlite3WalClose(
       if( pWal->exclusiveMode==WAL_NORMAL_MODE ){
         pWal->exclusiveMode = WAL_EXCLUSIVE_MODE;
       }
+      /*
+      * we disable the checkpoint hook here
+      */
+      db->xWalCheckpointCallback = 0;
       rc = sqlite3WalCheckpoint(pWal, db, 
           SQLITE_CHECKPOINT_PASSIVE, 0, 0, sync_flags, nBuf, zBuf, 0, 0
       );
@@ -3546,6 +3550,16 @@ int walInjectPage(
 }
 
 
+static int walCheckpointHook(Wal *pWal){
+  // printf("WAL%p: checkpointHook\n", pWal);
+
+  if (pWal->db->xWalCheckpointCallback) {
+  // printf("WAL%p: 2 checkpointHook\n", pWal);
+    pWal->db->xWalCheckpointCallback(pWal->db->pWalCheckpointArg);
+    return 1;
+  }
+  return 0;
+}
 
 /* 
 ** This routine is called to implement sqlite3_wal_checkpoint() and
@@ -3658,6 +3672,9 @@ int sqlite3WalCheckpoint(
   sqlite3WalEndWriteTransaction(pWal);
   walUnlockExclusive(pWal, WAL_CKPT_LOCK, 1);
   pWal->ckptLock = 0;
+  if (rc == SQLITE_OK) {
+    walCheckpointHook(pWal);
+  }
   WALTRACE(("WAL%p: checkpoint %s\n", pWal, rc ? "failed" : "ok"));
   return (rc==SQLITE_OK && eMode!=eMode2 ? SQLITE_BUSY : rc);
 }
