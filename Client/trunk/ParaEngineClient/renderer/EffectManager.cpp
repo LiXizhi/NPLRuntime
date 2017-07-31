@@ -8,9 +8,8 @@
 #include "ParaEngine.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
-//#ifdef USE_DIRECTX_RENDERER
-#include "ShadowMap.h"
 #ifdef USE_DIRECTX_RENDERER
+#include "ShadowMap.h"
 #include "GlowEffect.h"
 #include "WaveEffect.h"
 #endif
@@ -24,6 +23,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 
 #ifdef USE_OPENGL_RENDERER
+#include "ShadowMap.h"
 #include "platform/OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
@@ -249,7 +249,7 @@ EffectManager::EffectManager()
 m_bDisableD3DAlphaTesting(false), m_bDisableD3DCulling(false), m_bEnableLocalLighting(true), m_bUsingShadowMap(false), m_bZEnable(true),
 #ifdef USE_DIRECTX_RENDERER
 m_pShadowMap(NULL), m_pGlowEffect(NULL), 
-#else
+#elif defined(USE_OPENGL_RENDERER)
 m_pShadowMap(NULL),
 #endif
 m_colorGlowness(1.0f, 1.0f, 1.0f, 1.0f), m_nGlowTechnique(0),m_bIsUsingFullScreenGlow(false),m_nMaxLocalLightsNum(4),
@@ -277,8 +277,9 @@ void EffectManager::Cleanup()
 	m_pCurrentEffect = NULL;
 	m_HandleMap.clear();
 	AssetManager <CEffectFile>::Cleanup();
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	SAFE_DELETE(m_pShadowMap);
+#endif
 #ifdef USE_DIRECTX_RENDERER
 	SAFE_DELETE(m_pGlowEffect);
 	SAFE_DELETE(m_pWaveEffect);
@@ -299,7 +300,7 @@ int EffectManager::GetMaxLocalLightsNum()
 
 CShadowMap* EffectManager::GetShadowMap()
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if (m_pShadowMap == 0)
 	{
 		m_pShadowMap = new CShadowMap();
@@ -309,9 +310,9 @@ CShadowMap* EffectManager::GetShadowMap()
 		}
 	}
 	return m_pShadowMap;
-//#else
-	//return NULL;
-//#endif
+#else
+	return NULL;
+#endif
 }
 
 bool EffectManager::IsUsingFullScreenGlow()
@@ -459,9 +460,10 @@ EffectManager::EffectTechniques EffectManager::GetCurrentEffectTechniqueType()
 
 void EffectManager::RestoreDeviceObjects()
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 		m_pShadowMap->RestoreDeviceObjects();
+#endif
 #ifdef USE_DIRECTX_RENDERER
 	if(m_pGlowEffect!=0)
 		m_pGlowEffect->RestoreDeviceObjects();
@@ -473,9 +475,10 @@ void EffectManager::RestoreDeviceObjects()
 
 void EffectManager::InvalidateDeviceObjects()
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 		m_pShadowMap->InvalidateDeviceObjects();
+#endif
 #ifdef USE_DIRECTX_RENDERER
 	if(m_pGlowEffect!=0)
 		m_pGlowEffect->InvalidateDeviceObjects();
@@ -556,12 +559,12 @@ bool EffectManager::IsUsingShadowMap()
 
 const Matrix4* EffectManager::GetTexViewProjMatrix()
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 	{
 		return m_pShadowMap->GetTexViewProjMatrix();
 	}
-//#endif
+#endif
 	return NULL;
 }
 
