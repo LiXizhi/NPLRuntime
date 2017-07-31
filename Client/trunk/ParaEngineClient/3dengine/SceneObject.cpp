@@ -1822,7 +1822,7 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	//
 	//////////////////////////////////////////////////////////////////////////
 	sceneState.CleanupSceneState();
-	
+	sceneState.EnableGlobalLOD(IsLODEnabled());
 	sceneState.vEye = pCamera->GetEyePosition();
 	sceneState.vLookAt = pCamera->GetLookAtPosition();
 	
@@ -2075,6 +2075,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	globalTime =  (int)(CGlobals::GetGameTime()*1000);
 	SceneState& sceneState = *(m_sceneState.get());
+	
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
 	RenderDevicePtr pd3dDevice = sceneState.m_pd3dDevice;
 

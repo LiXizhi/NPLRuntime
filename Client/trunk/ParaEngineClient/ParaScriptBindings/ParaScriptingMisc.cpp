@@ -38,14 +38,30 @@ using namespace luabind;
 
 namespace ParaScripting
 {
-	string ParaMisc::md5(const char* source)
+	string ParaMisc::md5(const std::string& source)
 	{
 		return ParaEngine::StringHelper::md5(source);
 	}
 
-	std::string ParaMisc::md5_(const char* source, bool bBinary)
+	std::string ParaMisc::md5_(const std::string& source, bool bBinary)
 	{
 		return ParaEngine::StringHelper::md5(source, bBinary);
+	}
+
+	std::string ParaMisc::sha1(const std::string& source)
+	{
+		return ParaEngine::StringHelper::sha1(source);
+	}
+
+	std::string ParaMisc::sha1_(const std::string& source, bool bBinary)
+	{
+		return ParaEngine::StringHelper::sha1(source, bBinary);
+	}
+
+
+	std::string ParaMisc::base64(const std::string& source)
+	{
+		return ParaEngine::StringHelper::base64(source);
 	}
 
 	int ParaMisc::GetUnicodeCharNum(const char* str)
@@ -73,12 +89,12 @@ namespace ParaScripting
 		return utf8;
 	}
 
-	const char* ParaMisc::SimpleEncode(const char* source)
+	std::string ParaMisc::SimpleEncode(const std::string& source)
 	{
 		return ParaEngine::StringHelper::SimpleEncode(source);
 	}
 
-	const char* ParaMisc::SimpleDecode( const char* source )
+	std::string ParaMisc::SimpleDecode( const std::string& source )
 	{
 		return ParaEngine::StringHelper::SimpleDecode(source);
 	}
