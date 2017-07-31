@@ -21,6 +21,8 @@
 #include "DropShadowRenderer.h"
 #include "OcclusionQueryBank.h"
 #include "WaveEffect.h"
+#elif defined(USE_OPENGL_RENDERER)
+#include "ShadowMap.h"
 #endif
 #include "PaintEngine/Painter.h"
 #include "ContainerObject.h"
@@ -65,7 +67,6 @@
 #include "SceneObject.h"
 #include "SunLight.h"
 #include "BufferPicking.h"
-#include "ShadowMap.h"
 #include "memdebug.h"
 
 /** @def shadow radius around the eye, larger than which shadows will not be considered.  */
@@ -3688,7 +3689,7 @@ void CSceneObject::SetCurrentPlayer(CBipedObject* pPlayer)
 }
 void CSceneObject::SetShadowMapTexelSizeLevel(int nLevel)
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(CGlobals::GetRenderDevice())
 	{
 		CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
@@ -3701,25 +3702,25 @@ void CSceneObject::SetShadowMapTexelSizeLevel(int nLevel)
 	{
 		CShadowMap::SetDefaultShadowMapTexelSizeLevel(nLevel);
 	}
-//#endif
+#endif
 }
 
 void CSceneObject::SetShadowMapTexelSize(int nWidth, int nHeight)
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
 	if(pShadowMap!=0) 
 	{
 		pShadowMap->SetShadowMapTexelSize(nWidth, nHeight);
 	}
-//#endif
+#endif
 }
 
 /// call this function turn on/off shadow rendering once for all
 void CSceneObject::SetShadow(bool bRenderShadow)
 {
 	m_bRenderMeshShadow = bRenderShadow;
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(bRenderShadow)
 	{
 		// never allow shadow rendering, if the shader version is below 20. 
@@ -3734,7 +3735,7 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 	{
 		SetShadowMapTexelSizeLevel(0);
 	}
-//#endif
+#endif
 }
 
 bool CSceneObject::IsShadowMapEnabled()
@@ -3748,7 +3749,7 @@ bool CSceneObject::IsShadowMapEnabled()
 }
 void CSceneObject::RenderShadowMap()
 {
-//#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	// render a blank image even if sceneState.listShadowCasters.empty() 
 	
 	SceneState& sceneState = *(m_sceneState.get());
@@ -3774,7 +3775,7 @@ void CSceneObject::RenderShadowMap()
 		sceneState.SetShadowPass(false);
 		pShadowMap->EndShadowPass();
 	}
-//#endif
+#endif
 }
 
 BOOL CSceneObject::IsOnObject(int x,int y, int z)
