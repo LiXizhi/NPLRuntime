@@ -63,12 +63,16 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 			LoadCursor( NULL, IDC_ARROW ),//LoadCursorFromFileA( "cursor.cur" ),//remember to ask artist to make the this cursor file the same as "cursor.png"
 			(HBRUSH)GetStockObject(WHITE_BRUSH),
 			NULL, g_sWindowClassName };
-                wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
+		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
 		RegisterClassW( &wndClass );
 
 		// Set the window's initial style
-		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | //WS_THICKFRAME | disable resizing by dragging window frame
-			WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
+	#ifdef TRUCK_STAR_D
+		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
+	#else
+		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | /*WS_THICKFRAME |*/ WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ; //disable resizing by dragging window frame on release build
+	#endif
+
 	#ifdef SHOW_DEFAULT_MENU
 		HMENU hMenu = LoadMenuW( hInstance, MAKEINTRESOURCEW(IDR_MENU) );
 	#else

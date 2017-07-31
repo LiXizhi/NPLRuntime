@@ -466,7 +466,11 @@ namespace ParaScripting
 	{
 		//"Seer_Dev" for developer internal use
 		//"Seer" for release
+	#ifdef TRUCK_STAR_D
 		return "Seer_Dev";
+	#else
+		return "Seer";
+	#endif
 	}
 
 	void CNPL::Crash()
