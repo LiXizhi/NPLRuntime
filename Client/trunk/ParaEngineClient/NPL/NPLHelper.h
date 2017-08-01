@@ -64,7 +64,7 @@ namespace NPL
 		* @return true if successful. 
 		*/
 		template <typename StringType>
-		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL);
+		static bool SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL, bool sort = false);
 
 		template <typename StringType>
 		static bool SerializeToJson(const luabind::object& input, StringType& sCode, int nCodeOffset = 0, STableStack* pRecursionTable = NULL, bool bUseEmptyArray = false);
