@@ -82,15 +82,15 @@ void CSceneWriter::Write(const char* pData, int nSize)
 void CSceneWriter::BeginManagedLoader(const string& sLoaderName)
 {
 	const char sManagedLoader1[] = "local sceneLoader = ParaScene.GetObject(\"<managed_loader>";
-	const char sManagedLoader2[] = "\");\r\n\
-if (sceneLoader:IsValid() == true) then \r\n\
-	ParaScene.Attach(sceneLoader);\r\n\
-	return\r\n\
-end\r\n\
+	const char sManagedLoader2[] = "\");\n\
+if (sceneLoader:IsValid() == true) then \n\
+	ParaScene.Attach(sceneLoader);\n\
+	return\n\
+end\n\
 sceneLoader = ParaScene.CreateManagedLoader(\"";
-const char sManagedLoader3[] = "\");\r\n\
-local player, asset, playerChar,att;\r\n\
-local cpmesh=ParaScene.CreateMeshPhysicsObject;\r\n";
+const char sManagedLoader3[] = "\");\n\
+local player, asset, playerChar,att;\n\
+local cpmesh=ParaScene.CreateMeshPhysicsObject;\n";
 
 	Write(sManagedLoader1, sizeof(sManagedLoader1)-1);
 	Write(sLoaderName);
@@ -102,7 +102,7 @@ local cpmesh=ParaScene.CreateMeshPhysicsObject;\r\n";
 
 void CSceneWriter::EndManagedLoader()
 {
-	const char sManagedLoader1[] = "ParaScene.Attach(sceneLoader);\r\n";
+	const char sManagedLoader1[] = "ParaScene.Attach(sceneLoader);\n";
 	Write(sManagedLoader1, sizeof(sManagedLoader1)-1);
 	Flush();
 }
@@ -186,7 +186,7 @@ void CSceneWriter::WriteRegion(const CShapeAABB& aabb)
 
 	/// write objects
 	const char sManagedLoader1[] = "	asset = ParaAsset.LoadStaticMesh(\"\", \"";
-	const char sManagedLoader2[] = "\");\r\n";
+	const char sManagedLoader2[] = "\");\n";
 	
 	AssetEntity * pLastAsset = NULL;
 

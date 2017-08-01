@@ -1012,7 +1012,7 @@ namespace ParaScripting
 		if(IsValid())
 		{
 			m_pFile->WriteString(str);
-			m_pFile->WriteString("\r\n");
+			m_pFile->WriteString("\n");
 		}
 	}
 

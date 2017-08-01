@@ -376,7 +376,7 @@ namespace ParaEngine
 				for( itCurCP = m_items.begin(); itCurCP != itEndCP; ++ itCurCP,++i)
 				{
 					pOutputFile->WriteString(itCurCP->second->GetKey());
-					pOutputFile->WriteString("\r\n");
+					pOutputFile->WriteString("\n");
 				}
 			}
 			return i;

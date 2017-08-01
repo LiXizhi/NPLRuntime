@@ -45,8 +45,13 @@ void CCommandLineParams::SetAppCommandLine( const char* pCommandLine )
 		else
 			nFromPosName++;
 		int i = nPos - 1;
-		int nFromPos = m_sAppCmdLine.find('\"', nFromPosName + 1);
-		if (nFromPos != string::npos)
+		auto nFromPos = nPos + 1;
+		while(m_sAppCmdLine.size() > nFromPos && m_sAppCmdLine[nFromPos] == ' ')
+		{
+			// skip all spaces
+			nFromPos++;
+		}
+		if (m_sAppCmdLine.size() > nFromPos && m_sAppCmdLine[nFromPos] == '"')
 		{
 			auto nToPos = m_sAppCmdLine.find('\"', nFromPos + 1);
 			if (nToPos != string::npos)

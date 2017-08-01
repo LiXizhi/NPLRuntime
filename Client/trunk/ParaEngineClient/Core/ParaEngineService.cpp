@@ -203,6 +203,7 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 	}
 	else
 	{
+		// printf("            ---ParaEngine Server V%d.%d---         \n", 2, 0);
 		printf("            ---ParaEngine Service---               \n");
 		printf("---------------------------------------------------\n");
 		printf("Service is now running ... do not exit             \n");
