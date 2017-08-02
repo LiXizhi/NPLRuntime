@@ -23,9 +23,9 @@
 * Install VS2017 Community.
 * Download and Install CMake GUI 3.5 or later.
 * Install DXSDK_Jun10.exe (the latest one, from then on, dxsdk is included in Windows SDK)
-* Clone http://<your_name>@10.0.1.201/FrontEnd/NPLRuntime_truck_star.git into your local computer ( your_local_git_path/NPLRuntime_truck_star ).
+* Clone `http://<your_name>@10.0.1.201/FrontEnd/NPLRuntime_truck_star.git` into your local computer ( your_local_git_path/NPLRuntime_truck_star ).
 * Checkout branch: origin/truck_star_develop ( which means creating a local branch "truck_star_develop that tracks remote branch "origin/truck_star_develop" )
-* Download boost_1_64_0.rar from ftp://10.0.1.201/NPL_SDK/DEVKIT/boost_1_64_0.rar
+* Download boost_1_64_0.rar from `ftp://10.0.1.201/NPL_SDK/DEVKIT/boost_1_64_0.rar`
 * Extract boost_1_64_0.rar into your_local_git_path/NPLRuntime_truck_star/Server/trunk/ and rename it to "boost_1_61_0", so it will be like this: your_local_git_path/NPLRuntime_truck_star/Server/trunk/boost_1_61_0/...
 
 #### Build:
@@ -52,7 +52,7 @@
 * Remember: DO NOT Edit source files within Visual Studio unless you're absolutely sure the line endings is set to Unix Convention (LF), or it may cause problem building Linux Version.
             Since there's no convenient way to do this in VS itself, maybe you will need 3rd party plugin such as Strip'em.
 
-### How to send my codes back to original NPLRuntime
+### How to send your codes back to original NPLRuntime
 1. Stash your local changes (if any) and checkout `mirror` branch.
 2. Create a new branch from `mirror`, with a name starting with "send_back", for example `send_back_avatar`, and start working on it.
 3. Push your local `send_back_xxx` onto the remote repository (currently 201), which means creating a new remote branch called `send_back_xxx` on the remote repository.
