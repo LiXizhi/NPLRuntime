@@ -397,7 +397,15 @@ bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object&
 				}
 				else if (type1 == LUA_TSTRING && type2 == LUA_TSTRING)
 				{
-					return object_cast<std::string>(key1).compare(object_cast<std::string>(key2)) < 0;
+					//return object_cast<std::string>(key1).compare(object_cast<std::string>(key2)) < 0;
+					key1.push(key1.interpreter());
+					key2.push(key2.interpreter());
+
+					auto ret = lua_lessthan(key1.interpreter(), -2, -1);
+					lua_pop(key2.interpreter(), 2);
+
+					return ret > 0;
+
 				}
 				else if (type1 == type2)
 				{
