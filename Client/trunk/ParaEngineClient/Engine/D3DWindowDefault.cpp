@@ -65,7 +65,7 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 			NULL, g_sWindowClassName };
 		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
 		RegisterClassW( &wndClass );
-
+	#define TRUCK_STAR_D
 		// Set the window's initial style
 	#ifdef TRUCK_STAR_D
 		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;

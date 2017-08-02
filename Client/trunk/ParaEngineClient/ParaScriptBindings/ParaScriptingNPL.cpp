@@ -464,6 +464,7 @@ namespace ParaScripting
 
 	const char* CNPL::GetNPLID()
 	{
+	#define TRUCK_STAR_D
 		//"Seer_Dev" for developer internal use
 		//"Seer" for release
 	#ifdef TRUCK_STAR_D
