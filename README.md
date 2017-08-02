@@ -1,50 +1,61 @@
-[![Build Status](https://travis-ci.org/LiXizhi/NPLRuntime.svg?branch=master)](https://travis-ci.org/LiXizhi/NPLRuntime)
-[![Build status](https://ci.appveyor.com/api/projects/status/k9e19sceq859bt4p?svg=true)](https://ci.appveyor.com/project/DarrenGZY/nplruntime-e8wud)
-[![Code docs](https://codedocs.xyz/LiXizhi/NPLRuntime.svg)](https://codedocs.xyz/LiXizhi/NPLRuntime)
-[![Documentation Status](https://readthedocs.org/projects/tatfook-npldocs/badge/?version=master)](http://docs.paraengine.com/en/master/?badge=master)
+# Welcome to the TruckStar variant of NPLRuntime!
 
+## Terminology
+**original NPLRuntime**: The original one created and maintained by Xizhi: https://github.com/LiXizhi/NPLRuntime
 
-Welcome to the NPL Runtime!
--------------------------
-NPL or Neural Parallel Language is an open source, high-performance, scripting language. Its syntax is 100%-compatible with [lua](http://www.lua.org). NPL runtime provides essential functionality for building `3D/2D/Server` applications that runs on `windows/linux/android/iOS`. It is similar to [java](www.java.com), but is more flexible in nature.
+## Definition and Usage for each branch:
 
-### Install Guide
-```
-git clone https://github.com/LiXizhi/NPLRuntime.git
-./build_linux.sh
-```
-See [Install Guide](https://github.com/LiXizhi/NPLRuntime/wiki/InstallGuide) for details
+`mirror` This is and will always be exactly the same as THE Original NPLRuntime, you should never try to push to this branch (AND you can't either btw).
 
-### Getting Started
-* [What is NPL?](https://github.com/LiXizhi/NPLRuntime/wiki/WhatIsNPL)
-* [Tutorial: HelloWorld](https://github.com/LiXizhi/NPLRuntime/wiki/TutorialHelloWorld)
-* [Source Code Overview](https://github.com/LiXizhi/NPLRuntime/wiki/SourceCodeOverview)
+`send_back` An example branch for sending codes back to original NPLRuntime, see "How to send my codes back to original NPLRuntime"
 
-### Example code
-```lua
--- this is from `helloworld.npl`
-NPL.activate("(gl)helloworld.npl", {data="hello world!"})
-this(msg){
-   if(msg) then
-      print(msg.data or "");
-   end
-}
-```
+`truck_star_develop` The main branch of TruckStar under development.
 
-### Why a New Programming Language?
-NPL prototype was designed in 2004, which was then called 'parallel oriented language'. NPL is initially designed to write flexible algorithms that works in a multi-threaded, and distributed environment with many computers across the network. More specifically, I want to have a language that is suitable for writing neural network algorithms, 3d simulation and visualization. Lua and C/C++ affinity was chosen from the beginning. 
+`master` Not your business, forget about it.
 
- 
-### Usage
-To run with GUI, use:
-``` 
-npl [filename] [parameters...]
-```    
-To run in server mode, use:
-```	
-npls [filename] [parameters...]
-```    
-For example:
-```	
-npls hello.npl
-```    
+## Workflow for TruckStar Developers
+### General workflow
+1. Clone this repository to your local disk and checkout the `truck_star_develop` branch, which will be your main working place unless it's more appropriate to create a dedicated branch for your feature.
+2. The simple workflow of Pulling->Merging/Rebasing->Pushing will do in most cases. But it's also fine for you to create any branch for specific function or feature and push it up as you like, just remember to merge it back into `truck_star_develop` when you consider it finished.
+
+### How to build
+#### Preparation:
+* Install VS2017 Community.
+* Download and Install CMake GUI 3.5 or later.
+* Install DXSDK_Jun10.exe (the latest one, from then on, dxsdk is included in Windows SDK)
+* Clone http://<your_name>@10.0.1.201/FrontEnd/NPLRuntime_truck_star.git into your local computer ( your_local_git_path/NPLRuntime_truck_star ).
+* Checkout branch: origin/truck_star_develop ( which means creating a local branch "truck_star_develop that tracks remote branch "origin/truck_star_develop" )
+* Download boost_1_64_0.rar from ftp://10.0.1.201/NPL_SDK/DEVKIT/boost_1_64_0.rar
+* Extract boost_1_64_0.rar into your_local_git_path/NPLRuntime_truck_star/Server/trunk/ and rename it to "boost_1_61_0", so it will be like this: your_local_git_path/NPLRuntime_truck_star/Server/trunk/boost_1_61_0/...
+
+#### Build:
+* Run Cmake, set
+        "Where is the source code" to:    "your_local_git_path/NPLRuntime_truck_star"
+        "where to build the binaries" to: "your_vs_project_path_for_nplruntime" (which basically means whatever-folder-you-like)
+* Click "Configure", Select "VisualStudio 2017" Toolset.
+* When configure finished, there will be an option "PARAENGINE_CLIENT_DLL" with a default "off" value. Tick it "on".
+* Click "Configure" again, there should be no errors (only warnings), ignore them.
+* Click "Generate".
+* VS project and solutions should be successfully generated in "your_vs_project_path_for_nplruntime".
+* Open "your_vs_project_path_for_nplruntime/ParaEngine.sln" with VS2017
+* Choose Debug or Release, build solution.
+* Check your_vs_project_path_for_nplruntime/Client/trunk/ParaEngineClient/Debug (or Release), PaperStar[_d].dll should be the thing you want.
+* Done.
+    
+#### How to run and test:
+* Copy the newly generated "PaperStar.dll" and "PaperStar.exe" into TruckStarClient/ClientMain/redist/
+* Run YouCraft_32bits.bat
+
+#### Notes:
+* treat "truck_star_develop" branch as the real master, and DO NOT mess around with the so-named "master" branch. Only commit to "truck_star_develop" or other branches created by yourself.
+* Inform me (Cellfy) if you have features done and want it to be integrated into official NPLRuntime.
+* Remember: DO NOT Edit source files within Visual Studio unless you're absolutely sure the line endings is set to Unix Convention (LF), or it may cause problem building Linux Version.
+            Since there's no convenient way to do this in VS itself, maybe you will need 3rd party plugin such as Strip'em.
+
+### How to send my codes back to original NPLRuntime
+1. Stash your local changes (if any) and checkout `mirror` branch.
+2. Create a new branch from `mirror`, with a name starting with "send_back", for example `send_back_avatar`, and start working on it.
+3. Push your local `send_back_xxx` onto the remote repository (currently 201), which means creating a new remote branch called `send_back_xxx` on the remote repository.
+4. Notify me (Cellfy) and tell me your branch name, say, "I want my codes `send_back_xxx` integrated into NPLRuntime, do that for me". Then i will do that for you. No thanks, but several roasted shashlik sticks in return will be appreciated ;D.
+5. Actually i say "i will do that for you" just means i will send a pull request to xizhi with your branch, so when exactly the request will be merged back into `mirror` can not be guaranteed.
+
