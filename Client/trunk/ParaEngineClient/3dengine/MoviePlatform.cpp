@@ -309,10 +309,9 @@ bool CMoviePlatform::TakeScreenShot(const string& filename, int width, int heigh
 }
 bool CMoviePlatform::TakeScreenShot(const string& filename)
 {
-//#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_DIRECTX_RENDERER
 #define SCREENSHOT_FROM_BACKBUFFER
 #ifdef SCREENSHOT_FROM_BACKBUFFER
-#ifdef USE_DIRECTX_RENDERER
 	LPDIRECT3DSURFACE9  pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
 	if(pBackBuffer)
 	{
@@ -364,6 +363,12 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		}
 	}
 #else
+	if(filename.empty())
+		GSSHOTSYSTEM->TakeScreenShot(NULL);
+	else
+		GSSHOTSYSTEM->TakeScreenShot(filename.c_str());
+#endif
+#elif defined(PARAENGINE_MOBILE)
 	string Filename = filename;
 
 	if (filename.empty())
@@ -396,13 +401,6 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		return true;
 	}
 #endif
-#else
-	if(filename.empty())
-		GSSHOTSYSTEM->TakeScreenShot(NULL);
-	else
-		GSSHOTSYSTEM->TakeScreenShot(filename.c_str());
-#endif
-//#endif
 	return false;
 }
 void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)
