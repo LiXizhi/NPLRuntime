@@ -50,17 +50,24 @@ namespace ParaScripting
 		* str = SimpleDecode(SimpleEncode(str)) 
 		* @return: it may return NULL if input invalid
 		*/
-		static const char* SimpleEncode(const char* source);
+		static std::string SimpleEncode(const std::string& source);
 
 		/** decode a string using really simple algorithm.  
 		* str = SimpleDecode(SimpleEncode(str)) 
 		* @return: it may return NULL if input invalid
 		*/
-		static const char* SimpleDecode(const char* source);
+		static std::string SimpleDecode(const std::string& source);
 
 		/** convert the md5 of the input source string. */
-		static string md5(const char* source);
-		static string md5_(const char* source, bool bBinary);
+		static string md5(const string& source);
+		static string md5_(const string& source, bool bBinary);
+
+		/** convert the sha1 of the input source string. */
+		static string sha1(const string& source);
+		static string sha1_(const string& source, bool bBinary);
+
+		/** convert the base64 of the input source string. */
+		static string base64(const string& source);
 
 		/** Generating [-MAX, MAX] long integer
 		* @param seedTable: nil or a table containing {_seed=integer} 

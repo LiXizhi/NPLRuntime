@@ -522,6 +522,8 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, IsPhysicsEnabled_s, bool*)	{ *p1 = cls->IsPhysicsEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnablePhysics_s, bool)	{ cls->EnablePhysics(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, EnableLOD_s, bool) { cls->EnableLOD(p1); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, GetTextureFileName_s, const char**)	{ *p1 = cls->GetTextureFileName().c_str(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetTextureFileName_s, const char*)	{ cls->SetTextureFileName(p1); return S_OK; }
 
@@ -532,7 +534,6 @@ public:
 	/** we support multi-dimensional child object. by default objects have only one column. */
 	virtual int GetChildAttributeColumnCount();
 	virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
-	
 public:
 	
 	/** whether this object is global. By default,the type info is used to determine this.*/
@@ -1225,6 +1226,10 @@ public:
 	inline bool IsGeometryDirty() const { return m_bGeometryDirty; }
 	void SetGeometryDirty(bool bDirty = true);
 
+	/** whether to enable lod if there is lod. Default to true. */
+	bool IsLODEnabled() const;
+	void EnableLOD(bool val);
+
 	/** this function is usually called after asset file has changed. and bounding box needs to be recalculated. */
 	virtual void UpdateGeometry();
 
@@ -1260,19 +1265,19 @@ protected:
 	CTerrainTile* m_tileContainer;
 	
 	/** the primary technique handle*/
-	int m_nTechniqueHandle;
+	int32 m_nTechniqueHandle;
 	
 	/** the frame number that this object is last accessed.*/
-	int m_nFrameNumber;
+	int32 m_nFrameNumber;
 	
 	/** this is the selection group index. if -1, it means that it was not selected. */
-	int m_nSelectGroupIndex;
+	int32 m_nSelectGroupIndex;
 
 	/** the larger, the more important. default to 0. only positive numbers are allowed. 
 	* During scene sorting, objects of the same group with larger render importance is rendered first, regardless of its camera to object distance
 	* we can limit the max number of objects drawn of a given render importance by calling SceneObject::SetMaxRenderCount() function 
 	*/
-	int m_nRenderImportance;
+	int32 m_nRenderImportance;
 
 	/** 0 if automatic, larger number renders after smaller numbered object. The following numbers are fixed in the pipeline and may subject to changes in later versions.
 	[1.0-2.0): solid big objects
@@ -1293,7 +1298,9 @@ protected:
 	CParameterBlock* m_pEffectParamBlock;
 
 	/** whether the shape of the object is dirty, such as model, size, facing, local transform is changed. */
-	bool m_bGeometryDirty;
+	bool m_bGeometryDirty : 1;
+	/** whether to enable lod if there is lod. Default to true. */
+	bool m_bEnableLOD : 1;
 	/** enum of RenderSelectionStyle */
 	static int g_nObjectSelectionEffect;
 };

@@ -22,6 +22,9 @@
 
 using namespace ParaEngine;
 
+/**@def enable automatic lod calculation for bmax model */
+#define ENABLE_BMAX_AUTO_LOD
+
 //////////////////////////////////////////////////////////////////////////
 //
 // CParaXLoader
@@ -282,35 +285,70 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 	{
 		// preload file data to memory in the IO thread. 
 		std::vector<MeshLOD> & pMeshLODs = m_MeshLODs.size() > 0 ? m_MeshLODs : m_asset->m_MeshLODs;
-		std::vector<MeshLOD>::iterator iCur, iEnd = pMeshLODs.end();
-		for (iCur = pMeshLODs.begin(); iCur != iEnd; ++iCur)
+		for (auto iCur = pMeshLODs.begin(); iCur != pMeshLODs.end(); ++iCur)
 		{
-			MeshLOD& lod = (*iCur);
-			if (lod.m_pParaXMesh == 0)
+			if ( ! (iCur->m_pParaXMesh) )
 			{
-				CParaFile myFile(lod.m_sMeshFileName.c_str());
+				CParaFile myFile(iCur->m_sMeshFileName.c_str());
 
 				if (myFile.isEof())
 				{
-					OUTPUT_LOG("warning: ParaX model file not found %s\n", lod.m_sMeshFileName.c_str());
+					OUTPUT_LOG("warning: ParaX model file not found %s\n", iCur->m_sMeshFileName.c_str());
 					return E_FAIL;
 				}
 
-				std::string sExt = CParaFile::GetFileExtension(lod.m_sMeshFileName);
+				std::string sExt = CParaFile::GetFileExtension(iCur->m_sMeshFileName);
 				StringHelper::make_lower(sExt);
 				if (sExt == "bmax")
 				{
 					// block max model. 
 					BMaxParser p(myFile.getBuffer(), myFile.getSize());
-					lod.m_pParaXMesh = p.ParseParaXModel();
+					iCur->m_pParaXMesh = p.ParseParaXModel();
+					auto pParaXMesh = iCur->m_pParaXMesh;
+
+#ifdef ENABLE_BMAX_AUTO_LOD
+					if (m_MeshLODs.size() == 1)
+					{
+						// each LOD at least cut triangle count in half and no bigger than a given count. 
+						// by default, generate lod in range 30, 60, 90, 120 meters;
+						// TODO: currently it is hard-coded, shall we read LOD settings from bmax file, so that users
+						// have find-control on the settings. 
+						struct LODSetting {
+							int nMaxTriangleCount;
+							float fMaxDistance;
+						};
+						const LODSetting nLodsMaxTriangleCounts[] = { {2000, 60.f}, {500, 90.f}, {100, 120.f} };
+						
+						// from second lod
+						for (int i = 0; pParaXMesh && i < sizeof(nLodsMaxTriangleCounts)/sizeof(LODSetting); i++)
+						{
+							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i].nMaxTriangleCount)
+							{
+								MeshLOD lod;
+								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i].nMaxTriangleCount, (int)(pParaXMesh->GetPolyCount() / 2) - 4));
+								lod.m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[i].fMaxDistance);
+								if (lod.m_pParaXMesh)
+								{
+									if (pMeshLODs.size() == 1)
+									{
+										iCur->m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[0].fMaxDistance*0.5f);
+									}
+									pParaXMesh = lod.m_pParaXMesh;
+									pMeshLODs.push_back(lod);
+									iCur = pMeshLODs.end() - 1;
+								}
+							}
+						}
+					}
+#endif
 				}
 
 #ifdef SUPPORT_FBX_MODEL_FILE
 				else if (sExt == "fbx")
 				{
 					// static or animated fbx model
-					FBXParser parser(lod.m_sMeshFileName);
-					lod.m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize());
+					FBXParser parser(iCur->m_sMeshFileName);
+					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize());
 				}
 #endif
 				else
@@ -318,25 +356,25 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					CParaXSerializer serializer;
 #if  defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 					ParaXParser parser(myFile, CAsyncLoader::GetSingleton().GetFileParser());
-					lod.m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile, parser);
+					iCur->m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile, parser);
 #else
-					lod.m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile);
+					iCur->m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile);
 #endif
 				}
-				if (lod.m_pParaXMesh == 0)
+				if (iCur->m_pParaXMesh == 0)
 				{
 					// lod.m_pParaXMesh = new CParaXModel(ParaXHeaderDef());
-					OUTPUT_LOG("warning: cannot load ParaX model file %s\n", lod.m_sMeshFileName.c_str());
+					OUTPUT_LOG("warning: cannot load ParaX model file %s\n", iCur->m_sMeshFileName.c_str());
 					return E_FAIL;
 				}
 
-				if (!lod.m_pParaXMesh->IsValid())
+				if (!iCur->m_pParaXMesh->IsValid())
 				{
 					return E_FAIL;
 				}
 				else
 				{
-					m_nTechniqueHandle = lod.m_pParaXMesh->IsBmaxModel() ? TECH_BMAX_MODEL : TECH_CHARACTER;
+					m_nTechniqueHandle = iCur->m_pParaXMesh->IsBmaxModel() ? TECH_BMAX_MODEL : TECH_CHARACTER;
 				}
 			}
 		}

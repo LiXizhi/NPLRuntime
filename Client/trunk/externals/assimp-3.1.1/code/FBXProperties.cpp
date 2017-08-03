@@ -75,10 +75,18 @@ Property* ReadTypedProperty(const Element& element)
 	ai_assert(element.KeyToken().StringContents() == "P");
 
 	const TokenList& tok = element.Tokens();
-	ai_assert(tok.size() >= 5);
-
+	
 	const std::string& s = ParseTokenAsString(*tok[1]);
 	const char* const cs = s.c_str();
+
+	if (!strcmp(cs, "Compound") || !strcmp(cs, "Reference"))
+	{
+		return nullptr;
+	}
+
+	auto size = tok.size();
+	ai_assert(size >= 5);
+
 	if (!strcmp(cs,"KString")) {
 		return new TypedProperty<std::string>(ParseTokenAsString(*tok[4]));
 	}

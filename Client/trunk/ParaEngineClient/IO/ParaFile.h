@@ -381,7 +381,8 @@ namespace ParaEngine
 		/** the string length can not exceed 1024*/
 		PE_CORE_DECL int WriteFormated(const char *, ...);
 
-		inline int WriteDWORD(DWORD data){ return write(&data, 4); }
+		inline int WriteDWORD(DWORD data){ return write(&data, sizeof(data)); }
+		inline int WriteWORD(WORD data) { return write(&data, sizeof(data)); } 
 
 
 		/**

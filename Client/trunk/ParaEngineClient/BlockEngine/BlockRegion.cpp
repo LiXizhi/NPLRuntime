@@ -17,6 +17,8 @@
 #include "NPLRuntime.h"
 #include "WorldInfo.h"
 
+#include <zlib.h>
+
 namespace ParaEngine
 {
 	/**	we will not use custom data for blocks that has very few instances(less than this value),
@@ -154,6 +156,33 @@ namespace ParaEngine
 			return pChunk->SetBlockToAir(blockId_r);
 		}
 		return false;
+	}
+
+	void BlockRegion::SetChunksDirtyByBlockTemplate(uint16_t templateId)
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i<nCount; i++)
+		{
+			BlockChunk* pChunk = m_chunks[i];
+			if (pChunk)
+			{
+				
+				std::vector<Uint16x3> rets = pChunk->refreshBlockVisible(templateId);
+				for (auto itr = rets.begin(); itr != rets.end(); ++itr)
+				{
+					Uint16x3 blockId_rs = *itr;
+					ChunkMaxHeight& blockHeight = m_blockHeightMap[blockId_rs.x + (blockId_rs.z << 9)];
+					ChunkMaxHeight prevHeight = blockHeight;
+
+					blockId_rs.x += m_minBlockId_ws.x;
+					blockId_rs.y += m_minBlockId_ws.y;
+					blockId_rs.z += m_minBlockId_ws.z;
+
+					m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
+					m_pBlockWorld->NotifyBlockHeightMapChanged(blockId_rs.x, blockId_rs.z, prevHeight);
+				}
+			}
+		}
 	}
 
 	void BlockRegion::SetBlockTemplateByIndex(uint16_t blockX_rs,uint16_t blockY_rs,uint16_t blockZ_rs,BlockTemplate* pTemplate)
@@ -771,42 +800,46 @@ namespace ParaEngine
 		SetModified(false);
 
 		std::string fileName = m_pBlockWorld->GetWorldInfo().GetBlockRegionFileName(m_regionX,m_regionZ,true);
-		
-		CParaFile cfile;
-		if(cfile.CreateNewFile(fileName.c_str(),true))
+		CParaFile cfile, memFile;
+
+		if (cfile.CreateNewFile(fileName.c_str(), true) && memFile.OpenFile("<memory>", false))
 		{
-			//'b'<<24 + 'l'<<16 + 'o'<<8 + 'c';
-			uint32_t fileTypeId = 0x626c6f63;
+			//'b'<<24 + 'l'<<16 + 'o'<<8 + 'c' + 1;
+			uint32_t fileTypeId = 0x626c6f63 + 1;
 			cfile.WriteDWORD(fileTypeId);
 
-			uint32_t regionId = (m_regionX << 16) + m_regionZ;
-			cfile.WriteDWORD(regionId);
+			//version 1.00
+			uint16_t version = 0x0100;
+			cfile.WriteWORD(version);
 
-			std::vector<std::pair<uint16_t,uint16_t>> blockData;
-			std::vector<std::pair<uint16_t,uint16_t>> blockMetaData;
+			uint32_t regionId = (m_regionX << 16) + m_regionZ;
+			memFile.WriteDWORD(regionId);
+
+			std::vector<std::pair<uint16_t, uint16_t>> blockData;
+			std::vector<std::pair<uint16_t, uint16_t>> blockMetaData;
 			std::vector<uint8_t> blockLightMapData;
 			std::map<uint16_t, std::vector<uint16_t> > blockIDToIndex;
-			
+
 			StringBuilder strBuilder(1024);
-			uint32_t dataItemSize = sizeof(std::pair<uint16_t,uint16_t>);
+			uint32_t dataItemSize = sizeof(std::pair<uint16_t, uint16_t>);
 			DWORD data_mask = 0;
 			data_mask |= ChunkDataMask_HasCustomData;
-			cfile.WriteDWORD(dataItemSize | data_mask);
+			memFile.WriteDWORD(dataItemSize | data_mask);
 
 			{
 				strBuilder.clear();
 				if (CIntegerEncoder::IsSameIntegerBetter(m_chunkTimestamp))
 				{
-					cfile.WriteEncodedUInt(ChunkCustomDataType_TimeStamp_SameInteger);
+					memFile.WriteEncodedUInt(ChunkCustomDataType_TimeStamp_SameInteger);
 					CIntegerEncoder::EncodeSameInteger(strBuilder, m_chunkTimestamp);
 				}
 				else
 				{
-					cfile.WriteEncodedUInt(ChunkCustomDataType_TimeStamp);
+					memFile.WriteEncodedUInt(ChunkCustomDataType_TimeStamp);
 					CIntegerEncoder::EncodeIntArray(strBuilder, m_chunkTimestamp);
 				}
-				cfile.WriteEncodedUInt(strBuilder.size());
-				cfile.write(&(strBuilder[0]), strBuilder.size());
+				memFile.WriteEncodedUInt(strBuilder.size());
+				memFile.write(&(strBuilder[0]), strBuilder.size());
 			}
 			{
 				// TODO: biomes of each 512*512 chunk column. 
@@ -815,19 +848,19 @@ namespace ParaEngine
 				// TODO: heightmap of each 512*512 chunk column. 
 			}
 
-			cfile.WriteEncodedUInt(ChunkCustomDataType_ChunksData);
+			memFile.WriteEncodedUInt(ChunkCustomDataType_ChunksData);
 
 			// saving for all 32*32*16 chunks
 			uint32_t nCount = GetChunksCount();
-			for(uint32_t i = 0;i<nCount;i++)
+			for (uint32_t i = 0; i<nCount; i++)
 			{
 				BlockChunk * pChunk = m_chunks[i];
-				if(!pChunk)
+				if (!pChunk)
 					continue;
 				// first 32bits stores chunkid and data mask
 				DWORD dwChunkID = i;
 				// any bitwise field of ChunkDataMask
-				DWORD dwChunkDataMask = 0; 
+				DWORD dwChunkDataMask = 0;
 
 				blockIDToIndex.clear();
 				blockData.clear();
@@ -835,17 +868,17 @@ namespace ParaEngine
 				blockLightMapData.clear();
 
 				// prepare and pre-process data into memory
-				
+
 				uint16_t sizeCount = (uint16_t)pChunk->m_blockIndices.size();
-				for(uint16_t j=0;j<sizeCount;j++)
+				for (uint16_t j = 0; j<sizeCount; j++)
 				{
 					int32_t blockIdx = pChunk->m_blockIndices[j];
-					if(blockIdx > -1)
+					if (blockIdx > -1)
 					{
 						Block& block = pChunk->GetBlockByIndex(blockIdx);
 						auto& block_indices = blockIDToIndex[block.GetTemplateId()];
 						block_indices.push_back(j);
-						
+
 						if (block.GetUserData() != 0)
 						{
 							blockMetaData.push_back(make_pair(j, (uint16_t)(block.GetUserData())));
@@ -854,26 +887,26 @@ namespace ParaEngine
 				}
 
 				int nCustomDataCount = 0;
-				for(auto itCur=blockIDToIndex.begin(); itCur!=blockIDToIndex.end(); ++itCur)
+				for (auto itCur = blockIDToIndex.begin(); itCur != blockIDToIndex.end(); ++itCur)
 				{
 					int nBlockCount = itCur->second.size();
-					if(nBlockCount < SKIP_CUSTOM_BLOCK_COUNT  && nBlockCount >0)
+					if (nBlockCount < SKIP_CUSTOM_BLOCK_COUNT  && nBlockCount >0)
 					{
 						// we will not use custom data for blocks that has very few instances,
 						// since custom data has 64bits overhead. 
 						uint16_t nBlockID = itCur->first;
 
 						auto& block_indices = itCur->second;
-						for(auto itBlockCur = block_indices.begin();itBlockCur!=block_indices.end(); ++itBlockCur)
+						for (auto itBlockCur = block_indices.begin(); itBlockCur != block_indices.end(); ++itBlockCur)
 						{
-							blockData.push_back(make_pair(*itBlockCur,nBlockID));
+							blockData.push_back(make_pair(*itBlockCur, nBlockID));
 						}
 						block_indices.clear();
 					}
 					else
 					{
 						// in most cases, we will use custom data to store block id and indices
-						nCustomDataCount ++; 
+						nCustomDataCount++;
 					}
 				}
 
@@ -899,66 +932,66 @@ namespace ParaEngine
 						blockLightMapData.clear();
 					}
 				}
-				
-				if(nCustomDataCount>0)
+
+				if (nCustomDataCount>0)
 				{
 					dwChunkDataMask |= ChunkDataMask_HasCustomData;
 				}
-				if(blockData.size() > 0)
+				if (blockData.size() > 0)
 				{
 					dwChunkDataMask |= ChunkDataMask_HasBlockData;
 				}
-				if(blockMetaData.size() > 0)
+				if (blockMetaData.size() > 0)
 				{
 					dwChunkDataMask |= ChunkDataMask_HasMaskData;
 				}
 
 				// skip this chunk if it is fully empty
-				if(dwChunkDataMask == 0)
+				if (dwChunkDataMask == 0)
 					continue;
 
 				// write id and data mask
-				cfile.WriteDWORD(dwChunkID | dwChunkDataMask);
+				memFile.WriteDWORD(dwChunkID | dwChunkDataMask);
 
 
 				// custom data
-				if(nCustomDataCount > 0)
+				if (nCustomDataCount > 0)
 				{
-					cfile.WriteEncodedUInt(nCustomDataCount);
+					memFile.WriteEncodedUInt(nCustomDataCount);
 
 					// write block id and indices
-					for(auto itCur=blockIDToIndex.begin(); itCur!=blockIDToIndex.end(); ++itCur)
+					for (auto itCur = blockIDToIndex.begin(); itCur != blockIDToIndex.end(); ++itCur)
 					{
 						uint16_t nBlockID = itCur->first;
 						auto& block_indices = itCur->second;
 						int nCount = block_indices.size();
-						if(nCount > 0)
+						if (nCount > 0)
 						{
 							if (nCount>10 && CIntegerEncoder::IsSkipOneBetter(block_indices))
 							{
 								strBuilder.clear();
 								CIntegerEncoder::EncodeSkipOne(strBuilder, block_indices);
-								cfile.WriteEncodedUInt(ChunkCustomDataType_Blocks_SkipOne);
-								cfile.WriteEncodedUInt(nBlockID);
-								cfile.WriteEncodedUInt(strBuilder.size());
-								cfile.write(&(strBuilder[0]), strBuilder.size());
+								memFile.WriteEncodedUInt(ChunkCustomDataType_Blocks_SkipOne);
+								memFile.WriteEncodedUInt(nBlockID);
+								memFile.WriteEncodedUInt(strBuilder.size());
+								memFile.write(&(strBuilder[0]), strBuilder.size());
 							}
-							else if(nCount > 1)
+							else if (nCount > 1)
 							{
 								strBuilder.clear();
 								CIntegerEncoder::EncodeIntDeltaArray(strBuilder, block_indices);
-								cfile.WriteEncodedUInt(ChunkCustomDataType_Blocks_Delta);
-								cfile.WriteEncodedUInt(nBlockID);
-								cfile.WriteEncodedUInt(strBuilder.size());
-								cfile.write(&(strBuilder[0]), strBuilder.size());
+								memFile.WriteEncodedUInt(ChunkCustomDataType_Blocks_Delta);
+								memFile.WriteEncodedUInt(nBlockID);
+								memFile.WriteEncodedUInt(strBuilder.size());
+								memFile.write(&(strBuilder[0]), strBuilder.size());
 							}
 							else
 							{
 								// this is never used
-								cfile.WriteEncodedUInt(ChunkCustomDataType_Blocks);
-								cfile.WriteEncodedUInt(nBlockID);
-								cfile.WriteEncodedUInt(block_indices.size());
-								cfile.write(&(block_indices[0]), block_indices.size() * sizeof(uint16_t));
+								memFile.WriteEncodedUInt(ChunkCustomDataType_Blocks);
+								memFile.WriteEncodedUInt(nBlockID);
+								memFile.WriteEncodedUInt(block_indices.size());
+								memFile.write(&(block_indices[0]), block_indices.size() * sizeof(uint16_t));
 							}
 						}
 					}
@@ -966,36 +999,364 @@ namespace ParaEngine
 					// write light map
 					if (!blockLightMapData.empty())
 					{
-						cfile.WriteEncodedUInt(ChunkCustomDataType_LightValues);
-						cfile.WriteDWORD(blockLightMapData.size());
-						cfile.write(&(blockLightMapData[0]), blockLightMapData.size());
-					}
-				}
-				
-				if(blockData.size() > 0 || ((dwChunkDataMask & ChunkDataMask_HasCustomData) == 0) )
-				{
-					//block count
-					cfile.WriteDWORD(blockData.size());
-					//block id data
-					if(blockData.size() > 0)
-					{
-						std::pair<uint16_t,uint16_t>* pBlockData = &blockData[0];
-						cfile.write(pBlockData, blockData.size() * dataItemSize);
+						memFile.WriteEncodedUInt(ChunkCustomDataType_LightValues);
+						memFile.WriteDWORD(blockLightMapData.size());
+						memFile.write(&(blockLightMapData[0]), blockLightMapData.size());
 					}
 				}
 
-				if(blockMetaData.size() > 0)
+				if (blockData.size() > 0 || ((dwChunkDataMask & ChunkDataMask_HasCustomData) == 0))
 				{
 					//block count
-					cfile.WriteDWORD(blockMetaData.size());
+					memFile.WriteDWORD(blockData.size());
+					//block id data
+					if (blockData.size() > 0)
+					{
+						std::pair<uint16_t, uint16_t>* pBlockData = &blockData[0];
+						memFile.write(pBlockData, blockData.size() * dataItemSize);
+					}
+				}
+
+				if (blockMetaData.size() > 0)
+				{
+					//block count
+					memFile.WriteDWORD(blockMetaData.size());
 					// block meta data
-					std::pair<uint16_t,uint16_t>* pBlockData = &blockMetaData[0];
-					cfile.write(pBlockData, blockMetaData.size() * dataItemSize);
+					std::pair<uint16_t, uint16_t>* pBlockData = &blockMetaData[0];
+					memFile.write(pBlockData, blockMetaData.size() * dataItemSize);
 				}
 			}
+			auto pStringBuilder = static_cast<StringBuilder*>(memFile.GetHandlePtr());
+
+			// save compressed data
+			do
+			{			
+				auto uncompressedSize = pStringBuilder->size();
+
+				// 
+				if (uncompressedSize > 1024)
+				{
+					char* compressedData = new char[uncompressedSize];
+					size_t compressedSize = 0;
+
+					z_stream stream;
+					stream.next_in = (Bytef*)pStringBuilder->str();
+					stream.avail_in = (uInt)uncompressedSize;
+
+					stream.next_out = (Bytef*)compressedData;
+					stream.avail_out = (uInt)uncompressedSize;
+
+					stream.zalloc = (alloc_func)0;
+					stream.zfree = (free_func)0;
+					stream.opaque = (voidpf)0;
+
+					int err = deflateInit(&stream, Z_DEFAULT_COMPRESSION);
+					if (err != Z_OK)
+					{
+						OUTPUT_LOG("could not compress data");
+						delete[] compressedData;
+						break;
+					}
+
+					err = deflate(&stream, Z_FINISH);
+					if (err != Z_STREAM_END) 
+					{
+						deflateEnd(&stream);
+
+						OUTPUT_LOG("could not compress data");
+						delete[] compressedData;
+						break;
+					}
+					compressedSize = stream.total_out;
+					deflateEnd(&stream);
+
+					cfile.WriteDWORD(uncompressedSize); // uncompressedSize
+					cfile.WriteDWORD(compressedSize); // compressedSize;
+					cfile.write(compressedData, compressedSize);
+
+					delete[] compressedData;
+				}
+				else // so small, write uncompressed data
+				{
+					cfile.WriteDWORD(uncompressedSize); // uncompressedSize
+					cfile.WriteDWORD(0); // compressedSize;
+					cfile.write(pStringBuilder->str(), pStringBuilder->size());
+				}
+
+
+			} while (false);
+
+			
 			cfile.close();
+			memFile.close();
 
 			GetBlockWorld()->OnSaveBlockRegion(m_regionX, m_regionZ);
+		}
+	}
+
+	void BlockRegion::ParserFile(CParaFile* pFile)
+	{
+		uint32_t regionId = pFile->ReadDWORD();
+
+		uint32_t data_mask = pFile->ReadDWORD();
+		uint32_t dataItemSize = data_mask & 0xffff;
+
+		m_pBlockWorld->SuspendLightUpdate();
+
+		if ((data_mask & ChunkDataMask_HasCustomData) > 0)
+		{
+			// read all custom data until we meet ChunkCustomDataType_ChunksData
+			DWORD nCustomDataType;
+			while (!pFile->isEof() && ((nCustomDataType = pFile->ReadEncodedUInt()) != ChunkCustomDataType_ChunksData))
+			{
+				switch (nCustomDataType)
+				{
+				case ChunkCustomDataType_Biomes:
+				case ChunkCustomDataType_Biomes_SameInteger:
+					break;
+				case ChunkCustomDataType_TimeStamp:
+				case ChunkCustomDataType_TimeStamp_SameInteger:
+				{
+					uint32_t nByteCount = pFile->ReadEncodedUInt();
+					m_chunkTimestamp.clear();
+
+					if (nCustomDataType == ChunkCustomDataType_TimeStamp_SameInteger)
+						CIntegerEncoder::DecodeSameInteger(*pFile, m_chunkTimestamp, nByteCount);
+					else
+						CIntegerEncoder::DecodeIntArray(*pFile, m_chunkTimestamp, nByteCount);
+					if (m_chunkTimestamp.size() != 32 * 32)
+					{
+						m_chunkTimestamp.resize(32 * 32);
+						OUTPUT_LOG("error:invalid m_chunkTimestamp \n");
+						return;
+					}
+				}
+				break;
+				default:
+					OUTPUT_LOG("error:unknown block region file format in custom data \n");
+					return;
+				}
+			}
+		}
+		else
+		{ // compatible with old formats
+
+		  // timestamp of 32*32 chunk columns. chunk column will be generated if there is no timestamp. 
+		  // loading a file without timestamp will be set to default timestamp of 1. 
+			std::fill(m_chunkTimestamp.begin(), m_chunkTimestamp.end(), 1);
+		}
+
+		std::vector<std::pair<uint16_t, uint16_t>> blockData;
+		std::vector<uint16_t> blockIndices;
+		std::vector<uint8_t> blockLightMap;
+
+		while (!pFile->isEof())
+		{
+			uint32_t chunkId_and_dataMask = pFile->ReadDWORD();
+			uint32_t chunkId = chunkId_and_dataMask & (0x7fffffff);
+
+			m_nChunksLoaded++;
+
+			uint16_t chunkX, chunkY, chunkZ;
+			UnpackChunkIndex(chunkId, chunkX, chunkY, chunkZ);
+			blockLightMap.clear();
+			uint16_t offset_x = (chunkX << 4);
+			uint16_t offset_y = (chunkY << 4);
+			uint16_t offset_z = (chunkZ << 4);
+
+			if ((chunkId_and_dataMask & ChunkDataMask_HasCustomData) > 0)
+			{
+				int nCustomDataCount = pFile->ReadEncodedUInt();
+				for (int c = 0; c<nCustomDataCount; ++c)
+				{
+					DWORD nCustomDataType = pFile->ReadEncodedUInt();
+					switch (nCustomDataType)
+					{
+					case ChunkCustomDataType_LightValues:
+					{
+						uint32_t blockCount = pFile->ReadDWORD();
+
+						blockLightMap.resize(blockCount);
+						pFile->read(&blockLightMap[0], blockCount);
+						break;
+					}
+					case ChunkCustomDataType_Blocks:
+					case ChunkCustomDataType_Blocks_SkipOne:
+					case ChunkCustomDataType_Blocks_Delta:
+					{
+						uint16_t nBlockID = (uint16_t)pFile->ReadEncodedUInt();
+						uint16_t nBlockCount = (uint16_t)pFile->ReadEncodedUInt();
+
+						if (nCustomDataType == ChunkCustomDataType_Blocks_SkipOne)
+						{
+							blockIndices.clear();
+							CIntegerEncoder::DecodeSkipOne(*pFile, blockIndices, nBlockCount);
+							nBlockCount = (uint16_t)blockIndices.size();
+						}
+						else if (nCustomDataType == ChunkCustomDataType_Blocks_Delta)
+						{
+							blockIndices.clear();
+							CIntegerEncoder::DecodeIntDeltaArray(*pFile, blockIndices, nBlockCount);
+							nBlockCount = (uint16_t)blockIndices.size();
+						}
+						else if (nCustomDataType == ChunkCustomDataType_Blocks)
+						{
+							blockIndices.resize(nBlockCount);
+							pFile->read(&blockIndices[0], nBlockCount * sizeof(uint16_t));
+						}
+						if (nBlockCount > 0)
+						{
+							BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(nBlockID);
+							if (pTemplate)
+							{
+								BlockChunk* pChunk = GetChunk(chunkId, true);
+								if (pChunk)
+								{
+									pChunk->LoadBlocks(blockIndices, pTemplate);
+								}
+							}
+						}
+					}
+					break;
+					case ChunkCustomDataType_Biomes:
+					{
+						// TODO: 
+					}
+					break;
+					default:
+					{
+						OUTPUT_LOG("error:unknown block region file format in custom data \n");
+						return;
+					}
+					}
+				}
+			}
+
+			if ((chunkId_and_dataMask & ChunkDataMask_HasBlockData) > 0 ||
+				(chunkId_and_dataMask & ChunkDataMask_HasCustomData) == 0)
+			{
+				uint32_t blockCount = pFile->ReadDWORD();
+
+				blockData.resize(blockCount);
+				if (blockData.size() > 0)
+				{
+					std::pair<uint16_t, uint16_t> *pData = &blockData[0];
+					pFile->read(pData, dataItemSize*blockCount);
+				}
+
+				BlockChunk* pChunk = GetChunk(chunkId, true);
+				if (pChunk)
+				{
+					pChunk->ReserveBlocks(pChunk->GetBlockCount() + blockCount);
+					for (uint32_t i = 0; i < blockCount; i++)
+					{
+						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
+						BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(curBlockData.second);
+						if (pTemplate)
+						{
+							pChunk->LoadBlock(curBlockData.first, pTemplate);
+						}
+					}
+				}
+			}
+
+			if ((chunkId_and_dataMask & ChunkDataMask_HasMaskData) > 0)
+			{
+				uint32_t blockCount = pFile->ReadDWORD();
+
+				blockData.resize(blockCount);
+				std::pair<uint16_t, uint16_t> *pData = &blockData[0];
+				pFile->read(pData, dataItemSize*blockCount);
+
+				BlockChunk* pChunk = GetChunk(chunkId);
+				if (pChunk)
+				{
+					for (uint32_t i = 0; i < blockCount; i++)
+					{
+						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
+						pChunk->SetBlockData(curBlockData.first, curBlockData.second);
+					}
+				}
+			}
+			if (!blockLightMap.empty())
+			{
+				BlockChunk* pChunk = GetChunk(chunkId, true);
+				uint32_t blockCount = blockLightMap.size();
+				for (uint32_t i = 0; i < blockCount; i++)
+				{
+					uint8_t v = blockLightMap[i];
+					pChunk->m_lightmapArray[i].LoadBrightness((v & 0xf0) >> 4, v & 0xf);
+				}
+				m_pBlockWorld->GetLightGrid().SetColumnPreloaded((m_regionX << 5) + chunkX, (m_regionZ << 5) + chunkZ);
+			}
+		}
+
+		m_nEventAsyncLoadWorldFinished = 1;
+
+		// TODO: initialize sunlight on height map?  
+		m_pBlockWorld->ResumeLightUpdate();
+	}
+
+	void BlockRegion::ParserFile1_0(CParaFile* pFile)
+	{
+		size_t uncompressedSize = pFile->ReadDWORD();
+		size_t compressedSize = pFile->ReadDWORD();
+
+		if (compressedSize == 0)
+		{
+			// uncompressed data
+			ParserFile(pFile);
+		}
+		else
+		{
+			// compressed data
+			char* compressedData = new char[compressedSize];
+			char* uncompressedData = new char[uncompressedSize];
+			auto readSize = pFile->read(compressedData, compressedSize);
+			
+			if (readSize != compressedSize)
+			{
+				delete[] compressedData;
+				delete[] uncompressedData;
+				return;
+			}
+
+			z_stream zstream;
+			zstream.opaque = Z_NULL;
+			zstream.zalloc = Z_NULL;
+			zstream.zfree = Z_NULL;
+			zstream.data_type = Z_BINARY;
+
+			// http://hewgill.com/journal/entries/349-how-to-decompress-gzip-stream-with-zlib
+			inflateInit(&zstream);
+
+			zstream.next_in = reinterpret_cast<Bytef*>(compressedData);
+			zstream.avail_in = compressedSize;
+
+			zstream.avail_out = uncompressedSize;
+			zstream.next_out = reinterpret_cast<Bytef*>(uncompressedData);
+
+			const int ret = inflate(&zstream, Z_FINISH);
+
+			if (ret != Z_STREAM_END && ret != Z_OK) 
+			{
+				OUTPUT_LOG("failure decompressing compressed data");
+
+				delete[] compressedData;
+				delete[] uncompressedData;
+
+				return;
+			}
+
+			// terminate zlib
+			inflateEnd(&zstream);
+
+			CParaFile memFile(uncompressedData, uncompressedSize);
+
+			ParserFile(&memFile);
+			
+			delete[] compressedData;
+			delete[] uncompressedData;
 		}
 	}
 
@@ -1026,208 +1387,23 @@ namespace ParaEngine
 		}
 
 		uint32_t fileTypeId = pFile->ReadDWORD();
-		if(fileTypeId != 0x626c6f63)
-			return;
-
-		uint32_t regionId = pFile->ReadDWORD();
-
-		uint32_t data_mask = pFile->ReadDWORD();
-		uint32_t dataItemSize = data_mask & 0xffff;
-
-		m_pBlockWorld->SuspendLightUpdate();
-
-		if((data_mask & ChunkDataMask_HasCustomData) > 0)
+		if (fileTypeId == 0x626c6f63)
 		{
-			// read all custom data until we meet ChunkCustomDataType_ChunksData
-			DWORD nCustomDataType;
-			while(!pFile->isEof() && ((nCustomDataType = pFile->ReadEncodedUInt()) != ChunkCustomDataType_ChunksData))
-			{
-				switch(nCustomDataType)
-				{
-				case ChunkCustomDataType_Biomes:
-				case ChunkCustomDataType_Biomes_SameInteger:
-					break;
-				case ChunkCustomDataType_TimeStamp:
-				case ChunkCustomDataType_TimeStamp_SameInteger:
-					{
-						uint32_t nByteCount = pFile->ReadEncodedUInt();
-						m_chunkTimestamp.clear();
-						
-						if(nCustomDataType == ChunkCustomDataType_TimeStamp_SameInteger)
-							CIntegerEncoder::DecodeSameInteger(*pFile, m_chunkTimestamp, nByteCount);
-						else
-							CIntegerEncoder::DecodeIntArray(*pFile, m_chunkTimestamp, nByteCount);
-						if(m_chunkTimestamp.size()!=32*32)
-						{
-							m_chunkTimestamp.resize(32*32);
-							OUTPUT_LOG("error:invalid m_chunkTimestamp \n");
-							return;
-						}
-					}
-					break;
-				default:
-					OUTPUT_LOG("error:unknown block region file format in custom data \n");
-					return;
-				}
-			}
+			ParserFile(pFile);
 		}
-		else
-		{ // compatible with old formats
-			
-			// timestamp of 32*32 chunk columns. chunk column will be generated if there is no timestamp. 
-			// loading a file without timestamp will be set to default timestamp of 1. 
-			std::fill(m_chunkTimestamp.begin(),m_chunkTimestamp.end(), 1);
-		}
-
-		std::vector<std::pair<uint16_t,uint16_t>> blockData;
-		std::vector<uint16_t> blockIndices;
-		std::vector<uint8_t> blockLightMap;
-
-		while(!pFile->isEof())
+		else if (fileTypeId == 0x626c6f63 + 1)
 		{
-			uint32_t chunkId_and_dataMask = pFile->ReadDWORD();
-			uint32_t chunkId = chunkId_and_dataMask & (0x7fffffff);
-			
-			m_nChunksLoaded++;
-
-			uint16_t chunkX,chunkY,chunkZ;
-			UnpackChunkIndex(chunkId,chunkX,chunkY,chunkZ);
-			blockLightMap.clear();
-			uint16_t offset_x = (chunkX << 4);
-			uint16_t offset_y = (chunkY << 4);
-			uint16_t offset_z = (chunkZ << 4);
-
-			if((chunkId_and_dataMask & ChunkDataMask_HasCustomData) > 0)
+			uint16_t version = pFile->ReadWORD();
+			switch (version)
 			{
-				int nCustomDataCount = pFile->ReadEncodedUInt();
-				for(int c=0; c<nCustomDataCount; ++c)
-				{
-					DWORD nCustomDataType = pFile->ReadEncodedUInt();
-					switch(nCustomDataType)
-					{
-					case ChunkCustomDataType_LightValues:
-						{
-							uint32_t blockCount = pFile->ReadDWORD();
-
-							blockLightMap.resize(blockCount);
-							pFile->read(&blockLightMap[0], blockCount);
-							break;
-						}
-					case ChunkCustomDataType_Blocks:
-					case ChunkCustomDataType_Blocks_SkipOne:
-					case ChunkCustomDataType_Blocks_Delta:
-						{
-							uint16_t nBlockID = (uint16_t)pFile->ReadEncodedUInt();
-							uint16_t nBlockCount = (uint16_t)pFile->ReadEncodedUInt();
-
-							if(nCustomDataType == ChunkCustomDataType_Blocks_SkipOne)
-							{
-								blockIndices.clear();
-								CIntegerEncoder::DecodeSkipOne(*pFile, blockIndices, nBlockCount);
-								nBlockCount = (uint16_t)blockIndices.size();
-							}
-							else if(nCustomDataType == ChunkCustomDataType_Blocks_Delta)
-							{
-								blockIndices.clear();
-								CIntegerEncoder::DecodeIntDeltaArray(*pFile, blockIndices, nBlockCount);
-								nBlockCount = (uint16_t)blockIndices.size();
-							}
-							else if(nCustomDataType == ChunkCustomDataType_Blocks)
-							{
-								blockIndices.resize(nBlockCount);
-								pFile->read(&blockIndices[0], nBlockCount*sizeof(uint16_t));
-							}
-							if(nBlockCount > 0)
-							{
-								BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(nBlockID);
-								if(pTemplate)
-								{
-									BlockChunk* pChunk = GetChunk(chunkId, true);
-									if (pChunk)
-									{
-										pChunk->LoadBlocks(blockIndices, pTemplate);
-									}
-								}
-							}
-						}
-						break;
-					case ChunkCustomDataType_Biomes:
-						{
-							// TODO: 
-						}
-						break;
-					default:
-						{
-							OUTPUT_LOG("error:unknown block region file format in custom data \n");
-							return;
-						}
-					}
-				}
-			}
-
-			if( (chunkId_and_dataMask & ChunkDataMask_HasBlockData) > 0 || 
-				(chunkId_and_dataMask & ChunkDataMask_HasCustomData) == 0)
-			{
-				uint32_t blockCount = pFile->ReadDWORD();
-
-				blockData.resize(blockCount);
-				if(blockData.size() > 0)
-				{
-					std::pair<uint16_t,uint16_t> *pData = &blockData[0];
-					pFile->read(pData,dataItemSize*blockCount);
-				}
-
-				BlockChunk* pChunk = GetChunk(chunkId, true);
-				if (pChunk)
-				{
-					pChunk->ReserveBlocks(pChunk->GetBlockCount() + blockCount);
-					for (uint32_t i = 0; i < blockCount; i++)
-					{
-						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
-						BlockTemplate *pTemplate = m_pBlockWorld->GetBlockTemplate(curBlockData.second);
-						if (pTemplate)
-						{
-							pChunk->LoadBlock(curBlockData.first, pTemplate);
-						}
-					}
-				}
-			}
-
-			if((chunkId_and_dataMask & ChunkDataMask_HasMaskData) > 0)
-			{
-				uint32_t blockCount = pFile->ReadDWORD();
-				
-				blockData.resize(blockCount);
-				std::pair<uint16_t,uint16_t> *pData = &blockData[0];
-				pFile->read(pData,dataItemSize*blockCount);
-
-				BlockChunk* pChunk = GetChunk(chunkId);
-				if (pChunk)
-				{
-					for (uint32_t i = 0; i < blockCount; i++)
-					{
-						std::pair<uint16_t, uint16_t>& curBlockData = blockData[i];
-						pChunk->SetBlockData(curBlockData.first, curBlockData.second);
-					}
-				}
-			}
-			if (!blockLightMap.empty())
-			{
-				BlockChunk* pChunk = GetChunk(chunkId, true);
-				uint32_t blockCount = blockLightMap.size();
-				for (uint32_t i = 0; i < blockCount; i++)
-				{
-					uint8_t v = blockLightMap[i];
-					pChunk->m_lightmapArray[i].LoadBrightness((v & 0xf0) >> 4, v & 0xf);
-				}
-				m_pBlockWorld->GetLightGrid().SetColumnPreloaded((m_regionX<<5)+chunkX, (m_regionZ<<5)+chunkZ);
+			case 0x0100:
+				ParserFile1_0(pFile);
+				break;
+			default:
+				break;
 			}
 		}
-		
-		m_nEventAsyncLoadWorldFinished = 1;
-		
-		// TODO: initialize sunlight on height map?  
-		m_pBlockWorld->ResumeLightUpdate();
+
 	}
 
 	void BlockRegion::DeleteAllBlocks()
@@ -1690,6 +1866,21 @@ namespace ParaEngine
 		m_nChunksLoaded = val;
 	}
 
+	void BlockRegion::ClearAllLight()
+	{
+		uint32_t nCount = GetChunksCount();
+		for (uint32_t i = 0; i < nCount; i++)
+		{
+			BlockChunk * pChunk = m_chunks[i];
+			if (pChunk)
+			{
+				pChunk->ClearAllLight();
+			}
+		}
+	}
+
+	
+
 	uint32 BlockRegion::GetChunksLoaded() const
 	{
 		return m_nChunksLoaded;
@@ -1828,6 +2019,9 @@ namespace ParaEngine
 		pClass->AddField("ChunksLoaded", FieldType_Int, (void*)SetChunksLoaded_s, (void*)GetChunksLoaded_s, NULL, NULL, bOverride);
 		pClass->AddField("TotalBytes", FieldType_Int, (void*)0, (void*)GetTotalBytes_s, NULL, NULL, bOverride);
 		pClass->AddField("IsModified", FieldType_Bool, (void*)SetModified_s, (void*)IsModified_s, NULL, NULL, bOverride);
+		pClass->AddField("ClearAllLight", FieldType_void, (void*)ClearAllLight_s, NULL, NULL, "", bOverride);
+
+
 		return S_OK;
 	}
 

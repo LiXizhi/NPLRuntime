@@ -657,12 +657,19 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		writer.WriteParamDelimiter();
 		writer.Append(m_sNPLCallback.c_str());
 
-		// TODO: 
 		
+		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
+		if (pState)
+		{
+			// thread safe
+			pState->activate(NULL, writer.ToString().c_str(), (int)(writer.ToString().size()));
+		}
+
+		/* this could crash app in server mode where main thread and main state thread are different.
 		if(! m_sNPLStateName.empty())
 		{
 			NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
-			if(pState) 
+			if(pState)
 			{
 				pState->DoString(writer.ToString().c_str(), (int)(writer.ToString().size()));
 			}
@@ -670,7 +677,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		else
 		{
 			CGlobals::GetAISim()->NPLDoString(writer.ToString().c_str(), (int)(writer.ToString().size()));
-		}
+		}*/
 	}
 	if(m_pfuncCallBack)
 	{

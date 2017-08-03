@@ -58,6 +58,9 @@ namespace ParaEngine
 		*/
 		DWORD ZipAdd(const char* destFilename, const char* filename);
 
+		
+		DWORD ZipAdd(const char* destFilename, CParaFile* pFile);
+
 		/**
 		* add a zip folder to the zip file. call this for each folder to be added to the zip.
 		* It does not check for duplicates

@@ -41,6 +41,8 @@ namespace ParaEngine
 			batt_framemove		= 0x0020000,	// whether the block has a frame move function.
 			batt_onload		= 0x0040000,	// whether the block has a OnBlockLoaded function.
 			batt_color_data		= 0x0080000,	// whether the block contains color in its block data.
+
+			batt_invisible = 0x0100000,// whether the block is invisible.
 		};
 
 		BlockTemplate(uint16_t id,uint32_t attFlag, uint16_t category_id);
@@ -68,6 +70,12 @@ namespace ParaEngine
 		inline bool IsMatchAttribute(uint32_t attFlags) const
 		{
 			return ((m_attFlag & attFlags) > 0);
+		}
+
+		/** all attributes as specified in dwMask must match the value of attFlags*/
+		inline bool IsMatchAttributes(uint32_t dwMask, uint32_t attFlags) const
+		{
+			return ((m_attFlag & dwMask) == attFlags);
 		}
 
 		/** if match all of the given attributes */

@@ -920,7 +920,7 @@ bool CGUIEditBox::MsgProc(MSG *event)
 			// Determine the character corresponding to the coordinates.
 			int nCP, nTrail, nX1st, nY1st;
 			CPtoXY(m_nFirstVisible, FALSE, &nX1st, &nY1st);  // X offset of the 1st visible char
-			if (SUCCEEDED(XYtoCP(pt.x - rcText.left + nX1st, pt.y - rcText.top + nY1st, &nCP, &nTrail)))
+			if (SUCCEEDED(XYtoCP(pt.x - rcText.left + nX1st, pt.y - rcText.top + nY1st, &nCP, &nTrail, true)))
 			{
 				// Cap at the NULL character.
 				if (nTrail && nCP < m_Buffer.GetTextSize())
@@ -943,7 +943,8 @@ bool CGUIEditBox::MsgProc(MSG *event)
 				// Determine the character corresponding to the coordinates.
 				int nCP, nTrail, nX1st, nY1st;
 				CPtoXY(m_nFirstVisible, FALSE, &nX1st, &nY1st);  // X offset of the 1st visible char
-				if (SUCCEEDED(XYtoCP(pt.x - rcText.left + nX1st, pt.y - rcText.top + nY1st, &nCP, &nTrail)))
+
+				if (SUCCEEDED(XYtoCP(pt.x - rcText.left + nX1st, pt.y - rcText.top + nY1st, &nCP, &nTrail, true)))
 				{
 					// Cap at the NULL character.
 					if (nTrail && nCP < m_Buffer.GetTextSize())
@@ -1286,27 +1287,83 @@ void CGUIEditBox::GetNextWordPos(int nCP, int *pNext)
 	m_Buffer.GetNextItemPos(nCP, pNext);
 }
 
-HRESULT CGUIEditBox::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY)
+HRESULT CGUIEditBox::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY, bool absolute)
 {
-	if (m_PasswordChar == '\0')
-	{
-		return m_Buffer.CPtoXY(nCP, bTrail, pX, pY);
-	}
-	else
-	{
-		std::u16string strPassword = m_Buffer.GetBuffer();
 
-		// use the PasswordChar for position calculation
-		int nSize = m_Buffer.GetTextSize();
-		strPassword.resize(nSize, (char16_t)m_PasswordChar);
-		for (int i = 0; i < nSize; ++i)
-			m_Buffer[i] = (char16_t)m_PasswordChar;
+	int retX = 0, retY = 0;
+	HRESULT ret;
 
-		HRESULT res = m_Buffer.CPtoXY(nCP, bTrail, pX, pY);
-		for (int i = 0; i < nSize; ++i)
-			m_Buffer[i] = strPassword[i];
-		return res;
+	do
+	{
+		if (m_PasswordChar == '\0')
+		{
+			ret = m_Buffer.CPtoXY(nCP, bTrail, &retX, &retY);
+			break;
+		}
+		else
+		{
+			std::u16string strPassword = m_Buffer.GetBuffer();
+
+			// use the PasswordChar for position calculation
+			int nSize = m_Buffer.GetTextSize();
+			strPassword.resize(nSize, (char16_t)m_PasswordChar);
+			for (int i = 0; i < nSize; ++i)
+				m_Buffer[i] = (char16_t)m_PasswordChar;
+
+			ret = m_Buffer.CPtoXY(nCP, bTrail, &retX, &retY);
+			for (int i = 0; i < nSize; ++i)
+				m_Buffer[i] = strPassword[i];
+			break;
+		}
+	}while (false);
+
+
+	if (absolute)
+	{
+		auto pFontElement = m_objResource->GetFontElement(0);
+		if (pFontElement)
+		{
+			auto textFormat = pFontElement->dwTextFormat;
+			RECT rcWindow = m_objResource->GetDrawingRects(9);
+
+			int textWidth, textHeight;
+			GetTextLineSize(&textWidth, &textHeight);
+
+			if (textFormat & DT_LEFT)
+			{
+
+			}
+			else if (textFormat & DT_CENTER)
+			{
+				int offset = ((rcWindow.right - rcWindow.left) - textWidth) / 2;
+				retX += offset;
+			}
+			else if (textFormat & DT_RIGHT)
+			{
+				int offset = (rcWindow.right - rcWindow.left) - textWidth;
+				retX += offset;
+			}
+
+			if (textFormat & DT_TOP)
+			{
+
+			}
+			else if (textFormat & DT_VCENTER)
+			{
+				int offset = ((rcWindow.bottom - rcWindow.top) - textHeight) / 2;
+				retY += offset;
+			}
+			else if (textFormat & DT_BOTTOM)
+			{
+				int offset = (rcWindow.bottom - rcWindow.top) - textHeight;
+				retY += offset;
+			}
+		}
 	}
+
+	*pX = retX; *pY = retY;
+
+	return ret;
 }
 
 /** get the text line size in pixels, supposing the current font and text will be rendered in a single line. */
@@ -1336,27 +1393,75 @@ void CGUIEditBox::GetTextLineSize(int* width, int* height)
 #endif
 }
 
-HRESULT CGUIEditBox::XYtoCP(int nX, int nY, int *pCP, int *pnTrail)
+HRESULT CGUIEditBox::XYtoCP(int nX, int nY, int *pCP, int *pnTrail, bool absolute)
 {
-	if (m_PasswordChar == '\0')
+	if (absolute)
 	{
-		return m_Buffer.XYtoCP(nX, nY, pCP, pnTrail);
+		auto pFontElement = m_objResource->GetFontElement(0);
+		if (pFontElement)
+		{
+			auto textFormat = pFontElement->dwTextFormat;
+			RECT rcWindow = m_objResource->GetDrawingRects(9);
+
+			int textWidth, textHeight;
+			GetTextLineSize(&textWidth, &textHeight);
+
+			if (textFormat & DT_LEFT)
+			{
+
+			}
+			else if (textFormat & DT_CENTER)
+			{
+				int offset = ((rcWindow.right - rcWindow.left) - textWidth) / 2;
+				nX -= offset;
+			}
+			else if (textFormat & DT_RIGHT)
+			{
+				int offset = (rcWindow.right - rcWindow.left) - textWidth;
+				nX -= offset;
+			}
+
+			if (textFormat & DT_TOP)
+			{
+
+			}
+			else if (textFormat & DT_VCENTER)
+			{
+				int offset = ((rcWindow.bottom - rcWindow.top) - textHeight) / 2;
+				nY -= offset;
+			}
+			else if (textFormat & DT_BOTTOM)
+			{
+				int offset = (rcWindow.bottom - rcWindow.top) - textHeight;
+				nY -= offset;
+			}
+
+		}
 	}
-	else
+
+
+	do
 	{
-		u16string strPassword = m_Buffer.GetBuffer();
+		if (m_PasswordChar == '\0')
+		{
+			return m_Buffer.XYtoCP(nX, nY, pCP, pnTrail);
+		}
+		else
+		{
+			u16string strPassword = m_Buffer.GetBuffer();
 
-		// use the PasswordChar for position calculation
-		int nSize = m_Buffer.GetTextSize();
-		strPassword.resize(nSize, (char16_t)m_PasswordChar);
-		for (int i = 0; i < nSize; ++i)
-			m_Buffer[i] = (char16_t)m_PasswordChar;
+			// use the PasswordChar for position calculation
+			int nSize = m_Buffer.GetTextSize();
+			strPassword.resize(nSize, (char16_t)m_PasswordChar);
+			for (int i = 0; i < nSize; ++i)
+				m_Buffer[i] = (char16_t)m_PasswordChar;
 
-		HRESULT res = m_Buffer.XYtoCP(nX, nY, pCP, pnTrail);
-		for (int i = 0; i < nSize; ++i)
-			m_Buffer[i] = strPassword[i];
-		return res;
-	}
+			HRESULT res = m_Buffer.XYtoCP(nX, nY, pCP, pnTrail);
+			for (int i = 0; i < nSize; ++i)
+				m_Buffer[i] = strPassword[i];
+			return res;
+		}
+	} while (false);
 
 }
 HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
@@ -1400,11 +1505,13 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	//
 	// Compute the X coordinates of the selection rectangle
 	//
-	hr = CPtoXY(m_nCaret, FALSE, &nCaretX, &nCaretY);
+	hr = CPtoXY(m_nCaret, FALSE, &nCaretX, &nCaretY, true);
 	if (m_nCaret != m_nSelStart)
-		hr = CPtoXY(m_nSelStart, FALSE, &nSelStartX, &nSelStartY);
+		hr = CPtoXY(m_nSelStart, FALSE, &nSelStartX, &nSelStartY, true);
 	else
 		nSelStartX = nCaretX;
+
+	GUIFontElement* pFontElement = NULL;
 
 	RECT rcText = rcWindow;
 	//
@@ -1417,7 +1524,8 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 		// Swap if left is bigger than right
 		if (nSelLeftX > nSelRightX)
 		{
-			int nTemp = nSelLeftX; nSelLeftX = nSelRightX; nSelRightX = nTemp;
+			//int nTemp = nSelLeftX; nSelLeftX = nSelRightX; nSelRightX = nTemp;
+			std::swap(nSelLeftX, nSelRightX);
 		}
 
 		SetRect(&rcSelection, nSelLeftX, rcText.top, nSelRightX, rcText.bottom);
@@ -1430,7 +1538,6 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	//
 	// Render the text
 	//
-	GUIFontElement* pFontElement = NULL;
 	// Element 0 for text
 	pFontElement = m_objResource->GetFontElement(0);
 	//	pFontElement.FontColor = m_TextColor;
@@ -1521,8 +1628,8 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 		{
 			// Obtain the right edge X coord of the current character
 			int nRightEdgeX, nRightEdgeY;
-			CPtoXY(m_nCaret, TRUE, &nRightEdgeX, &nRightEdgeY);
-			rcCaret.right = rcText.left - nXFirst + nRightEdgeX;
+			CPtoXY(m_nCaret, TRUE, &nRightEdgeX, &nRightEdgeY, true);
+			rcCaret.right = rcText.left + nXFirst + nRightEdgeX;
 		}
 #endif
 		GetPainter(pGUIState)->DrawRect(&rcCaret, m_CaretColor, m_position.GetDepth());

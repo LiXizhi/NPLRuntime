@@ -167,9 +167,18 @@ namespace ParaEngine
 		Vector2 texcoord;
 	};
 
+
+
 	class BlockModel
 	{
 	public:
+		enum FaceStatus
+		{
+			faceInvisiable = 0, 
+			faceVisiableNotSign, 
+			faceVisiableSigned
+		};
+
 		friend class BlockModelManager;
 		enum EdgeVertexFlag
 		{
@@ -319,6 +328,11 @@ namespace ParaEngine
 		unsigned char CalculateCubeVertexAOShadowLevel(int nIndex, uint32 aoFlags);
 
 		void SetVertexHeightScale(int nIndex, float scale);
+
+		void SetFaceVisiable(int nIndex);
+		void SetFaceUsed(int nIndex);
+		bool IsFaceNotUse(int nIndex);
+
 		//
 		//    LT  -----  RT
 		//       |     |
@@ -387,6 +401,8 @@ namespace ParaEngine
 		CShapeAABB m_shapeAABB;
 
 		friend class IBlockModelProvider;
+
+		FaceStatus m_faces[6];
 	};
 }
 

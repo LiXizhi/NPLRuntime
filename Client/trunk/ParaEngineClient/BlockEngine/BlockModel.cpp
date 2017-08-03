@@ -24,6 +24,7 @@ namespace ParaEngine
 	BlockModel::BlockModel(int32_t texFaceNum)
 		:m_bUseAO(true), m_nFaceCount(6), m_bDisableFaceCulling(false), m_bUseSelfLighting(false), m_bIsCubeAABB(true), m_nTextureIndex(0), m_bUniformLighting(false)
 	{
+		memset(m_faces, faceInvisiable, sizeof(m_faces));
 		m_Vertices.resize(24);
 		LoadModelByTexture(texFaceNum);
 		m_shapeAABB.SetMinMax(Vector3(0, 0, 0), Vector3(BlockConfig::g_blockSize,BlockConfig::g_blockSize,BlockConfig::g_blockSize));
@@ -463,6 +464,18 @@ namespace ParaEngine
 	void BlockModel::SetVertexHeightScale(int nIndex, float scale)
 	{
 		m_Vertices[nIndex].SetHeightScale(scale);
+	}
+	void BlockModel::SetFaceVisiable(int nIndex)
+	{
+		m_faces[nIndex] = faceVisiableNotSign;
+	}
+	void BlockModel::SetFaceUsed(int nIndex)
+	{
+		m_faces[nIndex] = faceVisiableSigned;
+	}
+	bool BlockModel::IsFaceNotUse(int nIndex)
+	{
+		return m_faces[nIndex] == faceVisiableNotSign;
 	}
 	void BlockModel::SetVerticalScale(EdgeVertexFlag vertex,float scale)
 	{

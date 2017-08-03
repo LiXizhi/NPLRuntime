@@ -246,7 +246,6 @@ void CMonoScriptingState::DestroyState()
 	}
 }
 
-#ifdef WIN32
 /* Installs a function which is called each time a new assembly is loaded. */
 void MonoAssemblyLoad_CallBackFunc(MonoAssembly *assembly, void* user_data)
 {
@@ -260,7 +259,6 @@ MonoAssembly * MonoAssemblyPreLoad_CallBackFunc(MonoAssemblyName *aname, char **
 	OUTPUT_LOG("NPLMono loading assembly: %s \n", mono_assembly_name_get_name(aname));
 	return NULL;
 }
-#endif
 
 void CMonoScriptingState::CreateAppDomain()
 {
@@ -311,26 +309,27 @@ void CMonoScriptingState::CreateAppDomain()
 #endif
 		// load mono config (dll map) from preset mono_etc_path 
 		mono_config_parse(NULL);
-#ifdef WIN32
+
 		mono_install_assembly_preload_hook(MonoAssemblyPreLoad_CallBackFunc, NULL);
 		mono_install_assembly_load_hook(MonoAssemblyLoad_CallBackFunc, NULL);
-#endif
-
-#ifdef WIN32
+		
 		// const char* mono_jit_version_ = "3.5";  // 4.0
 		const char* mono_jit_version_ = "v2.0.50727";
-#else
-		const char* mono_jit_version_ = "v2.0.50727";
-#endif
+
 		/*
 		* mono_jit_init() creates a domain: each assembly is
 		* loaded and run in a MonoDomain with version 2.0.
 		*/
-		s_mono_domain = mono_jit_init_version ("NPLMono_Root", mono_jit_version_);
+		s_mono_domain = mono_jit_init_version("NPLMono_Root", mono_jit_version_);
 		//s_mono_domain = mono_jit_init("NPLMono_Root");
 
 		// Set root mono domain in to which all assemblies are loaded. 
 		m_global_assemblies_pool->SetMonoDomain(s_mono_domain);
+
+		/** in 3.8 which fixed following configuration exception under win32.
+		System.ArgumentException: The 'ExeConfigFilename' argument cannot be null.
+		*/
+		mono_domain_set_config(s_mono_domain, ".", "NPLRuntime.dll.config"); 
 
 		// add all internal calls 
 		Init();

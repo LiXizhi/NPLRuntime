@@ -42,6 +42,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(BlockRegion, GetTotalBytes_s, int*)		{ *p1 = cls->GetTotalBytes(); return S_OK; }
 		
 
+		ATTRIBUTE_METHOD(BlockRegion, ClearAllLight_s) { cls->ClearAllLight(); return S_OK; }
 	public:
 		virtual const std::string& GetIdentifier();
 		virtual void SetIdentifier(const std::string& sID);
@@ -150,6 +151,10 @@ namespace ParaEngine
 		const Uint16x3& GetMaxBlockWs();
 
 		
+		void ClearAllLight();
+		
+		/** refresh chunks include one type block*/
+		void SetChunksDirtyByBlockTemplate(uint16_t templateId);
 	private:
 		Block* CreateBlock(Uint16x3& blockID_r);
 
@@ -175,6 +180,11 @@ namespace ParaEngine
 		void LoadFromFile();
 		
 	private:
+		void ParserFile(CParaFile* pFile);
+		void ParserFile1_0(CParaFile* pFile);
+
+
+
 		friend class BlockChunk;
 		friend class RenderableChunk;
 

@@ -693,7 +693,7 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 				ParaXEntity * pModelAsset = m_pCharModel->GetBaseModel();
 				if (pModelAsset)
 				{
-					int nIndex = pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance());
+					int nIndex = sceneState->IsLODEnabled() ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
 					CParaXModel* pModel = pModelAsset->GetModel(nIndex);
 
 					if (pModel)

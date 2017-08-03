@@ -717,10 +717,10 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	if (!CParaFile::GetDevDirectory().empty())
 	{
 		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
-		hFile = ::CreateFile(sAbsFilePath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, NULL, NULL);
+		hFile = ::CreateFile(sAbsFilePath.c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	}
 	if (hFile == INVALID_HANDLE_VALUE)
-		hFile = ::CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, NULL, NULL);
+		hFile = ::CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	FileData data;
 	if (hFile != INVALID_HANDLE_VALUE)
@@ -831,7 +831,7 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 	return (int)fs::file_size(sFilePath);
 #else
 	DWORD dwFileSize = 0;
-	HANDLE hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 	if (hFile != INVALID_HANDLE_VALUE)
 	{
 		dwFileSize = ::GetFileSize(hFile, NULL);

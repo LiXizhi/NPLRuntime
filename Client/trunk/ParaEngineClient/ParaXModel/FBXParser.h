@@ -83,8 +83,8 @@ namespace ParaEngine
 		void ParseParticleParam(ParticleSystem& ps, lua_State* L);
 		void ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int iIndex, CParaXModel *pMesh);
 
-		void AddDefaultColors(CParaXModel *pMesh);
-		void AddDefaultTransparency(CParaXModel *pMesh);
+		void AddColors(CParaXModel *pMesh);
+		void AddTransparency(CParaXModel *pMesh);
 		void FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene);
 		void PostProcessParaXModelData(CParaXModel *pMesh);
 
@@ -125,6 +125,9 @@ namespace ParaEngine
 		bool m_bUsedVertexColor;
 		bool m_bHasSkinnedMesh;
 		std::string m_sAnimSplitterFilename;
+
+		vector<ModelColor> m_colors;
+		vector<ModelTransparency> m_transparencys;
 	};
 }
 

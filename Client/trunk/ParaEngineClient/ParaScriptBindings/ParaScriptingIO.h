@@ -267,6 +267,12 @@ namespace ParaScripting
 		DWORD ZipAdd(const char* dstzn, const char* fn);
 
 		/**
+		* add a data to the zip.
+		* @return: 0 if succeed.
+		*/
+		DWORD ZipAddData(const char* dstzn, const std::string& buff);
+
+		/**
 		* add a zip folder to the zip file. call this for each folder to be added to the zip.
 		* @return: 0 if succeed.
 		*/

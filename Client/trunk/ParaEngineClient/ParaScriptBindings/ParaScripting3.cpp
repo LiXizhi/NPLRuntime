@@ -121,7 +121,7 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 
 				def("SetBlockUserData",&ParaTerrain::SetBlockUserData),
 				def("SetBlockUserDataByIdx",&ParaTerrain::SetBlockUserDataByIdx),
-				
+		
 				def("GetBlockUserData",&ParaTerrain::GetBlockUserData),
 				def("GetBlockUserDataByIdx",&ParaTerrain::GetBlockUserDataByIdx),
 
@@ -146,7 +146,7 @@ void CNPLScriptingState::LoadHAPI_SceneManager()
 				def("SetChunkColumnTimeStamp", &ParaTerrain::SetChunkColumnTimeStamp),
 				def("GetMapChunkData", &ParaTerrain::GetMapChunkData),
 				def("ApplyMapChunkData", &ParaTerrain::ApplyMapChunkData),
-
+				def("GetBlockFullData", &ParaTerrain::GetBlockFullData, pure_out_value(_4) + pure_out_value(_5)),
 				def("SetBlockWorldSunIntensity",&ParaTerrain::SetBlockWorldSunIntensity)
 			]
 		];
@@ -354,6 +354,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("DoString",&CNPL::DoString2),
 				def("test",&CNPL::test),
 				def("SerializeToSCode",&CNPL::SerializeToSCode),
+				def("SerializeToSCode", &CNPL::SerializeToSCode2),
 				def("IsSCodePureData",&CNPL::IsSCodePureData),
 				def("IsPureData",&CNPL::IsPureData),
 				def("IsPureTable",&CNPL::IsPureTable),
