@@ -352,6 +352,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("DoString",&CNPL::DoString2),
 				def("test",&CNPL::test),
 				def("SerializeToSCode",&CNPL::SerializeToSCode),
+				def("SerializeToSCode", &CNPL::SerializeToSCode2),
 				def("IsSCodePureData",&CNPL::IsSCodePureData),
 				def("IsPureData",&CNPL::IsPureData),
 				def("IsPureTable",&CNPL::IsPureTable),

@@ -385,20 +385,25 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->GetMainRuntimeState()->DoString(sCode, (int)strlen(sCode));
 	}
 
-	const string& CNPL::SerializeToSCode(const char* sStorageVar, const object& input)
+	const string& CNPL::SerializeToSCode2(const char* sStorageVar, const object& input, bool sort)
 	{
 		NPL::NPLRuntimeState_ptr runtime_state = NPL::CNPLRuntimeState::GetRuntimeStateFromLuaObject(input);
-		if(runtime_state.get() != 0)
+		if (runtime_state.get() != 0)
 		{
 			std::string& sCode = runtime_state->GetStringBuffer(0);
 			sCode.clear();
-			NPL::NPLHelper::SerializeToSCode(sStorageVar, input, sCode);
+			NPL::NPLHelper::SerializeToSCode(sStorageVar, input, sCode, 0, nullptr, sort);
 			return sCode;
 		}
 		else
 		{
 			return CGlobals::GetString();
 		}
+	}
+
+	const string& CNPL::SerializeToSCode(const char* sStorageVar, const object& input)
+	{
+		return SerializeToSCode2(sStorageVar, input, false);
 	}
 
 	bool CNPL::IsSCodePureData( const char* sCode )

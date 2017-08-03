@@ -315,6 +315,7 @@ namespace ParaScripting
 		* @return sCode the output scode
 		*/
 		static const string& SerializeToSCode(const char* sStorageVar, const object& input);
+		static const string& SerializeToSCode2(const char* sStorageVar, const object& input, bool sort);
 
 		/** verify the script code. it returns true if the script code contains pure msg data or table. 
 		* this function is used to verify scode received from the network. So that the execution of a pure data in the local runtime is harmless. 
