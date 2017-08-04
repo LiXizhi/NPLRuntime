@@ -297,7 +297,7 @@ bool NPL::NPLHelper::containsControlCharacter(const char* str)
 }
 
 template <typename StringType>
-bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset, STableStack* pRecursionTable)
+bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, StringType& sCode, int nCodeOffset, STableStack* pRecursionTable, bool sort /*= false*/)
 {
 	sCode.resize(nCodeOffset);
 
@@ -358,80 +358,229 @@ bool NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object&
 		STableStack thisRecursionTable = { &input, pRecursionTable};
 		
 		sCode.append("{");
-		int nNumberIndex = 1;
-		for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
-		{
-			// we only serialize item with a string key
-			const object& key = itCur.key();
-			if (type(key) == LUA_TSTRING)
-			{
-				const char* sKey = object_cast<const char*>(key);
-				const object& value = *itCur;
-				int nOldSize = (int)(sCode.size());
-				// if sKey contains only alphabetic letters, we will use sKey=data,otherwise, we go the safer one ["sKey"]=data.
-				// the first is more efficient in disk space. 
-				int nSKeyCount = (int)strlen(sKey);
-				bool bIsIdentifier = NPLParser::IsIdentifier(sKey, nSKeyCount);
-				if (bIsIdentifier && nSKeyCount > 0)
-				{
-					sCode.append(sKey, nSKeyCount);
-					sCode.append("=");
-				}
-				else
-				{
-					sCode.append("[");
-					EncodeStringInQuotation(sCode, (int)(sCode.size()), sKey, nSKeyCount);
-					sCode.append("]=");
-				}
-				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable))
-				{
-					sCode.append(",");
-				}
-				else
-				{
-					sCode.resize(nOldSize);
-				}
-			}
-			else if (type(key) == LUA_TNUMBER)
-			{
-				double dKey = object_cast<double>(key);
-				int64_t nKey = (int64_t)(dKey);
-				const object& value = *itCur;
-				int nOldSize = (int)(sCode.size());
 
-				// for number index, we will serialize without square brackets. 
-				if (nNumberIndex == nKey && dKey == nKey)
+		if (sort)
+		{
+			struct sortItem
+			{
+				sortItem(const object& key_, const object& value_) : key(key_), value(value_) {}
+				sortItem() {};
+				object key;
+				object value;
+			};
+
+			std::vector<sortItem> sortTable;
+
+			for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
+			{
+				sortTable.push_back(sortItem(itCur.key(), *itCur));
+			}
+
+			std::sort(sortTable.begin(), sortTable.end(), [](const sortItem& a, const sortItem& b) {
+				const object& key1 = a.key;
+				const object& key2 = b.key;
+
+				auto type1 = type(key1);
+				auto type2 = type(key2);
+
+				if (type1 == LUA_TNUMBER && type2 == LUA_TNUMBER)
 				{
-					++nNumberIndex;
+					return object_cast<double>(key1) < object_cast<double>(key2);
+				}
+				else if (type1 == LUA_TNUMBER && type2 == LUA_TSTRING)
+				{
+					return false;
+				}
+				else if (type1 == LUA_TSTRING && type2 == LUA_TNUMBER)
+				{
+					return true;
+				}
+				else if (type1 == LUA_TSTRING && type2 == LUA_TSTRING)
+				{
+					//return object_cast<std::string>(key1).compare(object_cast<std::string>(key2)) < 0;
+					key1.push(key1.interpreter());
+					key2.push(key2.interpreter());
+
+					auto ret = lua_lessthan(key1.interpreter(), -2, -1);
+					lua_pop(key2.interpreter(), 2);
+
+					return ret > 0;
+
+				}
+				else if (type1 == type2)
+				{
+					key1.push(key1.interpreter());
+					auto p1 = lua_topointer(key1.interpreter(), -1);
+					lua_pop(key1.interpreter(), 1);
+
+					key2.push(key2.interpreter());
+					auto p2 = lua_topointer(key2.interpreter(), -1);
+					lua_pop(key2.interpreter(), 1);
+
+					return p1 < p2;
 				}
 				else
 				{
-					char buff[40];
-					sCode.append("[");
-					int nLen = 0;
-					if (dKey == nKey)
+					return type1 < type2;
+				}
+			});
+
+
+			int nNumberIndex = 1;
+			//for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
+			for (size_t i = 0; i < sortTable.size(); i++)
+			{
+
+				// we only serialize item with a string key
+				const object& key = sortTable[i].key;
+				const object& value = sortTable[i].value;
+				if (type(key) == LUA_TSTRING)
+				{
+					const char* sKey = object_cast<const char*>(key);
+						int nOldSize = (int)(sCode.size());
+					// if sKey contains only alphabetic letters, we will use sKey=data,otherwise, we go the safer one ["sKey"]=data.
+					// the first is more efficient in disk space. 
+					int nSKeyCount = (int)strlen(sKey);
+					bool bIsIdentifier = NPLParser::IsIdentifier(sKey, nSKeyCount);
+					if (bIsIdentifier && nSKeyCount > 0)
 					{
-						nLen = ParaEngine::StringHelper::fast_itoa(nKey, buff, 40);
+						sCode.append(sKey, nSKeyCount);
+						sCode.append("=");
 					}
 					else
 					{
-						nLen = ParaEngine::StringHelper::fast_dtoa(dKey, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						sCode.append("[");
+						EncodeStringInQuotation(sCode, (int)(sCode.size()), sKey, nSKeyCount);
+						sCode.append("]=");
 					}
-					sCode.append(buff, nLen);
-					sCode.append("]=");
+					if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable, sort))
+					{
+						sCode.append(",");
+					}
+					else
+					{
+						sCode.resize(nOldSize);
+					}
 				}
+				else if (type(key) == LUA_TNUMBER)
+				{
+					double dKey = object_cast<double>(key);
+					int64_t nKey = (int64_t)(dKey);
+					int nOldSize = (int)(sCode.size());
 
-				if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable))
-				{
-					sCode.append(",");
-				}
-				else
-				{
-					nNumberIndex = -1;
-					sCode.resize(nOldSize);
+					// for number index, we will serialize without square brackets. 
+					if (nNumberIndex == nKey && dKey == nKey)
+					{
+						++nNumberIndex;
+					}
+					else
+					{
+						char buff[40];
+						sCode.append("[");
+						int nLen = 0;
+						if (dKey == nKey)
+						{
+							nLen = ParaEngine::StringHelper::fast_itoa(nKey, buff, 40);
+						}
+						else
+						{
+							nLen = ParaEngine::StringHelper::fast_dtoa(dKey, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						}
+						sCode.append(buff, nLen);
+						sCode.append("]=");
+					}
+
+					if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable, sort))
+					{
+						sCode.append(",");
+					}
+					else
+					{
+						nNumberIndex = -1;
+						sCode.resize(nOldSize);
+					}
 				}
 			}
 		}
+		else
+		{
+			int nNumberIndex = 1;
+			for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
+			{
+				// we only serialize item with a string key
+				const object& key = itCur.key();
+				if (type(key) == LUA_TSTRING)
+				{
+					const char* sKey = object_cast<const char*>(key);
+					const object& value = *itCur;
+					int nOldSize = (int)(sCode.size());
+					// if sKey contains only alphabetic letters, we will use sKey=data,otherwise, we go the safer one ["sKey"]=data.
+					// the first is more efficient in disk space. 
+					int nSKeyCount = (int)strlen(sKey);
+					bool bIsIdentifier = NPLParser::IsIdentifier(sKey, nSKeyCount);
+					if (bIsIdentifier && nSKeyCount > 0)
+					{
+						sCode.append(sKey, nSKeyCount);
+						sCode.append("=");
+					}
+					else
+					{
+						sCode.append("[");
+						EncodeStringInQuotation(sCode, (int)(sCode.size()), sKey, nSKeyCount);
+						sCode.append("]=");
+					}
+					if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable, sort))
+					{
+						sCode.append(",");
+					}
+					else
+					{
+						sCode.resize(nOldSize);
+					}
+				}
+				else if (type(key) == LUA_TNUMBER)
+				{
+					double dKey = object_cast<double>(key);
+					int64_t nKey = (int64_t)(dKey);
+					const object& value = *itCur;
+					int nOldSize = (int)(sCode.size());
+
+					// for number index, we will serialize without square brackets. 
+					if (nNumberIndex == nKey && dKey == nKey)
+					{
+						++nNumberIndex;
+					}
+					else
+					{
+						char buff[40];
+						sCode.append("[");
+						int nLen = 0;
+						if (dKey == nKey)
+						{
+							nLen = ParaEngine::StringHelper::fast_itoa(nKey, buff, 40);
+						}
+						else
+						{
+							nLen = ParaEngine::StringHelper::fast_dtoa(dKey, buff, 40, 5); // similar to "%.5f" but without trailing zeros. 
+						}
+						sCode.append(buff, nLen);
+						sCode.append("]=");
+					}
+
+					if (SerializeToSCode(NULL, value, sCode, (int)(sCode.size()), &thisRecursionTable, sort))
+					{
+						sCode.append(",");
+					}
+					else
+					{
+						nNumberIndex = -1;
+						sCode.resize(nOldSize);
+					}
+				}
+			}
+		}
+		
+		
 		sCode.append("}");
 		break;
 	}
@@ -1465,8 +1614,8 @@ template void NPL::NPLHelper::EncodeStringInQuotation(ParaEngine::StringBuilder&
 template void NPL::NPLHelper::EncodeJsonStringInQuotation(std::string& output, int nOutputOffset, const char* input, int nInputSize);
 template void NPL::NPLHelper::EncodeJsonStringInQuotation(ParaEngine::StringBuilder& output, int nOutputOffset, const char* input, int nInputSize);
 
-template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable);
-template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable);
+template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable, bool sort);
+template bool NPL::NPLHelper::SerializeToSCode(const char* sStorageVar, const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable, bool sort);
 
 template bool NPL::NPLHelper::SerializeToJson(const luabind::object& input, std::string& sCode, int nCodeOffset, STableStack* pRecursionTable, bool bUseEmptyArray);
 template bool NPL::NPLHelper::SerializeToJson(const luabind::object& input, ParaEngine::StringBuilder& sCode, int nCodeOffset, STableStack* pRecursionTable, bool bUseEmptyArray);
