@@ -6,7 +6,7 @@
 
 Welcome to the NPL Runtime!
 -------------------------
-NPL or Neural Parallel Language is an open source, high-performance, scripting language. Its syntax is 100%-compatible with [lua](http://www.lua.org). NPL runtime provides essential functionality for building `3D/2D/Server` applications that runs on `windows/linux/android/iOS`. It is similar to [java](www.java.com), but is more flexible in nature.
+NPL or Neural Parallel Language is an open source, high-performance, scripting language. Its syntax is 100%-compatible with [lua](http://www.lua.org). NPL runtime provides essential functionality for building `3D/2D/Server` applications that runs on `windows/linux/android/iOS`. 
 
 ### Install Guide
 ```
