@@ -16,6 +16,5 @@
 #else
 
 #endif
-
-void WriteLog(const char* zFormat, ...);
+extern void WriteLog(const char* zFormat, ...);
 // #define sqlite3DebugPrintf WriteLog

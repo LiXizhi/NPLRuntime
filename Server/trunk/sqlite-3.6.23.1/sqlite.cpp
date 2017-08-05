@@ -1,3 +1,9 @@
+#ifdef WIN32
+#	ifndef _CRT_SECURE_NO_WARNINGS
+#		define _CRT_SECURE_NO_WARNINGS
+#	endif
+#endif
+
 #include "PluginAPI.h"
 
 /**
@@ -9,6 +15,7 @@
 #include "IParaEngineApp.h"
 
 using namespace ParaEngine;
+
 
 #ifdef WIN32
 #define CORE_EXPORT_DECL    __declspec(dllexport)
@@ -141,6 +148,20 @@ CORE_EXPORT_DECL void LibInitParaEngine(IParaEngineCore* pCoreInterface)
 CORE_EXPORT_DECL void LibInit()
 {
 }
+
+/*
+#ifdef WIN32
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, ULONG fdwReason, LPVOID lpvReserved)
+#else
+void __attribute__((constructor)) DllMain()
+#endif
+{
+#ifdef WIN32
+	Instance = hinstDLL;				// Hang on to this DLL's instance handle.
+	return (TRUE);
+#endif
+}
+*/
 
 extern "C" {
 	/** this is an example of c function calling NPL core interface */

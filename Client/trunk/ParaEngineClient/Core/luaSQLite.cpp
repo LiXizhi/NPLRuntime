@@ -90,19 +90,12 @@ extern "C"
 
 using namespace ParaEngine;
 
-/**  plugin dll file path */
-#ifdef _DEBUG
-const char* SQLITE_DLL_FILE_PATH = "sqlite_d.dll";
-#else
-const char* SQLITE_DLL_FILE_PATH = "sqlite.dll";
-#endif
-
 
 struct  DB
 {
 public:
 	DB() : L(0), key2value_pos(0){
-		getSqliteInterface();
+		CheckLoadSqliteInterface();
 	};
 	//sqlite3 * pSqlite3;
 	ParaEngine::asset_ptr<ParaEngine::DBEntity> m_pDBEntity;
@@ -114,12 +107,24 @@ public:
 		//return pSqlite3;
 	}
 
-	void getSqliteInterface() {
-		DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(SQLITE_DLL_FILE_PATH);
-		if(pPluginEntity==0)
+	/* static function to expose core interface to sqlite3's raft WAL interface. */
+	static void CheckLoadSqliteInterface() {
+		static bool bLoaded = false;
+		if (!bLoaded)
 		{
-			// load the plug-in if it has never been loaded before. 
-			pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", SQLITE_DLL_FILE_PATH);
+			/**  plugin dll file path */
+#ifdef _DEBUG
+			const char* SQLITE_DLL_FILE_PATH = "sqlite_d.dll";
+#else
+			const char* SQLITE_DLL_FILE_PATH = "sqlite.dll";
+#endif
+			bLoaded = true;
+			DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(SQLITE_DLL_FILE_PATH);
+			if (pPluginEntity == 0)
+			{
+				// load the plug-in if it has never been loaded before. 
+				pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", SQLITE_DLL_FILE_PATH);
+			}
 		}
 	}
 };
