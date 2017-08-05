@@ -248,7 +248,7 @@
 ** Trace output macros
 */
 #if defined(SQLITE_TEST) && defined(SQLITE_DEBUG)
-int sqlite3WalTrace = 1;
+int sqlite3WalTrace = 0;
 # define WALTRACE(X)  if(sqlite3WalTrace) sqlite3DebugPrintf X
 #else
 # define WALTRACE(X)
@@ -3433,7 +3433,6 @@ int walInjectPage(
     assert( rc==SQLITE_OK || iWrite==0 );
     if( iWrite>=iFirst ){
       i64 iOff = walFrameOffset(iWrite, szPage) + WAL_FRAME_HDRSIZE;
-      void *pData;
       if( pWal->iReCksum==0 || iWrite<pWal->iReCksum ){
         pWal->iReCksum = iWrite;
       }
