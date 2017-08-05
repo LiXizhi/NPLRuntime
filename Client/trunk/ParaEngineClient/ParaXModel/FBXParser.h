@@ -116,6 +116,7 @@ namespace ParaEngine
 		lua_State* m_pLuaState;
 		/** embedded texture filename and its binary data */
 		map<string, string> m_textureContentMapping;
+
 		vector<ModelAnimation> m_anims;
 		map<string, int> m_boneMapping;
 		asset_ptr<TextureEntity> *textures;

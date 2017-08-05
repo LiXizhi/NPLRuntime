@@ -72,6 +72,8 @@ namespace ParaEngine
 		virtual int GetPhysicsGroup();
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
+		virtual const std::string& GetTextureFileName()override;
+		virtual void SetTextureFileName(const std::string& sFilename)override;
 
 		/** whether animation is enabled. by default this is true. During movie editing, we may disable animation, set animation frame explicitly by editor logics. */
 		virtual void EnableAnim(bool bAnimated);
@@ -95,6 +97,10 @@ namespace ParaEngine
 		/** update model according to current animation data and time*/
 		bool UpdateModel(SceneState * sceneState = NULL);
 
+		/** ignore selected state for bmaxobject
+		virtual void OnSelect(int nGroupID)override{}
+		virtual void OnDeSelect()override{}
+
 	private:
 		/** size scale */
 		float	m_fScale;
@@ -117,5 +123,8 @@ namespace ParaEngine
 		int m_curTime;
 		/** whether to enable animation in asset file. */
 		bool m_bEnableAnim;
+
+		std::string mReplaceTexturesName;
+		std::map<uint32, TextureEntity*> mReplaceTextures;
 	};
 }

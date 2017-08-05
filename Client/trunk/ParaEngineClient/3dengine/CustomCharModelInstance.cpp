@@ -486,6 +486,10 @@ bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& C
 
 	if (pModel == NULL)
 		return false;
+	//--------------add by devilwalk-----------fix the entity which has no animation can not change the texture
+	if (!m_bIsCustomModel)
+		UpdateTexturesToModel(pModel);
+	//-------------------------------------------------
 	if (!pModel->HasAnimation())
 		return true;
 	if (!CurrentAnim.IsValid())
