@@ -248,7 +248,7 @@
 ** Trace output macros
 */
 #if defined(SQLITE_TEST) && defined(SQLITE_DEBUG)
-int sqlite3WalTrace = 1;
+int sqlite3WalTrace = 0;
 # define WALTRACE(X)  if(sqlite3WalTrace) sqlite3DebugPrintf X
 #else
 # define WALTRACE(X)
