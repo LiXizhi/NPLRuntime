@@ -317,15 +317,15 @@ namespace ParaEngine
 		/**
 		* delete the animation instance associated with this model.
 		*/
-		void DeleteAnimInstance();
+		void DeleteAnimInstance(int avatarIndex);
 		virtual void Cleanup();
 		/** get the animation instance.*/
-		CAnimInstanceBase* GetAnimInstance();
+		CAnimInstanceBase* GetAnimInstance(int avatarIndex);
 		/** get the ParaX animation instance. This function will return NULL, if GetAnimInstance() is not a ParaX AnimInstance*/
-		CParaXAnimInstance* GetParaXAnimInstance();
+		CParaXAnimInstance* GetParaXAnimInstance(int avatarIndex);
 		/** get the character model instance. This function will return NULL, if there is no character
 		* model instance associated with this node*/
-		CharModelInstance* GetCharModelInstance();
+		CharModelInstance* GetCharModelInstance(int avatarIndex);
 
 		/** dump BVH animations of the main character asset*/
 		bool DumpBVHAnimations();
@@ -840,6 +840,12 @@ namespace ParaEngine
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
 
+		void setAvatar(int avatarIndex,AssetEntity* assetCharModel);
+		AssetEntity * getAvatarEntity(int avatarIndex)const;
+		ref_ptr<CAnimInstanceBase> & getAvatarAI(int avatarIndex);
+		const vector<asset_ptr<AssetEntity> > & getAvatarEntities()const;
+		const vector<ref_ptr<CAnimInstanceBase> > & getAvatarAIs()const;
+
 	protected:
 		void AnimateIdle(double dTimeDelta);
 		void AnimateMoving(double dTimeDelta, bool bSharpTurning = false);
@@ -853,6 +859,10 @@ namespace ParaEngine
 		asset_ptr<AssetEntity>			m_pMultiAnimationEntity;
 		/// animation instance
 		ref_ptr<CAnimInstanceBase>		m_pAI;
+
+
+		vector<asset_ptr<AssetEntity> > mAvatarEntities;
+		vector<ref_ptr<CAnimInstanceBase> > mAvatarAIs;
 
 
 		/** how biped move according to the physics of its environment. */

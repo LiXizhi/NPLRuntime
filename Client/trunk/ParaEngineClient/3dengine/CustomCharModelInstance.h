@@ -317,6 +317,7 @@ namespace ParaEngine
 			NUM_TEX
 		};
 		asset_ptr<TextureEntity> m_textures[NUM_TEX];
+		map<int,asset_ptr<TextureEntity> > mPrepareReplaceableTextures;
 
 		enum CharGeosets {
 			CSET_HAIR = 0,

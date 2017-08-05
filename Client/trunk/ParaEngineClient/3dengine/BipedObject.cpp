@@ -175,16 +175,19 @@ CBipedObject::~CBipedObject()
 
 void CBipedObject::SetUseGlobalTime(bool bUseGlobalTime)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
-	if (pAI)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		pAI->SetUseGlobalTime(bUseGlobalTime);
+		CAnimInstanceBase * pAI=GetAnimInstance(i);
+		if(pAI)
+		{
+			pAI->SetUseGlobalTime(bUseGlobalTime);
+		}
 	}
 }
 
 bool CBipedObject::IsUseGlobalTime()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	if (pAI)
 	{
 		return pAI->IsUseGlobalTime();
@@ -202,8 +205,8 @@ std::string CBipedObject::ToString(DWORD nMethod)
 	char line[MAX_LINE + 1];
 	snprintf(line, MAX_LINE, "-- %s\n", m_sIdentifer.c_str());
 	sScript.append(line);
-	CharModelInstance* pChar = GetCharModelInstance();
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	if (pChar && pAI)
 	{
 		if (pChar->GetBaseModel())
@@ -260,21 +263,28 @@ std::string CBipedObject::ToString(DWORD nMethod)
 	return sScript;
 }
 
-void CBipedObject::DeleteAnimInstance()
+void CBipedObject::DeleteAnimInstance(int avatarIndex)
 {
-	if (m_pAI && m_pMultiAnimationEntity)
+	if(-1==avatarIndex)
 	{
-		if (m_pMultiAnimationEntity->GetType() == AssetEntity::parax)
+		for(auto & ai:mAvatarAIs)
+		{
+			ai.reset();
+		}
+	}
+	else if (getAvatarAI(avatarIndex) &&getAvatarEntity(avatarIndex))
+	{
+		if (getAvatarEntity(avatarIndex)->GetType() == AssetEntity::parax)
 		{
 			// manually clear this resource
-			m_pAI.reset();
+			getAvatarAI(avatarIndex).reset();
 		}
 	}
 }
 
 void CBipedObject::Cleanup()
 {
-	DeleteAnimInstance();
+	DeleteAnimInstance(-1);
 	ReplaceAIModule(NULL);
 	SAFE_DELETE(m_pBipedStateManager);
 }
@@ -319,19 +329,23 @@ CAIBase* CBipedObject::UseAIModule(const string& sAIType)
 /// the size and speed of the animation and the biped object is not synchronized.
 /// you need to manually get the current size and speed from the animation instance
 /// so that the biped and its animation instance could synchronize in action.
-CAnimInstanceBase* CBipedObject::GetAnimInstance()
+CAnimInstanceBase* CBipedObject::GetAnimInstance(int avatarIndex)
 {
-	if (!m_pAI)
+	if(static_cast<int>(mAvatarAIs.size())<=avatarIndex)
+		mAvatarAIs.resize(avatarIndex+1);
+	CAnimInstanceBase * ret=mAvatarAIs[avatarIndex].get();
+	if (!ret)
 	{
-		if (m_pMultiAnimationEntity)
+		if (getAvatarEntity(avatarIndex))
 		{
-			if (m_pMultiAnimationEntity->GetType() == AssetEntity::parax)
+			if (getAvatarEntity(avatarIndex)->GetType() == AssetEntity::parax)
 			{
-				m_pAI = ((ParaXEntity*)m_pMultiAnimationEntity.get())->CreateAnimInstance();
-				if (m_pAI)
+				ret= ((ParaXEntity*)getAvatarEntity(avatarIndex))->CreateAnimInstance();
+				mAvatarAIs[avatarIndex]=ret;
+				if (ret)
 				{
 					/** load the default animation */
-					m_pAI->LoadDefaultStandAnim(&m_fSpeed);
+					ret->LoadDefaultStandAnim(&m_fSpeed);
 					/// if there is no Stand animation, just call ForceStop to set the speed to zero
 					ForceStop();
 				}
@@ -340,18 +354,20 @@ CAnimInstanceBase* CBipedObject::GetAnimInstance()
 		}
 		else
 		{
-			m_pAI = CDummyAnimInstance::GetInstance();
+			ret= CDummyAnimInstance::GetInstance();
 		}
 	}
-	return m_pAI.get();
+	if(avatarIndex==0)
+		m_pAI=ret;
+	return ret;
 }
 
-CParaXAnimInstance* CBipedObject::GetParaXAnimInstance()
+CParaXAnimInstance* CBipedObject::GetParaXAnimInstance(int avatarIndex)
 {
-	CAnimInstanceBase* pAI = GetAnimInstance();
-	if (pAI && m_pMultiAnimationEntity)
+	CAnimInstanceBase* pAI = GetAnimInstance(avatarIndex);
+	if (pAI && getAvatarEntity(avatarIndex))
 	{
-		if (m_pMultiAnimationEntity->GetType() == AssetEntity::parax)
+		if (getAvatarEntity(avatarIndex)->GetType() == AssetEntity::parax)
 		{
 			return (CParaXAnimInstance*)pAI;
 		}
@@ -359,9 +375,9 @@ CParaXAnimInstance* CBipedObject::GetParaXAnimInstance()
 	return NULL;
 }
 
-CharModelInstance* CBipedObject::GetCharModelInstance()
+CharModelInstance* CBipedObject::GetCharModelInstance(int avatarIndex)
 {
-	CParaXAnimInstance* pAI = GetParaXAnimInstance();
+	CParaXAnimInstance* pAI = GetParaXAnimInstance(avatarIndex);
 	if (pAI)
 	{
 		CharModelInstance * pChar = pAI->GetCharModel();
@@ -913,12 +929,23 @@ void CBipedObject::Animate(double dTimeDelta, int nRenderNumber)
 	{
 		dTimeDelta = 0.f;
 	}
-	/** For animation instance. */
-	CAnimInstanceBase* pAI = GetAnimInstance();
+	bool bIsAnimationProcessed=true;
+	CAnimInstanceBase* pAI=GetAnimInstance(0);
+	if(pAI)
+	{
+		bIsAnimationProcessed=!(pAI->GetRenderCount()<nRenderNumber||nRenderNumber==0);
+	}
+		/** For animation instance. */
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+	{
+		CAnimInstanceBase* pAI=GetAnimInstance(i);
+		if(pAI)
+		{
+			pAI->Animate(dTimeDelta,nRenderNumber);
+		}
+	}
 	if (pAI)
 	{
-		bool bIsAnimationProcessed = !(pAI->GetRenderCount() < nRenderNumber || nRenderNumber == 0);
-		pAI->Animate(dTimeDelta, nRenderNumber);
 		if (bIsAnimationProcessed)
 			return;
 		// Bug fix 2008.5.26: to prevent recursively calling this function. 
@@ -981,7 +1008,7 @@ void CBipedObject::Animate(double dTimeDelta, int nRenderNumber)
 
 bool ParaEngine::CBipedObject::HasAttachmentPoint(int nAttachmentID)
 {
-	CParaXAnimInstance* pParaXAI = GetParaXAnimInstance();
+	CParaXAnimInstance* pParaXAI = GetParaXAnimInstance(0);
 	if (pParaXAI)
 	{
 		return (pParaXAI->HasAttachmentMatrix(nAttachmentID));
@@ -991,7 +1018,7 @@ bool ParaEngine::CBipedObject::HasAttachmentPoint(int nAttachmentID)
 
 Matrix4* ParaEngine::CBipedObject::GetAttachmentMatrix(Matrix4& pOut, int nAttachmentID, int nRenderNumber)
 {
-	CParaXAnimInstance* pParaXAI = GetParaXAnimInstance();
+	CParaXAnimInstance* pParaXAI = GetParaXAnimInstance(0);
 	if (pParaXAI)
 	{
 		/// get the mount point matrix using animation instance
@@ -1236,8 +1263,8 @@ bool CBipedObject::SetParamsFromAsset()
 		if (((ParaXEntity*)m_pMultiAnimationEntity.get())->GetPrimaryTechniqueHandle() > 0)
 		{
 			/** load the default animation */
-			if (m_pAI)
-				m_pAI->LoadDefaultStandAnim(&m_fSpeed);
+			if (GetAnimInstance(0))
+				GetAnimInstance(0)->LoadDefaultStandAnim(&m_fSpeed);
 			/// if there is no Stand animation, just call ForceStop to set the speed to zero
 			ForceStop();
 
@@ -1360,7 +1387,7 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 	SetFrameNumber(sceneState->m_nRenderCount);
 
 	// call Draw() of biped animation instance
-	CAnimInstanceBase* pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance(0);
 	if (pAI)
 	{
 		PushGlobalTime pust_global_time_(sceneState);
@@ -1370,7 +1397,11 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			//pust_global_time_.PushIgnoreTransparent(true);
 			pust_global_time_.PushGlobalAnimTime(pAI->GetAnimFrame());
 			// tricky: we will disable motion blending when paused. 
-			pAI->SetBlendingFactor(0.f);
+			for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+			{
+				CAnimInstanceBase* pAI=GetAnimInstance(i);
+				pAI->SetBlendingFactor(0.f);
+			}
 		}
 		pEffectManager->applyObjectLocalLighting(this);
 
@@ -1386,11 +1417,19 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			{
 				RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
 				pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
-				pAI->Draw(sceneState, mat);
+				for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+				{
+					CAnimInstanceBase* pAI=GetAnimInstance(i);
+					pAI->Draw(sceneState,mat);
+				}
 
 				pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0x0000000F);
 				pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-				pAI->Draw(sceneState, mat);
+				for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+				{
+					CAnimInstanceBase* pAI=GetAnimInstance(i);
+					pAI->Draw(sceneState,mat);
+				}
 
 				return S_OK;
 			}
@@ -1432,7 +1471,11 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 							{
 								Vector3 vOffsets(x*border_width, y*border_width, 0.f);
 								pEffectFile->GetDXEffect()->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
-								pAI->Draw(sceneState, mat);
+								for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+								{
+									CAnimInstanceBase* pAI=GetAnimInstance(i);
+									pAI->Draw(sceneState,mat);
+								}
 							}
 						}
 					}
@@ -1452,7 +1495,11 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 						Vector3 vColorAdd(0.2f, 0.2f, 0.2f);
 						pEffectFile->GetDXEffect()->SetRawValue("g_color_add", &vColorAdd, 0, sizeof(Vector3));
 
-						pAI->Draw(sceneState, mat);
+						for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+						{
+							CAnimInstanceBase* pAI=GetAnimInstance(i);
+							pAI->Draw(sceneState,mat);
+						}
 						bIsRendered = true;
 					}
 					// change back to primary technique
@@ -1529,7 +1576,11 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 		}
 
 		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
-		pAI->Draw(sceneState, mat, p.GetParamsBlock());
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+		{
+			CAnimInstanceBase* pAI=GetAnimInstance(i);
+			pAI->Draw(sceneState,mat,p.GetParamsBlock());
+		}
 
 		sceneState->EnableLocalMaterial(false);
 	}
@@ -1542,14 +1593,17 @@ void CBipedObject::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pSh
 #ifdef USE_DIRECTX_RENDERER
 	if (!IsShadowEnabled())
 		return;
-	CAnimInstanceBase* pAI = GetAnimInstance();
-	if (pAI)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
-		// push matrix
-		Matrix4 mxWorld;
+		CAnimInstanceBase* pAI=GetAnimInstance(i);
+		if(pAI)
+		{
+			LPDIRECT3DDEVICE9  pd3dDevice=CGlobals::GetRenderDevice();
+			// push matrix
+			Matrix4 mxWorld;
 
-		pAI->BuildShadowVolume(sceneState, pShadowVolume, pLight, GetRenderMatrix(mxWorld, sceneState->GetRenderFrameCount()));
+			pAI->BuildShadowVolume(sceneState,pShadowVolume,pLight,GetRenderMatrix(mxWorld,sceneState->GetRenderFrameCount()));
+		}
 	}
 #endif
 }
@@ -4259,7 +4313,7 @@ float ParaEngine::CBipedObject::GetAssetHeight()
 void ParaEngine::CBipedObject::UpdateGeometry()
 {
 	SetGeometryDirty(false);
-	CAnimInstanceBase* pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance(0);
 	if (pAI && m_pMultiAnimationEntity)
 	{
 		float fScale = GetSizeScale();
@@ -4312,16 +4366,19 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 
 void CBipedObject::SetHeadTurningAngle(float fFacing)
 {
-	CharModelInstance* pChar = GetCharModelInstance();
-	if (pChar)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		pChar->SetUpperBodyTurningAngle(Math::ToStandardAngle(fFacing));
+		CharModelInstance* pChar=GetCharModelInstance(i);
+		if(pChar)
+		{
+			pChar->SetUpperBodyTurningAngle(Math::ToStandardAngle(fFacing));
+		}
 	}
 }
 
 float CBipedObject::GetHeadTurningAngle()
 {
-	CharModelInstance* pChar = GetCharModelInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
 	if (pChar)
 		return pChar->GetCurrrentUpperBodyTurningAngle();
 	return 0;
@@ -4330,16 +4387,19 @@ float CBipedObject::GetHeadTurningAngle()
 
 void ParaEngine::CBipedObject::SetHeadUpdownAngle(float fFacing)
 {
-	CharModelInstance* pChar = GetCharModelInstance();
-	if (pChar)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		pChar->SetUpperBodyUpdownAngle(Math::ToStandardAngle(fFacing));
+		CharModelInstance* pChar=GetCharModelInstance(i);
+		if(pChar)
+		{
+			pChar->SetUpperBodyUpdownAngle(Math::ToStandardAngle(fFacing));
+		}
 	}
 }
 
 float ParaEngine::CBipedObject::GetHeadUpdownAngle()
 {
-	CharModelInstance* pChar = GetCharModelInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
 	if (pChar)
 		return pChar->GetCurrrentUpperBodyUpdownAngle();
 	return 0;
@@ -4410,10 +4470,10 @@ void CBipedObject::SetSpeed(float fSpeed)
 float CBipedObject::GetMaxSpeed()
 {
 	// stop whatever action the pObj is doing
-	if (!m_pAI || m_pAI->GetValidAnimID(4) <= 0)
+	if (!GetAnimInstance(0) ||GetAnimInstance(0)->GetValidAnimID(4) <= 0)
 		return 0.f;
 	float speed = 0.f;
-	m_pAI->GetSpeedOf("Walk", &speed);
+	GetAnimInstance(0)->GetSpeedOf("Walk", &speed);
 	return speed;
 }
 
@@ -4430,10 +4490,10 @@ void CBipedObject::SetSpeedScale(float fScale)
 {
 	m_fSpeedScale = fScale;
 
-	if (m_pAI)
-	{
-		m_pAI->SetSpeedScale(fScale);
-	}
+	//if (m_pAI)
+	//{
+	//	m_pAI->SetSpeedScale(fScale);
+	//}
 }
 
 float CBipedObject::GetSizeScale()
@@ -4469,13 +4529,17 @@ void CBipedObject::Reset()
 void CBipedObject::SetSizeScale(float fScale)
 {
 	m_fSizeScale = fScale;
-	CAnimInstanceBase* pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance(0);
 	if (pAI && m_pMultiAnimationEntity)
 	{
-		/// set scale of the associated mesh
-		float fOldScale = pAI->GetSizeScale();
-		pAI->SetSizeScale(fScale);
-		SetGeometryDirty(true);
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+		{
+			pAI=GetAnimInstance(i);
+			/// set scale of the associated mesh
+			float fOldScale=pAI->GetSizeScale();
+			pAI->SetSizeScale(fScale);
+			SetGeometryDirty(true);
+		}
 	}
 	else
 	{
@@ -4560,11 +4624,11 @@ void CBipedObject::UpdateSpeed(float fNewSpeed)
 	}
 	else if (fNewSpeed != 0.f && m_fSpeed == 0.f)
 	{
-		m_fSpeed = fNewSpeed;
+		m_fSpeed = m_fSpeedScale * fNewSpeed;
 		ForceMove();
 	}
 	else
-		m_fSpeed = fNewSpeed;
+		m_fSpeed = m_fSpeedScale * fNewSpeed;
 }
 void CBipedObject::UseSpeedFromAnimation(int nIndex)
 {
@@ -4572,20 +4636,28 @@ void CBipedObject::UseSpeedFromAnimation(int nIndex)
 }
 void CBipedObject::UseSpeedFromAnimation(const char* sName)
 {
-	if (m_pAI)
+	if (GetAnimInstance(0))
 	{
 		float fNewSpeed = m_fSpeed;
-		m_pAI->GetSpeedOf(sName, &fNewSpeed);
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+		{
+			if(GetAnimInstance(i))
+				GetAnimInstance(i)->GetSpeedOf(sName,&fNewSpeed);
+		}
 		UpdateSpeed(fNewSpeed);
 	}
 }
 
 void CBipedObject::PlayAnimation(DWORD nIndex, bool bUpdateSpeed, bool bAppend)
 {
-	if (m_pAI)
+	if (GetAnimInstance(0))
 	{
 		float fNewSpeed = m_fSpeed;
-		m_pAI->LoadAnimation(nIndex, &fNewSpeed, bAppend);
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+		{
+			if(GetAnimInstance(i))
+				GetAnimInstance(i)->LoadAnimation(nIndex,&fNewSpeed,bAppend);
+		}
 
 		if (bUpdateSpeed)
 			UpdateSpeed(fNewSpeed);
@@ -4593,10 +4665,14 @@ void CBipedObject::PlayAnimation(DWORD nIndex, bool bUpdateSpeed, bool bAppend)
 }
 void CBipedObject::PlayAnimation(const char* sName, bool bUpdateSpeed, bool bAppend)
 {
-	if (m_pAI)
+	if (GetAnimInstance(0))
 	{
 		float fNewSpeed = m_fSpeed;
-		m_pAI->LoadAnimation(sName, &fNewSpeed, bAppend);
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+		{
+			if(GetAnimInstance(i))
+				GetAnimInstance(i)->LoadAnimation(sName,&fNewSpeed,bAppend);
+		}
 
 		if (bUpdateSpeed)
 			UpdateSpeed(fNewSpeed);
@@ -4604,9 +4680,9 @@ void CBipedObject::PlayAnimation(const char* sName, bool bUpdateSpeed, bool bApp
 }
 int CBipedObject::GetCurrentAnimation()
 {
-	if (m_pAI)
+	if (GetAnimInstance(0))
 	{
-		return m_pAI->GetCurrentAnimation();
+		return GetAnimInstance(0)->GetCurrentAnimation();
 	}
 	return 0;
 }
@@ -4650,7 +4726,7 @@ TextureEntity* ParaEngine::CBipedObject::GetDefaultReplaceableTexture(int Replac
 
 TextureEntity* ParaEngine::CBipedObject::GetReplaceableTexture(int ReplaceableTextureID)
 {
-	CharModelInstance* pChar = GetCharModelInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
 	if (pChar)
 	{
 		return pChar->GetReplaceableTexture(ReplaceableTextureID);
@@ -4660,12 +4736,16 @@ TextureEntity* ParaEngine::CBipedObject::GetReplaceableTexture(int ReplaceableTe
 
 bool ParaEngine::CBipedObject::SetReplaceableTexture(int ReplaceableTextureID, TextureEntity* pTextureEntity)
 {
-	CharModelInstance* pChar = GetCharModelInstance();
-	if (pChar)
+	bool ret=true;
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		return pChar->SetReplaceableTexture(ReplaceableTextureID, pTextureEntity);
+		CharModelInstance* pChar=GetCharModelInstance(i);
+		if(pChar)
+		{
+			ret&=pChar->SetReplaceableTexture(ReplaceableTextureID,pTextureEntity);
+		}
 	}
-	return true;
+	return ret;
 }
 
 void ParaEngine::CBipedObject::SetNormal(const Vector3 & pNorm)
@@ -4704,10 +4784,13 @@ void ParaEngine::CBipedObject::LoadPhysics()
 		// get world transform matrix
 		Matrix4 mxWorld;
 		GetWorldTransform(mxWorld);
-		auto pAI = GetParaXAnimInstance();
-		if (pAI)
+		for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 		{
-			pAI->UpdateWorldTransform(CGlobals::GetSceneState(), mxWorld, mxWorld);
+			auto pAI=GetParaXAnimInstance(i);
+			if(pAI)
+			{
+				pAI->UpdateWorldTransform(CGlobals::GetSceneState(),mxWorld,mxWorld);
+			}
 		}
 
 		IParaPhysicsActor* pActor = CGlobals::GetPhysicsWorld()->CreateStaticMesh(GetParaXEntity(), mxWorld, GetPhysicsGroup(), &m_staticActors, this);
@@ -4769,6 +4852,40 @@ bool ParaEngine::CBipedObject::IsPhysicsEnabled()
 int ParaEngine::CBipedObject::GetStaticActorCount()
 {
 	return (int)m_staticActors.size();
+}
+
+void ParaEngine::CBipedObject::setAvatar(int avatarIndex,AssetEntity * assetCharModel)
+{
+	if(static_cast<int>(mAvatarEntities.size())<=avatarIndex)
+	{
+		mAvatarEntities.resize(avatarIndex+1);
+		mAvatarAIs.resize(avatarIndex+1);
+	}
+	mAvatarEntities[avatarIndex]=assetCharModel;
+	DeleteAnimInstance(avatarIndex);
+	if(avatarIndex==0)
+		ResetBaseModel(assetCharModel);
+}
+
+AssetEntity * ParaEngine::CBipedObject::getAvatarEntity(int avatarIndex) const
+{
+	return static_cast<int>(mAvatarEntities.size())>avatarIndex?mAvatarEntities[avatarIndex].get():nullptr;
+}
+
+ref_ptr<CAnimInstanceBase>& ParaEngine::CBipedObject::getAvatarAI(int avatarIndex)
+{
+	static ref_ptr<CAnimInstanceBase> null;
+	return static_cast<int>(mAvatarEntities.size())>avatarIndex?mAvatarAIs[avatarIndex]:null;
+}
+
+const vector<asset_ptr<AssetEntity>>& ParaEngine::CBipedObject::getAvatarEntities() const
+{
+	return mAvatarEntities;
+}
+
+const vector<ref_ptr<CAnimInstanceBase>>& ParaEngine::CBipedObject::getAvatarAIs() const
+{
+	return mAvatarAIs;
 }
 
 ParaEngine::ParaXEntity* ParaEngine::CBipedObject::GetParaXEntity()
@@ -4897,16 +5014,19 @@ void ParaEngine::CBipedObject::SetAlwaysFlying(bool val)
 
 void ParaEngine::CBipedObject::SetBlendingFactor(float fBlendingFactor)
 {
-	CAnimInstanceBase* pAI = GetAnimInstance();
-	if (pAI)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		pAI->SetBlendingFactor(fBlendingFactor);
+		CAnimInstanceBase* pAI=GetAnimInstance(i);
+		if(pAI)
+		{
+			pAI->SetBlendingFactor(fBlendingFactor);
+		}
 	}
 }
 
 bool ParaEngine::CBipedObject::HasAnimId(int nAnimID)
 {
-	CAnimInstanceBase* pAI = GetAnimInstance();
+	CAnimInstanceBase* pAI = GetAnimInstance(0);
 	if (pAI)
 	{
 		return pAI->HasAnimId(nAnimID);
@@ -4953,7 +5073,7 @@ IAttributeFields* ParaEngine::CBipedObject::GetChildAttributeObject(int nRowInde
 		if (nRowIndex == 0)
 			return GetPrimaryAsset();
 		else if (nRowIndex == 1)
-			return GetAnimInstance();
+			return GetAnimInstance(0);
 	}
 	else if (nColumnIndex == 2)
 	{
@@ -5105,10 +5225,13 @@ int ParaEngine::CBipedObject::ProcessObjectEvent(const ObjectEvent& event)
 					value[i] = (float)curToken.dValue;
 				}
 			}
-			CAnimInstanceBase* pAI = GetAnimInstance();
-			if (pAI)
+			for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 			{
-				pAI->SetModelColor(LinearColor(value[0], value[1], value[2], 1.0f));
+				CAnimInstanceBase* pAI=GetAnimInstance(i);
+				if(pAI)
+				{
+					pAI->SetModelColor(LinearColor(value[0],value[1],value[2],1.0f));
+				}
 			}
 		}
 		else if (curTokenCmd == HLEToken("spds").GetCmd())
@@ -5215,11 +5338,14 @@ void CBipedObject::ResetBaseModel(AssetEntity* assetCharBaseModel)
 		// delete the old animation instance, this allows us to replace custom model with non-custom model, and vice versa. 
 		// 2009.9.5: I delete old instance and create a new one. This will lose all CCS info in the old instance. So we will not be able to 
 		// change from female to male model, etc without losing CCS like before. However, the new code is simpler and less error prone. 
-		DeleteAnimInstance();
+		DeleteAnimInstance(0);
 		m_pMultiAnimationEntity = assetCharBaseModel;
+		if(mAvatarEntities.empty())
+			mAvatarEntities.resize(1);
+		mAvatarEntities[0]=assetCharBaseModel;
 
 		// try create a new one
-		CharModelInstance* pChar = GetCharModelInstance();
+		CharModelInstance* pChar = GetCharModelInstance(0);
 
 		if (m_pMultiAnimationEntity && (m_pMultiAnimationEntity->GetType() == AssetEntity::parax))
 		{
@@ -5249,7 +5375,7 @@ void ParaEngine::CBipedObject::SetAssetFileName(const std::string& sFilename)
 
 			// just reset asset file, without deleting old animation instance, 
 			// all animation instance info like bone parameters, skin, etc are preserved. 
-			CParaXAnimInstance* pInstance = GetParaXAnimInstance();
+			CParaXAnimInstance* pInstance = GetParaXAnimInstance(0);
 			if (pInstance)
 			{
 				pInstance->ResetBaseModel(pNewModel);
@@ -5261,7 +5387,7 @@ void ParaEngine::CBipedObject::SetAssetFileName(const std::string& sFilename)
 // obsoleted function:
 void CBipedObject::LoadStoredModel(int nModelSetID)
 {
-	CharModelInstance* pChar = GetCharModelInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
 	if (pChar)
 	{
 		// pChar->loadSet(nModelSetID);
@@ -5347,7 +5473,7 @@ int CBipedObject::On_Net_Receive(DWORD dwNetType, DWORD dwParam1, DWORD dwParam2
 bool CBipedObject::DumpBVHAnimations()
 {
 #ifdef USE_DIRECTX_RENDERER
-	CharModelInstance* pChar = GetCharModelInstance();
+	CharModelInstance* pChar = GetCharModelInstance(0);
 	if (pChar != 0)
 	{
 		ParaXEntity* pEntity = pChar->GetBaseModel();
@@ -5374,7 +5500,7 @@ bool CBipedObject::DumpBVHAnimations()
 
 int CBipedObject::GetAnimFrame()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	if (pAI)
 	{
 		return pAI->GetAnimFrame();
@@ -5384,24 +5510,30 @@ int CBipedObject::GetAnimFrame()
 
 void CBipedObject::SetAnimFrame(int nFrame)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
-	if (pAI)
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
 	{
-		return pAI->SetAnimFrame(nFrame);
+		CAnimInstanceBase * pAI=GetAnimInstance(i);
+		if(pAI)
+		{
+			pAI->SetAnimFrame(nFrame);
+		}
 	}
 }
 
 
 void ParaEngine::CBipedObject::EnableAnim(bool bAnimated)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
-	if (pAI)
-		return pAI->EnableAnimation(bAnimated);
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+	{
+		CAnimInstanceBase * pAI=GetAnimInstance(i);
+		if(pAI)
+			pAI->EnableAnimation(bAnimated);
+	}
 }
 
 bool ParaEngine::CBipedObject::IsAnimEnabled()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	if (pAI)
 		return pAI->IsAnimationEnabled();
 	return true;
@@ -5410,15 +5542,18 @@ bool ParaEngine::CBipedObject::IsAnimEnabled()
 
 int ParaEngine::CBipedObject::GetTime()
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
+	CAnimInstanceBase * pAI = GetAnimInstance(0);
 	return (pAI) ? pAI->GetTime() : 0;
 }
 
 void ParaEngine::CBipedObject::SetTime(int nTime)
 {
-	CAnimInstanceBase * pAI = GetAnimInstance();
-	if(pAI)
-		pAI->SetTime(nTime);
+	for(int i=0;i<static_cast<int>(getAvatarEntities().size());++i)
+	{
+		CAnimInstanceBase * pAI=GetAnimInstance(i);
+		if(pAI)
+			pAI->SetTime(nTime);
+	}
 }
 
 bool CBipedObject::MountOn(CBaseObject* pTarget, int nMountID)

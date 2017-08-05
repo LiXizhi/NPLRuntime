@@ -263,7 +263,9 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetAnimID", &ParaCharacter::GetAnimID)
 				.def("GetAnimFileName", &ParaCharacter::GetAnimFileName)
 				.def("HasAnimation", &ParaCharacter::HasAnimation)
-				.def("IsValid", &ParaCharacter::IsValid),
+				.def("IsValid", &ParaCharacter::IsValid)
+				.def("SetAvatar",&ParaCharacter::SetAvatar)
+				.def("GetAvatar",&ParaCharacter::GetAvatar),
 
 			// ParaMovieCtrler class declarations
 			class_<ParaMovieCtrler>("ParaMovieCtrler")
