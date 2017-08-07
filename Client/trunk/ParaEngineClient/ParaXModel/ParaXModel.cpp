@@ -1377,9 +1377,10 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						// uncomment to detect incorrect index. 
 						// assert(a < m_objNum.nVertices, "index overflow");
 
-						if (m_frame_number_vertices[a] != CGlobals::GetViewportManager()->getCurrentFrameNumber())
+						// TODO: m_nCurrentFrameNumber can not be replaced by CGlobals::GetViewportManager()->getCurrentFrameNumber()
+						if (m_frame_number_vertices[a] != m_nCurrentFrameNumber)
 						{
-							m_frame_number_vertices[a] = CGlobals::GetViewportManager()->getCurrentFrameNumber();
+							m_frame_number_vertices[a] = m_nCurrentFrameNumber;
 
 							float weight = ov->weights[0] * (1 / 255.0f);
 							Bone& bone = bones[ov->bones[0]];
