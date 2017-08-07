@@ -320,6 +320,7 @@ include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
 	include_directories("${Assimp_SOURCE_DIR}/include")
+	include_directories("${Assimp_BINARY_DIR}/include")
 ENDIF(WIN32)
 
 IF(WIN32)

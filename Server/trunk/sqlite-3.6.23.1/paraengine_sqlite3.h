@@ -7,13 +7,14 @@
 //-----------------------------------------------------------------------------
 #ifdef WIN32
 
-#ifdef PE_CORE_EXPORTING
-#define SQLITE_API    __declspec(dllimport)
-#else
-#define SQLITE_API    __declspec(dllexport)
-#endif
+  #ifdef PE_CORE_EXPORTING
+    #define SQLITE_API    __declspec(dllimport)
+  #else
+    #define SQLITE_API    __declspec(dllexport)
+  #endif
 
 #else
 
 #endif
-
+extern void WriteLog(const char* zFormat, ...);
+// #define sqlite3DebugPrintf WriteLog

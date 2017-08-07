@@ -2343,10 +2343,10 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		RenderSelection(RENDER_MISSILES);
 	}
 
-	m_pBlockWorldClient->Render(BlockRenderPass_ReflectedWater);
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
+	m_pBlockWorldClient->Render(BlockRenderPass_ReflectedWater);
 
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);

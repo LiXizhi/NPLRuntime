@@ -66,16 +66,16 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 		model.ClearVertices();
 	}
 	/*
-	/|
-	/ |
-	/  |
+	   /|
+	  / |
+	 /  |
 	/___|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLB].position[0], cube_mode.Vertices()[BlockModel::g_leftLB].position[1], cube_mode.Vertices()[BlockModel::g_leftLB].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRB].position[0], cube_mode.Vertices()[BlockModel::g_leftRB].position[1], cube_mode.Vertices()[BlockModel::g_leftRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLT].position[0], cube_mode.Vertices()[BlockModel::g_rightLT].position[1], cube_mode.Vertices()[BlockModel::g_rightLT].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i] = cube_mode.Vertices()[BlockModel::g_leftLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLT] = cube_mode.Vertices()[BlockModel::g_frtLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRT] = cube_mode.Vertices()[BlockModel::g_bkRB];
 	++block_index;
@@ -86,10 +86,10 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|___\
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLB].position[0], cube_mode.Vertices()[BlockModel::g_rightLB].position[1], cube_mode.Vertices()[BlockModel::g_rightLB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLT].position[0], cube_mode.Vertices()[BlockModel::g_leftLT].position[1], cube_mode.Vertices()[BlockModel::g_leftLT].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i] = cube_mode.Vertices()[BlockModel::g_rightLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRT] = cube_mode.Vertices()[BlockModel::g_frtRB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLT] = cube_mode.Vertices()[BlockModel::g_bkLB];
 	++block_index;
@@ -101,25 +101,25 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|/
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRB].position[0], cube_mode.Vertices()[BlockModel::g_leftRB].position[1], cube_mode.Vertices()[BlockModel::g_leftRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLB].position[0], cube_mode.Vertices()[BlockModel::g_leftLB].position[1], cube_mode.Vertices()[BlockModel::g_leftLB].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i] = cube_mode.Vertices()[BlockModel::g_rightLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRB] = cube_mode.Vertices()[BlockModel::g_frtRT];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB] = cube_mode.Vertices()[BlockModel::g_bkLT];
 	++block_index;
 	/*
 	____
-	\	  |
-	\  |
-	\ |
-	\|
+	\	|
+	 \  |
+	  \ |
+	   \|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetPosition(cube_mode.Vertices()[BlockModel::g_leftLT].position[0], cube_mode.Vertices()[BlockModel::g_leftLT].position[1], cube_mode.Vertices()[BlockModel::g_leftLT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightLB].position[0], cube_mode.Vertices()[BlockModel::g_rightLB].position[1], cube_mode.Vertices()[BlockModel::g_rightLB].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i] = cube_mode.Vertices()[BlockModel::g_leftLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB] = cube_mode.Vertices()[BlockModel::g_frtLT];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRB] = cube_mode.Vertices()[BlockModel::g_bkRT];
 	++block_index;
@@ -130,10 +130,10 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|/_____\|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB] = cube_mode.Vertices()[BlockModel::g_leftLT];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRB] = cube_mode.Vertices()[BlockModel::g_rightRT];
 	++block_index;
@@ -144,10 +144,10 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|_______|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i] = cube_mode.Vertices()[BlockModel::g_frtLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i] = cube_mode.Vertices()[BlockModel::g_btmLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRB] = cube_mode.Vertices()[BlockModel::g_leftRT];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLB] = cube_mode.Vertices()[BlockModel::g_rightLT];
 	++block_index;
@@ -158,10 +158,10 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|_______|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i] = cube_mode.Vertices()[BlockModel::g_frtLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftRT] = cube_mode.Vertices()[BlockModel::g_leftRB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightLT] = cube_mode.Vertices()[BlockModel::g_rightLB];
 	++block_index;
@@ -172,10 +172,10 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	|/_____\|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
-	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
+	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
 	for (int i = 0; i < 4; ++i)
-		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i] = cube_mode.Vertices()[BlockModel::g_bkLB];
+		mEdgeBlockModels[block_index].Vertices()[BlockModel::g_topLB + i] = cube_mode.Vertices()[BlockModel::g_topLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLT] = cube_mode.Vertices()[BlockModel::g_leftLB];
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRT] = cube_mode.Vertices()[BlockModel::g_rightRB];
 	++block_index;
@@ -197,17 +197,17 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	}
 	//90degree is inner
 	/*
-	/|
-	/ |
-	/__|
+	   /|
+	  / |
+	 /__|
 	/___|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
@@ -215,6 +215,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRT].position[0], cube_mode.Vertices()[BlockModel::g_rightRT].position[1], cube_mode.Vertices()[BlockModel::g_rightRT].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtRT].texcoord[1]);
 	++block_index;
 	//90degree is outer
 	/*
@@ -227,8 +228,8 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
@@ -236,6 +237,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_leftRT].position[0], cube_mode.Vertices()[BlockModel::g_leftRT].position[1], cube_mode.Vertices()[BlockModel::g_leftRT].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_bkRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_bkRT].texcoord[1]);
 	++block_index;
 	//90degree is inner
 	/*
@@ -249,8 +251,8 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
@@ -258,21 +260,22 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLB].position[0], cube_mode.Vertices()[BlockModel::g_btmLB].position[1], cube_mode.Vertices()[BlockModel::g_btmLB].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtLB].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtLB].texcoord[1]);
 	++block_index;
 	//90degree is outer
 	/*
 	____
 	\___|
-	\  |
-	\ |
-	\|
+	 \  |
+	  \ |
+	   \|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
@@ -280,21 +283,22 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_bkLB].texcoord[0], cube_mode.Vertices()[BlockModel::g_bkLB].texcoord[1]);
 	++block_index;
 
 	//90degree is outer
 	/*
-	/|
-	/ |
-	/__|
+	   /|
+	  / |
+	 /__|
 	/___|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
@@ -302,6 +306,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_leftRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_leftRT].texcoord[1]);
 	++block_index;
 	//90degree is inner
 	/*
@@ -314,8 +319,8 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_topLB].normal[0], cube_mode.Vertices()[BlockModel::g_topLB].normal[1], cube_mode.Vertices()[BlockModel::g_topLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
@@ -323,6 +328,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_rightRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_rightRT].texcoord[1]);
 	++block_index;
 	//90degree is outer
 	/*
@@ -336,8 +342,8 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
@@ -345,21 +351,22 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmLT].position[0], cube_mode.Vertices()[BlockModel::g_btmLT].position[1], cube_mode.Vertices()[BlockModel::g_btmLT].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_rightRB].texcoord[0], cube_mode.Vertices()[BlockModel::g_rightRB].texcoord[1]);
 	++block_index;
 	//90degree is inner
 	/*
 	____
 	\___|
-	\  |
-	\ |
-	\|
+	 \  |
+	  \ |
+	   \|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
 	{
 		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB + i].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
-		mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
+		//mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB + i].SetNormal(cube_mode.Vertices()[BlockModel::g_btmLB].normal[0], cube_mode.Vertices()[BlockModel::g_btmLB].normal[1], cube_mode.Vertices()[BlockModel::g_btmLB].normal[2]);
 	}
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
@@ -367,6 +374,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_btmRB].position[0], cube_mode.Vertices()[BlockModel::g_btmRB].position[1], cube_mode.Vertices()[BlockModel::g_btmRB].position[2]);
+	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtRB].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtRB].texcoord[1]);
 	++block_index;
 
 	for (auto& model : mOuterCornerBlockModels){
@@ -389,48 +397,64 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRB].position[0], cube_mode.Vertices()[BlockModel::g_frtRB].position[1], cube_mode.Vertices()[BlockModel::g_frtRB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
 	++block_index;
 	//shift FRB to FRT
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtRT].position[0], cube_mode.Vertices()[BlockModel::g_frtRT].position[1], cube_mode.Vertices()[BlockModel::g_frtRT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
 	++block_index;
 	//shift FLT to FLB
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_topRT].position[0], cube_mode.Vertices()[BlockModel::g_topRT].position[1], cube_mode.Vertices()[BlockModel::g_topRT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_topRB].position[0], cube_mode.Vertices()[BlockModel::g_topRB].position[1], cube_mode.Vertices()[BlockModel::g_topRB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_topLB].position[0], cube_mode.Vertices()[BlockModel::g_topLB].position[1], cube_mode.Vertices()[BlockModel::g_topLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLB].position[0], cube_mode.Vertices()[BlockModel::g_frtLB].position[1], cube_mode.Vertices()[BlockModel::g_frtLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_topRT].texcoord[1]);
 	++block_index;
 	//shift FLB to FLT
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLT].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_leftRB].SetPosition(cube_mode.Vertices()[BlockModel::g_frtLT].position[0], cube_mode.Vertices()[BlockModel::g_frtLT].position[1], cube_mode.Vertices()[BlockModel::g_frtLT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLB].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLB].texcoord[1]);
 	++block_index;
 	//shift BRT to BRB
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRB].position[0], cube_mode.Vertices()[BlockModel::g_bkRB].position[1], cube_mode.Vertices()[BlockModel::g_bkRB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topLB].texcoord[0], cube_mode.Vertices()[BlockModel::g_topLB].texcoord[1]);
 	++block_index;
 	//shift BRB to BRT
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_bkRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkRT].position[0], cube_mode.Vertices()[BlockModel::g_bkRT].position[1], cube_mode.Vertices()[BlockModel::g_bkRT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmLT].texcoord[1]);
 	++block_index;
 	//shift BLT to BLB
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
-	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLB].SetPosition(cube_mode.Vertices()[BlockModel::g_topLT].position[0], cube_mode.Vertices()[BlockModel::g_topLT].position[1], cube_mode.Vertices()[BlockModel::g_topLT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_topRT].position[0], cube_mode.Vertices()[BlockModel::g_topRT].position[1], cube_mode.Vertices()[BlockModel::g_topRT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetPosition(cube_mode.Vertices()[BlockModel::g_topRB].position[0], cube_mode.Vertices()[BlockModel::g_topRB].position[1], cube_mode.Vertices()[BlockModel::g_topRB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRB].SetPosition(cube_mode.Vertices()[BlockModel::g_topLB].position[0], cube_mode.Vertices()[BlockModel::g_topLB].position[1], cube_mode.Vertices()[BlockModel::g_topLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topLT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRT].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLB].position[0], cube_mode.Vertices()[BlockModel::g_bkLB].position[1], cube_mode.Vertices()[BlockModel::g_bkLB].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_topRT].SetTexcoord(cube_mode.Vertices()[BlockModel::g_topLB].texcoord[0], cube_mode.Vertices()[BlockModel::g_topLB].texcoord[1]);
 	++block_index;
 	//shift BLB to BLT
 	mInnerCornerBlockModels[block_index] = cube_mode;
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_bkLB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_rightRB].SetPosition(cube_mode.Vertices()[BlockModel::g_bkLT].position[0], cube_mode.Vertices()[BlockModel::g_bkLT].position[1], cube_mode.Vertices()[BlockModel::g_bkLT].position[2]);
+	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmRT].texcoord[1]);
 	++block_index;
 
 	for (auto& model : mInnerCornerBlockModels){
