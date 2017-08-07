@@ -422,7 +422,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 	// draw this model
 	if (model != 0)
 	{
-		int nIndex = model->GetLodIndex(fCameraToObjectDist);
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(fCameraToObjectDist) : 0;
 		CParaXModel* pModel = model->GetModel(nIndex);
 
 		if (pModel)
