@@ -23,6 +23,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 
 #ifdef USE_OPENGL_RENDERER
+#include "ShadowMap.h"
 #include "platform/OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
@@ -248,6 +249,8 @@ EffectManager::EffectManager()
 m_bDisableD3DAlphaTesting(false), m_bDisableD3DCulling(false), m_bEnableLocalLighting(true), m_bUsingShadowMap(false), m_bZEnable(true),
 #ifdef USE_DIRECTX_RENDERER
 m_pShadowMap(NULL), m_pGlowEffect(NULL), 
+#elif defined(USE_OPENGL_RENDERER)
+m_pShadowMap(NULL),
 #endif
 m_colorGlowness(1.0f, 1.0f, 1.0f, 1.0f), m_nGlowTechnique(0),m_bIsUsingFullScreenGlow(false),m_nMaxLocalLightsNum(4),
 m_bEnableReflectionRendering(true),m_pScene(NULL), m_nEffectLevel(30), m_bEffectValid(true), m_bDisableZWrite(false),m_pWaveEffect(NULL),
@@ -274,8 +277,10 @@ void EffectManager::Cleanup()
 	m_pCurrentEffect = NULL;
 	m_HandleMap.clear();
 	AssetManager <CEffectFile>::Cleanup();
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	SAFE_DELETE(m_pShadowMap);
+#endif
+#ifdef USE_DIRECTX_RENDERER
 	SAFE_DELETE(m_pGlowEffect);
 	SAFE_DELETE(m_pWaveEffect);
 #endif
@@ -295,7 +300,7 @@ int EffectManager::GetMaxLocalLightsNum()
 
 CShadowMap* EffectManager::GetShadowMap()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if (m_pShadowMap == 0)
 	{
 		m_pShadowMap = new CShadowMap();
@@ -432,7 +437,7 @@ WaveEffect* EffectManager::GetScreenWaveEffect()
 
 EffectManager::EffectTechniques EffectManager::GetCurrentEffectTechniqueType()
 {
-#ifdef USE_DIRECTX_RENDERER
+//#ifdef USE_DIRECTX_RENDERER
 	if(m_pCurrentEffect == 0)
 		return EFFECT_FIXED_FUNCTION;
 	else
@@ -448,16 +453,18 @@ EffectManager::EffectTechniques EffectManager::GetCurrentEffectTechniqueType()
 			break;
 		}
 	}
-#else
-	return EFFECT_DEFAULT;
-#endif
+//#else
+	//return EFFECT_DEFAULT;
+//#endif
 }
 
 void EffectManager::RestoreDeviceObjects()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 		m_pShadowMap->RestoreDeviceObjects();
+#endif
+#ifdef USE_DIRECTX_RENDERER
 	if(m_pGlowEffect!=0)
 		m_pGlowEffect->RestoreDeviceObjects();
 	if(m_pWaveEffect!=0)
@@ -468,9 +475,11 @@ void EffectManager::RestoreDeviceObjects()
 
 void EffectManager::InvalidateDeviceObjects()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 		m_pShadowMap->InvalidateDeviceObjects();
+#endif
+#ifdef USE_DIRECTX_RENDERER
 	if(m_pGlowEffect!=0)
 		m_pGlowEffect->InvalidateDeviceObjects();
 	if(m_pWaveEffect != 0)
@@ -550,7 +559,7 @@ bool EffectManager::IsUsingShadowMap()
 
 const Matrix4* EffectManager::GetTexViewProjMatrix()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)||defined(USE_OPENGL_RENDERER)
 	if(m_pShadowMap!=0)
 	{
 		return m_pShadowMap->GetTexViewProjMatrix();
@@ -2171,7 +2180,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_BLOCK:
 	{
-		pEffect->use();
+		pEffect->use(GetScene()->IsShadowMapEnabled()?1:0);
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
@@ -2609,7 +2618,7 @@ void EffectManager::EndEffect()
 
 void EffectManager::SetAllEffectsTechnique(EffectTechniques nTech)
 {
-#ifdef USE_DIRECTX_RENDERER
+//#ifdef USE_DIRECTX_RENDERER
 	EndEffect();
 	switch(nTech)
 	{
@@ -2630,7 +2639,7 @@ void EffectManager::SetAllEffectsTechnique(EffectTechniques nTech)
 		}
 		break;
 	}
-#endif
+//#endif
 }
 
 void EffectManager::SetDefaultEffectMapping(int nLevel)

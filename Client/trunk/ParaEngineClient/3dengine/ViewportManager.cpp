@@ -14,6 +14,7 @@ using namespace ParaEngine;
 
 CViewportManager::CViewportManager()
 	:m_nWidth(1), m_nHeight(1), m_nActiveViewPortIndex(1), m_nLayout(VIEW_LAYOUT_INVALID)
+	,m_nCurrentFrameNumber(0)
 {
 	m_viewport.X = 0;
 	m_viewport.Y = 0;
@@ -30,6 +31,7 @@ CViewportManager::~CViewportManager(void)
 
 void ParaEngine::CViewportManager::UpdateViewport(int nBackbufferWidth, int nBackbufferHeight)
 {
+	++m_nCurrentFrameNumber;
 	if (m_nHeight != nBackbufferHeight || m_nWidth != nBackbufferWidth)
 	{
 		m_nWidth = nBackbufferWidth;
