@@ -386,7 +386,6 @@ namespace ParaEngine
 		CViewportManager* GetViewportManager() { return NULL; };
 
 		virtual void VerifyCommandLine(const char* sCommandLine, std::string &strCmd);
-		virtual int getCurrentFrameNumber()const{ return m_nCurrentFrameNumber; }
 
 	protected:
 		/** shared init called in constructor.  */
@@ -420,7 +419,6 @@ namespace ParaEngine
 		std::string m_sModuleDir;
 		/** application state */
 		PEAppState m_nAppState;
-		int m_nCurrentFrameNumber;
 	};
 }
 

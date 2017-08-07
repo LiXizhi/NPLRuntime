@@ -2067,7 +2067,6 @@ HRESULT CParaEngineApp::DoWork()
 
 HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender)
 {
-	++m_nCurrentFrameNumber;
 	return CD3DApplication::Render3DEnvironment(bForceRender);
 }
 

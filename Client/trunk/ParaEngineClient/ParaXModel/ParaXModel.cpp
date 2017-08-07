@@ -25,7 +25,7 @@
 #include "memdebug.h"
 #include "XFileCharModelExporter.h"
 #include "./IO/FileUtils.h"
-#include "IParaEngineApp.h"
+#include "ViewportManager.h"
 
 
 /** def this, if one wants the animation to be very accurate. */
@@ -1377,9 +1377,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						// uncomment to detect incorrect index. 
 						// assert(a < m_objNum.nVertices, "index overflow");
 
-						if (m_frame_number_vertices[a] != CGlobals::GetApp()->getCurrentFrameNumber())
+						if (m_frame_number_vertices[a] != CGlobals::GetViewportManager()->getCurrentFrameNumber())
 						{
-							m_frame_number_vertices[a] = CGlobals::GetApp()->getCurrentFrameNumber();
+							m_frame_number_vertices[a] = CGlobals::GetViewportManager()->getCurrentFrameNumber();
 
 							float weight = ov->weights[0] * (1 / 255.0f);
 							Bone& bone = bones[ov->bones[0]];
