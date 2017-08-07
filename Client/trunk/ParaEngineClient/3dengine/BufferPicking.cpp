@@ -171,9 +171,9 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 			byte * byte_ptr = reinterpret_cast<byte*>(&result);
 			byte red = *byte_ptr++;
 			byte green = *byte_ptr++;
-			byte blur = *byte_ptr++;
+			byte blue = *byte_ptr++;
 			byte alpha = *byte_ptr;
-			result = (alpha << 24) | (red << 16) | (green << 8) | (blur);
+			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
 		}
 #endif
 		EndBuffer();
