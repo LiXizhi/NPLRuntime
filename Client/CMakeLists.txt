@@ -50,7 +50,7 @@ else()
 	FIND_PACKAGE(CURL REQUIRED)
 	# making executable relocatable 
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
+	SET(CMAKE_INSTALL_RPATH "$ORIGIN/") 
 endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${CLIENT_BINARY_DIR}/lua-5.1.4)
@@ -62,7 +62,7 @@ add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
 add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
 
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-3.1.1 ${CLIENT_BINARY_DIR}/assimp-3.1.1)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/assimp-4.0.0 ${CLIENT_BINARY_DIR}/assimp-4.0.0)
 
 # main NPL runtime using ParaEngineClient
 add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)

@@ -562,7 +562,6 @@ namespace ParaEngine
 		} while (true);
 	}
 
-
 	int BMaxObject::GetStaticActorCount()
 	{
 		return (int)m_staticActors.size();

@@ -437,7 +437,9 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				{
 					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
 					char* bufferCpy = new char[nSize];
-					memcpy(bufferCpy, m_textureContentMapping[m_textures[i]].c_str(), nSize);
+
+					auto src = m_textureContentMapping[m_textures[i]].c_str();
+					memcpy(bufferCpy, src, nSize);
 					texEntity->SetRawData(bufferCpy, nSize);
 					pMesh->textures[i] = texEntity;
 				}
@@ -621,6 +623,17 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	aiString szPath;
 	char* content_begin = NULL;
 	int content_len = -1;
+
+	//ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
+	//	aiTextureType type,
+	//	unsigned int  index,
+	//	aiString* path,
+	//	aiTextureMapping* mapping = NULL,
+	//	unsigned int* uvindex = NULL,
+	//	ai_real* blend = NULL,
+	//	aiTextureOp* op = NULL,
+	//	aiTextureMapMode* mapmode = NULL,
+	//	unsigned int* flags = NULL);
 
 	bool bNoOpacity = true;
 	for (unsigned int i = 0; i <= AI_TEXTURE_TYPE_MAX; ++i)
@@ -809,8 +822,10 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 		{
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
-			m_textureContentMapping[diffuseTexName] = "";
-			m_textureContentMapping[diffuseTexName].append(content_begin, content_len);
+
+
+			m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
+
 			// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
 		}
 		else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))

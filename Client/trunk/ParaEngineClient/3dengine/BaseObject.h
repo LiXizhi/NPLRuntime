@@ -524,6 +524,7 @@ public:
 
 	ATTRIBUTE_METHOD1(CBaseObject, IsLODEnabled_s, bool*) { *p1 = cls->IsLODEnabled(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, EnableLOD_s, bool) { cls->EnableLOD(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, GetTextureFileName_s, const char**)	{ *p1 = cls->GetTextureFileName().c_str(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetTextureFileName_s, const char*)	{ cls->SetTextureFileName(p1); return S_OK; }
 

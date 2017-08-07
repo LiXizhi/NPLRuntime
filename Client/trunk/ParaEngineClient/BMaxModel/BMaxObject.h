@@ -72,6 +72,8 @@ namespace ParaEngine
 		virtual int GetPhysicsGroup();
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
+		virtual const std::string& GetTextureFileName()override;
+		virtual void SetTextureFileName(const std::string& sFilename)override;
 
 		/** whether animation is enabled. by default this is true. During movie editing, we may disable animation, set animation frame explicitly by editor logics. */
 		virtual void EnableAnim(bool bAnimated);
@@ -80,9 +82,6 @@ namespace ParaEngine
 		/** get the current local time in case it is animated in milli seconds frames. */
 		virtual int GetTime();
 		virtual void SetTime(int nTime);
-
-		virtual const std::string& GetTextureFileName()override;
-		virtual void SetTextureFileName(const std::string& sFilename)override;
 
 		/** set the current animation frame number relative to the beginning of current animation.
 		* @param nFrame: 0 means beginning. if nFrame is longer than the current animation length, it will wrap (modulate the length).
@@ -94,9 +93,11 @@ namespace ParaEngine
 
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
+		
 		/** update model according to current animation data and time*/
 		bool UpdateModel(SceneState * sceneState = NULL);
 
+		/** ignore selected state for bmaxobject
 		virtual void OnSelect(int nGroupID)override{}
 		virtual void OnDeSelect()override{}
 
