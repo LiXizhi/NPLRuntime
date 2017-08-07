@@ -165,7 +165,17 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 		m_pickingResult.resize(nWidth*nHeight);
 		if (!RenderDevice::ReadPixels(region.left(), region.top(), nWidth, nHeight, (void*)(&(m_pickingResult[0]))))
 			m_pickingResult.clear();
-
+#ifdef USE_OPENGL_RENDERER
+		for (auto & result : m_pickingResult)
+		{
+			byte * byte_ptr = reinterpret_cast<byte*>(&result);
+			byte red = *byte_ptr++;
+			byte green = *byte_ptr++;
+			byte blue = *byte_ptr++;
+			byte alpha = *byte_ptr;
+			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
+		}
+#endif
 		EndBuffer();
 	}
 	return m_pickingResult.size();
