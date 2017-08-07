@@ -16,6 +16,8 @@ namespace ParaEngine
 		DWORD m_dwFileSize;
 	public:
 		CFileFindData(const std::string& sFileName, DWORD dwFileSize = 0, DWORD dwFileAttributes = 0, const FILETIME* ftLastWriteTime = 0, const FILETIME* ftCreationTime = 0, const FILETIME* ftLastAccessTime = 0);
+
+		bool IsDirectory() const;
 	};
 
 	/** it represents the search result.*/

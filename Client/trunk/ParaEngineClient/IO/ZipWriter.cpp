@@ -367,7 +367,7 @@ DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int n
 			auto itemData = result->GetItemData(i);
 			const string& item = itemData->m_sFileName;
 
-			if ((itemData->m_dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+			if (!itemData->IsDirectory())
 			{
 				DWORD result = ZipAdd((sDestFolder + item).c_str(), (rootpath + item).c_str());
 
