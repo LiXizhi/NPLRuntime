@@ -123,6 +123,7 @@ namespace ParaEngine
 		void ParseBlockAnimationKeys(uint16 x, uint16 y, uint16 z, BMaxXMLElement* node, int nIndex);
 		void ParseBlockAnimationKey(BMaxXMLElement* node,Bone* bone,const std::string propertyType);
 
+		void ClearModel();
 		void FillParaXModelData(CParaXModel *pMesh);
 		void FillVerticesAndIndices();
 		void ProcessBoneNodes();
