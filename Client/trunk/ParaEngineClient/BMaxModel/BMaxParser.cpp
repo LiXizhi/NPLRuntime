@@ -343,8 +343,10 @@ namespace ParaEngine
 			}
 		}
 	}
+
 	CParaXModel* BMaxParser::ParseParaXModel()
 	{
+		ClearModel();
 		CParaXModel* pMesh = NULL;
 		ParaXHeaderDef m_xheader;
 		pMesh = new CParaXModel(m_xheader);
@@ -355,6 +357,7 @@ namespace ParaEngine
 
 	CParaXModel * BMaxParser::ParseParaXModel(uint32 nMaxTriangleCount)
 	{
+		ClearModel();
 		CalculateLod(nMaxTriangleCount);
 
 		CParaXModel* pMesh = NULL;
@@ -407,7 +410,7 @@ namespace ParaEngine
 			{
 				continue;
 			}
-			for (uint32 i = 0; i < 6; i++)
+			for (uint32 i = 0; i < model->GetFaceCount(); i++)
 			{
 				if (model->IsFaceNotUse(i))
 				{
@@ -476,7 +479,7 @@ namespace ParaEngine
 			do
 			{
 				BMaxNode *neighbourNode = currentNode->GetNeighbourByOffset(offset);
-				if (neighbourNode == NULL || currentNode->GetColor() != neighbourNode->GetColor() || currentNode->GetBoneIndex() != neighbourNode->GetBoneIndex())
+				if (!currentNode->isSolid() || neighbourNode == NULL || !neighbourNode->isSolid() || currentNode->GetColor() != neighbourNode->GetColor() || currentNode->GetBoneIndex() != neighbourNode->GetBoneIndex())
 					return;
 				BlockModel* neighbourCube = neighbourNode->GetCube();
 
@@ -774,11 +777,6 @@ namespace ParaEngine
 
 	void BMaxParser::FillVerticesAndIndices()
 	{
-		m_geosets.clear();
-		m_renderPasses.clear();
-		m_indices.clear();
-		m_vertices.clear();
-
 		if (m_blockModels.size() == 0)
 		{
 			return;
@@ -847,12 +845,12 @@ namespace ParaEngine
 			nStartVertex += nVertices;
 		}
 
-		/*
+		int nRootBoneIndex = 0;
 		for (uint32 i = 0; i < m_blockModels.size(); i++)
 		{
 			BlockModel* model = m_blockModels.at(i);
 			BMaxNode* node = m_blockModelsMapping[model];
-			if (!node)
+			if (!node || node->isSolid())
 				continue;
 
 			int nVertices = model->GetVerticesCount();
@@ -888,6 +886,7 @@ namespace ParaEngine
 				ModelVertex modelVertex;
 				memset(&modelVertex, 0, sizeof(ModelVertex));
 				pVertices->GetPosition(modelVertex.pos);
+				modelVertex.pos *= m_fScale;
 				pVertices->GetNormal(modelVertex.normal);
 				modelVertex.color0 = pVertices->color2;
 				//set bone and weight, only a single bone
@@ -911,9 +910,19 @@ namespace ParaEngine
 			total_count += nVertices;
 			nStartVertex += nVertices;
 		}
-		*/
+		
 		aabb.GetMin(m_minExtent);
 		aabb.GetMax(m_maxExtent);
+	}
+
+
+
+	void BMaxParser::ClearModel()
+	{
+		m_geosets.clear();
+		m_renderPasses.clear();
+		m_indices.clear();
+		m_vertices.clear();
 	}
 
 	void BMaxParser::FillParaXModelData(CParaXModel *pMesh)

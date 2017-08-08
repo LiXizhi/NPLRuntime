@@ -118,6 +118,7 @@ int ParaEngine::BMaxBlockModelNode::TessellateBlock(BlockModel* tessellatedModel
 			}
 		}
 		tessellatedModel->SetFaceCount(nTotalFaceCount);
+
 		return tessellatedModel->GetVerticesCount();
 	}
 	return 0;
