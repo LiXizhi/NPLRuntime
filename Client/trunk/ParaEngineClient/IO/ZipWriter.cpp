@@ -364,8 +364,10 @@ DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int n
 		int nNum = result->GetNumOfResult();
 		for (int i = 0; i < nNum; ++i)
 		{
-			string item = result->GetItem(i);
-			if (CParaFile::GetFileExtension(item) != "")
+			auto itemData = result->GetItemData(i);
+			const string& item = itemData->m_sFileName;
+
+			if (!itemData->IsDirectory())
 			{
 				DWORD result = ZipAdd((sDestFolder + item).c_str(), (rootpath + item).c_str());
 
@@ -402,9 +404,13 @@ DWORD CZipWriter::AddDirectory(const char* dstzn, const char* filepattern, int n
 			{
 				if (!item.empty())
 				{
-					if (ZipAddFolder((sDestFolder + item).c_str()) != ZIP_OK)
+					auto path = sDestFolder + item;
+					if (item[item.size() - 1] != '/')
+						path += "/";
+
+					if (ZipAddFolder(path.c_str()) != ZIP_OK)
 					{
-						OUTPUT_LOG("warning: unable to add folder %s to zip. \n", (sDestFolder + item).c_str());
+						OUTPUT_LOG("warning: unable to add folder %s to zip. \n", path.c_str());
 					}
 				}
 			}

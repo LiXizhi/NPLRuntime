@@ -98,8 +98,13 @@ namespace ParaEngine
 		void AddShadowCasterPoint(const CShapeAABB& aabb);
 	private:
 		static int g_nShadowMapTexelSizeLevel;
+#ifdef USE_DIRECTX_RENDERER
 		LPDIRECT3DSURFACE9 m_pBackBuffer, m_pZBuffer; 
 		LPDIRECT3DSURFACE9 m_pSMColorSurface, m_pSMColorSurfaceBlurredHorizontal, m_pSMColorSurfaceBlurredVertical, m_pSMZSurface;
+#else
+		GLuint mOldFrameBufferObject;
+		GLuint mSMFrameBufferObject,mSMDepthStencilBufferObject;
+#endif
 		asset_ptr<TextureEntity> m_pSMColorTexture, m_pSMColorTextureBlurredHorizontal, m_pSMColorTextureBlurredVertical, m_pSMZTexture;
 		int m_shadowTexWidth, m_shadowTexHeight;
 		// light direction
@@ -145,9 +150,9 @@ namespace ParaEngine
 		bool    BuildPSMProjectionMatrix();
 		bool    BuildLSPSMProjectionMatrix();
 		bool    BuildOrthoShadowProjectionMatrix();
-
+#ifdef USE_DIRECTX_RENDERER
 		HRESULT CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE resType, DWORD dwUsage);
-		
+#endif
 	};
 
 }

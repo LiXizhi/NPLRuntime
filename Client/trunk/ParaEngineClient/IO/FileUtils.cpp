@@ -1184,7 +1184,7 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	int nLen = (int)sFilePattern.size();
 	if (nSubLevel > 0/* && sFilePattern[nLen-1] != '.'*/)
 	{
-		DirSpec = sRootPath + "*.";
+		DirSpec = sRootPath + "*.*";
 		CParaFile::ToCanonicalFilePath(DirSpec, DirSpec);
 		hFind = FindFirstFile(DirSpec.c_str(), &FindFileData);
 

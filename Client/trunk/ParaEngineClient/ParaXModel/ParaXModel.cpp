@@ -25,7 +25,7 @@
 #include "memdebug.h"
 #include "XFileCharModelExporter.h"
 #include "./IO/FileUtils.h"
-
+#include "ViewportManager.h"
 
 
 /** def this, if one wants the animation to be very accurate. */
@@ -1377,6 +1377,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 						// uncomment to detect incorrect index. 
 						// assert(a < m_objNum.nVertices, "index overflow");
 
+						// TODO: m_nCurrentFrameNumber can not be replaced by CGlobals::GetViewportManager()->getCurrentFrameNumber()
 						if (m_frame_number_vertices[a] != m_nCurrentFrameNumber)
 						{
 							m_frame_number_vertices[a] = m_nCurrentFrameNumber;

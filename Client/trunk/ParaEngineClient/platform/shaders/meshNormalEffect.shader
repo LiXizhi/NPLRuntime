@@ -83,3 +83,47 @@ void main()
 	// gl_FragColor = vec4(1.0,0.0,0.0, 1.0); // testing
 }
 );
+
+const char* meshWriteShadowMapEffect_vert = STRINGIFY(
+
+attribute vec4 a_position;
+attribute vec2 a_texCoord;
+
+uniform mat4 worldviewprojection;
+varying vec2 v_texCoord;
+varying vec4 v_depth;
+
+void main()
+{
+	gl_Position = worldviewprojection * a_position;
+	v_texCoord = a_texCoord;
+	//convert to [0,1]
+	float depth = gl_Position.z / gl_Position.w * 0.5 + 0.5;
+	//encoding
+	depth = depth*256.0;
+	v_depth.r = floor(depth) / 256.0;
+	depth = fract(depth)*256.0;
+	v_depth.g = floor(depth) / 256.0;
+	depth = fract(depth)*256.0;
+	v_depth.b = floor(depth) / 256.0;
+	v_depth.a = fract(depth);
+}
+);
+
+const char* meshWriteShadowMapEffect_frag = STRINGIFY(
+
+uniform bool alphatesting;
+uniform float opacity;
+
+varying vec2 v_texCoord;
+varying vec4 v_depth;
+
+void main()
+{
+	vec4 albedoColor = texture2D(CC_Texture0, v_texCoord);
+	// this is for alpha testing. 
+	if (alphatesting && albedoColor.a < 0.05)
+		discard;
+	gl_FragColor = v_depth;
+}
+);

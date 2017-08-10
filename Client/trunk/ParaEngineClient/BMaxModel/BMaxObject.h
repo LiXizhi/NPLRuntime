@@ -72,8 +72,8 @@ namespace ParaEngine
 		virtual int GetPhysicsGroup();
 		virtual void EnablePhysics(bool bEnable);
 		virtual bool IsPhysicsEnabled();
-		virtual const std::string& GetTextureFileName()override;
-		virtual void SetTextureFileName(const std::string& sFilename)override;
+		virtual TextureEntity* GetReplaceableTexture(int ReplaceableTextureID)override;
+		virtual bool  SetReplaceableTexture(int ReplaceableTextureID,TextureEntity* pTextureEntity)override;
 
 		/** whether animation is enabled. by default this is true. During movie editing, we may disable animation, set animation frame explicitly by editor logics. */
 		virtual void EnableAnim(bool bAnimated);
@@ -119,12 +119,11 @@ namespace ParaEngine
 		/** a hash to detect if the containing block position of this biped changed. */
 		DWORD m_dwLastBlockHash;
 
-		std::string mReplaceTexturesName;
-		std::map<uint32, TextureEntity*> mReplaceTextures;
-
 		/** current time for dynamic fields. */
 		int m_curTime;
 		/** whether to enable animation in asset file. */
 		bool m_bEnableAnim;
+
+		std::map<uint32, TextureEntity*> mReplaceTextures;
 	};
 }
