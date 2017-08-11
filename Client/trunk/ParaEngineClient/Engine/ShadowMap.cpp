@@ -9,7 +9,9 @@
 */
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
+#endif
 #include "ShapeFrustum.h"
 
 #include "ShapeAABB.h"
@@ -50,13 +52,18 @@ namespace ParaEngine
 
 CShadowMap::CShadowMap(void)
 {
+#ifdef USE_DIRECTX_RENDERER
 	m_pBackBuffer = NULL;
 	m_pZBuffer = NULL;
 	m_pSMColorSurface = NULL;
 	m_pSMZSurface = NULL;
 	m_pSMColorSurfaceBlurredHorizontal = NULL;
 	m_pSMColorSurfaceBlurredVertical = NULL;
-
+#else
+	mOldFrameBufferObject = 0;
+	mSMDepthStencilBufferObject = 0;
+	mSMFrameBufferObject = 0;
+#endif
 	m_lightDir = Vector3(0.f, 1.f, 0.f);
 	m_bUnitCubeClip = true;
 	m_bSlideBack = true;
@@ -90,7 +97,7 @@ CShadowMap::CShadowMap(void)
 CShadowMap::~CShadowMap(void)
 {
 }
-
+#ifdef USE_DIRECTX_RENDERER
 HRESULT CShadowMap::CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE resType, DWORD dwUsage)
 {
 	HRESULT hr = S_OK;
@@ -107,7 +114,7 @@ HRESULT CShadowMap::CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE re
 
 	return hr;
 }
-
+#endif
 int CShadowMap::GetShadowMapTexelSize()
 {
 	return m_shadowTexWidth;
@@ -126,7 +133,11 @@ void CShadowMap::SetShadowMapTexelSize(int nWidth, int nHeight)
 	{
 		m_shadowTexWidth = nWidth;
 		m_shadowTexHeight = nHeight;
-		if(m_pSMColorTexture!=0 || m_pSMZSurface!=0)
+		if(m_pSMColorTexture!=0
+#ifdef USE_DIRECTX_RENDERER
+			|| m_pSMZSurface!=0
+#endif
+			)
 		{
 			InvalidateDeviceObjects();
 			RestoreDeviceObjects();
@@ -151,9 +162,13 @@ HRESULT CShadowMap::RestoreDeviceObjects()
 
 bool CShadowMap::PrepareAllSurfaces()
 {
-	if(m_pSMColorSurface)
+#ifdef USE_DIRECTX_RENDERER
+	if (m_pSMColorSurface)
+#else
+	if (mSMFrameBufferObject)
+#endif
 		return true;
-
+#ifdef USE_DIRECTX_RENDERER
 	IDirect3DDevice9* pd3dDevice = CGlobals::GetRenderDevice();
 
 	//  hardware shadow maps are enabled by creating a texture with a depth format (D16, D24X8, D24S8),
@@ -181,14 +196,17 @@ bool CShadowMap::PrepareAllSurfaces()
 
 
 	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
-
+#else
+	m_bSupportsHWShadowMaps = false;
+#endif
 	TextureEntity::TextureInfo tex_info;
 	tex_info.m_width = m_shadowTexWidth;
 	tex_info.m_height = m_shadowTexHeight;
 
 	if (m_bSupportsHWShadowMaps)
 	{
-		if(m_pSMColorTexture == 0)
+#ifdef USE_DIRECTX_RENDERER
+		if (m_pSMColorTexture == 0)
 		{
 			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
 			m_pSMColorTexture->SetTextureInfo(tex_info);
@@ -209,6 +227,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		}
 		SAFE_RELEASE(m_pSMZSurface);
 		m_pSMZTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMZSurface);
+#endif
 	}
 	else
 	{
@@ -221,6 +240,7 @@ bool CShadowMap::PrepareAllSurfaces()
 			if(!m_pSMColorTexture->IsValid())
 				return false;
 		}
+#ifdef USE_DIRECTX_RENDERER
 		SAFE_RELEASE(m_pSMColorSurface);
 		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
 
@@ -230,8 +250,25 @@ bool CShadowMap::PrepareAllSurfaces()
 
 		if(!m_pSMColorSurface )
 			return false;
+#else
+		glDeleteFramebuffers(1, &mSMFrameBufferObject);
+		glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
+		glGenFramebuffers(1, &mSMFrameBufferObject);
+		glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
+		glBindTexture(GL_TEXTURE_2D, m_pSMColorTexture->GetTexture());
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture(), 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glGenRenderbuffers(1, &mSMDepthStencilBufferObject);
+		glBindRenderbuffer(GL_RENDERBUFFER, mSMDepthStencilBufferObject);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, tex_info.GetWidth(), tex_info.GetHeight());
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		PE_CHECK_GL_ERROR_DEBUG();
+#endif
 	}
-	if(m_bBlurSMColorTexture)
+#ifdef USE_DIRECTX_RENDERER
+	if (m_bBlurSMColorTexture)
 	{
 		TextureEntity::TextureInfo tex_info;
 		tex_info.m_width = m_shadowTexWidth;
@@ -260,6 +297,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		SAFE_RELEASE(m_pSMColorSurfaceBlurredVertical);
 		m_pSMColorTextureBlurredVertical->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurfaceBlurredVertical);
 	}
+#endif
 	return true;
 }
 //-----------------------------------------------------------------------------
@@ -273,10 +311,18 @@ bool CShadowMap::PrepareAllSurfaces()
 //-----------------------------------------------------------------------------
 HRESULT CShadowMap::InvalidateDeviceObjects()
 {
+#ifdef USE_DIRECTX_RENDERER
 	SAFE_RELEASE(m_pSMColorSurface);
 	SAFE_RELEASE(m_pSMZSurface);
 	SAFE_RELEASE(m_pSMColorSurfaceBlurredHorizontal);
 	SAFE_RELEASE(m_pSMColorSurfaceBlurredVertical);
+#else
+	glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
+	mSMDepthStencilBufferObject = 0;
+	glDeleteFramebuffers(1, &mSMFrameBufferObject);
+	mSMFrameBufferObject = 0;
+	PE_CHECK_GL_ERROR_DEBUG();
+#endif
 	if (m_pSMColorTexture)
 		m_pSMColorTexture->InvalidateDeviceObjects();
 	if (m_pSMZTexture)
@@ -954,7 +1000,13 @@ bool CShadowMap::BuildPSMProjectionMatrix()
 	else
 	{
 		virtualCameraView = Matrix4::IDENTITY;
-		ParaMatrixPerspectiveFovLH( &virtualCameraProj, D3DXToRadian(60.f), m_fAspect, m_zNear, m_zFar);
+		ParaMatrixPerspectiveFovLH( &virtualCameraProj, 
+#ifdef USE_DIRECTX_RENDERER
+			D3DXToRadian(60.f)
+#else
+			60.f/180.f*3.1415926f
+#endif
+			, m_fAspect, m_zNear, m_zFar);
 	}
 
 	ParaMatrixMultiply(&virtualCameraViewProj, &m_View, &virtualCameraView);
@@ -1270,13 +1322,14 @@ HRESULT CShadowMap::BeginShadowPass()
 	float fOffsetY = 0.5f + (0.5f / (float)(m_shadowTexHeight));
 	unsigned int range = 1;
 	float fBias    = 0.0f;
-	Matrix4 texScaleBiasMat(0.5f,     0.0f,     0.0f,         0.0f,
+#ifdef USE_DIRECTX_RENDERER
+	Matrix4 texScaleBiasMat(0.5f, 0.0f, 0.0f, 0.0f,
 							0.0f,    -0.5f,     0.0f,         0.0f,
 							0.0f,     0.0f,     (float)range, 0.0f,
 							fOffsetX, fOffsetY, 0.0f,         1.0f );
 	
 	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
-
+//#ifdef USE_DIRECTX_RENDERER
 	//  preserve old viewport and back buffer
 	LPDIRECT3DDEVICE9 pd3dDevice =  CGlobals::GetRenderDevice();
 	pd3dDevice->GetViewport(&oldViewport);
@@ -1284,7 +1337,19 @@ HRESULT CShadowMap::BeginShadowPass()
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
 	if(FAILED(pd3dDevice->GetDepthStencilSurface(&m_pZBuffer)))
 		return E_FAIL;
+#else
+	Matrix4 texScaleBiasMat(0.5f, 0.0f, 0.0f, 0.0f,
+							0.0f,    0.5f,     0.0f,         0.0f,
+							0.0f,     0.0f,     (float)range, 0.0f,
+							0.5f, 0.5f, 0.0f, 1.0f);
+	
+	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
+	auto pd3dDevice = CGlobals::GetRenderDevice();
+	pd3dDevice->GetViewport(&oldViewport);
 
+	glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&mOldFrameBufferObject));
+	PE_CHECK_GL_ERROR_DEBUG();
+#endif
 
 	// restore other textures
 	pd3dDevice->SetTexture(1, NULL);
@@ -1292,7 +1357,8 @@ HRESULT CShadowMap::BeginShadowPass()
 	pd3dDevice->SetTexture(3, NULL);
 
 	//set render target to shadow map surfaces
-	if(FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pSMColorSurface)))
+#ifdef USE_DIRECTX_RENDERER
+	if (FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pSMColorSurface)))
 		return E_FAIL;
 
 	pd3dDevice->SetRenderTarget(1,NULL);
@@ -1302,6 +1368,11 @@ HRESULT CShadowMap::BeginShadowPass()
 	//set depth stencil
 	if(FAILED(pd3dDevice->SetDepthStencilSurface(m_pSMZSurface)))
 		return E_FAIL;
+#else
+	glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
+	PE_CHECK_GL_ERROR_DEBUG();
+	pd3dDevice->BeginRenderTarget(m_shadowTexWidth, m_shadowTexHeight);
+#endif
 
 	//  set new viewport for shadow map
 	D3DVIEWPORT9 newViewport;
@@ -1360,12 +1431,17 @@ HRESULT CShadowMap::EndShadowPass()
 	CGlobals::GetViewMatrixStack().pop();
 	CGlobals::GetProjectionMatrixStack().pop();
 
-	LPDIRECT3DDEVICE9 pd3dDevice =  CGlobals::GetRenderDevice();
+#ifdef USE_DIRECTX_RENDERER
+	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+#else
+	auto pd3dDevice = CGlobals::GetRenderDevice();
+#endif
 	float fTemp = 0.0f;
 	pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&fTemp);
 	pd3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, *(DWORD*)&fTemp);
 
-	if( m_bBlurSMColorTexture && 
+#ifdef USE_DIRECTX_RENDERER
+	if (m_bBlurSMColorTexture &&
 		BlockWorldClient::GetInstance()->GetBlockRenderMethod() != BLOCK_RENDER_FANCY_SHADER)
 	{
 		/* 
@@ -1437,14 +1513,22 @@ HRESULT CShadowMap::EndShadowPass()
 			pEffectFile->end();
 		}
 	}
-	pd3dDevice->SetRenderState( D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+#endif
+	pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 
 	//set render target back to normal back buffer / depth buffer
-	if(FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pBackBuffer)))
+#ifdef USE_DIRECTX_RENDERER
+	if (FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pBackBuffer)))
 		return E_FAIL;
 	if(FAILED(pd3dDevice->SetDepthStencilSurface(m_pZBuffer)))
 		return E_FAIL;
 	SAFE_RELEASE(m_pZBuffer);
+#else
+	glBindFramebuffer(GL_FRAMEBUFFER, mOldFrameBufferObject);
+	mOldFrameBufferObject = 0;
+	PE_CHECK_GL_ERROR_DEBUG();
+	pd3dDevice->EndRenderTarget();
+#endif
 
 	// restore old view port
 	pd3dDevice->SetViewport(&oldViewport);
@@ -1460,8 +1544,12 @@ HRESULT CShadowMap::EndShadowPass()
 
 bool CShadowMap::SaveShadowMapToFile(string file)
 {
-	D3DXSaveTextureToFile(file.c_str(),D3DXIFF_JPG, m_pSMColorTexture->GetTexture(), NULL );
+#ifdef USE_DIRECTX_RENDERER
+	D3DXSaveTextureToFile(file.c_str(), D3DXIFF_JPG, m_pSMColorTexture->GetTexture(), NULL);
 	return true;
+#else
+	return false;
+#endif
 }
 const Matrix4* CShadowMap::GetTexViewProjMatrix()
 {

@@ -10,8 +10,8 @@
 #include "EffectManager.h"
 #include "OceanManager.h"
 #include "ParaVertexBufferPool.h"
-#ifdef USE_DIRECTX_RENDERER
 #include "ShadowMap.h"
+#ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #endif
 #include "SunLight.h"
@@ -675,6 +675,10 @@ namespace ParaEngine
 					pEffect->EndPass();
 				}
 				CGlobals::GetEffectManager()->applyFogParameters();
+				if (CGlobals::GetEffectManager()->IsUsingShadowMap())
+					CGlobals::GetEffectManager()->GetShadowMap()->SetShadowTexture(*pEffect, 1);
+				else
+					CGlobals::GetEffectManager()->GetShadowMap()->UnsetShadowTexture(1);
 #endif
 				
 
@@ -848,6 +852,12 @@ namespace ParaEngine
 						Matrix4 mWorldView;
 						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
 						pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
+					}
+					if (CGlobals::GetEffectManager()->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
+					{
+						Matrix4 mTex;
+						ParaMatrixMultiply(&mTex, &vWorldMatrix, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
+						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
 					}
 					{
 						// set the new render origin

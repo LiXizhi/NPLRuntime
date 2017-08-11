@@ -78,6 +78,10 @@ namespace ParaEngine
 
 		void ApplyViewport();
 
+		int getCurrentFrameNumber()const
+		{
+			return m_nCurrentFrameNumber;
+		}
 	private:
 		void SortViewport();
 	private:
@@ -90,6 +94,7 @@ namespace ParaEngine
 		int m_nHeight;
 		int m_nActiveViewPortIndex;
 		VIEWPORT_LAYOUT m_nLayout;
+		int m_nCurrentFrameNumber;
 	};
 
 }

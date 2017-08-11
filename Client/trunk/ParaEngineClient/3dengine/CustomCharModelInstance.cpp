@@ -481,7 +481,7 @@ bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& C
 	ParaXEntity * pModelAsset = GetBaseModel();
 	if (pModelAsset == NULL)
 		return false;
-	int nIndex = sceneState ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? pModelAsset->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
 	CParaXModel* pModel = pModelAsset->GetModel(nIndex);
 
 	if (pModel == NULL)

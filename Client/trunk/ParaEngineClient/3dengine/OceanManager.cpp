@@ -2176,9 +2176,10 @@ namespace ParaEngine
 		m_underwater = pBlockWorldClient->IsPointUnderWater(vEye);
 		if (m_underwater)
 		{
-			m_CustomUnderWaterColor = pBlockWorldClient->GetBlockTemplate(pBlockWorldClient->GetBlockTemplateId(vEye.x, vEye.y, vEye.z))->getUnderWaterColor();
+			auto pBlockTemplate = pBlockWorldClient->GetBlockTemplate(pBlockWorldClient->GetBlockTemplateId(vEye.x, vEye.y, vEye.z));
+			m_CustomUnderWaterColor = pBlockTemplate ? pBlockTemplate->getUnderWaterColor(): 0;
 		}
-		
+
 		//
 		// Render ocean surface
 		//
