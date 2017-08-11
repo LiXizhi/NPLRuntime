@@ -534,32 +534,16 @@ namespace ParaEngine
 		return m_CurrentAnim.IsValid() ? (m_CurrentAnim.nCurrentFrame - m_CurrentAnim.nStartFrame) : 0;
 	}
 
-	const std::string& BMaxObject::GetTextureFileName()
+	TextureEntity* BMaxObject::GetReplaceableTexture(int ReplaceableTextureID)
 	{
-		return mReplaceTexturesName;
+		auto iter=mReplaceTextures.find(ReplaceableTextureID);
+		return (mReplaceTextures.end()==iter)?nullptr:iter->second;
 	}
 
-	void BMaxObject::SetTextureFileName(const std::string& sFilename)
+	bool BMaxObject::SetReplaceableTexture(int ReplaceableTextureID,TextureEntity* pTextureEntity)
 	{
-		mReplaceTexturesName = sFilename;
-		mReplaceTextures.clear();
-		auto temp = mReplaceTexturesName;
-		std::stringstream ss;
-		do
-		{
-			auto split_begin = temp.find(':');
-			auto split_end = temp.find(';');
-			if (std::string::npos == split_end)
-			{
-				break;
-			}
-			uint32 tex_index;
-			ss << temp.substr(0, split_begin);
-			ss >> tex_index;
-			auto tex_name=(temp.substr(split_begin + 1, split_end - split_begin - 1));
-			mReplaceTextures[tex_index] = CGlobals::GetAssetManager()->LoadTexture(tex_name.c_str(), tex_name.c_str(), TextureEntity::StaticTexture);
-			temp = temp.substr(split_end + 1);
-		} while (true);
+		mReplaceTextures[ReplaceableTextureID]=pTextureEntity;
+		return true;
 	}
 
 	int BMaxObject::GetStaticActorCount()
