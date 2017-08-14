@@ -1993,9 +1993,9 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 				int32* dest = (int32*)&(indices[nD]);
 				int16* src;
 				if (pass.indexStart == 0xffff)
-					src = &(m_indices[pass.indexStart]);
-				else
 					src = &(m_indices[pass.m_nIndexStart]);
+				else
+					src = &(m_indices[pass.indexStart]);
 				int nFaceCount = pass.indexCount / 3;
 				for (int i = 0; i < nFaceCount; ++i)
 				{
