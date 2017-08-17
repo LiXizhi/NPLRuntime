@@ -565,12 +565,12 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
 			if (CParaFile::DoesFileExist("paperbox900.pkg") || CParaFile::DoesFileExist("paperbox900.zip"))
 				fileList.push_back("paperbox900.zip");
-			if (CParaFile::DoesFileExist("paperbox006.pkg") || CParaFile::DoesFileExist("paperbox006.zip"))
-				fileList.push_back("paperbox006.zip");
-			if (CParaFile::DoesFileExist("paperbox005.pkg") || CParaFile::DoesFileExist("paperbox005.zip"))
-				fileList.push_back("paperbox005.zip");
-			if (CParaFile::DoesFileExist("paperbox004.pkg") || CParaFile::DoesFileExist("paperbox004.zip"))
-				fileList.push_back("paperbox004.zip");
+			if (CParaFile::DoesFileExist("paperbox104.pkg") || CParaFile::DoesFileExist("paperbox104.zip"))
+				fileList.push_back("paperbox104.zip");
+			if (CParaFile::DoesFileExist("paperbox103.pkg") || CParaFile::DoesFileExist("paperbox103.zip"))
+				fileList.push_back("paperbox103.zip");
+			if (CParaFile::DoesFileExist("paperbox102.pkg") || CParaFile::DoesFileExist("paperbox102.zip"))
+				fileList.push_back("paperbox102.zip");
 			if (CParaFile::DoesFileExist("paperbox003.pkg") || CParaFile::DoesFileExist("paperbox003.zip"))
 				fileList.push_back("paperbox003.zip");
 			if (CParaFile::DoesFileExist("paperbox002.pkg") || CParaFile::DoesFileExist("paperbox002.zip"))
