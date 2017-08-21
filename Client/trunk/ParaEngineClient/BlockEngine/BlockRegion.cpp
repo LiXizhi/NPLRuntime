@@ -190,11 +190,11 @@ namespace ParaEngine
 		if (IsLocked())
 			return;
 #ifdef _DEBUG
-		if (! m_pBlockWorld->GetReadWriteLock().HasWriterLock())
+		/*if (! m_pBlockWorld->GetReadWriteLock().HasWriterLock())
 		{
 			OUTPUT_LOG("error: writer lock is not acquired when calling block writing functions\n");
 			return;
-		}
+		}*/
 #endif
 		if(blockY_rs >= BlockConfig::g_regionBlockDimY)
 		{
@@ -1817,8 +1817,8 @@ namespace ParaEngine
 
 			if (!GetBlockWorld()->IsRemote())
 			{
-			
-				if (GetBlockWorld()->IsUseAsyncLoadWorld())
+				// it is important that server mode always use sync mode or there may be empty chunks on client side. 
+				if (GetBlockWorld()->IsUseAsyncLoadWorld() && !GetBlockWorld()->IsServerWorld())
 				{
 					OUTPUT_LOG("Block loading region %d %d in Async mode\n", m_regionX, m_regionZ);
 					m_bIsLocked = true;
