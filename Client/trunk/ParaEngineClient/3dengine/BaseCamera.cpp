@@ -699,21 +699,21 @@ Vector3 ParaEngine::CBaseCamera::GetRenderEyePosition()
 /// [in] nWidth, nHeight: Device Screen size
 /// [in] world transform matrix
 //-----------------------------------------------------------------------------
-void CBaseCamera::GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT ptCursor, UINT nWidth, UINT nHeight, Matrix4* pMatWorld)
+void CBaseCamera::GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT ptCursor, UINT nWidth, UINT nHeight, const Matrix4* pMatWorld)
 {
 	Matrix4* pMatProj = GetProjMatrix();
 
 	// Compute the vector of the pick ray in screen space
 	Vector3 v;
-	v.x =  ( ( ( 2.0f * ptCursor.x ) / nWidth  ) - 1 ) / pMatProj->_11;
-	v.y = -( ( ( 2.0f * ptCursor.y ) / nHeight ) - 1 ) / pMatProj->_22;
+	v.x =  ( ( ( 2.0f * ptCursor.x ) / nWidth  ) - 1.0f ) / pMatProj->_11;
+	v.y = -( ( ( 2.0f * ptCursor.y ) / nHeight ) - 1.0f ) / pMatProj->_22;
 	v.z =  1.0f;
 
 	// Get the inverse of the composite view and world matrix
 	Matrix4*	pMatView = GetViewMatrix();
 	Matrix4	m;
 	m = (*pMatWorld)*(*pMatView);
-	m = m.inverse();
+	m.invert();
 
 	// Transform the screen space pick ray into 3D space
 	vPickRayDir.x  = v.x*m._11 + v.y*m._21 + v.z*m._31;
