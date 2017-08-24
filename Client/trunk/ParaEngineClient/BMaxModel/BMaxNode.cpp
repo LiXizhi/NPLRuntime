@@ -270,8 +270,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	//ao
 	uint32 aoFlags = CalculateCubeAO(neighborBlocks);
 
-	//model position offset
-	//BlockModel model;
+	// model position offset
 	BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
 	int count = tessellatedModel->GetVerticesCount();
 	const Vector3& vCenter = m_pParser->GetCenterPos();
@@ -297,8 +296,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			for (int v = 0; v < 4; ++v)
 			{
 				int i = nFirstVertex + v;
-				//int nIndex = tessellatedModel->AddVertex(model, i);
-
+				
 				int nShadowLevel = 0;
 				if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
 				{
@@ -310,7 +308,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 					tessellatedModel->SetVertexColor(i, (DWORD)color);
 				}
 			}
-			tessellatedModel->SetFaceVisiable(face);
+			tessellatedModel->SetFaceVisible(face);
 		}
 	}
 	return tessellatedModel->GetVerticesCount();

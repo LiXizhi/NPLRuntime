@@ -410,8 +410,7 @@ namespace ParaEngine
 			BlockModel *model = node->GetBlockModel();
 			if (model)
 			{
-				int nFaceCount = model->GetFaceCount();
-				for (int i = 0; i < nFaceCount; i++)
+				for (int i = 0; i < 6; i++)
 				{
 					if (model->IsFaceNotUse(i))
 					{
