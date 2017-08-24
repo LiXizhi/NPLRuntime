@@ -16,7 +16,7 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_cube(nullptr)
+m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr)
 {
 
 }
@@ -44,9 +44,14 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	return m_color;
 }
 
-BlockModel * ParaEngine::BMaxNode::GetCube()
+BlockModel * ParaEngine::BMaxNode::GetBlockModel()
 {
-	return m_cube;
+	return m_pBlockModel;
+}
+
+void ParaEngine::BMaxNode::SetBlockModel(BlockModel* pModel)
+{
+	m_pBlockModel = pModel;
 }
 
 BMaxFrameNode* ParaEngine::BMaxNode::ToBoneNode()
@@ -250,17 +255,10 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
 	//clear vertices
-	//tessellatedModel->ClearVertices();
+	tessellatedModel->LoadCubeModel();
 
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
 	DWORD dwBlockColor = GetColor();
-
-	//light
-	// const int nNearbyLightCount = 27;
-	// uint8_t blockBrightness[27 * 3];
-	// memset(blockBrightness, 0, sizeof(uint8_t) * nNearbyLightCount * 3);
-	//Uint16x3 blockId_ws(0, 0, 0);
-	//BlockWorldClient::GetInstance()->GetBlockBrightness(blockId_ws, blockBrightness, nNearbyLightCount, 3);
 
 	//neighbor blocks
 	const int nNearbyBlockCount = 27;
@@ -312,15 +310,8 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 					tessellatedModel->SetVertexColor(i, (DWORD)color);
 				}
 			}
-			tessellatedModel->IncrementFaceCount(1);
 			tessellatedModel->SetFaceVisiable(face);
 		}
 	}
-	
-	if (tessellatedModel->GetVerticesCount() > 0)
-		m_cube = tessellatedModel;
-	else
-		m_cube = NULL;
-	
 	return tessellatedModel->GetVerticesCount();
 }

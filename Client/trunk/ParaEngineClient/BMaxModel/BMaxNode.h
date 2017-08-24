@@ -22,7 +22,9 @@ namespace ParaEngine
 			return (DWORD)x + ((DWORD)z << 8) + ((DWORD)y << 16);
 		}
 		virtual DWORD GetColor();
-		BlockModel *GetCube();
+		BlockModel *GetBlockModel();
+		/** set block model weak reference. */
+		void SetBlockModel(BlockModel* pModel);
 		virtual void SetColor(DWORD val);
 		/** get the bone node interface if it is*/
 		virtual BMaxFrameNode* ToBoneNode();
@@ -60,7 +62,8 @@ namespace ParaEngine
 	protected:
 		BMaxParser* m_pParser;
 		DWORD m_color;
-		BlockModel *m_cube;
+		/* weak reference to block model*/
+		BlockModel * m_pBlockModel;
 	};
 	typedef ref_ptr<BMaxNode> BMaxNodePtr;
 }
