@@ -172,13 +172,6 @@ namespace ParaEngine
 	class BlockModel
 	{
 	public:
-		enum FaceStatus
-		{
-			faceInvisible = 0, 
-			faceVisibleNotSign, 
-			faceVisibleSigned
-		};
-
 		friend class BlockModelManager;
 		enum EdgeVertexFlag
 		{
@@ -330,10 +323,6 @@ namespace ParaEngine
 
 		void SetVertexHeightScale(int nIndex, float scale);
 
-		void SetFaceVisible(int nIndex);
-		void SetFaceUsed(int nIndex);
-		bool IsFaceNotUse(int nIndex);
-
 		//
 		//    LT  -----  RT
 		//       |     |
@@ -402,8 +391,6 @@ namespace ParaEngine
 		CShapeAABB m_shapeAABB;
 
 		friend class IBlockModelProvider;
-
-		FaceStatus m_facesStatus[6];
 	};
 }
 
