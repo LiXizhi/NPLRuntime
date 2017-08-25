@@ -637,6 +637,11 @@ namespace ParaEngine
 					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
 					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
 					SetNeighborChunkDirty(curNeighbor_ws);
+
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
+					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
 				}
 			}
 			else
@@ -648,7 +653,13 @@ namespace ParaEngine
 					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
 					curNeighbor_ws.z = (uint16_t)chunkIdZ_ws;
 					SetNeighborChunkDirty(curNeighbor_ws);
+
 					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+
+					curNeighbor_ws.x = (uint16_t)neighborChunkX_ws;
 					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
 					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
 					SetNeighborChunkDirty(curNeighbor_ws);
@@ -678,6 +689,11 @@ namespace ParaEngine
 
 					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
 					curNeighbor_ws.y = (uint16_t)chunkIdY_ws;
+					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
+					SetNeighborChunkDirty(curNeighbor_ws);
+
+					curNeighbor_ws.x = (uint16_t)chunkIdX_ws;
+					curNeighbor_ws.y = (uint16_t)neighborChunkY_ws;
 					curNeighbor_ws.z = (uint16_t)neighborChunkZ_ws;
 					SetNeighborChunkDirty(curNeighbor_ws);
 				}
