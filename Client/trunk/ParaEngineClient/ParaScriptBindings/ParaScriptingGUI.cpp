@@ -2803,17 +2803,30 @@ void ParaUI::SetDesignTime(bool bDesign)
 
 void ParaUI::ShowCursor(bool bShow)
 {
-	CGlobals::GetGUI()->m_pMouse->ShowCursor(bShow);
+	auto pMouse = CGlobals::GetGUI()->m_pMouse;
+	if (pMouse)
+	{
+		pMouse->ShowCursor(bShow);
+	}
 }
 
 void ParaUI::LockMouse(bool bLock)
 {
-	CGlobals::GetGUI()->m_pMouse->SetLock(bLock);
+	auto pMouse = CGlobals::GetGUI()->m_pMouse;
+	if (pMouse)
+	{
+		CGlobals::GetGUI()->m_pMouse->SetLock(bLock);
+	}
 }
 
 bool ParaUI::IsMouseLocked()
 {
-	return CGlobals::GetGUI()->m_pMouse->IsLocked();
+	auto pMouse = CGlobals::GetGUI()->m_pMouse;
+	if (pMouse)
+	{
+		return CGlobals::GetGUI()->m_pMouse->IsLocked();
+	}
+	return false;	
 }
 
 void ParaUI::SetToolTipBehavior(const char* behavior)
