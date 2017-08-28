@@ -210,7 +210,7 @@ void DLLPlugInEntity::Init(const char* sFilename)
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
 	// if there is no slash in the file name, add './' to load only from the current directory. 
-	if (sDLLPath.find("\\/") == string::npos)
+	if (!CParaFile::IsAbsolutePath(sDLLPath))
 	{
 		sDLLPath = std::string("./") + sDLLPath;
 	}
