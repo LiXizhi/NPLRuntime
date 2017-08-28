@@ -725,13 +725,17 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 #elif defined(USE_BOOST_FILE_API)
 	FileData data;
 	fs::ifstream file;
-	if (!CParaFile::GetDevDirectory().empty())
+	if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
 	{
 		file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
 		if (!file.is_open())
 		{
 			file.open(filename, ios::in | ios::binary | ios::ate);
 		}
+	}
+	else 
+	{
+		file.open(filename, ios::in | ios::binary | ios::ate);
 	}
 
 	if(file.is_open())
@@ -830,6 +834,9 @@ bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 	return !sFile.empty() && (cocos2d::FileUtils::getInstance()->isFileExist(sFile) || cocos2d::FileUtils::getInstance()->isDirectoryExist(sFile));
 #elif defined USE_BOOST_FILE_API
 	return fs::exists(filename);
+	/*bool bFound = fs::exists(filename);
+	OUTPUT_LOG("%s check raw %s\n", filename, bFound ? "true" : "false");
+	return bFound;*/
 #else
 	struct stat stFileInfo;
 	bool blnReturn;

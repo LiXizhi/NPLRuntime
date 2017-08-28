@@ -187,6 +187,11 @@ void CParaFile::TakeBufferOwnership()
 	m_bIsOwner = true;
 }
 
+bool ParaEngine::CParaFile::IsAbsolutePath(const std::string & path)
+{
+	return CFileUtils::IsAbsolutePath(path);
+}
+
 int CParaFile::DeleteTempFile(const string& sFilePattern)
 {
 	std::string sPattern = "temp/";
