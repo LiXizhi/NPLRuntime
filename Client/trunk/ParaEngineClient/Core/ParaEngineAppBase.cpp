@@ -35,7 +35,7 @@
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
-#include "GeosetObject.h"
+
 
 using namespace ParaEngine;
 
@@ -180,7 +180,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
-	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
+
 	// TODO add more here: 
 }
 

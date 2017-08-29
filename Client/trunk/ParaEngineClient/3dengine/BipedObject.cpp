@@ -1534,9 +1534,6 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 		sceneState->EnableLocalMaterial(false);
 	}
 
-	for(auto child:m_children)
-		child->Draw(sceneState);
-
 	return S_OK;
 }
 
