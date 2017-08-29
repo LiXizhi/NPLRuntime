@@ -16,13 +16,23 @@ namespace ParaEngine
 	public:
 		BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_);
 		virtual ~BMaxNode();
+
+		enum FaceStatus
+		{
+			faceInvisible = 0,
+			faceVisibleNotSign,
+			faceVisibleSigned
+		};
+
 	public:
 		inline uint32 GetIndex()
 		{
 			return (DWORD)x + ((DWORD)z << 8) + ((DWORD)y << 16);
 		}
 		virtual DWORD GetColor();
-		BlockModel *GetCube();
+		BlockModel *GetBlockModel();
+		/** set block model weak reference. */
+		void SetBlockModel(BlockModel* pModel);
 		virtual void SetColor(DWORD val);
 		/** get the bone node interface if it is*/
 		virtual BMaxFrameNode* ToBoneNode();
@@ -50,6 +60,10 @@ namespace ParaEngine
 		uint32 CalculateCubeAO(BMaxNode** neighborBlocks);
 
 		int32_t GetAvgVertexLight(int32_t v1, int32_t v2, int32_t v3, int32_t v4);
+
+		void SetFaceVisible(int nIndex);
+		void SetFaceUsed(int nIndex);
+		bool IsFaceNotUse(int nIndex);
 	public:
 		int16 x;
 		int16 y;
@@ -60,7 +74,9 @@ namespace ParaEngine
 	protected:
 		BMaxParser* m_pParser;
 		DWORD m_color;
-		BlockModel *m_cube;
+		/* weak reference to block model*/
+		BlockModel * m_pBlockModel;
+		FaceStatus m_facesStatus[6];
 	};
 	typedef ref_ptr<BMaxNode> BMaxNodePtr;
 }

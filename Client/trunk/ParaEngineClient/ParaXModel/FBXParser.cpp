@@ -1950,7 +1950,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			ModelGeoset geoset;
 			geoset.id = (uint16)pMesh->geosets.size();
 			vertex_start = nVertexOffset;
-			int nFaceCount = std::min(maxFaceCount, numFaces);
+			int nFaceCount = (std::min)(maxFaceCount, numFaces);
 			if (numFaces > maxFaceCount || nSplitCount>1)
 			{
 				// get vertex offset and max number of vertex
