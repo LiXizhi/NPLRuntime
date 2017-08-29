@@ -1061,6 +1061,15 @@ int ParaEngine::CBaseObject::GetMeshTriangleList(vector<Vector3>& output, int nO
 	return (int)(output.size() / 3);
 }
 
+void ParaEngine::CBaseObject::SetMaskColor(int index,float r,float g,float b)
+{
+	auto block=GetEffectParamBlock(true);
+	if(block)
+	{
+		block->SetParameter(std::string("gMaskColor")+char('0'+index),Vector3(r,g,b));
+	}
+}
+
 void ParaEngine::CBaseObject::UpdateGeometry()
 {
 	SetGeometryDirty(false);
