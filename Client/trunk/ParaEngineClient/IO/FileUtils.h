@@ -47,6 +47,11 @@ namespace ParaEngine
 		/** check if file exist, this function is cross platform. */
 		static bool FileExist(const char* filename);
 
+		/** check if file exist, this function is cross platform. 
+		* @param pDiskFile: output the actual file name. This is useful when development or search path is used. 
+		*/
+		static bool FileExist2(const char* filename, std::string * pDiskFile = NULL);
+
 		/** make a standard filename.
 		* @param output: the output string buffer. such as: char output[MAX_PATH]
 		* @param filename: the relative file name. if NULL, the parent directory is in output.

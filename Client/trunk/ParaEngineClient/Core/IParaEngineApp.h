@@ -448,6 +448,9 @@ namespace ParaEngine
 		/** render the current frame and does not return until everything is presented to screen.
 		* this function is usually used to draw the animated loading screen. */
 		virtual bool ForceRender() { return false; };
+
+		/** get the NPL bin directory (main executable directory). this one ends with "/" */
+		virtual const char* GetModuleDir() { return NULL; };
 	};
 
 }

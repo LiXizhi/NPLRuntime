@@ -191,6 +191,11 @@ void CParaFile::TakeBufferOwnership()
 	m_bIsOwner = true;
 }
 
+bool ParaEngine::CParaFile::IsAbsolutePath(const std::string & path)
+{
+	return CFileUtils::IsAbsolutePath(path);
+}
+
 int CParaFile::DeleteTempFile(const string& sFilePattern)
 {
 	std::string sPattern = "temp/";
@@ -295,10 +300,8 @@ int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*=
 
 	if ((dwWhereToSearch & FILE_ON_DISK) >0 && (dwWhereToSearch & FILE_ON_ZIP_ARCHIVE) == 0)
 	{
-		if (CFileUtils::FileExist(sFilename)){
+		if (CFileUtils::FileExist2(sFilename, pDiskFilePath)){
 			dwFoundPlace = FILE_ON_DISK;
-			if (pDiskFilePath)
-				*pDiskFilePath = sFilename;
 		}
 	}
 	else
@@ -306,10 +309,8 @@ int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*=
 		// we will use GetDiskFilePriority(), to determine which one to search first.
 		if ((dwWhereToSearch & FILE_ON_DISK) > 0 && GetDiskFilePriority() >= 0)
 		{
-			if (CFileUtils::FileExist(sFilename)){
+			if (CFileUtils::FileExist2(sFilename, pDiskFilePath)){
 				dwFoundPlace = FILE_ON_DISK;
-				if (pDiskFilePath)
-					*pDiskFilePath = sFilename;
 			}
 		}
 
@@ -323,10 +324,8 @@ int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*=
 
 		if (!dwFoundPlace && (dwWhereToSearch & FILE_ON_DISK) > 0 && GetDiskFilePriority() < 0)
 		{
-			if (CFileUtils::FileExist(sFilename)){
+			if (CFileUtils::FileExist2(sFilename, pDiskFilePath)) {
 				dwFoundPlace = FILE_ON_DISK;
-				if (pDiskFilePath)
-					*pDiskFilePath = sFilename;
 			}
 		}
 	}

@@ -355,8 +355,10 @@ void CGUIRoot::DeleteGUIObject(CGUIBase * pObj)
 		return;
 	CGUIRoot *root = CGUIRoot::GetInstance();
 	
-	root->m_tooltip->RemoveTip(pObj);
-	root->m_pMouse->ReleaseCapture(pObj);
+	if(root->m_tooltip)
+		root->m_tooltip->RemoveTip(pObj);
+	if(root->m_pMouse)
+		root->m_pMouse->ReleaseCapture(pObj);
 	pObj->InvalidateDeviceObjects();
 	pObj->DeleteDeviceObjects();
 
@@ -916,10 +918,13 @@ void CGUIRoot::Reset()
 
 void CGUIRoot::GetMousePosition(int* nX, int* nY) const
 {
-	if (nX != 0)
-		*nX = m_pMouse->m_x;
-	if (nY != 0)
-		*nY = m_pMouse->m_y;
+	if (m_pMouse)
+	{
+		if (nX != 0)
+			*nX = m_pMouse->m_x;
+		if (nY != 0)
+			*nY = m_pMouse->m_y;
+	}
 }
 
 bool ParaEngine::CGUIRoot::IsActive()

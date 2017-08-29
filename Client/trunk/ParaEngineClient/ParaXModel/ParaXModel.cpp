@@ -1991,7 +1991,11 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 
 #ifdef INVERT_PHYSICS_FACE_WINDING
 				int32* dest = (int32*)&(indices[nD]);
-				int16* src = &(m_indices[pass.indexStart]);
+				int16* src;
+				if (pass.indexStart == 0xffff)
+					src = &(m_indices[pass.m_nIndexStart]);
+				else
+					src = &(m_indices[pass.indexStart]);
 				int nFaceCount = pass.indexCount / 3;
 				for (int i = 0; i < nFaceCount; ++i)
 				{
@@ -2002,10 +2006,21 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 					dest += 3;
 				}
 #else
-				for (int i = 0; i < pass.indexCount; ++i)
+				if (pass.indexStart == 0xffff)
 				{
-					indices[nD + i] = m_indices[pass.indexStart + i] + nVertexOffset;
+					for (int i = 0; i < pass.indexCount; ++i)
+					{
+						indices[nD + i] = m_indices[pass.m_nIndexStart + i] + nVertexOffset;
+					}
 				}
+				else
+				{
+					for (int i = 0; i < pass.indexCount; ++i)
+					{
+						indices[nD + i] = m_indices[pass.indexStart + i] + nVertexOffset;
+					}
+				}
+
 #endif
 				nD += pass.indexCount;
 			}

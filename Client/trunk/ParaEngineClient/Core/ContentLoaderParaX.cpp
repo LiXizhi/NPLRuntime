@@ -325,7 +325,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 							if ((int)pParaXMesh->GetPolyCount() >= nLodsMaxTriangleCounts[i].nMaxTriangleCount)
 							{
 								MeshLOD lod;
-								lod.m_pParaXMesh = p.ParseParaXModel(std::min(nLodsMaxTriangleCounts[i].nMaxTriangleCount, (int)(pParaXMesh->GetPolyCount() / 2) - 4));
+								lod.m_pParaXMesh = p.ParseParaXModel((std::min)(nLodsMaxTriangleCounts[i].nMaxTriangleCount, (int)(pParaXMesh->GetPolyCount() / 2) - 4));
 								lod.m_fromDepthSquared = Math::Sqr(nLodsMaxTriangleCounts[i].fMaxDistance);
 								if (lod.m_pParaXMesh)
 								{

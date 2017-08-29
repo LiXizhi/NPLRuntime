@@ -2956,6 +2956,10 @@ void CSceneObject::RegenerateRenderOrigin(const Vector3& vPos)
 	m_vRenderOrigin.x = (float)((int)vPos.x);
 	m_vRenderOrigin.y = (float)((int)vPos.y);
 	m_vRenderOrigin.z = (float)((int)vPos.z);
+
+	//m_vRenderOrigin.x = round(vPos.x);
+	//m_vRenderOrigin.y = round(vPos.y);
+	//m_vRenderOrigin.z = round(vPos.z);
 }
 CMissileObject* CSceneObject::NewMissile()
 {
@@ -4358,8 +4362,7 @@ int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT
 	static CPortalFrustum g_frustum;
 	CPortalFrustum* pFrustum = &g_frustum;
 	
-	Matrix4 matWorld;
-	matWorld = Matrix4::IDENTITY;
+	const Matrix4& matWorld = Matrix4::IDENTITY;
 
 	POINT ptCursor[5];
 	Vector3 vPickRayOrig;
@@ -4405,24 +4408,26 @@ int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT
 	for (int i=0;i<4;++i)
 	{
 		Vector3 vNormal;
-		vNormal = vPickRayDir[(i+1)%4].crossProduct(vPickRayDir[i]);
-		ParaVec3Normalize(&vNormal, &vNormal);
-		Plane plane(vPickRayOrig, vNormal);
+		auto nextIndex = (i + 1) % 4;
+		vNormal = vPickRayDir[nextIndex].crossProduct(vPickRayDir[i]);
+		vNormal.normalise();
+		Plane plane(vNormal, vPickRayOrig);
 		pFrustum->AddCullingPlane(plane);
 	}
 	// add the near and far plane at index 4 and 5, this is tricky, since we will use CanSeeObject_CompleteCull for testing
 	{
-		Vector3 vNormal = vPickRayDir[4];
-		ParaVec3Normalize(&vNormal, &vNormal);
+		Vector3& vNormal = vPickRayDir[4];
+		vNormal.normalise();
 
 		{
 			// near plane
-			Plane plane(vPickRayOrig+pCamera->GetNearPlane()*vNormal, vNormal);
+			Plane plane(vNormal, vPickRayOrig + (pCamera->GetNearPlane() * vNormal));
 			pFrustum->AddCullingPlane(plane, false);
 		}
 		{
 			// far plane
-			Plane plane(vPickRayOrig + ((fMaxDistance>0.f) ? fMaxDistance : pCamera->GetObjectFrustum()->GetViewDepth())*vNormal, -vNormal);
+			auto t1 = ((fMaxDistance > 0.f) ? fMaxDistance : pCamera->GetObjectFrustum()->GetViewDepth()) * vNormal;
+			Plane plane(-vNormal, vPickRayOrig + t1);
 			pFrustum->AddCullingPlane(plane, false);
 		}
 	}

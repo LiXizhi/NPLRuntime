@@ -2595,6 +2595,7 @@ namespace ParaEngine
 		if ((m_minActiveChunkId_ws.z + m_activeChunkDim) < endIdx.z)
 			endIdx.z = m_minActiveChunkId_ws.z + m_activeChunkDim;
 
+		//float fRenderDist = (std::max)(GetRenderDist(), 16) * BlockConfig::g_blockSize;
 		float fRenderDist = GetRenderDist() * BlockConfig::g_blockSize;
 		CShapeSphere sEyeSphere(camWorldPos, fRenderDist);
 
@@ -2607,7 +2608,7 @@ namespace ParaEngine
 		int32 chunkX = GetEyeChunkId().x;
 		int32 chunkY = GetEyeChunkId().y;
 		int32 chunkZ = GetEyeChunkId().z;
-		int32 chunkViewRadius = (int32)(GetRenderDist() / 16);
+		int32 chunkViewRadius = (std::max)((int)(GetRenderDist() / 16), 1);
 		int32 chunkViewSize = chunkViewRadius * 2;
 		
 		Vector3 vChunkSize(BlockConfig::g_chunkSize, BlockConfig::g_chunkSize, BlockConfig::g_chunkSize);

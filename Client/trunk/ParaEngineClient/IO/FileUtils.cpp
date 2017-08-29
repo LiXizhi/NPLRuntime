@@ -159,6 +159,33 @@ bool ParaEngine::CFileUtils::FileExist(const char* filename)
 	return false;
 }
 
+bool ParaEngine::CFileUtils::FileExist2(const char * filename, std::string * pDiskFile)
+{
+	if (FileExistRaw(filename))
+	{
+		if (pDiskFile)
+			*pDiskFile = filename;
+		return true;
+	}
+	else
+	{
+		if (!CParaFile::GetDevDirectory().empty())
+		{
+			if (filename[0] != '\0' && filename[1] != ':')
+			{
+				std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
+				if (FileExistRaw(sAbsFilePath.c_str()))
+				{
+					if (pDiskFile)
+						*pDiskFile = sAbsFilePath;
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 bool ParaEngine::CFileUtils::IsAbsolutePath(const std::string& filename)
 {
 #ifdef WIN32
@@ -494,7 +521,7 @@ int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		return fs::remove_all(filename);
+		return (int)fs::remove_all(filename);
 	}
 	catch (...)
 	{
@@ -701,7 +728,20 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	return data;
 #elif defined(USE_BOOST_FILE_API)
 	FileData data;
-	fs::ifstream file(filename, ios::in | ios::binary | ios::ate);
+	fs::ifstream file;
+	if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
+	{
+		file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
+		if (!file.is_open())
+		{
+			file.open(filename, ios::in | ios::binary | ios::ate);
+		}
+	}
+	else 
+	{
+		file.open(filename, ios::in | ios::binary | ios::ate);
+	}
+
 	if(file.is_open())
 	{
 		size_t nSize = (size_t)file.tellg();
@@ -798,6 +838,9 @@ bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 	return !sFile.empty() && (cocos2d::FileUtils::getInstance()->isFileExist(sFile) || cocos2d::FileUtils::getInstance()->isDirectoryExist(sFile));
 #elif defined USE_BOOST_FILE_API
 	return fs::exists(filename);
+	/*bool bFound = fs::exists(filename);
+	OUTPUT_LOG("%s check raw %s\n", filename, bFound ? "true" : "false");
+	return bFound;*/
 #else
 	struct stat stFileInfo;
 	bool blnReturn;
