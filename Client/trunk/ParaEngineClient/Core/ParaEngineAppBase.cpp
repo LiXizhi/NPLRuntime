@@ -611,6 +611,7 @@ bool ParaEngine::CParaEngineAppBase::FindBootStrapper()
 	{
 		// may be the `loadpackage` params have set the bootstrapper if not explicitly specified by the application. 
 		pBootFileName = CBootStrapper::GetSingleton()->GetMainLoopFile().c_str();
+		OUTPUT_LOG("try bootstrapper in loadpackage command: %s\n", pBootFileName);
 	}
 
 	bool bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
