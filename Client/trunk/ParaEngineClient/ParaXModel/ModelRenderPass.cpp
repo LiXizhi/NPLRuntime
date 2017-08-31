@@ -249,7 +249,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 					auto const name=std::string("gMaskColor")+char('0'+i);
 					auto params=pMaterialParams->GetParameter(name);
 					if(params)
-						pEffect->SetVector3(name.c_str(),(Vector3)(*params));
+						pEffect->SetVector3(name.c_str(),*params);
 				}
 			}
 		}
