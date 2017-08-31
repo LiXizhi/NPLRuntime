@@ -214,7 +214,7 @@ namespace ParaEngine
 		inline bool IsMouseMButtonDown() { return m_bMouseMButtonDown; } 
 		inline bool IsMouseRButtonDown() { return m_bMouseRButtonDown; } 
 
-		void GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT ptCursor, UINT nWidth, UINT nHeight, Matrix4* pMatWorld);
+		void GetMouseRay(Vector3& vPickRayOrig, Vector3& vPickRayDir, POINT ptCursor, UINT nWidth, UINT nHeight, const Matrix4* pMatWorld);
 
 		// Get camera parameters
 		inline DVector3 GetEyePosition(){return m_vEye;};

@@ -114,7 +114,7 @@ namespace ParaScripting
 			else if(sFilterFunc[0]>='0' && sFilterFunc[0]<='9')
 			{
 				// filter by type. 
-				DWORD filter = atoi(sFilterFunc);
+				DWORD filter = (DWORD)atoll(sFilterFunc);
 				// if(filter!=0)
 				{
 					SetPickingFilter(filter);
@@ -124,7 +124,7 @@ namespace ParaScripting
 			else if(sFilterFunc[0] == 'p' && sFilterFunc[1] == ':' && sFilterFunc[2]>='0' && sFilterFunc[2]<='9')
 			{
 				// filter by physics group.  e.g. "p:4294967295" matches all physics group
-				DWORD filter = atoi(sFilterFunc+2);
+				DWORD filter = (DWORD)atoll(sFilterFunc+2);
 				{
 					SetPickingPhysicsFilter(filter);
 					pFilterFunc = g_fncPickingByPhysicsGroup;
@@ -1134,6 +1134,14 @@ bool ParaObject::SetReplaceableTexture( int ReplaceableTextureID, ParaAssetObjec
 		}
 	}
 	return false;
+}
+
+void ParaObject::SetMaskColor(int colorIndex,float r,float g,float b)
+{
+	if(IsValid())
+	{
+		m_pObj->SetMaskColor(colorIndex,r,g,b);
+	}
 }
 
 int ParaObject::GetXRefScriptCount()

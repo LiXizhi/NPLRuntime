@@ -2,6 +2,10 @@
 @author LiXizhi
 Copyright 2004-2012 ParaEngine Corporation.
 
+2017.8.27
+	- fixed open file in dev folder under linux
+	- fixed open database file in dev folder under linux
+
 2017.5.9
 	- web socket protocol added to NPL tcp connection
 

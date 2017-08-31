@@ -35,7 +35,7 @@
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
-
+#include "GeosetObject.h"
 
 using namespace ParaEngine;
 
@@ -142,6 +142,11 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 	return false;
 }
 
+const char * ParaEngine::CParaEngineAppBase::GetModuleDir() 
+{ 
+	return m_sModuleDir.c_str(); 
+}
+
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
 	SetCurrentInstance((CParaEngineApp*)this);
@@ -180,7 +185,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
-
+	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	// TODO add more here: 
 }
 
@@ -367,38 +372,43 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				sPKGDir = sFullDir;
 			}
 		}
-		std::string sFullDir;
+		
 		if (!sPKGDir.empty())
 		{
 			// found packages under dev folder
 		}
-		else if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		else 
 		{
-			sPKGDir = sFullDir;
-		}
-		else
-		{
-			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
-			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			std::string sFullDir;
+
+			if ( CParaFile::IsAbsolutePath(sDirName) && CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
 			{
 				sPKGDir = sFullDir;
 			}
-
-			if (sPKGDir.empty() && !m_sModuleDir.empty())
+			else
 			{
-				std::string workingDir = m_sModuleDir;
-				// search for all parent directory for at most 5 levels
-				for (int i = 0; i < 5 && !workingDir.empty(); ++i)
+				sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
+				if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 				{
-					std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
-					if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+					sPKGDir = sFullDir;
+				}
+
+				if (sPKGDir.empty() && !m_sModuleDir.empty())
+				{
+					std::string workingDir = m_sModuleDir;
+					// search for all parent directory for at most 5 levels
+					for (int i = 0; i < 5 && !workingDir.empty(); ++i)
 					{
-						sPKGDir = sFullDir;
-						break;
-					}
-					else
-					{
-						workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+						std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
+						if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+						{
+							sPKGDir = sFullDir;
+							break;
+						}
+						else
+						{
+							workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+						}
 					}
 				}
 			}
@@ -571,12 +581,12 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
 			if (CParaFile::DoesFileExist("paperbox900.pkg") || CParaFile::DoesFileExist("paperbox900.zip"))
 				fileList.push_back("paperbox900.zip");
-			if (CParaFile::DoesFileExist("paperbox006.pkg") || CParaFile::DoesFileExist("paperbox006.zip"))
-				fileList.push_back("paperbox006.zip");
-			if (CParaFile::DoesFileExist("paperbox005.pkg") || CParaFile::DoesFileExist("paperbox005.zip"))
-				fileList.push_back("paperbox005.zip");
-			if (CParaFile::DoesFileExist("paperbox004.pkg") || CParaFile::DoesFileExist("paperbox004.zip"))
-				fileList.push_back("paperbox004.zip");
+			if (CParaFile::DoesFileExist("paperbox104.pkg") || CParaFile::DoesFileExist("paperbox104.zip"))
+				fileList.push_back("paperbox104.zip");
+			if (CParaFile::DoesFileExist("paperbox103.pkg") || CParaFile::DoesFileExist("paperbox103.zip"))
+				fileList.push_back("paperbox103.zip");
+			if (CParaFile::DoesFileExist("paperbox102.pkg") || CParaFile::DoesFileExist("paperbox102.zip"))
+				fileList.push_back("paperbox102.zip");
 			if (CParaFile::DoesFileExist("paperbox003.pkg") || CParaFile::DoesFileExist("paperbox003.zip"))
 				fileList.push_back("paperbox003.zip");
 			if (CParaFile::DoesFileExist("paperbox002.pkg") || CParaFile::DoesFileExist("paperbox002.zip"))

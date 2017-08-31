@@ -20,6 +20,7 @@ using namespace ParaEngine;
 ParaEngine::ModelRenderPass::ModelRenderPass()
 {
 	memset(this, 0, sizeof(ModelRenderPass));
+	mTexMask=-1;
 }
 
 bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
@@ -129,6 +130,14 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	if (!bindtex || bindtex->GetTexture() == 0)
 		return false;
 
+	TextureEntity * mask_tex=nullptr;
+	if(mTexMask>0&&m->specialTextures[mTexMask]>0)
+	{
+		mask_tex=m->replaceTextures[m->specialTextures[mTexMask]];
+	}
+	if(mask_tex&&mask_tex->GetTexture()==0)
+		mask_tex=nullptr;
+
 	if(pSceneState->IsIgnoreTransparent() && (blendmode == BM_ADDITIVE || blendmode == BM_ALPHA_BLEND || blendmode == BM_ADDITIVE_ALPHA
 		|| materialAlpha < 1))
 	{
@@ -229,6 +238,21 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			if (pParams)
 				pEffect->setFloat(CEffectFile::k_transitionFactor, (float)(*pParams));
 		}
+
+		if(mask_tex)
+		{
+			pEffect->setBool(CEffectFile::k_bBoolean10,TRUE);
+			if(pMaterialParams!=nullptr)
+			{
+				for(int i=0;i<7;++i)
+				{
+					auto const name=std::string("gMaskColor")+char('0'+i);
+					auto params=pMaterialParams->GetParameter(name);
+					if(params)
+						pEffect->SetVector3(name.c_str(),*params);
+				}
+			}
+		}
 	}
 	else
 	{
@@ -238,6 +262,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	
 	/// Set the texture
 	pEffect->setTexture(0, bindtex);
+	pEffect->setTexture(1,mask_tex);
 
 	if(is_rigid_body)
 	{
@@ -325,6 +350,14 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 		{
 			Vector3 color_(0.f, 0.f, 0.f);
 			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_);
+		}
+		pEffect->setBool(CEffectFile::k_bBoolean10,FALSE);
+		for(int i=0;i<7;++i)
+		{
+			auto const name=std::string("gMaskColor")+char('0'+i);
+			auto params=pMaterialParams->GetParameter(name);
+			if(params)
+				pEffect->SetVector3(name.c_str(),Vector3::UNIT_SCALE);
 		}
 	}
 	else

@@ -246,11 +246,13 @@ namespace ParaEngine
 					BlockModel* tessellatedModel = new BlockModel();
 					if (node->TessellateBlock(tessellatedModel) > 0)
 					{
+						node->SetBlockModel(tessellatedModel);
 						m_blockModels.push_back(tessellatedModel);
 						m_blockModelsMapping[tessellatedModel] = node;
 					}
 					else
 					{
+						node->SetBlockModel(NULL);
 						delete tessellatedModel;
 					}
 				}
@@ -405,16 +407,14 @@ namespace ParaEngine
 		for (auto& item : m_nodes)
 		{
 			BMaxNode *node = item.second.get();
-			BlockModel *model = node->GetCube();
-			if (!model)
+			if (node->GetBlockModel())
 			{
-				continue;
-			}
-			for (uint32 i = 0; i < model->GetFaceCount(); i++)
-			{
-				if (model->IsFaceNotUse(i))
+				for (int i = 0; i < 6; i++)
 				{
-					FindCoplanerFace(node, i);
+					if (node->IsFaceNotUse(i))
+					{
+						FindCoplanerFace(node, i);
+					}
 				}
 			}
 		}
@@ -445,11 +445,7 @@ namespace ParaEngine
 		for (uint32 i = 0; i < nVertexCount; i++)
 		{
 			FindNeighbourFace(rectangle.get(), i, nFaceIndex);
-			BlockModel *model = node->GetCube();
-			if (model)
-			{
-				model->SetFaceUsed(nFaceIndex);
-			}
+			node->SetFaceUsed(nFaceIndex);
 		}
 
 		rectangle->CloneNodes();
@@ -481,9 +477,9 @@ namespace ParaEngine
 				BMaxNode *neighbourNode = currentNode->GetNeighbourByOffset(offset);
 				if (!currentNode->isSolid() || neighbourNode == NULL || !neighbourNode->isSolid() || currentNode->GetColor() != neighbourNode->GetColor() || currentNode->GetBoneIndex() != neighbourNode->GetBoneIndex())
 					return;
-				BlockModel* neighbourCube = neighbourNode->GetCube();
+				BlockModel* neighbourCube = neighbourNode->GetBlockModel();
 
-				if (neighbourCube && neighbourCube->GetVerticesCount() > 0 && neighbourCube->IsFaceNotUse(nFaceIndex))
+				if (neighbourCube && neighbourCube->GetVerticesCount() > 0 && neighbourNode->IsFaceNotUse(nFaceIndex))
 					nodes.push_back(BMaxNodePtr(neighbourNode));
 				else
 					return;
@@ -499,9 +495,7 @@ namespace ParaEngine
 
 		for (BMaxNodePtr nodePtr : nodes)
 		{
-			BMaxNode *node = nodePtr.get();
-			BlockModel *model = node->GetCube();
-			model->SetFaceUsed(nFaceIndex);
+			nodePtr->SetFaceUsed(nFaceIndex);
 		}
 		rectangle->UpdateNode(newFromNode, newToNode, nextI);
 		FindNeighbourFace(rectangle, i, nFaceIndex);
@@ -914,8 +908,6 @@ namespace ParaEngine
 		aabb.GetMin(m_minExtent);
 		aabb.GetMax(m_maxExtent);
 	}
-
-
 
 	void BMaxParser::ClearModel()
 	{

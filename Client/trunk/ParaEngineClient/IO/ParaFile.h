@@ -111,6 +111,17 @@ namespace ParaEngine
 		*/
 		static int32 DoesFileExist2(const char* filename, uint32 dwWhereToSearch = FILE_ON_DISK, std::string* pDiskFilePath = NULL);
 
+		/**
+		*  Checks whether the path is an absolute path.
+		*
+		*  @note On Android, if the parameter passed in is relative to "assets/", this method will treat it as an absolute path.
+		*        Also on Blackberry, path starts with "app/native/Resources/" is treated as an absolute path.
+		*
+		*  @param strPath The path that needs to be checked.
+		*  @return true if it's an absolute path, otherwise it will return false.
+		*/
+		static bool IsAbsolutePath(const std::string& path);
+
 		/** delete temporary file. temporary files are file in the ./temp/ directory of the ParaEngine's root dir.
 		* this function is general used to delete temporary texture file generated during the game.
 		* @param sFilePattern: such as "*.dds", "temp.txt", etc
