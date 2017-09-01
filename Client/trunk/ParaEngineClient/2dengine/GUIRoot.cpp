@@ -461,7 +461,7 @@ int CGUIRoot::Release()
 //no need refactoring
 CGUIBase* CGUIRoot::GetUIObject(const char * strObjectName)
 {
-	if (strObjectName == 0)
+	if (strObjectName == 0 || strObjectName[0] == 0)
 		return NULL;
 	if (strcmp(strObjectName, "root") == 0)
 		return this;
