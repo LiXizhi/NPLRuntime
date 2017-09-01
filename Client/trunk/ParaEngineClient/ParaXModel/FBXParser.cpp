@@ -142,7 +142,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
 		//_ref_anim_file_: marker for mutual anim file
-		if (m_sFilename.find("_ref_anim_file_") != std::string::npos)
+		if (m_sFilename.find("_RAF(") != std::string::npos)
 		{
 			m_xheader.IsAnimated = 1;
 		}
@@ -161,9 +161,11 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
 		// must be called before ProcessFBXBoneNodes
-		if (m_sFilename.find("_ref_anim_file_") != std::string::npos)
+		if (m_sFilename.find("_RAF(") != std::string::npos)
 		{
-			std::string anim_file_name = m_sFilename.substr(m_sFilename.find_last_of("_") + 1);
+			auto ref_file_start=m_sFilename.find("_RAF(")+strlen("_RAF(");
+			auto ref_file_end=m_sFilename.find(')',ref_file_start)-1;
+			std::string anim_file_name = m_sFilename.substr(ref_file_start,ref_file_end-ref_file_start+1)+".fbx";
 			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/") + 1) + anim_file_name;
 			FBXParser anim_parser(anim_file_name);
 			anim_parser.ParseParaXModel();
