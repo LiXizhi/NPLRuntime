@@ -33,7 +33,6 @@ namespace ParaEngine
 			bFacegroupSknningAni = false;
 			nIndex = -1;
 			m_nOrder = 0;
-			mMaskTextureIndex=-1;
 		}
 	public:
 		bool isAlphaBlended() {return fAlphaTestingRef == 0.f; }
@@ -111,7 +110,5 @@ namespace ParaEngine
 
 		// emissive color animation block. 
 		ModelColor m_colors_anim;
-
-		int mMaskTextureIndex;
 	};
 }

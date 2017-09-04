@@ -461,12 +461,6 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 	}
 	else
 	{
-		for(auto & replaceable_texture_pair:mReplaceableTexturesCache)
-		{
-			SetReplaceableTexture(replaceable_texture_pair.first,replaceable_texture_pair.second.get());
-			replaceable_texture_pair.second.reset();
-		}
-		mReplaceableTexturesCache.clear();
 		for (int i = 0, k = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
 		{
 			int nIndex = pModel->specialTextures[i];
@@ -1269,10 +1263,6 @@ TextureEntity* CharModelInstance::GetReplaceableTexture(int ReplaceableTextureID
 						}
 					}
 				}
-				else
-				{
-					return mReplaceableTexturesCache[ReplaceableTextureID].get();
-				}
 			}
 		}
 
@@ -1325,7 +1315,7 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 					// model is NULL, this is mostly because model is asynchronously  loaded. we shall assume it is 0. 
 					// this is correct, if the model has only one replaceable texture, however it can be wrong. 
 					// TODO: is there a better way to preload. 
-					mReplaceableTexturesCache[ReplaceableTextureID] = pTextureEntity;
+					m_textures[0] = pTextureEntity;
 				}
 			}
 		}

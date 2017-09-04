@@ -779,20 +779,14 @@ void CEffectFileDirectX::parseParameters()
 				m_paramHandle[k_fresnelR0] = hParam;
 			else if((nIndex = BeginWith(ParamDesc.Semantic, "ConstVector"))>0)
 			{
-				int nvalue;
-				if(GetNumber(ParamDesc.Semantic,nIndex,&nvalue))
-				{
-					PE_ASSERT(0<=nvalue && nvalue<=(k_ConstVectorMax-k_ConstVector0));
-					m_paramHandle[k_ConstVector0+nvalue]=hParam;
-				}
-				/*if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
+				if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
 					m_paramHandle[k_ConstVector0] = hParam;
 				else if( strcmpi( ParamDesc.Semantic, "ConstVector1" ) == 0 )
 					m_paramHandle[k_ConstVector1] = hParam;
 				else if( strcmpi( ParamDesc.Semantic, "ConstVector2" ) == 0 )
 					m_paramHandle[k_ConstVector2] = hParam;
 				else if( strcmpi( ParamDesc.Semantic, "ConstVector3" ) == 0 )
-					m_paramHandle[k_ConstVector3] = hParam;*/
+					m_paramHandle[k_ConstVector3] = hParam;
 			}
 			
             else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )

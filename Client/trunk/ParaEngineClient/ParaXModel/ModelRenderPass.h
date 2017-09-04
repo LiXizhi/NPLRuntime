@@ -23,7 +23,6 @@ namespace ParaEngine
 
 		//TextureID texture, texture2;
 		int32 tex;
-		int32 mTexMask;
 		union{
 			float m_fStripLength;
 			float m_fCategoryID;
@@ -69,7 +68,7 @@ namespace ParaEngine
 
 		inline bool operator == (const ModelRenderPass &m) const
 		{
-			return tex == m.tex && blendmode == m.blendmode && color == m.color && mTexMask==m.mTexMask;
+			return tex == m.tex && blendmode == m.blendmode && color == m.color;
 		}
 
 		void SetStartIndex(int32 nIndex);
