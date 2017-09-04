@@ -78,7 +78,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 	Vector4 ecol(0,0,0,0);
 
 	// Emissive colors
-	if (color!=-1) {
+	if ((color!=-1)&&m->colors) {
 		// TODO: non-local provider?
 		Vector3 c = m->colors[color].color.getValue(m->m_CurrentAnim);
 		float o = m->colors[color].opacity.getValue(m->m_CurrentAnim);
@@ -93,7 +93,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 
 
 	// opacity
-	if (opacity!=-1) {
+	if ((opacity!=-1)&&m->transparency) {
 		ocol.w *= m->transparency[opacity].trans.getValue(m->m_CurrentAnim);
 	}
 
@@ -351,13 +351,21 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 			Vector3 color_(0.f, 0.f, 0.f);
 			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_);
 		}
-		pEffect->setBool(CEffectFile::k_bBoolean10,FALSE);
-		for(int i=0;i<7;++i)
+		if(pMaterialParams)
 		{
-			auto const name=std::string("gMaskColor")+char('0'+i);
-			auto params=pMaterialParams->GetParameter(name);
-			if(params)
-				pEffect->SetVector3(name.c_str(),Vector3::UNIT_SCALE);
+			bool has_mask_color=false;
+			for(int i=0;i<7;++i)
+			{
+				auto const name=std::string("gMaskColor")+char('0'+i);
+				auto params=pMaterialParams->GetParameter(name);
+				if(params)
+				{
+					pEffect->SetVector3(name.c_str(),Vector3::UNIT_SCALE);
+					has_mask_color|=true;
+				}
+			}
+			if(has_mask_color)
+				pEffect->setBool(CEffectFile::k_bBoolean10,FALSE);
 		}
 	}
 	else
