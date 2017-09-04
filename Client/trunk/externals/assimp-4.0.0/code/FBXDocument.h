@@ -667,7 +667,7 @@ public:
         }
 
         
-        content = 0;
+        //content = 0;
         return ptr;
     }
 
