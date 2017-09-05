@@ -455,6 +455,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 			{
 				pMesh->specialTextures[i] = m_textures[i].nIsReplaceableIndex;
 			}
+			if(m_textures[i].mMaskTextureIndex>0&&i<32)
+			{
+				pMesh->specialTextures[i+16]=m_textures[i].mMaskTextureIndex;
+			}
 		}
 	}
 
@@ -783,6 +787,11 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 				out->nIsReplaceableIndex = nID >= 0 ? nID : 2;
 				break;
 			}
+			case 'm':
+			{
+				out->mMaskTextureIndex=nID>=0?nID:0;
+				break;
+			}
 			default:
 				break;
 			}
@@ -907,6 +916,10 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.order = fbxMat.m_nOrder;
 	pass.geoset = -1; // make its geoset uninitialized
 	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
+
+	pMesh->mMaskTexes.resize(pMesh->mMaskTexes.size()+1);
+	auto & mask_tex=pMesh->mMaskTexes[pMesh->mMaskTexes.size()-1];
+	mask_tex=fbxMat.mMaskTextureIndex>0?texture_index+16:-1;
 
 	ParseUVAnimation(pass, pfbxMaterial, pMesh);
 	ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);

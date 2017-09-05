@@ -893,6 +893,8 @@ namespace ParaScripting
 		* @return true if succeed. if ReplaceableTextureID exceed the total number of replaceable textures, this function will return false.
 		*/
 		bool  SetReplaceableTexture(int ReplaceableTextureID, ParaAssetObject pTextureEntity);
+
+		void SetMaskColor(int colorIndex,float r,float g,float b);
 	};
 
 	

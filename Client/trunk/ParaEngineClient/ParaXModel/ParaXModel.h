@@ -296,6 +296,7 @@ namespace ParaEngine
 		asset_ptr<TextureEntity> *textures;
 
 		std::vector<ModelRenderPass> passes;
+		std::vector<int32> mMaskTexes;
 		/** it has the same number of element as the passes. the int value denotes the index into the m_faceGroups*/
 		std::vector<int> m_TranslucentPassIndice;
 		/** translucent face groups. */
