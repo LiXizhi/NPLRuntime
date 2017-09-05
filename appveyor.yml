@@ -24,11 +24,11 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
 
-    appveyor DownloadFile https://sourceforge.net/projects/boost/files/boost/1.61.0/boost_1_61_0.zip/download -FileName "C:\projects\nplruntime\Server\trunk\boost.zip"
+    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
 
-    7z x C:\projects\nplruntime\Server\trunk\boost.zip -oC:\projects\nplruntime\Server\trunk\
+    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
 
-    cd C:\projects\nplruntime\Server\trunk\boost_1_61_0\
+    cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
 
     bootstrap.bat
 
