@@ -27,6 +27,7 @@ install:
     appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
 
     7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
+    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
 
     cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
 
