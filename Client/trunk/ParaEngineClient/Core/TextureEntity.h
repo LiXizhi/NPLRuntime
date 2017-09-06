@@ -5,6 +5,19 @@ namespace ParaEngine
 {
 	class ImageEntity;
 
+	struct ImageExtendInfo
+	{
+		ImageExtendInfo()
+			: FocalLength(0.0f)
+		{
+		}
+
+		// lens focal length, unit is mm
+		double FocalLength;
+	};
+
+
+
 	/** 
 	Which DXT Compression to Use?
 	Obviously, there are some trade-offs between the different formats which make them better or worse for different types of images. Some general rules of thumb for good use of DXT textures are as follows:
@@ -301,6 +314,7 @@ namespace ParaEngine
 		* @param nFormat: default to 32bits ARGB. PixelFormat24bppRGB, PixelFormat16bppGrayScale, PixelFormat8bppIndexed, PixelFormat32bppARGB, etc
 		*/
 		static bool LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
+		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo *info = nullptr);
 
 		/** create a texture entity from memory buffer. */
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool= D3DPOOL_MANAGED, DWORD nFormat = 0);

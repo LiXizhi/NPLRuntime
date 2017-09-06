@@ -899,11 +899,10 @@ void TextureEntityDirectX::LoadImage(char *sBufMemFile, int sizeBuf, int &width,
 	SAFE_RELEASE( pTexture );
 }
 
-
-bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
+bool TextureEntityDirectX::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *exInfo)
 {
 #ifdef USE_FREEIMAGE
-	if (nFormat<=0)
+	if (nFormat <= 0)
 		nFormat = PixelFormat32bppARGB;
 
 	int nBytesPerPixel = 0;
@@ -914,6 +913,24 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 		OUTPUT_LOG("warning: can not load terrain region file %s \n", sTextureFileName.c_str());
 		return false;
 	}
+
+
+	if (exInfo)
+	{
+		FITAG *tag = nullptr;
+		FreeImage_GetMetadata(FIMD_EXIF_EXIF, dib, "FocalLength", &tag);
+		if (tag)
+		{
+			// value type is  FIDT_RATIONAL  Two LONGs: the first represents the numerator of a fraction; the second, the denominator 
+			if (FreeImage_GetTagType(tag) == FIDT_RATIONAL)
+			{
+				long* value = (long*)FreeImage_GetTagValue(tag);
+				exInfo->FocalLength = (double)value[0] / value[1];
+			}
+		}
+	}
+	
+
 	BITMAPINFOHEADER* pInfo = FreeImage_GetInfoHeader(dib);
 
 	if (pInfo)
@@ -926,10 +943,10 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 			&& FreeImage_GetColorType(dib) == FIC_PALETTE)
 		{
 			auto oldDib = dib;
-			if (nFormat == PixelFormat24bppRGB){
+			if (nFormat == PixelFormat24bppRGB) {
 				dib = FreeImage_ConvertTo24Bits(dib);
 			}
-			else{
+			else {
 				dib = FreeImage_ConvertTo32Bits(dib);
 			}
 			FreeImage_Unload(oldDib);
@@ -962,6 +979,11 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 #else
 	return false;
 #endif
+}
+
+bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
+{
+	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
 }
 
 
