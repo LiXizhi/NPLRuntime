@@ -1144,6 +1144,14 @@ void ParaObject::SetMaskColor(int colorIndex,float r,float g,float b)
 	}
 }
 
+void ParaObject::DestroyChildren()
+{
+	if(IsValid())
+	{
+		m_pObj->DestroyChildren();
+	}
+}
+
 int ParaObject::GetXRefScriptCount()
 {
 	if(IsValid())
