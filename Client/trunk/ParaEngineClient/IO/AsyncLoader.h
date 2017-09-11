@@ -77,6 +77,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAsyncLoader, GetBytesProcessed_s, int*) { *p1 = cls->GetBytesProcessed(); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CAsyncLoader, SetWorkerThreads_s, Vector2) { cls->CreateWorkerThreads((int)p1.x, (int)p1.y); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(CAsyncLoader, SetProcessorQueueSize_s, Vector2) { cls->SetProcessorQueueSize((int)p1.x, (int)p1.y); return S_OK; }
 		ATTRIBUTE_METHOD1(CAsyncLoader, log_s, const char*) { cls->log(p1); return S_OK; }
 		ATTRIBUTE_METHOD(CAsyncLoader, WaitForAllItems_s) { cls->WaitForAllItems(); return S_OK; }
 		
@@ -141,6 +143,10 @@ namespace ParaEngine
 		* @return true if success. 
 		*/
 		bool CreateWorkerThreads(int nProcessorQueueID, int nMaxCount);
+		int GetWorkerThreadsCount(int nProcessorQueueID);
+		/** message queue size of a given processor id*/
+		void SetProcessorQueueSize(int nProcessorQueueID, int nSize);
+		int GetProcessorQueueSize(int nProcessorQueueID);
 
 		/** Wait for all work in the queues to finish. 
 		* Only call this from graphics thread
