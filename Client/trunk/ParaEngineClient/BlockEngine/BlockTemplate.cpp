@@ -136,6 +136,7 @@ namespace ParaEngine
 		}
 
 		m_block_models.resize(1);
+		SAFE_DELETE(m_pBlockModelFilter);
 
 		GetBlockModel().LoadModelByTexture(uvPattern);
 		GetBlockModel().SetCategoryID(GetCategoryID());
@@ -503,7 +504,11 @@ namespace ParaEngine
 
 	TextureEntity* BlockTemplate::GetTexture0(uint32 nUserData)
 	{
-		int nIndex = GetBlockModelByData(nUserData).GetTextureIndex();
+		int nIndex = 0;
+		if (IsMatchAttribute(batt_randomTexture))
+			nIndex = nUserData;
+		else
+			nIndex = GetBlockModelByData(nUserData).GetTextureIndex();
 		return nIndex < (int32)(m_textures0.size()) ? m_textures0[nIndex] : m_textures0[0];
 	}
 
