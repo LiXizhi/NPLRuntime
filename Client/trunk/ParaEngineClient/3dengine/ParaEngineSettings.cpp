@@ -1130,7 +1130,6 @@ bool ParaEngine::ParaEngineSettings::Is64BitsSystem()
 	return sizeof(void*) > 4;
 }
 
-
 void ParaEngine::ParaEngineSettings::LoadNameIndex()
 {
 	m_name_to_index.clear();
@@ -1143,6 +1142,7 @@ void ParaEngine::ParaEngineSettings::LoadNameIndex()
 	m_name_to_index["Painter"] = 6;
 	m_name_to_index["BufferPicking"] = 7;
 	m_name_to_index["OverlayPicking"] = 8;
+	m_name_to_index["AsyncLoader"] = 9;
 }
 
 IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const std::string& sName)
@@ -1171,6 +1171,8 @@ IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(int nR
 		return CGlobals::GetAssetManager()->LoadBufferPick("backbuffer");
 	else if (nRowIndex == 8)
 		return CGlobals::GetAssetManager()->LoadBufferPick("overlay");
+	else if (nRowIndex == 9)
+		return &(CAsyncLoader::GetSingleton());
 	else
 		return NULL;
 }

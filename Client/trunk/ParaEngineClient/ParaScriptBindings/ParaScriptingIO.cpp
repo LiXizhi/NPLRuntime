@@ -151,6 +151,71 @@ namespace ParaScripting
 	}
 
 
+	ParaScripting::ParaFileObject ParaIO::openimage2(const char * filename, const char* mode, const object& oExInfo)
+	{
+		ParaFileObject file;
+		if (filename == NULL)
+			return file;
+		{
+			string sFilename = filename;
+			if (sFilename.find_first_of(":") != string::npos)
+			{
+				// skip writable directory.
+				std::string writablePath = CParaFile::GetWritablePath();
+				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
+				{
+					// only relative path is allowed.
+					OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+					return file;
+				}
+			}
+			else
+			{
+				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
+			}
+		}
+
+		// open the given file according to its file type. currently image files are automatically opened.
+		// Load the texture data.
+		CParaFile cFile;
+		cFile.OpenAssetFile(filename);
+
+		if (!cFile.isEof())
+		{
+			int texWidth, texHeight, nBytesPerPixel;
+			byte *pTextureImage = NULL;
+			ImageExtendInfo exInfo;
+			if (TextureEntity::LoadImageOfFormatEx(filename, cFile.getBuffer(), (int)cFile.getSize(), texWidth, texHeight, &pTextureImage, &nBytesPerPixel, -1, &exInfo))
+			{
+				int nSize = texWidth*texHeight*nBytesPerPixel;
+				int nHeaderSize = sizeof(DWORD) * 4;
+				byte* pFileBuffer = new byte[nSize + nHeaderSize];
+				DWORD * pData = (DWORD*)pFileBuffer;
+				*pData = 0; pData++;
+				*pData = texWidth; pData++;
+				*pData = texHeight; pData++;
+				*pData = nBytesPerPixel; pData++;
+				memcpy(pData, pTextureImage, nSize);
+
+				file.m_pFile.reset(new CParaFile((char*)pFileBuffer, nSize + nHeaderSize, true));
+
+				// must be to delete, because bCopyBuffer is true
+				delete[] pFileBuffer;
+
+				file.m_pFile->SetFilePointer(0, FILE_BEGIN);
+				file.m_pFile->TakeBufferOwnership();
+				SAFE_DELETE_ARRAY(pTextureImage);
+
+				if (type(oExInfo) == LUA_TTABLE)
+				{
+					oExInfo["FocalLength"] = exInfo.FocalLength;
+				}
+			}
+		}
+
+		return file;
+	}
+
 	ParaScripting::ParaFileObject ParaIO::openimage( const char * filename, const char *mode )
 	{
 		return ParaIO::open(filename, "image");

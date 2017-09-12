@@ -269,14 +269,56 @@ bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nM
 			nCount++;
 		}
 	}
-
-	for(i=nCount; i<nMaxCount; ++i)
+	int nNewlyCreated = 0;
+	for(i=nCount; i<nMaxCount; ++i, ++nNewlyCreated)
 	{
 		ProcessorWorkerThread* worker_thread= new ProcessorWorkerThread(nProcessorQueueID);
 		worker_thread->reset(new boost::thread(boost::bind(&CAsyncLoader::ProcessingThreadProc, this, worker_thread)));
 		m_workers.push_back(worker_thread);
 	}
+	if (nNewlyCreated > 0) {
+		std::string sName;
+		if (nProcessorQueueID == ResourceRequestID_Local)
+			sName = "Local";
+		else if (nProcessorQueueID == ResourceRequestID_Asset)
+			sName = "Asset";
+		else if (nProcessorQueueID == ResourceRequestID_Web)
+			sName = "Web";
+		else if (nProcessorQueueID == ResourceRequestID_Asset_BigFile)
+			sName = "Asset_BigFile";
+		else if (nProcessorQueueID == ResourceRequestID_AudioFile)
+			sName = "AudioFile";
+		OUTPUT_LOG("CAsyncLoader QueueID:%d(%s) has %d worker threads\n", nProcessorQueueID, sName.c_str(), nMaxCount);
+	}
 	return true;
+}
+
+int ParaEngine::CAsyncLoader::GetWorkerThreadsCount(int nProcessorQueueID)
+{
+	int nCount = 0;
+	int nWorkerCount = (int)(m_workers.size());
+	for (int i = 0; i < nWorkerCount; ++i)
+	{
+		if (m_workers[i]->GetProcessorQueueID() == nProcessorQueueID)
+		{
+			nCount++;
+		}
+	}
+	return nCount;
+}
+
+void ParaEngine::CAsyncLoader::SetProcessorQueueSize(int nProcessorQueueID, int nSize)
+{
+	if (nProcessorQueueID >= 0 && nProcessorQueueID < MAX_PROCESS_QUEUE && nSize>0)
+		m_ProcessQueues[nProcessorQueueID].set_capacity(nSize);
+}
+
+int ParaEngine::CAsyncLoader::GetProcessorQueueSize(int nProcessorQueueID)
+{
+	if (nProcessorQueueID >= 0 && nProcessorQueueID < MAX_PROCESS_QUEUE)
+		return (int)m_ProcessQueues[nProcessorQueueID].capacity();
+	else
+		return 0;
 }
 
 int ParaEngine::CAsyncLoader::GetEstimatedSizeInBytes()
@@ -471,7 +513,7 @@ int CAsyncLoader::Start(int nWorkerCount)
 	CreateWorkerThreads(ResourceRequestID_AudioFile, DEFAULT_AUDIOFILE_THREAD_COUNT);
 	
 
-	OUTPUT_LOG("CAsyncLoader is started with 1 IO thread and %d worker thread\n", nWorkerCount);
+	OUTPUT_LOG("CAsyncLoader is started with 1 IO thread and %d worker threads\n", (int)m_workers.size());
 
 	return 0;
 }
@@ -920,5 +962,20 @@ bool ParaEngine::CAsyncLoader::HasPendingRequest( const char* sURL )
 	}
 	else
 		return false;
+}
+
+int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass * pClass, bool bOverride)
+{
+	IAttributeFields::InstallFields(pClass, bOverride);
+	pClass->AddField("EstimatedSizeInBytes", FieldType_Int, (void*)0, (void*)GetEstimatedSizeInBytes_s, NULL, "", bOverride);
+	pClass->AddField("ItemsLeft", FieldType_Int, (void*)0, (void*)GetItemsLeft_s, NULL, "", bOverride);
+	pClass->AddField("BytesProcessed", FieldType_Int, (void*)0, (void*)GetBytesProcessed_s, NULL, "", bOverride);
+
+	pClass->AddField("WorkerThreadsCount", FieldType_Vector2, (void*)SetWorkerThreads_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("ProcessorQueueSize", FieldType_Vector2, (void*)SetProcessorQueueSize_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("log", FieldType_String, (void*)log_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("WaitForAllItems", FieldType_void, (void*)WaitForAllItems_s, (void*)0, NULL, "", bOverride);
+	return S_OK;
+	return 0;
 }
 
