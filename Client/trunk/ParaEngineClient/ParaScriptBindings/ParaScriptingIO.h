@@ -478,6 +478,15 @@ namespace ParaScripting
 		*  - "float32": each pixel is a four bytes of float. [Not supported yet]
 		*/
 		static ParaFileObject openimage(const char * filename, const char *mode);
+		/* like openimage, but can get exinfo*/
+		/*
+			local exinfo = {};
+			local file = ParaIO.openimage("test.jpg", "", exinfo);
+			if (file) then
+				print(exinfo.FocalLength);
+			end
+		*/
+		static ParaFileObject openimage2(const char * filename, const char* mode, const object& oExInfo);
 
 		/** make directory
 		* @param filename: director path. file portion will be automatically striped off. So it is ok to pass in file name, instead of directory name.

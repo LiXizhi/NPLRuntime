@@ -404,6 +404,15 @@ TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLe
 #endif
 }
 
+bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
+{
+#ifdef USE_DIRECTX_RENDERER
+	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
+#else
+	return false;
+#endif
+}
+
 bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
 {
 #ifdef USE_DIRECTX_RENDERER

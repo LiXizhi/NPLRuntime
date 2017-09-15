@@ -9,7 +9,7 @@ ADD ./ /opt/NPLRuntime
 
 WORKDIR /opt/NPLRuntime
 
-RUN git submodule init && git submodule update
+#RUN git submodule init && git submodule update
 
 RUN chmod +x npl_install.sh; sync; ./npl_install.sh && rm -rf /opt/NPLRuntime/bin && rm -rf /usr/local/include/boost
 

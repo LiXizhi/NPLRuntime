@@ -213,6 +213,10 @@ namespace ParaEngine
 
 	float CSceneObject::PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask)
 	{
+		if (!CGlobals::GetViewportManager())
+		{
+			return -1.f;
+		}
 		Matrix4 matWorld;
 		matWorld = Matrix4::IDENTITY;
 

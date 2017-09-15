@@ -560,6 +560,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			
 			def("open", & ParaIO::open),
 			def("openimage", & ParaIO::openimage),
+			def("openimage", &ParaIO::openimage2),
 			def("readline", & ParaIO::readline),
 			def("WriteString", & ParaIO::WriteString),
 			def("write", & ParaIO::write),
