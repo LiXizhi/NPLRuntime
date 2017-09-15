@@ -671,6 +671,17 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 				{
 					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
 				}
+
+				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_randomTexture))
+				{
+					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
+					int size = m_pCurBlockTemplate->getTileSize();
+					float scale = 1.0f / size;
+					Vector2 tran((float)(m_blockId_cs.x % size), (float)(m_blockId_cs.z % size));
+					float u,v;
+					vert->GetTexcoord(u,v);
+					vert->SetTexcoord((tran.x + u) * scale, (tran.y + v) * scale);
+				}
 			}
 			tessellatedModel.IncrementFaceCount(1);
 		}
