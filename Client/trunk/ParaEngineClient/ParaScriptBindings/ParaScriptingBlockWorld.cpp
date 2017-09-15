@@ -88,8 +88,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 {
 	uint32_t attFlag = 0;
 	uint16_t category_id = 0;
-	std::string sModelName, sNormalMap, sTexture0;
-	std::vector<std::string> sTextures(8);
+	std::string sModelName, sNormalMap, sTexture0, sTexture2, sTexture3, sTexture4;
 	Color dwMapColor = 0;
 	int nOpacity = -1;
 	uint16_t associated_blockid = 0;
@@ -131,13 +130,11 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 		if (type(params["texture"]) == LUA_TSTRING)
 			sTexture0 = object_cast<const char*>(params["texture"]);
 		if (type(params["texture2"]) == LUA_TSTRING)
-			sTextures[2] = object_cast<const char*>(params["texture2"]);
+			sTexture2 = object_cast<const char*>(params["texture2"]);
 		if (type(params["texture3"]) == LUA_TSTRING)
-			sTextures[3] = object_cast<const char*>(params["texture3"]);
+			sTexture3 = object_cast<const char*>(params["texture3"]);
 		if (type(params["texture4"]) == LUA_TSTRING)
-			sTextures[4] = object_cast<const char*>(params["texture4"]);
-		if (type(params["texture5"]) == LUA_TSTRING)
-			sTextures[5] = object_cast<const char*>(params["texture5"]);
+			sTexture4 = object_cast<const char*>(params["texture4"]);
 		if (type(params["mapcolor"]) == LUA_TSTRING)
 			dwMapColor = Color::FromString(object_cast<const char*>(params["mapcolor"]));
 		if (type(params["opacity"]) == LUA_TNUMBER)
@@ -159,20 +156,18 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetNormalMap(sNormalMap.c_str());
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
+			if (!sTexture2.empty())
+				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+			if (!sTexture3.empty())
+				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+			if (!sTexture4.empty())
+				pTemplate->SetTexture0(sTexture4.c_str(), 4);
 			if (fSpeedReduction < 1.f)
 				pTemplate->SetSpeedReductionPercent(fSpeedReduction);
 			if (nOpacity>0)
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor !=0)
 				pTemplate->SetMapColor(dwMapColor);
-
-			size_t numTex = sTextures.size();
-			for (size_t i = 0; i < numTex; ++i)
-			{
-				auto tex = sTextures[i];
-				if (!tex.empty())
-					pTemplate->SetTexture0(tex.c_str(), i);
-			}
 
 			BlockWorldClient* mgr = BlockWorldClient::GetInstance();
 			if (mgr)
@@ -205,6 +200,12 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetNormalMap(sNormalMap.c_str());
 			if (!sTexture0.empty())
 				pTemplate->SetTexture0(sTexture0.c_str());
+			if (!sTexture2.empty())
+				pTemplate->SetTexture0(sTexture2.c_str(), 2);
+			if (!sTexture3.empty())
+				pTemplate->SetTexture0(sTexture3.c_str(), 3);
+			if (!sTexture4.empty())
+				pTemplate->SetTexture0(sTexture4.c_str(), 4);
 			if (associated_blockid > 0)
 				pTemplate->SetAssociatedBlock(associated_blockid);
 			if (bProvidePower)
@@ -219,14 +220,6 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetMapColor(dwMapColor);
 			if ((DWORD)under_water_color != 0)
 				pTemplate->setUnderWaterColor(under_water_color);
-
-			size_t numTex = sTextures.size();
-			for (size_t i = 0; i < numTex; ++i)
-			{
-				auto tex = sTextures[i];
-				if (!tex.empty())
-					pTemplate->SetTexture0(tex.c_str(), i);
-			}
 
 			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
 			{

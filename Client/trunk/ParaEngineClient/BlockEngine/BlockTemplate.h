@@ -43,8 +43,7 @@ namespace ParaEngine
 			batt_color_data		= 0x0080000,	// whether the block contains color in its block data.
 
 			batt_invisible = 0x0100000,// whether the block is invisible.
-
-			batt_randomTexture	= 0x0200000,
+			
 			batt_tiling			= 0x0200000,
 		};
 
