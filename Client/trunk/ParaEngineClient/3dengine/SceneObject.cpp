@@ -4353,7 +4353,7 @@ int FilterScreenObjectToList(T& renderlist, list<CBaseObject*>& output, CPortalF
 int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT& rect, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
 {
 	auto pViewportManager = CGlobals::GetViewportManager();
-	if(rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager!=0)
+	if(rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager==0)
 	{
 		return 0;
 	}
