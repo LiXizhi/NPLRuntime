@@ -672,7 +672,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
 				}
 
-				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_randomTexture))
+				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_tiling))
 				{
 					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
 					int size = m_pCurBlockTemplate->getTileSize();

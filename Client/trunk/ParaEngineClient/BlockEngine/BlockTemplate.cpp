@@ -152,7 +152,7 @@ namespace ParaEngine
 	{
 		if(texName)
 		{
-			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_randomTexture))
+			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_tiling))
 			{
 				regex r("^.+x(.+)[.].+$");
 				std::cmatch num;
