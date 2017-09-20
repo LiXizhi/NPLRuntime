@@ -13,6 +13,8 @@
 #include "SlopeModelProvider.h"
 #include "BlockWorld.h"
 #include "SceneObject.h"
+#include "util/regularexpression.h"
+#include "StringHelper.h"
 
 namespace ParaEngine
 {
@@ -151,6 +153,16 @@ namespace ParaEngine
 	{
 		if(texName)
 		{
+			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_tiling))
+			{
+				regex r("^.+_x(\\d+)\\..+$");
+
+				cmatch num;
+				if (regex_search(texName, num, r))
+					mTileSize = StringHelper::StrToInt(num.str().c_str());
+
+			}
+
 			if ((int)m_textures0.size() <= nIndex)
 				m_textures0.resize(nIndex + 1, NULL);
 			m_textures0[nIndex] = CGlobals::GetAssetManager()->LoadTexture("", texName, TextureEntity::StaticTexture);
@@ -504,11 +516,7 @@ namespace ParaEngine
 
 	TextureEntity* BlockTemplate::GetTexture0(uint32 nUserData)
 	{
-		int nIndex = 0;
-		if (IsMatchAttribute(batt_randomTexture))
-			nIndex = nUserData;
-		else
-			nIndex = GetBlockModelByData(nUserData).GetTextureIndex();
+		int nIndex = GetBlockModelByData(nUserData).GetTextureIndex();
 		return nIndex < (int32)(m_textures0.size()) ? m_textures0[nIndex] : m_textures0[0];
 	}
 

@@ -3106,6 +3106,15 @@ int sqlite3WalFrames(
   }
 #endif
 
+  //if (pWal->db->xWalPageCallback) {
+  //  for(p=pList; p; p=p->pDirty){
+	 // int nDbSize;   /* 0 normally.  Positive == commit flag */
+	 // nDbSize = (isCommit && p->pDirty==0) ? nTruncate : 0;
+  //    walPageHook(pWal, p->pData, szPage, p->pgno, nTruncate, nDbSize > 0 ? 1 : 0);
+  //  }
+  //  return SQLITE_OK;    
+  //}
+
   pLive = (WalIndexHdr*)walIndexHdr(pWal);
   if( memcmp(&pWal->hdr, (void *)pLive, sizeof(WalIndexHdr))!=0 ){
     iFirst = pLive->mxFrame+1;

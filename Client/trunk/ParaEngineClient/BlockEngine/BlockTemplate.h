@@ -43,8 +43,8 @@ namespace ParaEngine
 			batt_color_data		= 0x0080000,	// whether the block contains color in its block data.
 
 			batt_invisible = 0x0100000,// whether the block is invisible.
-
-			batt_randomTexture	= 0x0200000,
+			
+			batt_tiling			= 0x0200000,
 		};
 
 		BlockTemplate(uint16_t id,uint32_t attFlag, uint16_t category_id);
@@ -255,6 +255,7 @@ namespace ParaEngine
 		DWORD GetDiffuseColor(int32_t blockData);
 		void setUnderWaterColor(const Color & val);
 		const Color & getUnderWaterColor()const;
+		int getTileSize()const { return mTileSize; }
 		private:
 			/** unique id */
 			uint16_t m_id;
@@ -294,6 +295,8 @@ namespace ParaEngine
 			/** color as shown on the map*/
 			Color m_dwMapColor;
 			Color m_UnderWaterColor;
+
+			int mTileSize = 1;
 			
 			friend class IBlockModelProvider;
 		};
