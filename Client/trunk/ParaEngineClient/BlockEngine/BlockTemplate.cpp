@@ -14,6 +14,7 @@
 #include "BlockWorld.h"
 #include "SceneObject.h"
 #include "util/regularexpression.h"
+#include "StringHelper.h"
 
 namespace ParaEngine
 {
@@ -154,27 +155,12 @@ namespace ParaEngine
 		{
 			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_tiling))
 			{
-				regex r("^.+x(.+)[.].+$");
-				//macro branch point: see line 10 of util/regularexpression.h
-#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX)
-				smatch num;
+				regex r("^.+_x(\d+)\..+$");
 
-				if (regex_search(string(texName), num, r))
-				{
-					std::stringstream ss;
-					ss << num[1].str().c_str();
-					ss >> mTileSize;
-				}
-#else
-				std::cmatch num;
+				cmatch num;
+				if (regex_search(texName, num, r))
+					mTileSize = StringHelper::StrToInt(num.str().c_str());
 
-				if (std::regex_match(texName, num, r))
-				{
-					std::stringstream ss;
-					ss << num[1].str().c_str();
-					ss >> mTileSize;
-				}
-#endif
 			}
 
 			if ((int)m_textures0.size() <= nIndex)

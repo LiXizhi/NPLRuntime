@@ -611,6 +611,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		if (!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15))
 		{
+			int tileSize = m_pCurBlockTemplate->getTileSize();
+			float uvScale = 1.0f / tileSize;
+
 			for (int v = 0; v < 4; ++v)
 			{
 				int i = nFirstVertex + v;
@@ -675,12 +678,10 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_tiling))
 				{
 					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
-					int size = m_pCurBlockTemplate->getTileSize();
-					float scale = 1.0f / size;
-					Vector2 tran((float)(m_blockId_cs.x % size), (float)(m_blockId_cs.z % size));
+					Vector2 tran((float)(m_blockId_cs.x % tileSize), (float)(m_blockId_cs.z % tileSize));
 					float u,v;
 					vert->GetTexcoord(u,v);
-					vert->SetTexcoord((tran.x + u) * scale, (tran.y + v) * scale);
+					vert->SetTexcoord((tran.x + u) * uvScale, (tran.y + v) * uvScale);
 				}
 			}
 			tessellatedModel.IncrementFaceCount(1);
