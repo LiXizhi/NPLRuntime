@@ -155,7 +155,7 @@ namespace ParaEngine
 		{
 			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_tiling))
 			{
-				regex r("^.+_x(\d+)\..+$");
+				regex r("^.+_x(\\d+)\\..+$");
 
 				cmatch num;
 				if (regex_search(texName, num, r))
