@@ -1136,6 +1136,22 @@ bool ParaObject::SetReplaceableTexture( int ReplaceableTextureID, ParaAssetObjec
 	return false;
 }
 
+void ParaObject::SetMaskColor(int colorIndex,float r,float g,float b)
+{
+	if(IsValid())
+	{
+		m_pObj->SetMaskColor(colorIndex,r,g,b);
+	}
+}
+
+void ParaObject::DestroyChildren()
+{
+	if(IsValid())
+	{
+		m_pObj->DestroyChildren();
+	}
+}
+
 int ParaObject::GetXRefScriptCount()
 {
 	if(IsValid())
