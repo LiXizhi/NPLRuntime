@@ -159,8 +159,10 @@ namespace ParaEngine
 
 				cmatch num;
 				if (regex_search(texName, num, r))
-					mTileSize = StringHelper::StrToInt(num.str().c_str());
-
+				{
+					std::string str(num[1].first, num[1].second - num[1].first);
+					mTileSize = StringHelper::StrToInt(str.c_str());
+				}
 			}
 
 			if ((int)m_textures0.size() <= nIndex)
