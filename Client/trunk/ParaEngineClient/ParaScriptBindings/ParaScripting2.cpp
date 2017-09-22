@@ -148,7 +148,8 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("md5", &ParaMisc::md5),
 				def("sha1", &ParaMisc::sha1),
 				def("sha1", &ParaMisc::sha1_),
-				def("base64", &ParaMisc::base64)
+				def("base64", &ParaMisc::base64),
+				def("unbase64", &ParaMisc::unbase64)
 			]
 		];
 

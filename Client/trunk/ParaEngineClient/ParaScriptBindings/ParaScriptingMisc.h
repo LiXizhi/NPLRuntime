@@ -68,6 +68,8 @@ namespace ParaScripting
 
 		/** convert the base64 of the input source string. */
 		static string base64(const string& source);
+		/** return the unbase64 of the input source string. */
+		static string unbase64(const string& source);
 
 		/** Generating [-MAX, MAX] long integer
 		* @param seedTable: nil or a table containing {_seed=integer} 

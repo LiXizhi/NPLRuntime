@@ -7,11 +7,11 @@
 // Desc: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "CyoEncode.h"
-#include "CyoDecode.h"
+
 #include "util/MD5.h"
 #include "util/sha1.h"
 #include "util/CyoEncode.h"
+#include "util/CyoDecode.h"
 #include "StringHelper.h"
 #include <boost/thread/tss.hpp>
 #include "ConvertUTF.h"
@@ -1275,8 +1275,9 @@ std::string ParaEngine::StringHelper::base64(const std::string& source)
 		int nBufferSize = CyoEncode::Base64EncodeGetLength(size);
 		std::string outBase64Buffers;
 		outBase64Buffers.resize(nBufferSize);
-		CyoEncode::Base64Encode(&(outBase64Buffers[0]), source.c_str(), size);
-
+		int nSize = CyoEncode::Base64Encode(&(outBase64Buffers[0]), source.c_str(), size);
+		if (nSize >= 0 && nSize!= nBufferSize)
+			outBase64Buffers.resize(nSize);
 		return outBase64Buffers;
 	}
 	else
@@ -1284,4 +1285,23 @@ std::string ParaEngine::StringHelper::base64(const std::string& source)
 		return "";
 	}
 	
+}
+
+std::string ParaEngine::StringHelper::unbase64(const std::string& source)
+{
+	auto size = source.size();
+	if (size > 0)
+	{
+		int nBufferSize = CyoDecode::Base64DecodeGetLength(size);
+		std::string out;
+		out.resize(nBufferSize);
+		int nSize = CyoDecode::Base64Decode(&(out[0]), source.c_str(), size);
+		if (nSize >= 0 && nSize != nBufferSize)
+			out.resize(nSize);
+		return out;
+	}
+	else
+	{
+		return "";
+	}
 }

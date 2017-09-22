@@ -567,9 +567,6 @@ namespace ParaScripting
 		*/
 		void				SetCursorEx(const char* szCursorFile, int nHotSpotX, int nHotSpotY);
 
-//		void OnEvent(const char * strScriptName);
-//		string GetOnEvent()const;
-
 		/** usually the editbox will call this handle, "virtual_key" contains the last key stroke. 
 		* Usually application may check if it is an enter key for special actions.*/
 		void OnChange(const object&  strScriptName);

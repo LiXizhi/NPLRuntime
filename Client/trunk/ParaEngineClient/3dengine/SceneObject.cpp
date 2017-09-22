@@ -2995,6 +2995,7 @@ bool CSceneObject::HandleUserInput()
 	MouseEvent mouse_up_event(0,0,0,-1);
 	MouseEvent mouse_move_event(0,0,0,-1);
 	MouseEvent mouse_click_event(0,0,0, -1);
+	MouseEvent mouse_wheel_event(0, 0, 0, -1);
 	KeyEvent key_event(0,0);
 
 	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
@@ -3063,6 +3064,16 @@ bool CSceneObject::HandleUserInput()
 							mouse_click_event.m_nEventType = EVENT_MOUSE;
 						}
 					}
+				}
+				else if ((mouse_wheel_event.m_nEventType == -1) && m_event->IsMapTo(pMsg->message, EM_MOUSE_WHEEL))
+				{
+					mouse_wheel_event.m_MouseState = pMsg->message;
+
+					// please note: mouse move is delta value. 
+					mouse_wheel_event.m_x = (int)pMsg->lParam / 120;
+					mouse_wheel_event.m_y = 0;
+
+					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
 				}
 				
 			}
@@ -3136,6 +3147,8 @@ bool CSceneObject::HandleUserInput()
 	// call mouse click event handlers
 	if(mouse_click_event.m_nEventType>=0) 
 		CGlobals::GetEventsCenter()->FireEvent(mouse_click_event);
+	if (mouse_wheel_event.m_nEventType >= 0)
+		CGlobals::GetEventsCenter()->FireEvent(mouse_wheel_event);
 	//if(bHasKeyEvent)
 	//{ 
 	//	// key handlers
