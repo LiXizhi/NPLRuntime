@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM xuntian/ubuntu:tz
 MAINTAINER xuntian "li.zq@foxmail.com"
 
 #VOLUME ["/etc/localtime","/etc/localtime"]
