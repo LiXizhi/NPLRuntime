@@ -179,7 +179,7 @@ namespace ParaEngine
 
 		/** This will find the root path from a given directory path using the following rule:
 		* find a file called "ParaEngine.sig" in the parent directories of sFile, from near to far.
-		* in branch "seer_master": ParaEngine.sig -> PaperStar.sig
+		* in branch "truck_star_develop": ParaEngine.sig -> AwesomeTruck.sig
 		* e.g. if sFile is "c:/a/b/c/xxx.x", then it will search for "c:/a/b/c/","c:/a/b/","c:/a/" and "c:/".
 		* the function will return the first parent directory that contains the file, otherwise "" is returned.
 		*/
