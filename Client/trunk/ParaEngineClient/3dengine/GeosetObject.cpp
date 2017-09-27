@@ -233,8 +233,34 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 	return S_OK;
 }
 
+bool ParaEngine::CGeosetObject::SetReplaceableTexture(int ReplaceableTextureID,TextureEntity * pTextureEntity)
+{
+	mReplaceTextures[ReplaceableTextureID]=pTextureEntity;
+	return true;
+}
+
+TextureEntity * ParaEngine::CGeosetObject::GetReplaceableTexture(int ReplaceableTextureID)
+{
+	auto iter=mReplaceTextures.find(ReplaceableTextureID);
+	return (mReplaceTextures.end()==iter)?nullptr:iter->second;
+}
+
 void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,CParameterBlock* params)
 {
+	if(mEntity&&mEntity->GetModel())
+	{
+		for(int i=0; i<CParaXModel::MAX_MODEL_TEXTURES; ++i)
+		{
+			mEntity->GetModel()->specialTextures[i]=-1;
+			mEntity->GetModel()->replaceTextures[i]=nullptr;
+		}
+		for(auto const & tex:mReplaceTextures)
+		{
+			mEntity->GetModel()->specialTextures[tex.first]=tex.first;
+			mEntity->GetModel()->replaceTextures[tex.first]=tex.second;
+		}
+	}
+
 	auto* pAI=static_cast<CParaXAnimInstance*>(mParent->GetAnimInstance());
 	Matrix4 mat;
 	if(pAI->UpdateWorldTransform(sceneState,mat,*mxWorld))

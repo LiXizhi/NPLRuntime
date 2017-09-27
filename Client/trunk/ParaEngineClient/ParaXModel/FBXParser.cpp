@@ -789,7 +789,7 @@ void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBX
 			}
 			case 'm':
 			{
-				out->mMaskTextureIndex=nID>=0?nID:0;
+				out->mMaskTextureIndex=nID>=0?nID:16;
 				break;
 			}
 			default:

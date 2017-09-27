@@ -11,6 +11,7 @@ namespace ParaEngine
 	protected:
 		asset_ptr<ParaXEntity> mEntity;
 		CBipedObject * mParent;
+		std::map<uint32,TextureEntity*> mReplaceTextures;
 	public:
 		ATTRIBUTE_DEFINE_CLASS(CGeosetObject);
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CGeosetObject);
@@ -34,6 +35,8 @@ namespace ParaEngine
 		}
 		virtual void SetAssetFileName(const std::string& sFilename) override;
 		virtual HRESULT Draw(SceneState * sceneState) override;
+		virtual bool SetReplaceableTexture(int ReplaceableTextureID,TextureEntity* pTextureEntity) override;
+		virtual TextureEntity* GetReplaceableTexture(int ReplaceableTextureID) override;
 	protected:
 		void _draw(SceneState * sceneState,Matrix4 * mxWorld,CParameterBlock* params=NULL);
 	};

@@ -678,7 +678,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_tiling))
 				{
 					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
-					Vector2 tran((float)(m_blockId_cs.x % tileSize), (float)(m_blockId_cs.z % tileSize));
+					Vector2 tran((float)(m_nBlockData % tileSize), (float)(m_nBlockData / tileSize));
 					float u,v;
 					vert->GetTexcoord(u,v);
 					vert->SetTexcoord((tran.x + u) * uvScale, (tran.y + v) * uvScale);
