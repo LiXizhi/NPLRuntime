@@ -431,7 +431,7 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 	}
 
 	int nIndex = ((MeshEntity*)m_pModelEntity.get())->GetLodIndex(fCameraToObjectDist);
-	CParaXStaticModelRawPtr pMesh = ((MeshEntity*)m_pModelEntity.get())->GetMesh(nIndex);
+	auto pMesh = ((MeshEntity*)m_pModelEntity.get())->GetMesh(nIndex);
 
 	if(pMesh == NULL)
 		return E_FAIL;
@@ -446,8 +446,7 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 	CGlobals::GetEffectManager()->applyObjectLocalLighting(m_pParent);
 
 	/// set whether to use the material(texture) in the mesh file
-	pMesh->m_bUseMaterials = true;
-
+	pMesh->UseMeshMaterials(true);
 	CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if ( pEffectFile == 0)
 	{

@@ -459,7 +459,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 	}
 
 	int nIndex = (sceneState && sceneState->IsLODEnabled()) ? m_ppMesh->GetLodIndex(fCameraToObjectDist) : 0;
-	CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh(nIndex);
+	auto pMesh = m_ppMesh->GetMesh(nIndex);
 
 	if(pMesh == NULL)
 		return E_FAIL;
@@ -483,7 +483,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 	}
 
 	/// set whether to use the material(texture) in the mesh file
-	pMesh->m_bUseMaterials = true;
+	pMesh->UseMeshMaterials(true);
 	bool bIsRendered = false;
 	CGlobals::GetEffectManager()->applyObjectLocalLighting(this);
 
@@ -1198,7 +1198,7 @@ int CMeshObject::GetNumReplaceableTextures()
 {
 	if(m_ppMesh==0 || ! (m_ppMesh->IsValid()))
 		return 0;
-	CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh();
+	auto pMesh = m_ppMesh->GetMesh();
 	if(pMesh == NULL)
 		return 0;
 
@@ -1209,7 +1209,7 @@ TextureEntity* CMeshObject::GetDefaultReplaceableTexture( int ReplaceableTexture
 {
 	if(m_ppMesh==0 || ! (m_ppMesh->IsValid()))
 		return 0;
-	CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh();
+	auto pMesh = m_ppMesh->GetMesh();
 	if(pMesh == NULL)
 		return 0;
 
@@ -1220,7 +1220,7 @@ TextureEntity* CMeshObject::GetReplaceableTexture( int ReplaceableTextureID )
 {
 	if(m_ppMesh==0 || ! (m_ppMesh->IsValid()))
 		return 0;
-	CParaXStaticModelRawPtr pMesh = m_ppMesh->GetMesh();
+	auto pMesh = m_ppMesh->GetMesh();
 	if(pMesh == NULL)
 		return 0;
 	if(pMesh->GetReplaceableTexture(ReplaceableTextureID))

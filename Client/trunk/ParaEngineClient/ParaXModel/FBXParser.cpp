@@ -79,7 +79,7 @@ XFile::Scene* ParaEngine::FBXParser::ParseFBXFile(const char* buffer, int nSize)
 {
 	Assimp::Importer importer;
 	Reset();
-	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals, "fbx");
+	const aiScene* pFbxScene = importer.ReadFileFromMemory(buffer, nSize, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs, "fbx");
 	if (pFbxScene) {
 		if (pFbxScene->HasMeshes())
 		{
@@ -607,6 +607,56 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	aiString szPath;
 	char* content_begin = NULL;
 	int content_len = -1;
+	int16 opacity = -1;
+
+	aiGetMaterialTexture(pfbxMaterial, (aiTextureType)aiTextureType_DIFFUSE, 0,
+		&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len);
+
+	std::string diffuseTexName(szPath.C_Str());
+	if (diffuseTexName != "")
+	{
+		diffuseTexName = GetTexturePath(diffuseTexName);
+
+		if (content_begin)
+		{
+			std::string sFileName = CParaFile::GetFileName(m_sFilename);
+			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
+
+			//m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
+			TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().GetEntity(diffuseTexName);
+			if (!texEntity)
+			{
+				texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(diffuseTexName);
+				char* bufferCpy = new char[content_len];
+				memcpy(bufferCpy, content_begin, content_len);
+				texEntity->SetRawData(bufferCpy, content_len);
+				CGlobals::GetAssetManager()->GetTextureManager().AddEntity(diffuseTexName, texEntity);
+			}
+
+			// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
+		}
+		else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))
+		{
+			OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
+			diffuseTexName = "";
+		}
+	}
+
+
+	if (diffuseTexName.empty())
+	{
+		diffuseTexName = std::string(g_sDefaultTexture);
+	}
+
+	Material material;
+	material.mIsReference = false;
+	material.mName = sMatName;
+	material.mDiffuse = GetRGBA(1);
+	material.mSpecularExponent = 0;
+	material.mSpecular = GetRGBA(2).ToVector3();
+	material.mEmissive = GetRGBA(3).ToVector3();
+	material.mTextures.push_back(TexEntry(diffuseTexName, true));
+	m_pScene->mGlobalMeshes[iMesh]->mMaterials.push_back(material);
 
 	//ASSIMP_API aiReturn aiGetMaterialTexture(const C_STRUCT aiMaterial* mat,
 	//	aiTextureType type,
@@ -619,6 +669,8 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	//	aiTextureMapMode* mapmode = NULL,
 	//	unsigned int* flags = NULL);
 
+
+	/*
 	bool bNoOpacity = true;
 	for (unsigned int i = 0; i <= AI_TEXTURE_TYPE_MAX; ++i)
 	{
@@ -652,6 +704,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	TexEntry tex(texname, true);
 	material.mTextures.push_back(TexEntry(texname, true));
 	m_pScene->mGlobalMeshes[iMesh]->mMaterials.push_back(material);
+	*/
 }
 
 void ParaEngine::FBXParser::ParseMaterialByName(const std::string& sMatName, FBXMaterial* out)
@@ -1761,17 +1814,22 @@ void FBXParser::ProcessStaticFBXMesh(aiMesh *pFbxMesh, XFile::Mesh *pMesh)
 	pMesh->mPositions.resize(numVertices);
 	pMesh->mNormals.resize(numVertices);
 	std::vector<Vector2>& coords = pMesh->mTexCoords[pMesh->mNumTextures++];
-	coords.resize(pFbxMesh->mNumVertices);
+	coords.resize(numVertices);
 	//pMesh->mTexCoords.resize(numVertices);
+
+	aiVector3D* uvs = nullptr;
+	if (pFbxMesh->HasTextureCoords(0))
+		uvs = pFbxMesh->mTextureCoords[0];
+
 	int i;
 	for (i = 0; i < numVertices; i++)
 	{
 		pMesh->mPositions[i] = ConvertFBXVector3D(pFbxMesh->mVertices[i]);
 		pMesh->mNormals[i] = ConvertFBXVector3D(pFbxMesh->mNormals[i]);
-		if (pFbxMesh->HasTextureCoords(0))
-			coords[i] = Vector2(pFbxMesh->mTextureCoords[0][i].x, pFbxMesh->mTextureCoords[0][i].y);
+		if (uvs)
+			coords[i] = Vector2(uvs[i].x, uvs[i].y);
 		else
-			coords[i] = Vector2(0.5f, 0.5f);
+			coords[i] = Vector2(0.0f, 0.0f);
 	}
 
 	int numFaces = pFbxMesh->mNumFaces;

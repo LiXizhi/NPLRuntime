@@ -132,12 +132,14 @@ HRESULT ParaEngine::CMeshProcessor::UnLockDeviceObject()
 			MeshLOD& lod = (*iCur);
 			if (lod.m_pStaticMesh)
 			{
-				lod.m_pStaticMesh->Create(pd3dDevice, (const char*)NULL, (m_asset->GetPrimaryTechniqueHandle() == TECH_SIMPLE_MESH_NORMAL_TEX2));
+				lod.m_pStaticMesh->CParaXStaticBase::Create(pd3dDevice
+					, (const char*)nullptr
+					, (m_asset->GetPrimaryTechniqueHandle() == TECH_SIMPLE_MESH_NORMAL_TEX2));
 
 				if (i == 0 && !(m_aabb.IsValid()))
 				{
 					// get the mesh header(using the first LOD level) if previous one failed. 
-					MeshHeader& mesh_header = lod.m_pStaticMesh->GetMeshHeader();
+					MeshHeader& mesh_header = lod.m_pStaticMesh->GetMeshHeader((LPD3DXFILE)nullptr);
 					if (mesh_header.m_bIsValid)
 					{
 						m_aabb.SetMinMax(mesh_header.m_vMin, mesh_header.m_vMax);
@@ -237,7 +239,12 @@ bool ParaEngine::CMeshProcessor::CreateMeshLODLevel(float fromDepth, const strin
 	meshLOD.m_fromDepthSquared = fromDepth*fromDepth;
 	meshLOD.m_sMeshFileName = sFilename;
 #ifdef USE_DIRECTX_RENDERER
-	meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
+	//meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
+	if (CParaXStaticBase::GetFileTypeByFilename(sFilename) == XModelFileType::FileType_FBX)
+		meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
+	else
+		meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
+
 #elif defined(USE_OPENGL_RENDERER)
 	meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
 #endif
