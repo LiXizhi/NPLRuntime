@@ -87,7 +87,7 @@ namespace ParaEngine
 		/** get the mesh header. and compute if not valid.  one needs to check MeshHeader.m_bIsValid before using it.
 		because if async loading is used, the mesh itself may not be ready when this function is called. */
 #ifdef USE_DIRECTX_RENDERER
-		virtual MeshHeader& GetMeshHeader(LPD3DXFILE pFileParser = nullptr) { return m_header;  };
+		virtual MeshHeader& GetMeshHeader(LPD3DXFILE pFileParser = nullptr) { return GetMeshHeader((XFileParser*)nullptr);  };
 #endif
 		virtual MeshHeader& GetMeshHeader(XFileParser* pFileParser = nullptr);
 

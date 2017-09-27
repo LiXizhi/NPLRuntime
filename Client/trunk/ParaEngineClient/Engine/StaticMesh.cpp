@@ -860,6 +860,11 @@ namespace ParaEngine
 		return m_header;
 	}
 
+	MeshHeader& CParaXStaticMesh::GetMeshHeader(XFileParser* pFileParser)
+	{
+		return GetMeshHeader((LPD3DXFILE)nullptr);
+	}
+
 	bool CParaXStaticMesh::GetMeshHeaderFromFile(CParaFile& myFile, LPD3DXFILE pFileParser)
 	{
 		HRESULT      hr = S_OK;

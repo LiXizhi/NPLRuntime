@@ -139,7 +139,11 @@ HRESULT ParaEngine::CMeshProcessor::UnLockDeviceObject()
 				if (i == 0 && !(m_aabb.IsValid()))
 				{
 					// get the mesh header(using the first LOD level) if previous one failed. 
+#ifdef USE_DIRECTX_RENDERER
 					MeshHeader& mesh_header = lod.m_pStaticMesh->GetMeshHeader((LPD3DXFILE)nullptr);
+#else
+					MeshHeader& mesh_header = lod.m_pStaticMesh->GetMeshHeader();
+#endif
 					if (mesh_header.m_bIsValid)
 					{
 						m_aabb.SetMinMax(mesh_header.m_vMin, mesh_header.m_vMax);

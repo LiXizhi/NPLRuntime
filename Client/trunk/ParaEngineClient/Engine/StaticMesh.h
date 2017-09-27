@@ -88,7 +88,7 @@ namespace ParaEngine
 #ifdef USE_DIRECTX_RENDERER
 		virtual MeshHeader& GetMeshHeader(LPD3DXFILE pFileParser = nullptr);
 #endif
-		virtual MeshHeader& GetMeshHeader(XFileParser* pFileParser = nullptr) { return m_header;  };
+		virtual MeshHeader& GetMeshHeader(XFileParser* pFileParser = nullptr);
 
 #ifdef USE_DIRECTX_RENDERER
 		/** Get mesh header from file. */
