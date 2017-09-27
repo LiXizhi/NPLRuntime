@@ -73,9 +73,9 @@ bool CMyApp::CheckLoad()
 
 #ifdef _DEBUG
 	// post_fix with _d
-	m_ParaEngine_plugin.Init("PaperStar_d.dll"); 
+	m_ParaEngine_plugin.Init("AwesomeTruck_d.dll"); 
 #else
-	m_ParaEngine_plugin.Init("PaperStar.dll");
+	m_ParaEngine_plugin.Init("AwesomeTruck.dll");
 #endif
 
 	int nClassCount = m_ParaEngine_plugin.GetNumberOfClasses();
@@ -367,7 +367,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
      
 	if(sAppCmdLine != sSeerConfigString)
 	{
-		MessageBoxA(NULL,"请从上层目录的\"PaperStarLauncher\"启动游戏","Paper Star",MB_OK);
+		MessageBoxA(NULL,"请从上层目录的\"Launcher\"启动游戏","创意空间",MB_OK);
 		return -1;
 	}	
 	else if(sAppCmdLine.find("appid=") != std::string::npos)
