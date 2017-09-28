@@ -465,15 +465,17 @@ string ParaWorld::NewEmptyWorld(const char* sWorldName, float fTileSize, int nTi
 		cFile.WriteString("type = lattice\n");
 		snprintf(line, MAX_LINE, "TileSize = %f\n", fTileSize);
 		cFile.WriteString(line);
+		snprintf(line, MAX_LINE, "([0-%d],[0-%d]) = %WORLD%/flat.txt\n", nTileDimension-1, nTileDimension-1, fTileSize);
+		cFile.WriteString(line);
 
-		for (int x=0;x<nTileDimension; ++x)
+		/*for (int x=0;x<nTileDimension; ++x)
 		{
 			for (int y=0;y<nTileDimension;++y)
 			{
 				snprintf(line, MAX_LINE, "(%d,%d) = %s\n", x,y, sTerrainConfig.c_str());
 				cFile.WriteString(line);
 			}
-		}
+		}*/
 	}
 	{ // write terrain config file for 0 0
 	
