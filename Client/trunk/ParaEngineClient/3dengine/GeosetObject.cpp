@@ -286,7 +286,42 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 			pModel->m_BlendingAnim=pAI->m_BlendingAnim;
 			pModel->blendingFactor=pAI->m_fBlendingFactor;
 			pModel->animate(sceneState,nullptr,pAI);
-			pModel->draw(sceneState,params);
+
+			std::map<string,CParameter*> save_params;
+			auto my_params=GetEffectParamBlock();
+			if(params&&my_params)
+			{
+				for(auto iter=my_params->BeginIter();iter!=my_params->EndIter();++iter)
+				{
+					auto const & name=iter->first;
+					auto const & param=iter->second;
+					if(params->GetParameter(name))
+					{
+						save_params[name]=new CParameter(*params->GetParameter(name));
+					}
+					else
+					{
+						save_params[name]=nullptr;
+					}
+					params->SetParameter(name,param);
+				}
+			}
+			pModel->draw(sceneState,params?params:my_params);
+			if(params&&my_params)
+			{
+				for(auto iter=save_params.begin();save_params.end()!=iter;++iter)
+				{
+					auto const & name=iter->first;
+					auto const & param=iter->second;
+					if(param)
+					{
+						params->SetParameter(name,*param);
+						delete param;
+					}
+					else
+						params->m_params.erase(name);
+				}
+			}
 		}
 
 
