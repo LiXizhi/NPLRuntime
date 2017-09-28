@@ -539,11 +539,11 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 	/** we will load all packages that matches the following pattern in the order given by their name,
 	* such that "main_001.pkg" is always loaded before "main_002.pkg" */
 #define MAIN_PACKAGE_FILE_PATTERN_MAIN	"main*.pkg"
-#define MAIN_PACKAGE_FILE_PATTERN_PAPER	"paper*.pkg"
+#define MAIN_PACKAGE_FILE_PATTERN_CRATE	"crate*.pkg"
 
 	std::vector<std::string> fileList;
 	bool result_main_valid = false;
-	bool result_paper_valid = false;
+	bool result_crate_valid = false;
 	CSearchResult* result_main = CFileManager::GetInstance()->SearchFiles(
 		sPkgFolder,
 		MAIN_PACKAGE_FILE_PATTERN_MAIN, "", 0, 1000, 0);
@@ -556,20 +556,20 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 			fileList.push_back(result_main->GetItem(i));
 		}
 	}
-	CSearchResult* result_paper = CFileManager::GetInstance()->SearchFiles(
+	CSearchResult* result_crate = CFileManager::GetInstance()->SearchFiles(
 		sPkgFolder,
-		MAIN_PACKAGE_FILE_PATTERN_PAPER, "", 0, 1000, 0);
-	if (result_paper != 0)
+		MAIN_PACKAGE_FILE_PATTERN_CRATE, "", 0, 1000, 0);
+	if (result_crate != 0)
 	{
-		result_paper_valid = true;
-		int nNum = result_paper->GetNumOfResult();
+		result_crate_valid = true;
+		int nNum = result_crate->GetNumOfResult();
 		for (int i = 0; i < nNum; ++i)
 		{
-		    fileList.push_back(result_paper->GetItem(i));
+		    fileList.push_back(result_crate->GetItem(i));
 		}
 	}
 	bool bIs64Bits = sizeof(void*) > 4;
-	if (result_main_valid || result_paper_valid)
+	if (result_main_valid || result_crate_valid)
 	{
 		// we will sort by file name
 		// we will enqueue in reverse order, so that main_002 is pushed first, and then main_001
@@ -579,20 +579,20 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 		{
 #ifdef PARAENGINE_MOBILE
 			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
-			if (CParaFile::DoesFileExist("paperbox900.pkg") || CParaFile::DoesFileExist("paperbox900.zip"))
-				fileList.push_back("paperbox900.zip");
-			if (CParaFile::DoesFileExist("paperbox104.pkg") || CParaFile::DoesFileExist("paperbox104.zip"))
-				fileList.push_back("paperbox104.zip");
-			if (CParaFile::DoesFileExist("paperbox103.pkg") || CParaFile::DoesFileExist("paperbox103.zip"))
-				fileList.push_back("paperbox103.zip");
-			if (CParaFile::DoesFileExist("paperbox102.pkg") || CParaFile::DoesFileExist("paperbox102.zip"))
-				fileList.push_back("paperbox102.zip");
-			if (CParaFile::DoesFileExist("paperbox003.pkg") || CParaFile::DoesFileExist("paperbox003.zip"))
-				fileList.push_back("paperbox003.zip");
-			if (CParaFile::DoesFileExist("paperbox002.pkg") || CParaFile::DoesFileExist("paperbox002.zip"))
-				fileList.push_back("paperbox002.zip");
-			if (CParaFile::DoesFileExist("paperbox001.pkg") || CParaFile::DoesFileExist("paperbox001.zip"))
-				fileList.push_back("paperbox001.zip");
+			if (CParaFile::DoesFileExist("crate900.pkg") || CParaFile::DoesFileExist("crate900.zip"))
+				fileList.push_back("crate900.zip");
+			if (CParaFile::DoesFileExist("crate104.pkg") || CParaFile::DoesFileExist("crate104.zip"))
+				fileList.push_back("crate104.zip");
+			if (CParaFile::DoesFileExist("crate103.pkg") || CParaFile::DoesFileExist("crate103.zip"))
+				fileList.push_back("crate103.zip");
+			if (CParaFile::DoesFileExist("crate102.pkg") || CParaFile::DoesFileExist("crate102.zip"))
+				fileList.push_back("crate102.zip");
+			if (CParaFile::DoesFileExist("crate003.pkg") || CParaFile::DoesFileExist("crate003.zip"))
+				fileList.push_back("crate003.zip");
+			if (CParaFile::DoesFileExist("crate002.pkg") || CParaFile::DoesFileExist("crate002.zip"))
+				fileList.push_back("crate002.zip");
+			if (CParaFile::DoesFileExist("crate001.pkg") || CParaFile::DoesFileExist("crate001.zip"))
+				fileList.push_back("crate001.zip");
 #endif
 			if (CParaFile::DoesFileExist("main_mobile_res.pkg") || CParaFile::DoesFileExist("main_mobile_res.zip"))
 				fileList.push_back("main_mobile_res.zip");
@@ -723,18 +723,18 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		}
 	}
 #ifdef WIN32
-	// PaperStar.sig must be called first, to locate the root dir. 
-	if (!CParaFile::DoesFileExist("PaperStar.sig", false))
+	// AwesomeTruck.sig must be called first, to locate the root dir. 
+	if (!CParaFile::DoesFileExist("AwesomeTruck.sig", false))
 	{
 		if (!sModuleDir.empty())
 		{
 			std::string workingDir = m_sModuleDir;
-			std::string sigPath = workingDir + "PaperStar.sig";
+			std::string sigPath = workingDir + "AwesomeTruck.sig";
 			bool bFoundSigFile = false;
 			if (!CParaFile::DoesFileExist(sigPath.c_str(), false))
 			{
 				// search the parent directory of the module for signature file, if file exist, use it as current working directory. 
-				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "PaperStar.sig";
+				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "AwesomeTruck.sig";
 				if (CParaFile::DoesFileExist(sigPath.c_str(), false))
 				{
 					workingDir = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1);
@@ -749,7 +749,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			}
 			else
 			{
-				OUTPUT_LOG("PaperStar.sig file not found\n");
+				OUTPUT_LOG("AwesomeTruck.sig file not found\n");
 			}
 		}
 		// set the current directory by reading from the registry.
