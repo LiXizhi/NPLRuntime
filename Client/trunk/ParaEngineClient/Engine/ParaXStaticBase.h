@@ -181,7 +181,7 @@ namespace ParaEngine
 		MeshHeader				m_header;
 
 		/// the file data from which to load the mesh
-		void*					m_pFileData;
+		char*					m_pFileData;
 		/// the file data size in bytes from which to load the mesh
 		int						m_pFileDataSize;
 		/** get a list of XRef objects*/

@@ -56,16 +56,16 @@ namespace ParaEngine
 		IAttributeFields::InstallFields(pClass, bOverride);
 
 		assert(pClass != nullptr);
-		pClass->AddField("TextureUsage", FieldType_String, nullptr, DumpTextureUsage_s, nullptr, nullptr, bOverride);
-		pClass->AddField("PolyCount", FieldType_Int, nullptr, GetPolyCount_s, nullptr, nullptr, bOverride);
-		pClass->AddField("PhysicsCount", FieldType_Int, nullptr, GetPhysicsCount_s, nullptr, nullptr, bOverride);
+		pClass->AddField("TextureUsage", FieldType_String, nullptr, (void*)DumpTextureUsage_s, nullptr, nullptr, bOverride);
+		pClass->AddField("PolyCount", FieldType_Int, nullptr, (void*)GetPolyCount_s, nullptr, nullptr, bOverride);
+		pClass->AddField("PhysicsCount", FieldType_Int, nullptr, (void*)GetPhysicsCount_s, nullptr, nullptr, bOverride);
 		return S_OK;
 	}
 
 	void CParaXStaticBase::SetMeshFileData(void * pData, int nSize)
 	{
 		DeleteMeshFileData();
-		m_pFileData = pData;
+		m_pFileData = (char*)pData;
 		m_pFileDataSize = nSize;
 	}
 	void CParaXStaticBase::DeleteMeshFileData()
