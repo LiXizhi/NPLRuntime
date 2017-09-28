@@ -60,7 +60,7 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_renderer_FILES})
 ##############################
 file (GLOB ParaEngineServer_pb_FILES ${CLIENT_SOURCE_DIR}/protocol/*.h ${CLIENT_SOURCE_DIR}/protocol/*.cpp)
 SOURCE_GROUP("protocol" FILES ${ParaEngineServer_pb_FILES})
-list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_pb_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_pb_FILES}) 
 
 ##############################
 file (GLOB ParaEngineServer_ParaXModel_FILES ${CLIENT_SOURCE_DIR}/ParaXModel/*.cpp ${CLIENT_SOURCE_DIR}/ParaXModel/*.h ${CLIENT_SOURCE_DIR}/ParaXModel/*.templates ${CLIENT_SOURCE_DIR}/ParaXModel/*.inl)
