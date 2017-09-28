@@ -19,7 +19,7 @@ find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS}  )
 
 ##############################
-file (GLOB ParaEngineServer_Engine_FILES ${CLIENT_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
+file (GLOB ParaEngineServer_Engine_FILES ${CLIENT_SOURCE_DIR}/Engine/ParaEngineServer.cpp ${CLIENT_SOURCE_DIR}/Engine/ParaXStaticBase.cpp)
 SOURCE_GROUP("Engine" FILES ${ParaEngineServer_Engine_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Engine_FILES})
 
