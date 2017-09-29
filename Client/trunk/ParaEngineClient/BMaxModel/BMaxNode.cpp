@@ -16,9 +16,9 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_cube(nullptr)
+m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr)
 {
-
+	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
 
 ParaEngine::BMaxNode::~BMaxNode()
@@ -44,9 +44,14 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	return m_color;
 }
 
-BlockModel * ParaEngine::BMaxNode::GetCube()
+BlockModel * ParaEngine::BMaxNode::GetBlockModel()
 {
-	return m_cube;
+	return m_pBlockModel;
+}
+
+void ParaEngine::BMaxNode::SetBlockModel(BlockModel* pModel)
+{
+	m_pBlockModel = pModel;
 }
 
 BMaxFrameNode* ParaEngine::BMaxNode::ToBoneNode()
@@ -246,21 +251,29 @@ int32_t ParaEngine::BMaxNode::GetAvgVertexLight(int32_t v1, int32_t v2, int32_t 
 	}
 }
 
+void BMaxNode::SetFaceVisible(int nIndex)
+{
+	m_facesStatus[nIndex] = faceVisibleNotSign;
+}
+
+void BMaxNode::SetFaceUsed(int nIndex)
+{
+	m_facesStatus[nIndex] = faceVisibleSigned;
+}
+
+bool BMaxNode::IsFaceNotUse(int nIndex)
+{
+	return m_facesStatus[nIndex] == faceVisibleNotSign;
+}
+
 int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
-	//clear vertices
-	//tessellatedModel->ClearVertices();
+	// we will assume tessellatedModel is cube model. 
+	// tessellatedModel->LoadCubeModel();
 
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
 	DWORD dwBlockColor = GetColor();
-
-	//light
-	// const int nNearbyLightCount = 27;
-	// uint8_t blockBrightness[27 * 3];
-	// memset(blockBrightness, 0, sizeof(uint8_t) * nNearbyLightCount * 3);
-	//Uint16x3 blockId_ws(0, 0, 0);
-	//BlockWorldClient::GetInstance()->GetBlockBrightness(blockId_ws, blockBrightness, nNearbyLightCount, 3);
 
 	//neighbor blocks
 	const int nNearbyBlockCount = 27;
@@ -272,8 +285,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 	//ao
 	uint32 aoFlags = CalculateCubeAO(neighborBlocks);
 
-	//model position offset
-	//BlockModel model;
+	// model position offset
 	BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
 	int count = tessellatedModel->GetVerticesCount();
 	const Vector3& vCenter = m_pParser->GetCenterPos();
@@ -284,10 +296,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 		pVertices[k].SetBlockColor(dwBlockColor);
 	}
 
-	const uint16_t nFaceCount = tessellatedModel->GetFaceCount();
-	PE_ASSERT(nFaceCount <= 6);
-
-	for (int face = 0; face < nFaceCount; ++face)
+	for (int face = 0; face < 6; ++face)
 	{
 		int nFirstVertex = face * 4;
 
@@ -299,8 +308,7 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 			for (int v = 0; v < 4; ++v)
 			{
 				int i = nFirstVertex + v;
-				//int nIndex = tessellatedModel->AddVertex(model, i);
-
+				
 				int nShadowLevel = 0;
 				if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
 				{
@@ -312,15 +320,8 @@ int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 					tessellatedModel->SetVertexColor(i, (DWORD)color);
 				}
 			}
-			tessellatedModel->IncrementFaceCount(1);
-			tessellatedModel->SetFaceVisiable(face);
+			SetFaceVisible(face);
 		}
 	}
-	
-	if (tessellatedModel->GetVerticesCount() > 0)
-		m_cube = tessellatedModel;
-	else
-		m_cube = NULL;
-	
 	return tessellatedModel->GetVerticesCount();
 }

@@ -412,6 +412,11 @@ ParaWorld::~ParaWorld(void)
 
 string ParaWorld::NewWorld(const char* sWorldName, const char* sBaseWorldName)
 {
+	if (sBaseWorldName == NULL || sBaseWorldName[0] == '\0')
+	{
+		return NewEmptyWorld(sWorldName);
+	}
+
 	CParaFile templateFile;
 	templateFile.OpenAssetFile(sBaseWorldName);
 	if(templateFile.isEof())
@@ -455,6 +460,13 @@ string ParaWorld::NewEmptyWorld(const char* sWorldName, float fTileSize, int nTi
 	ParaTerrain::CWorldNameFactory worldname((sWorldName==NULL) ? "_emptyworld":sWorldName);
 	string sTerrainConfig = worldname.GetWorldDirectory()+"flat.txt"; // worldname.GetTerrainConfigFile(0,0);
 	string sTerrainElev = worldname.GetWorldDirectory()+"flat.raw"; //worldname.GetTerrainElevationFile(0,0);
+	bool bCreateElevFile = true;
+	if (CParaFile::DoesAssetFileExist2("_emptyworld/flat.raw", true))
+	{
+		// use existing shared flat.raw. 
+		sTerrainElev = "_emptyworld/flat.raw";
+		bCreateElevFile = false;
+	}
 
 	{ // write config file
 		CParaFile cFile;
@@ -465,15 +477,17 @@ string ParaWorld::NewEmptyWorld(const char* sWorldName, float fTileSize, int nTi
 		cFile.WriteString("type = lattice\n");
 		snprintf(line, MAX_LINE, "TileSize = %f\n", fTileSize);
 		cFile.WriteString(line);
+		snprintf(line, MAX_LINE, "([0-%d],[0-%d]) = %%WORLD%%/flat.txt\n", nTileDimension-1, nTileDimension-1);
+		cFile.WriteString(line);
 
-		for (int x=0;x<nTileDimension; ++x)
+		/*for (int x=0;x<nTileDimension; ++x)
 		{
 			for (int y=0;y<nTileDimension;++y)
 			{
 				snprintf(line, MAX_LINE, "(%d,%d) = %s\n", x,y, sTerrainConfig.c_str());
 				cFile.WriteString(line);
 			}
-		}
+		}*/
 	}
 	{ // write terrain config file for 0 0
 	
@@ -498,20 +512,29 @@ NumOfDetailTextures = 0\n\
 		int nSize = snprintf(buf, 1024, sFileFmt, sTerrainElev.c_str(), fTileSize);
 		cFile.write(buf, nSize);
 	}
-	{ // flat elevation file
-
-		CParaFile cFile;
-		if(cFile.CreateNewFile(sTerrainElev.c_str(), true)==false)
+	
+	if(bCreateElevFile)
+	{ 
+		// flat elevation file
+		if (CreateRawTerrainFile(sTerrainElev.c_str()))
 			return "";
-		int nSize = 129*129;
-		float* elev = new float[nSize];
-		memset(elev, 0 , nSize*4);
-		cFile.write(elev, nSize*4);
-		delete [] elev;
 	}
 	return configFileName;
 }
 
+bool ParaScripting::ParaWorld::CreateRawTerrainFile(const char* sFilename, float fHeight, int nDimension /*= 129*/)
+{
+	CParaFile cFile;
+	if (cFile.CreateNewFile(sFilename, true) == false)
+		return false;
+	int nSize = nDimension * nDimension;
+	float* elev = new float[nSize];
+	for (int i = 0; i < nSize; ++i)
+		elev[i] = fHeight;
+	cFile.write(elev, nSize * 4);
+	delete[] elev;
+	return true;
+}
 const char* ParaWorld::NewEmptyWorld_(const char* sWorldName, float fTileSize, int nTileDimension)
 {
 	static string g_str;

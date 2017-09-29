@@ -76,7 +76,7 @@ namespace ParaEngine
 		int startVertex = faceIndex * 4;
 		for(int i = 0; i < 4; i++)
 		{
-			BlockModel *cube = m_nodes[i]->GetCube();
+			BlockModel *cube = m_nodes[i]->GetBlockModel();
 			BlockVertexCompressed *vertice = cube->GetVertices();
 			m_retangleVertices[i] = vertice[startVertex + i];
 		}

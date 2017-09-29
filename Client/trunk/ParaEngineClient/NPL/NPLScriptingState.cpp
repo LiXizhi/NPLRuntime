@@ -611,7 +611,12 @@ bool ParaScripting::CNPLScriptingState::LoadFile(const string& filePath, bool bR
 			std::string sExt = CParaFile::GetFileExtension(sFileName);
 			if (sExt == "npl" || sExt == "lua")
 			{
-				OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
+				if (!dwFound) {
+					OUTPUT_LOG("warning: script file %s not found\n", sFileName.c_str());
+				}
+				else {
+					OUTPUT_LOG("warning: script file %s found but can not be opened\n", sFileName.c_str());
+				}
 			}
 			SetFileLoadStatus(filePath, NPL_FILE_MODULE_NOT_FOUND);
 			nFileStatus = NPL_FILE_MODULE_NOT_FOUND;

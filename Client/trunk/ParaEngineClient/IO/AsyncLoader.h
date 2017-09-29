@@ -1,4 +1,5 @@
 #pragma once
+#include "IAttributeFields.h"
 #include "IDataLoader.h"
 #include "util/LogService.h"
 #include <vector>
@@ -58,13 +59,29 @@ namespace ParaEngine
 		8.Then the I/O thread puts an unlock request in the lock/unlock queue.
 		9.When the render thread feels like it, it picks up the unlock request and unlocks the resource. The resource is now ready to use.
 	*/
-	class CAsyncLoader : public CRefCounted
+	class CAsyncLoader : public IAttributeFields
 	{
 	public:
+		typedef boost::shared_ptr<boost::thread> Boost_Thread_ptr_type;
+
 		CAsyncLoader();
 		~CAsyncLoader();
 
-		typedef boost::shared_ptr<boost::thread> Boost_Thread_ptr_type;
+		ATTRIBUTE_DEFINE_CLASS(CAsyncLoader);
+
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+		ATTRIBUTE_METHOD1(CAsyncLoader, GetEstimatedSizeInBytes_s, int*) { *p1 = cls->GetEstimatedSizeInBytes(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAsyncLoader, GetItemsLeft_s, int*) { *p1 = cls->GetItemsLeft(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAsyncLoader, GetBytesProcessed_s, int*) { *p1 = cls->GetBytesProcessed(); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(CAsyncLoader, SetWorkerThreads_s, Vector2) { cls->CreateWorkerThreads((int)p1.x, (int)p1.y); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(CAsyncLoader, SetProcessorQueueSize_s, Vector2) { cls->SetProcessorQueueSize((int)p1.x, (int)p1.y); return S_OK; }
+		ATTRIBUTE_METHOD1(CAsyncLoader, log_s, const char*) { cls->log(p1); return S_OK; }
+		ATTRIBUTE_METHOD(CAsyncLoader, WaitForAllItems_s) { cls->WaitForAllItems(); return S_OK; }
+		
 	private:
 		struct ProcessorWorkerThread;
 	public:
@@ -126,6 +143,10 @@ namespace ParaEngine
 		* @return true if success. 
 		*/
 		bool CreateWorkerThreads(int nProcessorQueueID, int nMaxCount);
+		int GetWorkerThreadsCount(int nProcessorQueueID);
+		/** message queue size of a given processor id*/
+		void SetProcessorQueueSize(int nProcessorQueueID, int nSize);
+		int GetProcessorQueueSize(int nProcessorQueueID);
 
 		/** Wait for all work in the queues to finish. 
 		* Only call this from graphics thread

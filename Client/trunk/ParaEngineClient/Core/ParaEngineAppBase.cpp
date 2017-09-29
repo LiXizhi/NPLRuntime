@@ -35,7 +35,7 @@
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
-
+#include "GeosetObject.h"
 
 using namespace ParaEngine;
 
@@ -142,6 +142,11 @@ bool ParaEngine::CParaEngineAppBase::ForceRender()
 	return false;
 }
 
+const char * ParaEngine::CParaEngineAppBase::GetModuleDir() 
+{ 
+	return m_sModuleDir.c_str(); 
+}
+
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
 	SetCurrentInstance((CParaEngineApp*)this);
@@ -180,7 +185,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CSkyMesh", new CDefaultObjectFactory<CSkyMesh>());
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
-
+	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	// TODO add more here: 
 }
 
@@ -367,38 +372,43 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				sPKGDir = sFullDir;
 			}
 		}
-		std::string sFullDir;
+		
 		if (!sPKGDir.empty())
 		{
 			// found packages under dev folder
 		}
-		else if (CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
+		else 
 		{
-			sPKGDir = sFullDir;
-		}
-		else
-		{
-			std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
-			if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+			std::string sFullDir;
+
+			if ( CParaFile::IsAbsolutePath(sDirName) && CParaFile::DoesFileExist2(sDirName.c_str(), FILE_ON_DISK, &sFullDir))
 			{
 				sPKGDir = sFullDir;
 			}
-
-			if (sPKGDir.empty() && !m_sModuleDir.empty())
+			else
 			{
-				std::string workingDir = m_sModuleDir;
-				// search for all parent directory for at most 5 levels
-				for (int i = 0; i < 5 && !workingDir.empty(); ++i)
+				sFullDir = CParaFile::GetAbsolutePath(sDirName, CParaFile::GetCurDirectory(0));
+				if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 				{
-					std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
-					if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+					sPKGDir = sFullDir;
+				}
+
+				if (sPKGDir.empty() && !m_sModuleDir.empty())
+				{
+					std::string workingDir = m_sModuleDir;
+					// search for all parent directory for at most 5 levels
+					for (int i = 0; i < 5 && !workingDir.empty(); ++i)
 					{
-						sPKGDir = sFullDir;
-						break;
-					}
-					else
-					{
-						workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+						std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
+						if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+						{
+							sPKGDir = sFullDir;
+							break;
+						}
+						else
+						{
+							workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+						}
 					}
 				}
 			}
@@ -597,6 +607,13 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 bool ParaEngine::CParaEngineAppBase::FindBootStrapper()
 {
 	const char* pBootFileName = GetAppCommandLineByParam("bootstrapper", "");
+	if (pBootFileName[0] == '\0' && ! CBootStrapper::GetSingleton()->IsEmpty())
+	{
+		// may be the `loadpackage` params have set the bootstrapper if not explicitly specified by the application. 
+		pBootFileName = CBootStrapper::GetSingleton()->GetMainLoopFile().c_str();
+		OUTPUT_LOG("try bootstrapper in loadpackage command: %s\n", pBootFileName);
+	}
+
 	bool bHasBootstrapper = CBootStrapper::GetSingleton()->LoadFromFile(pBootFileName);
 	if (!bHasBootstrapper)
 	{

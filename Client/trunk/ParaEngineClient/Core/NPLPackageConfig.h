@@ -9,6 +9,7 @@ namespace ParaEngine
 	{
 	public:
 		CNPLPackageConfig();
+		
 	public:
 		bool IsOpened();
 		void open(const char* filename);
@@ -19,6 +20,9 @@ namespace ParaEngine
 		void IsSearchPath(bool val);
 		const std::string& GetMainFile() const;
 		void SetMainFile(const std::string& val);
+
+		const std::string& GetBootstrapper() const;
+		void SetBootstrapper(const std::string& val);
 
 	private:
 		bool m_bIsOpened;

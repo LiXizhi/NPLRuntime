@@ -586,7 +586,7 @@ namespace ParaScripting
 
 	luabind::object ParaTerrain::MousePick( float fMaxDistance,const object& result,uint32_t filter/*=0xffffffff*/ )
 	{
-		if(!CGlobals::GetGUI()->GetMouseInClient())
+		if(!CGlobals::GetGUI()->GetMouseInClient() || !CGlobals::GetViewportManager())
 			return object(result);
 
 		int nScreenX,nScreenY;

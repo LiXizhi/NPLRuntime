@@ -2995,6 +2995,7 @@ bool CSceneObject::HandleUserInput()
 	MouseEvent mouse_up_event(0,0,0,-1);
 	MouseEvent mouse_move_event(0,0,0,-1);
 	MouseEvent mouse_click_event(0,0,0, -1);
+	MouseEvent mouse_wheel_event(0, 0, 0, -1);
 	KeyEvent key_event(0,0);
 
 	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
@@ -3063,6 +3064,16 @@ bool CSceneObject::HandleUserInput()
 							mouse_click_event.m_nEventType = EVENT_MOUSE;
 						}
 					}
+				}
+				else if ((mouse_wheel_event.m_nEventType == -1) && m_event->IsMapTo(pMsg->message, EM_MOUSE_WHEEL))
+				{
+					mouse_wheel_event.m_MouseState = pMsg->message;
+
+					// please note: mouse move is delta value. 
+					mouse_wheel_event.m_x = (int)pMsg->lParam / 120;
+					mouse_wheel_event.m_y = 0;
+
+					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
 				}
 				
 			}
@@ -3136,6 +3147,8 @@ bool CSceneObject::HandleUserInput()
 	// call mouse click event handlers
 	if(mouse_click_event.m_nEventType>=0) 
 		CGlobals::GetEventsCenter()->FireEvent(mouse_click_event);
+	if (mouse_wheel_event.m_nEventType >= 0)
+		CGlobals::GetEventsCenter()->FireEvent(mouse_wheel_event);
 	//if(bHasKeyEvent)
 	//{ 
 	//	// key handlers
@@ -4352,7 +4365,8 @@ int FilterScreenObjectToList(T& renderlist, list<CBaseObject*>& output, CPortalF
 
 int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT& rect, OBJECT_FILTER_CALLBACK pFnctFilter/*=NULL*/, float fMaxDistance)
 {
-	if(rect.top >= rect.bottom || rect.left >= rect.right)
+	auto pViewportManager = CGlobals::GetViewportManager();
+	if(rect.top >= rect.bottom || rect.left >= rect.right || pViewportManager==0)
 	{
 		return 0;
 	}
@@ -4371,35 +4385,35 @@ int CSceneObject::GetObjectsByScreenRect( list<CBaseObject*>& output, const RECT
 	int x = rect.left;
 	int y = rect.top;
 	int nWidth, nHeight;
-	CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+	pViewportManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 	ptCursor[0].x = x;
 	ptCursor[0].y = y;
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[0], ptCursor[0], nWidth, nHeight, &matWorld);
 
 	x = rect.right;
 	y = rect.top;
-	CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+	pViewportManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 	ptCursor[1].x = x;
 	ptCursor[1].y = y;
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[1], ptCursor[1], nWidth, nHeight, &matWorld);
 
 	x = rect.right;
 	y = rect.bottom;
-	CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+	pViewportManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 	ptCursor[2].x = x;
 	ptCursor[2].y = y;
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[2], ptCursor[2], nWidth, nHeight, &matWorld);
 
 	x = rect.left;
 	y = rect.bottom;
-	CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+	pViewportManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 	ptCursor[3].x = x;
 	ptCursor[3].y = y;
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[3], ptCursor[3], nWidth, nHeight, &matWorld);
 
 	x = 0;
 	y = 0;
-	CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+	pViewportManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 	ptCursor[4].x = x;
 	ptCursor[4].y = y;
 	pCamera->GetMouseRay(vPickRayOrig, vPickRayDir[4], ptCursor[4], nWidth, nHeight, &matWorld);

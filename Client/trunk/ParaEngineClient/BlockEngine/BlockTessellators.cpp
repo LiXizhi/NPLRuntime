@@ -603,6 +603,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
 	const bool bHasColorData = dwBlockColor!=Color::White;
 
+	int tileSize = m_pCurBlockTemplate->getTileSize();
+	float uvScale = (tileSize == 1) ? 1.0f : (1.0f / tileSize);
+
 	for (int face = 0; face < nFaceCount; ++face)
 	{
 		int nFirstVertex = face * 4;
@@ -670,6 +673,15 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 				if (bHasColorData)
 				{
 					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+				}
+
+				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_tiling))
+				{
+					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
+					Vector2 tran((float)(m_blockId_cs.x % tileSize), (float)(m_blockId_cs.z % tileSize));
+					float u,v;
+					vert->GetTexcoord(u,v);
+					vert->SetTexcoord((tran.x + u) * uvScale, (tran.y + v) * uvScale);
 				}
 			}
 			tessellatedModel.IncrementFaceCount(1);

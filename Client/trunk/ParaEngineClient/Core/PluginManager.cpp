@@ -13,6 +13,7 @@
 #include "FileManager.h"
 #include "util/os_calls.h"
 #include "util/regularexpression.h"
+#include "IParaEngineApp.h"
 #include "PluginManager.h"
 
 #include <boost/filesystem.hpp>
@@ -195,12 +196,21 @@ void DLLPlugInEntity::Init(const char* sFilename)
 				}
 			}
 		}
+		else
+		{
+			// also find dll in module directory. This could be a security problem.
+			std::string sFullPath = CGlobals::GetApp()->GetModuleDir();
+			sFullPath += sDLLPath;
+			if (CParaFile::DoesFileExist2(sFullPath.c_str(), FILE_ON_DISK))
+				sDLLPath = sFullPath;
+		}
 	}
+	
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
 	// if there is no slash in the file name, add './' to load only from the current directory. 
-	if (sDLLPath.find("\\/") == string::npos)
+	if (!CParaFile::IsAbsolutePath(sDLLPath))
 	{
 		sDLLPath = std::string("./") + sDLLPath;
 	}

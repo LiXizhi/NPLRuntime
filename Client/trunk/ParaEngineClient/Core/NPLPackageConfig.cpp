@@ -54,6 +54,16 @@ void ParaEngine::CNPLPackageConfig::SetMainFile(const std::string& val)
 	m_sMainFile = val;
 }
 
+const std::string& ParaEngine::CNPLPackageConfig::GetBootstrapper() const
+{
+	return m_sBootstrapper;
+}
+
+void ParaEngine::CNPLPackageConfig::SetBootstrapper(const std::string& val)
+{
+	m_sBootstrapper = val;
+}
+
 void ParaEngine::CNPLPackageConfig::open(const char* pBuffer, int nSize)
 {
 	m_bIsOpened = true;
@@ -72,7 +82,9 @@ void ParaEngine::CNPLPackageConfig::open(const char* pBuffer, int nSize)
 			auto sBootstrapper = packageConfig.GetField("bootstrapper");
 			if (sBootstrapper.GetType() == NPL::NPLObjectBase::NPLObjectType_String)
 			{
-				m_sBootstrapper = (const std::string&)sBootstrapper;
+				SetBootstrapper((const std::string&)sBootstrapper);
+				if(!GetBootstrapper().empty())
+					CBootStrapper::GetSingleton()->SetMainLoopFile(GetBootstrapper());
 			}
 		}
 

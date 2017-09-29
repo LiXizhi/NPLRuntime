@@ -172,13 +172,6 @@ namespace ParaEngine
 	class BlockModel
 	{
 	public:
-		enum FaceStatus
-		{
-			faceInvisiable = 0, 
-			faceVisiableNotSign, 
-			faceVisiableSigned
-		};
-
 		friend class BlockModelManager;
 		enum EdgeVertexFlag
 		{
@@ -315,6 +308,7 @@ namespace ParaEngine
 		/** load static model from parax file. */
 		void LoadModel(BlockTemplate* pTemplate, const std::string& filename, const Matrix4& mat, int nTextureIndex = 0);
 		void LoadModelByTexture(int32_t texFaceNum);
+		void LoadCubeModel();
 		/** load from known model name */
 		void LoadModel(const std::string& sModelName);
 		/** set the vertex in shadow as in ao calculation. 
@@ -328,10 +322,6 @@ namespace ParaEngine
 		unsigned char CalculateCubeVertexAOShadowLevel(int nIndex, uint32 aoFlags);
 
 		void SetVertexHeightScale(int nIndex, float scale);
-
-		void SetFaceVisiable(int nIndex);
-		void SetFaceUsed(int nIndex);
-		bool IsFaceNotUse(int nIndex);
 
 		//
 		//    LT  -----  RT
@@ -401,8 +391,6 @@ namespace ParaEngine
 		CShapeAABB m_shapeAABB;
 
 		friend class IBlockModelProvider;
-
-		FaceStatus m_faces[6];
 	};
 }
 

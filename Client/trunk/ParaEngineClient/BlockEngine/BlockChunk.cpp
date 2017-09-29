@@ -639,9 +639,9 @@ namespace ParaEngine
 	bool BlockChunk::IsNearbyChunksLoaded()
 	{
 		CBlockWorld* pWorld =  GetBlockWorld();
-		return (pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x - 16, m_minBlockId_ws.z) > 0 && 
+		return ((m_minBlockId_ws.x < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x - 16, m_minBlockId_ws.z) > 0) &&
 				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x + 16, m_minBlockId_ws.z) > 0 && 
-				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z-16) > 0 && 
+				(m_minBlockId_ws.z < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z-16) > 0) &&
 				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z+16) > 0);
 	}
 
@@ -694,11 +694,13 @@ namespace ParaEngine
 
 	std::vector<Uint16x3> BlockChunk::refreshBlockVisible(uint16_t blockTemplateId)
 	{
-		for (auto iter = m_blocks.begin(); iter != m_blocks.end(); ++iter)
+		for (unsigned int inx = 0; inx != m_blocks.size(); ++inx)
 		{
-			if (iter->GetTemplate() && iter->GetTemplate()->GetID() == blockTemplateId)
+			if (m_blocks[inx].GetTemplate() && m_blocks[inx].GetTemplate()->GetID() == blockTemplateId)
 			{
 				SetDirty(true);
+				Uint16x3 blockId_rs = GetBlockPosRs(inx);
+				m_ownerBlockRegion->CheckNeighborChunkDirty(blockId_rs);
 				break;
 			}
 		}
@@ -716,6 +718,7 @@ namespace ParaEngine
 				rets.push_back(blockId_rs);	
 			}
 		}
+
 		return rets;
 	}
 

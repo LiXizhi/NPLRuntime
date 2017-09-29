@@ -213,6 +213,10 @@ namespace ParaEngine
 
 	float CSceneObject::PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask)
 	{
+		if (!CGlobals::GetViewportManager())
+		{
+			return -1.f;
+		}
 		Matrix4 matWorld;
 		matWorld = Matrix4::IDENTITY;
 
@@ -338,11 +342,16 @@ namespace ParaEngine
 		int x = ptCursor.x;
 		int y = ptCursor.y;
 		int nWidth, nHeight;
-		CGlobals::GetViewportManager()->GetPointOnViewport(x, y, &nWidth, &nHeight);
+		
+		auto pManager = CGlobals::GetViewportManager();
+		if(pManager)
+			pManager->GetPointOnViewport(x, y, &nWidth, &nHeight);
 		ptCursor.x = x;
 		ptCursor.y = y;
 		Vector3 vPickRayOrig, vPickRayDir;
-		GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor,nWidth, nHeight, &matWorld);
+		auto pCamera = GetCurrentCamera();
+		if(pCamera)
+			pCamera->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor,nWidth, nHeight, &matWorld);
 
 		return PickObject(CShapeRay(vPickRayOrig+GetRenderOrigin(), vPickRayDir), pTouchedObject, fMaxDistance,pFnctFilter);
 	}
