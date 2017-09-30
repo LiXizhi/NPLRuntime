@@ -602,7 +602,7 @@ namespace ParaScripting
 		void AddAttachment(ParaAssetObject ModelAsset, int nAttachmentID);
 		void AddAttachment3(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID);
 		void AddAttachment4(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling);
-		void AddAttachment5(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture);
+		void AddAttachment5(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture,int replaceableTextureID=2);
 
 		/** get the attachment object's attribute field. */
 		ParaAttributeObject GetAttachmentAttObj(int nAttachmentID);

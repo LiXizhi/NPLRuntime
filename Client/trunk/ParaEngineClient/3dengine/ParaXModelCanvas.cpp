@@ -190,11 +190,11 @@ void CanvasAttachment::release()
 		delete this;
 }
 
-void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex)
+void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex,int replaceableTextureID)
 {
 	if (pTex)
 	{
-		texReplaceable = pTex;
+		texReplaceables[replaceableTextureID]= pTex;
 	}
 }
 
@@ -427,19 +427,24 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 
 		if (pModel)
 		{
-			if (texReplaceable)
+			for (auto const & tex_pair:texReplaceables)
 			{
-				pModel->replaceTextures[2] = texReplaceable.get();
+				pModel->replaceTextures[tex_pair.first] =tex_pair.second.get();
 			}
 			
 			pModel->draw(sceneState, materialParams);
+
+			for(auto const & tex_pair:texReplaceables)
+			{
+				pModel->replaceTextures[tex_pair.first]=nullptr;
+			}
 		}
 	}
 	if (m_pMeshObject)
 	{
-		if (texReplaceable)
+		for(auto const & tex_pair:texReplaceables)
 		{
-			m_pMeshObject->SetReplaceableTexture(2, texReplaceable.get());
+			m_pMeshObject->SetReplaceableTexture(tex_pair.first,tex_pair.second.get());
 		}
 		m_pMeshObject->DrawInner(sceneState, NULL, fCameraToObjectDist, materialParams);
 	}

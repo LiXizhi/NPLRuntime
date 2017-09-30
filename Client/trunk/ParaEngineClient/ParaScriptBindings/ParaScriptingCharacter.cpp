@@ -631,7 +631,7 @@ namespace ParaScripting
 		return ParaAttributeObject();
 	}
 
-	void ParaCharacter::AddAttachment5( ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture )
+	void ParaCharacter::AddAttachment5( ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture,int replaceableTextureID )
 	{
 		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
 		if(pChar!=0)
@@ -643,7 +643,7 @@ namespace ParaScripting
 			}
 			if( ModelAsset.m_pAsset->GetType() == AssetEntity::parax)
 			{
-				pChar->AddAttachment( (ParaXEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex);
+				pChar->AddAttachment( (ParaXEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex,replaceableTextureID);
 			}
 			else if( ModelAsset.m_pAsset->GetType() == AssetEntity::mesh)
 			{

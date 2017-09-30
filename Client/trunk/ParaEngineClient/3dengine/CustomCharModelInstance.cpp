@@ -1569,7 +1569,7 @@ void CharModelInstance::CastEffect(int nEffectID, int nAttachmentID, int nSlotID
 	}
 }
 
-void CharModelInstance::AddAttachment(ParaXEntity* pModelEntity, int nAttachmentID, int nSlotID, float fScaling, TextureEntity* pReplaceableTexture)
+void CharModelInstance::AddAttachment(ParaXEntity* pModelEntity, int nAttachmentID, int nSlotID, float fScaling, TextureEntity* pReplaceableTexture,int replaceableTextureID)
 {
 	if (pModelEntity == 0)
 	{
@@ -1583,7 +1583,7 @@ void CharModelInstance::AddAttachment(ParaXEntity* pModelEntity, int nAttachment
 		CanvasAttachment* pAtt = m_pModelCanvas->addAttachment(pModelEntity, nAttachmentID, nSlotID, fScaling);
 		if (pReplaceableTexture && pAtt)
 		{
-			pAtt->SetReplaceableTexture(pReplaceableTexture);
+			pAtt->SetReplaceableTexture(pReplaceableTexture,replaceableTextureID);
 		}
 	}
 }
