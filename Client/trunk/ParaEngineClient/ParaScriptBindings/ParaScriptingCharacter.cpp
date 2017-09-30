@@ -681,6 +681,19 @@ namespace ParaScripting
 		}
 	}
 
+	ParaParamBlock ParaCharacter::GetAttachmentParamBlock(int attachmentID,int slotID)
+	{
+		if(m_pCharacter)
+		{
+			CharModelInstance* pChar=m_pCharacter->GetCharModelInstance();
+			if(pChar!=0)
+			{
+				return ParaParamBlock(pChar->GetAttachmentParamBlock(attachmentID,slotID));
+			}
+		}
+		return ParaParamBlock();
+	}
+
 	void ParaCharacter::CastEffect(int nEffectID)
 	{
 		CastEffect2(nEffectID, "");

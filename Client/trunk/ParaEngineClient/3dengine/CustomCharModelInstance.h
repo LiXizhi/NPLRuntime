@@ -214,6 +214,7 @@ namespace ParaEngine
 
 		/** get attribute fields of the given attachment ID */
 		IAttributeFields * GetAttachmentAttObj(int nAttachmentID);
+		CParameterBlock * GetAttachmentParamBlock(int attachmentID,int slotID);
 
 		/**
 		* get the current replaceable texture by its ID.

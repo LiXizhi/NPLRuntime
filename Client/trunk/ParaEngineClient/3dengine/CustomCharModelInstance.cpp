@@ -1598,6 +1598,16 @@ IAttributeFields * CharModelInstance::GetAttachmentAttObj(int nAttachmentID)
 	return NULL;
 }
 
+CParameterBlock * ParaEngine::CharModelInstance::GetAttachmentParamBlock(int attachmentID,int slotID)
+{
+	CanvasAttachment* pAtt=m_pModelCanvas->GetChild(attachmentID,slotID);
+	if(pAtt)
+	{
+		return pAtt->GetParamBlock(true);
+	}
+	return nullptr;
+}
+
 
 void CharModelInstance::AddAttachment(MeshEntity* pModelEntity, int nAttachmentID, int nSlotID, float fScaling, TextureEntity* pReplaceableTexture)
 {

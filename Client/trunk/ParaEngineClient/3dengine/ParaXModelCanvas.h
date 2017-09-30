@@ -203,6 +203,8 @@ namespace ParaEngine
 		/** build the shadow volume */
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 
+		CParameterBlock * GetParamBlock(bool bCreateIfNotExist= false);
+
 	public:
 		/** child models */
 		std::vector< CanvasAttachmentPtr > children;
@@ -220,6 +222,8 @@ namespace ParaEngine
 
 		// a replaceable texture for use with the model on this attachment.
 		std::map<int,asset_ptr<TextureEntity> > texReplaceables;
+
+		CParameterBlock * m_pParamBlock;
 		
 
 		/// this id will be used to index into the parent model's attachment lookup table to find the

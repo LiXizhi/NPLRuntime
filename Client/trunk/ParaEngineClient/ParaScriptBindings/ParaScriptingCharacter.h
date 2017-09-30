@@ -614,6 +614,7 @@ namespace ParaScripting
 		*/
 		void RemoveAttachment(int nAttachmentID);
 		void RemoveAttachment2(int nAttachmentID, int nSlotID);
+		ParaParamBlock GetAttachmentParamBlock(int attachmentID,int slotID);
 
 		/** stop the biped if it is moving.*/
 		void Stop();
