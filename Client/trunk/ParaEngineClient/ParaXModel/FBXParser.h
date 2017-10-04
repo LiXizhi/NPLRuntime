@@ -1,9 +1,6 @@
 #pragma once
 
-#if defined(WIN32) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
-#ifndef SUPPORT_FBX_MODEL_FILE
-#define SUPPORT_FBX_MODEL_FILE
-#endif
+#ifdef SUPPORT_FBX_MODEL_FILE
 
 #include "XFileParser.h"
 #include "ParaXModel.h"

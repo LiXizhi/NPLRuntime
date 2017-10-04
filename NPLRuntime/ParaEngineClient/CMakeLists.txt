@@ -358,15 +358,20 @@ include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
+
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
-	include_directories("${Assimp_SOURCE_DIR}/include/")
-	include_directories("${Assimp_BINARY_DIR}/include")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
+
+if(NPLRUNTIME_SUPPORT_FBX)
+	include_directories("${Assimp_SOURCE_DIR}/include/")
+	include_directories("${Assimp_BINARY_DIR}/include")
+	ADD_DEFINITIONS(-DSUPPORT_FBX_MODEL_FILE)
+endif()
 
 IF(WIN32)
 	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
@@ -505,7 +510,6 @@ if (WIN32)
 			Wldap32
 			zlib
 			libcurl
-			assimp
   )
 else (WIN32)
 	if(APPLE)
@@ -537,6 +541,10 @@ else (WIN32)
 		)
 	endif(APPLE)
 endif (WIN32)
+
+if (NPLRUNTIME_SUPPORT_FBX)
+	set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} assimp)
+endif()
 
 # Link the executable to the libraries.
 target_link_libraries (ParaEngineClient
