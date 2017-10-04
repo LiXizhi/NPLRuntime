@@ -55,7 +55,9 @@ endif()
 # the following will build lua as dll, the reason for this, is that we need its pdb files for debugging using decoda (a lua debugger). 
 # plus it also makes core game engine update more granular. 
 IF(WIN32)
-	add_definitions(-DLUA_BUILD_AS_DLL)
+	if(NOT NPLRUNTIME_STATIC_LIB)
+		add_definitions(-DLUA_BUILD_AS_DLL)
+	endif()
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 	
 	# generate program database (PDB symbol files even in release build)
@@ -68,7 +70,9 @@ IF(WIN32)
 	
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})
 
-	SET(output_luafilename "lua51.dll")
+	if(NOT NPLRUNTIME_STATIC_LIB)
+		SET(output_luafilename "lua51.dll")
+	endif()
 ELSE(WIN32)
 	add_definitions(-DLUA_USE_LINUX)
 	ADD_LIBRARY(lua ${LUA_LIB_MODE} ${lua_SRCS})

@@ -22,7 +22,9 @@ include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 IF(WIN32)
+if(NOT NPLRUNTIME_STATIC_LIB)
 	add_definitions(-DLUA_BUILD_AS_DLL)
+endif()
 ENDIF(WIN32)
 
 IF(MSVC)
