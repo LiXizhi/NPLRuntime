@@ -2,6 +2,10 @@
 # Email: lixizhi@yeah.net
 # Date: 2016.4.30
 # Desc:
+# Output variables:
+# - ${NPLRUNTIME_LINK_LIBRARIES} contains link libraries, including the NPLRuntime itself.
+# - ${NPLRUNTIME_LINK_DIRECTORIES} contains all link directories.
+
 project (ParaEngineClient)
 
 set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
@@ -21,13 +25,12 @@ if (WIN32)
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
 
-
 if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
 	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
 
 	include_directories( ${DIRECTX_INCLUDE_DIR} )
-	link_directories (${DIRECTX_LIBRARY_DIR})
+	set(NPLRUNTIME_LINK_DIRECTORIES ${DIRECTX_LIBRARY_DIR})
 	set(GRAPHIC_LIBRARIES
 			comctl32.lib
 			d3dxof.lib
@@ -307,9 +310,12 @@ if(APPLE)
 	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
 
 
-	link_directories("${Ex_Dir}/png/prebuilt/mac")
-	link_directories("${Ex_Dir}/jpeg/prebuilt/mac")
-	link_directories("${Ex_Dir}/freetype2/prebuilt/mac")
+	set(NPLRUNTIME_LINK_DIRECTORIES 
+		"${Ex_Dir}/png/prebuilt/mac"
+		"${Ex_Dir}/jpeg/prebuilt/mac"
+		"${Ex_Dir}/freetype2/prebuilt/mac"
+		)
+
 	set(WRAPPER_LIB
 		libpng.a
 		libjpeg.a
@@ -395,7 +401,11 @@ ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
-ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+if(NPLRUNTIME_STATIC_LIB)
+	ADD_DEFINITIONS(-DNPLRUNTIME_STATICLIB)
+else()
+	ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+endif()
 ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
@@ -472,6 +482,7 @@ ELSE()
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
 
+link_directories(${NPLRUNTIME_LINK_DIRECTORIES})
 
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
@@ -546,13 +557,20 @@ if (NPLRUNTIME_SUPPORT_FBX)
 	set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} assimp)
 endif()
 
-# Link the executable to the libraries.
-target_link_libraries (ParaEngineClient
-	sqlite lua jsoncpp tinyxpath luabind
+set(NPLRUNTIME_LINK_LIBRARIES sqlite lua jsoncpp tinyxpath luabind
 	${GRAPHIC_LIBRARIES}
 	${EXTRA_LIBRARIES}
 	${Boost_LIBRARIES}
 )
+
+# Link the executable to the libraries.
+target_link_libraries(ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES})
+
+set(NPLRUNTIME_LINK_LIBRARIES ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES})
+
+# export these two variables to its parent scope just in case some app project reference NPLRuntime statically. 
+set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
+set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
 
 ADD_CUSTOM_COMMAND(
    TARGET ParaEngineClient

@@ -130,3 +130,7 @@ if(NPLRUNTIME_STATIC_LIB)
 else()	
 	add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${CLIENT_BINARY_DIR}/NPLMono/NPLMono2)
 endif()
+
+# export these two variables to its parent scope just in case some app project reference NPLRuntime statically. 
+set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
+set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
