@@ -12,7 +12,7 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	if(PARAENGINE_CLIENT_DLL)
+	if(PARAENGINE_CLIENT_DLL OR NPLRUNTIME_STATIC_LIB)
 		set(PARAENGINE_COMPILE_LIB    true)
 		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
 	else()
@@ -20,6 +20,7 @@ if (WIN32)
 	endif()
 	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
 endif (WIN32)
+
 
 if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
@@ -469,7 +470,14 @@ ENDIF()
 
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
-	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+
+	if(NPLRUNTIME_STATIC_LIB)
+		SET(NPLRUNTIME_LIB_MODE "STATIC")
+	else()
+		SET(NPLRUNTIME_LIB_MODE "SHARED")
+	endif()
+
+	add_library(ParaEngineClient ${NPLRUNTIME_LIB_MODE} ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable

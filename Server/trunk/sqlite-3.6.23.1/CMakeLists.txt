@@ -79,7 +79,13 @@ ELSE(WIN32)
 	
 ENDIF(WIN32)
 
-ADD_LIBRARY(sqlite SHARED ${sqlite_SRCS})
+if(SQLITE_STATICLIB)
+	SET(SQLITE_LIB_MODE "STATIC")
+else()
+	SET(SQLITE_LIB_MODE "SHARED")
+endif()
+
+ADD_LIBRARY(sqlite ${SQLITE_LIB_MODE} ${sqlite_SRCS})
 
 
 # set(TEST_DIR "D:/code/npl/TableDB/")
