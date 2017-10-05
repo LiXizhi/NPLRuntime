@@ -88,7 +88,7 @@ if (NPLRUNTIME_LUA51)
 	add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${CLIENT_BINARY_DIR}/lua-5.1.4)
 endif()
 if(NPLRUNTIME_LUAJIT20)
-	add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT-2.0.4 ${CLIENT_BINARY_DIR}/LuaJIT-2.0.4)
+	add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${CLIENT_BINARY_DIR}/LuaJIT)
 endif()
 
 add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${CLIENT_BINARY_DIR}/luabind-0.9)
