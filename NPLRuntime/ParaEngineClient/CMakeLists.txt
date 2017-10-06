@@ -8,6 +8,9 @@
 
 project (ParaEngineClient)
 
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
+
 set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
 # The version number.
@@ -150,6 +153,7 @@ SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
 
+set(EmbeddedResource_FILES)
 
 if(DIRECTX_FOUND)
 	#####################################
@@ -179,19 +183,28 @@ if(DIRECTX_FOUND)
 	# custom build rules: effect FX files
 	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 		get_filename_component(src_filename ${src_file} NAME_WE)
-		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
 		add_custom_command(
-			OUTPUT "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo"
-			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${src_file}
+			OUTPUT ${out_file}
+			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
 			# uncomment the following line if you want to see the text output to debug shader instructions.
 			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
 			DEPENDS ${src_file}
 			COMMENT "fxc compile: ${src_file}"
 			)
+
+		embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		list(APPEND EmbeddedResource_FILES ${MyResource})
+
 	endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
 	set_source_files_properties(${ParaEngineClient_SHADER_BIN_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
+
+	message(WARNING ${EmbeddedResource_FILES})
+	list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+	SOURCE_GROUP("ResEmbeded" FILES ${EmbeddedResource_FILES})
 
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)

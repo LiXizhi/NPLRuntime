@@ -13,10 +13,12 @@ Then add to your CMakeLists.txt for your project:
     include_directories(lib/embed-resource)
     add_subdirectory(lib/embed-resource)
 
-Now you can add your resources, by calling the provided `embed_resources()` function in your
+Now you can add your resources, by calling the provided `embed_resources()` or `embed_resources_abs()` function in your
 CMakeLists.txt file:
 
     embed_resources(MyResources shaders/vertex.glsl shaders/frag.glsl)
+	embed_resources_abs(MyResources absolute_filename)
+
 
 Then link to your binary by adding the created variable to your add_executable statement:
 
