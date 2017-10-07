@@ -8,18 +8,15 @@
 //-----------------------------------------------------------------------------
 
 #include "ParaEngine.h"
-#include "IO/FileUtils.h"
-#include "embedresource.h"
+#include "IO/ResourceEmbedded.h"
+
 
 using namespace ParaEngine;
 
-#define ADD_RESOURCE(NAME, FILENAME)   {Resource res = LOAD_RESOURCE(FILENAME); ParaEngine::CFileUtils::AddEmbeddedResource(NAME, res.data(), res.size());}
-
-/** only loaded*/
-class CStaticInitRes
+namespace ParaEngine 
 {
-public:
-	CStaticInitRes() {
+	/** only loaded*/
+	CStaticInitRes::CStaticInitRes() {
 #if defined(USE_DIRECTX_RENDERER) && defined(NPLRUNTIME_STATICLIB)
 		ADD_RESOURCE(":IDR_PARAXTEMPLATE", ParaXmodel_templates);
 		ADD_RESOURCE(":IDR_FX_OCEANWATER", ocean_water_fxo);
@@ -53,9 +50,14 @@ public:
 		ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fxo);
 #endif
 	}
-};
 
-static CStaticInitRes _embedded_resource;
+	CStaticInitRes& CStaticInitRes::StaticInit(){
+		static CStaticInitRes _embedded_resource;
+		return _embedded_resource;
+	}
+}
+
+
 
 
 

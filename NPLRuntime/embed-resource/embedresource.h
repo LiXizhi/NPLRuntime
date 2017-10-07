@@ -1,6 +1,6 @@
 // LiXizhi modified from https://github.com/cyrilcode/embed-resource
 #pragma once
-#include <cstddef>
+#include <string>
 
 namespace ParaEngine
 {
@@ -23,6 +23,6 @@ namespace ParaEngine
 	};
 }
 #define LOAD_RESOURCE(RESOURCE) ([]() {                      \
-        extern const char _resource_##RESOURCE[]; extern const size_t _resource_##RESOURCE##_len;   \
-        return ParaEngine::Resource(_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
+        extern const unsigned char _resource_##RESOURCE[]; extern const size_t _resource_##RESOURCE##_len;   \
+        return ParaEngine::Resource((const char*)_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
     })()

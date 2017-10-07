@@ -35,6 +35,7 @@
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
+#include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
 
 using namespace ParaEngine;
@@ -149,6 +150,8 @@ const char * ParaEngine::CParaEngineAppBase::GetModuleDir()
 
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
+	CStaticInitRes::StaticInit();
+
 	SetCurrentInstance((CParaEngineApp*)this);
 
 	srand((unsigned long)time(NULL));

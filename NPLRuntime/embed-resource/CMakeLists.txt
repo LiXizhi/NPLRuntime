@@ -6,7 +6,7 @@ function(embed_resources out_var)
     set(result)
     foreach(in_f ${ARGN})
         file(RELATIVE_PATH src_f ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${in_f})
-        set(out_f "${PROJECT_BINARY_DIR}/${in_f}.c")
+        set(out_f "${PROJECT_BINARY_DIR}/${in_f}.cxx")
         add_custom_command(OUTPUT ${out_f}
                 COMMAND embed-resource ${out_f} ${src_f}
                 DEPENDS ${in_f}
@@ -24,7 +24,7 @@ function(embed_resources_abs out_var)
     foreach(in_f ${ARGN})
         set(src_f ${in_f})
 		get_filename_component(filename ${src_f} NAME)
-        set(out_f "${PROJECT_BINARY_DIR}/resource_embedded/${filename}.c")
+        set(out_f "${PROJECT_BINARY_DIR}/resource_embedded/${filename}.cxx")
 
         add_custom_command(OUTPUT ${out_f}
                 COMMAND embed-resource ${out_f} ${src_f}
