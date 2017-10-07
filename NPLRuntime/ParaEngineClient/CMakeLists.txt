@@ -202,9 +202,13 @@ if(DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
 
-	message(WARNING ${EmbeddedResource_FILES})
+	# embedded resource
+	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+
+	list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
 	list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
-	SOURCE_GROUP("ResEmbeded" FILES ${EmbeddedResource_FILES})
+	SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
