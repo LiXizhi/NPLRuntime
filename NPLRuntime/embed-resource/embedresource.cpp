@@ -28,8 +28,7 @@ int main(int argc, char** argv)
 
     boost::filesystem::ifstream ifs{src};
 
-    ofs << "#include <stdlib.h>" << endl;
-    ofs << "const char _resource_" << sym << "[] = {" << endl;
+    ofs << "extern const unsigned char _resource_" << sym << "[] = {" << endl;
 
     size_t lineCount = 0;
     while (!ifs.eof())
@@ -45,7 +44,7 @@ int main(int argc, char** argv)
 
 
     ofs << "};" << endl;
-    ofs << "const size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << ");";
+    ofs << "extern const size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << ");";
 
     return EXIT_SUCCESS;
 }
