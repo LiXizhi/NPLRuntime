@@ -27,6 +27,8 @@ int main(int argc, char** argv)
     boost::filesystem::ofstream ofs(dst);
 
     boost::filesystem::ifstream ifs(src, std::ios::binary);
+	
+	ofs << "#include <stdlib.h>" << endl;
 
     ofs << "extern const unsigned char _resource_" << sym << "[] = {" << endl;
 
