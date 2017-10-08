@@ -4,6 +4,9 @@
 # Desc: option modify PARAENGINE_COMPILE_LIB
 project (ParaEngineServer)
 
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
+
 set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
 # The version number.
@@ -87,6 +90,15 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_IO_FILES})
 #file (GLOB ParaEngineServer_Common_FILES ${CLIENT_SOURCE_DIR}/common/*.*)
 #SOURCE_GROUP("Externals\\CommonDirectX" FILES ${ParaEngineServer_Common_FILES})
 #list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Common_FILES})
+
+set(EmbeddedResource_FILES)
+# embedded resource
+embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
+list(APPEND EmbeddedResource_FILES ${MyResource})
+
+list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 ##############################
 file (GLOB ParaEngineServer_CurlLua_FILES ${CLIENT_SOURCE_DIR}/curllua/*.*)
