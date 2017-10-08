@@ -15,8 +15,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    path dst{argv[1]};
-    path src{argv[2]};
+    path dst(argv[1]);
+    path src(argv[2]);
 
     string sym = src.filename().string();
     replace(sym.begin(), sym.end(), '.', '_');
@@ -24,9 +24,9 @@ int main(int argc, char** argv)
 
     create_directories(dst.parent_path());
 
-    boost::filesystem::ofstream ofs{dst};
+    boost::filesystem::ofstream ofs(dst);
 
-    boost::filesystem::ifstream ifs{src};
+    boost::filesystem::ifstream ifs(src);
 
     ofs << "extern const unsigned char _resource_" << sym << "[] = {" << endl;
 
