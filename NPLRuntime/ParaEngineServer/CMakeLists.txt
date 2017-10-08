@@ -93,11 +93,11 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_IO_FILES})
 
 set(EmbeddedResource_FILES)
 # embedded resource
-embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
+embed_resources_abs(MyResource "${CLIENT_SOURCE_DIR}/res/ParaXmodel.templates")
 list(APPEND EmbeddedResource_FILES ${MyResource})
 
-list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
-list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+list(APPEND EmbeddedResource_FILES ${CLIENT_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineServer_SRCS ${EmbeddedResource_FILES})
 SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 ##############################
