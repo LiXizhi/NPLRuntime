@@ -12,6 +12,7 @@
 #include <boost/bind.hpp>
 #include "util/keyboard.h"
 #include "NPLRuntime.h"
+#include "INPLAcitvationFile.h"
 #include "ParaEngineAppImp.h"
 #include "ParaEngineService.h"
 
@@ -24,7 +25,7 @@ using namespace ParaEngine;
 ParaEngine::CParaEngineService * g_current_service_ptr = NULL;
 
 CParaEngineService::CParaEngineService()
-: m_main_timer(m_main_io_service), m_bQuit(false), m_pParaEngineApp(NULL), m_fElapsedTime(0.f), m_bAcceptKeyStroke(true)
+: m_main_timer(m_main_io_service), m_bQuit(false), m_pParaEngineApp(NULL), m_bAcceptKeyStroke(true)
 {
 	g_current_service_ptr = this;
 }
@@ -46,6 +47,32 @@ void CParaEngineService::AcceptKeyStroke(bool bAccept)
 	m_bAcceptKeyStroke = bAccept;
 }
 
+/** main loop handler define a INPLActivationFile handler in C++. 
+* a main loop file to make sure the FrameMove is called in the NPL thread instead of main thread
+*/
+class CNPLFile_ServerMainLoop : public NPL::INPLActivationFile
+{
+public:
+	CNPLFile_ServerMainLoop(CParaEngineApp* pParaEngineApp):m_pParaEngineApp(pParaEngineApp), m_fElapsedTime(0.f){};
+	
+	virtual NPL::NPLReturnCode OnActivate(NPL::INPLRuntimeState* pState){
+		if(m_pParaEngineApp)
+		{
+			m_fElapsedTime += (float)(MAIN_TIMER_DURATION / 1000.f);
+			if(m_pParaEngineApp->GetAppState() != ParaEngine::PEAppState_Exiting)
+			{
+				m_pParaEngineApp->FrameMove(m_fElapsedTime);
+			}
+		}
+		return NPL::NPL_OK;
+	};
+
+protected:
+	CParaEngineApp* m_pParaEngineApp;
+	/** number of seconds elapsed since the game engine start. */
+	float m_fElapsedTime;
+};
+	
 void CParaEngineService::handle_timeout(const boost::system::error_code& err)
 {
 	if (!err && !m_bQuit && m_pParaEngineApp!=0)
@@ -71,14 +98,13 @@ void CParaEngineService::handle_timeout(const boost::system::error_code& err)
 			}
 		}
 #endif
-
-		m_fElapsedTime += (float)(MAIN_TIMER_DURATION/1000.f);
-		if(m_pParaEngineApp->GetAppState() == ParaEngine::PEAppState_Exiting)
+		if (m_pParaEngineApp->GetAppState() == ParaEngine::PEAppState_Exiting)
 		{
 			StopService();
 			return;
 		}
-		m_pParaEngineApp->FrameMove(m_fElapsedTime);
+
+		ParaEngine::CGlobals::GetNPLRuntime()->GetMainState()->activate("ParaEngineService.cpp", "");
 
 		// continue with next activation. 
 		m_main_timer.expires_from_now(boost::chrono::milliseconds(MAIN_TIMER_DURATION));
@@ -219,7 +245,11 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 
 	// this makes the server more responsive to NPL messages. However, JGSL is still lagged. 
 	ParaEngine::CGlobals::GetNPLRuntime()->SetHostMainStatesInFrameMove(false);
-	
+
+	// a main loop file to make sure the FrameMove is called in the NPL thread instead of main thread
+	auto main_loop_file = new CNPLFile_ServerMainLoop(m_pParaEngineApp);
+	ParaEngine::CGlobals::GetNPLRuntime()->GetMainState()->RegisterFile("ParaEngineService.cpp", main_loop_file);
+
 	m_work_lifetime.reset(new boost::asio::io_service::work(m_main_io_service));
 	m_main_timer.expires_from_now(boost::chrono::milliseconds(50));
 	m_main_timer.async_wait(boost::bind(&CParaEngineService::handle_timeout, this, boost::asio::placeholders::error));
