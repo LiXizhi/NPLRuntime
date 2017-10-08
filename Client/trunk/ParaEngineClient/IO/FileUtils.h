@@ -1,5 +1,6 @@
 #pragma once
 #include "FileData.h"
+#include "FileHandle.h"
 #include <map>
 
 namespace ParaEngine
