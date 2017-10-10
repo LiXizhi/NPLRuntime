@@ -136,6 +136,9 @@ namespace ParaEngine
 		*/
 		static FileData GetResDataFromFile(const std::string& filename);
 
+		/** whether the resource file exist */
+		static bool DoesResFileExist(const std::string& filename);
+
 		/** add an embedded resource, the resource is usually from extern static const char* of the executable.
 		* Please note the data is never released. 
 		* we can obtain it by name with GetResDataFromFile

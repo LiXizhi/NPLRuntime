@@ -812,6 +812,17 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::strin
 	return data;
 }
 
+bool ParaEngine::CFileUtils::DoesResFileExist(const std::string& filename)
+{
+	FileData data = GetResDataFromFile(filename);
+	if (!data.isNull())
+	{
+		data.ReleaseOwnership();
+		return true;
+	}
+	return false;
+}
+
 void ParaEngine::CFileUtils::AddEmbeddedResource(const char* name, const char* buffer, size_t nSize)
 {
 	s_all_resources[name] = EmbeddedResource(buffer, nSize);
