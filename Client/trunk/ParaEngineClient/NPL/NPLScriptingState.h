@@ -172,6 +172,12 @@ namespace ParaScripting
 
 		/** set/get exported file module. */
 		int NPL_export(lua_State* L = 0);
+
+		/** NOT thread-safe:
+		* all loaded files mapping from filename to number of cached objects.
+		* If -1, it means that file is being loaded or something went wrong. 0 means no cached object.
+		*/
+		const std::map <std::string, int32>& GetLoadedFiles();
 	protected:
 
 		/** destroy the runtime state
