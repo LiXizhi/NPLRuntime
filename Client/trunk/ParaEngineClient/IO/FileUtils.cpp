@@ -104,6 +104,8 @@
 #endif
 #endif
 
+std::map<std::string, ParaEngine::CFileUtils::EmbeddedResource> ParaEngine::CFileUtils::s_all_resources;
+
 namespace ParaEngine
 {
 	std::string ParaEngine::CFileUtils::s_writepath;
@@ -778,6 +780,16 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::string& filename)
 {
 	FileData data;
+	// always search for code embedded data first
+	auto it = s_all_resources.find(filename);
+	if (it != s_all_resources.end())
+	{
+		size_t nSize = (size_t)(it->second.size());
+		char* buffer = (char*)(it->second.data());
+		data.SetOwnBuffer(buffer, nSize);
+		return data;
+	}
+
 #ifdef USE_COCOS_FILE_API
 	
 #elif defined(WIN32) && defined(PARAENGINE_CLIENT)
@@ -798,6 +810,22 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::strin
 	}
 #endif
 	return data;
+}
+
+bool ParaEngine::CFileUtils::DoesResFileExist(const std::string& filename)
+{
+	FileData data = GetResDataFromFile(filename);
+	if (!data.isNull())
+	{
+		data.ReleaseOwnership();
+		return true;
+	}
+	return false;
+}
+
+void ParaEngine::CFileUtils::AddEmbeddedResource(const char* name, const char* buffer, size_t nSize)
+{
+	s_all_resources[name] = EmbeddedResource(buffer, nSize);
 }
 
 std::string ParaEngine::CFileUtils::GetWritableFullPathForFilename(const std::string& filename)
@@ -1259,6 +1287,7 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	}
 #endif
 }
+
 
 bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nFront /*= false*/)
 {

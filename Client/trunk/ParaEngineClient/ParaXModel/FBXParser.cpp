@@ -6,7 +6,7 @@
 // Date:	2015.6
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined(WIN32) && (defined(USE_DIRECTX_RENDERER)  || defined(USE_OPENGL_RENDERER))
+#ifdef SUPPORT_FBX_MODEL_FILE
 #include "XFileHelper.h"
 #include "FBXParser.h"
 #include "assimp/Importer.hpp"

@@ -2,7 +2,14 @@
 # Email: lixizhi@yeah.net
 # Date: 2016.4.30
 # Desc:
+# Output variables:
+# - ${NPLRUNTIME_LINK_LIBRARIES} contains link libraries, including the NPLRuntime itself.
+# - ${NPLRUNTIME_LINK_DIRECTORIES} contains all link directories.
+
 project (ParaEngineClient)
+
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
 
 set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
@@ -12,7 +19,7 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	if(PARAENGINE_CLIENT_DLL)
+	if(PARAENGINE_CLIENT_DLL OR NPLRUNTIME_STATIC_LIB)
 		set(PARAENGINE_COMPILE_LIB    true)
 		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
 	else()
@@ -26,7 +33,7 @@ if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
 
 	include_directories( ${DIRECTX_INCLUDE_DIR} )
-	link_directories (${DIRECTX_LIBRARY_DIR})
+	set(NPLRUNTIME_LINK_DIRECTORIES ${DIRECTX_LIBRARY_DIR})
 	set(GRAPHIC_LIBRARIES
 			comctl32.lib
 			d3dxof.lib
@@ -146,6 +153,7 @@ SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
 
+set(EmbeddedResource_FILES)
 
 if(DIRECTX_FOUND)
 	#####################################
@@ -175,19 +183,32 @@ if(DIRECTX_FOUND)
 	# custom build rules: effect FX files
 	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 		get_filename_component(src_filename ${src_file} NAME_WE)
-		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
 		add_custom_command(
-			OUTPUT "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo"
-			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo" ${src_file}
+			OUTPUT ${out_file}
+			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
 			# uncomment the following line if you want to see the text output to debug shader instructions.
 			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
 			DEPENDS ${src_file}
 			COMMENT "fxc compile: ${src_file}"
 			)
+
+		embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		list(APPEND EmbeddedResource_FILES ${MyResource})
+
 	endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
 	set_source_files_properties(${ParaEngineClient_SHADER_BIN_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
+
+	# embedded resource
+	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+
+	list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
+	list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+	SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
@@ -306,9 +327,12 @@ if(APPLE)
 	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
 
 
-	link_directories("${Ex_Dir}/png/prebuilt/mac")
-	link_directories("${Ex_Dir}/jpeg/prebuilt/mac")
-	link_directories("${Ex_Dir}/freetype2/prebuilt/mac")
+	set(NPLRUNTIME_LINK_DIRECTORIES 
+		"${Ex_Dir}/png/prebuilt/mac"
+		"${Ex_Dir}/jpeg/prebuilt/mac"
+		"${Ex_Dir}/freetype2/prebuilt/mac"
+		)
+
 	set(WRAPPER_LIB
 		libpng.a
 		libjpeg.a
@@ -357,20 +381,27 @@ include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
+
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
-	include_directories("${Assimp_SOURCE_DIR}/include/")
-	include_directories("${Assimp_BINARY_DIR}/include")
 	include_directories("${CURL_SOURCE_DIR}/include/")
 	include_directories("${CURL_BINARY_DIR}/include/curl/")
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
 
+if(NPLRUNTIME_SUPPORT_FBX)
+	include_directories("${Assimp_SOURCE_DIR}/include/")
+	include_directories("${Assimp_BINARY_DIR}/include")
+	ADD_DEFINITIONS(-DSUPPORT_FBX_MODEL_FILE)
+endif()
+
 IF(WIN32)
 	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
 	ADD_DEFINITIONS(-D_PERFORMANCE_MONITOR)
-	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
+	if(NOT NPLRUNTIME_STATIC_LIB)
+		ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
+	endif()
 	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
 	ADD_DEFINITIONS(-DUSE_SCHANNEL)
 	ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
@@ -389,7 +420,13 @@ ENDIF(WIN32)
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
 ADD_DEFINITIONS(-DTIXML_USE_STL)
-ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+if(NPLRUNTIME_STATIC_LIB)
+	ADD_DEFINITIONS(-DNPLRUNTIME_STATICLIB)
+	ADD_DEFINITIONS(-DSQLITE_STATICLIB)
+	ADD_DEFINITIONS(-DCURL_STATICLIB)
+else()
+	ADD_DEFINITIONS(-DPE_CORE_EXPORTING)
+endif()
 ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
@@ -466,10 +503,18 @@ ELSE()
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
 ENDIF()
 
+link_directories(${NPLRUNTIME_LINK_DIRECTORIES})
 
 if (PARAENGINE_COMPILE_LIB)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
-	add_library(ParaEngineClient SHARED ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+
+	if(NPLRUNTIME_STATIC_LIB)
+		SET(NPLRUNTIME_LIB_MODE "STATIC")
+	else()
+		SET(NPLRUNTIME_LIB_MODE "SHARED")
+	endif()
+
+	add_library(ParaEngineClient ${NPLRUNTIME_LIB_MODE} ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
@@ -497,7 +542,6 @@ if (WIN32)
 			Wldap32
 			zlib
 			libcurl
-			assimp
   )
 else (WIN32)
 	if(APPLE)
@@ -530,13 +574,24 @@ else (WIN32)
 	endif(APPLE)
 endif (WIN32)
 
-# Link the executable to the libraries.
-target_link_libraries (ParaEngineClient
-	sqlite lua jsoncpp tinyxpath luabind
+if (NPLRUNTIME_SUPPORT_FBX)
+	set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} assimp)
+endif()
+
+set(NPLRUNTIME_LINK_LIBRARIES sqlite lua jsoncpp tinyxpath luabind
 	${GRAPHIC_LIBRARIES}
 	${EXTRA_LIBRARIES}
 	${Boost_LIBRARIES}
 )
+
+# Link the executable to the libraries.
+target_link_libraries(ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES})
+
+set(NPLRUNTIME_LINK_LIBRARIES ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES})
+
+# export these two variables to its parent scope just in case some app project reference NPLRuntime statically. 
+set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
+set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
 
 ADD_CUSTOM_COMMAND(
    TARGET ParaEngineClient
