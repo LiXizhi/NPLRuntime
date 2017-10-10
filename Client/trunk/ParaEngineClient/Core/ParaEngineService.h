@@ -67,8 +67,6 @@ namespace ParaEngine
 		/** accept key stroke */
 		bool m_bAcceptKeyStroke;
 
-		/** number of seconds elapsed since the game engine start. */
-		float m_fElapsedTime;
 		CParaEngineApp* m_pParaEngineApp;
 	};
 

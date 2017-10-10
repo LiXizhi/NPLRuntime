@@ -15,6 +15,7 @@
 #include "MemReadFile.h"
 #include <algorithm>
 #include "FileManager.h"
+#include "IO/FileUtils.h"
 #include "util/StringHelper.h"
 #include "util/regularexpression.h"
 
@@ -199,14 +200,6 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 	CArchive::Open(sArchiveName, nPriority);
 
 	string tempStr = m_filename;
-#ifdef WIN32
-	int nSize = (int)tempStr.size();
-	for(int i =0; i<nSize;i++)
-	{
-		if(tempStr[i] == '/')
-			tempStr[i] = '\\';
-	}
-#endif
 
 	const string sFileExt = CParaFile::GetFileExtension(tempStr);
 	if(sFileExt == "pkg")
@@ -214,14 +207,37 @@ bool CZipArchive::Open(const string& sArchiveName, int nPriority)
 		return OpenPkgFile(tempStr);
 	}
 
-	if( CParaFile::DoesFileExist(tempStr.c_str(), false, true))
+	DWORD dwFound = CParaFile::DoesFileExist2(tempStr.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH | FILE_ON_EXECUTABLE);
+	if(dwFound)
 	{
-		m_bOpened =  OpenZipFile(tempStr);
+		if (dwFound == FILE_ON_EXECUTABLE) 
+		{
+			FileData data = CFileUtils::GetResDataFromFile(tempStr.c_str());
+			if (!data.isNull())
+			{
+				m_bOpened = OpenMemFile(data.GetBytes(), data.GetSize(), false);
+				data.ReleaseOwnership();
+			}
+		}
+		else
+		{
+			m_bOpened = OpenZipFile(tempStr);
+		}
 	}
 	else
 	{
 		string pkgFile = CParaFile::ChangeFileExtension(tempStr, "pkg");
-		if (CParaFile::DoesFileExist(pkgFile.c_str(), false, true))
+		dwFound = CParaFile::DoesFileExist2(pkgFile.c_str(), FILE_ON_DISK | FILE_ON_SEARCH_PATH | FILE_ON_EXECUTABLE);
+		if (dwFound == FILE_ON_EXECUTABLE)
+		{
+			FileData data = CFileUtils::GetResDataFromFile(pkgFile.c_str());
+			if (!data.isNull())
+			{
+				m_bOpened = OpenMemFile(data.GetBytes(), data.GetSize(), false);
+				data.ReleaseOwnership();
+			}
+		}
+		else
 		{
 			m_bOpened =  OpenPkgFile(pkgFile);
 		}

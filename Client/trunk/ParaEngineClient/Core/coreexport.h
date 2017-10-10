@@ -5,7 +5,13 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#ifdef NPLRUNTIME_STATICLIB
+#define PE_CORE_DECL
+#define EXPIMP_TEMPLATE extern
+#else
+
 #ifdef WIN32
+
 
 #ifdef PE_CORE_EXPORTING
 #define PE_CORE_DECL    __declspec(dllexport)
@@ -14,6 +20,7 @@
 #define PE_CORE_DECL    __declspec(dllimport)
 #define EXPIMP_TEMPLATE extern
 #endif
+
 
 #else
 
@@ -24,6 +31,7 @@
 #else
 #define PE_CORE_DECL
 #define EXPIMP_TEMPLATE extern
+#endif
 #endif
 
 #endif

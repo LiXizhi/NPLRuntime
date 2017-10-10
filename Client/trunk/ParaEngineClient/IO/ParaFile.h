@@ -17,6 +17,7 @@ namespace ParaEngine
 		FILE_ON_DISK = 1,
 		FILE_ON_ZIP_ARCHIVE = 2,
 		FILE_ON_SEARCH_PATH = 4,
+		FILE_ON_EXECUTABLE = 8, // embedded resource file
 	};
 
 	/**

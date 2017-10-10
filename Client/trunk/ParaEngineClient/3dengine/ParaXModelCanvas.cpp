@@ -295,7 +295,7 @@ bool CanvasAttachment::animate(SceneState * sceneState, CharacterPose* pPose, bo
 	// CharacterPose* pPoseInfo=(m_bIsAutoCharacter)?pPose:NULL;
 	if (model != 0)
 	{
-		int nIndex = sceneState ? model->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
+		int nIndex = (sceneState && sceneState->IsLODEnabled()) ? model->GetLodIndex(sceneState->GetCameraToCurObjectDistance()) : 0;
 		CParaXModel* pModel = model->GetModel(nIndex);
 		if (pModel != NULL)
 		{
