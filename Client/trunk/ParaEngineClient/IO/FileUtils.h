@@ -1,5 +1,7 @@
 #pragma once
 #include "FileData.h"
+#include "FileHandle.h"
+#include <map>
 
 namespace ParaEngine
 {
@@ -36,6 +38,7 @@ namespace ParaEngine
 	class CFileUtils
 	{
 	public:
+
 		/* remove the starting and trailing spaces ' ' from the string */
 		static void TrimString(std::string & str);
 
@@ -128,10 +131,20 @@ namespace ParaEngine
 		static bool GetFileInfo(const char* filename, CParaFileInfo& fileInfo);
 
 		/** data need not be released, since it is from the resource file. 
-		* only supported in win32
+		* resources may be embedded with rc file under win32 and added using AddEmbeddedResource API.
 		* @return Note one must call FileData.ReleaseOwnership(). 
 		*/
 		static FileData GetResDataFromFile(const std::string& filename);
+
+		/** whether the resource file exist */
+		static bool DoesResFileExist(const std::string& filename);
+
+		/** add an embedded resource, the resource is usually from extern static const char* of the executable.
+		* Please note the data is never released. 
+		* we can obtain it by name with GetResDataFromFile
+		* @param name: should begin with ":" to designate it is a resource file
+		*/
+		static void AddEmbeddedResource(const char* name, const char* buffer, size_t nSize);
 
 		/** get fullPath for filename*/
 		static std::string GetFullPathForFilename(const std::string &filename);
@@ -207,6 +220,30 @@ namespace ParaEngine
 	public:
 		// this is usually /mnt/sdcard/XXX/ in android. 
 		static std::string s_writepath;
+
+	private:
+		/** embedded resource */
+		struct EmbeddedResource 
+		{
+		public:
+			EmbeddedResource():resource_data(0), data_len(0) {}
+			EmbeddedResource(const char* start, size_t len) : resource_data(start), data_len(len) {}
+
+			const char * const &data() const { return resource_data; }
+			const size_t &size() const { return data_len; }
+
+			const char *begin() const { return resource_data; }
+			const char *end() const { return resource_data + data_len; }
+
+			std::string toString() { return std::string(data(), size()); }
+
+		private:
+			const char* resource_data;
+			size_t data_len;
+		};
+
+		// all embedded resources
+		static std::map<std::string, EmbeddedResource> s_all_resources;
 	};
 
 	

@@ -54,6 +54,58 @@ buffers sizes on the order of 128K or 256K bytes should be used. */
 
 namespace ParaScripting
 {
+
+	// only used in NPL::GetStats
+	struct NPL_GetNidsStr_Iterator : public NPL::CNPLConnectionManager::NPLConnectionCallBack
+	{
+	public:
+		NPL_GetNidsStr_Iterator() { m_nids_str.reserve(500); }
+
+		virtual int DoCallBack(const NPL::NPLConnection_ptr& c)
+		{
+			if (c->IsAuthenticated())
+			{
+				const std::string& sNid = c->GetNID();
+				if (!sNid.empty())
+				{
+					m_nids_str += sNid;
+					m_nids_str += ",";
+				}
+			}
+			return 0;
+		};
+		const std::string& ToString() { return m_nids_str; }
+
+	private:
+		std::string m_nids_str;
+	};
+
+	// only used in NPL::GetStats
+	struct NPL_GetNidsArray_Iterator : public NPL::CNPLConnectionManager::NPLConnectionCallBack
+	{
+	public:
+		NPL_GetNidsArray_Iterator(luabind::object& nids_array) :m_nids_array(nids_array), m_nCount(0) {}
+
+		virtual int DoCallBack(const NPL::NPLConnection_ptr& c)
+		{
+			if (c->IsAuthenticated())
+			{
+				const std::string& sNid = c->GetNID();
+				if (!sNid.empty())
+				{
+					++m_nCount;
+					m_nids_array[m_nCount] = sNid;
+				}
+			}
+			return 0;
+		};
+
+		luabind::object& GetNidArray() { return m_nids_array; }
+	private:
+		luabind::object& m_nids_array;
+		int m_nCount;
+	};
+
 	//////////////////////////////////////////////////////////////////////////
 	//
 	// NPL 
@@ -1603,94 +1655,10 @@ namespace ParaScripting
 		}
 	}
 
-	// only used in NPL::GetStats
-	struct NPL_GetNidsStr_Iterator : public NPL::CNPLConnectionManager::NPLConnectionCallBack
-	{
-	public:
-		NPL_GetNidsStr_Iterator(){m_nids_str.reserve(500);}
-
-		virtual int DoCallBack(const NPL::NPLConnection_ptr& c) 
-		{
-			if(c->IsAuthenticated())
-			{
-				const std::string& sNid = c->GetNID();
-				if(!sNid.empty())
-				{
-					m_nids_str += sNid;
-					m_nids_str += ",";
-				}
-			}
-			return 0;
-		};
-		const std::string& ToString() {return m_nids_str;}
-
-	private:
-		std::string m_nids_str;
-	};
-
-	// only used in NPL::GetStats
-	struct NPL_GetNidsArray_Iterator : public NPL::CNPLConnectionManager::NPLConnectionCallBack
-	{
-	public:
-		NPL_GetNidsArray_Iterator(luabind::object& nids_array):m_nids_array(nids_array), m_nCount(0){}
-
-		virtual int DoCallBack(const NPL::NPLConnection_ptr& c) 
-		{
-			if(c->IsAuthenticated())
-			{
-				const std::string& sNid = c->GetNID();
-				if(!sNid.empty())
-				{
-					++ m_nCount;
-					m_nids_array[m_nCount] = sNid;
-				}
-			}
-			return 0;
-		};
-
-		luabind::object& GetNidArray() {return m_nids_array;}
-	private:
-		luabind::object& m_nids_array;
-		int m_nCount;
-	};
-
 	luabind::object CNPL::GetStats(const object& input)
 	{
-		int nType = type(input);
-		luabind::object output = luabind::newtable(input.interpreter());
-
-		if(nType == LUA_TTABLE)
-		{
-			for (luabind::iterator itCur(input), itEnd; itCur!=itEnd; ++itCur)
-			{
-				// we only serialize item with a string key
-				const object& key = itCur.key();
-				if(type(key) == LUA_TSTRING)
-				{
-					std::string sFieldName = object_cast<const char*>(key);
-					if(sFieldName == "connection_count")
-					{
-						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().get_connection_count();
-						output[sFieldName] = nConnCount;
-					}
-					else if(sFieldName == "nids_str")
-					{
-						NPL_GetNidsStr_Iterator iter;
-						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().ForEachConnection(&iter);
-						output[sFieldName] = iter.ToString();
-					}
-					else if(sFieldName == "nids")
-					{
-						luabind::object nids_array = luabind::newtable(input.interpreter());
-						NPL_GetNidsArray_Iterator iter(nids_array);
-						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().ForEachConnection(&iter);
-						output[sFieldName] = iter.GetNidArray();
-					}
-				}
-			}
-			
-		}
-		return output;
+		ParaNPLRuntimeState main_state(CGlobals::GetNPLRuntime()->GetMainRuntimeState());
+		return main_state.GetStats(input);
 	}
 
 #pragma region NPL Runtime State
@@ -1718,9 +1686,52 @@ namespace ParaScripting
 		return true;
 	}
 
-	luabind::object ParaNPLRuntimeState::GetStats( const object& inout )
+	luabind::object ParaNPLRuntimeState::GetStats( const object& input )
 	{
-		return object(inout);
+		int nType = type(input);
+		luabind::object output = luabind::newtable(input.interpreter());
+
+		if (nType == LUA_TTABLE)
+		{
+			for (luabind::iterator itCur(input), itEnd; itCur != itEnd; ++itCur)
+			{
+				// we only serialize item with a string key
+				const object& key = itCur.key();
+				if (type(key) == LUA_TSTRING)
+				{
+					std::string sFieldName = object_cast<const char*>(key);
+					if (sFieldName == "connection_count")
+					{
+						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().get_connection_count();
+						output[sFieldName] = nConnCount;
+					}
+					else if (sFieldName == "nids_str")
+					{
+						NPL_GetNidsStr_Iterator iter;
+						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().ForEachConnection(&iter);
+						output[sFieldName] = iter.ToString();
+					}
+					else if (sFieldName == "nids")
+					{
+						luabind::object nids_array = luabind::newtable(input.interpreter());
+						NPL_GetNidsArray_Iterator iter(nids_array);
+						int nConnCount = CGlobals::GetNPLRuntime()->GetNetServer()->GetConnectionManager().ForEachConnection(&iter);
+						output[sFieldName] = iter.GetNidArray();
+					}
+					else if (sFieldName == "loadedfiles")
+					{
+						luabind::object files_map = luabind::newtable(input.interpreter());
+						for(auto item : m_rts->GetLoadedFiles())
+						{
+							files_map[item.first] = item.second;
+						}
+						output[sFieldName] = files_map;
+					}
+				}
+			}
+
+		}
+		return output;
 	}
 
 	ParaNPLRuntimeState::ParaNPLRuntimeState()

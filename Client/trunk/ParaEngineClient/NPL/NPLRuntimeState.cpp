@@ -333,6 +333,13 @@ int NPL::CNPLRuntimeState::ProcessMsg(NPLMessage_ptr msg)
 	{
 		return FrameMoveTick();
 	}
+	else if (msg->m_type == MSG_TYPE_FILE_LOAD)
+	{
+		auto pFileState = GetNeuronFileState(msg->m_filename, false);
+		if (!pFileState) {
+			LoadFile_any(msg->m_filename, false, 0, true);
+		}
+	}
 	else if (msg->m_type == MSG_TYPE_RESET)
 	{
 		Reset_Imp();
@@ -825,6 +832,15 @@ NPL::NPLReturnCode NPL::CNPLRuntimeState::Activate_async(const string & filepath
 			msg->m_code = code;
 		}
 	}
+	// insert to the input message queue
+	return Activate_async(msg, priority);
+}
+
+NPL::NPLReturnCode NPL::CNPLRuntimeState::Loadfile_async(const string & filepath, int priority /*= 0*/)
+{
+	NPLMessage_ptr msg(new NPLMessage());
+	msg->m_filename = filepath;
+	msg->m_type = NPL::MSG_TYPE_FILE_LOAD;
 	// insert to the input message queue
 	return Activate_async(msg, priority);
 }

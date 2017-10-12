@@ -160,10 +160,10 @@ namespace ParaEngine
 		*/
 		static std::string sha1(const std::string& source, bool bBinary = false);
 
-		/*
-			convert the base64 of the input source string.
-		*/
+		/** convert the base64 of the input source string. */
 		static std::string base64(const std::string& source);
+		/** return unbase64 of the input source string. */
+		static std::string unbase64(const std::string& source);
 
 
 

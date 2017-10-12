@@ -639,9 +639,9 @@ namespace ParaEngine
 	bool BlockChunk::IsNearbyChunksLoaded()
 	{
 		CBlockWorld* pWorld =  GetBlockWorld();
-		return (pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x - 16, m_minBlockId_ws.z) > 0 && 
+		return ((m_minBlockId_ws.x < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x - 16, m_minBlockId_ws.z) > 0) &&
 				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x + 16, m_minBlockId_ws.z) > 0 && 
-				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z-16) > 0 && 
+				(m_minBlockId_ws.z < 16 || pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z-16) > 0) &&
 				pWorld->GetChunkColumnTimeStamp(m_minBlockId_ws.x, m_minBlockId_ws.z+16) > 0);
 	}
 

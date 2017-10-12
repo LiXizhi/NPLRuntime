@@ -603,6 +603,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
 	const bool bHasColorData = dwBlockColor!=Color::White;
 
+	int tileSize = m_pCurBlockTemplate->getTileSize();
+	float uvScale = (tileSize == 1) ? 1.0f : (1.0f / tileSize);
+
 	for (int face = 0; face < nFaceCount; ++face)
 	{
 		int nFirstVertex = face * 4;
@@ -611,9 +614,6 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 
 		if (!pCurBlock || (pCurBlock->GetTemplate()->GetLightOpacity() < 15))
 		{
-			int tileSize = m_pCurBlockTemplate->getTileSize();
-			float uvScale = 1.0f / tileSize;
-
 			for (int v = 0; v < 4; ++v)
 			{
 				int i = nFirstVertex + v;

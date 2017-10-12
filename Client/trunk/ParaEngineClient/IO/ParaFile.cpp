@@ -329,6 +329,13 @@ int32 CParaFile::DoesFileExist2(const char* filename, uint32 dwWhereToSearch /*=
 			}
 		}
 	}
+	if (!dwFoundPlace && (dwWhereToSearch & FILE_ON_EXECUTABLE) > 0)
+	{
+		if (CFileUtils::DoesResFileExist(filename))
+		{
+			dwFoundPlace = FILE_ON_EXECUTABLE;
+		}
+	}
 	return dwFoundPlace;
 }
 
@@ -839,7 +846,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 
 	if (bReadyOnly)
 	{
-		if (!(!m_filename.empty() && m_filename[0] == ':'))
+		if (!(!m_filename.empty() && m_filename[0] == ':') && ((dwWhereToOpen & FILE_ON_EXECUTABLE) == 0))
 		{
 			BOOL succ = FALSE;
 			/// for ready-only file, we will read everything in to the buffer, and close the file handle
@@ -928,8 +935,10 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		}
 		else
 		{
-			/** If the file name begins with ':', it is treated as a win32 resource.
-			e.g.":IDR_FX_OCEANWATER". loads data from a resource of type "TEXTFILE". See MSDN for more information about Windows resources.*/
+			/** If the file name begins with ':' or FILE_ON_EXECUTABLE is specified, it is treated as a win32 resource.
+			e.g.":IDR_FX_OCEANWATER". loads data from a resource of type "TEXTFILE". See MSDN for more information about Windows resources.
+			we also support C++ embedded binary file as external global variables in this way. 
+			*/
 			m_eof = true;
 			FileData data = CFileUtils::GetResDataFromFile(filename);
 			if (!data.isNull())

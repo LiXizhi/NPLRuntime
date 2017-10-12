@@ -449,6 +449,11 @@ void ParaScripting::CNPLScriptingState::SetFileLoadStatus(const string& filepath
 	}
 }
 
+const std::map <std::string, int32>& ParaScripting::CNPLScriptingState::GetLoadedFiles()
+{
+	return m_loaded_files;
+}
+
 void ParaScripting::CNPLScriptingState::PushFileName(const string& filename)
 {
 	m_stack_current_file.push(filename);

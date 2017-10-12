@@ -2003,13 +2003,6 @@ void CAutoCamera::HandleUserInput()
 						m_nMouseWheelDelta  = (int)pMsg->lParam/120;
 						m_nForceNoRollbackFrames = 1;
 					}
-
-					MouseEvent mouse_wheel_event(0,0,0, -1);
-					mouse_wheel_event.m_MouseState = pMsg->message;
-					mouse_wheel_event.m_x = (int)pMsg->lParam/120;
-					mouse_wheel_event.m_y = 0;
-					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
-					CGlobals::GetEventsCenter()->FireEvent(mouse_wheel_event);
 				}
 			}
 

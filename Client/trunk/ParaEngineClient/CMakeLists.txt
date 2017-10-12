@@ -229,6 +229,14 @@ SOURCE_GROUP("Shader Files\\Headers Files" FILES ${ParaEngineClient_SHADER_HEADE
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES} ${ParaEngineClient_SHADER_HEADER_FILES})
 
 ##############################
+# embedded resource 
+set(EmbeddedResource_FILES)
+list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
+
+
+##############################
 # util files
 file (GLOB ParaEngineClient_UTIL_FILES ${PROJECT_SOURCE_DIR}/util/*.h ${PROJECT_SOURCE_DIR}/util/*.cpp ${PROJECT_SOURCE_DIR}/util/*.hpp ${PROJECT_SOURCE_DIR}/util/*.c)
 SOURCE_GROUP("util" FILES ${ParaEngineClient_UTIL_FILES})

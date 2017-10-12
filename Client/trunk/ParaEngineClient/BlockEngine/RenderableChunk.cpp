@@ -435,7 +435,7 @@ namespace ParaEngine
 
 	BlockChunk* RenderableChunk::GetChunk()
 	{
-		if (m_regionX > 0 && m_pWorld)
+		if (m_regionX >= 0 && m_pWorld)
 		{
 			BlockRegion * pOwnerBlockRegion = m_pWorld->GetRegion(m_regionX, m_regionZ);
 			if(pOwnerBlockRegion)

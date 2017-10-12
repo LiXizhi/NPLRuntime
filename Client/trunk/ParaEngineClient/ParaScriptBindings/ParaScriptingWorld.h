@@ -443,6 +443,12 @@ namespace ParaScripting
 		* @param nTileDimension: dimension of the tile matrix. default is 64, which is has 64*64 tiles
 		*/
 		static string NewEmptyWorld(const char* sWorldName=NULL, float fTileSize=533.3333f, int nTileDimension=64 );
+
+		/**
+		* create a raw terrain file
+		*/
+		static bool CreateRawTerrainFile(const char* sFilename, float fHeight = 0.f, int nDimension = 129);
+
 		/** solely used for exporting*/
 		static const char* NewEmptyWorld_(const char* sWorldName=NULL, float fTileSize=533.3333f, int nTileDimension=64 );
 

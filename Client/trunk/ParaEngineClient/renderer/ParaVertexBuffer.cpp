@@ -69,7 +69,9 @@ bool ParaEngine::ParaVertexBuffer::CreateIndexBuffer(uint32 nBufferSize, DWORD d
 	m_bufferType = BufferType_IndexBuffer;
 	m_nBufferSize = nBufferSize;
 #ifdef USE_DIRECTX_RENDERER
-	return SUCCEEDED(CGlobals::GetRenderDevice()->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
+	auto ret = SUCCEEDED(CGlobals::GetRenderDevice()->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
+
+	return ret;
 #elif defined(USE_OPENGL_RENDERER)
 	glGenBuffers(1, &m_vertexBuffer);
 	PE_CHECK_GL_ERROR_DEBUG();

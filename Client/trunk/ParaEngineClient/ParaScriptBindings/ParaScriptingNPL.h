@@ -69,9 +69,16 @@ namespace ParaScripting
 		void Reset1(const char* onResetScode);
 
 		/**
-		* TODO: get statistics about this runtime environment. 
+		* get statistics about this runtime environment.
+		* e.g. local stats = NPL.GetStats({connection_count = true, nids_str=true, nids = true});
+		* @param input: this should be a table containing mapping from string to true. function will return a new table by replacing true with the actual data. such as {["connection_count"] = true, ["nids_str"] = true }, supported fields are
+		*  "connection_count" : total connection.
+		*  "nids_str": commar separated list of nids.
+		*  "nids": a table array of nids
+		*  "loadedfiles": a table array of loaded files in the current NPL runtime state
+		* @return {connection_count = 10, nids_str="101,102,"}
 		*/
-		object GetStats(const object& inout);
+		object GetStats(const object& input);
 
 		/** Get the current number of messages in the input message queue. Sometimes, a monitor or dispatcher logics may need to know the queue size of all NPL runtime states. 
 		* and a dispatcher will usually need to add new messages to the NPL state with smallest queue size. 
@@ -385,6 +392,7 @@ namespace ParaScripting
 		*  "connection_count" : total connection. 
 		*  "nids_str": commar separated list of nids.  
 		*  "nids": a table array of nids
+		*  "loadedfiles": a table array of loaded files in the current NPL runtime state
 		* @return {connection_count = 10, nids_str="101,102,"}
 		*/
 		static object GetStats(const object& inout);

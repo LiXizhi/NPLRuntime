@@ -21,6 +21,8 @@ namespace NPL
 		MSG_TYPE_EXIT,
 		/// frame move tick
 		MSG_TYPE_TICK,
+		/// load without activation
+		MSG_TYPE_FILE_LOAD,
 	};
 
 	/** an NPL message in the message queue.
