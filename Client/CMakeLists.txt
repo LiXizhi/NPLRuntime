@@ -17,8 +17,10 @@ option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
 
 if (WIN32)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
+	option(NPLRUNTIME_DIRECTX_RENDERER "use openGL or directX renderer" ON)
 else()
 	option(NPLRUNTIME_PHYSICS "include physics" OFF)
+	option(NPLRUNTIME_DIRECTX_RENDERER "use openGL or directX renderer" OFF)
 endif()
 
 # using static lib for other modules if main NPLRuntime is built as static lib. 
