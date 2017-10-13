@@ -76,6 +76,15 @@ if (WIN32)
 	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.3)
   
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
+
+	if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+		option(GLFW_BUILD_DOCS OFF)
+		option(GLFW_BUILD_EXAMPLES OFF)
+		option(GLFW_BUILD_TESTS OFF)
+		option(GLFW_INSTALL OFF)
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${CLIENT_BINARY_DIR}/glfw-3.2.1)
+	endif()
+
 else()
 	FIND_PACKAGE(CURL REQUIRED)
 	# making executable relocatable 

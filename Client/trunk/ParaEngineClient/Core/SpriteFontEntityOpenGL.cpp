@@ -16,7 +16,6 @@
 #include "memdebug.h"
 
 using namespace ParaEngine;
-USING_NS_CC;
 
 SpriteFontEntityOpenGL::SpriteFontEntityOpenGL(const AssetKey& key)
 :SpriteFontEntity(key), m_fontRenderer(NULL)

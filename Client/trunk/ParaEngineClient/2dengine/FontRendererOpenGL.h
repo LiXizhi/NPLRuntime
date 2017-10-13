@@ -3,8 +3,6 @@
 
 namespace ParaEngine
 {
-	USING_NS_CC;
-
 	class CSpriteRenderer;
 
 	/** used for rendering labels 
