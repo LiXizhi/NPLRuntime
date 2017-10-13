@@ -53,6 +53,7 @@ Client/trunk/externals/*
 !Client/trunk/externals/png*
 !Client/trunk/externals/jpeg*
 !Client/trunk/externals/freetype2*
+!Client/trunk/externals/gl*
 
 !Server/
 Server/*
