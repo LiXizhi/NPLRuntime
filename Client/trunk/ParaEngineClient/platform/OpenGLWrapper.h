@@ -23,7 +23,9 @@ USING_NS_CC;
 #elif defined(PARA_PLATFORM_WIN32)
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
+#include "PEtypes.h"
+#include "win32/GLType.h"
+#include "win32/GLProgram.h"
 #endif
-
 
 #endif

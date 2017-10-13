@@ -776,6 +776,16 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 #endif
 }
 
+std::string ParaEngine::CFileUtils::GetStringFromFile(const std::string& filename)
+{
+	auto data = GetDataFromFile(filename.c_str());
+	if (data.isNull())
+		return "";
+
+	std::string ret((const char*)data.GetBytes());
+	return ret;
+}
+
 ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::string& filename)
 {
 	FileData data;

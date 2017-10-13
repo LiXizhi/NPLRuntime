@@ -1,14 +1,13 @@
 #pragma once
-#include "Platforms.h"
-
 // config file for ParaEngine
 #ifdef WIN32
 #include "ParaEngineClientConfig.win32.h"
 #else
 #include "ParaEngineClientConfig.h"
 #endif
-
 #include "coreexport.h"
+
+#include "Platforms.h"
 
 #ifndef DROP_ASSET
 /** @def drop an asset object, decrease its reference count, and set the pointer to NULL.*/

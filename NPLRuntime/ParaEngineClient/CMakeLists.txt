@@ -79,9 +79,7 @@ else()
 	ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
-	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}
-
-	)
+	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}	)
 
 	if(APPLE)
 		find_package(GLUT REQUIRED)
@@ -91,6 +89,7 @@ else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
 	else()
+		
 	endif()
 
 
@@ -323,18 +322,18 @@ if(APPLE)
 	list(APPEND ParaEngineClient_SRCS ${Platform_Shader_FILES})
 
 
-	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
+	set (External_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
 
 
-	include_directories("${Ex_Dir}/png/include/mac")
-	include_directories("${Ex_Dir}/jpeg/include/mac")
-	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
+	include_directories("${External_Dir}/png/include/mac")
+	include_directories("${External_Dir}/jpeg/include/mac")
+	include_directories("${External_Dir}/freetype2/include/mac/freetype2")
 
 
 	set(NPLRUNTIME_LINK_DIRECTORIES 
-		"${Ex_Dir}/png/prebuilt/mac"
-		"${Ex_Dir}/jpeg/prebuilt/mac"
-		"${Ex_Dir}/freetype2/prebuilt/mac"
+		"${External_Dir}/png/prebuilt/mac"
+		"${External_Dir}/jpeg/prebuilt/mac"
+		"${External_Dir}/freetype2/prebuilt/mac"
 		)
 
 	set(WRAPPER_LIB
@@ -347,16 +346,29 @@ endif(APPLE)
 
 if (NOT DIRECTX_FOUND AND WIN32)
 	# opengl under WIN32
+	set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
 	list(APPEND ParaEngineClient_Platform_FILES 
 		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h ${ParaEngineClient_SOURCE_DIR}/platform/PlatformMacro.h 
-		${ParaEngineClient_SOURCE_DIR}/../externals/glad/src/glad.c)
+		${External_Dir}/glad/src/glad.c)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 
-	include_directories("${ParaEngineClient_SOURCE_DIR}/../externals/glfw-3.2.1/include")
-	include_directories("${ParaEngineClient_SOURCE_DIR}/../externals/glad/include")
+	include_directories("${External_Dir}/glfw-3.2.1/include")
+	include_directories("${External_Dir}/glad/include")
+	include_directories("${External_Dir}/freetype2/include/win32")
+	include_directories("${External_Dir}/png/include/win32")
+	include_directories("${External_Dir}/jpeg/include/win32")
+	include_directories("${External_Dir}/icon/include")
+
+	set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} 
+		"${External_Dir}/freetype2/prebuilt/win32"
+		"${External_Dir}/png/prebuilt/win32"
+		"${External_Dir}/jpeg/prebuilt/win32"
+		"${External_Dir}/icon/prebuilt"
+		)
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw freetype250.lib libiconv.lib libpng.lib libjpeg.lib)
 endif()
 
 #######################################

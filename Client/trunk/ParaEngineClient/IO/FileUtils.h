@@ -127,6 +127,8 @@ namespace ParaEngine
 		*/
 		static FileData GetDataFromFile(const char* filename);
 
+		static std::string GetStringFromFile(const std::string& filename);
+
 		/** get file size of a disk file in bytes. */
 		static bool GetFileInfo(const char* filename, CParaFileInfo& fileInfo);
 
