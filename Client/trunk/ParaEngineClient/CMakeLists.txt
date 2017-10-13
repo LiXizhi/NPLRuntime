@@ -329,6 +329,7 @@ IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
 	include_directories("${Assimp_SOURCE_DIR}/include")
 	include_directories("${Assimp_BINARY_DIR}/include")
+	ADD_DEFINITIONS(-DSUPPORT_FBX_MODEL_FILE)
 ENDIF(WIN32)
 
 IF(WIN32)
