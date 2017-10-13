@@ -191,7 +191,6 @@ HRESULT RenderDevice::SetClipPlane(DWORD Index, const float* pPlane)
 }
 HRESULT RenderDevice::SetTexture(DWORD Stage, DeviceTexturePtr_type pTexture)
 {
-//#ifdef PARAENGINE_MOBILE
 #ifdef USE_OPENGL_RENDERER
 	GL::bindTexture2DN(Stage, pTexture);
 #endif

@@ -62,43 +62,6 @@ bool CParaEngineApp::IsAppActive()
 	return m_bIsAppActive;
 }
 
-#ifdef USE_OPENGL_RENDERER
-void CParaEngineApp::listenRendererRecreated(cocos2d::EventCustom* event)
-{
-//#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID || PARA_TARGET_PLATFORM == PARA_PLATFORM_WP8)
-	OUTPUT_LOG("\nInfo: opengl listenRendererRecreated \n\n");
-	// listen the event that renderer was recreated on Android/WP8
-	// all opengl related id has already become invalid at this time, no need to release them, just recreate them all.
-	CGlobals::GetRenderDevice()->RendererRecreated();
-	CGlobals::GetAssetManager()->RendererRecreated();
-	m_pRootScene->RendererRecreated();
-//#endif
-}
-
-void CParaEngineApp::applicationDidEnterBackground()
-{
-#if defined(STATIC_PLUGIN_CAUDIOENGINE) || defined(WIN32)
-	CAudioEngine2::GetInstance()->PauseAll();
-#else
-	//TODO: wangpeng
-	//CocosDenshion::SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
-#endif
-	m_bIsAppActive = false;
-}
-
-void CParaEngineApp::applicationWillEnterForeground()
-{
-#if defined(STATIC_PLUGIN_CAUDIOENGINE) || defined(WIN32)
-	CAudioEngine2::GetInstance()->ResumeAll();
-#else
-	//TODO: wangpeng
-	// CocosDenshion::SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
-#endif
-	m_bIsAppActive = true;
-}
-
-#endif
-
 void CParaEngineApp::SetResolution(float x, float y)
 {
 	m_nScreenWidth = (int)x;
@@ -379,7 +342,9 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
 	SetAppState(PEAppState_Exiting);
 
+#ifdef TODO_FONT
 	FontFreeType::shutdownFreeType_exit();
+#endif
 }
 
 ParaEngine::PEAppState CParaEngineApp::GetAppState()
@@ -487,7 +452,8 @@ void CParaEngineApp::UpdateMouse()
 	static int oldBtnMiddle = 0;
 
 	int x,y,btnLeft,btnRight,btnMiddle;
-	FsGetMouseState(btnLeft,btnMiddle,btnRight,x,y);
+
+	// FsGetMouseState(btnLeft,btnMiddle,btnRight,x,y);
 
 	if ( oldBtnLeft != btnLeft )
 	{
@@ -540,7 +506,7 @@ void CParaEngineApp::UpdateMouse()
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
 
-	FsPassedTime();  // Reset the timer
+	// FsPassedTime();  // Reset the timer
 
 	// this is server mode
 	auto nStartTime = GetTickCount();
@@ -548,24 +514,25 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	while (GetAppState() != PEAppState_Exiting)
 	{
 
-        FsPollDevice();
+        //FsPollDevice();
 
-        FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
+        //FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
 
         UpdateMouse();
 
 		auto nCurTickCount = GetTickCount() - nStartTime;
 		FrameMove(nCurTickCount / 1000.f);
 
-		int passed = FsPassedTime();
+		// int passed = FsPassedTime();
+		int passed = 0;
 
 
         glClear(GL_COLOR_BUFFER_BIT);
 
 		Render3DEnvironment(true);
 
-        FsSwapBuffers();
-        FsSleep(33-passed);
+        // FsSwapBuffers();
+        // FsSleep(33-passed);
 
 	}
 
