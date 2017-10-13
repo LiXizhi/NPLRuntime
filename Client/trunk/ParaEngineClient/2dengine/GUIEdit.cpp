@@ -27,9 +27,8 @@
 using namespace ParaEngine;
 using namespace std;
 
-#ifdef PARAENGINE_MOBILE
+#ifdef USE_OPENGL_RENDERER
 #include "platform/OpenGLWrapper.h"
-USING_NS_CC;
 #endif
 
 const IType* CGUIEditBox::m_type = NULL;

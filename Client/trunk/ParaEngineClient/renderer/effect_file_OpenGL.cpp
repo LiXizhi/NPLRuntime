@@ -16,7 +16,6 @@
 #include "effect_file_OpenGL.h"
 #include "SunLight.h"
 using namespace ParaEngine;
-USING_NS_CC;
 // TODO: add more buildin shaders here
 #define STRINGIFY(A)  #A
 #include "platform/shaders/blockEffect.shader"

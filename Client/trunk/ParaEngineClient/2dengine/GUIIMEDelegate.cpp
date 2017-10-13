@@ -10,7 +10,6 @@
 
 #ifdef PARAENGINE_MOBILE
 #include "platform/OpenGLWrapper.h"
-USING_NS_CC;
 
 using namespace ParaEngine;
 

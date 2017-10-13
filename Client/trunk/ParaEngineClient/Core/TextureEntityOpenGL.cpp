@@ -14,7 +14,6 @@
 #include "TextureEntity.h"
 
 using namespace ParaEngine;
-USING_NS_CC;
 
 namespace ParaEngine
 {

@@ -102,7 +102,7 @@ namespace ParaEngine
 	};
 }
 
-#if !defined(PE_CORE_EXPORTING) && !defined(PARAENGINE_MOBILE)
+#if !defined(PE_CORE_EXPORTING) && !defined(PARAENGINE_MOBILE) && !defined(NPLRUNTIME_STATICLIB)
 
 namespace ParaEngine
 {

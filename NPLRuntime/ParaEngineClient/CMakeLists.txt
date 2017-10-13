@@ -345,6 +345,20 @@ if(APPLE)
 
 endif(APPLE)
 
+if (NOT DIRECTX_FOUND AND WIN32)
+	# opengl under WIN32
+	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
+	list(APPEND ParaEngineClient_Platform_FILES 
+		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h ${ParaEngineClient_SOURCE_DIR}/platform/PlatformMacro.h 
+		${ParaEngineClient_SOURCE_DIR}/../externals/glad/src/glad.c)
+	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+
+	include_directories("${ParaEngineClient_SOURCE_DIR}/../externals/glfw-3.2.1/include")
+	include_directories("${ParaEngineClient_SOURCE_DIR}/../externals/glad/include")
+endif()
+
 #######################################
 # PCH: precompiled header under msvc
 if (MSVC)
