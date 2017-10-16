@@ -1234,6 +1234,68 @@ bool ParaEngine::StringHelper::UTF8ToUTF16_Safe(const std::string& utf8, std::u1
 }
 
 
+void ParaEngine::StringHelper::TrimUTF16VectorFromIndex(std::vector<char16_t>& str, int index)
+{
+	int size = static_cast<int>(str.size());
+	if (index >= size || index < 0)
+		return;
+	str.erase(str.begin() + index, str.begin() + size);
+}
+
+bool ParaEngine::StringHelper::IsUnicodeSpace(char16_t ch)
+{
+	return  (ch >= 0x0009 && ch <= 0x000D) || ch == 0x0020 || ch == 0x0085 || ch == 0x00A0 || ch == 0x1680
+		|| (ch >= 0x2000 && ch <= 0x200A) || ch == 0x2028 || ch == 0x2029 || ch == 0x202F
+		|| ch == 0x205F || ch == 0x3000;
+}
+
+bool ParaEngine::StringHelper::IsCJKUnicode(char16_t ch)
+{
+	return (ch >= 0x4E00 && ch <= 0x9FBF)   // CJK Unified Ideographs
+		|| (ch >= 0x2E80 && ch <= 0x2FDF)   // CJK Radicals Supplement & Kangxi Radicals
+		|| (ch >= 0x2FF0 && ch <= 0x30FF)   // Ideographic Description Characters, CJK Symbols and Punctuation & Japanese
+		|| (ch >= 0x3100 && ch <= 0x31BF)   // Korean
+		|| (ch >= 0xAC00 && ch <= 0xD7AF)   // Hangul Syllables
+		|| (ch >= 0xF900 && ch <= 0xFAFF)   // CJK Compatibility Ideographs
+		|| (ch >= 0xFE30 && ch <= 0xFE4F)   // CJK Compatibility Forms
+		|| (ch >= 0x31C0 && ch <= 0x4DFF);  // Other extensions
+}
+
+void ParaEngine::StringHelper::TrimUTF16Vector(std::vector<char16_t>& str)
+{
+	int len = static_cast<int>(str.size());
+
+	if (len <= 0)
+		return;
+
+	int last_index = len - 1;
+
+	// Only start trimming if the last character is whitespace..
+	if (IsUnicodeSpace(str[last_index]))
+	{
+		for (int i = last_index - 1; i >= 0; --i)
+		{
+			if (IsUnicodeSpace(str[i]))
+				last_index = i;
+			else
+				break;
+		}
+
+		TrimUTF16VectorFromIndex(str, last_index);
+	}
+}
+
+unsigned int ParaEngine::StringHelper::GetIndexOfLastNotChar16(const std::vector<char16_t>& str, char16_t c)
+{
+	int len = static_cast<int>(str.size());
+
+	int i = len - 1;
+	for (; i >= 0; --i)
+		if (str[i] != c) return i;
+
+	return i;
+}
+
 std::string ParaEngine::StringHelper::sha1(const std::string& source, bool bBinary)
 {
 	SHA1Context sha;

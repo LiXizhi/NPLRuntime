@@ -1,6 +1,5 @@
 #pragma once
 #include "GLType.h"
-
 #include "GLTexture2D.h"
 
 namespace ParaEngine

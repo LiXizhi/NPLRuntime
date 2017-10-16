@@ -3,6 +3,7 @@
 #include "GLFontAtlas.h"
 #include "GLFontAtlasCache.h"
 #include "GLFont.h"
+#include "util/StringHelper.h"
 #include "GLLabel.h"
 
 
@@ -47,7 +48,7 @@ bool LabelTextFormatter::multilineText(Label *theLabel)
 			tIndex = j + skip + justSkipped;
 			if (strWhole[tIndex - 1] == '\n')
 			{
-				StringUtils::trimUTF16Vector(last_word);
+				StringHelper::TrimUTF16Vector(last_word);
 
 				last_word.push_back('\n');
 				multiline_string.insert(multiline_string.end(), last_word.begin(), last_word.end());
@@ -86,15 +87,15 @@ bool LabelTextFormatter::multilineText(Label *theLabel)
 
 		// 1) Whitespace.
 		// 2) This character is non-CJK, but the last character is CJK
-		bool isspace = StringUtils::isUnicodeSpace(character);
+		bool isspace = StringHelper::IsUnicodeSpace(character);
 		bool isCJK = false;
 		if (!isspace)
 		{
-			isCJK = StringUtils::isCJKUnicode(character);
+			isCJK = StringHelper::IsCJKUnicode(character);
 		}
 
 		if (isspace ||
-			(!last_word.empty() && StringUtils::isCJKUnicode(last_word.back()) && !isCJK))
+			(!last_word.empty() && StringHelper::IsCJKUnicode(last_word.back()) && !isCJK))
 		{
 			// if current character is white space, put it into the current word
 			if (isspace) last_word.push_back(character);
@@ -116,9 +117,9 @@ bool LabelTextFormatter::multilineText(Label *theLabel)
 			{
 				last_word.push_back(character);
 
-				int found = StringUtils::getIndexOfLastNotChar16(multiline_string, ' ');
+				int found = StringHelper::GetIndexOfLastNotChar16(multiline_string, ' ');
 				if (found != -1)
-					StringUtils::trimUTF16Vector(multiline_string);
+					StringHelper::TrimUTF16Vector(multiline_string);
 				else
 					multiline_string.clear();
 
@@ -130,7 +131,7 @@ bool LabelTextFormatter::multilineText(Label *theLabel)
 			}
 			else
 			{
-				StringUtils::trimUTF16Vector(last_word);
+				StringHelper::TrimUTF16Vector(last_word);
 
 				last_word.push_back('\n');
 

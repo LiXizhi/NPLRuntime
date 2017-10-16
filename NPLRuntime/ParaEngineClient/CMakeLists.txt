@@ -205,13 +205,8 @@ if(DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
 
-	# embedded resource
 	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
 	list(APPEND EmbeddedResource_FILES ${MyResource})
-
-	list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
-	list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
-	SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
@@ -222,6 +217,12 @@ if(DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES} ${ParaEngineClient_SHADER_HEADER_FILES})
 
 endif(DIRECTX_FOUND)
+
+##############################
+# embedded resource
+list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 ##############################
 file (GLOB ParaEngineClient_CurlLua_FILES ${ParaEngineClient_SOURCE_DIR}/curllua/*.*)
@@ -341,7 +342,6 @@ if(APPLE)
 		libjpeg.a
 		libfreetype.a
 	)
-
 endif(APPLE)
 
 if (NOT DIRECTX_FOUND AND WIN32)
@@ -349,7 +349,10 @@ if (NOT DIRECTX_FOUND AND WIN32)
 	set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
 	list(APPEND ParaEngineClient_Platform_FILES 
-		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h ${ParaEngineClient_SOURCE_DIR}/platform/PlatformMacro.h 
+		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/uthash.h
 		${External_Dir}/glad/src/glad.c)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 
