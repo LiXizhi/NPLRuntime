@@ -4,14 +4,11 @@
 
 #include <unordered_map>
 
-namespace cocos2d
+namespace ParaEngine
 {
 	class GLProgram;
 	struct Uniform;
-}
 
-namespace ParaEngine
-{
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
 	public:
@@ -146,9 +143,9 @@ namespace ParaEngine
 		const TechniqueDesc* GetCurrentTechniqueDesc();
 
 	public:
-		bool setParameter(cocos2d::Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
+		bool setParameter(Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
 
-		cocos2d::GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
+		GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
 		
 		/** Initializes the GLProgram with a vertex and fragment with bytes array
 		*/
@@ -173,8 +170,8 @@ namespace ParaEngine
 		*/
 		void updateUniforms(int nTech = -1, int nPass = -1);
 		
-		cocos2d::Uniform* GetUniformByID(eParameterHandles id);
-		cocos2d::Uniform* GetUniform(const std::string& sName);
+		Uniform* GetUniformByID(eParameterHandles id);
+		Uniform* GetUniform(const std::string& sName);
 		
 		/** add changes to shader parameters, those changes are commited to device when CommitChange() is called. */
 		template <typename ValueType>
@@ -197,10 +194,9 @@ namespace ParaEngine
 
 		void SetShadowMapSize(int nsize);
 	protected:
-		//std::vector<cocos2d::GLProgram*> m_programs;
 		struct TechniqueDescGL : public TechniqueDesc
 		{
-			std::vector<cocos2d::GLProgram*> mPasses;
+			std::vector<GLProgram*> mPasses;
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;

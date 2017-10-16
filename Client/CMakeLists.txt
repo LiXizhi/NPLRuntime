@@ -69,11 +69,11 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
-    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
+    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)
 	set(ZLIB_LIBRARIES zlib)
-	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.3)
+	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.11)
   
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
 

@@ -40,7 +40,7 @@
 namespace ParaEngine 
 {
 	using namespace ParaTerrain;
-#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER)
+#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER) && !defined(USE_OPENGL_RENDERER)
 	extern HWND* g_pHwndHWND;
 #endif
 }
@@ -283,7 +283,7 @@ CMoviePlatform* CGlobals::GetMoviePlatform()
 
 HWND CGlobals::GetAppHWND()
 {
-#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER)
+#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER) && !defined(USE_OPENGL_RENDERER)
 	if (g_pHwndHWND != 0)
 		return *g_pHwndHWND;
 	else

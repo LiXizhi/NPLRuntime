@@ -5,6 +5,10 @@
 #include "jpeglib.h"
 #include "png.h"
 
+#ifdef WIN32
+// just for compatibility with previous version of libpng.lib built by earlier version of visual studio 2015
+extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
+#endif
 
 #define MAX(a,b) ((a>b)?a:b)
 

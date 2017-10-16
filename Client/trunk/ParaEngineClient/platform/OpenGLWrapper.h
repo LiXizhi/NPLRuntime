@@ -26,6 +26,11 @@ USING_NS_CC;
 #include "PEtypes.h"
 #include "win32/GLType.h"
 #include "win32/GLProgram.h"
+#include "math/ParaMathUtility.h"
+#include "win32/GLLabel.h"
+#include "win32/GLFontAtlas.h"
+#include "win32/GLTexture2D.h"
+#include "win32/GLImage.h"
 #endif
 
 #endif

@@ -171,7 +171,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 			{
 				for (auto program : passes)
 				{
-					CC_SAFE_RELEASE_NULL(program);
+					SAFE_RELEASE(program);
 				}
 				passes.clear();
 			}
@@ -180,7 +180,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 				auto program = GetGLProgram(tech_index, nPass);
 				if (program)
 				{
-					CC_SAFE_RELEASE_NULL(passes[nPass]);
+					SAFE_RELEASE(passes[nPass]);
 				}
 			}
 		}
@@ -192,7 +192,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 		{
 			for (auto program : passes)
 			{
-				CC_SAFE_RELEASE_NULL(program);
+				SAFE_RELEASE(program);
 			}
 			passes.clear();
 		}
@@ -201,7 +201,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 			auto program = GetGLProgram(nTech, nPass);
 			if (program)
 			{
-				CC_SAFE_RELEASE_NULL(passes[nPass]);
+				SAFE_RELEASE(passes[nPass]);
 			}
 		}
 	}
@@ -250,7 +250,7 @@ bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 	return isParameterUsed(index);
 }
 
-bool ParaEngine::CEffectFileOpenGL::setParameter(cocos2d::Uniform* uniform, const void* data, int32 size)
+bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* data, int32 size)
 {
 	bool ret = false;
 	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
@@ -449,7 +449,7 @@ bool ParaEngine::CEffectFileOpenGL::initWithFilenames(const std::string& vShader
 	}
 }
 
-cocos2d::GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
+GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
 {
 	if ((int)mTechniques.size() <= nTech)
 	{
@@ -465,7 +465,7 @@ cocos2d::GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int n
 		auto program = passes[nPass];
 		if (program == NULL && bCreateIfNotExist)
 		{
-			program = new cocos2d::GLProgram();
+			program = new GLProgram();
 			passes[nPass] = program;
 		}
 		return program;
@@ -542,12 +542,12 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 	}
 }
 
-cocos2d::Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
+Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
 {
 	return GetUniform(s_id_to_names[id]);
 }
 
-cocos2d::Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
+Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 {
 	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);
 	if (program)
@@ -852,7 +852,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::RendererRecreated()
 		{
 			if (program)
 				program->reset();
-			CC_SAFE_RELEASE_NULL(program);
+			SAFE_RELEASE(program);
 		}
 		tech.mPasses.clear();
 	}
@@ -947,7 +947,7 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type 
 
 HRESULT ParaEngine::CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
 {
-	cocos2d::Uniform* uniform = GetUniform(hParameter);
+	Uniform* uniform = GetUniform(hParameter);
 	if (uniform)
 	{
 		PE_ASSERT(ByteOffset == 0);

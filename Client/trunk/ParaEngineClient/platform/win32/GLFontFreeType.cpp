@@ -2,6 +2,7 @@
 #include "../base/edtaa3func.h"
 
 #include "IO/FileUtils.h"
+#include "util/StringHelper.h"
 #include "GLFontFreeType.h"
 #include "GLFontAtlas.h"
 
@@ -78,7 +79,7 @@ void FontFreeType::shutdownFreeType_exit()
         auto item = s_cacheFontData.begin();
         while (s_cacheFontData.end() != item)
         {
-            item->second.data.fastSet(0,0);
+            item->second.data.SetOwnBuffer(0,0);
             item++;
         }
 
@@ -138,7 +139,7 @@ bool FontFreeType::createFontObject(const std::string &fontName, float fontSize)
         }
     }
 
-    if (FT_New_Memory_Face(getFTLibrary(), s_cacheFontData[fontName].data.getBytes(), s_cacheFontData[fontName].data.getSize(), 0, &face ))
+    if (FT_New_Memory_Face(getFTLibrary(), (const FT_Byte*)(s_cacheFontData[fontName].data.GetBytes()), s_cacheFontData[fontName].data.GetSize(), 0, &face ))
         return false;
 
     if (FT_Select_Charmap(face, FT_ENCODING_UNICODE))
@@ -208,12 +209,12 @@ FontAtlas * FontFreeType::createFontAtlas()
         if (_fontAtlas && _usedGlyphs != GlyphCollection::DYNAMIC)
         {
             std::u16string utf16;
-            if (StringUtils::UTF8ToUTF16(getGlyphCollection(), utf16))
+            if (StringHelper::UTF8ToUTF16(getGlyphCollection(), utf16))
             {
                 _fontAtlas->prepareLetterDefinitions(utf16);
             }
         }
-        this->autorelease();
+        this->AddToAutoReleasePool();
     }
 
     return _fontAtlas;
