@@ -73,7 +73,8 @@ if (WIN32)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)
 	set(ZLIB_LIBRARIES zlib)
-	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.11)
+	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
+	set(ZLIB_SOURCE_DIR ${ZLIB_INCLUDE_DIR})
   
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
 
@@ -108,6 +109,7 @@ add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
 
 if(NPLRUNTIME_STATIC_LIB) 
+	# add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/png ${CLIENT_BINARY_DIR}/png)
 else()
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
 endif()
