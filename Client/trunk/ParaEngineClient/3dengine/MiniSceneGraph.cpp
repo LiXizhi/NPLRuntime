@@ -680,6 +680,11 @@ void ParaEngine::CMiniSceneGraph::Draw(float fDeltaTime)
 
 }
 
+void ParaEngine::CMiniSceneGraph::DestroyChildren()
+{
+	CRenderTarget::DestroyChildren();
+	m_name_map.clear();
+}
 
 void ParaEngine::CMiniSceneGraph::CameraZoom( float fAmount )
 {
