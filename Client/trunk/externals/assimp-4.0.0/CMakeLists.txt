@@ -283,7 +283,7 @@ else(NOT ZLIB_FOUND)
   ADD_DEFINITIONS(-DASSIMP_BUILD_NO_OWN_ZLIB)
   SET(ZLIB_LIBRARIES_LINKED -lz)
 ENDIF(NOT ZLIB_FOUND)
-include_directories("${ZLIB_SOURCE_DIR}")
+include_directories("${ZLIB_INCLUDE_DIR}")
 
 # Search for unzip
 use_pkgconfig(UNZIP minizip)
