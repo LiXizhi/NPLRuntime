@@ -53,6 +53,8 @@ Client/trunk/externals/*
 !Client/trunk/externals/png*
 !Client/trunk/externals/jpeg*
 !Client/trunk/externals/freetype2*
+!Client/trunk/externals/gl*
+!Client/trunk/externals/icon/
 
 !Server/
 Server/*
@@ -67,7 +69,7 @@ Server/trunk/*
 !Server/trunk/luasql/
 !Server/trunk/luaJIT/
 !Server/trunk/luaJIT-2.1/
-!Server/trunk/zlib-1.2.3/
+!Server/trunk/zlib-1.2.11/
 !Server/trunk/curl-7.47.1/
 
 

@@ -94,7 +94,6 @@
 
 #ifdef USE_COCOS_FILE_API
 	#include "platform/OpenGLWrapper.h"
-	USING_NS_CC;
 	/** @Note by LiXizhi: all cocos read file api are not thread safe, hence we need to use a lock. 
 	remove this when cocos no longer uses non-thread-safe file cache map. */
 	static std::mutex  s_cocos_file_io_mutex;
@@ -779,6 +778,16 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	}
 	return data;
 #endif
+}
+
+std::string ParaEngine::CFileUtils::GetStringFromFile(const std::string& filename)
+{
+	auto data = GetDataFromFile(filename.c_str());
+	if (data.isNull())
+		return "";
+
+	std::string ret((const char*)data.GetBytes());
+	return ret;
 }
 
 ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::string& filename)

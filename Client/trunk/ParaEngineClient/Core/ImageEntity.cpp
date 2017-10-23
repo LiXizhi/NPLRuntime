@@ -9,7 +9,6 @@
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
 #include "platform/OpenGLWrapper.h"
-USING_NS_CC;
 #endif
 
 #include "ImageEntity.h"

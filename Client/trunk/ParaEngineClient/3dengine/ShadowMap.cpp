@@ -9,6 +9,8 @@
 */
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #endif
@@ -1615,3 +1617,4 @@ void CShadowMap::UnsetShadowTexture(int nTextureIndex)
 	CGlobals::GetRenderDevice()->SetSamplerState( nTextureIndex, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 	*/
 }
+#endif

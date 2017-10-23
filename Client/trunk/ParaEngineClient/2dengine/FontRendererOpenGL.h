@@ -3,14 +3,12 @@
 
 namespace ParaEngine
 {
-	USING_NS_CC;
-
 	class CSpriteRenderer;
 
 	/** used for rendering labels 
 	* rendering a given font from TTF format. It emulates the d3dxfont class.
 	*/
-	class CFontRendererOpenGL : public cocos2d::Label
+	class CFontRendererOpenGL : public Label
 	{
 	public:
 		static CFontRendererOpenGL* create(const std::string& sFontName, int nFontSize);

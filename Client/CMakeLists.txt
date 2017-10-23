@@ -17,8 +17,10 @@ option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
 
 if (WIN32)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
+	option(NPLRUNTIME_DIRECTX_RENDERER "use openGL or directX renderer" ON)
 else()
 	option(NPLRUNTIME_PHYSICS "include physics" OFF)
+	option(NPLRUNTIME_DIRECTX_RENDERER "use openGL or directX renderer" OFF)
 endif()
 
 # using static lib for other modules if main NPLRuntime is built as static lib. 
@@ -67,13 +69,23 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
-    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${CLIENT_BINARY_DIR}/zlib-1.2.3)
+    add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
 	set(ZLIB_FOUND 1)
 	set(ZLIB_LIBRARY zlib)
 	set(ZLIB_LIBRARIES zlib)
-	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.3)
+	set(ZLIB_INCLUDE_DIR ${SERVER_SOURCE_DIR}zlib-1.2.11 ${CLIENT_BINARY_DIR}/zlib-1.2.11)
+	set(ZLIB_SOURCE_DIR ${ZLIB_INCLUDE_DIR})
   
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
+
+	if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+		option(GLFW_BUILD_DOCS OFF)
+		option(GLFW_BUILD_EXAMPLES OFF)
+		option(GLFW_BUILD_TESTS OFF)
+		option(GLFW_INSTALL OFF)
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${CLIENT_BINARY_DIR}/glfw-3.2.1)
+	endif()
+
 else()
 	FIND_PACKAGE(CURL REQUIRED)
 	# making executable relocatable 
@@ -97,6 +109,7 @@ add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
 
 if(NPLRUNTIME_STATIC_LIB) 
+	# add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/png ${CLIENT_BINARY_DIR}/png)
 else()
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${CLIENT_BINARY_DIR}/luasql)
 endif()

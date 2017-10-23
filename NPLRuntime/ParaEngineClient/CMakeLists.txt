@@ -19,19 +19,23 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
-	if(PARAENGINE_CLIENT_DLL OR NPLRUNTIME_STATIC_LIB)
+	if(PARAENGINE_CLIENT_DLL)
 		set(PARAENGINE_COMPILE_LIB    true)
 		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
 	else()
 		set(PARAENGINE_COMPILE_LIB    false)
 	endif()
-	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
+
+	if(NPLRUNTIME_DIRECTX_RENDERER)
+		include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
+	endif(NPLRUNTIME_DIRECTX_RENDERER)
+	
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
 endif (WIN32)
  
 if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
-	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
-
+	ADD_DEFINITIONS(-DUSE_DIRECTX_RENDERER)
 	include_directories( ${DIRECTX_INCLUDE_DIR} )
 	set(NPLRUNTIME_LINK_DIRECTORIES ${DIRECTX_LIBRARY_DIR})
 	set(GRAPHIC_LIBRARIES
@@ -72,12 +76,10 @@ if (DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 
 else()
+	ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
 	find_package(OpenGL REQUIRED)
 	include_directories( ${OPENGL_INCLUDE_DIRS}  )
-	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}
-
-	)
-
+	set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}	)
 
 	if(APPLE)
 		find_package(GLUT REQUIRED)
@@ -87,6 +89,7 @@ else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
 
 	else()
+		
 	endif()
 
 
@@ -202,13 +205,8 @@ if(DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
 
-	# embedded resource
 	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
 	list(APPEND EmbeddedResource_FILES ${MyResource})
-
-	list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
-	list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
-	SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
@@ -219,6 +217,12 @@ if(DIRECTX_FOUND)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES} ${ParaEngineClient_SHADER_HEADER_FILES})
 
 endif(DIRECTX_FOUND)
+
+##############################
+# embedded resource
+list(APPEND EmbeddedResource_FILES ${ParaEngineClient_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineClient_SRCS ${EmbeddedResource_FILES})
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 ##############################
 file (GLOB ParaEngineClient_CurlLua_FILES ${ParaEngineClient_SOURCE_DIR}/curllua/*.*)
@@ -319,18 +323,18 @@ if(APPLE)
 	list(APPEND ParaEngineClient_SRCS ${Platform_Shader_FILES})
 
 
-	set (Ex_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
+	set (External_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
 
 
-	include_directories("${Ex_Dir}/png/include/mac")
-	include_directories("${Ex_Dir}/jpeg/include/mac")
-	include_directories("${Ex_Dir}/freetype2/include/mac/freetype2")
+	include_directories("${External_Dir}/png/include/mac")
+	include_directories("${External_Dir}/jpeg/include/mac")
+	include_directories("${External_Dir}/freetype2/include/mac/freetype2")
 
 
 	set(NPLRUNTIME_LINK_DIRECTORIES 
-		"${Ex_Dir}/png/prebuilt/mac"
-		"${Ex_Dir}/jpeg/prebuilt/mac"
-		"${Ex_Dir}/freetype2/prebuilt/mac"
+		"${External_Dir}/png/prebuilt/mac"
+		"${External_Dir}/jpeg/prebuilt/mac"
+		"${External_Dir}/freetype2/prebuilt/mac"
 		)
 
 	set(WRAPPER_LIB
@@ -338,8 +342,37 @@ if(APPLE)
 		libjpeg.a
 		libfreetype.a
 	)
-
 endif(APPLE)
+
+if (NOT DIRECTX_FOUND AND WIN32)
+	# opengl under WIN32
+	set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
+	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
+	list(APPEND ParaEngineClient_Platform_FILES 
+		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.h
+		${ParaEngineClient_SOURCE_DIR}/platform/base/uthash.h
+		${External_Dir}/glad/src/glad.c)
+	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+
+	include_directories("${External_Dir}/glfw-3.2.1/include")
+	include_directories("${External_Dir}/glad/include")
+	include_directories("${External_Dir}/freetype2/include/win32")
+	include_directories("${External_Dir}/png/include/win32")
+	include_directories("${External_Dir}/jpeg/include/win32")
+	include_directories("${External_Dir}/icon/include")
+
+	set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} 
+		"${External_Dir}/freetype2/prebuilt/win32"
+		"${External_Dir}/png/prebuilt/win32"
+		"${External_Dir}/jpeg/prebuilt/win32"
+		"${External_Dir}/icon/prebuilt"
+		)
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw freetype250.lib libiconv.lib libpng.lib libjpeg.lib)
+endif()
 
 #######################################
 # PCH: precompiled header under msvc

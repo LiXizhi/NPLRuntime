@@ -46,7 +46,7 @@ namespace ParaEngine
 
 	CParaXStaticMesh::~CParaXStaticMesh()
 	{
-
+		DeleteDeviceObjects();
 	}
 
 	int CParaXStaticMesh::GetPolyCount()

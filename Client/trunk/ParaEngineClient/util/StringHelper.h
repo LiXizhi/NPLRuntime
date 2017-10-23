@@ -31,6 +31,38 @@ namespace ParaEngine
 		/** similar to UTF8ToUTF16. except that if UTF8ToUTF16 returns false, it will replace invalid utf8 character with ?. and then return the converted string. */
 		static bool UTF8ToUTF16_Safe(const std::string& utf8, std::u16string& outUtf16);
 
+		/*
+		* @str:    the string to trim
+		* @index:    the index to start trimming from.
+		*
+		* Trims str st str=[0, index) after the operation.
+		*
+		* Return value: the trimmed string.
+		* */
+		static void TrimUTF16VectorFromIndex(std::vector<char16_t>& str, int index);
+
+		/*
+		* @ch is the unicode character whitespace?
+		*
+		* Reference: http://en.wikipedia.org/wiki/Whitespace_character#Unicode
+		*
+		* Return value: weather the character is a whitespace character.
+		* */
+		static bool IsUnicodeSpace(char16_t ch);
+
+		static bool IsCJKUnicode(char16_t ch);
+
+		static void TrimUTF16Vector(std::vector<char16_t>& str);
+
+
+		/*
+		* @str:    the string to search through.
+		* @c:        the character to not look for.
+		*
+		* Return value: the index of the last character that is not c.
+		* */
+		static unsigned int GetIndexOfLastNotChar16(const std::vector<char16_t>& str, char16_t c);
+
 		/**
 		*  @brief Converts utf16 string to utf8 string
 		*  @param utf16 The utf16 string to be converted

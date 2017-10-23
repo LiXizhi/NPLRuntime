@@ -16,9 +16,7 @@
 #include "RenderDeviceOpenGL.h"
 
 using namespace ParaEngine;
-#ifdef USE_OPENGL_RENDERER
-	USING_NS_CC;
-#endif
+
 
 /** define this to ignore all draw calls to find program bottleneck. If defined, but FPS is still low, it is CPU bound. */
 // #define DEBUG_IGNORE_DRAW_CALL
@@ -193,7 +191,6 @@ HRESULT RenderDevice::SetClipPlane(DWORD Index, const float* pPlane)
 }
 HRESULT RenderDevice::SetTexture(DWORD Stage, DeviceTexturePtr_type pTexture)
 {
-//#ifdef PARAENGINE_MOBILE
 #ifdef USE_OPENGL_RENDERER
 	GL::bindTexture2DN(Stage, pTexture);
 #endif

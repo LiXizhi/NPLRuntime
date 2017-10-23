@@ -14,7 +14,6 @@
 #include "TextureEntity.h"
 
 using namespace ParaEngine;
-USING_NS_CC;
 
 namespace ParaEngine
 {
@@ -31,7 +30,7 @@ TextureEntityOpenGL::TextureEntityOpenGL()
 {
 }
 
-ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(cocos2d::Texture2D* texture)
+ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(Texture2D* texture)
 	: TextureEntity(), m_texture(nullptr), m_nSamplerState(0)
 {
 	SetInnerTexture(texture);
@@ -49,15 +48,15 @@ HRESULT ParaEngine::TextureEntityOpenGL::RendererRecreated()
 }
 
 
-cocos2d::Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
+Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
 {
-	cocos2d::Texture2D * texture = nullptr;
+	Texture2D * texture = nullptr;
 	CParaFile file;
 	if (file.OpenFile(sFileName.c_str(), true))
 	{
 		LoadFromMemory(file.getBuffer(), file.getSize(), 0, D3DFMT_UNKNOWN, (void**)(&texture));
 		if (texture){
-			texture->autorelease();
+			texture->AddToAutoReleasePool();
 		}
 	}
 	else
@@ -88,7 +87,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 	}
 	if (SurfaceType == StaticTexture)
 	{
-		CC_SAFE_RELEASE(m_texture);
+		SAFE_RELEASE(m_texture);
 		if(!IsAsyncLoad())
 			SetInnerTexture(CreateTextureFromFile_Serial(sTextureFileName));
 		else
@@ -110,13 +109,13 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 				{
 					for (int i = 0; i < nTotalTextureSequence; ++i)
 					{
-						CC_SAFE_RELEASE(m_pTextureSequence[i]);
+						SAFE_RELEASE(m_pTextureSequence[i]);
 					}
 				}
 				else
 				{
-					m_pTextureSequence = new cocos2d::Texture2D*[nTotalTextureSequence];
-					memset(m_pTextureSequence, 0, sizeof(cocos2d::Texture2D*)*nTotalTextureSequence);
+					m_pTextureSequence = new Texture2D*[nTotalTextureSequence];
+					memset(m_pTextureSequence, 0, sizeof(Texture2D*)*nTotalTextureSequence);
 				}
 
 				// if there are texture sequence, export all bitmaps in the texture sequence. 
@@ -140,7 +139,8 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 						if (!IsAsyncLoad())
 						{
 							auto texture = CreateTextureFromFile_Serial(sTemp);
-							CC_SAFE_RETAIN(texture);
+							if(texture)
+								texture->addref();
 							m_pTextureSequence[i - 1] = texture;
 						}
 						else
@@ -164,16 +164,17 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 }
 
 
-void ParaEngine::TextureEntityOpenGL::SetInnerTexture(cocos2d::Texture2D* texture)
+void ParaEngine::TextureEntityOpenGL::SetInnerTexture(Texture2D* texture)
 {
 	if (SurfaceType == StaticTexture)
 	{
-		CC_SAFE_RELEASE_NULL(m_texture);
+		SAFE_RELEASE(m_texture);
 		m_bIsInitialized = true;
 		if (texture)
 		{
 			m_texture = texture;
-			CC_SAFE_RETAIN(m_texture);
+			if(m_texture)
+				m_texture->addref();
 		}
 	}
 }
@@ -253,7 +254,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::DeleteDeviceObjects()
 			{
 				for (int i = 0; i < nTotalTextureSequence; ++i)
 				{
-					CC_SAFE_RELEASE_NULL(m_pTextureSequence[i]);
+					SAFE_RELEASE(m_pTextureSequence[i]);
 				}
 				SAFE_DELETE_ARRAY(m_pTextureSequence);
 			}
@@ -265,7 +266,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::DeleteDeviceObjects()
 		if (m_texture)
 		{
 			// m_texture->releaseGLTexture();
-			CC_SAFE_RELEASE_NULL(m_texture);
+			SAFE_RELEASE(m_texture);
 		}
 		break;
 	}
@@ -401,7 +402,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 {
 	if (!pTexels)
 		return NULL;
-	cocos2d::Texture2D * texture = new Texture2D();
+	Texture2D * texture = new Texture2D();
 	if (texture)
 	{
 		int dataLen = width * height * bytesPerPixel;
@@ -469,7 +470,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 			pTextureEntity->AddToAutoReleasePool();
 			return pTextureEntity;
 		}
-		CC_SAFE_RELEASE_NULL(texture);
+		SAFE_RELEASE(texture);
 	}
 	return NULL;
 }
@@ -477,7 +478,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
 	/*
-	cocos2d::Image* image = new Image();
+	Image* image = new Image();
 
 	if (image)
 	{
@@ -518,7 +519,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 	{
 		const char* buffer = (const char*)(imageEntity->getData());
 		size_t nFileSize = imageEntity->getDataLen();
-		cocos2d::Image image;
+		Image image;
 		bool bRet = false;
 		if (imageEntity->getRenderFormat() == D3DFMT_A8R8G8B8)
 			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), imageEntity->hasPremultipliedAlpha());
@@ -527,7 +528,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 		
 		if (bRet)
 		{
-			cocos2d::Texture2D * texture = new Texture2D();
+			Texture2D * texture = new Texture2D();
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 				auto errorCode = glGetError();
@@ -582,14 +583,15 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 				}
 				if (ppTexture != NULL)
 				{
-					CC_SAFE_RETAIN(texture);
+					if (texture)
+						texture->addref();
 					(*ppTexture) = (void*)texture;
 				}
 				else
 				{
 					SetInnerTexture(texture);
 				}
-				CC_SAFE_RELEASE_NULL(texture);
+				SAFE_RELEASE(texture);
 				return true;
 			}
 		}

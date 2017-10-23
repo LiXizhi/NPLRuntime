@@ -25,7 +25,12 @@ namespace ParaEngine
 		*/
 		void copy(char* bytes, const size_t size);
 
-		/** take ownership of the buffer. it can be null. */
+		/** take ownership of the buffer. Please use it carefully.
+		*  @param bytes The buffer pointer, note that it have to be allocated by new method,
+		*         since in the destructor of Data, the buffer will be deleted by 'free'.
+		*  @note 1. This method will move the ownership of bytes' pointer to Data,
+		*        2. The pointer should not be used outside after it was passed to this method.
+		*/
 		void SetOwnBuffer(char* bytes, const size_t size);
 		void ReleaseOwnership();
 

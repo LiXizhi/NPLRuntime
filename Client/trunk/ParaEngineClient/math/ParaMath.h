@@ -2,6 +2,7 @@
 #include <limits>
 #include <stdint.h>
 #include "ParaAngle.h"
+#include "ParaMathUtility.h"
 
 #if !defined(WIN32) && !defined(INT64_C)
 #  define INT64_C(c) static_cast<long long>(c ## LL)     /* signed 64 bit constant */
