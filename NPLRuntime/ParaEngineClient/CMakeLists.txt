@@ -556,13 +556,13 @@ else (PARAENGINE_COMPILE_LIB)
 		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
 	endif(DIRECTX_FOUND)
+
+endif (PARAENGINE_COMPILE_LIB)
+
 if (WIN32)
 	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "AwesomeTruck")
 	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "AwesomeTruck")
 endif()
-
-endif (PARAENGINE_COMPILE_LIB)
-
 
 if (WIN32)
 	set(EXTRA_LIBRARIES
