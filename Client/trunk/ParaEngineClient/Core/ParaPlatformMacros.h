@@ -3,8 +3,10 @@
 #ifndef PE_ASSERT
 #if defined(_DEBUG) || (defined(COCOS2D_DEBUG) && COCOS2D_DEBUG > 0)
 #define PE_ASSERT(cond) if (!(cond)) { ParaEngine::CLogger::GetSingleton().WriteFormated("assertion failed at %s:%d\n", __FILE__,__LINE__); }
+#define PE_ASSERT2(cond, reason) if (!(cond)) { ParaEngine::CLogger::GetSingleton().WriteFormated("assertion failed at %s:%d with reason: %s\n", __FILE__,__LINE__, reason); }
 #else
 #define PE_ASSERT(cond)
+#define PE_ASSERT2(cond, reason)
 #endif
 
 #ifndef WIN32

@@ -18,7 +18,7 @@ namespace ParaEngine
 		std::string m_sMeshFileName;
 
 		/// Hard link to mesh to avoid looking up each time
-		CParaXStaticModelPtr m_pStaticMesh;
+		ref_ptr<CParaXStaticBase> m_pStaticMesh;
 		CParaXModelPtr m_pParaXMesh;
 	};
 
@@ -134,8 +134,8 @@ namespace ParaEngine
 		/** get the highest level mesh if LOD is enabled. 
 		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
 		*/
-		CParaXStaticModelRawPtr GetMesh(int nLODIndex = 0);
-		CParaXStaticModelPtr CreateMesh(const char* sFilename);
+		CParaXStaticBase* GetMesh(int nLODIndex = 0);
+		ref_ptr<CParaXStaticBase> CreateMesh(const char* sFilename);
 
 		/**
 		* init the asset entity object.

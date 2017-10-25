@@ -4,6 +4,9 @@
 # Desc: option modify PARAENGINE_COMPILE_LIB
 project (ParaEngineServer)
 
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
+
 set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
 # The version number.
@@ -19,7 +22,7 @@ find_package(OpenGL REQUIRED)
 include_directories( ${OPENGL_INCLUDE_DIRS}  )
 
 ##############################
-file (GLOB ParaEngineServer_Engine_FILES ${CLIENT_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
+file (GLOB ParaEngineServer_Engine_FILES ${CLIENT_SOURCE_DIR}/Engine/ParaEngineServer.cpp ${CLIENT_SOURCE_DIR}/Engine/ParaXStaticBase.cpp)
 SOURCE_GROUP("Engine" FILES ${ParaEngineServer_Engine_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Engine_FILES})
 
@@ -60,7 +63,7 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_renderer_FILES})
 ##############################
 file (GLOB ParaEngineServer_pb_FILES ${CLIENT_SOURCE_DIR}/protocol/*.h ${CLIENT_SOURCE_DIR}/protocol/*.cpp)
 SOURCE_GROUP("protocol" FILES ${ParaEngineServer_pb_FILES})
-list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_pb_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_pb_FILES}) 
 
 ##############################
 file (GLOB ParaEngineServer_ParaXModel_FILES ${CLIENT_SOURCE_DIR}/ParaXModel/*.cpp ${CLIENT_SOURCE_DIR}/ParaXModel/*.h ${CLIENT_SOURCE_DIR}/ParaXModel/*.templates ${CLIENT_SOURCE_DIR}/ParaXModel/*.inl)
@@ -87,6 +90,15 @@ list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_IO_FILES})
 #file (GLOB ParaEngineServer_Common_FILES ${CLIENT_SOURCE_DIR}/common/*.*)
 #SOURCE_GROUP("Externals\\CommonDirectX" FILES ${ParaEngineServer_Common_FILES})
 #list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_Common_FILES})
+
+set(EmbeddedResource_FILES)
+# embedded resource
+embed_resources_abs(MyResource "${CLIENT_SOURCE_DIR}/res/ParaXmodel.templates")
+list(APPEND EmbeddedResource_FILES ${MyResource})
+
+list(APPEND EmbeddedResource_FILES ${CLIENT_SOURCE_DIR}/ResourceEmbedded.cpp)
+list(APPEND ParaEngineServer_SRCS ${EmbeddedResource_FILES})
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 
 ##############################
 file (GLOB ParaEngineServer_CurlLua_FILES ${CLIENT_SOURCE_DIR}/curllua/*.*)

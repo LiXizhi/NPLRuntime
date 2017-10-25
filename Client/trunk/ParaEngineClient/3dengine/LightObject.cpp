@@ -474,20 +474,23 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 				ppMesh=CGlobals::GetAssetManager()->LoadMesh("_default_directional_light_mesh","");
 				ppMesh->SetAABB(&Vector3(-10000000.0f,-10000000.0f,-10000000.0f),&Vector3(10000000.0f,10000000.0f,10000000.0f));
 				ppMesh->CreateMeshLODLevel(0.0f,"");
-				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ,CGlobals::GetRenderDevice(),&ppMesh->GetMesh()->m_pSysMemMesh);
+
+				auto pRawMesh = (CParaXStaticModelRawPtr)ppMesh->GetMesh();
+
+				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ,CGlobals::GetRenderDevice(), &(pRawMesh->GetSysMemMeshRef()));
 				std::vector<Vector3> pos;
 				LightGeomUtil::createQuad(pos);
 				void * data=nullptr;
-				ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+				((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->LockVertexBuffer(0,&data);
 				memcpy(data,&pos[0],pos.size()*sizeof(Vector3));
-				ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
+				((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->UnlockVertexBuffer();
 				D3DXATTRIBUTERANGE attr;
 				attr.AttribId=0;
 				attr.FaceCount=2;
 				attr.FaceStart=0;
 				attr.VertexCount=pos.size();
 				attr.VertexStart=0;
-				ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+				((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
 			}
 			break;
 		case D3DLIGHT_POINT:
@@ -503,19 +506,19 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			std::vector<unsigned short> indices;
 			LightGeomUtil::createSphere(pos,indices,m_pLightParams->Range,10,10);
 			void * data=nullptr;
-			ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->LockVertexBuffer(0,&data);
 			memcpy(data,&pos[0],pos.size()*sizeof(pos[0]));
-			ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
-			ppMesh->GetMesh()->GetSysMemMesh()->LockIndexBuffer(0,&data);
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->UnlockVertexBuffer();
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->LockIndexBuffer(0,&data);
 			memcpy(data,&indices[0],indices.size()*sizeof(indices[0]));
-			ppMesh->GetMesh()->GetSysMemMesh()->UnlockIndexBuffer();
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->UnlockIndexBuffer();
 			D3DXATTRIBUTERANGE attr;
 			attr.AttribId=0;
 			attr.FaceCount=indices.size()/3;
 			attr.FaceStart=0;
 			attr.VertexCount=pos.size();
 			attr.VertexStart=0;
-			ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
 		}
 		break;
 		case D3DLIGHT_SPOT:
@@ -548,26 +551,26 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			for(auto & p:pos)
 				p=p*init_rotate;
 			void * data=nullptr;
-			ppMesh->GetMesh()->GetSysMemMesh()->LockVertexBuffer(0,&data);
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->LockVertexBuffer(0,&data);
 			memcpy(data,&pos[0],pos.size()*sizeof(pos[0]));
-			ppMesh->GetMesh()->GetSysMemMesh()->UnlockVertexBuffer();
-			ppMesh->GetMesh()->GetSysMemMesh()->LockIndexBuffer(0,&data);
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->UnlockVertexBuffer();
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->LockIndexBuffer(0,&data);
 			memcpy(data,&indices[0],indices.size()*sizeof(indices[0]));
-			ppMesh->GetMesh()->GetSysMemMesh()->UnlockIndexBuffer();
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->UnlockIndexBuffer();
 			D3DXATTRIBUTERANGE attr;
 			attr.AttribId=0;
 			attr.FaceCount=indices.size()/3;
 			attr.FaceStart=0;
 			attr.VertexCount=pos.size();
 			attr.VertexStart=0;
-			ppMesh->GetMesh()->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
 		}
 		break;
 		}
 		m_pDeferredShadingMesh=ppMesh;
 	}
 	LPDIRECT3DDEVICE9 pd3dDevice=sceneState->m_pd3dDevice;
-	CParaXStaticMesh* pMesh=m_pDeferredShadingMesh->GetMesh();
+	auto pMesh = m_pDeferredShadingMesh->GetMesh();
 	CEffectFile* pEffectFile=CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	CGlobals::GetWorldMatrixStack().push(m_mxLocalTransform);
 	pMesh->Render(sceneState,pEffectFile,true,false);

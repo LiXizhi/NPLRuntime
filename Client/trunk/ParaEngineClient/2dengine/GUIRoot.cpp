@@ -227,7 +227,6 @@ void CGUIRoot::Clear()
 {
 	TouchSessions::GetInstance().ClearTouchSessions();
 	
-	m_namemap.clear();
 	DestroyChildren();
 	SAFE_RELEASE(m_tooltip);
 	ClearAllTopLevelControls();
@@ -1066,6 +1065,12 @@ void ParaEngine::CGUIRoot::DispatchTouchMouseEvent(bool &bMouseHandled)
 	m_events.clear();
 }
 
+
+void ParaEngine::CGUIRoot::DestroyChildren()
+{
+	CGUIContainer::DestroyChildren();
+	m_namemap.clear();
+}
 
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 {

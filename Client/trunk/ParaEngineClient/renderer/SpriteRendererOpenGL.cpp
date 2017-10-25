@@ -18,7 +18,6 @@
 #include "SpriteRendererOpenGL.h"
 
 using namespace ParaEngine;
-USING_NS_CC;
 
 ParaEngine::CSpriteRendererOpenGL::CSpriteRendererOpenGL()
 	:m_sprite_count(0), m_pEffectFile(0), m_bNeedUpdateShader(false), m_bIsTextMode(false), m_bIsTextModeDevice(false)

@@ -35,6 +35,7 @@
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
 #include "NPLPackageConfig.h"
+#include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
 
 using namespace ParaEngine;
@@ -149,6 +150,8 @@ const char * ParaEngine::CParaEngineAppBase::GetModuleDir()
 
 void ParaEngine::CParaEngineAppBase::InitCommon()
 {
+	CStaticInitRes::StaticInit();
+
 	SetCurrentInstance((CParaEngineApp*)this);
 
 	srand((unsigned long)time(NULL));
@@ -677,8 +680,14 @@ void CParaEngineAppBase::LoadPackages()
 	std::string sRootDir = CParaFile::GetCurDirectory(0);
 	OUTPUT_LOG("ParaEngine Root Dir is %s\n", sRootDir.c_str());
 	// always load main package folder if exist
-	LoadNPLPackage("npl_packages/main/");
-
+	std::string sOutputFile;
+	if (LoadNPLPackage("npl_packages/main/", &sOutputFile))
+	{
+		if (!sOutputFile.empty()) {
+			CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Loadfile_async(sOutputFile.c_str());
+		}
+	}
+	
 	// load packages via command line
 	const char* sPackages = GetAppCommandLineByParam("loadpackage", NULL);
 	if (sPackages)
@@ -687,7 +696,13 @@ void CParaEngineAppBase::LoadPackages()
 		StringHelper::split(sPackages, ",;", listPackages);
 		for (const std::string& package : listPackages)
 		{
-			LoadNPLPackage(package.c_str());
+			std::string sOutputFile;
+			if (LoadNPLPackage(package.c_str(), &sOutputFile))
+			{
+				if (!sOutputFile.empty()) {
+					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->Loadfile_async(sOutputFile.c_str());
+				}
+			}
 		}
 	}
 

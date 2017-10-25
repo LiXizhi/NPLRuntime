@@ -745,7 +745,7 @@ public:
 	* Completely destroy child nodes from memory recursively. This is often called 
 	* by the root scene at application clean up
 	*/
-	void					DestroyChildren();
+	virtual void					DestroyChildren();
 
 	/**
 	* destroy a child by name. It returns the number of nodes that are destroyed. 

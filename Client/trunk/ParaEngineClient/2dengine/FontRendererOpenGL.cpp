@@ -69,7 +69,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 				// disable aliasing
 				pFontRenderer->getFontAtlas()->setAliasTexParameters();
 			}
-			pFontRenderer->autorelease();
+			pFontRenderer->AddToAutoReleasePool();
 			return pFontRenderer;
 		}
 	}

@@ -22,7 +22,7 @@ namespace ParaEngine
 	class CBlockLightGridClient : public CBlockLightGridBase
 	{
 	public:
-		typedef FixedSizedAllocator< std::pair<uint64_t, Light> >	DL_Allocator_BlockLight;
+		typedef FixedSizedAllocator< std::pair<const uint64_t, Light> >	DL_Allocator_BlockLight;
 		
 		CBlockLightGridClient(int32_t chunkCacheDim, CBlockWorld* pBlockWorld);
 		virtual ~CBlockLightGridClient();

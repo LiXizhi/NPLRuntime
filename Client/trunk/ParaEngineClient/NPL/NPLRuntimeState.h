@@ -184,6 +184,7 @@ namespace NPL
 		* @return: NPLReturnCode
 		*/
 		virtual NPLReturnCode Activate_async(const string & filepath, const char * code = NULL,int nLength=0, int priority=0);
+		virtual NPLReturnCode Loadfile_async(const string & filepath, int priority = 0);
 
 		/** same as Activate_async. except that input are read from NPLMesage. 
 		* e.g.

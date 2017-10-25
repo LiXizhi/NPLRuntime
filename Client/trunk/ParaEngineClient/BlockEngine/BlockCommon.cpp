@@ -376,17 +376,17 @@ namespace ParaEngine
 	{
 #ifdef USE_DOUBLE_BLOCK_CONVERT
 		const double blocksize_inverse = BlockConfig::g_dBlockSizeInverse;
-		idx_x = (uint16)(x*blocksize_inverse);
+		idx_x = (uint16)((x > 0) ? (x*blocksize_inverse) : 0);
 		y -= CBlockWorld::GetVerticalOffset();
 		idx_y = (uint16)((y > 0) ? (y*blocksize_inverse) : 0);
-		idx_z = (uint16)(z*blocksize_inverse);
+		idx_z = (uint16)((z > 0) ? (z*blocksize_inverse) : 0);
 #else
 		const double blocksize = BlockConfig::g_blockSize;
 		const double region_width = BlockConfig::g_regionSize;
 		double offset_y = CBlockWorld::GetVerticalOffset();
 
-		idx_x = uint16(x / region_width);
-		idx_z = uint16(z / region_width);
+		idx_x = (x>0) ? uint16(x / region_width) : 0;
+		idx_z = (y>0) ? uint16(z / region_width) : 0;
 		double x_orgin = idx_x * region_width;
 		double z_orgin = idx_z * region_width;
 		// local index
@@ -396,8 +396,7 @@ namespace ParaEngine
 		idx_x = (idx_x<<9) + bx;
 
 		double ofsY = y - offset_y;
-		if(ofsY < 0)ofsY = 0;
-		idx_y = uint16(ofsY/blocksize);
+		idx_y = (ofsY > 0) ? (uint16(ofsY/blocksize)) : 0;
 
 		idx_z = (idx_z<<9) + bz;
 #endif

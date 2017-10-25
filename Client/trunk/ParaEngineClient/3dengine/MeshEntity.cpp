@@ -40,7 +40,8 @@ HRESULT MeshEntity::RestoreDeviceObjects()
 		{
 			MeshLOD& lod = (*iCur);
 #ifdef USE_DIRECTX_RENDERER
-			if(lod.m_pStaticMesh && (lod.m_pStaticMesh->m_pLocalMesh == NULL))
+
+			if(lod.m_pStaticMesh)
 			{
 				lod.m_pStaticMesh->InitDeviceObjects();
 			}
@@ -191,7 +192,7 @@ bool MeshEntity::IsLoaded()
 	return GetMesh()!=0;
 }
 
-CParaXStaticModelRawPtr MeshEntity::GetMesh(int nLODIndex)
+CParaXStaticBase* MeshEntity::GetMesh(int nLODIndex)
 {
 	LoadAsset();
 	if(IsValid() && ((int)m_MeshLODs.size())>nLODIndex && nLODIndex>=0)
@@ -201,14 +202,21 @@ CParaXStaticModelRawPtr MeshEntity::GetMesh(int nLODIndex)
 }
 
 
-ParaEngine::CParaXStaticModelPtr ParaEngine::MeshEntity::CreateMesh(const char* sFilename)
+ParaEngine::ref_ptr<CParaXStaticBase> ParaEngine::MeshEntity::CreateMesh(const char* sFilename)
 {
 #ifdef USE_DIRECTX_RENDERER
-	return  CParaXStaticModelPtr(new CParaXStaticMesh(sFilename));
+	if (CParaXStaticBase::GetFileTypeByFilename(sFilename) == XModelFileType::FileType_FBX)
+		return ref_ptr<CParaXStaticBase>(new CParaXStaticModel(sFilename));
+	else
+		return ref_ptr<CParaXStaticBase>(new CParaXStaticMesh(sFilename));
+
+
 #elif defined(USE_OPENGL_RENDERER)
-	return CParaXStaticModelPtr(new CParaXStaticModel(sFilename));
+	//return CParaXStaticModelPtr(new CParaXStaticModel(sFilename));
+	return ref_ptr<CParaXStaticBase>(new CParaXStaticModel(sFilename));
 #else
-	return CParaXStaticModelPtr();
+	//return CParaXStaticModelPtr();
+	return ref_ptr<CParaXStaticBase>();
 #endif
 }
 

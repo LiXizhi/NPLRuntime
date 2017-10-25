@@ -64,6 +64,11 @@ namespace ParaScripting
 		return ParaEngine::StringHelper::base64(source);
 	}
 
+	std::string ParaMisc::unbase64(const string& source)
+	{
+		return ParaEngine::StringHelper::unbase64(source);
+	}
+
 	int ParaMisc::GetUnicodeCharNum(const char* str)
 	{
 		return ParaEngine::StringHelper::GetUnicodeCharNum(str);
