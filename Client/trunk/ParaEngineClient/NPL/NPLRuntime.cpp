@@ -768,7 +768,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-	#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+	#if !defined(PARAENGINE_MOBILE)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
     #endif
 
