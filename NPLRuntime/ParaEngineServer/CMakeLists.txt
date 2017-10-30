@@ -389,6 +389,10 @@ else (WIN32)
 			pthread
 		)
 	endif(LINUX)
+	if(APPLE)
+	    ## this is for file monitor API in MAC OSX
+		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} "-framework CoreFoundation" "-framework CoreServices")
+	endif(APPLE)
 endif (WIN32)
 
 # Link the executable to the libraries.
