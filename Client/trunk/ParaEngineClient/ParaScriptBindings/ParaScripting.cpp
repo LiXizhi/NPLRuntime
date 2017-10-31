@@ -197,7 +197,6 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetObject", &ParaObject::GetObject)
 				.def("GetTexture", &ParaObject::GetTexture)
 				.def("AddChild", &ParaObject::AddChild)
-				.def("DestroyChildren", &ParaObject::DestroyChildren)
 				.def("SetMaskColor", &ParaObject::SetMaskColor),
 
 				// ParaCharacter class declarations

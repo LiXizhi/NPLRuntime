@@ -895,8 +895,6 @@ namespace ParaScripting
 		bool  SetReplaceableTexture(int ReplaceableTextureID, ParaAssetObject pTextureEntity);
 
 		void SetMaskColor(int colorIndex,float r,float g,float b);
-
-		void DestroyChildren();
 	};
 
 	
