@@ -79,6 +79,11 @@ CParaEngineCore::~CParaEngineCore(void)
 }
 
 
+void ParaEngine::CParaEngineCore::Destroy()
+{
+	DestroySingleton();
+}
+
 CParaEngineCore* ParaEngine::CParaEngineCore::GetInstance()
 {
 	static boost::thread_specific_ptr< CParaEngineCore > g_instance;

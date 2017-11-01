@@ -106,7 +106,7 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 		if( GetMessageW( &msg, NULL, 0U, 0U ) != 0 )
 		{
 			// Translate and dispatch the message
-			if( (hAccel == NULL) || (m_hWnd == NULL) ||
+			if( (m_hWnd == NULL) ||
 				// process custom messages. standalone app must always call it in order for the game engine to act properly
 				((m_pApp->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam)==0) &&
 				(TranslateAcceleratorW( m_hWnd, hAccel, &msg ) == 0)))
