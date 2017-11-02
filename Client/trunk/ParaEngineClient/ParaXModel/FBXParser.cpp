@@ -428,7 +428,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 					pMesh->textures[i] = texEntity;
 				}
 			}
-			else if (CParaFile::DoesAssetFileExist(m_textures[i].GetFileName().c_str()))
+			else if (CParaFile::DoesFileExist(m_textures[i].GetFileName().c_str(), true))
 			{
 				pMesh->textures[i] = CGlobals::GetAssetManager()->LoadTexture("", m_textures[i], TextureEntity::StaticTexture);
 			}
