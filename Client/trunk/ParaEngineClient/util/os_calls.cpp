@@ -303,6 +303,7 @@ int _findclose(long h)
 
 #if defined(__APPLE__) && defined(__MACH__)
 #include <mach/mach.h>
+#include <mach-o/dyld.h>
 
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #include <fcntl.h>
@@ -404,6 +405,10 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 		len = 0;
 	exePath[len] = '\0';
 	return std::string(exePath);
+#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
+    unsigned int bufferSize = 512;
+    _NSGetExecutablePath(exePath, &bufferSize);
+    return std::string(exePath);
 #else
 	return std::string();
 #endif
