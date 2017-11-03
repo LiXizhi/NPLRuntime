@@ -7,7 +7,7 @@
 
 namespace ParaEngine
 {
-#ifdef USE_DIRECTX_RENDERER	
+#if defined(USE_DIRECTX_RENDERER)
 	/**
 	* key board
 	*/

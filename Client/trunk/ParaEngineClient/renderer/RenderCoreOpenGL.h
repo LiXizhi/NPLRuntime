@@ -1,5 +1,54 @@
 #pragma once
 
+#ifndef DIRECTINPUT_VERSION
+namespace ParaEngine
+{
+#ifndef FIELD_OFFSET
+#define FIELD_OFFSET(type, field)    ((uint32_t)offsetof(type, field))
+#endif
+
+
+	typedef struct _DIMOUSESTATE {
+		uint32    lX;
+		uint32    lY;
+		uint32    lZ;
+		BYTE    rgbButtons[4];
+	} DIMOUSESTATE, *LPDIMOUSESTATE;
+
+	// emulate direct mouse
+	typedef struct _DIMOUSESTATE2 {
+		uint32    lX;
+		uint32    lY;
+		uint32    lZ;
+		BYTE    rgbButtons[8];
+	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
+
+	enum DIMOFS_ENUM
+	{
+		DIMOFS_X = FIELD_OFFSET(DIMOUSESTATE, lX),
+		DIMOFS_Y = FIELD_OFFSET(DIMOUSESTATE, lY),
+		DIMOFS_Z = FIELD_OFFSET(DIMOUSESTATE, lZ),
+		DIMOFS_BUTTON0 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 0),
+		DIMOFS_BUTTON1 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 1),
+		DIMOFS_BUTTON2 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 2),
+		DIMOFS_BUTTON3 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 3)
+	};
+
+	// emulate direct input 8 structure
+	typedef struct DIDEVICEOBJECTDATA {
+		DWORD       dwOfs;
+		DWORD       dwData;
+		DWORD       dwTimeStamp;
+		DWORD       dwSequence;
+		DWORD		uAppData;
+	} DIDEVICEOBJECTDATA, *LPDIDEVICEOBJECTDATA;
+
+
+
+
+}
+#endif
+
 namespace ParaEngine
 {
 #ifndef MAKEFOURCC
@@ -22,45 +71,8 @@ namespace ParaEngine
 		D3DCULL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
 	} D3DCULL;
 
-	// emulate direct input 8 structure
-	typedef struct DIDEVICEOBJECTDATA {
-		DWORD       dwOfs;
-		DWORD       dwData;
-		DWORD       dwTimeStamp;
-		DWORD       dwSequence;
-		DWORD		uAppData;
-	} DIDEVICEOBJECTDATA, *LPDIDEVICEOBJECTDATA;
 
-	typedef struct _DIMOUSESTATE {
-		uint32    lX;
-		uint32    lY;
-		uint32    lZ;
-		BYTE    rgbButtons[4];
-	} DIMOUSESTATE, *LPDIMOUSESTATE;
 
-	// emulate direct mouse
-	typedef struct _DIMOUSESTATE2 {
-		uint32    lX;
-		uint32    lY;
-		uint32    lZ;
-		BYTE    rgbButtons[8];
-	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
-
-#ifndef FIELD_OFFSET
-#define FIELD_OFFSET(type, field)    ((uint32_t)offsetof(type, field))
-#endif
-	
-	enum DIMOFS_ENUM
-	{
-		DIMOFS_X = FIELD_OFFSET(DIMOUSESTATE, lX),
-		DIMOFS_Y = FIELD_OFFSET(DIMOUSESTATE, lY),
-		DIMOFS_Z = FIELD_OFFSET(DIMOUSESTATE, lZ),
-		DIMOFS_BUTTON0 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 0),
-		DIMOFS_BUTTON1 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 1),
-		DIMOFS_BUTTON2 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 2),
-		DIMOFS_BUTTON3 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 3)
-	};
-	
 
 	typedef enum _D3DFORMAT
 	{

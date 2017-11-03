@@ -233,7 +233,7 @@ void CBaseCamera::SetFarPlane(float fFarPlane)
 //-----------------------------------------------------------------------------
 LRESULT CBaseCamera::HandleMessages( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined( USE_DIRECTX_RENDERER)
 	UNREFERENCED_PARAMETER( hWnd );
 	UNREFERENCED_PARAMETER( lParam );
 

@@ -83,9 +83,32 @@ if (WIN32)
 		option(GLFW_BUILD_EXAMPLES OFF)
 		option(GLFW_BUILD_TESTS OFF)
 		option(GLFW_INSTALL OFF)
-		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${CLIENT_BINARY_DIR}/glfw-3.2.1)
-	endif()
 
+		
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${CLIENT_BINARY_DIR}/glfw-3.2.1)
+
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
+		set(PNG_FOUND 1)
+		set(PNG_LIBRARY libpng)
+		set(PNG_LIBRARIES libpng)
+		set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
+		set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
+		
+
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1 ${CLIENT_BINARY_DIR}/freetype-2.8.1)
+		set(FREETYPE_LIBRARY freetype)
+		set(FREETYPE_LIBRARIES freetype)
+		set(FREETYPE_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/include ${CLIENT_BINARY_DIR}/freetype-2.8.1/include)
+		set(FREETYPE_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/src ${CLIENT_BINARY_DIR}/freetype-2.8.1/src)
+
+
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/build/cmake ${CLIENT_BINARY_DIR}/glew-2.1.0)
+		set(GLEW_LIBRARY glew)
+		set(GLEW_LIBRARIES glew)
+		set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${CLIENT_BINARY_DIR}/glew-2.1.0/include)
+		set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${CLIENT_BINARY_DIR}/glew-2.1.0/src)
+		
+	endif()
 else()
 	FIND_PACKAGE(CURL REQUIRED)
 	# making executable relocatable 
@@ -107,6 +130,8 @@ add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${CLIENT_BINARY_DIR}/luabind-0
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${CLIENT_BINARY_DIR}/sqlite-3.6.23.1)
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
+
+
 
 if(NPLRUNTIME_STATIC_LIB) 
 	# add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/png ${CLIENT_BINARY_DIR}/png)
