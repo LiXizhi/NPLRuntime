@@ -35,7 +35,8 @@ CReport::~CReport(void)
 
 double CReport::GetValue (const char * strItemName)
 {
-	map<string, ReportItem>::iterator iter = m_items.find(string(strItemName));
+	string sTmp(strItemName);
+	map<string, ReportItem>::iterator iter = m_items.find(sTmp);
 	if(iter != m_items.end())
 	{
 		return (*iter).second.dValue;
@@ -45,32 +46,35 @@ double CReport::GetValue (const char * strItemName)
 
 void CReport::SetValue (const char * strItemName, double dValue)
 {
-	map<string, ReportItem>::iterator iter = m_items.find(string(strItemName));
+	string sTmp(strItemName);
+	map<string, ReportItem>::iterator iter = m_items.find(sTmp);
 	if(iter != m_items.end())
 	{
 		(*iter).second = ReportItem(dValue);
 	}
 	else
 	{
-		m_items.insert(pair<string, ReportItem>(string(strItemName), ReportItem(dValue)));
+		m_items.insert(pair<string, ReportItem>(sTmp, ReportItem(dValue)));
 	}
 }
 
 void CReport::SetString (const char * strItemName, const char * str)
 {
-	map<string, ReportItem>::iterator iter = m_items.find(string(strItemName));
+	string sTmp(strItemName);
+	map<string, ReportItem>::iterator iter = m_items.find(sTmp);
 	if(iter != m_items.end())
 	{
 		(*iter).second = ReportItem(str);
 	}
 	else
 	{
-		m_items.insert(pair<string, ReportItem>(string(strItemName), ReportItem(str)));
+		m_items.insert(pair<string, ReportItem>(sTmp, ReportItem(str)));
 	}
 }
 void CReport::GetItemReport (const char * strItemName, char* pReport)
 {
-	map<string, ReportItem>::iterator iter = m_items.find(string(strItemName));
+	string sTmp(strItemName);
+	map<string, ReportItem>::iterator iter = m_items.find(sTmp);
 	if(iter != m_items.end())
 	{
 		sprintf(pReport, "%s=%s", strItemName, (*iter).second.GetString().c_str());
