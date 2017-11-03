@@ -40,7 +40,15 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		//fontFile = "fonts/simhei.ttf"; // 9MB
 		//fontFile = "fonts/FZYTK.TTF"; // 3MB
 		//fontFile = "fonts/SIMYOU.TTF"; // 6MB
+#ifdef WIN32
+		char szPath[MAX_PATH];
+		GetWindowsDirectoryA(szPath, MAX_PATH);
+		fontFile = szPath;
+		fontFile = fontFile + "/fonts/msyh.ttc";
+#else
 		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
+#endif
+		
 	}
 	else
 	{

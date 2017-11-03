@@ -9,7 +9,7 @@
 #include "ParaEngine.h"
 #include "util/StringHelper.h"
 #include "GUIUniBuffer.h"
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 #include "MiscEntity.h"
 #include <strsafe.h>
 #include "GUIResource.h"
@@ -770,6 +770,70 @@ int ParaEngine::CUniBuffer::GetBufferA(std::string& out) const
 
 bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 {
+	//PE_ASSERT(nIndex >= 0);
+
+
+	//if (nIndex < 0)
+	//	return false;  // invalid index
+	//int nTextSize = lstrlenW((WCHAR*)m_pwszBuffer);
+	//if (nIndex > nTextSize)
+	//	return false;
+
+	//// Check for maximum length allowed
+	//if ((nTextSize + 1) >= DXUT_MAX_EDITBOXLENGTH)
+	//	return false;
+
+
+	//if ((nTextSize + 1) >= m_nBufferSize)
+	//{
+	//	if (!SetBufferSize(-1))
+	//		return false;  // out of memory
+	//}
+
+	//PE_ASSERT(m_nBufferSize >= 2);
+
+	//// Shift the characters after the index, start by copying the null terminator
+	//char16_t* dest = m_pwszBuffer + nTextSize + 1;
+	//char16_t* stop = m_pwszBuffer + nIndex;
+	//char16_t* src = dest - 1;
+
+	//while (dest > stop)
+	//{
+	//	*dest-- = *src--;
+	//}
+
+	//// Set new character
+	//m_pwszBuffer[nIndex] = wChar;
+	//m_bAnalyseRequired = true;
+
+	//return true;
+
+	PE_ASSERT(nIndex >= 0);
+	if (nIndex < 0)
+		return false; // invalid index
+
+	auto nTextSize = m_utf16Text.size();
+
+	if (nIndex > nTextSize)
+		return false;
+
+	if (nIndex == 0)
+	{
+		m_utf16Text = wchar + m_utf16Text;
+	}
+	else if (nIndex == nTextSize)
+	{
+		m_utf16Text += wchar;
+	}
+	else
+	{
+		std::u16string start(m_utf16Text, nIndex);
+		std::u16string end(&m_utf16Text[nIndex]);
+
+		m_utf16Text = start + wchar + end;
+	}
+
+
 	return true;
 }
 

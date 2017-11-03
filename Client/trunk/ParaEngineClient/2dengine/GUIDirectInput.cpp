@@ -12,7 +12,7 @@
 //			buffered mouse/key events are based on windows messages, however macros can be used to switch between using window messages or direct input
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) 
 #include <strsafe.h>
 #include "GUIDirectInput.h"
 #include "Globals.h"
@@ -20,7 +20,13 @@
 #include "EventBinding.h"
 #include "GUIRoot.h"
 #include "util/StringHelper.h"
-#include "ParaEngineApp.h"
+
+
+#ifdef USE_OPENGL_RENDERER
+	#include "platform/win32/ParaEngineApp.h"
+#else
+	#include "ParaEngineApp.h"
+#endif
 
 using namespace ParaEngine;
 
@@ -522,6 +528,7 @@ bool ParaEngine::CDirectMouse::IsButtonDown(MOUSE_KEY_STD nMouseButton)
 
 void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHotSpot)
 {
+#ifdef USE_DIRECTX_RENDERER
 	HRESULT hr = E_FAIL;
 	
 	//OUTPUT_LOG("SetCursorFromFile: %s\r\n", szCursor==0?"none":szCursor);
@@ -598,6 +605,8 @@ void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHo
 		m_szCursorName=szCursor;
 	}
 	return;
+#endif
+
 }
 void CDirectMouse::SetCursorTexture( TextureEntity* pTexture, RECT* prcTexture, Color defaultTextureColor)
 {
