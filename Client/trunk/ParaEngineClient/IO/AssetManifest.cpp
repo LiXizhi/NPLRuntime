@@ -168,7 +168,8 @@ bool AssetFileEntry::SyncFile()
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 		if(pAsyncLoader->interruption_requested())
 			return false;
-		pAsyncLoader->log(string("AssetFile Sync Started:")+url+"\n");
+		string sTmp = string("AssetFile Sync Started:") + url + "\n";
+		pAsyncLoader->log(sTmp);
 		CUrlLoader loader;
 		CUrlProcessor processor;
 
@@ -176,7 +177,8 @@ bool AssetFileEntry::SyncFile()
 		processor.SetUrl(url.c_str());
 		if(pAsyncLoader->RunWorkItem( &loader, &processor, NULL, NULL) != S_OK)
 		{
-			pAsyncLoader->log(string("AssetFile Sync Failed:")+url+"\n");
+			string sTmp = string("AssetFile Sync Failed:") + url + "\n";
+			pAsyncLoader->log(sTmp);
 			return false;
 		}
 		else
@@ -186,18 +188,21 @@ bool AssetFileEntry::SyncFile()
 			{
 				if(SaveToDisk(&(processor.GetData()[0]), (int)(processor.GetData().size())))
 				{
-					pAsyncLoader->log(string("AssetFile Sync Completed:")+url+"\n");
+					string sTmp = string("AssetFile Sync Completed:") + url + "\n";
+					pAsyncLoader->log(sTmp);
 					// open the file now. 
 					return true;
 				}
 				else
 				{
-					pAsyncLoader->log(string("AssetFile Sync Failed cannot save to disk:") + url + "\n");
+					string sTmp = string("AssetFile Sync Failed cannot save to disk:") + url + "\n";
+					pAsyncLoader->log(sTmp);
 				}
 			}
 			else
 			{
-				pAsyncLoader->log(string("AssetFile Sync Failed http code!=200:") + url + "\n");
+				string sTmp = string("AssetFile Sync Failed http code!=200:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 			}
 		}
 	}
@@ -250,17 +255,20 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 		{
 			if(pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
 			{
-				pAsyncLoader->log(string("AssetFile ASync Completed:")+url+"\n");
+				string sTmp = string("AssetFile ASync Completed:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 				bSucceed = true;
 			}
 			else
 			{
-				pAsyncLoader->log(string("AssetFile ASync Failed cannot save to disk:") + url + "\n");
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 			}
 		}
 		else
 		{
-			pAsyncLoader->log(string("AssetFile ASync Failed http code!=200:") + url + "\n");
+			string sTmp = string("AssetFile ASync Failed http code!=200:") + url + "\n";
+			pAsyncLoader->log(sTmp);
 		}
 
 		if(pData->m_pFuncCallback)
@@ -304,7 +312,8 @@ HRESULT AssetFileEntry::SyncFile_Async(URL_LOADER_CALLBACK pFuncCallback, CUrlPr
 	if(pAsyncLoader->interruption_requested())
 		return E_FAIL;
 
-	pAsyncLoader->log(string("AssetFile ASync Started:")+url+"\n");
+	string sTmp = string("AssetFile ASync Started:") + url + "\n";
+	pAsyncLoader->log(sTmp);
 	
 	CUrlLoader* pLoader = new CUrlLoader();
 	pLoader->SetEstimatedSizeInBytes(m_nFileSize);
@@ -331,17 +340,20 @@ DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pReques
 		{
 			if(pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
 			{
-				pAsyncLoader->log(string("AssetFile ASync Completed:")+url+"\n");
+				string sTmp = string("AssetFile ASync Completed:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 				bSucceed = true;
 			}
 			else
 			{
-				pAsyncLoader->log(string("AssetFile ASync Failed cannot save to disk:") + url + "\n");
+				string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 			}
 		}
 		else
 		{
-			pAsyncLoader->log(string("AssetFile ASync Failed http code!=200:") + url + "\n");
+			string sTmp = string("AssetFile ASync Failed http code!=200:") + url + "\n";
+			pAsyncLoader->log(sTmp);
 		}
 
 		pData->m_pAssetFileEntry->SignalComplete(bSucceed ? 0 : -1);
@@ -386,7 +398,8 @@ HRESULT AssetFileEntry::SyncFile_Async(const SyncFile_Callback_t::slot_type& slo
 			if(pAsyncLoader->interruption_requested())
 				return E_FAIL;
 
-			pAsyncLoader->log(string("AssetFile ASync Started:")+url+"\n");
+			string sTmp = string("AssetFile ASync Started:") + url + "\n";
+			pAsyncLoader->log(sTmp);
 
 			CUrlLoader* pLoader = new CUrlLoader();
 			pLoader->SetEstimatedSizeInBytes(m_nFileSize);
@@ -465,7 +478,8 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 {
 	if(bCheckMD5 && !CheckMD5AndSize(buffer, nSize))
 	{
-		CAsyncLoader::GetSingleton().log(string("Asset md5 check Failed:")+m_url+"\n");
+		string sTmp = string("Asset md5 check Failed:") + m_url + "\n";
+		CAsyncLoader::GetSingleton().log(sTmp);
 		// OUTPUT_LOG("warning: md5 check for asset file failed for file: %s.\n", m_url.c_str());
 		m_nStatus = AssetFileStatus_Unknown;
 		return false;
@@ -487,12 +501,14 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 			}
 			else
 			{
-				CAsyncLoader::GetSingleton().log(string("Failed To MoveFile:")+m_url+"\n");
+				string sTmp = string("Failed To MoveFile:") + m_url + "\n";
+				CAsyncLoader::GetSingleton().log(sTmp);
 			}
 		}
 		else
 		{
-			CAsyncLoader::GetSingleton().log(string("Failed To UnzipMemToFile:")+m_url+"\n");
+			string sTmp = string("Failed To UnzipMemToFile:") + m_url + "\n";
+			CAsyncLoader::GetSingleton().log(sTmp);
 		}
 	}
 	else
@@ -510,12 +526,14 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 			}
 			else
 			{
-				CAsyncLoader::GetSingleton().log(string("Failed To MoveFile:")+m_url+"\n");
+				string sTmp = string("Failed To MoveFile:") + m_url + "\n";
+				CAsyncLoader::GetSingleton().log(sTmp);
 			}
 		}
 		else
 		{
-			CAsyncLoader::GetSingleton().log(string("Failed To CreateNewFile:")+m_url+"\n");
+			string sTmp = string("Failed To CreateNewFile:") + m_url + "\n";
+			CAsyncLoader::GetSingleton().log(sTmp);
 		}
 	}
 	m_nStatus = AssetFileStatus_Unknown;

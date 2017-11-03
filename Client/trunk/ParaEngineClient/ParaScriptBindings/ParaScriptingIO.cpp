@@ -451,7 +451,7 @@ namespace ParaScripting
 
 	void ParaIO::WriteString(const char* str)
 	{
-		g_currentIOfile.WriteString(string(str));
+		g_currentIOfile.WriteString(str);
 	}
 
 	void ParaIO::write(const char* buffer, int nSize)

@@ -2051,7 +2051,7 @@ namespace ParaEngine
 	void COceanManager::RenderUnderwaterEffect(SceneState* pSceneState)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
