@@ -1,26 +1,23 @@
 #pragma once
 
+#ifndef DIRECTINPUT_VERSION
 namespace ParaEngine
 {
-#ifndef MAKEFOURCC
-#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
-                ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |       \
-                ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
-#endif /* defined(MAKEFOURCC) */
+#ifndef FIELD_OFFSET
+#define FIELD_OFFSET(type, field)    ((uint32_t)offsetof(type, field))
+#endif
 
-	typedef enum _D3DLIGHTTYPE {
-		D3DLIGHT_POINT = 1,
-		D3DLIGHT_SPOT = 2,
-		D3DLIGHT_DIRECTIONAL = 3,
-		D3DLIGHT_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
-	} D3DLIGHTTYPE;
 
-	typedef enum _D3DCULL {
-		D3DCULL_NONE = 1,
-		D3DCULL_CW = 2,
-		D3DCULL_CCW = 3,
-		D3DCULL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
-	} D3DCULL;
+	enum DIMOFS_ENUM
+	{
+		DIMOFS_X = FIELD_OFFSET(DIMOUSESTATE, lX),
+		DIMOFS_Y = FIELD_OFFSET(DIMOUSESTATE, lY),
+		DIMOFS_Z = FIELD_OFFSET(DIMOUSESTATE, lZ),
+		DIMOFS_BUTTON0 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 0),
+		DIMOFS_BUTTON1 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 1),
+		DIMOFS_BUTTON2 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 2),
+		DIMOFS_BUTTON3 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 3)
+	};
 
 	// emulate direct input 8 structure
 	typedef struct DIDEVICEOBJECTDATA {
@@ -46,21 +43,34 @@ namespace ParaEngine
 		BYTE    rgbButtons[8];
 	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
 
-#ifndef FIELD_OFFSET
-#define FIELD_OFFSET(type, field)    ((uint32_t)offsetof(type, field))
+
+}
 #endif
-	
-	enum DIMOFS_ENUM
-	{
-		DIMOFS_X = FIELD_OFFSET(DIMOUSESTATE, lX),
-		DIMOFS_Y = FIELD_OFFSET(DIMOUSESTATE, lY),
-		DIMOFS_Z = FIELD_OFFSET(DIMOUSESTATE, lZ),
-		DIMOFS_BUTTON0 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 0),
-		DIMOFS_BUTTON1 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 1),
-		DIMOFS_BUTTON2 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 2),
-		DIMOFS_BUTTON3 = (FIELD_OFFSET(DIMOUSESTATE, rgbButtons) + 3)
-	};
-	
+
+namespace ParaEngine
+{
+#ifndef MAKEFOURCC
+#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+                ((DWORD)(BYTE)(ch0) | ((DWORD)(BYTE)(ch1) << 8) |       \
+                ((DWORD)(BYTE)(ch2) << 16) | ((DWORD)(BYTE)(ch3) << 24 ))
+#endif /* defined(MAKEFOURCC) */
+
+	typedef enum _D3DLIGHTTYPE {
+		D3DLIGHT_POINT = 1,
+		D3DLIGHT_SPOT = 2,
+		D3DLIGHT_DIRECTIONAL = 3,
+		D3DLIGHT_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+	} D3DLIGHTTYPE;
+
+	typedef enum _D3DCULL {
+		D3DCULL_NONE = 1,
+		D3DCULL_CW = 2,
+		D3DCULL_CCW = 3,
+		D3DCULL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+	} D3DCULL;
+
+
+
 
 	typedef enum _D3DFORMAT
 	{

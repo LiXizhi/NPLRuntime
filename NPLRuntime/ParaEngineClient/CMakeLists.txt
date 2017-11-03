@@ -32,6 +32,8 @@ if (WIN32)
 	
 	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
 endif (WIN32)
+
+
  
 if (DIRECTX_FOUND)
 	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
@@ -100,10 +102,15 @@ else()
 endif()
 
 
-##############################
-#file (GLOB ParaEngineClient_EngineHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.h)
-#SOURCE_GROUP("Engine\\headers" FILES ${ParaEngineClient_EngineHeader_FILES})
-#list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_EngineHeader_FILES})
+if(WIN32 AND NOT NPLRUNTIME_DIRECTX_RENDERER)
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} gdiplus.lib dinput8.lib dxguid.lib)
+
+	##############################
+	file (GLOB_RECURSE ParaEngineClient_OPENGLTEST_FILES ${ParaEngineClient_SOURCE_DIR}/OpenGLTest/*.*  ${ParaEngineClient_SOURCE_DIR}/Engine/guicon.cpp ${ParaEngineClient_SOURCE_DIR}/Engine/guicon.h ${ParaEngineClient_SOURCE_DIR}/Engine/OSWindows.h ${ParaEngineClient_SOURCE_DIR}/Engine/OSWindows.cpp)
+	SOURCE_GROUP("OpenGLTest" FILES ${ParaEngineClient_OPENGLTEST_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_OPENGLTEST_FILES})
+endif(WIN32)
+
 
 ##############################
 file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dir_monitor/*.*)
@@ -326,19 +333,16 @@ if(APPLE)
 	set (External_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
 
 
-	include_directories("${External_Dir}/png/include/mac")
 	include_directories("${External_Dir}/jpeg/include/mac")
-	include_directories("${External_Dir}/freetype2/include/mac/freetype2")
+	#include_directories("${External_Dir}/freetype2/include/mac/freetype2")
 
 
 	set(NPLRUNTIME_LINK_DIRECTORIES 
-		"${External_Dir}/png/prebuilt/mac"
 		"${External_Dir}/jpeg/prebuilt/mac"
-		"${External_Dir}/freetype2/prebuilt/mac"
+		#"${External_Dir}/freetype2/prebuilt/mac"
 		)
 
 	set(WRAPPER_LIB
-		libpng.a
 		libjpeg.a
 		libfreetype.a
 	)
@@ -360,18 +364,32 @@ if (NOT DIRECTX_FOUND AND WIN32)
 
 	include_directories("${External_Dir}/glfw-3.2.1/include")
 	include_directories("${External_Dir}/glad/include")
-	include_directories("${External_Dir}/freetype2/include/win32")
-	include_directories("${External_Dir}/png/include/win32")
+	#include_directories("${External_Dir}/freetype2/include/win32")
 	include_directories("${External_Dir}/jpeg/include/win32")
 	include_directories("${External_Dir}/icon/include")
 
+	include_directories("${ZLIB_SOURCE_DIR}")
+	
+
+	include_directories("${CURL_SOURCE_DIR}/include/")
+	include_directories("${CURL_BINARY_DIR}/include/curl/")
+
 	set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} 
-		"${External_Dir}/freetype2/prebuilt/win32"
-		"${External_Dir}/png/prebuilt/win32"
+		#"${External_Dir}/freetype2/prebuilt/win32"
 		"${External_Dir}/jpeg/prebuilt/win32"
 		"${External_Dir}/icon/prebuilt"
 		)
-	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw freetype250.lib libiconv.lib libpng.lib libjpeg.lib)
+	#set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw freetype250.lib libiconv.lib libjpeg.lib)
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw libiconv.lib libjpeg.lib)
+endif()
+
+
+if (NOT DIRECTX_FOUND)
+	include_directories("${PNG_INCLUDE_DIR}")
+	include_directories("${FREETYPE_INCLUDE_DIR}")
+	include_directories("${GLEW_INCLUDE_DIR}")
+
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} png_static freetype glew_s)
 endif()
 
 #######################################
@@ -552,10 +570,10 @@ if (PARAENGINE_COMPILE_LIB)
 else (PARAENGINE_COMPILE_LIB)
 	# add the executable
 	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-	if(DIRECTX_FOUND)
+	if(WIN32)
 		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
-	endif(DIRECTX_FOUND)
+	endif(WIN32)
 if (WIN32)
 	set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "ParaEngineClient")
 	set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")

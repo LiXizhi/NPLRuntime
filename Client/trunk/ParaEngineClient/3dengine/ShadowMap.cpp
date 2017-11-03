@@ -1242,12 +1242,12 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	Vector3 min_pt(FLT_MAX, FLT_MAX, FLT_MAX), max_pt(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 	for (int i = 0; i < 8; ++i)
 	{
-		min_pt.x = std::min(min_pt.x, frustum_point_in_fake_light[i].x);
-		min_pt.y = std::min(min_pt.y, frustum_point_in_fake_light[i].y);
-		min_pt.z = std::min(min_pt.z, frustum_point_in_fake_light[i].z);
-		max_pt.x = std::max(max_pt.x, frustum_point_in_fake_light[i].x);
-		max_pt.y = std::max(max_pt.y, frustum_point_in_fake_light[i].y);
-		max_pt.z = std::max(max_pt.z, frustum_point_in_fake_light[i].z);
+		min_pt.x = (std::min)(min_pt.x, frustum_point_in_fake_light[i].x);
+		min_pt.y = (std::min)(min_pt.y, frustum_point_in_fake_light[i].y);
+		min_pt.z = (std::min)(min_pt.z, frustum_point_in_fake_light[i].z);
+		max_pt.x = (std::max)(max_pt.x, frustum_point_in_fake_light[i].x);
+		max_pt.y = (std::max)(max_pt.y, frustum_point_in_fake_light[i].y);
+		max_pt.z = (std::max)(max_pt.z, frustum_point_in_fake_light[i].z);
 	}
 	//snap
 	Vector3 diagonal_vec = pCamera->GetShadowFrustum()->vecFrustum[0] - pCamera->GetShadowFrustum()->vecFrustum[6];
