@@ -8,6 +8,21 @@ namespace ParaEngine
 #endif
 
 
+	typedef struct _DIMOUSESTATE {
+		uint32    lX;
+		uint32    lY;
+		uint32    lZ;
+		BYTE    rgbButtons[4];
+	} DIMOUSESTATE, *LPDIMOUSESTATE;
+
+	// emulate direct mouse
+	typedef struct _DIMOUSESTATE2 {
+		uint32    lX;
+		uint32    lY;
+		uint32    lZ;
+		BYTE    rgbButtons[8];
+	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
+
 	enum DIMOFS_ENUM
 	{
 		DIMOFS_X = FIELD_OFFSET(DIMOUSESTATE, lX),
@@ -28,20 +43,7 @@ namespace ParaEngine
 		DWORD		uAppData;
 	} DIDEVICEOBJECTDATA, *LPDIDEVICEOBJECTDATA;
 
-	typedef struct _DIMOUSESTATE {
-		uint32    lX;
-		uint32    lY;
-		uint32    lZ;
-		BYTE    rgbButtons[4];
-	} DIMOUSESTATE, *LPDIMOUSESTATE;
 
-	// emulate direct mouse
-	typedef struct _DIMOUSESTATE2 {
-		uint32    lX;
-		uint32    lY;
-		uint32    lZ;
-		BYTE    rgbButtons[8];
-	} DIMOUSESTATE2, *LPDIMOUSESTATE2;
 
 
 }
