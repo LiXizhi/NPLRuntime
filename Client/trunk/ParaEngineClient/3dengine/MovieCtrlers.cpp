@@ -154,7 +154,8 @@ void CMovieCtrler::SaveToFile(const std::string& filename)
 			const PosKey& key = m_keyframesPos[i];
 			snprintf(line, MAX_MOVIE_FILE_LINE, "%f pos(%f,%f,%f,%f)\r\n", m_keyframesPos.time(i), 
 				key.vPos.x, key.vPos.y, key.vPos.z, key.fFacing);
-			file.WriteString(string(line));
+			string sTmp(line);
+			file.WriteString(sTmp);
 		}
 
 		// write action keys.
@@ -163,7 +164,8 @@ void CMovieCtrler::SaveToFile(const std::string& filename)
 		file.WriteString(line);
 		for (int i=0; i<nLen;i++) {
 			snprintf(line, MAX_MOVIE_FILE_LINE, "%f %s\r\n", m_keyframesAction.time(i), m_keyframesAction[i].ToString());
-			file.WriteString(string(line));
+			string sTmp(line);
+			file.WriteString(sTmp);
 		}
 		// write effect keys.
 		nLen = m_keyframesEffect.GetSize();
@@ -171,7 +173,8 @@ void CMovieCtrler::SaveToFile(const std::string& filename)
 		file.WriteString(line);
 		for (int i=0; i<nLen;i++) {
 			snprintf(line, MAX_MOVIE_FILE_LINE, "%f e(%d) %s\r\n", m_keyframesEffect.time(i), m_keyframesEffect[i].nEffectID, m_keyframesEffect[i].sTarget.c_str());
-			file.WriteString(string(line));
+			string sTmp(line);
+			file.WriteString(sTmp);
 		}
 
 		// write dialog keys.
@@ -180,7 +183,8 @@ void CMovieCtrler::SaveToFile(const std::string& filename)
 		file.WriteString(line);
 		for (int i=0; i<nLen;i++) {
 			snprintf(line, MAX_MOVIE_FILE_LINE, "%f\r\n%s\r\r", m_keyframesDialog.time(i), m_keyframesDialog[i].sDialog.c_str());
-			file.WriteString(string(line));
+			string sTmp(line);
+			file.WriteString(sTmp);
 		}
 	}
 	SetMode(MOVIE_SUSPENDED);
