@@ -353,9 +353,16 @@ endif (PARAENGINE_COMPILE_LIB)
 
 
 if(APPLE)
-	# for luajit & mac
-	SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+	# for luajit 2.0 & mac
+    # SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
+
+if(APPLE)
+    set(LUA_LIBRARY luajit21)
+else()
+    set(LUA_LIBRARY lua)
+endif()
+
 
 
 if (WIN32)
@@ -395,10 +402,11 @@ else (WIN32)
 	endif(APPLE)
 endif (WIN32)
 
+
 # Link the executable to the libraries.
 target_link_libraries (ParaEngineServer
-	${Boost_LIBRARIES}
-	sqlite lua jsoncpp tinyxpath luabind
+    ${Boost_LIBRARIES} ${LUA_LIBRARY}
+	sqlite jsoncpp tinyxpath luabind
 	${OPENGL_LIBRARIES}
 	${EXTRA_LIBRARIES}
 )
