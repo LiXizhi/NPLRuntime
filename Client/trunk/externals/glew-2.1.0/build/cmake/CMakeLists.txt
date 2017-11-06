@@ -15,7 +15,7 @@ endif()
 
 set(CMAKE_DEBUG_POSTFIX d)
 
-option (BUILD_UTILS "utilities" ON)
+option (BUILD_UTILS "utilities" OFF)
 option (GLEW_REGAL "Regal mode" OFF)
 option (GLEW_OSMESA "OSMesa mode" OFF)
 if (APPLE)
