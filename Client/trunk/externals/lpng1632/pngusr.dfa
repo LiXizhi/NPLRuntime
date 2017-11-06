@@ -38,3 +38,5 @@ option READ_GAMMA on
 option READ_EXPAND on
 option READ_STRIP_16_TO_8 on
 option READ_GRAY_TO_RGB on
+option EASY_ACCESS on
+option READ_TRANSFORMS on
