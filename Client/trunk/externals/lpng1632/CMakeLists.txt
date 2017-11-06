@@ -23,7 +23,7 @@ if (POLICY CMP0042)
 endif(POLICY CMP0042)
 # Use new variable expansion policy.
 if (POLICY CMP0053)
-  cmake_policy(SET CMP0053 NEW)
+  cmake_policy(SET CMP0053 NEW) 
 endif(POLICY CMP0053)
 if (POLICY CMP0054)
   cmake_policy(SET CMP0054 NEW)
@@ -277,8 +277,10 @@ IF(MSVC)
 
 ENDIF()
 
-find_program(AWK NAMES gawk awk)
-
+# find_program(AWK NAMES gawk awk)
+#set(AWK "C:/Users/lan/Desktop/gawk-3.1.6-1-bin/bin/awk")
+set(AWK FALSE)
+ 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if(NOT AWK)
