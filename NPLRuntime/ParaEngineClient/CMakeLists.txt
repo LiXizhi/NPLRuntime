@@ -185,29 +185,6 @@ if(DIRECTX_FOUND)
 	SOURCE_GROUP("Externals\\CommonDirectX" FILES ${ParaEngineClient_Common_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Common_FILES})
 
-	###################################
-	##------------shader-------------##
-	# Add shader files to the project.
-	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.fx)
-
-	# custom build rules: effect FX files
-	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
-		get_filename_component(src_filename ${src_file} NAME_WE)
-		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
-		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
-		add_custom_command(
-			OUTPUT ${out_file}
-			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
-			# uncomment the following line if you want to see the text output to debug shader instructions.
-			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
-			DEPENDS ${src_file}
-			COMMENT "fxc compile: ${src_file}"
-			)
-
-		embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
-		list(APPEND EmbeddedResource_FILES ${MyResource})
-
-	endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
 	set_source_files_properties(${ParaEngineClient_SHADER_BIN_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_BIN_FILES})
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
@@ -221,12 +198,87 @@ if(DIRECTX_FOUND)
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
 	set_source_files_properties(${ParaEngineClient_SHADER_HEADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-	SOURCE_GROUP("Shader Files" FILES ${ParaEngineClient_SHADER_FILES})
+	
 	SOURCE_GROUP("Shader Files\\Headers Files" FILES ${ParaEngineClient_SHADER_HEADER_FILES})
 
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES} ${ParaEngineClient_SHADER_HEADER_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_HEADER_FILES})
+
 
 endif(DIRECTX_FOUND)
+
+
+##################################
+#------------shader-------------##
+
+#DX2GL Tool
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+	if(WIN32)
+	set(DX2GLTOOL ${ParaEngineClient_SOURCE_DIR}/dxEffects2glEffects/bin/dx2gl.exe)
+	elseif(APPLE)
+	set(DX2GLTOOL ${ParaEngineClient_SOURCE_DIR}/dxEffects2glEffects/bin/dx2gl)	
+	endif()
+endif()
+
+
+
+
+#Add shader files to the project.
+
+if(DIRECTX_FOUND)
+	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.fx)
+endif()
+
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/fx/*.fx)
+endif()
+
+# custom build rules: effect FX files
+foreach( src_file ${ParaEngineClient_SHADER_FILES} )
+	get_filename_component(src_filename ${src_file} NAME_WE)
+	# dx shader
+	if(DIRECTX_FOUND)	
+		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
+		add_custom_command(
+			OUTPUT ${out_file}
+			COMMAND "${DIRECTX_INCLUDE_DIR}/../Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
+			# uncomment the following line if you want to see the text output to debug shader instructions.
+			# COMMAND fxc /Tfx_2_0 /Gfp /nologo /Fc "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.txt" ${src_file}
+			DEPENDS ${src_file}
+			COMMENT "fxc compile: ${src_file}"
+			)
+		embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
+		list(APPEND EmbeddedResource_FILES ${MyResource})
+	endif(DIRECTX_FOUND)
+	# OpenGl shader
+	if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/${src_filename}.fx.glsl")
+		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
+		add_custom_command(
+			OUTPUT ${out_file}
+			COMMAND "${DX2GLTOOL}" -glsl  ${src_file} ${out_file}
+			DEPENDS ${src_file} dx2gl 
+			COMMENT "dx2gl : ${src_file}"
+			)
+		#embed_resources_abs(MyResource ${out_file})
+		#list(APPEND EmbeddedResource_FILES ${MyResource})
+	endif(NOT NPLRUNTIME_DIRECTX_RENDERER)
+
+	
+endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
+
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+	file (GLOB ParaEngineClient_GLSHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/glsl/*.glsl)
+	foreach( src_file ${ParaEngineClient_GLSHADER_FILES} )
+		embed_resources_abs(MyResource ${src_file})
+		list(APPEND EmbeddedResource_FILES ${MyResource})
+	endforeach( src_file ${ParaEngineClient_GLSHADER_FILES} )
+endif()
+
+
+SOURCE_GROUP("Shader Files" FILES ${ParaEngineClient_SHADER_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES})
+
 
 ##############################
 # embedded resource
