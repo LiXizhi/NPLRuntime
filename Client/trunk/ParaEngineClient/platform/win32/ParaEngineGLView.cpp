@@ -9,6 +9,277 @@
 #include "2dengine/GUIIME.h"
 
 namespace ParaEngine {
+
+	struct keyCodeItem
+	{
+		int glfwKeyCode;
+		WPARAM keyCode;
+	};
+
+	static std::unordered_map<int, UINT> g_keyCodeMap;
+
+	static keyCodeItem g_keyCodeStructArray[] = {
+		/* The unknown key */
+		{ GLFW_KEY_UNKNOWN         , 0 },
+
+		/* Printable keys */
+		{ GLFW_KEY_SPACE           , VK_SPACE },
+		{ GLFW_KEY_APOSTROPHE      , VK_OEM_7 },
+		{ GLFW_KEY_COMMA           , VK_OEM_COMMA },
+		{ GLFW_KEY_MINUS           , VK_OEM_MINUS },
+		{ GLFW_KEY_PERIOD          , VK_OEM_PERIOD },
+		{ GLFW_KEY_SLASH           , VK_OEM_2 },
+		{ GLFW_KEY_0               , '0' },
+		{ GLFW_KEY_1               , '1' },
+		{ GLFW_KEY_2               , '2' },
+		{ GLFW_KEY_3               , '3' },
+		{ GLFW_KEY_4               , '4' },
+		{ GLFW_KEY_5               , '5' },
+		{ GLFW_KEY_6               , '6' },
+		{ GLFW_KEY_7               , '7' },
+		{ GLFW_KEY_8               , '8' },
+		{ GLFW_KEY_9               , '9' },
+		{ GLFW_KEY_SEMICOLON       , VK_OEM_1 },
+		{ GLFW_KEY_EQUAL           , VK_OEM_PLUS },
+		{ GLFW_KEY_A               , 'A' },
+		{ GLFW_KEY_B               , 'B' },
+		{ GLFW_KEY_C               , 'C' },
+		{ GLFW_KEY_D               , 'D' },
+		{ GLFW_KEY_E               , 'E' },
+		{ GLFW_KEY_F               , 'F' },
+		{ GLFW_KEY_G               , 'G' },
+		{ GLFW_KEY_H               , 'H' },
+		{ GLFW_KEY_I               , 'I' },
+		{ GLFW_KEY_J               , 'J' },
+		{ GLFW_KEY_K               , 'K' },
+		{ GLFW_KEY_L               , 'L' },
+		{ GLFW_KEY_M               , 'M' },
+		{ GLFW_KEY_N               , 'N' },
+		{ GLFW_KEY_O               , 'O' },
+		{ GLFW_KEY_P               , 'P' },
+		{ GLFW_KEY_Q               , 'Q' },
+		{ GLFW_KEY_R               , 'R' },
+		{ GLFW_KEY_S               , 'S' },
+		{ GLFW_KEY_T               , 'T' },
+		{ GLFW_KEY_U               , 'U' },
+		{ GLFW_KEY_V               , 'V' },
+		{ GLFW_KEY_W               , 'W' },
+		{ GLFW_KEY_X               , 'X' },
+		{ GLFW_KEY_Y               , 'Y' },
+		{ GLFW_KEY_Z               , 'Z' },
+		{ GLFW_KEY_LEFT_BRACKET    , VK_OEM_4 },
+		{ GLFW_KEY_BACKSLASH       , VK_OEM_5 },
+		{ GLFW_KEY_RIGHT_BRACKET   , VK_OEM_6 },
+		{ GLFW_KEY_GRAVE_ACCENT    , VK_OEM_3 },
+		{ GLFW_KEY_WORLD_1         , 0 },
+		{ GLFW_KEY_WORLD_2         , 0 },
+
+		/* Function keys */
+		{ GLFW_KEY_ESCAPE          , VK_ESCAPE },
+		{ GLFW_KEY_ENTER           , VK_RETURN },
+		{ GLFW_KEY_TAB             , VK_TAB },
+		{ GLFW_KEY_BACKSPACE       , VK_BACK },
+		{ GLFW_KEY_INSERT          , VK_INSERT },
+		{ GLFW_KEY_DELETE          , VK_DELETE },
+		{ GLFW_KEY_RIGHT           , VK_RIGHT },
+		{ GLFW_KEY_LEFT            , VK_LEFT },
+		{ GLFW_KEY_DOWN            , VK_DOWN },
+		{ GLFW_KEY_UP              , VK_UP },
+		{ GLFW_KEY_PAGE_UP         , VK_PRIOR },
+		{ GLFW_KEY_PAGE_DOWN       , VK_NEXT },
+		{ GLFW_KEY_HOME            , VK_HOME },
+		{ GLFW_KEY_END             , VK_END },
+		{ GLFW_KEY_CAPS_LOCK       , VK_CAPITAL },
+		{ GLFW_KEY_SCROLL_LOCK     , VK_SCROLL },
+		{ GLFW_KEY_NUM_LOCK        , VK_NUMLOCK },
+		{ GLFW_KEY_PRINT_SCREEN    , VK_SNAPSHOT },
+		{ GLFW_KEY_PAUSE           , VK_PAUSE },
+		{ GLFW_KEY_F1              , VK_F1 },
+		{ GLFW_KEY_F2              , VK_F2 },
+		{ GLFW_KEY_F3              , VK_F3 },
+		{ GLFW_KEY_F4              , VK_F4 },
+		{ GLFW_KEY_F5              , VK_F5 },
+		{ GLFW_KEY_F6              , VK_F6 },
+		{ GLFW_KEY_F7              , VK_F7 },
+		{ GLFW_KEY_F8              , VK_F8 },
+		{ GLFW_KEY_F9              , VK_F9 },
+		{ GLFW_KEY_F10             , VK_F10 },
+		{ GLFW_KEY_F11             , VK_F11 },
+		{ GLFW_KEY_F12             , VK_F12 },
+		{ GLFW_KEY_F13             , VK_F13 },
+		{ GLFW_KEY_F14             , VK_F14 },
+		{ GLFW_KEY_F15             , VK_F15 },
+		{ GLFW_KEY_F16             , VK_F16 },
+		{ GLFW_KEY_F17             , VK_F17 },
+		{ GLFW_KEY_F18             , VK_F18 },
+		{ GLFW_KEY_F19             , VK_F19 },
+		{ GLFW_KEY_F20             , VK_F20 },
+		{ GLFW_KEY_F21             , VK_F21 },
+		{ GLFW_KEY_F22             , VK_F22 },
+		{ GLFW_KEY_F23             , VK_F23 },
+		{ GLFW_KEY_F24             , VK_F24 },
+		{ GLFW_KEY_F25             , 0 },
+		{ GLFW_KEY_KP_0            , VK_NUMPAD0 },
+		{ GLFW_KEY_KP_1            , VK_NUMPAD1 },
+		{ GLFW_KEY_KP_2            , VK_NUMPAD2 },
+		{ GLFW_KEY_KP_3            , VK_NUMPAD3 },
+		{ GLFW_KEY_KP_4            , VK_NUMPAD4 },
+		{ GLFW_KEY_KP_5            , VK_NUMPAD5 },
+		{ GLFW_KEY_KP_6            , VK_NUMPAD6 },
+		{ GLFW_KEY_KP_7            , VK_NUMPAD7 },
+		{ GLFW_KEY_KP_8            , VK_NUMPAD8 },
+		{ GLFW_KEY_KP_9            , VK_NUMPAD9 },
+		{ GLFW_KEY_KP_DECIMAL      , VK_DECIMAL },
+		{ GLFW_KEY_KP_DIVIDE       , VK_DIVIDE },
+		{ GLFW_KEY_KP_MULTIPLY     , VK_MULTIPLY },
+		{ GLFW_KEY_KP_SUBTRACT     , VK_SUBTRACT },
+		{ GLFW_KEY_KP_ADD          , VK_ADD },
+		{ GLFW_KEY_KP_ENTER        , VK_SEPARATOR },
+		{ GLFW_KEY_KP_EQUAL        , 0 },
+		{ GLFW_KEY_LEFT_SHIFT      , VK_LSHIFT },
+		{ GLFW_KEY_LEFT_CONTROL    , VK_LCONTROL },
+		{ GLFW_KEY_LEFT_ALT        , VK_LMENU },
+		{ GLFW_KEY_LEFT_SUPER      , VK_LWIN },
+		{ GLFW_KEY_RIGHT_SHIFT     , VK_RSHIFT },
+		{ GLFW_KEY_RIGHT_CONTROL   , VK_RCONTROL },
+		{ GLFW_KEY_RIGHT_ALT       , VK_RMENU },
+		{ GLFW_KEY_RIGHT_SUPER     , VK_RWIN },
+		{ GLFW_KEY_MENU            , VK_MENU },
+		{ GLFW_KEY_LAST            , 0 }
+	};
+
+
+	//static keyCodeItem g_keyCodeStructArray[] = {
+	//	/* The unknown key */
+	//	{ GLFW_KEY_UNKNOWN         , 0 },
+
+	//	/* Printable keys */
+	//	{ GLFW_KEY_SPACE           , 0x039 },
+	//	{ GLFW_KEY_APOSTROPHE      , 0x028 },
+	//	{ GLFW_KEY_COMMA           , 0x033 },
+	//	{ GLFW_KEY_MINUS           , 0x00C },
+	//	{ GLFW_KEY_PERIOD          , 0x034 },
+	//	{ GLFW_KEY_SLASH           , 0x035 },
+	//	{ GLFW_KEY_0               , 0x00B },
+	//	{ GLFW_KEY_1               , 0x002 },
+	//	{ GLFW_KEY_2               , 0x003 },
+	//	{ GLFW_KEY_3               , 0x004 },
+	//	{ GLFW_KEY_4               , 0x005 },
+	//	{ GLFW_KEY_5               , 0x006 },
+	//	{ GLFW_KEY_6               , 0x007 },
+	//	{ GLFW_KEY_7               , 0x008 },
+	//	{ GLFW_KEY_8               , 0x009 },
+	//	{ GLFW_KEY_9               , 0x00A },
+	//	{ GLFW_KEY_SEMICOLON       , 0x027 },
+	//	{ GLFW_KEY_EQUAL           , 0x00D },
+	//	{ GLFW_KEY_A               , 0x01E },
+	//	{ GLFW_KEY_B               , 0x030 },
+	//	{ GLFW_KEY_C               , 0x02E },
+	//	{ GLFW_KEY_D               , 0x020 },
+	//	{ GLFW_KEY_E               , 0x012 },
+	//	{ GLFW_KEY_F               , 0x021 },
+	//	{ GLFW_KEY_G               , 0x022 },
+	//	{ GLFW_KEY_H               , 0x023 },
+	//	{ GLFW_KEY_I               , 0x017 },
+	//	{ GLFW_KEY_J               , 0x024 },
+	//	{ GLFW_KEY_K               , 0x025 },
+	//	{ GLFW_KEY_L               , 0x026 },
+	//	{ GLFW_KEY_M               , 0x032 },
+	//	{ GLFW_KEY_N               , 0x031 },
+	//	{ GLFW_KEY_O               , 0x018 },
+	//	{ GLFW_KEY_P               , 0x019 },
+	//	{ GLFW_KEY_Q               , 0x010 },
+	//	{ GLFW_KEY_R               , 0x013 },
+	//	{ GLFW_KEY_S               , 0x01F },
+	//	{ GLFW_KEY_T               , 0x014 },
+	//	{ GLFW_KEY_U               , 0x016 },
+	//	{ GLFW_KEY_V               , 0x02F },
+	//	{ GLFW_KEY_W               , 0x011 },
+	//	{ GLFW_KEY_X               , 0x02D },
+	//	{ GLFW_KEY_Y               , 0x015 },
+	//	{ GLFW_KEY_Z               , 0x02C },
+	//	{ GLFW_KEY_LEFT_BRACKET    , 0x01A },
+	//	{ GLFW_KEY_BACKSLASH       , 0x02B },
+	//	{ GLFW_KEY_RIGHT_BRACKET   , 0x01B },
+	//	{ GLFW_KEY_GRAVE_ACCENT    , 0x029 },
+	//	{ GLFW_KEY_WORLD_1         , 0 },
+	//	{ GLFW_KEY_WORLD_2         , 0x056 },
+
+	//	/* Function keys */
+	//	{ GLFW_KEY_ESCAPE          , 0x001 },
+	//	{ GLFW_KEY_ENTER           , 0x01C },
+	//	{ GLFW_KEY_TAB             , 0x00F },
+	//	{ GLFW_KEY_BACKSPACE       , 0x00E },
+	//	{ GLFW_KEY_INSERT          , 0x152 },
+	//	{ GLFW_KEY_DELETE          , 0x153 },
+	//	{ GLFW_KEY_RIGHT           , 0x14D },
+	//	{ GLFW_KEY_LEFT            , 0x14B },
+	//	{ GLFW_KEY_DOWN            , 0x150 },
+	//	{ GLFW_KEY_UP              , 0x148 },
+	//	{ GLFW_KEY_PAGE_UP         , 0x149 },
+	//	{ GLFW_KEY_PAGE_DOWN       , 0x151 },
+	//	{ GLFW_KEY_HOME            , 0x147 },
+	//	{ GLFW_KEY_END             , 0x14F },
+	//	{ GLFW_KEY_CAPS_LOCK       , 0x03A },
+	//	{ GLFW_KEY_SCROLL_LOCK     , 0x046 },
+	//	{ GLFW_KEY_NUM_LOCK        , 0x145 },
+	//	{ GLFW_KEY_PRINT_SCREEN    , 0x137 },
+	//	{ GLFW_KEY_PAUSE           , 0x046 },
+	//	{ GLFW_KEY_F1              , 0x03B },
+	//	{ GLFW_KEY_F2              , 0x03C },
+	//	{ GLFW_KEY_F3              , 0x03D },
+	//	{ GLFW_KEY_F4              , 0x03E },
+	//	{ GLFW_KEY_F5              , 0x03F },
+	//	{ GLFW_KEY_F6              , 0x040 },
+	//	{ GLFW_KEY_F7              , 0x041 },
+	//	{ GLFW_KEY_F8              , 0x042 },
+	//	{ GLFW_KEY_F9              , 0x043 },
+	//	{ GLFW_KEY_F10             , 0x044 },
+	//	{ GLFW_KEY_F11             , 0x057 },
+	//	{ GLFW_KEY_F12             , 0x058 },
+	//	{ GLFW_KEY_F13             , 0x064 },
+	//	{ GLFW_KEY_F14             , 0x065 },
+	//	{ GLFW_KEY_F15             , 0x066 },
+	//	{ GLFW_KEY_F16             , 0x067 },
+	//	{ GLFW_KEY_F17             , 0x068 },
+	//	{ GLFW_KEY_F18             , 0x069 },
+	//	{ GLFW_KEY_F19             , 0x06A },
+	//	{ GLFW_KEY_F20             , 0x06B },
+	//	{ GLFW_KEY_F21             , 0x06C },
+	//	{ GLFW_KEY_F22             , 0x06D },
+	//	{ GLFW_KEY_F23             , 0x06E },
+	//	{ GLFW_KEY_F24             , 0x076 },
+	//	{ GLFW_KEY_F25             , 0 },
+	//	{ GLFW_KEY_KP_0            , 0x052 },
+	//	{ GLFW_KEY_KP_1            , 0x04F },
+	//	{ GLFW_KEY_KP_2            , 0x050 },
+	//	{ GLFW_KEY_KP_3            , 0x051 },
+	//	{ GLFW_KEY_KP_4            , 0x04B },
+	//	{ GLFW_KEY_KP_5            , 0x04C },
+	//	{ GLFW_KEY_KP_6            , 0x04D },
+	//	{ GLFW_KEY_KP_7            , 0x047 },
+	//	{ GLFW_KEY_KP_8            , 0x048 },
+	//	{ GLFW_KEY_KP_9            , 0x049 },
+	//	{ GLFW_KEY_KP_DECIMAL      , 0x053 },
+	//	{ GLFW_KEY_KP_DIVIDE       , 0x135 },
+	//	{ GLFW_KEY_KP_MULTIPLY     , 0x037 },
+	//	{ GLFW_KEY_KP_SUBTRACT     , 0x04A },
+	//	{ GLFW_KEY_KP_ADD          , 0x04E },
+	//	{ GLFW_KEY_KP_ENTER        , 0x11C },
+	//	{ GLFW_KEY_KP_EQUAL        , 0 },
+	//	{ GLFW_KEY_LEFT_SHIFT      , 0x02A },
+	//	{ GLFW_KEY_LEFT_CONTROL    , 0x01D },
+	//	{ GLFW_KEY_LEFT_ALT        , 0x038 },
+	//	{ GLFW_KEY_LEFT_SUPER      , 0x15B },
+	//	{ GLFW_KEY_RIGHT_SHIFT     , 0x036 },
+	//	{ GLFW_KEY_RIGHT_CONTROL   , 0x11D },
+	//	{ GLFW_KEY_RIGHT_ALT       , 0x138 },
+	//	{ GLFW_KEY_RIGHT_SUPER     , 0x15C },
+	//	{ GLFW_KEY_MENU            , 0x15D },
+	//	{ GLFW_KEY_LAST            , 0 }
+	//};
+
+
 	class GLFWEventHandler
 	{
 	public:
@@ -105,13 +376,13 @@ namespace ParaEngine {
 	{
 		_viewName = "ParaEngine";
 
-		/*
+		
 		g_keyCodeMap.clear();
 		for (auto& item : g_keyCodeStructArray)
 		{
 			g_keyCodeMap[item.glfwKeyCode] = item.keyCode;
 		}
-		*/
+
 
 		GLFWEventHandler::setGLViewImpl(this);
 
@@ -523,7 +794,10 @@ namespace ParaEngine {
 			msg++;
 		}
 
-		CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg, key, scancode);
+		WPARAM wParam = g_keyCodeMap[key];
+
+		if (wParam != 0)
+			CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg, wParam, 0);
 	}
 
 	void CParaEngineGLView::onGLFWCharCallback(GLFWwindow *window, unsigned int character)
