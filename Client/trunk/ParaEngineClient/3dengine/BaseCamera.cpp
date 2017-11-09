@@ -51,12 +51,6 @@ CBaseCamera::CBaseCamera()
 	DVector3 vEyePt(0.0f,0.0f,0.0f);
 	DVector3 vLookatPt(0.0f,0.0f,1.0f);
 
-	// Setup the view matrix
-	SetViewParams( vEyePt, vLookatPt );
-
-	// Setup the projection matrix
-	SetProjParams( MATH_PI/4, 1.0f, 1.0f, 1000.0f );
-
 #ifdef WIN32
 	GetCursorPos( &m_ptLastMousePosition );
 #endif
