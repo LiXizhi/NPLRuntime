@@ -1000,7 +1000,9 @@ bool CParaFile::SetEndOfFile()
 	}
 	else if (m_bMemoryFile)
 	{
-		m_curPos = ToStringBuilder(this)->size();
+		ToStringBuilder(this)->resize(m_curPos);
+		m_size = m_curPos;
+		m_eof = true;
 	}
 	return false;
 }
