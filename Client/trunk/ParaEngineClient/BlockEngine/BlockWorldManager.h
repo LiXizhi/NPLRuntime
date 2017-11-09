@@ -7,13 +7,13 @@ namespace ParaEngine
 	class CBlockWorld;
 	
 	/** factory class for multiple instances of CBlockWorld */
-	class CBlockWorldManager
+	class CBlockWorldManager : public CRefCounted
 	{
 	public:
 		typedef std::map<std::string, CBlockWorld*>  BlockWorldMap_t;
 
 		CBlockWorldManager();
-		~CBlockWorldManager();
+		virtual ~CBlockWorldManager();
 	public:
 		static CBlockWorldManager* GetSingleton();
 

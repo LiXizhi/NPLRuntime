@@ -13,7 +13,7 @@ namespace NPL
 		public:
 			WebSocketFrame();
 			~WebSocketFrame();
-			vector<byte> getMask() {
+			std::vector<byte> getMask() {
 				return mask;
 			};
 			byte getOpCode() {
@@ -36,7 +36,7 @@ namespace NPL
 				// set bit 1
 				finRsvOp = (byte)((finRsvOp & 0x7F) | (fin ? 0x80 : 0x00));
 			};
-			void setMask(vector<byte> maskingKey) {
+			void setMask(std::vector<byte> maskingKey) {
 				mask = maskingKey;
 				masked = !mask.empty();
 			};
@@ -86,7 +86,7 @@ namespace NPL
 			};
 			void assertValid();
 
-			void loadData(vector<byte>& outData);
+			void loadData(std::vector<byte>& outData);
 		private:
 			/**
 			* Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
@@ -102,7 +102,7 @@ namespace NPL
 			byte finRsvOp;
 			bool masked;
 			ByteBuffer data;
-			vector<byte> mask;
+			std::vector<byte> mask;
 		};
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 
 #include "dir_monitor/basic_dir_monitor.hpp"
 #include <boost/thread.hpp>
@@ -135,7 +135,6 @@ namespace ParaEngine
 	class CFileSystemWatcher
 	{
 	public:
-
 	};
 }
 #endif

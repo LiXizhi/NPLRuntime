@@ -308,7 +308,8 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 		((ParaEngine::CParaFile::GetDiskFilePriority()>=0 || !ParaEngine::CParaFile::DoesFileExist2(filename.c_str(), ParaEngine::FILE_ON_ZIP_ARCHIVE))) )
 	{
 		// disk file exist and (disk file has priority or zip file does not contain the file).
-		ParaEngine::CAsyncLoader::GetSingleton().log(string("DBEntity.PrepareDatabaseFile using local file:") + sOutputFilename + "\n");
+		string sTmp = string("DBEntity.PrepareDatabaseFile using local file:") + sOutputFilename + "\n";
+		ParaEngine::CAsyncLoader::GetSingleton().log(sTmp);
 #ifdef WIN32
 		// remove read only file attribute. This is actually not necessary, but just leaves here for debugging purposes. 
 		DWORD dwAttrs = ::GetFileAttributes(sOutputFilename.c_str());

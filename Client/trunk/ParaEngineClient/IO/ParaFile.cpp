@@ -404,7 +404,8 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 	{
 		if (CParaFile::DoesFileExist(filename, false))
 		{
-			CAsyncLoader::GetSingleton().log(string("ParaFile.OpenAssetFile using disk file:") + filename + "\n");
+			string sTmp = string("ParaFile.OpenAssetFile using disk file:") + filename + "\n";
+			CAsyncLoader::GetSingleton().log(sTmp);
 			if (OpenFile(filename, true, relativePath))
 				return 1;
 			else
@@ -440,7 +441,8 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 	}
 	else
 	{
-		CAsyncLoader::GetSingleton().log(string("ParaFile.OpenAssetFile using local file:") + filename + "\n");
+		string sTmp = string("ParaFile.OpenAssetFile using local file:") + filename + "\n";
+		CAsyncLoader::GetSingleton().log(sTmp);
 #ifdef PARAENGINE_MOBILE
 		if (relativePath == NULL)
 		{

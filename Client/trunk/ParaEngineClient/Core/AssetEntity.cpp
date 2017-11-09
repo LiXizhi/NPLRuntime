@@ -130,18 +130,21 @@ namespace ParaEngine
 				{
 					file.write(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size()));
 					file.close();
-					pAsyncLoader->log(string("AssetFile ASync Completed:")+url+"\n");
+					string sTmp = string("AssetFile ASync Completed:") + url + "\n";
+					pAsyncLoader->log(sTmp);
 					bSucceed = true;
 					pData->m_pAssetEntity->SetState(AssetEntity::ASSET_STATE_CACHE);
 				}
 				else
 				{
-					pAsyncLoader->log(string("AssetFile ASync Failed cannot save to disk:") + url + "\n");
+					string sTmp = string("AssetFile ASync Failed cannot save to disk:") + url + "\n";
+					pAsyncLoader->log(sTmp);
 				}
 			}
 			else
 			{
-				pAsyncLoader->log(string("AssetFile ASync Failed http code!=200:") + url + "\n");
+				string sTmp = string("AssetFile ASync Failed http code!=200:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 			}
 		}
 		return 0;
@@ -204,7 +207,8 @@ bool AssetEntity::AutoSync(bool bForceSync, bool bLazyLoading)
 				if(pAsyncLoader->interruption_requested())
 					return false;
 
-				pAsyncLoader->log(string("AssetFile ASync Started:")+url+"\n");
+				string sTmp = string("AssetFile ASync Started:") + url + "\n";
+				pAsyncLoader->log(sTmp);
 
 				CUrlLoader* pLoader = new CUrlLoader();
 				CUrlProcessor* pProcessor = new CUrlProcessor();

@@ -25,7 +25,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <stdarg.h>
-#if (defined PARA_TARGET_PLATFORM) && (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC )
+#if (defined(__APPLE__)) || ((defined PARA_TARGET_PLATFORM) && (PARA_TARGET_PLATFORM == PARA_PLATFORM_IOS || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC ))
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
