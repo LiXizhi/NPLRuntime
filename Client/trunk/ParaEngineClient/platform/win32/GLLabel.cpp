@@ -440,6 +440,8 @@ Label::Label(FontAtlas *atlas /* = nullptr */, TextHAlignment hAlignment /* = Te
 	, _compatibleMode(false)
 	, _insideBounds(true)
 	, _effectColorF(Color4F::BLACK)
+	, _scaleX(1.0f)
+	, _scaleY(1.0f)
 {
 	//TODO:wangpeng maybe dont need: setAnchorPoint(Vector2::ANCHOR_MIDDLE);
 	reset();

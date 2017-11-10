@@ -88,6 +88,13 @@ CBaseCamera::CBaseCamera()
 	m_fOrthoHeight = 100.f;
 	m_fOrthoWidth = 100.f;
 	m_bIsPerspectiveView = true;
+
+
+	// Setup the view matrix
+	SetViewParams(vEyePt, vLookatPt);
+
+	// Setup the projection matrix
+	SetProjParams(MATH_PI / 4, 1.0f, 1.0f, 1000.0f);
 }
 
 void ParaEngine::CBaseCamera::CopyCameraParamsFrom(CBaseCamera* pFromCamera)
