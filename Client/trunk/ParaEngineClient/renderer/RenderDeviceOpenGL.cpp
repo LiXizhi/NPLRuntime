@@ -323,10 +323,16 @@ HRESULT ParaEngine::RenderDevice::Clear(DWORD Count, const void* pRects, DWORD F
 	}
 	else
 	{
+
+#ifndef PARAENGINE_MOBILE
+		glClear(fields);
+#else
 		// this is done by cocos at the beginning of each tick, we just set default values.
 		// glClear(fields);
 		if (Flags == D3DCLEAR_STENCIL)
 			glClear(GL_STENCIL_BUFFER_BIT);
+#endif
+
 	}
 	return S_OK;
 }
