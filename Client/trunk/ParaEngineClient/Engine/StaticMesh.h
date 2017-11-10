@@ -119,13 +119,10 @@ namespace ParaEngine
 		HRESULT DrawSubSetEx(int nIndex, D3DXATTRIBUTERANGE* pAtts);
 	protected:
 		CParaXMaterial*         m_pMaterials;
-		vector< asset_ptr<TextureEntity> >	m_ReplaceableTextures;
-
+		
 		LPD3DXFILE				m_pDXFileParser;	// x file template parsing
 		LPD3DXMESH              m_pSysMemMesh;    // SysMem mesh, lives through resize
 		LPD3DXMESH              m_pLocalMesh;     // Local mesh, rebuilt on resize
-
-
 	};
 
 

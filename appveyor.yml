@@ -31,6 +31,8 @@ install:
     7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
 
     cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
+    
+    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_0\"
 
     bootstrap.bat
 

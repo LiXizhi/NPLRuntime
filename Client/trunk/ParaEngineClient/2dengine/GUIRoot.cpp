@@ -227,7 +227,6 @@ void CGUIRoot::Clear()
 {
 	TouchSessions::GetInstance().ClearTouchSessions();
 	
-	m_namemap.clear();
 	DestroyChildren();
 	SAFE_RELEASE(m_tooltip);
 	ClearAllTopLevelControls();
@@ -1067,6 +1066,12 @@ void ParaEngine::CGUIRoot::DispatchTouchMouseEvent(bool &bMouseHandled)
 }
 
 
+void ParaEngine::CGUIRoot::DestroyChildren()
+{
+	CGUIContainer::DestroyChildren();
+	m_namemap.clear();
+}
+
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 {
 #ifdef USE_DIRECTX_RENDERER
@@ -1717,6 +1722,13 @@ void CGUIRoot::UseDefaultMouseCursor(bool bUseDefaultMouseCursor)
 			if(!sCursorFile.empty())
 			{
 				m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
+			}
+			else
+			{
+				// prevent waiting cursor to show up
+				m_pMouse->SetCursorFromFile(":IDR_DEFAULT_CURSOR", -1, -1);
+				/*HCURSOR hc = LoadCursor(NULL, IDC_ARROW);
+				::SetCursor(hc);*/
 			}
 		}
 	}

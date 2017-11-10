@@ -1018,7 +1018,7 @@ namespace ParaEngine {
 
 	CParaXStaticModel::~CParaXStaticModel()
 	{
-
+		DeleteDeviceObjects();
 	}
 
 } // end namespace

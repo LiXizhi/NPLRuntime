@@ -63,4 +63,6 @@ deploy:
     tags: true
     all_branches: true
     repo: LiXizhi/NPLRuntime
-    
+
+notifications:
+  webhooks: https://hook.bearychat.com/=bwBHc/travis/d3c22fbb73065f1d2e79754098608b21

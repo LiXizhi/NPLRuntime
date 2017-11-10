@@ -135,7 +135,6 @@ namespace ParaEngine
 
 		m_dwNumMaterials = 0L;
 
-		DeleteDeviceObjects();
 
 		return S_OK;
 	}

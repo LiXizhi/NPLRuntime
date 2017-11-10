@@ -423,7 +423,8 @@ void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const 
 		return;
 	using namespace ParaEngine;
 	CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
-	pAsyncLoader->log(string("NPL.AsyncDownload Started:")+string(url)+"\n");
+	string sTmp = string("NPL.AsyncDownload Started:") + string(url) + "\n";
+	pAsyncLoader->log(sTmp);
 	CUrlLoader* pLoader = new CUrlLoader();
 	CUrlProcessor* pProcessor = new CUrlProcessor();
 
@@ -433,7 +434,8 @@ void CNPLRuntime::AsyncDownload( const char* url, const char* destFolder, const 
 	pProcessor->SetSaveToFile(destFolder);
 	if(pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL,ResourceRequestID_Asset) != S_OK)
 	{
-		pAsyncLoader->log(string("NPL.AsyncDownload Failed:")+string(url)+"\n");
+		string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
+		pAsyncLoader->log(sTmp);
 	}
 
 	// obsoleted: we used UrlLoader now
@@ -768,7 +770,7 @@ void CNPLRuntime::SetHostMainStatesInFrameMove(bool bHostMainStatesInFrameMove)
 void CNPLRuntime::Run(bool bToEnd)
 {
 	/** dispatch events in NPL. */
-	#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+	#if !defined(PARAENGINE_MOBILE)
 	ParaEngine::CFileSystemWatcherService::GetInstance()->DispatchEvents();
     #endif
 

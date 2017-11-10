@@ -59,7 +59,7 @@ namespace ParaEngine
 		/**
 		* Clear all the control's children
 		*/
-		void					DestroyChildren();
+		virtual void DestroyChildren();
 
 		/**
 		* Sort children by z-order. it will just move child in min distance to make them in order. 
