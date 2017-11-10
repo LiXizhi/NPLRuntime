@@ -21,6 +21,8 @@
 #include "SortedFaceGroups.h"
 #include "SunLight.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "2dengine/GUIRoot.h"
+#include "PaintEngine/Painter.h"
 #include <time.h>
 #include "memdebug.h"
 
@@ -2050,69 +2052,67 @@ namespace ParaEngine
 
 	void COceanManager::RenderUnderwaterEffect(SceneState* pSceneState)
 	{
-#ifdef USE_DIRECTX_RENDERER
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
-		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
-		CEffectFile* pEffectFile = NULL;
-
-		/** for under water effect, we will 
+		/** for under water effect, we will
 		* - blend the ocean color to the entire screen.
 		* - display an animated texture in front of the screen. The texture may contain some bubbles, etc.
-		* - blur the image with post-processing. Maybe need to copy back buffer using StrechRect, then apply a blur type pixel shader. 
+		* - blur the image with post-processing. Maybe need to copy back buffer using StrechRect, then apply a blur type pixel shader.
 		* - using fog or vertex based fog, etc.*/
-		if(m_underwater)
+		if (!m_underwater)
 		{
-			//////////////////////////////////////////////////////////////////////////
-			//
-			// Render under water effect
-			//
-			//////////////////////////////////////////////////////////////////////////
-			CGlobals::GetEffectManager()->BeginEffect(TECH_OCEAN_UNDERWATER);
-
-			/** draw a blue square in front of the screen. */
-			pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-			if(pEffectFile == 0)
-			{
-				//////////////////////////////////////////////////////////////////////////
-				// fixed programming pipeline
-				D3DVIEWPORT9 curViewport;
-				CGlobals::GetRenderDevice()->GetViewport(&curViewport);
-				FLOAT sx = (FLOAT)curViewport.Width;
-				FLOAT sy = (FLOAT)curViewport.Height;
-
-				UNDERWATER_VERTEX v[4];
-				v[0].p = Vector4(  0, sy, 0.0f, 1.0f );
-				v[1].p = Vector4(  0,  0, 0.0f, 1.0f );
-				v[2].p = Vector4( sx, sy, 0.0f, 1.0f );
-				v[3].p = Vector4( sx,  0, 0.0f, 1.0f );
-
-				LinearColor underwaterColor = CGlobals::GetScene()->GetFogColor();
-				if ((DWORD)m_CustomUnderWaterColor == 0)
-				{
-					// make it a little blue than the fog color.
-					underwaterColor.r *= 0.8f*m_colorOcean.r;
-					underwaterColor.g *= m_colorOcean.g;
-					underwaterColor.b *= 1.1f*m_colorOcean.b;
-					underwaterColor.a = 0.6f;
-				}
-				else
-				{
-					underwaterColor = m_CustomUnderWaterColor;
-				}
-				DWORD dwColor = underwaterColor;
-
-				for(int i=0;i<4;i++)
-				{
-					v[i].color = dwColor;
-				}
-
-				// Set render states (disable z-buffering, enable stencil, disable fog, and
-				// turn on alpha blending)
-
-				RenderDevice::DrawPrimitiveUP( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX) );
-			}
+			return;
 		}
-#endif
+
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto painter = CGlobals::GetGUI()->GetPainter();
+
+		if (painter->begin(CGlobals::GetGUI()))
+		{
+			// blend the ocean color to the entire screen by drawing a full screen quad using ocean color.
+			
+			// Set render states (disable z-buffering, enable stencil, disable fog, and turn on alpha blending)
+			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
+			pd3dDevice->SetTexture(0, NULL);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+			pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
+
+			D3DVIEWPORT9 curViewport;
+			CGlobals::GetRenderDevice()->GetViewport(&curViewport);
+			FLOAT sx = (FLOAT)curViewport.Width;
+			FLOAT sy = (FLOAT)curViewport.Height;
+
+			UNDERWATER_VERTEX v[4];
+			v[0].p = Vector4(0, sy, 0.0f, 1.0f);
+			v[1].p = Vector4(0, 0, 0.0f, 1.0f);
+			v[2].p = Vector4(sx, sy, 0.0f, 1.0f);
+			v[3].p = Vector4(sx, 0, 0.0f, 1.0f);
+
+			LinearColor underwaterColor = CGlobals::GetScene()->GetFogColor();
+			if ((DWORD)m_CustomUnderWaterColor == 0)
+			{
+				// make it a little blue than the fog color.
+				underwaterColor.r *= 0.8f*m_colorOcean.r;
+				underwaterColor.g *= m_colorOcean.g;
+				underwaterColor.b *= 1.1f*m_colorOcean.b;
+				underwaterColor.a = 0.6f;
+			}
+			else
+			{
+				underwaterColor = m_CustomUnderWaterColor;
+			}
+			DWORD dwColor = underwaterColor;
+
+			for (int i = 0; i < 4; i++)
+			{
+				v[i].color = dwColor;
+			}
+			
+			RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
+
+			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			painter->end();
+		}
 	}
 
 	void COceanManager::CalculateTileToRender(SceneState* pSceneState, float& x0, float& y0, float& x1, float& y1)

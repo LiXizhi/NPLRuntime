@@ -11,11 +11,11 @@ cd bin/linux/
 
 # to build in parallel with 3 threads, use make -j3 or `./build_linux.sh 3`
 if [ $# -gt 0 ]; then
-   JOBS="$1"
+   JOBS="${1:-1}"
 fi
 echo "parallel build with ${JOBS:-1} jobs, you can set JOBS=6 or ./build_linux.sh 6"
 
-cmake -DCMAKE_BUILD_TYPE=Release ../../NPLRuntime/ && make --jobs=${JOBS:-1}
+cmake -DCMAKE_BUILD_TYPE=${2:-Release} ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 
