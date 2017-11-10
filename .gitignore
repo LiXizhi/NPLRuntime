@@ -72,7 +72,7 @@ Server/trunk/*
 !Server/trunk/zlib-1.2.11/
 !Server/trunk/curl-7.47.1/
 
-
+build/
 buildvm_arch.h
 
 .DS_Store

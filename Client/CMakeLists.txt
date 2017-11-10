@@ -172,3 +172,9 @@ endif()
 # export these two variables to its parent scope just in case some app project reference NPLRuntime statically. 
 set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
 set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
+
+
+# dxEffects2glEffects
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects)
+endif()
