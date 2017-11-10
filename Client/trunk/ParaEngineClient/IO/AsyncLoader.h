@@ -65,7 +65,7 @@ namespace ParaEngine
 		typedef boost::shared_ptr<boost::thread> Boost_Thread_ptr_type;
 
 		CAsyncLoader();
-		~CAsyncLoader();
+		virtual ~CAsyncLoader();
 
 		ATTRIBUTE_DEFINE_CLASS(CAsyncLoader);
 
