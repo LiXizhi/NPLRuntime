@@ -216,10 +216,17 @@ void CBaseObject::AddChild(CBaseObject * pObject)
 {
 	if(pObject)
 	{
-		if (pObject->GetParent() != NULL)
-			pObject->GetParent()->RemoveChild(pObject);
+		CBaseObject* pParent = pObject->GetParent();
+		if (pParent != NULL) {
+			pObject->addref();
+			pParent->RemoveChild(pObject);
+		}
 		pObject->SetParent(this);
 		m_children.push_back(pObject);
+
+		if (pParent != NULL) {
+			pObject->delref();
+		}
 	}
 }
 

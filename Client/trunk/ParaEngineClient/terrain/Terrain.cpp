@@ -3378,8 +3378,10 @@ bool Terrain::LoadFromConfigFile(const char* pFileName, float fSize, const char*
 	m_pDetailedTextureFactory->Init(DetailTextureMatrixSize, Size/DetailTextureMatrixSize);
 	for(int i=0;i<NumOfDetailTextures;i++)
 	{
-		if(cFile.GetNextLine(line, MAX_LINE)>0)
-			m_pDetailedTextureFactory->m_listTextures.push_back(string(line));
+		if (cFile.GetNextLine(line, MAX_LINE) > 0) {
+			string sTmp(line);
+			m_pDetailedTextureFactory->m_listTextures.push_back(sTmp);
+		}
 		else
 			return false;
 	}
@@ -3453,7 +3455,8 @@ void Terrain::LoadMaskFromDisk(bool bForceReload)
 	}
 	else
 	{
-		CAsyncLoader::GetSingleton().log(string("ParaFile.OpenAssetFile using local file:") + sMaskFile + "\n");
+		string sTmp = string("ParaFile.OpenAssetFile using local file:") + sMaskFile + "\n";
+		CAsyncLoader::GetSingleton().log(sTmp);
 		if(fileMask.OpenFile(sMaskFile.c_str(), true, NULL))
 		{
 			ReadMaskFile(fileMask);
@@ -3841,7 +3844,8 @@ void Terrain::OnLoad()
 		}
 		else
 		{
-			CAsyncLoader::GetSingleton().log(string("Terrain.OnLoad using local file:") + filename  + "\n");
+			string sTmp = string("Terrain.OnLoad using local file:") + filename + "\n";
+			CAsyncLoader::GetSingleton().log(sTmp);
 		}
 		
 		CGlobals::SetLoading(true);

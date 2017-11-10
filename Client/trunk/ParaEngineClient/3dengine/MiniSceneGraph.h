@@ -141,6 +141,12 @@ namespace ParaEngine
 		/** clean up all resource objects */
 		virtual void Cleanup();
 
+		/**
+		* Completely destroy child nodes from memory recursively. This is often called
+		* by the root scene at application clean up
+		*/
+		virtual void DestroyChildren();
+
 		/** get the camera object. create if the camera does not exist.*/
 		CCanvasCamera* GetCamera();
 

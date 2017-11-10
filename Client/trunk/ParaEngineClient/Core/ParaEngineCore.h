@@ -39,6 +39,9 @@ namespace ParaEngine
 		*/
 		virtual IParaEngineApp* CreateApp();
 
+		/** one should call this when you no longer need this application, usually as the last line of your code. */
+		virtual void Destroy();
+
 	public:
 		static CParaEngineCore* GetInstance();
 		/** it is recommended to call this function. */

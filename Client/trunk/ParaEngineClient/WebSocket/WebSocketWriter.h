@@ -29,7 +29,7 @@ namespace NPL
 			void generateHeaderBytes(WebSocketFrame& frame, ByteBuffer& buffer);
 		 	void generateWholeFrame(WebSocketFrame& frame, ByteBuffer& buffer);
 
-			void generate(const char * code, int nLength, vector<byte>& outData);
+			void generate(const char * code, int nLength, std::vector<byte>& outData);
 			void reset();
 		private:
 			/**

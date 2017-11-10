@@ -278,6 +278,11 @@ namespace ParaEngine
 		virtual void Reset();
 
 		/**
+		* Clear all the control's children
+		*/
+		virtual void DestroyChildren();
+
+		/**
 		* Delete all contains of the root object
 		*/
 		void Clear();
