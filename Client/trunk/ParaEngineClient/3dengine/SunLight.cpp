@@ -19,6 +19,8 @@ using namespace ParaEngine;
 
 CSunLight::CSunLight()
 	:m_bAutoSunColor(true), m_bHasNightHours(false)
+	, m_seconds(0)
+	, m_fDayLength(0)
 {
 	m_fYaxisRotation = 0.3f;
 	m_fMaxAngle = MAX_SUN_ANGLE;

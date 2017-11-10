@@ -33,4 +33,4 @@ popd
 # Build with cmake
 chmod +x ./build_linux.sh
 sync
-./build_linux.sh
+./build_linux.sh ${1:-1} ${2:-Release}

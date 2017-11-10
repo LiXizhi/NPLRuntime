@@ -87,12 +87,12 @@ if (WIN32)
 		
 		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${CLIENT_BINARY_DIR}/glfw-3.2.1)
 
-		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${CLIENT_BINARY_DIR}/lpng1634)
 		set(PNG_FOUND 1)
 		set(PNG_LIBRARY libpng)
 		set(PNG_LIBRARIES libpng)
-		set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
-		set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1632 ${CLIENT_BINARY_DIR}/lpng1632)
+		set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${CLIENT_BINARY_DIR}/lpng1634)
+		set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${CLIENT_BINARY_DIR}/lpng1634)
 		
 
 		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1 ${CLIENT_BINARY_DIR}/freetype-2.8.1)
