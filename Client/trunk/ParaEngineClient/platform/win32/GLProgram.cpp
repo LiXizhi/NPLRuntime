@@ -26,6 +26,7 @@ namespace ParaEngine
 		GLvoid*         value;       // value
 		unsigned int    location;    // Key
 		UT_hash_handle  hh;          // hash entry
+		unsigned int	size;
 	} tHashUniformEntry;
 }
 
@@ -519,6 +520,9 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 		// key
 		element->location = location;
 
+		// size
+		element->size = bytes;
+
 		// value
 		element->value = malloc(bytes);
 		memcpy(element->value, data, bytes);
@@ -527,12 +531,14 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 	}
 	else
 	{
-		if (memcmp(element->value, data, bytes) == 0)
+		if (bytes == element->size && memcmp(element->value, data, bytes) == 0)
 		{
 			updated = false;
 		}
 		else
 		{
+			element->value = realloc(element->value, bytes);
+			element->size = bytes;
 			memcpy(element->value, data, bytes);
 		}
 	}
