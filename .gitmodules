@@ -5,4 +5,4 @@
 	url = https://github.com/NPLPackages/main.git
 [submodule "Client/trunk/ParaEngineClient/dxEffects2glEffects"]
 	path = Client/trunk/ParaEngineClient/dxEffects2glEffects
-	url = https://github.com/qq573011406/dxEffects2glEffects.git
+	url = https://github.com/tatfook/dxEffects2glEffects.git

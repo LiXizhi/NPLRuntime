@@ -109,7 +109,7 @@ if(WIN32 AND NOT NPLRUNTIME_DIRECTX_RENDERER)
 	file (GLOB_RECURSE ParaEngineClient_OPENGLTEST_FILES ${ParaEngineClient_SOURCE_DIR}/OpenGLTest/*.*  ${ParaEngineClient_SOURCE_DIR}/Engine/guicon.cpp ${ParaEngineClient_SOURCE_DIR}/Engine/guicon.h ${ParaEngineClient_SOURCE_DIR}/Engine/OSWindows.h ${ParaEngineClient_SOURCE_DIR}/Engine/OSWindows.cpp)
 	SOURCE_GROUP("OpenGLTest" FILES ${ParaEngineClient_OPENGLTEST_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_OPENGLTEST_FILES})
-endif(WIN32)
+endif()
 
 
 ##############################
@@ -223,7 +223,7 @@ endif()
 
 
 #Add shader files to the project.
-
+message("==========================================Genrate Shaders.")
 if(DIRECTX_FOUND)
 	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.fx)
 endif()
@@ -234,6 +234,7 @@ endif()
 
 # custom build rules: effect FX files
 foreach( src_file ${ParaEngineClient_SHADER_FILES} )
+  
 	get_filename_component(src_filename ${src_file} NAME_WE)
 	# dx shader
 	if(DIRECTX_FOUND)	
@@ -249,10 +250,11 @@ foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 			)
 		embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/shaders/${src_filename}.fxo")
 		list(APPEND EmbeddedResource_FILES ${MyResource})
-	endif(DIRECTX_FOUND)
+	endif()
 	# OpenGl shader
 	if(NOT NPLRUNTIME_DIRECTX_RENDERER)
 		set(out_file "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/${src_filename}.fx.glsl")
+		 message(${out_file})
 		set(ParaEngineClient_SHADER_BIN_FILES ${ParaEngineClient_SHADER_BIN_FILES} ${out_file})
 		add_custom_command(
 			OUTPUT ${out_file}
@@ -260,20 +262,12 @@ foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 			DEPENDS ${src_file} dx2gl 
 			COMMENT "dx2gl : ${src_file}"
 			)
-		#embed_resources_abs(MyResource ${out_file})
-		#list(APPEND EmbeddedResource_FILES ${MyResource})
-	endif(NOT NPLRUNTIME_DIRECTX_RENDERER)
+		embed_resources_abs(MyResource ${out_file})
+		list(APPEND EmbeddedResource_FILES ${MyResource})
+	endif()
 
 	
 endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
-
-if(NOT NPLRUNTIME_DIRECTX_RENDERER)
-	file (GLOB ParaEngineClient_GLSHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/glsl/*.glsl)
-	foreach( src_file ${ParaEngineClient_GLSHADER_FILES} )
-		embed_resources_abs(MyResource ${src_file})
-		list(APPEND EmbeddedResource_FILES ${MyResource})
-	endforeach( src_file ${ParaEngineClient_GLSHADER_FILES} )
-endif()
 
 
 SOURCE_GROUP("Shader Files" FILES ${ParaEngineClient_SHADER_FILES})
