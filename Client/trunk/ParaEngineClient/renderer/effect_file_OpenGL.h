@@ -1,7 +1,7 @@
 #pragma once
 #include "effect_file.h"
 #include "ParameterBlock.h"
-
+#include "gleffects.h"
 #include <unordered_map>
 
 namespace ParaEngine
@@ -193,15 +193,21 @@ namespace ParaEngine
 		}
 
 		void SetShadowMapSize(int nsize);
+
 	protected:
+		bool MappingEffectUniforms();
+		bool GeneratePasses();
+
+	protected:
+		std::unordered_map<uint32, std::string> m_ID2Names;
+		GLEffectsTree* m_Effect;
+
 		struct TechniqueDescGL : public TechniqueDesc
 		{
 			std::vector<GLProgram*> mPasses;
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;
-		static std::unordered_map<uint32, std::string> s_id_to_names;
-		static std::unordered_map<uint32, std::string> LoadStaticIdNameMap();
 		/** current active pass */
 		int m_nActivePassIndex;
 		bool m_bIsBegin;
