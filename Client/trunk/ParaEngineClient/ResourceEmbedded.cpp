@@ -49,7 +49,9 @@ namespace ParaEngine
 		ADD_RESOURCE(":IDR_FX_OCEANWATER_QUAD", ocean_water_quad_fxo);
 		ADD_RESOURCE(":IDR_FX_OCEANWATER_CLOUD", ocean_water_cloud_fxo);
 		ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fxo);
-#else
+#endif
+
+#ifdef USE_OPENGL_RENDERER
 		ADD_RESOURCE(":IDR_FX_BLOCK", blockEffect_fx_glsl);
 		ADD_RESOURCE(":IDR_FX_SINGLECOLOR", singleColorEffect_fx_glsl);
 		ADD_RESOURCE(":IDR_FX_SIMPLE_MESH_NORMAL", simple_mesh_normal_fx_glsl);
@@ -60,7 +62,9 @@ namespace ParaEngine
 		ADD_RESOURCE(":IDR_FX_SKYDOME", skydome_fx_glsl);
 		ADD_RESOURCE(":IDR_FX_TERRAIN_NORMAL", terrain_normal_fx_glsl);
 		ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fx_glsl);
-#endif
+#endif // USE_OPENGL_RENDERER
+
+
 	}
 
 	CStaticInitRes& CStaticInitRes::StaticInit(){
