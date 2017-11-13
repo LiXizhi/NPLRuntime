@@ -208,6 +208,9 @@ if(DIRECTX_FOUND)
 	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
 	list(APPEND EmbeddedResource_FILES ${MyResource})
 
+	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/cursor.tga")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+	
 	# header files
 	file (GLOB ParaEngineClient_SHADER_HEADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.h)
 	set_source_files_properties(${ParaEngineClient_SHADER_HEADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)

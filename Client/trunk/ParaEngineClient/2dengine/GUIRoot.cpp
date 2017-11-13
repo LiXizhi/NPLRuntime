@@ -1723,6 +1723,13 @@ void CGUIRoot::UseDefaultMouseCursor(bool bUseDefaultMouseCursor)
 			{
 				m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
 			}
+			else
+			{
+				// prevent waiting cursor to show up
+				m_pMouse->SetCursorFromFile(":IDR_DEFAULT_CURSOR", -1, -1);
+				/*HCURSOR hc = LoadCursor(NULL, IDC_ARROW);
+				::SetCursor(hc);*/
+			}
 		}
 	}
 #endif

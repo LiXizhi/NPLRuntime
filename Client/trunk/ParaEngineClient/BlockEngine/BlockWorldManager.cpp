@@ -6,6 +6,7 @@
 // Date:	2014.2.6
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "util/CSingleton.h"
 #include "BlockWorld.h"
 #include "BlockWorldManager.h"
 
@@ -23,8 +24,7 @@ ParaEngine::CBlockWorldManager::~CBlockWorldManager()
 
 CBlockWorldManager* ParaEngine::CBlockWorldManager::GetSingleton()
 {
-	static CBlockWorldManager g_singleton;
-	return &g_singleton;
+	return CAppSingleton<CBlockWorldManager>::GetInstance();
 }
 
 CBlockWorld* ParaEngine::CBlockWorldManager::GetBlockWorld(const std::string& sInstanceName)

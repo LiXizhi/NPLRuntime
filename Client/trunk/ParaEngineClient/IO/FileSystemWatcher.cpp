@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 
 
 #include "CSingleton.h"

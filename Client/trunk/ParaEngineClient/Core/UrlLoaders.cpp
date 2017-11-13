@@ -633,12 +633,14 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 			if(m_responseCode == 200)
 			{
 				writer.WriteValue("complete");
-				CAsyncLoader::GetSingleton().log(string("NPL.AsyncDownload Completed:")+m_url+"\n");
+				string sTmp = string("NPL.AsyncDownload Completed:") + m_url + "\n";
+				CAsyncLoader::GetSingleton().log(sTmp);
 			}
 			else
 			{
 				writer.WriteValue("terminated");
-				CAsyncLoader::GetSingleton().log(string("NPL.AsyncDownload Failed:")+m_url+"\n");
+				string sTmp = string("NPL.AsyncDownload Failed:") + m_url + "\n";
+				CAsyncLoader::GetSingleton().log(sTmp);
 			}
 			writer.WriteName("totalFileSize");
 			writer.WriteValue(m_nBytesReceived);

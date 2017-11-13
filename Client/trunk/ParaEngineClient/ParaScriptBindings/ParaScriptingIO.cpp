@@ -451,7 +451,7 @@ namespace ParaScripting
 
 	void ParaIO::WriteString(const char* str)
 	{
-		g_currentIOfile.WriteString(string(str));
+		g_currentIOfile.WriteString(str);
 	}
 
 	void ParaIO::write(const char* buffer, int nSize)
@@ -1042,7 +1042,7 @@ namespace ParaScripting
 
 	ParaScripting::ParaFileSystemWatcher ParaIO::GetFileSystemWatcher( const char* filename )
 	{
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE)
 		return ParaFileSystemWatcher();
 #else
 		return ParaFileSystemWatcher(CFileSystemWatcherService::GetInstance()->GetDirWatcher(filename).get());
@@ -1051,7 +1051,7 @@ namespace ParaScripting
 
 	void ParaIO::DeleteFileSystemWatcher( const char* name )
     {
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
         CFileSystemWatcherService::GetInstance()->DeleteDirWatcher(name);
 #endif
 	}
@@ -1954,7 +1954,7 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::AddDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 		if (m_watcher)
 			m_watcher->add_directory(filename);
 #endif
@@ -1962,12 +1962,12 @@ namespace ParaScripting
 
 	void ParaFileSystemWatcher::RemoveDirectory( const char* filename )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 		if (m_watcher)
 			m_watcher->remove_directory(filename);
 #endif
 	}
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 	/** callback to npl runtime */
 	struct FileSystemWatcher_NPLCallback
 	{
@@ -1998,7 +1998,7 @@ namespace ParaScripting
 #endif
 	void ParaFileSystemWatcher::AddCallback( const char* sCallbackScript )
 	{
-#if !defined(PARAENGINE_MOBILE) && !defined(PLATFORM_MAC)
+#if !defined(PARAENGINE_MOBILE)
 		if (m_watcher)
 			m_watcher->AddEventCallback(FileSystemWatcher_NPLCallback(sCallbackScript));
 #endif
@@ -2010,7 +2010,7 @@ namespace ParaScripting
 
 	}
 
-#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
+#if defined(PARAENGINE_MOBILE)
 	ParaFileSystemWatcher::ParaFileSystemWatcher(ParaFileSystemWatcher* watcher) : m_watcher(watcher)
 	{
 

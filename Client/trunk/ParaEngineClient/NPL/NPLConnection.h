@@ -366,8 +366,8 @@ namespace NPL
 
 		WebSocket::WebSocketReader m_websocket_reader;
 		WebSocket::WebSocketWriter m_websocket_writer;
-		vector<byte> m_websocket_input_data;
-		vector<byte> m_websocket_out_data;
+		std::vector<byte> m_websocket_input_data;
+		std::vector<byte> m_websocket_out_data;
 
 		ProtocolType m_protocolType;
 	};

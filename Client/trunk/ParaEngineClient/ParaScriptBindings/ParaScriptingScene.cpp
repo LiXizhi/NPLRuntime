@@ -1805,7 +1805,8 @@ void ParaScene::FireMissile2(ParaAssetObject& asset, float fSpeed, double fromX,
 
 ParaObject ParaScene::CreateManagedLoader(const char * sLoaderName)
 {
-	ParaObject obj((CBaseObject*)CGlobals::GetScene()->CreateManagedLoader(string(sLoaderName)));
+	string sTmp(sLoaderName);
+	ParaObject obj((CBaseObject*)CGlobals::GetScene()->CreateManagedLoader(sTmp));
 	return obj;
 }
 
