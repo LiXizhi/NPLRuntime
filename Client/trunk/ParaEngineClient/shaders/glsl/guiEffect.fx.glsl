@@ -19,8 +19,8 @@ uniform mat4 viewprojection;
 
 
 
-varying lowp vec4 v_color;
-varying mediump vec2 v_texCoord;
+varying  vec4 v_color;
+varying  vec2 v_texCoord;
 
 
 void main()
@@ -40,8 +40,8 @@ void main()
 uniform bool k_bBoolean0; // weather it is text rendering or quad rendering
 
 
-varying lowp vec4 v_color;
-varying mediump vec2 v_texCoord;
+varying  vec4 v_color;
+varying  vec2 v_texCoord;
 
 
 void main()

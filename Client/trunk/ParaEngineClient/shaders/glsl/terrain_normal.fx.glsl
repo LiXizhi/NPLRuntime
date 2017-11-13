@@ -40,11 +40,11 @@ uniform bool fogenable; // g_bEnableFog
 uniform vec4 fogparameters; // g_fogParam (fogstart, fogrange, fogDensity, reserved)
 
 
-uniform lowp vec4 materialdiffuse;
-uniform lowp vec4 fogColor; // g_fogColor
-varying lowp vec4 v_colorDiffuse;
-varying mediump vec3 v_tex0;
-varying mediump vec4 v_tex1;
+uniform  vec4 materialdiffuse;
+uniform  vec4 fogColor; // g_fogColor
+varying  vec4 v_colorDiffuse;
+varying  vec3 v_tex0;
+varying  vec4 v_tex1;
 
 
 // Calculates fog factor based upon distance
@@ -85,11 +85,11 @@ void main()
 uniform bool k_bBoolean10; // g_bIsBaseEnabled
 
 
-uniform lowp vec4 materialdiffuse;
-uniform lowp vec4 fogColor; // g_fogColor
-varying lowp vec4 v_colorDiffuse;
-varying mediump vec3 v_tex0;
-varying mediump vec4 v_tex1;
+uniform  vec4 materialdiffuse;
+uniform  vec4 fogColor; // g_fogColor
+varying  vec4 v_colorDiffuse;
+varying  vec3 v_tex0;
+varying  vec4 v_tex1;
 
 
 

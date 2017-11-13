@@ -15,102 +15,13 @@
 #include "AutoCamera.h"
 #include "effect_file_OpenGL.h"
 #include "SunLight.h"
+#include "driver.h"
 using namespace ParaEngine;
-// TODO: add more buildin shaders here
-#define STRINGIFY(A)  #A
-#include "platform/shaders/blockEffect.shader"
-#include "platform/shaders/blockSelectEffect.shader"
-#include "platform/shaders/singleColorEffect.shader"
-#include "platform/shaders/meshNormalEffect.shader"
-#include "platform/shaders/particleEffect.shader"
-#include "platform/shaders/guiEffect.shader"
-#include "platform/shaders/guiTextEffect.shader"
-#include "platform/shaders/skymeshEffect.shader"
-#include "platform/shaders/skydomeEffect.shader"
-#include "platform/shaders/terrainEffect.shader"
-#include "platform/shaders/blockMaxEffect.shader"
-
-std::unordered_map<uint32, std::string> CEffectFileOpenGL::s_id_to_names = CEffectFileOpenGL::LoadStaticIdNameMap();
-
-std::unordered_map<uint32, std::string> CEffectFileOpenGL::LoadStaticIdNameMap()
-{
-	std::unordered_map<uint32, std::string> fields;
-	fields[k_worldMatrix] = "world";
-	fields[k_worldInverseMatrix] = "worldinverse";
-	fields[k_worldViewMatrix] = "worldview";
-	fields[k_worldViewProjMatrix] = "worldviewprojection";
-	fields[k_worldMatrixArray] = "worldmatrixarray";
-	fields[k_skyBoxMatrix] = "skyboxmatrix";
-	fields[k_viewMatrix] = "view";
-	fields[k_projMatrix] = "projection";
-	fields[k_viewProjMatrix] = "viewprojection";
-	fields[k_TexWorldViewProjMatrix] = "texworldviewproj";
-	fields[k_ambientMaterialColor] = "materialambient";
-	fields[k_diffuseMaterialColor] = "materialdiffuse";
-	fields[k_specularMaterialColor] = "materialspecular";
-	fields[k_emissiveMaterialColor] = "materialemissive";
-	fields[k_posScaleOffset] = "posScaleOffset";
-	fields[k_uvScaleOffset] = "uvScaleOffset";
-	fields[k_lensFlareColor] = "flareColor";
-	fields[k_fogParameters] = "fogparameters";
-	fields[k_fogColor] = "fogColor";
-	fields[k_shadowFactor] = "shadowfactor";
-	fields[k_LightStrength] = "LightStrength";
-	fields[k_LightColors] = "LightColors";
-	fields[k_LightPositions] = "LightPositions";
-	fields[k_fresnelR0] = "FresnelR0";
-	fields[k_ConstVector0] = "ConstVector0";
-	fields[k_ConstVector1] = "ConstVector1";
-	fields[k_ConstVector2] = "ConstVector2";
-	fields[k_ConstVector3] = "ConstVector3";
-	fields[k_sunVector] = "sunvector";
-	fields[k_sunColor] = "suncolor";
-	fields[k_cameraPos] = "worldcamerapos";
-	fields[k_cameraDistances] = "viewdistances";
-	fields[k_cameraFacing] = "worldviewvector";
-	fields[k_ambientLight] = "ambientlight";
-	fields[k_sunlightInscatter] = "sunlight_inscatter";
-	fields[k_sunlightExtinction] = "sunlight_extinction";
-	fields[k_worldPos] = "worldpos";
-	fields[k_texCoordOffset] = "texCoordOffset";
-	fields[k_boneInfluenceCount] = "curnumbones";
-	fields[k_fogEnable] = "fogenable";
-	fields[k_bAlphaTesting] = "alphatesting";
-	fields[k_bAlphaBlending] = "alphablending";
-	fields[k_bBoolean0] = "k_bBoolean0";
-	fields[k_bBoolean1] = "k_bBoolean1";
-	fields[k_bBoolean2] = "k_bBoolean2";
-	fields[k_bBoolean3] = "k_bBoolean3";
-	fields[k_bBoolean4] = "k_bBoolean4";
-	fields[k_bBoolean5] = "k_bBoolean5";
-	fields[k_bBoolean6] = "k_bBoolean6";
-	fields[k_bBoolean7] = "k_bBoolean7";
-	fields[k_bBoolean8] = "k_bBoolean8";
-	fields[k_bBoolean9] = "k_bBoolean9";
-	fields[k_bBoolean10] = "k_bBoolean10";
-	fields[k_bBoolean11] = "k_bBoolean11";
-	fields[k_bBoolean12] = "k_bBoolean12";
-	fields[k_bBoolean13] = "k_bBoolean13";
-	fields[k_bBoolean14] = "k_bBoolean14";
-	fields[k_bBoolean15] = "k_bBoolean15";
-	fields[k_bSunlightEnable] = "sunlightenable";
-	fields[k_nShadowmapSize] = "shadowmapsize";
-	fields[k_fShadowRadius] = "shadowradius";
-	fields[k_specularMaterialPower] = "materialpower";
-	fields[k_reflectFactor] = "reflectfactor";
-	fields[k_LocalLightNum] = "locallightnum";
-	fields[k_LayersNum] = "layersnum";
-	fields[k_time] = "time";
-	fields[k_opacity] = "opacity";
-	fields[k_specularPower] = "specularPower";
-	fields[k_transitionFactor] = "transitionFactor";
-	return fields;
-}
-
 
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
 	, mTechniqueIndex(0)
+	,m_Effect(nullptr)
 {
 	SetFileName(filename);
 	Init();
@@ -119,12 +30,18 @@ ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const AssetKey& key)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
 	, mTechniqueIndex(0)
+	, m_Effect(nullptr)
 {
 	Init();
 }
 
 ParaEngine::CEffectFileOpenGL::~CEffectFileOpenGL()
 {
+	if (m_Effect != nullptr)
+	{
+		delete m_Effect;
+		m_Effect = nullptr;
+	}
 	releaseEffect();
 }
 
@@ -146,10 +63,51 @@ const std::string& ParaEngine::CEffectFileOpenGL::GetFileName()
 HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 {
 	m_bIsInitialized = true;
-	if (!LoadBuildinShader())
+	
+	// Load and parse effetcs.
+	CParaFile shaderFile(GetFileName().c_str());
+	std::string shader_str(shaderFile.getBuffer(), shaderFile.getSize());
+	m_Effect = new GLEffectsTree();
+	GLEFFECTS::Driver parseDriver(*m_Effect);
+	bool ret = parseDriver.parse_string(shader_str);
+	if (!ret)
 	{
-		OUTPUT_LOG("warning: unknown shader %s\n", GetFileName().c_str());
+		delete m_Effect;
+		m_Effect = nullptr;
+		OUTPUT_LOG("error: parse effect failed %s\n", GetFileName().c_str());
+		return S_FALSE;
 	}
+
+	// Parse uniforms
+	
+	ret = MappingEffectUniforms();
+	if (ret) {
+		OUTPUT_LOG("[%s] Parse uniforms sucessed.\n", GetFileName().c_str());
+	}
+	else {
+		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
+		return S_FALSE;
+	}
+
+	// Init effect
+	ret = GeneratePasses();
+	if (ret) {
+		OUTPUT_LOG("[%s] Generate passes sucessed.\n", GetFileName().c_str());
+	}
+	else {
+		OUTPUT_LOG("[%s] Generate passes failed.\n", GetFileName().c_str());
+		return S_FALSE;
+	}
+
+	if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
+	{
+		SetFloat("opacity", 1.f);
+	}
+	if (m_filename == ":IDR_FX_GUI")
+	{
+		SetBool("k_bBoolean0", true);
+	}
+
 	return S_OK;
 }
 
@@ -544,7 +502,7 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 
 Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
 {
-	return GetUniform(s_id_to_names[id]);
+	return GetUniform(m_ID2Names[id]);
 }
 
 Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
@@ -890,7 +848,7 @@ void ParaEngine::CEffectFileOpenGL::EnableAlphaBlending(bool bAlphaBlending)
 {
 	if (isParameterUsed(k_bAlphaBlending))
 	{
-		AddParamChange(s_id_to_names[k_bAlphaBlending], bAlphaBlending);
+		AddParamChange(m_ID2Names[k_bAlphaBlending], bAlphaBlending);
 		// setBool(k_bAlphaBlending, bAlphaBlending);
 	}
 }
@@ -899,7 +857,7 @@ void ParaEngine::CEffectFileOpenGL::EnableAlphaTesting(bool bAlphaTesting)
 {
 	if (isParameterUsed(k_bAlphaTesting))
 	{
-		AddParamChange(s_id_to_names[k_bAlphaTesting], bAlphaTesting);
+		AddParamChange(m_ID2Names[k_bAlphaTesting], bAlphaTesting);
 		// setBool(k_bAlphaTesting, bAlphaTesting);
 	}
 }
@@ -991,175 +949,6 @@ bool ParaEngine::CEffectFileOpenGL::SetMatrix(const char* hParameter, const Matr
 }
 
 
-bool ParaEngine::CEffectFileOpenGL::LoadBuildinShader()
-{
-	if (m_filename == ":IDR_FX_BLOCK")
-	{
-		int nPass = 0;
-		if (initWithByteArrays(shaderBlockEffect_vert, shaderOpacheBlockEffect_frag, 0, nPass))
-		{
-			if (link(0,nPass))
-			{
-				updateUniforms(0, nPass);
-			}
-		}
-		nPass = 1;
-		if (initWithByteArrays(shaderBlockSelectEffect_vert, shaderBlockSelectEffect_frag, 0, nPass))
-		{
-			if (link(0, nPass))
-			{
-				updateUniforms(0, nPass);
-			}
-		}
-		nPass = 2;
-		if (initWithByteArrays(shaderTransparentBlockEffect_vert, shaderTransparentBlockEffect_frag, 0, nPass))
-		{
-			if (link(0, nPass))
-			{
-				updateUniforms(0, nPass);
-			}
-		}
-		if (initWithByteArrays(shaderBlockWithShadowEffect_vert, shaderOpacheBlockWithShadowEffect_frag, 1))
-		{
-			if (link(1))
-			{
-				updateUniforms(1);
-			}
-		}
-		if (initWithByteArrays(shaderBlockWithShadowEffect_vert, shaderTransparentBlockWithShadowEffect_frag, 1, 1))
-		{
-			if (link(1, 1))
-			{
-				updateUniforms(1, 1);
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_SINGLECOLOR")
-	{
-		if (initWithByteArrays(singleColorEffect_vert, singleColorEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
-	{
-		if (initWithByteArrays(meshNormalEffect_vert, meshNormalEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-				// set initial value, opengl does not support initial value in shader.
-				SetFloat("opacity", 1.f);
-			}
-		}
-		if (initWithByteArrays(meshWriteShadowMapEffect_vert, meshWriteShadowMapEffect_frag, 1))
-		{
-			if (link(1))
-			{
-				mTechniques[1].nCategory = TechCategory_GenShadowMap;
-				updateUniforms(1);
-				// set initial value, opengl does not support initial value in shader.
-				SetFloat("opacity", 1.f);
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_SIMPLE_PARTICLE")
-	{
-		if (initWithByteArrays(particleEffect_vert, particleEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_GUI")
-	{
-		if (initWithByteArrays(guiEffect_vert, guiEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-				// set initial value, opengl does not support initial value in shader.
-				SetBool("k_bBoolean0", true);
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_GUI_TEXT")
-	{
-		if (initWithByteArrays(guiTextEffect_vert, guiTextEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_SKY")
-	{
-		if (initWithByteArrays(skyMeshEffect_vert, skyMeshEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_SKYDOME")
-	{
-		int nPass = 0;
-		if (initWithByteArrays(skyDomeEffect_vert, skyDomeDayEffect_frag, 0, nPass))
-		{
-			if (link(0, nPass))
-			{
-				updateUniforms(0, nPass);
-			}
-		}
-		nPass = 1;
-		if (initWithByteArrays(skyDomeEffect_vert, skyDomeNightEffect_frag, 0, nPass))
-		{
-			if (link(0, nPass))
-			{
-				updateUniforms(0, nPass);
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_TERRAIN_NORMAL")
-	{
-		if (initWithByteArrays(terrainEffect_vert, terrainEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	else if (m_filename == ":IDR_FX_BMAXMODEL")
-	{
-		if (initWithByteArrays(shaderBlockMaxEffect_vert, shaderBlockMaxEffect_frag))
-		{
-			if (link())
-			{
-				updateUniforms();
-			}
-		}
-		return true;
-	}
-	return false;
-}
-
 bool ParaEngine::CEffectFileOpenGL::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
 {
 	if (mTechniqueIndex >= (int)mTechniques.size())
@@ -1217,6 +1006,237 @@ void ParaEngine::CEffectFileOpenGL::SetShadowMapSize(int nsize)
 	{
 		setInt(k_nShadowmapSize, nsize);
 	}
+}
+
+bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms()
+{
+	if (!m_Effect) return false;
+
+	static std::unordered_map<std::string, uint32> table;
+	{
+		table["world"] = k_worldMatrix;
+		table["worldinverse"] = k_worldInverseMatrix;
+		table["worldview"] = k_worldViewMatrix;
+		table["worldviewprojection"] = k_worldViewProjMatrix;
+		table["worldmatrixarray"] = k_worldMatrixArray;
+		table["skyboxmatrix"] = k_skyBoxMatrix;
+		table["view"] = k_viewMatrix;
+		table["projection"] = k_projMatrix;
+		table["viewprojection"] = k_viewProjMatrix;
+		table["texworldviewproj"] = k_TexWorldViewProjMatrix;
+		table["materialambient"] = k_ambientMaterialColor;
+		table["materialdiffuse"] = k_diffuseMaterialColor;
+		table["materialspecular"] = k_specularMaterialColor;
+		table["materialemissive"] = k_emissiveMaterialColor;
+		table["posScaleOffset"] = k_posScaleOffset;
+		table["uvScaleOffset"] = k_uvScaleOffset;
+		table["flareColor"] = k_lensFlareColor;
+		table["fogparameters"] = k_fogParameters;
+		table["fogColor"] = k_fogColor;
+		table["shadowfactor"] = k_shadowFactor;
+		table["LightStrength"] = k_LightStrength;
+		table["shadowfactor"] = k_shadowFactor;
+		table["LightStrength"] = k_LightStrength;
+		table["LightColors"] = k_LightColors;
+		table["LightPositions"] = k_LightPositions;
+		table["FresnelR0"] = k_fresnelR0;
+		table["ConstVector0"] = k_ConstVector0;
+		table["ConstVector1"] = k_ConstVector1;
+		table["ConstVector2"] = k_ConstVector2;
+		table["ConstVector3"] = k_ConstVector3;
+		table["sunvector"] = k_sunVector;
+		table["suncolor"] = k_sunColor;
+		table["worldcamerapos"] = k_cameraPos;
+		table["viewdistances"] = k_cameraDistances;
+		table["worldviewvector"] = k_cameraFacing;
+		table["ambientlight"] = k_ambientLight;
+		table["sunlight_inscatter"] = k_sunlightInscatter;
+		table["sunlight_extinction"] = k_sunlightExtinction;
+		table["worldpos"] = k_worldPos;
+		table["texCoordOffset"] = k_texCoordOffset;
+		table["curnumbones"] = k_boneInfluenceCount;
+		table["fogenable"] = k_fogEnable;
+		table["alphatesting"] = k_bAlphaTesting;
+
+		// boolean
+		for (int i = 0; i < (k_bBooleanMAX - k_bBoolean0); i++)
+		{
+			char buf[64]{ 0 };
+			sprintf(buf, "boolean%d", i);
+			table[buf] = k_bBoolean0 + i;
+		}
+
+		table["sunlightenable"] = k_bSunlightEnable;
+		table["shadowmapsize"] = k_nShadowmapSize;
+		table["shadowradius"] = k_fShadowRadius;
+		table["materialpower"] = k_specularMaterialPower;
+		table["reflectfactor"] = k_reflectFactor;
+		table["locallightnum"] = k_LocalLightNum;
+		table["layersnum"] = k_LayersNum;
+		table["time"] = k_time;
+		table["opacity"] = k_opacity;
+		table["specularPower"] = k_specularPower;
+		table["transitionFactor"] = k_transitionFactor;
+		table["LightParams"] = k_LightParams;
+
+
+	}
+
+	m_ID2Names.clear();
+	auto uniforms = m_Effect->getUniforms();
+	static char numerals[] = { '0','1','2','3','4','5','6','7','8','9' };
+	for (auto uniform : uniforms)
+	{
+		std::string sec = uniform->getSemantic();
+		std::string name = uniform->getName();
+		std::string type = uniform->getType();
+		auto it = table.find(sec);
+		if (it != table.end()) {
+			uint32 id = it->second;
+			m_ID2Names[id] = name;
+		}
+		else if (type == "sampler2D" || type == "sampler3D" || type == "SamplerCube") {
+			int iPos = (int)name.find_first_of(numerals, 0, sizeof(numerals));
+
+			if (iPos != string::npos)
+			{
+				int iTexture = atoi(&name[iPos]);
+				if (iTexture >= 0 && iTexture < (k_tex_max - k_tex0))
+				{
+					table[name] = k_tex0 + iTexture;
+				}
+			}
+
+		}
+		else {
+			std::cout << std::endl << "can't parse uniform " << name << ", unkonw semantic " << sec << std::endl;
+		}
+	}
+
+	return true;
+
+}
+
+static const std::string StringToLower(const std::string& str)
+{
+	std::string data = str;
+	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+	return data;
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
+{
+	if (m_Effect == NULL)return false;
+	auto techniques = m_Effect->getTechiques();
+	if (techniques.empty()) {
+		std::cout << std::endl << "no techinique" << std::endl;
+		return false;
+	}
+	auto tec = techniques[0];
+	auto passes = tec->getPasses();
+	if (passes.empty())
+	{
+		std::cout << std::endl << "no pass" << std::endl;
+		return false;
+	}
+
+	for (int nPass = 0; nPass < passes.size(); nPass++)
+	{
+		auto pass = passes[nPass];
+		auto states = pass->getStateAssignments();
+		std::string vs_codeblock_name = "";
+		std::string ps_codeblock_name = "";
+		for (auto state : states)
+		{
+			const std::string lowerName = StringToLower(state->getName());
+			if (lowerName == "vertexshader" || lowerName == "pixelshader")
+			{
+				auto value = state->getValue();
+				if (value->getValueType() == StateValueType::COMPILE)
+				{
+					auto compileValue = static_cast<const StateCompileValue*>(value);
+					if (lowerName == "vertexshader")
+					{
+						vs_codeblock_name = compileValue->getEntryPoint();
+					}
+					if (lowerName == "pixelshader")
+					{
+						ps_codeblock_name = compileValue->getEntryPoint();
+					}
+					if (vs_codeblock_name != "" && ps_codeblock_name != "")
+					{
+						break;
+					}
+				}
+			}
+		}
+
+		if (vs_codeblock_name == "")
+		{
+			std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+			return false;
+		}
+
+		if (ps_codeblock_name == "")
+		{
+			std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+			return false;
+		}
+
+
+		// find code block
+		std::string vscode = "";
+		std::string pscode = "";
+		auto codeblocks = m_Effect->getCodeBlocks();
+		for (auto codeblock : codeblocks)
+		{
+			if (codeblock->getName() == vs_codeblock_name)
+			{
+				vscode = codeblock->getCode();
+			}
+			if (codeblock->getName() == ps_codeblock_name)
+			{
+				pscode = codeblock->getCode();
+			}
+			if (vscode != "" && pscode != "") break;
+		}
+
+		if (vscode == "")
+		{
+			std::cout << std::endl << "can't find vertex shader codeblock. " << vs_codeblock_name << std::endl;
+			return false;
+		}
+		if (pscode == "")
+		{
+			std::cout << std::endl << "can't find pixel shader codeblock. " << ps_codeblock_name << std::endl;
+			return false;
+		}
+		std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+		if (initWithByteArrays(vscode.c_str(), pscode.c_str(), nPass))
+		{
+			if (link(nPass))
+			{
+				updateUniforms(nPass);
+			}
+			else
+			{
+				std::cerr << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+				return false;
+			}
+		}
+		else
+		{
+			std::cerr << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+			return false;
+		}
+
+
+	}
+
+
+	return true;
+
 }
 
 #endif
