@@ -544,10 +544,11 @@ const char* ParaEngine::StringHelper::GetTextFromClipboard()
 		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
 		if (handle)
 		{
-			const WCHAR *szText = (const WCHAR*)GlobalLock(handle);
+			const char16_t *szText = (const char16_t*)GlobalLock(handle);
 			if (szText)
 			{
-				g_str = ParaEngine::StringHelper::WideCharToMultiByte(szText, CP_UTF8);
+				std::u16string szText_(szText);
+				 ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
 				bSucceed = true;
 				GlobalUnlock(handle);
 			}
