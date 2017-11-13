@@ -264,11 +264,31 @@ foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 			)
 		embed_resources_abs(MyResource ${out_file})
 		list(APPEND EmbeddedResource_FILES ${MyResource})
-	endif()
-
-	
+	endif()	
 endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
 
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+	# Other GL shader
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/terrain_normal.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/terrain_normal.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/skydome.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/skydome.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/singleColorEffect.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/singleColorEffect.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/simple_mesh_normal.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/simple_mesh_normal.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/guiTextEffect.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/guiTextEffect.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+	embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/guiEffect.fx.glsl")
+	list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/guiEffect.fx.glsl")
+	list(APPEND EmbeddedResource_FILES ${MyResource})
+endif()
 
 SOURCE_GROUP("Shader Files" FILES ${ParaEngineClient_SHADER_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SHADER_FILES})
@@ -429,7 +449,7 @@ if (NOT DIRECTX_FOUND AND WIN32)
 		"${External_Dir}/icon/prebuilt"
 		)
 	#set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw freetype250.lib libiconv.lib libjpeg.lib)
-	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw libiconv.lib libjpeg.lib)
+	set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw libiconv.lib libjpeg.lib glEffectsParser)
 endif()
 
 

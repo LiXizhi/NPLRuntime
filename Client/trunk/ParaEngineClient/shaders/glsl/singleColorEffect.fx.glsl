@@ -16,7 +16,7 @@ attribute vec4 a_color;
 uniform mat4 worldviewprojection;
 
 
-varying lowp vec4 v_color;
+varying  vec4 v_color;
 
 
 void main()
@@ -32,7 +32,7 @@ void main()
 // Class:	fragment shader file
 //-----------------------------------------------------------------------------
 
-varying lowp vec4 v_color;
+varying  vec4 v_color;
 
 
 void main()

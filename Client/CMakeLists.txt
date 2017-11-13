@@ -176,5 +176,10 @@ set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
 
 # dxEffects2glEffects
 if(NOT NPLRUNTIME_DIRECTX_RENDERER)
-add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects)
+	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects)
+endif()
+
+# glEffectsParser
+if(NOT NPLRUNTIME_DIRECTX_RENDERER)
+	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects)
 endif()
