@@ -107,6 +107,11 @@ namespace ParaEngine {
 		*/
 		const Rect& getViewPortRect() const;
 
+
+		/** return true if the key is being pressed at the time of calling.
+		* @param nKey: a direct input key, such as DIK_SPACE. */
+		bool IsKeyPressed(DWORD nKey);
+
 #ifdef WIN32
 		HWND getWin32Window() { return glfwGetWin32Window(_mainWindow); };
 #endif /* (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) */
