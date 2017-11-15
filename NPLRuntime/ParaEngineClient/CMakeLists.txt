@@ -8,4 +8,7 @@
 
 if(WIN32)
 	include(cmake/win32.cmake)
+elseif(APPLE)
+	include(cmake/osx.cmake)
 endif()
+
