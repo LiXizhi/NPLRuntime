@@ -7,6 +7,7 @@
 #include "2dengine/GUIRoot.h"
 
 #include "2dengine/GUIIME.h"
+#include "2dengine/EventBinding.h"
 
 namespace ParaEngine {
 
@@ -16,7 +17,9 @@ namespace ParaEngine {
 		WPARAM keyCode;
 	};
 
+
 	static std::unordered_map<int, UINT> g_keyCodeMap;
+	static std::unordered_map<UINT, int> g_naviteKeyCodeMap;
 
 	static keyCodeItem g_keyCodeStructArray[] = {
 		/* The unknown key */
@@ -381,6 +384,7 @@ namespace ParaEngine {
 		for (auto& item : g_keyCodeStructArray)
 		{
 			g_keyCodeMap[item.glfwKeyCode] = item.keyCode;
+			g_naviteKeyCodeMap[item.keyCode] = item.glfwKeyCode;
 		}
 
 
@@ -986,6 +990,24 @@ namespace ParaEngine {
 	const Rect& CParaEngineGLView::getViewPortRect() const
 	{
 		return _viewPortRect;
+	}
+
+	bool CParaEngineGLView::IsKeyPressed(DWORD nKey)
+	{
+		if (_mainWindow)
+		{
+			auto vkey = CEventBinding::DIKToWinVirtualKey[nKey];
+			if (vkey == 0)
+				return false;
+
+			auto glfwKey = g_naviteKeyCodeMap[vkey];
+
+			return glfwGetKey(_mainWindow, glfwKey) == GLFW_PRESS;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 } // end namespace
