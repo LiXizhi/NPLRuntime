@@ -229,6 +229,12 @@ namespace ParaEngine
 
 		/** get options as NPL table object. */
 		NPL::NPLObjectProxy& GetOptions();
+
+		/** whether we will invoke callback immediately using NPL.call instead of NPL.activate. This is only enabled in sync-mode api. */
+		bool IsSyncCallbackMode() const;
+		void SetSyncCallbackMode(bool val);
+	private:
+		int InvokeCallbackScript(const char* sCode, int nLength);
 	public:
 		/** CURLOPT_URL*/
 		string m_url;
@@ -279,6 +285,8 @@ namespace ParaEngine
 		bool m_bForbidReuse;
 		/** whether to send progress update via callback */
 		bool m_bEnableProgressUpdate;
+		/** we will invoke callback immediately using NPL.call instead of NPL.activate. This is only enabled in sync-mode api. */
+		bool m_bIsSyncCallbackMode;
 		
 		int m_nBytesReceived;
 		int m_nTotalBytes;

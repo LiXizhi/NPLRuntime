@@ -98,7 +98,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor( )
 	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bForbidReuse(false), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
 }
 
@@ -106,7 +106,7 @@ ParaEngine::CUrlProcessor::CUrlProcessor(const string& url, const string& npl_ca
 	:m_pFormPost(0), m_pHttpHeaders(0), m_nTimeOutTime(DEFAULT_TIME_OUT), m_nStartTime(0), m_responseCode(0), m_nLastProgressTime(0),
 	m_pFormLast(0), m_pUserData(0), m_returnCode(CURLE_OK), m_type(URL_REQUEST_HTTP_AUTO), 
 	m_nPriority(0), m_nStatus(URL_REQUEST_UNSTARTED), m_pfuncCallBack(0), m_nBytesReceived(0), m_pUploadContext(NULL),
-	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true)
+	m_nTotalBytes(0), m_nUserDataType(0), m_pFile(NULL), m_pThreadLocalData(NULL), m_bEnableProgressUpdate(true), m_bIsSyncCallbackMode(false)
 {
 	m_url = url;
 	SetScriptCallback(npl_callback.c_str());
@@ -404,6 +404,10 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	connection timeout (it will then only timeout on the system's internal timeouts). See also the CURLOPT_TIMEOUT option
 	*/
 
+	/* abort if slower than 30 bytes/sec during 10 seconds */
+	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, 10L);
+	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 30L);
+
 	// time allowed to connect to server
 	curl_easy_setopt(handle,CURLOPT_CONNECTTIMEOUT,5);
 	// progress callback is only used to terminate the url progress
@@ -554,12 +558,7 @@ int ParaEngine::CUrlProcessor::progress_callback(double dltotal, double dlnow, d
 			writer.WriteParamDelimiter();
 			writer.Append(m_sNPLCallback.c_str());
 
-			NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
-			if (pState)
-			{
-				// thread safe
-				pState->activate(NULL, writer.ToString().c_str(), (int)(writer.ToString().size()));
-			}
+			InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
 		}
 	}
 	return 0;
@@ -659,27 +658,7 @@ void ParaEngine::CUrlProcessor::CompleteTask()
 		writer.WriteParamDelimiter();
 		writer.Append(m_sNPLCallback.c_str());
 
-		
-		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
-		if (pState)
-		{
-			// thread safe
-			pState->activate(NULL, writer.ToString().c_str(), (int)(writer.ToString().size()));
-		}
-
-		/* this could crash app in server mode where main thread and main state thread are different.
-		if(! m_sNPLStateName.empty())
-		{
-			NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
-			if(pState)
-			{
-				pState->DoString(writer.ToString().c_str(), (int)(writer.ToString().size()));
-			}
-		}
-		else
-		{
-			CGlobals::GetAISim()->NPLDoString(writer.ToString().c_str(), (int)(writer.ToString().size()));
-		}*/
+		InvokeCallbackScript(writer.ToString().c_str(), (int)(writer.ToString().size()));
 	}
 	if(m_pfuncCallBack)
 	{
@@ -798,4 +777,36 @@ NPL::NPLObjectProxy& ParaEngine::CUrlProcessor::GetOptions()
 		m_options.reset(new NPL::NPLObjectProxy());
 	}
 	return *(m_options.get());
+}
+
+bool ParaEngine::CUrlProcessor::IsSyncCallbackMode() const
+{
+	return m_bIsSyncCallbackMode;
+}
+
+void ParaEngine::CUrlProcessor::SetSyncCallbackMode(bool val)
+{
+	m_bIsSyncCallbackMode = val;
+}
+
+int ParaEngine::CUrlProcessor::InvokeCallbackScript(const char* sCode, int nLength)
+{
+	if (!IsSyncCallbackMode())
+	{
+		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
+		if (pState)
+		{
+			// thread safe
+			return pState->activate(NULL, sCode, nLength);
+		}
+	}
+	else
+	{
+		NPL::NPLRuntimeState_ptr pState = CGlobals::GetNPLRuntime()->GetRuntimeState(m_sNPLStateName);
+		if (pState)
+		{
+			pState->DoString(sCode, nLength);
+		}
+	}
+	return S_OK;
 }
