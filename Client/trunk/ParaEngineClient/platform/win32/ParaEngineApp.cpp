@@ -1014,6 +1014,11 @@ namespace ParaEngine {
 	}
 
 
+	bool CParaEngineApp::IsKeyPressed(DWORD nKey)
+	{
+		return (m_pGLView) ? m_pGLView->IsKeyPressed(nKey) : false;
+	}
+
 
 	int CParaEngineApp::CalculateRenderTime(double fIdealInterval, double* pNextInterval)
 	{
