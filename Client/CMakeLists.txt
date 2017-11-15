@@ -5,6 +5,9 @@
 
 cmake_minimum_required (VERSION 2.6)
 
+project (CLIENT)
+
+
 if(WIN32)
 	include(cmake/win32.cmake)
 endif()
