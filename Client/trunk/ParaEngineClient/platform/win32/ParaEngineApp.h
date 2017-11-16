@@ -352,6 +352,10 @@ namespace ParaEngine
 		*/
 		int CalculateRenderTime(double fIdealInterval, double* pNextInterval);
 
+		/** return true if the key is being pressed at the time of calling.
+		* @param nKey: a direct input key, such as DIK_SPACE. */
+		bool IsKeyPressed(DWORD nKey);
+
 
 		void InitApp(const char* sCommandLine);
 	protected:
