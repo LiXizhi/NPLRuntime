@@ -247,11 +247,43 @@ set(WRAPPER_LIB
 	libfreetype.a
 )
 
+##############################
 
-include_directories("${PNG_INCLUDE_DIR}")
+option(GLFW_BUILD_DOCS OFF)
+option(GLFW_BUILD_EXAMPLES OFF)
+option(GLFW_BUILD_TESTS OFF)
+option(GLFW_INSTALL OFF)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${ParaEngineClient_BINARY_DIR}/glfw-3.2.1)
+#add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+set(PNG_FOUND 1)
+set(PNG_LIBRAY libpng)
+set(PNG_LIBRARIES libpng)
+set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1 ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1)
+set(FREETYPE_LIBRARY freetype)
+set(FREETYPE_LIBRARIES freetype)
+set(FREETYPE_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/include ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/include)
+set(FREETYPE_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/src ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/src)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/build/cmake ${ParaEngineClient_BINARY_DIR}/glew-2.1.0)
+set(GLEW_LIBRARY glew)
+set(GLEW_LIBRARIES glew)
+set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/include)
+set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/src)
+
+
+##############################
+add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
+add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
+
+##############################
+#include_directories("${PNG_INCLUDE_DIR}")
 include_directories("${FREETYPE_INCLUDE_DIR}")
 include_directories("${GLEW_INCLUDE_DIR}")
-set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} png_static freetype glew_s)
+#set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} png_static freetype glew_s)
+set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} freetype glew_s glEffectsParser)
 
 
 ##############################
