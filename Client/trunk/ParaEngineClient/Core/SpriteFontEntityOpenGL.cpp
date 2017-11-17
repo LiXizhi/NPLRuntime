@@ -32,7 +32,7 @@ SpriteFontEntityOpenGL::~SpriteFontEntityOpenGL()
 
 void ParaEngine::SpriteFontEntityOpenGL::Cleanup()
 {
-	SAFE_RELEASE(m_fontRenderer);
+	UNI_SAFE_RELEASE_NULL(m_fontRenderer);
 }
 
 HRESULT ParaEngine::SpriteFontEntityOpenGL::DrawTextW(CSpriteRenderer* pSprite, const char16_t* strText, int nCount, RECT* rect, DWORD dwTextFormat, DWORD textColor)
@@ -56,17 +56,16 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::InitDeviceObjects()
 	if (m_bIsInitialized)
 		return S_OK;
 	m_bIsInitialized = true;
-	SAFE_RELEASE(m_fontRenderer);
+	UNI_SAFE_RELEASE(m_fontRenderer);
 	m_fontRenderer = CFontRendererOpenGL::create(GetFontName(), GetFontSize());
-	if(m_fontRenderer)
-		m_fontRenderer->addref();
+        UNI_SAFE_RETAIN(m_fontRenderer);
 	return S_OK;
 }
 
 HRESULT ParaEngine::SpriteFontEntityOpenGL::DeleteDeviceObjects()
 {
 	m_bIsInitialized = false;
-	SAFE_RELEASE(m_fontRenderer);
+	UNI_SAFE_RELEASE_NULL(m_fontRenderer);
 	return S_OK;
 }
 

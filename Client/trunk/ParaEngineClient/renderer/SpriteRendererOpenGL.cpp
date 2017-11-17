@@ -18,6 +18,7 @@
 #include "SpriteRendererOpenGL.h"
 
 using namespace ParaEngine;
+using namespace cocos2d;
 
 ParaEngine::CSpriteRendererOpenGL::CSpriteRendererOpenGL()
 	:m_sprite_count(0), m_pEffectFile(0), m_bNeedUpdateShader(false), m_bIsTextMode(false), m_bIsTextModeDevice(false)
@@ -300,11 +301,11 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 {
 #define kQuadSize sizeof(sprite_vertex)
 	// vertices
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
+	glVertexAttribPointer(cocos2d::GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
 	// colors
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
+	glVertexAttribPointer(cocos2d::GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
 	// tex coords
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
+	glVertexAttribPointer(cocos2d::GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 
 	RenderDevice::DrawPrimitive(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, 0, nTriangleCount);
 }

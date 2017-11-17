@@ -14,7 +14,7 @@ namespace ParaEngine
 
 	public:
 		TextureEntityOpenGL(const AssetKey& key);
-		TextureEntityOpenGL(Texture2D* texture);
+		TextureEntityOpenGL(cocos2d::Texture2D* texture);
 		TextureEntityOpenGL();
 		virtual ~TextureEntityOpenGL();
 
@@ -49,11 +49,11 @@ namespace ParaEngine
 
 		void SetAliasTexParameters();
 	public:
-		void SetInnerTexture(Texture2D* texture);
+		void SetInnerTexture(cocos2d::Texture2D* texture);
 		virtual DeviceTexturePtr_type GetTexture();
 		virtual const TextureInfo* GetTextureInfo();
 
-		Texture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
+                cocos2d::Texture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
 		
 		/** in most cases this is false, where the image origin is at left, top.
 		* however, in opengl frame buffer, the frame buffer's origin is at left, bottom.
@@ -82,8 +82,8 @@ namespace ParaEngine
 	protected:
 		friend class CRenderTarget;
 		union{
-			Texture2D* m_texture;
-			Texture2D** m_pTextureSequence;
+                        cocos2d::Texture2D* m_texture;
+                        cocos2d::Texture2D** m_pTextureSequence;
 		};
 		/** 0 for anti-aliased, 1 for blocky texture. */
 		uint32 m_nSamplerState;

@@ -16,6 +16,8 @@
 #include "effect_file_OpenGL.h"
 #include "SunLight.h"
 using namespace ParaEngine;
+using namespace cocos2d;
+
 // TODO: add more buildin shaders here
 #define STRINGIFY(A)  #A
 #include "platform/shaders/blockEffect.shader"
@@ -171,7 +173,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 			{
 				for (auto program : passes)
 				{
-					SAFE_RELEASE(program);
+					UNI_SAFE_RELEASE_NULL(program);
 				}
 				passes.clear();
 			}
@@ -180,7 +182,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 				auto program = GetGLProgram(tech_index, nPass);
 				if (program)
 				{
-					SAFE_RELEASE(passes[nPass]);
+					UNI_SAFE_RELEASE_NULL(passes[nPass]);
 				}
 			}
 		}
@@ -192,7 +194,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 		{
 			for (auto program : passes)
 			{
-				SAFE_RELEASE(program);
+				UNI_SAFE_RELEASE_NULL(program);
 			}
 			passes.clear();
 		}
@@ -201,7 +203,7 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 			auto program = GetGLProgram(nTech, nPass);
 			if (program)
 			{
-				SAFE_RELEASE(passes[nPass]);
+				UNI_SAFE_RELEASE_NULL(passes[nPass]);
 			}
 		}
 	}
@@ -852,7 +854,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::RendererRecreated()
 		{
 			if (program)
 				program->reset();
-			SAFE_RELEASE(program);
+			UNI_SAFE_RELEASE_NULL(program);
 		}
 		tech.mPasses.clear();
 	}
