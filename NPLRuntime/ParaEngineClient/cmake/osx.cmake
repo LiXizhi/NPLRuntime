@@ -8,14 +8,17 @@
 
 project (ParaEngineClient)
 
-include_directories(../embed-resource)
-add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
 
-set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
 # The version number.
 set (ParaEngineClient_VERSION_MAJOR 1)
 set (ParaEngineClient_VERSION_MINOR 0)
+
+
+
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
+set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
 
 
@@ -224,10 +227,33 @@ file (GLOB ParaEngineClient_Platform_m_FILES ${ParaEngineClient_SOURCE_DIR}/plat
 SOURCE_GROUP("Platform_m" FILES ${ParaEngineClient_Platform_m_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_m_FILES})
 
-
-file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.cpp)
+set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
+file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.*)
 SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+list(APPEND ParaEngineClient_Platform_FILES 
+${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h
+${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.h
+${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.h
+${ParaEngineClient_SOURCE_DIR}/platform/base/uthash.h
+${External_Dir}/glad/src/glad.c)
+include_directories("${External_Dir}/glfw-3.2.1/include")
+include_directories("${External_Dir}/glad/include")
+include_directories("${External_Dir}/jpeg/include/mac")
+include_directories("${External_Dir}/icon/include")
+#include_directories("${ZLIB_SOURCE_DIR}")
+
+include_directories("${CURL_SOURCE_DIR}/include/")
+include_directories("${CURL_BINARY_DIR}/include/curl/")
+set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} 
+	#"${External_Dir}/freetype2/prebuilt/win32"
+	"${External_Dir}/jpeg/prebuilt/mac"
+	"${External_Dir}/icon/prebuilt"
+	)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
+
+
+
+
 
 file (GLOB Platform_Base_FILES ${ParaEngineClient_SOURCE_DIR}/platform/base/*.cpp)
 SOURCE_GROUP("Platform_Base" FILES ${Platform_Base_FILES})
@@ -246,6 +272,9 @@ set(WRAPPER_LIB
 	libjpeg.a
 	libfreetype.a
 )
+
+
+
 
 ##############################
 
@@ -270,8 +299,8 @@ set(FREETYPE_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/src 
 add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/build/cmake ${ParaEngineClient_BINARY_DIR}/glew-2.1.0)
 set(GLEW_LIBRARY glew)
 set(GLEW_LIBRARIES glew)
-set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/include)
-set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/src)
+set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${ParaEngineClient_SOURCE_DIR}/glew-2.1.0/include)
+set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${ParaEngineClient_SOURCE_DIR}/glew-2.1.0/src)
 
 
 ##############################
@@ -300,16 +329,16 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings")
 include_directories("${ParaEngineClient_SOURCE_DIR}/NPL")
 include_directories("${ParaEngineClient_SOURCE_DIR}/2dengine/Video")
 include_directories("${ParaEngineClient_SOURCE_DIR}/common")
-include_directories("${sqlite_SOURCE_DIR}")
-include_directories("${Boost_INCLUDE_DIRS}")
-include_directories("${luabind_SOURCE_DIR}")
-include_directories("${tinyxpath_SOURCE_DIR}")
-include_directories("${lua_SOURCE_DIR}/src/")
-include_directories("${jsoncpp_SOURCE_DIR}/include")
+
 
 
 INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
-
+include_directories("${lua_SOURCE_DIR}/src/")
+include_directories("${luabind_SOURCE_DIR}")
+include_directories("${sqlite_SOURCE_DIR}")
+include_directories("${Boost_INCLUDE_DIRS}")
+include_directories("${tinyxpath_SOURCE_DIR}")
+include_directories("${jsoncpp_SOURCE_DIR}/include")
 
 if(NPLRUNTIME_SUPPORT_FBX)
 	include_directories("${Assimp_SOURCE_DIR}/include/")

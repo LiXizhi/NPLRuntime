@@ -14,6 +14,7 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #endif
+#include <float.h>
 #include "ShapeFrustum.h"
 
 #include "ShapeAABB.h"

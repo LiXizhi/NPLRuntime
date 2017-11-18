@@ -7,8 +7,6 @@ cmake_minimum_required (VERSION 2.6)
 
 project (CLIENT)
 
-message(${CLIENT_SOURCE_DIR})
-
 if(WIN32)
 	include(cmake/win32.cmake)
 elseif(APPLE)
