@@ -10,12 +10,21 @@
 
 #if defined(PLATFORM_MAC)
 
-#include "platform/PlatformMacro.h"
-#include "platform/mac/CCImage.h"
-#include "platform/mac/CCLabel.h"
-#include "platform/mac/CCGLProgram.h"
-#include "platform/mac/CCTexture2D.h"
-#include "Platform/mac/CCFontAtlas.h"
+
+
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
+#include "PEtypes.h"
+#include "mac/GLType.h"
+#include "mac/GLProgram.h"
+#include "math/ParaMathUtility.h"
+#include "mac/GLLabel.h"
+#include "mac/GLFontAtlas.h"
+#include "mac/GLTexture2D.h"
+#include "mac/GLImage.h"
+
+
+
 
 #elif defined(PARAENGINE_MOBILE)
 #include "cocos2d.h"
@@ -57,6 +66,9 @@ USING_NS_CC;
 
 
 
+
+
+
 #ifdef WIN32
 #pragma warning( pop ) 
 #endif
@@ -79,8 +91,6 @@ USING_NS_CC;
 #include "win32/GLFontAtlas.h"
 #include "win32/GLTexture2D.h"
 #include "win32/GLImage.h"
-
-
 
 
 
