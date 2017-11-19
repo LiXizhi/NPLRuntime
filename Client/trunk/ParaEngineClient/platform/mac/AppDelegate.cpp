@@ -58,8 +58,9 @@ void ParaEngine::AppDelegate::Run()
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-
     FsPollDevice();
+    
+    glewInit();
 
     InitApp();
 
