@@ -389,8 +389,8 @@ set(EXTRA_LIBRARIES
 if (NPLRUNTIME_SUPPORT_FBX)
 	set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} assimp)
 endif()
-
-set(NPLRUNTIME_LINK_LIBRARIES sqlite lua jsoncpp tinyxpath luabind
+ 
+set(NPLRUNTIME_LINK_LIBRARIES sqlite luajit21 jsoncpp tinyxpath luabind
 	${GRAPHIC_LIBRARIES}
 	${EXTRA_LIBRARIES}
 	${Boost_LIBRARIES}
