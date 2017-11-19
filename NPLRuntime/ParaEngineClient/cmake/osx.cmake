@@ -9,27 +9,21 @@
 project (ParaEngineClient)
 
 
-
 # The version number.
 set (ParaEngineClient_VERSION_MAJOR 1)
 set (ParaEngineClient_VERSION_MINOR 0)
 
-
-
-include_directories(../embed-resource)
-add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
 set (ParaEngineClient_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient)
 
+# Embed Resource
+include_directories(../embed-resource)
+add_subdirectory(../embed-resource ${PROJECT_BINARY_DIR}/../embed-resource)
 
 
-ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
-find_package(OpenGL REQUIRED)
-include_directories( ${OPENGL_INCLUDE_DIRS}  )
-set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}	)
-find_package(GLUT REQUIRED)
-include_directories(${GLUT_INCLUDE_DIR})
-# set(CMAKE_CXX_FLAGS "-g -Wall")
- set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++11")
+set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
+set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL)
+
+
 ##############################
 file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
 SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
@@ -81,9 +75,20 @@ SOURCE_GROUP("IO" FILES ${ParaEngineClient_IO_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_IO_FILES})
 
 
+# OpenGL
+ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
+find_package(OpenGL REQUIRED)
+include_directories( ${OPENGL_INCLUDE_DIRS}  )
+set(GRAPHIC_LIBRARIES ${OPENGL_LIBRARIES}	)
+find_package(GLUT REQUIRED)
+include_directories(${GLUT_INCLUDE_DIR})
+
+
+
+
+
+
 set(EmbeddedResource_FILES)
-
-
 
 ##################################
 #------------shader-------------##
@@ -114,8 +119,6 @@ foreach( src_file ${ParaEngineClient_SHADER_FILES} )
 	list(APPEND EmbeddedResource_FILES ${MyResource})
 endforeach( src_file ${ParaEngineClient_SHADER_FILES} )
 
-
-# Other GL shader
 embed_resources_abs(MyResource  "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/terrain_normal.fx.glsl")
 list(APPEND ParaEngineClient_SHADER_FILES "${ParaEngineClient_SOURCE_DIR}/shaders/glsl/terrain_normal.fx.glsl")
 list(APPEND EmbeddedResource_FILES ${MyResource})
@@ -223,10 +226,6 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebSocket_FILES})
 
 ADD_DEFINITIONS(-DMAC_CLIENT)
 
-file (GLOB ParaEngineClient_Platform_m_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.m)
-SOURCE_GROUP("Platform_m" FILES ${ParaEngineClient_Platform_m_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_m_FILES})
-
 set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
 file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.*)
 SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
@@ -239,40 +238,27 @@ ${External_Dir}/glad/src/glad.c)
 include_directories("${External_Dir}/glfw-3.2.1/include")
 include_directories("${External_Dir}/glad/include")
 include_directories("${External_Dir}/jpeg/include/mac")
-include_directories("${External_Dir}/icon/include")
-#include_directories("${ZLIB_SOURCE_DIR}")
+#nclude_directories("${External_Dir}/icon/include")
 
 include_directories("${CURL_SOURCE_DIR}/include/")
 include_directories("${CURL_BINARY_DIR}/include/curl/")
+
 set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} 
-	#"${External_Dir}/freetype2/prebuilt/win32"
 	"${External_Dir}/jpeg/prebuilt/mac"
-	"${External_Dir}/icon/prebuilt"
 	)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 
-
+set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} glfw libjpeg.a glEffectsParser)
 
 
 
 file (GLOB Platform_Base_FILES ${ParaEngineClient_SOURCE_DIR}/platform/base/*.cpp)
 SOURCE_GROUP("Platform_Base" FILES ${Platform_Base_FILES})
 list(APPEND ParaEngineClient_SRCS ${Platform_Base_FILES})
-file (GLOB Platform_Shader_FILES ${ParaEngineClient_SOURCE_DIR}/platform/baseshaders/*.cpp)
-SOURCE_GROUP("Platform_Base" FILES ${Platform_Shader_FILES})
-list(APPEND ParaEngineClient_SRCS ${Platform_Shader_FILES})
+
+
 set (External_Dir ${PROJECT_SOURCE_DIR}/../../Client/trunk/externals)
 include_directories("${External_Dir}/jpeg/include/mac")
-#include_directories("${External_Dir}/freetype2/include/mac/freetype2")
-set(NPLRUNTIME_LINK_DIRECTORIES 
-	"${External_Dir}/jpeg/prebuilt/mac"
-	#"${External_Dir}/freetype2/prebuilt/mac"
-	)
-set(WRAPPER_LIB
-	libjpeg.a
-	libfreetype.a
-)
-
 
 
 
@@ -284,7 +270,7 @@ option(GLFW_BUILD_TESTS OFF)
 option(GLFW_INSTALL OFF)
 
 add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${ParaEngineClient_BINARY_DIR}/glfw-3.2.1)
-#add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
 set(PNG_FOUND 1)
 set(PNG_LIBRAY libpng)
 set(PNG_LIBRARIES libpng)
@@ -308,11 +294,11 @@ add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects
 add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
 
 ##############################
-#include_directories("${PNG_INCLUDE_DIR}")
+include_directories("${PNG_INCLUDE_DIR}")
 include_directories("${FREETYPE_INCLUDE_DIR}")
 include_directories("${GLEW_INCLUDE_DIR}")
-#set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} png_static freetype glew_s)
-set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} freetype glew_s glEffectsParser)
+
+set(GRAPHIC_LIBRARIES ${GRAPHIC_LIBRARIES} png_static freetype glew_s)
 
 
 ##############################
@@ -386,30 +372,13 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarat
 
 link_directories(${NPLRUNTIME_LINK_DIRECTORIES})
 
-if (PARAENGINE_COMPILE_LIB)
-	SET(CMAKE_DEBUG_POSTFIX "_d")
+add_executable(ParaEngineClient MACOSX_BUNDLE ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
-	if(NPLRUNTIME_STATIC_LIB)
-		SET(NPLRUNTIME_LIB_MODE "STATIC")
-	else()
-		SET(NPLRUNTIME_LIB_MODE "SHARED")
-	endif()
-
-	add_library(ParaEngineClient ${NPLRUNTIME_LIB_MODE} ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-
-else ()
-	# add the executable
-	add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-endif ()
-
-
-# for luajit & mac
-SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 set(EXTRA_LIBRARIES
 		dl
 		resolv
 		z
-	libiconv.dylib
+		iconv
 	${WRAPPER_LIB}
 	${CURL_LIBRARIES}
 	${GLUT_LIBRARY}

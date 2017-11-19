@@ -28,6 +28,7 @@ int main(int argc, char** argv)
 	std::fstream ofs(dst.c_str(), std::fstream::out | std::fstream::binary);
 	
 	ofs << "#include <stdlib.h>" << endl;
+	ofs << "namespace ParaEngine" << endl << "{"<<endl; 
 
 	ofs << "extern const unsigned char _resource_" << sym << "[] = {" << endl;
 
@@ -49,6 +50,7 @@ int main(int argc, char** argv)
 
 	ofs << "};" << endl;
 	ofs << "extern const size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << "); // total file size " << dec << nSize;
-
+    
+	ofs <<endl<< "};";  // End of namespace ParaEngine
 	return EXIT_SUCCESS;
 }
