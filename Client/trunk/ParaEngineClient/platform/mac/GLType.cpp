@@ -3,7 +3,7 @@
 #include <cmath>
 
 using namespace std;
-
+using namespace ParaEngine;
 CCVector2 CCVector2::ZERO = CCVector2(0,0);
 
 CCVector2::CCVector2() : x(0), y(0)

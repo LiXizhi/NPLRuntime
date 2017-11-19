@@ -180,8 +180,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
             char* pout = gb2312Text;
             size_t inLen = strLen * 2;
             size_t outLen = gb2312StrSize;
-
-            iconv(_iconv, (const char**)&pin, &inLen, &pout, &outLen);
+            iconv(_iconv, (char**)&pin, &inLen, &pout, &outLen);
         }
 
     }

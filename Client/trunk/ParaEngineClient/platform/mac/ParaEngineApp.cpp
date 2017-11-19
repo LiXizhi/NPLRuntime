@@ -51,8 +51,8 @@
 using namespace std;
 using namespace ParaEngine;
 
-#include "CCFontFreeType.h"
-USING_NS_CC;
+#include "GLFontFreeType.h"
+
 
 CParaEngineApp::CParaEngineApp(const char*  lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bServerMode(false), m_bIsAppActive(true), m_bHasNewConfig(false), m_nAppState(PEAppState_None), m_nScreenWidth(960), m_nScreenHeight(640), m_fTime(0), m_fFPS(0.f)
