@@ -554,6 +554,9 @@ void CParaEngineApp::UpdateMouse()
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
 
+    
+    glewInit();
+    
 	FsPassedTime();  // Reset the timer
 
 	// this is server mode
