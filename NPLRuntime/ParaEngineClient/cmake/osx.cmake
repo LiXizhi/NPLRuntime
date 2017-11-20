@@ -390,7 +390,10 @@ if (NPLRUNTIME_SUPPORT_FBX)
 	set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} assimp)
 endif()
  
-set(NPLRUNTIME_LINK_LIBRARIES sqlite luajit21 jsoncpp tinyxpath luabind
+# for luajit2.0 
+SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+
+set(NPLRUNTIME_LINK_LIBRARIES sqlite liblua jsoncpp tinyxpath luabind
 	${GRAPHIC_LIBRARIES}
 	${EXTRA_LIBRARIES}
 	${Boost_LIBRARIES}
