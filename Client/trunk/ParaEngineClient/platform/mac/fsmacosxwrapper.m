@@ -6,7 +6,6 @@
 
 static int mouseLb=0,mouseMb=0,mouseRb=0;
 
-
 static int FsNormalKeyCode[256]=
 {
 	0,                 // 0
@@ -617,9 +616,8 @@ extern void FsOnClosed();
 
 - (void) windowWillClose: (NSNotification *)notification
 {
-	[NSApp terminate:nil];	// This can also be exit(0);
-
 	FsOnClosed();
+    //[NSApp terminate:nil];    // This can also be exit(0);
 }
 
 @end
@@ -1092,8 +1090,8 @@ void FsPollDeviceC(void)
 		  }
 		if(event!=nil)
 		{
-			[NSApp sendEvent:event];
-			[NSApp updateWindows];
+            [NSApp sendEvent:event];
+            [NSApp updateWindows];
 		}
 		else
 		{
