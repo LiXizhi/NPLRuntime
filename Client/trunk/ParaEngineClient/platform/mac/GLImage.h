@@ -16,7 +16,9 @@ namespace ParaEngine
 	class Image : public CRefCountedOne
 	{
 	public:
-
+        
+        Image();
+        
 		// config
 		static bool supportsS3TC;
 		static bool PNG_PREMULTIPLIED_ALPHA_ENABLED;
