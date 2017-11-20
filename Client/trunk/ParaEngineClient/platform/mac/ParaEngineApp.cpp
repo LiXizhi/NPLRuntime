@@ -564,6 +564,10 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 	{
 
         FsPollDevice();
+        if(GetAppState() == PEAppState_Exiting || GetAppState() == PEAppState_Exited)
+        {
+            break;
+        }
 
         FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
 
