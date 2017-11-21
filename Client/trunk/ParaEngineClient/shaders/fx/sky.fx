@@ -10,7 +10,7 @@ float4x4 mWorldViewProj: worldviewprojection;
 float4x4 mWorldView: worldview;
 float4x4 mWorld: world;
 
-float3 sun_vec: sunvector;
+float4 sun_vec: sunvector;
 
 float3	colorDiffuse:materialdiffuse;
 float3	colorAmbient:ambientlight;
@@ -65,7 +65,7 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 
 	if (g_bEnableSunLight)
 	{
-		o.colorDiffuse = colorDiffuse*dot(sun_vec, half3(0, 1, 0)) + colorAmbient;
+		o.colorDiffuse = colorDiffuse*dot(sun_vec.xyz, half3(0, 1, 0)) + colorAmbient;
 	}
 	else
 	{
