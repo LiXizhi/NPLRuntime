@@ -495,24 +495,27 @@ const char* StringHelper::EncodingConvert(const char* srcEncoding, const char* d
 }
 
 
-bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text)
+bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
 {
 #ifdef WIN32
 	if (OpenClipboard(NULL))
 	{
 		EmptyClipboard();
 
-		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(char) * (text.size() + 1));
+		std::u16string text;
+		UTF8ToUTF16(text_, text);
+
+		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(char16_t) * (text.size() + 1));
 		if (hBlock)
 		{
-			char *szText = (char*)GlobalLock(hBlock);
+			char16_t *szText = (char16_t*)GlobalLock(hBlock);
 			if (szText)
 			{
-				CopyMemory(szText, &(text[0]), text.size() * sizeof(char));
+				CopyMemory(szText, &(text[0]), text.size() * sizeof(char16_t));
 				szText[(int)text.size()] = '\0';  // Terminate it
 				GlobalUnlock(hBlock);
 			}
-			SetClipboardData(CF_TEXT, hBlock);
+			SetClipboardData(CF_UNICODETEXT, hBlock);
 		}
 		CloseClipboard();
 		// We must not free the object until CloseClipboard is called.
@@ -538,15 +541,14 @@ const char* ParaEngine::StringHelper::GetTextFromClipboard()
 #ifdef WIN32
 	if (OpenClipboard(NULL))
 	{
-		HANDLE handle = GetClipboardData(CF_TEXT);
+		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
 		if (handle)
 		{
-			// Convert the ANSI string to Unicode, then
-			// insert to our buffer.
-			char *szText = (char*)GlobalLock(handle);
+			const char16_t *szText = (const char16_t*)GlobalLock(handle);
 			if (szText)
 			{
-				g_str = szText;
+				std::u16string szText_(szText);
+				 ParaEngine::StringHelper::UTF16ToUTF8(szText_, g_str);
 				bSucceed = true;
 				GlobalUnlock(handle);
 			}

@@ -831,14 +831,14 @@ uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
 	return GetBlockData(x, y, z);
 }
 
-void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
+bool CBlockWorld::SetBlockVisible(uint16_t templateId, bool value, bool bRefreshWorld)
 {
 	BlockTemplate* pTemp = GetBlockTemplate(templateId);
 
 	if (pTemp)
 	{
 		if (!value == pTemp->IsMatchAttribute(BlockTemplate::batt_invisible))
-			return;
+			return false;
 
 		if (!value)
 		{
@@ -867,20 +867,21 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 				m_blockTemplateVisibleDatas.erase(templateId);
 			}
 		}
-
-		// refresh player region
-		CBipedObject* currentPlayer = CGlobals::GetScene()->GetCurrentPlayer();
-		auto v3 = currentPlayer->GetPosition();
-		uint16_t blockX_rs(0), blockY_rs(0), blockZ_rs(0);
-		BlockCommon::ConvertToBlockIndex((float)v3.x, (float)v3.y, (float)v3.z, blockX_rs, blockY_rs, blockZ_rs);
-		uint16_t lx, ly, lz;
-		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
-		if (pRegion)
-		{
-			pRegion->SetChunksDirtyByBlockTemplate(templateId);
+		if (bRefreshWorld) {
+			RefreshBlockTemplate(templateId);
+			return false;
 		}
+		return true;
 	}
+	return false;
+}
 
+void ParaEngine::CBlockWorld::RefreshBlockTemplate(uint16_t templateId)
+{
+	for (auto& iter : m_regionCache)
+	{
+		iter.second->SetChunksDirtyByBlockTemplate(templateId);
+	}
 }
 
 uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID)
