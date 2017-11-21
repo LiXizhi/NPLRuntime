@@ -166,21 +166,7 @@ namespace ParaEngine
 			BlockChunk* pChunk = m_chunks[i];
 			if (pChunk)
 			{
-				
-				std::vector<Uint16x3> rets = pChunk->refreshBlockVisible(templateId);
-				for (auto itr = rets.begin(); itr != rets.end(); ++itr)
-				{
-					Uint16x3 blockId_rs = *itr;
-					ChunkMaxHeight& blockHeight = m_blockHeightMap[blockId_rs.x + (blockId_rs.z << 9)];
-					ChunkMaxHeight prevHeight = blockHeight;
-
-					blockId_rs.x += m_minBlockId_ws.x;
-					blockId_rs.y += m_minBlockId_ws.y;
-					blockId_rs.z += m_minBlockId_ws.z;
-
-					m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
-					m_pBlockWorld->NotifyBlockHeightMapChanged(blockId_rs.x, blockId_rs.z, prevHeight);
-				}
+				pChunk->refreshBlockVisible(templateId);
 			}
 		}
 	}
@@ -275,6 +261,88 @@ namespace ParaEngine
 								m_pBlockWorld->SetLightBlockDirty(blockId_rs, true);
 							}
 						}
+					}
+				}
+			}
+		}
+	}
+
+	void BlockRegion::RefreshBlockTemplateByIndex(uint16_t blockX_rs, uint16_t blockY_rs, uint16_t blockZ_rs, BlockTemplate* pTemplate)
+	{
+		if (IsLocked())
+			return;
+
+		if (blockY_rs >= BlockConfig::g_regionBlockDimY)
+		{
+			OUTPUT_LOG("warn: SetBlockTemplateByIndex y is %d which is too big.\n", blockY_rs);
+			return;
+		}
+
+		bool bLightSuspended = m_pBlockWorld->IsLightUpdateSuspended();
+
+		uint16_t packedChunkId_rs = CalcPackedChunkID(blockX_rs, blockY_rs, blockZ_rs);
+		Uint16x3 blockId_rs(blockX_rs, blockY_rs, blockZ_rs);
+
+		//on remove
+		SetModified();
+		SetChunkDirty(packedChunkId_rs, true);
+		CheckNeighborChunkDirty(blockId_rs);
+		UpdateBlockHeightMap(blockId_rs, true, false);
+
+		blockId_rs.x += m_minBlockId_ws.x;
+		blockId_rs.z += m_minBlockId_ws.z;
+
+		m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
+		m_pBlockWorld->SetLightBlockDirty(blockId_rs, true);
+		m_pBlockWorld->DeselectBlock(blockId_rs.x, blockId_rs.y, blockId_rs.z);
+
+		//reset blockId_rs
+		blockId_rs.x -= m_minBlockId_ws.x;
+		blockId_rs.z -= m_minBlockId_ws.z;
+
+		//on add
+		BlockChunk* pChunk = GetChunk(packedChunkId_rs, false);
+		if (pChunk)
+		{
+			uint16 nBlockIndex = CalcPackedBlockID(blockId_rs);
+			BlockTemplate* pPrevBlockTemplate = pChunk->GetBlockTemplate(nBlockIndex);
+			bool prevIsLight = false;
+			if (pPrevBlockTemplate)
+				prevIsLight = pPrevBlockTemplate->IsMatchAttribute(BlockTemplate::batt_light);
+			bool curIsLight = pTemplate->IsMatchAttribute(BlockTemplate::batt_light);
+
+
+			SetModified();
+			SetChunkDirty(packedChunkId_rs, true);
+			CheckNeighborChunkDirty(blockId_rs);
+			UpdateBlockHeightMap(blockId_rs, false, pTemplate->IsTransparent());
+
+			//add/remove to/from light table.
+			if (prevIsLight && !curIsLight)
+			{
+				pChunk->RemoveLight(blockId_rs);
+			}
+			else if (!prevIsLight && curIsLight)
+			{
+				pChunk->AddLight(blockId_rs);
+			}
+
+			blockId_rs.x += m_minBlockId_ws.x;
+			blockId_rs.z += m_minBlockId_ws.z;
+
+			if (!bLightSuspended)
+			{
+				if (curIsLight)
+				{
+					m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
+				}
+				else
+				{
+					m_pBlockWorld->SetLightBlockDirty(blockId_rs, false);
+					if (!(pPrevBlockTemplate && pPrevBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid) && pTemplate->IsMatchAttribute(BlockTemplate::batt_solid)))
+					{
+						// update sun light 
+						m_pBlockWorld->SetLightBlockDirty(blockId_rs, true);
 					}
 				}
 			}
