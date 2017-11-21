@@ -16,7 +16,9 @@
 #include "effect_file_OpenGL.h"
 #include "SunLight.h"
 using namespace ParaEngine;
+#ifdef PARAENGINE_MOBILE
 using namespace cocos2d;
+#endif
 
 // TODO: add more buildin shaders here
 #define STRINGIFY(A)  #A
