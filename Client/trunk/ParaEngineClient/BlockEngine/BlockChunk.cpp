@@ -694,30 +694,39 @@ namespace ParaEngine
 
 	std::vector<Uint16x3> BlockChunk::refreshBlockVisible(uint16_t blockTemplateId)
 	{
-		for (unsigned int inx = 0; inx != m_blocks.size(); ++inx)
+		int nIndexSize = (int)m_blockIndices.size();
+		if (nIndexSize > 0)
 		{
-			if (m_blocks[inx].GetTemplate() && m_blocks[inx].GetTemplate()->GetID() == blockTemplateId)
+			for (int blockIndex = 1; blockIndex < nIndexSize; ++blockIndex)
 			{
-				SetDirty(true);
-				Uint16x3 blockId_rs = GetBlockPosRs(inx);
-				m_ownerBlockRegion->CheckNeighborChunkDirty(blockId_rs);
-				break;
+				if (m_blockIndices[blockIndex] >= 0)
+				{
+					Block& block = m_blocks[m_blockIndices[blockIndex]];
+					BlockTemplate* blockTemplate = block.GetTemplate();
+					if (blockTemplate && blockTemplate->GetID() == blockTemplateId)
+					{
+						Uint16x3 blockId_rs = GetBlockPosRs(blockIndex);
+						m_ownerBlockRegion->RefreshBlockTemplateByIndex(blockId_rs.x, blockId_rs.y, blockId_rs.z, blockTemplate);
+						m_ownerBlockRegion->CheckNeighborChunkDirty(blockId_rs);
+						SetDirty(true);
+					}
+				}
 			}
 		}
 
 		std::vector<Uint16x3> rets;
-		for (auto iter = m_lightBlockIndices.begin(); iter != m_lightBlockIndices.end(); ++iter)
-		{
-			uint16_t nIndex = *iter;
-			int32_t blockIndex = m_blockIndices[nIndex];
-			Block& block = m_blocks[blockIndex];
+		// for (auto iter = m_lightBlockIndices.begin(); iter != m_lightBlockIndices.end(); ++iter)
+		// {
+			// uint16_t nIndex = *iter;
+			// int32_t blockIndex = m_blockIndices[nIndex];
+			// Block& block = m_blocks[blockIndex];
 
-			if (block.GetTemplate()->GetID() == blockTemplateId)
-			{
-				Uint16x3 blockId_rs = GetBlockPosRs(nIndex);
-				rets.push_back(blockId_rs);	
-			}
-		}
+			// if (block.GetTemplate()->GetID() == blockTemplateId)
+			// {
+				// Uint16x3 blockId_rs = GetBlockPosRs(nIndex);
+				// rets.push_back(blockId_rs);	
+			// }
+		// }
 
 		return rets;
 	}

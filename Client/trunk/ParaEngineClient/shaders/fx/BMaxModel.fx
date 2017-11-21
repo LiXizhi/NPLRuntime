@@ -10,7 +10,7 @@ float4x4 mWorld: world;
 // for selection effect: light_params.x: sun_lightIntensity, light_params.y: damageDegree
 // for block effect: light_params.xyz: light color, light_params.w light intensity
 float4 light_params: ConstVector0; 
-float3 sun_vec: sunvector;
+float4 sun_vec: sunvector;
 float3	colorDiffuse:materialdiffuse;
 float3	colorAmbient:ambientlight;
 
@@ -49,8 +49,8 @@ VSOut MainVS(	float4 pos		: POSITION,
 	// world space normal
 	float3 worldNormal = normalize(mul(Norm, (float3x3)mWorld));
 
-	float3 sun_lightmap = colorAmbient + colorDiffuse*saturate(dot(sun_vec, worldNormal));
-	// float sun_lightmap = 0.7 + 0.3*saturate(dot(sun_vec, worldNormal));
+	float3 sun_lightmap = colorAmbient + colorDiffuse*saturate(dot(sun_vec.xyz, worldNormal));
+	// float sun_lightmap = 0.7 + 0.3*saturate(dot(sun_vec.xyz, worldNormal));
 	output.color.xyz = color.rgb * sun_lightmap;
 
 	// calculate the fog factor
