@@ -77,19 +77,18 @@
 // #define USE_BOOST_FILE_API
 #endif
 
-#if defined USE_BOOST_FILE_API || defined(USE_COCOS_FILE_API)
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11
 	#define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
-	#include <boost/filesystem.hpp>
-	#include <boost/filesystem/operations.hpp>
-	#include <boost/filesystem/path.hpp>
-	#include <boost/filesystem/fstream.hpp>
-	#include <iostream>
-	namespace fs = boost::filesystem;
-	#define BOOST_FILESYSTEM_NO_DEPRECATED
-#endif
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <iostream>
+namespace fs = boost::filesystem;
+#define BOOST_FILESYSTEM_NO_DEPRECATED
+
 
 #ifdef USE_COCOS_FILE_API
 	#include "platform/OpenGLWrapper.h"
@@ -1135,7 +1134,7 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 }
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
-#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
+
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
 	try
@@ -1195,11 +1194,9 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 	}
 	catch (...){}
 }
-#endif
 
 void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
 {
-#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	std::string path = GetWritableFullPathForFilename(sRootPath);
 	fs::path rootPath(path);
 	if ( !fs::exists( rootPath) || !fs::is_directory(rootPath) ) {
@@ -1209,7 +1206,7 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	result.SetRootPath(rootPath.string());
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
 	
-#elif defined(WIN32)
+#ifdef OLD_FILE_SEARCH
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	DWORD dwError;
