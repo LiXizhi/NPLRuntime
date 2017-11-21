@@ -19,7 +19,7 @@
 
 #elif defined(PARAENGINE_MOBILE)
 #include "cocos2d.h"
-USING_NS_CC;
+//USING_NS_CC;	//this will cause a awful lot of problems on mobile(cocos2d) platform
 #elif defined(PARA_PLATFORM_WIN32)
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -31,6 +31,30 @@ USING_NS_CC;
 #include "win32/GLFontAtlas.h"
 #include "win32/GLTexture2D.h"
 #include "win32/GLImage.h"
+#endif
+
+#if defined(PARAENGINE_MOBILE)
+#define UNI_AUTO_RELEASE(ptr) ptr->autorelease();
+#elif
+#define UNI_AUTO_RELEASE(ptr) ptr->AddToAutoReleasePool();
+#endif
+
+#if defined(PARAENGINE_MOBILE)
+#define UNI_SAFE_RELEASE(ptr) CC_SAFE_RELEASE(ptr);
+#elif
+#define UNI_SAFE_RELEASE(ptr) SAFE_RELEASE(ptr);
+#endif
+
+#if defined(PARAENGINE_MOBILE)
+#define UNI_SAFE_RELEASE_NULL(ptr) CC_SAFE_RELEASE_NULL(ptr);
+#elif
+#define UNI_SAFE_RELEASE(ptr) SAFE_RELEASE(ptr);
+#endif
+
+#if defined(PARAENGINE_MOBILE)
+#define UNI_SAFE_RETAIN(ptr) CC_SAFE_RETAIN(ptr);
+#elif
+#define UNI_SAFE_RETAIN(ptr) if(ptr) ptr->addref();
 #endif
 
 #endif
