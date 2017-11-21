@@ -58,7 +58,7 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::InitDeviceObjects()
 	m_bIsInitialized = true;
 	UNI_SAFE_RELEASE(m_fontRenderer);
 	m_fontRenderer = CFontRendererOpenGL::create(GetFontName(), GetFontSize());
-        UNI_SAFE_RETAIN(m_fontRenderer);
+	UNI_SAFE_RETAIN(m_fontRenderer);
 	return S_OK;
 }
 
