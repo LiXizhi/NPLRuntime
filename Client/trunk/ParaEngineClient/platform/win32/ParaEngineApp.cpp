@@ -48,6 +48,7 @@
 #include "guicon.h"
 #include "FileLogger.h"
 #include "OSWindows.h"
+#include "OceanManager.h"
 
 #include "MoviePlatform.h"
 
@@ -445,6 +446,11 @@ namespace ParaEngine {
 		m_pRootScene->GetSceneState()->pAssetManager = CGlobals::GetAssetManager();
 		m_pRootScene->GetSceneState()->CleanupSceneState();
 		m_pRootScene->GetSceneState()->pGUIState = &(m_pGUIRoot->GetGUIState());
+
+		/************************************************************************/
+		/* Create ocean manager                                                 */
+		/************************************************************************/
+		CGlobals::GetOceanManager()->create();
 
 		// GUI
 		if (Is3DRenderingEnabled()) {
