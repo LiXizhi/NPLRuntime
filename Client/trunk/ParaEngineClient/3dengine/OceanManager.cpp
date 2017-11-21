@@ -2075,7 +2075,8 @@ namespace ParaEngine
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-			pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
+			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
+			pd3dDevice->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
 
 			D3DVIEWPORT9 curViewport;
 			CGlobals::GetRenderDevice()->GetViewport(&curViewport);
@@ -2101,6 +2102,7 @@ namespace ParaEngine
 			{
 				underwaterColor = m_CustomUnderWaterColor;
 			}
+
 			DWORD dwColor = underwaterColor;
 
 			for (int i = 0; i < 4; i++)
@@ -2164,8 +2166,8 @@ namespace ParaEngine
 	{
 		if(!m_bIsCreated)
 			return;
-#ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+//#if defined( USE_DIRECTX_RENDERER)
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		PERF1("ocean_render");
 
 		/** check whether the camera eye is under the water surface or not*/
@@ -2246,7 +2248,7 @@ namespace ParaEngine
 			if(m_useScreenSpaceFog)
 				RenderUnderwaterEffect(pSceneState);
 		}
-#endif
+//#endif
 	}
 
 	inline float COceanManager::getOceanHeight( int x, int y )
