@@ -777,17 +777,6 @@ namespace ParaEngine {
 
 	void CParaEngineGLView::onGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 	{
-		//if (GLFW_REPEAT != action)
-		//{
-		//	EventKeyboard event(g_keyCodeMap[key], GLFW_PRESS == action);
-		//	auto dispatcher = Director::getInstance()->getEventDispatcher();
-		//	dispatcher->dispatchEvent(&event);
-		//}
-
-		//if (GLFW_RELEASE != action && g_keyCodeMap[key] == EventKeyboard::KeyCode::KEY_BACKSPACE)
-		//{
-		//	IMEDispatcher::sharedDispatcher()->dispatchDeleteBackward();
-		//}
 		UINT msg = WM_KEYDOWN;
 		if (GLFW_PRESS == action)
 		{
@@ -806,16 +795,6 @@ namespace ParaEngine {
 
 	void CParaEngineGLView::onGLFWCharCallback(GLFWwindow *window, unsigned int character)
 	{
-		//char16_t wcharString[2] = { (char16_t)character, 0 };
-		//std::string utf8String;
-
-		//StringUtils::UTF16ToUTF8(wcharString, utf8String);
-		//IMEDispatcher::sharedDispatcher()->dispatchInsertText(utf8String.c_str(), utf8String.size());
-
-
-		//CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(WM_CHAR, character, 0);
-		//CGUIIME::SendWinMsgChar((WCHAR)character);
-
 		auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
 		if (pGUI)
 		{
@@ -862,11 +841,17 @@ namespace ParaEngine {
 
 	void CParaEngineGLView::onGLFWWindowSizeFunCallback(GLFWwindow *window, int width, int height)
 	{
-		//if (_resolutionPolicy != ResolutionPolicy::UNKNOWN)
-		//{
-		//	updateDesignResolutionSize();
-		//	Director::getInstance()->setViewport();
-		//}
+
+		if (width != 0 && height != 0)
+		{
+			int frameWidth = (int)(width / _frameZoomFactor);
+			int frameHeight = (int)(height / _frameZoomFactor);
+
+
+			CGlobals::GetApp()->SetResolution((float)frameWidth, (float)frameHeight);
+		}
+
+
 	}
 
 
