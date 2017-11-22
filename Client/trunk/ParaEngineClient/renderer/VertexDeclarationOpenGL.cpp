@@ -12,7 +12,9 @@
 #endif
 #include "VertexDeclarationOpenGL.h"
 using namespace ParaEngine;
-
+#ifdef PARAENGINE_MOBILE
+using namespace cocos2d;
+#endif
 
 //ParaEngine::VertexElement::VertexElement()
 //	:Stream(0xff), Offset(0), Type(D3DDECLTYPE_UNUSED), Method(0), Usage(0), UsageIndex(0)
