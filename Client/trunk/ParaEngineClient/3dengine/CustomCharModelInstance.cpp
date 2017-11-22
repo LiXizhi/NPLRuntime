@@ -1314,7 +1314,7 @@ bool CharModelInstance::SetReplaceableTexture(int ReplaceableTextureID, TextureE
 							if (nIndex == ReplaceableTextureID)
 							{
 								m_textures[k] = pTextureEntity;
-								return true;
+								//return true;
 							}
 							k++;
 						}
