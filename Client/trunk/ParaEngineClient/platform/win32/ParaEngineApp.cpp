@@ -49,6 +49,7 @@
 #include "FileLogger.h"
 #include "OSWindows.h"
 #include "OceanManager.h"
+#include "DynamicAttributeField.h"
 
 #include "MoviePlatform.h"
 
@@ -338,6 +339,8 @@ namespace ParaEngine {
 		, m_dwWinThreadID(0)
 		, m_hWnd(NULL)
 		, m_fRefreshTimerInterval(IDEAL_FRAME_RATE)
+		, m_bStartFullscreen(false)
+		, m_nInitialGameEffectSet(0)
 	{
 		//SetTouchInputting(true);
 		g_pCurrentApp = this;
@@ -348,6 +351,16 @@ namespace ParaEngine {
 
 	CParaEngineApp::~CParaEngineApp()
 	{
+	}
+
+	void CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
+	{
+		m_fRefreshTimerInterval = fTimeInterval;
+	}
+
+	float CParaEngineApp::GetRefreshTimer() 
+	{
+		return m_fRefreshTimerInterval;
 	}
 
 	bool CParaEngineApp::IsAppActive()
@@ -371,6 +384,11 @@ namespace ParaEngine {
 	{
 		m_nScreenWidth = (int)x;
 		m_nScreenHeight = (int)y;
+
+		if (m_pGLView)
+		{
+			m_pGLView->setFrameSize(x, y);
+		}
 	}
 
 	void CParaEngineApp::GetResolution(float* pX, float* pY)
@@ -383,13 +401,20 @@ namespace ParaEngine {
 
 	void CParaEngineApp::SetScreenResolution(const Vector2& vSize)
 	{
-		static bool s_bFirstTimeSet = true;
+		//static bool s_bFirstTimeSet = true;
 		// for mobile version, we will only allow setting it once at start up, scripting interface can not change the resolution.
-		if (s_bFirstTimeSet)
+		//if (s_bFirstTimeSet)
 		{
-			s_bFirstTimeSet = false;
+			//s_bFirstTimeSet = false;
 			SetResolution(vSize.x, vSize.y);
 		}
+
+		ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
+		CVariable value;
+		value = (int)(vSize.x);
+		settings.SetDynamicField("ScreenWidth", value);
+		value = (int)(vSize.y);
+		settings.SetDynamicField("ScreenHeight", value);
 	}
 
 	bool CParaEngineApp::IsSlateMode()
@@ -436,7 +461,7 @@ namespace ParaEngine {
 
 		CGUIEvent::StaticInit();
 
-		CGlobals::GetSettings().LoadGameEffectSet(0);
+		CGlobals::GetSettings().LoadGameEffectSet(m_nInitialGameEffectSet);
 
 		InitAudioEngine();
 
@@ -775,9 +800,49 @@ namespace ParaEngine {
 
 		LoadPackages();
 		InitSystemModules();
+		LoadAndApplySettings();
 		return S_OK;
 	}
 
+
+	void CParaEngineApp::LoadAndApplySettings()
+	{
+		// load from settings.
+		auto& settings = ParaEngineSettings::GetSingleton();
+
+		CDynamicAttributeField* pField = NULL;
+		if ((pField = settings.GetDynamicField("StartFullscreen")))
+			m_bStartFullscreen = (bool)(*pField);
+		else
+			m_bStartFullscreen = false;
+
+		const char* sIsFullScreen = GetAppCommandLineByParam("fullscreen", NULL);
+		if (sIsFullScreen)
+			m_bStartFullscreen = (strcmp("true", sIsFullScreen) == 0);
+
+		if ((pField = settings.GetDynamicField("ScreenWidth")))
+			m_nScreenWidth = (int)(*pField);
+
+		if ((pField = settings.GetDynamicField("ScreenHeight")))
+			m_nScreenHeight = (int)(*pField);
+
+		if ((pField = settings.GetDynamicField("ScriptEditor")))
+			settings.SetScriptEditor((const string&)(*pField));
+
+		if ((pField = settings.GetDynamicField("GameEffectSet")))
+			m_nInitialGameEffectSet = (int)(*pField);
+
+		if ((pField = settings.GetDynamicField("InverseMouse")))
+			settings.SetMouseInverse((bool)(*pField));
+
+		if ((pField = settings.GetDynamicField("language")))
+			settings.SetLocale((const char*)(*pField));
+
+		if ((pField = settings.GetDynamicField("TextureLOD")))
+			settings.SetTextureLOD((int)(*pField));
+
+		
+	}
 
 	void CParaEngineApp::BootStrapAndLoadConfig()
 	{
@@ -1148,6 +1213,8 @@ namespace ParaEngine {
 
 	void CParaEngineApp::handle_mainloop_timer(const boost::system::error_code& err)
 	{
+		m_bQuit = m_pGLView ? m_pGLView->windowShouldClose() : false;
+
 		if (!err && !m_bQuit)
 		{
 				PEAppState dwState = GetAppState();
@@ -1200,7 +1267,7 @@ namespace ParaEngine {
 		if (Is3DRenderingEnabled())
 		{
 
-			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", Rect(0, 0, 960, 640));
+			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", Rect(0, 0, (float)m_nScreenWidth, (float)m_nScreenHeight));
 
 			SetMainWindow(m_pGLView->getWin32Window());
 
@@ -1214,82 +1281,6 @@ namespace ParaEngine {
 			m_bMainLoopExited = false;
 			m_main_io_service.run();
 			m_bMainLoopExited = true;
-
-
-			/////////////////////////////////////////////////////////////////////////////
-			///////////////// changing timer resolution
-			/////////////////////////////////////////////////////////////////////////////
-			//UINT TARGET_RESOLUTION = 1; // 1 millisecond target resolution
-			//TIMECAPS tc;
-			//UINT wTimerRes = 0;
-			//if (TIMERR_NOERROR == timeGetDevCaps(&tc, sizeof(TIMECAPS)))
-			//{
-			//	wTimerRes = (std::min)((std::max)(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);
-			//	timeBeginPeriod(wTimerRes);
-			//}
-
-			//LARGE_INTEGER freq;
-			//QueryPerformanceFrequency(&freq);
-
-			//LARGE_INTEGER       _animationInterval;
-			//{
-			//	_animationInterval.QuadPart = (LONGLONG)(1.0 / 60.0f * freq.QuadPart);
-			//}
-
-			//// Main message loop:
-			//LARGE_INTEGER nLast;
-			//LARGE_INTEGER nNow;
-
-			//QueryPerformanceCounter(&nLast);
-
-			//LONGLONG interval = 0LL;
-			//LONG waitMS = 0L;
-
-			//while (!m_pGLView->windowShouldClose())
-			//{
-
-			//	PEAppState dwState = GetAppState();
-			//	if (dwState == PEAppState_Ready)
-			//	{
-			//	}
-			//	else if (dwState == PEAppState_Device_Error /*|| dwState == PEAppState_Exiting*/)
-			//	{
-			//		continue;
-			//	}
-			//	else if (dwState == PEAppState_None)
-			//	{
-			//		Create(hInstance);
-			//	}
-
-			//	QueryPerformanceCounter(&nNow);
-			//	interval = nNow.QuadPart - nLast.QuadPart;
-
-			//	auto d = (interval * 1000LL / freq.QuadPart - 1L) / 1000.0f;
-			//	m_fTime += d;
-
-			//	//printf("%lf\n", m_fTime);
-
-			//	if (interval >= _animationInterval.QuadPart)
-			//	{
-			//		nLast.QuadPart = nNow.QuadPart;
-
-			//		FrameMove(m_fTime);
-			//		m_pGLView->pollEvents();
-			//		Render3DEnvironment(false);
-			//		m_pGLView->swapBuffers();
-			//	}
-			//	else
-			//	{
-			//		// The precision of timer on Windows is set to highest (1ms) by 'timeBeginPeriod' from above code,
-			//		// but it's still not precise enough. For example, if the precision of timer is 1ms,
-			//		// Sleep(3) may make a sleep of 2ms or 4ms. Therefore, we subtract 1ms here to make Sleep time shorter.
-			//		// If 'waitMS' is equal or less than 1ms, don't sleep and run into next loop to
-			//		// boost CPU to next frame accurately.
-			//		waitMS = (_animationInterval.QuadPart - interval) * 1000LL / freq.QuadPart - 1L;
-			//		if (waitMS > 1L)
-			//			Sleep(waitMS);
-			//	}
-			//}
 
 			if (m_pGLView->isOpenGLReady())
 			{
