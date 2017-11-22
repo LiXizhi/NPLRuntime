@@ -2071,7 +2071,8 @@ namespace ParaEngine
 			
 			// Set render states (disable z-buffering, enable stencil, disable fog, and turn on alpha blending)
 			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
-			pd3dDevice->SetTexture(0, NULL);
+			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
+			pd3dDevice->SetTexture(0, pWhiteTexture->GetTexture());
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
