@@ -103,6 +103,8 @@ namespace ParaEngine
 
 		virtual void InitSystemModules();
 
+		void LoadAndApplySettings();
+
 		void BootStrapAndLoadConfig();
 
 		/** This is the last function that should be called. It is usually called just before process exit.
@@ -356,6 +358,18 @@ namespace ParaEngine
 		* @param nKey: a direct input key, such as DIK_SPACE. */
 		bool IsKeyPressed(DWORD nKey);
 
+		/** get the refresh timer.
+		*/
+		virtual float GetRefreshTimer();
+
+		/**
+		* Set the frame rate timer interval
+		* @param fTimeInterval:  value in seconds. such as 0.033f or 0.01667f
+		* 	Passing a value <= 0 to render in idle time.
+		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
+		*/
+		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
+
 
 		void InitApp(const char* sCommandLine);
 	protected:
@@ -403,7 +417,9 @@ namespace ParaEngine
 		DWORD m_dwWinThreadID;
 		HWND  m_hWnd;              // The main app window
 
-
+		bool              m_bStartFullscreen;  // Whether to start up the app in fullscreen mode
+		/** initial game effect setting to be loaded from the config file. default value it 0*/
+		int m_nInitialGameEffectSet;
 
 		void UpdateMouse();
 	};
