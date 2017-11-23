@@ -4,11 +4,25 @@
 
 #include <unordered_map>
 
+#if defined(PARAENGINE_MOBILE)
+namespace cocos2d
+#elif
 namespace ParaEngine
+#endif
 {
 	class GLProgram;
 	struct Uniform;
+}
+#if defined(PARAENGINE_MOBILE)
+using cocos2d::GLProgram;
+using cocos2d::Uniform;
+#elif
+using ParaEngine::GLProgram;
+using ParaEngine::Uniform;
+#endif
 
+namespace ParaEngine
+{
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
 	public:
@@ -196,7 +210,11 @@ namespace ParaEngine
 	protected:
 		struct TechniqueDescGL : public TechniqueDesc
 		{
-			std::vector<GLProgram*> mPasses;
+#if defined(PARAENGINE_MOBILE)
+			std::vector<cocos2d::GLProgram*> mPasses;
+#else
+			std::vector<ParaEngine::GLProgram*> mPasses;
+#endif
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;

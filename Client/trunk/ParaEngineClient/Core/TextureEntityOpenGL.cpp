@@ -15,6 +15,10 @@
 
 using namespace ParaEngine;
 
+#if defined(PARAENGINE_MOBILE)
+USING_NS_CC;
+#endif
+
 namespace ParaEngine
 {
 	extern int globalTime;
@@ -56,7 +60,7 @@ Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const s
 	{
 		LoadFromMemory(file.getBuffer(), file.getSize(), 0, D3DFMT_UNKNOWN, (void**)(&texture));
 		if (texture){
-			texture->AddToAutoReleasePool();
+			UNI_AUTO_RELEASE(texture);
 		}
 	}
 	else
@@ -87,7 +91,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 	}
 	if (SurfaceType == StaticTexture)
 	{
-		SAFE_RELEASE(m_texture);
+		UNI_SAFE_RELEASE(m_texture);
 		if(!IsAsyncLoad())
 			SetInnerTexture(CreateTextureFromFile_Serial(sTextureFileName));
 		else
@@ -109,7 +113,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 				{
 					for (int i = 0; i < nTotalTextureSequence; ++i)
 					{
-						SAFE_RELEASE(m_pTextureSequence[i]);
+						UNI_SAFE_RELEASE(m_pTextureSequence[i]);
 					}
 				}
 				else
@@ -139,8 +143,8 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 						if (!IsAsyncLoad())
 						{
 							auto texture = CreateTextureFromFile_Serial(sTemp);
-							if(texture)
-								texture->addref();
+							UNI_SAFE_RETAIN(texture);
+
 							m_pTextureSequence[i - 1] = texture;
 						}
 						else
@@ -168,13 +172,12 @@ void ParaEngine::TextureEntityOpenGL::SetInnerTexture(Texture2D* texture)
 {
 	if (SurfaceType == StaticTexture)
 	{
-		SAFE_RELEASE(m_texture);
+		UNI_SAFE_RELEASE_NULL(m_texture);
 		m_bIsInitialized = true;
 		if (texture)
 		{
 			m_texture = texture;
-			if(m_texture)
-				m_texture->addref();
+			UNI_SAFE_RETAIN(m_texture);
 		}
 	}
 }
@@ -254,7 +257,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::DeleteDeviceObjects()
 			{
 				for (int i = 0; i < nTotalTextureSequence; ++i)
 				{
-					SAFE_RELEASE(m_pTextureSequence[i]);
+					UNI_SAFE_RELEASE_NULL(m_pTextureSequence[i]);
 				}
 				SAFE_DELETE_ARRAY(m_pTextureSequence);
 			}
@@ -266,7 +269,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::DeleteDeviceObjects()
 		if (m_texture)
 		{
 			// m_texture->releaseGLTexture();
-			SAFE_RELEASE(m_texture);
+			UNI_SAFE_RELEASE_NULL(m_texture);
 		}
 		break;
 	}
@@ -470,7 +473,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 			pTextureEntity->AddToAutoReleasePool();
 			return pTextureEntity;
 		}
-		SAFE_RELEASE(texture);
+		UNI_SAFE_RELEASE_NULL(texture);
 	}
 	return NULL;
 }
@@ -583,15 +586,14 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 				}
 				if (ppTexture != NULL)
 				{
-					if (texture)
-						texture->addref();
+					UNI_SAFE_RETAIN(texture);
 					(*ppTexture) = (void*)texture;
 				}
 				else
 				{
 					SetInnerTexture(texture);
 				}
-				SAFE_RELEASE(texture);
+				UNI_SAFE_RELEASE_NULL(texture);
 				return true;
 			}
 		}

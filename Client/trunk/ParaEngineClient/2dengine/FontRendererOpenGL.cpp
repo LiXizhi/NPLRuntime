@@ -24,6 +24,7 @@
 #include "FontRendererOpenGL.h"
 
 using namespace ParaEngine;
+using namespace cocos2d;
 
 ParaEngine::CFontRendererOpenGL::CFontRendererOpenGL()
 	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false)
@@ -69,7 +70,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 				// disable aliasing
 				pFontRenderer->getFontAtlas()->setAliasTexParameters();
 			}
-			pFontRenderer->AddToAutoReleasePool();
+			UNI_AUTO_RELEASE(pFontRenderer);
 			return pFontRenderer;
 		}
 	}
