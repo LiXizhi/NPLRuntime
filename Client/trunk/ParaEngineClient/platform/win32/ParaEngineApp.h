@@ -372,6 +372,31 @@ namespace ParaEngine
 
 
 		void InitApp(const char* sCommandLine);
+
+		/**
+			* Write a string to the registry. e.g. WriteRegStr("HKLM", "Software\My Company\My Software", "string Value", "string Name");
+			* @param root_key: must be
+			HKCR or HKEY_CLASSES_ROOT
+			HKLM or HKEY_LOCAL_MACHINE
+			HKCU or HKEY_CURRENT_USER
+			HKU or HKEY_USERS
+		*/
+		bool WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value);
+		/** Read string from the registry.
+		* Valid values for root_key are listed under WriteRegStr. NULL will be returned if the string is not present.
+		* If the value is present, but is of type REG_DWORD, it will be read and converted to a string.
+		*/
+		const char* ReadRegStr(const string& root_key, const string& sSubKey, const string& name);
+
+		/**
+		* Write a DWORD to the registry. see WriteRegStr() for more info
+		*/
+		bool WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value);
+
+		/** Read DWORD from the registry.
+		* Valid values for root_key are listed under WriteRegStr. NULL will be returned if the DWORD is not present or type is a string.
+		*/
+		DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name);
 	protected:
 
 		// whether we are loaded from config/config.new.txt.
