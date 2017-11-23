@@ -213,6 +213,7 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 	// clear layout
 	SetViewportCount(0);
 
+	
 	m_nLayout = nLayout;
 	if (nLayout == VIEW_LAYOUT_STEREO_LEFT_RIGHT)
 	{
@@ -290,6 +291,9 @@ void ParaEngine::CViewportManager::SetLayout(VIEWPORT_LAYOUT nLayout, CSceneObje
 		pMainSceneViewport->SetEyeMode(STEREO_EYE_NORMAL);
 		SetViewportCount(2);
 	}
+
+	// refresh all viewport size on next time
+	m_nHeight = m_nWidth = -1;
 }
 
 void ParaEngine::CViewportManager::SetActiveViewPort(CViewport* pViewport)
