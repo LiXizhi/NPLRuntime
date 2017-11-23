@@ -1135,9 +1135,13 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
 
+#ifndef Int32x32To64
+#define Int32x32To64(a, b)  (((int64_t)((int32_t)(a))) * ((int64_t)((int32_t)(b))))
+#endif
+
 void TimetToFileTime(const std::time_t& t, FILETIME* pft)
 {
-	LONGLONG ll = Int32x32To64(t, 10000000) + 116444736000000000;
+	int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
 	pft->dwLowDateTime = (DWORD)ll;
 	pft->dwHighDateTime = ll >> 32;
 }
