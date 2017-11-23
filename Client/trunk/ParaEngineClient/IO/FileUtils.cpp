@@ -1135,6 +1135,13 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
 
+void TimetToFileTime(const std::time_t& t, FILETIME* pft)
+{
+	LONGLONG ll = Int32x32To64(t, 10000000) + 116444736000000000;
+	pft->dwLowDateTime = (DWORD)ll;
+	pft->dwHighDateTime = ll >> 32;
+}
+
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
 	try
@@ -1157,14 +1164,14 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
+					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 					//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
 					DWORD file_attr = 0;
 					if (fs::is_directory(iter->status()))
 						file_attr = 16;
 					else if(fs::is_regular_file(iter->status()))
 						file_attr = 32;
-					if (!result.AddResult(iter->path().string(), 0, file_attr, &fileLastWriteTime, 0, 0))
+					if (!result.AddResult(iter->path().string(), 0, file_attr, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
 				else if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
@@ -1172,8 +1179,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
-					if (!result.AddResult(iter->path().string(), 0, 0, &fileLastWriteTime, 0, 0))
+					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					if (!result.AddResult(iter->path().string(), 0, 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
 			}
@@ -1185,8 +1192,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
-					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
+					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
 			}
