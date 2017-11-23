@@ -50,6 +50,7 @@
 #include "OSWindows.h"
 #include "OceanManager.h"
 #include "DynamicAttributeField.h"
+#include "BlockEngine/BlockWorldManager.h"
 
 #include "MoviePlatform.h"
 
@@ -351,6 +352,7 @@ namespace ParaEngine {
 
 	CParaEngineApp::~CParaEngineApp()
 	{
+		StopApp();
 	}
 
 	void CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
@@ -549,6 +551,7 @@ namespace ParaEngine {
 		m_pGUIRoot.reset();
 		m_pViewportManager.reset();
 		m_pGUIRoot.reset();
+		m_pGLView.reset();
 
 		// delete m_pAudioEngine;
 		CoUninitialize();
@@ -567,24 +570,16 @@ namespace ParaEngine {
 	{
 		//CAsyncLoader::GetSingleton().Stop();
 
-		if (!CGlobals::GetAISim()->IsCleanedUp())
-		{
-			if (CGlobals::GetEventsCenter())
-			{
-				SystemEvent event(SystemEvent::SYS_WM_DESTROY, "");
-				// set sync mode, so that event is processed immediately, since there is no next frame move.
-				event.SetAsyncMode(false);
-				CGlobals::GetEventsCenter()->FireEvent(event);
-			}
-		}
-		CGlobals::GetNPLRuntime()->Cleanup();
-		CGlobals::GetAISim()->CleanUp();
+		CBlockWorldManager::GetSingleton()->Cleanup();
+
+		CParaEngineAppBase::FinalCleanup();
 
 		m_pGUIRoot->Release();		// GUI: 2D engine
 		m_pRootScene->Cleanup();
 		CSingleton<CObjectManager>::Instance().Finalize();
 		CSingleton<CGUIHighlightManager>::Instance().Finalize();
 		CGlobals::GetAssetManager()->Cleanup();
+		m_pParaWorldAsset->Cleanup();
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
 		return S_OK;
 	}
