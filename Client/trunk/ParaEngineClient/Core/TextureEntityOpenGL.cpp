@@ -30,7 +30,7 @@ TextureEntityOpenGL::TextureEntityOpenGL()
 {
 }
 
-ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(Texture2D* texture)
+ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(GLWrapper::Texture2D* texture)
 	: TextureEntity(), m_texture(nullptr), m_nSamplerState(0)
 {
 	SetInnerTexture(texture);
@@ -48,9 +48,9 @@ HRESULT ParaEngine::TextureEntityOpenGL::RendererRecreated()
 }
 
 
-Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
+GLWrapper::Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
 {
-	Texture2D * texture = nullptr;
+	GLWrapper::Texture2D * texture = nullptr;
 	CParaFile file;
 	if (file.OpenFile(sFileName.c_str(), true))
 	{
@@ -114,8 +114,8 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 				}
 				else
 				{
-					m_pTextureSequence = new Texture2D*[nTotalTextureSequence];
-					memset(m_pTextureSequence, 0, sizeof(Texture2D*)*nTotalTextureSequence);
+					m_pTextureSequence = new GLWrapper::Texture2D*[nTotalTextureSequence];
+					memset(m_pTextureSequence, 0, sizeof(GLWrapper::Texture2D*)*nTotalTextureSequence);
 				}
 
 				// if there are texture sequence, export all bitmaps in the texture sequence. 
@@ -164,7 +164,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 }
 
 
-void ParaEngine::TextureEntityOpenGL::SetInnerTexture(Texture2D* texture)
+void ParaEngine::TextureEntityOpenGL::SetInnerTexture(GLWrapper::Texture2D* texture)
 {
 	if (SurfaceType == StaticTexture)
 	{
@@ -402,13 +402,13 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 {
 	if (!pTexels)
 		return NULL;
-	Texture2D * texture = new Texture2D();
+	GLWrapper::Texture2D * texture = new Texture2D();
 	if (texture)
 	{
 		int dataLen = width * height * bytesPerPixel;
 		if (bytesPerPixel == 4)
 		{
-			if (!texture->initWithData(pTexels, dataLen, Texture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+			if (!texture->initWithData(pTexels, dataLen, GLWrapper::Texture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 			{
 				SAFE_DELETE(texture);
 			}
@@ -478,7 +478,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
 	/*
-	Image* image = new Image();
+	GLWrapper::Image* image = new Image();
 
 	if (image)
 	{
@@ -519,7 +519,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 	{
 		const char* buffer = (const char*)(imageEntity->getData());
 		size_t nFileSize = imageEntity->getDataLen();
-		Image image;
+		GLWrapper::Image image;
 		bool bRet = false;
 		if (imageEntity->getRenderFormat() == D3DFMT_A8R8G8B8)
 			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), imageEntity->hasPremultipliedAlpha());
@@ -528,7 +528,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 		
 		if (bRet)
 		{
-			Texture2D * texture = new Texture2D();
+			auto texture = new GLWrapper::Texture2D();
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 				auto errorCode = glGetError();
@@ -536,14 +536,14 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 					OUTPUT_LOG("unknown opengl error: 0x%04X before LoadTexture: \n", errorCode);
 				}
 			}
-			Texture2D::PixelFormat format = Texture2D::PixelFormat::AUTO;
+			auto format = GLWrapper::Texture2D::PixelFormat::AUTO;
 			if (dwTextureFormat != 0){
 				if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT1)
-					format = Texture2D::PixelFormat::S3TC_DXT1;
+					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT1;
 				else if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT3)
-					format = Texture2D::PixelFormat::S3TC_DXT3;
+					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT3;
 				else if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT5)
-					format = Texture2D::PixelFormat::S3TC_DXT5;
+					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT5;
 			}
 
 			if (texture && texture->initWithImage(&image, format))
@@ -569,7 +569,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 					{
 						// if texture filename contains "blocks" either in folder name or filename, we will force POINT mip mapping
 						//Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
-						Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
+						GLWrapper::Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
 						texture->setTexParameters(s_block_texture_params);
 						SetSamplerStateBlocky(true);
 					}

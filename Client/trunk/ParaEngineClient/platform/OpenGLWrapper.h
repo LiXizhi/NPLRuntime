@@ -16,11 +16,16 @@
 #include "platform/mac/CCGLProgram.h"
 #include "platform/mac/CCTexture2D.h"
 #include "Platform/mac/CCFontAtlas.h"
+#define GLWrapper cocos2d
 
 #elif defined(PARAENGINE_MOBILE)
 #include "cocos2d.h"
-USING_NS_CC;
+#define GLWrapper cocos2d
+
 #elif defined(PARA_PLATFORM_WIN32)
+
+#define GLWrapper ParaEngine
+
 
 #ifdef APIENTRY
 #undef APIENTRY
