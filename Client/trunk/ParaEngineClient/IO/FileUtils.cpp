@@ -1,3 +1,4 @@
+
 //-----------------------------------------------------------------------------
 // Class: FileUtil
 // Authors:	Li,Xizhi
@@ -7,8 +8,12 @@
 // three sets of API: 1. native win32  2. boost  3. cocos2dx
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (PARAENGINE_CLIENT) && defined(WIN32)
-	#include "ParaEngineApp.h"
+#if defined (PARAENGINE_CLIENT) && defined(WIN32) 
+	#ifdef USE_OPENGL_RENDERER
+		#include "platform/win32/ParaEngineApp.h"
+	#else
+		#include "ParaEngineApp.h"
+	#endif
 #endif
 #include "FileUtils.h"
 #include "StringHelper.h"
