@@ -18,9 +18,7 @@ set(ParaEngineClient_SRCS)
 # SOURCE
 # ==================================================================================
 ##############################
-file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.cpp)
-SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
+
 
 
 ##############################
@@ -155,6 +153,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_OPENGLTEST_FILES})
 
 	##############################
+	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
+	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
+
+	##############################
 	# opengl under WIN32
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
 	list(APPEND ParaEngineClient_Platform_FILES 
@@ -218,7 +221,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
 	
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-# DIRECTX Renderer Source
+
+	##############################
+	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.cpp)
+	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
 
 	##############################
 	file (GLOB ParaEngineClient_EngineHeader_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/*.h)
@@ -233,10 +240,6 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 	SOURCE_GROUP("Externals\\CadModel" FILES ${ParaEngineClient_Cad_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 
-	##############################
-	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
-	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
 
 	#####################################
 	# Resource file
@@ -378,120 +381,122 @@ set(ParaEngineClient_LINK_DIRS)
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
-##############################
-# OpenGL
-find_package(OpenGL REQUIRED)
-include_directories( ${OPENGL_INCLUDE_DIRS}  )
-list(APPEND ParaEngineClient_LIBS ${OPENGL_LIBRARIES})
+	##############################
+	# OpenGL
+	find_package(OpenGL REQUIRED)
+	include_directories( ${OPENGL_INCLUDE_DIRS}  )
+	list(APPEND ParaEngineClient_LIBS ${OPENGL_LIBRARIES})
 
-##############################
-# GLFW
-option(GLFW_BUILD_DOCS OFF)
-option(GLFW_BUILD_EXAMPLES OFF)
-option(GLFW_BUILD_TESTS OFF)
-option(GLFW_INSTALL OFF)
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${ParaEngineClient_BINARY_DIR}/glfw-3.2.1)
+	##############################
+	# GLFW
+	option(GLFW_BUILD_DOCS OFF)
+	option(GLFW_BUILD_EXAMPLES OFF)
+	option(GLFW_BUILD_TESTS OFF)
+	option(GLFW_INSTALL OFF)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glfw-3.2.1 ${ParaEngineClient_BINARY_DIR}/glfw-3.2.1)
 
-##############################
-# PNG
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-set(PNG_FOUND 1)
-set(PNG_LIBRARY libpng)
-set(PNG_LIBRARIES libpng)
-set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
-include_directories("${PNG_INCLUDE_DIR}")
-list(APPEND ParaEngineClient_LIBS png_static)
-
-
-##############################
-# Freetype
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1 ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1)
-set(FREETYPE_LIBRARY freetype)
-set(FREETYPE_LIBRARIES freetype)
-set(FREETYPE_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/include ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/include)
-set(FREETYPE_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/src ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/src)
-include_directories("${FREETYPE_INCLUDE_DIR}")
-list(APPEND ParaEngineClient_LIBS freetype)
+	##############################
+	# PNG
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+	set(PNG_FOUND 1)
+	set(PNG_LIBRARY libpng)
+	set(PNG_LIBRARIES libpng)
+	set(PNG_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+	set(PNG_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/lpng1634 ${ParaEngineClient_BINARY_DIR}/lpng1634)
+	include_directories("${PNG_INCLUDE_DIR}")
+	list(APPEND ParaEngineClient_LIBS png_static)
 
 
-##############################
-# GLEW
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/build/cmake ${ParaEngineClient_BINARY_DIR}/glew-2.1.0)
-set(GLEW_LIBRARY glew)
-set(GLEW_LIBRARIES glew)
-set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/include)
-set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/src)
-include_directories("${GLEW_INCLUDE_DIR}")
-list(APPEND ParaEngineClient_LIBS glew_s)
+	##############################
+	# Freetype
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1 ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1)
+	set(FREETYPE_LIBRARY freetype)
+	set(FREETYPE_LIBRARIES freetype)
+	set(FREETYPE_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/include ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/include)
+	set(FREETYPE_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/freetype-2.8.1/src ${ParaEngineClient_BINARY_DIR}/freetype-2.8.1/src)
+	include_directories("${FREETYPE_INCLUDE_DIR}")
+	list(APPEND ParaEngineClient_LIBS freetype)
+
+
+	##############################
+	# GLEW
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/build/cmake ${ParaEngineClient_BINARY_DIR}/glew-2.1.0)
+	set(GLEW_LIBRARY glew)
+	set(GLEW_LIBRARIES glew)
+	set(GLEW_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/include ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/include)
+	set(GLEW_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/glew-2.1.0/src ${ParaEngineClient_BINARY_DIR}/glew-2.1.0/src)
+	include_directories("${GLEW_INCLUDE_DIR}")
+	list(APPEND ParaEngineClient_LIBS glew_s)
 
 
 
-##############################
-# GLFW
-include_directories("${External_Dir}/glfw-3.2.1/include")
-list(APPEND ParaEngineClient_LIBS glfw)
+	##############################
+	# GLFW
+	include_directories("${External_Dir}/glfw-3.2.1/include")
+	list(APPEND ParaEngineClient_LIBS glfw)
 
-##############################
-# GLAD
-include_directories("${External_Dir}/glad/include")
+	##############################
+	# GLAD
+	include_directories("${External_Dir}/glad/include")
 
-##############################
-# Jpeg
-include_directories("${External_Dir}/jpeg/include/win32")
-list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32")
-list(APPEND ParaEngineClient_LIBS libjpeg.lib)
+	##############################
+	# Jpeg
+	include_directories("${External_Dir}/jpeg/include/win32")
+	list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32")
+	list(APPEND ParaEngineClient_LIBS libjpeg.lib)
 
-##############################
-# icon
-include_directories("${External_Dir}/icon/include")
-list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
-list(APPEND ParaEngineClient_LIBS libiconv.lib)
+	##############################
+	# icon
+	include_directories("${External_Dir}/icon/include")
+	list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
+	list(APPEND ParaEngineClient_LIBS libiconv.lib)
 
 
-##############################
-# DX2GL
-add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
+	##############################
+	# DX2GL
+	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
 
-##############################
-# GLEffectParser
-add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
-list(APPEND ParaEngineClient_LIBS glEffectsParser)
+	##############################
+	# GLEffectParser
+	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
+	list(APPEND ParaEngineClient_LIBS glEffectsParser)
 
-##############################
-# DirectX ?
-list(APPEND ParaEngineClient_LIBS gdiplus.lib dinput8.lib dxguid.lib)
-
-##############################
-# BOOST
-list(APPEND ParaEngineClient_LIBS ${Boost_LIBRARIES})
+	##############################
+	# DirectX ?
+	list(APPEND ParaEngineClient_LIBS gdiplus.lib dinput8.lib dxguid.lib)
 
 
 
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
-##############################
-# Direct3D
-include_directories(${DIRECTX_INCLUDE_DIR})
-list(APPEND ParaEngineClient_LINK_DIRS 	${DIRECTX_LIBRARY_DIR})
-list(APPEND ParaEngineClient_LIBS
-			comctl32.lib
-			d3dxof.lib
-			dxguid.lib
-			d3d9.lib
-			d3dx9.lib
-			dinput8.lib
-			dxerr.lib
-			Dbghelp.lib
-			X3daudio.lib
-			wsock32.lib
-			VFW32.lib
-			SHLWAPI.lib
-			gdiplus.lib
-			Psapi.lib
-)
+	##############################
+	# Direct3D
+	include_directories(${DIRECTX_INCLUDE_DIR})
+	list(APPEND ParaEngineClient_LINK_DIRS 	${DIRECTX_LIBRARY_DIR})
+	list(APPEND ParaEngineClient_LIBS
+				comctl32.lib
+				d3dxof.lib
+				dxguid.lib
+				d3d9.lib
+				d3dx9.lib
+				dinput8.lib
+				dxerr.lib
+				Dbghelp.lib
+				X3daudio.lib
+				wsock32.lib
+				VFW32.lib
+				SHLWAPI.lib
+				gdiplus.lib
+				Psapi.lib
+	)
 
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
+
+
+##############################
+# BOOST
+list(APPEND ParaEngineClient_LIBS ${Boost_LIBRARIES})
+
 
 
 ##############################
@@ -504,21 +509,10 @@ endif()
 ##############################
 # EXTRA_LIBRARIES
 list(APPEND ParaEngineClient_LIBS Ws2_32 winmm wsock32 Dnsapi Secur32 Crypt32 Wldap32 zlib libcurl
-sqlite lua jsoncpp tinyxpath luabind)
+sqlite liblua jsoncpp tinyxpath luabind)
 
 
 # END OF LIBRARIES
-# ==================================================================================
-
-
-
-# EMBED RESOURCE
-# ==================================================================================
-
-
-
-
-# END OF EMBED RESOURCE
 # ==================================================================================
 
 
@@ -528,15 +522,15 @@ sqlite lua jsoncpp tinyxpath luabind)
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
-ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
+	ADD_DEFINITIONS(-DUSE_OPENGL_RENDERER)
 
 
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 
-ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
-ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
-ADD_DEFINITIONS(-DUSE_DIRECTX_RENDERER)
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+	ADD_DEFINITIONS(-DPARAENGINE_CLIENT)
+	ADD_DEFINITIONS(-DUSE_DIRECTX_RENDERER)
 
 
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
@@ -677,6 +671,9 @@ ENDIF()
 
 # TARGET
 
+link_directories(${ParaEngineClient_LINK_DIRS})
+
+
 # Note: if true, we will produce dll instead of exe, only under win32
 if(PARAENGINE_CLIENT_DLL)
 	set(PARAENGINE_COMPILE_LIB    true)
@@ -705,7 +702,6 @@ else ()
 
 endif ()
 
-link_directories(${ParaEngineClient_LINK_DIRS})
 target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 
 ADD_CUSTOM_COMMAND(
