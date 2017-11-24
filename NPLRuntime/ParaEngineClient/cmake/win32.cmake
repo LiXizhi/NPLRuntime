@@ -279,6 +279,13 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 	##############################
 	# Shader
+
+	# find directx
+	include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
+	if(NOT DIRECTX_FOUND)
+		message( FATAL_ERROR "Not found DirectX SDK, CMake will exit.")
+	endif()
+
 	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/*.fx)	
 	# custom build rules: effect FX files
 	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
@@ -461,18 +468,10 @@ list(APPEND ParaEngineClient_LIBS ${Boost_LIBRARIES})
 
 
 
-
-
-
-
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 ##############################
 # Direct3D
-include(${PROJECT_SOURCE_DIR}/cmake/DirectX.cmake)
-if(NOT DIRECTX_FOUND)
-    message( FATAL_ERROR "Not found DirectX SDK, CMake will exit.")
-endif()
 include_directories(${DIRECTX_INCLUDE_DIR})
 list(APPEND ParaEngineClient_LINK_DIRS 	${DIRECTX_LIBRARY_DIR})
 list(APPEND ParaEngineClient_LIBS
@@ -509,6 +508,17 @@ sqlite lua jsoncpp tinyxpath luabind)
 
 
 # END OF LIBRARIES
+# ==================================================================================
+
+
+
+# EMBED RESOURCE
+# ==================================================================================
+
+
+
+
+# END OF EMBED RESOURCE
 # ==================================================================================
 
 
@@ -696,7 +706,7 @@ else ()
 endif ()
 
 link_directories(${ParaEngineClient_LINK_DIRS})
-target_link_libraries(ParaEngineClient ${ParaEngineClient_LINK_DIRS})
+target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
 
 ADD_CUSTOM_COMMAND(
 	TARGET ParaEngineClient
@@ -708,7 +718,7 @@ ADD_CUSTOM_COMMAND(
 
 
 
-set(NPLRUNTIME_LINK_LIBRARIES ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES} ${ParaEngineClient_LINK_DIRS})
+set(NPLRUNTIME_LINK_LIBRARIES ParaEngineClient ${NPLRUNTIME_LINK_LIBRARIES} ${ParaEngineClient_LIBS})
 # export these two variables to its parent scope just in case some app project reference NPLRuntime statically. 
 set(NPLRUNTIME_LINK_LIBRARIES ${NPLRUNTIME_LINK_LIBRARIES} PARENT_SCOPE)
 set(NPLRUNTIME_LINK_DIRECTORIES ${NPLRUNTIME_LINK_DIRECTORIES} PARENT_SCOPE)
