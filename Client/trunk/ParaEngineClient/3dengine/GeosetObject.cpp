@@ -251,12 +251,10 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 	{
 		for(int i=0; i<CParaXModel::MAX_MODEL_TEXTURES; ++i)
 		{
-			mEntity->GetModel()->specialTextures[i]=-1;
 			mEntity->GetModel()->replaceTextures[i]=nullptr;
 		}
 		for(auto const & tex:mReplaceTextures)
 		{
-			mEntity->GetModel()->specialTextures[tex.first]=tex.first;
 			mEntity->GetModel()->replaceTextures[tex.first]=tex.second;
 		}
 	}
