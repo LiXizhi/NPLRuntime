@@ -6,7 +6,7 @@
 
 #if defined(PARAENGINE_MOBILE)
 namespace cocos2d
-#elif
+#else
 namespace ParaEngine
 #endif
 {
@@ -16,7 +16,7 @@ namespace ParaEngine
 #if defined(PARAENGINE_MOBILE)
 using cocos2d::GLProgram;
 using cocos2d::Uniform;
-#elif
+#else
 using ParaEngine::GLProgram;
 using ParaEngine::Uniform;
 #endif
