@@ -624,6 +624,8 @@ void CParaEngineApp::UpdateKey()
     
     int fsKeyState = FsGetKeyState(fsKeyCode); //0 keyup 1 keydown
     
+    std::cout<<"Key:" << fsKeyCode << " state:"  << fsKeyState << std::endl;
+    
     UINT msg = WM_KEYDOWN;
     if(fsKeyState == 0)
     {
@@ -634,6 +636,8 @@ void CParaEngineApp::UpdateKey()
     
     if(keyCode != 0)
     {
+        auto diKeyCode = CEventBinding::TranslateVKToDIK(keyCode);
+        CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(diKeyCode,fsKeyState != 0);
         CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg,keyCode,0);
     }
 
