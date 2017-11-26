@@ -1,5 +1,5 @@
 #include "ParaEngine.h"
-#include "../base/edtaa3func.h"
+#include "edtaa3func.h"
 
 #include "IO/FileUtils.h"
 #include "util/StringHelper.h"
@@ -282,7 +282,7 @@ const char* FontFreeType::getFontFamily() const
     return _fontRef->family_name;
 }
 
-unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, Rect &outRect,int &xAdvance)
+unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, NPLRect &outRect,int &xAdvance)
 {
     bool invalidChar = true;
     unsigned char* ret = nullptr;

@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #ifndef USE_DIRECTX_RENDERER
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclarationOpenGL.h"
 #include "IParaEngineApp.h"

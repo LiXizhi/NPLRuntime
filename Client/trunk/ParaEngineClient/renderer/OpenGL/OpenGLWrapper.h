@@ -8,21 +8,8 @@
 
 
 
+
 #if defined(PLATFORM_MAC)
-
-
-
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
-#include "PEtypes.h"
-#include "mac/GLType.h"
-#include "mac/GLProgram.h"
-#include "math/ParaMathUtility.h"
-#include "mac/GLLabel.h"
-#include "mac/GLFontAtlas.h"
-#include "mac/GLTexture2D.h"
-#include "mac/GLImage.h"
-
 
 
 
@@ -66,6 +53,17 @@ USING_NS_CC;
 
 
 
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
+#include "PEtypes.h"
+#include "GLType.h"
+#include "GLProgram.h"
+#include "math/ParaMathUtility.h"
+#include "GLLabel.h"
+#include "GLFontAtlas.h"
+#include "GLTexture2D.h"
+#include "GLImage.h"
+
 
 
 
@@ -80,17 +78,6 @@ USING_NS_CC;
 
 
 
-//#include "glad/glad.h"
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
-#include "PEtypes.h"
-#include "win32/GLType.h"
-#include "win32/GLProgram.h"
-#include "math/ParaMathUtility.h"
-#include "win32/GLLabel.h"
-#include "win32/GLFontAtlas.h"
-#include "win32/GLTexture2D.h"
-#include "win32/GLImage.h"
 
 
 
