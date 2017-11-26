@@ -282,7 +282,7 @@ const char* FontFreeType::getFontFamily() const
     return _fontRef->family_name;
 }
 
-unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, NPLRect &outRect,int &xAdvance)
+unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect,int &xAdvance)
 {
     bool invalidChar = true;
     unsigned char* ret = nullptr;

@@ -234,7 +234,7 @@ public:
 
 
 
-class NPLRect
+class CCRect
 {
 public:
 	/**Low left point of rect.*/
@@ -247,28 +247,28 @@ public:
 	Constructor an empty Rect.
 	* @js NA
 	*/
-	NPLRect();
+	CCRect();
 	/**
 	Constructor a rect.
 	* @js NA
 	*/
-	NPLRect(float x, float y, float width, float height);
+	CCRect(float x, float y, float width, float height);
 	/**
 	Constructor a rect.
 	* @js NA
 	*/
-	NPLRect(const CCVector2& pos, const Size& dimension);
+	CCRect(const CCVector2& pos, const Size& dimension);
 	/**
 	Copy constructor.
 	* @js NA
 	* @lua NA
 	*/
-	NPLRect(const NPLRect& other);
+	CCRect(const CCRect& other);
 	/**
 	* @js NA
 	* @lua NA
 	*/
-	NPLRect& operator= (const NPLRect& other);
+	CCRect& operator= (const CCRect& other);
 	/**
 	Set the x, y, width and height of Rect.
 	* @js NA
@@ -309,7 +309,7 @@ public:
 						   Compare two rects.
 						   * @js NA
 						   */
-	bool equals(const NPLRect& rect) const;
+	bool equals(const CCRect& rect) const;
 	/**
 	Check if the points is contained in the rect.
 	* @js NA
@@ -319,7 +319,7 @@ public:
 	Check the intersect status of two rects.
 	* @js NA
 	*/
-	bool intersectsRect(const NPLRect& rect) const;
+	bool intersectsRect(const CCRect& rect) const;
 	/**
 	Check the intersect status of the rect and a circle.
 	* @js NA
@@ -330,10 +330,10 @@ public:
 	* @js NA
 	* @lua NA
 	*/
-	NPLRect unionWithRect(const NPLRect & rect) const;
+	CCRect unionWithRect(const CCRect & rect) const;
 	/**Compute the min rect which can contain this and rect, assign it to this.*/
-	void merge(const NPLRect& rect);
+	void merge(const CCRect& rect);
 	/**An empty Rect.*/
-	static const NPLRect ZERO;
+	static const CCRect ZERO;
 };
 }
