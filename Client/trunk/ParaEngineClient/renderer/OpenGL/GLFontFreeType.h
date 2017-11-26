@@ -35,7 +35,7 @@ namespace ParaEngine
 
 		int* getHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const override;
 
-		unsigned char* getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, NPLRect &outRect, int &xAdvance);
+		unsigned char* getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance);
 
 		int getFontAscender() const;
 		const char* getFontFamily() const;

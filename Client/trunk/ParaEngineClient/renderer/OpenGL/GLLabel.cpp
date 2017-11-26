@@ -284,7 +284,7 @@ bool LabelTextFormatter::createStringSprites(Label *theLabel)
 		}
 	}
 
-	NPLRect charRect;
+	CCRect charRect;
 	int charXOffset = 0;
 	int charYOffset = 0;
 	int charAdvance = 0;

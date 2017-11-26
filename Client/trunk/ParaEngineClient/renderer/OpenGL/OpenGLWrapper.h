@@ -8,7 +8,7 @@
 
 
 
-
+#define GLWrapper ParaEngine
 #if defined(PLATFORM_MAC)
 
 
@@ -43,7 +43,6 @@
 
 
 #ifdef WIN32
-
     #include <winsock2.h>
     #include <windows.h>
     #include <windowsx.h>

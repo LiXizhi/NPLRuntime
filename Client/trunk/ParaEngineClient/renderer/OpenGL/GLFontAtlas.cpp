@@ -300,7 +300,7 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     long bitmapWidth;
     long bitmapHeight;
     int glyphHeight;
-    NPLRect tempRect;
+    CCRect tempRect;
     FontLetterDefinition tempDef;
 
     auto scaleFactor = GL_CONTENT_SCALE_FACTOR();

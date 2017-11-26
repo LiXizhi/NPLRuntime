@@ -140,7 +140,7 @@ namespace ParaEngine
 		bool  _compatibleMode;
 
 		//! used for optimization
-		NPLRect _reusedRect;
+		CCRect _reusedRect;
 		int _limitShowCount;
 
 		float _additionalKerning;

@@ -148,33 +148,33 @@ bool Size::equals(const Size& v) const
 	return true;
 }
 
-NPLRect::NPLRect(void) : origin(0.0f, 0.0f), size(0.0f, 0.0f)
+CCRect::CCRect(void) : origin(0.0f, 0.0f), size(0.0f, 0.0f)
 {
 }
 
-NPLRect::NPLRect(float x, float y, float width, float height)
+CCRect::CCRect(float x, float y, float width, float height)
 	: origin(x, y), size(width, height)
 {
 }
 
-NPLRect::NPLRect(const CCVector2& pos, const Size& dimension)
+CCRect::CCRect(const CCVector2& pos, const Size& dimension)
 	: origin(pos), size(dimension)
 {
 
 }
 
-NPLRect::NPLRect(const NPLRect& other)
+CCRect::CCRect(const CCRect& other)
 	: origin(other.origin), size(other.size)
 {
 }
 
-NPLRect& NPLRect::operator= (const NPLRect& other)
+CCRect& CCRect::operator= (const CCRect& other)
 {
 	setRect(other.origin.x, other.origin.y, other.size.width, other.size.height);
 	return *this;
 }
 
-void NPLRect::setRect(float x, float y, float width, float height)
+void CCRect::setRect(float x, float y, float width, float height)
 {
 	// CGRect can support width<0 or height<0
 	// CCASSERT(width >= 0.0f && height >= 0.0f, "width and height of Rect must not less than 0.");
@@ -186,7 +186,7 @@ void NPLRect::setRect(float x, float y, float width, float height)
 	size.height = height;
 }
 
-bool NPLRect::equals(const NPLRect& rect) const
+bool CCRect::equals(const CCRect& rect) const
 {
 	return (origin.equals(rect.origin) &&
 		size.equals(rect.size));
@@ -194,37 +194,37 @@ bool NPLRect::equals(const NPLRect& rect) const
 
 
 
-float NPLRect::getMaxX() const
+float CCRect::getMaxX() const
 {
 	return origin.x + size.width;
 }
 
-float NPLRect::getMidX() const
+float CCRect::getMidX() const
 {
 	return origin.x + size.width / 2.0f;
 }
 
-float NPLRect::getMinX() const
+float CCRect::getMinX() const
 {
 	return origin.x;
 }
 
-float NPLRect::getMaxY() const
+float CCRect::getMaxY() const
 {
 	return origin.y + size.height;
 }
 
-float NPLRect::getMidY() const
+float CCRect::getMidY() const
 {
 	return origin.y + size.height / 2.0f;
 }
 
-float NPLRect::getMinY() const
+float CCRect::getMinY() const
 {
 	return origin.y;
 }
 
-bool NPLRect::containsPoint(const CCVector2& point) const
+bool CCRect::containsPoint(const CCVector2& point) const
 {
 	bool bRet = false;
 
@@ -237,7 +237,7 @@ bool NPLRect::containsPoint(const CCVector2& point) const
 	return bRet;
 }
 
-bool NPLRect::intersectsRect(const NPLRect& rect) const
+bool CCRect::intersectsRect(const CCRect& rect) const
 {
 	return !(getMaxX() < rect.getMinX() ||
 		rect.getMaxX() <      getMinX() ||
@@ -245,7 +245,7 @@ bool NPLRect::intersectsRect(const NPLRect& rect) const
 		rect.getMaxY() <      getMinY());
 }
 
-bool NPLRect::intersectsCircle(const CCVector2& center, float radius) const
+bool CCRect::intersectsCircle(const CCVector2& center, float radius) const
 {
 	CCVector2 rectangleCenter((origin.x + size.width / 2),
 		(origin.y + size.height / 2));
@@ -279,7 +279,7 @@ bool NPLRect::intersectsCircle(const CCVector2& center, float radius) const
 	return (cornerDistanceSq <= (powf(radius, 2)));
 }
 
-void NPLRect::merge(const NPLRect& rect)
+void CCRect::merge(const CCRect& rect)
 {
 	float minX = min(getMinX(), rect.getMinX());
 	float minY = min(getMinY(), rect.getMinY());
@@ -288,7 +288,7 @@ void NPLRect::merge(const NPLRect& rect)
 	setRect(minX, minY, maxX - minX, maxY - minY);
 }
 
-NPLRect NPLRect::unionWithRect(const NPLRect & rect) const
+CCRect CCRect::unionWithRect(const CCRect & rect) const
 {
 	float thisLeftX = origin.x;
 	float thisRightX = origin.x + size.width;
@@ -325,10 +325,10 @@ NPLRect NPLRect::unionWithRect(const NPLRect & rect) const
 	float combinedTopY = max(thisTopY, otherTopY);
 	float combinedBottomY = min(thisBottomY, otherBottomY);
 
-	return NPLRect(combinedLeftX, combinedBottomY, combinedRightX - combinedLeftX, combinedTopY - combinedBottomY);
+	return CCRect(combinedLeftX, combinedBottomY, combinedRightX - combinedLeftX, combinedTopY - combinedBottomY);
 }
 
-const NPLRect NPLRect::ZERO = NPLRect(0, 0, 0, 0);
+const CCRect CCRect::ZERO = CCRect(0, 0, 0, 0);
 
 
 
