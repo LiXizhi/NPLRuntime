@@ -160,13 +160,6 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebSocket_FILES})
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 # OPENGL Renderer Source
 
-
-	##############################
-	file (GLOB ParaEngineClient_Server_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
-	SOURCE_GROUP("Server" FILES ${ParaEngineClient_Server_FILES})
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Server_FILES})
-
-
 	file (GLOB ParaEngineClient_GLRenerer_FILES ${ParaEngineClient_SOURCE_DIR}/renderer/OpenGL/*.*)
 	SOURCE_GROUP("GLRenderer" FILES ${ParaEngineClient_GLRenerer_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_GLRenerer_FILES})
@@ -175,7 +168,12 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	##################################
 	#Shader
 	set(EmbeddedResource_FILES)
-	set(DX2GLTOOL ${ParaEngineClient_SOURCE_DIR}/dxEffects2glEffects/bin/dx2gl.exe)
+	if(WIN32)
+		set(DX2GLTOOL ${ParaEngineClient_SOURCE_DIR}/dxEffects2glEffects/bin/dx2gl.exe)
+	endif()
+	if(APPLE)
+		set(DX2GLTOOL ${ParaEngineClient_SOURCE_DIR}/dxEffects2glEffects/bin/dx2gl)
+	endif()
 	file (GLOB ParaEngineClient_SHADER_FILES ${ParaEngineClient_SOURCE_DIR}/shaders/fx/*.fx)
 	# custom build rules: effect FX files
 	foreach( src_file ${ParaEngineClient_SHADER_FILES} )
@@ -326,9 +324,16 @@ endif()
 
 
 if(APPLE)
-	set (External_Dir ${ParaEngineClient_SOURCE_DIR}/../externals)
+
+	##############################
+	file (GLOB ParaEngineClient_Engine_FILES ${ParaEngineClient_SOURCE_DIR}/Engine/ParaEngineServer.cpp)
+	SOURCE_GROUP("Engine" FILES ${ParaEngineClient_Engine_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Engine_FILES})
+
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/mac/*.*)
+	list(APPEND ParaEngineClient_Platform_FILES ${External_Dir}/glad/src/glad.c)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 endif()
 
 
@@ -588,7 +593,7 @@ if(WIN32)
 endif()
 	
 if(APPLE)
-	list(APPEND ParaEngineClient_LIBS dl resolv z pthread)
+	list(APPEND ParaEngineClient_LIBS dl resolv z pthread sqlite liblua jsoncpp tinyxpath luabind)
 endif()
 
 
@@ -614,42 +619,107 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
 
+if(WIN32)
 
-#######################################
-# PCH: precompiled header under msvc
-if (MSVC)
-	set_source_files_properties(${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx
-		PROPERTIES
-		COMPILE_FLAGS "/YcParaEngine.h"
-		)
-	foreach( src_file ${ParaEngineClient_SRCS} )
-		if(${src_file} MATCHES "cpp")
-			set_source_files_properties(
-				${src_file}
-				PROPERTIES
-				COMPILE_FLAGS "/YuParaEngine.h"
-				)
-		endif(${src_file} MATCHES "cpp")
-	endforeach( src_file ${ParaEngineClient_SRCS} )
+	#######################################
+	# PCH: precompiled header under msvc
+	if (MSVC)
+		set_source_files_properties(${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx
+			PROPERTIES
+			COMPILE_FLAGS "/YcParaEngine.h"
+			)
+		foreach( src_file ${ParaEngineClient_SRCS} )
+			if(${src_file} MATCHES "cpp")
+				set_source_files_properties(
+					${src_file}
+					PROPERTIES
+					COMPILE_FLAGS "/YuParaEngine.h"
+					)
+			endif(${src_file} MATCHES "cpp")
+		endforeach( src_file ${ParaEngineClient_SRCS} )
 
-	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx)
-endif (MSVC)
+		list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SOURCE_DIR}/Core/ParaEngine.cxx)
+	endif (MSVC)
+
+	if(MSVC)
+		ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+	endif()
 
 
-ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
-ADD_DEFINITIONS(-D_PERFORMANCE_MONITOR)
-if(NOT NPLRUNTIME_STATIC_LIB)
-	ADD_DEFINITIONS(-DLUA_BUILD_AS_DLL)
-endif()
-ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
-ADD_DEFINITIONS(-DUSE_SCHANNEL)
-ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
-ADD_DEFINITIONS(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
-ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 
-if(MSVC)
-	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-endif()
+
+	IF(MSVC)
+	# statically link MSVC to reduce dependancies
+	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+		if(${flag_var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MD")
+		if(${flag_var} MATCHES "/MDd")
+			string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MDd")
+	endforeach(flag_var)
+
+	# enable multiprocessor build option /MP, this will greatly increase compile speed
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
+	SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+	SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
+
+	ENDIF()
+
+
+
+
+	# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically.
+	option(USE_LINK_TIME_CODE_GENERATION	"true to enable link time code gen in release build" OFF)
+
+	IF(MSVC)
+		if(USE_LINK_TIME_CODE_GENERATION)
+			# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient.
+			SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
+			# /LTCG Link time code generation
+			if (PARAENGINE_COMPILE_LIB)
+				SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
+			else(PARAENGINE_COMPILE_LIB)
+				SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
+			endif(PARAENGINE_COMPILE_LIB)
+		endif(USE_LINK_TIME_CODE_GENERATION)
+
+		# /GR- Remove RTTI to miminize the executable size
+		# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
+		
+		# /Zi generate program database (PDB symbol files even in release build)
+		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+		SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+		
+		if (PARAENGINE_COMPILE_LIB)
+			# To turn size optimisations on again
+			SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /opt:ref /DEBUG")
+			# add a stripped version of symbol files during release build
+			SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /PDBSTRIPPED:Release/ParaEngineClient.stripped.pdb")
+		else (PARAENGINE_COMPILE_LIB)
+			# To turn size optimisations on again
+			SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /opt:ref /DEBUG /LARGEADDRESSAWARE")
+			# add a stripped version of symbol files during release build
+			SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /PDBSTRIPPED:Release/ParaEngineClient.stripped.pdb")
+		endif (PARAENGINE_COMPILE_LIB)
+	ELSE()
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+		# remove Run-Time-Type-Information (RTTI) to miminize the executable size
+		# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti")
+
+		# -Os to optimize for size. or -O3 to turn on all optimizations.
+		# -s option to strip debug info, -g to include debug info
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
+
+		# suppress warnings
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
+	ENDIF()
+
+
+endif() # END IF WIN32
 
 
 ADD_DEFINITIONS(-DBOOST_SIGNALS_NO_DEPRECATION_WARNING)
@@ -665,85 +735,10 @@ ADD_DEFINITIONS(-DNPLRUNTIME)
 
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 CHECK_INCLUDE_FILE(
-  "unistd.h" HAVE_UNISTD_H)
+"unistd.h" HAVE_UNISTD_H)
 IF(HAVE_UNISTD_H)
-  ADD_DEFINITIONS(-DHAVE_UNISTD_H)
+ADD_DEFINITIONS(-DHAVE_UNISTD_H)
 ENDIF(HAVE_UNISTD_H)
-
-IF(MSVC)
-# statically link MSVC to reduce dependancies
-foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
-     if(${flag_var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-     endif(${flag_var} MATCHES "/MD")
-     if(${flag_var} MATCHES "/MDd")
-         string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-    endif(${flag_var} MATCHES "/MDd")
-endforeach(flag_var)
-
-# enable multiprocessor build option /MP, this will greatly increase compile speed
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
-SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
-SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-
-ENDIF()
-
-
-
-
-# NOTE: This generate smaller and faster exe/dll, but no other libs should to it statically.
-option(USE_LINK_TIME_CODE_GENERATION	"true to enable link time code gen in release build" OFF)
-
-IF(MSVC)
-	if(USE_LINK_TIME_CODE_GENERATION)
-		# /GL Link time code generation. Note turn this off if you have plugins that links to ParaEngineClient.
-		SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")
-		# /LTCG Link time code generation
-		if (PARAENGINE_COMPILE_LIB)
-			SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
-		else(PARAENGINE_COMPILE_LIB)
-			SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG:STATUS")
-		endif(PARAENGINE_COMPILE_LIB)
-	endif(USE_LINK_TIME_CODE_GENERATION)
-
-	# /GR- Remove RTTI to miminize the executable size
-	# SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
-	
-	# /Zi generate program database (PDB symbol files even in release build)
-	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
-	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-	
-	if (PARAENGINE_COMPILE_LIB)
-		# To turn size optimisations on again
-		SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /opt:ref /DEBUG")
-		# add a stripped version of symbol files during release build
-		SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /PDBSTRIPPED:Release/ParaEngineClient.stripped.pdb")
-	else (PARAENGINE_COMPILE_LIB)
-		# To turn size optimisations on again
-		SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /opt:ref /DEBUG /LARGEADDRESSAWARE")
-		# add a stripped version of symbol files during release build
-		SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LARGEADDRESSAWARE /PDBSTRIPPED:Release/ParaEngineClient.stripped.pdb")
-	endif (PARAENGINE_COMPILE_LIB)
-ELSE()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-	# remove Run-Time-Type-Information (RTTI) to miminize the executable size
-	# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-rtti")
-
-	# -Os to optimize for size. or -O3 to turn on all optimizations.
-	# -s option to strip debug info, -g to include debug info
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -s")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3 -s")
-
-	# suppress warnings
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-deprecated-declarations")
-ENDIF()
-
-
-
-
-
 
 
 # END OF COMPILER SETTTINGS
@@ -755,11 +750,15 @@ ENDIF()
 # TARGET
 
 link_directories(${ParaEngineClient_LINK_DIRS})
+link_directories(${NPLRUNTIME_LINK_DIRECTORIES})
 
 #########################
 # Platform/ Win32
 if(WIN32)
 
+	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+	ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
 
 	# Note: if true, we will produce dll instead of exe, only under win32
 	if(PARAENGINE_CLIENT_DLL)
@@ -794,9 +793,10 @@ endif()
 if(APPLE)
 
 
-ADD_DEFINITIONS(-DMAC_CLIENT)
+	ADD_DEFINITIONS(-DMAC_CLIENT)
+	ADD_DEFINITIONS(-DPLATFORM_MAC)
 
-add_executable(ParaEngineClient MACOSX_BUNDLE ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+	add_executable(ParaEngineClient MACOSX_BUNDLE ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 
 endif()
 

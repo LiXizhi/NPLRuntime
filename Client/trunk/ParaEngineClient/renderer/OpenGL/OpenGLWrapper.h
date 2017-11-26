@@ -14,41 +14,52 @@
 
 
 #elif defined(PARAENGINE_MOBILE)
-#include "cocos2d.h"
-USING_NS_CC;
-#elif defined(PARA_PLATFORM_WIN32)
 
-#ifdef APIENTRY
-#undef APIENTRY
-#endif
+    #include "cocos2d.h"
+    USING_NS_CC;
+    #elif defined(PARA_PLATFORM_WIN32)
 
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-#define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
+    #ifdef APIENTRY
+    #undef APIENTRY
+    #endif
 
-#define STRICT
-#define NOMINMAX 
-#ifndef WINVER
-#define WINVER         0x0500
-#endif
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0410 
-#endif
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT   0x0500 
-#endif
+    #ifndef _CRT_SECURE_NO_WARNINGS
+    #define _CRT_SECURE_NO_WARNINGS
+    #endif
+    #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
 
-#include <winsock2.h>
+    #define STRICT
+    #define NOMINMAX
+    #ifndef WINVER
+    #define WINVER         0x0500
+    #endif
+    #ifndef _WIN32_WINDOWS
+    #define _WIN32_WINDOWS 0x0410
+    #endif
+    #ifndef _WIN32_WINNT
+    #define _WIN32_WINNT   0x0500
+    #endif
 
-#include <windows.h>
-#include <windowsx.h>
-#include <mmsystem.h>
+
 
 #ifdef WIN32
-#pragma warning( push )
-// warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-#pragma warning( disable : 4819 ) 
+
+    #include <winsock2.h>
+    #include <windows.h>
+    #include <windowsx.h>
+    #include <mmsystem.h>
+
+    #pragma warning( push )
+    // warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
+    #pragma warning( disable : 4819 )
+    #endif
+
+    #pragma warning( pop )
+
+
+    /** use direct input 8 interface */
+    #define DIRECTINPUT_VERSION		0x0800
+    #include <dinput.h>
 #endif
 
 
@@ -65,22 +76,5 @@ USING_NS_CC;
 #include "GLImage.h"
 
 
-
-
-#ifdef WIN32
-#pragma warning( pop ) 
-#endif
-
-
-/** use direct input 8 interface */
-#define DIRECTINPUT_VERSION		0x0800
-#include <dinput.h>
-
-
-
-
-
-
-#endif
 
 #endif
