@@ -22,7 +22,7 @@ option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
 # Win32 Default Option
 if(WIN32)
 
-	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
+	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
