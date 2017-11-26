@@ -768,6 +768,10 @@ extern void FsOnClosed();
 		if(fskey!=0)
 		{
 			fsKeyIsDown[fskey]=0;
+            if(nKeyBufUsed<NKEYBUF)
+            {
+                keyBuffer[nKeyBufUsed++]=fskey;
+            }
 		}
 	}
 }
