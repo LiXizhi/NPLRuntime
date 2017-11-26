@@ -10,7 +10,7 @@
 
 #ifdef PLATFORM_MAC
 
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 
 //#include "ParaAudioMac.h"
@@ -47,6 +47,9 @@
 #include <time.h>
 
 #include "fssimplewindow.h"
+
+#include <unordered_map>
+#include <cassert>
 
 using namespace std;
 using namespace ParaEngine;
@@ -492,6 +495,163 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 }
 
 
+
+static std::unordered_map<int,uint32> g_KeyCodeMap;
+static void InitKeyCodeMap()
+{
+    
+    
+    static uint32 kv[FSKEY_NUM_KEYCODE*2]= {
+        FSKEY_NULL,0,
+        FSKEY_SPACE,VK_SPACE,
+        FSKEY_0,'0',
+        FSKEY_1,'1',
+        FSKEY_2,'2',
+        FSKEY_3,'3',
+        FSKEY_4,'4',
+        FSKEY_5,'5',
+        FSKEY_6,'6',
+        FSKEY_7,'7',
+        FSKEY_8,'8',
+        FSKEY_9,'9',
+        FSKEY_A,'A',
+        FSKEY_B,'B',
+        FSKEY_C,'C',
+        FSKEY_D,'D',
+        FSKEY_E,'E',
+        FSKEY_F,'F',
+        FSKEY_G,'G',
+        FSKEY_H,'H',
+        FSKEY_I,'I',
+        FSKEY_J,'J',
+        FSKEY_K,'K',
+        FSKEY_L,'L',
+        FSKEY_M,'M',
+        FSKEY_N,'N',
+        FSKEY_O,'O',
+        FSKEY_P,'P',
+        FSKEY_Q,'Q',
+        FSKEY_R,'R',
+        FSKEY_S,'S',
+        FSKEY_T,'T',
+        FSKEY_U,'U',
+        FSKEY_V,'V',
+        FSKEY_W,'W',
+        FSKEY_X,'X',
+        FSKEY_Y,'Y',
+        FSKEY_Z,'Z',
+        FSKEY_ESC,VK_ESCAPE,
+        FSKEY_F1,VK_F1,
+        FSKEY_F2,VK_F2,
+        FSKEY_F3,VK_F3,
+        FSKEY_F4,VK_F4,
+        FSKEY_F5,VK_F5,
+        FSKEY_F6,VK_F6,
+        FSKEY_F7,VK_F7,
+        FSKEY_F8,VK_F8,
+        FSKEY_F9,VK_F9,
+        FSKEY_F10,VK_F10,
+        FSKEY_F11,VK_F11,
+        FSKEY_F12,VK_F12,
+        FSKEY_PRINTSCRN,VK_PRINT,
+        FSKEY_CAPSLOCK,VK_CAPITAL,
+        FSKEY_SCROLLLOCK,VK_SCROLL,
+        FSKEY_PAUSEBREAK,VK_PAUSE,
+        FSKEY_BS,VK_BACK,
+        FSKEY_TAB,VK_TAB,
+        FSKEY_ENTER,VK_RETURN,
+        FSKEY_SHIFT,VK_SHIFT,
+        FSKEY_CTRL,VK_CONTROL,
+        FSKEY_ALT,VK_LMENU,
+        FSKEY_INS,VK_INSERT,
+        FSKEY_DEL,VK_DELETE,
+        FSKEY_HOME,VK_HOME,
+        FSKEY_END,VK_END,
+        FSKEY_PAGEUP,VK_PRIOR,
+        FSKEY_PAGEDOWN,VK_NEXT,
+        FSKEY_UP,VK_UP,
+        FSKEY_DOWN,VK_DOWN,
+        FSKEY_LEFT,VK_LEFT,
+        FSKEY_RIGHT,VK_RIGHT,
+        FSKEY_NUMLOCK,VK_NUMLOCK,
+        FSKEY_TILDA,0,
+        FSKEY_MINUS,VK_OEM_MINUS,
+        FSKEY_PLUS,VK_OEM_PLUS,
+        FSKEY_LBRACKET,VK_OEM_4,
+        FSKEY_RBRACKET,VK_OEM_6,
+        FSKEY_BACKSLASH,VK_OEM_5,
+        FSKEY_SEMICOLON,VK_OEM_1,
+        FSKEY_SINGLEQUOTE,VK_OEM_7,
+        FSKEY_COMMA,VK_OEM_COMMA,
+        FSKEY_DOT,VK_OEM_PERIOD,
+        FSKEY_SLASH,VK_OEM_2,
+        FSKEY_TEN0,VK_NUMPAD0,
+        FSKEY_TEN1,VK_NUMPAD1,
+        FSKEY_TEN2,VK_NUMPAD2,
+        FSKEY_TEN3,VK_NUMPAD3,
+        FSKEY_TEN4,VK_NUMPAD4,
+        FSKEY_TEN5,VK_NUMPAD5,
+        FSKEY_TEN6,VK_NUMPAD6,
+        FSKEY_TEN7,VK_NUMPAD7,
+        FSKEY_TEN8,VK_NUMPAD8,
+        FSKEY_TEN9,VK_NUMPAD9,
+        FSKEY_TENDOT,VK_OEM_PERIOD,
+        FSKEY_TENSLASH,VK_OEM_2,
+        FSKEY_TENSTAR,VK_MULTIPLY,
+        FSKEY_TENMINUS,VK_OEM_MINUS,
+        FSKEY_TENPLUS,VK_OEM_PLUS,
+        FSKEY_TENENTER,VK_RETURN,
+        FSKEY_WHEELUP,0,
+        FSKEY_WHEELDOWN,0
+    };
+    g_KeyCodeMap.clear();
+    
+    for(int i = 0;i<FSKEY_NUM_KEYCODE*2;i+=2)
+    {
+        g_KeyCodeMap[kv[i]] = kv[i]+1;
+    }
+    
+    //g_KeyCodeMap[]
+}
+
+void CParaEngineApp::UpdateKey()
+{
+    //int FsInkey(void);
+    //int FsInkeyChar();
+    
+    int fsKeyCode = FsInkey();
+    if(fsKeyCode == 0) return;
+    
+    int fsKeyState = FsGetKeyState(fsKeyCode); //0 keyup 1 keydown
+    
+    UINT msg = WM_KEYUP;
+    if(fsKeyState == 1)
+    {
+        msg = WM_KEYDOWN;
+    }
+    
+    uint32 keyCode = g_KeyCodeMap[fsKeyCode];
+    
+    CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg,keyCode,0);
+    
+    int character = FsInkeyChar();
+    if(character > 0)
+    {
+        auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+        if(pGUI)
+        {
+            std::wstring s;
+            s+= (WCHAR)character;
+            pGUI->OnHandleWinMsgChars(s);
+        }
+    }
+    
+    
+    //int FmsgeyChar(void);
+    //int FsGetKeyState(int fsKeyCode);
+}
+
+
 void CParaEngineApp::UpdateMouse()
 {
 	static int oldX = 0;
@@ -553,7 +713,8 @@ void CParaEngineApp::UpdateMouse()
 
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
-
+    
+    InitKeyCodeMap();
     
 	FsPassedTime();  // Reset the timer
 
@@ -572,6 +733,7 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
         FsGetWindowSize(m_nScreenWidth,m_nScreenHeight);
 
         UpdateMouse();
+        UpdateKey();
 
 		auto nCurTickCount = GetTickCount() - nStartTime;
 		FrameMove(nCurTickCount / 1000.f);
