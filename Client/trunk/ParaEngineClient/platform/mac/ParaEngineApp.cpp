@@ -608,7 +608,7 @@ static void InitKeyCodeMap()
     
     for(int i = 0;i<FSKEY_NUM_KEYCODE*2;i+=2)
     {
-        g_KeyCodeMap[kv[i]] = kv[i]+1;
+        g_KeyCodeMap[kv[i]] = kv[i+1];
     }
     
     //g_KeyCodeMap[]
@@ -624,15 +624,19 @@ void CParaEngineApp::UpdateKey()
     
     int fsKeyState = FsGetKeyState(fsKeyCode); //0 keyup 1 keydown
     
-    UINT msg = WM_KEYUP;
-    if(fsKeyState == 1)
+    UINT msg = WM_KEYDOWN;
+    if(fsKeyState == 0)
     {
-        msg = WM_KEYDOWN;
+        msg++;
     }
     
-    uint32 keyCode = g_KeyCodeMap[fsKeyCode];
+    WPARAM keyCode = g_KeyCodeMap[fsKeyCode];
     
-    CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg,keyCode,0);
+    if(keyCode != 0)
+    {
+        CGUIRoot::GetInstance()->GetKeyboard()->PushKeyEvent(msg,keyCode,0);
+    }
+
     
     int character = FsInkeyChar();
     if(character > 0)
