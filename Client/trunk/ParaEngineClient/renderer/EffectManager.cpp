@@ -24,7 +24,7 @@
 
 #ifdef USE_OPENGL_RENDERER
 #include "ShadowMap.h"
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
 

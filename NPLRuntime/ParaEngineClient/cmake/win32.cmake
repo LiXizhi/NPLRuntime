@@ -161,16 +161,14 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	# opengl under WIN32
 	file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
 	list(APPEND ParaEngineClient_Platform_FILES 
-		${ParaEngineClient_SOURCE_DIR}/platform/OpenGLWrapper.h
-		${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/s3tc.h
-		${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.cpp ${ParaEngineClient_SOURCE_DIR}/platform/base/edtaa3func.h
-		${ParaEngineClient_SOURCE_DIR}/platform/base/uthash.h
 		${External_Dir}/glad/src/glad.c)
 	SOURCE_GROUP("Platform" FILES ${ParaEngineClient_Platform_FILES})
 	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platform_FILES})
 
-
-
+	file (GLOB ParaEngineClient_GLRenerer_FILES ${ParaEngineClient_SOURCE_DIR}/renderer/OpenGL/*.*)
+	SOURCE_GROUP("GLRenderer" FILES ${ParaEngineClient_GLRenerer_FILES})
+	list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_GLRenerer_FILES})
+	include_directories("${ParaEngineClient_SOURCE_DIR}/renderer/OpenGL/")
 
 	##################################
 	#Shader

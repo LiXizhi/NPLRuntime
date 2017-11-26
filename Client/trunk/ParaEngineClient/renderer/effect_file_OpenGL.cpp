@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"

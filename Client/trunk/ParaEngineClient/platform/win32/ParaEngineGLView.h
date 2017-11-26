@@ -56,7 +56,7 @@ namespace ParaEngine {
 
 	public:
 		static CParaEngineGLView* create(const std::string& viewName);
-		static CParaEngineGLView* createWithRect(const std::string& viewName, const Rect& rect, float frameZoomFactor = 1.0f);
+		static CParaEngineGLView* createWithRect(const std::string& viewName, const NPLRect& rect, float frameZoomFactor = 1.0f);
 		static CParaEngineGLView* createWithFullScreen(const std::string& viewName);
 		static CParaEngineGLView* createWithFullScreen(const std::string& viewName, const GLFWvidmode &videoMode, GLFWmonitor *monitor);
 
@@ -105,7 +105,7 @@ namespace ParaEngine {
 		*
 		* @return Return the opengl view port rectangle.
 		*/
-		const Rect& getViewPortRect() const;
+		const NPLRect& getViewPortRect() const;
 
 
 		/** return true if the key is being pressed at the time of calling.
@@ -119,7 +119,7 @@ namespace ParaEngine {
 		CParaEngineGLView();
 		virtual ~CParaEngineGLView();
 
-		bool initWithRect(const std::string& viewName, const Rect& rect, float frameZoomFactor);
+		bool initWithRect(const std::string& viewName, const NPLRect& rect, float frameZoomFactor);
 		bool initWithFullScreen(const std::string& viewName);
 		bool initWithFullscreen(const std::string& viewname, const GLFWvidmode &videoMode, GLFWmonitor *monitor);
 
@@ -181,7 +181,7 @@ namespace ParaEngine {
 		Size _designResolutionSize;
 
 		// the view port size
-		Rect _viewPortRect;
+		NPLRect _viewPortRect;
 
 		float _scaleX;
 		float _scaleY;

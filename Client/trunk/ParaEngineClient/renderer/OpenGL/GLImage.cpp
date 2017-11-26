@@ -1,6 +1,6 @@
 #include "ParaEngine.h"
 #include "GLImage.h"
-#include "platform/base/s3tc.h"
+#include "s3tc.h"
 
 #include "jpeglib.h"
 #include "png.h"
@@ -135,6 +135,17 @@ struct S3TCTexHeader
 };
 #pragma pack(pop)
 
+
+Image::Image():
+_width(0)
+,_height(0)
+,_hasPremultipliedAlpha(false)
+,_dataLen(0)
+,_data(nullptr)
+,_numberOfMipmaps(0)
+{
+    
+}
 
 bool Image::initWithRawData(const unsigned char * data, size_t dataLen, int width, int height, int bitsPerComponent, bool preMulti)
 {

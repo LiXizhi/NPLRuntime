@@ -6,7 +6,7 @@
 #include <alloca.h>
 #endif
 
-#include "../base/uthash.h"
+#include "uthash.h"
 #include "FileUtils.h"
 
 #define CHECK_GL_ERROR_DEBUG() \
@@ -166,7 +166,7 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	{
 		if (!compileShader(&_fragShader, GL_FRAGMENT_SHADER, fShaderByteArray))
 		{
-			OUTPUT_LOG("cocos2d: ERROR: Failed to compile fragment shader");
+			OUTPUT_LOG("ERROR: Failed to compile fragment shader");
 			return false;
 		}
 	}
@@ -332,6 +332,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 #if (PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX && PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC)
 		(type == GL_VERTEX_SHADER ? "precision highp float;\n" : "precision mediump float;\n"),
 #endif
+        "#version 120\n"
 		"uniform mat4 CC_PMatrix;\n"
 		"uniform mat4 CC_MVMatrix;\n"
 		"uniform mat4 CC_MVPMatrix;\n"
@@ -471,7 +472,6 @@ std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc
 {
 	std::string ret;
 	GLint logLength = 0, charsWritten = 0;
-
 	infoFunc(object, GL_INFO_LOG_LENGTH, &logLength);
 	if (logLength < 1)
 		return "";
@@ -487,17 +487,17 @@ std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc
 
 std::string GLProgram::getVertexShaderLog() const
 {
-	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
 }
 
 std::string GLProgram::getFragmentShaderLog() const
 {
-	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
+	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
 }
 
 std::string GLProgram::getProgramLog() const
 {
-	return this->logForOpenGLObject(_program, (GLInfoFunction)&glGetProgramiv, (GLLogFunction)&glGetProgramInfoLog);
+	return this->logForOpenGLObject(_program, (GLInfoFunction)glGetProgramiv, (GLLogFunction)glGetProgramInfoLog);
 }
 
 // Uniform cache

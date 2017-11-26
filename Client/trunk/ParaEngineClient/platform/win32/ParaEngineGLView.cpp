@@ -1,5 +1,5 @@
 #include "ParaEngine.h"
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "platform/win32/ParaEngineGLView.h"
 #include "platform/win32/ParaEngineApp.h"
 
@@ -405,14 +405,14 @@ namespace ParaEngine {
 	CParaEngineGLView* CParaEngineGLView::create(const std::string& viewName)
 	{
 		auto ret = new (std::nothrow) CParaEngineGLView;
-		if (ret && ret->initWithRect(viewName, Rect(0, 0, 960, 640), 1)) {
+		if (ret && ret->initWithRect(viewName, NPLRect(0, 0, 960, 640), 1)) {
 			return ret;
 		}
 
 		return nullptr;
 	}
 
-	CParaEngineGLView* CParaEngineGLView::createWithRect(const std::string& viewName, const Rect& rect, float frameZoomFactor)
+	CParaEngineGLView* CParaEngineGLView::createWithRect(const std::string& viewName, const NPLRect& rect, float frameZoomFactor)
 	{
 		auto ret = new (std::nothrow) CParaEngineGLView;
 		if (ret && ret->initWithRect(viewName, rect, frameZoomFactor)) {
@@ -442,7 +442,7 @@ namespace ParaEngine {
 		return nullptr;
 	}
 
-	bool CParaEngineGLView::initWithRect(const std::string& viewName, const Rect& rect, float frameZoomFactor)
+	bool CParaEngineGLView::initWithRect(const std::string& viewName, const NPLRect& rect, float frameZoomFactor)
 	{
 		setViewName(viewName);
 
@@ -504,7 +504,7 @@ namespace ParaEngine {
 			return false;
 
 		const GLFWvidmode* videoMode = glfwGetVideoMode(_monitor);
-		return initWithRect(viewName, Rect(0, 0, (float)videoMode->width, (float)videoMode->height), 1.0f);
+		return initWithRect(viewName, NPLRect(0, 0, (float)videoMode->width, (float)videoMode->height), 1.0f);
 	}
 
 	bool CParaEngineGLView::initWithFullscreen(const std::string &viewname, const GLFWvidmode &videoMode, GLFWmonitor *monitor)
@@ -520,7 +520,7 @@ namespace ParaEngine {
 		glfwWindowHint(GLFW_BLUE_BITS, videoMode.blueBits);
 		glfwWindowHint(GLFW_GREEN_BITS, videoMode.greenBits);
 
-		return initWithRect(viewname, Rect(0, 0, (float)videoMode.width, (float)videoMode.height), 1.0f);
+		return initWithRect(viewname, NPLRect(0, 0, (float)videoMode.width, (float)videoMode.height), 1.0f);
 	}
 
 	bool CParaEngineGLView::isOpenGLReady()
@@ -987,7 +987,7 @@ namespace ParaEngine {
 	}
 
 
-	const Rect& CParaEngineGLView::getViewPortRect() const
+	const NPLRect& CParaEngineGLView::getViewPortRect() const
 	{
 		return _viewPortRect;
 	}

@@ -1,5 +1,5 @@
 #pragma once
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 namespace ParaEngine
 {

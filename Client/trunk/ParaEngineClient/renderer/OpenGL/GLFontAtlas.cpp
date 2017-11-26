@@ -176,11 +176,11 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
         }
         else
         {
-            char* pin = (char*)u16Text.c_str();
+            const char* pin = (char*)u16Text.c_str();
             char* pout = gb2312Text;
             size_t inLen = strLen * 2;
             size_t outLen = gb2312StrSize;
-            iconv(_iconv, (char**)&pin, &inLen, &pout, &outLen);
+            iconv(_iconv, &pin, &inLen, &pout, &outLen);
         }
 
     }
