@@ -169,12 +169,22 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			if ((DWORD)dwMapColor !=0)
 				pTemplate->SetMapColor(dwMapColor);
 
-			BlockWorldClient* mgr = BlockWorldClient::GetInstance();
-			if (mgr)
-				mgr->SetBlockVisible(templateId, bIsVisible);
-
 			if ((DWORD)under_water_color != 0)
 				pTemplate->setUnderWaterColor(under_water_color);
+
+
+			bool bRefreshBlockTemplate = false;
+			bRefreshBlockTemplate = pWorld->SetBlockVisible(templateId, bIsVisible, false) || bRefreshBlockTemplate;
+			if (nTorchLight >= 0 && pTemplate->GetTorchLight() != nTorchLight) 
+			{
+				pTemplate->SetTorchLight(nTorchLight);
+				bRefreshBlockTemplate = true;
+			}
+
+			if (bRefreshBlockTemplate)
+			{
+				pWorld->RefreshBlockTemplate(templateId);
+			}
 			return true;
 		}
 	}

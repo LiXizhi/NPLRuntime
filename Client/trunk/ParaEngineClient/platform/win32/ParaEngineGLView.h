@@ -112,6 +112,14 @@ namespace ParaEngine {
 		* @param nKey: a direct input key, such as DIK_SPACE. */
 		bool IsKeyPressed(DWORD nKey);
 
+		/**
+		* Set the frame size of EGL view.
+		*
+		* @param width The width of the fram size.
+		* @param height The height of the fram size.
+		*/
+		void setFrameSize(float width, float height);
+
 #ifdef WIN32
 		HWND getWin32Window() { return glfwGetWin32Window(_mainWindow); };
 #endif /* (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) */
@@ -147,13 +155,7 @@ namespace ParaEngine {
 		*/
 		const Size& getFrameSize() const;
 
-		/**
-		* Set the frame size of EGL view.
-		*
-		* @param width The width of the fram size.
-		* @param height The height of the fram size.
-		*/
-		void setFrameSize(float width, float height);
+		
 
 	protected:
 
