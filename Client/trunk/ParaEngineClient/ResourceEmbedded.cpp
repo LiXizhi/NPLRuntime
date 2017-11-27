@@ -13,8 +13,6 @@
 
 using namespace ParaEngine;
 
-namespace ParaEngine 
-{
 	/** only loaded*/
 	CStaticInitRes::CStaticInitRes() {
 #if defined(USE_DIRECTX_RENDERER) && defined(NPLRUNTIME_STATICLIB)
@@ -71,7 +69,6 @@ namespace ParaEngine
 		static CStaticInitRes _embedded_resource;
 		return _embedded_resource;
 	}
-}
 
 
 
