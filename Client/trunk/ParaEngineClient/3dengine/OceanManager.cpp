@@ -2182,7 +2182,7 @@ namespace ParaEngine
 		if (m_underwater)
 		{
 			auto pBlockTemplate = pBlockWorldClient->GetBlockTemplate(pBlockWorldClient->GetBlockTemplateId(vEye.x, vEye.y, vEye.z));
-			m_CustomUnderWaterColor = pBlockTemplate ? (LinearColor)pBlockTemplate->getUnderWaterColor(): 0;
+			m_CustomUnderWaterColor = pBlockTemplate ? (LinearColor)pBlockTemplate->getUnderWaterColor(): ((uint32)0);
 		}
 
 		//
