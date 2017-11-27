@@ -31,6 +31,10 @@
 #define PARAENGINE_SUPPORT_WRITE_REG
 #endif
 
+#if defined(WIN32) && defined(PARAENGINE_CLIENT)
+#define PARAENGINE_SUPPORT_READ_REG
+#endif 
+
 #ifndef MAX_LINE
 /**@def max number of characters in a single line */
 #define MAX_LINE	1024
@@ -1759,7 +1763,7 @@ bool ParaScripting::ParaGlobal::WriteRegStr(const string& root_key, const string
 
 const char* ParaScripting::ParaGlobal::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
 {
-#ifdef PARAENGINE_CLIENT
+#ifdef PARAENGINE_SUPPORT_READ_REG
 	if (CParaEngineApp::GetInstance())
 		return CParaEngineApp::GetInstance()->ReadRegStr(root_key, sSubKey, name);
 	else
@@ -1784,7 +1788,7 @@ bool ParaScripting::ParaGlobal::WriteRegDWORD(const string& root_key, const stri
 
 DWORD ParaScripting::ParaGlobal::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
 {
-#ifdef PARAENGINE_CLIENT
+#ifdef PARAENGINE_SUPPORT_READ_REG
 	if (CParaEngineApp::GetInstance())
 		return CParaEngineApp::GetInstance()->ReadRegDWORD(root_key, sSubKey, name);
 	else
