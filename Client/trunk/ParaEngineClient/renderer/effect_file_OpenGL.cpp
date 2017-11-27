@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
@@ -75,7 +75,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 		delete m_Effect;
 		m_Effect = nullptr;
 		OUTPUT_LOG("error: parse effect failed %s\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	// Parse uniforms
@@ -86,7 +86,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	}
 	else {
 		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	// Init effect
@@ -96,7 +96,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	}
 	else {
 		OUTPUT_LOG("[%s] Generate passes failed.\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
@@ -208,7 +208,7 @@ bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 	return isParameterUsed(index);
 }
 
-bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* data, int32 size)
+bool ParaEngine::CEffectFileOpenGL::setParameter(GLWrapper::Uniform* uniform, const void* data, int32 size)
 {
 	bool ret = false;
 	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
@@ -217,21 +217,46 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* d
 		if (uniform && program && data != 0)
 		{
 			if (uniform->type == GL_INT)
+			{
 				program->setUniformLocationWith1i(uniform->location, *((const GLint*)(data)));
+
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_BOOL)
+			{
 				program->setUniformLocationWith1i(uniform->location, *((const bool*)(data)));
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_FLOAT)
+			{
 				program->setUniformLocationWith1f(uniform->location, *((const GLfloat*)(data)));
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_FLOAT_VEC3)
+			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_FLOAT_VEC2)
+			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_FLOAT_VEC4)
+			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (uniform->type == GL_FLOAT_MAT4)
+			{
 				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else if (size > 0)
+			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), (uint32)((size + 1) / 2));
+				PE_CHECK_GL_ERROR_DEBUG();
+			}
 			else
 			{
 				OUTPUT_LOG("warn: unknown uniform size and type\n");
@@ -256,7 +281,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
 		if (program && data != 0)
 		{
-			Uniform* uniform = GetUniformByID(index);
+			auto uniform = GetUniformByID(index);
 			if (uniform)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), 1);
@@ -276,7 +301,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
 		if (program && data != 0)
 		{
-			Uniform* uniform = GetUniformByID(index);
+			auto uniform = GetUniformByID(index);
 			if (uniform)
 			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), 1);
@@ -296,7 +321,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
 		if (program && data != 0)
 		{
-			Uniform* uniform = GetUniformByID(index);
+			auto uniform = GetUniformByID(index);
 			if (uniform)
 			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), 1);
@@ -407,7 +432,7 @@ bool ParaEngine::CEffectFileOpenGL::initWithFilenames(const std::string& vShader
 	}
 }
 
-GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
+GLWrapper::GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
 {
 	if ((int)mTechniques.size() <= nTech)
 	{
@@ -423,7 +448,7 @@ GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, boo
 		auto program = passes[nPass];
 		if (program == NULL && bCreateIfNotExist)
 		{
-			program = new GLProgram();
+			program = new GLWrapper::GLProgram();
 			passes[nPass] = program;
 		}
 		return program;
@@ -500,12 +525,12 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 	}
 }
 
-Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
+GLWrapper::Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
 {
 	return GetUniform(m_ID2Names[id]);
 }
 
-Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
+GLWrapper::Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 {
 	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);
 	if (program)
@@ -905,7 +930,7 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type 
 
 HRESULT ParaEngine::CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
 {
-	Uniform* uniform = GetUniform(hParameter);
+	auto uniform = GetUniform(hParameter);
 	if (uniform)
 	{
 		PE_ASSERT(ByteOffset == 0);
