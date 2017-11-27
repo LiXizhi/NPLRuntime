@@ -17,7 +17,7 @@
 #include <gdiplus.h>
 
 
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 
 
@@ -50,6 +50,7 @@
 #include "OSWindows.h"
 #include "OceanManager.h"
 #include "DynamicAttributeField.h"
+#include "BlockEngine/BlockWorldManager.h"
 
 #include "MoviePlatform.h"
 
@@ -351,6 +352,7 @@ namespace ParaEngine {
 
 	CParaEngineApp::~CParaEngineApp()
 	{
+		StopApp();
 	}
 
 	void CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
@@ -549,6 +551,7 @@ namespace ParaEngine {
 		m_pGUIRoot.reset();
 		m_pViewportManager.reset();
 		m_pGUIRoot.reset();
+		m_pGLView.reset();
 
 		// delete m_pAudioEngine;
 		CoUninitialize();
@@ -567,24 +570,16 @@ namespace ParaEngine {
 	{
 		//CAsyncLoader::GetSingleton().Stop();
 
-		if (!CGlobals::GetAISim()->IsCleanedUp())
-		{
-			if (CGlobals::GetEventsCenter())
-			{
-				SystemEvent event(SystemEvent::SYS_WM_DESTROY, "");
-				// set sync mode, so that event is processed immediately, since there is no next frame move.
-				event.SetAsyncMode(false);
-				CGlobals::GetEventsCenter()->FireEvent(event);
-			}
-		}
-		CGlobals::GetNPLRuntime()->Cleanup();
-		CGlobals::GetAISim()->CleanUp();
+		CBlockWorldManager::GetSingleton()->Cleanup();
+
+		CParaEngineAppBase::FinalCleanup();
 
 		m_pGUIRoot->Release();		// GUI: 2D engine
 		m_pRootScene->Cleanup();
 		CSingleton<CObjectManager>::Instance().Finalize();
 		CSingleton<CGUIHighlightManager>::Instance().Finalize();
 		CGlobals::GetAssetManager()->Cleanup();
+		m_pParaWorldAsset->Cleanup();
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
 		return S_OK;
 	}
@@ -1267,7 +1262,7 @@ namespace ParaEngine {
 		if (Is3DRenderingEnabled())
 		{
 
-			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", Rect(0, 0, (float)m_nScreenWidth, (float)m_nScreenHeight));
+			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", CCRect(0, 0, (float)m_nScreenWidth, (float)m_nScreenHeight));
 
 			SetMainWindow(m_pGLView->getWin32Window());
 
@@ -1299,6 +1294,283 @@ namespace ParaEngine {
 		}
 		return result;
 
+	}
+
+
+	HKEY GetHKeyByName(const string& root_key)
+	{
+		if (root_key == "HKCR" || root_key == "HKEY_CLASSES_ROOT")
+			return HKEY_CLASSES_ROOT;
+		else if (root_key == "HKLM" || root_key == "HKEY_LOCAL_MACHINE")
+			return HKEY_LOCAL_MACHINE;
+		else if (root_key == "HKCU" || root_key == "HKEY_CURRENT_USER")
+			return HKEY_CURRENT_USER;
+		else if (root_key == "HKU" || root_key == "HKEY_USERS")
+			return HKEY_USERS;
+		else
+			return HKEY_CURRENT_USER;
+	}
+
+	/** get hkey by path
+	* one needs to close the key if it is not zero.
+	*/
+	static HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRights = KEY_QUERY_VALUE, bool bCreateGet = false)
+	{
+		HKEY  hKey = NULL;
+		HKEY  hParentKey = NULL;
+		LPBYTE lpValue = NULL;
+		LONG lRet = NULL;
+
+		std::string path_;
+		std::string::size_type nFrom = 0;
+		for (int i = 0; i<20 && nFrom != std::string::npos; ++i)
+		{
+			std::string::size_type nLastFrom = (nFrom == 0) ? 0 : (nFrom + 1);
+			nFrom = sSubKey.find_first_of("/\\", nLastFrom);
+			path_ = sSubKey.substr(nLastFrom, (nFrom == std::string::npos) ? nFrom : (nFrom - nLastFrom));
+
+			if (hParentKey == NULL)
+			{
+				hParentKey = GetHKeyByName(root_key);
+			}
+			if (!bCreateGet)
+			{
+				lRet = ::RegOpenKeyEx(hParentKey,
+					path_.c_str(),
+					0,
+					dwOpenRights,
+					&hKey);
+			}
+			else
+			{
+				DWORD dwDisposition = 0;
+				lRet = ::RegCreateKeyEx(hParentKey,
+					path_.c_str(),
+					0,
+					NULL,
+					REG_OPTION_NON_VOLATILE,
+					dwOpenRights,
+					NULL,
+					&hKey, &dwDisposition);
+				if (dwDisposition == REG_CREATED_NEW_KEY)
+				{
+					OUTPUT_LOG("created the registry key %s \n", sSubKey.c_str());
+				}
+			}
+
+
+			if (nFrom != std::string::npos && i>0)
+			{
+				::RegCloseKey(hParentKey);
+			}
+			hParentKey = hKey;
+
+			if (ERROR_SUCCESS != lRet)
+			{
+				// Error handling (see this FAQ)
+				if (ERROR_ACCESS_DENIED == lRet)
+				{
+					OUTPUT_LOG("can not open the registry key %s because %s access denied.\n", sSubKey.c_str(), path_.c_str());
+				}
+				else
+				{
+					OUTPUT_LOG("can not open the registry key %s because %s does not exist.\n", sSubKey.c_str(), path_.c_str());
+				}
+				return NULL;
+			}
+		}
+		return hKey;
+	}
+
+	bool CParaEngineApp::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
+	{
+		LPBYTE lpValue = NULL;
+		LONG lRet = NULL;
+
+		HKEY  hKey = GetHKeyByPath(root_key, sSubKey, KEY_WRITE, true);
+		if (hKey == NULL)
+			return NULL;
+
+		lRet = ::RegSetValueEx(hKey,
+			name.c_str(),
+			0,
+			REG_SZ,
+			(const byte*)(value.c_str()),
+			(int)(value.size()));
+		::RegCloseKey(hKey);
+		if (ERROR_SUCCESS != lRet)
+		{
+			// Error handling
+			OUTPUT_LOG("can not set the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+			return false;
+		}
+		return true;
+	}
+
+	const char* CParaEngineApp::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
+	{
+		LPBYTE lpValue = NULL;
+		LONG lRet = NULL;
+		DWORD dwSize = 0;
+		DWORD dwDataType = 0;
+
+		static string g_tmp;
+		g_tmp.clear();
+
+		try
+		{
+			HKEY  hKey = GetHKeyByPath(root_key, sSubKey);
+			if (hKey == NULL)
+				return NULL;
+
+			// Call once RegQueryValueEx to retrieve the necessary buffer size
+			::RegQueryValueEx(hKey,
+				name.c_str(),
+				0,
+				&dwDataType,
+				lpValue,  // NULL
+				&dwSize); // will contain the data size
+
+			if (ERROR_SUCCESS == lRet && (dwSize > 0 || dwDataType == REG_DWORD))
+			{
+				// Alloc the buffer
+				lpValue = (LPBYTE)malloc(dwSize);
+
+				// Call twice RegQueryValueEx to get the value
+				lRet = ::RegQueryValueEx(hKey,
+					name.c_str(),
+					0,
+					&dwDataType,
+					lpValue,
+					&dwSize);
+			}
+
+			::RegCloseKey(hKey);
+
+			if (ERROR_SUCCESS != lRet)
+			{
+				// Error handling
+				OUTPUT_LOG("can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+				return NULL;
+			}
+
+			if (dwDataType == REG_SZ)
+			{
+				if (lpValue != NULL)
+				{
+					g_tmp = (const char*)lpValue;
+				}
+			}
+			else if (dwDataType == REG_DWORD)
+			{
+				if (lpValue != NULL)
+				{
+					DWORD dwValue = *((const DWORD *)lpValue);
+					char temp[30];
+					memset(temp, 0, sizeof(temp));
+					_itoa_s(dwValue, temp, 10);
+					g_tmp = temp;
+				}
+			}
+
+			// free the buffer when no more necessary
+			if (lpValue != NULL)
+				free(lpValue);
+
+			return g_tmp.c_str();
+		}
+		catch (...)
+		{
+			OUTPUT_LOG("error: Exception: can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+		}
+		return g_tmp.c_str();
+	}
+
+	bool CParaEngineApp::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
+	{
+		LONG lRet = NULL;
+
+		try
+		{
+			HKEY  hKey = GetHKeyByPath(root_key, sSubKey, KEY_SET_VALUE);
+			if (hKey == NULL)
+				return NULL;
+
+			lRet = ::RegSetValueEx(hKey,
+				name.c_str(),
+				0,
+				REG_DWORD,
+				((const byte*)(&value)),
+				sizeof(DWORD));
+			::RegCloseKey(hKey);
+			if (ERROR_SUCCESS != lRet)
+			{
+				// Error handling
+				OUTPUT_LOG("can not set the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+				return false;
+			}
+		}
+		catch (...)
+		{
+			OUTPUT_LOG("error: Exception when WriteRegDWORD registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+			return false;
+		}
+		return true;
+	}
+
+	DWORD CParaEngineApp::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
+	{
+		LPBYTE lpValue = NULL;
+		LONG lRet = NULL;
+		DWORD dwSize = 0;
+		DWORD dwDataType = 0;
+
+		try
+		{
+			HKEY  hKey = GetHKeyByPath(root_key, sSubKey);
+			if (hKey == NULL)
+				return NULL;
+
+			// Call once RegQueryValueEx to retrieve the necessary buffer size
+			::RegQueryValueEx(hKey,
+				name.c_str(),
+				0,
+				&dwDataType,
+				lpValue,  // NULL
+				&dwSize); // will contain the data size
+
+						  // Alloc the buffer
+			lpValue = (LPBYTE)malloc(dwSize);
+
+			// Call twice RegQueryValueEx to get the value
+			lRet = ::RegQueryValueEx(hKey,
+				name.c_str(),
+				0,
+				&dwDataType,
+				lpValue,
+				&dwSize);
+			::RegCloseKey(hKey);
+			if (ERROR_SUCCESS != lRet)
+			{
+				// Error handling
+				OUTPUT_LOG("can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+				return NULL;
+			}
+
+			DWORD dwValue = 0;
+			if (dwDataType == REG_DWORD)
+			{
+				dwValue = *((const DWORD *)lpValue);
+			}
+			// free the buffer when no more necessary
+			free(lpValue);
+			return dwValue;
+		}
+		catch (...)
+		{
+			OUTPUT_LOG("error: Exception: can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
+		}
+		return 0;
 	}
 
 } // end namespace

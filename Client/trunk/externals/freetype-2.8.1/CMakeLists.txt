@@ -239,6 +239,7 @@ if (ZLIB_FOUND)
     "/\\* +(#define +FT_CONFIG_OPTION_SYSTEM_ZLIB) +\\*/" "\\1"
     FTOPTION_H "${FTOPTION_H}")
 endif ()
+set(BZIP2_FOUND FALSE)
 if (BZIP2_FOUND)
   string(REGEX REPLACE
     "/\\* +(#define +FT_CONFIG_OPTION_USE_BZIP2) +\\*/" "\\1"

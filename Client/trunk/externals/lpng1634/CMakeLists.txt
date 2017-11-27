@@ -151,8 +151,8 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^i?86" OR
       " PNG_INTEL_SSE must be one of [${PNG_INTEL_SSE_POSSIBLE_VALUES}]")
   elseif(NOT ${PNG_INTEL_SSE} STREQUAL "no")
     set(libpng_intel_sources
-      intel/intel_init.c
-      intel/filter_sse2_intrinsics.c)
+      contrib/intel/intel_init.c
+      contrib/intel/filter_sse2_intrinsics.c)
     if(${PNG_INTEL_SSE} STREQUAL "on")
       add_definitions(-DPNG_INTEL_SSE_OPT=1)
     endif()
