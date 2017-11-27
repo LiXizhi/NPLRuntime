@@ -49,6 +49,6 @@ int main(int argc, char** argv)
 
 	ofs << "};" << endl;
 	ofs << "extern const size_t _resource_" << sym << "_len = sizeof(_resource_" << sym << "); // total file size " << dec << nSize;
-
+    
 	return EXIT_SUCCESS;
 }

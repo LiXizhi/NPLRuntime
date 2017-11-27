@@ -97,7 +97,7 @@
 #endif
 
 #ifdef USE_COCOS_FILE_API
-	#include "platform/OpenGLWrapper.h"
+	#include "OpenGLWrapper.h"
 	/** @Note by LiXizhi: all cocos read file api are not thread safe, hence we need to use a lock. 
 	remove this when cocos no longer uses non-thread-safe file cache map. */
 	static std::mutex  s_cocos_file_io_mutex;

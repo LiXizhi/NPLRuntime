@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "TextureEntity.h"
 //#include "CGUIRootLayer.h"
 #include "EffectManager.h"

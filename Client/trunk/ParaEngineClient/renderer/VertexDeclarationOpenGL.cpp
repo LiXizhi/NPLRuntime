@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclarationOpenGL.h"
 using namespace ParaEngine;
