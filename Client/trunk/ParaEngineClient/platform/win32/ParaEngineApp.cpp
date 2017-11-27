@@ -17,7 +17,7 @@
 #include <gdiplus.h>
 
 
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 
 
@@ -1262,7 +1262,7 @@ namespace ParaEngine {
 		if (Is3DRenderingEnabled())
 		{
 
-			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", Rect(0, 0, (float)m_nScreenWidth, (float)m_nScreenHeight));
+			m_pGLView = CParaEngineGLView::createWithRect("ParaEngine", CCRect(0, 0, (float)m_nScreenWidth, (float)m_nScreenHeight));
 
 			SetMainWindow(m_pGLView->getWin32Window());
 

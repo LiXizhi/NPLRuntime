@@ -31,6 +31,7 @@ ParaEngine::CParaSimpleAudioEngine::CParaSimpleAudioEngine()
 
 ParaEngine::CParaSimpleAudioEngine::~CParaSimpleAudioEngine()
 {
+    Release();
 }
 
 CParaSimpleAudioEngine* ParaEngine::CParaSimpleAudioEngine::GetInstance()

@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
@@ -75,7 +75,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 		delete m_Effect;
 		m_Effect = nullptr;
 		OUTPUT_LOG("error: parse effect failed %s\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	// Parse uniforms
@@ -86,7 +86,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	}
 	else {
 		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	// Init effect
@@ -96,7 +96,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	}
 	else {
 		OUTPUT_LOG("[%s] Generate passes failed.\n", GetFileName().c_str());
-		return S_FALSE;
+		return false;
 	}
 
 	if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")

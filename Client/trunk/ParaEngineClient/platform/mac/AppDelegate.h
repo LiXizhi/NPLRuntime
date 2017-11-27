@@ -32,7 +32,7 @@ namespace ParaEngine
 		@return false   Initialize failed, app terminate.
 		*/
 		virtual bool applicationDidFinishLaunching();
-
+		void InitGlew();
 		bool InitApp();
 
 		void CreateParaEngineApp();
