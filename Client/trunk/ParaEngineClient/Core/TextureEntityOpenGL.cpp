@@ -9,7 +9,7 @@
 #include "ParaEngine.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "ImageEntity.h"
 #include "TextureEntity.h"
 

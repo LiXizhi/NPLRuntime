@@ -372,6 +372,7 @@ namespace ParaEngine
 		bool m_bIsAppActive;
 
 		void UpdateMouse();
+        void UpdateKey();
 	};
 
 }
