@@ -139,7 +139,7 @@ namespace ParaEngine
 		*/
 		static const char* EncodingConvert(const char* srcEncoding, const char* dstEncoding, const char* bytes);
 
-		/** copy text to clipboard. Input is ANSI code page */
+		/** copy text to clipboard. Input is GUI UTF8 encoding */
 		static bool CopyTextToClipboard(const string& text);
 
 		/** get text from clipboard. text is converted to ANSI code page when returned.*/

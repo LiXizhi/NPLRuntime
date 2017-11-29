@@ -14,13 +14,19 @@
 // @changes LiXizhi 2009.11.7: Information on IME: http://msdn.microsoft.com/en-us/library/ee419002(VS.85).aspx 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 #include "GUIRoot.h"
 #include "GUIBase.h"
 #include <strsafe.h>
 #include <vector>
 #include "EventBinding.h"
+
+#ifdef USE_OPENGL_RENDERER
+#include "platform/win32/ParaEngineApp.h"
+#else
 #include "ParaEngineApp.h"
+#endif
+
 #include "GUIIME.h"
 #include "memdebug.h"
 

@@ -4,11 +4,13 @@
 /** @def load and return resource object */
 #define LOAD_RESOURCE(RESOURCE) ([]() {                      \
         extern const unsigned char _resource_##RESOURCE[]; extern const size_t _resource_##RESOURCE##_len;  \
-        return ParaEngine::Resource((const char*)_resource_##RESOURCE, _resource_##RESOURCE##_len);  \
+        return ParaEngine::Resource((const char*)_resource_##RESOURCE,_resource_##RESOURCE##_len);  \
     })()
 
 /** @def add resource at compile time */
 #define ADD_RESOURCE(NAME, FILENAME)   {Resource res = LOAD_RESOURCE(FILENAME); ParaEngine::CFileUtils::AddEmbeddedResource(NAME, res.data(), res.size());}
+
+
 
 namespace ParaEngine
 {
@@ -29,10 +31,11 @@ namespace ParaEngine
 		const size_t data_len;
 	};
 
-	class CStaticInitRes
-	{
-	public:
-		CStaticInitRes();
-		static CStaticInitRes& StaticInit();
-	};
+
 }
+class CStaticInitRes
+{
+public:
+	CStaticInitRes();
+	static CStaticInitRes& StaticInit();
+};

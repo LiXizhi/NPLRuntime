@@ -853,7 +853,7 @@ namespace ParaEngine
 		
 		if (!m_memoryBuffers.empty())
 		{
-			for (ParaMemoryBuffer memBuffer : m_memoryBuffers)
+			for (ParaMemoryBuffer& memBuffer : m_memoryBuffers)
 			{
 				ParaVertexBuffer* pBuffer = RequestVertexBuffer(memBuffer.GetBufferSize() / (sizeof(BlockVertexCompressed) * 4));
 				if (pBuffer)

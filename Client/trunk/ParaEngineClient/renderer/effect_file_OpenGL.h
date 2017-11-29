@@ -1,13 +1,17 @@
 #pragma once
 #include "effect_file.h"
 #include "ParameterBlock.h"
-
+#include "gleffects.h"
 #include <unordered_map>
+
+namespace GLWrapper{
+	class GLProgram;
+	struct Uniform;
+}
 
 namespace ParaEngine
 {
-	class GLProgram;
-	struct Uniform;
+	
 
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
@@ -143,9 +147,9 @@ namespace ParaEngine
 		const TechniqueDesc* GetCurrentTechniqueDesc();
 
 	public:
-		bool setParameter(Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
+		bool setParameter(GLWrapper::Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
 
-		GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
+		GLWrapper::GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
 		
 		/** Initializes the GLProgram with a vertex and fragment with bytes array
 		*/
@@ -170,8 +174,8 @@ namespace ParaEngine
 		*/
 		void updateUniforms(int nTech = -1, int nPass = -1);
 		
-		Uniform* GetUniformByID(eParameterHandles id);
-		Uniform* GetUniform(const std::string& sName);
+		GLWrapper::Uniform* GetUniformByID(eParameterHandles id);
+		GLWrapper::Uniform* GetUniform(const std::string& sName);
 		
 		/** add changes to shader parameters, those changes are commited to device when CommitChange() is called. */
 		template <typename ValueType>
@@ -193,15 +197,21 @@ namespace ParaEngine
 		}
 
 		void SetShadowMapSize(int nsize);
+
 	protected:
+		bool MappingEffectUniforms();
+		bool GeneratePasses();
+
+	protected:
+		std::unordered_map<uint32, std::string> m_ID2Names;
+		GLEffectsTree* m_Effect;
+
 		struct TechniqueDescGL : public TechniqueDesc
 		{
-			std::vector<GLProgram*> mPasses;
+			std::vector<GLWrapper::GLProgram*> mPasses;
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;
-		static std::unordered_map<uint32, std::string> s_id_to_names;
-		static std::unordered_map<uint32, std::string> LoadStaticIdNameMap();
 		/** current active pass */
 		int m_nActivePassIndex;
 		bool m_bIsBegin;
