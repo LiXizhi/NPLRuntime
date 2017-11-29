@@ -1,5 +1,5 @@
 #pragma once
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 #include <list>
 #include <usp10.h>
 #include <dimm.h>

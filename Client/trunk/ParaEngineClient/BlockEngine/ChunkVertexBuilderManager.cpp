@@ -23,7 +23,7 @@ using namespace ParaEngine;
 
 ParaEngine::ChunkVertexBuilderManager::ChunkVertexBuilderManager()
 	:m_nMaxPendingChunks(4), m_nMaxUploadingChunks(4), m_bChunkThreadStarted(false),
-	m_nMaxChunksToUploadPerTick(8), m_nMaxBytesToUploadPerTick(4*1024*1024)
+	m_nMaxChunksToUploadPerTick(8), m_nMaxBytesToUploadPerTick(4*1024*1024), m_pBlockWorld(nullptr)
 {
 
 }

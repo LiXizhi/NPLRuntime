@@ -23,6 +23,7 @@ map<string,int> CEventBinding::StringToEventTable;
 map<int,string> CEventBinding::EventToStringTable;
 DWORD CEventBinding::WinVirtualKeyToDIK[256];
 DWORD CEventBinding::ScancodeToKeyTable[256];
+DWORD CEventBinding::DIKToWinVirtualKey[256];
 
 void CEventBinding::InitMsg(MSG *pevent,DWORD time,DWORD message,POINT& pt)
 {
@@ -805,6 +806,14 @@ void CEventBinding::StaticInit()
 	WinVirtualKeyToDIK[VK_INSERT] = DIK_INSERT;
 	WinVirtualKeyToDIK[VK_DELETE] = DIK_DELETE;
 	// WinVirtualKeyToDIK[VK_HELP] = DIK_HELP;
+
+	// key maps here
+	memset(DIKToWinVirtualKey, 0, sizeof(DIKToWinVirtualKey));
+	for (int i = 0; i < 256; i++)
+	{
+		if (WinVirtualKeyToDIK[i] != 0)
+			DIKToWinVirtualKey[WinVirtualKeyToDIK[i]] = i;
+	}
 }
 
 CEventBinding::CEventBinding()

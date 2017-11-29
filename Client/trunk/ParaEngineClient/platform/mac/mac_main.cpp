@@ -12,12 +12,8 @@
 
 #include "AppDelegate.h"
 #include <string>
-
 int main(int argc, char **argv)
 {
-
-	int exit_code = 0;
-
 	bool bServiceMode = false;
 	bool bInterpreterMode = false;
 

@@ -6,7 +6,6 @@
 
 static int mouseLb=0,mouseMb=0,mouseRb=0;
 
-
 static int FsNormalKeyCode[256]=
 {
 	0,                 // 0
@@ -617,9 +616,8 @@ extern void FsOnClosed();
 
 - (void) windowWillClose: (NSNotification *)notification
 {
-	[NSApp terminate:nil];	// This can also be exit(0);
-
 	FsOnClosed();
+    //[NSApp terminate:nil];    // This can also be exit(0);
 }
 
 @end
@@ -770,6 +768,10 @@ extern void FsOnClosed();
 		if(fskey!=0)
 		{
 			fsKeyIsDown[fskey]=0;
+            if(nKeyBufUsed<NKEYBUF)
+            {
+                keyBuffer[nKeyBufUsed++]=fskey;
+            }
 		}
 	}
 }
@@ -1020,17 +1022,18 @@ void FsOpenWindowC(int x0,int y0,int wid,int hei,int useDoubleBuffer)
 		defer:NO];
 
 	NSOpenGLPixelFormat *format;
-	NSOpenGLPixelFormatAttribute formatAttrib[]=
-	{
-		NSOpenGLPFAWindow,
-		NSOpenGLPFADepthSize,(NSOpenGLPixelFormatAttribute)32,
-		NSOpenGLPFADoubleBuffer,
-		0
-	};
+    NSOpenGLPixelFormatAttribute formatAttrib[] = {
+        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
+        NSOpenGLPFAColorSize,32,
+        NSOpenGLPFADepthSize,16,
+        NSOpenGLPFADoubleBuffer,
+        NSOpenGLPFAAccelerated,
+        0
+    };
 
 	if(useDoubleBuffer==0)
 	{
-		formatAttrib[3]=0;
+		formatAttrib[5]=0;
 	}
 
 	format=[NSOpenGLPixelFormat alloc];
@@ -1060,25 +1063,6 @@ void FsOpenWindowC(int x0,int y0,int wid,int hei,int useDoubleBuffer)
 	{
 		fsKeyIsDown[i]=0;
 	}
-
-
-    glClearColor(1.0F,1.0F,1.0F,0.0F);
-    glClearDepth(1.0F);
-	glDisable(GL_DEPTH_TEST);
-
-	glViewport(0,0,wid,hei);
-
-    glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,(float)wid-1,(float)hei-1,0,-1,1);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	glShadeModel(GL_FLAT);
-	glPointSize(1);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	glColor3ub(0,0,0);
 }
 
 void FsGetWindowSizeC(int *wid,int *hei)
@@ -1110,8 +1094,8 @@ void FsPollDeviceC(void)
 		  }
 		if(event!=nil)
 		{
-			[NSApp sendEvent:event];
-			[NSApp updateWindows];
+            [NSApp sendEvent:event];
+            [NSApp updateWindows];
 		}
 		else
 		{

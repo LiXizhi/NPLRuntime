@@ -252,7 +252,7 @@ void CGUIRoot::Clear()
 
 void CGUIRoot::ActivateRoot()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)|| 0
 	if (!m_bActive && m_pMouse && m_pKeyboard) 
 	{
 		if (m_pMouse->m_pMouse)
@@ -280,7 +280,7 @@ void CGUIRoot::ActivateRoot()
 
 void CGUIRoot::InactivateRoot()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 	if (m_bActive && m_pMouse && m_pKeyboard) 
 	{
 		m_pMouse->m_dwElements=0;
@@ -955,7 +955,7 @@ void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
 {
 	m_pMouse->SetMousePosition(nX, nY);
 
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 	if (m_pMouse->IsLocked())
 	{
 		// Set position of camera to center of desktop, 
@@ -1815,7 +1815,7 @@ bool CGUIRoot::OnClick(int MouseState, int X, int Y)
 LRESULT CGUIRoot::MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool &bNoFurtherProcess)
 {
 	LRESULT result = 0;
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 	MSG newMsg;
 	if (uMsg<=WM_MOUSELAST&&uMsg>=WM_MOUSEFIRST) 
 	{
@@ -1967,7 +1967,7 @@ HRESULT CGUIRoot::OneTimeGUIInit()
 		m_pKeyboard = new CDirectKeyboard(CGlobals::GetAppHWND());
 	if (m_pMouse == 0)
 		m_pMouse = new CDirectMouse(CGlobals::GetAppHWND());
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)
 	CGUIIME::OnFocusOut();
 #endif
 
