@@ -105,6 +105,7 @@ namespace ParaEngine
 			S0_POS_TEX0_TEX1, // all data in stream 0: position, tex0 and tex1
 			S0_S1_OCEAN_CLOUD, // stream 0: position; stream 1, height field
 			S0_POS_COLOR, // all data in stream 0: position, and color
+			S0_POS2_COLOR,  // all data in stream 0: homogeneous coordinates, and color
 			S0_POS_NORM_COLOR, // all data in stream 0: position, normal, and color
 			S0_POS_NORM_TEX0_COLOR0_COLOR1, // all data in stream 0: position, normal, tex0,color0 and color1
 			S0_POS, // all data in stream 0: position

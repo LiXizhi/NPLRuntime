@@ -1,3 +1,4 @@
+
 //-----------------------------------------------------------------------------
 // Class: FileUtil
 // Authors:	Li,Xizhi
@@ -7,8 +8,12 @@
 // three sets of API: 1. native win32  2. boost  3. cocos2dx
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (PARAENGINE_CLIENT) && defined(WIN32)
-	#include "ParaEngineApp.h"
+#if defined (PARAENGINE_CLIENT) && defined(WIN32) 
+	#ifdef USE_OPENGL_RENDERER
+		#include "platform/win32/ParaEngineApp.h"
+	#else
+		#include "ParaEngineApp.h"
+	#endif
 #endif
 #include "FileUtils.h"
 #include "StringHelper.h"
@@ -77,21 +82,22 @@
 // #define USE_BOOST_FILE_API
 #endif
 
+#if defined USE_BOOST_FILE_API || defined(USE_COCOS_FILE_API)
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11
 	#define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <iostream>
-namespace fs = boost::filesystem;
-#define BOOST_FILESYSTEM_NO_DEPRECATED
-
+	#include <boost/filesystem.hpp>
+	#include <boost/filesystem/operations.hpp>
+	#include <boost/filesystem/path.hpp>
+	#include <boost/filesystem/fstream.hpp>
+	#include <iostream>
+	namespace fs = boost::filesystem;
+	#define BOOST_FILESYSTEM_NO_DEPRECATED
+#endif
 
 #ifdef USE_COCOS_FILE_API
-	#include "platform/OpenGLWrapper.h"
+	#include "OpenGLWrapper.h"
 	/** @Note by LiXizhi: all cocos read file api are not thread safe, hence we need to use a lock. 
 	remove this when cocos no longer uses non-thread-safe file cache map. */
 	static std::mutex  s_cocos_file_io_mutex;
@@ -1134,18 +1140,7 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 }
 
 #define CHECK_BIT(x,y) (((x)&(y))>0)
-
-#ifndef Int32x32To64
-#define Int32x32To64(a, b)  (((int64_t)((int32_t)(a))) * ((int64_t)((int32_t)(b))))
-#endif
-
-void TimetToFileTime(const std::time_t& t, FILETIME* pft)
-{
-	int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
-	pft->dwLowDateTime = (DWORD)ll;
-	pft->dwHighDateTime = ll >> 32;
-}
-
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
 	try
@@ -1168,14 +1163,14 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
 					//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
 					DWORD file_attr = 0;
 					if (fs::is_directory(iter->status()))
 						file_attr = 16;
 					else if(fs::is_regular_file(iter->status()))
 						file_attr = 32;
-					if (!result.AddResult(iter->path().string(), 0, file_attr, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+					if (!result.AddResult(iter->path().string(), 0, file_attr, &fileLastWriteTime, 0, 0))
 						return;
 				}
 				else if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
@@ -1183,8 +1178,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
-					if (!result.AddResult(iter->path().string(), 0, 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
+					if (!result.AddResult(iter->path().string(), 0, 0, &fileLastWriteTime, 0, 0))
 						return;
 				}
 			}
@@ -1196,8 +1191,8 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
-					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+					memcpy(&fileLastWriteTime, &lastWriteTime, sizeof(fileLastWriteTime));
+					if (!result.AddResult(iter->path().string(), (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, 0, 0))
 						return;
 				}
 			}
@@ -1205,9 +1200,11 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 	}
 	catch (...){}
 }
+#endif
 
 void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
 {
+#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	std::string path = GetWritableFullPathForFilename(sRootPath);
 	fs::path rootPath(path);
 	if ( !fs::exists( rootPath) || !fs::is_directory(rootPath) ) {
@@ -1217,7 +1214,7 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	result.SetRootPath(rootPath.string());
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
 	
-#ifdef OLD_FILE_SEARCH
+#elif defined(WIN32)
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = INVALID_HANDLE_VALUE;
 	DWORD dwError;

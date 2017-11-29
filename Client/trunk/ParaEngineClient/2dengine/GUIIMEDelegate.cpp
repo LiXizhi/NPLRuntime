@@ -9,7 +9,7 @@
 #include "GUIIMEDelegate.h"
 
 #ifdef PARAENGINE_MOBILE
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 using namespace ParaEngine;
 

@@ -24,7 +24,7 @@
 
 #ifdef USE_OPENGL_RENDERER
 #include "ShadowMap.h"
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
 
@@ -75,6 +75,15 @@ namespace ParaEngine
 		{ 0, 12, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
 		D3DDECL_END()
 	};
+
+	static VertexElement vertex2desc_single_color[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		{ 0, 16, D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 },
+		D3DDECL_END()
+	};
+
 	static VertexElement vertexdesc_particle[]=
 	{
 		// base data (stream 0)
@@ -794,6 +803,19 @@ VertexDeclarationPtr EffectManager::GetVertexDeclaration(int nIndex)
 			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS_COLOR\n");
 		}
 		break;
+	
+	case S0_POS2_COLOR:
+		if (SUCCEEDED(pd3dDevice->CreateVertexDeclaration(vertex2desc_single_color, &pDecl)))
+		{
+			m_pVertexDeclarations[S0_POS2_COLOR] = pDecl;
+		}
+		else
+		{
+			OUTPUT_LOG("error: CreateVertexDeclaration failed for S0_POS2_COLOR\n");
+		}
+		break;
+
+
 	case S0_POS:
 		if (SUCCEEDED(pd3dDevice->CreateVertexDeclaration(vertexdesc_pos, &pDecl)))
 		{

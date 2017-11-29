@@ -9,6 +9,10 @@
 #include "EventBinding.h"
 #include "GUIKeyboardVirtual.h"
 
+#if defined(WIN32) && defined(USE_OPENGL_RENDERER)
+	#include "platform/win32/ParaEngineApp.h"
+#endif
+
 using namespace ParaEngine;
 
 CGUIBase * CGUIKeyboardVirtual::m_objCaptured = NULL;
@@ -30,7 +34,11 @@ ParaEngine::CGUIKeyboardVirtual::~CGUIKeyboardVirtual()
 
 bool CGUIKeyboardVirtual::IsKeyPressed(DWORD nKey)
 {
+#if defined(WIN32) && defined(USE_OPENGL_RENDERER)
+	return CParaEngineApp::GetInstance()->IsKeyPressed(nKey);
+#else
 	return ((m_keystate[nKey] & 0x80) != 0);
+#endif
 }
 
 void ParaEngine::CGUIKeyboardVirtual::SetKeyPressed(DWORD nKey, bool bPressed)

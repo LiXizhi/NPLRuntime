@@ -1,5 +1,5 @@
 #pragma once
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 
 namespace ParaEngine
 {
@@ -8,7 +8,7 @@ namespace ParaEngine
 	/** used for rendering labels 
 	* rendering a given font from TTF format. It emulates the d3dxfont class.
 	*/
-	class CFontRendererOpenGL : public Label
+	class CFontRendererOpenGL : public GLWrapper::Label
 	{
 	public:
 		static CFontRendererOpenGL* create(const std::string& sFontName, int nFontSize);

@@ -3,3 +3,9 @@
 [submodule "npl_packages/main"]
 	path = npl_packages/main
 	url = https://github.com/NPLPackages/main.git
+[submodule "Client/trunk/ParaEngineClient/dxEffects2glEffects"]
+	path = Client/trunk/ParaEngineClient/dxEffects2glEffects
+	url = https://github.com/tatfook/dxEffects2glEffects.git
+[submodule "Client/trunk/ParaEngineClient/glEffects"]
+	path = Client/trunk/ParaEngineClient/glEffects
+	url = https://github.com/tatfook/glEffects.git
