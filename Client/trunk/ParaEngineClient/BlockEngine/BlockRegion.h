@@ -55,6 +55,8 @@ namespace ParaEngine
 		@param bNeedUpdate: during loading from file, bNeedUpdate is false.
 		*/
 		void SetBlockTemplateByIndex(uint16_t x_rs,uint16_t y_rs,uint16_t z_rs,BlockTemplate* pTemplate);
+
+		void RefreshBlockTemplateByIndex(uint16_t x_rs, uint16_t y_rs, uint16_t z_rs, BlockTemplate* pTemplate);
 		
 		uint32_t GetBlockTemplateIdByIndex(int16_t x,int16_t y,int16_t z);
 

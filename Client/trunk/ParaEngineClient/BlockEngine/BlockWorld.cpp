@@ -41,7 +41,7 @@ namespace ParaEngine
 CBlockWorld::CBlockWorld()
 	:m_curChunkIdW(-1), m_activeChunkDim(0), m_lastChunkIdW(-1), m_lastChunkIdW_RegionCache(-1), m_lastViewCheckIdW(0), m_dwBlockRenderMethod(BLOCK_RENDER_FAST_SHADER), m_sunIntensity(1), m_isVisibleChunkDirty(true), m_curRegionIdX(0), m_curRegionIdZ(0),
 m_pLightGrid(new CBlockLightGridBase(this)), m_bReadOnlyWorld(false), m_bIsRemote(false), m_bIsServerWorld(false), m_bCubeModePicking(false), m_isInWorld(false), m_bSaveLightMap(false), 
-m_bUseAsyncLoadWorld(true), m_bRenderBlocks(true), m_group_by_chunk_before_texture(false), m_is_linear_torch_brightness(false),
+m_bUseAsyncLoadWorld(true), m_bRenderBlocks(true), m_group_by_chunk_before_texture(false), m_is_linear_torch_brightness(false), m_maxCacheRegionCount(0),
 m_minWorldPos(0, 0, 0), m_maxWorldPos(0xffff, 0xffff, 0xffff), m_minRegionX(0), m_minRegionZ(0), m_maxRegionX(63), m_maxRegionZ(63)
 {
 	// 256 blocks, so that it never wraps
@@ -831,14 +831,14 @@ uint32_t CBlockWorld::GetBlockUserDataByIdx(uint16_t x, uint16_t y, uint16_t z)
 	return GetBlockData(x, y, z);
 }
 
-void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
+bool CBlockWorld::SetBlockVisible(uint16_t templateId, bool value, bool bRefreshWorld)
 {
 	BlockTemplate* pTemp = GetBlockTemplate(templateId);
 
 	if (pTemp)
 	{
 		if (!value == pTemp->IsMatchAttribute(BlockTemplate::batt_invisible))
-			return;
+			return false;
 
 		if (!value)
 		{
@@ -867,20 +867,21 @@ void CBlockWorld::SetBlockVisible(uint16_t templateId, bool value)
 				m_blockTemplateVisibleDatas.erase(templateId);
 			}
 		}
-
-		// refresh player region
-		CBipedObject* currentPlayer = CGlobals::GetScene()->GetCurrentPlayer();
-		auto v3 = currentPlayer->GetPosition();
-		uint16_t blockX_rs(0), blockY_rs(0), blockZ_rs(0);
-		BlockCommon::ConvertToBlockIndex((float)v3.x, (float)v3.y, (float)v3.z, blockX_rs, blockY_rs, blockZ_rs);
-		uint16_t lx, ly, lz;
-		BlockRegion* pRegion = GetRegion(blockX_rs, blockY_rs, blockZ_rs, lx, ly, lz);
-		if (pRegion)
-		{
-			pRegion->SetChunksDirtyByBlockTemplate(templateId);
+		if (bRefreshWorld) {
+			RefreshBlockTemplate(templateId);
+			return false;
 		}
+		return true;
 	}
+	return false;
+}
 
+void ParaEngine::CBlockWorld::RefreshBlockTemplate(uint16_t templateId)
+{
+	for (auto& iter : m_regionCache)
+	{
+		iter.second->SetChunksDirtyByBlockTemplate(templateId);
+	}
 }
 
 uint32_t ParaEngine::CBlockWorld::SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID)

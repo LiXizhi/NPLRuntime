@@ -211,7 +211,7 @@ namespace adl
       return fn(L, -1, -2) != 0; \
   }
 
-LUABIND_BINARY_OP_DEF(==, lua_equal)
+LUABIND_BINARY_OP_DEF(==, lua_rawequal)
 LUABIND_BINARY_OP_DEF(<, lua_lessthan)
 
   template<class ValueWrapper>
