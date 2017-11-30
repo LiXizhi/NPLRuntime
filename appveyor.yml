@@ -3,18 +3,17 @@ clone_folder: c:\projects\nplruntime
 image: Visual Studio 2017
 environment:
   matrix:
-  - solution_name: c:\projects\nplruntime\bin\client\CLIENT.sln
+  - addresss_mode: 32
     installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
     zip_name: NPLRuntime_32bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin32
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
-    addresss_mode:32
-  - solution_name: c:\projects\nplruntime\bin\client\CLIENT.sln
+  - addresss_mode: 64
     installer_name: C:\projects\nplruntime\installer\nplruntime_x64.nsi
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
-    addresss_mode:64
+    
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
@@ -71,7 +70,7 @@ install:
     
 build_script:
 - cmd: >-
-    msbuild  %solution_name% /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
+    msbuild  c:\projects\nplruntime\bin\client\CLIENT.sln /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
 
     7z a %zip_name% %zip_path%
 
