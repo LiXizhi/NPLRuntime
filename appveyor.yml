@@ -24,15 +24,15 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
 
-    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
+## manually install boost
+#    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
+#    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
+#    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
+#    cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
+#    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_0\"
 
-    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
-    
-    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
-
-    cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
-    
-    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_0\"
+    cd C:\Libraries\boost_1_64_0   # this location is provided by appveyor
+    set BOOST_ROOT="C:\Libraries\boost_1_64_0\"
 
     bootstrap.bat
 
