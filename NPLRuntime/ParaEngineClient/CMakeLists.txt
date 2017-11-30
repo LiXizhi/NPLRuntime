@@ -21,7 +21,7 @@ set (ParaEngineClient_VERSION_MINOR 0)
 
 # Sources
 set(ParaEngineClient_SRCS)
-# Libraries
+# Libraries 
 set(ParaEngineClient_LIBS)
 
 
@@ -511,9 +511,16 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	##############################
 	# icon
 	if(WIN32)
-		include_directories("${External_Dir}/icon/include")
-		list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
-		list(APPEND ParaEngineClient_LIBS libiconv.lib)
+
+		#include_directories("${External_Dir}/icon/include")
+		#list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
+		#list(APPEND ParaEngineClient_LIBS libiconv.lib)
+
+		add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/externals/libiconv ${ParaEngineClient_BINARY_DIR}/libiconv)
+		set(ICONV_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/include ${ParaEngineClient_BINARY_DIR}/libiconv/include)
+		set(ICONV_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/src ${ParaEngineClient_BINARY_DIR}/libiconv/src)
+		include_directories("${ICONV_INCLUDE_DIR}")
+		list(APPEND ParaEngineClient_LIBS libiconv)
 	endif()
 
 	if(APPLE)
@@ -529,11 +536,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/glEffects ${ParaEngineClient_BINARY_DIR}/glEffects)
 	list(APPEND ParaEngineClient_LIBS glEffectsParser)
 
-if(WIN32)	
-	##############################
-	# DirectX ?
-	list(APPEND ParaEngineClient_LIBS gdiplus.lib dinput8.lib dxguid.lib)
-endif()
+	if(WIN32)	
+		##############################
+		# DirectX ?
+		list(APPEND ParaEngineClient_LIBS gdiplus.lib dinput8.lib dxguid.lib)
+	endif()
 
 
 	#############################
