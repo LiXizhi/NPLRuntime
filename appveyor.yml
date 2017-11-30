@@ -21,13 +21,13 @@ install:
 ############################################################################
 # Install a recent CMake
 ############################################################################
-# - mkdir bin
-# - cd bin
-# - set CMAKE_URL="https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip"
-# - appveyor DownloadFile %CMAKE_URL% -FileName cmake.zip
-# - 7z x cmake.zip -oC:\projects\nplruntime\bin > nul
-# - move C:\projects\nplruntime\bin\cmake-* C:\projects\nplruntime\bin\cmake # Move to a version-agnostic directory
-# - set PATH=C:\projects\nplruntime\bin\cmake\bin;%PATH%
+- mkdir bin
+- cd bin
+- set CMAKE_URL="https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip"
+- appveyor DownloadFile %CMAKE_URL% -FileName cmake.zip
+- 7z x cmake.zip -oC:\projects\nplruntime\bin > nul
+- move C:\projects\nplruntime\bin\cmake-* C:\projects\nplruntime\bin\cmake # Move to a version-agnostic directory
+- set PATH=C:\projects\nplruntime\bin\cmake\bin;%PATH%
 - cmake --version
 
 
@@ -59,13 +59,15 @@ install:
 
     b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
 
+    dir %BOOST_ROOT%stage\lib
+
     cd C:\projects\nplruntime
 
     mkdir bin\client
 
     cd bin\client
 
-    if %addresss_mode% == "64" then ( 
+    if "%addresss_mode%" == "64" then ( 
     
         cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 
 
