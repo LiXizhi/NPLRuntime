@@ -180,7 +180,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
             size_t inLen = strLen * 2;
             size_t outLen = gb2312StrSize;
 
-#if _LIBICONV_VERSION == 0x109
+#if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
             const char* pin = (char*)u16Text.c_str();
             iconv(_iconv, &pin, &inLen, &pout, &outLen);
 #else
