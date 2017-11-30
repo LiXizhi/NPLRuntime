@@ -13,6 +13,17 @@ environment:
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
 install:
+
+
+#----------------------------#
+# manually install boost     #
+#----------------------------#
+#    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
+#    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
+#    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
+#    cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
+#    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_0\"
+
 - cmd: >-
     git submodule init
 
@@ -23,19 +34,7 @@ install:
     rmdir "C:/Program Files/MySQL" /s /q
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
-
-## manually install boost
-
-#    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
-
-#    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
-
-#    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
-
-#    cd C:\projects\nplruntime\Server\trunk\boost_1_65_0\
-
-#    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_0\"
-
+    
     cd C:\Libraries\boost_1_64_0\
 
     set BOOST_ROOT="C:\Libraries\boost_1_64_0\"
