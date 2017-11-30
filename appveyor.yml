@@ -13,6 +13,8 @@ environment:
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+matrix:
+  fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
 
 
@@ -36,9 +38,9 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries\boost_1_64_0\
+    cd C:\Libraries\boost_1_65_1\
 
-    set BOOST_ROOT="C:\Libraries\boost_1_64_0\"
+    set BOOST_ROOT="C:\Libraries\boost_1_65_1\"
 
     bootstrap.bat
 
@@ -50,11 +52,11 @@ install:
 
     cd ..
 
-    b2 runtime-link=static address-model=64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
+    rem b2 runtime-link=static address-model=64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
 
-    cd stage
+    rem cd stage
 
-    rename lib lib64
+    rem rename lib lib64
 
     cd C:\projects\nplruntime
 
@@ -72,7 +74,7 @@ install:
 
     cd bin\client_64bit
 
-    cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
+    rem cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
 build_script:
 - cmd: >-
     msbuild  %solution_name% /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
