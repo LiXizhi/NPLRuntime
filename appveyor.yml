@@ -1,5 +1,6 @@
 version: 1.0.{build}
 clone_folder: c:\projects\nplruntime
+image: Visual Studio 2017
 environment:
   matrix:
   - solution_name: c:\projects\nplruntime\bin\client_32bit\CLIENT.sln
@@ -27,7 +28,7 @@ install:
 - cmd: >-
     git submodule init
 
-    git submodule update
+    git submodule update --init --recursive
 
     del C:\projects\nplruntime\npl_packages\main\* /q
 
