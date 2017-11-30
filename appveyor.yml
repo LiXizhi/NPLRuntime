@@ -3,16 +3,18 @@ clone_folder: c:\projects\nplruntime
 image: Visual Studio 2017
 environment:
   matrix:
-  - solution_name: c:\projects\nplruntime\bin\client_32bit\CLIENT.sln
+  - solution_name: c:\projects\nplruntime\bin\client\CLIENT.sln
     installer_name: C:\projects\nplruntime\installer\nplruntime_x86.nsi
     zip_name: NPLRuntime_32bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin32
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x86.exe
-  - solution_name: c:\projects\nplruntime\bin\client_64bit\CLIENT.sln
+    addresss_mode:32
+  - solution_name: c:\projects\nplruntime\bin\client\CLIENT.sln
     installer_name: C:\projects\nplruntime\installer\nplruntime_x64.nsi
     zip_name: NPLRuntime_64bit.zip
     zip_path: C:\projects\nplruntime\ParaWorld\bin64
     exe_path: installer\nplruntime_v1.0-alpha.10_Windows_x64.exe
+    addresss_mode:64
 matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
@@ -56,37 +58,16 @@ install:
 
     bootstrap.bat
 
-    b2 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
-
-    cd stage
-
-    rename lib lib32
-
-    cd ..
-
-    rem b2 address-model=64 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
-
-    rem cd stage
-
-    rem rename lib lib64
+    b2 address-model=%addresss_mode% runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
 
     cd C:\projects\nplruntime
 
-    mkdir bin\client_32bit
+    mkdir bin\client
 
-    cd bin\client_32bit
+    cd bin\client
 
-    cmake ../../Client
+    if %addresss_mode% == "64" then (cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64) else ( cmake ../../Client )
 
-    dir .
-
-    cd ..\..
-
-    mkdir bin\client_64bit
-
-    cd bin\client_64bit
-
-    rem cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
     
 build_script:
 - cmd: >-
