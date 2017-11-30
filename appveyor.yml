@@ -17,6 +17,18 @@ matrix:
   fast_finish: true     # set this flag to immediately finish build once one of the jobs fails.
 install:
 
+############################################################################
+# Install a recent CMake
+############################################################################
+- mkdir bin
+- cd bin
+- set CMAKE_URL="https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip"
+- appveyor DownloadFile %CMAKE_URL% -FileName cmake.zip
+- 7z x cmake.zip -oC:\projects\nplruntime\bin > nul
+- move C:\projects\nplruntime\bin\cmake-* C:\projects\nplruntime\bin\cmake # Move to a version-agnostic directory
+- set PATH=C:\projects\nplruntime\bin\cmake\bin;%PATH%
+- cmake --version
+
 
 #----------------------------#
 # manually install boost     #
@@ -75,6 +87,7 @@ install:
     cd bin\client_64bit
 
     rem cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64
+    
 build_script:
 - cmd: >-
     msbuild  %solution_name% /verbosity:minimal /property:Configuration=Release /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll"
