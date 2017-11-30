@@ -67,15 +67,15 @@ install:
 
     cd bin\client
 
-    if "%addresss_mode%" == "64" then ( 
+    rem if "%addresss_mode%" == "64" then ( 
     
-        cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 
+    rem     cmake ../../Client -DCMAKE_GENERATOR_PLATFORM=x64 
 
-    ) else ( 
+    rem ) else ( 
 
         cmake ../../Client 
 
-    )
+    rem )
     
 build_script:
 - cmd: >-
