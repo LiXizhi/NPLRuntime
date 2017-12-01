@@ -375,6 +375,21 @@ HRESULT CDirectMouse::ReadImmediateData( )
 	// Get the input's device state, and put the state in dims
 	ZeroMemory( &m_dims2, sizeof(m_dims2) );
 	hr = m_pMouse->GetDeviceState( sizeof(DIMOUSESTATE2), &m_dims2 );
+
+	{
+#ifdef WIN32
+		const float x_radio = 26.0f;
+		const float y_radio = 45.0f;
+
+
+		if (GetSystemMetrics(SM_REMOTESESSION) != 0) //Is Remote Session
+		{
+			m_dims2.lX /= x_radio;
+			m_dims2.lY /= y_radio;
+		}
+#endif
+	}
+
 	if( FAILED(hr) ) 
 	{
 		// DirectInput may be telling us that the input stream has been
