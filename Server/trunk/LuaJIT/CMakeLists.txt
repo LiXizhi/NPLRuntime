@@ -307,7 +307,13 @@ IF(MSVC)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
 ENDIF()
 
-add_library ( liblua SHARED ${LJCORE_C} ${DEPS} )
+if(LUA_STATICLIB)
+	SET(LUA_LIB_MODE "STATIC")
+else()
+	SET(LUA_LIB_MODE "SHARED")
+endif()
+
+add_library ( liblua ${LUA_LIB_MODE} ${LJCORE_C} ${DEPS} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
 
