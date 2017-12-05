@@ -8,7 +8,13 @@ if (WIN32)
             "C:/DX90SDK/Include"
             "E:/DX90SDK/Include"
             "$ENV{PROGRAMFILES}/DX90SDK/Include"
+            NO_DEFAULT_PATH
+            NO_CMAKE_PATH
+            NO_CMAKE_ENVIRONMENT_PATH
+            NO_SYSTEM_ENVIRONMENT_PATH
+            NO_CMAKE_SYSTEM_PATH
             )
+            
   if (DIRECTX_INCLUDE_DIR)
     include_directories(${DIRECTX_INCLUDE_DIR})
       message(STATUS "Found DirectX include: ${DIRECTX_INCLUDE_DIR}")
