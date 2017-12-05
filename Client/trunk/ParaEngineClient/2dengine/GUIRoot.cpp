@@ -955,20 +955,25 @@ void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
 {
 	m_pMouse->SetMousePosition(nX, nY);
 
-#if defined(USE_DIRECTX_RENDERER) || 0
+	// since we will clip mouse in window, this is no longer needed. 
+#if FALSE && (defined(USE_DIRECTX_RENDERER) || 0)
 	if (m_pMouse->IsLocked())
 	{
-		// Set position of camera to center of desktop, 
-		// so it always has room to move.  This is very useful
-		// if the cursor is hidden.  If this isn't done and cursor is hidden, 
-		// then invisible cursor will hit the edge of the screen 
+		// Set position of camera to center of desktop, so it always has room to move.  This is very useful
+		// if the cursor is hidden.  If this isn't done and cursor is hidden,  then invisible cursor will hit the edge of the screen 
 		// and the user can't tell what happened
 		POINT ptCenter;
 		RECT rcDesktop;
 		GetWindowRect(GetDesktopWindow(), &rcDesktop);
-		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
-		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
-		SetCursorPos(ptCenter.x, ptCenter.y);
+		InflateRect(&rcDesktop, -50, -50);
+		POINT pt;
+		::GetCursorPos(&pt);
+		if (! PtInRect(rcDesktop, pt))
+		{
+			ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
+			ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
+			SetCursorPos(ptCenter.x, ptCenter.y);
+		}
 	}
 #endif
 }
