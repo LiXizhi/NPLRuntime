@@ -104,18 +104,25 @@ endif()
 ################################
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
 if ("$ENV{BOOST_ROOT}" STREQUAL "")
-if(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_65_0)
-	set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_65_0)
-elseif(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_61_0)
-	set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_61_0)
+	if(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_65_0)
+		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_65_0)
+	elseif(IS_DIRECTORY ${SERVER_SOURCE_DIR}/boost_1_61_0)
+		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_61_0)
+	else()
+		message(WARNING "You can define a global environment variable of BOOST_ROOT that specify the boost root dir")
+	endif()
 else()
-	message(WARNING "You can define a global environment variable of BOOST_ROOT that specify the boost root dir")
-endif()
+	message("BOOST_ROOT env is at: $ENV{BOOST_ROOT}")
+	set(BOOST_ROOT "$ENV{BOOST_ROOT}")
 endif()
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
+	if(IS_DIRECTORY ${BOOST_ROOT}/stage/lib64)
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)	
+	endif()
 else()
-set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib32)
+	if(IS_DIRECTORY ${BOOST_ROOT}/stage/lib32)
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib32)
+	endif()
 endif()
 
 set(Boost_USE_MULTITHREADED ON)
@@ -127,7 +134,7 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 
 # End of boost
 
-#ZLIP
+#ZLIB
 ################################
 if(WIN32)
 
