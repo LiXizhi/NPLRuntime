@@ -88,11 +88,14 @@ artifacts:
   name: binary_64
 deploy:
 - provider: GitHub
+  on:
+    branch: master
   tag: v1.0-alpha.10
   release: v1.0-alpha.10(Windows)
   auth_token:
     secure: bBIY9/rjpoYwv0hKiworA8dihkgoZ+L7y4kM8kuYtJw1Z3XM51gdbDUIotOduIza
   artifact: execute_32, binary_32, execute_64, binary_64
   prerelease: true
+  
 on_finish:
 - cmd: 
