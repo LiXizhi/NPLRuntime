@@ -1,0 +1,49 @@
+FreeImage and MinGW / LCC WIN 32
+================================
+
+This file explains how to create a FreeImage.a file from the FreeImage DLL, so that it can be linked with the MinGW / LCC WIN 32 / GNU gcc C compiler.
+
+1) Open a DOS shell (run the program cmd.exe)
+
+2) Add the MinGW path to your environment variable : 
+
+C:\>set PATH=%PATH%;C:\mingw32\bin;
+
+3) Creates a .def file from the FreeImage DLL
+
+C:\>pexports freeimage.dll | sed "s/^_//" > freeimage_gcc.def
+
+4) Creates the FreeImage.a file
+
+C:\>dlltool -U -d freeimage_gcc.def -l freeimage.a 
+
+Note : you may also use a batch file to automate this process : 
+
+--- FIExport.bat ---
+set PATH=%PATH%;C:\mingw32\bin;
+pexports freeimage.dll | sed "s/^_//" > freeimage_gcc.def
+dlltool -U -d freeimage_gcc.def -l libfreeimage.a 
+--- FIExport.bat ---
+
+
+Here are some links on the use of WIN32 DLL with the GNU C compiler : 
+=====================================================================
+
+==> About pexport
+
+A Moron's Guide to Using Microsoft DLL's when Compiling Cygwin or Mingw Programs
+http://www.emmestech.com/software/cygwin/pexports-0.43/moron1.html
+
+==> About GNU tools and DLL 
+
+Introduction to (mostly) GNU Programming Tools
+http://webclub.kcom.ne.jp/ma/colinp/win32/tools/index.html
+
+These pages are dealing with the use of Win32 DLL :
+
+The DLL Import Library Tool
+http://webclub.kcom.ne.jp/ma/colinp/win32/tools/dlltool.html
+
+Using Dynamic Link Libraries
+http://webclub.kcom.ne.jp/ma/colinp/win32/dll/use.html
+
