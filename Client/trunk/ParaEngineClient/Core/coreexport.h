@@ -5,33 +5,56 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#ifdef NPLRUNTIME_STATICLIB
-#define PE_CORE_DECL
-#define EXPIMP_TEMPLATE extern
-#else
+//#ifdef NPLRUNTIME_STATICLIB
+//#define PE_CORE_DECL 
+//#define EXPIMP_TEMPLATE extern
+//#else
+//
+//#ifdef WIN32
+//
+//
+//#ifdef PE_CORE_EXPORTING
+//#define PE_CORE_DECL    __declspec(dllexport)
+//#define EXPIMP_TEMPLATE
+//#else
+//#define PE_CORE_DECL    __declspec(dllimport)
+//#define EXPIMP_TEMPLATE extern
+//#endif
+//
+//
+//#else
+//
+//#ifdef PE_CORE_EXPORTING
+//// #define PE_CORE_DECL    
+//#define PE_CORE_DECL    __attribute__ ((visibility("default")))
+//#define EXPIMP_TEMPLATE
+//#else
+//#define PE_CORE_DECL
+//#define EXPIMP_TEMPLATE extern
+//#endif
+//#endif
+//
+//#endif
+
 
 #ifdef WIN32
+	#ifdef PE_CORE_EXPORTING
+		#define PE_CORE_DECL    __declspec(dllexport)
+		#define EXPIMP_TEMPLATE
+	#else
+		#define PE_CORE_DECL    __declspec(dllimport)
+		#define EXPIMP_TEMPLATE extern
+	#endif
 
 
-#ifdef PE_CORE_EXPORTING
-#define PE_CORE_DECL    __declspec(dllexport)
-#define EXPIMP_TEMPLATE
-#else
-#define PE_CORE_DECL    __declspec(dllimport)
-#define EXPIMP_TEMPLATE extern
-#endif
+	#else
 
-
-#else
-
-#ifdef PE_CORE_EXPORTING
-// #define PE_CORE_DECL    
-#define PE_CORE_DECL    __attribute__ ((visibility("default")))
-#define EXPIMP_TEMPLATE
-#else
-#define PE_CORE_DECL
-#define EXPIMP_TEMPLATE extern
-#endif
-#endif
-
+		#ifdef PE_CORE_EXPORTING
+			// #define PE_CORE_DECL    
+			#define PE_CORE_DECL    __attribute__ ((visibility("default")))
+			#define EXPIMP_TEMPLATE
+		#else
+			#define PE_CORE_DECL
+			#define EXPIMP_TEMPLATE extern
+		#endif
 #endif
