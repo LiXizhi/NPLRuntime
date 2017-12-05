@@ -573,6 +573,16 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 				Psapi.lib
 	)
 
+	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+		# for 64bits libs
+	elseif(WIN32)
+		ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
+		ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
+		include_directories("${External_Dir}/FreeImage_3120/Dist")
+		link_directories("${External_Dir}/FreeImage_3120/Dist")
+		list(APPEND ParaEngineClient_LIBS FreeImage.lib)
+		configure_file("${External_Dir}/FreeImage_3120/Dist/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
+	endif()
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
 
 

@@ -24,7 +24,7 @@ InstallDir $PROGRAMFILES64\npl
 
 !insertmacro DriveSpace
 !define MUI_ABORTWARNING
-!define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the installation of nplruntime. It is recommended that you close all other applications before starting Setup.Note to Win2k/XP users: You may require administrator privileges to install Aries successfully."  
+!define MUI_WELCOMEPAGE_TEXT  "This wizard will guide you through the installation of nplruntime. It is recommended that you close all other applications before starting Setup."  
 !define MUI_WELCOMEFINISHPAGE_BITMAP "sidebar.bmp"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_BITMAP  "header.bmp"
@@ -39,7 +39,7 @@ Page directory dir_pre "" ""
 !insertmacro MUI_LANGUAGE "SimpChinese" ;first language is the default language
 !insertmacro MUI_LANGUAGE "English"
 
-BrandingText "http://www.paracraft.cn"
+BrandingText "http://www.keepwork.com"
 ;--------------------------------
 
 LangString DskCText ${LANG_ENGLISH} "The installer is already running."
@@ -120,6 +120,7 @@ Section "" ;No components page, name is not important
 	File "..\ParaWorld\bin64\lua.dll"
 	File "..\ParaWorld\bin64\luasql.dll"
 	File "..\ParaWorld\bin64\sqlite.dll"
+	File "..\ParaWorld\bin64\PhysicsBT.dll"
   
 	FileOpen $9 npl.bat w ;Opens a Empty File an fills it
 	FileWrite $9 "@echo off $\n"
