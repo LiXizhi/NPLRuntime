@@ -69,20 +69,11 @@ if(MSVC)
 	get_target_property(RELEASE_EXE_PATH PhysicsBT RELEASE_LOCATION)
 	STRING(REGEX REPLACE "^.*[/\\]([^/\\]+)$" "\\1" RELEASE_EXE_NAME "${RELEASE_EXE_PATH}" )
 
-	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
-		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/bin64/" )
-	else()
-		#set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaCraftSDK/redist/" )
-		set( PARAWORLD_BIN_DIR "${CLIENT_SOURCE_DIR}/../../ParaWorld/" )
-	endif()
-
-
 	ADD_CUSTOM_COMMAND(
 	   TARGET PhysicsBT
 	   POST_BUILD
 
-	   COMMAND ${CMAKE_COMMAND} -E make_directory ${PARAWORLD_BIN_DIR}
-	   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:PhysicsBT> ${PARAWORLD_BIN_DIR}
+	   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+	   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:PhysicsBT> ${OUTPUT_BIN_DIR}
 	)
 endif(MSVC)

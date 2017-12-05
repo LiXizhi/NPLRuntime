@@ -265,6 +265,9 @@ void CDirectMouse::Reset()
 
 HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 {
+	if (!m_bUseDirectInput)
+		return S_OK;
+
 	HRESULT hr;
 	BOOL    bExclusive;
 	BOOL    bForeground;
@@ -279,7 +282,7 @@ HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 	// Cleanup any previous call first
 	Free();
 
-	// Detrimine where the buffer would like to be allocated 
+	// Determine where the buffer would like to be allocated 
 	bExclusive         = false;
 	bForeground        = true;
 
@@ -312,7 +315,7 @@ HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 	if( FAILED( hr = m_pMouse->SetDataFormat( &c_dfDIMouse2 ) ) )
 		return hr;
 
-	// Set the cooperativity level to let DirectInput know how
+	// Set the cooperatively level to let DirectInput know how
 	// this device should interact with the system and with other
 	// DirectInput applications.
 	hr = m_pMouse->SetCooperativeLevel( hDlg, dwCoopFlags );
@@ -396,7 +399,29 @@ void CDirectMouse::SetMousePosition(int x, int y)
 
 HRESULT CDirectMouse::ReadImmediateData( )
 {
-	HRESULT       hr;
+	HRESULT hr = S_OK;
+
+	if (!m_bUseDirectInput)
+	{
+		/** Fix: in teamviewer, vmware, parallel desktop, remote desktop, etc. DirectInput does not give correct mouse cursor position.
+		* so we will use disable direct input by default, unless for full screen mode maybe. 
+		*/
+		POINT pt;
+		if (::GetCursorPos(&pt))
+		{
+			m_curMouseState.lX = pt.x;
+			m_curMouseState.lY = pt.y;
+		}
+
+		CGUIMouseVirtual::ReadImmediateData();
+		OUTPUT_LOG("%d %d dx:%d dy:%d\n", m_curMouseState.lX, m_curMouseState.lY, m_dims2.lX, m_dims2.lY);
+
+		m_dims2.rgbButtons[0] = (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) ? 0x80 : 0;
+		m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
+		m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
+
+		return S_OK;
+	}
 
 	if (!m_bUseDirectInput)
 	{
@@ -464,7 +489,6 @@ HRESULT CDirectMouse::ReadImmediateData( )
 //		}
 //#endif
 //	}
-
 	if( FAILED(hr) ) 
 	{
 		// DirectInput may be telling us that the input stream has been

@@ -98,8 +98,7 @@ namespace ParaEngine
 		LPDIRECTINPUT8			m_pDI; // The DirectInput object         
 		LPDIRECTINPUTDEVICE8	m_pMouse; // The Mouse device 
 		bool					m_bShowCursor;
-
-	protected:
+protected:
 		bool m_bUseDirectInput;
 	};
 #else
