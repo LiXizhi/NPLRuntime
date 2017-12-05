@@ -7,7 +7,7 @@
 // Desc: for async asset streaming. It uses architecture proposed by the content streaming sample in DirectX 9&10
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_GDI_COMPOSER
 #include "GDIEngine.h"
 #endif
 #include "AssetManifest.h"
@@ -110,7 +110,7 @@ HRESULT ParaEngine::CCCSSkinLoader::Load()
 			}
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_GDI_COMPOSER
 	return ComposeWithGDIPlus();
 #else
 	return S_OK;
@@ -120,7 +120,7 @@ HRESULT ParaEngine::CCCSSkinLoader::Load()
 HRESULT ParaEngine::CCCSSkinLoader::ComposeWithGDIPlus()
 {
 	HRESULT hr = S_OK;
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_GDI_COMPOSER
 	// DO the texture composition here
 	CGDIEngine* pEngine = CAsyncLoader::GetSingleton().GetGDIEngine();
 	if (pEngine == NULL)
@@ -190,7 +190,7 @@ HRESULT ParaEngine::CCCSSkinProcessor::UnLockDeviceObject()
 		// assign the texture (m_sFileName) to m_pCharModelInstance
 		if (m_pCharModelInstance->m_bodyTexture && m_pCharModelInstance->m_bodyTexture->GetCacheFileName() == m_sFileName)
 		{
-#ifdef USE_DIRECTX_RENDERER
+#ifdef USE_GDI_COMPOSER
 			m_pCharModelInstance->m_textures[CharModelInstance::CHAR_TEX] = CGlobals::GetAssetManager()->LoadTexture("", m_sFileName.c_str(), TextureEntity::StaticTexture);
 #else
 			m_pCharModelInstance->m_textures[CharModelInstance::CHAR_TEX] = ComposeRenderTarget();

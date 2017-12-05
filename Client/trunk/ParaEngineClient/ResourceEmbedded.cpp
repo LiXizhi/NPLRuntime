@@ -15,7 +15,7 @@ using namespace ParaEngine;
 
 	/** only loaded*/
 	CStaticInitRes::CStaticInitRes() {
-#if defined(USE_DIRECTX_RENDERER) && defined(NPLRUNTIME_STATICLIB)
+#if defined(USE_DIRECTX_RENDERER)
 		ADD_RESOURCE(":IDR_PARAXTEMPLATE", ParaXmodel_templates);
 		ADD_RESOURCE(":IDR_DEFAULT_CURSOR", cursor_tga);
 		ADD_RESOURCE(":IDR_FX_OCEANWATER", ocean_water_fxo);

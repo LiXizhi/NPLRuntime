@@ -53,6 +53,7 @@ Client/trunk/externals/*
 !Client/trunk/externals/freetype2*
 !Client/trunk/externals/gl*
 !Client/trunk/externals/icon/
+!Client/trunk/externals/FreeImage_3120/
 
 !Server/
 Server/*

@@ -26,7 +26,7 @@ bool ParaEngine::VertexElement::IsEndDeclare() const
 
 uint32 ParaEngine::VertexElement::GetSize() const
 {
-	if (Type == D3DDECLTYPE_FLOAT3)
+	if (Type == D3DDECLTYPE_FLOAT4)
 		return 16;
 	else if (Type == D3DDECLTYPE_FLOAT3)
 		return 12;
