@@ -134,7 +134,7 @@ find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system 
 
 # End of boost
 
-#ZLIP
+#ZLIB
 ################################
 if(WIN32)
 
