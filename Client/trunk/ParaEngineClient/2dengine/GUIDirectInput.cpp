@@ -403,7 +403,7 @@ HRESULT CDirectMouse::ReadImmediateData( )
 		/** Fix: in teamviewer, vmware, parallel desktop, remote desktop, etc. DirectInput does not give correct mouse cursor position.
 		* so we will use disable direct input by default, unless for full screen mode maybe.
 		*/
-		bool bNeedRest = false;
+		bool bNeedReset = false;
 
 		POINT pt;
 		if (::GetCursorPos(&pt))
@@ -420,7 +420,7 @@ HRESULT CDirectMouse::ReadImmediateData( )
 				rc.top += height / 8;
 				rc.bottom -= height / 8;
 
-				bNeedRest = !::PtInRect(&rc, pt);
+				bNeedReset = !::PtInRect(&rc, pt);
 			}
 
 
@@ -435,7 +435,7 @@ HRESULT CDirectMouse::ReadImmediateData( )
 		m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
 		m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
 
-		if (bNeedRest)
+		if (bNeedReset)
 		{
 			ResetCursorPosition();
 		}
@@ -733,30 +733,22 @@ void CDirectMouse::ResetCursorPosition()
 
 void CDirectMouse::SetLock(bool bLock)
 {
+	static POINT s_last_lock_pos = {0, 0};
 	if (bLock&&!m_bLock) {
 		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
-		//POINT ptMousePos;
-		//::GetCursorPos(&ptMousePos);
-		//RECT rcClient = {ptMousePos.x, ptMousePos.y, ptMousePos.x+1, ptMousePos.y+1};
-		//::ClipCursor(&rcClient);
-
-		//::SetCapture(m_hwnd);
-
+		ShowCursor(false);
+		::GetCursorPos(&s_last_lock_pos);
 		ResetCursorPosition();
 
 		RECT rc;
 		::GetWindowRect(m_hwnd, &rc);
 		::ClipCursor(&rc);
-
 	}
 	if (!bLock&&m_bLock) {
 		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
-		//::ClipCursor(NULL);
-
-		//::ReleaseCapture();
-
-
+		ShowCursor(true);
 		::ClipCursor(NULL);
+		::SetCursorPos(s_last_lock_pos.x, s_last_lock_pos.y);
 	}
 	m_bLock=bLock;
 }
