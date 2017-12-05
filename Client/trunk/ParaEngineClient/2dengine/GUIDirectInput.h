@@ -92,6 +92,7 @@ namespace ParaEngine
 		LPDIRECTINPUT8			m_pDI; // The DirectInput object         
 		LPDIRECTINPUTDEVICE8	m_pMouse; // The Mouse device 
 		bool					m_bShowCursor;
+		bool m_bUseDirectInput;
 	};
 #else
 	class CDirectKeyboard : public CGUIKeyboardVirtual
