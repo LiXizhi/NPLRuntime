@@ -269,7 +269,7 @@ HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 	BOOL    bExclusive;
 	BOOL    bForeground;
 	DWORD   dwCoopFlags;
-
+	 
 	// save window handle
 	m_hwnd = hDlg;
 
