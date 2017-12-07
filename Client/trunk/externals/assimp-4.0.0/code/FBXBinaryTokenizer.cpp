@@ -152,7 +152,8 @@ uint32_t ReadWord(const char* input, const char*& cursor, const char* end)
         TokenizeError("cannot ReadWord, out of bounds",input, cursor);
     }
 
-    uint32_t word = *reinterpret_cast<const uint32_t*>(cursor);
+    uint32_t word;
+    memcpy(&word, cursor, k_to_read);
     AI_SWAP4(word);
 
     cursor += k_to_read;
@@ -167,7 +168,8 @@ uint64_t ReadDoubleWord(const char* input, const char*& cursor, const char* end)
         TokenizeError("cannot ReadDoubleWord, out of bounds",input, cursor);
     }
 
-    uint64_t dword = *reinterpret_cast<const uint64_t*>(cursor);
+    uint64_t dword;
+    memcpy(&dword, cursor, k_to_read);
     AI_SWAP8(dword);
 
     cursor += k_to_read;
