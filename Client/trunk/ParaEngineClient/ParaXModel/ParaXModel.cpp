@@ -578,7 +578,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
-			if (nHeadAttachmentIndex >= 0)
+			if (false) //if (nHeadAttachmentIndex >= 0)
 			{
 				int nParent = m_atts[nHeadAttachmentIndex].bone;
 				if (nParent >= 0)
