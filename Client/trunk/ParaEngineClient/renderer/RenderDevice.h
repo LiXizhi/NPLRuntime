@@ -35,10 +35,10 @@ namespace ParaEngine
 	};
 }
 
-#ifdef USE_DIRECTX_RENDERER
-#include "RenderDeviceDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "RenderDeviceOpenGL.h"
-#else
-#include "RenderDeviceOpenGL.h"
-#endif
+//#ifdef USE_DIRECTX_RENDERER
+//#include "RenderDeviceDirectX.h"
+//#elif defined(USE_OPENGL_RENDERER)
+//#include "RenderDeviceOpenGL.h"
+//#else
+//#include "RenderDeviceOpenGL.h"
+//#endif

@@ -14,7 +14,7 @@
 #include "ParaEngine.h"
 #include "EventBinding.h"
 #include "ObjectManager.h"
-#include "util/cow_ptr.hpp"
+#include "cow_ptr.hpp"
 
 #include "memdebug.h"
 using namespace std;

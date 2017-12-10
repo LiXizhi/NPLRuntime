@@ -1,5 +1,5 @@
 #pragma once
-
+#include <IRenderDevice.h>
 namespace ParaEngine
 {
 	class CGUIBase;

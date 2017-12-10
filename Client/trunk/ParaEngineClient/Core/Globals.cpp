@@ -12,7 +12,7 @@
 #include "FileManager.h"
 #include "ParaEngineSettings.h"
 #include "IParaEngineApp.h"
-#include "ParaEngineAppImp.h"
+#include "ParaEngineAppBase.h"
 #include "PluginManager.h"
 #include "EventsCenter.h"
 #include "ic/ICConfigManager.h"
@@ -73,7 +73,7 @@ CGlobals::~CGlobals(void)
 
 IParaEngineApp* CGlobals::GetApp()
 {
-	return CParaEngineApp::GetInstance();
+	return CParaEngineAppBase::GetInstance();
 }
 
 TransformStack& CGlobals::GetWorldMatrixStack()
@@ -230,7 +230,7 @@ CPhysicsWorld* CGlobals::GetPhysicsWorld()
 
 CViewportManager* CGlobals::GetViewportManager()
 {
-	return CParaEngineApp::GetInstance()->GetViewportManager();
+	return CParaEngineAppBase::GetInstance()->GetViewportManager();
 }
 
 CSelectionManager* CGlobals::GetSelectionManager()
