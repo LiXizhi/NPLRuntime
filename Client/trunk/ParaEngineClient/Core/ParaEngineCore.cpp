@@ -10,7 +10,7 @@
 #include "PluginAPI.h"
 #include "ParaEngineCore.h"
 #include "FrameRateController.h"
-#include "ParaEngineAppImp.h"
+#include "ParaEngineAppBase.h"
 #include <boost/thread/tss.hpp>
 
 using namespace ParaEngine;
@@ -115,12 +115,12 @@ HWND CParaEngineCore::GetParaEngineHWnd()
 
 bool CParaEngineCore::ForceRender()
 {
-	return CParaEngineApp::GetInstance()->ForceRender();
+	return CParaEngineAppBase::GetInstance()->ForceRender();
 }
 
 IParaEngineApp* CParaEngineCore::GetAppInterface()
 {
-	return (IParaEngineApp*)(CParaEngineApp::GetInstance());
+	return (IParaEngineApp*)(CParaEngineAppBase::GetInstance());
 }
 
 
@@ -132,7 +132,7 @@ IParaEngineApp* CParaEngineCore::CreateApp()
 		// we will only create app if it has not been created before. 
 		if (!m_pAppSingleton)
 		{
-			CParaEngineApp* pApp = new CParaEngineApp();
+			CParaEngineAppBase* pApp = new CParaEngineAppBase();
 			m_pAppSingleton = pApp;
 			return (IParaEngineApp*)pApp;
 		}

@@ -11,7 +11,7 @@ namespace ParaEngine
 {
 	using namespace boost::asio;
 
-	class CParaEngineApp;
+	class CParaEngineAppBase;
 	/**
 	* this allows ParaEngine to operate as a system service without GUI, such as in server mode.  
 	* normally, one should use CParaEngineApp, which is the stand ParaEngine Application with 3D graphics. 
@@ -28,7 +28,7 @@ namespace ParaEngine
 		* @param pApp: if NULL, a new app is created. 
 		* @return the exit code. 
 		*/
-		int Run(const char* pCommandLine = NULL, CParaEngineApp* pApp = NULL);
+		int Run(const char* pCommandLine = NULL, CParaEngineAppBase* pApp = NULL);
 
 		/** stop the service */
 		void StopService();
@@ -67,7 +67,7 @@ namespace ParaEngine
 		/** accept key stroke */
 		bool m_bAcceptKeyStroke;
 
-		CParaEngineApp* m_pParaEngineApp;
+		CParaEngineAppBase* m_pParaEngineApp;
 	};
 
 }

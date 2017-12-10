@@ -1,0 +1,10 @@
+
+option(BUILD_CURL_EXE OFF)
+option(BUILD_CURL_TESTS OFF)
+add_subdirectory(curl)
+add_subdirectory(jsoncpp)
+add_subdirectory(luabind)
+add_subdirectory(luajit)
+add_subdirectory(tinyxml)
+add_subdirectory(zlib)
+add_subdirectory(tinyxpath)

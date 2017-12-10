@@ -14,8 +14,8 @@ namespace ParaEngine
 		CParaEngineAppBase();
 		CParaEngineAppBase(const char* sCmd);
 		/** the singleton application. */
-		static CParaEngineApp* GetInstance();
-		static void SetCurrentInstance(CParaEngineApp* pInstance);
+		static IParaEngineApp* GetInstance();
+		static void SetCurrentInstance(IParaEngineApp* pInstance);
 		virtual LifetimeType	LifetimeControl();
 		virtual BaseInterface*	AcquireInterface();
 		virtual void			ReleaseInterface();
@@ -385,8 +385,6 @@ namespace ParaEngine
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
 		virtual const char* GetModuleDir();;
 	public:
-		/** managing multiple 3d views */
-		CViewportManager* GetViewportManager() { return NULL; };
 
 		virtual void VerifyCommandLine(const char* sCommandLine, std::string &strCmd);
 
@@ -408,7 +406,7 @@ namespace ParaEngine
 		/** register any custom classes */
 		void RegisterObjectClasses();
 	protected:
-		static CParaEngineApp* g_pCurrentApp;
+		static IParaEngineApp* g_pCurrentApp;
 		bool m_bEnable3DRendering;
 		bool m_isTouching;
 		bool m_hasClosingRequest;
