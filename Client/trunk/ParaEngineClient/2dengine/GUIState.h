@@ -29,13 +29,7 @@ namespace ParaEngine
 		void EndDepthTest(CGUIBase* pObject = NULL);
 	public:
 		/// rendering device pointer
-		RenderDevicePtr pd3dDevice;
-#ifdef USE_DIRECTX_RENDERER
-		/** back buffer */
-		LPDIRECT3DSURFACE9 pBackSurface;
-		/// back buffer format
-		D3DFORMAT		d3dBackbufferFormat;
-#endif
+		IRenderDevice* pd3dDevice;
 		/// back buffer width
 		UINT			nBkbufWidth;
 		/// back buffer height

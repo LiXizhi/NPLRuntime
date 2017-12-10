@@ -55,7 +55,7 @@ add_executable(ParaEngineCore
 
 target_include_directories(ParaEngineCore PUBLIC
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/
-    ${PROJECT_SOURCE_DIR}/Framework/Interface/
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/Framework/Interface/
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/math/
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/core/
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/util/
