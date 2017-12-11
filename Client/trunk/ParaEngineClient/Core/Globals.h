@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <stack>
-#include "IRenderDevice.h"
 
 namespace ParaEngine
 {
@@ -91,7 +90,7 @@ namespace ParaEngine
 		/** set whether the scene is loading. */
 		static void SetLoading(bool bIsLoading);
 
-		static IRenderDevice* GetRenderDevice();
+		static RenderDevicePtr GetRenderDevice();
 		static EffectManager* GetEffectManager();
 
 		static CAttributesManager* GetAttributesManager();
@@ -103,6 +102,12 @@ namespace ParaEngine
 		* @return application handle
 		*/
 		static HWND GetAppHWND();
+#ifdef PLATFORM_WINDOWS
+		static CAudioEngine* GetAudioEngine();
+	public:
+		/** get directX engine parameters */
+		static DirectXEngine& GetDirectXEngine();
+#endif
 	};
 
 

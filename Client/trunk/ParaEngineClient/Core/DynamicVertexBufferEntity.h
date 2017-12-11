@@ -1,11 +1,11 @@
 #pragma once
-//#ifdef USE_DIRECTX_RENDERER
-//#include "DynamicVertexBufferEntityDirectX.h"
-//#elif defined(USE_OPENGL_RENDERER)
-//#include "DynamicVertexBufferEntityOpenGL.h"
-//#else
-//#include "DynamicVertexBufferEntityOpenGL.h"
-//#endif
+#ifdef USE_DIRECTX_RENDERER
+#include "DynamicVertexBufferEntityDirectX.h"
+#elif defined(USE_OPENGL_RENDERER)
+#include "DynamicVertexBufferEntityOpenGL.h"
+#else
+#include "DynamicVertexBufferEntityOpenGL.h"
+#endif
 
 namespace ParaEngine
 {

@@ -230,7 +230,6 @@ HRESULT CDirectKeyboard::ReadImmediateData(  )
 //////////////////////////////////////////////////////////////////////////
 
 CDirectMouse::CDirectMouse(HWND hDlg)
-	: m_bUseDirectInput(false)
 {
 	m_pDI=NULL;
 	m_pMouse=NULL; 
@@ -245,23 +244,8 @@ CDirectMouse::CDirectMouse(HWND hDlg)
 CDirectMouse::~CDirectMouse()
 {
 	//m_bExitMouseProcess=true;
-	//if (m_bLock)
-	//	::ReleaseCapture();
-
-
 	Free();
 };
-
-void CDirectMouse::Reset()
-{
-	CGUIMouseVirtual::Reset();
-
-	//if (m_bLock)
-	//{
-	//	m_bLock = false;
-	//	::ReleaseCapture();
-	//}
-}
 
 HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 {
@@ -269,12 +253,9 @@ HRESULT CDirectMouse::CreateDevice( HWND hDlg )
 	BOOL    bExclusive;
 	BOOL    bForeground;
 	DWORD   dwCoopFlags;
-	 
-	// save window handle
-	m_hwnd = hDlg;
 
-	if (!m_bUseDirectInput)
-		return S_OK;
+	// save window handle
+	m_hwnd=hDlg;
 
 	// Cleanup any previous call first
 	Free();
@@ -384,65 +365,9 @@ void ParaEngine::CDirectMouse::Update()
 	}
 }
 
-void CDirectMouse::SetMousePosition(int x, int y)
-{
-	CGUIMouseVirtual::SetMousePosition(x, y);
-
-	if (this->IsLocked() && !m_bUseDirectInput)
-	{
-		ResetCursorPosition();
-	}
-}
-
 HRESULT CDirectMouse::ReadImmediateData( )
 {
 	HRESULT       hr;
-
-	if (!m_bUseDirectInput)
-	{
-		/** Fix: in teamviewer, vmware, parallel desktop, remote desktop, etc. DirectInput does not give correct mouse cursor position.
-		* so we will use disable direct input by default, unless for full screen mode maybe.
-		*/
-		bool bNeedReset = false;
-
-		POINT pt;
-		if (::GetCursorPos(&pt))
-		{
-			if (this->IsLocked())
-			{
-				RECT rc;
-				::GetWindowRect(m_hwnd, &rc);
-				auto width = rc.right - rc.left;
-				auto height = rc.bottom - rc.top;
-
-				rc.left += width / 8;
-				rc.right -= width / 8;
-				rc.top += height / 8;
-				rc.bottom -= height / 8;
-
-				bNeedReset = !::PtInRect(&rc, pt);
-			}
-
-
-			m_curMouseState.lX = pt.x;
-			m_curMouseState.lY = pt.y;
-		}
-
-		CGUIMouseVirtual::ReadImmediateData();
-		//OUTPUT_LOG("%d %d dx:%d dy:%d\n", m_curMouseState.lX, m_curMouseState.lY, m_dims2.lX, m_dims2.lY);
-
-		m_dims2.rgbButtons[0] = (::GetAsyncKeyState(VK_LBUTTON) & 0x8000) ? 0x80 : 0;
-		m_dims2.rgbButtons[1] = (::GetAsyncKeyState(VK_RBUTTON) & 0x8000) ? 0x80 : 0;
-		m_dims2.rgbButtons[2] = (::GetAsyncKeyState(VK_MBUTTON) & 0x8000) ? 0x80 : 0;
-
-		if (bNeedReset)
-		{
-			ResetCursorPosition();
-		}
-
-		return S_OK;
-	}
-
 
 	if( NULL == m_pMouse ) 
 		return S_OK;
@@ -450,21 +375,6 @@ HRESULT CDirectMouse::ReadImmediateData( )
 	// Get the input's device state, and put the state in dims
 	ZeroMemory( &m_dims2, sizeof(m_dims2) );
 	hr = m_pMouse->GetDeviceState( sizeof(DIMOUSESTATE2), &m_dims2 );
-
-//	{
-//#ifdef WIN32
-//		const float x_radio = 26.0f;
-//		const float y_radio = 45.0f;
-//
-//
-//		if (GetSystemMetrics(SM_REMOTESESSION) != 0) //Is Remote Session
-//		{
-//			m_dims2.lX /= x_radio;
-//			m_dims2.lY /= y_radio;
-//		}
-//#endif
-//	}
-
 	if( FAILED(hr) ) 
 	{
 		// DirectInput may be telling us that the input stream has been
@@ -492,7 +402,7 @@ HRESULT CDirectMouse::ReadImmediateData( )
 //-----------------------------------------------------------------------------
 HRESULT CDirectMouse::ReadBufferedData(  )
 {
-	if(m_bUseWindowMessage || !m_bUseDirectInput)
+	if(m_bUseWindowMessage)
 	{
 		return CGUIMouseVirtual::ReadBufferedData();
 	}
@@ -719,36 +629,18 @@ void CDirectMouse::ForceShowCursor(bool bShow)
 	CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SHOWCURSOR, bShow ? 1 : 0, 0);
 }
 
-
-void CDirectMouse::ResetCursorPosition()
-{
-	RECT rc;
-	::GetWindowRect(m_hwnd, &rc);
-
-	m_lastMouseState.lX = rc.left + (rc.right - rc.left) / 2;
-	m_lastMouseState.lY = rc.top + (rc.bottom - rc.top) / 2;
-
-	::SetCursorPos(m_lastMouseState.lX, m_lastMouseState.lY);
-}
-
 void CDirectMouse::SetLock(bool bLock)
 {
-	static POINT s_last_lock_pos = {0, 0};
 	if (bLock&&!m_bLock) {
 		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
-		ShowCursor(false);
-		::GetCursorPos(&s_last_lock_pos);
-		ResetCursorPosition();
-
-		RECT rc;
-		::GetWindowRect(m_hwnd, &rc);
-		::ClipCursor(&rc);
+		POINT ptMousePos;
+		::GetCursorPos(&ptMousePos);
+		RECT rcClient = {ptMousePos.x, ptMousePos.y, ptMousePos.x+1, ptMousePos.y+1};
+		::ClipCursor(&rcClient);
 	}
 	if (!bLock&&m_bLock) {
 		// CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
-		ShowCursor(true);
 		::ClipCursor(NULL);
-		::SetCursorPos(s_last_lock_pos.x, s_last_lock_pos.y);
 	}
 	m_bLock=bLock;
 }

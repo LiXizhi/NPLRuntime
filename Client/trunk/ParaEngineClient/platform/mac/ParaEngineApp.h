@@ -294,7 +294,7 @@ namespace ParaEngine
 		/** server mode has no user interface */
 		virtual bool IsServerMode() { return false; };
 
-		virtual float GetFPS();
+		float GetFPS() const;
 
 
 		/** init application */

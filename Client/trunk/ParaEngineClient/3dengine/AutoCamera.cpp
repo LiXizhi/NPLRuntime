@@ -149,7 +149,7 @@ void CAutoCamera::CameraConstraint::BoundToFocusConstraint(Vector3* pEye, Vector
 CAutoCamera::CAutoCamera()
 	:m_fLookAtShiftY(0),m_event(NULL), m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), 
 	m_bEnableMouseLeftDrag(true), m_bEnableMouseRightDrag(true), m_bUseCharacterLookup(false), m_bUseCharacterLookupWhenMounted(true), m_nCharacterLookupBoneIndex(-1),
-	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
+	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true)
 {
 	m_bUseRightButtonBipedFacing = true;
 	m_pTargetObject = NULL;
@@ -1974,7 +1974,8 @@ void CAutoCamera::HandleUserInput()
 						if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 						{
 							// unlock the mouse position and show the cursor
-							SetMouseDragLock(false);
+							//pMouse->ShowCursor(true);
+							pMouse->SetLock(false);
 						}
 					}
 					else if (m_event->IsMapTo(pMsg->message,EM_CAM_RIGHTDOWN) && GetEnableMouseRightButton())
@@ -1990,7 +1991,8 @@ void CAutoCamera::HandleUserInput()
 						if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 						{
 							// unlock the mouse position and show the cursor
-							SetMouseDragLock(false);
+							//pMouse->ShowCursor(true);
+							pMouse->SetLock(false);
 						}
 					}
 				}
@@ -2144,7 +2146,8 @@ void CAutoCamera::HandleUserInput()
 		{
 			if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 			{
-				SetMouseDragLock(true);
+				pMouse->SetLock(true);
+				//pMouse->ShowCursor(false);
 			}
 			
 			// if user is dragging the right mouse button. uncomment following, if u do not wants it
@@ -2187,7 +2190,8 @@ void CAutoCamera::HandleUserInput()
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
 			// unlock the mouse position and show the cursor
-			SetMouseDragLock(false);
+			//pMouse->ShowCursor(true);
+			pMouse->SetLock(false);
 		}
 	}
 	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(CDirectMouse::RIGHT_BUTTON))) 
@@ -2196,7 +2200,8 @@ void CAutoCamera::HandleUserInput()
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
 			// unlock the mouse position and show the cursor
-			SetMouseDragLock(false);
+			//pMouse->ShowCursor(true);
+			pMouse->SetLock(false);
 		}
 	}
 
@@ -2246,16 +2251,6 @@ void CAutoCamera::FollowMode()
 }
 
 
-bool ParaEngine::CAutoCamera::IsLockMouseWhenDragging() const
-{
-	return m_bLockMouseWhenDragging;
-}
-
-void ParaEngine::CAutoCamera::SetLockMouseWhenDragging(bool val)
-{
-	m_bLockMouseWhenDragging = val;
-}
-
 float ParaEngine::CAutoCamera::GetKeyboardMovVelocity()
 {
 	return m_fKeyboardMovVelocity;
@@ -2286,7 +2281,8 @@ void ParaEngine::CAutoCamera::EnableMouseLeftButton( bool bValue )
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
 			// unlock the mouse position and show the cursor
-			SetMouseDragLock(false);
+			//pMouse->ShowCursor(true);
+			pMouse->SetLock(false);
 		}
 	}
 }
@@ -2301,7 +2297,8 @@ void ParaEngine::CAutoCamera::EnableMouseRightButton( bool bValue )
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
 			// unlock the mouse position and show the cursor
-			SetMouseDragLock(false);
+			//pMouse->ShowCursor(true);
+			pMouse->SetLock(false);
 		}
 	}
 }
@@ -2348,19 +2345,7 @@ void ParaEngine::CAutoCamera::ClearMouseStates()
 	m_nMouseDragDistance = 0;
 	if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 	{
-		SetMouseDragLock(false);
-	}
-}
-
-void ParaEngine::CAutoCamera::SetMouseDragLock(bool bLock)
-{
-	if (IsLockMouseWhenDragging())
-	{
-		auto pMouse = CGlobals::GetGUI()->m_pMouse;
-		if (pMouse) {
-			pMouse->SetLock(bLock);
-			//pMouse->ShowCursor(!bLock);
-		}
+		pMouse->SetLock(false);
 	}
 }
 
@@ -2516,8 +2501,6 @@ int CAutoCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("EnableMouseRightDrag", FieldType_Bool, (void*)EnableMouseRightDrag_s, (void*)IsEnableMouseRightDrag_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableMouseLeftDrag", FieldType_Bool, (void*)EnableMouseLeftDrag_s, (void*)IsEnableMouseLeftDrag_s, NULL, NULL, bOverride);
-
-	pClass->AddField("LockMouseWhenDragging", FieldType_Bool, (void*)SetLockMouseWhenDragging_s, (void*)IsLockMouseWhenDragging_s, NULL, NULL, bOverride);
 
 	pClass->AddField("UseCharacterLookup", FieldType_Bool, (void*)SetUseCharacterLookup_s, (void*)IsUseCharacterLookup_s, NULL, NULL, bOverride);
 	pClass->AddField("UseCharacterLookupWhenMounted", FieldType_Bool, (void*)SetUseCharacterLookupWhenMounted_s, (void*)IsUseCharacterLookupWhenMounted_s, NULL, NULL, bOverride);

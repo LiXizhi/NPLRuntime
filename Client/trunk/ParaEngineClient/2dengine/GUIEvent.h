@@ -29,18 +29,6 @@ using namespace std;
 #define RetainMiddleState(x) (((x)&0x1c0)>>6)
 #define RetainDragState(x) (((x)&0xe00)>>9)
 #define RetainKeyState(x) (((x)&0x3000)>>12)
-
-// emulate direct input 8 structure
-typedef struct InputDeviceObjectData {
-	DWORD       dwOfs;
-	DWORD       dwData;
-	DWORD       dwTimeStamp;
-	DWORD       dwSequence;
-	DWORD		uAppData;
-} InputDeviceObjectData;
-
-
-
 namespace ParaEngine
 {
 	class CEventBinding;
@@ -145,7 +133,7 @@ namespace ParaEngine
 		//can not be memcpy
 		struct GUI_EVENT_KEYBOARD {
 		public:
-			InputDeviceObjectData KeyEvents[SAMPLE_BUFFER_SIZE];
+			DIDEVICEOBJECTDATA KeyEvents[SAMPLE_BUFFER_SIZE];
 
 			DWORD Size;//size of KeyEvents
 			//the alternative key for the current trigger event.
