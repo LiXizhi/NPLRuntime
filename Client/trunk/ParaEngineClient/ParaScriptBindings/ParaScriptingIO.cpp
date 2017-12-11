@@ -552,7 +552,7 @@ namespace ParaScripting
 	// file time to 1982-11-26 type string.
 	string FileTimeToDateString(const FILETIME* pTime)
 	{
-#ifdef WIN32
+#ifdef PARAENGINE_CLIENT
 		if(pTime->dwHighDateTime==0 && pTime->dwLowDateTime==0)
 			return "2000-01-01-00-00";
 		SYSTEMTIME stUTC, stLocal;

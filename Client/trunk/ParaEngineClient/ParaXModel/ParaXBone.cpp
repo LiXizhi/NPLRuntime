@@ -1188,8 +1188,6 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("IsPivotBone", FieldType_Bool, (void*)0, (void*)IsPivotBone_s, NULL, "", bOverride);
 	pClass->AddField("IsOffsetMatrixBone", FieldType_Bool, (void*)0, (void*)IsOffsetMatrixBone_s, NULL, "", bOverride);
 	pClass->AddField("IsStaticTransform", FieldType_Bool, (void*)0, (void*)IsStaticTransform_s, NULL, "", bOverride);
-	pClass->AddField("IsTransformationNode", FieldType_Bool, (void*)0, (void*)IsTransformationNode_s, NULL, "", bOverride);
-
 	pClass->AddField("IsAnimated", FieldType_Bool, (void*)0, (void*)IsAnimated_s, NULL, "", bOverride);
 	pClass->AddField("OffsetMatrix", FieldType_Matrix4, (void*)SetOffsetMatrix_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("SetStaticTransform", FieldType_Matrix4, (void*)SetStaticTransform_s, (void*)0, NULL, "", bOverride);

@@ -17,7 +17,7 @@
 #include "SceneObject.h"
 #endif
 #include "NPLHelper.h"
-#include "ParaEngineAppBase.h"
+#include "ParaEngineAppImp.h"
 #include "AttributesManager.h"
 #include "ParaScriptingGlobal.h"
 #include "ParaScriptingScene.h"

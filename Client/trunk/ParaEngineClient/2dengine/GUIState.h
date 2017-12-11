@@ -1,5 +1,5 @@
 #pragma once
-#include <IRenderDevice.h>
+
 namespace ParaEngine
 {
 	class CGUIBase;
@@ -29,7 +29,13 @@ namespace ParaEngine
 		void EndDepthTest(CGUIBase* pObject = NULL);
 	public:
 		/// rendering device pointer
-		IRenderDevice* pd3dDevice;
+		RenderDevicePtr pd3dDevice;
+#ifdef USE_DIRECTX_RENDERER
+		/** back buffer */
+		LPDIRECT3DSURFACE9 pBackSurface;
+		/// back buffer format
+		D3DFORMAT		d3dBackbufferFormat;
+#endif
 		/// back buffer width
 		UINT			nBkbufWidth;
 		/// back buffer height

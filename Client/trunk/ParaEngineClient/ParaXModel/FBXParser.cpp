@@ -2343,10 +2343,8 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, int parentBoneIndex, CParaXModel* pMesh)
 {
 	const std::string nodeName(pFbxNode->mName.C_Str());
-	
 	// this will force create a bone for every node. Bones without weights are just treated as ordinary nodes, 
 	// so it is important to add them here
-
 	int bone_index = CreateGetBoneIndex(pFbxNode->mName.C_Str());
 	if (bone_index >= 0)
 	{
@@ -2358,11 +2356,6 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 		if (!bone.IsAnimated())
 		{
 			bone.flags |= ParaEngine::Bone::BONE_STATIC_TRANSFORM;
-		}
-
-		if (pFbxNode->mIsComplex)
-		{
-			bone.flags |= ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		}
 	}
 	m_bones[bone_index].parent = parentBoneIndex;

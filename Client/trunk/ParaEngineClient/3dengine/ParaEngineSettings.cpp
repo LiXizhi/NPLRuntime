@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#include "ParaEngineAppBase.h"
+#include "ParaEngineAppImp.h"
 #include "SceneObject.h"
 #include "EffectManager.h"
 #include "ParaWorldAsset.h"

@@ -129,9 +129,6 @@ public:
 	ATTRIBUTE_METHOD1(CAutoCamera, IsEnableMouseLeftDrag_s, bool*)	{*p1 = cls->IsEnableMouseLeftDrag(); return S_OK;}
 	ATTRIBUTE_METHOD1(CAutoCamera, EnableMouseLeftDrag_s, bool)	{cls->EnableMouseLeftDrag(p1); return S_OK;}
 
-	ATTRIBUTE_METHOD1(CAutoCamera, IsLockMouseWhenDragging_s, bool*) { *p1 = cls->IsLockMouseWhenDragging(); return S_OK; }
-	ATTRIBUTE_METHOD1(CAutoCamera, SetLockMouseWhenDragging_s, bool) { cls->SetLockMouseWhenDragging(p1); return S_OK; }
-
 	ATTRIBUTE_METHOD1(CAutoCamera, IsUseCharacterLookup_s, bool*)	{*p1 = cls->IsUseCharacterLookup(); return S_OK;}
 	ATTRIBUTE_METHOD1(CAutoCamera, SetUseCharacterLookup_s, bool)	{cls->SetUseCharacterLookup(p1); return S_OK;}
 
@@ -287,10 +284,6 @@ public:
 	/** set whether camera dragging with left button if enabled. default to true */
 	void EnableMouseLeftDrag(bool bEnabled) {m_bEnableMouseLeftDrag = bEnabled;}
 	
-	/** whether to lock mouse during dragging, default to false. On FPS mode, one should enable or manually lock the mouse. */
-	bool IsLockMouseWhenDragging() const;
-	void SetLockMouseWhenDragging(bool val);
-
 	/**
 	* reset camera, without playing transitions.
 	*/
@@ -453,8 +446,6 @@ private:
 	/* as if no mouse button is down. used before disable mouse */
 	void ClearMouseStates();
 
-	void SetMouseDragLock(bool bLock);
-	
 public:
 	/// true to follow target
 	BOOL				m_bIsFollowMode;			
@@ -598,9 +589,6 @@ private:
 	* when both eye and the look-at point are in sunlight. 
 	*/
 	bool m_bIgnoreEyeBlockCollisionInSunlight;
-
-	/** whether to lock mouse during dragging, default to false. On FPS mode, one should enable or manually lock the mouse. */
-	bool m_bLockMouseWhenDragging;
 	
 	Vector3 m_bipedFlyNormal;
 

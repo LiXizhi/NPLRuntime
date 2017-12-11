@@ -147,7 +147,7 @@ bool ParaEngine::FreeLibrary(void *hDLL)
 bool ParaEngine::GetLastFileWriteTime(const char* filename, time_t& ftWrite)
 {
 	struct stat filestat;
-	if (stat(filename, &filestat) == 0)
+	if (stat(filename, &filestat) != 0)
 	{
 		ftWrite = filestat.st_mtime;
 		return true;

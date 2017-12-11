@@ -397,17 +397,28 @@ uint32 ParaScripting::CNPLScriptingState::GetScriptDiskPath(const string& filePa
 			return dwFound;
 		}
 	}
-	
-	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
+
+	// 2008.5.7: we will first find if there is an up to date compiled version in the bin directory. if there is, 
+	// we will load the compiled version, otherwise we will use the text version. 
+	sFileName = std::string("bin/") + filePath;
+	sFileName = CParaFile::ChangeFileExtension(sFileName, "o");
+
+	if ((dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH)))
 	{
-		sFileName = filePath;
+		time_t srcTime, binTime;
+		uint32 dwFoundSrc = FILE_NOT_FOUND;
+		if ((dwFoundSrc = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH))
+			&& (!ParaEngine::GetLastFileWriteTime(filePath.c_str(), srcTime) || !ParaEngine::GetLastFileWriteTime(sFileName.c_str(), binTime) || (srcTime > binTime)))
+		{
+			// use src version, if source version exist and up to date. 
+			sFileName = filePath;
+			dwFound = dwFoundSrc;
+		}
 	}
 	else
 	{
-		// search bin/[path].o version if non-compiled source code version not found. 
-		sFileName = std::string("bin/") + filePath;
-		sFileName = CParaFile::ChangeFileExtension(sFileName, "o");
-		dwFound = ParaEngine::CParaFile::DoesFileExist2(sFileName.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH);
+		dwFound = ParaEngine::CParaFile::DoesFileExist2(filePath.c_str(), FILE_ON_ZIP_ARCHIVE | FILE_ON_DISK | FILE_ON_SEARCH_PATH);
+		sFileName = filePath;
 	}
 #endif
 	return dwFound;
