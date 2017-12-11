@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <tchar.h>  
+#include <d3dx9math.h>
 #else// For LINUX
 #include <ctype.h>
 #include <wctype.h>
@@ -359,6 +360,15 @@ namespace ParaEngine
 	typedef D3DXVECTOR2  DeviceVector2;
 	typedef D3DXVECTOR3  DeviceVector3;
 	typedef D3DXVECTOR4  DeviceVector4;
+
+	//typedef PARAMATRIX  DeviceMatrix;
+	//typedef PARAMATRIX*  DeviceMatrix_ptr;
+	//typedef PARAVECTOR2*  DeviceVector2_ptr;
+	//typedef PARAVECTOR3*  DeviceVector3_ptr;
+	//typedef PARAVECTOR4*  DeviceVector4_ptr;
+	//typedef PARAVECTOR2  DeviceVector2;
+	//typedef PARAVECTOR3  DeviceVector3;
+	//typedef PARAVECTOR4  DeviceVector4;
 #else
 	typedef PARAMATRIX  DeviceMatrix;
 	typedef PARAMATRIX*  DeviceMatrix_ptr;
