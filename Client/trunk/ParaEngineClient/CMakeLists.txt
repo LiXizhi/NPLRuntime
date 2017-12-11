@@ -1,10 +1,10 @@
 
 include(${PROJECT_SOURCE_DIR}/cmake/FindBoost.cmake)
-
+include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
 
 # Source
 aux_source_directory(util src_util)
-source_group("util" FILES ${src_util})
+#source_group("util" FILES ${src_util})
 
 aux_source_directory(math src_math)
 aux_source_directory(core src_core)
@@ -26,7 +26,14 @@ aux_source_directory(ic src_ic)
 aux_source_directory(terrain src_terrain)
 aux_source_directory(blockengine src_blockengine)
 aux_source_directory(websocket src_websocket)
+aux_source_directory(PaintEngine src_paintengine)
+aux_source_directory(CadModel src_carmodel)
 
+# For direct3d renderer
+aux_source_directory(engine src_engine)
+
+aux_source_directory(voxelmesh src_voxelmesh)
+aux_source_directory(common src_common) #DirextX
 
 
 
@@ -51,6 +58,12 @@ add_executable(ParaEngineCore
     ${src_terrain}
     ${src_blockengine}
     ${src_websocket}
+    ${src_engine}
+    ${src_voxelmesh}
+    ${src_common}
+    ${src_paintengine}
+    ${src_carmodel}
+    
 )
 
 target_include_directories(ParaEngineCore PUBLIC
@@ -76,16 +89,28 @@ target_include_directories(ParaEngineCore PUBLIC
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/terrain
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/websocket
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/blockengine
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/engine
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/voxelmesh
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/common
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/PaintEngine
+    ${PROJECT_SOURCE_DIR}/ParaEngineClient/CadModel
 
     ${Boost_INCLUDE_DIR}/
+    ${DirectX_INCLUDE_DIRS}
 )
 
-link_directories(ParaEngineCore ${Boost_LIBRARY_DIRS})
-target_link_libraries(ParaEngineCore libcurl tinyxml tinyxpath liblua luabind zlib jsoncpp  ${Boost_LIBRARIES})
+link_directories(ParaEngineCore ${Boost_LIBRARY_DIRS} ${DirectX_LIBRARY_PATHS})
+target_link_libraries(ParaEngineCore libcurl tinyxml tinyxpath liblua luabind zlib jsoncpp  ${Boost_LIBRARIES} ${DirectX_LIBRARIES})
 target_compile_definitions(ParaEngineCore 
 PUBLIC PE_CORE_EXPORTING
 PUBLIC NPLRUNTIME
 PUBLIC SQLITE_STATICLIB
+PUBLIC USE_DIRECTX_RENDERER
+PUBLIC _WIN32_WINNT=0x0501
+PUBLIC PARAENGINE_CLIENT
+PUBLIC BOOST_SIGNALS_NO_DEPRECATION_WARNING
+PUBLIC PLATFORM_WINDOWS
+PUBLIC USE_WINDOWS_SSPI
 )
 
 
@@ -103,4 +128,10 @@ endforeach(flag_var)
 # /GR- Remove RTTI to miminize the executable size
 SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
+
+# enable multiprocessor build option /MP, this will greatly increase compile speed
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
 ENDIF()
