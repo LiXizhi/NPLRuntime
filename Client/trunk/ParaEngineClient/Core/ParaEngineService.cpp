@@ -13,7 +13,7 @@
 #include "util/keyboard.h"
 #include "NPLRuntime.h"
 #include "INPLAcitvationFile.h"
-#include "ParaEngineAppImp.h"
+#include "IParaEngineApp.h"
 #include "ParaEngineService.h"
 
 using namespace ParaEngine;
@@ -53,7 +53,7 @@ void CParaEngineService::AcceptKeyStroke(bool bAccept)
 class CNPLFile_ServerMainLoop : public NPL::INPLActivationFile
 {
 public:
-	CNPLFile_ServerMainLoop(CParaEngineApp* pParaEngineApp):m_pParaEngineApp(pParaEngineApp), m_fElapsedTime(0.f){};
+	CNPLFile_ServerMainLoop(IParaEngineApp* pParaEngineApp):m_pParaEngineApp(pParaEngineApp), m_fElapsedTime(0.f){};
 	
 	virtual NPL::NPLReturnCode OnActivate(NPL::INPLRuntimeState* pState){
 		if(m_pParaEngineApp)
@@ -68,7 +68,7 @@ public:
 	};
 
 protected:
-	CParaEngineApp* m_pParaEngineApp;
+	IParaEngineApp* m_pParaEngineApp;
 	/** number of seconds elapsed since the game engine start. */
 	float m_fElapsedTime;
 };
@@ -207,21 +207,14 @@ void CParaEngineService::InitDaemon(void)
 #endif
 }
 
-int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
+int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 {
 	if (pApp && !pCommandLine){
 		pCommandLine = pApp->GetAppCommandLine();
 	}
 
-	if (pApp)
-	{
-		m_pParaEngineApp = pApp;
-	}
-	else
-	{
-		m_pParaEngineApp = new CParaEngineApp(pCommandLine);
-	}
-
+	assert(pApp);
+	m_pParaEngineApp = pApp;
 	if (strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0)
 	{
 		// run in interpreter and interactive mode. io.read() can be used to read input from standard io. 

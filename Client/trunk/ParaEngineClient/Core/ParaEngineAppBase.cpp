@@ -40,7 +40,7 @@
 
 using namespace ParaEngine;
 
-CParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
+IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
 
 /** default bootstrapper file */
 #define NPL_CODE_WIKI_BOOTFILE "script/apps/WebServer/WebServer.lua"
@@ -86,7 +86,7 @@ void ParaEngine::CParaEngineAppBase::ReleaseInterface()
 	}
 }
 
-CParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
+IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 {
 	return g_pCurrentApp;
 }
@@ -96,8 +96,9 @@ CParaEngineAppBase::LifetimeType ParaEngine::CParaEngineAppBase::LifetimeControl
 	return wantsRelease;
 }
 
-void CParaEngineAppBase::SetCurrentInstance(CParaEngineApp* pInstance)
+void CParaEngineAppBase::SetCurrentInstance(IParaEngineApp* pInstance)
 {
+	assert(pInstance);
 	g_pCurrentApp = pInstance;
 }
 
@@ -152,7 +153,7 @@ void ParaEngine::CParaEngineAppBase::InitCommon()
 {
 	CStaticInitRes::StaticInit();
 
-	SetCurrentInstance((CParaEngineApp*)this);
+	SetCurrentInstance(this);
 
 	srand((unsigned long)time(NULL));
 

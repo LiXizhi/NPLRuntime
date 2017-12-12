@@ -261,6 +261,7 @@ SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 ##############################
 # add the binary tree to the search path for include files
 include_directories("${ParaEngineClient_SOURCE_DIR}")
+include_directories("${ParaEngineClient_SOURCE_DIR}/Framework/Interface")
 include_directories("${ParaEngineClient_SOURCE_DIR}/Core")
 include_directories("${ParaEngineClient_SOURCE_DIR}/renderer")
 include_directories("${ParaEngineClient_SOURCE_DIR}/3dengine")

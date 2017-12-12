@@ -17,7 +17,7 @@
 #include "SceneObject.h"
 #endif
 #include "NPLHelper.h"
-#include "ParaEngineAppImp.h"
+#include "IParaEngineApp.h"
 #include "AttributesManager.h"
 #include "ParaScriptingGlobal.h"
 #include "ParaScriptingScene.h"
@@ -47,6 +47,7 @@ extern "C"
 }
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
+#include "IParaEngineApp.h"
 
 namespace ParaEngine
 {
@@ -1751,8 +1752,8 @@ DWORD ParaScripting::ParaGlobal::timeGetTime()
 bool ParaScripting::ParaGlobal::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
 {
 #ifdef PARAENGINE_SUPPORT_WRITE_REG
-	if (CParaEngineApp::GetInstance())
-		return CParaEngineApp::GetInstance()->WriteRegStr(root_key, sSubKey, name, value);
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->WriteRegStr(root_key, sSubKey, name, value);
 	else
 		return false;
 #else
@@ -1764,8 +1765,8 @@ bool ParaScripting::ParaGlobal::WriteRegStr(const string& root_key, const string
 const char* ParaScripting::ParaGlobal::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
 {
 #ifdef PARAENGINE_SUPPORT_READ_REG
-	if (CParaEngineApp::GetInstance())
-		return CParaEngineApp::GetInstance()->ReadRegStr(root_key, sSubKey, name);
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->ReadRegStr(root_key, sSubKey, name);
 	else
 		return NULL;
 #else
@@ -1776,8 +1777,8 @@ const char* ParaScripting::ParaGlobal::ReadRegStr(const string& root_key, const 
 bool ParaScripting::ParaGlobal::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
 {
 #ifdef PARAENGINE_SUPPORT_WRITE_REG
-	if (CParaEngineApp::GetInstance())
-		return CParaEngineApp::GetInstance()->WriteRegDWORD(root_key, sSubKey, name, value);
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->WriteRegDWORD(root_key, sSubKey, name, value);
 	else
 		return false;
 #else
@@ -1789,8 +1790,8 @@ bool ParaScripting::ParaGlobal::WriteRegDWORD(const string& root_key, const stri
 DWORD ParaScripting::ParaGlobal::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
 {
 #ifdef PARAENGINE_SUPPORT_READ_REG
-	if (CParaEngineApp::GetInstance())
-		return CParaEngineApp::GetInstance()->ReadRegDWORD(root_key, sSubKey, name);
+	if (CGlobals::GetApp())
+		return CGlobals::GetApp()->ReadRegDWORD(root_key, sSubKey, name);
 	else
 		return 0;
 #else
@@ -1853,17 +1854,17 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	int nCount = GetCurrentDirectory(MAX_LINE, buf);
 
 	// switch to windowed mode to display the win32 common dialog.
-	bool bOldWindowed = CParaEngineApp::GetInstance()->IsWindowedMode();  // Preserve original windowed flag
+	bool bOldWindowed = CGlobals::GetApp()->IsWindowedMode();  // Preserve original windowed flag
 	if (bOldWindowed == false)
 	{
-		CParaEngineApp::GetInstance()->SetWindowedMode(true);
+		CGlobals::GetApp()->SetWindowedMode(true);
 	}
 
 	bool bResult = bIsSavingFile ? (!!::GetSaveFileName(&ofn)) : (!!::GetOpenFileName(&ofn));
 
 	if (bOldWindowed == false)
 	{
-		CParaEngineApp::GetInstance()->SetWindowedMode(false);
+		CGlobals::GetApp()->SetWindowedMode(false);
 	}
 
 	// reset directory. 
