@@ -258,9 +258,7 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 	SOURCE_GROUP("Shader Files\\Compiled Files" FILES ${ParaEngineClient_SHADER_BIN_FILES})
 
 	##############################
-	# ParaXmodel.templates
-	embed_resources_abs(MyResource "${ParaEngineClient_SOURCE_DIR}/res/ParaXmodel.templates")
-	list(APPEND EmbeddedResource_FILES ${MyResource})
+
 	
 	##############################
 	# cursor.tga
