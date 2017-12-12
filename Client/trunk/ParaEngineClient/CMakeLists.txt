@@ -172,6 +172,16 @@ file (GLOB ParaEngineClient_Cad_FILES ${ParaEngineClient_SOURCE_DIR}/CadModel/*.
 SOURCE_GROUP("Externals\\CadModel" FILES ${ParaEngineClient_Cad_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 #####################################
+
+
+
+file (GLOB ParaEngineClient_Platfowm_Windows_FILES ${ParaEngineClient_SOURCE_DIR}/Platform/Windows/*.*)
+SOURCE_GROUP("Platform\\Windows" FILES ${ParaEngineClient_Platfowm_Windows_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platfowm_Windows_FILES})
+#####################################
+
+
+
 # Resource file
 # winmain.rc is the only buildable file, but the rest are all dependencies of it.
 file (GLOB ParaEngineClient_RESOURCE_FILES ${ParaEngineClient_SOURCE_DIR}/res/*.*)
