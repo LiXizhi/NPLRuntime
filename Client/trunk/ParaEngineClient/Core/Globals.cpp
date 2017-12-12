@@ -11,8 +11,6 @@
 #include "FrameRateController.h"
 #include "FileManager.h"
 #include "ParaEngineSettings.h"
-#include "IParaEngineApp.h"
-#include "ParaEngineAppImp.h"
 #include "PluginManager.h"
 #include "EventsCenter.h"
 #include "ic/ICConfigManager.h"
@@ -45,6 +43,7 @@ namespace ParaEngine
 #endif
 }
 #endif
+#include "ParaEngineAppBase.h"
 
 namespace ParaEngine 
 {
@@ -73,7 +72,7 @@ CGlobals::~CGlobals(void)
 
 IParaEngineApp* CGlobals::GetApp()
 {
-	return CParaEngineApp::GetInstance();
+	return CParaEngineAppBase::GetInstance();
 }
 
 TransformStack& CGlobals::GetWorldMatrixStack()
@@ -230,7 +229,7 @@ CPhysicsWorld* CGlobals::GetPhysicsWorld()
 
 CViewportManager* CGlobals::GetViewportManager()
 {
-	return CParaEngineApp::GetInstance()->GetViewportManager();
+	return CGlobals::GetApp()->GetViewportManager();
 }
 
 CSelectionManager* CGlobals::GetSelectionManager()

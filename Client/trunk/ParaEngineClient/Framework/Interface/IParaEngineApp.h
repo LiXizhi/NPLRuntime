@@ -451,6 +451,42 @@ namespace ParaEngine
 
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
 		virtual const char* GetModuleDir() { return NULL; };
+
+		virtual bool AppHasFocus() = 0;
+
+		virtual HRESULT FrameMove(double fTime) = 0;
+
+		virtual HRESULT FinalCleanup() = 0;
+
+
+
+		virtual void GetStats(string& output, DWORD dwFields) = 0;
+
+		virtual bool WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value) = 0;
+
+		virtual void SetAutoLowerFrameRateWhenNotFocused(bool bEnabled) = 0;
+
+		virtual const char* ReadRegStr(const string& root_key, const string& sSubKey, const string& name) = 0;
+
+
+		virtual bool WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value) = 0;
+
+
+
+		virtual DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name) = 0;
+
+
+		virtual bool GetAutoLowerFrameRateWhenNotFocused() = 0;
+
+		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) = 0;
+
+		virtual bool GetToggleSoundWhenNotFocused() = 0;
+
+
+
+		virtual CViewportManager* GetViewportManager() = 0;
+
+
 	};
 
 }

@@ -6,7 +6,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#include "ParaEngineAppImp.h"
 #include "SceneObject.h"
 #include "EffectManager.h"
 #include "ParaWorldAsset.h"
@@ -26,11 +25,7 @@
 #include "util/os_calls.h"
 #include "SelectionManager.h"
 #include "BufferPicking.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#include "OceanManager.h"
-#include "OSWindows.h"
-#endif
+
 
 #ifdef PARAENGINE_CLIENT
 #include "util/CommonFileDialog.h"
@@ -40,6 +35,9 @@
 #endif
 
 #include <time.h>
+#include "Globals.h"
+#include "IParaEngineApp.h"
+#include "OSWindows.h"
 
 using namespace ParaEngine;
 using namespace luabind;
@@ -119,9 +117,7 @@ float  ParaEngineSettings::GetCtorSpeed()
 string ParaEngineSettings::GetStats(DWORD dwFields)
 {
 	string output;
-#ifdef USE_DIRECTX_RENDERER
-	ParaEngine::CParaEngineApp::GetInstance()->GetStats(output, dwFields);
-#endif
+	CGlobals::GetApp()->GetStats(output, dwFields);
 	return output;
 }
 
@@ -132,12 +128,13 @@ void ParaEngineSettings::SetCtorSpeed(float fSpeed)
 
 int ParaEngineSettings::GetVertexShaderVersion()
 {
+
 #ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().GetVertexShaderVersion();
+		return CGlobals::GetDirectXEngine().GetVertexShaderVersion();
 #elif defined(USE_OPENGL_RENDERER)
-	return 2;
+		return 2;
 #else
-	return 0;
+		return 0;
 #endif
 }
 
@@ -900,14 +897,14 @@ const std::string& ParaEngine::ParaEngineSettings::GetSystemInfoString( bool bRe
 void ParaEngine::ParaEngineSettings::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
 {
 #ifdef USE_DIRECTX_RENDERER
-	((CParaEngineApp*)(CGlobals::GetApp()))->SetAutoLowerFrameRateWhenNotFocused(bEnabled);
+	CGlobals::GetApp()->SetAutoLowerFrameRateWhenNotFocused(bEnabled);
 #endif
 }
 
 bool ParaEngine::ParaEngineSettings::GetAutoLowerFrameRateWhenNotFocused()
 {
 #ifdef USE_DIRECTX_RENDERER
-	return ((CParaEngineApp*)(CGlobals::GetApp()))->GetAutoLowerFrameRateWhenNotFocused();
+	return CGlobals::GetApp()->GetAutoLowerFrameRateWhenNotFocused();
 #else
 	return false;
 #endif
@@ -916,14 +913,14 @@ bool ParaEngine::ParaEngineSettings::GetAutoLowerFrameRateWhenNotFocused()
 void ParaEngine::ParaEngineSettings::SetToggleSoundWhenNotFocused( bool bEnabled )
 {
 #ifdef USE_DIRECTX_RENDERER
-	((CParaEngineApp*)(CGlobals::GetApp()))->SetToggleSoundWhenNotFocused(bEnabled);
+	return CGlobals::GetApp()->SetToggleSoundWhenNotFocused(bEnabled);
 #endif
 }
 
 bool ParaEngine::ParaEngineSettings::GetToggleSoundWhenNotFocused()
 {
 #ifdef USE_DIRECTX_RENDERER
-	return ((CParaEngineApp*)(CGlobals::GetApp()))->GetToggleSoundWhenNotFocused();
+	return CGlobals::GetApp()->GetToggleSoundWhenNotFocused();
 #else
 	return false;
 #endif
@@ -946,11 +943,7 @@ void ParaEngine::ParaEngineSettings::SetAppHasFocus( bool bEnabled )
 
 bool ParaEngine::ParaEngineSettings::GetAppHasFocus()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return ((CParaEngineApp*)(CGlobals::GetApp()))->AppHasFocus();
-#else
-	return true;
-#endif
+	return CGlobals::GetApp()->AppHasFocus();
 }
 
 void ParaEngine::ParaEngineSettings::SetCaptureMouse(bool bCapture)

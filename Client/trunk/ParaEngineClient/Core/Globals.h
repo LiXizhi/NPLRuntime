@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
 #include <stack>
-
+#include "IParaEngineApp.h"
+#include "OceanManager.h"
+#include "DirectXEngine.h"
 namespace ParaEngine
 {
-	class IParaEngineApp;
 	class TransformStack;
 	/** a table of global strings. */
 	enum GLOBAL_STRING_ID

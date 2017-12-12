@@ -4,7 +4,6 @@
 
 namespace ParaEngine
 {
-	class CParaEngineApp;
 	class CObjectAutoReleasePool;
 
 	/* base implementation of ParaEngine APP, shared by both mobile and pc version.  */
@@ -14,8 +13,8 @@ namespace ParaEngine
 		CParaEngineAppBase();
 		CParaEngineAppBase(const char* sCmd);
 		/** the singleton application. */
-		static CParaEngineApp* GetInstance();
-		static void SetCurrentInstance(CParaEngineApp* pInstance);
+		static IParaEngineApp* GetInstance();
+		static void SetCurrentInstance(IParaEngineApp* pInstance);
 		virtual LifetimeType	LifetimeControl();
 		virtual BaseInterface*	AcquireInterface();
 		virtual void			ReleaseInterface();
@@ -408,7 +407,7 @@ namespace ParaEngine
 		/** register any custom classes */
 		void RegisterObjectClasses();
 	protected:
-		static CParaEngineApp* g_pCurrentApp;
+		static IParaEngineApp* g_pCurrentApp;
 		bool m_bEnable3DRendering;
 		bool m_isTouching;
 		bool m_hasClosingRequest;
