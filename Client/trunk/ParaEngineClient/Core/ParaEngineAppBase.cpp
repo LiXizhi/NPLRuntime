@@ -65,7 +65,7 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
 {
 	DestroySingletons();
-	SetCurrentInstance(NULL);
+	g_pCurrentApp = nullptr;
 }
 
 void ParaEngine::CParaEngineAppBase::DeleteInterface()

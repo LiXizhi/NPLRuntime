@@ -75,7 +75,7 @@
 #include <algorithm>
 
 // header include
-#include "ParaEngineApp.h"
+#include "WindowsApplication.h"
 #include "D3DWindowUtil.h"
 #include "OSWindows.h"
 #include <time.h>

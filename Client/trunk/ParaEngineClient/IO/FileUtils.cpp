@@ -8,13 +8,6 @@
 // three sets of API: 1. native win32  2. boost  3. cocos2dx
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (PARAENGINE_CLIENT) && defined(WIN32) 
-	#ifdef USE_OPENGL_RENDERER
-		#include "platform/win32/ParaEngineApp.h"
-	#else
-		#include "ParaEngineApp.h"
-	#endif
-#endif
 #include "FileUtils.h"
 #include "StringHelper.h"
 #include <time.h>
@@ -808,7 +801,7 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::strin
 #elif defined(WIN32) && defined(PARAENGINE_CLIENT)
 	if (!filename.empty() && filename[0] == ':')
 	{
-		HINSTANCE hInstance = CParaEngineApp::GetInstance()->GetModuleHandle();
+		HINSTANCE hInstance = CGlobals::GetApp()->GetModuleHandle();
 		HRSRC hSrc = ::FindResource(hInstance, filename.c_str() + 1, "textfile");
 		if (hSrc != NULL)
 		{

@@ -6,7 +6,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "DirectXEngine.h"
-#include "ParaEngineApp.h"
+#include "IParaEngineApp.h"
 #include "ParaWorldAsset.h"
 
 using namespace ParaEngine;
