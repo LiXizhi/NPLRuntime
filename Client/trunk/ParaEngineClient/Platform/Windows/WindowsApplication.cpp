@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Class:	CParaEngineApp
+// Class:	CWindowsApplication
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine Co.
@@ -150,7 +150,7 @@ namespace ParaEngine
 extern "C" BOOL ( STDAPICALLTYPE *pChangeWindowMessageFilter )( UINT,DWORD ) = NULL;
 
 #pragma region CtorDtor
-CParaEngineApp::CParaEngineApp()
+CWindowsApplication::CWindowsApplication()
 : m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
 	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
@@ -160,7 +160,7 @@ CParaEngineApp::CParaEngineApp()
 	CFrameRateController::LoadFRCNormal();
 }
 
-CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
+CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine), m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
 	m_dwCoreUsage(PE_USAGE_STANDALONE),  m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
 	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
@@ -172,12 +172,12 @@ CParaEngineApp::CParaEngineApp(const char* lpCmdLine)
 }
 
 
-CViewportManager* CParaEngineApp::GetViewportManager()
+CViewportManager* CWindowsApplication::GetViewportManager()
 {
 	return m_pViewportManager.get();
 }
 
-void CParaEngineApp::InitApp(const char* sCommandLine)
+void CWindowsApplication::InitApp(const char* sCommandLine)
 {
 	if (m_pWinRawMsgQueue == 0)
 		m_pWinRawMsgQueue = new CWinRawMsgQueue();
@@ -198,12 +198,12 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 	CoInitialize(NULL);
 }
 
-bool CParaEngineApp::IsServerMode()
+bool CWindowsApplication::IsServerMode()
 {
 	return m_bServerMode;
 }
 
-void CParaEngineApp::InitLogger()
+void CWindowsApplication::InitLogger()
 {
 #ifdef LOG_FILES_ACTIVITY
 	CFileLogger::GetInstance()->BeginFileLog();
@@ -217,7 +217,7 @@ void CParaEngineApp::InitLogger()
 #endif
 }
 
-void CParaEngineApp::BootStrapAndLoadConfig()
+void CWindowsApplication::BootStrapAndLoadConfig()
 {
 	FindBootStrapper();
 	{
@@ -241,7 +241,7 @@ void CParaEngineApp::BootStrapAndLoadConfig()
 	}
 }
 
-void CParaEngineApp::InitWin3DSettings()
+void CWindowsApplication::InitWin3DSettings()
 {
 	// Following is just for window management
 	if (GetAppCommandLineByParam("d3d", NULL))
@@ -262,7 +262,7 @@ void CParaEngineApp::InitWin3DSettings()
 	m_bShowCursorWhenFullscreen = false;
 }
 
-bool CParaEngineApp::CheckClientLicense()
+bool CWindowsApplication::CheckClientLicense()
 {
 	// check for license file
 	CParaFile file((CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "license.txt").c_str());
@@ -280,7 +280,7 @@ bool CParaEngineApp::CheckClientLicense()
 }
 
 
-void CParaEngineApp::LoadAndApplySettings()
+void CWindowsApplication::LoadAndApplySettings()
 {
 	// load from settings.
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
@@ -338,7 +338,7 @@ void CParaEngineApp::LoadAndApplySettings()
 		m_bStartFullscreen = (strcmp("true", sIsFullScreen) == 0);
 }
 
-void CParaEngineApp::InitSystemModules()
+void CWindowsApplication::InitSystemModules()
 {
 	m_pParaWorldAsset.reset(new CParaWorldAsset());
 	CAISimulator::GetSingleton()->SetGameLoop(CBootStrapper::GetSingleton()->GetMainLoopFile());
@@ -352,7 +352,7 @@ void CParaEngineApp::InitSystemModules()
 }
 
 
-HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
+HRESULT CWindowsApplication::StartApp(const char* sCommandLine)
 {
 	SetCurrentInstance(this);
 	std::string strCmd;
@@ -370,12 +370,12 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 }
 
 
-CParaEngineApp::~CParaEngineApp()
+CWindowsApplication::~CWindowsApplication()
 {
 	StopApp();
 }
 
-HRESULT CParaEngineApp::StopApp()
+HRESULT CWindowsApplication::StopApp()
 {
 	// if it is already stopped, we shall return
 	if(!m_pParaWorldAsset)
@@ -418,12 +418,12 @@ HRESULT CParaEngineApp::StopApp()
 }
 #pragma endregion CtorDtor
 
-HINSTANCE CParaEngineApp::GetModuleHandle()
+HINSTANCE CWindowsApplication::GetModuleHandle()
 {
 	return g_hAppInstance;
 }
 
-void CParaEngineApp::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
+void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 {
 	m_hWnd = hWnd;
 	m_dwWinThreadID = ::GetWindowThreadProcessId(hWnd, NULL);
@@ -450,12 +450,12 @@ void CParaEngineApp::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 #endif
 }
 
-HWND CParaEngineApp::GetMainWindow()
+HWND CWindowsApplication::GetMainWindow()
 {
 	return m_hWnd;
 }
 
-HRESULT CParaEngineApp::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)
+HRESULT CWindowsApplication::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)
 {
 	HRESULT hr = CD3DApplication::CreateFromD3D9Device(pD3dDevice,apSwapChain);
 	if (FAILED(hr))
@@ -464,7 +464,7 @@ HRESULT CParaEngineApp::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDire
 	return hr;
 }
 
-HRESULT CParaEngineApp::Create( HINSTANCE hInstance )
+HRESULT CWindowsApplication::Create( HINSTANCE hInstance )
 {
 	m_hInstance = hInstance;
 	HRESULT hr = CD3DApplication::Create();
@@ -472,17 +472,17 @@ HRESULT CParaEngineApp::Create( HINSTANCE hInstance )
 	return hr;
 }
 
-void CParaEngineApp::SetAllowWindowClosing(bool bAllowClosing)
+void CWindowsApplication::SetAllowWindowClosing(bool bAllowClosing)
 {
 	m_bAllowWindowClosing = bAllowClosing;
 }
 
-bool CParaEngineApp::IsWindowClosingAllowed()
+bool CWindowsApplication::IsWindowClosingAllowed()
 {
 	return m_bAllowWindowClosing;
 };
 
-HRESULT CParaEngineApp::OnCreateWindow()
+HRESULT CWindowsApplication::OnCreateWindow()
 {
 	return S_OK;
 }
@@ -492,7 +492,7 @@ HRESULT CParaEngineApp::OnCreateWindow()
 /// Called during device initialization, this code checks the device
 ///       for some minimum set of capabilities
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD dwBehavior,
+HRESULT CWindowsApplication::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD dwBehavior,
 	D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat )
 {
 	//TODO: this is not a good place to init m_pD3D;
@@ -557,7 +557,7 @@ HRESULT CParaEngineApp::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD 
 	return S_OK;
 }
 
-HRESULT CParaEngineApp::Init(HWND* pHWND)
+HRESULT CWindowsApplication::Init(HWND* pHWND)
 {
 	//load config file
 	CICConfigManager *cm=CGlobals::GetICConfigManager();
@@ -720,9 +720,9 @@ HRESULT CParaEngineApp::Init(HWND* pHWND)
 ///       permanent initialization. ParaEngine modules are setup here.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::OneTimeSceneInit()
+HRESULT CWindowsApplication::OneTimeSceneInit()
 {
-	return CParaEngineApp::Init(&m_hWnd);
+	return CWindowsApplication::Init(&m_hWnd);
 }
 
 
@@ -731,7 +731,7 @@ HRESULT CParaEngineApp::OneTimeSceneInit()
 /// Initialize scene objects.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::InitDeviceObjects()
+HRESULT CWindowsApplication::InitDeviceObjects()
 {
 	LPDIRECT3DDEVICE9 pd3dDevice = m_pd3dDevice;
 	HRESULT hr = S_OK;
@@ -758,12 +758,12 @@ HRESULT CParaEngineApp::InitDeviceObjects()
 /// Initialize scene objects.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::RestoreDeviceObjects()
+HRESULT CWindowsApplication::RestoreDeviceObjects()
 {
 	/*------------------------------------------------------
 	* start of ParaWorld code
 	*-----------------------------------------------------------*/
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
 
 	UINT nBkbufWidth = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
@@ -828,7 +828,7 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 /// Called when the device-dependent objects are about to be lost.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::InvalidateDeviceObjects()
+HRESULT CWindowsApplication::InvalidateDeviceObjects()
 {
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
@@ -843,7 +843,7 @@ HRESULT CParaEngineApp::InvalidateDeviceObjects()
 ///       this function deletes any device dependent objects.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::DeleteDeviceObjects()
+HRESULT CWindowsApplication::DeleteDeviceObjects()
 {
 	// --stage c.1
 	m_pRootScene->DeleteDeviceObjects();
@@ -860,7 +860,7 @@ HRESULT CParaEngineApp::DeleteDeviceObjects()
 ///       to cleanup after itself.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::FinalCleanup()
+HRESULT CWindowsApplication::FinalCleanup()
 {
 	CBlockWorldManager::GetSingleton()->Cleanup();
 
@@ -902,7 +902,7 @@ void SetClientRect(HWND hwnd, RECT& rect)
 	//	SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
 	MoveWindow(hwnd, rect.left, rect.top, rect.right - rect.left,rect.bottom - rect.top, TRUE);
 }
-void CParaEngineApp::SetAppWndRect(const RECT& rect)
+void CWindowsApplication::SetAppWndRect(const RECT& rect)
 {
 	RECT rect_ = rect;
 	SetClientRect(CGlobals::GetAppHWND(), rect_);
@@ -910,7 +910,7 @@ void CParaEngineApp::SetAppWndRect(const RECT& rect)
 
 bool tempRunOnceVar = false;
 
-HRESULT CParaEngineApp::FrameMove()
+HRESULT CWindowsApplication::FrameMove()
 {
 	return FrameMove(m_fTime);
 }
@@ -925,7 +925,7 @@ HRESULT CParaEngineApp::FrameMove()
 * hence the current order is changed to SIM->SCRIPT->IO(camera and biped control)->RENDER
 * the old order is IO(camera and biped control)->SIM->SCRIPT->RENDER */
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::FrameMove(double fTime)
+HRESULT CWindowsApplication::FrameMove(double fTime)
 {
 	bool bIOExecuted=false;
 	/** process all messages in the main game thread.
@@ -1071,12 +1071,12 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	return S_OK;
 }
 
-bool CParaEngineApp::AppHasFocus()
+bool CWindowsApplication::AppHasFocus()
 {
 	return m_bAppHasFocus;
 }
 
-bool CParaEngineApp::UpdateScreenDevice()
+bool CWindowsApplication::UpdateScreenDevice()
 {
 	if(m_bUpdateScreenDevice)
 	{
@@ -1148,7 +1148,7 @@ bool CParaEngineApp::UpdateScreenDevice()
 }
 
 
-void CParaEngineApp::GenerateD3DDebugString()
+void CWindowsApplication::GenerateD3DDebugString()
 {
 	const char* pDebugStr1 = m_strFrameStats;
 	const char* pDebugStr2 = m_strDeviceStats;
@@ -1177,18 +1177,18 @@ void CParaEngineApp::GenerateD3DDebugString()
 		}
 		{
 			char tmp[150];
-			int nUI = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_UI);
-			int nMesh = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_MESH);
-			int nChar = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER);
-			int nTerra = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN);
-			int nOthers = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN);
+			int nUI = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI);
+			int nMesh = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH);
+			int nChar = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER);
+			int nTerra = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN);
+			int nOthers = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN);
 			int nAll = nUI + nMesh + nChar + nTerra + nOthers;
 			snprintf(tmp, 149, "tri:%6d,mesh:%6d,char:%6d,ui:%5d,terra:%5d,other:%5d\n", nAll, nMesh, nChar, nUI, nTerra, nOthers);
 			m_sTitleString.append(tmp);
 		}
-		if (CGlobals::GetScene()->m_sConsoleString){
-			m_sTitleString.append(CGlobals::GetScene()->m_sConsoleString);
-			if (CGlobals::GetScene()->m_sConsoleString[0] != '\0')
+		if (CGlobals::GetScene()->GetConsoleString()){
+			m_sTitleString.append(CGlobals::GetScene()->GetConsoleString());
+			if (CGlobals::GetScene()->GetConsoleString()[0] != '\0')
 				m_sTitleString += "\n";
 		}
 
@@ -1227,7 +1227,7 @@ void CParaEngineApp::GenerateD3DDebugString()
 ///       viewport, and renders the scene.
 /// ParaEngine fixed code: must call these functions as given below
 //-----------------------------------------------------------------------------
-HRESULT CParaEngineApp::Render()
+HRESULT CWindowsApplication::Render()
 {
 	if(!m_bActive || m_bMinimized || GetAppState() != PEAppState_Ready)
 		return E_FAIL;
@@ -1241,14 +1241,14 @@ HRESULT CParaEngineApp::Render()
 	}
 	if(m_bServerMode)
 		return E_FAIL;
-	RenderDevice::ClearAllPerfCount();
+	CGlobals::GetRenderDevice()->ClearAllPerfCount();
 
 	CMoviePlatform* pMoviePlatform = CGlobals::GetMoviePlatform();
 	pMoviePlatform->BeginCaptureFrame();
 
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	m_pRootScene->GetSceneState()->m_pd3dDevice = pd3dDevice;
 	PERF1("Main Render");
 
@@ -1293,7 +1293,7 @@ HRESULT CParaEngineApp::Render()
 	return S_OK;
 }
 
-bool CParaEngineApp::IsDebugBuild()
+bool CWindowsApplication::IsDebugBuild()
 {
 #ifdef _DEBUG
 	return true;
@@ -1302,7 +1302,7 @@ bool CParaEngineApp::IsDebugBuild()
 #endif
 }
 
-int CParaEngineApp::Run( HINSTANCE hInstance )
+int CWindowsApplication::Run( HINSTANCE hInstance )
 {
 	//add a console window for debug or when in server mode.
 	if (!Is3DRenderingEnabled() || IsDebugBuild())
@@ -1329,7 +1329,7 @@ int CParaEngineApp::Run( HINSTANCE hInstance )
 	return result;
 }
 
-void CParaEngineApp::GetStats(string& output, DWORD dwFields)
+void CWindowsApplication::GetStats(string& output, DWORD dwFields)
 {
 	if(dwFields == 0)
 	{
@@ -1352,7 +1352,7 @@ void CParaEngineApp::GetStats(string& output, DWORD dwFields)
 	}
 }
 
-void CParaEngineApp::HandleUserInput()
+void CWindowsApplication::HandleUserInput()
 {
 	/** handle 2D GUI input: dispatch mouse and key event for gui objects. */
 	m_pGUIRoot->HandleUserInput();
@@ -1370,13 +1370,13 @@ void CParaEngineApp::HandleUserInput()
 	CGlobals::GetScene()->HandleUserInput();
 }
 
-void CParaEngineApp::GetScreenResolution(Vector2* pOut)
+void CWindowsApplication::GetScreenResolution(Vector2* pOut)
 {
 	if (pOut)
 		*pOut = Vector2((float)(m_dwCreationWidth), (float)(m_dwCreationHeight));
 }
 
-void CParaEngineApp::SetScreenResolution( const Vector2& vSize )
+void CWindowsApplication::SetScreenResolution( const Vector2& vSize )
 {
 	//m_d3dSettings.Fullscreen_DisplayMode.Width = (int)(vSize.x);
 	//m_d3dSettings.Fullscreen_DisplayMode.Height = (int)(vSize.y);
@@ -1393,7 +1393,7 @@ void CParaEngineApp::SetScreenResolution( const Vector2& vSize )
 	settings.SetDynamicField("ScreenHeight", value);
 }
 
-void CParaEngineApp::GetResolution(float* pX, float* pY)
+void CWindowsApplication::GetResolution(float* pX, float* pY)
 {
 	Vector2 vSize;
 	GetScreenResolution(&vSize);
@@ -1407,40 +1407,40 @@ void CParaEngineApp::GetResolution(float* pX, float* pY)
 		*pY = vSize.y;
 	}
 }
-void CParaEngineApp::SetResolution(float x, float y)
+void CWindowsApplication::SetResolution(float x, float y)
 {
 	SetScreenResolution(Vector2(x,y));
 }
 
-int CParaEngineApp::GetMultiSampleType()
+int CWindowsApplication::GetMultiSampleType()
 {
 	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleType : m_d3dSettings.Windowed_MultisampleType);
 }
 
-void CParaEngineApp::SetMultiSampleType( int nType )
+void CWindowsApplication::SetMultiSampleType( int nType )
 {
 	m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
 	m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
 }
 
-int CParaEngineApp::GetMultiSampleQuality()
+int CWindowsApplication::GetMultiSampleQuality()
 {
 	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleQuality : m_d3dSettings.Windowed_MultisampleQuality);
 }
 
-void CParaEngineApp::SetMultiSampleQuality( int nType )
+void CWindowsApplication::SetMultiSampleQuality( int nType )
 {
 	m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)nType;
 	m_d3dSettings.Windowed_MultisampleQuality = (DWORD)nType;
 }
 
-bool CParaEngineApp::UpdateScreenMode()
+bool CWindowsApplication::UpdateScreenMode()
 {
 	m_bUpdateScreenDevice = true;
 	return true;
 }
 
-bool CParaEngineApp::SetWindowedMode(bool bWindowed)
+bool CWindowsApplication::SetWindowedMode(bool bWindowed)
 {
 	if(IsWindowedMode() == bWindowed)
 		return true;
@@ -1449,23 +1449,23 @@ bool CParaEngineApp::SetWindowedMode(bool bWindowed)
 	return UpdateScreenMode();
 }
 
-bool CParaEngineApp::IsWindowedMode()
+bool CWindowsApplication::IsWindowedMode()
 {
 	return m_bWindowed;
 }
 
-void CParaEngineApp::SetFullScreenMode( bool bFullscreen )
+void CWindowsApplication::SetFullScreenMode( bool bFullscreen )
 {
 	m_nWindowedDesired = bFullscreen ? 0 : 1;
 }
 
-bool CParaEngineApp::IsFullScreenMode()
+bool CWindowsApplication::IsFullScreenMode()
 {
 	return !m_bWindowed;
 }
 
 
-void CParaEngineApp::ShowMenu( bool bShow )
+void CWindowsApplication::ShowMenu( bool bShow )
 {
 	if(m_bIsExternalWindow)
 		return;
@@ -1503,24 +1503,24 @@ void CParaEngineApp::ShowMenu( bool bShow )
 	}
 }
 
-void CParaEngineApp::SetIgnoreWindowSizeChange(bool bIgnoreSizeChange)
+void CWindowsApplication::SetIgnoreWindowSizeChange(bool bIgnoreSizeChange)
 {
 	m_bIgnoreSizeChange = bIgnoreSizeChange;
 }
 
-bool CParaEngineApp::GetIgnoreWindowSizeChange()
+bool CWindowsApplication::GetIgnoreWindowSizeChange()
 {
 	return m_bIgnoreSizeChange;
 }
 
-void CParaEngineApp::SetWindowText( const char* pChar )
+void CWindowsApplication::SetWindowText( const char* pChar )
 {
 	static std::wstring g_sTitle;
 	g_sTitle = ParaEngine::StringHelper::MultiByteToWideChar(pChar, CP_UTF8);
 	::SetWindowTextW(CGlobals::GetAppHWND(), g_sTitle.c_str());
 }
 
-const char* CParaEngineApp::GetWindowText()
+const char* CWindowsApplication::GetWindowText()
 {
 	static WCHAR g_wstr_title[256];
 	static std::string g_title;
@@ -1529,7 +1529,7 @@ const char* CParaEngineApp::GetWindowText()
 	return g_title.c_str();
 }
 
-void CParaEngineApp::WriteConfigFile(const char* FileName)
+void CWindowsApplication::WriteConfigFile(const char* FileName)
 {
 	string sFileName;
 	if(FileName==NULL || FileName[0]=='\0')
@@ -1606,17 +1606,17 @@ void CParaEngineApp::WriteConfigFile(const char* FileName)
 	OUTPUT_LOG("ParaEngine config file is saved to %s\r\n", sFileName.c_str());
 }
 
-bool CParaEngineApp::HasNewConfig()
+bool CWindowsApplication::HasNewConfig()
 {
 	return m_bHasNewConfig;
 }
 
-void CParaEngineApp::SetHasNewConfig( bool bHasNewConfig )
+void CWindowsApplication::SetHasNewConfig( bool bHasNewConfig )
 {
 	m_bHasNewConfig = bHasNewConfig;
 }
 
-void CParaEngineApp::GetCursorPosition( int* pX,int * pY, bool bInBackbuffer /*= true*/ )
+void CWindowsApplication::GetCursorPosition( int* pX,int * pY, bool bInBackbuffer /*= true*/ )
 {
 	if (IsTouchInputting())
 	{
@@ -1638,7 +1638,7 @@ void CParaEngineApp::GetCursorPosition( int* pX,int * pY, bool bInBackbuffer /*=
 	}
 }
 
-void CParaEngineApp::GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer)
+void CWindowsApplication::GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer)
 {
 	if(bInBackbuffer && IsWindowedMode())
 	{
@@ -1656,7 +1656,7 @@ void CParaEngineApp::GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer
 	}
 }
 
-void CParaEngineApp::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer)
+void CWindowsApplication::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer)
 {
 	if(bInBackbuffer && IsWindowedMode())
 	{
@@ -1700,7 +1700,7 @@ void NewSetForegroundWindow(HWND hWnd)
 			ShowWindow(hWnd, SW_SHOW);*/
 	}
 }
-void CParaEngineApp::BringWindowToTop()
+void CWindowsApplication::BringWindowToTop()
 {
 	if(!IsFullScreenMode())
 	{
@@ -1805,7 +1805,7 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 	return hKey;
 }
 
-bool CParaEngineApp::WriteRegStr( const string& root_key, const string& sSubKey, const string& name, const string& value )
+bool CWindowsApplication::WriteRegStr( const string& root_key, const string& sSubKey, const string& name, const string& value )
 {
 	LPBYTE lpValue   = NULL;
 	LONG lRet = NULL;
@@ -1830,7 +1830,7 @@ bool CParaEngineApp::WriteRegStr( const string& root_key, const string& sSubKey,
 	return true;
 }
 
-const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sSubKey, const string& name )
+const char* CWindowsApplication::ReadRegStr( const string& root_key, const string& sSubKey, const string& name )
 {
 	LPBYTE lpValue   = NULL;
 	LONG lRet = NULL;
@@ -1909,7 +1909,7 @@ const char* CParaEngineApp::ReadRegStr( const string& root_key, const string& sS
 	return g_tmp.c_str();
 }
 
-bool CParaEngineApp::WriteRegDWORD( const string& root_key, const string& sSubKey, const string& name, DWORD value )
+bool CWindowsApplication::WriteRegDWORD( const string& root_key, const string& sSubKey, const string& name, DWORD value )
 {
 	LONG lRet = NULL;
 
@@ -1941,7 +1941,7 @@ bool CParaEngineApp::WriteRegDWORD( const string& root_key, const string& sSubKe
 	return true;
 }
 
-DWORD CParaEngineApp::ReadRegDWORD( const string& root_key, const string& sSubKey, const string& name )
+DWORD CWindowsApplication::ReadRegDWORD( const string& root_key, const string& sSubKey, const string& name )
 {
 	LPBYTE lpValue   = NULL;
 	LONG lRet = NULL;
@@ -2039,38 +2039,38 @@ INT_PTR CALLBACK ParaEngine::DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam
 }
 
 /**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-void    CParaEngineApp::EnablePassiveRendering( bool bEnable ) {
+void    CWindowsApplication::EnablePassiveRendering( bool bEnable ) {
 	CD3DApplication::EnablePassiveRendering(bEnable);
 };
 /**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-bool	CParaEngineApp::IsPassiveRenderingEnabled( ) {
+bool	CWindowsApplication::IsPassiveRenderingEnabled( ) {
 	return CD3DApplication::IsPassiveRenderingEnabled();
 };
 /** disable 3D rendering, do not present the scene.
 * This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
-void CParaEngineApp::Enable3DRendering(bool bEnable)
+void CWindowsApplication::Enable3DRendering(bool bEnable)
 {
 	CD3DApplication::Enable3DRendering(bEnable);
 }
 
 /** whether 3D rendering is enabled, do not present the scene.
 * This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
-bool CParaEngineApp::Is3DRenderingEnabled()
+bool CWindowsApplication::Is3DRenderingEnabled()
 {
 	return CD3DApplication::Is3DRenderingEnabled();
 }
 
-HRESULT CParaEngineApp::DoWork()
+HRESULT CWindowsApplication::DoWork()
 {
 	return CD3DApplication::DoWork();
 }
 
-HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender)
+HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 {
 	return CD3DApplication::Render3DEnvironment(bForceRender);
 }
 
-void CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
+void CWindowsApplication::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
 {
 	if(nFrameRateControl == 1)
 	{
@@ -2083,12 +2083,12 @@ void CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
 	CD3DApplication::SetRefreshTimer(fTimeInterval, nFrameRateControl);
 }
 
-float CParaEngineApp::GetRefreshTimer()
+float CWindowsApplication::GetRefreshTimer()
 {
 	return CD3DApplication::GetRefreshTimer();
 }
 
-void CParaEngineApp::GetWindowCreationSize(int * pWidth, int * pHeight)
+void CWindowsApplication::GetWindowCreationSize(int * pWidth, int * pHeight)
 {
 	if(pWidth)
 		*pWidth = m_dwCreationWidth;
@@ -2096,17 +2096,17 @@ void CParaEngineApp::GetWindowCreationSize(int * pWidth, int * pHeight)
 		*pHeight = m_dwCreationHeight;
 }
 
-PEAppState CParaEngineApp::GetAppState()
+PEAppState CWindowsApplication::GetAppState()
 {
 	return CD3DApplication::GetAppState();
 }
 
-void CParaEngineApp::SetAppState(ParaEngine::PEAppState state)
+void CWindowsApplication::SetAppState(ParaEngine::PEAppState state)
 {
 	CD3DApplication::SetAppState(state);
 }
 
-void CParaEngineApp::ActivateApp( bool bActivate )
+void CWindowsApplication::ActivateApp( bool bActivate )
 {
 	m_bAppHasFocus = bActivate;
 	//OUTPUT_LOG("WM_ACTIVATEAPP:%s\n", m_bAppHasFocus? "true":"false");
@@ -2150,29 +2150,29 @@ void CParaEngineApp::ActivateApp( bool bActivate )
 	}
 }
 
-bool CParaEngineApp::IsAppActive()
+bool CWindowsApplication::IsAppActive()
 {
 	/*CGUIRoot * pRoot = CGlobals::GetGUI();
 	return  pRoot!=0 && pRoot->IsActive();*/
 	return m_bAppHasFocus;
 }
 
-DWORD CParaEngineApp::GetCoreUsage()
+DWORD CWindowsApplication::GetCoreUsage()
 {
 	return m_dwCoreUsage;
 }
 
-void CParaEngineApp::SetCoreUsage( DWORD dwUsage )
+void CWindowsApplication::SetCoreUsage( DWORD dwUsage )
 {
 	m_dwCoreUsage = (m_dwCoreUsage & 0xfffffff0) | dwUsage;
 }
 
-void CParaEngineApp::SetMinUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
+void CWindowsApplication::SetMinUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
 {
 	CGlobals::GetGUI()->SetMinimumScreenSize(nWidth,nHeight, bAutoUIScaling);
 }
 
-bool CParaEngineApp::IsSlateMode()
+bool CWindowsApplication::IsSlateMode()
 {
 	// slate mode
 	// laptop mode / non-tablet mode
@@ -2181,7 +2181,7 @@ bool CParaEngineApp::IsSlateMode()
 }
 
 // obsoleted: since the parent window is not in the same thread,  GetFocus() will always return NULL even a child window is having the focus.
-bool CParaEngineApp::HasFocus(HWND hWnd)
+bool CWindowsApplication::HasFocus(HWND hWnd)
 {
 	if(hWnd ==0)
 		hWnd = ::GetFocus();
@@ -2199,27 +2199,27 @@ bool CParaEngineApp::HasFocus(HWND hWnd)
 	return false;
 }
 
-void CParaEngineApp::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
+void CWindowsApplication::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
 {
 	m_bAutoLowerFrameRateWhenNotFocused = bEnabled;
 }
 
-bool CParaEngineApp::GetAutoLowerFrameRateWhenNotFocused()
+bool CWindowsApplication::GetAutoLowerFrameRateWhenNotFocused()
 {
 	return m_bAutoLowerFrameRateWhenNotFocused;
 }
 
-void CParaEngineApp::SetToggleSoundWhenNotFocused( bool bEnabled )
+void CWindowsApplication::SetToggleSoundWhenNotFocused( bool bEnabled )
 {
 	m_bToggleSoundWhenNotFocused = bEnabled;
 }
 
-bool CParaEngineApp::GetToggleSoundWhenNotFocused()
+bool CWindowsApplication::GetToggleSoundWhenNotFocused()
 {
 	return m_bToggleSoundWhenNotFocused;
 }
 
-LRESULT CParaEngineApp::SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CWindowsApplication::SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if(m_pWinRawMsgQueue)
 	{
@@ -2229,7 +2229,7 @@ LRESULT CParaEngineApp::SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, L
 	return 0;
 }
 
-bool CParaEngineApp::GetMessageFromApp(CWinRawMsg* pMsg)
+bool CWindowsApplication::GetMessageFromApp(CWinRawMsg* pMsg)
 {
 	if(m_pWinRawMsgQueue)
 	{
@@ -2246,7 +2246,7 @@ bool CParaEngineApp::GetMessageFromApp(CWinRawMsg* pMsg)
 	return false;
 }
 
-bool CParaEngineApp::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
+bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	if(m_dwWinThreadID!=0)
 	{
@@ -2256,7 +2256,7 @@ bool CParaEngineApp::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lPara
 }
 
 // return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CWindowsApplication::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT result = 0;
 	if(uMsg >= PE_WM_FIRST && uMsg<=PE_WM_LAST)
@@ -2343,7 +2343,7 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 }
 
 // return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
+LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
 {
 	LRESULT result = 0;
 	bool bContinue = true;
@@ -2723,7 +2723,7 @@ LRESULT CParaEngineApp::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, L
 }
 
 
-const char* CParaEngineApp::GetTouchEventSCodeFromMessage(const char * event_type, HWND hWnd, WPARAM wParam, LPARAM lParam)
+const char* CWindowsApplication::GetTouchEventSCodeFromMessage(const char * event_type, HWND hWnd, WPARAM wParam, LPARAM lParam)
 {
 	// msg = command line.
 	int32_t x = GET_X_LPARAM(lParam);
@@ -2753,7 +2753,7 @@ const char* CParaEngineApp::GetTouchEventSCodeFromMessage(const char * event_typ
 }
 
 // return 0 if not processed, 1 if processed, 2 if no further messages in the queue should ever be processed.
-LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
 {
 	bool bIsSceneEnabled = !(m_pRootScene==NULL || !m_pRootScene->IsInitialized());
 	if(bIsSceneEnabled)
@@ -3127,7 +3127,7 @@ LRESULT CParaEngineApp::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 	return 0;
 }
 
-void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
+void CWindowsApplication::Exit( int nReturnCode /*= 0*/ )
 {
 	SetReturnCode(nReturnCode);
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
@@ -3146,7 +3146,7 @@ void CParaEngineApp::Exit( int nReturnCode /*= 0*/ )
 }
 
 
-ITouchInputTranslator* CParaEngineApp::LoadTouchInputPlug()
+ITouchInputTranslator* CWindowsApplication::LoadTouchInputPlug()
 {
 	if(m_pTouchInput)
 		return m_pTouchInput;
@@ -3178,12 +3178,12 @@ ITouchInputTranslator* CParaEngineApp::LoadTouchInputPlug()
 	return m_pTouchInput;
 }
 
-float CParaEngineApp::GetFPS()
+float CWindowsApplication::GetFPS()
 {
 	return m_fFPS;
 }
 
-void CParaEngineApp::UpdateFrameStats(double fTime)
+void CWindowsApplication::UpdateFrameStats(double fTime)
 {
 	// Keep track of the frame count
 	static double fLastTime = 0.0f;
@@ -3199,7 +3199,7 @@ void CParaEngineApp::UpdateFrameStats(double fTime)
 }
 
 
-bool CParaEngineApp::ForceRender()
+bool CWindowsApplication::ForceRender()
 {
 #ifdef USE_DIRECTX_RENDERER
 	auto pd3dDevice = CGlobals::GetRenderDevice();

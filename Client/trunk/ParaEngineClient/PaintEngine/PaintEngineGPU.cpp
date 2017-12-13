@@ -92,7 +92,7 @@ void ParaEngine::CPaintEngineGPU::InitDeviceObjects()
 	CPaintEngineGPU::s_IsStencilSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps&(D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE)) == (D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE);
 #elif defined(USE_OPENGL_RENDERER)
 	CPaintEngineGPU::s_IsScissorRectSupported = true;
-	CPaintEngineGPU::s_IsStencilSupported = RenderDevice::GetStencilBits() > 0;
+	CPaintEngineGPU::s_IsStencilSupported = pD3dDevice->GetStencilBits() > 0;
 #endif
 	m_pSprite->InitDeviceObjects();
 }

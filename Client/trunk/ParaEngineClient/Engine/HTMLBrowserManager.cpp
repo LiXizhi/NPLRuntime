@@ -18,6 +18,7 @@
 #include "HtmlBrowserManager.h"
 
 #include "memdebug.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 using namespace ParaEngine;
 
 // 6 browsers can be opened at the same time by default
@@ -610,7 +611,8 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// here let's check if we can use dynamic textures
 	D3DCAPS9 caps;
 	ZeroMemory( &caps, sizeof(D3DCAPS9));
-	LPDIRECT3DDEVICE9 pd3dDevice=CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	hr = pd3dDevice->GetDeviceCaps( &caps );
 	if( caps.Caps2 & D3DCAPS2_DYNAMICTEXTURES )
 	{

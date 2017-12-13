@@ -42,6 +42,7 @@
 #include "BufferPicking.h"
 #include "ParaWorldAsset.h"
 #include "memdebug.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 /**@def whether to use asset map */
 // #define USE_ASSET_MAP
@@ -595,8 +596,10 @@ HRESULT CParaWorldAsset::InitDeviceObjects()
 	{
 		if(m_pShadowSquareVB == NULL)
 		{
+			auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+			LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 			// Create a shadow square for rendering the stencil buffer contents
-			if( FAILED( CGlobals::GetRenderDevice()->CreateVertexBuffer( 4*sizeof(SHADOWVERTEX),
+			if( FAILED(pd3dDevice->CreateVertexBuffer( 4*sizeof(SHADOWVERTEX),
 											D3DUSAGE_WRITEONLY, SHADOWVERTEX::FVF,
 											D3DPOOL_MANAGED, &m_pShadowSquareVB, NULL ) ) )
 				return E_FAIL;
@@ -619,7 +622,8 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 	GetFontManager().RestoreDeviceObjects();
 	m_DynamicVBManager.RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	m_EffectsManager.RestoreDeviceObjects();
 #ifdef USE_FLASH_MANAGER
 	m_FlashManager.RestoreDeviceObjects();
@@ -1071,7 +1075,9 @@ LatentOcclusionQueryBank* CParaWorldAsset::GetOcclusionQueryBank(int nID)
 			{
 				if(nID>=(int)m_pOcclusionQueryBanks.size())
 					m_pOcclusionQueryBanks.resize(nID+1, 0);
-				pOcclusionQueryBank = new LatentOcclusionQueryBank(CGlobals::GetRenderDevice());
+				auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+				LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+				pOcclusionQueryBank = new LatentOcclusionQueryBank(pd3dDevice);
 				if(!pOcclusionQueryBank->IsValid())
 				{
 					OUTPUT_LOG("warning: failed creating OcclusionQueryBank ID %d\n", nID);

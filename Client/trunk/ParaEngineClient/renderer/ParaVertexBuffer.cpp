@@ -8,6 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ParaVertexBuffer.h"
+#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -51,8 +52,11 @@ bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwForm
 	ReleaseBuffer();
 	m_bufferType = BufferType_VertexBuffer;
 	m_nBufferSize = nBufferSize;
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 #ifdef USE_DIRECTX_RENDERER
-	return SUCCEEDED(CGlobals::GetRenderDevice()->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, dwPool, &m_vertexBuffer, NULL));
+
+	return SUCCEEDED(pd3dDevice->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, dwPool, &m_vertexBuffer, NULL));
 #elif defined(USE_OPENGL_RENDERER)
 	glGenBuffers(1, &m_vertexBuffer);
 	return true;
@@ -68,8 +72,10 @@ bool ParaEngine::ParaVertexBuffer::CreateIndexBuffer(uint32 nBufferSize, DWORD d
 
 	m_bufferType = BufferType_IndexBuffer;
 	m_nBufferSize = nBufferSize;
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 #ifdef USE_DIRECTX_RENDERER
-	auto ret = SUCCEEDED(CGlobals::GetRenderDevice()->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
+	auto ret = SUCCEEDED(pd3dDevice->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
 
 	return ret;
 #elif defined(USE_OPENGL_RENDERER)

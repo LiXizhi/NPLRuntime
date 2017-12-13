@@ -570,7 +570,7 @@ namespace ParaEngine
 		m_num_triangle = total_indexes -2;
 
 		/// create and fill the Direct3D index buffer
-		LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+		auto pD3dDevice = CGlobals::GetRenderDevice();
 		HRESULT result= pD3dDevice->CreateIndexBuffer(sizeof(unsigned short)*total_indexes,
 			D3DUSAGE_WRITEONLY,
 			D3DFMT_INDEX16,
@@ -622,7 +622,7 @@ namespace ParaEngine
 		if(!m_bIsCreated)
 			return;
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+		auto pD3dDevice = CGlobals::GetRenderDevice();
 
 		/** 
 		* Create the base vertex buffer
@@ -716,7 +716,7 @@ namespace ParaEngine
 	{
 #ifdef USE_DIRECTX_RENDERER
 		HRESULT hr;
-		LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+		auto pD3dDevice = CGlobals::GetRenderDevice();
 		int i=0;
 		/**
 		* Fill the dynamic vertex buffers, if it has not been filled
@@ -1236,7 +1236,7 @@ namespace ParaEngine
 	{
 #ifdef USE_DIRECTX_RENDERER
 		CheckLoadOceanTextures(0);
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		static const short pIndexBuffer[] = {
 			0,1,2,0,2,3 
 		};
@@ -1284,7 +1284,7 @@ namespace ParaEngine
 		// set render state
 		pd3dDevice->SetTexture(0,m_pWaterColorTexture->GetTexture());
 		
-		RenderDevice::DrawIndexedPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST, 0, 
+		pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST, 0, 
 			4, 2, pIndexBuffer, D3DFMT_INDEX16,vertices, sizeof(SPRITEVERTEX));
 #endif
 	}
@@ -1373,7 +1373,7 @@ namespace ParaEngine
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 		
@@ -1523,7 +1523,7 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 						}
 					}
 					pEffectFile->EndPass();
@@ -1548,7 +1548,7 @@ namespace ParaEngine
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -1737,7 +1737,7 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, 
+							HRESULT hr = pd3dDevice->DrawIndexedPrimitive( RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, 
 								D3DPT_TRIANGLESTRIP,
 								0,
 								0,
@@ -1774,7 +1774,7 @@ namespace ParaEngine
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -1919,7 +1919,7 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, 
+							HRESULT hr = pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, 
 								D3DPT_TRIANGLESTRIP,
 								0,
 								0,
@@ -1952,7 +1952,7 @@ namespace ParaEngine
 	int COceanManager::RenderTechnique_OccusionTest(SceneState* pSceneState, float x0, float y0, float x1, float y1)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -2004,7 +2004,7 @@ namespace ParaEngine
 						if(hr == S_OK)
 						{
 							// render a quad for the ocean tile occlustion testing. 
-							RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 							hr = pQueries->EndNewQuery();
 						}
 						else
@@ -2113,7 +2113,7 @@ namespace ParaEngine
 				v[i].color = dwColor;
 			}
 			
-			RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
+			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
 
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			painter->end();
@@ -2335,7 +2335,7 @@ namespace ParaEngine
 		m_fLastReflectionTime = 0.f;
 		PERF1("render_reflection");
 
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		CSceneObject* pScene = CGlobals::GetScene();
 
@@ -2540,7 +2540,7 @@ namespace ParaEngine
 			CGlobals::GetViewMatrixStack().pop();
 		}
 
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		Matrix4 worldViewMatrix;
 		Matrix4 worldInverseTransposeMatrix;
 		Matrix4 viewMatrix;
@@ -2659,7 +2659,7 @@ namespace ParaEngine
 		if(pEffectFile==0)
 			return;
 		
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 
 		DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
@@ -2747,7 +2747,7 @@ namespace ParaEngine
 						{
 							pEffectFile->setTexture(0, m_pRippleTexture.get());
 
-							RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+							pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 							pEffectFile->EndPass();
 						}
 					}

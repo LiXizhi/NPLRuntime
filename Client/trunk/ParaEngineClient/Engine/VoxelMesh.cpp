@@ -87,7 +87,7 @@ HRESULT ParaEngine::CVoxelMesh::Draw( SceneState * sceneState )
 	if(pIsoSurface)
 	{
 		sceneState->SetCurrentSceneObject(this);
-		LPDIRECT3DDEVICE9 pd3dDevice = sceneState->m_pd3dDevice;
+		auto pd3dDevice = sceneState->m_pd3dDevice;
 
 		// get world transform matrix
 		Matrix4 mxWorld;

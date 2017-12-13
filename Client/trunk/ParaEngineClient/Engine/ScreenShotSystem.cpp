@@ -66,6 +66,7 @@
 #pragma comment(lib, "VFW32.lib")
 
 #include "memdebug.h"
+#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
 using namespace ParaEngine;
 
 namespace ScreenShot
@@ -501,7 +502,9 @@ void SCREENSHOTSYSTEM::GetValidFilename(char* ValidFilename, char* Filename, boo
 inline void SaveScreenShot(char* Filename, int Width, int Height, int Channels, unsigned char* ScreenData, bool ConvertToBGR = true)
 {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTexture(CGlobals::GetRenderDevice(), Width, Height, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pTexture);
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	HRESULT hr = D3DXCreateTexture(pd3dDevice, Width, Height, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pTexture);
 	if(FAILED(hr))
 	{
 		OUTPUT_LOG("failed creating snap shot texture\n");

@@ -13,6 +13,7 @@
 #include "ParaXBone.h"
 #include "ParaXModel.h"
 #include "ModelRenderPass.h"
+#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -135,7 +136,8 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 		return false;
 	}
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	PE_ASSERT(pEffect!=0);
 	if (!pSceneState->IsShadowPass())
@@ -252,7 +254,8 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 }
 void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMaterialParams /*= NULL*/)
 {
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	PE_ASSERT(pEffect!=0);
 	if(is_rigid_body)
@@ -389,7 +392,8 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		return false;
 	}
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	// blend mode
 	switch (blendmode) {
 	case BM_TRANSPARENT: // 1
@@ -513,7 +517,8 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 void ModelRenderPass::deinit()
 {
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	if(is_rigid_body)
 	{
 		CGlobals::GetWorldMatrixStack().pop();

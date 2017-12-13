@@ -51,7 +51,7 @@ namespace ParaEngine
 		~CParaXProcessor();
 
 		/** Get render device */
-		RenderDevicePtr GetRenderDevice();
+		IRenderDevice* GetRenderDevice();
 
 		/** clean up everything */
 		HRESULT CleanUp();

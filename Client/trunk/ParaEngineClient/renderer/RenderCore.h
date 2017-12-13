@@ -26,6 +26,7 @@
 #ifndef USE_DIRECTX_RENDERER
 #include "RenderCoreOpenGL.h"
 #endif
+#include "IRenderDevice.h"
 
 //  defining structures as if DirectX exist to be used with OpengGL or Null renderer.
 
@@ -60,8 +61,8 @@ namespace ParaEngine
 {
 #ifdef USE_DIRECTX_RENDERER
 	/** Get the texture for rendering */
-	typedef IDirect3DTexture9 * DeviceTexturePtr_type;
-	typedef IDirect3DDevice9* RenderDevicePtr;
+	typedef IDirect3DTexture9* DeviceTexturePtr_type;
+	typedef IRenderDevice* RenderDevicePtr;
 	typedef LPDIRECT3DVERTEXDECLARATION9 VertexDeclarationPtr;
 #elif defined(USE_OPENGL_RENDERER)
 	typedef GLuint DeviceTexturePtr_type;

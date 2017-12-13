@@ -132,7 +132,7 @@ namespace ParaScripting
 		//#include "SceneObject.h"
 		//#include "FrameRateController.h"
 
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		if(pd3dDevice == 0)
 			return false;
 		CSceneObject* pScene = CGlobals::GetScene();

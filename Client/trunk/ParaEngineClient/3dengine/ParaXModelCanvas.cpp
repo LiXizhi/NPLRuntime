@@ -333,7 +333,6 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 	if (!model)
 		return;
 	// draw model
-	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.

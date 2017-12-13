@@ -97,7 +97,7 @@ HRESULT ParaEngine::CMeshProcessor::LockDeviceObject()
 	return E_FAIL;
 }
 
-RenderDevicePtr ParaEngine::CMeshProcessor::GetRenderDevice()
+IRenderDevice* ParaEngine::CMeshProcessor::GetRenderDevice()
 {
 	return (m_pDevice != 0) ? m_pDevice : CGlobals::GetRenderDevice();
 }

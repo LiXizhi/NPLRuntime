@@ -11,7 +11,6 @@
 #include "ParaEngine.h"
 #include "resource.h"
 
-#include "ParaEngineApp.h"
 #include "ParaEngineService.h"
 #include "ParaEngineCore.h"
 
@@ -21,6 +20,9 @@
 #include "guicon.h"
 
 #include "memdebug.h"
+#include "CommandLineParams.h"
+
+#include "WindowsApplication.h"
 
 
 using namespace ParaEngine;
@@ -103,161 +105,11 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	else
 	{
 		InitCommonControls();
-
-#ifdef MULTITHREADED_APP_WINDOW
-		/**
-		* This is a sample code for writing your own ParaEngine Application using the simple way. 
-		* the simple way is to let the CParaEngineApp to create the main window(HWND) and manage message processing automatically. 
-		*/
-		class CMyApp : public CParaEngineApp
-		{
-		public:
-			CMyApp(LPSTR lpCmdLine):CParaEngineApp(lpCmdLine){};
-		};
-
 		// run as application
-		CMyApp d3dApp(lpCmdLine);
-
+		CWindowsApplication app(lpCmdLine);
 		// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 
-		d3dApp.SetRefreshTimer(1/60.f, 0);
-
-		exit_code = d3dApp.Run(hInst);
-
-#else // CUSTOM_APP_WINDOW
-		/**
-		* We will use interface only as if in a dll to create a window. 
-		* the advanced way is to create a custom window and pass its HWND to CParaEngineApp, and in the MsgProc , call CParaEngineApp's message handler. 
-		* I have marked all API calls in comment prefix like "API:". 
-		*/
-		ClassDescriptor* pClassDesc = ParaEngine_GetClassDesc(); // this can also be retrieved from plugin interface
-		IParaEngineCore* pParaEngine = (IParaEngineCore*)(pClassDesc->Create());
-		if(pParaEngine)
-		{
-			// API: Create App to get the IParaEngineApp interface. 
-			IParaEngineApp* pParaEngineApp = pParaEngine->CreateApp();
-			if(pParaEngineApp)
-			{
-				static IParaEngineApp* pParaEngineApp_ = pParaEngineApp;
-				// This illustrate how to work with an external custom window created outside ParaEngineApp. 
-				class ExternalCustomWindow_
-				{
-				public:
-					static HWND Create(HINSTANCE hInstance, int x, int y, int nWidth, int nHeight)
-					{
-						static const WCHAR sWindowClassName[] = L"TestWindowName";
-						HWND hWnd = NULL;
-						// Register the windows class
-						WNDCLASSW wndClass = { 0, WndProc, 0, 0, hInstance,
-							NULL, // LoadIcon( hInstance, MAKEINTRESOURCE(IDI_PARAWORLD_ICON) ),
-							LoadCursor( NULL, IDC_ARROW ),
-							(HBRUSH)GetStockObject(WHITE_BRUSH),
-							NULL, sWindowClassName };
-						RegisterClassW( &wndClass );
-
-						// Set the window's initial style
-						DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
-						HMENU hMenu = NULL;
-						// Set the window's initial width
-						RECT rc;
-						SetRect( &rc, x, y, nWidth, nHeight);        
-						AdjustWindowRect( &rc, dwWindowStyle, ( hMenu != NULL ) ? true : false );
-
-						// Create the render window
-						hWnd = CreateWindowW( sWindowClassName, L"strWindowTitle", dwWindowStyle,
-							CW_USEDEFAULT, CW_USEDEFAULT,
-							(rc.right-rc.left), (rc.bottom-rc.top), 0,
-							hMenu, hInstance, 0 );
-						return hWnd;
-					}
-
-					static LRESULT CALLBACK WndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
-					{
-						// Note: do any custom processing here
-						if(pParaEngineApp_)
-						{
-							// API: send window message to app WndProc for processing, Please note default window procedure is called internally.
-							return pParaEngineApp_->MsgProcWinThread(hWnd, uMsg, wParam, lParam);
-						}
-						else
-							return DefWindowProcW( hWnd, uMsg, wParam, lParam );
-					}
-				};
-				
-				// Specify command line such as "bootstrapper=\"script/apps/Aries/bootstrapper.xml\"";
-				const char* sCommandLine = lpCmdLine; 
-
-				// API: start the application (windows and rendering devices are not yet created), need to call Create later
-				if(pParaEngineApp->StartApp(sCommandLine) != S_OK)
-				{
-					OUTPUT_LOG("error: failed to start app\n");
-					return 0;
-				}
-
-				// set refresh timer, uncomment to render as fast as it could (Eat all CPU)
-				pParaEngineApp->SetRefreshTimer(0.0333f, 1);
-				
-				// Create a window to render to
-				int nWidth, nHeight;
-				pParaEngineApp->GetWindowCreationSize(&nWidth, &nHeight);
-				HWND hWnd = ExternalCustomWindow_::Create(hInst, 0,0, nWidth, nHeight);
-
-				// API: Assign the external hWnd to app
-				pParaEngineApp->SetMainWindow(hWnd);
-				// API: Now create window and render device
-				if(pParaEngineApp->Create() == S_OK)
-				{
-					// Now we're ready to receive and process Windows messages.
-					HRESULT hr;
-					bool bGotMsg;
-					MSG  msg;
-					msg.message = WM_NULL;
-					PeekMessageW( &msg, NULL, 0U, 0U, PM_NOREMOVE );
-
-					while( WM_QUIT != msg.message  )
-					{
-						bool bAppActive=true;
-						bool bDeviceLost = false;
-
-						// Use PeekMessage() if the app is active, so we can use idle time to
-						// render the scene. Else, use GetMessageW() to avoid eating CPU time.
-						if( bAppActive )
-							bGotMsg = ( PeekMessageW( &msg, NULL, 0U, 0U, PM_REMOVE ) != 0 );
-						else
-							bGotMsg = ( GetMessageW( &msg, NULL, 0U, 0U ) != 0 );
-
-						if( bGotMsg )
-						{
-							if(pParaEngineApp->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam)==0)
-							{
-								TranslateMessage( &msg );
-								DispatchMessageW( &msg );
-							}
-						}
-						else
-						{
-							if( bDeviceLost )
-							{
-								// Yield some CPU time to other processes
-								Sleep( 100 ); // 100 milliseconds
-							}
-							if( bAppActive )
-							{
-								// API: Render a frame during idle time (no messages are waiting)
-								if( FAILED( hr = pParaEngineApp->Render3DEnvironment() ) )
-								{
-									SendMessage(hWnd, WM_QUIT,NULL, NULL);
-								}
-							}
-						}
-					} // while( WM_QUIT != msg.message  )
-				}
-				// API: Finally call this before process exit. 
-				pParaEngineApp->StopApp();
-				exit_code = pParaEngineApp->GetReturnCode();
-				pParaEngineApp->De
-			}
-		}
-#endif
+		app.SetRefreshTimer(1/60.f, 0);
+		exit_code = app.Run(hInst);
 	}
 	return exit_code;
 }

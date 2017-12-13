@@ -94,7 +94,7 @@ namespace ParaEngine
 		return E_FAIL;
 	}
 
-	IDirect3DDevice9* CadModelProcessor::GetRenderDevice()
+	IRenderDevice* CadModelProcessor::GetRenderDevice()
 	{
 		return (m_pDevice!=0)?m_pDevice:CGlobals::GetRenderDevice();
 	}
@@ -112,7 +112,7 @@ namespace ParaEngine
 				return S_OK;
 			}
 
-			IDirect3DDevice9* pDevice = GetRenderDevice();
+			auto pDevice = GetRenderDevice();
 			if(pDevice == 0)
 				return E_FAIL;
 
@@ -142,7 +142,7 @@ namespace ParaEngine
 
 			//todo:optimize to use single vertex declaration object across all cad model
 			IDirect3DVertexDeclaration9* pVertexLayout;
-			pDevice->CreateVertexDeclaration(VertexPositionNormal::g_VertexDesc,&pVertexLayout);
+			pDevice->CreateVertexDeclaration((D3DVERTEXELEMENT9*)VertexPositionNormal::g_VertexDesc,&pVertexLayout);
 
 			m_asset->m_pVertexLayout = pVertexLayout;
 			for(size_t i=0;i<m_modelData->SubPartInfo.size();i++)
@@ -265,7 +265,7 @@ namespace ParaEngine
 			uint32_t gridCount = 24;
 			float gridSpace = 0.5;
 
-			IDirect3DDevice9* pDevice = GetRenderDevice();
+			auto* pDevice = GetRenderDevice();
 			if(pDevice == 0)
 				return E_FAIL;
 
@@ -329,7 +329,7 @@ namespace ParaEngine
 
 			//todo:optimize to use single vertex declaration object across all cad model
 			IDirect3DVertexDeclaration9* pVertexLayout;
-			pDevice->CreateVertexDeclaration(VertexPosition::g_VertexDesc,&pVertexLayout);
+			pDevice->CreateVertexDeclaration((D3DVERTEXELEMENT9*)VertexPosition::g_VertexDesc,&pVertexLayout);
 			m_asset->m_pVertexLayout = pVertexLayout;
 
 			CadModelPart* pModelPart = m_asset->CreateCadModelPart(m_asset->m_pSharedVertexBuffer,m_asset->m_pSharedIndexBuffer,pVertexLayout,

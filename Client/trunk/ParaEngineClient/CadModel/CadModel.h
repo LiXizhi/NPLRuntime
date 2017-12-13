@@ -47,7 +47,7 @@ namespace ParaEngine
 		CParameterBlock* GetParamBlock();
 		const LinearColor& GetDiffuseColor(){return m_diffuseColor;}
 		int32 GetEffectPassId(){return m_effectPassId;}
-		void SubmitGeometry(IDirect3DDevice9* pDevice);
+		void SubmitGeometry(IRenderDevice* pDevice);
 
 	private:
 		char* m_name;
@@ -103,7 +103,7 @@ namespace ParaEngine
 		void Init(const char* fileName=NULL);
 
 		CParameterBlock* GetParamBlockByIndex_(int16_t index);
-		HRESULT CreateFromFile_Async(void* pContext, IDirect3DDevice9* pDev=NULL, const char* sFileName=NULL);
+		HRESULT CreateFromFile_Async(void* pContext, IRenderDevice* pDev=NULL, const char* sFileName=NULL);
 
 		CadModelPart* CreateCadModelPart(IDirect3DVertexBuffer9* sharedVB,IDirect3DIndexBuffer9* sharedIB,IDirect3DVertexDeclaration9* sharedLayout,
 			D3DPRIMITIVETYPE primitiveType,uint16_t vertexStride,uint32_t vertexOfs,uint32_t indexOfs,uint32_t primitiveCount,uint32_t vertexCount);

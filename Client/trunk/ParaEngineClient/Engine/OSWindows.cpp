@@ -8,11 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "OSWindows.h"
-#ifdef USE_OPENGL_RENDERER
-	#include "platform/win32/ParaEngineApp.h"
-#else
-	#include "ParaEngineApp.h"
-#endif
 #include <strsafe.h>
 #pragma comment(lib, "User32.lib")
 

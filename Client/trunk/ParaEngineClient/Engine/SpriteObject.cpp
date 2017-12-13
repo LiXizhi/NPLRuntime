@@ -53,7 +53,7 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 		sceneState->listPRSprite.push_back(this);
 		return S_OK;
 	}
-	LPDIRECT3DDEVICE9 pd3dDevice = sceneState->m_pd3dDevice;
+	auto pd3dDevice = sceneState->m_pd3dDevice;
 	
 	//-- set world transformation matrix
 	Matrix4 mx;
@@ -97,12 +97,12 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 
 	
 	//-- Render the billboard
-	RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
+	pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
 	
 	return S_OK;
 }
 
-void CSpriteObject::SetRenderState(LPDIRECT3DDEVICE9 pd3dDevice)
+void ParaEngine::CSpriteObject::SetRenderState(IRenderDevice* pd3dDevice)
 {
 	//TODO: render state is kind of chaos: Use sceneState::StateManager in future versions
 	CGlobals::GetEffectManager()->SetCullingMode(false);
@@ -128,7 +128,7 @@ void CSpriteObject::SetRenderState(LPDIRECT3DDEVICE9 pd3dDevice)
 	}
 }
 
-void CSpriteObject::RestoreRenderState(LPDIRECT3DDEVICE9 pd3dDevice)
+void ParaEngine::CSpriteObject::RestoreRenderState(IRenderDevice* pd3dDevice)
 {
 	//-- restore state
 	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))

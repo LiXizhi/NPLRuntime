@@ -65,13 +65,13 @@ void CMirrorSurface::RestoreDeviceObjects()
 {
 	HRESULT hr;
 
-	LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
 	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
 	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-	hr = pD3dDevice->CreateTexture(nWidth, 	nHeight, 
+	hr = pd3dDevice->CreateTexture(nWidth, 	nHeight, 
 		1, D3DUSAGE_RENDERTARGET, 
 		D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pReflectionTexture, NULL);
 	CHECK_RETURN_CODE("CreateTexture Reflection Texture", hr);  
@@ -79,7 +79,7 @@ void CMirrorSurface::RestoreDeviceObjects()
 	hr = m_pReflectionTexture->GetSurfaceLevel(0, &m_pReflectionSurface);
 	CHECK_RETURN_CODE("GetSurfaceLevel Reflection Surface", hr);
 
-	hr = pD3dDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
+	hr = pd3dDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
 		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
 	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
 	m_bInitialized=true;
@@ -132,7 +132,7 @@ void CMirrorSurface::SetMatrices(bool bPostPushMatrices, bool bPrePopMatrices)
 		CGlobals::GetViewMatrixStack().pop();
 	}
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	Matrix4 worldViewMatrix;
 	Matrix4 worldInverseTransposeMatrix;
 	Matrix4 viewMatrix;
@@ -187,7 +187,7 @@ void CMirrorSurface::RenderReflectionTexture()
 			InitDeviceObjects();
 			RestoreDeviceObjects();
 		}
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		Plane clipPlane;
 		Plane transformedClipPlane;

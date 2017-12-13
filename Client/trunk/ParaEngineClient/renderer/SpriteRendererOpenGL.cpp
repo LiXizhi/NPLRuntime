@@ -306,7 +306,7 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	// tex coords
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 
-	RenderDevice::DrawPrimitive(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, 0, nTriangleCount);
+	pD3dDevice->DrawPrimitive(CGlobals::GetRenderDevice(), RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, 0, nTriangleCount);
 }
 
 void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)

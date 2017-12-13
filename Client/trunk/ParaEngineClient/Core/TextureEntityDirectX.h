@@ -81,7 +81,7 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		HRESULT CreateTextureFromFile_Serial(RenderDevicePtr pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
+		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
 
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.

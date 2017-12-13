@@ -76,7 +76,7 @@ namespace ParaEngine
 		/** the asset file that this texture loader will update to*/
 		asset_ptr<TextureEntity> m_asset;
 		/// if this is NULL, the default device is used. 
-		RenderDevicePtr m_pDevice;
+		IRenderDevice* m_pDevice;
 		/// if this is NULL, the m_asset->m_pTexture is sued. 
 		void** m_ppTexture;
 
@@ -100,7 +100,7 @@ namespace ParaEngine
 		~CTextureProcessor();
 
 		/** Get render device */
-		RenderDevicePtr GetRenderDevice();
+		IRenderDevice* GetRenderDevice();
 
 		/** clean up everything */
 		HRESULT CleanUp();

@@ -5,7 +5,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "D3DWindowUtil.h"
-#include "ParaEngineApp.h"
 
 using namespace ParaEngine;
 
@@ -222,9 +221,9 @@ HRESULT CD3DWindowUtil::DisplayErrorMsg( HRESULT hr, DWORD dwType )
 			wcscpy( strMsg, L"很抱歉，出现了一个错误, 请发送Log文件给我们");
     }
 
-	if(CParaEngineApp::GetInstance())
+	if(CGlobals::GetApp())
 	{
-		CParaEngineApp::GetInstance()->SendMessageToApp(CParaEngineApp::GetInstance()->GetMainWindow(),  PE_APP_SHOW_ERROR_MSG, hr, dwType);
+		CGlobals::GetApp()->SendMessageToApp(CGlobals::GetApp()->GetMainWindow(),  PE_APP_SHOW_ERROR_MSG, hr, dwType);
 	}
 
     if( MSGERR_APPMUSTEXIT == dwType )
@@ -235,9 +234,9 @@ HRESULT CD3DWindowUtil::DisplayErrorMsg( HRESULT hr, DWORD dwType )
         MessageBoxW( NULL, strMsg, g_sWindowTitle, MB_ICONERROR|MB_OK );
 
         // Close the window, which shuts down the app
-        if(CParaEngineApp::GetInstance())
+        if(CGlobals::GetApp())
 		{
-			CParaEngineApp::GetInstance()->SendMessageToApp(CParaEngineApp::GetInstance()->GetMainWindow(),  WM_CLOSE, 0, 0);
+			CGlobals::GetApp()->SendMessageToApp(CGlobals::GetApp()->GetMainWindow(),  WM_CLOSE, 0, 0);
 		}
     }
     else

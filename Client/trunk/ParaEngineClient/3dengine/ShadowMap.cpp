@@ -30,6 +30,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "ViewportManager.h"
 #include "ShadowMap.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 
 using namespace ParaEngine;
@@ -105,7 +106,9 @@ HRESULT CShadowMap::CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE re
 {
 	HRESULT hr = S_OK;
 	IDirect3D9* tempD3D = NULL;
-	CGlobals::GetRenderDevice()->GetDirect3D(&tempD3D);
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	pd3dDevice->GetDirect3D(&tempD3D);
 	const D3DCAPS9& devCaps = CGlobals::GetDirectXEngine().m_d3dCaps;
 	
 	D3DDISPLAYMODE displayMode;
@@ -172,7 +175,8 @@ bool CShadowMap::PrepareAllSurfaces()
 #endif
 		return true;
 #ifdef USE_DIRECTX_RENDERER
-	IDirect3DDevice9* pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 	//  hardware shadow maps are enabled by creating a texture with a depth format (D16, D24X8, D24S8),
 	//  with usage DEPTHSTENCIL set.
@@ -1334,7 +1338,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
 //#ifdef USE_DIRECTX_RENDERER
 	//  preserve old viewport and back buffer
-	LPDIRECT3DDEVICE9 pd3dDevice =  CGlobals::GetRenderDevice();
+	auto pd3dDevice =  CGlobals::GetRenderDevice();
 	pd3dDevice->GetViewport(&oldViewport);
 
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
@@ -1435,7 +1439,7 @@ HRESULT CShadowMap::EndShadowPass()
 	CGlobals::GetProjectionMatrixStack().pop();
 
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 #else
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 #endif
@@ -1493,7 +1497,7 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->setTexture(0, m_pSMColorTexture->GetTexture());
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = RenderDevice::DrawPrimitiveUP( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}
@@ -1507,7 +1511,7 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->setTexture(0, m_pSMColorTextureBlurredHorizontal->GetTexture());
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = RenderDevice::DrawPrimitiveUP( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}

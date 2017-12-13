@@ -17,7 +17,7 @@ namespace ParaEngine
 		int PerformOcclusionTest(T& renderlist, SceneState& sceneState, int nMinEnableCount = 25, int nPixelsCount = 0)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pd3dDevice = sceneState.m_pd3dDevice;
+		auto pd3dDevice = sceneState.m_pd3dDevice;
 		int nObjectNum = (int)renderlist.size();
 
 		// only bother to use hardware occlusion testing if the number of small object is larger than 20.
@@ -116,7 +116,7 @@ namespace ParaEngine
 		bool bUseInstancing = false;
 #endif
 
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 
 		//////////////////////////////////////////////////////////////////////////
 		// render without hardware occlusion testing
@@ -221,7 +221,7 @@ namespace ParaEngine
 //#ifdef USE_DIRECTX_RENDERER
 		sceneState.m_nCurRenderGroup = RENDER_SHADOWMAP;
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 #else
 		auto pd3dDevice = CGlobals::GetRenderDevice();
 #endif

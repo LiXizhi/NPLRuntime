@@ -34,6 +34,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 
 #ifdef PARAENGINE_CLIENT
 	#include "memdebug.h"
+#include "D3D9RenderDevice.h"
 #endif
 
 // to lower case
@@ -290,7 +291,7 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 	return m_pTextureInfo;
 }
 
-HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IDirect3DDevice9* pDev, const char* sFileName, IDirect3DTexture9** ppTexture, D3DFORMAT dwTextureFormat, UINT nMipLevels, Color dwColorKey )
+HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, const char* sFileName, IDirect3DTexture9** ppTexture, D3DFORMAT dwTextureFormat, UINT nMipLevels, Color dwColorKey )
 {
 	// Load Texture sequentially
 	asset_ptr<TextureEntity> my_asset(this);
@@ -470,7 +471,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		return S_OK;
 	}
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	if(SurfaceType == TextureEntityDirectX::StaticTexture || SurfaceType == TextureEntityDirectX::TerrainHighResTexture)
 	{
@@ -581,7 +582,8 @@ void TextureEntityDirectX::CreateTexture(LPDIRECT3DTEXTURE9 pSrcTexture, D3DFORM
 		UnloadAsset();
 		m_bIsInitialized = true;
 
-		LPDIRECT3DDEVICE9 pd3dDevice =  CGlobals::GetRenderDevice();
+		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 		HRESULT hr = D3DXCreateTexture(pd3dDevice, width, height,  MipLevels, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &m_pTexture);
 		if( SUCCEEDED(hr) )
 		{
@@ -654,6 +656,10 @@ VOID WINAPI ColorFill (D3DXVECTOR4* pOut, const D3DXVECTOR2* pTexCoord, const D3
 
 HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 {
+
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+
 	if(m_bIsInitialized)
 		return S_OK;
 	if(SurfaceType == TextureEntityDirectX::RenderTarget)
@@ -695,13 +701,13 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 			format = D3DFMT_A16B16G16R16F;
 		}
 
-		if( FAILED(D3DXCreateTexture(CGlobals::GetRenderDevice(),width,height,1,D3DUSAGE_RENDERTARGET,
+		if( FAILED(D3DXCreateTexture(pd3dDevice,width,height,1,D3DUSAGE_RENDERTARGET,
 			format, D3DPOOL_DEFAULT,&m_pTexture)) )
 		{
 			if(format == D3DFMT_A8R8G8B8 || format == D3DFMT_R32F)
 			{
 				// try D3DFMT_X8R8G8B8 if FMT_A8R8G8B8 is not supported; perhaps D3DXCreateTexture already secretly does this for us. 
-				if( FAILED(D3DXCreateTexture(CGlobals::GetRenderDevice(),width,height,1,D3DUSAGE_RENDERTARGET,
+				if( FAILED(D3DXCreateTexture(pd3dDevice,width,height,1,D3DUSAGE_RENDERTARGET,
 					D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,&m_pTexture)) )
 				{
 					OUTPUT_LOG("failed creating render target for %s", GetKey().c_str());
@@ -756,7 +762,7 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 			format = D3DFMT_R32F;
 		}
 
-		if( FAILED(D3DXCreateTexture(CGlobals::GetRenderDevice(),width,height,1,D3DUSAGE_DEPTHSTENCIL,
+		if( FAILED(D3DXCreateTexture(pd3dDevice,width,height,1,D3DUSAGE_DEPTHSTENCIL,
 			format, D3DPOOL_DEFAULT,&m_pTexture)) )
 		{
 			OUTPUT_LOG("failed creating depth stencil for %s", GetKey().c_str());
@@ -842,6 +848,9 @@ HRESULT TextureEntityDirectX::DeleteDeviceObjects()
 
 void TextureEntityDirectX::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
+
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	HRESULT hr;
 	D3DSURFACE_DESC desc;
 	IDirect3DTexture9* pTexture = NULL;
@@ -853,7 +862,7 @@ void TextureEntityDirectX::LoadImage(char *sBufMemFile, int sizeBuf, int &width,
 		d3dFormat = D3DFMT_R8G8B8;
 
 	// read from file
-	hr = D3DXCreateTextureFromFileInMemoryEx( CGlobals::GetRenderDevice(), sBufMemFile, sizeBuf,
+	hr = D3DXCreateTextureFromFileInMemoryEx(pd3dDevice, sBufMemFile, sizeBuf,
 		0, 0, 1, 0, 
 		d3dFormat, D3DPOOL_SCRATCH, 
 		D3DX_FILTER_NONE, D3DX_FILTER_NONE,
@@ -989,6 +998,8 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 
 bool TextureEntityDirectX::StretchRect(TextureEntityDirectX * pSrcTexture, TextureEntityDirectX * pDestTexture)
 {
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	bool bReleaseSrc = false;
 	bool bReleaseDest = false;
 	bool res = false;
@@ -1009,7 +1020,7 @@ bool TextureEntityDirectX::StretchRect(TextureEntityDirectX * pSrcTexture, Textu
 
 	if (pSrcSurface && pDestSurface)
 	{
-		res = SUCCEEDED(CGlobals::GetRenderDevice()->StretchRect(pSrcSurface, NULL, pDestSurface, NULL, D3DTEXF_LINEAR));
+		res = SUCCEEDED(pd3dDevice->StretchRect(pSrcSurface, NULL, pDestSurface, NULL, D3DTEXF_LINEAR));
 	}
 
 	if (bReleaseSrc)
@@ -1029,6 +1040,8 @@ bool TextureEntityDirectX::SetRenderTarget(int nIndex)
 	bool bReleaseSrc = false;
 	bool res = false;
 	LPDIRECT3DSURFACE9 pSrcSurface = GetSurface();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	if (pSrcSurface == 0)
 	{
 		LPDIRECT3DTEXTURE9 pTex = GetTexture();
@@ -1036,7 +1049,7 @@ bool TextureEntityDirectX::SetRenderTarget(int nIndex)
 	}
 	if (pSrcSurface)
 	{
-		res = SUCCEEDED(CGlobals::GetRenderDevice()->SetRenderTarget(nIndex, pSrcSurface));
+		res = SUCCEEDED(pd3dDevice->SetRenderTarget(nIndex, pSrcSurface));
 	}
 	if (bReleaseSrc)
 	{
@@ -1064,8 +1077,10 @@ void TextureEntityDirectX::SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture)
 
 TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileEx(CGlobals::GetRenderDevice(), pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, dwCreatePool, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
+	HRESULT hr = D3DXCreateTextureFromFileEx(pd3dDevice, pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, dwCreatePool, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
 	if (SUCCEEDED(hr) && pTexture != NULL)
 	{
 		TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
@@ -1090,7 +1105,8 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 	DeviceTexturePtr_type pSrcTexture = GetTexture();
 	if (!pSrcTexture)
 		return false;
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	DeviceTexturePtr_type pDestTexture = NULL;
 	HRESULT hr = D3DXCreateTexture(pd3dDevice, width, height, 1, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &pDestTexture);
 	if (SUCCEEDED(hr))
@@ -1160,7 +1176,8 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 
 TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
-	IDirect3DDevice9* pD3d = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pD3d = pRenderDevice->GetDirect3DDevice9();
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
 
 	if (!pTexels)
@@ -1299,7 +1316,8 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 {
 	HRESULT hr;
 	DeviceTexturePtr_type* ppTexture = (DeviceTexturePtr_type*)ppTexture_;
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
 

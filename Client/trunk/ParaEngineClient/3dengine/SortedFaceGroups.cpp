@@ -326,7 +326,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 						pBufEntity->Unlock();
 
-						RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+						pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 						if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 						{
@@ -613,9 +613,9 @@ void ParaEngine::CSortedFaceGroups::Render()
 								}
 
 								if (pBufEntity->IsMemoryBuffer())
-									RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+									pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 								else
-									RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+									pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 								if(enableTexStripEffect)
 								{

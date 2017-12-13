@@ -363,6 +363,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 	SceneState& sceneState = m_sceneState;
 	m_sceneState.m_pd3dDevice = CGlobals::GetRenderDevice();
 	RenderDevicePtr pd3dDevice = m_sceneState.m_pd3dDevice;
+	
 
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	bool old_IsLocalLightEnabled = pEffectManager->IsLocalLightingEnabled();
@@ -534,7 +535,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2,D3DTA_CURRENT);*/
 
 			pd3dDevice->SetTexture(0, m_pMask->GetTexture());
-			RenderDevice::DrawPrimitiveUP( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 			/*pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_MODULATE);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1,D3DTA_TEXTURE);

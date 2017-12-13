@@ -650,7 +650,6 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 void CParaXAnimInstance::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld)
 {
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 
 	// scale the model
 	Matrix4 mat, matScale;

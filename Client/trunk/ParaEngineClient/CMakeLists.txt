@@ -180,6 +180,11 @@ SOURCE_GROUP("Platform\\Windows" FILES ${ParaEngineClient_Platfowm_Windows_FILES
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platfowm_Windows_FILES})
 #####################################
 
+file (GLOB ParaEngineClient_D3D9Render_FILES ${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9/*.*)
+SOURCE_GROUP("Platform\\Windows\\Render\\D3D9" FILES ${ParaEngineClient_D3D9Render_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_D3D9Render_FILES})
+#####################################
+
 
 
 # Resource file
@@ -284,6 +289,7 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/NPL")
 include_directories("${ParaEngineClient_SOURCE_DIR}/2dengine/Video")
 include_directories("${ParaEngineClient_SOURCE_DIR}/common")
 include_directories("${ParaEngineClient_SOURCE_DIR}/sqlite3")
+include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 if(NPLRUNTIME_SUPPORT_FBX)

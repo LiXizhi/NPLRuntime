@@ -187,8 +187,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 {
 	if(m_nLineCount == 0)
 		return;
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	if (!pd3dDevice)
+	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
+	if (!pRenderDevice)
 		return;
 #ifdef USE_OPENGL_RENDERER
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
@@ -209,12 +209,12 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	// set render state
 	{
 		// pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetTexture(0, 0);
+		pRenderDevice->SetTexture(0, 0);
 
-		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		pd3dDevice->SetFVF(LINEVERTEX::FVF);
+		pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-		RenderDevice::DrawIndexedPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
+		pRenderDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0,
 			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), D3DFMT_INDEX16,
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
 	}
@@ -381,7 +381,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 				ThickVertices += 24;
 			}
 			pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&DepthBiasThisBatch);
-			RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
+			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
 				8 * NumLinesThisBatch, (LINEVERTEX*)(&s_VertexData[0]), sizeof(LINEVERTEX));
 		}
 		pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
@@ -497,7 +497,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 				}
 				pEffect->setTexture(0, renderPass.GetTexture());
 				pEffect->CommitChanges();
-				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
+				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
 					2 * NumParticlesThisBatch, (SPRITEVERTEX*)(&s_VertexData[0]), sizeof(SPRITEVERTEX));
 			}
 		}

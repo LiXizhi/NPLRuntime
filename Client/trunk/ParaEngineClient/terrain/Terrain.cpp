@@ -1672,7 +1672,7 @@ void Terrain::Render()
 						}
 					}
 					// render triangles for the current texture group 
-					RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+					pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 				}
 
 				/**
@@ -1693,7 +1693,7 @@ void Terrain::Render()
 						pD3dDevice->SetTexture(1, pCell->BindDetail(k) );
 
 						// render triangles for the current texture group 
-						RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+						pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 					}
 					// restore states
 					pD3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
@@ -1716,7 +1716,7 @@ void Terrain::Render()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = RenderDevice::GetMaxSimultaneousTextures();
+		int nMaxNumGPUTextures = pD3dDevice->GetMaxSimultaneousTextures();
 		// my shader only support 8, so ...
 		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
 			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;
@@ -1743,7 +1743,7 @@ void Terrain::Render()
 						{
 							// render triangles for the current texture group 
 							//pEffectFile->CommitChanges();
-							RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+							pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 						}
 					}//for( itCurCP = 
 					pEffectFile->EndPass();
@@ -1874,7 +1874,7 @@ void Terrain::Render()
 
 									pEffectFile->CommitChanges();
 									// render triangles for the current texture group 
-									RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+									pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 									nFinishedLayers = i;
 									++nPass;
 									nCurrentTexIndex = 0; // the next pass begin with index 0;
@@ -1911,7 +1911,7 @@ void Terrain::Render()
 							}
 							pEffectFile->CommitChanges();
 							// render triangles for the current texture group 
-							RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+							pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 							nFinishedLayers = nLayers;
 							++nPass;
 							nCurrentTexIndex = 0; // the next pass begin with index 0;
@@ -1929,7 +1929,7 @@ void Terrain::Render()
 						CGlobals::GetEffectManager()->EnableD3DAlphaBlending(false);
 						pEffectFile->CommitChanges();
 						// render triangles for the current texture group 
-						RenderDevice::DrawPrimitive( pD3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+						pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 						pEffectFile->EndPass(1);
 					}
 				}
@@ -2064,7 +2064,7 @@ void Terrain::RenderGeoMipmap()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = RenderDevice::GetMaxSimultaneousTextures(); // usually 4, 8 or above
+		int nMaxNumGPUTextures = pD3dDevice->GetMaxSimultaneousTextures(); // usually 4, 8 or above
 		// my shader only support 8, so ...
 		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
 			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;
@@ -2085,7 +2085,7 @@ void Terrain::RenderGeoMipmap()
 						if(block->GetFrustumState() > 0)
 						{
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-							RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+							pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 						}
@@ -2198,7 +2198,7 @@ void Terrain::RenderGeoMipmap()
 									}
 									pEffectFile->CommitChanges();
 									IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-									RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+									pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 										block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 										idxInfo->GetIndexCount()/3);
 									nFinishedLayers = i;
@@ -2239,7 +2239,7 @@ void Terrain::RenderGeoMipmap()
 							
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
 
-							RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+							pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 							nFinishedLayers = nLayers;
@@ -2263,7 +2263,7 @@ void Terrain::RenderGeoMipmap()
 							pEffectFile->CommitChanges();
 						
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-							RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+							pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 							pEffectFile->EndPass(1);
@@ -2301,7 +2301,7 @@ void Terrain::RenderGeoMipmap()
 							{
 								//transparent layer
 								CGlobals::GetEffectManager()->EnableD3DAlphaBlending(true);
-								RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+								pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 									pBlock->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 									idxInfo->GetIndexCount()/3);
 
@@ -2315,7 +2315,7 @@ void Terrain::RenderGeoMipmap()
 								pD3dDevice->SetRenderState(D3DRS_DEPTHBIAS,*((DWORD*)&bias));
 								pD3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
 
-								RenderDevice::DrawIndexedPrimitive(pD3dDevice,RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
+								pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 									pBlock->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 									idxInfo->GetIndexCount()/3);
 

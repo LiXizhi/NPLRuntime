@@ -15,6 +15,7 @@
 #include "SkyMesh.h"
 #include "AutoCamera.h"
 #include "SunLight.h"
+#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
 #ifdef WIN32
 #define strcmpi		_strcmpi
 #endif
@@ -311,7 +312,8 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 {
 	m_bIsInitialized =true;
 	m_bIsValid = false;//set to true if created successfully.
-	LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 	LPD3DXBUFFER pBufferErrors = NULL;
 	
@@ -328,7 +330,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
 		*/
 		result = D3DXCreateEffect(
-			pD3dDevice, 
+			pd3dDevice,
 			file.getBuffer(),
 			(UINT)file.getSize(), 
 			NULL, //(D3DXMACRO*) (s_bUseHalfPrecision ? s_halfPrecisionMacroTable : s_fullPrecisionMacroTable), 

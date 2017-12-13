@@ -294,7 +294,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 
 			if (pSur)
 			{
-				LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+				auto pd3dDevice = CGlobals::GetRenderDevice();
 				D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
 				LPDIRECT3DTEXTURE9 pTextureDest = NULL;
 				LPDIRECT3DSURFACE9 pSurDest = NULL;

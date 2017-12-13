@@ -1005,9 +1005,9 @@ namespace ParaEngine {
 
 	void CParaXStaticModel::DrawRenderPass(int i)
 	{
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		ParaXStaticModelRenderPass& pass = m_passes[i];
-		RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
+		pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
 	}
 
 

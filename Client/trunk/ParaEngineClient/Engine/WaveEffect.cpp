@@ -36,7 +36,7 @@ namespace ParaEngine
 
 	HRESULT WaveEffect::RestoreDeviceObjects()
 	{
-		IDirect3DDevice9* pDevice = CGlobals::GetRenderDevice();
+		auto* pDevice = CGlobals::GetRenderDevice();
 
 		D3DFORMAT surfaceFmt = D3DFMT_A8R8G8B8;
 		D3DVIEWPORT9 viewport;
@@ -77,7 +77,7 @@ namespace ParaEngine
 
 	HRESULT WaveEffect::Render()
 	{
-		IDirect3DDevice9* pDevice = CGlobals::GetRenderDevice();
+		auto pDevice = CGlobals::GetRenderDevice();
 		
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		pEffectManager->BeginEffect(TECH_SCREEN_WAVE);
@@ -105,7 +105,7 @@ namespace ParaEngine
 				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3],900000.0f);
 				pDevice->SetVertexShaderConstantF(0,m_waveParam,1);
 
-				RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
+				pDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
 			
 				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
 				pDevice->SetRenderState(D3DRS_ZENABLE,true);
