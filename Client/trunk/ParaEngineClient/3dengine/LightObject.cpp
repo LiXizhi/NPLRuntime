@@ -13,6 +13,7 @@
 #include "LightManager.h"
 #include "LightObject.h"
 #include "LightGeoUtil.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -461,7 +462,15 @@ Matrix4* ParaEngine::CLightObject::GetRenderMatrix(Matrix4& out, int nRenderNumb
 
 void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 {
+
+
+
 #ifdef USE_DIRECTX_RENDERER
+
+
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+
 	if(m_pDeferredShadingMesh==NULL)
 	{
 		MeshEntity * ppMesh=nullptr;
@@ -477,7 +486,7 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 
 				auto pRawMesh = (CParaXStaticModelRawPtr)ppMesh->GetMesh();
 
-				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ,CGlobals::GetRenderDevice(), &(pRawMesh->GetSysMemMeshRef()));
+				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ, pd3dDevice, &(pRawMesh->GetSysMemMeshRef()));
 				std::vector<Vector3> pos;
 				LightGeomUtil::createQuad(pos);
 				void * data=nullptr;
@@ -569,7 +578,6 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 		}
 		m_pDeferredShadingMesh=ppMesh;
 	}
-	LPDIRECT3DDEVICE9 pd3dDevice=sceneState->m_pd3dDevice;
 	auto pMesh = m_pDeferredShadingMesh->GetMesh();
 	CEffectFile* pEffectFile=CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	CGlobals::GetWorldMatrixStack().push(m_mxLocalTransform);

@@ -1548,7 +1548,6 @@ void CBipedObject::BuildShadowVolume(SceneState * sceneState, ShadowVolume * pSh
 	CAnimInstanceBase* pAI = GetAnimInstance();
 	if (pAI)
 	{
-		LPDIRECT3DDEVICE9  pd3dDevice = CGlobals::GetRenderDevice();
 		// push matrix
 		Matrix4 mxWorld;
 

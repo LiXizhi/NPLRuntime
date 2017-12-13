@@ -87,7 +87,7 @@ namespace ParaEngine
 		~CMeshProcessor();
 
 		/** Get render device */
-		RenderDevicePtr GetRenderDevice();
+		IRenderDevice* GetRenderDevice();
 
 		/** clean up everything */
 		HRESULT CleanUp();

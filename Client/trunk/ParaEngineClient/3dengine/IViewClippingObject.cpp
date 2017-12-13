@@ -17,6 +17,7 @@
 
 #include "IViewClippingObject.h"
 #include "memdebug.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -59,7 +60,8 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 		4,5,5,6,6,7,7,4, // top
 		0,4,1,5,2,6,3,7, // sides
 	};
-
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	Vector3 pVecBounds[8];
 	int nNumVertices;
 	GetRenderVertices(pVecBounds, &nNumVertices);
@@ -74,7 +76,7 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	else if(nNumVertices == 8)
 		nLenCount = 12;
 #ifdef USE_DIRECTX_RENDERER
-	RenderDevice::DrawIndexedPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_LINELIST, 0, 
+	pRenderDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_LINELIST, 0,
 		nNumVertices, nLenCount, pIndexBuffer, D3DFMT_INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
 #endif
 	
@@ -94,7 +96,7 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	GetRenderVertices(pVecBounds, &nNumVertices);
 	
 #ifdef USE_DIRECTX_RENDERER
-	RenderDevice::DrawPrimitiveUP(sceneState->m_pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_POINTLIST, nNumVertices, 
+	pD3dDevice->DrawPrimitiveUP(sceneState->m_pd3dDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_POINTLIST, nNumVertices, 
 		pVecBounds, sizeof(OCCLUSION_VERTEX));
 #endif
 #endif

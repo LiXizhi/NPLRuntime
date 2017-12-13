@@ -183,7 +183,7 @@ HRESULT ParaEngine::CTextureProcessor::LockDeviceObject()
 	return E_FAIL;
 }
 
-RenderDevicePtr ParaEngine::CTextureProcessor::GetRenderDevice()
+IRenderDevice* ParaEngine::CTextureProcessor::GetRenderDevice()
 {
 	return (m_pDevice != 0) ? m_pDevice : CGlobals::GetRenderDevice();
 }

@@ -27,6 +27,7 @@
 #include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclaration.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 /**@def define to disable all shaders. */
@@ -204,8 +205,8 @@ namespace ParaEngine
 	{
 		if(bForceSet)
 		{
-			RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-			pd3dDevice->SetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, dwValue);
+			IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
+			pRenderDevice->SetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, dwValue);
 			m_lastSamplerStates[nStage][dwType] = dwValue;
 		}
 		else
@@ -213,8 +214,8 @@ namespace ParaEngine
 			DWORD dwLastValue = m_lastSamplerStates[nStage][dwType];
 			if(dwLastValue != dwValue)
 			{
-				RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-				pd3dDevice->SetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, dwValue);
+				IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
+				pRenderDevice->SetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, dwValue);
 				m_lastSamplerStates[nStage][dwType] = dwValue;
 			}
 		}
@@ -227,8 +228,8 @@ namespace ParaEngine
 #ifdef USE_DIRECTX_RENDERER
 		if(bForceGet)
 		{
-			RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-			pd3dDevice->GetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, &dwValue);
+			auto pRenderDevice = CGlobals::GetRenderDevice();
+			pRenderDevice->GetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, &dwValue);
 		}
 		else
 			dwValue = m_lastSamplerStates[nStage][dwType];
@@ -609,7 +610,8 @@ bool EffectManager::SetD3DFogState()
 {
 #ifdef USE_DIRECTX_RENDERER
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	IScene * pScene = GetScene();
 	pd3dDevice->SetRenderState( D3DRS_FOGENABLE,      pScene->IsFogEnabled());
 	if(pScene->IsFogEnabled())
@@ -740,7 +742,8 @@ VertexDeclarationPtr EffectManager::GetVertexDeclaration(int nIndex)
 	/**
 	* create vertex declaration if it has not been created before.
 	*/
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	switch(nIndex)
 	{
 	case S0_POS_TEX0:
@@ -998,7 +1001,8 @@ const Matrix4& EffectManager::GetProjTransform()
 void EffectManager::UpdateD3DPipelineTransform(bool pWorld, bool pView,bool pProjection)
 {
 #ifdef USE_DIRECTX_RENDERER
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	if(pWorld)
 		pd3dDevice->SetTransform( D3DTS_WORLD, GetWorldTransform().GetConstPointer());
 	if(pView)
@@ -1062,7 +1066,8 @@ void EffectManager::applyFogParameters()
 
 void EffectManager::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient)
 {
-
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	if(m_pCurrentEffect != 0)
 		m_pCurrentEffect->applySurfaceMaterial(pSurfaceMaterial,bUseGlobalAmbient);
 	else
@@ -1077,7 +1082,7 @@ void EffectManager::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, b
 			mat.Emissive = LinearColor(0,0,0,0);
 			// turn off specular lighting at the moment
 			mat.Specular = LinearColor(0,0,0,0);
-			CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&mat);
+			pd3dDevice->SetMaterial((D3DMATERIAL9*)&mat);
 		}
 		else
 		{
@@ -1086,7 +1091,7 @@ void EffectManager::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, b
 			mat.Emissive = LinearColor(0,0,0,0);
 			// turn off specular lighting at the moment
 			mat.Specular = LinearColor(0,0,0,0);
-			CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&mat);
+			pd3dDevice->SetMaterial((D3DMATERIAL9*)&mat);
 		}
 #endif
 	}
@@ -1101,7 +1106,8 @@ void EffectManager::applyLocalLightingData(const LightList* plights, int nLightN
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// set d3d light for fixed function pipeline.
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 		nLightNum = min(nLightNum, CEffectFile::MAX_EFFECT_LIGHT_NUM);
 
 		if(plights!=0)
@@ -1162,7 +1168,8 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		return false;
 	}
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	bool bEnableLight = GetScene()->IsLightEnabled();
 	switch(nHandle)
 	{
@@ -1534,7 +1541,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		}
 	}
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 	bool bEnableLight = GetScene()->IsLightEnabled();
 	bool bEnableSunLight = GetScene()->IsSunLightEnabled();
@@ -2366,7 +2374,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 
 void EffectManager::EndEffect()
 {
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 #ifdef USE_DIRECTX_RENDERER
 	if((m_pCurrentEffect == 0) || (!m_pCurrentEffect->IsValid()))
 	{

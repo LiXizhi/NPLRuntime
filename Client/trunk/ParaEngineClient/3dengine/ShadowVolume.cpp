@@ -63,7 +63,7 @@ HRESULT ShadowVolume::Render( SceneState * sceneState )
 #ifdef USE_DIRECTX_RENDERER
 	sceneState->m_pd3dDevice->SetFVF( D3DFVF_XYZ );
 	
-    return RenderDevice::DrawPrimitiveUP( sceneState->m_pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
+    return sceneState->m_pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
 #else
 	return E_FAIL;
 #endif

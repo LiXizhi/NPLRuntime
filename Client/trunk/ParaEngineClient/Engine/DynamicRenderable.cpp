@@ -69,7 +69,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawPrimitive( D3DPRIMITIVETYPE Type, UI
 	assert(Type == D3DPT_TRIANGLELIST);
 	assert(m_nFVF == mesh_vertex_normal::FVF);
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 
 	int nNumLockedVertice = 0;
@@ -96,7 +96,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawPrimitive( D3DPRIMITIVETYPE Type, UI
 
 			pBufEntity->Unlock();
 
-			RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -118,7 +118,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive( D3DPRIMITIVETYPE T
 	assert(Type == D3DPT_TRIANGLELIST);
 	assert(m_nFVF == mesh_vertex_normal::FVF);
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	
 	int nNumLockedVertice = 0;
@@ -147,7 +147,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive( D3DPRIMITIVETYPE T
 
 			pBufEntity->Unlock();
 
-			RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{

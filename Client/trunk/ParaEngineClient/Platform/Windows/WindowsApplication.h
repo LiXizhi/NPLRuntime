@@ -93,18 +93,18 @@ namespace ParaEngine
 	* @see ParaWorld::CMyD3DApplication
 	* Note for debugging: please see the macro comments
 	*/
-	class CParaEngineApp : public CD3DApplication, public CParaEngineAppBase
+	class CWindowsApplication : public CD3DApplication, public CParaEngineAppBase
 	{
 	public:
 		/** start the application immediately, it calls StartApp with the given command line.
 		* @param lpCmdLine: command line arguments. we support the following argument at the moment
 		*  - bootstappper="config/bootstrapper.xml"
 		*/
-		CParaEngineApp(const char* lpCmdLine);
+		CWindowsApplication(const char* lpCmdLine);
 		/** One needs to manually start the application.
 		*/
-		CParaEngineApp();
-		virtual ~CParaEngineApp();
+		CWindowsApplication();
+		virtual ~CWindowsApplication();
 
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance);

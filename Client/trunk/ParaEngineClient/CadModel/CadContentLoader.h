@@ -38,7 +38,7 @@ namespace ParaEngine
 		CadModelProcessor(asset_ptr<CadModel>& pAsset);
 		~CadModelProcessor();
 
-		IDirect3DDevice9* GetRenderDevice();
+		IRenderDevice* GetRenderDevice();
 		HRESULT CleanUp();
 
 		HRESULT LockDeviceObject();
@@ -50,7 +50,7 @@ namespace ParaEngine
 
 	private:
 		asset_ptr<CadModel> m_asset;
-		IDirect3DDevice9* m_pDevice;
+		IRenderDevice* m_pDevice;
 		char* m_pData;
 		int m_bytes;
 		AssetFileEntry* m_pAssetFileEntry;

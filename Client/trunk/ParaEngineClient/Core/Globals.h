@@ -2,6 +2,7 @@
 #include <vector>
 #include <stack>
 #include "IParaEngineApp.h"
+#include "IRenderDevice.h"
 #include "OceanManager.h"
 #include "DirectXEngine.h"
 namespace ParaEngine
@@ -91,7 +92,7 @@ namespace ParaEngine
 		/** set whether the scene is loading. */
 		static void SetLoading(bool bIsLoading);
 
-		static RenderDevicePtr GetRenderDevice();
+		static IRenderDevice* GetRenderDevice();
 		static EffectManager* GetEffectManager();
 
 		static CAttributesManager* GetAttributesManager();
@@ -109,6 +110,11 @@ namespace ParaEngine
 		/** get directX engine parameters */
 		static DirectXEngine& GetDirectXEngine();
 #endif
+
+
+	private:
+		static IRenderDevice* g_RenderDevice;
+
 	};
 
 

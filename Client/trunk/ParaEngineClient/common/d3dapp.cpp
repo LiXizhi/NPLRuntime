@@ -29,7 +29,6 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "resource.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
-#include "ParaEngineApp.h"
 #include "D3DWindowDefault.h"
 #include "D3DWindowUtil.h"
 #include "FrameRateController.h"
@@ -1800,7 +1799,7 @@ int CD3DApplication::Run(HINSTANCE hInstance)
 {
 	// CD3DWindowDefault can be used as a sample to create application using paraengine lib. 
 	CD3DWindowDefault defaultWin;
-	defaultWin.SetAppInterface(CParaEngineApp::GetInstance());
+	defaultWin.SetAppInterface(CGlobals::GetApp());
 	
 	return defaultWin.Run(hInstance);
 }

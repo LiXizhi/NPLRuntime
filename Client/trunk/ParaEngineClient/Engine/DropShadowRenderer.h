@@ -54,6 +54,6 @@ namespace ParaEngine
 
 		void CreateCylinder(float height,float radius,int tesselationFactor,Vector3* pVertices,uint16_t* pIndices);
 
-		void DrawAllBatch(IDirect3DDevice9* pDevice);
+		void DrawAllBatch(IRenderDevice* pDevice);
 	};
 }

@@ -2680,7 +2680,7 @@ void CSceneObject::RenderShadows()
 #ifdef USE_DIRECTX_RENDERER
 	SceneState& sceneState = *(m_sceneState.get());
 	CAutoCamera* pCamera =  (CAutoCamera*)GetCurrentCamera();
-	LPDIRECT3DDEVICE9 pd3dDevice = sceneState.m_pd3dDevice;
+	auto pd3dDevice = sceneState.m_pd3dDevice;
 
 	if(m_bRenderMeshShadow)
 	{// for each light, we cast shadows
@@ -2873,7 +2873,7 @@ void CSceneObject::RenderShadows()
 			pd3dDevice->SetFVF( SHADOWVERTEX::FVF );
 			pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 			pd3dDevice->SetStreamSource( 0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX) );
-			RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, 0, 2 );
+			pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, 0, 2 );
 
 			// Restore render states
 			pd3dDevice->SetRenderState( D3DRS_ZENABLE,          TRUE );
@@ -3211,7 +3211,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 #endif
 		// run the occlusion test pass, if there are more than 8 small objects to render. 
 		// PerformOcclusionTest(sceneState.listPRBiped, sceneState, 8);
-		int nStartCharCount = RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER);
+		int nStartCharCount = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER);
 
 		CGlobals::GetEffectManager()->BeginEffect(TECH_CHARACTER, &(sceneState.m_pCurrentEffect));
 
@@ -3223,7 +3223,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 			{
 				if (item.m_pRenderObject == pPlayer && !CanShowMainPlayer())
 					continue;
-				if (RenderDevice::GetPerfCount(RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER) < (nStartCharCount + GetMaxCharTriangles()))
+				if (CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER) < (nStartCharCount + GetMaxCharTriangles()))
 				{
 					sceneState.SetCameraToCurObjectDistance(item.m_fObjectToCameraDistance);
 					item.m_pRenderObject->Draw(&sceneState);
@@ -3370,7 +3370,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 	if(CHECK_SELECTION(RENDER_SPRITES))
 	{
 		/// -- Sprite post-rendering list
-		LPDIRECT3DDEVICE9 pd3dDevice = sceneState.m_pd3dDevice;
+		auto pd3dDevice = sceneState.m_pd3dDevice;
 		if(!sceneState.listPRSprite.empty())
 		{
 			pd3dDevice->SetVertexShader( NULL );			// always set this
@@ -3408,7 +3408,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		if(!sceneState.listZones.empty() || !sceneState.listPortals.empty())
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_NONE, &(sceneState.m_pCurrentEffect));
-			LPDIRECT3DDEVICE9 pd3dDevice = sceneState.m_pd3dDevice;
+			auto pd3dDevice = sceneState.m_pd3dDevice;
 
 			// draw zones
 			{
@@ -4851,6 +4851,11 @@ void CSceneObject::RemoveDeadObjects()
 		}
 	}
 	m_dead_objects.clear();
+}
+
+const char * ParaEngine::CSceneObject::GetConsoleString() const
+{
+	return m_sConsoleString;
 }
 
 

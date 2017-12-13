@@ -11,6 +11,7 @@
 #include "ParaWorldAsset.h"
 #include "2dengine/GUIRoot.h"
 #include "SpriteRendererDirectX.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -82,7 +83,9 @@ HRESULT ParaEngine::CSpriteRendererDirectX::SetTransform(const Matrix4& mat)
 void ParaEngine::CSpriteRendererDirectX::InitDeviceObjects()
 {
 	SAFE_RELEASE(m_pSprite);
-	HRESULT hr = D3DXCreateSprite(CGlobals::GetRenderDevice(), &m_pSprite);
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	HRESULT hr = D3DXCreateSprite(pd3dDevice, &m_pSprite);
 	if (FAILED(hr))
 	{
 		OUTPUT_LOG("error: D3DXCreateSprite in CSpriteRendererDirectX::InitDeviceObjects\n");

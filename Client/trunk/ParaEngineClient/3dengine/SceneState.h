@@ -368,7 +368,7 @@ namespace ParaEngine
 		/** x is the sun light strength, y is local light strength. z is reserved.*/
 		Vector3& GetCurrentLightStrength();
 
-		RenderDevicePtr GetRenderDevice(){ return m_pd3dDevice; };
+		IRenderDevice* GetRenderDevice(){ return CGlobals::GetRenderDevice(); }
 
 		BillBoardViewInfo& BillBoardInfo() { return m_BillBoardInfo; }
 

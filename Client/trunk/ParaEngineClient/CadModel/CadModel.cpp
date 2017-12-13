@@ -79,7 +79,7 @@ namespace ParaEngine
 	}
 
 	//todo: replace IDirect3DDevice9 with sth like IDevice.
-	void CadModelPart::SubmitGeometry(IDirect3DDevice9* pDevice)
+	void CadModelPart::SubmitGeometry(IRenderDevice* pDevice)
 	{
 		pDevice->SetVertexDeclaration(m_pVertexLayout);
 		pDevice->SetStreamSource(0,m_pVertexBuffer,m_vertexOffset*m_vertexStride,m_vertexStride);
@@ -148,7 +148,7 @@ namespace ParaEngine
 			LoadAsset();
 	}
 
-	HRESULT CadModel::CreateFromFile_Async(void* pContext, IDirect3DDevice9* pDev, const char* sFileName)
+	HRESULT CadModel::CreateFromFile_Async(void* pContext, IRenderDevice* pDev, const char* sFileName)
 	{
 		asset_ptr<CadModel> asset(this);
 		if(pContext == 0)

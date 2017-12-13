@@ -9,7 +9,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "resource.h"
-#include "ParaEngineApp.h"
 
 #include "D3DWindowDefault.h"
 #include "util/EnumProcess.hpp"

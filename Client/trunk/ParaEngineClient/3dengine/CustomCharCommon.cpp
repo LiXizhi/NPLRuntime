@@ -12,6 +12,7 @@
 #include "util/HttpUtility.h"
 #include "CustomCharModelInstance.h"
 #include "CustomCharCommon.h"
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -28,7 +29,8 @@ bool CharTextureComponent::GetPixels(byte* pBuffer, int* nWidth, int* nHeight)
 {
 	bool bOK = true;
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	D3DXIMAGE_INFO SrcInfo;
 
 	CParaFile myFile(name.c_str());

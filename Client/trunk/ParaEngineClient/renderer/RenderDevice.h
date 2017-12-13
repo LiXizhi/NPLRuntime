@@ -34,11 +34,3 @@ namespace ParaEngine
 		static int g_perfCounters[DRAW_PERF_END];
 	};
 }
-
-#ifdef USE_DIRECTX_RENDERER
-#include "RenderDeviceDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "RenderDeviceOpenGL.h"
-#else
-#include "RenderDeviceOpenGL.h"
-#endif

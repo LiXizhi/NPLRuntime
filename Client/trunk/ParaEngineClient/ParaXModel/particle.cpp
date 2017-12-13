@@ -502,7 +502,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 
 void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 {
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	ParticleListType & particles = instancePS->particles;
 	if(particles.empty())
 		return;
@@ -721,9 +721,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 				
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 					nNumFinishedVertice += (nLockedNum*3);
@@ -802,9 +802,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
@@ -1016,7 +1016,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 	if(segs.size() <= 1)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	/// blending additive
 	pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -1107,7 +1107,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 #ifdef USE_DIRECTX_RENDERER
 				///////////////////////////////////////////////////////////////////////////
 				// fixed function pipeline
-				RenderDevice::DrawPrimitive( pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
+				pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
 #endif
 			}
 			else
@@ -1119,9 +1119,9 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 					if(pEffect->BeginPass(0))
 					{
 						if (pBufEntity->IsMemoryBuffer())
-							RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+							pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 						else
-							RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
+							pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
 
 					}
 					pEffect->EndPass(0);

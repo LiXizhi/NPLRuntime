@@ -204,7 +204,7 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 
 #ifdef USE_DIRECTX_RENDERER
 	// set render state
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	if(pd3dDevice)
 	{
 		DrawBoundingBox(sceneState, color);
@@ -215,7 +215,7 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		pd3dDevice->SetFVF(LINEVERTEX::FVF);
 
-		RenderDevice::DrawIndexedPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
+		pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
 			nNumVertices, nLenCount, pIndexBuffer, D3DFMT_INDEX16,pVertices, sizeof(LINEVERTEX));
 	}
 #endif

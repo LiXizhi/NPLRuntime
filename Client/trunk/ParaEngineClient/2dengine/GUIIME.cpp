@@ -21,12 +21,6 @@
 #include <vector>
 #include "EventBinding.h"
 
-#ifdef USE_OPENGL_RENDERER
-#include "platform/win32/ParaEngineApp.h"
-#else
-#include "ParaEngineApp.h"
-#endif
-
 #include "GUIIME.h"
 #include "memdebug.h"
 

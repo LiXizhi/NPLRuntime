@@ -20,13 +20,7 @@
 #include "EventBinding.h"
 #include "GUIRoot.h"
 #include "util/StringHelper.h"
-
-
-#ifdef USE_OPENGL_RENDERER
-	#include "platform/win32/ParaEngineApp.h"
-#else
-	#include "ParaEngineApp.h"
-#endif
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -553,7 +547,8 @@ void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHo
 				m_YHotSpot = YHotSpot;
 		}
 	}
-	LPDIRECT3DDEVICE9 pD3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pD3dDevice = pRenderDevice->GetDirect3DDevice9();
 	if(pD3dDevice == NULL)
 		return;
 

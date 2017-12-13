@@ -46,6 +46,7 @@
 #ifdef PRINT_CHUNK_LOG
 #include "ParaTime.h"
 #endif
+#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 
 namespace ParaEngine
@@ -288,7 +289,8 @@ namespace ParaEngine
 		renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs.z * fBlockSize;
 
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
-		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -305,12 +307,12 @@ namespace ParaEngine
 		if(pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
-			pDevice->SetVertexDeclaration(pVertexLayout);
+			pd3dDevice->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards. 
-			pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+			pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 
 			//////////////////////////////////////////////////////////////////////////
 			// set the wave time parameter
@@ -321,7 +323,7 @@ namespace ParaEngine
 			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 
 			IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
-			pDevice->SetIndices(pIndexBuffer);
+			pRenderDevice->SetIndices(pIndexBuffer);
 
 			for (int nRenderPass = 0; nRenderPass<=BlockRenderPass_AlphaBlended; nRenderPass++)
 			{
@@ -342,7 +344,7 @@ namespace ParaEngine
 
 						if(pVB != pCurVB)
 						{
-							pDevice->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+							pRenderDevice->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
@@ -375,7 +377,7 @@ namespace ParaEngine
 							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								pDevice->SetTexture(0,pCurTex0);
+								pRenderDevice->SetTexture(0,pCurTex0);
 							}
 							
 							// culling mode
@@ -383,7 +385,7 @@ namespace ParaEngine
 							{
 								if(culling != D3DCULL_NONE)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
 									culling = D3DCULL_NONE;
 								}
 							}
@@ -392,7 +394,7 @@ namespace ParaEngine
 							{
 								if(culling != D3DCULL_CW)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
+									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
 									culling = D3DCULL_CW;
 								}
 							}
@@ -400,7 +402,7 @@ namespace ParaEngine
 							{
 								if(culling != D3DCULL_CCW)
 								{
-									pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
 									culling = D3DCULL_CCW;
 								}
 							}
@@ -419,19 +421,19 @@ namespace ParaEngine
 
 						pEffect->CommitChanges();
 
-						pDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+						pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 							pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 					}
 				}
 				if(curPass > -1)
 					pEffect->EndPass();
 
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+				pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
 			}
 			// turn blending on again
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pEffect->end();
 		}
 #endif
@@ -449,7 +451,8 @@ namespace ParaEngine
 			pCurRenderQueue = GetRenderQueueByPass(nRenderPass);
 		
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
-
+		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(pDevice);
+		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 		if(pCurRenderQueue->size() > 0)
 		{
 			const float fBlockSize = BlockConfig::g_blockSize;
@@ -655,7 +658,7 @@ namespace ParaEngine
 
 					pDevice->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
-					RenderDevice::DrawIndexedPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+					pDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 						pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 				}
 				
@@ -872,7 +875,7 @@ namespace ParaEngine
 
 					pEffect->CommitChanges();
 
-					RenderDevice::DrawIndexedPrimitive(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+					pDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 				}
 
@@ -1112,7 +1115,7 @@ namespace ParaEngine
 
 				if(curInstCount >= nMaxFaceCount)
 				{
-					RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					pDevice->DrawIndexedPrimitiveUP( RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
@@ -1129,7 +1132,7 @@ namespace ParaEngine
 
 			if(curInstCount > 0)
 			{
-				RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				pDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
@@ -1198,7 +1201,7 @@ namespace ParaEngine
 
 					if(curInstCount >= nMaxFaceCount)
 					{
-						RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+						pDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1215,7 +1218,7 @@ namespace ParaEngine
 
 				if(curInstCount > 0)
 				{
-					RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					pDevice->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				}
 
 				pEffect->EndPass();
@@ -1299,7 +1302,7 @@ namespace ParaEngine
 				instFloatCount++;
 				curInstCount++;
 			}
-			RenderDevice::DrawIndexedPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+			pDevice->DrawIndexedPrimitiveUP( RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
 			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
 			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -1346,7 +1349,7 @@ namespace ParaEngine
 					instFloatCount++;
 					curInstCount++;
 				}
-				RenderDevice::DrawIndexedPrimitiveUP(pDevice, D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				pDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				
 				pEffect->EndPass();
 				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);

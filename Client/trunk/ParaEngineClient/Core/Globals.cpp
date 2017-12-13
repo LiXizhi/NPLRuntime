@@ -57,6 +57,10 @@ namespace ParaEngine
 	extern CFrameRateController g_ioFRC;
 	extern CFrameRateController g_simFRC;
 	extern CFrameRateController g_gameTime;
+
+
+	IRenderDevice* CGlobals::g_RenderDevice = nullptr;
+
 }
 using namespace ParaEngine;
 
@@ -252,13 +256,10 @@ CLightManager* CGlobals::GetLightManager()
 	return &CLightManager::GetSingleton();
 }
 
-RenderDevicePtr CGlobals::GetRenderDevice()
+IRenderDevice* CGlobals::GetRenderDevice()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return GetDirectXEngine().GetRenderDevice();
-#else
-	return RenderDevice::GetInstance();
-#endif
+	assert(CGlobals::g_RenderDevice);
+	return g_RenderDevice;
 }
 
 EffectManager* CGlobals::GetEffectManager()

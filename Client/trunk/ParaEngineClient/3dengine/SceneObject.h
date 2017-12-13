@@ -1053,6 +1053,9 @@ namespace ParaEngine
 		* the object add itself to dead object pool for the root scene to safely remove it at the end of the frame. */
 		void AddToDeadObjectPool(CBaseObject* pObject);
 		void RemoveDeadObjects();
+
+		const char* GetConsoleString() const;
+
 	private:
 
 		/** whether to block all user input (both key and mouse). Input is usually blocked as a game logics, such as we do not want the user to control the player anymore. */
@@ -1315,7 +1318,6 @@ namespace ParaEngine
 		float m_fPostRenderQueueOrder;
 		/** attribute models in the second column*/
 		unordered_ref_array<IAttributeFields*> m_attribute_models;
-		friend class CParaEngineApp;
 	};
 
 }

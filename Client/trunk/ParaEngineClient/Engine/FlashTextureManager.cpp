@@ -1664,7 +1664,7 @@ void CFlashTextureManager::RenderFlashWindows(SceneState& sceneState)
 						v[i].h = 1.0f;
 					}
 					sceneState.m_pd3dDevice->SetTexture(0, pTexture);
-					RenderDevice::DrawPrimitiveUP( sceneState.m_pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+					pD3dDevice->DrawPrimitiveUP( sceneState.m_pd3dDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 				}
 			}
 		}

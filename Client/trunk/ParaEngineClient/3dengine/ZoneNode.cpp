@@ -161,7 +161,7 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 		}
 #ifdef USE_DIRECTX_RENDERER
 		// set render state
-		LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		if(pd3dDevice)
 		{
 			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -171,7 +171,7 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 			pd3dDevice->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
 			pd3dDevice->SetFVF(LINEVERTEX::FVF);
 
-			RenderDevice::DrawIndexedPrimitiveUP(CGlobals::GetRenderDevice(), RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
+			pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
 				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), D3DFMT_INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
 		}
 #endif

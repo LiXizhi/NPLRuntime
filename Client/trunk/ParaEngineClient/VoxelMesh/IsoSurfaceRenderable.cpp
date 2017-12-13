@@ -134,7 +134,7 @@ void IsoSurfaceRenderable::deleteGeometry()
 }
 
 
-HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, LPDIRECT3DDEVICE9 pd3dDevice )
+HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRenderDevice* pd3dDevice )
 {
 	pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 
@@ -153,7 +153,7 @@ HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, LPDI
 
 HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, CEffectFile *pEffect )
 {
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	/// apply surface materials
 	bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();

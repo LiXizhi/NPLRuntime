@@ -13,6 +13,7 @@
 #include "SpriteFontEntity.h"
 #include "StringHelper.h"
 #include "memdebug.h"
+#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -53,7 +54,8 @@ HRESULT SpriteFontEntityDirectX::InitDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 
 	// Initialize font
 	if (TextureType == SpriteFontEntityDirectX::sprite_font_GDI)

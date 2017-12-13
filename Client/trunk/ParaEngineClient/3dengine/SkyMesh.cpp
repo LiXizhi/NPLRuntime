@@ -584,7 +584,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			pd3dDevice->SetPixelShader(NULL);
 			pd3dDevice->SetFVF(LINEVERTEX::FVF);
 
-			RenderDevice::DrawIndexedPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0,
+			pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0,
 				8, 8, pIndexBufferSides, D3DFMT_INDEX16, pVertices, sizeof(LINEVERTEX));
 
 			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -776,7 +776,7 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 
 				// we don't want to render completely transparent parts
 				pEffectFile->CommitChanges();
-				RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
+				pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
 				pEffectFile->EndPass();
 			}
 			pEffectFile->end();
