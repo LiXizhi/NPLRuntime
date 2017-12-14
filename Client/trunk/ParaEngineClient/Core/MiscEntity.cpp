@@ -10,8 +10,6 @@
 
 #ifdef USE_DIRECTX_RENDERER
 #include "MiscEntity.h"
-#include "D3D9RenderDevice.h"
-
 using namespace ParaEngine;
 
 HRESULT D3DXSpriteEntity::InitDeviceObjects()
@@ -21,11 +19,9 @@ HRESULT D3DXSpriteEntity::InitDeviceObjects()
 	m_bIsInitialized = true;
 
 	HRESULT hr;
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
-
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	// Create a quad for rendering each tree
-	if (FAILED(hr = pd3dDevice->CreateVertexBuffer(m_nFrames * 4 * sizeof(SPRITEVERTEX),
+	if (FAILED(hr = pRenderDevice->CreateVertexBuffer(m_nFrames * 4 * sizeof(SPRITEVERTEX),
 		D3DUSAGE_WRITEONLY, SPRITEVERTEX::FVF,
 		D3DPOOL_MANAGED, &(m_pSpriteVB), NULL)))
 	{

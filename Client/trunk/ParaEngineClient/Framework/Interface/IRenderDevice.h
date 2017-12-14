@@ -28,10 +28,10 @@ namespace ParaEngine
 		virtual HRESULT SetFVF(DWORD FVF) = 0;
 		virtual void SetCursorPosition(int X, int Y, DWORD Flags) = 0;
 		virtual HRESULT SetVertexDeclaration(IDirect3DVertexDeclaration9* pDecl) = 0;
-		virtual HRESULT CreateVertexDeclaration(D3DVERTEXELEMENT9* pVertexElements, IDirect3DVertexDeclaration9** ppDecl) = 0;
+		virtual HRESULT CreateVertexDeclaration(CONST D3DVERTEXELEMENT9* pVertexElements, IDirect3DVertexDeclaration9** ppDecl) = 0;
 		virtual HRESULT BeginScene() = 0;
 		virtual HRESULT EndScene() = 0;
-		virtual HRESULT Clear(DWORD Count, const void* pRects, DWORD Flags, DWORD Color, float Z, DWORD Stencil) = 0;
+		virtual HRESULT Clear(DWORD Count, const D3DRECT* pRects, DWORD Flags, DWORD Color, float Z, DWORD Stencil) = 0;
 
 		virtual HRESULT SetViewport(const D3DVIEWPORT9* pViewport) = 0;
 		virtual HRESULT GetViewport(D3DVIEWPORT9* pViewport) = 0;
@@ -54,8 +54,8 @@ namespace ParaEngine
 			UINT VertexStreamZeroStride) = 0;
 
 
-		virtual HRESULT DrawIndexedPrimitive(int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount) = 0;
-		virtual HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) = 0;
+		virtual HRESULT DrawIndexedPrimitive(int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount) = 0;
+		virtual HRESULT DrawIndexedPrimitive(D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) = 0;
 		virtual HRESULT DrawIndexedPrimitiveUP(int nStatisticsType,
 			D3DPRIMITIVETYPE PrimitiveType,
 			UINT MinVertexIndex,
@@ -90,7 +90,7 @@ namespace ParaEngine
 		virtual int GetPerfCount(RenderDeviceBase::StatisticsType nStatisticsType) = 0;
 
 		virtual HRESULT SetStreamSourceFreq(UINT StreamNumber, UINT Setting) = 0;
-		virtual HRESULT SetLight(DWORD Index, CONST D3DLIGHT9*) = 0;
+		virtual HRESULT SetLight(DWORD Index, CONST D3DLIGHT9* pLight) = 0;
 
 		virtual void ClearAllPerfCount() = 0;
 

@@ -6,6 +6,7 @@
 //
 //-----------------------------------------------------------------------------
 #include "IParaEngineApp.h"
+#include "IRenderDevice.h"
 
 /** 
 * A base class for creating D3D device based application. 
@@ -143,6 +144,7 @@ protected:
 	HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
 	LPDIRECT3D9       m_pD3D;              // The main D3D object
 	LPDIRECT3DDEVICE9 m_pd3dDevice;        // The D3D rendering device
+	ParaEngine::IRenderDevice*	  m_pRenderDevice;
 	IDirect3DSwapChain9* m_pd3dSwapChain;
 	D3DCAPS9          m_d3dCaps;           // Caps for the device
 	D3DSURFACE_DESC   m_d3dsdBackBuffer;   // Surface desc of the backbuffer

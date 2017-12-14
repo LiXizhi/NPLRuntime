@@ -142,7 +142,7 @@ namespace ParaEngine
 
 			//todo:optimize to use single vertex declaration object across all cad model
 			IDirect3DVertexDeclaration9* pVertexLayout;
-			pDevice->CreateVertexDeclaration((D3DVERTEXELEMENT9*)VertexPositionNormal::g_VertexDesc,&pVertexLayout);
+			pDevice->CreateVertexDeclaration(VertexPositionNormal::g_VertexDesc,&pVertexLayout);
 
 			m_asset->m_pVertexLayout = pVertexLayout;
 			for(size_t i=0;i<m_modelData->SubPartInfo.size();i++)

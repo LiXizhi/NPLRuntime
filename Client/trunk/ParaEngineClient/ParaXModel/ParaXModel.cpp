@@ -26,7 +26,6 @@
 #include "XFileCharModelExporter.h"
 #include "./IO/FileUtils.h"
 #include "ViewportManager.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 
 /** def this, if one wants the animation to be very accurate. */
@@ -66,7 +65,7 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
 
-	if(IsBmaxModel())
+	if (IsBmaxModel())
 		m_RenderMethod = BMAX_MODEL;
 	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
@@ -285,7 +284,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 	{
 		m_origVertices = new ModelVertex[nVertices];
 		if (m_origVertices != 0)
-			memcpy(m_origVertices, pVertices, nVertices*sizeof(ModelVertex));
+			memcpy(m_origVertices, pVertices, nVertices * sizeof(ModelVertex));
 		if (m_RenderMethod != BMAX_MODEL && m_RenderMethod != NO_ANIM)
 		{
 			m_frame_number_vertices = new int[nVertices];
@@ -307,12 +306,12 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
 			{
 				ModelVertex* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
 				{
-					memcpy(pBuffer, pVertices, nVertices*sizeof(ModelVertex));
+					memcpy(pBuffer, pVertices, nVertices * sizeof(ModelVertex));
 					m_pVertexBuffer.Unlock();
 				}
 			}
@@ -325,7 +324,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
 			{
 				mesh_vertex_normal* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
@@ -346,8 +345,7 @@ void CParaXModel::initIndices(int nIndices, uint16* pIndices)
 {
 	if (pIndices == 0) return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
 	// delete old
 	m_objNum.nIndices = nIndices;
 	SAFE_DELETE_ARRAY(m_indices);
@@ -563,7 +561,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	// uncomment to fine tune performances for this part of code. 
 	//#define PERFOAMRNCE_TEST_calcBones
 #ifdef PERFOAMRNCE_TEST_calcBones
-	if(nBones<30)
+	if (nBones<30)
 		return;
 	// PERF1("calcBones");
 
@@ -706,8 +704,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	if (nPasses <= 0)
 		return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	pd3dDevice->SetStreamSource(0, m_pVertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
 	pd3dDevice->SetIndices(m_pIndexBuffer.GetDevicePointer());
 
@@ -723,7 +720,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			if (p.init(this, pSceneState))
 			{
 				// we don't want to render completely transparent parts
-				pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 				p.deinit();
 			}
 		}
@@ -744,7 +741,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 					{
 						// we don't want to render completely transparent parts
 						pEffect->CommitChanges();
-						pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+						pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 						p.deinit_FX(pSceneState);
 					}
 				}
@@ -762,8 +759,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 	if (nPasses <= 0)
 		return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
@@ -858,7 +854,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 										faceGroup.m_vUVScale.x = texAnim.sval.x;
 										faceGroup.m_vUVScale.y = texAnim.sval.y;
 									}
-									
+
 
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
@@ -872,7 +868,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if(pLastPass == NULL)
+						if (pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -881,9 +877,9 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 								DrawPass_NoAnim(p);
 							}
 						}
-						else 
+						else
 						{
-							if ( (*pLastPass == p) )
+							if ((*pLastPass == p))
 							{
 								DrawPass_NoAnim(p);
 							}
@@ -911,7 +907,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if(pLastPass != NULL)
+				if (pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -931,8 +927,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 	if (nPasses <= 0)
 		return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
 
@@ -998,8 +993,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 #endif
 
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
@@ -1140,7 +1134,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if(pLastPass == NULL)
+						if (pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -1149,9 +1143,9 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 								DrawPass(p);
 							}
 						}
-						else 
+						else
 						{
-							if ( (*pLastPass == p) )
+							if ((*pLastPass == p))
 							{
 								DrawPass(p);
 							}
@@ -1178,7 +1172,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if(pLastPass != NULL)
+				if (pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -1194,8 +1188,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 	if (p.indexCount == 0)
 		return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	int nVertexOffset = p.GetVertexStart(this);
 	ModelVertex *ov = m_origVertices;
@@ -1227,9 +1220,9 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pRenderDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1250,8 +1243,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 	if (p.indexCount == 0)
 		return;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	bmax_vertex* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
 	int nNumLockedVertice;
@@ -1316,9 +1308,9 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pRenderDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pd3dDevice->DrawPrimitive( RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1334,9 +1326,6 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 
 void CParaXModel::DrawPass(ModelRenderPass &p)
 {
-
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
 	// uncomment to generate performance result in order to fine tune optimizations.  
 	// #define DO_PERFORMANCE_TEST
 	if (p.indexCount == 0)
@@ -1353,6 +1342,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 		return;
 	PERF1("SoftSkinningDrawPass");
 #endif
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
 	int nVertexOffset = p.GetVertexStart(this);
@@ -1423,9 +1413,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pRenderDevice->DrawPrimitive( RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1830,10 +1820,10 @@ bool CParaXModel::HasAlphaBlendedObjects()
 
 int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
-	if (nColumnIndex == 0){
+	if (nColumnIndex == 0) {
 		return (int)GetObjectNum().nBones;
 	}
-	else if (nColumnIndex == 1){
+	else if (nColumnIndex == 1) {
 		return (int)GetObjectNum().nTextures;
 	}
 	return 0;
@@ -1954,7 +1944,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 		if (m_RenderMethod == SOFT_ANIM)
 		{
-			if(m_frame_number_vertices == 0)
+			if (m_frame_number_vertices == 0)
 				m_frame_number_vertices = new int[dwNumVx];
 			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
@@ -1975,7 +1965,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
 				int nVertexOffset = pass.GetVertexStart(this);
-				if(m_RenderMethod == SOFT_ANIM)
+				if (m_RenderMethod == SOFT_ANIM)
 				{
 					int nIndexOffset = pass.m_nIndexStart;
 					for (int i = 0; i < pass.indexCount; ++i)
@@ -2037,16 +2027,16 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 	}
 	// output result
-	if (pNumVertices != 0){
+	if (pNumVertices != 0) {
 		*pNumVertices = dwNumVx;
 	}
-	if (ppVerts != 0){
+	if (ppVerts != 0) {
 		*ppVerts = verts;
 	}
-	if (pNumTriangles != 0){
+	if (pNumTriangles != 0) {
 		*pNumTriangles = dwNumFaces;
 	}
-	if (ppIndices != 0){
+	if (ppIndices != 0) {
 		*ppIndices = indices;
 	}
 	return S_OK;
