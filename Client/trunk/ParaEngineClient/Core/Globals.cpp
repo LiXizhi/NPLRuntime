@@ -258,7 +258,7 @@ CLightManager* CGlobals::GetLightManager()
 
 IRenderDevice* CGlobals::GetRenderDevice()
 {
-	assert(CGlobals::g_RenderDevice);
+	//assert(CGlobals::g_RenderDevice);
 	return g_RenderDevice;
 }
 
@@ -279,6 +279,11 @@ CDataProviderManager* CGlobals::GetDataProviderManager()
 CMoviePlatform* CGlobals::GetMoviePlatform()
 {
 	return &CMoviePlatform::GetSingleton();
+}
+
+void ParaEngine::CGlobals::SetRenderDevice(IRenderDevice * device)
+{
+	CGlobals::g_RenderDevice = device;
 }
 
 HWND CGlobals::GetAppHWND()

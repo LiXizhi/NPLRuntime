@@ -100,6 +100,9 @@ namespace ParaEngine
 
 		static CMoviePlatform* GetMoviePlatform();
 
+
+		static void SetRenderDevice(IRenderDevice* device);
+
 		/**
 		* @return application handle
 		*/

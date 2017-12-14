@@ -13,7 +13,6 @@
 #include "effect_file.h"
 #include "EffectManager.h"
 #include "SceneObject.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 namespace ParaEngine
 {
@@ -40,7 +39,7 @@ namespace ParaEngine
 			{
 				if(pEffect->BeginPass(0))
 				{
-					auto* pDevice = CGlobals::GetRenderDevice();
+					auto pDevice = CGlobals::GetRenderDevice();
 					pDevice->SetStreamSource(0,m_pGeometryBuffer,0,sizeof(VertexPositionIndex));
 					pDevice->SetIndices(m_pIndexBuffer);
 
@@ -93,8 +92,7 @@ namespace ParaEngine
 
 	void DropShadowRenderer::DrawAllBatch(IRenderDevice* pDevice)
 	{
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		
 		uint32_t batchCount = m_instanceCount / g_maxInstancePerBatch + 1;
 		for(uint32_t i=0;i<batchCount;i++)
 		{
@@ -103,8 +101,8 @@ namespace ParaEngine
 			if(currentInstancCount > 0)
 			{
 				uint32_t offset = i * g_maxInstancePerBatch * 4 * 3;
-				pd3dDevice->SetVertexShaderConstantF(20,&m_constantBuffer[offset] ,currentInstancCount*3);
-				pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
+				CGlobals::GetRenderDevice()->SetVertexShaderConstantF(20,&m_constantBuffer[offset] ,currentInstancCount*3);
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
 			}
 		}
 	}

@@ -34,7 +34,7 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "FrameRateController.h"
 #include "MiscEntity.h"
 #include "d3dapp.h"
-
+#include "D3D9RenderDevice.h"
 using namespace ParaEngine;
 
 static CD3DApplication* g_pD3DApp = NULL;
@@ -975,6 +975,10 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
     hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
                                m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
                                &m_pd3dDevice );
+
+	m_pRenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
+	CGlobals::SetRenderDevice(m_pRenderDevice);
+
 	
 	//following code create nvidia perfhud device for performance testing --clayman
 	/*
