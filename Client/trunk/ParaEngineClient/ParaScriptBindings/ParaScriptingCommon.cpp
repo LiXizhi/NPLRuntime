@@ -454,6 +454,15 @@ TextureEntity * ParaScripting::ParaAssetObject::GetTexture(const object& texture
 	return pTextureEntity;
 }
 
+void ParaScripting::ParaAssetObject::SetCallback(int callbackType,const char * func)
+{
+	if(IsValid()&&m_pAsset->GetType()==AssetEntity::effectfile)
+	{
+		CEffectFile* pEffect=(CEffectFile*)m_pAsset;
+		pEffect->AddScriptCallback(callbackType,func);
+	}
+}
+
 #pragma endregion ParaAssetObject
 #pragma region ParaParamsBlock
 /////////////////////////////////////////////////////////////
