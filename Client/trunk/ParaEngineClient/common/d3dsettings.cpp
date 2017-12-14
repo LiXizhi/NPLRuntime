@@ -8,8 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "D3DWindowUtil.h"
-#include "d3dapp.h"
-
 CD3DSettingsDialog* s_pSettingsDialog = NULL;
 
 
