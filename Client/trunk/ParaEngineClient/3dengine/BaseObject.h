@@ -1239,8 +1239,6 @@ public:
 	/** return triangle list */
 	virtual int GetMeshTriangleList(std::vector<Vector3>& output, int nOption = 0);
 
-	virtual void SetMaskColor(int index,float r,float g,float b);
-
 protected:
 	/** the ID of the object. default to 0. it is regenerated automatically when GetID() is called and that the id is 0. */
 	int m_nID;

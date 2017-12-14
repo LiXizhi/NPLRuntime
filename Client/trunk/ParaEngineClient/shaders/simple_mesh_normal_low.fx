@@ -33,25 +33,12 @@ float3 g_TexRot			:ConstVector1;
 float2 g_TexScale		:ConstVector2 = { 1.0f, 1.0f };
 //bool g_bNormalMap		:boolean6;
 float g_opacity			:opacity = 1.f; 
-bool gEnableMaskColor:boolean10=false;
-float3 gMaskColor0:ConstVector2=1.0;
-float3 gMaskColor1:ConstVector3=1.0;
-float3 gMaskColor2:ConstVector4=1.0;
-float3 gMaskColor3:ConstVector5=1.0;
-float3 gMaskColor4:ConstVector6=1.0;
-float3 gMaskColor5:ConstVector7=1.0;
-float3 gMaskColor6:ConstVector8=1.0;
 
 // texture 0
 texture tex0 : TEXTURE; 
 sampler tex0Sampler : register(s0) = sampler_state 
 {
     texture = <tex0>;
-};
-texture tex1 : TEXTURE1;
-sampler tex1Sampler : register(s1) = sampler_state
-{
-  texture = <tex1>;
 };
 
 
@@ -155,41 +142,6 @@ half4 pixelShader(Interpolants i) : COLOR
 		// alpha testing and blending
 		clip(normalColor.w-ALPHA_TESTING_REF);
 	}
-  if(gEnableMaskColor)
-  {
-    float mask_select_value=tex2D(tex1Sampler,i.tex.xy).r*255;
-    
-    float3 mask_color=1.0;
-    if(mask_select_value>=0.0&&mask_select_value<32.0)
-    {
-      mask_color=gMaskColor0;
-    }
-    else if(mask_select_value>=32.0&&mask_select_value<64.0)
-    {
-      mask_color=gMaskColor1;
-    }
-    else if(mask_select_value>=64.0&&mask_select_value<96.0)
-    {
-      mask_color=gMaskColor2;
-    }
-    else if(mask_select_value>=96.0&&mask_select_value<128.0)
-    {
-      mask_color=gMaskColor3;
-    }
-    else if(mask_select_value>=128.0&&mask_select_value<160.0)
-    {
-      mask_color=gMaskColor4;
-    }
-    else if(mask_select_value>=160.0&&mask_select_value<192.0)
-    {
-      mask_color=gMaskColor5;
-    }
-    else
-    {
-      mask_color=gMaskColor6;
-    }
-    normalColor.rgb*=mask_color;
-  }
 
 	if(g_bEnableFog)
 	{
