@@ -1,18 +1,11 @@
 #pragma once
 
 
-#ifdef PLATFORM_MAC
-    #include "platform/mac/ParaEngineApp.h"
-#else
-
-
 #include "ParaEngineAppBase.h"
-#include "common/d3dapp.h"
 #include "ITouchInputTranslator.h"
 
 #include <map>
 
-// forward declare
 namespace ParaEngine
 {
 	struct SpriteFontEntity;
@@ -26,74 +19,10 @@ namespace ParaEngine
 	class CViewportManager;
 	struct CWinRawMsg;
 }
-
-/**
-@mainpage ParaEngine Reference
-
-*
-* @section intro_sec Introduction
-*
-[The following text is taken from my bachelor thesis proposal]\n
-In recent years, game engine related technology has drawn increasing academic attention from
-a wide range of research areas. People come to realize that game engine may naturally evolve
-in to the most widely used virtual reality platform in the future. The research framework
-proposed in this paper is to exploit this possibility using established computer technologies
-as well as newly designed ones. Current game engine framework already include solutions for a
-large number of platform issues, such as real-time 3D visualization, physics simulation, event
-and script system, path-finding, high-level decision making, networking, etc. However, the
-computing paradigm behind it is usually constrained to a single platform, where a predefined
-network topology must be explicitly constructed for cross-platform communications. My major
-research goal is to redesign the computing paradigm to suit the need of highly dynamic networked
-virtual environment, where intelligent entities are situated and communicate with each other
-as well as human avatars. A complete distributed game engine framework will be proposed and
-implemented with supporting game demos. Two areas of interest will be specialized with in-depth
-study. One is the script programming environment and runtime for distributed game world logics;
-the other is autonomous character animations in virtual game worlds.
-
-The idea of distributed computer game engine can be pictured by drawing an analog with the current
-World Wide Web. I.e. we compare web pages to 3D game worlds; hyperlinks and services in web pages
-to active objects in 3D game worlds; and web browsers and client/server side runtime environments
-to computer game engines. However, in distributed game world, interactions among entities will be
-more intensive and extensive, such as several characters exchanging messages at real time; game world
-logic will be more distributed, with each node being a potential server, and also more dynamic,
-with different nodes forming temporary or long lasting relationships.
-* \n
-* @section copyright Copyright
-*
-I will possibly release it under GNU license when the game engine framework is stable.
-* \n
-* @section developer Developer
-*
-- Li, Xizhi: Developer of ParaEngine.
-*/
-
-/**
-* The main game engine implementations.
-* The ParaEngine namespace contains the main ParaEngine source code.
-* It includes scene objects, scene management, asset and file management,
-* 2D GUI, AI modules, ParaX file support, frame rate management, etc.
-*/
 namespace ParaEngine
 {
-	/**
-	* This class demonstrate how to initialize, destroy and drive the game loop
-	* of ParaEngine through the C++ programming interface. Users can derive their
-	* main Windows application from this class.
-	* Note: paraengine is designed to be manipulated through the NPL scripting interface
-	* Currently,its C++ programming interface is not designed to be used from outside the core code.
-	* i.e. Users' ability to program through C++ API is restricted by the amount of
-	* source code unvailed to them.
-	*
-	* this class can be regarded as sample code for writing your own ParaEngine games
-	* logics. This class is not engine specific, but it contains basic steps to establish
-	* a running environment of any paraEngine created games. For example: SceneObject,
-	* Environment and AI simulator are created here. Message handling, Timing and I/O are
-	* also processed partly here.
-	*
-	* @see ParaWorld::CMyD3DApplication
-	* Note for debugging: please see the macro comments
-	*/
-	class CWindowsApplication : public CD3DApplication, public CParaEngineAppBase
+
+	class CWindowsApplication : public CParaEngineAppBase
 	{
 	public:
 		/** start the application immediately, it calls StartApp with the given command line.
@@ -111,26 +40,6 @@ namespace ParaEngine
 
 		/** whether it is debug build. */
 		bool IsDebugBuild();
-
-		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
-		* call this as often as one like internally it will use a timer to best fit the interval.
-		*/
-		virtual HRESULT DoWork();
-
-		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual void    EnablePassiveRendering( bool bEnable );
-		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual bool	IsPassiveRenderingEnabled( );
-
-		/** disable 3D rendering, do not present the scene.
-		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window
-		* @param bEnable: true to enable.
-		*/
-		virtual void Enable3DRendering(bool bEnable);
-
-		/** whether 3D rendering is enabled, do not present the scene.
-		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
-		virtual bool Is3DRenderingEnabled();
 
 
 		/** whether to use full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
@@ -269,73 +178,10 @@ namespace ParaEngine
 		/** init application */
 		HRESULT Init(HWND* pHWND);
 
-		/**
-		* This function should be called only once when the application start, one can initialize game objects here.
-		* @param pHWND:a pointer to the handle of the current application window.
-		*/
-		HRESULT OneTimeSceneInit();
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has been
-		* created, which will happen during application initialization and windowed/full screen
-		* toggles. This is the best location to create D3DPOOL_MANAGED resources since these
-		* resources need to be reloaded whenever the device is destroyed. Resources created
-		* here should be released in the OnDestroyDevice callback.
-		*/
-		virtual HRESULT InitDeviceObjects();
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has been
-		* reset, which will happen after a lost device scenario. This is the best location to
-		* create D3DPOOL_DEFAULT resources since these resources need to be reloaded whenever
-		* the device is lost. Resources created here should be released in the OnLostDevice
-		* callback.
-		*/
-		virtual HRESULT RestoreDeviceObjects();
-
-
-		/**
-		* This callback function will be called at the end of every frame to perform all the
-		* rendering calls for the scene, and it will also be called if the window needs to be
-		* repainted. After this function has returned, application should call
-		* IDirect3DDevice9::Present to display the contents of the next buffer in the swap chain
-		* @param fTime: Current time elapsed.
-		*/
-		virtual HRESULT Render();
 
 		/** Output text information to console, for debugging only.*/
 		void GenerateD3DDebugString();
 
-		/**
-		* This callback function will be called once at the beginning of every frame. This is the
-		* best location for your application to handle updates to the scene, but is not
-		* intended to contain actual rendering calls, which should instead be placed in the
-		* OnFrameRender callback.
-		* @param fTime: Current time elapsed.
-		*/
-		virtual HRESULT FrameMove();
-		virtual HRESULT FrameMove(double fTime);
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has
-		* entered a lost state and before IDirect3DDevice9::Reset is called. Resources created
-		* in the OnResetDevice callback should be released here, which generally includes all
-		* D3DPOOL_DEFAULT resources. See the "Lost Devices" section of the documentation for
-		* information about lost devices.
-		*/
-		virtual HRESULT InvalidateDeviceObjects();
-		/**
-		* This callback function will be called immediately after the Direct3D device has
-		* been destroyed, which generally happens as a result of application termination or
-		* windowed/full screen toggles. Resources created in the OnCreateDevice callback
-		* should be released here, which generally includes all D3DPOOL_MANAGED resources.
-		*/
-		virtual HRESULT DeleteDeviceObjects();
-
-		/**
-		* This function should be called only once when the application end, one can destroy game objects here.
-		*/
-		virtual HRESULT FinalCleanup();
 
 	public:
 		/** process game input.*/
@@ -388,11 +234,9 @@ namespace ParaEngine
 		virtual LRESULT MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/** create instance */
-		virtual HRESULT Create( HINSTANCE hInstance = 0 );
+		virtual HRESULT Create( HINSTANCE hInstance);
 
 		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain);
-
-		virtual HRESULT Render3DEnvironment(bool bForceRender = false);
 		virtual float GetFPS();
 		void UpdateFrameStats(double fTime);
 
@@ -402,16 +246,7 @@ namespace ParaEngine
 		/** get the module handle, it may be exe or the dll handle, depending on how the main host app is built. */
 		virtual HINSTANCE GetModuleHandle();
 
-		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
-
-		virtual float GetRefreshTimer();
-
 		virtual void GetWindowCreationSize(int * pWidth, int * pHeight);
-
-		virtual PEAppState GetAppState();
-
-		/** set application state */
-		virtual void SetAppState(ParaEngine::PEAppState state);
 
 		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
 		* [main thread only]
@@ -478,6 +313,96 @@ namespace ParaEngine
 
 		/** managing multiple 3d views */
 		CViewportManager* GetViewportManager();
+
+
+		///////////////////////////////
+		virtual void    Pause(bool bPause);
+		virtual bool	IsPaused();
+
+		/** force present the scene. */
+		HRESULT PresentScene();
+
+		void    EnablePassiveRendering(bool bEnable) { m_bPassiveRendering = bEnable; };
+		bool	IsPassiveRenderingEnabled() { return m_bPassiveRendering; };
+
+		/** disable 3D rendering, do not present the scene.
+		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window
+		* @param bEnable: true to enable.
+		*/
+		void Enable3DRendering(bool bEnable) { m_bEnable3DRendering = bEnable; };
+
+		/** whether 3D rendering is enabled, do not present the scene.
+		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
+		bool Is3DRenderingEnabled() { return m_bEnable3DRendering; };
+
+		/**
+		* Set the frame rate timer interval
+		* @param fTimeInterval:  value in seconds. such as 0.033f or 0.01667f
+		* 	Passing a value <= 0 to render in idle time.
+		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
+		*/
+		void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
+
+		/** get the refresh timer.
+		*/
+		float GetRefreshTimer() const;
+
+		// Functions to create, run, pause, and clean up the application
+		virtual HRESULT Create();
+
+		ParaEngine::PEAppState GetAppState() { return m_nAppState; }
+		void SetAppState(ParaEngine::PEAppState state) { m_nAppState = state; }
+
+		/** whether the d3d device is managed externally */
+		bool IsExternalD3DDevice() { return m_bIsExternalD3DDevice; }
+		///////////////////////////////
+
+	protected:
+		// Internal error handling function
+		HRESULT DisplayErrorMsg(HRESULT hr, DWORD dwType);
+
+		// Internal functions to manage and render the 3D scene
+		static bool ConfirmDeviceHelper(D3DCAPS9* pCaps, VertexProcessingType vertexProcessingType, D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat);
+		bool    FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
+		bool    FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
+		HRESULT LaunchReadme();
+		HRESULT ChooseInitialD3DSettings();
+		HRESULT Initialize3DEnvironment();
+		/** this function is called whenever the main window size changes. It may need to adjust/strech the d3d devices and coordinate systems.
+		* @param bUpdateSizeOnly: if true, we will only update the d3d device.
+		*/
+		HRESULT HandlePossibleSizeChange(bool bUpdateSizeOnly = false);
+		HRESULT Reset3DEnvironment();
+		HRESULT ToggleFullscreen();
+		HRESULT ForceWindowed();
+		HRESULT UserSelectNewDevice();
+		void    Cleanup3DEnvironment();
+		/** frame move and render
+		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
+		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called. */
+		HRESULT Render3DEnvironment(bool bForceRender = false) override;
+		virtual void BuildPresentParamsFromSettings();
+		virtual HRESULT AdjustWindowForChange();
+		virtual void UpdateStats();
+
+		// Overridable functions for the 3D scene created by the app
+		virtual HRESULT ConfirmDevice(D3DCAPS9*, DWORD, D3DFORMAT, D3DFORMAT) { return S_OK; }
+		virtual HRESULT OneTimeSceneInit();
+		virtual HRESULT InitDeviceObjects() override;
+		virtual HRESULT RestoreDeviceObjects() override;
+		virtual HRESULT FrameMove();
+		virtual HRESULT FrameMove(double fTime) override;
+		virtual HRESULT Render();
+		HRESULT InvalidateDeviceObjects() override;
+		virtual HRESULT DeleteDeviceObjects() override;
+		virtual HRESULT FinalCleanup() override;
+		/** update view port by backbuffer size. */
+		virtual bool UpdateViewPort();
+
+		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
+		* call this as often as one like internally it will use a timer to best fit the interval.
+		*/
+		virtual HRESULT DoWork();
 
 	private:
 		bool UpdateScreenDevice();
@@ -556,8 +481,83 @@ namespace ParaEngine
 
 		ITouchInputTranslator* LoadTouchInputPlug();
 
+		///////////////////////////////////////////////////////////
+		// D3D APP
+
+
+		CD3DEnumeration   m_d3dEnumeration;
+		CD3DSettings      m_d3dSettings;
+
+		// Internal variables for the state of the app
+		bool              m_bWindowed;
+		bool              m_bActive;
+		bool              m_bDeviceLost;
+		bool              m_bMinimized;
+		bool              m_bMaximized;
+		bool              m_bIgnoreSizeChange;
+		bool              m_bDeviceObjectsInited;
+		bool              m_bDeviceObjectsRestored;
+
+		// Internal variables used for timing
+		bool              m_bFrameMoving;
+		bool              m_bSingleStep;
+		/** if this is true, the directX is not needed to run the application. this is useful for server mode application.
+		* by default, it is false.
+		*/
+		bool			  m_bDisableD3D;
+
+		/// passive rendering, it will not render the scene, but simulation and time remains the same. Default is false
+		bool              m_bPassiveRendering;
+
+		/// whether to render 3d scene and present to screen. 
+		bool              m_bEnable3DRendering;
+
+		// Main objects used for creating and rendering the 3D scene
+		D3DPRESENT_PARAMETERS m_d3dpp;         // Parameters for CreateDevice/Reset
+		HWND              m_hWnd;              // The main app window
+		HWND              m_hWndFocus;         // The D3D focus window (usually same as m_hWnd)
+		HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
+		LPDIRECT3D9       m_pD3D;              // The main D3D object
+		LPDIRECT3DDEVICE9 m_pd3dDevice;        // The D3D rendering device
+		ParaEngine::IRenderDevice*	  m_pRenderDevice;
+		IDirect3DSwapChain9* m_pd3dSwapChain;
+		D3DCAPS9          m_d3dCaps;           // Caps for the device
+		D3DSURFACE_DESC   m_d3dsdBackBuffer;   // Surface desc of the backbuffer
+		DWORD             m_dwCreateFlags;     // Indicate sw or hw vertex processing
+		DWORD             m_dwWindowStyle;     // Saved window style for mode switches
+		RECT              m_rcWindowBounds;    // Saved window bounds for mode switches
+		RECT              m_rcWindowClient;    // Saved client area size for mode switches
+		int				  m_nClientWidth;
+		int				  m_nClientHeight;
+
+		// Variables for timing
+		double            m_fTime;             // Current time in seconds
+		double            m_fElapsedTime;      // Time elapsed since last frame
+		TCHAR             m_strDeviceStats[90];// string to hold D3D device stats
+		TCHAR             m_strFrameStats[90]; // string to hold frame stats
+		float			  m_fRefreshTimerInterval; //  in seconds. 
+		int				  m_nFrameRateControl;
+
+		// Overridable variables for the app
+		TCHAR*            m_strWindowTitle;    // Title for the app's window
+		DWORD             m_dwCreationWidth;   // Width used to create window
+		DWORD             m_dwCreationHeight;  // Height used to create window
+		bool              m_bShowCursorWhenFullscreen; // Whether to show cursor when fullscreen
+		bool              m_bClipCursorWhenFullscreen; // Whether to limit cursor pos when fullscreen
+		bool              m_bStartFullscreen;  // Whether to start up the app in fullscreen mode
+		bool              m_bCreateMultithreadDevice; // Whether to create a multithreaded device
+		bool              m_bAllowDialogBoxMode; // If enabled the framework will try to enable GDI dialogs while in fullscreen
+
+												 /** whether the main rendering window is an externally provided window or not. This will be true if SetMainWindow() is called. */
+		bool			  m_bIsExternalWindow;
+
+		bool m_bIsExternalD3DDevice;
+		/** application state */
+		ParaEngine::PEAppState m_nAppState;
+
+		//////////////////////////////////////////////////////////
+
+
 	};
 
 }
-
-#endif
