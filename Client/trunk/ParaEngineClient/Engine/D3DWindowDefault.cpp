@@ -24,9 +24,9 @@ using namespace ParaEngine;
 WCHAR* g_sWindowClassName = L"ParaWorld";
 WCHAR* g_sWindowTitle = L"ParaEngine Window";
 
-IParaEngineApp* g_pApp = NULL;
+IParaEngineApp* g_pApp = nullptr;
 CD3DWindowDefault::CD3DWindowDefault()
-: m_main_timer(m_main_io_service), m_bQuit(false), m_pApp(NULL), m_bMainLoopExited(true)
+: m_main_timer(m_main_io_service), m_bQuit(false), m_pApp(nullptr), m_bMainLoopExited(true)
 {
 	m_hWnd = NULL;
 }
