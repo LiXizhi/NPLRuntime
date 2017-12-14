@@ -178,7 +178,8 @@ CWindowsApplication::CWindowsApplication()
 , m_fFPS(0.f)
 {
 
-	//StartApp("");
+	g_pHwndHWND = &m_hWnd;
+	CFrameRateController::LoadFRCNormal();
 }
 
 CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
