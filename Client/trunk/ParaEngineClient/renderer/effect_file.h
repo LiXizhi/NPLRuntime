@@ -310,18 +310,25 @@ namespace ParaEngine
 		/** get the current technique description. This function may return NULL*/
 		const TechniqueDesc* GetCurrentTechniqueDesc() { return NULL; };
 
-		void onDrawPass(CParameterBlock* pMaterialParams)
+		void onDrawPass(CParameterBlock* pMaterialParams,int passIndex)
 		{
 			ScriptCallback* pCallback=GetScriptCallback(Type_DrawPass);
 			if(pCallback)
 			{
-				string code;
+				string code="msg={";
 				if(pMaterialParams&&pMaterialParams->GetParameter("CallbackKey"))
 				{
-					code="msg={CallbackKey=";
+					code+="CallbackKey=";
 					code+=pMaterialParams->GetParameter("CallbackKey")->GetValueByString();
-					code+="};";
+					code+=",";
 				}
+				code+="PassIndex=";
+				string pass_index_str;
+				stringstream ss;
+				ss<<passIndex;
+				ss>>pass_index_str;
+				code+=pass_index_str;
+				code+="};";
 				code+=pCallback->GetCode();
 				pCallback->ActivateLocalNow(code);
 			}
