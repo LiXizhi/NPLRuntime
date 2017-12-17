@@ -29,7 +29,9 @@ set(ParaEngineClient_SRCS)
 # SOURCE
 # ==================================================================================
 ##############################
-
+file (GLOB_RECURSE ParaEngineClient_Interface_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/Interface/*.*)
+SOURCE_GROUP("Framework\\Interface" FILES ${ParaEngineClient_Interface_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Interface_FILES})
 
 ##############################
 file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dir_monitor/*.*)
@@ -290,6 +292,7 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/2dengine/Video")
 include_directories("${ParaEngineClient_SOURCE_DIR}/common")
 include_directories("${ParaEngineClient_SOURCE_DIR}/sqlite3")
 include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9")
+include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 if(NPLRUNTIME_SUPPORT_FBX)
