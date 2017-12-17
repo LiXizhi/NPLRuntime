@@ -156,31 +156,7 @@ namespace ParaEngine
 extern "C" BOOL ( STDAPICALLTYPE *pChangeWindowMessageFilter )( UINT,DWORD ) = NULL;
 
 #pragma region CtorDtor
-CWindowsApplication::CWindowsApplication()
-: m_bHasNewConfig(false)
-, m_pWinRawMsgQueue(NULL)
-, m_dwWinThreadID(0)
-, m_bIsKeyEvent(false)
-, m_bUpdateScreenDevice(false)
-, m_bServerMode(false)
-, m_dwCoreUsage(PE_USAGE_STANDALONE)
-, m_pAudioEngine(NULL)
-, m_bAutoLowerFrameRateWhenNotFocused(false)
-, m_nInitialGameEffectSet(0)
-, m_bDrawReflection(false)
-, m_bDisplayText(false)
-, m_bDisplayHelp(false)
-, m_bAllowWindowClosing(true)
-, m_pKeyboard(NULL)
-, m_bToggleSoundWhenNotFocused(true)
-, m_bAppHasFocus(true)
-, m_hwndTopLevelWnd(NULL)
-, m_fFPS(0.f)
-{
 
-	g_pHwndHWND = &m_hWnd;
-	CFrameRateController::LoadFRCNormal();
-}
 
 CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 	:CParaEngineAppBase(lpCmdLine)
@@ -240,8 +216,8 @@ CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 	m_nFrameRateControl = 0;
 
 	m_strWindowTitle = _T("D3D9 Application");
-	m_dwCreationWidth = 400;
-	m_dwCreationHeight = 300;
+	m_dwCreationWidth = 800;
+	m_dwCreationHeight = 600;
 	m_nClientWidth = 0;
 	m_nClientHeight = 0;
 	m_bShowCursorWhenFullscreen = true;
@@ -271,6 +247,42 @@ CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
 }
+
+
+
+int CWindowsApplication::Run(HINSTANCE hInstance)
+{
+	if (!Is3DRenderingEnabled() || IsDebugBuild())
+	{
+		RedirectIOToConsole();
+	}
+
+	auto result = 0;
+	if (!Is3DRenderingEnabled())
+	{
+		// the console window is used.
+		CParaEngineService service;
+		return service.Run(0, this);
+	}
+
+	// Create render window
+	m_RenderWindow = new WindowsRenderWindow(hInstance, m_dwCreationWidth, m_dwCreationHeight, "ParaEngine Window", "ParaWorld",false);
+
+	// Create render context
+
+	// Create render device
+
+
+
+	while (!m_RenderWindow->ShouldClose())
+	{
+		m_RenderWindow->PollEvents();
+	}
+
+	return result;
+}
+
+
 
 
 #pragma region DevicesAndEvents
@@ -1983,35 +1995,6 @@ HRESULT CWindowsApplication::LaunchReadme()
 	return S_OK;
 }
 
-int CWindowsApplication::Run(HINSTANCE hInstance)
-{
-	//add a console window for debug or when in server mode.
-	if (!Is3DRenderingEnabled() || IsDebugBuild())
-	{
-		/*const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
-		bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
-		if (!bIsInterpreterMode)*/
-		{
-			RedirectIOToConsole();
-		}
-	}
-	auto result = 0;
-	if (Is3DRenderingEnabled())
-	{
-		// create 3d window and run till exit
-		// CD3DWindowDefault can be used as a sample to create application using paraengine lib. 
-		CD3DWindowDefault defaultWin;
-		defaultWin.SetAppInterface(CGlobals::GetApp());
-		result = defaultWin.Run(hInstance);
-	}
-	else
-	{
-		// the console window is used.
-		CParaEngineService service;
-		result = service.Run(0, this);
-	}
-	return result;
-}
 
 
 

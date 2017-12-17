@@ -5,6 +5,7 @@
 #include "ITouchInputTranslator.h"
 
 #include <map>
+#include "WindowsRenderWindow.h"
 
 namespace ParaEngine
 {
@@ -24,23 +25,28 @@ namespace ParaEngine
 
 	class CWindowsApplication : public CParaEngineAppBase
 	{
-	public:
-		/** start the application immediately, it calls StartApp with the given command line.
-		* @param lpCmdLine: command line arguments. we support the following argument at the moment
-		*  - bootstappper="config/bootstrapper.xml"
-		*/
-		CWindowsApplication(const char* lpCmdLine);
-		/** One needs to manually start the application.
-		*/
-		CWindowsApplication();
-		virtual ~CWindowsApplication();
 
+#pragma region New
+
+	public:
+		CWindowsApplication(const char* lpCmdLine);
+		virtual ~CWindowsApplication();
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance);
 
+	protected:
+		WindowsRenderWindow* m_RenderWindow;
+
+
+#pragma endregion
+
+
+
+
+	public:	
+
 		/** whether it is debug build. */
 		bool IsDebugBuild();
-
 
 		/** whether to use full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void SetFullScreenMode(bool bFullscreen);
@@ -94,7 +100,7 @@ namespace ParaEngine
 		* @param dwFields: current it is 0, which just collect graphics card settings.
 		* 1 is os information.
 		*/
-		virtual void GetStats(string& output, DWORD dwFields=0);
+		virtual void GetStats(string& output, DWORD dwFields = 0);
 
 		/**
 		* Write a string to the registry. e.g. WriteRegStr("HKLM", "Software\My Company\My Software", "string Value", "string Name");
@@ -126,21 +132,21 @@ namespace ParaEngine
 		* @param pY: out
 		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
 		*/
-		virtual void GetCursorPosition(int* pX,int * pY, bool bInBackbuffer = true);
+		virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true);
 
 		/** translate a position from game coordination system to client window position.
 		* @param inout_x: in and out
 		* @param inout_y: in and out
 		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
 		*/
-		virtual void GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer = true);
+		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true);
 
 		/** translate a position from client window position to game coordination system.
 		* @param inout_x: in and out
 		* @param inout_y: in and out
 		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
 		*/
-		virtual void ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer = true);
+		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true);
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
@@ -173,7 +179,7 @@ namespace ParaEngine
 		* Called during device initialization, this code checks the device for some
 		* minimum set of capabilities, and rejects those that don't pass by returning false.
 		*/
-		HRESULT ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9*, DWORD, D3DFORMAT, D3DFORMAT );
+		HRESULT ConfirmDevice(LPDIRECT3D9 pD3d, D3DCAPS9*, DWORD, D3DFORMAT, D3DFORMAT);
 
 		/** init application */
 		HRESULT Init(HWND* pHWND);
@@ -187,7 +193,7 @@ namespace ParaEngine
 		/** process game input.*/
 		void HandleUserInput();
 
-		virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow=true);
+		virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow = true);
 		virtual HWND GetMainWindow();
 
 		/** call this function to create the ParaEngine main rendering device based on the current window.
@@ -212,11 +218,11 @@ namespace ParaEngine
 
 		virtual HRESULT StopApp();
 
-		virtual LRESULT MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true);
+		virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true);
 
-		virtual LRESULT MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam);
+		virtual LRESULT MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-		virtual LRESULT SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -231,10 +237,10 @@ namespace ParaEngine
 		* Before handling window messages, application should pass incoming windows
 		* messages to the application through this callback function.
 		*/
-		virtual LRESULT MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+		virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/** create instance */
-		virtual HRESULT Create( HINSTANCE hInstance);
+		virtual HRESULT Create(HINSTANCE hInstance);
 
 		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain);
 		virtual float GetFPS();
@@ -289,12 +295,12 @@ namespace ParaEngine
 		*/
 		virtual bool HasFocus(HWND hWnd = 0);
 
-		virtual bool IsTouchInputting(){ return m_isTouching; }
+		virtual bool IsTouchInputting() { return m_isTouching; }
 		virtual bool IsSlateMode();
 
 		// deprecated:
-		virtual int32 GetTouchPointX(){ return m_touchPointX; }
-		virtual int32 GetTouchPointY(){ return m_touchPointY; }
+		virtual int32 GetTouchPointX() { return m_touchPointX; }
+		virtual int32 GetTouchPointY() { return m_touchPointY; }
 
 
 		/** server mode has no user interface */
@@ -428,17 +434,17 @@ namespace ParaEngine
 		float                 m_fAspectRatio;             // Aspect ratio used by the FPS camera
 		CAudioEngine*        m_pAudioEngine;                   // audio engine class
 
-		bool                  m_bDrawReflection:1;          // reflection-drawing option
-		bool                  m_bDisplayText:1;             // whether to display text
-		bool                  m_bDisplayHelp:1;             // whether to display help text
-		bool	m_bServerMode:1;
+		bool                  m_bDrawReflection : 1;          // reflection-drawing option
+		bool                  m_bDisplayText : 1;             // whether to display text
+		bool                  m_bDisplayHelp : 1;             // whether to display help text
+		bool	m_bServerMode : 1;
 		// whether we are loaded from config/config.new.txt.
-		bool m_bHasNewConfig:1;
-		bool m_bAllowWindowClosing:1;
+		bool m_bHasNewConfig : 1;
+		bool m_bAllowWindowClosing : 1;
 		// default to false. if true, we will lower frame rate when the window is not focused.
-		bool m_bAutoLowerFrameRateWhenNotFocused:1;
+		bool m_bAutoLowerFrameRateWhenNotFocused : 1;
 		// if true, sound volume will be set to 0, when not focused.
-		bool m_bToggleSoundWhenNotFocused:1;
+		bool m_bToggleSoundWhenNotFocused : 1;
 
 		/** initial game effect setting to be loaded from the config file. default value it 0*/
 		int m_nInitialGameEffectSet;
