@@ -91,12 +91,6 @@ file (GLOB ParaEngineClient_InfoCenter_FILES ${ParaEngineClient_SOURCE_DIR}/ic/*
 SOURCE_GROUP("Externals\\InfoCenter" FILES ${ParaEngineClient_InfoCenter_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_InfoCenter_FILES})
 
-##############################
-file (GLOB ParaEngineClient_SQLite3_FILES ${ParaEngineClient_SOURCE_DIR}/sqlite3/*.h ${ParaEngineClient_SOURCE_DIR}/sqlite3/*.cpp ${ParaEngineClient_SOURCE_DIR}/sqlite3/*.c)
-SOURCE_GROUP("Externals\\SQLite3" FILES ${ParaEngineClient_SQLite3_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_SQLite3_FILES})
-
-
 
 ##############################
 file (GLOB ParaEngineClient_TERRAIN_FILES ${ParaEngineClient_SOURCE_DIR}/terrain/*.h ${ParaEngineClient_SOURCE_DIR}/terrain/*.cpp)
@@ -290,10 +284,11 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings")
 include_directories("${ParaEngineClient_SOURCE_DIR}/NPL")
 include_directories("${ParaEngineClient_SOURCE_DIR}/2dengine/Video")
 include_directories("${ParaEngineClient_SOURCE_DIR}/common")
-include_directories("${ParaEngineClient_SOURCE_DIR}/sqlite3")
 include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9")
 include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/")
 include_directories("${Boost_INCLUDE_DIRS}")
+
+
 
 if(NPLRUNTIME_SUPPORT_FBX)
 	include_directories("${Assimp_SOURCE_DIR}/include/")
@@ -366,7 +361,7 @@ endif()
 # EXTRA_LIBRARIES
 if(WIN32)
 	list(APPEND ParaEngineClient_LIBS Ws2_32 winmm wsock32 Dnsapi Secur32 Crypt32 Wldap32 zlib libcurl
-	 liblua jsoncpp tinyxpath luabind)
+	 liblua jsoncpp tinyxpath luabind sqlite)
 endif()
 	
 

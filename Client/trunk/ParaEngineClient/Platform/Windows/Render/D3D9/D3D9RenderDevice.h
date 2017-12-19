@@ -1,5 +1,6 @@
 #pragma once
 #include "IRenderDevice.h"
+#include "D3D9RenderContext.h"
 #include "d3d9.h"
 
 
@@ -8,7 +9,7 @@ namespace ParaEngine
 	class CD3D9RenderDevice : public IRenderDevice
 	{
 	public:
-		CD3D9RenderDevice(IDirect3DDevice9* device);
+		CD3D9RenderDevice(D3D9RenderContext* context);
 		virtual ~CD3D9RenderDevice() = default;
 	
 		LPDIRECT3DDEVICE9 GetDirect3DDevice9() const;
@@ -162,6 +163,9 @@ namespace ParaEngine
 
 
 		virtual HRESULT ShowCursor(BOOL bShow) override;
+
+
+		virtual HRESULT Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) override;
 
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;

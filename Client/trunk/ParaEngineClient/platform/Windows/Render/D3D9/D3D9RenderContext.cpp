@@ -68,12 +68,24 @@ bool ParaEngine::D3D9RenderContext::IsInvalid() const
 	return m_invalid;
 }
 
+IDirect3DDevice9* ParaEngine::D3D9RenderContext::GetD3DDevice() const
+{
+	return m_pD3Device;
+}
+
+IDirect3D9* ParaEngine::D3D9RenderContext::GetD3D() const
+{
+	return m_pD3D9;
+}
+
 HRESULT D3D9RenderContext::Initialize3DEnvironment()
 {
 	HRESULT hr = S_OK;
 	D3DAdapterInfo* pAdapterInfo = m_d3dSettings.PAdapterInfo();
 	D3DDeviceInfo* pDeviceInfo = m_d3dSettings.PDeviceInfo();
 
+
+	BuildPresentParamsFromSettings();
 
 
 	if (pDeviceInfo->Caps.PrimitiveMiscCaps & D3DPMISCCAPS_NULLREFERENCE)
@@ -93,6 +105,8 @@ HRESULT D3D9RenderContext::Initialize3DEnvironment()
 		behaviorFlags = D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE;
 	else
 		behaviorFlags = 0; // TODO: throw exception
+
+
 
 	hr = m_pD3D9->CreateDevice(m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
 		m_pRenderWindow->GetHandle(), behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/, &m_d3dpp,
@@ -135,7 +149,68 @@ HRESULT D3D9RenderContext::Initialize3DEnvironment()
 	return hr;
 }
 
+//-----------------------------------------------------------------------------
+// Name: BuildPresentParamsFromSettings()
+// Desc:
+//-----------------------------------------------------------------------------
+void D3D9RenderContext::BuildPresentParamsFromSettings()
+{
 
+	m_d3dpp.Windowed = m_d3dSettings.IsWindowed;
+	m_d3dpp.BackBufferCount = 1;
+	m_d3dpp.MultiSampleType = m_d3dSettings.MultisampleType();
+	m_d3dpp.MultiSampleQuality = m_d3dSettings.MultisampleQuality();
+	m_d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	m_d3dpp.EnableAutoDepthStencil = m_d3dEnumeration.AppUsesDepthBuffer;
+	m_d3dpp.hDeviceWindow = m_pRenderWindow->GetHandle();
+	if (m_d3dEnumeration.AppUsesDepthBuffer)
+	{
+		m_d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
+		m_d3dpp.AutoDepthStencilFormat = m_d3dSettings.DepthStencilBufferFormat();
+	}
+	else
+	{
+		m_d3dpp.Flags = 0;
+	}
+
+	if (m_d3dSettings.DeviceClip())
+		m_d3dpp.Flags |= D3DPRESENTFLAG_DEVICECLIP;
+
+	// make it lockable so that we can read back pixel data for CBufferPicking.  Not needed now.
+	// m_d3dpp.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+
+	if (m_pRenderWindow->IsWindowed())
+	{
+		m_d3dpp.BackBufferWidth = m_d3dSettings.Windowed_Width;
+		m_d3dpp.BackBufferHeight = m_d3dSettings.Windowed_Height;
+		m_d3dpp.BackBufferFormat = m_d3dSettings.PDeviceCombo()->BackBufferFormat;
+		m_d3dpp.FullScreen_RefreshRateInHz = 0;
+		m_d3dpp.PresentationInterval = m_d3dSettings.PresentInterval();
+	}
+	else
+	{
+		m_d3dpp.BackBufferWidth = m_d3dSettings.DisplayMode().Width;
+		m_d3dpp.BackBufferHeight = m_d3dSettings.DisplayMode().Height;
+		m_d3dpp.BackBufferFormat = m_d3dSettings.PDeviceCombo()->BackBufferFormat;
+		m_d3dpp.FullScreen_RefreshRateInHz = m_d3dSettings.Fullscreen_DisplayMode.RefreshRate;
+		m_d3dpp.PresentationInterval = m_d3dSettings.PresentInterval();
+
+		//if (m_bAllowDialogBoxMode)
+		//{
+		//	// Make the back buffers lockable in fullscreen mode
+		//	// so we can show dialog boxes via SetDialogBoxMode() 
+		//	// but since lockable back buffers incur a performance cost on 
+		//	// some graphics hardware configurations we'll only 
+		//	// enable lockable backbuffers where SetDialogBoxMode() would work.
+		//	if ((m_d3dpp.BackBufferFormat == D3DFMT_X1R5G5B5 || m_d3dpp.BackBufferFormat == D3DFMT_R5G6B5 || m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8) &&
+		//		(m_d3dpp.MultiSampleType == D3DMULTISAMPLE_NONE) &&
+		//		(m_d3dpp.SwapEffect == D3DSWAPEFFECT_DISCARD))
+		//	{
+		//		m_d3dpp.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+		//	}
+		//}
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Name: FindBestFullscreenMode()
@@ -444,7 +519,7 @@ HRESULT D3D9RenderContext::ChooseInitialD3DSettings()
 	m_d3dSettings.SetDeviceClip(false);
 	if (!m_pRenderWindow->IsWindowed() && bFoundFullscreen)
 			m_d3dSettings.IsWindowed = false;
-		if (!bFoundWindowed && bFoundFullscreen)
+	if (!bFoundWindowed && bFoundFullscreen)
 			m_d3dSettings.IsWindowed = false;
 
 
@@ -478,5 +553,5 @@ bool D3D9RenderContext::ConfirmDeviceHelper(D3DCAPS9* pCaps, VertexProcessingTyp
 	else
 		dwBehavior = 0; // TODO: throw exception
 
-
+	return true;
 }

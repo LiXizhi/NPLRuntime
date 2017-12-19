@@ -153,6 +153,9 @@ int DLLPlugInEntity::GetNumberOfClasses()
 
 void DLLPlugInEntity::Init(const char* sFilename)
 {
+
+	OUTPUT_LOG("DLLPlugInEntity::INit %s \n", sFilename);
+
 	m_bIsInitialized = true;
 	m_bIsValid = true;
 

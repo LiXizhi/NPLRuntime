@@ -12,12 +12,16 @@ namespace ParaEngine
 		bool Initialize();
 		void Uninitialize();
 		bool IsInvalid() const;
+	public:
+		IDirect3DDevice9* GetD3DDevice() const;
+		IDirect3D9* GetD3D() const;
 	
 	private:
 		bool FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
 		bool FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
 		HRESULT ChooseInitialD3DSettings();
 		HRESULT Initialize3DEnvironment();
+		void BuildPresentParamsFromSettings();
 		static bool ConfirmDeviceHelper(D3DCAPS9 * pCaps,
 			VertexProcessingType vertexProcessingType,
 			D3DFORMAT adapterFormat,

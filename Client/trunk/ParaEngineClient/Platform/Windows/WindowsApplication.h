@@ -34,6 +34,7 @@ namespace ParaEngine
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance);
 
+		int CalculateRenderTime(double fIdealInterval, double* pNextInterval);
 	protected:
 		WindowsRenderWindow* m_RenderWindow;
 
@@ -182,7 +183,7 @@ namespace ParaEngine
 		HRESULT ConfirmDevice(LPDIRECT3D9 pD3d, D3DCAPS9*, DWORD, D3DFORMAT, D3DFORMAT);
 
 		/** init application */
-		HRESULT Init(HWND* pHWND);
+		HRESULT Init(HWND pHWND);
 
 
 		/** Output text information to console, for debugging only.*/
@@ -242,7 +243,6 @@ namespace ParaEngine
 		/** create instance */
 		virtual HRESULT Create(HINSTANCE hInstance);
 
-		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain);
 		virtual float GetFPS();
 		void UpdateFrameStats(double fTime);
 
