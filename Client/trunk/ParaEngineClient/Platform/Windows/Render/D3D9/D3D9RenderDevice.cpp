@@ -3,10 +3,10 @@
 
 using namespace ParaEngine;
 
-ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9 * device):
+ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(D3D9RenderContext * context):
 	m_pD3DDevice(nullptr)
 {
-	m_pD3DDevice = device;
+	m_pD3DDevice = context->GetD3DDevice();
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::RendererRecreated()
@@ -254,6 +254,11 @@ HRESULT ParaEngine::CD3D9RenderDevice::SetVertexShaderConstantF(UINT StartRegist
 HRESULT ParaEngine::CD3D9RenderDevice::ShowCursor(BOOL bShow)
 {
 	return m_pD3DDevice->ShowCursor(bShow);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
+{
+	return m_pD3DDevice->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::DrawIndexedPrimitive(D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)

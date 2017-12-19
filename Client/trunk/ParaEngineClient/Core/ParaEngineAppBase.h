@@ -152,7 +152,7 @@ namespace ParaEngine
 		virtual HRESULT StopApp()  { return S_OK; };
 
 		/** init application */
-		virtual HRESULT Init(HWND* pHWND)  { return S_OK; };
+		virtual HRESULT Init(HWND pHWND)  { return S_OK; };
 
 		/** Send the exit message, so that the game engine will prepare to exit in the next frame.
 		* this is the recommended way of exiting application.
@@ -186,11 +186,6 @@ namespace ParaEngine
 		* call this as often as one like internally it will use a timer to best fit the interval.
 		*/
 		virtual HRESULT DoWork()  { return 0; };
-
-		/** create from an existing d3d device. This is an advanced function to replaced the default render device.
-		* and caller is responsible for managing device life time. The external caller must call InitDeviceObjects(), RestoreDeviceObjects(), InvalidateDeviceObjects(), DeleteDeviceObjects() at proper time
-		*/
-		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)  { return 0; };
 
 		/**
 		* This callback function will be called immediately after the Direct3D device has been

@@ -99,6 +99,9 @@ namespace ParaEngine
 		virtual HRESULT SetVertexShaderConstantF(UINT StartRegister, CONST float* pConstantData, UINT Vector4fCount) = 0;
 
 		virtual HRESULT ShowCursor(BOOL bShow) = 0;
+
+		virtual HRESULT Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) = 0;
+
 	};
 }
 

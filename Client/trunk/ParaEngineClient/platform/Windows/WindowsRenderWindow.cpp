@@ -11,7 +11,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	: m_hWnd(NULL)
 	, m_hAccel(NULL)
 	, m_Width(width)
-	, m_Height(m_Height)
+	, m_Height(height)
 	, m_Windowed(windowed)
 {
 

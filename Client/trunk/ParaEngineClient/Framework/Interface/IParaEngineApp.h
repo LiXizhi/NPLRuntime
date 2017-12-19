@@ -125,11 +125,6 @@ namespace ParaEngine
 		*/
 		virtual HRESULT DoWork() = 0;
 
-		/** create from an existing d3d device. This is an advanced function to replaced the default render device. 
-		* and caller is responsible for managing device life time. The external caller must call InitDeviceObjects(), RestoreDeviceObjects(), InvalidateDeviceObjects(), DeleteDeviceObjects() at proper time
-		*/
-		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain) = 0;
-
 		/**
 		* This callback function will be called immediately after the Direct3D device has been 
 		* created, which will happen during application initialization and windowed/full screen 
@@ -170,7 +165,7 @@ namespace ParaEngine
 		virtual HRESULT Create( HINSTANCE hInstance = 0 ) = 0;
 
 		/** init the application. no need to be called unless in a service where no rendering devices are created. */
-		virtual HRESULT Init(HWND* pHWND = 0) = 0;
+		virtual HRESULT Init(HWND pHWND = 0) = 0;
 
 		/** Frame move and render a frame during idle time (no messages are waiting). Call this function during CPU idle time. 
 		* internally it uses a timer to control frame rates, so it is safe to call this as often as one like. 
