@@ -9,6 +9,11 @@ ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(D3D9RenderContext * context):
 	m_pD3DDevice = context->GetD3DDevice();
 }
 
+ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
+{
+	m_pD3DDevice = device;
+}
+
 HRESULT ParaEngine::CD3D9RenderDevice::RendererRecreated()
 {
 	throw std::logic_error("The method or operation is not implemented.");

@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <tchar.h>  
-#include <d3dx9math.h>
+//#include <d3dx9math.h>
 #else// For LINUX
 #include <ctype.h>
 #include <wctype.h>
