@@ -10,6 +10,7 @@ namespace ParaEngine
 	{
 	public:
 		CD3D9RenderDevice(D3D9RenderContext* context);
+		CD3D9RenderDevice(IDirect3DDevice9* device);
 		virtual ~CD3D9RenderDevice() = default;
 	
 		LPDIRECT3DDEVICE9 GetDirect3DDevice9() const;

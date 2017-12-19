@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Class:	CWindowsApplication
+// Class:	CParaEngineApp
 // Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine Co.
@@ -80,11 +80,6 @@
 #include "OSWindows.h"
 #include <time.h>
 #include "ParaEngineAppBase.h"
-#include "D3D9RenderDevice.h"
-#include "D3D9RenderContext.h"
-#include "D3DWindowDefault.h"
-#include "D3D9RenderDevice.h"
-
 
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)                (wParam & 0xFFFF)
@@ -135,17 +130,15 @@ HINSTANCE g_hAppInstance;
 #endif
 
 using namespace ParaEngine;
-
-static CWindowsApplication* g_pD3DApp = NULL;
-CFrameRateController g_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW);
-
 namespace ParaEngine
 {
 	/** this value changes from 0 to 1, and back to 0 in one second.*/
 	float g_flash = 0.f;
 
+	/** the main rendering window. */
+	HWND* g_pHwndHWND = NULL;
 
-	INT_PTR CALLBACK DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam );
+	INT_PTR CALLBACK DialogProcAbout(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	Gdiplus::GdiplusStartupInput g_gdiplusStartupInput;
 	ULONG_PTR           g_gdiplusToken;
@@ -154,783 +147,30 @@ namespace ParaEngine
 #pragma endregion PE Includes
 
 #define MSGFLT_ADD 1
-extern "C" BOOL ( STDAPICALLTYPE *pChangeWindowMessageFilter )( UINT,DWORD ) = NULL;
+extern "C" BOOL(STDAPICALLTYPE *pChangeWindowMessageFilter)(UINT, DWORD) = NULL;
 
 #pragma region CtorDtor
-
+CWindowsApplication::CWindowsApplication()
+	: m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
+	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
+	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
+	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL), m_fFPS(0.f)
+{
+	g_pHwndHWND = &m_hWnd;
+	CFrameRateController::LoadFRCNormal();
+}
 
 CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
-	:CParaEngineAppBase(lpCmdLine)
-	, m_bHasNewConfig(false)
-	, m_pWinRawMsgQueue(NULL)
-	, m_dwWinThreadID(0)
-	, m_bIsKeyEvent(false)
-	, m_bUpdateScreenDevice(false)
-	, m_bServerMode(false)
-	, m_dwCoreUsage(PE_USAGE_STANDALONE)
-	, m_pAudioEngine(NULL)
-	, m_bAutoLowerFrameRateWhenNotFocused(false)
-	, m_nInitialGameEffectSet(0)
-	, m_bDrawReflection(false)
-	, m_bDisplayText(false)
-	, m_bDisplayHelp(false)
-	, m_bAllowWindowClosing(true)
-	, m_pKeyboard(NULL)
-	, m_bToggleSoundWhenNotFocused(true)
-	, m_bAppHasFocus(true)
-	, m_hwndTopLevelWnd(NULL)
-	, m_fFPS(0.f)
-	, m_RenderDevice(nullptr)
-	, m_RenderContext(nullptr)
-	, m_dwCreationWidth(800)
-	, m_dwCreationHeight(600)
+	:CParaEngineAppBase(lpCmdLine), m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
+	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
+	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
+	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL)
 {
-
-	g_pD3DApp = this;
-
-	SetAppState(PEAppState_None);
-
-	m_bIsExternalD3DDevice = false;
-	m_bWindowed = true;
-	m_bActive = false;
-	m_bDeviceLost = false;
-	m_bMinimized = false;
-	m_bMaximized = false;
-	m_bIgnoreSizeChange = false;
-	m_bDeviceObjectsInited = false;
-	m_bDeviceObjectsRestored = false;
-
-	m_bDisableD3D = false;
-	m_bPassiveRendering = false;
-	m_bEnable3DRendering = true;
-	m_bFrameMoving = true;
-	m_bSingleStep = false;
-	m_fTime = 0.0f;
-	m_fElapsedTime = 0.0f;
-	m_fFPS = 0.0f;
-	m_strDeviceStats[0] = _T('\0');
-	m_strFrameStats[0] = _T('\0');
-	m_fRefreshTimerInterval = -1.f;
-	m_nFrameRateControl = 0;
-
-	m_bShowCursorWhenFullscreen = true;
-	m_bStartFullscreen = false;
-	m_bCreateMultithreadDevice = true;
-	m_bAllowDialogBoxMode = false;
-	m_bIsExternalWindow = false;
-
-
-	Pause(true); // Pause until we're ready to render
-
-				 // When m_bClipCursorWhenFullscreen is true, the cursor is limited to
-				 // the device window when the app goes fullscreen.  This prevents users
-				 // from accidentally clicking outside the app window on a multimon system.
-				 // This flag is turned off by default for debug builds, since it makes 
-				 // multimon debugging difficult.
-#if defined(_DEBUG) || defined(DEBUG)
-	m_bClipCursorWhenFullscreen = false;
-#else
-	m_bClipCursorWhenFullscreen = true;
-#endif
+	g_pHwndHWND = &m_hWnd;
 	CFrameRateController::LoadFRCNormal();
 	StartApp(lpCmdLine);
 }
 
-
-
-int CWindowsApplication::Run(HINSTANCE hInstance)
-{
-	if (!Is3DRenderingEnabled() || IsDebugBuild())
-	{
-		RedirectIOToConsole();
-	}
-
-	auto result = 0;
-	if (!Is3DRenderingEnabled())
-	{
-		// the console window is used.
-		CParaEngineService service;
-		return service.Run(0, this);
-	}
-
-	// Create render window
-	m_RenderWindow = new WindowsRenderWindow(hInstance, 800, 600, "ParaEngine Window", "ParaWorld",true);
-
-	// Init
-	Init(m_RenderWindow->GetHandle());
-
-	SetAppState(PEAppState_Device_Created);
-	// Create render context
-	D3D9RenderContext renderContext(m_RenderWindow);
-	renderContext.Initialize();
-
-	// Create render device
-	CD3D9RenderDevice renderDevice(&renderContext);
-	m_RenderDevice = &renderDevice;
-	CGlobals::SetRenderDevice(&renderDevice);
-
-	InitDeviceObjects();
-
-	// Initialize the application timer
-	DXUtil_Timer(TIMER_START);
-
-	Pause(false);
-
-	SetAppState(PEAppState_Ready);
-	while (!m_RenderWindow->ShouldClose())
-	{
-		m_RenderWindow->PollEvents();
-		double fIdealInterval = (GetRefreshTimer() <= 0) ? IDEAL_FRAME_RATE : GetRefreshTimer();
-		double fNextInterval = 0.f;
-		int nFrameDelta = CalculateRenderTime(fIdealInterval, &fNextInterval);
-		if (nFrameDelta > 0)
-		{
-			Render3DEnvironment(false);
-		}
-	}
-	return result;
-}
-
-
-
-int CWindowsApplication::CalculateRenderTime(double fIdealInterval, double* pNextInterval)
-{
-	double fCurTime = DXUtil_Timer(TIMER_GETAPPTIME);
-	double fNextInterval = 0.f;
-	int nUpdateFrameDelta = 0;
-	int nFrameDelta = 1;
-
-	const bool USE_ADAPTIVE_INTERVAL = true;
-	if (USE_ADAPTIVE_INTERVAL)
-	{
-		// --------adaptive interval algorithm
-		// check FPS by modifying the interval adaptively until FPS is within a good range.
-		// we will adjust every 1 second
-		static double fLastTime = fCurTime;
-		static double fLastFrameTime = fCurTime;
-		static double fSeconds = fCurTime;
-
-		static double fAdaptiveInterval = 1 / 60.0; // initial value for tying
-		static double fLastIdealInterval = 1 / 30.0;
-		// static double fLastDrawTime = fCurTime;
-
-		if (fLastIdealInterval != fIdealInterval)
-		{
-			if (fLastIdealInterval > fIdealInterval)
-				fAdaptiveInterval = fIdealInterval;
-			fLastIdealInterval = fIdealInterval;
-		}
-
-		static int nFPS = 0;
-		nFPS++;
-
-		if ((fSeconds + 1) < fCurTime)
-		{
-			// adaptive delta
-			double fDelta = nFPS*fIdealInterval;
-
-			if (fDelta > 1.5)
-			{
-				fAdaptiveInterval = fAdaptiveInterval + 0.002f;
-			}
-			else if (fDelta > 1.3)
-			{
-				fAdaptiveInterval = fAdaptiveInterval + 0.001f;
-			}
-			else if (nFPS*fIdealInterval < 1)
-			{
-				fAdaptiveInterval = fAdaptiveInterval - 0.001f;
-				if (fAdaptiveInterval < 0)
-				{
-					fAdaptiveInterval = 0.f;
-				}
-			}
-			fSeconds = fCurTime;
-			nFPS = 0;
-		}
-		/** tricky: run the main_loop as fast as possible at least 100FPS, so that FPS is more accurate. */
-		fAdaptiveInterval = Math::Min(fAdaptiveInterval, 1 / 100.0);
-
-		fNextInterval = fAdaptiveInterval;
-
-		if ((fCurTime - fLastTime) > 1.f)
-		{
-			// too laggy
-			nFrameDelta = 2;
-			fLastFrameTime = fCurTime;
-			fLastTime = fCurTime;
-		}
-		else
-		{
-			nFrameDelta = (int)((fCurTime - fLastFrameTime) / fIdealInterval + 0.5);
-
-			fLastFrameTime = fLastFrameTime + (nFrameDelta * fIdealInterval);
-			fLastTime = fCurTime;
-		}
-	}
-	else
-	{
-		// --------fixed interval algorithm
-		// continue with next activation. 
-		static double s_next_time = 0;
-		fNextInterval = s_next_time - fCurTime;
-		if (fNextInterval <= 0)
-		{
-			s_next_time = fCurTime;
-			fNextInterval = 0;
-		}
-		else if (fNextInterval >= fIdealInterval)
-		{
-			fNextInterval = fIdealInterval;
-			s_next_time = fCurTime;
-		}
-		s_next_time = s_next_time + fIdealInterval;
-	}
-
-	/** define to output interval to log file to change timer implementation. */
-	// #define DEBUG_TIMER_INTERVAL
-#ifdef DEBUG_TIMER_INTERVAL
-	{
-		// debug timer
-		static double fLastTime = fCurTime;
-		static double fSeconds = fCurTime;
-		static int nFPS = 0;
-		nFPS++;
-		if ((fSeconds + 1) < fCurTime)
-		{
-			fSeconds = fCurTime;
-			OUTPUT_LOG("%d Second(FPS: %d)--------------\n", (int)(fSeconds), nFPS);
-			nFPS = 0;
-		}
-
-		OUTPUT_LOG("Tick: delta:%d, global:%d, next:%d\n", (int)((fCurTime - fLastTime) * 1000),
-			(int)(fCurTime * 1000), (int)(fNextInterval * 1000));
-		fLastTime = fCurTime;
-	}
-#endif	
-	if (pNextInterval)
-		*pNextInterval = fNextInterval;
-	return nFrameDelta;
-}
-
-
-
-#pragma region DevicesAndEvents
-
-//-----------------------------------------------------------------------------
-// Name: ConfirmDeviceHelper()
-// Desc: Static function used by D3DEnumeration
-//-----------------------------------------------------------------------------
-bool CWindowsApplication::ConfirmDeviceHelper(D3DCAPS9* pCaps, VertexProcessingType vertexProcessingType,
-	D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat)
-{
-	DWORD dwBehavior;
-
-	if (vertexProcessingType == SOFTWARE_VP)
-		dwBehavior = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-	else if (vertexProcessingType == MIXED_VP)
-		dwBehavior = D3DCREATE_MIXED_VERTEXPROCESSING;
-	else if (vertexProcessingType == HARDWARE_VP)
-		dwBehavior = D3DCREATE_HARDWARE_VERTEXPROCESSING;
-	else if (vertexProcessingType == PURE_HARDWARE_VP)
-		dwBehavior = D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE;
-	else
-		dwBehavior = 0; // TODO: throw exception
-
-	return SUCCEEDED(g_pD3DApp->ConfirmDevice(pCaps, dwBehavior, adapterFormat, backBufferFormat));
-}
-
-
-//-----------------------------------------------------------------------------
-// Name: Render3DEnvironment()
-// Desc: Here's what this function does:
-//       - Checks to make sure app is still active (if fullscreen, etc)
-//       - Checks to see if it is time to draw with DXUtil_Timer, if not, it just returns S_OK
-//       - Calls FrameMove() to recalculate new positions
-//       - Calls Render() to draw the new frame
-//       - Updates some frame count statistics
-//       - Calls m_pd3dDevice->Present() to display the rendered frame.
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
-{
-	HRESULT hr = S_OK;
-
-	// Get the app's time, in seconds. Skip rendering if no time elapsed
-	double fAppTime = DXUtil_Timer(TIMER_GETAPPTIME);
-	double fElapsedAppTime = DXUtil_Timer(TIMER_GETELAPSEDTIME);
-
-	//////////////////////////////////////////////////////////////////////////
-	//
-	// frame rate control at 30 FPS
-	//
-	//////////////////////////////////////////////////////////////////////////
-
-	static double fRenderTime = 0;
-	static double fConstTime = 0;
-	bool bUseIdealFrameRate = (m_nFrameRateControl == 1);
-
-	fRenderTime += fElapsedAppTime;
-	fConstTime += fElapsedAppTime;
-	if (!bUseIdealFrameRate || (fConstTime >= IDEAL_FRAME_RATE) || bForceRender)
-	{
-		m_fElapsedTime = bUseIdealFrameRate ? fRenderTime : fElapsedAppTime;
-
-
-		if (bForceRender)
-		{
-			fConstTime = 0;
-		}
-		else
-		{
-			// TRICKY: this helps to smooth the frame rate to IDEAL_FRAME_RATE, when force render is false
-			fConstTime -= IDEAL_FRAME_RATE;
-			if (fConstTime >= IDEAL_FRAME_RATE) // if 0.5 seconds is passed, we will catch up 
-				fConstTime = 0;
-		}
-		fRenderTime = 0;
-
-		if ((0.0f == fElapsedAppTime) && m_bFrameMoving)
-			return S_OK;
-
-		if (bUseIdealFrameRate)
-		{
-			// only use ideal frame rate if interval is smaller than it.
-			if (m_fRefreshTimerInterval<IDEAL_FRAME_RATE)
-			{
-				// TRICKY: this fixed a bug of inaccurate timing, we will assume a perfect timing here, but correct it if it differentiate too much from   
-				// FrameMove (animate) the scene, frame move is called before Render(), since the frame move may contain ForceRender() calls
-				// Store the time for the app
-				if (m_fTime < (fAppTime - IDEAL_FRAME_RATE)) // if 0.5 seconds is passed, we will catch up 
-					m_fTime = fAppTime;
-				else
-					m_fTime += IDEAL_FRAME_RATE;
-			}
-			else
-			{
-				// if we special refresh timer to be 0.03334 or bigger, we shall use absolute time. 
-				m_fTime = fAppTime;
-			}
-		}
-		else
-		{
-			m_fTime = fAppTime;
-		}
-
-		// OUTPUT_LOG("%f:%f, %f, %f\n", m_fTime, fAppTime, m_fElapsedTime, fConstTime);
-
-		__try
-		{
-			// UpdateViewPort();
-
-			// Frame move the scene
-			if (SUCCEEDED(hr = FrameMove()))
-			{
-			}
-
-			// Render the scene as normal
-
-			if (m_bActive && !IsPassiveRenderingEnabled() && (!m_bDisableD3D))
-			{
-				if (Is3DRenderingEnabled() && !m_bMinimized && SUCCEEDED(hr) && SUCCEEDED(hr = Render()))
-				{
-					// only present if render returns true.
-					hr = PresentScene();
-				}
-			}
-			else
-			{
-				// passive mode: sleep until the next ideal frame move time and a little more. 0.1 seconds
-				Sleep(100);
-			}
-		}
-		__except (GenerateDump(GetExceptionInformation()))
-		{
-			exit(0);
-		}
-		// Show the frame on the primary surface.
-	}
-	return S_OK;
-}
-
-HRESULT CWindowsApplication::PresentScene()
-{
-	// OUTPUT_LOG("---------\n");
-	HRESULT hr;
-	// only present if render returns true.
-	PERF1("present");
-	if (IsExternalD3DDevice()) {
-		//hr = m_pd3dSwapChain->Present(NULL, NULL, m_hWnd, NULL, 0);
-		assert(false);
-	}
-	else {
-		hr = m_RenderDevice->Present(NULL, NULL, NULL, NULL);
-	}
-	if (D3DERR_DEVICELOST == hr)
-		m_bDeviceLost = true;
-	return hr;
-}
-
-
-
-
-
-bool CWindowsApplication::UpdateViewPort()
-{
-	if (CGlobals::GetRenderDevice())
-	{
-		D3DVIEWPORT9 CurrentViewport;
-		CGlobals::GetRenderDevice()->GetViewport(&CurrentViewport);
-		//if (m_d3dpp.BackBufferWidth != CurrentViewport.Width && m_d3dpp.BackBufferHeight != CurrentViewport.Height)
-		//{
-		//	CurrentViewport.Width = m_d3dpp.BackBufferWidth;
-		//	CurrentViewport.Height = m_d3dpp.BackBufferHeight;
-		//	CGlobals::GetRenderDevice()->SetViewport(&CurrentViewport);
-		//}
-		return true;
-	}
-	return false;
-}
-
-
-
-
-//-----------------------------------------------------------------------------
-// Name: ToggleFullScreen()
-// Desc: Called when user toggles between fullscreen mode and windowed mode
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::ToggleFullscreen()
-{
-	
-	assert(false);
-	//Pause(false);
-	return S_OK;
-}
-
-
-
-
-//-----------------------------------------------------------------------------
-// Name: ForceWindowed()
-// Desc: Switch to a windowed mode, even if that means picking a new device
-//       and/or adapter
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::ForceWindowed()
-{
-	if (IsExternalD3DDevice())
-		return S_OK;
-	HRESULT hr;
-
-	if (m_bWindowed)
-		return S_OK;
-
-	if (!FindBestWindowedMode(false, false))
-	{
-		return E_FAIL;
-	}
-	m_bWindowed = true;
-
-	// Now destroy the current 3D device objects, then reinitialize
-
-	Pause(true);
-
-	// Release all scene objects that will be re-created for the new device
-	Cleanup3DEnvironment();
-
-	// Create the new device
-	if (FAILED(hr = Initialize3DEnvironment()))
-		return DisplayErrorMsg(hr, MSGERR_APPMUSTEXIT);
-
-	Pause(false);
-	return S_OK;
-}
-
-
-//-----------------------------------------------------------------------------
-// Name: AdjustWindowForChange()
-// Desc: Prepare the window for a possible change between windowed mode and
-//       fullscreen mode.  This function is virtual and thus can be overridden
-//       to provide different behavior, such as switching to an entirely
-//       different window for fullscreen mode (as in the MFC sample apps).
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::AdjustWindowForChange()
-{
-	assert(false);
-	return S_OK;
-}
-#pragma endregion DevicesAndEvents
-
-#pragma region Miscs
-
-//-----------------------------------------------------------------------------
-// Name: UserSelectNewDevice()
-// Desc: Displays a dialog so the user can select a new adapter, device, or
-//       display mode, and then recreates the 3D environment if needed
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::UserSelectNewDevice()
-{
-	//if (IsExternalD3DDevice())
-	//	return S_OK;
-	//HRESULT hr;
-	//bool bDialogBoxMode = false;
-	//bool bOldWindowed = m_bWindowed;  // Preserve original windowed flag
-
-	//if (m_bWindowed == false)
-	//{
-	//	// See if the current settings comply with the rules
-	//	// for allowing SetDialogBoxMode().  
-	//	if ((m_d3dpp.BackBufferFormat == D3DFMT_X1R5G5B5 || m_d3dpp.BackBufferFormat == D3DFMT_R5G6B5 || m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8) &&
-	//		(m_d3dpp.MultiSampleType == D3DMULTISAMPLE_NONE) &&
-	//		(m_d3dpp.SwapEffect == D3DSWAPEFFECT_DISCARD) &&
-	//		((m_d3dpp.Flags & D3DPRESENTFLAG_LOCKABLE_BACKBUFFER) == D3DPRESENTFLAG_LOCKABLE_BACKBUFFER) &&
-	//		((m_dwCreateFlags & D3DCREATE_ADAPTERGROUP_DEVICE) != D3DCREATE_ADAPTERGROUP_DEVICE))
-	//	{
-	//		if (SUCCEEDED(m_pd3dDevice->SetDialogBoxMode(true)))
-	//			bDialogBoxMode = true;
-	//	}
-
-	//	// If SetDialogBoxMode(true) didn't work then we can't display dialogs  
-	//	// in fullscreen mode so we'll go back to windowed mode
-	//	if (FALSE == bDialogBoxMode)
-	//	{
-	//		if (FAILED(ToggleFullscreen()))
-	//		{
-	//			DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
-	//			return E_FAIL;
-	//		}
-	//	}
-	//}
-
-	//// The dialog should use the mode the sample runs in, not
-	//// the mode that the dialog runs in.
-	//CD3DSettings tempSettings = m_d3dSettings;
-	//tempSettings.IsWindowed = bOldWindowed;
-	//CD3DSettingsDialog settingsDialog(&m_d3dEnumeration, &tempSettings);
-	//INT_PTR nResult = settingsDialog.ShowDialog(m_hWnd, CGlobals::GetApp()->GetModuleHandle());
-
-	//// Before creating the device, switch back to SetDialogBoxMode(false) 
-	//// mode to allow the user to pick multisampling or backbuffer formats 
-	//// not supported by SetDialogBoxMode(true) but typical apps wouldn't 
-	//// need to switch back.
-	//if (bDialogBoxMode)
-	//	m_pd3dDevice->SetDialogBoxMode(false);
-
-	//if (nResult != IDOK)
-	//{
-	//	// If we had to switch mode to display the dialog, we
-	//	// need to go back to the original mode the sample
-	//	// was running in.
-	//	if (bOldWindowed != m_bWindowed && FAILED(ToggleFullscreen()))
-	//	{
-	//		DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
-	//		return E_FAIL;
-	//	}
-
-	//	return S_OK;
-	//}
-
-	//settingsDialog.GetFinalSettings(&m_d3dSettings);
-
-	//m_bWindowed = m_d3dSettings.IsWindowed;
-
-	//// Release all scene objects that will be re-created for the new device
-	//Cleanup3DEnvironment();
-
-	//// Inform the display class of the change. It will internally
-	//// re-create valid surfaces, a d3ddevice, etc.
-	//if (FAILED(hr = Initialize3DEnvironment()))
-	//{
-	//	if (hr != D3DERR_OUTOFVIDEOMEMORY)
-	//		hr = D3DAPPERR_RESETFAILED;
-	//	if (!m_bWindowed && !m_bIsExternalWindow)
-	//	{
-	//		// Restore window type to windowed mode
-	//		m_bWindowed = !m_bWindowed;
-	//		m_d3dSettings.IsWindowed = m_bWindowed;
-	//		AdjustWindowForChange();
-	//		SetWindowPos(m_hWnd, HWND_NOTOPMOST,
-	//			m_rcWindowBounds.left, m_rcWindowBounds.top,
-	//			(m_rcWindowBounds.right - m_rcWindowBounds.left),
-	//			(m_rcWindowBounds.bottom - m_rcWindowBounds.top),
-	//			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
-	//	}
-	//	return DisplayErrorMsg(hr, MSGERR_APPMUSTEXIT);
-	//}
-
-	//// If the app is paused, trigger the rendering of the current frame
-	//if (false == m_bFrameMoving)
-	//{
-	//	m_bSingleStep = true;
-	//	DXUtil_Timer(TIMER_START);
-	//	DXUtil_Timer(TIMER_STOP);
-	//}
-
-	assert(false);
-
-	return S_OK;
-}
-
-
-//-----------------------------------------------------------------------------
-// Name: UpdateStats()
-// Desc: 
-//-----------------------------------------------------------------------------
-void CWindowsApplication::UpdateStats()
-{
-	assert(false);
-	//// Keep track of the frame count
-	//static double fLastTime = 0.0f;
-	//static DWORD dwFrames = 0;
-	//double fTime = DXUtil_Timer(TIMER_GETABSOLUTETIME);
-	//++dwFrames;
-
-	//// Update the scene stats once per second
-	//if (fTime - fLastTime > 1.0f)
-	//{
-	//	m_fFPS = (float)(dwFrames / (fTime - fLastTime));
-	//	fLastTime = fTime;
-	//	dwFrames = 0;
-
-	//	TCHAR strFmt[100];
-	//	D3DFORMAT fmtAdapter = m_d3dSettings.DisplayMode().Format;
-	//	if (fmtAdapter == m_d3dsdBackBuffer.Format)
-	//	{
-	//		lstrcpyn(strFmt, D3DUtil_D3DFormatToString(fmtAdapter, false), 100);
-	//	}
-	//	else
-	//	{
-	//		_sntprintf(strFmt, 100, TEXT("backbuf %s, adapter %s"),
-	//			D3DUtil_D3DFormatToString(m_d3dsdBackBuffer.Format, false),
-	//			D3DUtil_D3DFormatToString(fmtAdapter, false));
-	//	}
-	//	strFmt[99] = TEXT('\0');
-
-	//	TCHAR strDepthFmt[100];
-	//	if (m_d3dEnumeration.AppUsesDepthBuffer)
-	//	{
-	//		_sntprintf(strDepthFmt, 100, TEXT(" (%s)"),
-	//			D3DUtil_D3DFormatToString(m_d3dSettings.DepthStencilBufferFormat(), false));
-	//		strDepthFmt[99] = TEXT('\0');
-	//	}
-	//	else
-	//	{
-	//		// No depth buffer
-	//		strDepthFmt[0] = TEXT('\0');
-	//	}
-
-	//	TCHAR* pstrMultiSample;
-	//	switch (m_d3dSettings.MultisampleType())
-	//	{
-	//	case D3DMULTISAMPLE_NONMASKABLE:  pstrMultiSample = TEXT(" (Nonmaskable Multisample)"); break;
-	//	case D3DMULTISAMPLE_2_SAMPLES:  pstrMultiSample = TEXT(" (2x Multisample)"); break;
-	//	case D3DMULTISAMPLE_3_SAMPLES:  pstrMultiSample = TEXT(" (3x Multisample)"); break;
-	//	case D3DMULTISAMPLE_4_SAMPLES:  pstrMultiSample = TEXT(" (4x Multisample)"); break;
-	//	case D3DMULTISAMPLE_5_SAMPLES:  pstrMultiSample = TEXT(" (5x Multisample)"); break;
-	//	case D3DMULTISAMPLE_6_SAMPLES:  pstrMultiSample = TEXT(" (6x Multisample)"); break;
-	//	case D3DMULTISAMPLE_7_SAMPLES:  pstrMultiSample = TEXT(" (7x Multisample)"); break;
-	//	case D3DMULTISAMPLE_8_SAMPLES:  pstrMultiSample = TEXT(" (8x Multisample)"); break;
-	//	case D3DMULTISAMPLE_9_SAMPLES:  pstrMultiSample = TEXT(" (9x Multisample)"); break;
-	//	case D3DMULTISAMPLE_10_SAMPLES: pstrMultiSample = TEXT(" (10x Multisample)"); break;
-	//	case D3DMULTISAMPLE_11_SAMPLES: pstrMultiSample = TEXT(" (11x Multisample)"); break;
-	//	case D3DMULTISAMPLE_12_SAMPLES: pstrMultiSample = TEXT(" (12x Multisample)"); break;
-	//	case D3DMULTISAMPLE_13_SAMPLES: pstrMultiSample = TEXT(" (13x Multisample)"); break;
-	//	case D3DMULTISAMPLE_14_SAMPLES: pstrMultiSample = TEXT(" (14x Multisample)"); break;
-	//	case D3DMULTISAMPLE_15_SAMPLES: pstrMultiSample = TEXT(" (15x Multisample)"); break;
-	//	case D3DMULTISAMPLE_16_SAMPLES: pstrMultiSample = TEXT(" (16x Multisample)"); break;
-	//	default:                        pstrMultiSample = TEXT(""); break;
-	//	}
-
-	//	const int cchMaxFrameStats = sizeof(m_strFrameStats) / sizeof(TCHAR);
-	//	_sntprintf(m_strFrameStats, cchMaxFrameStats, _T("%.02f fps (%dx%d), %s%s%s"), m_fFPS,
-	//		m_d3dsdBackBuffer.Width, m_d3dsdBackBuffer.Height,
-	//		strFmt, strDepthFmt, pstrMultiSample);
-	//	m_strFrameStats[cchMaxFrameStats - 1] = TEXT('\0');
-	//}
-}
-
-void CWindowsApplication::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
-{
-
-	if (nFrameRateControl == 1)
-	{
-		CFrameRateController::LoadFRCNormal(fTimeInterval);
-	}
-	else
-	{
-		CFrameRateController::LoadFRCRealtime(fTimeInterval);
-	}
-	m_fRefreshTimerInterval = fTimeInterval;
-	m_nFrameRateControl = nFrameRateControl;
-	g_doWorkFRC.m_fConstDeltaTime = (m_fRefreshTimerInterval <= 0.f) ? IDEAL_FRAME_RATE : m_fRefreshTimerInterval;
-}
-
-float CWindowsApplication::GetRefreshTimer() const
-{
-	return m_fRefreshTimerInterval;
-}
-
-//-----------------------------------------------------------------------------
-// Name: Pause()
-// Desc: Called in to toggle the pause state of the app.
-//-----------------------------------------------------------------------------
-void CWindowsApplication::Pause(bool bPause)
-{
-	// OUTPUT_LOG("game is %s\n", bPause ? "paused" : "resumed");
-	m_bActive = !bPause;
-}
-
-bool CWindowsApplication::IsPaused()
-{
-	return !m_bActive;
-}
-
-
-//-----------------------------------------------------------------------------
-// Name: DisplayErrorMsg()
-// Desc: Displays error messages in a message box
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::DisplayErrorMsg(HRESULT hr, DWORD dwType)
-{
-	return CD3DWindowUtil::DisplayErrorMsg(hr, dwType);
-}
-
-//-----------------------------------------------------------------------------
-// Name: LaunchReadme()
-// Desc: Ensures the app is windowed, and launches the readme.txt 
-//       in the default text editor
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::LaunchReadme()
-{
-	// Switch to windowed if launching the readme.txt
-	if (m_bWindowed == false)
-	{
-		if (FAILED(ToggleFullscreen()))
-		{
-			DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
-			return E_FAIL;
-		}
-	}
-
-	DXUtil_LaunchReadme(m_RenderWindow->GetHandle());
-
-	return S_OK;
-}
-
-
-
-
-HRESULT CWindowsApplication::DoWork()
-{
-	// continue with next activation. 
-	double fCurTime = DXUtil_Timer(TIMER_GETAPPTIME);
-	if (g_doWorkFRC.FrameMove(fCurTime) > 0)
-	{
-		return Render3DEnvironment();
-	}
-	return S_OK;
-}
-
-
-#pragma endregion Miscs
 
 CViewportManager* CWindowsApplication::GetViewportManager()
 {
@@ -995,13 +235,32 @@ void CWindowsApplication::BootStrapAndLoadConfig()
 			ParaEngineSettings::GetSingleton().LoadDynamicFieldsFromString(content);
 		}
 		if (bHasNewConfig)
-		{ 
+		{
 			CParaFile::DeleteFile(sConfigFile, false);
 		}
 	}
 }
 
+void CWindowsApplication::InitWin3DSettings()
+{
+	// Following is just for window management
+	if (GetAppCommandLineByParam("d3d", NULL))
+	{
+		m_bDisableD3D = true;
+	}
+	m_nWindowedDesired = -1;
+	/// AppUsesDepthBuffer needed for Parallel world
+	m_d3dEnumeration.AppUsesDepthBuffer = TRUE;
+	/// AppUsesMixedVP needed for parallel world
+	m_d3dEnumeration.AppUsesMixedVP = TRUE;
+	/// enable stencil buffer
+	m_d3dEnumeration.AppUsesDepthBuffer = TRUE;
+	m_d3dEnumeration.AppMinDepthBits = 16;
+	m_d3dEnumeration.AppMinStencilBits = 4;
 
+	/// Just turn off Full screen cursor, we will use mine.
+	m_bShowCursorWhenFullscreen = false;
+}
 
 bool CWindowsApplication::CheckClientLicense()
 {
@@ -1047,30 +306,16 @@ void CWindowsApplication::LoadAndApplySettings()
 	if (!m_bStartFullscreen)
 	{
 		if ((pField = settings.GetDynamicField("MultiSampleType")))
-		{
-			//m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
-			assert(false);
-		}
-			
+			m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
 		if ((pField = settings.GetDynamicField("MultiSampleQuality")))
-		{
-			//m_d3dSettings.Windowed_MultisampleQuality = (DWORD)(*pField);
-			assert(false);
-		}
-			
+			m_d3dSettings.Windowed_MultisampleQuality = (DWORD)(*pField);
 	}
 	else
 	{
 		if ((pField = settings.GetDynamicField("MultiSampleType")))
-		{
-			//m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
-			assert(false);
-		}
+			m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
 		if ((pField = settings.GetDynamicField("MultiSampleQuality")))
-		{
-			//m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)(*pField);
-			assert(false);
-		}
+			m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)(*pField);
 	}
 
 	if ((pField = settings.GetDynamicField("ScriptEditor")))
@@ -1109,7 +354,6 @@ void CWindowsApplication::InitSystemModules()
 
 HRESULT CWindowsApplication::StartApp(const char* sCommandLine)
 {
-	//////////////////////////
 	SetCurrentInstance(this);
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
@@ -1134,11 +378,16 @@ CWindowsApplication::~CWindowsApplication()
 HRESULT CWindowsApplication::StopApp()
 {
 	// if it is already stopped, we shall return
-	if(!m_pParaWorldAsset)
+	if (!m_pParaWorldAsset)
 		return S_OK;
 
 	SAFE_DELETE(m_pWinRawMsgQueue);
 
+	if ((!m_bDisableD3D))
+	{
+		Cleanup3DEnvironment();
+		SAFE_RELEASE(m_pD3D);
+	}
 	FinalCleanup();
 
 	m_pParaWorldAsset.reset();
@@ -1151,7 +400,7 @@ HRESULT CWindowsApplication::StopApp()
 	CoUninitialize();
 
 	//#ifdef LOG_FILES_ACTIVITY
-	if(CFileLogger::GetInstance()->IsBegin())
+	if (CFileLogger::GetInstance()->IsBegin())
 	{
 		CFileLogger::GetInstance()->EndFileLog();
 		CFileLogger::GetInstance()->SaveLogToFile("temp/filelog.txt");
@@ -1176,6 +425,7 @@ HINSTANCE CWindowsApplication::GetModuleHandle()
 
 void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 {
+	m_hWnd = hWnd;
 	m_dwWinThreadID = ::GetWindowThreadProcessId(hWnd, NULL);
 	m_bIsExternalWindow = bIsExternalWindow;
 	m_bWindowed = true;
@@ -1183,13 +433,13 @@ void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 	/** let us find the top-level window which should be the foreground window. */
 	m_hwndTopLevelWnd = hWnd;
 	HWND wndParent = NULL;
-	while((wndParent = ::GetParent(m_hwndTopLevelWnd)) != NULL)
+	while ((wndParent = ::GetParent(m_hwndTopLevelWnd)) != NULL)
 	{
-		m_hwndTopLevelWnd  = wndParent;
+		m_hwndTopLevelWnd = wndParent;
 	}
 
-	OUTPUT_LOG("Window is %s: 3d window: %x, top level: %x\n", bIsExternalWindow ? "external" : "native", hWnd, m_hwndTopLevelWnd);
-	if(m_bIsExternalWindow)
+	OUTPUT_LOG("Window is %s: 3d window: %x, top level: %x\n", bIsExternalWindow ? "external" : "native", m_hWnd, m_hwndTopLevelWnd);
+	if (m_bIsExternalWindow)
 	{
 		// m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
 		HandlePossibleSizeChange();
@@ -1202,14 +452,22 @@ void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 
 HWND CWindowsApplication::GetMainWindow()
 {
-	return m_RenderWindow->GetHandle();
+	return m_hWnd;
 }
 
+HRESULT CWindowsApplication::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)
+{
+	HRESULT hr = CD3DApplication::CreateFromD3D9Device(pD3dDevice, apSwapChain);
+	if (FAILED(hr))
+		return hr;
 
-HRESULT CWindowsApplication::Create( HINSTANCE hInstance )
+	return hr;
+}
+
+HRESULT CWindowsApplication::Create(HINSTANCE hInstance)
 {
 	m_hInstance = hInstance;
-	HRESULT hr = Create();
+	HRESULT hr = CD3DApplication::Create();
 
 	return hr;
 }
@@ -1234,8 +492,8 @@ HRESULT CWindowsApplication::OnCreateWindow()
 /// Called during device initialization, this code checks the device
 ///       for some minimum set of capabilities
 //-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD dwBehavior,
-	D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat )
+HRESULT CWindowsApplication::ConfirmDevice(LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, DWORD dwBehavior,
+	D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat)
 {
 	//TODO: this is not a good place to init m_pD3D;
 	CGlobals::GetDirectXEngine().m_pD3D = pD3d;
@@ -1243,53 +501,53 @@ HRESULT CWindowsApplication::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, D
 	/// TODO: Just for mouse picking, however, I am going to turn this out
 	/// because I have managed to sidestep using GetTransform() function.
 	/// GetTransform() is needed for mouse ray picking
-	if( dwBehavior & D3DCREATE_PUREDEVICE )
+	if (dwBehavior & D3DCREATE_PUREDEVICE)
 		return E_FAIL; // GetTransform doesn't work on PUREDEVICE
 
-	/// Need to support post-pixel processing (for alpha blending)
-	if( FAILED( pD3d->CheckDeviceFormat( pCaps->AdapterOrdinal, pCaps->DeviceType,
+					   /// Need to support post-pixel processing (for alpha blending)
+	if (FAILED(pD3d->CheckDeviceFormat(pCaps->AdapterOrdinal, pCaps->DeviceType,
 		adapterFormat, D3DUSAGE_RENDERTARGET | D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING,
-		D3DRTYPE_SURFACE, backBufferFormat ) ) )
+		D3DRTYPE_SURFACE, backBufferFormat)))
 	{
 		return E_FAIL;
 	}
 
 	/// Billboard uses alpha textures and/or straight alpha. Make sure the
 	/// device supports them
-	if( pCaps->TextureCaps & D3DPTEXTURECAPS_ALPHAPALETTE )
+	if (pCaps->TextureCaps & D3DPTEXTURECAPS_ALPHAPALETTE)
 		return S_OK;
-	if( pCaps->TextureCaps & D3DPTEXTURECAPS_ALPHA )
+	if (pCaps->TextureCaps & D3DPTEXTURECAPS_ALPHA)
 		return S_OK;
 
 	/// Debugging vertex shaders requires either REF or software vertex processing
 	/// and debugging pixel shaders requires REF.
 #ifdef DEBUG_VS
-	if( pCaps->DeviceType != D3DDEVTYPE_REF &&
-		(dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING) == 0 )
+	if (pCaps->DeviceType != D3DDEVTYPE_REF &&
+		(dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING) == 0)
 		return E_FAIL;
 #endif
 #ifdef DEBUG_PS
-	if( pCaps->DeviceType != D3DDEVTYPE_REF )
+	if (pCaps->DeviceType != D3DDEVTYPE_REF)
 		return E_FAIL;
 #endif
 
 	/// Need to support vs 1.1 or use software vertex processing
-	if( pCaps->VertexShaderVersion < D3DVS_VERSION( 1, 1 ) )
+	if (pCaps->VertexShaderVersion < D3DVS_VERSION(1, 1))
 	{
-		if( (dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING ) == 0 )
+		if ((dwBehavior & D3DCREATE_SOFTWARE_VERTEXPROCESSING) == 0)
 			return E_FAIL;
 	}
 
 	/// Need to support A8R8G8B8 textures
-	if( FAILED( pD3d->CheckDeviceFormat( pCaps->AdapterOrdinal, pCaps->DeviceType,
+	if (FAILED(pD3d->CheckDeviceFormat(pCaps->AdapterOrdinal, pCaps->DeviceType,
 		adapterFormat, 0,
-		D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8 ) ) )
+		D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8)))
 		return E_FAIL;
 
 	/// Need to support A8 textures, if not tell the engine to use A8R8G8B8 for A8.
-	if( FAILED( pD3d->CheckDeviceFormat( pCaps->AdapterOrdinal, pCaps->DeviceType,
+	if (FAILED(pD3d->CheckDeviceFormat(pCaps->AdapterOrdinal, pCaps->DeviceType,
 		adapterFormat, 0,
-		D3DRTYPE_TEXTURE, D3DFMT_A8 ) ) )
+		D3DRTYPE_TEXTURE, D3DFMT_A8)))
 	{
 		OUTPUT_LOG("D3DFMT_A8 texture format is not supported.Program will use 3 times more video memory for alpha textures.\n");
 		// TODO: tell the engine to use A8R8G8B8 for A8.
@@ -1299,49 +557,49 @@ HRESULT CWindowsApplication::ConfirmDevice( LPDIRECT3D9 pD3d, D3DCAPS9* pCaps, D
 	return S_OK;
 }
 
-HRESULT CWindowsApplication::Init(HWND pHWND)
+HRESULT CWindowsApplication::Init(HWND* pHWND)
 {
 	//load config file
-	CICConfigManager *cm=CGlobals::GetICConfigManager();
+	CICConfigManager *cm = CGlobals::GetICConfigManager();
 	cm->LoadFromFile();
 
-	srand( GetTickCount() );
+	srand(GetTickCount());
 
 	//Performance monitor
 	PERF_BEGIN("Program");
 
-	if(pHWND!=0)
+	if (pHWND != 0)
 	{
-		SetMainWindow(pHWND, m_bIsExternalWindow);
+		SetMainWindow(*pHWND, m_bIsExternalWindow);
 
 		bool g_bEnableDragAndDropFile = true;
-		if(g_bEnableDragAndDropFile)
+		if (g_bEnableDragAndDropFile)
 		{
-			DragAcceptFiles(pHWND, TRUE);
+			DragAcceptFiles(*pHWND, TRUE);
 
-			if(COSInfo::GetOSMajorVersion() > 5)
+			if (COSInfo::GetOSMajorVersion() > 5)
 			{
 				/** fixing win vista or win 7 security filters. */
 				HMODULE hMod = 0;
 
-				if ( ( hMod = ::LoadLibrary( _T( "user32.dll" ) ) ) != 0 )
+				if ((hMod = ::LoadLibrary(_T("user32.dll"))) != 0)
 				{
-					pChangeWindowMessageFilter = (BOOL (__stdcall *)( UINT,DWORD ) )::GetProcAddress( hMod, "ChangeWindowMessageFilter" );
+					pChangeWindowMessageFilter = (BOOL(__stdcall *)(UINT, DWORD))::GetProcAddress(hMod, "ChangeWindowMessageFilter");
 				}
-				if ( pChangeWindowMessageFilter )
+				if (pChangeWindowMessageFilter)
 				{
-					pChangeWindowMessageFilter (WM_DROPFILES, MSGFLT_ADD);
-					pChangeWindowMessageFilter (WM_COPYDATA, MSGFLT_ADD);
-					pChangeWindowMessageFilter (0x0049, MSGFLT_ADD);
+					pChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+					pChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
+					pChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
 				}
 			}
 		}
 
 
 
-		HMENU hMenu = GetMenu(pHWND);
+		HMENU hMenu = GetMenu(*pHWND);
 
-		if(hMenu != 0)
+		if (hMenu != 0)
 		{
 #ifdef _DEBUG
 			UINT menustate = MF_ENABLED;
@@ -1349,16 +607,16 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 			UINT menustate = MF_GRAYED;
 #endif
 
-			EnableMenuItem(hMenu,ID_GAME_DEBUGMODE,menustate);
-			EnableMenuItem(hMenu,ID_GAME_PLAYMODE,menustate);
-			EnableMenuItem(hMenu,ID_GAME_DEMOMODE,menustate);
-			EnableMenuItem(hMenu,ID_GAME_DEBUGMODE,menustate);
-			EnableMenuItem(hMenu,ID_GAME_SERVERMODE,MF_ENABLED);
+			EnableMenuItem(hMenu, ID_GAME_DEBUGMODE, menustate);
+			EnableMenuItem(hMenu, ID_GAME_PLAYMODE, menustate);
+			EnableMenuItem(hMenu, ID_GAME_DEMOMODE, menustate);
+			EnableMenuItem(hMenu, ID_GAME_DEBUGMODE, menustate);
+			EnableMenuItem(hMenu, ID_GAME_SERVERMODE, MF_ENABLED);
 
-			EnableMenuItem(hMenu,ID_GAME_FUNCTION1,menustate);
-			EnableMenuItem(hMenu,ID_GAME_FUNCTION2,MF_ENABLED);
-			EnableMenuItem(hMenu,ID_GAME_FUNCTION3,menustate);
-			EnableMenuItem(hMenu,ID_GAME_FUNCTION4,menustate);
+			EnableMenuItem(hMenu, ID_GAME_FUNCTION1, menustate);
+			EnableMenuItem(hMenu, ID_GAME_FUNCTION2, MF_ENABLED);
+			EnableMenuItem(hMenu, ID_GAME_FUNCTION3, menustate);
+			EnableMenuItem(hMenu, ID_GAME_FUNCTION4, menustate);
 		}
 
 		/// set up dSound
@@ -1367,14 +625,14 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 		HRESULT hr;
 #ifdef USE_XACT_AUDIO_ENGINE
 		// Prepare the audio engine
-		if( FAILED( hr = m_pAudioEngine->InitAudioEngine() ) )
+		if (FAILED(hr = m_pAudioEngine->InitAudioEngine()))
 		{
 			OUTPUT_LOG("Audio engine init fail!\n");
 			m_pAudioEngine->CleanupAudioEngine();
 		}
 #endif
 #ifdef USE_OPENAL_AUDIO_ENGINE
-		if( FAILED( hr = CAudioEngine2::GetInstance()->InitAudioEngine() ) )
+		if (FAILED(hr = CAudioEngine2::GetInstance()->InitAudioEngine()))
 		{
 			OUTPUT_LOG("Audio engine init fail!\n");
 			CAudioEngine2::GetInstance()->CleanupAudioEngine();
@@ -1386,7 +644,7 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 	/// Create a blank root scene with certain dimensions
 	/// units is Meter.
 	//----------------------------------------------------------
-	m_pRootScene->SetBoundRect(1000.f, 1000.f,0); // a very large scene
+	m_pRootScene->SetBoundRect(1000.f, 1000.f, 0); // a very large scene
 	m_pRootScene->SetMyType(_Scene);
 	m_pRootScene->GetSceneState()->pAssetManager = m_pParaWorldAsset.get();
 	m_pRootScene->GetSceneState()->CleanupSceneState();
@@ -1397,18 +655,19 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 
 	{
 		// Load font mapping
-		string value0,value1;
+		string value0, value1;
 		DWORD nSize = 0;
 		HRESULT hr;
-		hr=cm->GetSize("GUI_font_mapping",&nSize);
-		if (hr==E_INVALIDARG||hr==E_ACCESSDENIED) {
+		hr = cm->GetSize("GUI_font_mapping", &nSize);
+		if (hr == E_INVALIDARG || hr == E_ACCESSDENIED) {
 			//error
-		}else{
-			for (int i=0;i<(int)nSize;i+=2) {
-				if (FAILED(cm->GetTextValue("GUI_font_mapping",value0,i))) {
+		}
+		else {
+			for (int i = 0; i<(int)nSize; i += 2) {
+				if (FAILED(cm->GetTextValue("GUI_font_mapping", value0, i))) {
 					break;
 				}
-				if (FAILED(cm->GetTextValue("GUI_font_mapping",value1,i+1))) {
+				if (FAILED(cm->GetTextValue("GUI_font_mapping", value1, i + 1))) {
 					break;
 				}
 				SpriteFontEntity::AddFontName(value0, value1);
@@ -1416,8 +675,8 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 		}
 	}
 
-	SpriteFontEntity* pFont=NULL;
-	pFont=m_pParaWorldAsset->LoadGDIFont("sys", "System", 12);
+	SpriteFontEntity* pFont = NULL;
+	pFont = m_pParaWorldAsset->LoadGDIFont("sys", "System", 12);
 
 	/// set up terrain engine parameters
 	ParaTerrain::Settings::GetInstance()->SetVerbose(false);
@@ -1437,9 +696,35 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 	// Load default mapping at the program start
 	CGlobals::GetSettings().LoadGameEffectSet(m_nInitialGameEffectSet);
 
+#ifdef _DEBUG
+	//CBaseTable::test();
+
+	//AttributeProvider* m_pProvider =  CGlobals::GetDataProviderManager()->GetAttributeProvider();
+	//m_pProvider->TestDB();
+
+	//CNpcDatabase* m_pProvider =  CGlobals::GetDataProviderManager()->GetNpcDB();
+	//m_pProvider->TestDB();
+
+	//CKidsDBProvider* m_pProvider =  CGlobals::GetDataProviderManager()->GetKidsDBProvider();
+	//m_pProvider->TestDB();
+
+	//// Old version:
+	//CGlobals::GetDataProviderManager()->SetKidsDBProvider("database/Kids.db");
+	//m_pProvider->TestDB();
+#endif
 	return S_OK;
 }
 
+//-----------------------------------------------------------------------------
+// Name: OneTimeSceneInit()
+/// Called during initial app startup, this function performs all the
+///       permanent initialization. ParaEngine modules are setup here.
+/// ParaEngine fixed code: must call these functions as given below
+//-----------------------------------------------------------------------------
+HRESULT CWindowsApplication::OneTimeSceneInit()
+{
+	return CWindowsApplication::Init(&m_hWnd);
+}
 
 
 //-----------------------------------------------------------------------------
@@ -1449,8 +734,11 @@ HRESULT CWindowsApplication::Init(HWND pHWND)
 //-----------------------------------------------------------------------------
 HRESULT CWindowsApplication::InitDeviceObjects()
 {
+	LPDIRECT3DDEVICE9 pd3dDevice = m_pd3dDevice;
+	HRESULT hr = S_OK;
+
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(m_RenderContext->GetD3D(),m_RenderContext->GetD3DDevice(), NULL);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(m_pD3D, pd3dDevice, m_pd3dSwapChain);
 
 	// print stats when device is initialized.
 	string stats;
@@ -1458,12 +746,12 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 	OUTPUT_LOG("Graphics Stats:\n%s\n", stats.c_str());
 	OUTPUT_LOG("VS:%d PS:%d\n", CGlobals::GetDirectXEngine().GetVertexShaderVersion(), CGlobals::GetDirectXEngine().GetPixelShaderVersion());
 
-
 	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
 	m_pParaWorldAsset->InitDeviceObjects();
 	m_pRootScene->InitDeviceObjects();
 	m_pGUIRoot->InitDeviceObjects();		// GUI: 2D engine
-	return S_OK;
+
+	return hr;
 }
 
 //-----------------------------------------------------------------------------
@@ -1476,7 +764,7 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	/*------------------------------------------------------
 	* start of ParaWorld code
 	*-----------------------------------------------------------*/
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
 
 	UINT nBkbufWidth = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
@@ -1488,45 +776,45 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	m_pParaWorldAsset->RestoreDeviceObjects();
 	m_pGUIRoot->RestoreDeviceObjects(nBkbufWidth, nBkbufHeight);		// GUI: 2D engine
 
-	// for terrain
+																		// for terrain
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(nBkbufWidth);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(nBkbufHeight);
 
 	/// these render state is preferred.
-	pd3dDevice->SetRenderState( D3DRS_DITHERENABLE, TRUE );
-	pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );		// disable lighting
-	//pd3dDevice->SetRenderState( D3DRS_AMBIENT, 0x33333333 /*COLOR_ARGB( 255, 255, 255, 255 )*/ );
-	pd3dDevice->SetRenderState( D3DRS_AMBIENT, COLOR_ARGB( 255, 255, 255, 255 ) );
+	pRenderDevice->SetRenderState(D3DRS_DITHERENABLE, TRUE);
+	pRenderDevice->SetRenderState(D3DRS_LIGHTING, FALSE);		// disable lighting
+															//pd3dDevice->SetRenderState( D3DRS_AMBIENT, 0x33333333 /*COLOR_ARGB( 255, 255, 255, 255 )*/ );
+	pRenderDevice->SetRenderState(D3DRS_AMBIENT, COLOR_ARGB(255, 255, 255, 255));
 
-	pd3dDevice->SetRenderState( D3DRS_ZENABLE, TRUE );
-	pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+	pRenderDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+	pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 
 	/// these render state is just for point occlusion testing.
 	/// See also CBaseObject::DrawOcclusionObject()
 	//#define POINT_OCCLUSION_OBJECT
 #ifdef POINT_OCCLUSION_OBJECT
 	float PointSize = 1.f;
-	pd3dDevice->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
-	pd3dDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
 #endif
 
 	/* default state */
 #ifdef FAST_RENDER
-	/*pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
-	pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-	pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
-	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
-	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP );
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP );*/
+	/*pRenderDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
+	pRenderDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+	pRenderDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+	pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
+	pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+	pRenderDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
+	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP );
+	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP );*/
 #else
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-	pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-	pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+	pRenderDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	pRenderDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	pRenderDevice->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	pRenderDevice->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 #endif
 	/* -------end of paraworld code ----------------------------*/
@@ -1591,7 +879,7 @@ HRESULT CWindowsApplication::FinalCleanup()
 	PERF_REPORT();
 
 #ifdef USE_XACT_AUDIO_ENGINE
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		m_pAudioEngine->CleanupAudioEngine();
 	}
@@ -1613,7 +901,7 @@ void SetClientRect(HWND hwnd, RECT& rect)
 	rect.top = oldRect.top;
 	//SetWindowPos( hwnd, 0,0, 0,rect.right - rect.left,rect.bottom - rect.top,
 	//	SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
-	MoveWindow(hwnd, rect.left, rect.top, rect.right - rect.left,rect.bottom - rect.top, TRUE);
+	MoveWindow(hwnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
 }
 void CWindowsApplication::SetAppWndRect(const RECT& rect)
 {
@@ -1640,21 +928,21 @@ HRESULT CWindowsApplication::FrameMove()
 //-----------------------------------------------------------------------------
 HRESULT CWindowsApplication::FrameMove(double fTime)
 {
-	bool bIOExecuted=false;
+	bool bIOExecuted = false;
 	/** process all messages in the main game thread.
 	*/
 	{
 		HRESULT result = 0;
 		CWinRawMsg msg;
-		while(GetMessageFromApp(&msg))
+		while (GetMessageFromApp(&msg))
 		{
-			if(MsgProcApp(msg.m_hWnd, msg.m_uMsg, msg.m_wParam, msg.m_lParam) == 2)
+			if (MsgProcApp(msg.m_hWnd, msg.m_uMsg, msg.m_wParam, msg.m_lParam) == 2)
 			{
 				return S_OK;
 			}
 		}
 	}
-	if(GetAppState() == PEAppState_Stopped)
+	if (GetAppState() == PEAppState_Stopped)
 		return S_OK;
 
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
@@ -1671,7 +959,7 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 	*/
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
 
-	if( bIOExecuted || (fElapsedEnvSimTime > 0) )
+	if (bIOExecuted || (fElapsedEnvSimTime > 0))
 	{
 		/*static int i=0;
 		OUTPUT_LOG("%d: %f, %f\n", ++i, fTime, fElapsedEnvSimTime);*/
@@ -1688,7 +976,7 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 		/// always call Environment simulation  before you frame move any other object in the scene
 		/// since Environment simulation may change the object's cached actions.
 		PERF_BEGIN("EnvironmentSim");
-		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime );  // generate valid LLE from HLE
+		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime);  // generate valid LLE from HLE
 		PERF_END("EnvironmentSim");
 
 #ifdef USE_OPENAL_AUDIO_ENGINE
@@ -1698,11 +986,11 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 		{
 			// animate g_flash value for some beeper effect, such as object selection.
 			static float s_flash = 0.f;
-			s_flash+=(float)fElapsedEnvSimTime*2;
-			if(s_flash>2)
-				s_flash=0;
-			if(s_flash>1)
-				g_flash = 2-s_flash;
+			s_flash += (float)fElapsedEnvSimTime * 2;
+			if (s_flash>2)
+				s_flash = 0;
+			if (s_flash>1)
+				g_flash = 2 - s_flash;
 			else
 				g_flash = s_flash;
 		}
@@ -1715,7 +1003,7 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 	* Faster than the user input <= 1/30 sec
 	*/
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
-	if( fElapsedIOTime > 0.f )
+	if (fElapsedIOTime > 0.f)
 	{
 		bIOExecuted = true;
 
@@ -1725,27 +1013,27 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 		//m_icroot->FrameMove();
 		//PERF_END("IC");
 
-		if(m_bActive)
+		if (m_bActive)
 		{
 			/**
 			* process all user key and mouse messages
 			*/
 			HandleUserInput(); // user input.
 
-			// we update the mouse position after dispatch to ensure the correct begin position for next FrameMove;
-			/**
-			* Engine required: Camera control
-			* some object in the scene requires to update its parameters each frame
-			* currently only Camera control responses.
-			*/
-			m_pRootScene->Animate( (float)fElapsedIOTime );
+							   // we update the mouse position after dispatch to ensure the correct begin position for next FrameMove;
+							   /**
+							   * Engine required: Camera control
+							   * some object in the scene requires to update its parameters each frame
+							   * currently only Camera control responses.
+							   */
+			m_pRootScene->Animate((float)fElapsedIOTime);
 		}
 	}
 #ifdef USE_XACT_AUDIO_ENGINE
 	/** for audio engine */
-	if(m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
+	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
 	{
-		if( m_pAudioEngine->IsValid() )
+		if (m_pAudioEngine->IsValid())
 		{
 			PERF1("Audio Engine Framemove");
 			m_pAudioEngine->DoWork();
@@ -1791,24 +1079,23 @@ bool CWindowsApplication::AppHasFocus()
 
 bool CWindowsApplication::UpdateScreenDevice()
 {
-	if(m_bUpdateScreenDevice)
+	if (m_bUpdateScreenDevice)
 	{
-		OUTPUT_LOG("update screen device to (%d, %d) windowed: %s\n", m_dwCreationWidth, m_dwCreationHeight, m_nWindowedDesired==1 ? "true":"false");
+		OUTPUT_LOG("update screen device to (%d, %d) windowed: %s\n", m_dwCreationWidth, m_dwCreationHeight, m_nWindowedDesired == 1 ? "true" : "false");
 		m_bUpdateScreenDevice = false;
-		if(IsWindowedMode() && (m_nWindowedDesired!=0))
+		if (IsWindowedMode() && (m_nWindowedDesired != 0))
 		{
 			OUTPUT_LOG("Window size adjust in windowed mode\n");
 
 			// if only windowed mode resolution and back buffer size is changed.
-			if(!m_bIsExternalWindow)
+			if (!m_bIsExternalWindow)
 			{
 				RECT rect;
 				GetWindowRect(CGlobals::GetAppHWND(), &rect);
 
-				//rect.right = rect.left + m_d3dSettings.Windowed_DisplayMode.Width;
-				//rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
-				//SetAppWndRect(rect);
-				assert(false);
+				rect.right = rect.left + m_d3dSettings.Windowed_DisplayMode.Width;
+				rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
+				SetAppWndRect(rect);
 			}
 
 			bool  bOldValue = m_bIgnoreSizeChange;
@@ -1817,17 +1104,17 @@ bool CWindowsApplication::UpdateScreenDevice()
 			m_bIgnoreSizeChange = bOldValue;
 
 			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
+			CGlobals::GetGUI()->SetUIScale(1, 1, true);
 			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
 		}
 		else
 		{
 			OUTPUT_LOG("toggle between windowed and full screen mode\n");
-			if(m_nWindowedDesired==0)
+			if (m_nWindowedDesired == 0)
 			{
 				OUTPUT_LOG("Find best full screen mode \n");
-				FindBestFullscreenMode( false, false );
-				if(IsFullScreenMode())
+				FindBestFullscreenMode(false, false);
+				if (IsFullScreenMode())
 				{
 					// in case we are changing full screen resolution in the full screen mode.
 					m_bWindowed = !m_bWindowed;
@@ -1835,21 +1122,21 @@ bool CWindowsApplication::UpdateScreenDevice()
 			}
 
 			// Toggle the fullscreen/window mode
-			Pause( true );
-			if( FAILED( ToggleFullscreen() ) )
+			Pause(true);
+			if (FAILED(ToggleFullscreen()))
 			{
-				DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
+				DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
 				return false;
 			}
 			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
-			Pause( false );
-			if(IsWindowedMode())
+			CGlobals::GetGUI()->SetUIScale(1, 1, true);
+			Pause(false);
+			if (IsWindowedMode())
 			{
 				RECT rect;
 				GetClientRect(CGlobals::GetAppHWND(), &rect);
-				OUTPUT_LOG("window resolution is (%d,%d)\n", rect.right-rect.left, rect.bottom-rect.top);
-				if((rect.right-rect.left) != m_dwCreationWidth || (rect.bottom-rect.top) != m_dwCreationHeight)
+				OUTPUT_LOG("window resolution is (%d,%d)\n", rect.right - rect.left, rect.bottom - rect.top);
+				if ((rect.right - rect.left) != m_dwCreationWidth || (rect.bottom - rect.top) != m_dwCreationHeight)
 				{
 					OUTPUT_LOG("New window resolution is (%d,%d)\n", m_dwCreationWidth, m_dwCreationHeight);
 					SetScreenResolution(Vector2((float)m_dwCreationWidth, (float)m_dwCreationHeight));
@@ -1879,12 +1166,12 @@ void CWindowsApplication::GenerateD3DDebugString()
 	// show game reports for debugging purposes
 	if (CGlobals::WillGenReport())
 	{
-		if (pDebugStr1){
+		if (pDebugStr1) {
 			m_sTitleString.append(pDebugStr1);
 			if (pDebugStr2[0] != '\0')
 				m_sTitleString += "\n";
 		}
-		if (pDebugStr2){
+		if (pDebugStr2) {
 			m_sTitleString.append(pDebugStr2);
 			if (pDebugStr2[0] != '\0')
 				m_sTitleString += "\n";
@@ -1900,7 +1187,7 @@ void CWindowsApplication::GenerateD3DDebugString()
 			snprintf(tmp, 149, "tri:%6d,mesh:%6d,char:%6d,ui:%5d,terra:%5d,other:%5d\n", nAll, nMesh, nChar, nUI, nTerra, nOthers);
 			m_sTitleString.append(tmp);
 		}
-		if (CGlobals::GetScene()->GetConsoleString()){
+		if (CGlobals::GetScene()->GetConsoleString()) {
 			m_sTitleString.append(CGlobals::GetScene()->GetConsoleString());
 			if (CGlobals::GetScene()->GetConsoleString()[0] != '\0')
 				m_sTitleString += "\n";
@@ -1943,17 +1230,17 @@ void CWindowsApplication::GenerateD3DDebugString()
 //-----------------------------------------------------------------------------
 HRESULT CWindowsApplication::Render()
 {
-	if(!m_bActive || m_bMinimized || GetAppState() != PEAppState_Ready)
+	if (!m_bActive || m_bMinimized || GetAppState() != PEAppState_Ready)
 		return E_FAIL;
 	double fTime = m_fTime;
 	UpdateFrameStats(m_fTime);
 
-	if(CGlobals::WillGenReport())
+	if (CGlobals::WillGenReport())
 	{
-		if(!m_bDisableD3D)
+		if (!m_bDisableD3D)
 			UpdateStats();
 	}
-	if(m_bServerMode)
+	if (m_bServerMode)
 		return E_FAIL;
 	CGlobals::GetRenderDevice()->ClearAllPerfCount();
 
@@ -1962,30 +1249,25 @@ HRESULT CWindowsApplication::Render()
 
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 
-	auto pd3dDevice = m_RenderDevice;
-	m_pRootScene->GetSceneState()->m_pd3dDevice = pd3dDevice;
+	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
+	m_pRootScene->GetSceneState()->m_pd3dDevice = pRenderDevice;
 	PERF1("Main Render");
 
-	HRESULT hr = S_OK;
-
-	if( SUCCEEDED( pd3dDevice->BeginScene() ) )
+	if (SUCCEEDED(pRenderDevice->BeginScene()))
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime); // for asset manager
-		// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
-		// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
-		// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
-		hr = pd3dDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
-		assert(hr == S_OK);
+																	// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
+																	// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
+																	// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
+		pRenderDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 
-		/// clear all render targets
-		hr = pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER |D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
-		assert(hr == S_OK);
+																						 /// clear all render targets
+		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
+
 		/// force using less equal
-		hr = pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
-		assert(hr == S_OK);
+		pRenderDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 
-		//m_pViewportManager->UpdateViewport(m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
-		m_pViewportManager->UpdateViewport(m_RenderWindow->GetWidth(), m_RenderWindow->GetHeight());
+		m_pViewportManager->UpdateViewport(m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
 		{
 			PERF1("3D Scene Render");
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
@@ -2000,13 +1282,12 @@ HRESULT CWindowsApplication::Render()
 #ifdef USE_FLASH_MANAGER
 		//////////////////////////////////////////////////////////////////////////
 		// render flash windows under full screen mode.
-		if(!IsWindowedMode())
+		if (!IsWindowedMode())
 			CGlobals::GetAssetManager()->GetFlashManager().RenderFlashWindows(*(m_pRootScene->GetSceneState()));
 #endif
 		GenerateD3DDebugString();
 
-		hr = pd3dDevice->EndScene();
-		assert(hr == S_OK);
+		pRenderDevice->EndScene();
 	}
 
 	pMoviePlatform->EndCaptureFrame();
@@ -2022,13 +1303,38 @@ bool CWindowsApplication::IsDebugBuild()
 #endif
 }
 
-
+int CWindowsApplication::Run(HINSTANCE hInstance)
+{
+	//add a console window for debug or when in server mode.
+	if (!Is3DRenderingEnabled() || IsDebugBuild())
+	{
+		/*const char* sInteractiveMode = GetAppCommandLineByParam("i", NULL);
+		bool bIsInterpreterMode = (sInteractiveMode && strcmp(sInteractiveMode, "true") == 0);
+		if (!bIsInterpreterMode)*/
+		{
+			RedirectIOToConsole();
+		}
+	}
+	auto result = 0;
+	if (Is3DRenderingEnabled())
+	{
+		// create 3d window and run till exit
+		result = CD3DApplication::Run(hInstance);
+	}
+	else
+	{
+		// the console window is used.
+		CParaEngineService service;
+		result = service.Run(0, this);
+	}
+	return result;
+}
 
 void CWindowsApplication::GetStats(string& output, DWORD dwFields)
 {
-	if(dwFields == 0)
+	if (dwFields == 0)
 	{
-		if(!m_bDisableD3D)
+		if (!m_bDisableD3D)
 			UpdateStats();
 		output = m_strDeviceStats;
 		output.append("|");
@@ -2036,12 +1342,12 @@ void CWindowsApplication::GetStats(string& output, DWORD dwFields)
 	}
 	else
 	{
-		if(dwFields == 1)
+		if (dwFields == 1)
 		{
 			TCHAR szOS[512];
-			if( COSInfo::GetOSDisplayString( szOS ) )
+			if (COSInfo::GetOSDisplayString(szOS))
 			{
-				output = szOS ;
+				output = szOS;
 			}
 		}
 	}
@@ -2071,16 +1377,14 @@ void CWindowsApplication::GetScreenResolution(Vector2* pOut)
 		*pOut = Vector2((float)(m_dwCreationWidth), (float)(m_dwCreationHeight));
 }
 
-void CWindowsApplication::SetScreenResolution( const Vector2& vSize )
+void CWindowsApplication::SetScreenResolution(const Vector2& vSize)
 {
 	//m_d3dSettings.Fullscreen_DisplayMode.Width = (int)(vSize.x);
 	//m_d3dSettings.Fullscreen_DisplayMode.Height = (int)(vSize.y);
 	m_dwCreationWidth = (int)(vSize.x);
 	m_dwCreationHeight = (int)(vSize.y);
-	//m_d3dSettings.Windowed_DisplayMode.Width = (int)(vSize.x);
-	//m_d3dSettings.Windowed_DisplayMode.Height = (int)(vSize.y);
-
-	assert(false);
+	m_d3dSettings.Windowed_DisplayMode.Width = (int)(vSize.x);
+	m_d3dSettings.Windowed_DisplayMode.Height = (int)(vSize.y);
 
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 	CVariable value;
@@ -2095,46 +1399,40 @@ void CWindowsApplication::GetResolution(float* pX, float* pY)
 	Vector2 vSize;
 	GetScreenResolution(&vSize);
 
-	if(pX)
+	if (pX)
 	{
 		*pX = vSize.x;
 	}
-	if(pY)
+	if (pY)
 	{
 		*pY = vSize.y;
 	}
 }
 void CWindowsApplication::SetResolution(float x, float y)
 {
-	SetScreenResolution(Vector2(x,y));
+	SetScreenResolution(Vector2(x, y));
 }
 
 int CWindowsApplication::GetMultiSampleType()
 {
-	//return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleType : m_d3dSettings.Windowed_MultisampleType);
-	assert(false);
-	return 0;
+	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleType : m_d3dSettings.Windowed_MultisampleType);
 }
 
-void CWindowsApplication::SetMultiSampleType( int nType )
+void CWindowsApplication::SetMultiSampleType(int nType)
 {
-	//m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
-	//m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
-	assert(false);
+	m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
+	m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
 }
 
 int CWindowsApplication::GetMultiSampleQuality()
 {
-	//return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleQuality : m_d3dSettings.Windowed_MultisampleQuality);
-	assert(false);
-	return 0;
+	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleQuality : m_d3dSettings.Windowed_MultisampleQuality);
 }
 
-void CWindowsApplication::SetMultiSampleQuality( int nType )
+void CWindowsApplication::SetMultiSampleQuality(int nType)
 {
-	//m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)nType;
-	//m_d3dSettings.Windowed_MultisampleQuality = (DWORD)nType;
-	assert(false);
+	m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)nType;
+	m_d3dSettings.Windowed_MultisampleQuality = (DWORD)nType;
 }
 
 bool CWindowsApplication::UpdateScreenMode()
@@ -2145,7 +1443,7 @@ bool CWindowsApplication::UpdateScreenMode()
 
 bool CWindowsApplication::SetWindowedMode(bool bWindowed)
 {
-	if(IsWindowedMode() == bWindowed)
+	if (IsWindowedMode() == bWindowed)
 		return true;
 	m_nWindowedDesired = bWindowed ? 1 : 0;
 
@@ -2157,7 +1455,7 @@ bool CWindowsApplication::IsWindowedMode()
 	return m_bWindowed;
 }
 
-void CWindowsApplication::SetFullScreenMode( bool bFullscreen )
+void CWindowsApplication::SetFullScreenMode(bool bFullscreen)
 {
 	m_nWindowedDesired = bFullscreen ? 0 : 1;
 }
@@ -2168,27 +1466,27 @@ bool CWindowsApplication::IsFullScreenMode()
 }
 
 
-void CWindowsApplication::ShowMenu( bool bShow )
+void CWindowsApplication::ShowMenu(bool bShow)
 {
-	if(m_bIsExternalWindow)
+	if (m_bIsExternalWindow)
 		return;
 
-	if(bShow)
+	if (bShow)
 	{
-		if( m_hMenu != NULL )
+		if (m_hMenu != NULL)
 		{
-			SetMenu( m_hWnd, m_hMenu );
+			SetMenu(m_hWnd, m_hMenu);
 			m_hMenu = NULL;
 		}
 	}
 	else
 	{
-		m_hMenu = GetMenu( m_hWnd );
-		if(m_hMenu)
+		m_hMenu = GetMenu(m_hWnd);
+		if (m_hMenu)
 		{
 			RECT oldClient;
 			GetClientRect(m_hWnd, &oldClient);
-			SetMenu( m_hWnd, NULL );
+			SetMenu(m_hWnd, NULL);
 
 			RECT afterRect;
 			GetWindowRect(m_hWnd, &afterRect);
@@ -2198,8 +1496,8 @@ void CWindowsApplication::ShowMenu( bool bShow )
 			MoveWindow(m_hWnd,
 				afterRect.left,
 				afterRect.top,
-				afterRect.right-afterRect.left,
-				afterRect.bottom-afterRect.top - (afterClient.bottom - oldClient.bottom),
+				afterRect.right - afterRect.left,
+				afterRect.bottom - afterRect.top - (afterClient.bottom - oldClient.bottom),
 				TRUE);
 		}
 
@@ -2216,7 +1514,7 @@ bool CWindowsApplication::GetIgnoreWindowSizeChange()
 	return m_bIgnoreSizeChange;
 }
 
-void CWindowsApplication::SetWindowText( const char* pChar )
+void CWindowsApplication::SetWindowText(const char* pChar)
 {
 	static std::wstring g_sTitle;
 	g_sTitle = ParaEngine::StringHelper::MultiByteToWideChar(pChar, CP_UTF8);
@@ -2235,7 +1533,7 @@ const char* CWindowsApplication::GetWindowText()
 void CWindowsApplication::WriteConfigFile(const char* FileName)
 {
 	string sFileName;
-	if(FileName==NULL || FileName[0]=='\0')
+	if (FileName == NULL || FileName[0] == '\0')
 		sFileName = "config/config.txt";
 	else
 		sFileName = FileName;
@@ -2243,7 +1541,7 @@ void CWindowsApplication::WriteConfigFile(const char* FileName)
 	{
 		// remove the read-only file attribute
 		DWORD dwAttrs = ::GetFileAttributes(sFileName.c_str());
-		if (dwAttrs!=INVALID_FILE_ATTRIBUTES)
+		if (dwAttrs != INVALID_FILE_ATTRIBUTES)
 		{
 			if ((dwAttrs & FILE_ATTRIBUTE_READONLY))
 			{
@@ -2253,7 +1551,7 @@ void CWindowsApplication::WriteConfigFile(const char* FileName)
 	}
 
 	CParaFile file;
-	if(!file.CreateNewFile(sFileName.c_str()))
+	if (!file.CreateNewFile(sFileName.c_str()))
 	{
 		OUTPUT_LOG("failed creating file %s\r\n", sFileName.c_str());
 	}
@@ -2269,10 +1567,10 @@ void CWindowsApplication::WriteConfigFile(const char* FileName)
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 	CVariable value;
 
-	value = ! (m_nWindowedDesired!=0); //  IsWindowedMode();
+	value = !(m_nWindowedDesired != 0); //  IsWindowedMode();
 	settings.SetDynamicField("StartFullscreen", value);
 
-	if(IsWindowedMode())
+	if (IsWindowedMode())
 	{
 		value = (int)(m_d3dSettings.Windowed_MultisampleType);
 		settings.SetDynamicField("MultiSampleType", value);
@@ -2314,12 +1612,12 @@ bool CWindowsApplication::HasNewConfig()
 	return m_bHasNewConfig;
 }
 
-void CWindowsApplication::SetHasNewConfig( bool bHasNewConfig )
+void CWindowsApplication::SetHasNewConfig(bool bHasNewConfig)
 {
 	m_bHasNewConfig = bHasNewConfig;
 }
 
-void CWindowsApplication::GetCursorPosition( int* pX,int * pY, bool bInBackbuffer /*= true*/ )
+void CWindowsApplication::GetCursorPosition(int* pX, int * pY, bool bInBackbuffer /*= true*/)
 {
 	if (IsTouchInputting())
 	{
@@ -2341,9 +1639,9 @@ void CWindowsApplication::GetCursorPosition( int* pX,int * pY, bool bInBackbuffe
 	}
 }
 
-void CWindowsApplication::GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer)
+void CWindowsApplication::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer)
 {
-	if(bInBackbuffer && IsWindowedMode())
+	if (bInBackbuffer && IsWindowedMode())
 	{
 		// we need to scale cursor position according to backbuffer.
 		RECT rcWindowClient;
@@ -2351,17 +1649,17 @@ void CWindowsApplication::GameToClient(int& inout_x,int & inout_y, bool bInBackb
 		int width = (rcWindowClient.right - rcWindowClient.left);
 		int height = (rcWindowClient.bottom - rcWindowClient.top);
 
-		if((width != m_d3dpp.BackBufferWidth) || (height != m_d3dpp.BackBufferHeight))
+		if ((width != m_d3dpp.BackBufferWidth) || (height != m_d3dpp.BackBufferHeight))
 		{
-			inout_x = (int)((float)width*(float)inout_x/m_d3dpp.BackBufferWidth);
-			inout_y = (int)((float)height*(float)inout_y/m_d3dpp.BackBufferHeight);
+			inout_x = (int)((float)width*(float)inout_x / m_d3dpp.BackBufferWidth);
+			inout_y = (int)((float)height*(float)inout_y / m_d3dpp.BackBufferHeight);
 		}
 	}
 }
 
-void CWindowsApplication::ClientToGame(int& inout_x,int & inout_y, bool bInBackbuffer)
+void CWindowsApplication::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer)
 {
-	if(bInBackbuffer && IsWindowedMode())
+	if (bInBackbuffer && IsWindowedMode())
 	{
 		// we need to scale cursor position according to backbuffer.
 		RECT rcWindowClient;
@@ -2369,10 +1667,10 @@ void CWindowsApplication::ClientToGame(int& inout_x,int & inout_y, bool bInBackb
 		int width = (rcWindowClient.right - rcWindowClient.left);
 		int height = (rcWindowClient.bottom - rcWindowClient.top);
 
-		if((width != m_d3dpp.BackBufferWidth) || (height != m_d3dpp.BackBufferHeight))
+		if ((width != m_d3dpp.BackBufferWidth) || (height != m_d3dpp.BackBufferHeight))
 		{
-			inout_x = (int)(m_d3dpp.BackBufferWidth * (float)inout_x/(float)width);
-			inout_y = (int)(m_d3dpp.BackBufferHeight * (float)inout_y/(float)height);
+			inout_x = (int)(m_d3dpp.BackBufferWidth * (float)inout_x / (float)width);
+			inout_y = (int)(m_d3dpp.BackBufferHeight * (float)inout_y / (float)height);
 		}
 	}
 }
@@ -2398,16 +1696,16 @@ void NewSetForegroundWindow(HWND hWnd)
 			SetForegroundWindow(hWnd);
 
 		/*if (IsIconic(hWnd))
-			ShowWindow(hWnd, SW_RESTORE);
+		ShowWindow(hWnd, SW_RESTORE);
 		else
-			ShowWindow(hWnd, SW_SHOW);*/
+		ShowWindow(hWnd, SW_SHOW);*/
 	}
 }
 void CWindowsApplication::BringWindowToTop()
 {
-	if(!IsFullScreenMode())
+	if (!IsFullScreenMode())
 	{
-		if((GetCoreUsage() & PE_USAGE_WEB_BROWSER)!=0)
+		if ((GetCoreUsage() & PE_USAGE_WEB_BROWSER) != 0)
 		{
 			NewSetForegroundWindow(m_hwndTopLevelWnd);
 			// OUTPUT_LOG("BringWindowToTop: setting foreground HWND from %x, to %x\n", GetForegroundWindow(), m_hwndTopLevelWnd);
@@ -2425,13 +1723,13 @@ void CWindowsApplication::BringWindowToTop()
 
 HKEY GetHKeyByName(const string& root_key)
 {
-	if(root_key == "HKCR" || root_key == "HKEY_CLASSES_ROOT")
+	if (root_key == "HKCR" || root_key == "HKEY_CLASSES_ROOT")
 		return HKEY_CLASSES_ROOT;
-	else if(root_key == "HKLM" || root_key == "HKEY_LOCAL_MACHINE")
+	else if (root_key == "HKLM" || root_key == "HKEY_LOCAL_MACHINE")
 		return HKEY_LOCAL_MACHINE;
-	else if(root_key == "HKCU" || root_key == "HKEY_CURRENT_USER")
+	else if (root_key == "HKCU" || root_key == "HKEY_CURRENT_USER")
 		return HKEY_CURRENT_USER;
-	else if(root_key == "HKU" || root_key == "HKEY_USERS")
+	else if (root_key == "HKU" || root_key == "HKEY_USERS")
 		return HKEY_USERS;
 	else
 		return HKEY_CURRENT_USER;
@@ -2442,24 +1740,24 @@ HKEY GetHKeyByName(const string& root_key)
 */
 HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRights = KEY_QUERY_VALUE, bool bCreateGet = false)
 {
-	HKEY  hKey       = NULL;
+	HKEY  hKey = NULL;
 	HKEY  hParentKey = NULL;
-	LPBYTE lpValue   = NULL;
+	LPBYTE lpValue = NULL;
 	LONG lRet = NULL;
 
 	std::string path_;
 	std::string::size_type nFrom = 0;
-	for (int i=0;i<20 && nFrom!=std::string::npos;++i)
+	for (int i = 0; i<20 && nFrom != std::string::npos; ++i)
 	{
-		std::string::size_type nLastFrom = (nFrom == 0) ? 0: (nFrom+1);
+		std::string::size_type nLastFrom = (nFrom == 0) ? 0 : (nFrom + 1);
 		nFrom = sSubKey.find_first_of("/\\", nLastFrom);
-		path_ = sSubKey.substr(nLastFrom, (nFrom==std::string::npos) ? nFrom: (nFrom - nLastFrom));
+		path_ = sSubKey.substr(nLastFrom, (nFrom == std::string::npos) ? nFrom : (nFrom - nLastFrom));
 
-		if(hParentKey == NULL)
+		if (hParentKey == NULL)
 		{
 			hParentKey = GetHKeyByName(root_key);
 		}
-		if(!bCreateGet)
+		if (!bCreateGet)
 		{
 			lRet = ::RegOpenKeyEx(hParentKey,
 				path_.c_str(),
@@ -2478,23 +1776,23 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 				dwOpenRights,
 				NULL,
 				&hKey, &dwDisposition);
-			if(dwDisposition == REG_CREATED_NEW_KEY)
+			if (dwDisposition == REG_CREATED_NEW_KEY)
 			{
 				OUTPUT_LOG("created the registry key %s \n", sSubKey.c_str());
 			}
 		}
 
 
-		if(nFrom != std::string::npos && i>0)
+		if (nFrom != std::string::npos && i>0)
 		{
 			::RegCloseKey(hParentKey);
 		}
 		hParentKey = hKey;
 
-		if(ERROR_SUCCESS != lRet)
+		if (ERROR_SUCCESS != lRet)
 		{
 			// Error handling (see this FAQ)
-			if(ERROR_ACCESS_DENIED == lRet)
+			if (ERROR_ACCESS_DENIED == lRet)
 			{
 				OUTPUT_LOG("can not open the registry key %s because %s access denied.\n", sSubKey.c_str(), path_.c_str());
 			}
@@ -2508,13 +1806,13 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 	return hKey;
 }
 
-bool CWindowsApplication::WriteRegStr( const string& root_key, const string& sSubKey, const string& name, const string& value )
+bool CWindowsApplication::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
 {
-	LPBYTE lpValue   = NULL;
+	LPBYTE lpValue = NULL;
 	LONG lRet = NULL;
 
 	HKEY  hKey = GetHKeyByPath(root_key, sSubKey, KEY_WRITE, true);
-	if(hKey == NULL)
+	if (hKey == NULL)
 		return NULL;
 
 	lRet = ::RegSetValueEx(hKey,
@@ -2524,7 +1822,7 @@ bool CWindowsApplication::WriteRegStr( const string& root_key, const string& sSu
 		(const byte*)(value.c_str()),
 		(int)(value.size()));
 	::RegCloseKey(hKey);
-	if(ERROR_SUCCESS != lRet)
+	if (ERROR_SUCCESS != lRet)
 	{
 		// Error handling
 		OUTPUT_LOG("can not set the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
@@ -2533,11 +1831,11 @@ bool CWindowsApplication::WriteRegStr( const string& root_key, const string& sSu
 	return true;
 }
 
-const char* CWindowsApplication::ReadRegStr( const string& root_key, const string& sSubKey, const string& name )
+const char* CWindowsApplication::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
 {
-	LPBYTE lpValue   = NULL;
+	LPBYTE lpValue = NULL;
 	LONG lRet = NULL;
-	DWORD dwSize     = 0;
+	DWORD dwSize = 0;
 	DWORD dwDataType = 0;
 
 	static string g_tmp;
@@ -2546,7 +1844,7 @@ const char* CWindowsApplication::ReadRegStr( const string& root_key, const strin
 	try
 	{
 		HKEY  hKey = GetHKeyByPath(root_key, sSubKey);
-		if(hKey == NULL)
+		if (hKey == NULL)
 			return NULL;
 
 		// Call once RegQueryValueEx to retrieve the necessary buffer size
@@ -2557,7 +1855,7 @@ const char* CWindowsApplication::ReadRegStr( const string& root_key, const strin
 			lpValue,  // NULL
 			&dwSize); // will contain the data size
 
-		if(ERROR_SUCCESS == lRet && (dwSize > 0 || dwDataType == REG_DWORD))
+		if (ERROR_SUCCESS == lRet && (dwSize > 0 || dwDataType == REG_DWORD))
 		{
 			// Alloc the buffer
 			lpValue = (LPBYTE)malloc(dwSize);
@@ -2573,34 +1871,34 @@ const char* CWindowsApplication::ReadRegStr( const string& root_key, const strin
 
 		::RegCloseKey(hKey);
 
-		if(ERROR_SUCCESS != lRet)
+		if (ERROR_SUCCESS != lRet)
 		{
 			// Error handling
 			OUTPUT_LOG("can not query the registry key %s with name %s\n", sSubKey.c_str(), name.c_str());
 			return NULL;
 		}
 
-		if(dwDataType == REG_SZ)
+		if (dwDataType == REG_SZ)
 		{
-			if(lpValue!=NULL)
+			if (lpValue != NULL)
 			{
 				g_tmp = (const char*)lpValue;
 			}
 		}
-		else if(dwDataType == REG_DWORD)
+		else if (dwDataType == REG_DWORD)
 		{
-			if(lpValue!=NULL)
+			if (lpValue != NULL)
 			{
 				DWORD dwValue = *((const DWORD *)lpValue);
 				char temp[30];
 				memset(temp, 0, sizeof(temp));
-				_itoa_s(dwValue,temp,10);
+				_itoa_s(dwValue, temp, 10);
 				g_tmp = temp;
 			}
 		}
 
 		// free the buffer when no more necessary
-		if(lpValue!=NULL)
+		if (lpValue != NULL)
 			free(lpValue);
 
 		return g_tmp.c_str();
@@ -2612,7 +1910,7 @@ const char* CWindowsApplication::ReadRegStr( const string& root_key, const strin
 	return g_tmp.c_str();
 }
 
-bool CWindowsApplication::WriteRegDWORD( const string& root_key, const string& sSubKey, const string& name, DWORD value )
+bool CWindowsApplication::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
 {
 	LONG lRet = NULL;
 
@@ -2644,11 +1942,11 @@ bool CWindowsApplication::WriteRegDWORD( const string& root_key, const string& s
 	return true;
 }
 
-DWORD CWindowsApplication::ReadRegDWORD( const string& root_key, const string& sSubKey, const string& name )
+DWORD CWindowsApplication::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
 {
-	LPBYTE lpValue   = NULL;
+	LPBYTE lpValue = NULL;
 	LONG lRet = NULL;
-	DWORD dwSize     = 0;
+	DWORD dwSize = 0;
 	DWORD dwDataType = 0;
 
 	try
@@ -2665,7 +1963,7 @@ DWORD CWindowsApplication::ReadRegDWORD( const string& root_key, const string& s
 			lpValue,  // NULL
 			&dwSize); // will contain the data size
 
-		// Alloc the buffer
+					  // Alloc the buffer
 		lpValue = (LPBYTE)malloc(dwSize);
 
 		// Call twice RegQueryValueEx to get the value
@@ -2703,33 +2001,33 @@ DWORD CWindowsApplication::ReadRegDWORD( const string& root_key, const string& s
 // Name: DialogProcHelper
 // Desc:
 //-----------------------------------------------------------------------------
-INT_PTR CALLBACK ParaEngine::DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam )
+INT_PTR CALLBACK ParaEngine::DialogProcAbout(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	switch( msg )
+	switch (msg)
 	{
 	case WM_INITDIALOG:
+	{
+		HWND hWndText = ::GetDlgItem(hDlg, IDC_ABOUT_TEXT);
+		CParaFile file("readme.txt");
+		if (!file.isEof())
 		{
-			HWND hWndText = ::GetDlgItem(hDlg,IDC_ABOUT_TEXT);
-			CParaFile file("readme.txt");
-			if(!file.isEof())
-			{
-				::SetWindowText(hWndText,file.getBuffer());
-			}
-			else
-			{
-				::SetWindowText(hWndText,"");
-			}
+			::SetWindowText(hWndText, file.getBuffer());
 		}
-		return TRUE;
+		else
+		{
+			::SetWindowText(hWndText, "");
+		}
+	}
+	return TRUE;
 
 	case WM_COMMAND:
-		switch( LOWORD(wParam) )
+		switch (LOWORD(wParam))
 		{
 		case IDOK:
-			EndDialog( hDlg, IDOK );
+			EndDialog(hDlg, IDOK);
 			break;
 		case IDCANCEL:
-			EndDialog( hDlg, IDCANCEL );
+			EndDialog(hDlg, IDCANCEL);
 			break;
 		default:
 			break;
@@ -2741,47 +2039,94 @@ INT_PTR CALLBACK ParaEngine::DialogProcAbout( HWND hDlg, UINT msg, WPARAM wParam
 	}
 }
 
+/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
+void    CWindowsApplication::EnablePassiveRendering(bool bEnable) {
+	CD3DApplication::EnablePassiveRendering(bEnable);
+};
+/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
+bool	CWindowsApplication::IsPassiveRenderingEnabled() {
+	return CD3DApplication::IsPassiveRenderingEnabled();
+};
+/** disable 3D rendering, do not present the scene.
+* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
+void CWindowsApplication::Enable3DRendering(bool bEnable)
+{
+	CD3DApplication::Enable3DRendering(bEnable);
+}
 
+/** whether 3D rendering is enabled, do not present the scene.
+* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
+bool CWindowsApplication::Is3DRenderingEnabled()
+{
+	return CD3DApplication::Is3DRenderingEnabled();
+}
 
+HRESULT CWindowsApplication::DoWork()
+{
+	return CD3DApplication::DoWork();
+}
 
+HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
+{
+	return CD3DApplication::Render3DEnvironment(bForceRender);
+}
 
+void CWindowsApplication::SetRefreshTimer(float fTimeInterval, int nFrameRateControl)
+{
+	if (nFrameRateControl == 1)
+	{
+		CFrameRateController::LoadFRCNormal(fTimeInterval);
+	}
+	else
+	{
+		CFrameRateController::LoadFRCRealtime(fTimeInterval);
+	}
+	CD3DApplication::SetRefreshTimer(fTimeInterval, nFrameRateControl);
+}
 
-
-
-
-
+float CWindowsApplication::GetRefreshTimer()
+{
+	return CD3DApplication::GetRefreshTimer();
+}
 
 void CWindowsApplication::GetWindowCreationSize(int * pWidth, int * pHeight)
 {
-	if(pWidth)
+	if (pWidth)
 		*pWidth = m_dwCreationWidth;
-	if(pHeight)
+	if (pHeight)
 		*pHeight = m_dwCreationHeight;
 }
 
+PEAppState CWindowsApplication::GetAppState()
+{
+	return CD3DApplication::GetAppState();
+}
 
+void CWindowsApplication::SetAppState(ParaEngine::PEAppState state)
+{
+	CD3DApplication::SetAppState(state);
+}
 
-
-void CWindowsApplication::ActivateApp( bool bActivate )
+void CWindowsApplication::ActivateApp(bool bActivate)
 {
 	m_bAppHasFocus = bActivate;
 	//OUTPUT_LOG("WM_ACTIVATEAPP:%s\n", m_bAppHasFocus? "true":"false");
 
 	// we shall prevent activate to be called multiple times.
-	if(CGlobals::GetGUI()->IsActive() == bActivate)
+	if (CGlobals::GetGUI()->IsActive() == bActivate)
 		return;
 
-	if(m_bToggleSoundWhenNotFocused)
+	if (m_bToggleSoundWhenNotFocused)
 	{
 		CAudioEngine2::GetInstance()->OnSwitch(bActivate);
 	}
 	// Pause(!bActivate);
-	if(bActivate)
+	if (bActivate)
 		CGlobals::GetGUI()->ActivateRoot();
 	else
 		CGlobals::GetGUI()->InactivateRoot();
 
-	if(m_bAutoLowerFrameRateWhenNotFocused)
+	if (m_bAutoLowerFrameRateWhenNotFocused)
 	{
 		float fIdealInterval = (GetRefreshTimer() <= 0) ? IDEAL_FRAME_RATE : GetRefreshTimer();
 		static float s_fLastRefreshRate = fIdealInterval;
@@ -2789,16 +2134,17 @@ void CWindowsApplication::ActivateApp( bool bActivate )
 		if (!bActivate)
 		{
 			// set to a lower frame rate when app is switched away.
-			const float fLowTimer = 1/20.f;
-			if(fIdealInterval < fLowTimer)
+			const float fLowTimer = 1 / 20.f;
+			if (fIdealInterval < fLowTimer)
 			{
 				s_fLastRefreshRate = fIdealInterval;
 				SetRefreshTimer(fLowTimer);
 			}
-		}else
+		}
+		else
 		{
 			// restore to original frame rate.
-			if(s_fLastRefreshRate > 0.f && s_fLastRefreshRate<fIdealInterval)
+			if (s_fLastRefreshRate > 0.f && s_fLastRefreshRate<fIdealInterval)
 			{
 				SetRefreshTimer(s_fLastRefreshRate);
 			}
@@ -2818,14 +2164,14 @@ DWORD CWindowsApplication::GetCoreUsage()
 	return m_dwCoreUsage;
 }
 
-void CWindowsApplication::SetCoreUsage( DWORD dwUsage )
+void CWindowsApplication::SetCoreUsage(DWORD dwUsage)
 {
 	m_dwCoreUsage = (m_dwCoreUsage & 0xfffffff0) | dwUsage;
 }
 
-void CWindowsApplication::SetMinUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
+void CWindowsApplication::SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling /*= true*/)
 {
-	CGlobals::GetGUI()->SetMinimumScreenSize(nWidth,nHeight, bAutoUIScaling);
+	CGlobals::GetGUI()->SetMinimumScreenSize(nWidth, nHeight, bAutoUIScaling);
 }
 
 bool CWindowsApplication::IsSlateMode()
@@ -2839,13 +2185,13 @@ bool CWindowsApplication::IsSlateMode()
 // obsoleted: since the parent window is not in the same thread,  GetFocus() will always return NULL even a child window is having the focus.
 bool CWindowsApplication::HasFocus(HWND hWnd)
 {
-	if(hWnd ==0)
+	if (hWnd == 0)
 		hWnd = ::GetFocus();
 
 	// try parent and parent's parent
-	for(int i=0;i<2 && hWnd != NULL; i++)
+	for (int i = 0; i<2 && hWnd != NULL; i++)
 	{
-		if(hWnd != GetMainWindow())
+		if (hWnd != GetMainWindow())
 		{
 			hWnd = GetParent(hWnd);
 		}
@@ -2855,7 +2201,7 @@ bool CWindowsApplication::HasFocus(HWND hWnd)
 	return false;
 }
 
-void CWindowsApplication::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )
+void CWindowsApplication::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
 {
 	m_bAutoLowerFrameRateWhenNotFocused = bEnabled;
 }
@@ -2865,7 +2211,7 @@ bool CWindowsApplication::GetAutoLowerFrameRateWhenNotFocused()
 	return m_bAutoLowerFrameRateWhenNotFocused;
 }
 
-void CWindowsApplication::SetToggleSoundWhenNotFocused( bool bEnabled )
+void CWindowsApplication::SetToggleSoundWhenNotFocused(bool bEnabled)
 {
 	m_bToggleSoundWhenNotFocused = bEnabled;
 }
@@ -2875,11 +2221,11 @@ bool CWindowsApplication::GetToggleSoundWhenNotFocused()
 	return m_bToggleSoundWhenNotFocused;
 }
 
-LRESULT CWindowsApplication::SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CWindowsApplication::SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if(m_pWinRawMsgQueue)
+	if (m_pWinRawMsgQueue)
 	{
-		CWinRawMsg_ptr msg(new CWinRawMsg(hWnd,uMsg,wParam,lParam));
+		CWinRawMsg_ptr msg(new CWinRawMsg(hWnd, uMsg, wParam, lParam));
 		m_pWinRawMsgQueue->push(msg);
 	}
 	return 0;
@@ -2887,12 +2233,12 @@ LRESULT CWindowsApplication::SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wPar
 
 bool CWindowsApplication::GetMessageFromApp(CWinRawMsg* pMsg)
 {
-	if(m_pWinRawMsgQueue)
+	if (m_pWinRawMsgQueue)
 	{
 		CWinRawMsg_ptr msg;
-		if(m_pWinRawMsgQueue->try_pop(msg))
+		if (m_pWinRawMsgQueue->try_pop(msg))
 		{
-			if(pMsg)
+			if (pMsg)
 			{
 				(*pMsg) = *msg;
 			}
@@ -2904,7 +2250,7 @@ bool CWindowsApplication::GetMessageFromApp(CWinRawMsg* pMsg)
 
 bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if(m_dwWinThreadID!=0)
+	if (m_dwWinThreadID != 0)
 	{
 		return !!::PostThreadMessage(m_dwWinThreadID, uMsg, wParam, lParam);
 	}
@@ -2912,84 +2258,84 @@ bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM 
 }
 
 // return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CWindowsApplication::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CWindowsApplication::MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	LRESULT result = 0;
-	if(uMsg >= PE_WM_FIRST && uMsg<=PE_WM_LAST)
+	if (uMsg >= PE_WM_FIRST && uMsg <= PE_WM_LAST)
 	{
 		result = 1;
-		switch( uMsg )
+		switch (uMsg)
 		{
 		case PE_TIMERID_HEARTBEAT:
-			{
-				break;
-			}
+		{
+			break;
+		}
 		case PE_WM_SHOWCURSOR:
+		{
+			// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
+			// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
+			if (CGlobals::GetRenderDevice())
 			{
-				// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
-				// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
-				if(CGlobals::GetRenderDevice())
-				{
-					// ::SetCursor( NULL );
-					CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
-					// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
-				}
-				break;
+				// ::SetCursor( NULL );
+				CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
+				// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
 			}
+			break;
+		}
 		case PE_WM_SETCAPTURE:
-			{
-				::SetCapture(CGlobals::GetAppHWND());
-				break;
-			}
+		{
+			::SetCapture(CGlobals::GetAppHWND());
+			break;
+		}
 		case PE_WM_RELEASECAPTURE:
-			{
-				::ReleaseCapture();
-				break;
-			}
+		{
+			::ReleaseCapture();
+			break;
+		}
 		case PE_WM_SETFOCUS:
-			{
-				::SetFocus((HWND)wParam);
-				break;
-			}
+		{
+			::SetFocus((HWND)wParam);
+			break;
+		}
 		case PE_WM_QUIT:
-			{
-				HMENU hMenu;
-				hMenu = GetMenu(m_hWnd);
-				if( hMenu != NULL )
-					DestroyMenu( hMenu );
-				DestroyWindow( m_hWnd );
-				PostQuitMessage((int)wParam);
-				break;
-			}
+		{
+			HMENU hMenu;
+			hMenu = GetMenu(m_hWnd);
+			if (hMenu != NULL)
+				DestroyMenu(hMenu);
+			DestroyWindow(m_hWnd);
+			PostQuitMessage((int)wParam);
+			break;
+		}
 		case PE_IME_SETOPENSTATUS:
-			{
-				CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
-				break;
-			}
+		{
+			CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
+			break;
+		}
 		case PE_IME_SETFOCUS:
-			{
-				if(lParam == 1){
-					CGUIIME::OnFocusIn_imp();
-				}
-				else{
-					CGUIIME::OnFocusOut_imp();
-				}
-				break;
+		{
+			if (lParam == 1) {
+				CGUIIME::OnFocusIn_imp();
 			}
+			else {
+				CGUIIME::OnFocusOut_imp();
+			}
+			break;
+		}
 		case PE_APP_SWITCH:
-			{
-				// on app switch in/out
-				if(lParam == 1){
-					// inject WM_ACTIVATEAPP to simulate activate APP
-					MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)TRUE, 0, false);
-				}
-				else{
-					// inject WM_ACTIVATEAPP to simulate activate APP
-					MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)FALSE, 0, false);
-				}
-
-				break;
+		{
+			// on app switch in/out
+			if (lParam == 1) {
+				// inject WM_ACTIVATEAPP to simulate activate APP
+				MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)TRUE, 0, false);
 			}
+			else {
+				// inject WM_ACTIVATEAPP to simulate activate APP
+				MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)FALSE, 0, false);
+			}
+
+			break;
+		}
 		default:
 			result = 0;
 			break;
@@ -2999,19 +2345,19 @@ LRESULT CWindowsApplication::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, L
 }
 
 // return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
+LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
 {
 	LRESULT result = 0;
 	bool bContinue = true;
 
-	if (uMsg<=WM_MOUSELAST && uMsg>=WM_MOUSEFIRST)
+	if (uMsg <= WM_MOUSELAST && uMsg >= WM_MOUSEFIRST)
 	{
 		bContinue = false;
 		SendMessageToApp(hWnd, uMsg, wParam, lParam);
-		if(uMsg == WM_LBUTTONUP)
+		if (uMsg == WM_LBUTTONUP)
 			bContinue = true;
 
-		if (uMsg == WM_LBUTTONDOWN)			{
+		if (uMsg == WM_LBUTTONDOWN) {
 			// 2014.5.14 andy: check input source using message info along with WM_LBUTTONDOWN instead of WM_POINTERCAPTURECHANGED
 			//
 			//GetMessageExtraInfo() returns the extra info associated with a message
@@ -3019,14 +2365,14 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 			//Mask extra info against 0xFFFFFF80
 			//	0xFF515780 for touch, 0xFF515700 for pen
 
-			#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
+#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
 			SetTouchInputting(IsTouchEvent(GetMessageExtraInfo()));
 			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
 		}
 	}
-	if(bContinue)
+	if (bContinue)
 	{
-		switch( uMsg )
+		switch (uMsg)
 		{
 			//--------------------------------------------------------------------------------------------
 			//process touch message
@@ -3093,47 +2439,47 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 
 			break;
 		}
-			/*
+		/*
 		case 0x0119: //case WM_GESTURE:
-			{
-				if(!m_pTouchInput)
-					LoadTouchInputPlug();
+		{
+		if(!m_pTouchInput)
+		LoadTouchInputPlug();
 
-				if(m_pTouchInput)
-				{
-					PEGestureInfo gi;
-					ZeroMemory(&gi, sizeof(PEGestureInfo));
-					gi.cbSize = sizeof(PEGestureInfo);
+		if(m_pTouchInput)
+		{
+		PEGestureInfo gi;
+		ZeroMemory(&gi, sizeof(PEGestureInfo));
+		gi.cbSize = sizeof(PEGestureInfo);
 
-					if(m_pTouchInput->DecodeGestureMessage(hWnd,uMsg,wParam,lParam,gi))
-					{
-						switch(gi.dwID)
-						{
-						case 4:  //GID_Pan
-							{
-								POINT p;
-								p.x = gi.ptsLocation.x;
-								p.y = gi.ptsLocation.y;
+		if(m_pTouchInput->DecodeGestureMessage(hWnd,uMsg,wParam,lParam,gi))
+		{
+		switch(gi.dwID)
+		{
+		case 4:  //GID_Pan
+		{
+		POINT p;
+		p.x = gi.ptsLocation.x;
+		p.y = gi.ptsLocation.y;
 
-								ScreenToClient(hWnd,&p);
-								SendMessageToApp(hWnd,WM_MOUSEMOVE,0,MAKELONG(p.x,p.y));
-								result = 1;
-							}
-							break;
-						default:
-							result = 0;
-						}
-					}
-					else
-						result = 0;
-				}
-			}
-			break;
-			*/
-			//--------------------------------------------------------------------------------------------
+		ScreenToClient(hWnd,&p);
+		SendMessageToApp(hWnd,WM_MOUSEMOVE,0,MAKELONG(p.x,p.y));
+		result = 1;
+		}
+		break;
+		default:
+		result = 0;
+		}
+		}
+		else
+		result = 0;
+		}
+		}
+		break;
+		*/
+		//--------------------------------------------------------------------------------------------
 
 		case WM_CLOSE:
-			if(!IsWindowClosingAllowed())
+			if (!IsWindowClosingAllowed())
 			{
 				result = 1;
 			}
@@ -3150,15 +2496,15 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 
 		case WM_IME_SETCONTEXT:
 
-			if(CGUIIME::IsEnableImeSystem())
+			if (CGUIIME::IsEnableImeSystem())
 			{
 				// We don't want anything to display, so we have to clear this
 				lParam = 0;
-				CGUIIME::HandleWinThreadMsg(uMsg,wParam,lParam);
+				CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
 			}
 			else
 			{
-				lParam =  ISC_SHOWUICOMPOSITIONWINDOW | ISC_SHOWUICANDIDATEWINDOW ;
+				lParam = ISC_SHOWUICOMPOSITIONWINDOW | ISC_SHOWUICANDIDATEWINDOW;
 				// let windows draw the IME.
 				// TODO: we need to set the candidate window position.
 			}
@@ -3170,31 +2516,31 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 		case WM_IME_STARTCOMPOSITION:
 		case WM_IME_ENDCOMPOSITION:
 		case WM_IME_NOTIFY:
+		{
+			if (CGUIIME::IsEnableImeSystem())
 			{
-				if(CGUIIME::IsEnableImeSystem())
-				{
-					result = 1;
-				}
-				/*if(uMsg == WM_INPUTLANGCHANGE)
-					OUTPUT_LOG("WM_INPUTLANGCHANGE");
-				else if(uMsg == WM_IME_COMPOSITION)
-					OUTPUT_LOG("WM_IME_COMPOSITION");
-				else if(uMsg == WM_IME_STARTCOMPOSITION)
-					OUTPUT_LOG("WM_IME_STARTCOMPOSITION");
-				else if(uMsg == WM_IME_ENDCOMPOSITION)
-					OUTPUT_LOG("WM_IME_ENDCOMPOSITION");
-				else if(uMsg == WM_IME_NOTIFY)
-					OUTPUT_LOG("WM_IME_NOTIFY");
-				OUTPUT_LOG(": %d, %d\n", wParam, lParam);*/
-
-				CGUIRoot* pRoot =  CGlobals::GetGUI();
-				if(pRoot !=0 && pRoot->HasIMEFocus())
-				{
-					CGUIIME::HandleWinThreadMsg(uMsg,wParam,lParam);
-				}
-				if(uMsg!=WM_KEYUP)
-					break;
+				result = 1;
 			}
+			/*if(uMsg == WM_INPUTLANGCHANGE)
+			OUTPUT_LOG("WM_INPUTLANGCHANGE");
+			else if(uMsg == WM_IME_COMPOSITION)
+			OUTPUT_LOG("WM_IME_COMPOSITION");
+			else if(uMsg == WM_IME_STARTCOMPOSITION)
+			OUTPUT_LOG("WM_IME_STARTCOMPOSITION");
+			else if(uMsg == WM_IME_ENDCOMPOSITION)
+			OUTPUT_LOG("WM_IME_ENDCOMPOSITION");
+			else if(uMsg == WM_IME_NOTIFY)
+			OUTPUT_LOG("WM_IME_NOTIFY");
+			OUTPUT_LOG(": %d, %d\n", wParam, lParam);*/
+
+			CGUIRoot* pRoot = CGlobals::GetGUI();
+			if (pRoot != 0 && pRoot->HasIMEFocus())
+			{
+				CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
+			}
+			if (uMsg != WM_KEYUP)
+				break;
+		}
 		// key strokes
 		//case WM_KEYUP:
 		case WM_KEYDOWN:
@@ -3213,68 +2559,68 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 			SendMessageToApp(hWnd, uMsg, wParam, lParam);
 			break;
 		case WM_NCHITTEST:
-			{
-				// Prevent the user from selecting the menu in full screen mode
+		{
+			// Prevent the user from selecting the menu in full screen mode
+			result = HTCLIENT;
+			if (!m_bWindowed) {
 				result = HTCLIENT;
-				if( !m_bWindowed ){
-					result = HTCLIENT;
+			}
+			else {
+				result = HTCLIENT;
+				if (!m_bIsExternalWindow)
+				{
+					result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
 				}
-				else{
-					result = HTCLIENT;
-					if(!m_bIsExternalWindow)
-					{
-						result = DefWindowProcW( hWnd, uMsg, wParam, lParam );
-					}
-				}
-				SendMessageToApp(hWnd, uMsg, result, 0);
+			}
+			SendMessageToApp(hWnd, uMsg, result, 0);
 
-				CGUIRoot* pRoot = CGlobals::GetGUI();
-				if(pRoot != 0 && pRoot->IsNonClient())
-					result = HTCAPTION; // this will allow dragging
-				return result;
+			CGUIRoot* pRoot = CGlobals::GetGUI();
+			if (pRoot != 0 && pRoot->IsNonClient())
+				result = HTCAPTION; // this will allow dragging
+			return result;
 		}
 		case WM_LBUTTONUP:
-			if(m_bIsExternalWindow)
+			if (m_bIsExternalWindow)
 				break;
 			// fall through to WM_MOUSEACTIVATE if this is the top level window, since WM_MOUSEACTIVATE is not called for top-level window, but always called on mouse click for child windows.
 		case WM_MOUSEACTIVATE:
-			{
-				// This fixed a issue that in some buggy browser like(sougou), Foreground window can not be set back by clicking on the plugin window.
-				BringWindowToTop();
+		{
+			// This fixed a issue that in some buggy browser like(sougou), Foreground window can not be set back by clicking on the plugin window.
+			BringWindowToTop();
 
-				// this message is received whenever the user clicks on the window, even if there is child window.
-				//
-				// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may
-				// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
-				// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undetermined ordered.
-				// if the render process calls first, then the final result of focus window is wrong.
-				//
-				// To fix above problem, we will handle mouse activate in the window process and SetFocus to the window.
-				HWND hWndMain = GetMainWindow();
+			// this message is received whenever the user clicks on the window, even if there is child window.
+			//
+			// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may
+			// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
+			// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undetermined ordered.
+			// if the render process calls first, then the final result of focus window is wrong.
+			//
+			// To fix above problem, we will handle mouse activate in the window process and SetFocus to the window.
+			HWND hWndMain = GetMainWindow();
+			{
+				POINT ptCursor;
+				::GetCursorPos(&ptCursor);
+				::ScreenToClient(hWndMain, &ptCursor);
+
+				HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE | CWP_SKIPDISABLED);
+				if (hMouseOverWnd == hWndMain)
 				{
-					POINT ptCursor;
-					::GetCursorPos(&ptCursor);
-					::ScreenToClient(hWndMain,&ptCursor);
-
-					HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE|CWP_SKIPDISABLED);
-					if(hMouseOverWnd == hWndMain)
-					{
-						::SetFocus(hWndMain);
-						// result = MA_NOACTIVATE;
-					}
+					::SetFocus(hWndMain);
+					// result = MA_NOACTIVATE;
 				}
-				// very tricky here: we will simulate activate app message when clicked.
-				SendMessageToApp(hWnd, WM_ACTIVATEAPP, TRUE, 0);
-				break;
 			}
+			// very tricky here: we will simulate activate app message when clicked.
+			SendMessageToApp(hWnd, WM_ACTIVATEAPP, TRUE, 0);
+			break;
+		}
 		case WM_COMMAND:
-			if(!m_bIsExternalWindow)
+			if (!m_bIsExternalWindow)
 			{
-				switch( LOWORD( wParam ) )
+				switch (LOWORD(wParam))
 				{
 				case IDM_EXIT:
 					// Received key/menu command to exit app
-					SendMessage( hWnd, WM_CLOSE, 0, 0 );
+					SendMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
 				default:
 					SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
@@ -3283,49 +2629,49 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 			}
 			break;
 		case WM_DROPFILES:
-			{
-				HDROP query = (HDROP) wParam;
-				int n = 0, count = DragQueryFile( query, 0xFFFFFFFF, 0, 0 );
-				std::string cmds = "";
-				while ( n < count ) {
-					char filename[MAX_FILENAME_LENGTH];
-					if(DragQueryFile( query, n, filename, MAX_FILENAME_LENGTH ) != 0)
-					{
-						OUTPUT_LOG("drop files: %s\n", filename);
-						cmds += filename;
-						cmds += ";";
-					}
-					n++;
-				}
-				// TODO: make m_cmd thread safe by using a lock.
-				m_cmd = cmds;
-				SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
-				DragFinish( query );
-				break;
-			}
-		case WM_COPYDATA:
-			{
-				PCOPYDATASTRUCT pMyCDS = (PCOPYDATASTRUCT) lParam;
-				switch( pMyCDS->dwData )
+		{
+			HDROP query = (HDROP)wParam;
+			int n = 0, count = DragQueryFile(query, 0xFFFFFFFF, 0, 0);
+			std::string cmds = "";
+			while (n < count) {
+				char filename[MAX_FILENAME_LENGTH];
+				if (DragQueryFile(query, n, filename, MAX_FILENAME_LENGTH) != 0)
 				{
-				case ID_GAME_COMMANDLINE:
-
-					if(pMyCDS->lpData)
-					{
-						// TODO: make m_cmd thread safe by using a lock.
-						m_cmd = (const char*)(pMyCDS->lpData);
-					}
-					SendMessageToApp(hWnd, WM_COMMAND, ID_GAME_COMMANDLINE, (LPARAM)(LPSTR)(m_cmd.c_str()));
-					break;
+					OUTPUT_LOG("drop files: %s\n", filename);
+					cmds += filename;
+					cmds += ";";
 				}
+				n++;
+			}
+			// TODO: make m_cmd thread safe by using a lock.
+			m_cmd = cmds;
+			SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
+			DragFinish(query);
+			break;
+		}
+		case WM_COPYDATA:
+		{
+			PCOPYDATASTRUCT pMyCDS = (PCOPYDATASTRUCT)lParam;
+			switch (pMyCDS->dwData)
+			{
+			case ID_GAME_COMMANDLINE:
+
+				if (pMyCDS->lpData)
+				{
+					// TODO: make m_cmd thread safe by using a lock.
+					m_cmd = (const char*)(pMyCDS->lpData);
+				}
+				SendMessageToApp(hWnd, WM_COMMAND, ID_GAME_COMMANDLINE, (LPARAM)(LPSTR)(m_cmd.c_str()));
 				break;
 			}
+			break;
+		}
 
 		case WM_SYSCOMMAND:
-			if(!m_bIsExternalWindow)
+			if (!m_bIsExternalWindow)
 			{
 				// Prevent moving/sizing and power loss in fullscreen mode
-				switch( wParam )
+				switch (wParam)
 				{
 				case SC_MOVE:
 				case SC_SIZE:
@@ -3349,31 +2695,31 @@ LRESULT CWindowsApplication::MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wPar
 			}
 			break;
 
-		/*case WM_IME_CHAR:
+			/*case WM_IME_CHAR:
 			{
-				OUTPUT_LOG("WM_IME_CHAR:%d\n",wParam);
+			OUTPUT_LOG("WM_IME_CHAR:%d\n",wParam);
 			}
 			break;
-		case WM_UNICHAR:
+			case WM_UNICHAR:
 			{
-				OUTPUT_LOG("WM_UNICHAR:%d\n",wParam);
+			OUTPUT_LOG("WM_UNICHAR:%d\n",wParam);
 			}
 			break;
-		*/
+			*/
 		case WM_CHAR:
-			{
-				//BOOL bIsUnicode = IsWindowUnicode(hWnd);
-				CGUIIME::SendWinMsgChar((WCHAR)wParam);
-				// OUTPUT_LOG("WM_CHAR:%d\n",wParam);
-			}
-			break;
+		{
+			//BOOL bIsUnicode = IsWindowUnicode(hWnd);
+			CGUIIME::SendWinMsgChar((WCHAR)wParam);
+			// OUTPUT_LOG("WM_CHAR:%d\n",wParam);
+		}
+		break;
 
 		}
 	}
-	if(result == 0)
+	if (result == 0)
 	{
-		if(bCallDefProcedure)
-			return DefWindowProcW( hWnd, uMsg, wParam, lParam );
+		if (bCallDefProcedure)
+			return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
 	return result;
 }
@@ -3409,46 +2755,46 @@ const char* CWindowsApplication::GetTouchEventSCodeFromMessage(const char * even
 }
 
 // return 0 if not processed, 1 if processed, 2 if no further messages in the queue should ever be processed.
-LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam )
+LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	bool bIsSceneEnabled = !(m_pRootScene==NULL || !m_pRootScene->IsInitialized());
-	if(bIsSceneEnabled)
+	bool bIsSceneEnabled = !(m_pRootScene == NULL || !m_pRootScene->IsInitialized());
+	if (bIsSceneEnabled)
 	{
 		// let the GUI system to process the message first.
 		bool bNoFurtherProcess = false;
-		LRESULT result=m_pGUIRoot->MsgProc(hWnd, uMsg, wParam, lParam,bNoFurtherProcess);
+		LRESULT result = m_pGUIRoot->MsgProc(hWnd, uMsg, wParam, lParam, bNoFurtherProcess);
 		if (bNoFurtherProcess) {
 			return 1;
 		}
 	}
 
-	switch( uMsg )
+	switch (uMsg)
 	{
 	case WM_PAINT:
 		// Handle paint messages when the app is paused
 		// this may lead to problems, so do nothing with WM_PAINT, especially during initialization.
 		/*if( bIsSceneEnabled && (!m_bDisableD3D) && m_pd3dDevice && !m_bActive &&
-			m_bDeviceObjectsInited && m_bDeviceObjectsRestored )
+		m_bDeviceObjectsInited && m_bDeviceObjectsRestored )
 		{
-			if(Is3DRenderingEnabled())
-			{
-				HRESULT hr;
-				Render();
-				hr = m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
-				if( D3DERR_DEVICELOST == hr )
-					m_bDeviceLost = true;
-			}
+		if(Is3DRenderingEnabled())
+		{
+		HRESULT hr;
+		Render();
+		hr = m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
+		if( D3DERR_DEVICELOST == hr )
+		m_bDeviceLost = true;
+		}
 		}*/
 		break;
 	case WM_ENTERSIZEMOVE:
 		// Halt frame movement while the app is sizing or moving
-		if(bIsSceneEnabled)
+		if (bIsSceneEnabled)
 		{
 			//Pause(true);
 		}
 		break;
 	case WM_EXITSIZEMOVE:
-		if(bIsSceneEnabled)
+		if (bIsSceneEnabled)
 		{
 			//Pause(false);
 			HandlePossibleSizeChange();
@@ -3461,110 +2807,110 @@ LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		}
 		break;
 	case WM_SIZE:
+	{
+		if (bIsSceneEnabled)
 		{
-			if(bIsSceneEnabled)
-			{
 #ifdef USE_FLASH_MANAGER
-				// Flash Window Size changes.
-				CGlobals::GetAssetManager()->GetFlashManager().OnSizeChange();
+			// Flash Window Size changes.
+			CGlobals::GetAssetManager()->GetFlashManager().OnSizeChange();
 #endif
-				// Pick up possible changes to window style due to maximize, etc.
-				if( m_bWindowed && m_hWnd != NULL )
-					m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
-				if( SIZE_MINIMIZED == wParam )
+			// Pick up possible changes to window style due to maximize, etc.
+			if (m_bWindowed && m_hWnd != NULL)
+				m_dwWindowStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+			if (SIZE_MINIMIZED == wParam)
+			{
+				if (m_bClipCursorWhenFullscreen && !m_bWindowed)
+					ClipCursor(NULL);
+				//Pause( true ); // Pause while we're minimized
+				m_bMinimized = true;
+				m_bMaximized = false;
+			}
+			if (SIZE_MAXIMIZED == wParam)
+			{
+				//if( m_bMinimized )
+				//    Pause( false ); // Unpause since we're no longer minimized
+				m_bMinimized = false;
+				m_bMaximized = true;
+				HandlePossibleSizeChange();
+			}
+			else if (SIZE_RESTORED == wParam)
+			{
+				if (m_bMaximized)
 				{
-					if( m_bClipCursorWhenFullscreen && !m_bWindowed )
-						ClipCursor( NULL );
-					//Pause( true ); // Pause while we're minimized
-					m_bMinimized = true;
 					m_bMaximized = false;
-				}
-				if( SIZE_MAXIMIZED == wParam )
-				{
-					//if( m_bMinimized )
-					//    Pause( false ); // Unpause since we're no longer minimized
-					m_bMinimized = false;
-					m_bMaximized = true;
 					HandlePossibleSizeChange();
 				}
-				else if( SIZE_RESTORED == wParam )
+				else if (m_bMinimized)
 				{
-					if( m_bMaximized )
+					//Pause( false ); // Unpause since we're no longer minimized
+					m_bMinimized = false;
+					HandlePossibleSizeChange();
+				}
+				else
+				{
+					// If we're neither maximized nor minimized, the window size
+					// is changing by the user dragging the window edges.  In this
+					// case, we don't reset the device yet -- we wait until the
+					// user stops dragging, and a WM_EXITSIZEMOVE message comes.
+					if (!IsPaused())
 					{
-						m_bMaximized = false;
+						// in case, the window size is changed by command line, we will do it immediately.
 						HandlePossibleSizeChange();
-					}
-					else if( m_bMinimized)
-					{
-						//Pause( false ); // Unpause since we're no longer minimized
-						m_bMinimized = false;
-						HandlePossibleSizeChange();
-					}
-					else
-					{
-						// If we're neither maximized nor minimized, the window size
-						// is changing by the user dragging the window edges.  In this
-						// case, we don't reset the device yet -- we wait until the
-						// user stops dragging, and a WM_EXITSIZEMOVE message comes.
-						if(!IsPaused())
-						{
-							// in case, the window size is changed by command line, we will do it immediately.
-							HandlePossibleSizeChange();
-						}
 					}
 				}
 			}
-
-			break;
 		}
+
+		break;
+	}
 	case WM_ENTERMENULOOP:
-		if(bIsSceneEnabled)
+		if (bIsSceneEnabled)
 		{
 			// Pause the app when menus are displayed
 			//Pause(true);
 		}
 		break;
 	case WM_EXITMENULOOP:
-		if(bIsSceneEnabled)
+		if (bIsSceneEnabled)
 		{
 			//Pause(false);
 		}
 		break;
 	case WM_ACTIVATEAPP:
+	{
+		bool  bActive = !(FALSE == wParam);
+		m_bAppHasFocus = bActive;
+		if (bIsSceneEnabled)
 		{
-			bool  bActive = !(FALSE==wParam);
-			m_bAppHasFocus = bActive;
-			if(bIsSceneEnabled)
-			{
-				ActivateApp(bActive);
-			}
-			break;
+			ActivateApp(bActive);
 		}
+		break;
+	}
 	case WM_MOUSEACTIVATE:
-		{
-			// Set focus if mouse is over the main window but not over any of its visible child window
-			//HWND hWndMain = GetMainWindow();
-			//{
-			//	POINT ptCursor;
-			//	::GetCursorPos(&ptCursor);
-			//	::ScreenToClient(hWndMain,&ptCursor);
+	{
+		// Set focus if mouse is over the main window but not over any of its visible child window
+		//HWND hWndMain = GetMainWindow();
+		//{
+		//	POINT ptCursor;
+		//	::GetCursorPos(&ptCursor);
+		//	::ScreenToClient(hWndMain,&ptCursor);
 
-			//	HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE|CWP_SKIPDISABLED);
-			//	if(hMouseOverWnd == hWndMain)
-			//	{
-			//		// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may set
-			//		// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
-			//		// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undertermined ordered.
-			//		// if the render process calls first, then the final result of focus window is wrong.
-			//		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETFOCUS, (WPARAM)(hWndMain), 0);
-			//		ActivateApp(true);
-			//	}
-			//}
-			break;
-		}
+		//	HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE|CWP_SKIPDISABLED);
+		//	if(hMouseOverWnd == hWndMain)
+		//	{
+		//		// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may set
+		//		// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
+		//		// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undertermined ordered.
+		//		// if the render process calls first, then the final result of focus window is wrong.
+		//		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETFOCUS, (WPARAM)(hWndMain), 0);
+		//		ActivateApp(true);
+		//	}
+		//}
+		break;
+	}
 	case WM_NCHITTEST:
 		// Prevent the user from selecting the menu in full screen mode
-		if( !m_bWindowed ){
+		if (!m_bWindowed) {
 			using namespace ParaEngine;
 			CGUIRoot::GetInstance()->SetMouseInClient(true);
 		}
@@ -3577,185 +2923,185 @@ LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		}
 		break;
 	case WM_DROPFILES:
+	{
+		const char* sCmd = (const char*)lParam;
+		if (sCmd)
+		{
+			if (CGlobals::GetEventsCenter())
+			{
+				// msg = command line.
+				string msg = "msg=";
+				NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), sCmd);
+				msg.append(";");
+				SystemEvent event(SystemEvent::SYS_WM_DROPFILES, msg);
+				CGlobals::GetEventsCenter()->FireEvent(event);
+			}
+		}
+		break;
+	}
+	case WM_POWERBROADCAST:
+		switch (wParam)
+		{
+#ifndef PBT_APMQUERYSUSPEND
+#define PBT_APMQUERYSUSPEND 0x0000
+#endif
+		case PBT_APMQUERYSUSPEND:
+			// At this point, the app should save any data for open
+			// network connections, files, etc., and prepare to go into
+			// a suspended mode.
+			return true;
+
+#ifndef PBT_APMRESUMESUSPEND
+#define PBT_APMRESUMESUSPEND 0x0007
+#endif
+		case PBT_APMRESUMESUSPEND:
+			// At this point, the app should recover any data, network
+			// connections, files, etc., and resume running from when
+			// the app was suspended.
+			return true;
+		}
+		break;
+	case WM_COMMAND:
+	{
+		/// menu command
+		switch (LOWORD(wParam))
+		{
+		case IDM_TOGGLESTART:
+			// Toggle frame movement
+			m_bFrameMoving = !m_bFrameMoving;
+			DXUtil_Timer(m_bFrameMoving ? TIMER_START : TIMER_STOP);
+			break;
+
+		case IDM_SINGLESTEP:
+			// Single-step frame movement
+			if (false == m_bFrameMoving)
+				DXUtil_Timer(TIMER_ADVANCE);
+			else
+				DXUtil_Timer(TIMER_STOP);
+			m_bFrameMoving = false;
+			m_bSingleStep = true;
+			break;
+
+		case IDM_CHANGEDEVICE:
+			// Prompt the user to select a new device or mode
+			Pause(true);
+			UserSelectNewDevice();
+			Pause(false);
+			break;
+
+		case IDM_TOGGLEFULLSCREEN:
+			// Toggle the fullscreen/window mode
+			Pause(true);
+			if (FAILED(ToggleFullscreen()))
+				DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
+			Pause(false);
+			break;
+
+		case IDM_HELP:
+			LaunchReadme();
+			break;
+			/// application defined command
+		case ID_GAME_COMMANDLINE:
 		{
 			const char* sCmd = (const char*)lParam;
-			if(sCmd)
+			if (sCmd)
 			{
-				if(CGlobals::GetEventsCenter())
+				if (CGlobals::GetEventsCenter())
 				{
 					// msg = command line.
-					string msg="msg=";
+					string msg = "msg=";
 					NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), sCmd);
 					msg.append(";");
-					SystemEvent event(SystemEvent::SYS_WM_DROPFILES, msg);
+					SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
 					CGlobals::GetEventsCenter()->FireEvent(event);
 				}
 			}
 			break;
 		}
-	case WM_POWERBROADCAST:
-		switch( wParam )
+		case ID_SCREENSHOT_BEGINRECORDINGVIDEO:
 		{
-#ifndef PBT_APMQUERYSUSPEND
-#define PBT_APMQUERYSUSPEND 0x0000
-#endif
-	case PBT_APMQUERYSUSPEND:
-		// At this point, the app should save any data for open
-		// network connections, files, etc., and prepare to go into
-		// a suspended mode.
-		return true;
-
-#ifndef PBT_APMRESUMESUSPEND
-#define PBT_APMRESUMESUSPEND 0x0007
-#endif
-	case PBT_APMRESUMESUSPEND:
-		// At this point, the app should recover any data, network
-		// connections, files, etc., and resume running from when
-		// the app was suspended.
-		return true;
-		}
-		break;
-	case WM_COMMAND:
-		{
-			/// menu command
-			switch( LOWORD( wParam ) )
-			{
-			case IDM_TOGGLESTART:
-				// Toggle frame movement
-				m_bFrameMoving = !m_bFrameMoving;
-				DXUtil_Timer( m_bFrameMoving ? TIMER_START : TIMER_STOP );
-				break;
-
-			case IDM_SINGLESTEP:
-				// Single-step frame movement
-				if( false == m_bFrameMoving )
-					DXUtil_Timer( TIMER_ADVANCE );
-				else
-					DXUtil_Timer( TIMER_STOP );
-				m_bFrameMoving = false;
-				m_bSingleStep  = true;
-				break;
-
-			case IDM_CHANGEDEVICE:
-				// Prompt the user to select a new device or mode
-				Pause(true);
-				UserSelectNewDevice();
-				Pause(false);
-				break;
-
-			case IDM_TOGGLEFULLSCREEN:
-				// Toggle the fullscreen/window mode
-				Pause( true );
-				if( FAILED( ToggleFullscreen() ) )
-					DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
-				Pause( false );
-				break;
-
-			case IDM_HELP:
-				LaunchReadme();
-				break;
-				/// application defined command
-			case ID_GAME_COMMANDLINE:
-				{
-					const char* sCmd = (const char*)lParam;
-					if(sCmd)
-					{
-						if(CGlobals::GetEventsCenter())
-						{
-							// msg = command line.
-							string msg="msg=";
-							NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), sCmd);
-							msg.append(";");
-							SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-							CGlobals::GetEventsCenter()->FireEvent(event);
-						}
-					}
-					break;
-				}
-			case ID_SCREENSHOT_BEGINRECORDINGVIDEO:
-				{
-					CGlobals::GetMoviePlatform()->BeginCapture("");
-					break;
-				}
-			case ID_SCREENSHOT_STOPRECORDINGVIDEO:
-				{
-					CGlobals::GetMoviePlatform()->EndCapture();
-					break;
-				}
-			case ID_SCREENSHOT_PAUSE_RESUME:
-				{
-					if(CGlobals::GetMoviePlatform()->IsRecording())
-					{
-						CGlobals::GetMoviePlatform()->PauseCapture();
-					}
-					else
-					{
-						CGlobals::GetMoviePlatform()->ResumeCapture();
-					}
-					break;
-				}
-			case ID_HELP_ABOUT:
-				{
-					return DialogBox( NULL, MAKEINTRESOURCE( IDD_ABOUT ),
-						hWnd, DialogProcAbout );
-					break;
-				}
-			}
-		}
-		break;
-	case PE_APP_SHOW_ERROR_MSG:
-		{
-			// show error message.
+			CGlobals::GetMoviePlatform()->BeginCapture("");
 			break;
 		}
+		case ID_SCREENSHOT_STOPRECORDINGVIDEO:
+		{
+			CGlobals::GetMoviePlatform()->EndCapture();
+			break;
+		}
+		case ID_SCREENSHOT_PAUSE_RESUME:
+		{
+			if (CGlobals::GetMoviePlatform()->IsRecording())
+			{
+				CGlobals::GetMoviePlatform()->PauseCapture();
+			}
+			else
+			{
+				CGlobals::GetMoviePlatform()->ResumeCapture();
+			}
+			break;
+		}
+		case ID_HELP_ABOUT:
+		{
+			return DialogBox(NULL, MAKEINTRESOURCE(IDD_ABOUT),
+				hWnd, DialogProcAbout);
+			break;
+		}
+		}
+	}
+	break;
+	case PE_APP_SHOW_ERROR_MSG:
+	{
+		// show error message.
+		break;
+	}
 	case WM_POINTERDOWN:
 	case WM_POINTERUP:
 	case WM_POINTERUPDATE:
-		{
-			int32_t x = GET_X_LPARAM(lParam);
-			int32_t y = GET_Y_LPARAM(lParam);
-			int32_t id = GET_POINTERID_WPARAM(wParam);
-			POINT p;p.x = x;p.y = y;
-			ScreenToClient(hWnd, &p);
-			x = p.x; y = p.y;
-			ClientToGame(x, y, true);
-			int nEventType = -1;
-			if (uMsg == WM_POINTERUPDATE)
-				nEventType = TouchEvent::TouchEvent_POINTER_UPDATE;
-			//else if (uMsg == WM_POINTERENTER)
-			//	nEventType = TouchEvent::TouchEvent_POINTER_ENTER;
-			//else if (uMsg == WM_POINTERLEAVE)
-			//	nEventType = TouchEvent::TouchEvent_POINTER_UP;
-			else if (uMsg == WM_POINTERUP)
-				nEventType = TouchEvent::TouchEvent_POINTER_UP;
-			else if (uMsg == WM_POINTERDOWN)
-				nEventType = TouchEvent::TouchEvent_POINTER_DOWN;
+	{
+		int32_t x = GET_X_LPARAM(lParam);
+		int32_t y = GET_Y_LPARAM(lParam);
+		int32_t id = GET_POINTERID_WPARAM(wParam);
+		POINT p; p.x = x; p.y = y;
+		ScreenToClient(hWnd, &p);
+		x = p.x; y = p.y;
+		ClientToGame(x, y, true);
+		int nEventType = -1;
+		if (uMsg == WM_POINTERUPDATE)
+			nEventType = TouchEvent::TouchEvent_POINTER_UPDATE;
+		//else if (uMsg == WM_POINTERENTER)
+		//	nEventType = TouchEvent::TouchEvent_POINTER_ENTER;
+		//else if (uMsg == WM_POINTERLEAVE)
+		//	nEventType = TouchEvent::TouchEvent_POINTER_UP;
+		else if (uMsg == WM_POINTERUP)
+			nEventType = TouchEvent::TouchEvent_POINTER_UP;
+		else if (uMsg == WM_POINTERDOWN)
+			nEventType = TouchEvent::TouchEvent_POINTER_DOWN;
 
-			if (nEventType >= 0)
-			{
-				TouchEvent event(EH_TOUCH, (TouchEvent::TouchEventMsgType)nEventType, id, (float)x, (float)y, GetTickCount());
-				CGUIRoot::GetInstance()->handleTouchEvent(event);
-			}
-			break;
-		}
-	case WM_POINTERCAPTURECHANGED:
+		if (nEventType >= 0)
 		{
-			//delay actual state change until game thread start because mouse msg come after POINT msg.
-
+			TouchEvent event(EH_TOUCH, (TouchEvent::TouchEventMsgType)nEventType, id, (float)x, (float)y, GetTickCount());
+			CGUIRoot::GetInstance()->handleTouchEvent(event);
 		}
 		break;
+	}
+	case WM_POINTERCAPTURECHANGED:
+	{
+		//delay actual state change until game thread start because mouse msg come after POINT msg.
+
+	}
+	break;
 
 	case WM_CLOSE:
 		// WM_CLOSE indicates a request to close a window, such as by clicking on the x. This is a good time to ask the user if they want to save their work, etc.
 		// Calling DefWindowProc will destroy the window, while returning zero will leave the window intact.
 
 		// if the user prohibit closing, then we will return 0.
-		if(!IsWindowClosingAllowed())
+		if (!IsWindowClosingAllowed())
 		{
-			if(CGlobals::GetEventsCenter())
+			if (CGlobals::GetEventsCenter())
 			{
 				// msg = command line.
-				string msg="msg={type=\"WM_CLOSE\"};";
+				string msg = "msg={type=\"WM_CLOSE\"};";
 				SystemEvent event(SystemEvent::SYS_WM_CLOSE, msg);
 				CGlobals::GetEventsCenter()->FireEvent(event);
 				SetHasClosingRequest(false);
@@ -3764,10 +3110,10 @@ LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 		else
 		{
 			SetHasClosingRequest(false);
-			if((!m_bDisableD3D))
+			if ((!m_bDisableD3D))
 			{
 				Cleanup3DEnvironment();
-				SAFE_RELEASE( m_pD3D );
+				SAFE_RELEASE(m_pD3D);
 			}
 			FinalCleanup();
 			// this will prevent render to be called.
@@ -3783,14 +3129,14 @@ LRESULT CWindowsApplication::MsgProcApp( HWND hWnd, UINT uMsg, WPARAM wParam, LP
 	return 0;
 }
 
-void CWindowsApplication::Exit( int nReturnCode /*= 0*/ )
+void CWindowsApplication::Exit(int nReturnCode /*= 0*/)
 {
 	SetReturnCode(nReturnCode);
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
 #ifdef PARAENGINE_CLIENT
-	if(CGlobals::GetAppHWND())
+	if (CGlobals::GetAppHWND())
 	{
-		::PostMessage( CGlobals::GetAppHWND(), WM_CLOSE, 0, 0 );
+		::PostMessage(CGlobals::GetAppHWND(), WM_CLOSE, 0, 0);
 	}
 	else
 	{
@@ -3804,7 +3150,7 @@ void CWindowsApplication::Exit( int nReturnCode /*= 0*/ )
 
 ITouchInputTranslator* CWindowsApplication::LoadTouchInputPlug()
 {
-	if(m_pTouchInput)
+	if (m_pTouchInput)
 		return m_pTouchInput;
 
 
@@ -3815,17 +3161,17 @@ ITouchInputTranslator* CWindowsApplication::LoadTouchInputPlug()
 #endif
 
 	DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(TouchInputPlugin_DLL_FILE_PATH);
-	if(pPluginEntity == 0)
+	if (pPluginEntity == 0)
 	{
 		pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", TouchInputPlugin_DLL_FILE_PATH);
 	}
 
-	if(pPluginEntity != 0)
+	if (pPluginEntity != 0)
 	{
-		for(int i=0; i<pPluginEntity->GetNumberOfClasses();i++)
+		for (int i = 0; i<pPluginEntity->GetNumberOfClasses(); i++)
 		{
 			ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
-			if(pClassDesc && (strcmp(pClassDesc->ClassName(),"ITouchInput")==0))
+			if (pClassDesc && (strcmp(pClassDesc->ClassName(), "ITouchInput") == 0))
 			{
 				m_pTouchInput = (ITouchInputTranslator*)pClassDesc->Create();
 			}
@@ -3876,7 +3222,7 @@ bool CWindowsApplication::ForceRender()
 		// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well. 
 		pd3dDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and 
 
-		/// clear to scene
+																						 /// clear to scene
 		pd3dDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
 			0x00000000, 1.0f, 0L);
 		CGlobals::GetGUI()->AdvanceGUI(0);
