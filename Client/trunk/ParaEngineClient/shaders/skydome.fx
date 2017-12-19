@@ -162,7 +162,9 @@ float4 NightSkyPS(
 	float3 moonVector = float3(-sunvector.x, sunvector.y, -sunvector.z);
 	float dotMoonAngle = dot(moonVector.xyz, normal);
 	float dotMoonAnglePos = saturate(dotMoonAngle);
-	float moonHighlight = clamp(pow((dotMoonAnglePos - 0.9975) * 300, 0.5)*clamp(sign(dotMoonAnglePos - 0.9975), 0.0, 1.0), 0.0, 1.0);
+	float moonSizeDot = dotMoonAnglePos - (1.0 - 1.25/moonSize.x);
+	float moonHighlight = clamp(pow(moonSizeDot * 300, 0.5)*clamp(sign(moonSizeDot), 0.0, 1.0), 0.0, 1.0);
+	// float moonHighlight = pow(dotMoonAnglePos, moonSize.x);
 	float moonHalo = pow(dotMoonAnglePos, moonSize.y)*sunIntensity.y;
 	skyColor += float3(1.0, 1.0, 0.6) * (moonHalo + moonHighlight);
 
