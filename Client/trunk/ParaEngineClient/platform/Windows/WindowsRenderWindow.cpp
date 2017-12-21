@@ -7,6 +7,23 @@ using namespace ParaEngine;
 
 bool WindowsRenderWindow::m_IsQuit = false;
 
+
+const std::wstring s2ws(const std::string& s)
+{
+	std::locale old_loc =
+		std::locale::global(std::locale(""));
+	const char* src_str = s.c_str();
+	const size_t buffer_size = std::mbstowcs(NULL, src_str, 0);
+	wchar_t* dst_wstr = new wchar_t[buffer_size];
+	wmemset(dst_wstr, 0, buffer_size);
+	std::mbstowcs(dst_wstr, src_str, buffer_size);
+	std::wstring result = dst_wstr;
+	delete[]dst_wstr;
+	std::locale::global(old_loc);
+	return result;
+}
+
+
 WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int height, std::string title, std::string className, bool windowed)
 	: m_hWnd(NULL)
 	, m_hAccel(NULL)
@@ -15,7 +32,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	, m_Windowed(windowed)
 {
 
-	std::wstring wClassName = std::wstring(className.begin(), className.end());
+	std::wstring wClassName = s2ws(className);
 
 	WNDCLASSW wndClass = { 0, WindowsRenderWindow::WindowProc, 0, 0, hInstance,
 		NULL,
@@ -42,8 +59,8 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	AdjustWindowRect(&rc, dwWindowStyle, (hMenu != NULL) ? true : false);
 
 	// Create the render window
-	std::wstring wTitle = std::wstring(title.begin(), title.end());
-	m_hWnd = CreateWindowW(wClassName.c_str(), wTitle.c_str(), dwWindowStyle,
+	std::wstring wTitle = s2ws(title);
+	m_hWnd = CreateWindowW(wClassName.c_str(),wTitle.c_str(), dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		(rc.right - rc.left), (rc.bottom - rc.top), 0,
 		hMenu, hInstance, 0);

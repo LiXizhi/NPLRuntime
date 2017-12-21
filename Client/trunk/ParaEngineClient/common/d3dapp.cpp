@@ -35,7 +35,9 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "FrameRateController.h"
 #include "MiscEntity.h"
 #include "d3dapp.h"
-#include "../Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+#include "D3D9RenderDevice.h"
+#include "WindowsRenderWindow.h"
+
 
 using namespace ParaEngine;
 
@@ -88,6 +90,8 @@ CD3DApplication::CD3DApplication()
     m_bCreateMultithreadDevice = true;
     m_bAllowDialogBoxMode = false;
 	m_bIsExternalWindow = false;
+
+	m_RenderDevice = NULL;
 
 	memset(&m_d3dSettings, 0 , sizeof(m_d3dSettings));
 	memset( &m_rcWindowBounds, 0, sizeof(RECT));
@@ -977,7 +981,9 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
     hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
                                m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
                                &m_pd3dDevice );
-	
+
+	m_RenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
+	CGlobals::SetRenderDevice(m_RenderDevice);
 	//following code create nvidia perfhud device for performance testing --clayman
 	/*
 	UINT AdapterToUse=D3DADAPTER_DEFAULT;
@@ -1151,7 +1157,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
                 ClipCursor( NULL );
             }
         }
-		CGlobals::SetRenderDevice(new CD3D9RenderDevice(m_pd3dDevice));
         // Initialize the app's device-dependent objects
         hr = InitDeviceObjects();
 
@@ -1800,10 +1805,28 @@ HRESULT CD3DApplication::LaunchReadme()
 int CD3DApplication::Run(HINSTANCE hInstance)
 {
 	// CD3DWindowDefault can be used as a sample to create application using paraengine lib. 
-	CD3DWindowDefault defaultWin;
-	defaultWin.SetAppInterface(CGlobals::GetApp());
+	//CD3DWindowDefault defaultWin;
+	//defaultWin.SetAppInterface(CGlobals::GetApp());
 	
-	return defaultWin.Run(hInstance);
+	//return defaultWin.Run(hInstance);
+
+
+	int nWidth, nHeight;
+	CGlobals::GetApp()->GetWindowCreationSize(&nWidth, &nHeight);
+
+	WCHAR* WindowClassName = L"ParaWorld";
+	WCHAR* WindowTitle = L"ParaEngine Window";
+	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,"ParaEngine Window", "ParaWorld",false);
+	m_hWnd = defaultWin.GetHandle();
+	CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
+	CGlobals::GetApp()->Create();
+	while (!defaultWin.ShouldClose())
+	{
+		defaultWin.PollEvents();
+		DoWork();
+	}
+
+	return 0;
 }
 
 HRESULT CD3DApplication::DoWork()
