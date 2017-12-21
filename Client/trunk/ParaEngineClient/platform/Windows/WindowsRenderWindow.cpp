@@ -5,7 +5,37 @@
 
 using namespace ParaEngine;
 
-bool WindowsRenderWindow::m_IsQuit = false;
+std::unordered_map<HWND,WindowsRenderWindow*> WindowsRenderWindow::g_WindowMap;
+
+
+LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+
+
+	if (g_WindowMap.find(hWnd) == g_WindowMap.end())
+	{
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+
+	WindowsRenderWindow* window = g_WindowMap[hWnd];
+	assert(window);
+	assert(window->GetHandle() == hWnd);
+
+	if (message == WM_DESTROY)
+	{
+		// close the application entirely
+		PostQuitMessage(0);
+		window->m_IsQuit = true;
+	}
+
+	if (window->m_MessageCallBack)
+	{
+		return window->m_MessageCallBack(window, message, wParam, lParam);
+	}
+
+	// Handle any messages the switch statement didn't
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
 
 
 const std::wstring s2ws(const std::string& s)
@@ -30,6 +60,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	, m_Width(width)
 	, m_Height(height)
 	, m_Windowed(windowed)
+	, m_IsQuit(false)
 {
 
 	std::wstring wClassName = s2ws(className);
@@ -65,13 +96,30 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 		(rc.right - rc.left), (rc.bottom - rc.top), 0,
 		hMenu, hInstance, 0);
 
+	g_WindowMap[m_hWnd] = this;
+
 	//
 	// Dispatching window messages in this window thread. 
 	//
 
 	// Load keyboard accelerators
 	m_hAccel = LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(IDR_MAIN_ACCEL));
+
+	
+
 }
+
+WindowsRenderWindow::~WindowsRenderWindow()
+{
+	if (g_WindowMap.find(m_hWnd)!=g_WindowMap.end())
+	{
+		g_WindowMap.erase(m_hWnd);
+	}
+	
+	m_hWnd = NULL;
+}
+
+
 
 bool WindowsRenderWindow::ShouldClose() const
 {
@@ -97,20 +145,6 @@ HWND WindowsRenderWindow::GetHandle() const
 	return m_hWnd;
 }
 
-LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	if (message == WM_DESTROY)
-	{
-		// close the application entirely
-		PostQuitMessage(0);
-		WindowsRenderWindow::m_IsQuit = true;
-		return 0;
-	}
-
-	// Handle any messages the switch statement didn't
-	return DefWindowProc(hWnd, message, wParam, lParam);
-}
-
 int ParaEngine::WindowsRenderWindow::GetWidth() const
 {
 	return m_Width;
@@ -124,4 +158,9 @@ int ParaEngine::WindowsRenderWindow::GetHeight() const
 bool ParaEngine::WindowsRenderWindow::IsWindowed() const
 {
 	return m_Windowed;
+}
+
+void ParaEngine::WindowsRenderWindow::SetMessageCallBack(std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> callback)
+{
+	m_MessageCallBack = callback;
 }

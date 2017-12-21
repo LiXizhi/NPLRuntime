@@ -7,6 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "IParaEngineApp.h"
 #include "IRenderDevice.h"
+#include "WindowsRenderWindow.h"
 /** 
 * A base class for creating D3D device based application. 
 */
@@ -63,7 +64,9 @@ protected:
 	*/
 	virtual HRESULT DoWork();
 
-	
+	LRESULT HandleWindowMessage(ParaEngine::WindowsRenderWindow* sender, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+
 public:
     virtual void    Pause( bool bPause );
 	virtual bool	IsPaused();
@@ -183,6 +186,7 @@ protected:
 
 
 	ParaEngine::IRenderDevice*	m_RenderDevice;
+
 
 
 };
