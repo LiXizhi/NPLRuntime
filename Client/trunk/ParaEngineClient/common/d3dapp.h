@@ -6,7 +6,7 @@
 //
 //-----------------------------------------------------------------------------
 #include "IParaEngineApp.h"
-
+#include "IRenderDevice.h"
 /** 
 * A base class for creating D3D device based application. 
 */
@@ -16,6 +16,8 @@ public:
 	virtual         ~CD3DApplication()                         { }
 
 protected:
+
+	
 	// Internal error handling function
     HRESULT DisplayErrorMsg( HRESULT hr, DWORD dwType );
 
@@ -178,5 +180,9 @@ protected:
 	bool m_bIsExternalD3DDevice;
 	/** application state */
 	ParaEngine::PEAppState m_nAppState;
+
+
+	ParaEngine::IRenderDevice*	m_RenderDevice;
+
 
 };
