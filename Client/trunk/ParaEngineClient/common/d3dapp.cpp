@@ -37,6 +37,7 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "d3dapp.h"
 #include "D3D9RenderDevice.h"
 #include "WindowsRenderWindow.h"
+#include <functional>
 
 
 using namespace ParaEngine;
@@ -1819,7 +1820,10 @@ int CD3DApplication::Run(HINSTANCE hInstance)
 	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,"ParaEngine Window", "ParaWorld",false);
 	m_hWnd = defaultWin.GetHandle();
 	CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
+	auto msgCallback = std::bind(&CD3DApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
+	defaultWin.SetMessageCallBack(msgCallback);
 	CGlobals::GetApp()->Create();
+
 	while (!defaultWin.ShouldClose())
 	{
 		defaultWin.PollEvents();
@@ -1840,5 +1844,15 @@ HRESULT CD3DApplication::DoWork()
 	return S_OK;
 }
 
+
+LRESULT CD3DApplication::HandleWindowMessage(WindowsRenderWindow* sender, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	HWND hWnd = sender->GetHandle();
+	if (uMsg == WM_DESTROY)
+	{
+		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_QUIT, 0, 0);
+	}
+	return CGlobals::GetApp()->MsgProcWinThread(hWnd, uMsg, wParam, lParam);
+}
 
 #pragma endregion Miscs
