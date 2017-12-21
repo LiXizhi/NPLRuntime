@@ -258,7 +258,7 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar);
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText();
-
+		virtual void FixWindowSize(bool fixed);
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
@@ -409,6 +409,9 @@ namespace ParaEngine
 
 		int m_nScreenWidth;
 		int m_nScreenHeight;
+
+		// tilte
+		std::string m_sWindowTitle;
 
 		/** 2d gui root */
 		ref_ptr<CGUIRoot> m_pGUIRoot;
