@@ -738,12 +738,24 @@ namespace ParaEngine {
 
 	void CParaEngineApp::SetWindowText(const char* pChar)
 	{
+		if (m_pGLView.get())
+		{
+			m_sWindowTitle = pChar;
+			m_pGLView->SetWindowText(pChar);
+		}
+	}
 
+	void CParaEngineApp::FixWindowSize(bool fixed)
+	{
+		if (IsWindowedMode() && m_pGLView.get())
+		{
+			m_pGLView->FixWindowSize(fixed);
+		}
 	}
 
 	const char* CParaEngineApp::GetWindowText()
 	{
-		return CGlobals::GetString().c_str();
+		return m_sWindowTitle.c_str();
 	}
 
 	void CParaEngineApp::WriteConfigFile(const char* FileName)
