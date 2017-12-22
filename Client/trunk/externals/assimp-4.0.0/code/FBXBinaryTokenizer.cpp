@@ -156,6 +156,7 @@ uint32_t ReadWord(const char* input, const char*& cursor, const char* end)
     memcpy(&word, cursor, k_to_read);
     AI_SWAP4(word);
 
+
     cursor += k_to_read;
 
     return word;
