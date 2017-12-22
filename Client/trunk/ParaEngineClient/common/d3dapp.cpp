@@ -1815,7 +1815,7 @@ int CD3DApplication::Run(HINSTANCE hInstance)
 
 	WCHAR* WindowClassName = L"ParaWorld";
 	WCHAR* WindowTitle = L"ParaEngine Window";
-	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,"ParaEngine Window", "ParaWorld",false);
+	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,false);
 	m_hWnd = defaultWin.GetHandle();
 	auto msgCallback = std::bind(&CD3DApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 	defaultWin.SetMessageCallBack(msgCallback);
