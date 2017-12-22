@@ -28,7 +28,7 @@
 using namespace ParaEngine;
 
 /** main window class name: used to prevent multiple instances of this application from running. */
-extern WCHAR* g_sWindowClassName;
+
 
 /** 
 There are two different ways to create a ParaEngine Application.
@@ -70,7 +70,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	if(strcmp("true", cmdParams.GetAppCommandLineByParam("single", "false")) == 0)
 	{
 		// only prevent multiple instance if single is true.
-		HWND hWnd = ::FindWindowW(g_sWindowClassName,NULL);
+		HWND hWnd = ::FindWindowW(WindowsRenderWindow::ClassName,NULL);
 		if(hWnd !=NULL)
 		{
 			// OUTPUT_LOG("warning: multiple instances of the same ParaWorld application is opened. \n");

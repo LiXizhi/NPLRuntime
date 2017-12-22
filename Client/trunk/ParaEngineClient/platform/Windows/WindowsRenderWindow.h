@@ -15,7 +15,7 @@ namespace ParaEngine
 	{
 	public:
 		~WindowsRenderWindow();
-		WindowsRenderWindow(HINSTANCE hInstance,int width, int height, std::string title, std::string className, bool windowed);
+		WindowsRenderWindow(HINSTANCE hInstance,int width, int height,bool windowed);
 	public:
 		bool ShouldClose() const;
 		void PollEvents();
@@ -25,6 +25,9 @@ namespace ParaEngine
 		bool IsWindowed() const;
 		void SetMessageCallBack(std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> callback);
 	
+	public:
+		const static WCHAR* ClassName;
+
 	private:
 		HWND m_hWnd;
 		HACCEL m_hAccel;
@@ -33,9 +36,7 @@ namespace ParaEngine
 		bool m_Windowed;
 		std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> m_MessageCallBack;
 		bool m_IsQuit;
-		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-	private:
+		 static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		static std::unordered_map<HWND, WindowsRenderWindow*> g_WindowMap;
 	};
 }

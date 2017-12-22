@@ -8,7 +8,6 @@
 
 using namespace ParaEngine;
 
-extern WCHAR* g_sWindowTitle;
 
 //-----------------------------------------------------------------------------
 // Name: D3DFormatToString
@@ -231,7 +230,7 @@ HRESULT CD3DWindowUtil::DisplayErrorMsg( HRESULT hr, DWORD dwType )
         s_bFatalErrorReported = true;
         /*_tcscat( strMsg, _T("\n\nThis sample will now exit.") );*/
 		wcscpy( strMsg, L"\n\n程序即将退出");
-        MessageBoxW( NULL, strMsg, g_sWindowTitle, MB_ICONERROR|MB_OK );
+        MessageBoxW( NULL, strMsg, L"ParaEngine Window", MB_ICONERROR|MB_OK );
 
         // Close the window, which shuts down the app
         if(CGlobals::GetApp())
@@ -251,7 +250,7 @@ HRESULT CD3DWindowUtil::DisplayErrorMsg( HRESULT hr, DWORD dwType )
 				_T("但是会运行得非常缓慢。") );*/
 			wcscpy( strMsg, L"\n\n切换到了软件加速模式\n程序会用软件模拟全部3D显卡的加速功能,\n但是运行会比较缓慢。" );
 		}
-        MessageBoxW( NULL, strMsg, g_sWindowTitle, MB_ICONWARNING|MB_OK );
+        MessageBoxW( NULL, strMsg, L"ParaEngine Window", MB_ICONWARNING|MB_OK );
     }
     return hr;
 }
