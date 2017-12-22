@@ -611,6 +611,40 @@ namespace ParaEngine {
 		return _screenSize;
 	}
 
+	/** set the window title when at windowed mode */
+	void CParaEngineGLView::SetWindowText(const char* pChar)
+	{
+		if (_mainWindow)
+		{
+			glfwSetWindowTitle(_mainWindow, pChar);
+		}
+	}
+
+	void CParaEngineGLView::FixWindowSize(bool fixed)
+	{
+		if (_mainWindow)
+		{
+#ifdef WIN32
+			auto hwnd = getWin32Window();
+			if (hwnd == nullptr)
+				return;
+
+			auto dwWindowStyle = GetWindowStyle(hwnd);
+
+			if (fixed)
+			{
+				dwWindowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+			}
+			else
+			{
+				dwWindowStyle |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
+			}
+
+			SetWindowLong(hwnd, GWL_STYLE, dwWindowStyle);
+#endif
+		}
+	}
+
 	void CParaEngineGLView::setFrameSize(float width, float height)
 	{
 		_designResolutionSize = _screenSize = Size(width, height);
