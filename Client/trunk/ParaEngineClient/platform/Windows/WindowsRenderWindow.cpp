@@ -34,7 +34,7 @@ LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, 
 	}
 
 	// Handle any messages the switch statement didn't
-	return DefWindowProc(hWnd, message, wParam, lParam);
+	return  DefWindowProcW(hWnd, message, wParam, lParam);
 }
 
 
@@ -63,14 +63,12 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	, m_IsQuit(false)
 {
 
-	std::wstring wClassName = s2ws(className);
-
 	WNDCLASSW wndClass = { 0, WindowsRenderWindow::WindowProc, 0, 0, hInstance,
 		NULL,
 		LoadCursor(NULL, IDC_ARROW),
 		(HBRUSH)GetStockObject(WHITE_BRUSH),
 		NULL,
-		wClassName.c_str()
+		L"ParaWorld"
 	};
 
 	RegisterClassW(&wndClass);
@@ -91,7 +89,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 
 	// Create the render window
 	std::wstring wTitle = s2ws(title);
-	m_hWnd = CreateWindowW(wClassName.c_str(),wTitle.c_str(), dwWindowStyle,
+	m_hWnd = CreateWindowW(L"ParaWorld", L"ParaEngine Window", dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		(rc.right - rc.left), (rc.bottom - rc.top), 0,
 		hMenu, hInstance, 0);
@@ -129,14 +127,14 @@ bool WindowsRenderWindow::ShouldClose() const
 void WindowsRenderWindow::PollEvents()
 {
 	MSG  msg;
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+		if (TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) return;
+		if (CGlobals::GetApp()->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam) != 0) return;
 		// translate keystroke messages into the right format
 		TranslateMessage(&msg);
 
 		// send the message to the WindowProc function
-		DispatchMessage(&msg);
-
-		TranslateAcceleratorW(m_hWnd, m_hAccel, &msg);
+		DispatchMessageW(&msg);	
 	}
 }
 
