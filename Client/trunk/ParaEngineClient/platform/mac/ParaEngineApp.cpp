@@ -454,7 +454,7 @@ void CParaEngineApp::UpdateStats(double fTime)
 	}
 }
 
-float CParaEngineApp::GetFPS() const
+float CParaEngineApp::GetFPS()
 {
 	return m_fFPS;
 }

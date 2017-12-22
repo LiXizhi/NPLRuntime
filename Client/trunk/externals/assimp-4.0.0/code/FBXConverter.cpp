@@ -1068,6 +1068,7 @@ void Converter::GenerateTransformationNodeChain( const Model& model,
             aiNode* nd = new aiNode();
             output_nodes.push_back( nd );
 
+            nd->mIsComplex = true;
             nd->mName.Set( NameTransformationChainNode( name, comp ) );
             nd->mTransformation = chain[ i ];
         }
