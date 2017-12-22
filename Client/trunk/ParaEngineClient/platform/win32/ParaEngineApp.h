@@ -410,7 +410,7 @@ namespace ParaEngine
 		int m_nScreenWidth;
 		int m_nScreenHeight;
 
-		// tilte
+		// title
 		std::string m_sWindowTitle;
 
 		/** 2d gui root */
