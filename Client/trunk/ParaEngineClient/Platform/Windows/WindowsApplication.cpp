@@ -2347,7 +2347,10 @@ LRESULT CWindowsApplication::MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LP
 // return 1 if we do not want default window procedure or other message handler to process the message.
 LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
 {
+	
+
 	LRESULT result = 0;
+
 	bool bContinue = true;
 
 	if (uMsg <= WM_MOUSELAST && uMsg >= WM_MOUSEFIRST)

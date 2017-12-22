@@ -29,8 +29,6 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "resource.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
-//#include "ParaEngineApp.h"
-#include "D3DWindowDefault.h"
 #include "D3DWindowUtil.h"
 #include "FrameRateController.h"
 #include "MiscEntity.h"
@@ -1819,9 +1817,9 @@ int CD3DApplication::Run(HINSTANCE hInstance)
 	WCHAR* WindowTitle = L"ParaEngine Window";
 	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,"ParaEngine Window", "ParaWorld",false);
 	m_hWnd = defaultWin.GetHandle();
-	CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
 	auto msgCallback = std::bind(&CD3DApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 	defaultWin.SetMessageCallBack(msgCallback);
+	CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
 	CGlobals::GetApp()->Create();
 
 	while (!defaultWin.ShouldClose())
@@ -1852,7 +1850,7 @@ LRESULT CD3DApplication::HandleWindowMessage(WindowsRenderWindow* sender, UINT u
 	{
 		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_QUIT, 0, 0);
 	}
-	return CGlobals::GetApp()->MsgProcWinThread(hWnd, uMsg, wParam, lParam);
+	return CGlobals::GetApp()->MsgProcWinThread(hWnd, uMsg, wParam, lParam,true);
 }
 
 #pragma endregion Miscs
