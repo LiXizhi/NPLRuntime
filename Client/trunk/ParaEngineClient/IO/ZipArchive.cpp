@@ -125,12 +125,14 @@ bool ParaEngine::GetFirstFileData(const char* src, std::string& out)
 
 CZipArchive::CZipArchive(void)
 :m_pFile(NULL),m_bIgnoreCase(true),m_zipComment(NULL),m_pEntries(NULL),m_bRelativePath(false)
+, m_bSort(false)
 {
 
 }
 
 CZipArchive::CZipArchive(bool bIgnoreCase)
 :m_pFile(NULL),m_bIgnoreCase(bIgnoreCase),m_zipComment(NULL),m_pEntries(NULL),m_bRelativePath(false)
+, m_bSort(false)
 {
 }
 
@@ -281,6 +283,27 @@ void CZipArchive::SetRootDirectory( const string& filename )
 	}
 }
 
+void CZipArchive::Sort()
+{
+	if (!m_bSort)
+	{
+
+		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr& a, const SZipFileEntryPtr& b)
+		{
+			if (a.m_pEntry->hashValue == b.m_pEntry->hashValue)
+			{
+				return a.m_pEntry->zipFileName < b.m_pEntry->zipFileName;
+			}
+			else
+			{
+				return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
+			}
+		});
+
+		m_bSort = true;
+	}
+}
+
 bool CZipArchive::OpenZipFile(const string& filename)
 {
 	m_pFile = new CReadFile(filename);
@@ -304,7 +327,7 @@ bool CZipArchive::OpenZipFile(const string& filename)
 		//PERF_END(sArchiveName.c_str());
 
 		// prepare file index for binary search
-		m_FileList.sort();
+		Sort();
 
 		if(m_bOpened)
 		{
@@ -354,7 +377,7 @@ bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffe
 	if(m_bOpened)
 	{
 		m_bOpened = ReadEntries();
-		m_FileList.sort();
+		Sort();
 	}
 	return m_bOpened;
 }
@@ -475,8 +498,9 @@ bool CZipArchive::ReadEntries_pkg()
 
 	// OUTPUT_LOG("len: %d, nEntry: %d, sizeof(DWORD)%d, sizeof(int)%d\n", nLen, nEntryNum, sizeof(DWORD), sizeof(int));
 
-	m_FileList.set_used(nEntryNum);
-	m_FileList.set_sorted(true);
+	m_FileList.resize(nEntryNum);
+	m_bSort = false;
+
 	SAFE_DELETE_ARRAY(m_pEntries);
 	m_pEntries = new SZipFileEntry[nEntryNum];
 	for (int i = 0; i < nEntryNum; ++i) 
@@ -490,8 +514,7 @@ bool CZipArchive::ReadEntries_pkg()
 		m_pFile->read(tmp, nNameSize);
 		tmp[nNameSize] = 0x0;
 		entry.zipFileName = tmp;
-		if (m_bIgnoreCase)
-			StringHelper::make_lower(entry.zipFileName);
+		entry.RefreshHash(m_bIgnoreCase);
 
 		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
 		m_pFile->read(&entry.CompressedSize, sizeof(DWORD));
@@ -540,7 +563,13 @@ bool CZipArchive::DoesFileExist(const string& filename)
 
 int CZipArchive::findFile(const string& sFilename)
 {
+
 	SZipFileEntry entry;
+
+	if (sFilename.find("Mod/") != string::npos)
+	{
+		printf("");
+	}
 
 	if(!m_bRelativePath)
 	{
@@ -562,11 +591,46 @@ int CZipArchive::findFile(const string& sFilename)
 	}
 
 	if (m_bIgnoreCase)
+	{
 		StringHelper::make_lower(entry.zipFileName);
+	}
 
-	int res = m_FileList.binary_search(SZipFileEntryPtr(&entry));
+	
+	entry.RefreshHash(false);
 
-	return res;
+
+	Sort();
+
+	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), entry, [](const SZipFileEntryPtr& a, const SZipFileEntry& b)
+	{
+		return a.m_pEntry->hashValue < b.hashValue;
+
+	});
+
+	if (m_bIgnoreCase)
+	{
+		for (; it != m_FileList.end() && it->m_pEntry->hashValue == entry.hashValue; it++)
+		{
+			auto filename = it->m_pEntry->zipFileName;
+			StringHelper::make_lower(filename);
+			if (filename == entry.zipFileName)
+			{
+				return it - m_FileList.begin();
+			}
+		}
+	}
+	else
+	{
+		for (; it != m_FileList.end() && it->m_pEntry->hashValue == entry.hashValue; it++)
+		{
+			if (it->m_pEntry->zipFileName == entry.zipFileName)
+			{
+				return it - m_FileList.begin();
+			}
+		}
+	}
+
+	return -1;
 }
 
 bool CZipArchive::OpenFile(const char* filename, FileHandle& handle)
@@ -817,8 +881,9 @@ bool CZipArchive::scanLocalHeader()
 	m_pFile->read(tmp, entry.header.FilenameLength);
 	tmp[entry.header.FilenameLength] = 0x0;
 	entry.zipFileName = tmp;
-	if (m_bIgnoreCase)
-		StringHelper::make_lower(entry.zipFileName);
+	//if (m_bIgnoreCase)
+	//	StringHelper::make_lower(entry.zipFileName);
+	entry.RefreshHash(m_bIgnoreCase);
 
 	// extractFilename(&entry);
 
@@ -930,8 +995,9 @@ bool CZipArchive::ReadEntries()
 #endif
 
 	int nEntryNum = EndOfCentralDir.entriesForThisDisk;
-	m_FileList.set_used(nEntryNum);
-	m_FileList.set_sorted(false);
+	m_FileList.resize(nEntryNum);
+	m_bSort = false;
+
 	SAFE_DELETE_ARRAY(m_pEntries);
 	m_pEntries = new SZipFileEntry[nEntryNum];
 	for (int i = 0; i < nEntryNum; ++i) 
@@ -953,8 +1019,7 @@ bool CZipArchive::ReadEntries()
 		pReader->read(tmp, CentralDir.NameSize);
 		tmp[CentralDir.NameSize] = 0x0;
 		entry.zipFileName = tmp;
-		if (m_bIgnoreCase)
-			StringHelper::make_lower(entry.zipFileName);
+		entry.RefreshHash(m_bIgnoreCase);
 
 #ifdef SAVE_ZIP_HEADER
 		/// fill header data
@@ -1096,13 +1161,17 @@ void CZipArchive::FindFiles(CSearchResult& result, const string& sRootPath, cons
 		for (int index=0;index<nSize;++index)
 		{
 			const SZipFileEntryPtr& entry = m_FileList[index];
+			auto filename = entry.m_pEntry->zipFileName;
 
-			int nCount = (int)entry.m_pEntry->zipFileName.size();
+			if (m_bIgnoreCase)
+				StringHelper::make_lower(filename);
+
+			int nCount = (int)filename.size();
 			int j=0;
 			int i=0;
 			for (i=0; i<nCount;)
 			{
-				char srcChar = entry.m_pEntry->zipFileName[i];
+				char srcChar = filename[i];
 				char destChar = sFilePattern[j];
 				if(destChar==srcChar)
 				{
@@ -1191,6 +1260,7 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
 
 		if (m_bIgnoreCase)
 			StringHelper::make_lower(sBaseDir);
+
 		if (sBaseDir[sBaseDir.size() - 1] != '/')
 		{
 			sBaseDir = sBaseDir + "/";
@@ -1204,12 +1274,19 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
 			SZipFileEntry* pEntry = m_FileList[i].m_pEntry;
 
 			// check if zipFileName begins with sBaseDir
-			if ((int)pEntry->zipFileName.size() > nBaseSize &&
-				pEntry->zipFileName.compare(0, nBaseSize, sBaseDir) == 0)
+			auto filename = pEntry->zipFileName;
+			if (m_bIgnoreCase)
+				StringHelper::make_lower(filename);
+
+			if ((int)filename.size() > nBaseSize &&
+				filename.compare(0, nBaseSize, sBaseDir) == 0)
 			{
 				pEntry->zipFileName = pEntry->zipFileName.substr(nBaseSize);
+				pEntry->RefreshHash(m_bIgnoreCase);
 			}
 		}
+
+		m_bSort = false;
 	}
 	
 }
