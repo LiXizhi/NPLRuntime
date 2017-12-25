@@ -125,24 +125,34 @@ namespace ParaEngine
 
 		void RefreshHash(bool ignoreCase)
 		{
+			hashValue = Hash(zipFileName.c_str(), ignoreCase);
+		}
+
+		static uint32 Hash(const char* str, bool ignoreCase)
+		{
 			const size_t seed = 2166136261U;
 			const size_t prime = 16777619U;
 			const char diff = 'a' - 'A';
 
-			const char* p = zipFileName.c_str();
-			hashValue = seed;
-			for (size_t i = 0; i < zipFileName.size(); i++)
+			uint32 ret = seed;
+
+			const char* p = str;
+			while(*p != 0)
 			{
-				auto cur = p[i];
+				auto cur = *p;
 
 				if (ignoreCase)
 				{
 					if (cur >= 'A' && cur <= 'Z')
 						cur += diff;
 				}
-				hashValue ^= cur;
-				hashValue *= prime;
+				ret ^= cur;
+				ret *= prime;
+
+				p++;
 			}
+
+			return ret;
 		}
 	};
 
