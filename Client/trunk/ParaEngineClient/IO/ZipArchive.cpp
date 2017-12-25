@@ -513,6 +513,9 @@ bool CZipArchive::ReadEntries_pkg()
 		m_pFile->read(&nNameSize, sizeof(WORD));
 		m_pFile->read(tmp, nNameSize);
 		tmp[nNameSize] = 0x0;
+
+		PE_ASSERT(nNameSize < MAX_PATH);
+
 		entry.zipFileName = tmp;
 		entry.RefreshHash(m_bIgnoreCase);
 
@@ -563,57 +566,75 @@ bool CZipArchive::DoesFileExist(const string& filename)
 
 int CZipArchive::findFile(const string& sFilename)
 {
+	PE_ASSERT(sFilename.size() < MAX_PATH);
 
-	SZipFileEntry entry;
+	const char* filename = sFilename.c_str();
 
-	if (sFilename.find("Mod/") != string::npos)
+	if (!m_bRelativePath)
 	{
-		printf("");
-	}
 
-	if(!m_bRelativePath)
-	{
-		entry.zipFileName = sFilename;
 	}
 	else
 	{
 		int nSize = (int)m_sRootPath.size();
-		int i=0;
-		for (;i<nSize&&(m_sRootPath[i] == sFilename[i]);++i)
+		int i = 0;
+		for (; i<nSize && (m_sRootPath[i] == sFilename[i]); ++i)
 		{
 		}
-		if(i==nSize)
+
+		if (i == nSize)
 		{
-			entry.zipFileName = sFilename.substr(i);
+			filename += i;
 		}
 		else
 			return -1; // return file not found
-	}
+	} 
 
+	char tmp[MAX_PATH];
 	if (m_bIgnoreCase)
 	{
-		StringHelper::make_lower(entry.zipFileName);
+		size_t i = 0;
+		for (; filename[i] != 0; i++)
+		{
+			tmp[i] = filename[i];
+			if (tmp[i] >= 'A' && tmp[i] <= 'Z')
+				tmp[i]+= 'a' - 'A';
+		}
+		tmp[i] = 0;
+
+		filename = tmp;
 	}
 
-	
-	entry.RefreshHash(false);
-
+	auto hash = SZipFileEntry::Hash(filename, false);
 
 	Sort();
 
-	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), entry, [](const SZipFileEntryPtr& a, const SZipFileEntry& b)
+	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)
 	{
-		return a.m_pEntry->hashValue < b.hashValue;
+		return a.m_pEntry->hashValue < hash;
 
 	});
 
 	if (m_bIgnoreCase)
 	{
-		for (; it != m_FileList.end() && it->m_pEntry->hashValue == entry.hashValue; it++)
+		for (; it != m_FileList.end() && it->m_pEntry->hashValue == hash; it++)
 		{
-			auto filename = it->m_pEntry->zipFileName;
-			StringHelper::make_lower(filename);
-			if (filename == entry.zipFileName)
+			char curFilename[MAX_PATH];
+			{
+				for (size_t i = 0; i < it->m_pEntry->zipFileName.size(); i++)
+				{
+					auto cur = it->m_pEntry->zipFileName[i];
+
+					if (cur >= 'A' && cur <= 'Z')
+						cur += 'a' - 'A';
+
+					curFilename[i] = cur;
+				}
+			}
+
+			curFilename[it->m_pEntry->zipFileName.size()] = 0;
+
+			if (strcmp(curFilename, filename) == 0)
 			{
 				return it - m_FileList.begin();
 			}
@@ -621,9 +642,9 @@ int CZipArchive::findFile(const string& sFilename)
 	}
 	else
 	{
-		for (; it != m_FileList.end() && it->m_pEntry->hashValue == entry.hashValue; it++)
+		for (; it != m_FileList.end() && it->m_pEntry->hashValue == hash; it++)
 		{
-			if (it->m_pEntry->zipFileName == entry.zipFileName)
+			if (it->m_pEntry->zipFileName == filename)
 			{
 				return it - m_FileList.begin();
 			}
@@ -880,6 +901,8 @@ bool CZipArchive::scanLocalHeader()
 	entry.zipFileName.reserve(entry.header.FilenameLength+2);
 	m_pFile->read(tmp, entry.header.FilenameLength);
 	tmp[entry.header.FilenameLength] = 0x0;
+
+	PE_ASSERT(entry.header.FilenameLength < MAX_PATH);
 	entry.zipFileName = tmp;
 	//if (m_bIgnoreCase)
 	//	StringHelper::make_lower(entry.zipFileName);
@@ -1018,6 +1041,9 @@ bool CZipArchive::ReadEntries()
 		entry.zipFileName.reserve(CentralDir.NameSize+2);
 		pReader->read(tmp, CentralDir.NameSize);
 		tmp[CentralDir.NameSize] = 0x0;
+
+		PE_ASSERT(CentralDir.NameSize < MAX_PATH);
+
 		entry.zipFileName = tmp;
 		entry.RefreshHash(m_bIgnoreCase);
 
