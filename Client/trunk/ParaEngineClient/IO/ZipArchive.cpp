@@ -320,7 +320,7 @@ bool CZipArchive::OpenZipFile(const string& filename)
 		//PERF_END(sArchiveName.c_str());
 
 		// prepare file index for binary search
-		Sort();
+		//Sort();
 
 		if(m_bOpened)
 		{
@@ -387,6 +387,8 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 		return false;
 
 	ParaEngine::Lock lock_(m_mutex);
+
+	Sort();
 
 	// pkg header
 	file.WriteString(".pkg",4);
