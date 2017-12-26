@@ -618,23 +618,23 @@ int CZipArchive::findFile(const string& sFilename)
 	if (m_bIgnoreCase)
 	{
 		for (; it != m_FileList.end() && it->m_pEntry->hashValue == hash; it++)
-		{
-			char curFilename[MAX_PATH];
+		{	
+			auto& zipFilenName = it->m_pEntry->zipFileName;
+			bool eq = true;
+			for (size_t i = 0; i < zipFilenName.size() && filename[i] != 0; i++)
 			{
-				for (size_t i = 0; i < it->m_pEntry->zipFileName.size(); i++)
+				auto c = zipFilenName[i];
+				if (c >= 'A' && c <= 'Z')
+					c += 'a' - 'A';
+
+				if (filename[i] != c)
 				{
-					auto cur = it->m_pEntry->zipFileName[i];
-
-					if (cur >= 'A' && cur <= 'Z')
-						cur += 'a' - 'A';
-
-					curFilename[i] = cur;
+					eq = false;
+					break;
 				}
 			}
 
-			curFilename[it->m_pEntry->zipFileName.size()] = 0;
-
-			if (strcmp(curFilename, filename) == 0)
+			if (eq)
 			{
 				return it - m_FileList.begin();
 			}
