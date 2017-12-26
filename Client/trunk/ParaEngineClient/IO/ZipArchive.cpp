@@ -290,14 +290,7 @@ void CZipArchive::Sort()
 
 		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr& a, const SZipFileEntryPtr& b)
 		{
-			if (a.m_pEntry->hashValue == b.m_pEntry->hashValue)
-			{
-				return a.m_pEntry->zipFileName < b.m_pEntry->zipFileName;
-			}
-			else
-			{
-				return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
-			}
+			return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
 		});
 
 		m_bSort = true;
