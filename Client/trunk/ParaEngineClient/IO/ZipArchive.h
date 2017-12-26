@@ -103,6 +103,7 @@ namespace ParaEngine
 	struct SZipFileEntry
 	{
 		string zipFileName;
+		uint32 hashValue;
 		DWORD fileDataPosition; // position of compressed data in file
 
 		WORD CompressionMethod;
@@ -114,7 +115,7 @@ namespace ParaEngine
 
 	public:
 		SZipFileEntry()
-			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) 
+			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0)
 		{
 #ifdef SAVE_ZIP_HEADER
 			memset(&header, 0, sizeof(SZIPFileHeader)); 
@@ -122,13 +123,49 @@ namespace ParaEngine
 		};
 		~SZipFileEntry(){};
 
-		bool operator < (const SZipFileEntry& other) const
+		void RefreshHash(bool ignoreCase)
 		{
-			return zipFileName < other.zipFileName;
+			hashValue = Hash(zipFileName.c_str(), ignoreCase);
 		}
-		bool operator == (const SZipFileEntry& other) const
+
+		static uint32 Hash(const char* str, bool ignoreCase)
 		{
-			return zipFileName == other.zipFileName;
+			const size_t seed = 2166136261U;
+			const size_t prime = 16777619U;
+			const char diff = 'a' - 'A';
+
+			uint32 ret = seed;
+
+			const char* p = str;
+
+			if (ignoreCase)
+			{
+				while (*p != 0)
+				{
+					auto cur = *p;
+
+					if (cur >= 'A' && cur <= 'Z')
+						cur += diff;
+					ret ^= cur;
+					ret *= prime;
+
+					p++;
+				}
+			}
+			else
+			{
+				while (*p != 0)
+				{
+					auto cur = *p;
+
+					ret ^= cur;
+					ret *= prime;
+
+					p++;
+				}
+			}
+
+			return ret;
 		}
 	};
 
@@ -139,15 +176,6 @@ namespace ParaEngine
 		SZipFileEntryPtr():m_pEntry(NULL){};
 		SZipFileEntryPtr(const SZipFileEntryPtr& entry):m_pEntry(entry.m_pEntry){};
 		SZipFileEntryPtr(SZipFileEntry* pEntry):m_pEntry(pEntry){};
-
-		bool operator < (const SZipFileEntryPtr& other) const
-		{
-			return m_pEntry->zipFileName < other.m_pEntry->zipFileName;
-		}
-		bool operator == (const SZipFileEntryPtr& other) const
-		{
-			return m_pEntry->zipFileName == other.m_pEntry->zipFileName;
-		}
 	};
 
 	// check src data is zip file data
@@ -217,7 +245,7 @@ namespace ParaEngine
 	[data n]
 	*/
 	class CZipArchive :	public CArchive
-	{
+	{ 
 	public:
 		CZipArchive(void);
 		CZipArchive(bool bIgnoreCase);
@@ -321,7 +349,8 @@ namespace ParaEngine
 
 	private:
 		IReadFile* m_pFile;
-		array<SZipFileEntryPtr> m_FileList;
+		vector<SZipFileEntryPtr> m_FileList;
+		bool m_bSort;
 		SZipFileEntry* m_pEntries;
 
 
@@ -342,6 +371,7 @@ namespace ParaEngine
 		/* open a pkg file. this function is only called inside OpenFile() virtual method */
 		bool OpenPkgFile(const string& filename);
 
+		void Sort();
 		/**  
 		* search the last occurrence of a integer signature in the range [endLocation-minimumBlockSize-maximumVariableData, endLocation-minimumBlockSize]
 		* -1 is returned if not found.
