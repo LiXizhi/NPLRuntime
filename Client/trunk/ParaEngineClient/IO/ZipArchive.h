@@ -137,19 +137,32 @@ namespace ParaEngine
 			uint32 ret = seed;
 
 			const char* p = str;
-			while(*p != 0)
-			{
-				auto cur = *p;
 
-				if (ignoreCase)
+			if (ignoreCase)
+			{
+				while (*p != 0)
 				{
+					auto cur = *p;
+
 					if (cur >= 'A' && cur <= 'Z')
 						cur += diff;
-				}
-				ret ^= cur;
-				ret *= prime;
+					ret ^= cur;
+					ret *= prime;
 
-				p++;
+					p++;
+				}
+			}
+			else
+			{
+				while (*p != 0)
+				{
+					auto cur = *p;
+
+					ret ^= cur;
+					ret *= prime;
+
+					p++;
+				}
 			}
 
 			return ret;
