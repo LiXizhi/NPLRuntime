@@ -14,11 +14,8 @@ namespace ParaEngine
 	struct Uniform;
 }
 #if defined(PARAENGINE_MOBILE)
-using cocos2d::GLProgram;
-using cocos2d::Uniform;
-#elif
-using ParaEngine::GLProgram;
-using ParaEngine::Uniform;
+typedef cocos2d::GLProgram GLProgram;
+typedef cocos2d::Uniform Uniform;
 #endif
 
 namespace ParaEngine
@@ -210,11 +207,7 @@ namespace ParaEngine
 	protected:
 		struct TechniqueDescGL : public TechniqueDesc
 		{
-#if defined(PARAENGINE_MOBILE)
-			std::vector<cocos2d::GLProgram*> mPasses;
-#else
-			std::vector<ParaEngine::GLProgram*> mPasses;
-#endif
+			std::vector<GLProgram*> mPasses;
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;
