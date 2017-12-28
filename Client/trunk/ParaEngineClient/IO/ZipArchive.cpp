@@ -290,14 +290,7 @@ void CZipArchive::Sort()
 
 		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr& a, const SZipFileEntryPtr& b)
 		{
-			if (a.m_pEntry->hashValue == b.m_pEntry->hashValue)
-			{
-				return a.m_pEntry->zipFileName < b.m_pEntry->zipFileName;
-			}
-			else
-			{
-				return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
-			}
+			return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
 		});
 
 		m_bSort = true;
@@ -327,7 +320,7 @@ bool CZipArchive::OpenZipFile(const string& filename)
 		//PERF_END(sArchiveName.c_str());
 
 		// prepare file index for binary search
-		Sort();
+		//Sort();
 
 		if(m_bOpened)
 		{
@@ -394,6 +387,8 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 		return false;
 
 	ParaEngine::Lock lock_(m_mutex);
+
+	Sort();
 
 	// pkg header
 	file.WriteString(".pkg",4);
