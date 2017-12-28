@@ -16,9 +16,7 @@
 #include "RenderDeviceOpenGL.h"
 
 using namespace ParaEngine;
-#ifdef PARAENGINE_MOBILE
 using namespace cocos2d;
-#endif
 
 /** define this to ignore all draw calls to find program bottleneck. If defined, but FPS is still low, it is CPU bound. */
 // #define DEBUG_IGNORE_DRAW_CALL
