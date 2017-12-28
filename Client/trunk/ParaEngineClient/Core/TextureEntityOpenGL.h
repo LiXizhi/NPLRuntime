@@ -14,7 +14,7 @@ namespace ParaEngine
 
 	public:
 		TextureEntityOpenGL(const AssetKey& key);
-		TextureEntityOpenGL(cocos2d::Texture2D* texture);
+		TextureEntityOpenGL(Texture2D* texture);
 		TextureEntityOpenGL();
 		virtual ~TextureEntityOpenGL();
 
@@ -49,11 +49,11 @@ namespace ParaEngine
 
 		void SetAliasTexParameters();
 	public:
-		void SetInnerTexture(cocos2d::Texture2D* texture);
+		void SetInnerTexture(Texture2D* texture);
 		virtual DeviceTexturePtr_type GetTexture();
 		virtual const TextureInfo* GetTextureInfo();
 
-		cocos2d::Texture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
+		Texture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
 		
 		/** in most cases this is false, where the image origin is at left, top.
 		* however, in opengl frame buffer, the frame buffer's origin is at left, bottom.

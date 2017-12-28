@@ -4,22 +4,11 @@
 
 #include <unordered_map>
 
-#if defined(PARAENGINE_MOBILE)
-namespace cocos2d
-#elif
 namespace ParaEngine
-#endif
 {
 	class GLProgram;
 	struct Uniform;
-}
-#if defined(PARAENGINE_MOBILE)
-typedef cocos2d::GLProgram GLProgram;
-typedef cocos2d::Uniform Uniform;
-#endif
 
-namespace ParaEngine
-{
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
 	public:

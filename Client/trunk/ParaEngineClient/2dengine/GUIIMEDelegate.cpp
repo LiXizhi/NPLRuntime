@@ -13,10 +13,6 @@
 
 using namespace ParaEngine;
 
-#if defined(PARAENGINE_MOBILE)
-USING_NS_CC;
-#endif
-
 namespace ParaEngine
 {
 	/* this is just a proxy class to wrapper around the cocos' IMEDelegate, 

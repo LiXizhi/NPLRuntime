@@ -1,10 +1,6 @@
 #pragma once
 #include "platform/OpenGLWrapper.h"
 
-#if defined(PARAENGINE_MOBILE)
-using cocos2d::Label;
-#endif
-
 namespace ParaEngine
 {
 	class CSpriteRenderer;

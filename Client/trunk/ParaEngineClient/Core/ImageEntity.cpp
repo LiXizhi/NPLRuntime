@@ -15,10 +15,6 @@
 
 using namespace ParaEngine;
 
-#if defined(PARAENGINE_MOBILE)
-USING_NS_CC;
-#endif
-
 ParaEngine::ImageEntity::ImageEntity()
 	: _data(nullptr)
 	, _dataLen(0)
