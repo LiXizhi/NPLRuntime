@@ -114,13 +114,24 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 	bool bOpened = false;
 	bool bMPQProcessed = false;
 
+	string tempStr = filename;
+	int nSize = (int)tempStr.size();
+	for (int i = 0; i<nSize; i++)
+	{
+		if (tempStr[i] == '\\')
+			tempStr[i] = '/';
+	}
+
+	uint32 hash = SZipFileEntry::Hash(tempStr.c_str(), true);
+	ArchiveFileFindItem item(tempStr.c_str(), nullptr, &hash);
+
 	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 	for( itCurCP = m_archivers.begin(); (!bOpened) && itCurCP != itEndCP; ++ itCurCP)
 	{
 		CArchive* pArchive = (*itCurCP);
 		//PERF_BEGIN("ZIP_Search");
-		bOpened = pArchive->OpenFile(filename, handle);
+		bOpened = pArchive->OpenFile(&item, handle);
 		//PERF_END("ZIP_Search");
 	}
 	return bOpened;
