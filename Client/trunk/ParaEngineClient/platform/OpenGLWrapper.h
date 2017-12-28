@@ -35,25 +35,25 @@
 
 #if defined(PARAENGINE_MOBILE)
 #define UNI_AUTO_RELEASE(ptr) ptr->autorelease();
-#else
+#elif
 #define UNI_AUTO_RELEASE(ptr) ptr->AddToAutoReleasePool();
 #endif
 
 #if defined(PARAENGINE_MOBILE)
 #define UNI_SAFE_RELEASE(ptr) CC_SAFE_RELEASE(ptr);
-#else
+#elif
 #define UNI_SAFE_RELEASE(ptr) SAFE_RELEASE(ptr);
 #endif
 
 #if defined(PARAENGINE_MOBILE)
 #define UNI_SAFE_RELEASE_NULL(ptr) CC_SAFE_RELEASE_NULL(ptr);
-#else
+#elif
 #define UNI_SAFE_RELEASE(ptr) SAFE_RELEASE(ptr);
 #endif
 
 #if defined(PARAENGINE_MOBILE)
 #define UNI_SAFE_RETAIN(ptr) CC_SAFE_RETAIN(ptr);
-#else
+#elif
 #define UNI_SAFE_RETAIN(ptr) if(ptr) ptr->addref();
 #endif
 
