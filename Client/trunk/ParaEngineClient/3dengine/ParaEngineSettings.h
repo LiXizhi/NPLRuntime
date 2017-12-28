@@ -91,6 +91,9 @@ namespace ParaEngine
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsShowWindowTitleBar_s, bool*)	{ *p1 = cls->IsShowWindowTitleBar(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetShowWindowTitleBar_s, bool)	{ cls->SetShowWindowTitleBar(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, FixWindowSize_s, bool) { cls->FixWindowSize(p1); return S_OK; }
+		
 		
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetGameEffectSet_s, int*)	{*p1 = cls->GetGameEffectSet(); return S_OK;}
@@ -669,6 +672,9 @@ namespace ParaEngine
 		*/
 		bool HasClosingRequest();
 		void SetHasClosingRequest(bool val);
+
+		// 
+		void FixWindowSize(bool fixed);
 
 		static int GetAppHWND();
 	protected:
