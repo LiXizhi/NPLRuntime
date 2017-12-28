@@ -1025,7 +1025,7 @@ void ParaEngine::CPainter::drawText(const QPointF &p, const std::string &text)
 {
 	if (!engine || !state)
 		return;
-	RECT rect = { (int)p.x(), (int)p.y(), (int)p.x() + 1000, (int)p.y() + 100 };
+	RECT rect = { (int)p.x(), (int)p.y(), std::max((int)p.x(), 0) + 5000, (int)p.y() + 100 };
 	Color color = state->color();
 
 	engine->drawText(state->m_font.GetSpriteFont(), text.c_str(), text.size(), &rect, QTextOption(), color);

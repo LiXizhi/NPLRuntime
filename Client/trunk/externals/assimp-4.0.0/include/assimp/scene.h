@@ -124,6 +124,8 @@ struct ASSIMP_API aiNode
       */
     C_STRUCT aiMetadata* mMetaData;
 
+
+    bool mIsComplex;
 #ifdef __cplusplus
     /** Constructor */
     aiNode();

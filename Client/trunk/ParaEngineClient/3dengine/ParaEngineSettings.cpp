@@ -735,6 +735,15 @@ void ParaEngine::ParaEngineSettings::SetScreenResolution( const Vector2& vSize )
 		CGlobals::GetApp()->SetScreenResolution(vSize);
 }
 
+void ParaEngine::ParaEngineSettings::FixWindowSize(bool fixed)
+{
+	auto app = CGlobals::GetApp();
+	if (app)
+	{
+		app->FixWindowSize(fixed);
+	}
+}
+
 void ParaEngine::ParaEngineSettings::SetFullScreenMode( bool bFullscreen )
 {
 	if(CGlobals::GetApp())
@@ -1364,6 +1373,8 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("ShowMenu", FieldType_Bool, (void*)SetShowMenu_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("EnableProfiling", FieldType_Bool, (void*)EnableProfiling_s, (void*)IsProfilingEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("Enable3DRendering", FieldType_Bool, (void*)Enable3DRendering_s, (void*)Is3DRenderingEnabled_s, NULL, NULL, bOverride);
+
+	pClass->AddField("FixWindowSize", FieldType_Bool, (void*)FixWindowSize_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("PixelShaderVersion", FieldType_Int, NULL, (void*)GetPixelShaderVersion_s, NULL, NULL, bOverride);
 	pClass->AddField("VertexShaderVersion", FieldType_Int, NULL, (void*)GetVertexShaderVersion_s, NULL, NULL, bOverride);

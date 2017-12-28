@@ -7,7 +7,7 @@
 
 namespace ParaEngine
 {
-#ifdef USE_DIRECTX_RENDERER	
+#if defined(USE_DIRECTX_RENDERER)
 	/**
 	* key board
 	*/
@@ -83,7 +83,13 @@ namespace ParaEngine
 
 		/** this may return "" if cursor is not set. */
 		const std::string& GetCursorName() const;
+
+		/** only change m_x, m_y, which is pretty fast. */
+		virtual void SetMousePosition(int x, int y);
 		
+		virtual void Reset();
+
+		void ResetCursorPosition();
 	public:
 		HWND					m_hwnd;// window handle of the default window
 		std::string					m_szCursorName;//the name of the cursor file 
@@ -92,6 +98,9 @@ namespace ParaEngine
 		LPDIRECTINPUT8			m_pDI; // The DirectInput object         
 		LPDIRECTINPUTDEVICE8	m_pMouse; // The Mouse device 
 		bool					m_bShowCursor;
+
+	protected:
+		bool m_bUseDirectInput;
 	};
 #else
 	class CDirectKeyboard : public CGUIKeyboardVirtual

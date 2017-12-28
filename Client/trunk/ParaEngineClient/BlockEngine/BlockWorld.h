@@ -272,7 +272,10 @@ namespace ParaEngine
 		//template related function
 		BlockTemplate* RegisterTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id);
 
-		void SetBlockVisible(uint16_t templateId, bool value);
+		/** return true if refresh world is required. */
+		bool SetBlockVisible(uint16_t templateId, bool value, bool bRefreshWorld = true);
+		/** refresh light and other attributes for all instances of given block template. */
+		void RefreshBlockTemplate(uint16_t templateId);
 
 		//set/get block id/data
 		uint32_t SetBlockId(uint16_t x, uint16_t y, uint16_t z, uint32_t nBlockID);

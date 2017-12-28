@@ -172,13 +172,13 @@ bool CGUIBase::DoAutoSize()
 
 int CGUIBase::Release()
 {
-	/*
+	
 	//TODO:  if(-- reference count <=0 )
 	delete this;
 	return 0;
-	*/
+	
 
-	return IObject::Release();
+	//return IObject::Release();
 }
 
 bool CGUIBase::Equals(const IObject *obj)const

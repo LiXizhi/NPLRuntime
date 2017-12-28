@@ -1547,6 +1547,27 @@ bool CParaEngineApp::GetIgnoreWindowSizeChange()
 	return m_bIgnoreSizeChange;
 }
 
+void CParaEngineApp::FixWindowSize(bool fixed)
+{
+	if (IsWindowedMode() && m_hWnd != nullptr)
+	{
+		auto dwWindowStyle = GetWindowStyle(m_hWnd);
+
+		if (fixed)
+		{
+			dwWindowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+		}
+		else
+		{
+			dwWindowStyle |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
+		}
+
+		SetWindowLong(m_hWnd, GWL_STYLE, dwWindowStyle);
+
+	}
+}
+
+
 void CParaEngineApp::SetWindowText( const char* pChar )
 {
 	static std::wstring g_sTitle;

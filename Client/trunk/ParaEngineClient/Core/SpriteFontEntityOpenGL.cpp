@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "StringHelper.h"
 #include "2dengine/GUIBase.h"
 #include "2dengine/FontRendererOpenGL.h"
