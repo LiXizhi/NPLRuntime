@@ -102,7 +102,9 @@ namespace ParaEngine
 	/** light-weighted file record header in memory. */
 	struct SZipFileEntry
 	{
-		string zipFileName;
+		//string zipFileName;
+		WORD fileNameLen;
+		const char* zipFileName;
 		uint32 hashValue;
 		DWORD fileDataPosition; // position of compressed data in file
 
@@ -115,7 +117,7 @@ namespace ParaEngine
 
 	public:
 		SZipFileEntry()
-			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0)
+			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0), zipFileName(nullptr), fileNameLen(0)
 		{
 #ifdef SAVE_ZIP_HEADER
 			memset(&header, 0, sizeof(SZIPFileHeader)); 
@@ -123,9 +125,16 @@ namespace ParaEngine
 		};
 		~SZipFileEntry(){};
 
+		void SetFileName(const char* str, WORD len)
+		{
+			zipFileName = str;
+			fileNameLen = len;
+		}
+
 		void RefreshHash(bool ignoreCase)
 		{
-			hashValue = Hash(zipFileName.c_str(), ignoreCase);
+			if (zipFileName)
+				hashValue = Hash(zipFileName, ignoreCase);
 		}
 
 		static uint32 Hash(const char* str, bool ignoreCase)
@@ -284,6 +293,15 @@ namespace ParaEngine
 		*/
 		virtual bool OpenFile(const char* filename, FileHandle& handle);
 
+		/**
+		* Open a file for immediate reading.
+		* call getBuffer() to retrieval the data
+		* @param item: the file find item to open
+		* @param handle to the opened file.
+		* @return : true if succeeded.
+		*/
+		virtual bool OpenFile(const ArchiveFileFindItem* item, FileHandle& handle);
+
 		/* open a zip file in memory 
 		* @param buffer: 
 		* @param nLen: size in byte of the buffer
@@ -343,15 +361,19 @@ namespace ParaEngine
 		* @return true if successful.
 		*/
 		bool GeneratePkgFile(const char* filename);
+		bool GeneratePkgFile2(const char* filename);
 
 		/** get total file count. */
 		int GetFileCount();
 
+		virtual bool IsIgnoreCase() const { return m_bIgnoreCase;  }
 	private:
 		IReadFile* m_pFile;
 		vector<SZipFileEntryPtr> m_FileList;
 		bool m_bSort;
 		SZipFileEntry* m_pEntries;
+		// save name block
+		vector<char> m_nameBlock;
 
 
 		bool m_bIgnoreCase;
@@ -364,7 +386,9 @@ namespace ParaEngine
 		ParaEngine::mutex m_mutex;
 	private:
 		/** return file index. -1 is returned if file not found.*/
-		int findFile(const string& sFilename);
+		int findFile(const ArchiveFileFindItem* item);
+
+
 		IReadFile* openFile(int index);
 		/* open a zip file. this function is only called inside OpenFile() virtual method */
 		bool OpenZipFile(const string& filename);
@@ -384,6 +408,8 @@ namespace ParaEngine
 		bool ReadEntries();
 
 		/** read pkg entry*/
+		bool _ReadEntries_pkg();
 		bool ReadEntries_pkg();
+		bool ReadEntries_pkg2();
 	};
 }

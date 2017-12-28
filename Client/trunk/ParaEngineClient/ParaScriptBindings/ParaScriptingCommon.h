@@ -339,6 +339,7 @@ namespace ParaScripting
 		* @return true if successful. It will overwrite existing file. Output file is at the save directory and filename but with pkg file extension. 
 		*/
 		static bool GeneratePkgFile(const char* srcZip, const char* destPkg );
+		static bool GeneratePkgFile2(const char* srcZip, const char* destPkg);
 
 		/**
 		* open the archive file(zip or pkg file) for further resource file searching. If any file can not be located
