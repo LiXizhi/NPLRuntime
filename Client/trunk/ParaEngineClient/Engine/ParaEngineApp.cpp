@@ -382,9 +382,10 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 	VerifyCommandLine(sCommandLine, strCmd);
 
 #ifdef WIN32
-	std::string sSeerConfigString = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"";
+	std::string sSeerConfigString1 = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"";
+	std::string sSeerConfigString2 = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"\n";
 
-	if(strCmd != sSeerConfigString)
+	if(strCmd != sSeerConfigString1 && strCmd != sSeerConfigString2)
 	{
 		MessageBoxA(NULL,"Please start the game from yoocraftlauncher.exe","YooCraft Client Dll",MB_OK);
 		return -1;

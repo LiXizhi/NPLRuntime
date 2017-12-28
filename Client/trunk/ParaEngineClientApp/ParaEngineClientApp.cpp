@@ -363,9 +363,10 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	if(lpCmdLine)
 		sAppCmdLine = lpCmdLine;
      
-	std::string sSeerConfigString = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"";
+	std::string sSeerConfigString1 = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"";
+	std::string sSeerConfigString2 = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Seer\" isDevEnv=\"true\"\n";
      
-	if(sAppCmdLine != sSeerConfigString)
+	if(sAppCmdLine != sSeerConfigString1 && sAppCmdLine != sSeerConfigString2)
 	{
 		MessageBoxA(NULL,"请从上层目录的\"Launcher\"启动游戏","创意空间",MB_OK);
 		return -1;
