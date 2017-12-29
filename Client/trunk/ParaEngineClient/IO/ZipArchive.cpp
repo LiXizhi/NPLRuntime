@@ -128,14 +128,14 @@ bool ParaEngine::GetFirstFileData(const char* src, std::string& out)
 
 CZipArchive::CZipArchive(void)
 :m_pFile(NULL),m_bIgnoreCase(true),m_zipComment(NULL),m_pEntries(NULL),m_bRelativePath(false)
-, m_bSort(false)
+, m_bDirty(true)
 {
 
 }
 
 CZipArchive::CZipArchive(bool bIgnoreCase)
 :m_pFile(NULL),m_bIgnoreCase(bIgnoreCase),m_zipComment(NULL),m_pEntries(NULL),m_bRelativePath(false)
-, m_bSort(false)
+, m_bDirty(true)
 {
 }
 
@@ -286,9 +286,9 @@ void CZipArchive::SetRootDirectory( const string& filename )
 	}
 }
 
-void CZipArchive::Sort()
+void CZipArchive::ReBuild()
 {
-	if (!m_bSort)
+	if (m_bDirty)
 	{
 
 		std::sort(m_FileList.begin(), m_FileList.end(), [](const SZipFileEntryPtr& a, const SZipFileEntryPtr& b)
@@ -296,7 +296,7 @@ void CZipArchive::Sort()
 			return a.m_pEntry->hashValue < b.m_pEntry->hashValue;
 		});
 
-		m_bSort = true;
+		m_bDirty = false;
 	}
 }
 
@@ -373,7 +373,7 @@ bool CZipArchive::OpenMemFile(const char* buffer, DWORD nSize, bool bDeleteBuffe
 	if(m_bOpened)
 	{
 		m_bOpened = ReadEntries();
-		Sort();
+		ReBuild();
 	}
 	return m_bOpened;
 }
@@ -391,7 +391,7 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 
 	ParaEngine::Lock lock_(m_mutex);
 
-	Sort();
+	ReBuild();
 
 	// pkg header
 	file.WriteString(".pkg", 4);
@@ -464,6 +464,9 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 	DWORD nameOffset = 0;
 	for (i = 0; i < nEntryNum; ++i)
 	{
+		if (m_FileList[i].m_pEntry == nullptr)
+			continue;
+
 		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 		// name len
 		auto nFileNameLen = entry.fileNameLen;
@@ -496,6 +499,9 @@ bool CZipArchive::GeneratePkgFile2(const char* filename)
 
 		for (i = 0; i<nEntryNum; ++i)
 		{
+			if (m_FileList[i].m_pEntry == nullptr)
+				continue;
+
 			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 			if (cData.size()<entry.CompressedSize)
 				cData.resize(entry.CompressedSize);
@@ -520,7 +526,7 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 
 	ParaEngine::Lock lock_(m_mutex);
 
-	Sort();
+	ReBuild();
 
 	// pkg header
 	file.WriteString(".pkg",4);
@@ -548,8 +554,11 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 		}
 	}
 	DWORD dataPos = (DWORD)file.getPos()+nDirSize;
-	for (i=0;i<nEntryNum;++i)
+	for (i = 0; i < nEntryNum; ++i)
 	{
+		if (m_FileList[i].m_pEntry == nullptr)
+			continue;
+
 		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 		WORD nFileNameLen = (WORD)entry.fileNameLen;
 		file.write(&nFileNameLen, sizeof(WORD));
@@ -573,6 +582,9 @@ bool CZipArchive::GeneratePkgFile( const char* filename )
 
 		for (i=0;i<nEntryNum;++i)
 		{
+			if (m_FileList[i].m_pEntry == nullptr)
+				continue;
+
 			SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 			if(cData.size()<entry.CompressedSize)
 				cData.resize(entry.CompressedSize);
@@ -648,7 +660,7 @@ bool CZipArchive::ReadEntries_pkg2()
 	m_pFile->read(&nameCompressedSize, sizeof(DWORD));
 
 	m_FileList.resize(nEntryNum);
-	m_bSort = false;
+	
 	SAFE_DELETE_ARRAY(m_pEntries);
 	m_nameBlock.clear();
 	m_nameBlock.resize(nameBuffSize);
@@ -705,6 +717,9 @@ bool CZipArchive::ReadEntries_pkg2()
 		entry.fileDataPosition = nDataPos;
 	}
 
+	// pkg already sorted
+	m_bDirty = false;
+
 	return true;
 }
 
@@ -725,7 +740,7 @@ bool CZipArchive::ReadEntries_pkg()
 	// OUTPUT_LOG("len: %d, nEntry: %d, sizeof(DWORD)%d, sizeof(int)%d\n", nLen, nEntryNum, sizeof(DWORD), sizeof(int));
 
 	m_FileList.resize(nEntryNum);
-	m_bSort = false;
+	m_bDirty = true;
 
 	SAFE_DELETE_ARRAY(m_pEntries);
 	m_nameBlock.clear();
@@ -889,7 +904,7 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 
 
 
-	Sort();
+	ReBuild();
 
 	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)
 	{
@@ -1302,8 +1317,11 @@ bool CZipArchive::ReadEntries()
 #endif
 
 	int nEntryNum = EndOfCentralDir.entriesForThisDisk;
+	m_FileList.clear();
+
+
 	m_FileList.resize(nEntryNum);
-	m_bSort = false;
+	m_bDirty = true;
 
 	SAFE_DELETE_ARRAY(m_pEntries);
 	m_nameBlock.clear();
@@ -1327,17 +1345,16 @@ bool CZipArchive::ReadEntries()
 			return false; // throw new ZipException("Wrong Central Directory signature");
 		}
 
-		m_FileList[i].m_pEntry = &m_pEntries[i];
-		if(m_FileList[i].m_pEntry == 0)
-			return false;
-		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
-
 		// read filename
 		nameBlcokSize = nameOffset + CentralDir.NameSize + 1;
 		pReader->read(&m_nameBlock[nameOffset], CentralDir.NameSize);
 		m_nameBlock[nameBlcokSize - 1] = 0;
 
 		PE_ASSERT(CentralDir.NameSize < MAX_PATH);
+
+		m_FileList[i].m_pEntry = &m_pEntries[i];
+		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
+
 		entry.zipFileName = &m_nameBlock[nameOffset];
 		entry.fileNameLen = CentralDir.NameSize;
 		entry.RefreshHash(m_bIgnoreCase);
@@ -1614,7 +1631,7 @@ void ParaEngine::CZipArchive::SetBaseDirectory(const char * sBaseDir_)
 			}
 		}
 
-		m_bSort = false;
+		m_bDirty = true;
 	}
 	
 }
