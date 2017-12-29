@@ -114,16 +114,18 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 	bool bOpened = false;
 	bool bMPQProcessed = false;
 
-	string tempStr = filename;
-	int nSize = (int)tempStr.size();
-	for (int i = 0; i<nSize; i++)
-	{
-		if (tempStr[i] == '\\')
-			tempStr[i] = '/';
-	}
+	char tempStr[1024];
+	int i = 0;
 
-	uint32 hash = SZipFileEntry::Hash(tempStr.c_str(), true);
-	ArchiveFileFindItem item(tempStr.c_str(), nullptr, &hash);
+	while (filename[i])
+	{
+		tempStr[i] = filename[i] == '\\' ? tempStr[i] = '/' : filename[i];
+		i++;
+	};
+	tempStr[i] = 0;
+
+	uint32 hash = SZipFileEntry::Hash(tempStr, true);
+	ArchiveFileFindItem item(tempStr, nullptr, &hash);
 
 	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
