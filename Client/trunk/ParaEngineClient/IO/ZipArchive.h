@@ -370,7 +370,7 @@ namespace ParaEngine
 	private:
 		IReadFile* m_pFile;
 		vector<SZipFileEntryPtr> m_FileList;
-		bool m_bSort;
+		bool m_bDirty;
 		SZipFileEntry* m_pEntries;
 		// save name block
 		vector<char> m_nameBlock;
@@ -395,7 +395,7 @@ namespace ParaEngine
 		/* open a pkg file. this function is only called inside OpenFile() virtual method */
 		bool OpenPkgFile(const string& filename);
 
-		void Sort();
+		void ReBuild();
 		/**  
 		* search the last occurrence of a integer signature in the range [endLocation-minimumBlockSize-maximumVariableData, endLocation-minimumBlockSize]
 		* -1 is returned if not found.
