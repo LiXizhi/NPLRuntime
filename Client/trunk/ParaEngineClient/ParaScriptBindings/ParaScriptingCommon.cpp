@@ -608,16 +608,16 @@ bool ParaAsset::OpenArchive(const char* strFileName)
 		return false;
 }
 
-bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
+static bool _GeneratePkgFile(const char* srcZip, const char* destPkg, int version)
 {
 	bool bRes = false;
 	CZipArchive* pArchive = new CZipArchive(); // TODO
-	if(pArchive != NULL)
+	if (pArchive != NULL)
 	{
-		if(pArchive->Open(srcZip, 0))
+		if (pArchive->Open(srcZip, 0))
 		{
 			string pkgFile = CParaFile::ChangeFileExtension(srcZip, "pkg");
-			if(destPkg == 0)
+			if (destPkg == 0)
 			{
 				destPkg = pkgFile.c_str();
 			}
@@ -627,19 +627,33 @@ bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
 			CGlobals::GetFileManager()->CloseArchive(destPkg);
 			CGlobals::GetFileManager()->CloseArchive(CParaFile::ChangeFileExtension(destPkg, "zip"));
 
-			bRes = pArchive->GeneratePkgFile(destPkg);
-			if(!bRes)
+			if (version == 1)
+				bRes = pArchive->GeneratePkgFile(destPkg);
+			else if (version == 2)
+				bRes = pArchive->GeneratePkgFile2(destPkg);
+
+			if (!bRes)
 			{
 				OUTPUT_LOG("warning: failed generating pkg file from %s. Make sure the pkg file is not in use.\n", srcZip);
 			}
 		}
 		SAFE_DELETE(pArchive);
 	}
-	if(!bRes)
+	if (!bRes)
 	{
 		OUTPUT_LOG("warning: zip file %s is not found\n", srcZip);
 	}
 	return bRes;
+}
+
+bool ParaAsset::GeneratePkgFile2(const char* srcZip, const char* destPkg)
+{
+	return _GeneratePkgFile(srcZip, destPkg, 2);
+}
+
+bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
+{
+	return _GeneratePkgFile(srcZip, destPkg, 1);
 }
 
 bool ParaAsset::OpenArchive2(const char* strFileName, bool bUseRelativePath)
