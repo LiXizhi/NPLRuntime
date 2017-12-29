@@ -4,6 +4,7 @@
 #include "d3d9.h"
 #include "PEtypes.h"
 #include "RenderDevice.h"
+#include <memory>
 
 namespace ParaEngine
 {
@@ -102,6 +103,12 @@ namespace ParaEngine
 
 		virtual HRESULT Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) = 0;
 
+		virtual HRESULT TestCooperativeLevel() = 0;
+
+		virtual HRESULT Reset() = 0;
+
 	};
+
+	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;
 }
 

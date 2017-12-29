@@ -1,41 +1,23 @@
 #pragma once
+#include "IRenderContext.h"
+#include <vector>
 #include <string>
-#include "WindowsRenderWindow.h"
-#include "d3d9.h"
+
+struct IDirect3D9;
 namespace ParaEngine
 {
-	class D3D9RenderContext
+	class D3D9RenderContext : public IRenderContext
 	{
+	public:	
+		static D3D9RenderContext* Create();
+		virtual ~D3D9RenderContext() override;
+	private:
+		D3D9RenderContext();
+		IDirect3D9* m_D3D;
 	public:
-		D3D9RenderContext(WindowsRenderWindow* window);		
-		~D3D9RenderContext() = default;
-		bool Initialize();
-		void Uninitialize();
-		bool IsInvalid() const;
-	public:
-		IDirect3DDevice9* GetD3DDevice() const;
+		virtual IRenderDevice* CreateDevice(const RenderDeviceConfiguration& cfg) override;
 		IDirect3D9* GetD3D() const;
-	
-	private:
-		bool FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
-		bool FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
-		HRESULT ChooseInitialD3DSettings();
-		HRESULT Initialize3DEnvironment();
-		void BuildPresentParamsFromSettings();
-		static bool ConfirmDeviceHelper(D3DCAPS9 * pCaps,
-			VertexProcessingType vertexProcessingType,
-			D3DFORMAT adapterFormat,
-			D3DFORMAT backBufferFormat);
 
-	private:
-		D3DPRESENT_PARAMETERS m_d3dpp;
-		WindowsRenderWindow* m_pRenderWindow;
-		IDirect3D9* m_pD3D9;
-		IDirect3DDevice9* m_pD3Device;
-		CD3DEnumeration   m_d3dEnumeration;
-		CD3DSettings      m_d3dSettings;
-		std::string m_strDeviceStats;
-		D3DCAPS9          m_d3dCaps;
-		bool m_invalid;
 	};
+	using D3D9RenderContextPtr = std::shared_ptr<D3D9RenderContext>;
 }

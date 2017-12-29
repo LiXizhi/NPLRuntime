@@ -6,7 +6,7 @@ using namespace ParaEngine;
 ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(D3D9RenderContext * context):
 	m_pD3DDevice(nullptr)
 {
-	m_pD3DDevice = context->GetD3DDevice();
+	//m_pD3DDevice = context->GetD3DDevice();
 }
 
 ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
@@ -264,6 +264,17 @@ HRESULT ParaEngine::CD3D9RenderDevice::ShowCursor(BOOL bShow)
 HRESULT ParaEngine::CD3D9RenderDevice::Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion)
 {
 	return m_pD3DDevice->Present(pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::TestCooperativeLevel()
+{
+	return m_pD3DDevice->TestCooperativeLevel();
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::Reset()
+{
+	D3DPRESENT_PARAMETERS d3dpp;
+	return  m_pD3DDevice->Reset(&d3dpp);
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::DrawIndexedPrimitive(D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
