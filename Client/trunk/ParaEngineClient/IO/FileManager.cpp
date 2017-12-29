@@ -119,7 +119,7 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 
 	while (filename[i])
 	{
-		tempStr[i] = filename[i] == '\\' ? tempStr[i] = '/' : filename[i];
+		tempStr[i] = filename[i] == '\\' ?  '/' : filename[i];
 		i++;
 	};
 	tempStr[i] = 0;
