@@ -168,6 +168,12 @@ namespace ParaEngine
 
 		virtual HRESULT Present(RECT* pSourceRect, CONST RECT* pDestRect, HWND hDestWindowOverride, CONST RGNDATA* pDirtyRegion) override;
 
+
+		virtual HRESULT TestCooperativeLevel() override;
+
+
+		virtual HRESULT Reset() override;
+
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;
 	};

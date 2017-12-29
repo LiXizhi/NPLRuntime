@@ -1,4 +1,6 @@
 #pragma once
+
+#include "IRenderWindow.h"
 #include <string>
 #include <unordered_map>
 #include <functional>
@@ -11,7 +13,7 @@
 namespace ParaEngine
 {
 
-	class WindowsRenderWindow
+	class WindowsRenderWindow : public IRenderWindow
 	{
 	public:
 		~WindowsRenderWindow();
@@ -20,8 +22,8 @@ namespace ParaEngine
 		bool ShouldClose() const;
 		void PollEvents();
 		HWND GetHandle() const;
-		int GetWidth() const;
-		int GetHeight() const;
+		unsigned int GetWidth() const override;
+		unsigned int GetHeight() const override;
 		bool IsWindowed() const;
 		void SetMessageCallBack(std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> callback);
 	
@@ -36,7 +38,7 @@ namespace ParaEngine
 		bool m_Windowed;
 		std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> m_MessageCallBack;
 		bool m_IsQuit;
-		 static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		static std::unordered_map<HWND, WindowsRenderWindow*> g_WindowMap;
 	};
 }

@@ -60,23 +60,12 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	// Set the window's initial style
 	DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |
 		WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE;
-
-	HMENU hMenu = NULL;
-#ifdef SHOW_DEFAULT_MENU
-	hMenu = LoadMenuW(hInstance, MAKEINTRESOURCEW(IDR_MENU));
-#endif
-
-	// Set the window's initial width
-	RECT rc;
-	SetRect(&rc, 0, 0, width, height);
-	AdjustWindowRect(&rc, dwWindowStyle, (hMenu != NULL) ? true : false);
-
 	// Create the render window
 
 	m_hWnd = CreateWindowW(WindowsRenderWindow::ClassName, L"ParaEngine Window", dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		(rc.right - rc.left), (rc.bottom - rc.top), 0,
-		hMenu, hInstance, 0);
+		width,height, 0,
+		NULL, hInstance, 0);
 
 	g_WindowMap[m_hWnd] = this;
 
@@ -97,7 +86,7 @@ WindowsRenderWindow::~WindowsRenderWindow()
 	{
 		g_WindowMap.erase(m_hWnd);
 	}
-	
+
 	m_hWnd = NULL;
 }
 
@@ -127,12 +116,12 @@ HWND WindowsRenderWindow::GetHandle() const
 	return m_hWnd;
 }
 
-int ParaEngine::WindowsRenderWindow::GetWidth() const
+unsigned int ParaEngine::WindowsRenderWindow::GetWidth() const
 {
 	return m_Width;
 }
 
-int ParaEngine::WindowsRenderWindow::GetHeight() const
+unsigned int ParaEngine::WindowsRenderWindow::GetHeight() const
 {
 	return m_Height;
 }
