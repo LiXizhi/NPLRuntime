@@ -12,11 +12,11 @@ namespace ParaEngine
 	{
 		ArchiveFileFindItem() : filename(nullptr), hashValue(nullptr), hashlower(nullptr) {};
 		ArchiveFileFindItem(const char* sFilename) : filename(sFilename), hashValue(nullptr), hashlower(nullptr) {};
-		ArchiveFileFindItem(const char* sFilename, uint32* uHash, uint32* uHashLower) : filename(sFilename), hashValue(uHash), hashlower(uHashLower) {};
+		ArchiveFileFindItem(const char* sFilename, const uint32* uHash, const uint32* uHashLower) : filename(sFilename), hashValue(uHash), hashlower(uHashLower) {};
 
 		const char* filename;
-		uint32* hashValue;
-		uint32* hashlower;
+		const uint32* hashValue;
+		const uint32* hashlower;
 	};
 
 
