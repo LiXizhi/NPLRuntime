@@ -301,14 +301,7 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 			// Check if the device needs to be reset.
 			if( D3DERR_DEVICENOTRESET == hr )
 			{
-				// If we are windowed, read the desktop mode and use the same format for
-				// the back buffer
-				if( IsExternalD3DDevice() && m_bWindowed )
-				{
-					D3DAdapterInfo* pAdapterInfo = m_d3dSettings.PAdapterInfo();
-					m_pD3D->GetAdapterDisplayMode( pAdapterInfo->AdapterOrdinal, &m_d3dSettings.Windowed_DisplayMode );
-					m_d3dpp.BackBufferFormat = m_d3dSettings.Windowed_DisplayMode.Format;
-				}
+
 				
 				OUTPUT_LOG("TestCooperativeLevel needs to reset device with D3DERR_DEVICENOTRESET\n");
 				
@@ -442,12 +435,7 @@ HRESULT CD3DApplication::PresentScene()
 	HRESULT hr;
 	// only present if render returns true.
 	PERF1("present");
-	if (IsExternalD3DDevice()) {
-		hr = m_pd3dSwapChain->Present( NULL, NULL, m_hWnd, NULL, 0 );
-	}
-	else {
-		hr = m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
-	}
+	hr = m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
 	if( D3DERR_DEVICELOST == hr )
 		m_bDeviceLost = true;
 	return hr;
@@ -461,8 +449,6 @@ HRESULT CD3DApplication::PresentScene()
 //-----------------------------------------------------------------------------
 bool CD3DApplication::FindBestWindowedMode( bool bRequireHAL, bool bRequireREF )
 {
-	if(IsExternalD3DDevice())
-		return true;
     // Get display mode of primary adapter (which is assumed to be where the window 
     // will appear)
     D3DDISPLAYMODE primaryDesktopDisplayMode;
@@ -566,8 +552,6 @@ EndWindowedDeviceComboSearch:
 //-----------------------------------------------------------------------------
 bool CD3DApplication::FindBestFullscreenMode( bool bRequireHAL, bool bRequireREF )
 {
-	if(IsExternalD3DDevice())
-		return true;
     // For fullscreen, default to first HAL DeviceCombo that supports the current desktop 
     // display mode, or any display mode if HAL is not compatible with the desktop mode, or 
     // non-HAL if no HAL is available
@@ -762,8 +746,6 @@ EndFullscreenDeviceComboSearch:
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::ChooseInitialD3DSettings()
 {
-	if(IsExternalD3DDevice())
-		return S_OK;
     bool bFoundFullscreen = FindBestFullscreenMode( false, false );
     bool bFoundWindowed = FindBestWindowedMode( false, false );
     m_d3dSettings.SetDeviceClip( false );
@@ -819,20 +801,7 @@ HRESULT CD3DApplication::HandlePossibleSizeChange(bool bUpdateSizeOnly)
 			m_d3dSettings.Windowed_Width = m_d3dpp.BackBufferWidth;
 			m_d3dSettings.Windowed_Height = m_d3dpp.BackBufferHeight;
 
-			if(IsExternalD3DDevice())
-			{
-				// With swapchain, there is no need to do this. 
-				//// Release all vidmem objects
-				//if( m_bDeviceObjectsRestored )
-				//{
-				//	m_bDeviceObjectsRestored = false;
-				//	InvalidateDeviceObjects();
-				//}
-				//// Initialize the app's device-dependent objects
-				//hr = RestoreDeviceObjects();
-				//m_bDeviceObjectsRestored = true;
-			}
-			else if( m_pd3dDevice != NULL )
+			if( m_pd3dDevice != NULL )
 			{
 				// Reset the 3D environment
 				if( FAILED( hr = Reset3DEnvironment() ) )
@@ -897,38 +866,6 @@ bool CD3DApplication::UpdateViewPort()
 HRESULT CD3DApplication::Initialize3DEnvironment()
 {
     HRESULT hr = S_OK;
-
-	if(IsExternalD3DDevice()) {
-		/*
-		This actually gets us only one 'main' swap chain per adapter...
-		so it doesn't include the swap chains created with CreateAdditionalSwapChain()....
-
-		DWORD numSwapChains = m_pd3dDevice->GetNumberOfSwapChains();
-		if (numSwapChains == 0) {
-			return E_FAIL;
-		}
-
-		IDirect3DSwapChain9* pLastSwapChain = NULL;
-		if (FAILED(m_pd3dDevice->GetSwapChain(numSwapChains-1,&pLastSwapChain))) {
-			return E_FAIL;
-		}*/
-		
-		// Store render target surface desc
-		LPDIRECT3DSURFACE9 pBackBuffer = NULL;
-		m_pd3dSwapChain->GetBackBuffer( 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer );
-		pBackBuffer->GetDesc( &m_d3dsdBackBuffer );
-		
-
-		m_pd3dSwapChain->GetPresentParameters(&m_d3dpp);
-		OUTPUT_LOG("External d3d device info: Backbuffer size:%dx%d, MultiSampleType:%d\n", m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight, m_d3dpp.MultiSampleType);
-	
-		InitDeviceObjects();
-		m_bDeviceObjectsInited = true;
-		RestoreDeviceObjects();
-		m_bDeviceObjectsRestored = true;
-		pBackBuffer->Release();
-		return hr;
-	}
 
     D3DAdapterInfo* pAdapterInfo = m_d3dSettings.PAdapterInfo();
     D3DDeviceInfo* pDeviceInfo = m_d3dSettings.PDeviceInfo();
@@ -1221,8 +1158,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 //-----------------------------------------------------------------------------
 void CD3DApplication::BuildPresentParamsFromSettings()
 {
-	if(IsExternalD3DDevice())
-		return;
     m_d3dpp.Windowed               = m_d3dSettings.IsWindowed;
     m_d3dpp.BackBufferCount        = 1;
     m_d3dpp.MultiSampleType        = m_d3dSettings.MultisampleType();
@@ -1363,8 +1298,6 @@ HRESULT CD3DApplication::Reset3DEnvironment()
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::ToggleFullscreen()
 {
-	if(IsExternalD3DDevice())
-		return S_OK;
     HRESULT hr;
     int AdapterOrdinalOld = m_d3dSettings.AdapterOrdinal();
     D3DDEVTYPE DevTypeOld = m_d3dSettings.DevType();
@@ -1456,8 +1389,6 @@ HRESULT CD3DApplication::ToggleFullscreen()
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::ForceWindowed()
 {
-	if(IsExternalD3DDevice())
-		return S_OK;
     HRESULT hr;
 
     if( m_bWindowed )
@@ -1494,8 +1425,6 @@ HRESULT CD3DApplication::ForceWindowed()
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::AdjustWindowForChange()
 {
-	if(IsExternalD3DDevice() || m_bIsExternalWindow)
-		return S_OK;
     if( m_bWindowed )
     {
         // Set windowed-mode style
@@ -1529,8 +1458,6 @@ HRESULT CD3DApplication::AdjustWindowForChange()
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::UserSelectNewDevice()
 {
-	if(IsExternalD3DDevice())
-		return S_OK;
     HRESULT hr;
     bool bDialogBoxMode = false;
     bool bOldWindowed = m_bWindowed;  // Preserve original windowed flag
@@ -1754,16 +1681,12 @@ void CD3DApplication::Cleanup3DEnvironment()
 
 		if (m_pd3dSwapChain) {
 			if (m_pd3dSwapChain->Release() > 0) {
-				if (!IsExternalD3DDevice())
-					DisplayErrorMsg( D3DAPPERR_NONZEROREFCOUNT, MSGERR_APPMUSTEXIT );
+				DisplayErrorMsg( D3DAPPERR_NONZEROREFCOUNT, MSGERR_APPMUSTEXIT );
 			}
 		}
 		long nRefCount = 0;
 		if ((nRefCount=m_pd3dDevice->Release()) > 0) {
-			if (!IsExternalD3DDevice()){
-				OUTPUT_LOG("\n\nerror: reference count of d3ddevice is non-zero %d when exit\n\n", nRefCount);
-				// DisplayErrorMsg(D3DAPPERR_NONZEROREFCOUNT, MSGERR_APPMUSTEXIT); 
-			}
+			OUTPUT_LOG("\n\nerror: reference count of d3ddevice is non-zero %d when exit\n\n", nRefCount);
 		}
 		
         m_pd3dDevice = NULL;

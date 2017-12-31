@@ -107,9 +107,6 @@ public:
 
 	ParaEngine::PEAppState GetAppState() {return m_nAppState;}
 	void SetAppState(ParaEngine::PEAppState state) {m_nAppState = state;}
-
-	/** whether the d3d device is managed externally */
-	bool IsExternalD3DDevice(){return m_bIsExternalD3DDevice;}
 protected:
 	// Internal constructor
 	CD3DApplication();
