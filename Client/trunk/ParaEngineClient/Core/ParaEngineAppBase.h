@@ -422,6 +422,8 @@ namespace ParaEngine
 		std::string m_sPackagesDir;
 		/** bin/ module path */
 		std::string m_sModuleDir;
+		/** initial working directory*/
+		std::string m_sInitialWorkingDir;
 		/** application state */
 		PEAppState m_nAppState;
 	};

@@ -231,7 +231,9 @@ namespace ParaEngine
 		*  Gets the writable path.
 		*  @return  The path that can be write/read a file in
 		*/
-		PE_CORE_DECL static std::string GetWritablePath();
+		PE_CORE_DECL static const std::string& GetWritablePath();
+
+		/** Note: NOT thread safe, only set at startup when there is just one thread running. */
 		PE_CORE_DECL static void SetWritablePath(const std::string& writable_path);
 
 		enum PARAENGINE_DIRECTORY{

@@ -740,9 +740,7 @@ void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
 
 const char* ParaEngine::ParaEngineSettings::GetWritablePath()
 {
-	static boost::thread_specific_ptr< std::string > sPath;
-	*sPath = CParaFile::GetWritablePath();
-	return sPath->c_str();
+	return CParaFile::GetWritablePath().c_str();
 }
 
 void ParaEngine::ParaEngineSettings::SetWritablePath(const char* sPath)
