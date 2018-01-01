@@ -345,7 +345,7 @@ namespace ParaScripting
 		static bool RemoveSearchPath(const char* sFile);
 
 		/** get writable path */
-		static std::string GetWritablePath();
+		static const std::string& GetWritablePath();
 
 		/**
 		* clear all search paths.

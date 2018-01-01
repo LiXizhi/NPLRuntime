@@ -1112,7 +1112,7 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #endif
 }
 
-std::string ParaEngine::CFileUtils::GetWritablePath()
+const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
 	if (s_writepath.empty())
 	{
@@ -1140,6 +1140,16 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 			{
 				OUTPUT_LOG("warn: failed to set writable path to %s\n", writable_path.c_str());
 			}
+		}
+
+		if (!s_writepath.empty())
+		{
+			char nLastChar = writable_path[writable_path.size() - 1];
+			if (nLastChar != '/' && nLastChar != '\\')
+			{
+				s_writepath = s_writepath + "/";
+			}
+			CParaFile::ToCanonicalFilePath(s_writepath, s_writepath);
 		}
 	}
 }

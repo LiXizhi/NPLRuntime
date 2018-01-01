@@ -161,7 +161,7 @@ namespace ParaScripting
 			if (sFilename.find_first_of(":") != string::npos)
 			{
 				// skip writable directory.
-				std::string writablePath = CParaFile::GetWritablePath();
+				auto writablePath = CParaFile::GetWritablePath();
 				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
 				{
 					// only relative path is allowed.
@@ -340,7 +340,7 @@ namespace ParaScripting
 			if(sFilename.find_first_of(":") != string::npos)
 			{
 				// skip writable directory.
-				std::string writablePath = CParaFile::GetWritablePath();
+				auto writablePath = CParaFile::GetWritablePath();
 				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
 				{
 					// only relative path is allowed.
@@ -1052,7 +1052,7 @@ namespace ParaScripting
 #endif
 	}
 
-	std::string ParaIO::GetWritablePath()
+	const std::string& ParaIO::GetWritablePath()
 	{
 		return CParaFile::GetWritablePath();
 	}

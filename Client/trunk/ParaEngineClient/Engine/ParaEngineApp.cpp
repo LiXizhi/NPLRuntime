@@ -184,8 +184,6 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 
 	SetAppCommandLine(sCommandLine);
 
-	InitCommandLineParams();
-
 	COSInfo::DumpSystemInfo();
 
 	if (Is3DRenderingEnabled())

@@ -368,9 +368,10 @@ ParaScripting::ParaAttributeObject ParaScripting::ParaAssetObject::GetAttributeO
 
 void ParaScripting::ParaAssetObject::UnloadAsset()
 {
-	if(IsValid())
+	if(m_pAsset)
 	{
 		m_pAsset->UnloadAsset();
+		
 		// 2008.10.9: we will delete texture info for static texture as well. this corrects a bug when the dimension of the texture info changes.
 		if(m_pAsset->GetType()==AssetEntity::texture)
 		{
@@ -378,6 +379,12 @@ void ParaScripting::ParaAssetObject::UnloadAsset()
 			if(pTexture->SurfaceType == TextureEntity::StaticTexture)
 			{
 				SAFE_DELETE(pTexture->m_pTextureInfo);
+			}
+			// make valid again, because we will reload it
+			if (!m_pAsset->IsValid() && m_pAsset->GetState() == AssetEntity::ASSET_STATE_FAILED_TO_LOAD)
+			{
+				m_pAsset->SetState(AssetEntity::ASSET_STATE_NORMAL);
+				m_pAsset->m_bIsValid = true;
 			}
 		}
 	}
@@ -608,7 +615,7 @@ bool ParaAsset::OpenArchive(const char* strFileName)
 		return false;
 }
 
-static bool _GeneratePkgFile(const char* srcZip, const char* destPkg, int version)
+bool ParaAsset::GeneratePkgFile_(const char* srcZip, const char* destPkg, int nVersion)
 {
 	bool bRes = false;
 	CZipArchive* pArchive = new CZipArchive(); // TODO
@@ -627,9 +634,9 @@ static bool _GeneratePkgFile(const char* srcZip, const char* destPkg, int versio
 			CGlobals::GetFileManager()->CloseArchive(destPkg);
 			CGlobals::GetFileManager()->CloseArchive(CParaFile::ChangeFileExtension(destPkg, "zip"));
 
-			if (version == 1)
+			if (nVersion == 1)
 				bRes = pArchive->GeneratePkgFile(destPkg);
-			else if (version == 2)
+			else if (nVersion == 2)
 				bRes = pArchive->GeneratePkgFile2(destPkg);
 
 			if (!bRes)
@@ -646,14 +653,10 @@ static bool _GeneratePkgFile(const char* srcZip, const char* destPkg, int versio
 	return bRes;
 }
 
-bool ParaAsset::GeneratePkgFile2(const char* srcZip, const char* destPkg)
-{
-	return _GeneratePkgFile(srcZip, destPkg, 2);
-}
-
 bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
 {
-	return _GeneratePkgFile(srcZip, destPkg, 1);
+	// default to version 2
+	return GeneratePkgFile_(srcZip, destPkg, 2);
 }
 
 bool ParaAsset::OpenArchive2(const char* strFileName, bool bUseRelativePath)
