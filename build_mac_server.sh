@@ -20,6 +20,7 @@ if [ $result == 0 ]; then
     pushd ParaWorld/bin64/
     ls -l
     npl_exe_path=/usr/local/bin/npl
+	nplc_exe_path=/usr/local/bin/nplc
     echo "install executable to $npl_exe_path"
     if [ -f ./ParaEngineServer ]; then
         if [ ! -e $npl_exe_path ] && [ ! -L $npl_exe_path ];  then
@@ -29,8 +30,12 @@ if [ $result == 0 ]; then
         fi
         ls -l $npl_exe_path
     fi
+	if [ ! -f ./nplc.sh ]; then
+		ln -s  ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
+		chmod +x nplc.sh
+		ln -s $(pwd)/nplc.sh $nplc_exe_path
+	fi
     popd
-
     # run all NPL tests
     echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua"
 fi

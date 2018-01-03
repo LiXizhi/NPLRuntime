@@ -36,19 +36,17 @@ if [ $result == 0 ]; then
         ls -l $npl_exe_path
     fi
 	if [ ! -f ./nplc.sh ]; then
-		cp -f ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
+		ln -s  ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
 		chmod +x nplc.sh
 		ln -s $(pwd)/nplc.sh $nplc_exe_path
 	fi
-    ls -l $nplc_exe_path
-	
+
     if [ -f ./libluajit21.so ]; then
         echo "Force using LJ_GC64 in 64bits system"
         cp liblua.so libluajit20.so
         cp -f libluajit21.so liblua.so
     fi
     popd
-
     # run all NPL tests
     echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua"
 fi
