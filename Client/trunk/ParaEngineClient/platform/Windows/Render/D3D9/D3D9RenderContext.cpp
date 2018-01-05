@@ -304,31 +304,20 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 
 	D3DPRESENT_PARAMETERS d3dpp;
 	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
-	d3dpp.BackBufferWidth = pWin->GetWidth();
-	d3dpp.BackBufferHeight = pWin->GetHeight();
-	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	d3dpp.BackBufferCount = 1;
-	d3dpp.Windowed = TRUE;
-	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-	d3dpp.EnableAutoDepthStencil = TRUE;
-	d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
-	d3dpp.hDeviceWindow = pWin->GetHandle();
 
 	if (cfg.isWindowed)
 	{
-		d3dpp.FullScreen_RefreshRateInHz = 0;
+		d3dpp.BackBufferWidth = pWin->GetWidth();
+		d3dpp.BackBufferHeight = pWin->GetHeight();
+		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+		d3dpp.BackBufferCount = 1;
+		d3dpp.Windowed = TRUE;
+		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
+		d3dpp.EnableAutoDepthStencil = TRUE;
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+		d3dpp.hDeviceWindow = pWin->GetHandle();
 	}
-	else {
-
-	}
-
-	if (cfg.msaaSamples > 0)
-	{
-		d3dpp.MultiSampleType = (D3DMULTISAMPLE_TYPE)(cfg.msaaSamples);
-		d3dpp.MultiSampleQuality = 0;
-	}
-
 
 	IDirect3DDevice9* pD3DDevice = nullptr;
 	HRESULT  hr = m_D3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, pWin->GetHandle(), D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, &pD3DDevice);
