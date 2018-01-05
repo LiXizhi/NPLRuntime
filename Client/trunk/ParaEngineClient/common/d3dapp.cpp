@@ -33,6 +33,7 @@ Using this presentation method can give scarce CPU cycles back to the applicatio
 #include "FrameRateController.h"
 #include "MiscEntity.h"
 #include "d3dapp.h"
+#include "D3D9RenderContext.h"
 #include "D3D9RenderDevice.h"
 #include "WindowsRenderWindow.h"
 #include <functional>
@@ -90,7 +91,8 @@ CD3DApplication::CD3DApplication()
     m_bAllowDialogBoxMode = false;
 	m_bIsExternalWindow = false;
 
-	m_RenderDevice = NULL;
+	m_pRenderDevice = NULL;
+	m_pRenderContext = nullptr;
 
 	memset(&m_d3dSettings, 0 , sizeof(m_d3dSettings));
 	memset( &m_rcWindowBounds, 0, sizeof(RECT));
@@ -210,8 +212,12 @@ HRESULT CD3DApplication::Create()
 	
 	if(!m_bDisableD3D)
 	{
+
+		m_pRenderContext = D3D9RenderContext::Create();
+
 		// Create the Direct3D object
-		m_pD3D = Direct3DCreate9( D3D_SDK_VERSION );
+		m_pD3D = static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D();
+
 		if( m_pD3D == NULL )
 			return DisplayErrorMsg( D3DAPPERR_NODIRECT3D, MSGERR_APPMUSTEXIT );
 
@@ -914,12 +920,25 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 	*/
 
 	
-    hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
-                               m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
-                               &m_pd3dDevice );
+    //hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
+    //                           m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
+    //                           &m_pd3dDevice );
+	RenderDeviceConfiguration cfg;
+	cfg.isWindowed = !m_bStartFullscreen;
+	cfg.renderWindow = m_pRenderWindow;
 
-	m_RenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
-	CGlobals::SetRenderDevice(m_RenderDevice);
+	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	if (!m_pRenderDevice)
+	{
+		OUTPUT_LOG("Error: Can not create render device. \n");
+		return E_FAIL;
+	}
+
+	m_pd3dDevice = static_cast<CD3D9RenderDevice*>(m_pRenderDevice)->GetDirect3DDevice9();
+
+
+	m_pRenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
+	CGlobals::SetRenderDevice(m_pRenderDevice);
 	//following code create nvidia perfhud device for performance testing --clayman
 	/*
 	UINT AdapterToUse=D3DADAPTER_DEFAULT;
@@ -1738,16 +1757,16 @@ int CD3DApplication::Run(HINSTANCE hInstance)
 
 	WCHAR* WindowClassName = L"ParaWorld";
 	WCHAR* WindowTitle = L"ParaEngine Window";
-	WindowsRenderWindow defaultWin(hInstance,nWidth,nHeight,false);
-	m_hWnd = defaultWin.GetHandle();
+	m_pRenderWindow = new WindowsRenderWindow(hInstance, nWidth, nHeight, false);
+	m_hWnd = m_pRenderWindow->GetHandle();
 	auto msgCallback = std::bind(&CD3DApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-	defaultWin.SetMessageCallBack(msgCallback);
+	m_pRenderWindow->SetMessageCallBack(msgCallback);
 	CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
 	CGlobals::GetApp()->Create();
 
-	while (!defaultWin.ShouldClose())
+	while (!m_pRenderWindow->ShouldClose())
 	{
-		defaultWin.PollEvents();
+		m_pRenderWindow->PollEvents();
 		DoWork();
 	}
 
