@@ -155,12 +155,8 @@ namespace ParaEngine
 	struct RenderDeviceConfiguration
 	{
 		bool isWindowed;
-		uint32_t redBits; ///< red color channel depth in bits
-		uint32_t greenBits; ///< green color channel depth in bits
-		uint32_t blueBits; ///< blue color channel depth in bits
-		uint32_t alphaBits; ///< alpha color channel depth in bits
-		uint32_t depthBits; ///< depth buffer depth in bits
-		uint32_t stencilBits; ///< stencil buffer depth in bits
+		PixelFormat colorFormat;
+		PixelFormat depthStencilFormat;
 		uint32_t msaaSamples; ///< MSAA samples
 		uint32_t screenWidth;
 		uint32_t screenHeight;
@@ -169,12 +165,8 @@ namespace ParaEngine
 		
 		RenderDeviceConfiguration()
 			:isWindowed(true)
-			,redBits(8)
-			,greenBits(8)
-			,blueBits(8)
-			,alphaBits(8)
-			,depthBits(24)
-			,stencilBits(8)
+			,colorFormat(PixelFormat::A8R8G8B8)
+			,depthStencilFormat(PixelFormat::D24S8)
 			,msaaSamples(0)
 			,screenWidth(1024)
 			,screenHeight(768)

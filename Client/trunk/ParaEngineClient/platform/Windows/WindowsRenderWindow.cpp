@@ -35,7 +35,7 @@ LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, 
 
 	// Handle any messages the switch statement didn't
 	return  DefWindowProcW(hWnd, message, wParam, lParam);
-}
+} 
 
 
 WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int height,bool windowed)
@@ -61,17 +61,26 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |
 		WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE;
 	// Create the render window
+	RECT rect;
+	rect.left = 0;
+	rect.right = width;
+	rect.top = 0;
+	rect.bottom = height;
+	
+	if (!AdjustWindowRect(&rect, dwWindowStyle, false))
+	{
+		OUTPUT_LOG("AdjustWindowRect failed.");
+		return;
+	}
 
 	m_hWnd = CreateWindowW(WindowsRenderWindow::ClassName, L"ParaEngine Window", dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		width,height, 0,
+		rect.right - rect.left ,rect.bottom - rect.top, 0,
 		NULL, hInstance, 0);
 
 	g_WindowMap[m_hWnd] = this;
 
-	//
-	// Dispatching window messages in this window thread. 
-	//
+
 
 	// Load keyboard accelerators
 	m_hAccel = LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(IDR_MAIN_ACCEL));

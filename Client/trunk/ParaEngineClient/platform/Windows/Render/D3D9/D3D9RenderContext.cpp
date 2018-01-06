@@ -70,59 +70,59 @@ namespace ParaEngine
 		case PixelFormat::X8B8G8R8:
 			return D3DFMT_X8B8G8R8;
 		case PixelFormat::G16R16:
-			return D3DFMT_A2R10G10B10;
+			return D3DFMT_G16R16;
 		case PixelFormat::A2R10G10B10:
-			return D3DFMT_A16B16G16R16;
+			return D3DFMT_A2R10G10B10;
 		case PixelFormat::A16B16G16R16:
-			return D3DFMT_A8P8;
+			return D3DFMT_A16B16G16R16;
 		case PixelFormat::A8P8:
-			return D3DFMT_P8;
+			return D3DFMT_A8P8;
 		case PixelFormat::P8:
-			return D3DFMT_L8;
+			return D3DFMT_P8;
 		case PixelFormat::L8:
-			return D3DFMT_A8L8;
+			return D3DFMT_L8;
 		case PixelFormat::A8L8:
-			return D3DFMT_A4L4;
+			return D3DFMT_A8L8;
 		case PixelFormat::A4L4:
-			return D3DFMT_V8U8;
+			return D3DFMT_A4L4;
 		case PixelFormat::V8U8:
-			return D3DFMT_L6V5U5;
+			return D3DFMT_V8U8;
 		case PixelFormat::L6V5U5:
-			return D3DFMT_X8L8V8U8;
+			return D3DFMT_L6V5U5;
 		case PixelFormat::X8L8V8U8:
-			return D3DFMT_Q8W8V8U8;
+			return D3DFMT_X8L8V8U8;
 		case PixelFormat::Q8W8V8U8:
-			return D3DFMT_V16U16;
+			return D3DFMT_Q8W8V8U8;
 		case PixelFormat::V16U16:
-			return D3DFMT_A2W10V10U10;
+			return D3DFMT_V16U16;
 		case PixelFormat::A2W10V10U10:
-			return D3DFMT_UYVY;
+			return D3DFMT_A2W10V10U10;
 		case PixelFormat::UYVY:
-			return D3DFMT_R8G8_B8G8;
+			return D3DFMT_UYVY;
 		case PixelFormat::R8G8_B8G8:
-			return D3DFMT_YUY2;
+			return D3DFMT_R8G8_B8G8;
 		case PixelFormat::YUY2:
-			return D3DFMT_G8R8_G8B8;
+			return D3DFMT_YUY2;
 		case PixelFormat::G8R8_G8B8:
-			return D3DFMT_DXT1;
+			return D3DFMT_G8R8_G8B8;
 		case PixelFormat::DXT1:
-			return D3DFMT_DXT2;
+			return D3DFMT_DXT1;
 		case PixelFormat::DXT2:
-			return D3DFMT_DXT3;
+			return D3DFMT_DXT2;
 		case PixelFormat::DXT3:
-			return D3DFMT_DXT4;
+			return D3DFMT_DXT3;
 		case PixelFormat::DXT4:
-			return D3DFMT_DXT5;
+			return D3DFMT_DXT4;
 		case PixelFormat::DXT5:
-			return D3DFMT_D16_LOCKABLE;
+			return D3DFMT_DXT5;
 		case PixelFormat::D16_LOCKABLE:
-			return D3DFMT_D32;
+			return D3DFMT_D16_LOCKABLE;
 		case PixelFormat::D32:
-			return D3DFMT_D15S1;
+			return D3DFMT_D32;
 		case PixelFormat::D15S1:
-			return D3DFMT_D24S8;
+			return D3DFMT_D15S1;
 		case PixelFormat::D24S8:
-			return D3DFMT_D24X8;
+			return D3DFMT_D24S8;
 		case PixelFormat::D24X8:
 			return D3DFMT_D24X8;
 		case PixelFormat::D24X4S4:
@@ -302,25 +302,69 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 	WindowsRenderWindow* pWin = dynamic_cast<WindowsRenderWindow*>(cfg.renderWindow);
 	assert(pWin);
 
+
+
+	D3DDISPLAYMODE defaultAdapterDesplayMode;
+	HRESULT hr = m_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &defaultAdapterDesplayMode);
+	if (hr != D3D_OK)
+	{
+		OUTPUT_LOG("GetDefaultAdapterDisplayMode failed.");
+		return nullptr;
+	}
+
 	D3DPRESENT_PARAMETERS d3dpp;
 	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
 
+
 	if (cfg.isWindowed)
 	{
-		d3dpp.BackBufferWidth = pWin->GetWidth();
-		d3dpp.BackBufferHeight = pWin->GetHeight();
-		d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+		d3dpp.Windowed = true;
 		d3dpp.BackBufferCount = 1;
-		d3dpp.Windowed = TRUE;
+		d3dpp.MultiSampleQuality = D3DMULTISAMPLE_NONE;
+		d3dpp.MultiSampleQuality = 0;
+		d3dpp.BackBufferWidth = pWin->GetWidth();
+		d3dpp.BackBufferHeight = pWin->GetHeight();	
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-		d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
-		d3dpp.EnableAutoDepthStencil = TRUE;
+		d3dpp.EnableAutoDepthStencil = true;
+		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
+		d3dpp.BackBufferFormat = toD3DFromat(cfg.colorFormat);
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 		d3dpp.hDeviceWindow = pWin->GetHandle();
 	}
+	else {
+		d3dpp.Windowed = false;
+		d3dpp.BackBufferCount = 1;
+		d3dpp.MultiSampleQuality = D3DMULTISAMPLE_NONE;
+		d3dpp.MultiSampleQuality = 0;
+		d3dpp.BackBufferWidth = defaultAdapterDesplayMode.Width;
+		d3dpp.BackBufferHeight = defaultAdapterDesplayMode.Height;
+		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		d3dpp.EnableAutoDepthStencil = true;
+		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
+		d3dpp.BackBufferFormat = defaultAdapterDesplayMode.Format;
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+		d3dpp.FullScreen_RefreshRateInHz = defaultAdapterDesplayMode.RefreshRate;
+		d3dpp.hDeviceWindow = pWin->GetHandle();
+	}
+
+	D3DCAPS9 caps; int vp = 0;
+	if (m_D3D->GetDeviceCaps(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, &caps) != D3D_OK)
+	{
+		OUTPUT_LOG("GetDeviceCaps failed.");
+		return nullptr;
+	}
+	if (caps.DevCaps & D3DDEVCAPS_HWTRANSFORMANDLIGHT)
+	{
+		vp = D3DCREATE_HARDWARE_VERTEXPROCESSING;
+	}
+	else {
+		vp = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+	}
 
 	IDirect3DDevice9* pD3DDevice = nullptr;
-	HRESULT  hr = m_D3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, pWin->GetHandle(), D3DCREATE_HARDWARE_VERTEXPROCESSING, &d3dpp, &pD3DDevice);
+	hr = m_D3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, pWin->GetHandle(), vp | D3DCREATE_FPU_PRESERVE, &d3dpp, &pD3DDevice);
 	if (hr == D3D_OK)
 	{
 		CD3D9RenderDevice* pDevice = new CD3D9RenderDevice(pD3DDevice);
