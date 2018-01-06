@@ -873,8 +873,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 {
     HRESULT hr = S_OK;
 
-    D3DAdapterInfo* pAdapterInfo = m_d3dSettings.PAdapterInfo();
-    D3DDeviceInfo* pDeviceInfo = m_d3dSettings.PDeviceInfo();
 
     m_bWindowed = m_d3dSettings.IsWindowed;
 
@@ -884,27 +882,7 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
     // Set up the presentation parameters
     BuildPresentParamsFromSettings();
 
-    if( pDeviceInfo->Caps.PrimitiveMiscCaps & D3DPMISCCAPS_NULLREFERENCE )
-    {
-        // Warn user about null ref device that can't render anything
-        DisplayErrorMsg( D3DAPPERR_NULLREFDEVICE, 0 );
-    }
 
-    DWORD behaviorFlags;
-    if (m_d3dSettings.GetVertexProcessingType() == SOFTWARE_VP)
-        behaviorFlags = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-    else if (m_d3dSettings.GetVertexProcessingType() == MIXED_VP)
-        behaviorFlags = D3DCREATE_MIXED_VERTEXPROCESSING;
-    else if (m_d3dSettings.GetVertexProcessingType() == HARDWARE_VP)
-        behaviorFlags = D3DCREATE_HARDWARE_VERTEXPROCESSING;
-    else if (m_d3dSettings.GetVertexProcessingType() == PURE_HARDWARE_VP)
-        behaviorFlags = D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE;
-    else
-        behaviorFlags = 0; // TODO: throw exception
-
-    // Add multithreaded flag if requested by app
-    if( m_bCreateMultithreadDevice )
-        behaviorFlags |= D3DCREATE_MULTITHREADED;
 
 
 	RenderDeviceConfiguration cfg;
@@ -924,12 +902,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 	m_pRenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
-
-	// Store render target surface desc
-	LPDIRECT3DSURFACE9 pBackBuffer = NULL;
-	m_pd3dDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer);
-	pBackBuffer->GetDesc(&m_d3dsdBackBuffer);
-	pBackBuffer->Release();
 
 	// Initialize the app's device-dependent objects
 	hr = InitDeviceObjects();
@@ -1058,26 +1030,6 @@ HRESULT CD3DApplication::Reset3DEnvironment()
         return hr;
 	}
 
-    // Store render target surface desc
-    LPDIRECT3DSURFACE9 pBackBuffer;
-    m_pd3dDevice->GetBackBuffer( 0, 0, D3DBACKBUFFER_TYPE_MONO, &pBackBuffer );
-    pBackBuffer->GetDesc( &m_d3dsdBackBuffer );
-    pBackBuffer->Release();
-
-    // Confine cursor to fullscreen window
-    if( m_bClipCursorWhenFullscreen )
-    {
-        if (!m_bWindowed )
-        {
-            RECT rcWindow;
-            GetWindowRect( m_hWnd, &rcWindow );
-            ClipCursor( &rcWindow );
-        }
-        else
-        {
-            ClipCursor( NULL );
-        }
-    }
 
     // Initialize the app's device-dependent objects
     hr = RestoreDeviceObjects();
@@ -1384,59 +1336,9 @@ void CD3DApplication::UpdateStats()
         fLastTime = fTime;
         dwFrames  = 0;
 
-        TCHAR strFmt[100];
-        D3DFORMAT fmtAdapter = m_d3dSettings.DisplayMode().Format;
-        if( fmtAdapter == m_d3dsdBackBuffer.Format )
-        {
-            lstrcpyn( strFmt, D3DUtil_D3DFormatToString( fmtAdapter, false ), 100 );
-        }
-        else
-        {
-            _sntprintf( strFmt, 100, TEXT("backbuf %s, adapter %s"), 
-                D3DUtil_D3DFormatToString( m_d3dsdBackBuffer.Format, false ), 
-                D3DUtil_D3DFormatToString( fmtAdapter, false ) );
-        }
-        strFmt[99] = TEXT('\0');
-
-        TCHAR strDepthFmt[100];
-        if( m_d3dEnumeration.AppUsesDepthBuffer )
-        {
-            _sntprintf( strDepthFmt, 100, TEXT(" (%s)"), 
-                D3DUtil_D3DFormatToString( m_d3dSettings.DepthStencilBufferFormat(), false ) );
-            strDepthFmt[99] = TEXT('\0');
-        }
-        else
-        {
-            // No depth buffer
-            strDepthFmt[0] = TEXT('\0');
-        }
-
-        TCHAR* pstrMultiSample;
-        switch( m_d3dSettings.MultisampleType() )
-        {
-        case D3DMULTISAMPLE_NONMASKABLE:  pstrMultiSample = TEXT(" (Nonmaskable Multisample)"); break;
-        case D3DMULTISAMPLE_2_SAMPLES:  pstrMultiSample = TEXT(" (2x Multisample)"); break;
-        case D3DMULTISAMPLE_3_SAMPLES:  pstrMultiSample = TEXT(" (3x Multisample)"); break;
-        case D3DMULTISAMPLE_4_SAMPLES:  pstrMultiSample = TEXT(" (4x Multisample)"); break;
-        case D3DMULTISAMPLE_5_SAMPLES:  pstrMultiSample = TEXT(" (5x Multisample)"); break;
-        case D3DMULTISAMPLE_6_SAMPLES:  pstrMultiSample = TEXT(" (6x Multisample)"); break;
-        case D3DMULTISAMPLE_7_SAMPLES:  pstrMultiSample = TEXT(" (7x Multisample)"); break;
-        case D3DMULTISAMPLE_8_SAMPLES:  pstrMultiSample = TEXT(" (8x Multisample)"); break;
-        case D3DMULTISAMPLE_9_SAMPLES:  pstrMultiSample = TEXT(" (9x Multisample)"); break;
-        case D3DMULTISAMPLE_10_SAMPLES: pstrMultiSample = TEXT(" (10x Multisample)"); break;
-        case D3DMULTISAMPLE_11_SAMPLES: pstrMultiSample = TEXT(" (11x Multisample)"); break;
-        case D3DMULTISAMPLE_12_SAMPLES: pstrMultiSample = TEXT(" (12x Multisample)"); break;
-        case D3DMULTISAMPLE_13_SAMPLES: pstrMultiSample = TEXT(" (13x Multisample)"); break;
-        case D3DMULTISAMPLE_14_SAMPLES: pstrMultiSample = TEXT(" (14x Multisample)"); break;
-        case D3DMULTISAMPLE_15_SAMPLES: pstrMultiSample = TEXT(" (15x Multisample)"); break;
-        case D3DMULTISAMPLE_16_SAMPLES: pstrMultiSample = TEXT(" (16x Multisample)"); break;
-        default:                        pstrMultiSample = TEXT(""); break;
-        }
-
         const int cchMaxFrameStats = sizeof(m_strFrameStats) / sizeof(TCHAR);
-        _sntprintf( m_strFrameStats, cchMaxFrameStats, _T("%.02f fps (%dx%d), %s%s%s"), m_fFPS,
-                    m_d3dsdBackBuffer.Width, m_d3dsdBackBuffer.Height,
-                    strFmt, strDepthFmt, pstrMultiSample );
+        _sntprintf( m_strFrameStats, cchMaxFrameStats, _T("%.02f fps (%dx%d)"), m_fFPS,
+			m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
         m_strFrameStats[cchMaxFrameStats - 1] = TEXT('\0');
     }
 }
