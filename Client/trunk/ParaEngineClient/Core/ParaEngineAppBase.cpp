@@ -31,6 +31,7 @@
 #include "BootStrapper.h"
 #include "NPL/NPLHelper.h"
 #include "AISimulator.h"
+#include "AsyncLoader.h"
 #include "FileManager.h"
 #include "Archive.h"
 #include "ParaEngineAppBase.h"
@@ -115,6 +116,24 @@ void ParaEngine::CParaEngineAppBase::OnFrameEnded()
 
 bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 {
+	const char* sWritablePath = GetAppCommandLineByParam("writablepath", NULL);
+	if (sWritablePath && sWritablePath[0] != 0) {
+		CParaFile::SetWritablePath(sWritablePath);
+	}
+
+	const char* nAssetLogLevel = GetAppCommandLineByParam("assetlog_level", NULL);
+	if (nAssetLogLevel && nAssetLogLevel[0] != 0) 
+	{
+		int nLevel = 0;
+		if (strcmp(nAssetLogLevel, "all") == 0)
+			nLevel = ParaEngine::CAsyncLoader::Log_All;
+		else if (strcmp(nAssetLogLevel, "remote") == 0)
+			nLevel = ParaEngine::CAsyncLoader::Log_Remote;
+		else if (strcmp(nAssetLogLevel, "error") == 0)
+			nLevel = ParaEngine::CAsyncLoader::Log_Error;
+		ParaEngine::CAsyncLoader::GetSingleton().SetLogLevel(0);
+	}
+
 	const char* sLogFile = GetAppCommandLineByParam("logfile", NULL);
 	if (sLogFile && sLogFile[0] != 0){
 		CLogger::GetSingleton().SetLogFile(sLogFile);
@@ -155,8 +174,6 @@ void ParaEngine::CParaEngineAppBase::InitCommon()
 	SetCurrentInstance((CParaEngineApp*)this);
 
 	srand((unsigned long)time(NULL));
-
-	InitCommandLineParams();
 
 	FindParaEngineDirectory();
 	RegisterObjectClasses();
@@ -243,6 +260,20 @@ void ParaEngine::CParaEngineAppBase::SystemMessageBox(const std::string& msg)
 void ParaEngine::CParaEngineAppBase::SetAppCommandLine(const char* pCommandLine)
 {
 	CCommandLineParams::SetAppCommandLine(pCommandLine);
+	InitCommandLineParams();
+
+	static bool bFirstCall = true;
+	if (bFirstCall)
+	{
+		bFirstCall = false;
+		OUTPUT_LOG1("NPL Runtime started\n");
+		OUTPUT_LOG("NPL bin dir: %s\n", m_sModuleDir.c_str());
+		if (m_sPackagesDir.empty()) {
+			OUTPUT_LOG("no packages at: %s\n", m_sPackagesDir.c_str());
+		}
+		OUTPUT_LOG("WorkingDir: %s\n", m_sInitialWorkingDir.c_str());
+		OUTPUT_LOG("WritablePath: %s\n", CParaFile::GetWritablePath().c_str());
+	}
 }
 
 const char* ParaEngine::CParaEngineAppBase::GetAppCommandLine()
@@ -682,14 +713,12 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 	if (!sModuleDir.empty())
 	{
 		m_sModuleDir = CParaFile::GetParentDirectoryFromPath(sModuleDir);
-		OUTPUT_LOG("NPL bin dir: %s\n", m_sModuleDir.c_str());
 		std::string packagesDir = m_sModuleDir + "packages";
 		if (!CParaFile::DoesFileExist(packagesDir.c_str(), false))
 		{
 			packagesDir = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "packages";
 			if (!CParaFile::DoesFileExist(packagesDir.c_str(), false))
 			{
-				OUTPUT_LOG("no packages at: %s\n", packagesDir.c_str());
 				packagesDir = "";
 			}
 		}
@@ -725,7 +754,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			}
 			else
 			{
-				OUTPUT_LOG("ParaEngine.sig file not found\n");
+				// OUTPUT_LOG("ParaEngine.sig file not found\n");
 			}
 		}
 		// set the current directory by reading from the registry.
@@ -739,7 +768,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		char sWorkingDir[512 + 1] = { 0 };
 		memset(sWorkingDir, 0, sizeof(sWorkingDir));
 		::GetCurrentDirectory(MAX_PATH, sWorkingDir);
-		OUTPUT_LOG("WorkingDir: %s\n", sWorkingDir);
+		m_sInitialWorkingDir = sWorkingDir;
 #ifdef PARAENGINE_MOBILE
 		CGlobals::GetFileManager()->AddDiskSearchPath(sWorkingDir);
 #endif

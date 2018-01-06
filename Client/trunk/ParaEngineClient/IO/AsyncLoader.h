@@ -62,6 +62,15 @@ namespace ParaEngine
 	class CAsyncLoader : public IAttributeFields
 	{
 	public:
+		enum AssetLogLevelEnum
+		{
+			Log_All = 0,
+			Log_Debug,
+			Log_Remote,
+			Log_Warn,
+			Log_Error,
+		};
+
 		typedef boost::shared_ptr<boost::thread> Boost_Thread_ptr_type;
 
 		CAsyncLoader();
@@ -79,6 +88,10 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAsyncLoader, SetWorkerThreads_s, Vector2) { cls->CreateWorkerThreads((int)p1.x, (int)p1.y); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CAsyncLoader, SetProcessorQueueSize_s, Vector2) { cls->SetProcessorQueueSize((int)p1.x, (int)p1.y); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CAsyncLoader, GetLogLevel_s, int*) { *p1 = cls->GetLogLevel(); return S_OK; }
+		ATTRIBUTE_METHOD1(CAsyncLoader, SetLogLevel_s, int) { cls->SetLogLevel(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CAsyncLoader, log_s, const char*) { cls->log(p1); return S_OK; }
 		ATTRIBUTE_METHOD(CAsyncLoader, WaitForAllItems_s) { cls->WaitForAllItems(); return S_OK; }
 		
@@ -186,8 +199,12 @@ namespace ParaEngine
 		*/
 		void ClearAllPendingRequests();
 
+		int GetLogLevel() const;
+		void SetLogLevel(int val);
+
 		/** write formated text to "asset.log". the input is same to printf */
 		void log(const string& msg);
+		void log(int nLogLevel, const string& msg);
 
 		/** this is a global interrupt signal. Once set, all thread should try to exit ASAP*/
 		inline bool interruption_requested(){return m_bInterruptSignal;}
@@ -345,6 +362,9 @@ namespace ParaEngine
 
 		/** for logging */
 		CServiceLogger_ptr g_asset_logger;
+		
+		/** default to Log_Remote */
+		AssetLogLevelEnum m_nLogLevel;
 
 #ifdef PARAENGINE_CLIENT
 		/** another parax file parser used in the IO thread */

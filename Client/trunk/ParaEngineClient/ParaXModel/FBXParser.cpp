@@ -433,7 +433,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				pMesh->textures[i] = CGlobals::GetAssetManager()->LoadTexture("", m_textures[i], TextureEntity::StaticTexture);
 			}
 			// for replaceable textures
-			if (m_textures[i].nIsReplaceableIndex > 0 && i < 32)
+			if (m_textures[i].nIsReplaceableIndex >= 0 && i < 32)
 			{
 				pMesh->specialTextures[i] = m_textures[i].nIsReplaceableIndex;
 			}

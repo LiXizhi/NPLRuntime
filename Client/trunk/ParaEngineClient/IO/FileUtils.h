@@ -211,8 +211,9 @@ namespace ParaEngine
 		*  Gets the writable path.
 		*  @return  The path that can be write/read a file in
 		*/
-		static std::string GetWritablePath();
+		static const std::string& GetWritablePath();
 
+		/** not thread safe, only set at startup when there is just one thread running. */
 		static void SetWritablePath(const std::string& writable_path);
 
 		/** this is a recursive function. @see SearchFiles */
