@@ -181,10 +181,6 @@ namespace ParaEngine
 		bool              m_bCreateMultithreadDevice; // Whether to create a multithreaded device
 		bool              m_bAllowDialogBoxMode; // If enabled the framework will try to enable GDI dialogs while in fullscreen
 
-												 /** whether the main rendering window is an externally provided window or not. This will be true if SetMainWindow() is called. */
-		bool			  m_bIsExternalWindow;
-
-		bool m_bIsExternalD3DDevice;
 		/** application state */
 		PEAppState m_nAppState;
 

@@ -427,7 +427,6 @@ void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 {
 	m_hWnd = hWnd;
 	m_dwWinThreadID = ::GetWindowThreadProcessId(hWnd, NULL);
-	m_bIsExternalWindow = bIsExternalWindow;
 	m_bWindowed = true;
 
 	/** let us find the top-level window which should be the foreground window. */
@@ -439,11 +438,6 @@ void CWindowsApplication::SetMainWindow(HWND hWnd, bool bIsExternalWindow)
 	}
 
 	OUTPUT_LOG("Window is %s: 3d window: %x, top level: %x\n", bIsExternalWindow ? "external" : "native", m_hWnd, m_hwndTopLevelWnd);
-	if (m_bIsExternalWindow)
-	{
-		// m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
-		HandlePossibleSizeChange();
-	}
 
 #ifdef USE_FLASH_MANAGER
 	CGlobals::GetAssetManager()->GetFlashManager().SetParentWindow(hWnd);
@@ -562,7 +556,7 @@ HRESULT CWindowsApplication::Init(HWND* pHWND)
 
 	if (pHWND != 0)
 	{
-		SetMainWindow(*pHWND, m_bIsExternalWindow);
+		SetMainWindow(*pHWND, false);
 
 		bool g_bEnableDragAndDropFile = true;
 		if (g_bEnableDragAndDropFile)
@@ -1080,15 +1074,14 @@ bool CWindowsApplication::UpdateScreenDevice()
 			OUTPUT_LOG("Window size adjust in windowed mode\n");
 
 			// if only windowed mode resolution and back buffer size is changed.
-			if (!m_bIsExternalWindow)
-			{
+
 				RECT rect;
 				GetWindowRect(CGlobals::GetAppHWND(), &rect);
 
 				rect.right = rect.left + m_d3dSettings.Windowed_DisplayMode.Width;
 				rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
 				SetAppWndRect(rect);
-			}
+			
 
 			bool  bOldValue = m_bIgnoreSizeChange;
 			m_bIgnoreSizeChange = false;
@@ -1460,8 +1453,6 @@ bool CWindowsApplication::IsFullScreenMode()
 
 void CWindowsApplication::ShowMenu(bool bShow)
 {
-	if (m_bIsExternalWindow)
-		return;
 
 	if (bShow)
 	{
@@ -2561,11 +2552,7 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 				result = HTCLIENT;
 			}
 			else {
-				result = HTCLIENT;
-				if (!m_bIsExternalWindow)
-				{
-					result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
-				}
+				result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
 			}
 			SendMessageToApp(hWnd, uMsg, result, 0);
 
@@ -2575,8 +2562,6 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			return result;
 		}
 		case WM_LBUTTONUP:
-			if (m_bIsExternalWindow)
-				break;
 			// fall through to WM_MOUSEACTIVATE if this is the top level window, since WM_MOUSEACTIVATE is not called for top-level window, but always called on mouse click for child windows.
 		case WM_MOUSEACTIVATE:
 		{
@@ -2609,8 +2594,7 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			break;
 		}
 		case WM_COMMAND:
-			if (!m_bIsExternalWindow)
-			{
+
 				switch (LOWORD(wParam))
 				{
 				case IDM_EXIT:
@@ -2621,7 +2605,7 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 					SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
 					break;
 				}
-			}
+			
 			break;
 		case WM_DROPFILES:
 		{
@@ -2663,8 +2647,7 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 		}
 
 		case WM_SYSCOMMAND:
-			if (!m_bIsExternalWindow)
-			{
+
 				// Prevent moving/sizing and power loss in fullscreen mode
 				switch (wParam)
 				{
@@ -2687,7 +2670,7 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 					return 0;
 				}
 
-			}
+			
 			break;
 
 			/*case WM_IME_CHAR:
