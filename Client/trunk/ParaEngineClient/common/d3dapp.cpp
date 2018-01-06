@@ -50,7 +50,6 @@ CD3DApplication::CD3DApplication()
 
 	SetAppState(PEAppState_None);
 
-	m_bIsExternalD3DDevice = false;
     m_pD3D              = NULL;
     m_pd3dDevice        = NULL;
 	m_pd3dSwapChain     = NULL;
@@ -89,7 +88,6 @@ CD3DApplication::CD3DApplication()
     m_bStartFullscreen  = false;
     m_bCreateMultithreadDevice = true;
     m_bAllowDialogBoxMode = false;
-	m_bIsExternalWindow = false;
 
 	m_pRenderDevice = NULL;
 	m_pRenderContext = nullptr;
@@ -160,7 +158,6 @@ HRESULT CD3DApplication::Create()
 		return E_FAIL;
 	}
 
-	m_bIsExternalD3DDevice = false;
 	SetAppState(PEAppState_Device_Created);
 	
 	if(!m_bDisableD3D)
@@ -710,13 +707,12 @@ HRESULT CD3DApplication::ChooseInitialD3DSettings()
     m_d3dSettings.SetDeviceClip( false );
 
 	// For external window, always start in windowed mode, this fixed a bug for web browser plugin. 
-	if(!m_bIsExternalWindow)
-	{
+
 		if( m_bStartFullscreen && bFoundFullscreen)
 			m_d3dSettings.IsWindowed = false;
 		if( !bFoundWindowed && bFoundFullscreen )
 			m_d3dSettings.IsWindowed = false;
-	}
+	
 
     if( !bFoundFullscreen && !bFoundWindowed )
         return D3DAPPERR_NOCOMPATIBLEDEVICES;
@@ -1035,7 +1031,7 @@ HRESULT CD3DApplication::ToggleFullscreen()
         if( hr != D3DERR_OUTOFVIDEOMEMORY )
             hr = D3DAPPERR_RESETFAILED;
         m_bIgnoreSizeChange = false;
-		if( !m_bWindowed && !m_bIsExternalWindow)
+		if( !m_bWindowed )
         {
 			OUTPUT_LOG("Restore window type to windowed mode\n");
             // Restore window type to windowed mode
@@ -1062,7 +1058,7 @@ HRESULT CD3DApplication::ToggleFullscreen()
     // the window size to 1000x600 until after the display mode has
     // changed to 1024x768, because windows cannot be larger than the
     // desktop.
-	if( m_bWindowed && !m_bIsExternalWindow)
+	if( m_bWindowed)
     {
         SetWindowPos( m_hWnd, HWND_NOTOPMOST,
                       m_rcWindowBounds.left, m_rcWindowBounds.top,
@@ -1227,7 +1223,7 @@ HRESULT CD3DApplication::UserSelectNewDevice()
     {
         if( hr != D3DERR_OUTOFVIDEOMEMORY )
             hr = D3DAPPERR_RESETFAILED;
-		if( !m_bWindowed && !m_bIsExternalWindow)
+		if( !m_bWindowed)
         {
             // Restore window type to windowed mode
             m_bWindowed = !m_bWindowed;
