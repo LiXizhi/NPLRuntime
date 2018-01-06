@@ -921,7 +921,7 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 
 	
     //hr = m_pD3D->CreateDevice( m_d3dSettings.AdapterOrdinal(), pDeviceInfo->DevType,
-    //                           m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/ , &m_d3dpp,
+    //                           m_hWndFocus, behaviorFlags | D3DCREATE_FPU_PRESERVE /*| D3DCREATE_NOWINDOWCHANGES*/, &m_d3dpp,
     //                           &m_pd3dDevice );
 	RenderDeviceConfiguration cfg;
 	cfg.isWindowed = !m_bStartFullscreen;
