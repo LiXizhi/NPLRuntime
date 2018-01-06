@@ -157,7 +157,6 @@ namespace ParaEngine
 		LPDIRECT3DDEVICE9 m_pd3dDevice;        // The D3D rendering device
 		IDirect3DSwapChain9* m_pd3dSwapChain;
 		D3DCAPS9          m_d3dCaps;           // Caps for the device
-		D3DSURFACE_DESC   m_d3dsdBackBuffer;   // Surface desc of the backbuffer
 		DWORD             m_dwCreateFlags;     // Indicate sw or hw vertex processing
 		DWORD             m_dwWindowStyle;     // Saved window style for mode switches
 		RECT              m_rcWindowBounds;    // Saved window bounds for mode switches
