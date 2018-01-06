@@ -15,6 +15,7 @@
 #include <boost/filesystem.hpp>
 #include "zlib.h"
 
+
 using namespace ParaEngine;
 
 namespace ParaEngine 
@@ -95,52 +96,6 @@ namespace ParaEngine
 		}
 	public:
 
-		/**@def CHUNK is simply the buffer size for feeding data to and pulling data from the zlib routines.
-		Larger buffer sizes would be more efficient, especially for inflate(). If the memory is available,
-		buffers sizes on the order of 128K or 256K bytes should be used. */
-		static const int NPL_ZLIB_CHUNK = 32768;
-
-		/** compress without zip header*/
-		static int Compress(std::string& outstring, const char* src, int nSrcSize, int compressionlevel = Z_DEFAULT_COMPRESSION)
-		{
-			z_stream zs;
-			memset(&zs, 0, sizeof(z_stream));
-
-			if (deflateInit2(&zs, compressionlevel, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY) != Z_OK)
-			{
-				OUTPUT_LOG("warning: NPLCodec::Compress deflateInit failed while compressing.\n");
-				return -1;
-			}
-
-			zs.next_in = (Bytef*)src;
-			// set the z_stream's input
-			zs.avail_in = nSrcSize;
-
-			int ret;
-			char outbuffer[NPL_ZLIB_CHUNK];
-			// retrieve the compressed bytes blockwise
-			do {
-				zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
-				zs.avail_out = sizeof(outbuffer);
-
-				ret = deflate(&zs, Z_FINISH);
-
-				if (outstring.size() < zs.total_out) {
-					// append the block to the output string
-					outstring.append(outbuffer,
-						zs.total_out - outstring.size());
-				}
-			} while (ret == Z_OK);
-
-			deflateEnd(&zs);
-
-			if (ret != Z_STREAM_END) {
-				OUTPUT_LOG("warning: NPLCodec::Compress failed an error occurred that was not EOF.\n");
-				return -1;
-			}
-			return 1;
-		}
-
 		/**
 		* @param destFilename: filename in zip file
 		* @param filename: filename in system. if empty, it means destFilename is a directory. 
@@ -188,7 +143,7 @@ namespace ParaEngine
 					{
 						std::string output;
 						output.reserve(m_pFile->getSize());
-						if (Compress(output, (const char*)m_pFile->getBuffer(), m_pFile->getSize()) == 1)
+						if (CZipWriter::Compress(output, (const char*)m_pFile->getBuffer(), m_pFile->getSize()) == 1)
 						{
 							m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
 							m_localFileHeader.DataDescriptor.UncompressedSize = m_pFile->getSize();
@@ -215,7 +170,7 @@ namespace ParaEngine
 					{
 						std::string output;
 						output.reserve(input.getSize());
-						if (Compress(output, (const char*)input.getBuffer(), input.getSize()) == 1)
+						if (CZipWriter::Compress(output, (const char*)input.getBuffer(), input.getSize()) == 1)
 						{
 							m_localFileHeader.CompressionMethod = 8; // 8 for zip, 0 for no compression.
 							m_localFileHeader.DataDescriptor.UncompressedSize = input.getSize();
@@ -277,6 +232,53 @@ namespace ParaEngine
 /// CZipWriter
 ///
 /////////////////////////////////////////////
+
+/** compress without zip header*/
+int CZipWriter::Compress(std::string& outstring, const char* src, int nSrcSize, int compressionlevel)
+{
+	/**@def CHUNK is simply the buffer size for feeding data to and pulling data from the zlib routines.
+	Larger buffer sizes would be more efficient, especially for inflate(). If the memory is available,
+	buffers sizes on the order of 128K or 256K bytes should be used. */
+	static const int NPL_ZLIB_CHUNK = 32768;
+
+	z_stream zs;
+	memset(&zs, 0, sizeof(z_stream));
+
+	if (deflateInit2(&zs, compressionlevel, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY) != Z_OK)
+	{
+		OUTPUT_LOG("warning: NPLCodec::Compress deflateInit failed while compressing.\n");
+		return -1;
+	}
+
+	zs.next_in = (Bytef*)src;
+	// set the z_stream's input
+	zs.avail_in = nSrcSize;
+
+	int ret;
+	char outbuffer[NPL_ZLIB_CHUNK];
+	// retrieve the compressed bytes blockwise
+	do {
+		zs.next_out = reinterpret_cast<Bytef*>(outbuffer);
+		zs.avail_out = sizeof(outbuffer);
+
+		ret = deflate(&zs, Z_FINISH);
+
+		if (outstring.size() < zs.total_out) {
+			// append the block to the output string
+			outstring.append(outbuffer,
+				zs.total_out - outstring.size());
+		}
+	} while (ret == Z_OK);
+
+	deflateEnd(&zs);
+
+	if (ret != Z_STREAM_END) {
+		OUTPUT_LOG("warning: NPLCodec::Compress failed an error occurred that was not EOF.\n");
+		return -1;
+	}
+	return 1;
+}
+
 
 CZipWriter::CZipWriter()
 {

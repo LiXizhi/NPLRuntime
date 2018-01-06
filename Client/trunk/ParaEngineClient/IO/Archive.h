@@ -8,6 +8,18 @@ namespace ParaEngine
 	class CSearchResult;
 	using namespace std;
 
+	struct ArchiveFileFindItem
+	{
+		ArchiveFileFindItem() : filename(nullptr), hashValue(nullptr), hashlower(nullptr) {};
+		ArchiveFileFindItem(const char* sFilename) : filename(sFilename), hashValue(nullptr), hashlower(nullptr) {};
+		ArchiveFileFindItem(const char* sFilename, const uint32* uHash, const uint32* uHashLower) : filename(sFilename), hashValue(uHash), hashlower(uHashLower) {};
+
+		const char* filename;
+		const uint32* hashValue;
+		const uint32* hashlower;
+	};
+
+
 	/** file archiver base class. */
 	class CArchive : public IAttributeFields
 	{
@@ -49,6 +61,15 @@ namespace ParaEngine
 		* @return : true if succeeded.
 		*/
 		virtual bool OpenFile(const char* filename, FileHandle& handle) = 0;
+
+		/**
+		* Open a file for immediate reading.
+		* call getBuffer() to retrieval the data
+		* @param item: the file find item to open
+		* @param handle to the opened file.
+		* @return : true if succeeded.
+		*/
+		virtual bool OpenFile(const ArchiveFileFindItem* item, FileHandle& handle) = 0;
 
 		/** get file size. */
 		virtual DWORD GetFileSize(FileHandle& handle) = 0;
@@ -95,6 +116,7 @@ namespace ParaEngine
 		*/
 		virtual void FindFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel){};
 
+		virtual bool IsIgnoreCase() const { return false;  };
 	protected:
 		/// file name
 		string		m_filename;

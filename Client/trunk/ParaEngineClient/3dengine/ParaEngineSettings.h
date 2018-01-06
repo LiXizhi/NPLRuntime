@@ -88,13 +88,10 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetEditingMode_s, bool)	{cls->SetEditingMode(p1); return S_OK;}
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLockWindowSize_s, bool)	{ cls->SetLockWindowSize(p1); return S_OK; }
-		
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsShowWindowTitleBar_s, bool*)	{ *p1 = cls->IsShowWindowTitleBar(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetShowWindowTitleBar_s, bool)	{ cls->SetShowWindowTitleBar(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(ParaEngineSettings, FixWindowSize_s, bool) { cls->FixWindowSize(p1); return S_OK; }
-		
-		
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetGameEffectSet_s, int*)	{*p1 = cls->GetGameEffectSet(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, LoadGameEffectSet_s, int)	{cls->LoadGameEffectSet(p1); return S_OK;}
@@ -214,13 +211,16 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCurrentMemoryUse_s, int*)	{ *p1 = cls->GetCurrentMemoryUse(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexBufferPoolTotalBytes_s, int*)	{ *p1 = (int)cls->GetVertexBufferPoolTotalBytes(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetWritablePath_s, const char**) { *p1 = cls->GetWritablePath(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWritablePath_s, const char*) { cls->SetWritablePath(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, int*) { *p1 = cls->GetAppHWND(); return S_OK; }
 	public:
 		/** 
 		* @param dwTechnique: 0 for basic, the higher the more advanced. up to 3. */
 		static void SetOceanTechnique(DWORD dwTechnique);
 
-		/** set the default script editor file path for ParaEngine.The windows notepad.exe is used if not specifcied.  */
+		/** set the default script editor file path for ParaEngine.The windows notepad.exe is used if not specified.  */
 		void SetScriptEditor(const string& sEditorFilePath);
 		/** Get the default script editor for ParaEngine.*/
 		const string& GetScriptEditor();
@@ -673,8 +673,13 @@ namespace ParaEngine
 		bool HasClosingRequest();
 		void SetHasClosingRequest(bool val);
 
-		// 
-		void FixWindowSize(bool fixed);
+		/** get the current writable path */
+		const char* GetWritablePath();
+
+		/** set current writable path. 
+		* TODO: This can be a security problem. use with care. 
+		*/
+		void SetWritablePath(const char* sPath);
 
 		static int GetAppHWND();
 	protected:

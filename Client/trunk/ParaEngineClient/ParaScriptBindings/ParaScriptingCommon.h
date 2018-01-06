@@ -343,6 +343,16 @@ namespace ParaScripting
 		static bool GeneratePkgFile(const char* srcZip, const char* destPkg );
 
 		/**
+		* Generate a pkg file which is equivalent to the specified zip file.
+		* This function can only be called, when a zip file can be successfully loaded.
+		* @param srcZip: the zip file name from which to generate.
+		* @param destPkg : destination file. if nil, it just rename the srcZip
+		* @param nVersion: the pkg file version number. version 2 is recommended.
+		* @return true if successful. It will overwrite existing file. Output file is at the save directory and filename but with pkg file extension.
+		*/
+		static bool GeneratePkgFile_(const char* srcZip, const char* destPkg, int nVersion);
+
+		/**
 		* open the archive file(zip or pkg file) for further resource file searching. If any file can not be located
 		* on the disk file system, it will go on searching for it in the archive file.
 		* @param strFileName: the package file path name

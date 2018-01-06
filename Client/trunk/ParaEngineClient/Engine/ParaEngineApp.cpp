@@ -184,8 +184,6 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 
 	SetAppCommandLine(sCommandLine);
 
-	InitCommandLineParams();
-
 	COSInfo::DumpSystemInfo();
 
 	if (Is3DRenderingEnabled())
@@ -1529,17 +1527,16 @@ void CParaEngineApp::FixWindowSize(bool fixed)
 		if (fixed)
 		{
 			dwWindowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+			// dwWindowStyle &= (~(WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
 		}
 		else
 		{
 			dwWindowStyle |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
+			// dwWindowStyle |= (WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
 		}
-
 		SetWindowLong(m_hWnd, GWL_STYLE, dwWindowStyle);
-
 	}
 }
-
 
 void CParaEngineApp::SetWindowText( const char* pChar )
 {
