@@ -389,9 +389,6 @@ namespace ParaEngine
 
 		/** create instance */
 		virtual HRESULT Create(HINSTANCE hInstance = 0);
-
-		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain);
-
 		virtual HRESULT Render3DEnvironment(bool bForceRender = false);
 		virtual float GetFPS();
 		void UpdateFrameStats(double fTime);

@@ -455,14 +455,6 @@ HWND CWindowsApplication::GetMainWindow()
 	return m_hWnd;
 }
 
-HRESULT CWindowsApplication::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)
-{
-	HRESULT hr = CD3DApplication::CreateFromD3D9Device(pD3dDevice, apSwapChain);
-	if (FAILED(hr))
-		return hr;
-
-	return hr;
-}
 
 HRESULT CWindowsApplication::Create(HINSTANCE hInstance)
 {

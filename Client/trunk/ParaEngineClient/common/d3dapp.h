@@ -108,8 +108,6 @@ namespace ParaEngine
 
 		// Functions to create, run, pause, and clean up the application
 		virtual HRESULT Create();
-		virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain);
-
 		virtual int     Run(HINSTANCE hInstance);
 
 		ParaEngine::PEAppState GetAppState() { return m_nAppState; }

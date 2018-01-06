@@ -139,54 +139,7 @@ bool CD3DApplication::ConfirmDeviceHelper( D3DCAPS9* pCaps, VertexProcessingType
     return SUCCEEDED( g_pD3DApp->ConfirmDevice( pCaps, dwBehavior, adapterFormat, backBufferFormat ) );
 }
 
-HRESULT CD3DApplication::CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain)
-{
-	HRESULT hr; 
-	m_bIsExternalD3DDevice = true;
-	m_pD3D = NULL;
-	m_pd3dDevice = pD3dDevice;
-	m_pd3dDevice->AddRef();
-	m_pd3dSwapChain = apSwapChain;
-	m_pd3dSwapChain->AddRef();
-	SetAppState(PEAppState_Device_Created);
 
-	OUTPUT_LOG("Note: d3d device is created by external application\n");
-
-	// The focus window can be a specified to be a different window than the
-	// device window.  If not, use the device window as the focus window.
-	if( m_hWndFocus == NULL )
-		m_hWndFocus = m_hWnd;
-
-	OUTPUT_LOG("DEBUG: main thread wnd handle : %d\n", m_hWndFocus);
-
-	// Save window properties
-	m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
-	HandlePossibleSizeChange(true);
-
-	// Initialize the application timer
-	DXUtil_Timer( TIMER_START );
-
-	// Initialize the app's custom scene stuff
-	if( FAILED( hr = OneTimeSceneInit() ) )
-	{
-		return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-	}
-
-	if(!m_bDisableD3D)
-	{
-		// Initialize the 3D environment for the app
-		if( FAILED( hr = Initialize3DEnvironment() ) )
-		{
-			return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-		}
-	}
-
-	// The app is ready to go
-	Pause( false );
-	SetAppState(PEAppState_Ready);
-
-	return S_OK;
-}
 //-----------------------------------------------------------------------------
 // Name: Create()
 // Desc: Here's what this function does:
@@ -855,20 +808,6 @@ bool CD3DApplication::UpdateViewPort()
 	return false;
 }
 
-//-----------------------------------------------------------------------------
-// Name: Initialize3DEnvironment()
-// Desc: Usually this function is not overridden.  Here's what this function does:
-//       - Sets the windowed flag to be either windowed or fullscreen
-//       - Sets parameters for z-buffer depth and back buffer
-//       - Creates the D3D device
-//       - Sets the window position (if windowed, that is)
-//       - Makes some determinations as to the abilites of the driver (HAL, etc)
-//       - Sets up some cursor stuff
-//       - Calls InitDeviceObjects()
-//       - Calls RestoreDeviceObjects()
-//       - If all goes well, m_bActive is set to TRUE, and the function returns
-//       - Otherwise, initialization is reattempted using the reference device
-//-----------------------------------------------------------------------------
 HRESULT CD3DApplication::Initialize3DEnvironment()
 {
     HRESULT hr = S_OK;
@@ -881,8 +820,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 
     // Set up the presentation parameters
     BuildPresentParamsFromSettings();
-
-
 
 
 	RenderDeviceConfiguration cfg;
