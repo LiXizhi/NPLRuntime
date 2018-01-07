@@ -32,7 +32,7 @@ namespace ParaEngine
 		
 		bool    FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
 		bool    FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
-		HRESULT ChooseInitialD3DSettings();
+
 		HRESULT Initialize3DEnvironment();
 		/** this function is called whenever the main window size changes. It may need to adjust/strech the d3d devices and coordinate systems.
 		* @param bUpdateSizeOnly: if true, we will only update the d3d device.
