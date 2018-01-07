@@ -150,14 +150,6 @@ HRESULT CD3DApplication::Create()
     m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
     HandlePossibleSizeChange(true);
 
-	if(!m_bDisableD3D)
-	{
-		if( FAILED( hr = ChooseInitialD3DSettings() ) )
-		{
-			SAFE_RELEASE( m_pD3D );
-			return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-		}
-	}
 
     // Initialize the application timer
     DXUtil_Timer( TIMER_START );
@@ -643,31 +635,6 @@ EndFullscreenDeviceComboSearch:
 }
 
 
-
-
-//-----------------------------------------------------------------------------
-// Name: ChooseInitialD3DSettings()
-// Desc: 
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::ChooseInitialD3DSettings()
-{
-    bool bFoundFullscreen = FindBestFullscreenMode( false, false );
-    bool bFoundWindowed = FindBestWindowedMode( false, false );
-    m_d3dSettings.SetDeviceClip( false );
-
-	// For external window, always start in windowed mode, this fixed a bug for web browser plugin. 
-
-		if( m_bStartFullscreen && bFoundFullscreen)
-			m_d3dSettings.IsWindowed = false;
-		if( !bFoundWindowed && bFoundFullscreen )
-			m_d3dSettings.IsWindowed = false;
-	
-
-    if( !bFoundFullscreen && !bFoundWindowed )
-        return D3DAPPERR_NOCOMPATIBLEDEVICES;
-
-    return S_OK;
-}
 
 
 //-----------------------------------------------------------------------------
