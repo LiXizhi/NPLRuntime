@@ -69,20 +69,8 @@ namespace ParaScripting
 	{
 		if(dest!=NULL && src!=NULL)
 		{
-#ifndef PARAENGINE_MOBILE
-			string sDestPath = dest;
-			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sDestPath.find_first_of(":") != string::npos)
-			{
-				// only relative path is allowed.
-				OUTPUT_LOG("security alert: some one is telling the engine to copy a file to %s which is not allowed\r\n", sDestPath.c_str());
+			if (!CParaFile::IsWritablePath(dest))
 				return false;
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-#endif
 		}
 		return CParaFile::CopyFile(src, dest, bOverride);
 	}
@@ -95,17 +83,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::CreateNewFile is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 		g_currentIOfile.close();
 		return g_currentIOfile.CreateNewFile(filename);
 	}
@@ -114,17 +93,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFileWrite is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 
 		g_currentIOfile.close();
 		return g_currentIOfile.OpenFile(filename, false);
@@ -134,17 +104,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFile is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 
 		g_currentIOfile.close();
 		return g_currentIOfile.OpenFile(filename);
@@ -156,24 +117,8 @@ namespace ParaScripting
 		ParaFileObject file;
 		if (filename == NULL)
 			return file;
-		{
-			string sFilename = filename;
-			if (sFilename.find_first_of(":") != string::npos)
-			{
-				// skip writable directory.
-				auto writablePath = CParaFile::GetWritablePath();
-				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
-				{
-					// only relative path is allowed.
-					OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
-					return file;
-				}
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-		}
+		if (!CParaFile::IsWritablePath(filename))
+			return file;
 
 		// open the given file according to its file type. currently image files are automatically opened.
 		// Load the texture data.
@@ -335,24 +280,9 @@ namespace ParaScripting
 		ParaFileObject file;
 		if(filename == NULL)
 			return file;
-		{
-			string sFilename = filename;
-			if(sFilename.find_first_of(":") != string::npos)
-			{
-				// skip writable directory.
-				auto writablePath = CParaFile::GetWritablePath();
-				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
-				{
-					// only relative path is allowed.
-					OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
-					return file;
-				}
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-		}
+		if (!CParaFile::IsWritablePath(filename))
+			return file;
+
 		if (mode[0] == 'r')
 		{
 			if(mode[1] != 'w')
@@ -664,15 +594,11 @@ namespace ParaScripting
 			return "";
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
 		string sFileName = sfilename;
-		if(sFileName.find_first_of(":") != string::npos)
+		if(!CParaFile::IsWritablePath(sfilename, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to change file extension to a file %s which is not allowed\r\n", sFileName.c_str());
 			return "";
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
 		}
 		return CParaFile::ChangeFileExtension(sfilename, sExt);
 	}
@@ -894,28 +820,21 @@ namespace ParaScripting
 		{
 			string sDestPath = dest;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sDestPath.find_first_of(":") != string::npos)
+			if(!CParaFile::IsWritablePath(sDestPath))
 			{
 				// only relative path is allowed.
 				OUTPUT_LOG("security alert: some one is telling the engine to move a file to %s which is not allowed\r\n", sDestPath.c_str());
 				return false;
 			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
+			
 
 			string sSrcPath = dest;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sSrcPath.find_first_of(":") != string::npos)
+			if (!CParaFile::IsWritablePath(sSrcPath))
 			{
 				// only relative path is allowed.
 				OUTPUT_LOG("security alert: some one is telling the engine to move a file from %s which is not allowed\r\n", sSrcPath.c_str());
 				return false;
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
 			}
 			return CParaFile::MoveFile(src, dest);
 		}

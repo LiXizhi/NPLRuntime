@@ -235,6 +235,8 @@ namespace ParaEngine
 
 		/** Note: NOT thread safe, only set at startup when there is just one thread running. */
 		PE_CORE_DECL static void SetWritablePath(const std::string& writable_path);
+		/** whether the given file is a writable path. For absolute file path, we only allow files in initial working directory and writable path. */
+		PE_CORE_DECL static bool IsWritablePath(const std::string& filepath, bool bLogWarning = true);
 
 		enum PARAENGINE_DIRECTORY{
 			APP_ROOT_DIR = 0,
