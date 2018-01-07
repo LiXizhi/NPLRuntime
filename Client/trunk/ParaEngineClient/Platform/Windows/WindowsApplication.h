@@ -7,9 +7,8 @@
 
 
 #include "ParaEngineAppBase.h"
-#include "common/d3dapp.h"
 #include "ITouchInputTranslator.h"
-
+#include "IParaEngineApp.h"
 #include <map>
 
 // forward declare
@@ -24,113 +23,161 @@ namespace ParaEngine
 	class CAudioEngine;
 	class CWinRawMsgQueue;
 	class CViewportManager;
+
+	class IRenderContext;
+	class IRenderDevice;
+	class WindowsRenderWindow;
 	struct CWinRawMsg;
 }
 
-/**
-@mainpage ParaEngine Reference
-
-*
-* @section intro_sec Introduction
-*
-[The following text is taken from my bachelor thesis proposal]\n
-In recent years, game engine related technology has drawn increasing academic attention from
-a wide range of research areas. People come to realize that game engine may naturally evolve
-in to the most widely used virtual reality platform in the future. The research framework
-proposed in this paper is to exploit this possibility using established computer technologies
-as well as newly designed ones. Current game engine framework already include solutions for a
-large number of platform issues, such as real-time 3D visualization, physics simulation, event
-and script system, path-finding, high-level decision making, networking, etc. However, the
-computing paradigm behind it is usually constrained to a single platform, where a predefined
-network topology must be explicitly constructed for cross-platform communications. My major
-research goal is to redesign the computing paradigm to suit the need of highly dynamic networked
-virtual environment, where intelligent entities are situated and communicate with each other
-as well as human avatars. A complete distributed game engine framework will be proposed and
-implemented with supporting game demos. Two areas of interest will be specialized with in-depth
-study. One is the script programming environment and runtime for distributed game world logics;
-the other is autonomous character animations in virtual game worlds.
-
-The idea of distributed computer game engine can be pictured by drawing an analog with the current
-World Wide Web. I.e. we compare web pages to 3D game worlds; hyperlinks and services in web pages
-to active objects in 3D game worlds; and web browsers and client/server side runtime environments
-to computer game engines. However, in distributed game world, interactions among entities will be
-more intensive and extensive, such as several characters exchanging messages at real time; game world
-logic will be more distributed, with each node being a potential server, and also more dynamic,
-with different nodes forming temporary or long lasting relationships.
-* \n
-* @section copyright Copyright
-*
-I will possibly release it under GNU license when the game engine framework is stable.
-* \n
-* @section developer Developer
-*
-- Li, Xizhi: Developer of ParaEngine.
-*/
-
-/**
-* The main game engine implementations.
-* The ParaEngine namespace contains the main ParaEngine source code.
-* It includes scene objects, scene management, asset and file management,
-* 2D GUI, AI modules, ParaX file support, frame rate management, etc.
-*/
 namespace ParaEngine
 {
-	/**
-	* This class demonstrate how to initialize, destroy and drive the game loop
-	* of ParaEngine through the C++ programming interface. Users can derive their
-	* main Windows application from this class.
-	* Note: paraengine is designed to be manipulated through the NPL scripting interface
-	* Currently,its C++ programming interface is not designed to be used from outside the core code.
-	* i.e. Users' ability to program through C++ API is restricted by the amount of
-	* source code unvailed to them.
-	*
-	* this class can be regarded as sample code for writing your own ParaEngine games
-	* logics. This class is not engine specific, but it contains basic steps to establish
-	* a running environment of any paraEngine created games. For example: SceneObject,
-	* Environment and AI simulator are created here. Message handling, Timing and I/O are
-	* also processed partly here.
-	*
-	* @see ParaWorld::CMyD3DApplication
-	* Note for debugging: please see the macro comments
-	*/
-	class CWindowsApplication : public CD3DApplication, public CParaEngineAppBase
+
+	class CWindowsApplication : public CParaEngineAppBase
 	{
-	public:
-		/** start the application immediately, it calls StartApp with the given command line.
-		* @param lpCmdLine: command line arguments. we support the following argument at the moment
-		*  - bootstappper="config/bootstrapper.xml"
-		*/
-		CWindowsApplication(const char* lpCmdLine);
-		/** One needs to manually start the application.
-		*/
-		CWindowsApplication();
-		virtual ~CWindowsApplication();
 
-		/** only call this function if one does not want to manage game loop externally. */
-		virtual int Run(HINSTANCE hInstance);
 
-		/** whether it is debug build. */
-		bool IsDebugBuild();
+	protected:
+
+
+		// Internal error handling function
+		HRESULT DisplayErrorMsg(HRESULT hr, DWORD dwType);
+		HRESULT Initialize3DEnvironment();
+		HRESULT Reset3DEnvironment();
+		void    Cleanup3DEnvironment();
+		/** frame move and render
+		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
+		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called. */
+		HRESULT Render3DEnvironment(bool bForceRender = false);
+		virtual void UpdateStats();
+
+		virtual bool UpdateViewPort();
 
 		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
 		* call this as often as one like internally it will use a timer to best fit the interval.
 		*/
 		virtual HRESULT DoWork();
 
-		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual void    EnablePassiveRendering(bool bEnable);
-		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual bool	IsPassiveRenderingEnabled();
+		LRESULT HandleWindowMessage(ParaEngine::WindowsRenderWindow* sender, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	public:
+
+		virtual void    Pause(bool bPause);
+		virtual bool	IsPaused();
+
+		/** force present the scene. */
+		HRESULT PresentScene();
+
+		void    EnablePassiveRendering(bool bEnable) { m_bPassiveRendering = bEnable; };
+		bool	IsPassiveRenderingEnabled() { return m_bPassiveRendering; };
 
 		/** disable 3D rendering, do not present the scene.
 		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window
 		* @param bEnable: true to enable.
 		*/
-		virtual void Enable3DRendering(bool bEnable);
+		void Enable3DRendering(bool bEnable) { m_bEnable3DRendering = bEnable; };
 
 		/** whether 3D rendering is enabled, do not present the scene.
 		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
-		virtual bool Is3DRenderingEnabled();
+		bool Is3DRenderingEnabled() { return m_bEnable3DRendering; };
+
+		/**
+		* Set the frame rate timer interval
+		* @param fTimeInterval:  value in seconds. such as 0.033f or 0.01667f
+		* 	Passing a value <= 0 to render in idle time.
+		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
+		*/
+		void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
+
+		/** get the refresh timer.
+		*/
+		float GetRefreshTimer() const;
+
+		// Functions to create, run, pause, and clean up the application
+		virtual HRESULT Create();
+		virtual int     Run(HINSTANCE hInstance);
+
+		ParaEngine::PEAppState GetAppState() { return m_nAppState; }
+		void SetAppState(ParaEngine::PEAppState state) { m_nAppState = state; }
+	protected:
+
+		CD3DSettings      m_d3dSettings;
+
+		// Internal variables for the state of the app
+		bool              m_bWindowed;
+		bool              m_bActive;
+		bool              m_bDeviceLost;
+		bool              m_bMinimized;
+		bool              m_bMaximized;
+		bool              m_bIgnoreSizeChange;
+		bool              m_bDeviceObjectsInited;
+		bool              m_bDeviceObjectsRestored;
+
+		// Internal variables used for timing
+		bool              m_bFrameMoving;
+		bool              m_bSingleStep;
+
+
+		/// passive rendering, it will not render the scene, but simulation and time remains the same. Default is false
+		bool              m_bPassiveRendering;
+
+		/// whether to render 3d scene and present to screen. 
+		bool              m_bEnable3DRendering;
+
+		// Main objects used for creating and rendering the 3D scene
+		HWND              m_hWnd;              // The main app window
+		HWND              m_hWndFocus;         // The D3D focus window (usually same as m_hWnd)
+		HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
+
+		IRenderContext*   m_pRenderContext;
+		IRenderDevice*    m_pRenderDevice;
+
+		LPDIRECT3DDEVICE9 m_pd3dDevice;        // The D3D rendering device
+		IDirect3DSwapChain9* m_pd3dSwapChain;
+		D3DCAPS9          m_d3dCaps;           // Caps for the device
+		DWORD             m_dwCreateFlags;     // Indicate sw or hw vertex processing
+		RECT              m_rcWindowClient;    // Saved client area size for mode switches
+
+											   // Variables for timing
+		double            m_fTime;             // Current time in seconds
+		double            m_fElapsedTime;      // Time elapsed since last frame
+		FLOAT             m_fFPS;              // Instanteous frame rate
+		TCHAR             m_strDeviceStats[90];// string to hold D3D device stats
+		TCHAR             m_strFrameStats[90]; // string to hold frame stats
+		float			  m_fRefreshTimerInterval; //  in seconds. 
+		int				  m_nFrameRateControl;
+
+		// Overridable variables for the app
+		TCHAR*            m_strWindowTitle;    // Title for the app's window
+		DWORD             m_dwCreationWidth;   // Width used to create window
+		DWORD             m_dwCreationHeight;  // Height used to create window
+		bool              m_bShowCursorWhenFullscreen; // Whether to show cursor when fullscreen
+		bool              m_bClipCursorWhenFullscreen; // Whether to limit cursor pos when fullscreen
+		bool              m_bStartFullscreen;  // Whether to start up the app in fullscreen mode
+		bool              m_bCreateMultithreadDevice; // Whether to create a multithreaded device
+		bool              m_bAllowDialogBoxMode; // If enabled the framework will try to enable GDI dialogs while in fullscreen
+
+												 /** application state */
+		PEAppState m_nAppState;
+
+
+		WindowsRenderWindow* m_pRenderWindow;
+
+
+	public:
+		/** start the application immediately, it calls StartApp with the given command line.
+		* @param lpCmdLine: command line arguments. we support the following argument at the moment
+		*  - bootstappper="config/bootstrapper.xml"
+		*/
+		CWindowsApplication(const char* lpCmdLine);
+
+		virtual ~CWindowsApplication();
+
+
+		/** whether it is debug build. */
+		bool IsDebugBuild();
+
+
 
 
 		/** whether to use full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
@@ -388,8 +435,7 @@ namespace ParaEngine
 		virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/** create instance */
-		virtual HRESULT Create(HINSTANCE hInstance = 0);
-		virtual HRESULT Render3DEnvironment(bool bForceRender = false);
+		virtual HRESULT Create(HINSTANCE hInstance);
 		virtual float GetFPS();
 		void UpdateFrameStats(double fTime);
 
@@ -399,16 +445,11 @@ namespace ParaEngine
 		/** get the module handle, it may be exe or the dll handle, depending on how the main host app is built. */
 		virtual HINSTANCE GetModuleHandle();
 
-		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
 
 		virtual float GetRefreshTimer();
 
 		virtual void GetWindowCreationSize(int * pWidth, int * pHeight);
 
-		virtual PEAppState GetAppState();
-
-		/** set application state */
-		virtual void SetAppState(ParaEngine::PEAppState state);
 
 		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
 		* [main thread only]
@@ -546,8 +587,6 @@ namespace ParaEngine
 		// deprecated:
 		int32 m_touchPointX;
 		int32 m_touchPointY;
-
-		float m_fFPS;
 
 		ITouchInputTranslator* m_pTouchInput;
 
