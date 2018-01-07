@@ -40,8 +40,6 @@ CD3DApplication::CD3DApplication()
     m_bDeviceObjectsInited = false;
     m_bDeviceObjectsRestored = false;
     m_dwCreateFlags     = 0;
-
-	m_bDisableD3D = false;
 	m_bPassiveRendering = false;
 	m_bEnable3DRendering = true;
     m_bFrameMoving      = true;
@@ -109,15 +107,13 @@ HRESULT CD3DApplication::Create()
 
 	SetAppState(PEAppState_Device_Created);
 	
-	if(!m_bDisableD3D)
-	{
 
 		m_pRenderContext = D3D9RenderContext::Create();
 
 
 		if(m_pRenderContext == NULL )
 			return DisplayErrorMsg( D3DAPPERR_NODIRECT3D, MSGERR_APPMUSTEXIT );
-	}
+	
 	
     // The focus window can be a specified to be a different window than the
     // device window.  If not, use the device window as the focus window.
@@ -137,8 +133,7 @@ HRESULT CD3DApplication::Create()
         return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
     }
 
-	if(!m_bDisableD3D)
-	{
+
 		// Initialize the 3D environment for the app
 		if( FAILED( hr = Initialize3DEnvironment() ) )
 		{
@@ -146,7 +141,7 @@ HRESULT CD3DApplication::Create()
 			m_pRenderContext = nullptr;
 			return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
 		}
-	}
+	
 
     // The app is ready to go
     Pause( false );
@@ -169,7 +164,7 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 {
 	HRESULT hr = S_OK;
 
-	if(!m_bDisableD3D &&  m_bDeviceLost )
+	if( m_bDeviceLost )
 	{
 		// Test the cooperative level to see if it's okay to render
 		if( FAILED( hr = m_pd3dDevice->TestCooperativeLevel() ) )
@@ -280,7 +275,7 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 
 			// Render the scene as normal
 
-			if(m_bActive && !IsPassiveRenderingEnabled() && (!m_bDisableD3D))
+			if(m_bActive && !IsPassiveRenderingEnabled())
 			{
 				if(  Is3DRenderingEnabled() && !m_bMinimized && SUCCEEDED(hr) && SUCCEEDED( hr = Render() ) )
 				{
