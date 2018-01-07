@@ -2787,9 +2787,6 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			// Flash Window Size changes.
 			CGlobals::GetAssetManager()->GetFlashManager().OnSizeChange();
 #endif
-			// Pick up possible changes to window style due to maximize, etc.
-			if (m_bWindowed && m_hWnd != NULL)
-				m_dwWindowStyle = GetWindowLong(m_hWnd, GWL_STYLE);
 			if (SIZE_MINIMIZED == wParam)
 			{
 				if (m_bClipCursorWhenFullscreen && !m_bWindowed)

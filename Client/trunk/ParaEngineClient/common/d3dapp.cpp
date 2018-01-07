@@ -145,9 +145,6 @@ HRESULT CD3DApplication::Create()
 
 	OUTPUT_LOG("DEBUG: main thread wnd handle : %d\n", m_hWndFocus);
 
-
-    // Save window properties
-    m_dwWindowStyle = GetWindowLong( m_hWnd, GWL_STYLE );
     HandlePossibleSizeChange(true);
 
 
