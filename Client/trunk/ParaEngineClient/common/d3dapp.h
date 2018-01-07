@@ -117,10 +117,7 @@ namespace ParaEngine
 		// Internal variables used for timing
 		bool              m_bFrameMoving;
 		bool              m_bSingleStep;
-		/** if this is true, the directX is not needed to run the application. this is useful for server mode application.
-		* by default, it is false.
-		*/
-		bool			  m_bDisableD3D;
+
 
 		/// passive rendering, it will not render the scene, but simulation and time remains the same. Default is false
 		bool              m_bPassiveRendering;

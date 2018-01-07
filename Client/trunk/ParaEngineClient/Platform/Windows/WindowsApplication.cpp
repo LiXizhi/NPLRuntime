@@ -245,11 +245,6 @@ void CWindowsApplication::BootStrapAndLoadConfig()
 
 void CWindowsApplication::InitWin3DSettings()
 {
-	// Following is just for window management
-	if (GetAppCommandLineByParam("d3d", NULL))
-	{
-		m_bDisableD3D = true;
-	}
 	m_nWindowedDesired = -1;
 
 	/// Just turn off Full screen cursor, we will use mine.
@@ -284,8 +279,7 @@ void CWindowsApplication::LoadAndApplySettings()
 		m_bStartFullscreen = (bool)(*pField);
 	else
 		m_bStartFullscreen = false;
-	if (m_bDisableD3D)
-		m_bStartFullscreen = false;
+
 
 	if ((pField = settings.GetDynamicField("ScreenWidth")))
 		m_dwCreationWidth = (int)(*pField);
@@ -377,12 +371,11 @@ HRESULT CWindowsApplication::StopApp()
 
 	SAFE_DELETE(m_pWinRawMsgQueue);
 
-	if ((!m_bDisableD3D))
-	{
+
 		Cleanup3DEnvironment();
 		delete m_pRenderContext;
 		m_pRenderContext = nullptr;
-	}
+	
 	FinalCleanup();
 
 	m_pParaWorldAsset.reset();
@@ -1203,8 +1196,7 @@ HRESULT CWindowsApplication::Render()
 
 	if (CGlobals::WillGenReport())
 	{
-		if (!m_bDisableD3D)
-			UpdateStats();
+		UpdateStats();
 	}
 	if (m_bServerMode)
 		return E_FAIL;
@@ -1300,8 +1292,7 @@ void CWindowsApplication::GetStats(string& output, DWORD dwFields)
 {
 	if (dwFields == 0)
 	{
-		if (!m_bDisableD3D)
-			UpdateStats();
+		UpdateStats();
 		output = m_strDeviceStats;
 		output.append("|");
 		output.append(m_strFrameStats);
@@ -3019,12 +3010,9 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 		else
 		{
 			SetHasClosingRequest(false);
-			if ((!m_bDisableD3D))
-			{
-				Cleanup3DEnvironment();
-				delete m_pRenderContext;
-				m_pRenderContext = nullptr;
-			}
+			Cleanup3DEnvironment();
+			delete m_pRenderContext;
+			m_pRenderContext = nullptr;
 			FinalCleanup();
 			// this will prevent render to be called.
 			SetAppState(PEAppState_Stopped);
