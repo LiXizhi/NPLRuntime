@@ -59,8 +59,6 @@ CD3DApplication::CD3DApplication()
     m_strWindowTitle    = _T("D3D9 Application");
     m_dwCreationWidth   = 400;
     m_dwCreationHeight  = 300;
-	m_nClientWidth = 0;
-	m_nClientHeight = 0;
     m_bShowCursorWhenFullscreen = true;
     m_bStartFullscreen  = false;
     m_bCreateMultithreadDevice = true;
