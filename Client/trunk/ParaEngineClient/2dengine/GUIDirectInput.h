@@ -1,4 +1,4 @@
-
+#pragma  once;
 #include "GUIBase.h"
 #include "GUIResource.h"
 #include "ParaEngine.h"
