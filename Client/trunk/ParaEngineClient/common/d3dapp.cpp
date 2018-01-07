@@ -1244,27 +1244,6 @@ HRESULT CD3DApplication::DisplayErrorMsg( HRESULT hr, DWORD dwType )
     return CD3DWindowUtil::DisplayErrorMsg(hr, dwType);
 }
 
-//-----------------------------------------------------------------------------
-// Name: LaunchReadme()
-// Desc: Ensures the app is windowed, and launches the readme.txt 
-//       in the default text editor
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::LaunchReadme()
-{
-    // Switch to windowed if launching the readme.txt
-    if( m_bWindowed == false )
-    {
-        if( FAILED( ToggleFullscreen() ) )
-        {
-            DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
-            return E_FAIL;
-        }
-    }
-
-    DXUtil_LaunchReadme( m_hWnd );
-
-    return S_OK;
-}
 
 int CD3DApplication::Run(HINSTANCE hInstance)
 {
