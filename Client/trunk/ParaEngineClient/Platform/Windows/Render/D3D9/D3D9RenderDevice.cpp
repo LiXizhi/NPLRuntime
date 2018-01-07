@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "D3D9RenderDevice.h"
+#include "WindowsRenderWindow.h"
 
 using namespace ParaEngine;
 
@@ -269,12 +270,6 @@ HRESULT ParaEngine::CD3D9RenderDevice::Present(RECT* pSourceRect, CONST RECT* pD
 HRESULT ParaEngine::CD3D9RenderDevice::TestCooperativeLevel()
 {
 	return m_pD3DDevice->TestCooperativeLevel();
-}
-
-HRESULT ParaEngine::CD3D9RenderDevice::Reset()
-{
-	D3DPRESENT_PARAMETERS d3dpp;
-	return  m_pD3DDevice->Reset(&d3dpp);
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::DrawIndexedPrimitive(D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)

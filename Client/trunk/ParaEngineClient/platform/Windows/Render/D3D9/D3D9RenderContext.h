@@ -18,6 +18,9 @@ namespace ParaEngine
 		virtual IRenderDevice* CreateDevice(const RenderDeviceConfiguration& cfg) override;
 		IDirect3D9* GetD3D() const;
 
+
+		virtual bool ResetDevice(IRenderDevice* device, const RenderDeviceConfiguration& cfg) override;
+
 	};
 	using D3D9RenderContextPtr = std::shared_ptr<D3D9RenderContext>;
 }
