@@ -121,17 +121,6 @@ HRESULT CD3DApplication::Create()
 
 		if( m_pD3D == NULL )
 			return DisplayErrorMsg( D3DAPPERR_NODIRECT3D, MSGERR_APPMUSTEXIT );
-
-		// Build a list of Direct3D adapters, modes and devices. The
-		// ConfirmDevice() callback is used to confirm that only devices that
-		// meet the app's requirements are considered.
-		m_d3dEnumeration.SetD3D( m_pD3D );
-		m_d3dEnumeration.ConfirmDeviceCallback = NULL;
-		if( FAILED( hr = m_d3dEnumeration.Enumerate() ) )
-		{
-			SAFE_RELEASE( m_pD3D );
-			return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-		}
 	}
 	
     // The focus window can be a specified to be a different window than the

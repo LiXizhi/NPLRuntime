@@ -250,14 +250,6 @@ void CWindowsApplication::InitWin3DSettings()
 		m_bDisableD3D = true;
 	}
 	m_nWindowedDesired = -1;
-	/// AppUsesDepthBuffer needed for Parallel world
-	m_d3dEnumeration.AppUsesDepthBuffer = TRUE;
-	/// AppUsesMixedVP needed for parallel world
-	m_d3dEnumeration.AppUsesMixedVP = TRUE;
-	/// enable stencil buffer
-	m_d3dEnumeration.AppUsesDepthBuffer = TRUE;
-	m_d3dEnumeration.AppMinDepthBits = 16;
-	m_d3dEnumeration.AppMinStencilBits = 4;
 
 	/// Just turn off Full screen cursor, we will use mine.
 	m_bShowCursorWhenFullscreen = false;
