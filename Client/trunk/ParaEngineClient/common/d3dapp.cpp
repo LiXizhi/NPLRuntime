@@ -913,9 +913,6 @@ HRESULT CD3DApplication::ToggleFullscreen()
     m_bWindowed = !m_bWindowed;
     m_d3dSettings.IsWindowed = m_bWindowed;
 
-    // Prepare window for windowed/fullscreen change
-    AdjustWindowForChange();
-
     // If AdapterOrdinal and DevType are the same, we can just do a Reset().
     // If they've changed, we need to do a complete device teardown/rebuild.
     if (m_d3dSettings.AdapterOrdinal() == AdapterOrdinalOld &&
