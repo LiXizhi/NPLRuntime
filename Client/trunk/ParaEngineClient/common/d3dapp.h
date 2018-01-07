@@ -43,7 +43,6 @@ namespace ParaEngine
 		HRESULT Reset3DEnvironment();
 		HRESULT ToggleFullscreen();
 		HRESULT ForceWindowed();
-		HRESULT UserSelectNewDevice();
 		void    Cleanup3DEnvironment();
 		/** frame move and render
 		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will

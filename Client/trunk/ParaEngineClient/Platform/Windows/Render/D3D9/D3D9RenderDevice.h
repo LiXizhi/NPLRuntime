@@ -172,8 +172,6 @@ namespace ParaEngine
 		virtual HRESULT TestCooperativeLevel() override;
 
 
-		virtual HRESULT Reset() override;
-
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;
 	};

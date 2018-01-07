@@ -5,7 +5,7 @@
 #include "PEtypes.h"
 #include "RenderDevice.h"
 #include <memory>
-
+#include "RenderCommon.h"
 namespace ParaEngine
 {
 	class IRenderDevice
@@ -105,7 +105,6 @@ namespace ParaEngine
 
 		virtual HRESULT TestCooperativeLevel() = 0;
 
-		virtual HRESULT Reset() = 0;
 
 	};
 

@@ -10,28 +10,6 @@ using namespace ParaEngine;
 
 namespace ParaEngine
 {
-	D3DDEVTYPE toD3DDEVTYPE(DeviceType deviceType)
-	{
-		switch (deviceType)
-		{
-		case DeviceType::HAL:
-			return D3DDEVTYPE_HAL;
-			break;
-		case DeviceType::REF:
-			return D3DDEVTYPE_REF;
-			break;
-		case DeviceType::SW:
-			return D3DDEVTYPE_SW;
-			break;
-		case DeviceType::NullRef:
-			return D3DDEVTYPE_NULLREF;
-			break;
-		default:
-			assert(false);
-			return D3DDEVTYPE_NULLREF;
-			break;
-		}
-	}
 
 
 
@@ -223,25 +201,6 @@ namespace ParaEngine
 	}
 
 
-	D3DSWAPEFFECT toD3DSwapEffect(SwapEffectType swapEffect)
-	{
-		switch (swapEffect)
-		{
-		case SwapEffectType::Discard:
-			return D3DSWAPEFFECT_DISCARD;
-			break;
-		case SwapEffectType::Flip:
-			return D3DSWAPEFFECT_FLIP;
-			break;
-		case SwapEffectType::Copy:
-			return D3DSWAPEFFECT_COPY;
-			break;
-		default:
-			assert(false);
-			return D3DSWAPEFFECT_DISCARD;
-			break;
-		}
-	}
 
 	HWND toHWND(const IRenderWindow* window)
 	{
@@ -251,28 +210,7 @@ namespace ParaEngine
 		return winRenderWindow->GetHandle();
 	}
 
-	DWORD toD3DPersentationInterval(PresentInterval pi)
-	{
-		switch (pi)
-		{
-		case PresentInterval::Default:
-			return D3DPRESENT_INTERVAL_DEFAULT;
-			break;
-		case PresentInterval::Immediate:
-			return D3DPRESENT_INTERVAL_IMMEDIATE;
-			break;
-		case PresentInterval::One:
-			return D3DPRESENT_INTERVAL_ONE;
-			break;
-		case PresentInterval::Two:
-			return D3DPRESENT_INTERVAL_TWO;
-			break;
-		default:
-			assert(false);
-			return D3DPRESENT_INTERVAL_DEFAULT;
-			break;
-		}
-	}
+
 }
 
 
@@ -297,7 +235,7 @@ ParaEngine::D3D9RenderContext* ParaEngine::D3D9RenderContext::Create()
 
 ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const RenderDeviceConfiguration& cfg)
 {
-	if (!cfg.renderWindow) return nullptr;
+	assert(cfg.renderWindow);
 
 	WindowsRenderWindow* pWin = dynamic_cast<WindowsRenderWindow*>(cfg.renderWindow);
 	assert(pWin);
@@ -384,6 +322,76 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 IDirect3D9* ParaEngine::D3D9RenderContext::GetD3D() const
 {
 	return m_D3D;
+}
+
+bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const RenderDeviceConfiguration& cfg)
+{
+	assert(cfg.renderWindow);
+
+	WindowsRenderWindow* pWin = dynamic_cast<WindowsRenderWindow*>(cfg.renderWindow);
+	assert(pWin);
+
+	assert(device);
+
+	CD3D9RenderDevice* d3d9Device = dynamic_cast<CD3D9RenderDevice*>(device);
+	assert(d3d9Device);
+
+
+
+
+	D3DDISPLAYMODE defaultAdapterDesplayMode;
+	HRESULT hr = m_D3D->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &defaultAdapterDesplayMode);
+	if (hr != D3D_OK)
+	{
+		OUTPUT_LOG("GetDefaultAdapterDisplayMode failed.");
+		return nullptr;
+	}
+
+	D3DPRESENT_PARAMETERS d3dpp;
+	ZeroMemory(&d3dpp, sizeof(D3DPRESENT_PARAMETERS));
+
+
+	if (cfg.isWindowed)
+	{
+		d3dpp.Windowed = true;
+		d3dpp.BackBufferCount = 1;
+		d3dpp.MultiSampleQuality = D3DMULTISAMPLE_NONE;
+		d3dpp.MultiSampleQuality = 0;
+		d3dpp.BackBufferWidth = pWin->GetWidth();
+		d3dpp.BackBufferHeight = pWin->GetHeight();
+		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		d3dpp.EnableAutoDepthStencil = true;
+		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
+		d3dpp.BackBufferFormat = toD3DFromat(cfg.colorFormat);
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+		d3dpp.hDeviceWindow = pWin->GetHandle();
+	}
+	else {
+		d3dpp.Windowed = false;
+		d3dpp.BackBufferCount = 1;
+		d3dpp.MultiSampleQuality = D3DMULTISAMPLE_NONE;
+		d3dpp.MultiSampleQuality = 0;
+		d3dpp.BackBufferWidth = defaultAdapterDesplayMode.Width;
+		d3dpp.BackBufferHeight = defaultAdapterDesplayMode.Height;
+		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		d3dpp.EnableAutoDepthStencil = true;
+		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
+		d3dpp.BackBufferFormat = defaultAdapterDesplayMode.Format;
+		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
+		d3dpp.FullScreen_RefreshRateInHz = defaultAdapterDesplayMode.RefreshRate;
+		d3dpp.hDeviceWindow = pWin->GetHandle();
+	}
+
+	hr = d3d9Device->GetDirect3DDevice9()->Reset(&d3dpp);
+
+	if (hr != D3D_OK)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 D3D9RenderContext::~D3D9RenderContext()

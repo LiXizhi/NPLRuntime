@@ -2960,13 +2960,6 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			m_bSingleStep = true;
 			break;
 
-		case IDM_CHANGEDEVICE:
-			// Prompt the user to select a new device or mode
-			Pause(true);
-			UserSelectNewDevice();
-			Pause(false);
-			break;
-
 		case IDM_TOGGLEFULLSCREEN:
 			// Toggle the fullscreen/window mode
 			Pause(true);
