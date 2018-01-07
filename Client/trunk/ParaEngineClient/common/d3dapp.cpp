@@ -719,9 +719,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 
     m_bWindowed = m_d3dSettings.IsWindowed;
 
-    // Prepare window for possible windowed/fullscreen change
-    AdjustWindowForChange();
-
     // Set up the presentation parameters
     BuildPresentParamsFromSettings();
 
@@ -942,7 +939,6 @@ HRESULT CD3DApplication::ToggleFullscreen()
             // Restore window type to windowed mode
             m_bWindowed = !m_bWindowed;
             m_d3dSettings.IsWindowed = m_bWindowed;
-            AdjustWindowForChange();
             SetWindowPos( m_hWnd, HWND_NOTOPMOST,
                         m_rcWindowBounds.left, m_rcWindowBounds.top,
                         ( m_rcWindowBounds.right - m_rcWindowBounds.left ),
