@@ -18,16 +18,14 @@
 
 using namespace ParaEngine;
 
-static CD3DApplication* g_pD3DApp = NULL;
+
 CFrameRateController g_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW);
 
 CD3DApplication::CD3DApplication()
 {
-    g_pD3DApp           = this;
 
 	SetAppState(PEAppState_None);
 
-    m_pD3D              = NULL;
     m_pd3dDevice        = NULL;
 	m_pd3dSwapChain     = NULL;
     m_hWnd              = NULL;
@@ -116,10 +114,8 @@ HRESULT CD3DApplication::Create()
 
 		m_pRenderContext = D3D9RenderContext::Create();
 
-		// Create the Direct3D object
-		m_pD3D = static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D();
 
-		if( m_pD3D == NULL )
+		if(m_pRenderContext == NULL )
 			return DisplayErrorMsg( D3DAPPERR_NODIRECT3D, MSGERR_APPMUSTEXIT );
 	}
 	
@@ -136,7 +132,8 @@ HRESULT CD3DApplication::Create()
     // Initialize the app's custom scene stuff
     if( FAILED( hr = OneTimeSceneInit() ) )
     {
-        SAFE_RELEASE( m_pD3D );
+		delete m_pRenderContext;
+		m_pRenderContext = nullptr;
         return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
     }
 
@@ -145,7 +142,8 @@ HRESULT CD3DApplication::Create()
 		// Initialize the 3D environment for the app
 		if( FAILED( hr = Initialize3DEnvironment() ) )
 		{
-			SAFE_RELEASE( m_pD3D );
+			delete m_pRenderContext;
+			m_pRenderContext = nullptr;
 			return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
 		}
 	}
@@ -393,21 +391,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 
 
 
-
-//-----------------------------------------------------------------------------
-// Name: Reset3DEnvironment()
-// Desc: Usually this function is not overridden.  Here's what this function does:
-//       - Sets the windowed flag to be either windowed or fullscreen
-//       - Sets parameters for z-buffer depth and back buffer
-//       - Creates the D3D device
-//       - Sets the window position (if windowed, that is)
-//       - Makes some determinations as to the abilites of the driver (HAL, etc)
-//       - Sets up some cursor stuff
-//       - Calls InitDeviceObjects()
-//       - Calls RestoreDeviceObjects()
-//       - If all goes well, m_bActive is set to TRUE, and the function returns
-//       - Otherwise, initialization is reattempted using the reference device
-//-----------------------------------------------------------------------------
 HRESULT CD3DApplication::Reset3DEnvironment()
 {
     HRESULT hr = E_FAIL;

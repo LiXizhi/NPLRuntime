@@ -81,6 +81,7 @@
 #include <time.h>
 #include "ParaEngineAppBase.h"
 #include "WindowsRenderWindow.h"
+#include "D3D9RenderContext.h"
 
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)                (wParam & 0xFFFF)
@@ -379,7 +380,8 @@ HRESULT CWindowsApplication::StopApp()
 	if ((!m_bDisableD3D))
 	{
 		Cleanup3DEnvironment();
-		SAFE_RELEASE(m_pD3D);
+		delete m_pRenderContext;
+		m_pRenderContext = nullptr;
 	}
 	FinalCleanup();
 
@@ -717,7 +719,7 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 	HRESULT hr = S_OK;
 
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(m_pD3D, pd3dDevice, m_pd3dSwapChain);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), pd3dDevice, m_pd3dSwapChain);
 
 	// print stats when device is initialized.
 	string stats;
@@ -3020,7 +3022,8 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			if ((!m_bDisableD3D))
 			{
 				Cleanup3DEnvironment();
-				SAFE_RELEASE(m_pD3D);
+				delete m_pRenderContext;
+				m_pRenderContext = nullptr;
 			}
 			FinalCleanup();
 			// this will prevent render to be called.
