@@ -39,7 +39,6 @@ namespace ParaEngine
 		*/
 		HRESULT HandlePossibleSizeChange(bool bUpdateSizeOnly = false);
 		HRESULT Reset3DEnvironment();
-		HRESULT ToggleFullscreen();
 		HRESULT ForceWindowed();
 		void    Cleanup3DEnvironment();
 		/** frame move and render
