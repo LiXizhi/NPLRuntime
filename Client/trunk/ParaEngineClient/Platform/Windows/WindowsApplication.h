@@ -307,11 +307,6 @@ namespace ParaEngine
 		*/
 		HRESULT OnCreateWindow();
 
-		/**
-		* Called during device initialization, this code checks the device for some
-		* minimum set of capabilities, and rejects those that don't pass by returning false.
-		*/
-		HRESULT ConfirmDevice(LPDIRECT3D9 pD3d, D3DCAPS9*, DWORD, D3DFORMAT, D3DFORMAT);
 
 		/** init application */
 		HRESULT Init(HWND* pHWND);
