@@ -49,6 +49,22 @@ namespace ParaEngine
 		inline static float Absolute1(const Quaternion& v){ return fabs(v.x) + fabs(v.y) + fabs(v.z) + fabs(v.w); };
 		inline static float Absolute1(const Vector2& v){ return fabs(v.x) + fabs(v.y); };
 
+		/** check if all key are equal*/
+		bool CheckIsAnimated()
+		{
+			int nSize = (int)data.size();
+			if (used && nSize>0)
+			{
+				auto firstValue = data[0];
+				for (int i = 1; i < nSize; ++i)
+				{
+					if (data[i] != firstValue)
+						return true;
+				}
+			}
+			return false;
+		}
+
 		/** if all animated values equals to the key, this animation will be set unused*/
 		void SetConstantKey(T key)
 		{
