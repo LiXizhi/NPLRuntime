@@ -2967,10 +2967,6 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 				DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
 			Pause(false);
 			break;
-
-		case IDM_HELP:
-			LaunchReadme();
-			break;
 			/// application defined command
 		case ID_GAME_COMMANDLINE:
 		{

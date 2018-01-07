@@ -33,7 +33,6 @@ namespace ParaEngine
 		static bool ConfirmDeviceHelper(D3DCAPS9* pCaps, VertexProcessingType vertexProcessingType, D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat);
 		bool    FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
 		bool    FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
-		HRESULT LaunchReadme();
 		HRESULT ChooseInitialD3DSettings();
 		HRESULT Initialize3DEnvironment();
 		/** this function is called whenever the main window size changes. It may need to adjust/strech the d3d devices and coordinate systems.
