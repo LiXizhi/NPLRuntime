@@ -872,14 +872,6 @@ HRESULT CD3DApplication::Reset3DEnvironment()
 		return hr;
 	}
 
-    // Reset the device
- //   if( FAILED( hr = m_pd3dDevice->Reset( &m_d3dpp ) ) )
-	//{
-	//	OUTPUT_LOG("reset d3d device failed because Reset function failed: %d\n", hr);
-	//	InterpretError(hr, __FILE__, __LINE__);
- //       return hr;
-	//}
-
 
     // Initialize the app's device-dependent objects
     hr = RestoreDeviceObjects();
