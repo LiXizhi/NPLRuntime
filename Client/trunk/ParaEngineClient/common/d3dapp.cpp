@@ -1,27 +1,4 @@
-//-----------------------------------------------------------------------------
-// Class:	CD3DApplication
-// Authors:	Li, Xizhi
-// Emails:	LiXizhi@yeah.net
-// Desc: Create the d3d device and manage its relationship with a window HWND. 
-/** 
-Fix0.1: Currently, framemove and render are in the same thread. 
-The default mode is that the framemove and render function will be called 30 times a seconds
-It is thus assumed that the player's CPU and GPU is able to handle that rate. However, if the task has been
-completed less than 33ms, the remaining time is wasted. It is the programmer's task to gaurantee that 
-the application always terminate after 33ms, which include the physics, IO and rendering routines. 
-Alternatively, one can turn on NO_FRAME_RATE_CONTROL flag, to remove this inforced 30FPS constraint. 
-The game is allowed to run as fast as possible(over several hundreds FPS). However, some tearing and jittering
-effect will appear with some screen resolution and refreshrate. This is due to the Present() method and
-VSYNC parameters. It is up to the user to properly configure their hardware device.
 
-The default behavior of Present method prior to Direct 9 was to wait for GPU to become available 
-for performing presentation operation, thus causing a stall in runtime or driver. This behavior 
-changed in DirectX 9 by including a special presentation flag in swap chain Present method. 
-Instead of using device¡¯s Present method (which is really a shortcut to swap chain¡¯s presentation 
-function) retrieve a swap chain and use it for presentation with D3DPRESENT_DONOTWAIT flag. 
-If CPU is currently unavailable for performing presentation, Present will return D3DERR_WASSTILLDRAWING error code. 
-Using this presentation method can give scarce CPU cycles back to the application and improve CPU and graphics hardware parallelism.
-*/
 #include "ParaEngine.h"
 
 #pragma region Headers
@@ -114,28 +91,6 @@ CD3DApplication::CD3DApplication()
 
 #pragma region DevicesAndEvents
 
-//-----------------------------------------------------------------------------
-// Name: ConfirmDeviceHelper()
-// Desc: Static function used by D3DEnumeration
-//-----------------------------------------------------------------------------
-bool CD3DApplication::ConfirmDeviceHelper( D3DCAPS9* pCaps, VertexProcessingType vertexProcessingType, 
-                         D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat )
-{
-	DWORD dwBehavior;
-
-    if (vertexProcessingType == SOFTWARE_VP)
-        dwBehavior = D3DCREATE_SOFTWARE_VERTEXPROCESSING;
-    else if (vertexProcessingType == MIXED_VP)
-        dwBehavior = D3DCREATE_MIXED_VERTEXPROCESSING;
-    else if (vertexProcessingType == HARDWARE_VP)
-        dwBehavior = D3DCREATE_HARDWARE_VERTEXPROCESSING;
-    else if (vertexProcessingType == PURE_HARDWARE_VP)
-        dwBehavior = D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_PUREDEVICE;
-    else
-        dwBehavior = 0; // TODO: throw exception
-    
-    return SUCCEEDED( g_pD3DApp->ConfirmDevice( pCaps, dwBehavior, adapterFormat, backBufferFormat ) );
-}
 
 
 //-----------------------------------------------------------------------------
@@ -175,7 +130,7 @@ HRESULT CD3DApplication::Create()
 		// ConfirmDevice() callback is used to confirm that only devices that
 		// meet the app's requirements are considered.
 		m_d3dEnumeration.SetD3D( m_pD3D );
-		m_d3dEnumeration.ConfirmDeviceCallback = ConfirmDeviceHelper;
+		m_d3dEnumeration.ConfirmDeviceCallback = NULL;
 		if( FAILED( hr = m_d3dEnumeration.Enumerate() ) )
 		{
 			SAFE_RELEASE( m_pD3D );
