@@ -46,7 +46,6 @@ namespace ParaEngine
 		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
 		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called. */
 		HRESULT Render3DEnvironment(bool bForceRender = false);
-		virtual void BuildPresentParamsFromSettings();
 		virtual void UpdateStats();
 
 		// Overridable functions for the 3D scene created by the app
@@ -140,7 +139,6 @@ namespace ParaEngine
 		bool              m_bEnable3DRendering;
 
 		// Main objects used for creating and rendering the 3D scene
-		D3DPRESENT_PARAMETERS m_d3dpp;         // Parameters for CreateDevice/Reset
 		HWND              m_hWnd;              // The main app window
 		HWND              m_hWndFocus;         // The D3D focus window (usually same as m_hWnd)
 		HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
