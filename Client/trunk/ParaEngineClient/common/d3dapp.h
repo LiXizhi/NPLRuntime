@@ -29,8 +29,7 @@ namespace ParaEngine
 		// Internal error handling function
 		HRESULT DisplayErrorMsg(HRESULT hr, DWORD dwType);
 
-		// Internal functions to manage and render the 3D scene
-		static bool ConfirmDeviceHelper(D3DCAPS9* pCaps, VertexProcessingType vertexProcessingType, D3DFORMAT adapterFormat, D3DFORMAT backBufferFormat);
+		
 		bool    FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
 		bool    FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
 		HRESULT ChooseInitialD3DSettings();
