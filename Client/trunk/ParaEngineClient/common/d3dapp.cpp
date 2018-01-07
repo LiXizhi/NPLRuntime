@@ -512,11 +512,6 @@ void CD3DApplication::Cleanup3DEnvironment()
             DeleteDeviceObjects();
         }
 
-		if (m_pd3dSwapChain) {
-			if (m_pd3dSwapChain->Release() > 0) {
-				DisplayErrorMsg( D3DAPPERR_NONZEROREFCOUNT, MSGERR_APPMUSTEXIT );
-			}
-		}
 		long nRefCount = 0;
 		if ((nRefCount=m_pd3dDevice->Release()) > 0) {
 			OUTPUT_LOG("\n\nerror: reference count of d3ddevice is non-zero %d when exit\n\n", nRefCount);

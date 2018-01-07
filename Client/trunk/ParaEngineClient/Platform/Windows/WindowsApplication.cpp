@@ -712,7 +712,7 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 	HRESULT hr = S_OK;
 
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), pd3dDevice, m_pd3dSwapChain);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), pd3dDevice, NULL);
 
 	// print stats when device is initialized.
 	string stats;
