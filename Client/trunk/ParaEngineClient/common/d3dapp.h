@@ -148,7 +148,6 @@ namespace ParaEngine
 		IDirect3DSwapChain9* m_pd3dSwapChain;
 		D3DCAPS9          m_d3dCaps;           // Caps for the device
 		DWORD             m_dwCreateFlags;     // Indicate sw or hw vertex processing
-		DWORD             m_dwWindowStyle;     // Saved window style for mode switches
 		RECT              m_rcWindowBounds;    // Saved window bounds for mode switches
 		RECT              m_rcWindowClient;    // Saved client area size for mode switches
 		int				  m_nClientWidth;
