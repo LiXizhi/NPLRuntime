@@ -1098,8 +1098,6 @@ bool CWindowsApplication::UpdateScreenDevice()
 			OUTPUT_LOG("toggle between windowed and full screen mode\n");
 			if (m_nWindowedDesired == 0)
 			{
-				OUTPUT_LOG("Find best full screen mode \n");
-				FindBestFullscreenMode(false, false);
 				if (IsFullScreenMode())
 				{
 					// in case we are changing full screen resolution in the full screen mode.

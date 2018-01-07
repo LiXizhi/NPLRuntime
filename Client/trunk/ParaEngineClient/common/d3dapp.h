@@ -29,9 +29,6 @@ namespace ParaEngine
 		// Internal error handling function
 		HRESULT DisplayErrorMsg(HRESULT hr, DWORD dwType);
 
-		
-		bool    FindBestWindowedMode(bool bRequireHAL, bool bRequireREF);
-		bool    FindBestFullscreenMode(bool bRequireHAL, bool bRequireREF);
 
 		HRESULT Initialize3DEnvironment();
 		/** this function is called whenever the main window size changes. It may need to adjust/strech the d3d devices and coordinate systems.
