@@ -70,7 +70,6 @@ CD3DApplication::CD3DApplication()
 	m_pRenderContext = nullptr;
 
 	memset(&m_d3dSettings, 0 , sizeof(m_d3dSettings));
-	memset( &m_rcWindowBounds, 0, sizeof(RECT));
 	memset( &m_rcWindowClient, 0, sizeof(RECT));
 	
     Pause( true ); // Pause until we're ready to render
@@ -641,14 +640,8 @@ EndFullscreenDeviceComboSearch:
 HRESULT CD3DApplication::HandlePossibleSizeChange(bool bUpdateSizeOnly)
 {
 	HRESULT hr = S_OK;
- //   RECT rcClientOld;
- //   rcClientOld = m_rcWindowClient;
-
- //   // Update window properties
-	GetWindowRect(m_hWnd, &m_rcWindowBounds);
 	GetClientRect(m_hWnd, &m_rcWindowClient);
-	m_nClientWidth = m_rcWindowClient.right - m_rcWindowClient.left;
-	m_nClientHeight = m_rcWindowClient.bottom - m_rcWindowClient.top;
+
 
     return hr;
 }
