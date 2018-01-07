@@ -1,11 +1,5 @@
 #pragma once
 
-
-#ifdef PLATFORM_MAC
-#include "platform/mac/ParaEngineApp.h"
-#else
-
-
 #include "ParaEngineAppBase.h"
 #include "ITouchInputTranslator.h"
 #include "IParaEngineApp.h"
@@ -590,5 +584,3 @@ namespace ParaEngine
 	};
 
 }
-
-#endif
