@@ -68,7 +68,6 @@ CD3DApplication::CD3DApplication()
 	m_pRenderContext = nullptr;
 
 	memset(&m_d3dSettings, 0 , sizeof(m_d3dSettings));
-	memset( &m_rcWindowClient, 0, sizeof(RECT));
 	
     Pause( true ); // Pause until we're ready to render
 
@@ -141,9 +140,6 @@ HRESULT CD3DApplication::Create()
         m_hWndFocus = m_hWnd;
 
 	OUTPUT_LOG("DEBUG: main thread wnd handle : %d\n", m_hWndFocus);
-
-    HandlePossibleSizeChange(true);
-
 
     // Initialize the application timer
     DXUtil_Timer( TIMER_START );
@@ -332,21 +328,6 @@ HRESULT CD3DApplication::PresentScene()
 	return hr;
 }
 
-
-
-
-//-----------------------------------------------------------------------------
-// Name: HandlePossibleSizeChange()
-// Desc: Reset the device if the client area size has changed.
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::HandlePossibleSizeChange(bool bUpdateSizeOnly)
-{
-	HRESULT hr = S_OK;
-	GetClientRect(m_hWnd, &m_rcWindowClient);
-
-
-    return hr;
-}
 
 bool CD3DApplication::UpdateViewPort()
 {
