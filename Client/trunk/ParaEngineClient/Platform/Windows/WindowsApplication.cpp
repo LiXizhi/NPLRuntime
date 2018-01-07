@@ -1082,12 +1082,6 @@ bool CWindowsApplication::UpdateScreenDevice()
 				rect.right = rect.left + m_d3dSettings.Windowed_DisplayMode.Width;
 				rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
 				SetAppWndRect(rect);
-			
-
-			bool  bOldValue = m_bIgnoreSizeChange;
-			m_bIgnoreSizeChange = false;
-			HandlePossibleSizeChange();
-			m_bIgnoreSizeChange = bOldValue;
 
 			// ensure minimum screen size, with largest UI scaling
 			CGlobals::GetGUI()->SetUIScale(1, 1, true);
@@ -2764,19 +2758,6 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			//Pause(true);
 		}
 		break;
-	case WM_EXITSIZEMOVE:
-		if (bIsSceneEnabled)
-		{
-			//Pause(false);
-			HandlePossibleSizeChange();
-		}
-		break;
-	case WM_STYLECHANGED:
-		if (bIsSceneEnabled)
-		{
-			HandlePossibleSizeChange();
-		}
-		break;
 	case WM_SIZE:
 	{
 		if (bIsSceneEnabled)
@@ -2799,32 +2780,17 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 				//    Pause( false ); // Unpause since we're no longer minimized
 				m_bMinimized = false;
 				m_bMaximized = true;
-				HandlePossibleSizeChange();
 			}
 			else if (SIZE_RESTORED == wParam)
 			{
 				if (m_bMaximized)
 				{
 					m_bMaximized = false;
-					HandlePossibleSizeChange();
 				}
 				else if (m_bMinimized)
 				{
 					//Pause( false ); // Unpause since we're no longer minimized
 					m_bMinimized = false;
-					HandlePossibleSizeChange();
-				}
-				else
-				{
-					// If we're neither maximized nor minimized, the window size
-					// is changing by the user dragging the window edges.  In this
-					// case, we don't reset the device yet -- we wait until the
-					// user stops dragging, and a WM_EXITSIZEMOVE message comes.
-					if (!IsPaused())
-					{
-						// in case, the window size is changed by command line, we will do it immediately.
-						HandlePossibleSizeChange();
-					}
 				}
 			}
 		}

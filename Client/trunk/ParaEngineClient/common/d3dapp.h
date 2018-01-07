@@ -31,10 +31,6 @@ namespace ParaEngine
 
 
 		HRESULT Initialize3DEnvironment();
-		/** this function is called whenever the main window size changes. It may need to adjust/strech the d3d devices and coordinate systems.
-		* @param bUpdateSizeOnly: if true, we will only update the d3d device.
-		*/
-		HRESULT HandlePossibleSizeChange(bool bUpdateSizeOnly = false);
 		HRESULT Reset3DEnvironment();
 		void    Cleanup3DEnvironment();
 		/** frame move and render
