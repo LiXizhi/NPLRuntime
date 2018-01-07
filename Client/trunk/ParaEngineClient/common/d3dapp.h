@@ -47,7 +47,6 @@ namespace ParaEngine
 		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called. */
 		HRESULT Render3DEnvironment(bool bForceRender = false);
 		virtual void BuildPresentParamsFromSettings();
-		virtual HRESULT AdjustWindowForChange();
 		virtual void UpdateStats();
 
 		// Overridable functions for the 3D scene created by the app

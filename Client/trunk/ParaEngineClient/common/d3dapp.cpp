@@ -683,62 +683,15 @@ HRESULT CD3DApplication::ChooseInitialD3DSettings()
 HRESULT CD3DApplication::HandlePossibleSizeChange(bool bUpdateSizeOnly)
 {
 	HRESULT hr = S_OK;
-    RECT rcClientOld;
-    rcClientOld = m_rcWindowClient;
+ //   RECT rcClientOld;
+ //   rcClientOld = m_rcWindowClient;
 
-    // Update window properties
-    GetWindowRect( m_hWnd, &m_rcWindowBounds );
-    GetClientRect( m_hWnd, &m_rcWindowClient );
+ //   // Update window properties
+	GetWindowRect(m_hWnd, &m_rcWindowBounds);
+	GetClientRect(m_hWnd, &m_rcWindowClient);
 	m_nClientWidth = m_rcWindowClient.right - m_rcWindowClient.left;
 	m_nClientHeight = m_rcWindowClient.bottom - m_rcWindowClient.top;
 
-	//OUTPUT_LOG("window rect width:%d height:%d\n", m_rcWindowBounds.right - m_rcWindowBounds.left, m_rcWindowBounds.bottom - m_rcWindowBounds.top);
-	//OUTPUT_LOG("client rect width:%d height:%d\n", m_rcWindowClient.right - m_rcWindowClient.left, m_rcWindowClient.bottom - m_rcWindowClient.top);
-
-    if( (rcClientOld.right - rcClientOld.left) != (m_rcWindowClient.right - m_rcWindowClient.left) ||
-        (rcClientOld.bottom - rcClientOld.top) != (m_rcWindowClient.bottom - m_rcWindowClient.top) )
-    {
-		OUTPUT_LOG("update d3d window size: width: %d, height:%d, left:%d, top:%d\n", m_nClientWidth, m_nClientHeight, m_rcWindowBounds.left, m_rcWindowBounds.top);
-		if( !bUpdateSizeOnly && !m_bIgnoreSizeChange )
-		{
-			// A new window size will require a new backbuffer
-			// size, so the 3D structures must be changed accordingly.
-			Pause( true );
-
-			m_d3dpp.BackBufferWidth  = std::max(1, (int)(m_rcWindowClient.right - m_rcWindowClient.left));
-			m_d3dpp.BackBufferHeight = std::max(1, (int)(m_rcWindowClient.bottom - m_rcWindowClient.top));
-
-			m_d3dSettings.Windowed_Width = m_d3dpp.BackBufferWidth;
-			m_d3dSettings.Windowed_Height = m_d3dpp.BackBufferHeight;
-
-			if( m_pd3dDevice != NULL )
-			{
-				// Reset the 3D environment
-				if( FAILED( hr = Reset3DEnvironment() ) )
-				{
-					if( hr == D3DERR_DEVICELOST )
-					{
-						m_bDeviceLost = true;
-						hr = S_OK;
-					}
-					else
-					{
-						if( hr != D3DERR_OUTOFVIDEOMEMORY )
-							hr = D3DAPPERR_RESETFAILED;
-
-						DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-					}
-				}
-			}
-			Pause( false );
-
-		}
-
-		if(m_bWindowed && !m_bIgnoreSizeChange && CGlobals::GetRenderDevice())
-		{
-			UpdateViewPort();
-		}
-    }
     return hr;
 }
 
@@ -1064,38 +1017,6 @@ HRESULT CD3DApplication::ForceWindowed()
     return S_OK;
 }
 
-
-//-----------------------------------------------------------------------------
-// Name: AdjustWindowForChange()
-// Desc: Prepare the window for a possible change between windowed mode and
-//       fullscreen mode.  This function is virtual and thus can be overridden
-//       to provide different behavior, such as switching to an entirely
-//       different window for fullscreen mode (as in the MFC sample apps).
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::AdjustWindowForChange()
-{
-    if( m_bWindowed )
-    {
-        // Set windowed-mode style
-        SetWindowLong( m_hWnd, GWL_STYLE, m_dwWindowStyle );
-        if( m_hMenu != NULL )
-        {
-            SetMenu( m_hWnd, m_hMenu );
-            m_hMenu = NULL;
-        }
-    }
-    else
-    {
-        // Set fullscreen-mode style
-        SetWindowLong( m_hWnd, GWL_STYLE, WS_POPUP|WS_SYSMENU|WS_VISIBLE );
-        if( m_hMenu == NULL )
-        {
-            m_hMenu = GetMenu( m_hWnd );
-            SetMenu( m_hWnd, NULL );
-        }
-    }
-    return S_OK;
-}
 #pragma endregion DevicesAndEvents
 
 #pragma region Miscs
