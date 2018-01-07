@@ -132,7 +132,7 @@ namespace ParaEngine
 		HWND              m_hWnd;              // The main app window
 		HWND              m_hWndFocus;         // The D3D focus window (usually same as m_hWnd)
 		HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
-		LPDIRECT3D9       m_pD3D;              // The main D3D object
+
 		IRenderContext*   m_pRenderContext;
 		IRenderDevice*    m_pRenderDevice;
 
