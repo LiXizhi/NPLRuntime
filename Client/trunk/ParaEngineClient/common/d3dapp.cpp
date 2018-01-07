@@ -852,7 +852,7 @@ void CD3DApplication::BuildPresentParamsFromSettings()
 //-----------------------------------------------------------------------------
 HRESULT CD3DApplication::Reset3DEnvironment()
 {
-    HRESULT hr;
+    HRESULT hr = E_FAIL;
 
     // Release all vidmem objects
     if( m_bDeviceObjectsRestored )
@@ -860,13 +860,25 @@ HRESULT CD3DApplication::Reset3DEnvironment()
         m_bDeviceObjectsRestored = false;
         InvalidateDeviceObjects();
     }
-    // Reset the device
-    if( FAILED( hr = m_pd3dDevice->Reset( &m_d3dpp ) ) )
+
+	RenderDeviceConfiguration cfg;
+	cfg.renderWindow = m_pRenderWindow;
+	cfg.isWindowed = true;
+
+	if (!m_pRenderContext->ResetDevice(m_pRenderDevice, cfg))
 	{
 		OUTPUT_LOG("reset d3d device failed because Reset function failed: %d\n", hr);
 		InterpretError(hr, __FILE__, __LINE__);
-        return hr;
+		return hr;
 	}
+
+    // Reset the device
+ //   if( FAILED( hr = m_pd3dDevice->Reset( &m_d3dpp ) ) )
+	//{
+	//	OUTPUT_LOG("reset d3d device failed because Reset function failed: %d\n", hr);
+	//	InterpretError(hr, __FILE__, __LINE__);
+ //       return hr;
+	//}
 
 
     // Initialize the app's device-dependent objects
