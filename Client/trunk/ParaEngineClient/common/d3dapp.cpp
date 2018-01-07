@@ -701,10 +701,10 @@ bool CD3DApplication::UpdateViewPort()
 	{
 		D3DVIEWPORT9 CurrentViewport;
 		CGlobals::GetRenderDevice()->GetViewport(&CurrentViewport);
-		if(m_d3dpp.BackBufferWidth != CurrentViewport.Width && m_d3dpp.BackBufferHeight != CurrentViewport.Height)
+		if(m_pRenderWindow->GetWidth() != CurrentViewport.Width && m_pRenderWindow->GetHeight() != CurrentViewport.Height)
 		{
-			CurrentViewport.Width = m_d3dpp.BackBufferWidth;
-			CurrentViewport.Height = m_d3dpp.BackBufferHeight;
+			CurrentViewport.Width = m_pRenderWindow->GetWidth();
+			CurrentViewport.Height = m_pRenderWindow->GetHeight();
 			CGlobals::GetRenderDevice()->SetViewport(&CurrentViewport);
 		}
 		return true;
