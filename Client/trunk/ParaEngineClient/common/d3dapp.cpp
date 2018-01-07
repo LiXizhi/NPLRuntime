@@ -226,12 +226,6 @@ HRESULT CD3DApplication::Render3DEnvironment(bool bForceRender)
 						if( SUCCEEDED( hr = Reset3DEnvironment() ) )
 						{
 							OUTPUT_LOG("TestCooperativeLevel successfully reset devices.\n");
-
-							if(!m_bWindowed)
-							{
-								// if user toggles devices during full screen mode, we will switch to windowed mode. 
-								ToggleFullscreen();
-							}
 							return hr;
 						}
 					}
@@ -826,89 +820,6 @@ HRESULT CD3DApplication::Reset3DEnvironment()
         DXUtil_Timer( TIMER_STOP );
     }
 
-    return S_OK;
-}
-
-
-//-----------------------------------------------------------------------------
-// Name: ToggleFullScreen()
-// Desc: Called when user toggles between fullscreen mode and windowed mode
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::ToggleFullscreen()
-{
-    HRESULT hr;
-    int AdapterOrdinalOld = m_d3dSettings.AdapterOrdinal();
-    D3DDEVTYPE DevTypeOld = m_d3dSettings.DevType();
-
-    Pause( true );
-	OUTPUT_LOG("ToggleFullscreen\n");
-	bool bOldIgnoreSizeChange = m_bIgnoreSizeChange;
-	m_bIgnoreSizeChange = true;
-
-    // Toggle the windowed state
-    m_bWindowed = !m_bWindowed;
-    m_d3dSettings.IsWindowed = m_bWindowed;
-
-    // If AdapterOrdinal and DevType are the same, we can just do a Reset().
-    // If they've changed, we need to do a complete device teardown/rebuild.
-    if (m_d3dSettings.AdapterOrdinal() == AdapterOrdinalOld &&
-        m_d3dSettings.DevType() == DevTypeOld)
-    {
-        // Reset the 3D device
-		OUTPUT_LOG("Reset the 3D device \n");
-        hr = Reset3DEnvironment();
-    }
-    else
-    {
-		OUTPUT_LOG("Cleanup 3D Environment\n");
-        Cleanup3DEnvironment();
-		//OUTPUT_LOG("Initialize 3D Environment\n");
-        hr = Initialize3DEnvironment();
-    }
-    if( FAILED( hr ) )
-    {
-		OUTPUT_LOG("Failed to toggle screen mode\n");
-        if( hr != D3DERR_OUTOFVIDEOMEMORY )
-            hr = D3DAPPERR_RESETFAILED;
-        m_bIgnoreSizeChange = false;
-		if( !m_bWindowed )
-        {
-			OUTPUT_LOG("Restore window type to windowed mode\n");
-            // Restore window type to windowed mode
-            m_bWindowed = !m_bWindowed;
-            m_d3dSettings.IsWindowed = m_bWindowed;
-            SetWindowPos( m_hWnd, HWND_NOTOPMOST,
-                        m_rcWindowBounds.left, m_rcWindowBounds.top,
-                        ( m_rcWindowBounds.right - m_rcWindowBounds.left ),
-                        ( m_rcWindowBounds.bottom - m_rcWindowBounds.top ),
-                        SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
-        }
-        return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-    }
-
-    m_bIgnoreSizeChange = bOldIgnoreSizeChange;
-	
-
-    // When moving from fullscreen to windowed mode, it is important to
-    // adjust the window size after resetting the device rather than
-    // beforehand to ensure that you get the window size you want.  For
-    // example, when switching from 640x480 fullscreen to windowed with
-    // a 1000x600 window on a 1024x768 desktop, it is impossible to set
-    // the window size to 1000x600 until after the display mode has
-    // changed to 1024x768, because windows cannot be larger than the
-    // desktop.
-	if( m_bWindowed)
-    {
-        SetWindowPos( m_hWnd, HWND_NOTOPMOST,
-                      m_rcWindowBounds.left, m_rcWindowBounds.top,
-                      ( m_rcWindowBounds.right - m_rcWindowBounds.left ),
-                      ( m_rcWindowBounds.bottom - m_rcWindowBounds.top ),
-                      SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
-    }
-
-    GetClientRect( m_hWnd, &m_rcWindowClient );  // Update our copy
-
-    Pause( false );
     return S_OK;
 }
 

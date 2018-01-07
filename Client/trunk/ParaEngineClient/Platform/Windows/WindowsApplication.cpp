@@ -1107,13 +1107,7 @@ bool CWindowsApplication::UpdateScreenDevice()
 				}
 			}
 
-			// Toggle the fullscreen/window mode
 			Pause(true);
-			if (FAILED(ToggleFullscreen()))
-			{
-				DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
-				return false;
-			}
 			// ensure minimum screen size, with largest UI scaling
 			CGlobals::GetGUI()->SetUIScale(1, 1, true);
 			Pause(false);
@@ -2959,14 +2953,6 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 				DXUtil_Timer(TIMER_STOP);
 			m_bFrameMoving = false;
 			m_bSingleStep = true;
-			break;
-
-		case IDM_TOGGLEFULLSCREEN:
-			// Toggle the fullscreen/window mode
-			Pause(true);
-			if (FAILED(ToggleFullscreen()))
-				DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
-			Pause(false);
 			break;
 			/// application defined command
 		case ID_GAME_COMMANDLINE:
