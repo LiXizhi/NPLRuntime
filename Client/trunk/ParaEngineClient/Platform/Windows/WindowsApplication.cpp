@@ -1633,10 +1633,10 @@ void CWindowsApplication::GameToClient(int& inout_x, int & inout_y, bool bInBack
 		int width = (rcWindowClient.right - rcWindowClient.left);
 		int height = (rcWindowClient.bottom - rcWindowClient.top);
 
-		if ((width != m_d3dpp.BackBufferWidth) || (height != m_d3dpp.BackBufferHeight))
+		if ((width != m_pRenderWindow->GetWidth()) || (height != m_pRenderWindow->GetHeight()))
 		{
-			inout_x = (int)((float)width*(float)inout_x / m_d3dpp.BackBufferWidth);
-			inout_y = (int)((float)height*(float)inout_y / m_d3dpp.BackBufferHeight);
+			inout_x = (int)((float)width*(float)inout_x / m_pRenderWindow->GetWidth());
+			inout_y = (int)((float)height*(float)inout_y / m_pRenderWindow->GetHeight());
 		}
 	}
 }
