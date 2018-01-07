@@ -719,8 +719,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 
     m_bWindowed = m_d3dSettings.IsWindowed;
 
-    // Set up the presentation parameters
-    BuildPresentParamsFromSettings();
 
 
 	RenderDeviceConfiguration cfg;
@@ -769,69 +767,6 @@ HRESULT CD3DApplication::Initialize3DEnvironment()
 }
 
 
-
-
-//-----------------------------------------------------------------------------
-// Name: BuildPresentParamsFromSettings()
-// Desc:
-//-----------------------------------------------------------------------------
-void CD3DApplication::BuildPresentParamsFromSettings()
-{
-    m_d3dpp.Windowed               = m_d3dSettings.IsWindowed;
-    m_d3dpp.BackBufferCount        = 1;
-    m_d3dpp.MultiSampleType        = m_d3dSettings.MultisampleType();
-	m_d3dpp.MultiSampleQuality     = m_d3dSettings.MultisampleQuality();
-    m_d3dpp.SwapEffect             = D3DSWAPEFFECT_DISCARD;
-    m_d3dpp.EnableAutoDepthStencil = m_d3dEnumeration.AppUsesDepthBuffer;
-    m_d3dpp.hDeviceWindow          = m_hWnd;
-    if( m_d3dEnumeration.AppUsesDepthBuffer )
-    {
-        m_d3dpp.Flags              = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
-        m_d3dpp.AutoDepthStencilFormat = m_d3dSettings.DepthStencilBufferFormat();
-    }
-    else
-    {
-        m_d3dpp.Flags              = 0;
-    }
-
-    if ( m_d3dSettings.DeviceClip() )
-        m_d3dpp.Flags |= D3DPRESENTFLAG_DEVICECLIP;
-
-	// make it lockable so that we can read back pixel data for CBufferPicking.  Not needed now.
-	// m_d3dpp.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-
-    if( m_bWindowed )
-    {
-        m_d3dpp.BackBufferWidth  = m_d3dSettings.Windowed_Width;
-        m_d3dpp.BackBufferHeight = m_d3dSettings.Windowed_Height;
-        m_d3dpp.BackBufferFormat = m_d3dSettings.PDeviceCombo()->BackBufferFormat;
-        m_d3dpp.FullScreen_RefreshRateInHz = 0;
-        m_d3dpp.PresentationInterval = m_d3dSettings.PresentInterval();
-    }
-    else
-    {
-        m_d3dpp.BackBufferWidth  = m_d3dSettings.DisplayMode().Width;
-        m_d3dpp.BackBufferHeight = m_d3dSettings.DisplayMode().Height;
-        m_d3dpp.BackBufferFormat = m_d3dSettings.PDeviceCombo()->BackBufferFormat;
-        m_d3dpp.FullScreen_RefreshRateInHz = m_d3dSettings.Fullscreen_DisplayMode.RefreshRate;
-        m_d3dpp.PresentationInterval = m_d3dSettings.PresentInterval();
-
-        if( m_bAllowDialogBoxMode )
-        {
-            // Make the back buffers lockable in fullscreen mode
-            // so we can show dialog boxes via SetDialogBoxMode() 
-            // but since lockable back buffers incur a performance cost on 
-            // some graphics hardware configurations we'll only 
-            // enable lockable backbuffers where SetDialogBoxMode() would work.
-            if ( (m_d3dpp.BackBufferFormat == D3DFMT_X1R5G5B5 || m_d3dpp.BackBufferFormat == D3DFMT_R5G6B5 || m_d3dpp.BackBufferFormat == D3DFMT_X8R8G8B8 ) &&
-                ( m_d3dpp.MultiSampleType == D3DMULTISAMPLE_NONE ) &&
-                ( m_d3dpp.SwapEffect == D3DSWAPEFFECT_DISCARD ) )
-            {
-                m_d3dpp.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-            }
-        }
-    }
-}
 
 
 
@@ -921,7 +856,6 @@ HRESULT CD3DApplication::ToggleFullscreen()
     {
         // Reset the 3D device
 		OUTPUT_LOG("Reset the 3D device \n");
-        BuildPresentParamsFromSettings();
         hr = Reset3DEnvironment();
     }
     else
