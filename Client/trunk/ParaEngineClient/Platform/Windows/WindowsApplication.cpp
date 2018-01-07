@@ -80,6 +80,7 @@
 #include "OSWindows.h"
 #include <time.h>
 #include "ParaEngineAppBase.h"
+#include "WindowsRenderWindow.h"
 
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)                (wParam & 0xFFFF)
@@ -1252,7 +1253,7 @@ HRESULT CWindowsApplication::Render()
 		/// force using less equal
 		pRenderDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
 
-		m_pViewportManager->UpdateViewport(m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{
 			PERF1("3D Scene Render");
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
