@@ -102,7 +102,6 @@ namespace ParaEngine
 		// Internal constructor
 		CD3DApplication();
 
-		CD3DEnumeration   m_d3dEnumeration;
 		CD3DSettings      m_d3dSettings;
 
 		// Internal variables for the state of the app
