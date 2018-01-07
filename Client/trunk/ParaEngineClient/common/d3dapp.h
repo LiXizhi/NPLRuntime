@@ -39,7 +39,6 @@ namespace ParaEngine
 		*/
 		HRESULT HandlePossibleSizeChange(bool bUpdateSizeOnly = false);
 		HRESULT Reset3DEnvironment();
-		HRESULT ForceWindowed();
 		void    Cleanup3DEnvironment();
 		/** frame move and render
 		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will

@@ -825,40 +825,6 @@ HRESULT CD3DApplication::Reset3DEnvironment()
 
 
 
-
-//-----------------------------------------------------------------------------
-// Name: ForceWindowed()
-// Desc: Switch to a windowed mode, even if that means picking a new device
-//       and/or adapter
-//-----------------------------------------------------------------------------
-HRESULT CD3DApplication::ForceWindowed()
-{
-    HRESULT hr;
-
-    if( m_bWindowed )
-        return S_OK;
-
-    if( !FindBestWindowedMode(false, false) )
-    {
-        return E_FAIL;
-    }
-    m_bWindowed = true;
-
-    // Now destroy the current 3D device objects, then reinitialize
-
-    Pause( true );
-
-    // Release all scene objects that will be re-created for the new device
-    Cleanup3DEnvironment();
-
-    // Create the new device
-    if( FAILED(hr = Initialize3DEnvironment() ) )
-        return DisplayErrorMsg( hr, MSGERR_APPMUSTEXIT );
-
-    Pause( false );
-    return S_OK;
-}
-
 #pragma endregion DevicesAndEvents
 
 #pragma region Miscs
