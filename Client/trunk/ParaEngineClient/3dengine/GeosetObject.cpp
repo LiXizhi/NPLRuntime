@@ -224,7 +224,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0,D3DSAMP_MAGFILTER,pEffectManager->GetDefaultSamplerState(0,D3DSAMP_MAGFILTER));
 		}
 
-		CApplyObjectLevelParamBlock p(mParent->GetEffectParamBlock());
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 		_draw(sceneState,mat,p.GetParamsBlock());
 
 		sceneState->EnableLocalMaterial(false);
@@ -260,6 +260,7 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 			pModel->m_BlendingAnim=pAI->m_BlendingAnim;
 			pModel->blendingFactor=pAI->m_fBlendingFactor;
 			pModel->animate(sceneState,nullptr,pAI);
+
 			pModel->draw(sceneState,params);
 		}
 

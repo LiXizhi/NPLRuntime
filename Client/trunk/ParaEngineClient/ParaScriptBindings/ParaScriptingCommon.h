@@ -308,6 +308,8 @@ namespace ParaScripting
 		* @return this may return invalid asset, if replaceable texture is not set before or ID is invalid.
 		*/
 		ParaAssetObject GetDefaultReplaceableTexture(int ReplaceableTextureID); 
+
+		void SetCallback(int callbackType,const char * func);
 	};
 
 
