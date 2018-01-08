@@ -1814,7 +1814,7 @@ int CParaFile::WriteEncodedUInt(uint32_t value)
 	return write((const char*)buffer, count);
 }
 
-std::string CParaFile::GetWritablePath()
+const std::string& CParaFile::GetWritablePath()
 {
 	return CFileUtils::GetWritablePath();
 }

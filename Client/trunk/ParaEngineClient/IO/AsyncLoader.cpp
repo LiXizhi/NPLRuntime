@@ -86,7 +86,7 @@ using namespace ParaEngine;
 #endif
 
 /** easy define :-) */
-#define ASSETS_LOG(...) SERVICE_LOG1(g_asset_logger, ## __VA_ARGS__)
+#define ASSETS_LOG(nLevel, ...) if(m_nLogLevel<=nLevel){ SERVICE_LOG1(g_asset_logger, ## __VA_ARGS__) }
 
 ///////////////////////////////////////////////////////
 //
@@ -210,8 +210,11 @@ CAsyncLoader::CAsyncLoader()
 #ifdef PARAENGINE_CLIENT
 m_pXFileParser(NULL), m_pEngine(NULL), m_pGDIEngine(NULL),
 #endif
-m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL)
+m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
 {
+#ifdef _DEBUG
+	// SetLogLevel(Log_All);
+#endif
 	g_asset_logger.reset(new CServiceLogger("assets.log", false));
 	g_asset_logger->SetForceFlush(false);
 	m_RenderThreadQueue.SetUseEvent(false);
@@ -254,7 +257,15 @@ void ParaEngine::CAsyncLoader::Interrupt()
 
 void ParaEngine::CAsyncLoader::log(const string& message)
 {
-	g_asset_logger->WriteServiceFormated("%s", message.c_str());
+	log(0, message);
+}
+
+void ParaEngine::CAsyncLoader::log(int nLogLevel, const string& message)
+{
+	if (GetLogLevel() <= nLogLevel)
+	{
+		g_asset_logger->WriteServiceFormated("%s", message.c_str());
+	}
 }
 
 bool ParaEngine::CAsyncLoader::CreateWorkerThreads(int nProcessorQueueID, int nMaxCount)
@@ -546,7 +557,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 	// Handle a read request
 	if (!ResourceRequest->m_bCopy)
 	{
-		// ASSETS_LOG("DEBUG: IO msg(to proc) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		// ASSETS_LOG(Log_Debug, "DEBUG: IO msg(to proc) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 
 		if (!ResourceRequest->m_bError)
 		{
@@ -584,7 +595,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 	// Handle a copy request
 	else
 	{
-		// ASSETS_LOG("DEBUG: IO msg(COPY) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		// ASSETS_LOG(Log_Debug, "DEBUG: IO msg(COPY) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 
 		if (!ResourceRequest->m_bError)
 		{
@@ -631,7 +642,7 @@ int CAsyncLoader::FileIOThreadProc()
 	ResourceRequest_ptr ResourceRequest;
 	HRESULT hr = S_OK;
 
-	ASSETS_LOG("CAsyncLoader IO Thread started");
+	ASSETS_LOG(Log_All, "CAsyncLoader IO Thread started");
 
 	int nRes = 0;
 	while(nRes != -1)
@@ -677,7 +688,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 			ThreadType = "AudioFile";
 			break;
 		}
-		ASSETS_LOG("Async Processing Thread %s(%d) Started\n", ThreadType, nQueueID);
+		ASSETS_LOG(Log_All, "Async Processing Thread %s(%d) Started\n", ThreadType, nQueueID);
 	}
 
 	int nRes = 0;
@@ -691,7 +702,7 @@ int CAsyncLoader::ProcessingThreadProc(ProcessorWorkerThread* pThreadData)
 		// let us sleep some time to emulate slow connection for debugging purposes.
 		// Sleep(300);
 
-		// ASSETS_LOG("DEBUG: process msg %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		// ASSETS_LOG(Log_All, "DEBUG: process msg %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 		
 		// Decompress the data
 		if( !ResourceRequest->m_bError )
@@ -802,11 +813,11 @@ int ParaEngine::CAsyncLoader::AddWorkItem( ResourceRequest_ptr& msg)
 
 	if(msg->m_nProcessorQueueID == ResourceRequestID_Local)
 	{
-		ASSETS_LOG("AssetRequested %s\n", name);
+		ASSETS_LOG(Log_All, "AssetRequested %s\n", name);
 	}
 	else
 	{
-		ASSETS_LOG("AddWorkItem(%d) %s\n", (int)(msg->m_nProcessorQueueID), name);
+		ASSETS_LOG(Log_Remote, "AddWorkItem(%d) %s\n", (int)(msg->m_nProcessorQueueID), name);
 	}
 	int nSizeBytes = msg->m_pDataLoader->GetEstimatedSizeInBytes();
 
@@ -828,7 +839,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 	HRESULT hr = S_OK;
 	if (ResourceRequest->m_bLock)
 	{
-		// ASSETS_LOG("DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		// ASSETS_LOG(Log_Debug, "DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 
 		if (!ResourceRequest->m_bError)
 		{
@@ -865,7 +876,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 	}
 	else
 	{
-		// ASSETS_LOG("DEBUG: render msg(unlock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		// ASSETS_LOG(Log_Debug, "DEBUG: render msg(unlock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 
 		if (!ResourceRequest->m_bError)
 		{
@@ -877,7 +888,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 			const char* name = ResourceRequest->m_pDataLoader->GetFileName();
 			if (name == 0)
 				name = "unknown";
-			ASSETS_LOG("AssetLoaded %s\n", name);
+			ASSETS_LOG(Log_All, "AssetLoaded %s\n", name);
 		}
 		else
 		{
@@ -888,7 +899,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 				{
 					// bug fix: we only set resource error if file name is not ""
 					// for some reason, if we set resource error for empty file, some models will not show up.  Empty file is considered valid. 
-					ASSETS_LOG("ERROR: AssetFailed (%d)%s\n", ResourceRequest->m_last_error_code, sFileName);
+					ASSETS_LOG(Log_Error, "ERROR: AssetFailed (%d)%s\n", ResourceRequest->m_last_error_code, sFileName);
 					ResourceRequest->m_pDataProcessor->SetResourceError();
 				}
 			}
@@ -953,6 +964,16 @@ void ParaEngine::CAsyncLoader::ClearAllPendingRequests()
 	m_pending_requests.clear();
 }
 
+int ParaEngine::CAsyncLoader::GetLogLevel() const
+{
+	return m_nLogLevel;
+}
+
+void ParaEngine::CAsyncLoader::SetLogLevel(int val)
+{
+	m_nLogLevel = (ParaEngine::CAsyncLoader::AssetLogLevelEnum)val;
+}
+
 bool ParaEngine::CAsyncLoader::HasPendingRequest( const char* sURL )
 {
 	if(sURL)
@@ -973,6 +994,7 @@ int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass * pClass, bool bOver
 
 	pClass->AddField("WorkerThreadsCount", FieldType_Vector2, (void*)SetWorkerThreads_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("ProcessorQueueSize", FieldType_Vector2, (void*)SetProcessorQueueSize_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, "", bOverride);
 	pClass->AddField("log", FieldType_String, (void*)log_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("WaitForAllItems", FieldType_void, (void*)WaitForAllItems_s, (void*)0, NULL, "", bOverride);
 	return S_OK;

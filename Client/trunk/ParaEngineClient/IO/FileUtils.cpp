@@ -1112,28 +1112,44 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #endif
 }
 
-std::string ParaEngine::CFileUtils::GetWritablePath()
+const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
-	if (!s_writepath.empty())
-		return s_writepath;
+	if (s_writepath.empty())
+	{
 #ifdef USE_COCOS_FILE_API
-	return cocos2d::FileUtils::getInstance()->getWritablePath();
+		s_writepath = cocos2d::FileUtils::getInstance()->getWritablePath();
 #else
-	return ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_ROOT_DIR);
+		s_writepath = ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_ROOT_DIR);
 #endif
+	}
+	return s_writepath;
 }
 
 void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 {
-	if (!writable_path.empty() && s_writepath != writable_path)
+	if (s_writepath != writable_path)
 	{
-		if (MakeDirectoryFromFilePath(writable_path.c_str()))
+		s_writepath = writable_path;
+		if (!writable_path.empty())
 		{
-			s_writepath = writable_path;
+			if (MakeDirectoryFromFilePath(writable_path.c_str()))
+			{
+				s_writepath = writable_path;
+			}
+			else
+			{
+				OUTPUT_LOG("warn: failed to set writable path to %s\n", writable_path.c_str());
+			}
 		}
-		else
+
+		if (!s_writepath.empty())
 		{
-			OUTPUT_LOG("warn: failed to set writable path to %s\n", writable_path.c_str());
+			char nLastChar = writable_path[writable_path.size() - 1];
+			if (nLastChar != '/' && nLastChar != '\\')
+			{
+				s_writepath = s_writepath + "/";
+			}
+			CParaFile::ToCanonicalFilePath(s_writepath, s_writepath);
 		}
 	}
 }
