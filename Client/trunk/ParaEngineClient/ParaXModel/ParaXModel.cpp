@@ -1164,6 +1164,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
+							pEffect->onDrawPass(pMaterialParams,nPass);
 							pEffect->CommitChanges();
 							DrawPass(p);
 							p.deinit_FX(pSceneState, pMaterialParams);

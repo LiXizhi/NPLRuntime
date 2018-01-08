@@ -6,6 +6,7 @@
 #include "LightManager.h"
 #include "ParameterBlock.h"
 #include "EffectFileHandles.h"
+#include "IObjectScriptingInterface.h"
 
 namespace ParaEngine
 {
@@ -15,7 +16,7 @@ namespace ParaEngine
 	/**
 	* asset entity: CEffectFile
 	*/
-	class CEffectFileBase : public AssetEntity
+	class CEffectFileBase : public AssetEntity,public IObjectScriptingInterface
 	{
 	public:
 		const static int MAX_EFFECT_LIGHT_NUM = 4;
@@ -169,6 +170,11 @@ namespace ParaEngine
 			k_max_param_handles
 		};
 
+		enum CallBackType
+		{
+			Type_DrawPass
+		};
+
 		/** a technique description */
 		struct TechniqueDesc
 		{
@@ -303,6 +309,32 @@ namespace ParaEngine
 		bool SetTechniqueByIndex(int nIndex) { return false; };
 		/** get the current technique description. This function may return NULL*/
 		const TechniqueDesc* GetCurrentTechniqueDesc() { return NULL; };
+
+		void onDrawPass(CParameterBlock* pMaterialParams,int passIndex)
+		{
+			ScriptCallback* pCallback=GetScriptCallback(Type_DrawPass);
+			if(pCallback)
+			{
+				thread_local static string code;
+				code="callback_key=-1;";
+				if(pMaterialParams&&pMaterialParams->GetParameter("CallbackKey"))
+				{
+					code+="callback_key=";
+					code+=pMaterialParams->GetParameter("CallbackKey")->GetValueByString();
+					code+=";";
+				}
+				code+="pass_index=";
+				thread_local static string pass_index_str;
+				thread_local static stringstream ss;
+				ss.clear();
+				ss<<passIndex;
+				ss>>pass_index_str;
+				code+=pass_index_str;
+				code+=";";
+				code+=pCallback->GetCode();
+				pCallback->ActivateLocalNow(code);
+			}
+		}
 	};
 }
 

@@ -219,6 +219,7 @@ void CNPLScriptingState::LoadHAPI_ResourceManager()
 				.def("EndPass", &ParaAssetObject::EndPass)
 				.def("End", &ParaAssetObject::End)
 				.def("CommitChanges", &ParaAssetObject::CommitChanges)
+				.def("SetCallback", &ParaAssetObject::SetCallback)
 				.def("GetType", &ParaAssetObject::GetType),
 				// parameter block object declarations
 				class_<ParaParamBlock>("ParaParamBlock")
