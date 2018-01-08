@@ -83,7 +83,10 @@ namespace ParaEngine
 		/** calling this function means that you want to use BONE_STATIC_TRANSFORM for final bone matrix calculation. */
 		void SetStaticTransform(const Matrix4& mat);
 
-		const std::string& GetName();
+		/** whether the bone contains animation data. */
+		bool CheckHasAnimation();
+
+		const std::string& GetName() const;
 		void SetName(const std::string& val);
 
 		/** automatically set bone id from bone name. */
@@ -149,6 +152,11 @@ namespace ParaEngine
 		/** similar to GetFinalRotMatrix(), except that it will remove rotation in its offset matrix. */
 		Matrix4 GetPivotRotMatrix();
 		
+		/** mark this bone as un-calculated bone. 
+		* @param bForce: if false(default), Static and transformation node are never dirty. 
+		*/
+		void MakeDirty(bool bForce = false);
+
 		friend class CBVHSerializer;
 	public:
 		enum BONE_FLAGS

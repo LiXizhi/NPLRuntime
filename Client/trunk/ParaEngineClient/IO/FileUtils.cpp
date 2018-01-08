@@ -579,15 +579,11 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	if (bSecureFolderOnly)
 	{
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-		if (sFilePattern.find_first_of(":") != string::npos)
+		if(!CParaFile::IsWritablePath(sFilePattern, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
 			return 0;
-		}
-		else
-		{
-			// TODO: only allow deletion in some given folder. we will only allow deletion in the specified user directory
 		}
 	}
 
