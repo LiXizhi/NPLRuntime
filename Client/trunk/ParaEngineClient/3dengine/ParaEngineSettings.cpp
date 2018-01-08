@@ -49,6 +49,13 @@ using namespace luabind;
 #define DEFAULT_LOCALE	"zhCN"
 //#define DEFAULT_LOCALE	"enUS"
 
+
+#ifdef WIN32
+bool ParaEngine::ParaEngineSettings::m_bSandboxMode = true;
+#else
+bool ParaEngine::ParaEngineSettings::m_bSandboxMode = false;
+#endif
+
 ParaEngineSettings::ParaEngineSettings(void)
 	:m_currentLanguage(-1)
 {
@@ -994,6 +1001,16 @@ Vector2 ParaEngine::ParaEngineSettings::GetWindowResolution()
 #endif
 }
 
+bool ParaEngine::ParaEngineSettings::IsSandboxMode()
+{
+	return m_bSandboxMode;
+}
+
+void ParaEngine::ParaEngineSettings::SetSandboxMode(bool val)
+{
+	m_bSandboxMode = val;
+}
+
 void ParaEngine::ParaEngineSettings::SetDefaultOpenFileFolder(const char* sDefaultOpenFileFolder)
 {
 #ifdef PARAENGINE_CLIENT
@@ -1399,6 +1416,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("LockWindowSize", FieldType_Bool, (void*)SetLockWindowSize_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ShowWindowTitleBar", FieldType_Bool, (void*)SetShowWindowTitleBar_s, (void*)IsShowWindowTitleBar_s, NULL, NULL, bOverride);
 	pClass->AddField("WritablePath", FieldType_String, (void*)SetWritablePath_s, (void*)GetWritablePath_s, NULL, NULL, bOverride);
+	pClass->AddField("SandboxMode", FieldType_Bool, (void*)SetSandboxMode_s, (void*)IsSandboxMode_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FPS", FieldType_Float, NULL, (void*)GetFPS_s, NULL, NULL, bOverride);
 	pClass->AddField("TriangleCount", FieldType_Int, NULL, (void*)GetTriangleCount_s, NULL, NULL, bOverride);

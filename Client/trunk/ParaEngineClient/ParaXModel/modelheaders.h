@@ -198,13 +198,25 @@ static_assert(sizeof(AnimationBlock) == 28, "compiler breaks packing rules");
 // block E - bones
 struct ModelBoneDef {
 	int32 animid;
-	int32 flags;
+	uint32 flags;
 	int16 parent; // parent bone index
 	int16 boneid; // id of a known (predefined) bone. this can be 0 or -1 which means unknown bones.
 	AnimationBlock translation;
 	AnimationBlock rotation;
-	AnimationBlock scaling;
-	Vector3 pivot;
+	union {
+		AnimationBlock scaling;
+		uint32 ofsStaticMatrix;
+	};
+	
+	union {
+		Vector3 pivot;
+		// this is only used when (flags & 0x80000000) > 0
+		struct {
+			uint32 nBoneName;
+			uint32 nOffsetMatrix;
+			uint32 nOffsetPivot;
+		};
+	};
 };
 
 struct ModelTexAnimDef {
