@@ -322,21 +322,21 @@ namespace ParaEngine
 			if(pCallback)
 			{
 				thread_local static string code;
-				code="msg={";
+				code="callback_key=-1;";
 				if(pMaterialParams&&pMaterialParams->GetParameter("CallbackKey"))
 				{
-					code+="CallbackKey=";
+					code+="callback_key=";
 					code+=pMaterialParams->GetParameter("CallbackKey")->GetValueByString();
-					code+=",";
+					code+=";";
 				}
-				code+="PassIndex=";
+				code+="pass_index=";
 				thread_local static string pass_index_str;
 				thread_local static stringstream ss;
 				ss.clear();
 				ss<<passIndex;
 				ss>>pass_index_str;
 				code+=pass_index_str;
-				code+="};";
+				code+=";";
 				code+=pCallback->GetCode();
 				pCallback->ActivateLocalNow(code);
 			}
