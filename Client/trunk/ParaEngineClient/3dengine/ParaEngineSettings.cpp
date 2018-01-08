@@ -38,7 +38,7 @@
 	#include "util/EnumProcess.hpp"
 #endif
 #endif
-
+#include <boost/thread/tss.hpp>
 #include <time.h>
 
 using namespace ParaEngine;
@@ -729,6 +729,26 @@ void ParaEngine::ParaEngineSettings::SetScreenResolution( const Vector2& vSize )
 		CGlobals::GetApp()->SetScreenResolution(vSize);
 }
 
+void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
+{
+	auto app = CGlobals::GetApp();
+	if (app)
+	{
+		app->FixWindowSize(bEnabled);
+	}
+}
+
+const char* ParaEngine::ParaEngineSettings::GetWritablePath()
+{
+	return CParaFile::GetWritablePath().c_str();
+}
+
+void ParaEngine::ParaEngineSettings::SetWritablePath(const char* sPath)
+{
+	if(sPath!=NULL)
+		CParaFile::SetWritablePath(sPath);
+}
+
 void ParaEngine::ParaEngineSettings::SetFullScreenMode( bool bFullscreen )
 {
 	if(CGlobals::GetApp())
@@ -1204,25 +1224,6 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 #endif
 }
 
-void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
-{
-#ifdef WIN32
-	if (CGlobals::GetApp()->IsWindowedMode())
-	{
-		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
-		if (bEnabled)
-		{
-			dwAttr &= (~(WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
-		}
-		else
-		{
-			dwAttr |= (WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
-		}
-		SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
-	}
-#endif
-}
-
 void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
 {
 #ifdef WIN32
@@ -1397,6 +1398,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Icon", FieldType_String, (void*)SetIcon_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("LockWindowSize", FieldType_Bool, (void*)SetLockWindowSize_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ShowWindowTitleBar", FieldType_Bool, (void*)SetShowWindowTitleBar_s, (void*)IsShowWindowTitleBar_s, NULL, NULL, bOverride);
+	pClass->AddField("WritablePath", FieldType_String, (void*)SetWritablePath_s, (void*)GetWritablePath_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FPS", FieldType_Float, NULL, (void*)GetFPS_s, NULL, NULL, bOverride);
 	pClass->AddField("TriangleCount", FieldType_Int, NULL, (void*)GetTriangleCount_s, NULL, NULL, bOverride);

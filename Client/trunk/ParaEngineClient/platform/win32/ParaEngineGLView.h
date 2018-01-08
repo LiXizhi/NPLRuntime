@@ -120,6 +120,11 @@ namespace ParaEngine {
 		*/
 		void setFrameSize(float width, float height);
 
+		/** set the window title when at windowed mode */
+		void SetWindowText(const char* pChar);
+
+
+		void FixWindowSize(bool fixed);
 #ifdef WIN32
 		HWND getWin32Window() { return glfwGetWin32Window(_mainWindow); };
 #endif /* (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) */
