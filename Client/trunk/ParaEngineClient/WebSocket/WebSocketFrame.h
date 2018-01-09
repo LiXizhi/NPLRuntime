@@ -48,8 +48,11 @@ namespace NPL
 			};
 			void setPayload(ByteBuffer& buffer) {
 				data.clear();
+				append(buffer);
+			};
+			void append(ByteBuffer& buffer) {
 				int len = buffer.bytesRemaining();
-				for (int i = 0; i< len; i++)
+				for (int i = 0; i < len; i++)
 				{
 					data.put(buffer.get());
 				}
@@ -87,6 +90,7 @@ namespace NPL
 			void assertValid();
 
 			void loadData(std::vector<byte>& outData);
+			int size() { return data.bytesRemaining(); };
 		private:
 			/**
 			* Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.

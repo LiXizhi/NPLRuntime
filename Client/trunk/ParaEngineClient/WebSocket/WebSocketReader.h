@@ -14,6 +14,9 @@ namespace NPL
 			bool parse(ByteBuffer& buffer);
 			bool parseFrame(ByteBuffer& buffer);
 
+			// append buffer to frame
+			bool append(ByteBuffer& buffer);
+
 			bool isRsv1InUse() { return (flagsInUse & 0x40) != 0; };
 			bool isRsv2InUse() { return (flagsInUse & 0x20) != 0; };
 			bool isRsv3InUse() { return (flagsInUse & 0x10) != 0; };
@@ -22,17 +25,12 @@ namespace NPL
 
 
 			WebSocketFrame* getFrame();
-
+			ComingMsgState getState() {
+				return frameState;
+			};
+			void reset();
 		private:
 			void assertSanePayloadLength(int length);
-			/**
-			* Implementation specific parsing of a payload
-			*
-			* @param buffer
-			*            the payload buffer
-			* @return true if payload is done reading, false if incomplete
-			*/
-			bool parsePayload(ByteBuffer& buffer);
 		private:
 			ByteBuffer payload;
 			int payloadLength;
@@ -51,6 +49,8 @@ namespace NPL
 			*/
 			byte flagsInUse;
 			WebSocketFrame* frame;
+
+			ComingMsgState frameState;
 		};
 	}
 }
