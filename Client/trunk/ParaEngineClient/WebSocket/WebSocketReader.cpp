@@ -13,13 +13,14 @@ using namespace NPL::WebSocket;
 
 void WebSocketReader::assertSanePayloadLength(int length)
 {
-
+	OUTPUT_LOG("assertSanePayloadLength: %d\n", payloadLength);
 }
 
 WebSocketReader::WebSocketReader()
 	: state(START)
 	, cursor(0)
 	, flagsInUse(0x00)
+	, frameState(ComingMsgState::EMPTY)
 {
 	frame = new WebSocketFrame();
 }
@@ -67,6 +68,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		{
 		case NPL::WebSocket::State::START:
 		{
+			frameState = ComingMsgState::EMPTY;
 			byte b = buffer.get();
 			bool fin = ((b & 0x80) != 0);
 			byte opcode = (byte)(b & 0x0F);
@@ -139,7 +141,10 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 				cursor = 2;
 				break; // continue onto next state
 			}
-			assertSanePayloadLength(payloadLength);
+			else 
+			{
+				assertSanePayloadLength(payloadLength);
+			}
 			if (frame->isMasked())
 			{
 				state = MASK;
@@ -236,7 +241,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		case NPL::WebSocket::State::PAYLOAD:
 		{
 			frame->assertValid();
-			if (parsePayload(buffer))
+			if (append(buffer))
 			{
 				// special check for close
 				if (frame->getOpCode() == OpCode::CLOSE)
@@ -255,27 +260,32 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 	return true;
 }
 
-bool WebSocketReader::parsePayload(ByteBuffer& buffer)
+bool WebSocketReader::append(ByteBuffer& buffer)
 {
-	if (payloadLength == 0)
+	if (payloadLength <= 0)
 	{
 		return true;
 	}
-
 	const int len = buffer.bytesRemaining();
-	if ( len > 0)
+	payloadLength -= len;
+	frame->append(buffer);
+	if (payloadLength > 0)
 	{
-
-		frame->setPayload(buffer);
-		
-		return true;
-		
+		frameState = ComingMsgState::FRAGMENT_CONTINUATION;
 	}
-	return false;
+	else
+	{
+		frameState = ComingMsgState::ENTIRE;
+	}
+	return true;
 }
 
 WebSocketFrame* WebSocketReader::getFrame()
 {
 	return frame;
 }
-
+void WebSocketReader::reset() 
+{
+	frameState = ComingMsgState::EMPTY; 
+	payloadLength = 0;
+}

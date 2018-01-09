@@ -723,13 +723,35 @@ void NPL::CNPLConnection::handleDisconnect(int reason)
 bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 {
 	WebSocket::ByteBuffer b = WebSocket::WebSocketReader::load(&m_buffer, bytes_transferred);
-	if (m_websocket_reader.parse(b))
+	WebSocket::ComingMsgState state = m_websocket_reader.getState();
+	OUTPUT_LOG("handle_websocket_data state: %d \n", state);
+	bool parsed = false;
+	if (state == WebSocket::ComingMsgState::EMPTY)
+	{
+		m_websocket_reader.parse(b);
+		parsed = true;
+	}
+	state = m_websocket_reader.getState();
+	if (state == WebSocket::ComingMsgState::FRAGMENT_CONTINUATION)
+	{
+		if (parsed)
+		{
+			return true;
+		}
+		m_websocket_reader.append(b);
+	}
+	state = m_websocket_reader.getState();
+	if (state == WebSocket::ComingMsgState::FRAGMENT_CONTINUATION)
+	{
+		return true;
+	}
+	if (state == WebSocket::ComingMsgState::ENTIRE)
 	{
 		NPL::WebSocket::WebSocketFrame* frame = m_websocket_reader.getFrame();
 
 		m_websocket_input_data.clear();
 		frame->loadData(m_websocket_input_data);
-
+		m_websocket_reader.reset();
 
 		NPL::WebSocket::OpCode opcode = (NPL::WebSocket::OpCode)frame->getOpCode();
 		switch (opcode)
@@ -742,7 +764,7 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 			m_input_msg.method = "A";
 			m_input_msg.m_n_filename = server_id;
 			NPL::NPLHelper::EncodeStringInQuotation(m_input_msg.m_code, 0, (const char*)(&m_websocket_input_data[0]), (int)m_websocket_input_data.size());
-			
+
 			return handleMessageIn();
 		}
 		case NPL::WebSocket::CLOSE:
