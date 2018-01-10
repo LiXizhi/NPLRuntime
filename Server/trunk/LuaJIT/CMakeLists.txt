@@ -313,13 +313,16 @@ else()
 	SET(LUA_LIB_MODE "SHARED")
 endif()
 
-add_library ( liblua ${LUA_LIB_MODE} ${LJCORE_C} ${DEPS} )
-target_link_libraries ( liblua ${LIBS} )
-set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
+add_library ( luajit20 ${LUA_LIB_MODE} ${LJCORE_C} ${DEPS} )
+target_link_libraries ( luajit20 ${LIBS} )
+set_target_properties ( luajit20 PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
 
-ADD_CUSTOM_COMMAND(
-	TARGET liblua
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:liblua> ${OUTPUT_BIN_DIR}
-)
+
+if(NOT LUA_STATICLIB)
+	ADD_CUSTOM_COMMAND(
+		TARGET luajit20
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:luajit20> ${OUTPUT_BIN_DIR}
+	)
+endif()

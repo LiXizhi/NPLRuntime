@@ -197,8 +197,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 			if (buffer.bytesRemaining() >= 4)
 			{
 				buffer.getBytes(m, 4);
-				std::vector<byte> mm(m, m + 4);
-				frame->setMask(mm);
+				frame->setMask(m, 4);
 				// special case for empty payloads (no more bytes left in buffer)
 				if (payloadLength == 0)
 				{
@@ -219,9 +218,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		case NPL::WebSocket::State::MASK_BYTES:
 		{
 			byte b = buffer.get();
-			std::vector<byte> mask = frame->getMask();
-			mask[4 - cursor] = b;
-			frame->setMask(mask);
+			frame->getMask()[4 - cursor] = b;
 			--cursor;
 			if (cursor == 0)
 			{
