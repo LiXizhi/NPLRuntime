@@ -1,7 +1,7 @@
 #!/bin/bash
 # author: lixizhi@yeah.net
 # date: 2016.2.26
-# desc: to install dependencies, please see `.travis.yml` 
+# desc: to install dependencies, please see `.travis.yml`
 # For boost: Download boost 1.55 or above and build with `./b2 link=static`
 
 # run cmake in ./NPLRuntime folder and make
@@ -25,6 +25,7 @@ if [ $result == 0 ]; then
     pushd ParaWorld/bin64/
     ls -l
     npl_exe_path=/usr/local/bin/npl
+	nplc_exe_path=/usr/local/bin/nplc
     echo "install executable to $npl_exe_path"
     if [ -f ./ParaEngineServer ]; then
         if [ ! -e $npl_exe_path ] && [ ! -L $npl_exe_path ];  then
@@ -34,14 +35,21 @@ if [ $result == 0 ]; then
         fi
         ls -l $npl_exe_path
     fi
+	if [ ! -f ./nplc.sh ]; then
+		ln -s  ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
+		chmod +x nplc.sh
+		ln -s $(pwd)/nplc.sh $nplc_exe_path
+	fi
+	
     if [ -f ./libluajit21.so ]; then
         echo "Force using LJ_GC64 in 64bits system"
+        cp liblua.so libluajit20.so
         cp -f libluajit21.so liblua.so
     fi
     popd
 
-    # run all NPL tests 
-    echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua" 
+    # run all NPL tests
+    echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua"
 fi
 
 exit $result

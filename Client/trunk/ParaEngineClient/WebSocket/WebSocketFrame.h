@@ -13,7 +13,7 @@ namespace NPL
 		public:
 			WebSocketFrame();
 			~WebSocketFrame();
-			std::vector<byte> getMask() {
+			std::vector<byte>& getMask() {
 				return mask;
 			};
 			byte getOpCode() {
@@ -36,10 +36,8 @@ namespace NPL
 				// set bit 1
 				finRsvOp = (byte)((finRsvOp & 0x7F) | (fin ? 0x80 : 0x00));
 			};
-			void setMask(std::vector<byte> maskingKey) {
-				mask = maskingKey;
-				masked = !mask.empty();
-			};
+			void setMask(const std::vector<byte>& maskingKey);
+			void setMask(const byte* data, int nCount=4);
 			void setMasked(bool mask) {
 				masked = mask;
 			};
@@ -50,20 +48,7 @@ namespace NPL
 				data.clear();
 				append(buffer,buffer.bytesRemaining());
 			};
-			void append(ByteBuffer& buffer,int needed_len) {
-				int len = buffer.bytesRemaining();
-				needed_len = min(needed_len,len);
-
-				int max_size = data.size() + needed_len;
-				if (data.capacity() < max_size)
-				{
-					data.reserve(max_size);
-				}
-				for (int i = 0; i < needed_len; i++)
-				{
-					data.put(buffer.get());
-				}
-			};
+			void append(ByteBuffer& buffer,int needed_len);;
 			void setRsv1(bool rsv1) {
 				// set bit 2
 				finRsvOp = (byte)((finRsvOp & 0xBF) | (rsv1 ? 0x40 : 0x00));
@@ -88,12 +73,7 @@ namespace NPL
 			bool hasPayload() {
 				return getPayloadLength() > 0;
 			};
-			void reset() {
-				finRsvOp = (byte)0x80; // FIN (!RSV, opcode 0)
-				masked = false;
-				data.clear();
-				mask.clear();
-			};
+			void reset();;
 			void assertValid();
 
 			void loadData(std::vector<byte>& outData);

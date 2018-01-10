@@ -606,13 +606,25 @@ endif()
 # EXTRA_LIBRARIES
 if(WIN32)
 	list(APPEND ParaEngineClient_LIBS Ws2_32 winmm wsock32 Dnsapi Secur32 Crypt32 Wldap32 zlib libcurl
-	sqlite liblua jsoncpp tinyxpath luabind)
+	sqlite jsoncpp tinyxpath luabind)
 endif()
 	
 if(APPLE)
-	list(APPEND ParaEngineClient_LIBS dl resolv z pthread sqlite liblua jsoncpp tinyxpath luabind)
+	list(APPEND ParaEngineClient_LIBS dl resolv z pthread sqlite jsoncpp tinyxpath luabind)
 endif()
 
+if(NPLRUNTIME_STATIC_LIB)
+	if(NPLRUNTIME_LUAJIT20)
+		list(APPEND ParaEngineClient_LIBS luajit20)
+	elseif(NPLRUNTIME_LUAJIT21)
+		list(APPEND ParaEngineClient_LIBS luajit21)
+	else()
+		list(APPEND ParaEngineClient_LIBS lua)
+	endif()
+else()
+	# since luajit is ABI compatible with lua, we will always link with standard lua 
+	list(APPEND ParaEngineClient_LIBS lua)
+endif()
 
 # END OF LIBRARIES
 # ==================================================================================
