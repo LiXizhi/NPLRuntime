@@ -48,11 +48,12 @@ namespace NPL
 			};
 			void setPayload(ByteBuffer& buffer) {
 				data.clear();
-				append(buffer);
+				append(buffer,buffer.bytesRemaining());
 			};
-			void append(ByteBuffer& buffer) {
+			void append(ByteBuffer& buffer,int needed_len) {
 				int len = buffer.bytesRemaining();
-				for (int i = 0; i < len; i++)
+				needed_len = min(needed_len,len);
+				for (int i = 0; i < needed_len; i++)
 				{
 					data.put(buffer.get());
 				}

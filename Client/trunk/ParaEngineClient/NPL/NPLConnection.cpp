@@ -724,7 +724,6 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 {
 	WebSocket::ByteBuffer b = WebSocket::WebSocketReader::load(&m_buffer, bytes_transferred);
 	WebSocket::ComingMsgState state = m_websocket_reader.getState();
-	OUTPUT_LOG("handle_websocket_data state: %d \n", state);
 	bool parsed = false;
 	if (state == WebSocket::ComingMsgState::EMPTY)
 	{
