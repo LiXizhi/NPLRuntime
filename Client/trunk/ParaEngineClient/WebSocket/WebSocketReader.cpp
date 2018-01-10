@@ -13,7 +13,6 @@ using namespace NPL::WebSocket;
 
 void WebSocketReader::assertSanePayloadLength(int length)
 {
-	OUTPUT_LOG("assertSanePayloadLength: %d\n", payloadLength);
 }
 
 WebSocketReader::WebSocketReader()
@@ -267,8 +266,9 @@ bool WebSocketReader::append(ByteBuffer& buffer)
 		return true;
 	}
 	const int len = buffer.bytesRemaining();
+	int needed_len = payloadLength;
 	payloadLength -= len;
-	frame->append(buffer);
+	frame->append(buffer, needed_len);
 	if (payloadLength > 0)
 	{
 		frameState = ComingMsgState::FRAGMENT_CONTINUATION;
