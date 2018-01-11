@@ -794,13 +794,14 @@ if(WIN32)
 			set(NPLRUNTIME_LIB_MODE "SHARED")
 		endif()
 		add_library(ParaEngineClient ${NPLRUNTIME_LIB_MODE} ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "AwesomeTruck")
 	else ()
 		# add the executable
 		add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
 		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
 		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
-		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "ParaEngineClient")
-		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
+		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "AwesomeTruck")
+		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "AwesomeTruck_d")
 
 	endif ()
 
