@@ -36,10 +36,11 @@ if [ $result == 0 ]; then
         ls -l $npl_exe_path
     fi
 	if [ ! -f ./nplc.sh ]; then
-		ln -s  ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
+		cp -f ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
 		chmod +x nplc.sh
 		ln -s $(pwd)/nplc.sh $nplc_exe_path
 	fi
+    ls -l $nplc_exe_path
 	
     if [ -f ./libluajit21.so ]; then
         echo "Force using LJ_GC64 in 64bits system"
