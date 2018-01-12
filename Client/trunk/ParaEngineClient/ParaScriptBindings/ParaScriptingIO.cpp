@@ -39,12 +39,13 @@ extern "C" {
 
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
+#include "os_calls.h"
 #include "ParaScriptingIO.h"
 
 using namespace luabind;
 
 //@def the maximum number of bytes in a text file line.
-#define MAX_LINE_CHARACTER_NUM	500
+#define MAX_LINE_CHARACTER_NUM	512
 
 namespace ParaScripting
 {
@@ -393,8 +394,16 @@ namespace ParaScripting
 	{
 		// not thread safe
 		static char line[MAX_LINE_CHARACTER_NUM];
-		if(g_currentIOfile.isEof())
+		if (g_currentIOfile.isEof())
+		{
+			// read from stdio
+			static std::string sLine;
+			if (ParaEngine::ReadLine(sLine, ">"))
+			{
+				return sLine.c_str();
+			}
 			return NULL;
+		}
 		else
 			g_currentIOfile.GetNextLine(line, MAX_LINE_CHARACTER_NUM-1);
 		return line;
