@@ -453,7 +453,7 @@ PE_CORE_DECL bool ParaEngine::ReadLine(std::string& output, const char* prmt)
 	return false;
 #else
 	char buf[NPL_MAXINPUT+1];
-	if (prmt != 0)
+	if (prmt != 0 && prmt[0]!=0)
 	{
 		fputs(prmt, stdout);
 		fflush(stdout);
