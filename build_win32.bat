@@ -42,7 +42,12 @@ msbuild  %~dp0\bin\client_win32\CLIENT.sln /verbosity:minimal /property:Configur
 
 popd
 
-dir ParaWorld/bin32
+pushd ParaWorld\bin32\
+	if NOT EXIST "npl.exe" ( mklink npl.exe ParaEngineClient.exe )
+	if NOT EXIST "nplc.bat" ( copy ..\..\npl_packages\main\script\ide\System\nplcmd\nplc.bat  nplc.bat )
+	dir
+popd
+
 
 
 

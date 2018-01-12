@@ -382,12 +382,24 @@ namespace ParaScripting
 
 	void ParaIO::WriteString(const char* str)
 	{
-		g_currentIOfile.WriteString(str);
+		if (!g_currentIOfile.isEof())
+			g_currentIOfile.WriteString(str);
+		else
+		{
+			// write to stdout
+			fputs(str, stdout);
+			fflush(stdout);
+		}
 	}
 
 	void ParaIO::write(const char* buffer, int nSize)
 	{
-		g_currentIOfile.write(buffer, nSize);
+		if (!g_currentIOfile.isEof())
+			g_currentIOfile.write(buffer, nSize);
+		else
+		{
+			WriteString(buffer);
+		}
 	}
 
 	const char* ParaIO::readline()
@@ -1008,7 +1020,7 @@ namespace ParaScripting
 
 	void ParaFileObject::writeline(const char* str)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->WriteString(str);
 			m_pFile->WriteString("\n");
