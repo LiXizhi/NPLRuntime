@@ -419,6 +419,10 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
     unsigned int bufferSize = 512;
     _NSGetExecutablePath(exePath, &bufferSize);
+	ssize_t len = ::readlink(exePath, exePath, sizeof(exePath));
+	if (len == -1 || len == sizeof(exePath))
+		len = 0;
+	exePath[len] = '\0';
     return std::string(exePath);
 #else
 	return std::string();
