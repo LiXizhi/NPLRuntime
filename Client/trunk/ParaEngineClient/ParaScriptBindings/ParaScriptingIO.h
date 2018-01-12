@@ -519,6 +519,11 @@ namespace ParaScripting
 		*/
 		static const char* readline();
 		
+		/** read line from stdin and automatically add to history
+		* @param prompt: the default prompt like "> ", ">> " or just ""
+		*/
+		static const char* readline2(const char* prompt);
+
 		/**
 		* Check whether a given file exists on disk.
 		* @param filename: file name to check
