@@ -173,44 +173,6 @@ namespace ParaEngine
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance){ return 0; };
 
-		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
-		* call this as often as one like internally it will use a timer to best fit the interval.
-		*/
-		virtual HRESULT DoWork()  { return 0; };
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has been
-		* created, which will happen during application initialization and windowed/full screen
-		* toggles. This is the best location to create D3DPOOL_MANAGED resources since these
-		* resources need to be reloaded whenever the device is destroyed. Resources created
-		* here should be released in the OnDestroyDevice callback.
-		*/
-		virtual HRESULT InitDeviceObjects() { return S_OK;}
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has been
-		* reset, which will happen after a lost device scenario. This is the best location to
-		* create D3DPOOL_DEFAULT resources since these resources need to be reloaded whenever
-		* the device is lost. Resources created here should be released in the OnLostDevice
-		* callback.
-		*/
-		virtual HRESULT RestoreDeviceObjects() { return S_OK; }
-
-		/**
-		* This callback function will be called immediately after the Direct3D device has
-		* entered a lost state and before IDirect3DDevice9::Reset is called. Resources created
-		* in the OnResetDevice callback should be released here, which generally includes all
-		* D3DPOOL_DEFAULT resources. See the "Lost Devices" section of the documentation for
-		* information about lost devices.
-		*/
-		virtual HRESULT InvalidateDeviceObjects() { return S_OK; }
-		/**
-		* This callback function will be called immediately after the Direct3D device has
-		* been destroyed, which generally happens as a result of application termination or
-		* windowed/full screen toggles. Resources created in the OnCreateDevice callback
-		* should be released here, which generally includes all D3DPOOL_MANAGED resources.
-		*/
-		virtual HRESULT DeleteDeviceObjects() { return S_OK; }
 
 		/** create d3d render device based on the current main window.
 		* Use this function to create a new render device automatically.
