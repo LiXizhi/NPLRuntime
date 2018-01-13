@@ -11,6 +11,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef WIN32
+#include <io.h>
+#include <stdio.h>
+#else
+#include <unistd.h>
+#endif
+
+#if defined(NPL_USE_READLINE)
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 ///////////////////////////////////////////////////////
 //
@@ -408,8 +419,60 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 #elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
     unsigned int bufferSize = 512;
     _NSGetExecutablePath(exePath, &bufferSize);
+	ssize_t len = ::readlink(exePath, exePath, sizeof(exePath));
+	if (len == -1 || len == sizeof(exePath))
+		len = 0;
+	exePath[len] = '\0';
     return std::string(exePath);
 #else
 	return std::string();
+#endif
+}
+
+PE_CORE_DECL bool ParaEngine::stdin_is_tty()
+{
+#ifdef WIN32
+	return _isatty(_fileno(stdin)) != 0;
+#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
+	return isatty(0) != 0;
+#else
+	return 1; // assume it is tty
+#endif
+}
+
+#define NPL_MAXINPUT 512
+PE_CORE_DECL bool ParaEngine::ReadLine(std::string& output, const char* prmt)
+{
+#if defined(NPL_USE_READLINE)
+	char* buf = readline(prmt);
+	if (buf != NULL)
+	{
+		output = buf;
+
+		if (!output.empty())  /* non-empty line? */ 
+			add_history(output.c_str());  /* add it to history */
+		free(buf);
+		return true;
+	}
+	return false;
+#else
+	char buf[NPL_MAXINPUT+1];
+	if (prmt != 0 && prmt[0]!=0)
+	{
+		fputs(prmt, stdout);
+		fflush(stdout);
+	}
+
+	if (fgets(buf, NPL_MAXINPUT, stdin) != NULL)  /* get line */
+	{
+		size_t len = strlen(buf);
+		if (len > 0 && buf[len - 1] == '\n')
+		{ 
+			buf[len - 1] = '\0';
+			output = buf;
+		}
+		return true;
+	}
+	return false;
 #endif
 }

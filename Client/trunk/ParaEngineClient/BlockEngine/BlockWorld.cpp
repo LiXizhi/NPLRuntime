@@ -2198,8 +2198,8 @@ bool ParaEngine::CBlockWorld::ChunkColumnExists(uint16_t chunkX, uint16_t chunkZ
 
 bool ParaEngine::CBlockWorld::IsChunkLocked(uint32 worldX, uint32 worldZ)
 {
-	int16_t regionX = (int16_t)(worldX >> 5);
-	int16_t regionZ = (int16_t)(worldZ >> 5);
+	int16_t regionX = (int16_t)(worldX >> 9);
+	int16_t regionZ = (int16_t)(worldZ >> 9);
 
 	BlockRegion* pRegion = GetRegion(regionX, regionZ);
 	if (pRegion && !pRegion->IsLocked())

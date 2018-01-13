@@ -345,7 +345,7 @@ namespace ParaScripting
 		static bool RemoveSearchPath(const char* sFile);
 
 		/** get writable path */
-		static std::string GetWritablePath();
+		static const std::string& GetWritablePath();
 
 		/**
 		* clear all search paths.
@@ -400,16 +400,6 @@ namespace ParaScripting
 		* @return true if succeeds
 		*/
 		static bool CopyFile(const char* src, const char* dest, bool bOverride);
-
-		/** create a new file for writing.
-		* it will make all necessary directories in order to create the file.
-		*/
-		static bool CreateNewFile(const char * filename);
-		/** open a new file for write-only access. If the file does not exist, it will be created.
-		* if the file exists, the file pointer is at the end of file.*/
-		static bool OpenFileWrite(const char * filename);
-		/** Open a file for read-only access. */
-		static bool OpenFile(const char * filename);
 
 		/**
 		* This is rather similar to OpenFile() method, except that it will first look in the AssetManifest to see if the file exit.
@@ -492,18 +482,48 @@ namespace ParaScripting
 		* @return: true if the directory is made or already exists*/
 		static bool CreateDirectory(const char* filename);
 
-		/** Close the current file.*/
+		/** deprecated: use ParaIO.open
+		* create a new file for writing.
+		* it will make all necessary directories in order to create the file.
+		*/
+		static bool CreateNewFile(const char * filename);
+		/** deprecated: use ParaIO.open
+		* open a new file for write-only access. If the file does not exist, it will be created.
+		* if the file exists, the file pointer is at the end of file.*/
+		static bool OpenFileWrite(const char * filename);
+		/** deprecated: use ParaIO.open
+		* Open a file for read-only access.
+		*/
+		static bool OpenFile(const char * filename);
+
+		/** deprecated: use ParaIO.open
+		* Close the current file.
+		*/
 		static void CloseFile();
-		/** write a string to the current file. */
+		/** deprecated: use ParaIO.open
+		* write a string to the current file. 
+		*/
 		static void WriteString(const char* str);
-		/** read line as a string. The string is guaranteed to be ended with '\0'.
+		/**
+		* deprecated: use ParaIO.open
+		* write a buffer to the current file.
+		*/
+		static void write(const char* buffer, int nSize);
+
+		/** if no file is opened, it means readline from stdin.
+		* a deprecated usage is reading from current open file. 
+		* read line as a string. The string is guaranteed to be ended with '\0'.
 		* if end of file is reached, it will return NULL. which is nil in the script.
 		* if a line begins with "--", it is automatically recognized as a comment line and will be skipped.
 		* a blank line will also be skipped.
 		*/
 		static const char* readline();
-		/** write a buffer to the current file. */
-		static void write(const char* buffer, int nSize);
+		
+		/** read line from stdin and automatically add to history
+		* @param prompt: the default prompt like "> ", ">> " or just ""
+		*/
+		static const char* readline2(const char* prompt);
+
 		/**
 		* Check whether a given file exists on disk.
 		* @param filename: file name to check

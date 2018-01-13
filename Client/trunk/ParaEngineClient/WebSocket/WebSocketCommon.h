@@ -22,7 +22,12 @@ namespace NPL
 			PAYLOAD
 
 		};
-
+		enum ComingMsgState
+		{
+			EMPTY,
+			ENTIRE,
+			FRAGMENT_CONTINUATION,
+		};
 		class WebSocketCommon {
 		public:
 			static bool isKnown(unsigned char opcode) {

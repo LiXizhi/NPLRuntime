@@ -13,6 +13,7 @@ apt-get install -y build-essential cmake git-core
 if [ "$CXX" = "g++" ]; then apt-get install -y g++-4.9; fi
 if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
 apt-get install -y libssl-dev libssh2-1-dev
+apt-get install -y libreadline6 libreadline6-dev
 apt-get install -y freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev libbz2-1.0 libbz2-dev
 
 # install boost from latest source url. boost version should be 1.55.0 or above

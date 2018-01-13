@@ -184,8 +184,6 @@ void CParaEngineApp::InitApp(const char* sCommandLine)
 
 	SetAppCommandLine(sCommandLine);
 
-	InitCommandLineParams();
-
 	COSInfo::DumpSystemInfo();
 
 	if (Is3DRenderingEnabled())
@@ -896,8 +894,15 @@ void SetClientRect(HWND hwnd, RECT& rect)
 	RECT oldRect = rect;
 	AdjustWindowRectEx(&rect, GetWindowLong(hwnd, GWL_STYLE),
 		FALSE, GetWindowLong(hwnd, GWL_EXSTYLE));
+	auto offsetX = rect.left - oldRect.left;
+	auto offsetY = rect.top - oldRect.top;
+
 	rect.left = oldRect.left;
 	rect.top = oldRect.top;
+	rect.right -= offsetX;
+	rect.bottom -= offsetY;
+
+
 	//SetWindowPos( hwnd, 0,0, 0,rect.right - rect.left,rect.bottom - rect.top,
 	//	SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOZORDER);
 	MoveWindow(hwnd, rect.left, rect.top, rect.right - rect.left,rect.bottom - rect.top, TRUE);
@@ -1522,17 +1527,16 @@ void CParaEngineApp::FixWindowSize(bool fixed)
 		if (fixed)
 		{
 			dwWindowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+			// dwWindowStyle &= (~(WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
 		}
 		else
 		{
 			dwWindowStyle |= (WS_THICKFRAME | WS_MAXIMIZEBOX);
+			// dwWindowStyle |= (WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
 		}
-
 		SetWindowLong(m_hWnd, GWL_STYLE, dwWindowStyle);
-
 	}
 }
-
 
 void CParaEngineApp::SetWindowText( const char* pChar )
 {

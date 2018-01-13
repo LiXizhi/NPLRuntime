@@ -509,7 +509,7 @@ Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, cons
 				/** calculate the bone and its parent bones */
 				for (uint32 i = 0; i < nBones; i++)
 				{
-					bones[i].calc = false;
+					bones[i].MakeDirty();
 				}
 			}
 			if (bones[nBoneIndex].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance))
@@ -545,7 +545,7 @@ void CParaXModel::calcBones()
 	uint32 nBones = (uint32)GetObjectNum().nBones;
 	for (uint32 i = 0; i < nBones; i++)
 	{
-		bones[i].calc = false;
+		bones[i].MakeDirty();
 	}
 
 	for (uint32 i = 0; i < nBones; i++) {
@@ -568,7 +568,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 #endif
 
 	for (uint32 i = 0; i < nBones; i++) {
-		bones[i].calc = false;
+		bones[i].MakeDirty();
 	}
 
 	if (pPose)
@@ -1164,6 +1164,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
+							pEffect->onDrawPass(pMaterialParams,nPass);
 							pEffect->CommitChanges();
 							DrawPass(p);
 							p.deinit_FX(pSceneState, pMaterialParams);
@@ -2069,7 +2070,6 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 void CParaXModel::SaveToDisk(const char* path)
 {
-	string sRootDir = CFileUtils::GetInitialDirectory();
 	string filepath(path);
-	XFileCharModelExporter::Export(sRootDir + filepath, this);
+	XFileCharModelExporter::Export(filepath, this);
 }

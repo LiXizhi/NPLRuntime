@@ -86,6 +86,15 @@ namespace ParaEngine
 	/** get current executable path.
 	*/
 	PE_CORE_DECL std::string GetExecutablePath();
+
+	/** whether stdin is tty */
+	PE_CORE_DECL bool stdin_is_tty();
+
+	/** read line from stdin in interactive mode. 
+	@param output: output string containing the actual line data without \n.
+	@param prompt: such as ">" or ">>"
+	*/
+	PE_CORE_DECL bool ReadLine(std::string& output, const char* prmt);
 }
 
 ///////////////////////////////////////////////////////

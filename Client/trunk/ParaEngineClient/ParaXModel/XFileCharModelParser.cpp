@@ -633,8 +633,26 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 				Bone& bone = xmesh.bones[i];
 				const ModelBoneDef&b = mb[i];
 				bone.parent = b.parent;
-				bone.pivot = b.pivot;
 				bone.flags = b.flags;
+				if ((bone.flags & 0x80000000)!=0)
+				{
+					bone.flags = bone.flags & (~0x80000000);
+					if(b.nOffsetPivot!=0)
+						bone.SetName((const char*)GetRawData(b.nBoneName));
+
+					if (bone.IsOffsetMatrixBone()) {
+						bone.matOffset = *((const Matrix4*)GetRawData(b.nOffsetMatrix));
+						bone.bUsePivot = false;
+					}
+
+					bone.pivot = *((const Vector3*)GetRawData(b.nOffsetPivot));
+					if (bone.IsStaticTransform())
+						bone.matTransform = *((const Matrix4*)GetRawData(b.ofsStaticMatrix));
+				}
+				else
+				{
+					bone.pivot = b.pivot;
+				}
 				bone.nIndex = i;
 
 				if (b.boneid>0 && b.boneid < MAX_KNOWN_BONE_NODE)
@@ -643,11 +661,14 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 					//bone.nBoneID = b.boneid;
 				}
 				bone.nBoneID = b.boneid;
-
-				ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
-				ReadAnimationBlock(&b.rotation, bone.rot, xmesh.globalSequences);
-				ReadAnimationBlock(&b.scaling, bone.scale, xmesh.globalSequences);
-				bone.RemoveRedundentKeys();
+				
+				if (!bone.IsStaticTransform())
+				{
+					ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
+					ReadAnimationBlock(&b.rotation, bone.rot, xmesh.globalSequences);
+					ReadAnimationBlock(&b.scaling, bone.scale, xmesh.globalSequences);
+					bone.RemoveRedundentKeys();
+				}
 			}
 		}
 	}

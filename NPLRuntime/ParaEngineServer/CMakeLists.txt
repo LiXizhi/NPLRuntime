@@ -13,6 +13,7 @@ set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient
 set (ParaEngineServer_VERSION_MAJOR 1)
 set (ParaEngineServer_VERSION_MINOR 0)
 
+set(EXTRA_LIBRARIES )
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
 	set(PARAENGINE_COMPILE_LIB    false)
@@ -224,6 +225,18 @@ ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
 
+## Readline support
+include("${PROJECT_SOURCE_DIR}/../cmake/FindReadline.cmake")
+# FIND_PACKAGE(Readline)
+IF(READLINE_FOUND)
+  ADD_DEFINITIONS("-DNPL_USE_READLINE")
+  LIST(APPEND EXTRA_LIBRARIES ${Readline_LIBRARY})
+  MESSAGE("NPL_USE_READLINE read line is found and used")
+  INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
+ELSE()
+	MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
+ENDIF()
+
 IF(WIN32)
 	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
 	ADD_DEFINITIONS(-D_PERFORMANCE_MONITOR)
@@ -366,7 +379,7 @@ endif()
 
 
 if (WIN32)
-  set(EXTRA_LIBRARIES
+  set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 			Ws2_32
 			winmm
 			wsock32
@@ -379,7 +392,7 @@ if (WIN32)
   )
 else (WIN32)
 	if(LINUX)
-		set(EXTRA_LIBRARIES
+		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 				rt
 				dl
 				resolv
@@ -388,7 +401,7 @@ else (WIN32)
 			pthread
 		)
 	else(LINUX)
-		set(EXTRA_LIBRARIES
+		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 				dl
 				resolv
 				z

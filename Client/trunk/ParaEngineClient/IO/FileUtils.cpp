@@ -579,15 +579,11 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	if (bSecureFolderOnly)
 	{
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-		if (sFilePattern.find_first_of(":") != string::npos)
+		if(!CParaFile::IsWritablePath(sFilePattern, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
 			return 0;
-		}
-		else
-		{
-			// TODO: only allow deletion in some given folder. we will only allow deletion in the specified user directory
 		}
 	}
 
@@ -1112,28 +1108,44 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 #endif
 }
 
-std::string ParaEngine::CFileUtils::GetWritablePath()
+const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
-	if (!s_writepath.empty())
-		return s_writepath;
+	if (s_writepath.empty())
+	{
 #ifdef USE_COCOS_FILE_API
-	return cocos2d::FileUtils::getInstance()->getWritablePath();
+		s_writepath = cocos2d::FileUtils::getInstance()->getWritablePath();
 #else
-	return ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_ROOT_DIR);
+		s_writepath = ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_ROOT_DIR);
 #endif
+	}
+	return s_writepath;
 }
 
 void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 {
-	if (!writable_path.empty() && s_writepath != writable_path)
+	if (s_writepath != writable_path)
 	{
-		if (MakeDirectoryFromFilePath(writable_path.c_str()))
+		s_writepath = writable_path;
+		if (!writable_path.empty())
 		{
-			s_writepath = writable_path;
+			if (MakeDirectoryFromFilePath(writable_path.c_str()))
+			{
+				s_writepath = writable_path;
+			}
+			else
+			{
+				OUTPUT_LOG("warn: failed to set writable path to %s\n", writable_path.c_str());
+			}
 		}
-		else
+
+		if (!s_writepath.empty())
 		{
-			OUTPUT_LOG("warn: failed to set writable path to %s\n", writable_path.c_str());
+			char nLastChar = writable_path[writable_path.size() - 1];
+			if (nLastChar != '/' && nLastChar != '\\')
+			{
+				s_writepath = s_writepath + "/";
+			}
+			CParaFile::ToCanonicalFilePath(s_writepath, s_writepath);
 		}
 	}
 }

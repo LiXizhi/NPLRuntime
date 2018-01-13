@@ -5,6 +5,8 @@
 *.sdf
 *.suo
 *.zip
+log.txt
+assets.log
 *.user
 *.ncb
 *.aps
