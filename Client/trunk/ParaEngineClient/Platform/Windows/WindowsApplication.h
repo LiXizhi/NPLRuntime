@@ -93,8 +93,6 @@ namespace ParaEngine
 		void SetAppState(ParaEngine::PEAppState state) { m_nAppState = state; }
 	protected:
 
-		CD3DSettings      m_d3dSettings;
-
 		// Internal variables for the state of the app
 		bool              m_bWindowed;
 		bool              m_bActive;
