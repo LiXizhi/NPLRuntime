@@ -76,7 +76,6 @@
 
 // header include
 #include "WindowsApplication.h"
-#include "D3DWindowUtil.h"
 #include "OSWindows.h"
 #include <time.h>
 #include "ParaEngineAppBase.h"
@@ -87,7 +86,6 @@
 #include "resource.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIDirectInput.h"
-#include "D3DWindowUtil.h"
 #include "FrameRateController.h"
 #include "MiscEntity.h"
 

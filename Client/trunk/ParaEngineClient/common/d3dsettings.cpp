@@ -7,7 +7,6 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "D3DWindowUtil.h"
 CD3DSettingsDialog* s_pSettingsDialog = NULL;
 
 
@@ -475,97 +474,7 @@ void CD3DSettingsDialog::DeviceChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::WindowedFullscreenChanged( void )
 {
-    D3DAdapterInfo* pAdapterInfo = (D3DAdapterInfo*)ComboBoxSelected( IDC_ADAPTER_COMBO );
-    D3DDeviceInfo* pDeviceInfo = (D3DDeviceInfo*)ComboBoxSelected( IDC_DEVICE_COMBO );
-    if( pAdapterInfo == NULL || pDeviceInfo == NULL )
-        return;
-
-    if( IsDlgButtonChecked( m_hDlg, IDC_WINDOW ) )
-    {
-        m_d3dSettings.IsWindowed = true;
-        m_d3dSettings.pWindowed_AdapterInfo = pAdapterInfo;
-        m_d3dSettings.pWindowed_DeviceInfo = pDeviceInfo;
-
-        // Update device clip check box
-        EnableWindow( GetDlgItem( m_hDlg, IDC_DEVICECLIP_CHECK ), true );
-        if( m_d3dSettings.DeviceClip() )
-            SendMessage( GetDlgItem( m_hDlg, IDC_DEVICECLIP_CHECK ), BM_SETCHECK, BST_CHECKED, 0 );
-        else
-            SendMessage( GetDlgItem( m_hDlg, IDC_DEVICECLIP_CHECK ), BM_SETCHECK, BST_UNCHECKED, 0 );
-
-        // Update adapter format combo box
-        ComboBoxClear( IDC_ADAPTERFORMAT_COMBO );
-        ComboBoxAdd( IDC_ADAPTERFORMAT_COMBO, (void*)m_d3dSettings.Windowed_DisplayMode.Format,
-            D3DUtil_D3DFormatToString( m_d3dSettings.Windowed_DisplayMode.Format ) );
-        ComboBoxSelectIndex( IDC_ADAPTERFORMAT_COMBO, 0 );
-        EnableWindow( GetDlgItem( m_hDlg, IDC_ADAPTERFORMAT_COMBO ), false );
-
-        // Update resolution combo box
-        DWORD dwResolutionData;
-        TCHAR strResolution[50];
-        dwResolutionData = MAKELONG( m_d3dSettings.Windowed_DisplayMode.Width,
-                                     m_d3dSettings.Windowed_DisplayMode.Height );
-        _sntprintf( strResolution, 50, TEXT("%d by %d"), m_d3dSettings.Windowed_DisplayMode.Width, 
-            m_d3dSettings.Windowed_DisplayMode.Height );
-        strResolution[49] = 0;
-        ComboBoxClear( IDC_RESOLUTION_COMBO );
-        ComboBoxAdd( IDC_RESOLUTION_COMBO, ULongToPtr(dwResolutionData), strResolution );
-        ComboBoxSelectIndex( IDC_RESOLUTION_COMBO, 0 );
-        EnableWindow( GetDlgItem( m_hDlg, IDC_RESOLUTION_COMBO ), false );
-
-        // Update refresh rate combo box
-        TCHAR strRefreshRate[50];
-        if( m_d3dSettings.Windowed_DisplayMode.RefreshRate == 0 )
-            lstrcpy( strRefreshRate, TEXT("Default Rate") );
-        else
-            _sntprintf( strRefreshRate, 50, TEXT("%d Hz"), m_d3dSettings.Windowed_DisplayMode.RefreshRate );
-        strRefreshRate[49] = 0;
-        ComboBoxClear( IDC_REFRESHRATE_COMBO );
-        ComboBoxAdd( IDC_REFRESHRATE_COMBO, ULongToPtr(m_d3dSettings.Windowed_DisplayMode.RefreshRate),
-            strRefreshRate );
-        ComboBoxSelectIndex( IDC_REFRESHRATE_COMBO, 0 );
-        EnableWindow( GetDlgItem( m_hDlg, IDC_REFRESHRATE_COMBO ), false );
-    }
-    else
-    {
-        m_d3dSettings.IsWindowed = false;
-        m_d3dSettings.pFullscreen_AdapterInfo = pAdapterInfo;
-        m_d3dSettings.pFullscreen_DeviceInfo = pDeviceInfo;
-
-        // Update device clip check box
-        EnableWindow( GetDlgItem( m_hDlg, IDC_DEVICECLIP_CHECK ), false );
-
-        // Update adapter format combo box
-        ComboBoxClear( IDC_ADAPTERFORMAT_COMBO );
-        for( UINT idc = 0; idc < pDeviceInfo->pDeviceComboList->Count(); idc++ )
-        {
-            D3DDeviceCombo* pDeviceCombo = (D3DDeviceCombo*)pDeviceInfo->pDeviceComboList->GetPtr(idc);
-            if( pDeviceCombo->IsWindowed )
-                continue;
-            D3DFORMAT adapterFormat = pDeviceCombo->AdapterFormat;
-            if( !ComboBoxContainsText( IDC_ADAPTERFORMAT_COMBO, D3DUtil_D3DFormatToString( adapterFormat ) ) )
-            {
-                ComboBoxAdd( IDC_ADAPTERFORMAT_COMBO, (void*)adapterFormat, 
-                    D3DUtil_D3DFormatToString( adapterFormat ) );
-                if( adapterFormat == m_d3dSettings.Fullscreen_DisplayMode.Format )
-                {
-                    ComboBoxSelect( IDC_ADAPTERFORMAT_COMBO, (void*)adapterFormat );
-                }
-            }
-        }
-        if( !ComboBoxSomethingSelected( IDC_ADAPTERFORMAT_COMBO ) &&
-            ComboBoxCount( IDC_ADAPTERFORMAT_COMBO ) > 0 )
-        {
-            ComboBoxSelectIndex( IDC_ADAPTERFORMAT_COMBO, 0 );
-        }
-        EnableWindow( GetDlgItem( m_hDlg, IDC_ADAPTERFORMAT_COMBO), true );
-        
-        // Update resolution combo box
-        EnableWindow( GetDlgItem( m_hDlg, IDC_RESOLUTION_COMBO), true );
-        
-        // Update refresh rate combo box
-        EnableWindow( GetDlgItem( m_hDlg, IDC_REFRESHRATE_COMBO), true );
-    }
+   
 }
 
 
@@ -580,89 +489,7 @@ void CD3DSettingsDialog::WindowedFullscreenChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::AdapterFormatChanged( void )
 {
-    if( !IsDlgButtonChecked( m_hDlg, IDC_WINDOW ) )
-    {
-        D3DAdapterInfo* pAdapterInfo = (D3DAdapterInfo*)ComboBoxSelected( IDC_ADAPTER_COMBO );
-        D3DFORMAT adapterFormat = (D3DFORMAT)PtrToUlong( ComboBoxSelected( IDC_ADAPTERFORMAT_COMBO ) );
-        m_d3dSettings.Fullscreen_DisplayMode.Format = adapterFormat;
-
-        ComboBoxClear( IDC_RESOLUTION_COMBO );
-        for( UINT idm = 0; idm < pAdapterInfo->pDisplayModeList->Count(); idm++ )
-        {
-            D3DDISPLAYMODE displayMode = *(D3DDISPLAYMODE*)pAdapterInfo->pDisplayModeList->GetPtr(idm);
-            if (displayMode.Format == adapterFormat)
-            {
-                DWORD dwResolutionData;
-                TCHAR strResolution[50];
-                dwResolutionData = MAKELONG( displayMode.Width, displayMode.Height );
-                _sntprintf( strResolution, 50, TEXT("%d by %d"), displayMode.Width, displayMode.Height );
-                strResolution[49] = 0;
-                if (!ComboBoxContainsText( IDC_RESOLUTION_COMBO, strResolution ) )
-                {
-                    ComboBoxAdd( IDC_RESOLUTION_COMBO, ULongToPtr( dwResolutionData ), strResolution );
-                    if (m_d3dSettings.Fullscreen_DisplayMode.Width == displayMode.Width &&
-                        m_d3dSettings.Fullscreen_DisplayMode.Height == displayMode.Height)
-                    {
-                        ComboBoxSelect( IDC_RESOLUTION_COMBO, ULongToPtr( dwResolutionData ) );
-                    }
-                }
-            }
-        }
-        if (!ComboBoxSomethingSelected( IDC_RESOLUTION_COMBO ) && 
-            ComboBoxCount( IDC_RESOLUTION_COMBO ) > 0)
-        {
-            ComboBoxSelectIndex( IDC_RESOLUTION_COMBO, 0 );
-        }
-    }
-
-    // Update backbuffer format combo box
-    D3DDeviceInfo* pDeviceInfo = (D3DDeviceInfo*)ComboBoxSelected( IDC_DEVICE_COMBO );
-    if( pDeviceInfo == NULL )
-        return;
-    bool bHasWindowedBackbuffer = false;
-    ComboBoxClear( IDC_BACKBUFFERFORMAT_COMBO );
-    for( UINT idc = 0; idc < pDeviceInfo->pDeviceComboList->Count(); idc++ )
-    {
-        D3DDeviceCombo* pDeviceCombo = (D3DDeviceCombo*)pDeviceInfo->pDeviceComboList->GetPtr(idc);
-        if (pDeviceCombo->IsWindowed == m_d3dSettings.IsWindowed &&
-            pDeviceCombo->AdapterFormat == m_d3dSettings.DisplayMode().Format)
-        {
-            if (!ComboBoxContainsText( IDC_BACKBUFFERFORMAT_COMBO, 
-                D3DUtil_D3DFormatToString( pDeviceCombo->BackBufferFormat ) ) )
-            {
-                ComboBoxAdd( IDC_BACKBUFFERFORMAT_COMBO, (void*)pDeviceCombo->BackBufferFormat,
-                    D3DUtil_D3DFormatToString( pDeviceCombo->BackBufferFormat ) );
-                if (pDeviceCombo->BackBufferFormat == m_d3dSettings.BackBufferFormat() )
-                    ComboBoxSelect( IDC_BACKBUFFERFORMAT_COMBO, (void*)pDeviceCombo->BackBufferFormat );
-            }
-        }
-
-        // Count the number of backbuffer format supported for windowed mode
-        if( true == pDeviceCombo->IsWindowed &&
-            pDeviceCombo->AdapterFormat == m_d3dSettings.Windowed_DisplayMode.Format )
-        {
-            bHasWindowedBackbuffer = true;
-        }
-    }
-
-    // If no backbuffer format is allowed and this is windowed, then the adapter
-    // cannot handle 3D in the format the desktop is currently in.  Force
-    // fullscreen in this case.
-    if( !bHasWindowedBackbuffer )
-    {
-        EnableWindow( GetDlgItem( m_hDlg, IDC_WINDOW ), FALSE );
-        if( m_d3dSettings.IsWindowed )
-        {
-            CheckRadioButton( m_hDlg, IDC_WINDOW, IDC_FULLSCREEN, IDC_FULLSCREEN );
-            WindowedFullscreenChanged();
-        }
-    }
-
-    if (!ComboBoxSomethingSelected( IDC_BACKBUFFERFORMAT_COMBO ) && 
-        ComboBoxCount( IDC_BACKBUFFERFORMAT_COMBO ) > 0)
-    {
-        ComboBoxSelectIndex( IDC_BACKBUFFERFORMAT_COMBO, 0 );
-    }
+    
 }
 
 
@@ -675,49 +502,7 @@ void CD3DSettingsDialog::AdapterFormatChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::ResolutionChanged( void )
 {
-    if (m_d3dSettings.IsWindowed)
-        return;
 
-    D3DAdapterInfo* pAdapterInfo = (D3DAdapterInfo*)ComboBoxSelected( IDC_ADAPTER_COMBO );
-    if( pAdapterInfo == NULL )
-        return;
-
-    // Update settingsNew with new resolution
-    DWORD dwResolutionData = PtrToUlong( ComboBoxSelected( IDC_RESOLUTION_COMBO ) );
-    UINT width = LOWORD( dwResolutionData );
-    UINT height = HIWORD( dwResolutionData );
-    m_d3dSettings.Fullscreen_DisplayMode.Width = width;
-    m_d3dSettings.Fullscreen_DisplayMode.Height = height;
-
-    // Update refresh rate list based on new resolution
-    D3DFORMAT adapterFormat = (D3DFORMAT)PtrToUlong( ComboBoxSelected( IDC_ADAPTERFORMAT_COMBO ) );
-    ComboBoxClear( IDC_REFRESHRATE_COMBO );
-    for( UINT idm = 0; idm < pAdapterInfo->pDisplayModeList->Count(); idm++ )
-    {
-        D3DDISPLAYMODE displayMode = *(D3DDISPLAYMODE*)pAdapterInfo->pDisplayModeList->GetPtr(idm);
-        if (displayMode.Format == adapterFormat &&
-            displayMode.Width  == width &&
-            displayMode.Height == height)
-        {
-            TCHAR strRefreshRate[50];
-            if( displayMode.RefreshRate == 0 )
-                lstrcpy( strRefreshRate, TEXT("Default Rate") );
-            else
-                _sntprintf( strRefreshRate, 50, TEXT("%d Hz"), displayMode.RefreshRate );
-            strRefreshRate[49] = 0;
-            if( !ComboBoxContainsText( IDC_REFRESHRATE_COMBO, strRefreshRate ) )
-            {
-                ComboBoxAdd( IDC_REFRESHRATE_COMBO, UlongToPtr( displayMode.RefreshRate ), strRefreshRate );
-                if (m_d3dSettings.Fullscreen_DisplayMode.RefreshRate == displayMode.RefreshRate)
-                    ComboBoxSelect( IDC_REFRESHRATE_COMBO, UlongToPtr( displayMode.RefreshRate ) );
-            }
-        }
-    }
-    if (!ComboBoxSomethingSelected( IDC_REFRESHRATE_COMBO ) && 
-        ComboBoxCount( IDC_REFRESHRATE_COMBO ) > 0)
-    {
-        ComboBoxSelectIndex( IDC_REFRESHRATE_COMBO, 0 );
-    }
 }
 
 
@@ -729,12 +514,7 @@ void CD3DSettingsDialog::ResolutionChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::RefreshRateChanged( void )
 {
-    if( m_d3dSettings.IsWindowed )
-        return;
 
-    // Update settingsNew with new refresh rate
-    UINT refreshRate = PtrToUlong( ComboBoxSelected( IDC_REFRESHRATE_COMBO ) );
-    m_d3dSettings.Fullscreen_DisplayMode.RefreshRate = refreshRate;
 }
 
 
@@ -748,79 +528,7 @@ void CD3DSettingsDialog::RefreshRateChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::BackBufferFormatChanged( void )
 {
-    D3DDeviceInfo* pDeviceInfo = (D3DDeviceInfo*)ComboBoxSelected( IDC_DEVICE_COMBO );
-    D3DFORMAT adapterFormat = (D3DFORMAT)PtrToUlong( ComboBoxSelected( IDC_ADAPTERFORMAT_COMBO ) );
-    D3DFORMAT backBufferFormat = (D3DFORMAT)PtrToUlong( ComboBoxSelected( IDC_BACKBUFFERFORMAT_COMBO ) );
-    if( pDeviceInfo == NULL )
-        return;
-
-    for( UINT idc = 0; idc < pDeviceInfo->pDeviceComboList->Count(); idc++ )
-    {
-        D3DDeviceCombo* pDeviceCombo = (D3DDeviceCombo*)pDeviceInfo->pDeviceComboList->GetPtr(idc);
-        if (pDeviceCombo->IsWindowed == m_d3dSettings.IsWindowed &&
-            pDeviceCombo->AdapterFormat == adapterFormat &&
-            pDeviceCombo->BackBufferFormat == backBufferFormat)
-        {
-            if( m_d3dSettings.IsWindowed )
-                m_d3dSettings.pWindowed_DeviceCombo = pDeviceCombo;
-            else
-                m_d3dSettings.pFullscreen_DeviceCombo = pDeviceCombo;
-
-            ComboBoxClear( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO );
-            if( m_pEnumeration->AppUsesDepthBuffer )
-            {
-                for( UINT ifmt = 0; ifmt < pDeviceCombo->pDepthStencilFormatList->Count(); ifmt++ )
-                {
-                    D3DFORMAT fmt = *(D3DFORMAT*)pDeviceCombo->pDepthStencilFormatList->GetPtr(ifmt);
-                    ComboBoxAdd( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO, (void*)fmt, 
-                        D3DUtil_D3DFormatToString(fmt) );
-                    if( fmt == m_d3dSettings.DepthStencilBufferFormat() )
-                        ComboBoxSelect( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO, (void*)fmt );
-                }
-                if (!ComboBoxSomethingSelected( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO ) && 
-                    ComboBoxCount( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO ) > 0)
-                {
-                    ComboBoxSelectIndex( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO, 0 );
-                }
-            }
-            else
-            {
-                EnableWindow( GetDlgItem( m_hDlg, IDC_DEPTHSTENCILBUFFERFORMAT_COMBO ), false );
-                ComboBoxAdd( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO, NULL, TEXT("(not used)") );
-                ComboBoxSelectIndex( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO, 0 );
-            }
-
-            ComboBoxClear( IDC_VERTEXPROCESSING_COMBO );
-            for( UINT ivpt = 0; ivpt < pDeviceCombo->pVertexProcessingTypeList->Count(); ivpt++ )
-            {
-                VertexProcessingType vpt = *(VertexProcessingType*)pDeviceCombo->pVertexProcessingTypeList->GetPtr(ivpt);
-                ComboBoxAdd( IDC_VERTEXPROCESSING_COMBO, (void*)vpt, VertexProcessingTypeToString(vpt) );
-                if( vpt == m_d3dSettings.GetVertexProcessingType() )
-                    ComboBoxSelect( IDC_VERTEXPROCESSING_COMBO, (void*)vpt );
-            }
-            if (!ComboBoxSomethingSelected( IDC_VERTEXPROCESSING_COMBO ) && 
-                ComboBoxCount( IDC_VERTEXPROCESSING_COMBO ) > 0)
-            {
-                ComboBoxSelectIndex( IDC_VERTEXPROCESSING_COMBO, 0 );
-            }
-
-            ComboBoxClear( IDC_PRESENTINTERVAL_COMBO );
-            for( UINT ipi = 0; ipi < pDeviceCombo->pPresentIntervalList->Count(); ipi++ )
-            {
-                UINT pi = *(UINT*)pDeviceCombo->pPresentIntervalList->GetPtr(ipi);
-                ComboBoxAdd( IDC_PRESENTINTERVAL_COMBO, UlongToPtr( pi ), PresentIntervalToString(pi) );
-                if( pi == m_d3dSettings.PresentInterval() )
-                    ComboBoxSelect( IDC_PRESENTINTERVAL_COMBO, UlongToPtr( pi ) );
-            }
-            if (!ComboBoxSomethingSelected( IDC_PRESENTINTERVAL_COMBO ) && 
-                ComboBoxCount( IDC_PRESENTINTERVAL_COMBO ) > 0)
-            {
-                ComboBoxSelectIndex( IDC_PRESENTINTERVAL_COMBO, 0 );
-            }
-
-            break;
-        }
-    }
+   
 }
 
 
@@ -832,40 +540,7 @@ void CD3DSettingsDialog::BackBufferFormatChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::DepthStencilBufferFormatChanged( void )
 {
-    D3DFORMAT fmt = (D3DFORMAT)PtrToUlong( ComboBoxSelected( IDC_DEPTHSTENCILBUFFERFORMAT_COMBO ) );
-    if( m_pEnumeration->AppUsesDepthBuffer )
-        m_d3dSettings.SetDepthStencilBufferFormat( fmt );
 
-    // Build multisample list
-    D3DDeviceCombo* pDeviceCombo = m_d3dSettings.PDeviceCombo();
-    ComboBoxClear( IDC_MULTISAMPLE_COMBO );
-    for( UINT ims = 0; ims < pDeviceCombo->pMultiSampleTypeList->Count(); ims++ )
-    {
-        D3DMULTISAMPLE_TYPE msType = *(D3DMULTISAMPLE_TYPE*)pDeviceCombo->pMultiSampleTypeList->GetPtr(ims);
-
-        // check for DS/MS conflicts
-        BOOL bConflictFound = FALSE;
-        for( UINT iConf = 0; iConf < pDeviceCombo->pDSMSConflictList->Count(); iConf++ )
-        {
-            D3DDSMSConflict* pDSMSConf = (D3DDSMSConflict*)pDeviceCombo->pDSMSConflictList->GetPtr(iConf);
-            if( pDSMSConf->DSFormat == fmt && pDSMSConf->MSType == msType )
-            {
-                bConflictFound = TRUE;
-                break;
-            }
-        }
-        if( !bConflictFound )
-        {
-            ComboBoxAdd( IDC_MULTISAMPLE_COMBO, (void*)msType, MultisampleTypeToString(msType) );
-            if( msType == m_d3dSettings.MultisampleType() )
-                ComboBoxSelect( IDC_MULTISAMPLE_COMBO, (void*)msType );
-        }
-    }
-    if (!ComboBoxSomethingSelected( IDC_MULTISAMPLE_COMBO ) && 
-        ComboBoxCount( IDC_MULTISAMPLE_COMBO ) > 0)
-    {
-        ComboBoxSelectIndex( IDC_MULTISAMPLE_COMBO, 0 );
-    }
 }
 
 
@@ -878,37 +553,7 @@ void CD3DSettingsDialog::DepthStencilBufferFormatChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::MultisampleTypeChanged( void )
 {
-    D3DMULTISAMPLE_TYPE mst = (D3DMULTISAMPLE_TYPE)PtrToUlong( ComboBoxSelected( IDC_MULTISAMPLE_COMBO ) );
-    m_d3dSettings.SetMultisampleType( mst );
 
-    // Set up max quality for this mst
-    D3DDeviceCombo* pDeviceCombo = m_d3dSettings.PDeviceCombo();
-    DWORD maxQuality = 0;
-
-    for( UINT ims = 0; ims < pDeviceCombo->pMultiSampleTypeList->Count(); ims++ )
-    {
-        D3DMULTISAMPLE_TYPE msType = *(D3DMULTISAMPLE_TYPE*)pDeviceCombo->pMultiSampleTypeList->GetPtr(ims);
-        if( msType == mst )
-        {
-            maxQuality = *(DWORD*)pDeviceCombo->pMultiSampleQualityList->GetPtr(ims);
-            break;
-        }
-    }
-
-    ComboBoxClear( IDC_MULTISAMPLE_QUALITY_COMBO );
-    for( UINT msq = 0; msq < maxQuality; msq++ )
-    {
-        TCHAR str[100];
-        wsprintf( str, TEXT("%d"), msq );
-        ComboBoxAdd( IDC_MULTISAMPLE_QUALITY_COMBO, UlongToPtr( msq ), str );
-        if( msq == m_d3dSettings.MultisampleQuality() )
-            ComboBoxSelect( IDC_MULTISAMPLE_QUALITY_COMBO, UlongToPtr( msq ) );
-    }
-    if (!ComboBoxSomethingSelected( IDC_MULTISAMPLE_QUALITY_COMBO ) && 
-        ComboBoxCount( IDC_MULTISAMPLE_QUALITY_COMBO ) > 0)
-    {
-        ComboBoxSelectIndex( IDC_MULTISAMPLE_QUALITY_COMBO, 0 );
-    }
 }
 
 
@@ -920,8 +565,7 @@ void CD3DSettingsDialog::MultisampleTypeChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::MultisampleQualityChanged( void )
 {
-    DWORD msq = (DWORD)PtrToUlong( ComboBoxSelected( IDC_MULTISAMPLE_QUALITY_COMBO ) );
-    m_d3dSettings.SetMultisampleQuality( msq );
+
 }
 
 
@@ -933,8 +577,7 @@ void CD3DSettingsDialog::MultisampleQualityChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::VertexProcessingChanged( void )
 {
-    VertexProcessingType vpt = (VertexProcessingType)PtrToUlong( ComboBoxSelected( IDC_VERTEXPROCESSING_COMBO ) );
-    m_d3dSettings.SetVertexProcessingType( vpt );
+
 }
 
 
@@ -946,8 +589,7 @@ void CD3DSettingsDialog::VertexProcessingChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::PresentIntervalChanged( void )
 {
-    UINT pi = PtrToUlong( ComboBoxSelected( IDC_PRESENTINTERVAL_COMBO ) );
-    m_d3dSettings.SetPresentInterval( pi );
+
 }
 
 
@@ -959,10 +601,5 @@ void CD3DSettingsDialog::PresentIntervalChanged( void )
 //-----------------------------------------------------------------------------
 void CD3DSettingsDialog::DeviceClipChanged( void )
 {
-    HWND hWndCheckBox = GetDlgItem( m_hDlg, IDC_DEVICECLIP_CHECK );
-    if( hWndCheckBox )
-    {
-        bool bChecked = SendMessage( hWndCheckBox, BM_GETCHECK, 0, 0 ) == BST_CHECKED;
-        m_d3dSettings.SetDeviceClip( bChecked );
-    }
+
 }
