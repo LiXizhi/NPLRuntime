@@ -125,15 +125,7 @@ namespace ParaEngine
 		*/
 		virtual HRESULT Render3DEnvironment(bool bForceRender = false) = 0;
 
-		/** the window message processor. One needs send all messages belonging to the main window to this function, after calling Create(). 
-		* @note: the main rendering thread can be a different thread than the window proc thread. 
-		* @param bCallDefProcedure: whether we will call the ::DefWindowProdure(). 
-		* @return: 0 if message was not processed. 1 if message is processed. -1 if message is processed by can be passed on to other processor. 
-		*/
-		virtual LRESULT MsgProcWinThread( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true) = 0;
 
-		/*** process win thread messages without a hWnd. Such messages are usually invoked by PostWinThreadMessage() from other threads. */
-		virtual LRESULT MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
 
 		/** Send a RAW win32 message the application to be processed in the next main thread update interval. 
 		* This function can be called from any thread. It is also used by the windows procedure thread to dispatch messages to the main processing thread.

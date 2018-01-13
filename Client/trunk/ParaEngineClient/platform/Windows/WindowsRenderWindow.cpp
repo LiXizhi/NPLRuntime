@@ -111,7 +111,7 @@ void WindowsRenderWindow::PollEvents()
 	MSG  msg;
 	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
 		if (TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) return;
-		if (CGlobals::GetApp()->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam) != 0) return;
+		//if (CGlobals::GetApp()->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam) != 0) return;
 		// translate keystroke messages into the right format
 		TranslateMessage(&msg);
 

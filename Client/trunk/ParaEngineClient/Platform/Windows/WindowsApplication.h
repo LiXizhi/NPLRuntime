@@ -393,9 +393,6 @@ namespace ParaEngine
 		virtual HRESULT StopApp();
 
 		virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true);
-
-		virtual LRESULT MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
