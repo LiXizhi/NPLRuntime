@@ -1082,12 +1082,12 @@ int ParaEngine::ParaEngineSettings::GetFPS()
 
 int ParaEngine::ParaEngineSettings::GetTriangleCount()
 {
-	return CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TOTAL_TRIANGLES);
+	return 0;
 }
 
 int ParaEngine::ParaEngineSettings::GetDrawCallCount()
 {
-	return CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_DRAW_CALL_COUNT);
+	return 0;
 }
 
 bool ParaEngine::ParaEngineSettings::Is64BitsSystem()

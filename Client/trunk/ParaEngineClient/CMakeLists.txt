@@ -33,6 +33,13 @@ file (GLOB_RECURSE ParaEngineClient_Interface_FILES ${ParaEngineClient_SOURCE_DI
 SOURCE_GROUP("Framework\\Interface" FILES ${ParaEngineClient_Interface_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Interface_FILES})
 
+file (GLOB_RECURSE ParaEngineClient_RenderSystem_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/RenderSystem/*.*)
+SOURCE_GROUP("Framework\\RenderSystem" FILES ${ParaEngineClient_RenderSystem_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_RenderSystem_FILES})
+
+
+
+
 ##############################
 file (GLOB_RECURSE ParaEngineClient_DirMonitor_FILES ${ParaEngineClient_SOURCE_DIR}/dir_monitor/*.*)
 SOURCE_GROUP("Externals\\dir_monitor" FILES ${ParaEngineClient_DirMonitor_FILES})

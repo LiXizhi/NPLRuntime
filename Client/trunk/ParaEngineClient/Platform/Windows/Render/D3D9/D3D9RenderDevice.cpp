@@ -9,10 +9,6 @@ ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
 	m_pD3DDevice = device;
 }
 
-HRESULT ParaEngine::CD3D9RenderDevice::RendererRecreated()
-{
-	throw std::logic_error("The method or operation is not implemented.");
-}
 
 HRESULT ParaEngine::CD3D9RenderDevice::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue)
 {
@@ -240,11 +236,7 @@ HRESULT ParaEngine::CD3D9RenderDevice::GetTransform(D3DTRANSFORMSTATETYPE State,
 	return m_pD3DDevice->GetTransform(State, pMatrix);
 }
 
-int ParaEngine::CD3D9RenderDevice::GetPerfCount(RenderDeviceBase::StatisticsType nStatisticsType)
-{
-	//throw std::logic_error("The method or operation is not implemented.");
-	return 0;
-}
+
 
 HRESULT ParaEngine::CD3D9RenderDevice::SetStreamSourceFreq(UINT StreamNumber, UINT Setting)
 {
@@ -256,10 +248,6 @@ HRESULT ParaEngine::CD3D9RenderDevice::SetLight(DWORD Index, CONST D3DLIGHT9* pL
 	return m_pD3DDevice->SetLight(Index, pLight);
 }
 
-void ParaEngine::CD3D9RenderDevice::ClearAllPerfCount()
-{
-	//throw std::logic_error("The method or operation is not implemented.");
-}
 
 HRESULT ParaEngine::CD3D9RenderDevice::GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface)
 {
