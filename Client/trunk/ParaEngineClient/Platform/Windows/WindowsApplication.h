@@ -183,8 +183,7 @@ namespace ParaEngine
 		virtual void SetAllowWindowClosing(bool bAllowClosing);
 		virtual bool IsWindowClosingAllowed();
 
-		/** turn on/off menu */
-		virtual void ShowMenu(bool bShow);
+
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetScreenResolution(Vector2* pOut);

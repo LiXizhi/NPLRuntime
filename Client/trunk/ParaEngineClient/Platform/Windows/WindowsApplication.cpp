@@ -1792,41 +1792,7 @@ bool CWindowsApplication::IsFullScreenMode()
 }
 
 
-void CWindowsApplication::ShowMenu(bool bShow)
-{
 
-	if (bShow)
-	{
-		if (m_hMenu != NULL)
-		{
-			SetMenu(m_hWnd, m_hMenu);
-			m_hMenu = NULL;
-		}
-	}
-	else
-	{
-		m_hMenu = GetMenu(m_hWnd);
-		if (m_hMenu)
-		{
-			RECT oldClient;
-			GetClientRect(m_hWnd, &oldClient);
-			SetMenu(m_hWnd, NULL);
-
-			RECT afterRect;
-			GetWindowRect(m_hWnd, &afterRect);
-			RECT afterClient;
-			GetClientRect(m_hWnd, &afterClient);
-
-			MoveWindow(m_hWnd,
-				afterRect.left,
-				afterRect.top,
-				afterRect.right - afterRect.left,
-				afterRect.bottom - afterRect.top - (afterClient.bottom - oldClient.bottom),
-				TRUE);
-		}
-
-	}
-}
 
 void CWindowsApplication::SetIgnoreWindowSizeChange(bool bIgnoreSizeChange)
 {
