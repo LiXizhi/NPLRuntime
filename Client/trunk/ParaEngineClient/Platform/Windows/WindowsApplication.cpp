@@ -702,9 +702,9 @@ LRESULT CWindowsApplication::HandleWindowMessage(WindowsRenderWindow* sender, UI
 	HWND hWnd = sender->GetHandle();
 	if (uMsg == WM_DESTROY)
 	{
-		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_QUIT, 0, 0);
+		PostWinThreadMessage(PE_WM_QUIT, 0, 0);
 	}
-	return CGlobals::GetApp()->MsgProcWinThread(hWnd, uMsg, wParam, lParam, true);
+	return MsgProcWinThread(hWnd, uMsg, wParam, lParam, true);
 }
 
 
@@ -2401,16 +2401,6 @@ bool CWindowsApplication::GetMessageFromApp(CWinRawMsg* pMsg)
 
 bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (m_dwWinThreadID != 0)
-	{
-		return !!::PostThreadMessage(m_dwWinThreadID, uMsg, wParam, lParam);
-	}
-	return false;
-}
-
-// return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CWindowsApplication::MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
 	LRESULT result = 0;
 	if (uMsg >= PE_WM_FIRST && uMsg <= PE_WM_LAST)
 	{
@@ -2492,8 +2482,9 @@ LRESULT CWindowsApplication::MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LP
 			break;
 		}
 	}
-	return result;
+	return true;
 }
+
 
 // return 1 if we do not want default window procedure or other message handler to process the message.
 LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
