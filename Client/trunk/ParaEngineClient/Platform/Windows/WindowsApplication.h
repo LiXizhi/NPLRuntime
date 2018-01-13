@@ -333,8 +333,6 @@ namespace ParaEngine
 		*/
 		virtual HRESULT Render();
 
-		/** Output text information to console, for debugging only.*/
-		void GenerateD3DDebugString();
 
 		/**
 		* This callback function will be called once at the beginning of every frame. This is the

@@ -1507,76 +1507,7 @@ bool CWindowsApplication::UpdateScreenDevice()
 }
 
 
-void CWindowsApplication::GenerateD3DDebugString()
-{
-	const char* pDebugStr1 = m_strFrameStats;
-	const char* pDebugStr2 = m_strDeviceStats;
 
-	m_sTitleString.clear();
-#ifdef DISPLAY_WATERMARK
-	//if(!ParaEngineSettings::IsProductActivated())
-	{
-		m_sTitleString.append(ParaEngineInfo::CParaEngineInfo::GetWaterMarkText());
-		m_sTitleString += "\n";
-	}
-#endif
-
-	// show game reports for debugging purposes
-	if (CGlobals::WillGenReport())
-	{
-		if (pDebugStr1) {
-			m_sTitleString.append(pDebugStr1);
-			if (pDebugStr2[0] != '\0')
-				m_sTitleString += "\n";
-		}
-		if (pDebugStr2) {
-			m_sTitleString.append(pDebugStr2);
-			if (pDebugStr2[0] != '\0')
-				m_sTitleString += "\n";
-		}
-		{
-			char tmp[150];
-			int nUI = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI);
-			int nMesh = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH);
-			int nChar = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER);
-			int nTerra = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN);
-			int nOthers = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN);
-			int nAll = nUI + nMesh + nChar + nTerra + nOthers;
-			snprintf(tmp, 149, "tri:%6d,mesh:%6d,char:%6d,ui:%5d,terra:%5d,other:%5d\n", nAll, nMesh, nChar, nUI, nTerra, nOthers);
-			m_sTitleString.append(tmp);
-		}
-		if (CGlobals::GetScene()->GetConsoleString()) {
-			m_sTitleString.append(CGlobals::GetScene()->GetConsoleString());
-			if (CGlobals::GetScene()->GetConsoleString()[0] != '\0')
-				m_sTitleString += "\n";
-		}
-
-		static string strReport;
-		CGlobals::GetReport()->GetAllReport(strReport);
-		m_sTitleString.append(strReport);
-	}
-	if (!m_sTitleString.empty())
-	{
-		using namespace ParaScripting;
-		ParaUIObject obj = ParaUI::GetUIObject("_debug_str1_");
-		if (obj.IsValid() == false)
-		{
-			obj = ParaUI::CreateUIObject("text", "_debug_str1_", "_lt", 2, 20, 450, 20);
-			obj.SetFontString("System;11");
-			obj.SetAutoSize(false);
-			obj.SetEnabled(false);
-			ParaUIFont font = obj.GetFont("text");
-			font.SetColor("0 255 255");
-			font.SetFormat(256);
-			obj.AttachToRoot();
-		}
-		if (obj.IsValid() == true)
-		{
-			if (obj.GetText() != m_sTitleString)
-				obj.SetText(m_sTitleString.c_str());
-		}
-	}
-}
 
 
 //-----------------------------------------------------------------------------
@@ -1642,7 +1573,6 @@ HRESULT CWindowsApplication::Render()
 		if (!IsWindowedMode())
 			CGlobals::GetAssetManager()->GetFlashManager().RenderFlashWindows(*(m_pRootScene->GetSceneState()));
 #endif
-		GenerateD3DDebugString();
 
 		pRenderDevice->EndScene();
 	}
