@@ -110,11 +110,6 @@ namespace ParaEngine
 		virtual int Run(HINSTANCE hInstance) = 0;
 		
 
-		/** create d3d render device based on the current main window. 
-		* Use this function to create a new render device automatically. 
-		*/
-		virtual HRESULT Create( HINSTANCE hInstance = 0 ) = 0;
-
 		/** init the application. no need to be called unless in a service where no rendering devices are created. */
 		virtual HRESULT Init(HWND pHWND = 0) = 0;
 
