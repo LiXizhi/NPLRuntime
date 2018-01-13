@@ -515,3 +515,4 @@ target_link_libraries(ParaEngineLibrary ${ParaEngineClient_LIBS})
 # END OF TARGET
 # ==================================================================================
 
+add_subdirectory(Platform/Windows)
