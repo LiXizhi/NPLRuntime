@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "D3D9RenderDevice.h"
+#include "D3D9Tools.hpp"
 
 using namespace ParaEngine;
 
@@ -9,16 +10,6 @@ ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
 	m_pD3DDevice = device;
 }
 
-
-HRESULT ParaEngine::CD3D9RenderDevice::GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue)
-{
-	return m_pD3DDevice->GetRenderState(State, pValue);
-}
-
-HRESULT ParaEngine::CD3D9RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
-{
-	return m_pD3DDevice->SetRenderState(State, Value);
-}
 
 HRESULT ParaEngine::CD3D9RenderDevice::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
@@ -287,4 +278,21 @@ HRESULT ParaEngine::CD3D9RenderDevice::DrawIndexedPrimitive(D3DPRIMITIVETYPE Typ
 LPDIRECT3DDEVICE9 CD3D9RenderDevice::GetDirect3DDevice9() const
 {
 	return m_pD3DDevice;
+}
+
+uint32_t ParaEngine::CD3D9RenderDevice::GetRenderState(const ERenderState& State)
+{
+	auto d3dRenderState = toD3DRenderState(State);
+	DWORD state = 0;
+	if (m_pD3DDevice->GetRenderState(d3dRenderState, &state) == S_OK)
+	{
+		return (uint32_t)state;
+	}
+	return 0;
+}
+
+void ParaEngine::CD3D9RenderDevice::SetRenderState(ERenderState State, uint32_t Value)
+{
+	auto rs = toD3DRenderState(State);
+	m_pD3DDevice->SetRenderState(rs, Value);
 }
