@@ -44,8 +44,6 @@
 #include <D3DX9.h>
 
 #include "DXUtil.h"
-#include "D3DEnumeration.h"
-#include "D3DSettings.h"
 // #include "D3DApp.h"
 #include "D3DRes.h"
 
