@@ -233,7 +233,7 @@ ParaEngine::D3D9RenderContext* ParaEngine::D3D9RenderContext::Create()
 	return nullptr;
 }
 
-ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const RenderDeviceConfiguration& cfg)
+ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const RenderConfiguration& cfg)
 {
 	assert(cfg.renderWindow);
 
@@ -324,7 +324,7 @@ IDirect3D9* ParaEngine::D3D9RenderContext::GetD3D() const
 	return m_D3D;
 }
 
-bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const RenderDeviceConfiguration& cfg)
+bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
 {
 	assert(cfg.renderWindow);
 

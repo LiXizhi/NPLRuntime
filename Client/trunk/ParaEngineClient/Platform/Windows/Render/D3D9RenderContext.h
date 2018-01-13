@@ -1,5 +1,6 @@
 #pragma once
 #include "IRenderContext.h"
+
 #include <vector>
 #include <string>
 
@@ -15,11 +16,11 @@ namespace ParaEngine
 		D3D9RenderContext();
 		IDirect3D9* m_D3D;
 	public:
-		virtual IRenderDevice* CreateDevice(const RenderDeviceConfiguration& cfg) override;
+		virtual IRenderDevice* CreateDevice(const RenderConfiguration& cfg) override;
 		IDirect3D9* GetD3D() const;
 
 
-		virtual bool ResetDevice(IRenderDevice* device, const RenderDeviceConfiguration& cfg) override;
+		virtual bool ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg) override;
 
 	};
 	using D3D9RenderContextPtr = std::shared_ptr<D3D9RenderContext>;

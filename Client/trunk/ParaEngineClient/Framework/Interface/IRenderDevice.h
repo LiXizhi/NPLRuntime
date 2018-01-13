@@ -6,8 +6,7 @@
 #include "RenderCore.h"
 #include "d3d9.h"
 #include "PEtypes.h"
-//#include "RenderDevice.h"
-#include "RenderCommon.h"
+#include "Framework/RenderSystem/RenderTypes.h"
 namespace ParaEngine
 {
 	class IRenderDevice

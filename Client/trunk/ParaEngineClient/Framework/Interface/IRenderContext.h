@@ -1,7 +1,7 @@
 #pragma once;
+#include "Framework/RenderSystem/RenderConfig.h"
 #include <vector>
 #include <memory>
-#include "RenderCommon.h"
 namespace ParaEngine
 {
 
@@ -13,8 +13,8 @@ namespace ParaEngine
 	public: 
 		IRenderContext() = default;
 		virtual ~IRenderContext() = default;
-		virtual IRenderDevice* CreateDevice(const RenderDeviceConfiguration& cfg) = 0;
-		virtual bool ResetDevice(IRenderDevice* device, const RenderDeviceConfiguration& cfg) = 0;
+		virtual IRenderDevice* CreateDevice(const RenderConfiguration& cfg) = 0;
+		virtual bool ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg) = 0;
 	};
 	using IRenderContextPtr = std::shared_ptr<IRenderContext>;
 }
