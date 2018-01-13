@@ -486,7 +486,7 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 
 
 
-	RenderDeviceConfiguration cfg;
+	RenderConfiguration cfg;
 	cfg.isWindowed = !m_bStartFullscreen;
 	cfg.renderWindow = m_pRenderWindow;
 
@@ -542,7 +542,7 @@ HRESULT CWindowsApplication::Reset3DEnvironment()
 		InvalidateDeviceObjects();
 	}
 
-	RenderDeviceConfiguration cfg;
+	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
 	cfg.isWindowed = true;
 
