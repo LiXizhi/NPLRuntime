@@ -119,109 +119,123 @@ namespace ParaEngine
 
 	enum class ERenderState
 	{
-		ZENABLE = 7,
-		FILLMODE = 8,
-		SHADEMODE = 9,
-		ZWRITEENABLE = 14,   /* TRUE to enable z writes */
-		ALPHATESTENABLE = 15,   /* TRUE to enable alpha tests */
-		LASTPIXEL = 16,   /* TRUE for last-pixel on lines */
-		SRCBLEND = 19,   /* D3DBLEND */
-		DESTBLEND = 20,   /* D3DBLEND */
-		CULLMODE = 22,   /* D3DCULL */
-		ZFUNC = 23,   /* D3DCMPFUNC */
-		ALPHAREF = 24,   /* D3DFIXED */
-		ALPHAFUNC = 25,   /* D3DCMPFUNC */
-		DITHERENABLE = 26,   /* TRUE to enable dithering */
-		ALPHABLENDENABLE = 27,   /* TRUE to enable alpha blending */
-		FOGENABLE = 28,   /* TRUE to enable fog blending */
-		SPECULARENABLE = 29,   /* TRUE to enable specular */
-		FOGCOLOR = 34,   /* D3DCOLOR */
-		FOGTABLEMODE = 35,   /* D3DFOGMODE */
-		FOGSTART = 36,   /* Fog start (for both vertex and pixel fog) */
-		FOGEND = 37,   /* Fog end      */
-		FOGDENSITY = 38,   /* Fog density  */
-		RANGEFOGENABLE = 48,   /* Enables range-based fog */
-		STENCILENABLE = 52,   /* BOOL enable/disable stenciling */
-		STENCILFAIL = 53,   /* D3DSTENCILOP to do if stencil test fails */
-		STENCILZFAIL = 54,   /* D3DSTENCILOP to do if stencil test passes and Z test fails */
-		STENCILPASS = 55,   /* D3DSTENCILOP to do if both stencil and Z tests pass */
-		STENCILFUNC = 56,   /* D3DCMPFUNC fn.  Stencil Test passes if ((ref & mask) stencilfn (stencil & mask)) is true */
-		STENCILREF = 57,   /* Reference value used in stencil test */
-		STENCILMASK = 58,   /* Mask value used in stencil test */
-		STENCILWRITEMASK = 59,   /* Write mask applied to values written to stencil buffer */
-		TEXTUREFACTOR = 60,   /* D3DCOLOR used for multi-texture blend */
-		WRAP0 = 128,  /* wrap for 1st texture coord. set */
-		WRAP1 = 129,  /* wrap for 2nd texture coord. set */
-		WRAP2 = 130,  /* wrap for 3rd texture coord. set */
-		WRAP3 = 131,  /* wrap for 4th texture coord. set */
-		WRAP4 = 132,  /* wrap for 5th texture coord. set */
-		WRAP5 = 133,  /* wrap for 6th texture coord. set */
-		WRAP6 = 134,  /* wrap for 7th texture coord. set */
-		WRAP7 = 135,  /* wrap for 8th texture coord. set */
-		CLIPPING = 136,
-		LIGHTING = 137,
-		AMBIENT = 139,
-		FOGVERTEXMODE = 140,
-		COLORVERTEX = 141,
-		LOCALVIEWER = 142,
-		NORMALIZENORMALS = 143,
-		DIFFUSEMATERIALSOURCE = 145,
-		SPECULARMATERIALSOURCE = 146,
-		AMBIENTMATERIALSOURCE = 147,
-		EMISSIVEMATERIALSOURCE = 148,
-		VERTEXBLEND = 151,
-		CLIPPLANEENABLE = 152,
-		POINTSIZE = 154,   /* float point size */
-		POINTSIZE_MIN = 155,   /* float point size min threshold */
-		POINTSPRITEENABLE = 156,   /* BOOL point texture coord control */
-		POINTSCALEENABLE = 157,   /* BOOL point size scale enable */
-		POINTSCALE_A = 158,   /* float point attenuation A value */
-		POINTSCALE_B = 159,   /* float point attenuation B value */
-		POINTSCALE_C = 160,   /* float point attenuation C value */
-		MULTISAMPLEANTIALIAS = 161,  // BOOL - set to do FSAA with multisample buffer
-		MULTISAMPLEMASK = 162,  // DWORD - per-sample enable/disable
-		PATCHEDGESTYLE = 163,  // Sets whether patch edges will use float style tessellation
-		DEBUGMONITORTOKEN = 165,  // DEBUG ONLY - token to debug monitor
-		POINTSIZE_MAX = 166,   /* float point size max threshold */
-		INDEXEDVERTEXBLENDENABLE = 167,
-		COLORWRITEENABLE = 168,  // per-channel write enable
-		TWEENFACTOR = 170,   // float tween factor
-		BLENDOP = 171,   // D3DBLENDOP setting
-		POSITIONDEGREE = 172,   // NPatch position interpolation degree. D3DDEGREE_LINEAR or D3DDEGREE_CUBIC (default)
-		NORMALDEGREE = 173,   // NPatch normal interpolation degree. D3DDEGREE_LINEAR (default) or D3DDEGREE_QUADRATIC
-		SCISSORTESTENABLE = 174,
-		SLOPESCALEDEPTHBIAS = 175,
-		ANTIALIASEDLINEENABLE = 176,
-		MINTESSELLATIONLEVEL = 178,
-		MAXTESSELLATIONLEVEL = 179,
-		ADAPTIVETESS_X = 180,
-		ADAPTIVETESS_Y = 181,
-		ADAPTIVETESS_Z = 182,
-		ADAPTIVETESS_W = 183,
-		ENABLEADAPTIVETESSELLATION = 184,
-		TWOSIDEDSTENCILMODE = 185,   /* BOOL enable/disable 2 sided stenciling */
-		CCW_STENCILFAIL = 186,   /* D3DSTENCILOP to do if ccw stencil test fails */
-		CCW_STENCILZFAIL = 187,   /* D3DSTENCILOP to do if ccw stencil test passes and Z test fails */
-		CCW_STENCILPASS = 188,   /* D3DSTENCILOP to do if both ccw stencil and Z tests pass */
-		CCW_STENCILFUNC = 189,   /* D3DCMPFUNC fn.  ccw Stencil Test passes if ((ref & mask) stencilfn (stencil & mask)) is true */
-		COLORWRITEENABLE1 = 190,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
-		COLORWRITEENABLE2 = 191,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
-		COLORWRITEENABLE3 = 192,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
-		BLENDFACTOR = 193,   /* D3DCOLOR used for a constant blend factor during alpha blending for devices that support D3DPBLENDCAPS_BLENDFACTOR */
-		SRGBWRITEENABLE = 194,   /* Enable rendertarget writes to be DE-linearized to SRGB (for formats that expose D3DUSAGE_QUERY_SRGBWRITE) */
-		DEPTHBIAS = 195,
-		WRAP8 = 198,   /* Additional wrap states for vs_3_0+ attributes with D3DDECLUSAGE_TEXCOORD */
-		WRAP9 = 199,
-		WRAP10 = 200,
-		WRAP11 = 201,
-		WRAP12 = 202,
-		WRAP13 = 203,
-		WRAP14 = 204,
-		WRAP15 = 205,
-		SEPARATEALPHABLENDENABLE = 206,  /* TRUE to enable a separate blending function for the alpha channel */
-		SRCBLENDALPHA = 207,  /* SRC blend factor for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
-		DESTBLENDALPHA = 208,  /* DST blend factor for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
-		BLENDOPALPHA = 209,  /* Blending operation for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
+		Unkonwn = 0,
+		ZENABLE,
+		FILLMODE,
+		SHADEMODE,
+		ZWRITEENABLE,   /* TRUE to enable z writes */
+		ALPHATESTENABLE,   /* TRUE to enable alpha tests */
+		LASTPIXEL,   /* TRUE for last-pixel on lines */
+		SRCBLEND ,   /* D3DBLEND */
+		DESTBLEND,   /* D3DBLEND */
+		CULLMODE,   /* D3DCULL */
+		ZFUNC,   /* D3DCMPFUNC */
+		ALPHAREF,   /* D3DFIXED */
+		ALPHAFUNC,   /* D3DCMPFUNC */
+		DITHERENABLE,   /* TRUE to enable dithering */
+		ALPHABLENDENABLE,   /* TRUE to enable alpha blending */
+		FOGENABLE,   /* TRUE to enable fog blending */
+		SPECULARENABLE,   /* TRUE to enable specular */
+		FOGCOLOR,   /* D3DCOLOR */
+		FOGTABLEMODE,   /* D3DFOGMODE */
+		FOGSTART,   /* Fog start (for both vertex and pixel fog) */
+		FOGEND,   /* Fog end      */
+		FOGDENSITY,   /* Fog density  */
+		RANGEFOGENABLE,   /* Enables range-based fog */
+		STENCILENABLE,   /* BOOL enable/disable stenciling */
+		STENCILFAIL,   /* D3DSTENCILOP to do if stencil test fails */
+		STENCILZFAIL,   /* D3DSTENCILOP to do if stencil test passes and Z test fails */
+		STENCILPASS,   /* D3DSTENCILOP to do if both stencil and Z tests pass */
+		STENCILFUNC,   /* D3DCMPFUNC fn.  Stencil Test passes if ((ref & mask) stencilfn (stencil & mask)) is true */
+		STENCILREF,   /* Reference value used in stencil test */
+		STENCILMASK,   /* Mask value used in stencil test */
+		STENCILWRITEMASK,   /* Write mask applied to values written to stencil buffer */
+		TEXTUREFACTOR,   /* D3DCOLOR used for multi-texture blend */
+		WRAP0,  /* wrap for 1st texture coord. set */
+		WRAP1,  /* wrap for 2nd texture coord. set */
+		WRAP2,  /* wrap for 3rd texture coord. set */
+		WRAP3,  /* wrap for 4th texture coord. set */
+		WRAP4,  /* wrap for 5th texture coord. set */
+		WRAP5,  /* wrap for 6th texture coord. set */
+		WRAP6,  /* wrap for 7th texture coord. set */
+		WRAP7,  /* wrap for 8th texture coord. set */
+		CLIPPING,
+		LIGHTING,
+		AMBIENT,
+		FOGVERTEXMODE,
+		COLORVERTEX,
+		LOCALVIEWER,
+		NORMALIZENORMALS,
+		DIFFUSEMATERIALSOURCE,
+		SPECULARMATERIALSOURCE,
+		AMBIENTMATERIALSOURCE,
+		EMISSIVEMATERIALSOURCE,
+		VERTEXBLEND,
+		CLIPPLANEENABLE,
+		POINTSIZE,   /* float point size */
+		POINTSIZE_MIN,   /* float point size min threshold */
+		POINTSPRITEENABLE,   /* BOOL point texture coord control */
+		POINTSCALEENABLE,   /* BOOL point size scale enable */
+		POINTSCALE_A,   /* float point attenuation A value */
+		POINTSCALE_B,   /* float point attenuation B value */
+		POINTSCALE_C,   /* float point attenuation C value */
+		MULTISAMPLEANTIALIAS,  // BOOL - set to do FSAA with multisample buffer
+		MULTISAMPLEMASK,  // DWORD - per-sample enable/disable
+		PATCHEDGESTYLE,  // Sets whether patch edges will use float style tessellation
+		DEBUGMONITORTOKEN,  // DEBUG ONLY - token to debug monitor
+		POINTSIZE_MAX,   /* float point size max threshold */
+		INDEXEDVERTEXBLENDENABLE,
+		COLORWRITEENABLE,  // per-channel write enable
+		TWEENFACTOR,   // float tween factor
+		BLENDOP,   // D3DBLENDOP setting
+		POSITIONDEGREE,   // NPatch position interpolation degree. D3DDEGREE_LINEAR or D3DDEGREE_CUBIC (default)
+		NORMALDEGREE,   // NPatch normal interpolation degree. D3DDEGREE_LINEAR (default) or D3DDEGREE_QUADRATIC
+		SCISSORTESTENABLE,
+		SLOPESCALEDEPTHBIAS,
+		ANTIALIASEDLINEENABLE,
+		MINTESSELLATIONLEVEL,
+		MAXTESSELLATIONLEVEL,
+		ADAPTIVETESS_X,
+		ADAPTIVETESS_Y,
+		ADAPTIVETESS_Z,
+		ADAPTIVETESS_W,
+		ENABLEADAPTIVETESSELLATION,
+		TWOSIDEDSTENCILMODE,   /* BOOL enable/disable 2 sided stenciling */
+		CCW_STENCILFAIL,   /* D3DSTENCILOP to do if ccw stencil test fails */
+		CCW_STENCILZFAIL,   /* D3DSTENCILOP to do if ccw stencil test passes and Z test fails */
+		CCW_STENCILPASS,   /* D3DSTENCILOP to do if both ccw stencil and Z tests pass */
+		CCW_STENCILFUNC,   /* D3DCMPFUNC fn.  ccw Stencil Test passes if ((ref & mask) stencilfn (stencil & mask)) is true */
+		COLORWRITEENABLE1,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
+		COLORWRITEENABLE2,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
+		COLORWRITEENABLE3,   /* Additional ColorWriteEnables for the devices that support D3DPMISCCAPS_INDEPENDENTWRITEMASKS */
+		BLENDFACTOR,   /* D3DCOLOR used for a constant blend factor during alpha blending for devices that support D3DPBLENDCAPS_BLENDFACTOR */
+		SRGBWRITEENABLE,   /* Enable rendertarget writes to be DE-linearized to SRGB (for formats that expose D3DUSAGE_QUERY_SRGBWRITE) */
+		DEPTHBIAS,
+		WRAP8,   /* Additional wrap states for vs_3_0+ attributes with D3DDECLUSAGE_TEXCOORD */
+		WRAP9,
+		WRAP10,
+		WRAP11,
+		WRAP12,
+		WRAP13,
+		WRAP14,
+		WRAP15,
+		SEPARATEALPHABLENDENABLE,  /* TRUE to enable a separate blending function for the alpha channel */
+		SRCBLENDALPHA,  /* SRC blend factor for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
+		DESTBLENDALPHA,  /* DST blend factor for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
+		BLENDOPALPHA,  /* Blending operation for the alpha channel when SEPARATEDESTALPHAENABLE is TRUE */
+
+		COUNT // END
 	};
+
+	struct RenderStateValue
+	{
+		virtual uint32_t ToValueData() = 0;
+	};
+
+	struct RenderStateValueClipPlane0
+	{
+
+	};
+
 }
 

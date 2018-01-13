@@ -15,10 +15,10 @@ namespace ParaEngine
 	
 
 
-		virtual HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) override;
+		virtual uint32_t GetRenderState(const ERenderState& State) override;
 
 
-		virtual HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) override;
+		virtual void SetRenderState(const ERenderState State, const uint32_t Value) override;
 
 
 		virtual HRESULT SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) override;

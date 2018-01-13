@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <stdint.h>
 
 #include "VertexDeclaration.h"
 #include "RenderCore.h"
 #include "d3d9.h"
 #include "PEtypes.h"
 #include "Framework/RenderSystem/RenderTypes.h"
+
 namespace ParaEngine
 {
 	class IRenderDevice
@@ -15,8 +17,12 @@ namespace ParaEngine
 		IRenderDevice() = default;
 		virtual ~IRenderDevice() = default;
 
-		virtual HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) = 0;
-		virtual HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) = 0;
+		virtual uint32_t GetRenderState(const ERenderState& State) = 0;
+		virtual void SetRenderState(const ERenderState State, const uint32_t Value) = 0;
+
+
+
+
 		virtual HRESULT SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value) = 0;
 		virtual HRESULT SetClipPlane(DWORD Index, const float* pPlane) = 0;
 		virtual HRESULT SetTexture(DWORD Stage, IDirect3DTexture9* pTexture) = 0;
