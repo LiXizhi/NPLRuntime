@@ -38,7 +38,7 @@ CParaEngineApp::~CParaEngineApp()
 	StopApp();
 }
 
-HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
+bool ParaEngine::CParaEngineApp::StartApp(const char* sCommandLine /*= 0*/)
 {
 	SetCurrentInstance(this);
 	std::string strCmd;
@@ -71,7 +71,7 @@ void CParaEngineApp::InitSystemModules()
 	m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
 }
 
-HRESULT CParaEngineApp::StopApp()
+void ParaEngine::CParaEngineApp::StopApp()
 {
 	// if it is already stopped, we shall return
 	if (!m_pParaWorldAsset)

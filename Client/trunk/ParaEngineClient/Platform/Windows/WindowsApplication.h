@@ -374,7 +374,8 @@ namespace ParaEngine
 		* If no window is specified using SetMainWindow(), it will create a default window using the default config settings.
 		* @param sCommandLine: the command line parameter
 		*/
-		virtual HRESULT StartApp(const char* sCommandLine = 0);
+		virtual bool StartApp(const char* sCommandLine = 0);
+		virtual void StopApp();
 
 		void InitSystemModules();
 
@@ -390,7 +391,7 @@ namespace ParaEngine
 
 		void LoadAndApplySettings();
 
-		virtual HRESULT StopApp();
+		
 
 		virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true);
 		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

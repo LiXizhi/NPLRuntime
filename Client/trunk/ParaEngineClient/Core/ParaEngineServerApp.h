@@ -26,8 +26,8 @@ namespace ParaEngine
 		virtual ~CParaEngineApp();
 
 	public:
-		virtual HRESULT StartApp(const char* sCommandLine = 0);
-		virtual HRESULT StopApp();
+		virtual bool StartApp(const char* sCommandLine = 0);
+		virtual void StopApp();
 		virtual HRESULT FrameMove(double fTime);
 
 		virtual DWORD GetCoreUsage();
