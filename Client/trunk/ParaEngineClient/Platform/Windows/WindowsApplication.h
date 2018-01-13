@@ -34,8 +34,6 @@ namespace ParaEngine
 	protected:
 
 
-		// Internal error handling function
-		HRESULT DisplayErrorMsg(HRESULT hr, DWORD dwType);
 		HRESULT Initialize3DEnvironment();
 		HRESULT Reset3DEnvironment();
 		void    Cleanup3DEnvironment();
