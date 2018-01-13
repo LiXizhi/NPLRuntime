@@ -310,7 +310,7 @@ double ParaEngine::GetSysDateTime()
 	// call and subtract the ptime.
 	time_duration diff = now - time_t_epoch;
 
-	dateTime = diff.total_seconds();
+	dateTime = (double)diff.total_seconds();
 	return dateTime;
 }
 

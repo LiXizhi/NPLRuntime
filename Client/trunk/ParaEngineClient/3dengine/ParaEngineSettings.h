@@ -132,13 +132,6 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMultiSampleType_s, int*)	{*p1 = cls->GetMultiSampleType(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetMultiSampleType_s, int)	{cls->SetMultiSampleType(p1); return S_OK;}
-		
-		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMultiSampleQuality_s, int*)	{*p1 = cls->GetMultiSampleQuality(); return S_OK;}
-		ATTRIBUTE_METHOD1(ParaEngineSettings, SetMultiSampleQuality_s, int)	{cls->SetMultiSampleQuality(p1); return S_OK;}
-
-		ATTRIBUTE_METHOD(ParaEngineSettings, UpdateScreenMode_s)	{cls->UpdateScreenMode(); return S_OK;}
-
-		ATTRIBUTE_METHOD1(ParaEngineSettings, SetShowMenu_s, bool)	{cls->ShowMenu(p1); return S_OK;}
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsProfilingEnabled_s, bool*)	{*p1 = cls->IsProfilingEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, EnableProfiling_s, bool)	{cls->EnableProfiling(p1); return S_OK;}
@@ -494,9 +487,6 @@ namespace ParaEngine
 		int GetMultiSampleType();
 		void SetMultiSampleType(int nType);
 
-		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
-		int GetMultiSampleQuality();
-		void SetMultiSampleQuality(int nType);
 
 		/** get the vertex shader version. This can be roughly used to auto-adjust graphics settings. 
 		* @return 0,1,2,3,4
@@ -521,8 +511,6 @@ namespace ParaEngine
 		*/
 		const std::string& GetSystemInfoString(bool bRefresh = false);
 
-		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
-		void UpdateScreenMode();
 
 		/** switch to either windowed mode or full screen mode. */
 		static bool SetWindowedMode(bool bWindowed);
@@ -547,9 +535,6 @@ namespace ParaEngine
 		* When set to false, the scripting interface will receive WM_CLOSE message via system event. And can use ParaEngine.Exit() to quit the application after user confirmation, etc. 
 		*/
 		static bool IsWindowClosingAllowed();
-
-		/** turn on/off menu */
-		static void ShowMenu(bool bShow);
 
 		/** switch to ignore windows size change. default to false. 
 		* if false, the user is allowed to adjust window size in windowed mode. */

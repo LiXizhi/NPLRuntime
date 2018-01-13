@@ -746,11 +746,6 @@ void ParaEngine::ParaEngineSettings::BringWindowToTop()
 		CGlobals::GetApp()->BringWindowToTop();
 }
 
-void ParaEngine::ParaEngineSettings::UpdateScreenMode()
-{
-	if(CGlobals::GetApp())
-		CGlobals::GetApp()->UpdateScreenMode();
-}
 
 int ParaEngine::ParaEngineSettings::GetMultiSampleType()
 {
@@ -766,19 +761,7 @@ void ParaEngine::ParaEngineSettings::SetMultiSampleType( int nType )
 		CGlobals::GetApp()->SetMultiSampleType(nType);
 }
 
-int ParaEngine::ParaEngineSettings::GetMultiSampleQuality()
-{
-	if(CGlobals::GetApp())
-		return CGlobals::GetApp()->GetMultiSampleQuality();
-	else
-		return 0;
-}
 
-void ParaEngine::ParaEngineSettings::SetMultiSampleQuality( int nType )
-{
-	if(CGlobals::GetApp())
-		CGlobals::GetApp()->SetMultiSampleQuality(nType);
-}
 
 void ParaEngine::ParaEngineSettings::SetIgnoreWindowSizeChange( bool bIgnoreSizeChange )
 {
@@ -804,11 +787,6 @@ int ParaEngine::ParaEngineSettings::GetTextureLOD()
 	return TextureEntity::g_nTextureLOD;
 }
 
-void ParaEngine::ParaEngineSettings::ShowMenu( bool bShow )
-{
-	if(CGlobals::GetApp())
-		return CGlobals::GetApp()->ShowMenu(bShow);
-}
 
 bool ParaEngine::ParaEngineSettings::HasNewConfig()
 {
@@ -1345,10 +1323,7 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("BringWindowToTop", FieldType_void, (void*)BringWindowToTop_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ScreenResolution", FieldType_Vector2, (void*)SetScreenResolution_s, (void*)GetScreenResolution_s, CAttributeField::GetSimpleSchema(SCHEMA_RGB), NULL, bOverride);
 	pClass->AddField("MultiSampleType", FieldType_Int, (void*)SetMultiSampleType_s, (void*)GetMultiSampleType_s, NULL, NULL, bOverride);
-	pClass->AddField("MultiSampleQuality", FieldType_Int, (void*)SetMultiSampleQuality_s, (void*)GetMultiSampleQuality_s, NULL, NULL, bOverride);
 
-	pClass->AddField("UpdateScreenMode", FieldType_void, (void*)UpdateScreenMode_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("ShowMenu", FieldType_Bool, (void*)SetShowMenu_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("EnableProfiling", FieldType_Bool, (void*)EnableProfiling_s, (void*)IsProfilingEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("Enable3DRendering", FieldType_Bool, (void*)Enable3DRendering_s, (void*)Is3DRenderingEnabled_s, NULL, NULL, bOverride);
 
