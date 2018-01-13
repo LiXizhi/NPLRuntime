@@ -119,7 +119,7 @@ namespace ParaEngine
 		// Main objects used for creating and rendering the 3D scene
 		HWND              m_hWnd;              // The main app window
 		HWND              m_hWndFocus;         // The D3D focus window (usually same as m_hWnd)
-		HMENU             m_hMenu;             // App menu bar (stored here when fullscreen)
+
 
 		IRenderContext*   m_pRenderContext;
 		IRenderDevice*    m_pRenderDevice;

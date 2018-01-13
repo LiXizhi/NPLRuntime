@@ -174,7 +174,6 @@ CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 
 	m_hWnd = NULL;
 	m_hWndFocus = NULL;
-	m_hMenu = NULL;
 	m_bWindowed = true;
 	m_bActive = false;
 	m_bDeviceLost = false;
