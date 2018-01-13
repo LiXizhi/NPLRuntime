@@ -9,8 +9,6 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "RenderDeviceDirectX.h"
-#include "D3D9RenderDevice.h"
-
 using namespace ParaEngine;
 
 RenderDevice* RenderDevice::GetInstance()
@@ -50,8 +48,7 @@ bool RenderDevice::CheckRenderError(const char* filename, const char* func, int 
 
 bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, DWORD nDataFormat /*= 0*/, DWORD nDataType /*= 0*/)
 {
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	// gets the surface of the back buffer.
 	IDirect3DSurface9* pFrameBufferSurface = CGlobals::GetDirectXEngine().GetRenderTarget();
 	/*HRESULT hResult = pd3dDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pFrameBufferSurface);
@@ -74,7 +71,7 @@ bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int n
 		LPDIRECT3DSURFACE9 pSurDest = NULL;
 		RECT srcRect = {nLeft, nTop, nLeft+nWidth, nTop+nHeight};
 		RECT destRect = { 0, 0, nWidth, nHeight };
-		if (FAILED(pd3dDevice->CreateTexture(nWidth, nHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
+		if (FAILED(pRenderDevice->CreateTexture(nWidth, nHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
 		{
 			return false;
 		}
@@ -85,12 +82,12 @@ bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int n
 		}
 
 		// Copy scene to render target texture
-		if (SUCCEEDED(pd3dDevice->StretchRect(pFrameBufferSurface, &srcRect, pSurDest, &destRect, D3DTEXF_NONE)))
+		if (SUCCEEDED(pRenderDevice->StretchRect(pFrameBufferSurface, &srcRect, pSurDest, &destRect, D3DTEXF_NONE)))
 		{
 			LPDIRECT3DSURFACE9 pSurDestInMem = NULL;
-			if (SUCCEEDED(pd3dDevice->CreateOffscreenPlainSurface(nWidth, nHeight, colorFormat, D3DPOOL_SYSTEMMEM, &pSurDestInMem, NULL)))
+			if (SUCCEEDED(pRenderDevice->CreateOffscreenPlainSurface(nWidth, nHeight, colorFormat, D3DPOOL_SYSTEMMEM, &pSurDestInMem, NULL)))
 			{
-				if (SUCCEEDED(pd3dDevice->GetRenderTargetData(pSurDest, pSurDestInMem)))
+				if (SUCCEEDED(pRenderDevice->GetRenderTargetData(pSurDest, pSurDestInMem)))
 				{
 					// Read the pixels 
 					D3DLOCKED_RECT bits;

@@ -170,14 +170,6 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 #####################################
 
 
-
-file (GLOB ParaEngineClient_D3D9Render_FILES ${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9/*.*)
-SOURCE_GROUP("Platform\\Windows\\Render\\D3D9" FILES ${ParaEngineClient_D3D9Render_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_D3D9Render_FILES})
-#####################################
-
-
-
 # Resource file
 # winmain.rc is the only buildable file, but the rest are all dependencies of it.
 file (GLOB ParaEngineClient_RESOURCE_FILES ${ParaEngineClient_SOURCE_DIR}/res/*.*)
@@ -279,8 +271,6 @@ include_directories("${ParaEngineClient_SOURCE_DIR}/ParaScriptBindings")
 include_directories("${ParaEngineClient_SOURCE_DIR}/NPL")
 include_directories("${ParaEngineClient_SOURCE_DIR}/2dengine/Video")
 include_directories("${ParaEngineClient_SOURCE_DIR}/common")
-include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9")
-include_directories("${ParaEngineClient_SOURCE_DIR}/Platform/Windows/")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 
