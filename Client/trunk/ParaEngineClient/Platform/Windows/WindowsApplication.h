@@ -126,9 +126,6 @@ namespace ParaEngine
 		IRenderContext*   m_pRenderContext;
 		IRenderDevice*    m_pRenderDevice;
 
-		LPDIRECT3DDEVICE9 m_pd3dDevice;        // The D3D rendering device
-		IDirect3DSwapChain9* m_pd3dSwapChain;
-		D3DCAPS9          m_d3dCaps;           // Caps for the device
 		DWORD             m_dwCreateFlags;     // Indicate sw or hw vertex processing
 		RECT              m_rcWindowClient;    // Saved client area size for mode switches
 
