@@ -105,6 +105,53 @@ namespace ParaEngine
 
 		virtual HRESULT TestCooperativeLevel() = 0;
 
+		virtual HRESULT CreateTexture(UINT Width, UINT Height, UINT MipLeves, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, LPDIRECT3DTEXTURE9* ppTexture) = 0;
+
+		virtual HRESULT CreateTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Width, UINT Height, UINT MipLevels,
+			DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo,
+			PALETTEENTRY*pPalette, LPDIRECT3DTEXTURE9*ppTexture) = 0;
+
+		virtual HRESULT CreateTextureFromFileEx(
+			LPCSTR                    pSrcFile,
+			UINT                      Width,
+			UINT                      Height,
+			UINT                      MipLevels,
+			DWORD                     Usage,
+			D3DFORMAT                 Format,
+			D3DPOOL                   Pool,
+			DWORD                     Filter,
+			DWORD                     MipFilter,
+			D3DCOLOR                  ColorKey,
+			D3DXIMAGE_INFO*           pSrcInfo,
+			PALETTEENTRY*             pPalette,
+			LPDIRECT3DTEXTURE9*       ppTexture
+
+		) = 0;
+
+		virtual HRESULT CheckTextureRequirements(
+			UINT*                     pWidth,
+			UINT*                     pHeight,
+			UINT*                     pNumMipLevels,
+			DWORD                     Usage,
+			D3DFORMAT*                pFormat,
+			D3DPOOL                   Pool
+		) = 0;
+
+		virtual HRESULT CreateCubeTextureFromFileInMemoryEx(
+			LPCVOID                   pSrcData,
+			UINT                      SrcDataSize,
+			UINT                      Size,
+			UINT                      MipLevels,
+			DWORD                     Usage,
+			D3DFORMAT                 Format,
+			D3DPOOL                   Pool,
+			DWORD                     Filter,
+			DWORD                     MipFilter,
+			D3DCOLOR                  ColorKey,
+			D3DXIMAGE_INFO*           pSrcInfo,
+			PALETTEENTRY*             pPalette,
+			LPDIRECT3DCUBETEXTURE9*   ppCubeTexture
+		) = 0;
 
 	};
 

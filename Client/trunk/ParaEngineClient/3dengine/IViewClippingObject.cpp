@@ -17,7 +17,6 @@
 
 #include "IViewClippingObject.h"
 #include "memdebug.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -60,8 +59,7 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 		4,5,5,6,6,7,7,4, // top
 		0,4,1,5,2,6,3,7, // sides
 	};
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	Vector3 pVecBounds[8];
 	int nNumVertices;
 	GetRenderVertices(pVecBounds, &nNumVertices);

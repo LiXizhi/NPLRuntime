@@ -80,8 +80,8 @@
 #include <time.h>
 #include "ParaEngineAppBase.h"
 #include "WindowsRenderWindow.h"
-#include "D3D9RenderDevice.h"
-#include "D3D9RenderContext.h"
+#include "Render/D3D9/D3D9RenderDevice.h"
+#include "Render/D3D9/D3D9RenderContext.h"
 
 #include "resource.h"
 #include "2dengine/GUIRoot.h"

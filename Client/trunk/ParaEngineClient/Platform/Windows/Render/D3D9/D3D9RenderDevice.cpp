@@ -1,14 +1,8 @@
 #include "ParaEngine.h"
 #include "D3D9RenderDevice.h"
-#include "WindowsRenderWindow.h"
 
 using namespace ParaEngine;
 
-ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(D3D9RenderContext * context):
-	m_pD3DDevice(nullptr)
-{
-	//m_pD3DDevice = context->GetD3DDevice();
-}
 
 ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
 {
@@ -211,6 +205,26 @@ HRESULT ParaEngine::CD3D9RenderDevice::CreateTexture(UINT Width, UINT Height, UI
 	return m_pD3DDevice->CreateTexture(Width, Height, Levels, Usage, Format, Pool, ppTexture, pSharedHandle);
 }
 
+HRESULT ParaEngine::CD3D9RenderDevice::CreateTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Width, UINT Height, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY*pPalette, LPDIRECT3DTEXTURE9*ppTexture)
+{
+	return D3DXCreateTextureFromFileInMemoryEx(m_pD3DDevice, pSrcData, SrcDataSize, Width, Height, MipLevels, Usage, Format, Pool, Filter, MipFilter, ColorKey, pSrcInfo, pPalette, ppTexture);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CreateTextureFromFileEx(LPCSTR pSrcFile, UINT Width, UINT Height, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY* pPalette, LPDIRECT3DTEXTURE9* ppTexture)
+{
+	return D3DXCreateTextureFromFileEx(m_pD3DDevice, pSrcFile, Width, Height, MipLevels, Usage, Format, Pool, Filter, MipFilter, ColorKey, pSrcInfo, pPalette, ppTexture);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CheckTextureRequirements(UINT* pWidth, UINT* pHeight, UINT* pNumMipLevels, DWORD Usage, D3DFORMAT* pFormat, D3DPOOL Pool)
+{
+	return D3DXCheckTextureRequirements(m_pD3DDevice, pWidth, pHeight, pNumMipLevels, Usage, pFormat, Pool);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CreateCubeTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Size, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY* pPalette, LPDIRECT3DCUBETEXTURE9* ppCubeTexture)
+{
+	return D3DXCreateCubeTextureFromFileInMemoryEx(m_pD3DDevice, pSrcData, SrcDataSize, Size, MipLevels, Usage, Format, Pool, Filter, MipFilter, ColorKey, pSrcInfo, pPalette, ppCubeTexture);
+}
+
 HRESULT ParaEngine::CD3D9RenderDevice::CreateDepthStencilSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 {
 	return m_pD3DDevice->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
@@ -270,6 +284,11 @@ HRESULT ParaEngine::CD3D9RenderDevice::Present(RECT* pSourceRect, CONST RECT* pD
 HRESULT ParaEngine::CD3D9RenderDevice::TestCooperativeLevel()
 {
 	return m_pD3DDevice->TestCooperativeLevel();
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CreateTexture(UINT Width, UINT Height, UINT MipLeves, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, LPDIRECT3DTEXTURE9* ppTexture)
+{
+	return D3DXCreateTexture(m_pD3DDevice, Width, Height, MipLeves, Usage, Format, Pool, ppTexture);
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::DrawIndexedPrimitive(D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)

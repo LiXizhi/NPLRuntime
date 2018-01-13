@@ -1,6 +1,5 @@
 #pragma once
 #include "IRenderDevice.h"
-#include "D3D9RenderContext.h"
 #include "d3d9.h"
 
 
@@ -9,7 +8,6 @@ namespace ParaEngine
 	class CD3D9RenderDevice : public IRenderDevice
 	{
 	public:
-		CD3D9RenderDevice(D3D9RenderContext* context);
 		CD3D9RenderDevice(IDirect3DDevice9* device);
 		virtual ~CD3D9RenderDevice() = default;
 	
@@ -171,6 +169,21 @@ namespace ParaEngine
 
 		virtual HRESULT TestCooperativeLevel() override;
 
+
+
+		virtual HRESULT CreateTexture(UINT Width, UINT Height, UINT MipLeves, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, LPDIRECT3DTEXTURE9* ppTexture) override;
+
+
+		virtual HRESULT CreateTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Width, UINT Height, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY*pPalette, LPDIRECT3DTEXTURE9*ppTexture) override;
+
+
+		virtual HRESULT CreateTextureFromFileEx(LPCSTR pSrcFile, UINT Width, UINT Height, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY* pPalette, LPDIRECT3DTEXTURE9* ppTexture) override;
+
+
+		virtual HRESULT CheckTextureRequirements(UINT* pWidth, UINT* pHeight, UINT* pNumMipLevels, DWORD Usage, D3DFORMAT* pFormat, D3DPOOL Pool) override;
+
+
+		virtual HRESULT CreateCubeTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Size, UINT MipLevels, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo, PALETTEENTRY* pPalette, LPDIRECT3DCUBETEXTURE9* ppCubeTexture) override;
 
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;
