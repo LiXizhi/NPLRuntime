@@ -207,8 +207,6 @@ CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 	m_pRenderDevice = NULL;
 	m_pRenderContext = nullptr;
 
-	memset(&m_d3dSettings, 0, sizeof(m_d3dSettings));
-
 	Pause(true); // Pause until we're ready to render
 
 				 // When m_bClipCursorWhenFullscreen is true, the cursor is limited to
@@ -469,7 +467,7 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 	HRESULT hr = S_OK;
 
 
-	m_bWindowed = m_d3dSettings.IsWindowed;
+	m_bWindowed = TRUE;
 
 
 
@@ -828,20 +826,6 @@ void CWindowsApplication::LoadAndApplySettings()
 	else
 		m_dwCreationHeight = 680;
 
-	if (!m_bStartFullscreen)
-	{
-		if ((pField = settings.GetDynamicField("MultiSampleType")))
-			m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
-		if ((pField = settings.GetDynamicField("MultiSampleQuality")))
-			m_d3dSettings.Windowed_MultisampleQuality = (DWORD)(*pField);
-	}
-	else
-	{
-		if ((pField = settings.GetDynamicField("MultiSampleType")))
-			m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)((DWORD)(*pField));
-		if ((pField = settings.GetDynamicField("MultiSampleQuality")))
-			m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)(*pField);
-	}
 
 	if ((pField = settings.GetDynamicField("ScriptEditor")))
 		settings.SetScriptEditor((const string&)(*pField));
@@ -1519,57 +1503,7 @@ bool CWindowsApplication::AppHasFocus()
 
 bool CWindowsApplication::UpdateScreenDevice()
 {
-	if (m_bUpdateScreenDevice)
-	{
-		OUTPUT_LOG("update screen device to (%d, %d) windowed: %s\n", m_dwCreationWidth, m_dwCreationHeight, m_nWindowedDesired == 1 ? "true" : "false");
-		m_bUpdateScreenDevice = false;
-		if (IsWindowedMode() && (m_nWindowedDesired != 0))
-		{
-			OUTPUT_LOG("Window size adjust in windowed mode\n");
 
-			// if only windowed mode resolution and back buffer size is changed.
-
-				RECT rect;
-				GetWindowRect(CGlobals::GetAppHWND(), &rect);
-
-				rect.right = rect.left + m_d3dSettings.Windowed_DisplayMode.Width;
-				rect.bottom = rect.top + m_d3dSettings.Windowed_DisplayMode.Height;
-				SetAppWndRect(rect);
-
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1, 1, true);
-			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
-		}
-		else
-		{
-			OUTPUT_LOG("toggle between windowed and full screen mode\n");
-			if (m_nWindowedDesired == 0)
-			{
-				if (IsFullScreenMode())
-				{
-					// in case we are changing full screen resolution in the full screen mode.
-					m_bWindowed = !m_bWindowed;
-				}
-			}
-
-			Pause(true);
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1, 1, true);
-			Pause(false);
-			if (IsWindowedMode())
-			{
-				RECT rect;
-				GetClientRect(CGlobals::GetAppHWND(), &rect);
-				OUTPUT_LOG("window resolution is (%d,%d)\n", rect.right - rect.left, rect.bottom - rect.top);
-				if ((rect.right - rect.left) != m_dwCreationWidth || (rect.bottom - rect.top) != m_dwCreationHeight)
-				{
-					OUTPUT_LOG("New window resolution is (%d,%d)\n", m_dwCreationWidth, m_dwCreationHeight);
-					SetScreenResolution(Vector2((float)m_dwCreationWidth, (float)m_dwCreationHeight));
-					UpdateScreenMode();
-				}
-			}
-		}
-	}
 	return true;
 }
 
@@ -1780,9 +1714,6 @@ void CWindowsApplication::SetScreenResolution(const Vector2& vSize)
 	//m_d3dSettings.Fullscreen_DisplayMode.Height = (int)(vSize.y);
 	m_dwCreationWidth = (int)(vSize.x);
 	m_dwCreationHeight = (int)(vSize.y);
-	m_d3dSettings.Windowed_DisplayMode.Width = (int)(vSize.x);
-	m_d3dSettings.Windowed_DisplayMode.Height = (int)(vSize.y);
-
 	ParaEngineSettings& settings = ParaEngineSettings::GetSingleton();
 	CVariable value;
 	value = (int)(vSize.x);
@@ -1812,24 +1743,22 @@ void CWindowsApplication::SetResolution(float x, float y)
 
 int CWindowsApplication::GetMultiSampleType()
 {
-	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleType : m_d3dSettings.Windowed_MultisampleType);
+	return 0;
 }
 
 void CWindowsApplication::SetMultiSampleType(int nType)
 {
-	m_d3dSettings.Fullscreen_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
-	m_d3dSettings.Windowed_MultisampleType = (D3DMULTISAMPLE_TYPE)nType;
+
 }
 
 int CWindowsApplication::GetMultiSampleQuality()
 {
-	return (int)(IsFullScreenMode() ? m_d3dSettings.Fullscreen_MultisampleQuality : m_d3dSettings.Windowed_MultisampleQuality);
+	return 0;
 }
 
 void CWindowsApplication::SetMultiSampleQuality(int nType)
 {
-	m_d3dSettings.Fullscreen_MultisampleQuality = (DWORD)nType;
-	m_d3dSettings.Windowed_MultisampleQuality = (DWORD)nType;
+
 }
 
 bool CWindowsApplication::UpdateScreenMode()
@@ -1965,20 +1894,6 @@ void CWindowsApplication::WriteConfigFile(const char* FileName)
 	value = !(m_nWindowedDesired != 0); //  IsWindowedMode();
 	settings.SetDynamicField("StartFullscreen", value);
 
-	if (IsWindowedMode())
-	{
-		value = (int)(m_d3dSettings.Windowed_MultisampleType);
-		settings.SetDynamicField("MultiSampleType", value);
-		value = (int)(m_d3dSettings.Windowed_MultisampleQuality);
-		settings.SetDynamicField("MultiSampleQuality", value);
-	}
-	else
-	{
-		value = (int)(m_d3dSettings.Fullscreen_MultisampleType);
-		settings.SetDynamicField("MultiSampleType", value);
-		value = (int)(m_d3dSettings.Fullscreen_MultisampleQuality);
-		settings.SetDynamicField("MultiSampleQuality", value);
-	}
 
 	value = settings.GetScriptEditor();
 	settings.SetDynamicField("ScriptEditor", value);
