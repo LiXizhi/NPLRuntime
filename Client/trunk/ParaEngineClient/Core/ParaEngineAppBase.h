@@ -236,9 +236,6 @@ namespace ParaEngine
 		virtual void SetFullScreenMode(bool bFullscreen){};
 		virtual bool IsFullScreenMode(){ return false; };
 
-		/** turn on/off menu */
-		virtual void ShowMenu(bool bShow){};
-
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetScreenResolution(Vector2* pOut)  { *pOut = Vector2::ZERO; };
 		virtual void SetScreenResolution(const Vector2& vSize){};
