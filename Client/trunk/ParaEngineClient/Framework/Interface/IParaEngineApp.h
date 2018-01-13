@@ -108,14 +108,6 @@ namespace ParaEngine
 		*/
 		virtual HRESULT StopApp() = 0;
 
-		/** set the hWnd on to which we will render and process window messages. 
-		* this function should be called prior to Create(). 
-		* @note: the rendering device size will use the client area of the input window
-		* @param hWnd: the Window on to which we will render. 
-		* @param bIsExternalWindow: this is always true, unless for the default window used by ParaEngine when no window is created by the user. 
-		*/
-		virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow=true) = 0;
-		virtual HWND GetMainWindow() = 0;
 
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance) = 0;
