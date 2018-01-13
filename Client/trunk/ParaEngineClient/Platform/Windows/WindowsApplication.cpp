@@ -860,7 +860,7 @@ void CWindowsApplication::InitSystemModules()
 }
 
 
-HRESULT CWindowsApplication::StartApp(const char* sCommandLine)
+bool ParaEngine::CWindowsApplication::StartApp(const char* sCommandLine /*= 0*/)
 {
 	SetCurrentInstance(this);
 	std::string strCmd;
@@ -883,19 +883,19 @@ CWindowsApplication::~CWindowsApplication()
 	StopApp();
 }
 
-HRESULT CWindowsApplication::StopApp()
+void CWindowsApplication::StopApp()
 {
 	// if it is already stopped, we shall return
 	if (!m_pParaWorldAsset)
-		return S_OK;
+		return;
 
 	SAFE_DELETE(m_pWinRawMsgQueue);
 
 
-		Cleanup3DEnvironment();
-		delete m_pRenderContext;
-		m_pRenderContext = nullptr;
-	
+	Cleanup3DEnvironment();
+	delete m_pRenderContext;
+	m_pRenderContext = nullptr;
+
 	FinalCleanup();
 
 	m_pParaWorldAsset.reset();
@@ -922,7 +922,6 @@ HRESULT CWindowsApplication::StopApp()
 
 	// delete all singletons
 	DestroySingletons();
-	return S_OK;
 }
 #pragma endregion CtorDtor
 
@@ -1087,7 +1086,7 @@ HRESULT CWindowsApplication::Init(HWND* pHWND)
 			//error
 		}
 		else {
-			for (int i = 0; i<(int)nSize; i += 2) {
+			for (int i = 0; i < (int)nSize; i += 2) {
 				if (FAILED(cm->GetTextValue("GUI_font_mapping", value0, i))) {
 					break;
 				}
@@ -1410,9 +1409,9 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 			// animate g_flash value for some beeper effect, such as object selection.
 			static float s_flash = 0.f;
 			s_flash += (float)fElapsedEnvSimTime * 2;
-			if (s_flash>2)
+			if (s_flash > 2)
 				s_flash = 0;
-			if (s_flash>1)
+			if (s_flash > 1)
 				g_flash = 2 - s_flash;
 			else
 				g_flash = s_flash;
@@ -1952,7 +1951,7 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 
 	std::string path_;
 	std::string::size_type nFrom = 0;
-	for (int i = 0; i<20 && nFrom != std::string::npos; ++i)
+	for (int i = 0; i < 20 && nFrom != std::string::npos; ++i)
 	{
 		std::string::size_type nLastFrom = (nFrom == 0) ? 0 : (nFrom + 1);
 		nFrom = sSubKey.find_first_of("/\\", nLastFrom);
@@ -1988,7 +1987,7 @@ HKEY GetHKeyByPath(const string& root_key, const string& sSubKey, DWORD dwOpenRi
 		}
 
 
-		if (nFrom != std::string::npos && i>0)
+		if (nFrom != std::string::npos && i > 0)
 		{
 			::RegCloseKey(hParentKey);
 		}
@@ -2295,7 +2294,7 @@ void CWindowsApplication::ActivateApp(bool bActivate)
 		else
 		{
 			// restore to original frame rate.
-			if (s_fLastRefreshRate > 0.f && s_fLastRefreshRate<fIdealInterval)
+			if (s_fLastRefreshRate > 0.f && s_fLastRefreshRate < fIdealInterval)
 			{
 				SetRefreshTimer(s_fLastRefreshRate);
 			}
@@ -2340,7 +2339,7 @@ bool CWindowsApplication::HasFocus(HWND hWnd)
 		hWnd = ::GetFocus();
 
 	// try parent and parent's parent
-	for (int i = 0; i<2 && hWnd != NULL; i++)
+	for (int i = 0; i < 2 && hWnd != NULL; i++)
 	{
 		if (hWnd != GetMainWindow())
 		{
@@ -2489,7 +2488,7 @@ bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM 
 // return 1 if we do not want default window procedure or other message handler to process the message.
 LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
 {
-	
+
 
 	LRESULT result = 0;
 
@@ -2754,17 +2753,17 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 		}
 		case WM_COMMAND:
 
-				switch (LOWORD(wParam))
-				{
-				case IDM_EXIT:
-					// Received key/menu command to exit app
-					SendMessage(hWnd, WM_CLOSE, 0, 0);
-					break;
-				default:
-					SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
-					break;
-				}
-			
+			switch (LOWORD(wParam))
+			{
+			case IDM_EXIT:
+				// Received key/menu command to exit app
+				SendMessage(hWnd, WM_CLOSE, 0, 0);
+				break;
+			default:
+				SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
+				break;
+			}
+
 			break;
 		case WM_DROPFILES:
 		{
@@ -2807,29 +2806,29 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 
 		case WM_SYSCOMMAND:
 
-				// Prevent moving/sizing and power loss in fullscreen mode
-				switch (wParam)
-				{
-				case SC_MOVE:
-				case SC_SIZE:
-				case SC_MAXIMIZE:
-				case SC_KEYMENU:
-				case SC_MONITORPOWER:
-					SendMessageToApp(hWnd, uMsg, wParam, lParam);
-					break;
-				}
-				/*
-				When you release the Alt key, the system generates a WM_SYSCOMMAND/SC_KEYMENU message.
-				Futhermore, unless you press a key to open a specific popup menu, the lparam will be 0.
-				DefWindowProc, upon receiving this, will enter the menu loop. So, all you have to do is
-				detect this message and prevent it from getting to DefWindowProc:
-				*/
-				if (wParam == SC_KEYMENU)
-				{
-					return 0;
-				}
+			// Prevent moving/sizing and power loss in fullscreen mode
+			switch (wParam)
+			{
+			case SC_MOVE:
+			case SC_SIZE:
+			case SC_MAXIMIZE:
+			case SC_KEYMENU:
+			case SC_MONITORPOWER:
+				SendMessageToApp(hWnd, uMsg, wParam, lParam);
+				break;
+			}
+			/*
+			When you release the Alt key, the system generates a WM_SYSCOMMAND/SC_KEYMENU message.
+			Futhermore, unless you press a key to open a specific popup menu, the lparam will be 0.
+			DefWindowProc, upon receiving this, will enter the menu loop. So, all you have to do is
+			detect this message and prevent it from getting to DefWindowProc:
+			*/
+			if (wParam == SC_KEYMENU)
+			{
+				return 0;
+			}
 
-			
+
 			break;
 
 			/*case WM_IME_CHAR:
@@ -3253,7 +3252,7 @@ ITouchInputTranslator* CWindowsApplication::LoadTouchInputPlug()
 
 	if (pPluginEntity != 0)
 	{
-		for (int i = 0; i<pPluginEntity->GetNumberOfClasses(); i++)
+		for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); i++)
 		{
 			ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
 			if (pClassDesc && (strcmp(pClassDesc->ClassName(), "ITouchInput") == 0))

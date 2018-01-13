@@ -145,11 +145,11 @@ namespace ParaEngine
 		* call this function to start the application. Rendering window and devices are not created, one need to call Create() instead.
 		* @param sCommandLine: the command line parameter
 		*/
-		virtual HRESULT StartApp(const char* sCommandLine = 0)  { return S_OK; };
+		virtual bool StartApp(const char* sCommandLine = 0)  { return S_OK; };
 
 		/** This is the last function that should be called. It is usually called just before process exit.
 		*/
-		virtual HRESULT StopApp()  { return S_OK; };
+		virtual void StopApp()  { };
 
 		/** init application */
 		virtual HRESULT Init(HWND pHWND)  { return S_OK; };
