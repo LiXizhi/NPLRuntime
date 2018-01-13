@@ -164,10 +164,25 @@ extern "C" BOOL(STDAPICALLTYPE *pChangeWindowMessageFilter)(UINT, DWORD) = NULL;
 
 
 CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
-	:CParaEngineAppBase(lpCmdLine), m_bHasNewConfig(false), m_pWinRawMsgQueue(NULL), m_dwWinThreadID(0), m_bIsKeyEvent(false), m_bUpdateScreenDevice(false), m_bServerMode(false),
-	m_dwCoreUsage(PE_USAGE_STANDALONE), m_pAudioEngine(NULL), m_bAutoLowerFrameRateWhenNotFocused(false),
-	m_nInitialGameEffectSet(0), m_bDrawReflection(false), m_bDisplayText(false), m_bDisplayHelp(false), m_bAllowWindowClosing(true), m_pKeyboard(NULL),
-	m_bToggleSoundWhenNotFocused(true), m_bAppHasFocus(true), m_hwndTopLevelWnd(NULL)
+	:CParaEngineAppBase(lpCmdLine)
+	, m_bHasNewConfig(false)
+	, m_pWinRawMsgQueue(NULL)
+	, m_dwWinThreadID(0)
+	, m_bIsKeyEvent(false)
+	, m_bUpdateScreenDevice(false)
+	, m_bServerMode(false)
+	, m_dwCoreUsage(PE_USAGE_STANDALONE)
+	, m_pAudioEngine(NULL)
+	, m_bAutoLowerFrameRateWhenNotFocused(false)
+	, m_nInitialGameEffectSet(0)
+	, m_bDrawReflection(false)
+	, m_bDisplayText(false)
+	, m_bDisplayHelp(false)
+	, m_bAllowWindowClosing(true)
+	, m_pKeyboard(NULL)
+	, m_bToggleSoundWhenNotFocused(true)
+	, m_bAppHasFocus(true)
+	, m_hwndTopLevelWnd(NULL)
 {
 
 	SetAppState(PEAppState_None);

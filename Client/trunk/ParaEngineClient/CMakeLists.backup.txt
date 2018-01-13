@@ -171,6 +171,11 @@ list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
 
 
 
+file (GLOB ParaEngineClient_Platfowm_Windows_FILES ${ParaEngineClient_SOURCE_DIR}/Platform/Windows/*.*)
+SOURCE_GROUP("Platform\\Windows" FILES ${ParaEngineClient_Platfowm_Windows_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Platfowm_Windows_FILES})
+#####################################
+
 file (GLOB ParaEngineClient_D3D9Render_FILES ${ParaEngineClient_SOURCE_DIR}/Platform/Windows/Render/D3D9/*.*)
 SOURCE_GROUP("Platform\\Windows\\Render\\D3D9" FILES ${ParaEngineClient_D3D9Render_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_D3D9Render_FILES})
@@ -502,14 +507,55 @@ ENDIF(HAVE_UNISTD_H)
 link_directories(${ParaEngineClient_LINK_DIRS})
 link_directories(${NPLRUNTIME_LINK_DIRECTORIES})
 
-ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
-ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
-ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
-ADD_DEFINITIONS(-DSQLITE_STATICLIB)
+#########################
+# Platform/ Win32
+if(WIN32)
+
+	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
+	ADD_DEFINITIONS(-D_WIN32_WINNT=0x0501)
+    ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
+    ADD_DEFINITIONS(-DSQLITE_STATICLIB)
+
+	# Note: if true, we will produce dll instead of exe, only under win32
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+		ADD_DEFINITIONS(-DNPLRUNTIME_DLL)
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
+
+	if (PARAENGINE_COMPILE_LIB)
+		set(CMAKE_DEBUG_POSTFIX "_d")
+		if(NPLRUNTIME_STATIC_LIB)
+			set(NPLRUNTIME_LIB_MODE "STATIC")
+		else()
+			set(NPLRUNTIME_LIB_MODE "SHARED")
+		endif()
+		add_library(ParaEngineClient ${NPLRUNTIME_LIB_MODE} ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+	else ()
+		# add the executable
+		add_executable(ParaEngineClient ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+		# When this property is set to true the executable when linked on Windows will be created with a WinMain() entry point instead of of just main().
+		set_target_properties(ParaEngineClient PROPERTIES WIN32_EXECUTABLE true)
+		set_target_properties(ParaEngineClient PROPERTIES OUTPUT_NAME "ParaEngineClient")
+		set_target_properties(ParaEngineClient PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
+
+	endif ()
+
+endif()
 
 
-add_library(ParaEngineLibrary STATIC ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-target_link_libraries(ParaEngineLibrary ${ParaEngineClient_LIBS})
+
+
+target_link_libraries(ParaEngineClient ${ParaEngineClient_LIBS})
+
+#ADD_CUSTOM_COMMAND(
+#	TARGET ParaEngineClient
+#	POST_BUILD
+#	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+#	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaEngineClient> ${OUTPUT_BIN_DIR}
+ #)
+
 
 
 # END OF TARGET
