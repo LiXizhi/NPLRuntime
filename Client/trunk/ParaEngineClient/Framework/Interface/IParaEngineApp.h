@@ -5,28 +5,18 @@
 // Date:	2010.2
 // Description:	API for ParaEngine App windows management interface 
 //-----------------------------------------------------------------------------
+
 #include <string>
-#include "baseinterface.h"
 #include <stdint.h>
+
+
+#include "baseinterface.h"
+
 
 namespace NPL{
 	class INPLRuntime;
 }
 
-#ifndef WIN32
-#ifndef WM_USER
-	#define WM_USER                         0x0400
-#endif
-#ifndef LRESULT
-	#define LRESULT     long*
-#endif
-#ifndef WPARAM
-	#define WPARAM     int*
-#endif
-#ifndef LPARAM
-	#define LPARAM     int*
-#endif
-#endif
 namespace ParaEngine
 {
 	struct CWinRawMsg;
@@ -112,20 +102,6 @@ namespace ParaEngine
 
 		/** init the application. no need to be called unless in a service where no rendering devices are created. */
 		virtual HRESULT Init(HWND pHWND = 0) = 0;
-
-		/** Frame move and render a frame during idle time (no messages are waiting). Call this function during CPU idle time. 
-		* internally it uses a timer to control frame rates, so it is safe to call this as often as one like. 
-		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
-		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called.
-		*/
-		virtual HRESULT Render3DEnvironment(bool bForceRender = false) = 0;
-
-
-
-		/** Send a RAW win32 message the application to be processed in the next main thread update interval. 
-		* This function can be called from any thread. It is also used by the windows procedure thread to dispatch messages to the main processing thread.
-		*/
-		virtual LRESULT SendMessageToApp( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
 
 		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
 		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
