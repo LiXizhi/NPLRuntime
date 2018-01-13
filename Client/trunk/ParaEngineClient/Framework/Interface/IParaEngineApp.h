@@ -135,17 +135,8 @@ namespace ParaEngine
 		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
 		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
 
-		/** get a message from the application message queue and remove it from the queue. This function is mostly 
-		used internally by the main thread. 
-		* @param pMsg: the receiving message
-		* @return true if one message is fetched. or false if there is no more messages in the queue. 
-		*/
-		virtual bool GetMessageFromApp(CWinRawMsg* pMsg) = 0;
 
-		/**
-		* handle a message in the main application thread. 
-		*/
-		virtual LRESULT MsgProcApp(HWND hWnd,  UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
 		virtual void    EnablePassiveRendering( bool bEnable ) = 0;
