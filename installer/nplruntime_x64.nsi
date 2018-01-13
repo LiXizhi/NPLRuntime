@@ -121,6 +121,7 @@ Section "" ;No components page, name is not important
 	File "..\ParaWorld\bin64\luasql.dll"
 	File "..\ParaWorld\bin64\sqlite.dll"
 	File "..\ParaWorld\bin64\PhysicsBT.dll"
+	File "..\npl_packages\main\script\ide\System\nplcmd\nplc.bat"
   
 	FileOpen $9 npl.bat w ;Opens a Empty File an fills it
 	FileWrite $9 "@echo off $\n"
