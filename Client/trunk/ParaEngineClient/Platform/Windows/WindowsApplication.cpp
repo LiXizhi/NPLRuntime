@@ -249,7 +249,7 @@ HRESULT CWindowsApplication::Create()
 
 
 	if (m_pRenderContext == NULL)
-		return DisplayErrorMsg(D3DAPPERR_NODIRECT3D, MSGERR_APPMUSTEXIT);
+		return E_FAIL;
 
 
 	// The focus window can be a specified to be a different window than the
@@ -267,7 +267,7 @@ HRESULT CWindowsApplication::Create()
 	{
 		delete m_pRenderContext;
 		m_pRenderContext = nullptr;
-		return DisplayErrorMsg(hr, MSGERR_APPMUSTEXIT);
+		return E_FAIL;
 	}
 
 
@@ -276,7 +276,7 @@ HRESULT CWindowsApplication::Create()
 	{
 		delete m_pRenderContext;
 		m_pRenderContext = nullptr;
-		return DisplayErrorMsg(hr, MSGERR_APPMUSTEXIT);
+		return E_FAIL;
 	}
 
 
@@ -331,7 +331,7 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 							return hr;
 						}
 					}
-					return DisplayErrorMsg(D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT);
+					return E_FAIL;
 				}
 			}
 			return hr;
@@ -647,14 +647,7 @@ void CWindowsApplication::Cleanup3DEnvironment()
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Name: DisplayErrorMsg()
-// Desc: Displays error messages in a message box
-//-----------------------------------------------------------------------------
-HRESULT CWindowsApplication::DisplayErrorMsg(HRESULT hr, DWORD dwType)
-{
-	return CD3DWindowUtil::DisplayErrorMsg(hr, dwType);
-}
+
 
 
 int CWindowsApplication::Run(HINSTANCE hInstance)
