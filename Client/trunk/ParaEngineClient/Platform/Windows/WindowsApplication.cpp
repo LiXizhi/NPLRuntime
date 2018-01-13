@@ -81,6 +81,7 @@
 #include <time.h>
 #include "ParaEngineAppBase.h"
 #include "WindowsRenderWindow.h"
+#include "D3D9RenderDevice.h"
 #include "D3D9RenderContext.h"
 
 #include "resource.h"
@@ -89,7 +90,7 @@
 #include "D3DWindowUtil.h"
 #include "FrameRateController.h"
 #include "MiscEntity.h"
-#include "D3D9RenderDevice.h"
+
 #include <functional>
 
 
@@ -173,8 +174,6 @@ CWindowsApplication::CWindowsApplication(const char* lpCmdLine)
 
 	SetAppState(PEAppState_None);
 
-	m_pd3dDevice = NULL;
-	m_pd3dSwapChain = NULL;
 	m_hWnd = NULL;
 	m_hWndFocus = NULL;
 	m_hMenu = NULL;
@@ -306,7 +305,7 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 	if (m_bDeviceLost)
 	{
 		// Test the cooperative level to see if it's okay to render
-		if (FAILED(hr = m_pd3dDevice->TestCooperativeLevel()))
+		if (FAILED(hr = m_pRenderDevice->TestCooperativeLevel()))
 		{
 			// If the device was lost, do not render until we get it back
 			if (D3DERR_DEVICELOST == hr)
@@ -443,7 +442,7 @@ HRESULT CWindowsApplication::PresentScene()
 	HRESULT hr;
 	// only present if render returns true.
 	PERF1("present");
-	hr = m_pd3dDevice->Present(NULL, NULL, NULL, NULL);
+	hr = m_pRenderDevice->Present(NULL, NULL, NULL, NULL);
 	if (D3DERR_DEVICELOST == hr)
 		m_bDeviceLost = true;
 	return hr;
@@ -487,10 +486,6 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 		return E_FAIL;
 	}
 
-	m_pd3dDevice = static_cast<CD3D9RenderDevice*>(m_pRenderDevice)->GetDirect3DDevice9();
-
-
-	m_pRenderDevice = new CD3D9RenderDevice(m_pd3dDevice);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 
@@ -634,7 +629,7 @@ bool CWindowsApplication::IsPaused()
 //-----------------------------------------------------------------------------
 void CWindowsApplication::Cleanup3DEnvironment()
 {
-	if (m_pd3dDevice != NULL)
+	if (m_pRenderDevice != NULL)
 	{
 		if (m_bDeviceObjectsRestored)
 		{
@@ -647,12 +642,8 @@ void CWindowsApplication::Cleanup3DEnvironment()
 			DeleteDeviceObjects();
 		}
 
-		long nRefCount = 0;
-		if ((nRefCount = m_pd3dDevice->Release()) > 0) {
-			OUTPUT_LOG("\n\nerror: reference count of d3ddevice is non-zero %d when exit\n\n", nRefCount);
-		}
-
-		m_pd3dDevice = NULL;
+		delete m_pRenderDevice;
+		m_pRenderDevice = nullptr;
 	}
 }
 
@@ -1193,11 +1184,10 @@ HRESULT CWindowsApplication::OneTimeSceneInit()
 //-----------------------------------------------------------------------------
 HRESULT CWindowsApplication::InitDeviceObjects()
 {
-	LPDIRECT3DDEVICE9 pd3dDevice = m_pd3dDevice;
 	HRESULT hr = S_OK;
 
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), pd3dDevice, NULL);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), static_cast<CD3D9RenderDevice*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
 
 	// print stats when device is initialized.
 	string stats;
