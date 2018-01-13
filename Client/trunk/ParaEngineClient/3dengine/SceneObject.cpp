@@ -3211,7 +3211,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 #endif
 		// run the occlusion test pass, if there are more than 8 small objects to render. 
 		// PerformOcclusionTest(sceneState.listPRBiped, sceneState, 8);
-		int nStartCharCount = CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER);
+		int nStartCharCount = 0;
 
 		CGlobals::GetEffectManager()->BeginEffect(TECH_CHARACTER, &(sceneState.m_pCurrentEffect));
 
@@ -3223,7 +3223,7 @@ int CSceneObject::RenderCharacters(SceneState& sceneState, SceneState::List_Post
 			{
 				if (item.m_pRenderObject == pPlayer && !CanShowMainPlayer())
 					continue;
-				if (CGlobals::GetRenderDevice()->GetPerfCount(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER) < (nStartCharCount + GetMaxCharTriangles()))
+				if (0 < (nStartCharCount + GetMaxCharTriangles()))
 				{
 					sceneState.SetCameraToCurObjectDistance(item.m_fObjectToCameraDistance);
 					item.m_pRenderObject->Draw(&sceneState);

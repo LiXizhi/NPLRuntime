@@ -79,9 +79,10 @@
 #include "OSWindows.h"
 #include <time.h>
 #include "ParaEngineAppBase.h"
-#include "WindowsRenderWindow.h"
+#include "Render/WindowsRenderWindow.h"
+#include "Render/D3D9RenderContext.h"
 #include "Render/D3D9/D3D9RenderDevice.h"
-#include "Render/D3D9/D3D9RenderContext.h"
+
 
 #include "resource.h"
 #include "2dengine/GUIRoot.h"
@@ -1544,7 +1545,6 @@ HRESULT CWindowsApplication::Render()
 	}
 	if (m_bServerMode)
 		return E_FAIL;
-	CGlobals::GetRenderDevice()->ClearAllPerfCount();
 
 	CMoviePlatform* pMoviePlatform = CGlobals::GetMoviePlatform();
 	pMoviePlatform->BeginCaptureFrame();

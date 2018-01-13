@@ -14,8 +14,6 @@ namespace ParaEngine
 		LPDIRECT3DDEVICE9 GetDirect3DDevice9() const;
 	
 
-		virtual HRESULT RendererRecreated() override;
-
 
 		virtual HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) override;
 
@@ -143,16 +141,12 @@ namespace ParaEngine
 		virtual HRESULT GetTransform(D3DTRANSFORMSTATETYPE State, D3DMATRIX* pMatrix) override;
 
 
-		virtual int GetPerfCount(RenderDeviceBase::StatisticsType nStatisticsType) override;
 
 
 		virtual HRESULT SetStreamSourceFreq(UINT StreamNumber, UINT Setting) override;
 
 
 		virtual HRESULT SetLight(DWORD Index, CONST D3DLIGHT9* pLight) override;
-
-
-		virtual void ClearAllPerfCount() override;
 
 
 		virtual HRESULT GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface) override;

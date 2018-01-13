@@ -23,8 +23,6 @@
 #include "CommandLineParams.h"
 
 #include "WindowsApplication.h"
-#include "WindowsRenderWindow.h"
-
 
 using namespace ParaEngine;
 

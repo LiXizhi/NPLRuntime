@@ -1,10 +1,12 @@
 #pragma once
+
+#include <memory>
+
 #include "VertexDeclaration.h"
 #include "RenderCore.h"
 #include "d3d9.h"
 #include "PEtypes.h"
-#include "RenderDevice.h"
-#include <memory>
+//#include "RenderDevice.h"
 #include "RenderCommon.h"
 namespace ParaEngine
 {
@@ -13,8 +15,6 @@ namespace ParaEngine
 	public:
 		IRenderDevice() = default;
 		virtual ~IRenderDevice() = default;
-
-		virtual HRESULT RendererRecreated() = 0;
 
 		virtual HRESULT GetRenderState(D3DRENDERSTATETYPE State, DWORD* pValue) = 0;
 		virtual HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value) = 0;
@@ -88,12 +88,8 @@ namespace ParaEngine
 
 		virtual HRESULT GetTransform(D3DTRANSFORMSTATETYPE State, D3DMATRIX* pMatrix) = 0;
 
-		virtual int GetPerfCount(RenderDeviceBase::StatisticsType nStatisticsType) = 0;
-
 		virtual HRESULT SetStreamSourceFreq(UINT StreamNumber, UINT Setting) = 0;
 		virtual HRESULT SetLight(DWORD Index, CONST D3DLIGHT9* pLight) = 0;
-
-		virtual void ClearAllPerfCount() = 0;
 
 		virtual HRESULT GetRenderTargetData(IDirect3DSurface9* pRenderTarget, IDirect3DSurface9* pDestSurface) = 0;
 
