@@ -140,8 +140,6 @@ namespace ParaEngine
 		virtual void SetAllowWindowClosing(bool bAllowClosing) = 0;
 		virtual bool IsWindowClosingAllowed() = 0;
 
-		/** turn on/off menu */
-		virtual void ShowMenu(bool bShow) = 0;
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetResolution(float* pX, float* pY) = 0;
@@ -150,13 +148,6 @@ namespace ParaEngine
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
 		virtual int GetMultiSampleType() = 0;
 		virtual void SetMultiSampleType(int nType) = 0;
-
-		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
-		virtual int GetMultiSampleQuality() = 0;
-		virtual void SetMultiSampleQuality(int nType) = 0;
-
-		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
-		virtual bool UpdateScreenMode() = 0;
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */
