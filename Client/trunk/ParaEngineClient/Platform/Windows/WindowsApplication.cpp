@@ -666,8 +666,8 @@ int CWindowsApplication::Run(HINSTANCE hInstance)
 		m_hWnd = m_pRenderWindow->GetHandle();
 		auto msgCallback = std::bind(&CWindowsApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 		m_pRenderWindow->SetMessageCallBack(msgCallback);
-		CGlobals::GetApp()->SetMainWindow(m_hWnd, false);
-		CGlobals::GetApp()->Create();
+		SetMainWindow(m_hWnd, false);
+		Create();
 
 		while (!m_pRenderWindow->ShouldClose())
 		{
