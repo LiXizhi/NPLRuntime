@@ -332,7 +332,7 @@ namespace ParaEngine
 				IDirect3DVertexBuffer9* pCurVB = NULL;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = D3DCULL_CCW;
+				D3DCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
 
 				if(pCurRenderQueue->size() > 0)
@@ -383,27 +383,27 @@ namespace ParaEngine
 							// culling mode
 							if(pTempate->GetBlockModel().IsDisableFaceCulling())
 							{
-								if(culling != D3DCULL_NONE)
+								if(culling != RSV_CULL_NONE)
 								{
-									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
-									culling = D3DCULL_NONE;
+									pRenderDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
+									culling = RSV_CULL_NONE;
 								}
 							}
 							else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 								&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 							{
-								if(culling != D3DCULL_CW)
+								if(culling != RSV_CULL_CW)
 								{
-									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
-									culling = D3DCULL_CW;
+									pRenderDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
+									culling = RSV_CULL_CW;
 								}
 							}
 							else
 							{
-								if(culling != D3DCULL_CCW)
+								if(culling != RSV_CULL_CCW)
 								{
-									pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
-									culling = D3DCULL_CCW;
+									pRenderDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
+									culling = RSV_CULL_CCW;
 								}
 							}
 						}
@@ -428,7 +428,7 @@ namespace ParaEngine
 				if(curPass > -1)
 					pEffect->EndPass();
 
-				pRenderDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+				pRenderDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 			}
 			// turn blending on again
 			pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
@@ -542,7 +542,7 @@ namespace ParaEngine
 				IDirect3DVertexBuffer9* pCurVB = NULL;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = D3DCULL_CCW;
+				D3DCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
 				IDirect3DTexture9* pCurTex1 = NULL;
 				IDirect3DTexture9* pCurTex2 = NULL;
@@ -622,27 +622,27 @@ namespace ParaEngine
 						// culling mode 
 						if(pTempate->GetBlockModel().IsDisableFaceCulling())
 						{
-							if(culling != D3DCULL_NONE)
+							if(culling != RSV_CULL_NONE)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
-								culling = D3DCULL_NONE;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
+								culling = RSV_CULL_NONE;
 							}
 						}
 						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 							&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 						{
-							if(culling != D3DCULL_CW)
+							if(culling != RSV_CULL_CW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
-								culling = D3DCULL_CW;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
+								culling = RSV_CULL_CW;
 							}
 						}
 						else
 						{
-							if(culling != D3DCULL_CCW)
+							if(culling != RSV_CULL_CCW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
-								culling = D3DCULL_CCW;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
+								culling = RSV_CULL_CCW;
 							}
 						}
 					}
@@ -662,7 +662,7 @@ namespace ParaEngine
 						pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 				}
 				
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 				pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
 				pDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 #endif
@@ -711,7 +711,7 @@ namespace ParaEngine
 				VertexBufferDevicePtr_type pCurVB = 0;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = D3DCULL_CCW;
+				D3DCULL culling = RSV_CULL_CCW;
 				DeviceTexturePtr_type pCurTex0 = 0;
 				DeviceTexturePtr_type pCurTex1 = 0;
 				DeviceTexturePtr_type pCurTex2 = 0;
@@ -813,27 +813,27 @@ namespace ParaEngine
 						// culling mode
 						if(pTempate->GetBlockModel().IsDisableFaceCulling())
 						{
-							if(culling != D3DCULL_NONE)
+							if(culling != RSV_CULL_NONE)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
-								culling = D3DCULL_NONE;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
+								culling = RSV_CULL_NONE;
 							}
 						}
 						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
 							&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
 						{
-							if(culling != D3DCULL_CW)
+							if(culling != RSV_CULL_CW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
-								culling = D3DCULL_CW;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
+								culling = RSV_CULL_CW;
 							}
 						}
 						else
 						{
-							if(culling != D3DCULL_CCW)
+							if(culling != RSV_CULL_CCW)
 							{
-								pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
-								culling = D3DCULL_CCW;
+								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
+								culling = RSV_CULL_CCW;
 							}
 						}
 					}
@@ -882,7 +882,7 @@ namespace ParaEngine
 				if(curPass > -1)
 					pEffect->EndPass();
 				
-				pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -1066,11 +1066,11 @@ namespace ParaEngine
 		// culling mode 
 		if(selectedBlocks.m_bOnlyRenderClickableArea)
 		{
-			pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_NONE);
+			pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
 		}
 		else
 		{
-			pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+			pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 		}
 
 		if ( pEffect == 0)
@@ -1230,7 +1230,7 @@ namespace ParaEngine
 			}
 			pEffect->end();
 		}
-		pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+		pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 
 	}
 

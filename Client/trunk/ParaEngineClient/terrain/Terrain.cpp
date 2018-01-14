@@ -1978,7 +1978,7 @@ void Terrain::RenderGeoMipmap()
 
 	//The order of triangle index is different from the order of vertex,
 	//so we have to change cull mode here -.-        --clayman 2012.2.21
-	CGlobals::GetRenderDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+	CGlobals::GetRenderDevice()->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CW);
 
 	CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 
@@ -1991,7 +1991,7 @@ void Terrain::RenderGeoMipmap()
 		
 		pD3dDevice->SetStreamSource(0,NULL,0,0);
 		pD3dDevice->SetIndices(NULL);
-		CGlobals::GetRenderDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
 		return;
 		/*
@@ -2432,7 +2432,7 @@ void Terrain::RenderGeoMipmap()
 			}
 		}
 	}
-	CGlobals::GetRenderDevice()->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+	CGlobals::GetRenderDevice()->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 #endif
 }
 

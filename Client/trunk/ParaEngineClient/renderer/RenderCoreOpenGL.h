@@ -65,9 +65,9 @@ namespace ParaEngine
 	} D3DLIGHTTYPE;
 
 	typedef enum _D3DCULL {
-		D3DCULL_NONE = 1,
-		D3DCULL_CW = 2,
-		D3DCULL_CCW = 3,
+		RSV_CULL_NONE = 1,
+		RSV_CULL_CW = 2,
+		RSV_CULL_CCW = 3,
 		D3DCULL_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
 	} D3DCULL;
 
@@ -363,7 +363,7 @@ namespace ParaEngine
 		D3DRS_LASTPIXEL = 16,   /* TRUE for last-pixel on lines */
 		D3DRS_SRCBLEND = 19,   /* D3DBLEND */
 		D3DRS_DESTBLEND = 20,   /* D3DBLEND */
-		D3DRS_CULLMODE = 22,   /* D3DCULL */
+		ERenderState::CULLMODE = 22,   /* D3DCULL */
 		D3DRS_ZFUNC = 23,   /* D3DCMPFUNC */
 		D3DRS_ALPHAREF = 24,   /* D3DFIXED */
 		D3DRS_ALPHAFUNC = 25,   /* D3DCMPFUNC */

@@ -154,7 +154,7 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 
 	pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
 
-	pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
 	pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 	pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);

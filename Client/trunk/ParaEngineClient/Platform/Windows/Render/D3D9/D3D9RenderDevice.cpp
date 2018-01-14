@@ -291,8 +291,9 @@ uint32_t ParaEngine::CD3D9RenderDevice::GetRenderState(const ERenderState& State
 	return 0;
 }
 
-void ParaEngine::CD3D9RenderDevice::SetRenderState(ERenderState State, uint32_t Value)
+bool ParaEngine::CD3D9RenderDevice::SetRenderState(const ERenderState State, const uint32_t Value)
 {
 	auto rs = toD3DRenderState(State);
-	m_pD3DDevice->SetRenderState(rs, Value);
+	HRESULT hr = m_pD3DDevice->SetRenderState(rs, Value);
+	return hr == D3D_OK;
 }

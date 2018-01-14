@@ -391,7 +391,7 @@ HRESULT CD3DFont::RestoreDeviceObjects()
         m_pd3dDevice->SetRenderState( D3DRS_ALPHAREF,         0x08 );
         m_pd3dDevice->SetRenderState( D3DRS_ALPHAFUNC,  D3DCMP_GREATEREQUAL );
         m_pd3dDevice->SetRenderState( D3DRS_FILLMODE,   D3DFILL_SOLID );
-        m_pd3dDevice->SetRenderState( D3DRS_CULLMODE,   D3DCULL_CCW );
+        m_pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CCW );
         m_pd3dDevice->SetRenderState( D3DRS_STENCILENABLE,    FALSE );
         m_pd3dDevice->SetRenderState( D3DRS_CLIPPING,         TRUE );
         m_pd3dDevice->SetRenderState( D3DRS_CLIPPLANEENABLE,  FALSE );
@@ -813,7 +813,7 @@ HRESULT CD3DFont::Render3DText( const TCHAR* strText, DWORD dwFlags )
 
     // Turn off culling for two-sided text
     if( dwFlags & D3DFONT_TWOSIDED )
-        m_pd3dDevice->SetRenderState( D3DRS_CULLMODE, D3DCULL_NONE );
+        m_pd3dDevice->SetRenderState( ERenderState::CULLMODE, RSV_CULL_NONE );
 
     // Adjust for character spacing
     x -= m_dwSpacing / 10.0f;

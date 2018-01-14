@@ -201,7 +201,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	}
 	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 #elif defined(USE_DIRECTX_RENDERER)
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
@@ -219,7 +219,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
 	}
 #ifdef USE_OPENGL_RENDERER
-	pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 	pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
 	pEffect->EndPass();
 	pEffect->end();
@@ -271,7 +271,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 
 		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		pd3dDevice->SetFVF(LINEVERTEX::FVF);
-		pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
 		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
 
@@ -384,7 +384,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
 				8 * NumLinesThisBatch, (LINEVERTEX*)(&s_VertexData[0]), sizeof(LINEVERTEX));
 		}
-		pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
 	}

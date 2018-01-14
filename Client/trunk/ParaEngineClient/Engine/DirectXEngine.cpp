@@ -416,7 +416,7 @@ bool CDirectXEngine::Begin2D()
 	}
 	m_pd3dDevice->SetRenderState( D3DRS_ZENABLE, FALSE);
 	m_pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE);
-	m_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+	m_pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 	m_pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 	m_pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 

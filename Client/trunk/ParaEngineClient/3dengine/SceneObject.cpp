@@ -2788,7 +2788,7 @@ void CSceneObject::RenderShadows()
 									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
 									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILPASS, D3DSTENCILOP_DECR );
 
-									pd3dDevice->SetRenderState( D3DRS_CULLMODE,  D3DCULL_NONE );
+									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_NONE );
 
 									// Draw both sides of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
@@ -2798,7 +2798,7 @@ void CSceneObject::RenderShadows()
 								else
 								{
 									// render front faces on z pass
-									pd3dDevice->SetRenderState( D3DRS_CULLMODE,  D3DCULL_CCW );
+									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
 									pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
 									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
 									pd3dDevice->SetRenderState( D3DRS_STENCILPASS,      D3DSTENCILOP_INCR );
@@ -2807,7 +2807,7 @@ void CSceneObject::RenderShadows()
 									pShadowVolume->Render( &sceneState );
 
 									// Now reverse cull order so back sides of shadow volume are written.
-									pd3dDevice->SetRenderState( D3DRS_CULLMODE,   D3DCULL_CW );
+									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CW );
 									pd3dDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_DECR );
 
 									// Draw back-side of shadow volume in stencil/z only
@@ -2819,7 +2819,7 @@ void CSceneObject::RenderShadows()
 								/// Z-Fail
 								{
 									// render front faces on z pass
-									pd3dDevice->SetRenderState( D3DRS_CULLMODE,  D3DCULL_CW );
+									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CW );
 									pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
 									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_INCR );
 									pd3dDevice->SetRenderState( D3DRS_STENCILPASS,  D3DSTENCILOP_KEEP);
@@ -2828,7 +2828,7 @@ void CSceneObject::RenderShadows()
 									pShadowVolume->Render( &sceneState );
 
 									// Now reverse cull order so back sides of shadow volume are written.
-									pd3dDevice->SetRenderState( D3DRS_CULLMODE,   D3DCULL_CCW );
+									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CCW );
 									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_DECR );
 
 									// Draw back-side of shadow volume in stencil/z only
@@ -2851,7 +2851,7 @@ void CSceneObject::RenderShadows()
 			pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
 			pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
 			//pd3dDevice->SetRenderState( D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
-			pd3dDevice->SetRenderState( D3DRS_CULLMODE,  D3DCULL_CCW );
+			pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
 
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );

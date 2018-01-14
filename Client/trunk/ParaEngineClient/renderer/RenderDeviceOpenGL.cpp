@@ -52,7 +52,7 @@ namespace ParaEngine
 	static bool		s_bEnableSeparateAlphaBlending = false;
 	static bool		s_bAlphaBlendingChanged = true;
 	static bool		s_bEnableBlending = true;
-	static DWORD    s_currentCullingMode = D3DCULL_NONE;
+	static DWORD    s_currentCullingMode = RSV_CULL_NONE;
 	static DWORD	s_sampler_states[MAX_SAMPLER_COUNT][MAX_SAMPLER_STATES_COUNT] = {};
 	static DWORD	s_stencil_ref_value = 0;
 	static DWORD	s_stencil_pass = 0;
@@ -354,7 +354,7 @@ HRESULT ParaEngine::RenderDevice::RendererRecreated()
 	s_currentIndexBuffer = 0;
 	s_blendingSource = GL_SRC_ALPHA;
 	s_blendingDest = GL_ONE_MINUS_SRC_ALPHA;
-	s_currentCullingMode = D3DCULL_NONE;
+	s_currentCullingMode = RSV_CULL_NONE;
 	s_blendingAlphaSource = GL_SRC_ALPHA;
 	s_blendingAlphaDest = GL_ONE_MINUS_SRC_ALPHA;
 	s_bAlphaBlendingChanged = true;
@@ -475,20 +475,20 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 {
 	switch (State)
 	{
-	case D3DRS_CULLMODE:
+	case ERenderState::CULLMODE:
 	{
 		if (s_currentCullingMode != Value)
 		{
 			s_currentCullingMode = Value;
-			if (Value == D3DCULL_CCW){
+			if (Value == RSV_CULL_CCW){
 				glEnable(GL_CULL_FACE);
 				glFrontFace(GL_CW);//glCullFace(GL_FRONT);
 			}
-			else if (Value == D3DCULL_CW){
+			else if (Value == RSV_CULL_CW){
 				glEnable(GL_CULL_FACE);
 				glFrontFace(GL_CCW);//glCullFace(GL_BACK);
 			}
-			else if (Value == D3DCULL_NONE){
+			else if (Value == RSV_CULL_NONE){
 				glDisable(GL_CULL_FACE);
 			}
 			PE_CHECK_GL_ERROR_DEBUG();

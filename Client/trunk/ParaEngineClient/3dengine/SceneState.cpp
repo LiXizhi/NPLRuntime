@@ -97,7 +97,7 @@ namespace ParaEngine
 		bIsBatchRender = false;
 		m_bEnableTranslucentFaceSorting = false;
 		fAlphaFactor = 1.0f;
-		m_dwD3D_CULLMODE = D3DCULL_CCW;
+		m_dwD3D_CULLMODE = RSV_CULL_CCW;
 		m_pCurrentEffect = NULL;
 		m_bSkipOcean = false;
 		m_bSkipTerrain = false;
