@@ -295,7 +295,6 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 						texMat = texMat * tmp;
 
-						pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
 						pd3dDevice->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
 					}
 					pd3dDevice->SetTexture( 0, pTexture);
@@ -353,14 +352,6 @@ void ParaEngine::CSortedFaceGroups::Render()
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
-		//if(!bHasLighting)
-			//CGlobals::GetEffectManager()->EnableSunLight(true);
-		if(vLastUVOffset != Vector2::ZERO || vLastUVRotate != Vector3::ZERO || vLastUVScale != Vector2::ZERO)
-		{
-			// disable texture transformation in fixed function.
-			pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
-		}
-		// pd3dDevice->SetRenderState( ERenderState::FOGENABLE, CGlobals::GetScene()->IsFogEnabled());
 #endif
 	}
 	else

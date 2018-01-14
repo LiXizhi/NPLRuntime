@@ -1215,10 +1215,6 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 		pRenderDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
-		// set multi-texture stage:
-		pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
-		pRenderDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_MODULATE   );		// modulate operation
-		pRenderDevice->SetTextureStageState( 1, D3DTSS_ALPHAOP,   D3DTOP_MODULATE );
 		// set vertex sources
 		if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 		{
@@ -1244,8 +1240,6 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		
 		//CGlobals::GetOceanManager()->SetRenderTechnique(COceanManager::OCEAN_TECH_QUAD);
 		// render ocean as a quad
-		pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-		pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
 		SetCullingMode(false);
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
@@ -1267,8 +1261,6 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 			pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
 			pRenderDevice->SetTexture(0, NULL);
-			pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
-			pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
 
 			pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE); m_bZEnable = false;
 			pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,     FALSE );
@@ -2387,7 +2379,6 @@ void EffectManager::EndEffect()
 					pd3dDevice->SetTexture( i, NULL );
 				}
 			
-				pd3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
 				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 				pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
@@ -2438,7 +2429,6 @@ void EffectManager::EndEffect()
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE); m_bZEnable = true;
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        GetScene()->IsFogEnabled() );
-			pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
 			break;
 		case TECH_CHARACTER:
 			if(GetScene()->IsLightEnabled()){

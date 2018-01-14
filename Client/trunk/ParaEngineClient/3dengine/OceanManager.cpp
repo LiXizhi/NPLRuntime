@@ -2075,8 +2075,6 @@ namespace ParaEngine
 			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
 			pd3dDevice->SetTexture(0, pWhiteTexture->GetTexture());
 
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
 			pd3dDevice->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
@@ -2115,7 +2113,6 @@ namespace ParaEngine
 			
 			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
 
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			painter->end();
 		}
 	}

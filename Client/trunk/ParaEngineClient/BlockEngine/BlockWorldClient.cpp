@@ -547,8 +547,6 @@ namespace ParaEngine
 				IDirect3DTexture9* pCurTex1 = NULL;
 				IDirect3DTexture9* pCurTex2 = NULL;
 
-				pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
-				pDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_DIFFUSE | D3DTA_ALPHAREPLICATE );
 				
 				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
 				{
@@ -663,8 +661,6 @@ namespace ParaEngine
 				}
 				
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-				pDevice->SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
-				pDevice->SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 #endif
 			}
 			else if(pEffect != 0 && pEffect->begin(false))
@@ -1090,8 +1086,6 @@ namespace ParaEngine
 			uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
 			uint8 lightScaler = (bColorAnimate) ?  (uint8)(abs(sin(time*0.0015f)) * 0.4f * 255) : 0xff;
 			DWORD lightIntensity = COLOR_ARGB(255, lightScaler, lightScaler, lightScaler);
-			pDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_CONSTANT);
-			pDevice->SetTextureStageState( 0, D3DTSS_CONSTANT, lightIntensity);
 
 			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 			vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
@@ -1142,7 +1136,6 @@ namespace ParaEngine
 			pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
 			pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 
-			pDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_CURRENT);
 #endif
 		}
 		else if(pEffect != 0 && pEffect->begin(false))

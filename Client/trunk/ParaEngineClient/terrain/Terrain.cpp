@@ -1685,7 +1685,6 @@ void Terrain::Render()
 				{
 					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 
 					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
 					{
@@ -1698,7 +1697,6 @@ void Terrain::Render()
 					// restore states
 					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_MODULATE   );
 				}
 			}
 		}//for( itCurCP = 
