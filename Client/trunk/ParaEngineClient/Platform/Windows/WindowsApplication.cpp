@@ -1219,23 +1219,23 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(nBkbufHeight);
 
 	/// these render state is preferred.
-	pRenderDevice->SetRenderState(D3DRS_DITHERENABLE, TRUE);
-	pRenderDevice->SetRenderState(D3DRS_LIGHTING, FALSE);		// disable lighting
-															//pd3dDevice->SetRenderState( D3DRS_AMBIENT, 0x33333333 /*COLOR_ARGB( 255, 255, 255, 255 )*/ );
-	pRenderDevice->SetRenderState(D3DRS_AMBIENT, COLOR_ARGB(255, 255, 255, 255));
+	pRenderDevice->SetRenderState(ERenderState::DITHERENABLE, TRUE);
+	pRenderDevice->SetRenderState(ERenderState::LIGHTING, FALSE);		// disable lighting
+															//pd3dDevice->SetRenderState( ERenderState::AMBIENT, 0x33333333 /*COLOR_ARGB( 255, 255, 255, 255 )*/ );
+	pRenderDevice->SetRenderState(ERenderState::AMBIENT, COLOR_ARGB(255, 255, 255, 255));
 
-	pRenderDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-	pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+	pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+	pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 
 	/// these render state is just for point occlusion testing.
 	/// See also CBaseObject::DrawOcclusionObject()
 	//#define POINT_OCCLUSION_OBJECT
 #ifdef POINT_OCCLUSION_OBJECT
 	float PointSize = 1.f;
-	pRenderDevice->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&PointSize));
-	pRenderDevice->SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&PointSize));
-	pRenderDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
-	pRenderDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(ERenderState::POINTSIZE, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(ERenderState::POINTSIZE_MIN, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
 #endif
 
 	/* default state */
@@ -1567,7 +1567,7 @@ HRESULT CWindowsApplication::Render()
 		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
 
 		/// force using less equal
-		pRenderDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{

@@ -612,14 +612,14 @@ bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass
 
 	if (pSceneState->GetRenderState() == RenderState_Overlay_ZPass)
 	{
-		pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pD3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_GREATER);
-		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		pD3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pD3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_GREATER);
+		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 	else
 	{
-		pD3dDevice->SetRenderState(D3DRS_ZENABLE, bZEnablePass ? TRUE : FALSE);
-		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		pD3dDevice->SetRenderState(ERenderState::ZENABLE, bZEnablePass ? TRUE : FALSE);
+		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 	
 	if (b3DTextPass)
@@ -641,12 +641,12 @@ void ParaEngine::IHeadOn3D::EndPaint(SceneState* pSceneState, bool b3DTextPass)
 	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
 	if (pSceneState->GetRenderState() == RenderState_Overlay_ZPass)
 	{
-		pD3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		pD3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 	}
 	else
 	{
-		pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		pD3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 
 	if (b3DTextPass)

@@ -100,7 +100,7 @@ namespace ParaEngine
 				
 
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
-				pDevice->SetRenderState(D3DRS_ZENABLE,false);
+				pDevice->SetRenderState(ERenderState::ZENABLE,false);
 
 				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3],900000.0f);
 				pDevice->SetVertexShaderConstantF(0,m_waveParam,1);
@@ -108,7 +108,7 @@ namespace ParaEngine
 				pDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
 			
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-				pDevice->SetRenderState(D3DRS_ZENABLE,true);
+				pDevice->SetRenderState(ERenderState::ZENABLE,true);
 				//clean up
 				pBackBuffer->Release();
 				pDevice->SetTexture(1,NULL);

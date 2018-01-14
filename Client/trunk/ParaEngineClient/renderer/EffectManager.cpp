@@ -611,16 +611,16 @@ bool EffectManager::SetD3DFogState()
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	IScene * pScene = GetScene();
-	pRenderDevice->SetRenderState( D3DRS_FOGENABLE,      pScene->IsFogEnabled());
+	pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      pScene->IsFogEnabled());
 	if(pScene->IsFogEnabled())
 	{
 		LinearColor color = pScene->GetFogColor();
-		pRenderDevice->SetRenderState( D3DRS_FOGCOLOR,       color);
-		pRenderDevice->SetRenderState( D3DRS_FOGTABLEMODE,   D3DFOG_NONE );
-		pRenderDevice->SetRenderState( D3DRS_FOGVERTEXMODE,  D3DFOG_LINEAR );
-		pRenderDevice->SetRenderState( D3DRS_RANGEFOGENABLE, FALSE );
-		pRenderDevice->SetRenderState( D3DRS_FOGSTART,       FtoDW(pScene->GetFogStart()) );
-		pRenderDevice->SetRenderState( D3DRS_FOGEND,         FtoDW(pScene->GetFogEnd()) );
+		pRenderDevice->SetRenderState(ERenderState::FOGCOLOR,       color);
+		pRenderDevice->SetRenderState(ERenderState::FOGTABLEMODE,   D3DFOG_NONE );
+		pRenderDevice->SetRenderState(ERenderState::FOGVERTEXMODE,  D3DFOG_LINEAR );
+		pRenderDevice->SetRenderState(ERenderState::RANGEFOGENABLE, FALSE );
+		pRenderDevice->SetRenderState(ERenderState::FOGSTART,       FtoDW(pScene->GetFogStart()) );
+		pRenderDevice->SetRenderState(ERenderState::FOGEND,         FtoDW(pScene->GetFogEnd()) );
 	}
 #endif
 	return true;
@@ -1168,10 +1168,10 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	{
 	case TECH_OCCLUSION_TEST:
 		EnableLocalLighting(false);
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
-		pRenderDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-		pRenderDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_ZERO );
-		pRenderDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_ONE );
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_ZERO );
+		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_ONE );
 		pRenderDevice->SetTexture(0,NULL);
 		pRenderDevice->SetFVF(OCCLUSION_VERTEX::FVF);
 		pRenderDevice->SetTransform( D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
@@ -1197,15 +1197,15 @@ bool EffectManager::BeginEffectFF(int nHandle)
 
 		// set states
 		SetCullingMode(true);
-		pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		// 2009.10.13: I will use D3DBLEND_INVSRCALPHA instead of D3DBLEND_ONE. This makes fixed function looks almost identical to shader version.
-		// pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-		pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		// pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 		// it should not be Less function. Because we have multi-texturing
-		pRenderDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		// clamping should be enabled for base texture and alpha texture, which are in texture stage 0.
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP );
@@ -1223,13 +1223,13 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 		{
 			pRenderDevice->SetFVF(terrain_vertex::FVF);
-			pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+			pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 
 		}
 		else
 		{
 			pRenderDevice->SetFVF(terrain_vertex_normal::FVF);
-			pRenderDevice->SetRenderState( D3DRS_LIGHTING, bEnableLight );
+			pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 			ParaMaterial matTerrain = CGlobals::GetSceneState()->GetGlobalMaterial();
 			// matTerrain.Ambient = LinearColor(0.6f,0.6f,0.6f,1.f );
 			matTerrain.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
@@ -1239,7 +1239,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_OCEAN_SIMPLE:
 	case TECH_OCEAN_CLOUD:
 	case TECH_OCEAN:
-		pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 		EnableLocalLighting(false);
 		
 		//CGlobals::GetOceanManager()->SetRenderTechnique(COceanManager::OCEAN_TECH_QUAD);
@@ -1247,14 +1247,14 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
 		pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
 		SetCullingMode(false);
-		pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pRenderDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE,          FALSE );
-		pRenderDevice->SetRenderState( D3DRS_FOGENABLE,        FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,          FALSE );
+		pRenderDevice->SetRenderState( ERenderState::FOGENABLE,        FALSE );
 
 		pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		pRenderDevice->SetFVF(SPRITEVERTEX::FVF);
@@ -1264,18 +1264,18 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_OCEAN_UNDERWATER:
 		{
 			EnableLocalLighting(false);
-			pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
-			pRenderDevice->SetRenderState( D3DRS_FOGENABLE,      FALSE);
+			pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
+			pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
 			pRenderDevice->SetTexture(0, NULL);
 			pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
 			pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
 
-			pRenderDevice->SetRenderState(D3DRS_ZENABLE, FALSE); m_bZEnable = false;
-			pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE,     FALSE );
-			pRenderDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-			pRenderDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pRenderDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-			pRenderDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+			pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE); m_bZEnable = false;
+			pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,     FALSE );
+			pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+			pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+			pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 			// Draw a big square
 			pRenderDevice->SetFVF( UNDERWATER_VERTEX::FVF );
@@ -1283,7 +1283,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		}
 	case TECH_CHARACTER:
 		EnableLocalLighting(bEnableLight);
-		pRenderDevice->SetRenderState( D3DRS_LIGHTING, bEnableLight );
+		pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 		if(bEnableLight)
 		{
 			ParaMaterial mat = CGlobals::GetSceneState()->GetGlobalMaterial();
@@ -1291,11 +1291,11 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
 			pRenderDevice->SetMaterial((D3DMATERIAL9*)&mat);
 		}
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-		pRenderDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)0x0000000BE); // should be 0.3
-		pRenderDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::ALPHAREF, (DWORD)0x0000000BE); // should be 0.3
+		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 		SetCullingMode(true);
@@ -1305,23 +1305,23 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		break;
 	case TECH_PARTICLES:
 		EnableLocalLighting(false);
-		pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 		SetCullingMode(false);
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 		pRenderDevice->SetFVF(SPRITEVERTEX::FVF);
 		break;
 	case TECH_GUI:
 		EnableLocalLighting(false);
-		pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
-		pRenderDevice->SetRenderState( D3DRS_FOGENABLE,      FALSE);
+		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
 		pRenderDevice->SetTexture(0, NULL);
 		
-		pRenderDevice->SetRenderState(D3DRS_ZENABLE, FALSE); m_bZEnable = false;
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE,     FALSE );
-		pRenderDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-		pRenderDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pRenderDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-		pRenderDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE); m_bZEnable = false;
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,     FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 		pRenderDevice->SetFVF( DXUT_SCREEN_VERTEX::FVF );
 		break;
@@ -1332,10 +1332,10 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		return false;
 		break;
 	case TECH_BMAX_MODEL:
-		pRenderDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pRenderDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::LIGHTING, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		pRenderDevice->SetFVF(bmax_vertex::FVF);
 		SetCullingMode(true);
 		break;
@@ -1349,21 +1349,21 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
 			pRenderDevice->SetMaterial((D3DMATERIAL9*)&mat);
 		}
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pRenderDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
-		pRenderDevice->SetRenderState( D3DRS_FOGENABLE, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::FOGENABLE, FALSE);
 
-		pRenderDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE);
-		pRenderDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-		pRenderDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
 		pRenderDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_POINT );
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT );
 
-		pRenderDevice->SetRenderState( D3DRS_ALPHAREF, 0);
-		pRenderDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+		pRenderDevice->SetRenderState( ERenderState::ALPHAREF, 0);
+		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
 
 		pRenderDevice->SetFVF( mesh_vertex_normal_color::FVF );
 		SetCullingMode(true);
@@ -1389,19 +1389,19 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 		pRenderDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR ); // use this or not?
-		pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		pRenderDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 
-		pRenderDevice->SetRenderState( D3DRS_ALPHAREF,         FIXED_FUNCTION_ALPHA_TESTING_REF );
-		pRenderDevice->SetRenderState( D3DRS_ALPHAFUNC,  D3DCMP_GREATER );
-		pRenderDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pRenderDevice->SetRenderState( ERenderState::ALPHAREF,         FIXED_FUNCTION_ALPHA_TESTING_REF );
+		pRenderDevice->SetRenderState( ERenderState::ALPHAFUNC,  D3DCMP_GREATER );
+		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 		if(nHandle == TECH_SIMPLE_MESH_NORMAL || nHandle == TECH_SIMPLE_MESH_NORMAL_CTOR || nHandle== TECH_SIMPLE_MESH_NORMAL_VEGETATION)
 		{
 			// use lighting 
-			pRenderDevice->SetRenderState( D3DRS_LIGHTING, bEnableLight );
+			pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 			EnableLocalLighting(bEnableLight);
 		}
 		pRenderDevice->SetFVF(mesh_vertex_normal::FVF);
@@ -1581,11 +1581,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 
 		applyFogParameters();
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(true);
 
 		pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
@@ -1608,11 +1608,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->applySurfaceMaterial(&CGlobals::GetSceneState()->GetGlobalMaterial());
 		applyFogParameters();
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 		DisableD3DCulling(true);
 
@@ -1653,11 +1653,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(true);
 
 		pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
@@ -1784,11 +1784,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 
 		pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
@@ -1874,24 +1874,24 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->applySurfaceMaterial(&matTerrain);
 
 		SetCullingMode(true);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE); // this may be true in future
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE); // this may be true in future
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		// the separate alpha channel setting is for full screen glow effect
 		//if(IsUsingFullScreenGlow())
 		//{
 		//	//bool bSupportSeperateAlpha = (CGlobals::GetDirectXEngine().m_d3dCaps.PrimitiveMiscCaps&D3DPMISCCAPS_SEPARATEALPHABLEND)>0;
-		//	pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		//	pd3dDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, true);
-		//	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-		//	pd3dDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ZERO);
-		//	pd3dDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ZERO);
+		//	pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		//	pd3dDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, true);
+		//	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+		//	pd3dDevice->SetRenderState(ERenderState::SRCBLENDALPHA, D3DBLEND_ZERO);
+		//	pd3dDevice->SetRenderState(ERenderState::DESTBLENDALPHA, D3DBLEND_ZERO);
 		//}
 
 		// it should not be Less function. Because we have multi-texturing
-		pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL); 
+		pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL); 
 
 		if(CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 		{
@@ -1939,11 +1939,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			return false;
 		pd3dDevice->SetVertexDeclaration(pDecl);
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 
 		pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
@@ -1962,9 +1962,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->EnableAlphaTesting(false);
 		applyFogParameters();
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		SetCullingMode(true);
 		break;
 	}
@@ -1976,12 +1976,12 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 
 		applyFogParameters();
 
-		// pd3dDevice->SetRenderState(D3DRS_FOGENABLE,0);
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-		pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		// pd3dDevice->SetRenderState(ERenderState::FOGENABLE,0);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
 		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 		SetCullingMode(true);
@@ -2008,11 +2008,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			DisableD3DAlphaTesting(true);
 			pEffect->EnableAlphaBlending(false);
 			pEffect->EnableAlphaTesting(false);
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			SetCullingMode(true);
 			pd3dDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
 			SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR , true);
@@ -2108,11 +2108,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetIndices(0);
 		pd3dDevice->SetStreamSource(0, 0, 0, 0);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);m_bZEnable = false;
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);m_bZEnable = false;
 		// Note by Xizhi: always enable zwrite otherwise z-clear will not working when cocos clear the zbuffer in the outer loop. 
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, true);
 		SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, true);
@@ -2131,11 +2131,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetIndices(0);
 			pd3dDevice->SetStreamSource(0, 0, 0, 0);
 			pd3dDevice->SetVertexDeclaration(pDecl);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
 			SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
-			// @note: do not set D3DRS_ZENABLE, D3DRS_ZWRITEENABLE
+			// @note: do not set ERenderState::ZENABLE, ERenderState::ZWRITEENABLE
 			// it will inherit last technique to enable text rendering in 3d object space. 
 		}
 		break;
@@ -2152,12 +2152,12 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetStreamSource(0, 0, 0, 0);
 			pd3dDevice->SetVertexDeclaration(pDecl);
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-			pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);m_bZEnable = false;
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);m_bZEnable = false;
 			// Note by Xizhi: always enable zwrite otherwise z-clear will not working when cocos clear the zbuffer in the outer loop. 
-			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
 			SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
 		}
@@ -2173,10 +2173,10 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetStreamSource(0,0,0,0);
 		pd3dDevice->SetVertexDeclaration(pDecl);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
 		SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
 		break;
@@ -2194,9 +2194,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		applyFogParameters();
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		SetCullingMode(true);
 		break;
 	}
@@ -2210,10 +2210,10 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
 		SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case TECH_PARTICLES:
@@ -2225,11 +2225,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetIndices(0);
 		pd3dDevice->SetStreamSource(0, 0, 0, 0);
 		pd3dDevice->SetVertexDeclaration(pDecl);
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 		pd3dDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, true);
@@ -2252,11 +2252,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, true);
 		SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		applyFogParameters();
 		break;
 	}
@@ -2278,11 +2278,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
 		SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		applyFogParameters();
 		break;
 	}
@@ -2305,10 +2305,10 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, true);
 			SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, true);
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-			pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 			applyFogParameters();
 		}
@@ -2345,14 +2345,14 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pEffect->applySurfaceMaterial(&matTerrain);
 
 		SetCullingMode(true);
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);m_bZEnable = true;
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		
 		// it should not be Less function. Because we have multi-texturing
-		pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		pd3dDevice->SetVertexDeclaration(pDecl);
 		break;
@@ -2374,10 +2374,10 @@ void EffectManager::EndEffect()
 		switch(m_nCurrentEffect)
 		{
 		case TECH_OCCLUSION_TEST:
-			pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
-			pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-			pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, FALSE );
+			pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+			pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			break;
 		case TECH_TERRAIN:
 			{
@@ -2388,18 +2388,18 @@ void EffectManager::EndEffect()
 				}
 			
 				pd3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_DISABLE );
-				pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 				pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 				pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 				if(CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals() && GetScene()->IsLightEnabled())
 				{
-					pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+					pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 					applyLocalLightingData(NULL, 0);
 				}
 				/*if(IsUsingFullScreenGlow())
 				{
-					pd3dDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, false);
+					pd3dDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, false);
 				}*/
 				break;
 			}
@@ -2415,11 +2415,11 @@ void EffectManager::EndEffect()
 		case TECH_SIMPLE_MESH_NORMAL_SHADOW:
 		case TECH_SIMPLE_CAD_MODEL:
 			if(GetScene()->IsLightEnabled())
-				pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+				pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 			break;
 		case TECH_SIMPLE_DROPSHADOW:
 			if(GetScene()->IsLightEnabled())
-				pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+				pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 			break;
 		case TECH_SKY_MESH:
 			pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
@@ -2429,31 +2429,31 @@ void EffectManager::EndEffect()
 		case TECH_OCEAN_SIMPLE:
 		case TECH_OCEAN:
 			if(GetScene()->IsLightEnabled())
-				pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE,     TRUE );
-			pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+				pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE,     TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, FALSE );
 			break;
 		case TECH_OCEAN_UNDERWATER:
 			// Restore render states
-			pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE); m_bZEnable = true;
-			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        GetScene()->IsFogEnabled() );
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE); m_bZEnable = true;
+			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        GetScene()->IsFogEnabled() );
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
 			break;
 		case TECH_CHARACTER:
 			if(GetScene()->IsLightEnabled()){
-				pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+				pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 				applyLocalLightingData(NULL, 0);
 			}
 			break;
 		case TECH_PARTICLES:
 			SetCullingMode(true);
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			break;
 		case TECH_GUI:
-			pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE); m_bZEnable = true;
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE,     TRUE );
-			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        GetScene()->IsFogEnabled() );
+			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE); m_bZEnable = true;
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE,     TRUE );
+			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        GetScene()->IsFogEnabled() );
 			break;
 		case TECH_BLOCK_FANCY:
 		case TECH_BLOCK:
@@ -2461,8 +2461,8 @@ void EffectManager::EndEffect()
 			pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 			SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_LINEAR, true);
 			SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_LINEAR, true);
-			pd3dDevice->SetRenderState( D3DRS_ALPHAREF, FIXED_FUNCTION_ALPHA_TESTING_REF);
-			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        GetScene()->IsFogEnabled() );
+			pd3dDevice->SetRenderState( ERenderState::ALPHAREF, FIXED_FUNCTION_ALPHA_TESTING_REF);
+			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        GetScene()->IsFogEnabled() );
 			break;
 		default:
 			break;
@@ -2530,7 +2530,7 @@ void EffectManager::EndEffect()
 			}
 			else if(m_nCurrentEffect == TECH_SIMPLE_MESH_NORMAL_TRANSPARENT)
 			{
-				CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+				CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 				DisableD3DCulling(false);
 				SetCullingMode(true);
 			}
@@ -2545,7 +2545,7 @@ void EffectManager::EndEffect()
 			EnableLocalLighting(false);
 			break;
 		case TECH_SIMPLE_MESH_NORMAL_CTOR:
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 			DisableD3DCulling(false);
 			SetCullingMode(true);
 			break;
@@ -2570,8 +2570,8 @@ void EffectManager::EndEffect()
 						pShadowMap->UnsetShadowTexture(2);
 					}
 				}
-				pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 				pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
 				pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 				break;
@@ -2579,7 +2579,7 @@ void EffectManager::EndEffect()
 		case TECH_PARTICLES:
 		case TECH_WATER_RIPPLE:
 			SetCullingMode(true);
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			break;
 		case TECH_FULL_SCREEN_GLOW:
 			{
@@ -2593,9 +2593,9 @@ void EffectManager::EndEffect()
 		case TECH_BLOCK:
 			{
 				SetCullingMode(true);
-				pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-				pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
-				pd3dDevice->SetRenderState( D3DRS_FOGENABLE, GetScene()->IsFogEnabled() );
+				pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+				pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
+				pd3dDevice->SetRenderState( ERenderState::FOGENABLE, GetScene()->IsFogEnabled() );
 				pd3dDevice->SetStreamSource(0,NULL,0,0);
 				pd3dDevice->SetIndices(NULL);
 				pd3dDevice->SetTexture(0,NULL);
@@ -2612,7 +2612,7 @@ void EffectManager::EndEffect()
 			if(m_nCurrentEffect>1000)
 			{
 				if(GetScene()->IsLightEnabled())
-					pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+					pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 			}
 			break;
 		}
@@ -2624,8 +2624,8 @@ void EffectManager::EndEffect()
 	case TECH_TERRAIN:
 	{
 		EnableD3DAlphaBlending(true);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
 		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 		break;

@@ -1397,7 +1397,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	//  render color if it is going to be displayed (or necessary for shadow map) -- otherwise don't
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
 	{
-		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
+		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0);
 		pd3dDevice->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
 	}
 	else
@@ -1406,12 +1406,12 @@ HRESULT CShadowMap::BeginShadowPass()
 	}
 
 	
-	pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 	//depth bias
 	if (m_bSupportsHWShadowMaps)
 	{
-		pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&depthBias);
-		pd3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, *(DWORD*)&m_fBiasSlope);
+		pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&depthBias);
+		pd3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS, *(DWORD*)&m_fBiasSlope);
 	}
 
 	//pd3dDevice->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_PROJECTED);
@@ -1444,8 +1444,8 @@ HRESULT CShadowMap::EndShadowPass()
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 #endif
 	float fTemp = 0.0f;
-	pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&fTemp);
-	pd3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, *(DWORD*)&fTemp);
+	pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
+	pd3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS, *(DWORD*)&fTemp);
 
 #ifdef USE_DIRECTX_RENDERER
 	if (m_bBlurSMColorTexture &&
@@ -1521,7 +1521,7 @@ HRESULT CShadowMap::EndShadowPass()
 		}
 	}
 #endif
-	pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+	pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 	//set render target back to normal back buffer / depth buffer
 #ifdef USE_DIRECTX_RENDERER
@@ -1542,9 +1542,9 @@ HRESULT CShadowMap::EndShadowPass()
 
 	//re enable color writes
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
-		pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0xf);
+		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0xf);
 	//pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_ARGB(0, 60, 60, 60), 1.0f, 0L);
-	//pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+	//pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 	//pd3dDevice->SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 	return S_OK;
 }

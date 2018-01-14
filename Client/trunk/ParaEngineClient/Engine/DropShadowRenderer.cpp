@@ -44,32 +44,32 @@ namespace ParaEngine
 					pDevice->SetIndices(m_pIndexBuffer);
 
 					//step 1:
-					pDevice->SetRenderState(D3DRS_ZWRITEENABLE,false);
-					pDevice->SetRenderState(D3DRS_STENCILENABLE, true);
-					pDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_ALWAYS);
-					pDevice->SetRenderState(D3DRS_STENCILZFAIL,D3DSTENCILOP_KEEP);
-					pDevice->SetRenderState(D3DRS_STENCILFAIL,D3DSTENCILOP_KEEP);
-					pDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_INCR );
-					pDevice->SetRenderState( D3DRS_STENCILREF, 0x01 );
-					pDevice->SetRenderState( D3DRS_STENCILMASK, 0xffffffff );
-					pDevice->SetRenderState( D3DRS_STENCILWRITEMASK, 0xffffffff );
-					pDevice->SetRenderState( D3DRS_COLORWRITEENABLE, 0x00000000 );
+					pDevice->SetRenderState(ERenderState::ZWRITEENABLE,false);
+					pDevice->SetRenderState(ERenderState::STENCILENABLE, true);
+					pDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_ALWAYS);
+					pDevice->SetRenderState(ERenderState::STENCILZFAIL,D3DSTENCILOP_KEEP);
+					pDevice->SetRenderState(ERenderState::STENCILFAIL,D3DSTENCILOP_KEEP);
+					pDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_INCR );
+					pDevice->SetRenderState( ERenderState::STENCILREF, 0x01 );
+					pDevice->SetRenderState( ERenderState::STENCILMASK, 0xffffffff );
+					pDevice->SetRenderState( ERenderState::STENCILWRITEMASK, 0xffffffff );
+					pDevice->SetRenderState( ERenderState::COLORWRITEENABLE, 0x00000000 );
 					DrawAllBatch(pDevice);
 
 					//step 2;
 					pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
-					pDevice->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_DECR);
+					pDevice->SetRenderState(ERenderState::STENCILPASS,D3DSTENCILOP_DECR);
 					DrawAllBatch(pDevice);
 
 					//step 3:
-					pDevice->SetRenderState(D3DRS_COLORWRITEENABLE,0xf);
+					pDevice->SetRenderState(ERenderState::COLORWRITEENABLE,0xf);
 					pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-					pDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_LESSEQUAL);
-					pDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
+					pDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_LESSEQUAL);
+					pDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_KEEP);
 					DrawAllBatch(pDevice);
 
-					pDevice->SetRenderState(D3DRS_ZWRITEENABLE,true);
-					pDevice->SetRenderState(D3DRS_STENCILENABLE,false);
+					pDevice->SetRenderState(ERenderState::ZWRITEENABLE,true);
+					pDevice->SetRenderState(ERenderState::STENCILENABLE,false);
 
 					pEffect->EndPass();
 				}

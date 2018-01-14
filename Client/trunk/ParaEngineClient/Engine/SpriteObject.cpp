@@ -106,25 +106,25 @@ void ParaEngine::CSpriteObject::SetRenderState(IRenderDevice* pd3dDevice)
 {
 	//TODO: render state is kind of chaos: Use sceneState::StateManager in future versions
 	CGlobals::GetEffectManager()->SetCullingMode(false);
-	pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+	pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 	
 	//if(! CheckSpriteStyleField(SPRITE_RENDER_ZBUFFER))
-	//	pd3dDevice->SetRenderState( D3DRS_ZENABLE,      FALSE );
+	//	pd3dDevice->SetRenderState( ERenderState::ZENABLE,      FALSE );
 
 	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
 	{
 		//-- enable alpha and reference color for billboard
-		pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE,   TRUE );
-		pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-		pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   TRUE );
+		pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+		pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-		//pd3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, TRUE );
-		//pd3dDevice->SetRenderState( D3DRS_ALPHAREF,        0x08 );
-		//pd3dDevice->SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
+		//pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE, TRUE );
+		//pd3dDevice->SetRenderState( ERenderState::ALPHAREF,        0x08 );
+		//pd3dDevice->SetRenderState( ERenderState::ALPHAFUNC, D3DCMP_GREATEREQUAL );
 	}
 	else
 	{
-		pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE,   FALSE );
+		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
 	}
 }
 
@@ -134,11 +134,11 @@ void ParaEngine::CSpriteObject::RestoreRenderState(IRenderDevice* pd3dDevice)
 	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
 	{
 		// only for billboard, so we turn it off
-		pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE,   FALSE );
-		//pd3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE,    FALSE );
+		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
+		//pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE,    FALSE );
 	}
 	//if(! CheckSpriteStyleField(SPRITE_RENDER_ZBUFFER))
-	//	pd3dDevice->SetRenderState( D3DRS_ZENABLE,      TRUE );
+	//	pd3dDevice->SetRenderState( ERenderState::ZENABLE,      TRUE );
 	CGlobals::GetEffectManager()->SetCullingMode(true);
 }
 

@@ -1683,8 +1683,8 @@ void Terrain::Render()
 				*/
 				if (pCell->GetNumberOfDetails() > 0)
 				{
-					pD3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
-					pD3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
+					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 
 					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
@@ -1696,8 +1696,8 @@ void Terrain::Render()
 						pD3dDevice->DrawPrimitive(  RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,  D3DPT_TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 					}
 					// restore states
-					pD3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-					pD3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_MODULATE   );
 				}
 			}
@@ -2035,8 +2035,8 @@ void Terrain::RenderGeoMipmap()
 		/*
 				if (pCell->GetNumberOfDetails() > 0)
 				{
-					pD3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
-					pD3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
+					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );
 
 					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
@@ -2052,8 +2052,8 @@ void Terrain::RenderGeoMipmap()
 							idxInfo->GetIndexCount()/3);
 					}
 					// restore states
-					pD3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
-					pD3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+					pD3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+					pD3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 					pD3dDevice->SetTextureStageState( 1, D3DTSS_COLOROP,   D3DTOP_MODULATE   );
 				}
 			}
@@ -2284,10 +2284,10 @@ void Terrain::RenderGeoMipmap()
 						BuildHelperMeshBuffer();
 					}
 
-					DWORD defaultFillMode;
-					pD3dDevice->GetRenderState(D3DRS_FILLMODE,&defaultFillMode);
-					pD3dDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-					pD3dDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+					DWORD defaultFillMode = pD3dDevice->GetRenderState(ERenderState::FILLMODE);
+					
+					pD3dDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_SRCALPHA);
+					pD3dDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_INVSRCALPHA);
 					pD3dDevice->SetFVF(LINEVERTEX::FVF);
 
 					pD3dDevice->SetStreamSource(0, m_pEditorMeshVB.GetDevicePointer(), 0, sizeof(LINEVERTEX));
@@ -2308,28 +2308,28 @@ void Terrain::RenderGeoMipmap()
 								//wireframe layer
 								CGlobals::GetEffectManager()->EnableD3DAlphaBlending(false);
 								//adjust depth bias to get stable line
-								pD3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);
+								pD3dDevice->SetRenderState(ERenderState::FILLMODE,D3DFILL_WIREFRAME);
 								float bias = -0.0003f;
 								float slopeBias = 1.0f;
 								float fzero = 0;
-								pD3dDevice->SetRenderState(D3DRS_DEPTHBIAS,*((DWORD*)&bias));
-								pD3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
+								pD3dDevice->SetRenderState(ERenderState::DEPTHBIAS,*((DWORD*)&bias));
+								pD3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
 
 								pD3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 									pBlock->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 									idxInfo->GetIndexCount()/3);
 
-								pD3dDevice->SetRenderState(D3DRS_FILLMODE,defaultFillMode);
+								pD3dDevice->SetRenderState(ERenderState::FILLMODE,defaultFillMode);
 								//Don't set to 0 directly, it may cause a render error on XP
-								pD3dDevice->SetRenderState(D3DRS_DEPTHBIAS,*((DWORD*)&fzero));
-								pD3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,*((DWORD*)&fzero));
+								pD3dDevice->SetRenderState(ERenderState::DEPTHBIAS,*((DWORD*)&fzero));
+								pD3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS,*((DWORD*)&fzero));
 							}
 						}
 						pEffectFile->EndPass();
 					}
 
-					pD3dDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-					pD3dDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+					pD3dDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
+					pD3dDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
 					if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 						pD3dDevice->SetFVF(terrain_vertex::FVF);
 					else
@@ -2349,10 +2349,10 @@ void Terrain::RenderGeoMipmap()
 					}
 
 					DWORD defaultFillMode;
-					pD3dDevice->GetRenderState(D3DRS_FILLMODE,&defaultFillMode);
+					pD3dDevice->GetRenderState(ERenderState::FILLMODE,&defaultFillMode);
 
-					pD3dDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_SRCALPHA);
-					pD3dDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_INVSRCALPHA);
+					pD3dDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_SRCALPHA);
+					pD3dDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_INVSRCALPHA);
 					pD3dDevice->SetFVF(LINEVERTEX::FVF);
 
 					if(pEffectFile->BeginPass(3))
@@ -2395,22 +2395,22 @@ void Terrain::RenderGeoMipmap()
 									
 									//wireframe layer
 									CGlobals::GetEffectManager()->EnableD3DAlphaBlending(false);
-									pD3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);
+									pD3dDevice->SetRenderState(ERenderState::FILLMODE,D3DFILL_WIREFRAME);
 									//adjust depth bias to get stable wireframe
 									float bias = -0.0003f;
 									float slopeBias = 1.0f;
 									float fzero = 0;
-									pD3dDevice->SetRenderState(D3DRS_DEPTHBIAS,*((DWORD*)&bias));
-									pD3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
+									pD3dDevice->SetRenderState(ERenderState::DEPTHBIAS,*((DWORD*)&bias));
+									pD3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
 
 									DirectXPerf::DrawIndexedPrimitive(pD3dDevice,DirectXPerf::DRAW_PERF_TRIANGLES_TERRAIN,D3DPT_TRIANGLELIST,
 										block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 										idxInfo->GetIndexCount()/3);
 
-									pD3dDevice->SetRenderState(D3DRS_FILLMODE,defaultFillMode);
+									pD3dDevice->SetRenderState(ERenderState::FILLMODE,defaultFillMode);
 									//Don't set to 0 directly, it may cause a render error on XP
-									pD3dDevice->SetRenderState(D3DRS_DEPTHBIAS,*((DWORD*)&fzero));
-									pD3dDevice->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS,*((DWORD*)&fzero));
+									pD3dDevice->SetRenderState(ERenderState::DEPTHBIAS,*((DWORD*)&fzero));
+									pD3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS,*((DWORD*)&fzero));
 								}
 							}
 						}
@@ -2418,8 +2418,8 @@ void Terrain::RenderGeoMipmap()
 					}
 
 					//reset all state
-					pD3dDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-					pD3dDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
+					pD3dDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
+					pD3dDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
 					if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 						pD3dDevice->SetFVF(terrain_vertex::FVF);
 					else

@@ -310,9 +310,9 @@ namespace ParaEngine
 			pd3dDevice->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards. 
-			pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-			pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 
 			//////////////////////////////////////////////////////////////////////////
 			// set the wave time parameter
@@ -332,7 +332,7 @@ namespace ParaEngine
 				IDirect3DVertexBuffer9* pCurVB = NULL;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = RSV_CULL_CCW;
+				ERSVCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
 
 				if(pCurRenderQueue->size() > 0)
@@ -431,9 +431,9 @@ namespace ParaEngine
 				pRenderDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 			}
 			// turn blending on again
-			pRenderDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pRenderDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pRenderDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pEffect->end();
 		}
 #endif
@@ -508,9 +508,9 @@ namespace ParaEngine
 
 			if (nRenderPass == BlockRenderPass_AlphaBlended || nRenderPass == BlockRenderPass_ReflectedWater)
 			{
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-				pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			}
 			else
 			{
@@ -518,9 +518,9 @@ namespace ParaEngine
 					pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 
 				// turn off alpha blending to enable early-Z on modern graphic cards. 
-				pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-				pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+				pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 			}
 
 			if ( pEffect == 0)
@@ -542,7 +542,7 @@ namespace ParaEngine
 				IDirect3DVertexBuffer9* pCurVB = NULL;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = RSV_CULL_CCW;
+				ERSVCULL culling = RSV_CULL_CCW;
 				IDirect3DTexture9* pCurTex0 = NULL;
 				IDirect3DTexture9* pCurTex1 = NULL;
 				IDirect3DTexture9* pCurTex2 = NULL;
@@ -575,19 +575,19 @@ namespace ParaEngine
 							curPass = passId;
 							if(passId == 0)
 							{
-								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 							}
 							else if(passId == 1)
 							{
-								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 							}
 							else if(passId == 2)
 							{
-								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 							}
 							else if(passId == 3)
 							{
-								pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 							}
 							else
 							{
@@ -711,7 +711,7 @@ namespace ParaEngine
 				VertexBufferDevicePtr_type pCurVB = 0;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
-				D3DCULL culling = RSV_CULL_CCW;
+				ERSVCULL culling = RSV_CULL_CCW;
 				DeviceTexturePtr_type pCurTex0 = 0;
 				DeviceTexturePtr_type pCurTex1 = 0;
 				DeviceTexturePtr_type pCurTex2 = 0;
@@ -903,9 +903,9 @@ namespace ParaEngine
 				if (nRenderPass == BlockRenderPass_AlphaTest)
 					pDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
 				// turn blending on again
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-				pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			}
 		}
 		if (nRenderPass == BlockRenderPass_AlphaBlended)
@@ -1079,11 +1079,11 @@ namespace ParaEngine
 			// fixed function pipeline
 			pDevice->SetTexture(0,highLightTexture->GetTexture());
 
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-			pDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
+			pDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
+			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
@@ -1135,12 +1135,12 @@ namespace ParaEngine
 				pDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
-			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
-			pDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
+			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
+			pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 
 			pDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_CURRENT);
 #endif
@@ -1164,10 +1164,10 @@ namespace ParaEngine
 							
 				pDevice->SetTexture(0,highLightTexture->GetTexture());
 					
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,TRUE);
-				pDevice->SetRenderState(D3DRS_SRCBLEND,D3DBLEND_ONE);
-				pDevice->SetRenderState(D3DRS_DESTBLEND,D3DBLEND_ONE);
-				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,TRUE);
+				pDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
+				pDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
+				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 				uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
 				float lightIntensity = 1.f;
@@ -1222,11 +1222,11 @@ namespace ParaEngine
 				}
 
 				pEffect->EndPass();
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
-				pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-				pDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 			}
 			pEffect->end();
 		}
@@ -1281,9 +1281,9 @@ namespace ParaEngine
 			// fixed function pipeline
 			pDevice->SetTexture(0,m_damangeTexture->GetTexture());
 
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 			pDevice->SetFVF(mesh_vertex_plain::FVF);
 
@@ -1304,9 +1304,9 @@ namespace ParaEngine
 			}
 			pDevice->DrawIndexedPrimitiveUP( RenderDeviceBase::DRAW_PERF_TRIANGLES_TERRAIN, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
-			pDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
-			pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(D3DRS_ZWRITEENABLE,TRUE);
+			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
+			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
 		}
 		else if(pEffect != 0 && pEffect->begin(false))
 		{
@@ -1326,8 +1326,8 @@ namespace ParaEngine
 
 				pDevice->SetTexture(0,m_damangeTexture->GetTexture());
 
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 				vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
@@ -1352,8 +1352,8 @@ namespace ParaEngine
 				pDevice->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				
 				pEffect->EndPass();
-				pDevice->SetRenderState(D3DRS_ALPHABLENDENABLE,FALSE);
-				pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,FALSE);
+				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 			}
 			pEffect->end();
 		}

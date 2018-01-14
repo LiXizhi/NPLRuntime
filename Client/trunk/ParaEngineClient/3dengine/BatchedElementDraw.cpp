@@ -199,8 +199,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 		if (bClear)
 			ClearLines();
 	}
-	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 #elif defined(USE_DIRECTX_RENDERER)
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
@@ -208,7 +208,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 #endif
 	// set render state
 	{
-		// pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		// pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pRenderDevice->SetTexture(0, 0);
 
 		pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
@@ -220,7 +220,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	}
 #ifdef USE_OPENGL_RENDERER
 	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-	pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+	pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 	pEffect->EndPass();
 	pEffect->end();
 #endif
@@ -264,9 +264,9 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		CameraY.normalise();
 
 
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pd3dDevice->SetTexture(0, 0);
 
 		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
@@ -380,13 +380,13 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 
 				ThickVertices += 24;
 			}
-			pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&DepthBiasThisBatch);
+			pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&DepthBiasThisBatch);
 			pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLELIST,
 				8 * NumLinesThisBatch, (LINEVERTEX*)(&s_VertexData[0]), sizeof(LINEVERTEX));
 		}
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, 0);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 	}
 #ifdef USE_OPENGL_RENDERER
 	pEffect->EndPass();
@@ -445,10 +445,10 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 		s_VertexData.resize(2 * 3 * sizeof(SPRITEVERTEX) * (MaxParticlesPerBatch+10));
 		
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pEffectManager->SetCullingMode(false);
 
 		// get camera billboarding rotations

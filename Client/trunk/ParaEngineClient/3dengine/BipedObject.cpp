@@ -1385,11 +1385,11 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			if (pEffectFile != NULL)
 			{
 				RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
-				pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0);
+				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0);
 				pAI->Draw(sceneState, mat);
 
-				pd3dDevice->SetRenderState(D3DRS_COLORWRITEENABLE, 0x0000000F);
-				pd3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0x0000000F);
+				pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 				pAI->Draw(sceneState, mat);
 
 				return S_OK;
@@ -1419,7 +1419,7 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 					pEffectFile = pEffectManager->GetCurrentEffectFile();
 
 					RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
-					pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+					pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 					if (pEffectFile != 0)
 					{
@@ -1437,7 +1437,7 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 						}
 					}
 
-					pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+					pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 
 					// change back to primary technique
 					pEffectManager->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));

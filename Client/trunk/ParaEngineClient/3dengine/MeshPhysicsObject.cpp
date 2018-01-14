@@ -544,9 +544,9 @@ HRESULT CMeshPhysicsObject::Draw( SceneState * sceneState)
 
 	SetFrameNumber(sceneState->m_nRenderCount);
 
-	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
+	//sceneState->pd3dDevice->SetRenderState( ERenderState::FILLMODE, D3DFILL_WIREFRAME );
 	HRESULT hr = m_pMeshObject->Draw(sceneState);
-	//sceneState->pd3dDevice->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+	//sceneState->pd3dDevice->SetRenderState( ERenderState::FILLMODE, D3DFILL_SOLID );
 
 	if(bCheckAsset && m_pMeshObject->GetPrimaryTechniqueHandle()>0)
 	{

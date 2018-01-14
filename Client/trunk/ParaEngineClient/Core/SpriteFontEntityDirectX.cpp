@@ -13,7 +13,7 @@
 #include "SpriteFontEntity.h"
 #include "StringHelper.h"
 #include "memdebug.h"
-#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
+
 
 using namespace ParaEngine;
 
@@ -54,8 +54,7 @@ HRESULT SpriteFontEntityDirectX::InitDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	// Initialize font
 	if (TextureType == SpriteFontEntityDirectX::sprite_font_GDI)
@@ -99,7 +98,7 @@ HRESULT SpriteFontEntityDirectX::InitDeviceObjects()
 		// see:  it is very tricky for cell height or character height. 
 		// http://msdn.microsoft.com/en-us/library/dd183499.aspx
 		// http://www.emdpi.com/fontsize.html
-		hr = D3DXCreateFont(pd3dDevice,          // D3D device
+		hr = pd3dDevice->CreateFont(          // D3D device
 			nHeight,               // Height
 			0,                     // Width
 			m_nWeight,             // Weight
@@ -115,7 +114,7 @@ HRESULT SpriteFontEntityDirectX::InitDeviceObjects()
 		{
 			OUTPUT_LOG("warning: font %s is not found. we will default to Arial font.", sFontName.c_str());
 
-			if (FAILED(hr = D3DXCreateFont(pd3dDevice, nHeight, 0, m_nWeight, 0, FALSE, DEFAULT_CHARSET,
+			if (FAILED(hr = pd3dDevice->CreateFont(nHeight, 0, m_nWeight, 0, FALSE, DEFAULT_CHARSET,
 				OUT_DEFAULT_PRECIS, 5, DEFAULT_PITCH | FF_DONTCARE,
 				TEXT("Arial"), &(FontAttibute.GDIFont.m_pFont))))
 			{

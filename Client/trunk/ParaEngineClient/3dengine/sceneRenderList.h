@@ -318,9 +318,9 @@ namespace ParaEngine
 					nLastHandle = nCurTechHandle;
 					CGlobals::GetEffectManager()->BeginEffect(nCurTechHandle, &(sceneState.m_pCurrentEffect));
 					// turn off alpha blending to enable early-Z on modern graphic cards. 
-					CGlobals::GetRenderDevice()->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-					CGlobals::GetRenderDevice()->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
-					CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+					CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+					CGlobals::GetRenderDevice()->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
+					CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 				}
 
 				sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);

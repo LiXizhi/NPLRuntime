@@ -108,6 +108,9 @@ namespace ParaEngine
 
 		virtual HRESULT CreateTexture(UINT Width, UINT Height, UINT MipLeves, DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, LPDIRECT3DTEXTURE9* ppTexture) = 0;
 
+		virtual HRESULT LightEnable(DWORD Index, BOOL Enable) = 0;
+
+
 		virtual HRESULT CreateTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Width, UINT Height, UINT MipLevels,
 			DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo,
 			PALETTEENTRY*pPalette, LPDIRECT3DTEXTURE9*ppTexture) = 0;
@@ -154,6 +157,28 @@ namespace ParaEngine
 			LPDIRECT3DCUBETEXTURE9*   ppCubeTexture
 		) = 0;
 
+		virtual HRESULT CreateEffect(
+			LPCVOID                         pSrcData,
+			UINT                            SrcDataLen,
+			CONST D3DXMACRO*                pDefines,
+			LPD3DXINCLUDE                   pInclude,
+			DWORD                           Flags,
+			LPD3DXEFFECTPOOL                pPool,
+			LPD3DXEFFECT*                   ppEffect,
+			LPD3DXBUFFER*                   ppCompilationErrors) = 0;
+
+		virtual HRESULT CreateFont(
+			INT                     Height,
+			UINT                    Width,
+			UINT                    Weight,
+			UINT                    MipLevels,
+			BOOL                    Italic,
+			DWORD                   CharSet,
+			DWORD                   OutputPrecision,
+			DWORD                   Quality,
+			DWORD                   PitchAndFamily,
+			LPCSTR                  pFaceName,
+			LPD3DXFONT*             ppFont) = 0;
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

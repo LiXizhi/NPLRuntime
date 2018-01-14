@@ -465,7 +465,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 		matProj_one_depth = matProj * matProj_one_depth;
 
 		pd3dDevice->SetTransform(D3DTS_PROJECTION, matProj_one_depth.GetConstPointer());
-		pd3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 		/** render the static mesh background */
 		if (m_pStaticMesh)
 		{
@@ -563,14 +563,14 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			}
 			/// blend the fog color with the back ground image
 			//pEffectManager->SetCullingMode(true);
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 			// use depth bias
 			float depthBias = -0.00001f;
-			pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&depthBias);
+			pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&depthBias);
 
 			pd3dDevice->SetTexture(0, NULL);
 
@@ -587,16 +587,16 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0,
 				8, 8, pIndexBufferSides, D3DFMT_INDEX16, pVertices, sizeof(LINEVERTEX));
 
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 
 			// this line crashes on VIA/S3G UniChrome Pro IGP
 			//DirectXPerf::DrawIndexedPrimitiveUP(pd3dDevice, DirectXPerf::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLEFAN, 0, 
 			//	5, 4, pIndexBufferSides+10, D3DFMT_INDEX16,pVertices, sizeof(LINEVERTEX));
 
 			float fTemp = 0.0f;
-			pd3dDevice->SetRenderState(D3DRS_DEPTHBIAS, *(DWORD*)&fTemp);
+			pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
 		}
-		pd3dDevice->SetRenderState(D3DRS_FOGENABLE, sceneState->GetScene()->IsFogEnabled());
+		pd3dDevice->SetRenderState(ERenderState::FOGENABLE, sceneState->GetScene()->IsFogEnabled());
 		pd3dDevice->SetTransform(D3DTS_PROJECTION, matProj.GetConstPointer());
 #endif
 	}
