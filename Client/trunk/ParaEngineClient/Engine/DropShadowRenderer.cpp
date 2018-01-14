@@ -57,13 +57,13 @@ namespace ParaEngine
 					DrawAllBatch(pDevice);
 
 					//step 2;
-					pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CW);
+					pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
 					pDevice->SetRenderState(D3DRS_STENCILPASS,D3DSTENCILOP_DECR);
 					DrawAllBatch(pDevice);
 
 					//step 3:
 					pDevice->SetRenderState(D3DRS_COLORWRITEENABLE,0xf);
-					pDevice->SetRenderState(D3DRS_CULLMODE,D3DCULL_CCW);
+					pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 					pDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_LESSEQUAL);
 					pDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
 					DrawAllBatch(pDevice);

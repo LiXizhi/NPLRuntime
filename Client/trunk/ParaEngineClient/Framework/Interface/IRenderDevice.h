@@ -18,7 +18,7 @@ namespace ParaEngine
 		virtual ~IRenderDevice() = default;
 
 		virtual uint32_t GetRenderState(const ERenderState& State) = 0;
-		virtual void SetRenderState(const ERenderState State, const uint32_t Value) = 0;
+		virtual bool SetRenderState(const ERenderState State, const uint32_t Value) = 0;
 
 
 

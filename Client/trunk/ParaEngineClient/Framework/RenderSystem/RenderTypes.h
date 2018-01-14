@@ -227,15 +227,26 @@ namespace ParaEngine
 		COUNT // END
 	};
 
-	struct RenderStateValue
+	// These bits could be ORed together to use with ERenderState::CLIPPLANEENABLE
+	//
+	const uint32_t RSV_CLIPPLANE_NONE(0);
+	const uint32_t RSV_CLIPPLANE0(1 << 0);
+	const uint32_t RSV_CLIPPLANE1(1 << 1);
+	const uint32_t RSV_CLIPPLANE2(1 << 2);
+	const uint32_t RSV_CLIPPLANE3(1 << 3);
+	const uint32_t RSV_CLIPPLANE4(1 << 4);
+	const uint32_t RSV_CLIPPLANE5(1 << 5);
+
+	const uint32_t RSV_TRUE(TRUE);
+	const uint32_t RSV_FALSE(FALSE);
+
+	enum  ERSVCULL
 	{
-		virtual uint32_t ToValueData() = 0;
+		RSV_CULL_NONE,
+		RSV_CULL_CW,
+		RSV_CULL_CCW
 	};
 
-	struct RenderStateValueClipPlane0
-	{
-
-	};
 
 }
 

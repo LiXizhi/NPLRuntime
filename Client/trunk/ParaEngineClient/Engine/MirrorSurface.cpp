@@ -251,7 +251,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		if(bUseReflection)
 			pEffectManager->EnableReflectionRendering(false);
 		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = D3DCULL_CW; 
+		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
 		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
 		//pd3dDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, 0);
 		CGlobals::GetScene()->RenderSelection(RENDER_SKY_BOX);

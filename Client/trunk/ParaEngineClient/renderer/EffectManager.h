@@ -299,7 +299,7 @@ namespace ParaEngine
 		bool IsZTestEnabled();
 
 		/** set the culling mode of the current effect file or the fixed function pipeline. 
-		*@param dwCullMode: D3DCULL_NONE, D3DCULL_CW, D3DCULL_CCW
+		*@param dwCullMode: RSV_CULL_NONE, RSV_CULL_CW, RSV_CULL_CCW
 		*/
 		void SetCullingMode(DWORD dwCullMode);
 		/** 

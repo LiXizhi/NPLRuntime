@@ -2423,7 +2423,7 @@ namespace ParaEngine
 			pEffectManager->EnableReflectionRendering(false);*/
 
 		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = D3DCULL_CW; 
+		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
 		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
 		//pd3dDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, 0);
 		if(m_ReflectionItems[R_SKY_BOX])
@@ -2504,7 +2504,7 @@ namespace ParaEngine
 		pEffectManager->EnableClipPlane(false);
 		if(m_bDisableFogInReflection)
 			pEffectManager->EnableFog(pScene->IsFogEnabled());
-		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = D3DCULL_CCW;
+		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CCW;
 		CGlobals::GetProjectionMatrixStack().pop();
 		m_reflectViewMatrix = false;
 
