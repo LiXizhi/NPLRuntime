@@ -369,10 +369,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			// we want the alpha to be the modulation of the texture and the diffuse color
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
+
 			break;
 		}
 #endif
@@ -405,10 +402,6 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pEffect->EnableAlphaBlending(true);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-			// we want the alpha to be the modulation of the texture and the diffuse color
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
 			break;
 		}
 	}
@@ -469,7 +462,6 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 4://ADDITIVE ALPHA
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -490,7 +482,6 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 4://ADDITIVE ALPHA
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -1024,10 +1015,6 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
-	// we want the alpha to be the modulation of the texture and the diffuse color
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
 
 	// texture
 	pd3dDevice->SetTexture(0, GetDeviceTexture());
@@ -1141,7 +1128,6 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 

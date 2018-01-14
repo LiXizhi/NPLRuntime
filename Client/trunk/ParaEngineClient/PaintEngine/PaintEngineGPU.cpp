@@ -156,13 +156,7 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 
 	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
-	pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
 
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
 
 	pd3dDevice->SetVertexShader(NULL);
 	pd3dDevice->SetPixelShader(NULL);

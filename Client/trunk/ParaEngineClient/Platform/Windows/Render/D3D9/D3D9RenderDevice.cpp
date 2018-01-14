@@ -11,11 +11,6 @@ ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
 }
 
 
-HRESULT ParaEngine::CD3D9RenderDevice::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
-{
-	return m_pD3DDevice->SetTextureStageState(Stage, Type, Value);
-}
-
 HRESULT ParaEngine::CD3D9RenderDevice::SetClipPlane(DWORD Index, const float* pPlane)
 {
 	return m_pD3DDevice->SetClipPlane(Index, pPlane);

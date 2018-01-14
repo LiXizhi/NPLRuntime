@@ -440,9 +440,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		texMat = Matrix4::IDENTITY;
 		texMat._31 = texAnim.tval.x;
 		texMat._32 = texAnim.tval.y;
-		pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
 		pd3dDevice->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
-		//pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU );
 	}
 
 	// color
@@ -553,10 +551,6 @@ void ModelRenderPass::deinit()
 		pd3dDevice->SetRenderState( ERenderState::LIGHTING, CGlobals::GetScene()->IsLightEnabled() );
 	}
 	
-	if (texanim!=-1) {
-		// disable texture transformation in fixed function.
-		pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
-	}
 #ifdef TODO
 	// TODO:
 	if (useenvmap) {
