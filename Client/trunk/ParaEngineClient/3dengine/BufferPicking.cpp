@@ -350,15 +350,15 @@ void ParaEngine::CBufferPicking::DrawObjects()
 			{
 				// use GUI shader and enable 3d world transform by enable 3d text. 
 				RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
-				pD3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+				pD3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
+				pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 				
 				painter.SetSpriteUseWorldMatrix(true);
 				pRenderTarget->DoPaint(&painter);
 				painter.SetSpriteUseWorldMatrix(false);
 
-				pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-				pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+				pD3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+				pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 				painter.end();
 			}
 			pRenderTarget->SetDirty(false);

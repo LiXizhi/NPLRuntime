@@ -1,6 +1,6 @@
 #pragma once
 #ifdef USE_DIRECTX_RENDERER
-#include "common/dxstdafx.h"
+#include "dxstdafx.h"
 #elif defined(USE_OPENGL_RENDERER)
 #include "OpenGLWrapper.h"
 #else

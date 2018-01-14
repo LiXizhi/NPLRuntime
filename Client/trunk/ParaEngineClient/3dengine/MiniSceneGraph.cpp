@@ -516,15 +516,15 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 			//pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1 );		// modulate operation
 			//pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG2 );
 			//
-			//pd3dDevice->SetRenderState( D3DRS_COLORWRITEENABLE,
+			//pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE,
 			//	D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
 			//	D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
 
-			pd3dDevice->SetRenderState( D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA );
+			pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA );
 
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
 
 			/*pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_SELECTARG2);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1,D3DTA_TEXTURE);
@@ -545,10 +545,10 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1,D3DTA_TEXTURE);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2,D3DTA_CURRENT);*/
 
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
-			pd3dDevice->SetRenderState( D3DRS_COLORWRITEENABLE,
+			pd3dDevice->SetRenderState( ERenderState::COLORWRITEENABLE,
 					D3DCOLORWRITEENABLE_RED  | D3DCOLORWRITEENABLE_GREEN |
 					D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_ALPHA );
 		}

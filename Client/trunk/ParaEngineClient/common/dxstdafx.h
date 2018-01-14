@@ -1,3 +1,4 @@
+#pragma once
 //-----------------------------------------------------------------------------
 // File: DxStdAfx.h
 //
@@ -45,7 +46,7 @@
 
 #include "DXUtil.h"
 // #include "D3DApp.h"
-#include "D3DRes.h"
+//#include "D3DRes.h"
 
 #ifdef WIN32
 #pragma warning( pop ) 

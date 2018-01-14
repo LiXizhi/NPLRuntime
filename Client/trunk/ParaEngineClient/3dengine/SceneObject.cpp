@@ -2175,11 +2175,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	if(IsUseWireFrame())
 	{
-		CGlobals::GetRenderDevice()->SetRenderState( D3DRS_FILLMODE, D3DFILL_WIREFRAME );
+		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_WIREFRAME );
 	}
 	else
 	{
-		CGlobals::GetRenderDevice()->SetRenderState( D3DRS_FILLMODE, D3DFILL_SOLID );
+		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_SOLID );
 	}
 #endif
 	/////////////////////////////////////////////////////////////////
@@ -2735,24 +2735,24 @@ void CSceneObject::RenderShadows()
 			/** set up render states */
 			// Disable z-buffer writes (note: z-testing still occurs), and enable the
 			// stencil-buffer
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE,  FALSE );
-			pd3dDevice->SetRenderState( D3DRS_STENCILENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE,  FALSE );
+			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE, TRUE );
 
 			// Make sure that no pixels get drawn to the frame buffer
-			pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-			pd3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_ZERO );
-			pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_ONE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_ZERO );
+			pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_ONE );
 			
 			// Do not bother with interpolating color
-			//pd3dDevice->SetRenderState( D3DRS_SHADEMODE,     D3DSHADE_FLAT );
+			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE,     D3DSHADE_FLAT );
 
 			// Set up stencil compare function, reference value, and masks.
 			// Stencil test passes if ((ref & mask) cmpfn (stencil & mask)) is true.
-			pd3dDevice->SetRenderState( D3DRS_STENCILFUNC,  D3DCMP_ALWAYS );
-			pd3dDevice->SetRenderState( D3DRS_STENCILREF,       0x1 );			// 0x0
-			pd3dDevice->SetRenderState( D3DRS_STENCILMASK,      0xffffffff );
-			pd3dDevice->SetRenderState( D3DRS_STENCILWRITEMASK, 0xffffffff );
+			pd3dDevice->SetRenderState( ERenderState::STENCILFUNC,  D3DCMP_ALWAYS );
+			pd3dDevice->SetRenderState( ERenderState::STENCILREF,       0x1 );			// 0x0
+			pd3dDevice->SetRenderState( ERenderState::STENCILMASK,      0xffffffff );
+			pd3dDevice->SetRenderState( ERenderState::STENCILWRITEMASK, 0xffffffff );
 
 			/// Build and render shadow volume for these bipeds
 			if(!sceneState.listShadowCasters.empty())
@@ -2778,37 +2778,37 @@ void CSceneObject::RenderShadows()
 								if(( CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED ) != 0 )
 								{
 									// With 2-sided stencil, we can avoid rendering twice:
-									pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_STENCILPASS,      D3DSTENCILOP_INCR );
+									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
 
-									pd3dDevice->SetRenderState( D3DRS_TWOSIDEDSTENCILMODE, TRUE );
-									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILFUNC,  D3DCMP_ALWAYS );
-									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_CCW_STENCILPASS, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, TRUE );
+									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFUNC,  D3DCMP_ALWAYS );
+									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR );
 
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_NONE );
 
 									// Draw both sides of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
 
-									pd3dDevice->SetRenderState( D3DRS_TWOSIDEDSTENCILMODE, FALSE );
+									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, FALSE );
 								}
 								else
 								{
 									// render front faces on z pass
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
-									pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_STENCILPASS,      D3DSTENCILOP_INCR );
+									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
 
 									// Draw front-side of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
 
 									// Now reverse cull order so back sides of shadow volume are written.
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CW );
-									pd3dDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_DECR );
 
 									// Draw back-side of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
@@ -2820,16 +2820,16 @@ void CSceneObject::RenderShadows()
 								{
 									// render front faces on z pass
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CW );
-									pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_INCR );
-									pd3dDevice->SetRenderState( D3DRS_STENCILPASS,  D3DSTENCILOP_KEEP);
+									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
+									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_INCR );
+									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,  D3DSTENCILOP_KEEP);
 
 									// Draw front-side of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
 
 									// Now reverse cull order so back sides of shadow volume are written.
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,   RSV_CULL_CCW );
-									pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_DECR );
+									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_DECR );
 
 									// Draw back-side of shadow volume in stencil/z only
 									pShadowVolume->Render( &sceneState );
@@ -2844,13 +2844,13 @@ void CSceneObject::RenderShadows()
 			*/
 			// Set render states (disable z-buffering, enable stencil, disable fog, and
 			// turn on alpha blending)
-			pd3dDevice->SetRenderState( D3DRS_ZENABLE,          FALSE );
-			pd3dDevice->SetRenderState( D3DRS_STENCILENABLE,    TRUE );
-			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        FALSE );
-			pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-			pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-			pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
-			//pd3dDevice->SetRenderState( D3DRS_SHADEMODE, D3DSHADE_GOURAUD );
+			pd3dDevice->SetRenderState( ERenderState::ZENABLE,          FALSE );
+			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE,    TRUE );
+			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        FALSE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+			pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
+			//pd3dDevice->SetRenderState( ERenderState::SHADEMODE, D3DSHADE_GOURAUD );
 			pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
 
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -2862,12 +2862,12 @@ void CSceneObject::RenderShadows()
 
 			// Only write where stencil val >= 1 (count indicates # of shadows that
 			// overlap that pixel)
-			pd3dDevice->SetRenderState( D3DRS_STENCILWRITEMASK,      0x0 );// do not write to stencil buffer
-			pd3dDevice->SetRenderState( D3DRS_STENCILFUNC, D3DCMP_LESSEQUAL ); // D3DCMP_EQUAL
-			pd3dDevice->SetRenderState( D3DRS_STENCILREF,  0x1 );	// 0x0
-			pd3dDevice->SetRenderState( D3DRS_STENCILPASS, D3DSTENCILOP_KEEP );
-			pd3dDevice->SetRenderState( D3DRS_STENCILFAIL,  D3DSTENCILOP_KEEP );
-			pd3dDevice->SetRenderState( D3DRS_STENCILZFAIL, D3DSTENCILOP_KEEP );
+			pd3dDevice->SetRenderState( ERenderState::STENCILWRITEMASK,      0x0 );// do not write to stencil buffer
+			pd3dDevice->SetRenderState( ERenderState::STENCILFUNC, D3DCMP_LESSEQUAL ); // D3DCMP_EQUAL
+			pd3dDevice->SetRenderState( ERenderState::STENCILREF,  0x1 );	// 0x0
+			pd3dDevice->SetRenderState( ERenderState::STENCILPASS, D3DSTENCILOP_KEEP );
+			pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
+			pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
 
 			// Draw a big, gray square
 			pd3dDevice->SetFVF( SHADOWVERTEX::FVF );
@@ -2876,10 +2876,10 @@ void CSceneObject::RenderShadows()
 			pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, 0, 2 );
 
 			// Restore render states
-			pd3dDevice->SetRenderState( D3DRS_ZENABLE,          TRUE );
-			pd3dDevice->SetRenderState( D3DRS_STENCILENABLE,    FALSE );
-			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        TRUE );
-			pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, FALSE );
+			pd3dDevice->SetRenderState( ERenderState::ZENABLE,          TRUE );
+			pd3dDevice->SetRenderState( ERenderState::STENCILENABLE,    FALSE );
+			pd3dDevice->SetRenderState( ERenderState::FOGENABLE,        TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, FALSE );
 		}//for each light 
 		//pStateBlock->Apply();
 		//SAFE_RELEASE(pStateBlock);

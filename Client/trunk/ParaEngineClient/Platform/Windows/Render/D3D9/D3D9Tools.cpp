@@ -1,14 +1,6 @@
-#pragma once
-#include <d3d9.h>
-#include <cassert>
-#include <unordered_map>
-#include "Framework/RenderSystem/RenderTypes.h"
-
-
+#include "D3D9Tools.h"
 namespace ParaEngine
 {
-
-
 	_D3DRENDERSTATETYPE toD3DRenderState(const ERenderState& rs)
 	{
 		switch (rs)
@@ -435,5 +427,22 @@ namespace ParaEngine
 			break;
 		}
 	}
+
+	DWORD toD3DRenderStateValue(const ERenderState& rs, const uint32_t value)
+	{
+		switch (rs)
+		{
+		case ERenderState::CULLMODE:
+		{
+			if (value == RSV_CULL_NONE) return D3DCULL_NONE;
+			if (value == RSV_CULL_CW) return D3DCULL_CW;
+			if (value == RSV_CULL_CCW) return D3DCULL_CCW;
+			assert(false);
+		}
+		break;
+		}
+		return value;
+	}
+
 }
 

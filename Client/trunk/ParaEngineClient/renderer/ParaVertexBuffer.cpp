@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "ParaVertexBuffer.h"
-#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
+
 
 using namespace ParaEngine;
 
@@ -52,8 +52,7 @@ bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwForm
 	ReleaseBuffer();
 	m_bufferType = BufferType_VertexBuffer;
 	m_nBufferSize = nBufferSize;
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 #ifdef USE_DIRECTX_RENDERER
 
 	return SUCCEEDED(pd3dDevice->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, dwPool, &m_vertexBuffer, NULL));
@@ -72,8 +71,7 @@ bool ParaEngine::ParaVertexBuffer::CreateIndexBuffer(uint32 nBufferSize, DWORD d
 
 	m_bufferType = BufferType_IndexBuffer;
 	m_nBufferSize = nBufferSize;
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 #ifdef USE_DIRECTX_RENDERER
 	auto ret = SUCCEEDED(pd3dDevice->CreateIndexBuffer(nBufferSize, 0, (D3DFORMAT)dwFormat, D3DPOOL_MANAGED, &m_indexBuffer, NULL));
 

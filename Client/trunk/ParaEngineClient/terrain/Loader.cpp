@@ -7,7 +7,7 @@
 #include "ParaWorldAsset.h"
 #include "Loader.h"
 #include "memdebug.h"
-#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
+
 using namespace ParaEngine;
 
 using namespace ParaTerrain;
@@ -71,11 +71,11 @@ HRESULT Loader::LoadElevations( float **ppImageData, int* nSize, const char * sz
 		D3DSURFACE_DESC desc;
 		IDirect3DTexture9* pTexture = NULL;
 		HRESULT hr;
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		/// Create a D3DFMT_X8R8G8B8 texture -- use D3DPOOL_SCRATCH to 
 		// ensure that this will succeeded independent of the device
-		hr = D3DXCreateTextureFromFileInMemoryEx(pd3dDevice, cFile.getBuffer(), (int)cFile.getSize(),
+	
+		hr = pd3dDevice->CreateTextureFromFileInMemoryEx(cFile.getBuffer(), (int)cFile.getSize(),
 			0, 0, 1, 0, 
 			D3DFMT_X8R8G8B8, D3DPOOL_SCRATCH, 
 			D3DX_FILTER_NONE, D3DX_FILTER_NONE,
@@ -286,8 +286,7 @@ void Loader::ApplyTexture(Terrain * pTerrain, const char *szFilename, bool isBas
 
 void LoadImage(char *buf, int sizeBuf, int &width, int &height, uint8 ** ppBuffer, bool bAlpha)
 {
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 #ifdef USE_DIRECTX_RENDERER
 	HRESULT hr;
 	D3DSURFACE_DESC desc;
@@ -300,7 +299,7 @@ void LoadImage(char *buf, int sizeBuf, int &width, int &height, uint8 ** ppBuffe
 		d3dFormat = D3DFMT_R8G8B8;
 	
 	// read from file
-	hr = D3DXCreateTextureFromFileInMemoryEx(pd3dDevice, buf, sizeBuf,
+	hr = pd3dDevice->CreateTextureFromFileInMemoryEx(buf, sizeBuf,
 		0, 0, 1, 0, 
 		d3dFormat, D3DPOOL_SCRATCH, 
 		D3DX_FILTER_NONE, D3DX_FILTER_NONE,

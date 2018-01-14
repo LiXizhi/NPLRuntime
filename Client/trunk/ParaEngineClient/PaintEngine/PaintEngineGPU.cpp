@@ -141,18 +141,18 @@ bool ParaEngine::CPaintEngineGPU::begin(CPaintDevice *pdev)
 	{
 		if (CPaintEngineGPU::s_IsStencilSupported && !CPaintEngineGPU::s_IsScissorRectSupported){
 			pd3dDevice->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
-			pd3dDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-			pd3dDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
-			pd3dDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xFFFFFFFF);
+			pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
+			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFFFFFFFF);
 		}
 	}
 	
-	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-	pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+	pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 
-	pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+	pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
 
 	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
@@ -262,92 +262,92 @@ void ParaEngine::CPaintEngineGPU::ApplyCompositionMode(CPainter::CompositionMode
 	case CPainter::CompositionMode_SourceBlend:
 	{
 		// default mode
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_SourceOver:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_DestinationOver:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTCOLOR);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_INVDESTCOLOR);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	}
 	case CPainter::CompositionMode_Clear:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
 		break;
 	}
 	case CPainter::CompositionMode_Source:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
 		break;
 	}
 	case CPainter::CompositionMode_Destination:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	}
 	case CPainter::CompositionMode_SourceIn:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_DESTALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
 		break;
 	}
 	case CPainter::CompositionMode_DestinationIn:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_SourceOut:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_INVDESTALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ZERO);
 		break;
 	}
 	case CPainter::CompositionMode_DestinationOut:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_SourceAtop:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_DESTALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_DESTALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_DestinationAtop:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_INVDESTALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_Xor:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_INVDESTALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_INVDESTALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		break;
 	}
 	case CPainter::CompositionMode_Plus:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	}
 	case CPainter::CompositionMode_PlusSourceBlend:
 	{
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	}
 	default:
@@ -638,34 +638,34 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 #ifdef USE_DIRECTX_RENDERER
 		// use alpha blending with src=zero and dest=one to prevent writes to color buffer
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ZERO);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
 
 		// set up stencil function to increment stencil of pixels that pass alpha testing
-		pd3dDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
-		pd3dDevice->SetRenderState(D3DRS_STENCILREF, state->m_nStencilValue);
-		pd3dDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+		pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_REPLACE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILREF, state->m_nStencilValue);
+		pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
 
 		// draw mask
 		DrawRect(&clipRect, Color::White, 0.f);
 		Flush();
 
 		// disable alpha blending and testing
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		state->compositionModeChanged = true;
 
 #elif defined(USE_OPENGL_RENDERER)
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE, TRUE);
 		if (state->m_nStencilValue == 1)
 		{
 			// clear stencil buffer to 0 on first stencil layer
 			pd3dDevice->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
-			pd3dDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xFF);
+			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
 		}
 		// disable color write
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -673,10 +673,10 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 		// draw m_nStencilValue to the stencil buffer
 		/*glStencilFunc(GL_NEVER, pGUIState->m_nStencilValue, 0xFF);
 		glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);*/
-		pd3dDevice->SetRenderState(D3DRS_STENCILREF, state->m_nStencilValue);
-		pd3dDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_NEVER);
-		pd3dDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
-		pd3dDevice->SetRenderState(D3DRS_STENCILWRITEMASK, 0xFF);
+		pd3dDevice->SetRenderState(ERenderState::STENCILREF, state->m_nStencilValue);
+		pd3dDevice->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_NEVER);
+		pd3dDevice->SetRenderState(ERenderState::STENCILPASS, D3DSTENCILOP_REPLACE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
 
 		// this will automatically apply all the scaling, rotation, etc.
 		// draw mask
@@ -759,12 +759,12 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		if (state->rectangleClip.isValid())
 		{
 			RECT clipRect = state->rectangleClip;
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, TRUE);
 			CGlobals::GetRenderDevice()->SetScissorRect(&clipRect);
 		}
 		else
 		{
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);
 		}
 	}
 	else if (IsStencilSupported())
@@ -774,13 +774,13 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 			RECT clipRect = state->rectangleClip;
 			RenderMask(clipRect);
 			// here we mean to allow the non-zero pixels to draw on frame buffer if we set it to D3DCMP_EQUAL.
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_EQUAL);
 		}
 		else
 		{
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_ALWAYS);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILFUNC, D3DCMP_ALWAYS);
 #ifdef USE_OPENGL_RENDERER
-			CGlobals::GetRenderDevice()->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::STENCILENABLE, FALSE);
 #endif
 		}
 	}

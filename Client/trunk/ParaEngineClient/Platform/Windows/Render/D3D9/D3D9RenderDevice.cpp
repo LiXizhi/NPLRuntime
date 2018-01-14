@@ -1,6 +1,6 @@
 #include "ParaEngine.h"
 #include "D3D9RenderDevice.h"
-#include "D3D9Tools.hpp"
+#include "D3D9Tools.h"
 
 using namespace ParaEngine;
 
@@ -212,6 +212,21 @@ HRESULT ParaEngine::CD3D9RenderDevice::CreateCubeTextureFromFileInMemoryEx(LPCVO
 	return D3DXCreateCubeTextureFromFileInMemoryEx(m_pD3DDevice, pSrcData, SrcDataSize, Size, MipLevels, Usage, Format, Pool, Filter, MipFilter, ColorKey, pSrcInfo, pPalette, ppCubeTexture);
 }
 
+HRESULT ParaEngine::CD3D9RenderDevice::LightEnable(DWORD Index, BOOL Enable)
+{
+	return m_pD3DDevice->LightEnable(Index, Enable);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CreateEffect(LPCVOID pSrcData, UINT SrcDataLen, CONST D3DXMACRO* pDefines, LPD3DXINCLUDE pInclude, DWORD Flags, LPD3DXEFFECTPOOL pPool, LPD3DXEFFECT* ppEffect, LPD3DXBUFFER* ppCompilationErrors)
+{
+	return D3DXCreateEffect(m_pD3DDevice, pSrcData, SrcDataLen, pDefines, pInclude, Flags, pPool, ppEffect, ppCompilationErrors);
+}
+
+HRESULT ParaEngine::CD3D9RenderDevice::CreateFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCSTR pFaceName, LPD3DXFONT* ppFont)
+{
+	return D3DXCreateFont(m_pD3DDevice,Height,Width,Weight,MipLevels,Italic,CharSet,OutputPrecision,Quality,PitchAndFamily,pFaceName,ppFont);
+}
+
 HRESULT ParaEngine::CD3D9RenderDevice::CreateDepthStencilSurface(UINT Width, UINT Height, D3DFORMAT Format, D3DMULTISAMPLE_TYPE MultiSample, DWORD MultisampleQuality, BOOL Discard, IDirect3DSurface9** ppSurface, HANDLE* pSharedHandle)
 {
 	return m_pD3DDevice->CreateDepthStencilSurface(Width, Height, Format, MultiSample, MultisampleQuality, Discard, ppSurface, pSharedHandle);
@@ -294,6 +309,6 @@ uint32_t ParaEngine::CD3D9RenderDevice::GetRenderState(const ERenderState& State
 bool ParaEngine::CD3D9RenderDevice::SetRenderState(const ERenderState State, const uint32_t Value)
 {
 	auto rs = toD3DRenderState(State);
-	HRESULT hr = m_pD3DDevice->SetRenderState(rs, Value);
+	HRESULT hr = m_pD3DDevice->SetRenderState(rs, toD3DRenderStateValue(State,Value));
 	return hr == D3D_OK;
 }

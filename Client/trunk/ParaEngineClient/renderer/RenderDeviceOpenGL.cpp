@@ -300,7 +300,7 @@ HRESULT ParaEngine::RenderDevice::Clear(DWORD Count, const void* pRects, DWORD F
 	{
 		fields |= GL_DEPTH_BUFFER_BIT;
 		glClearDepth(Z);
-		SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
+		SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 	}
 	if ((Flags & D3DCLEAR_TARGET) != 0)
 	{
@@ -495,11 +495,11 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		}
 		break;
 	}
-	case D3DRS_DEPTHBIAS:
+	case ERenderState::DEPTHBIAS:
 	{
 		break;
 	}
-	case D3DRS_ZENABLE:
+	case ERenderState::ZENABLE:
 	{
 		// z test enable
 		if (Value)
@@ -510,7 +510,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_ZFUNC:
+	case ERenderState::ZFUNC:
 	{
 		// z test enable
 		if (Value == D3DCMP_LESSEQUAL)
@@ -533,14 +533,14 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_ZWRITEENABLE:
+	case ERenderState::ZWRITEENABLE:
 	{
 		// z write enable
 		glDepthMask(Value ? GL_TRUE : GL_FALSE);
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_SEPARATEALPHABLENDENABLE:
+	case ERenderState::SEPARATEALPHABLENDENABLE:
 	{
 		bool bEnabled = Value ? true : false;
 		if (s_bEnableSeparateAlphaBlending != bEnabled)
@@ -550,7 +550,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		}
 		break;
 	}
-	case D3DRS_ALPHABLENDENABLE:
+	case ERenderState::ALPHABLENDENABLE:
 	{
 		bool bEnabled = Value ? true : false;
 		if (s_bEnableBlending != bEnabled)
@@ -560,10 +560,10 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		}
 		break;
 	}
-	case D3DRS_SRCBLENDALPHA:
-	case D3DRS_DESTBLENDALPHA:
-	case D3DRS_SRCBLEND:
-	case D3DRS_DESTBLEND:
+	case ERenderState::SRCBLENDALPHA:
+	case ERenderState::DESTBLENDALPHA:
+	case ERenderState::SRCBLEND:
+	case ERenderState::DESTBLEND:
 	{
 		GLenum glValue = D3DBLEND_ONE;
 		if (Value == D3DBLEND_ONE)
@@ -579,26 +579,26 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		else if (Value == D3DBLEND_INVDESTALPHA)
 			glValue = GL_ONE_MINUS_DST_ALPHA;
 
-		if (State == D3DRS_SRCBLEND){
+		if (State == ERenderState::SRCBLEND){
 			if (s_blendingSource != glValue)
 			{
 				s_blendingSource = glValue;
 				s_bAlphaBlendingChanged = true;
 			}
 		}
-		else if (State == D3DRS_DESTBLEND){
+		else if (State == ERenderState::DESTBLEND){
 			if (s_blendingDest != glValue){
 				s_blendingDest = glValue;
 				s_bAlphaBlendingChanged = true;
 			}
 		}
-		else if (State == D3DRS_SRCBLENDALPHA){
+		else if (State == ERenderState::SRCBLENDALPHA){
 			if (s_blendingAlphaSource != glValue){
 				s_blendingAlphaSource = glValue;
 				s_bAlphaBlendingChanged = true;
 			}
 		}
-		else if (State == D3DRS_DESTBLENDALPHA){
+		else if (State == ERenderState::DESTBLENDALPHA){
 			if (s_blendingAlphaDest != glValue){
 				s_blendingAlphaDest = glValue;
 				s_bAlphaBlendingChanged = true;
@@ -608,7 +608,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		// ApplyBlendingModeChange();
 		break;
 	}
-	case D3DRS_STENCILENABLE:
+	case ERenderState::STENCILENABLE:
 	{
 		if (Value)
 			glEnable(GL_STENCIL_TEST);
@@ -617,7 +617,7 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_STENCILFUNC:
+	case ERenderState::STENCILFUNC:
 	{
 		if (Value == D3DCMP_EQUAL)
 		{
@@ -635,13 +635,13 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_STENCILWRITEMASK:
+	case ERenderState::STENCILWRITEMASK:
 	{
 		glStencilMask(Value);
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_STENCILPASS:
+	case ERenderState::STENCILPASS:
 	{
 		if (Value == D3DSTENCILOP_REPLACE)
 		{
@@ -651,12 +651,12 @@ HRESULT RenderDevice::SetRenderState(D3DRENDERSTATETYPE State, DWORD Value)
 		PE_CHECK_GL_ERROR_DEBUG();
 		break;
 	}
-	case D3DRS_STENCILREF:
+	case ERenderState::STENCILREF:
 	{
 		s_stencil_ref_value = Value;
 		break;
 	}
-	case D3DRS_SCISSORTESTENABLE:
+	case ERenderState::SCISSORTESTENABLE:
 	{
 		if(Value)
 			glEnable(GL_SCISSOR_TEST);

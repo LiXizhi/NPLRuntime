@@ -511,7 +511,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_BORDER, &(sceneState->m_pCurrentEffect));
 				pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 
-				pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+				pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 
 				if(pEffectFile!=0)
 				{
@@ -535,7 +535,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 						CGlobals::GetWorldMatrixStack().pop();
 				}
 
-				pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+				pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 #endif
 				// change back to primary technique
 				CGlobals::GetEffectManager()->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));
@@ -621,8 +621,8 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				CGlobals::GetWorldMatrixStack().push(*pMxWorld);
 
 			// render by default as non-transparent.
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 
 			if(GetPrimaryTechniqueHandle() == TECH_SIMPLE_MESH_NORMAL_CTOR)

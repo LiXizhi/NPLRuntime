@@ -2077,7 +2077,7 @@ namespace ParaEngine
 
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
-			pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
 			pd3dDevice->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
 
@@ -2425,7 +2425,7 @@ namespace ParaEngine
 		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
 		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
 		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
-		//pd3dDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, 0);
+		//pd3dDevice->SetRenderState(ERenderState::CLIPPLANEENABLE, 0);
 		if(m_ReflectionItems[R_SKY_BOX])
 			pScene->RenderSelection(RENDER_SKY_BOX);
 		pEffectManager->EnableClipPlane(true);

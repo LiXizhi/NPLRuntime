@@ -456,7 +456,7 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 		CGlobals::GetWorldMatrixStack().push(mxWorld);
 
 		// render by default as non-transparent.
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		CGlobals::GetEffectManager()->EnableZWrite(true);
 		CGlobals::GetEffectManager()->SetCullingMode(true);
 

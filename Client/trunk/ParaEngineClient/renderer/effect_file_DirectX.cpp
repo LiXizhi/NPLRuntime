@@ -15,7 +15,7 @@
 #include "SkyMesh.h"
 #include "AutoCamera.h"
 #include "SunLight.h"
-#include "Platform\Windows\Render\D3D9\D3D9RenderDevice.h"
+
 #ifdef WIN32
 #define strcmpi		_strcmpi
 #endif
@@ -312,8 +312,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 {
 	m_bIsInitialized =true;
 	m_bIsValid = false;//set to true if created successfully.
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	LPD3DXBUFFER pBufferErrors = NULL;
 	
@@ -329,8 +328,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
 		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
 		*/
-		result = D3DXCreateEffect(
-			pd3dDevice,
+		result = pd3dDevice->CreateEffect(
 			file.getBuffer(),
 			(UINT)file.getSize(), 
 			NULL, //(D3DXMACRO*) (s_bUseHalfPrecision ? s_halfPrecisionMacroTable : s_fullPrecisionMacroTable), 
@@ -918,7 +916,7 @@ void CEffectFileDirectX::EnableAlphaTesting(bool bAlphaTesting)
 	{
 		setBool(k_bAlphaTesting, bAlphaTesting);
 		if(!CGlobals::GetEffectManager()->IsD3DAlphaTestingDisabled())
-			CGlobals::GetRenderDevice()->SetRenderState( D3DRS_ALPHATESTENABLE,  bAlphaTesting );
+			CGlobals::GetRenderDevice()->SetRenderState( ERenderState::ALPHATESTENABLE,  bAlphaTesting );
 	}
 }
 

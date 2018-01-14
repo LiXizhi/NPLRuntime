@@ -409,37 +409,42 @@ bool CDirectXEngine::Begin2D()
 {
 	if(!BeginScene() || m_pd3dDevice == 0)
 		return false;
-	HRESULT hr = m_pd3dDevice->SetRenderTarget(0, m_pRenderTargetSurface);
+
+
+	auto pd3dDevice = CGlobals::GetRenderDevice();
+
+	HRESULT hr = pd3dDevice->SetRenderTarget(0, m_pRenderTargetSurface);
 	if(FAILED(hr))
 	{
 		return false;
 	}
-	m_pd3dDevice->SetRenderState( D3DRS_ZENABLE, FALSE);
-	m_pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE);
-	m_pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-	m_pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
-	m_pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+	pd3dDevice->SetRenderState( ERenderState::ZENABLE, FALSE);
+	pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE);
+	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
+	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 
-	m_pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE);
-	m_pd3dDevice->SetRenderState( D3DRS_FOGENABLE,      FALSE);
+	pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
+	pd3dDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
 
-	m_pd3dDevice->SetRenderState( D3DRS_ALPHABLENDENABLE, TRUE );
-	m_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+	pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
+	pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 
-	m_pd3dDevice->SetRenderState( D3DRS_SRCBLEND,  D3DBLEND_SRCALPHA );
-	m_pd3dDevice->SetRenderState( D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA );
+	pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+	pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-	m_pd3dDevice->SetFVF( DXUT_SCREEN_VERTEX::FVF );
+	pd3dDevice->SetFVF( DXUT_SCREEN_VERTEX::FVF );
 
-	m_pd3dDevice->SetVertexShader( NULL );
-	m_pd3dDevice->SetPixelShader( NULL );
+	pd3dDevice->SetVertexShader( NULL );
+	pd3dDevice->SetPixelShader( NULL );
 	return true;
 }
 
 void CDirectXEngine::End2D()
 {
-	m_pd3dDevice->SetRenderState( D3DRS_ZENABLE, TRUE );
-	m_pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+	auto pd3dDevice = CGlobals::GetRenderDevice();
+	pd3dDevice->SetRenderState( ERenderState::ZENABLE, TRUE );
+	pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 	EndScene();
 }
 

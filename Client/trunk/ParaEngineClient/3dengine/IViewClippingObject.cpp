@@ -84,10 +84,10 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	if(m_bEnableOcclusionQuery && d3dQuery)
 	{
 	float PointSize = 1.f;
-	pd3dDevice->SetRenderState(D3DRS_POINTSIZE, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(D3DRS_POINTSIZE_MIN, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
-	pd3dDevice->SetRenderState(D3DRS_POINTSCALEENABLE, false);
+	pd3dDevice->SetRenderState(ERenderState::POINTSIZE, *((DWORD*)&PointSize));
+	pd3dDevice->SetRenderState(ERenderState::POINTSIZE_MIN, *((DWORD*)&PointSize));
+	pd3dDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
+	pd3dDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
 	}*/
 	Vector3 pVecBounds[8];
 	int nNumVertices;

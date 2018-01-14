@@ -1178,19 +1178,19 @@ namespace ParaEngine
 						if (bUseAdditive && !bAdditive) {
 							if (pMaterial->hasAlphaBlending())
 							{
-								pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-								pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+								pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+								pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 							}
 							else
 							{
-								pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-								pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+								pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+								pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 							}
 							bAdditive = true;
 						}
 						else if (!bUseAdditive && bAdditive) {
-							pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-							pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+							pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+							pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 							bAdditive = false;
 						}
 
@@ -1218,23 +1218,23 @@ namespace ParaEngine
 						/** turn on and off blending. */
 						if (blend && !bl)
 						{
-							pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+							pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 							bl = true;
 						}
 						else if (!blend && bl)
 						{
-							pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+							pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 							bl = false;
 						}
 						/** turn on and off alpha testing. */
 						if (atest && !at)
 						{
-							pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+							pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 							at = true;
 						}
 						else if (!atest && at)
 						{
-							pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+							pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 
 							at = false;
 						}
@@ -1266,9 +1266,9 @@ namespace ParaEngine
 				else
 				{
 #ifdef RENDER_NO_TEXTURE
-					pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+					pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
 					m_pLocalMesh->DrawSubset(i);
-					pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+					pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 #endif
 				}
 				if (pMaterial->hasAnyBillboard())
@@ -1333,24 +1333,24 @@ namespace ParaEngine
 				else
 				{
 #ifdef RENDER_NO_TEXTURE
-					pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+					pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
 					m_pLocalMesh->DrawSubset(i);
-					pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+					pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 #endif
 				}
 			}
 		}
 		if (bl)
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		if (at)
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 		if (zm)
 			CGlobals::GetEffectManager()->EnableZWrite(true);
 		if (bDisableBackFacing)
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 		if (bAdditive) {
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 		return S_OK;
 	}
@@ -1557,19 +1557,19 @@ namespace ParaEngine
 								if (bUseAdditive && !bAdditive) {
 									if (pMaterial->hasAlphaBlending())
 									{
-										pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-										pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									else
 									{
-										pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-										pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									bAdditive = true;
 								}
 								else if (!bUseAdditive && bAdditive) {
-									pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-									pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									bAdditive = false;
 								}
 
@@ -1666,13 +1666,13 @@ namespace ParaEngine
 						else
 						{
 #ifdef RENDER_NO_TEXTURE
-							pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+							pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
 #ifdef USE_DRAW_SUBSET_EX
 							DrawSubSetEx(i, &atts[0]);
 #else
 							m_pLocalMesh->DrawSubset(i);
 #endif
-							pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+							pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 #endif
 						}
 						if (pMaterial->hasAnyBillboard())
@@ -1762,13 +1762,13 @@ namespace ParaEngine
 						else
 						{
 #ifdef RENDER_NO_TEXTURE
-							pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+							pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_WIREFRAME);
 #ifdef USE_DRAW_SUBSET_EX
 							DrawSubSetEx(i, &atts[0]);
 #else
 							m_pLocalMesh->DrawSubset(i);
 #endif
-							pd3dDevice->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
+							pd3dDevice->SetRenderState(ERenderState::FILLMODE, D3DFILL_SOLID);
 #endif
 						}
 					}
@@ -1798,8 +1798,8 @@ namespace ParaEngine
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 
 		if (bAdditive) {
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 
 #ifdef USE_DRAW_SUBSET_EX	

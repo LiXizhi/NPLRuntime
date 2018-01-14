@@ -63,7 +63,7 @@ namespace ParaEngine
 		{
 			
 			CGlobals::GetWorldMatrixStack().push(worldMat);
-			//sceneState->pd3dDevice->SetRenderState(D3DRS_FILLMODE,D3DFILL_WIREFRAME);
+			//sceneState->pd3dDevice->SetRenderState(ERenderState::FILLMODE,D3DFILL_WIREFRAME);
 			int currentPass = -1;
 			pEffectFile->begin(true);
 			//pEffectFile->BeginPass(0);

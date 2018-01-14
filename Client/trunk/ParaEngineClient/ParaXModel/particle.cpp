@@ -343,32 +343,32 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 
 		switch (blend) {
 		case 0://OPAQUE
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 			break;
 		case 1://ADDITIVE BLEND
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			break;
 		case 2://ALPHA_BLEND
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		case 3://TRANSPARENT
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
-			//pd3dDevice->SetRenderState( D3DRS_ALPHAREF,         0x18 );
-			//pd3dDevice->SetRenderState( D3DRS_ALPHAFUNC,  D3DCMP_GREATER );
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
+			//pd3dDevice->SetRenderState( ERenderState::ALPHAREF,         0x18 );
+			//pd3dDevice->SetRenderState( ERenderState::ALPHAFUNC,  D3DCMP_GREATER );
 			break;
 		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			// we want the alpha to be the modulation of the texture and the diffuse color
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
@@ -387,14 +387,14 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 1://ADDITIVE BLEND
 			pEffect->EnableAlphaTesting(false);
 			pEffect->EnableAlphaBlending(true);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			break;
 		case 2://ALPHA_BLEND
 			pEffect->EnableAlphaTesting(false);
 			pEffect->EnableAlphaBlending(true);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		case 3://TRANSPARENT
 			pEffect->EnableAlphaTesting(true);
@@ -403,8 +403,8 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 4://ADDITIVE ALPHA
 			pEffect->EnableAlphaTesting(false);
 			pEffect->EnableAlphaBlending(true);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			// we want the alpha to be the modulation of the texture and the diffuse color
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
@@ -467,13 +467,13 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 3://TRANSPARENT
 			break;
 		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		}
 	}
@@ -488,13 +488,13 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 3://TRANSPARENT
 			break;
 		case 4://ADDITIVE ALPHA
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		}
 	}
@@ -1019,10 +1019,10 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	/// blending additive
-	pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-	pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+	pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+	pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
 	// we want the alpha to be the modulation of the texture and the diffuse color
 	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
@@ -1139,11 +1139,11 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 			break;
 	}while(!bFinished);
 
-	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 	pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
-	pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-	pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 }
 

@@ -260,8 +260,8 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 	if (painter->begin(CGlobals::GetGUI()))
 	{
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
 		painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
 		painter->setPen(Color::White);
@@ -273,7 +273,7 @@ bool ParaEngine::CMultiFrameBlockWorldRenderer::DrawToSkybox()
 		painter->drawTexture(QRectF(0.f, 0.f, painter->FromUnitSpaceX(1.f), painter->FromUnitSpaceY(1.f)), pRenderTarget->GetTexture(), QRectF(), 1.f);
 		
 		painter->Flush();
-		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		painter->end();
 	}
 	return true;

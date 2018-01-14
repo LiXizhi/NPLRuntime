@@ -164,7 +164,7 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 		auto pd3dDevice = CGlobals::GetRenderDevice();
 		if(pd3dDevice)
 		{
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 			pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
 			pd3dDevice->SetTexture(0,NULL);
 

@@ -160,7 +160,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 		mesh_vertex_normal* vb_vertices = NULL;
 		int nNumLockedVertice;
 		int nNumFinishedVertice = 0;
-		// pd3dDevice->SetRenderState( D3DRS_FOGENABLE,      FALSE);
+		// pd3dDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
 
 		DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
@@ -197,19 +197,19 @@ void ParaEngine::CSortedFaceGroups::Render()
 					if(bUseAdditive && !bAdditive){
 						if(blend)
 						{
-							pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-							pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+							pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+							pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 						}
 						else
 						{
-							pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-							pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+							pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+							pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 						}
 						bAdditive = true;
 					}
 					else if(!bUseAdditive && bAdditive){
-						pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-						pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+						pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+						pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 						bAdditive = false;
 					}
 
@@ -228,33 +228,33 @@ void ParaEngine::CSortedFaceGroups::Render()
 					/** turn on and off blending. */
 					if (blend && !bl ) 
 					{
-						pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+						pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 						bl = true;
 					}
 					else if (!blend && bl) 
 					{
-						pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+						pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 						bl = false;
 					}
 
 					/** turn on and off alpha testing. */
 					if (atest && !at) 
 					{
-						pd3dDevice->SetRenderState( D3DRS_ALPHATESTENABLE,  TRUE );
+						pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE,  TRUE );
 						at = true;
 					}
 					else if (!atest && at) 
 					{
-						pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+						pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 						at = false;
 					}
 					/** turn on or off z write: z mask means disable z write */
 					if(zmask && !zm){
-						pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+						pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 						zm = true;
 					}
 					else if(!zmask && zm){
-						pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+						pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 						zm = false;
 					}
 
@@ -342,16 +342,16 @@ void ParaEngine::CSortedFaceGroups::Render()
 		}
 	
 		if(bl)
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		if(at)
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 		if(zm)
-			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 		if(bDisableBackFacing)
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 		if(bAdditive){
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 		//if(!bHasLighting)
 			//CGlobals::GetEffectManager()->EnableSunLight(true);
@@ -360,7 +360,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 			// disable texture transformation in fixed function.
 			pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
 		}
-		// pd3dDevice->SetRenderState( D3DRS_FOGENABLE, CGlobals::GetScene()->IsFogEnabled());
+		// pd3dDevice->SetRenderState( ERenderState::FOGENABLE, CGlobals::GetScene()->IsFogEnabled());
 #endif
 	}
 	else
@@ -421,20 +421,20 @@ void ParaEngine::CSortedFaceGroups::Render()
 							{
 								if(blend)
 								{
-									pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-									pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 								}
 								else
 								{
-									pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-									pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 								}
 								bAdditive = true;
 							}
 							else if(!bUseAdditive && bAdditive)
 							{
-								pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-								pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+								pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+								pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 								bAdditive = false;
 							}
 
@@ -475,11 +475,11 @@ void ParaEngine::CSortedFaceGroups::Render()
 							}
 							/** turn on or off z write: z mask means disable z write */
 							if(zmask && !zm){
-								pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, FALSE );
+								pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 								zm = true;
 							}
 							else if(!zmask && zm){
-								pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+								pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 								zm = false;
 							}
 
@@ -644,10 +644,10 @@ void ParaEngine::CSortedFaceGroups::Render()
 			if(at)
 				pEffect->EnableAlphaTesting(false);
 			if(zm)
-				pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE, TRUE );
+				pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			if(bAdditive){
-				pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-				pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			}
 			if(bDisableBackFacing)
 				CGlobals::GetEffectManager()->SetCullingMode(true);

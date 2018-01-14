@@ -240,7 +240,7 @@ namespace ParaEngine
 	const uint32_t RSV_TRUE(TRUE);
 	const uint32_t RSV_FALSE(FALSE);
 
-	enum  ERSVCULL
+	enum ERSVCULL
 	{
 		RSV_CULL_NONE,
 		RSV_CULL_CW,

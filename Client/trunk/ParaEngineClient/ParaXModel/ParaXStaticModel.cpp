@@ -798,19 +798,19 @@ namespace ParaEngine {
 								if (bUseAdditive && !bAdditive) {
 									if (pMaterial->hasAlphaBlending())
 									{
-										pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-										pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									else
 									{
-										pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-										pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									bAdditive = true;
 								}
 								else if (!bUseAdditive && bAdditive) {
-									pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-									pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									bAdditive = false;
 								}
 
@@ -997,8 +997,8 @@ namespace ParaEngine {
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 
 		if (bAdditive) {
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 		return S_OK;
 	}

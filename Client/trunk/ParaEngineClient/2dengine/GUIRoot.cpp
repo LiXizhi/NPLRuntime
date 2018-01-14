@@ -751,9 +751,9 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 		//////////////////////////////////////////////////////////////////////////
 		// breadth first transversing the 2D scene
-		//pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,TRUE);
-		//pd3dDevice->SetRenderState(D3DRS_STENCILFUNC,D3DCMP_EQUAL);
-		//pd3dDevice->SetRenderState(D3DRS_STENCILREF,0);
+		//pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,TRUE);
+		//pd3dDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_EQUAL);
+		//pd3dDevice->SetRenderState(ERenderState::STENCILREF,0);
 		for( iter = this->GetChildren()->begin(); iter != this->GetChildren()->end();iter++ )
 		{
 			CGUIBase* pObjChild = * iter;  
@@ -775,13 +775,13 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 		//////////////////////////////////////////////////////////////////////////
 		//render the dragging object if exist
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
 		if (pdrag->pDragging!=NULL && ! pdrag->m_bIsCandicateOnly) {
 			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
 		}
 		//////////////////////////////////////////////////////////////////////////
 		//render the IME candidate window
-		pd3dDevice->SetRenderState(D3DRS_STENCILENABLE,FALSE);
+		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
 		//if (GetIMEFocus()) {
 		//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
 		//}
