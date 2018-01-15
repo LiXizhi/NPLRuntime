@@ -19,9 +19,10 @@ namespace ParaEngine
 
 		virtual uint32_t GetRenderState(const ERenderState& State) = 0;
 		virtual bool SetRenderState(const ERenderState State, const uint32_t Value) = 0;
+		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) = 0;
 
 
-		virtual HRESULT SetClipPlane(DWORD Index, const float* pPlane) = 0;
+
 		virtual HRESULT SetTexture(DWORD Stage, IDirect3DTexture9* pTexture) = 0;
 		virtual HRESULT SetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD Value) = 0;
 		virtual HRESULT GetSamplerState(DWORD Sampler, D3DSAMPLERSTATETYPE Type, DWORD* pValue) = 0;

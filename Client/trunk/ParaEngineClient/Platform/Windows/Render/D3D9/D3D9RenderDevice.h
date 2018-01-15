@@ -21,7 +21,7 @@ namespace ParaEngine
 		virtual bool SetRenderState(const ERenderState State, const uint32_t Value) override;
 
 
-		virtual HRESULT SetClipPlane(DWORD Index, const float* pPlane) override;
+		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
 
 
 		virtual HRESULT SetTexture(DWORD Stage, IDirect3DTexture9* pTexture) override;

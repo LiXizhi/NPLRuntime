@@ -11,9 +11,9 @@ ParaEngine::CD3D9RenderDevice::CD3D9RenderDevice(IDirect3DDevice9* device)
 }
 
 
-HRESULT ParaEngine::CD3D9RenderDevice::SetClipPlane(DWORD Index, const float* pPlane)
+bool ParaEngine::CD3D9RenderDevice::SetClipPlane(uint32_t Index, const float* pPlane)
 {
-	return m_pD3DDevice->SetClipPlane(Index, pPlane);
+	return m_pD3DDevice->SetClipPlane(Index, pPlane) == S_OK;
 }
 
 HRESULT ParaEngine::CD3D9RenderDevice::SetTexture(DWORD Stage, IDirect3DTexture9* pTexture)
