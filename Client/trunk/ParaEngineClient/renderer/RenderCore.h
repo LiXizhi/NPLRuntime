@@ -26,7 +26,7 @@
 #ifndef USE_DIRECTX_RENDERER
 #include "RenderCoreOpenGL.h"
 #endif
-#include "IRenderDevice.h"
+#include "Framework/Interface/Render/IRenderDevice.h"
 
 //  defining structures as if DirectX exist to be used with OpengGL or Null renderer.
 
