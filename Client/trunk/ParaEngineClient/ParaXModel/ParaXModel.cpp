@@ -345,7 +345,7 @@ void CParaXModel::initIndices(int nIndices, uint16* pIndices)
 {
 	if (pIndices == 0) return;
 
-	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	// delete old
 	m_objNum.nIndices = nIndices;
 	SAFE_DELETE_ARRAY(m_indices);
@@ -704,9 +704,9 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 	if (nPasses <= 0)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	pd3dDevice->SetStreamSource(0, m_pVertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
-	pd3dDevice->SetIndices(m_pIndexBuffer.GetDevicePointer());
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	pRenderDevice->SetStreamSource(0, m_pVertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
+	pRenderDevice->SetIndices(m_pIndexBuffer.GetDevicePointer());
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if (pEffect == 0)
@@ -720,7 +720,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			if (p.init(this, pSceneState))
 			{
 				// we don't want to render completely transparent parts
-				pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 				p.deinit();
 			}
 		}
@@ -741,7 +741,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 					{
 						// we don't want to render completely transparent parts
 						pEffect->CommitChanges();
-						pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+						pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 						p.deinit_FX(pSceneState);
 					}
 				}
@@ -750,7 +750,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			pEffect->end();
 		}
 	}
-	pd3dDevice->SetIndices(0);
+	pRenderDevice->SetIndices(0);
 }
 
 void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams)
@@ -759,9 +759,9 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 	if (nPasses <= 0)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
+	pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if (pEffect == 0)
@@ -927,9 +927,9 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 	if (nPasses <= 0)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
-	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
+	pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if (pEffect == 0)
@@ -993,9 +993,9 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 #endif
 
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
+	pRenderDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	if (pEffect == 0)
@@ -1188,7 +1188,7 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 	if (p.indexCount == 0)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	int nVertexOffset = p.GetVertexStart(this);
 	ModelVertex *ov = m_origVertices;
@@ -1220,9 +1220,9 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pRenderDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1243,7 +1243,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 	if (p.indexCount == 0)
 		return;
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	bmax_vertex* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
 	int nNumLockedVertice;
@@ -1308,9 +1308,9 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pd3dDevice->DrawPrimitive( RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pRenderDevice->DrawPrimitive( RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1342,7 +1342,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 		return;
 	PERF1("SoftSkinningDrawPass");
 #endif
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	mesh_vertex_normal* vb_vertices = NULL;
 	ModelVertex *ov = m_origVertices;
 	int nVertexOffset = p.GetVertexStart(this);
@@ -1413,9 +1413,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pRenderDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{

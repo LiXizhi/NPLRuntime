@@ -838,7 +838,7 @@ HRESULT CSceneObject::InitDeviceObjects()
 	CBaseObject::InitDeviceObjects();
 
 	CGlobals::GetEffectManager()->SetScene(this);
-	m_sceneState->m_pd3dDevice = CGlobals::GetRenderDevice();
+
 
 	m_globalTerrain->InitDeviceObjects();
 	CGlobals::GetOceanManager()->InitDeviceObjects();
@@ -2078,7 +2078,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	SceneState& sceneState = *(m_sceneState.get());
 	
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
-	RenderDevicePtr pd3dDevice = sceneState.m_pd3dDevice;
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 #ifdef USE_DIRECTX_RENDERER
 	pd3dDevice->SetRenderTarget(1,NULL);
@@ -2680,7 +2680,7 @@ void CSceneObject::RenderShadows()
 #ifdef USE_DIRECTX_RENDERER
 	SceneState& sceneState = *(m_sceneState.get());
 	CAutoCamera* pCamera =  (CAutoCamera*)GetCurrentCamera();
-	auto pd3dDevice = sceneState.m_pd3dDevice;
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 	if(m_bRenderMeshShadow)
 	{// for each light, we cast shadows
@@ -3364,7 +3364,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 	if(CHECK_SELECTION(RENDER_SPRITES))
 	{
 		/// -- Sprite post-rendering list
-		auto pd3dDevice = sceneState.m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		if(!sceneState.listPRSprite.empty())
 		{
 			pd3dDevice->SetVertexShader( NULL );			// always set this
@@ -3402,7 +3402,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		if(!sceneState.listZones.empty() || !sceneState.listPortals.empty())
 		{
 			CGlobals::GetEffectManager()->BeginEffect(TECH_NONE, &(sceneState.m_pCurrentEffect));
-			auto pd3dDevice = sceneState.m_pd3dDevice;
+			auto pd3dDevice = CGlobals::GetRenderDevice();
 
 			// draw zones
 			{

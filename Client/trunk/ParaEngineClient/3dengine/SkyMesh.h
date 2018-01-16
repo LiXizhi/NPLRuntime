@@ -118,9 +118,9 @@ namespace ParaEngine
 		///render the sky
 		virtual HRESULT Draw(SceneState * sceneState);
 
-		void DrawSimulatedSky(EffectManager* pEffectManager, SceneState * sceneState, CSunLight &sunlight, RenderDevicePtr pd3dDevice, Vector3 &vPos);
+		void DrawSimulatedSky(EffectManager* pEffectManager, SceneState * sceneState, CSunLight &sunlight, RenderDevicePtr pRenderDevice, Vector3 &vPos);
 
-		void DrawStaticMeshSky(EffectManager* pEffectManager, SceneState * sceneState, RenderDevicePtr pd3dDevice, CSunLight &sunlight, Vector3 vPos);
+		void DrawStaticMeshSky(EffectManager* pEffectManager, SceneState * sceneState, RenderDevicePtr pRenderDevice, CSunLight &sunlight, Vector3 vPos);
 
 		void DrawStaticMeshSkyInner(SceneState * sceneState);
 

@@ -84,17 +84,17 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	if(m_bEnableOcclusionQuery && d3dQuery)
 	{
 	float PointSize = 1.f;
-	pd3dDevice->SetRenderState(ERenderState::POINTSIZE, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(ERenderState::POINTSIZE_MIN, *((DWORD*)&PointSize));
-	pd3dDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
-	pd3dDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(ERenderState::POINTSIZE, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(ERenderState::POINTSIZE_MIN, *((DWORD*)&PointSize));
+	pRenderDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
+	pRenderDevice->SetRenderState(ERenderState::POINTSCALEENABLE, false);
 	}*/
 	Vector3 pVecBounds[8];
 	int nNumVertices;
 	GetRenderVertices(pVecBounds, &nNumVertices);
 	
 #ifdef USE_DIRECTX_RENDERER
-	pD3dDevice->DrawPrimitiveUP(sceneState->m_pd3dDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_POINTLIST, nNumVertices, 
+	pRenderDevice->DrawPrimitiveUP(sceneState->m_pRenderDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_POINTLIST, nNumVertices, 
 		pVecBounds, sizeof(OCCLUSION_VERTEX));
 #endif
 #endif

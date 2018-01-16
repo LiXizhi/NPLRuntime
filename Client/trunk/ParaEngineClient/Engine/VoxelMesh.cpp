@@ -87,7 +87,7 @@ HRESULT ParaEngine::CVoxelMesh::Draw( SceneState * sceneState )
 	if(pIsoSurface)
 	{
 		sceneState->SetCurrentSceneObject(this);
-		auto pd3dDevice = sceneState->m_pd3dDevice;
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 
 		// get world transform matrix
 		Matrix4 mxWorld;
@@ -103,7 +103,7 @@ HRESULT ParaEngine::CVoxelMesh::Draw( SceneState * sceneState )
 		{
 			//////////////////////////////////////////////////////////////////////////
 			// fixed programming pipeline
-			pIsoSurface->Render(sceneState, pd3dDevice);
+			pIsoSurface->Render(sceneState, pRenderDevice);
 		}
 		else
 		{

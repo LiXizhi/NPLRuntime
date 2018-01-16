@@ -104,7 +104,7 @@ namespace ParaEngine
 		return pTex;
 	}
 
-	HRESULT CParaXStaticBase::Create(RenderDevicePtr pd3dDevice, const char* strFilename, bool bCheckSecondUV)
+	HRESULT CParaXStaticBase::Create(RenderDevicePtr pRenderDevice, const char* strFilename, bool bCheckSecondUV)
 	{
 		// Initialize textures from texture file
 		if (strFilename != NULL)
@@ -112,7 +112,7 @@ namespace ParaEngine
 
 		if (m_pFileData)
 		{
-			return Create(pd3dDevice, (char*)m_pFileData, m_pFileDataSize, bCheckSecondUV);
+			return Create(pRenderDevice, (char*)m_pFileData, m_pFileDataSize, bCheckSecondUV);
 		}
 		else
 		{
@@ -121,7 +121,7 @@ namespace ParaEngine
 			DWORD nFileSize = (DWORD)myFile.getSize();
 			if (buffer == 0)
 				return E_FAIL;
-			return Create(pd3dDevice, buffer, nFileSize, bCheckSecondUV);
+			return Create(pRenderDevice, buffer, nFileSize, bCheckSecondUV);
 		}
 	}
 

@@ -79,7 +79,7 @@ RenderDevice* RenderDevice::GetInstance()
 	return &g_instance;
 }
 
-HRESULT RenderDevice::DrawPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
+HRESULT RenderDevice::DrawPrimitive(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
 {
 	ApplyBlendingModeChange();
 
@@ -100,13 +100,13 @@ HRESULT RenderDevice::DrawPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsT
 	return S_OK;
 }
 
-HRESULT RenderDevice::DrawPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+HRESULT RenderDevice::DrawPrimitiveUP(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
 	if (s_currentIndexBuffer)
-		pd3dDevice->SetIndices(0);
+		pRenderDevice->SetIndices(0);
 	if (s_currentVertexBuffer)
-		pd3dDevice->SetStreamSource(0, 0, 0, 0);
+		pRenderDevice->SetStreamSource(0, 0, 0, 0);
 	if (s_currentVertexDeclaration)
 		s_currentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 
@@ -122,7 +122,7 @@ HRESULT RenderDevice::DrawPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatistic
 	return S_OK;
 }
 
-HRESULT RenderDevice::DrawIndexedPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount)
+HRESULT RenderDevice::DrawIndexedPrimitive(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount)
 {
 	ApplyBlendingModeChange();
 #ifdef DEBUG_DRAW_CALL_SINGLE_TRIANGLE
@@ -162,13 +162,13 @@ HRESULT RenderDevice::DrawIndexedPrimitive(RenderDevicePtr pd3dDevice, int nStat
 	return S_OK;
 }
 
-HRESULT RenderDevice::DrawIndexedPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void * pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+HRESULT RenderDevice::DrawIndexedPrimitiveUP(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void * pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
 	if (s_currentIndexBuffer)
-		pd3dDevice->SetIndices(0);
+		pRenderDevice->SetIndices(0);
 	if (s_currentVertexBuffer)
-		pd3dDevice->SetStreamSource(0, 0, 0, 0);
+		pRenderDevice->SetStreamSource(0, 0, 0, 0);
 	if (s_currentVertexDeclaration)
 		s_currentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 

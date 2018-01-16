@@ -32,7 +32,7 @@ void TriangleStrip::Render(Terrain * pTerrain)
 		glDrawElements(GL_TRIANGLE_STRIP, m_NumberOfVertices, GL_UNSIGNED_INT, m_pVertices);*/
 	/*if (m_bEnabled)
 	{
-			DirectXPerf::DrawIndexedPrimitiveUP(pd3dDevice, DirectXPerf::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0, m_NumberOfVertices, m_NumberOfVertices-2, 
+			DirectXPerf::DrawIndexedPrimitiveUP(pRenderDevice, DirectXPerf::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0, m_NumberOfVertices, m_NumberOfVertices-2, 
 			m_pVertices,D3DFMT_INDEX16, pTerrain->m_pVertices, sizeof(FLOAT)*3);
 	}*/
 }

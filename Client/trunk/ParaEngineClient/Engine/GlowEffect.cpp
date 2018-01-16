@@ -60,22 +60,22 @@ HRESULT CGlowEffect::RestoreDeviceObjects()
 {
 	HRESULT hr=S_OK;
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	
 	D3DVIEWPORT9 viewport;
-	pd3dDevice->GetViewport( &viewport );
+	pRenderDevice->GetViewport( &viewport );
 	m_glowtextureWidth = (float)viewport.Width/2;
 	m_glowtextureHeight = (float)viewport.Height/2;
 
 	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
-	if(FAILED(pd3dDevice->CreateTexture(viewport.Width, viewport.Height, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(pRenderDevice->CreateTexture(viewport.Width, viewport.Height, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
 		D3DPOOL_DEFAULT, &m_pRTHalfSizeTexture, NULL)))
 		return E_FAIL;
 	
-	if(FAILED(pd3dDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(pRenderDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
 		D3DPOOL_DEFAULT, &m_pRTGlowSourceTexture, NULL)))
 		return E_FAIL;
-	if(FAILED(pd3dDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(pRenderDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
 		D3DPOOL_DEFAULT, &m_pRTBlurHorizTexture, NULL)))
 		return E_FAIL;
 
@@ -102,17 +102,17 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 	
 	HRESULT hr=S_OK;
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	// get current render target
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-	if(FAILED(pd3dDevice->GetDepthStencilSurface(&m_pZBuffer)))
+	if(FAILED(pRenderDevice->GetDepthStencilSurface(&m_pZBuffer)))
 		return E_FAIL;
 	if(!m_pBackBuffer || !m_pZBuffer)
 		return E_FAIL;
 
 	// Copy scene to lower resolution render target texture
-	if( FAILED(hr = pd3dDevice->StretchRect( m_pBackBuffer, NULL, m_pRTHalfSizeSurface, NULL, D3DTEXF_LINEAR )) ) {
+	if( FAILED(hr = pRenderDevice->StretchRect( m_pBackBuffer, NULL, m_pRTHalfSizeSurface, NULL, D3DTEXF_LINEAR )) ) {
 		OUTPUT_LOG("StretchRect() failed!\r\n");
 		return hr;
 	}
@@ -176,8 +176,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		{
 			//////////////////////////////////////////////////////////////////////////
 			// make the glow source. Multiply texture alpha * RGB to get the glow sources
-			pd3dDevice->SetRenderTarget( 0, m_pRTGlowSourceSurface);
-			pd3dDevice->SetDepthStencilSurface( NULL );
+			pRenderDevice->SetRenderTarget( 0, m_pRTGlowSourceSurface);
+			pRenderDevice->SetDepthStencilSurface( NULL );
 
 			if(pEffectFile->BeginPass(0))
 			{
@@ -187,7 +187,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 				
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}
@@ -197,10 +197,10 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Blur glow sources in the horizontal axis
 
-		pd3dDevice->SetRenderTarget( 0, m_pRTBlurHorizSurface );
-		pd3dDevice->SetDepthStencilSurface( NULL );
+		pRenderDevice->SetRenderTarget( 0, m_pRTBlurHorizSurface );
+		pRenderDevice->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
-		// pd3dDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
+		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
 		if(pEffectFile->BeginPass(1))
 		{
@@ -209,7 +209,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTGlowSourceTexture);
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -220,10 +220,10 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Blur the horizontal blur in the vertical direction
 
-		pd3dDevice->SetRenderTarget( 0, m_pRTBlurVertSurface );
-		pd3dDevice->SetDepthStencilSurface( NULL );
+		pRenderDevice->SetRenderTarget( 0, m_pRTBlurVertSurface );
+		pRenderDevice->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
-		// pd3dDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
+		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
 		//fGlowAmount = 2;
 		if(pEffectFile->BeginPass(1))
@@ -233,7 +233,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTBlurHorizTexture );  //editor here!!!
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -244,10 +244,10 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Add the final blur image to the back buffer
 
-		pd3dDevice->SetRenderTarget( 0, m_pBackBuffer);
-		pd3dDevice->SetDepthStencilSurface( NULL );
+		pRenderDevice->SetRenderTarget( 0, m_pBackBuffer);
+		pRenderDevice->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
-		// pd3dDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
+		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
 		for (int i=0;i<4;++i)
 		{
@@ -266,7 +266,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pd3dDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
@@ -274,7 +274,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		}
 
 		// restore depth stencil buffer
-		pd3dDevice->SetDepthStencilSurface( m_pZBuffer );
+		pRenderDevice->SetDepthStencilSurface( m_pZBuffer );
 		pEffectFile->end();
 	}
 	else

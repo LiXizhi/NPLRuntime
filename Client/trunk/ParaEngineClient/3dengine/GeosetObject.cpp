@@ -80,12 +80,12 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			CEffectFile* pEffectFile=pEffectManager->GetCurrentEffectFile();
 			if(pEffectFile!=NULL)
 			{
-				RenderDevicePtr pd3dDevice=sceneState->m_pd3dDevice;
-				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE,0);
+				RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+				pRenderDevice->SetRenderState(ERenderState::COLORWRITEENABLE,0);
 				_draw(sceneState,mat);
 
-				pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE,0x0000000F);
-				pd3dDevice->SetRenderState(ERenderState::ZFUNC,D3DCMP_LESSEQUAL);
+				pRenderDevice->SetRenderState(ERenderState::COLORWRITEENABLE,0x0000000F);
+				pRenderDevice->SetRenderState(ERenderState::ZFUNC,D3DCMP_LESSEQUAL);
 				_draw(sceneState,mat);
 
 				return S_OK;
@@ -114,8 +114,8 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 					pEffectManager->BeginEffect(TECH_SIMPLE_MESH_NORMAL_BORDER,&(sceneState->m_pCurrentEffect));
 					pEffectFile=pEffectManager->GetCurrentEffectFile();
 
-					RenderDevicePtr pd3dDevice=sceneState->m_pd3dDevice;
-					pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE,FALSE);
+					RenderDevicePtr pRenderDevice= CGlobals::GetRenderDevice();
+					pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE,FALSE);
 
 					if(pEffectFile!=0)
 					{
@@ -133,7 +133,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 						}
 					}
 
-					pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
+					pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
 
 					// change back to primary technique
 					pEffectManager->BeginEffect(mParent->GetPrimaryTechniqueHandle(),&(sceneState->m_pCurrentEffect));
@@ -241,7 +241,7 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 	{
 		CGlobals::GetWorldMatrixStack().push(mat);
 		// draw model
-		RenderDevicePtr  pd3dDevice=CGlobals::GetRenderDevice();
+		RenderDevicePtr  pRenderDevice=CGlobals::GetRenderDevice();
 
 		float fCameraToObjectDist=sceneState->GetCameraToCurObjectDistance();
 		// scale the model

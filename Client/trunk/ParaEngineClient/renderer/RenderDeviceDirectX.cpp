@@ -17,28 +17,28 @@ RenderDevice* RenderDevice::GetInstance()
 	return &g_instance;
 }
 
-HRESULT RenderDevice::DrawPrimitive(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
+HRESULT RenderDevice::DrawPrimitive(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
 {
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
-	return pd3dDevice->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
+	return pRenderDevice->DrawPrimitive(PrimitiveType, StartVertex, PrimitiveCount);
 }
 
-HRESULT RenderDevice::DrawPrimitiveUP(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+HRESULT RenderDevice::DrawPrimitiveUP(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
-	return pd3dDevice->DrawPrimitiveUP(PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+	return pRenderDevice->DrawPrimitiveUP(PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
-HRESULT RenderDevice::DrawIndexedPrimitive(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount)
+HRESULT RenderDevice::DrawIndexedPrimitive(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount)
 {
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
-	return pd3dDevice->DrawIndexedPrimitive(Type, BaseVertexIndex, MinIndex, NumVertices, indexStart, PrimitiveCount);
+	return pRenderDevice->DrawIndexedPrimitive(Type, BaseVertexIndex, MinIndex, NumVertices, indexStart, PrimitiveCount);
 }
 
-HRESULT RenderDevice::DrawIndexedPrimitiveUP(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, CONST void * pIndexData, D3DFORMAT IndexDataFormat, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+HRESULT RenderDevice::DrawIndexedPrimitiveUP(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, CONST void * pIndexData, D3DFORMAT IndexDataFormat, CONST void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
 {
 	IncrementDrawBatchAndVertices(1, PrimitiveCount, nStatisticsType);
-	return pd3dDevice->DrawIndexedPrimitiveUP(PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+	return pRenderDevice->DrawIndexedPrimitiveUP(PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
 }
 
 bool RenderDevice::CheckRenderError(const char* filename, const char* func, int nLine)
@@ -51,7 +51,7 @@ bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int n
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	// gets the surface of the back buffer.
 	IDirect3DSurface9* pFrameBufferSurface = CGlobals::GetDirectXEngine().GetRenderTarget();
-	/*HRESULT hResult = pd3dDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pFrameBufferSurface);
+	/*HRESULT hResult = pRenderDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &pFrameBufferSurface);
 	if (FAILED(hResult))
 	return false;
 	bool bIsBackbuffer = CGlobals::GetDirectXEngine().GetRenderTarget() == pFrameBufferSurface;

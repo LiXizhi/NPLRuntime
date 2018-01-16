@@ -4323,7 +4323,7 @@ For LXZ:
 	- global scene objects can be queried from a hash map.Hence, it is faster now.
 	- The character attachment structure now works with particle system. Once can attach or dettach particle system or other models to a 
 		specified attachment point, such as head, shoulder, hands.
-	- TODO: pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE); should be used instead of D3DTOP_SELECTARG1 for some models.
+	- TODO: pRenderDevice->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE); should be used instead of D3DTOP_SELECTARG1 for some models.
 		TODO: there is a bug when rendering water after rendering particle or other transparent objects. The ocean color seems to blend into 
 			transparent objects, even if they are in front of the water. 
 		
@@ -4563,7 +4563,7 @@ For LXZ:
 	-	Global water level is implemented.
 	- TODO: Use triangle strips for terrain surface. Use 4 degenerate triangles to connect disjoint strips
 	- TODO: When in REF mode, BLP model created with 
-			D3DXCreateTexture(pd3dDevice, width, height, 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pTexture)))
+			D3DXCreateTexture(pRenderDevice, width, height, 0, 0, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, &pTexture)))
 			Will not LOCK properly. Please Check blp.cpp Line 242. 
 			[possible Solution:] load BLP directly 
 	- a new configuration mode DEBUG_shaders is added, please see effect_file.cpp for more information

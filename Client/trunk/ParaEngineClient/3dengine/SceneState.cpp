@@ -32,7 +32,6 @@ namespace ParaEngine
 		m_pCurrentSceneObject = NULL;
 		fViewCullingRadius = OBJ_UNIT*20; // default to 20 meters round the eye
 		pTouchedObject = NULL;
-		m_pd3dDevice = NULL;
 		
 		ZeroMemory( &m_matGlobalMaterial, sizeof(m_matGlobalMaterial) );
 		m_matGlobalMaterial.Diffuse.r = m_matGlobalMaterial.Ambient.r = 0.3f;

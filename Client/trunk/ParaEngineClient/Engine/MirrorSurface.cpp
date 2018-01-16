@@ -65,13 +65,13 @@ void CMirrorSurface::RestoreDeviceObjects()
 {
 	HRESULT hr;
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
 	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
 	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-	hr = pd3dDevice->CreateTexture(nWidth, 	nHeight, 
+	hr = pRenderDevice->CreateTexture(nWidth, 	nHeight, 
 		1, D3DUSAGE_RENDERTARGET, 
 		D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pReflectionTexture, NULL);
 	CHECK_RETURN_CODE("CreateTexture Reflection Texture", hr);  
@@ -79,7 +79,7 @@ void CMirrorSurface::RestoreDeviceObjects()
 	hr = m_pReflectionTexture->GetSurfaceLevel(0, &m_pReflectionSurface);
 	CHECK_RETURN_CODE("GetSurfaceLevel Reflection Surface", hr);
 
-	hr = pd3dDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
+	hr = pRenderDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
 		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
 	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
 	m_bInitialized=true;
@@ -132,7 +132,7 @@ void CMirrorSurface::SetMatrices(bool bPostPushMatrices, bool bPrePopMatrices)
 		CGlobals::GetViewMatrixStack().pop();
 	}
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	Matrix4 worldViewMatrix;
 	Matrix4 worldInverseTransposeMatrix;
 	Matrix4 viewMatrix;
@@ -187,7 +187,7 @@ void CMirrorSurface::RenderReflectionTexture()
 			InitDeviceObjects();
 			RestoreDeviceObjects();
 		}
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		Plane clipPlane;
 		Plane transformedClipPlane;
@@ -200,9 +200,9 @@ void CMirrorSurface::RenderReflectionTexture()
 
 		// set depth surface
 		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(pd3dDevice->GetDepthStencilSurface(&pOldZBuffer)))
+		if(FAILED(pRenderDevice->GetDepthStencilSurface(&pOldZBuffer)))
 			return;
-		pd3dDevice->SetDepthStencilSurface( m_pDepthStencilSurface );
+		pRenderDevice->SetDepthStencilSurface( m_pDepthStencilSurface );
 
 		// Compute the field of view and use it
 		CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
@@ -239,7 +239,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		pEffectManager->EnableClipPlane(true);
 
 		// D3DCLEAR_ZBUFFER is doomed. Hence, reflection must be rendered before the main thing is rendered. 
-		pd3dDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_RGBA(0, 0, 0, 0), 1.0f, 0L);
+		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_RGBA(0, 0, 0, 0), 1.0f, 0L);
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -253,7 +253,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		// reverse cull mode, since we made the reflection. This should be done for both fixed function and programmable pipeline.
 		//CGlobals::GetSceneState()->m_dwD3D_CULLMODE = RSV_CULL_CW; 
 		// TODO: maybe first rendering terrain then rendering sky box will reduce fill rate ?
-		//pd3dDevice->SetRenderState(ERenderState::CLIPPLANEENABLE, 0);
+		//pRenderDevice->SetRenderState(ERenderState::CLIPPLANEENABLE, 0);
 		CGlobals::GetScene()->RenderSelection(RENDER_SKY_BOX);
 		pEffectManager->EnableClipPlane(true);
 		CGlobals::GetScene()->RenderSelection(RENDER_PLAYER);
@@ -280,7 +280,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		pCamera->UpdateFrustum();
 
 		// restore old depth surface
-		pd3dDevice->SetDepthStencilSurface( pOldZBuffer);
+		pRenderDevice->SetDepthStencilSurface( pOldZBuffer);
 		SAFE_RELEASE(pOldZBuffer);
 
 		//////////////////////////////////////////////////////////////////////////

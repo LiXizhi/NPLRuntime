@@ -13,7 +13,6 @@
 #include "RenderTarget.h"
 #include "PaintEngine/Painter.h"
 #include "BufferPicking.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -138,8 +137,7 @@ DWORD ParaEngine::CBufferPicking::Pick(int nX, int nY, int nViewportId /*= -1*/)
 int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -1*/)
 {
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice =CGlobals::GetRenderDevice();
 
 	ClearPickingResult();
 	SetResultDirty(false);

@@ -36,8 +36,8 @@ void ParaEngine::GUIState::BeginDepthTest(CGUIBase* pObject)
 	{
 		if (pObject)
 			pObject->GetPainter(this)->Flush();
-		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
-		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 	m_nDepthEnableCount++;
 }
@@ -50,7 +50,7 @@ void ParaEngine::GUIState::EndDepthTest(CGUIBase* pObject)
 	{
 		if (pObject)
 			pObject->GetPainter(this)->Flush();
-		pd3dDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
-		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 }

@@ -13,18 +13,18 @@ namespace ParaEngine
 		RenderDevice();
 		static RenderDevice* GetInstance();
 
-		static HRESULT DrawPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+		static HRESULT DrawPrimitive(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
 
-		static HRESULT DrawPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatisticsType,
+		static HRESULT DrawPrimitiveUP(RenderDevicePtr pRenderDevice, int nStatisticsType,
 			D3DPRIMITIVETYPE PrimitiveType,
 			UINT PrimitiveCount,
 			const void* pVertexStreamZeroData,
 			UINT VertexStreamZeroStride);
 
 
-		static HRESULT DrawIndexedPrimitive(RenderDevicePtr pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount);
+		static HRESULT DrawIndexedPrimitive(RenderDevicePtr pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount);
 
-		static HRESULT DrawIndexedPrimitiveUP(RenderDevicePtr pd3dDevice, int nStatisticsType,
+		static HRESULT DrawIndexedPrimitiveUP(RenderDevicePtr pRenderDevice, int nStatisticsType,
 			D3DPRIMITIVETYPE PrimitiveType,
 			UINT MinVertexIndex,
 			UINT NumVertices,

@@ -161,17 +161,17 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 		}
 #ifdef USE_DIRECTX_RENDERER
 		// set render state
-		auto pd3dDevice = CGlobals::GetRenderDevice();
-		if(pd3dDevice)
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if(pRenderDevice)
 		{
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-			pd3dDevice->SetTexture(0,NULL);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pRenderDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
+			pRenderDevice->SetTexture(0,NULL);
 
-			pd3dDevice->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
-			pd3dDevice->SetFVF(LINEVERTEX::FVF);
+			pRenderDevice->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
+			pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-			pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
+			pRenderDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
 				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), D3DFMT_INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
 		}
 #endif

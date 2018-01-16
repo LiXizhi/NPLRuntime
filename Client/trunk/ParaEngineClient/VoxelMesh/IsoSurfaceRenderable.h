@@ -31,7 +31,7 @@ namespace ParaEngine
 		void deleteGeometry();
 
 		// Rendering with fixed function 
-		HRESULT Render( SceneState * pSceneState, IRenderDevice* pd3dDevice);
+		HRESULT Render( SceneState * pSceneState, IRenderDevice* pRenderDevice);
 
 		// Rendering with shader effect
 		HRESULT Render( SceneState * pSceneState, CEffectFile *pEffect);

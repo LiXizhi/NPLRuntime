@@ -29,7 +29,7 @@ using namespace ScreenShot;
 #include "PluginManager.h"
 #include "ViewportManager.h"
 #include "PluginAPI.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+#include "d3d9.h"
 
 using namespace ParaEngine;
 
@@ -249,10 +249,9 @@ bool CMoviePlatform::GetImageInfo(const string& filename, int* width, int* heigh
 bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, const string& destFilename)
 {
 #ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileEx(pd3dDevice, filename.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
+	HRESULT hr = pd3dDevice->CreateTextureFromFileEx(filename.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
 	if(SUCCEEDED(hr))
 	{
 		string sExt = CParaFile::GetFileExtension(destFilename);
@@ -730,7 +729,7 @@ bool CMoviePlatform::UnsetCaptureTarget()
 void CMoviePlatform::RenderCaptured()
 {
 #ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	if(IsInCaptureSession())
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -780,7 +779,7 @@ void CMoviePlatform::RenderCaptured()
 			}
 
 			CGlobals::GetRenderDevice()->SetTexture(0, m_pCaptureTexture);
-			pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+			CGlobals::GetRenderDevice()->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 			//////////////////////////////////////////////////////////////////////////
 			// render a border, indicating whether the screen is being recorded or not.
@@ -834,7 +833,7 @@ void CMoviePlatform::RenderCaptured()
 				}
 				CGlobals::GetRenderDevice()->SetTexture(0, NULL);
 				CGlobals::GetEffectManager()->SetCullingMode(false);
-				pRenderDevice->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
 				CGlobals::GetEffectManager()->SetCullingMode(true);
 			}
 		}

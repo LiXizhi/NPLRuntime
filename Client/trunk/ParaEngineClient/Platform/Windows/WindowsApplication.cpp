@@ -81,7 +81,7 @@
 #include "ParaEngineAppBase.h"
 #include "Render/WindowsRenderWindow.h"
 #include "Render/D3D9RenderContext.h"
-#include "Render/D3D9/D3D9RenderDevice.h"
+#include "Render/D3D9/RenderDeviceD3D9.h"
 
 
 #include "resource.h"
@@ -1176,7 +1176,7 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 	HRESULT hr = S_OK;
 
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), static_cast<CD3D9RenderDevice*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
 
 	// print stats when device is initialized.
 	string stats;
@@ -1552,7 +1552,6 @@ HRESULT CWindowsApplication::Render()
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
-	m_pRootScene->GetSceneState()->m_pd3dDevice = pRenderDevice;
 	PERF1("Main Render");
 
 	if (SUCCEEDED(pRenderDevice->BeginScene()))

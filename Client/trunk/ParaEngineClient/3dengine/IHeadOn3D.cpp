@@ -599,7 +599,7 @@ bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, Scen
 
 bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass, bool bZEnablePass)
 {
-	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	auto painter = CGlobals::GetGUI()->GetPainter();
 	painter->SetUse3DTransform(b3DTextPass);
@@ -612,14 +612,14 @@ bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass
 
 	if (pSceneState->GetRenderState() == RenderState_Overlay_ZPass)
 	{
-		pD3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
-		pD3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_GREATER);
-		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_GREATER);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 	else
 	{
-		pD3dDevice->SetRenderState(ERenderState::ZENABLE, bZEnablePass ? TRUE : FALSE);
-		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, bZEnablePass ? TRUE : FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 	
 	if (b3DTextPass)
@@ -638,15 +638,15 @@ void ParaEngine::IHeadOn3D::EndPaint(SceneState* pSceneState, bool b3DTextPass)
 		painter->end();
 	}
 
-	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	if (pSceneState->GetRenderState() == RenderState_Overlay_ZPass)
 	{
-		pD3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
+		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 	}
 	else
 	{
-		pD3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
-		pD3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pRenderDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 	}
 
 	if (b3DTextPass)

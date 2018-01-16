@@ -46,7 +46,7 @@
 #ifdef PRINT_CHUNK_LOG
 #include "ParaTime.h"
 #endif
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+
 
 
 namespace ParaEngine
@@ -289,8 +289,8 @@ namespace ParaEngine
 		renderBlockOfs_remain.z = renderOfs.z - renderBlockOfs.z * fBlockSize;
 
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		
 
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -307,7 +307,7 @@ namespace ParaEngine
 		if(pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
-			pd3dDevice->SetVertexDeclaration(pVertexLayout);
+			pRenderDevice->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards. 
 			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
@@ -421,7 +421,7 @@ namespace ParaEngine
 
 						pEffect->CommitChanges();
 
-						pd3dDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+						pRenderDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 							pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 					}
 				}
@@ -450,9 +450,8 @@ namespace ParaEngine
 		if (pCurRenderQueue == 0)
 			pCurRenderQueue = GetRenderQueueByPass(nRenderPass);
 		
-		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(pDevice);
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		auto pDevice = CGlobals::GetRenderDevice();;
+		
 		if(pCurRenderQueue->size() > 0)
 		{
 			const float fBlockSize = BlockConfig::g_blockSize;

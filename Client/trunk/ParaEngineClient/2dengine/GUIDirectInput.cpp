@@ -20,7 +20,6 @@
 #include "EventBinding.h"
 #include "GUIRoot.h"
 #include "util/StringHelper.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
 
 using namespace ParaEngine;
 
@@ -547,9 +546,9 @@ void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHo
 				m_YHotSpot = YHotSpot;
 		}
 	}
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pD3dDevice = pRenderDevice->GetDirect3DDevice9();
-	if(pD3dDevice == NULL)
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	
+	if(pRenderDevice == NULL)
 		return;
 
 	// cursor file is loaded from memory to increase speed when cursor images changes frequently.
@@ -572,7 +571,7 @@ void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHo
 		LPDIRECT3DSURFACE9 pCursorSurface = ((TextureEntityDirectX*)pCursor)->GetSurface();
 		if (pCursorSurface) 
 		{
-			if(SUCCEEDED(hr = pD3dDevice->SetCursorProperties( m_XHotSpot,m_YHotSpot, pCursorSurface))) 
+			if(SUCCEEDED(hr = pRenderDevice->SetCursorProperties( m_XHotSpot,m_YHotSpot, pCursorSurface))) 
 			{
 				// Set the device cursor
 				m_szCursorName=szCursor;

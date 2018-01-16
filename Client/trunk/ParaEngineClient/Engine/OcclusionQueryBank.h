@@ -48,7 +48,7 @@ namespace ParaEngine
 	class LatentOcclusionQueryBank
 	{
 	public:
-		LatentOcclusionQueryBank( IDirect3DDevice9 *  pD3DDev);
+		LatentOcclusionQueryBank( IRenderDevice *  pD3DDev);
 		~LatentOcclusionQueryBank();
 		HRESULT GetLatestResults(DWORD *count);
 		HRESULT BeginNextQuery();

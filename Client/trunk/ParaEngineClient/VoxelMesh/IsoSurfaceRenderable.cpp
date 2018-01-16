@@ -134,15 +134,15 @@ void IsoSurfaceRenderable::deleteGeometry()
 }
 
 
-HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRenderDevice* pd3dDevice )
+HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRenderDevice* pRenderDevice )
 {
-	pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+	pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
+	pRenderDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
 
 	if(m_texture != 0)
-		pd3dDevice->SetTexture(0, m_texture->GetTexture());
+		pRenderDevice->SetTexture(0, m_texture->GetTexture());
 
 	// render
 	DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0,0, m_nVertexBufSize, 0, m_nIndexBufSize/3);
@@ -153,7 +153,7 @@ HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRen
 
 HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, CEffectFile *pEffect )
 {
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	/// apply surface materials
 	bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();
@@ -172,7 +172,7 @@ HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, CEff
 	}
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
+	pRenderDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
 
 	//////////////////////////////////////////////////////////////////////////
 	// programmable pipeline

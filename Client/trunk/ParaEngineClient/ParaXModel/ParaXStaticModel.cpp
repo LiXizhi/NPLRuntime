@@ -96,7 +96,7 @@ namespace ParaEngine {
 		return nullptr;
 	}
 
-	HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV)
+	HRESULT CParaXStaticModel::Create(RenderDevicePtr pRenderDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV)
 	{
 		try
 		{
@@ -105,14 +105,14 @@ namespace ParaEngine {
 			{
 				XFileStaticModelParser parser((char*)buffer, nFileSize);
 				auto pSysMemMesh = parser.ParseParaXStaticModel();
-				return Create(pd3dDevice, pSysMemMesh);
+				return Create(pRenderDevice, pSysMemMesh);
 			}
 #ifdef SUPPORT_FBX_MODEL_FILE
 			else if (nFileType == FileType_FBX)
 			{
 				FBXParser parser(m_strName);
 				auto pSysMemMesh = parser.ParseFBXFile();
-				return Create(pd3dDevice, pSysMemMesh);
+				return Create(pRenderDevice, pSysMemMesh);
 			}
 #endif
 			else
@@ -128,7 +128,7 @@ namespace ParaEngine {
 		}
 	}
 
-	HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, XFile::Scene* pFileData)
+	HRESULT CParaXStaticModel::Create(RenderDevicePtr pRenderDevice, XFile::Scene* pFileData)
 	{
 		if (!pFileData)
 			return E_FAIL;
@@ -640,9 +640,9 @@ namespace ParaEngine {
 
 	HRESULT CParaXStaticModel::Render(SceneState * pSceneState, CEffectFile *pEffect, bool bDrawOpaqueSubsets, bool bDrawAlphaSubsets, float fAlphaFactor, CParameterBlock* materialParams)
 	{
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
-		pd3dDevice->SetIndices(m_indexBuffer.GetDevicePointer());
+		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+		pRenderDevice->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
+		pRenderDevice->SetIndices(m_indexBuffer.GetDevicePointer());
 
 		bool bHasAlphaPass = false;
 		int cPasses = pEffect->totalPasses();
@@ -798,19 +798,19 @@ namespace ParaEngine {
 								if (bUseAdditive && !bAdditive) {
 									if (pMaterial->hasAlphaBlending())
 									{
-										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+										pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+										pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									else
 									{
-										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
-										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+										pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+										pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									bAdditive = true;
 								}
 								else if (!bUseAdditive && bAdditive) {
-									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+									pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									bAdditive = false;
 								}
 
@@ -997,17 +997,17 @@ namespace ParaEngine {
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 
 		if (bAdditive) {
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 		return S_OK;
 	}
 
 	void CParaXStaticModel::DrawRenderPass(int i)
 	{
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 		ParaXStaticModelRenderPass& pass = m_passes[i];
-		pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
+		pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
 	}
 
 

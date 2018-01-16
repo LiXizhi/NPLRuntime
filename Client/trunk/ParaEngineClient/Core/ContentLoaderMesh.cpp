@@ -106,8 +106,8 @@ HRESULT ParaEngine::CMeshProcessor::UnLockDeviceObject()
 {
 	if (m_asset.get() != 0)
 	{
-		RenderDevicePtr pd3dDevice = GetRenderDevice();
-		if (pd3dDevice == 0)
+		RenderDevicePtr pRenderDevice = GetRenderDevice();
+		if (pRenderDevice == 0)
 			return E_FAIL;
 		// copy params 
 		if (m_pParamBlock && m_asset->m_pParamBlock == 0)
@@ -132,7 +132,7 @@ HRESULT ParaEngine::CMeshProcessor::UnLockDeviceObject()
 			MeshLOD& lod = (*iCur);
 			if (lod.m_pStaticMesh)
 			{
-				lod.m_pStaticMesh->CParaXStaticBase::Create(pd3dDevice
+				lod.m_pStaticMesh->CParaXStaticBase::Create(pRenderDevice
 					, (const char*)nullptr
 					, (m_asset->GetPrimaryTechniqueHandle() == TECH_SIMPLE_MESH_NORMAL_TEX2));
 

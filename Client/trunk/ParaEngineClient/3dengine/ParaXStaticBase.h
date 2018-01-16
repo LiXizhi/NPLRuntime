@@ -95,13 +95,13 @@ namespace ParaEngine
 		* @param bCheckSecondUV: whether to check the second UV set. if there exist a second UV set, it will be created.
 		* 2008.1.25 by LXZ: this is a tricky workaround of D3DXLoadMeshFromXOf can only load a simple mesh from data node. If the mesh contains frames or second UV sets, the function will not work. So in such cases, I fall back to use the original D3DXLoadMeshFromXInMemory, which can handle frames and second UV sets.
 		*/
-		HRESULT Create(RenderDevicePtr pd3dDevice, const char* strFilename, bool bCheckSecondUV = false);
+		HRESULT Create(RenderDevicePtr pRenderDevice, const char* strFilename, bool bCheckSecondUV = false);
 
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false)			= 0;
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false)			= 0;
 #ifdef USE_DIRECTX_RENDERER
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, LPD3DXFILEDATA pFileData)											= 0;
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, LPD3DXFILEDATA pFileData)											= 0;
 #endif
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, XFile::Scene* pFileData)												= 0;
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, XFile::Scene* pFileData)												= 0;
 
 		virtual HRESULT Destroy();
 
@@ -140,7 +140,7 @@ namespace ParaEngine
 		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* pFileParser) = 0;
 
 		// Rendering
-		virtual HRESULT Render(SceneState * pSceneState, RenderDevicePtr pd3dDevice,
+		virtual HRESULT Render(SceneState * pSceneState, RenderDevicePtr pRenderDevice,
 			bool bDrawOpaqueSubsets = true,
 			bool bDrawAlphaSubsets = true, float fAlphaFactor = 1.0f) = 0;
 		virtual HRESULT Render(SceneState * pSceneState, CEffectFile *pEffect,

@@ -54,11 +54,11 @@ namespace ParaEngine
 		* @param bCheckSecondUV: whether to check the second UV set. if there exist a second UV set, it will be created.
 		* 2008.1.25 by LXZ: this is a tricky workaround of D3DXLoadMeshFromXOf can only load a simple mesh from data node. If the mesh contains frames or second UV sets, the function will not work. So in such cases, I fall back to use the original D3DXLoadMeshFromXInMemory, which can handle frames and second UV sets.
 		*/
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false);
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV = false);
 #ifdef USE_DIRECTX_RENDERER
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, LPD3DXFILEDATA pFileData);
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, LPD3DXFILEDATA pFileData);
 #endif
-		virtual HRESULT Create(RenderDevicePtr pd3dDevice, XFile::Scene* pFileData) { return S_FALSE;  };
+		virtual HRESULT Create(RenderDevicePtr pRenderDevice, XFile::Scene* pFileData) { return S_FALSE;  };
 
 		virtual HRESULT Destroy();
 
@@ -97,7 +97,7 @@ namespace ParaEngine
 		virtual bool GetMeshHeaderFromFile(CParaFile& myFile, XFileParser* pFileParser) { return false;  };
 
 		// Rendering
-		virtual HRESULT Render(SceneState * pSceneState, RenderDevicePtr pd3dDevice,
+		virtual HRESULT Render(SceneState * pSceneState, RenderDevicePtr pRenderDevice,
 			bool bDrawOpaqueSubsets = true,
 			bool bDrawAlphaSubsets = true, float fAlphaFactor = 1.0f);
 		virtual HRESULT Render(SceneState * pSceneState, CEffectFile *pEffect,
@@ -114,7 +114,7 @@ namespace ParaEngine
 		/** get the file parser */
 		static HRESULT GetMeshHeader(LPCSTR strFilename, LPD3DXFILE pFileParser, Vector3& vMin, Vector3& vMax, bool& bHasNormal, bool& bHasTex2);
 	protected:
-		HRESULT CreateMaterials(const char* strPath, IDirect3DDevice9 *pd3dDevice, ID3DXBuffer *pAdjacencyBuffer, ID3DXBuffer *pMtrlBuffer);
+		HRESULT CreateMaterials(const char* strPath, IRenderDevice *pRenderDevice, ID3DXBuffer *pAdjacencyBuffer, ID3DXBuffer *pMtrlBuffer);
 		/** a wrapper for DrawSubset().*/
 		HRESULT DrawSubSetEx(int nIndex, D3DXATTRIBUTERANGE* pAtts);
 	protected:

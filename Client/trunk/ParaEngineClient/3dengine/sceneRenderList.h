@@ -17,7 +17,7 @@ namespace ParaEngine
 		int PerformOcclusionTest(T& renderlist, SceneState& sceneState, int nMinEnableCount = 25, int nPixelsCount = 0)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		auto pd3dDevice = sceneState.m_pd3dDevice;
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 		int nObjectNum = (int)renderlist.size();
 
 		// only bother to use hardware occlusion testing if the number of small object is larger than 20.
@@ -116,7 +116,7 @@ namespace ParaEngine
 		bool bUseInstancing = false;
 #endif
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 
 		//////////////////////////////////////////////////////////////////////////
 		// render without hardware occlusion testing
@@ -176,10 +176,10 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									pd3dDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									pRenderDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
 									// Set the second stream to be per instance data and iterate once per instance
-									pd3dDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									pd3dDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									pRenderDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
+									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);
@@ -221,9 +221,9 @@ namespace ParaEngine
 //#ifdef USE_DIRECTX_RENDERER
 		sceneState.m_nCurRenderGroup = RENDER_SHADOWMAP;
 #ifdef USE_DIRECTX_RENDERER
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 #else
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
 #endif
 		// check whether use instancing
 		CEffectFile* pEntity = CGlobals::GetEffectManager()->GetEffectByHandle(TECH_SIMPLE_MESH_NORMAL_INSTANCED); 
@@ -289,10 +289,10 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									pd3dDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									pRenderDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
 									// Set the second stream to be per instance data and iterate once per instance
-									pd3dDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									pd3dDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									pRenderDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
+									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);

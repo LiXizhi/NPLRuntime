@@ -12,18 +12,18 @@ namespace ParaEngine
 	public:
 		static RenderDevice* GetInstance();
 
-		static HRESULT DrawPrimitive(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+		static HRESULT DrawPrimitive(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
 
-		static HRESULT DrawPrimitiveUP(IDirect3DDevice9* pd3dDevice, int nStatisticsType,
+		static HRESULT DrawPrimitiveUP(IDirect3DDevice9* pRenderDevice, int nStatisticsType,
 			D3DPRIMITIVETYPE PrimitiveType,
 			UINT PrimitiveCount,
 			CONST void* pVertexStreamZeroData,
 			UINT VertexStreamZeroStride);
 
 
-		static HRESULT DrawIndexedPrimitive(IDirect3DDevice9* pd3dDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount);
+		static HRESULT DrawIndexedPrimitive(IDirect3DDevice9* pRenderDevice, int nStatisticsType, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinIndex, UINT NumVertices, UINT indexStart, UINT PrimitiveCount);
 
-		static HRESULT DrawIndexedPrimitiveUP(IDirect3DDevice9* pd3dDevice, int nStatisticsType,
+		static HRESULT DrawIndexedPrimitiveUP(IDirect3DDevice9* pRenderDevice, int nStatisticsType,
 			D3DPRIMITIVETYPE PrimitiveType,
 			UINT MinVertexIndex,
 			UINT NumVertices,

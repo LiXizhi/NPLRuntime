@@ -821,8 +821,8 @@ HRESULT CFlashPlayer::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// here let's check if we can use dynamic textures
 	D3DCAPS9 caps;
 	ZeroMemory( &caps, sizeof(D3DCAPS9));
-	LPDIRECT3DDEVICE9 pd3dDevice=CGlobals::GetRenderDevice();
-	hr = pd3dDevice->GetDeviceCaps( &caps );
+	LPDIRECT3DDEVICE9 pRenderDevice=CGlobals::GetRenderDevice();
+	hr = pRenderDevice->GetDeviceCaps( &caps );
 	if( caps.Caps2 & D3DCAPS2_DYNAMICTEXTURES )
 	{
 		m_bUseDynamicTextures = true;
@@ -851,7 +851,7 @@ HRESULT CFlashPlayer::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	
 	if( m_bUseDynamicTextures )
 	{
-		hr = pd3dDevice->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
+		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
 			D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT,
 			ppTexture, NULL);
 		if( FAILED(hr))
@@ -861,7 +861,7 @@ HRESULT CFlashPlayer::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	}
 	else
 	{
-		hr = pd3dDevice->CreateTexture(uintWidth, uintHeight, 1, 0,
+		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, 0,
 			D3DFMT_X8R8G8B8,D3DPOOL_MANAGED,
 			ppTexture, NULL);
 	}
@@ -1663,8 +1663,8 @@ void CFlashTextureManager::RenderFlashWindows(SceneState& sceneState)
 						v[i].z = 0;
 						v[i].h = 1.0f;
 					}
-					sceneState.m_pd3dDevice->SetTexture(0, pTexture);
-					pD3dDevice->DrawPrimitiveUP( sceneState.m_pd3dDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+					sceneState.m_pRenderDevice->SetTexture(0, pTexture);
+					pRenderDevice->DrawPrimitiveUP( sceneState.m_pRenderDevice, RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 				}
 			}
 		}

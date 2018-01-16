@@ -12,7 +12,7 @@ namespace ParaEngine
 		CDirectXEngine();
 		~CDirectXEngine(void);
 	public:
-		void InitDeviceObjects(LPDIRECT3DDEVICE9 pd3dDevice);
+		void InitDeviceObjects(LPDIRECT3DDEVICE9 pRenderDevice);
 		void RestoreDeviceObjects();
 		void InvalidateDeviceObjects();
 		void DeleteDeviceObjects();
@@ -87,7 +87,7 @@ namespace ParaEngine
 		/** return the current render target, without increasing the reference count of the surface */
 		LPDIRECT3DSURFACE9  GetRenderTarget(int nIndex=0);
 
-		void InitDeviceObjects(LPDIRECT3D9 pd3d, LPDIRECT3DDEVICE9 pd3dDevice, IDirect3DSwapChain9* pd3dSwapChain=NULL);
+		void InitDeviceObjects(LPDIRECT3D9 pd3d, LPDIRECT3DDEVICE9 pRenderDevice, IDirect3DSwapChain9* pd3dSwapChain=NULL);
 		void RestoreDeviceObjects();
 		void InvalidateDeviceObjects();
 		void DeleteDeviceObjects();

@@ -53,7 +53,7 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 		sceneState->listPRSprite.push_back(this);
 		return S_OK;
 	}
-	auto pd3dDevice = sceneState->m_pd3dDevice;
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	
 	//-- set world transformation matrix
 	Matrix4 mx;
@@ -93,52 +93,52 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 		mx._43 = vPos.z;
 	}
 	
-    pd3dDevice->SetTransform( D3DTS_WORLD, mx.GetConstPointer() );
+    pRenderDevice->SetTransform( D3DTS_WORLD, mx.GetConstPointer() );
 
 	
 	//-- Render the billboard
-	pd3dDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
+	pRenderDevice->DrawPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH,  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
 	
 	return S_OK;
 }
 
-void ParaEngine::CSpriteObject::SetRenderState(IRenderDevice* pd3dDevice)
+void ParaEngine::CSpriteObject::SetRenderState(IRenderDevice* pRenderDevice)
 {
 	//TODO: render state is kind of chaos: Use sceneState::StateManager in future versions
 	CGlobals::GetEffectManager()->SetCullingMode(false);
-	pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+	pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 	
 	//if(! CheckSpriteStyleField(SPRITE_RENDER_ZBUFFER))
-	//	pd3dDevice->SetRenderState( ERenderState::ZENABLE,      FALSE );
+	//	pRenderDevice->SetRenderState( ERenderState::ZENABLE,      FALSE );
 
 	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
 	{
 		//-- enable alpha and reference color for billboard
-		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   TRUE );
-		pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
-		pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   TRUE );
+		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
+		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-		//pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE, TRUE );
-		//pd3dDevice->SetRenderState( ERenderState::ALPHAREF,        0x08 );
-		//pd3dDevice->SetRenderState( ERenderState::ALPHAFUNC, D3DCMP_GREATEREQUAL );
+		//pRenderDevice->SetRenderState( ERenderState::ALPHATESTENABLE, TRUE );
+		//pRenderDevice->SetRenderState( ERenderState::ALPHAREF,        0x08 );
+		//pRenderDevice->SetRenderState( ERenderState::ALPHAFUNC, D3DCMP_GREATEREQUAL );
 	}
 	else
 	{
-		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
 	}
 }
 
-void ParaEngine::CSpriteObject::RestoreRenderState(IRenderDevice* pd3dDevice)
+void ParaEngine::CSpriteObject::RestoreRenderState(IRenderDevice* pRenderDevice)
 {
 	//-- restore state
 	if(CheckSpriteStyleField(SPRITE_RENDER_ALPHA))
 	{
 		// only for billboard, so we turn it off
-		pd3dDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
-		//pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE,    FALSE );
+		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE,   FALSE );
+		//pRenderDevice->SetRenderState( ERenderState::ALPHATESTENABLE,    FALSE );
 	}
 	//if(! CheckSpriteStyleField(SPRITE_RENDER_ZBUFFER))
-	//	pd3dDevice->SetRenderState( ERenderState::ZENABLE,      TRUE );
+	//	pRenderDevice->SetRenderState( ERenderState::ZENABLE,      TRUE );
 	CGlobals::GetEffectManager()->SetCullingMode(true);
 }
 

@@ -132,8 +132,8 @@ namespace ParaScripting
 		//#include "SceneObject.h"
 		//#include "FrameRateController.h"
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
-		if(pd3dDevice == 0)
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		if(pRenderDevice == 0)
 			return false;
 		CSceneObject* pScene = CGlobals::GetScene();
 
@@ -147,14 +147,14 @@ namespace ParaScripting
 
 		
 		// render the scene
-		if( SUCCEEDED( pd3dDevice->BeginScene() ) )
+		if( SUCCEEDED( pRenderDevice->BeginScene() ) )
 		{
-			if(FAILED(pd3dDevice->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+			if(FAILED(pRenderDevice->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
 				D3DPOOL_DEFAULT, &m_pRenderTarget, NULL)))
 				return false;
 			if(FAILED(m_pRenderTarget->GetSurfaceLevel(0, &m_pRenderTargetSurface)))
 				return false;
-			if(FAILED(pd3dDevice->CreateDepthStencilSurface(width, height, D3DFMT_D16, 
+			if(FAILED(pRenderDevice->CreateDepthStencilSurface(width, height, D3DFMT_D16, 
 					D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthSurface, NULL)))
 				return false;
 		
@@ -165,7 +165,7 @@ namespace ParaScripting
 			CBaseCamera* pCamera = pScene->GetCurrentCamera();
 			float fOldAspectRatio = pCamera->GetAspectRatio();
 			pCamera->SetAspectRatio((float)width/(float)height);
-			pd3dDevice->GetViewport(&oldViewport);
+			pRenderDevice->GetViewport(&oldViewport);
 			D3DVIEWPORT9 newViewport;
 			newViewport.X = 0;
 			newViewport.Y = 0;
@@ -174,21 +174,21 @@ namespace ParaScripting
 			
 			newViewport.MinZ = 0.0f;
 			newViewport.MaxZ = 1.0f;
-			pd3dDevice->SetViewport(&newViewport);
+			pRenderDevice->SetViewport(&newViewport);
 
 			// set depth surface
 			LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-			if(FAILED(pd3dDevice->GetDepthStencilSurface(&pOldZBuffer)))
+			if(FAILED(pRenderDevice->GetDepthStencilSurface(&pOldZBuffer)))
 			{
 				OUTPUT_LOG("GetDepthStencilSurface failed\r\n");
 				return false;
 			}
-			pd3dDevice->SetDepthStencilSurface( m_pDepthSurface );
+			pRenderDevice->SetDepthStencilSurface( m_pDepthSurface );
 
 			/////////////////////////////////////////////////////////////////////////
 			/// render
 			/// clear to scene
-			pd3dDevice->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 
+			pRenderDevice->Clear( 0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 
 				0x00000000, 1.0f, 0L );
 
 			if(pScene->IsSceneEnabled())
@@ -204,10 +204,10 @@ namespace ParaScripting
 			D3DXSaveTextureToFile(filename, FileFormat, m_pRenderTarget, NULL);
 
 			// restore old view port
-			pd3dDevice->SetViewport(&oldViewport);
+			pRenderDevice->SetViewport(&oldViewport);
 			pCamera->SetAspectRatio(fOldAspectRatio);
 			
-			pd3dDevice->SetDepthStencilSurface( pOldZBuffer);
+			pRenderDevice->SetDepthStencilSurface( pOldZBuffer);
 			SAFE_RELEASE(pOldZBuffer);
 			CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
 
@@ -215,7 +215,7 @@ namespace ParaScripting
 			SAFE_RELEASE(m_pDepthSurface);
 			SAFE_RELEASE(m_pRenderTarget);
 
-			pd3dDevice->EndScene();
+			pRenderDevice->EndScene();
 		}
 #endif		
 		return true;

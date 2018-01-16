@@ -387,7 +387,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 	if (model == 0 && !m_pMeshObject)
 		return;
 	// draw model
-	RenderDevicePtr  pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr  pRenderDevice = CGlobals::GetRenderDevice();
 
 	float fCameraToObjectDist = sceneState->GetCameraToCurObjectDistance();
 	// Push matrix: set up transforms for this attached model.

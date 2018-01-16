@@ -30,7 +30,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "ViewportManager.h"
 #include "ShadowMap.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+
 
 
 using namespace ParaEngine;
@@ -104,21 +104,21 @@ CShadowMap::~CShadowMap(void)
 #ifdef USE_DIRECTX_RENDERER
 HRESULT CShadowMap::CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE resType, DWORD dwUsage)
 {
-	HRESULT hr = S_OK;
-	IDirect3D9* tempD3D = NULL;
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
-	pd3dDevice->GetDirect3D(&tempD3D);
-	const D3DCAPS9& devCaps = CGlobals::GetDirectXEngine().m_d3dCaps;
-	
-	D3DDISPLAYMODE displayMode;
-	tempD3D->GetAdapterDisplayMode(devCaps.AdapterOrdinal, &displayMode);
+	//HRESULT hr = S_OK;
+	//IDirect3D9* tempD3D = NULL;
+	//auto pRenderDevice = CGlobals::GetRenderDevice();
+	//
+	//pRenderDevice->GetDirect3D(&tempD3D);
+	//const D3DCAPS9& devCaps = CGlobals::GetDirectXEngine().m_d3dCaps;
+	//
+	//D3DDISPLAYMODE displayMode;
+	//tempD3D->GetAdapterDisplayMode(devCaps.AdapterOrdinal, &displayMode);
 
-	hr = tempD3D->CheckDeviceFormat(devCaps.AdapterOrdinal, devCaps.DeviceType, displayMode.Format, dwUsage, resType, fmt);
+	//hr = tempD3D->CheckDeviceFormat(devCaps.AdapterOrdinal, devCaps.DeviceType, displayMode.Format, dwUsage, resType, fmt);
 
-	tempD3D->Release(), tempD3D = NULL;
+	//tempD3D->Release(), tempD3D = NULL;
 
-	return hr;
+	return S_OK;
 }
 #endif
 int CShadowMap::GetShadowMapTexelSize()
@@ -175,8 +175,8 @@ bool CShadowMap::PrepareAllSurfaces()
 #endif
 		return true;
 #ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	
 
 	//  hardware shadow maps are enabled by creating a texture with a depth format (D16, D24X8, D24S8),
 	//  with usage DEPTHSTENCIL set.
@@ -251,7 +251,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		SAFE_RELEASE(m_pSMColorSurface);
 		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
 
-		if(FAILED(pd3dDevice->CreateDepthStencilSurface(m_shadowTexWidth, m_shadowTexHeight, zFormat, 
+		if(FAILED(pRenderDevice->CreateDepthStencilSurface(m_shadowTexWidth, m_shadowTexHeight, zFormat, 
 			D3DMULTISAMPLE_NONE, 0, FALSE, &m_pSMZSurface, NULL)))
 			return false;
 
