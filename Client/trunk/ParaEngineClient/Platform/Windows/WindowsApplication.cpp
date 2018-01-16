@@ -81,7 +81,7 @@
 #include "ParaEngineAppBase.h"
 #include "Render/WindowsRenderWindow.h"
 #include "Render/D3D9RenderContext.h"
-#include "Render/D3D9/RenderDeviceD3D9.h"
+#include "RenderSystem/d3d9/RenderDeviceD3D9.h"
 
 
 #include "resource.h"

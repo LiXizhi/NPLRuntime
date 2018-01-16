@@ -5,7 +5,7 @@ namespace ParaEngine
 	{
 	public:
 		ITexture();
-		virtual ~ITexture();
+		~ITexture();
 
 	private:
 
