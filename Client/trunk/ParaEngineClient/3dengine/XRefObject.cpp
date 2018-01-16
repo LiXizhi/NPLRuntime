@@ -440,7 +440,7 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 	Matrix4 mxWorld;
 	GetRenderMatrix(mxWorld, pMxWorld, sceneState->GetRenderFrameCount());
 
-	RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	// use the lighting of the parent.
 	CGlobals::GetEffectManager()->applyObjectLocalLighting(m_pParent);
@@ -456,12 +456,12 @@ HRESULT ParaEngine::XRefMeshObject::DrawInner( SceneState * sceneState, const Ma
 		CGlobals::GetWorldMatrixStack().push(mxWorld);
 
 		// render by default as non-transparent.
-		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		CGlobals::GetEffectManager()->EnableZWrite(true);
 		CGlobals::GetEffectManager()->SetCullingMode(true);
 
 		// Draw with mesh materials
-		pMesh->Render(sceneState, pd3dDevice, true, true,sceneState->fAlphaFactor);
+		pMesh->Render(sceneState, pRenderDevice, true, true,sceneState->fAlphaFactor);
 		CGlobals::GetWorldMatrixStack().pop();
 #endif
 	}

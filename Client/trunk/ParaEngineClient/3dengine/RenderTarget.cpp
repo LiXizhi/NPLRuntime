@@ -101,7 +101,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 		return S_OK;
 	m_bInitialized = true;
 
-	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	int nWidth = m_nTextureWidth;
 	int nHeight = m_nTextureHeight;
@@ -109,7 +109,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 #ifdef USE_DIRECTX_RENDERER
 	HRESULT hr;
 	
-	/*hr = pD3dDevice->CreateTexture(nWidth, 	nHeight,
+	/*hr = pRenderDevice->CreateTexture(nWidth, 	nHeight,
 	1, D3DUSAGE_RENDERTARGET,
 	D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pCanvasTexture, NULL);
 	CHECK_RETURN_CODE("CreateTexture Canvas Texture", hr);
@@ -123,7 +123,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	hr = m_pCanvasTexture->GetTexture()->GetSurfaceLevel(0, &m_pCanvasSurface);
 	CHECK_RETURN_CODE("GetSurfaceLevel Canvas Surface", hr);
 
-	hr = pD3dDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
+	hr = pRenderDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
 		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
 	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
 #elif defined(USE_OPENGL_RENDERER)
@@ -294,14 +294,14 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 
 			if (pSur)
 			{
-				auto pd3dDevice = CGlobals::GetRenderDevice();
+				auto pRenderDevice = CGlobals::GetRenderDevice();
 				D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
 				LPDIRECT3DTEXTURE9 pTextureDest = NULL;
 				LPDIRECT3DSURFACE9 pSurDest = NULL;
 				RECT srcRect;
 				srcRect.left = srcLeft; srcRect.top = srcTop; srcRect.right = srcLeft + srcWidth; srcRect.bottom = srcTop + srcHeight;
 
-				if (FAILED(pd3dDevice->CreateTexture((int)nImageWidth, (int)nImageHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
+				if (FAILED(pRenderDevice->CreateTexture((int)nImageWidth, (int)nImageHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
 				{
 					SAFE_RELEASE(pSur);
 					return E_FAIL;
@@ -314,7 +314,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 				}
 
 				// Copy scene to render target texture
-				if (SUCCEEDED(pd3dDevice->StretchRect(pSur, (srcWidth == 0) ? NULL : (&srcRect), pSurDest, NULL, D3DTEXF_LINEAR)))
+				if (SUCCEEDED(pRenderDevice->StretchRect(pSur, (srcWidth == 0) ? NULL : (&srcRect), pSurDest, NULL, D3DTEXF_LINEAR)))
 				{
 					if (SUCCEEDED(D3DXSaveSurfaceToFile(sFile.c_str(), FileFormat, pSurDest, NULL, NULL)))
 					{
@@ -491,12 +491,12 @@ bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3
 
 bool ParaEngine::CRenderTarget::Begin()
 {
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	CheckInit();
 
 	// save old viewport
-	pd3dDevice->GetViewport(&m_oldViewport);
+	pRenderDevice->GetViewport(&m_oldViewport);
 	// save old render origin
 	m_vOldRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
@@ -513,17 +513,17 @@ bool ParaEngine::CRenderTarget::Begin()
 	m_pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
 	CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pCanvasSurface);
 
-	pd3dDevice->SetRenderTarget(1, NULL);
-	pd3dDevice->SetRenderTarget(2, NULL);
-	pd3dDevice->SetRenderTarget(3, NULL);
+	pRenderDevice->SetRenderTarget(1, NULL);
+	pRenderDevice->SetRenderTarget(2, NULL);
+	pRenderDevice->SetRenderTarget(3, NULL);
 
 	// set depth surface
-	if (FAILED(pd3dDevice->GetDepthStencilSurface(&m_pOldZBuffer)))
+	if (FAILED(pRenderDevice->GetDepthStencilSurface(&m_pOldZBuffer)))
 	{
 		OUTPUT_LOG("error: can not get GetDepthStencilSurface in miniscene graph.\n");
 		return false;
 	}
-	pd3dDevice->SetDepthStencilSurface(m_pDepthStencilSurface);
+	pRenderDevice->SetDepthStencilSurface(m_pDepthStencilSurface);
 
 	
 #elif defined(USE_OPENGL_RENDERER)
@@ -532,7 +532,7 @@ bool ParaEngine::CRenderTarget::Begin()
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
 	
-	pd3dDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
+	pRenderDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
 	//calculate viewport
 	{
 		ParaViewport myViewport;
@@ -540,7 +540,7 @@ bool ParaEngine::CRenderTarget::Begin()
 		myViewport.Y = 0;
 		myViewport.Width = GetTextureWidth();
 		myViewport.Height = GetTextureHeight();
-		pd3dDevice->SetViewport((D3DVIEWPORT9*)&myViewport);
+		pRenderDevice->SetViewport((D3DVIEWPORT9*)&myViewport);
 	}
 #endif
 	m_bIsBegin = true;
@@ -556,13 +556,13 @@ void ParaEngine::CRenderTarget::End()
 		OUTPUT_LOG("warning:calling end() without calling begin in CRenderTarget. \n");
 		return;
 	}
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	// restore render origin
 	CGlobals::GetScene()->RegenerateRenderOrigin(m_vOldRenderOrigin);
 #ifdef USE_DIRECTX_RENDERER
 	
 	// restore old depth surface
-	pd3dDevice->SetDepthStencilSurface(m_pOldZBuffer);
+	pRenderDevice->SetDepthStencilSurface(m_pOldZBuffer);
 	SAFE_RELEASE(m_pOldZBuffer);
 	// Restore the old render target: i.e. the backbuffer
 	HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pOldRenderTarget);
@@ -571,14 +571,14 @@ void ParaEngine::CRenderTarget::End()
 
 #elif defined(USE_OPENGL_RENDERER)
 	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
-	pd3dDevice->EndRenderTarget();
+	pRenderDevice->EndRenderTarget();
 	
 	// TODO: this should be removed, when we handle glClear() by ourselves instead of cocos. 
 	LinearColor color(CGlobals::GetScene()->GetClearColor());
 	glClearColor(color.r, color.g, color.b, color.a);
 #endif
 	// restore viewport
-	pd3dDevice->SetViewport(&m_oldViewport);
+	pRenderDevice->SetViewport(&m_oldViewport);
 }
 
 
@@ -597,8 +597,8 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 {
 	if (m_bIsBegin)
 	{
-		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-		pd3dDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
+		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
 	}
 	else
 	{

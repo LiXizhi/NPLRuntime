@@ -1373,7 +1373,7 @@ namespace ParaEngine
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 		
@@ -1547,8 +1547,8 @@ namespace ParaEngine
 		if(!m_bRenderOceanReflection)
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -1774,7 +1774,7 @@ namespace ParaEngine
 			return 0;
 #ifdef USE_DIRECTX_RENDERER
 		CBaseCamera * pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -1952,7 +1952,7 @@ namespace ParaEngine
 	int COceanManager::RenderTechnique_OccusionTest(SceneState* pSceneState, float x0, float y0, float x1, float y1)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		Vector3 vRenderOrig =  CGlobals::GetScene()->GetRenderOrigin();
 		CEffectFile* pEffectFile = NULL;
 
@@ -2062,7 +2062,7 @@ namespace ParaEngine
 			return;
 		}
 
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		auto painter = CGlobals::GetGUI()->GetPainter();
 
 		if (painter->begin(CGlobals::GetGUI()))
@@ -2167,7 +2167,7 @@ namespace ParaEngine
 		if(!m_bIsCreated)
 			return;
 //#if defined( USE_DIRECTX_RENDERER)
-		auto pd3dDevice = pSceneState->m_pd3dDevice;
+		auto pd3dDevice = CGlobals::GetRenderDevice();
 		PERF1("ocean_render");
 
 		/** check whether the camera eye is under the water surface or not*/

@@ -361,9 +361,6 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 {
 	PERF1("MiniSceneGraph_Draw");
 	SceneState& sceneState = m_sceneState;
-	m_sceneState.m_pd3dDevice = CGlobals::GetRenderDevice();
-	RenderDevicePtr pd3dDevice = m_sceneState.m_pd3dDevice;
-	
 
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	bool old_IsLocalLightEnabled = pEffectManager->IsLocalLightingEnabled();
@@ -381,7 +378,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 	pEffectManager->EnableFog(IsFogEnabled());
 	pEffectManager->SetD3DFogState();
 #ifdef USE_DIRECTX_RENDERER
-	pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
+	CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 #elif defined(USE_OPENGL_RENDERER)
 	if (!IsSunLightEnabled())
 	{
@@ -489,6 +486,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 		}
 	}
 #ifdef USE_DIRECTX_RENDERER
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	if(m_pMask!=0 && pEffectManager->BeginEffect(TECH_GUI, &(m_sceneState.m_pCurrentEffect)))
 	{
 		/** draw the mask square in front of the screen. */
@@ -626,8 +624,6 @@ void ParaEngine::CMiniSceneGraph::Draw(float fDeltaTime)
 
 	bool bRenderToTexture = (GetRenderPipelineOrder() < PIPELINE_UI );
 	
-	m_sceneState.m_pd3dDevice = CGlobals::GetRenderDevice();
-
 	if (IsDirty())
 		SetDirty(false);
 

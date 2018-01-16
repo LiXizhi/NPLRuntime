@@ -5,11 +5,11 @@
 
 namespace ParaEngine
 {
-	class CD3D9RenderDevice : public IRenderDevice
+	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
-		CD3D9RenderDevice(IDirect3DDevice9* device);
-		virtual ~CD3D9RenderDevice() = default;
+		RenderDeviceD3D9(IDirect3DDevice9* device);
+		virtual ~RenderDeviceD3D9() = default;
 	
 		LPDIRECT3DDEVICE9 GetDirect3DDevice9() const;
 	
@@ -184,6 +184,24 @@ namespace ParaEngine
 
 
 		virtual HRESULT CreateFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCSTR pFaceName, LPD3DXFONT* ppFont) override;
+
+
+		virtual HRESULT SetCursorProperties(UINT XHotSpot, UINT YHotSpot, IDirect3DSurface9* pCursorBitmap) override;
+
+
+		virtual HRESULT CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) override;
+
+
+		virtual HRESULT CreateMeshFVF(DWORD NumFaces, DWORD NumVertices, DWORD Options, DWORD FVF, LPD3DXMESH* ppMesh) override;
+
+
+		virtual HRESULT CreateSprite(LPD3DXSPRITE* ppSprite) override;
+
+
+		virtual HRESULT LoadMeshFromXInMemory(LPCVOID Memory, DWORD SizeOfMemory, DWORD Options, LPD3DXBUFFER *ppAdjacency, LPD3DXBUFFER *ppMaterials, LPD3DXBUFFER *ppEffectInstances, DWORD *pNumMaterials, LPD3DXMESH *ppMesh) override;
+
+
+		virtual HRESULT LoadMeshFromXof(LPD3DXFILEDATA pxofMesh, DWORD Options, LPD3DXBUFFER *ppAdjacency, LPD3DXBUFFER *ppMaterials, LPD3DXBUFFER *ppEffectInstances, DWORD *pNumMaterials, LPD3DXMESH *ppMesh) override;
 
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;

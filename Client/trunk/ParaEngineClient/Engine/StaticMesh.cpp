@@ -21,9 +21,9 @@
 #include "ShadowMap.h"
 #include "SceneObject.h"
 #include "ParaxSerializer.h"
-
+#include "Platform/Windows/Render/D3D9/RenderDeviceD3D9.h"
 #include "memdebug.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+
 namespace ParaEngine
 {
 	/** @def if defined, force alpha testing whenever alpha blending is enabled. For models exported by ParaEngine Exporter 2006.12.21 or later, this is not needed.*/
@@ -155,8 +155,7 @@ namespace ParaEngine
 	{
 		HRESULT      hr = S_OK;
 
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(pd3dDevice);
-		LPDIRECT3DDEVICE9 pd3d = pRenderDevice->GetDirect3DDevice9();
+		auto pRenderDevice = pd3dDevice;
 
 		if (m_pDXFileParser != NULL)
 		{
@@ -255,7 +254,7 @@ namespace ParaEngine
 		LPD3DXBUFFER pMtrlBuffer = NULL;
 
 		// Load the mesh
-		if (FAILED(hr = D3DXLoadMeshFromXInMemory(buffer, nFileSize, D3DXMESH_SYSTEMMEM, pd3d,
+		if (FAILED(hr = pRenderDevice->LoadMeshFromXInMemory(buffer, nFileSize, D3DXMESH_SYSTEMMEM,
 			&pAdjacencyBuffer, &pMtrlBuffer, NULL,
 			&m_dwNumMaterials, &m_pSysMemMesh)))
 		{
@@ -272,7 +271,7 @@ namespace ParaEngine
 			return hr;
 		}
 
-		hr = CreateMaterials(strPath, pd3d, pAdjacencyBuffer, pMtrlBuffer);
+		hr = CreateMaterials(strPath, pRenderDevice, pAdjacencyBuffer, pMtrlBuffer);
 
 		SAFE_RELEASE(pAdjacencyBuffer);
 		SAFE_RELEASE(pMtrlBuffer);
@@ -286,10 +285,10 @@ namespace ParaEngine
 		LPD3DXBUFFER pMtrlBuffer = NULL;
 		LPD3DXBUFFER pAdjacencyBuffer = NULL;
 		HRESULT      hr;
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(pDevice);
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		auto pRenderDevice = pDevice;
+		
 		// Load the mesh from the DXFILEDATA object
-		if (FAILED(hr = D3DXLoadMeshFromXof(pFileData, D3DXMESH_SYSTEMMEM, pd3dDevice,
+		if (FAILED(hr = pRenderDevice->LoadMeshFromXof(pFileData, D3DXMESH_SYSTEMMEM,
 			&pAdjacencyBuffer, &pMtrlBuffer, NULL,
 			&m_dwNumMaterials, &m_pSysMemMesh)))
 		{
@@ -306,7 +305,7 @@ namespace ParaEngine
 			return hr;
 		}
 
-		hr = CreateMaterials("", pd3dDevice, pAdjacencyBuffer, pMtrlBuffer);
+		hr = CreateMaterials("", pRenderDevice, pAdjacencyBuffer, pMtrlBuffer);
 
 		SAFE_RELEASE(pAdjacencyBuffer);
 		SAFE_RELEASE(pMtrlBuffer);
@@ -314,7 +313,7 @@ namespace ParaEngine
 		return hr;
 	}
 
-	HRESULT CParaXStaticMesh::CreateMaterials(const char* strPath, IDirect3DDevice9 *pd3dDevice, ID3DXBuffer *pAdjacencyBuffer, ID3DXBuffer *pMtrlBuffer)
+	HRESULT CParaXStaticMesh::CreateMaterials(const char* strPath, IRenderDevice *pd3dDevice, ID3DXBuffer *pAdjacencyBuffer, ID3DXBuffer *pMtrlBuffer)
 	{
 		// we will only store used materials. 
 		if (atts.size()<m_dwNumMaterials)
@@ -599,10 +598,10 @@ namespace ParaEngine
 		{
 			// Make a local memory version of the mesh. Note: because we are passing in
 			// no flags, the default behavior is to clone into local memory.
-			auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-			LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+			auto pRenderDevice = static_cast<RenderDeviceD3D9*>(CGlobals::GetRenderDevice());
+			
 			if (FAILED(m_pSysMemMesh->CloneMeshFVF(D3DXMESH_MANAGED | (m_pSysMemMesh->GetOptions() & ~D3DXMESH_SYSTEMMEM),
-				m_pSysMemMesh->GetFVF(), pd3dDevice, &m_pLocalMesh)))
+				m_pSysMemMesh->GetFVF(), pRenderDevice->GetDirect3DDevice9(), &m_pLocalMesh)))
 				return E_FAIL;
 		}
 
@@ -962,8 +961,8 @@ namespace ParaEngine
 	HRESULT CParaXStaticMesh::GetMeshHeader(LPCSTR strFilename, LPD3DXFILE pFileParser, Vector3& vMin, Vector3& vMax, bool& bHasNormal, bool& bHasTex2)
 	{
 		HRESULT      hr = S_OK;
-		auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-		LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+		auto pRenderDevice = CGlobals::GetRenderDevice();
+		
 		CParaFile myFile(strFilename);
 		if (myFile.isEof())
 			return E_FAIL;
@@ -1003,7 +1002,7 @@ namespace ParaEngine
 					DWORD dwNumMaterials = 0;
 
 					// LXZ 2008.1.8: D3DXLoadMeshFromXof requires &pAdjacencyBuffer, &pMtrlBuffer, however D3DXLoadMeshFromXInMemory does not need them. 
-					if (FAILED(hr = D3DXLoadMeshFromXof(p.m_pD3DMesh, D3DXMESH_SYSTEMMEM, pd3dDevice,
+					if (FAILED(hr = pRenderDevice->LoadMeshFromXof(p.m_pD3DMesh, D3DXMESH_SYSTEMMEM,
 						&pAdjacencyBuffer, &pMtrlBuffer, NULL, &dwNumMaterials, &pMesh)))
 					{
 						return hr;
@@ -1018,7 +1017,7 @@ namespace ParaEngine
 				else
 				{
 					// if the mesh is inside some d3d frames, we will load the DirectX way, by collapsing all frames into one mesh
-					if (FAILED(hr = D3DXLoadMeshFromXInMemory(myFile.getBuffer(), (int)(myFile.getSize()), D3DXMESH_SYSTEMMEM, pd3dDevice,
+					if (FAILED(hr = pRenderDevice->LoadMeshFromXInMemory(myFile.getBuffer(), (int)(myFile.getSize()), D3DXMESH_SYSTEMMEM,
 						NULL, NULL, NULL, NULL, &pMesh)))
 					{
 						return hr;

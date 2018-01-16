@@ -15,7 +15,7 @@ using namespace ParaEngine;
 #define MAX_QUERIES 30
 
 
-LatentOcclusionQueryBank::LatentOcclusionQueryBank( IDirect3DDevice9 *  pD3DDev)
+LatentOcclusionQueryBank::LatentOcclusionQueryBank( IRenderDevice *  pD3DDev)
 :m_bIsValid(true), m_nFirstUnusedIndex(0), m_nFirstQueryIndex(0)
 {
 	//m_Queries.reserve(MAX_QUERIES);

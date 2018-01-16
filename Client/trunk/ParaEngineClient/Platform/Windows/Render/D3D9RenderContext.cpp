@@ -2,7 +2,7 @@
 #include "ParaEngine.h"
 #include <d3d9.h>
 #include "D3D9/D3D9Tools.h"
-#include "D3D9/D3D9RenderDevice.h"
+#include "D3D9/RenderDeviceD3D9.h"
 #include "D3D9RenderContext.h"
 #include "WindowsRenderWindow.h"
 #include "PEtypes.h"
@@ -109,7 +109,7 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 	hr = m_D3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, pWin->GetHandle(), vp | D3DCREATE_FPU_PRESERVE, &d3dpp, &pD3DDevice);
 	if (hr == D3D_OK)
 	{
-		CD3D9RenderDevice* pDevice = new CD3D9RenderDevice(pD3DDevice);
+		RenderDeviceD3D9* pDevice = new RenderDeviceD3D9(pD3DDevice);
 		return pDevice;
 	}
 	else if (hr == D3DERR_INVALIDCALL)
@@ -137,7 +137,7 @@ bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const Ren
 
 	assert(device);
 
-	CD3D9RenderDevice* d3d9Device = dynamic_cast<CD3D9RenderDevice*>(device);
+	RenderDeviceD3D9* d3d9Device = dynamic_cast<RenderDeviceD3D9*>(device);
 	assert(d3d9Device);
 
 

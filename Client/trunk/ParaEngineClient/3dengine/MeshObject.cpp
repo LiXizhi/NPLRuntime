@@ -464,7 +464,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 	if(pMesh == NULL)
 		return E_FAIL;
 
-	RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	//////////////////////////////////////////////////////////////////////////
 	// set replaceable textures if any
@@ -511,7 +511,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_BORDER, &(sceneState->m_pCurrentEffect));
 				pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 
-				pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
+				pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
 
 				if(pEffectFile!=0)
 				{
@@ -535,7 +535,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 						CGlobals::GetWorldMatrixStack().pop();
 				}
 
-				pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+				pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 #endif
 				// change back to primary technique
 				CGlobals::GetEffectManager()->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));
@@ -621,8 +621,8 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				CGlobals::GetWorldMatrixStack().push(*pMxWorld);
 
 			// render by default as non-transparent.
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 			CGlobals::GetEffectManager()->SetCullingMode(true);
 
 			if(GetPrimaryTechniqueHandle() == TECH_SIMPLE_MESH_NORMAL_CTOR)
@@ -639,13 +639,13 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 			//if(m_bUseMaterials)
 			//{// Draw with assets materials
 			//	if(m_ppTexture)
-			//		pd3dDevice->SetTexture( 0, (m_ppTexture->GetTexture()) );
-			//	pd3dDevice->SetMaterial( & m_Material );
+			//		pRenderDevice->SetTexture( 0, (m_ppTexture->GetTexture()) );
+			//	pRenderDevice->SetMaterial( & m_Material );
 			//	pMesh->GetLocalMesh()->DrawSubset( 0 );
 			//}
 			//else
 			{// Draw with mesh materials
-				pMesh->Render(sceneState, pd3dDevice, true, true,sceneState->fAlphaFactor);
+				pMesh->Render(sceneState, pRenderDevice, true, true,sceneState->fAlphaFactor);
 			}
 
 			if(pMxWorld!=0)

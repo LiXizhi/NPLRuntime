@@ -691,8 +691,8 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	GUIState* pGUIState = &m_stateGUI;
 	/// clean up GUI state
 	pGUIState->CleanupGUIState();
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	pGUIState->pd3dDevice = pd3dDevice;
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	pGUIState->pRenderDevice = pRenderDevice;
 
 	auto painter = GetPainter();
 	pGUIState->painter = painter;
@@ -744,16 +744,16 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		}
 
 		// default to UV wrapping, instead of UV clamp for UI. 
-		// pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-		// pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
+		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 
 		GUIBase_List_Type::iterator iter;
 
 		//////////////////////////////////////////////////////////////////////////
 		// breadth first transversing the 2D scene
-		//pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,TRUE);
-		//pd3dDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_EQUAL);
-		//pd3dDevice->SetRenderState(ERenderState::STENCILREF,0);
+		//pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,TRUE);
+		//pRenderDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_EQUAL);
+		//pRenderDevice->SetRenderState(ERenderState::STENCILREF,0);
 		for( iter = this->GetChildren()->begin(); iter != this->GetChildren()->end();iter++ )
 		{
 			CGUIBase* pObjChild = * iter;  
@@ -775,13 +775,13 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 		//////////////////////////////////////////////////////////////////////////
 		//render the dragging object if exist
-		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
+		pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
 		if (pdrag->pDragging!=NULL && ! pdrag->m_bIsCandicateOnly) {
 			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
 		}
 		//////////////////////////////////////////////////////////////////////////
 		//render the IME candidate window
-		pd3dDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
+		pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
 		//if (GetIMEFocus()) {
 		//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
 		//}
@@ -856,7 +856,7 @@ void VisitAllObjects(CGUIRoot& root, const std::function<void(CGUIBase* pObj)> &
 //no need refactoring
 HRESULT CGUIRoot::InitDeviceObjects()
 {
-	m_stateGUI.pd3dDevice = CGlobals::GetRenderDevice();
+	m_stateGUI.pRenderDevice = CGlobals::GetRenderDevice();
 
 	auto f = [](CGUIBase* pObj) { pObj->InitDeviceObjects(); };
 	VisitAllObjects(*this, f);

@@ -393,8 +393,6 @@ namespace ParaEngine
 
 	public:
 		IScene* GetScene(){ return m_pScene; }
-
-		RenderDevicePtr m_pd3dDevice;	/// rendering device pointer
 		// scene associated with the state
 		IScene*			m_pScene;
 		/// the GUI rendering state

@@ -470,7 +470,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		return S_OK;
 	}
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	if(SurfaceType == TextureEntityDirectX::StaticTexture || SurfaceType == TextureEntityDirectX::TerrainHighResTexture)
 	{

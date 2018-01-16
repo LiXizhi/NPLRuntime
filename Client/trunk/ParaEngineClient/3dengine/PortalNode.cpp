@@ -204,18 +204,18 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 
 #ifdef USE_DIRECTX_RENDERER
 	// set render state
-	auto pd3dDevice = CGlobals::GetRenderDevice();
-	if(pd3dDevice)
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	if(pRenderDevice)
 	{
 		DrawBoundingBox(sceneState, color);
-		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-		pd3dDevice->SetTexture(0,NULL);
+		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		pRenderDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
+		pRenderDevice->SetTexture(0,NULL);
 
-		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		pd3dDevice->SetFVF(LINEVERTEX::FVF);
+		pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-		pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
+		pRenderDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN,D3DPT_LINELIST, 0, 
 			nNumVertices, nLenCount, pIndexBuffer, D3DFMT_INDEX16,pVertices, sizeof(LINEVERTEX));
 	}
 #endif

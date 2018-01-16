@@ -13,8 +13,6 @@
 #include "LightManager.h"
 #include "LightObject.h"
 #include "LightGeoUtil.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
-
 using namespace ParaEngine;
 
 /**@def whether to automatically adjust light parameters by range. */
@@ -345,7 +343,7 @@ HRESULT ParaEngine::CLightObject::RenderMesh(SceneState * sceneState)
 	Matrix4 mxWorld;
 	GetRenderMatrix(mxWorld);
 
-	RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->applyObjectLocalLighting(this);
 
@@ -468,8 +466,8 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 #ifdef USE_DIRECTX_RENDERER
 
 
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	
 
 	if(m_pDeferredShadingMesh==NULL)
 	{
@@ -486,7 +484,7 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 
 				auto pRawMesh = (CParaXStaticModelRawPtr)ppMesh->GetMesh();
 
-				D3DXCreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ, pd3dDevice, &(pRawMesh->GetSysMemMeshRef()));
+				pRenderDevice->CreateMeshFVF(2,4,D3DXMESH_SYSTEMMEM,D3DFVF_XYZ,&(pRawMesh->GetSysMemMeshRef()));
 				std::vector<Vector3> pos;
 				LightGeomUtil::createQuad(pos);
 				void * data=nullptr;

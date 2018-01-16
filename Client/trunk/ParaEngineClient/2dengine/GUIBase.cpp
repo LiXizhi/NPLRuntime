@@ -1526,8 +1526,8 @@ void CGUIBase::Begin(GUIState* pGUIState,float fElapsedTime )
 		if(pGUIState)
 		{
 			GetPainter(pGUIState)->Flush();
-			pGUIState->pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-			pGUIState->pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+			pGUIState->pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
+			pGUIState->pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 		}
 	}
 }
@@ -1555,8 +1555,8 @@ void CGUIBase::End(GUIState* pGUIState,float fElapsedTime )
 		if(pGUIState)
 		{
 			GetPainter(pGUIState)->Flush();
-			pGUIState->pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP);
-			pGUIState->pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP);
+			pGUIState->pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP);
+			pGUIState->pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP);
 		}
 	}
 }

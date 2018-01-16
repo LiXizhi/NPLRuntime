@@ -456,7 +456,7 @@ HRESULT CPainter::DrawSprite(GUITextureElement* pElement, RECT *prcDest, const V
 	{
 //#ifdef USE_DIRECTX_RENDERER
 //		POINT pt = { rcScreen.left, rcScreen.top };
-//		hr = guiroot->m_stateGUI.pd3dDevice->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
+//		hr = guiroot->m_stateGUI.pRenderDevice->UpdateSurface(((TextureEntityDirectX*)pTexture)->GetSurface(), &rcTexture, guiroot->GetGUIState().pBackSurface, &pt);
 //#endif
 	}
 	else

@@ -42,7 +42,7 @@
 #include "BufferPicking.h"
 #include "ParaWorldAsset.h"
 #include "memdebug.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+
 
 /**@def whether to use asset map */
 // #define USE_ASSET_MAP
@@ -596,10 +596,10 @@ HRESULT CParaWorldAsset::InitDeviceObjects()
 	{
 		if(m_pShadowSquareVB == NULL)
 		{
-			auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-			LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+			auto pRenderDevice = CGlobals::GetRenderDevice();
+			
 			// Create a shadow square for rendering the stencil buffer contents
-			if( FAILED(pd3dDevice->CreateVertexBuffer( 4*sizeof(SHADOWVERTEX),
+			if( FAILED(pRenderDevice->CreateVertexBuffer( 4*sizeof(SHADOWVERTEX),
 											D3DUSAGE_WRITEONLY, SHADOWVERTEX::FVF,
 											D3DPOOL_MANAGED, &m_pShadowSquareVB, NULL ) ) )
 				return E_FAIL;
@@ -622,8 +622,8 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 	GetFontManager().RestoreDeviceObjects();
 	m_DynamicVBManager.RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	
 	m_EffectsManager.RestoreDeviceObjects();
 #ifdef USE_FLASH_MANAGER
 	m_FlashManager.RestoreDeviceObjects();
@@ -633,7 +633,7 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 	CGlobals::GetMoviePlatform()->RestoreDeviceObjects();
 	{
 		D3DVIEWPORT9 ViewPort;
-		pd3dDevice->GetViewport(&ViewPort);
+		pRenderDevice->GetViewport(&ViewPort);
 		 // Set the size of the big square shadow
 		SHADOWVERTEX* v;
 		FLOAT sx = (FLOAT)ViewPort.Width;
@@ -651,16 +651,16 @@ HRESULT CParaWorldAsset::RestoreDeviceObjects()
 	}
 
 	// Check to see if device supports visibility query
-	if( D3DERR_NOTAVAILABLE == pd3dDevice->CreateQuery( D3DQUERYTYPE_OCCLUSION, NULL ) )
+	if( D3DERR_NOTAVAILABLE == pRenderDevice->CreateQuery( D3DQUERYTYPE_OCCLUSION, NULL ) )
 	{
 		m_pOcclusionQuery = NULL;
 	}
 	else
 	{
-		pd3dDevice->CreateQuery( D3DQUERYTYPE_OCCLUSION, &m_pOcclusionQuery );
+		pRenderDevice->CreateQuery( D3DQUERYTYPE_OCCLUSION, &m_pOcclusionQuery );
 		for(int i=0;i<(int)(m_pOcclusionQueryBanks.size());++i)
 		{
-			LatentOcclusionQueryBank* pOcclusionQueryBank = new LatentOcclusionQueryBank(pd3dDevice);
+			LatentOcclusionQueryBank* pOcclusionQueryBank = new LatentOcclusionQueryBank(pRenderDevice);
 			if(!pOcclusionQueryBank->IsValid())
 				SAFE_DELETE(pOcclusionQueryBank);
 			m_pOcclusionQueryBanks[i] = pOcclusionQueryBank;
@@ -1075,9 +1075,9 @@ LatentOcclusionQueryBank* CParaWorldAsset::GetOcclusionQueryBank(int nID)
 			{
 				if(nID>=(int)m_pOcclusionQueryBanks.size())
 					m_pOcclusionQueryBanks.resize(nID+1, 0);
-				auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-				LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
-				pOcclusionQueryBank = new LatentOcclusionQueryBank(pd3dDevice);
+				auto pRenderDevice = CGlobals::GetRenderDevice();
+				
+				pOcclusionQueryBank = new LatentOcclusionQueryBank(pRenderDevice);
 				if(!pOcclusionQueryBank->IsValid())
 				{
 					OUTPUT_LOG("warning: failed creating OcclusionQueryBank ID %d\n", nID);

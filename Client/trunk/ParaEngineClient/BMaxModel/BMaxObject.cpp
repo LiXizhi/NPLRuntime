@@ -323,7 +323,7 @@ namespace ParaEngine
 		GetRenderMatrix(mxWorld);
 
 
-		RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		pEffectManager->applyObjectLocalLighting(this);
 

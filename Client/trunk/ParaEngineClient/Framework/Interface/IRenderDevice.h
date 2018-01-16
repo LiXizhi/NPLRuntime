@@ -108,6 +108,9 @@ namespace ParaEngine
 
 		virtual HRESULT LightEnable(DWORD Index, BOOL Enable) = 0;
 
+		virtual HRESULT SetCursorProperties( UINT XHotSpot, UINT YHotSpot, IDirect3DSurface9* pCursorBitmap)  = 0;
+
+		virtual HRESULT CreateQuery(D3DQUERYTYPE Type, IDirect3DQuery9** ppQuery) = 0;
 
 		virtual HRESULT CreateTextureFromFileInMemoryEx(LPCVOID pSrcData, UINT SrcDataSize, UINT Width, UINT Height, UINT MipLevels,
 			DWORD Usage, D3DFORMAT Format, D3DPOOL Pool, DWORD Filter, DWORD MipFilter, D3DCOLOR ColorKey, D3DXIMAGE_INFO* pSrcInfo,
@@ -177,6 +180,37 @@ namespace ParaEngine
 			DWORD                   PitchAndFamily,
 			LPCSTR                  pFaceName,
 			LPD3DXFONT*             ppFont) = 0;
+
+		virtual HRESULT CreateMeshFVF(
+			DWORD NumFaces,
+			DWORD NumVertices,
+			DWORD Options,
+			DWORD FVF,
+			LPD3DXMESH* ppMesh) = 0;
+
+		virtual HRESULT CreateSprite(
+			LPD3DXSPRITE*    ppSprite) = 0;
+
+		virtual HRESULT LoadMeshFromXInMemory(
+			LPCVOID Memory,
+			DWORD SizeOfMemory,
+			DWORD Options,
+			LPD3DXBUFFER *ppAdjacency,
+			LPD3DXBUFFER *ppMaterials,
+			LPD3DXBUFFER *ppEffectInstances,
+			DWORD *pNumMaterials,
+			LPD3DXMESH *ppMesh) = 0;
+
+
+		virtual HRESULT LoadMeshFromXof(
+			LPD3DXFILEDATA pxofMesh,
+			DWORD Options,
+			LPD3DXBUFFER *ppAdjacency,
+			LPD3DXBUFFER *ppMaterials,
+			LPD3DXBUFFER *ppEffectInstances,
+			DWORD *pNumMaterials,
+			LPD3DXMESH *ppMesh) = 0;
+
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

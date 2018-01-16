@@ -63,7 +63,7 @@ namespace ParaEngine
 		{
 			
 			CGlobals::GetWorldMatrixStack().push(worldMat);
-			//sceneState->pd3dDevice->SetRenderState(ERenderState::FILLMODE,D3DFILL_WIREFRAME);
+			//sceneState->pRenderDevice->SetRenderState(ERenderState::FILLMODE,D3DFILL_WIREFRAME);
 			int currentPass = -1;
 			pEffectFile->begin(true);
 			//pEffectFile->BeginPass(0);
@@ -84,7 +84,7 @@ namespace ParaEngine
 
 				pEffectFile->setParameter(CEffectFile::k_diffuseMaterialColor,(const float*)&(m_pModel->m_modelParts[i]->GetDiffuseColor()));	
 				pEffectFile->CommitChanges();
-				modelPart->SubmitGeometry(sceneState->m_pd3dDevice);
+				modelPart->SubmitGeometry(CGlobals::GetRenderDevice());
 			}
 			pEffectFile->EndPass();
 

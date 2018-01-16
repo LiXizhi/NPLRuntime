@@ -67,7 +67,7 @@ CSkyMesh::~CSkyMesh(void)
 //-----------------------------------------------------------------------------
 HRESULT CSkyMesh::Draw(SceneState * sceneState)
 {
-	RenderDevicePtr pd3dDevice = sceneState->m_pd3dDevice;
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	const Matrix4& viewMatrix = CGlobals::GetViewMatrixStack().SafeGetTop();
 	Matrix4 InverseViewMatrix;
 	InverseViewMatrix = viewMatrix.inverse();
@@ -97,12 +97,12 @@ HRESULT CSkyMesh::Draw(SceneState * sceneState)
 		{
 		case Sky_StaticMesh:
 		{
-			DrawStaticMeshSky(pEffectManager, sceneState, pd3dDevice, sunlight, vPos);
+			DrawStaticMeshSky(pEffectManager, sceneState, pRenderDevice, sunlight, vPos);
 			break;
 		}
 		case Sky_Simulated:
 		{
-			DrawSimulatedSky(pEffectManager, sceneState, sunlight, pd3dDevice, vPos);
+			DrawSimulatedSky(pEffectManager, sceneState, sunlight, pRenderDevice, vPos);
 			break;
 		}
 		default:
@@ -258,7 +258,7 @@ HRESULT ParaEngine::CSkyMesh::InitDeviceObjects()
 
 		//////////////////////////////////////////////////////////////////////////
 		// create vertex buffer
-		RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
+		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 		if (m_simsky_vb.CreateBuffer(m_nSimsky_vertexCount*sizeof(mesh_vertex_plain), 0, D3DUSAGE_WRITEONLY))
 		{
@@ -427,7 +427,7 @@ HRESULT ParaEngine::CSkyMesh::RendererRecreated()
 	return S_OK;
 }
 
-void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, SceneState * sceneState, RenderDevicePtr pd3dDevice, CSunLight &sunlight, Vector3 vPos)
+void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, SceneState * sceneState, RenderDevicePtr pRenderDevice, CSunLight &sunlight, Vector3 vPos)
 {
 	if (!m_pStaticMesh)
 		return;
@@ -448,10 +448,10 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 		/**
 		* Set default sun lighting
 		*/
-		pd3dDevice->SetLight(0, (const D3DLIGHT9*)sunlight.GetD3DLight());
+		pRenderDevice->SetLight(0, (const D3DLIGHT9*)sunlight.GetD3DLight());
 		// turn off light
-		//pd3dDevice->LightEnable(0, sceneState->GetScene()->IsLightEnabled() );
-		//pd3dDevice->LightEnable(0, false);
+		//pRenderDevice->LightEnable(0, sceneState->GetScene()->IsLightEnabled() );
+		//pRenderDevice->LightEnable(0, false);
 
 		pEffectManager->EnableZWrite(false);
 
@@ -464,8 +464,8 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 		matProj_one_depth._43 = 0.999f;
 		matProj_one_depth = matProj * matProj_one_depth;
 
-		pd3dDevice->SetTransform(D3DTS_PROJECTION, matProj_one_depth.GetConstPointer());
-		pd3dDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
+		pRenderDevice->SetTransform(D3DTS_PROJECTION, matProj_one_depth.GetConstPointer());
+		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 		/** render the static mesh background */
 		if (m_pStaticMesh)
 		{
@@ -563,41 +563,41 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			}
 			/// blend the fog color with the back ground image
 			//pEffectManager->SetCullingMode(true);
-			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
 			// use depth bias
 			float depthBias = -0.00001f;
-			pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&depthBias);
+			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&depthBias);
 
-			pd3dDevice->SetTexture(0, NULL);
+			pRenderDevice->SetTexture(0, NULL);
 
 			// set translation
 			Matrix4 mxWorld;
 			Vector3 vPos = GetRenderOffset();
 			mxWorld.makeTrans(vPos.x, vPos.y, vPos.z);
-			pd3dDevice->SetTransform(D3DTS_WORLD, mxWorld.GetConstPointer());
+			pRenderDevice->SetTransform(D3DTS_WORLD, mxWorld.GetConstPointer());
 
-			pd3dDevice->SetVertexShader(NULL);
-			pd3dDevice->SetPixelShader(NULL);
-			pd3dDevice->SetFVF(LINEVERTEX::FVF);
+			pRenderDevice->SetVertexShader(NULL);
+			pRenderDevice->SetPixelShader(NULL);
+			pRenderDevice->SetFVF(LINEVERTEX::FVF);
 
-			pd3dDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0,
+			pRenderDevice->DrawIndexedPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLESTRIP, 0,
 				8, 8, pIndexBufferSides, D3DFMT_INDEX16, pVertices, sizeof(LINEVERTEX));
 
-			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 
 			// this line crashes on VIA/S3G UniChrome Pro IGP
-			//DirectXPerf::DrawIndexedPrimitiveUP(pd3dDevice, DirectXPerf::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLEFAN, 0, 
+			//DirectXPerf::DrawIndexedPrimitiveUP(pRenderDevice, DirectXPerf::DRAW_PERF_TRIANGLES_MESH, D3DPT_TRIANGLEFAN, 0, 
 			//	5, 4, pIndexBufferSides+10, D3DFMT_INDEX16,pVertices, sizeof(LINEVERTEX));
 
 			float fTemp = 0.0f;
-			pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
+			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
 		}
-		pd3dDevice->SetRenderState(ERenderState::FOGENABLE, sceneState->GetScene()->IsFogEnabled());
-		pd3dDevice->SetTransform(D3DTS_PROJECTION, matProj.GetConstPointer());
+		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, sceneState->GetScene()->IsFogEnabled());
+		pRenderDevice->SetTransform(D3DTS_PROJECTION, matProj.GetConstPointer());
 #endif
 	}
 	else
@@ -654,7 +654,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 	}
 }
 
-void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, SceneState * sceneState, CSunLight &sunlight, RenderDevicePtr pd3dDevice, Vector3 &vPos)
+void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, SceneState * sceneState, CSunLight &sunlight, RenderDevicePtr pRenderDevice, Vector3 &vPos)
 {
 	if (!m_bSimsky_BufferInited)
 	{
@@ -738,8 +738,8 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
 		pEffectManager->EnableZWrite(false);
-		pd3dDevice->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
-		pd3dDevice->SetIndices(m_simsky_ib.GetDevicePointer());
+		pRenderDevice->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
+		pRenderDevice->SetIndices(m_simsky_ib.GetDevicePointer());
 
 		if (pEffectFile->begin(false))
 		{
@@ -776,13 +776,13 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 
 				// we don't want to render completely transparent parts
 				pEffectFile->CommitChanges();
-				pd3dDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
+				pRenderDevice->DrawIndexedPrimitive(RenderDeviceBase::DRAW_PERF_TRIANGLES_UNKNOWN, D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
 				pEffectFile->EndPass();
 			}
 			pEffectFile->end();
 		}
-		pd3dDevice->SetIndices(0);
-		pd3dDevice->SetTexture(1, 0);
+		pRenderDevice->SetIndices(0);
+		pRenderDevice->SetTexture(1, 0);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }

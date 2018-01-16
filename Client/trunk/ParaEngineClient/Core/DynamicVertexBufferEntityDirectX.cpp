@@ -52,36 +52,36 @@ HRESULT DynamicVertexBufferEntityDirectX::RestoreDeviceObjects()
 		return S_OK;
 	m_bIsInitialized = true;
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	HRESULT hr = S_OK;
 	switch (m_dwDataFormat)
 	{
 	case DVB_XYZ_TEX1_NORM_DIF:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, mesh_vertex_normal_color::FVF,
 			D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;
 	case DVB_XYZ_TEX1_NORM:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, mesh_vertex_normal::FVF,
 			D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;
 	case DVB_XYZ_TEX1_DIF:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, SPRITEVERTEX::FVF,
 			D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;
 	case DVB_XYZ_NORM_DIF:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, bmax_vertex::FVF,
 			D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;
 	case DVB_MATRIX:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 			D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, 0, D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;
 		/*case DVB_X:
-		hr = pd3dDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
+		hr = pRenderDevice->CreateVertexBuffer(m_dwDiscard*m_nUnitSize,
 		D3DUSAGE_WRITEONLY|D3DUSAGE_DYNAMIC, 0,
 		D3DPOOL_DEFAULT, &(m_lpVB), NULL);
 		break;*/

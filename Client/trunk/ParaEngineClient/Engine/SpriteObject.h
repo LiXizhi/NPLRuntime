@@ -136,8 +136,8 @@ public:
 	/// -- for init and delete
 	HRESULT InitObject(D3DXSpriteEntity* pSprite,TextureEntity* ppTexture, Vector3 vPos, 
 		FLOAT fWidth=1.0f, FLOAT fHeight=1.0f, DWORD sprite_style=0);
-	void SetRenderState(IRenderDevice* pd3dDevice);
-	void RestoreRenderState(IRenderDevice* pd3dDevice);
+	void SetRenderState(IRenderDevice* pRenderDevice);
+	void RestoreRenderState(IRenderDevice* pRenderDevice);
 
 public:
 	CSpriteObject(void);

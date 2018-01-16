@@ -16,9 +16,9 @@
 #include "PluginManager.h"
 #include "PluginAPI.h"
 #include "HtmlBrowserManager.h"
-
+#include "Platform/Windows/Render/D3D9/RenderDeviceD3D9.h"
 #include "memdebug.h"
-#include "Platform/Windows/Render/D3D9/D3D9RenderDevice.h"
+
 using namespace ParaEngine;
 
 // 6 browsers can be opened at the same time by default
@@ -611,9 +611,9 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// here let's check if we can use dynamic textures
 	D3DCAPS9 caps;
 	ZeroMemory( &caps, sizeof(D3DCAPS9));
-	auto pRenderDevice = static_cast<CD3D9RenderDevice*>(CGlobals::GetRenderDevice());
-	LPDIRECT3DDEVICE9 pd3dDevice = pRenderDevice->GetDirect3DDevice9();
-	hr = pd3dDevice->GetDeviceCaps( &caps );
+	auto pRenderDevice = static_cast<RenderDeviceD3D9*>(CGlobals::GetRenderDevice());
+	
+	hr = pRenderDevice->GetDirect3DDevice9()->GetDeviceCaps( &caps );
 	if( caps.Caps2 & D3DCAPS2_DYNAMICTEXTURES )
 	{
 		m_bUseDynamicTextures = true;
@@ -642,7 +642,7 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// use the size in buffer
 	if( m_bUseDynamicTextures )
 	{
-		hr = pd3dDevice->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
+		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
 			D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT,
 			ppTexture, NULL);
 		if( FAILED(hr))
@@ -652,7 +652,7 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	}
 	else
 	{
-		hr = pd3dDevice->CreateTexture(uintWidth, uintHeight, 1, 0,
+		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, 0,
 			D3DFMT_X8R8G8B8,D3DPOOL_MANAGED,
 			ppTexture, NULL);
 	}

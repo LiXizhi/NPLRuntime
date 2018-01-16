@@ -231,7 +231,7 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 	UpdateShader();
 
-	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 
 	m_vertices.resize(6 * m_sprite_count);
 
@@ -284,7 +284,7 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 		// do the rendering with opengl
 		{
-			pd3dDevice->SetTexture(0, m_sprites[start].texture);
+			pRenderDevice->SetTexture(0, m_sprites[start].texture);
 			DrawTriangles(&m_vertices[6 * start], count * 2);
 		}
 	}
@@ -306,7 +306,7 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 	// tex coords
 	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 
-	pD3dDevice->DrawPrimitive(CGlobals::GetRenderDevice(), RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, 0, nTriangleCount);
+	pRenderDevice->DrawPrimitive(CGlobals::GetRenderDevice(), RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, 0, nTriangleCount);
 }
 
 void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)
