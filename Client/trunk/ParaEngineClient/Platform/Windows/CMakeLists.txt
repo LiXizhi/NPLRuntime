@@ -16,5 +16,5 @@ add_executable(WindowsApplication
     ${src_render_d3d9}
 )
 
-target_link_libraries(WindowsApplication ParaEngineLibrary)
+target_link_libraries(WindowsApplication ParaEngineLibrary RenderSystemD3D9)
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)

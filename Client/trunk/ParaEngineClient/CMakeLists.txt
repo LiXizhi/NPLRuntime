@@ -29,16 +29,16 @@ set(ParaEngineClient_SRCS)
 # SOURCE
 # ==================================================================================
 ##############################
-file (GLOB_RECURSE ParaEngineClient_Interface_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/Interface/*.*)
+file (GLOB ParaEngineClient_Interface_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/Interface/*.*)
 SOURCE_GROUP("Framework\\Interface" FILES ${ParaEngineClient_Interface_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Interface_FILES})
 
-file (GLOB_RECURSE ParaEngineClient_Interface_Render_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/Interface/Render/*.*)
+file (GLOB ParaEngineClient_Interface_Render_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/Interface/Render/*.*)
 SOURCE_GROUP("Framework\\Interface\\Render" FILES ${ParaEngineClient_Interface_Render_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Interface_Render_FILES})
 
 
-file (GLOB_RECURSE ParaEngineClient_RenderSystem_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/RenderSystem/*.*)
+file (GLOB ParaEngineClient_RenderSystem_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/RenderSystem/*.*)
 SOURCE_GROUP("Framework\\RenderSystem" FILES ${ParaEngineClient_RenderSystem_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_RenderSystem_FILES})
 
@@ -517,4 +517,5 @@ target_link_libraries(ParaEngineLibrary ${ParaEngineClient_LIBS})
 # END OF TARGET
 # ==================================================================================
 
+add_subdirectory(RenderSystem)
 add_subdirectory(Platform/Windows)

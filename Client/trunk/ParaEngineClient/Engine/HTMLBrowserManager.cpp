@@ -16,7 +16,7 @@
 #include "PluginManager.h"
 #include "PluginAPI.h"
 #include "HtmlBrowserManager.h"
-#include "Platform/Windows/Render/D3D9/RenderDeviceD3D9.h"
+#include "RenderSystem/d3d9/RenderDeviceD3D9.h"
 #include "memdebug.h"
 
 using namespace ParaEngine;
