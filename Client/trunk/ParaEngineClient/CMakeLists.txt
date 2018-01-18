@@ -510,8 +510,12 @@ ADD_DEFINITIONS(-DUSE_WINDOWS_SSPI)
 ADD_DEFINITIONS(-DSQLITE_STATICLIB)
 
 
-add_library(ParaEngineLibrary STATIC ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
-target_link_libraries(ParaEngineLibrary ${ParaEngineClient_LIBS})
+add_library(ParaEngine STATIC ${ParaEngineClient_HEADERS} ${ParaEngineClient_SRCS})
+target_link_libraries(ParaEngine ${ParaEngineClient_LIBS})
+
+
+# Impl
+add_subdirectory(ParaEngineImpl/d3d)
 
 
 # END OF TARGET
