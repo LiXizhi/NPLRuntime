@@ -3,11 +3,6 @@
 file (GLOB src_render Render/*.cpp Render/*.h)
 source_group("Render" FILES ${src_render})
 
-file (GLOB src_render_d3d9 Render/D3D9/*.cpp Render/D3D9/*.h Render/D3D9/*.hpp)
-source_group("Render\\D3D9" FILES ${src_render_d3d9})
-
-
-
 add_executable(WindowsApplication 
     main.cpp
     WindowsApplication.h
@@ -16,5 +11,5 @@ add_executable(WindowsApplication
     ${src_render_d3d9}
 )
 
-target_link_libraries(WindowsApplication ParaEngine RenderSystemD3D9)
+target_link_libraries(WindowsApplication ParaEngine RenderSystemD3D9 opengl32.lib glad_core glad_ext_wgl)
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
