@@ -81,6 +81,7 @@
 #include "ParaEngineAppBase.h"
 #include "Render/WindowsRenderWindow.h"
 #include "Render/D3D9RenderContext.h"
+#include "Render/OpenGLRenderContext.h"
 #include "RenderSystem/d3d9/RenderDeviceD3D9.h"
 
 
@@ -489,6 +490,12 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 	RenderConfiguration cfg;
 	cfg.isWindowed = !m_bStartFullscreen;
 	cfg.renderWindow = m_pRenderWindow;
+
+
+	auto glRenderContext = RenderContextOpenGL::Create();
+	glRenderContext->CreateDevice(cfg);
+
+
 
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	if (!m_pRenderDevice)
