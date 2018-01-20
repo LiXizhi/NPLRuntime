@@ -319,7 +319,7 @@ void ParaEngine::CViewportManager::ApplyViewport()
 	myViewport.Y = 0;
 	myViewport.Width = GetWidth();
 	myViewport.Height = GetHeight();
-	CGlobals::GetRenderDevice()->SetViewport(reinterpret_cast<D3DVIEWPORT9*>(&myViewport));
+	GETD3D(CGlobals::GetRenderDevice())->SetViewport(reinterpret_cast<D3DVIEWPORT9*>(&myViewport));
 }
 
 void ParaEngine::CViewportManager::GetCurrentViewport(ParaViewport& out)

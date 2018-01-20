@@ -4,11 +4,10 @@
 // Description:	
 //-----------------------------------------------------------------------------
 #pragma once
-
+#include "Core/ParaEngine.h"
 namespace ParaEngine
 {
 	class CArchive;
-
 	/** a file handle in a Archive */
 	struct FileHandle
 	{

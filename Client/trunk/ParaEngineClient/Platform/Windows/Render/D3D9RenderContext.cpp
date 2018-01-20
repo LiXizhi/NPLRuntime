@@ -1,8 +1,8 @@
 
 #include "ParaEngine.h"
 #include <d3d9.h>
-#include "RenderSystem/d3d9/D3D9Tools.h"
-#include "RenderSystem/d3d9/RenderDeviceD3D9.h"
+#include "D3D9Tools.h"
+#include "RenderDeviceD3D9.h"
 #include "D3D9RenderContext.h"
 #include "WindowsRenderWindow.h"
 #include "PEtypes.h"

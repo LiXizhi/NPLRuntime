@@ -124,7 +124,7 @@ void Frustrum(float Left, float Right, float Bottom, float Top, float Near, floa
 		Matrix._14 = 0.0f; Matrix._24 = 0.0f; Matrix._34 = M006; Matrix._44 = 0.0f;
 
 		//--Apply the matrix to the projection matrix
-		CGlobals::GetRenderDevice()->SetTransform(D3DTS_PROJECTION, Matrix.GetConstPointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_PROJECTION, Matrix.GetConstPointer());
 	}
 }
 
@@ -506,7 +506,7 @@ inline void SaveScreenShot(char* Filename, int Width, int Height, int Channels, 
 {
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-	HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(Width, Height, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pTexture);
+	HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(Width, Height, 1, 0, D3DFMT_X8R8G8B8, D3DPOOL_SYSTEMMEM, &pTexture,NULL);
 	if(FAILED(hr))
 	{
 		OUTPUT_LOG("failed creating snap shot texture\n");
@@ -870,7 +870,7 @@ void SCREENSHOTSYSTEM::CaptureTexture(byte** ppBmpBuffer, int nMode)
 		return;
 	if(m_pOffScreenSurface!=0)
 	{
-		if(FAILED(CGlobals::GetRenderDevice()->GetRenderTargetData(pSurface, m_pOffScreenSurface)))
+		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetRenderTargetData(pSurface, m_pOffScreenSurface)))
 			return;
 		SAFE_RELEASE(pSurface);
 		pSurface = m_pOffScreenSurface;
@@ -2322,7 +2322,7 @@ void SCREENSHOTSYSTEM::SetCaptureTexture(LPDIRECT3DTEXTURE9 pTexture)
 
 		if((ddsd.Usage & D3DUSAGE_RENDERTARGET)!=0 )
 		{
-			if( FAILED(CGlobals::GetRenderDevice()->CreateOffscreenPlainSurface(m_TextureWidth, m_TextureHeight, m_TextureFormat, 
+			if( FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateOffscreenPlainSurface(m_TextureWidth, m_TextureHeight, m_TextureFormat,
 				D3DPOOL_SYSTEMMEM,&m_pOffScreenSurface, NULL)) )
 			{
 				m_bFromTexture=false;

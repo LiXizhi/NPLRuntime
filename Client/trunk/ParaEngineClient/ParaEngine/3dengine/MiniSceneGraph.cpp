@@ -381,7 +381,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 	pEffectManager->EnableFog(IsFogEnabled());
 	pEffectManager->SetD3DFogState();
 #ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
+	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 #elif defined(USE_OPENGL_RENDERER)
 	if (!IsSunLightEnabled())
 	{

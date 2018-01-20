@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
-project(EmbedResource)
-
+include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 ## embed with relative to project path
 function(embed_resources out_var)
     set(result)

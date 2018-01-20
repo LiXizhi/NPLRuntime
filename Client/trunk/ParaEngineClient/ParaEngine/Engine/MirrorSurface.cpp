@@ -75,7 +75,7 @@ void CMirrorSurface::RestoreDeviceObjects()
 	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
 	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-	hr = pRenderDevice->CreateTexture(nWidth, 	nHeight, 
+	hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight,
 		1, D3DUSAGE_RENDERTARGET, 
 		D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pReflectionTexture, NULL);
 	CHECK_RETURN_CODE("CreateTexture Reflection Texture", hr);  
@@ -83,7 +83,7 @@ void CMirrorSurface::RestoreDeviceObjects()
 	hr = m_pReflectionTexture->GetSurfaceLevel(0, &m_pReflectionSurface);
 	CHECK_RETURN_CODE("GetSurfaceLevel Reflection Surface", hr);
 
-	hr = pRenderDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
+	hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
 		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
 	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
 	m_bInitialized=true;
@@ -204,9 +204,9 @@ void CMirrorSurface::RenderReflectionTexture()
 
 		// set depth surface
 		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(pRenderDevice->GetDepthStencilSurface(&pOldZBuffer)))
+		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
 			return;
-		pRenderDevice->SetDepthStencilSurface( m_pDepthStencilSurface );
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
 
 		// Compute the field of view and use it
 		CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
@@ -243,7 +243,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		pEffectManager->EnableClipPlane(true);
 
 		// D3DCLEAR_ZBUFFER is doomed. Hence, reflection must be rendered before the main thing is rendered. 
-		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_RGBA(0, 0, 0, 0), 1.0f, 0L);
+		GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, COLOR_RGBA(0, 0, 0, 0), 1.0f, 0L);
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -284,7 +284,7 @@ void CMirrorSurface::RenderReflectionTexture()
 		pCamera->UpdateFrustum();
 
 		// restore old depth surface
-		pRenderDevice->SetDepthStencilSurface( pOldZBuffer);
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
 		SAFE_RELEASE(pOldZBuffer);
 
 		//////////////////////////////////////////////////////////////////////////

@@ -16,6 +16,16 @@ bool ParaEngine::RenderDeviceD3D9::SetClipPlane(uint32_t Index, const float* pPl
 	return m_pD3DDevice->SetClipPlane(Index, pPlane) == S_OK;
 }
 
+bool ParaEngine::RenderDeviceD3D9::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+int ParaEngine::RenderDeviceD3D9::GetMaxSimultaneousTextures()
+{
+	return 8;
+}
+
 //HRESULT ParaEngine::RenderDeviceD3D9::SetTexture(DWORD Stage, IDirect3DTexture9* pTexture)
 //{
 //	return m_GETD3D(CGlobals::GetRenderDevice())->SetTexture(Stage, pTexture);

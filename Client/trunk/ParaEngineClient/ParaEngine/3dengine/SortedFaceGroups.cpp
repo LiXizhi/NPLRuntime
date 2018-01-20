@@ -298,7 +298,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 						texMat = texMat * tmp;
 
-						pd3dDevice->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
+						GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
 					}
 					GETD3D(CGlobals::GetRenderDevice())->SetTexture( 0, pTexture);
 				}
@@ -309,7 +309,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 				// draw the face group. 
 
 				// set world transform. 
-				CGlobals::GetRenderDevice()->SetTransform( D3DTS_WORLD, facegroup.m_transform.GetConstPointer());
+				GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_WORLD, facegroup.m_transform.GetConstPointer());
 
 				int nTotalVertices = facegroup.m_facegroup->m_nNumTriangles*3;
 				do
@@ -602,19 +602,19 @@ void ParaEngine::CSortedFaceGroups::Render()
 								
 								if(enableTexStripEffect)
 								{
-									pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
-									pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
+									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
+									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
 								}
 
 								if (pBufEntity->IsMemoryBuffer())
-									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 								else
-									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( pBufEntity->GetBaseVertex(), nLockedNum);
+									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(D3DPT_TRIANGLELIST,pBufEntity->GetBaseVertex(), nLockedNum);
 
 								if(enableTexStripEffect)
 								{
-									pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_WRAP);
-									pd3dDevice->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_WRAP);
+									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_WRAP);
+									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_WRAP);
 								}
 
 								if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)

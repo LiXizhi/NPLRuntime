@@ -12,9 +12,9 @@ PROJECT(sqlite)
 include_directories("${PROJECT_SOURCE_DIR}")
 # Note: include the ParaEngine/NPLRuntime include directory
 if ("$ENV{NPLRUNTIME_ROOT}" STREQUAL "")
-	set(NPLRUNTIME_ROOT ${PROJECT_SOURCE_DIR}/../../ParaEngineClient)
+	set(NPLRUNTIME_ROOT ${PROJECT_SOURCE_DIR}/../../ParaEngineClient/ParaEngine)
 else()
-	set(NPLRUNTIME_ROOT $ENV{NPLRUNTIME_ROOT}/Client/trunk/ParaEngineClient)
+	set(NPLRUNTIME_ROOT $ENV{NPLRUNTIME_ROOT}/Client/trunk/ParaEngineClient/ParaEngine)
 endif()
 
 include_directories("${NPLRUNTIME_ROOT}/Framework/Interface/")

@@ -2084,9 +2084,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
 #ifdef USE_DIRECTX_RENDERER
-	pd3dDevice->SetRenderTarget(1,NULL);
-	pd3dDevice->SetRenderTarget(2,NULL);
-	pd3dDevice->SetRenderTarget(3,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
 #endif
 	if(nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
 	{
@@ -2173,7 +2173,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	CGlobals::GetEffectManager()->EnableFog(IsFogEnabled());
 	CGlobals::GetEffectManager()->SetD3DFogState();
 #ifdef USE_DIRECTX_RENDERER
-	pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
+	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 
 
 	if(IsUseWireFrame())
@@ -2707,8 +2707,8 @@ void CSceneObject::RenderShadows()
 			Matrix4 matModelview;
 			Matrix4 matProjection;
 			ParaViewport  viewport;
-			pd3dDevice->GetTransform(D3DTS_PROJECTION, matProjection.GetConstPointer());
-			pd3dDevice->GetTransform(D3DTS_VIEW, matModelview.GetConstPointer());
+			GETD3D(CGlobals::GetRenderDevice())->GetTransform(D3DTS_PROJECTION, matProjection.GetConstPointer());
+			GETD3D(CGlobals::GetRenderDevice())->GetTransform(D3DTS_VIEW, matModelview.GetConstPointer());
 			GETD3D(CGlobals::GetRenderDevice())->GetViewport(reinterpret_cast<D3DVIEWPORT9*> (&viewport));
 
 			pShadowVolume->UpdateProjectionInfo(&viewport, &matProjection, &matModelview);
@@ -2730,7 +2730,7 @@ void CSceneObject::RenderShadows()
 			pShadowVolume->ReCalculateOcclusionPyramid(pCamera);
 			
 			// set world transform as identity, since all volume shadows are in world coordinates
-			pd3dDevice->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
+			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
 								
 			/// clear stencil buffer
 			GETD3D(CGlobals::GetRenderDevice())->Clear( 0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L );
@@ -2867,8 +2867,8 @@ void CSceneObject::RenderShadows()
 			pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
 
 			// Draw a big, gray square
-			pd3dDevice->SetFVF( SHADOWVERTEX::FVF );
-			pd3dDevice->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF( SHADOWVERTEX::FVF );
+			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX) );
 			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(  D3DPT_TRIANGLESTRIP, 0, 2 );
 
@@ -3371,7 +3371,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 		if(!sceneState.listPRSprite.empty())
 		{
 			GETD3D(CGlobals::GetRenderDevice())->SetVertexShader( NULL );			// always set this
-			pd3dDevice->SetFVF( SPRITEVERTEX::FVF );
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF( SPRITEVERTEX::FVF );
 
 			AssetEntity* pLastAsset = NULL;
 			CSpriteObject* pObj;

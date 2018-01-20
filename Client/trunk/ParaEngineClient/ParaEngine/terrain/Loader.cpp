@@ -7,7 +7,9 @@
 #include "ParaWorldAsset.h"
 #include "Loader.h"
 #include "memdebug.h"
-
+#ifdef USE_DIRECTX_RENDERER
+#include "RenderDeviceD3D9.h"
+#endif
 using namespace ParaEngine;
 
 using namespace ParaTerrain;
@@ -75,7 +77,7 @@ HRESULT Loader::LoadElevations( float **ppImageData, int* nSize, const char * sz
 		/// Create a D3DFMT_X8R8G8B8 texture -- use D3DPOOL_SCRATCH to 
 		// ensure that this will succeeded independent of the device
 	
-		hr = pd3dDevice->CreateTextureFromFileInMemoryEx(cFile.getBuffer(), (int)cFile.getSize(),
+		hr = D3DXCreateTextureFromFileInMemoryEx(GETD3D(CGlobals::GetRenderDevice()),cFile.getBuffer(), (int)cFile.getSize(),
 			0, 0, 1, 0, 
 			D3DFMT_X8R8G8B8, D3DPOOL_SCRATCH, 
 			D3DX_FILTER_NONE, D3DX_FILTER_NONE,
@@ -299,7 +301,7 @@ void LoadImage(char *buf, int sizeBuf, int &width, int &height, uint8 ** ppBuffe
 		d3dFormat = D3DFMT_R8G8B8;
 	
 	// read from file
-	hr = pd3dDevice->CreateTextureFromFileInMemoryEx(buf, sizeBuf,
+	hr = D3DXCreateTextureFromFileInMemoryEx(GETD3D(CGlobals::GetRenderDevice()),buf, sizeBuf,
 		0, 0, 1, 0, 
 		d3dFormat, D3DPOOL_SCRATCH, 
 		D3DX_FILTER_NONE, D3DX_FILTER_NONE,

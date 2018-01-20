@@ -416,7 +416,7 @@ bool CDirectXEngine::Begin2D()
 
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
-	HRESULT hr = pd3dDevice->SetRenderTarget(0, m_pRenderTargetSurface);
+	HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_pRenderTargetSurface);
 	if(FAILED(hr))
 	{
 		return false;
@@ -424,8 +424,8 @@ bool CDirectXEngine::Begin2D()
 	pd3dDevice->SetRenderState( ERenderState::ZENABLE, FALSE);
 	pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE);
 	pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
-	pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+	GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
+	GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 
 	pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 	pd3dDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
@@ -436,7 +436,7 @@ bool CDirectXEngine::Begin2D()
 	pd3dDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
 	pd3dDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-	pd3dDevice->SetFVF( DXUT_SCREEN_VERTEX::FVF );
+	GETD3D(CGlobals::GetRenderDevice())->SetFVF( DXUT_SCREEN_VERTEX::FVF );
 
 	GETD3D(CGlobals::GetRenderDevice())->SetVertexShader( NULL );
 	GETD3D(CGlobals::GetRenderDevice())->SetPixelShader( NULL );

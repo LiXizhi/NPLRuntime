@@ -334,7 +334,7 @@ bool ParaEngine::CViewport::DrawQuad()
 	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
 	bool bSucceed = false;
 #ifdef USE_DIRECTX_RENDERER
-	bSucceed = SUCCEEDED(CGlobals::GetRenderDevice()->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
+	bSucceed = SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
 #endif
 
 	return bSucceed;
@@ -436,7 +436,7 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 	myViewport.Y = y;
 	myViewport.Width = width;
 	myViewport.Height = height;
-	CGlobals::GetRenderDevice()->SetViewport(reinterpret_cast<const D3DVIEWPORT9*>(&myViewport));
+	GETD3D(CGlobals::GetRenderDevice())->SetViewport(reinterpret_cast<const D3DVIEWPORT9*>(&myViewport));
 	return myViewport;
 }
 

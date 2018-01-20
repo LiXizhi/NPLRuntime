@@ -644,7 +644,7 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// use the size in buffer
 	if( m_bUseDynamicTextures )
 	{
-		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
+		hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
 			D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT,
 			ppTexture, NULL);
 		if( FAILED(hr))
@@ -654,7 +654,7 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	}
 	else
 	{
-		hr = pRenderDevice->CreateTexture(uintWidth, uintHeight, 1, 0,
+		hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(uintWidth, uintHeight, 1, 0,
 			D3DFMT_X8R8G8B8,D3DPOOL_MANAGED,
 			ppTexture, NULL);
 	}

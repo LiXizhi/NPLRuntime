@@ -27,7 +27,7 @@ LatentOcclusionQueryBank::LatentOcclusionQueryBank( IRenderDevice *  pD3DDev)
 	for(int i=0;i<MAX_QUERIES;i++)
 	{
 		LPDIRECT3DQUERY9 query = NULL;
-		if(FAILED(pD3DDev->CreateQuery(D3DQUERYTYPE_OCCLUSION, &query))) 
+		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateQuery(D3DQUERYTYPE_OCCLUSION, &query)))
 		{
 			m_bIsValid = false;
 			Cleanup();

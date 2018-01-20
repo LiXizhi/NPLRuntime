@@ -84,10 +84,10 @@ namespace ParaEngine
 	//todo: replace IDirect3DDevice9 with sth like IDevice.
 	void CadModelPart::SubmitGeometry(IRenderDevice* pDevice)
 	{
-		pDevice->SetVertexDeclaration(m_pVertexLayout);
-		pDevice->SetStreamSource(0,m_pVertexBuffer,m_vertexOffset*m_vertexStride,m_vertexStride);
-		pDevice->SetIndices(m_pIndexBuffer);
-		pDevice->DrawIndexedPrimitive(m_primitiveType,0,0,m_vertexCount,m_indexOffset,m_primitiveCount);
+		GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(m_pVertexLayout);
+		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,m_pVertexBuffer,m_vertexOffset*m_vertexStride,m_vertexStride);
+		GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer);
+		GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(m_primitiveType,0,0,m_vertexCount,m_indexOffset,m_primitiveCount);
 	}
 
 

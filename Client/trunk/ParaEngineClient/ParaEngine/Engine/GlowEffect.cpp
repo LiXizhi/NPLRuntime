@@ -66,19 +66,19 @@ HRESULT CGlowEffect::RestoreDeviceObjects()
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	
 	D3DVIEWPORT9 viewport;
-	pRenderDevice->GetViewport( &viewport );
+	GETD3D(CGlobals::GetRenderDevice())->GetViewport( &viewport );
 	m_glowtextureWidth = (float)viewport.Width/2;
 	m_glowtextureHeight = (float)viewport.Height/2;
 
 	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
-	if(FAILED(pRenderDevice->CreateTexture(viewport.Width, viewport.Height, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture(viewport.Width, viewport.Height, 1, D3DUSAGE_RENDERTARGET, colorFormat,
 		D3DPOOL_DEFAULT, &m_pRTHalfSizeTexture, NULL)))
 		return E_FAIL;
 	
-	if(FAILED(pRenderDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
 		D3DPOOL_DEFAULT, &m_pRTGlowSourceTexture, NULL)))
 		return E_FAIL;
-	if(FAILED(pRenderDevice->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, 
+	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture((int)m_glowtextureWidth, (int)m_glowtextureHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
 		D3DPOOL_DEFAULT, &m_pRTBlurHorizTexture, NULL)))
 		return E_FAIL;
 
@@ -109,13 +109,13 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 
 	// get current render target
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-	if(FAILED(pRenderDevice->GetDepthStencilSurface(&m_pZBuffer)))
+	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pZBuffer)))
 		return E_FAIL;
 	if(!m_pBackBuffer || !m_pZBuffer)
 		return E_FAIL;
 
 	// Copy scene to lower resolution render target texture
-	if( FAILED(hr = pRenderDevice->StretchRect( m_pBackBuffer, NULL, m_pRTHalfSizeSurface, NULL, D3DTEXF_LINEAR )) ) {
+	if( FAILED(hr = GETD3D(CGlobals::GetRenderDevice())->StretchRect( m_pBackBuffer, NULL, m_pRTHalfSizeSurface, NULL, D3DTEXF_LINEAR )) ) {
 		OUTPUT_LOG("StretchRect() failed!\r\n");
 		return hr;
 	}
@@ -179,8 +179,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		{
 			//////////////////////////////////////////////////////////////////////////
 			// make the glow source. Multiply texture alpha * RGB to get the glow sources
-			pRenderDevice->SetRenderTarget( 0, m_pRTGlowSourceSurface);
-			pRenderDevice->SetDepthStencilSurface( NULL );
+			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTGlowSourceSurface);
+			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 
 			if(pEffectFile->BeginPass(0))
 			{
@@ -190,7 +190,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 				
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = pRenderDevice->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}
@@ -200,8 +200,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Blur glow sources in the horizontal axis
 
-		pRenderDevice->SetRenderTarget( 0, m_pRTBlurHorizSurface );
-		pRenderDevice->SetDepthStencilSurface( NULL );
+		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTBlurHorizSurface );
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
 		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
@@ -212,7 +212,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTGlowSourceTexture);
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pRenderDevice->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -223,8 +223,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Blur the horizontal blur in the vertical direction
 
-		pRenderDevice->SetRenderTarget( 0, m_pRTBlurVertSurface );
-		pRenderDevice->SetDepthStencilSurface( NULL );
+		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pRTBlurVertSurface );
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
 		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
@@ -236,7 +236,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTBlurHorizTexture );  //editor here!!!
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pRenderDevice->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -247,8 +247,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		//////////////////////////////////////////////////////////////////////////
 		// Add the final blur image to the back buffer
 
-		pRenderDevice->SetRenderTarget( 0, m_pBackBuffer);
-		pRenderDevice->SetDepthStencilSurface( NULL );
+		GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pBackBuffer);
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 		// no need to clear alpha channel?
 		// pRenderDevice->Clear( 0, NULL, D3DCLEAR_TARGET, 0x00, 1.0f, 0 ); 
 
@@ -269,7 +269,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = pRenderDevice->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
@@ -277,7 +277,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 		}
 
 		// restore depth stencil buffer
-		pRenderDevice->SetDepthStencilSurface( m_pZBuffer );
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pZBuffer );
 		pEffectFile->end();
 	}
 	else

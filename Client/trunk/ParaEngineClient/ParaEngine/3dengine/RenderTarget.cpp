@@ -126,7 +126,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	hr = m_pCanvasTexture->GetTexture()->GetSurfaceLevel(0, &m_pCanvasSurface);
 	CHECK_RETURN_CODE("GetSurfaceLevel Canvas Surface", hr);
 
-	hr = pRenderDevice->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
+	hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
 		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
 	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
 #elif defined(USE_OPENGL_RENDERER)
@@ -304,7 +304,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 				RECT srcRect;
 				srcRect.left = srcLeft; srcRect.top = srcTop; srcRect.right = srcLeft + srcWidth; srcRect.bottom = srcTop + srcHeight;
 
-				if (FAILED(pRenderDevice->CreateTexture((int)nImageWidth, (int)nImageHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
+				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture((int)nImageWidth, (int)nImageHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat, D3DPOOL_DEFAULT, &pTextureDest, NULL)))
 				{
 					SAFE_RELEASE(pSur);
 					return E_FAIL;
@@ -317,7 +317,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 				}
 
 				// Copy scene to render target texture
-				if (SUCCEEDED(pRenderDevice->StretchRect(pSur, (srcWidth == 0) ? NULL : (&srcRect), pSurDest, NULL, D3DTEXF_LINEAR)))
+				if (SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->StretchRect(pSur, (srcWidth == 0) ? NULL : (&srcRect), pSurDest, NULL, D3DTEXF_LINEAR)))
 				{
 					if (SUCCEEDED(D3DXSaveSurfaceToFile(sFile.c_str(), FileFormat, pSurDest, NULL, NULL)))
 					{
@@ -499,7 +499,7 @@ bool ParaEngine::CRenderTarget::Begin()
 	CheckInit();
 
 	// save old viewport
-	pRenderDevice->GetViewport(&m_oldViewport);
+	GETD3D(CGlobals::GetRenderDevice())->GetViewport(&m_oldViewport);
 	// save old render origin
 	m_vOldRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
@@ -516,17 +516,17 @@ bool ParaEngine::CRenderTarget::Begin()
 	m_pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
 	CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pCanvasSurface);
 
-	pRenderDevice->SetRenderTarget(1, NULL);
-	pRenderDevice->SetRenderTarget(2, NULL);
-	pRenderDevice->SetRenderTarget(3, NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
 
 	// set depth surface
-	if (FAILED(pRenderDevice->GetDepthStencilSurface(&m_pOldZBuffer)))
+	if (FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pOldZBuffer)))
 	{
 		OUTPUT_LOG("error: can not get GetDepthStencilSurface in miniscene graph.\n");
 		return false;
 	}
-	pRenderDevice->SetDepthStencilSurface(m_pDepthStencilSurface);
+	GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pDepthStencilSurface);
 
 	
 #elif defined(USE_OPENGL_RENDERER)
@@ -565,7 +565,7 @@ void ParaEngine::CRenderTarget::End()
 #ifdef USE_DIRECTX_RENDERER
 	
 	// restore old depth surface
-	pRenderDevice->SetDepthStencilSurface(m_pOldZBuffer);
+	GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pOldZBuffer);
 	SAFE_RELEASE(m_pOldZBuffer);
 	// Restore the old render target: i.e. the backbuffer
 	HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pOldRenderTarget);
@@ -581,7 +581,7 @@ void ParaEngine::CRenderTarget::End()
 	glClearColor(color.r, color.g, color.b, color.a);
 #endif
 	// restore viewport
-	pRenderDevice->SetViewport(&m_oldViewport);
+	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&m_oldViewport);
 }
 
 
@@ -601,7 +601,7 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 	if (m_bIsBegin)
 	{
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
+		GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
 	}
 	else
 	{

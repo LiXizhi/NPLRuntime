@@ -176,10 +176,10 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									pRenderDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
 									// Set the second stream to be per instance data and iterate once per instance
-									pRenderDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);
@@ -289,10 +289,10 @@ namespace ParaEngine
 								if(CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_INSTANCED, &(sceneState.m_pCurrentEffect)))
 								{
 									// Set the first stream to be the indexed data and render N instances
-									pRenderDevice->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(0,(D3DSTREAMSOURCE_INDEXEDDATA | nInstanceCount));
 									// Set the second stream to be per instance data and iterate once per instance
-									pRenderDevice->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
-									pRenderDevice->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSourceFreq(1,(D3DSTREAMSOURCE_INSTANCEDATA | 1));
+									GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(1, pBuffer->GetBuffer(), pBuffer->m_dwBase*pBuffer->m_nUnitSize, pBuffer->m_nUnitSize);
 
 									sceneState.SetCameraToCurObjectDistance((*itCurCP).m_fObjectToCameraDistance);
 									(*itCurCP).m_pRenderObject->Draw(&sceneState);

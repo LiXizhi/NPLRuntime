@@ -168,13 +168,13 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 		if(pRenderDevice)
 		{
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pRenderDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-			pRenderDevice->SetTexture(0,NULL);
+			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
+			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,NULL);
 
-			pRenderDevice->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
-			pRenderDevice->SetFVF(LINEVERTEX::FVF);
+			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
-			pRenderDevice->DrawIndexedPrimitiveUP( 0, 
+			GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST,0,
 				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), D3DFMT_INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
 		}
 #endif

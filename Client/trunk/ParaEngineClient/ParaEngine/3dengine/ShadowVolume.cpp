@@ -64,9 +64,9 @@ void ShadowVolume::CommitBlock(int nSize)
 HRESULT ShadowVolume::Render( SceneState * sceneState )
 {
 #ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetRenderDevice()->SetFVF( D3DFVF_XYZ );
+	GETD3D(CGlobals::GetRenderDevice())->SetFVF( D3DFVF_XYZ );
 	
-    return CGlobals::GetRenderDevice()->DrawPrimitiveUP( D3DPT_TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
+    return GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
 #else
 	return E_FAIL;
 #endif
