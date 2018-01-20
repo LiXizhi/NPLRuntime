@@ -28,8 +28,8 @@
 #include "2dengine/GUIDirectInput.h"
 #include "util/StringHelper.h"
 #include "FrameRateController.h"
-#include "ic/ICDBManager.h"
-#include "ic/ICConfigManager.h"
+#include "InfoCenter/ICDBManager.h"
+#include "InfoCenter/ICConfigManager.h"
 #include "ObjectManager.h"
 #include "PredefinedEvents.h"
 #include "DynamicAttributeField.h"
@@ -82,7 +82,7 @@
 #include "Render/WindowsRenderWindow.h"
 #include "Render/D3D9RenderContext.h"
 #include "Render/OpenGLRenderContext.h"
-#include "RenderSystem/d3d9/RenderDeviceD3D9.h"
+#include "RenderDeviceD3D9.h"
 
 
 #include "resource.h"
@@ -109,6 +109,11 @@
 
 #ifndef SM_CONVERTIBLESLATEMODE
 #define SM_CONVERTIBLESLATEMODE	0x2003
+#endif
+
+
+#ifndef USE_DIRECTX_RENDERER
+#include "RenderSystemD3D9.h"
 #endif
 
 
@@ -317,7 +322,7 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 	if (m_bDeviceLost)
 	{
 		// Test the cooperative level to see if it's okay to render
-		if (FAILED(hr = m_pRenderDevice->TestCooperativeLevel()))
+		if (FAILED(hr = GETD3D(m_pRenderDevice)->TestCooperativeLevel()))
 		{
 			// If the device was lost, do not render until we get it back
 			if (D3DERR_DEVICELOST == hr)
@@ -454,7 +459,7 @@ HRESULT CWindowsApplication::PresentScene()
 	HRESULT hr;
 	// only present if render returns true.
 	PERF1("present");
-	hr = m_pRenderDevice->Present(NULL, NULL, NULL, NULL);
+	hr = GETD3D(m_pRenderDevice)->Present(NULL, NULL, NULL, NULL);
 	if (D3DERR_DEVICELOST == hr)
 		m_bDeviceLost = true;
 	return hr;
@@ -466,12 +471,12 @@ bool CWindowsApplication::UpdateViewPort()
 	if (CGlobals::GetRenderDevice())
 	{
 		D3DVIEWPORT9 CurrentViewport;
-		CGlobals::GetRenderDevice()->GetViewport(&CurrentViewport);
+		GETD3D(m_pRenderDevice)->GetViewport(&CurrentViewport);
 		if (m_pRenderWindow->GetWidth() != CurrentViewport.Width && m_pRenderWindow->GetHeight() != CurrentViewport.Height)
 		{
 			CurrentViewport.Width = m_pRenderWindow->GetWidth();
 			CurrentViewport.Height = m_pRenderWindow->GetHeight();
-			CGlobals::GetRenderDevice()->SetViewport(&CurrentViewport);
+			GETD3D(m_pRenderDevice)->SetViewport(&CurrentViewport);
 		}
 		return true;
 	}
@@ -1256,10 +1261,10 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP );
 	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP );*/
 #else
-	pRenderDevice->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	pRenderDevice->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	pRenderDevice->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	pRenderDevice->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	GETD3D(m_pRenderDevice)->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	GETD3D(m_pRenderDevice)->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	GETD3D(m_pRenderDevice)->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
+	GETD3D(m_pRenderDevice)->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
 
 #endif
 	/* -------end of paraworld code ----------------------------*/
@@ -1561,16 +1566,16 @@ HRESULT CWindowsApplication::Render()
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 	PERF1("Main Render");
 
-	if (SUCCEEDED(pRenderDevice->BeginScene()))
+	if (SUCCEEDED(GETD3D(m_pRenderDevice)->BeginScene()))
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime); // for asset manager
 																	// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
 																	// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
 																	// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
-		pRenderDevice->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
+		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 
 																						 /// clear all render targets
-		pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
+		GETD3D(m_pRenderDevice)->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
 
 		/// force using less equal
 		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
@@ -1594,7 +1599,7 @@ HRESULT CWindowsApplication::Render()
 			CGlobals::GetAssetManager()->GetFlashManager().RenderFlashWindows(*(m_pRootScene->GetSceneState()));
 #endif
 
-		pRenderDevice->EndScene();
+		GETD3D(m_pRenderDevice)->EndScene();
 	}
 
 	pMoviePlatform->EndCaptureFrame();
@@ -2438,7 +2443,7 @@ bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM 
 			if (CGlobals::GetRenderDevice())
 			{
 				// ::SetCursor( NULL );
-				CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
+				GETD3D(m_pRenderDevice)->ShowCursor(wParam == 1);
 				// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
 			}
 			break;

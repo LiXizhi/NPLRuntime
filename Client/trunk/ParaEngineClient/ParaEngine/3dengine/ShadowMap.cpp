@@ -254,7 +254,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		SAFE_RELEASE(m_pSMColorSurface);
 		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
 
-		if(FAILED(pRenderDevice->CreateDepthStencilSurface(m_shadowTexWidth, m_shadowTexHeight, zFormat, 
+		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(m_shadowTexWidth, m_shadowTexHeight, zFormat,
 			D3DMULTISAMPLE_NONE, 0, FALSE, &m_pSMZSurface, NULL)))
 			return false;
 
@@ -1371,9 +1371,9 @@ HRESULT CShadowMap::BeginShadowPass()
 	if (FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pSMColorSurface)))
 		return E_FAIL;
 
-	pd3dDevice->SetRenderTarget(1,NULL);
-	pd3dDevice->SetRenderTarget(2,NULL);
-	pd3dDevice->SetRenderTarget(3,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
+	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
 
 	//set depth stencil
 	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pSMZSurface)))
@@ -1393,7 +1393,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	newViewport.Height = m_shadowTexHeight;
 	newViewport.MinZ = 0.0f;
 	newViewport.MaxZ = 1.0f;
-	pd3dDevice->SetViewport(&newViewport);
+	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&newViewport);
 
 	float depthBias = float(m_iDepthBias) / 16777215.f;
 
@@ -1492,7 +1492,7 @@ HRESULT CShadowMap::EndShadowPass()
 			}
 			pEffectFile->setParameter(CEffectFile::k_ConstVector0, Vector4(1.f/m_shadowTexWidth, 1.f/m_shadowTexHeight, 0.0f, 0.0f).ptr());
 
-			pd3dDevice->SetRenderTarget(0, m_pSMColorSurfaceBlurredHorizontal );
+			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_pSMColorSurfaceBlurredHorizontal );
 			
 			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 			if(pEffectFile->BeginPass(0))
@@ -1507,7 +1507,7 @@ HRESULT CShadowMap::EndShadowPass()
 			// set texture 0 to NULL so same texture is never simultaneously a source and render target
 			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
 			
-			pd3dDevice->SetRenderTarget( 0, m_pSMColorSurfaceBlurredVertical );
+			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pSMColorSurfaceBlurredVertical );
 			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
 			if(pEffectFile->BeginPass(1))
 			{
@@ -1541,7 +1541,7 @@ HRESULT CShadowMap::EndShadowPass()
 #endif
 
 	// restore old view port
-	pd3dDevice->SetViewport(&oldViewport);
+	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&oldViewport);
 
 	//re enable color writes
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
@@ -1621,8 +1621,8 @@ void CShadowMap::UnsetShadowTexture(int nTextureIndex)
 	// GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(nTextureIndex, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 	// IMPORTANT: if the shader does not restore sampler states, the following must be called. Since shadow map will use the 0xffffffff as the border color
 	/*
-	CGlobals::GetRenderDevice()->SetSamplerState( nTextureIndex, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
-	CGlobals::GetRenderDevice()->SetSamplerState( nTextureIndex, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+	GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( nTextureIndex, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
+	GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( nTextureIndex, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
 	*/
 }
 #endif

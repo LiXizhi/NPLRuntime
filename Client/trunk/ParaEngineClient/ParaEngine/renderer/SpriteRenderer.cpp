@@ -368,7 +368,7 @@ void ParaEngine::CSpriteRenderer::FlushQuads()
 void ParaEngine::CSpriteRenderer::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
 	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
-//	CGlobals::GetRenderDevice()->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
+//	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
 }
 
 bool ParaEngine::CSpriteRenderer::IsUseObjectSpaceTransform()

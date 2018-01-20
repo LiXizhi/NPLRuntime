@@ -256,7 +256,7 @@ namespace ParaEngine
 		LPD3DXBUFFER pMtrlBuffer = NULL;
 
 		// Load the mesh
-		if (FAILED(hr = pRenderDevice->LoadMeshFromXInMemory(buffer, nFileSize, D3DXMESH_SYSTEMMEM,
+		if (FAILED(hr = D3DXLoadMeshFromXInMemory(buffer, nFileSize, D3DXMESH_SYSTEMMEM, GETD3D(CGlobals::GetRenderDevice()),
 			&pAdjacencyBuffer, &pMtrlBuffer, NULL,
 			&m_dwNumMaterials, &m_pSysMemMesh)))
 		{
@@ -290,7 +290,7 @@ namespace ParaEngine
 		auto pRenderDevice = pDevice;
 		
 		// Load the mesh from the DXFILEDATA object
-		if (FAILED(hr = pRenderDevice->LoadMeshFromXof(pFileData, D3DXMESH_SYSTEMMEM,
+		if (FAILED(hr = D3DXLoadMeshFromXof(pFileData, D3DXMESH_SYSTEMMEM, GETD3D(CGlobals::GetRenderDevice()),
 			&pAdjacencyBuffer, &pMtrlBuffer, NULL,
 			&m_dwNumMaterials, &m_pSysMemMesh)))
 		{
@@ -1004,7 +1004,7 @@ namespace ParaEngine
 					DWORD dwNumMaterials = 0;
 
 					// LXZ 2008.1.8: D3DXLoadMeshFromXof requires &pAdjacencyBuffer, &pMtrlBuffer, however D3DXLoadMeshFromXInMemory does not need them. 
-					if (FAILED(hr = pRenderDevice->LoadMeshFromXof(p.m_pD3DMesh, D3DXMESH_SYSTEMMEM,
+					if (FAILED(hr = D3DXLoadMeshFromXof(p.m_pD3DMesh, D3DXMESH_SYSTEMMEM, GETD3D(CGlobals::GetRenderDevice()),
 						&pAdjacencyBuffer, &pMtrlBuffer, NULL, &dwNumMaterials, &pMesh)))
 					{
 						return hr;
@@ -1019,7 +1019,7 @@ namespace ParaEngine
 				else
 				{
 					// if the mesh is inside some d3d frames, we will load the DirectX way, by collapsing all frames into one mesh
-					if (FAILED(hr = pRenderDevice->LoadMeshFromXInMemory(myFile.getBuffer(), (int)(myFile.getSize()), D3DXMESH_SYSTEMMEM,
+					if (FAILED(hr = D3DXLoadMeshFromXInMemory(myFile.getBuffer(), (int)(myFile.getSize()), D3DXMESH_SYSTEMMEM, GETD3D(CGlobals::GetRenderDevice()),
 						NULL, NULL, NULL, NULL, &pMesh)))
 					{
 						return hr;
@@ -1101,7 +1101,7 @@ namespace ParaEngine
 		if (NULL == m_pLocalMesh)
 			return E_FAIL;
 
-		pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 
 		bool bHasAlphaPass = false;
 
@@ -1260,7 +1260,7 @@ namespace ParaEngine
 					Math::CreateBillboardMatrix(&mtrans, NULL, &(pMaterial->m_vPivot));
 					mtrans = mtrans * CGlobals::GetWorldMatrixStack().SafeGetTop();
 					CGlobals::GetWorldMatrixStack().push(mtrans);
-					pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+					GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 				}
 				if (pTexture)
 					m_pLocalMesh->DrawSubset(i);
@@ -1275,7 +1275,7 @@ namespace ParaEngine
 				if (pMaterial->hasAnyBillboard())
 				{
 					CGlobals::GetWorldMatrixStack().pop();
-					pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+					GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 				}
 			}
 		}

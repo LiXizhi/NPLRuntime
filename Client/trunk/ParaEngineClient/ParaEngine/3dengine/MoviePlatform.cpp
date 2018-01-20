@@ -254,7 +254,7 @@ bool CMoviePlatform::ResizeImage(const string& filename, int width, int height, 
 #ifdef USE_DIRECTX_RENDERER
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTextureFromFileEx(filename.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
+	HRESULT hr = D3DXCreateTextureFromFileEx(GETD3D(CGlobals::GetRenderDevice()),filename.c_str(), width, height, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, (LPDIRECT3DTEXTURE9*)(&pTexture));
 	if(SUCCEEDED(hr))
 	{
 		string sExt = CParaFile::GetFileExtension(destFilename);
@@ -642,7 +642,7 @@ HRESULT CMoviePlatform::RestoreDeviceObjects()
 			else
 			{
 #ifdef USE_DIRECTX_RENDERER
-				if (FAILED(CGlobals::GetRenderDevice()->CreateOffscreenPlainSurface(captureTexWidth, captureTexHeight, D3DFMT_X8R8G8B8,
+				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateOffscreenPlainSurface(captureTexWidth, captureTexHeight, D3DFMT_X8R8G8B8,
 					D3DPOOL_SYSTEMMEM, &m_pOffScreenSurface, NULL)))
 				{
 					m_pOffScreenSurface = NULL;
@@ -658,11 +658,11 @@ HRESULT CMoviePlatform::RestoreDeviceObjects()
 			int captureTexWidth = GetScreenWidth();
 			int captureTexHeight = GetScreenHeight();
 
-			if (FAILED(CGlobals::GetRenderDevice()->CreateTexture(captureTexWidth, captureTexHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
+			if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture(captureTexWidth, captureTexHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
 				D3DPOOL_DEFAULT, &m_pCaptureTexture, NULL)))
 				return E_FAIL;
 
-			if (FAILED(CGlobals::GetRenderDevice()->CreateDepthStencilSurface(captureTexWidth, captureTexHeight, D3DFMT_D24S8,
+			if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(captureTexWidth, captureTexHeight, D3DFMT_D24S8,
 				D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL)))
 			{
 				OUTPUT_LOG("failed creating depth stencil buffer for Movie Platform\r\n");
@@ -697,12 +697,12 @@ bool CMoviePlatform::SetCaptureTarget()
 			{
 				// save old render target
 				m_pBackBufferSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
-				if (FAILED(CGlobals::GetRenderDevice()->GetDepthStencilSurface(&m_pOldDepthStencilSurface)))
+				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pOldDepthStencilSurface)))
 					return false;
 
 				// set new render target
 				CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pCaptureSurface);
-				CGlobals::GetRenderDevice()->SetDepthStencilSurface(m_pDepthStencilSurface);
+				GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pDepthStencilSurface);
 
 				return true;
 			}
@@ -720,7 +720,7 @@ bool CMoviePlatform::UnsetCaptureTarget()
 	{
 		// restore old render target
 		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pBackBufferSurface);
-		CGlobals::GetRenderDevice()->SetDepthStencilSurface( m_pOldDepthStencilSurface );
+		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pOldDepthStencilSurface );
 		SAFE_RELEASE(m_pOldDepthStencilSurface);
 
 		return true;
@@ -782,7 +782,7 @@ void CMoviePlatform::RenderCaptured()
 			}
 
 			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pCaptureTexture);
-			CGlobals::GetRenderDevice()->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 			//////////////////////////////////////////////////////////////////////////
 			// render a border, indicating whether the screen is being recorded or not.
@@ -836,7 +836,7 @@ void CMoviePlatform::RenderCaptured()
 				}
 				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 				CGlobals::GetEffectManager()->SetCullingMode(false);
-				CGlobals::GetRenderDevice()->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
+				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
 				CGlobals::GetEffectManager()->SetCullingMode(true);
 			}
 		}

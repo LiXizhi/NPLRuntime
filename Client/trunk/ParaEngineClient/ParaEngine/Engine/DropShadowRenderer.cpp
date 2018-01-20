@@ -43,8 +43,8 @@ namespace ParaEngine
 				if(pEffect->BeginPass(0))
 				{
 					auto pDevice = CGlobals::GetRenderDevice();
-					pDevice->SetStreamSource(0,m_pGeometryBuffer,0,sizeof(VertexPositionIndex));
-					pDevice->SetIndices(m_pIndexBuffer);
+					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,m_pGeometryBuffer,0,sizeof(VertexPositionIndex));
+					GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer);
 
 					//step 1:
 					pDevice->SetRenderState(ERenderState::ZWRITEENABLE,false);
@@ -105,7 +105,7 @@ namespace ParaEngine
 			{
 				uint32_t offset = i * g_maxInstancePerBatch * 4 * 3;
 				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(20,&m_constantBuffer[offset] ,currentInstancCount*3);
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
+				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
 			}
 		}
 	}
@@ -214,7 +214,7 @@ namespace ParaEngine
 		//create vertex buffer for a batch
 		auto* pDevice = CGlobals::GetRenderDevice();
 		uint32_t vbSize = m_instanceVertexCount * g_maxInstancePerBatch * sizeof(VertexPositionIndex);
-		pDevice->CreateVertexBuffer(vbSize,D3DUSAGE_WRITEONLY,0,D3DPOOL_MANAGED,&m_pGeometryBuffer,NULL);
+		GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(vbSize,D3DUSAGE_WRITEONLY,0,D3DPOOL_MANAGED,&m_pGeometryBuffer,NULL);
 
 		VertexPositionIndex* pVBData;
 		m_pGeometryBuffer->Lock(0,0,(void**)&pVBData,0);
@@ -234,7 +234,7 @@ namespace ParaEngine
 
 		//create index buffer 
 		uint32_t ibSize = m_instanceIndexCount * g_maxInstancePerBatch * sizeof(uint16_t);
-		pDevice->CreateIndexBuffer(ibSize,D3DUSAGE_WRITEONLY,D3DFMT_INDEX16,D3DPOOL_MANAGED,&m_pIndexBuffer,NULL);
+		GETD3D(CGlobals::GetRenderDevice())->CreateIndexBuffer(ibSize,D3DUSAGE_WRITEONLY,D3DFMT_INDEX16,D3DPOOL_MANAGED,&m_pIndexBuffer,NULL);
 		
 		uint16_t* pIBData;
 		m_pIndexBuffer->Lock(0,0,(void**)&pIBData, 0);

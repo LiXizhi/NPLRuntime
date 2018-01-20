@@ -19,6 +19,7 @@ namespace ParaEngine
 		virtual bool SetRenderState(const ERenderState State, const uint32_t Value) = 0;
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) = 0;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) = 0;
+		virtual int GetMaxSimultaneousTextures() = 0;
 		//virtual HRESULT DrawPrimitive(D3DPRIMITIVETYPE PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) = 0;
 		//virtual HRESULT DrawPrimitiveUP(D3DPRIMITIVETYPE PrimitiveType, uint32_t PrimitiveCount,const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
 		//virtual void SetCursorPosition(int X, int Y, DWORD Flags) = 0;

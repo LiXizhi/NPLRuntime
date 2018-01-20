@@ -1,3 +1,4 @@
-
+add_subdirectory(EmbedResource)
 add_subdirectory(ParaEngine)
 add_subdirectory(RenderSystem/d3d9)
+add_subdirectory(Platform)

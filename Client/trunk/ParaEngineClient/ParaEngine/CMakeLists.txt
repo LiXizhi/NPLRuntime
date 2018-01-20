@@ -1,7 +1,7 @@
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
-
+include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
 
 # FreeImage
 SET(FREEIMAGE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/)
@@ -32,14 +32,40 @@ ucm_add_dirs(
     VoxelMesh
     CadModel
     d3dcommon
+    terrain
     Util
 
 TO sources RECURSIVE
 )
 
 
+file(GLOB SHADER_FILES ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/shaders/*.fx)
+foreach(src_file ${SHADER_FILES})
+    get_filename_component(src_filename ${src_file} NAME_WE)
+    set(out_file "${PROJECT_BINARY_DIR}/ParaEngineClient/shaders/${src_filename}.fxo")
 
-add_library(ParaEngine ${sources})
+    add_custom_command(
+        OUTPUT ${out_file}
+        COMMAND "${DirectX_ROOT_DIR}/Utilities/bin/x86/fxc" /Tfx_2_0 /Gfp /nologo /Fo ${out_file} ${src_file}
+        DEPENDS ${src_file}
+        COMMENT "fxc compile: ${src_file}"
+    )
+    embed_resources_abs(Resource ${out_file})
+    list(APPEND EmbeddedResource_Files ${Resource})
+endforeach(src_file ${SHADER_FILES})
+
+list(APPEND EmbeddedResource_Files ResourceEmbedded.cpp)
+
+embed_resources_abs(Resource ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/res/ParaXmodel.templates)
+list(APPEND EmbeddedResource_Files ${Resource})	
+
+embed_resources_abs(Resource ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/res/cursor.tga)
+list(APPEND EmbeddedResource_Files ${Resource})
+
+SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files})
+
+add_library(ParaEngine ${sources} ${EmbeddedResource_Files})
+
 target_include_directories(ParaEngine PUBLIC 
     ./
     ./Core
@@ -59,6 +85,7 @@ target_include_directories(ParaEngine PUBLIC
 )
 
 target_link_libraries(ParaEngine PUBLIC 
+    RenderSystemD3D9
     ${Boost_LIBRARIES}
     ${FREEIMAGE_INCLUDE_LIBS}
     zlib
@@ -67,14 +94,12 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite
-    RenderSystemD3D9
+    sqlite 
 )
 
 target_compile_definitions(ParaEngine PUBLIC 
     PLATFORM_WINDOWS
     SQLITE_STATICLIB
-    USE_DIRECTX_RENDERER
     PARAENGINE_CLIENT
     PE_CORE_EXPORTING
     _WIN32_WINNT=0x0501
@@ -87,6 +112,7 @@ target_compile_definitions(ParaEngine PUBLIC
     USE_WINDOWS_SSPI
     SQLITE_STATICLIB
 )
+
 
 
 

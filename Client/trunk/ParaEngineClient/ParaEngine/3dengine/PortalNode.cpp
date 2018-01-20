@@ -212,13 +212,13 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 	{
 		DrawBoundingBox(sceneState, color);
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		pRenderDevice->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
-		pRenderDevice->SetTexture(0,NULL);
+		GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState->GetGlobalMaterial()));
+		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,NULL);
 
-		pRenderDevice->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		pRenderDevice->SetFVF(LINEVERTEX::FVF);
+		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
-		pRenderDevice->DrawIndexedPrimitiveUP( 0, 
+		GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,
 			nNumVertices, nLenCount, pIndexBuffer, D3DFMT_INDEX16,pVertices, sizeof(LINEVERTEX));
 	}
 #endif

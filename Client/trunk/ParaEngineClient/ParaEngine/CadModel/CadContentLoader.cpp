@@ -127,7 +127,7 @@ namespace ParaEngine
 			}
 			
 			uint32_t vbSize = vertexCount * sizeof(VertexPositionNormal);
-			pDevice->CreateVertexBuffer(vbSize,0,0,D3DPOOL_MANAGED,&(m_asset->m_pSharedVertexBuffer),NULL);
+			GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(vbSize,0,0,D3DPOOL_MANAGED,&(m_asset->m_pSharedVertexBuffer),NULL);
 			void *pData;
 			IDirect3DVertexBuffer9* vb = m_asset->m_pSharedVertexBuffer;
 			vb->Lock(0,0,&pData,0);
@@ -135,7 +135,7 @@ namespace ParaEngine
 			vb->Unlock();
 
 			uint32_t ibSize = indexCount * sizeof(uint32_t);
-			pDevice->CreateIndexBuffer(ibSize,0,D3DFMT_INDEX32,D3DPOOL_MANAGED,&(m_asset->m_pSharedIndexBuffer),NULL);
+			GETD3D(CGlobals::GetRenderDevice())->CreateIndexBuffer(ibSize,0,D3DFMT_INDEX32,D3DPOOL_MANAGED,&(m_asset->m_pSharedIndexBuffer),NULL);
 			pData = NULL;
 			IDirect3DIndexBuffer9* ib = m_asset->m_pSharedIndexBuffer;
 			ib->Lock(0,0,&pData,0);
@@ -144,7 +144,7 @@ namespace ParaEngine
 
 			//todo:optimize to use single vertex declaration object across all cad model
 			IDirect3DVertexDeclaration9* pVertexLayout;
-			pDevice->CreateVertexDeclaration(VertexPositionNormal::g_VertexDesc,&pVertexLayout);
+			GETD3D(CGlobals::GetRenderDevice())->CreateVertexDeclaration(VertexPositionNormal::g_VertexDesc,&pVertexLayout);
 
 			m_asset->m_pVertexLayout = pVertexLayout;
 			for(size_t i=0;i<m_modelData->SubPartInfo.size();i++)
@@ -311,7 +311,7 @@ namespace ParaEngine
 			}
 			
 			uint32_t vbSize = vertexCount * sizeof(VertexPosition);
-			pDevice->CreateVertexBuffer(vbSize,0,0,D3DPOOL_MANAGED,&(m_asset->m_pSharedVertexBuffer),NULL);
+			GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(vbSize,0,0,D3DPOOL_MANAGED,&(m_asset->m_pSharedVertexBuffer),NULL);
 			void *pData;
 			IDirect3DVertexBuffer9* vb = m_asset->m_pSharedVertexBuffer;
 			vb->Lock(0,0,&pData,0);
@@ -319,7 +319,7 @@ namespace ParaEngine
 			vb->Unlock();
 
 			uint32_t ibSize = indexCount * sizeof(uint16_t);
-			pDevice->CreateIndexBuffer(ibSize,0,D3DFMT_INDEX16,D3DPOOL_MANAGED,&(m_asset->m_pSharedIndexBuffer),NULL);
+			GETD3D(CGlobals::GetRenderDevice())->CreateIndexBuffer(ibSize,0,D3DFMT_INDEX16,D3DPOOL_MANAGED,&(m_asset->m_pSharedIndexBuffer),NULL);
 			pData = NULL;
 			IDirect3DIndexBuffer9* ib = m_asset->m_pSharedIndexBuffer;
 			ib->Lock(0,0,&pData,0);
@@ -331,7 +331,7 @@ namespace ParaEngine
 
 			//todo:optimize to use single vertex declaration object across all cad model
 			IDirect3DVertexDeclaration9* pVertexLayout;
-			pDevice->CreateVertexDeclaration((D3DVERTEXELEMENT9*)VertexPosition::g_VertexDesc,&pVertexLayout);
+			GETD3D(CGlobals::GetRenderDevice())->CreateVertexDeclaration((D3DVERTEXELEMENT9*)VertexPosition::g_VertexDesc,&pVertexLayout);
 			m_asset->m_pVertexLayout = pVertexLayout;
 
 			CadModelPart* pModelPart = m_asset->CreateCadModelPart(m_asset->m_pSharedVertexBuffer,m_asset->m_pSharedIndexBuffer,pVertexLayout,

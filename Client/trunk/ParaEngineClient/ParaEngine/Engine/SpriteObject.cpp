@@ -95,11 +95,11 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 		mx._43 = vPos.z;
 	}
 	
-    pRenderDevice->SetTransform( D3DTS_WORLD, mx.GetConstPointer() );
+	GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_WORLD, mx.GetConstPointer() );
 
 	
 	//-- Render the billboard
-	pRenderDevice->DrawPrimitive(  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
+	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
 	
 	return S_OK;
 }

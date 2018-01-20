@@ -133,8 +133,8 @@ HRESULT CSkyMesh::Draw(SceneState * sceneState)
 					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
 
 					// enable texture wrapping for sub module
-					CGlobals::GetRenderDevice()->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
-					CGlobals::GetRenderDevice()->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
 
 					for (auto& child : GetChildren())
 					{
@@ -451,7 +451,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 		/**
 		* Set default sun lighting
 		*/
-		pRenderDevice->SetLight(0, (const D3DLIGHT9*)sunlight.GetD3DLight());
+		GETD3D(CGlobals::GetRenderDevice())->SetLight(0, (const D3DLIGHT9*)sunlight.GetD3DLight());
 		// turn off light
 		//pRenderDevice->LightEnable(0, sceneState->GetScene()->IsLightEnabled() );
 		//pRenderDevice->LightEnable(0, false);
@@ -467,7 +467,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 		matProj_one_depth._43 = 0.999f;
 		matProj_one_depth = matProj * matProj_one_depth;
 
-		pRenderDevice->SetTransform(D3DTS_PROJECTION, matProj_one_depth.GetConstPointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_PROJECTION, matProj_one_depth.GetConstPointer());
 		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 		/** render the static mesh background */
 		if (m_pStaticMesh)
@@ -575,19 +575,19 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			float depthBias = -0.00001f;
 			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&depthBias);
 
-			pRenderDevice->SetTexture(0, NULL);
+			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 
 			// set translation
 			Matrix4 mxWorld;
 			Vector3 vPos = GetRenderOffset();
 			mxWorld.makeTrans(vPos.x, vPos.y, vPos.z);
-			pRenderDevice->SetTransform(D3DTS_WORLD, mxWorld.GetConstPointer());
+			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, mxWorld.GetConstPointer());
 
-			pRenderDevice->SetVertexShader(NULL);
-			pRenderDevice->SetPixelShader(NULL);
-			pRenderDevice->SetFVF(LINEVERTEX::FVF);
+			GETD3D(CGlobals::GetRenderDevice())->SetVertexShader(NULL);
+			GETD3D(CGlobals::GetRenderDevice())->SetPixelShader(NULL);
+			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
-			pRenderDevice->DrawIndexedPrimitiveUP( D3DPT_TRIANGLESTRIP, 0,
+			GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLESTRIP, 0,
 				8, 8, pIndexBufferSides, D3DFMT_INDEX16, pVertices, sizeof(LINEVERTEX));
 
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
@@ -600,7 +600,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
 		}
 		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, sceneState->GetScene()->IsFogEnabled());
-		pRenderDevice->SetTransform(D3DTS_PROJECTION, matProj.GetConstPointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_PROJECTION, matProj.GetConstPointer());
 #endif
 	}
 	else
@@ -741,8 +741,8 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
 		pEffectManager->EnableZWrite(false);
-		pRenderDevice->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
-		pRenderDevice->SetIndices(m_simsky_ib.GetDevicePointer());
+		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
+		GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_simsky_ib.GetDevicePointer());
 
 		if (pEffectFile->begin(false))
 		{
@@ -779,13 +779,13 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 
 				// we don't want to render completely transparent parts
 				pEffectFile->CommitChanges();
-				pRenderDevice->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
+				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
 				pEffectFile->EndPass();
 			}
 			pEffectFile->end();
 		}
-		pRenderDevice->SetIndices(0);
-		pRenderDevice->SetTexture(1, 0);
+		GETD3D(CGlobals::GetRenderDevice())->SetIndices(0);
+		GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, 0);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }

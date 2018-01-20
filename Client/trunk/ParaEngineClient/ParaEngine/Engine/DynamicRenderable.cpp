@@ -99,7 +99,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawPrimitive( D3DPRIMITIVETYPE Type, UI
 
 			pBufEntity->Unlock();
 
-			pRenderDevice->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -150,7 +150,7 @@ HRESULT ParaEngine::CDynamicRenderable::DrawIndexedPrimitive( D3DPRIMITIVETYPE T
 
 			pBufEntity->Unlock();
 
-			pRenderDevice->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 			if((indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{

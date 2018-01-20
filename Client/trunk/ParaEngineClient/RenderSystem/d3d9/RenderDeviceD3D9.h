@@ -201,7 +201,13 @@ namespace ParaEngine
 		//virtual HRESULT LoadMeshFromXInMemory(LPCVOID Memory, DWORD SizeOfMemory, DWORD Options, LPD3DXBUFFER *ppAdjacency, LPD3DXBUFFER *ppMaterials, LPD3DXBUFFER *ppEffectInstances, DWORD *pNumMaterials, LPD3DXMESH *ppMesh) override;
 
 
-		//virtual HRESULT LoadMeshFromXof(LPD3DXFILEDATA pxofMesh, DWORD Options, LPD3DXBUFFER *ppAdjacency, LPD3DXBUFFER *ppMaterials, LPD3DXBUFFER *ppEffectInstances, DWORD *pNumMaterials, LPD3DXMESH *ppMesh) override;
+
+virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
+
+
+virtual int GetMaxSimultaneousTextures() override;
+
+//virtual HRESULT LoadMeshFromXof(LPD3DXFILEDATA pxofMesh, DWORD Options, LPD3DXBUFFER *ppAdjacency, LPD3DXBUFFER *ppMaterials, LPD3DXBUFFER *ppEffectInstances, DWORD *pNumMaterials, LPD3DXMESH *ppMesh) override;
 
 	private:
 		LPDIRECT3DDEVICE9 m_pD3DDevice;

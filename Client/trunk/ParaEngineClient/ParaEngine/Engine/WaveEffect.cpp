@@ -43,9 +43,9 @@ namespace ParaEngine
 
 		D3DFORMAT surfaceFmt = D3DFMT_A8R8G8B8;
 		D3DVIEWPORT9 viewport;
-		pDevice->GetViewport(&viewport);
+		GETD3D(CGlobals::GetRenderDevice())->GetViewport(&viewport);
 
-		HRESULT hr = pDevice->CreateTexture(viewport.Width,viewport.Height,1,D3DUSAGE_RENDERTARGET,surfaceFmt,
+		HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(viewport.Width,viewport.Height,1,D3DUSAGE_RENDERTARGET,surfaceFmt,
 			D3DPOOL_DEFAULT,&m_pBackbufferCopy,NULL);
 
 		if(FAILED(hr))
@@ -91,30 +91,30 @@ namespace ParaEngine
 			if(pEffectFile->BeginPass(0))
 			{
 				IDirect3DSurface9* pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-				HRESULT hr = pDevice->StretchRect(pBackBuffer,NULL,m_pBackbufferCopySurface,NULL,D3DTEXF_LINEAR);
+				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->StretchRect(pBackBuffer,NULL,m_pBackbufferCopySurface,NULL,D3DTEXF_LINEAR);
 				if(FAILED(hr))
 				{
 					OUTPUT_LOG("wave effect StretchRect() failed!\r\n");
 					return hr;
 				}
 				
-				pDevice->SetTexture(0,m_pBackbufferCopy);
-				pDevice->SetTexture(1,m_pNoiseMap->GetTexture());
+				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pBackbufferCopy);
+				GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,m_pNoiseMap->GetTexture());
 				
 
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
 				pDevice->SetRenderState(ERenderState::ZENABLE,false);
 
 				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3],900000.0f);
-				pDevice->SetVertexShaderConstantF(0,m_waveParam,1);
+				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(0,m_waveParam,1);
 
-				pDevice->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
+				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
 			
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 				pDevice->SetRenderState(ERenderState::ZENABLE,true);
 				//clean up
 				pBackBuffer->Release();
-				pDevice->SetTexture(1,NULL);
+				GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,NULL);
 				pEffectFile->EndPass();
 				return S_OK;
 			}
