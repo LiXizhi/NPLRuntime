@@ -195,7 +195,7 @@ bool ParaEngine::CEffectFileOpenGL::setMatrix(eParameterHandles index, const Mat
 				// Xizhi 2014.9.16: for some reason, it does not need to be transposed, opengl already packed data in our way.
 				// Matrix4 matTranposed = data->transpose();
 				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), 1);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -220,48 +220,48 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(GLWrapper::Uniform* uniform, co
 			{
 				program->setUniformLocationWith1i(uniform->location, *((const GLint*)(data)));
 
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_BOOL)
 			{
 				program->setUniformLocationWith1i(uniform->location, *((const bool*)(data)));
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_FLOAT)
 			{
 				program->setUniformLocationWith1f(uniform->location, *((const GLfloat*)(data)));
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_FLOAT_VEC3)
 			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_FLOAT_VEC2)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_FLOAT_VEC4)
 			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (uniform->type == GL_FLOAT_MAT4)
 			{
 				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else if (size > 0)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), (uint32)((size + 1) / 2));
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 			}
 			else
 			{
 				OUTPUT_LOG("warn: unknown uniform size and type\n");
 			}
-			// PE_CHECK_GL_ERROR_DEBUG();
+			// 
 			ret = true;
 		}
 	}
@@ -285,7 +285,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			if (uniform)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), 1);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -305,7 +305,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			if (uniform)
 			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), 1);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -325,7 +325,7 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			if (uniform)
 			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), 1);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -345,7 +345,7 @@ bool ParaEngine::CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoole
 			if (uniform)
 			{
 				program->setUniformLocationWith1i(uniform->location, bBoolean ? 1 : 0);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -365,7 +365,7 @@ bool ParaEngine::CEffectFileOpenGL::setInt(eParameterHandles index, int nValue)
 			if (uniform)
 			{
 				program->setUniformLocationWith1i(uniform->location, nValue);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -385,7 +385,7 @@ bool ParaEngine::CEffectFileOpenGL::setFloat(eParameterHandles index, float fVal
 			if (uniform)
 			{
 				program->setUniformLocationWith1f(uniform->location, fValue);
-				PE_CHECK_GL_ERROR_DEBUG();
+				
 				ret = true;
 			}
 		}
@@ -491,7 +491,7 @@ bool ParaEngine::CEffectFileOpenGL::use(int nTech, int nPass)
 	if (program)
 	{
 		program->use();
-		PE_CHECK_GL_ERROR_DEBUG();
+		
 		if (mTechniqueIndex != nTech)
 		{
 			mTechniqueIndex = nTech;
@@ -521,7 +521,7 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 		{
 			OUTPUT_LOG("unknown opengl error: 0x%04X before updateUniforms: %s pass: %d\n", errorCode, m_filename.c_str(), nPass);
 		}
-		// PE_CHECK_GL_ERROR_DEBUG();
+		// 
 	}
 }
 
@@ -780,7 +780,7 @@ bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD fla
 			// TODO: In future: uniform values should be cached until Commit() is called.
 			program->use();
 		}
-		PE_CHECK_GL_ERROR_DEBUG();
+		
 
 		if (bApplyParam)
 		{

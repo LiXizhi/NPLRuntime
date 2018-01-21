@@ -1,17 +1,18 @@
 #pragma once
 #include <string>
+#include <memory>
 #include <unordered_map>
 
 #include "GLType.h"
+#include "GLFont.h"
+#include "GLTexture2D.h"
 
 namespace ParaEngine
 {
-
-	class Font;
-	class Texture2D;
+	class GLTexture2D;
 	class FontFreeType;
 
-	class FontAtlas : public CRefCountedOne
+	class FontAtlas
 	{
 	public:
 		static const int CacheTextureWidth;
@@ -19,7 +20,7 @@ namespace ParaEngine
 		static const char* CMD_PURGE_FONTATLAS;
 		static const char* CMD_RESET_FONTATLAS;
 		
-		FontAtlas(Font &theFont);
+		FontAtlas(GLFontPtr &theFont);
 		virtual ~FontAtlas();
 
 		void addLetterDefinition(char16_t utf16Char, const FontLetterDefinition &letterDefinition);
@@ -27,15 +28,15 @@ namespace ParaEngine
 
 		bool prepareLetterDefinitions(const std::u16string& utf16String);
 
-		inline const std::unordered_map<size_t, Texture2D*>& getTextures() const { return _atlasTextures; }
-		void  addTexture(Texture2D *texture, int slot);
+		inline const std::unordered_map<size_t, GLTexture2DPtr>& getTextures() const { return _atlasTextures; }
+		void  addTexture(GLTexture2DPtr texture, int slot);
 		float getLineHeight() const { return _lineHeight; }
 		void  setLineHeight(float newHeight);
 
 
 
-		Texture2D* getTexture(int slot);
-		const Font* getFont() const { return _font; }
+		GLTexture2DPtr getTexture(int slot);
+		const GLFontPtr getFont() const { return _font; }
 
 
 		float getCommonLineHeight() const
@@ -76,10 +77,10 @@ namespace ParaEngine
 		 */
 		void scaleFontLetterDefinition(float scaleFactor);
 
-		std::unordered_map<size_t, Texture2D*> _atlasTextures;
+		std::unordered_map<size_t, GLTexture2DPtr> _atlasTextures;
 		std::unordered_map<char16_t, FontLetterDefinition> _letterDefinitions;
 		float _lineHeight;
-		Font* _font;
+		GLFontPtr _font;
 		FontFreeType* _fontFreeType;
 		void* _iconv;
 
@@ -99,4 +100,6 @@ namespace ParaEngine
 
 		friend class Label;
 	};
+
+	using FontAtlasPtr = std::shared_ptr<FontAtlas>;
 }

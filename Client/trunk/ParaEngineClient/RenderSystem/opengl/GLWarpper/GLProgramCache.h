@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 
 #include "GLType.h"
@@ -8,6 +9,7 @@
 namespace ParaEngine
 {
 	class GLProgram;
+	using GLProgramPtr = std::shared_ptr<GLProgram>;
 
 	/**
 	 * @addtogroup shaders
@@ -18,7 +20,7 @@ namespace ParaEngine
 	  Singleton that stores manages GLProgram objects (shaders)
 	  @since v2.0
 	  */
-	class GLProgramCache : public CRefCountedOne
+	class GLProgramCache
 	{
 	public:
 		/**
@@ -53,19 +55,20 @@ namespace ParaEngine
 
 		/** returns a GL program for a given key
 		 */
-		GLProgram * getGLProgram(const std::string &key);
-		GLProgram * getProgram(const std::string &key) { return getGLProgram(key); }
-		GLProgram * programForKey(const std::string &key) { return getGLProgram(key); }
+		GLProgramPtr getGLProgram(const std::string &key);
+		GLProgramPtr getProgram(const std::string &key) { return getGLProgram(key); }
+		GLProgramPtr programForKey(const std::string &key) { return getGLProgram(key); }
 
 		/** adds a GLProgram to the cache for a given name */
-		void addGLProgram(GLProgram* program, const std::string &key);
-		void addProgram(GLProgram* program, const std::string &key) { addGLProgram(program, key); }
+		void addGLProgram(GLProgramPtr program, const std::string &key);
+		void addProgram(GLProgramPtr program, const std::string &key) { addGLProgram(program, key); }
 
 	private:
 		bool init();
 		void loadDefaultGLProgram(GLProgram *program, int type);
 
 		//    Dictionary* _programs;
-		std::unordered_map<std::string, GLProgram*> _programs;
+		std::unordered_map<std::string, GLProgramPtr> _programs;
 	};
+	using GLProgramCachePtr = std::shared_ptr<GLProgramCache>;
 }

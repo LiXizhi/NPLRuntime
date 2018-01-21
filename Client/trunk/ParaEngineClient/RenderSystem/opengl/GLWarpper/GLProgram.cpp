@@ -1,14 +1,12 @@
-#include "ParaEngine.h"
 
 #include "GLProgram.h"
+#include <memory>
 
 #ifndef WIN32
 #include <alloca.h>
 #endif
 
 #include "uthash.h"
-#include "FileUtils.h"
-
 #define CHECK_GL_ERROR_DEBUG() \
 do { \
 GLenum __error = glGetError(); \
@@ -74,33 +72,17 @@ const char* GLProgram::ATTRIBUTE_NAME_NORMAL = "a_normal";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_WEIGHT = "a_blendWeight";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_INDEX = "a_blendIndex";
 
-GLProgram* GLProgram::createWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
+GLProgramPtr GLProgram::createWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray)
 {
-	auto ret = new (std::nothrow) GLProgram();
+	auto ret = std::make_shared<GLProgram>();
 	if (ret && ret->initWithByteArrays(vShaderByteArray, fShaderByteArray)) {
 		ret->link();
 		ret->updateUniforms();
-		ret->AddToAutoReleasePool();
 		return ret;
 	}
-
-	SAFE_DELETE(ret);
 	return nullptr;
 }
 
-GLProgram* GLProgram::createWithFilenames(const std::string& vShaderFilename, const std::string& fShaderFilename)
-{
-	auto ret = new (std::nothrow) GLProgram();
-	if (ret && ret->initWithFilenames(vShaderFilename, fShaderFilename)) {
-		ret->link();
-		ret->updateUniforms();
-		ret->AddToAutoReleasePool();
-		return ret;
-	}
-
-	SAFE_DELETE(ret);
-	return nullptr;
-}
 
 GLProgram::GLProgram()
 	: _program(0)
@@ -114,7 +96,7 @@ GLProgram::GLProgram()
 
 GLProgram::~GLProgram()
 {
-	OUTPUT_LOG("%s %d deallocing GLProgram: %p", __FUNCTION__, __LINE__, this);
+	//OUTPUT_LOG("%s %d deallocing GLProgram: %p", __FUNCTION__, __LINE__, this);
 
 	if (_vertShader)
 	{

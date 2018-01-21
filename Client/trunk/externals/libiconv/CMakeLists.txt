@@ -57,4 +57,5 @@ IF(MSVC)
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 ENDIF()
 
-add_library(libiconv STATIC ${ICONV_SRCS} ${ICONV_PUBLIC_HDRS} ${ICONV_PRIVATE_HDRS})
+add_library(iconv STATIC ${ICONV_SRCS} ${ICONV_PUBLIC_HDRS} ${ICONV_PRIVATE_HDRS})
+target_include_directories(iconv PUBLIC include src)

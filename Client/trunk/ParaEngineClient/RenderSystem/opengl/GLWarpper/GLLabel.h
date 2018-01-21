@@ -1,6 +1,6 @@
 #pragma once
 #include "GLType.h"
-#include "ParaVector2.h"
+#include "Framework/Common/Math/Vector2.h"
 #include <unordered_map>
 #include <vector>
 
@@ -26,12 +26,12 @@ namespace ParaEngine
 	};
 
 
-	class Texture2D;
+	class GLTexture2D;
 	class FontAtlas;
 
 
 
-	class Label : public CRefCountedOne
+	class Label
 	{
 	public:
 
@@ -60,7 +60,7 @@ namespace ParaEngine
 
 		bool setTTFConfig(const TTFConfig& ttfConfig);
 
-		FontAtlas* getFontAtlas() { return _fontAtlas; }
+		FontAtlasPtr getFontAtlas() { return _fontAtlas; }
 
 
 
@@ -131,7 +131,7 @@ namespace ParaEngine
 		float         _systemFontSize;
 		LabelType _currentLabelType;
 
-		FontAtlas *                   _fontAtlas;
+		FontAtlasPtr                   _fontAtlas;
 		std::vector<LetterInfo>       _lettersInfo;
 
 		TTFConfig _fontConfig;
@@ -195,7 +195,7 @@ namespace ParaEngine
 		float _scaleX;
 
 		void reset();
-		void setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled = false, bool useA8Shader = false);
+		void setFontAtlas(FontAtlasPtr atlas, bool distanceFieldEnabled = false, bool useA8Shader = false);
 
 
 		friend class LabelTextFormatter;

@@ -274,7 +274,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		PE_CHECK_GL_ERROR_DEBUG();
+		
 #endif
 	}
 #ifdef USE_DIRECTX_RENDERER
@@ -331,7 +331,7 @@ HRESULT CShadowMap::InvalidateDeviceObjects()
 	mSMDepthStencilBufferObject = 0;
 	glDeleteFramebuffers(1, &mSMFrameBufferObject);
 	mSMFrameBufferObject = 0;
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 #endif
 	if (m_pSMColorTexture)
 		m_pSMColorTexture->InvalidateDeviceObjects();
@@ -1358,7 +1358,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	GETD3D(CGlobals::GetRenderDevice())->GetViewport(&oldViewport);
 
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&mOldFrameBufferObject));
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 #endif
 
 	// restore other textures
@@ -1380,7 +1380,7 @@ HRESULT CShadowMap::BeginShadowPass()
 		return E_FAIL;
 #else
 	glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 	pd3dDevice->BeginRenderTarget(m_shadowTexWidth, m_shadowTexHeight);
 #endif
 
@@ -1536,7 +1536,7 @@ HRESULT CShadowMap::EndShadowPass()
 #else
 	glBindFramebuffer(GL_FRAMEBUFFER, mOldFrameBufferObject);
 	mOldFrameBufferObject = 0;
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 	pd3dDevice->EndRenderTarget();
 #endif
 

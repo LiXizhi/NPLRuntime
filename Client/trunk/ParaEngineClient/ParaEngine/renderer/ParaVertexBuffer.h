@@ -1,4 +1,7 @@
 #pragma once
+#if USE_OPENGL_RENDERER
+#include "RenderDeviceOpenGL.h"
+#endif
 namespace ParaEngine
 {
 #ifdef USE_DIRECTX_RENDERER
@@ -37,7 +40,7 @@ namespace ParaEngine
 		* @param dwFormat: only used in DirectX, ignored in openGL
 		* @param dwUsage: only used in DirectX, ignored in openGL
 		*/
-		bool CreateBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0, D3DPOOL dwPool = D3DPOOL_MANAGED);
+		bool CreateBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0, EPoolType dwPool = EPoolType::Managed);
 		bool CreateIndexBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0);
 		bool CreateMemoryBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0);
 

@@ -10,7 +10,7 @@
 #include "IO/FileUtils.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "OpenGLWrapper.h"
+#include "RenderDeviceOpenGL.h"
 #include "GUIBase.h"
 #include "TextureEntity.h"
 #include "StringHelper.h"

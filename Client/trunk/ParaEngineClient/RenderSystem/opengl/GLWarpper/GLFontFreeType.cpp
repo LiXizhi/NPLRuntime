@@ -1,8 +1,8 @@
-#include "ParaEngine.h"
+
 #include "edtaa3func.h"
 
-#include "IO/FileUtils.h"
-#include "util/StringHelper.h"
+#include "IO/FileData.h"
+
 #include "GLFontFreeType.h"
 #include "GLFontAtlas.h"
 
@@ -201,7 +201,7 @@ FontFreeType::~FontFreeType()
     }
 }
 
-FontAtlas * FontFreeType::createFontAtlas()
+FontAtlasPtr FontFreeType::CreateFontAtlas()
 {
     if (_fontAtlas == nullptr)
     {
@@ -220,7 +220,7 @@ FontAtlas * FontFreeType::createFontAtlas()
     return _fontAtlas;
 }
 
-int * FontFreeType::getHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const
+int * FontFreeType::GetHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const
 {
     if (!_fontRef)
         return nullptr;

@@ -1,18 +1,23 @@
 #pragma once
 #include "GLType.h"
 #include <map>
+#include <memory>
 
 namespace ParaEngine
 {
 	class Image;
 	class GLProgram;
+	using GLProgramPtr = std::shared_ptr<GLProgram>;
+
 	typedef struct _MipmapInfo MipmapInfo;
 
+	class GLTexture2D;
+	using GLTexture2DPtr = std::shared_ptr<GLTexture2D>;
 
-	class Texture2D : public CRefCountedOne
+	class GLTexture2D
 	{
 	public:
-		enum class PixelFormat
+		enum class GLPixelFormat
 		{
 			//! auto detect the type
 			AUTO,
@@ -82,7 +87,7 @@ namespace ParaEngine
 			bool alpha;
 		};
 
-		typedef std::map<Texture2D::PixelFormat, const PixelFormatInfo> PixelFormatInfoMap;
+		typedef std::map<GLTexture2D::GLPixelFormat, const PixelFormatInfo> PixelFormatInfoMap;
 
 
 		typedef struct _TexParams {
@@ -92,11 +97,11 @@ namespace ParaEngine
 			GLuint    wrapT;
 		}TexParams;
 
-		Texture2D();
-		virtual ~Texture2D();
+		GLTexture2D();
+		virtual ~GLTexture2D();
 
 		bool initWithImage(Image * image);
-		bool initWithImage(Image * image, PixelFormat format);
+		bool initWithImage(Image * image, GLPixelFormat format);
 
 
 
@@ -110,7 +115,7 @@ namespace ParaEngine
 		int getPixelsHigh() const;
 
 
-		bool initWithData(const void *data, size_t dataLen, Texture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
+		bool initWithData(const void *data, size_t dataLen, GLTexture2D::GLPixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
 
 		bool updateWithData(const void *data, int offsetX, int offsetY, int width, int height);
 
@@ -122,10 +127,10 @@ namespace ParaEngine
 		static const PixelFormatInfoMap& getPixelFormatInfoMap();
 
 	private:
-		static Texture2D::PixelFormat g_defaultAlphaPixelFormat;
+		static GLTexture2D::GLPixelFormat g_defaultAlphaPixelFormat;
 
 		/** pixel format of the texture */
-		Texture2D::PixelFormat _pixelFormat;
+		GLTexture2D::GLPixelFormat _pixelFormat;
 
 		/** width in pixels */
 		int _pixelsWide;
@@ -152,7 +157,7 @@ namespace ParaEngine
 		bool _hasMipmaps;
 
 		/** shader program used by drawAtPoint and drawInRect */
-		GLProgram* _shaderProgram;
+		GLProgramPtr _shaderProgram;
 
 		static const PixelFormatInfoMap _pixelFormatInfoTables;
 
@@ -161,20 +166,20 @@ namespace ParaEngine
 		bool _valid;
 		std::string _filePath;
 
-		Texture2D* _alphaTexture;
+		GLTexture2DPtr _alphaTexture;
 
 
 
-		bool initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh);
+		bool initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, GLPixelFormat pixelFormat, int pixelsWide, int pixelsHigh);
 
-		void setGLProgram(GLProgram* shaderProgram);
+		void setGLProgram(GLProgramPtr shaderProgram);
 
-		static Texture2D::PixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static GLTexture2D::GLPixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, GLPixelFormat originFormat, GLPixelFormat format, unsigned char** outData, size_t* outDataLen);
 
-		static PixelFormat convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
-		static PixelFormat convertAI88ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
-		static PixelFormat convertRGB888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
-		static PixelFormat convertRGBA8888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static GLPixelFormat convertI8ToFormat(const unsigned char* data, size_t dataLen, GLPixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static GLPixelFormat convertAI88ToFormat(const unsigned char* data, size_t dataLen, GLPixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static GLPixelFormat convertRGB888ToFormat(const unsigned char* data, size_t dataLen, GLPixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static GLPixelFormat convertRGBA8888ToFormat(const unsigned char* data, size_t dataLen, GLPixelFormat format, unsigned char** outData, size_t* outDataLen);
 
 		//I8 to XXX
 		static void convertI8ToRGB888(const unsigned char* data, size_t dataLen, unsigned char* outData);
@@ -211,4 +216,6 @@ namespace ParaEngine
 		static void convertRGBA8888ToRGBA4444(const unsigned char* data, size_t dataLen, unsigned char* outData);
 		static void convertRGBA8888ToRGB5A1(const unsigned char* data, size_t dataLen, unsigned char* outData);
 	};
+
+	
 }

@@ -49,7 +49,7 @@ void ParaEngine::ParaVertexBuffer::RendererRecreated()
 	SAFE_DELETE_ARRAY(m_buffer);
 }
 
-bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, D3DPOOL dwPool)
+bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, EPoolType dwPool)
 {
 	ReleaseBuffer();
 	m_bufferType = BufferType_VertexBuffer;
@@ -80,7 +80,7 @@ bool ParaEngine::ParaVertexBuffer::CreateIndexBuffer(uint32 nBufferSize, DWORD d
 	return ret;
 #elif defined(USE_OPENGL_RENDERER)
 	glGenBuffers(1, &m_vertexBuffer);
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 	return true;
 #else
 	return false;
@@ -174,7 +174,7 @@ void ParaEngine::ParaVertexBuffer::Unlock()
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nBufferSize, m_buffer, GL_STATIC_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		}
-		PE_CHECK_GL_ERROR_DEBUG();
+		
 		SAFE_DELETE_ARRAY(m_buffer);
 	}
 #endif
@@ -206,7 +206,7 @@ void ParaEngine::ParaVertexBuffer::UploadMemoryBuffer(const char* pBuffer, int32
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nBufSize, pBuffer, GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
-	PE_CHECK_GL_ERROR_DEBUG();
+	
 #else
 	char * pData = NULL;
 	if(Lock((void**)&pData, 0, 0))

@@ -1,12 +1,5 @@
-set(SOURCE CCModuleJPEG.cpp)
+add_library(libjpeg INTERFACE)
 
-add_library(cocosjpeg STATIC ${SOURCE})
+target_include_directories(libjpeg INTERFACE include/win32)
 
-target_link_libraries(cocosjpeg jpeg cocos2d)
-
-set_target_properties(cocosjpeg
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
-)
-
+target_link_libraries(libjpeg INTERFACE prebuild/win32/libjpeg.lib)

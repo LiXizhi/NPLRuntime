@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
-#include "PERef.h"
-
+#include "glad/glad.h"
 #define GL_CONTENT_SCALE_FACTOR() 1
 
 

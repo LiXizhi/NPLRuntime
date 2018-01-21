@@ -1,16 +1,16 @@
-#include "ParaEngine.h"
+
 #include <iostream>
 #include <sstream>
 
 #include "GLFontAtlasCache.h"
 #include "GLFontFreeType.h"
 #include "GLFontAtlas.h"
-// #include "GLLabel.h"
+#include "GLLabel.h"
 
 namespace ParaEngine
 {
 
-	std::unordered_map<std::string, FontAtlas *> FontAtlasCache::_atlasMap;
+	std::unordered_map<std::string, FontAtlasPtr> FontAtlasCache::_atlasMap;
 
 	void FontAtlasCache::purgeCachedData()
 	{
@@ -20,14 +20,14 @@ namespace ParaEngine
 		}
 	}
 
-	FontAtlas * FontAtlasCache::getFontAtlasTTF(const TTFConfig & config)
+	FontAtlasPtr FontAtlasCache::getFontAtlasTTF(const TTFConfig & config)
 	{
 		bool useDistanceField = config.distanceFieldEnabled;
 		if (config.outlineSize > 0)
 		{
 			useDistanceField = false;
 		}
-		int fontSize = config.fontSize;
+		int fontSize = (int)config.fontSize;
 		auto contentScaleFactor = GL_CONTENT_SCALE_FACTOR();
 
 		if (useDistanceField)
@@ -49,7 +49,7 @@ namespace ParaEngine
 				config.customGlyphs, useDistanceField, config.outlineSize);
 			if (font)
 			{
-				auto tempAtlas = font->createFontAtlas();
+				auto tempAtlas = font->CreateFontAtlas();
 				if (tempAtlas)
 				{
 					_atlasMap[atlasName] = tempAtlas;
@@ -59,7 +59,6 @@ namespace ParaEngine
 		}
 		else
 		{
-			_atlasMap[atlasName]->addref();
 			return _atlasMap[atlasName];
 		}
 
@@ -100,7 +99,7 @@ namespace ParaEngine
 		return  tempName.append(ss.str());
 	}
 
-	bool FontAtlasCache::releaseFontAtlas(FontAtlas *atlas)
+	bool FontAtlasCache::releaseFontAtlas(FontAtlasPtr atlas)
 	{
 		if (nullptr != atlas)
 		{
@@ -108,12 +107,12 @@ namespace ParaEngine
 			{
 				if (item.second == atlas)
 				{
-					if (atlas->GetRefCount() == 1)
+					if (atlas.use_count() == 1)
 					{
 						_atlasMap.erase(item.first);
 					}
 
-					atlas->Release();
+					atlas = nullptr;
 
 					return true;
 				}

@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+
 #include "GLImage.h"
 #include "s3tc.h"
 
@@ -158,7 +158,7 @@ bool Image::initWithRawData(const unsigned char * data, size_t dataLen, int widt
 		_height = height;
 		_width = width;
 		_hasPremultipliedAlpha = preMulti;
-		_renderFormat = Texture2D::PixelFormat::RGBA8888;
+		_renderFormat = GLTexture2D::GLPixelFormat::RGBA8888;
 
 		// only RGBA8888 supported
 		int bytesPerComponent = 4;
@@ -452,12 +452,12 @@ bool Image::initWithJpgData(const unsigned char * data, size_t dataLen)
 		// we only support RGB or grayscale
 		if (cinfo.jpeg_color_space == JCS_GRAYSCALE)
 		{
-			_renderFormat = Texture2D::PixelFormat::I8;
+			_renderFormat = GLTexture2D::GLPixelFormat::I8;
 		}
 		else
 		{
 			cinfo.out_color_space = JCS_RGB;
-			_renderFormat = Texture2D::PixelFormat::RGB888;
+			_renderFormat = GLTexture2D::GLPixelFormat::RGB888;
 		}
 
 		/* Start decompression jpeg here */
@@ -612,16 +612,16 @@ bool Image::initWithPngData(const unsigned char * data, size_t dataLen)
 		switch (color_type)
 		{
 		case PNG_COLOR_TYPE_GRAY:
-			_renderFormat = Texture2D::PixelFormat::I8;
+			_renderFormat = GLTexture2D::GLPixelFormat::I8;
 			break;
 		case PNG_COLOR_TYPE_GRAY_ALPHA:
-			_renderFormat = Texture2D::PixelFormat::AI88;
+			_renderFormat = GLTexture2D::GLPixelFormat::AI88;
 			break;
 		case PNG_COLOR_TYPE_RGB:
-			_renderFormat = Texture2D::PixelFormat::RGB888;
+			_renderFormat = GLTexture2D::GLPixelFormat::RGB888;
 			break;
 		case PNG_COLOR_TYPE_RGB_ALPHA:
-			_renderFormat = Texture2D::PixelFormat::RGBA8888;
+			_renderFormat = GLTexture2D::GLPixelFormat::RGBA8888;
 			break;
 		default:
 			break;
@@ -733,19 +733,19 @@ bool Image::initWithS3TCData(const unsigned char * data, size_t dataLen)
 
 		if (FOURCC_DXT1 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
 		{
-			_renderFormat = Texture2D::PixelFormat::S3TC_DXT1;
+			_renderFormat = GLTexture2D::GLPixelFormat::S3TC_DXT1;
 		}
 		else if (FOURCC_DXT3 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
 		{
-			_renderFormat = Texture2D::PixelFormat::S3TC_DXT3;
+			_renderFormat = GLTexture2D::GLPixelFormat::S3TC_DXT3;
 		}
 		else if (FOURCC_DXT5 == header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC)
 		{
-			_renderFormat = Texture2D::PixelFormat::S3TC_DXT5;
+			_renderFormat = GLTexture2D::GLPixelFormat::S3TC_DXT5;
 		}
 	}
 	else { //will software decode
-		_renderFormat = Texture2D::PixelFormat::RGBA8888;
+		_renderFormat = GLTexture2D::GLPixelFormat::RGBA8888;
 	}
 
 	/* load the mipmaps */
@@ -823,7 +823,7 @@ void Image::premultipliedAlpha()
 	return;
 #else
 	// The pixel format should be RGBA8888!
-	PE_ASSERT(_renderFormat == Texture2D::PixelFormat::RGBA8888);
+	PE_ASSERT(_renderFormat == GLTexture2D::GLPixelFormat::RGBA8888);
 
 	unsigned int* fourBytes = (unsigned int*)_data;
 	for (int i = 0; i < _width * _height; i++)
