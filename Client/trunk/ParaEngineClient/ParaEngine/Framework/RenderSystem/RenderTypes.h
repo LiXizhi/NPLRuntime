@@ -246,5 +246,20 @@ namespace ParaEngine
 		RSV_CULL_CW,
 		RSV_CULL_CCW
 	};
+
+	enum class ELightType {
+		Point = 1,
+		Spot = 2,
+		Directional = 3
+	};
+
+	enum class EPoolType {
+		Default = 0,
+		Managed = 1,
+		SystemMem = 2,
+		Scratch = 3,
+	};
+
+
 }
 

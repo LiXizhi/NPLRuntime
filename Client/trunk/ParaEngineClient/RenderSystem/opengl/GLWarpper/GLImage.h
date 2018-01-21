@@ -13,7 +13,7 @@ namespace ParaEngine
 	}MipmapInfo;
 
 
-	class Image : public CRefCountedOne
+	class Image
 	{
 	public:
         
@@ -62,7 +62,7 @@ namespace ParaEngine
 		float               getWidth() { return _width; }
 		float               getHeight() { return _height; }
 
-		Texture2D::PixelFormat getRenderFormat() { return _renderFormat; }
+		GLTexture2D::GLPixelFormat getRenderFormat() { return _renderFormat; }
 
 		int getNumberOfMipmaps() { return _numberOfMipmaps; }
 
@@ -72,12 +72,12 @@ namespace ParaEngine
 		int	getDataLen() const { return _dataLen; }
 		MipmapInfo* getMipmaps() { return _mipmaps; }
 		bool	isCompressed() const { return false; }
-		bool	hasPremultipliedAlpha() const { return Texture2D::getPixelFormatInfoMap().at(_renderFormat).compressed; }
+		bool	hasPremultipliedAlpha() const { return GLTexture2D::getPixelFormatInfoMap().at(_renderFormat).compressed; }
 
 	protected:
 		static const int MIPMAP_MAX = 16;
 
-		Texture2D::PixelFormat _renderFormat;
+		GLTexture2D::GLPixelFormat _renderFormat;
 
 		float _width;
 		float _height;

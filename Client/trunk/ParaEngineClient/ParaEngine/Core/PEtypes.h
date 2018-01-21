@@ -351,7 +351,7 @@ namespace ParaEngine
 	};
 
 	
-#if defined(WIN32) && defined(PARAENGINE_CLIENT)
+#if defined(WIN32) && defined(USE_DIRECTX_RENDERER)
 	typedef D3DXMATRIX   DeviceMatrix;
 	typedef D3DXMATRIX*   DeviceMatrix_ptr;
 	typedef D3DXVECTOR2*  DeviceVector2_ptr;

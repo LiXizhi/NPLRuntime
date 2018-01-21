@@ -212,14 +212,14 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 			width = 256;
 			height = 256;
 		}
-		m_texture = new (std::nothrow) Texture2D();
+		m_texture = new (std::nothrow) GLTexture2D();
 		if (m_texture)
 		{
 			void *data = nullptr;
 			auto dataLen = width * height * 4;
 			data = malloc(dataLen);
 			memset(data, 0, dataLen);
-			m_texture->initWithData(data, dataLen, (Texture2D::PixelFormat)Texture2D::PixelFormat::RGBA8888, width, height, Size((float)width, (float)height));
+			m_texture->initWithData(data, dataLen, (GLTexture2D::GLPixelFormat)GLTexture2D::GLPixelFormat::RGBA8888, width, height, Size((float)width, (float)height));
 			free(data);
 
 			GL::bindTexture2D(m_texture->getName());
@@ -402,7 +402,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 {
 	if (!pTexels)
 		return NULL;
-	GLWrapper::Texture2D * texture = new Texture2D();
+	GLWrapper::Texture2D * texture = new GLTexture2D();
 	if (texture)
 	{
 		int dataLen = width * height * bytesPerPixel;
@@ -429,7 +429,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 					pp[index++] = 0xff;
 				}
 			}
-			if (!texture->initWithData(pTexels, dataLen, Texture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+			if (!texture->initWithData(pTexels, dataLen, GLTexture2D::GLPixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 			{
 				SAFE_DELETE(texture);
 			}
@@ -440,7 +440,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 			/** -1 not determined, 0 do not support A8, 1 support A8. we will only try it once. */
 			static int nSupportA8PixelFormat = -1;
 			
-			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, Texture2D::PixelFormat::A8, width, height, Size((float)width, (float)height)))
+			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, GLTexture2D::GLPixelFormat::A8, width, height, Size((float)width, (float)height)))
 			{
 				if (nSupportA8PixelFormat == -1)
 					nSupportA8PixelFormat = 0;
@@ -450,7 +450,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				if (!texture->initWithData(pData, width*height * 4, Texture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+				if (!texture->initWithData(pData, width*height * 4, GLTexture2D::GLPixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 				{
 					SAFE_DELETE(texture);
 				}

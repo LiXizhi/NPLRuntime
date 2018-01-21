@@ -1,6 +1,6 @@
 #pragma once
 #include "TextureEntity.h"
-
+#include "RenderDeviceOpenGL.h"
 namespace ParaEngine
 {
 	class CRenderTarget;

@@ -1,4 +1,3 @@
-#include "ParaEngine.h"
 #include <iconv.h>
 #include "GLFontAtlas.h"
 #include "GLFont.h"
@@ -13,8 +12,8 @@ const int FontAtlas::CacheTextureHeight = 512;
 const char* FontAtlas::CMD_PURGE_FONTATLAS = "__cc_PURGE_FONTATLAS";
 const char* FontAtlas::CMD_RESET_FONTATLAS = "__cc_RESET_FONTATLAS";
 
-FontAtlas::FontAtlas(Font &theFont)
-: _font(&theFont)
+FontAtlas::FontAtlas(GLFontPtr &theFont)
+: _font(theFont)
 , _fontFreeType(nullptr)
 , _iconv(nullptr)
 , _currentPageData(nullptr)
@@ -22,14 +21,14 @@ FontAtlas::FontAtlas(Font &theFont)
 , _antialiasEnabled(true)
 , _currLineHeight(0)
 {
-    _font->addref();
 
-    _fontFreeType = dynamic_cast<FontFreeType*>(_font);
+
+    _fontFreeType = dynamic_cast<FontFreeType*>(_font.get());
     if (_fontFreeType)
     {
-        _lineHeight = _font->getFontMaxHeight();
-        _fontAscender = _fontFreeType->getFontAscender();
-        auto texture = new (std::nothrow) Texture2D;
+        _lineHeight = (float)_font->GetFontMaxHeight();
+        _fontAscender = (int)_fontFreeType->getFontAscender();
+		auto texture = std::make_shared<GLTexture2D>();
         _currentPage = 0;
         _currentPageOrigX = 0;
         _currentPageOrigY = 0;
@@ -51,12 +50,12 @@ FontAtlas::FontAtlas(Font &theFont)
         _currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
         memset(_currentPageData, 0, _currentPageDataSize);
 
-        auto  pixelFormat = outlineSize > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8;
+        auto  pixelFormat = outlineSize > 0 ? GLTexture2D::GLPixelFormat::AI88 : GLTexture2D::GLPixelFormat::A8;
         texture->initWithData(_currentPageData, _currentPageDataSize,
             pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
 
         addTexture(texture,0);
-        texture->Release();
+        
 
 #if CC_ENABLE_CACHE_TEXTURE_DATA
         auto eventDispatcher = Director::getInstance()->getEventDispatcher();
@@ -78,7 +77,7 @@ FontAtlas::~FontAtlas()
     }
 #endif
 
-    _font->Release();
+	_font = nullptr;
     releaseTextures();
 
     delete []_currentPageData;
@@ -107,7 +106,7 @@ void FontAtlas::releaseTextures()
 {
     for( auto &item: _atlasTextures)
     {
-        item.second->Release();
+		item.second = nullptr;
     }
     _atlasTextures.clear();
 }
@@ -172,7 +171,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
 
         if (_iconv == (iconv_t)-1)
         {
-            OUTPUT_LOG("conversion from utf16 to gb2312 not available");
+            //OUTPUT_LOG("conversion from utf16 to gb2312 not available");
         }
         else
         {
@@ -192,7 +191,7 @@ void FontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unorde
     }
     break;
     default:
-        OUTPUT_LOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
+        //OUTPUT_LOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
         break;
     }
 
@@ -275,7 +274,7 @@ void FontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordered_
             break;
         }
         default:
-            OUTPUT_LOG("FontAtlas::findNewCharacters: Unsupported encoding:%d", charEncoding);
+            //OUTPUT_LOG("FontAtlas::findNewCharacters: Unsupported encoding:%d", charEncoding);
             break;
         }
     }
@@ -304,7 +303,7 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     FontLetterDefinition tempDef;
 
     auto scaleFactor = GL_CONTENT_SCALE_FACTOR();
-    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8;
+    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? GLTexture2D::GLPixelFormat::AI88 : GLTexture2D::GLPixelFormat::A8;
 
     float startY = _currentPageOrigY;
 
@@ -327,7 +326,7 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                 if (_currentPageOrigY + _lineHeight + _letterPadding + _letterEdgeExtend >= CacheTextureHeight)
                 {
                     unsigned char *data = nullptr;
-                    if (pixelFormat == Texture2D::PixelFormat::AI88)
+                    if (pixelFormat == GLTexture2D::GLPixelFormat::AI88)
                     {
                         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
                     }
@@ -343,7 +342,7 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                     _currentPageOrigY = 0;
                     memset(_currentPageData, 0, _currentPageDataSize);
                     _currentPage++;
-                    auto tex = new (std::nothrow) Texture2D;
+					auto tex = std::make_shared<GLTexture2D>();
                     if (_antialiasEnabled)
                     {
                         tex->setAntiAliasTexParameters();
@@ -355,7 +354,6 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                     tex->initWithData(_currentPageData, _currentPageDataSize,
                         pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
                     addTexture(tex, _currentPage);
-                    tex->Release();
                 }
             }
             glyphHeight = static_cast<int>(bitmapHeight) + _letterPadding + _letterEdgeExtend;
@@ -395,7 +393,7 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     }
 
     unsigned char *data = nullptr;
-    if (pixelFormat == Texture2D::PixelFormat::AI88)
+    if (pixelFormat == GLTexture2D::GLPixelFormat::AI88)
     {
         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
     }
@@ -408,13 +406,12 @@ bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     return true;
 }
 
-void FontAtlas::addTexture(Texture2D *texture, int slot)
+void FontAtlas::addTexture(GLTexture2DPtr texture, int slot)
 {
-    texture->addref();
     _atlasTextures[slot] = texture;
 }
 
-Texture2D* FontAtlas::getTexture(int slot)
+GLTexture2DPtr FontAtlas::getTexture(int slot)
 {
     return _atlasTextures[slot];
 }

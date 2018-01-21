@@ -1,4 +1,3 @@
-#include "ParaEngine.h"
 #include "GLType.h"
 #include "GLFontAtlas.h"
 #include "GLFontAtlasCache.h"
@@ -462,7 +461,7 @@ Label::~Label()
 bool Label::setTTFConfig(const TTFConfig& ttfConfig)
 {
 
-	FontAtlas *newAtlas = FontAtlasCache::getFontAtlasTTF(ttfConfig);
+	FontAtlasPtr newAtlas = FontAtlasCache::getFontAtlasTTF(ttfConfig);
 
 	if (!newAtlas)
 	{
@@ -492,7 +491,7 @@ bool Label::setTTFConfig(const TTFConfig& ttfConfig)
 	return true;
 }
 
-void Label::setFontAtlas(FontAtlas* atlas, bool distanceFieldEnabled /* = false */, bool useA8Shader /* = false */)
+void Label::setFontAtlas(FontAtlasPtr atlas, bool distanceFieldEnabled /* = false */, bool useA8Shader /* = false */)
 {
 	if (atlas == _fontAtlas)
 	{
@@ -600,7 +599,7 @@ bool Label::computeHorizontalKernings(const std::u16string& stringToRender)
 	}
 
 	int letterCount = 0;
-	_horizontalKernings = _fontAtlas->getFont()->getHorizontalKerningForTextUTF16(stringToRender, letterCount);
+	_horizontalKernings = _fontAtlas->getFont()->GetHorizontalKerningForTextUTF16(stringToRender, letterCount);
 
 	if (!_horizontalKernings)
 		return false;

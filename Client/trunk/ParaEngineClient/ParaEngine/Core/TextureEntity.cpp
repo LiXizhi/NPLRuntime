@@ -72,7 +72,7 @@ bool TextureEntity::GiveupRawDataOwnership()
 	return true;
 }
 
-bool TextureEntity::LoadFromImage(ImageEntity * image, D3DFORMAT dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
+bool TextureEntity::LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
 	if (image)
 	{
@@ -306,7 +306,7 @@ void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 }
 
 
-HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev /*= NULL*/, const char* sFileName /*= NULL*/, void** ppTexture /*= NULL*/, D3DFORMAT dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels /*= D3DX_DEFAULT*/, Color dwColorKey /*= 0*/)
+HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev /*= NULL*/, const char* sFileName /*= NULL*/, void** ppTexture /*= NULL*/, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels /*= D3DX_DEFAULT*/, Color dwColorKey /*= 0*/)
 {
 	if (GetRawData())
 	{
@@ -368,7 +368,7 @@ int32 TextureEntity::GetHeight()
 	return pInfo ? pInfo->GetHeight() : 0;
 }
 
-bool TextureEntity::SaveToFile(const char* filename, D3DFORMAT dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
+bool TextureEntity::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
 	return false;
 }
@@ -382,7 +382,7 @@ void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &h
 #endif
 }
 
-TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
@@ -393,7 +393,7 @@ TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, in
 #endif
 }
 
-TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/)
+TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
 #ifdef USE_DIRECTX_RENDERER
 	return TextureEntityDirectX::CreateTexture(pFileName, nMipLevels, dwCreatePool);

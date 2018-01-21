@@ -2,7 +2,7 @@
 #ifdef USE_DIRECTX_RENDERER
 #include "d3dcommon/dxstdafx.h"
 #elif defined(USE_OPENGL_RENDERER)
-#include "OpenGLWrapper.h"
+#include "RenderDeviceOpenGL.h"
 #else
 #include "PEtypes.h"
 
@@ -33,7 +33,7 @@
 namespace ParaEngine
 {
 	typedef struct _Para3DLight {
-		D3DLIGHTTYPE    Type;            /* Type of light source */
+		ELightType    Type;            /* Type of light source */
 		LinearColor   Diffuse;         /* Diffuse color of light */
 		LinearColor   Specular;        /* Specular color of light */
 		LinearColor   Ambient;         /* Ambient color of light */
@@ -66,7 +66,7 @@ namespace ParaEngine
 	typedef LPDIRECT3DVERTEXDECLARATION9 VertexDeclarationPtr;
 #elif defined(USE_OPENGL_RENDERER)
 	typedef GLuint DeviceTexturePtr_type;
-	class RenderDevice; typedef RenderDevice* RenderDevicePtr;
+	class RenderDevice; typedef IRenderDevice* RenderDevicePtr;
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
 #else
 	typedef uint32_t DeviceTexturePtr_type;

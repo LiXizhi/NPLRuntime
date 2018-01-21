@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <memory>
 #include "GLType.h"
 
 
@@ -13,6 +14,7 @@ namespace ParaEngine
 
 	struct _hashUniformEntry;
 	class GLProgram;
+
 
 	typedef void(*GLInfoFunction)(GLuint program, GLenum pname, GLint* params);
 	typedef void(*GLLogFunction) (GLuint program, GLsizei bufsize, GLsizei* length, GLchar* infolog);
@@ -34,13 +36,17 @@ namespace ParaEngine
 		std::string name;
 	};
 
+
+	class GLProgram;
+	using GLProgramPtr = std::shared_ptr<GLProgram>;
+
 	/** GLProgram
 	Class that implements a glProgram
 
 
 	@since v2.0.0
 	*/
-	class GLProgram : public CRefCountedOne
+	class GLProgram 
 	{
 		friend class GLProgramState;
 
@@ -135,14 +141,13 @@ namespace ParaEngine
 		* @js initWithString
 		* @lua initWithString
 		*/
-		static GLProgram* createWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray);
+		static GLProgramPtr createWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray);
 		bool initWithByteArrays(const GLchar* vShaderByteArray, const GLchar* fShaderByteArray);
 
 		/** Initializes the GLProgram with a vertex and fragment with contents of filenames
 		* @js init
 		* @lua init
 		*/
-		static GLProgram* createWithFilenames(const std::string& vShaderFilename, const std::string& fShaderFilename);
 		bool initWithFilenames(const std::string& vShaderFilename, const std::string& fShaderFilename);
 
 		//void bindUniform(std::string uniformName, int value);

@@ -1,9 +1,8 @@
 #pragma once
+#include <string>
+#include <memory>
 
 #include "GLType.h"
-#include "GLFont.h"
-
-#include <string>
 
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -14,12 +13,17 @@
 namespace ParaEngine
 {
 
-	class FontFreeType : public Font
+	class FontAtlas;
+	using FontAtlasPtr = std::shared_ptr<FontAtlas>;
+	class FontFreeType;
+	using FontFreeTypePtr = std::shared_ptr<FontFreeType>;
+
+	class FontFreeType : public GLFont
 	{
 	public:
 		static const int DistanceMapSpread;
 
-		static FontFreeType* create(const std::string &fontName, float fontSize, GlyphCollection glyphs,
+		static FontFreeTypePtr create(const std::string &fontName, float fontSize, GlyphCollection glyphs,
 			const char *customGlyphs, bool distanceFieldEnabled = false, int outline = 0);
 
 		static void shutdownFreeType();
@@ -33,15 +37,15 @@ namespace ParaEngine
 
 		FT_Encoding getEncoding() const { return _encoding; }
 
-		int* getHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const override;
+		int* GetHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const override;
 
 		unsigned char* getGlyphBitmap(unsigned short theChar, long &outWidth, long &outHeight, CCRect &outRect, int &xAdvance);
 
 		int getFontAscender() const;
 		const char* getFontFamily() const;
 
-		virtual FontAtlas* createFontAtlas() override;
-		virtual int getFontMaxHeight() const override { return _lineHeight; }
+		virtual FontAtlasPtr CreateFontAtlas() override;
+		virtual int GetFontMaxHeight() const override { return _lineHeight; }
 
 		static void releaseFont(const std::string &fontName);
 

@@ -1,4 +1,3 @@
-#include "ParaEngine.h"
 
 #include "GLProgramCache.h"
 #include "GLProgram.h"
@@ -43,7 +42,11 @@ GLProgramCache* GLProgramCache::getInstance()
         _sharedGLProgramCache = new GLProgramCache();
         if (!_sharedGLProgramCache->init())
         {
-            SAFE_DELETE(_sharedGLProgramCache);
+			if (_sharedGLProgramCache)
+			{
+				delete _sharedGLProgramCache;
+				_sharedGLProgramCache = nullptr;
+			}
         }
     }
     return _sharedGLProgramCache;
@@ -51,7 +54,12 @@ GLProgramCache* GLProgramCache::getInstance()
 
 void GLProgramCache::destroyInstance()
 {
-    SAFE_RELEASE(_sharedGLProgramCache);
+
+	if (_sharedGLProgramCache)
+	{
+		delete _sharedGLProgramCache;
+		_sharedGLProgramCache = nullptr;
+	}
 }
 
 // XXX: deprecated
@@ -74,9 +82,11 @@ GLProgramCache::GLProgramCache()
 
 GLProgramCache::~GLProgramCache()
 {
+
     for( auto it = _programs.begin(); it != _programs.end(); ++it ) {
-        (it->second)->Release();
+		it->second = nullptr;
     }
+	_programs.clear();
 }
 
 bool GLProgramCache::init()
@@ -357,7 +367,7 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
 #endif
 }
 
-GLProgram* GLProgramCache::getGLProgram(const std::string &key)
+GLProgramPtr GLProgramCache::getGLProgram(const std::string &key)
 {
     auto it = _programs.find(key);
     if( it != _programs.end() )
@@ -365,10 +375,7 @@ GLProgram* GLProgramCache::getGLProgram(const std::string &key)
     return nullptr;
 }
 
-void GLProgramCache::addGLProgram(GLProgram* program, const std::string &key)
+void GLProgramCache::addGLProgram(GLProgramPtr program, const std::string &key)
 {
-    if (program)
-        program->addref();
-
     _programs[key] = program;
 }
