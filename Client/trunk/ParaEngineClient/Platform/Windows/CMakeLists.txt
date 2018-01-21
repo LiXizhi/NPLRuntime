@@ -13,9 +13,10 @@ add_executable(WindowsApplication
 
 target_compile_definitions(WindowsApplication PUBLIC 
     PLATFORM_WINDOWS
-    USE_DIRECTX_RENDERER
     PARAENGINE_CLIENT
     USE_WINDOWS_SSPI
+    _WIN32_WINNT=0x0501
+    _WINSOCK_DEPRECATED_NO_WARNINGS
 )
 
 target_link_libraries(WindowsApplication
