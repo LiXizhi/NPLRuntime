@@ -1,6 +1,8 @@
 #pragma once
 #include "TextureEntity.h"
 #include "RenderDeviceOpenGL.h"
+#include "Framework/RenderSystem/RenderTypes.h"
+#include "OpenGLWrapper/GLTexture2D.h"
 namespace ParaEngine
 {
 	class CRenderTarget;
@@ -14,7 +16,7 @@ namespace ParaEngine
 
 	public:
 		TextureEntityOpenGL(const AssetKey& key);
-		TextureEntityOpenGL(GLWrapper::Texture2D* texture);
+		TextureEntityOpenGL(GLTexture2D* texture);
 		TextureEntityOpenGL();
 		virtual ~TextureEntityOpenGL();
 
@@ -28,12 +30,12 @@ namespace ParaEngine
 		* NOTE: It will not convert the pvr image file.
 		* @param dwTextureFormat: if 0, we will use the image file format.
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
 
 		/** load from memory buffer.
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object.
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, void** ppTexture = NULL);
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL);
 
 		/** whether we will use blocky or non-blocky (anti-aliased) texture */
 		virtual void SetSamplerStateBlocky(bool bIsBlocky);
@@ -45,15 +47,15 @@ namespace ParaEngine
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
 		*/
-		virtual bool SaveToFile(const char* filename, D3DFORMAT dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = D3DX_DEFAULT, Color ColorKey = 0);
+		virtual bool SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);
 
 		void SetAliasTexParameters();
 	public:
-		void SetInnerTexture(GLWrapper::Texture2D* texture);
+		void SetInnerTexture(GLTexture2D* texture);
 		virtual DeviceTexturePtr_type GetTexture();
 		virtual const TextureInfo* GetTextureInfo();
 
-		GLWrapper::Texture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
+		GLTexture2D* CreateTextureFromFile_Serial(const std::string& sFileName);
 		
 		/** in most cases this is false, where the image origin is at left, top.
 		* however, in opengl frame buffer, the frame buffer's origin is at left, bottom.
@@ -76,14 +78,14 @@ namespace ParaEngine
 		static bool LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1);
 
 		/** create a texture entity from memory buffer. */
-		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0);
+		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
 		/** create a texture entity from file path. */
-		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED);
+		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
 	protected:
 		friend class CRenderTarget;
 		union{
-			GLWrapper::Texture2D* m_texture;
-			GLWrapper::Texture2D** m_pTextureSequence;
+			GLTexture2D* m_texture;
+			GLTexture2D** m_pTextureSequence;
 		};
 		/** 0 for anti-aliased, 1 for blocky texture. */
 		uint32 m_nSamplerState;

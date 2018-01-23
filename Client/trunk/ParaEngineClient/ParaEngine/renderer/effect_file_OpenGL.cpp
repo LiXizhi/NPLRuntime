@@ -7,7 +7,8 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "OpenGLWrapper.h"
+#include "RenderDeviceOpenGL.h"
+#include "OpenGLWrapper/GLProgram.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
@@ -208,7 +209,7 @@ bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 	return isParameterUsed(index);
 }
 
-bool ParaEngine::CEffectFileOpenGL::setParameter(GLWrapper::Uniform* uniform, const void* data, int32 size)
+bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* data, int32 size)
 {
 	bool ret = false;
 	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
@@ -432,7 +433,7 @@ bool ParaEngine::CEffectFileOpenGL::initWithFilenames(const std::string& vShader
 	}
 }
 
-GLWrapper::GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
+GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
 {
 	if ((int)mTechniques.size() <= nTech)
 	{
@@ -448,7 +449,7 @@ GLWrapper::GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int
 		auto program = passes[nPass];
 		if (program == NULL && bCreateIfNotExist)
 		{
-			program = new GLWrapper::GLProgram();
+			program = new GLProgram();
 			passes[nPass] = program;
 		}
 		return program;
@@ -525,12 +526,12 @@ void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 	}
 }
 
-GLWrapper::Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
+Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
 {
 	return GetUniform(m_ID2Names[id]);
 }
 
-GLWrapper::Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
+Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 {
 	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);
 	if (program)
@@ -903,8 +904,8 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
 
 		// ensure that sampler states matches the one used in the texture. if not, change the texture sampler
 		// unless a texture is used with different sampler states during rendering, the glTexParameteri function is called at most once for a texture.
-		DWORD dwValue = 0;
-		CGlobals::GetRenderDevice()->GetSamplerState(index, D3DSAMP_MINFILTER, &dwValue);
+		uint32_t dwValue = 0;
+		CGlobals::GetRenderDevice()->GetSamplerState(index, ESamplerStateType::MINFILTER, &dwValue);
 		if (dwValue == D3DTEXF_POINT && !data->IsSamplerStateBlocky())
 		{
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -925,7 +926,7 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
 
 bool ParaEngine::CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type pTex)
 {
-	return SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->SetTexture(index, pTex));
+	return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
 }
 
 HRESULT ParaEngine::CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)

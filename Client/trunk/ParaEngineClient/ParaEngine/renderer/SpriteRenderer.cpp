@@ -237,7 +237,10 @@ void ParaEngine::CSpriteRenderer::FlushTriangles()
 		// do the batched rendering 
 		{
 			auto pRenderDevice = CGlobals::GetRenderDevice();
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_triangles[start].texture);
+
+			CGlobals::GetRenderDevice()->SetTexture(0, m_triangles[start].texture);
+
+			
 			DrawTriangles(&m_vertices[verticesPerTriangle * start], count * verticesPerTriangle / 3);
 		}
 	}
@@ -353,7 +356,7 @@ void ParaEngine::CSpriteRenderer::FlushThickLines()
 		// do the rendering with opengl
 		{
 			auto pRenderDevice =CGlobals::GetRenderDevice();
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_thickLines[start].texture);
+			CGlobals::GetRenderDevice()->SetTexture(0, m_thickLines[start].texture);
 			DrawTriangles(&m_vertices[verticesPerLine * start], count * verticesPerLine / 3);
 		}
 	}
@@ -367,8 +370,7 @@ void ParaEngine::CSpriteRenderer::FlushQuads()
 
 void ParaEngine::CSpriteRenderer::DrawTriangles(const sprite_vertex* pVertices, int nTriangleCount)
 {
-	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
-//	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(RenderDeviceBase::DRAW_PERF_TRIANGLES_UI, D3DPT_TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
+	CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nTriangleCount, pVertices, sizeof(sprite_vertex));
 }
 
 bool ParaEngine::CSpriteRenderer::IsUseObjectSpaceTransform()

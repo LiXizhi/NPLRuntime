@@ -182,13 +182,13 @@ void CLightObject::SetLightType(int nType)
 {
 	if(m_pLightParams!=0)
 	{
-		m_pLightParams->Type = (D3DLIGHTTYPE)nType;
+		m_pLightParams->Type = (ELightType)nType;
 	}
 }
 
 int CLightObject::GetLightType()
 {
-	return (int)((m_pLightParams!=0) ? m_pLightParams->Type: D3DLIGHT_POINT);
+	return (int)((m_pLightParams!=0) ? m_pLightParams->Type: ELightType::Point);
 }
 
 void CLightObject::SetDiffuse(const LinearColor& color)

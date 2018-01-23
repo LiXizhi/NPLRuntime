@@ -37,7 +37,7 @@
 #include <time.h>
 #include "Globals.h"
 #include "IParaEngineApp.h"
-#include "OSWindows.h"
+//#include "OSWindows.h"
 
 using namespace ParaEngine;
 using namespace luabind;

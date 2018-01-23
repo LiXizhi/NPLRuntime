@@ -45,7 +45,7 @@ namespace ParaEngine
 		* @param dwUsage: only used in DirectX, ignored in openGL
 		* @return: never delete the returned buffer, instead one should call ReleaseBuffer. 
 		*/
-		ParaVertexBuffer* CreateBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0, D3DPOOL dwPool = D3DPOOL_MANAGED);
+		ParaVertexBuffer* CreateBuffer(uint32 nBufferSize, DWORD dwFormat = 0, DWORD dwUsage = 0, EPoolType dwPool = EPoolType::Managed);
 
 		/** release the buffer. If it is a full sized buffer we will not release it but add it to a pool for reuse. 
 		*/

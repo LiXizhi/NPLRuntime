@@ -91,6 +91,9 @@ namespace ParaEngine
 		D16,
 		D32F_LOCKABLE,
 		D24FS8,
+		VERTEXDATA,
+		INDEX16,
+		INDEX32,
 		COUNT
 	};
 
@@ -115,6 +118,10 @@ namespace ParaEngine
 		Samples_16 = 16,
 	};
 
+
+#define CLEAR_TARGET            0x00000001l  /* Clear target surface */
+#define CLEAR_ZBUFFER           0x00000002l  /* Clear target z buffer */
+#define CLEAR_STENCIL           0x00000004l  /* Clear stencil planes */
 
 
 	enum class ERenderState
@@ -247,6 +254,50 @@ namespace ParaEngine
 		RSV_CULL_CCW
 	};
 
+	enum ERSVCMP
+	{
+		RSV_CMP_NEVER = 1,
+		RSV_CMP_LESS = 2,
+		RSV_CMP_EQUAL = 3,
+		RSV_CMP_LESSEQUAL = 4,
+		RSV_CMP_GREATER = 5,
+		RSV_CMP_NOTEQUAL = 6,
+		RSV_CMP_GREATEREQUAL = 7,
+		RSV_CMP_ALWAYS = 8,
+	};
+
+	enum ERSVBLEND {
+		RSV_BLEND_ZERO = 1,
+		RSV_BLEND_ONE = 2,
+		RSV_BLEND_SRCCOLOR = 3,
+		RSV_BLEND_INVSRCCOLOR = 4,
+		RSV_BLEND_SRCALPHA = 5,
+		RSV_BLEND_INVSRCALPHA = 6,
+		RSV_BLEND_DESTALPHA = 7,
+		RSV_BLEND_INVDESTALPHA = 8,
+		RSV_BLEND_DESTCOLOR = 9,
+		RSV_BLEND_INVDESTCOLOR = 10,
+		RSV_BLEND_SRCALPHASAT = 11,
+		RSV_BLEND_BOTHSRCALPHA = 12,
+		RSV_BLEND_BOTHINVSRCALPHA = 13,
+		RSV_BLEND_BLENDFACTOR = 14, /* Only supported if RSV_PBLENDCAPS_BLENDFACTOR is on */
+		RSV_BLEND_INVBLENDFACTOR = 15, /* Only supported if RSV_PBLENDCAPS_BLENDFACTOR is on */
+	};
+
+	enum ERSVSTENCILOP {
+		RSV_STENCILOP_KEEP = 1,
+		RSV_STENCILOP_ZERO = 2,
+		RSV_STENCILOP_REPLACE = 3,
+		RSV_STENCILOP_INCRSAT = 4,
+		RSV_STENCILOP_DECRSAT = 5,
+		RSV_STENCILOP_INVERT = 6,
+		RSV_STENCILOP_INCR = 7,
+		RSV_STENCILOP_DECR = 8,
+		RSV_STENCILOP_FORCE_DWORD = 0x7fffffff, /* force 32-bit size enum */
+	} ;
+
+
+
 	enum class ELightType {
 		Point = 1,
 		Spot = 2,
@@ -260,6 +311,46 @@ namespace ParaEngine
 		Scratch = 3,
 	};
 
+	// Primitives supported by draw-primitive API
+	enum class EPrimitiveType {
+		POINTLIST = 1,
+		LINELIST = 2,
+		LINESTRIP = 3,
+		TRIANGLELIST = 4,
+		TRIANGLESTRIP = 5,
+		TRIANGLEFAN = 6,
+	};
 
+	enum class ESamplerStateType
+	{
+		ADDRESSU = 1,
+		ADDRESSV = 2,
+		ADDRESSW = 3,
+		BORDERCOLOR = 4, 
+		MAGFILTER = 5,  
+		MINFILTER = 6,  
+		MIPFILTER = 7,  
+		MIPMAPLODBIAS = 8, 
+		MAXMIPLEVEL = 9,  
+		MAXANISOTROPY = 10, 
+		SRGBTEXTURE = 11,											
+		ELEMENTINDEX = 12,						
+		DMAPOFFSET = 13,	
+	};
+	
+	enum class ETransformsStateType
+	{
+		WORLD,
+		VIEW,
+		PROJECTION,
+		TEXTURE0,
+		TEXTURE1,
+		TEXTURE2,
+		TEXTURE3,
+		TEXTURE4,
+		TEXTURE5,
+		TEXTURE6,
+		TEXTURE7,
+	};
 }
 

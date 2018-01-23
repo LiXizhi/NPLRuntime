@@ -240,7 +240,7 @@ void TerrainBuffer::RebuildBuffer()
 			/** recreate buffer, if the old buffer is too small.*/
 			DeleteDeviceObjects();
 			
-			if (m_pVertexBuffer.CreateBuffer(nNewBufferSize, bUseNormal ? terrain_vertex_normal::FVF : terrain_vertex::FVF, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, D3DPOOL_DEFAULT))
+			if (m_pVertexBuffer.CreateBuffer(nNewBufferSize, bUseNormal ? terrain_vertex_normal::FVF : terrain_vertex::FVF, D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, EPoolType::Default))
 			{
 				m_nBufferSize = nNewBufferSize;
 				if(m_pVertexBuffer.Lock((void**)&pVertices, 0,0, D3DLOCK_DISCARD))

@@ -13,14 +13,27 @@ add_library(RenderSystemOpenGL
 
 target_include_directories(RenderSystemOpenGL PUBLIC 
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/
-    /
+    ${PROJECT_SOURCE_DIR}/externals/lpng1634/
+    ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include/
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_link_libraries(RenderSystemOpenGL PUBLIC 
     glad_core
     iconv
-    Freetype2
+    freetype
     libjpeg
-    libpng
+    png_static
+    glEffectsParser
 )
 target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
+
+
+if(MSVC)
+    ucm_set_runtime(STATIC)
+    # enable multiprocessor build option /MP, this will greatly increase compile speed
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
+endif()

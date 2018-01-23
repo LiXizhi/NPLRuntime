@@ -4,14 +4,12 @@
 #include "gleffects.h"
 #include <unordered_map>
 
-namespace GLWrapper{
-	class GLProgram;
-	struct Uniform;
-}
+
 
 namespace ParaEngine
 {
-	
+	class GLProgram;
+	struct Uniform;
 
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
@@ -147,9 +145,9 @@ namespace ParaEngine
 		const TechniqueDesc* GetCurrentTechniqueDesc();
 
 	public:
-		bool setParameter(GLWrapper::Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
+		bool setParameter(Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
 
-		GLWrapper::GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
+		GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
 		
 		/** Initializes the GLProgram with a vertex and fragment with bytes array
 		*/
@@ -174,8 +172,8 @@ namespace ParaEngine
 		*/
 		void updateUniforms(int nTech = -1, int nPass = -1);
 		
-		GLWrapper::Uniform* GetUniformByID(eParameterHandles id);
-		GLWrapper::Uniform* GetUniform(const std::string& sName);
+		Uniform* GetUniformByID(eParameterHandles id);
+		Uniform* GetUniform(const std::string& sName);
 		
 		/** add changes to shader parameters, those changes are commited to device when CommitChange() is called. */
 		template <typename ValueType>
@@ -208,7 +206,7 @@ namespace ParaEngine
 
 		struct TechniqueDescGL : public TechniqueDesc
 		{
-			std::vector<GLWrapper::GLProgram*> mPasses;
+			std::vector<GLProgram*> mPasses;
 		};
 		std::vector<TechniqueDescGL> mTechniques;
 		int mTechniqueIndex;

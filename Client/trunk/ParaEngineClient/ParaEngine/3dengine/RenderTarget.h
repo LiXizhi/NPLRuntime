@@ -176,7 +176,7 @@ namespace ParaEngine
 		GLint        _oldFBO;
 		GLint		 _oldRBO;
 #endif
-		D3DVIEWPORT9 m_oldViewport;
+		ParaViewport m_oldViewport;
 		Vector3 m_vOldRenderOrigin;
 
 		/** used when clearing background color */

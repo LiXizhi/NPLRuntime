@@ -35,7 +35,7 @@ target_include_directories(RenderSystemD3D9 PUBLIC
 )
 
 
-target_compile_definitions(RenderSystemD3D9 PUBLIC USE_DIRECTX_RENDERER)
+target_compile_definitions(RenderSystemD3D9 PUBLIC USE_DIRECTX_RENDERER PARAENGINE_CLIENT)
 
 
 

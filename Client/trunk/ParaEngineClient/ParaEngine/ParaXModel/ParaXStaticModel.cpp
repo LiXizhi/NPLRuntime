@@ -645,8 +645,8 @@ namespace ParaEngine {
 	HRESULT CParaXStaticModel::Render(SceneState * pSceneState, CEffectFile *pEffect, bool bDrawOpaqueSubsets, bool bDrawAlphaSubsets, float fAlphaFactor, CParameterBlock* materialParams)
 	{
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
-		GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_indexBuffer.GetDevicePointer());
+		CGlobals::GetRenderDevice()->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
+		CGlobals::GetRenderDevice()->SetIndices(m_indexBuffer.GetDevicePointer());
 
 		bool bHasAlphaPass = false;
 		int cPasses = pEffect->totalPasses();
@@ -1011,7 +1011,7 @@ namespace ParaEngine {
 	{
 		auto pRenderDevice = CGlobals::GetRenderDevice();
 		ParaXStaticModelRenderPass& pass = m_passes[i];
-		GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
+		CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
 	}
 
 

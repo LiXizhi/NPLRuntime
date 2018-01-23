@@ -388,13 +388,13 @@ namespace ParaEngine
 
 			if (bUsePointTextureFilter)
 			{
-				pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-				pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
+				pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);
+				pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT);
 			}
 			else
 			{
-				pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, pEffectManager->GetDefaultSamplerState(0, D3DSAMP_MINFILTER));
-				pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, pEffectManager->GetDefaultSamplerState(0, D3DSAMP_MAGFILTER));
+				pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, pEffectManager->GetDefaultSamplerState(0, ESamplerStateType::MINFILTER));
+				pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, pEffectManager->GetDefaultSamplerState(0, ESamplerStateType::MAGFILTER));
 			}
 
 			// just a single standing animation is supported now and looped. 

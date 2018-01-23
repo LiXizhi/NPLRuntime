@@ -624,8 +624,8 @@ bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass
 	
 	if (b3DTextPass)
 	{
-		CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT, true);
-		CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT, true);
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 	}
 	return true;
 }
@@ -651,8 +651,8 @@ void ParaEngine::IHeadOn3D::EndPaint(SceneState* pSceneState, bool b3DTextPass)
 
 	if (b3DTextPass)
 	{
-		CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR, true);
-		CGlobals::GetEffectManager()->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR, true);
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR, true);
+		CGlobals::GetEffectManager()->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 	}
 }
 

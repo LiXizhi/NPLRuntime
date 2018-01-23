@@ -227,10 +227,10 @@ of needed terrain triangles exceed this number. typically you can set this value
 large value.
 - See the render() function for more information. 
 - use the default render state and the following for better effect
-m_pRenderDevice->SetSamplerState( 0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-m_pRenderDevice->SetSamplerState( 0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
-m_pRenderDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
-m_pRenderDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
+m_pRenderDevice->SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR );
+m_pRenderDevice->SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR );
+m_pRenderDevice->SetSamplerState( 1, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR );
+m_pRenderDevice->SetSamplerState( 1, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR );
 -  When loading the terrain the elevation scale means the distance between the highest terrain
 position and the lowest. the lowest is always 0. 
 - enable WIRED_TERRAIN in config to render terrain in wires

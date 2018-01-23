@@ -11,8 +11,12 @@
 
 #pragma region PE Includes
 #include "resource.h"
+#include "guicon.h"
+#if USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
-#include <gdiplus.h>
+#endif
+
+//#include <gdiplus.h>
 
 //-- ParaEngine includes
 #include "ParaWorldAsset.h"
@@ -44,6 +48,8 @@
 #include "PluginAPI.h"
 #include "ParaEngineService.h"
 #include "guicon.h"
+
+#include "Framework/Interface/Render/IRenderContext.h"
 
 /** define to load xact based audio engine */
 // #define USE_XACT_AUDIO_ENGINE
@@ -80,9 +86,6 @@
 #include <time.h>
 #include "ParaEngineAppBase.h"
 #include "Render/WindowsRenderWindow.h"
-#include "Render/D3D9RenderContext.h"
-#include "Render/OpenGLRenderContext.h"
-#include "RenderDeviceD3D9.h"
 
 
 #include "resource.h"
@@ -93,7 +96,7 @@
 
 #include <functional>
 
-
+#include <time.h>
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)                (wParam & 0xFFFF)
 #endif
@@ -109,11 +112,6 @@
 
 #ifndef SM_CONVERTIBLESLATEMODE
 #define SM_CONVERTIBLESLATEMODE	0x2003
-#endif
-
-
-#ifndef USE_DIRECTX_RENDERER
-#include "RenderSystemD3D9.h"
 #endif
 
 
@@ -158,14 +156,267 @@ namespace ParaEngine
 
 	INT_PTR CALLBACK DialogProcAbout(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
 
-	Gdiplus::GdiplusStartupInput g_gdiplusStartupInput;
-	ULONG_PTR           g_gdiplusToken;
+	//Gdiplus::GdiplusStartupInput g_gdiplusStartupInput;
+	//ULONG_PTR           g_gdiplusToken;
 }
 
 #pragma endregion PE Includes
 
 #define MSGFLT_ADD 1
 extern "C" BOOL(STDAPICALLTYPE *pChangeWindowMessageFilter)(UINT, DWORD) = NULL;
+
+//-----------------------------------------------------------------------------
+// Name: DXUtil_Timer()
+// Desc: Performs timer opertations. Use the following commands:
+//          TIMER_RESET           - to reset the timer
+//          TIMER_START           - to start the timer
+//          TIMER_STOP            - to stop (or pause) the timer
+//          TIMER_ADVANCE         - to advance the timer by 0.1 seconds
+//          TIMER_GETABSOLUTETIME - to get the absolute system time
+//          TIMER_GETAPPTIME      - to get the current time
+//          TIMER_GETELAPSEDTIME  - to get the time that elapsed between 
+//                                  TIMER_GETELAPSEDTIME calls
+//-----------------------------------------------------------------------------
+enum TIMER_COMMAND {
+	TIMER_RESET, TIMER_START, TIMER_STOP, TIMER_ADVANCE,
+	TIMER_GETABSOLUTETIME, TIMER_GETAPPTIME, TIMER_GETELAPSEDTIME
+};
+
+/**
+* LiXizhi 2009.1.15: this fixed a problem of timeGetTime or QueryPerformanceCount() hardware defects. see: http://support.microsoft.com/kb/274323
+*/
+// define this if u want it. 
+#define USE_QueryPerformanceFrequency
+
+//-----------------------------------------------------------------------------
+// Name: DXUtil_Timer()
+// Desc: Performs timer opertations. Use the following commands:
+//          TIMER_RESET           - to reset the timer
+//          TIMER_START           - to start the timer
+//          TIMER_STOP            - to stop (or pause) the timer
+//          TIMER_ADVANCE         - to advance the timer by 0.1 seconds
+//          TIMER_GETABSOLUTETIME - to get the absolute system time
+//          TIMER_GETAPPTIME      - to get the current time
+//          TIMER_GETELAPSEDTIME  - to get the time that elapsed between 
+//                                  TIMER_GETELAPSEDTIME calls
+//-----------------------------------------------------------------------------
+static double __stdcall DXUtil_Timer(TIMER_COMMAND command)
+{
+	static BOOL     m_bTimerInitialized = FALSE;
+	static BOOL     m_bUsingQPF = FALSE;
+	static BOOL     m_bTimerStopped = TRUE;
+	static LONGLONG m_llQPFTicksPerSec = 0;
+	static LARGE_INTEGER liFrequency;
+
+	static LONGLONG mLastTime;
+	static LARGE_INTEGER mStartTime;
+	static DWORD mStartTick;
+
+	int i = 0;
+
+#ifdef USE_QueryPerformanceFrequency
+	// Initialize the timer
+	if (FALSE == m_bTimerInitialized)
+	{
+		m_bTimerInitialized = TRUE;
+
+		// Use QueryPerformanceFrequency() to get frequency of timer.  If QPF is
+		// not supported, we will timeGetTime() which returns milliseconds.
+		m_bUsingQPF = QueryPerformanceFrequency(&liFrequency);
+		if (m_bUsingQPF)
+			m_llQPFTicksPerSec = liFrequency.QuadPart;
+
+		// remember the first tick. 
+		QueryPerformanceCounter(&mStartTime);
+		mStartTick = GetTickCount();
+		mLastTime = mStartTime.QuadPart;
+	}
+#endif
+
+	if (m_bUsingQPF)
+	{
+		static LONGLONG m_llStopTime = 0;
+		static LONGLONG m_llLastElapsedTime = 0;
+		static LONGLONG m_llBaseTime = 0;
+		double fTime;
+		double fElapsedTime;
+		LARGE_INTEGER liCurrent;
+
+		// Get either the current time or the stop time, depending
+		// on whether we're stopped and what command was sent
+		if (m_llStopTime != 0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
+			liCurrent.QuadPart = m_llStopTime;
+		else
+		{
+			// this is a fix of http://support.microsoft.com/kb/274323
+			QueryPerformanceCounter(&liCurrent);
+
+			LONGLONG newTime = liCurrent.QuadPart - mStartTime.QuadPart;
+			// scale by 1000 for milliseconds
+			unsigned long newTicks = (unsigned long)(1000 * newTime / liFrequency.QuadPart);
+
+			// detect and compensate for performance counter leaps
+			// (surprisingly common, see Microsoft KB: Q274323)
+			unsigned long check = GetTickCount() - mStartTick;
+			signed long msecOff = (signed long)(newTicks - check);
+			if (msecOff < -200 || msecOff > 200)
+			{
+				// We must keep the timer running forward :)
+				LONGLONG adjust = min(msecOff * liFrequency.QuadPart / 1000, newTime - mLastTime);
+				mStartTime.QuadPart += adjust;
+				newTime -= adjust;
+
+				// Re-calculate milliseconds
+				newTicks = (unsigned long)(1000 * newTime / liFrequency.QuadPart);
+			}
+			// Record last time for adjust
+			mLastTime = newTime;
+			liCurrent.QuadPart = newTime;
+		}
+
+		// Return the elapsed time
+		if (command == TIMER_GETELAPSEDTIME)
+		{
+			fElapsedTime = (double)(liCurrent.QuadPart - m_llLastElapsedTime) / (double)m_llQPFTicksPerSec;
+			m_llLastElapsedTime = liCurrent.QuadPart;
+			return fElapsedTime;
+		}
+
+		// Return the current time
+		if (command == TIMER_GETAPPTIME)
+		{
+			double fAppTime = (double)(liCurrent.QuadPart - m_llBaseTime) / (double)m_llQPFTicksPerSec;
+			return fAppTime;
+		}
+
+		// Reset the timer
+		if (command == TIMER_RESET)
+		{
+			m_llBaseTime = liCurrent.QuadPart;
+			m_llLastElapsedTime = liCurrent.QuadPart;
+			m_llStopTime = 0;
+			m_bTimerStopped = FALSE;
+			return 0.0;
+		}
+
+		// Start the timer
+		if (command == TIMER_START)
+		{
+			if (m_bTimerStopped)
+				m_llBaseTime += liCurrent.QuadPart - m_llStopTime;
+			m_llStopTime = 0;
+			m_llLastElapsedTime = liCurrent.QuadPart;
+			m_bTimerStopped = FALSE;
+			return 0.0;
+		}
+
+		// Stop the timer
+		if (command == TIMER_STOP)
+		{
+			if (!m_bTimerStopped)
+			{
+				m_llStopTime = liCurrent.QuadPart;
+				m_llLastElapsedTime = liCurrent.QuadPart;
+				m_bTimerStopped = TRUE;
+			}
+			return 0.0;
+		}
+
+		// Advance the timer by 1/10th second
+		if (command == TIMER_ADVANCE)
+		{
+			m_llStopTime += m_llQPFTicksPerSec / 10;
+			return 0.0f;
+		}
+
+		if (command == TIMER_GETABSOLUTETIME)
+		{
+			fTime = liCurrent.QuadPart / (double)m_llQPFTicksPerSec;
+			return fTime;
+		}
+
+		return -1.0; // Invalid command specified
+	}
+	else
+	{
+		// Get the time using timeGetTime()
+		static double m_fLastElapsedTime = 0.0;
+		static double m_fBaseTime = 0.0;
+		static double m_fStopTime = 0.0;
+		double fTime;
+		double fElapsedTime;
+
+		// Get either the current time or the stop time, depending
+		// on whether we're stopped and what command was sent
+		if (m_fStopTime != 0.0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
+			fTime = m_fStopTime;
+		else
+			fTime = GetTickCount() * 0.001;
+
+		// Return the elapsed time
+		if (command == TIMER_GETELAPSEDTIME)
+		{
+			fElapsedTime = (double)(fTime - m_fLastElapsedTime);
+			m_fLastElapsedTime = fTime;
+			return fElapsedTime;
+		}
+
+		// Return the current time
+		if (command == TIMER_GETAPPTIME)
+		{
+			return (fTime - m_fBaseTime);
+		}
+
+		// Reset the timer
+		if (command == TIMER_RESET)
+		{
+			m_fBaseTime = fTime;
+			m_fLastElapsedTime = fTime;
+			m_fStopTime = 0;
+			m_bTimerStopped = FALSE;
+			return 0.0;
+		}
+
+		// Start the timer
+		if (command == TIMER_START)
+		{
+			if (m_bTimerStopped)
+				m_fBaseTime += fTime - m_fStopTime;
+			m_fStopTime = 0.0f;
+			m_fLastElapsedTime = fTime;
+			m_bTimerStopped = FALSE;
+			return 0.0;
+		}
+
+		// Stop the timer
+		if (command == TIMER_STOP)
+		{
+			if (!m_bTimerStopped)
+			{
+				m_fStopTime = fTime;
+				m_fLastElapsedTime = fTime;
+				m_bTimerStopped = TRUE;
+			}
+			return 0.0;
+		}
+
+		// Advance the timer by 1/10th second
+		if (command == TIMER_ADVANCE)
+		{
+			m_fStopTime += 0.1;
+			return 0.0;
+		}
+
+		if (command == TIMER_GETABSOLUTETIME)
+		{
+			return fTime;
+		}
+
+		return -1.0; // Invalid command specified
+	}
+}
+
+
 
 #pragma region CtorDtor
 
@@ -262,7 +513,7 @@ HRESULT CWindowsApplication::Create()
 	SetAppState(PEAppState_Device_Created);
 
 
-	m_pRenderContext = D3D9RenderContext::Create();
+	m_pRenderContext = IRenderContext::Create();
 
 
 	if (m_pRenderContext == NULL)
@@ -319,42 +570,42 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 {
 	HRESULT hr = S_OK;
 
-	if (m_bDeviceLost)
-	{
-		// Test the cooperative level to see if it's okay to render
-		if (FAILED(hr = GETD3D(m_pRenderDevice)->TestCooperativeLevel()))
-		{
-			// If the device was lost, do not render until we get it back
-			if (D3DERR_DEVICELOST == hr)
-				return S_OK;
+	//if (m_bDeviceLost)
+	//{
+	//	// Test the cooperative level to see if it's okay to render
+	//	if (FAILED(hr = GETD3D(m_pRenderDevice)->TestCooperativeLevel()))
+	//	{
+	//		// If the device was lost, do not render until we get it back
+	//		if (D3DERR_DEVICELOST == hr)
+	//			return S_OK;
 
-			// Check if the device needs to be reset.
-			if (D3DERR_DEVICENOTRESET == hr)
-			{
+	//		// Check if the device needs to be reset.
+	//		if (D3DERR_DEVICENOTRESET == hr)
+	//		{
 
 
-				OUTPUT_LOG("TestCooperativeLevel needs to reset device with D3DERR_DEVICENOTRESET\n");
+	//			OUTPUT_LOG("TestCooperativeLevel needs to reset device with D3DERR_DEVICENOTRESET\n");
 
-				if (FAILED(hr = Reset3DEnvironment()))
-				{
-					// This fixed a strange issue where d3d->reset() returns D3DERR_DEVICELOST. Perhaps this is due to strange. 
-					// I will keep reset for 5 seconds, until reset() succeed, otherwise we will exit application.  
-					for (int i = 0; i < 5 && hr == D3DERR_DEVICELOST; ++i)
-					{
-						::Sleep(1000);
-						if (SUCCEEDED(hr = Reset3DEnvironment()))
-						{
-							OUTPUT_LOG("TestCooperativeLevel successfully reset devices.\n");
-							return hr;
-						}
-					}
-					return E_FAIL;
-				}
-			}
-			return hr;
-		}
-		m_bDeviceLost = false;
-	}
+	//			if (FAILED(hr = Reset3DEnvironment()))
+	//			{
+	//				// This fixed a strange issue where d3d->reset() returns D3DERR_DEVICELOST. Perhaps this is due to strange. 
+	//				// I will keep reset for 5 seconds, until reset() succeed, otherwise we will exit application.  
+	//				for (int i = 0; i < 5 && hr == D3DERR_DEVICELOST; ++i)
+	//				{
+	//					::Sleep(1000);
+	//					if (SUCCEEDED(hr = Reset3DEnvironment()))
+	//					{
+	//						OUTPUT_LOG("TestCooperativeLevel successfully reset devices.\n");
+	//						return hr;
+	//					}
+	//				}
+	//				return E_FAIL;
+	//			}
+	//		}
+	//		return hr;
+	//	}
+	//	m_bDeviceLost = false;
+	//}
 
 	// Get the app's time, in seconds. Skip rendering if no time elapsed
 	double fAppTime = DXUtil_Timer(TIMER_GETAPPTIME);
@@ -419,17 +670,13 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 
 		// OUTPUT_LOG("%f:%f, %f, %f\n", m_fTime, fAppTime, m_fElapsedTime, fConstTime);
 
-		__try
-		{
+		//__try
+		//{
 			// UpdateViewPort();
 
 			// Frame move the scene
-			if (SUCCEEDED(hr = FrameMove()))
-			{
-			}
-
+			FrameMove();
 			// Render the scene as normal
-
 			if (m_bActive && !IsPassiveRenderingEnabled())
 			{
 				if (Is3DRenderingEnabled() && !m_bMinimized && SUCCEEDED(hr) && SUCCEEDED(hr = Render()))
@@ -443,11 +690,11 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 				// passive mode: sleep until the next ideal frame move time and a little more. 0.1 seconds
 				Sleep(100);
 			}
-		}
-		__except (GenerateDump(GetExceptionInformation()))
-		{
-			exit(0);
-		}
+		//}
+		//__except (GenerateDump(GetExceptionInformation()))
+		//{
+		//	exit(0);
+		//}
 		// Show the frame on the primary surface.
 	}
 	return S_OK;
@@ -456,13 +703,12 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 HRESULT CWindowsApplication::PresentScene()
 {
 	// OUTPUT_LOG("---------\n");
-	HRESULT hr;
 	// only present if render returns true.
 	PERF1("present");
-	hr = GETD3D(m_pRenderDevice)->Present(NULL, NULL, NULL, NULL);
-	if (D3DERR_DEVICELOST == hr)
-		m_bDeviceLost = true;
-	return hr;
+	m_pRenderDevice->Present();
+	//if (D3DERR_DEVICELOST == hr)
+	//	m_bDeviceLost = true;
+	return S_OK;
 }
 
 
@@ -470,13 +716,22 @@ bool CWindowsApplication::UpdateViewPort()
 {
 	if (CGlobals::GetRenderDevice())
 	{
-		D3DVIEWPORT9 CurrentViewport;
-		GETD3D(m_pRenderDevice)->GetViewport(&CurrentViewport);
+		ParaViewport CurrentViewport;
+		auto vp = CGlobals::GetRenderDevice()->GetViewport();
+		CurrentViewport.X = vp.x;
+		CurrentViewport.Y = vp.y;
+		CurrentViewport.Width = vp.z;
+		CurrentViewport.Height = vp.w;
 		if (m_pRenderWindow->GetWidth() != CurrentViewport.Width && m_pRenderWindow->GetHeight() != CurrentViewport.Height)
 		{
 			CurrentViewport.Width = m_pRenderWindow->GetWidth();
 			CurrentViewport.Height = m_pRenderWindow->GetHeight();
-			GETD3D(m_pRenderDevice)->SetViewport(&CurrentViewport);
+			//Rect vp;
+			vp.x = CurrentViewport.X;
+			vp.y = CurrentViewport.Y;
+			vp.w = CurrentViewport.Width;
+			vp.z = CurrentViewport.Height;
+			CGlobals::GetRenderDevice()->SetViewport(vp);
 		}
 		return true;
 	}
@@ -496,12 +751,6 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 	cfg.isWindowed = !m_bStartFullscreen;
 	cfg.renderWindow = m_pRenderWindow;
 
-
-	auto glRenderContext = RenderContextOpenGL::Create();
-	glRenderContext->CreateDevice(cfg);
-
-
-
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	if (!m_pRenderDevice)
 	{
@@ -511,6 +760,10 @@ HRESULT CWindowsApplication::Initialize3DEnvironment()
 
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
+	Rect vp;
+	vp.z = m_pRenderWindow->GetWidth();
+	vp.w = m_pRenderWindow->GetHeight();
+	m_pRenderDevice->SetViewport(vp);
 
 	// Initialize the app's device-dependent objects
 	hr = InitDeviceObjects();
@@ -561,7 +814,7 @@ HRESULT CWindowsApplication::Reset3DEnvironment()
 	if (!m_pRenderContext->ResetDevice(m_pRenderDevice, cfg))
 	{
 		OUTPUT_LOG("reset d3d device failed because Reset function failed: %d\n", hr);
-		InterpretError(hr, __FILE__, __LINE__);
+		//InterpretError(hr, __FILE__, __LINE__);
 		return hr;
 	}
 
@@ -750,16 +1003,16 @@ void CWindowsApplication::InitApp(const char* sCommandLine)
 
 	InitCommandLineParams();
 
-	COSInfo::DumpSystemInfo();
+	//TODO: COSInfo::DumpSystemInfo();
 
 	if (Is3DRenderingEnabled())
 	{
 		// Initialize GDI+.
-		Gdiplus::GdiplusStartup(&g_gdiplusToken, &g_gdiplusStartupInput, NULL);
+		//Gdiplus::GdiplusStartup(&g_gdiplusToken, &g_gdiplusStartupInput, NULL);
 	}
 
 	// Initialize COM
-	CoInitialize(NULL);
+	//CoInitialize(NULL);
 }
 
 bool CWindowsApplication::IsServerMode()
@@ -933,7 +1186,7 @@ void CWindowsApplication::StopApp()
 	m_pGUIRoot.reset();
 
 	// delete m_pAudioEngine;
-	CoUninitialize();
+	//CoUninitialize();
 
 	//#ifdef LOG_FILES_ACTIVITY
 	if (CFileLogger::GetInstance()->IsBegin())
@@ -946,7 +1199,7 @@ void CWindowsApplication::StopApp()
 	CFileLogger::GetInstance()->MirrorFiles("_InstallFiles/");
 #endif
 
-	Gdiplus::GdiplusShutdown(g_gdiplusToken);
+	//Gdiplus::GdiplusShutdown(g_gdiplusToken);
 
 	// delete all singletons
 	DestroySingletons();
@@ -1026,24 +1279,24 @@ HRESULT CWindowsApplication::Init(HWND* pHWND)
 		bool g_bEnableDragAndDropFile = true;
 		if (g_bEnableDragAndDropFile)
 		{
-			DragAcceptFiles(*pHWND, TRUE);
+			//DragAcceptFiles(*pHWND, TRUE);
+			// TODO: DragAcceptFiles
+			//if (COSInfo::GetOSMajorVersion() > 5)
+			//{
+			//	/** fixing win vista or win 7 security filters. */
+			//	HMODULE hMod = 0;
 
-			if (COSInfo::GetOSMajorVersion() > 5)
-			{
-				/** fixing win vista or win 7 security filters. */
-				HMODULE hMod = 0;
-
-				if ((hMod = ::LoadLibrary(_T("user32.dll"))) != 0)
-				{
-					pChangeWindowMessageFilter = (BOOL(__stdcall *)(UINT, DWORD))::GetProcAddress(hMod, "ChangeWindowMessageFilter");
-				}
-				if (pChangeWindowMessageFilter)
-				{
-					pChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
-					pChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
-					pChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
-				}
-			}
+			//	if ((hMod = ::LoadLibrary(_T("user32.dll"))) != 0)
+			//	{
+			//		pChangeWindowMessageFilter = (BOOL(__stdcall *)(UINT, DWORD))::GetProcAddress(hMod, "ChangeWindowMessageFilter");
+			//	}
+			//	if (pChangeWindowMessageFilter)
+			//	{
+			//		pChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+			//		pChangeWindowMessageFilter(WM_COPYDATA, MSGFLT_ADD);
+			//		pChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+			//	}
+			//}
 		}
 
 
@@ -1187,6 +1440,7 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 {
 	HRESULT hr = S_OK;
 
+#if USE_DIRECTX_RENDERER
 	// stage b.1
 	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
 
@@ -1195,6 +1449,9 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 	GetStats(stats, 0);
 	OUTPUT_LOG("Graphics Stats:\n%s\n", stats.c_str());
 	OUTPUT_LOG("VS:%d PS:%d\n", CGlobals::GetDirectXEngine().GetVertexShaderVersion(), CGlobals::GetDirectXEngine().GetPixelShaderVersion());
+#endif
+
+
 
 	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
 	m_pParaWorldAsset->InitDeviceObjects();
@@ -1215,10 +1472,16 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	* start of ParaWorld code
 	*-----------------------------------------------------------*/
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
-	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
+
+#if USE_DIRECTX_RENDERER
+		CGlobals::GetDirectXEngine().RestoreDeviceObjects();
 
 	UINT nBkbufWidth = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
 	UINT nBkbufHeight = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+#endif
+
+	int nBkbufWidth = m_pRenderWindow->GetWidth();
+	int nBkbufHeight = m_pRenderWindow->GetHeight();
 
 	/// Set up the camera's projection matrix
 	m_fAspectRatio = nBkbufWidth / (FLOAT)nBkbufHeight;
@@ -1257,14 +1520,14 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	pRenderDevice->SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
 	pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1 );
 	pRenderDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-	pRenderDevice->SetSamplerState( 0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR );
-	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP );
-	pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP );*/
+	pRenderDevice->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+	pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
+	pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );*/
 #else
-	GETD3D(m_pRenderDevice)->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	GETD3D(m_pRenderDevice)->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-	GETD3D(m_pRenderDevice)->SetSamplerState(1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-	GETD3D(m_pRenderDevice)->SetSamplerState(1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
+	m_pRenderDevice->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);
+	m_pRenderDevice->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR);
+	m_pRenderDevice->SetSamplerState(1, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);
+	m_pRenderDevice->SetSamplerState(1, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR);
 
 #endif
 	/* -------end of paraworld code ----------------------------*/
@@ -1284,7 +1547,10 @@ HRESULT CWindowsApplication::InvalidateDeviceObjects()
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
 	m_pGUIRoot->InvalidateDeviceObjects();		// GUI: 2D engine
+#if USE_DIRECTX_RENDERER
 	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
+#endif
+
 	return S_OK;
 }
 
@@ -1300,7 +1566,10 @@ HRESULT CWindowsApplication::DeleteDeviceObjects()
 	m_pRootScene->DeleteDeviceObjects();
 	m_pGUIRoot->DeleteDeviceObjects();		// GUI: 2D engine
 	m_pParaWorldAsset->DeleteDeviceObjects();
+#if USE_DIRECTX_RENDERER
 	CGlobals::GetDirectXEngine().DeleteDeviceObjects();
+#endif
+
 	return S_OK;
 }
 
@@ -1397,16 +1666,6 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	PERF_BEGIN("Main FrameMove");
-	/**
-	* <<fElapsedEnvSimTime>>
-	* in worst case, it might be half of 60.f, that is only 1/30secs.
-	* Animate the environment, remote script and network module
-	* it must be called if IO is executed. Since IO may change the cognitive state of some characters
-	* The environment simulator will provide feedback (constraint) on those subjective state.
-	* e.g. An IO event might send a character to a moving state(mentally), however, if the character is blocked,
-	* this cognitive state must be prohibited, before rendering function is called. Such constraints
-	* are feedback by the physical environment
-	*/
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
 
 	if (bIOExecuted || (fElapsedEnvSimTime > 0))
@@ -1566,40 +1825,37 @@ HRESULT CWindowsApplication::Render()
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 	PERF1("Main Render");
 
-	if (SUCCEEDED(GETD3D(m_pRenderDevice)->BeginScene()))
+	if (m_pRenderDevice->BeginScene())
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime); // for asset manager
 																	// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
 																	// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
 																	// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
+		
+		
+#if USE_DIRECTX_RENDERER
 		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
+#endif
+																					 /// clear all render targets
+		m_pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
 
-																						 /// clear all render targets
-		GETD3D(m_pRenderDevice)->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
-
-		/// force using less equal
-		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
+		///// force using less equal
+		//pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
-		{
-			PERF1("3D Scene Render");
-			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
-		}
-		{
-			PERF1("GUI Render");
-			m_pViewportManager->Render(fElapsedTime, PIPELINE_UI);
-		}
-		{
-			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
-		}
-#ifdef USE_FLASH_MANAGER
-		//////////////////////////////////////////////////////////////////////////
-		// render flash windows under full screen mode.
-		if (!IsWindowedMode())
-			CGlobals::GetAssetManager()->GetFlashManager().RenderFlashWindows(*(m_pRootScene->GetSceneState()));
-#endif
+		//{
+		//	PERF1("3D Scene Render");
+		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
+		//}
+		//{
+		//	PERF1("GUI Render");
+		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_UI);
+		//}
+		//{
+		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
+		//}
 
-		GETD3D(m_pRenderDevice)->EndScene();
+		m_pRenderDevice->EndScene();
 	}
 
 	pMoviePlatform->EndCaptureFrame();
@@ -1618,24 +1874,25 @@ bool CWindowsApplication::IsDebugBuild()
 
 void CWindowsApplication::GetStats(string& output, DWORD dwFields)
 {
-	if (dwFields == 0)
-	{
-		UpdateStats();
-		output = m_strDeviceStats;
-		output.append("|");
-		output.append(m_strFrameStats);
-	}
-	else
-	{
-		if (dwFields == 1)
-		{
-			TCHAR szOS[512];
-			if (COSInfo::GetOSDisplayString(szOS))
-			{
-				output = szOS;
-			}
-		}
-	}
+	// TODO: GetStats
+	//if (dwFields == 0)
+	//{
+	//	UpdateStats();
+	//	output = m_strDeviceStats;
+	//	output.append("|");
+	//	output.append(m_strFrameStats);
+	//}
+	//else
+	//{
+	//	if (dwFields == 1)
+	//	{
+	//		TCHAR szOS[512];
+	//		if (COSInfo::GetOSDisplayString(szOS))
+	//		{
+	//			output = szOS;
+	//		}
+	//	}
+	//}
 }
 
 void CWindowsApplication::HandleUserInput()
@@ -2443,7 +2700,10 @@ bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM 
 			if (CGlobals::GetRenderDevice())
 			{
 				// ::SetCursor( NULL );
+#if USE_DIRECTX_RENDERER
 				GETD3D(m_pRenderDevice)->ShowCursor(wParam == 1);
+#endif
+
 				// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
 			}
 			break;
@@ -2475,16 +2735,19 @@ bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM 
 		}
 		case PE_IME_SETOPENSTATUS:
 		{
-			CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
+			//TODO: CGUIIME:SetIMEOpenStatus_imp
+			// CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
 			break;
 		}
 		case PE_IME_SETFOCUS:
 		{
 			if (lParam == 1) {
-				CGUIIME::OnFocusIn_imp();
+				// TODO: CGUIIME::OnFocusIn_imp
+				//CGUIIME::OnFocusIn_imp();
 			}
 			else {
-				CGUIIME::OnFocusOut_imp();
+				// TODO
+				//CGUIIME::OnFocusOut_imp();
 			}
 			break;
 		}
@@ -2670,7 +2933,8 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			{
 				// We don't want anything to display, so we have to clear this
 				lParam = 0;
-				CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
+				// TODO:
+				//CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
 			}
 			else
 			{
@@ -2706,7 +2970,8 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			CGUIRoot* pRoot = CGlobals::GetGUI();
 			if (pRoot != 0 && pRoot->HasIMEFocus())
 			{
-				CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
+				// TODO:
+				//CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
 			}
 			if (uMsg != WM_KEYUP)
 				break;
@@ -2793,23 +3058,24 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			break;
 		case WM_DROPFILES:
 		{
-			HDROP query = (HDROP)wParam;
-			int n = 0, count = DragQueryFile(query, 0xFFFFFFFF, 0, 0);
-			std::string cmds = "";
-			while (n < count) {
-				char filename[MAX_FILENAME_LENGTH];
-				if (DragQueryFile(query, n, filename, MAX_FILENAME_LENGTH) != 0)
-				{
-					OUTPUT_LOG("drop files: %s\n", filename);
-					cmds += filename;
-					cmds += ";";
-				}
-				n++;
-			}
-			// TODO: make m_cmd thread safe by using a lock.
-			m_cmd = cmds;
-			SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
-			DragFinish(query);
+			// TODO
+			//HDROP query = (HDROP)wParam;
+			//int n = 0, count = DragQueryFile(query, 0xFFFFFFFF, 0, 0);
+			//std::string cmds = "";
+			//while (n < count) {
+			//	char filename[MAX_FILENAME_LENGTH];
+			//	if (DragQueryFile(query, n, filename, MAX_FILENAME_LENGTH) != 0)
+			//	{
+			//		OUTPUT_LOG("drop files: %s\n", filename);
+			//		cmds += filename;
+			//		cmds += ";";
+			//	}
+			//	n++;
+			//}
+			//// TODO: make m_cmd thread safe by using a lock.
+			//m_cmd = cmds;
+			//SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
+			//DragFinish(query);
 			break;
 		}
 		case WM_COPYDATA:
@@ -2870,8 +3136,9 @@ LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wPara
 			*/
 		case WM_CHAR:
 		{
+			// TODO
 			//BOOL bIsUnicode = IsWindowUnicode(hWnd);
-			CGUIIME::SendWinMsgChar((WCHAR)wParam);
+			//CGUIIME::SendWinMsgChar((WCHAR)wParam);
 			// OUTPUT_LOG("WM_CHAR:%d\n",wParam);
 		}
 		break;

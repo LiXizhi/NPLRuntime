@@ -374,7 +374,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 		int nNumLockedVertice;
 		int nNumFinishedVertice = 0;
 		DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
+		CGlobals::GetRenderDevice()->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
 
 		if(pEffect->begin())
 		{
@@ -602,19 +602,19 @@ void ParaEngine::CSortedFaceGroups::Render()
 								
 								if(enableTexStripEffect)
 								{
-									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_CLAMP);
-									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_CLAMP);
+									CGlobals::GetRenderDevice()->SetSamplerState(0,ESamplerStateType::ADDRESSU,D3DTADDRESS_CLAMP);
+									CGlobals::GetRenderDevice()->SetSamplerState(0,ESamplerStateType::ADDRESSV,D3DTADDRESS_CLAMP);
 								}
 
 								if (pBufEntity->IsMemoryBuffer())
-									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+									CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 								else
-									GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(D3DPT_TRIANGLELIST,pBufEntity->GetBaseVertex(), nLockedNum);
+									CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->GetBaseVertex(), nLockedNum);
 
 								if(enableTexStripEffect)
 								{
-									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSU,D3DTADDRESS_WRAP);
-									GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0,D3DSAMP_ADDRESSV,D3DTADDRESS_WRAP);
+									CGlobals::GetRenderDevice()->SetSamplerState(0,ESamplerStateType::ADDRESSU,D3DTADDRESS_WRAP);
+									CGlobals::GetRenderDevice()->SetSamplerState(0,ESamplerStateType::ADDRESSV,D3DTADDRESS_WRAP);
 								}
 
 								if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)

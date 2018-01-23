@@ -8,7 +8,8 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "OpenGLWrapper.h"
+#include "RenderDeviceOpenGL.h"
+#include "OpenGLWrapper/GLImage.h"
 #endif
 
 #include "ImageEntity.h"
@@ -23,7 +24,7 @@ ParaEngine::ImageEntity::ImageEntity()
 	, _unpack(false)
 	, m_bIsOwnData(true)
 	, _fileType(0)
-	, _renderFormat(D3DFMT_UNKNOWN)
+	, _renderFormat(PixelFormat::Unkonwn)
 	, _hasPremultipliedAlpha(false)
 	, _numberOfMipmaps(0)
 {
@@ -79,7 +80,7 @@ bool ParaEngine::ImageEntity::LoadFromRawData(const unsigned char * data, size_t
 		_height = height;
 		_width = width;
 		_hasPremultipliedAlpha = preMulti;
-		_renderFormat = D3DFMT_A8R8G8B8;
+		_renderFormat = PixelFormat::A8R8G8B8;
 
 		// only RGBA8888 supported
 		int bytesPerComponent = 4;
@@ -101,7 +102,7 @@ bool ParaEngine::ImageEntity::SaveToFile(const std::string &filename, bool isToR
 #ifdef USE_OPENGL_RENDERER
 	std::string filepath = CParaFile::GetWritablePath() + filename;
 	CParaFile::CreateDirectory(filepath.c_str());
-	Image image;
+	GLImage image;
 	image.initWithRawData(getData(), getDataLen(), getWidth(), getHeight(), getBitPerPixel());
 	bool res =image.saveToFile(filepath, isToRGB);
 	if (res){
@@ -119,7 +120,7 @@ bool ParaEngine::ImageEntity::SaveToFile(const std::string &filename, bool isToR
 
 int ParaEngine::ImageEntity::getBitPerPixel()
 {
-	if (getRenderFormat() == D3DFMT_A8R8G8B8)
+	if (getRenderFormat() == PixelFormat::A8R8G8B8)
 		return 32;
 	else
 		return 0;

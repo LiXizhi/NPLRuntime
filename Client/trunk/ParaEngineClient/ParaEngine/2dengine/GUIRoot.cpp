@@ -739,13 +739,13 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 	{
 		if(GetUsePointTextureFiltering())
 		{
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT, true);
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_POINT, true);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_POINT, true);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_POINT, true);
 		}
 
 		// default to UV wrapping, instead of UV clamp for UI. 
-		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-		// pRenderDevice->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+		// pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP);
+		// pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
 
 		GUIBase_List_Type::iterator iter;
 
@@ -795,8 +795,8 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 	if(GetUsePointTextureFiltering())
 	{
-		CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_LINEAR);
-		CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_LINEAR);
+		CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_LINEAR);
+		CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_LINEAR);
 	}
 
 #if !defined(NPLRUNTIME)

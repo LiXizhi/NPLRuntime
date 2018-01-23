@@ -28,7 +28,7 @@ CSunLight::CSunLight()
 	
 	///create default sun light direction.
 	ZeroMemory( &m_light, sizeof(CLightParam) );
-	m_light.Type        = D3DLIGHT_DIRECTIONAL;
+	m_light.Type        = ELightType::Directional;
 	m_light.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
 	m_light.Position  = Vector3(0.0f, -1.0f, 1.0f);
 	m_light.Range        = (1.5*SUN_HEIGHT);

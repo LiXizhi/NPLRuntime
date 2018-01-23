@@ -36,6 +36,47 @@ TO sources_commmon RECURSIVE
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 #{
     set(RenderSystem RenderSystemOpenGL)
+    ucm_add_dirs(
+        OpenGLWrapper
+    TO sources_rendersystem RECURSIVE
+    )
+
+    if(WIN32)
+        set(DX2GLTOOL ${PROJECT_SOURCE_DIR}/externals/dxEffects2glEffects/bin/dx2gl.exe)
+    endif()
+    if(APPLE)
+        set(DX2GLTOOL ${PROJECT_SOURCE_DIR}/externals/dxEffects2glEffects/bin/dx2gl)
+    endif()
+    # Embedded Resource For OpenGL
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.fx)
+    foreach( src_file ${SHADER_FILES} )	
+        get_filename_component(src_filename ${src_file} NAME_WE) 
+        set(out_file "${CMAKE_CURRENT_BINARY_DIR}shaders/${src_filename}.fx.glsl")
+        add_custom_command(
+            OUTPUT ${out_file}
+            COMMAND "${DX2GLTOOL}" -glsl  ${src_file} ${out_file}
+            DEPENDS ${src_file} dx2gl 
+            COMMENT "dx2gl : ${src_file}"
+        )
+        embed_resources_abs(Resource ${out_file})
+        list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+    endforeach( src_file ${SHADER_FILES} )
+
+    # Only OpenGL Shaders
+    file(GLOB GLSL_SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/glsl/*.glsl)
+    foreach( src_file ${GLSL_SHADER_FILES} )	
+        message("OpenGL Shader:" ${src_file})
+        embed_resources_abs(Resource ${src_file})
+        list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+    endforeach( src_file ${GLSL_SHADER_FILES} )
+
+    list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
+
+    SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
+
+    list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
+
+
 #}
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 #{
@@ -52,7 +93,7 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     file(GLOB SHADER_FILES ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/shaders/*.fx)
     foreach(src_file ${SHADER_FILES})
         get_filename_component(src_filename ${src_file} NAME_WE)
-        set(out_file "${PROJECT_BINARY_DIR}/ParaEngineClient/shaders/${src_filename}.fxo")
+        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
 
         add_custom_command(
             OUTPUT ${out_file}
@@ -127,7 +168,6 @@ target_compile_definitions(ParaEngine PUBLIC
     _WIN32_WINNT=0x0501
     _WINSOCK_DEPRECATED_NO_WARNINGS
     PLATFORM_WINDOWS
-    PARAENGINE_CLIENT
 )
 
 

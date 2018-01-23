@@ -28,7 +28,7 @@ using namespace ParaEngine;
 using namespace std;
 
 #ifdef USE_OPENGL_RENDERER
-#include "OpenGLWrapper.h"
+#include "RenderDeviceOpenGL.h"
 #endif
 
 const IType* CGUIEditBox::m_type = NULL;

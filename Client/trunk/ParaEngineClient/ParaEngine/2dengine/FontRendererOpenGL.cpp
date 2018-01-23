@@ -11,6 +11,7 @@
 
 #ifdef USE_OPENGL_RENDERER
 #include "RenderDeviceOpenGL.h"
+#include "OpenGLWrapper/GLFontAtlas.h"
 #include "GUIBase.h"
 #include "TextureEntity.h"
 #include "StringHelper.h"

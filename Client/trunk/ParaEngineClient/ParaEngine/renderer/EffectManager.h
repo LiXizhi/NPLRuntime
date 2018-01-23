@@ -168,13 +168,13 @@ namespace ParaEngine
 		HRESULT SetRenderState(D3DRENDERSTATETYPE State, DWORD Value);
 		HRESULT SetTexture(DWORD Stage, DeviceTexturePtr_type pTexture);
 		/** internally it will cache texture stage to prevent direct d3d calls */
-		HRESULT SetSamplerState(int nStage, DWORD dwType, DWORD dwValue, bool bForceSet = false);
+		HRESULT SetSamplerState(int nStage, ESamplerStateType dwType, DWORD dwValue, bool bForceSet = false);
 		/** internally it will cache texture stage to prevent direct d3d calls */
-		HRESULT GetSamplerState(int nStage, DWORD dwType, DWORD* pValue, bool bForceGet = false);
+		HRESULT GetSamplerState(int nStage, ESamplerStateType dwType, DWORD* pValue, bool bForceGet = false);
 		/** default sampler state. in most cases, this will define whether the point filtering or linear filtering is used by default for all meshes and characters. */
-		void SetDefaultSamplerState(int nStage, DWORD dwType, DWORD dwValue);
+		void SetDefaultSamplerState(int nStage, ESamplerStateType dwType, DWORD dwValue);
 		/** default sampler state. in most cases, this will define whether the point filtering or linear filtering is used by default for all meshes and characters. */
-		DWORD GetDefaultSamplerState(int nStage, DWORD dwType);
+		DWORD GetDefaultSamplerState(int nStage, ESamplerStateType dwType);
 
 		HRESULT SetTransform(D3DTRANSFORMSTATETYPE State, const Matrix4 *pMatrix);
 		HRESULT GetTransform(D3DTRANSFORMSTATETYPE State,Matrix4 * pMatrix);

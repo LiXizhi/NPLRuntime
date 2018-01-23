@@ -430,13 +430,23 @@ void ParaEngine::CViewport::SetActive()
 ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, DWORD height)
 {
 	ParaViewport CurrentViewport;
-	GETD3D(CGlobals::GetRenderDevice())->GetViewport(reinterpret_cast<D3DVIEWPORT9*>(&CurrentViewport));
+	auto vp = CGlobals::GetRenderDevice()->GetViewport();
+	CurrentViewport.X = vp.x;
+	CurrentViewport.Y = vp.y;
+	CurrentViewport.Width = vp.z;
+	CurrentViewport.Height = vp.w;
+
 	ParaViewport myViewport = CurrentViewport;
 	myViewport.X = x;
 	myViewport.Y = y;
 	myViewport.Width = width;
 	myViewport.Height = height;
-	GETD3D(CGlobals::GetRenderDevice())->SetViewport(reinterpret_cast<const D3DVIEWPORT9*>(&myViewport));
+
+	vp.x = myViewport.X;
+	vp.y = myViewport.Y;
+	vp.w = myViewport.Width;
+	vp.z = myViewport.Height;
+	CGlobals::GetRenderDevice()->SetViewport(vp);
 	return myViewport;
 }
 
