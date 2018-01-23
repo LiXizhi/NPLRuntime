@@ -1451,9 +1451,15 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 	{
 		return GetDevDirectory();
 	}
-		
 	ParaEngine::Lock lock_(g_file_mutex);
 
+	if (dwDirectoryType == APP_EXECUTABLE_DIR)
+	{
+		if (g_CurDirs[dwDirectoryType].empty())
+			g_CurDirs[dwDirectoryType] = CGlobals::GetApp()->GetModuleDir();
+		return g_CurDirs[dwDirectoryType];
+	}
+	
 	if (dwDirectoryType<APP_SH_DESKTOP_DIR)
 	{
 		if (!g_CurDirs[dwDirectoryType].empty())
