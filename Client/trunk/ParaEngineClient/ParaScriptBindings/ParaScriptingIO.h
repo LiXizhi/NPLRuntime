@@ -568,17 +568,29 @@ namespace ParaScripting
 		* and that it always ends with "\". e.g. "c:/lxzsrc/paraengineSDK/" or "c:/lxzsrc/paraengineSDK/script/"
 		* @param dwDirectoryType: it can be one of the PARAENGINE_DIRECTORY enumeration type
 			enum PARAENGINE_DIRECTORY{
-			APP_ROOT_DIR=0,
-			APP_SCRIPT_DIR=1,
-			APP_ARCHIVE_DIR=2, // xmodels
-			APP_MODEL_DIR=3,
-			APP_SHADER_DIR=4,
-			APP_DATABASE_DIR=5,
-			APP_TEMP_DIR=6,
-			APP_USER_DIR=7,
-			APP_BACKUP_DIR=8,
-			APP_SCREENSHOT_DIR=9,
-			APP_PLUGIN_DIR=10,
+			APP_ROOT_DIR = 0,
+			APP_SCRIPT_DIR = 1,
+			APP_ARCHIVE_DIR = 2, // xmodels
+			APP_MODEL_DIR = 3,
+			APP_SHADER_DIR = 4,
+			APP_DATABASE_DIR = 5,
+			APP_TEMP_DIR = 6,
+			APP_USER_DIR = 7,
+			APP_BACKUP_DIR = 8,
+			APP_SCREENSHOT_DIR = 9,
+			APP_PLUGIN_DIR = 10,
+			APP_CONFIG_DIR = 11,
+			APP_CHARACTER_DIR = 12,
+			APP_SH_DESKTOP_DIR = 13,
+			APP_SH_DESKTOP_FOLDER_DIR = 14,
+			APP_SH_MYDOC_DIR = 15,
+			APP_SH_FAV_DIR = 16,
+			APP_SH_MUSIC_DIR = 17,
+			APP_SH_PICTURE_DIR = 18,
+			APP_SH_VIDEO_DIR = 19,
+			APP_DEV_DIR = 20,
+			APP_EXECUTABLE_DIR = 21,
+			APP_LAST_DIR,
 			};
 		* @return: the directory is returned. */
 		static string GetCurDirectory(DWORD dwDirectoryType);

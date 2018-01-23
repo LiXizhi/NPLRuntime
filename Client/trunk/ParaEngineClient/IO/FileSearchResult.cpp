@@ -128,6 +128,8 @@ bool CFileFindData::IsDirectory() const
 	return (m_dwFileAttributes & 16) > 0;
 #elif defined(WIN32)
 	return (m_dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0;
+#else
+	return (m_dwFileAttributes & 16) > 0;
 #endif
 }
 
