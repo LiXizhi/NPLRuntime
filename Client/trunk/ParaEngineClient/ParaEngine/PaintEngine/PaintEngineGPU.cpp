@@ -95,7 +95,7 @@ void ParaEngine::CPaintEngineGPU::InitDeviceObjects()
 	CPaintEngineGPU::s_IsStencilSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps&(D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE)) == (D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE);
 #elif defined(USE_OPENGL_RENDERER)
 	CPaintEngineGPU::s_IsScissorRectSupported = true;
-	CPaintEngineGPU::s_IsStencilSupported = pD3dDevice->GetStencilBits() > 0;
+	CPaintEngineGPU::s_IsStencilSupported = GETGL(CGlobals::GetRenderDevice())->GetStencilBits() > 0;
 #endif
 	m_pSprite->InitDeviceObjects();
 }
@@ -661,7 +661,7 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 		if (state->m_nStencilValue == 1)
 		{
 			// clear stencil buffer to 0 on first stencil layer
-			GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
+			CGlobals::GetRenderDevice()->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
 			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
 		}
 		// disable color write
@@ -757,7 +757,7 @@ void ParaEngine::CPaintEngineGPU::updateClipScissorTest()
 		{
 			RECT clipRect = state->rectangleClip;
 			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::SCISSORTESTENABLE, TRUE);
-			GETD3D(CGlobals::GetRenderDevice())->SetScissorRect(&clipRect);
+			CGlobals::GetRenderDevice()->SetScissorRect(&clipRect);
 		}
 		else
 		{

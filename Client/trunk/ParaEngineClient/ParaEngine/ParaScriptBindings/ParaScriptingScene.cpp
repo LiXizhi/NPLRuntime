@@ -2972,11 +2972,11 @@ void ParaMiniSceneGraph::Draw( float fDeltaTime )
 {
 	if(IsValid())
 	{
-		if(CGlobals::GetRenderDevice() && SUCCEEDED( GETD3D(CGlobals::GetRenderDevice())->BeginScene() ) )
+		if(CGlobals::GetRenderDevice()->BeginScene())
 		{
 			m_pSceneGraph->Draw(fDeltaTime);
 
-			GETD3D(CGlobals::GetRenderDevice())->EndScene();
+			CGlobals::GetRenderDevice()->EndScene();
 		}
 	}
 }

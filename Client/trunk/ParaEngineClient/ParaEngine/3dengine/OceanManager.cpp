@@ -2076,14 +2076,18 @@ namespace ParaEngine
 			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
 			//GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pWhiteTexture->GetTexture());
+			CGlobals::GetRenderDevice()->SetTexture(0, pWhiteTexture->GetTexture());
 
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
+			CGlobals::GetRenderDevice()->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
 
-			D3DVIEWPORT9 curViewport;
-			GETD3D(CGlobals::GetRenderDevice())->GetViewport(&curViewport);
+			ParaViewport curViewport;
+			auto vp = CGlobals::GetRenderDevice()->GetViewport();
+			curViewport.X = vp.x;
+			curViewport.Y = vp.y;
+			curViewport.Width = vp.z;
+			curViewport.Height = vp.w;
 			FLOAT sx = (FLOAT)curViewport.Width;
 			FLOAT sy = (FLOAT)curViewport.Height;
 
@@ -2114,7 +2118,7 @@ namespace ParaEngine
 				v[i].color = dwColor;
 			}
 			
-			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
+			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(UNDERWATER_VERTEX));
 
 			painter->end();
 		}

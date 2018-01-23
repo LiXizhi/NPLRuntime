@@ -555,7 +555,7 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 	}
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
-	GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
+	CGlobals::GetRenderDevice()->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
 
 	SPRITEVERTEX* vb_vertices;
 	int nNumLockedVertice;
@@ -717,9 +717,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 				
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 					nNumFinishedVertice += (nLockedNum*3);
@@ -798,9 +798,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
@@ -1022,10 +1022,10 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 
 
 	// texture
-	GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, GetDeviceTexture());
+	CGlobals::GetRenderDevice()->SetTexture(0, GetDeviceTexture());
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
-	GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
+	CGlobals::GetRenderDevice()->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
 
 	DWORD nColor = LinearColor((const float*)&(tcolor));
 	float fCurrentLength = 0;
@@ -1099,7 +1099,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 #ifdef USE_DIRECTX_RENDERER
 				///////////////////////////////////////////////////////////////////////////
 				// fixed function pipeline
-				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
+				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
 #endif
 			}
 			else
@@ -1111,9 +1111,9 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 					if(pEffect->BeginPass(0))
 					{
 						if (pBufEntity->IsMemoryBuffer())
-							GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+							CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 						else
-							GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
+							CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
 
 					}
 					pEffect->EndPass(0);

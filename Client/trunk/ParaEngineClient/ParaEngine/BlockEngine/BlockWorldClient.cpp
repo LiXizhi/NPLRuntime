@@ -422,7 +422,7 @@ namespace ParaEngine
 
 						pEffect->CommitChanges();
 
-						GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+						GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 							pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 					}
 				}
@@ -515,7 +515,7 @@ namespace ParaEngine
 			else
 			{
 				if (nRenderPass == BlockRenderPass_AlphaTest)
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::MIPFILTER, D3DTEXF_NONE);
 
 				// turn off alpha blending to enable early-Z on modern graphic cards. 
 				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
@@ -656,7 +656,7 @@ namespace ParaEngine
 
 					GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
-					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 						pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
 				}
 				
@@ -682,7 +682,7 @@ namespace ParaEngine
 				
 
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
-				GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pVertexLayout);
+				CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -702,7 +702,7 @@ namespace ParaEngine
 				}
 				
 				IndexBufferDevicePtr_type pIndexBuffer =  GetIndexBuffer();
-				GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
+				CGlobals::GetRenderDevice()->SetIndices(pIndexBuffer);
 
 				VertexBufferDevicePtr_type pCurVB = 0;
 				uint16_t curTamplerId = 0;
@@ -731,7 +731,7 @@ namespace ParaEngine
 					VertexBufferDevicePtr_type pVB = pRenderTask->GetVertexBuffer();
 					if (pVB != pCurVB)
 					{
-						GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+						CGlobals::GetRenderDevice()->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
 						pCurVB = pVB;
 					}
 					int32_t passId;
@@ -787,14 +787,14 @@ namespace ParaEngine
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,pCurTex0);
+							CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
 						}
 
 						pTexEntity = pTempate->GetTexture1();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,pCurTex1);
+							CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
 						}
 
 						pTexEntity = pTempate->GetNormalMap();
@@ -802,7 +802,7 @@ namespace ParaEngine
 						{
 							pCurTex2 = pTexEntity->GetTexture();
 							if (dwRenderMethod  == BLOCK_RENDER_FANCY_SHADER){
-								GETD3D(CGlobals::GetRenderDevice())->SetTexture(2,pCurTex2);
+								CGlobals::GetRenderDevice()->SetTexture(2,pCurTex2);
 							}
 						}
 
@@ -871,7 +871,7 @@ namespace ParaEngine
 
 					pEffect->CommitChanges();
 
-					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
 						pRenderTask->GetVertexCount(), pRenderTask->GetIndexOfs(), pRenderTask->GetPrimitiveCount());
 				}
 
@@ -890,14 +890,14 @@ namespace ParaEngine
 				{
 					// unbind buffer if any, this fixed a crash bug with OpenGL multi-frame renderer
 					// where the same stream source is used both in multi-frame renderer and main renderer. 
-					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, 0, 0, 0);
+					CGlobals::GetRenderDevice()->SetStreamSource(0, 0, 0, 0);
 				}
 			}
 			
 			if (nRenderPass != BlockRenderPass_AlphaBlended)
 			{
 				if (nRenderPass == BlockRenderPass_AlphaTest)
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR);
 				// turn blending on again
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -1055,8 +1055,8 @@ namespace ParaEngine
 		pEffectManager->BeginEffect(TECH_BLOCK);
 		CEffectFile* pEffect = pEffectManager->GetCurrentEffectFile();
 
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, 0,0,0);
-		GETD3D(CGlobals::GetRenderDevice())->SetIndices(0);
+		CGlobals::GetRenderDevice()->SetStreamSource(0, 0,0,0);
+		CGlobals::GetRenderDevice()->SetIndices(0);
 		
 
 		// culling mode 
@@ -1109,7 +1109,7 @@ namespace ParaEngine
 
 				if(curInstCount >= nMaxFaceCount)
 				{
-					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(  D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
@@ -1126,7 +1126,7 @@ namespace ParaEngine
 
 			if(curInstCount > 0)
 			{
-				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
@@ -1140,7 +1140,7 @@ namespace ParaEngine
 		}
 		else if(pEffect != 0 && pEffect->begin(false))
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(GetSelectBlockVertexLayout());
+			CGlobals::GetRenderDevice()->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
 			if(pEffect->BeginPass(g_selectBlockPass))
 			{
@@ -1155,7 +1155,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 							
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,highLightTexture->GetTexture());
+				CGlobals::GetRenderDevice()->SetTexture(0,highLightTexture->GetTexture());
 					
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,TRUE);
 				pDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
@@ -1194,7 +1194,7 @@ namespace ParaEngine
 
 					if(curInstCount >= nMaxFaceCount)
 					{
-						GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1211,7 +1211,7 @@ namespace ParaEngine
 
 				if(curInstCount > 0)
 				{
-					GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				}
 
 				pEffect->EndPass();
@@ -1295,7 +1295,7 @@ namespace ParaEngine
 				instFloatCount++;
 				curInstCount++;
 			}
-			GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(  D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+			GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
@@ -1342,7 +1342,7 @@ namespace ParaEngine
 					instFloatCount++;
 					curInstCount++;
 				}
-				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), D3DFMT_INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				
 				pEffect->EndPass();
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,FALSE);

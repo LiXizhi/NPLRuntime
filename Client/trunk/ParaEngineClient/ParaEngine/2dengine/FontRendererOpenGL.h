@@ -1,6 +1,6 @@
 #pragma once
 #include "RenderDeviceOpenGL.h"
-
+#include "OpenGLWrapper/GLLabel.h"
 namespace ParaEngine
 {
 	class CSpriteRenderer;
@@ -8,7 +8,7 @@ namespace ParaEngine
 	/** used for rendering labels 
 	* rendering a given font from TTF format. It emulates the d3dxfont class.
 	*/
-	class CFontRendererOpenGL : public GLWrapper::Label
+	class CFontRendererOpenGL : public GLLabel
 	{
 	public:
 		static CFontRendererOpenGL* create(const std::string& sFontName, int nFontSize);

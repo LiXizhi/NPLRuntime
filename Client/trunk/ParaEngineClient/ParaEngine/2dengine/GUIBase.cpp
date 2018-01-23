@@ -503,7 +503,11 @@ void CGUIBase::GetAbsolutePosition(CGUIPosition* pOut, const CGUIPosition* pIn)
 		// vIn.y+=pIn->Relative.To3D.p3DSceneObject->GetHeight();
 		vIn = *(Vector3*)(&(pIn->Relative.To3D.m_v3DPosition));
 
-		GETD3D(CGlobals::GetRenderDevice())->GetViewport(reinterpret_cast<D3DVIEWPORT9*>(&viewport));
+		auto vp = CGlobals::GetRenderDevice()->GetViewport();
+		viewport.X = vp.x;
+		viewport.Y = vp.y;
+		viewport.Width = vp.z;
+		viewport.Height = vp.w;
 		ParaVec3Project(&vOut, &vIn, &viewport, CGUIRoot::GetInstance()->Get3DViewProjMatrix(), NULL, NULL);
 		
 		int nWidth = pIn->rect.right - pIn->rect.left;
@@ -1531,8 +1535,8 @@ void CGUIBase::Begin(GUIState* pGUIState,float fElapsedTime )
 		if(pGUIState)
 		{
 			GetPainter(pGUIState)->Flush();
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP);
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_WRAP );
+			CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP);
+			CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
 		}
 	}
 }
@@ -1560,8 +1564,8 @@ void CGUIBase::End(GUIState* pGUIState,float fElapsedTime )
 		if(pGUIState)
 		{
 			GetPainter(pGUIState)->Flush();
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_CLAMP);
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DSAMP_ADDRESSV,  D3DTADDRESS_CLAMP);
+			CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP);
+			CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP);
 		}
 	}
 }

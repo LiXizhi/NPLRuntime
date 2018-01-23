@@ -214,13 +214,13 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	// set render state
 	{
 		// pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, 0);
+		CGlobals::GetRenderDevice()->SetTexture(0, 0);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 
-		GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP(D3DPT_LINELIST, 0,
-			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), D3DFMT_INDEX16,
+		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
 	}
 #ifdef USE_OPENGL_RENDERER
@@ -272,10 +272,10 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, 0);
+		CGlobals::GetRenderDevice()->SetTexture(0, 0);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
 		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
@@ -386,7 +386,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 				ThickVertices += 24;
 			}
 			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&DepthBiasThisBatch);
-			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST,
+			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLELIST,
 				8 * NumLinesThisBatch, (LINEVERTEX*)(&s_VertexData[0]), sizeof(LINEVERTEX));
 		}
 		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
@@ -472,15 +472,15 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 			{
 				if (renderPass.IsPointTexture())
 				{
-					pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);
-					pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_POINT);
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::MIPFILTER, D3DTEXF_NONE);
 				}
 				else
 				{
-					pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
-					pEffectManager->SetSamplerState(0, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR);
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR);
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR);
+					pEffectManager->SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR);
 				}
 			}
 			
@@ -502,7 +502,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 				}
 				pEffect->setTexture(0, renderPass.GetTexture());
 				pEffect->CommitChanges();
-				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST,
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLELIST,
 					2 * NumParticlesThisBatch, (SPRITEVERTEX*)(&s_VertexData[0]), sizeof(SPRITEVERTEX));
 			}
 		}

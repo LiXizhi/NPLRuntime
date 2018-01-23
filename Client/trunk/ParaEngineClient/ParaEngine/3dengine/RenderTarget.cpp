@@ -20,6 +20,10 @@
 #include "RenderDeviceD3D9.h"
 #endif
 
+#if USE_OPENGL_RENDERER
+#include "RenderDeviceOpenGL.h"
+#endif
+
 /** @def default canvas map width in pixels */
 #define DEFAULT_CANVAS_MAP_WIDTH	512
 /** @def default canvas map height in pixels */
@@ -494,12 +498,16 @@ bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3
 
 bool ParaEngine::CRenderTarget::Begin()
 {
-	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	CheckInit();
 
 	// save old viewport
-	GETD3D(CGlobals::GetRenderDevice())->GetViewport(&m_oldViewport);
+	auto vp = CGlobals::GetRenderDevice()->GetViewport();
+	m_oldViewport.X = vp.x;
+	m_oldViewport.Y = vp.y;
+	m_oldViewport.Width = vp.z;
+	m_oldViewport.Height = vp.w;
 	// save old render origin
 	m_vOldRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
@@ -535,15 +543,15 @@ bool ParaEngine::CRenderTarget::Begin()
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
 	
-	pRenderDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
+	 GETGL(pRenderDevice)->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
 	//calculate viewport
 	{
-		ParaViewport myViewport;
-		myViewport.X = 0;
-		myViewport.Y = 0;
-		myViewport.Width = GetTextureWidth();
-		myViewport.Height = GetTextureHeight();
-		pRenderDevice->SetViewport((D3DVIEWPORT9*)&myViewport);
+		Rect vp;
+		vp.x = 0;
+		vp.y = 0;
+		vp.w = GetTextureWidth();
+		vp.z = GetTextureHeight();
+		pRenderDevice->SetViewport(vp);
 	}
 #endif
 	m_bIsBegin = true;
@@ -574,14 +582,19 @@ void ParaEngine::CRenderTarget::End()
 
 #elif defined(USE_OPENGL_RENDERER)
 	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
-	pRenderDevice->EndRenderTarget();
+	GETGL(pRenderDevice)->EndRenderTarget();
 	
 	// TODO: this should be removed, when we handle glClear() by ourselves instead of cocos. 
 	LinearColor color(CGlobals::GetScene()->GetClearColor());
 	glClearColor(color.r, color.g, color.b, color.a);
 #endif
 	// restore viewport
-	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&m_oldViewport);
+	Rect vp;
+	vp.x = m_oldViewport.X;
+	vp.y = m_oldViewport.Y;
+	vp.w = m_oldViewport.Width;
+	vp.z = m_oldViewport.Height;
+	pRenderDevice->SetViewport(vp);
 }
 
 
@@ -601,7 +614,7 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 	if (m_bIsBegin)
 	{
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-		GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
+		CGlobals::GetRenderDevice()->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
 	}
 	else
 	{

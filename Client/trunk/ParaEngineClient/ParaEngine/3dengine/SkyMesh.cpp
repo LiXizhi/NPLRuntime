@@ -133,8 +133,8 @@ HRESULT CSkyMesh::Draw(SceneState * sceneState)
 					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
 
 					// enable texture wrapping for sub module
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
-					GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
+					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP);
 
 					for (auto& child : GetChildren())
 					{
@@ -741,8 +741,8 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
 		pEffectManager->EnableZWrite(false);
-		GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
-		GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_simsky_ib.GetDevicePointer());
+		CGlobals::GetRenderDevice()->SetStreamSource(0, m_simsky_vb.GetDevicePointer(), 0, sizeof(mesh_vertex_plain));
+		CGlobals::GetRenderDevice()->SetIndices(m_simsky_ib.GetDevicePointer());
 
 		if (pEffectFile->begin(false))
 		{
@@ -779,13 +779,13 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 
 				// we don't want to render completely transparent parts
 				pEffectFile->CommitChanges();
-				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( D3DPT_TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitive( EPrimitiveType::TRIANGLESTRIP, 0, 0, m_nSimsky_vertexCount, 0, m_nSimsky_primitiveCount);
 				pEffectFile->EndPass();
 			}
 			pEffectFile->end();
 		}
-		GETD3D(CGlobals::GetRenderDevice())->SetIndices(0);
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, 0);
+		CGlobals::GetRenderDevice()->SetIndices(0);
+		CGlobals::GetRenderDevice()->SetTexture(1, 0);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }

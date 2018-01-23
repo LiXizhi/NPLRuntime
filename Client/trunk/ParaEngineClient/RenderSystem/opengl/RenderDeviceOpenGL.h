@@ -1,13 +1,15 @@
 #pragma once
 #include "Framework/Interface/Render/IRenderDevice.h"
 #include "glad/glad.h"
-#include "GLWarpper/GLTexture2D.h"
 namespace ParaEngine
 {
+	class CVertexDeclaration;
 	class RenderDeviceOpenGL : public IRenderDevice
 	{
 
 	public:
+		RenderDeviceOpenGL();
+		virtual ~RenderDeviceOpenGL() override = default;
 		virtual uint32_t GetRenderState(const ERenderState& State) override;
 
 
@@ -22,5 +24,95 @@ namespace ParaEngine
 
 		virtual int GetMaxSimultaneousTextures() override;
 
+		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) ;
+
+		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
+
+
+		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
+
+
+		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
+
+
+		virtual bool SetVertexDeclaration(CVertexDeclaration* pVertexDeclaration) override;
+
+
+		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl) override;
+
+
+		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) override;
+
+
+		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
+
+		void BeginRenderTarget(uint32_t width,uint32_t height);
+		void EndRenderTarget();
+
+		virtual bool BeginScene() override;
+		virtual bool EndScene() override;
+
+		int GetStencilBits();
+
+
+		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) override;
+
+
+		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
+
+
+		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
+
+
+		virtual bool SetFVF(uint32_t FVF) override;
+
+
+		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
+
+
+		virtual bool GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value) override;
+
+
+		virtual Rect GetViewport() override;
+
+
+		virtual bool SetViewport(const Rect& viewport) override;
+
+
+		virtual bool Clear(uint32_t Count, const void* pRects, uint32_t Flags, uint32_t Color, float Z, uint32_t Stencil) override;
+
+
+		virtual bool SetScissorRect(RECT* pRect) override;
+
+
+		virtual bool GetScissorRect(RECT* pRect) override;
+
+
+		virtual bool Present() override  = 0;
+	protected:
+		void ApplyBlendingModeChange();
+	private:
+		bool m_AlphaBlendingChanged;
+		bool m_EnableBlending;
+		bool m_EnableSeparateAlphaBlending;
+		bool m_BlendingSource;
+		bool m_BlendingDest;
+		bool m_BlendingAlphaSource;
+		bool m_BlendingAlphaDest;
+		uint32_t m_StencilRefValue;
+		uint32_t m_StencilPass;
+		uint32_t m_SamplerStates[8][8] = {};
+		CVertexDeclaration* m_CurrentVertexDeclaration;
+		VertexBufferDevicePtr_type m_CurrentVertexBuffer;
+		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
+		uint32_t m_RenderTargetWidth;
+		uint32_t m_RenderTargetHeight;
+		bool m_isBeginRenderTarget ;
+		Rect m_CurrentViewPort;
 	};
+
+	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)
+	{
+		return (RenderDeviceOpenGL*)device;
+	}
 }

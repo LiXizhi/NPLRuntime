@@ -55,7 +55,7 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 {
 	g_hAppInstance = hInst;
 	int exit_code = 0;
-	InitCommonControls();
+	//InitCommonControls();
 	// run as application
 	CWindowsApplication app(lpCmdLine);
 	// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 

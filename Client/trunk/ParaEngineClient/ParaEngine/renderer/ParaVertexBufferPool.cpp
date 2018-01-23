@@ -127,7 +127,7 @@ void ParaEngine::ParaVertexBufferPool::TickCache()
 	}
 }
 
-ParaVertexBuffer* ParaEngine::ParaVertexBufferPool::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, D3DPOOL dwPool)
+ParaVertexBuffer* ParaEngine::ParaVertexBufferPool::CreateBuffer(uint32 nBufferSize, DWORD dwFormat /*= 0*/, DWORD dwUsage /*= 0*/, EPoolType dwPool)
 {
 	if (nBufferSize == 0)
 		return NULL;

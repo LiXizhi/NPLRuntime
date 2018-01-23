@@ -1292,7 +1292,7 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 	return true;
 }
 
-static D3DVIEWPORT9 oldViewport;
+static ParaViewport oldViewport;
 
 HRESULT CShadowMap::BeginShadowPass()
 {
@@ -1355,16 +1355,19 @@ HRESULT CShadowMap::BeginShadowPass()
 	
 	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-	GETD3D(CGlobals::GetRenderDevice())->GetViewport(&oldViewport);
-
+	auto vp = CGlobals::GetRenderDevice()->GetViewport();
+	oldViewport.X = vp.x;
+	oldViewport.Y = vp.y;
+	oldViewport.Width = vp.z;
+	oldViewport.Height = vp.w;
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&mOldFrameBufferObject));
 	
 #endif
 
 	// restore other textures
-	GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetTexture(2, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetTexture(3, NULL);
+	CGlobals::GetRenderDevice()->SetTexture(1, NULL);
+	CGlobals::GetRenderDevice()->SetTexture(2, NULL);
+	CGlobals::GetRenderDevice()->SetTexture(3, NULL);
 
 	//set render target to shadow map surfaces
 #ifdef USE_DIRECTX_RENDERER
@@ -1381,11 +1384,11 @@ HRESULT CShadowMap::BeginShadowPass()
 #else
 	glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
 	
-	pd3dDevice->BeginRenderTarget(m_shadowTexWidth, m_shadowTexHeight);
+	GETGL(pd3dDevice)->BeginRenderTarget(m_shadowTexWidth, m_shadowTexHeight);
 #endif
 
 	//  set new viewport for shadow map
-	D3DVIEWPORT9 newViewport;
+	ParaViewport newViewport;
 	//newViewport = CGlobals::GetViewportManager()->GetActiveViewPort()->GetTextureViewport(m_shadowTexWidth, m_shadowTexHeight);
 	newViewport.X = 0;
 	newViewport.Y = 0;
@@ -1393,7 +1396,12 @@ HRESULT CShadowMap::BeginShadowPass()
 	newViewport.Height = m_shadowTexHeight;
 	newViewport.MinZ = 0.0f;
 	newViewport.MaxZ = 1.0f;
-	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&newViewport);
+//	Rect vp;
+	vp.x = newViewport.X;
+	vp.y = newViewport.Y;
+	vp.w = newViewport.Width;
+	vp.z = newViewport.Height;
+	CGlobals::GetRenderDevice()->SetViewport(vp);
 
 	float depthBias = float(m_iDepthBias) / 16777215.f;
 
@@ -1401,11 +1409,11 @@ HRESULT CShadowMap::BeginShadowPass()
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
 	{
 		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0);
-		GETD3D(CGlobals::GetRenderDevice())->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
+		CGlobals::GetRenderDevice()->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
 	}
 	else
 	{
-		GETD3D(CGlobals::GetRenderDevice())->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFFFFFFFF, 1.0f, 0L);
+		CGlobals::GetRenderDevice()->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFFFFFFFF, 1.0f, 0L);
 	}
 
 	
@@ -1537,11 +1545,16 @@ HRESULT CShadowMap::EndShadowPass()
 	glBindFramebuffer(GL_FRAMEBUFFER, mOldFrameBufferObject);
 	mOldFrameBufferObject = 0;
 	
-	pd3dDevice->EndRenderTarget();
+	GETGL(pd3dDevice)->EndRenderTarget();
 #endif
 
 	// restore old view port
-	GETD3D(CGlobals::GetRenderDevice())->SetViewport(&oldViewport);
+	Rect vp;
+	vp.x = oldViewport .X;
+	vp.y = oldViewport.Y;
+	vp.w = oldViewport.Width;
+	vp.z = oldViewport.Height;
+	CGlobals::GetRenderDevice()->SetViewport(vp);
 
 	//re enable color writes
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))

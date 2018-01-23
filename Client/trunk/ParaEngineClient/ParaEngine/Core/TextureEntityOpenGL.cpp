@@ -9,9 +9,9 @@
 #include "ParaEngine.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "OpenGLWrapper.h"
 #include "ImageEntity.h"
 #include "TextureEntity.h"
+#include "OpenGLWrapper/GLImage.h"
 
 using namespace ParaEngine;
 
@@ -30,7 +30,7 @@ TextureEntityOpenGL::TextureEntityOpenGL()
 {
 }
 
-ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(GLWrapper::Texture2D* texture)
+ParaEngine::TextureEntityOpenGL::TextureEntityOpenGL(GLTexture2D* texture)
 	: TextureEntity(), m_texture(nullptr), m_nSamplerState(0)
 {
 	SetInnerTexture(texture);
@@ -48,13 +48,13 @@ HRESULT ParaEngine::TextureEntityOpenGL::RendererRecreated()
 }
 
 
-GLWrapper::Texture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
+GLTexture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const std::string& sFileName)
 {
-	GLWrapper::Texture2D * texture = nullptr;
+	GLTexture2D * texture = nullptr;
 	CParaFile file;
 	if (file.OpenFile(sFileName.c_str(), true))
 	{
-		LoadFromMemory(file.getBuffer(), file.getSize(), 0, D3DFMT_UNKNOWN, (void**)(&texture));
+		LoadFromMemory(file.getBuffer(), file.getSize(), 0, PixelFormat::Unkonwn, (void**)(&texture));
 		if (texture){
 			texture->AddToAutoReleasePool();
 		}
@@ -114,8 +114,8 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 				}
 				else
 				{
-					m_pTextureSequence = new GLWrapper::Texture2D*[nTotalTextureSequence];
-					memset(m_pTextureSequence, 0, sizeof(GLWrapper::Texture2D*)*nTotalTextureSequence);
+					m_pTextureSequence = new GLTexture2D*[nTotalTextureSequence];
+					memset(m_pTextureSequence, 0, sizeof(GLTexture2D*)*nTotalTextureSequence);
 				}
 
 				// if there are texture sequence, export all bitmaps in the texture sequence. 
@@ -164,7 +164,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::InitDeviceObjects()
 }
 
 
-void ParaEngine::TextureEntityOpenGL::SetInnerTexture(GLWrapper::Texture2D* texture)
+void ParaEngine::TextureEntityOpenGL::SetInnerTexture(GLTexture2D* texture)
 {
 	if (SurfaceType == StaticTexture)
 	{
@@ -191,7 +191,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 		DWORD width, height;
 		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
 
-		D3DFORMAT format = D3DFMT_A8R8G8B8;
+		PixelFormat format = PixelFormat::A8R8G8B8;
 
 		if (GetTextureInfo() != NULL)
 		{
@@ -204,7 +204,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 			}
 			if (GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
-				format = D3DFMT_X8R8G8B8;
+				format = PixelFormat::X8R8G8B8;
 			}
 		}
 		else
@@ -219,7 +219,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 			auto dataLen = width * height * 4;
 			data = malloc(dataLen);
 			memset(data, 0, dataLen);
-			m_texture->initWithData(data, dataLen, (GLTexture2D::GLPixelFormat)GLTexture2D::GLPixelFormat::RGBA8888, width, height, Size((float)width, (float)height));
+			m_texture->initWithData(data, dataLen, (GLTexture2D::PixelFormat)GLTexture2D::PixelFormat::RGBA8888, width, height, Size((float)width, (float)height));
 			free(data);
 
 			GL::bindTexture2D(m_texture->getName());
@@ -385,7 +385,7 @@ bool ParaEngine::TextureEntityOpenGL::IsSamplerStateBlocky()
 	return m_nSamplerState == 1;
 }
 
-TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/)
+TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
 	TextureEntityOpenGL* pTextureEntity = new TextureEntityOpenGL(AssetKey(pFileName));
 	if (pTextureEntity)
@@ -398,17 +398,17 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const char* pFileN
 	return NULL;
 }
 
-TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
 	if (!pTexels)
 		return NULL;
-	GLWrapper::Texture2D * texture = new GLTexture2D();
+	GLTexture2D * texture = new GLTexture2D();
 	if (texture)
 	{
 		int dataLen = width * height * bytesPerPixel;
 		if (bytesPerPixel == 4)
 		{
-			if (!texture->initWithData(pTexels, dataLen, GLWrapper::Texture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+			if (!texture->initWithData(pTexels, dataLen, GLTexture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 			{
 				SAFE_DELETE(texture);
 			}
@@ -429,7 +429,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 					pp[index++] = 0xff;
 				}
 			}
-			if (!texture->initWithData(pTexels, dataLen, GLTexture2D::GLPixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+			if (!texture->initWithData(pTexels, dataLen, GLTexture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 			{
 				SAFE_DELETE(texture);
 			}
@@ -440,7 +440,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 			/** -1 not determined, 0 do not support A8, 1 support A8. we will only try it once. */
 			static int nSupportA8PixelFormat = -1;
 			
-			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, GLTexture2D::GLPixelFormat::A8, width, height, Size((float)width, (float)height)))
+			if (nSupportA8PixelFormat == 0 || !texture->initWithData(pTexels, dataLen, GLTexture2D::PixelFormat::A8, width, height, Size((float)width, (float)height)))
 			{
 				if (nSupportA8PixelFormat == -1)
 					nSupportA8PixelFormat = 0;
@@ -450,7 +450,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				if (!texture->initWithData(pData, width*height * 4, GLTexture2D::GLPixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
+				if (!texture->initWithData(pData, width*height * 4, GLTexture2D::PixelFormat::BGRA8888, width, height, Size((float)width, (float)height)))
 				{
 					SAFE_DELETE(texture);
 				}
@@ -478,7 +478,7 @@ TextureEntity* ParaEngine::TextureEntityOpenGL::CreateTexture(const uint8 * pTex
 void ParaEngine::TextureEntityOpenGL::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
 	/*
-	GLWrapper::Image* image = new Image();
+	GLImage* image = new Image();
 
 	if (image)
 	{
@@ -507,28 +507,28 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 	return false;
 }
 
-bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, D3DFORMAT dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
+bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
 	// TODO:
 	return false;
 }
 
-bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D3DFORMAT dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
+bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
 	if (imageEntity && imageEntity->IsValid())
 	{
 		const char* buffer = (const char*)(imageEntity->getData());
 		size_t nFileSize = imageEntity->getDataLen();
-		GLWrapper::Image image;
+		GLImage image;
 		bool bRet = false;
-		if (imageEntity->getRenderFormat() == D3DFMT_A8R8G8B8)
+		if (imageEntity->getRenderFormat() == PixelFormat::A8R8G8B8)
 			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), imageEntity->hasPremultipliedAlpha());
 		else
 			bRet = image.initWithImageData((const unsigned char*)buffer, nFileSize);
 		
 		if (bRet)
 		{
-			auto texture = new GLWrapper::Texture2D();
+			auto texture = new GLTexture2D();
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 				auto errorCode = glGetError();
@@ -536,14 +536,14 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 					OUTPUT_LOG("unknown opengl error: 0x%04X before LoadTexture: \n", errorCode);
 				}
 			}
-			auto format = GLWrapper::Texture2D::PixelFormat::AUTO;
-			if (dwTextureFormat != 0){
-				if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT1)
-					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT1;
-				else if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT3)
-					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT3;
-				else if (dwTextureFormat == D3DFORMAT::D3DFMT_DXT5)
-					format = GLWrapper::Texture2D::PixelFormat::S3TC_DXT5;
+			auto format = GLTexture2D::PixelFormat::AUTO;
+			if (dwTextureFormat != PixelFormat::Unkonwn){
+				if (dwTextureFormat == PixelFormat::DXT1)
+					format = GLTexture2D::PixelFormat::S3TC_DXT1;
+				else if (dwTextureFormat == PixelFormat::DXT3)
+					format = GLTexture2D::PixelFormat::S3TC_DXT3;
+				else if (dwTextureFormat == PixelFormat::DXT5)
+					format = GLTexture2D::PixelFormat::S3TC_DXT5;
 			}
 
 			if (texture && texture->initWithImage(&image, format))
@@ -569,7 +569,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 					{
 						// if texture filename contains "blocks" either in folder name or filename, we will force POINT mip mapping
 						//Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
-						GLWrapper::Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
+						GLTexture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
 						texture->setTexParameters(s_block_texture_params);
 						SetSamplerStateBlocky(true);
 					}
@@ -601,7 +601,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, D
 }
 
 
-HRESULT ParaEngine::TextureEntityOpenGL::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat, void** ppTexture /*= NULL*/)
+HRESULT ParaEngine::TextureEntityOpenGL::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat, void** ppTexture /*= NULL*/)
 {
 	ImageEntity image;
 	image.LoadFromMemory((const unsigned char*)buffer, nFileSize, false);

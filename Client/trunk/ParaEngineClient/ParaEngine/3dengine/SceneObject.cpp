@@ -2107,7 +2107,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 					if(nCount == 0)
 					{
 						// clear z buffer
-						GETD3D(CGlobals::GetRenderDevice())->Clear( 0L, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0L );
+						CGlobals::GetRenderDevice()->Clear( 0L, NULL, D3DCLEAR_ZBUFFER, 0, 1.0f, 0L );
 					}
 					pObj->Draw((float)dTimeDelta);
 					nCount++;

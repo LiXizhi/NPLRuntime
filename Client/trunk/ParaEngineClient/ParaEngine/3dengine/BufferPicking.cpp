@@ -151,8 +151,12 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 	if (BeginBuffer())
 	{
 		// just in case viewport is scaled.
-		D3DVIEWPORT9 viewport;
-		GETD3D(CGlobals::GetRenderDevice())->GetViewport(&viewport);
+		ParaViewport viewport;
+		auto vp = CGlobals::GetRenderDevice()->GetViewport();
+		viewport.X = vp.x;
+		viewport.Y = vp.y;
+		viewport.Width = vp.z;
+		viewport.Height = vp.w;
 
 		float fScalingX = (float)viewport.Width / CGlobals::GetGUI()->GetWidth();
 		float fScalingY = (float)viewport.Height / CGlobals::GetGUI()->GetHeight();
