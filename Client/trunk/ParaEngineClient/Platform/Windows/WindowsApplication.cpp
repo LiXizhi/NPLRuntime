@@ -570,42 +570,13 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 {
 	HRESULT hr = S_OK;
 
-	//if (m_bDeviceLost)
-	//{
-	//	// Test the cooperative level to see if it's okay to render
-	//	if (FAILED(hr = GETD3D(m_pRenderDevice)->TestCooperativeLevel()))
-	//	{
-	//		// If the device was lost, do not render until we get it back
-	//		if (D3DERR_DEVICELOST == hr)
-	//			return S_OK;
-
-	//		// Check if the device needs to be reset.
-	//		if (D3DERR_DEVICENOTRESET == hr)
-	//		{
+	if (!m_bActive)return S_OK;
+	if (m_bServerMode) return S_OK;
+	if (IsPassiveRenderingEnabled()) return S_OK;
+	if (m_bMinimized)return S_OK;
+	if (!Is3DRenderingEnabled())return S_OK;
 
 
-	//			OUTPUT_LOG("TestCooperativeLevel needs to reset device with D3DERR_DEVICENOTRESET\n");
-
-	//			if (FAILED(hr = Reset3DEnvironment()))
-	//			{
-	//				// This fixed a strange issue where d3d->reset() returns D3DERR_DEVICELOST. Perhaps this is due to strange. 
-	//				// I will keep reset for 5 seconds, until reset() succeed, otherwise we will exit application.  
-	//				for (int i = 0; i < 5 && hr == D3DERR_DEVICELOST; ++i)
-	//				{
-	//					::Sleep(1000);
-	//					if (SUCCEEDED(hr = Reset3DEnvironment()))
-	//					{
-	//						OUTPUT_LOG("TestCooperativeLevel successfully reset devices.\n");
-	//						return hr;
-	//					}
-	//				}
-	//				return E_FAIL;
-	//			}
-	//		}
-	//		return hr;
-	//	}
-	//	m_bDeviceLost = false;
-	//}
 
 	// Get the app's time, in seconds. Skip rendering if no time elapsed
 	double fAppTime = DXUtil_Timer(TIMER_GETAPPTIME);
@@ -667,35 +638,17 @@ HRESULT CWindowsApplication::Render3DEnvironment(bool bForceRender)
 		{
 			m_fTime = fAppTime;
 		}
-
-		// OUTPUT_LOG("%f:%f, %f, %f\n", m_fTime, fAppTime, m_fElapsedTime, fConstTime);
-
-		//__try
-		//{
-			// UpdateViewPort();
-
-			// Frame move the scene
-			FrameMove();
-			// Render the scene as normal
-			if (m_bActive && !IsPassiveRenderingEnabled())
-			{
-				if (Is3DRenderingEnabled() && !m_bMinimized && SUCCEEDED(hr) && SUCCEEDED(hr = Render()))
-				{
-					// only present if render returns true.
-					hr = PresentScene();
-				}
-			}
-			else
-			{
-				// passive mode: sleep until the next ideal frame move time and a little more. 0.1 seconds
-				Sleep(100);
-			}
-		//}
-		//__except (GenerateDump(GetExceptionInformation()))
-		//{
-		//	exit(0);
-		//}
-		// Show the frame on the primary surface.
+		// Frame move the scene
+		FrameMove(m_fTime);
+		// Render the scene as normal
+		if (Render() == S_OK)
+		{
+			PresentScene();
+		}
+		else
+		{
+			Sleep(100);
+		}
 	}
 	return S_OK;
 }
@@ -943,10 +896,10 @@ int CWindowsApplication::Run(HINSTANCE hInstance)
 
 		WCHAR* WindowClassName = L"ParaWorld";
 		WCHAR* WindowTitle = L"ParaEngine Window";
-		m_pRenderWindow = new WindowsRenderWindow(hInstance, nWidth, nHeight, false);
+		m_pRenderWindow = new ApplicationWindow(hInstance, nWidth, nHeight, false);
 		m_hWnd = m_pRenderWindow->GetHandle();
 		auto msgCallback = std::bind(&CWindowsApplication::HandleWindowMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
-		m_pRenderWindow->SetMessageCallBack(msgCallback);
+		//m_pRenderWindow->SetMessageCallBack(msgCallback);
 		SetMainWindow(m_hWnd, false);
 		Create();
 
@@ -1474,7 +1427,7 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 
 #if USE_DIRECTX_RENDERER
-		CGlobals::GetDirectXEngine().RestoreDeviceObjects();
+	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
 
 	UINT nBkbufWidth = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
 	UINT nBkbufHeight = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
@@ -1779,7 +1732,7 @@ HRESULT CWindowsApplication::FrameMove(double fTime)
 
 	OnFrameEnded();
 	return S_OK;
-}
+	}
 
 bool CWindowsApplication::AppHasFocus()
 {
@@ -1810,10 +1763,6 @@ HRESULT CWindowsApplication::Render()
 	double fTime = m_fTime;
 	UpdateFrameStats(m_fTime);
 
-	if (CGlobals::WillGenReport())
-	{
-		UpdateStats();
-	}
 	if (m_bServerMode)
 		return E_FAIL;
 
@@ -1831,8 +1780,8 @@ HRESULT CWindowsApplication::Render()
 																	// since we use EnableAutoDepthStencil, The device will create a depth-stencil buffer when it is created. The depth-stencil buffer will be automatically set as the render target of the device.
 																	// When the device is reset, the depth-stencil buffer will be automatically destroyed and recreated in the new size.
 																	// However, we must SetRenderTarget to the back buffer in each frame in order for  EnableAutoDepthStencil work properly for the backbuffer as well.
-		
-		
+
+
 #if USE_DIRECTX_RENDERER
 		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 #endif
@@ -1843,20 +1792,20 @@ HRESULT CWindowsApplication::Render()
 		//pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
-		//{
-		//	PERF1("3D Scene Render");
-		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
-		//}
-		//{
-		//	PERF1("GUI Render");
-		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_UI);
-		//}
-		//{
-		//	m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
-		//}
+		{
+			PERF1("3D Scene Render");
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
+		}
+		{
+			PERF1("GUI Render");
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_UI);
+		}
+		{
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
+		}
 
 		m_pRenderDevice->EndScene();
-	}
+}
 
 	pMoviePlatform->EndCaptureFrame();
 	return S_OK;
@@ -2102,28 +2051,6 @@ bool CWindowsApplication::HasNewConfig()
 void CWindowsApplication::SetHasNewConfig(bool bHasNewConfig)
 {
 	m_bHasNewConfig = bHasNewConfig;
-}
-
-void CWindowsApplication::GetCursorPosition(int* pX, int * pY, bool bInBackbuffer /*= true*/)
-{
-	if (IsTouchInputting())
-	{
-		// tricky, since the touch input may change the virtual mouse position when it is near a click-able UI object.
-		CGUIRoot::GetInstance()->GetMouse()->GetDeviceCursorPos(*pX, *pY);
-	}
-	else
-	{
-		POINT ptCursor;
-		::GetCursorPos(&ptCursor);
-		::ScreenToClient(CGlobals::GetAppHWND(), &ptCursor);
-
-		int x = (int)(ptCursor.x);
-		int y = (int)(ptCursor.y);
-		ClientToGame(x, y, bInBackbuffer);
-
-		*pX = x;
-		*pY = y;
-	}
 }
 
 void CWindowsApplication::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer)
@@ -2681,477 +2608,6 @@ bool CWindowsApplication::GetMessageFromApp(CWinRawMsg* pMsg)
 	return false;
 }
 
-bool CWindowsApplication::PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	LRESULT result = 0;
-	if (uMsg >= PE_WM_FIRST && uMsg <= PE_WM_LAST)
-	{
-		result = 1;
-		switch (uMsg)
-		{
-		case PE_TIMERID_HEARTBEAT:
-		{
-			break;
-		}
-		case PE_WM_SHOWCURSOR:
-		{
-			// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
-			// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
-			if (CGlobals::GetRenderDevice())
-			{
-				// ::SetCursor( NULL );
-#if USE_DIRECTX_RENDERER
-				GETD3D(m_pRenderDevice)->ShowCursor(wParam == 1);
-#endif
-
-				// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
-			}
-			break;
-		}
-		case PE_WM_SETCAPTURE:
-		{
-			::SetCapture(CGlobals::GetAppHWND());
-			break;
-		}
-		case PE_WM_RELEASECAPTURE:
-		{
-			::ReleaseCapture();
-			break;
-		}
-		case PE_WM_SETFOCUS:
-		{
-			::SetFocus((HWND)wParam);
-			break;
-		}
-		case PE_WM_QUIT:
-		{
-			HMENU hMenu;
-			hMenu = GetMenu(m_hWnd);
-			if (hMenu != NULL)
-				DestroyMenu(hMenu);
-			DestroyWindow(m_hWnd);
-			PostQuitMessage((int)wParam);
-			break;
-		}
-		case PE_IME_SETOPENSTATUS:
-		{
-			//TODO: CGUIIME:SetIMEOpenStatus_imp
-			// CGUIIME::SetIMEOpenStatus_imp(lParam != 0);
-			break;
-		}
-		case PE_IME_SETFOCUS:
-		{
-			if (lParam == 1) {
-				// TODO: CGUIIME::OnFocusIn_imp
-				//CGUIIME::OnFocusIn_imp();
-			}
-			else {
-				// TODO
-				//CGUIIME::OnFocusOut_imp();
-			}
-			break;
-		}
-		case PE_APP_SWITCH:
-		{
-			// on app switch in/out
-			if (lParam == 1) {
-				// inject WM_ACTIVATEAPP to simulate activate APP
-				MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)TRUE, 0, false);
-			}
-			else {
-				// inject WM_ACTIVATEAPP to simulate activate APP
-				MsgProcWinThread(GetMainWindow(), WM_ACTIVATEAPP, (WPARAM)FALSE, 0, false);
-			}
-
-			break;
-		}
-		default:
-			result = 0;
-			break;
-		}
-	}
-	return true;
-}
-
-
-// return 1 if we do not want default window procedure or other message handler to process the message.
-LRESULT CWindowsApplication::MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure)
-{
-
-
-	LRESULT result = 0;
-
-	bool bContinue = true;
-
-	if (uMsg <= WM_MOUSELAST && uMsg >= WM_MOUSEFIRST)
-	{
-		bContinue = false;
-		SendMessageToApp(hWnd, uMsg, wParam, lParam);
-		if (uMsg == WM_LBUTTONUP)
-			bContinue = true;
-
-		if (uMsg == WM_LBUTTONDOWN) {
-			// 2014.5.14 andy: check input source using message info along with WM_LBUTTONDOWN instead of WM_POINTERCAPTURECHANGED
-			//
-			//GetMessageExtraInfo() returns the extra info associated with a message
-			//	Mouse up and down messages are tagged with a special signature indicating they came from touch or pen :
-			//Mask extra info against 0xFFFFFF80
-			//	0xFF515780 for touch, 0xFF515700 for pen
-
-#define IsTouchEvent(dw) (((dw) & 0xFFFFFF80) == 0xFF515780)
-			SetTouchInputting(IsTouchEvent(GetMessageExtraInfo()));
-			// OUTPUT_LOG("WM_LBUTTONDOWN: %d \n", GetMessageExtraInfo());
-		}
-	}
-	if (bContinue)
-	{
-		switch (uMsg)
-		{
-			//--------------------------------------------------------------------------------------------
-			//process touch message
-			/*Touch input messages on windows 8 have following order:
-			WM_POINTERENTER
-			WM_POINTERDOWN
-			WM_POINTERUPDATE
-			.... (1-many WM_POINTERUPDATE which may further translated to other message e.g pan,rotate..)
-			WM_POINTERUPDATE
-			WM_POINTERUP
-			WM_POINTERLEAVE
-
-			DO NOT direct process WM_POINTXX message unless you need custom gestures event or multi-touch input.
-			Window will translate most touch input to traditional windows messages and standard gestures message,
-			however,there might be some delay, e.g you will receive mouse down/up message *after* WM_POINTERLEAVE:
-			WM_POINTERENTER
-			WM_POINTERDOWN
-			WM_POINTERUPDATE
-			....
-			WM_POINTERUPDATE
-			WM_POINTERUP
-			WM_POINTERLEAVE
-			WM_LBUTTONDOWN
-			WM_LBUTTONUP
-
-			Current input system(which based on DXInput) return wrong "mouse" position in touch mode,we add a quick fix here:
-			use WM_POINTERENTER and WM_POINTERLEAVE to check if we're in touch mode and update "mouse position" when
-			WM_POINTERDOWN and WM_POINTERUPDATE message come.Be ware touch input is very sensitive, sometimes you may get <10
-			pixel offset even when you feel you don't move at all.       --clayman
-			*/
-		case WM_POINTERENTER:
-		case WM_POINTERDOWN:
-		case WM_POINTERUP:
-		case WM_POINTERUPDATE:
-		case WM_POINTERLEAVE:
-		{
-			m_touchPointX = GET_X_LPARAM(lParam);
-			m_touchPointY = GET_Y_LPARAM(lParam);
-			result = 0;
-			SendMessageToApp(hWnd, uMsg, wParam, lParam);
-			break;
-		}
-		case WM_SETTINGCHANGE:
-		{
-			// When either system metric SM_CONVERTIBLESLATEMODE or SM_SYSTEMDOCKED changes, a broadcast message is sent by the system by using WM_SETTINGCHANGE.
-			// This method works when the system is running New Windows 8 UI mode.
-			// https://software.intel.com/en-us/articles/detecting-slateclamshell-mode-screen-orientation-in-convertible-pc
-			if (lParam)
-			{
-				if (wcscmp((const wchar_t*)lParam, L"ConvertibleSlateMode") == 0 || wcscmp((const wchar_t*)lParam, L"SystemDockMode") == 0)
-				{
-					//BOOL bSlateMode = (GetSystemMetrics(SM_CONVERTIBLESLATEMODE) == 0);
-					//BOOL bDocked = (GetSystemMetrics(SM_SYSTEMDOCKED) != 0);
-					SetTouchInputting(IsSlateMode());
-					CEventsCenter::GetInstance()->PostEvent(PredefinedEvents::SettingChange, false);
-					OUTPUT_LOG("slate mode settings changed\n");
-				}
-			}
-			break;
-		}
-		case WM_DISPLAYCHANGE:
-		{
-			// In desktop environment, OS broadcasts WM_DISPLAYCHANGE message to the windows when it detects orientation changes.lParam��s low word is the width and high word is the height of the new orientation.
-
-			break;
-		}
-		/*
-		case 0x0119: //case WM_GESTURE:
-		{
-		if(!m_pTouchInput)
-		LoadTouchInputPlug();
-
-		if(m_pTouchInput)
-		{
-		PEGestureInfo gi;
-		ZeroMemory(&gi, sizeof(PEGestureInfo));
-		gi.cbSize = sizeof(PEGestureInfo);
-
-		if(m_pTouchInput->DecodeGestureMessage(hWnd,uMsg,wParam,lParam,gi))
-		{
-		switch(gi.dwID)
-		{
-		case 4:  //GID_Pan
-		{
-		POINT p;
-		p.x = gi.ptsLocation.x;
-		p.y = gi.ptsLocation.y;
-
-		ScreenToClient(hWnd,&p);
-		SendMessageToApp(hWnd,WM_MOUSEMOVE,0,MAKELONG(p.x,p.y));
-		result = 1;
-		}
-		break;
-		default:
-		result = 0;
-		}
-		}
-		else
-		result = 0;
-		}
-		}
-		break;
-		*/
-		//--------------------------------------------------------------------------------------------
-
-		case WM_CLOSE:
-			if (!IsWindowClosingAllowed())
-			{
-				result = 1;
-			}
-			SetHasClosingRequest(true);
-			SendMessageToApp(hWnd, uMsg, wParam, lParam);
-			break;
-		case WM_SETCURSOR:
-			// do not display the windows cursors
-			// ::SetCursor(NULL);
-			// OUTPUT_LOG1("WM_SETCURSOR \n");
-			SendMessageToApp(hWnd, uMsg, wParam, lParam);
-			result = 1;
-			break;
-
-		case WM_IME_SETCONTEXT:
-
-			if (CGUIIME::IsEnableImeSystem())
-			{
-				// We don't want anything to display, so we have to clear this
-				lParam = 0;
-				// TODO:
-				//CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
-			}
-			else
-			{
-				lParam = ISC_SHOWUICOMPOSITIONWINDOW | ISC_SHOWUICANDIDATEWINDOW;
-				// let windows draw the IME.
-				// TODO: we need to set the candidate window position.
-			}
-			//OUTPUT_LOG("WM_IME_SETCONTEXT: fset:%d, %d\n", wParam, lParam);
-			break;
-		case WM_KEYUP:
-		case WM_INPUTLANGCHANGE:
-		case WM_IME_COMPOSITION:
-		case WM_IME_STARTCOMPOSITION:
-		case WM_IME_ENDCOMPOSITION:
-		case WM_IME_NOTIFY:
-		{
-			if (CGUIIME::IsEnableImeSystem())
-			{
-				result = 1;
-			}
-			/*if(uMsg == WM_INPUTLANGCHANGE)
-			OUTPUT_LOG("WM_INPUTLANGCHANGE");
-			else if(uMsg == WM_IME_COMPOSITION)
-			OUTPUT_LOG("WM_IME_COMPOSITION");
-			else if(uMsg == WM_IME_STARTCOMPOSITION)
-			OUTPUT_LOG("WM_IME_STARTCOMPOSITION");
-			else if(uMsg == WM_IME_ENDCOMPOSITION)
-			OUTPUT_LOG("WM_IME_ENDCOMPOSITION");
-			else if(uMsg == WM_IME_NOTIFY)
-			OUTPUT_LOG("WM_IME_NOTIFY");
-			OUTPUT_LOG(": %d, %d\n", wParam, lParam);*/
-
-			CGUIRoot* pRoot = CGlobals::GetGUI();
-			if (pRoot != 0 && pRoot->HasIMEFocus())
-			{
-				// TODO:
-				//CGUIIME::HandleWinThreadMsg(uMsg, wParam, lParam);
-			}
-			if (uMsg != WM_KEYUP)
-				break;
-		}
-		// key strokes
-		//case WM_KEYUP:
-		case WM_KEYDOWN:
-			// system
-		case WM_SYSKEYDOWN:
-		case WM_SYSKEYUP:
-		case WM_PAINT:
-		case WM_ENTERSIZEMOVE:
-		case WM_STYLECHANGED:
-		case WM_SIZE:
-		case WM_EXITSIZEMOVE:
-		case WM_ENTERMENULOOP:
-		case WM_EXITMENULOOP:
-		case WM_ACTIVATEAPP:
-		case WM_POWERBROADCAST:
-			SendMessageToApp(hWnd, uMsg, wParam, lParam);
-			break;
-		case WM_NCHITTEST:
-		{
-			// Prevent the user from selecting the menu in full screen mode
-			result = HTCLIENT;
-			if (!m_bWindowed) {
-				result = HTCLIENT;
-			}
-			else {
-				result = DefWindowProcW(hWnd, uMsg, wParam, lParam);
-			}
-			SendMessageToApp(hWnd, uMsg, result, 0);
-
-			CGUIRoot* pRoot = CGlobals::GetGUI();
-			if (pRoot != 0 && pRoot->IsNonClient())
-				result = HTCAPTION; // this will allow dragging
-			return result;
-		}
-		case WM_LBUTTONUP:
-			// fall through to WM_MOUSEACTIVATE if this is the top level window, since WM_MOUSEACTIVATE is not called for top-level window, but always called on mouse click for child windows.
-		case WM_MOUSEACTIVATE:
-		{
-			// This fixed a issue that in some buggy browser like(sougou), Foreground window can not be set back by clicking on the plugin window.
-			BringWindowToTop();
-
-			// this message is received whenever the user clicks on the window, even if there is child window.
-			//
-			// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may
-			// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
-			// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undetermined ordered.
-			// if the render process calls first, then the final result of focus window is wrong.
-			//
-			// To fix above problem, we will handle mouse activate in the window process and SetFocus to the window.
-			HWND hWndMain = GetMainWindow();
-			{
-				POINT ptCursor;
-				::GetCursorPos(&ptCursor);
-				::ScreenToClient(hWndMain, &ptCursor);
-
-				HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE | CWP_SKIPDISABLED);
-				if (hMouseOverWnd == hWndMain)
-				{
-					::SetFocus(hWndMain);
-					// result = MA_NOACTIVATE;
-				}
-			}
-			// very tricky here: we will simulate activate app message when clicked.
-			SendMessageToApp(hWnd, WM_ACTIVATEAPP, TRUE, 0);
-			break;
-		}
-		case WM_COMMAND:
-
-			switch (LOWORD(wParam))
-			{
-			case IDM_EXIT:
-				// Received key/menu command to exit app
-				SendMessage(hWnd, WM_CLOSE, 0, 0);
-				break;
-			default:
-				SendMessageToApp(hWnd, WM_COMMAND, wParam, lParam);
-				break;
-			}
-
-			break;
-		case WM_DROPFILES:
-		{
-			// TODO
-			//HDROP query = (HDROP)wParam;
-			//int n = 0, count = DragQueryFile(query, 0xFFFFFFFF, 0, 0);
-			//std::string cmds = "";
-			//while (n < count) {
-			//	char filename[MAX_FILENAME_LENGTH];
-			//	if (DragQueryFile(query, n, filename, MAX_FILENAME_LENGTH) != 0)
-			//	{
-			//		OUTPUT_LOG("drop files: %s\n", filename);
-			//		cmds += filename;
-			//		cmds += ";";
-			//	}
-			//	n++;
-			//}
-			//// TODO: make m_cmd thread safe by using a lock.
-			//m_cmd = cmds;
-			//SendMessageToApp(hWnd, WM_DROPFILES, NULL, (LPARAM)(LPSTR)(m_cmd.c_str()));
-			//DragFinish(query);
-			break;
-		}
-		case WM_COPYDATA:
-		{
-			PCOPYDATASTRUCT pMyCDS = (PCOPYDATASTRUCT)lParam;
-			switch (pMyCDS->dwData)
-			{
-			case ID_GAME_COMMANDLINE:
-
-				if (pMyCDS->lpData)
-				{
-					// TODO: make m_cmd thread safe by using a lock.
-					m_cmd = (const char*)(pMyCDS->lpData);
-				}
-				SendMessageToApp(hWnd, WM_COMMAND, ID_GAME_COMMANDLINE, (LPARAM)(LPSTR)(m_cmd.c_str()));
-				break;
-			}
-			break;
-		}
-
-		case WM_SYSCOMMAND:
-
-			// Prevent moving/sizing and power loss in fullscreen mode
-			switch (wParam)
-			{
-			case SC_MOVE:
-			case SC_SIZE:
-			case SC_MAXIMIZE:
-			case SC_KEYMENU:
-			case SC_MONITORPOWER:
-				SendMessageToApp(hWnd, uMsg, wParam, lParam);
-				break;
-			}
-			/*
-			When you release the Alt key, the system generates a WM_SYSCOMMAND/SC_KEYMENU message.
-			Futhermore, unless you press a key to open a specific popup menu, the lparam will be 0.
-			DefWindowProc, upon receiving this, will enter the menu loop. So, all you have to do is
-			detect this message and prevent it from getting to DefWindowProc:
-			*/
-			if (wParam == SC_KEYMENU)
-			{
-				return 0;
-			}
-
-
-			break;
-
-			/*case WM_IME_CHAR:
-			{
-			OUTPUT_LOG("WM_IME_CHAR:%d\n",wParam);
-			}
-			break;
-			case WM_UNICHAR:
-			{
-			OUTPUT_LOG("WM_UNICHAR:%d\n",wParam);
-			}
-			break;
-			*/
-		case WM_CHAR:
-		{
-			// TODO
-			//BOOL bIsUnicode = IsWindowUnicode(hWnd);
-			//CGUIIME::SendWinMsgChar((WCHAR)wParam);
-			// OUTPUT_LOG("WM_CHAR:%d\n",wParam);
-		}
-		break;
-
-		}
-	}
-	if (result == 0)
-	{
-		if (bCallDefProcedure)
-			return DefWindowProcW(hWnd, uMsg, wParam, lParam);
-	}
-	return result;
-}
 
 
 const char* CWindowsApplication::GetTouchEventSCodeFromMessage(const char * event_type, HWND hWnd, WPARAM wParam, LPARAM lParam)
@@ -3196,315 +2652,8 @@ LRESULT CWindowsApplication::MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPA
 			return 1;
 		}
 	}
-
-	switch (uMsg)
-	{
-	case WM_PAINT:
-		// Handle paint messages when the app is paused
-		// this may lead to problems, so do nothing with WM_PAINT, especially during initialization.
-		/*if( bIsSceneEnabled && (!m_bDisableD3D) && m_pd3dDevice && !m_bActive &&
-		m_bDeviceObjectsInited && m_bDeviceObjectsRestored )
-		{
-		if(Is3DRenderingEnabled())
-		{
-		HRESULT hr;
-		Render();
-		hr = m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
-		if( D3DERR_DEVICELOST == hr )
-		m_bDeviceLost = true;
-		}
-		}*/
-		break;
-	case WM_ENTERSIZEMOVE:
-		// Halt frame movement while the app is sizing or moving
-		if (bIsSceneEnabled)
-		{
-			//Pause(true);
-		}
-		break;
-	case WM_SIZE:
-	{
-		if (bIsSceneEnabled)
-		{
-#ifdef USE_FLASH_MANAGER
-			// Flash Window Size changes.
-			CGlobals::GetAssetManager()->GetFlashManager().OnSizeChange();
-#endif
-			if (SIZE_MINIMIZED == wParam)
-			{
-				if (m_bClipCursorWhenFullscreen && !m_bWindowed)
-					ClipCursor(NULL);
-				//Pause( true ); // Pause while we're minimized
-				m_bMinimized = true;
-				m_bMaximized = false;
-			}
-			if (SIZE_MAXIMIZED == wParam)
-			{
-				//if( m_bMinimized )
-				//    Pause( false ); // Unpause since we're no longer minimized
-				m_bMinimized = false;
-				m_bMaximized = true;
-			}
-			else if (SIZE_RESTORED == wParam)
-			{
-				if (m_bMaximized)
-				{
-					m_bMaximized = false;
-				}
-				else if (m_bMinimized)
-				{
-					//Pause( false ); // Unpause since we're no longer minimized
-					m_bMinimized = false;
-				}
-			}
-		}
-
-		break;
-	}
-	case WM_ENTERMENULOOP:
-		if (bIsSceneEnabled)
-		{
-			// Pause the app when menus are displayed
-			//Pause(true);
-		}
-		break;
-	case WM_EXITMENULOOP:
-		if (bIsSceneEnabled)
-		{
-			//Pause(false);
-		}
-		break;
-	case WM_ACTIVATEAPP:
-	{
-		bool  bActive = !(FALSE == wParam);
-		m_bAppHasFocus = bActive;
-		if (bIsSceneEnabled)
-		{
-			ActivateApp(bActive);
-		}
-		break;
-	}
-	case WM_MOUSEACTIVATE:
-	{
-		// Set focus if mouse is over the main window but not over any of its visible child window
-		//HWND hWndMain = GetMainWindow();
-		//{
-		//	POINT ptCursor;
-		//	::GetCursorPos(&ptCursor);
-		//	::ScreenToClient(hWndMain,&ptCursor);
-
-		//	HWND hMouseOverWnd = ChildWindowFromPointEx(hWndMain, ptCursor, CWP_SKIPINVISIBLE|CWP_SKIPDISABLED);
-		//	if(hMouseOverWnd == hWndMain)
-		//	{
-		//		// Note: since SetFocus is not called immediately during MouseActivate, the parent window in the browser process may set
-		//		// think that no child window is getting the focus, and therefore wrongly get focus, but at the same time,
-		//		// the render process send PE_WM_SETFOCUS to set focus, so the two processes(threads) may call SetFocus in undertermined ordered.
-		//		// if the render process calls first, then the final result of focus window is wrong.
-		//		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETFOCUS, (WPARAM)(hWndMain), 0);
-		//		ActivateApp(true);
-		//	}
-		//}
-		break;
-	}
-	case WM_NCHITTEST:
-		// Prevent the user from selecting the menu in full screen mode
-		if (!m_bWindowed) {
-			using namespace ParaEngine;
-			CGUIRoot::GetInstance()->SetMouseInClient(true);
-		}
-		else
-		{
-			LRESULT result = wParam;
-			using namespace ParaEngine;
-			MouseEvent event(0, 0, 0, ((LRESULT)wParam) == HTCLIENT ? 1 : 0);
-			CGUIRoot::GetInstance()->handleNonClientTest(event);
-		}
-		break;
-	case WM_DROPFILES:
-	{
-		const char* sCmd = (const char*)lParam;
-		if (sCmd)
-		{
-			if (CGlobals::GetEventsCenter())
-			{
-				// msg = command line.
-				string msg = "msg=";
-				NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), sCmd);
-				msg.append(";");
-				SystemEvent event(SystemEvent::SYS_WM_DROPFILES, msg);
-				CGlobals::GetEventsCenter()->FireEvent(event);
-			}
-		}
-		break;
-	}
-	case WM_POWERBROADCAST:
-		switch (wParam)
-		{
-#ifndef PBT_APMQUERYSUSPEND
-#define PBT_APMQUERYSUSPEND 0x0000
-#endif
-		case PBT_APMQUERYSUSPEND:
-			// At this point, the app should save any data for open
-			// network connections, files, etc., and prepare to go into
-			// a suspended mode.
-			return true;
-
-#ifndef PBT_APMRESUMESUSPEND
-#define PBT_APMRESUMESUSPEND 0x0007
-#endif
-		case PBT_APMRESUMESUSPEND:
-			// At this point, the app should recover any data, network
-			// connections, files, etc., and resume running from when
-			// the app was suspended.
-			return true;
-		}
-		break;
-	case WM_COMMAND:
-	{
-		/// menu command
-		switch (LOWORD(wParam))
-		{
-		case IDM_TOGGLESTART:
-			// Toggle frame movement
-			m_bFrameMoving = !m_bFrameMoving;
-			DXUtil_Timer(m_bFrameMoving ? TIMER_START : TIMER_STOP);
-			break;
-
-		case IDM_SINGLESTEP:
-			// Single-step frame movement
-			if (false == m_bFrameMoving)
-				DXUtil_Timer(TIMER_ADVANCE);
-			else
-				DXUtil_Timer(TIMER_STOP);
-			m_bFrameMoving = false;
-			m_bSingleStep = true;
-			break;
-			/// application defined command
-		case ID_GAME_COMMANDLINE:
-		{
-			const char* sCmd = (const char*)lParam;
-			if (sCmd)
-			{
-				if (CGlobals::GetEventsCenter())
-				{
-					// msg = command line.
-					string msg = "msg=";
-					NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), sCmd);
-					msg.append(";");
-					SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-					CGlobals::GetEventsCenter()->FireEvent(event);
-				}
-			}
-			break;
-		}
-		case ID_SCREENSHOT_BEGINRECORDINGVIDEO:
-		{
-			CGlobals::GetMoviePlatform()->BeginCapture("");
-			break;
-		}
-		case ID_SCREENSHOT_STOPRECORDINGVIDEO:
-		{
-			CGlobals::GetMoviePlatform()->EndCapture();
-			break;
-		}
-		case ID_SCREENSHOT_PAUSE_RESUME:
-		{
-			if (CGlobals::GetMoviePlatform()->IsRecording())
-			{
-				CGlobals::GetMoviePlatform()->PauseCapture();
-			}
-			else
-			{
-				CGlobals::GetMoviePlatform()->ResumeCapture();
-			}
-			break;
-		}
-		case ID_HELP_ABOUT:
-		{
-			return DialogBox(NULL, MAKEINTRESOURCE(IDD_ABOUT),
-				hWnd, DialogProcAbout);
-			break;
-		}
-		}
-	}
-	break;
-	case PE_APP_SHOW_ERROR_MSG:
-	{
-		// show error message.
-		break;
-	}
-	case WM_POINTERDOWN:
-	case WM_POINTERUP:
-	case WM_POINTERUPDATE:
-	{
-		int32_t x = GET_X_LPARAM(lParam);
-		int32_t y = GET_Y_LPARAM(lParam);
-		int32_t id = GET_POINTERID_WPARAM(wParam);
-		POINT p; p.x = x; p.y = y;
-		ScreenToClient(hWnd, &p);
-		x = p.x; y = p.y;
-		ClientToGame(x, y, true);
-		int nEventType = -1;
-		if (uMsg == WM_POINTERUPDATE)
-			nEventType = TouchEvent::TouchEvent_POINTER_UPDATE;
-		//else if (uMsg == WM_POINTERENTER)
-		//	nEventType = TouchEvent::TouchEvent_POINTER_ENTER;
-		//else if (uMsg == WM_POINTERLEAVE)
-		//	nEventType = TouchEvent::TouchEvent_POINTER_UP;
-		else if (uMsg == WM_POINTERUP)
-			nEventType = TouchEvent::TouchEvent_POINTER_UP;
-		else if (uMsg == WM_POINTERDOWN)
-			nEventType = TouchEvent::TouchEvent_POINTER_DOWN;
-
-		if (nEventType >= 0)
-		{
-			TouchEvent event(EH_TOUCH, (TouchEvent::TouchEventMsgType)nEventType, id, (float)x, (float)y, GetTickCount());
-			CGUIRoot::GetInstance()->handleTouchEvent(event);
-		}
-		break;
-	}
-	case WM_POINTERCAPTURECHANGED:
-	{
-		//delay actual state change until game thread start because mouse msg come after POINT msg.
-
-	}
-	break;
-
-	case WM_CLOSE:
-		// WM_CLOSE indicates a request to close a window, such as by clicking on the x. This is a good time to ask the user if they want to save their work, etc.
-		// Calling DefWindowProc will destroy the window, while returning zero will leave the window intact.
-
-		// if the user prohibit closing, then we will return 0.
-		if (!IsWindowClosingAllowed())
-		{
-			if (CGlobals::GetEventsCenter())
-			{
-				// msg = command line.
-				string msg = "msg={type=\"WM_CLOSE\"};";
-				SystemEvent event(SystemEvent::SYS_WM_CLOSE, msg);
-				CGlobals::GetEventsCenter()->FireEvent(event);
-				SetHasClosingRequest(false);
-			}
-		}
-		else
-		{
-			SetHasClosingRequest(false);
-			Cleanup3DEnvironment();
-			delete m_pRenderContext;
-			m_pRenderContext = nullptr;
-			FinalCleanup();
-			// this will prevent render to be called.
-			SetAppState(PEAppState_Stopped);
-
-			// tell the window to destroy itself and Post WM_QUIT message.
-			PostWinThreadMessage(PE_WM_QUIT, 0, 0);
-			m_hWnd = NULL;
-			return 2; // this will stop processing any other messages in the pool
-		}
-		break;
-	}
 	return 0;
-}
+	}
 
 void CWindowsApplication::Exit(int nReturnCode /*= 0*/)
 {

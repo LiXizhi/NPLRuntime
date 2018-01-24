@@ -1,11 +1,11 @@
 #pragma once
 namespace ParaEngine
 {
-    struct Vector2
+    struct CVector2
     {
         float x;
         float y;
-        Vector2()
+        CVector2()
         :x(0)
         ,y(0)
         {

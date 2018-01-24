@@ -93,12 +93,13 @@ namespace ParaEngine
 		void ApplyBlendingModeChange();
 	private:
 		bool m_AlphaBlendingChanged;
+		bool m_BlendingChaned;
 		bool m_EnableBlending;
 		bool m_EnableSeparateAlphaBlending;
-		bool m_BlendingSource;
-		bool m_BlendingDest;
-		bool m_BlendingAlphaSource;
-		bool m_BlendingAlphaDest;
+		uint32_t m_BlendingSource;
+		uint32_t m_BlendingDest;
+		uint32_t m_BlendingAlphaSource;
+		uint32_t m_BlendingAlphaDest;
 		uint32_t m_StencilRefValue;
 		uint32_t m_StencilPass;
 		uint32_t m_SamplerStates[8][8] = {};

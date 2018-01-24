@@ -28,6 +28,8 @@ add_executable(WindowsApplication
     guicon.h
     render/WindowsRenderWindow.cpp
     render/windowsRenderWindow.h
+    ApplicationWindow.h
+    ApplicationWindow.cpp
     ${src_render_context})
 
 target_compile_definitions(WindowsApplication PUBLIC 
