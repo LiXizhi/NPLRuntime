@@ -5,12 +5,72 @@
 //#include "Math/ParaColor.h"
 using namespace ParaEngine;
 
+
+
+namespace ParaEngine
+{
+	uint32_t ToGLBlendValue(uint32_t value)
+	{
+		switch (value)
+		{
+		case RSV_BLEND_ZERO:
+			return GL_ZERO;
+		case RSV_BLEND_ONE:
+			return GL_ONE;
+		case RSV_BLEND_SRCCOLOR:
+			return GL_SRC_COLOR;
+		case RSV_BLEND_INVSRCCOLOR:
+			return GL_ONE_MINUS_SRC_COLOR;
+		case RSV_BLEND_SRCALPHA:
+			return GL_SRC_ALPHA;
+		case RSV_BLEND_INVSRCALPHA:
+			return GL_ONE_MINUS_SRC_ALPHA;
+		case RSV_BLEND_DESTALPHA:
+			return GL_DST_ALPHA;
+		case RSV_BLEND_INVDESTALPHA:
+			return GL_ONE_MINUS_DST_ALPHA;
+		case RSV_BLEND_DESTCOLOR:
+			return GL_DST_COLOR;
+		case RSV_BLEND_INVDESTCOLOR:
+			return GL_ONE_MINUS_DST_COLOR;
+		case RSV_BLEND_SRCALPHASAT:
+			return GL_SRC_ALPHA_SATURATE;
+		//case RSV_BLEND_BOTHSRCALPHA:
+		//case RSV_BLEND_BOTHINVSRCALPHA:
+		//case RSV_BLEND_BLENDFACTOR:
+		//case RSV_BLEND_INVBLENDFACTOR:
+		default:
+			assert(false);//Unkonw blend value
+			break;
+		}
+		return 0;
+	}
+}
+
+
+
 ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	:m_AlphaBlendingChanged(true)
 	,m_EnableBlending(false)
 	,m_EnableSeparateAlphaBlending(false)
+	,m_BlendingChaned(true)
+	,m_BlendingSource(RSV_BLEND_SRCALPHA)
+	,m_BlendingDest(RSV_BLEND_INVSRCALPHA)
+	,m_BlendingAlphaSource(RSV_BLEND_SRCALPHA)
+	,m_BlendingAlphaDest(RSV_BLEND_INVSRCALPHA)
+	,m_StencilPass(0)
+	,m_StencilRefValue(0)
+	,m_CurrentIndexBuffer(0)
+	,m_CurrentVertexBuffer(0)
+	,m_CurrentVertexDeclaration(0)
 {
-
+	for (int i = 0;i<8;i++)
+	{
+		for (int j =0;j<8;j++)
+		{
+			m_SamplerStates[i][j] = 0;
+		}
+	}
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -76,71 +136,61 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 	case ERenderState::SEPARATEALPHABLENDENABLE:
 	{
 		bool bEnabled = Value ? true : false;
-		if (m_EnableSeparateAlphaBlending != bEnabled)
+		if (bEnabled == m_EnableSeparateAlphaBlending)break;
+		m_EnableSeparateAlphaBlending = bEnabled;
+		if (bEnabled)
 		{
-			m_EnableSeparateAlphaBlending = bEnabled;
-			m_AlphaBlendingChanged = true;
+			glEnable(GL_BLEND);
 		}
+		else {
+			glDisable(GL_BLEND);
+		}
+
 		break;
 	}
 	case ERenderState::ALPHABLENDENABLE:
 	{
 		bool bEnabled = Value ? true : false;
-		if (m_EnableBlending != bEnabled)
+		if (bEnabled == m_EnableBlending) break;
+		m_EnableBlending = bEnabled;
+		if (bEnabled)
 		{
-			m_EnableBlending = bEnabled;
-			m_AlphaBlendingChanged = true;
+			glEnable(GL_BLEND);
 		}
+		else {
+			glDisable(GL_BLEND);
+		}
+		
 		break;
 	}
 	case ERenderState::SRCBLENDALPHA:
+	{
+		if (Value == m_BlendingAlphaSource)break;
+		m_BlendingAlphaSource = Value;
+		m_AlphaBlendingChanged = true;
+	}
+	break;
 	case ERenderState::DESTBLENDALPHA:
+	{
+		if (Value == m_BlendingAlphaDest)break;
+		m_BlendingAlphaDest = Value;
+		m_AlphaBlendingChanged = true;
+	}
+	break;
 	case ERenderState::SRCBLEND:
+	{
+		if (Value == m_BlendingSource)break;
+		m_BlendingSource = Value;
+		m_BlendingChaned = true;
+	}
+	break;
 	case ERenderState::DESTBLEND:
 	{
-		GLenum glValue = RSV_BLEND_ONE;
-		if (Value == RSV_BLEND_ONE)
-			glValue = GL_ONE;
-		else if (Value == RSV_BLEND_ZERO)
-			glValue = GL_ZERO;
-		else if (Value == RSV_BLEND_SRCALPHA)
-			glValue = GL_SRC_ALPHA;
-		else if (Value == RSV_BLEND_INVSRCALPHA)
-			glValue = GL_ONE_MINUS_SRC_ALPHA;
-		else if (Value == RSV_BLEND_DESTALPHA)
-			glValue = GL_DST_ALPHA;
-		else if (Value == RSV_BLEND_INVDESTALPHA)
-			glValue = GL_ONE_MINUS_DST_ALPHA;
-
-		if (State == ERenderState::SRCBLEND) {
-			if (m_BlendingSource != glValue)
-			{
-				m_BlendingSource = glValue;
-				m_AlphaBlendingChanged = true;
-			}
-		}
-		else if (State == ERenderState::DESTBLEND) {
-			if (m_BlendingDest != glValue) {
-				m_BlendingDest = glValue;
-				m_AlphaBlendingChanged = true;
-			}
-		}
-		else if (State == ERenderState::SRCBLENDALPHA) {
-			if (m_BlendingAlphaSource != glValue) {
-				m_BlendingAlphaSource = glValue;
-				m_AlphaBlendingChanged = true;
-			}
-		}
-		else if (State == ERenderState::DESTBLENDALPHA) {
-			if (m_BlendingAlphaDest != glValue) {
-				m_BlendingAlphaDest = glValue;
-				m_AlphaBlendingChanged = true;
-			}
-		}
-		// blending mode is delayed until the next draw call.
-		// ApplyBlendingModeChange();
-		break;
+		if (Value == m_BlendingDest)break;
+		m_BlendingDest = Value;
+		m_BlendingChaned = true;
 	}
+	break;
 	case ERenderState::STENCILENABLE:
 	{
 		if (Value)
@@ -216,10 +266,14 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 	return 4;
 }
 
-bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, uint32_t texture)
+
+
+
+bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {
 	glActiveTexture(GL_TEXTURE0 + stage);
-	glBindTexture(GL_TEXTURE, texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	//auto error = glGetError();
 	return true;
 }
 
@@ -364,14 +418,6 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
-	if (m_CurrentIndexBuffer)
-	{
-		SetIndices(0);
-	}
-	if (m_CurrentVertexBuffer)
-	{
-		SetStreamSource(0, 0, 0, 0);
-	}
 	if (m_CurrentVertexDeclaration)
 	{
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
@@ -417,8 +463,10 @@ Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
 
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 {
+	assert(viewport.z > viewport.w);
 	m_CurrentViewPort = viewport;
 	glViewport((GLint)(viewport.x), (GLint)(viewport.y), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
+	//auto error = glGetError();
 	return true;
 }
 
@@ -429,12 +477,11 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(uint32_t Count, const void* pRects, u
 	{
 		fields |= GL_DEPTH_BUFFER_BIT;
 		glClearDepth(Z);
-		SetRenderState(ERenderState::ZFUNC,RSV_CMP_LESSEQUAL);
 	}
 	if ((Flags & CLEAR_TARGET) != 0)
 	{
 		//LinearColor color(Color);
-		glClearColor(0, 0, 0, 0);
+		glClearColor(1, 1, 1, 0);
 		fields |= GL_COLOR_BUFFER_BIT;
 	}
 	if ((Flags & CLEAR_STENCIL) != 0)
@@ -449,6 +496,8 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(uint32_t Count, const void* pRects, u
 			glDepthMask(GL_TRUE);
 		glClear(fields);
 	}
+
+	//auto error = glGetError();
 
 	return true;
 }
@@ -467,34 +516,23 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 {
+	
 	if (m_AlphaBlendingChanged)
 	{
+		uint32_t asrc = ToGLBlendValue(m_BlendingAlphaSource);
+		uint32_t adst = ToGLBlendValue(m_BlendingAlphaDest);
+
+		uint32_t src = ToGLBlendValue(m_BlendingSource);
+		uint32_t dst = ToGLBlendValue(m_BlendingDest);
+		glBlendFuncSeparate(src, dst, asrc, adst);
 		m_AlphaBlendingChanged = false;
-		if (m_EnableBlending)
-		{
-			if (m_EnableSeparateAlphaBlending)
-			{
-				glEnable(GL_BLEND);
-				glBlendFuncSeparate(m_BlendingSource, m_BlendingDest, m_BlendingAlphaSource, m_BlendingAlphaDest);
-			}
-			else
-			{
-				if (m_BlendingSource == GL_ONE && m_BlendingDest == GL_ZERO)
-				{
-					glDisable(GL_BLEND);
-				}
-				else
-				{
-					glEnable(GL_BLEND);
-					glBlendFunc(m_BlendingSource, m_BlendingDest);
-				}
-			}
-		}
-		else
-		{
-			glDisable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ZERO);
-		}
+	}else if (m_BlendingChaned)
+	{
+		uint32_t src = ToGLBlendValue(m_BlendingSource);
+		uint32_t dst = ToGLBlendValue(m_BlendingDest);
+		glBlendFunc(src, dst);
+		m_BlendingChaned = false;
 	}
+
 }
 

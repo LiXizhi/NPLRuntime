@@ -4,7 +4,7 @@
 #include "ITouchInputTranslator.h"
 #include "IParaEngineApp.h"
 #include <map>
-
+#include "ApplicationWindow.h"
 // forward declare
 namespace ParaEngine
 {
@@ -148,7 +148,7 @@ namespace ParaEngine
 		PEAppState m_nAppState;
 
 
-		WindowsRenderWindow* m_pRenderWindow;
+		ApplicationWindow* m_pRenderWindow;
 
 
 	public:
@@ -245,12 +245,6 @@ namespace ParaEngine
 		*/
 		DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name);
 
-		/** get the current mouse cursor position.
-		* @param pX: out
-		* @param pY: out
-		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
-		*/
-		virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true);
 
 		/** translate a position from game coordination system to client window position.
 		* @param inout_x: in and out
@@ -393,10 +387,9 @@ namespace ParaEngine
 
 		
 
-		virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true);
 		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 
 		/** get a message from the application message queue and remove it from the queue. This function is mostly
 		used internally by the main thread.
@@ -568,6 +561,10 @@ namespace ParaEngine
 		ITouchInputTranslator* m_pTouchInput;
 
 		ITouchInputTranslator* LoadTouchInputPlug();
+
+
+	 protected:
+		 
 
 	};
 

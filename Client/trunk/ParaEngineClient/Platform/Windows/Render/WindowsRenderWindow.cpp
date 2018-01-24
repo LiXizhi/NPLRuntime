@@ -10,8 +10,6 @@ const WCHAR* WindowsRenderWindow::ClassName = L"ParaWorld";
 
 LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-
-
 	if (g_WindowMap.find(hWnd) == g_WindowMap.end())
 	{
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -21,17 +19,52 @@ LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, 
 	assert(window);
 	assert(window->GetHandle() == hWnd);
 
-	if (message == WM_DESTROY)
+	switch (message)
 	{
+	case WM_MOUSEMOVE:
+	{
+		float xPos = GET_X_LPARAM(lParam);
+		float yPos = GET_Y_LPARAM(lParam);
+		window->m_MousePos.x = xPos;
+		window->m_MousePos.y = yPos;
+		window->OnMouseMove(xPos, yPos);
+	}
+		break;
+	case WM_LBUTTONDOWN:
+		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
+		window->OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS);
+		break;
+	case WM_LBUTTONUP:
+		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
+		window->OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE);
+		break;
+	case WM_RBUTTONDOWN:
+		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
+		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS);
+		break;
+	case WM_RBUTTONUP:
+		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
+		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE);
+		break;
+	case WM_MBUTTONDOWN:
+		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
+		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS);
+		break;
+	case WM_MBUTTONUP:
+		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
+		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE);
+		break;
+
+	case WM_DESTROY:
 		// close the application entirely
 		PostQuitMessage(0);
 		window->m_IsQuit = true;
+		break;;
+	default:
+		break;
 	}
 
-	if (window->m_MessageCallBack)
-	{
-		return window->m_MessageCallBack(window, message, wParam, lParam);
-	}
+
 
 	// Handle any messages the switch statement didn't
 	return  DefWindowProcW(hWnd, message, wParam, lParam);
@@ -46,6 +79,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 	, m_Windowed(windowed)
 	, m_IsQuit(false)
 {
+	InitInput();
 
 	WNDCLASSW wndClass = { 0, WindowsRenderWindow::WindowProc, 0, 0, hInstance,
 		NULL,
@@ -54,6 +88,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 		NULL,
 		L"ParaWorld"
 	};
+	wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 
 	RegisterClassW(&wndClass);
 
@@ -140,7 +175,24 @@ bool ParaEngine::WindowsRenderWindow::IsWindowed() const
 	return m_Windowed;
 }
 
-void ParaEngine::WindowsRenderWindow::SetMessageCallBack(std::function<LRESULT(WindowsRenderWindow*, UINT, WPARAM, LPARAM)> callback)
+
+ParaEngine::EKeyState ParaEngine::WindowsRenderWindow::GetMouseButtonState(EMouseButton button)
 {
-	m_MessageCallBack = callback;
+	assert(button!=EMouseButton::END);
+	return m_MouseState[(unsigned int)button];
 }
+
+CVector2 ParaEngine::WindowsRenderWindow::GetMousePos()
+{
+	return m_MousePos;
+}
+
+void WindowsRenderWindow::InitInput()
+{
+	// Init mouse state
+	for (uint32_t i = 0;i<(uint32_t)EMouseButton::END;i++)
+	{
+		m_MouseState[i] = EKeyState::RELEASE;
+	}
+}
+

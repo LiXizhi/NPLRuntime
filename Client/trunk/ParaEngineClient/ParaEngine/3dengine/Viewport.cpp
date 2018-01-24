@@ -444,8 +444,8 @@ ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, D
 
 	vp.x = myViewport.X;
 	vp.y = myViewport.Y;
-	vp.w = myViewport.Width;
-	vp.z = myViewport.Height;
+	vp.z = myViewport.Width;
+	vp.w = myViewport.Height;
 	CGlobals::GetRenderDevice()->SetViewport(vp);
 	return myViewport;
 }
