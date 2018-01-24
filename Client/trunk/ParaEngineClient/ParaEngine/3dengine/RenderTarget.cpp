@@ -549,8 +549,8 @@ bool ParaEngine::CRenderTarget::Begin()
 		Rect vp;
 		vp.x = 0;
 		vp.y = 0;
-		vp.w = GetTextureWidth();
-		vp.z = GetTextureHeight();
+		vp.z = GetTextureWidth();
+		vp.w = GetTextureHeight();
 		pRenderDevice->SetViewport(vp);
 	}
 #endif
@@ -592,8 +592,8 @@ void ParaEngine::CRenderTarget::End()
 	Rect vp;
 	vp.x = m_oldViewport.X;
 	vp.y = m_oldViewport.Y;
-	vp.w = m_oldViewport.Width;
-	vp.z = m_oldViewport.Height;
+	vp.z = m_oldViewport.Width;
+	vp.w = m_oldViewport.Height;
 	pRenderDevice->SetViewport(vp);
 }
 

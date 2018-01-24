@@ -334,10 +334,14 @@ bool ParaEngine::RenderDeviceOpenGL::SetSamplerState(uint32_t stage, ESamplerSta
 
 bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pVertexDeclaration)
 {
-	glBindVertexArray(0);
-	pVertexDeclaration->EnableAttribute();
-	pVertexDeclaration->ApplyAttribute();
-	m_CurrentVertexDeclaration = pVertexDeclaration;
+	if (pVertexDeclaration)
+	{
+		glBindVertexArray(0);
+		pVertexDeclaration->EnableAttribute();
+		pVertexDeclaration->ApplyAttribute();
+		m_CurrentVertexDeclaration = pVertexDeclaration;
+	}
+
 	return true;
 }
 
@@ -350,13 +354,29 @@ bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVer
 
 bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndexData)
 {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
+	if (pIndexData != m_CurrentIndexBuffer)
+	{
+		m_CurrentIndexBuffer = pIndexData;
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
+	}
+
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
+	if (pStreamData != m_CurrentVertexBuffer)
+	{
+		m_CurrentVertexBuffer = pStreamData;
+		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
+		if (pStreamData && m_CurrentVertexDeclaration)
+		{
+			m_CurrentVertexDeclaration->EnableAttribute();
+			m_CurrentVertexDeclaration->ApplyAttribute();
+		}
+
+	}
+
 	return true;
 	
 }
@@ -406,6 +426,7 @@ int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount)
 {
 	ApplyBlendingModeChange();
+
 	if (Type == EPrimitiveType::TRIANGLELIST)
 		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 	else if (Type == EPrimitiveType::TRIANGLESTRIP)
@@ -463,7 +484,7 @@ Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
 
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 {
-	assert(viewport.z > viewport.w);
+	assert(viewport.z >= viewport.w);
 	m_CurrentViewPort = viewport;
 	glViewport((GLint)(viewport.x), (GLint)(viewport.y), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
 	//auto error = glGetError();
