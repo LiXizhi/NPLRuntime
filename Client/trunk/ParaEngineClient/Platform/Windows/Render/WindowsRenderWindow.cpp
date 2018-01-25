@@ -2,8 +2,153 @@
 #include "WindowsRenderWindow.h"
 #include "resource.h"
 #include "Winuser.h"
+#include <unordered_map>
 
 using namespace ParaEngine;
+
+std::unordered_map<DWORD, EVirtualKey> s_keymap;
+
+void InitVirtualKeyMap()
+{
+	if (s_keymap.size() == 0)
+	{
+		// Init keymap.
+
+		s_keymap[VK_SPACE] = EVirtualKey::KEY_SPACE;
+		s_keymap[VK_OEM_7] = EVirtualKey::KEY_APOSTROPHE;
+		s_keymap[VK_OEM_COMMA] = EVirtualKey::KEY_COMMA;
+		s_keymap[VK_OEM_PERIOD] = EVirtualKey::KEY_PERIOD;
+		s_keymap[VK_OEM_2] = EVirtualKey::KEY_SLASH;
+		s_keymap['0'] = EVirtualKey::KEY_0;
+		s_keymap['1'] = EVirtualKey::KEY_1;
+		s_keymap['2'] = EVirtualKey::KEY_2;
+		s_keymap['3'] = EVirtualKey::KEY_3;
+		s_keymap['4'] = EVirtualKey::KEY_4;
+		s_keymap['5'] = EVirtualKey::KEY_5;
+		s_keymap['6'] = EVirtualKey::KEY_6;
+		s_keymap['7'] = EVirtualKey::KEY_7;
+		s_keymap['8'] = EVirtualKey::KEY_8;
+		s_keymap['9'] = EVirtualKey::KEY_9;
+		s_keymap[VK_OEM_1] = EVirtualKey::KEY_SEMICOLON;
+		s_keymap[VK_OEM_PLUS] = EVirtualKey::KEY_EQUAL;
+		s_keymap['A'] = EVirtualKey::KEY_A;
+		s_keymap['B'] = EVirtualKey::KEY_B;
+		s_keymap['C'] = EVirtualKey::KEY_C;
+		s_keymap['D'] = EVirtualKey::KEY_D;
+		s_keymap['E'] = EVirtualKey::KEY_E;
+		s_keymap['F'] = EVirtualKey::KEY_F;
+		s_keymap['G'] = EVirtualKey::KEY_G;
+		s_keymap['H'] = EVirtualKey::KEY_H;
+		s_keymap['I'] = EVirtualKey::KEY_I;
+		s_keymap['G'] = EVirtualKey::KEY_J;
+		s_keymap['K'] = EVirtualKey::KEY_K;
+		s_keymap['L'] = EVirtualKey::KEY_L;
+		s_keymap['M'] = EVirtualKey::KEY_M;
+		s_keymap['N'] = EVirtualKey::KEY_N;
+		s_keymap['O'] = EVirtualKey::KEY_O;
+		s_keymap['P'] = EVirtualKey::KEY_P;
+		s_keymap['Q'] = EVirtualKey::KEY_Q;
+		s_keymap['R'] = EVirtualKey::KEY_R;
+		s_keymap['S'] = EVirtualKey::KEY_S;
+		s_keymap['T'] = EVirtualKey::KEY_T;
+		s_keymap['U'] = EVirtualKey::KEY_U;
+		s_keymap['V'] = EVirtualKey::KEY_V;
+		s_keymap['W'] = EVirtualKey::KEY_W;
+		s_keymap['X'] = EVirtualKey::KEY_X;
+		s_keymap['Y'] = EVirtualKey::KEY_Y;
+		s_keymap['Z'] = EVirtualKey::KEY_Z;
+		s_keymap[VK_OEM_4] = EVirtualKey::KEY_LEFT_BRACKET;
+		s_keymap[VK_OEM_5] = EVirtualKey::KEY_BACKSLASH;
+		s_keymap[VK_OEM_6] = EVirtualKey::KEY_RIGHT_BRACKET;
+		s_keymap[VK_OEM_3] = EVirtualKey::KEY_GRAVE_ACCENT;
+
+		/// Function Keys
+		s_keymap[VK_ESCAPE] = EVirtualKey::KEY_ESCAPE;
+		s_keymap[VK_RETURN] = EVirtualKey::KEY_ENTER;
+		s_keymap[VK_TAB] = EVirtualKey::KEY_TAB;
+		s_keymap[VK_BACK] = EVirtualKey::KEY_BACKSPACE;
+		s_keymap[VK_INSERT] = EVirtualKey::KEY_INSERT;
+		s_keymap[VK_DELETE] = EVirtualKey::KEY_DELETE;
+		s_keymap[VK_RIGHT] = EVirtualKey::KEY_RIGHT;
+		s_keymap[VK_LEFT] = EVirtualKey::KEY_LEFT;
+		s_keymap[VK_DOWN] = EVirtualKey::KEY_DOWN;
+		s_keymap[VK_UP] = EVirtualKey::KEY_UP;
+		s_keymap[VK_PRIOR] = EVirtualKey::KEY_PAGE_UP;
+		s_keymap[VK_NEXT] = EVirtualKey::KEY_PAGE_DOWN;
+		s_keymap[VK_HOME] = EVirtualKey::KEY_HOME;
+		s_keymap[VK_END] = EVirtualKey::KEY_END;
+		s_keymap[VK_CAPITAL] = EVirtualKey::KEY_CAPS_LOCK;
+		s_keymap[VK_SCROLL] = EVirtualKey::KEY_SCROLL_LOCK;
+		s_keymap[VK_NUMLOCK] = EVirtualKey::KEY_NUM_LOCK;
+		s_keymap[VK_SNAPSHOT] = EVirtualKey::KEY_PRINT_SCREEN;
+		s_keymap[VK_PAUSE] = EVirtualKey::KEY_PAUSE;
+		s_keymap[VK_F1] = EVirtualKey::KEY_F1;
+		s_keymap[VK_F2] = EVirtualKey::KEY_F2;
+		s_keymap[VK_F3] = EVirtualKey::KEY_F3;
+		s_keymap[VK_F4] = EVirtualKey::KEY_F4;
+		s_keymap[VK_F5] = EVirtualKey::KEY_F5;
+		s_keymap[VK_F6] = EVirtualKey::KEY_F6;
+		s_keymap[VK_F7] = EVirtualKey::KEY_F7;
+		s_keymap[VK_F8] = EVirtualKey::KEY_F8;
+		s_keymap[VK_F9] = EVirtualKey::KEY_F9;
+		s_keymap[VK_F10] = EVirtualKey::KEY_F10;
+		s_keymap[VK_F11] = EVirtualKey::KEY_F11;
+		s_keymap[VK_F12] = EVirtualKey::KEY_F12;
+
+		s_keymap[VK_NUMPAD0] = EVirtualKey::KEY_NUMPAD_0;
+		s_keymap[VK_NUMPAD1] = EVirtualKey::KEY_NUMPAD_1;
+		s_keymap[VK_NUMPAD2] = EVirtualKey::KEY_NUMPAD_2;
+		s_keymap[VK_NUMPAD3] = EVirtualKey::KEY_NUMPAD_3;
+		s_keymap[VK_NUMPAD4] = EVirtualKey::KEY_NUMPAD_4;
+		s_keymap[VK_NUMPAD5] = EVirtualKey::KEY_NUMPAD_5;
+		s_keymap[VK_NUMPAD6] = EVirtualKey::KEY_NUMPAD_6;
+		s_keymap[VK_NUMPAD7] = EVirtualKey::KEY_NUMPAD_7;
+		s_keymap[VK_NUMPAD8] = EVirtualKey::KEY_NUMPAD_8;
+		s_keymap[VK_NUMPAD9] = EVirtualKey::KEY_NUMPAD_9;
+
+		s_keymap[VK_DECIMAL] = EVirtualKey::KEY_NUMPAD_DECIMAL;
+		s_keymap[VK_DIVIDE] = EVirtualKey::KEY_NUMPAD_DIVIDE;
+		s_keymap[VK_MULTIPLY] = EVirtualKey::KEY_NUMPAD_MULTIPLY;
+		s_keymap[VK_SUBTRACT] = EVirtualKey::KEY_NUMPAD_SUBTRACT;
+		s_keymap[VK_ADD] = EVirtualKey::KEY_NUMPAD_ADD;
+		s_keymap[VK_SEPARATOR] = EVirtualKey::KEY_NUMPAD_ENTER;
+		s_keymap[VK_LSHIFT] = EVirtualKey::KEY_LEFT_SHIFT;
+		s_keymap[VK_LCONTROL] = EVirtualKey::KEY_LEFT_CONTROL;
+		s_keymap[VK_RSHIFT] = EVirtualKey::KEY_RIGHT_SHIFT;
+		s_keymap[VK_RCONTROL] = EVirtualKey::KEY_RIGHT_CONTROL;
+		s_keymap[VK_LMENU] = EVirtualKey::KEY_LEFT_ALT;
+		s_keymap[VK_RMENU] = EVirtualKey::KEY_RIGHT_ALT;
+
+	}
+}
+
+ParaEngine::EVirtualKey ParaEngine::Win32VirtualKeyToParaVK(DWORD vk)
+{
+
+	InitVirtualKeyMap();	
+	auto result = s_keymap.find(vk);
+	if (result != s_keymap.end())
+	{
+		return result->second;
+	}
+	return EVirtualKey::KEY_UNKNOWN;
+}
+
+
+
+DWORD ParaEngine::ParaVKToWin32VirtualKey(EVirtualKey key)
+{
+	InitVirtualKeyMap();
+	for (auto kv:s_keymap)
+	{
+		if (kv.second == key)
+		{
+			return kv.first;
+		}
+	}
+	//assert(false);
+	return -1;
+}
 
 std::unordered_map<HWND,WindowsRenderWindow*> WindowsRenderWindow::g_WindowMap;
 const WCHAR* WindowsRenderWindow::ClassName = L"ParaWorld";
@@ -54,12 +199,25 @@ LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, 
 		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
 		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE);
 		break;
-
+	case WM_MOUSEWHEEL:
+	{
+		float xPos = GET_X_LPARAM(lParam);
+		float yPos = GET_Y_LPARAM(lParam);
+		float zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+		window->OnMouseWhell(xPos, yPos, zDelta);
+	}
+	break;
+	case WM_CHAR:
+	{
+		char ascii_code = wParam;
+		window->OnChar(ascii_code);
+	}
+	break;
 	case WM_DESTROY:
 		// close the application entirely
 		PostQuitMessage(0);
 		window->m_IsQuit = true;
-		break;;
+		break;
 	default:
 		break;
 	}
@@ -145,8 +303,8 @@ void WindowsRenderWindow::PollEvents()
 {
 	MSG  msg;
 	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+		ProcessInput(msg);
 		if (TranslateAcceleratorW(m_hWnd, m_hAccel, &msg) != 0) return;
-		//if (CGlobals::GetApp()->MsgProcWinThreadCustom(msg.message, msg.wParam, msg.lParam) != 0) return;
 		// translate keystroke messages into the right format
 		TranslateMessage(&msg);
 
@@ -178,8 +336,14 @@ bool ParaEngine::WindowsRenderWindow::IsWindowed() const
 
 ParaEngine::EKeyState ParaEngine::WindowsRenderWindow::GetMouseButtonState(EMouseButton button)
 {
-	assert(button!=EMouseButton::END);
+	assert(button!=EMouseButton::COUNT);
 	return m_MouseState[(unsigned int)button];
+}
+
+ParaEngine::EKeyState ParaEngine::WindowsRenderWindow::GetKeyState(EVirtualKey key)
+{
+	assert(key != EVirtualKey::COUNT && key!=EVirtualKey::KEY_UNKNOWN);
+	return m_KeyState[(uint32_t)key];
 }
 
 CVector2 ParaEngine::WindowsRenderWindow::GetMousePos()
@@ -187,12 +351,52 @@ CVector2 ParaEngine::WindowsRenderWindow::GetMousePos()
 	return m_MousePos;
 }
 
+
+
+void ParaEngine::WindowsRenderWindow::ProcessInput(const MSG& msg)
+{
+
+	switch (msg.message)
+	{
+	case WM_KEYDOWN:
+	{
+		auto key = Win32VirtualKeyToParaVK(msg.wParam);
+		if (key != EVirtualKey::KEY_UNKNOWN)
+		{
+			m_KeyState[(uint32_t)key] = EKeyState::PRESS;
+		}
+		OnKey(key, EKeyState::PRESS);
+	}
+	break;
+	case WM_KEYUP:
+	{
+		auto key = Win32VirtualKeyToParaVK(msg.wParam);
+		if (key != EVirtualKey::KEY_UNKNOWN)
+		{
+			m_KeyState[(uint32_t)key] = EKeyState::RELEASE;
+		}
+		OnKey(key, EKeyState::RELEASE);
+	}
+	break;
+	default:
+		break;
+	}
+
+
+
+}
+
 void WindowsRenderWindow::InitInput()
 {
 	// Init mouse state
-	for (uint32_t i = 0;i<(uint32_t)EMouseButton::END;i++)
+	for (uint32_t i = 0;i<(uint32_t)EMouseButton::COUNT;i++)
 	{
 		m_MouseState[i] = EKeyState::RELEASE;
+	}
+	// Init key state
+	for (uint32_t i = 0; i < (uint32_t)EVirtualKey::COUNT; i++)
+	{
+		m_KeyState[i] = EKeyState::RELEASE;
 	}
 }
 

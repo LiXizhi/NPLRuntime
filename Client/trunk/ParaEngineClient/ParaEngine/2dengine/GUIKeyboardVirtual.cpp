@@ -30,14 +30,7 @@ ParaEngine::CGUIKeyboardVirtual::~CGUIKeyboardVirtual()
 
 bool CGUIKeyboardVirtual::IsKeyPressed(DWORD nKey)
 {
-#if defined(WIN32) && defined(USE_OPENGL_RENDERER)
-	//return CParaEngineApp::GetInstance()->IsKeyPressed(nKey);
-	// TODO:CParaEngineApp::GetInstance()->IsKeyPressed(nKey);
-	//assert(false);
-	return false;
-#else
 	return ((m_keystate[nKey] & 0x80) != 0);
-#endif
 }
 
 void ParaEngine::CGUIKeyboardVirtual::SetKeyPressed(DWORD nKey, bool bPressed)
