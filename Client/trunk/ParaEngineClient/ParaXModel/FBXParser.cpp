@@ -305,6 +305,35 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		}
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
+
+		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+		{
+			Bone& bone = bones[i];
+			if (bone.IsTransformationNode() && !bone.CheckHasAnimation())
+			{
+				bone.SetStaticTransform(bone.matTransform);
+			}
+		}
+		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+		{
+			Bone& bone = bones[i];
+			if (bone.IsStaticTransform() && bone.IsTransformationNode())
+			{
+				// try to collapse multiple transform node into one to save computation. 
+				while (bone.parent >= 0) 
+				{
+					Bone& parent = bones[bone.parent];
+					if (parent.IsStaticTransform() && parent.IsTransformationNode())
+					{
+						bone.matTransform *= parent.matTransform;
+						bone.parent = parent.parent;
+					}
+					else
+						break;
+				}
+			}
+		}
+		
 	}
 
 	std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
@@ -853,22 +882,92 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName != "")
 	{
+		std::string sOriginalPath;
+		CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
 		diffuseTexName = GetTexturePath(diffuseTexName);
-
+		
 		if (content_begin)
 		{
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
 
-
 			m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
-
 			// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
 		}
 		else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))
 		{
-			OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
-			diffuseTexName = "";
+			bool bFound = false;
+			if (CParaFile::IsAbsolutePath(sOriginalPath) || sOriginalPath[0] == '.')
+			{
+				// in case it is ../../Texture/abc.png, we will use relative path 
+				if (sOriginalPath[1] == '.' && sOriginalPath[2] == '/')
+				{
+					// such as ../../
+					std::string fullPath = CParaFile::GetParentDirectoryFromPath(diffuseTexName, 1);
+					int nOffset = 3;
+					while (sOriginalPath[nOffset] == '.' && sOriginalPath[nOffset + 1] == '.' && sOriginalPath[nOffset + 2] == '/')
+					{
+						fullPath = CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+						nOffset += 3;
+					}
+					fullPath.append(sOriginalPath.c_str() + nOffset);
+					if (CParaFile::DoesFileExist(fullPath.c_str(), true))
+					{
+						diffuseTexName = fullPath;
+						bFound = true;
+					}
+				}
+				if (!bFound)
+				{
+					// search all parent directories for a possible global texture path. 
+					auto nPos = sOriginalPath.find_first_of('/');
+					int nCount = 0;
+					while (nPos != std::string::npos)
+					{
+						if (nPos == 2 && sOriginalPath[0] == '.')
+						{
+							while (nPos == 2 && sOriginalPath[0] == '.') {
+								sOriginalPath = sOriginalPath.substr(nPos + 1);
+								nPos = sOriginalPath.find_first_of('/');
+								++nCount;
+							}
+						}
+						else
+						{
+							sOriginalPath = sOriginalPath.substr(nPos + 1);
+							nPos = sOriginalPath.find_first_of('/');
+							++nCount;
+						}
+
+						if (nCount > 1 && CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+						{
+							diffuseTexName = sOriginalPath;
+							bFound = true;
+							break;
+						}
+					}
+				}
+			}
+			else if(CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+			{
+				bFound = true;
+				diffuseTexName = sOriginalPath;
+			}
+			if (!bFound) 
+			{
+				OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
+				diffuseTexName = "";
+			}
+		}
+
+		if (!content_begin && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
+		{
+			// try making it relative to project root
+			const std::string & curDir = CParaFile::GetCurDirectory(0);
+			if (curDir.size()<diffuseTexName.size() && diffuseTexName.compare(0, curDir.size(), curDir) == 0)
+			{
+				diffuseTexName = diffuseTexName.substr(curDir.size());
+			}
 		}
 	}
 	m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;

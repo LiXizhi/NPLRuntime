@@ -432,7 +432,7 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXRawData(XFileDataObjectPtr pD
 	DWORD nSize = m_pRawData->GetSize();
 	if (nSize > 0)
 	{
-		DWORD nCount = m_pRawData->GetSize() / sizeof(int);
+		DWORD nCount = m_pRawData->GetSize() / sizeof(int32);
 		pData->ResizeBuffer(4 + m_pRawData->GetSize() + 4);
 		*(DWORD*)pData->GetBuffer() = nCount;
 		memcpy(pData->GetBuffer() + 4, m_pRawData->GetBuffer(), m_pRawData->GetSize());
@@ -589,10 +589,10 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 		pData->m_sTemplateName = "XTextures";
 		pData->m_sName = strName;
 
-		// 255是每个texture路径预留长度,导入完成后按实际长度动态修改
-		pData->ResizeBuffer((sizeof(ModelTextureDef_) + 255)*nTextures + sizeof(int));
+		// 255 is the reserved texture file length
+		pData->ResizeBuffer((sizeof(ModelTextureDef_) + 255)*nTextures + 4);
 
-		*(int*)pData->GetBuffer() = nTextures;
+		*(int32*)pData->GetBuffer() = nTextures;
 
 		ModelTextureDef_* pBuffer = (ModelTextureDef_*)(pData->GetBuffer() + 4);
 
@@ -602,7 +602,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 			if (m_pMesh->textures[i].get() == nullptr) {
 				pBuffer->type = m_pMesh->specialTextures[i];
 				pBuffer->sName = '\0';
-				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1);
+				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1 + 1);
 			}
 			else {
 				pBuffer->type = m_pMesh->specialTextures[i];
@@ -785,12 +785,28 @@ bool ParaEngine::XFileCharModelExporter::WriteXBones(XFileDataObjectPtr pData, c
 		for (int i = 0; i < nBones; i++) {
 			const Bone& bone = m_pMesh->bones[i];
 			bones[i].parent = bone.parent;
-			bones[i].pivot = bone.pivot;
-			bones[i].flags = bone.flags;
+			// we will encode string
+			bones[i].flags = bone.flags | 0x80000000;
 			bones[i].boneid = bone.nBoneID;
-			WriteAnimationBlock(&bones[i].translation, bone.trans);
-			WriteAnimationBlock(&bones[i].rotation, bone.rot);
-			WriteAnimationBlock(&bones[i].scaling, bone.scale);
+
+			bones[i].nBoneName = (!bone.GetName().empty()) ? m_pRawData->AddRawData(bone.GetName()) : 0;
+			
+			if (bone.IsOffsetMatrixBone())
+				bones[i].nOffsetMatrix = m_pRawData->AddRawData(&bone.matOffset, 1);
+			else
+				bones[i].nOffsetMatrix = 0;
+			bones[i].nOffsetPivot = m_pRawData->AddRawData(&bone.pivot, 1);
+
+			if (bone.IsStaticTransform())
+			{
+				bones[i].ofsStaticMatrix = m_pRawData->AddRawData(&bone.matTransform, 1);
+			}
+			else
+			{
+				WriteAnimationBlock(&bones[i].translation, bone.trans);
+				WriteAnimationBlock(&bones[i].rotation, bone.rot);
+				WriteAnimationBlock(&bones[i].scaling, bone.scale);
+			}
 		}
 	}
 
