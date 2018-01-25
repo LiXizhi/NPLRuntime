@@ -1786,7 +1786,11 @@ HRESULT CWindowsApplication::Render()
 		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 #endif
 																					 /// clear all render targets
-		m_pRenderDevice->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, m_pRootScene->GetClearColor(), 1.0f, 0L);
+		auto color = m_pRootScene->GetClearColor();
+		CGlobals::GetRenderDevice()->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
+		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
+		CGlobals::GetRenderDevice()->SetClearStencil(1.0f);
+		CGlobals::GetRenderDevice()->Clear(true, true, true);
 
 		///// force using less equal
 		//pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);

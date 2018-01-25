@@ -1409,11 +1409,15 @@ HRESULT CShadowMap::BeginShadowPass()
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
 	{
 		pd3dDevice->SetRenderState(ERenderState::COLORWRITEENABLE, 0);
-		CGlobals::GetRenderDevice()->Clear(0, NULL, D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0L);
+		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
+		CGlobals::GetRenderDevice()->SetClearStencil(0);
+		CGlobals::GetRenderDevice()->Clear(false, true, true);
 	}
 	else
 	{
-		CGlobals::GetRenderDevice()->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0xFFFFFFFF, 1.0f, 0L);
+		CGlobals::GetRenderDevice()->SetClearColor(Color4f(1,1,1,1));
+		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
+		CGlobals::GetRenderDevice()->Clear(true, true,false);
 	}
 
 	
