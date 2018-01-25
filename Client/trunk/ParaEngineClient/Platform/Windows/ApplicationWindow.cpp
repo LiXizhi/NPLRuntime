@@ -86,3 +86,41 @@ void ApplicationWindow::OnMouseMove(uint32_t x, uint32_t y)
 	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, wParam, param);
 }
 
+void ParaEngine::ApplicationWindow::OnMouseWhell(float x, float y, float delta)
+{
+	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+	{
+		return;
+	}
+	WPARAM wParam = MAKEWPARAM(0, (int)y * WHEEL_DELTA);
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, wParam, 0);
+}
+
+void ParaEngine::ApplicationWindow::OnKey(EVirtualKey key, EKeyState state)
+{
+	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+	{
+		return;
+	}
+	DWORD vk = ParaVKToWin32VirtualKey(key);
+	if (vk == -1)return;
+	DWORD dik = CEventBinding::WinVirtualKeyToDIK[vk];
+	bool pressed = state == EKeyState::PRESS ? true : false;
+	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(dik, pressed);
+}
+
+void ParaEngine::ApplicationWindow::OnChar(char character)
+{
+	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+	{
+		return;
+	}
+	auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+	if (pGUI)
+	{
+		std::wstring s;
+		s += (WCHAR)character;
+		pGUI->OnHandleWinMsgChars(s);
+	}
+}
+

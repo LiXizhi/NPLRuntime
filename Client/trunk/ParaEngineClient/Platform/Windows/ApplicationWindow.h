@@ -10,5 +10,14 @@ namespace ParaEngine
 	protected:
 		virtual void OnMouseButton(EMouseButton button, EKeyState state) override;
 		virtual void OnMouseMove(uint32_t x, uint32_t y) override;
+
+		virtual void OnMouseWhell(float x, float y, float delta) override;
+
+
+		virtual void OnKey(EVirtualKey key, EKeyState state) override;
+
+
+		virtual void OnChar(char character) override;
+
 	};
 }
