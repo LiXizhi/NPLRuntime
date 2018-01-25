@@ -84,13 +84,14 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 	{
 	case ERenderState::CULLMODE:
 		{
+			//http://www.cnblogs.com/onlyDIABLO/p/3853125.html
 			if (Value == RSV_CULL_CW) {
 				glEnable(GL_CULL_FACE);
-				glFrontFace(GL_CW);//glCullFace(GL_FRONT);
+				glFrontFace(GL_CCW);//glCullFace(GL_FRONT);
 			}
 			else if (Value == RSV_CULL_CCW) {
 				glEnable(GL_CULL_FACE);
-				glFrontFace(GL_CCW);//glCullFace(GL_BACK);
+				glFrontFace(GL_CW);//glCullFace(GL_BACK);
 			}
 			else if (Value == RSV_CULL_NONE) {
 				glDisable(GL_CULL_FACE);
@@ -511,12 +512,16 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(uint32_t Count, const void* pRects, u
 		fields |= GL_STENCIL_BUFFER_BIT;
 	}
 
+
 	if (m_isBeginRenderTarget)
 	{
 		if ((Flags & CLEAR_ZBUFFER) != 0)
 			glDepthMask(GL_TRUE);
-		glClear(fields);
 	}
+
+	glClear(fields);
+
+
 
 	//auto error = glGetError();
 
