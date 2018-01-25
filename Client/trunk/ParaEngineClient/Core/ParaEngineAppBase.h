@@ -316,6 +316,8 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) {};
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() { return ""; };
+		/* */
+		virtual void FixWindowSize(bool fixed) {};
 
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.

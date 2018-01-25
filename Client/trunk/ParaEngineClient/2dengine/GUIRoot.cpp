@@ -252,7 +252,7 @@ void CGUIRoot::Clear()
 
 void CGUIRoot::ActivateRoot()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)|| 0
 	if (!m_bActive && m_pMouse && m_pKeyboard) 
 	{
 		if (m_pMouse->m_pMouse)
@@ -280,7 +280,7 @@ void CGUIRoot::ActivateRoot()
 
 void CGUIRoot::InactivateRoot()
 {
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 	if (m_bActive && m_pMouse && m_pKeyboard) 
 	{
 		m_pMouse->m_dwElements=0;
@@ -954,23 +954,23 @@ void ParaEngine::CGUIRoot::SetIsNonClient(bool val)
 void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
 {
 	m_pMouse->SetMousePosition(nX, nY);
-
-#ifdef USE_DIRECTX_RENDERER
-	if (m_pMouse->IsLocked())
-	{
-		// Set position of camera to center of desktop, 
-		// so it always has room to move.  This is very useful
-		// if the cursor is hidden.  If this isn't done and cursor is hidden, 
-		// then invisible cursor will hit the edge of the screen 
-		// and the user can't tell what happened
-		POINT ptCenter;
-		RECT rcDesktop;
-		GetWindowRect(GetDesktopWindow(), &rcDesktop);
-		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
-		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
-		SetCursorPos(ptCenter.x, ptCenter.y);
-	}
-#endif
+//
+//#if defined(USE_DIRECTX_RENDERER) || 0
+//	if (m_pMouse->IsLocked())
+//	{
+//		// Set position of camera to center of desktop, 
+//		// so it always has room to move.  This is very useful
+//		// if the cursor is hidden.  If this isn't done and cursor is hidden, 
+//		// then invisible cursor will hit the edge of the screen 
+//		// and the user can't tell what happened
+//		POINT ptCenter;
+//		RECT rcDesktop;
+//		GetWindowRect(GetDesktopWindow(), &rcDesktop);
+//		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
+//		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
+//		SetCursorPos(ptCenter.x, ptCenter.y);
+//	}
+//#endif
 }
 
 int ParaEngine::CGUIRoot::GetFingerSizePixels() const
@@ -1815,7 +1815,7 @@ bool CGUIRoot::OnClick(int MouseState, int X, int Y)
 LRESULT CGUIRoot::MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool &bNoFurtherProcess)
 {
 	LRESULT result = 0;
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER) || 0
 	MSG newMsg;
 	if (uMsg<=WM_MOUSELAST&&uMsg>=WM_MOUSEFIRST) 
 	{
@@ -1967,7 +1967,7 @@ HRESULT CGUIRoot::OneTimeGUIInit()
 		m_pKeyboard = new CDirectKeyboard(CGlobals::GetAppHWND());
 	if (m_pMouse == 0)
 		m_pMouse = new CDirectMouse(CGlobals::GetAppHWND());
-#ifdef USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)
 	CGUIIME::OnFocusOut();
 #endif
 

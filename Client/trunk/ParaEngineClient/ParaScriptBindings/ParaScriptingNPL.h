@@ -711,6 +711,7 @@ namespace ParaScripting
 		*    - "d": download pool. default size is 2, for downloading files. 
 		*    - "r": rest pool. default size is 5, for REST like HTTP get/post calls.
 		*    - "w": web pool. default size is 5, for web based requests.
+		*    - "self": this will block and use the current thread instead of additional thread.
 		*/
 		static bool AppendURLRequest1(const object& url, const char* sCallback, const object& sForm, const char* sPoolName);
 

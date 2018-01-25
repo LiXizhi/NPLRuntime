@@ -47,19 +47,20 @@ AppDelegate::~AppDelegate()
 	StopApp();
 }
 
+
+void ParaEngine::AppDelegate::InitGlew()
+{
+	glewInit();
+	printf("OpenGL version supported by this platform (%s): \n",
+        glGetString(GL_VERSION));
+}
+
 void ParaEngine::AppDelegate::Run()
 {
     FsOpenWindow(32,32,800,600,1); // 800x600 pixels, useDoubleBuffer=1
-
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_LIGHTING);
-    glDepthFunc(GL_ALWAYS);
-
-    glClear(GL_COLOR_BUFFER_BIT);
-
-
     FsPollDevice();
+    
+    InitGlew();
 
     InitApp();
 

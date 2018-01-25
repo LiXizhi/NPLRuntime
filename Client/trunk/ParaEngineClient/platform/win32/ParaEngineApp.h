@@ -2,12 +2,21 @@
 #include "IAttributeFields.h"
 #include "ParaEngineAppBase.h"
 
+#include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/asio/steady_timer.hpp>
+
 // forward declare
 namespace ParaEngine
 {
 	class CAISimulator;
 	class CGUIRoot;
 	class CViewportManager;
+	class CParaEngineGLView;
+	class CWinRawMsgQueue;
+	struct CWinRawMsg;
 }
 
 /**
@@ -94,6 +103,8 @@ namespace ParaEngine
 
 		virtual void InitSystemModules();
 
+		void LoadAndApplySettings();
+
 		void BootStrapAndLoadConfig();
 
 		/** This is the last function that should be called. It is usually called just before process exit.
@@ -106,8 +117,8 @@ namespace ParaEngine
 		* @param hWnd: the Window on to which we will render.
 		* @param bIsExternalWindow: this is always true, unless for the default window used by ParaEngine when no window is created by the user.
 		*/
-		virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow = true)  { };
-		virtual HWND GetMainWindow()  { return 0; };
+		virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow = true) ;
+		virtual HWND GetMainWindow()  ;
 
 		/** only call this function if one does not want to manage game loop externally. */
 		virtual int Run(HINSTANCE hInstance);;
@@ -159,7 +170,7 @@ namespace ParaEngine
 		/** create d3d render device based on the current main window.
 		* Use this function to create a new render device automatically.
 		*/
-		virtual HRESULT Create(HINSTANCE hInstance = 0)  { return 0; };
+		virtual HRESULT Create(HINSTANCE hInstance = 0);
 
 		/** Frame move and render a frame during idle time (no messages are waiting). Call this function during CPU idle time.
 		* internally it uses a timer to control frame rates, so it is safe to call this as often as one like.
@@ -183,22 +194,22 @@ namespace ParaEngine
 		/** Send a RAW win32 message the application to be processed in the next main thread update interval.
 		* This function can be called from any thread. It is also used by the windows procedure thread to dispatch messages to the main processing thread.
 		*/
-		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)  { return 0; };
+		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) ;
 
 		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
-		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)  { return false; };
+		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) ;
 
 		/** get a message from the application message queue and remove it from the queue. This function is mostly
 		used internally by the main thread.
 		* @param pMsg: the receiving message
 		* @return true if one message is fetched. or false if there is no more messages in the queue.
 		*/
-		virtual bool GetMessageFromApp(CWinRawMsg* pMsg)  { return false; };
+		virtual bool GetMessageFromApp(CWinRawMsg* pMsg);
 
 		/**
 		* handle a message in the main application thread.
 		*/
-		virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)  { return 0; };
+		virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
 		virtual void    EnablePassiveRendering(bool bEnable) { };
@@ -247,7 +258,7 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar);
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText();
-
+		virtual void FixWindowSize(bool fixed);
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
@@ -288,7 +299,7 @@ namespace ParaEngine
 		/** server mode has no user interface */
 		virtual bool IsServerMode() { return false; };
 
-		float GetFPS() const;
+		virtual float GetFPS();
 
 
 		/** init application */
@@ -330,6 +341,62 @@ namespace ParaEngine
 
 		CViewportManager* GetViewportManager();
 
+		/** whether it is debug build. */
+		bool IsDebugBuild();
+
+
+		void handle_mainloop_timer(const boost::system::error_code& err);
+
+		/** return true if this is a render tick, otherwise false.
+		* @param fIdealInterval: the ideal interval (FPS) when this function will return true at ideal FPS.
+		* @param pNextInterval: main_loop timer interval.
+		* @return frameDelta. if this is bigger than 0, we will render a frame.
+		*/
+		int CalculateRenderTime(double fIdealInterval, double* pNextInterval);
+
+		/** return true if the key is being pressed at the time of calling.
+		* @param nKey: a direct input key, such as DIK_SPACE. */
+		bool IsKeyPressed(DWORD nKey);
+
+		/** get the refresh timer.
+		*/
+		virtual float GetRefreshTimer();
+
+		/**
+		* Set the frame rate timer interval
+		* @param fTimeInterval:  value in seconds. such as 0.033f or 0.01667f
+		* 	Passing a value <= 0 to render in idle time.
+		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
+		*/
+		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
+
+
+		void InitApp(const char* sCommandLine);
+
+		/**
+			* Write a string to the registry. e.g. WriteRegStr("HKLM", "Software\My Company\My Software", "string Value", "string Name");
+			* @param root_key: must be
+			HKCR or HKEY_CLASSES_ROOT
+			HKLM or HKEY_LOCAL_MACHINE
+			HKCU or HKEY_CURRENT_USER
+			HKU or HKEY_USERS
+		*/
+		bool WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value);
+		/** Read string from the registry.
+		* Valid values for root_key are listed under WriteRegStr. NULL will be returned if the string is not present.
+		* If the value is present, but is of type REG_DWORD, it will be read and converted to a string.
+		*/
+		const char* ReadRegStr(const string& root_key, const string& sSubKey, const string& name);
+
+		/**
+		* Write a DWORD to the registry. see WriteRegStr() for more info
+		*/
+		bool WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value);
+
+		/** Read DWORD from the registry.
+		* Valid values for root_key are listed under WriteRegStr. NULL will be returned if the DWORD is not present or type is a string.
+		*/
+		DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name);
 	protected:
 
 		// whether we are loaded from config/config.new.txt.
@@ -343,6 +410,9 @@ namespace ParaEngine
 		int m_nScreenWidth;
 		int m_nScreenHeight;
 
+		// title
+		std::string m_sWindowTitle;
+
 		/** 2d gui root */
 		ref_ptr<CGUIRoot> m_pGUIRoot;
 		/** 3d scene root object */
@@ -352,10 +422,32 @@ namespace ParaEngine
 		/** asset manager */
 		ref_ptr<CParaWorldAsset>	  m_pParaWorldAsset;
 
-		double m_fTime;
-		float m_fFPS;
+		ref_ptr<CParaEngineGLView>	  m_pGLView;
+
+		/** the main game loop */
+		boost::asio::io_service m_main_io_service;
+		/** the main timer that ticks 30 times a second*/
+		boost::asio::steady_timer m_main_timer;
+
+		bool m_bQuit;
+		bool m_bMainLoopExited;
+
+		double m_fTime;		// Current time in seconds
+		float m_fFPS;		// Instanteous frame rate
+		float			  m_fRefreshTimerInterval; //  in seconds. 
 
 		bool m_bIsAppActive;
+
+		/** The thread safe message queue target for receiving messages from window thread. They are processed in the main game thread though. */
+		CWinRawMsgQueue*	m_pWinRawMsgQueue;
+
+		/** the thread id of the main window thread. It is used when doing the PostWinThreadMessage(). */
+		DWORD m_dwWinThreadID;
+		HWND  m_hWnd;              // The main app window
+
+		bool              m_bStartFullscreen;  // Whether to start up the app in fullscreen mode
+		/** initial game effect setting to be loaded from the config file. default value it 0*/
+		int m_nInitialGameEffectSet;
 
 		void UpdateMouse();
 	};

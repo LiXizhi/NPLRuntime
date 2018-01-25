@@ -1,8 +1,7 @@
 # Author: LiXizhi
 # Company: ParaEngine.com
 # Date: 2010.3.2
-# Updated: 2017.Feb.15 by Cellfy
-# Desc: The client exe application for ParaEngine. It is just a small exe that uses AwesomeTruck(_d).dll 
+# Desc: The client exe application for ParaEngine. It is just a small exe that uses ParaEngineClient.dll 
 
 project (ParaEngineClientApp)
 
@@ -78,7 +77,7 @@ IF(MSVC)
 	
 	# /GR- Remove RTTI to miminize the executable size
 	# /Zi generate program database (PDB symbol files even in release build)
-	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /GR-")
+	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 	# To turn size optimisations on again
 	SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /opt:ref /DEBUG /LARGEADDRESSAWARE")
@@ -93,8 +92,8 @@ set_target_properties(ParaEngineClientApp PROPERTIES WIN32_EXECUTABLE true)
 # Since we are installing to local app data dir from now on, we will only need medium integrity level to run the app, however protected mode IE only gives use low IL, in which we need to write to registry to promote this process to medium IL. 
 # set_target_properties(ParaEngineClientApp PROPERTIES LINK_FLAGS /MANIFESTUAC:"level='highestAvailable' uiAccess='false'")
 
-set_target_properties(ParaEngineClientApp PROPERTIES OUTPUT_NAME "AwesomeTruck")
-set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "AwesomeTruck_d")
+set_target_properties(ParaEngineClientApp PROPERTIES OUTPUT_NAME "ParaEngineClient")
+set_target_properties(ParaEngineClientApp PROPERTIES DEBUG_OUTPUT_NAME "ParaEngineClient_d")
 
 
 # Link the executable to the libraries. 

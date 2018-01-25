@@ -48,7 +48,8 @@ aiNode::aiNode()
 , mChildren(NULL)
 , mNumMeshes(0)
 , mMeshes(NULL)
-, mMetaData(NULL) {
+, mMetaData(NULL)
+, mIsComplex(false) {
     // empty
 }
 
@@ -59,7 +60,8 @@ aiNode::aiNode(const std::string& name)
 , mChildren(NULL)
 , mNumMeshes(0)
 , mMeshes(NULL)
-, mMetaData(NULL) {
+, mMetaData(NULL)
+, mIsComplex(false) {
     // empty
 }
 

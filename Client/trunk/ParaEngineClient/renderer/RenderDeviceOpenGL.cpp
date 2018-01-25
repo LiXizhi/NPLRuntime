@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #ifndef USE_DIRECTX_RENDERER
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclarationOpenGL.h"
 #include "IParaEngineApp.h"
@@ -16,9 +16,7 @@
 #include "RenderDeviceOpenGL.h"
 
 using namespace ParaEngine;
-#ifdef PARAENGINE_MOBILE
-using namespace cocos2d;
-#endif
+
 
 /** define this to ignore all draw calls to find program bottleneck. If defined, but FPS is still low, it is CPU bound. */
 // #define DEBUG_IGNORE_DRAW_CALL
@@ -325,10 +323,16 @@ HRESULT ParaEngine::RenderDevice::Clear(DWORD Count, const void* pRects, DWORD F
 	}
 	else
 	{
+
+#ifndef PARAENGINE_MOBILE
+		glClear(fields);
+#else
 		// this is done by cocos at the beginning of each tick, we just set default values.
 		// glClear(fields);
 		if (Flags == D3DCLEAR_STENCIL)
 			glClear(GL_STENCIL_BUFFER_BIT);
+#endif
+
 	}
 	return S_OK;
 }

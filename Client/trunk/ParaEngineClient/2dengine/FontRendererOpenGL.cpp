@@ -10,7 +10,7 @@
 #include "IO/FileUtils.h"
 
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "GUIBase.h"
 #include "TextureEntity.h"
 #include "StringHelper.h"
@@ -24,7 +24,6 @@
 #include "FontRendererOpenGL.h"
 
 using namespace ParaEngine;
-using namespace cocos2d;
 
 ParaEngine::CFontRendererOpenGL::CFontRendererOpenGL()
 	:m_nFontSize(14), m_nRealFontSize(14), m_fFontScaling(1.f), m_bUseCustomShader(false)
@@ -41,7 +40,15 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		//fontFile = "fonts/simhei.ttf"; // 9MB
 		//fontFile = "fonts/FZYTK.TTF"; // 3MB
 		//fontFile = "fonts/SIMYOU.TTF"; // 6MB
-		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
+#ifdef WIN32
+		char szPath[MAX_PATH];
+		GetWindowsDirectoryA(szPath, MAX_PATH);
+		fontFile = szPath;
+		fontFile = fontFile + "/fonts/msyh.ttc";
+#else
+		fontFile = "./fonts/DroidSansFallback.ttf"; // 3.6MB
+#endif
+		
 	}
 	else
 	{
@@ -70,7 +77,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 				// disable aliasing
 				pFontRenderer->getFontAtlas()->setAliasTexParameters();
 			}
-			UNI_AUTO_RELEASE(pFontRenderer);
+			pFontRenderer->AddToAutoReleasePool();
 			return pFontRenderer;
 		}
 	}
