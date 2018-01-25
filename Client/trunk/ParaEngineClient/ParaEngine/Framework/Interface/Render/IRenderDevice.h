@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Common/Math/Rect.h"
+#include "Framework/Common/Math/Color4f.h"
 #include "core/PEtypes.h"
 
 #if USE_DIRECTX_RENDERER
@@ -77,7 +78,11 @@ namespace ParaEngine
 		virtual Rect GetViewport() = 0;
 		virtual bool SetViewport(const Rect& viewport) = 0;
 
-		virtual bool Clear(uint32_t Count, const void* pRects, uint32_t Flags, uint32_t Color, float Z, uint32_t Stencil) = 0;
+		virtual bool SetClearColor(const Color4f& color) = 0;
+		virtual bool SetClearDepth(const float depth) = 0;
+		virtual bool SetClearStencil(const float stencil) = 0;
+
+		virtual bool Clear(bool color,bool depth,float stencil) = 0;
 
 		virtual bool SetScissorRect(RECT* pRect) = 0;
 		virtual bool GetScissorRect(RECT* pRect) = 0;

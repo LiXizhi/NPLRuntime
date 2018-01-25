@@ -492,39 +492,22 @@ bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 	return true;
 }
 
-bool ParaEngine::RenderDeviceOpenGL::Clear(uint32_t Count, const void* pRects, uint32_t Flags, uint32_t Color, float Z, uint32_t Stencil)
+bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil)
 {
-	DWORD fields = 0;
-	if ((Flags & CLEAR_ZBUFFER) != 0)
+	uint32_t fields = 0;
+	if (depth)
 	{
 		fields |= GL_DEPTH_BUFFER_BIT;
-		glClearDepth(Z);
 	}
-	if ((Flags & CLEAR_TARGET) != 0)
+	if (color)
 	{
-		//LinearColor color(Color);
-		glClearColor(1, 1, 1, 0);
 		fields |= GL_COLOR_BUFFER_BIT;
 	}
-	if ((Flags & CLEAR_STENCIL) != 0)
+	if (stencil)
 	{
-		glClearStencil(Stencil);
 		fields |= GL_STENCIL_BUFFER_BIT;
 	}
-
-
-	if (m_isBeginRenderTarget)
-	{
-		if ((Flags & CLEAR_ZBUFFER) != 0)
-			glDepthMask(GL_TRUE);
-	}
-
 	glClear(fields);
-
-
-
-	//auto error = glGetError();
-
 	return true;
 }
 
@@ -537,6 +520,24 @@ bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 {
 	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
+}
+
+bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
+{
+	glClearColor(color.r, color.g, color.b, color.a);
+	return true;
+}
+
+bool ParaEngine::RenderDeviceOpenGL::SetClearDepth(const float depth)
+{
+	glClearDepth(depth);
+	return true;
+}
+
+bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const float stencil)
+{
+	glClearStencil(stencil);
 	return true;
 }
 

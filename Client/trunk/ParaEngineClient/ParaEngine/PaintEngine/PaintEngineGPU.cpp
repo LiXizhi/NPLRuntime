@@ -661,7 +661,8 @@ void CPaintEngineGPU::RenderMask(const RECT& rcWindow)
 		if (state->m_nStencilValue == 1)
 		{
 			// clear stencil buffer to 0 on first stencil layer
-			CGlobals::GetRenderDevice()->Clear(0L, NULL, D3DCLEAR_STENCIL, 0, 0, 0L);
+			CGlobals::GetRenderDevice()->SetClearStencil(0);
+			CGlobals::GetRenderDevice()->Clear(false,false,true);
 			pd3dDevice->SetRenderState(ERenderState::STENCILWRITEMASK, 0xFF);
 		}
 		// disable color write

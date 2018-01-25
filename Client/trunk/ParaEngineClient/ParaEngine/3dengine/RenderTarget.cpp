@@ -614,7 +614,9 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 	if (m_bIsBegin)
 	{
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-		CGlobals::GetRenderDevice()->Clear(0L, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, (DWORD)color, depthValue, stencilValue);
+		pRenderDevice->SetClearColor(Color4f(color.r,color.g,color.b,color.a));
+		pRenderDevice->SetClearDepth(depthValue);
+		pRenderDevice->Clear(true, true, false);
 	}
 	else
 	{

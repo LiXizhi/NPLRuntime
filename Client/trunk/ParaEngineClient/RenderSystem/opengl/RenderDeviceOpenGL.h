@@ -79,7 +79,7 @@ namespace ParaEngine
 		virtual bool SetViewport(const Rect& viewport) override;
 
 
-		virtual bool Clear(uint32_t Count, const void* pRects, uint32_t Flags, uint32_t Color, float Z, uint32_t Stencil) override;
+		virtual bool Clear(bool color, bool depth, float stencil) override;
 
 
 		virtual bool SetScissorRect(RECT* pRect) override;
@@ -89,6 +89,15 @@ namespace ParaEngine
 
 
 		virtual bool Present() override  = 0;
+
+		virtual bool SetClearColor(const Color4f& color) override;
+
+
+		virtual bool SetClearDepth(const float depth) override;
+
+
+		virtual bool SetClearStencil(const float stencil) override;
+
 	protected:
 		void ApplyBlendingModeChange();
 	private:
