@@ -93,7 +93,7 @@ namespace ParaEngine
 		//DWORD a=0,b=0;
 		//char ctemp[30];
 		//string charseq="";
-		//CDirectKeyboard *pKeyboard=CGUIRoot::Instance()->m_pKeyboard;
+		//CGUIKeyboardVirtual *pKeyboard=CGUIRoot::Instance()->m_pKeyboard;
 		//for (a=0;a<m_pKeyEvent.m_keyboard.Size;a++) {
 		//	if(((m_pKeyEvent.m_keyboard.KeyEvents[a].dwData&0x80)!=0&&(option&CGUIEvent::IGNORE_DOWN_EVENTS)==0)|| \
 		//	((m_pKeyEvent.m_keyboard.KeyEvents[a].dwData&0x80)==0&&(option&CGUIEvent::IGNORE_UP_EVENTS)==0)){			

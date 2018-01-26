@@ -1,7 +1,6 @@
 #include "ApplicationWindow.h"
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 using namespace ParaEngine;
 void ApplicationWindow::OnMouseButton(EMouseButton button, EKeyState state)
 {

@@ -9,7 +9,7 @@
 namespace ParaEngine
 {
 	struct SpriteFontEntity;
-	class CDirectKeyboard;
+	class CGUIKeyboardVirtual;
 	class CGUIRoot;
 	class CSceneObject;
 	class CAISimulator;
@@ -507,7 +507,7 @@ namespace ParaEngine
 		/** asset manager */
 		ref_ptr<CParaWorldAsset>	  m_pParaWorldAsset;
 
-		CDirectKeyboard*	  m_pKeyboard;
+		CGUIKeyboardVirtual*	  m_pKeyboard;
 		float                 m_fAspectRatio;             // Aspect ratio used by the FPS camera
 		CAudioEngine*        m_pAudioEngine;                   // audio engine class
 

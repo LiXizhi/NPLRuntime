@@ -16,7 +16,6 @@
 #include "ParaWorldAsset.h"
 #include "GUIEdit.h"
 #include "GUIIME.h"
-#include "GUIDirectInput.h"
 #include "GUIRoot.h"
 #include "ObjectManager.h"
 #include "EventBinding.h"
@@ -873,7 +872,7 @@ bool CGUIEditBox::OnMouseEnter()
 {
 	bool bHandled = CGUIBase::OnMouseEnter();
 #ifdef USE_DIRECTX_RENDERER
-	CDirectMouse *mouse = CGUIRoot::GetInstance()->m_pMouse;
+	CGUIMouseVirtual *mouse = CGUIRoot::GetInstance()->m_pMouse;
 	if (mouse&&!L_PRESSED(mouse)){
 		m_bMouseDrag = false;
 	}

@@ -25,7 +25,6 @@
 #include "util/StringHelper.h"
 #include "PaintEngine/Painter.h"
 #include "ParaWorldAsset.h"
-#include "GUIDirectInput.h"
 #include "GUIScrollBar.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "GUIListBox.h"
@@ -383,8 +382,8 @@ bool CGUIListBox::MsgProc(MSG *event)
 	if (!m_bIsEnabled)
 		return false;
 	bool bHandled = false;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	CGUIMouseVirtual *pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
 	if (event != NULL&&!m_event->InterpretMessage(event)) {
 		return false;
 	}

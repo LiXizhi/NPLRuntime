@@ -22,7 +22,6 @@
 #include <list>
 #include <queue>
 #include "GUIHighlight.h"
-#include "GUIDirectInput.h"
 #include "GUIRoot.h"
 #include "GUIContainer.h"
 #include "GUIResource.h"
@@ -908,7 +907,7 @@ bool CGUIBase::OnMouseEnter()
 	if(!sCursorFile.empty())
 	{
 #ifdef USE_DIRECTX_RENDERER
-		CDirectMouse *pMouse=CGUIRoot::GetInstance()->m_pMouse;
+		CGUIMouseVirtual *pMouse=CGUIRoot::GetInstance()->m_pMouse;
 		if(pMouse)
 		{
 			pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
@@ -1233,8 +1232,8 @@ bool CGUIBase::MsgProc(MSG *event)
 		return false;
 	bool bHandled=false;
 	CGUIRoot *pRoot=CGUIRoot::GetInstance();
-	CDirectMouse *pMouse=pRoot->m_pMouse;
-	CDirectKeyboard *pKeyboard=pRoot->m_pKeyboard;
+	CGUIMouseVirtual *pMouse=pRoot->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard=pRoot->m_pKeyboard;
 	STRUCT_DRAG_AND_DROP *pdrag=&IObjectDrag::DraggingObject;
 	MSG newMsg;
 	if (event!=NULL&& !m_event->InterpretMessage(event)) {
@@ -1376,21 +1375,21 @@ bool CGUIBase::MsgProc(MSG *event)
 	if (m_event->IsMapTo(nEvent,EM_CTRL_FRAMEMOVE)) 
 	{
 		//detect up event lost and resend the up event.
-		/*if (!pMouse->IsButtonDown(CDirectMouse::LEFT_BUTTON)) {
+		/*if (!pMouse->IsButtonDown(CGUIMouseVirtual::LEFT_BUTTON)) {
 			if (0!=(CGUIEvent::KeyStates[EM_MOUSE_LEFTDOWN]&0x80)) {
 				CEventBinding::InitMsg(&newMsg,event->time,EM_MOUSE_LEFTUP,event->pt);
 				MsgProc(&newMsg);
 				CGUIEvent::KeyStates[EM_MOUSE_LEFTDOWN]=0;
 			}
 		}
-		if (!pMouse->IsButtonDown(CDirectMouse::RIGHT_BUTTON)) {
+		if (!pMouse->IsButtonDown(CGUIMouseVirtual::RIGHT_BUTTON)) {
 			if (0!=(CGUIEvent::KeyStates[EM_MOUSE_RIGHTDOWN]&0x80)) {
 				CEventBinding::InitMsg(&newMsg,event->time,EM_MOUSE_RIGHTUP,event->pt);
 				MsgProc(&newMsg);
 				CGUIEvent::KeyStates[EM_MOUSE_RIGHTDOWN]=0;
 			}
 		}
-		if (!pMouse->IsButtonDown(CDirectMouse::MIDDLE_BUTTON)) {
+		if (!pMouse->IsButtonDown(CGUIMouseVirtual::MIDDLE_BUTTON)) {
 			if (0!=(CGUIEvent::KeyStates[EM_MOUSE_MIDDLEDOWN]&0x80)) {
 				CEventBinding::InitMsg(&newMsg,event->time,EM_MOUSE_MIDDLEUP,event->pt);
 				MsgProc(&newMsg);
@@ -1498,7 +1497,7 @@ void CGUIBase::Begin(GUIState* pGUIState,float fElapsedTime )
 	if (m_bNeedUpdate){
 		UpdateRects();
 	}
-	CDirectMouse *pMouse=CGUIRoot::GetInstance()->m_pMouse;
+	CGUIMouseVirtual *pMouse=CGUIRoot::GetInstance()->m_pMouse;
 	POINT pt;
 	pt.x=pMouse->m_x;
 	pt.y=pMouse->m_y;

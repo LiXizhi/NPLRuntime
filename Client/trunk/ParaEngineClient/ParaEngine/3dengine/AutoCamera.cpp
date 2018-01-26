@@ -18,7 +18,6 @@
 #include "BipedStateManager.h"
 #include "OceanManager.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockCommon.h"
 #include "IParaEngineApp.h"
@@ -1896,7 +1895,7 @@ void CAutoCamera::HandleUserInput()
 	// process mouse input
 	int dx=0;
 	int dy=0;
-	CDirectKeyboard *pKeyboard = CGlobals::GetGUI()->m_pKeyboard;
+	CGUIKeyboardVirtual *pKeyboard = CGlobals::GetGUI()->m_pKeyboard;
 
 	// Fixed: 2009.11.11. I used to use this via event, however, some key event may be lost, so I switched to hardware key query. 
 	bool bIsKeyProcessed = CGlobals::GetGUI()->IsKeyboardProcessed();
@@ -1935,7 +1934,7 @@ void CAutoCamera::HandleUserInput()
 	SetKeyDownState(FLY_DOWNWARD,!bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(FLY_DOWNWARD))));
 
 
-	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+	CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
 	if (pMouse && CGlobals::GetGUI()->m_events.size()>0)
 	{
 		GUIMsgEventList_type::const_iterator iter=CGlobals::GetGUI()->m_events.begin(),iterend=CGlobals::GetGUI()->m_events.end();
@@ -2184,7 +2183,7 @@ void CAutoCamera::HandleUserInput()
 	UpdateMouseDelta(dx, dy);
 
 	// double check the device if the mouse button is down, in case we lost the mouse focus.
-	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(CDirectMouse::LEFT_BUTTON))) 
+	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(CGUIMouseVirtual::LEFT_BUTTON))) 
 	{
 		m_bMouseLButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
@@ -2194,7 +2193,7 @@ void CAutoCamera::HandleUserInput()
 			pMouse->SetLock(false);
 		}
 	}
-	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(CDirectMouse::RIGHT_BUTTON))) 
+	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(CGUIMouseVirtual::RIGHT_BUTTON))) 
 	{
 		m_bMouseRButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
@@ -2276,7 +2275,7 @@ void ParaEngine::CAutoCamera::EnableMouseLeftButton( bool bValue )
 	m_bEnableMouseLeftButton = bValue;
 	if(!bValue)
 	{
-		CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+		CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
 		m_bMouseRButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
@@ -2292,7 +2291,7 @@ void ParaEngine::CAutoCamera::EnableMouseRightButton( bool bValue )
 	m_bEnableMouseRightButton = bValue;
 	if(!bValue)
 	{
-		CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+		CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
 		m_bMouseLButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
@@ -2339,7 +2338,7 @@ bool ParaEngine::CAutoCamera::IsBlockInput()
 void ParaEngine::CAutoCamera::ClearMouseStates()
 {
 	// clear any pressed state. 
-	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+	CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
 	m_bMouseLButtonDown=false;
 	m_bMouseRButtonDown=false;
 	m_nMouseDragDistance = 0;

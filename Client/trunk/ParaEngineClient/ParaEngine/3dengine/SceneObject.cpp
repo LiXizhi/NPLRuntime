@@ -46,7 +46,6 @@
 #include "ParaXModel/particle.h"
 #include "RayCollider.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "ParaXSerializer.h"
 #include "SceneWriter.h"
 #include "ParaScriptingScene.h"
@@ -2996,7 +2995,7 @@ bool CSceneObject::HandleUserInput()
 	MouseEvent mouse_wheel_event(0, 0, 0, -1);
 	KeyEvent key_event(0,0);
 
-	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+	CGUIMouseVirtual* pMouse=CGlobals::GetGUI()->m_pMouse;
 	if (pMouse && CGlobals::GetGUI()->m_events.size()>0)
 	{
 		GUIMsgEventList_type::iterator iter=CGlobals::GetGUI()->m_events.begin(),iterend=CGlobals::GetGUI()->m_events.end();
