@@ -35,7 +35,8 @@ namespace NPL
 		enum ProtocolType
 		{
 			NPL = 0,
-			WEBSOCKET
+			WEBSOCKET = 1,
+			TCP_CUSTOM = 2, // any custom protocol, like google protocol buffer
 		};
 		friend class CNPLDispatcher;
 		typedef concurrent_ptr_queue<NPLMsgOut_ptr, dummy_condition_variable> RingBuffer_Type;
@@ -260,6 +261,8 @@ namespace NPL
 	private:
 		/// try to parse websocket protocol
 		bool handle_websocket_data(int bytes_transferred);
+		/// try to parse TCP_CUSTOM protocol
+		bool handle_tcp_custom_data(int bytes_transferred);
 		//
 		// boost io service call backs. 
 		//
