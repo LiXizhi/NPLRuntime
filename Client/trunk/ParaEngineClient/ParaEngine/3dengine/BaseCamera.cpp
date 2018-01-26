@@ -12,7 +12,7 @@
 #include "BaseObject.h"
 #include "ParaEngineSettings.h"
 #include "SceneObject.h"
-
+#include "Framework/InputSystem/VirtualKey.h"
 #include "BaseCamera.h"
 
 #ifndef min 
@@ -24,19 +24,19 @@
 
 using namespace ParaEngine;
 
-BYTE ParaEngine::CBaseCamera::m_scancode_key_map[] ={
-	(BYTE)DIK_A,
-	(BYTE)DIK_D,
-	(BYTE)DIK_W,
-	(BYTE)DIK_S,
-	(BYTE)DIK_E,
-	(BYTE)DIK_Q,
-	(BYTE)DIK_SPACE,
-	(BYTE)NULL,
-	(BYTE)NULL,
-	(BYTE)DIK_INSERT,
-	(BYTE)DIK_DELETE,
-	(BYTE)DIK_X,
+EVirtualKey ParaEngine::CBaseCamera::m_scancode_key_map[] ={
+	EVirtualKey::KEY_A,
+	EVirtualKey::KEY_D,
+	EVirtualKey::KEY_W,
+	EVirtualKey::KEY_S,
+	EVirtualKey::KEY_E,
+	EVirtualKey::KEY_Q,
+	EVirtualKey::KEY_SPACE,
+	EVirtualKey::KEY_UNKNOWN,
+	EVirtualKey::KEY_UNKNOWN,
+	EVirtualKey::KEY_INSERT,
+	EVirtualKey::KEY_DELETE,
+	EVirtualKey::KEY_X,
 };
 
 //-----------------------------------------------------------------------------
@@ -633,12 +633,12 @@ float ParaEngine::CBaseCamera::GetTotalDragTime()
 }
 
 
-void ParaEngine::CBaseCamera::SetKeyMap(CharacterAndCameraKeys key, BYTE scancode)
+void ParaEngine::CBaseCamera::SetKeyMap(CharacterAndCameraKeys key, const EVirtualKey& scancode)
 {
 	m_scancode_key_map[key] = scancode;
 }
 
-BYTE ParaEngine::CBaseCamera::GetKeyMap( CharacterAndCameraKeys key )
+ParaEngine::EVirtualKey ParaEngine::CBaseCamera::GetKeyMap( CharacterAndCameraKeys key )
 {
 	return m_scancode_key_map[key];
 }
@@ -669,22 +669,22 @@ float ParaEngine::CBaseCamera::GetMoveScaler()
 
 bool ParaEngine::CBaseCamera::IsShiftMoveSwitched()
 {
-	return !( m_scancode_key_map[MOVE_LEFT] == DIK_A);
+	return !( m_scancode_key_map[MOVE_LEFT] == EVirtualKey::KEY_A);
 }
 
 void ParaEngine::CBaseCamera::SetShiftMoveSwitched( bool bSwitched /*= false*/ )
 {
 	if(bSwitched){
-		 m_scancode_key_map[MOVE_LEFT] = DIK_Q;
-		 m_scancode_key_map[MOVE_RIGHT] = DIK_E;
-		 m_scancode_key_map[SHIFT_LEFT] = DIK_A;
-		 m_scancode_key_map[SHIFT_RIGHT] = DIK_D;
+		 m_scancode_key_map[MOVE_LEFT] = EVirtualKey::KEY_Q;
+		 m_scancode_key_map[MOVE_RIGHT] = EVirtualKey::KEY_E;
+		 m_scancode_key_map[SHIFT_LEFT] = EVirtualKey::KEY_A;
+		 m_scancode_key_map[SHIFT_RIGHT] = EVirtualKey::KEY_D;
 	}
 	else{
-		m_scancode_key_map[MOVE_LEFT] = DIK_A;
-		m_scancode_key_map[MOVE_RIGHT] = DIK_D;
-		m_scancode_key_map[SHIFT_LEFT] = DIK_Q;
-		m_scancode_key_map[SHIFT_RIGHT] = DIK_E;
+		m_scancode_key_map[MOVE_LEFT] = EVirtualKey::KEY_A;
+		m_scancode_key_map[MOVE_RIGHT] = EVirtualKey::KEY_D;
+		m_scancode_key_map[SHIFT_LEFT] = EVirtualKey::KEY_Q;
+		m_scancode_key_map[SHIFT_RIGHT] = EVirtualKey::KEY_E;
 	}
 }
 

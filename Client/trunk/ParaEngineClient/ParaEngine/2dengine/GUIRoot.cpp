@@ -45,13 +45,6 @@ Each container type object stores a mouse focus object, which can be NULL or one
 The GUIRoot object contains the top level mouse focus object.
 */
 #include "ParaEngine.h"
-
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#if !defined(NPLRUNTIME)
-#include "GUIWebBrowser.h"
-#endif
-#endif
 #include "SceneObject.h"
 #include "AutoCamera.h"
 #include "ParaWorldAsset.h"
@@ -131,9 +124,6 @@ CGUIRoot::CGUIRoot(void)
 		m_type = IType::GetType("guiroot");
 	}
 	m_sIdentifer = "__root";
-#ifdef USE_DIRECTX_RENDERER
-	m_stateGUI.d3dBackbufferFormat = D3DFMT_X8R8G8B8;
-#endif
 	m_pKeyboard = NULL;
 	m_pMouse = NULL;
 
@@ -252,57 +242,11 @@ void CGUIRoot::Clear()
 
 void CGUIRoot::ActivateRoot()
 {
-#if defined(USE_DIRECTX_RENDERER)|| 0
-	if (!m_bActive && m_pMouse && m_pKeyboard) 
-	{
-		if (m_pMouse->m_pMouse)
-		{
-			m_pMouse->m_pMouse->Acquire();
-		}
-		if (m_pKeyboard->m_pKeyboard)
-		{
-			m_pKeyboard->m_pKeyboard->Acquire();
-		}
 
-		m_pMouse->m_dwElements=0;
-		m_pKeyboard->SetElementsCount(0);
-		m_bActive=true;
-		//UseDefaultMouseCursor(false);
-		UpdateCursorPosition();
-		if(m_bActive)
-		{
-			m_pMouse->ShowCursor(true);
-			m_pMouse->SetLock(false);
-		}
-	}
-#endif
 }
 
 void CGUIRoot::InactivateRoot()
 {
-#if defined(USE_DIRECTX_RENDERER) || 0
-	if (m_bActive && m_pMouse && m_pKeyboard) 
-	{
-		m_pMouse->m_dwElements=0;
-		m_pKeyboard->SetElementsCount(0);
-		if (m_pMouse->m_pMouse)
-		{
-			m_pMouse->m_pMouse->Unacquire();
-		}
-		if (m_pKeyboard->m_pKeyboard)
-		{
-			m_pKeyboard->m_pKeyboard->Unacquire();
-		}
-		m_bActive=false;
-		Reset();
-		//UseDefaultMouseCursor(true);
-		POINT ptCursor;
-		ptCursor.x=m_pMouse->m_x;
-		ptCursor.y=m_pMouse->m_y;
-		//::ClientToScreen(CGlobals::GetAppHWND(), &ptCursor);
-		//::SetCursorPos(ptCursor.x,ptCursor.y);
-	}
-#endif
 }
 
 string CGUIRoot::ToScript(int option)
@@ -703,7 +647,6 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 
 	// update which 3d object are visible.
 	Update3DObject(fElapsedTime);
-#ifdef USE_OPENGL_RENDERER
 	if (painter->isActive())
 	{
 		for (auto iter = GetChildren()->begin(); iter != GetChildren()->end(); iter++)
@@ -732,78 +675,8 @@ void	CGUIRoot::AdvanceGUI(float fElapsedTime)
 		}
 		painter->end();
 	}
-#endif
 
-#ifdef USE_DIRECTX_RENDERER
-	if (painter->isActive())
-	{
-		if(GetUsePointTextureFiltering())
-		{
-			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_POINT, true);
-			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_POINT, true);
-		}
 
-		// default to UV wrapping, instead of UV clamp for UI. 
-		// pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP);
-		// pRenderDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
-
-		GUIBase_List_Type::iterator iter;
-
-		//////////////////////////////////////////////////////////////////////////
-		// breadth first transversing the 2D scene
-		//pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,TRUE);
-		//pRenderDevice->SetRenderState(ERenderState::STENCILFUNC,D3DCMP_EQUAL);
-		//pRenderDevice->SetRenderState(ERenderState::STENCILREF,0);
-		for( iter = this->GetChildren()->begin(); iter != this->GetChildren()->end();iter++ )
-		{
-			CGUIBase* pObjChild = * iter;  
-			/// skip any node that is not visible
-			if(!(pObjChild->m_bIsVisible))
-				continue; 
-			pObjChild->DoRender(pGUIState, fElapsedTime);
-		}
-		painter->Flush();
-
-		//////////////////////////////////////////////////////////////////////////
-		// render highlighting markers
-		CGUIHighlightManager* gm=&CSingleton<CGUIHighlightManager>::Instance();
-		gm->Render(pGUIState, fElapsedTime,true);
-
-		//////////////////////////////////////////////////////////////////////////
-		// render tooltips
-		m_tooltip->Render(pGUIState, fElapsedTime);
-
-		//////////////////////////////////////////////////////////////////////////
-		//render the dragging object if exist
-		pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
-		if (pdrag->pDragging!=NULL && ! pdrag->m_bIsCandicateOnly) {
-			((CGUIBase*)pdrag->pDragging)->DoRender(pGUIState, fElapsedTime);
-		}
-		//////////////////////////////////////////////////////////////////////////
-		//render the IME candidate window
-		pRenderDevice->SetRenderState(ERenderState::STENCILENABLE,FALSE);
-		//if (GetIMEFocus()) {
-		//	GetIMEFocus()->PostRender(pGUIState, fElapsedTime);
-		//}
-		//draw user defined cursor here
-		//LXZ: draw user defined image cursor here, this is only used for movie capturing
-		if(m_bRenderImageCursor)
-			m_pMouse->RenderCursor(pGUIState,fElapsedTime);
-
-		painter->end();
-	}
-
-	if(GetUsePointTextureFiltering())
-	{
-		CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_LINEAR);
-		CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_LINEAR);
-	}
-
-#if !defined(NPLRUNTIME)
-	/** global frame move */
-	CGUIWebBrowser::GlobalFrameMove();
-#endif
-#endif
 
 	if (!pGUIState->listPostRenderingObjects.empty())
 	{
@@ -860,11 +733,6 @@ HRESULT CGUIRoot::InitDeviceObjects()
 
 	auto f = [](CGUIBase* pObj) { pObj->InitDeviceObjects(); };
 	VisitAllObjects(*this, f);
-
-#ifdef USE_DIRECTX_RENDERER
-	//updates the current display mode
-	EnumDisplaySettings (NULL,ENUM_CURRENT_SETTINGS,&m_displaymode);
-#endif
 	return 0;
 }
 
@@ -954,23 +822,6 @@ void ParaEngine::CGUIRoot::SetIsNonClient(bool val)
 void ParaEngine::CGUIRoot::SetMousePosition(int nX, int nY)
 {
 	m_pMouse->SetMousePosition(nX, nY);
-
-#if defined(USE_DIRECTX_RENDERER) || 0
-	if (m_pMouse->IsLocked())
-	{
-		// Set position of camera to center of desktop, 
-		// so it always has room to move.  This is very useful
-		// if the cursor is hidden.  If this isn't done and cursor is hidden, 
-		// then invisible cursor will hit the edge of the screen 
-		// and the user can't tell what happened
-		POINT ptCenter;
-		RECT rcDesktop;
-		GetWindowRect(GetDesktopWindow(), &rcDesktop);
-		ptCenter.x = (rcDesktop.right - rcDesktop.left) / 2;
-		ptCenter.y = (rcDesktop.bottom - rcDesktop.top) / 2;
-		SetCursorPos(ptCenter.x, ptCenter.y);
-	}
-#endif
 }
 
 int ParaEngine::CGUIRoot::GetFingerSizePixels() const
@@ -1074,82 +925,6 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 {
-#ifdef USE_DIRECTX_RENDERER
-	MSG newMsg;
-	POINT pt;
-	pt.x = pt.y = 0;
-	CEventBinding::InitMsg(&newMsg, GetTickCount(), EM_NONE, pt);
-
-	CGUIBase* pKeyTarget = GetUIKeyFocus();
-	bool bNoKeyMessage = false;
-	bool bHasImeFocus = GetIMEFocus() && pKeyTarget && GetIMEFocus()->GetVisibleRecursive();
-	SetHasIMEFocus(bHasImeFocus);
-	std::wstring sWinMsgChar = CGUIIME::GetWinMsgChar(true);
-	if (!sWinMsgChar.empty() && pKeyTarget)
-	{
-		pKeyTarget->OnHandleWinMsgChars(sWinMsgChar);
-	}
-
-	if (bHasImeFocus)
-	{
-		CGUIIME::GetLastCompString(true);
-		GetIMEFocus()->FetchIMEString();
-		if (!m_pKeyboard->IsUseWindowsMessage())
-		{
-			// when IME is used. we will do m_pKeyboard->Update() in the CGUIRoot::MsgProc
-			// Since IME messages are window messages, but m_pKeyboard->Update() is hardware, we need to call m_pKeyboard->Update() 
-			// as close to window message processor as possible in order to prevent hardware keys are more than software keys. 
-			if (!s_bIMEKeyBoardUpdated)
-			{
-				// between m_pKeyboard->Update() in the CGUIRoot::MsgProc, the Dispatch function may be called multiple times. 
-				// This prevents the same keyboard states to be processed multiple times during IME mode. 
-				bNoKeyMessage = true;
-			}
-		}
-		else
-			m_pKeyboard->Update();
-	}
-	else
-	{
-		m_pKeyboard->Update();
-	}
-
-	IMESTATE ime_state = CGUIIME::GetImeStateS();
-	if (ime_state == IMEUI_STATE_ON && !bHasImeFocus){
-		CGUIIME::OnFocusOut();
-	}
-	else if (bHasImeFocus && !CGUIIME::IMEHasFocus())
-	{
-		CGUIIME::OnFocusIn();
-	}
-
-	s_bIMEKeyBoardUpdated = false;
-
-	if (!bNoKeyMessage)
-	{
-		//synchronize the stored key state with the actual state
-		for (int a = 0; a < 256; a++) {
-			if (CEventBinding::ScancodeToKeyTable[a] != 0) {
-				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a);
-			}
-		}
-
-		if (pKeyTarget != NULL)
-		{
-			newMsg.message = EM_CTRL_UPDATEKEY;
-			DWORD oldsize = (DWORD)(m_events.size());
-			bKeyHandled = pKeyTarget->MsgProc(&newMsg);
-			//TODO: temporary solution shall delete
-			bKeyHandled = (oldsize == m_events.size());
-		}
-		else
-		{
-			newMsg.message = EM_CTRL_UPDATEKEY;
-			bKeyHandled = false;
-			MsgProc(&newMsg);
-		}
-	}
-#elif defined(USE_OPENGL_RENDERER)
 	MSG newMsg;
 	POINT pt;
 	pt.x = pt.y = 0;
@@ -1157,15 +932,17 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 
 	CGUIBase* pKeyTarget = GetUIKeyFocus();
 
-	m_pKeyboard->Update();
+	//TODO:m_pKeyboard->Update()
+	//m_pKeyboard->Update();
 
 	s_bIMEKeyBoardUpdated = false;
 
 	{
 		//synchronize the stored key state with the actual state
-		for (int a = 0; a < 256; a++) {
+		for (int a = 0; a < (int)EVirtualKey::COUNT; a++) {
 			if (CEventBinding::ScancodeToKeyTable[a] != 0) {
-				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a);
+				bool isPressed = m_pKeyboard->IsKeyPressed((EVirtualKey)a);
+				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = isPressed ? 0x80 : 0;
 			}
 		}
 		if (pKeyTarget != NULL)
@@ -1183,7 +960,6 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 			MsgProc(&newMsg);
 		}
 	}
-#endif
 	return bKeyHandled;
 }
 

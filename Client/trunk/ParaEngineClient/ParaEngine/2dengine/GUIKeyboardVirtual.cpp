@@ -14,12 +14,7 @@ using namespace ParaEngine;
 CGUIBase * CGUIKeyboardVirtual::m_objCaptured = NULL;
 
 ParaEngine::CGUIKeyboardVirtual::CGUIKeyboardVirtual()
-	:m_buffered_key_msgs_count(0)
 {
-	m_bUseWindowMessage = true;
-	memset(m_didod, 0, sizeof(m_didod));
-	memset(m_lastkeystate, 0, sizeof(m_lastkeystate));
-	memset(m_keystate, 0, sizeof(m_keystate));
 	Reset();
 }
 
@@ -28,107 +23,42 @@ ParaEngine::CGUIKeyboardVirtual::~CGUIKeyboardVirtual()
 
 }
 
-bool CGUIKeyboardVirtual::IsKeyPressed(DWORD nKey)
+bool CGUIKeyboardVirtual::IsKeyPressed(const EVirtualKey& key)
 {
-	return ((m_keystate[nKey] & 0x80) != 0);
+	if (key == EVirtualKey::KEY_UNKNOWN || key == EVirtualKey::COUNT) return false;
+	return m_keystate[(int)key] == EKeyState::PRESS;
 }
 
-void ParaEngine::CGUIKeyboardVirtual::SetKeyPressed(DWORD nKey, bool bPressed)
+void ParaEngine::CGUIKeyboardVirtual::SetKeyPressed(const EVirtualKey& key, bool bPressed)
 {
-	m_keystate[nKey] = bPressed ? 0x80 : 0;
+	if (key == EVirtualKey::KEY_UNKNOWN || key == EVirtualKey::COUNT) return;
+	m_keystate[(int)key] = bPressed ? EKeyState::PRESS : EKeyState::RELEASE;
 }
 
 void CGUIKeyboardVirtual::Reset()
 {
-	::memset(m_keystate, 0, sizeof(m_keystate));
+	for (int i =0;i<(int)EVirtualKey::COUNT;i++)
+	{
+		m_keystate[i] = EKeyState::RELEASE;
+	}
 	m_dwElements = 0;
 }
 
-void CGUIKeyboardVirtual::PushKeyEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (m_buffered_key_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
-		m_buffered_key_msgs[m_buffered_key_msgs_count].lParam = lParam;
-		m_buffered_key_msgs[m_buffered_key_msgs_count].wParam = wParam;
-		m_buffered_key_msgs[m_buffered_key_msgs_count].time = GetTickCount();
-		m_buffered_key_msgs[m_buffered_key_msgs_count].message = uMsg;
-	}
-	++m_buffered_key_msgs_count;
-}
 
-void CGUIKeyboardVirtual::PushKeyEvent(const MSG &msg)
-{
-	if (m_buffered_key_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
-		m_buffered_key_msgs[m_buffered_key_msgs_count] = msg;
-	}
-	++m_buffered_key_msgs_count;
-}
+
 
 CGUIBase* ParaEngine::CGUIKeyboardVirtual::GetCapture()
 {
 	return m_objCaptured;
 }
 
-HRESULT ParaEngine::CGUIKeyboardVirtual::ReadBufferedData()
-{
-	if (m_bUseWindowMessage)
-	{
-		/** we do not use Read Buffered Data, instead, mouse events are translated from windows messages.
-		Only immediate button data are read from direct input. */
-		m_dwElements = 0;
-		//translating windows message into DirextMouse-like events, in order to maintain consistency of the interface
-		for (int a = 0; a<m_buffered_key_msgs_count; a++) {
-			m_didod[m_dwElements].dwOfs = 0;
-			switch (m_buffered_key_msgs[a].message) {
-			case WM_KEYDOWN:
-				m_didod[m_dwElements].dwData = 0x80;
-				m_didod[m_dwElements].dwOfs = CEventBinding::TranslateVKToDIK(m_buffered_key_msgs[a].wParam);
-				break;
-			case WM_KEYUP:
-				m_didod[m_dwElements].dwData = 0;
-				m_didod[m_dwElements].dwOfs = CEventBinding::TranslateVKToDIK(m_buffered_key_msgs[a].wParam);
-				break;
-			}
-			if (m_didod[m_dwElements].dwOfs != 0)
-			{
-				m_didod[m_dwElements].dwTimeStamp = m_buffered_key_msgs[a].time;
-				m_dwElements++;
-			}
-		}
-		m_buffered_key_msgs_count = 0;
-	}
-	return S_OK;
-}
-
-void ParaEngine::CGUIKeyboardVirtual::Update()
-{
-	ReadBufferedData();
-	ReadImmediateData();
-}
-
-HRESULT ParaEngine::CGUIKeyboardVirtual::ReadImmediateData()
-{
-	memcpy(m_lastkeystate, m_keystate, sizeof(m_lastkeystate));
-	return S_OK;
-}
-
-BYTE ParaEngine::CGUIKeyboardVirtual::GetLastKeyState(int nIndex)
-{
-	return m_lastkeystate[nIndex];
-}
 
 
-BYTE ParaEngine::CGUIKeyboardVirtual::GetCurrentKeyState(int nIndex)
-{
-	return m_keystate[nIndex];
-}
 
-short ParaEngine::CGUIKeyboardVirtual::GetKeyState(int nIndex)
+EKeyState ParaEngine::CGUIKeyboardVirtual::GetKeyState(const EVirtualKey& key)
 {
-#ifdef WIN32
-	return ::GetKeyState(nIndex);
-#else
-	return m_keystate[nIndex];
-#endif
+	assert(key != EVirtualKey::KEY_UNKNOWN && key != EVirtualKey::COUNT);
+	return m_keystate[(int)key];
 }
 
 void ParaEngine::CGUIKeyboardVirtual::SetElementsCount(DWORD val)
@@ -155,15 +85,4 @@ void CGUIKeyboardVirtual::ReleaseCapture(CGUIBase* obj)
 void CGUIKeyboardVirtual::ReleaseCapture()
 {
 	m_objCaptured = NULL;
-}
-
-
-bool CGUIKeyboardVirtual::IsUseWindowsMessage()
-{
-	return m_bUseWindowMessage;
-}
-
-void CGUIKeyboardVirtual::SetUseWindowsMessage(bool bUseWinMsg)
-{
-	m_bUseWindowMessage = bUseWinMsg;
 }

@@ -9,6 +9,7 @@
 #include "ParaScriptingCharacter.h"
 #include "ParaScriptingGlobal.h"
 #include "MiniSceneGraph.h"
+#include "Framework/InputSystem/VirtualKey.h"
 
 namespace ParaEngine{
 	class CTerrainTile;
