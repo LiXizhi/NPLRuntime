@@ -509,8 +509,6 @@ namespace ParaEngine
 	} D3DPOOL;
 }
 
-#include "VirtualKeyDef.h"
-
 // Flexible vertex format bits
 //
 #define D3DFVF_RESERVED0        0x001

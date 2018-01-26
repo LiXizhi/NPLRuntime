@@ -2884,7 +2884,7 @@ bool ParaUI::SetHighlightParam(const char* szEffectName, const char* szParamName
 	return false;
 }
 
-bool ParaUI::IsKeyPressed( int nDikScanCode )
+bool ParaUI::IsKeyPressed(const EVirtualKey& nDikScanCode )
 {
 	CDirectKeyboard *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
 	if(pKeyboard)

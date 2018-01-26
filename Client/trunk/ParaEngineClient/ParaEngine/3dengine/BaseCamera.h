@@ -2,7 +2,7 @@
 #include "TileObject.h"
 #include "PortalFrustum.h"
 #include "CameraFrustum.h"
-
+#include "Framework/InputSystem/VirtualKey.h"
 namespace ParaEngine
 {
 	class CBaseObject;
@@ -72,7 +72,7 @@ namespace ParaEngine
 	public:
 		CBaseCamera();
 		// mapping from key id to key's direct input's scan code. 
-		static BYTE			  m_scancode_key_map[MAX_KEYS]; 
+		static EVirtualKey			  m_scancode_key_map[MAX_KEYS]; 
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		// implementation of IAttributeFields
@@ -255,9 +255,9 @@ namespace ParaEngine
 
 		virtual Vector3 GetRenderEyePosition();
 		// we can alter key map at runtime
-		static void SetKeyMap(CharacterAndCameraKeys key, BYTE scancode);
+		static void SetKeyMap(CharacterAndCameraKeys key, const EVirtualKey& scancode);
 		// get scancode from key id
-		static BYTE GetKeyMap(CharacterAndCameraKeys key);
+		static EVirtualKey GetKeyMap(CharacterAndCameraKeys key);
 
 	protected:
 		

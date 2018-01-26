@@ -102,11 +102,8 @@ void ParaEngine::ApplicationWindow::OnKey(EVirtualKey key, EKeyState state)
 	{
 		return;
 	}
-	DWORD vk = ParaVKToWin32VirtualKey(key);
-	if (vk == -1)return;
-	DWORD dik = CEventBinding::WinVirtualKeyToDIK[vk];
 	bool pressed = state == EKeyState::PRESS ? true : false;
-	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(dik, pressed);
+	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(key, pressed);
 }
 
 void ParaEngine::ApplicationWindow::OnChar(char character)

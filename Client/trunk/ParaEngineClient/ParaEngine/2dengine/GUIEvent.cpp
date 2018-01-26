@@ -541,7 +541,8 @@ void CGUIEvent::UpdateKey(int option)
 
 	vector<GUI_KEYBOARD_HOLDKEY>::iterator keyiter,keyend;
 	for (keyiter=m_keyboard.HoldKey.begin();keyiter!=m_keyboard.HoldKey.end();) {
-		if (!KEY_PRESSED(pKeyboard->GetKeyStates(),(*keyiter).key)) {
+	
+		if (!pKeyboard->IsKeyPressed((EVirtualKey)(*keyiter).key)) {
 			keyiter = m_keyboard.HoldKey.erase(keyiter);
 		}else
 			keyiter++;
@@ -568,15 +569,15 @@ void CGUIEvent::UpdateKey(int option)
 			}
 		}
 	}	
-	//copy the key events
-	for(DWORD i = 0; i < pKeyboard->GetElementsCount() && m_keyboard.Size<SAMPLE_BUFFER_SIZE; i++ ) {
-		if (((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)!=0&&(option&IGNORE_DOWN_EVENTS)==0)|| \
-			((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)==0&&(option&IGNORE_UP_EVENTS)==0)){
-				m_keyboard.KeyEvents[m_keyboard.Size]=pKeyboard->GetDeviceObjectData()[i];
-				m_keyboard.KeyEvents[m_keyboard.Size].uAppData=CEventBinding::ScancodeToKeyTable[pKeyboard->GetDeviceObjectData()[i].dwOfs];
-				m_keyboard.Size++;
-			}
-	}
+	////copy the key events
+	//for(DWORD i = 0; i < pKeyboard->GetElementsCount() && m_keyboard.Size<SAMPLE_BUFFER_SIZE; i++ ) {
+	//	if (((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)!=0&&(option&IGNORE_DOWN_EVENTS)==0)|| \
+	//		((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)==0&&(option&IGNORE_UP_EVENTS)==0)){
+	//			m_keyboard.KeyEvents[m_keyboard.Size]=pKeyboard->GetDeviceObjectData()[i];
+	//			m_keyboard.KeyEvents[m_keyboard.Size].uAppData=CEventBinding::ScancodeToKeyTable[pKeyboard->GetDeviceObjectData()[i].dwOfs];
+	//			m_keyboard.Size++;
+	//		}
+	//}
 
 }
 /** Interprets the raw mouse or keyboard state to meaningful events.
@@ -868,7 +869,7 @@ CHAR CGUIEvent::GetChar(DWORD key)
 //
 bool CGUIEvent::IsKeyPressed(int key)
 {
-	return ((CGlobals::GetGUI()->m_pKeyboard->GetKeyStates()[key] & 0x80) != 0);
+	return (CGlobals::GetGUI()->m_pKeyboard->IsKeyPressed((EVirtualKey)key));
 }
 
 bool CGUIEvent::IsMousePressed(int mouse)

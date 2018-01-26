@@ -6,6 +6,7 @@
 #include <map>
 #include <boost/array.hpp>
 #include "util/cow_ptr.hpp"
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define EventCount 512
 using namespace std;
@@ -122,16 +123,8 @@ namespace ParaEngine
 		//helper function for initializing a message
 		static void InitMsg(MSG *event,DWORD time,DWORD message,POINT& pt);
 
-		/** converting a windows virtual key to direct input key scan code. */
-		static DWORD TranslateVKToDIK(DWORD dwVKey);
 
-		static DWORD ScancodeToKeyTable[256];
-
-		/** windows virtual key code to direct input key. */
-		static DWORD WinVirtualKeyToDIK[256];
-
-		/** direct input key to windows virtual key code. */
-		static DWORD DIKToWinVirtualKey[256];
+		static DWORD ScancodeToKeyTable[(int)EVirtualKey::COUNT];
 	protected:
 		typedef std::bitset<EventCount> EventEnabledArray_type;
 		typedef std::map<int,SimpleScript> EventScriptMap_type;

@@ -16,6 +16,7 @@
 #endif
 #include "ParaScriptingPainter.h"
 #include "ParaScriptingGraphics.h"
+#include "Framework/InputSystem/VirtualKey.h"
 
 namespace ParaScripting
 {
@@ -891,7 +892,7 @@ namespace ParaScripting
 		* e.g. ParaUI.IsKeyPressed(DIK_SCANCODE.DIK_LCONTROL) or ParaUI.IsKeyPressed(DIK_SCANCODE.DIK_LSHIFT) or ParaUI.IsKeyPressed(DIK_SCANCODE.DIK_LMENU)
 		* @param nDikScanCode: DirectInput keyboard scan codes.
 		*/
-		static bool IsKeyPressed(int nDikScanCode);
+		static bool IsKeyPressed(const EVirtualKey& nDikScanCode);
 
 		/* check if a given mouse button is currently in pressed state. 
 		* @param nButton: 0 is left, 1 is right, 2 is middle. 
