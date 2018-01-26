@@ -511,8 +511,8 @@ bool CGUIScrollBar::MsgProc(MSG *event)
 	static int ThumbOffsetY = 0;
 	static int ThumbOffsetX = 0;
 	static bool bDrag = false;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	auto pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
 	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
 	if (event != NULL&&!m_event->InterpretMessage(event)) {
 		return false;

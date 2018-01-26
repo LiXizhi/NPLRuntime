@@ -8,7 +8,6 @@
 #include "ParaEngine.h"
 #include "2dengine/GUIBase.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "MiscEntity.h"
 #include "IObjectDrag.h"
 

@@ -16,7 +16,6 @@
 #include "ParaWorldAsset.h"
 #include "PaintEngine/Painter.h"
 #include "util/StringHelper.h"
-#include "GUIDirectInput.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "memdebug.h"
 

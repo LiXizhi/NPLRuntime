@@ -54,7 +54,6 @@ The GUIRoot object contains the top level mouse focus object.
 #include "ParaEngineSettings.h"
 #include "GUIScript.h"
 #include "GUIEvent.h"
-#include "GUIDirectInput.h"
 #include "GUIText.h"
 #include "GUIScrollBar.h"
 #include "GUIButton.h"
@@ -768,8 +767,8 @@ HRESULT CGUIRoot::DeleteDeviceObjects()
 //no need refactoring
 void CGUIRoot::Reset()
 {
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	auto pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	auto pMouse = CGUIRoot::GetInstance()->m_pMouse;
 
 	if (pKeyboard) {
 		pKeyboard->Reset();
@@ -1137,7 +1136,7 @@ int CGUIRoot::HandleUserInput()
 				{
 					if (pdrag->m_bIsCandicateOnly)
 					{
-						if (m_pMouse->IsButtonDown(CDirectMouse::LEFT_BUTTON))
+						if (m_pMouse->IsButtonDown(CGUIMouseVirtual::LEFT_BUTTON))
 						{
 							((CGUIBase*)pdrag->pDragging)->MsgProc(&newMsg);
 							bMouseHandled = true;
@@ -1740,12 +1739,9 @@ HRESULT CGUIRoot::OneTimeGUIInit()
 {
 	CGUIEvent::StaticInit();
 	if (m_pKeyboard == 0)
-		m_pKeyboard = new CDirectKeyboard(CGlobals::GetAppHWND());
+		m_pKeyboard = new CGUIKeyboardVirtual();
 	if (m_pMouse == 0)
-		m_pMouse = new CDirectMouse(CGlobals::GetAppHWND());
-#if defined(USE_DIRECTX_RENDERER)
-	CGUIIME::OnFocusOut();
-#endif
+		m_pMouse = new CGUIMouseVirtual();
 
 	if (CGlobals::GetAssetManager()->GetFont("sys") == NULL)
 	{

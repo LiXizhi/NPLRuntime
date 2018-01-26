@@ -22,7 +22,6 @@
 #include "GUIEvent.h"
 #include "Globals.h"
 #include "GUIRoot.h"
-#include "GUIDirectInput.h"
 #include "MiscEntity.h"
 #include "EventBinding.h"
 #include "InfoCenter/ICConfigManager.h"
@@ -157,8 +156,9 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		// during dragging operation
 		if((m_eState&GUIESDragMask) != 0)
 		{
-			if ( ! IsMousePressed(CDirectMouse::LEFT_BUTTON) )
+			if ( ! IsMousePressed(CGUIMouseVirtual::LEFT_BUTTON) )
 			{
+				
 				m_nTriggerEvent=EM_MOUSE_LEFTDRAGEND;
 				m_eState=(m_eState&~GUIESDragMask)|GUIESLeftNone;
 				m_mouse.LastLDown.init();
@@ -537,8 +537,8 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 void CGUIEvent::UpdateKey(int option)
 {
 	//adding hold key and copying the key events to this event object in the following
-	CDirectKeyboard *pKeyboard=CGUIRoot::GetInstance()->m_pKeyboard;
-
+	CGUIKeyboardVirtual *pKeyboard=CGUIRoot::GetInstance()->m_pKeyboard;
+	
 	vector<GUI_KEYBOARD_HOLDKEY>::iterator keyiter,keyend;
 	for (keyiter=m_keyboard.HoldKey.begin();keyiter!=m_keyboard.HoldKey.end();) {
 	
@@ -819,7 +819,7 @@ CHAR CGUIEvent::GetChar(DWORD key)
 //	string text;
 //	DWORD a;
 //	byte tempstate[256];
-//	CDirectKeyboard *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
+//	CGUIKeyboardVirtual *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
 //	memcpy(tempstate,pKeyboard->m_lastkeystate,256);
 //	for (a=0;a<m_keyboard.Size;a++) {
 //		///process the key down events in the direct keyboard buffer
@@ -874,5 +874,5 @@ bool CGUIEvent::IsKeyPressed(int key)
 
 bool CGUIEvent::IsMousePressed(int mouse)
 {
-	return CGUIRoot::GetInstance()->m_pMouse->IsButtonDown((CDirectMouse::MOUSE_KEY_STD)mouse);	
+	return CGUIRoot::GetInstance()->m_pMouse->IsButtonDown((CGUIMouseVirtual::MOUSE_KEY_STD)mouse);	
 }

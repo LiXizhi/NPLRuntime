@@ -9,7 +9,6 @@
 #include "ParaEngine.h"
 #include "ParaWorldAsset.h"
 #include "GUISlider.h"
-#include "GUIDirectInput.h"
 #include "GUIBase.h"
 #include "GUIRoot.h"
 #include "ObjectManager.h"
@@ -356,8 +355,8 @@ bool CGUISlider::MsgProc(MSG* event)
 		return false;
 	bool bHandled=false;
 	CGUIRoot *pRoot=CGUIRoot::GetInstance();
-	CDirectMouse *pMouse=pRoot->m_pMouse;
-	CDirectKeyboard *pKeyboard=pRoot->m_pKeyboard;
+	CGUIMouseVirtual *pMouse=pRoot->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard=pRoot->m_pKeyboard;
 	MSG newMsg;
 	if (event!=NULL&&!m_event->InterpretMessage(event)) {
 		return false;

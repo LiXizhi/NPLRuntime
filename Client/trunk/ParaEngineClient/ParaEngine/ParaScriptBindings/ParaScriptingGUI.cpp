@@ -16,7 +16,6 @@
 #include "2dengine/GUIIMEEditBox.h"
 #include "2dengine/GUIScript.h"
 #include "2dengine/GUIResource.h"
-#include "2dengine/GUIDirectInput.h"
 #include "2dengine/GUIListBox.h"
 #include "2dengine/GUIToolTip.h"
 #include "2dengine/GUISlider.h"
@@ -2886,7 +2885,7 @@ bool ParaUI::SetHighlightParam(const char* szEffectName, const char* szParamName
 
 bool ParaUI::IsKeyPressed(const EVirtualKey& nDikScanCode )
 {
-	CDirectKeyboard *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
+	CGUIKeyboardVirtual *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
 	if(pKeyboard)
 	{
 		return pKeyboard->IsKeyPressed(nDikScanCode);
@@ -2896,10 +2895,10 @@ bool ParaUI::IsKeyPressed(const EVirtualKey& nDikScanCode )
 
 bool ParaUI::IsMousePressed(int nButton)
 {
-	CDirectMouse *pMouse=CGlobals::GetGUI()->m_pMouse;
+	CGUIMouseVirtual *pMouse=CGlobals::GetGUI()->m_pMouse;
 	if(pMouse)
 	{
-		return pMouse->IsButtonDown((CDirectMouse::MOUSE_KEY_STD)nButton);
+		return pMouse->IsButtonDown((CGUIMouseVirtual::MOUSE_KEY_STD)nButton);
 	}
 	return false;
 }

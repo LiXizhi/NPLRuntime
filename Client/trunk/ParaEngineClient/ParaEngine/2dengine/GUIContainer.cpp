@@ -22,7 +22,6 @@
 #include "GUIResource.h"
 #include "ParaWorldAsset.h"
 #include "GUIEvent.h"
-#include "GUIDirectInput.h"
 #include "ObjectManager.h"
 #include "EventBinding.h"
 #include "InfoCenter/ICConfigManager.h"
@@ -520,7 +519,7 @@ void CGUIContainer::SetMouseFocus(CGUIBase* control)
 	m_pMouseFocus = control;
 	return;
 
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	CGUIMouseVirtual *pMouse = CGUIRoot::GetInstance()->m_pMouse;
 	CGUIContainer* temp = this, *cp;
 	CGUIContainer* route[MAX_GUI_HIERARCHY_LEVEL];
 	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
@@ -716,8 +715,8 @@ bool CGUIContainer::MsgProc(MSG *event)
 	if (!m_bIsEnabled || m_event == 0)
 		return false;
 	bool bHandled = false;
-	CDirectMouse *pMouse = CGUIRoot::GetInstance()->m_pMouse;
-	CDirectKeyboard *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
+	CGUIMouseVirtual *pMouse = CGUIRoot::GetInstance()->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard = CGUIRoot::GetInstance()->m_pKeyboard;
 	if (m_bScrollable&&m_bIsVisible) {
 		CGUIPosition pos;
 		if (m_ScrollType&VSCROLL) {

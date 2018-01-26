@@ -32,8 +32,8 @@ using namespace std;
 namespace ParaEngine
 {
 	class CEventBinding;
-	class CDirectKeyboard;
-	class CDirectMouse;
+	class CGUIKeyboardVirtual;
+	class CGUIMouseVirtual;
 	class CGUIBase;
 	class IObjectDrag;
 

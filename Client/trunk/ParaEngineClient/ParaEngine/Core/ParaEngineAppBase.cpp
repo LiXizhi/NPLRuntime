@@ -10,8 +10,6 @@
 #include "util/os_calls.h"
 #include "util/StringHelper.h"
 #include "ObjectAutoReleasePool.h"
-#include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "AttributesManager.h"
 #include "PluginManager.h"
 #include "MeshPhysicsObject.h"
@@ -37,6 +35,8 @@
 #include "NPLPackageConfig.h"
 #include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
+#include "2dengine/GUIRoot.h"
+#include "2dengine/GUIMouseVirtual.h"
 
 using namespace ParaEngine;
 

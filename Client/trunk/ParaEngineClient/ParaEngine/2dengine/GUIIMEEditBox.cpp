@@ -300,8 +300,8 @@ bool CGUIIMEEditBox::MsgProc(MSG *event)
 		return false;
 	bool bHandled=false;
 
-	CDirectMouse *pMouse=CGUIRoot::GetInstance()->m_pMouse;
-	CDirectKeyboard *pKeyboard=CGUIRoot::GetInstance()->m_pKeyboard;
+	CGUIMouseVirtual *pMouse=CGUIRoot::GetInstance()->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard=CGUIRoot::GetInstance()->m_pKeyboard;
 	GUIFontElement* pFontElement;
 	if (event!=NULL&&!m_event->InterpretMessage(event)) {
 		return false;

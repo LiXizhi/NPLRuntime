@@ -17,7 +17,6 @@
 #include "ParaWorldAsset.h"
 #include "InfoCenter/ICConfigManager.h"
 #include "GUIRoot.h"
-#include "GUIDirectInput.h"
 #include "ObjectManager.h"
 #include "EventBinding.h"
 #include "util/StringHelper.h"
@@ -275,8 +274,8 @@ bool CGUIButton::MsgProc(MSG *event)
 		return false;
 	bool bHandled=false;
 	CGUIRoot *pRoot=CGUIRoot::GetInstance();
-	CDirectMouse *pMouse=pRoot->m_pMouse;
-	CDirectKeyboard *pKeyboard=pRoot->m_pKeyboard;
+	CGUIMouseVirtual *pMouse=pRoot->m_pMouse;
+	CGUIKeyboardVirtual *pKeyboard=pRoot->m_pKeyboard;
 	MSG newMsg;
 	if (event!=NULL&&!m_event->InterpretMessage(event)) {
 		return false;

@@ -3,6 +3,9 @@
 #include "GUIContainer.h"
 #include "GUIScript.h"
 #include "GUIToolTip.h"
+#include "GUIMouseVirtual.h"
+#include "GUIKeyboardVirtual.h"
+#include "GUIResource.h"
 #include "SpriteRenderer.h"
 #include "util/mutex.h"
 #include <vector>
@@ -92,8 +95,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIsNonClient_s, bool)	{ cls->SetIsNonClient(p1); return S_OK; }
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
-		CDirectMouse* GetMouse() { return m_pMouse; }
-		CDirectKeyboard* GetKeyboard() { return m_pKeyboard; }
+		CGUIMouseVirtual* GetMouse() { return m_pMouse; }
+		CGUIKeyboardVirtual* GetKeyboard() { return m_pKeyboard; }
 		/** set whether we will capture the mouse for the main window. */
 		void SetCaptureMouse(bool bCapture);
 		bool IsMouseCaptured();
@@ -451,9 +454,9 @@ namespace ParaEngine
 
 		GUIMsgEventList_type m_events;
 
-		CDirectKeyboard*		m_pKeyboard;
+		CGUIKeyboardVirtual*	m_pKeyboard;
 
-		CDirectMouse*			m_pMouse;
+		CGUIMouseVirtual*		m_pMouse;
 
 		//	GUI_DRAG_AND_DROP		m_pDragObj;
 
