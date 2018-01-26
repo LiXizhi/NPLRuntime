@@ -604,6 +604,17 @@ NPL::NPLReturnCode NPL::CNPLConnection::SendMessage(const NPLFileName& file_name
 			nLength = strlen(code);
 		writer.Append(code, nLength);
 	}
+	else if (file_name.sRelativePath == "tcp")
+	{
+		// for TCP request/response message 
+		if (m_protocolType != TCP_CUSTOM)
+		{
+			SetProtocol(TCP_CUSTOM);
+		}
+		if (nLength < 0)
+			nLength = strlen(code);
+		writer.Append(code, nLength);
+	}
 	else if (file_name.sRelativePath == "websocket")
 	{
 		if (m_protocolType == WEBSOCKET)
@@ -781,6 +792,15 @@ bool NPL::CNPLConnection::handle_websocket_data(int bytes_transferred)
 	return false;
 }
 
+bool NPL::CNPLConnection::handle_tcp_custom_data(int bytes_transferred)
+{
+	int server_id = -30;
+	m_input_msg.method = "A";
+	m_input_msg.m_n_filename = server_id;
+	NPL::NPLHelper::EncodeStringInQuotation(m_input_msg.m_code, 0, (const char*)(m_buffer.begin()), bytes_transferred);
+	return handleMessageIn();
+}
+
 bool NPL::CNPLConnection::handleReceivedData(int bytes_transferred)
 {
 	if (m_protocolType == WEBSOCKET)
@@ -796,6 +816,12 @@ bool NPL::CNPLConnection::handleReceivedData(int bytes_transferred)
 			return false;
 		}
 	}
+	else if (m_protocolType == TCP_CUSTOM)
+	{
+		return handle_tcp_custom_data(bytes_transferred);
+	}
+
+	// else m_protocolType == NPL
 
 	boost::tribool result = true;
 	Buffer_Type::iterator curIt = m_buffer.begin();
@@ -820,19 +846,25 @@ bool NPL::CNPLConnection::handleReceivedData(int bytes_transferred)
 
 	if (!result)
 	{
-		// message parsing failed. the message format is not supported. 
-		// This is a stream error, we shall close the connection
-		if (GetLogLevel() > 0) {
-			OUTPUT_LOG("warning: message parsing failed when received data. we will close connection. nid %s \n", GetNID().c_str());
+		if (handle_tcp_custom_data(bytes_transferred))
+		{
+			// we shall try to switch to custom protocol if there is a handler provided. 
+			SetProtocol(TCP_CUSTOM);
 		}
-		m_connection_manager.stop(shared_from_this());
-		return false;
+		else
+		{
+			// message parsing failed. the message format is not supported. 
+			// This is a stream error, we shall close the connection
+			if (GetLogLevel() > 0) {
+				OUTPUT_LOG("warning: message parsing failed when received data. we will close connection. nid %s \n", GetNID().c_str());
+			}
+			m_connection_manager.stop(shared_from_this());
+			return false;
+		}
 	}
-	else
-	{
-		// the message has not been received completely, needs to receive more data from the socket. 
-		return true;
-	}
+
+	// the message has not been received completely, needs to receive more data from the socket. 
+	return true;
 }
 bool NPL::CNPLConnection::handleMessageIn()
 {
