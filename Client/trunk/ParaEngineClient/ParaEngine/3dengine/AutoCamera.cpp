@@ -1904,20 +1904,20 @@ void CAutoCamera::HandleUserInput()
 	bool bAlterKeyPressed = false;
 	if (pKeyboard)
 	{
-		bAlterKeyPressed = pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT_CONTROL) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT_CONTROL) ||
+		bAlterKeyPressed = pKeyboard->IsKeyPressed(EVirtualKey::KEY_LCONTROL) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RCONTROL) ||
 			// we still needs shift toggle run/walk movement
 			// pKeyboard->IsKeyPressed(DIK_LSHIFT) || pKeyboard->IsKeyPressed(DIK_RSHIFT) ||
-			pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT_ALT) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT_ALT);
+			pKeyboard->IsKeyPressed(EVirtualKey::KEY_LMENU) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RMENU);
 		bIsKeyProcessed = bIsKeyProcessed || bAlterKeyPressed;
 	}
 
-	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_8) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_UP)));
-	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_2) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_DOWN)));
+	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD8) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_UP)));
+	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD2) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_DOWN)));
 	
 	if(IsShiftMoveSwitched())
 	{
-		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_7) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
-		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_9) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
+		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD7) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD9) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
 		SetKeyDownState(MOVE_LEFT, FALSE);
 		SetKeyDownState(MOVE_RIGHT, FALSE);
 	}
@@ -1925,8 +1925,8 @@ void CAutoCamera::HandleUserInput()
 	{
 		SetKeyDownState(SHIFT_LEFT, FALSE);
 		SetKeyDownState(SHIFT_RIGHT, FALSE);
-		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_4) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
-		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD_6) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
+		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD4) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD6) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
 	}
 	SetKeyDownState(ZOOM_IN, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_IN)/*DIK_INSERT*/)));
 	SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
