@@ -29,7 +29,6 @@
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIIME.h"
 #include "2dengine/GUIHighlight.h"
-#include "2dengine/GUIDirectInput.h"
 #include "util/StringHelper.h"
 #include "FrameRateController.h"
 #include "InfoCenter/ICDBManager.h"
@@ -90,7 +89,6 @@
 
 #include "resource.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "FrameRateController.h"
 #include "MiscEntity.h"
 

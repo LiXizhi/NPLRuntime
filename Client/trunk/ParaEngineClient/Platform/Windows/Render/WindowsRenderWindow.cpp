@@ -30,7 +30,7 @@ void InitVirtualKeyMap()
 		s_keymap['8'] = EVirtualKey::KEY_8;
 		s_keymap['9'] = EVirtualKey::KEY_9;
 		s_keymap[VK_OEM_1] = EVirtualKey::KEY_SEMICOLON;
-		s_keymap[VK_OEM_PLUS] = EVirtualKey::KEY_EQUAL;
+		s_keymap[VK_OEM_PLUS] = EVirtualKey::KEY_EQUALS;
 		s_keymap['A'] = EVirtualKey::KEY_A;
 		s_keymap['B'] = EVirtualKey::KEY_B;
 		s_keymap['C'] = EVirtualKey::KEY_C;
@@ -57,30 +57,30 @@ void InitVirtualKeyMap()
 		s_keymap['X'] = EVirtualKey::KEY_X;
 		s_keymap['Y'] = EVirtualKey::KEY_Y;
 		s_keymap['Z'] = EVirtualKey::KEY_Z;
-		s_keymap[VK_OEM_4] = EVirtualKey::KEY_LEFT_BRACKET;
+		s_keymap[VK_OEM_4] = EVirtualKey::KEY_LBRACKET;
 		s_keymap[VK_OEM_5] = EVirtualKey::KEY_BACKSLASH;
-		s_keymap[VK_OEM_6] = EVirtualKey::KEY_RIGHT_BRACKET;
-		s_keymap[VK_OEM_3] = EVirtualKey::KEY_GRAVE_ACCENT;
+		s_keymap[VK_OEM_6] = EVirtualKey::KEY_RBRACKET;
+		s_keymap[VK_OEM_3] = EVirtualKey::KEY_GRAVE;
 
 		/// Function Keys
 		s_keymap[VK_ESCAPE] = EVirtualKey::KEY_ESCAPE;
-		s_keymap[VK_RETURN] = EVirtualKey::KEY_ENTER;
+		s_keymap[VK_RETURN] = EVirtualKey::KEY_RETURN;
 		s_keymap[VK_TAB] = EVirtualKey::KEY_TAB;
-		s_keymap[VK_BACK] = EVirtualKey::KEY_BACKSPACE;
+		s_keymap[VK_BACK] = EVirtualKey::KEY_BACK;
 		s_keymap[VK_INSERT] = EVirtualKey::KEY_INSERT;
 		s_keymap[VK_DELETE] = EVirtualKey::KEY_DELETE;
 		s_keymap[VK_RIGHT] = EVirtualKey::KEY_RIGHT;
 		s_keymap[VK_LEFT] = EVirtualKey::KEY_LEFT;
 		s_keymap[VK_DOWN] = EVirtualKey::KEY_DOWN;
 		s_keymap[VK_UP] = EVirtualKey::KEY_UP;
-		s_keymap[VK_PRIOR] = EVirtualKey::KEY_PAGE_UP;
-		s_keymap[VK_NEXT] = EVirtualKey::KEY_PAGE_DOWN;
+		s_keymap[VK_PRIOR] = EVirtualKey::KEY_PERIOD;
+		s_keymap[VK_NEXT] = EVirtualKey::KEY_NEXT;
 		s_keymap[VK_HOME] = EVirtualKey::KEY_HOME;
 		s_keymap[VK_END] = EVirtualKey::KEY_END;
-		s_keymap[VK_CAPITAL] = EVirtualKey::KEY_CAPS_LOCK;
-		s_keymap[VK_SCROLL] = EVirtualKey::KEY_SCROLL_LOCK;
-		s_keymap[VK_NUMLOCK] = EVirtualKey::KEY_NUM_LOCK;
-		s_keymap[VK_SNAPSHOT] = EVirtualKey::KEY_PRINT_SCREEN;
+		s_keymap[VK_CAPITAL] = EVirtualKey::KEY_CAPITAL;
+		s_keymap[VK_SCROLL] = EVirtualKey::KEY_SCROLL;
+		s_keymap[VK_NUMLOCK] = EVirtualKey::KEY_NUMLOCK;
+		s_keymap[VK_SNAPSHOT] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[VK_PAUSE] = EVirtualKey::KEY_PAUSE;
 		s_keymap[VK_F1] = EVirtualKey::KEY_F1;
 		s_keymap[VK_F2] = EVirtualKey::KEY_F2;
@@ -95,29 +95,29 @@ void InitVirtualKeyMap()
 		s_keymap[VK_F11] = EVirtualKey::KEY_F11;
 		s_keymap[VK_F12] = EVirtualKey::KEY_F12;
 
-		s_keymap[VK_NUMPAD0] = EVirtualKey::KEY_NUMPAD_0;
-		s_keymap[VK_NUMPAD1] = EVirtualKey::KEY_NUMPAD_1;
-		s_keymap[VK_NUMPAD2] = EVirtualKey::KEY_NUMPAD_2;
-		s_keymap[VK_NUMPAD3] = EVirtualKey::KEY_NUMPAD_3;
-		s_keymap[VK_NUMPAD4] = EVirtualKey::KEY_NUMPAD_4;
-		s_keymap[VK_NUMPAD5] = EVirtualKey::KEY_NUMPAD_5;
-		s_keymap[VK_NUMPAD6] = EVirtualKey::KEY_NUMPAD_6;
-		s_keymap[VK_NUMPAD7] = EVirtualKey::KEY_NUMPAD_7;
-		s_keymap[VK_NUMPAD8] = EVirtualKey::KEY_NUMPAD_8;
-		s_keymap[VK_NUMPAD9] = EVirtualKey::KEY_NUMPAD_9;
+		s_keymap[VK_NUMPAD0] = EVirtualKey::KEY_NUMPAD0;
+		s_keymap[VK_NUMPAD1] = EVirtualKey::KEY_NUMPAD1;
+		s_keymap[VK_NUMPAD2] = EVirtualKey::KEY_NUMPAD2;
+		s_keymap[VK_NUMPAD3] = EVirtualKey::KEY_NUMPAD3;
+		s_keymap[VK_NUMPAD4] = EVirtualKey::KEY_NUMPAD4;
+		s_keymap[VK_NUMPAD5] = EVirtualKey::KEY_NUMPAD5;
+		s_keymap[VK_NUMPAD6] = EVirtualKey::KEY_NUMPAD6;
+		s_keymap[VK_NUMPAD7] = EVirtualKey::KEY_NUMPAD7;
+		s_keymap[VK_NUMPAD8] = EVirtualKey::KEY_NUMPAD8;
+		s_keymap[VK_NUMPAD9] = EVirtualKey::KEY_NUMPAD9;
 
-		s_keymap[VK_DECIMAL] = EVirtualKey::KEY_NUMPAD_DECIMAL;
-		s_keymap[VK_DIVIDE] = EVirtualKey::KEY_NUMPAD_DIVIDE;
-		s_keymap[VK_MULTIPLY] = EVirtualKey::KEY_NUMPAD_MULTIPLY;
-		s_keymap[VK_SUBTRACT] = EVirtualKey::KEY_NUMPAD_SUBTRACT;
-		s_keymap[VK_ADD] = EVirtualKey::KEY_NUMPAD_ADD;
-		s_keymap[VK_SEPARATOR] = EVirtualKey::KEY_NUMPAD_ENTER;
-		s_keymap[VK_LSHIFT] = EVirtualKey::KEY_LEFT_SHIFT;
-		s_keymap[VK_LCONTROL] = EVirtualKey::KEY_LEFT_CONTROL;
-		s_keymap[VK_RSHIFT] = EVirtualKey::KEY_RIGHT_SHIFT;
-		s_keymap[VK_RCONTROL] = EVirtualKey::KEY_RIGHT_CONTROL;
-		s_keymap[VK_LMENU] = EVirtualKey::KEY_LEFT_ALT;
-		s_keymap[VK_RMENU] = EVirtualKey::KEY_RIGHT_ALT;
+		s_keymap[VK_DECIMAL] = EVirtualKey::KEY_DECIMAL;
+		s_keymap[VK_DIVIDE] = EVirtualKey::KEY_DIVIDE;
+		s_keymap[VK_MULTIPLY] = EVirtualKey::KEY_MULTIPLY;
+		s_keymap[VK_SUBTRACT] = EVirtualKey::KEY_SUBTRACT;
+		s_keymap[VK_ADD] = EVirtualKey::KEY_ADD;
+		s_keymap[VK_SEPARATOR] = EVirtualKey::KEY_RETURN;
+		s_keymap[VK_LSHIFT] = EVirtualKey::KEY_LSHIFT;
+		s_keymap[VK_LCONTROL] = EVirtualKey::KEY_LCONTROL;
+		s_keymap[VK_RSHIFT] = EVirtualKey::KEY_RSHIFT;
+		s_keymap[VK_RCONTROL] = EVirtualKey::KEY_RCONTROL;
+		s_keymap[VK_LMENU] = EVirtualKey::KEY_LMENU;
+		s_keymap[VK_RMENU] = EVirtualKey::KEY_RMENU;
 
 	}
 }
