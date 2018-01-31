@@ -33,6 +33,8 @@ ucm_add_dirs(
 TO sources_commmon RECURSIVE
 )
 
+message(STATUS "RenderSytem:"${NPLRUNTIME_RENDERER})
+
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 #{
     set(RenderSystem RenderSystemOpenGL)
@@ -40,7 +42,7 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
         OpenGLWrapper
     TO sources_rendersystem RECURSIVE
     )
-
+if(NOT ANDROID)
     if(WIN32)
         set(DX2GLTOOL ${PROJECT_SOURCE_DIR}/externals/dxEffects2glEffects/bin/dx2gl.exe)
     endif()
@@ -75,7 +77,7 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
 
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
-
+endif()
 
 #}
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
@@ -174,7 +176,7 @@ target_compile_definitions(ParaEngine PUBLIC
 
 
 IF(MSVC)
-    ucm_set_runtime(STATIC)
+    ucm_set_runtime(DYNAMIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")

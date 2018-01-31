@@ -7,9 +7,9 @@
 #include "PEtypes.h"
 
 #if (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC)
-	#include <OpenGL/gl.h>
+	//#include <OpenGL/gl.h>
 #else
-	#include <GL/gl.h>
+	//#include <GL/gl.h>
 #endif
 
 #endif

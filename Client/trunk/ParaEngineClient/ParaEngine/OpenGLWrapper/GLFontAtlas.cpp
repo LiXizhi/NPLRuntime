@@ -1,5 +1,5 @@
 #include "ParaEngine.h"
-#include <iconv.h>
+//#include <iconv.h>
 #include "GLFontAtlas.h"
 #include "GLFont.h"
 #include "GLTexture2D.h"
@@ -82,14 +82,14 @@ GLFontAtlas::~GLFontAtlas()
     releaseTextures();
 
     delete []_currentPageData;
-
-#if PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
-    if (_iconv)
-    {
-        iconv_close(_iconv);
-        _iconv = nullptr;
-    }
-#endif
+//
+//#if PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
+//    if (_iconv)
+//    {
+//        iconv_close(_iconv);
+//        _iconv = nullptr;
+//    }
+//#endif
 }
 
 void GLFontAtlas::reset()
@@ -162,35 +162,35 @@ void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unor
 
     switch (_fontFreeType->getEncoding())
     {
-    case FT_ENCODING_GB2312:
-    {
-
-        if (_iconv == nullptr)
-        {
-            _iconv = iconv_open("gb2312", "utf-16le");
-        }
-
-        if (_iconv == (iconv_t)-1)
-        {
-            OUTPUT_LOG("conversion from utf16 to gb2312 not available");
-        }
-        else
-        {
-            char* pout = gb2312Text;
-            size_t inLen = strLen * 2;
-            size_t outLen = gb2312StrSize;
-
-#if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
-            const char* pin = (char*)u16Text.c_str();
-            iconv(_iconv, &pin, &inLen, &pout, &outLen);
-#else
-            char* pin = (char*)u16Text.c_str();
-            iconv(_iconv, &pin, &inLen, &pout, &outLen);
-#endif
-        }
-
-    }
-    break;
+//    case FT_ENCODING_GB2312:
+//    {
+//
+//        if (_iconv == nullptr)
+//        {
+//            _iconv = iconv_open("gb2312", "utf-16le");
+//        }
+//
+//        if (_iconv == (iconv_t)-1)
+//        {
+//            OUTPUT_LOG("conversion from utf16 to gb2312 not available");
+//        }
+//        else
+//        {
+//            char* pout = gb2312Text;
+//            size_t inLen = strLen * 2;
+//            size_t outLen = gb2312StrSize;
+//
+//#if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
+//            const char* pin = (char*)u16Text.c_str();
+//            iconv(_iconv, &pin, &inLen, &pout, &outLen);
+//#else
+//            char* pin = (char*)u16Text.c_str();
+//            iconv(_iconv, &pin, &inLen, &pout, &outLen);
+//#endif
+//        }
+//
+//    }
+ //   break;
     default:
         OUTPUT_LOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
         break;

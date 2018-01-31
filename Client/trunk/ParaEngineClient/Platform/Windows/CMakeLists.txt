@@ -64,7 +64,7 @@ target_include_directories(WindowsApplication PRIVATE /)
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
 
 if(MSVC)
-    ucm_set_runtime(STATIC)
+    ucm_set_runtime(DYNAMIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
