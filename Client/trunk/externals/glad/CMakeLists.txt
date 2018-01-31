@@ -1,2 +1,4 @@
 add_subdirectory(core)
-add_subdirectory(ext/wgl)
+if(WIN32 AND NOT ANDROID)
+    add_subdirectory(ext/wgl)
+endif()

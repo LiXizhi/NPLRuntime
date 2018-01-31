@@ -1,6 +1,7 @@
 #pragma once
 #include "AssetEntity.h"
 #include "DynamicVertexBufferEntity.h"
+#include "RenderDeviceOpenGL.h"
 
 namespace ParaEngine
 {

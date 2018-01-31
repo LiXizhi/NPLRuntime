@@ -41,7 +41,7 @@ target_compile_definitions(RenderSystemD3D9 PUBLIC USE_DIRECTX_RENDERER PARAENGI
 
 
 IF(MSVC)
-    ucm_set_runtime(STATIC)
+    ucm_set_runtime(DYNAMIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")

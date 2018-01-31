@@ -4,7 +4,7 @@
 # Note: download sqlite src, and then use cmake to compile
 # we will build as dll in win32 and static linked lib under linux. 
 # Note: add #include "paraengine_sqlite3.h" at the very beginning of sqlite3.h and sqlite3.c to automatically define SQLITE_API according to ParaEngine usage macro. 
-
+include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 PROJECT(sqlite)
 
 
@@ -19,24 +19,6 @@ endif()
 
 include_directories("${NPLRUNTIME_ROOT}/Framework/Interface/")
 include_directories("${NPLRUNTIME_ROOT}/Core/")
-# include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
-if (PARAENGINE_CLIENT OR WIN32)
-	if ("$ENV{BOOST_ROOT}" STREQUAL "")
-		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/boost_1_61_0)
-	endif()
-    if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib64)
-	else()
-		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/stage/lib32)
-	endif()
-endif(PARAENGINE_CLIENT OR WIN32)
-
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_LIBS   ON)
-set(Boost_USE_STATIC_RUNTIME ON)
-
-# Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
 
 # source files for sqlite
 SET(sqlite_SRCS
