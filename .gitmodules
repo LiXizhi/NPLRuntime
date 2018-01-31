@@ -1,6 +1,0 @@
-[submodule "Client/trunk/externals/glEffects"]
-	path = Client/trunk/externals/glEffects
-	url = https://github.com/tatfook/glEffects.git
-[submodule "Client/trunk/externals/dxEffects2glEffects"]
-	path = Client/trunk/externals/dxEffects2glEffects
-	url = https://github.com/tatfook/dxEffects2glEffects.git
