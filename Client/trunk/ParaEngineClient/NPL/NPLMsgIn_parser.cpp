@@ -35,8 +35,8 @@ namespace NPL
 			}
 			else
 			{
-				// allowing char [0-255] as method name characters, escaping only \r\n and ' '.  
-				if (input == '\0' || !is_char(input)) {
+				// allowing only ansi char and 0xff as method name
+				if (((byte)input) != 0xff && (input == '\0' || !is_char(input))) {
 					// if the first byte is "\0" or non char we will switch to custom protocol by returning false.
 					return c_res_false;
 				}
