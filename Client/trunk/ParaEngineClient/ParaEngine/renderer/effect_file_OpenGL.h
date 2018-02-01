@@ -1,15 +1,30 @@
 #pragma once
 #include "effect_file.h"
 #include "ParameterBlock.h"
-#include "gleffects.h"
+#include "dxeffects.h"
 #include <unordered_map>
 
 
+struct UniformInfo
+{
+	std::string name;
+	std::string semantic;
+	std::string type;
+	bool operator == (const UniformInfo& r)
+	{
+		return r.name == this->name;
+	}
+	bool operator != (const UniformInfo&r)
+	{
+		return r.name != this->name;
+	}
+};
 
 namespace ParaEngine
 {
 	class GLProgram;
 	struct Uniform;
+
 
 	class CEffectFileOpenGL : public CEffectFileBase
 	{
@@ -197,12 +212,12 @@ namespace ParaEngine
 		void SetShadowMapSize(int nsize);
 
 	protected:
-		bool MappingEffectUniforms();
+		bool MappingEffectUniforms(const std::vector<UniformInfo>& uniforms);
 		bool GeneratePasses();
 
 	protected:
 		std::unordered_map<uint32, std::string> m_ID2Names;
-		GLEffectsTree* m_Effect;
+		DxEffectsTree* m_Effect;
 
 		struct TechniqueDescGL : public TechniqueDesc
 		{

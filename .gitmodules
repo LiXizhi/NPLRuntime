@@ -1,0 +1,6 @@
+[submodule "Client/trunk/externals/hlsl2glslfork"]
+	path = Client/trunk/externals/hlsl2glslfork
+	url = https://github.com/tatfook/hlsl2glslfork.git
+[submodule "Client/trunk/externals/dxEffectsParser"]
+	path = Client/trunk/externals/dxEffectsParser
+	url = https://github.com/tatfook/dxEffectsParser.git

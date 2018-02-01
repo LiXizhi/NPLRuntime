@@ -23,7 +23,8 @@ target_link_libraries(RenderSystemOpenGL PUBLIC
     freetype
     libjpeg
     libpng
-    glEffectsParser
+    GLSLCodeGen
+    fxParser
 )
 target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
 
