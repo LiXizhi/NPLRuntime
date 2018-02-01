@@ -17,7 +17,15 @@
 #include "effect_file_OpenGL.h"
 #include "SunLight.h"
 #include "driver.h"
+#include "dxeffects.h"
+#include "hlsl2glsl.h"
+#include "hlslCrossCompiler.h"
+#include "hlslLinker.h"
 using namespace ParaEngine;
+
+
+
+
 
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
@@ -68,9 +76,9 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	// Load and parse effetcs.
 	CParaFile shaderFile(GetFileName().c_str());
 	std::string shader_str(shaderFile.getBuffer(), shaderFile.getSize());
-	m_Effect = new GLEffectsTree();
-	GLEFFECTS::Driver parseDriver(*m_Effect);
-	bool ret = parseDriver.parse_string(shader_str);
+	m_Effect = new DxEffectsTree();
+	DxEffectsParser::Driver parseDriver(*m_Effect);
+	bool ret = parseDriver.parse_string(shader_str,GetFileName());
 	if (!ret)
 	{
 		delete m_Effect;
@@ -79,16 +87,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 		return false;
 	}
 
-	// Parse uniforms
-	
-	ret = MappingEffectUniforms();
-	if (ret) {
-		OUTPUT_LOG("[%s] Parse uniforms sucessed.\n", GetFileName().c_str());
-	}
-	else {
-		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
-		return false;
-	}
+
 
 	// Init effect
 	ret = GeneratePasses();
@@ -99,6 +98,8 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 		OUTPUT_LOG("[%s] Generate passes failed.\n", GetFileName().c_str());
 		return false;
 	}
+
+
 
 	if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
 	{
@@ -1034,7 +1035,7 @@ void ParaEngine::CEffectFileOpenGL::SetShadowMapSize(int nsize)
 	}
 }
 
-bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms()
+bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<UniformInfo>& uniforms)
 {
 	if (!m_Effect) return false;
 
@@ -1109,13 +1110,12 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms()
 	}
 
 	m_ID2Names.clear();
-	auto uniforms = m_Effect->getUniforms();
 	static char numerals[] = { '0','1','2','3','4','5','6','7','8','9' };
 	for (auto uniform : uniforms)
 	{
-		std::string sec = uniform->getSemantic();
-		std::string name = uniform->getName();
-		std::string type = uniform->getType();
+		std::string sec = uniform.semantic;
+		std::string name = uniform.name;
+		std::string type = uniform.type;
 		auto it = table.find(sec);
 		if (it != table.end()) {
 			uint32 id = it->second;
@@ -1151,8 +1151,173 @@ static const std::string StringToLower(const std::string& str)
 }
 
 
+static const char* EsTypeToString(EShType type)
+{
+	switch (type)
+	{
+	default:
+		return "unkonw";
+	case EShTypeVoid:
+		return "void";
+	case EShTypeBool:
+		return "bool";
+	case EShTypeBVec2:
+		return "bvec2";
+	case EShTypeBVec3:
+		return "bvec3";
+	case EShTypeBVec4:
+		return "bvec4";
+	case EShTypeInt:
+		return "int";
+	case EShTypeIVec2:
+		return "ivec2";
+	case EShTypeIVec3:
+		return "ivec3";
+	case EShTypeIVec4:
+		return "vec4";
+	case EShTypeFloat:
+		return "float";
+	case EShTypeVec2:
+		return "vec2";
+	case EShTypeVec3:
+		return "vec3";
+	case EShTypeVec4:
+		return "vec4";
+	case EShTypeMat2:
+		return "mat2";
+	case EShTypeMat2x3:
+		return "mat2x3";
+	case EShTypeMat2x4:
+		return "mat2x4";
+	case EShTypeMat3x2:
+		return "mat3x2";
+	case EShTypeMat3:
+		return "mat3";
+	case EShTypeMat3x4:
+		return "mat3x4";
+	case EShTypeMat4x2:
+		return "mat4x2";
+	case EShTypeMat4x3:
+		return "mat4x3";
+	case EShTypeMat4x4:
+		return "mat4";
+	case EShTypeSampler:
+		return "sampler";
+	case EShTypeSampler1D:
+		return "sampler1D";
+	case EShTypeSampler1DShadow:
+		return "sampler1DShadow";
+	case EShTypeSampler2D:
+		return "sampler2D";
+	case EShTypeSampler2DShadow:
+		return "Sampler2DShadow";
+	case EShTypeSampler3D:
+		return "Sampler3D";
+	case EShTypeSamplerCube:
+		return "SamplerCube";
+	case EShTypeSamplerRect:
+		return "SamplerRect";
+	case EShTypeSamplerRectShadow:
+		return "SamplerRectShadow";
+	case EShTypeSampler2DArray:
+		return "Sampler2DArray";
+	case EShTypeStruct:
+		return "Struct";
+	}
+}
+
+
+static void GetUniforms(ShHandle parser, std::vector<UniformInfo>& uniforms)
+{
+	int count = Hlsl2Glsl_GetUniformCount(parser);
+	if (count > 0)
+	{
+		const ShUniformInfo* uni = Hlsl2Glsl_GetUniformInfo(parser);
+
+		for (int i = 0; i < count; ++i)
+		{
+			UniformInfo info;
+			info.name = uni[i].name;
+			if (uni[i].semantic != nullptr) {
+				info.semantic = uni[i].semantic;
+			}
+			info.type = EsTypeToString(uni[i].type);
+
+			if (std::find(uniforms.begin(), uniforms.end(), info) == uniforms.end()) {
+				uniforms.push_back(info);
+			}
+		}
+	}
+}
+
+
+bool hlsl2glsl(const std::string& inCode, const std::string& enterpoint, EShLanguage toLang, ETargetVersion toVersion, std::string& outCode, std::vector<UniformInfo>& uniforms)
+{
+
+	Hlsl2Glsl_Initialize();
+
+	ShHandle parser = Hlsl2Glsl_ConstructCompiler(toLang);
+
+	auto linker = parser->GetLinker();
+	linker->setUserAttribName(EAttribSemantic::EAttrSemPosition, "a_position");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemNormal, "a_normal");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemColor0, "a_color");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemColor1, "a_color2");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemTex0, "a_texCoord");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemTex1, "a_texCoord1");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemTex2, "a_texCoord2");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemTex3, "a_texCoord3");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemBlendWeight, "a_blendWeight");
+	linker->setUserAttribName(EAttribSemantic::EAttrSemBlendIndices, "a_blendIndex");
+
+	const char* sourceStr = inCode.c_str();
+	const char* infoLog = nullptr;
+	int opt = ETranslateOpBGRAVertexColor;
+	int parseOk = Hlsl2Glsl_Parse(parser, sourceStr, toVersion, nullptr, opt);
+	if (!parseOk) {
+		infoLog = Hlsl2Glsl_GetInfoLog(parser);
+		std::cerr << infoLog << std::endl;
+		Hlsl2Glsl_DestructCompiler(parser);
+		Hlsl2Glsl_Shutdown();
+		return false;
+
+	}
+	int translateOk = Hlsl2Glsl_Translate(parser, enterpoint.c_str(), toVersion, opt);
+	if (!translateOk) {
+		infoLog = Hlsl2Glsl_GetInfoLog(parser);
+		std::cerr << infoLog << std::endl;
+		Hlsl2Glsl_DestructCompiler(parser);
+		Hlsl2Glsl_Shutdown();
+		return false;
+	}
+	outCode = Hlsl2Glsl_GetShader(parser);
+
+	// remove #line and #version
+	std::stringstream outss;
+	std::istringstream iss(outCode);
+	char buf[1024] = { 0 };
+	while (iss.getline(buf, sizeof(buf))) {
+		std::string line(buf);
+		if (line.find("#line ") != std::string::npos ||
+			line.find("#version ") != std::string::npos)
+		{
+			//skip
+			continue;
+		}
+		outss << line << std::endl;
+	}
+	outCode = outss.str();
+
+	GetUniforms(parser, uniforms);
+	Hlsl2Glsl_DestructCompiler(parser);
+	Hlsl2Glsl_Shutdown();
+	return true;
+}
+
+
 bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 {
+
 	if (m_Effect == NULL)return false;
 	auto techniques = m_Effect->getTechiques();
 	if (techniques.empty()) {
@@ -1166,6 +1331,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		std::cout << std::endl << "no pass" << std::endl;
 		return false;
 	}
+
+	std::vector<UniformInfo> uniforms;
 
 	for (int nPass = 0; nPass < passes.size(); nPass++)
 	{
@@ -1214,30 +1381,20 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		// find code block
 		std::string vscode = "";
 		std::string pscode = "";
-		auto codeblocks = m_Effect->getCodeBlocks();
-		for (auto codeblock : codeblocks)
+		auto codeblock = m_Effect->getCodeBlock();
+		bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, ETargetGLSL_110, vscode,uniforms);
+		if (!ret || vscode == "")
 		{
-			if (codeblock->getName() == vs_codeblock_name)
-			{
-				vscode = codeblock->getCode();
-			}
-			if (codeblock->getName() == ps_codeblock_name)
-			{
-				pscode = codeblock->getCode();
-			}
-			if (vscode != "" && pscode != "") break;
+			std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name <<"  shader:" <<GetFileName() <<std::endl;
+			return false;
+		}
+		ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, ETargetGLSL_110, pscode,uniforms);
+		if (!ret || vscode == "")
+		{
+			std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+			return false;
 		}
 
-		if (vscode == "")
-		{
-			std::cout << std::endl << "can't find vertex shader codeblock. " << vs_codeblock_name << std::endl;
-			return false;
-		}
-		if (pscode == "")
-		{
-			std::cout << std::endl << "can't find pixel shader codeblock. " << ps_codeblock_name << std::endl;
-			return false;
-		}
 		std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
 		if (initWithByteArrays(vscode.c_str(), pscode.c_str(), nPass))
 		{
@@ -1247,22 +1404,28 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 			}
 			else
 			{
-				std::cerr << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+				std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
 				return false;
 			}
 		}
 		else
 		{
-			std::cerr << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+			std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
 			return false;
 		}
-
-
 	}
 
+	// Parse uniforms
 
-	return true;
+	bool ret = MappingEffectUniforms(uniforms);
+	if (ret) {
+		OUTPUT_LOG("[%s] Parse uniforms sucessed.\n", GetFileName().c_str());
+	}
+	else {
+		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
+	}
 
+	return ret;
 }
 
 #endif

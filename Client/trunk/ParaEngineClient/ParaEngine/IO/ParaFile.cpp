@@ -1086,8 +1086,9 @@ int CParaFile::WriteString(const string& sStr)
 int CParaFile::WriteString(const char* sStr, int nLen)
 {
 	if (sStr)
+	{
 		return write(sStr, (nLen > 0) ? nLen : (int)strlen(sStr));
-	else
+	}else
 		return 0;
 }
 
