@@ -13,8 +13,8 @@ namespace ParaEngine
 		virtual ~BMaxFrameNode();
 	public:
 		BMaxFrameNode* GetParent();
-		int32 GetParentIndex() const;
-		void SetParentIndex(int32 val);
+		int64 GetParentIndex() const;
+		void SetParentIndex(int64 val);
 		bool HasParent();
 		/** we will automatically set the bone name according to topology, if it is not set before. */
 		void AutoSetBoneName();
@@ -43,8 +43,8 @@ namespace ParaEngine
 		int GetChildCount();
 		BMaxFrameNode* GetChild(int nIndex);
 		/** -1 if not found. */
-		int GetChildIndexOf(BMaxFrameNode* pChild);
-		int GetChildIndex();
+		int64 GetChildIndexOf(BMaxFrameNode* pChild);
+		int64 GetChildIndex();
 		/** add child node */
 		void AddChild(BMaxFrameNode* pNode);
 
@@ -57,10 +57,10 @@ namespace ParaEngine
 		DWORD CalculateBoneColor();
 
 	public:
-		int m_nParentIndex;
+		int64 m_nParentIndex;
 		ref_ptr<ParaEngine::Bone> m_pBone;
 		/** child node position index*/
-		vector<int> m_children;
+		vector<int64> m_children;
 	};
 	typedef ref_ptr<BMaxFrameNode> BMaxFrameNodePtr;
 }

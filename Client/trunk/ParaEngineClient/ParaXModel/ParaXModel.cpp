@@ -40,6 +40,7 @@ namespace ParaEngine
 {
 	int globalTime = 0;
 	VertexDeclarationPtr CParaXModel::m_pVertexDeclaration = NULL;
+
 	CEffectFile* CParaXModel::m_pEffectFile = NULL;
 }
 using namespace ParaEngine;
@@ -172,6 +173,10 @@ CParaXModel::~CParaXModel(void)
 	}
 }
 
+bool CParaXModel::CheckMinVersion(int v0, int v1/*=0*/, int v2/*=0*/, int v3/*=0*/)
+{
+	return (GetHeader().version[0] >= v0) && (GetHeader().version[1] >= v1) && (GetHeader().version[2] >= v2) && (GetHeader().version[3] >= v3);
+}
 
 bool CParaXModel::InitDeviceObjects()
 {
