@@ -88,6 +88,8 @@ namespace ParaEngine
 		/** get the number of objects in the model.*/
 		inline const ParaXModelObjNum& GetObjectNum() const {return m_objNum;};
 		inline const ParaXHeaderDef& GetHeader() const {return m_header;};
+		/** check the minimum file version. Return true if file version is equal or higher than the given one. */
+		bool CheckMinVersion(int v0, int v1=0, int v2=0, int v3=0);
 
 		/** file loading for ParaX file type*/
 		void initVertices(int nVertices, ModelVertex* pVertices);
