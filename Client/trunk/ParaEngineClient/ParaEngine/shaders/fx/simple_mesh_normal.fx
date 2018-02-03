@@ -1,6 +1,3 @@
-// Author: LiXizhi
-// Desc: 2006/4
-
 
 float4x4 PARA_MATRIX_MVP:worldviewprojection;
 float4x4 PARA_MATRIX_MV:worldview;
