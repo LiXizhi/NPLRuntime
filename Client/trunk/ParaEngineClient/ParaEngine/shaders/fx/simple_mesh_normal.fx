@@ -1,11 +1,10 @@
 // Author: LiXizhi
 // Desc: 2006/4
 
-// Uniforms
 
-float4x4 worldviewprojection:worldviewprojection;
-float4x4 worldview:worldview;
-float4x4 world:world;
+float4x4 PARA_MATRIX_MVP:worldviewprojection;
+float4x4 PARA_MATRIX_MV:worldview;
+float4x4 PARA_MATRIX_M:world;
 float4 sunvector:sunvector;
 float4 materialdiffuse:materialdiffuse;
 float4 ambientlight:ambientlight;
@@ -21,18 +20,20 @@ sampler tex0Sampler : register(s0) = sampler_state
     texture = <tex0>;
 };
 
-struct Interpolants
+
+struct appdata
 {
-  float4 pos			: POSITION;         // Screen space position
-  float2 uv				: TEXCOORD0;        // texture coordinates
-  float4 color          : COLOR;
+	float4 vertex : POSITION;
+	float2 uv : TEXCOORD0;
+	float3 normal : NORMAL;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-//
-//                              Vertex Shader
-//
-////////////////////////////////////////////////////////////////////////////////
+struct v2f
+{
+  float4 vertex			: POSITION;
+  float2 uv				: TEXCOORD0;
+  float4 color          : COLOR;
+};
 
 
 float CalcFogFactor( float d )
@@ -43,22 +44,19 @@ float CalcFogFactor( float d )
 }
 
 
-Interpolants vertexShader(	float4	Pos			: POSITION,
-							float3	Norm		: NORMAL,
-							float2  Tex      	: TEXCOORD0)
+v2f vert(appdata v)
 {
-	Interpolants o = (Interpolants)0;
+	v2f o = (v2f)0;
+
 	// screen space position
-	/*o.pos = mul(Pos, worldviewprojection);
-	o.uv = Tex;
-
-	float4 cameraPos = mul(pos,worldview);
-	float3 worldNormal = normalize( mul( Norm, (float3x3)world ) ); 
-
+	o.vertex = mul(v.vertex, PARA_MATRIX_MVP);
+	o.uv = v.uv;
+	float4 cameraPos = mul(v.vertex,PARA_MATRIX_MV);
+	float3 worldNormal = normalize( mul( v.normal, (float3x3)PARA_MATRIX_M ) ); 
 	o.color.xyz = max(0.0, dot( sunvector.xyz, worldNormal ))*materialdiffuse.xyz;
 	o.color.xyz += ambientlight.xyz;
 	//save the fog distance
-	o.color.a = CalcFogFactor(cameraPos.z);*/
+	o.color.a = CalcFogFactor(cameraPos.z);
 
 	return o;
 }
@@ -70,34 +68,30 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-half4 pixelShader(Interpolants i) : COLOR
+float4 frag(v2f i) : COLOR
 {
-	/*float4 albedoColor = tex2D(tex0Sampler, i.uv);
+	float4 albedoColor = tex2D(tex0Sampler, i.uv);
 	albedoColor.rgb *= i.color.rgb;
 	// this is for alpha testing. 
-	if(alphatesting && albedoColor.a < 0.05)
-		discard;
-	
+	if(alphatesting)
+	{
+		clip(albedoColor.w-0.5);
+	}
+	float4 ret = float4(0,0,0,1);
 	float fog = i.color.a;
-	half4 ret = half4(0,0,0,0);
-	ret.rgb = mix(albedoColor.rgb, fogColor.rgb, fog);
 	fog = clamp( (fog-0.8)*16.0, 0.0, 1.0);
-	ret.a = mix(albedoColor.a, 0.0, fog)*opacity;
-	return ret;*/
-	return half4(1,0,0,1);
+	
+	ret.rgb = lerp(albedoColor.rgb, fogColor.rgb, fog);
+	ret.a = lerp(albedoColor.a, 0.0, fog)*opacity;
+	return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//
-//                              Technique
-//
-////////////////////////////////////////////////////////////////////////////////
-technique SimpleMesh_vs20_ps20
+technique default
 {
 	pass P0
 	{
 		// shaders
-		VertexShader = compile vs_2_0 vertexShader();
-		PixelShader  = compile ps_2_0 pixelShader();
+		VertexShader = compile vs_2_0 vert();
+		PixelShader  = compile ps_2_0 frag();
 	}
 }
