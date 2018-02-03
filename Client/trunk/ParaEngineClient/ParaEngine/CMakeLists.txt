@@ -42,7 +42,7 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
         OpenGLWrapper
     TO sources_rendersystem RECURSIVE
     )
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/fx/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/opengl_spec/*.fx)
     foreach( src_file ${SHADER_FILES} )	
         embed_resources_abs(Resource ${src_file})
         list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
@@ -63,7 +63,7 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     )
 
     # Embedded Resource For Direct3D
-    file(GLOB SHADER_FILES ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/shaders/*.fx)
+    file(GLOB SHADER_FILES ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/shaders/d3d9_spec/*.fx)
     foreach(src_file ${SHADER_FILES})
         get_filename_component(src_filename ${src_file} NAME_WE)
         set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
