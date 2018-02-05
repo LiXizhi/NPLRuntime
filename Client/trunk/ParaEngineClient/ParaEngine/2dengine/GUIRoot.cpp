@@ -81,6 +81,7 @@ using namespace ParaEngine;
 #define MAX_TOPLEVEL_CONTAINER_COUNT	4
 
 #include <queue>
+#include "../InputSystem/VirtualKey.h"
 
 DWORD CGUIRoot::WheelScrollLines = 3;
 DWORD CGUIRoot::KeyDelay = 200;
@@ -981,13 +982,6 @@ int CGUIRoot::HandleUserInput()
 	bool bKeyHandled = false;
 	bool bMouseHandled = false;
 	STRUCT_DRAG_AND_DROP *pdrag = &IObjectDrag::DraggingObject;
-
-	if (false && CGlobals::GetApp()->IsTouchInputting())
-	{
-		DispatchTouchMouseEvent(bMouseHandled);
-		bKeyHandled = DispatchKeyboardMsg(bKeyHandled);
-	}
-	else
 	{
 		m_events.clear();
 		{
@@ -1035,83 +1029,65 @@ int CGUIRoot::HandleUserInput()
 		//
 		for (DWORD i = 0; i < m_pMouse->m_dwElements; i++)
 		{
+			auto e = m_pMouse->m_didod[i];
 			bMouseHandled = false;
 			ZeroMemory(&newMsg, sizeof(MSG));
-			newMsg.time = m_pMouse->m_didod[i].dwTimeStamp;
+			newMsg.time = e->GetTimestamp();
 			newMsg.hwnd = CGlobals::GetAppHWND();
 			newMsg.message = EM_NONE;
-			switch (m_pMouse->m_didod[i].dwOfs)
+			
+			switch (e->GetEventType())
 			{
-			case DIMOFS_BUTTON0:
-				if (m_pMouse->m_didod[i].dwData & 0x80){
-					newMsg.message = EM_MOUSE_LEFTDOWN;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_LEFTDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-					if (bHasMouseCapture)
+			default:
+				assert(false);
+				break;
+			case EMouseEventType::Unkonw:
+				assert(false);
+				break;
+			case EMouseEventType::Button:
+			{
+				const DeviceMouseButtonEvent* buttonEvent = static_cast<const DeviceMouseButtonEvent*>(e.get());
+				switch (buttonEvent->GetButton())
+				{
+					case EMouseButton::LEFT:
 					{
-						// this fixed a bug, when a button GUI may fail to release capture for a number of tricky reasons. 
-						// Any left click will automatically release any old captured button
-						bHasMouseCapture = false;
-						pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
-					}
+						newMsg.message = buttonEvent->GetKeyState() == EKeyState::PRESS ? EM_MOUSE_LEFTDOWN : EM_MOUSE_LEFTUP;
+						CGUIEvent::KeyStates[EM_MOUSE_LEFTDOWN] = buttonEvent->GetKeyState() == EKeyState::PRESS ? 0x80 : 0x00;
+						if (bHasMouseCapture)
+						{
+							// this fixed a bug, when a button GUI may fail to release capture for a number of tricky reasons. 
+							// Any left click will automatically release any old captured button
+							bHasMouseCapture = false;
+							pMouseTarget = GetUIObject(m_pMouse->m_x, m_pMouse->m_y);
+						}
+					}break;
+					case EMouseButton::RIGHT:
+					{
+						newMsg.message = buttonEvent->GetKeyState() == EKeyState::PRESS ? EM_MOUSE_RIGHTDOWN : EM_MOUSE_RIGHTUP;
+						CGUIEvent::KeyStates[EM_MOUSE_RIGHTDOWN] = buttonEvent->GetKeyState() == EKeyState::PRESS ? 0x80 : 0x00;
+						bCollapseMouseMove = false;
+					}break;
+					case EMouseButton::MIDDLE:
+					{
+						newMsg.message = buttonEvent->GetKeyState() == EKeyState::PRESS ? EM_MOUSE_MIDDLEDOWN : EM_MOUSE_MIDDLEUP;
+						CGUIEvent::KeyStates[EM_MOUSE_MIDDLEDOWN] = buttonEvent->GetKeyState() == EKeyState::PRESS ? 0x80 : 0x00;
+						bCollapseMouseMove = false;
+					}break;
 				}
-				else{
-					newMsg.message = EM_MOUSE_LEFTUP;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_LEFTDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-
-				}
-				bCollapseMouseMove = false;
-				break;
-
-			case DIMOFS_BUTTON1:
-				if (m_pMouse->m_didod[i].dwData & 0x80){
-					newMsg.message = EM_MOUSE_RIGHTDOWN;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_RIGHTDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-				}
-				else{
-					newMsg.message = EM_MOUSE_RIGHTUP;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_RIGHTDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-				}
-				bCollapseMouseMove = false;
-				break;
-			case DIMOFS_BUTTON2:
-				if (m_pMouse->m_didod[i].dwData & 0x80){
-					newMsg.message = EM_MOUSE_MIDDLEDOWN;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_MIDDLEDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-				}
-				else{
-					newMsg.message = EM_MOUSE_MIDDLEUP;
-					//update key state according to the event.
-					CGUIEvent::KeyStates[EM_MOUSE_MIDDLEDOWN] = (byte)m_pMouse->m_didod[i].dwData;
-				}
-				bCollapseMouseMove = false;
-				break;
-			case DIMOFS_X:
+			}break;
+			case EMouseEventType::Move:
+			{
 				newMsg.message = EM_MOUSE_MOVE;
-				newMsg.lParam = (int)m_pMouse->m_didod[i].dwData;
-				newMsg.wParam = 0;
-				// 2008.6.19. LiXizhi. mouse position is updated completely via windows ::GetCursorPosition(), instead of d3d cursor. So we need not update it. 
-				//m_pMouse->UpdateX((int)m_pMouse->m_didod[ i ].dwData);
-				break;
+				newMsg.lParam = (int)m_pMouse->m_dims2.x;
+				newMsg.wParam = (int)m_pMouse->m_dims2.y;
 
-			case DIMOFS_Y:
-				newMsg.message = EM_MOUSE_MOVE;
-				newMsg.lParam = 0;
-				newMsg.wParam = (int)m_pMouse->m_didod[i].dwData;
-				// 2008.6.19. LiXizhi. mouse position is updated completely via windows ::GetCursorPosition(), instead of d3d cursor. So we need not update it. 
-				//m_pMouse->UpdateY((int)m_pMouse->m_didod[ i ].dwData);
-				break;
-
-			case DIMOFS_Z:
+			}break;
+			case EMouseEventType::Whell:
+			{
+				const DeviceMouseWhellEvent* buttonEvent = static_cast<const DeviceMouseWhellEvent*>(e.get());
 				newMsg.message = EM_MOUSE_WHEEL;
-				newMsg.lParam = (int)m_pMouse->m_didod[i].dwData;
-				//pMouseEvent->m_mouse.WheelDelta=(int)m_pMouse->m_didod[ i ].dwData;
-				break;
-
+				newMsg.lParam = (int)buttonEvent->GetWhell();
+			}break;
 			}
 			if (newMsg.message == EM_MOUSE_MOVE)
 			{
@@ -1136,7 +1112,7 @@ int CGUIRoot::HandleUserInput()
 				{
 					if (pdrag->m_bIsCandicateOnly)
 					{
-						if (m_pMouse->IsButtonDown(CGUIMouseVirtual::LEFT_BUTTON))
+						if (m_pMouse->IsButtonDown(EMouseButton::LEFT))
 						{
 							((CGUIBase*)pdrag->pDragging)->MsgProc(&newMsg);
 							bMouseHandled = true;
@@ -2137,11 +2113,14 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 			if (pTouchSession->GetTag() == 1)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT,EKeyState::RELEASE)));
+
 			}
 			else if (pTouchSession->GetTag() == 2)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::RELEASE)));
 			}
 			else if (pTouchSession->GetTag() == -1)
 			{
@@ -2151,14 +2130,18 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					// OUTPUT_LOG("touch translate to click\n");
 					// short tap for left mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::PRESS)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::RELEASE)));
 				}
 				else
 				{
 					// long tap for right mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::PRESS)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::RELEASE)));
 				}
 			}
 		}
@@ -2191,12 +2174,14 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						// press hold and drag for right button drag, drag directly for left button drag. 
 						if (pTouchSession->GetDuration() < 500)
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::PRESS)));
 							pTouchSession->SetTag(1);
 						}
 						else
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::PRESS)));
 							pTouchSession->SetTag(2);
 						}
 					}
@@ -2217,7 +2202,8 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					{
 						// vertical drag move is always mapped to mouse wheel anyway. 
 						int nScrollY = (int)(fOffsetY * WHEEL_DELTA / fMouseWheelDragStep);
-						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+						//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(nScrollY)));
 						s_lastMouseWheelPosY = ui_mouse_y;
 						// OUTPUT_LOG("EM_MOUSE_WHEEL %d: delta: %d time:%d \n", pTouchSession->GetTouchId(), (int)(msg.lParam), touch.GetTime());
 					}
@@ -2230,7 +2216,9 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					// if mouse button down state is not determined, will reset mouse to make the mouse delta to 0 in the next frame. 
 					CGUIRoot::GetInstance()->GetMouse()->ResetLastMouseState();
 				}
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(mouse_x, mouse_y));
+				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(mouse_x, mouse_y));
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(mouse_x,mouse_y)));
+
 			}
 		}
 		// OUTPUT_LOG("touch session: %d  tag: %d  touch type:%d\n", pTouchSession->GetTouchId(), pTouchSession->GetTag(), touch.m_nTouchType);
@@ -2450,7 +2438,8 @@ bool ParaEngine::CGUIRoot::handleGesturePinch(CTouchGesturePinch& pinch_gesture)
 		// zoom in / out one step every 20 pixels
 		pinch_gesture.ResetLastDistance();
 		int nScrollY = (int)(nDeltaPixels * WHEEL_DELTA / 20);
-		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+		//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(nScrollY)));
 		// OUTPUT_LOG("handleGesturePinch %d\n", nScrollY);
 		return true;
 	}

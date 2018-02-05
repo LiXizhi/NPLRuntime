@@ -10,54 +10,7 @@ void ApplicationWindow::OnMouseButton(EMouseButton button, EKeyState state)
 		return;
 	}
 
-
-	uint32_t msg = 0;
-
-	if (state == EKeyState::PRESS)
-	{
-		switch (button)
-		{
-		case ParaEngine::EMouseButton::LEFT:
-			msg = WM_LBUTTONDOWN;
-			break;
-		case ParaEngine::EMouseButton::RIGHT:
-			msg = WM_RBUTTONDOWN;
-			break;
-		case ParaEngine::EMouseButton::MIDDLE:
-			msg = WM_MBUTTONDOWN;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-	}
-	else if (state == EKeyState::RELEASE)
-	{
-		switch (button)
-		{
-		case ParaEngine::EMouseButton::LEFT:
-			msg = WM_LBUTTONUP;
-			break;
-		case ParaEngine::EMouseButton::RIGHT:
-			msg = WM_RBUTTONUP;
-			break;
-		case ParaEngine::EMouseButton::MIDDLE:
-			msg = WM_MBUTTONUP;
-			break;
-		default:
-			assert(false);
-			break;
-		}
-	}
-	else
-	{
-		assert(false);
-	}
-
-	auto mousePos = GetMousePos();
-
-	LPARAM param = MAKELPARAM((uint32_t)mousePos.x, (uint32_t)mousePos.y);
-	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(msg, 0, param);
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state)));
 }
 
 void ApplicationWindow::OnMouseMove(uint32_t x, uint32_t y)
@@ -66,23 +19,7 @@ void ApplicationWindow::OnMouseMove(uint32_t x, uint32_t y)
 	{
 		return;
 	}
-
-	WPARAM wParam = 0;
-	if (GetMouseButtonState(EMouseButton::LEFT) == EKeyState::PRESS)
-	{
-		wParam |= MK_LBUTTON;
-	}
-	if (GetMouseButtonState(EMouseButton::RIGHT) == EKeyState::PRESS)
-	{
-		wParam |= MK_RBUTTON;
-	}
-	if (GetMouseButtonState(EMouseButton::MIDDLE) == EKeyState::PRESS)
-	{
-		wParam |= MK_MBUTTON;
-	}
-
-	LPARAM param = MAKELPARAM(x, y);
-	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, wParam, param);
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(x, y)));
 }
 
 void ParaEngine::ApplicationWindow::OnMouseWhell(float x, float y, float delta)
@@ -91,8 +28,7 @@ void ParaEngine::ApplicationWindow::OnMouseWhell(float x, float y, float delta)
 	{
 		return;
 	}
-	WPARAM wParam = MAKEWPARAM(0, (int)y * WHEEL_DELTA);
-	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, wParam, 0);
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(y)));
 }
 
 void ParaEngine::ApplicationWindow::OnKey(EVirtualKey key, EKeyState state)

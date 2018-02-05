@@ -2898,7 +2898,7 @@ bool ParaUI::IsMousePressed(int nButton)
 	CGUIMouseVirtual *pMouse=CGlobals::GetGUI()->m_pMouse;
 	if(pMouse)
 	{
-		return pMouse->IsButtonDown((CGUIMouseVirtual::MOUSE_KEY_STD)nButton);
+		return pMouse->IsButtonDown((EMouseButton)nButton);
 	}
 	return false;
 }

@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define L_PRESSED(x) (((x)->m_dims2.rgbButtons[0]&0x80)!=0)
 #define R_PRESSED(x) (((x)->m_dims2.rgbButtons[1]&0x80)!=0)
@@ -17,20 +17,14 @@ namespace ParaEngine
 		CGUIMouseVirtual();
 		virtual ~CGUIMouseVirtual();
 	public:
-		/** this is just traditional mouse key mapping.*/
-		enum MOUSE_KEY_STD{
-			LEFT_BUTTON = 0,
-			RIGHT_BUTTON = 1,
-			MIDDLE_BUTTON = 2
-		};
-		virtual HRESULT ReadBufferedData();
-		virtual HRESULT ReadImmediateData();
+		virtual bool ReadBufferedData();
+		virtual bool ReadImmediateData();
 		virtual void Update();
 		/** reset mouse to make the mouse delta correct in the next frame. */
 		virtual void ResetLastMouseState();
 
 		virtual void Reset();
-		virtual bool IsButtonDown(MOUSE_KEY_STD nMouseButton);
+		virtual bool IsButtonDown(const EMouseButton button);
 		/** the current mouse wheel delta in steps, such as -2,-1,0,1,2 */
 		virtual int	 GetMouseWheelDeltaSteps();
 		/** the current mouse X delta in steps, such as -2,-1,0,1,2 */
@@ -42,24 +36,14 @@ namespace ParaEngine
 		/** true to lock the mouse at its current location*/
 		virtual void SetLock(bool bLock);;
 
-		virtual void UpdateX(int delta);
-		virtual void UpdateY(int delta);
-
 
 		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
-		virtual void PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam);
-		/** push a standard windows mouse event to the buffer for processing in the next frame move. */
-		virtual void PushMouseEvent(const MSG &msg);
+		virtual void PushMouseEvent(const DeviceMouseEventPtr& msg);
 
 		virtual void SetCapture(CGUIBase* obj);
 		virtual void ReleaseCapture(CGUIBase* obj);
 		virtual CGUIBase* GetCapture();
 		virtual void ReleaseCapture();
-
-		/** whether to use window message for buffered mouse event. default to true, if false, directInput will be used. */
-		virtual bool IsUseWindowsMessage();
-		/** whether to use window message for buffered mouse event. default to true, if false, directInput will be used. */
-		virtual void SetUseWindowsMessage(bool bUseWinMsg);
 
 		/** true to show the cursor. only show if previous call is hide and vice versa. */
 		virtual void ShowCursor(bool bShowCursor){};
@@ -90,14 +74,15 @@ namespace ParaEngine
 		bool	m_bSwapMouseButton;
 		bool m_bLastMouseReset;
 	public:
-		DIDEVICEOBJECTDATA	m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
-		DWORD				m_dwElements;
-		DIMOUSESTATE2		m_dims2;   // DirectInput Mouse state buffer 
-		DIMOUSESTATE2		m_lastMouseState; 
-		DIMOUSESTATE2		m_curMouseState;
+		DeviceMouseEventPtr	        m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
+		uint32_t			m_dwElements;
+
+		DeviceMouseState		m_dims2;   // DirectInput Mouse state buffer 
+		DeviceMouseState		m_lastMouseState; 
+		DeviceMouseState		m_curMouseState;
 		int					m_x, m_y;	//coordinate of the current mouse position
 
-		MSG					m_buffered_mouse_msgs[SAMPLE_BUFFER_SIZE / 2];
+		DeviceMouseEventPtr	m_buffered_mouse_msgs[SAMPLE_BUFFER_SIZE / 2];
 		int					m_buffered_mouse_msgs_count;
 		
 		bool  m_isTouchInputting;
