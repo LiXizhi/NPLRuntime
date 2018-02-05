@@ -156,7 +156,7 @@ bool CGUIEvent::InterpretMessage(MSG *msg,int option)
 		// during dragging operation
 		if((m_eState&GUIESDragMask) != 0)
 		{
-			if ( ! IsMousePressed(CGUIMouseVirtual::LEFT_BUTTON) )
+			if ( ! IsMousePressed((int)EMouseButton::LEFT) )
 			{
 				
 				m_nTriggerEvent=EM_MOUSE_LEFTDRAGEND;
@@ -874,5 +874,5 @@ bool CGUIEvent::IsKeyPressed(int key)
 
 bool CGUIEvent::IsMousePressed(int mouse)
 {
-	return CGUIRoot::GetInstance()->m_pMouse->IsButtonDown((CGUIMouseVirtual::MOUSE_KEY_STD)mouse);	
+	return CGUIRoot::GetInstance()->m_pMouse->IsButtonDown((EMouseButton)mouse);	
 }

@@ -24,33 +24,16 @@ ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 
 }
 
-void CGUIMouseVirtual::PushMouseEvent(UINT uMsg, WPARAM wParam, LPARAM lParam)
+
+void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 {
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
-		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].lParam = lParam;
-		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].wParam = wParam;
-		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count].message = uMsg;
+		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = e;
 	}
 	++m_buffered_mouse_msgs_count;
 }
 
-void CGUIMouseVirtual::PushMouseEvent(const MSG &msg)
-{
-	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
-		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = msg;
-	}
-	++m_buffered_mouse_msgs_count;
-}
 
-bool ParaEngine::CGUIMouseVirtual::IsUseWindowsMessage()
-{
-	return m_bUseWindowMessage;
-}
-
-void ParaEngine::CGUIMouseVirtual::SetUseWindowsMessage(bool bUseWinMsg)
-{
-	m_bUseWindowMessage = bUseWinMsg;
-}
 
 bool ParaEngine::CGUIMouseVirtual::IsLocked()
 {
@@ -62,51 +45,39 @@ void ParaEngine::CGUIMouseVirtual::SetLock(bool bLock)
 	m_bLock = bLock;
 }
 
-bool ParaEngine::CGUIMouseVirtual::IsButtonDown(MOUSE_KEY_STD nMouseButton)
+bool ParaEngine::CGUIMouseVirtual::IsButtonDown(const EMouseButton button)
 {
 	if (m_isTouchInputting)
 		return false;
 	else
 	{
-		if (!m_bSwapMouseButton)
-		{
-			return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
-		}
-		else
-		{
-			nMouseButton = (MOUSE_KEY_STD)(1 - nMouseButton);
-			return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
-		}
-	}
-}
-void CGUIMouseVirtual::UpdateX(int delta)
-{
-	if (!IsLocked()) {
-		int delta1 = delta;
-		m_x += delta1;
-	}
-}
 
-void CGUIMouseVirtual::UpdateY(int delta)
-{
-	if (!IsLocked()) {
-		int delta1 = delta;
-		m_y += delta1;
+		if (m_bSwapMouseButton)
+		{
+			if (button == EMouseButton::LEFT) {
+				return m_curMouseState.buttons[(int)EMouseButton::RIGHT] == EKeyState::PRESS; 
+			}else if(button == EMouseButton::RIGHT)
+			{
+				return m_curMouseState.buttons[(int)EMouseButton::LEFT] == EKeyState::PRESS;
+			}
+		}
+
+		return m_curMouseState.buttons[(int)button] == EKeyState::PRESS;
 	}
 }
 int ParaEngine::CGUIMouseVirtual::GetMouseYDeltaSteps()
 {
-	return (int)(m_dims2.lY);
+	return (int)(m_dims2.y);
 }
 
 int ParaEngine::CGUIMouseVirtual::GetMouseXDeltaSteps()
 {
-	return (int)(m_dims2.lX);
+	return (int)(m_dims2.x);
 }
 
 int ParaEngine::CGUIMouseVirtual::GetMouseWheelDeltaSteps()
 {
-	return (int)(m_dims2.lZ / 120);
+	return (int)(m_dims2.z / 120);
 }
 
 void ParaEngine::CGUIMouseVirtual::Reset()
@@ -151,118 +122,87 @@ void ParaEngine::CGUIMouseVirtual::Update()
 	if (m_bLastMouseReset)
 	{
 		m_bLastMouseReset = false;
-		m_lastMouseState.lX = m_curMouseState.lX;
-		m_lastMouseState.lY = m_curMouseState.lY;
-		m_dims2.lX = m_dims2.lY = 0;
+		m_lastMouseState.x = m_curMouseState.x;
+		m_lastMouseState.y = m_curMouseState.y;
+		m_dims2.x = m_dims2.y = 0;
 	}
 }
 
-HRESULT ParaEngine::CGUIMouseVirtual::ReadBufferedData()
+bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 {
-	/** we do not use Read Buffered Data, instead, mouse events are translated from windows messages.
-	Only immediate button data are read from direct input. */
+	///** we do not use Read Buffered Data, instead, mouse events are translated from windows messages.
+	//Only immediate button data are read from direct input. */
 	bool bHasMouseMove = false;
 	m_dwElements = 0;
-	int x = m_curMouseState.lX, y = m_curMouseState.lY;
+	int lastX = m_curMouseState.x, lastY = m_curMouseState.y;
 	//translating windows message into DirextMouse-like events, in order to maintain consistency of the interface
-	for (int a = 0; a<m_buffered_mouse_msgs_count; m_dwElements++, a++) {
-		int mouse_x = GET_X_LPARAM(m_buffered_mouse_msgs[a].lParam);
-		int mouse_y = GET_Y_LPARAM(m_buffered_mouse_msgs[a].lParam);
+	for (int a = 0; a < m_buffered_mouse_msgs_count; m_dwElements++, a++)
+	{
 
-		switch (m_buffered_mouse_msgs[a].message) {
-		case WM_MOUSEMOVE:
-			m_didod[m_dwElements].dwData = mouse_x - x;
-			m_didod[m_dwElements].dwOfs = DIMOFS_X;
-			m_didod[m_dwElements].dwTimeStamp = m_buffered_mouse_msgs[a].time;
-			m_dwElements++;
-			m_didod[m_dwElements].dwData = mouse_y - y;
-			m_didod[m_dwElements].dwOfs = DIMOFS_Y;
-			x = mouse_x;
-			y = mouse_y;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
+
+		auto e = m_buffered_mouse_msgs[a];
+		switch (e->GetEventType())
+		{
+		default:
+			assert(false);
+			break;
+		case EMouseEventType::Unkonw:
+			assert(false);
+			break;
+		case EMouseEventType::Button:
+		{
+			const DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
+			m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
+			ResetLastMouseState();
+		}break;
+		case EMouseEventType::Move:
+		{
+			const DeviceMouseMoveEvent* moveEvent = (DeviceMouseMoveEvent*)(e.get());
+			m_curMouseState.x = moveEvent->GetX();
+			m_curMouseState.y = moveEvent->GetY();
+			m_dims2.x = m_curMouseState.x - lastX;
+			m_dims2.y = m_curMouseState.y - lastY;
 			bHasMouseMove = true;
-			break;
-		case WM_MOUSEWHEEL:
-			m_didod[m_dwElements].dwData = GET_WHEEL_DELTA_WPARAM(m_buffered_mouse_msgs[a].wParam);
-			m_didod[m_dwElements].dwOfs = DIMOFS_Z;
-			m_curMouseState.lZ = m_didod[m_dwElements].dwData;
-			break;
-		case WM_LBUTTONDOWN:
-			m_didod[m_dwElements].dwData = 0x80;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON0;
-			m_curMouseState.rgbButtons[0] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
-			break;
-		case WM_LBUTTONUP:
-			m_didod[m_dwElements].dwData = 0;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON0;
-			m_curMouseState.rgbButtons[0] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
-			break;
-		case WM_RBUTTONDOWN:
-			m_didod[m_dwElements].dwData = 0x80;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON1;
-			m_curMouseState.rgbButtons[1] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
-			break;
-		case WM_RBUTTONUP:
-			m_didod[m_dwElements].dwData = 0;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON1;
-			m_curMouseState.rgbButtons[1] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
-			break;
-		case WM_MBUTTONDOWN:
-			m_didod[m_dwElements].dwData = 0x80;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON2;
-			m_curMouseState.rgbButtons[2] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
-			break;
-		case WM_MBUTTONUP:
-			m_didod[m_dwElements].dwData = 0;
-			m_didod[m_dwElements].dwOfs = DIMOFS_BUTTON2;
-			m_curMouseState.rgbButtons[2] = (BYTE)m_didod[m_dwElements].dwData;
-			m_curMouseState.lX = mouse_x; m_curMouseState.lY = mouse_y;
-			ResetLastMouseState();
+		}break;
+		case EMouseEventType::Whell:
+		{
+			const DeviceMouseWhellEvent* whellEvent = (DeviceMouseWhellEvent*)(e.get());
+			m_curMouseState.z = whellEvent->GetWhell();
 			break;
 		}
-		m_didod[m_dwElements].dwTimeStamp = m_buffered_mouse_msgs[a].time;
+		}
+		m_didod[m_dwElements] = e;
 	}
-	
 	m_buffered_mouse_msgs_count = 0;
 	return S_OK;
 }
 
-HRESULT ParaEngine::CGUIMouseVirtual::ReadImmediateData()
+bool ParaEngine::CGUIMouseVirtual::ReadImmediateData()
 {
-	m_dims2.lX = m_curMouseState.lX - m_lastMouseState.lX;
-	m_dims2.lY = m_curMouseState.lY - m_lastMouseState.lY;
-	m_dims2.lZ = m_curMouseState.lZ - m_lastMouseState.lZ;
+	m_dims2.x = m_curMouseState.x - m_lastMouseState.x;
+	m_dims2.y = m_curMouseState.y - m_lastMouseState.y;
+	m_dims2.z = m_curMouseState.z - m_lastMouseState.z;
 
 	for (int i = 0; i < 3;++i)
 	{
-		m_dims2.rgbButtons[i] = m_curMouseState.rgbButtons[i];
+		m_dims2.buttons[i] = m_curMouseState.buttons[i];
 	}
 	memcpy(&m_lastMouseState, &m_curMouseState, sizeof(m_curMouseState));
 
 	// OUTPUT_LOG("dx %d,dy %d,dz %d: %d %d %d\n", m_dims2.lX, m_dims2.lY, m_dims2.lZ, m_dims2.rgbButtons[0], m_dims2.rgbButtons[1], m_dims2.rgbButtons[2]);
-	return S_OK;
+	return true;
 }
 
 void ParaEngine::CGUIMouseVirtual::GetDeviceCursorPos(int& x, int&y)
 {
-	x = m_curMouseState.lX;
-	y = m_curMouseState.lY;
+	x = m_curMouseState.x;
+	y = m_curMouseState.y;
 }
 
 void ParaEngine::CGUIMouseVirtual::SetDeviceCursorPos(int x, int y)
 {
-	m_curMouseState.lX = x;
-	m_curMouseState.lY = y;
+	m_curMouseState.x = x;
+	m_curMouseState.y = y;
 }
 
 void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
@@ -271,9 +211,9 @@ void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 	float fScaleX = 1.f, fScaleY = 1.f;
 	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
 	if (x>-500)
-		m_curMouseState.lX = (fScaleX == 1.f) ? x : (uint32)(x*fScaleX);
+		m_curMouseState.x = (fScaleX == 1.f) ? x : (uint32)(x*fScaleX);
 	if (y>-500)
-		m_curMouseState.lY = (fScaleY == 1.f) ? y : (uint32)(y*fScaleY);
+		m_curMouseState.y = (fScaleY == 1.f) ? y : (uint32)(y*fScaleY);
 
 	m_x = x;
 	m_y = y;

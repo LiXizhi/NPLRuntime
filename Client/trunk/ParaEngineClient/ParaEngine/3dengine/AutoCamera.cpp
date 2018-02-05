@@ -2183,7 +2183,7 @@ void CAutoCamera::HandleUserInput()
 	UpdateMouseDelta(dx, dy);
 
 	// double check the device if the mouse button is down, in case we lost the mouse focus.
-	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(CGUIMouseVirtual::LEFT_BUTTON))) 
+	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(EMouseButton::LEFT))) 
 	{
 		m_bMouseLButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
@@ -2193,7 +2193,7 @@ void CAutoCamera::HandleUserInput()
 			pMouse->SetLock(false);
 		}
 	}
-	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(CGUIMouseVirtual::RIGHT_BUTTON))) 
+	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(EMouseButton::RIGHT))) 
 	{
 		m_bMouseRButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))

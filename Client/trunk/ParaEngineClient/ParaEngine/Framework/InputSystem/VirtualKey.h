@@ -1,6 +1,19 @@
 #pragma once
+#include <ctime>
+#include <cstdint>
+#include <memory>
 namespace ParaEngine
 {
+
+
+	enum class EMouseEventType
+	{
+		Unkonw,
+		Button,
+		Move,
+		Whell
+	};
+
 	enum class EMouseButton
 	{
 		LEFT = 0,
@@ -165,4 +178,75 @@ namespace ParaEngine
 		KEY_MEDIASELECT = 237,  /* Media Select */
 		COUNT = 238,
 	};
+
+	struct DeviceMouseState
+	{
+		uint32_t x;
+		uint32_t y;
+		uint32_t z;
+		EKeyState buttons[(int)EMouseButton::COUNT];
+		DeviceMouseState()
+			:x(0)
+			,y(0)
+			,z(0)
+		{
+			for (int i = 0;i<(int)EMouseButton::COUNT;i++)
+			{
+				buttons[i] = EKeyState::RELEASE;
+			}
+		}
+	};
+
+	class DeviceMouseEvent
+	{
+	public:
+		DeviceMouseEvent():m_timestamp(0) {
+			m_timestamp = std::time(nullptr);
+		}
+		virtual EMouseEventType GetEventType() const { return EMouseEventType::Unkonw; }
+		uint32_t GetTimestamp() const { return m_timestamp; }
+	private:
+		uint32_t m_timestamp;
+	};
+	using DeviceMouseEventPtr = std::shared_ptr<DeviceMouseEvent>;
+
+	class DeviceMouseMoveEvent : public DeviceMouseEvent
+	{
+
+	public:
+		DeviceMouseMoveEvent(int x,int y):m_x(x),m_y(y) {};
+		inline int GetX() const { return m_x; };
+		inline int GetY() const { return m_y; };
+		virtual EMouseEventType GetEventType()const  override  { return EMouseEventType::Move; };
+	private:
+		int m_x;
+		int m_y;
+	};
+
+	class DeviceMouseButtonEvent : public DeviceMouseEvent
+	{
+
+	public:
+		DeviceMouseButtonEvent(const EMouseButton button, const EKeyState state)
+			:m_button(button)
+			,m_state(state) {};
+		inline EMouseButton GetButton() const { return m_button; };
+		inline EKeyState GetKeyState() const { return m_state; };
+		virtual EMouseEventType GetEventType() const { return EMouseEventType::Button; };
+	private:
+		EMouseButton m_button;
+		EKeyState m_state;
+	};
+
+	class DeviceMouseWhellEvent : public DeviceMouseEvent
+	{
+
+	public:
+		DeviceMouseWhellEvent(int whell) :m_whell(whell) {}
+		virtual EMouseEventType GetEventType() const { return EMouseEventType::Whell; }
+		virtual int GetWhell() const { return m_whell; }
+	private:
+		int m_whell;
+	};
+
 }
