@@ -143,8 +143,8 @@ list ( APPEND LJLIB_C src/lib_package.c )
 
 ## GENERATE VM
 # Build minilua
-add_executable ( minilua src/host/minilua.c )
-target_link_libraries ( minilua ${LIBS} )
+#add_executable ( minilua src/host/minilua.c )
+#target_link_libraries ( minilua ${LIBS} )
 
 # Dynasm
 set ( DASM ${CMAKE_CURRENT_SOURCE_DIR}/dynasm/dynasm.lua )
@@ -317,9 +317,3 @@ add_library ( liblua ${LUA_LIB_MODE} ${LJCORE_C} ${DEPS} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
 target_include_directories(liblua PUBLIC ${PROJECT_SOURCE_DIR}/src PUBLIC ${PROJECT_BINARY_DIR})
-#ADD_CUSTOM_COMMAND(
-#	TARGET liblua
-#	POST_BUILD
-#	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-#	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:liblua> ${OUTPUT_BIN_DIR}
-#)

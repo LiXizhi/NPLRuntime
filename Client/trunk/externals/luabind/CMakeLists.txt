@@ -25,7 +25,7 @@ ELSE()
 ENDIF()
 
 ADD_LIBRARY(luabind STATIC ${luabind_SRCS})
-target_link_libraries(luabind liblua)
+target_link_libraries(luabind lua)
 target_include_directories(luabind
 PUBLIC 	${PROJECT_SOURCE_DIR}
 PUBLIC 	${PROJECT_SOURCE_DIR}/luabind
