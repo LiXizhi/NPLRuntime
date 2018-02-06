@@ -13,7 +13,7 @@ set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL)
 
 
 
-add_subdirectory(EmbedResource)
-add_subdirectory(ParaEngine)
-add_subdirectory(RenderSystem)
+#add_subdirectory(EmbedResource)
+#add_subdirectory(ParaEngine)
+#add_subdirectory(RenderSystem)
 add_subdirectory(Platform)

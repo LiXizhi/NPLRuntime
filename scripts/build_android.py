@@ -64,7 +64,7 @@ def make_native_lib(abi):
 
 def build_apk():
     project_path = "./build/Android/project/"
-    src_path = "./Platform/Android/"
+    src_path = "./Client/trunk/ParaEngineClient/Platform/Android/"
     bin_path = project_path + "bin/"
     if os.path.exists(bin_path):
         shutil.rmtree(bin_path)
@@ -93,7 +93,7 @@ def build_apk():
 make_native_lib("armeabi")
 #make_native_lib("armeabi-v7a")
 
-#build_apk()
+build_apk()
 
 
 
