@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.7)
 set (CMAKE_CXX_STANDARD 11)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
 project(Client)
 
 
@@ -10,9 +15,9 @@ IF(MSVC)
 ENDIF()
 
 
-add_subdirectory(externals)
+#add_subdirectory(externals)
 add_subdirectory(ParaEngineClient)
-add_subdirectory(Plugins)
+#add_subdirectory(Plugins)
 #add_subdirectory(PhysicsBT)
 #add_subdirectory(ParaEngineClientApp)
 
