@@ -111,13 +111,13 @@ int CLightManager::ComputeLightScore(CLightParam* pLight, const Vector3& vCenter
 {
 	switch(pLight->Type)
 	{
-	case D3DLIGHT_DIRECTIONAL:   
+	case ELightType::Directional:   
 		{
 			pLight->m_nScore = MAX_LIGHT_SCORE;
 			break;
 		}
 
-	case D3DLIGHT_POINT:
+	case ELightType::Point:
 		{
 			Vector3 diff = pLight->Position;
 			diff -= vCenter;

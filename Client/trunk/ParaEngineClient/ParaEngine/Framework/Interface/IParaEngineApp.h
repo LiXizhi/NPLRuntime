@@ -53,6 +53,10 @@ namespace ParaEngine
 		PE_USAGE_OWN_WINDOW = 32,
 	};
 
+#ifndef WIN32
+#define WM_USER 0x0400
+#endif
+
 /** @def first paraengine user message */
 #define PE_WM_FIRST			WM_USER+2301
 /** @def Show/hide cursor for current window from any threads. One can use PostThreadMessage() from any threads.*/

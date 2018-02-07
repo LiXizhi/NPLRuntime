@@ -395,7 +395,7 @@ namespace ParaEngine
 			fgetpos(pFile, &pos);
 #ifdef WIN32
 			return static_cast<int>(pos);
-#elif defined (ANDROID)
+#elif defined (PLATFORM_ANDROID)
 			return static_cast<int>(pos);
 #elif defined (PLATFORM_IPHONE)
 			return static_cast<int>(pos);

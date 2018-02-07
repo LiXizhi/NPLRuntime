@@ -1,7 +1,7 @@
 
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
+
 
 # FreeImage
 SET(FREEIMAGE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/)
@@ -53,6 +53,7 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 #}
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 #{
+    include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
     set(RenderSystem RenderSystemD3D9)
     ucm_add_dirs(
         Engine
@@ -117,10 +118,32 @@ target_include_directories(ParaEngine PUBLIC
     ${FREEIMAGE_INCLUDE_DIRS}
 )
 
+
+if(ANDROID)
+    set(PLATROM_SPEC_DEFINITIONS 
+        PARAENGINE_MOBILE
+        PLATFORM_ANDROID
+        STATIC_PLUGIN_CAUDIOENGINE
+        AUTOUPDATE_PARAENGINE
+    )
+    set(PLATFORM_SPE_LIBS
+        tolua
+    )
+
+
+elseif(WIN32)
+    set(PLATROM_SPEC_DEFINITIONS 
+        PLATFORM_WINDOWS
+        _WIN32_WINNT=0x0501
+        _WINSOCK_DEPRECATED_NO_WARNINGS
+    )
+endif()
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
     ${FREEIMAGE_INCLUDE_LIBS}
+    ${PLATFORM_SPE_LIBS}
     zlib
     libcurl
     liblua
@@ -130,6 +153,9 @@ target_link_libraries(ParaEngine PUBLIC
     sqlite 
 )
 
+
+
+
 target_compile_definitions(ParaEngine PUBLIC 
     SQLITE_STATICLIB
     PE_CORE_EXPORTING
@@ -137,10 +163,7 @@ target_compile_definitions(ParaEngine PUBLIC
     BOOST_SIGNALS_NO_DEPRECATION_WARNING
     _CRT_SECURE_NO_WARNINGS
     NPLRUNTIME
-    SQLITE_STATICLIB
-    _WIN32_WINNT=0x0501
-    _WINSOCK_DEPRECATED_NO_WARNINGS
-    PLATFORM_WINDOWS
+    ${PLATROM_SPEC_DEFINITIONS}
 )
 
 

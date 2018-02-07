@@ -4,7 +4,7 @@ import shutil
 
 ANDROID_SDK = os.environ.get("ANDROID_SDK")
 if ANDROID_SDK is None:
-    print 'Not find ANDROID_SDK'
+    print('Not find ANDROID_SDK')
     exit()
 ANDROID_JDK = os.environ.get("ANDROID_JDK")
 if ANDROID_JDK is None:
@@ -55,7 +55,7 @@ def make_native_lib(abi):
     build_cmd = "cmake -G \"{0}\" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_VERSION={1} -DCMAKE_ANDROID_ARCH_ABI={2} -DCMAKE_ANDROID_NDK=\"{3}\" -DCMAKE_ANDROID_STL_TYPE={4} -DCMAKE_MAKE_PROGRAM=\"{5}\" ../../../../Client/trunk".format(build_g,ANDROID_SYSTEM_VERSION,build_arch_abi, \
     ANDROID_NDK,build_stl_type,build_make_program)
     os.system(build_cmd)
-    os.system("make")
+    os.system("make -j8")
     copy_files("./lib/","../../project/lib/"+abi)
 
     os.chdir("../../../../")

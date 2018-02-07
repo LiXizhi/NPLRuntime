@@ -17,9 +17,9 @@
 #include "StringHelper.h"
 #include "EffectManager.h"
 
-#ifdef PARAENGINE_MOBILE
-#include "2d/CCLabelTextFormatter.h"
-#endif
+//#ifdef PARAENGINE_MOBILE
+//#include "2d/CCLabelTextFormatter.h"
+//#endif
 
 #include "SpriteRendererOpenGL.h"
 #include "FontRendererOpenGL.h"

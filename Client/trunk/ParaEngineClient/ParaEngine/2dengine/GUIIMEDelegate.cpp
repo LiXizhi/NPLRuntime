@@ -9,14 +9,14 @@
 #include "GUIIMEDelegate.h"
 
 #ifdef PARAENGINE_MOBILE
-#include "OpenGLWrapper.h"
+//#include "OpenGLWrapper.h"
 
 using namespace ParaEngine;
 
-namespace ParaEngine
+/* namespace ParaEngine
 {
-	/* this is just a proxy class to wrapper around the cocos' IMEDelegate, 
-	without needing the main header file to include or depends on the cocos' IME related header files. */
+	// this is just a proxy class to wrapper around the cocos' IMEDelegate, 
+	//without needing the main header file to include or depends on the cocos' IME related header files.
 	class CIMEDelegateProxy : public IMEDelegate
 	{
 	public:
@@ -132,5 +132,5 @@ ParaEngine::CIMEDelegateProxy* ParaEngine::GUIIMEDelegate::GetIMEDelegateProxy()
 {
 	return NULL;
 }
-
-#endif
+*/
+#endif 

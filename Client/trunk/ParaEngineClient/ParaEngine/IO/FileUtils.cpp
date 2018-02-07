@@ -64,7 +64,8 @@
 
 
 #if defined(PARAENGINE_MOBILE)
-	#define USE_COCOS_FILE_API
+	//#define USE_COCOS_FILE_API
+	#define USE_BOOST_FILE_API
 #else
 	#if !defined(WIN32) || !defined(PARAENGINE_CLIENT) //  || defined(_DEBUG)
 		#define USE_BOOST_FILE_API
