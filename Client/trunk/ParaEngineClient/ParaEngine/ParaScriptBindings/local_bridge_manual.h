@@ -1,5 +1,5 @@
 
-#ifndef lua_manual_H
+/*#ifndef lua_manual_H
 #define lua_manual_H
 
 #ifdef __cplusplus
@@ -10,9 +10,10 @@ extern "C" {
 }
 #endif
 
-#include "base/CCRef.h"
+//#include "base/CCRef.h"
 
 TOLUA_API int register_all_local_bridge(lua_State* L);
 
 
 #endif
+*/

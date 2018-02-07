@@ -978,7 +978,8 @@ bool ParaEngine::ParaEngineSettings::IsMobilePlatform()
 void ParaEngine::ParaEngineSettings::RecreateRenderer()
 {
 #ifdef PARAENGINE_MOBILE
-	CParaEngineApp::GetInstance()->listenRendererRecreated(NULL);
+	//TODO:RecreateRenderer
+	//CParaEngineApp::GetInstance()->listenRendererRecreated(NULL);
 #endif
 }
 

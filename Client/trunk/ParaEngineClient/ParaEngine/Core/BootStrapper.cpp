@@ -61,7 +61,7 @@ void CBootStrapper::SetConfigFile(const string& sConfigFile)
 	m_sConfigFile = sConfigFile;
 }
 
-#ifdef PARAENGINE_MOBILE
+#ifdef PARAENGINE_MOBILE1
 #include <tinyxml2.h>
 namespace TXML = tinyxml2;
 bool CBootStrapper::LoadFromFile(const string& sXMLfile)

@@ -1,4 +1,4 @@
-#include "ParaEngine.h"
+/*#include "ParaEngine.h"
 #ifdef PARAENGINE_MOBILE
 #include "local_bridge_manual.h"
 #include "tolua_fix.h"
@@ -52,3 +52,4 @@ int register_all_local_bridge(lua_State* L)
 	return 1;
 }
 #endif
+*/

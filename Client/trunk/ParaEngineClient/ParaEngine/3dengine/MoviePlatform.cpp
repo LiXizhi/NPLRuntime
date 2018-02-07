@@ -7,6 +7,7 @@
 #include "ParaEngine.h"
 #include "IMovieCodec.h"
 #if USE_DIRECTX_RENDERER
+#include "d3d9.h"
 #include "RenderDeviceD3D9.h"
 #endif
 #ifdef USE_DIRECTX_RENDERER
@@ -32,7 +33,7 @@ using namespace ScreenShot;
 #include "PluginManager.h"
 #include "ViewportManager.h"
 #include "PluginAPI.h"
-#include "d3d9.h"
+
 
 using namespace ParaEngine;
 
@@ -373,8 +374,10 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 	else
 		GSSHOTSYSTEM->TakeScreenShot(filename.c_str());
 #endif
+
 #elif defined(PARAENGINE_MOBILE)
-	string Filename = filename;
+	//TODO: TakeScreenShot on android.
+	/*string Filename = filename;
 
 	if (filename.empty())
 	{
@@ -404,8 +407,9 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size()*sizeof(unsigned int), width, height, 32);
 		img.saveToFile(Filename);
 		return true;
-	}
+	}*/
 #endif
+
 	return false;
 }
 void CMoviePlatform::TakeScreenShot_Async(const string& filename, bool bEncode, int width, int height, screenshot_callback callback)

@@ -9,8 +9,8 @@
 #include "ParaEngine.h"
 #include "FileManager.h"
 #include "BaseObject.h"
-#ifdef PARAENGINE_MOBILE
-#include <tinyxml2.h>
+#ifdef PARAENGINE_MOBILE1
+#include <tinyxml.h>
 #else
 #include <tinyxml.h>
 #include <xpath_processor.h>
@@ -67,7 +67,7 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromFile(const string& filename, const st
 */
 bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 {
-#ifdef PARAENGINE_MOBILE
+#ifdef PARAENGINE_MOBILE1
 	namespace TXML = tinyxml2;
 	try
 	{

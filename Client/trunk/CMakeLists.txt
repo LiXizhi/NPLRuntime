@@ -16,8 +16,8 @@ ENDIF()
 
 
 add_subdirectory(externals)
+add_subdirectory(Plugins)
 add_subdirectory(ParaEngineClient)
-#add_subdirectory(Plugins)
 #add_subdirectory(PhysicsBT)
 #add_subdirectory(ParaEngineClientApp)
 

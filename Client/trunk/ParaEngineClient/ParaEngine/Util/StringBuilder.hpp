@@ -22,7 +22,7 @@
 #ifdef WIN32
 #define ecvt _ecvt
 #endif // WIN32
-#ifdef ANDROID
+#ifdef PLATFORM_ANDROID
 #include <math.h>
 #include <stdlib.h>
 
