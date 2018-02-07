@@ -1929,6 +1929,7 @@ int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 		nBoneIndex = bone.nIndex;
 		bone.SetName(pNodeName);
 		bone.AutoSetBoneInfoFromName();
+		bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		m_boneMapping[pNodeName] = bone.nIndex;
 		m_bones.push_back(bone);
 	}
@@ -2117,6 +2118,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		{
 			const aiBone * fbxBone = pFbxMesh->mBones[i];
 			int nBoneIndex = CreateGetBoneIndex(fbxBone->mName.C_Str());
+
 			if (nBoneIndex >= 0)
 			{
 				ParaEngine::Bone& bone = m_bones[nBoneIndex];
@@ -2124,6 +2126,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				offsetMat = offsetMat.transpose();
 				bone.matOffset = offsetMat;
 				bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
+				bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 				bone.pivot = Vector3(0, 0, 0) * bone.matOffset.InvertPRMatrix();
 			}
 
@@ -2291,7 +2294,7 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 		if (bone_index >= 0)
 		{
 			ParaEngine::Bone & bone = m_bones[bone_index];
-			bone.flags = ParaEngine::Bone::BONE_OFFSET_MATRIX;
+			bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 			// bone.calc is true, if there is bone animation. 
 			bone.calc = true;
 
@@ -2363,8 +2366,10 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, int parentBoneIndex, CParaXModel* pMesh)
 {
 	const std::string nodeName(pFbxNode->mName.C_Str());
+	
 	// this will force create a bone for every node. Bones without weights are just treated as ordinary nodes, 
 	// so it is important to add them here
+
 	int bone_index = CreateGetBoneIndex(pFbxNode->mName.C_Str());
 	if (bone_index >= 0)
 	{
@@ -2377,6 +2382,11 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 		{
 			bone.flags |= ParaEngine::Bone::BONE_STATIC_TRANSFORM;
 		}
+
+		//if (pFbxNode->mIsComplex)
+		//{
+		//	bone.flags |= ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
+		//}
 	}
 	m_bones[bone_index].parent = parentBoneIndex;
 

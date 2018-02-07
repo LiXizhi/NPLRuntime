@@ -8,13 +8,11 @@
 #include "ParaEngine.h"
 #if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 #include "VertexDeclarationOpenGL.h"
 using namespace ParaEngine;
-#ifdef PARAENGINE_MOBILE
-using namespace cocos2d;
-#endif
+
 
 //ParaEngine::VertexElement::VertexElement()
 //	:Stream(0xff), Offset(0), Type(D3DDECLTYPE_UNUSED), Method(0), Usage(0), UsageIndex(0)
@@ -28,7 +26,7 @@ bool ParaEngine::VertexElement::IsEndDeclare() const
 
 uint32 ParaEngine::VertexElement::GetSize() const
 {
-	if (Type == D3DDECLTYPE_FLOAT3)
+	if (Type == D3DDECLTYPE_FLOAT4)
 		return 16;
 	else if (Type == D3DDECLTYPE_FLOAT3)
 		return 12;
@@ -71,6 +69,8 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 		{
 			if (elem.Type == D3DDECLTYPE_FLOAT3)
 				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+			else if (elem.Type == D3DDECLTYPE_FLOAT4)
+				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 4, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 		}
 		else if (elem.Usage == D3DDECLUSAGE_COLOR)
 		{

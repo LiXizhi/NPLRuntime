@@ -122,7 +122,10 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 		}
 		unsigned int deviceSelection = 0;
 		//Initialize the manager with the user settings
-		m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection));
+		if (!m_pAudioEngine->initialize(m_pAudioEngine->getAvailableDeviceName(deviceSelection)))
+		{
+			return E_FAIL;
+		}
 
 		// use linear distance model by default. 
 		m_pAudioEngine->SetDistanceModel(Audio_DistModel_LINEAR_DISTANCE_CLAMPED);

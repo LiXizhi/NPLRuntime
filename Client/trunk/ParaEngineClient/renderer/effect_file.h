@@ -321,20 +321,22 @@ namespace ParaEngine
 			ScriptCallback* pCallback=GetScriptCallback(Type_DrawPass);
 			if(pCallback)
 			{
-				string code="msg={";
+				thread_local static string code;
+				code="callback_key=-1;";
 				if(pMaterialParams&&pMaterialParams->GetParameter("CallbackKey"))
 				{
-					code+="CallbackKey=";
+					code+="callback_key=";
 					code+=pMaterialParams->GetParameter("CallbackKey")->GetValueByString();
-					code+=",";
+					code+=";";
 				}
-				code+="PassIndex=";
-				string pass_index_str;
-				stringstream ss;
+				code+="pass_index=";
+				thread_local static string pass_index_str;
+				thread_local static stringstream ss;
+				ss.clear();
 				ss<<passIndex;
 				ss>>pass_index_str;
 				code+=pass_index_str;
-				code+="};";
+				code+=";";
 				code+=pCallback->GetCode();
 				pCallback->ActivateLocalNow(code);
 			}

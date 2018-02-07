@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #include "TextureEntity.h"
 //#include "CGUIRootLayer.h"
 #include "EffectManager.h"
@@ -18,10 +18,6 @@
 #include "SpriteRendererOpenGL.h"
 
 using namespace ParaEngine;
-#ifdef PARAENGINE_MOBILE
-using namespace cocos2d;
-typedef cocos2d::GLProgram GLProgram;
-#endif
 
 ParaEngine::CSpriteRendererOpenGL::CSpriteRendererOpenGL()
 	:m_sprite_count(0), m_pEffectFile(0), m_bNeedUpdateShader(false), m_bIsTextMode(false), m_bIsTextModeDevice(false)

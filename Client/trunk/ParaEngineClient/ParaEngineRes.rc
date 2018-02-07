@@ -27,39 +27,8 @@ LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
 // TEXTFILE
 //
 
-IDR_PARAXTEMPLATE       TEXTFILE                "res/ParaXmodel.templates"
-IDR_FX_OCEANWATER       TEXTFILE                "shaders/ocean_water.fxo"
-IDR_DEFAULT_CURSOR      TEXTFILE                "res/cursor.tga"
-IDR_FX_OCCLUSION_TEST   TEXTFILE                "shaders/occlusion_test.fxo"
-IDR_FX_SIMPLE_MESH      TEXTFILE                "shaders/simple_mesh.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL TEXTFILE                "shaders/simple_mesh_normal.fxo"
-IDR_FX_SMESH_CTOR       TEXTFILE                "shaders/smesh_ctor.fxo"
-IDR_FX_TERRAIN_NORMAL   TEXTFILE                "shaders/terrain_normal.fxo"
 IDR_DB_NPC_TABLE        TEXTFILE                "res/db_create_npc_table.sql"
-IDR_FX_FULLSCREEN_GLOW  TEXTFILE                "shaders/fullscreen_glow.fxo"
-IDR_FX_SKY              TEXTFILE                "shaders/sky.fxo"
 IDR_NPL_CHARACTER_EVENTS TEXTFILE                "res/character_script_template.txt"
-IDR_FX_SIMPLE_MESH_SHADOW TEXTFILE                "shaders/simple_mesh_normal_shadow.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_TEX2 TEXTFILE                "shaders/simple_mesh_normal_tex2.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_SELECTED TEXTFILE                "shaders/simple_mesh_normal_selected.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_BORDER TEXTFILE                "shaders/simple_mesh_normal_border.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_LOW TEXTFILE                "shaders/simple_mesh_normal_low.fxo"
-IDR_FX_WATER_RIPPLE     TEXTFILE                "shaders/water_ripples.fxo"
-IDR_FX_OCEANWATER_HIGH  TEXTFILE                "shaders/ocean_water_high.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_INSTANCED TEXTFILE                "shaders/simple_mesh_normal_instanced.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_UNLIT TEXTFILE                "shaders/simple_mesh_normal_unlit.fxo"
-IDR_FX_SIMPLE_PARTICLE  TEXTFILE                "shaders/simple_particle.fxo"
-IDR_FX_SIMPLE_CAD_MODEL TEXTFILE                "shaders/simple_cad_model.fxo"
-IDR_FX_DROPSHADOW       TEXTFILE                "shaders/dropShadow.fxo"
-IDR_FX_SCREENWAVE       TEXTFILE                "shaders/screenWave.fxo"
-IDR_FX_BLOCK            TEXTFILE                "shaders/blockEffect.fxo"
-IDR_FX_SHADOWMAP_BLUR   TEXTFILE                "shaders/shadowmap_blur.fxo"
-IDR_FX_SIMPLE_MESH_VEGETATION TEXTFILE                "shaders/simple_mesh_normal_vegetation.fxo"
-IDR_FX_SIMPLE_MESH_NORMAL_SPECIALEFFECTS TEXTFILE                "shaders/simple_mesh_normal_specialeffects.fxo"
-IDR_FX_SKYDOME          TEXTFILE                "shaders/skydome.fxo"
-IDR_FX_OCEANWATER_QUAD  TEXTFILE                "shaders/ocean_water_quad.fxo"
-IDR_FX_OCEANWATER_CLOUD TEXTFILE                "shaders/ocean_water_cloud.fxo"
-IDR_FX_BMAXMODEL        TEXTFILE                "shaders/BMaxModel.fxo"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -96,15 +65,6 @@ BEGIN
     EDITTEXT        IDC_ABOUT_TEXT,7,22,281,112,ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | ES_WANTRETURN | WS_VSCROLL | WS_HSCROLL
 END
 
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Icon
-//
-
-// Icon with lowest ID value placed first to ensure application icon
-// remains consistent on all systems.
-IDI_PARAWORLD_ICON               ICON                    "res\\paraworld.ico"
 #endif    // Chinese (Simplified, PRC) resources
 /////////////////////////////////////////////////////////////////////////////
 
@@ -215,7 +175,7 @@ END
 
 IDR_MAIN_ACCEL ACCELERATORS
 BEGIN
-    VK_F13,         IDM_CHANGEDEVICE,       VIRTKEY, NOINVERT
+VK_F13, IDM_CHANGEDEVICE, VIRTKEY, NOINVERT
 END
 
 

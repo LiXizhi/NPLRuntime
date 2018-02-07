@@ -8,16 +8,12 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "platform/OpenGLWrapper.h"
+#include "OpenGLWrapper.h"
 #endif
 
 #include "ImageEntity.h"
 
 using namespace ParaEngine;
-
-#if defined(PARAENGINE_MOBILE)
-USING_NS_CC;
-#endif
 
 ParaEngine::ImageEntity::ImageEntity()
 	: _data(nullptr)

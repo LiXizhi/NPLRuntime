@@ -224,7 +224,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0,D3DSAMP_MAGFILTER,pEffectManager->GetDefaultSamplerState(0,D3DSAMP_MAGFILTER));
 		}
 
-		CApplyObjectLevelParamBlock p(mParent->GetEffectParamBlock());
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 		_draw(sceneState,mat,p.GetParamsBlock());
 
 		sceneState->EnableLocalMaterial(false);
@@ -285,41 +285,7 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 			pModel->blendingFactor=pAI->m_fBlendingFactor;
 			pModel->animate(sceneState,nullptr,pAI);
 
-			std::map<string,CParameter*> save_params;
-			auto my_params=GetEffectParamBlock();
-			if(params&&my_params)
-			{
-				for(auto iter=my_params->BeginIter();iter!=my_params->EndIter();++iter)
-				{
-					auto const & name=iter->first;
-					auto const & param=iter->second;
-					if(params->GetParameter(name))
-					{
-						save_params[name]=new CParameter(*params->GetParameter(name));
-					}
-					else
-					{
-						save_params[name]=nullptr;
-					}
-					params->SetParameter(name,param);
-				}
-			}
-			pModel->draw(sceneState,params?params:my_params);
-			if(params&&my_params)
-			{
-				for(auto iter=save_params.begin();save_params.end()!=iter;++iter)
-				{
-					auto const & name=iter->first;
-					auto const & param=iter->second;
-					if(param)
-					{
-						params->SetParameter(name,*param);
-						delete param;
-					}
-					else
-						params->m_params.erase(name);
-				}
-			}
+			pModel->draw(sceneState,params);
 		}
 
 

@@ -574,6 +574,7 @@ namespace ParaScripting
 
 	bool CNPL::AppendURLRequest1(const object&  urlParams, const char* sCallback, const object& sForm_, const char* sPoolName)
 	{
+		bool bSyncMode = sPoolName && strcmp(sPoolName, "self") == 0;
 		const char* url = NULL;
 		if (type(urlParams) == LUA_TTABLE)
 		{
@@ -824,7 +825,34 @@ namespace ParaScripting
 		pProcessor->SetUrl(urlBuilder.ToString().c_str());
 		pProcessor->SetScriptCallback(sCallback);
 
-		return (pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL,ResourceRequestID_Web) == S_OK);
+		if (bSyncMode)
+		{
+			pProcessor->SetSyncCallbackMode(true);
+			// sync mode in current thread. 
+			if (SUCCEEDED(pLoader->Load()) &&
+				SUCCEEDED(pLoader->Decompress(NULL, NULL)) &&
+				SUCCEEDED(pProcessor->Process(NULL, NULL)) &&
+				SUCCEEDED(pProcessor->LockDeviceObject()) &&
+				SUCCEEDED(pProcessor->CopyToResource()) &&
+				SUCCEEDED(pProcessor->UnLockDeviceObject()))
+			{
+			}
+			else
+			{
+				pProcessor->SetResourceError();
+			}
+			pProcessor->Destroy();
+			pLoader->Destroy();
+
+			SAFE_DELETE(pLoader);
+			SAFE_DELETE(pProcessor);
+			return true;
+		}
+		else
+		{
+			// async mode. 
+			return (pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, ResourceRequestID_Web) == S_OK);
+		}
 	}
 
 	string CNPL::EncodeURLQuery( const char * baseUrl, const object& sParams )

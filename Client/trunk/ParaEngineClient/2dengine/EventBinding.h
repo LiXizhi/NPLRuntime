@@ -129,6 +129,9 @@ namespace ParaEngine
 
 		/** windows virtual key code to direct input key. */
 		static DWORD WinVirtualKeyToDIK[256];
+
+		/** direct input key to windows virtual key code. */
+		static DWORD DIKToWinVirtualKey[256];
 	protected:
 		typedef std::bitset<EventCount> EventEnabledArray_type;
 		typedef std::map<int,SimpleScript> EventScriptMap_type;
