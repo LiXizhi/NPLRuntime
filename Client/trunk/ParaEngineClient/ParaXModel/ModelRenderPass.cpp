@@ -115,7 +115,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 
 	/// Set the texture
 	TextureEntity* bindtex = NULL;
-	if (m->specialTextures[tex]==-1) 
+	if (tex >= CParaXModel::MAX_MODEL_TEXTURES || m->specialTextures[tex] == -1)
 		bindtex = m->textures[tex].get();
 	else 
 	{
