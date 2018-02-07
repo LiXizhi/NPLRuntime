@@ -4,7 +4,7 @@ import shutil
 
 ANDROID_SDK = os.environ.get("ANDROID_SDK")
 if ANDROID_SDK is None:
-    print('Not find ANDROID_SDK')
+    print 'Not find ANDROID_SDK'
     exit()
 ANDROID_JDK = os.environ.get("ANDROID_JDK")
 if ANDROID_JDK is None:

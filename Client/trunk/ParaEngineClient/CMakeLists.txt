@@ -9,4 +9,4 @@ endif()
 
 add_subdirectory(ParaEngine)
 add_subdirectory(RenderSystem)
-#add_subdirectory(Platform)
+add_subdirectory(Platform)
