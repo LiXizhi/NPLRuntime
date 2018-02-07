@@ -279,19 +279,13 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 
 		if(pModel)
 		{
-			pModel->animated=true;
-			//pModel->m_CurrentAnim=pAI->m_CurrentAnim;
-			//pModel->m_NextAnim=pAI->m_NextAnim;
-			//pModel->m_BlendingAnim=pAI->m_BlendingAnim;
-			//pModel->blendingFactor=pAI->m_fBlendingFactor;
-			//pModel->animate(sceneState,nullptr,pAI);
+			pModel->m_CurrentAnim=pAI->m_CurrentAnim;
+			pModel->m_NextAnim=pAI->m_NextAnim;
+			pModel->m_BlendingAnim=pAI->m_BlendingAnim;
+			pModel->blendingFactor=pAI->m_fBlendingFactor;
+			pModel->animate(sceneState,nullptr,pAI);
 
-			auto bones=pModel->bones;
-			pModel->bones=pAI->GetAnimModel()->GetModel()->bones;
-				
 			pModel->draw(sceneState,params);
-
-			pModel->bones=bones;
 		}
 
 
