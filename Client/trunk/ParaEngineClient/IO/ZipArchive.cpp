@@ -693,7 +693,7 @@ bool CZipArchive::ReadEntries_pkg2()
 
 		// read filename
 		m_pFile->read(&entry.fileNameLen, sizeof(WORD));
-		PE_ASSERT(entry.fileNameLen < MAX_PATH);
+
 		DWORD nameOffset;
 		m_pFile->read(&nameOffset, sizeof(DWORD));
 		entry.zipFileName = &m_nameBlock[nameOffset];
@@ -791,7 +791,7 @@ bool CZipArchive::ReadEntries_pkg()
 		nameBlockSize = nameOffset + nNameSize + 1;
 		m_pFile->read(&m_nameBlock[nameOffset], nNameSize);
 		m_nameBlock[nameBlockSize - 1] = 0;
-		PE_ASSERT(nNameSize < MAX_PATH);
+
 		entry.zipFileName = &m_nameBlock[nameOffset];
 		entry.fileNameLen = nNameSize;
 		entry.RefreshHash(m_bIgnoreCase);
@@ -871,11 +871,13 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 			return -1; // return file not found
 	}
 
-	char tmp[MAX_PATH];
+
+	const size_t max_path = 1024;
+	char tmp[max_path + 1];
 	if (m_bIgnoreCase)
 	{
 		size_t i = 0;
-		for (; filename[i] != 0; i++)
+		for (; filename[i] != 0 && i < max_path; i++)
 		{
 			tmp[i] = filename[i];
 			if (tmp[i] >= 'A' && tmp[i] <= 'Z')
@@ -1198,7 +1200,6 @@ bool CZipArchive::scanLocalHeader()
 	m_pFile->read(tmp, entry.header.FilenameLength);
 	tmp[entry.header.FilenameLength] = 0x0;
 
-	PE_ASSERT(entry.header.FilenameLength < MAX_PATH);
 	entry.zipFileName = tmp;
 	//if (m_bIgnoreCase)
 	//	StringHelper::make_lower(entry.zipFileName);
@@ -1349,8 +1350,6 @@ bool CZipArchive::ReadEntries()
 		nameBlcokSize = nameOffset + CentralDir.NameSize + 1;
 		pReader->read(&m_nameBlock[nameOffset], CentralDir.NameSize);
 		m_nameBlock[nameBlcokSize - 1] = 0;
-
-		PE_ASSERT(CentralDir.NameSize < MAX_PATH);
 
 		m_FileList[i].m_pEntry = &m_pEntries[i];
 		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
