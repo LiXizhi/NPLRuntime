@@ -217,6 +217,9 @@ include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
+
+
+
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
 	include_directories("${CURL_SOURCE_DIR}/include/")
@@ -376,7 +379,26 @@ else()
     set(LUA_LIBRARY lua)
 endif()
 
+##############################
+# iconv
+option(NPLRUNTIME_ICONV "include iconv" ON)
 
+if(NPLRUNTIME_ICONV)
+	ADD_DEFINITIONS(-DUSE_ICONV)
+
+
+	if(APPLE)
+		list(APPEND EXTRA_LIBRARIES iconv)
+	#elseif (LINUX OR UNIX)
+	#	list(APPEND EXTRA_LIBRARIES libiconv)
+	else()
+		add_subdirectory(${SERVER_SOURCE_DIR}libiconv ${NPLRuntime_BINARY_DIR}/libiconv)
+		set(ICONV_INCLUDE_DIR ${SERVER_SOURCE_DIR}libiconv/include ${NPLRuntime_BINARY_DIR}/libiconv/include)
+		set(ICONV_SOURCE_DIR ${SERVER_SOURCE_DIR}libiconv/src ${NPLRuntime_BINARY_DIR}/libiconv/src)
+		include_directories("${ICONV_INCLUDE_DIR}")
+		list(APPEND EXTRA_LIBRARIES libiconv)
+	endif()
+endif()
 
 if (WIN32)
   set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}

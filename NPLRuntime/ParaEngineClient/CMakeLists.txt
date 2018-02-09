@@ -508,26 +508,6 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	endif()
 
 
-
-	##############################
-	# icon
-	if(WIN32)
-
-		#include_directories("${External_Dir}/icon/include")
-		#list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
-		#list(APPEND ParaEngineClient_LIBS libiconv.lib)
-
-		add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/externals/libiconv ${ParaEngineClient_BINARY_DIR}/libiconv)
-		set(ICONV_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/include ${ParaEngineClient_BINARY_DIR}/libiconv/include)
-		set(ICONV_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/src ${ParaEngineClient_BINARY_DIR}/libiconv/src)
-		include_directories("${ICONV_INCLUDE_DIR}")
-		list(APPEND ParaEngineClient_LIBS libiconv)
-	endif()
-
-	if(APPLE)
-		list(APPEND ParaEngineClient_LIBS iconv)
-	endif()
-
 	##############################
 	# DX2GL
 	add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/ParaEngineClient/dxEffects2glEffects ${ParaEngineClient_BINARY_DIR}/dx2gl)
@@ -576,6 +556,24 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
+
+##############################
+# iconv
+option(NPLRUNTIME_ICONV "include iconv" ON)
+
+if(NPLRUNTIME_ICONV)
+	ADD_DEFINITIONS(-DUSE_ICONV)
+
+	if(APPLE)
+		list(APPEND ParaEngineClient_LIBS iconv)
+	else()
+		add_subdirectory(${SERVER_SOURCE_DIR}libiconv ${ParaEngineClient_BINARY_DIR}/libiconv)
+		set(ICONV_INCLUDE_DIR ${SERVER_SOURCE_DIR}libiconv/include ${ParaEngineClient_BINARY_DIR}/libiconv/include)
+		set(ICONV_SOURCE_DIR ${SERVER_SOURCE_DIR}libiconv/src ${ParaEngineClient_BINARY_DIR}/libiconv/src)
+		include_directories("${ICONV_INCLUDE_DIR}")
+		list(APPEND ParaEngineClient_LIBS libiconv)
+	endif()
+endif()
 
 
 ##############################
