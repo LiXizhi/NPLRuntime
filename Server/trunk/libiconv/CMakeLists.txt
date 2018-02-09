@@ -26,7 +26,7 @@ endif()
 if (APPLE)
 elseif(UNIX)
 	if (UNIX)
-		ADD_DEFINITIONS(-DLIBDIR=\'\"c\"\')
+		ADD_DEFINITIONS(-DLIBDIR='\"c\"')
 	endif()
 
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
