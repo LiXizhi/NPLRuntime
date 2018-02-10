@@ -161,6 +161,8 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
 		// must be called before ProcessFBXBoneNodes
+		decltype(m_bones) raf_bones;
+		decltype(m_boneMapping) raf_bonemapping;
 		if (m_sFilename.find("_RAF(") != std::string::npos)
 		{
 			auto ref_file_start=m_sFilename.find("_RAF(")+strlen("_RAF(");
@@ -170,8 +172,8 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 			FBXParser anim_parser(anim_file_name);
 			anim_parser.ParseParaXModel();
 			m_modelInfo.LoadFromFile(std::string(anim_parser.GetFilename().c_str(), anim_parser.GetFilename().size() - 3) + "xml");
-			m_boneMapping = anim_parser.m_boneMapping;
-			m_bones = anim_parser.m_bones;
+			raf_bonemapping = m_boneMapping = anim_parser.m_boneMapping;
+			raf_bones = m_bones = anim_parser.m_bones;
 			m_anims = anim_parser.m_anims;
 		}
 		else if (pFbxScene->HasAnimations())
@@ -187,6 +189,18 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		ProcessFBXBoneNodes(pFbxScene, pFbxScene->mRootNode, -1, pMesh);
 
 		// MakeAxisY_UP();
+		if (!raf_bones.empty())
+		{
+			for (auto const & pair: raf_bonemapping)
+			{
+				assert(pair.second == m_boneMapping[pair.first]);
+				m_bones[pair.second].matTransform = raf_bones[pair.second].matTransform;
+				m_bones[pair.second].flags = raf_bones[pair.second].flags;
+				m_bones[pair.second].matOffset = raf_bones[pair.second].matOffset;
+				m_bones[pair.second].pivot = raf_bones[pair.second].pivot;
+			}
+		}
+
 
 		FillParaXModelData(pMesh, pFbxScene);
 
