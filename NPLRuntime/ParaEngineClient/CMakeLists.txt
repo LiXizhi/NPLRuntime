@@ -313,6 +313,7 @@ if(WIN32)
 		SOURCE_GROUP("OpenGLTest" FILES ${ParaEngineClient_OPENGLTEST_FILES})
 		list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_OPENGLTEST_FILES})
 
+
 		##############################
 		# opengl under WIN32
 		file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
@@ -497,7 +498,14 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	# Jpeg
 	if(WIN32)
 		include_directories("${External_Dir}/jpeg/include/win32")
-		list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32")
+
+		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+			list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32/x64")
+		else()
+			list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32/x86")
+		endif()
+
+		
 		list(APPEND ParaEngineClient_LIBS libjpeg.lib)
 	endif()
 
@@ -591,6 +599,14 @@ if (WIN32)
 			SET(FREEIMAGE_DASM_FLAGS "x64")
 		else()
 			SET(FREEIMAGE_DASM_FLAGS "x32")
+		endif()
+
+		if(WIN32)
+			if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+				file (GLOB_RECURSE ParaEngineClient_FREEIMIAGE ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.h ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.cpp)
+				SOURCE_GROUP("Engine" FILES ${ParaEngineClient_FREEIMIAGE})
+				list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_FREEIMIAGE})
+			endif()
 		endif()
 
 		
