@@ -23,6 +23,16 @@ if(MSVC)
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 endif()
 
+if (APPLE)
+elseif(UNIX)
+	if (UNIX)
+		ADD_DEFINITIONS(-DLIBDIR='\"c\"')
+	endif()
+
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+endif()
+
 
 file (GLOB ParaEngineClient_pb_FILES ${ParaEngineClient_SOURCE_DIR}/protocol/*.h ${ParaEngineClient_SOURCE_DIR}/protocol/*.cpp)
 SOURCE_GROUP("protocol" FILES ${ParaEngineClient_pb_FILES})
