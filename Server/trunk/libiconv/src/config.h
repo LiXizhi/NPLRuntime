@@ -60,7 +60,7 @@
 #undef HAVE_WCRTOMB
 
 /* Define to 1 if O_NOFOLLOW works. */
-#undef HAVE_WORKING_O_NOFOLLOW
+#define HAVE_WORKING_O_NOFOLLOW 1
 
 /* Define if the machine's byte ordering is little endian. */
 #undef WORDS_LITTLEENDIAN

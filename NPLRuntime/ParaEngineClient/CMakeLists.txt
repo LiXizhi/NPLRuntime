@@ -313,6 +313,7 @@ if(WIN32)
 		SOURCE_GROUP("OpenGLTest" FILES ${ParaEngineClient_OPENGLTEST_FILES})
 		list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_OPENGLTEST_FILES})
 
+
 		##############################
 		# opengl under WIN32
 		file (GLOB ParaEngineClient_Platform_FILES ${ParaEngineClient_SOURCE_DIR}/platform/win32/*.*)
@@ -497,7 +498,14 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 	# Jpeg
 	if(WIN32)
 		include_directories("${External_Dir}/jpeg/include/win32")
-		list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32")
+
+		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+			list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32/x64")
+		else()
+			list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/jpeg/prebuilt/win32/x86")
+		endif()
+
+		
 		list(APPEND ParaEngineClient_LIBS libjpeg.lib)
 	endif()
 
@@ -507,26 +515,6 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 		list(APPEND ParaEngineClient_LIBS libjpeg.a)
 	endif()
 
-
-
-	##############################
-	# icon
-	if(WIN32)
-
-		#include_directories("${External_Dir}/icon/include")
-		#list(APPEND ParaEngineClient_LINK_DIRS 	"${External_Dir}/icon/prebuilt")
-		#list(APPEND ParaEngineClient_LIBS libiconv.lib)
-
-		add_subdirectory(${CLIENT_SOURCE_DIR}/trunk/externals/libiconv ${ParaEngineClient_BINARY_DIR}/libiconv)
-		set(ICONV_INCLUDE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/include ${ParaEngineClient_BINARY_DIR}/libiconv/include)
-		set(ICONV_SOURCE_DIR ${CLIENT_SOURCE_DIR}/trunk/externals/libiconv/src ${ParaEngineClient_BINARY_DIR}/libiconv/src)
-		include_directories("${ICONV_INCLUDE_DIR}")
-		list(APPEND ParaEngineClient_LIBS libiconv)
-	endif()
-
-	if(APPLE)
-		list(APPEND ParaEngineClient_LIBS iconv)
-	endif()
 
 	##############################
 	# DX2GL
@@ -577,6 +565,24 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 endif() # END OF NPLRUNTIME_RENDERER STREQUAL "OPENGL"
 
+##############################
+# iconv
+option(NPLRUNTIME_ICONV "include iconv" ON)
+
+if(NPLRUNTIME_ICONV)
+	ADD_DEFINITIONS(-DUSE_ICONV)
+
+	if(APPLE)
+		list(APPEND ParaEngineClient_LIBS iconv)
+	else()
+		add_subdirectory(${SERVER_SOURCE_DIR}libiconv ${ParaEngineClient_BINARY_DIR}/libiconv)
+		set(ICONV_INCLUDE_DIR ${SERVER_SOURCE_DIR}libiconv/include ${ParaEngineClient_BINARY_DIR}/libiconv/include)
+		set(ICONV_SOURCE_DIR ${SERVER_SOURCE_DIR}libiconv/src ${ParaEngineClient_BINARY_DIR}/libiconv/src)
+		include_directories("${ICONV_INCLUDE_DIR}")
+		list(APPEND ParaEngineClient_LIBS libiconv)
+	endif()
+endif()
+
 
 ##############################
 # FreeImage
@@ -593,6 +599,14 @@ if (WIN32)
 			SET(FREEIMAGE_DASM_FLAGS "x64")
 		else()
 			SET(FREEIMAGE_DASM_FLAGS "x32")
+		endif()
+
+		if(WIN32)
+			if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+				file (GLOB_RECURSE ParaEngineClient_FREEIMIAGE ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.h ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.cpp)
+				SOURCE_GROUP("Engine" FILES ${ParaEngineClient_FREEIMIAGE})
+				list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_FREEIMIAGE})
+			endif()
 		endif()
 
 		

@@ -17,7 +17,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <iconv.h>
+#include "iconv.h"
 
 #include <limits.h>
 #include <stdlib.h>

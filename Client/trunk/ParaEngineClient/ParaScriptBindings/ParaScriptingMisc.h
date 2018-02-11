@@ -97,7 +97,7 @@ namespace ParaScripting
 		* local text = ParaMisc.EncodingConvert("HTML", "", "Chinese characters: &#24320;&#21457;")
 		* log(text);
 		*/
-		static const char* EncodingConvert(const object& srcEncoding, const object& dstEncoding, const object& bytes);
+		static const std::string& EncodingConvert(const std::string& srcEncoding, const std::string& dstEncoding, const std::string& bytes);
 
 		/** copy text to clipboard. Input is ANSI code page */
 		static bool CopyTextToClipboard(const char* text);
