@@ -30,7 +30,7 @@ const char g_simpleXOR_key[] = "Copyright@ParaEngine, LiXizhi";
 
 const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, unsigned int nCodePage)
 {
-	static boost::thread_specific_ptr< vector<WCHAR> > wsName_;
+	static boost::thread_specific_ptr<vector<WCHAR> > wsName_;
 	if (!wsName_.get()) {
 		// first time called by this thread
 		// construct test element to be used in all subsequent calls from this thread

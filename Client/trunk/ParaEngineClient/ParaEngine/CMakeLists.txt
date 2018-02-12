@@ -98,22 +98,22 @@ endif()
 ###################################################################
 ## Target
 
-add_library(ParaEngine ${sources_commmon} ${sources_rendersystem})
+add_library(ParaEngine SHARED ${sources_commmon} ${sources_rendersystem})
 
 target_include_directories(ParaEngine PUBLIC 
-    ./
-    ./Core
-    ./Renderer
-    ./3dengine
-    ./Engine
-    ./IO
-    ./InfoCenter
-    ./Util
-    ./Math
-    ./ParaScriptBindings
-    ./NPL
-    ./2dengine/Video
-    ./Framework/Interface
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core
+    ${CMAKE_CURRENT_SOURCE_DIR}/Renderer
+    ${CMAKE_CURRENT_SOURCE_DIR}/3dengine
+    ${CMAKE_CURRENT_SOURCE_DIR}/Engine
+    ${CMAKE_CURRENT_SOURCE_DIR}/IO
+    ${CMAKE_CURRENT_SOURCE_DIR}/InfoCenter
+    ${CMAKE_CURRENT_SOURCE_DIR}/Util
+    ${CMAKE_CURRENT_SOURCE_DIR}/Math
+    ${CMAKE_CURRENT_SOURCE_DIR}/ParaScriptBindings
+    ${CMAKE_CURRENT_SOURCE_DIR}/NPL
+    ${CMAKE_CURRENT_SOURCE_DIR}/2dengine/Video
+    ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
     ${Boost_INCLUDE_DIRS}
     ${FREEIMAGE_INCLUDE_DIRS}
 )
@@ -146,7 +146,7 @@ target_link_libraries(ParaEngine PUBLIC
     ${PLATFORM_SPE_LIBS}
     zlib
     libcurl
-    liblua
+    lua
     jsoncpp
     tinyxpath
     luabind

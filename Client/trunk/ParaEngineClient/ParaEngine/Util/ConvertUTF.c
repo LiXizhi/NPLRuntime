@@ -45,7 +45,7 @@
     See the header file "ConvertUTF.h" for complete documentation.
 
 ------------------------------------------------------------------------ */
-#if !defined(PARAENGINE_MOBILE) || defined(WIN32)
+#if !defined(PARAENGINE_MOBILE1) || defined(WIN32)
 
 #include "ConvertUTF.h"
 #ifdef CVTUTF_DEBUG

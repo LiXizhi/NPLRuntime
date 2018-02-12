@@ -9,7 +9,8 @@ typedef unsigned int		udword;		//!< sizeof(udword)	must be 4
 
 #define	MAX_FLOAT				FLT_MAX						//!< max possible float value
 #define	MIN_FLOAT				(-FLT_MAX)					//!< min possible loat value
-#define FLT_MAX         3.402823466e+38F        /* max value */
+
+//#define FLT_MAX         3.402823466e+38F        /* max value */
 #define	SQRT2				1.41421356237f											//!< sqrt(2)
 #define	INVSQRT2			0.707106781188f											//!< 1 / sqrt(2)
 #define	INVSQRT3			0.577350269189f											//!< 1 / sqrt(3)
