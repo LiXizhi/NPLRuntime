@@ -881,7 +881,6 @@ namespace ParaEngine
 				nStartVertex = 0;
 			}
 
-			geoset->vstart += nVertices;
 			geoset->icount += nIndexCount;
 			pass->indexCount += nIndexCount;
 
@@ -940,7 +939,6 @@ namespace ParaEngine
 				nStartVertex = 0;
 			}
 
-			geoset->vstart += nVertices;
 			geoset->icount += nIndexCount;
 			pass->indexCount += nIndexCount;
 

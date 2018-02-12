@@ -267,9 +267,7 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) = 0;
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() = 0;
-		/* */
-		virtual void FixWindowSize(bool fixed) = 0;
-
+		
 		/** get the current mouse cursor position. 
 		* @param pX: out
 		* @param pY: out
@@ -453,6 +451,9 @@ namespace ParaEngine
 
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
 		virtual const char* GetModuleDir() { return NULL; };
+
+		/* whether the window size is fixed. */
+		virtual void FixWindowSize(bool fixed) = 0;
 	};
 
 }
