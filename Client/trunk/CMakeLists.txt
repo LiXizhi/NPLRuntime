@@ -17,10 +17,14 @@ IF(MSVC)
     ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
     ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 ENDIF()
+
 if(ANDROID)
+    set(CMAKE_ANDROID_API 19)
     set(CMAKE_ANDROID_STL_TYPE "gnustl_shared")
+    set(CMAKE_ANDROID_ARCH_ABI "armv7-a")
+    set(CMAKE_ANDROID_ARM_NEON OFF)
     add_compile_options(-fexceptions -frtti -Wno-psabi)
-    add_definitions(-D__ANDROID__ -DANDROID -D__ARM_NEON__)
+    add_definitions(-D__ANDROID__ -DANDROID)
 endif()
 
 

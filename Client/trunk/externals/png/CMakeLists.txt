@@ -18,3 +18,4 @@ pngwutil.c
 )
 target_link_libraries(libpng PUBLIC zlib)
 target_include_directories(libpng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(libpng PRIVATE PNG_ARM_NEON_OPT=0)
