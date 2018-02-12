@@ -1830,22 +1830,22 @@ int ParaEngine::CGUIEditBox::GetTextA(std::string& out)
 void ParaEngine::CGUIEditBox::OnSelectStart()
 {
 #ifdef PARAENGINE_MOBILE
-	if (m_bHasFocus)
-		attachWithIME();
+	//if (m_bHasFocus)
+//		attachWithIME();
 #endif
 }
 
 #ifdef PARAENGINE_MOBILE
 bool ParaEngine::CGUIEditBox::attachWithIME()
 {
-	bool ret = GUIIMEDelegate::attachWithIME();
-	return ret;
+	//bool ret = GUIIMEDelegate::attachWithIME();
+	//return ret;
 }
 
 bool ParaEngine::CGUIEditBox::detachWithIME()
 {
-	bool ret = GUIIMEDelegate::detachWithIME();
-	return ret;
+	//bool ret = GUIIMEDelegate::detachWithIME();
+	//return ret;
 }
 
 bool ParaEngine::CGUIEditBox::canAttachWithIME()

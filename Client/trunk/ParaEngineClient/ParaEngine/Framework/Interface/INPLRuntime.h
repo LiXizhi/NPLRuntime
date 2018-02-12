@@ -5,7 +5,6 @@
 // Date: 2010.2.26
 // Description:	API for NPL interface 
 //-----------------------------------------------------------------------------
-#include "baseinterface.h"
 #include <string>
 #include "INPLRuntimeState.h"
 
@@ -27,7 +26,7 @@ namespace NPL
 	* 
 	* There is a special NPL state called (main) state, which can be configured to run in the main thread or in a separate thread like other normal states. 
 	*/
-	class INPLRuntime : ParaEngine::BaseInterface
+	class INPLRuntime
 	{
 	public:
 		/** initialize NPL runtime environment */

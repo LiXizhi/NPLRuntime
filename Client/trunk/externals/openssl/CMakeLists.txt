@@ -1,0 +1,18 @@
+add_library(para_libssl INTERFACE)
+add_library(para_libcrypto INTERFACE)
+
+if(ANDROID)
+    target_include_directories(para_libssl INTERFACE include/android)
+    target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/armeabi-v7a/libssl.a)
+
+    target_include_directories(para_libcrypto INTERFACE include/android)
+    target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/armeabi-v7a/libcrypto.a)
+elseif(WIN32)
+    target_include_directories(para_libssl INTERFACE include/win32)
+    target_link_libraries(para_libssl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/libssl.lib)
+
+    target_include_directories(para_libcrypto INTERFACE include/win32)
+    target_link_libraries(para_libcrypto INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/libcrypto.lib)
+endif()
+
+

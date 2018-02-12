@@ -1,5 +1,9 @@
 #include "AndroidApplication.h"
 #include <android/log.h>
+#include <cstdlib>
+#include <cstring>
+#include <errno.h>
+#include <cassert>
 using namespace ParaEngine;
 
 
@@ -56,7 +60,7 @@ int32_t AndroidApplication::app_handle_input(struct android_app* app, AInputEven
 
 
 AndroidApplication::AndroidApplication(struct android_app* app)
-:m_App(app)
+:m_State(app)
 ,m_Display(EGL_NO_DISPLAY)
 ,m_Surface(EGL_NO_SURFACE)
 ,m_Context(EGL_NO_CONTEXT)
@@ -85,14 +89,19 @@ void AndroidApplication::Run()
         {
             // Process this event.
             if (source != NULL) {
-                source->process(m_App, source);
+                source->process(m_State, source);
             }
             // Check if we are exiting
-            if (m_App->destroyRequested != 0) {
-                 LOGI("app:destory");
+            if (m_State->destroyRequested != 0) {
+                 LOGI("app:destroy");
                 return;
             }
         }
+		if (m_Context != EGL_NO_CONTEXT)
+		{
+			Draw();
+		}
+
     }
     LOGI("app:exit");
 }
@@ -135,7 +144,37 @@ void AndroidApplication::OnInitWindow()
     EGLSurface surface;
     EGLContext context;
     EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+
     eglInitialize(display, 0, 0);
+
+	/* Here, the application chooses the configuration it desires. In this
+	* sample, we have a very simplified selection process, where we pick
+	* the first EGLConfig that matches our criteria */
+	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+
+	/* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
+	* guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
+	* As soon as we picked a EGLConfig, we can safely reconfigure the
+	* ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
+	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
+
+	ANativeWindow_setBuffersGeometry(m_State->window, 0, 0, format);
+
+	surface = eglCreateWindowSurface(display, config, m_State->window, NULL);
+	context = eglCreateContext(display, config, NULL, NULL);
+
+	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+		LOGW("Unable to eglMakeCurrent");
+		return;
+	}
+	eglQuerySurface(display, surface, EGL_WIDTH, &w);
+	eglQuerySurface(display, surface, EGL_HEIGHT, &h);
+
+	m_Context = context;
+	m_Surface = surface;
+	m_Display = display;
+	m_Width = w;
+	m_Height = h;
 }
 void AndroidApplication::OnTermWindow()
 {
@@ -144,4 +183,11 @@ void AndroidApplication::OnTermWindow()
 void AndroidApplication::OnWindowResized()
 {
     LOGI("app:OnWindowResized");
+}
+
+void ParaEngine::AndroidApplication::Draw()
+{
+	glClearColor(1, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	eglSwapBuffers(m_Display, m_Surface);
 }

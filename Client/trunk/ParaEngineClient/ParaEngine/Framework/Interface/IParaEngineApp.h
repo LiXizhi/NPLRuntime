@@ -9,9 +9,7 @@
 #include <string>
 #include <stdint.h>
 
-
-#include "baseinterface.h"
-
+#include "PEtypes.h"
 
 namespace NPL{
 	class INPLRuntime;
@@ -86,7 +84,7 @@ namespace ParaEngine
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
 	*/
-	class IParaEngineApp : public BaseInterface
+	class IParaEngineApp
 	{
 	public:
 		/** This is the first function that should be called when acquiring the IParaEngineApp interface. 

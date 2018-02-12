@@ -3,8 +3,8 @@
 #include "ParaEngineAppBase.h"
 #include "ITouchInputTranslator.h"
 #include "IParaEngineApp.h"
-#include <map>
 #include "ApplicationWindow.h"
+#include <map>
 // forward declare
 namespace ParaEngine
 {

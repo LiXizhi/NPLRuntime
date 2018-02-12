@@ -4,7 +4,7 @@
 // Date:	2010.2
 // Description:	API for NPL interface 
 //-----------------------------------------------------------------------------
-#include "baseinterface.h"
+
 
 namespace NPL
 {
@@ -14,7 +14,7 @@ namespace NPL
 	* Call GetNPLRuntime() to get the NPL runtime interface
 	* One can simply start the NPL service in a different thread, or use the GetNPLRuntime() interface to frame move in the main thread. 
 	*/
-	class INPL : ParaEngine::BaseInterface
+	class INPL
 	{
 	public:
 		/** the core NPL runtime interface. change global settings of the NPL runtime as well as managing runtime state. */

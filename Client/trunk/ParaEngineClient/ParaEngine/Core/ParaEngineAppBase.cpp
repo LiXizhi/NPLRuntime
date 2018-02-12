@@ -73,28 +73,13 @@ void ParaEngine::CParaEngineAppBase::DeleteInterface()
 	delete this;
 }
 
-BaseInterface* ParaEngine::CParaEngineAppBase::AcquireInterface()
-{
-	addref();
-	return(BaseInterface*)this;
-}
 
-void ParaEngine::CParaEngineAppBase::ReleaseInterface()
-{
-	if (delref()){
-		DeleteInterface();
-	}
-}
 
 IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 {
 	return g_pCurrentApp;
 }
 
-CParaEngineAppBase::LifetimeType ParaEngine::CParaEngineAppBase::LifetimeControl()
-{
-	return wantsRelease;
-}
 
 void CParaEngineAppBase::SetCurrentInstance(IParaEngineApp* pInstance)
 {

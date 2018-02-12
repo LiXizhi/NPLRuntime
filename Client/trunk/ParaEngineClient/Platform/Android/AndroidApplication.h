@@ -11,7 +11,7 @@ namespace ParaEngine
         ~AndroidApplication();
         void Run();
     private:
-        struct android_app* m_App;
+        struct android_app* m_State;
         EGLDisplay m_Display;
         EGLSurface m_Surface;
         EGLContext m_Context;
@@ -30,5 +30,6 @@ namespace ParaEngine
         virtual void OnInitWindow();
         virtual void OnTermWindow();
         virtual void OnWindowResized();
+		virtual void Draw();
     };
 }

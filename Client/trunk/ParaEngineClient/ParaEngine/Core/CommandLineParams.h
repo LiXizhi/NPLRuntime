@@ -1,5 +1,6 @@
 #pragma once
-
+#include <map>
+#include <string>
 namespace ParaEngine
 {
 	/**
@@ -31,10 +32,10 @@ namespace ParaEngine
 		/** string specifying the command line for the application, excluding the program name.
 		* such as XX="YY" aa="pp"
 		*/
-		string m_sAppCmdLine;
+		std::string m_sAppCmdLine;
 
 		/** parameters from m_sAppCmdLine */
-		std::map<string, string> m_commandParams;
+		std::map<std::string, std::string> m_commandParams;
 	};
 	
 }

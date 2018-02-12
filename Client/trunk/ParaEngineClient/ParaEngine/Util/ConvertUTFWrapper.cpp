@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 #include "ParaEngine.h"
-#if !defined(PARAENGINE_MOBILE) || defined(WIN32)
+#if !defined(PARAENGINE_MOBILE1) || defined(WIN32)
 #include "ConvertUTF.h"
 //#include "llvm/Support/SwapByteOrder.h"
 #include <string>

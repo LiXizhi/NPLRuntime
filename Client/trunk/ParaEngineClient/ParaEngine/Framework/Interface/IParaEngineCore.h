@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "baseinterface.h"
 namespace ParaEngine
 {
 	class IParaEngineApp;
@@ -14,7 +13,7 @@ namespace ParaEngine
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
 	*/
-	class IParaEngineCore : BaseInterface
+	class IParaEngineCore
 	{
 	public:
 		virtual DWORD GetVersion()=0;

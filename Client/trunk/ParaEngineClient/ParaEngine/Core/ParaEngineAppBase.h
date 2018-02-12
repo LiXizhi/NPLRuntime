@@ -1,7 +1,7 @@
 #pragma once
 #include "IParaEngineApp.h"
 #include "CommandLineParams.h"
-
+#include "ParaVector2.h"
 namespace ParaEngine
 {
 	class CObjectAutoReleasePool;
@@ -15,9 +15,6 @@ namespace ParaEngine
 		/** the singleton application. */
 		static IParaEngineApp* GetInstance();
 		static void SetCurrentInstance(IParaEngineApp* pInstance);
-		virtual LifetimeType	LifetimeControl();
-		virtual BaseInterface*	AcquireInterface();
-		virtual void			ReleaseInterface();
 		virtual void DeleteInterface();
 		virtual ~CParaEngineAppBase();
 

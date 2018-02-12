@@ -176,7 +176,6 @@ static void buffreplace (LexState *ls, char from, char to) {
 
 static void trydecpoint (LexState *ls, SemInfo *seminfo) {
   /* format error: try to update decimal point separator */
-  struct lconv *cv = localeconv();
   char old = ls->decpoint;
   ls->decpoint = lua_getlocaledecpoint();
   buffreplace(ls, old, ls->decpoint);  /* try updated decimal separator */

@@ -1,11 +1,11 @@
 #pragma once
+#include "PEtypes.h"
 #include "GUIBase.h"
 #include "GUIUniBuffer.h"
 #include "GUIIMEDelegate.h"
 
 namespace ParaEngine
 {
-	class CGUIBase;
 	struct TextureEntity;
 	struct AssetEntity;
 	struct GUIFontElement;
@@ -14,7 +14,7 @@ namespace ParaEngine
 	//-----------------------------------------------------------------------------
 	// EditBox control
 	//-----------------------------------------------------------------------------
-	class CGUIEditBox : public CGUIBase, public GUIIMEDelegate
+	class CGUIEditBox : public CGUIBase
 	{
 	public:
 		//////////////////////////////////////////////////////////////////////////
