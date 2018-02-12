@@ -6,10 +6,10 @@ ucm_add_dirs(res TO android_res RECURSIVE ADDITIONAL_EXT xml png)
 
 add_executable(Paracaft
     main.cpp
+    ParacraftApp.cpp
+    ParacraftApp.h
     AndroidApplication.h
     AndroidApplication.cpp
-    ParacraftApp.h
-    ParacraftApp.cpp
     AndroidManifest.xml
     ${android_res}
 )
@@ -31,6 +31,5 @@ target_compile_definitions(Paracaft PUBLIC
 
 set_target_properties(Paracaft PROPERTIES 
     ANDROID_GUI TRUE
-    ANDROID_API 19
 )
 
