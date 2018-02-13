@@ -236,5 +236,37 @@ namespace ParaEngine
 		@param sequence: it may contain ?, which matches to 1 any character.
 		*/
 		static bool StrEndsWith(const string& str, const string& sequence);
+
+
+		private:
+			class _CodePageName
+			{
+			public:
+				_CodePageName()
+				{
+#ifdef WIN32
+					auto cp = GetACP();
+					char tmp[30];
+					ParaEngine::StringHelper::fast_itoa((int)cp, tmp, 30);
+
+					name = "CP";
+					name += tmp;
+#else
+					name = "utf-8";
+#endif
+				}
+
+				const std::string& get() const
+				{
+					return name;
+				}
+
+			private:
+				std::string name;
+
+			};
+
+			static _CodePageName defaultCPName;
+
 	};
 }
