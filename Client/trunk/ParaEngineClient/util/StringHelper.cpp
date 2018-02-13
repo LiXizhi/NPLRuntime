@@ -1248,6 +1248,7 @@ bool ParaEngine::StringHelper::UTF8ToUTF16(const std::string& utf8, std::u16stri
 	char* utf16ptr = reinterpret_cast<char*>(utf16);
 	const UTF8* error = nullptr;
 
+	// instead of using code_convert, we will use a faster implementation here, since this is used by all GUI Text in ParaEngine. 
 	if (llvm::ConvertUTF8toWide(2, utf8, utf16ptr, error))
 	{
 		outUtf16 = utf16;
