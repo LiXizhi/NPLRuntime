@@ -1,5 +1,6 @@
 #pragma once
-
+#include <cstdint>
+#include <vector>
 namespace ParaEngine
 {
 	struct VertexElement
@@ -7,14 +8,14 @@ namespace ParaEngine
 		//VertexElement();
 
 		bool IsEndDeclare() const;
-		uint32 GetSize() const;
+		uint32_t GetSize() const;
 	public:
-		WORD    Stream;     // Stream index
-		WORD    Offset;     // Offset in the stream in bytes
-		BYTE    Type;       // Data type
-		BYTE    Method;     // Processing method
-		BYTE    Usage;      // Semantics
-		BYTE    UsageIndex; // Semantic index
+		uint16_t    Stream;     // Stream index
+		uint16_t    Offset;     // Offset in the stream in bytes
+		uint8_t     Type;       // Data type
+		uint8_t     Method;     // Processing method
+		uint8_t     Usage;      // Semantics
+		uint8_t     UsageIndex; // Semantic index
 	};
 	
 	/** vertex element*/
@@ -25,6 +26,8 @@ namespace ParaEngine
 		CVertexDeclaration(const VertexElement* elems);
 		virtual ~CVertexDeclaration();
 	public:
+
+		bool Fuck();
 		virtual void Release();
 
 		void ApplyAttribute(const void* pVertexStreamZeroData = 0);
@@ -35,10 +38,10 @@ namespace ParaEngine
 		
 	protected:
 		std::vector<VertexElement> m_elements;
-		uint32 m_nSize;
-		uint32 m_dwAttributes;
+		uint32_t m_nSize;
+		uint32_t m_dwAttributes;
 		//use opengl vertext array object (vao) if possible, same concept as vertex declaration in directX
-		GLuint m_vao; 
+		uint32_t m_vao;
 	};
 }
 

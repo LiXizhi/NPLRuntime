@@ -1,10 +1,12 @@
 #include <stdexcept>
-#include "RenderDeviceOpenGL.h"
-#include "Renderer/VertexDeclaration.h"
+#include "Renderer/VertexDeclarationOpenGL.h"
 #include "Math/ParaViewport.h"
+#include "RenderDeviceOpenGL.h"
 //#include "Math/ParaColor.h"
-using namespace ParaEngine;
 
+
+
+using namespace ParaEngine;
 
 
 namespace ParaEngine
@@ -303,6 +305,7 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 	}
 	if (m_CurrentVertexDeclaration)
 	{
+		m_CurrentVertexDeclaration->Fuck();
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 	}
 

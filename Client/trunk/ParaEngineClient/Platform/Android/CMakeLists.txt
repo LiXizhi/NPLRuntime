@@ -4,21 +4,28 @@ add_subdirectory(native_app_glue)
 
 ucm_add_dirs(res TO android_res RECURSIVE ADDITIONAL_EXT xml png)
 
-add_executable(Paracaft
+
+set(APP_SRC 
     main.cpp
     ParacraftApp.cpp
     ParacraftApp.h
-    AndroidApplication.h
-    AndroidApplication.cpp
+    AppDelegate.h
+    AppDelegate.cpp
     AndroidManifest.xml
     ${android_res}
 )
-target_link_libraries(Paracaft PUBLIC 
+source_group(src FILES ${APP_SRC})
+
+
+add_executable(Paracaft
+    ${APP_SRC}
+)
+target_link_libraries(Paracaft PUBLIC
     ParaEngine
+    RenderSystemOpenGL
     native_app_glue
     android
     EGL
-    GLESv2
     log
 )
 
@@ -31,5 +38,6 @@ target_compile_definitions(Paracaft PUBLIC
 
 set_target_properties(Paracaft PROPERTIES 
     ANDROID_GUI TRUE
+    ANDROID_NATIVE_LIB_DEPENDENCIES "sqlite.so"
 )
 

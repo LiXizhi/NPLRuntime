@@ -4,11 +4,11 @@
 #include <GLES2/gl2.h>
 namespace ParaEngine
 {
-    class AndroidApplication 
+    class AppDelegate 
     {
     public:
-        AndroidApplication(struct android_app* app);
-        ~AndroidApplication();
+        AppDelegate(struct android_app* app);
+        ~AppDelegate();
         void Run();
     private:
         struct android_app* m_State;

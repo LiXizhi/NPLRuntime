@@ -1,9 +1,10 @@
 #pragma once
 #include "Framework/Interface/Render/IRenderDevice.h"
-#include "glad/glad.h"
+#include "GL.h"
+
+
 namespace ParaEngine
 {
-	class CVertexDeclaration;
 	class RenderDeviceOpenGL : public IRenderDevice
 	{
 
@@ -17,7 +18,7 @@ namespace ParaEngine
 
 
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
-
+		;
 
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
 
@@ -112,7 +113,7 @@ namespace ParaEngine
 		uint32_t m_StencilRefValue;
 		uint32_t m_StencilPass;
 		uint32_t m_SamplerStates[8][8] = {};
-		CVertexDeclaration* m_CurrentVertexDeclaration;
+		ParaEngine::CVertexDeclaration* m_CurrentVertexDeclaration;
 		VertexBufferDevicePtr_type m_CurrentVertexBuffer;
 		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
 		uint32_t m_RenderTargetWidth;
