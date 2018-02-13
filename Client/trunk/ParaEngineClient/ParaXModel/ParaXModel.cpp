@@ -182,10 +182,25 @@ CParaXModel::~CParaXModel(void)
 	}
 }
 
+void CParaXModel::SetVertexBufferDirty()
+{
+	if (m_vbState == INITED)
+	{
+		m_uUsedVB -= m_pVertexBuffer.GetBufferSize();
+		m_pVertexBuffer.ReleaseBuffer();
+		m_pIndexBuffer.ReleaseBuffer();
+
+		m_vbState = NEED_INIT;
+	}
+}
+
 void CParaXModel::SetRenderMethod(RENDER_METHOD method)
 {
 	m_RenderMethod = method;
-	if (method == NO_ANIM && m_uUsedVB < MAX_USE_VERTEX_BUFFER_SIZE)
+
+	if (method == NO_ANIM 
+		|| (method == BMAX_MODEL && !HasAnimation())
+		&& m_uUsedVB < MAX_USE_VERTEX_BUFFER_SIZE)
 		m_vbState = NEED_INIT;
 }
 
@@ -197,9 +212,6 @@ bool CParaXModel::CheckMinVersion(int v0, int v1/*=0*/, int v2/*=0*/, int v3/*=0
 bool CParaXModel::InitDeviceObjects()
 {
 	LoadTextures();
-
-	if (m_vbState == NEED_INIT)
-		InitVertexBuffer();
 
 	return true;
 }
@@ -245,7 +257,7 @@ bool CParaXModel::IsBmaxModel()
 void CParaXModel::SetBmaxModel()
 {
 	m_header.type = PARAX_MODEL_BMAX;
-	m_RenderMethod = BMAX_MODEL;
+	SetRenderMethod(BMAX_MODEL);
 }
 
 void CParaXModel::ClearFaceGroups()
@@ -295,6 +307,97 @@ const ModelAnimation* CParaXModel::GetModelAnimByIndex(int nAnimIndex)
 
 void CParaXModel::InitVertexBuffer()
 {
+	switch (m_RenderMethod)
+	{
+	case ParaEngine::CParaXModel::NO_ANIM:
+		InitVertexBuffer_NOANIM();
+		break;
+	case ParaEngine::CParaXModel::BMAX_MODEL:
+		InitVertexBuffer_BMAX();
+		break;
+	default:
+		break;
+	}
+}
+
+void CParaXModel::InitVertexBuffer_BMAX()
+{
+	do
+	{
+		if (m_pVertexBuffer.IsValid()
+			|| m_pVertexBuffer.IsValid()
+			|| passes.size() == 0
+			|| m_origVertices == nullptr
+			|| m_indices == nullptr)
+		{
+			break;
+		}
+
+		auto nPasses = passes.size();
+
+		size_t count = 0;
+		for (size_t i = 0; i < nPasses; i++)
+		{
+			auto& p = passes[i];
+
+			if (!showGeosets[p.geoset])
+				continue;
+
+			count += p.indexCount;
+		}
+
+		if (!m_pVertexBuffer.CreateBuffer((uint32)(count * sizeof(bmax_vertex)), 0, D3DUSAGE_WRITEONLY))
+			break;
+
+		bmax_vertex* pBuffer;
+		if (!m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
+			break;
+
+		size_t index = 0;
+		for (size_t pass = 0; pass < nPasses; pass++)
+		{
+			auto& p = passes[pass];
+
+			if (!showGeosets[p.geoset])
+				continue;
+
+			size_t nLockedNum = p.indexCount / 3;
+			int nVertexOffset = p.GetVertexStart(this);
+			int nIndexOffset = p.m_nIndexStart;
+
+			for (size_t i = 0; i < nLockedNum; ++i)
+			{
+				size_t nVB = 3 * i;
+				for (int k = 0; k < 3; ++k, ++nVB)
+				{
+					int a = m_indices[nIndexOffset + nVB] + nVertexOffset;
+					auto& out_vertex = pBuffer[index++];
+					auto& ov = m_origVertices[a];
+					out_vertex.p = ov.pos;
+					out_vertex.n = ov.normal;
+					out_vertex.color = ov.color0;
+				}
+			}
+		}
+
+
+		m_pVertexBuffer.Unlock();
+		auto usedSize = count * sizeof(bmax_vertex);
+		m_uUsedVB += usedSize;
+
+		m_vbState = INITED;
+
+		return;
+
+	} while (false);
+
+	m_pVertexBuffer.ReleaseBuffer();
+	m_pIndexBuffer.ReleaseBuffer();
+	m_vbState = NOT_USE;
+}
+
+void CParaXModel::InitVertexBuffer_NOANIM()
+{
 	do
 	{
 		if (m_pVertexBuffer.IsValid()
@@ -312,6 +415,10 @@ void CParaXModel::InitVertexBuffer()
 		for (size_t i = 0; i < nPasses; i++)
 		{
 			auto& p = passes[i];
+
+			if (!showGeosets[p.geoset])
+				continue;
+
 			count += p.indexCount;
 		}
 		
@@ -1047,10 +1154,19 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
-	pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
+
+	if (m_vbState == INITED)
+	{
+		pd3dDevice->SetStreamSource(0, m_pVertexBuffer.GetDevicePointer(), 0, sizeof(bmax_vertex));
+	}
+	else
+	{
+		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
+		pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(bmax_vertex));
+	}
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	size_t startVB = 0;
 	if (pEffect == 0)
 	{
 #ifdef USE_DIRECTX_RENDERER
@@ -1063,9 +1179,12 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 			{
 				if (p.init_bmax_FX(this, pSceneState))
 				{
-					DrawPass_BMax(p);
+					//DrawPass_BMax(p);
+					DrawPass_BMax_VB(p, startVB);
 					p.deinit_bmax_FX(pSceneState);
 				}
+
+				startVB += p.indexCount;
 			}
 		}
 #endif
@@ -1088,9 +1207,10 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 						if (p.init_bmax_FX(this, pSceneState, pMaterialParams))
 						{
 							pEffect->CommitChanges();
-							DrawPass_BMax(p);
+							DrawPass_BMax_VB(p, startVB);
 							p.deinit_bmax_FX(pSceneState);
 						}
+						startVB += p.indexCount;
 					}
 				}
 				pEffect->EndPass(0);
@@ -1302,6 +1422,21 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 			pEffect->end();
 		}
 	}
+}
+
+void CParaXModel::DrawPass_BMax_VB(ModelRenderPass &p, size_t start)
+{
+	if (m_vbState != INITED)
+	{
+		DrawPass_BMax(p);
+		return;
+	}
+
+	if (p.indexCount == 0)
+		return;
+
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
 void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start)
@@ -1603,6 +1738,8 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		}
 	}
 
+	
+
 	if (nRenderMethod < 0)
 		nRenderMethod = m_RenderMethod;
 	switch (nRenderMethod)
@@ -1614,10 +1751,20 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-		RenderSoftNoAnim(pSceneState, pMaterialParam);
+		{
+			if (m_vbState == NEED_INIT)
+				InitVertexBuffer();
+			RenderSoftNoAnim(pSceneState, pMaterialParam);
+		}
+		
 		break;
 	case BMAX_MODEL:
-		RenderBMaxModel(pSceneState, pMaterialParam);
+		{
+			if (m_vbState == NEED_INIT)
+				InitVertexBuffer();
+			RenderBMaxModel(pSceneState, pMaterialParam);
+		}
+		
 		break;
 	default:
 		break;

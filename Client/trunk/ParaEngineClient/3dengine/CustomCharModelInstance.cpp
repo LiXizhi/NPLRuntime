@@ -435,8 +435,11 @@ void CharModelInstance::UpdateGeosetsToModel(CParaXModel* pModel)
 		{
 			// show all geoset whose id ==0, there may be multiple such geosets.
 			pModel->showGeosets[j] = true;
+			
 		}
 	}
+
+	pModel->SetVertexBufferDirty();
 }
 
 void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)

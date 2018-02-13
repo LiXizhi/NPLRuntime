@@ -16,6 +16,8 @@
 #include <boost/thread/tss.hpp>
 #include "ConvertUTF.h"
 
+#include <unordered_map>
+
 //#undef USE_ICONV
 
 #ifdef USE_ICONV
@@ -32,6 +34,8 @@ using namespace ParaEngine;
 * a XOR key used in SimpleEncode and SimpleDecode methods
 */
 const char g_simpleXOR_key[] = "Copyright@ParaEngine, LiXizhi";
+
+StringHelper::_CodePageName StringHelper::defaultCPName;
 
 
 const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, unsigned int nCodePage, size_t* outLen)
@@ -65,6 +69,7 @@ const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, uns
 		if (outLen)
 			*outLen = 0;
 	}
+
 	return &(wsName[0]);
 #else
 	size_t nLength = mbstowcs( 0, name, 0);
@@ -73,12 +78,18 @@ const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, uns
 		if(wsName.size()<=nLength) 
 			wsName.resize(nLength+1);
 		size_t nResult= mbstowcs( &(wsName[0]), name, nLength+1);
+
+		if (outLen)
+			*outLen = nResult;
 	}
 	else
 	{
 		if(((int)wsName.size())<1) 
 			wsName.resize(1);
 		wsName[0] = L'\0';
+
+		if (outLen)
+			*outLen = 0;
 	}
 	return &(wsName[0]);
 #endif
@@ -124,12 +135,18 @@ const char* ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, uns
 		if(cName.size()<nLength) 
 			cName.resize(nLength);
 		wcstombs( &(cName[0]), name, nLength+1);
+
+		if (outLen)
+			*outLen = nLength;
 	}
 	else
 	{
 		if(((int)cName.size())<1) 
 			cName.resize(1);
 		cName[0] = '\0';
+
+		if (outLen)
+			*outLen = 0;
 	}
 	return &(cName[0]);
 #endif
@@ -186,6 +203,39 @@ const char* ParaEngine::StringHelper::WideCharToAnsi(const WCHAR* name)
 static const std::string& code_convert(const char *from_charset, const char *to_charset, const char *inbuf, size_t inlen, bool appendZero = false)
 {
 
+	struct ZeroInfo
+	{
+		char charset_zero[4];
+		unsigned int  zero_size;
+	};
+
+	struct iconvObject
+	{
+		iconvObject(iconv_t _cd) : cd(_cd) {};
+		iconvObject() : cd((iconv_t)-1){};
+
+		iconvObject& operator = (iconv_t _cd)
+		{
+			cd = _cd;
+
+			return *this;
+		}
+
+		~iconvObject()
+		{
+			if (cd != (iconv_t)-1)
+				iconv_close(cd);
+		}
+		iconv_t cd;
+	};
+
+	static std::unordered_map<std::string, ZeroInfo> ZeroCache;
+	static boost::thread_specific_ptr<std::unordered_map<std::string, iconvObject>> IconvCache_;
+	static ParaEngine::mutex m;
+
+	if (!IconvCache_.get())
+		IconvCache_.reset(new std::unordered_map<std::string, iconvObject>());
+
 	static boost::thread_specific_ptr< std::string > cName_;
 	if (!cName_.get()) {
 		// first time called by this thread
@@ -193,7 +243,13 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 		cName_.reset(new std::string());
 	}
 
+	static boost::thread_specific_ptr<std::string> sKey_;
+	if (!sKey_.get())
+		sKey_.reset(new std::string());
+
 	auto& cName = *cName_;
+	auto& IconvCache = *IconvCache_;
+	auto& sKey = *sKey_;
 
 #if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
 	typedef const char* iconv_input_type;
@@ -207,40 +263,72 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 		char* s;
 		size_t ret;
 
-		char charset_zero[4];
+		char* charset_zero;
 		size_t zero_size;
+
+		sKey = from_charset;
+		sKey += to_charset;
 
 		if (appendZero)
 		{
-			static const char zero = '\0';
+			ParaEngine::Lock lock_(m);
 
-			iconv_t z_cd = iconv_open(to_charset, "gb2312");
-			if (z_cd == (iconv_t)-1)
+			auto it = ZeroCache.find(sKey);
+
+			if (it != ZeroCache.end())
 			{
-				break;
+				charset_zero = it->second.charset_zero;
+				zero_size = it->second.zero_size;
 			}
-
-			len = 2 + 2;
-			outlen = len;
-
-			s = charset_zero;
-			iconv_input_type pZero = (iconv_input_type)&zero;
-			size_t zeorlen = 1;
-
-			ret = iconv(z_cd, &pZero, &zeorlen, &s, &outlen);
-			iconv_close(z_cd);
-			if (ret == (size_t)-1)
+			else
 			{
-				break;
-			}
+				static const char zero = '\0';
+				
+				iconv_t z_cd = iconv_open(to_charset, "gb2312");
+				if (z_cd == (iconv_t)-1)
+				{
+					break;
+				}
 
-			zero_size = len - outlen;
+				len = 2 + 2;
+				outlen = len;
+
+				ZeroCache[sKey] = ZeroInfo();
+				ZeroInfo& info = ZeroCache[sKey];
+
+				charset_zero = info.charset_zero;
+				s = charset_zero;
+				iconv_input_type pZero = (iconv_input_type)&zero;
+				size_t zeorlen = 1;
+
+				ret = iconv(z_cd, &pZero, &zeorlen, &s, &outlen);
+				iconv_close(z_cd);
+				if (ret == (size_t)-1)
+				{
+					break;
+				}
+
+				zero_size = len - outlen;
+				info.zero_size = (unsigned int)zero_size;
+			}
 		}
 
-		iconv_t cd = iconv_open(to_charset, from_charset);
-		if (cd == (iconv_t)-1)
+		auto it = IconvCache.find(sKey);
+
+		iconv_t cd;
+		if (it == IconvCache.end())
 		{
-			break;
+			cd = iconv_open(to_charset, from_charset);
+			if (cd == (iconv_t)-1)
+			{
+				break;
+			}
+
+			IconvCache[sKey] = cd;
+		}
+		else
+		{
+			cd = it->second.cd;
 		}
 
 		len = inlen * 2 + 2;
@@ -252,11 +340,9 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 		iconv_input_type pInbuf = (iconv_input_type)inbuf;
 
 		ret = iconv(cd, &pInbuf, &inlen, &s, &outlen);
-		iconv_close(cd);
 
 		if (ret == (size_t )-1)
 		{
-			
 			break;
 		}
 
@@ -282,11 +368,13 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 }
 #endif
 
+
+
 const char* ParaEngine::StringHelper::UTF8ToAnsi(const char* name)
 {
 #ifdef USE_ICONV
 	size_t inlen = strlen(name);
-	auto& s = code_convert("utf-8", "gb2312", name, inlen, true);
+	auto& s = code_convert("utf-8", defaultCPName.get().c_str(), name, inlen, true);
 	return s.c_str();
 
 #else
@@ -303,7 +391,7 @@ const char* ParaEngine::StringHelper::AnsiToUTF8(const char* name)
 {
 #ifdef USE_ICONV
 	size_t inlen = strlen(name);
-	auto& s = code_convert("gb2312", "utf-8", name, inlen, true);
+	auto& s = code_convert(defaultCPName.get().c_str(), "utf-8", name, inlen, true);
 	return s.c_str();
 
 #else
@@ -494,10 +582,12 @@ std::string StringHelper::SimpleDecode(const std::string& source)
 	return NULL;
 }
 
+
 const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding, const std::string& dstEncoding, const std::string& bytes)
 {
 	if (bytes.empty())
 		return CGlobals::GetString();
+
 
 	static boost::thread_specific_ptr< std::string > g_result_;
 
@@ -613,10 +703,16 @@ const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding,
 #ifdef USE_ICONV
 	else
 	{
-		return code_convert(srcEncoding.empty() ? "gb2312" :srcEncoding.c_str()
-			, dstEncoding.empty() ? "gb2312" : dstEncoding.c_str()
-			, bytes.c_str()
-			, bytes.size());
+		const string& src = srcEncoding.empty() ? defaultCPName.get() : srcEncoding;
+		const string& dst = dstEncoding.empty() ? defaultCPName.get() : dstEncoding;
+
+		if (src == dst)
+			return bytes;
+		else
+			return code_convert(srcEncoding.empty() ? defaultCPName.get().c_str() : srcEncoding.c_str()
+				, dstEncoding.empty() ? defaultCPName.get().c_str() : dstEncoding.c_str()
+				, bytes.c_str()
+				, bytes.size());
 	}
 
 #else	// USE_ICONV
