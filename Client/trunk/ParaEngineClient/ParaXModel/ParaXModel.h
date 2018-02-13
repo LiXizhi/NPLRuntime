@@ -213,6 +213,7 @@ namespace ParaEngine
 		/** only called inside Render* function*/
 		void DrawPass(ModelRenderPass &p);
 		void DrawPass_NoAnim(ModelRenderPass &p);
+		void DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start);
 		void DrawPass_BMax(ModelRenderPass &p);
 		/** clear all face groups. */
 		void ClearFaceGroups();
@@ -235,8 +236,13 @@ namespace ParaEngine
 
 		void SaveToDisk(const char* path);
 
+		void SetRenderMethod(RENDER_METHOD method);
+
 		friend struct ModelRenderPass;
-			
+
+	private:
+		void InitVertexBuffer();
+
 	public:
 		/** model header */
 		ParaXHeaderDef	m_header;
@@ -350,6 +356,22 @@ namespace ParaEngine
 
 		/** a mapping from known bone id to bone index. */
 		int m_boneLookup[MAX_KNOWN_BONE_NODE];
+
+	private:
+		enum VERTEX_BUFFER_STATE
+		{
+			//
+			NOT_USE				= 0,
+			//
+			NEED_INIT			= 1,
+			// 
+			INITED				= 2,
+		};
+
+		VERTEX_BUFFER_STATE m_vbState;
+
+		static const size_t MAX_USE_VERTEX_BUFFER_SIZE = 1024 * 1024 * 256;
+		static size_t m_uUsedVB;
 	};
 
 	/** the pose of the character. It will override the one in the model.*/
