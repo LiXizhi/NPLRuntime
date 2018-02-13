@@ -1,6 +1,6 @@
 
 #include "android_native_app_glue.h"
-#include "AndroidApplication.h"
+#include "AppDelegate.h"
 
 /**
  * This is the main entry point of a native application that is using
@@ -12,7 +12,7 @@ void android_main(struct android_app* state) {
     app_dummy();
 	
 	using namespace ParaEngine;
-	AndroidApplication app(state);
+	AppDelegate app(state);
 	app.Run();
 }
 

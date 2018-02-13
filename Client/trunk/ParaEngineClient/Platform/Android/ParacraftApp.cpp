@@ -6,65 +6,7 @@
 // Date:	2014.8
 // Desc: Just for mobile version (android, iOS, cocos2dx) used by AppDelegate
 //-----------------------------------------------------------------------------
-#include "ParaEngine.h"
-#include "AudioEngine2.h"
-#include "InfoCenter/ICDBManager.h"
-#include "InfoCenter/ICConfigManager.h"
-#include "AttributesManager.h"
-#include "FrameRateController.h"
-#include "ParaWorldAsset.h"
-#include "PluginManager.h"
-#include "PluginAPI.h"
-#include "EventsCenter.h"
-#include "FileManager.h"
-#include "NPLRuntime.h"
-#include "AISimulator.h"
-#include "AsyncLoader.h"
-#include "AutoCamera.h"
-#include "ParaEngineSettings.h"
-#include "2dengine/GUIHighlight.h"
-#include "2dengine/GUIKeyboardVirtual.h"
-#include "2dengine/GUIRoot.h"
-#include "ViewportManager.h"
-#include "ObjectManager.h"
-#include "IEnvironmentSim.h"
-#include "SceneObject.h"
-#include "BootStrapper.h"
 
-// header include
-#include "ParaEngine.h"
-#include "ParaEngineSettings.h"
-#include "util/os_calls.h"
-#include "util/StringHelper.h"
-#include "ObjectAutoReleasePool.h"
-#include "AttributesManager.h"
-#include "PluginManager.h"
-#include "MeshPhysicsObject.h"
-#include "MeshObject.h"
-#include "MissileObject.h"
-#include "BipedObject.h"
-#include "BMaxModel/BMaxObject.h"
-#include "SkyMesh.h"
-#include "BlockPieceParticle.h"
-#include "ContainerObject.h"
-#include "RenderTarget.h"
-#include "WeatherEffect.h"
-#include "OverlayObject.h"
-#include "LightObject.h"
-#include "NPLRuntime.h"
-#include "EventsCenter.h"
-#include "BootStrapper.h"
-#include "NPL/NPLHelper.h"
-#include "AISimulator.h"
-#include "FileManager.h"
-#include "Archive.h"
-#include "ParaEngineAppBase.h"
-#include "NPLPackageConfig.h"
-#include "IO/ResourceEmbedded.h"
-#include "GeosetObject.h"
-#include "2dengine/GUIRoot.h"
-#include "2dengine/GUIMouseVirtual.h"
-#include "Globals.h"
 #include "ParacraftApp.h"
 
 #include <time.h>
@@ -506,4 +448,59 @@ int CParaEngineApp::Run(HINSTANCE hInstance)
 
 	}
 	return 0;
+}
+
+void ParaEngine::CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool ParaEngine::CParaEngineApp::AppHasFocus()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void ParaEngine::CParaEngineApp::GetStats(string& output, DWORD dwFields)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool ParaEngine::CParaEngineApp::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void ParaEngine::CParaEngineApp::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+const char* ParaEngine::CParaEngineApp::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool ParaEngine::CParaEngineApp::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+DWORD ParaEngine::CParaEngineApp::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool ParaEngine::CParaEngineApp::GetAutoLowerFrameRateWhenNotFocused()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+void ParaEngine::CParaEngineApp::SetToggleSoundWhenNotFocused(bool bEnabled)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+bool ParaEngine::CParaEngineApp::GetToggleSoundWhenNotFocused()
+{
+	throw std::logic_error("The method or operation is not implemented.");
 }

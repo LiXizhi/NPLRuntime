@@ -98,7 +98,7 @@ endif()
 ###################################################################
 ## Target
 
-add_library(ParaEngine SHARED ${sources_commmon} ${sources_rendersystem})
+add_library(ParaEngine  ${sources_commmon} ${sources_rendersystem})
 
 target_include_directories(ParaEngine PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}

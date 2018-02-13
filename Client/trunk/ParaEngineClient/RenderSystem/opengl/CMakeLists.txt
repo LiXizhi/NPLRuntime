@@ -6,6 +6,7 @@ ucm_add_dirs(GLWarpper TO sources_warpper)
 add_library(RenderSystemOpenGL 
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
+    GL.h
     ${sources_warpper}
 )
 
@@ -18,13 +19,21 @@ target_include_directories(RenderSystemOpenGL PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+
+if(ANDROID)
+    set(LIBGL GLESv2)
+elseif(WIN32)
+    set(LIBGL glad_core)
+endif()
+
 target_link_libraries(RenderSystemOpenGL PUBLIC 
-    glad_core
+    ${LIBGL}
     freetype
     libjpeg
     libpng
     GLSLCodeGen
     fxParser
+    ParaEngine
 )
 target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
 

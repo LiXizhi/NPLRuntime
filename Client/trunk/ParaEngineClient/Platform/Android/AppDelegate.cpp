@@ -1,9 +1,10 @@
-#include "AndroidApplication.h"
+#include "AppDelegate.h"
 #include <android/log.h>
 #include <cstdlib>
 #include <cstring>
 #include <errno.h>
 #include <cassert>
+//#include "ParacraftApp.h"
 using namespace ParaEngine;
 
 
@@ -11,9 +12,9 @@ using namespace ParaEngine;
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
 
 
-void AndroidApplication::app_handle_command(struct android_app* app, int32_t cmd)
+void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 {
-    AndroidApplication* myApp = static_cast<AndroidApplication*>(app->userData);
+    AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);
     switch(cmd)
     {
         case APP_CMD_START:
@@ -53,13 +54,13 @@ void AndroidApplication::app_handle_command(struct android_app* app, int32_t cmd
 
     }
 }
-int32_t AndroidApplication::app_handle_input(struct android_app* app, AInputEvent* event)
+int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* event)
 {
     return 0;
 }
 
 
-AndroidApplication::AndroidApplication(struct android_app* app)
+AppDelegate::AppDelegate(struct android_app* app)
 :m_State(app)
 ,m_Display(EGL_NO_DISPLAY)
 ,m_Surface(EGL_NO_SURFACE)
@@ -68,15 +69,15 @@ AndroidApplication::AndroidApplication(struct android_app* app)
 ,m_Height(0)
 {
     app->userData = this;
-    app->onAppCmd =  AndroidApplication::app_handle_command;
-    app->onInputEvent = AndroidApplication::app_handle_input;
+    app->onAppCmd =  AppDelegate::app_handle_command;
+    app->onInputEvent = AppDelegate::app_handle_input;
 }
-AndroidApplication::~AndroidApplication()
+AppDelegate::~AppDelegate()
 {
 
 }
 
-void AndroidApplication::Run()
+void AppDelegate::Run()
 {
     LOGI("app:run");
     while(1)
@@ -106,28 +107,28 @@ void AndroidApplication::Run()
     LOGI("app:exit");
 }
 
-void AndroidApplication::OnStart()
+void AppDelegate::OnStart()
 {
     LOGI("app:OnStart");
 }
-void AndroidApplication::OnStop()
+void AppDelegate::OnStop()
 {
     LOGI("app:OnStop");
 }
-void AndroidApplication::OnPause()
+void AppDelegate::OnPause()
 {
     LOGI("app:OnPause");
 }
-void AndroidApplication::OnResume()
+void AppDelegate::OnResume()
 {
     LOGI("app:OnResume");
 }
-void AndroidApplication::OnDestroy()
+void AppDelegate::OnDestroy()
 {
     LOGI("app:OnDestroy");
 }
 
-void AndroidApplication::OnInitWindow()
+void AppDelegate::OnInitWindow()
 {
     LOGI("app:OnInitWindow");
 
@@ -175,17 +176,21 @@ void AndroidApplication::OnInitWindow()
 	m_Display = display;
 	m_Width = w;
 	m_Height = h;
+
+	//CParaEngineApp app("");
+	//app.Run(0);
+
 }
-void AndroidApplication::OnTermWindow()
+void AppDelegate::OnTermWindow()
 {
     LOGI("app:OnTermWindow");
 }
-void AndroidApplication::OnWindowResized()
+void AppDelegate::OnWindowResized()
 {
     LOGI("app:OnWindowResized");
 }
 
-void ParaEngine::AndroidApplication::Draw()
+void ParaEngine::AppDelegate::Draw()
 {
 	glClearColor(1, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

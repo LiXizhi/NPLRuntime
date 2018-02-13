@@ -6,19 +6,19 @@
 // Date:	2014.9.12
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
-#include "OpenGLWrapper/GLProgram.h"
-#endif
-#include "VertexDeclarationOpenGL.h"
+
+
 using namespace ParaEngine;
 
+#ifdef USE_OPENGL_RENDERER
 
-//ParaEngine::VertexElement::VertexElement()
-//	:Stream(0xff), Offset(0), Type(D3DDECLTYPE_UNUSED), Method(0), Usage(0), UsageIndex(0)
-//{
-//}
+#include "OpenGLWrapper/GLProgram.h"
+#include "VertexDeclarationOpenGL.h"
+
+bool ParaEngine::CVertexDeclaration::Fuck()
+{
+	return true;
+}
 
 bool ParaEngine::VertexElement::IsEndDeclare() const
 {
@@ -52,6 +52,8 @@ ParaEngine::CVertexDeclaration::~CVertexDeclaration()
 {
 }
 
+
+
 void ParaEngine::CVertexDeclaration::Release()
 {
 	delete this;
@@ -61,7 +63,7 @@ void ParaEngine::CVertexDeclaration::Release()
 
 void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZeroData)
 {
-#ifdef USE_OPENGL_RENDERER
+
 	int nTextureIndex = 0;
 	int nColorIndex = 0;
 	for (auto elem : m_elements)
@@ -99,19 +101,17 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 		}
 	}
-#endif
+
 }
 
 void ParaEngine::CVertexDeclaration::EnableAttribute()
 {
-#ifdef USE_OPENGL_RENDERER
+
 	GL::enableVertexAttribs(m_dwAttributes);
-#endif
 }
 
 void ParaEngine::CVertexDeclaration::SetVertexElement(const VertexElement* elems)
 {
-#ifdef USE_OPENGL_RENDERER
 	m_nSize = 0;
 	m_dwAttributes = 0;
 	m_elements.clear();
@@ -151,7 +151,7 @@ void ParaEngine::CVertexDeclaration::SetVertexElement(const VertexElement* elems
 		else
 			break;
 	}
-#endif
+
 }
 
 #endif

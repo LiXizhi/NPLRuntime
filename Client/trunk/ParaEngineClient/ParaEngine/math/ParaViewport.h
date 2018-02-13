@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 namespace ParaEngine
 {
 
@@ -6,10 +7,10 @@ namespace ParaEngine
 	{
 	public:
 
-		DWORD       X;
-		DWORD       Y;            /* Viewport Top left */
-		DWORD       Width;
-		DWORD       Height;       /* Viewport Dimensions */
+		uint32_t       X;
+		uint32_t       Y;            /* Viewport Top left */
+		uint32_t       Width;
+		uint32_t       Height;       /* Viewport Dimensions */
 		float       MinZ;         /* Min/max of clip Volume */
 		float       MaxZ;
 	public:
