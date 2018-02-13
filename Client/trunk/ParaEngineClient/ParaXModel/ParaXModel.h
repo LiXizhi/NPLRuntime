@@ -214,6 +214,7 @@ namespace ParaEngine
 		void DrawPass(ModelRenderPass &p);
 		void DrawPass_NoAnim(ModelRenderPass &p);
 		void DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start);
+		void DrawPass_BMax_VB(ModelRenderPass &p, size_t start);
 		void DrawPass_BMax(ModelRenderPass &p);
 		/** clear all face groups. */
 		void ClearFaceGroups();
@@ -238,9 +239,13 @@ namespace ParaEngine
 
 		void SetRenderMethod(RENDER_METHOD method);
 
+		void SetVertexBufferDirty();
+
 		friend struct ModelRenderPass;
 
 	private:
+		void InitVertexBuffer_NOANIM();
+		void InitVertexBuffer_BMAX();
 		void InitVertexBuffer();
 
 	public:
