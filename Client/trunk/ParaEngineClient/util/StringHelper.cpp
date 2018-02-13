@@ -368,6 +368,8 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 }
 #endif
 
+
+
 const char* ParaEngine::StringHelper::UTF8ToAnsi(const char* name)
 {
 #ifdef USE_ICONV
@@ -701,10 +703,16 @@ const std::string& StringHelper::EncodingConvert(const std::string& srcEncoding,
 #ifdef USE_ICONV
 	else
 	{
-		return code_convert(srcEncoding.empty() ? defaultCPName.get().c_str() : srcEncoding.c_str()
-			, dstEncoding.empty() ? defaultCPName.get().c_str() : dstEncoding.c_str()
-			, bytes.c_str()
-			, bytes.size());
+		const string& src = srcEncoding.empty() ? defaultCPName.get() : srcEncoding;
+		const string& dst = dstEncoding.empty() ? defaultCPName.get() : dstEncoding;
+
+		if (src == dst)
+			return bytes;
+		else
+			return code_convert(srcEncoding.empty() ? defaultCPName.get().c_str() : srcEncoding.c_str()
+				, dstEncoding.empty() ? defaultCPName.get().c_str() : dstEncoding.c_str()
+				, bytes.c_str()
+				, bytes.size());
 	}
 
 #else	// USE_ICONV
