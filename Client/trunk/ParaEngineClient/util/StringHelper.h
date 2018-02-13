@@ -252,7 +252,7 @@ namespace ParaEngine
 					name = "CP";
 					name += tmp;
 #else
-					name = "gb2312";
+					name = "utf-8";
 #endif
 				}
 
