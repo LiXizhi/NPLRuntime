@@ -33,8 +33,6 @@ ucm_add_dirs(
 TO sources_commmon RECURSIVE
 )
 
-message(STATUS "RenderSytem:"${NPLRUNTIME_RENDERER})
-
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 #{
     set(RenderSystem RenderSystemOpenGL)

@@ -168,6 +168,12 @@ void AppDelegate::OnInitWindow()
 		LOGW("Unable to eglMakeCurrent");
 		return;
 	}
+
+	if (!loadGL())
+	{
+		LOGW("Unable to load gl ext.");
+	}
+
 	eglQuerySurface(display, surface, EGL_WIDTH, &w);
 	eglQuerySurface(display, surface, EGL_HEIGHT, &h);
 
@@ -176,6 +182,8 @@ void AppDelegate::OnInitWindow()
 	m_Display = display;
 	m_Width = w;
 	m_Height = h;
+
+	
 
 	//CParaEngineApp app("");
 	//app.Run(0);

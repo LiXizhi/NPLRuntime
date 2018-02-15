@@ -1,13 +1,19 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 
-ucm_add_dirs(GLWarpper TO sources_warpper)
+if(ANDROID)
+    set(LIBGL GLESv2 EGL)
+    set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
+elseif(WIN32)
+    set(LIBGL glad_core)
+    set(PLATFORM_SRC gl_glad_spec.c)
+endif()
 
 add_library(RenderSystemOpenGL 
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
-    GL.h
-    ${sources_warpper}
+    OpenGL.h
+    ${PLATFORM_SRC}
 )
 
 
@@ -20,20 +26,14 @@ target_include_directories(RenderSystemOpenGL PUBLIC
 )
 
 
-if(ANDROID)
-    set(LIBGL GLESv2)
-elseif(WIN32)
-    set(LIBGL glad_core)
-endif()
-
 target_link_libraries(RenderSystemOpenGL PUBLIC 
     ${LIBGL}
+    ParaEngine
     freetype
     libjpeg
     libpng
     GLSLCodeGen
     fxParser
-    ParaEngine
 )
 target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
 

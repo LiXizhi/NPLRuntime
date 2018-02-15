@@ -3,26 +3,18 @@ add_subdirectory(native_app_glue)
 
 
 ucm_add_dirs(res TO android_res RECURSIVE ADDITIONAL_EXT xml png)
+ucm_add_dirs(src TO app_src)
 
-
-set(APP_SRC 
-    main.cpp
-    ParacraftApp.cpp
-    ParacraftApp.h
-    AppDelegate.h
-    AppDelegate.cpp
-    AndroidManifest.xml
-    ${android_res}
-)
-source_group(src FILES ${APP_SRC})
 
 
 add_executable(Paracaft
-    ${APP_SRC}
+    ${app_src}
+    ${android_res}
+    AndroidManifest.xml
 )
 target_link_libraries(Paracaft PUBLIC
-    ParaEngine
     RenderSystemOpenGL
+    ParaEngine
     native_app_glue
     android
     EGL

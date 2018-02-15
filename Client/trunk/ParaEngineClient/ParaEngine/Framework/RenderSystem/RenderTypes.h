@@ -1,4 +1,5 @@
 #pragma  once
+#include <cstdint>
 #include "Framework/Interface/Render/IRenderWindow.h"
 namespace ParaEngine
 {
