@@ -1,6 +1,6 @@
 #pragma once
 #include "Framework/Interface/Render/IRenderDevice.h"
-#include "GL.h"
+#include "OpenGL.h"
 
 
 namespace ParaEngine

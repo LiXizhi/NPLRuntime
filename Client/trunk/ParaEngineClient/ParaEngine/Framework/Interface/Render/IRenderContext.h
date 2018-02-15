@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 #include "Framework/RenderSystem/RenderConfig.h"
 #include <vector>
 #include <memory>
