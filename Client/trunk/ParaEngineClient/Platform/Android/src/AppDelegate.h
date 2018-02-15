@@ -4,6 +4,10 @@
 #include "RenderDeviceOpenGL.h"
 namespace ParaEngine
 {
+	class CParaEngineApp;
+	class IRenderDevice;
+	class IRenderContext;
+	class IRenderWindow;
     class AppDelegate 
     {
     public:
@@ -12,12 +16,6 @@ namespace ParaEngine
         void Run();
     private:
         struct android_app* m_State;
-        EGLDisplay m_Display;
-        EGLSurface m_Surface;
-        EGLContext m_Context;
-        int32_t m_Width;
-        int32_t m_Height;
-
         static void app_handle_command(struct android_app* app, int32_t cmd);
         static int32_t app_handle_input(struct android_app* app, AInputEvent* event);
     protected:
@@ -30,6 +28,10 @@ namespace ParaEngine
         virtual void OnInitWindow();
         virtual void OnTermWindow();
         virtual void OnWindowResized();
-		virtual void Draw();
+	protected:
+		CParaEngineApp* m_ParaEngineApp;
+		IRenderDevice* m_RenderDevice;
+		IRenderContext* m_RenderContext;
+		IRenderWindow* m_RenderWindow;
     };
 }

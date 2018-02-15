@@ -4,7 +4,10 @@
 #include <cstring>
 #include <errno.h>
 #include <cassert>
-//#include "ParacraftApp.h"
+#include "ParacraftApp.h"
+#include "RenderWindowAndroid.h"
+#include "RenderDeviceEGL.h"
+#include "RenderContextEGL.h"
 using namespace ParaEngine;
 
 
@@ -62,11 +65,10 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 
 AppDelegate::AppDelegate(struct android_app* app)
 :m_State(app)
-,m_Display(EGL_NO_DISPLAY)
-,m_Surface(EGL_NO_SURFACE)
-,m_Context(EGL_NO_CONTEXT)
-,m_Width(0)
-,m_Height(0)
+,m_RenderWindow(nullptr)
+,m_RenderContext(nullptr)
+,m_RenderDevice(nullptr)
+,m_ParaEngineApp(nullptr)
 {
     app->userData = this;
     app->onAppCmd =  AppDelegate::app_handle_command;
@@ -97,12 +99,12 @@ void AppDelegate::Run()
                  LOGI("app:destroy");
                 return;
             }
-        }
-		if (m_Context != EGL_NO_CONTEXT)
-		{
-			Draw();
-		}
 
+			if (m_ParaEngineApp)
+			{
+				m_ParaEngineApp->Render3DEnvironment();
+			}
+        }
     }
     LOGI("app:exit");
 }
@@ -132,61 +134,14 @@ void AppDelegate::OnInitWindow()
 {
     LOGI("app:OnInitWindow");
 
-    const EGLint attribs[] = {
-                EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-                EGL_BLUE_SIZE, 8,
-                EGL_GREEN_SIZE, 8,
-                EGL_RED_SIZE, 8,
-                EGL_NONE
-    };
-    EGLint w, h, format;
-    EGLint numConfigs;
-    EGLConfig config;
-    EGLSurface surface;
-    EGLContext context;
-    EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-
-    eglInitialize(display, 0, 0);
-
-	/* Here, the application chooses the configuration it desires. In this
-	* sample, we have a very simplified selection process, where we pick
-	* the first EGLConfig that matches our criteria */
-	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
-
-	/* EGL_NATIVE_VISUAL_ID is an attribute of the EGLConfig that is
-	* guaranteed to be accepted by ANativeWindow_setBuffersGeometry().
-	* As soon as we picked a EGLConfig, we can safely reconfigure the
-	* ANativeWindow buffers to match, using EGL_NATIVE_VISUAL_ID. */
-	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
-
-	ANativeWindow_setBuffersGeometry(m_State->window, 0, 0, format);
-
-	surface = eglCreateWindowSurface(display, config, m_State->window, NULL);
-	context = eglCreateContext(display, config, NULL, NULL);
-
-	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
-		LOGW("Unable to eglMakeCurrent");
-		return;
-	}
-
-	if (!loadGL())
-	{
-		LOGW("Unable to load gl ext.");
-	}
-
-	eglQuerySurface(display, surface, EGL_WIDTH, &w);
-	eglQuerySurface(display, surface, EGL_HEIGHT, &h);
-
-	m_Context = context;
-	m_Surface = surface;
-	m_Display = display;
-	m_Width = w;
-	m_Height = h;
-
-	
-
-	//CParaEngineApp app("");
-	//app.Run(0);
+	m_RenderWindow = new RenderWindowAndroid(m_State->window);
+	m_RenderContext = IRenderContext::Create();
+	RenderConfiguration cfg;
+	cfg.renderWindow = m_RenderWindow;
+	m_RenderDevice = m_RenderContext->CreateDevice(cfg);
+	CGlobals::SetRenderDevice(m_RenderDevice);
+	m_ParaEngineApp = new CParaEngineApp("");
+	m_ParaEngineApp->Init(nullptr);
 
 }
 void AppDelegate::OnTermWindow()
@@ -198,9 +153,3 @@ void AppDelegate::OnWindowResized()
     LOGI("app:OnWindowResized");
 }
 
-void ParaEngine::AppDelegate::Draw()
-{
-	glClearColor(1, 0, 0, 1);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	eglSwapBuffers(m_Display, m_Surface);
-}
