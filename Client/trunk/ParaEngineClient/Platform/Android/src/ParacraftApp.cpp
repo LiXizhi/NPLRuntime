@@ -150,6 +150,7 @@ HRESULT CParaEngineApp::Init( HWND* pHWND )
 	}
 	CGlobals::GetGUI()->OneTimeGUIInit();
 
+	InitDeviceObjects();
 	return OneTimeSceneInit(pHWND);
 }
 
@@ -425,6 +426,7 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
 		}
 	}
+	CGlobals::GetRenderDevice()->Present();
 	return S_OK;
 }
 
