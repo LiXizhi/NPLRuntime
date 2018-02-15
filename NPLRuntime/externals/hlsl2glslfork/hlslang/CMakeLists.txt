@@ -1,0 +1,3 @@
+add_subdirectory(GLSLCodeGen)
+add_subdirectory(OSDependent)
+add_subdirectory(MachineIndependent)
