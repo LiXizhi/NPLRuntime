@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(Client)
+project(NPLRuntime)
 set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)
 
@@ -28,10 +28,21 @@ if(ANDROID)
     add_definitions(-D__ANDROID__ -DANDROID)
 endif()
 
+if(ANDROID) 
+    set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
+    set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL)
+elseif(WIN32)
+    set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
+    set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL)
+endif()
+
+
 
 add_subdirectory(externals)
 add_subdirectory(Plugins)
-add_subdirectory(ParaEngineClient)
+add_subdirectory(ParaEngine)
+add_subdirectory(RenderSystem)
+add_subdirectory(Platform)
 #add_subdirectory(PhysicsBT)
 #add_subdirectory(ParaEngineClientApp)
 
