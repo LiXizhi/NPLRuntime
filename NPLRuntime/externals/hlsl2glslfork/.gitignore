@@ -1,0 +1,80 @@
+*.user
+*.ncb
+*.suo
+*.ilk
+*.pbxuser
+*.perspectivev3
+*.xcworkspace
+xcuserdata
+*.cmake
+*.wwdb
+.svn/
+.DS_Store
+
+_ReSharper.*
+*.sdf
+*.opensdf
+
+CMakeFiles/
+CMakeCache.txt
+Makefile
+build/
+lib/
+
+hlslang_tab.cpp
+hlslang.output
+tests/out-*.txt
+tests/**/*.txt
+*.dSYM
+tests/hlsl2glsltest/hlsl2glsltest
+tests/hlsl2glsltest/out.txt
+*-res.txt
+hlslang.output
+
+
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Editor
+.vscode/
+
+# Build
+build/
+
+!External/**/*.*
+.DS_Store
+
+# vs
+.vs/
+
