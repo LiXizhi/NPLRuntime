@@ -97,7 +97,7 @@ namespace ParaEngine
 		virtual bool SetClearDepth(const float depth) override;
 
 
-		virtual bool SetClearStencil(const float stencil) override;
+		virtual bool SetClearStencil(const int stencil) override;
 
 	protected:
 		void ApplyBlendingModeChange();

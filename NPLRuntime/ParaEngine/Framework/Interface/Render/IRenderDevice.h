@@ -80,7 +80,7 @@ namespace ParaEngine
 
 		virtual bool SetClearColor(const Color4f& color) = 0;
 		virtual bool SetClearDepth(const float depth) = 0;
-		virtual bool SetClearStencil(const float stencil) = 0;
+		virtual bool SetClearStencil(const int stencil) = 0;
 
 		virtual bool Clear(bool color,bool depth,float stencil) = 0;
 

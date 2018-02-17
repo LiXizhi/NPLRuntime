@@ -305,7 +305,6 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 	}
 	if (m_CurrentVertexDeclaration)
 	{
-		m_CurrentVertexDeclaration->Fuck();
 		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
 	}
 
@@ -538,7 +537,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetClearDepth(const float depth)
 	return true;
 }
 
-bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const float stencil)
+bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 {
 	glClearStencil(stencil);
 	return true;
