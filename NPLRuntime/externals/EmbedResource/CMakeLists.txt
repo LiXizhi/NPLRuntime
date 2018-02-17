@@ -1,5 +1,3 @@
-message("Host:" ${CMAKE_HOST_SYSTEM_NAME} )
-
 
 if(WIN32)
     include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
@@ -10,24 +8,6 @@ if(WIN32)
     set(EMBED_RES_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 endif()
 
-
-## embed with relative to project path
-function(embed_resources out_var)
-    set(result)
-    foreach(in_f ${ARGN})
-        file(RELATIVE_PATH src_f ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${in_f})
-        set(out_f "${PROJECT_BINARY_DIR}/${in_f}.cxx")
-        add_custom_command(OUTPUT ${out_f}
-                COMMAND embed-resource ${out_f} ${src_f}
-                DEPENDS ${in_f}
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                COMMENT "Building binary file for embedding ${out_f}"
-                VERBATIM)
-        list(APPEND result "${out_f}")
-    endforeach()
-    set(${out_var} "${result}" PARENT_SCOPE)
-endfunction()
-
 ## embed with absolute path
 function(embed_resources_abs out_var)
     set(result)
@@ -35,6 +15,8 @@ function(embed_resources_abs out_var)
         if( ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
             set(TOOL ${PROJECT_SOURCE_DIR}/externals/EmbedResource/prebuild/win32/embed-resource.exe)
         endif()
+    else()
+        set(TOOL embed-resource)
     endif()
     #message("Tool:" ${TOOL})
     foreach(in_f ${ARGN})
