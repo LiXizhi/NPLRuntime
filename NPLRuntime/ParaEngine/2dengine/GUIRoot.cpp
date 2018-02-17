@@ -1281,18 +1281,6 @@ int CGUIRoot::HandleUserInput()
 	}
 	m_deleteQueue.clear();
 
-#ifdef USE_DIRECTX_RENDERER
-	if(!m_bMouseProcessed && m_pMouse!=0)
-	{
-		int nHotSpotX = -1;
-		int nHotSpotY = -1;
-		const std::string& sCursorFile = CGlobals::GetScene()->GetCursor(&nHotSpotX, &nHotSpotY);
-		if(!sCursorFile.empty())
-		{
-			m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
-		}
-	}
-#endif
 	return 0;
 }
 
@@ -1434,56 +1422,6 @@ void CGUIRoot::SetUIMouseFocus(CGUIBase* control)
 //no need refactoring
 void CGUIRoot::UseDefaultMouseCursor(bool bUseDefaultMouseCursor)
 {
-#ifdef USE_DIRECTX_RENDERER
-	if(m_pMouse)
-	{
-		//if(m_pMouse->m_bUseDefaultCursor != bUseDefaultMouseCursor)
-		//{
-		//	m_pMouse->m_bUseDefaultCursor = bUseDefaultMouseCursor;
-		//	if(bUseDefaultMouseCursor)
-		//	{
-		//		//HCURSOR hc=LoadCursor(NULL,IDC_ARROW);
-		//		//::SetCursor(hc);
-		//		const string& sCursor = GetCursor();
-		//		if(!sCursor.empty())
-		//		{
-		//			m_pMouse->SetCursorFromFile(":IDR_DEFAULT_CURSOR",-1, -1);
-		//		}
-		//	}
-		//	else{
-		//		m_pMouse->SetCursorFromFile(NULL);
-		//	}
-		//}
-		//else
-		//{
-		//	if(bUseDefaultMouseCursor)
-		//	{
-		//		const string& sCursor = GetCursor();
-		//		if(!sCursor.empty())
-		//		{
-		//			m_pMouse->SetCursorFromFile(":IDR_DEFAULT_CURSOR", -1, -1);
-		//		}
-		//	}
-		//}
-		if(bUseDefaultMouseCursor)
-		{
-			int nHotSpotX = -1;
-			int nHotSpotY = -1;
-			const std::string& sCursorFile = GetCursor(&nHotSpotX, &nHotSpotY);
-			if(!sCursorFile.empty())
-			{
-				m_pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
-			}
-			else
-			{
-				// prevent waiting cursor to show up
-				m_pMouse->SetCursorFromFile(":IDR_DEFAULT_CURSOR", -1, -1);
-				/*HCURSOR hc = LoadCursor(NULL, IDC_ARROW);
-				::SetCursor(hc);*/
-			}
-		}
-	}
-#endif
 }
 
 
@@ -1555,113 +1493,13 @@ void CGUIRoot::DeleteInstance(CGUIRoot* pThis)
 Added LXZ: 2006.1.1 */
 bool CGUIRoot::OnClick(int MouseState, int X, int Y)
 {
-	//bool res = CGUIBase::OnClick( MouseState, X, Y);
-	//// Add to the mouse event pool
-	//m_MouseEvents.push_back(MouseEvent(MouseState, X, Y));
-	//return res;
 	return true;
 }
 
 //no need refactoring
 LRESULT CGUIRoot::MsgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool &bNoFurtherProcess)
 {
-	LRESULT result = 0;
-#if defined(USE_DIRECTX_RENDERER) || 0
-	MSG newMsg;
-	if (uMsg<=WM_MOUSELAST&&uMsg>=WM_MOUSEFIRST) 
-	{
-		// only process virtual mouse event when not touch inputting, since we will translate to mouse event by ourselves. 
-		if (!CGlobals::GetApp()->IsTouchInputting())
-		{
-			// catches all mouse events
-			if (m_pMouse && m_pMouse->IsUseWindowsMessage()) {
-				if (GetMouseInClient() || m_pLastMouseDownObject == CGlobals::GetScene()) {
-					newMsg.hwnd = hWnd;
-					newMsg.lParam = lParam;
-					newMsg.wParam = wParam;
-					newMsg.time = GetTickCount();
-					newMsg.message = uMsg;
-					m_pMouse->PushMouseEvent(newMsg);
-					bNoFurtherProcess = true;
-					//result=TRUE;
-				}
-			}
-		}
-	}
-	else
-	{
-		switch( uMsg )
-		{
-		case WM_SIZE:
-		{
-			// inform OnSize().
-			OnSize();
-			break;
-		}
-		case WM_SETCURSOR:
-			// Turn off Windows cursor in fullscreen mode
-			if(!GetUseSystemCursor())
-			{
-				if(m_pMouse && m_pMouse->m_bShowCursor)
-					m_pMouse->ForceShowCursor(true);
-				bNoFurtherProcess=true;// prevent Windows from setting cursor to window class cursor
-				result=TRUE;
-			}
-			break;
-		}	
-	}
-	if(bNoFurtherProcess)
-	{
-		return result;
-	}
-
-	if(m_pKeyboard)
-	{
-		if(m_pKeyboard->IsUseWindowsMessage())
-		{
-			//if (uMsg == WM_SYSCOMMAND && wParam == SC_KEYMENU)
-			//{
-			//	// translate to alt key up;
-			//	uMsg = WM_KEYUP;
-			//	wParam = VK_LMENU;
-			//}
-			if (uMsg == WM_SYSKEYDOWN && (wParam == VK_MENU || wParam == VK_LMENU))
-			{
-				// translate to alt key up;
-				uMsg = WM_KEYDOWN;
-				wParam = VK_LMENU;
-			}
-			else if (uMsg == WM_SYSKEYUP && (wParam == VK_MENU || wParam == VK_LMENU))
-			{
-				// translate to alt key up;
-				uMsg = WM_KEYUP;
-				wParam = VK_LMENU;
-			}
-			// only process key
-			if (uMsg == WM_KEYDOWN || uMsg == WM_KEYUP)
-			{
-				newMsg.hwnd=hWnd;
-				newMsg.lParam=lParam;
-				newMsg.wParam=wParam;
-				newMsg.time=GetTickCount();
-				newMsg.message=uMsg;
-				m_pKeyboard->PushKeyEvent(newMsg);
-				//bNoFurtherProcess=true;
-				//result=TRUE;
-			}
-		}
-		else
-		{
-			if(!s_bIMEKeyBoardUpdated)
-			{
-				s_bIMEKeyBoardUpdated = true;
-				result = TRUE;
-				m_pKeyboard->Update();
-			}
-		}
-	}
-#endif
-	return result;
+	return 0;
 }
 
 
@@ -1672,16 +1510,6 @@ bool ParaEngine::CGUIRoot::GetMouseInClient()
 
 bool ParaEngine::CGUIRoot::CheckLoadCursor()
 {
-#ifdef USE_DIRECTX_RENDERER
-	if (GetMouseInClient() && m_pMouse)
-	{
-		if (m_pMouse->GetCursorName().empty())
-		{
-			UseDefaultMouseCursor(true);
-			return !m_pMouse->GetCursorName().empty();
-		}
-	}
-#endif
 	return true;
 }
 
@@ -1726,11 +1554,7 @@ HRESULT CGUIRoot::OneTimeGUIInit()
 	}
 
 	UpdateCursorPosition();
-
-	//UseDefaultMouseCursor(false);
 	Initialize();
-	//using namespace ParaInfoCenter;
-	//CICConfigManager::test();
 	return S_OK;
 }
 
@@ -1807,18 +1631,6 @@ CGUIBase* CGUIRoot::GetDefaultObject(const char *strType)
 void ParaEngine::CGUIRoot::SetUseSystemCursor(bool bUseSystem)
 {
 	m_bUseSystemCursor = bUseSystem;
-#ifdef USE_DIRECTX_RENDERER
-	if(m_bUseSystemCursor)
-	{
-		UseDefaultMouseCursor(true);
-	}
-	else
-	{
-		UseDefaultMouseCursor(false);
-		if(m_pMouse->m_bShowCursor)
-			m_pMouse->ForceShowCursor(true);
-	}
-#endif
 }
 
 bool ParaEngine::CGUIRoot::GetUseSystemCursor()
@@ -1964,18 +1776,12 @@ void ParaEngine::CGUIRoot::SetHasIMEFocus(bool bHasFocus)
 
 bool ParaEngine::CGUIRoot::GetEnableIME()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGUIIME::IsEnableImeSystem();
-#else
 	return false;
-#endif
 }
 
 void ParaEngine::CGUIRoot::SetEnableIME(bool bEnableIME)
 {
-#ifdef USE_DIRECTX_RENDERER
-	CGUIIME::EnableImeSystem(bEnableIME);
-#endif
+
 }
 
 bool ParaEngine::CGUIRoot::IsCursorClipped()
@@ -1985,65 +1791,14 @@ bool ParaEngine::CGUIRoot::IsCursorClipped()
 
 void ParaEngine::CGUIRoot::EnableClipCursor(bool bEnable)
 {
-#ifdef USE_DIRECTX_RENDERER
-	if(CGlobals::GetSettings().IsWindowedMode())
-	{
-		if(bEnable !=  m_bIsCursorClipped)
-		{
-			if(bEnable)
-			{
-				// Record the area in which the cursor can move. 
-				if(GetClipCursor(&m_rcOldClipRect))
-				{
-					RECT rcClip, rcClient;
-					HWND hWnd = CGlobals::GetAppHWND();
-					// Get the dimensions of the application's window. 
-					// GetWindowRect(hWnd, &rcClip);
-
-					POINT pt;
-					pt.x=0;
-					pt.y=0;
-					ClientToScreen(hWnd, &pt);
-
-					GetClientRect(hWnd, &rcClient);
-					rcClip.left = pt.x;
-					rcClip.top  = pt.y;
-					rcClip.right = rcClip.left + rcClient.right;
-					rcClip.bottom = rcClip.top + rcClient.bottom;
-
-					{
-						// Confine the cursor to the application's window. 
-						if(ClipCursor(&rcClip))
-						{
-							m_bIsCursorClipped = true;
-						}
-					}
-				}
-			}
-			else
-			{
-				// Restore the cursor to its previous area. 
-				ClipCursor(&m_rcOldClipRect); 
-				m_bIsCursorClipped = false;
-			}
-		}
-	}
-#endif
 }
 
 void ParaEngine::CGUIRoot::GetBackBufferSize(float* pWidth, float* pHeight)
 {
-#ifdef USE_DIRECTX_RENDERER
-	if(pWidth)
-		*pWidth = (float)(CGlobals::GetDirectXEngine().GetBackBufferWidth());
-	if(pHeight)
-		*pHeight = (float)(CGlobals::GetDirectXEngine().GetBackBufferHeight());
-#else
 	if (pWidth)
 		*pWidth = (float)GetWidth();
 	if (pHeight)
 		*pHeight = (float)GetHeight();
-#endif
 }
 
 float ParaEngine::CGUIRoot::GetViewportLeft() const
