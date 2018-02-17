@@ -15,17 +15,13 @@ using namespace ParaEngine;
 #include "OpenGLWrapper/GLProgram.h"
 #include "VertexDeclarationOpenGL.h"
 
-bool ParaEngine::CVertexDeclaration::Fuck()
-{
-	return true;
-}
 
 bool ParaEngine::VertexElement::IsEndDeclare() const
 {
 	return (Stream == 0xff);
 }
 
-uint32 ParaEngine::VertexElement::GetSize() const
+uint32_t ParaEngine::VertexElement::GetSize() const
 {
 	if (Type == D3DDECLTYPE_FLOAT4)
 		return 16;

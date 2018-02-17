@@ -27,7 +27,6 @@ namespace ParaEngine
 		virtual ~CVertexDeclaration();
 	public:
 
-		bool Fuck();
 		virtual void Release();
 
 		void ApplyAttribute(const void* pVertexStreamZeroData = 0);

@@ -201,7 +201,7 @@ namespace ParaEngine
 	{
 	public:
 		DeviceMouseEvent():m_timestamp(0) {
-			m_timestamp = std::time(nullptr);
+			m_timestamp = (uint32_t)std::time(nullptr);
 		}
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Unkonw; }
 		uint32_t GetTimestamp() const { return m_timestamp; }
