@@ -13,7 +13,7 @@ namespace ParaEngine
 	It is the plugin developer's responsibility to provide implementations of some of the required methods.
 	Plugins can also call methods provided by ParaEngine using a pointer to an IParaEngine Class. 
 	*/
-	class CModifier : BaseInterface
+	class CModifier
 	{
 	public:
 		PE_CORE_DECL CModifier(void);

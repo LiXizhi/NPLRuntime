@@ -904,16 +904,6 @@ bool CGUIBase::OnMouseEnter()
 	int nHotSpotX = -1;
 	int nHotSpotY = -1;
 	const std::string& sCursorFile = GetCursor(&nHotSpotX, &nHotSpotY);
-	if(!sCursorFile.empty())
-	{
-#ifdef USE_DIRECTX_RENDERER
-		CGUIMouseVirtual *pMouse=CGUIRoot::GetInstance()->m_pMouse;
-		if(pMouse)
-		{
-			pMouse->SetCursorFromFile(sCursorFile.c_str(), nHotSpotX, nHotSpotY);
-		}
-#endif
-	}
 	// Only set mouse over to true, if all parent and this control is enabled. 
 	// m_bMouseOver=true;
 	{
@@ -1741,8 +1731,8 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		if(CGUIRoot::GetInstance()->GetUsePointTextureFiltering())
 		{
 			GetPainter(pGUIState)->Flush();
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_LINEAR);
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_LINEAR);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_LINEAR);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_LINEAR);
 		}
 #endif
 
@@ -1803,8 +1793,8 @@ HRESULT CGUIBase::DrawText(const char16_t* strText, GUIFontElement* pElement, RE
 		{
 #ifdef USE_DIRECTX_RENDERER
 			GetPainter(pGUIState)->Flush();
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MINFILTER,  D3DTEXF_POINT);
-			CGlobals::GetEffectManager()->SetSamplerState( 0, D3DSAMP_MAGFILTER,  D3DTEXF_POINT);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_POINT);
+			CGlobals::GetEffectManager()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_POINT);
 #endif
 		}
 

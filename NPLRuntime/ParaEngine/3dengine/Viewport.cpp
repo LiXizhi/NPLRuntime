@@ -334,7 +334,7 @@ bool ParaEngine::CViewport::DrawQuad()
 	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
 	bool bSucceed = false;
 #ifdef USE_DIRECTX_RENDERER
-	bSucceed = SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
+	bSucceed = SUCCEEDED(CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
 #endif
 
 	return bSucceed;

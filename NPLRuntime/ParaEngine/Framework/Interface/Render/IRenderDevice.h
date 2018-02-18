@@ -8,34 +8,28 @@
 #include "core/PEtypes.h"
 
 #if USE_DIRECTX_RENDERER
-#include "d3d9.h"
+using DeviceTexturePtr_type = IDirect3DTexture9*;
+using VertexBufferDevicePtr_type = IDirect3DVertexBuffer9* ;
+using IndexBufferDevicePtr_type =IDirect3DIndexBuffer9*  ;
+using VertexDeclarationPtr = IDirect3DVertexDeclaration9* ;
+using VertexElement = D3DVERTEXELEMENT9 ;
 #else
+namespace ParaEngine
+{
+	struct VertexElement;
+	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
+}
+
 typedef uint32_t DeviceTexturePtr_type;
 typedef uint32_t VertexBufferDevicePtr_type;
 typedef uint32_t IndexBufferDevicePtr_type;
 
-//struct PARAMATRIX;
-//struct PARAVECTOR2;
-//struct PARAVECTOR3;
-//struct PARAVECTOR4;
-//
-//typedef PARAMATRIX  DeviceMatrix;
-//typedef PARAMATRIX*  DeviceMatrix_ptr;
-//typedef PARAVECTOR2*  DeviceVector2_ptr;
-//typedef PARAVECTOR3*  DeviceVector3_ptr;
-//typedef PARAVECTOR4*  DeviceVector4_ptr;
-//typedef PARAVECTOR2  DeviceVector2;
-//typedef PARAVECTOR3  DeviceVector3;
-//typedef PARAVECTOR4  DeviceVector4;
 #endif
-
-//#include "d3d9.h"
 
 
 namespace ParaEngine
 {
 	class CVertexDeclaration;
-	struct VertexElement;
 	class ParaViewport;
 	class IRenderContext;
 
@@ -71,8 +65,8 @@ namespace ParaEngine
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) = 0;
 		virtual bool GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value) = 0;
 
-		virtual bool SetVertexDeclaration(CVertexDeclaration* pVertexDeclaration) = 0;
-		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl) = 0;
+		virtual bool SetVertexDeclaration(VertexDeclarationPtr pVertexDeclaration) = 0;
+		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, VertexDeclarationPtr* ppDecl) = 0;
 		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) = 0;
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) = 0;
 		virtual Rect GetViewport() = 0;

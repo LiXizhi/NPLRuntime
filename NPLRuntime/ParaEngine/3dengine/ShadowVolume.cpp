@@ -66,7 +66,7 @@ HRESULT ShadowVolume::Render( SceneState * sceneState )
 #ifdef USE_DIRECTX_RENDERER
 	GETD3D(CGlobals::GetRenderDevice())->SetFVF( D3DFVF_XYZ );
 	
-    return GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
+    return CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, m_nNumVertices/3, m_pVertices, sizeof(Vector3) );
 #else
 	return E_FAIL;
 #endif

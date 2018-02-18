@@ -118,7 +118,7 @@ namespace ParaEngine
 		*		1,2,3,4,5, stands for D3DFMT_DXT1-5.
 		* @param srcLeft, srcTop, srcWidth, srcHeight: which portion of the scene to save to the file. default to full rect.
 		*/
-		HRESULT SaveToFile(const char* filename, int width = 0, int height = 0, DWORD dwFormat = 3, UINT MipLevels = 0, int srcLeft = 0, int srcTop = 0, int srcWidth = 0, int srcHeight = 0);
+		HRESULT SaveToFile(const char* filename, int width = 0, int height = 0, PixelFormat dwFormat = (PixelFormat)3, UINT MipLevels = 0, int srcLeft = 0, int srcTop = 0, int srcWidth = 0, int srcHeight = 0);
 
 		/* creates a new Image from with the texture's data.
 		Caller is responsible for releasing it by calling delete.

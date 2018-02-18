@@ -99,7 +99,7 @@ HRESULT CSpriteObject::Draw( SceneState * sceneState)
 
 	
 	//-- Render the billboard
-	GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(  D3DPT_TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
+	CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, (m_nStartFrame+m_nCurrentFrameOffset)*4, 2 );
 	
 	return S_OK;
 }

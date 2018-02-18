@@ -76,8 +76,8 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 	else if(nNumVertices == 8)
 		nLenCount = 12;
 #ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_LINELIST, 0,
-		nNumVertices, nLenCount, pIndexBuffer, D3DFMT_INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
+	CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
+		nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
 #endif
 	
 #else 

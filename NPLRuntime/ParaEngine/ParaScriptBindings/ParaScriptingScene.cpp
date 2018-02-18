@@ -2989,7 +2989,7 @@ void ParaMiniSceneGraph::SaveToFile( const char* sFileName, int nImageSize /*= 0
 	}
 }
 
-void ParaMiniSceneGraph::SaveToFileEx(const char* sFileName, int width /*= 0*/, int height /*= 0*/, DWORD dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
+void ParaMiniSceneGraph::SaveToFileEx(const char* sFileName, int width /*= 0*/, int height /*= 0*/, PixelFormat dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
 {
 	if (IsValid())
 	{

@@ -174,8 +174,8 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, Matrix4::IDENTITY.GetConstPointer());
 			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
-			GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST,0,
-				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), D3DFMT_INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
+			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,
+				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), PixelFormat::INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
 		}
 #endif
 	}

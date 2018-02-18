@@ -13,6 +13,7 @@
 #include "GlowEffect.h"
 #include "WaveEffect.h"
 #include "RenderDeviceD3D9.h"
+#include "D3DMapping.h"
 #endif
 #include "OceanManager.h"
 #include "SunLight.h"
@@ -229,10 +230,10 @@ namespace ParaEngine
 		if(bForceGet)
 		{
 			auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-			pRenderDevice->GetSamplerState(nStage, (D3DSAMPLERSTATETYPE)dwType, &dwValue);
+			pRenderDevice->GetSamplerState(nStage, D3DMapping::toD3DSamplerSatetType(dwType), &dwValue);
 		}
 		else
-			dwValue = m_lastSamplerStates[nStage][dwType];
+			dwValue = m_lastSamplerStates[nStage][(int)dwType];
 #endif
 		if(pValue)
 			*pValue = dwValue;
@@ -1184,8 +1185,8 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		break;
 	case TECH_SKY_MESH:
 		EnableLocalLighting(false);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
 		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
 		break;
 	case TECH_TERRAIN:
@@ -1209,12 +1210,12 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		// clamping should be enabled for base texture and alpha texture, which are in texture stage 0.
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MINFILTER), D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MAGFILTER), D3DTEXF_LINEAR );
 
 		// set vertex sources
 		if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
@@ -1246,8 +1247,8 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,          FALSE );
 		pRenderDevice->SetRenderState( ERenderState::FOGENABLE,        FALSE );
 
@@ -1289,8 +1290,8 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::ALPHAREF, (DWORD)0x0000000BE); // should be 0.3
 		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		SetCullingMode(true);
 
 		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
@@ -1350,10 +1351,10 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
 		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_POINT );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_POINT );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP);
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV), D3DTADDRESS_WRAP);
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MAGFILTER),  D3DTEXF_POINT );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MINFILTER),  D3DTEXF_POINT );
 
 		pRenderDevice->SetRenderState( ERenderState::ALPHAREF, 0);
 		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
@@ -1379,9 +1380,9 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_SIMPLE_MESH_NORMAL_VEGETATION:
 	case TECH_SIMPLE_MESH_NORMAL_CTOR:*/
 		
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR ); // use this or not?
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR ); // use this or not?
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 
@@ -1581,11 +1582,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(true);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 		SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 		SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		break;
 	}
 	case TECH_SKY_DOME:
@@ -1609,11 +1610,11 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetCullingMode(false);
 		DisableD3DCulling(true);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 		SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 		SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
 		break;
 	}
 	case TECH_SIMPLE_MESH_NORMAL:
@@ -1653,7 +1654,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(true);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 		SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 		SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
 		if(nHandle == TECH_SIMPLE_MESH_NORMAL || nHandle == TECH_CHARACTER|| nHandle == TECH_SIMPLE_MESH_NORMAL_VEGETATION ||nHandle == TECH_SIMPLE_MESH_NORMAL_SHADOW || nHandle == TECH_SIMPLE_MESH_NORMAL_INSTANCED || nHandle == TECH_SIMPLE_MESH_NORMAL_UNLIT)
@@ -1665,8 +1666,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			EnableGlobalLighting(bEnableSunLight && bEnableLight);
 			EnableLocalLighting(bEnableLight);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU), D3DTADDRESS_WRAP);
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 
 			applyFogParameters();
 
@@ -1705,8 +1706,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			SetCullingMode(false);
 			DisableD3DCulling(true);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		}
 		else if(nHandle == TECH_SIMPLE_MESH_NORMAL_CTOR)
 		{
@@ -1718,8 +1719,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			SetCullingMode(false);
 			DisableD3DCulling(true);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 
 		}
 		else if(nHandle == TECH_SIMPLE_MESH_NORMAL_SELECTED)
@@ -1736,8 +1737,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			fogColor.a = 1.f;
 			pEffect->applyFogParameters(true, &fogParam, &fogColor);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		}
 		else if(nHandle == TECH_SIMPLE_MESH_NORMAL_TEX2)
 		{
@@ -1745,13 +1746,13 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			EnableLocalLighting(bEnableLight);
 			applyFogParameters();
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 		}
 		else if(nHandle == TECH_SKY_MESH)
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
 			//applyFogParameters();	
 		}
 		else if(nHandle == TECH_SIMPLE_MESH_NORMAL_BORDER)
@@ -1784,7 +1785,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 		SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 		SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
 
@@ -1939,7 +1940,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		SetCullingMode(false);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 		SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 		SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
 		break;
@@ -1975,8 +1976,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP);
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU), D3DTADDRESS_WRAP);
+		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV), D3DTADDRESS_WRAP);
 		SetCullingMode(true);
 
 		break;
@@ -2007,7 +2008,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			SetCullingMode(true);
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
 			SetSamplerState( 0, ESamplerStateType::MINFILTER, D3DTEXF_LINEAR , true);
 			SetSamplerState( 0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR ,true);
 
@@ -2018,8 +2019,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			EnableGlobalLighting(bEnableSunLight && bEnableLight);
 			EnableLocalLighting(bEnableLight);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 
 			applyFogParameters();
 
@@ -2382,8 +2383,8 @@ void EffectManager::EndEffect()
 			
 				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 				if(CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals() && GetScene()->IsLightEnabled())
 				{
 					pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
@@ -2414,8 +2415,8 @@ void EffectManager::EndEffect()
 				pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 			break;
 		case TECH_SKY_MESH:
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 			break;
 		case TECH_OCEAN_CLOUD:
 		case TECH_OCEAN_SIMPLE:
@@ -2448,8 +2449,8 @@ void EffectManager::EndEffect()
 			break;
 		case TECH_BLOCK_FANCY:
 		case TECH_BLOCK:
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+			GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 			SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_LINEAR, true);
 			SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_LINEAR, true);
 			pd3dDevice->SetRenderState( ERenderState::ALPHAREF, FIXED_FUNCTION_ALPHA_TESTING_REF);
@@ -2478,14 +2479,14 @@ void EffectManager::EndEffect()
 			break;
 		case TECH_SKY_MESH:
 			{
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 				break;
 			}
 		case TECH_SKY_DOME:
 			{
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 				DisableD3DCulling(false);
 				SetCullingMode(true);
 				break;
@@ -2563,8 +2564,8 @@ void EffectManager::EndEffect()
 				}
 				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
-				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
+				GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
 				break;
 			}
 		case TECH_PARTICLES:

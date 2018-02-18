@@ -17,7 +17,7 @@
 #include "IParaEngineApp.h"
 #include "PaintEngine/Painter.h"
 #include <strsafe.h>
-#include "GUIDirectInput.h"
+#include "GUIKeyboardVirtual.h"
 #include "GUIResource.h"
 #include "GUIRoot.h"
 #include "ObjectManager.h"

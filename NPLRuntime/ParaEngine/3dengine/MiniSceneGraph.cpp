@@ -527,24 +527,11 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ZERO);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_SRCALPHA);
 
-			/*GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_SELECTARG2);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLORARG1,D3DTA_TEXTURE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLORARG2,D3DTA_CURRENT);
-
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAARG1,D3DTA_TEXTURE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAARG2,D3DTA_CURRENT);*/
+	
 
 			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pMask->GetTexture());
-			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
-			/*GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLOROP,D3DTOP_MODULATE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLORARG1,D3DTA_TEXTURE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_COLORARG2,D3DTA_CURRENT);
-
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAARG1,D3DTA_TEXTURE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTextureStageState(0, D3DTSS_ALPHAARG2,D3DTA_CURRENT);*/
 
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);

@@ -2870,7 +2870,7 @@ void CSceneObject::RenderShadows()
 			GETD3D(CGlobals::GetRenderDevice())->SetFVF( SHADOWVERTEX::FVF );
 			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 			GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, sceneState.pAssetManager->GetShadowSquareVB(), 0, sizeof(SHADOWVERTEX) );
-			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(  D3DPT_TRIANGLESTRIP, 0, 2 );
+			CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, 0, 2 );
 
 			// Restore render states
 			pd3dDevice->SetRenderState( ERenderState::ZENABLE,          TRUE );

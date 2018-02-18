@@ -60,9 +60,9 @@ HRESULT DXUtil_ReadBoolRegKey( HKEY hKey, LPCTSTR strRegName, BOOL* pbValue, BOO
 //          TIMER_GETELAPSEDTIME  - to get the time that elapsed between 
 //                                  TIMER_GETELAPSEDTIME calls
 //-----------------------------------------------------------------------------
-enum TIMER_COMMAND { TIMER_RESET, TIMER_START, TIMER_STOP, TIMER_ADVANCE,
-                     TIMER_GETABSOLUTETIME, TIMER_GETAPPTIME, TIMER_GETELAPSEDTIME };
-double __stdcall DXUtil_Timer( TIMER_COMMAND command );
+//enum TIMER_COMMAND { TIMER_RESET, TIMER_START, TIMER_STOP, TIMER_ADVANCE,
+//                     TIMER_GETABSOLUTETIME, TIMER_GETAPPTIME, TIMER_GETELAPSEDTIME };
+//double __stdcall DXUtil_Timer( TIMER_COMMAND command );
 
 
 //-----------------------------------------------------------------------------

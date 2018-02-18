@@ -13,6 +13,8 @@
 #include "resource.h"
 #include "guicon.h"
 #if USE_DIRECTX_RENDERER
+#include "Render/context/d3d9/RenderContextD3D9.h"
+#include "RenderDeviceD3D9.h"
 #include "DirectXEngine.h"
 #endif
 
@@ -1393,7 +1395,7 @@ HRESULT CWindowsApplication::InitDeviceObjects()
 
 #if USE_DIRECTX_RENDERER
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<D3D9RenderContext*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<RenderContextD3D9*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
 
 	// print stats when device is initialized.
 	string stats;
@@ -1426,9 +1428,6 @@ HRESULT CWindowsApplication::RestoreDeviceObjects()
 
 #if USE_DIRECTX_RENDERER
 	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
-
-	UINT nBkbufWidth = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	UINT nBkbufHeight = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
 #endif
 
 	int nBkbufWidth = m_pRenderWindow->GetWidth();

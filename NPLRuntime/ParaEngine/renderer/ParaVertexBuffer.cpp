@@ -11,6 +11,7 @@
 
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
+#include "D3DMapping.h"
 #endif
 using namespace ParaEngine;
 
@@ -57,7 +58,7 @@ bool ParaEngine::ParaVertexBuffer::CreateBuffer(uint32 nBufferSize, DWORD dwForm
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 #ifdef USE_DIRECTX_RENDERER
 
-	return SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, dwPool, &m_vertexBuffer, NULL));
+	return SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->CreateVertexBuffer(nBufferSize, dwUsage, dwFormat, D3DMapping::toD3DPool(dwPool), &m_vertexBuffer, NULL));
 #elif defined(USE_OPENGL_RENDERER)
 	glGenBuffers(1, &m_vertexBuffer);
 	return true;

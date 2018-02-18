@@ -9,27 +9,27 @@
 #if !defined(DXSDK_STDAFX_H)
 
 #define DXSDK_STDAFX_H
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-#define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
-
-#define STRICT
-#define NOMINMAX 
-#ifndef WINVER
-#define WINVER         0x0500
-#endif
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0410 
-#endif
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT   0x0500 
-#endif
-
+//#ifndef _CRT_SECURE_NO_WARNINGS
+//#define _CRT_SECURE_NO_WARNINGS
+//#endif
+//#define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
+//
+//#define STRICT
+//#define NOMINMAX 
+//#ifndef WINVER
+//#define WINVER         0x0500
+//#endif
+//#ifndef _WIN32_WINDOWS
+//#define _WIN32_WINDOWS 0x0410 
+//#endif
+//#ifndef _WIN32_WINNT
+//#define _WIN32_WINNT   0x0500 
+//#endif
 #include <winsock2.h>
-
 #include <windows.h>
 #include <windowsx.h>
+
+
 #include <mmsystem.h>
 #include <stdio.h>
 #include <assert.h>

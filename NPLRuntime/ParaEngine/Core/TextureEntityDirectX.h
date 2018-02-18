@@ -39,7 +39,7 @@ namespace ParaEngine
 		/** load from memory buffer. 
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object. 
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, void** ppTexture = NULL);
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL) override;
 
 		/**
 		* most assets are loaded asynchronously. This allows us to check if an asset is loaded.
@@ -81,7 +81,7 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
+		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
 
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
@@ -97,7 +97,7 @@ namespace ParaEngine
 		*   if file extension is "png" and file path contains "blocks", we will use 32bits texture and full mipmap levels. if filename further contains "leaves" it will only has 1 mip level. 
 		*	in all other cases, such as "tga", format is D3DFMT_UNKNOWN and mip level is D3DX_DEFAULT.
 		*/
-		 static void GetFormatAndMipLevelFromFileName(const string& filename, D3DFORMAT* pdwTextureFormat, UINT* pnMipLevels);
+		 static void GetFormatAndMipLevelFromFileName(const string& filename, PixelFormat* pdwTextureFormat, UINT* pnMipLevels);
 
 		/**
 		* determine the texture format and mip level from file name. the texture is usually static texture.
@@ -107,7 +107,7 @@ namespace ParaEngine
 		*	if file extension is "png" and file name does not CONTAINS "_32bits", format is DXT3, complete mip level chain is created.
 		*	in all other cases, such as "tga", format is D3DFMT_UNKNOWN and mip level is D3DX_DEFAULT.
 		*/
-		static void GetFormatAndMipLevelFromFileNameEx(const string& filename, D3DFORMAT* pdwTextureFormat, UINT* pnMipLevels);
+		static void GetFormatAndMipLevelFromFileNameEx(const string& filename, PixelFormat* pdwTextureFormat, UINT* pnMipLevels);
 
 		/** secretly, change the m_pSurface */
 		void SetSurface(LPDIRECT3DSURFACE9 pSurface);
@@ -138,8 +138,8 @@ namespace ParaEngine
 		static bool StretchRect(TextureEntityDirectX * pSrcTexture, TextureEntityDirectX * pDestTexture);
 
 		/** create a texture entity from memory buffer. */
-		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED, DWORD nFormat = 0);
-		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, D3DPOOL dwCreatePool = D3DPOOL_MANAGED);
+		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
+		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
 	};
 
 	// the manager class

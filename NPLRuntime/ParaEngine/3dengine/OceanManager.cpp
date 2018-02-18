@@ -1287,8 +1287,8 @@ namespace ParaEngine
 		// set render state
 		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pWaterColorTexture->GetTexture());
 		
-		GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitiveUP( D3DPT_TRIANGLELIST, 0, 
-			4, 2, pIndexBuffer, D3DFMT_INDEX16,vertices, sizeof(SPRITEVERTEX));
+		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0,
+			4, 2, pIndexBuffer, PixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
 #endif
 	}
 
@@ -1526,7 +1526,7 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 						}
 					}
 					pEffectFile->EndPass();
@@ -1740,8 +1740,8 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(  
-								D3DPT_TRIANGLESTRIP,
+							HRESULT hr = CGlobals::GetRenderDevice()->DrawIndexedPrimitive(  
+								EPrimitiveType::TRIANGLESTRIP,
 								0,
 								0,
 								m_grid_size*m_grid_size,
@@ -1922,8 +1922,8 @@ namespace ParaEngine
 
 							pEffectFile->CommitChanges();
 
-							HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( 
-								D3DPT_TRIANGLESTRIP,
+							HRESULT hr = CGlobals::GetRenderDevice()->DrawIndexedPrimitive( 
+								EPrimitiveType::TRIANGLESTRIP,
 								0,
 								0,
 								m_grid_size*m_grid_size,
@@ -2007,7 +2007,7 @@ namespace ParaEngine
 						if(hr == S_OK)
 						{
 							// render a quad for the ocean tile occlustion testing. 
-							GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
+							CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(mesh_vertex_plain));
 							hr = pQueries->EndNewQuery();
 						}
 						else
@@ -2751,7 +2751,7 @@ namespace ParaEngine
 						{
 							pEffectFile->setTexture(0, m_pRippleTexture.get());
 
-							GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+							CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 							pEffectFile->EndPass();
 						}
 					}

@@ -62,7 +62,7 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     )
 
     # Embedded Resource For Direct3D
-    file(GLOB SHADER_FILES ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/shaders/d3d9_spec/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/d3d9_spec/*.fx)
     foreach(src_file ${SHADER_FILES})
         get_filename_component(src_filename ${src_file} NAME_WE)
         set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
@@ -79,10 +79,10 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
     list(APPEND EmbeddedResource_Files_D3D ResourceEmbedded.cpp)
 
-    embed_resources_abs(Resource ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/res/ParaXmodel.templates)
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/ParaXmodel.templates)
     list(APPEND EmbeddedResource_Files_D3D ${Resource})	
 
-    embed_resources_abs(Resource ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/res/cursor.tga)
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
     list(APPEND EmbeddedResource_Files_D3D ${Resource})
 
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})

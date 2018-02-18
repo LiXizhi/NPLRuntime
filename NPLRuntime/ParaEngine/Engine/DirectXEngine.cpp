@@ -655,7 +655,7 @@ HRESULT CDirectXEngine::DrawTriangleStrip(LPDIRECT3DTEXTURE9 pTexture,UINT nNumV
 		OUTPUT_DEFAULT_ERROR(hr);
 		return hr;
 	}
-	hr=GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP, nNumVertices-2,pVertices, sizeof(DXUT_SCREEN_VERTEX));
+	hr=CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, nNumVertices-2,pVertices, sizeof(DXUT_SCREEN_VERTEX));
 	if (FAILED(hr)) {
 		OUTPUT_DEFAULT_ERROR(hr);
 		return hr;
@@ -683,7 +683,7 @@ HRESULT CDirectXEngine::DrawTriangleList(LPDIRECT3DTEXTURE9 pTexture,UINT nNumVe
 		return hr;
 	}
 
-	hr=GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLELIST, nNumVertices/3,pVertices, sizeof(DXUT_SCREEN_VERTEX));
+	hr=CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nNumVertices/3,pVertices, sizeof(DXUT_SCREEN_VERTEX));
 	if (FAILED(hr)) {
 		OUTPUT_DEFAULT_ERROR(hr);
 		return hr;

@@ -2703,9 +2703,6 @@ void ParaUI::SetCursorFont(const char *fontname,const char * strColor,DWORD tran
 			OUTPUT_LOG("warning: Font %s does not exist \n", fontname);
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetGUI()->m_pMouse->SetCursorFont(CGlobals::GetAssetManager()->GetFont(fontname),color);
-#endif
 }
 
 void ParaUI::SetUseSystemCursor( bool bUseSystem )
@@ -2731,9 +2728,6 @@ void ParaUI::SetCursorTexture(const char *texturename, const char * strColor,DWO
 			OUTPUT_LOG("warning: ParaUI.SetCursorTexture, texture %s does not exist \n", texturename);
 		}
 	}
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetGUI()->m_pMouse->SetCursorTexture(CGlobals::GetAssetManager()->GetTexture(texturename),NULL,color);
-#endif
 }
 
 
@@ -2742,9 +2736,6 @@ void ParaUI::SetCursorText(const char *strText)
 	if (strText==NULL) {
 		OUTPUT_LOG("\nSetCursorText: Input text is nil.");
 	}
-#ifdef USE_DIRECTX_RENDERER
-	CGlobals::GetGUI()->m_pMouse->SetCursorTextA(strText);
-#endif
 }
 
 void ParaUI::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHotSpot)
@@ -2765,11 +2756,7 @@ void ParaUI::SetCursorFromFile_(const char *szCursor)
 
 const char* ParaUI::GetCursorFile()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetGUI()->m_pMouse->GetCursorFile();
-#else
 	return CGlobals::GetString().c_str();
-#endif
 }
 
 string ParaUI::ToScript()

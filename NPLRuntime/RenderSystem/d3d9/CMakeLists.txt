@@ -2,8 +2,8 @@ include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
 
 
 add_library(RenderSystemD3D9 
-    D3D9Tools.cpp
-    D3D9Tools.h
+    D3DMapping.cpp
+    D3DMapping.h
     RenderDeviceD3D9.cpp
     RenderDeviceD3D9.h
     TextureD3D9.h
@@ -29,7 +29,7 @@ target_link_libraries(RenderSystemD3D9 PUBLIC
 )
 
 target_include_directories(RenderSystemD3D9 PUBLIC 
-    ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/
+    ${PROJECT_SOURCE_DIR}/ParaEngine/
     ${DirectX_INCLUDE_DIRS}
     /
 )

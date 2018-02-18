@@ -32,6 +32,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #include "ViewportManager.h"
 #include "TextureEntityDirectX.h"
 #include "RenderDeviceD3D9.h"
+#include "D3DMapping.h"
 
 #ifdef PARAENGINE_CLIENT
 	#include "memdebug.h"
@@ -291,7 +292,7 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 	return m_pTextureInfo;
 }
 
-HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, const char* sFileName, IDirect3DTexture9** ppTexture, D3DFORMAT dwTextureFormat, UINT nMipLevels, Color dwColorKey )
+HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, const char* sFileName, IDirect3DTexture9** ppTexture, PixelFormat dwTextureFormat, UINT nMipLevels, Color dwColorKey )
 {
 	// Load Texture sequentially
 	asset_ptr<TextureEntity> my_asset(this);
@@ -330,10 +331,10 @@ HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, 
 	return S_OK;
 }
 
-void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTextureFileName, D3DFORMAT* pdwTextureFormat, UINT* pnMipLevels)
+void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN;
+	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -343,14 +344,14 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = D3DFMT_UNKNOWN;
+			dwTextureFormat = PixelFormat::Unkonwn;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
 			If one wants to ensure high resolution texture, use TGA format instead. */
 			if(sTextureFileName.find("_32bits") != string::npos)
 			{
-				dwTextureFormat = D3DFMT_A8R8G8B8;
+				dwTextureFormat = PixelFormat::A8R8G8B8;
 				MipLevels = 1;
 			}
 			//else if(sTextureFileName.find("blocks") != string::npos)
@@ -361,19 +362,19 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 			else if(sTextureFileName.find("_dxt1") != string::npos)
 			{
 				/** if the texture filename ends with "_dxt1.png", we will load with DXT1 */
-				dwTextureFormat = D3DFMT_DXT1;
+				dwTextureFormat = PixelFormat::DXT1;
 				MipLevels = 1;
 			}
 			else
 			{
-				dwTextureFormat = D3DFMT_DXT3;
+				dwTextureFormat = PixelFormat::DXT3;
 				MipLevels = 1;
 			}
 			
 		}
 		else if(c1=='j' && c2=='p' && c3=='g')
 		{
-			dwTextureFormat = D3DFMT_DXT1;
+			dwTextureFormat = PixelFormat::DXT1;
 			MipLevels = 1;
 		}
 	}
@@ -383,10 +384,10 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 		*pnMipLevels = MipLevels;
 }
 
-void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextureFileName, D3DFORMAT* pdwTextureFormat, UINT* pnMipLevels)
+void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	D3DFORMAT dwTextureFormat = D3DFMT_UNKNOWN;
+	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -396,14 +397,14 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextu
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = D3DFMT_UNKNOWN;
+			dwTextureFormat = PixelFormat::Unkonwn;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
 			If one wants to ensure high resolution texture, use TGA format instead. */
 			if(nSize>11 && sTextureFileName[nSize-11]=='_' && sTextureFileName[nSize-10]=='3' && sTextureFileName[nSize-9]=='2' && sTextureFileName[nSize-8]=='b')
 			{
-				dwTextureFormat = g_bEnable32bitsTexture ? D3DFMT_A8R8G8B8 : D3DFMT_DXT3;
+				dwTextureFormat = g_bEnable32bitsTexture ? PixelFormat::A8R8G8B8 : PixelFormat::DXT3;
 				MipLevels = 1;
 			}
 			else if(sTextureFileName.find("blocks") != string::npos)
@@ -420,28 +421,28 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextu
 				if(sTextureFileName.find("_dxt") != string::npos)
 				{
 					if(sTextureFileName.find("_dxt1") != string::npos)
-						dwTextureFormat = D3DFMT_DXT1;
+						dwTextureFormat = PixelFormat::DXT1;
 					else
-						dwTextureFormat = D3DFMT_DXT3;
+						dwTextureFormat = PixelFormat::DXT3;
 				}
 				else
-					dwTextureFormat = D3DFMT_A8R8G8B8;
+					dwTextureFormat = PixelFormat::A8R8G8B8;
 			}
 			else if(nSize>9 && sTextureFileName[nSize-9]=='_'  && sTextureFileName[nSize-8]=='d' && sTextureFileName[nSize-7]=='x' && sTextureFileName[nSize-6]=='t' && sTextureFileName[nSize-5]=='1')
 			{
 				/** if the texture filename ends with "_dxt1.png", we will load with DXT1 */
-				dwTextureFormat = D3DFMT_DXT1;
+				dwTextureFormat = PixelFormat::DXT1;
 				MipLevels = 1;
 			}
 			else
 			{
-				dwTextureFormat = D3DFMT_DXT3;
+				dwTextureFormat = PixelFormat::DXT3;
 				MipLevels = 1;
 			}
 		}
 		else if(c1=='j' && c2=='p' && c3=='g')
 		{
-			dwTextureFormat = D3DFMT_DXT1;
+			dwTextureFormat = PixelFormat::DXT1;
 			MipLevels = 1;
 		}
 	}
@@ -478,7 +479,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		if(m_pTexture == 0)
 		{
 			// Load Texture sequentially
-			D3DFORMAT dwTextureFormat;
+			PixelFormat dwTextureFormat;
 			UINT MipLevels;
 			GetFormatAndMipLevelFromFileName(sTextureFileName, &dwTextureFormat, &MipLevels);
 			if(SurfaceType == TextureEntityDirectX::TerrainHighResTexture)
@@ -496,9 +497,9 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		if(m_pSurface == 0)
 		{
 			if(!IsAsyncLoad())
-				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), D3DFMT_UNKNOWN, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 			else
-				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), D3DFMT_UNKNOWN, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 		}
 		return S_OK;
 	}
@@ -544,7 +545,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 					if(m_pTextureSequence[i-1] == 0)
 					{
 						// Load Texture sequentially
-						D3DFORMAT dwTextureFormat;
+						PixelFormat dwTextureFormat;
 						UINT MipLevels;
 						GetFormatAndMipLevelFromFileNameEx(sTextureFileName, &dwTextureFormat, &MipLevels);
 
@@ -1070,11 +1071,11 @@ void TextureEntityDirectX::SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture)
 	}
 }
 
-TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/)
+TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
 	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileEx(pRenderDevice,pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, dwCreatePool, D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
+	HRESULT hr = D3DXCreateTextureFromFileEx(pRenderDevice,pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DMapping::toD3DPool(dwCreatePool), D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
 	if (SUCCEEDED(hr) && pTexture != NULL)
 	{
 		TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
@@ -1167,7 +1168,7 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 	return SUCCEEDED(hr);
 }
 
-TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, D3DPOOL dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
+TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
 	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
 	LPDIRECT3DTEXTURE9 pTexture = NULL;
@@ -1177,7 +1178,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 
 	if (bytesPerPixel == 4)
 	{
-		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture,NULL);
+		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
 		if (FAILED(hr))
 		{
 			OUTPUT_LOG("failed creating terrain texture\n");
@@ -1193,7 +1194,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 	else if (bytesPerPixel == 3)
 	{
 		// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture,NULL);
+		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
 		if (FAILED(hr))
 		{
 			OUTPUT_LOG("failed creating terrain texture\n");
@@ -1230,7 +1231,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		if (nSupportAlphaTexture == -1)
 		{
 			D3DFORMAT nDesiredFormat = D3DFMT_A8;
-			hr = D3DXCheckTextureRequirements(pRenderDevice,NULL, NULL, NULL, 0, &nDesiredFormat, dwCreatePool);
+			hr = D3DXCheckTextureRequirements(pRenderDevice,NULL, NULL, NULL, 0, &nDesiredFormat, D3DMapping::toD3DPool(dwCreatePool));
 			if (SUCCEEDED(hr))
 			{
 				if (nDesiredFormat == D3DFMT_A8)
@@ -1251,7 +1252,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		if (nSupportAlphaTexture == 1)
 		{
 			// D3DFMT_A8 is supported
-			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, dwCreatePool, &pTexture,NULL);
+			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating alpha terrain texture\n");
@@ -1267,7 +1268,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		else if (nSupportAlphaTexture == 0)
 		{
 			// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
-			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, dwCreatePool, &pTexture,NULL);
+			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
 			if (FAILED(hr))
 			{
 				OUTPUT_LOG("failed creating alpha terrain texture\n");
@@ -1304,8 +1305,11 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 	return NULL;
 }
 
-HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, D3DFORMAT dwTextureFormat, void** ppTexture_)
+HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat format, void** ppTexture_)
 {
+
+	D3DFORMAT dwTextureFormat = D3DMapping::toD3DFromat(format);
+
 	HRESULT hr;
 	DeviceTexturePtr_type* ppTexture = (DeviceTexturePtr_type*)ppTexture_;
 	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());

@@ -35,6 +35,7 @@ add_executable(WindowsApplication
 target_compile_definitions(WindowsApplication PUBLIC 
     PLATFORM_WINDOWS
     USE_WINDOWS_SSPI
+    WIN32_LEAN_AND_MEAN
     _WIN32_WINNT=0x0501
     _WINSOCK_DEPRECATED_NO_WARNINGS
 )

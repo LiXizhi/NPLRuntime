@@ -1,12 +1,12 @@
 
 #include "ParaEngine.h"
-#include <d3d9.h>
-#include "D3D9Tools.h"
-#include "RenderDeviceD3D9.h"
-#include "D3D9RenderContext.h"
-#include "WindowsRenderWindow.h"
+
+#include "RenderContextD3D9.h"
+#include "Render/WindowsRenderWindow.h"
 #include "PEtypes.h"
 
+#include "RenderDeviceD3D9.h"
+#include "D3DMapping.h"
 
 using namespace ParaEngine;
 
@@ -21,23 +21,13 @@ namespace ParaEngine
 	}
 }
 
-ParaEngine::D3D9RenderContext* ParaEngine::D3D9RenderContext::Create()
+ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
 {
-	auto pContext = new D3D9RenderContext();
-	auto pD3D = Direct3DCreate9(D3D_SDK_VERSION);
-	if (pD3D)
-	{
-		pContext->m_D3D = pD3D;
-		return pContext;
-	}
-	else {
-		delete pContext;
-		pContext = nullptr;
-	}
-	return nullptr;
+	auto pContext = new RenderContextD3D9();
+	return pContext;
 }
 
-ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const RenderConfiguration& cfg)
+ParaEngine::IRenderDevice* ParaEngine::RenderContextD3D9::CreateDevice(const RenderConfiguration& cfg)
 {
 	assert(cfg.renderWindow);
 
@@ -68,9 +58,9 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 		d3dpp.BackBufferHeight = pWin->GetHeight();	
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.EnableAutoDepthStencil = true;
-		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.AutoDepthStencilFormat = D3DMapping::toD3DFromat(cfg.depthStencilFormat);
 		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
-		d3dpp.BackBufferFormat = toD3DFromat(cfg.colorFormat);
+		d3dpp.BackBufferFormat = D3DMapping::toD3DFromat(cfg.colorFormat);
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 		d3dpp.hDeviceWindow = pWin->GetHandle();
 	}
@@ -83,7 +73,7 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 		d3dpp.BackBufferHeight = defaultAdapterDesplayMode.Height;
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.EnableAutoDepthStencil = true;
-		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.AutoDepthStencilFormat = D3DMapping::toD3DFromat(cfg.depthStencilFormat);
 		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
 		d3dpp.BackBufferFormat = defaultAdapterDesplayMode.Format;
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
@@ -123,21 +113,21 @@ ParaEngine::IRenderDevice* ParaEngine::D3D9RenderContext::CreateDevice(const Ren
 	return nullptr;
 }
 
-IDirect3D9* ParaEngine::D3D9RenderContext::GetD3D() const
+IDirect3D9* ParaEngine::RenderContextD3D9::GetD3D() const
 {
 	return m_D3D;
 }
 
-bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
+bool ParaEngine::RenderContextD3D9::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
 {
 	assert(cfg.renderWindow);
 
-	WindowsRenderWindow* pWin = dynamic_cast<WindowsRenderWindow*>(cfg.renderWindow);
+	WindowsRenderWindow* pWin = static_cast<WindowsRenderWindow*>(cfg.renderWindow);
 	assert(pWin);
 
 	assert(device);
 
-	RenderDeviceD3D9* d3d9Device = dynamic_cast<RenderDeviceD3D9*>(device);
+	RenderDeviceD3D9* d3d9Device = static_cast<RenderDeviceD3D9*>(device);
 	assert(d3d9Device);
 
 
@@ -165,9 +155,9 @@ bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const Ren
 		d3dpp.BackBufferHeight = pWin->GetHeight();
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.EnableAutoDepthStencil = true;
-		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.AutoDepthStencilFormat = D3DMapping::toD3DFromat(cfg.depthStencilFormat);
 		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
-		d3dpp.BackBufferFormat = toD3DFromat(cfg.colorFormat);
+		d3dpp.BackBufferFormat = D3DMapping::toD3DFromat(cfg.colorFormat);
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
 		d3dpp.hDeviceWindow = pWin->GetHandle();
 	}
@@ -180,7 +170,7 @@ bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const Ren
 		d3dpp.BackBufferHeight = defaultAdapterDesplayMode.Height;
 		d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
 		d3dpp.EnableAutoDepthStencil = true;
-		d3dpp.AutoDepthStencilFormat = toD3DFromat(cfg.depthStencilFormat);
+		d3dpp.AutoDepthStencilFormat = D3DMapping::toD3DFromat(cfg.depthStencilFormat);
 		d3dpp.Flags = D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL;
 		d3dpp.BackBufferFormat = defaultAdapterDesplayMode.Format;
 		d3dpp.PresentationInterval = D3DPRESENT_INTERVAL_DEFAULT;
@@ -198,7 +188,7 @@ bool ParaEngine::D3D9RenderContext::ResetDevice(IRenderDevice* device, const Ren
 	return true;
 }
 
-D3D9RenderContext::~D3D9RenderContext()
+RenderContextD3D9::~RenderContextD3D9()
 {
 	if (m_D3D)
 	{
@@ -207,7 +197,7 @@ D3D9RenderContext::~D3D9RenderContext()
 	}
 }
 
-D3D9RenderContext::D3D9RenderContext()
+RenderContextD3D9::RenderContextD3D9()
 	:m_D3D(nullptr)
 {
 	m_D3D = Direct3DCreate9(D3D_SDK_VERSION);

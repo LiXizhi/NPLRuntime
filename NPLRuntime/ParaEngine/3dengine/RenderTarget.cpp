@@ -213,7 +213,7 @@ void ParaEngine::CRenderTarget::Cleanup()
 	DeleteDeviceObjects();
 }
 
-HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageWidth /*= 0*/, int nImageHeight /*= 0*/, DWORD dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
+HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageWidth /*= 0*/, int nImageHeight /*= 0*/, PixelFormat dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
 {
 	if (m_pCanvasTexture == 0)
 		return E_FAIL;
@@ -249,18 +249,18 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 	}
 	else if (FileFormat == D3DXIFF_DDS  && srcWidth == 0)
 	{
-		if (dwFormat == 1)
-			dwFormat = D3DFMT_DXT1;
-		else if (dwFormat == 2)
-			dwFormat = D3DFMT_DXT2;
-		else if (dwFormat == 3)
-			dwFormat = D3DFMT_DXT3;
-		else if (dwFormat == 4)
-			dwFormat = D3DFMT_DXT4;
-		else if (dwFormat == 5)
-			dwFormat = D3DFMT_DXT5;
+		if ((int)dwFormat == 1)
+			dwFormat = PixelFormat::DXT1;
+		else if ((int)dwFormat == 2)
+			dwFormat = PixelFormat::DXT2;
+		else if ((int)dwFormat == 3)
+			dwFormat = PixelFormat::DXT3;
+		else if ((int)dwFormat == 4)
+			dwFormat = PixelFormat::DXT4;
+		else if ((int)dwFormat == 5)
+			dwFormat = PixelFormat::DXT5;
 		else
-			dwFormat = D3DFMT_DXT3;
+			dwFormat = PixelFormat::DXT3;
 
 		if (m_pCanvasTexture->GetTexture())
 		{
@@ -270,7 +270,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 			{
 				nImageHeight = (m_nTextureHeight * nImageWidth) / m_nTextureWidth;
 			}
-			m_pCanvasTexture->SaveToFile(sFileName, (D3DFORMAT)dwFormat, nImageWidth, nImageHeight, 0);
+			m_pCanvasTexture->SaveToFile(sFileName,dwFormat, nImageWidth, nImageHeight, 0);
 		}
 	}
 	else
