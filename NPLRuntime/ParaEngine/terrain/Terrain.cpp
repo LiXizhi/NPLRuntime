@@ -1673,7 +1673,7 @@ void Terrain::Render()
 						}
 					}
 					// render triangles for the current texture group 
-					GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+					CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 				}
 
 				/**
@@ -1693,7 +1693,7 @@ void Terrain::Render()
 						GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, pCell->BindDetail(k) );
 
 						// render triangles for the current texture group 
-						GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive(  EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
+						CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 					}
 					// restore states
 					pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
@@ -2084,7 +2084,7 @@ void Terrain::RenderGeoMipmap()
 						if(block->GetFrustumState() > 0)
 						{
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-							GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+							CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 						}
@@ -2197,7 +2197,7 @@ void Terrain::RenderGeoMipmap()
 									}
 									pEffectFile->CommitChanges();
 									IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-									GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+									CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 										block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 										idxInfo->GetIndexCount()/3);
 									nFinishedLayers = i;
@@ -2238,7 +2238,7 @@ void Terrain::RenderGeoMipmap()
 							
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
 
-							GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+							CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 							nFinishedLayers = nLayers;
@@ -2262,7 +2262,7 @@ void Terrain::RenderGeoMipmap()
 							pEffectFile->CommitChanges();
 						
 							IndexInfo* idxInfo = m_pGeoMipmapIndicesGroup->GetChunkIndexInfo(block->GetLodLevel(),block->GetChunkType());
-							GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+							CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 								block->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 								idxInfo->GetIndexCount()/3);
 							pEffectFile->EndPass(1);
@@ -2300,7 +2300,7 @@ void Terrain::RenderGeoMipmap()
 							{
 								//transparent layer
 								CGlobals::GetEffectManager()->EnableD3DAlphaBlending(true);
-								GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+								CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 									pBlock->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 									idxInfo->GetIndexCount()/3);
 
@@ -2314,7 +2314,7 @@ void Terrain::RenderGeoMipmap()
 								pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS,*((DWORD*)&bias));
 								pRenderDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS,*((DWORD*)&slopeBias));
 
-								GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
+								CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,
 									pBlock->GetHomeIndex(),0,(m_MaximumVisibleBlockSize+1)*(m_MaximumVisibleBlockSize+1),idxInfo->GetStartIndexPos(),
 									idxInfo->GetIndexCount()/3);
 

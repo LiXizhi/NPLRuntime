@@ -721,7 +721,7 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			if (p.init(this, pSceneState))
 			{
 				// we don't want to render completely transparent parts
-				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 				p.deinit();
 			}
 		}

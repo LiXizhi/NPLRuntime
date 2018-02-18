@@ -367,7 +367,7 @@ HRESULT CGDIEngine::Clear(const ParaEngine::Color &color)
 		return E_FAIL;
 
 	int nRenderTargetSize = m_pRenderTarget->GetRenderTargetSize();
-	Rect rect(0, 0, nRenderTargetSize, nRenderTargetSize);
+	Gdiplus::Rect rect(0, 0, nRenderTargetSize, nRenderTargetSize);
 	BitmapData bitmapData;
 	bitmapData.Width = nRenderTargetSize;
 	bitmapData.Height = nRenderTargetSize;

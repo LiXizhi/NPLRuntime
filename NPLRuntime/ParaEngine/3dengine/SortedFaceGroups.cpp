@@ -328,7 +328,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 						pBufEntity->Unlock();
 
-						GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( D3DPT_TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
+						CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST,pBufEntity->m_dwBase,nLockedNum);
 
 						if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 						{

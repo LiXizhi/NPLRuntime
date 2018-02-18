@@ -108,7 +108,7 @@ namespace ParaEngine
 				m_waveParam[0] = fmodf((float)CGlobals::GetGameTime() * m_waveParam[3],900000.0f);
 				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(0,m_waveParam,1);
 
-				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,m_quadVertices,sizeof(mesh_vertex_plain));
 			
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 				pDevice->SetRenderState(ERenderState::ZENABLE,true);

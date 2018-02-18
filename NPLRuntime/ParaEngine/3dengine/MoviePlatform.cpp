@@ -7,7 +7,7 @@
 #include "ParaEngine.h"
 #include "IMovieCodec.h"
 #if USE_DIRECTX_RENDERER
-#include "d3d9.h"
+//#include "d3d9.h"
 #include "RenderDeviceD3D9.h"
 #endif
 #ifdef USE_DIRECTX_RENDERER
@@ -786,7 +786,7 @@ void CMoviePlatform::RenderCaptured()
 			}
 
 			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pCaptureTexture);
-			GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
+			CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 			//////////////////////////////////////////////////////////////////////////
 			// render a border, indicating whether the screen is being recorded or not.
@@ -840,7 +840,7 @@ void CMoviePlatform::RenderCaptured()
 				}
 				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 				CGlobals::GetEffectManager()->SetCullingMode(false);
-				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
+				CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 8, v, sizeof(DXUT_SCREEN_VERTEX) );
 				CGlobals::GetEffectManager()->SetCullingMode(true);
 			}
 		}

@@ -865,11 +865,7 @@ void ParaEngine::ParaEngineSettings::SetCoreUsage( DWORD dwUsage )
 
 const std::string& ParaEngine::ParaEngineSettings::GetSystemInfoString( bool bRefresh /*= false*/ )
 {
-#ifdef USE_DIRECTX_RENDERER
-	return COSInfo::GetSystemInfoString(bRefresh);
-#else
 	return CGlobals::GetString(0);
-#endif
 }
 
 void ParaEngine::ParaEngineSettings::SetAutoLowerFrameRateWhenNotFocused( bool bEnabled )

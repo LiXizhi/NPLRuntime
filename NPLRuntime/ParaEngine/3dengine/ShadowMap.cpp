@@ -1342,7 +1342,11 @@ HRESULT CShadowMap::BeginShadowPass()
 //#ifdef USE_DIRECTX_RENDERER
 	//  preserve old viewport and back buffer
 	auto pd3dDevice =  CGlobals::GetRenderDevice();
-	GETD3D(CGlobals::GetRenderDevice())->GetViewport(&oldViewport);
+	auto rect = CGlobals::GetRenderDevice()->GetViewport();
+	oldViewport.X = rect.x;
+	oldViewport.Y = rect.y;
+	oldViewport.Width = rect.z;
+	oldViewport.Height = rect.w;
 
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
 	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pZBuffer)))
@@ -1396,12 +1400,12 @@ HRESULT CShadowMap::BeginShadowPass()
 	newViewport.Height = m_shadowTexHeight;
 	newViewport.MinZ = 0.0f;
 	newViewport.MaxZ = 1.0f;
-//	Rect vp;
-	vp.x = newViewport.X;
-	vp.y = newViewport.Y;
-	vp.w = newViewport.Width;
-	vp.z = newViewport.Height;
-	CGlobals::GetRenderDevice()->SetViewport(vp);
+	Rect newvp;
+	newvp.x = newViewport.X;
+	newvp.y = newViewport.Y;
+	newvp.w = newViewport.Width;
+	newvp.z = newViewport.Height;
+	CGlobals::GetRenderDevice()->SetViewport(newvp);
 
 	float depthBias = float(m_iDepthBias) / 16777215.f;
 
@@ -1512,7 +1516,7 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->setTexture(0, m_pSMColorTexture->GetTexture());
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}
@@ -1526,7 +1530,7 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->setTexture(0, m_pSMColorTextureBlurredHorizontal->GetTexture());
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}

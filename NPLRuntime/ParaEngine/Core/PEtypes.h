@@ -6,6 +6,10 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
+#ifdef USE_DIRECTX_RENDERER
+#include <d3dx9math.h>
+#endif
+
 // Cross-platform type definitions
 #ifdef WIN32
 #ifndef PARAENGINE_CLIENT
@@ -18,7 +22,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <tchar.h>  
-//#include <d3dx9math.h>
+
 #else// For LINUX
 #include <ctype.h>
 #include <wctype.h>

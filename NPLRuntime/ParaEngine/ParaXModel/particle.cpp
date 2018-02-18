@@ -1099,7 +1099,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 #ifdef USE_DIRECTX_RENDERER
 				///////////////////////////////////////////////////////////////////////////
 				// fixed function pipeline
-				GETD3D(CGlobals::GetRenderDevice())->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
+				CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
 #endif
 			}
 			else

@@ -871,12 +871,6 @@ bool CGUIEditBox::OnMouseLeave()
 bool CGUIEditBox::OnMouseEnter()
 {
 	bool bHandled = CGUIBase::OnMouseEnter();
-#ifdef USE_DIRECTX_RENDERER
-	CGUIMouseVirtual *mouse = CGUIRoot::GetInstance()->m_pMouse;
-	if (mouse&&!L_PRESSED(mouse)){
-		m_bMouseDrag = false;
-	}
-#endif
 	return bHandled;
 }
 

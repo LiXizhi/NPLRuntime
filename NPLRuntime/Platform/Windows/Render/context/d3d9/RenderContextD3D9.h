@@ -1,27 +1,22 @@
 #pragma once
 #include "Framework/Interface/Render/IRenderContext.h"
-
 #include <vector>
 #include <string>
-
-struct IDirect3D9;
+//#include "d3d9.h"
 namespace ParaEngine
 {
-	class D3D9RenderContext : public IRenderContext
+	class RenderContextD3D9 : public IRenderContext
 	{
 	public:	
-		static D3D9RenderContext* Create();
-		virtual ~D3D9RenderContext() override;
-	private:
-		D3D9RenderContext();
+		RenderContextD3D9();
+		virtual ~RenderContextD3D9() override;
+	protected:
+
 		IDirect3D9* m_D3D;
 	public:
 		virtual IRenderDevice* CreateDevice(const RenderConfiguration& cfg) override;
 		IDirect3D9* GetD3D() const;
-
-
 		virtual bool ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg) override;
 
 	};
-	using D3D9RenderContextPtr = std::shared_ptr<D3D9RenderContext>;
 }

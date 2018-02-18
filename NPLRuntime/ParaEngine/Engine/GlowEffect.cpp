@@ -190,7 +190,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 				
 				pEffectFile->CommitChanges();
 
-				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+				HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 				pEffectFile->EndPass();
 			}
@@ -212,7 +212,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTGlowSourceTexture);
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -236,7 +236,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(0, m_pRTBlurHorizTexture );  //editor here!!!
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 		}
@@ -269,7 +269,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 
 			pEffectFile->CommitChanges();
 
-			HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->DrawPrimitiveUP( D3DPT_TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
+			HRESULT hr = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP,2,quadVertices,sizeof(mesh_vertex_plain));
 
 			pEffectFile->EndPass();
 			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );

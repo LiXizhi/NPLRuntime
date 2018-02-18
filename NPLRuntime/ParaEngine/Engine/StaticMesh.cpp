@@ -1814,7 +1814,7 @@ namespace ParaEngine
 	{
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 		const D3DXATTRIBUTERANGE& att = pAtts[nIndex];
-		return GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive( D3DPT_TRIANGLELIST, 0, att.VertexStart, att.VertexCount, att.FaceStart * 3, att.FaceCount);
+		return CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, att.VertexStart, att.VertexCount, att.FaceStart * 3, att.FaceCount);
 	}
 
 	int CParaXStaticMesh::GetNextPhysicsGroupID(int nPhysicsGroup)

@@ -105,7 +105,7 @@ namespace ParaEngine
 			{
 				uint32_t offset = i * g_maxInstancePerBatch * 4 * 3;
 				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(20,&m_constantBuffer[offset] ,currentInstancCount*3);
-				GETD3D(CGlobals::GetRenderDevice())->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
 			}
 		}
 	}

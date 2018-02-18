@@ -474,221 +474,221 @@ HRESULT DXUtil_WriteGuidRegKey( HKEY hKey, LPCTSTR strRegName, GUID guidValue )
 //          TIMER_GETELAPSEDTIME  - to get the time that elapsed between 
 //                                  TIMER_GETELAPSEDTIME calls
 //-----------------------------------------------------------------------------
-double __stdcall DXUtil_Timer( TIMER_COMMAND command )
-{
-    static BOOL     m_bTimerInitialized = FALSE;
-    static BOOL     m_bUsingQPF         = FALSE;
-    static BOOL     m_bTimerStopped     = TRUE;
-    static LONGLONG m_llQPFTicksPerSec  = 0;
-	static LARGE_INTEGER liFrequency;
-
-	static LONGLONG mLastTime;
-	static LARGE_INTEGER mStartTime;
-	static DWORD mStartTick;
-	
-	int i = 0;
-
-#ifdef USE_QueryPerformanceFrequency
-    // Initialize the timer
-    if( FALSE == m_bTimerInitialized )
-    {
-        m_bTimerInitialized = TRUE;
-
-        // Use QueryPerformanceFrequency() to get frequency of timer.  If QPF is
-        // not supported, we will timeGetTime() which returns milliseconds.
-        m_bUsingQPF = QueryPerformanceFrequency( &liFrequency );
-        if( m_bUsingQPF )
-            m_llQPFTicksPerSec = liFrequency.QuadPart;
-
-		// remember the first tick. 
-		QueryPerformanceCounter(&mStartTime);
-		mStartTick = GetTickCount();
-		mLastTime = mStartTime.QuadPart;
-    }
-#endif
-
-    if( m_bUsingQPF )
-    {
-        static LONGLONG m_llStopTime        = 0;
-        static LONGLONG m_llLastElapsedTime = 0;
-        static LONGLONG m_llBaseTime        = 0;
-        double fTime;
-        double fElapsedTime;
-		LARGE_INTEGER liCurrent;
-        
-        // Get either the current time or the stop time, depending
-        // on whether we're stopped and what command was sent
-        if( m_llStopTime != 0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
-            liCurrent.QuadPart = m_llStopTime;
-        else
-		{
-			// this is a fix of http://support.microsoft.com/kb/274323
-			QueryPerformanceCounter( &liCurrent );
-			
-			LONGLONG newTime = liCurrent.QuadPart - mStartTime.QuadPart;
-			// scale by 1000 for milliseconds
-			unsigned long newTicks = (unsigned long) (1000 * newTime / liFrequency.QuadPart);
-
-			// detect and compensate for performance counter leaps
-			// (surprisingly common, see Microsoft KB: Q274323)
-			unsigned long check = GetTickCount() - mStartTick;
-			signed long msecOff = (signed long)(newTicks - check);
-			if (msecOff < -200 || msecOff > 200)
-			{
-				// We must keep the timer running forward :)
-				LONGLONG adjust = std::min(msecOff * liFrequency.QuadPart / 1000, newTime - mLastTime);
-				mStartTime.QuadPart += adjust;
-				newTime -= adjust;
-
-				// Re-calculate milliseconds
-				newTicks = (unsigned long) (1000 * newTime / liFrequency.QuadPart);
-			}
-			// Record last time for adjust
-			mLastTime = newTime;
-			liCurrent.QuadPart = newTime;
-		}
-
-        // Return the elapsed time
-        if( command == TIMER_GETELAPSEDTIME )
-        {
-            fElapsedTime = (double) ( liCurrent.QuadPart - m_llLastElapsedTime ) / (double) m_llQPFTicksPerSec;
-            m_llLastElapsedTime = liCurrent.QuadPart;
-            return fElapsedTime;
-        }
-    
-        // Return the current time
-        if( command == TIMER_GETAPPTIME )
-        {
-            double fAppTime = (double) ( liCurrent.QuadPart - m_llBaseTime ) / (double) m_llQPFTicksPerSec;
-            return fAppTime;
-        }
-    
-        // Reset the timer
-        if( command == TIMER_RESET )
-        {
-            m_llBaseTime        = liCurrent.QuadPart;
-            m_llLastElapsedTime = liCurrent.QuadPart;
-            m_llStopTime        = 0;
-            m_bTimerStopped     = FALSE;
-            return 0.0;
-        }
-    
-        // Start the timer
-        if( command == TIMER_START )
-        {
-            if( m_bTimerStopped )
-                m_llBaseTime += liCurrent.QuadPart - m_llStopTime;
-            m_llStopTime = 0;
-            m_llLastElapsedTime = liCurrent.QuadPart;
-            m_bTimerStopped = FALSE;
-            return 0.0;
-        }
-    
-        // Stop the timer
-        if( command == TIMER_STOP )
-        {
-            if( !m_bTimerStopped )
-            {
-                m_llStopTime = liCurrent.QuadPart;
-                m_llLastElapsedTime = liCurrent.QuadPart;
-                m_bTimerStopped = TRUE;
-            }
-            return 0.0;
-        }
-    
-        // Advance the timer by 1/10th second
-        if( command == TIMER_ADVANCE )
-        {
-            m_llStopTime += m_llQPFTicksPerSec/10;
-            return 0.0f;
-        }
-
-        if( command == TIMER_GETABSOLUTETIME )
-        {
-            fTime = liCurrent.QuadPart / (double) m_llQPFTicksPerSec;
-            return fTime;
-        }
-
-        return -1.0; // Invalid command specified
-    }
-    else
-    {
-        // Get the time using timeGetTime()
-        static double m_fLastElapsedTime  = 0.0;
-        static double m_fBaseTime         = 0.0;
-        static double m_fStopTime         = 0.0;
-        double fTime;
-        double fElapsedTime;
-        
-        // Get either the current time or the stop time, depending
-        // on whether we're stopped and what command was sent
-        if( m_fStopTime != 0.0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
-            fTime = m_fStopTime;
-        else
-            fTime = GETTIMESTAMP() * 0.001;
-    
-        // Return the elapsed time
-        if( command == TIMER_GETELAPSEDTIME )
-        {   
-            fElapsedTime = (double) (fTime - m_fLastElapsedTime);
-            m_fLastElapsedTime = fTime;
-            return fElapsedTime;
-        }
-    
-        // Return the current time
-        if( command == TIMER_GETAPPTIME )
-        {
-            return (fTime - m_fBaseTime);
-        }
-    
-        // Reset the timer
-        if( command == TIMER_RESET )
-        {
-            m_fBaseTime         = fTime;
-            m_fLastElapsedTime  = fTime;
-            m_fStopTime         = 0;
-            m_bTimerStopped     = FALSE;
-            return 0.0;
-        }
-    
-        // Start the timer
-        if( command == TIMER_START )
-        {
-            if( m_bTimerStopped )
-                m_fBaseTime += fTime - m_fStopTime;
-            m_fStopTime = 0.0f;
-            m_fLastElapsedTime  = fTime;
-            m_bTimerStopped = FALSE;
-            return 0.0;
-        }
-    
-        // Stop the timer
-        if( command == TIMER_STOP )
-        {
-            if( !m_bTimerStopped )
-            {
-                m_fStopTime = fTime;
-                m_fLastElapsedTime  = fTime;
-                m_bTimerStopped = TRUE;
-            }
-            return 0.0;
-        }
-    
-        // Advance the timer by 1/10th second
-        if( command == TIMER_ADVANCE )
-        {
-            m_fStopTime += 0.1;
-            return 0.0;
-        }
-
-        if( command == TIMER_GETABSOLUTETIME )
-        {
-            return fTime;
-        }
-
-        return -1.0; // Invalid command specified
-    }
-}
+//double __stdcall DXUtil_Timer( TIMER_COMMAND command )
+//{
+//    static BOOL     m_bTimerInitialized = FALSE;
+//    static BOOL     m_bUsingQPF         = FALSE;
+//    static BOOL     m_bTimerStopped     = TRUE;
+//    static LONGLONG m_llQPFTicksPerSec  = 0;
+//	static LARGE_INTEGER liFrequency;
+//
+//	static LONGLONG mLastTime;
+//	static LARGE_INTEGER mStartTime;
+//	static DWORD mStartTick;
+//	
+//	int i = 0;
+//
+//#ifdef USE_QueryPerformanceFrequency
+//    // Initialize the timer
+//    if( FALSE == m_bTimerInitialized )
+//    {
+//        m_bTimerInitialized = TRUE;
+//
+//        // Use QueryPerformanceFrequency() to get frequency of timer.  If QPF is
+//        // not supported, we will timeGetTime() which returns milliseconds.
+//        m_bUsingQPF = QueryPerformanceFrequency( &liFrequency );
+//        if( m_bUsingQPF )
+//            m_llQPFTicksPerSec = liFrequency.QuadPart;
+//
+//		// remember the first tick. 
+//		QueryPerformanceCounter(&mStartTime);
+//		mStartTick = GetTickCount();
+//		mLastTime = mStartTime.QuadPart;
+//    }
+//#endif
+//
+//    if( m_bUsingQPF )
+//    {
+//        static LONGLONG m_llStopTime        = 0;
+//        static LONGLONG m_llLastElapsedTime = 0;
+//        static LONGLONG m_llBaseTime        = 0;
+//        double fTime;
+//        double fElapsedTime;
+//		LARGE_INTEGER liCurrent;
+//        
+//        // Get either the current time or the stop time, depending
+//        // on whether we're stopped and what command was sent
+//        if( m_llStopTime != 0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
+//            liCurrent.QuadPart = m_llStopTime;
+//        else
+//		{
+//			// this is a fix of http://support.microsoft.com/kb/274323
+//			QueryPerformanceCounter( &liCurrent );
+//			
+//			LONGLONG newTime = liCurrent.QuadPart - mStartTime.QuadPart;
+//			// scale by 1000 for milliseconds
+//			unsigned long newTicks = (unsigned long) (1000 * newTime / liFrequency.QuadPart);
+//
+//			// detect and compensate for performance counter leaps
+//			// (surprisingly common, see Microsoft KB: Q274323)
+//			unsigned long check = GetTickCount() - mStartTick;
+//			signed long msecOff = (signed long)(newTicks - check);
+//			if (msecOff < -200 || msecOff > 200)
+//			{
+//				// We must keep the timer running forward :)
+//				LONGLONG adjust = std::min(msecOff * liFrequency.QuadPart / 1000, newTime - mLastTime);
+//				mStartTime.QuadPart += adjust;
+//				newTime -= adjust;
+//
+//				// Re-calculate milliseconds
+//				newTicks = (unsigned long) (1000 * newTime / liFrequency.QuadPart);
+//			}
+//			// Record last time for adjust
+//			mLastTime = newTime;
+//			liCurrent.QuadPart = newTime;
+//		}
+//
+//        // Return the elapsed time
+//        if( command == TIMER_GETELAPSEDTIME )
+//        {
+//            fElapsedTime = (double) ( liCurrent.QuadPart - m_llLastElapsedTime ) / (double) m_llQPFTicksPerSec;
+//            m_llLastElapsedTime = liCurrent.QuadPart;
+//            return fElapsedTime;
+//        }
+//    
+//        // Return the current time
+//        if( command == TIMER_GETAPPTIME )
+//        {
+//            double fAppTime = (double) ( liCurrent.QuadPart - m_llBaseTime ) / (double) m_llQPFTicksPerSec;
+//            return fAppTime;
+//        }
+//    
+//        // Reset the timer
+//        if( command == TIMER_RESET )
+//        {
+//            m_llBaseTime        = liCurrent.QuadPart;
+//            m_llLastElapsedTime = liCurrent.QuadPart;
+//            m_llStopTime        = 0;
+//            m_bTimerStopped     = FALSE;
+//            return 0.0;
+//        }
+//    
+//        // Start the timer
+//        if( command == TIMER_START )
+//        {
+//            if( m_bTimerStopped )
+//                m_llBaseTime += liCurrent.QuadPart - m_llStopTime;
+//            m_llStopTime = 0;
+//            m_llLastElapsedTime = liCurrent.QuadPart;
+//            m_bTimerStopped = FALSE;
+//            return 0.0;
+//        }
+//    
+//        // Stop the timer
+//        if( command == TIMER_STOP )
+//        {
+//            if( !m_bTimerStopped )
+//            {
+//                m_llStopTime = liCurrent.QuadPart;
+//                m_llLastElapsedTime = liCurrent.QuadPart;
+//                m_bTimerStopped = TRUE;
+//            }
+//            return 0.0;
+//        }
+//    
+//        // Advance the timer by 1/10th second
+//        if( command == TIMER_ADVANCE )
+//        {
+//            m_llStopTime += m_llQPFTicksPerSec/10;
+//            return 0.0f;
+//        }
+//
+//        if( command == TIMER_GETABSOLUTETIME )
+//        {
+//            fTime = liCurrent.QuadPart / (double) m_llQPFTicksPerSec;
+//            return fTime;
+//        }
+//
+//        return -1.0; // Invalid command specified
+//    }
+//    else
+//    {
+//        // Get the time using timeGetTime()
+//        static double m_fLastElapsedTime  = 0.0;
+//        static double m_fBaseTime         = 0.0;
+//        static double m_fStopTime         = 0.0;
+//        double fTime;
+//        double fElapsedTime;
+//        
+//        // Get either the current time or the stop time, depending
+//        // on whether we're stopped and what command was sent
+//        if( m_fStopTime != 0.0 && command != TIMER_START && command != TIMER_GETABSOLUTETIME)
+//            fTime = m_fStopTime;
+//        else
+//            fTime = GETTIMESTAMP() * 0.001;
+//    
+//        // Return the elapsed time
+//        if( command == TIMER_GETELAPSEDTIME )
+//        {   
+//            fElapsedTime = (double) (fTime - m_fLastElapsedTime);
+//            m_fLastElapsedTime = fTime;
+//            return fElapsedTime;
+//        }
+//    
+//        // Return the current time
+//        if( command == TIMER_GETAPPTIME )
+//        {
+//            return (fTime - m_fBaseTime);
+//        }
+//    
+//        // Reset the timer
+//        if( command == TIMER_RESET )
+//        {
+//            m_fBaseTime         = fTime;
+//            m_fLastElapsedTime  = fTime;
+//            m_fStopTime         = 0;
+//            m_bTimerStopped     = FALSE;
+//            return 0.0;
+//        }
+//    
+//        // Start the timer
+//        if( command == TIMER_START )
+//        {
+//            if( m_bTimerStopped )
+//                m_fBaseTime += fTime - m_fStopTime;
+//            m_fStopTime = 0.0f;
+//            m_fLastElapsedTime  = fTime;
+//            m_bTimerStopped = FALSE;
+//            return 0.0;
+//        }
+//    
+//        // Stop the timer
+//        if( command == TIMER_STOP )
+//        {
+//            if( !m_bTimerStopped )
+//            {
+//                m_fStopTime = fTime;
+//                m_fLastElapsedTime  = fTime;
+//                m_bTimerStopped = TRUE;
+//            }
+//            return 0.0;
+//        }
+//    
+//        // Advance the timer by 1/10th second
+//        if( command == TIMER_ADVANCE )
+//        {
+//            m_fStopTime += 0.1;
+//            return 0.0;
+//        }
+//
+//        if( command == TIMER_GETABSOLUTETIME )
+//        {
+//            return fTime;
+//        }
+//
+//        return -1.0; // Invalid command specified
+//    }
+//}
 
 
 
