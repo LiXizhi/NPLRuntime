@@ -77,6 +77,16 @@ option ( LUA_USE_ASSERT "LuaJIT does asserts?" OFF )
 
 option ( LUAJIT_ENABLE_GC64 "LuaJIT 64 bits support" ON )
 
+
+# ext could cause a crash , so we disable it 
+option ( LUAJIT_ENABLE_EXT "LuaJIT EXT support" OFF )
+
+
+IF(NOT LUAJIT_ENABLE_EXT)
+   ADD_DEFINITIONS(-DLJ_NO_UNWIND)
+ENDIF()
+
+
 MARK_AS_ADVANCED(
   LUAJIT_DISABLE_FFI
   LUAJIT_ENABLE_LUA52COMPAT

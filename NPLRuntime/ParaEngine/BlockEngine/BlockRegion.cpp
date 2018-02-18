@@ -1488,6 +1488,11 @@ namespace ParaEngine
 			}
 		}
 
+		if (m_nEventAsyncLoadWorldFinished == 0)
+		{
+			m_nEventAsyncLoadWorldFinished = 2;
+			OUTPUT_LOG("error: failed to load region file %s. It may be corrupted or version not supported.\n", fileName.c_str());
+		}
 	}
 
 	void BlockRegion::DeleteAllBlocks()

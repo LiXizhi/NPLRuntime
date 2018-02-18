@@ -39,12 +39,13 @@ extern "C" {
 
 #include <luabind/luabind.hpp>
 #include <luabind/object.hpp>
+#include "os_calls.h"
 #include "ParaScriptingIO.h"
 
 using namespace luabind;
 
 //@def the maximum number of bytes in a text file line.
-#define MAX_LINE_CHARACTER_NUM	500
+#define MAX_LINE_CHARACTER_NUM	512
 
 namespace ParaScripting
 {
@@ -69,20 +70,8 @@ namespace ParaScripting
 	{
 		if(dest!=NULL && src!=NULL)
 		{
-#ifndef PARAENGINE_MOBILE
-			string sDestPath = dest;
-			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sDestPath.find_first_of(":") != string::npos)
-			{
-				// only relative path is allowed.
-				OUTPUT_LOG("security alert: some one is telling the engine to copy a file to %s which is not allowed\r\n", sDestPath.c_str());
+			if (!CParaFile::IsWritablePath(dest))
 				return false;
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-#endif
 		}
 		return CParaFile::CopyFile(src, dest, bOverride);
 	}
@@ -95,17 +84,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::CreateNewFile is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 		g_currentIOfile.close();
 		return g_currentIOfile.CreateNewFile(filename);
 	}
@@ -114,17 +94,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFileWrite is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 
 		g_currentIOfile.close();
 		return g_currentIOfile.OpenFile(filename, false);
@@ -134,17 +105,8 @@ namespace ParaScripting
 	{
 		OUTPUT_LOG("warning: ParaIO::OpenFile is absoleted. Use ParaIO.open() instead.\r\n");
 
-		string sFilename = filename;
-		if(sFilename.find_first_of(":") != string::npos)
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+		if (!CParaFile::IsWritablePath(filename))
 			return false;
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-		}
 
 		g_currentIOfile.close();
 		return g_currentIOfile.OpenFile(filename);
@@ -156,24 +118,8 @@ namespace ParaScripting
 		ParaFileObject file;
 		if (filename == NULL)
 			return file;
-		{
-			string sFilename = filename;
-			if (sFilename.find_first_of(":") != string::npos)
-			{
-				// skip writable directory.
-				std::string writablePath = CParaFile::GetWritablePath();
-				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
-				{
-					// only relative path is allowed.
-					OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
-					return file;
-				}
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-		}
+		if (!CParaFile::IsWritablePath(filename))
+			return file;
 
 		// open the given file according to its file type. currently image files are automatically opened.
 		// Load the texture data.
@@ -335,24 +281,9 @@ namespace ParaScripting
 		ParaFileObject file;
 		if(filename == NULL)
 			return file;
-		{
-			string sFilename = filename;
-			if(sFilename.find_first_of(":") != string::npos)
-			{
-				// skip writable directory.
-				std::string writablePath = CParaFile::GetWritablePath();
-				if (sFilename.compare(0, writablePath.length(), writablePath) != 0)
-				{
-					// only relative path is allowed.
-					OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
-					return file;
-				}
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
-		}
+		if (!CParaFile::IsWritablePath(filename))
+			return file;
+
 		if (mode[0] == 'r')
 		{
 			if(mode[1] != 'w')
@@ -451,23 +382,49 @@ namespace ParaScripting
 
 	void ParaIO::WriteString(const char* str)
 	{
-		g_currentIOfile.WriteString(str);
+		if (!g_currentIOfile.isEof())
+			g_currentIOfile.WriteString(str);
+		else
+		{
+			// write to stdout
+			fputs(str, stdout);
+			fflush(stdout);
+		}
 	}
 
 	void ParaIO::write(const char* buffer, int nSize)
 	{
-		g_currentIOfile.write(buffer, nSize);
+		if (!g_currentIOfile.isEof())
+			g_currentIOfile.write(buffer, nSize);
+		else
+		{
+			WriteString(buffer);
+		}
 	}
 
 	const char* ParaIO::readline()
 	{
 		// not thread safe
 		static char line[MAX_LINE_CHARACTER_NUM];
-		if(g_currentIOfile.isEof())
-			return NULL;
+		if (g_currentIOfile.isEof())
+		{
+			// read from stdio
+			return readline2("");
+		}
 		else
 			g_currentIOfile.GetNextLine(line, MAX_LINE_CHARACTER_NUM-1);
 		return line;
+	}
+
+	const char* ParaIO::readline2(const char* prompt)
+	{
+		// read from stdio
+		static std::string sLine;
+		if (ParaEngine::ReadLine(sLine, prompt))
+		{
+			return sLine.c_str();
+		}
+		return NULL;
 	}
 
 	bool ParaIO::DoesFileExist(const char * filename, bool bSearchZipFiles)
@@ -664,15 +621,11 @@ namespace ParaScripting
 			return "";
 		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
 		string sFileName = sfilename;
-		if(sFileName.find_first_of(":") != string::npos)
+		if(!CParaFile::IsWritablePath(sfilename, false))
 		{
 			// only relative path is allowed.
 			OUTPUT_LOG("security alert: some one is telling the engine to change file extension to a file %s which is not allowed\r\n", sFileName.c_str());
 			return "";
-		}
-		else
-		{
-			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
 		}
 		return CParaFile::ChangeFileExtension(sfilename, sExt);
 	}
@@ -894,28 +847,21 @@ namespace ParaScripting
 		{
 			string sDestPath = dest;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sDestPath.find_first_of(":") != string::npos)
+			if(!CParaFile::IsWritablePath(sDestPath))
 			{
 				// only relative path is allowed.
 				OUTPUT_LOG("security alert: some one is telling the engine to move a file to %s which is not allowed\r\n", sDestPath.c_str());
 				return false;
 			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
-			}
+			
 
 			string sSrcPath = dest;
 			//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-			if(sSrcPath.find_first_of(":") != string::npos)
+			if (!CParaFile::IsWritablePath(sSrcPath))
 			{
 				// only relative path is allowed.
 				OUTPUT_LOG("security alert: some one is telling the engine to move a file from %s which is not allowed\r\n", sSrcPath.c_str());
 				return false;
-			}
-			else
-			{
-				// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
 			}
 			return CParaFile::MoveFile(src, dest);
 		}
@@ -1052,7 +998,7 @@ namespace ParaScripting
 #endif
 	}
 
-	std::string ParaIO::GetWritablePath()
+	const std::string& ParaIO::GetWritablePath()
 	{
 		return CParaFile::GetWritablePath();
 	}
@@ -1074,7 +1020,7 @@ namespace ParaScripting
 
 	void ParaFileObject::writeline(const char* str)
 	{
-		if(IsValid())
+		if (IsValid())
 		{
 			m_pFile->WriteString(str);
 			m_pFile->WriteString("\n");

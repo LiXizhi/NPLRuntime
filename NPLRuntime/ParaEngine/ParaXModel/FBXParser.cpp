@@ -305,6 +305,35 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 		}
 		pMesh->m_header.minExtent = m_minExtent;
 		pMesh->m_header.maxExtent = m_maxExtent;
+
+		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+		{
+			Bone& bone = bones[i];
+			if (bone.IsTransformationNode() && !bone.CheckHasAnimation())
+			{
+				bone.SetStaticTransform(bone.matTransform);
+			}
+		}
+		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+		{
+			Bone& bone = bones[i];
+			if (bone.IsStaticTransform() && bone.IsTransformationNode())
+			{
+				// try to collapse multiple transform node into one to save computation. 
+				while (bone.parent >= 0) 
+				{
+					Bone& parent = bones[bone.parent];
+					if (parent.IsStaticTransform() && parent.IsTransformationNode())
+					{
+						bone.matTransform *= parent.matTransform;
+						bone.parent = parent.parent;
+					}
+					else
+						break;
+				}
+			}
+		}
+		
 	}
 
 	std::stable_sort(pMesh->passes.begin(), pMesh->passes.end());
@@ -433,14 +462,17 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				pMesh->textures[i] = CGlobals::GetAssetManager()->LoadTexture("", m_textures[i], TextureEntity::StaticTexture);
 			}
 			// for replaceable textures
-			if (m_textures[i].nIsReplaceableIndex > 0 && i < 32)
+			if (m_textures[i].nIsReplaceableIndex >= 0 && i < 32)
 			{
 				pMesh->specialTextures[i] = m_textures[i].nIsReplaceableIndex;
 			}
 		}
 	}
 
-	pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	//pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	pMesh->SetRenderMethod(pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM);
+
+
 	// only enable bmax model, if there are vertex color channel.
 	if (m_bUsedVertexColor)
 		pMesh->SetBmaxModel();
@@ -853,22 +885,92 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	std::string diffuseTexName(szPath.C_Str());
 	if (diffuseTexName != "")
 	{
+		std::string sOriginalPath;
+		CParaFile::ToCanonicalFilePath(sOriginalPath, diffuseTexName, false);
 		diffuseTexName = GetTexturePath(diffuseTexName);
-
+		
 		if (content_begin)
 		{
 			std::string sFileName = CParaFile::GetFileName(m_sFilename);
 			diffuseTexName = CParaFile::GetParentDirectoryFromPath(diffuseTexName) + sFileName + "/" + CParaFile::GetFileName(diffuseTexName);
 
-
 			m_textureContentMapping.insert(std::make_pair(diffuseTexName, std::string(content_begin, content_len)));
-
 			// OUTPUT_LOG("embedded FBX texture %s used. size %d bytes\n", texname.c_str(), (int)m_textureContentMapping[texname].size());
 		}
 		else if (!CParaFile::DoesFileExist(diffuseTexName.c_str(), true))
 		{
-			OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
-			diffuseTexName = "";
+			bool bFound = false;
+			if (CParaFile::IsAbsolutePath(sOriginalPath) || sOriginalPath[0] == '.')
+			{
+				// in case it is ../../Texture/abc.png, we will use relative path 
+				if (sOriginalPath[1] == '.' && sOriginalPath[2] == '/')
+				{
+					// such as ../../
+					std::string fullPath = CParaFile::GetParentDirectoryFromPath(diffuseTexName, 1);
+					int nOffset = 3;
+					while (sOriginalPath[nOffset] == '.' && sOriginalPath[nOffset + 1] == '.' && sOriginalPath[nOffset + 2] == '/')
+					{
+						fullPath = CParaFile::GetParentDirectoryFromPath(fullPath, 1);
+						nOffset += 3;
+					}
+					fullPath.append(sOriginalPath.c_str() + nOffset);
+					if (CParaFile::DoesFileExist(fullPath.c_str(), true))
+					{
+						diffuseTexName = fullPath;
+						bFound = true;
+					}
+				}
+				if (!bFound)
+				{
+					// search all parent directories for a possible global texture path. 
+					auto nPos = sOriginalPath.find_first_of('/');
+					int nCount = 0;
+					while (nPos != std::string::npos)
+					{
+						if (nPos == 2 && sOriginalPath[0] == '.')
+						{
+							while (nPos == 2 && sOriginalPath[0] == '.') {
+								sOriginalPath = sOriginalPath.substr(nPos + 1);
+								nPos = sOriginalPath.find_first_of('/');
+								++nCount;
+							}
+						}
+						else
+						{
+							sOriginalPath = sOriginalPath.substr(nPos + 1);
+							nPos = sOriginalPath.find_first_of('/');
+							++nCount;
+						}
+
+						if (nCount > 1 && CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+						{
+							diffuseTexName = sOriginalPath;
+							bFound = true;
+							break;
+						}
+					}
+				}
+			}
+			else if(CParaFile::DoesFileExist(sOriginalPath.c_str(), true))
+			{
+				bFound = true;
+				diffuseTexName = sOriginalPath;
+			}
+			if (!bFound) 
+			{
+				OUTPUT_LOG("warn: FBX texture %s not exist\n", diffuseTexName.c_str());
+				diffuseTexName = "";
+			}
+		}
+
+		if (!content_begin && !diffuseTexName.empty() && CParaFile::IsAbsolutePath(diffuseTexName))
+		{
+			// try making it relative to project root
+			const std::string & curDir = CParaFile::GetCurDirectory(0);
+			if (curDir.size()<diffuseTexName.size() && diffuseTexName.compare(0, curDir.size(), curDir) == 0)
+			{
+				diffuseTexName = diffuseTexName.substr(curDir.size());
+			}
 		}
 	}
 	m_bUsedVertexColor = diffuseTexName.empty() && m_bUsedVertexColor;
@@ -1155,11 +1257,11 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 				
-				values.push_back(std::pair<int, float>(key, value));
-
+				values.push_back(std::pair<const int&, const float&>(key, value));
+				 
 				lua_pop(L, 1);
 			}
 
@@ -1211,10 +1313,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1267,10 +1369,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1324,10 +1426,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1380,10 +1482,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1434,10 +1536,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1897,20 +1999,23 @@ void FBXParser::CalculateMinMax(const Vector3& v)
 int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 {
 	int nBoneIndex = -1;
-	if (m_boneMapping.find(pNodeName) != m_boneMapping.end())
+	auto it = m_boneMapping.find(pNodeName);
+	if (it != m_boneMapping.end())
 	{
-		nBoneIndex = m_boneMapping[pNodeName];
+		nBoneIndex = it->second;
 	}
 	else
 	{
-		ParaEngine::Bone bone;
-		bone.nIndex = m_bones.size();
+		nBoneIndex = m_bones.size();
+		m_bones.resize(nBoneIndex + 1);
+
+		ParaEngine::Bone& bone = m_bones.back();
+		bone.nIndex = nBoneIndex;
 		bone.bUsePivot = false;
-		nBoneIndex = bone.nIndex;
 		bone.SetName(pNodeName);
 		bone.AutoSetBoneInfoFromName();
+		bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		m_boneMapping[pNodeName] = bone.nIndex;
-		m_bones.push_back(bone);
 	}
 	return nBoneIndex;
 }
@@ -2097,19 +2202,20 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 		{
 			const aiBone * fbxBone = pFbxMesh->mBones[i];
 			int nBoneIndex = CreateGetBoneIndex(fbxBone->mName.C_Str());
+
 			if (nBoneIndex >= 0)
 			{
 				ParaEngine::Bone& bone = m_bones[nBoneIndex];
-				Matrix4 offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
-				offsetMat = offsetMat.transpose();
-				bone.matOffset = offsetMat;
+				const Matrix4& offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
+				bone.matOffset = offsetMat.transpose();
 				bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
+				bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 				bone.pivot = Vector3(0, 0, 0) * bone.matOffset.InvertPRMatrix();
 			}
 
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
 			{
-				aiVertexWeight vertexWeight = fbxBone->mWeights[j];
+				aiVertexWeight& vertexWeight = fbxBone->mWeights[j];
 				int vertex_id = vertexWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
 				int nTotalWeight = 0;
@@ -2271,7 +2377,7 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 		if (bone_index >= 0)
 		{
 			ParaEngine::Bone & bone = m_bones[bone_index];
-			bone.flags = ParaEngine::Bone::BONE_OFFSET_MATRIX;
+			bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 			// bone.calc is true, if there is bone animation. 
 			bone.calc = true;
 
@@ -2343,8 +2449,10 @@ void FBXParser::ProcessFBXAnimation(const aiScene* pFbxScene, unsigned int nInde
 void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, int parentBoneIndex, CParaXModel* pMesh)
 {
 	const std::string nodeName(pFbxNode->mName.C_Str());
+	
 	// this will force create a bone for every node. Bones without weights are just treated as ordinary nodes, 
 	// so it is important to add them here
+
 	int bone_index = CreateGetBoneIndex(pFbxNode->mName.C_Str());
 	if (bone_index >= 0)
 	{
@@ -2357,6 +2465,11 @@ void FBXParser::ProcessFBXBoneNodes(const aiScene* pFbxScene, aiNode* pFbxNode, 
 		{
 			bone.flags |= ParaEngine::Bone::BONE_STATIC_TRANSFORM;
 		}
+
+		//if (pFbxNode->mIsComplex)
+		//{
+		//	bone.flags |= ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
+		//}
 	}
 	m_bones[bone_index].parent = parentBoneIndex;
 

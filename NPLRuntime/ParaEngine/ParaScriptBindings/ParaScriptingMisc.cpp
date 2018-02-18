@@ -108,9 +108,10 @@ namespace ParaScripting
 		return ParaEngine::StringHelper::SimpleDecode(source);
 	}
 
-	const char* ParaMisc::EncodingConvert( const object& srcEncoding, const object& dstEncoding, const object& bytes)
+
+	const std::string& ParaMisc::EncodingConvert(const std::string& srcEncoding, const std::string& dstEncoding, const std::string& bytes)
 	{
-		return ParaEngine::StringHelper::EncodingConvert(NPL::NPLHelper::LuaObjectToString(srcEncoding), NPL::NPLHelper::LuaObjectToString(dstEncoding), NPL::NPLHelper::LuaObjectToString(bytes));
+		return ParaEngine::StringHelper::EncodingConvert(srcEncoding, dstEncoding, bytes);
 	}
 
 	bool ParaMisc::CopyTextToClipboard( const char* text )

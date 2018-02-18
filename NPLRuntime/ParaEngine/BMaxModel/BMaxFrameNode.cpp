@@ -71,12 +71,12 @@ ParaEngine::BMaxFrameNode::~BMaxFrameNode()
 
 }
 
-int32 ParaEngine::BMaxFrameNode::GetParentIndex() const
+int64 ParaEngine::BMaxFrameNode::GetParentIndex() const
 {
 	return m_nParentIndex;
 }
 
-void ParaEngine::BMaxFrameNode::SetParentIndex(int32 val)
+void ParaEngine::BMaxFrameNode::SetParentIndex(int64 val)
 {
 	m_nParentIndex = val;
 	auto pParent = GetParent();
@@ -209,7 +209,7 @@ DWORD ParaEngine::BMaxFrameNode::CalculateBoneColor()
 	auto pBlockWorld = BlockWorldClient::GetInstance();
 	BlockDirection::Side mySide = BlockDirection::GetBlockSide(block_data);
 
-	int index = GetIndex();
+	auto index = GetIndex();
 	BMaxFrameNode* pParentNode = GetParent();
 	
 	// always start from the opposite side
@@ -267,14 +267,14 @@ BMaxFrameNode* ParaEngine::BMaxFrameNode::GetChild(int nIndex)
 {
 	if ((int)(m_children.size()) > nIndex)
 	{
-		return m_pParser->m_bones[m_children[nIndex]].get();
+		return m_pParser->m_bones[(int)m_children[nIndex]].get();
 	}
 	return NULL;
 }
 
-int ParaEngine::BMaxFrameNode::GetChildIndexOf(BMaxFrameNode* pChild)
+int64 ParaEngine::BMaxFrameNode::GetChildIndexOf(BMaxFrameNode* pChild)
 {
-	int nIndex = pChild->GetIndex();
+	auto nIndex = pChild->GetIndex();
 	for (int i = 0; i < (int)m_children.size(); ++i)
 	{
 		if (m_children[i] == nIndex)
@@ -283,7 +283,7 @@ int ParaEngine::BMaxFrameNode::GetChildIndexOf(BMaxFrameNode* pChild)
 	return -1;
 }
 
-int ParaEngine::BMaxFrameNode::GetChildIndex()
+int64 ParaEngine::BMaxFrameNode::GetChildIndex()
 {
 	auto parent = GetParent();
 	return (parent) ? parent->GetChildIndexOf(this) : -1;
@@ -291,7 +291,7 @@ int ParaEngine::BMaxFrameNode::GetChildIndex()
 
 void ParaEngine::BMaxFrameNode::AddChild(BMaxFrameNode* pNode)
 {
-	int nIndex = pNode->GetIndex();
+	auto nIndex = pNode->GetIndex();
 	for (auto childIndex: m_children)
 	{
 		if (childIndex == nIndex)

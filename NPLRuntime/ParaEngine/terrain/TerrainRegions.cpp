@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "TerrainRegions.h"
-#ifdef USE_DIRECTX_RENDERER
+#ifdef WIN32
 #ifdef USE_FREEIMAGE
 #include "FreeImageMemIO.h"
 #endif

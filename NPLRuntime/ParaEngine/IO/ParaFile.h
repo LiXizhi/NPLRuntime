@@ -231,8 +231,12 @@ namespace ParaEngine
 		*  Gets the writable path.
 		*  @return  The path that can be write/read a file in
 		*/
-		PE_CORE_DECL static std::string GetWritablePath();
+		PE_CORE_DECL static const std::string& GetWritablePath();
+
+		/** Note: NOT thread safe, only set at startup when there is just one thread running. */
 		PE_CORE_DECL static void SetWritablePath(const std::string& writable_path);
+		/** whether the given file is a writable path. For absolute file path, we only allow files in initial working directory and writable path. */
+		PE_CORE_DECL static bool IsWritablePath(const std::string& filepath, bool bLogWarning = true);
 
 		enum PARAENGINE_DIRECTORY{
 			APP_ROOT_DIR = 0,
@@ -256,7 +260,8 @@ namespace ParaEngine
 			APP_SH_PICTURE_DIR = 18,
 			APP_SH_VIDEO_DIR = 19,
 			APP_DEV_DIR = 20,
-			APP_LAST_DIR
+			APP_EXECUTABLE_DIR = 21,
+			APP_LAST_DIR,
 		};
 
 		/** get the current directory of the application. it allows querying a number of standard directories.
