@@ -52,7 +52,7 @@ def make_native_lib(abi):
     build_arch_abi = abi
     build_stl_type = "gnustl_static"
     build_make_program= ANDROID_NDK + "/prebuilt/windows-x86_64/bin/make.exe"
-    build_cmd = "cmake -G \"{0}\" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_VERSION={1} -DCMAKE_ANDROID_ARCH_ABI={2} -DCMAKE_ANDROID_NDK=\"{3}\" -DCMAKE_ANDROID_STL_TYPE={4} -DCMAKE_MAKE_PROGRAM=\"{5}\" ../../../../Client/trunk".format(build_g,ANDROID_SYSTEM_VERSION,build_arch_abi, \
+    build_cmd = "cmake -G \"{0}\" -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_VERSION={1} -DCMAKE_ANDROID_ARCH_ABI={2} -DCMAKE_ANDROID_NDK=\"{3}\" -DCMAKE_ANDROID_STL_TYPE={4} -DCMAKE_MAKE_PROGRAM=\"{5}\" ../../../../NPLRuntime".format(build_g,ANDROID_SYSTEM_VERSION,build_arch_abi, \
     ANDROID_NDK,build_stl_type,build_make_program)
     os.system(build_cmd)
     os.system("make -j8")
@@ -64,7 +64,7 @@ def make_native_lib(abi):
 
 def build_apk():
     project_path = "./build/Android/project/"
-    src_path = "./Client/trunk/ParaEngineClient/Platform/Android/"
+    src_path = "./NPLRuntime/Platform/Android/"
     bin_path = project_path + "bin/"
     if os.path.exists(bin_path):
         shutil.rmtree(bin_path)
@@ -90,8 +90,8 @@ def build_apk():
     os.system(cmd)
     # Step5 launch
 
-make_native_lib("armeabi")
-#make_native_lib("armeabi-v7a")
+
+make_native_lib("armeabi-v7a")
 
 build_apk()
 
