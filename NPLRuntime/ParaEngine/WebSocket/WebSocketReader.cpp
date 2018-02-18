@@ -13,13 +13,13 @@ using namespace NPL::WebSocket;
 
 void WebSocketReader::assertSanePayloadLength(int length)
 {
-
 }
 
 WebSocketReader::WebSocketReader()
 	: state(START)
 	, cursor(0)
 	, flagsInUse(0x00)
+	, frameState(ComingMsgState::EMPTY)
 {
 	frame = new WebSocketFrame();
 }
@@ -67,6 +67,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		{
 		case NPL::WebSocket::State::START:
 		{
+			frameState = ComingMsgState::EMPTY;
 			byte b = buffer.get();
 			bool fin = ((b & 0x80) != 0);
 			byte opcode = (byte)(b & 0x0F);
@@ -139,7 +140,10 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 				cursor = 2;
 				break; // continue onto next state
 			}
-			assertSanePayloadLength(payloadLength);
+			else 
+			{
+				assertSanePayloadLength(payloadLength);
+			}
 			if (frame->isMasked())
 			{
 				state = MASK;
@@ -193,8 +197,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 			if (buffer.bytesRemaining() >= 4)
 			{
 				buffer.getBytes(m, 4);
-				std::vector<byte> mm(m, m + 4);
-				frame->setMask(mm);
+				frame->setMask(m, 4);
 				// special case for empty payloads (no more bytes left in buffer)
 				if (payloadLength == 0)
 				{
@@ -215,9 +218,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		case NPL::WebSocket::State::MASK_BYTES:
 		{
 			byte b = buffer.get();
-			std::vector<byte> mask = frame->getMask();
-			mask[4 - cursor] = b;
-			frame->setMask(mask);
+			frame->getMask()[4 - cursor] = b;
 			--cursor;
 			if (cursor == 0)
 			{
@@ -236,7 +237,7 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 		case NPL::WebSocket::State::PAYLOAD:
 		{
 			frame->assertValid();
-			if (parsePayload(buffer))
+			if (append(buffer))
 			{
 				// special check for close
 				if (frame->getOpCode() == OpCode::CLOSE)
@@ -255,27 +256,33 @@ bool WebSocketReader::parseFrame(ByteBuffer& buffer)
 	return true;
 }
 
-bool WebSocketReader::parsePayload(ByteBuffer& buffer)
+bool WebSocketReader::append(ByteBuffer& buffer)
 {
-	if (payloadLength == 0)
+	if (payloadLength <= 0)
 	{
 		return true;
 	}
-
 	const int len = buffer.bytesRemaining();
-	if ( len > 0)
+	int needed_len = payloadLength;
+	payloadLength -= len;
+	frame->append(buffer, needed_len);
+	if (payloadLength > 0)
 	{
-
-		frame->setPayload(buffer);
-		
-		return true;
-		
+		frameState = ComingMsgState::FRAGMENT_CONTINUATION;
 	}
-	return false;
+	else
+	{
+		frameState = ComingMsgState::ENTIRE;
+	}
+	return true;
 }
 
 WebSocketFrame* WebSocketReader::getFrame()
 {
 	return frame;
 }
-
+void WebSocketReader::reset() 
+{
+	frameState = ComingMsgState::EMPTY; 
+	payloadLength = 0;
+}

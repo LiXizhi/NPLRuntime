@@ -88,6 +88,8 @@ namespace ParaEngine
 		/** get the number of objects in the model.*/
 		inline const ParaXModelObjNum& GetObjectNum() const {return m_objNum;};
 		inline const ParaXHeaderDef& GetHeader() const {return m_header;};
+		/** check the minimum file version. Return true if file version is equal or higher than the given one. */
+		bool CheckMinVersion(int v0, int v1=0, int v2=0, int v3=0);
 
 		/** file loading for ParaX file type*/
 		void initVertices(int nVertices, ModelVertex* pVertices);
@@ -211,6 +213,8 @@ namespace ParaEngine
 		/** only called inside Render* function*/
 		void DrawPass(ModelRenderPass &p);
 		void DrawPass_NoAnim(ModelRenderPass &p);
+		void DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start);
+		void DrawPass_BMax_VB(ModelRenderPass &p, size_t start);
 		void DrawPass_BMax(ModelRenderPass &p);
 		/** clear all face groups. */
 		void ClearFaceGroups();
@@ -233,8 +237,17 @@ namespace ParaEngine
 
 		void SaveToDisk(const char* path);
 
+		void SetRenderMethod(RENDER_METHOD method);
+
+		void SetVertexBufferDirty();
+
 		friend struct ModelRenderPass;
-			
+
+	private:
+		void InitVertexBuffer_NOANIM();
+		void InitVertexBuffer_BMAX();
+		void InitVertexBuffer();
+
 	public:
 		/** model header */
 		ParaXHeaderDef	m_header;
@@ -348,6 +361,22 @@ namespace ParaEngine
 
 		/** a mapping from known bone id to bone index. */
 		int m_boneLookup[MAX_KNOWN_BONE_NODE];
+
+	private:
+		enum VERTEX_BUFFER_STATE
+		{
+			//
+			NOT_USE				= 0,
+			//
+			NEED_INIT			= 1,
+			// 
+			INITED				= 2,
+		};
+
+		VERTEX_BUFFER_STATE m_vbState;
+
+		static const size_t MAX_USE_VERTEX_BUFFER_SIZE = 1024 * 1024 * 256;
+		static size_t m_uUsedVB;
 	};
 
 	/** the pose of the character. It will override the one in the model.*/

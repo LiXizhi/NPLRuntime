@@ -53,6 +53,7 @@ void CParaEngineService::AcceptKeyStroke(bool bAccept)
 class CNPLFile_ServerMainLoop : public NPL::INPLActivationFile
 {
 public:
+
 	CNPLFile_ServerMainLoop(IParaEngineApp* pParaEngineApp):m_pParaEngineApp(pParaEngineApp), m_fElapsedTime(0.f){};
 	
 	virtual NPL::NPLReturnCode OnActivate(NPL::INPLRuntimeState* pState){
@@ -68,6 +69,7 @@ public:
 	};
 
 protected:
+
 	IParaEngineApp* m_pParaEngineApp;
 	/** number of seconds elapsed since the game engine start. */
 	float m_fElapsedTime;
@@ -207,15 +209,18 @@ void CParaEngineService::InitDaemon(void)
 #endif
 }
 
+
 int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 {
 	if (pApp && !pCommandLine){
 		pCommandLine = pApp->GetAppCommandLine();
 	}
 
+
 	assert(pApp);
 	m_pParaEngineApp = pApp;
-	if (strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0)
+	bool bInteractiveMode = strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0;
+	if (bInteractiveMode)
 	{
 		// run in interpreter and interactive mode. io.read() can be used to read input from standard io. 
 		AcceptKeyStroke(false);
@@ -253,7 +258,8 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 	// stop the service now. 
 	m_pParaEngineApp->FinalCleanup();
 
-	printf("Service is stopped             \n");
+	if (!bInteractiveMode)
+		printf("Service is stopped             \n");
 	int return_code = m_pParaEngineApp->GetReturnCode();
 	if (!pApp){
 		SAFE_DELETE(m_pParaEngineApp);

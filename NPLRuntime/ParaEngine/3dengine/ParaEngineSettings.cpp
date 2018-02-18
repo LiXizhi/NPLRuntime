@@ -33,7 +33,7 @@
 	#include "util/EnumProcess.hpp"
 #endif
 #endif
-
+#include <boost/thread/tss.hpp>
 #include <time.h>
 #include "Globals.h"
 #include "IParaEngineApp.h"
@@ -46,6 +46,13 @@ using namespace luabind;
 /** the default locale in this compilation. */
 #define DEFAULT_LOCALE	"zhCN"
 //#define DEFAULT_LOCALE	"enUS"
+
+
+#ifdef WIN32
+bool ParaEngine::ParaEngineSettings::m_bSandboxMode = true;
+#else
+bool ParaEngine::ParaEngineSettings::m_bSandboxMode = false;
+#endif
 
 ParaEngineSettings::ParaEngineSettings(void)
 	:m_currentLanguage(-1)
@@ -726,6 +733,26 @@ void ParaEngine::ParaEngineSettings::SetScreenResolution( const Vector2& vSize )
 		CGlobals::GetApp()->SetScreenResolution(vSize);
 }
 
+void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
+{
+	auto app = CGlobals::GetApp();
+	if (app)
+	{
+		app->FixWindowSize(bEnabled);
+	}
+}
+
+const char* ParaEngine::ParaEngineSettings::GetWritablePath()
+{
+	return CParaFile::GetWritablePath().c_str();
+}
+
+void ParaEngine::ParaEngineSettings::SetWritablePath(const char* sPath)
+{
+	if(sPath!=NULL)
+		CParaFile::SetWritablePath(sPath);
+}
+
 void ParaEngine::ParaEngineSettings::SetFullScreenMode( bool bFullscreen )
 {
 	if(CGlobals::GetApp())
@@ -939,6 +966,16 @@ Vector2 ParaEngine::ParaEngineSettings::GetWindowResolution()
 #else
 	return Vector2(0, 0);
 #endif
+}
+
+bool ParaEngine::ParaEngineSettings::IsSandboxMode()
+{
+	return m_bSandboxMode;
+}
+
+void ParaEngine::ParaEngineSettings::SetSandboxMode(bool val)
+{
+	m_bSandboxMode = val;
 }
 
 void ParaEngine::ParaEngineSettings::SetDefaultOpenFileFolder(const char* sDefaultOpenFileFolder)
@@ -1172,25 +1209,6 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 #endif
 }
 
-void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
-{
-#ifdef WIN32
-	if (CGlobals::GetApp()->IsWindowedMode())
-	{
-		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
-		if (bEnabled)
-		{
-			dwAttr &= (~(WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
-		}
-		else
-		{
-			dwAttr |= (WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
-		}
-		SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
-	}
-#endif
-}
-
 void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
 {
 #ifdef WIN32
@@ -1262,10 +1280,10 @@ void ParaEngine::ParaEngineSettings::SetHasClosingRequest(bool val)
 	CGlobals::GetApp()->SetHasClosingRequest(val);
 }
 
-int ParaEngine::ParaEngineSettings::GetAppHWND()
+intptr_t ParaEngine::ParaEngineSettings::GetAppHWND()
 {
 #if defined (PLATFORM_WINDOWS)
-	return (int)CGlobals::GetAppHWND();
+	return (intptr_t)CGlobals::GetAppHWND();
 #else
 	return 0;
 #endif
@@ -1362,6 +1380,8 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Icon", FieldType_String, (void*)SetIcon_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("LockWindowSize", FieldType_Bool, (void*)SetLockWindowSize_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("ShowWindowTitleBar", FieldType_Bool, (void*)SetShowWindowTitleBar_s, (void*)IsShowWindowTitleBar_s, NULL, NULL, bOverride);
+	pClass->AddField("WritablePath", FieldType_String, (void*)SetWritablePath_s, (void*)GetWritablePath_s, NULL, NULL, bOverride);
+	pClass->AddField("SandboxMode", FieldType_Bool, (void*)SetSandboxMode_s, (void*)IsSandboxMode_s, NULL, NULL, bOverride);
 
 	pClass->AddField("FPS", FieldType_Float, NULL, (void*)GetFPS_s, NULL, NULL, bOverride);
 	pClass->AddField("TriangleCount", FieldType_Int, NULL, (void*)GetTriangleCount_s, NULL, NULL, bOverride);
@@ -1371,6 +1391,6 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("PeakMemoryUse", FieldType_Int, NULL, (void*)GetPeakMemoryUse_s, NULL, NULL, bOverride);
 	pClass->AddField("VertexBufferPoolTotalBytes", FieldType_Int, NULL, (void*)GetVertexBufferPoolTotalBytes_s, NULL, NULL, bOverride);
 
-	pClass->AddField("AppHWND", FieldType_Int, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
+	pClass->AddField("AppHWND", FieldType_Double, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
 	return S_OK;
 }

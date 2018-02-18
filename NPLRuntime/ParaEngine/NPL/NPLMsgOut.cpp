@@ -97,7 +97,8 @@ namespace NPL{
 		}
 		else
 		{
-			byte method[] = {255, ' '};
+			// 0xff is the binary version for NPL append
+			byte method[] = {0xff, ' '};
 			Append((const char*)method, 2);
 		}
 

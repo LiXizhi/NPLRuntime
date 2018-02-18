@@ -257,6 +257,8 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) {};
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() { return ""; };
+		/* */
+		virtual void FixWindowSize(bool fixed) {};
 
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
@@ -361,6 +363,8 @@ namespace ParaEngine
 		std::string m_sPackagesDir;
 		/** bin/ module path */
 		std::string m_sModuleDir;
+		/** initial working directory*/
+		std::string m_sInitialWorkingDir;
 		/** application state */
 		PEAppState m_nAppState;
 	};

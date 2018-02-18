@@ -1,29 +1,11 @@
 #include "ParaEngine.h"
-#include "AnimInstanceBase.h"
 #include "ParaWorldAsset.h"
-#include "ViewCullingObject.h"
-#include "DummyAnimInstance.h"
+#include "ParaXAnimInstance.h"
 #include "SceneObject.h"
-#include "AutoCamera.h"
-#include "PhysicsWorld.h"
-#include "IEnvironmentSim.h"
-#include "terrain/GlobalTerrain.h"
-#include "AIModuleNPC.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockCommon.h"
-#include "OceanManager.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "BVHSerializer.h"
-#endif
 #include "ParaXModel/ParaXModel.h"
 #include "ParaXModel/BoneAnimProvider.h"
-#include "CustomCharModelInstance.h"
-#include "ParaXAnimInstance.h"
-#include "BipedStateManager.h"
-#include "BipedObject.h"
-#include "ShapeOBB.h"
-#include "ShapeAABB.h"
-#include "PhysicsWorld.h"
 #include "GeosetObject.h"
 #include <algorithm>
 using namespace ParaEngine;
@@ -224,7 +206,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			pEffectManager->SetSamplerState(0,ESamplerStateType::MAGFILTER,pEffectManager->GetDefaultSamplerState(0,ESamplerStateType::MAGFILTER));
 		}
 
-		CApplyObjectLevelParamBlock p(mParent->GetEffectParamBlock());
+		CApplyObjectLevelParamBlock p(GetEffectParamBlock());
 		_draw(sceneState,mat,p.GetParamsBlock());
 
 		sceneState->EnableLocalMaterial(false);
@@ -255,12 +237,19 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 
 		if(pModel)
 		{
-			pModel->m_CurrentAnim=pAI->m_CurrentAnim;
-			pModel->m_NextAnim=pAI->m_NextAnim;
-			pModel->m_BlendingAnim=pAI->m_BlendingAnim;
-			pModel->blendingFactor=pAI->m_fBlendingFactor;
-			pModel->animate(sceneState,nullptr,pAI);
+			pModel->animated=true;
+			//pModel->m_CurrentAnim=pAI->m_CurrentAnim;
+			//pModel->m_NextAnim=pAI->m_NextAnim;
+			//pModel->m_BlendingAnim=pAI->m_BlendingAnim;
+			//pModel->blendingFactor=pAI->m_fBlendingFactor;
+			//pModel->animate(sceneState,nullptr,pAI);
+
+			auto bones=pModel->bones;
+			pModel->bones=pAI->GetAnimModel()->GetModel()->bones;
+				
 			pModel->draw(sceneState,params);
+
+			pModel->bones=bones;
 		}
 
 

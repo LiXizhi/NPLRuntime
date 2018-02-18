@@ -299,6 +299,13 @@ void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 	}
 	UnloadAsset();
 
+	// make valid again, because we will reload it
+	if (!IsValid() && GetState() == AssetEntity::ASSET_STATE_FAILED_TO_LOAD)
+	{
+		SetState(AssetEntity::ASSET_STATE_NORMAL);
+		m_bIsValid = true;
+	}
+
 	SAFE_DELETE(m_pTextureInfo);
 	
 	if(!bLazyLoad)

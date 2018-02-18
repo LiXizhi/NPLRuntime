@@ -212,6 +212,7 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar);
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText();
+		virtual void FixWindowSize(bool fixed);
 
 		/** get the render engine stats to output.
 		* @param output: the output buffer.

@@ -58,6 +58,7 @@ namespace ParaEngine
 		const Vector3& GetCenterPos() const;
 
 		void MergeCoplanerBlockFace();
+		bool IsCoplaneNode(BMaxNode* node1, BMaxNode* node2, int nFaceIndex);
 		void FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex);
 		void FindNeighbourFace(Rectangle *rectangle, uint32 i, uint32 nFaceIndex);
 
@@ -65,28 +66,28 @@ namespace ParaEngine
 		void GetLodTable(uint32 faceCount, vector<uint32>&lodTable);
 		void PerformLod();
 		void CalculateAABB(vector<BMaxNodePtr>&nodes);
-		void CalculateLodNode(map<int32, BMaxNodePtr> &nodeMap, int x, int y, int z);
+		void CalculateLodNode(map<int64, BMaxNodePtr> &nodeMap, int x, int y, int z);
 	
-		inline uint32 GetNodeIndex(uint16 x, uint16 y, uint16 z)
+		inline uint64 GetNodeIndex(uint16 x, uint16 y, uint16 z)
 		{
-			return (DWORD)x + ((DWORD)z << 8) + ((DWORD)y << 16);
+			return (uint64)x + ((uint64)z << 16) + ((uint64)y << 32);
 		}
 		/* same as GetNode except that it checks for boundary condition. */
 		BMaxNode* GetBMaxNode(int x, int y, int z);
 
 		inline BMaxNode* GetNode(uint16 x, uint16 y, uint16 z)
 		{
-			int index = GetNodeIndex(x, y, z);
+			uint64 index = GetNodeIndex(x, y, z);
 			auto iter = m_nodes.find(index);
 			return (iter != m_nodes.end()) ? iter->second.get() : NULL;
 		}
-		inline BMaxNode* GetNodeByIndex(int index)
+		inline BMaxNode* GetNodeByIndex(int64 index)
 		{
 			auto iter = m_nodes.find(index);
 			return (iter != m_nodes.end()) ? iter->second.get() : NULL;
 		}
 		/** return node index*/
-		int InsertNode(BMaxNodePtr& nodePtr);
+		int64 InsertNode(BMaxNodePtr& nodePtr);
 		void Load(const char* pBuffer, int32 nSize);
 		void ParseBlocks(BMaxXMLDocument& doc);
 		void ParseBlocks_Internal(const char* value);
@@ -126,12 +127,12 @@ namespace ParaEngine
 		void ClearModel();
 		void FillParaXModelData(CParaXModel *pMesh);
 		void FillVerticesAndIndices();
-		void ProcessBoneNodes();
-		int CreateBoneIndex(uint16 x, uint16 y, uint16 z, int parentIndex);
+		//void ProcessBoneNodes();
+		//int CreateBoneIndex(uint16 x, uint16 y, uint16 z, int parentIndex);
 		int GetBoneIndex(uint16 x, uint16 y, uint16 z);
 		void ScaleModels();
 		float CalculateScale(float length);
-		int GetIndexFromXmlElement(BMaxXMLElement* node, const char* name, int& x, int& y, int& z);
+		int64 GetIndexFromXmlElement(BMaxXMLElement* node, const char* name, int& x, int& y, int& z);
 
 		bool ReadValue(BMaxXMLElement* node, const char* name, int32_t& value);
 		bool ReadValue(BMaxXMLElement* node, const char* name, float& value);
@@ -154,7 +155,7 @@ namespace ParaEngine
 		BMaxParser* m_pParent;
 		std::string m_filename;
 		std::vector<BlockModel*> m_blockModels;
-		std::map<uint32, BMaxNodePtr> m_nodes;
+		std::map<uint64, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;
 		/*std::vector<RectanglePtr>m_originRectangles;
 		std::map<uint16, vector<RectanglePtr>>m_lodRectangles;*/

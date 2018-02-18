@@ -345,7 +345,7 @@ namespace ParaScripting
 		static bool RemoveSearchPath(const char* sFile);
 
 		/** get writable path */
-		static std::string GetWritablePath();
+		static const std::string& GetWritablePath();
 
 		/**
 		* clear all search paths.
@@ -400,16 +400,6 @@ namespace ParaScripting
 		* @return true if succeeds
 		*/
 		static bool CopyFile(const char* src, const char* dest, bool bOverride);
-
-		/** create a new file for writing.
-		* it will make all necessary directories in order to create the file.
-		*/
-		static bool CreateNewFile(const char * filename);
-		/** open a new file for write-only access. If the file does not exist, it will be created.
-		* if the file exists, the file pointer is at the end of file.*/
-		static bool OpenFileWrite(const char * filename);
-		/** Open a file for read-only access. */
-		static bool OpenFile(const char * filename);
 
 		/**
 		* This is rather similar to OpenFile() method, except that it will first look in the AssetManifest to see if the file exit.
@@ -492,18 +482,48 @@ namespace ParaScripting
 		* @return: true if the directory is made or already exists*/
 		static bool CreateDirectory(const char* filename);
 
-		/** Close the current file.*/
+		/** deprecated: use ParaIO.open
+		* create a new file for writing.
+		* it will make all necessary directories in order to create the file.
+		*/
+		static bool CreateNewFile(const char * filename);
+		/** deprecated: use ParaIO.open
+		* open a new file for write-only access. If the file does not exist, it will be created.
+		* if the file exists, the file pointer is at the end of file.*/
+		static bool OpenFileWrite(const char * filename);
+		/** deprecated: use ParaIO.open
+		* Open a file for read-only access.
+		*/
+		static bool OpenFile(const char * filename);
+
+		/** deprecated: use ParaIO.open
+		* Close the current file.
+		*/
 		static void CloseFile();
-		/** write a string to the current file. */
+		/** deprecated: use ParaIO.open
+		* write a string to the current file. 
+		*/
 		static void WriteString(const char* str);
-		/** read line as a string. The string is guaranteed to be ended with '\0'.
+		/**
+		* deprecated: use ParaIO.open
+		* write a buffer to the current file.
+		*/
+		static void write(const char* buffer, int nSize);
+
+		/** if no file is opened, it means readline from stdin.
+		* a deprecated usage is reading from current open file. 
+		* read line as a string. The string is guaranteed to be ended with '\0'.
 		* if end of file is reached, it will return NULL. which is nil in the script.
 		* if a line begins with "--", it is automatically recognized as a comment line and will be skipped.
 		* a blank line will also be skipped.
 		*/
 		static const char* readline();
-		/** write a buffer to the current file. */
-		static void write(const char* buffer, int nSize);
+		
+		/** read line from stdin and automatically add to history
+		* @param prompt: the default prompt like "> ", ">> " or just ""
+		*/
+		static const char* readline2(const char* prompt);
+
 		/**
 		* Check whether a given file exists on disk.
 		* @param filename: file name to check
@@ -548,17 +568,29 @@ namespace ParaScripting
 		* and that it always ends with "\". e.g. "c:/lxzsrc/paraengineSDK/" or "c:/lxzsrc/paraengineSDK/script/"
 		* @param dwDirectoryType: it can be one of the PARAENGINE_DIRECTORY enumeration type
 			enum PARAENGINE_DIRECTORY{
-			APP_ROOT_DIR=0,
-			APP_SCRIPT_DIR=1,
-			APP_ARCHIVE_DIR=2, // xmodels
-			APP_MODEL_DIR=3,
-			APP_SHADER_DIR=4,
-			APP_DATABASE_DIR=5,
-			APP_TEMP_DIR=6,
-			APP_USER_DIR=7,
-			APP_BACKUP_DIR=8,
-			APP_SCREENSHOT_DIR=9,
-			APP_PLUGIN_DIR=10,
+			APP_ROOT_DIR = 0,
+			APP_SCRIPT_DIR = 1,
+			APP_ARCHIVE_DIR = 2, // xmodels
+			APP_MODEL_DIR = 3,
+			APP_SHADER_DIR = 4,
+			APP_DATABASE_DIR = 5,
+			APP_TEMP_DIR = 6,
+			APP_USER_DIR = 7,
+			APP_BACKUP_DIR = 8,
+			APP_SCREENSHOT_DIR = 9,
+			APP_PLUGIN_DIR = 10,
+			APP_CONFIG_DIR = 11,
+			APP_CHARACTER_DIR = 12,
+			APP_SH_DESKTOP_DIR = 13,
+			APP_SH_DESKTOP_FOLDER_DIR = 14,
+			APP_SH_MYDOC_DIR = 15,
+			APP_SH_FAV_DIR = 16,
+			APP_SH_MUSIC_DIR = 17,
+			APP_SH_PICTURE_DIR = 18,
+			APP_SH_VIDEO_DIR = 19,
+			APP_DEV_DIR = 20,
+			APP_EXECUTABLE_DIR = 21,
+			APP_LAST_DIR,
 			};
 		* @return: the directory is returned. */
 		static string GetCurDirectory(DWORD dwDirectoryType);

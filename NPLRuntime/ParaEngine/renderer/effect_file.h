@@ -6,6 +6,7 @@
 #include "LightManager.h"
 #include "ParameterBlock.h"
 #include "EffectFileHandles.h"
+#include "IObjectScriptingInterface.h"
 
 namespace ParaEngine
 {
@@ -15,7 +16,7 @@ namespace ParaEngine
 	/**
 	* asset entity: CEffectFile
 	*/
-	class CEffectFileBase : public AssetEntity
+	class CEffectFileBase : public AssetEntity,public IObjectScriptingInterface
 	{
 	public:
 		const static int MAX_EFFECT_LIGHT_NUM = 4;
@@ -169,6 +170,11 @@ namespace ParaEngine
 			k_max_param_handles
 		};
 
+		enum CallBackType
+		{
+			Type_DrawPass
+		};
+
 		/** a technique description */
 		struct TechniqueDesc
 		{
@@ -303,6 +309,8 @@ namespace ParaEngine
 		bool SetTechniqueByIndex(int nIndex) { return false; };
 		/** get the current technique description. This function may return NULL*/
 		const TechniqueDesc* GetCurrentTechniqueDesc() { return NULL; };
+
+		void onDrawPass(CParameterBlock* pMaterialParams,int passIndex);
 	};
 }
 

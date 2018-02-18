@@ -160,7 +160,7 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) = 0;
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() = 0;
-
+		
 		/** get the current mouse cursor position. 
 		* @param pX: out
 		* @param pY: out
