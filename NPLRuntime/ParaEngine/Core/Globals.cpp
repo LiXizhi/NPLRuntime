@@ -294,7 +294,7 @@ HWND CGlobals::GetAppHWND()
 	else
 		return 0;
 #elif defined(USE_OPENGL_RENDERER)
-	return CParaEngineApp::GetInstance()->GetMainWindow();
+	return 0;
 #else
 	return 0;
 #endif
