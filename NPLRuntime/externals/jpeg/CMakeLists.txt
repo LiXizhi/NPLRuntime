@@ -2,10 +2,15 @@ add_library(libjpeg INTERFACE)
 
 if(ANDROID)
     target_include_directories(libjpeg INTERFACE include/android)
-    target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/android/${CMAKE_ANDROID_ARCH_ABI}/libjpeg.a)
+    target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libjpeg.a)
 elseif(WIN32)
     target_include_directories(libjpeg INTERFACE include/win32)
-    target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuild/win32/libjpeg.lib)
+    if(CMAKE_CL_64)
+        target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/x64/libjpeg.lib)
+    else()
+        target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/x86/libjpeg.lib)
+    endif()
+
 endif()
 
 
