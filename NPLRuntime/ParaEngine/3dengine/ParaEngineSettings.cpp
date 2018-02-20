@@ -738,7 +738,7 @@ void ParaEngine::ParaEngineSettings::SetLockWindowSize(bool bEnabled)
 	auto app = CGlobals::GetApp();
 	if (app)
 	{
-		app->FixWindowSize(bEnabled);
+		//TODO: app->FixWindowSize(bEnabled);
 	}
 }
 

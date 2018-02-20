@@ -1981,6 +1981,11 @@ const char* CWindowsApplication::GetWindowText()
 	return g_title.c_str();
 }
 
+void ParaEngine::CWindowsApplication::FixWindowSize(bool fixed)
+{
+	//TODO
+}
+
 void CWindowsApplication::WriteConfigFile(const char* FileName)
 {
 	string sFileName;

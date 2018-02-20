@@ -14,11 +14,9 @@
 #include "ParaXBone.h"
 #include "particle.h"
 #include "memdebug.h"
-
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
 #endif
-
 using namespace ParaEngine;
 
 /** @def whether the particles of a particle system will default to global particles.
@@ -374,7 +372,10 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
-
+			// we want the alpha to be the modulation of the texture and the diffuse color
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
 			break;
 		}
 #endif
@@ -407,6 +408,10 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 			pEffect->EnableAlphaBlending(true);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+			// we want the alpha to be the modulation of the texture and the diffuse color
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
 			break;
 		}
 	}
@@ -420,7 +425,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		DeviceTexturePtr_type pTex = GetDeviceTexture();
 		if(pTex)
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pTex);
+			pd3dDevice->SetTexture(0, pTex);
 			CGlobals::GetEffectManager()->UpdateD3DPipelineTransform(true, false, false);
 			// render all
 			DrawInstanceSub(instancePS);
@@ -467,6 +472,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 4://ADDITIVE ALPHA
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -487,6 +493,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		case 4://ADDITIVE ALPHA
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 			break;
 		default:
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -498,7 +505,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 
 void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 {
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 	ParticleListType & particles = instancePS->particles;
 	if(particles.empty())
 		return;
@@ -555,7 +562,7 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 	}
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
-	CGlobals::GetRenderDevice()->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
+	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
 
 	SPRITEVERTEX* vb_vertices;
 	int nNumLockedVertice;
@@ -717,9 +724,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 				
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
 					nNumFinishedVertice += (nLockedNum*3);
@@ -798,9 +805,9 @@ void ParticleSystem::DrawInstanceSub( ParticleList* instancePS )
 				}
 				pBufEntity->Unlock();
 				if (pBufEntity->IsMemoryBuffer())
-					CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 
 				if((nTotalVertices - nNumFinishedVertice) > nNumLockedVertice)
@@ -1012,7 +1019,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 	if(segs.size() <= 1)
 		return;
 
-	auto pd3dDevice = CGlobals::GetRenderDevice();
+	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 
 	/// blending additive
 	pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
@@ -1020,12 +1027,16 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 
+	// we want the alpha to be the modulation of the texture and the diffuse color
+	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_MODULATE);
 
 	// texture
-	CGlobals::GetRenderDevice()->SetTexture(0, GetDeviceTexture());
+	pd3dDevice->SetTexture(0, GetDeviceTexture());
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
-	CGlobals::GetRenderDevice()->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
+	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
 
 	DWORD nColor = LinearColor((const float*)&(tcolor));
 	float fCurrentLength = 0;
@@ -1099,7 +1110,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 #ifdef USE_DIRECTX_RENDERER
 				///////////////////////////////////////////////////////////////////////////
 				// fixed function pipeline
-				CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
+				pd3dDevice->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP,pBufEntity->m_dwBase,nLockedNum/2);
 #endif
 			}
 			else
@@ -1111,9 +1122,9 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 					if(pEffect->BeginPass(0))
 					{
 						if (pBufEntity->IsMemoryBuffer())
-							CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+							pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 						else
-							CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
+							pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLESTRIP, pBufEntity->GetBaseVertex(), nLockedNum / 2);
 
 					}
 					pEffect->EndPass(0);
@@ -1133,6 +1144,7 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+	GETD3D(pd3dDevice)->SetTextureStageState(0, D3DTSS_ALPHAOP,D3DTOP_SELECTARG1);
 	pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
