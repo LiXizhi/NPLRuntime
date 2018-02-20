@@ -9,10 +9,13 @@
 #include "ParaEngine.h"
 #include "TerrainRegions.h"
 #ifdef WIN32
+
 #ifdef USE_FREEIMAGE
 #include "FreeImageMemIO.h"
 #endif
 #include "TextureEntity.h"
+#include <objbase.h>
+#include <comdef.h>
 #include <gdiplus.h>
 
 using namespace Gdiplus;

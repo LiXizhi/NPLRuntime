@@ -14,7 +14,7 @@ rem Build main executable
 mkdir build\win32
 cd build\win32
 
-call "cmake.exe" ../../Client/trunk
+call "cmake.exe" ../../NPLRuntime
 popd
 
 
