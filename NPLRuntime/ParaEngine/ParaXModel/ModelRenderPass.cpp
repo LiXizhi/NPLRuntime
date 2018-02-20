@@ -13,6 +13,9 @@
 #include "ParaXBone.h"
 #include "ParaXModel.h"
 #include "ModelRenderPass.h"
+#if USE_DIRECTX_RENDERER
+#include "RenderDeviceD3D9.h"
+#endif
 
 using namespace ParaEngine;
 
@@ -44,7 +47,7 @@ bool ParaEngine::ModelRenderPass::init_bmax_FX(CParaXModel *m, SceneState* pScen
 	{
 		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		blendmode |= BM_TEMP_FORCEALPHABLEND;
-		CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pEffect->EnableAlphaBlending(true);
 		pEffect->setFloat(CEffectFile::k_opacity, materialAlpha);
 	}
@@ -62,7 +65,7 @@ void ParaEngine::ModelRenderPass::deinit_bmax_FX(SceneState* pSceneState, CParam
 	{
 		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		blendmode &= (~BM_TEMP_FORCEALPHABLEND);
-		CGlobals::GetRenderDevice()->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		pEffect->EnableAlphaBlending(false);
 		pEffect->setFloat(CEffectFile::k_opacity, 1.f);
 	}
@@ -150,13 +153,13 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			break;
 		case BM_ADDITIVE: // 3
 			pEffect->EnableAlphaBlending(true);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			break;
 		case BM_ADDITIVE_ALPHA: // 4
 			pEffect->EnableAlphaBlending(true);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 			break;
 		default: // BM_OPAQUE
 			// default to OPAQUE
@@ -292,8 +295,8 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 		case BM_ADDITIVE:
 		case BM_ADDITIVE_ALPHA:
 			pEffect->EnableAlphaBlending(false);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		default:
 			break;
@@ -396,29 +399,29 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		return false;
 	}
 
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	// blend mode
 	switch (blendmode) {
 	case BM_TRANSPARENT: // 1
-		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
+		pd3dDevice->SetRenderState( ERenderState::ALPHATESTENABLE, TRUE);
 		break;
 	case BM_ALPHA_BLEND: // 2
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		break;
 	case BM_ADDITIVE: // 3
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	case BM_ADDITIVE_ALPHA: // 4
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);	
-		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);	
+		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 		break;
 	default: // BM_OPAQUE
 		// default to OPAQUE
-		//pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-		//pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE); 
+		//pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+		//pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE); 
 		break;
 	}
 
@@ -433,7 +436,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	pd3dDevice->SetTexture(0, pTex);
 
 	if (unlit) {
-		pd3dDevice->SetRenderState( D3DRS_LIGHTING, FALSE );
+		pd3dDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 	}
 
 	if (texanim!=-1) {
@@ -446,15 +449,15 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		texMat = Matrix4::IDENTITY;
 		texMat._31 = texAnim.tval.x;
 		texMat._32 = texAnim.tval.y;
-		pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
-		pd3dDevice->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
+		GETD3D(pd3dDevice)->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
+		pd3dDevice->SetTransform( ETransformsStateType::TEXTURE0, texMat.GetConstPointer() );
 		//pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU );
 	}
 
 	// color
 	if (blendmode<=1 && ocol.w<0.99f) 
 	{
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 	}
 
 	// TODO: how to programmatically set alpha to ocol.w in fixed function ? right now, it is either on or off. 
@@ -464,7 +467,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	//	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
 	//	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
 	//	
-	//	pd3dDevice->SetRenderState(D3DRS_TEXTUREFACTOR, (DWORD)(LinearColor(1.f, 1.f, 1.f, ocol.w)));*/
+	//	pd3dDevice->SetRenderState(ERenderState::TEXTUREFACTOR, (DWORD)(LinearColor(1.f, 1.f, 1.f, ocol.w)));*/
 
 	//	ParaMaterial mtrl;
 	//	ZeroMemory( &mtrl, sizeof(mtrl) );
@@ -482,10 +485,10 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 	//	
 	//	pd3dDevice->SetMaterial( &mtrl );
 
-	//	pd3dDevice->SetRenderState(D3DRS_COLORVERTEX, TRUE);
+	//	pd3dDevice->SetRenderState(ERenderState::COLORVERTEX, TRUE);
 	//	
-	//	pd3dDevice->SetRenderState(D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	//	pd3dDevice->SetRenderState(D3DRS_EMISSIVEMATERIALSOURCE, D3DMCS_MATERIAL);
+	//	pd3dDevice->SetRenderState(ERenderState::DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
+	//	pd3dDevice->SetRenderState(ERenderState::EMISSIVEMATERIALSOURCE, D3DMCS_MATERIAL);
 
 	//	//pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
 	//	// pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
@@ -513,12 +516,12 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 			mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart] + GetVertexStart(m)]).bones[0]].mat;
 			mat = mat1 * CGlobals::GetWorldMatrixStack().SafeGetTop();
 			CGlobals::GetWorldMatrixStack().push(mat);
-			pd3dDevice->SetTransform(D3DTS_WORLD, mat.GetConstPointer());
+			pd3dDevice->SetTransform(ETransformsStateType::WORLD, mat.GetConstPointer());
 		}
 		else
 		{
 			CGlobals::GetWorldMatrixStack().push(CGlobals::GetWorldMatrixStack().SafeGetTop());
-			pd3dDevice->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+			pd3dDevice->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 		}
 	}
 #endif
@@ -528,28 +531,28 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 void ModelRenderPass::deinit()
 {
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DDEVICE9 pd3dDevice = CGlobals::GetRenderDevice();
+	auto pd3dDevice = CGlobals::GetRenderDevice();
 	if(is_rigid_body)
 	{
 		CGlobals::GetWorldMatrixStack().pop();
-		CGlobals::GetRenderDevice()->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 	}
 
 	switch (blendmode) {
 		case BM_OPAQUE:
 			break;			
 		case BM_ALPHA_BLEND:
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 			break;
 		case BM_TRANSPARENT:
-			pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 			break;
 		case BM_ADDITIVE:
 		case BM_ADDITIVE_ALPHA:
-			pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
-			pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-			pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			break;
 		default:
 			break;
@@ -564,12 +567,12 @@ void ModelRenderPass::deinit()
 	}
 	
 	if (unlit) {
-		pd3dDevice->SetRenderState( D3DRS_LIGHTING, CGlobals::GetScene()->IsLightEnabled() );
+		pd3dDevice->SetRenderState( ERenderState::LIGHTING, CGlobals::GetScene()->IsLightEnabled() );
 	}
 	
 	if (texanim!=-1) {
 		// disable texture transformation in fixed function.
-		pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
+		GETD3D(pd3dDevice)->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_DISABLE );
 	}
 #ifdef TODO
 	// TODO:

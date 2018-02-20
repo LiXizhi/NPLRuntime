@@ -12,12 +12,8 @@
 #include "FBXParser.h"
 #include "XFileStaticModelParser.h"
 #include "SceneObject.h"
+
 #include "ParaXStaticModel.h"
-
-#if USE_DIRECTX_RENDERER
-#include "RenderDeviceD3D9.h"
-#endif
-
 
 namespace ParaEngine {
 
@@ -100,7 +96,7 @@ namespace ParaEngine {
 		return nullptr;
 	}
 
-	HRESULT CParaXStaticModel::Create(RenderDevicePtr pRenderDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV)
+	HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, void* buffer, DWORD nFileSize, bool bCheckSecondUV)
 	{
 		try
 		{
@@ -109,14 +105,14 @@ namespace ParaEngine {
 			{
 				XFileStaticModelParser parser((char*)buffer, nFileSize);
 				auto pSysMemMesh = parser.ParseParaXStaticModel();
-				return Create(pRenderDevice, pSysMemMesh);
+				return Create(pd3dDevice, pSysMemMesh);
 			}
 #ifdef SUPPORT_FBX_MODEL_FILE
 			else if (nFileType == FileType_FBX)
 			{
 				FBXParser parser(m_strName);
 				auto pSysMemMesh = parser.ParseFBXFile();
-				return Create(pRenderDevice, pSysMemMesh);
+				return Create(pd3dDevice, pSysMemMesh);
 			}
 #endif
 			else
@@ -132,7 +128,7 @@ namespace ParaEngine {
 		}
 	}
 
-	HRESULT CParaXStaticModel::Create(RenderDevicePtr pRenderDevice, XFile::Scene* pFileData)
+	HRESULT CParaXStaticModel::Create(RenderDevicePtr pd3dDevice, XFile::Scene* pFileData)
 	{
 		if (!pFileData)
 			return E_FAIL;
@@ -644,9 +640,9 @@ namespace ParaEngine {
 
 	HRESULT CParaXStaticModel::Render(SceneState * pSceneState, CEffectFile *pEffect, bool bDrawOpaqueSubsets, bool bDrawAlphaSubsets, float fAlphaFactor, CParameterBlock* materialParams)
 	{
-		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-		CGlobals::GetRenderDevice()->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
-		CGlobals::GetRenderDevice()->SetIndices(m_indexBuffer.GetDevicePointer());
+		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
+		pd3dDevice->SetStreamSource(0, m_vertexBuffer.GetDevicePointer(), 0, sizeof(mesh_vertex_normal));
+		pd3dDevice->SetIndices(m_indexBuffer.GetDevicePointer());
 
 		bool bHasAlphaPass = false;
 		int cPasses = pEffect->totalPasses();
@@ -802,19 +798,19 @@ namespace ParaEngine {
 								if (bUseAdditive && !bAdditive) {
 									if (pMaterial->hasAlphaBlending())
 									{
-										pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-										pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									else
 									{
-										pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
-										pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
+										pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_ONE);
 									}
 									bAdditive = true;
 								}
 								else if (!bUseAdditive && bAdditive) {
-									pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-									pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									bAdditive = false;
 								}
 
@@ -1001,17 +997,17 @@ namespace ParaEngine {
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 
 		if (bAdditive) {
-			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		}
 		return S_OK;
 	}
 
 	void CParaXStaticModel::DrawRenderPass(int i)
 	{
-		auto pRenderDevice = CGlobals::GetRenderDevice();
+		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
 		ParaXStaticModelRenderPass& pass = m_passes[i];
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
+		pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, 0, pass.indexStart, pass.indexCount / 3);
 	}
 
 
