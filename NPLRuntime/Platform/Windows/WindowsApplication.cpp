@@ -52,65 +52,73 @@ using namespace  ParaEngine;
 
 void ParaEngine::CWindowsApplication::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
 }
 
 void ParaEngine::CWindowsApplication::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
 }
 
 void ParaEngine::CWindowsApplication::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
 }
 
 bool ParaEngine::CWindowsApplication::AppHasFocus()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }
 
 void ParaEngine::CWindowsApplication::GetStats(string& output, DWORD dwFields)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
 }
 
 bool ParaEngine::CWindowsApplication::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }
 
 void ParaEngine::CWindowsApplication::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
 }
 
 const char* ParaEngine::CWindowsApplication::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return "";
 }
 
 bool ParaEngine::CWindowsApplication::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }
 
 DWORD ParaEngine::CWindowsApplication::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return  0;
 }
 
 bool ParaEngine::CWindowsApplication::GetAutoLowerFrameRateWhenNotFocused()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }
 
 void ParaEngine::CWindowsApplication::SetToggleSoundWhenNotFocused(bool bEnabled)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+//	throw std::logic_error("The method or operation is not implemented.");
+	
 }
 
 bool ParaEngine::CWindowsApplication::GetToggleSoundWhenNotFocused()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	//throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }
