@@ -444,13 +444,14 @@ void ParaEngine::CParaEngineAppBase::StopApp()
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
 	m_pGUIRoot.reset();
-
+#ifdef WIN32
 	//#ifdef LOG_FILES_ACTIVITY
 	if (CFileLogger::GetInstance()->IsBegin())
 	{
 		CFileLogger::GetInstance()->EndFileLog();
 		CFileLogger::GetInstance()->SaveLogToFile("temp/filelog.txt");
 	}
+#endif
 	//#endif
 #ifdef EXTRACT_INSTALL_FILE
 	CFileLogger::GetInstance()->MirrorFiles("_InstallFiles/");
