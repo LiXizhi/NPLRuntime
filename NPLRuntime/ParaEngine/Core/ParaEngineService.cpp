@@ -239,7 +239,7 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 		}
 	}
 
-	m_pParaEngineApp->Init(0);
+	//m_pParaEngineApp->Init();
 
 	// this makes the server more responsive to NPL messages. However, JGSL is still lagged. 
 	ParaEngine::CGlobals::GetNPLRuntime()->SetHostMainStatesInFrameMove(false);

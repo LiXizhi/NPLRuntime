@@ -1724,7 +1724,7 @@ void ParaEngine::CGUIRoot::GetUIScale(float* pfScalingX, float* pfScalingY)
 void ParaEngine::CGUIRoot::UpdateCursorPosition()
 {
 	int inout_x, inout_y;
-	CGlobals::GetApp()->GetCursorPosition(&inout_x, &inout_y);
+	CGUIRoot::GetInstance()->GetMouse()->GetDeviceCursorPos(inout_x, inout_y);
 	TranslateMousePos(inout_x, inout_y);
 	m_pMouse->m_x = inout_x;
 	m_pMouse->m_y = inout_y;
@@ -1814,10 +1814,10 @@ float ParaEngine::CGUIRoot::GetViewportTop() const
 void ParaEngine::CGUIRoot::SetCaptureMouse(bool bCapture)
 {
 	m_bMouseCaptured = bCapture;
-	if (bCapture)
-		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
-	else
-		CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
+	//if (bCapture)
+		//CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETCAPTURE, 0, 0);
+	//else
+		//CGlobals::GetApp()->PostWinThreadMessage(PE_WM_RELEASECAPTURE, 0, 0);
 }
 
 bool ParaEngine::CGUIRoot::IsMouseCaptured()

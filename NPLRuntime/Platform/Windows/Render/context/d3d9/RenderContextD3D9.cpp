@@ -2,7 +2,7 @@
 #include "ParaEngine.h"
 
 #include "RenderContextD3D9.h"
-#include "Render/WindowsRenderWindow.h"
+#include "Render/RenderWindowWin32.h"
 #include "PEtypes.h"
 
 #include "RenderDeviceD3D9.h"
@@ -15,7 +15,7 @@ namespace ParaEngine
 	HWND toHWND(const IRenderWindow* window)
 	{
 		if (window == nullptr) return NULL;
-		auto winRenderWindow = dynamic_cast<const WindowsRenderWindow*>(window);
+		auto winRenderWindow = dynamic_cast<const RenderWindowWin32*>(window);
 		assert(winRenderWindow);
 		return winRenderWindow->GetHandle();
 	}
@@ -31,7 +31,7 @@ ParaEngine::IRenderDevice* ParaEngine::RenderContextD3D9::CreateDevice(const Ren
 {
 	assert(cfg.renderWindow);
 
-	WindowsRenderWindow* pWin = dynamic_cast<WindowsRenderWindow*>(cfg.renderWindow);
+	RenderWindowWin32* pWin = dynamic_cast<RenderWindowWin32*>(cfg.renderWindow);
 	assert(pWin);
 
 
@@ -99,7 +99,7 @@ ParaEngine::IRenderDevice* ParaEngine::RenderContextD3D9::CreateDevice(const Ren
 	hr = m_D3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, pWin->GetHandle(), vp | D3DCREATE_FPU_PRESERVE, &d3dpp, &pD3DDevice);
 	if (hr == D3D_OK)
 	{
-		RenderDeviceD3D9* pDevice = new RenderDeviceD3D9(pD3DDevice);
+		RenderDeviceD3D9* pDevice = new RenderDeviceD3D9(pD3DDevice,m_D3D);
 		return pDevice;
 	}
 	else if (hr == D3DERR_INVALIDCALL)
@@ -122,7 +122,7 @@ bool ParaEngine::RenderContextD3D9::ResetDevice(IRenderDevice* device, const Ren
 {
 	assert(cfg.renderWindow);
 
-	WindowsRenderWindow* pWin = static_cast<WindowsRenderWindow*>(cfg.renderWindow);
+	RenderWindowWin32* pWin = static_cast<RenderWindowWin32*>(cfg.renderWindow);
 	assert(pWin);
 
 	assert(device);

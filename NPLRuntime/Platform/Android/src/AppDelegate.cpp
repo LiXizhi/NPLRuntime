@@ -4,7 +4,7 @@
 #include <cstring>
 #include <errno.h>
 #include <cassert>
-#include "ParacraftApp.h"
+#include "ParaAppAndroid.h"
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"
 #include "RenderContextEGL.h"
@@ -102,7 +102,7 @@ void AppDelegate::Run()
 
 			if (m_ParaEngineApp)
 			{
-				m_ParaEngineApp->Render3DEnvironment();
+				m_ParaEngineApp->DoWork();
 			}
         }
     }
@@ -135,14 +135,8 @@ void AppDelegate::OnInitWindow()
     LOGI("app:OnInitWindow");
 
 	m_RenderWindow = new RenderWindowAndroid(m_State->window);
-	m_RenderContext = IRenderContext::Create();
-	RenderConfiguration cfg;
-	cfg.renderWindow = m_RenderWindow;
-	m_RenderDevice = m_RenderContext->CreateDevice(cfg);
-	CGlobals::SetRenderDevice(m_RenderDevice);
-	m_ParaEngineApp = new CParaEngineApp("");
-	m_ParaEngineApp->Init(nullptr);
-
+	m_ParaEngineApp = new CParaEngineAppAndroid();
+	m_ParaEngineApp->InitApp(m_RenderWindow, "");
 }
 void AppDelegate::OnTermWindow()
 {

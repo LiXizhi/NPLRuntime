@@ -2,73 +2,90 @@
 #include "IParaEngineApp.h"
 #include "CommandLineParams.h"
 #include "ParaVector2.h"
+#include "FrameRateController.h"
 namespace ParaEngine
 {
+	class ParaTimer;
 	class CObjectAutoReleasePool;
 
 	/* base implementation of ParaEngine APP, shared by both mobile and pc version.  */
 	class CParaEngineAppBase : public IParaEngineApp, public CCommandLineParams, public IObject
 	{
+
 	public:
 		CParaEngineAppBase();
 		CParaEngineAppBase(const char* sCmd);
-		/** the singleton application. */
-		static IParaEngineApp* GetInstance();
-		static void SetCurrentInstance(IParaEngineApp* pInstance);
-		virtual void DeleteInterface();
 		virtual ~CParaEngineAppBase();
+		static IParaEngineApp* GetInstance();
+		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
+		virtual bool StartApp() override;
+		virtual void StopApp() override;
+
+		virtual void Enable3DRendering(bool bEnable) override;
+		virtual bool Is3DRenderingEnabled()override;
+		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
+		virtual bool IsTouchInputting() override;
+		virtual bool IsSlateMode() override;
+		virtual void DoWork();
+		virtual bool FrameMove(double fTime) override;
 
 
+	protected:
+		void SetTouchInputting(bool bTouchInputting);
+		void AutoSetLocale();
 		/** call this function at the end of the frame. */
 		virtual void OnFrameEnded();
-
-		void DoTestCode();
-	public:
 		virtual void WriteToLog(const char* sFormat, ...);
 		virtual void AppLog(const char* sFormat);
 		/** set the current working directory. This function is called in the constructor to ensure that all IO directs to the right dir. */
 		virtual bool FindParaEngineDirectory(const char* sHint = NULL);
+		void BootStrapAndLoadConfig();
+		void InitSystemModules();
+		void InitRenderEnvironment();
+		void ResetRenderEnvironment();
 
-		void AutoSetLocale();
+		void InitDeviceObjects();
+		void DeleteDeviceObjects();
+		void RestoreDeviceObjects();
+		void InvalidateDeviceObjects();
+		void Render();
+		void HandleUserInput();
+		
 
-		/** disable 3D rendering, do not present the scene.
-		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window
-		* @param bEnable: true to enable.
-		*/
-		virtual void Enable3DRendering(bool bEnable);
+	protected:
+		static IParaEngineApp* g_pCurrentApp;
+		bool m_bEnable3DRendering;
+		bool m_isTouching;
+		bool m_hasClosingRequest;
+		/** the application exit code or return code. 0 means success. otherwise means a failure. */
+		int m_nReturnCode;
+		/** a pool of registered singleton object. */
+		CObjectAutoReleasePool* m_pSingletonReleasePool;
+		/** packages/ directory path */
+		std::string m_sPackagesDir;
+		/** bin/ module path */
+		std::string m_sModuleDir;
+		/** initial working directory*/
+		std::string m_sInitialWorkingDir;
+		/** application state */
+		PEAppState m_nAppState;
+		ref_ptr<CGUIRoot> m_pGUIRoot;
+		/** 3d scene root object */
+		ref_ptr<CSceneObject>		  m_pRootScene;
+		/** viewport */
+		ref_ptr<CViewportManager>	  m_pViewportManager;
+		/** asset manager */
+		ref_ptr<CParaWorldAsset>	  m_pParaWorldAsset;
+		ParaTimer* m_Timer;
+		IRenderContext* m_pRenderContext;
+		IRenderDevice* m_pRenderDevice;
+		IRenderWindow* m_pRenderWindow;
+		CFrameRateController m_doWorkFRC;
 
-		/** whether 3D rendering is enabled, do not present the scene.
-		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window */
-		virtual bool Is3DRenderingEnabled();
+#pragma region OLD_CODE
 
-		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
-		virtual bool IsTouchInputting();
-		virtual void SetTouchInputting(bool bTouchInputting);
-		virtual bool IsSlateMode();
-		/** obsoleted function: */
-		virtual int32 GetTouchPointX()  { return 0; };
-		virtual int32 GetTouchPointY()  { return 0; };
 
-		/** get the current mouse cursor position.
-		* @param pX: out
-		* @param pY: out
-		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
-		*/
-		virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true);
-
-		/** translate a position from game coordination system to client window position.
-		* @param inout_x: in and out
-		* @param inout_y: in and out
-		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
-		*/
-		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) { };
-
-		/** translate a position from client window position to game coordination system.
-		* @param inout_x: in and out
-		* @param inout_y: in and out
-		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
-		*/
-		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true){ };
+	public:
 
 		/** switch to ignore windows size change. default to false.
 		* if false, the user is allowed to adjust window size in windowed mode. */
@@ -78,7 +95,7 @@ namespace ParaEngine
 		virtual bool GetIgnoreWindowSizeChange(){ return false; };
 
 		/** get the module handle, it may be exe or the dll handle, depending on how the main host app is built. */
-		virtual HINSTANCE GetModuleHandle()  { return 0; };
+		HINSTANCE GetModuleHandle() { return 0; };
 
 		/**
 		* Set the frame rate timer interval
@@ -138,18 +155,7 @@ namespace ParaEngine
 		*/
 		virtual const char* GetAppCommandLineByParam(const char* pParam, const char* defaultValue);
 	public:
-		/** This is the first function that should be called when acquiring the IParaEngineApp interface.
-		* call this function to start the application. Rendering window and devices are not created, one need to call Create() instead.
-		* @param sCommandLine: the command line parameter
-		*/
-		virtual bool StartApp(const char* sCommandLine = 0)  { return S_OK; };
 
-		/** This is the last function that should be called. It is usually called just before process exit.
-		*/
-		virtual void StopApp()  { };
-
-		/** init application */
-		virtual HRESULT Init(HWND pHWND)  { return S_OK; };
 
 		/** Send the exit message, so that the game engine will prepare to exit in the next frame.
 		* this is the recommended way of exiting application.
@@ -160,11 +166,11 @@ namespace ParaEngine
 		virtual ParaEngine::PEAppState GetAppState();
 		virtual void SetAppState(ParaEngine::PEAppState state);
 
-		virtual HRESULT FrameMove(double fTime){ return S_OK; };
+
 		/**
 		* This function should be called only once when the application end, one can destroy game objects here.
 		*/
-		virtual HRESULT FinalCleanup();
+		virtual bool FinalCleanup();
 
 
 		/** only call this function if one does not want to manage game loop externally. */
@@ -329,13 +335,12 @@ namespace ParaEngine
 		virtual const char* GetModuleDir();;
 	public:
 		/** managing multiple 3d views */
-		CViewportManager* GetViewportManager() { return NULL; };
+		CViewportManager * GetViewportManager();
 
 		virtual void VerifyCommandLine(const char* sCommandLine, std::string &strCmd);
 
 	protected:
 		/** shared init called in constructor.  */
-		void InitCommon();
 		void DestroySingletons();
 
 		/** we will load all packages that matches the following pattern in the order given by their name,
@@ -350,23 +355,11 @@ namespace ParaEngine
 
 		/** register any custom classes */
 		void RegisterObjectClasses();
-	protected:
-		static IParaEngineApp* g_pCurrentApp;
-		bool m_bEnable3DRendering;
-		bool m_isTouching;
-		bool m_hasClosingRequest;
-		/** the application exit code or return code. 0 means success. otherwise means a failure. */
-		int m_nReturnCode;
-		/** a pool of registered singleton object. */
-		CObjectAutoReleasePool* m_pSingletonReleasePool;
-		/** packages/ directory path */
-		std::string m_sPackagesDir;
-		/** bin/ module path */
-		std::string m_sModuleDir;
-		/** initial working directory*/
-		std::string m_sInitialWorkingDir;
-		/** application state */
-		PEAppState m_nAppState;
+
 	};
+
+
+#pragma endregion OLD_CODE
+
 }
 

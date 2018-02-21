@@ -487,7 +487,6 @@ Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
 
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 {
-	assert(viewport.z >= viewport.w);
 	m_CurrentViewPort = viewport;
 	glViewport((GLint)(viewport.x), (GLint)(viewport.y), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
 	//auto error = glGetError();

@@ -5,10 +5,14 @@ namespace ParaEngine
 	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
-		RenderDeviceD3D9(IDirect3DDevice9* device):m_pD3DDevice(device) {}
+		RenderDeviceD3D9(IDirect3DDevice9* device,IDirect3D9* context)
+			:m_pD3DDevice(device)
+			,m_pContext(context)
+		{}
 		virtual ~RenderDeviceD3D9() = default;
 	
 		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice; }
+		inline IDirect3D9* GetContext()const { return m_pContext; }
 	
 		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
 
@@ -104,6 +108,7 @@ namespace ParaEngine
 		float m_CurrentDepth;
 		int m_CurrentStencil;
 		IDirect3DDevice9* m_pD3DDevice;
+		IDirect3D9* m_pContext;
 	};
 
 	inline IDirect3DDevice9* GETD3D(IRenderDevice* pRenderDevice)
