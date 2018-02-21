@@ -38,42 +38,69 @@
 #include "GeosetObject.h"
 #include "2dengine/GUIRoot.h"
 #include "2dengine/GUIMouseVirtual.h"
-
+#include "FrameRateController.h"
+#include "FileLogger.h"
+#include "Render/IRenderContext.h"
+#include "InfoCenter/ICDBManager.h"
+#include "InfoCenter/ICConfigManager.h"
+#include "SceneObject.h"
+#include "ParaWorldAsset.h"
+#include "terrain/Terrain.h"
+#include "ViewportManager.h"
+#include "MoviePlatform.h"
+#include "Framework/Common/Time/ParaTimer.h"
+#include "EnvironmentSim.h"
+#include "AutoCamera.h"
+#include "BlockEngine/BlockWorldClient.h"
+#include "BlockEngine/BlockWorldManager.h"
+#include "ObjectManager.h"
+#include "2dengine/GUIHighlight.h"
 using namespace ParaEngine;
-
+using namespace ParaInfoCenter;
 IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
 
 /** default bootstrapper file */
 #define NPL_CODE_WIKI_BOOTFILE "script/apps/WebServer/WebServer.lua"
 
-// temp TEST code here
-void ParaEngine::CParaEngineAppBase::DoTestCode()
-{
-}
-
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
-	: m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
+	: m_bEnable3DRendering(true)
+	, m_isTouching(false)
+	, m_nReturnCode(0)
+	, m_pSingletonReleasePool(NULL)
+	, m_nAppState(PEAppState_None)
+	, m_hasClosingRequest(false)
+	, m_Timer(nullptr)
+	, m_pRenderWindow(nullptr)
+	, m_pRenderContext(nullptr)
+	, m_pRenderDevice(nullptr)
+	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 {
-	InitCommon();
+	g_pCurrentApp = this;
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
-	: CCommandLineParams(sCmd), m_bEnable3DRendering(true), m_isTouching(false), m_nReturnCode(0), m_pSingletonReleasePool(NULL), m_nAppState(PEAppState_None), m_hasClosingRequest(false)
+	: CCommandLineParams(sCmd)
+	, m_bEnable3DRendering(true)
+	, m_isTouching(false)
+	, m_nReturnCode(0)
+	, m_pSingletonReleasePool(NULL)
+	, m_nAppState(PEAppState_None)
+	, m_hasClosingRequest(false)
+	, m_Timer(nullptr)
+	, m_pRenderWindow(nullptr)
+	, m_pRenderContext(nullptr)
+	, m_pRenderDevice(nullptr)
+	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 {
-	InitCommon();
+	g_pCurrentApp = this;
 }
 
 ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
 {
+	StopApp();
 	DestroySingletons();
 	g_pCurrentApp = nullptr;
 }
-
-void ParaEngine::CParaEngineAppBase::DeleteInterface()
-{
-	delete this;
-}
-
 
 
 IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
@@ -82,12 +109,328 @@ IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 }
 
 
-void CParaEngineAppBase::SetCurrentInstance(IParaEngineApp* pInstance)
+bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */)
 {
-	assert(pInstance);
-	g_pCurrentApp = pInstance;
+	SetAppState(PEAppState_Device_Created);
+	std::string cmd;
+	VerifyCommandLine(sCommandLine, cmd);
+	SetAppCommandLine(cmd.c_str());
+	m_pRenderWindow = pWindow;
+
+	InitCommandLineParams();
+	CStaticInitRes::StaticInit();
+	srand((unsigned long)time(NULL));
+	FindParaEngineDirectory();
+	RegisterObjectClasses();
+	CFrameRateController::LoadFRCNormal();
+	// loading packages
+	LoadPackages();
+	BootStrapAndLoadConfig();
+	InitSystemModules();
+	//load config file
+	CICConfigManager *cm = CGlobals::GetICConfigManager();
+	cm->LoadFromFile();
+
+	HRESULT hr;
+#ifdef USE_XACT_AUDIO_ENGINE
+	// Prepare the audio engine
+	if (FAILED(hr = m_pAudioEngine->InitAudioEngine()))
+	{
+		OUTPUT_LOG("Audio engine init fail!\n");
+		m_pAudioEngine->CleanupAudioEngine();
+	}
+#endif
+#ifdef USE_OPENAL_AUDIO_ENGINE
+	if (FAILED(hr = CAudioEngine2::GetInstance()->InitAudioEngine()))
+	{
+		OUTPUT_LOG("Audio engine init fail!\n");
+		CAudioEngine2::GetInstance()->CleanupAudioEngine();
+	}
+#endif
+
+	//----------------------------------------------------------
+	/// Create a blank root scene with certain dimensions
+	/// units is Meter.
+	//----------------------------------------------------------
+	m_pRootScene->SetBoundRect(1000.f, 1000.f, 0); // a very large scene
+	m_pRootScene->SetMyType(_Scene);
+	m_pRootScene->GetSceneState()->pAssetManager = m_pParaWorldAsset.get();
+	m_pRootScene->GetSceneState()->CleanupSceneState();
+	m_pRootScene->GetSceneState()->pGUIState = &(m_pGUIRoot->GetGUIState());
+
+	/// create the default system font, the game should also use this sys font to save resources
+	{
+		// Load font mapping
+		string value0, value1;
+		DWORD nSize = 0;
+		HRESULT hr;
+		hr = cm->GetSize("GUI_font_mapping", &nSize);
+		if (hr == E_INVALIDARG || hr == E_ACCESSDENIED) {
+			//error
+		}
+		else {
+			for (int i = 0; i < (int)nSize; i += 2) {
+				if (FAILED(cm->GetTextValue("GUI_font_mapping", value0, i))) {
+					break;
+				}
+				if (FAILED(cm->GetTextValue("GUI_font_mapping", value1, i + 1))) {
+					break;
+				}
+				SpriteFontEntity::AddFontName(value0, value1);
+			}
+		}
+	}
+
+
+	SpriteFontEntity* pFont = NULL;
+	pFont = m_pParaWorldAsset->LoadGDIFont("sys", "System", 12);
+
+	/// set up terrain engine parameters
+	ParaTerrain::Settings::GetInstance()->SetVerbose(false);
+	// enable editor mode to make device lost recoverable
+	ParaTerrain::Settings::GetInstance()->SetEditor(true);
+#ifdef _USE_NORMAL_
+	ParaTerrain::Settings::GetInstance()->SetUseNormals(true);
+#endif
+	// perform GUI static initialization
+	// perform CGUIRoot initialization
+	m_pGUIRoot->OneTimeGUIInit();
+
+
+	/************************************************************************/
+	/* Create ocean manager                                                 */
+	/************************************************************************/
+	CGlobals::GetOceanManager()->create();
+	// Load default mapping at the program start
+	CGlobals::GetSettings().LoadGameEffectSet(0);
+
+	// Init Timer
+	m_Timer = new ParaTimer();
+	m_Timer->Start();
+	InitRenderEnvironment();
+
+
+	SetAppState(PEAppState_Ready);
+	return true;
 }
 
+
+void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
+{
+
+	// Create RenderDevice
+	m_pRenderContext = IRenderContext::Create();
+	RenderConfiguration cfg;
+	cfg.renderWindow = m_pRenderWindow;
+	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	CGlobals::SetRenderDevice(m_pRenderDevice);
+
+	Rect vp;
+	vp.x = 0; vp.y = 0;
+	vp.z = m_pRenderWindow->GetWidth();
+	vp.w = m_pRenderWindow->GetHeight();
+	m_pRenderDevice->SetViewport(vp);
+	
+	RestoreDeviceObjects();
+	InitDeviceObjects();
+}
+
+
+void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
+{
+	InvalidateDeviceObjects();
+	RenderConfiguration cfg;
+	cfg.renderWindow = m_pRenderWindow;
+	if (!m_pRenderContext->ResetDevice(m_pRenderDevice, cfg))
+	{
+		OUTPUT_LOG("reset d3d device failed because Reset function failed\n");
+		return;
+	}
+
+	// Initialize the app's device-dependent objects
+	RestoreDeviceObjects();
+}
+
+void ParaEngine::CParaEngineAppBase::InitDeviceObjects()
+{
+#if USE_DIRECTX_RENDERER
+	// stage b.1
+	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<RenderContextD3D9*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
+#endif
+	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
+	m_pParaWorldAsset->InitDeviceObjects();
+	m_pRootScene->InitDeviceObjects();
+	m_pGUIRoot->InitDeviceObjects();
+}
+
+void ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
+{
+	m_pRootScene->DeleteDeviceObjects();
+	m_pGUIRoot->DeleteDeviceObjects();
+	m_pParaWorldAsset->DeleteDeviceObjects();
+#if USE_DIRECTX_RENDERER
+	CGlobals::GetDirectXEngine().DeleteDeviceObjects();
+#endif
+
+}
+
+void ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
+{
+	int width = m_pRenderWindow->GetWidth();
+	int height = m_pRenderWindow->GetHeight();
+
+	/// Set up the camera's projection matrix
+	float aspectRatio = width / (float)height;
+	m_pRootScene->RestoreDeviceObjects();
+	m_pParaWorldAsset->RestoreDeviceObjects();
+	m_pGUIRoot->RestoreDeviceObjects(width, height);		// GUI: 2D engine
+
+	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
+	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
+}
+
+void ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
+{
+	m_pRootScene->InvalidateDeviceObjects();
+	m_pParaWorldAsset->InvalidateDeviceObjects();
+	m_pGUIRoot->InvalidateDeviceObjects();		// GUI: 2D engine
+#if USE_DIRECTX_RENDERER
+	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
+#endif
+
+}
+
+void ParaEngine::CParaEngineAppBase::Render()
+{
+	double fTime = m_Timer->GetAppTime();
+	CMoviePlatform* pMoviePlatform = CGlobals::GetMoviePlatform();
+	pMoviePlatform->BeginCaptureFrame();
+
+	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
+
+	m_pRenderDevice->BeginScene();
+	{
+		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime);
+#if USE_DIRECTX_RENDERER
+		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
+#endif
+		auto color = m_pRootScene->GetClearColor();
+		CGlobals::GetRenderDevice()->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
+		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
+		CGlobals::GetRenderDevice()->SetClearStencil(1.0f);
+		CGlobals::GetRenderDevice()->Clear(true, true, true);
+		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
+		{
+			PERF1("3D Scene Render");
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_3D_SCENE);
+		}
+		{
+			PERF1("GUI Render");
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_UI);
+		}
+		{
+			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
+		}
+	}
+	m_pRenderDevice->EndScene();
+	pMoviePlatform->EndCaptureFrame();
+}
+
+void ParaEngine::CParaEngineAppBase::HandleUserInput()
+{
+	/** handle 2D GUI input: dispatch mouse and key event for gui objects. */
+	m_pGUIRoot->HandleUserInput();
+
+	// escape input if app does not have focus
+	if (!IsAppActive())
+		return;
+
+	/** handle the camera user input. One can also block camera input and handle everything from script. */
+	CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
+	if (pCamera)
+		pCamera->HandleUserInput();
+
+	/** handle 3D scene input */
+	CGlobals::GetScene()->HandleUserInput();
+}
+
+bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
+{
+	if (GetAppState() == PEAppState_Stopped)
+		return true;
+	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
+	PERF_BEGIN("Main FrameMove");
+	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
+	if (fElapsedEnvSimTime > 0)
+	{
+		PERF_BEGIN("Script&Net FrameMove");
+		CAISimulator::GetSingleton()->FrameMove((float)fElapsedEnvSimTime);
+		PERF_END("Script&Net FrameMove");
+		PERF_BEGIN("EnvironmentSim");
+		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime);  // generate valid LLE from HLE
+		PERF_END("EnvironmentSim");
+#ifdef USE_OPENAL_AUDIO_ENGINE
+		CAudioEngine2::GetInstance()->Update();
+#endif
+	}
+
+	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
+	if (fElapsedIOTime > 0)
+	{
+		HandleUserInput();
+		m_pRootScene->Animate((float)fElapsedIOTime);
+	}
+
+#ifdef USE_XACT_AUDIO_ENGINE
+	/** for audio engine */
+	if (m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())
+	{
+		if (m_pAudioEngine->IsValid())
+		{
+			PERF1("Audio Engine Framemove");
+			m_pAudioEngine->DoWork();
+		}
+	}
+#endif
+
+	PERF_END("Main FrameMove");
+	OnFrameEnded();
+	return true;
+}
+
+bool ParaEngine::CParaEngineAppBase::StartApp()
+{
+	return true;
+}
+
+void ParaEngine::CParaEngineAppBase::StopApp()
+{
+	// if it is already stopped, we shall return
+	if (!m_pParaWorldAsset)
+		return;
+	FinalCleanup();
+	m_pParaWorldAsset.reset();
+	m_pRootScene.reset();
+	m_pGUIRoot.reset();
+	m_pViewportManager.reset();
+	m_pGUIRoot.reset();
+
+	//#ifdef LOG_FILES_ACTIVITY
+	if (CFileLogger::GetInstance()->IsBegin())
+	{
+		CFileLogger::GetInstance()->EndFileLog();
+		CFileLogger::GetInstance()->SaveLogToFile("temp/filelog.txt");
+	}
+	//#endif
+#ifdef EXTRACT_INSTALL_FILE
+	CFileLogger::GetInstance()->MirrorFiles("_InstallFiles/");
+#endif
+
+	//Gdiplus::GdiplusShutdown(g_gdiplusToken);
+
+	// delete all singletons
+	DestroySingletons();
+}
 
 void ParaEngine::CParaEngineAppBase::DestroySingletons()
 {
@@ -153,18 +496,10 @@ const char * ParaEngine::CParaEngineAppBase::GetModuleDir()
 	return m_sModuleDir.c_str(); 
 }
 
-void ParaEngine::CParaEngineAppBase::InitCommon()
+
+ParaEngine::CViewportManager * ParaEngine::CParaEngineAppBase::GetViewportManager()
 {
-	CStaticInitRes::StaticInit();
-
-	SetCurrentInstance(this);
-
-	srand((unsigned long)time(NULL));
-
-	FindParaEngineDirectory();
-	RegisterObjectClasses();
-
-	DoTestCode();
+	return m_pViewportManager.get();
 }
 
 // use RegisterObjectFactory instead
@@ -215,14 +550,20 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 	return false;
 }
 
+void ParaEngine::CParaEngineAppBase::DoWork()
+{
+	double fCurTime = m_Timer->GetAppTime();
+	if (m_doWorkFRC.FrameMove(fCurTime) > 0)
+	{
+		FrameMove(fCurTime);
+		Render();
+		m_pRenderDevice->Present();
+	}
+}
+
 void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)
 {
 	m_isTouching = bTouchInputting;
-}
-
-void ParaEngine::CParaEngineAppBase::GetCursorPosition(int* pX, int * pY, bool bInBackbuffer /*= true*/)
-{
-	CGUIRoot::GetInstance()->GetMouse()->GetDeviceCursorPos(*pX, *pY);
 }
 
 bool ParaEngine::CParaEngineAppBase::IsAppActive()
@@ -272,6 +613,7 @@ const char* ParaEngine::CParaEngineAppBase::GetAppCommandLineByParam(const char*
 	return CCommandLineParams::GetAppCommandLineByParam(pParam, defaultValue);
 }
 
+
 void ParaEngine::CParaEngineAppBase::Exit(int nReturnCode /*= 0*/)
 {
 	OUTPUT_LOG("program exited with code %d\n", nReturnCode);
@@ -289,8 +631,10 @@ void ParaEngine::CParaEngineAppBase::SetAppState(ParaEngine::PEAppState state)
 	m_nAppState = state;
 }
 
-HRESULT ParaEngine::CParaEngineAppBase::FinalCleanup()
+bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 {
+	CBlockWorldManager::GetSingleton()->Cleanup();
+
 	if (!CGlobals::GetAISim()->IsCleanedUp())
 	{
 		if (CGlobals::GetEventsCenter())
@@ -305,6 +649,29 @@ HRESULT ParaEngine::CParaEngineAppBase::FinalCleanup()
 	CGlobals::GetAISim()->CleanUp();
 	CGlobals::GetNPLRuntime()->Cleanup();
 	
+
+	CGlobals::GetMoviePlatform()->Cleanup();
+
+	m_pGUIRoot->Release();		// GUI: 2D engine
+	m_pRootScene->Cleanup();
+	CSingleton<CObjectManager>::Instance().Finalize();
+	CSingleton<CGUIHighlightManager>::Instance().Finalize();
+	m_pParaWorldAsset->Cleanup();
+	//Performance Monitor
+	PERF_END("Program");
+	PERF_REPORT();
+
+#ifdef USE_XACT_AUDIO_ENGINE
+	if (m_pAudioEngine)
+	{
+		m_pAudioEngine->CleanupAudioEngine();
+	}
+#endif
+#ifdef USE_OPENAL_AUDIO_ENGINE
+	CAudioEngine2::GetInstance()->CleanupAudioEngine();
+#endif
+
+
 	return S_OK;
 }
 
@@ -762,3 +1129,39 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 #endif
 	return true;
 }
+
+void ParaEngine::CParaEngineAppBase::BootStrapAndLoadConfig()
+{
+	FindBootStrapper();
+	{
+		// load settings from config/config.txt or config/config.new.txt
+		string sConfigFile = CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.new.txt";
+		bool bHasNewConfig = CParaFile::DoesFileExist(sConfigFile.c_str());
+		SetHasNewConfig(bHasNewConfig);
+		if (!bHasNewConfig)
+			sConfigFile = (CParaFile::GetCurDirectory(CParaFile::APP_CONFIG_DIR) + "config.txt");
+		string sFileName = CBootStrapper::GetSingleton()->GetConfigFile().empty() ? sConfigFile : CBootStrapper::GetSingleton()->GetConfigFile();
+		CParaFile file(sFileName.c_str());
+		if (!file.isEof())
+		{
+			string content = file.getBuffer();
+			ParaEngineSettings::GetSingleton().LoadDynamicFieldsFromString(content);
+		}
+		if (bHasNewConfig)
+		{
+			CParaFile::DeleteFile(sConfigFile, false);
+		}
+	}
+}
+
+void ParaEngine::CParaEngineAppBase::InitSystemModules()
+{
+	m_pParaWorldAsset.reset(new CParaWorldAsset());
+	CAISimulator::GetSingleton()->SetGameLoop(CBootStrapper::GetSingleton()->GetMainLoopFile());
+	m_pRootScene.reset(new CSceneObject());
+	m_pGUIRoot.reset(CGUIRoot::CreateInstance());
+	m_pViewportManager.reset(new CViewportManager());
+	m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
+}
+
+

@@ -20,6 +20,7 @@ namespace ParaEngine
 	struct CWinRawMsg;
 	class CRefCounted;
 	class Vector2;
+	class IRenderWindow;
 
 	/** ParaEngine application state */
 	enum PEAppState
@@ -87,28 +88,18 @@ namespace ParaEngine
 	class IParaEngineApp
 	{
 	public:
+
+		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine = nullptr) = 0;
+
 		/** This is the first function that should be called when acquiring the IParaEngineApp interface. 
 		* call this function to start the application. Rendering window and devices are not created, one need to call Create() instead. 
 		* @param sCommandLine: the command line parameter
 		*/
-		virtual bool StartApp(const char* sCommandLine = 0) = 0;
+		virtual bool StartApp() = 0;
 
 		/** This is the last function that should be called. It is usually called just before process exit. 
 		*/
 		virtual void StopApp() = 0;
-
-
-		/** only call this function if one does not want to manage game loop externally. */
-		virtual int Run(HINSTANCE hInstance) = 0;
-		
-
-		/** init the application. no need to be called unless in a service where no rendering devices are created. */
-		virtual HRESULT Init(HWND pHWND = 0) = 0;
-
-		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
-		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
-
-
 
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
@@ -160,13 +151,6 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) = 0;
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() = 0;
-		
-		/** get the current mouse cursor position. 
-		* @param pX: out
-		* @param pY: out
-		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size. 
-		*/
-		virtual void GetCursorPosition(int* pX,int * pY, bool bInBackbuffer = true) = 0;
 
 		/** translate a postion from game coordination system to client window position. 
 		* @param inout_x: in and out
@@ -275,18 +259,12 @@ namespace ParaEngine
 
 		virtual bool IsSlateMode() = 0;
 
-		/** obsoleted function: */
-		virtual int32 GetTouchPointX() = 0;
-		virtual int32 GetTouchPointY() = 0;
-
 		/** append text to log file. */
 		virtual void WriteToLog(const char* sFormat, ...) = 0;
 
 		/** write app log to file with time and code location. */
 		virtual void AppLog(const char* sMessage) { WriteToLog(sMessage); };
 
-		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
-		virtual void SetTouchInputting(bool bTouchInputting){};
 
 		/** show a system message box to the user. mostly about fatal error.  */
 		virtual void SystemMessageBox(const std::string& msg) {};
@@ -347,9 +325,9 @@ namespace ParaEngine
 
 		virtual bool AppHasFocus() = 0;
 
-		virtual HRESULT FrameMove(double fTime) = 0;
+		virtual bool FrameMove(double fTime) = 0;
 
-		virtual HRESULT FinalCleanup() = 0;
+		virtual bool FinalCleanup() = 0;
 
 
 

@@ -427,29 +427,27 @@ HRESULT CParaEngineApp::Render3DEnvironment(bool bForceRender /*= false*/)
 		}
 	}
 	CGlobals::GetRenderDevice()->Present();
+	FrameMove(fElapsedTime);
 	return S_OK;
 }
 
 int CParaEngineApp::Run(HINSTANCE hInstance)
 {
-	if (!Is3DRenderingEnabled())
-	{
-		// this is server mode
-		auto nStartTime = GetTickCount();
-		while (GetAppState() != PEAppState_Exiting)
-		{
-			auto nCurTickCount = GetTickCount() - nStartTime;
-			FrameMove(nCurTickCount / 1000.f);
-			// 30FPS
-			SLEEP(33);
-		}
-		return GetReturnCode();
-	}
-	else
-	{
-
-	}
 	return 0;
+}
+
+HRESULT ParaEngine::CParaEngineApp::DoWork()
+{
+	auto nStartTime = GetTickCount();
+
+	if (GetAppState() != PEAppState_Exiting)
+	{
+		Render3DEnvironment();
+		auto nCurTickCount = GetTickCount() - nStartTime;
+		FrameMove(nCurTickCount / 1000.f);
+		// 30FPS
+		SLEEP(33);
+	}
 }
 
 void ParaEngine::CParaEngineApp::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)

@@ -1,8 +1,8 @@
-#include "ApplicationWindow.h"
+#include "RenderWindowDelegate.h"
 #include "ParaEngine.h"
 #include "2dengine/GUIRoot.h"
 using namespace ParaEngine;
-void ApplicationWindow::OnMouseButton(EMouseButton button, EKeyState state)
+void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state)
 {
 
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
@@ -13,7 +13,7 @@ void ApplicationWindow::OnMouseButton(EMouseButton button, EKeyState state)
 	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state)));
 }
 
-void ApplicationWindow::OnMouseMove(uint32_t x, uint32_t y)
+void RenderWindowDelegate::OnMouseMove(uint32_t x, uint32_t y)
 {
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 	{
@@ -22,7 +22,7 @@ void ApplicationWindow::OnMouseMove(uint32_t x, uint32_t y)
 	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(x, y)));
 }
 
-void ParaEngine::ApplicationWindow::OnMouseWhell(float x, float y, float delta)
+void ParaEngine::RenderWindowDelegate::OnMouseWhell(float x, float y, float delta)
 {
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 	{
@@ -31,7 +31,7 @@ void ParaEngine::ApplicationWindow::OnMouseWhell(float x, float y, float delta)
 	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(y)));
 }
 
-void ParaEngine::ApplicationWindow::OnKey(EVirtualKey key, EKeyState state)
+void ParaEngine::RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)
 {
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 	{
@@ -41,7 +41,7 @@ void ParaEngine::ApplicationWindow::OnKey(EVirtualKey key, EKeyState state)
 	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(key, pressed);
 }
 
-void ParaEngine::ApplicationWindow::OnChar(char character)
+void ParaEngine::RenderWindowDelegate::OnChar(char character)
 {
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 	{

@@ -174,7 +174,7 @@ namespace ParaEngine
 		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
 		* call this as often as one like internally it will use a timer to best fit the interval.
 		*/
-		virtual HRESULT DoWork()  { return 0; };
+		virtual HRESULT DoWork();
 
 
 		/**

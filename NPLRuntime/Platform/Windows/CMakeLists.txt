@@ -20,16 +20,16 @@ endif()
 
 add_executable(WindowsApplication 
     main.cpp
-    WindowsApplication.h
-    WindowsApplication.cpp
     OSWindows.cpp
     OSWindows.h
     guicon.cpp
     guicon.h
-    render/WindowsRenderWindow.cpp
-    render/windowsRenderWindow.h
-    ApplicationWindow.h
-    ApplicationWindow.cpp
+    WindowsApplication.h
+    WindowsApplication.cpp
+    render/RenderWindowWin32.cpp
+    render/RenderWindowWin32.h
+    RenderWindowDelegate.h
+    RenderWindowDelegate.cpp
     ${src_render_context})
 
 target_compile_definitions(WindowsApplication PUBLIC 
