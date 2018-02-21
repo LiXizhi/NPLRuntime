@@ -82,6 +82,9 @@
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11
 	#define BOOST_NO_CXX11_SCOPED_ENUMS
 #endif
+#include <boost/system/config.hpp>
+#include <boost/system/system_error.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -866,7 +869,8 @@ bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 	// TODO: Cocos API FileUtils::getInstance()->isDirectoryExist(sFile) could not detect directory correctly
 	return !sFile.empty() && (cocos2d::FileUtils::getInstance()->isFileExist(sFile) || cocos2d::FileUtils::getInstance()->isDirectoryExist(sFile));
 #elif defined USE_BOOST_FILE_API
-	return fs::exists(filename);
+	boost::system::error_code err_code;
+	return fs::exists(filename,err_code);
 	/*bool bFound = fs::exists(filename);
 	OUTPUT_LOG("%s check raw %s\n", filename, bFound ? "true" : "false");
 	return bFound;*/

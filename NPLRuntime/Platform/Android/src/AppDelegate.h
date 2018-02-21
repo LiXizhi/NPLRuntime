@@ -4,7 +4,7 @@
 #include "RenderDeviceOpenGL.h"
 namespace ParaEngine
 {
-	class CParaEngineApp;
+	class CParaEngineAppAndroid;
 	class IRenderDevice;
 	class IRenderContext;
 	class IRenderWindow;
@@ -29,7 +29,7 @@ namespace ParaEngine
         virtual void OnTermWindow();
         virtual void OnWindowResized();
 	protected:
-		CParaEngineApp* m_ParaEngineApp;
+		CParaEngineAppAndroid* m_ParaEngineApp;
 		IRenderDevice* m_RenderDevice;
 		IRenderContext* m_RenderContext;
 		IRenderWindow* m_RenderWindow;
