@@ -102,7 +102,7 @@ void AppDelegate::Run()
 
 			if (m_ParaEngineApp)
 			{
-				m_ParaEngineApp->Render3DEnvironment();
+				m_ParaEngineApp->DoWork();
 			}
         }
     }

@@ -1,5 +1,5 @@
 #include "ParaEngine.h"
-#include "WindowsRenderWindow.h"
+#include "RenderWindowWin32.h"
 #include "resource.h"
 #include "Winuser.h"
 #include <unordered_map>
@@ -150,17 +150,17 @@ DWORD ParaEngine::ParaVKToWin32VirtualKey(EVirtualKey key)
 	return -1;
 }
 
-std::unordered_map<HWND,WindowsRenderWindow*> WindowsRenderWindow::g_WindowMap;
-const WCHAR* WindowsRenderWindow::ClassName = L"ParaWorld";
+std::unordered_map<HWND,RenderWindowWin32*> RenderWindowWin32::g_WindowMap;
+const WCHAR* RenderWindowWin32::ClassName = L"ParaWorld";
 
-LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	if (g_WindowMap.find(hWnd) == g_WindowMap.end())
 	{
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
-	WindowsRenderWindow* window = g_WindowMap[hWnd];
+	RenderWindowWin32* window = g_WindowMap[hWnd];
 	assert(window);
 	assert(window->GetHandle() == hWnd);
 
@@ -229,17 +229,16 @@ LRESULT WindowsRenderWindow::WindowProc(HWND hWnd, UINT message, WPARAM wParam, 
 } 
 
 
-WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int height,bool windowed)
+RenderWindowWin32::RenderWindowWin32(HINSTANCE hInstance,int width, int height)
 	: m_hWnd(NULL)
 	, m_hAccel(NULL)
 	, m_Width(width)
 	, m_Height(height)
-	, m_Windowed(windowed)
 	, m_IsQuit(false)
 {
 	InitInput();
 
-	WNDCLASSW wndClass = { 0, WindowsRenderWindow::WindowProc, 0, 0, hInstance,
+	WNDCLASSW wndClass = { 0, RenderWindowWin32::WindowProc, 0, 0, hInstance,
 		NULL,
 		LoadCursor(NULL, IDC_ARROW),
 		(HBRUSH)GetStockObject(WHITE_BRUSH),
@@ -266,7 +265,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 		return;
 	}
 
-	m_hWnd = CreateWindowW(WindowsRenderWindow::ClassName, L"ParaEngine Window", dwWindowStyle,
+	m_hWnd = CreateWindowW(RenderWindowWin32::ClassName, L"ParaEngine Window", dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		rect.right - rect.left ,rect.bottom - rect.top, 0,
 		NULL, hInstance, 0);
@@ -282,7 +281,7 @@ WindowsRenderWindow::WindowsRenderWindow(HINSTANCE hInstance,int width, int heig
 
 }
 
-WindowsRenderWindow::~WindowsRenderWindow()
+RenderWindowWin32::~RenderWindowWin32()
 {
 	if (g_WindowMap.find(m_hWnd)!=g_WindowMap.end())
 	{
@@ -294,12 +293,12 @@ WindowsRenderWindow::~WindowsRenderWindow()
 
 
 
-bool WindowsRenderWindow::ShouldClose() const
+bool RenderWindowWin32::ShouldClose() const
 {
 	return m_IsQuit;
 }
 
-void WindowsRenderWindow::PollEvents()
+void RenderWindowWin32::PollEvents()
 {
 	MSG  msg;
 	if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -313,47 +312,47 @@ void WindowsRenderWindow::PollEvents()
 	}
 }
 
-HWND WindowsRenderWindow::GetHandle() const
+HWND RenderWindowWin32::GetHandle() const
 {
 	return m_hWnd;
 }
 
-unsigned int ParaEngine::WindowsRenderWindow::GetWidth() const
+unsigned int ParaEngine::RenderWindowWin32::GetWidth() const
 {
 	return m_Width;
 }
 
-unsigned int ParaEngine::WindowsRenderWindow::GetHeight() const
+unsigned int ParaEngine::RenderWindowWin32::GetHeight() const
 {
 	return m_Height;
 }
 
-bool ParaEngine::WindowsRenderWindow::IsWindowed() const
+bool ParaEngine::RenderWindowWin32::IsWindowed() const
 {
 	return m_Windowed;
 }
 
 
-ParaEngine::EKeyState ParaEngine::WindowsRenderWindow::GetMouseButtonState(EMouseButton button)
+ParaEngine::EKeyState ParaEngine::RenderWindowWin32::GetMouseButtonState(EMouseButton button)
 {
 	assert(button!=EMouseButton::COUNT);
 	return m_MouseState[(unsigned int)button];
 }
 
-ParaEngine::EKeyState ParaEngine::WindowsRenderWindow::GetKeyState(EVirtualKey key)
+ParaEngine::EKeyState ParaEngine::RenderWindowWin32::GetKeyState(EVirtualKey key)
 {
 	assert(key != EVirtualKey::COUNT && key!=EVirtualKey::KEY_UNKNOWN);
 	return m_KeyState[(uint32_t)key];
 }
 
-CVector2 ParaEngine::WindowsRenderWindow::GetMousePos()
+CVector2 ParaEngine::RenderWindowWin32::GetMousePos()
 {
 	return m_MousePos;
 }
 
 
 
-void ParaEngine::WindowsRenderWindow::ProcessInput(const MSG& msg)
+void ParaEngine::RenderWindowWin32::ProcessInput(const MSG& msg)
 {
 
 	switch (msg.message)
@@ -386,7 +385,7 @@ void ParaEngine::WindowsRenderWindow::ProcessInput(const MSG& msg)
 
 }
 
-void WindowsRenderWindow::InitInput()
+void RenderWindowWin32::InitInput()
 {
 	// Init mouse state
 	for (uint32_t i = 0;i<(uint32_t)EMouseButton::COUNT;i++)

@@ -6,7 +6,7 @@
 #include <glad/glad_wgl.h>
 #include <glad/glad.h>
 
-#include "Render/WindowsRenderWindow.h"
+#include "Render/RenderWindowWin32.h"
 #include "RenderContextWGL.h"
 #include "RenderDeviceWGL.h"
 
@@ -114,7 +114,7 @@ ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
 ParaEngine::IRenderDevice* ParaEngine::RenderContextWGL::CreateDevice(const RenderConfiguration& cfg)
 {
 	assert(cfg.renderWindow);
-	WindowsRenderWindow* pWindow = (WindowsRenderWindow*)cfg.renderWindow;
+	RenderWindowWin32* pWindow = (RenderWindowWin32*)cfg.renderWindow;
 	HWND hWnd = pWindow->GetHandle();
 	HDC deviceContext = GetDC(hWnd);
 	if (!deviceContext) {

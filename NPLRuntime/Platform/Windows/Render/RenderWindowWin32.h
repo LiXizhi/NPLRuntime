@@ -22,11 +22,11 @@ namespace ParaEngine
 
 
 
-	class WindowsRenderWindow : public IRenderWindow
+	class RenderWindowWin32 : public IRenderWindow
 	{
 	public:
-		virtual ~WindowsRenderWindow();
-		WindowsRenderWindow(HINSTANCE hInstance,int width, int height,bool windowed);
+		virtual ~RenderWindowWin32();
+		RenderWindowWin32(HINSTANCE hInstance,int width, int height);
 		const static WCHAR* ClassName;
 		bool ShouldClose() const;
 		void PollEvents();
@@ -54,7 +54,7 @@ namespace ParaEngine
 		bool m_Windowed;
 		bool m_IsQuit;
 		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-		static std::unordered_map<HWND, WindowsRenderWindow*> g_WindowMap;
+		static std::unordered_map<HWND, RenderWindowWin32*> g_WindowMap;
 	private:
 		void InitInput();
 		void ProcessInput(const MSG& msg);
