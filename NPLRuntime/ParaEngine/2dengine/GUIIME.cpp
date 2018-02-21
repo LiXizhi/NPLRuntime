@@ -830,7 +830,9 @@ void CGUIIME::GetPrivateReadingString()
 bool CGUIIME::OnFocusIn()
 {
 	s_bIMEHasFocus = true;
-	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 1);
+	return false;
+	//TODO
+	//return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 1);
 }
 bool CGUIIME::OnFocusIn_imp()
 {
@@ -865,7 +867,9 @@ bool CGUIIME::OnFocusIn_imp()
 bool CGUIIME::OnFocusOut()
 {
 	s_bIMEHasFocus = false;
-	return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 0);
+	return false;
+	// TODO
+	//return CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETFOCUS, 0, 0);
 }
 
 bool CGUIIME::OnFocusOut_imp()
@@ -978,7 +982,8 @@ void CGUIIME::SetIMEOpenStatus(bool bOpen, bool bForce)
 	s_sLastCompString.clear();
 	if( bForce || (!bOpen && s_bIMETrap) )
 	{
-		CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETOPENSTATUS, 0, bOpen ? 1 : 0);
+		//TODO
+		//CGlobals::GetApp()->PostWinThreadMessage(PE_IME_SETOPENSTATUS, 0, bOpen ? 1 : 0);
 	}
 }
 void CGUIIME::SetIMEOpenStatus_imp(bool bOpen)

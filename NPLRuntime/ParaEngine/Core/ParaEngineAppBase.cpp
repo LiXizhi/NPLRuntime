@@ -55,9 +55,23 @@
 #include "BlockEngine/BlockWorldManager.h"
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
+
+#if USE_DIRECTX_RENDERER
+//#include "Render/context/d3d9/RenderContextD3D9.h"
+#include "RenderDeviceD3D9.h"
+#include "DirectXEngine.h"
+#endif
+
 using namespace ParaEngine;
 using namespace ParaInfoCenter;
 IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
+
+namespace ParaEngine
+{
+	/** this value changes from 0 to 1, and back to 0 in one second.*/
+	float g_flash = 0.f;
+}
+
 
 /** default bootstrapper file */
 #define NPL_CODE_WIKI_BOOTFILE "script/apps/WebServer/WebServer.lua"
@@ -131,7 +145,6 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	CICConfigManager *cm = CGlobals::GetICConfigManager();
 	cm->LoadFromFile();
 
-	HRESULT hr;
 #ifdef USE_XACT_AUDIO_ENGINE
 	// Prepare the audio engine
 	if (FAILED(hr = m_pAudioEngine->InitAudioEngine()))
@@ -231,8 +244,8 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	vp.w = m_pRenderWindow->GetHeight();
 	m_pRenderDevice->SetViewport(vp);
 	
-	RestoreDeviceObjects();
 	InitDeviceObjects();
+	RestoreDeviceObjects();
 }
 
 
@@ -255,7 +268,8 @@ void ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
 #if USE_DIRECTX_RENDERER
 	// stage b.1
-	CGlobals::GetDirectXEngine().InitDeviceObjects(static_cast<RenderContextD3D9*>(m_pRenderContext)->GetD3D(), static_cast<RenderDeviceD3D9*>(m_pRenderDevice)->GetDirect3DDevice9(), NULL);
+	auto d3d9RenderDevice = static_cast<RenderDeviceD3D9*>(m_pRenderDevice);
+	CGlobals::GetDirectXEngine().InitDeviceObjects(d3d9RenderDevice->GetContext(), d3d9RenderDevice->GetDirect3DDevice9(), NULL);
 #endif
 	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
 	m_pParaWorldAsset->InitDeviceObjects();
@@ -287,6 +301,10 @@ void ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
+
+#if USE_DIRECTX_RENDERER
+	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
+#endif
 }
 
 void ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
@@ -317,7 +335,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 		auto color = m_pRootScene->GetClearColor();
 		CGlobals::GetRenderDevice()->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
-		CGlobals::GetRenderDevice()->SetClearStencil(1.0f);
+		CGlobals::GetRenderDevice()->SetClearStencil(1);
 		CGlobals::GetRenderDevice()->Clear(true, true, true);
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{
@@ -372,6 +390,18 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 #ifdef USE_OPENAL_AUDIO_ENGINE
 		CAudioEngine2::GetInstance()->Update();
 #endif
+	}
+
+	{
+		// animate g_flash value for some beeper effect, such as object selection.
+		static float s_flash = 0.f;
+		s_flash += (float)fElapsedEnvSimTime * 2;
+		if (s_flash > 2)
+			s_flash = 0;
+		if (s_flash > 1)
+			g_flash = 2 - s_flash;
+		else
+			g_flash = s_flash;
 	}
 
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
