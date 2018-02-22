@@ -10,17 +10,11 @@ add_subdirectory(freetype-2.8.1)
 add_subdirectory(jpeg)
 add_subdirectory(png)
 add_subdirectory(EmbedResource)
-
+add_subdirectory(luajit)
 if(ANDROID)
-    add_subdirectory(lua-5.1.4)
     add_subdirectory(tolua)
     add_subdirectory(openssl)
-elseif(WIN32)
-    add_subdirectory(luajit)
 endif()
-set(LUA_STATICLIB TRUE)
-
-
 add_subdirectory(luabind)
 
 

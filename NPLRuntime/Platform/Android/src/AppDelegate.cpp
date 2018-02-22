@@ -162,7 +162,7 @@ void AppDelegate::OnInitWindow()
 
 
 	m_RenderWindow = new RenderWindowAndroid(m_State->window);
-	m_ParaEngineApp = new CParaEngineAppAndroid();
+	m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
 	m_ParaEngineApp->InitApp(m_RenderWindow, "");
 	
 }

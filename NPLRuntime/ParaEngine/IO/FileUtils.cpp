@@ -282,7 +282,8 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 	std::string sPattern = GetFileName(sFilePattern);
 	sRootPath = GetWritableFullPathForFilename(sRootPath);
 	std::string sFullPattern = GetWritableFullPathForFilename(sFilePattern);
-	if (fs::is_directory(sFullPattern))
+	boost::system::error_code err_code;
+	if (fs::is_directory(sFullPattern,err_code))
 	{
 		nCount = CFileUtils::DeleteDirectory(sRootPath.c_str());
 	}

@@ -1,44 +1,78 @@
 /*
 ** Configuration header.
-** Copyright (C) 2005-2013 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #ifndef luaconf_h
 #define luaconf_h
 
+#ifndef WINVER
+#define WINVER 0x0501
+#endif
 #include <limits.h>
 #include <stddef.h>
 
-#cmakedefine LUAJIT_DISABLE_FFI
-#cmakedefine LUAJIT_ENABLE_LUA52COMPAT
-#cmakedefine LUAJIT_DISABLE_JIT 
-
-#cmakedefine LUAJIT_USE_SYSMALLOC
-#cmakedefine LUAJIT_USE_VALGRIND
-#cmakedefine LUAJIT_USE_GDBJIT
-
-#cmakedefine LUA_USE_APICHECK
-#cmakedefine LUA_USE_ASSERT
-
-#cmakedefine LUAJIT_CPU_SSE2
-#cmakedefine LUAJIT_CPU_NOCMOV
-
 /* Default path for loading Lua and C modules with require(). */
-#cmakedefine LUA_MODULE_SUFFIX "@LUA_MODULE_SUFFIX@"
-#cmakedefine LUA_DIR	"@LUA_DIR@"
-#cmakedefine LUA_LDIR	"@LUA_LDIR@"
-#cmakedefine LUA_CDIR	"@LUA_CDIR@"
+#if defined(_WIN32)
+/*
+** In Windows, any exclamation mark ('!') in the path is replaced by the
+** path of the directory of the executable file of the current process.
+*/
+#define LUA_LDIR	"!\\lua\\"
+#define LUA_CDIR	"!\\"
+#define LUA_PATH_DEFAULT \
+  ".\\?.lua;" LUA_LDIR"?.lua;" LUA_LDIR"?\\init.lua;"
+#define LUA_CPATH_DEFAULT \
+  ".\\?.dll;" LUA_CDIR"?.dll;" LUA_CDIR"loadall.dll"
+#else
+/*
+** Note to distribution maintainers: do NOT patch the following lines!
+** Please read ../doc/install.html#distro and pass PREFIX=/usr instead.
+*/
+#ifndef LUA_MULTILIB
+#define LUA_MULTILIB	"lib"
+#endif
+#ifndef LUA_LMULTILIB
+#define LUA_LMULTILIB	"lib"
+#endif
+#define LUA_LROOT	"/usr/local"
+#define LUA_LUADIR	"/lua/5.1/"
+#define LUA_LJDIR	"/luajit-2.0.5/"
 
-#define LUA_PATH_DEFAULT "@LUA_PATH_DEFAULT@"
-#define LUA_CPATH_DEFAULT "@LUA_CPATH_DEFAULT@"
+#ifdef LUA_ROOT
+#define LUA_JROOT	LUA_ROOT
+#define LUA_RLDIR	LUA_ROOT "/share" LUA_LUADIR
+#define LUA_RCDIR	LUA_ROOT "/" LUA_MULTILIB LUA_LUADIR
+#define LUA_RLPATH	";" LUA_RLDIR "?.lua;" LUA_RLDIR "?/init.lua"
+#define LUA_RCPATH	";" LUA_RCDIR "?.so"
+#else
+#define LUA_JROOT	LUA_LROOT
+#define LUA_RLPATH
+#define LUA_RCPATH
+#endif
+
+#define LUA_JPATH	";" LUA_JROOT "/share" LUA_LJDIR "?.lua"
+#define LUA_LLDIR	LUA_LROOT "/share" LUA_LUADIR
+#define LUA_LCDIR	LUA_LROOT "/" LUA_LMULTILIB LUA_LUADIR
+#define LUA_LLPATH	";" LUA_LLDIR "?.lua;" LUA_LLDIR "?/init.lua"
+#define LUA_LCPATH1	";" LUA_LCDIR "?.so"
+#define LUA_LCPATH2	";" LUA_LCDIR "loadall.so"
+
+#define LUA_PATH_DEFAULT	"./?.lua" LUA_JPATH LUA_LLPATH LUA_RLPATH
+#define LUA_CPATH_DEFAULT	"./?.so" LUA_LCPATH1 LUA_RCPATH LUA_LCPATH2
+#endif
 
 /* Environment variable names for path overrides and initialization code. */
-#cmakedefine LUA_PATH "@LUA_PATH@"
-#cmakedefine LUA_CPATH "@LUA_CPATH@"
-#cmakedefine LUA_INIT "@LUA_INIT@"
+#define LUA_PATH	"LUA_PATH"
+#define LUA_CPATH	"LUA_CPATH"
+#define LUA_INIT	"LUA_INIT"
 
 /* Special file system characters. */
-#cmakedefine LUA_DIRSEP	"@LUA_DIRSEP@"
+#if defined(_WIN32)
+#define LUA_DIRSEP	"\\"
+#else
+#define LUA_DIRSEP	"/"
+#endif
 #define LUA_PATHSEP	";"
 #define LUA_PATH_MARK	"?"
 #define LUA_EXECDIR	"!"
@@ -52,11 +86,11 @@
 #define LUA_QS		LUA_QL("%s")
 
 /* Various tunables. */
-#cmakedefine LUAI_MAXSTACK	@LUAI_MAXSTACK@	/* Max. # of stack slots for a thread (<64K). */
-#cmakedefine LUAI_MAXCSTACK	@LUAI_MAXCSTACK@	/* Max. # of stack slots for a C func (<10K). */
-#cmakedefine LUAI_GCPAUSE	@LUAI_GCPAUSE@	/* Pause GC until memory is at 200%. */
-#cmakedefine LUAI_GCMUL	@LUAI_GCMUL@	/* Run GC at 200% of allocation speed. */
-#cmakedefine LUA_MAXCAPTURES	@LUA_MAXCAPTURES@	/* Max. pattern captures. */
+#define LUAI_MAXSTACK	65500	/* Max. # of stack slots for a thread (<64K). */
+#define LUAI_MAXCSTACK	8000	/* Max. # of stack slots for a C func (<10K). */
+#define LUAI_GCPAUSE	200	/* Pause GC until memory is at 200%. */
+#define LUAI_GCMUL	200	/* Run GC at 200% of allocation speed. */
+#define LUA_MAXCAPTURES	32	/* Max. pattern captures. */
 
 /* Compatibility with older library function names. */
 #define LUA_COMPAT_MOD		/* OLD: math.mod, NEW: math.fmod */
@@ -65,14 +99,14 @@
 /* Configuration for the frontend (the luajit executable). */
 #if defined(luajit_c)
 #define LUA_PROGNAME	"luajit"  /* Fallback frontend name. */
-#cmakedefine LUA_PROMPT		"@LUA_PROMPT@"  /* Interactive prompt. */
-#cmakedefine LUA_PROMPT2	"@LUA_PROMPT2@"  /* Continuation prompt. */
-#cmakedefine LUA_MAXINPUT	@LUA_MAXINPUT@ /* Max. input line length. */
+#define LUA_PROMPT	"> "	/* Interactive prompt. */
+#define LUA_PROMPT2	">> "	/* Continuation prompt. */
+#define LUA_MAXINPUT	512	/* Max. input line length. */
 #endif
 
 /* Note: changing the following defines breaks the Lua 5.1 ABI. */
 #define LUA_INTEGER	ptrdiff_t
-#define LUA_IDSIZE	120	/* Size of lua_Debug.short_src. */
+#define LUA_IDSIZE	60	/* Size of lua_Debug.short_src. */
 /*
 ** Size of lauxlib and io.* on-stack buffers. Weird workaround to avoid using
 ** unreasonable amounts of stack space, but still retain ABI compatibility.
