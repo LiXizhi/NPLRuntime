@@ -1,6 +1,6 @@
 /*
 ** I/O library.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2014 Mike Pall. See Copyright Notice in luajit.h
 **
 ** Major portions taken verbatim or adapted from the Lua interpreter.
 ** Copyright (C) 1994-2011 Lua.org, PUC-Rio. See Copyright Notice in lua.h
@@ -278,15 +278,6 @@ static int io_file_iter(lua_State *L)
   return n;
 }
 
-static int io_file_lines(lua_State *L)
-{
-  int n = (int)(L->top - L->base);
-  if (n > LJ_MAX_UPVAL)
-    lj_err_caller(L, LJ_ERR_UNPACK);
-  lua_pushcclosure(L, io_file_iter, n);
-  return 1;
-}
-
 /* -- I/O file methods ---------------------------------------------------- */
 
 #define LJLIB_MODULE_io_method
@@ -370,7 +361,8 @@ LJLIB_CF(io_method_setvbuf)
 LJLIB_CF(io_method_lines)
 {
   io_tofile(L);
-  return io_file_lines(L);
+  lua_pushcclosure(L, io_file_iter, (int)(L->top - L->base));
+  return 1;
 }
 
 LJLIB_CF(io_method___gc)
@@ -434,7 +426,7 @@ LJLIB_CF(io_popen)
 LJLIB_CF(io_tmpfile)
 {
   IOFileUD *iof = io_file_new(L);
-#if LJ_TARGET_PS3 || LJ_TARGET_PS4 || LJ_TARGET_PSVITA
+#if LJ_TARGET_PS3 || LJ_TARGET_PS4
   iof->fp = NULL; errno = ENOSYS;
 #else
   iof->fp = tmpfile();
@@ -500,7 +492,8 @@ LJLIB_CF(io_lines)
   } else {  /* io.lines() iterates over stdin. */
     setudataV(L, L->base, IOSTDF_UD(L, GCROOT_IO_INPUT));
   }
-  return io_file_lines(L);
+  lua_pushcclosure(L, io_file_iter, (int)(L->top - L->base));
+  return 1;
 }
 
 LJLIB_CF(io_type)

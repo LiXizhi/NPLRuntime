@@ -17,8 +17,6 @@ del %DESTDIR%\*.dll
 )
 
 cd /d %SRCDIR%\src
-#call msvcbuild.bat amalg
-#call msvcbuild.bat static
 call msvcbuild.bat
 
 if exist %SRCDIR%\src\lua51.lib (

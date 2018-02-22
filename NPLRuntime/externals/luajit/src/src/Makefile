@@ -7,12 +7,12 @@
 # Also works with MinGW and Cygwin on Windows.
 # Please check msvcbuild.bat for building with MSVC on Windows.
 #
-# Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+# Copyright (C) 2005-2014 Mike Pall. See Copyright Notice in luajit.h
 ##############################################################################
 
 MAJVER=  2
 MINVER=  0
-RELVER=  5
+RELVER=  3
 ABIVER=  5.1
 NODOTABIVER= 51
 
@@ -24,13 +24,11 @@ NODOTABIVER= 51
 # removing the '#' in front of them. Make sure you force a full recompile
 # with "make clean", followed by "make" if you change any options.
 #
-DEFAULT_CC = gcc
-#
 # LuaJIT builds as a native 32 or 64 bit binary by default.
-CC= $(DEFAULT_CC)
+CC= gcc
 #
 # Use this if you want to force a 32 bit build on a 64 bit multilib OS.
-#CC= $(DEFAULT_CC) -m32
+#CC= gcc -m32
 #
 # Since the assembler part does NOT maintain a frame pointer, it's pointless
 # to slow down the C part by not omitting it. Debugging, tracebacks and
@@ -124,10 +122,8 @@ XCFLAGS=
 #
 # Use the system provided memory allocator (realloc) instead of the
 # bundled memory allocator. This is slower, but sometimes helpful for
-# debugging. This option cannot be enabled on x64, since realloc usually
-# doesn't return addresses in the right address range.
-# OTOH this option is mandatory for Valgrind's memcheck tool on x64 and
-# the only way to get useful results from it for all other architectures.
+# debugging. It's helpful for Valgrind's memcheck tool, too. This option
+# cannot be enabled on x64, since the built-in allocator is mandatory.
 #XCFLAGS+= -DLUAJIT_USE_SYSMALLOC
 #
 # This define is required to run LuaJIT under Valgrind. The Valgrind
@@ -151,25 +147,6 @@ XCFLAGS=
 ##############################################################################
 # You probably don't need to change anything below this line!
 ##############################################################################
-
-##############################################################################
-# Host system detection.
-##############################################################################
-
-ifeq (Windows,$(findstring Windows,$(OS))$(MSYSTEM)$(TERM))
-  HOST_SYS= Windows
-  HOST_RM= del
-else
-  HOST_SYS:= $(shell uname -s)
-  ifneq (,$(findstring MINGW,$(HOST_SYS)))
-    HOST_SYS= Windows
-    HOST_MSYS= mingw
-  endif
-  ifneq (,$(findstring CYGWIN,$(HOST_SYS)))
-    HOST_SYS= Windows
-    HOST_MSYS= cygwin
-  endif
-endif
 
 ##############################################################################
 # Flags and options for host and target.
@@ -208,7 +185,7 @@ TARGET_CC= $(STATIC_CC)
 TARGET_STCC= $(STATIC_CC)
 TARGET_DYNCC= $(DYNAMIC_CC)
 TARGET_LD= $(CROSS)$(CC)
-TARGET_AR= $(CROSS)ar rcus 2>/dev/null
+TARGET_AR= $(CROSS)ar rcus
 TARGET_STRIP= $(CROSS)strip
 
 TARGET_LIBPATH= $(or $(PREFIX),/usr/local)/$(or $(MULTILIB),lib)
@@ -264,6 +241,9 @@ ifneq (,$(findstring LJ_TARGET_PS3 1,$(TARGET_TESTARCH)))
   TARGET_ARCH+= -D__CELLOS_LV2__
   TARGET_XCFLAGS+= -DLUAJIT_USE_SYSMALLOC
 endif
+ifneq (,$(findstring LJ_NO_UNWIND 1,$(TARGET_TESTARCH)))
+  TARGET_ARCH+= -DLUAJIT_NO_UNWIND
+endif
 
 TARGET_XCFLAGS+= $(CCOPT_$(TARGET_LJARCH))
 TARGET_ARCH+= $(patsubst %,-DLUAJIT_TARGET=LUAJIT_ARCH_%,$(TARGET_LJARCH))
@@ -284,8 +264,23 @@ ifneq (,$(LMULTILIB))
 endif
 
 ##############################################################################
-# Target system detection.
+# System detection.
 ##############################################################################
+
+ifeq (Windows,$(findstring Windows,$(OS))$(MSYSTEM)$(TERM))
+  HOST_SYS= Windows
+  HOST_RM= del
+else
+  HOST_SYS:= $(shell uname -s)
+  ifneq (,$(findstring MINGW,$(HOST_SYS)))
+    HOST_SYS= Windows
+    HOST_MSYS= mingw
+  endif
+  ifneq (,$(findstring CYGWIN,$(HOST_SYS)))
+    HOST_SYS= Windows
+    HOST_MSYS= cygwin
+  endif
+endif
 
 TARGET_SYS?= $(HOST_SYS)
 ifeq (Windows,$(TARGET_SYS))
@@ -293,14 +288,15 @@ ifeq (Windows,$(TARGET_SYS))
   TARGET_XSHLDFLAGS= -shared
   TARGET_DYNXLDOPTS=
 else
-ifeq (,$(shell $(TARGET_CC) -o /dev/null -c -x c /dev/null -fno-stack-protector 2>/dev/null || echo 1))
-  TARGET_XCFLAGS+= -fno-stack-protector
-endif
 ifeq (Darwin,$(TARGET_SYS))
   ifeq (,$(MACOSX_DEPLOYMENT_TARGET))
     export MACOSX_DEPLOYMENT_TARGET=10.4
   endif
   TARGET_STRIP+= -x
+  TARGET_AR+= 2>/dev/null
+  ifeq (,$(shell $(TARGET_CC) -o /dev/null -c -x c /dev/null -fno-stack-protector 2>/dev/null || echo 1))
+    TARGET_XCFLAGS+= -fno-stack-protector
+  endif
   TARGET_XSHLDFLAGS= -dynamiclib -single_module -undefined dynamic_lookup -fPIC
   TARGET_DYNXLDOPTS=
   TARGET_XSHLDFLAGS+= -install_name $(TARGET_DYLIBPATH) -compatibility_version $(MAJVER).$(MINVER) -current_version $(MAJVER).$(MINVER).$(RELVER)
@@ -311,10 +307,15 @@ ifeq (Darwin,$(TARGET_SYS))
 else
 ifeq (iOS,$(TARGET_SYS))
   TARGET_STRIP+= -x
+  TARGET_AR+= 2>/dev/null
+  TARGET_XCFLAGS+= -fno-stack-protector
   TARGET_XSHLDFLAGS= -dynamiclib -single_module -undefined dynamic_lookup -fPIC
   TARGET_DYNXLDOPTS=
   TARGET_XSHLDFLAGS+= -install_name $(TARGET_DYLIBPATH) -compatibility_version $(MAJVER).$(MINVER) -current_version $(MAJVER).$(MINVER).$(RELVER)
 else
+  ifneq (,$(findstring stack-protector,$(shell $(TARGET_CC) -dumpspecs)))
+    TARGET_XCFLAGS+= -fno-stack-protector
+  endif
   ifneq (SunOS,$(TARGET_SYS))
     ifneq (PS3,$(TARGET_SYS))
       TARGET_XLDFLAGS+= -Wl,-E
@@ -397,10 +398,6 @@ ifeq (,$(findstring LJ_ABI_SOFTFP 1,$(TARGET_TESTARCH)))
   TARGET_ARCH+= -DLJ_ABI_SOFTFP=0
 else
   TARGET_ARCH+= -DLJ_ABI_SOFTFP=1
-endif
-ifneq (,$(findstring LJ_NO_UNWIND 1,$(TARGET_TESTARCH)))
-  DASM_AFLAGS+= -D NO_UNWIND
-  TARGET_ARCH+= -DLUAJIT_NO_UNWIND
 endif
 DASM_AFLAGS+= -D VER=$(subst LJ_ARCH_VERSION_,,$(filter LJ_ARCH_VERSION_%,$(subst LJ_ARCH_VERSION ,LJ_ARCH_VERSION_,$(TARGET_TESTARCH))))
 ifeq (Windows,$(TARGET_SYS))

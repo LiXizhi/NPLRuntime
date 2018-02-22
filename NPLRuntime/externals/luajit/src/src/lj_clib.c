@@ -1,6 +1,6 @@
 /*
 ** FFI C library loader.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2014 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #include "lj_obj.h"
@@ -39,7 +39,7 @@ LJ_NORET LJ_NOINLINE static void clib_error_(lua_State *L)
 
 #define clib_error(L, fmt, name)	clib_error_(L)
 
-#if LJ_TARGET_CYGWIN
+#if defined(__CYGWIN__)
 #define CLIB_SOPREFIX	"cyg"
 #else
 #define CLIB_SOPREFIX	"lib"
@@ -47,7 +47,7 @@ LJ_NORET LJ_NOINLINE static void clib_error_(lua_State *L)
 
 #if LJ_TARGET_OSX
 #define CLIB_SOEXT	"%s.dylib"
-#elif LJ_TARGET_CYGWIN
+#elif defined(__CYGWIN__)
 #define CLIB_SOEXT	"%s.dll"
 #else
 #define CLIB_SOEXT	"%s.so"
@@ -56,14 +56,14 @@ LJ_NORET LJ_NOINLINE static void clib_error_(lua_State *L)
 static const char *clib_extname(lua_State *L, const char *name)
 {
   if (!strchr(name, '/')
-#if LJ_TARGET_CYGWIN
+#ifdef __CYGWIN__
       && !strchr(name, '\\')
 #endif
      ) {
     if (!strchr(name, '.')) {
       name = lj_str_pushf(L, CLIB_SOEXT, name);
       L->top--;
-#if LJ_TARGET_CYGWIN
+#ifdef __CYGWIN__
     } else {
       return name;
 #endif

@@ -1,6 +1,6 @@
 /*
 ** LuaJIT VM builder: Assembler source code emitter.
-** Copyright (C) 2005-2017 Mike Pall. See Copyright Notice in luajit.h
+** Copyright (C) 2005-2014 Mike Pall. See Copyright Notice in luajit.h
 */
 
 #include "buildvm.h"
@@ -183,8 +183,7 @@ static void emit_asm_label(BuildCtx *ctx, const char *name, int size, int isfunc
   case BUILD_machasm:
     fprintf(ctx->fp,
       "\n\t.private_extern %s\n"
-      "\t.no_dead_strip %s\n"
-      "%s:\n", name, name, name);
+      "%s:\n", name, name);
     break;
   default:
     break;
@@ -287,7 +286,7 @@ void emit_asm(BuildCtx *ctx)
   fprintf(ctx->fp, "\n");
   switch (ctx->mode) {
   case BUILD_elfasm:
-#if !(LJ_TARGET_PS3 || LJ_TARGET_PSVITA)
+#if !LJ_TARGET_PS3
     fprintf(ctx->fp, "\t.section .note.GNU-stack,\"\"," ELFASM_PX "progbits\n");
 #endif
 #if LJ_TARGET_PPCSPE
