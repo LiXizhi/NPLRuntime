@@ -11,13 +11,13 @@
 #include "ParaEngine.h"
 #include "ZipArchive.h"
 #include "ZipWriter.h"
-#include "ReadFile.h"
 #include "MemReadFile.h"
 #include <algorithm>
 #include "FileManager.h"
 #include "IO/FileUtils.h"
 #include "util/StringHelper.h"
 #include "util/regularexpression.h"
+#include "Framework/FileSystem/ParaFileUtils.h"
 
 /**@def define this macro to compile with ZLIB. */
 #define COMPILE_WITH_ZLIB
@@ -302,7 +302,7 @@ void CZipArchive::ReBuild()
 
 bool CZipArchive::OpenZipFile(const string& filename)
 {
-	m_pFile = new CReadFile(filename);
+	m_pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
 	{
@@ -341,7 +341,7 @@ bool CZipArchive::OpenPkgFile(const string& filename)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
-	m_pFile = new CReadFile(filename);
+	m_pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
 	m_bOpened = m_pFile->isOpen();
 	if (!m_bOpened)
 	{

@@ -21,7 +21,7 @@ CMemReadFile::CMemReadFile(void)
 {
 }
 
-CMemReadFile::CMemReadFile(IReadFile* pFile, DWORD nSize)
+CMemReadFile::CMemReadFile(IReadFile* pFile, uint32_t nSize)
 :m_bOwnBuffer(true)
 {
 	m_CacheData = new byte[nSize];
@@ -35,7 +35,7 @@ CMemReadFile::CMemReadFile(IReadFile* pFile, DWORD nSize)
 	}
 	pFile->seek(m_CacheStartPos, false); // restore file pos.
 }
-CMemReadFile::CMemReadFile(byte* buffer, DWORD nSize, bool bDeleteBuffer)
+CMemReadFile::CMemReadFile(byte* buffer, uint32_t nSize, bool bDeleteBuffer)
 :m_bOwnBuffer(bDeleteBuffer)
 {
 	if(buffer!=0)
@@ -76,7 +76,7 @@ void CMemReadFile::Unload()
 }
 
 /// returns how much was read
-DWORD CMemReadFile::read(void* buffer, DWORD sizeToRead)
+uint32_t CMemReadFile::read(void* buffer, uint32_t sizeToRead)
 {
 	if (!isOpen())
 		return 0;
@@ -101,7 +101,7 @@ byte* CMemReadFile::getBuffer()
 /// changes position in file, returns true if successful
 /// if relativeMovement==true, the pos is changed relative to current pos,
 /// otherwise from begin of file
-bool CMemReadFile::seek(DWORD finalPos, bool relativeMovement)
+bool CMemReadFile::seek(uint32_t finalPos, bool relativeMovement)
 {
 	if (!isOpen())
 		return false;

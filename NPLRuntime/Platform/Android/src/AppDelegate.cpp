@@ -1,5 +1,6 @@
 #include "AppDelegate.h"
 #include <android/log.h>
+#include <android/asset_manager.h>
 #include <cstdlib>
 #include <cstring>
 #include <errno.h>
@@ -133,10 +134,37 @@ void AppDelegate::OnDestroy()
 void AppDelegate::OnInitWindow()
 {
     LOGI("app:OnInitWindow");
+	auto assetManager = m_State->activity->assetManager;
+	auto asset = AAssetManager_open(assetManager, "config.txt", AASSET_MODE_STREAMING);
+	auto assetLength = AAsset_getLength(asset);
+	char* buf = new char[assetLength];
+	AAsset_read(asset, buf, assetLength);
+	AAsset_close(asset);
+
+
+	JNIEnv* jni;
+	m_State->activity->vm->AttachCurrentThread(&jni, NULL);
+
+	jclass activityClass = jni->GetObjectClass(m_State->activity->clazz);
+	jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
+	jobject fileObject = jni->CallObjectMethod(m_State->activity->clazz, getFilesDir);
+	jclass fileClass = jni->GetObjectClass(fileObject);
+	jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
+	jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
+	auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
+
+	jni->DeleteLocalRef(pathObject);
+	jni->DeleteLocalRef(fileClass);
+	jni->DeleteLocalRef(fileObject);
+	jni->DeleteLocalRef(activityClass);
+
+	m_State->activity->vm->DetachCurrentThread();
+
 
 	m_RenderWindow = new RenderWindowAndroid(m_State->window);
 	m_ParaEngineApp = new CParaEngineAppAndroid();
 	m_ParaEngineApp->InitApp(m_RenderWindow, "");
+	
 }
 void AppDelegate::OnTermWindow()
 {

@@ -3,7 +3,7 @@ add_subdirectory(native_app_glue)
 
 
 ucm_add_dirs(res TO android_res RECURSIVE ADDITIONAL_EXT xml png)
-ucm_add_dirs(src TO app_src)
+ucm_add_dirs(src TO app_src RECURSIVE)
 
 
 
@@ -31,5 +31,6 @@ target_compile_definitions(Paracaft PUBLIC
 set_target_properties(Paracaft PROPERTIES 
     ANDROID_GUI TRUE
     ANDROID_NATIVE_LIB_DEPENDENCIES "sqlite.so"
+    ANDROID_ASSETS_DIRECTORIES ${CMAKE_BINARY_DIR}/assets
 )
 

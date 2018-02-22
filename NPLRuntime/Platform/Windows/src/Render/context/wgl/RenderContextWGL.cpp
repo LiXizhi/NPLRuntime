@@ -6,7 +6,7 @@
 #include <glad/glad_wgl.h>
 #include <glad/glad.h>
 
-#include "Render/RenderWindowWin32.h"
+#include "RenderWindowWin32.h"
 #include "RenderContextWGL.h"
 #include "RenderDeviceWGL.h"
 

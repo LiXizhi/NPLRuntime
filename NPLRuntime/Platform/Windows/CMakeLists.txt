@@ -7,30 +7,19 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 #{
     set(RenderSystem RenderSystemOpenGL)
     list(APPEND RenderSystem  glad_ext_wgl opengl32.lib)
-    ucm_add_dirs(Render/context/wgl TO src_render_context)
+    ucm_add_dirs(src/Render/context/wgl TO src_render_context)
 #}
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 #{
     set(RenderSystem RenderSystemD3D9)
-    ucm_add_dirs(Render/context/d3d9 TO src_render_context)
+    ucm_add_dirs(src/Render/context/d3d9 TO src_render_context)
 #}
 endif()
 
+ucm_add_dirs(src TO src_platform)
 
 
-add_executable(WindowsApplication 
-    main.cpp
-    OSWindows.cpp
-    OSWindows.h
-    guicon.cpp
-    guicon.h
-    WindowsApplication.h
-    WindowsApplication.cpp
-    render/RenderWindowWin32.cpp
-    render/RenderWindowWin32.h
-    RenderWindowDelegate.h
-    RenderWindowDelegate.cpp
-    ${src_render_context})
+add_executable(WindowsApplication ${src_platform} ${src_render_context})
 
 target_compile_definitions(WindowsApplication PUBLIC 
     PLATFORM_WINDOWS
@@ -60,7 +49,7 @@ target_link_libraries(WindowsApplication PUBLIC
     Wldap32
 )
 
-target_include_directories(WindowsApplication PRIVATE /)
+target_include_directories(WindowsApplication PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
 

@@ -10,6 +10,7 @@
 #include "ParaEngine.h"
 #include "FileUtils.h"
 #include "StringHelper.h"
+#include "Framework/FileSystem/ParaFileUtils.h"
 #include <time.h>
 #include <sys/stat.h>
 
@@ -63,21 +64,6 @@
 
 
 
-
-#if defined(PARAENGINE_MOBILE)
-	//#define USE_COCOS_FILE_API
-	#define USE_BOOST_FILE_API
-#else
-	#if !defined(WIN32) || !defined(PARAENGINE_CLIENT) //  || defined(_DEBUG)
-		#define USE_BOOST_FILE_API
-	#endif
-#endif
-
-
-#ifdef _DEBUG
-// #define USE_BOOST_FILE_API
-#endif
-
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11
 	#define BOOST_NO_CXX11_SCOPED_ENUMS
@@ -93,18 +79,6 @@
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
-
-#ifdef USE_COCOS_FILE_API
-	#include "OpenGLWrapper.h"
-	/** @Note by LiXizhi: all cocos read file api are not thread safe, hence we need to use a lock. 
-	remove this when cocos no longer uses non-thread-safe file cache map. */
-	static std::mutex  s_cocos_file_io_mutex;
-#ifdef COCOS_IO_THREAD_SAFE_PARAENGINE
-	typedef ParaEngine::no_lock<std::mutex> FileLock_type;
-#else
-	typedef std::unique_lock<std::mutex> FileLock_type;
-#endif
-#endif
 
 std::map<std::string, ParaEngine::CFileUtils::EmbeddedResource> ParaEngine::CFileUtils::s_all_resources;
 
@@ -191,15 +165,7 @@ bool ParaEngine::CFileUtils::FileExist2(const char * filename, std::string * pDi
 
 bool ParaEngine::CFileUtils::IsAbsolutePath(const std::string& filename)
 {
-#ifdef WIN32
-	if (filename.find(":") != string::npos)
-		return true;
-#endif
-#ifdef USE_COCOS_FILE_API
-	return cocos2d::FileUtils::getInstance()->isAbsolutePath(filename);
-#else
-	return filename[0] == '/';
-#endif	
+	return CParaFileUtils::GetInstance()->IsAbsolutePath(filename);
 }
 
 void ParaEngine::CFileUtils::TrimString(std::string & str)
@@ -241,167 +207,19 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 	}
 	else
 	{
-#ifdef USE_COCOS_FILE_API
-		//OUTPUT_LOG("copy file not implemented in mobile version: from %s to %s\n", src, dest);
-		try
-		{
-			std::string destWritablePath = GetWritableFullPathForFilename(dest);
-			std::string srcWritablePath = GetWritableFullPathForFilename(src);
-			fs::path destFile(destWritablePath);
-			if (fs::exists(destFile))
-			{
-				if (bOverride)
-				{
-					if (!fs::remove(destFile))
-					{
-						return false;
-					}
-				}
-				else
-				{
-					return false;
-				}
-			}
-			fs::copy_file(fs::path(srcWritablePath), destFile);
-		}
-		catch (...)
-		{
-			return false;
-		}
-		return true;
-#elif defined(USE_BOOST_FILE_API)
-		try
-		{
-			fs::path destFile(dest);
-			if (fs::exists(destFile))
-			{
-				if (bOverride)
-				{
-					if (!fs::remove(destFile))
-					{
-						return false;
-					}
-				}
-				else
-				{
-					return false;
-				}
-			}
-			fs::copy_file(fs::path(src), destFile);
-		}
-		catch (...)
-		{
-			return false;
-		}
-		return true;
-#else
-		// try the system version, in case the src file is currently in use, such as the database. 
-		return ::CopyFile(src, dest, !bOverride) == TRUE;
-#endif
+		return CParaFileUtils::GetInstance()->Copy(src, dest, bOverride);
 	}
 	return false;
 }
 
 bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 {
-#ifdef USE_COCOS_FILE_API
-	// OUTPUT_LOG("move file not implemented in mobile version: from %s to %s\n", src, dest);
-	std::string src_path = GetWritableFullPathForFilename(src);
-	std::string dest_path = GetWritableFullPathForFilename(dest);
-	try
-	{
-		fs::path sSrc(src_path);
-		fs::copy_file(sSrc, fs::path(dest_path));
-		return fs::remove(sSrc);
-	}
-	catch (...)
-	{
-		OUTPUT_LOG("warning: move file failed: from %s to %s\n", src, dest);
-		return false;
-	}
-#elif defined(USE_BOOST_FILE_API)
-	try
-	{
-		fs::path sSrc(src);
-		fs::copy_file(sSrc, fs::path(dest));
-		return fs::remove(sSrc);
-	}
-	catch (...)
-	{
-		return false;
-	}
-#else
-	if (dest != NULL && src != NULL)
-	{
-		return ::MoveFileEx(src, dest, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == TRUE;
-	}
-#endif
-	return false;
+	return CParaFileUtils::GetInstance()->Move(src, dest);
 }
 
 bool ParaEngine::CFileUtils::MakeDirectoryFromFilePath(const char * filename)
 {
-#ifdef USE_COCOS_FILE_API
-	try
-	{
-		std::string path = filename;
-		if (!IsAbsolutePath(path))
-		{
-			path = GetWritablePath() + path;
-		}
-		fs::path filePath(path);
-		fs::path fileDir = filePath.parent_path();
-		if (!fs::is_directory(fileDir))
-		{
-			return fs::create_directories(fileDir);
-		}
-			
-		else
-			return true;
-	}
-	catch (...){}
-	return false;
-#elif defined(USE_BOOST_FILE_API)
-	try
-	{
-		fs::path filePath(filename);
-		fs::path fileDir = filePath.parent_path();
-		if( !fs::exists(fileDir))
-			return fs::create_directories(fileDir);
-		else
-			return true;
-	}
-	catch (...){}
-	return false;
-#else
-	std::string sParentDir = GetParentDirectoryFromPath(filename);
-
-	int i, len;
-	char buf[512];
-	int start = 0;
-
-	/* try to create all the intermediate directories */
-	len = (int)(sParentDir.size());
-	buf[0] = sParentDir[0];
-	for (i = 1; i<len; i++){
-		if ((sParentDir[i] == '/' || sParentDir[i] == '\\') && (i - start > 0)){
-			/* only mkdir if leaf dir != "." or "/" or ".." */
-			if (i - start > 2 || (i - start == 1 && buf[start] != '.' && (buf[start] != '/' && buf[start] != '\\'))
-				|| (i - start == 2 && buf[start] != '.' && buf[start + 1] != '.')){
-				buf[i] = '\0';
-				if (_mkdir(buf) != 0){
-					int err = errno;
-					if (err != EEXIST) {
-						return false;
-					}
-				}
-			}
-			start = i + 1;
-		}
-		buf[i] = sParentDir[i];
-	}
-	return true;
-#endif
+	return CParaFileUtils::GetInstance()->MakeDirectoryFromFilePath(filename);
 }
 
 std::string ParaEngine::CFileUtils::GetFileName(const std::string& sfilename)
@@ -441,100 +259,22 @@ std::string ParaEngine::CFileUtils::GetParentDirectoryFromPath(const std::string
 
 bool ParaEngine::CFileUtils::SaveBufferToFile(const string& filename, bool bReplace, char* buffer, DWORD nBufSize)
 {
-#ifdef USE_COCOS_FILE_API
-	OUTPUT_LOG("SaveBufferToFile not implemented in mobile version\n");
-	return false;
-#elif defined(USE_BOOST_FILE_API)
-	try
-	{
-		if(MakeDirectoryFromFilePath(filename.c_str())==false)
-			return false;
-		fs::path filePath(filename);
-		if(fs::exists(filePath) && (bReplace == false))
-			return false;
-
-		fs::ofstream file( filePath);
-		if(!file)
-		{
-			file.write(buffer, nBufSize);
-		}
-	}
-	catch (...){}
-	return false;
-#else
-	if (MakeDirectoryFromFilePath(filename.c_str()) == false)
-		return false;
-	if (FileExist(filename.c_str()) && (bReplace == false))
-		return false;
-	HANDLE hFile = ::CreateFile(filename.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		DWORD w;
-		::WriteFile(hFile, buffer, nBufSize, &w, NULL);
-		::CloseHandle(hFile);
-		return true;
-	}
-	else
-		return false;
-#endif
+	return CParaFileUtils::GetInstance()->SaveBufferToFile(filename, bReplace, buffer, nBufSize);
 }
 
 bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 {
-#ifdef USE_COCOS_FILE_API
-	std::string sFilePath = GetWritableFullPathForFilename(filename);
-	try
-	{
-		return fs::remove(sFilePath);
-	}
-	catch (...)
-	{
-		return false;
-	}
-#elif defined(USE_BOOST_FILE_API)
-	try
-	{
-		return fs::remove(filename);
-	}
-	catch (...)
-	{
-		return false;
-	}
-#else
-	::DeleteFile(filename);
-	return true;
-#endif
+	return CParaFileUtils::GetInstance()->Delete(filename);
 }
 
 int ParaEngine::CFileUtils::DeleteDirectory(const char* filename)
 {
-#ifdef USE_COCOS_FILE_API
-	std::string sFilePath = GetWritableFullPathForFilename(filename);
-	try
-	{
-		return fs::remove_all(sFilePath);
-	}
-	catch (...)
-	{
-		return 0;
-	}
-#elif defined(USE_BOOST_FILE_API)
-	try
-	{
-		return (int)fs::remove_all(filename);
-	}
-	catch (...)
-	{
-		return 0;
-	}
-#else
-	return ::DeleteFile(filename);
-#endif
+	return CParaFileUtils::GetInstance()->DeleteDirectory(filename);
 }
 
 int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bSecureFolderOnly /*= true*/, int nSubFolderCount)
 {
-#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
+
 	// search in writable disk files
 	// Note: bSecureFolderOnly is ignore, since it is guaranteed by the OS's writable path.
 	int nCount = 0;
@@ -564,91 +304,7 @@ int ParaEngine::CFileUtils::DeleteFiles(const std::string& sFilePattern, bool bS
 		}
 		OUTPUT_LOG("%d files removed from directory %s\n", nCount, sFilePattern.c_str());
 	}
-	if (nCount > 0){
-#if defined(USE_COCOS_FILE_API)
-		cocos2d::FileUtils::getInstance()->purgeCachedEntries();
-#endif
-	}
 	return nCount;
-#else
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-
-	string tmpDir_ = GetParentDirectoryFromPath(sFilePattern, 0);
-	if (bSecureFolderOnly)
-	{
-		//TODO: search if the directory is outside the application directory. If so, we should now allow user to delete file there.
-		if(!CParaFile::IsWritablePath(sFilePattern, false))
-		{
-			// only relative path is allowed.
-			OUTPUT_LOG("security alert: some one is telling the engine to delete a file %s which is not allowed\r\n", sFilePattern.c_str());
-			return 0;
-		}
-	}
-
-	string DirSpec = sFilePattern;
-	DWORD dwError;
-	hFind = FindFirstFile(DirSpec.c_str(), &FindFileData);
-
-	if (sFilePattern.size() > 0 && sFilePattern[sFilePattern.size() - 1] == '/')
-	{
-		std::string filename;
-		CParaFile::ToCanonicalFilePath(filename, sFilePattern, true);
-		filename.push_back('\0');
-		filename.push_back('\0');
-		SHFILEOPSTRUCT file_op = {
-			NULL,
-			FO_DELETE,
-			filename.c_str(),
-			NULL,
-			FOF_NOCONFIRMATION |
-			FOF_NOERRORUI |
-			FOF_SILENT,
-			false,
-			0,
-			"" };
-		return (SHFileOperation(&file_op) == S_OK) ? 1 : 0;
-	}
-
-	int nFileCount = 0;
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		return nFileCount;
-	}
-	else
-	{
-		// we will first read file to a cache location, and then delete in a batch. This may prevent file error on old FAT32 system. 
-		// NTFS works file to delete file during the FindNextFile() loop.
-		std::vector<std::string> files;
-		do
-		{
-			files.push_back(FindFileData.cFileName);
-			++nFileCount;
-		} while (FindNextFile(hFind, &FindFileData) != 0);
-
-		dwError = GetLastError();
-		FindClose(hFind);
-
-		std::vector<std::string>::iterator itCur, itEnd = files.end();
-		for (itCur = files.begin(); itCur != itEnd; ++itCur)
-		{
-			std::string filename(tmpDir_ + (*itCur));
-			if (DeleteFile(filename.c_str()))
-			{
-			}
-			else
-			{
-				OUTPUT_LOG("warning, unable to delete file %s\n", filename.c_str());
-			}
-		}
-
-		if (dwError == ERROR_NO_MORE_FILES)
-		{
-			return nFileCount;
-		}
-	}
-	return nFileCount;
-#endif
 }
 
 namespace ParaEngine
@@ -708,71 +364,21 @@ bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fi
 
 ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filename)
 {
-#ifdef USE_COCOS_FILE_API
-	FileLock_type lock_(s_cocos_file_io_mutex);
-	cocos2d::Data buf = cocos2d::FileUtils::getInstance()->getDataFromFile(filename);
-	lock_.unlock();
 	FileData data;
-	if (!buf.isNull())
-	{
-		size_t nSize = (size_t)buf.getSize();
-		char* pBuffer = new char[nSize + 1];
-		memcpy(pBuffer, buf.getBytes(), nSize);
-		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
-		data.SetOwnBuffer(pBuffer, (DWORD)nSize);
-	}
-	return data;
-#elif defined(USE_BOOST_FILE_API)
-	FileData data;
-	fs::ifstream file;
 	if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
 	{
-		file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
-		if (!file.is_open())
+		std::string devFilePath = CParaFile::GetDevDirectory() + filename;
+		data = CParaFileUtils::GetInstance()->GetDataFromFile(devFilePath.c_str());
+		if (data.isNull())
 		{
-			file.open(filename, ios::in | ios::binary | ios::ate);
+			data = CParaFileUtils::GetInstance()->GetDataFromFile(filename);
 		}
 	}
 	else 
 	{
-		file.open(filename, ios::in | ios::binary | ios::ate);
-	}
-
-	if(file.is_open())
-	{
-		size_t nSize = (size_t)file.tellg();
-		char* pBuffer = new char[nSize + 1];
-		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
-		file.seekg (0, ios::beg);
-		file.read(pBuffer, nSize);
-		file.close();
-		data.SetOwnBuffer(pBuffer, nSize);
+		data = CParaFileUtils::GetInstance()->GetDataFromFile(filename);
 	}
 	return data;
-#else
-	HANDLE hFile = INVALID_HANDLE_VALUE;
-	if (!CParaFile::GetDevDirectory().empty())
-	{
-		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
-		hFile = ::CreateFile(sAbsFilePath.c_str(), GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	}
-	if (hFile == INVALID_HANDLE_VALUE)
-		hFile = ::CreateFile(filename, GENERIC_READ, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	FileData data;
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		/// load from disk
-		size_t nSize = (size_t)::GetFileSize(hFile, NULL);
-		DWORD nBytesRead = 0;
-		char* pBuffer = new char[nSize + 1];
-		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
-		::ReadFile(hFile, pBuffer, (DWORD)nSize, &nBytesRead, NULL);
-		::CloseHandle(hFile);
-		data.SetOwnBuffer(pBuffer, nSize);
-	}
-	return data;
-#endif
 }
 
 std::string ParaEngine::CFileUtils::GetStringFromFile(const std::string& filename)
@@ -797,26 +403,6 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetResDataFromFile(const std::strin
 		data.SetOwnBuffer(buffer, nSize);
 		return data;
 	}
-
-#ifdef USE_COCOS_FILE_API
-	
-#elif defined(WIN32) && defined(PARAENGINE_CLIENT)
-	if (!filename.empty() && filename[0] == ':')
-	{
-		HINSTANCE hInstance = CGlobals::GetApp()->GetModuleHandle();
-		HRSRC hSrc = ::FindResource(hInstance, filename.c_str() + 1, "textfile");
-		if (hSrc != NULL)
-		{
-			HGLOBAL hHandle = ::LoadResource(hInstance, hSrc);
-			if (hHandle != NULL)
-			{
-				size_t nSize = (size_t)::SizeofResource(hInstance, hSrc);
-				char* buffer = (char*)::LockResource(hHandle);
-				data.SetOwnBuffer(buffer, nSize);
-			}
-		}
-	}
-#endif
 	return data;
 }
 
@@ -849,108 +435,36 @@ std::string ParaEngine::CFileUtils::GetWritableFullPathForFilename(const std::st
 
 std::string ParaEngine::CFileUtils::GetFullPathForFilename(const std::string &filename)
 {
-#ifdef USE_COCOS_FILE_API
-	FileLock_type lock_(s_cocos_file_io_mutex);
-	return cocos2d::FileUtils::getInstance()->fullPathForFilename(filename);
-#elif defined(USE_BOOST_FILE_API)
-	fs::path filepath(filename);
-	fs::path abs_path = fs::absolute(filepath);
-	return abs_path.string();
-#else
-	return filename;
-#endif
+	return CParaFileUtils::GetInstance()->GetFullPathForFilename(filename);
 }
 
 bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 {
-#ifdef USE_COCOS_FILE_API
-	std::string sFile(filename);
-	FileLock_type lock_(s_cocos_file_io_mutex);
-	// TODO: Cocos API FileUtils::getInstance()->isDirectoryExist(sFile) could not detect directory correctly
-	return !sFile.empty() && (cocos2d::FileUtils::getInstance()->isFileExist(sFile) || cocos2d::FileUtils::getInstance()->isDirectoryExist(sFile));
-#elif defined USE_BOOST_FILE_API
-	boost::system::error_code err_code;
-	return fs::exists(filename,err_code);
-	/*bool bFound = fs::exists(filename);
-	OUTPUT_LOG("%s check raw %s\n", filename, bFound ? "true" : "false");
-	return bFound;*/
-#else
-	struct stat stFileInfo;
-	bool blnReturn;
-	int intStat;
 
-	// Attempt to get the file attributes
-	intStat = stat(filename, &stFileInfo);
-	if (intStat == 0) {
-		// We were able to get the file attributes
-		// so the file obviously exists.
-		blnReturn = true;
-	}
-	else {
-		// We were not able to get the file attributes.
-		// This may mean that we don't have permission to
-		// access the folder which contains this file. If you
-		// need to do that level of checking, lookup the
-		// return values of stat which will give you
-		// more details on why stat failed.
-		blnReturn = false;
-	}
-
-	return(blnReturn);
-#endif
+	return CParaFileUtils::GetInstance()->Exists(filename);
 }
 
 int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 {
-#ifdef USE_COCOS_FILE_API
-	return 0;
-#elif defined USE_BOOST_FILE_API
 	return (int)fs::file_size(sFilePath);
-#else
-	DWORD dwFileSize = 0;
-	HANDLE hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		dwFileSize = ::GetFileSize(hFile, NULL);
-		if (dwFileSize == INVALID_FILE_SIZE)
-			dwFileSize = 0;
-		::CloseHandle(hFile);
-	}
-	return dwFileSize;
-#endif
 }
 
 ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bool bRead /*= false*/, bool bWrite/*=true*/)
 {
-#ifdef USE_COCOS_FILE_API
 	std::string sFilePath;
 	if (bWrite && !IsAbsolutePath(filename))
 	{
 		sFilePath = GetWritablePath() + filename;
-		sFilePath = GetFullPathForFilename(sFilePath);
 	}
-	else{
-		sFilePath = GetFullPathForFilename(filename);
+	else {
+		sFilePath = filename;
 	}
+
+	sFilePath = GetFullPathForFilename(sFilePath);
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
-#elif defined USE_BOOST_FILE_API
-	std::string sFilePath = GetFullPathForFilename(filename);
-	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
-	FileHandle fileHandle;
-	fileHandle.m_pFile = pFile;
-	return fileHandle;
-#else
-	HANDLE hFile = ::CreateFile(filename, (bRead ? GENERIC_READ : 0) | (bWrite ? GENERIC_WRITE : 0), (bRead ? FILE_SHARE_READ : 0) | (bWrite ? FILE_SHARE_WRITE : 0),
-		NULL, bWrite ? OPEN_ALWAYS : 0, NULL, NULL);
-	if (hFile != INVALID_HANDLE_VALUE)
-	{
-		return FileHandle(hFile);
-	}
-	return FileHandle();
-#endif
 }
 
 bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanceToMove, int dwMoveMethod)
@@ -968,13 +482,7 @@ bool ParaEngine::CFileUtils::SetFilePointer(FileHandle& fileHandle, int lDistanc
 			OUTPUT_LOG("error: unknown SetFilePointer() move method\r\n");
 			return false;
 		}
-#ifdef USE_COCOS_FILE_API
 		fseek(fileHandle.m_pFile, lDistanceToMove, dwMoveMethod);
-#elif defined USE_BOOST_FILE_API
-		fseek(fileHandle.m_pFile, lDistanceToMove, dwMoveMethod);
-#else
-		::SetFilePointer(fileHandle.m_handle, lDistanceToMove, 0, dwMoveMethod);
-#endif
 		return true;
 	}
 	return false;
@@ -984,14 +492,7 @@ int ParaEngine::CFileUtils::GetFilePosition(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#ifdef USE_COCOS_FILE_API
 		return ftell(fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
-		return ftell(fileHandle.m_pFile);
-#else
-		int nPos = ::SetFilePointer(fileHandle.m_handle, 0, NULL, FILE_CURRENT);
-		return nPos != INVALID_SET_FILE_POINTER ? nPos : 0;
-#endif
 	}
 	return 0;
 }
@@ -1000,15 +501,8 @@ bool ParaEngine::CFileUtils::SetEndOfFile(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#ifdef USE_COCOS_FILE_API
 		fseek(fileHandle.m_pFile, 0, SEEK_END);
 		return true;
-#elif defined USE_BOOST_FILE_API
-		fseek(fileHandle.m_pFile, 0, SEEK_END);
-		return true;
-#else
-		return ::SetEndOfFile(fileHandle.m_handle) == TRUE;
-#endif
 	}
 	return false;
 }
@@ -1017,15 +511,7 @@ int ParaEngine::CFileUtils::WriteBytes(FileHandle& fileHandle, const void* src, 
 {
 	if (fileHandle.IsValid())
 	{
-#ifdef USE_COCOS_FILE_API
 		return (int)fwrite(src, 1, bytes, fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
-		return (int)fwrite(src, 1, bytes, fileHandle.m_pFile);
-#else
-		DWORD bytesWritten;
-		::WriteFile(fileHandle.m_handle, src, bytes, &bytesWritten, NULL);
-		return bytesWritten;
-#endif
 	}
 	return 0;
 }
@@ -1034,15 +520,7 @@ int ParaEngine::CFileUtils::ReadBytes(FileHandle& fileHandle, void* dest, int by
 {
 	if (fileHandle.IsValid())
 	{
-#ifdef USE_COCOS_FILE_API
 		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
-#elif defined USE_BOOST_FILE_API
-		return (int)fread(dest, 1, bytes, fileHandle.m_pFile);
-#else
-		DWORD bytesRead = 0;
-		::ReadFile(fileHandle.m_handle, dest, bytes, &bytesRead, NULL);
-		return bytesRead;
-#endif
 	}
 	return 0;
 }
@@ -1051,72 +529,28 @@ void ParaEngine::CFileUtils::CloseFile(FileHandle& fileHandle)
 {
 	if (fileHandle.IsValid())
 	{
-#ifdef USE_COCOS_FILE_API
 		fclose(fileHandle.m_pFile);
 		fileHandle.m_pFile = nullptr;
-#elif defined USE_BOOST_FILE_API
-		fclose(fileHandle.m_pFile);
-		fileHandle.m_pFile = nullptr;
-#else
-		::CloseHandle(fileHandle.m_handle);
-		fileHandle.m_handle = INVALID_HANDLE_VALUE;
-#endif
 	}
 }
 
 std::string ParaEngine::CFileUtils::GetInitialDirectory()
 {
-#ifdef USE_COCOS_FILE_API
-	FileLock_type lock_(s_cocos_file_io_mutex);
-#ifdef WIN32
-	std::string sRootDir = cocos2d::FileUtils::getInstance()->getSearchPaths()[0];
-	if(sRootDir.size()>0 && (sRootDir[sRootDir.size()-1] != '/' && sRootDir[sRootDir.size()-1] != '\\'))
-	{
-		sRootDir += "/";
-	}
-#else
-	// Provide empty initial directory here
-	std::string sRootDir = "";
-#endif
-	return sRootDir;
-#elif defined(USE_BOOST_FILE_API)
-	fs::path sWorkingDir = fs::initial_path();
-#ifndef WIN32
-	sWorkingDir = fs::path(sWorkingDir.string());
-#endif
+	std::string sWorkingDir = CParaFileUtils::GetInstance()->GetInitialDirectory();
 	std::string sRootDir;
-	CParaFile::ToCanonicalFilePath(sRootDir, sWorkingDir.string(), false);
+	CParaFile::ToCanonicalFilePath(sRootDir, sWorkingDir, false);
 	if(sRootDir.size()>0 && (sRootDir[sRootDir.size()-1] != '/' && sRootDir[sRootDir.size()-1] != '\\'))
 	{
 		sRootDir += "/";
 	}
 	return sRootDir;
-#else
-	char buf[1024 + 1];
-	int nCount;
-	if ((nCount = ::GetCurrentDirectory(1024, buf)) > 0)
-	{
-		if (buf[nCount - 1] != '/' && buf[nCount - 1] != '\\'){
-			buf[nCount] = '/';
-			buf[++nCount] = '\0';
-		}
-		string sAppRootPath;
-		CParaFile::ToCanonicalFilePath(sAppRootPath, buf, false);
-		return sAppRootPath;
-	}
-	return "";
-#endif
 }
 
 const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
 	if (s_writepath.empty())
 	{
-#ifdef USE_COCOS_FILE_API
-		s_writepath = cocos2d::FileUtils::getInstance()->getWritablePath();
-#else
-		s_writepath = ParaEngine::CParaFile::GetCurDirectory(ParaEngine::CParaFile::APP_ROOT_DIR);
-#endif
+		s_writepath = CParaFileUtils::GetInstance()->GetWriteAblePath();
 	}
 	return s_writepath;
 }
@@ -1248,105 +682,12 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	}
 	result.SetRootPath(rootPath.string());
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
-
-#ifdef OLD_FILE_SEARCH
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = INVALID_HANDLE_VALUE;
-	DWORD dwError;
-
-	string DirSpec = sRootPath + sFilePattern;
-	CParaFile::ToCanonicalFilePath(DirSpec, DirSpec);
-	hFind = FindFirstFile(DirSpec.c_str(), &FindFileData);
-
-	if (hFind != INVALID_HANDLE_VALUE)
-	{
-		if (FindFileData.cFileName[0] != '.')
-		{
-			string sFile = sRootPath + FindFileData.cFileName;
-			CParaFile::ToCanonicalFilePath(sFile, sFile, false);
-			if (!result.AddResult(sFile, FindFileData.nFileSizeLow, FindFileData.dwFileAttributes, &(FindFileData.ftLastWriteTime), &(FindFileData.ftCreationTime), &(FindFileData.ftLastAccessTime)))
-				return;
-			/*if(CHECK_BIT(FindFileData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY) && nSubLevel>0)
-			{
-			string sNewRoot = sRootPath+FindFileData.cFileName+"\\";
-			sNewRoot = CParaFile::ToCanonicalFilePath(sNewRoot);
-			FindDiskFiles(result, sNewRoot, sFilePattern, nSubLevel-1);
-			}*/
-		}
-		while (FindNextFile(hFind, &FindFileData) != 0)
-		{
-			if (FindFileData.cFileName[0] == '.')
-				continue;
-			string sFile = sRootPath + FindFileData.cFileName;
-			CParaFile::ToCanonicalFilePath(sFile, sFile, false);
-			if (!result.AddResult(sFile, FindFileData.nFileSizeLow, FindFileData.dwFileAttributes, &(FindFileData.ftLastWriteTime), &(FindFileData.ftCreationTime), &(FindFileData.ftLastAccessTime)))
-				return;
-			/*if(CHECK_BIT(FindFileData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY) && nSubLevel>0)
-			{
-			string sNewRoot = sRootPath+FindFileData.cFileName+"\\";
-			sNewRoot = CParaFile::ToCanonicalFilePath(sNewRoot);
-			FindDiskFiles(result, sNewRoot, sFilePattern, nSubLevel-1);
-			}*/
-		}
-		dwError = GetLastError();
-		FindClose(hFind);
-		if (dwError != ERROR_NO_MORE_FILES)
-		{
-			OUTPUT_LOG("FindNextFile error. Error is %u\n", dwError);
-		}
-	}
-
-	// search all sub directories, without adding files
-	int nLen = (int)sFilePattern.size();
-	if (nSubLevel > 0/* && sFilePattern[nLen-1] != '.'*/)
-	{
-		DirSpec = sRootPath + "*.*";
-		CParaFile::ToCanonicalFilePath(DirSpec, DirSpec);
-		hFind = FindFirstFile(DirSpec.c_str(), &FindFileData);
-
-		if (hFind != INVALID_HANDLE_VALUE)
-		{
-			if (FindFileData.cFileName[0] != '.')
-			{
-				if (CHECK_BIT(FindFileData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY))
-				{
-					string sNewRoot = sRootPath + FindFileData.cFileName + "\\";
-					CParaFile::ToCanonicalFilePath(sNewRoot, sNewRoot);
-					FindDiskFiles(result, sNewRoot, sFilePattern, nSubLevel - 1);
-				}
-			}
-			while (FindNextFile(hFind, &FindFileData) != 0)
-			{
-				if (FindFileData.cFileName[0] == '.')
-					continue;
-				if (CHECK_BIT(FindFileData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY))
-				{
-					string sNewRoot = sRootPath + FindFileData.cFileName + "\\";
-					CParaFile::ToCanonicalFilePath(sNewRoot, sNewRoot);
-					FindDiskFiles(result, sNewRoot, sFilePattern, nSubLevel - 1);
-				}
-			}
-			dwError = GetLastError();
-			FindClose(hFind);
-			if (dwError != ERROR_NO_MORE_FILES)
-			{
-				OUTPUT_LOG("FindNextFile error. Error is %u\n", dwError);
-			}
-		}
-	}
-#endif
 }
 
 
 bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nFront /*= false*/)
 {
-#ifdef USE_COCOS_FILE_API
-	FileLock_type lock_(s_cocos_file_io_mutex);
-	cocos2d::FileUtils::getInstance()->addSearchPath(sFile, nFront);
-	return true;
-#else
 	OUTPUT_LOG("warn: AddDiskSearchPath :%s not supported. ", sFile.c_str());
 	return false;
-#endif
 }
 

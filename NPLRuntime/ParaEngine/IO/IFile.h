@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cstdint>
 namespace ParaEngine
 {
 	/**
@@ -15,7 +15,7 @@ namespace ParaEngine
 		/// @param buffer: Pointer to buffer where to read bytes will be written to.
 		/// @param sizeToRead: Amount of bytes to read from the file.
 		/// @return Returns how much bytes were read.
-		virtual DWORD read(void* buffer, DWORD sizeToRead) = 0;
+		virtual uint32_t read(void* buffer, uint32_t sizeToRead) = 0;
 
 		/// Changes position in file, returns true if successful.
 		/// @param finalPos: Destination position in the file.
@@ -23,18 +23,18 @@ namespace ParaEngine
 		/// changed relative to current position. Otherwise the position is changed 
 		/// from begin of file.		
 		/// @return Returns true if successful, otherwise false.
-		virtual bool seek(DWORD finalPos, bool relativeMovement = false) = 0;
+		virtual bool seek(uint32_t finalPos, bool relativeMovement = false) = 0;
 
 		/// Returns size of file.
 		/// @return Returns the size of the file in bytes.
-		virtual DWORD getSize() = 0;
+		virtual uint32_t getSize() = 0;
 
 		/// returns if file is open
 		virtual bool isOpen() = 0;
 
 		/// Returns the current position in the file.
 		/// @return Returns the current position in the file in bytes.
-		virtual DWORD getPos() = 0;
+		virtual uint32_t getPos() = 0;
 
 		/// Returns name of file.
 		/// @return Returns the file name as zero terminated character string.
