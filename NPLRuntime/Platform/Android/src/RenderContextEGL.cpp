@@ -20,6 +20,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	ANativeWindow* nativeWindow = renderWindow->GetNativeWindow();
 	const EGLint attribs[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,
 		EGL_BLUE_SIZE, 8,
 		EGL_GREEN_SIZE, 8,
 		EGL_RED_SIZE, 8,
@@ -37,7 +38,12 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 
 	ANativeWindow_setBuffersGeometry(nativeWindow, 0, 0, format);
 	surface = eglCreateWindowSurface(display, config, nativeWindow, NULL);
-	context = eglCreateContext(display, config, NULL, NULL);
+	const EGLint context_attrib_list[] = {
+		// request a context using Open GL ES 2.0
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+	context = eglCreateContext(display, config, NULL, context_attrib_list);
 
 	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
 		LOGW("Unable to eglMakeCurrent");
@@ -48,6 +54,11 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	{
 		LOGW("Unable to load gl ext.");
 	}
+
+	auto version = glGetString(GL_VERSION);
+	LOGI("GL_VERSION:%s", version);
+
+
 
 	return new RenderDeviceEGL(display,surface);
 }

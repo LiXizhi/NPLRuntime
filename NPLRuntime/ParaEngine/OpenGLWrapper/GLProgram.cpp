@@ -156,7 +156,7 @@ bool GLProgram::initWithByteArrays(const GLchar* vShaderByteArray, const GLchar*
 	{
 		if (!compileShader(&_vertShader, GL_VERTEX_SHADER, vShaderByteArray))
 		{
-			OUTPUT_LOG("cocos2d: ERROR: Failed to compile vertex shader");
+			OUTPUT_LOG("ERROR: Failed to compile vertex shader");
 			return false;
 		}
 	}
@@ -328,11 +328,14 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 		return false;
 	}
 
+
+
+
 	const GLchar *sources[] = {
-#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX && PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC)
-		(type == GL_VERTEX_SHADER ? "precision highp float;\n" : "precision mediump float;\n"),
-#endif
-        "#version 120\n"
+//#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX && PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC)
+//		(type == GL_VERTEX_SHADER ? "precision highp float;\n" : "precision mediump float;\n"),
+//#endif
+		"precision highp float;\n"
 		"uniform mat4 CC_PMatrix;\n"
 		"uniform mat4 CC_MVMatrix;\n"
 		"uniform mat4 CC_MVPMatrix;\n"
@@ -354,22 +357,22 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 
 	glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
 
-	if (!status)
+	if (status!=GL_TRUE)
 	{
 		GLsizei length;
 		glGetShaderiv(*shader, GL_SHADER_SOURCE_LENGTH, &length);
 		GLchar* src = (GLchar *)malloc(sizeof(GLchar) * length);
 
 		glGetShaderSource(*shader, length, nullptr, src);
-		OUTPUT_LOG("cocos2d: ERROR: Failed to compile shader:\n%s", src);
+		OUTPUT_LOG("ERROR: Failed to compile shader:\n%s", src);
 
 		if (type == GL_VERTEX_SHADER)
 		{
-			OUTPUT_LOG("cocos2d: %s", getVertexShaderLog().c_str());
+			OUTPUT_LOG("VertexShaderError:\n %s", getVertexShaderLog().c_str());
 		}
 		else
 		{
-			OUTPUT_LOG("cocos2d: %s", getFragmentShaderLog().c_str());
+			OUTPUT_LOG("FragmentShaderError:\n %s", getFragmentShaderLog().c_str());
 		}
 		free(src);
 
@@ -487,17 +490,17 @@ std::string GLProgram::logForOpenGLObject(GLuint object, GLInfoFunction infoFunc
 
 std::string GLProgram::getVertexShaderLog() const
 {
-	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
+	return this->logForOpenGLObject(_vertShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
 }
 
 std::string GLProgram::getFragmentShaderLog() const
 {
-	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)glGetShaderiv, (GLLogFunction)glGetShaderInfoLog);
+	return this->logForOpenGLObject(_fragShader, (GLInfoFunction)&glGetShaderiv, (GLLogFunction)&glGetShaderInfoLog);
 }
 
 std::string GLProgram::getProgramLog() const
 {
-	return this->logForOpenGLObject(_program, (GLInfoFunction)glGetProgramiv, (GLLogFunction)glGetProgramInfoLog);
+	return this->logForOpenGLObject(_program, (GLInfoFunction)&glGetProgramiv, (GLLogFunction)&glGetProgramInfoLog);
 }
 
 // Uniform cache

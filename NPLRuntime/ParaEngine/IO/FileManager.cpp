@@ -46,6 +46,7 @@ CFileManager * CFileManager::GetInstance()
 bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRootDir)
 {
 	{
+		const char* cpath = path.c_str();
 		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 		/// we will not reopen it.
 		std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
