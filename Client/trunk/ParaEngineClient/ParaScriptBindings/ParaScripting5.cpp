@@ -12,6 +12,7 @@
 #include "util/StringHelper.h"
 #include "util/bitlib_lua.h"
 #include "util/lua_pack.h"
+#include "protocol/pb.h"
 
 using namespace ParaEngine;
 
@@ -258,7 +259,8 @@ void CNPLScriptingState::LoadHAPI_Globals()
 	// load lua file system
 	lua_register(L, "luaopen_lfs", luaopen_lfs);
 
-	
+	// activate pb
+	lua_register(L, "luaopen_pb", luaopen_pb);
 
 	// load luaxml
 	lua_register(L, "luaopen_luaxml", luaopen_luaxml);
