@@ -1,0 +1,93 @@
+include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
+
+
+set(src_render_context)
+
+if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+#{
+    set(RenderSystem RenderSystemOpenGL)
+    list(APPEND RenderSystem  glad_ext_wgl opengl32.lib)
+<<<<<<< HEAD
+    ucm_add_dirs(src/Render/context/wgl TO src_render_context)
+=======
+    ucm_add_dirs(Render/context/wgl TO src_render_context)
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+#}
+elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
+#{
+    set(RenderSystem RenderSystemD3D9)
+<<<<<<< HEAD
+    ucm_add_dirs(src/Render/context/d3d9 TO src_render_context)
+#}
+endif()
+
+ucm_add_dirs(src TO src_platform)
+
+
+add_executable(WindowsApplication ${src_platform} ${src_render_context})
+=======
+    ucm_add_dirs(Render/context/d3d9 TO src_render_context)
+#}
+endif()
+
+
+
+add_executable(WindowsApplication 
+    main.cpp
+    OSWindows.cpp
+    OSWindows.h
+    guicon.cpp
+    guicon.h
+    WindowsApplication.h
+    WindowsApplication.cpp
+    render/RenderWindowWin32.cpp
+    render/RenderWindowWin32.h
+    RenderWindowDelegate.h
+    RenderWindowDelegate.cpp
+    ${src_render_context})
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+
+target_compile_definitions(WindowsApplication PUBLIC 
+    PLATFORM_WINDOWS
+    USE_WINDOWS_SSPI
+    WIN32_LEAN_AND_MEAN
+    _WIN32_WINNT=0x0501
+    _WINSOCK_DEPRECATED_NO_WARNINGS
+)
+
+target_link_libraries(WindowsApplication PUBLIC
+    ${RenderSystem}
+    ParaEngine
+    gdiplus.lib
+    comctl32.lib
+    Dbghelp.lib
+    wsock32.lib
+    VFW32.lib
+    SHLWAPI.lib
+    gdiplus.lib
+    Psapi.lib
+    Ws2_32
+    winmm
+    wsock32
+    Dnsapi
+    Secur32
+    Crypt32
+    Wldap32
+)
+
+<<<<<<< HEAD
+target_include_directories(WindowsApplication PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+=======
+target_include_directories(WindowsApplication PRIVATE /)
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+
+set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
+
+if(MSVC)
+    ucm_set_runtime(DYNAMIC)
+    # enable multiprocessor build option /MP, this will greatly increase compile speed
+    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
+    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
+    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
+endif()
