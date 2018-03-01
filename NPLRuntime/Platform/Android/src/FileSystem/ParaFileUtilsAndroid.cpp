@@ -160,7 +160,18 @@ ParaEngine::IWriteFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForWrite(cons
 
 bool ParaEngine::CParaFileUtilsAndroid::MakeDirectoryFromFilePath(const std::string filename)
 {
-	
+	try
+	{
+
+		fs::path filePath(GetFullPathForFilename(filename));
+		fs::path fileDir = filePath.parent_path();
+		if (!fs::exists(fileDir))
+			return fs::create_directories(fileDir);
+		else
+			return true;
+	}
+	catch (...) {}
+	return false;
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize)
@@ -190,6 +201,6 @@ int ParaEngine::CParaFileUtilsAndroid::DeleteDirectory(const std::string& filena
 
 std::string ParaEngine::CParaFileUtilsAndroid::GetFullPathForFilename(const std::string &filename)
 {
-	
+	return GetWriteAblePath() + filename;
 }
 

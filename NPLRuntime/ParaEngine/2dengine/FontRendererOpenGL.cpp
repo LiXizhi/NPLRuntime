@@ -47,7 +47,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 		fontFile = szPath;
 		fontFile = fontFile + "/fonts/msyh.ttc";
 #else
-		fontFile = "./fonts/DroidSansFallback.ttf"; // 3.6MB
+		fontFile = "fonts/DroidSansFallback.ttf"; // 3.6MB
 #endif
 		
 	}

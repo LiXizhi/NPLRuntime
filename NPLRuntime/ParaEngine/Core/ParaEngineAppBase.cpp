@@ -915,6 +915,18 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 		}
 		return true;
 	}
+	else
+	{
+		//open pkg/zip
+		if (CParaFile::DoesFileExist(sFilePath_))
+		{
+			if (CFileManager::GetInstance()->OpenArchive(sFilePath_))
+			{
+				return true;
+			}
+		}
+
+	}
 	return false;
 }
 
@@ -1069,7 +1081,7 @@ void CParaEngineAppBase::LoadPackages()
 	if (sPackages)
 	{
 		std::vector<std::string> listPackages;
-		StringHelper::split(sPackages, ",;", listPackages);
+		StringHelper::split(sPackages, ";", listPackages);
 		for (const std::string& package : listPackages)
 		{
 			std::string sOutputFile;
