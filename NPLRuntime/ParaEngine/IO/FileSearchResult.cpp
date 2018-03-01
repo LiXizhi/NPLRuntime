@@ -124,12 +124,6 @@ CFileFindData::CFileFindData(const string& sFileName, DWORD dwFileSize/*=0*/, DW
 
 bool CFileFindData::IsDirectory() const
 {
-#if defined(USE_COCOS_FILE_API) || defined(USE_BOOST_FILE_API)
 	return (m_dwFileAttributes & 16) > 0;
-#elif defined(WIN32)
-	return (m_dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0;
-#else
-	return (m_dwFileAttributes & 16) > 0;
-#endif
 }
 

@@ -7,12 +7,12 @@
 // Notes: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "ReadFile.h"
+#include "ReadFileBoost.h"
 #include <stdio.h>
 
 using namespace ParaEngine;
 
-CReadFile::CReadFile(const std::string& fileName)
+CReadFileBoost::CReadFileBoost(const std::string& fileName)
 : m_FileSize(0)
 {
 	m_Filename = fileName;
@@ -21,7 +21,7 @@ CReadFile::CReadFile(const std::string& fileName)
 
 
 
-CReadFile::~CReadFile()
+CReadFileBoost::~CReadFileBoost()
 {
 	if (m_pFile)
 		fclose(m_pFile);
@@ -30,7 +30,7 @@ CReadFile::~CReadFile()
 
 
 /// returns if file is open
-inline bool CReadFile::isOpen()
+inline bool CReadFileBoost::isOpen()
 {
 	return m_pFile != 0;
 }
@@ -38,12 +38,12 @@ inline bool CReadFile::isOpen()
 
 
 /// returns how much was read
-DWORD CReadFile::read(void* buffer, DWORD sizeToRead)
+uint32_t CReadFileBoost::read(void* buffer, uint32_t sizeToRead)
 {
 	if (!isOpen())
 		return 0;
 
-	return (DWORD)fread(buffer, 1, sizeToRead, m_pFile);
+	return (uint32_t)fread(buffer, 1, sizeToRead, m_pFile);
 }
 
 
@@ -51,7 +51,7 @@ DWORD CReadFile::read(void* buffer, DWORD sizeToRead)
 /// changes position in file, returns true if successful
 /// if relativeMovement==true, the pos is changed relative to current pos,
 /// otherwise from begin of file
-bool CReadFile::seek(DWORD finalPos, bool relativeMovement)
+bool CReadFileBoost::seek(uint32_t finalPos, bool relativeMovement)
 {
 	if (!isOpen())
 		return false;
@@ -62,7 +62,7 @@ bool CReadFile::seek(DWORD finalPos, bool relativeMovement)
 
 
 /// returns size of file
-DWORD CReadFile::getSize()
+uint32_t CReadFileBoost::getSize()
 {
 	return m_FileSize;
 }
@@ -70,7 +70,7 @@ DWORD CReadFile::getSize()
 
 
 /// returns where in the file we are.
-DWORD CReadFile::getPos()
+uint32_t CReadFileBoost::getPos()
 {
 	return ftell(m_pFile);
 }
@@ -78,7 +78,7 @@ DWORD CReadFile::getPos()
 
 
 /// opens the file
-void CReadFile::openFile()
+void CReadFileBoost::openFile()
 {
 	if (m_Filename.size() == 0) // bugfix posted by rt
 	{
@@ -100,20 +100,8 @@ void CReadFile::openFile()
 	}
 }
 
-
-
 /// returns name of file
-const char* CReadFile::getFileName()
+const char* CReadFileBoost::getFileName()
 {
 	return m_Filename.c_str();
 }
-
-//
-//
-//CReadFile* createReadFile(const char* fileName)
-//{
-//	CReadFile* file = new CReadFile(fileName);
-//	if (file->isOpen())
-//		return file;
-//	return 0;
-//}

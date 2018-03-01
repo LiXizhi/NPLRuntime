@@ -1,0 +1,79 @@
+#include "RenderContextEGL.h"
+#include "RenderWindowAndroid.h"
+#include "RenderDeviceOpenGL.h"
+#include "RenderDeviceEGL.h"
+#include <EGL/egl.h>
+#include <android/log.h>
+
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
+using namespace ParaEngine;
+
+ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
+{
+	return new RenderContextEGL();
+}
+
+IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
+{
+	RenderWindowAndroid* renderWindow = static_cast<RenderWindowAndroid*>(cfg.renderWindow);
+	ANativeWindow* nativeWindow = renderWindow->GetNativeWindow();
+	const EGLint attribs[] = {
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+<<<<<<< HEAD
+		EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,
+=======
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+		EGL_BLUE_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_RED_SIZE, 8,
+		EGL_NONE
+	};
+	EGLint w, h, format;
+	EGLint numConfigs;
+	EGLConfig config;
+	EGLSurface surface;
+	EGLContext context;
+	EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	eglInitialize(display, 0, 0);
+	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
+
+	ANativeWindow_setBuffersGeometry(nativeWindow, 0, 0, format);
+	surface = eglCreateWindowSurface(display, config, nativeWindow, NULL);
+<<<<<<< HEAD
+	const EGLint context_attrib_list[] = {
+		// request a context using Open GL ES 2.0
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+	context = eglCreateContext(display, config, NULL, context_attrib_list);
+=======
+	context = eglCreateContext(display, config, NULL, NULL);
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+
+	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+		LOGW("Unable to eglMakeCurrent");
+		return nullptr;
+	}
+
+	if (!loadGL())
+	{
+		LOGW("Unable to load gl ext.");
+	}
+
+<<<<<<< HEAD
+	auto version = glGetString(GL_VERSION);
+	LOGI("GL_VERSION:%s", version);
+
+
+
+=======
+>>>>>>> 1dee307c569c3a53179f27e94bb4e47cc61f00d2
+	return new RenderDeviceEGL(display,surface);
+}
+
+bool RenderContextEGL::ResetDevice(IRenderDevice* device, const RenderConfiguration & cfg)
+{
+	return false;
+}

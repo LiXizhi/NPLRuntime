@@ -3,34 +3,31 @@
 #include <string>
 namespace ParaEngine
 {
-	using namespace std;
-	class CMemReadFile;
-
 	/**	reading a disk file.
 	*/
-	class CReadFile : public IReadFile
+	class CReadFileWin32 : public IReadFile
 	{
 	public:
-		CReadFile(const string& fileName);
+		CReadFileWin32(const std::string& fileName);
 		
-		virtual ~CReadFile();
+		virtual ~CReadFileWin32();
 
 		/// returns how much was read
-		virtual DWORD read(void* buffer, DWORD sizeToRead);
+		virtual uint32_t read(void* buffer, uint32_t sizeToRead);
 
 		/// changes position in file, returns true if successful
 		/// if relativeMovement==true, the pos is changed relative to current pos,
 		/// otherwise from begin of file
-		virtual bool seek(DWORD finalPos, bool relativeMovement = false);
+		virtual bool seek(uint32_t finalPos, bool relativeMovement = false);
 
 		/// returns size of file
-		virtual DWORD getSize();
+		virtual uint32_t getSize();
 
 		/// returns if file is open
 		virtual bool isOpen();
 
 		/// returns where in the file we are.
-		virtual DWORD getPos();
+		virtual uint32_t getPos();
 
 		/// returns name of file
 		virtual const char* getFileName();
@@ -40,8 +37,8 @@ namespace ParaEngine
 		/// opens the file
 		void openFile();	
 
-		string  m_Filename;
+		std::string  m_Filename;
 		FILE*	m_pFile;
-		DWORD	m_FileSize;
+		uint32_t	m_FileSize;
 	};
 }

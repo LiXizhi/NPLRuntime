@@ -17,28 +17,28 @@
 using namespace ParaEngine;
 
 CMemReadFile::CMemReadFile(void)
-:m_CacheStartPos(0),m_CacheEndPos(0),m_CacheData(NULL),m_curPos(0), m_bOwnBuffer(true)
+	:m_CacheStartPos(0), m_CacheEndPos(0), m_CacheData(NULL), m_curPos(0), m_bOwnBuffer(true)
 {
 }
 
-CMemReadFile::CMemReadFile(IReadFile* pFile, DWORD nSize)
-:m_bOwnBuffer(true)
+CMemReadFile::CMemReadFile(IReadFile* pFile, uint32_t nSize)
+	: m_bOwnBuffer(true)
 {
 	m_CacheData = new byte[nSize];
 	m_CacheStartPos = pFile->getPos();
 	m_curPos = m_CacheStartPos;
-	m_CacheEndPos = m_CacheStartPos+nSize;
-	if( pFile->read(m_CacheData, nSize) != nSize)
+	m_CacheEndPos = m_CacheStartPos + nSize;
+	if (pFile->read(m_CacheData, nSize) != nSize)
 	{
 		Unload();
 		return;
 	}
 	pFile->seek(m_CacheStartPos, false); // restore file pos.
 }
-CMemReadFile::CMemReadFile(byte* buffer, DWORD nSize, bool bDeleteBuffer)
-:m_bOwnBuffer(bDeleteBuffer)
+CMemReadFile::CMemReadFile(byte* buffer, uint32_t nSize, bool bDeleteBuffer)
+	:m_bOwnBuffer(bDeleteBuffer)
 {
-	if(buffer!=0)
+	if (buffer != 0)
 	{
 		m_CacheData = buffer;
 		m_curPos = 0;
@@ -48,7 +48,7 @@ CMemReadFile::CMemReadFile(byte* buffer, DWORD nSize, bool bDeleteBuffer)
 }
 
 ParaEngine::CMemReadFile::CMemReadFile(const char * filename)
-:m_CacheStartPos(0), m_CacheEndPos(0), m_CacheData(NULL), m_curPos(0), m_bOwnBuffer(true)
+	:m_CacheStartPos(0), m_CacheEndPos(0), m_CacheData(NULL), m_curPos(0), m_bOwnBuffer(true)
 {
 	CParaFile file(filename);
 	if (!file.isEof())
@@ -69,21 +69,21 @@ void CMemReadFile::Unload()
 	m_CacheStartPos = 0;
 	m_CacheEndPos = 0;
 	m_curPos = 0;
-	if(m_bOwnBuffer)
+	if (m_bOwnBuffer)
 	{
 		SAFE_DELETE_ARRAY(m_CacheData);
 	}
 }
 
 /// returns how much was read
-DWORD CMemReadFile::read(void* buffer, DWORD sizeToRead)
+uint32_t CMemReadFile::read(void* buffer, uint32_t sizeToRead)
 {
 	if (!isOpen())
 		return 0;
 
-	if(m_curPos >= m_CacheStartPos && m_curPos+sizeToRead<=m_CacheEndPos)
+	if (m_curPos >= m_CacheStartPos && m_curPos + sizeToRead <= m_CacheEndPos)
 	{
-		memcpy(buffer, m_CacheData+(m_curPos-m_CacheStartPos), sizeToRead);
+		memcpy(buffer, m_CacheData + (m_curPos - m_CacheStartPos), sizeToRead);
 		m_curPos += sizeToRead;
 		return sizeToRead;
 	}
@@ -101,20 +101,20 @@ byte* CMemReadFile::getBuffer()
 /// changes position in file, returns true if successful
 /// if relativeMovement==true, the pos is changed relative to current pos,
 /// otherwise from begin of file
-bool CMemReadFile::seek(DWORD finalPos, bool relativeMovement)
+bool CMemReadFile::seek(uint32_t finalPos, bool relativeMovement)
 {
 	if (!isOpen())
 		return false;
 
-	if(relativeMovement)
+	if (relativeMovement)
 	{
-		if(m_curPos+finalPos>m_CacheEndPos)
+		if (m_curPos + finalPos > m_CacheEndPos)
 			return false;
 		m_curPos += finalPos;
 	}
 	else
 	{
-		if(finalPos>m_CacheEndPos)
+		if (finalPos > m_CacheEndPos)
 			return false;
 		m_curPos = finalPos;
 	}

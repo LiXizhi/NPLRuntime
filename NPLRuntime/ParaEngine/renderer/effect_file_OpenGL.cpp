@@ -1382,13 +1382,17 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		std::string vscode = "";
 		std::string pscode = "";
 		auto codeblock = m_Effect->getCodeBlock();
-		bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, ETargetGLSL_110, vscode,uniforms);
+		ETargetVersion targetVersion = ETargetGLSL_110;
+#if PARAENGINE_MOBILE
+		targetVersion = ETargetGLSL_ES_100;
+#endif
+		bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode,uniforms);
 		if (!ret || vscode == "")
 		{
 			std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name <<"  shader:" <<GetFileName() <<std::endl;
 			return false;
 		}
-		ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, ETargetGLSL_110, pscode,uniforms);
+		ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, targetVersion, pscode,uniforms);
 		if (!ret || vscode == "")
 		{
 			std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;

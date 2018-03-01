@@ -39,23 +39,6 @@ Tests/
 !NPLRuntime/tests
 WanDeploy/
 WebAPI/
-!Client/
-!Client/CMakeLists.txt
-!Client/trunk/
-!Client/trunk/ParaEngineClient/
-!Client/trunk/ParaEngineClientApp/
-!Client/trunk/PhysicsBT/
-
-
-!Client/trunk/externals/assimp*
-!Client/trunk/externals/bullet-2.75/
-!Client/trunk/externals/bullet3/
-!Client/trunk/externals/png*
-!Client/trunk/externals/jpeg*
-!Client/trunk/externals/freetype2*
-!Client/trunk/externals/gl*
-!Client/trunk/externals/icon/
-!Client/trunk/externals/FreeImage_3120/
 
 !Server/
 Server/*
@@ -75,11 +58,6 @@ Server/trunk/*
 
 build/
 buildvm_arch.h
-
 .DS_Store
-
 settings.json
-Client/trunk/ParaEngineClient/shaders/glsl/blockEffect.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/BMaxModel.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/simple_particle.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/sky.fx.glsl
+/NPLRuntime/Platform/Android/assets

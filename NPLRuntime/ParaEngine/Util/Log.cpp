@@ -13,6 +13,11 @@
 #include "Log.h"
 #include "util/os_calls.h"
 #include <boost/thread/tss.hpp>
+#if ANDROID
+#include <android/log.h>
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
+#endif
+
 
 /** the etc length when too many characters are printed. This is larger then strlen("...\n")*/
 #define LOG_TAIL_ETC_LENGTH		5
@@ -259,9 +264,14 @@ namespace ParaEngine
 
 	void CLogger::AddLogStr_st(const char * pStr)
 	{
+
 		if (pStr==NULL) {
 			return;
 		}
+#if ANDROID
+		LOGI(pStr);
+#endif
+
 		int nLength = strnlen(pStr, MAX_DEBUG_STRING_LENGTH);
 		if(nLength>=0 && nLength<MAX_DEBUG_STRING_LENGTH)
 		{
@@ -326,6 +336,7 @@ namespace ParaEngine
 
 	void CLogger::WriteFormated_WithTime(const char * zFormat, ...)
 	{
+		
 		// TODO: LXZ, shall we cache the date string, since it does not change often?
 		// TODO LXZ: does STL in linux has SSO(small string optimization) like in windows? i.e. first 16 bytes on stack, instead of on heap?
 		std::string date_str = ParaEngine::GetDateFormat("yyyy-MM-dd");
@@ -348,6 +359,7 @@ namespace ParaEngine
 
 	void CLogger::WriteFormated(const char * zFormat,...)
 	{
+		
 		ParaEngine::Lock lock_(m_mutex);
 		va_list args;
 		va_start(args, zFormat);

@@ -10,10 +10,6 @@
 #include "ParaFile.h"
 
 
-#if !defined(WIN32) || !defined(PARAENGINE_CLIENT) //  || defined(_DEBUG)
-	#define USE_BOOST_FILE_API
-#endif
-
 namespace ParaEngine
 {
 	using namespace std;
