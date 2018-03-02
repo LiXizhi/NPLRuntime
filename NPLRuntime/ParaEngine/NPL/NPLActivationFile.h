@@ -30,6 +30,7 @@ namespace NPL
 		void SetFunctionByName(const std::string& filename);
 	protected:
 		NPL_Activate_CallbackFunc m_pFuncCallBack;
+		std::map<std::string, NPL_Activate_CallbackFunc> m_callbackTable;
 	};
 
 	/** this is a sample code of how to explicitly define a INPLActivationFile handler in C++. 

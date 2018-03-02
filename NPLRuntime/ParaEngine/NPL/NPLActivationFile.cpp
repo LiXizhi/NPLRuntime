@@ -26,8 +26,16 @@ extern "C"
 }
 
 
+
+
+
 NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& filename) : m_pFuncCallBack(0)
 {
+	// Load callback table
+	m_callbackTable["NPL_activate_protocol_pb_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_protocol_pb_cpp;
+	
+
+
 	SetFunctionByName(filename);
 }
 
@@ -50,7 +58,16 @@ void NPL::NPL_C_Func_ActivationFile::SetFunctionByName(const std::string& filena
 			c_func_name[i] = '_';
 	}
 
-	m_pFuncCallBack = (NPL_Activate_CallbackFunc)ParaEngine::GetProcAddress(CLIB_DEFHANDLE, c_func_name.c_str());
+	if (m_callbackTable.find(c_func_name) != m_callbackTable.end())
+	{
+		m_pFuncCallBack = m_callbackTable[c_func_name];
+	}
+
+	if (!m_pFuncCallBack)
+	{
+		m_pFuncCallBack = (NPL_Activate_CallbackFunc)ParaEngine::GetProcAddress(CLIB_DEFHANDLE, c_func_name.c_str());
+	}
+	
 	if (!m_pFuncCallBack){
 		OUTPUT_LOG("warning: file %s not found, %s undefined\n", filename.c_str(), c_func_name.c_str());
 	}
