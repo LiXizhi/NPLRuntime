@@ -91,7 +91,14 @@ void* ParaEngine::LoadLibrary(const char *pcDllname, int iMode)
 #else
 	if (sDllName.find(".") == string::npos)
 		sDllName += ".so";
-	return dlopen(sDllName.c_str(), iMode);
+	void* ret = dlopen(sDllName.c_str(), iMode);
+	if (!ret)
+	{
+		const char* error = dlerror();
+		OUTPUT_LOG(error);
+	}
+	return ret;
+	
 #endif
 
 

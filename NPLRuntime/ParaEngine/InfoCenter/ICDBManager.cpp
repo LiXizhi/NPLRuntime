@@ -399,7 +399,7 @@ void DBEntity::OpenDB(const char* dbname)
 	{
 		// the database file can not be found anywhere, we will try create the database anyway. 
 #ifdef PARAENGINE_MOBILE
-		diskfileName = ParaEngine::CParaFile::GetWritablePath() + dbname;
+		diskfileName = dbname;
 #else
 		diskfileName = dbname;
 #endif
@@ -408,7 +408,7 @@ void DBEntity::OpenDB(const char* dbname)
 		SetCreateFile(true);
 	}
 
-	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
+	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8((ParaEngine::CParaFile::GetWritablePath() + diskfileName).c_str());
 	
 	int nMaxRetryTimes = IsCreateFile() ? 1 : 3;
 

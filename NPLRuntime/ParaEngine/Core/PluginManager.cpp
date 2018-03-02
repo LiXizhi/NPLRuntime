@@ -212,11 +212,11 @@ void DLLPlugInEntity::Init(const char* sFilename)
 #ifdef WIN32
 	m_hDLL = (HINSTANCE)ParaEngine::LoadLibrary(sDLLPath.c_str());
 #else
-	// if there is no slash in the file name, add './' to load only from the current directory. 
-	if (!CParaFile::IsAbsolutePath(sDLLPath))
-	{
-		sDLLPath = std::string("./") + sDLLPath;
-	}
+	//// if there is no slash in the file name, add './' to load only from the current directory. 
+	//if (!CParaFile::IsAbsolutePath(sDLLPath))
+	//{
+	//	sDLLPath = std::string("./") + sDLLPath;
+	//}
 	fs::path filenamePath(sDLLPath);
 	sDLLPath = filenamePath.string();
 	m_hDLL = ParaEngine::LoadLibrary(sDLLPath.c_str(), RTLD_LOCAL | RTLD_LAZY);
