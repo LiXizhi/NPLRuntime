@@ -176,27 +176,90 @@ bool ParaEngine::CParaFileUtilsAndroid::MakeDirectoryFromFilePath(const std::str
 
 bool ParaEngine::CParaFileUtilsAndroid::SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize)
 {
-	
+	try
+	{
+		if (MakeDirectoryFromFilePath(filename.c_str()) == false)
+			return false;
+		fs::path filePath(GetFullPathForFilename(filename));
+		if (fs::exists(filePath) && (replace == false))
+			return false;
+
+		fs::ofstream file(filePath);
+		if (!file)
+		{
+			file.write(buffer, bufSize);
+		}
+	}
+	catch (...) {}
+	return false;
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::Copy(const std::string& src, const std::string& dest, bool override)
 {
-	
+	try
+	{
+		fs::path sSrc(GetFullPathForFilename(src));
+		fs::path sDest(GetFullPathForFilename(dest));
+		if (fs::exists(sDest))
+		{
+			if (override)
+			{
+				if (!fs::remove(sDest))
+				{
+					return false;
+				}
+			}
+			else
+			{
+				return false;
+			}
+		}
+		fs::copy_file(sSrc, sDest);
+	}
+	catch (...)
+	{
+		return false;
+	}
+	return true;
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::Move(const std::string& src, const std::string& dest)
 {
-	
+	try
+	{
+		fs::path sSrc(GetFullPathForFilename(src));
+		fs::path sDest(GetFullPathForFilename(dest));
+		fs::copy_file(sSrc,sDest);
+		return fs::remove(sSrc);
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::Delete(const std::string& filename)
 {
-	
+	try
+	{
+		return fs::remove(GetFullPathForFilename(filename));
+	}
+	catch (...)
+	{
+		return false;
+	}
 }
 
 int ParaEngine::CParaFileUtilsAndroid::DeleteDirectory(const std::string& filename)
 {
-	
+	try
+	{
+		return (int)fs::remove_all(GetFullPathForFilename(filename));
+	}
+	catch (...)
+	{
+		return 0;
+	}
 }
 
 std::string ParaEngine::CParaFileUtilsAndroid::GetFullPathForFilename(const std::string &filename)

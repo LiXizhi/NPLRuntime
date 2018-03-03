@@ -62,13 +62,7 @@ bool AssetFileEntry::DoesFileExist()
 {
 	if(m_nStatus == AssetFileStatus_Unknown)
 	{
-#if defined(PARAENGINE_MOBILE) && !defined(WIN32)
-		std::string sFullPath = CParaFile::GetWritablePath() + m_localFileName;
-		// OUTPUT_LOG("asset file: %s %s \n", sFullPath.c_str(), CParaFile::DoesFileExist2( sFullPath.c_str(), FILE_ON_DISK) ? "true" : "false");
-		if (CParaFile::DoesFileExist2( sFullPath.c_str(), FILE_ON_DISK))
-#else
 		if (CParaFile::DoesFileExist2(m_localFileName.c_str(), FILE_ON_DISK))
-#endif
 		{
 			m_nStatus = AssetFileStatus_Downloaded;
 			return true;
@@ -476,6 +470,7 @@ std::string AssetFileEntry::GetFullFilePath()
 
 bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 {
+	OUTPUT_LOG("SaveToDisk:%d", nSize);
 	if(bCheckMD5 && !CheckMD5AndSize(buffer, nSize))
 	{
 		string sTmp = string("Asset md5 check Failed:") + m_url + "\n";
