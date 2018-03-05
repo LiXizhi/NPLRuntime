@@ -3,7 +3,7 @@
 # Date: 2010.5.27
 # Note: download luabind and boost src, and then use cmake to compile
 # Note1: During release build, edit luabind/config.hpp and add #define LUABIND_NO_ERROR_CHECKING
-
+include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 PROJECT(luabind)
 
 # source files for luabind

@@ -31,6 +31,19 @@ else()
     option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" OFF)
 endif()
 
+# Using static lib for other modules if main NPLRuntime is built as static lib. 
+if(NPLRUNTIME_STATIC_LIB)
+	set(CURL_STATICLIB TRUE)
+	set(LUA_STATICLIB TRUE)
+	set(SQLITE_STATICLIB TRUE)
+endif()
+# This is the directory to keep all binary
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}/../ParaWorld/bin64/)
+else()
+set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}}/../ParaWorld/bin32/)
+endif()
+
 
 project(${NPLRUNTIME_PROJECT_NAME})
 set (CMAKE_CXX_STANDARD 11)
