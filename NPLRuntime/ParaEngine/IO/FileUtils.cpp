@@ -460,8 +460,6 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 	else {
 		sFilePath = filename;
 	}
-
-	sFilePath = GetFullPathForFilename(sFilePath);
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;

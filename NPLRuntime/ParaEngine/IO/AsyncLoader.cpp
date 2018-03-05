@@ -839,7 +839,7 @@ void ParaEngine::CAsyncLoader::ProcessDeviceWorkItemImp(ResourceRequest_ptr& Res
 	HRESULT hr = S_OK;
 	if (ResourceRequest->m_bLock)
 	{
-		// ASSETS_LOG(Log_Debug, "DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
+		 //ASSETS_LOG(Log_Debug, "DEBUG: render msg(lock) %s\n", ResourceRequest->m_pDataLoader->GetFileName());
 
 		if (!ResourceRequest->m_bError)
 		{

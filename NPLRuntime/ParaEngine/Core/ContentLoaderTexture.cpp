@@ -124,7 +124,7 @@ HRESULT ParaEngine::CTextureLoader::Load()
 	// let us only get raw compressed data from local zip file. and let the worker thread to decompress it. 
 	if (m_asset.get() != 0)
 	{
-		const string& sTextureFileName = m_sFileName.empty() ? m_asset->GetLocalFileName() : m_sFileName;
+		const std::string sTextureFileName = m_sFileName.empty() ? m_asset->GetLocalFileName() : m_sFileName;
 
 		AssetFileEntry* pEntry = CAssetManifest::GetSingleton().GetFile(sTextureFileName);
 		if (pEntry)
