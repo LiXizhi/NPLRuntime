@@ -49,6 +49,8 @@ endif()
 set(NPLRUNTIME_LUA_VERSION "LuaJit2_0" CACHE STRING "LUA VERSION")
 set_property(CACHE NPLRUNTIME_LUA_VERSION PROPERTY STRINGS LuaJit2_0 LuaJit2_1 Lua51)
 
+option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
+
 add_subdirectory(externals)
 add_subdirectory(Plugins)
 add_subdirectory(ParaEngine)

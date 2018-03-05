@@ -179,14 +179,13 @@ target_link_libraries(ParaEngine PUBLIC
     ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
     zlib
-    libcurl
+	libcurl
     lua
     jsoncpp
     tinyxpath
     luabind
     sqlite 
 )
-
 
 
 
