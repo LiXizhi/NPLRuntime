@@ -2,7 +2,7 @@
 #include "ParaEngine.h"
 
 #include "RenderContextD3D9.h"
-#include "Render/RenderWindowWin32.h"
+#include "RenderWindowWin32.h"
 #include "PEtypes.h"
 
 #include "RenderDeviceD3D9.h"
