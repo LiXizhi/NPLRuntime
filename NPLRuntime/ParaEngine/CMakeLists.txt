@@ -2,10 +2,46 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 
+# includes
+set(NPLRUNTIME_INCLUDES)
+# Libraries 
+set(NPLRUNTIME_LIBS)
 
 # FreeImage
-SET(FREEIMAGE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/)
-SET(FREEIMAGE_INCLUDE_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/FreeImage.lib)
+#SET(FREEIMAGE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/)
+#SET(FREEIMAGE_INCLUDE_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/FreeImage.lib)
+
+##############################
+# FreeImage
+if (WIN32)
+	option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
+
+	if (NPLRUNTIME_FREEIMAGE)
+		ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
+		if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
+			ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
+		endif()
+
+		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+			SET(FREEIMAGE_DASM_FLAGS "x64")
+		else()
+			SET(FREEIMAGE_DASM_FLAGS "x32")
+		endif()
+
+		#if(WIN32)
+		#	if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+		#		file (GLOB_RECURSE ParaEngineClient_FREEIMIAGE ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.h ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.cpp)
+		#		SOURCE_GROUP("Engine" FILES ${ParaEngineClient_FREEIMIAGE})
+		#		list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_FREEIMIAGE})
+		#	endif()
+		#endif()
+
+		
+		list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
+		list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
+		configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FreeImage.dll" COPYONLY)
+	endif()
+endif()
 
 ucm_add_dirs(
     Framework
@@ -113,7 +149,7 @@ target_include_directories(ParaEngine PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/2dengine/Video
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
     ${Boost_INCLUDE_DIRS}
-    ${FREEIMAGE_INCLUDE_DIRS}
+    ${NPLRUNTIME_INCLUDES}
 )
 
 
@@ -140,7 +176,7 @@ endif()
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
-    ${FREEIMAGE_INCLUDE_LIBS}
+    ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
     zlib
     libcurl

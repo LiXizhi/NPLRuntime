@@ -80,7 +80,7 @@ bool CGDIEngine::SaveRenderTarget(const string& filename, int nWidth, int nHeigh
 
 	FIBITMAP *dest_dib = FreeImage_Allocate(nRenderTargetSize,nRenderTargetSize,32);
 
-	Rect rect(0, 0, nRenderTargetSize, nRenderTargetSize);
+	Gdiplus::Rect rect(0, 0, nRenderTargetSize, nRenderTargetSize);
 	BitmapData bitmapData;
 	bitmapData.Width = nRenderTargetSize;
 	bitmapData.Height = nRenderTargetSize;
@@ -319,7 +319,7 @@ Gdiplus::Bitmap* CGDIEngine::LoadTexture(const string& filename, int nFileFormat
 	{
 		BYTE* pPixels = FreeImage_GetBits(dib);
 
-		Rect rect(0, 0, pInfo->biWidth, pInfo->biHeight);
+		Gdiplus::Rect rect(0, 0, pInfo->biWidth, pInfo->biHeight);
 		BitmapData bitmapData;
 		bitmapData.Width = pInfo->biWidth;
 		bitmapData.Height = pInfo->biHeight;
