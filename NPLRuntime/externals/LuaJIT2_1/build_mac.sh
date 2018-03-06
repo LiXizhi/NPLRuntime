@@ -1,6 +1,6 @@
 #!/bin/sh
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SRCDIR=$DIR/src
+SRCDIR=$DIR/code
 DESTDIR=$DIR/prebuilt/mac
 MACOSX_DEPLOYMENT_TARGET="10.6"
 

@@ -2,7 +2,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 host_os=`uname -s | tr "[:upper:]" "[:lower:]"`
 
-SRCDIR=$DIR/src
+SRCDIR=$DIR/code
 cd "$SRCDIR"
 
 NDK=$NDK_ROOT

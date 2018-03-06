@@ -1,10 +1,17 @@
-add_library(lua INTERFACE)
-target_include_directories(lua INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 if(ANDROID)
-    target_link_libraries(lua INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libluajit.a)
-elseif(WIN32)
-    target_link_libraries(lua INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/lua51.lib)
-    add_custom_target(Lua
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/lua51.dll ${CMAKE_BINARY_DIR}/bin/lua51.dll
-    )
+	add_library(luajit21 INTERFACE)
+	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libluajit.a)
+else()
+	if(NPLRUNTIME_STATIC_LIB)
+		set(LUA_STATICLIB TRUE)
+	endif()
+	add_subdirectory(code ${CLIENT_BINARY_DIR}/LuaJIT-2.1)
+	target_include_directories(luajit21 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+	
+	
 endif()
+
+
+
