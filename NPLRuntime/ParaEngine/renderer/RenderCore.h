@@ -70,7 +70,7 @@ namespace ParaEngine
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
 #else
 	typedef uint32_t DeviceTexturePtr_type;
-	class RenderDevice; typedef RenderDevice* RenderDevicePtr;
+	class RenderDevice; typedef IRenderDevice* RenderDevicePtr;
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
 #endif
 }

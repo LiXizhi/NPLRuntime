@@ -31,6 +31,13 @@ else()
     option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" OFF)
 endif()
 
+if(WIN32)
+else()
+    # making executable relocatable 
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
+endif()
+
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
 if(NPLRUNTIME_STATIC_LIB)
 	set(CURL_STATICLIB TRUE)
