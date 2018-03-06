@@ -272,6 +272,11 @@ namespace ParaEngine
 		LOGI(pStr);
 #endif
 
+#ifdef WIN32
+		printf(pStr);
+		::OutputDebugStringA(pStr);
+#endif
+
 		int nLength = strnlen(pStr, MAX_DEBUG_STRING_LENGTH);
 		if(nLength>=0 && nLength<MAX_DEBUG_STRING_LENGTH)
 		{

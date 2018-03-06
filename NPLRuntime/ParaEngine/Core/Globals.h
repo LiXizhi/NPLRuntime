@@ -3,7 +3,7 @@
 #include <stack>
 #include "Framework/Interface/IParaEngineApp.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
-#include "3DEngine/OceanManager.h"
+#include "3dengine/OceanManager.h"
 #include "Engine/DirectXEngine.h"
 namespace ParaEngine
 {
