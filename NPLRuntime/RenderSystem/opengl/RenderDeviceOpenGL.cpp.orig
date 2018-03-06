@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include "Renderer/VertexDeclarationOpenGL.h"
+#include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
 //#include "math/ParaColor.h"

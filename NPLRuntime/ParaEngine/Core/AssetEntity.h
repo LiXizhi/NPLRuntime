@@ -1,6 +1,6 @@
 #pragma once
 #include "IAttributeFields.h"
-#include "Renderer/VertexFVF.h"
+#include "renderer/VertexFVF.h"
 
 #include <set>
 #include <map>

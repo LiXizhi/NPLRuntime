@@ -4,7 +4,7 @@
 
 /** word packing order: in x86, android, mac, ios it is all little endian. */
 #define PLATFORM_LITTLE_ENDIAN	1
-#include "Renderer/RenderCore.h"
+#include "renderer/RenderCore.h"
 #include "PEtypes.h"
 
 #ifndef FORCEINLINE
