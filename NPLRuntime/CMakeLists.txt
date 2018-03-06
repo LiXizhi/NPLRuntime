@@ -33,8 +33,6 @@ endif()
 
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
 if(NPLRUNTIME_STATIC_LIB)
-	set(CURL_STATICLIB TRUE)
-	set(LUA_STATICLIB TRUE)
 	set(SQLITE_STATICLIB TRUE)
 endif()
 # This is the directory to keep all binary

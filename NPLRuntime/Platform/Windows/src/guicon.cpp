@@ -29,7 +29,7 @@ void RedirectIOToConsole()
 
 	int hConHandle;
 
-	long lStdHandle;
+	intptr_t lStdHandle;
 
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 
@@ -81,7 +81,7 @@ void RedirectIOToConsole()
 
 	// redirect unbuffered STDOUT to the console
 
-	lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+	lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
 
 	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 
@@ -93,7 +93,7 @@ void RedirectIOToConsole()
 
 	// redirect unbuffered STDIN to the console
 
-	lStdHandle = (long)GetStdHandle(STD_INPUT_HANDLE);
+	lStdHandle = (intptr_t)GetStdHandle(STD_INPUT_HANDLE);
 
 	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 
@@ -105,7 +105,7 @@ void RedirectIOToConsole()
 
 	// redirect unbuffered STDERR to the console
 
-	lStdHandle = (long)GetStdHandle(STD_ERROR_HANDLE);
+	lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
 
 	hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
 

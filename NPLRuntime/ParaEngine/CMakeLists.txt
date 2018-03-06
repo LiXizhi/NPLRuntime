@@ -39,7 +39,7 @@ if (WIN32)
 		
 		list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
 		list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
-		configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/FreeImage.dll" COPYONLY)
+		configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
 	endif()
 endif()
 
@@ -171,14 +171,15 @@ elseif(WIN32)
     )
 endif()
 
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
     ${NPLRUNTIME_LIBS}
     ${PLATFORM_SPE_LIBS}
+	${LUA_LIB_LIST}
     zlib
 	libcurl
-    lua
     jsoncpp
     tinyxpath
     luabind
@@ -207,4 +208,4 @@ IF(MSVC)
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
     SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-ENDIF()
+ENDIF()  

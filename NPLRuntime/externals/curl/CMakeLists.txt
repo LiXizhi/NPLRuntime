@@ -20,7 +20,11 @@ elseif(WIN32)
 	
 	target_include_directories(libcurl INTERFACE "${CURL_SOURCE_DIR}/include/")
 	target_include_directories(libcurl INTERFACE "${CURL_BINARY_DIR}/include/curl/")
-elseif(APPLE)
+else()
+	 FIND_PACKAGE(CURL REQUIRED)
+endif()
+
+if(APPLE)
 	add_library(libcurl INTERFACE)
 	target_include_directories(libcurl INTERFACE ${CURL_INCLUDE_DIR})
 	target_link_libraries(libcurl INTERFACE ${CURL_LIBRARIES})
