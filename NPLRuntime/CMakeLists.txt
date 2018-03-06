@@ -1,13 +1,18 @@
-if (WIN32)
-cmake_minimum_required(VERSION 3.10)
+if (ANDROID)
+	cmake_minimum_required(VERSION 3.10)
 else()
-cmake_minimum_required(VERSION 3.5)
+	cmake_minimum_required(VERSION 3.5)
 endif()
+
 
 set(NPLRUNTIME_PROJECT_NAME "NPLRuntime" CACHE STRING "Custom Project Name")
 
 option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
+
+project(${NPLRUNTIME_PROJECT_NAME})
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_C_STANDARD 11)
 
 # Win32 Default Option
 if(WIN32)
@@ -42,6 +47,7 @@ endif()
 if(NPLRUNTIME_STATIC_LIB)
 	set(SQLITE_STATICLIB TRUE)
 endif()
+
 # This is the directory to keep all binary
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}/../ParaWorld/bin64/)
@@ -50,12 +56,7 @@ else()
 endif()
 
 
-project(${NPLRUNTIME_PROJECT_NAME})
-set (CMAKE_CXX_STANDARD 11)
-set (CMAKE_C_STANDARD 11)
-
 # Output directory
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
