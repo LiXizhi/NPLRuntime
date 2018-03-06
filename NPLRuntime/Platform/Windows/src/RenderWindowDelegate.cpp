@@ -41,7 +41,7 @@ void ParaEngine::RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)
 	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(key, pressed);
 }
 
-void ParaEngine::RenderWindowDelegate::OnChar(char character)
+void ParaEngine::RenderWindowDelegate::OnChar(unsigned int character)
 {
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
 	{

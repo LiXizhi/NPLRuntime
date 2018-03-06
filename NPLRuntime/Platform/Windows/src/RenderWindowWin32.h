@@ -45,7 +45,7 @@ namespace ParaEngine
 		virtual void OnMouseMove(uint32_t x, uint32_t y) {};
 		virtual void OnMouseWhell(float x, float y, float delta) {};
 		virtual void OnKey(EVirtualKey key, EKeyState state) {};
-		virtual void OnChar(char character) {};
+		virtual void OnChar(unsigned int character) {};
 
 
 	private:

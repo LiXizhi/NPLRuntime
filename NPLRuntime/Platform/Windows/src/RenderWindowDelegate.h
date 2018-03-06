@@ -17,7 +17,7 @@ namespace ParaEngine
 		virtual void OnKey(EVirtualKey key, EKeyState state) override;
 
 
-		virtual void OnChar(char character) override;
+		virtual void OnChar(unsigned int character) override;
 
 	};
 }
