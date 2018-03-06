@@ -45,27 +45,26 @@ endif()
 
 ucm_add_dirs(
     Framework
-    Dirmonitor
+    dirmonitor
     Core
     BMaxModel
-    Renderer
-    Protocol
+    renderer
+    protocol
     ParaXModel
     IO
-    Curllua
-    DebugTools
+    curllua
+    debugtools
     InfoCenter
     BlockEngine
-    Math
+    math
     NPL
     ParaScriptBindings
-    2DEngine
+    2dengine
     PaintEngine
-    3Dengine
+    3dengine
     Util
     WebSocket
     terrain
-    Util
 TO sources_commmon RECURSIVE
 )
 
@@ -137,16 +136,15 @@ add_library(ParaEngine  ${sources_commmon} ${sources_rendersystem})
 target_include_directories(ParaEngine PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/Core
-    ${CMAKE_CURRENT_SOURCE_DIR}/Renderer
+    ${CMAKE_CURRENT_SOURCE_DIR}/renderer
     ${CMAKE_CURRENT_SOURCE_DIR}/3dengine
     ${CMAKE_CURRENT_SOURCE_DIR}/Engine
     ${CMAKE_CURRENT_SOURCE_DIR}/IO
     ${CMAKE_CURRENT_SOURCE_DIR}/InfoCenter
     ${CMAKE_CURRENT_SOURCE_DIR}/Util
-    ${CMAKE_CURRENT_SOURCE_DIR}/Math
+    ${CMAKE_CURRENT_SOURCE_DIR}/math
     ${CMAKE_CURRENT_SOURCE_DIR}/ParaScriptBindings
     ${CMAKE_CURRENT_SOURCE_DIR}/NPL
-    ${CMAKE_CURRENT_SOURCE_DIR}/2dengine/Video
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
     ${Boost_INCLUDE_DIRS}
     ${NPLRUNTIME_INCLUDES}
