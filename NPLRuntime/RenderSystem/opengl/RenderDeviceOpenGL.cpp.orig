@@ -1,8 +1,8 @@
 #include <stdexcept>
 #include "Renderer/VertexDeclarationOpenGL.h"
-#include "Math/ParaViewport.h"
+#include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
-//#include "Math/ParaColor.h"
+//#include "math/ParaColor.h"
 
 
 

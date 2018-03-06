@@ -5,7 +5,7 @@
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
-#include "core/PEtypes.h"
+#include "Core/PEtypes.h"
 
 #if USE_DIRECTX_RENDERER
 using DeviceTexturePtr_type = IDirect3DTexture9*;

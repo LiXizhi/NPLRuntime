@@ -42,8 +42,8 @@ namespace NPL
 #include "debugtools/paradebug.h"
 #include "PERef.h"
 #include "Util/Report.h"
-#include "Math/ParaGlobals.h"
-#include "Math/ParaMathUtility.h"
+#include "math/ParaGlobals.h"
+#include "math/ParaMathUtility.h"
 #include "IO/FileManager.h"
 // give access to global objects and functions
 #include "Core/Globals.h"
