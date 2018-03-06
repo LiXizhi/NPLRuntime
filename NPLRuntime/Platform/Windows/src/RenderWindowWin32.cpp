@@ -157,7 +157,7 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 {
 	if (g_WindowMap.find(hWnd) == g_WindowMap.end())
 	{
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
 
 	RenderWindowWin32* window = g_WindowMap[hWnd];
