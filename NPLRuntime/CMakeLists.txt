@@ -44,9 +44,9 @@ if(NPLRUNTIME_STATIC_LIB)
 endif()
 # This is the directory to keep all binary
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}/../ParaWorld/bin64/)
+	set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}/../ParaWorld/bin64/)
 else()
-set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}}/../ParaWorld/bin32/)
+	set(OUTPUT_BIN_DIR   ${PROJECT_SOURCE_DIR}/../ParaWorld/bin32/)
 endif()
 
 
