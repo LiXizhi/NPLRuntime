@@ -6,7 +6,7 @@ if "%WindowsSdkDir%" == "" (
 )
 
 set DIR=%~dp0
-set SRCDIR=%DIR%src
+set SRCDIR=%DIR%code
 set DESTDIR=%DIR%prebuilt\win32
 
 if exist %SRCDIR%\src\*.lib (
