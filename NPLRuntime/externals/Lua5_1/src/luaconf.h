@@ -207,7 +207,7 @@
 @* of a function in debug information.
 ** CHANGE it if you want a different size.
 */
-#define LUA_IDSIZE	60
+#define LUA_IDSIZE	120
 
 
 /*
@@ -319,7 +319,7 @@
 ** CHANGE it (define it) if you want exact compatibility with the
 ** behavior of setn/getn in Lua 5.0.
 */
-#undef LUA_COMPAT_GETN
+#define LUA_COMPAT_GETN
 
 /*
 @@ LUA_COMPAT_LOADLIB controls compatibility about global loadlib.
@@ -756,14 +756,6 @@ union luai_Cast { double l_d; long l_l; };
 ** Local configuration. You can use this space to add your redefinitions
 ** without modifying the main part of the file.
 */
-
-#if !defined(lua_getlocaledecpoint)
-#ifdef __ANDROID__
-#define lua_getlocaledecpoint()     ('.')
-#else
-#define lua_getlocaledecpoint()     (localeconv()->decimal_point[0])
-#endif
-#endif
 
 
 
