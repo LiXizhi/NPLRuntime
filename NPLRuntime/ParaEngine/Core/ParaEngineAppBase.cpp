@@ -123,6 +123,11 @@ IParaEngineApp* ParaEngine::CParaEngineAppBase::GetInstance()
 }
 
 
+IRenderWindow* ParaEngine::CParaEngineAppBase::GetRenderWindow()
+{
+	return m_pRenderWindow;
+}
+
 bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */)
 {
 	SetAppState(PEAppState_Device_Created);

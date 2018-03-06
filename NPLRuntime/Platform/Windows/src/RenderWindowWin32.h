@@ -38,6 +38,8 @@ namespace ParaEngine
 		EKeyState GetKeyState(EVirtualKey key);
 		CVector2 GetMousePos();
 
+		virtual intptr_t GetNativeHandle() const override;
+
 	protected:
 		virtual void OnMouseButton(EMouseButton button, EKeyState state) {};
 		virtual void OnMouseMove(uint32_t x, uint32_t y) {};

@@ -88,6 +88,7 @@ namespace ParaEngine
 	class IParaEngineApp
 	{
 	public:
+		virtual IRenderWindow* GetRenderWindow() = 0;
 
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine = nullptr) = 0;
 

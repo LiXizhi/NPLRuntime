@@ -312,6 +312,11 @@ void RenderWindowWin32::PollEvents()
 	}
 }
 
+intptr_t RenderWindowWin32::GetNativeHandle() const
+{ 
+	return (intptr_t)GetHandle(); 
+}
+
 HWND RenderWindowWin32::GetHandle() const
 {
 	return m_hWnd;

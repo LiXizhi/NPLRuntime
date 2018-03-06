@@ -288,7 +288,13 @@ void ParaEngine::CGlobals::SetRenderDevice(IRenderDevice * device)
 
 HWND CGlobals::GetAppHWND()
 {
+#ifdef WIN32
+	auto h = CParaEngineAppBase::GetInstance()->GetRenderWindow()->GetNativeHandle();
+	return (HWND)h;
+#else
 	return 0;
+#endif
+
 //#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER) && !defined(USE_OPENGL_RENDERER)
 //	if (g_pHwndHWND != 0)
 //		return *g_pHwndHWND;
