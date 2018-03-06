@@ -41,7 +41,7 @@ namespace NPL
 #include "util/Log.h"
 #include "debugtools/paradebug.h"
 #include "PERef.h"
-#include "Util/Report.h"
+#include "util/Report.h"
 #include "math/ParaGlobals.h"
 #include "math/ParaMathUtility.h"
 #include "IO/FileManager.h"

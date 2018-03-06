@@ -13,8 +13,8 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "EventBinding.h"
-#include "Util/ObjectManager.h"
-#include "Util/cow_ptr.hpp"
+#include "util/ObjectManager.h"
+#include "util/cow_ptr.hpp"
 #include "memdebug.h"
 #include "Framework/InputSystem/VirtualKey.h"
 
