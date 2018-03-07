@@ -6,42 +6,8 @@ include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 set(NPLRUNTIME_INCLUDES)
 # Libraries 
 set(NPLRUNTIME_LIBS)
-
-# FreeImage
-#SET(FREEIMAGE_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/)
-#SET(FREEIMAGE_INCLUDE_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage/Dist/FreeImage.lib)
-
 ##############################
-# FreeImage
-if (WIN32)
-	option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
 
-	if (NPLRUNTIME_FREEIMAGE)
-		ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
-		if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-			ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
-		endif()
-
-		if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-			SET(FREEIMAGE_DASM_FLAGS "x64")
-		else()
-			SET(FREEIMAGE_DASM_FLAGS "x32")
-		endif()
-
-		#if(WIN32)
-		#	if (NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-		#		file (GLOB_RECURSE ParaEngineClient_FREEIMIAGE ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.h ${ParaEngineClient_SOURCE_DIR}/Engine/FreeImageMemIO.cpp)
-		#		SOURCE_GROUP("Engine" FILES ${ParaEngineClient_FREEIMIAGE})
-		#		list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_FREEIMIAGE})
-		#	endif()
-		#endif()
-
-		
-		list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
-		list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
-		configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
-	endif()
-endif()
 
 ucm_add_dirs(
     Framework
@@ -123,7 +89,34 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
 
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
+
+
+    # FreeImage
+    if (WIN32)
+        option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
+
+        if (NPLRUNTIME_FREEIMAGE)
+            ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
+            if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
+                ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
+            endif()
+            if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+                SET(FREEIMAGE_DASM_FLAGS "x64")
+            else()
+                SET(FREEIMAGE_DASM_FLAGS "x32")
+            endif()
+            list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
+            list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
+            configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
+        endif()
+    endif()
+
 #}
+elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
+#{
+    set(RenderSystem RenderSystemNull)
+    list(APPEND sources_rendersystem ResourceEmbedded.cpp)
+#}  
 endif()
 
 

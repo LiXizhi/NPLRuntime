@@ -5,7 +5,7 @@
 // desc: 
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
-#if defined (USE_OPENGL_RENDERER) || defined (USE_NULL_RENDERER)
+#if defined (USE_OPENGL_RENDERER)
 #include "DynamicVertexBufferEntityOpenGL.h"
 
 using namespace ParaEngine;

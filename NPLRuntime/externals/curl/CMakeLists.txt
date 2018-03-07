@@ -12,7 +12,7 @@ elseif(WIN32)
 		set(CURL_STATICLIB TRUE)
 	endif()
 	
-	add_subdirectory(code/curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
+	add_subdirectory(code/curl-7.47.1)
 	
 	if(NPLRUNTIME_STATIC_LIB)
 		target_compile_definitions(libcurl INTERFACE CURL_STATICLIB)

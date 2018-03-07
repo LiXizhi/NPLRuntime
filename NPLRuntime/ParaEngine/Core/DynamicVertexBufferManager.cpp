@@ -21,6 +21,8 @@ For dynamic buffers you should not allocate buffers bigger than the data streame
 */
 #define MATRIX_CHARACTER_BUFFER_SIZE	30600
 
+
+#ifndef USE_NULL_RENDERER
 ParaEngine::DynamicVertexBufferManager::DynamicVertexBufferManager()
 {
 	// set the unit size of each type of dynamic buffers.
@@ -69,3 +71,32 @@ HRESULT ParaEngine::DynamicVertexBufferManager::InvalidateDeviceObjects()
 	}
 	return S_OK;
 }
+
+
+#else
+
+ParaEngine::DynamicVertexBufferManager::DynamicVertexBufferManager()
+{
+
+}
+
+DynamicVertexBufferEntity* ParaEngine::DynamicVertexBufferManager::GetDynamicBuffer(DynamicVBAssetType nBufferType)
+{
+	static DynamicVertexBufferEntity s_entity;
+	return &s_entity;
+}
+
+HRESULT ParaEngine::DynamicVertexBufferManager::RestoreDeviceObjects()
+{
+	return S_OK;
+}
+
+HRESULT ParaEngine::DynamicVertexBufferManager::InvalidateDeviceObjects()
+{
+	return S_OK;
+}
+
+
+#endif
+
+
