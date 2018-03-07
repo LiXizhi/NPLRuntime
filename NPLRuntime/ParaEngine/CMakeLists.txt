@@ -151,11 +151,6 @@ if(ANDROID)
         STATIC_PLUGIN_CAUDIOENGINE
         AUTOUPDATE_PARAENGINE
     )
-    set(PLATFORM_SPE_LIBS
-        tolua
-    )
-
-
 elseif(WIN32)
     set(PLATROM_SPEC_DEFINITIONS 
         PLATFORM_WINDOWS
@@ -165,21 +160,21 @@ elseif(WIN32)
 elseif(APPLE)
     set(PLATROM_SPEC_DEFINITIONS 
         "-framework CoreFoundation" "-framework CoreServices"
-    )	
-endif()
-
-if(UNIX)
+    )
+elseif(UNIX AND NOT ANDROID)
     ## Readline support
     include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")
     # FIND_PACKAGE(Readline)
     IF(READLINE_FOUND)
-        ADD_DEFINITIONS("-DNPL_USE_READLINE")
-        LIST(APPEND PLATROM_SPEC_DEFINITIONS ${Readline_LIBRARY})
-        MESSAGE("NPL_USE_READLINE read line is found and used")
-        INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
-    ELSE()
-        MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
-    ENDIF()
+    set(PLATROM_SPEC_DEFINITIONS
+         NPL_USE_READLINE
+    )
+    LIST(APPEND PLATROM_SPEC_DEFINITIONS ${Readline_LIBRARY})
+    MESSAGE("NPL_USE_READLINE read line is found and used")
+    INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
+  ELSE()
+    MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
+  ENDIF()
 endif()
 
 

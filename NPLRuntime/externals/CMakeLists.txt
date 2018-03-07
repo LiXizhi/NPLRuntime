@@ -40,7 +40,6 @@ add_subdirectory(EmbedResource)
 
 if(ANDROID)
     #add_subdirectory(LuaJIT2_0)
-    add_subdirectory(tolua)
     add_subdirectory(openssl)
 else()
     set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
