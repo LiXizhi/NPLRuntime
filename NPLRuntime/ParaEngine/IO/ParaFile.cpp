@@ -792,7 +792,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 	//		return bFound;
 	//	}
 	//}
-//#else
+#else
 	if ((dwWhereToOpen & FILE_ON_SEARCH_PATH) > 0)
 	{
 		dwWhereToOpen &= (~((uint32)FILE_ON_SEARCH_PATH));
