@@ -109,6 +109,9 @@ public:
 
 	/* static function to expose core interface to sqlite3's raft WAL interface. */
 	static void CheckLoadSqliteInterface() {
+
+#ifdef SQLITE_STATICLIB
+#else
 		static bool bLoaded = false;
 		if (!bLoaded)
 		{
@@ -126,6 +129,7 @@ public:
 				pPluginEntity = ParaEngine::CGlobals::GetPluginManager()->LoadDLL("", SQLITE_DLL_FILE_PATH);
 			}
 		}
+#endif
 	}
 };
 

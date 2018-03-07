@@ -272,7 +272,7 @@ namespace ParaEngine
 		LOGI(pStr);
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) && defined(_DEBUG) 
 		printf(pStr);
 		::OutputDebugStringA(pStr);
 #endif

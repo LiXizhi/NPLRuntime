@@ -17,6 +17,7 @@ namespace ParaEngine
 		CParaEngineAppBase(const char* sCmd);
 		virtual ~CParaEngineAppBase();
 		static IParaEngineApp* GetInstance();
+		virtual IRenderWindow* GetRenderWindow() override;
 		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
 		virtual bool StartApp() override;
 		virtual void StopApp() override;

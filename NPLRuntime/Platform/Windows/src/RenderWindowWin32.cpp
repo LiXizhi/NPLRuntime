@@ -157,7 +157,7 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 {
 	if (g_WindowMap.find(hWnd) == g_WindowMap.end())
 	{
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		return DefWindowProcW(hWnd, message, wParam, lParam);
 	}
 
 	RenderWindowWin32* window = g_WindowMap[hWnd];
@@ -208,9 +208,19 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	}
 	break;
 	case WM_CHAR:
+	case WM_UNICHAR:
 	{
-		char ascii_code = wParam;
-		window->OnChar(ascii_code);
+		unsigned int code = (unsigned int)wParam;
+
+		if (message == WM_UNICHAR && wParam == UNICODE_NOCHAR)
+		{
+			// WM_UNICHAR is not sent by Windows, but is sent by some
+			// third-party input method engine
+			// Returning TRUE here announces support for this message
+			return TRUE;
+		}
+
+		window->OnChar(code);
 	}
 	break;
 	case WM_DESTROY:
@@ -310,6 +320,11 @@ void RenderWindowWin32::PollEvents()
 		// send the message to the WindowProc function
 		DispatchMessageW(&msg);	
 	}
+}
+
+intptr_t RenderWindowWin32::GetNativeHandle() const
+{ 
+	return (intptr_t)GetHandle(); 
 }
 
 HWND RenderWindowWin32::GetHandle() const
