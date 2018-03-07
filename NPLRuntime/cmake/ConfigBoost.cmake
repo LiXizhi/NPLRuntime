@@ -32,7 +32,7 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
+find_package(Boost 1.65.1 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
 
 #message(STATUS "BOOST_INCLUDE_DIR:" ${Boost_INCLUDE_DIR})
 #message(STATUS "BOOST_LIBS:" ${Boost_LIBRARIES} )
