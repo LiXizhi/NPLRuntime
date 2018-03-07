@@ -4,7 +4,25 @@
 #elif defined(USE_OPENGL_RENDERER)
 #include "DynamicVertexBufferEntityOpenGL.h"
 #else
-#include "DynamicVertexBufferEntityOpenGL.h"
+namespace ParaEngine
+{
+	class DynamicVertexBufferEntity
+	{
+	public: 
+		DynamicVertexBufferEntity():m_nUnitSize(0)
+		{
+
+		}
+		int GetBuffer(){ return 0; }
+		int m_nUnitSize;
+		int Lock(int,void**) { return 0; }
+		void Unlock() {}
+		bool IsMemoryBuffer() { return false; }
+		int GetBaseVertex() { return 0; }
+		void* GetBaseVertexPointer() { return 0; }
+	};
+}
+
 #endif
 
 namespace ParaEngine

@@ -357,6 +357,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 		}
 #endif
 	}
+#ifdef USE_OPENGL_RENDERER
 	else
 	{
 		// render with shader technique
@@ -674,5 +675,6 @@ void ParaEngine::CSortedFaceGroups::Render()
 			}
 		}
 	}
+#endif
 }
 

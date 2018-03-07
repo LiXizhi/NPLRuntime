@@ -101,7 +101,7 @@ namespace ParaEngine
 #ifdef USE_DIRECTX_RENDERER
 		LPDIRECT3DSURFACE9 m_pBackBuffer, m_pZBuffer; 
 		LPDIRECT3DSURFACE9 m_pSMColorSurface, m_pSMColorSurfaceBlurredHorizontal, m_pSMColorSurfaceBlurredVertical, m_pSMZSurface;
-#else
+#elif USE_OPENGL_RENDERER
 		GLuint mOldFrameBufferObject;
 		GLuint mSMFrameBufferObject,mSMDepthStencilBufferObject;
 #endif

@@ -6,7 +6,7 @@ else()
 	if(NPLRUNTIME_STATIC_LIB)
 		set(LUA_STATICLIB TRUE)
 	endif()
-	add_subdirectory(code ${CLIENT_BINARY_DIR}/LuaJIT-2.0)
+	add_subdirectory(code)
 	target_include_directories(luajit20 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 

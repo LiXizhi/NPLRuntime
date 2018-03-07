@@ -4,17 +4,6 @@
 #endif
 namespace ParaEngine
 {
-#ifdef USE_DIRECTX_RENDERER
-	typedef IDirect3DVertexBuffer9* VertexBufferDevicePtr_type;
-	typedef IDirect3DIndexBuffer9* IndexBufferDevicePtr_type;
-#elif defined(USE_OPENGL_RENDERER)
-	typedef GLuint VertexBufferDevicePtr_type;
-	typedef GLuint IndexBufferDevicePtr_type;
-#else 
-	typedef int32_t VertexBufferDevicePtr_type;
-	typedef int32_t IndexBufferDevicePtr_type;
-#endif
-
 	/** cross platform vertex/index buffer. 
 	* this is light weighted, use this like an int, and copy by value. 
 	*/

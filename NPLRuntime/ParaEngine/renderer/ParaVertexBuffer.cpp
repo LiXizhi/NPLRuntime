@@ -7,6 +7,7 @@
 // Desc: cross platform vertex/index buffer. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "Render/IRenderDevice.h"
 #include "ParaVertexBuffer.h"
 
 #if USE_DIRECTX_RENDERER

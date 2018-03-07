@@ -6,7 +6,8 @@
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
 #include "Core/PEtypes.h"
-
+namespace ParaEngine
+{
 #if USE_DIRECTX_RENDERER
 using DeviceTexturePtr_type = IDirect3DTexture9*;
 using VertexBufferDevicePtr_type = IDirect3DVertexBuffer9* ;
@@ -14,17 +15,16 @@ using IndexBufferDevicePtr_type =IDirect3DIndexBuffer9*  ;
 using VertexDeclarationPtr = IDirect3DVertexDeclaration9* ;
 using VertexElement = D3DVERTEXELEMENT9 ;
 #else
-namespace ParaEngine
-{
+
 	struct VertexElement;
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
-}
 
 typedef uint32_t DeviceTexturePtr_type;
 typedef uint32_t VertexBufferDevicePtr_type;
 typedef uint32_t IndexBufferDevicePtr_type;
 
 #endif
+}
 
 
 namespace ParaEngine
