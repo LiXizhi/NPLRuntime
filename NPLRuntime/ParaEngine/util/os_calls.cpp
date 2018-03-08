@@ -11,6 +11,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <boost/log/attributes/current_process_name.hpp>
+
 #ifdef WIN32
 #include <io.h>
 #include <stdio.h>
@@ -411,8 +413,12 @@ PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 #endif
 }
 
+
+
+
 PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 {
+	/*
 	char exePath[512 + 1] = { 0 };
 	memset(exePath, 0, sizeof(exePath));
 #ifdef WIN32
@@ -434,6 +440,8 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 #else
 	return std::string();
 #endif
+*/
+	return boost::log::aux::get_process_name();
 }
 
 PE_CORE_DECL bool ParaEngine::stdin_is_tty()
