@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "AppDelegate.h"
 #include <android/log.h>
 #include <android/asset_manager.h>
@@ -60,6 +61,74 @@ void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 }
 int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* event)
 {
+	AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);
+	int32_t eventType = AInputEvent_getType(event);
+	if (eventType == AINPUT_EVENT_TYPE_MOTION)
+	{
+		auto eventSource = AInputEvent_getSource(event);
+		if (eventSource == AINPUT_SOURCE_TOUCHSCREEN)
+		{
+			int action = AKeyEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+			TouchEvent::TouchEventMsgType touchType = TouchEvent::TouchEvent_POINTER_UP;
+			switch(action) {
+			case AMOTION_EVENT_ACTION_DOWN:
+			{
+				touchType = TouchEvent::TouchEvent_POINTER_DOWN;
+			}
+			break;
+			case AMOTION_EVENT_ACTION_UP:
+			{
+				touchType = TouchEvent::TouchEvent_POINTER_UP;
+			}
+			break;
+			case AMOTION_EVENT_ACTION_MOVE:
+			{
+				touchType = TouchEvent::TouchEvent_POINTER_UPDATE;
+			}
+			break;
+			case AMOTION_EVENT_ACTION_CANCEL:
+			{
+				touchType = TouchEvent::TouchEvent_POINTER_UP;
+			}
+			break;
+			}
+			auto touchCount = AMotionEvent_getPointerCount(event);
+			std::vector<TouchEventPtr> touchEvents(touchCount);
+			for (int i = 0; i < touchCount; i++)
+			{
+				int32_t touchId = AMotionEvent_getPointerId(event, i);
+				float touchX = AMotionEvent_getX(event, i);
+				float touchY = AMotionEvent_getY(event, i);
+				int64_t eventTime = AMotionEvent_getEventTime(event);
+				TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId,
+					touchX, touchY, eventTime);
+				touchEvents.push_back(touchEvent);
+			}
+			switch (action) {
+			case AMOTION_EVENT_ACTION_DOWN:
+			{
+				myApp->OnTouchBegan(touchEvents);
+			}
+			break;
+			case AMOTION_EVENT_ACTION_UP:
+			{
+				myApp->OnTouchEnded(touchEvents);
+			}
+			break;
+			case AMOTION_EVENT_ACTION_MOVE:
+			{
+				myApp->OnTouchMoved(touchEvents);
+			}
+			break;
+			case AMOTION_EVENT_ACTION_CANCEL:
+			{
+				myApp->OnTouchCancelled(touchEvents);
+			}
+			break;
+			}
+
+		}
+	}
     return 0;
 }
 
@@ -100,12 +169,12 @@ void AppDelegate::Run()
                  LOGI("app:destroy");
                 return;
             }
-
-			if (m_ParaEngineApp)
-			{
-				m_ParaEngineApp->DoWork();
-			}
         }
+
+		if (m_ParaEngineApp)
+		{
+			m_ParaEngineApp->DoWork();
+		}
     }
     LOGI("app:exit");
 }
@@ -173,5 +242,69 @@ void AppDelegate::OnTermWindow()
 void AppDelegate::OnWindowResized()
 {
     LOGI("app:OnWindowResized");
+}
+
+void ParaEngine::AppDelegate::OnTouchBegan(const std::vector<TouchEventPtr>& events)
+{
+	if (m_ParaEngineApp)
+	{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (int i =0;i<events.size();i++)
+			{
+				TouchEvent event = *(events[i].get());
+				gui->handleTouchEvent(event);
+			}		
+		}
+	}
+}
+
+void ParaEngine::AppDelegate::OnTouchMoved(const std::vector<TouchEventPtr>& events)
+{
+	if (m_ParaEngineApp)
+	{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (int i = 0; i < events.size(); i++)
+			{
+				TouchEvent event = *(events[i].get());
+				gui->handleTouchEvent(event);
+			}
+		}
+	}
+}
+
+void ParaEngine::AppDelegate::OnTouchEnded(const std::vector<TouchEventPtr>& events)
+{
+	if (m_ParaEngineApp)
+	{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (int i = 0; i < events.size(); i++)
+			{
+				TouchEvent event = *(events[i].get());
+				gui->handleTouchEvent(event);
+			}
+		}
+	}
+}
+
+void ParaEngine::AppDelegate::OnTouchCancelled(const std::vector<TouchEventPtr>& events)
+{
+	if (m_ParaEngineApp)
+	{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (int i = 0; i < events.size(); i++)
+			{
+				TouchEvent event = *(events[i].get());
+				gui->handleTouchEvent(event);
+			}
+		}
+	}
 }
 

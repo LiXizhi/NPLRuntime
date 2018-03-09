@@ -21,3 +21,8 @@ unsigned int ParaEngine::RenderWindowAndroid::GetHeight() const
 	return ANativeWindow_getHeight(m_NativeWindow);
 }
 
+intptr_t ParaEngine::RenderWindowAndroid::GetNativeHandle() const
+{
+	return (intptr_t)m_NativeWindow;
+}
+

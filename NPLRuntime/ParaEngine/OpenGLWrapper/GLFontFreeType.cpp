@@ -286,7 +286,6 @@ unsigned char* FontFreeType::getGlyphBitmap(unsigned short theChar, long &outWid
 {
     bool invalidChar = true;
     unsigned char* ret = nullptr;
-
     do
     {
         if (_fontRef == nullptr)

@@ -17,6 +17,9 @@
 #include "InfoCenter/ICConfigManager.h"
 #include "util/StringHelper.h"
 #include "memdebug.h"
+#include <string>
+#include <boost/locale/encoding_utf.hpp>
+
 using namespace ParaEngine;
 using namespace std;
 const IType* CGUIText::m_type=NULL;

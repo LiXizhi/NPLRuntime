@@ -1,9 +1,10 @@
 #include "ParaEngine.h"
-//#include <iconv.h>
+#include "iconv.h"
 #include "GLFontAtlas.h"
 #include "GLFont.h"
 #include "GLTexture2D.h"
 #include "GLFontFreeType.h"
+#include "StringHelper.h"
 
 
 using namespace ParaEngine;
@@ -82,14 +83,14 @@ GLFontAtlas::~GLFontAtlas()
     releaseTextures();
 
     delete []_currentPageData;
-//
-//#if PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
-//    if (_iconv)
-//    {
-//        iconv_close(_iconv);
-//        _iconv = nullptr;
-//    }
-//#endif
+
+
+	if (_iconv)
+	{
+		iconv_close(_iconv);
+		_iconv = nullptr;
+	}
+
 }
 
 void GLFontAtlas::reset()
@@ -155,42 +156,43 @@ bool GLFontAtlas::getLetterDefinitionForChar(char16_t utf16Char, FontLetterDefin
 
 void GLFontAtlas::conversionU16TOGB2312(const std::u16string& u16Text, std::unordered_map<unsigned short, unsigned short>& charCodeMap)
 {
+	OUTPUT_LOG("conversionU16TOGB2312");
     size_t strLen = u16Text.length();
     auto gb2312StrSize = strLen * 2;
     auto gb2312Text = new (std::nothrow) char[gb2312StrSize];
     memset(gb2312Text, 0, gb2312StrSize);
-
-    switch (_fontFreeType->getEncoding())
+	auto encoding = _fontFreeType->getEncoding();
+    switch (encoding)
     {
-//    case FT_ENCODING_GB2312:
-//    {
-//
-//        if (_iconv == nullptr)
-//        {
-//            _iconv = iconv_open("gb2312", "utf-16le");
-//        }
-//
-//        if (_iconv == (iconv_t)-1)
-//        {
-//            OUTPUT_LOG("conversion from utf16 to gb2312 not available");
-//        }
-//        else
-//        {
-//            char* pout = gb2312Text;
-//            size_t inLen = strLen * 2;
-//            size_t outLen = gb2312StrSize;
-//
-//#if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
-//            const char* pin = (char*)u16Text.c_str();
-//            iconv(_iconv, &pin, &inLen, &pout, &outLen);
-//#else
-//            char* pin = (char*)u16Text.c_str();
-//            iconv(_iconv, &pin, &inLen, &pout, &outLen);
-//#endif
-//        }
-//
-//    }
- //   break;
+	case FT_ENCODING_GB2312:
+	{
+
+		if (_iconv == nullptr)
+		{
+			_iconv = iconv_open("gb2312", "utf-16le");
+		}
+
+		if (_iconv == (iconv_t)-1)
+		{
+			OUTPUT_LOG("conversion from utf16 to gb2312 not available");
+		}
+		else
+		{
+			char* pout = gb2312Text;
+			size_t inLen = strLen * 2;
+			size_t outLen = gb2312StrSize;
+
+#if _LIBICONV_VERSION == 0x109 || _LIBICONV_VERSION == 0x010F
+			const char* pin = (char*)u16Text.c_str();
+			iconv(_iconv, &pin, &inLen, &pout, &outLen);
+#else
+			char* pin = (char*)u16Text.c_str();
+			iconv(_iconv, &pin, &inLen, &pout, &outLen);
+#endif
+		}
+
+	}
+	break;
     default:
         OUTPUT_LOG("Unsupported encoding:%d", _fontFreeType->getEncoding());
         break;
@@ -283,11 +285,13 @@ void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordere
 
 bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
 {
+
+	//OUTPUT_LOG("prepareLetterDefinitions %s\n", u8Str.c_str());
+
     if (_fontFreeType == nullptr)
     {
         return false;
     }
-
     std::unordered_map<unsigned short, unsigned short> codeMapOfNewChar;
     findNewCharacters(utf16Text, codeMapOfNewChar);
     if (codeMapOfNewChar.empty())

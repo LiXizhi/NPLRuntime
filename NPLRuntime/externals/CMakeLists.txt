@@ -24,7 +24,7 @@ add_subdirectory(zlib)
 add_subdirectory(tinyxpath)
 add_subdirectory(curl)
 add_subdirectory(luabind)
-
+add_subdirectory(libiconv)
 if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux
 else()
