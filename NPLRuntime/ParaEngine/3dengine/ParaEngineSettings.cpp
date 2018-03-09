@@ -1299,6 +1299,25 @@ float ParaEngineSettings::GetRefreshTimer()
 	return CGlobals::GetApp()->GetRefreshTimer();
 }
 
+const char* ParaEngineSettings::GetModuleFileName()
+{
+	static std::string sModuleDir;
+	sModuleDir = ParaEngine::GetExecutablePath();
+	auto pos = sModuleDir.find_last_of('/');
+
+	if (pos == std::string::npos)
+	{
+		pos = sModuleDir.find_last_of('\\');
+	}
+
+	if (pos == std::string::npos)
+	{
+		return sModuleDir.c_str();
+	}
+
+	return sModuleDir.c_str() + pos + 1;
+}
+
 int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -1392,5 +1411,8 @@ int ParaEngineSettings::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("VertexBufferPoolTotalBytes", FieldType_Int, NULL, (void*)GetVertexBufferPoolTotalBytes_s, NULL, NULL, bOverride);
 
 	pClass->AddField("AppHWND", FieldType_Double, NULL, (void*)GetAppHWND_s, NULL, NULL, bOverride);
+
+	pClass->AddField("GetModuleFileName", FieldType_String, nullptr, (void*)GetModuleFileName_s, NULL, NULL, bOverride);
+	
 	return S_OK;
 }

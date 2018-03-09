@@ -1,4 +1,5 @@
 #pragma once
+#include <float.h>
 
 typedef signed int			sdword;		//!< sizeof(sdword)	must be 4
 typedef unsigned int		udword;		//!< sizeof(udword)	must be 4

@@ -190,6 +190,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetDefaultOpenFileFolder_s, const char*)	{ cls->SetDefaultOpenFileFolder(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetOpenFolder_s, const char**)	{ *p1 = cls->GetOpenFolder(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetModuleFileName_s, const char**) { *p1 = GetModuleFileName(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetIcon_s, const char*)	{ cls->SetIcon(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetPlatform_s, int*)	{ *p1 = cls->GetPlatform(); return S_OK; }
@@ -212,6 +214,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, double*) { *p1 = (double)cls->GetAppHWND(); return S_OK; }
 	public:
+		static const char* GetModuleFileName();
+
 		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
 		static bool IsSandboxMode();
 
