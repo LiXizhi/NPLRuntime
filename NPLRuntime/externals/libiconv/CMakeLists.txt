@@ -39,6 +39,7 @@ if(MSVC)
 endif()
 
 if (APPLE)
+	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
 elseif(UNIX)
 	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
 endif()

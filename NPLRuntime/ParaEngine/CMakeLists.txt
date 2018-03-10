@@ -159,7 +159,7 @@ elseif(WIN32)
     )
 elseif(APPLE)
     set(PLATROM_SPEC_DEFINITIONS 
-        "-framework CoreFoundation" "-framework CoreServices"
+        PLATFORM_MAC
     )
 elseif(UNIX AND NOT ANDROID)
     ## Readline support

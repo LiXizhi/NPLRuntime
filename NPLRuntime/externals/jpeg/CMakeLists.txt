@@ -10,7 +10,9 @@ elseif(WIN32)
     else()
         target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/x86/libjpeg.lib)
     endif()
-
+elseif(APPLE)
+    target_include_directories(libjpeg INTERFACE include/mac)
+    target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/libjpeg.a)
 endif()
 
 

@@ -1,5 +1,5 @@
 
-if(WIN32)
+if(WIN32 OR APPLE)
     include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
     find_package(Boost COMPONENTS filesystem REQUIRED)
     include_directories("${Boost_INCLUDE_DIRS}")
