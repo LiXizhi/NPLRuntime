@@ -8,7 +8,9 @@ elseif(WIN32)
     set(LIBGL glad_core)
     set(PLATFORM_SRC gl_glad_spec.c)
 elseif(APPLE)
-    set(LIBGL glad_core)
+    find_library(OPENGL_LIBRARY OpenGL)
+    set(LIBGL ${OpenGL})
+    set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 
 add_library(RenderSystemOpenGL 

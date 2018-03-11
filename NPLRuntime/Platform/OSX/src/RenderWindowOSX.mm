@@ -49,7 +49,7 @@ RenderWindowOSX::~RenderWindowOSX() noexcept
 
 intptr_t RenderWindowOSX::GetNativeHandle() const
 {
-    return 0;
+    return (intptr_t)m_window;
 }
 
 

@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 #include <cstdint>
-#include <Cocoa/Cocoa.h>
 #include "Framework/Interface/Render/IRenderWindow.h"
 
+@class NSWindow;
 namespace ParaEngine
 {
     class RenderWindowOSX : public IRenderWindow
