@@ -178,6 +178,9 @@ elseif(UNIX AND NOT ANDROID)
 endif()
 
 
+get_property(ICONV_LIB_NAME GLOBAL PROPERTY "ICONV_LIB_NAME" ) 
+get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" ) 
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
@@ -189,10 +192,9 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite
-    libiconv
+    sqlite 
+	${ICONV_LIB_NAME}
 )
-
 
 set(PARAENGINE_DEF_LIST)
 list(APPEND PARAENGINE_DEF_LIST TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})

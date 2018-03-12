@@ -19,8 +19,6 @@
 
 #include <unordered_map>
 
-#define USE_ICONV
-
 #ifdef USE_ICONV
 	#include "iconv.h"
 #endif

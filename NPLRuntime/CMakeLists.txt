@@ -9,6 +9,7 @@ set(NPLRUNTIME_PROJECT_NAME "NPLRuntime" CACHE STRING "Custom Project Name")
 
 option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
+option(NPLRUNTIME_ICONV "include iconv" ON)
 
 project(${NPLRUNTIME_PROJECT_NAME})
 set (CMAKE_CXX_STANDARD 11)
@@ -99,6 +100,7 @@ else()
     set(NPLRUNTIME_RENDERER "NULL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
 endif()
+
 
 add_subdirectory(externals)
 add_subdirectory(Plugins)
