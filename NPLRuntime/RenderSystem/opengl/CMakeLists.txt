@@ -7,6 +7,10 @@ if(ANDROID)
 elseif(WIN32)
     set(LIBGL glad_core)
     set(PLATFORM_SRC gl_glad_spec.c)
+elseif(APPLE)
+    find_library(OPENGL_LIBRARY OpenGL)
+    set(LIBGL ${OpenGL})
+    set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 
 add_library(RenderSystemOpenGL 
@@ -20,7 +24,6 @@ add_library(RenderSystemOpenGL
 
 target_include_directories(RenderSystemOpenGL PUBLIC 
     ${PROJECT_SOURCE_DIR}/ParaEngineClient/ParaEngine/
-    ${PROJECT_SOURCE_DIR}/externals/lpng1634/
     ${PROJECT_SOURCE_DIR}/externals/freetype-2.8.1/include/
     ${CMAKE_CURRENT_SOURCE_DIR}
 )

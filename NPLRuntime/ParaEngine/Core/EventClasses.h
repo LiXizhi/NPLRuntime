@@ -1,5 +1,6 @@
 #pragma once
 #include "IEvent.h"
+#include <memory>
 namespace ParaEngine
 {
 	class TouchEventSession;
@@ -153,6 +154,7 @@ namespace ParaEngine
 		virtual int GetEventType()  const { return EVENT_TOUCH; }
 		std::string ToScriptCode() const;
 	};
+	using TouchEventPtr = std::shared_ptr<TouchEvent>;
 
 	/** the total 3d vector of force that is currently on the device, including gravity. 
 	* we can use this to decide current roll and pitch of the device(usually mobile phone) in its own reference frame, 

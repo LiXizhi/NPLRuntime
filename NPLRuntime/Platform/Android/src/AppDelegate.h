@@ -2,6 +2,7 @@
 #include <android_native_app_glue.h>
 #include <EGL/egl.h>
 #include "RenderDeviceOpenGL.h"
+#include "EventClasses.h"
 namespace ParaEngine
 {
 	class CParaEngineAppAndroid;
@@ -28,6 +29,11 @@ namespace ParaEngine
         virtual void OnInitWindow();
         virtual void OnTermWindow();
         virtual void OnWindowResized();
+		virtual void OnTouchBegan(const std::vector<TouchEventPtr>& events);
+		virtual void OnTouchMoved(const std::vector<TouchEventPtr>& events);
+		virtual void OnTouchEnded(const std::vector<TouchEventPtr>& events);
+		virtual void OnTouchCancelled(const std::vector<TouchEventPtr>& events);
+
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
 		IRenderDevice* m_RenderDevice;

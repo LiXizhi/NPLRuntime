@@ -327,15 +327,12 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 	{
 		return false;
 	}
-
-
-
+    
 
 	const GLchar *sources[] = {
-//#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_WIN32 && PARA_TARGET_PLATFORM != PARA_PLATFORM_LINUX && PARA_TARGET_PLATFORM != PARA_PLATFORM_MAC)
-//		(type == GL_VERTEX_SHADER ? "precision highp float;\n" : "precision mediump float;\n"),
-//#endif
+#ifdef PARAENGINE_MOBILE
 		"precision highp float;\n"
+#endif
 		"uniform mat4 CC_PMatrix;\n"
 		"uniform mat4 CC_MVMatrix;\n"
 		"uniform mat4 CC_MVPMatrix;\n"

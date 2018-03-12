@@ -1,5 +1,5 @@
 #pragma once
-
+#include <boost/signals2.hpp>
 namespace ParaEngine
 {
 	using namespace std;

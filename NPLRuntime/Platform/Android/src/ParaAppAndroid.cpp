@@ -3,6 +3,11 @@ using namespace  ParaEngine;
 
 
 
+ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid(struct android_app* state):m_appState(state)
+{
+	SetTouchInputting(true);
+}
+
 void ParaEngine::CParaEngineAppAndroid::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
 	//throw std::logic_error("The method or operation is not implemented.");

@@ -159,7 +159,7 @@ elseif(WIN32)
     )
 elseif(APPLE)
     set(PLATROM_SPEC_DEFINITIONS 
-        "-framework CoreFoundation" "-framework CoreServices"
+        PLATFORM_MAC
     )
 elseif(UNIX AND NOT ANDROID)
     ## Readline support
@@ -189,7 +189,8 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite 
+    sqlite
+    libiconv
 )
 
 

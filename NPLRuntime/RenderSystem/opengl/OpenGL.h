@@ -5,8 +5,10 @@ extern "C" {
 
 #ifdef ANDROID
 #include "gl_android_spec.h"
-#else
+#elif _WIN32
 #include "glad/glad.h"
+#elif __APPLE__
+#include "gl_osx_spec.h"
 #endif
 
 extern int loadGL();

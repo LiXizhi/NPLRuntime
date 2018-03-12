@@ -14,11 +14,12 @@
 #include "util/CyoDecode.h"
 #include "StringHelper.h"
 #include <boost/thread/tss.hpp>
+#include <boost/locale/encoding_utf.hpp>
 #include "ConvertUTF.h"
 
 #include <unordered_map>
 
-//#undef USE_ICONV
+#define USE_ICONV
 
 #ifdef USE_ICONV
 	#include "iconv.h"
@@ -1329,41 +1330,21 @@ int ParaEngine::StringHelper::fast_dtoa(double num, char* result, int buf_size, 
 
 bool ParaEngine::StringHelper::UTF8ToUTF16(const std::string& utf8, std::u16string& outUtf16)
 {
-	if (utf8.empty())
-	{
-		outUtf16.clear();
-		return true;
-	}
+	
+	using boost::locale::conv::utf_to_utf;
 
-	bool ret = false;
+	std::wstring str = utf_to_utf<wchar_t>(utf8.c_str(), utf8.c_str() + utf8.size());
 
-	const size_t utf16Bytes = (utf8.length() + 1) * sizeof(char16_t);
-	char16_t* utf16 = (char16_t*)malloc(utf16Bytes);
-	memset(utf16, 0, utf16Bytes);
+	outUtf16 = std::u16string(str.begin(), str.end());
 
-	char* utf16ptr = reinterpret_cast<char*>(utf16);
-	const UTF8* error = nullptr;
-
-	if (llvm::ConvertUTF8toWide(2, utf8, utf16ptr, error))
-	{
-		outUtf16 = utf16;
-		ret = true;
-	}
-
-	free(utf16);
-
-	return ret;
+	return true;
 }
 
 bool ParaEngine::StringHelper::UTF16ToUTF8(const std::u16string& utf16, std::string& outUtf8)
 {
-	if (utf16.empty())
-	{
-		outUtf8.clear();
-		return true;
-	}
-	outUtf8.clear();
-	return llvm::convertUTF16ToUTF8String(utf16, outUtf8);
+	using boost::locale::conv::utf_to_utf;
+	outUtf8 = utf_to_utf<char>(utf16.c_str(), utf16.c_str() + utf16.size());
+	return true;
 }
 
 bool ParaEngine::StringHelper::MatchWildcard(const std::string& str, const std::string& sWildcardPattern)

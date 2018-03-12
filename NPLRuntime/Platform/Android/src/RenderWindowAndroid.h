@@ -12,6 +12,9 @@ namespace ParaEngine
 		virtual unsigned int GetWidth() const override;
 		virtual unsigned int GetHeight() const override;
 		ANativeWindow* GetNativeWindow() { return m_NativeWindow; }
+
+		virtual intptr_t GetNativeHandle() const override;
+
 	private:
 		ANativeWindow* m_NativeWindow;
 	};

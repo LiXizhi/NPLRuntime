@@ -15,18 +15,8 @@ enable_testing()
 
 set(CMAKE_REQUIRED_DEFINITIONS) # clear variable
 
-if(MSVC)
-    set(CMAKE_DEBUG_POSTFIX "d")
-    add_definitions(-D_CRT_SECURE_NO_DEPRECATE)
-    add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-endif()
 
 
-file (GLOB ParaEngineClient_pb_FILES ${ParaEngineClient_SOURCE_DIR}/protocol/*.h ${ParaEngineClient_SOURCE_DIR}/protocol/*.cpp)
-SOURCE_GROUP("protocol" FILES ${ParaEngineClient_pb_FILES})
-list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_pb_FILES})
 
 set(ICONV_PUBLIC_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/iconv.h
@@ -41,14 +31,15 @@ file (GLOB ICONV_SRCS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c)
 list(APPEND ICONV_SRCS ${ICONV_SRCS_FILES})
 
 
-IF(MSVC)
+add_library(libiconv STATIC ${ICONV_SRCS} ${ICONV_PUBLIC_HDRS} ${ICONV_PRIVATE_HDRS})
 
-	
-	# /GR- Remove RTTI to miminize the executable size
-	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GR-")
-	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
-ENDIF()
+target_include_directories(libiconv PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if(MSVC)
+	target_compile_definitions(libiconv PRIVATE _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE)
+endif()
 
-add_library(iconv STATIC ${ICONV_SRCS} ${ICONV_PUBLIC_HDRS} ${ICONV_PRIVATE_HDRS})
-target_compile_definitions(iconv PUBLIC HAVE_WORKING_O_NOFOLLOW)
-target_include_directories(iconv PUBLIC include src)
+if (APPLE)
+	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
+elseif(UNIX)
+	target_compile_definitions(libiconv PRIVATE LIBDIR='\"c\"')
+endif()

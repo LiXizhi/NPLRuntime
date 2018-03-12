@@ -1,17 +1,17 @@
 #Boost
 ################################
-# include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
-if ("$ENV{BOOST_ROOT}" STREQUAL "")
-    if(IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/boost)
-		set(BOOST_ROOT ${SERVER_SOURCE_DIR}/../../bin/boost)
-	else()
-		# message(WARNING "You can define a global environment variable of BOOST_ROOT that specify the boost root dir")
-	endif()
-else()
+if ("$ENV{BOOST_ROOT}" STRGREATER "")
     set(BOOST_ROOT $ENV{BOOST_ROOT})
-    message(STATUS "BOOST_ROOT env is at: ${BOOST_ROOT}")
-    string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
+	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
+else()
+	set(BOOST_ROOT CACHE PATH "boost root path")
 endif()
+
+if(BOOST_ROOT STREQUAL "")
+	message(FATAL_ERROR "please set boost root path")
+endif()
+
+message(STATUS "BOOST_ROOT  is at: ${BOOST_ROOT}")
 
 if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 	if(IS_DIRECTORY ${BOOST_ROOT}/stage/lib64)
@@ -32,7 +32,7 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
-find_package(Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log) 
+find_package(Boost 1.65.1 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log) 
 
 #message(STATUS "BOOST_INCLUDE_DIR:" ${Boost_INCLUDE_DIR})
 #message(STATUS "BOOST_LIBS:" ${Boost_LIBRARIES} )

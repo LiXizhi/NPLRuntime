@@ -55,7 +55,7 @@ namespace ParaEngine
 	class CParaEngineAppAndroid : public CParaEngineAppBase
 	{
 	public:
-		CParaEngineAppAndroid(struct android_app* state) :m_appState(state) {}
+		CParaEngineAppAndroid(struct android_app* state);
 		inline struct android_app* GetAndroidApp() { return m_appState; }
 	public:
 		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
