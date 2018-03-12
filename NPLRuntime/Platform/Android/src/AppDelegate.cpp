@@ -93,7 +93,7 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 			break;
 			}
 			auto touchCount = AMotionEvent_getPointerCount(event);
-			std::vector<TouchEventPtr> touchEvents(touchCount);
+			std::vector<TouchEventPtr> touchEvents;
 			for (int i = 0; i < touchCount; i++)
 			{
 				int32_t touchId = AMotionEvent_getPointerId(event, i);
@@ -244,19 +244,29 @@ void AppDelegate::OnWindowResized()
     LOGI("app:OnWindowResized");
 }
 
+
+void inline PostTouchEvents(const std::vector<TouchEventPtr>& events)
+{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (int i = 0; i < events.size(); i++)
+			{
+				if (events[i])
+				{
+					TouchEvent event = *(events[i].get());
+					gui->handleTouchEvent(event);
+				}
+
+			}
+		}
+}
+
 void ParaEngine::AppDelegate::OnTouchBegan(const std::vector<TouchEventPtr>& events)
 {
 	if (m_ParaEngineApp)
 	{
-		auto gui = CGUIRoot::GetInstance();
-		if (gui)
-		{
-			for (int i =0;i<events.size();i++)
-			{
-				TouchEvent event = *(events[i].get());
-				gui->handleTouchEvent(event);
-			}		
-		}
+		PostTouchEvents(events);
 	}
 }
 
@@ -264,15 +274,7 @@ void ParaEngine::AppDelegate::OnTouchMoved(const std::vector<TouchEventPtr>& eve
 {
 	if (m_ParaEngineApp)
 	{
-		auto gui = CGUIRoot::GetInstance();
-		if (gui)
-		{
-			for (int i = 0; i < events.size(); i++)
-			{
-				TouchEvent event = *(events[i].get());
-				gui->handleTouchEvent(event);
-			}
-		}
+		PostTouchEvents(events);
 	}
 }
 
@@ -280,15 +282,7 @@ void ParaEngine::AppDelegate::OnTouchEnded(const std::vector<TouchEventPtr>& eve
 {
 	if (m_ParaEngineApp)
 	{
-		auto gui = CGUIRoot::GetInstance();
-		if (gui)
-		{
-			for (int i = 0; i < events.size(); i++)
-			{
-				TouchEvent event = *(events[i].get());
-				gui->handleTouchEvent(event);
-			}
-		}
+		PostTouchEvents(events);
 	}
 }
 
@@ -296,15 +290,7 @@ void ParaEngine::AppDelegate::OnTouchCancelled(const std::vector<TouchEventPtr>&
 {
 	if (m_ParaEngineApp)
 	{
-		auto gui = CGUIRoot::GetInstance();
-		if (gui)
-		{
-			for (int i = 0; i < events.size(); i++)
-			{
-				TouchEvent event = *(events[i].get());
-				gui->handleTouchEvent(event);
-			}
-		}
+		PostTouchEvents(events);
 	}
 }
 
