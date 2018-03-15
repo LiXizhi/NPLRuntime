@@ -1,7 +1,9 @@
 #include <stdexcept>
+#include "ParaEngine.h"
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
+#include "OpenGLWrapper/GLType.h"
 //#include "math/ParaColor.h"
 
 
@@ -62,8 +64,8 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	,m_BlendingAlphaDest(RSV_BLEND_INVSRCALPHA)
 	,m_StencilPass(0)
 	,m_StencilRefValue(0)
-	,m_CurrentIndexBuffer(0)
-	,m_CurrentVertexBuffer(0)
+	,m_CurrentIndexBuffer(-1)
+	,m_CurrentVertexBuffer(-1)
 	,m_CurrentVertexDeclaration(0)
 {
 	for (int i = 0;i<8;i++)
@@ -73,6 +75,13 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 			m_SamplerStates[i][j] = 0;
 		}
 	}
+
+	
+}
+
+ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
+{
+	GL::ClearCache();
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -344,6 +353,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 		pVertexDeclaration->EnableAttribute();
 		pVertexDeclaration->ApplyAttribute();
 		m_CurrentVertexDeclaration = pVertexDeclaration;
+		//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetVertexDeclaration");
 	}
 
 	return true;
@@ -373,10 +383,12 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	{
 		m_CurrentVertexBuffer = pStreamData;
 		glBindBuffer(GL_ARRAY_BUFFER, pStreamData);
-		if (pStreamData && m_CurrentVertexDeclaration)
-		{
+		//OUTPUT_LOG("RenderDeviceOpenGL:glBindBuffer %d",pStreamData);
+		if (m_CurrentVertexDeclaration)
+		{		
 			m_CurrentVertexDeclaration->EnableAttribute();
 			m_CurrentVertexDeclaration->ApplyAttribute();
+			//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
 		}
 
 	}

@@ -74,6 +74,7 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::RendererRecreated()
 {
 	// the default implementation of CCLabel's FontAtlas does not seem to handle renderer creation very well
 	// we just delete and create again. 
+	m_fontRenderer->RendererRecreated();
 	DeleteDeviceObjects();
 	InitDeviceObjects();
 	return S_OK;

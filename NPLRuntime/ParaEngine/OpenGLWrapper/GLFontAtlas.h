@@ -61,6 +61,7 @@ namespace ParaEngine
 		void setAliasTexParameters();
 
 	protected:
+		void init();
 		void reset();
 
 		void releaseTextures();
@@ -98,5 +99,6 @@ namespace ParaEngine
 		int _currLineHeight;
 
 		friend class Label;
+		bool _inited;
 	};
 }

@@ -129,6 +129,12 @@ void GL::enableVertexAttribs(uint32_t flags)
     s_attributeFlags = flags;
 }
 
+void GL::ClearCache()
+{
+	s_attributeFlags = 0;
+}
+
+
 const Size Size::ZERO = Size(0, 0);
 
 Size::Size(void) : width(0), height(0)

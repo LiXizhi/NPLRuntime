@@ -88,6 +88,7 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
 	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
+	, m_bActive(true)
 {
 	g_pCurrentApp = this;
 }
@@ -105,6 +106,7 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
+	, m_bActive(true)
 {
 	g_pCurrentApp = this;
 }
@@ -303,7 +305,6 @@ void ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 	m_pRootScene->RestoreDeviceObjects();
 	m_pParaWorldAsset->RestoreDeviceObjects();
 	m_pGUIRoot->RestoreDeviceObjects(width, height);		// GUI: 2D engine
-
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
 
@@ -377,6 +378,11 @@ void ParaEngine::CParaEngineAppBase::HandleUserInput()
 	CGlobals::GetScene()->HandleUserInput();
 }
 
+void ParaEngine::CParaEngineAppBase::ActivateApp(bool bActivate)
+{
+	m_bActive = bActivate;
+}
+
 bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 {
 	if (GetAppState() == PEAppState_Stopped)
@@ -431,6 +437,65 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	PERF_END("Main FrameMove");
 	OnFrameEnded();
 	return true;
+}
+
+void ParaEngine::CParaEngineAppBase::OnPause()
+{
+	//InvalidateDeviceObjects();
+	ActivateApp(false);
+}
+
+void ParaEngine::CParaEngineAppBase::OnResume()
+{
+	ActivateApp(true);
+}
+
+void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderWindow)
+{
+	ActivateApp(false);
+	m_pRenderWindow = renderWindow;
+	m_pRenderContext = IRenderContext::Create();
+	RenderConfiguration cfg;
+	cfg.renderWindow = m_pRenderWindow;
+	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	CGlobals::SetRenderDevice(m_pRenderDevice);
+	Rect vp;
+	vp.x = 0; vp.y = 0;
+	vp.z = m_pRenderWindow->GetWidth();
+	vp.w = m_pRenderWindow->GetHeight();
+	m_pRenderDevice->SetViewport(vp);
+
+
+	m_pParaWorldAsset->RendererRecreated();
+	m_pRootScene->RendererRecreated();
+
+	ActivateApp(true);
+}
+
+void ParaEngine::CParaEngineAppBase::OnRendererDestroyed()
+{
+	//InvalidateDeviceObjects();
+	//m_pParaWorldAsset->RendererRecreated();
+	//m_pRootScene->RendererRecreated();
+
+	if (m_pRenderDevice)
+	{
+		delete m_pRenderDevice;
+		m_pRenderDevice = nullptr;
+		CGlobals::SetRenderDevice(nullptr);
+	}
+
+	if (m_pRenderContext)
+	{
+		delete m_pRenderContext;
+		m_pRenderContext = nullptr;
+	}
+
+	if (m_pRenderWindow)
+	{
+		delete m_pRenderWindow;
+		m_pRenderWindow = nullptr;
+	}
 }
 
 bool ParaEngine::CParaEngineAppBase::StartApp()
@@ -588,6 +653,8 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 
 void ParaEngine::CParaEngineAppBase::DoWork()
 {
+	if (!IsAppActive())return;
+	if (m_pRenderWindow == nullptr) return;
 	double fCurTime = m_Timer->GetAppTime();
 	if (m_doWorkFRC.FrameMove(fCurTime) > 0)
 	{
@@ -604,7 +671,7 @@ void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)
 
 bool ParaEngine::CParaEngineAppBase::IsAppActive()
 {
-	return true;
+	return m_bActive;
 }
 
 DWORD ParaEngine::CParaEngineAppBase::GetCoreUsage()

@@ -28,6 +28,8 @@ namespace ParaEngine
 
 		virtual float GetFontScaling() const;
 
+		void RendererRecreated();
+
 	protected:
 		int m_nFontSize;
 		// to minimize the total number of font used, the real font-size may be smaller than the m_nFontSize, and a scale factor is used during rendering. 

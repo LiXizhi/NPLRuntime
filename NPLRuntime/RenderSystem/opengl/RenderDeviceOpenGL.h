@@ -10,7 +10,7 @@ namespace ParaEngine
 
 	public:
 		RenderDeviceOpenGL();
-		virtual ~RenderDeviceOpenGL() override = default;
+		virtual ~RenderDeviceOpenGL();
 		virtual uint32_t GetRenderState(const ERenderState& State) override;
 
 

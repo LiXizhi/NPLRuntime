@@ -22,63 +22,15 @@ GLFontAtlas::GLFontAtlas(Font &theFont)
 , _fontAscender(0)
 , _antialiasEnabled(true)
 , _currLineHeight(0)
+, _inited(false)
 {
     _font->addref();
-
     _fontFreeType = dynamic_cast<FontFreeType*>(_font);
-    if (_fontFreeType)
-    {
-        _lineHeight = _font->getFontMaxHeight();
-        _fontAscender = _fontFreeType->getFontAscender();
-        auto texture = new (std::nothrow) GLTexture2D;
-        _currentPage = 0;
-        _currentPageOrigX = 0;
-        _currentPageOrigY = 0;
-        _letterEdgeExtend = 2;
-        _letterPadding = 0;
-
-        if (_fontFreeType->isDistanceFieldEnabled())
-        {
-            _letterPadding += 2 * FontFreeType::DistanceMapSpread;
-        }
-        _currentPageDataSize = CacheTextureWidth * CacheTextureHeight;
-        auto outlineSize = _fontFreeType->getOutlineSize();
-        if(outlineSize > 0)
-        {
-            _lineHeight += 2 * outlineSize;
-            _currentPageDataSize *= 2;
-        }
-
-        _currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
-        memset(_currentPageData, 0, _currentPageDataSize);
-
-        auto  pixelFormat = outlineSize > 0 ? GLTexture2D::PixelFormat::AI88 : GLTexture2D::PixelFormat::A8;
-        texture->initWithData(_currentPageData, _currentPageDataSize,
-            pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
-
-        addTexture(texture,0);
-        texture->Release();
-
-#if CC_ENABLE_CACHE_TEXTURE_DATA
-        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
-
-        _rendererRecreatedListener = EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(GLFontAtlas::listenRendererRecreated, this));
-        eventDispatcher->addEventListenerWithFixedPriority(_rendererRecreatedListener, 1);
-#endif
-    }
+	init();
 }
 
 GLFontAtlas::~GLFontAtlas()
 {
-#if CC_ENABLE_CACHE_TEXTURE_DATA
-    if (_fontFreeType && _rendererRecreatedListener)
-    {
-        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
-        eventDispatcher->removeEventListener(_rendererRecreatedListener);
-        _rendererRecreatedListener = nullptr;
-    }
-#endif
-
     _font->Release();
     releaseTextures();
 
@@ -90,7 +42,7 @@ GLFontAtlas::~GLFontAtlas()
 		iconv_close(_iconv);
 		_iconv = nullptr;
 	}
-
+	_inited = false;
 }
 
 void GLFontAtlas::reset()
@@ -102,6 +54,7 @@ void GLFontAtlas::reset()
     _currentPageOrigX = 0;
     _currentPageOrigY = 0;
     _letterDefinitions.clear();
+	_inited = false;
 }
 
 void GLFontAtlas::releaseTextures()
@@ -111,14 +64,17 @@ void GLFontAtlas::releaseTextures()
         item.second->Release();
     }
     _atlasTextures.clear();
+	_inited = false;
 }
 
 void GLFontAtlas::purgeTexturesAtlas()
 {
+	if (!_inited)return;
     if (_fontFreeType)
     {
         reset();
     }
+	_inited = false;
 }
 
 
@@ -286,6 +242,8 @@ void GLFontAtlas::findNewCharacters(const std::u16string& u16Text, std::unordere
 bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
 {
 
+	init();
+
 	//OUTPUT_LOG("prepareLetterDefinitions %s\n", u8Str.c_str());
 
     if (_fontFreeType == nullptr)
@@ -420,6 +378,7 @@ void GLFontAtlas::addTexture(GLTexture2D *texture, int slot)
 
 GLTexture2D* GLFontAtlas::getTexture(int slot)
 {
+	init();
     return _atlasTextures[slot];
 }
 
@@ -430,6 +389,7 @@ void  GLFontAtlas::setLineHeight(float newHeight)
 
 void GLFontAtlas::setAliasTexParameters()
 {
+	init();
     if (_antialiasEnabled)
     {
         _antialiasEnabled = false;
@@ -442,6 +402,7 @@ void GLFontAtlas::setAliasTexParameters()
 
 void GLFontAtlas::setAntiAliasTexParameters()
 {
+	init();
     if (! _antialiasEnabled)
     {
         _antialiasEnabled = true;
@@ -450,4 +411,44 @@ void GLFontAtlas::setAntiAliasTexParameters()
             tex.second->setAntiAliasTexParameters();
         }
     }
+}
+
+void ParaEngine::GLFontAtlas::init()
+{
+	if (_inited)return;
+	_inited = true;
+	if (_fontFreeType)
+	{
+		_lineHeight = _font->getFontMaxHeight();
+		_fontAscender = _fontFreeType->getFontAscender();
+		auto texture = new (std::nothrow) GLTexture2D;
+		_currentPage = 0;
+		_currentPageOrigX = 0;
+		_currentPageOrigY = 0;
+		_letterEdgeExtend = 2;
+		_letterPadding = 0;
+
+		if (_fontFreeType->isDistanceFieldEnabled())
+		{
+			_letterPadding += 2 * FontFreeType::DistanceMapSpread;
+		}
+		_currentPageDataSize = CacheTextureWidth * CacheTextureHeight;
+		auto outlineSize = _fontFreeType->getOutlineSize();
+		if (outlineSize > 0)
+		{
+			_lineHeight += 2 * outlineSize;
+			_currentPageDataSize *= 2;
+		}
+
+		_currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
+		memset(_currentPageData, 0, _currentPageDataSize);
+
+		auto  pixelFormat = outlineSize > 0 ? GLTexture2D::PixelFormat::AI88 : GLTexture2D::PixelFormat::A8;
+		texture->initWithData(_currentPageData, _currentPageDataSize,
+			pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+
+		addTexture(texture, 0);
+		texture->Release();
+	}
+
 }
