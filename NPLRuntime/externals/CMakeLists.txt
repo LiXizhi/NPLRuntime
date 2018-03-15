@@ -1,5 +1,6 @@
 set(LUA_LIB_LIST)
 
+
 if (NPLRUNTIME_LUAJIT21) 
 	add_subdirectory (LuaJIT2_1 ${PROJECT_BINARY_DIR}/LuaJIT-2.1)
 	list(APPEND LUA_LIB_LIST luajit21)
@@ -16,7 +17,7 @@ if(NPLRUNTIME_LUAJIT20)
 	list(APPEND LUA_LIB_LIST luajit20)
 endif()
 
-
+set_property(GLOBAL PROPERTY LUA_LIB_LIST ${LUA_LIB_LIST})
 
 add_subdirectory(jsoncpp)
 add_subdirectory(tinyxml)
@@ -24,7 +25,23 @@ add_subdirectory(zlib)
 add_subdirectory(tinyxpath)
 add_subdirectory(curl)
 add_subdirectory(luabind)
-add_subdirectory(libiconv)
+
+
+set(ICONV_LIB_NAME)
+
+if (NPLRUNTIME_ICONV)
+	if (APPLE)
+		list(APPEND ICONV_LIB_NAME iconv)
+	else()
+		add_subdirectory(libiconv)
+		list(APPEND ICONV_LIB_NAME libiconv)
+	endif()
+	
+	target_compile_definitions(${ICONV_LIB_NAME} PUBLIC USE_ICONV)
+endif()
+
+set_property(GLOBAL PROPERTY ICONV_LIB_NAME ${ICONV_LIB_NAME})
+
 if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux
 else()

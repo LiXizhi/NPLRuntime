@@ -78,12 +78,15 @@ option ( LUA_USE_ASSERT "LuaJIT does asserts?" OFF )
 option ( LUAJIT_ENABLE_GC64 "LuaJIT 64 bits support" ON )
 
 
-# ext could cause a crash , so we disable it 
-option ( LUAJIT_ENABLE_EXT "LuaJIT EXT support" OFF )
+option ( LUAJIT_ENABLE_EXT "LuaJIT EXT support" ON )
 
 
 IF(NOT LUAJIT_ENABLE_EXT)
    ADD_DEFINITIONS(-DLJ_NO_UNWIND)
+ELSE()
+	IF (MSVC)
+		 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DLJ_NO_UNWIND")
+	ENDIF()
 ENDIF()
 
 
