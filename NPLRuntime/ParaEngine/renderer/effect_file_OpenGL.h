@@ -92,11 +92,8 @@ namespace ParaEngine
 		void EndPass(bool bForceEnd = false);
 		void end(bool bForceEnd = false);
 
-		virtual HRESULT InitDeviceObjects();
-
-		bool LoadBuildinShader();
-
-		virtual HRESULT DeleteDeviceObjects();
+		virtual HRESULT InitDeviceObjects() override;
+		virtual HRESULT DeleteDeviceObjects() override;
 		/** 
 		* @param nPass: -1 to release all 
 		*/

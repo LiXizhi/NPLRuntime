@@ -17,11 +17,23 @@ using namespace ParaEngine;
 #define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
 
 
+
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 {
     AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);
     switch(cmd)
     {
+		case APP_CMD_SAVE_STATE:
+		{
+			//OUTPUT_LOG("save state");
+			//saved_state state;
+			//state.app = myApp;
+			//app->savedState = malloc(sizeof(saved_state));
+			//app->savedStateSize = sizeof(struct saved_state);
+			//memcpy(app->savedState, &state, app->savedStateSize);
+			LOGI("state saved");
+
+		}break;
         case APP_CMD_START:
         {
             myApp->OnStart();
@@ -36,11 +48,12 @@ void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
         }break;   
         case APP_CMD_STOP:
         {
-            myApp->OnPause();
+			myApp->OnStop();
+			myApp->m_isQuited = true;
         }break;   
         case APP_CMD_DESTROY:
         {
-            myApp->OnDestroy();
+            myApp->OnDestroy();		
         }break;  
         case APP_CMD_INIT_WINDOW:
         {
@@ -133,27 +146,29 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 }
 
 
-AppDelegate::AppDelegate(struct android_app* app)
-:m_State(app)
-,m_RenderWindow(nullptr)
-,m_RenderContext(nullptr)
-,m_RenderDevice(nullptr)
+AppDelegate::AppDelegate()
+:m_State(nullptr)
 ,m_ParaEngineApp(nullptr)
+,m_isQuited(false)
+,m_isPaused(false)
 {
-    app->userData = this;
-    app->onAppCmd =  AppDelegate::app_handle_command;
-    app->onInputEvent = AppDelegate::app_handle_input;
+
 }
 AppDelegate::~AppDelegate()
 {
-
+	OUTPUT_LOG("~AppDelegate");
 }
 
-void AppDelegate::Run()
+void AppDelegate::Run(struct android_app* app)
 {
+	m_State = app;
+	app->userData = this;
+	app->onAppCmd = AppDelegate::app_handle_command;
+	app->onInputEvent = AppDelegate::app_handle_input;
     LOGI("app:run");
-    while(1)
+    while(!m_State->destroyRequested)
     {
+		
         int ident = 0;
         int events = 0;
         struct android_poll_source* source = nullptr;
@@ -171,7 +186,7 @@ void AppDelegate::Run()
             }
         }
 
-		if (m_ParaEngineApp)
+		if (m_ParaEngineApp && !m_isPaused)
 		{
 			m_ParaEngineApp->DoWork();
 		}
@@ -190,10 +205,18 @@ void AppDelegate::OnStop()
 void AppDelegate::OnPause()
 {
     LOGI("app:OnPause");
+	if (m_ParaEngineApp)
+	{
+		m_ParaEngineApp->OnPause();
+	}
 }
 void AppDelegate::OnResume()
 {
     LOGI("app:OnResume");
+	if (m_ParaEngineApp)
+	{
+		m_ParaEngineApp->OnResume();
+	}
 }
 void AppDelegate::OnDestroy()
 {
@@ -203,41 +226,26 @@ void AppDelegate::OnDestroy()
 void AppDelegate::OnInitWindow()
 {
     LOGI("app:OnInitWindow");
-	auto assetManager = m_State->activity->assetManager;
-	auto asset = AAssetManager_open(assetManager, "config.txt", AASSET_MODE_STREAMING);
-	auto assetLength = AAsset_getLength(asset);
-	char* buf = new char[assetLength];
-	AAsset_read(asset, buf, assetLength);
-	AAsset_close(asset);
-
-
-	JNIEnv* jni;
-	m_State->activity->vm->AttachCurrentThread(&jni, NULL);
-
-	jclass activityClass = jni->GetObjectClass(m_State->activity->clazz);
-	jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
-	jobject fileObject = jni->CallObjectMethod(m_State->activity->clazz, getFilesDir);
-	jclass fileClass = jni->GetObjectClass(fileObject);
-	jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
-	jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
-	auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
-
-	jni->DeleteLocalRef(pathObject);
-	jni->DeleteLocalRef(fileClass);
-	jni->DeleteLocalRef(fileObject);
-	jni->DeleteLocalRef(activityClass);
-
-	m_State->activity->vm->DetachCurrentThread();
-
-
-	m_RenderWindow = new RenderWindowAndroid(m_State->window);
-	m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
-	m_ParaEngineApp->InitApp(m_RenderWindow, "");
-	
+	if (m_ParaEngineApp == nullptr)
+	{
+		auto renderWindow = new RenderWindowAndroid(m_State->window);
+		m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
+		m_ParaEngineApp->InitApp(renderWindow, "");
+	}
+	else
+	{
+		LOGI("app:window is recreaded.");
+		auto renderWindow = new RenderWindowAndroid(m_State->window);
+		m_ParaEngineApp->OnRendererRecreated(renderWindow);
+	}
 }
 void AppDelegate::OnTermWindow()
 {
-    LOGI("app:OnTermWindow");
+	LOGI("app:OnTermWindow");
+	if (m_ParaEngineApp)
+	{
+		m_ParaEngineApp->OnRendererDestroyed();
+	}
 }
 void AppDelegate::OnWindowResized()
 {

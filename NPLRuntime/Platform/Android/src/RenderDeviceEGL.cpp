@@ -13,6 +13,12 @@ ParaEngine::RenderDeviceEGL::~RenderDeviceEGL()
 
 }
 
+void ParaEngine::RenderDeviceEGL::Reset(EGLDisplay display, EGLSurface surface)
+{
+	m_Display = display;
+	m_Surface = surface;
+}
+
 bool ParaEngine::RenderDeviceEGL::Present()
 {
 	eglSwapBuffers(m_Display, m_Surface);

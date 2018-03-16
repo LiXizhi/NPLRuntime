@@ -12,6 +12,7 @@
 #ifdef USE_OPENGL_RENDERER
 #include "RenderDeviceOpenGL.h"
 #include "OpenGLWrapper/GLFontAtlas.h"
+#include "OpenGLWrapper/GLFontAtlasCache.h"
 #include "GUIBase.h"
 #include "TextureEntity.h"
 #include "StringHelper.h"
@@ -89,6 +90,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 
 ParaEngine::CFontRendererOpenGL::~CFontRendererOpenGL()
 {
+	
 }
 
 
@@ -257,6 +259,11 @@ void ParaEngine::CFontRendererOpenGL::RenderLetterSprites(CSpriteRenderer* pSpri
 float ParaEngine::CFontRendererOpenGL::GetFontScaling() const
 {
 	return m_fFontScaling;
+}
+
+void ParaEngine::CFontRendererOpenGL::RendererRecreated()
+{
+	FontAtlasCache::purgeCachedData();
 }
 
 void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD color)

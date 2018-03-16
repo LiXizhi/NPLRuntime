@@ -9,6 +9,7 @@ namespace ParaEngine
 		RenderDeviceEGL(EGLDisplay display, EGLSurface surface);
 		~RenderDeviceEGL();
 
+		void Reset(EGLDisplay display, EGLSurface surface);
 		virtual bool Present() override;
 
 	private:

@@ -26,6 +26,7 @@ public:
 	static void useProgram(GLuint program);
 	static void bindVAO(GLuint vaoId);
 	static void enableVertexAttribs(uint32_t flags);
+	static void ClearCache();
 };
 
 typedef struct _ttfConfig

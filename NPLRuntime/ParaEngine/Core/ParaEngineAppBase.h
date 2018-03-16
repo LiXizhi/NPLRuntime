@@ -29,7 +29,10 @@ namespace ParaEngine
 		virtual bool IsSlateMode() override;
 		virtual void DoWork();
 		virtual bool FrameMove(double fTime) override;
-
+		virtual void OnPause(); // device lost
+		virtual void OnResume();
+		virtual void OnRendererRecreated(IRenderWindow* renderWindow);
+		virtual void OnRendererDestroyed();
 
 	protected:
 		void SetTouchInputting(bool bTouchInputting);
@@ -51,7 +54,15 @@ namespace ParaEngine
 		void InvalidateDeviceObjects();
 		void Render();
 		void HandleUserInput();
-		
+		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
+		* [main thread only]
+		*/
+		virtual void ActivateApp(bool bActivate) override;
+
+		/** whether the application is active or not. */
+		virtual bool IsAppActive() override;
+
+
 
 	protected:
 		static IParaEngineApp* g_pCurrentApp;
@@ -82,6 +93,7 @@ namespace ParaEngine
 		IRenderDevice* m_pRenderDevice;
 		IRenderWindow* m_pRenderWindow;
 		CFrameRateController m_doWorkFRC;
+		bool m_bActive;
 
 #pragma region OLD_CODE
 
@@ -110,13 +122,7 @@ namespace ParaEngine
 		*/
 		virtual float GetRefreshTimer()  { return 0; };
 
-		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
-		* [main thread only]
-		*/
-		virtual void ActivateApp(bool bActivate) { };
 
-		/** whether the application is active or not. */
-		virtual bool IsAppActive();
 
 		/** Get the current ParaEngine app usage.
 		* [main thread only]

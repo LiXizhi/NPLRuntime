@@ -5,6 +5,10 @@
 #include "EventClasses.h"
 namespace ParaEngine
 {
+
+
+
+
 	class CParaEngineAppAndroid;
 	class IRenderDevice;
 	class IRenderContext;
@@ -12,9 +16,9 @@ namespace ParaEngine
     class AppDelegate 
     {
     public:
-        AppDelegate(struct android_app* app);
+        AppDelegate();
         ~AppDelegate();
-        void Run();
+        void Run(android_app* app);
     private:
         struct android_app* m_State;
         static void app_handle_command(struct android_app* app, int32_t cmd);
@@ -36,8 +40,14 @@ namespace ParaEngine
 
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
-		IRenderDevice* m_RenderDevice;
-		IRenderContext* m_RenderContext;
-		IRenderWindow* m_RenderWindow;
+		bool m_isQuited;
+		bool m_isPaused;
     };
+
+
+	struct saved_state
+	{
+		ParaEngine::AppDelegate* app;
+	};
+
 }

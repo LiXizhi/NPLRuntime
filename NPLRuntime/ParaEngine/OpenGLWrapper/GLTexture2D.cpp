@@ -508,10 +508,6 @@ void GLTexture2D::setAliasTexParameters()
 	}
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-#if CC_ENABLE_CACHE_TEXTURE_DATA
-	TexParams texParams = { (GLuint)(_hasMipmaps ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST),GL_NEAREST,GL_NONE,GL_NONE };
-	VolatileTextureMgr::setTexParameters(this, texParams);
-#endif
 }
 
 GLTexture2D::PixelFormat GLTexture2D::convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
