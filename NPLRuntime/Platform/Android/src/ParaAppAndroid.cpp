@@ -1,7 +1,10 @@
 #include "ParaAppAndroid.h"
 using namespace  ParaEngine;
 
-
+IParaEngineApp* CreateParaEngineApp()
+{
+	return new CParaEngineAppAndroid(nullptr);
+}
 
 ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid(struct android_app* state):m_appState(state)
 {

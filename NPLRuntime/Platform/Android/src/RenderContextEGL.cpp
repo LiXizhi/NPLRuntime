@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "RenderContextEGL.h"
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceOpenGL.h"
