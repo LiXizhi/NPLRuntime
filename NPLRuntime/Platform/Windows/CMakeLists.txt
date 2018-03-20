@@ -18,10 +18,30 @@ endif()
 
 ucm_add_dirs(src TO src_platform)
 
+# Note: if true, we will produce dll instead of exe, only under win32
+if(WIN32)
+	if(PARAENGINE_CLIENT_DLL)
+		set(PARAENGINE_COMPILE_LIB    true)
+		
+	else()
+		set(PARAENGINE_COMPILE_LIB    false)
+	endif()
+endif()
 
-add_executable(WindowsApplication ${src_platform} ${src_render_context})
+if (PARAENGINE_COMPILE_LIB)
+	set(CMAKE_DEBUG_POSTFIX "_d")
+	if(NPLRUNTIME_STATIC_LIB)
+		set(NPLRUNTIME_LIB_MODE "STATIC")
+	else()
+		set(NPLRUNTIME_LIB_MODE "SHARED")
+	endif()
 
-target_compile_definitions(WindowsApplication PUBLIC 
+	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context})
+else()
+	add_executable(WindowsApplication ${src_platform} ${src_render_context})
+endif()
+
+target_compile_definitions(WindowsApplication PRIVATE 
     PLATFORM_WINDOWS
     USE_WINDOWS_SSPI
     WIN32_LEAN_AND_MEAN
@@ -29,7 +49,7 @@ target_compile_definitions(WindowsApplication PUBLIC
     _WINSOCK_DEPRECATED_NO_WARNINGS
 )
 
-target_link_libraries(WindowsApplication PUBLIC
+target_link_libraries(WindowsApplication PRIVATE
     ${RenderSystem}
     ParaEngine
     gdiplus.lib
@@ -54,10 +74,20 @@ target_include_directories(WindowsApplication PRIVATE ${CMAKE_CURRENT_SOURCE_DIR
 set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
 
 if(MSVC)
-    ucm_set_runtime(DYNAMIC)
+    ucm_set_runtime(STATIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
     SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
     SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
 endif()
+
+set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
+
+# Copy files Link the executable to the libraries. 
+ADD_CUSTOM_COMMAND(
+   TARGET WindowsApplication
+   POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:WindowsApplication> ${OUTPUT_BIN_DIR}
+)

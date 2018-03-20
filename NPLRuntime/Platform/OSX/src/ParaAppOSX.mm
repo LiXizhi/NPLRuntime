@@ -1,7 +1,11 @@
 #include "ParaAppOSX.h"
+#include "RenderWindowOSX.h"
 using namespace  ParaEngine;
 
-
+IParaEngineApp* CreateParaEngineApp()
+{
+	return new CParaEngineAppOSX();
+}
 
 ParaEngine::CParaEngineAppOSX::CParaEngineAppOSX()
 {
@@ -79,4 +83,17 @@ bool ParaEngine::CParaEngineAppOSX::GetToggleSoundWhenNotFocused()
 {
 	//throw std::logic_error("The method or operation is not implemented.");
 	return true;
+}
+
+int ParaEngine::CParaEngineAppOSX::Run(HINSTANCE hInstance)
+{
+	auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
+
+	while (!pWindow->ShouldClose())
+	{
+		pWindow->PollEvents();
+		this->DoWork();
+	}
+	
+	return 0;
 }

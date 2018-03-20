@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Framework/Interface/Render/IRenderWindow.h"
+#include "ParaEngineRenderBase.h"
 #include "Framework/Common/Math/Vector2.h"
 #include "Framework/InputSystem/VirtualKey.h"
 #include <string>
@@ -20,9 +20,7 @@ namespace ParaEngine
 	EVirtualKey Win32VirtualKeyToParaVK(DWORD vk);
 	DWORD ParaVKToWin32VirtualKey(EVirtualKey key);
 
-
-
-	class RenderWindowWin32 : public IRenderWindow
+	class RenderWindowWin32 : public CParaEngineRenderBase
 	{
 	public:
 		virtual ~RenderWindowWin32();

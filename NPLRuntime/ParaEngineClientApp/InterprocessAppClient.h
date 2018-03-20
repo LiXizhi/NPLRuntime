@@ -88,6 +88,7 @@ namespace ParaEngine
 		ParaEngine::CPluginLoader m_ParaEngine_plugin;
 		ParaEngine::IParaEngineCore* m_pParaEngine;
 		ParaEngine::IParaEngineApp * m_pParaEngineApp;
+		ParaEngine::IRenderWindow * m_pParaEngineRenderWindow;
 		
 
 		CInterprocessQueue* m_ipAppQueueIn;

@@ -26,23 +26,30 @@
 #include "WindowsApplication.h"
 
 using namespace ParaEngine;
-//extern HINSTANCE g_hAppInstance;
+extern HINSTANCE g_hAppInstance;
+
+extern "C" __declspec(dllexport) const char* LibDescription();
 
 INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 {
-	//g_hAppInstance = hInst;
+	g_hAppInstance = hInst;
 	int exit_code = 0;
+
+	RedirectIOToConsole();
 
 	RenderWindowDelegate renderWindow(hInst,960,640);
 
 	CWindowsApplication app;
 	app.InitApp(&renderWindow, lpCmdLine);
 
+	/*
 	while (!renderWindow.ShouldClose())
 	{
 		renderWindow.PollEvents();
 		app.DoWork();
 	}
+	*/
+	app.Run(hInst);
 
 	return 0;
 }

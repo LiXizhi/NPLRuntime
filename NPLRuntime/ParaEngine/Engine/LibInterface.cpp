@@ -31,7 +31,7 @@ extern "C" {
 #ifdef __cplusplus
 }   /* extern "C" */
 #endif
-
+ 
 extern HINSTANCE g_hAppInstance;
 
 using namespace ParaEngine;

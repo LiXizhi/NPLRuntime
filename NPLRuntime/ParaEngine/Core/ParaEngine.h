@@ -18,6 +18,14 @@
 #define GRAB_ASSET(x)    if((x)!=0){(x)->addref();}
 #endif
 
+#if defined(__GNUC__) && ((__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1)))
+	#define PE_DEPRECATED_ATTRIBUTE __attribute__((deprecated))
+#elif _MSC_VER >= 1400 //vs 2005 or higher
+	#define PE_DEPRECATED_ATTRIBUTE __declspec(deprecated) 
+#else
+	#define PE_DEPRECATED_ATTRIBUTE
+#endif 
+
 #include <boost/shared_ptr.hpp>
 #include <boost/signals2.hpp>
 #include <boost/bind.hpp>

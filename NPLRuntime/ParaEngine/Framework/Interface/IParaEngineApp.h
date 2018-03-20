@@ -8,8 +8,11 @@
 
 #include <string>
 #include <stdint.h>
+#include "ParaEngine.h"
+#include "BaseInterface.h"
 
-#include "PEtypes.h"
+struct IDirect3DDevice9;
+struct IDirect3DSwapChain9;
 
 namespace NPL{
 	class INPLRuntime;
@@ -85,7 +88,7 @@ namespace ParaEngine
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
 	*/
-	class IParaEngineApp
+	class IParaEngineApp : public BaseInterface
 	{
 	public:
 		virtual IRenderWindow* GetRenderWindow() = 0;
@@ -101,6 +104,110 @@ namespace ParaEngine
 		/** This is the last function that should be called. It is usually called just before process exit. 
 		*/
 		virtual void StopApp() = 0;
+
+		/** set the hWnd on to which we will render and process window messages.
+		* this function should be called prior to Create().
+		* @note: the rendering device size will use the client area of the input window
+		* @param hWnd: the Window on to which we will render.
+		* @param bIsExternalWindow: this is always true, unless for the default window used by ParaEngine when no window is created by the user.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow = true) = 0;
+		PE_DEPRECATED_ATTRIBUTE virtual HWND GetMainWindow() = 0;
+
+		/** only call this function if one does not want to manage game loop externally. */
+		virtual int Run(HINSTANCE hInstance) = 0;
+
+		/** this function is called per frame, in most cases, it will render the 3d scene and frame move.
+		* call this as often as one like internally it will use a timer to best fit the interval.
+		*/
+		virtual HRESULT DoWork() = 0;
+
+		/** create from an existing d3d device. This is an advanced function to replaced the default render device.
+		* and caller is responsible for managing device life time. The external caller must call InitDeviceObjects(), RestoreDeviceObjects(), InvalidateDeviceObjects(), DeleteDeviceObjects() at proper time
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain) = 0;
+
+		/**
+		* This callback function will be called immediately after the Direct3D device has been
+		* created, which will happen during application initialization and windowed/full screen
+		* toggles. This is the best location to create D3DPOOL_MANAGED resources since these
+		* resources need to be reloaded whenever the device is destroyed. Resources created
+		* here should be released in the OnDestroyDevice callback.
+		*/
+		virtual HRESULT InitDeviceObjects() = 0;
+
+		/**
+		* This callback function will be called immediately after the Direct3D device has been
+		* reset, which will happen after a lost device scenario. This is the best location to
+		* create D3DPOOL_DEFAULT resources since these resources need to be reloaded whenever
+		* the device is lost. Resources created here should be released in the OnLostDevice
+		* callback.
+		*/
+		virtual HRESULT RestoreDeviceObjects() = 0;
+
+
+		/**
+		* This callback function will be called immediately after the Direct3D device has
+		* entered a lost state and before IDirect3DDevice9::Reset is called. Resources created
+		* in the OnResetDevice callback should be released here, which generally includes all
+		* D3DPOOL_DEFAULT resources. See the "Lost Devices" section of the documentation for
+		* information about lost devices.
+		*/
+		virtual HRESULT InvalidateDeviceObjects() = 0;
+
+		/**
+		* This callback function will be called immediately after the Direct3D device has
+		* been destroyed, which generally happens as a result of application termination or
+		* windowed/full screen toggles. Resources created in the OnCreateDevice callback
+		* should be released here, which generally includes all D3DPOOL_MANAGED resources.
+		*/
+		virtual HRESULT DeleteDeviceObjects() = 0;
+
+
+		/** create d3d render device based on the current main window.
+		* Use this function to create a new render device automatically.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Create(HINSTANCE hInstance = 0) = 0;
+
+		/** init the application. no need to be called unless in a service where no rendering devices are created. */
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Init(HWND* pHWND = 0) = 0;
+
+		/** Frame move and render a frame during idle time (no messages are waiting). Call this function during CPU idle time.
+		* internally it uses a timer to control frame rates, so it is safe to call this as often as one like.
+		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
+		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Render3DEnvironment(bool bForceRender = false) = 0;
+
+		/** the window message processor. One needs send all messages belonging to the main window to this function, after calling Create().
+		* @note: the main rendering thread can be a different thread than the window proc thread.
+		* @param bCallDefProcedure: whether we will call the ::DefWindowProdure().
+		* @return: 0 if message was not processed. 1 if message is processed. -1 if message is processed by can be passed on to other processor.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true) = 0;
+
+		/*** process win thread messages without a hWnd. Such messages are usually invoked by PostWinThreadMessage() from other threads. */
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
+		/** Send a RAW win32 message the application to be processed in the next main thread update interval.
+		* This function can be called from any thread. It is also used by the windows procedure thread to dispatch messages to the main processing thread.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
+		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
+		PE_DEPRECATED_ATTRIBUTE virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
+
+		/** get a message from the application message queue and remove it from the queue. This function is mostly
+		used internally by the main thread.
+		* @param pMsg: the receiving message
+		* @return true if one message is fetched. or false if there is no more messages in the queue.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual bool GetMessageFromApp(CWinRawMsg* pMsg) = 0;
+
+		/**
+		* handle a message in the main application thread.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) = 0;
 
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
@@ -134,6 +241,9 @@ namespace ParaEngine
 		virtual void SetAllowWindowClosing(bool bAllowClosing) = 0;
 		virtual bool IsWindowClosingAllowed() = 0;
 
+		/** turn on/off menu */
+		PE_DEPRECATED_ATTRIBUTE virtual void ShowMenu(bool bShow) = 0;
+
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetResolution(float* pX, float* pY) = 0;
@@ -142,6 +252,13 @@ namespace ParaEngine
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
 		virtual int GetMultiSampleType() = 0;
 		virtual void SetMultiSampleType(int nType) = 0;
+
+		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
+		PE_DEPRECATED_ATTRIBUTE virtual int GetMultiSampleQuality() = 0;
+		PE_DEPRECATED_ATTRIBUTE virtual void SetMultiSampleQuality(int nType) = 0;
+
+		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
+		PE_DEPRECATED_ATTRIBUTE virtual bool UpdateScreenMode() = 0;
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */
@@ -152,6 +269,13 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) = 0;
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() = 0;
+
+		/** get the current mouse cursor position.
+		* @param pX: out
+		* @param pY: out
+		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true) = 0;
 
 		/** translate a postion from game coordination system to client window position. 
 		* @param inout_x: in and out
@@ -260,11 +384,19 @@ namespace ParaEngine
 
 		virtual bool IsSlateMode() = 0;
 
+		/** obsoleted function: */
+		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointX() = 0;
+		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointY() = 0;
+
 		/** append text to log file. */
 		virtual void WriteToLog(const char* sFormat, ...) = 0;
 
 		/** write app log to file with time and code location. */
 		virtual void AppLog(const char* sMessage) { WriteToLog(sMessage); };
+
+
+		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
+		PE_DEPRECATED_ATTRIBUTE virtual void SetTouchInputting(bool bTouchInputting) {};
 
 
 		/** show a system message box to the user. mostly about fatal error.  */
@@ -324,6 +456,9 @@ namespace ParaEngine
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
 		virtual const char* GetModuleDir() { return NULL; };
 
+		/* whether the window size is fixed. */
+		PE_DEPRECATED_ATTRIBUTE virtual void FixWindowSize(bool fixed) = 0;
+
 		virtual bool AppHasFocus() = 0;
 
 		virtual bool FrameMove(double fTime) = 0;
@@ -344,7 +479,6 @@ namespace ParaEngine
 		virtual bool WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value) = 0;
 
 
-
 		virtual DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name) = 0;
 
 
@@ -354,11 +488,7 @@ namespace ParaEngine
 
 		virtual bool GetToggleSoundWhenNotFocused() = 0;
 
-
-
 		virtual CViewportManager* GetViewportManager() = 0;
-
-
 	};
 
 }

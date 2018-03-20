@@ -45,5 +45,7 @@ namespace ParaEngine
 
 		virtual bool GetToggleSoundWhenNotFocused() override;
 
+		virtual int Run(HINSTANCE hInstance) override;
+
 	};
 }

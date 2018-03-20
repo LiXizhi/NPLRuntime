@@ -19,6 +19,7 @@ endif()
 
 include_directories("${NPLRUNTIME_ROOT}/Framework/Interface/")
 include_directories("${NPLRUNTIME_ROOT}/Core/")
+include_directories("${NPLRUNTIME_ROOT}/")
 
 # source files for sqlite
 SET(sqlite_SRCS
@@ -71,6 +72,7 @@ endif()
 
 add_library(sqlite ${SQLITE_LIB_MODE} ${sqlite_SRCS})
 target_include_directories(sqlite PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(sqlite ${Boost_LIBRARIES}) 
 
 
 # set(TEST_DIR "D:/code/npl/TableDB/")

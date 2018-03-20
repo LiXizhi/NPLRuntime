@@ -101,6 +101,13 @@ else()
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
 endif()
 
+if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
+	
+else()
+	option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
+
+endif()
+
 
 add_subdirectory(externals)
 add_subdirectory(Plugins)
@@ -109,4 +116,11 @@ add_subdirectory(RenderSystem)
 add_subdirectory(Platform)
 #add_subdirectory(PhysicsBT)
 #add_subdirectory(ParaEngineClientApp)
+
+if(PARAENGINE_CLIENT_DLL)
+	if(NOT NPLRUNTIME_STATIC_LIB) 
+			# this app is for testing the client dll
+		add_subdirectory (ParaEngineClientApp)
+	endif()
+endif()
 

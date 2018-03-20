@@ -39,6 +39,7 @@ namespace ParaEngine
 		
 		/// ParaEngine loading progress, those messages are sent back from app client process to host app process. 
 		PEAPP_LoadingProgress_LoadingLibs = 100,
+		PEAPP_LoadingProgress_CreatingRenderWindow,
 		PEAPP_LoadingProgress_CreatingApp,
 		PEAPP_LoadingProgress_StartingApp,
 		PEAPP_LoadingProgress_CreatingDevice,

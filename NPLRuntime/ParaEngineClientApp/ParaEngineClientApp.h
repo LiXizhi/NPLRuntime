@@ -10,3 +10,4 @@
 #include "INPL.h"
 #include "IParaEngineCore.h"
 #include "IParaEngineApp.h"
+#include "IRenderWindow.h"

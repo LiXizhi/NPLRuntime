@@ -5,7 +5,7 @@ target_link_libraries(glad_ext_wgl PUBLIC glad_core)
 
 
 if(MSVC)
-    ucm_set_runtime(DYNAMIC)
+    ucm_set_runtime(STATIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
     SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")

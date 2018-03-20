@@ -271,7 +271,7 @@ void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
 	RestoreDeviceObjects();
 }
 
-void ParaEngine::CParaEngineAppBase::InitDeviceObjects()
+HRESULT ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
 #if USE_DIRECTX_RENDERER
 	// stage b.1
@@ -282,9 +282,11 @@ void ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 	m_pParaWorldAsset->InitDeviceObjects();
 	m_pRootScene->InitDeviceObjects();
 	m_pGUIRoot->InitDeviceObjects();
+
+	return S_OK;
 }
 
-void ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
+HRESULT ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
 {
 	m_pRootScene->DeleteDeviceObjects();
 	m_pGUIRoot->DeleteDeviceObjects();
@@ -293,9 +295,10 @@ void ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
 	CGlobals::GetDirectXEngine().DeleteDeviceObjects();
 #endif
 
+	return S_OK;
 }
 
-void ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
+HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 {
 	int width = m_pRenderWindow->GetWidth();
 	int height = m_pRenderWindow->GetHeight();
@@ -311,9 +314,11 @@ void ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 #if USE_DIRECTX_RENDERER
 	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
 #endif
+
+	return S_OK;
 }
 
-void ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
+HRESULT ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 {
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
@@ -322,6 +327,7 @@ void ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
 #endif
 
+	return S_OK;
 }
 
 void ParaEngine::CParaEngineAppBase::Render()
@@ -651,10 +657,12 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 	return false;
 }
 
-void ParaEngine::CParaEngineAppBase::DoWork()
+HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 {
-	if (!IsAppActive())return;
-	if (m_pRenderWindow == nullptr) return;
+	if (!IsAppActive()) 
+		return S_FALSE;
+	if (m_pRenderWindow == nullptr)
+		return S_FALSE;
 	double fCurTime = m_Timer->GetAppTime();
 	if (m_doWorkFRC.FrameMove(fCurTime) > 0)
 	{
@@ -662,6 +670,8 @@ void ParaEngine::CParaEngineAppBase::DoWork()
 		Render();
 		m_pRenderDevice->Present();
 	}
+
+	return S_OK;
 }
 
 void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)

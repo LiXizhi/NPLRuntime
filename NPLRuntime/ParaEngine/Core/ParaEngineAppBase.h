@@ -27,13 +27,19 @@ namespace ParaEngine
 		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
 		virtual bool IsTouchInputting() override;
 		virtual bool IsSlateMode() override;
-		virtual void DoWork();
+
+		virtual HRESULT DoWork() override;
+
 		virtual bool FrameMove(double fTime) override;
 		virtual void OnPause(); // device lost
 		virtual void OnResume();
 		virtual void OnRendererRecreated(IRenderWindow* renderWindow);
 		virtual void OnRendererDestroyed();
 
+		virtual HRESULT InitDeviceObjects() override;
+		virtual HRESULT RestoreDeviceObjects() override;
+		virtual HRESULT InvalidateDeviceObjects() override;
+		virtual HRESULT DeleteDeviceObjects() override;
 	protected:
 		void SetTouchInputting(bool bTouchInputting);
 		void AutoSetLocale();
@@ -48,10 +54,10 @@ namespace ParaEngine
 		void InitRenderEnvironment();
 		void ResetRenderEnvironment();
 
-		void InitDeviceObjects();
-		void DeleteDeviceObjects();
-		void RestoreDeviceObjects();
-		void InvalidateDeviceObjects();
+		
+		
+		
+		
 		void Render();
 		void HandleUserInput();
 		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
@@ -62,7 +68,7 @@ namespace ParaEngine
 		/** whether the application is active or not. */
 		virtual bool IsAppActive() override;
 
-
+		virtual void DeleteInterface() { delete this; }
 
 	protected:
 		static IParaEngineApp* g_pCurrentApp;
@@ -187,44 +193,44 @@ namespace ParaEngine
 		/** create d3d render device based on the current main window.
 		* Use this function to create a new render device automatically.
 		*/
-		virtual HRESULT Create(HINSTANCE hInstance = 0)  { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Create(HINSTANCE hInstance = 0)  override { return S_OK; };
 
 		/** Frame move and render a frame during idle time (no messages are waiting). Call this function during CPU idle time.
 		* internally it uses a timer to control frame rates, so it is safe to call this as often as one like.
 		* @param bForceRender: if true, it will force frame move and render the scene. if not, it will
 		* internally use a frame rate controller that maintain the frame rate at 30 fps, no matter who often this function is called.
 		*/
-		virtual HRESULT Render3DEnvironment(bool bForceRender = false) { return S_OK; }
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Render3DEnvironment(bool bForceRender = false) override  { return S_OK; }
 
 		/** the window message processor. One needs send all messages belonging to the main window to this function, after calling Create().
 		* @note: the main rendering thread can be a different thread than the window proc thread.
 		* @param bCallDefProcedure: whether we will call the ::DefWindowProdure().
 		* @return: 0 if message was not processed. 1 if message is processed. -1 if message is processed by can be passed on to other processor.
 		*/
-		virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true)  { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcWinThread(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool bCallDefProcedure = true) override { return 0; };
 
 		/*** process win thread messages without a hWnd. Such messages are usually invoked by PostWinThreadMessage() from other threads. */
-		virtual LRESULT MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam)  { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcWinThreadCustom(UINT uMsg, WPARAM wParam, LPARAM lParam)  override  { return 0; };
 
 		/** Send a RAW win32 message the application to be processed in the next main thread update interval.
 		* This function can be called from any thread. It is also used by the windows procedure thread to dispatch messages to the main processing thread.
 		*/
-		virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)  { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT SendMessageToApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)  override  { return 0; };
 
 		/** post a raw win32 message from any thread to the thread on which hWnd is created. */
-		virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)  { return false; };
+		PE_DEPRECATED_ATTRIBUTE virtual bool PostWinThreadMessage(UINT uMsg, WPARAM wParam, LPARAM lParam)  override  { return false; };
 
 		/** get a message from the application message queue and remove it from the queue. This function is mostly
 		used internally by the main thread.
 		* @param pMsg: the receiving message
 		* @return true if one message is fetched. or false if there is no more messages in the queue.
 		*/
-		virtual bool GetMessageFromApp(CWinRawMsg* pMsg)  { return false; };
+		PE_DEPRECATED_ATTRIBUTE virtual bool GetMessageFromApp(CWinRawMsg* pMsg)  override  { return false; };
 
 		/**
 		* handle a message in the main application thread.
 		*/
-		virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)  { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override { return 0; };
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
 		virtual void    EnablePassiveRendering(bool bEnable) { };
@@ -255,11 +261,11 @@ namespace ParaEngine
 		virtual void SetMultiSampleType(int nType){};
 
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
-		virtual int GetMultiSampleQuality(){ return 0; };
-		virtual void SetMultiSampleQuality(int nType){};
+		PE_DEPRECATED_ATTRIBUTE virtual int GetMultiSampleQuality() override { return 0; };
+		PE_DEPRECATED_ATTRIBUTE virtual void SetMultiSampleQuality(int nType) override  {};
 
 		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
-		virtual bool UpdateScreenMode(){ return false; };
+		PE_DEPRECATED_ATTRIBUTE virtual bool UpdateScreenMode() override { return false; };
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */
@@ -270,8 +276,8 @@ namespace ParaEngine
 		virtual void SetWindowText(const char* pChar) {};
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() { return ""; };
-		/* */
-		virtual void FixWindowSize(bool fixed) {};
+		/* whether the window size is fixed. */
+		PE_DEPRECATED_ATTRIBUTE virtual void FixWindowSize(bool fixed) override {};
 
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
@@ -339,7 +345,41 @@ namespace ParaEngine
 		virtual bool ForceRender();
 
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
-		virtual const char* GetModuleDir();;
+		virtual const char* GetModuleDir();
+
+		/** set the hWnd on to which we will render and process window messages.
+		* this function should be called prior to Create().
+		* @note: the rendering device size will use the client area of the input window
+		* @param hWnd: the Window on to which we will render.
+		* @param bIsExternalWindow: this is always true, unless for the default window used by ParaEngine when no window is created by the user.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual void SetMainWindow(HWND hWnd, bool bIsExternalWindow = true) override {};
+		PE_DEPRECATED_ATTRIBUTE virtual HWND GetMainWindow() override { return nullptr;  };
+
+		/** create from an existing d3d device. This is an advanced function to replaced the default render device.
+		* and caller is responsible for managing device life time. The external caller must call InitDeviceObjects(), RestoreDeviceObjects(), InvalidateDeviceObjects(), DeleteDeviceObjects() at proper time
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT CreateFromD3D9Device(IDirect3DDevice9* pD3dDevice, IDirect3DSwapChain9* apSwapChain) override { return S_OK;  };
+
+
+		/** init the application. no need to be called unless in a service where no rendering devices are created. */
+		PE_DEPRECATED_ATTRIBUTE virtual HRESULT Init(HWND* pHWND = 0)  override { return S_OK; };
+
+		/** turn on/off menu */
+		PE_DEPRECATED_ATTRIBUTE virtual void ShowMenu(bool bShow) override {};
+
+		/** get the current mouse cursor position.
+		* @param pX: out
+		* @param pY: out
+		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size.
+		*/
+		PE_DEPRECATED_ATTRIBUTE virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true) override {};
+
+		/** obsoleted function: */
+		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointX() override { return 0;  };
+		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointY() override { return 0; };
+
+
 	public:
 		/** managing multiple 3d views */
 		CViewportManager * GetViewportManager();

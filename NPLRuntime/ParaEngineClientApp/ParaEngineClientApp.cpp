@@ -23,7 +23,7 @@ class CMyApp : public ParaEngine::CAutoUpdaterApp
 {
 public:
 	CMyApp(HINSTANCE hInst=NULL)
-		: CAutoUpdaterApp(), m_pParaEngine(NULL), m_pParaEngineApp(NULL), m_hInst(hInst), m_hWndUpdater(NULL){
+		: CAutoUpdaterApp(), m_pParaEngine(NULL), m_pParaEngineApp(NULL), m_hInst(hInst), m_hWndUpdater(NULL), m_pParaEngineRenderWindow(nullptr){
 		g_pMyApp = this;
 	}
 	~CMyApp(){
@@ -31,6 +31,13 @@ public:
 			m_pParaEngineApp->DeleteInterface();
 			m_pParaEngineApp = NULL;
 		}
+
+		if (m_pParaEngineRenderWindow)
+		{
+			m_pParaEngineRenderWindow->DeleteInterface();
+			m_pParaEngineRenderWindow = nullptr;
+		}
+
 		g_pMyApp = NULL;
 	}
 
@@ -57,6 +64,7 @@ private:
 	ParaEngine::CPluginLoader m_ParaEngine_plugin;
 	ParaEngine::IParaEngineCore * m_pParaEngine;
 	ParaEngine::IParaEngineApp * m_pParaEngineApp;
+	ParaEngine::IRenderWindow* m_pParaEngineRenderWindow;
 	HINSTANCE m_hInst;
 	HWND m_hWndUpdater;
 	std::wstring m_autoupdater_text;
@@ -70,13 +78,11 @@ bool CMyApp::CheckLoad()
 	{
 		return true;
 	}
-
-#ifdef _DEBUG
-	// post_fix with _d
-	m_ParaEngine_plugin.Init("ParaEngineClient_d.dll"); 
-#else
-	m_ParaEngine_plugin.Init("ParaEngineClient.dll");
-#endif
+#define _GET_NAME(NAME) #NAME
+#define GET_NAME(NAME) _GET_NAME(NAME)
+	m_ParaEngine_plugin.Init(GET_NAME(PARA_ENGINE_NAME));
+#undef GET_NAME
+#undef _GET_NAME
 
 	int nClassCount = m_ParaEngine_plugin.GetNumberOfClasses();
 	for (int i=0; i<nClassCount; ++i)
@@ -98,19 +104,20 @@ int CMyApp::Run( HINSTANCE hInst,const char* lpCmdLine )
 	if(!CheckLoad())
 		return E_FAIL;
 
+	m_pParaEngineRenderWindow = m_pParaEngine->CreateRenderWindow(960, 640);
+
+	if (!m_pParaEngineRenderWindow)
+		return E_FAIL;
+
 	m_pParaEngineApp = m_pParaEngine->CreateApp();
 	if(m_pParaEngineApp == 0)
 		return E_FAIL;
 
-	if(m_pParaEngineApp->StartApp(lpCmdLine) != S_OK)
-		return E_FAIL;
+	m_pParaEngineApp->InitApp(m_pParaEngineRenderWindow, lpCmdLine);
 
-	// Set Frame Rate
-	//m_pParaEngineApp->SetRefreshTimer(1/45.f, 0);
-	m_pParaEngineApp->SetRefreshTimer(1/30.f, 0);
+	m_pParaEngineApp->Run(hInst);
 
-	// Run to end
-	return m_pParaEngineApp->Run(hInst);
+	return 0;
 }
 
 #pragma region autoupdater app

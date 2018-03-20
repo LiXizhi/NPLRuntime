@@ -1,12 +1,13 @@
 #pragma once
 #include <string>
 #include <cstdint>
-#include "Framework/Interface/Render/IRenderWindow.h"
+//#include "Framework/Interface/Render/IRenderWindow.h"
+#include "ParaEngineRenderBase.h"
 
 @class NSWindow;
 namespace ParaEngine
 {
-    class RenderWindowOSX : public IRenderWindow
+    class RenderWindowOSX : public CParaEngineRenderBase
     {
     public:
         RenderWindowOSX(const int width,const int height);

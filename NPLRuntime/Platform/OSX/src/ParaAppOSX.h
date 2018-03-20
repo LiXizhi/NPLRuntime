@@ -68,6 +68,7 @@ namespace ParaEngine
 		virtual bool GetAutoLowerFrameRateWhenNotFocused() override;
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
+		virtual int Run(HINSTANCE hInstance) override;
 	protected:
 
 	};

@@ -11,13 +11,20 @@
 #include "ParaEngineCore.h"
 #include "FrameRateController.h"
 #include "Globals.h"
+#include "ParaEngineAppBase.h"
+#include "ParaEngineRenderBase.h"
+
 #include <boost/thread/tss.hpp>
 
 
 using namespace ParaEngine;
 
+IParaEngineApp* CreateParaEngineApp();
+IRenderWindow* CreateParaRenderWindow(const int width, const int height);
+
 
 ParaEngine::WeakPtr ParaEngine::CParaEngineCore::m_pAppSingleton;
+ParaEngine::WeakPtr ParaEngine::CParaEngineCore::m_pRenderWindowSingleton;
 
 /** @def class id*/
 #define PARAENGINE_CLASS_ID Class_ID(0x2b903b29, 0x47e409af)
@@ -127,9 +134,36 @@ IParaEngineApp* CParaEngineCore::GetAppInterface()
 
 IParaEngineApp* CParaEngineCore::CreateApp()
 {
+	//IParaEngineApp* pApp = GetAppInterface();
+	//assert(pApp);
+	//return pApp;
+
+
 	IParaEngineApp* pApp = GetAppInterface();
-	assert(pApp);
+	if (pApp == 0)
+	{
+		// we will only create app if it has not been created before. 
+		if (!m_pAppSingleton)
+		{
+			CParaEngineAppBase* pApp = (CParaEngineAppBase*)CreateParaEngineApp();
+			m_pAppSingleton = pApp;
+			return (IParaEngineApp*)pApp;
+		}
+
+	}
 	return pApp;
+}
+
+IRenderWindow* CParaEngineCore::CreateRenderWindow(const int width, const int height)
+{
+	if (!m_pRenderWindowSingleton)
+	{
+		auto pWin = (CParaEngineAppBase*)CreateParaRenderWindow(width, height);
+		m_pRenderWindowSingleton = pWin;
+		return (IRenderWindow*)pWin;
+	}
+
+	return (IRenderWindow*)m_pRenderWindowSingleton.get();
 }
 
 void ParaEngine::CParaEngineCore::DestroySingleton()
@@ -138,5 +172,11 @@ void ParaEngine::CParaEngineCore::DestroySingleton()
 	{
 		m_pAppSingleton->Release();
 		m_pAppSingleton.reset();
+	}
+
+	if (m_pRenderWindowSingleton)
+	{
+		m_pRenderWindowSingleton->Release();
+		m_pRenderWindowSingleton.reset();
 	}
 }

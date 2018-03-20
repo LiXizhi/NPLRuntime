@@ -16,6 +16,7 @@
 #include "InterprocessAppClient.h"
 #include "CommandLineParser.hpp"
 #include "util/EnumProcess.hpp"
+#include "WindowsApplication.h"
 
 using namespace ParaEngine;
 
@@ -37,7 +38,7 @@ IParaEngineApp* g_pApp = NULL;
 
 CInterprocessAppClient * g_pIPCAppClient = NULL;
 ParaEngine::CInterprocessAppClient::CInterprocessAppClient( const char* appName /*= NULL*/ )
-:CAutoUpdaterApp(), m_hWndParent(NULL),m_bStarted(false), m_bAutoUpdateWhenStart(false), m_nMinWidth(0),m_nMinHeight(0), m_main_timer(m_main_io_service), m_pParaEngine(NULL), m_pParaEngineApp(NULL), m_bQuit(false), m_hWnd(NULL), m_ipAppQueueIn(NULL), m_ipHostQueueOut(NULL), m_hInst(0), m_dwWinThreadID(0), m_bMainLoopExited(true)
+:CAutoUpdaterApp(), m_hWndParent(NULL),m_bStarted(false), m_bAutoUpdateWhenStart(false), m_nMinWidth(0),m_nMinHeight(0), m_main_timer(m_main_io_service), m_pParaEngine(NULL), m_pParaEngineApp(NULL) ,m_pParaEngineRenderWindow(nullptr) ,m_bQuit(false), m_hWnd(NULL), m_ipAppQueueIn(NULL), m_ipHostQueueOut(NULL), m_hInst(0), m_dwWinThreadID(0), m_bMainLoopExited(true)
 {
 	g_pIPCAppClient = this;
 	SetAppName(appName);
@@ -238,13 +239,18 @@ int ParaEngine::CInterprocessAppClient::Start(int nMinResolutionWidth, int nMinR
 	if(!CheckLoad())
 		return E_FAIL;
 
+	SendHostMsg(PEAPP_LoadingProgress_CreatingRenderWindow);
+	m_pParaEngineRenderWindow = m_pParaEngine->CreateRenderWindow(960, 640);
+	if (!m_pParaEngineRenderWindow)
+		return E_FAIL;
+
 	SendHostMsg(PEAPP_LoadingProgress_CreatingApp);
 	m_pParaEngineApp = m_pParaEngine->CreateApp();
 	if(m_pParaEngineApp == 0)
 		return E_FAIL;
 
 	SendHostMsg(PEAPP_LoadingProgress_StartingApp);
-	if(m_pParaEngineApp->StartApp(m_sCmdLine.c_str()) != S_OK)
+	if (!m_pParaEngineApp->InitApp(m_pParaEngineRenderWindow, m_sCmdLine.c_str()))
 		return E_FAIL;
 
 	// Set Frame Rate

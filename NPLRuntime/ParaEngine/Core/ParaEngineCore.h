@@ -39,6 +39,8 @@ namespace ParaEngine
 		*/
 		virtual IParaEngineApp* CreateApp();
 
+		virtual IRenderWindow* CreateRenderWindow(const int width, const int height) override;
+
 		/** one should call this when you no longer need this application, usually as the last line of your code. */
 		virtual void Destroy();
 
@@ -48,6 +50,7 @@ namespace ParaEngine
 		void DestroySingleton();
 	protected:
 		static WeakPtr m_pAppSingleton;
+		static WeakPtr m_pRenderWindowSingleton;
 	};
 
 }

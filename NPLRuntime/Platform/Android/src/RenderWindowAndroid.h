@@ -1,9 +1,9 @@
 #pragma once
-#include "Framework/Interface/Render/IRenderWindow.h"
+#include "ParaEngineRenderBase.h"
 #include <android/native_activity.h>
 namespace ParaEngine
 {
-	class RenderWindowAndroid : public IRenderWindow
+	class RenderWindowAndroid : public CParaEngineRenderBase
 	{
 
 	public:

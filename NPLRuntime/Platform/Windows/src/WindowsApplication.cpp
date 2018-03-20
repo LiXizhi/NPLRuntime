@@ -48,7 +48,15 @@
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
 #include "WindowsApplication.h"
+#include "RenderWindowDelegate.h"
 using namespace  ParaEngine;
+
+HINSTANCE g_hAppInstance;
+
+IParaEngineApp* CreateParaEngineApp()
+{
+	return new CWindowsApplication();
+}
 
 void ParaEngine::CWindowsApplication::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
 {
@@ -121,4 +129,19 @@ bool ParaEngine::CWindowsApplication::GetToggleSoundWhenNotFocused()
 {
 	//throw std::logic_error("The method or operation is not implemented.");
 	return true;
+}
+
+
+int ParaEngine::CWindowsApplication::Run(HINSTANCE hInstance)
+{
+	auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+	assert(pWindow);
+
+	while (!pWindow->ShouldClose())
+	{
+		pWindow->PollEvents();
+		this->DoWork();
+	}
+
+	return 0;
 }

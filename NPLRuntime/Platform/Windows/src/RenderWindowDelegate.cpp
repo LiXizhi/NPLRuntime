@@ -2,6 +2,13 @@
 #include "RenderWindowDelegate.h"
 #include "2dengine/GUIRoot.h"
 using namespace ParaEngine;
+
+extern HINSTANCE g_hAppInstance;
+IRenderWindow* CreateParaRenderWindow(const int width, const int height)
+{
+	return new RenderWindowDelegate(g_hAppInstance, width, height);
+}
+
 void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state)
 {
 

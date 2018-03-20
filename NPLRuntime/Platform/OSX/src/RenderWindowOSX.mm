@@ -4,7 +4,10 @@
 using namespace ParaEngine;
 
 
-
+IRenderWindow* CreateParaRenderWindow(const int width, const int height)
+{
+	return new RenderWindowOSX(width, height);
+}
 
 RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_window(nullptr)

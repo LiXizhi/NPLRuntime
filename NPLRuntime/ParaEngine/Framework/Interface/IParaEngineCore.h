@@ -9,6 +9,7 @@
 namespace ParaEngine
 {
 	class IParaEngineApp;
+	class IRenderWindow;
 
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
@@ -31,6 +32,8 @@ namespace ParaEngine
 		* this function is mostly called from host application to create the application object. 
 		*/
 		virtual IParaEngineApp* CreateApp()=0;
+
+		virtual IRenderWindow* CreateRenderWindow(const int width, const int height) { return nullptr;  };
 
 		/** one should call this when you no longer need this application, usually as the last line of your code. */
 		virtual void Destroy() {};
