@@ -19,6 +19,7 @@ endif()
 
 include_directories("${NPLRUNTIME_ROOT}/Framework/Interface/")
 include_directories("${NPLRUNTIME_ROOT}/Core/")
+include_directories("${NPLRUNTIME_ROOT}/Engine/")
 include_directories("${NPLRUNTIME_ROOT}/")
 
 # source files for sqlite

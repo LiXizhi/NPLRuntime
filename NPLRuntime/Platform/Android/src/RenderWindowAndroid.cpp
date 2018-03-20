@@ -1,5 +1,12 @@
+#include "ParaEngine.h"
 #include "RenderWindowAndroid.h"
 
+using namespace ParaEngine;
+
+IRenderWindow* CreateParaRenderWindow(const int width, const int height)
+{
+	return new RenderWindowAndroid(nullptr);
+}
 
 ParaEngine::RenderWindowAndroid::RenderWindowAndroid(ANativeWindow* nativeWindow):m_NativeWindow(nativeWindow)
 {

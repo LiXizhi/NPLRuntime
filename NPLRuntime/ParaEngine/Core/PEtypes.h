@@ -179,6 +179,10 @@ typedef struct _FILETIME
 #define S_OK  ((HRESULT)0x00000000L)
 #endif
 
+#ifndef S_FALSE
+#define S_FALSE ((HRESULT)0x00000001L)
+#endif
+
 #ifndef UCHAR_MAX
 #define UCHAR_MAX     0xff      /* maximum unsigned char value */
 #endif

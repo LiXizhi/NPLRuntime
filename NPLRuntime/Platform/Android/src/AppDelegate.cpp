@@ -49,7 +49,6 @@ void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
         case APP_CMD_STOP:
         {
 			myApp->OnStop();
-			myApp->m_isQuited = true;
         }break;   
         case APP_CMD_DESTROY:
         {
@@ -149,7 +148,6 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 AppDelegate::AppDelegate()
 :m_State(nullptr)
 ,m_ParaEngineApp(nullptr)
-,m_isQuited(false)
 ,m_isPaused(false)
 {
 

@@ -40,7 +40,6 @@ namespace ParaEngine
 
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
-		bool m_isQuited;
 		bool m_isPaused;
     };
 
