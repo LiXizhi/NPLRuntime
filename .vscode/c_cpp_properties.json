@@ -5,7 +5,18 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Core",
+                "${workspaceRoot}/NPLRuntime/ParaEngine",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/math",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/renderer",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/3dengine",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/IO",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/util",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/ParaScriptBindings",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/NPL",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Framework/Interface",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Engine"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -51,7 +62,18 @@
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/ucrt",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/shared",
                 "C:/Program Files (x86)/Windows Kits/10/Include/10.0.16299.0/winrt",
-                "${workspaceRoot}"
+                "${workspaceRoot}",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Core",
+                "${workspaceRoot}/NPLRuntime/ParaEngine",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/math",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/renderer",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/3dengine",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/IO",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/util",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/ParaScriptBindings",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/NPL",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Framework/Interface",
+                "${workspaceRoot}/NPLRuntime/ParaEngine/Engine"
             ],
             "defines": [
                 "_DEBUG",
