@@ -98,6 +98,9 @@ const WCHAR* ParaEngine::StringHelper::MultiByteToWideChar(const char* name, uns
 
 const char* ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, unsigned int nCodePage, size_t* outLen)
 {
+	if (name == NULL)
+		return NULL;
+
 	static boost::thread_specific_ptr< vector<char> > cName_;
 	if (!cName_.get()) {
 		// first time called by this thread
@@ -154,6 +157,8 @@ const char* ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, uns
 
 int ParaEngine::StringHelper::WideCharToMultiByte(const WCHAR* name, char* szText, int nLength, unsigned int nCodePage /*= 0*/)
 {
+	if (name == NULL)
+		return 0;
 #ifdef WIN32
 	if (nLength > 0)
 	{
@@ -372,6 +377,8 @@ static const std::string& code_convert(const char *from_charset, const char *to_
 
 const char* ParaEngine::StringHelper::UTF8ToAnsi(const char* name)
 {
+	if (name == NULL)
+		return NULL;
 #ifdef USE_ICONV
 	size_t inlen = strlen(name);
 	auto& s = code_convert("utf-8", defaultCPName.get().c_str(), name, inlen, true);
@@ -389,6 +396,8 @@ const char* ParaEngine::StringHelper::UTF8ToAnsi(const char* name)
 
 const char* ParaEngine::StringHelper::AnsiToUTF8(const char* name)
 {
+	if (name == NULL)
+		return NULL;
 #ifdef USE_ICONV
 	size_t inlen = strlen(name);
 	auto& s = code_convert(defaultCPName.get().c_str(), "utf-8", name, inlen, true);
