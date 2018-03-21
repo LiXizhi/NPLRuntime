@@ -814,7 +814,7 @@ namespace ParaScripting
 			// sync mode in current thread. 
 			if (SUCCEEDED(pLoader->Load()) &&
 				SUCCEEDED(pLoader->Decompress(NULL, NULL)) &&
-				SUCCEEDED(pProcessor->Process(NULL, NULL)) &&
+				SUCCEEDED(pProcessor->Process(NULL, 0)) &&
 				SUCCEEDED(pProcessor->LockDeviceObject()) &&
 				SUCCEEDED(pProcessor->CopyToResource()) &&
 				SUCCEEDED(pProcessor->UnLockDeviceObject()))
