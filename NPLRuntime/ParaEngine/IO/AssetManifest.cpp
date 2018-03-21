@@ -470,7 +470,6 @@ std::string AssetFileEntry::GetFullFilePath()
 
 bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 {
-	OUTPUT_LOG("SaveToDisk:%d", nSize);
 	if(bCheckMD5 && !CheckMD5AndSize(buffer, nSize))
 	{
 		string sTmp = string("Asset md5 check Failed:") + m_url + "\n";

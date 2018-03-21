@@ -6,10 +6,12 @@
 #include <cstring>
 #include <errno.h>
 #include <cassert>
+#include <ctime>
 #include "ParaAppAndroid.h"
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"
 #include "RenderContextEGL.h"
+
 using namespace ParaEngine;
 
 
@@ -26,11 +28,11 @@ void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 		case APP_CMD_SAVE_STATE:
 		{
 			//OUTPUT_LOG("save state");
-			//saved_state state;
-			//state.app = myApp;
-			//app->savedState = malloc(sizeof(saved_state));
-			//app->savedStateSize = sizeof(struct saved_state);
-			//memcpy(app->savedState, &state, app->savedStateSize);
+			saved_state state;
+			state.app = myApp;
+			app->savedState = malloc(sizeof(saved_state));
+			app->savedStateSize = sizeof(struct saved_state);
+			memcpy(app->savedState, &state, app->savedStateSize);
 			LOGI("state saved");
 
 		}break;
@@ -85,60 +87,48 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 			switch(action) {
 			case AMOTION_EVENT_ACTION_DOWN:
 			{
+				//LOGI("AMOTION_EVENT_ACTION_DOWN");
 				touchType = TouchEvent::TouchEvent_POINTER_DOWN;
 			}
 			break;
 			case AMOTION_EVENT_ACTION_UP:
 			{
+				//LOGI("AMOTION_EVENT_ACTION_UP");
 				touchType = TouchEvent::TouchEvent_POINTER_UP;
 			}
 			break;
 			case AMOTION_EVENT_ACTION_MOVE:
 			{
+				//LOGI("AMOTION_EVENT_ACTION_MOVE");
 				touchType = TouchEvent::TouchEvent_POINTER_UPDATE;
 			}
 			break;
 			case AMOTION_EVENT_ACTION_CANCEL:
 			{
+				//LOGI("AMOTION_EVENT_ACTION_CANCEL");
 				touchType = TouchEvent::TouchEvent_POINTER_UP;
 			}
 			break;
 			}
 			auto touchCount = AMotionEvent_getPointerCount(event);
+			//LOGI("TOUCH_COUNT : %d", touchCount);
 			std::vector<TouchEventPtr> touchEvents;
 			for (int i = 0; i < touchCount; i++)
 			{
 				int32_t touchId = AMotionEvent_getPointerId(event, i);
 				float touchX = AMotionEvent_getX(event, i);
 				float touchY = AMotionEvent_getY(event, i);
-				int64_t eventTime = AMotionEvent_getEventTime(event);
+				//LOGI("TOUCH_POS %f,%f", touchX, touchY);
+				
+
+				std::clock_t t = std::clock();
+				double ms = (double)t / CLOCKS_PER_SEC * 1000; // ms
 				TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId,
-					touchX, touchY, eventTime);
+					touchX, touchY, ms);
+				//OUTPUT_LOG("event_time %f",ms);
 				touchEvents.push_back(touchEvent);
 			}
-			switch (action) {
-			case AMOTION_EVENT_ACTION_DOWN:
-			{
-				myApp->OnTouchBegan(touchEvents);
-			}
-			break;
-			case AMOTION_EVENT_ACTION_UP:
-			{
-				myApp->OnTouchEnded(touchEvents);
-			}
-			break;
-			case AMOTION_EVENT_ACTION_MOVE:
-			{
-				myApp->OnTouchMoved(touchEvents);
-			}
-			break;
-			case AMOTION_EVENT_ACTION_CANCEL:
-			{
-				myApp->OnTouchCancelled(touchEvents);
-			}
-			break;
-			}
-
+			myApp->OnTouch(touchEvents);
 		}
 	}
     return 0;
@@ -268,7 +258,7 @@ void inline PostTouchEvents(const std::vector<TouchEventPtr>& events)
 		}
 }
 
-void ParaEngine::AppDelegate::OnTouchBegan(const std::vector<TouchEventPtr>& events)
+void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 {
 	if (m_ParaEngineApp)
 	{
@@ -276,27 +266,4 @@ void ParaEngine::AppDelegate::OnTouchBegan(const std::vector<TouchEventPtr>& eve
 	}
 }
 
-void ParaEngine::AppDelegate::OnTouchMoved(const std::vector<TouchEventPtr>& events)
-{
-	if (m_ParaEngineApp)
-	{
-		PostTouchEvents(events);
-	}
-}
-
-void ParaEngine::AppDelegate::OnTouchEnded(const std::vector<TouchEventPtr>& events)
-{
-	if (m_ParaEngineApp)
-	{
-		PostTouchEvents(events);
-	}
-}
-
-void ParaEngine::AppDelegate::OnTouchCancelled(const std::vector<TouchEventPtr>& events)
-{
-	if (m_ParaEngineApp)
-	{
-		PostTouchEvents(events);
-	}
-}
 
