@@ -111,21 +111,23 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 			break;
 			}
 			auto touchCount = AMotionEvent_getPointerCount(event);
-			//LOGI("TOUCH_COUNT : %d", touchCount);
+
+			int msCurTime = ::GetTickCount();
+
+			/* this also works: 
+			std::clock_t t = std::clock();
+			int nTime = (int)(((double)t / CLOCKS_PER_SEC)*1000);
+			LOGI("Touch Event: time:%d  %d %f", nTime, msCurTime, (double)t / CLOCKS_PER_SEC);
+			*/
+			
 			std::vector<TouchEventPtr> touchEvents;
 			for (int i = 0; i < touchCount; i++)
 			{
 				int32_t touchId = AMotionEvent_getPointerId(event, i);
 				float touchX = AMotionEvent_getX(event, i);
 				float touchY = AMotionEvent_getY(event, i);
-				//LOGI("TOUCH_POS %f,%f", touchX, touchY);
-				
-
-				std::clock_t t = std::clock();
-				double ms = (double)t / CLOCKS_PER_SEC * 1000; // ms
-				TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId,
-					touchX, touchY, ms);
-				//OUTPUT_LOG("event_time %f",ms);
+				TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
+				LOGI("Touch Event: %s", touchEvent->ToScriptCode().c_str());
 				touchEvents.push_back(touchEvent);
 			}
 			myApp->OnTouch(touchEvents);
@@ -222,7 +224,7 @@ void AppDelegate::OnInitWindow()
 	}
 	else
 	{
-		LOGI("app:window is recreaded.");
+		LOGI("app:window is recreated.");
 		auto renderWindow = new RenderWindowAndroid(m_State->window);
 		m_ParaEngineApp->OnRendererRecreated(renderWindow);
 	}
