@@ -51,7 +51,7 @@ else()
 endif()
 
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
-if(NPLRUNTIME_STATIC_LIB)
+if(NPLRUNTIME_STATIC_LIB OR ANDROID)
 	set(SQLITE_STATICLIB TRUE)
 endif()
 
@@ -85,11 +85,12 @@ ENDIF()
 
 if(ANDROID)
     set(CMAKE_ANDROID_API 19)
-    set(CMAKE_ANDROID_STL_TYPE "gnustl_shared")
+    set(CMAKE_ANDROID_STL_TYPE "gnustl_static")
     set(CMAKE_ANDROID_ARCH_ABI "armeabi-v7a")
+	#set(CMAKE_ANDROID_ARM_MODE ON)
     set(CMAKE_ANDROID_NATIVE_LIB_DIRECTORIES  ${CMAKE_BINARY_DIR}/lib/debug)
     set(CMAKE_ANDROID_ARM_NEON OFF)
-    add_compile_options(-fexceptions -frtti -Wno-psabi)
+    add_compile_options(-fexceptions -frtti -Wno-psabi -fsigned-char)
     add_definitions(-D__ANDROID__ -DANDROID)
 endif()
 
