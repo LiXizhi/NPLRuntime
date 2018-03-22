@@ -153,6 +153,7 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 		{
 			const DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
 			m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
+			m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
 			ResetLastMouseState();
 		}break;
 		case EMouseEventType::Move:

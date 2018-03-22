@@ -227,15 +227,23 @@ namespace ParaEngine
 	{
 
 	public:
-		DeviceMouseButtonEvent(const EMouseButton button, const EKeyState state)
-			:m_button(button)
-			,m_state(state) {};
+		DeviceMouseButtonEvent(const EMouseButton button, const EKeyState state, int x, int y)
+			: m_button(button)
+			, m_state(state) 
+			, m_x(x)
+			, m_y(y) {};
 		inline EMouseButton GetButton() const { return m_button; };
 		inline EKeyState GetKeyState() const { return m_state; };
+
+		inline int GetX() const { return m_x; };
+		inline int GetY() const { return m_y; };
+
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Button; };
 	private:
 		EMouseButton m_button;
 		EKeyState m_state;
+		int m_x;
+		int m_y;
 	};
 
 	class DeviceMouseWhellEvent : public DeviceMouseEvent
