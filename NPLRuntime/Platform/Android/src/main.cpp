@@ -4,7 +4,11 @@
 #include <android/log.h>
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
 
+extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
+{
 
+	return JNI_VERSION_1_4;
+}
 
 inline std::string jni_sting_to_std_string(JNIEnv* env, jstring jstr)
 {

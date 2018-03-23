@@ -11,11 +11,7 @@ PROJECT(sqlite)
 # add the binary tree to the search path for include files
 include_directories("${PROJECT_SOURCE_DIR}")
 # Note: include the ParaEngine/NPLRuntime include directory
-if ("$ENV{NPLRUNTIME_ROOT}" STREQUAL "")
-	set(NPLRUNTIME_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../ParaEngine)
-else()
-	set(NPLRUNTIME_ROOT $ENV{NPLRUNTIME_ROOT}/NPLRuntime/ParaEngine)
-endif()
+set(NPLRUNTIME_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../ParaEngine)
 
 include_directories("${NPLRUNTIME_ROOT}/Framework/Interface/")
 include_directories("${NPLRUNTIME_ROOT}/Core/")

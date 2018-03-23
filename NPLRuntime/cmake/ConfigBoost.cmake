@@ -37,7 +37,7 @@ else()
 endif()
 
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
-find_package(Boost 1.65.1 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log) 
+find_package(Boost 1.64.0 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log) 
 
 #message(STATUS "BOOST_INCLUDE_DIR:" ${Boost_INCLUDE_DIR})
 #message(STATUS "BOOST_LIBS:" ${Boost_LIBRARIES} )
