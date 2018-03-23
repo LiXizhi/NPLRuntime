@@ -924,6 +924,30 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 	m_namemap.clear();
 }
 
+void ParaEngine::CGUIRoot::SendKeyDownEvent(EVirtualKey nVirtualkey)
+{
+	DeviceKeyEvent e(EKeyState::PRESS, nVirtualkey);
+	GetKeyboard()->PushKeyEvent(e);
+	GetKeyboard()->SetKeyPressed(nVirtualkey, true);
+}
+
+void ParaEngine::CGUIRoot::SendKeyUpEvent(EVirtualKey nVirtualkey)
+{
+	DeviceKeyEvent e(EKeyState::RELEASE, nVirtualkey);
+	GetKeyboard()->PushKeyEvent(e);
+	GetKeyboard()->SetKeyPressed(nVirtualkey, false);
+}
+
+bool ParaEngine::CGUIRoot::IsMouseButtonSwapped()
+{
+	return GetMouse()->IsMouseButtonSwapped();
+}
+
+void ParaEngine::CGUIRoot::SetMouseButtonSwapped(bool bSwapped)
+{
+	GetMouse()->SetMouseButtonSwapped(bSwapped);
+}
+
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 {
 	MSG newMsg;
@@ -933,8 +957,7 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 
 	CGUIBase* pKeyTarget = GetUIKeyFocus();
 
-	//TODO:m_pKeyboard->Update()
-	//m_pKeyboard->Update();
+	m_pKeyboard->Update();
 
 	s_bIMEKeyBoardUpdated = false;
 
@@ -1083,9 +1106,9 @@ int CGUIRoot::HandleUserInput()
 				newMsg.wParam = (int)m_pMouse->m_dims2.y;
 
 			}break;
-			case EMouseEventType::Whell:
+			case EMouseEventType::Wheel:
 			{
-				const DeviceMouseWhellEvent* buttonEvent = static_cast<const DeviceMouseWhellEvent*>(e.get());
+				const DeviceMouseWheelEvent* buttonEvent = static_cast<const DeviceMouseWheelEvent*>(e.get());
 				newMsg.message = EM_MOUSE_WHEEL;
 				newMsg.lParam = (int)buttonEvent->GetWhell();
 			}break;
@@ -1966,7 +1989,7 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						// vertical drag move is always mapped to mouse wheel anyway. 
 						int nScrollY = (int)(fOffsetY * WHEEL_DELTA / fMouseWheelDragStep);
 						//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
-						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(nScrollY)));
+						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 						s_lastMouseWheelPosY = ui_mouse_y;
 						// OUTPUT_LOG("EM_MOUSE_WHEEL %d: delta: %d time:%d \n", pTouchSession->GetTouchId(), (int)(msg.lParam), touch.GetTime());
 					}
@@ -2213,7 +2236,7 @@ bool ParaEngine::CGUIRoot::handleGesturePinch(CTouchGesturePinch& pinch_gesture)
 		pinch_gesture.ResetLastDistance();
 		int nScrollY = (int)(nDeltaPixels * WHEEL_DELTA / 20);
 		//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
-		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(nScrollY)));
+		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 		// OUTPUT_LOG("handleGesturePinch %d\n", nScrollY);
 		return true;
 	}
@@ -2242,6 +2265,11 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
+
+	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
+
 	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerStepSizePixels", FieldType_Int, (void*)SetFingerStepSizePixels_s, (void*)GetFingerStepSizePixels_s, NULL, NULL, bOverride);

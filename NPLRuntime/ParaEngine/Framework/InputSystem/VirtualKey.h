@@ -11,7 +11,7 @@ namespace ParaEngine
 		Unkonw,
 		Button,
 		Move,
-		Whell
+		Wheel
 	};
 
 	enum class EMouseButton
@@ -179,6 +179,17 @@ namespace ParaEngine
 		COUNT = 238,
 	};
 
+	class DeviceKeyEvent
+	{
+	public:
+		DeviceKeyEvent() :m_state(EKeyState::RELEASE), m_virtualKey(EVirtualKey::KEY_UNKNOWN), m_nTime(0) {}
+		DeviceKeyEvent(EKeyState state, EVirtualKey vKey, int32 nTime=0): m_state(state), m_virtualKey(vKey), m_nTime(nTime) {}
+
+		EKeyState m_state;
+		EVirtualKey m_virtualKey;
+		int32 m_nTime;
+	};
+
 	struct DeviceMouseState
 	{
 		uint32_t x;
@@ -246,12 +257,12 @@ namespace ParaEngine
 		int m_y;
 	};
 
-	class DeviceMouseWhellEvent : public DeviceMouseEvent
+	class DeviceMouseWheelEvent : public DeviceMouseEvent
 	{
 
 	public:
-		DeviceMouseWhellEvent(int whell) :m_whell(whell) {}
-		virtual EMouseEventType GetEventType() const { return EMouseEventType::Whell; }
+		DeviceMouseWheelEvent(int whell) :m_whell(whell) {}
+		virtual EMouseEventType GetEventType() const { return EMouseEventType::Wheel; }
 		virtual int GetWhell() const { return m_whell; }
 	private:
 		int m_whell;

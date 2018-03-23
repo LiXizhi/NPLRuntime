@@ -14,7 +14,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CGUIMouseVirtual::CGUIMouseVirtual()
-	:m_bLock(false), m_bUseWindowMessage(true), m_isTouchInputting(false), m_bLastMouseReset(false), m_buffered_mouse_msgs_count(0), m_bSwapMouseButton(false), m_x(0), m_y(0), m_objCaptured(NULL)
+	:m_bLock(false), m_bUseWindowMessage(true), m_isTouchInputting(false), m_bLastMouseReset(false), m_buffered_mouse_msgs_count(0), m_bSwapMouseButton(false), m_x(0), m_y(0), m_objCaptured(NULL), m_dwElements(0)
 {
 	Reset();
 }
@@ -165,9 +165,9 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 			m_dims2.y = m_curMouseState.y - lastY;
 			bHasMouseMove = true;
 		}break;
-		case EMouseEventType::Whell:
+		case EMouseEventType::Wheel:
 		{
-			const DeviceMouseWhellEvent* whellEvent = (DeviceMouseWhellEvent*)(e.get());
+			const DeviceMouseWheelEvent* whellEvent = (DeviceMouseWheelEvent*)(e.get());
 			m_curMouseState.z = whellEvent->GetWhell();
 			break;
 		}

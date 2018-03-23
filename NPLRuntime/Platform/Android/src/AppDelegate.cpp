@@ -356,7 +356,7 @@ inline EVirtualKey toVirtualKey(int32_t keycode)
 	auto ret = s_keymap.find(keycode);
 	if (ret != s_keymap.end())
 	{
-		return ret.second;
+		return ret->second;
 	}
 	return EVirtualKey::KEY_UNKNOWN;
 }

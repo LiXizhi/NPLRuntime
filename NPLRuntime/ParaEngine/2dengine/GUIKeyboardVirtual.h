@@ -20,13 +20,27 @@ namespace ParaEngine
 		virtual bool IsKeyPressed(const EVirtualKey& key);
 		virtual void SetKeyPressed(const EVirtualKey& key, bool bPressed);
 		virtual void Reset();
-
 		
+		/** push a standard key event to the buffer for processing in the next frame move. */
+		virtual void PushKeyEvent(const DeviceKeyEvent& msg);
+		/** read hardware buffer and immediate keyboard states to internal data structure. */
+		virtual void Update();
+
 		virtual EKeyState GetKeyState(const EVirtualKey& key);
 		inline EKeyState* GetKeyStates(){ return m_keystate; }
 
+		virtual HRESULT ReadBufferedData();
+		virtual HRESULT ReadImmediateData();
+
+		virtual EKeyState GetLastKeyState(int nIndex);
+		virtual EKeyState GetCurrentKeyState(int nIndex);
+		
 		DWORD GetElementsCount() const;
 		void SetElementsCount(DWORD val);
+
+		inline DIDEVICEOBJECTDATA* GetDeviceObjectData() {
+			return m_didod;
+		}
 
 	public:
 		static void SetCapture(CGUIBase* obj);
@@ -37,6 +51,13 @@ namespace ParaEngine
 	protected:
 		DWORD              m_dwElements;
 		EKeyState		   m_keystate[(int)EVirtualKey::COUNT];	
+		// last DirectInput keyboard state buffer 
+		EKeyState		   m_lastkeystate[(int)EVirtualKey::COUNT];   
+		DIDEVICEOBJECTDATA m_didod[SAMPLE_BUFFER_SIZE];  // Receives buffered data 
+
+		DeviceKeyEvent	m_buffered_key_msgs[SAMPLE_BUFFER_SIZE / 2];
+		int					m_buffered_key_msgs_count;
+
 		static CGUIBase *		m_objCaptured;
 	};
 }

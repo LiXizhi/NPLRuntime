@@ -85,7 +85,7 @@ ENDIF()
 
 if(ANDROID)
     set(CMAKE_ANDROID_API_MIN 19)
-    set(CMAKE_ANDROID_API 21)
+    set(CMAKE_ANDROID_API 19)
     set(CMAKE_ANDROID_STL_TYPE "gnustl_shared")
     set(CMAKE_ANDROID_ARCH_ABI "armeabi-v7a")
 	#set(CMAKE_ANDROID_ARM_MODE ON)

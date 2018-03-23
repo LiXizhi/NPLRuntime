@@ -86,6 +86,13 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, GetFingerStepSizePixels_s, int*)	{ *p1 = cls->GetFingerStepSizePixels(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetFingerStepSizePixels_s, int)	{ cls->SetFingerStepSizePixels(p1); return S_OK; }
 
+
+		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyDownEvent_s, int) { cls->SendKeyDownEvent((EVirtualKey)p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyUpEvent_s, int) { cls->SendKeyUpEvent((EVirtualKey)p1); return S_OK; }
+		
+		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseButtonSwapped_s, bool*) { *p1 = cls->IsMouseButtonSwapped(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetMouseButtonSwapped_s, bool) { cls->SetMouseButtonSwapped(p1); return S_OK; }
+		
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMinimumScreenSize_s, Vector2)		{ cls->SetMinimumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseCaptured_s, bool*)	{ *p1 = cls->IsMouseCaptured(); return S_OK; }
@@ -268,6 +275,17 @@ namespace ParaEngine
 		* return value tells which kind of event have been successfully dispatched.
 		*/
 		int	HandleUserInput();
+
+		/**
+		* send a simulated raw key event to ParaEngine.
+		* @param nVirtualkey: should be of type EVirtualkey
+		*/
+		void SendKeyDownEvent(EVirtualKey nVirtualkey);
+		void SendKeyUpEvent(EVirtualKey nVirtualkey);
+		/** swap left/right mouse button and touch.*/
+		bool IsMouseButtonSwapped();
+		void SetMouseButtonSwapped(bool bSwapped);
+
 
 		bool DispatchKeyboardMsg(bool bKeyHandled);
 
