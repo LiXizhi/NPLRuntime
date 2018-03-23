@@ -20,14 +20,10 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	ReleaseContext();
 	RenderWindowAndroid* renderWindow = static_cast<RenderWindowAndroid*>(cfg.renderWindow);
 	ANativeWindow* nativeWindow = renderWindow->GetNativeWindow();
-	const EGLint attribs[] = {
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,
-		EGL_BLUE_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_RED_SIZE, 8,
-		EGL_NONE
-	};
+	const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
+		EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+		EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_NONE };
 	EGLint w, h, format;
 	EGLint numConfigs;
 	EGLConfig config;
@@ -36,6 +32,24 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	eglInitialize(display, 0, 0);
 	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+
+	if (!numConfigs)
+	{
+		//Fall back to 16bit depth buffer
+		const EGLint attribs_d16[] = { EGL_RENDERABLE_TYPE,
+			EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+			EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+			EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 16, EGL_NONE };
+		eglChooseConfig(display, attribs_d16, &config, 1, &numConfigs);
+	}
+
+
+	if (!numConfigs)
+	{
+		LOGW("Unable to retrieve EGL config");
+		return false;
+	}
+
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
 
 	ANativeWindow_setBuffersGeometry(nativeWindow, 0, 0, format);
@@ -72,14 +86,11 @@ bool RenderContextEGL::ResetDevice(IRenderDevice* device, const RenderConfigurat
 	ReleaseContext();
 	RenderWindowAndroid* renderWindow = static_cast<RenderWindowAndroid*>(cfg.renderWindow);
 	ANativeWindow* nativeWindow = renderWindow->GetNativeWindow();
-	const EGLint attribs[] = {
-		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-		EGL_RENDERABLE_TYPE,EGL_OPENGL_ES2_BIT,
-		EGL_BLUE_SIZE, 8,
-		EGL_GREEN_SIZE, 8,
-		EGL_RED_SIZE, 8,
-		EGL_NONE
-	};
+	
+	const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
+		EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+		EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_NONE };
 	EGLint w, h, format;
 	EGLint numConfigs;
 	EGLConfig config;
@@ -88,6 +99,25 @@ bool RenderContextEGL::ResetDevice(IRenderDevice* device, const RenderConfigurat
 	EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	eglInitialize(display, 0, 0);
 	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
+
+	if (!numConfigs)
+	{
+		//Fall back to 16bit depth buffer
+		const EGLint attribs_d16[] = { EGL_RENDERABLE_TYPE,
+			EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+			EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+			EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 16, EGL_NONE };
+		eglChooseConfig(display, attribs_d16, &config, 1, &numConfigs);
+	}
+
+
+	if (!numConfigs)
+	{
+		LOGW("Unable to retrieve EGL config");
+		return false;
+	}
+
+
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
 
 	ANativeWindow_setBuffersGeometry(nativeWindow, 0, 0, format);
