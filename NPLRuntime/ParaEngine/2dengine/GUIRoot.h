@@ -90,6 +90,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyDownEvent_s, int) { cls->SendKeyDownEvent((EVirtualKey)p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyUpEvent_s, int) { cls->SendKeyUpEvent((EVirtualKey)p1); return S_OK; }
 		
+		ATTRIBUTE_METHOD1(CGUIRoot, SendInputMethodEvent_s, const char*) { cls->SendInputMethodEvent(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseButtonSwapped_s, bool*) { *p1 = cls->IsMouseButtonSwapped(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMouseButtonSwapped_s, bool) { cls->SetMouseButtonSwapped(p1); return S_OK; }
 		
@@ -282,6 +284,8 @@ namespace ParaEngine
 		*/
 		void SendKeyDownEvent(EVirtualKey nVirtualkey);
 		void SendKeyUpEvent(EVirtualKey nVirtualkey);
+		void SendInputMethodEvent(const char* pStr);
+		
 		/** swap left/right mouse button and touch.*/
 		bool IsMouseButtonSwapped();
 		void SetMouseButtonSwapped(bool bSwapped);

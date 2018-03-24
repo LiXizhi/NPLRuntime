@@ -33,7 +33,7 @@ namespace ParaEngine
         virtual void OnInitWindow();
         virtual void OnTermWindow();
         virtual void OnWindowResized();
-		virtual void OnTouch(const std::vector<TouchEventPtr>& events);
+		virtual void OnTouch(const TouchEvent& event);
 		virtual void OnKey(const EVirtualKey& key, const EKeyState& state);
 
 	protected:
