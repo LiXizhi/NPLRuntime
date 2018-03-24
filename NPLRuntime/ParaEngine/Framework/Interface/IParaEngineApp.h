@@ -58,7 +58,8 @@ namespace ParaEngine
 #ifndef WIN32
 #define WM_USER 0x0400
 #endif
-
+/** @def this is file path we will find to locate the paraengine root directory. */
+#define PARAENGINE_SIG_FILE	"ParaEngine.sig"
 /** @def first paraengine user message */
 #define PE_WM_FIRST			WM_USER+2301
 /** @def Show/hide cursor for current window from any threads. One can use PostThreadMessage() from any threads.*/

@@ -965,10 +965,10 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 		//synchronize the stored key state with the actual state
 		for (int a = 0; a < (int)EVirtualKey::COUNT; a++) {
 			if (CEventBinding::ScancodeToKeyTable[a] != 0) {
-				bool isPressed = m_pKeyboard->IsKeyPressed((EVirtualKey)a);
-				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = isPressed ? 0x80 : 0;
+				CGUIEvent::KeyStates[CEventBinding::ScancodeToKeyTable[a]] = m_pKeyboard->GetLastKeyState(a) == EKeyState::PRESS ? 0x80 : 0;
 			}
 		}
+		
 		if (pKeyTarget != NULL)
 		{
 			newMsg.message = EM_CTRL_UPDATEKEY;
@@ -1876,17 +1876,10 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 	}
 	
 
-	
-
-	// Note: we will only translate to click event when there is only a single touch event session to avoid multiple touches on GUI control. 
-	// Multi-touch is only available via handling the "ontouch" event. 
-	if (TouchSessions::GetInstance().GetSessionCount() == 1)
+	// Note: we will only translate to mouse event when is not handled by GUI control in NPL. 
+	TouchEventSession* pTouchSession = TouchSessions::GetInstance().GetTouchSession(touch.GetTouchId());
+	if (pTouchSession && !pTouchSession->IsHandledByGUI())
 	{
-		TouchEventSession* pTouchSession = TouchSessions::GetInstance()[0];
-		if (!pTouchSession)
-		{
-			return;
-		}
 		int mouse_x = (int)touch.m_x;
 		int mouse_y = (int)touch.m_y;
 		int ui_mouse_x = pTouchSession->GetCurrentEvent().GetClientPosX();
@@ -2093,11 +2086,9 @@ bool ParaEngine::CGUIRoot::handleTouchEvent(const TouchEvent& touch_)
 			CGUIBase* pUIObj = GetUIObject(iter->second);
 			if (pUIObj)
 			{
-
-
 				if (pUIObj->OnTouch(touch)) 
 				{
-
+					touchSession->SetHandledByGUI(touch.m_nTouchType != TouchEvent::TouchEvent_POINTER_UP);
 					bTouchEventHandled = true;
 				}
 				else

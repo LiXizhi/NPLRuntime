@@ -27,6 +27,10 @@ namespace ParaEngine
 
 		int32 GetTag() const;
 		void SetTag(int32 val);
+
+		bool IsHandledByGUI();
+		void SetHandledByGUI(bool bHandled);
+
 		static int32 GetFingerSize();
 		static int32 GetTouchDistanceBetween(TouchEvent* touch1, TouchEvent* touch2);
 	public:

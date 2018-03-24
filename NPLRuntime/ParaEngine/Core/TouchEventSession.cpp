@@ -103,6 +103,16 @@ void ParaEngine::TouchEventSession::SetTag(int32 val)
 	m_tag = val;
 }
 
+bool ParaEngine::TouchEventSession::IsHandledByGUI()
+{
+	return GetTag() == -1000;
+}
+
+void ParaEngine::TouchEventSession::SetHandledByGUI(bool bHandled)
+{
+	SetTag(bHandled ? -1000 : 0);
+}
+
 bool ParaEngine::TouchEventSession::IsRightClick()
 {
 	return ((m_current_event.m_nTime - m_start_event.m_nTime) > 300 && (GetMaxDragDistance() < default_finger_size));

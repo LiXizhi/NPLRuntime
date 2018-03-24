@@ -346,7 +346,7 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
             p->initWithByteArrays(cc3D_SkinPositionTex_vert, cc3D_ColorTex_frag);
             break;
         default:
-            OUTPUT_LOG("cocos2d: %s:%d, error shader type", __FUNCTION__, __LINE__);
+            OUTPUT_LOG("ParaEngine:%s:%d, error shader type", __FUNCTION__, __LINE__);
             return;
     }
 

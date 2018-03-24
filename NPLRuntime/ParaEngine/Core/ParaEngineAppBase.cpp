@@ -1207,17 +1207,17 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 	}
 #ifdef WIN32
 	// ParaEngine.sig must be called first, to locate the root dir. 
-	if (!CParaFile::DoesFileExist("ParaEngine.sig", false))
+	if (!CParaFile::DoesFileExist(PARAENGINE_SIG_FILE, false))
 	{
 		if (!sModuleDir.empty())
 		{
 			std::string workingDir = m_sModuleDir;
-			std::string sigPath = workingDir + "ParaEngine.sig";
+			std::string sigPath = workingDir + PARAENGINE_SIG_FILE;
 			bool bFoundSigFile = false;
 			if (!CParaFile::DoesFileExist(sigPath.c_str(), false))
 			{
 				// search the parent directory of the module for signature file, if file exist, use it as current working directory. 
-				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "ParaEngine.sig";
+				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + PARAENGINE_SIG_FILE;
 				if (CParaFile::DoesFileExist(sigPath.c_str(), false))
 				{
 					workingDir = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1);
