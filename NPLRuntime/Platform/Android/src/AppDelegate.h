@@ -14,6 +14,7 @@ namespace ParaEngine
     {
     public:
         AppDelegate();
+		AppDelegate(const std::string& intent_data);
         ~AppDelegate();
         void Run(android_app* app);
     private:
@@ -38,6 +39,7 @@ namespace ParaEngine
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
 		bool m_isPaused;
+		std::string m_intent_data;
     };
 
 

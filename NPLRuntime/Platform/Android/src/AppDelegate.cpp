@@ -403,6 +403,18 @@ AppDelegate::AppDelegate()
 {
 
 }
+
+AppDelegate::AppDelegate(const std::string& intent_data)
+	:m_State(nullptr)
+	, m_ParaEngineApp(nullptr)
+	, m_isPaused(false)
+	, m_intent_data(intent_data)
+{
+
+}
+
+
+
 AppDelegate::~AppDelegate()
 {
 	OUTPUT_LOG("~AppDelegate");
@@ -479,7 +491,7 @@ void AppDelegate::OnInitWindow()
 	{
 		auto renderWindow = new RenderWindowAndroid(m_State->window);
 		m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
-		m_ParaEngineApp->InitApp(renderWindow, "");
+		m_ParaEngineApp->InitApp(renderWindow, m_intent_data.c_str());
 	}
 	else
 	{

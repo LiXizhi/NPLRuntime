@@ -68,6 +68,29 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWriteAblePath()
 	{
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 		auto state = app->GetAndroidApp();
+
+		JNIEnv* jni;
+		state->activity->vm->AttachCurrentThread(&jni, NULL);
+		jclass activityClass = jni->GetObjectClass(state->activity->clazz);
+		jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
+		jobject fileObject = jni->CallObjectMethod(state->activity->clazz, getFilesDir);
+		jclass fileClass = jni->GetObjectClass(fileObject);
+		jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
+		jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
+		auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
+		m_writeAblePath = path;
+		jni->ReleaseStringUTFChars((jstring)pathObject, path);
+		jni->DeleteLocalRef(fileClass);
+		jni->DeleteLocalRef(fileObject);
+		jni->DeleteLocalRef(activityClass);
+		state->activity->vm->DetachCurrentThread();
+		
+		if (m_writeAblePath[m_writeAblePath.size() - 1] != '/')
+			m_writeAblePath += "/";
+
+		/*
+		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
+		auto state = app->GetAndroidApp();
 		if (state->activity->externalDataPath)
 		{
 			m_writeAblePath = state->activity->externalDataPath;
@@ -97,6 +120,7 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWriteAblePath()
 			sRootDir += "/";
 		}
 		m_writeAblePath = sRootDir;
+		*/
 	}
 	return m_writeAblePath;
 }

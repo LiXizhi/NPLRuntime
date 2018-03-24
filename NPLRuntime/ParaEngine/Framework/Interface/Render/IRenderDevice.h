@@ -6,23 +6,39 @@
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
 #include "Core/PEtypes.h"
+
+
+
+#if defined(DEBUG)
+	#define PE_CHECK_GL_ERROR_DEBUG() IRenderDevice::CheckRenderError(__FILE__, __FUNCTION__, __LINE__);
+#else
+	#define PE_CHECK_GL_ERROR_DEBUG() ((void)0)
+#endif
+
 namespace ParaEngine
 {
-#if USE_DIRECTX_RENDERER
+#if defined(USE_DIRECTX_RENDERER)
 using DeviceTexturePtr_type = IDirect3DTexture9*;
 using VertexBufferDevicePtr_type = IDirect3DVertexBuffer9* ;
 using IndexBufferDevicePtr_type =IDirect3DIndexBuffer9*  ;
 using VertexDeclarationPtr = IDirect3DVertexDeclaration9* ;
 using VertexElement = D3DVERTEXELEMENT9 ;
-#else
+#elif defined(USE_OPENGL_RENDERER)
 
 	struct VertexElement;
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
+	class GLTexture2D;
 
-typedef uint32_t DeviceTexturePtr_type;
-typedef uint32_t VertexBufferDevicePtr_type;
-typedef uint32_t IndexBufferDevicePtr_type;
+	typedef GLTexture2D* DeviceTexturePtr_type;
+	typedef uint32_t VertexBufferDevicePtr_type;
+	typedef uint32_t IndexBufferDevicePtr_type;
+#else
+	struct VertexElement;
+	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
 
+	typedef uint32_t DeviceTexturePtr_type;
+	typedef uint32_t VertexBufferDevicePtr_type;
+	typedef uint32_t IndexBufferDevicePtr_type;
 #endif
 }
 
@@ -86,6 +102,10 @@ namespace ParaEngine
 		virtual bool EndScene() = 0;
 
 		virtual bool Present() = 0;
+
+
+		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */
+		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

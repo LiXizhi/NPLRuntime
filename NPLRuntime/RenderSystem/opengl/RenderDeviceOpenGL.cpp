@@ -4,6 +4,7 @@
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
 #include "OpenGLWrapper/GLType.h"
+#include "OpenGLWrapper/GLTexture2D.h"
 //#include "math/ParaColor.h"
 
 
@@ -49,6 +50,17 @@ namespace ParaEngine
 		}
 		return 0;
 	}
+}
+
+bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const char* func, int nLine)
+{
+	GLenum __error = glGetError();
+	if (__error)
+	{
+		ParaEngine::CLogger::GetSingleton().WriteFormated("OpenGL error 0x%04X in %s %s %d\n", __error, filename, func, nLine);
+		return false;
+	}
+	return true;
 }
 
 
@@ -284,8 +296,11 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {
-	glActiveTexture(GL_TEXTURE0 + stage);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	//glActiveTexture(GL_TEXTURE0 + stage);
+	//glBindTexture(GL_TEXTURE_2D, texture);
+	texture->bindN(stage);
+
+	PE_CHECK_GL_ERROR_DEBUG();
 	//auto error = glGetError();
 	return true;
 }
@@ -299,6 +314,9 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitive(EPrimitiveType PrimitiveType,
 		glDrawArrays(GL_TRIANGLE_STRIP, StartVertex, PrimitiveCount + 2);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
 		glDrawArrays(GL_TRIANGLE_FAN, StartVertex, PrimitiveCount + 2);
+
+	PE_CHECK_GL_ERROR_DEBUG();
+
 	return true;
 }
 
@@ -324,6 +342,8 @@ bool ParaEngine::RenderDeviceOpenGL::DrawPrimitiveUP(EPrimitiveType PrimitiveTyp
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, PrimitiveCount + 2);
 	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
 		glDrawArrays(GL_TRIANGLE_FAN, 0, PrimitiveCount + 2);
+
+	PE_CHECK_GL_ERROR_DEBUG();
 
 	return true;
 
@@ -354,6 +374,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 		pVertexDeclaration->ApplyAttribute();
 		m_CurrentVertexDeclaration = pVertexDeclaration;
 		//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetVertexDeclaration");
+
+		PE_CHECK_GL_ERROR_DEBUG();
 	}
 
 	return true;
@@ -372,6 +394,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetIndices(IndexBufferDevicePtr_type pIndex
 	{
 		m_CurrentIndexBuffer = pIndexData;
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pIndexData);
+
+		PE_CHECK_GL_ERROR_DEBUG();
 	}
 
 	return true;
@@ -390,6 +414,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 			m_CurrentVertexDeclaration->ApplyAttribute();
 			//OUTPUT_LOG("RenderDeviceOpenGL: EnableAttribute & ApplyAttribute at SetStreamSource");
 		}
+
+		PE_CHECK_GL_ERROR_DEBUG();
 
 	}
 
@@ -423,6 +449,8 @@ bool ParaEngine::RenderDeviceOpenGL::EndScene()
 
 }
 
+
+
 int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 {
 	static bool once = true;
@@ -449,6 +477,8 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 		glDrawElements(GL_TRIANGLE_STRIP, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 	else if (Type == EPrimitiveType::TRIANGLEFAN)
 		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
+
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
@@ -468,6 +498,8 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType Primi
 		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 	else if (PrimitiveType == EPrimitiveType::LINELIST)
 		glDrawElements(GL_LINES, PrimitiveCount * 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
+
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 

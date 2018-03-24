@@ -65,7 +65,8 @@ namespace ParaEngine
 	typedef IRenderDevice* RenderDevicePtr;
 	typedef LPDIRECT3DVERTEXDECLARATION9 VertexDeclarationPtr;
 #elif defined(USE_OPENGL_RENDERER)
-	typedef GLuint DeviceTexturePtr_type;
+	class GLTexture2D;
+	typedef GLTexture2D* DeviceTexturePtr_type;
 	class RenderDevice; typedef IRenderDevice* RenderDevicePtr;
 	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
 #else

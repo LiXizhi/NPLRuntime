@@ -121,6 +121,10 @@ namespace ParaEngine
 
 		static const PixelFormatInfoMap& getPixelFormatInfoMap();
 
+
+		void bind();
+		void bindN(GLuint textureUnit);
+
 	private:
 		static GLTexture2D::PixelFormat g_defaultAlphaPixelFormat;
 

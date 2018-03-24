@@ -73,7 +73,7 @@ void android_main(struct android_app* state) {
 		LOGI("android main state saved");
 	}
 	else {
-		app = new AppDelegate;
+		app = new AppDelegate(intent_data);
 		LOGI("android main new state");
 	}	
 	app->Run(state);
