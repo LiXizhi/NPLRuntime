@@ -1324,112 +1324,112 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		std::cout << std::endl << "no techinique" << std::endl;
 		return false;
 	}
-	auto tec = techniques[0];
-	auto passes = tec->getPasses();
-	if (passes.empty())
-	{
-		std::cout << std::endl << "no pass" << std::endl;
-		return false;
-	}
 
-	std::vector<UniformInfo> uniforms;
-
-	for (int nPass = 0; nPass < passes.size(); nPass++)
+	for (int tecIndex = 0;tecIndex<techniques.size();tecIndex++)
 	{
-		auto pass = passes[nPass];
-		auto states = pass->getStateAssignments();
-		std::string vs_codeblock_name = "";
-		std::string ps_codeblock_name = "";
-		for (auto state : states)
+		auto tec = techniques[tecIndex];
+		auto passes = tec->getPasses();
+		if (passes.empty())
 		{
-			const std::string lowerName = StringToLower(state->getName());
-			if (lowerName == "vertexshader" || lowerName == "pixelshader")
+			std::cout << std::endl << "no pass" << std::endl;
+			return false;
+		}
+
+		std::vector<UniformInfo> uniforms;
+
+		for (int nPass = 0; nPass < passes.size(); nPass++)
+		{
+			auto pass = passes[nPass];
+			auto states = pass->getStateAssignments();
+			std::string vs_codeblock_name = "";
+			std::string ps_codeblock_name = "";
+			for (auto state : states)
 			{
-				auto value = state->getValue();
-				if (value->getValueType() == StateValueType::COMPILE)
+				const std::string lowerName = StringToLower(state->getName());
+				if (lowerName == "vertexshader" || lowerName == "pixelshader")
 				{
-					auto compileValue = static_cast<const StateCompileValue*>(value);
-					if (lowerName == "vertexshader")
+					auto value = state->getValue();
+					if (value->getValueType() == StateValueType::COMPILE)
 					{
-						vs_codeblock_name = compileValue->getEntryPoint();
-					}
-					if (lowerName == "pixelshader")
-					{
-						ps_codeblock_name = compileValue->getEntryPoint();
-					}
-					if (vs_codeblock_name != "" && ps_codeblock_name != "")
-					{
-						break;
+						auto compileValue = static_cast<const StateCompileValue*>(value);
+						if (lowerName == "vertexshader")
+						{
+							vs_codeblock_name = compileValue->getEntryPoint();
+						}
+						if (lowerName == "pixelshader")
+						{
+							ps_codeblock_name = compileValue->getEntryPoint();
+						}
+						if (vs_codeblock_name != "" && ps_codeblock_name != "")
+						{
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (vs_codeblock_name == "")
-		{
-			std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
-			return false;
-		}
-
-		if (ps_codeblock_name == "")
-		{
-			std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
-			return false;
-		}
-
-
-		// find code block
-		std::string vscode = "";
-		std::string pscode = "";
-		auto codeblock = m_Effect->getCodeBlock();
-		ETargetVersion targetVersion = ETargetGLSL_110;
-#if PARAENGINE_MOBILE
-		targetVersion = ETargetGLSL_ES_100;
-#endif
-		bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode,uniforms);
-		if (!ret || vscode == "")
-		{
-			std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name <<"  shader:" <<GetFileName() <<std::endl;
-			return false;
-		}
-		ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, targetVersion, pscode,uniforms);
-		if (!ret || vscode == "")
-		{
-			std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
-			return false;
-		}
-
-		std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
-		if (initWithByteArrays(vscode.c_str(), pscode.c_str(), nPass))
-		{
-			if (link(nPass))
+			if (vs_codeblock_name == "")
 			{
-				updateUniforms(nPass);
+				std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+				return false;
+			}
+
+			if (ps_codeblock_name == "")
+			{
+				std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+				return false;
+			}
+
+
+			// find code block
+			std::string vscode = "";
+			std::string pscode = "";
+			auto codeblock = m_Effect->getCodeBlock();
+			ETargetVersion targetVersion = ETargetGLSL_110;
+#if PARAENGINE_MOBILE
+			targetVersion = ETargetGLSL_ES_100;
+#endif
+			bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms);
+			if (!ret || vscode == "")
+			{
+				std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				return false;
+			}
+			ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms);
+			if (!ret || vscode == "")
+			{
+				std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				return false;
+			}
+
+			std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+			if (initWithByteArrays(vscode.c_str(), pscode.c_str(), tecIndex,nPass))
+			{
+				if (link(tecIndex, nPass))
+				{
+					updateUniforms(tecIndex, nPass);
+				}
+				else
+				{
+					std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+					return false;
+				}
 			}
 			else
 			{
-				std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+				std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
 				return false;
 			}
 		}
-		else
-		{
-			std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
-			return false;
+
+		// Parse uniforms
+
+		bool ret = MappingEffectUniforms(uniforms);
+		if (!ret) {
+			OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
 		}
 	}
-
-	// Parse uniforms
-
-	bool ret = MappingEffectUniforms(uniforms);
-	if (ret) {
-		OUTPUT_LOG("[%s] Parse uniforms sucessed.\n", GetFileName().c_str());
-	}
-	else {
-		OUTPUT_LOG("[%s] Parse uniforms failed.\n", GetFileName().c_str());
-	}
-
-	return ret;
+	return true;
 }
 
 #endif
