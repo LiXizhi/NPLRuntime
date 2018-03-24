@@ -529,16 +529,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		
 		if (bRet)
 		{
-			GLTexture2D* texture = m_texture;
-			if (!texture)
-			{
-				texture = new GLTexture2D();
-			}
-			else
-			{
-				texture->addref();
-			}
-
+			GLTexture2D* texture = new GLTexture2D();
 
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
@@ -600,8 +591,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 				}
 				else
 				{
-					if (!m_texture)
-						SetInnerTexture(texture);
+					SetInnerTexture(texture);
 				}
 				SAFE_RELEASE(texture);
 				return true;
