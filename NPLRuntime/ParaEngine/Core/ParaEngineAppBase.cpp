@@ -55,6 +55,8 @@
 #include "BlockEngine/BlockWorldManager.h"
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
+#include "3dengine/AudioEngine2.h"
+#include "PluginAPI.h"
 
 #if USE_DIRECTX_RENDERER
 //#include "Render/context/d3d9/RenderContextD3D9.h"
@@ -65,6 +67,9 @@
 using namespace ParaEngine;
 using namespace ParaInfoCenter;
 IParaEngineApp* CParaEngineAppBase::g_pCurrentApp = NULL;
+
+extern ClassDescriptor* AudioEngine_GetClassDesc();
+
 
 namespace ParaEngine
 {
@@ -148,23 +153,26 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	LoadPackages();
 	BootStrapAndLoadConfig();
 	InitSystemModules();
-	//load config file
+	// load config file
 	CICConfigManager *cm = CGlobals::GetICConfigManager();
 	cm->LoadFromFile();
 
-#ifdef USE_XACT_AUDIO_ENGINE
-	// Prepare the audio engine
-	if (FAILED(hr = m_pAudioEngine->InitAudioEngine()))
-	{
-		OUTPUT_LOG("Audio engine init fail!\n");
-		m_pAudioEngine->CleanupAudioEngine();
-	}
-#endif
-#ifdef USE_OPENAL_AUDIO_ENGINE
-	if (FAILED(hr = CAudioEngine2::GetInstance()->InitAudioEngine()))
+	// init audio engine
+
+#ifdef STATIC_PLUGIN_CAUDIOENGINE
+	IParaAudioEngine* pAudioEnginePlugin = (IParaAudioEngine*)AudioEngine_GetClassDesc()->Create();
+	if (CAudioEngine2::GetInstance()->InitAudioEngine(pAudioEnginePlugin) != S_OK)
 	{
 		OUTPUT_LOG("Audio engine init fail!\n");
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
+		return false;
+	}
+#else
+	if (CAudioEngine2::GetInstance()->InitAudioEngine() != S_OK)
+	{
+		OUTPUT_LOG("Audio engine init fail!\n");
+		CAudioEngine2::GetInstance()->CleanupAudioEngine();
+		return false;
 	}
 #endif
 
@@ -404,9 +412,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 		PERF_BEGIN("EnvironmentSim");
 		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime);  // generate valid LLE from HLE
 		PERF_END("EnvironmentSim");
-#ifdef USE_OPENAL_AUDIO_ENGINE
 		CAudioEngine2::GetInstance()->Update();
-#endif
 	}
 
 	{
@@ -773,18 +779,7 @@ bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 	//Performance Monitor
 	PERF_END("Program");
 	PERF_REPORT();
-
-#ifdef USE_XACT_AUDIO_ENGINE
-	if (m_pAudioEngine)
-	{
-		m_pAudioEngine->CleanupAudioEngine();
-	}
-#endif
-#ifdef USE_OPENAL_AUDIO_ENGINE
 	CAudioEngine2::GetInstance()->CleanupAudioEngine();
-#endif
-
-
 	return S_OK;
 }
 
