@@ -462,6 +462,8 @@ void AppDelegate::OnStart()
 void AppDelegate::OnStop()
 {
     LOGI("app:OnStop");
+	// kill app , this is temporary measures
+	exit(0);
 }
 void AppDelegate::OnPause()
 {
