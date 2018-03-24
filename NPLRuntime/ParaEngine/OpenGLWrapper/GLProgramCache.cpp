@@ -353,7 +353,7 @@ void GLProgramCache::loadDefaultGLProgram(GLProgram *p, int type)
     p->link();
     p->updateUniforms();
 
-    CHECK_GL_ERROR_DEBUG();
+	PE_CHECK_GL_ERROR_DEBUG();
 #endif
 }
 

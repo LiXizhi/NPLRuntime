@@ -212,6 +212,7 @@ bool GLTexture2D::updateWithData(const void *data, int offsetX, int offsetY, int
 		GL::bindTexture2D(_name);
 		const PixelFormatInfo& info = _pixelFormatInfoTables.at(_pixelFormat);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, offsetX, offsetY, width, height, info.format, info.type, data);
+		PE_CHECK_GL_ERROR_DEBUG();
 
 		return true;
 	}
@@ -465,7 +466,26 @@ void GLTexture2D::setGLProgram(GLProgram* shaderProgram)
 
 GLuint GLTexture2D::getName() const
 {
-    return _name;
+	if (this == nullptr)
+		return 0;
+	else
+		return _name;
+}
+
+void GLTexture2D::bind()
+{
+	if (this == nullptr)
+		return;
+
+	GL::bindTexture2D(this->_name);
+}
+
+void GLTexture2D::bindN(GLuint textureUnit)
+{
+	if (this == nullptr)
+		return;
+
+	GL::bindTexture2DN(textureUnit, this->_name);
 }
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)
@@ -476,6 +496,8 @@ void GLTexture2D::setTexParameters(const TexParams& texParams)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texParams.magFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texParams.wrapS);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texParams.wrapT);
+
+	PE_CHECK_GL_ERROR_DEBUG();
 
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	VolatileTextureMgr::setTexParameters(this, texParams);
@@ -508,6 +530,8 @@ void GLTexture2D::setAliasTexParameters()
 	}
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	PE_CHECK_GL_ERROR_DEBUG();
 }
 
 GLTexture2D::PixelFormat GLTexture2D::convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)

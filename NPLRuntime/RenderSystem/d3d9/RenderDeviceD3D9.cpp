@@ -3,6 +3,10 @@
 #include "D3DMapping.h"
 using namespace ParaEngine;
 
+bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const char* func, int nLine)
+{
+	return true;
+}
 
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {

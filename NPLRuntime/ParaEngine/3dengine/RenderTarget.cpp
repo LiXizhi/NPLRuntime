@@ -22,6 +22,7 @@
 
 #if USE_OPENGL_RENDERER
 #include "RenderDeviceOpenGL.h"
+#include "OpenGLWrapper/GLTexture2D.h"
 #endif
 
 /** @def default canvas map width in pixels */
@@ -143,7 +144,8 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
 	// associate texture with FBO
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pCanvasTexture->GetTexture(), 0);
+	auto pTex = m_pCanvasTexture->GetTexture();
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pTex ? pTex->getName() : 0, 0);
 
 	if (m_depthStencilFormat != 0)
 	{

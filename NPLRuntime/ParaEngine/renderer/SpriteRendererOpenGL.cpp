@@ -11,6 +11,7 @@
 #include "RenderDeviceOpenGL.h"
 #include "TextureEntity.h"
 #include "OpenGLWrapper/GLProgram.h"
+#include "OpenGLWrapper/GLTexture2D.h"
 //#include "CGUIRootLayer.h"
 #include "EffectManager.h"
 #include "ParaWorldAsset.h"

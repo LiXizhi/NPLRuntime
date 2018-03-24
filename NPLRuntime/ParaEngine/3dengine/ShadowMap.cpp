@@ -265,8 +265,8 @@ bool CShadowMap::PrepareAllSurfaces()
 		glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
 		glGenFramebuffers(1, &mSMFrameBufferObject);
 		glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
-		glBindTexture(GL_TEXTURE_2D, m_pSMColorTexture->GetTexture());
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture(), 0);
+		m_pSMColorTexture->GetTexture()->bind();
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture()->getName(), 0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glGenRenderbuffers(1, &mSMDepthStencilBufferObject);
 		glBindRenderbuffer(GL_RENDERBUFFER, mSMDepthStencilBufferObject);
@@ -274,6 +274,8 @@ bool CShadowMap::PrepareAllSurfaces()
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		PE_CHECK_GL_ERROR_DEBUG();
 		
 #endif
 	}

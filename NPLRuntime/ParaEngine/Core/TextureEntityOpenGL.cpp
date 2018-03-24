@@ -12,6 +12,7 @@
 #include "ImageEntity.h"
 #include "TextureEntity.h"
 #include "OpenGLWrapper/GLImage.h"
+#include "os_calls.h"
 
 using namespace ParaEngine;
 
@@ -301,13 +302,13 @@ DeviceTexturePtr_type ParaEngine::TextureEntityOpenGL::GetTexture()
 				}
 			}
 			auto tex = m_pTextureSequence[pInfo->m_nCurrentFrameIndex];
-			return tex ? tex->getName() : 0;
+			return tex;
 		}
 		break;
 	}
 	default:
 	{
-		return m_texture ? m_texture->getName() : 0;
+		return m_texture;
 		break;
 	}
 	}
@@ -528,7 +529,17 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		
 		if (bRet)
 		{
-			auto texture = new GLTexture2D();
+			GLTexture2D* texture = m_texture;
+			if (!texture)
+			{
+				texture = new GLTexture2D();
+			}
+			else
+			{
+				texture->addref();
+			}
+
+
 			{
 				// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
 				auto errorCode = glGetError();
@@ -589,7 +600,8 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 				}
 				else
 				{
-					SetInnerTexture(texture);
+					if (!m_texture)
+						SetInnerTexture(texture);
 				}
 				SAFE_RELEASE(texture);
 				return true;

@@ -1,6 +1,12 @@
 #include "RenderDeviceNull.h"
 using namespace ParaEngine;
 
+bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const char* func, int nLine)
+{
+	return true;
+}
+
+
 uint32_t ParaEngine::RenderDeviceNull::GetRenderState(const ERenderState& State)
 {
 	return 0;
