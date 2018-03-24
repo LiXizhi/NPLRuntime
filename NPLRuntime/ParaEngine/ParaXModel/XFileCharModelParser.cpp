@@ -357,7 +357,9 @@ bool XFileCharModelParser::ReadXGlobalSequences(CParaXModel& xmesh, XFileDataObj
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		xmesh.m_objNum.nGlobalSequences = *(DWORD*)(pBuffer);
+		DWORD _nGlobalSequences;
+		memcpy(&_nGlobalSequences, pBuffer, sizeof(DWORD));
+		xmesh.m_objNum.nGlobalSequences = _nGlobalSequences;
 		xmesh.globalSequences = new int[xmesh.m_objNum.nGlobalSequences];
 		if (xmesh.globalSequences)
 			memcpy(xmesh.globalSequences, pBuffer + 4, xmesh.m_objNum.nGlobalSequences*sizeof(DWORD));
@@ -392,7 +394,11 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nTextures = *(DWORD*)(pBuffer);
+		//int nTextures = *(DWORD*)(pBuffer);
+		DWORD _nTextures;
+		memcpy(&_nTextures, pBuffer, sizeof(DWORD));
+		int nTextures = _nTextures;
+		
 		xmesh.m_objNum.nTextures = nTextures;
 		struct ModelTextureDef_
 		{
@@ -447,8 +453,16 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nAttachments = *(DWORD*)(pBuffer);
-		int nAttachmentLookup = *(((DWORD*)(pBuffer)) + 1);
+		//int nAttachments = *(DWORD*)(pBuffer);
+		//int nAttachmentLookup = *(((DWORD*)(pBuffer)) + 1);
+		DWORD tmp;
+		memcpy(&tmp, pBuffer, sizeof(DWORD));
+		int nAttachments = tmp;
+
+		memcpy(&tmp, pBuffer + sizeof(DWORD), sizeof(DWORD));
+
+		int nAttachmentLookup = tmp;
+		
 		xmesh.m_objNum.nAttachments = nAttachments;
 		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 
@@ -483,7 +497,11 @@ bool XFileCharModelParser::ReadXColors(CParaXModel& xmesh, XFileDataObjectPtr pF
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nColors = *(DWORD*)(pBuffer);
+		//int nColors = *(DWORD*)(pBuffer);
+		DWORD _nColors;
+		memcpy(&_nColors, pBuffer, sizeof(DWORD));
+		int nColors = _nColors;
+		
 		xmesh.m_objNum.nColors = nColors;
 		if (nColors > 0)
 		{ // at least one Bone
@@ -510,7 +528,11 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nTransparency = *(DWORD*)(pBuffer);
+		//int nTransparency = *(DWORD*)(pBuffer);
+		DWORD _nTransparency;
+		memcpy(&_nTransparency, pBuffer, sizeof(DWORD));
+		int nTransparency = _nTransparency;
+		
 		xmesh.m_objNum.nTransparency = nTransparency;
 		if (nTransparency > 0)
 		{ // at least one item
@@ -555,7 +577,11 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nGeosets = *(DWORD*)(pBuffer);
+		//int nGeosets = *(DWORD*)(pBuffer);
+		DWORD _nGeosets;
+		memcpy(&_nGeosets, pBuffer, sizeof(DWORD));
+		int nGeosets = _nGeosets;
+		
 		ModelGeoset* pGeosets = (ModelGeoset*)(pBuffer + 4);
 		xmesh.showGeosets = new bool[nGeosets];
 		for (int i = 0; i < nGeosets; ++i)
@@ -596,7 +622,12 @@ bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPt
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nRenderPasses = *(DWORD*)(pBuffer);
+		//int nRenderPasses = *(DWORD*)(pBuffer);
+		DWORD _nRenderPasses;
+		memcpy(&_nRenderPasses, pBuffer, sizeof(DWORD));
+
+		int nRenderPasses = _nRenderPasses;
+		
 		ModelRenderPass* passes = (ModelRenderPass*)(pBuffer + 4);
 		xmesh.passes.resize(nRenderPasses);
 		if (nRenderPasses > 0)
@@ -709,7 +740,11 @@ bool XFileCharModelParser::ReadXTexAnims(CParaXModel& xmesh, XFileDataObjectPtr 
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nTexAnims = *(DWORD*)(pBuffer);
+		//int nTexAnims = *(DWORD*)(pBuffer);
+		DWORD _nTexAnims;
+		memcpy(&_nTexAnims, pBuffer, sizeof(DWORD));
+		int nTexAnims = _nTexAnims;
+
 		xmesh.m_objNum.nTexAnims = nTexAnims;
 		if (nTexAnims > 0)
 		{ // at least one Bone
@@ -738,7 +773,12 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nParticleEmitters = *(DWORD*)(pBuffer);
+		//int nParticleEmitters = *(DWORD*)(pBuffer);
+		DWORD _nParticleEmitters;
+		memcpy(&_nParticleEmitters, pBuffer, sizeof(pBuffer));
+		int nParticleEmitters = _nParticleEmitters;
+
+
 		xmesh.m_objNum.nParticleEmitters = nParticleEmitters;
 		if (nParticleEmitters > 0)
 		{ // at least one item
@@ -813,7 +853,11 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nRibbonEmitters = *(DWORD*)(pBuffer);
+		//int nRibbonEmitters = *(DWORD*)(pBuffer);
+		DWORD _nRibbonEmitters;
+		memcpy(&_nRibbonEmitters, pBuffer, sizeof(DWORD));
+		int nRibbonEmitters = _nRibbonEmitters;
+		
 		xmesh.m_objNum.nRibbonEmitters = nRibbonEmitters;
 		if (nRibbonEmitters > 0)
 		{ // at least one item
@@ -858,7 +902,11 @@ bool XFileCharModelParser::ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr p
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nCameras = *(DWORD*)(pBuffer);
+		//int nCameras = *(DWORD*)(pBuffer);
+		DWORD _nCameras;
+		memcpy(&_nCameras, pBuffer, sizeof(DWORD));
+		int nCameras = _nCameras;
+		
 		xmesh.m_objNum.nCameras = nCameras;
 		if (nCameras > 0)
 		{ // at least one item
@@ -895,7 +943,11 @@ bool XFileCharModelParser::ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pF
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nLights = *(DWORD*)(pBuffer);
+		//int nLights = *(DWORD*)(pBuffer);
+		DWORD _nLights;
+		memcpy(&_nLights, pBuffer, sizeof(DWORD));
+		int nLights = _nLights;
+	
 		xmesh.m_objNum.nLights = nLights;
 		if (nLights > 0)
 		{ // at least one item
@@ -931,7 +983,11 @@ bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPt
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		uint32 nAnimations = *(DWORD*)(pBuffer);
+		//uint32 nAnimations = *(DWORD*)(pBuffer);
+		DWORD _nAnimations;
+		memcpy(&_nAnimations, pBuffer, sizeof(DWORD));
+		uint32 nAnimations = _nAnimations;
+		
 		xmesh.m_objNum.nAnimations = nAnimations;
 
 		ModelAnimation *anims = (ModelAnimation *)(pBuffer + 4);
