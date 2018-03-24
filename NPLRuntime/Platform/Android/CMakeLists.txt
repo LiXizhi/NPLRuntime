@@ -23,6 +23,7 @@ target_link_libraries(Paracraft PUBLIC
     android
     EGL 
     log
+    cAudioEngine
 	#sqlite
 )
 target_compile_definitions(Paracraft PUBLIC 

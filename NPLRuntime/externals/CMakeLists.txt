@@ -58,6 +58,7 @@ add_subdirectory(EmbedResource)
 if(ANDROID)
     #add_subdirectory(LuaJIT2_0)
     add_subdirectory(openssl)
+    add_subdirectory(cAudioEngine)
 else()
     set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
 	
