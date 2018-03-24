@@ -115,7 +115,7 @@ void AppDelegate::handle_touch_input(AppDelegate* app, AInputEvent* event)
 		float touchX = AMotionEvent_getX(event, i);
 		float touchY = AMotionEvent_getY(event, i);
 		TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
-		LOGI("Touch Event: %s", touchEvent->ToScriptCode().c_str());
+		//LOGI("Touch Event: %s", touchEvent->ToScriptCode().c_str());
 		touchEvents.push_back(touchEvent);
 	}
 	app->OnTouch(touchEvents);

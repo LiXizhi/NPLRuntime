@@ -1276,7 +1276,7 @@ bool hlsl2glsl(const std::string& inCode, const std::string& enterpoint, EShLang
 	int parseOk = Hlsl2Glsl_Parse(parser, sourceStr, toVersion, nullptr, opt);
 	if (!parseOk) {
 		infoLog = Hlsl2Glsl_GetInfoLog(parser);
-		std::cerr << infoLog << std::endl;
+		OUTPUT_LOG(infoLog);
 		Hlsl2Glsl_DestructCompiler(parser);
 		Hlsl2Glsl_Shutdown();
 		return false;
@@ -1285,7 +1285,7 @@ bool hlsl2glsl(const std::string& inCode, const std::string& enterpoint, EShLang
 	int translateOk = Hlsl2Glsl_Translate(parser, enterpoint.c_str(), toVersion, opt);
 	if (!translateOk) {
 		infoLog = Hlsl2Glsl_GetInfoLog(parser);
-		std::cerr << infoLog << std::endl;
+		OUTPUT_LOG(infoLog);
 		Hlsl2Glsl_DestructCompiler(parser);
 		Hlsl2Glsl_Shutdown();
 		return false;
