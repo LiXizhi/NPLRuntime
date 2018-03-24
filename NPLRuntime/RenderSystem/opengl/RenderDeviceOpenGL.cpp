@@ -559,13 +559,25 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil
 
 bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 {
-	//throw std::logic_error("The method or operation is not implemented.");
+
+
+	if (!pRect || (pRect->left <= 0 && pRect->top <= 0 && pRect->right <= 0 && pRect->bottom <= 0))
+	{
+		glDisable(GL_SCISSOR_TEST);
+	}
+	else
+	{
+		int nScreenWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+		int nScreenHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.y + m_CurrentViewPort.w);
+		glScissor((GLint)(pRect->left + m_CurrentViewPort.x), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
+	}
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 {
-	//throw std::logic_error("The method or operation is not implemented.");
+
 	return true;
 }
 
