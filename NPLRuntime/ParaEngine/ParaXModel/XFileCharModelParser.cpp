@@ -627,6 +627,7 @@ bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPt
 	return true;
 }
 
+
 bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFileData)
 {
 	DWORD       dwSize;
@@ -634,12 +635,20 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 	// Get the template data
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
-		int nBones = *(DWORD*)(pBuffer);
+		//int nBones = *(DWORD*)(pBuffer);
+		DWORD _nBones;
+		memcpy(&_nBones, pBuffer, sizeof(DWORD));
+		int nBones = _nBones;
+
 		xmesh.m_objNum.nBones = nBones;
 		if (nBones > 0)
 		{ // at least one Bone
 			xmesh.bones = new Bone[nBones];
+
 			ModelBoneDef *mb = (ModelBoneDef*)(pBuffer + 4);
+
+			
+
 			for (int i = 0; i < nBones; ++i)
 			{
 				Bone& bone = xmesh.bones[i];
@@ -653,13 +662,17 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 						bone.SetName((const char*)GetRawData(b.nBoneName));
 
 					if (bone.IsOffsetMatrixBone()) {
-						bone.matOffset = *((const Matrix4*)GetRawData(b.nOffsetMatrix));
+						//bone.matOffset = *((const Matrix4*)GetRawData(b.nOffsetMatrix));
+						memcpy(&bone.matOffset, GetRawData(b.nOffsetMatrix), sizeof(Matrix4));
 						bone.bUsePivot = false;
 					}
-
-					bone.pivot = *((const Vector3*)GetRawData(b.nOffsetPivot));
+					//bone.pivot = *((const Vector3*)GetRawData(b.nOffsetPivot));
+					memcpy(&bone.pivot, GetRawData(b.nOffsetPivot), sizeof(Vector3));
 					if (bone.IsStaticTransform())
-						bone.matTransform = *((const Matrix4*)GetRawData(b.ofsStaticMatrix));
+					{
+						//bone.matTransform = *((const Matrix4*)GetRawData(b.ofsStaticMatrix));
+						memcpy(&bone.matTransform, GetRawData(b.ofsStaticMatrix), sizeof(Matrix4));
+					}
 				}
 				else
 				{
