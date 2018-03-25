@@ -11,3 +11,7 @@ ParaEngine
 ${COCOA_LIBRARY}
 ${OPENGL_LIBRARY}
 )
+
+set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+
+
