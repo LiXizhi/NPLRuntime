@@ -52,12 +52,7 @@ namespace ParaEngine
 		void BootStrapAndLoadConfig();
 		void InitSystemModules();
 		void InitRenderEnvironment();
-		void ResetRenderEnvironment();
-
-		
-		
-		
-		
+		void ResetRenderEnvironment();		
 		void Render();
 		void HandleUserInput();
 		/** this function is called whenever the application is disabled or enabled. usually called when receiving the WM_ACTIVATEAPP message.
@@ -100,6 +95,7 @@ namespace ParaEngine
 		IRenderWindow* m_pRenderWindow;
 		CFrameRateController m_doWorkFRC;
 		bool m_bActive;
+		bool m_bAudioEngineInitialized;
 
 #pragma region OLD_CODE
 

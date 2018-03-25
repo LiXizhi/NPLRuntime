@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "WindowDelegate.h"
 
 @implementation WindowDelegate
