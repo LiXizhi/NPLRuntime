@@ -272,6 +272,10 @@ namespace ParaEngine
 		LOGI(pStr);
 #endif
 
+#if __APPLE__
+     printf(pStr);
+#endif
+
 #if defined(WIN32) && defined(_DEBUG) 
 		printf(pStr);
 		::OutputDebugStringA(pStr);
