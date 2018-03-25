@@ -8,7 +8,7 @@ namespace ParaEngine
 
 	enum class EMouseEventType
 	{
-		Unkonw,
+		Unknown,
 		Button,
 		Move,
 		Wheel
@@ -214,8 +214,9 @@ namespace ParaEngine
 		DeviceMouseEvent():m_timestamp(0) {
 			m_timestamp = (uint32_t)std::time(nullptr);
 		}
-		virtual EMouseEventType GetEventType() const { return EMouseEventType::Unkonw; }
+		virtual EMouseEventType GetEventType() const { return EMouseEventType::Unknown; }
 		uint32_t GetTimestamp() const { return m_timestamp; }
+		virtual std::string ToString();
 	private:
 		uint32_t m_timestamp;
 	};
@@ -229,6 +230,8 @@ namespace ParaEngine
 		inline int GetX() const { return m_x; };
 		inline int GetY() const { return m_y; };
 		virtual EMouseEventType GetEventType()const  override  { return EMouseEventType::Move; };
+
+		virtual std::string ToString();
 	private:
 		int m_x;
 		int m_y;
@@ -244,12 +247,15 @@ namespace ParaEngine
 			, m_x(x)
 			, m_y(y) {};
 		inline EMouseButton GetButton() const { return m_button; };
+		void SetButton(EMouseButton btn) { m_button = btn; }
 		inline EKeyState GetKeyState() const { return m_state; };
 
 		inline int GetX() const { return m_x; };
 		inline int GetY() const { return m_y; };
 
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Button; };
+
+		virtual std::string ToString();
 	private:
 		EMouseButton m_button;
 		EKeyState m_state;
@@ -264,6 +270,8 @@ namespace ParaEngine
 		DeviceMouseWheelEvent(int whell) :m_whell(whell) {}
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Wheel; }
 		virtual int GetWhell() const { return m_whell; }
+
+		virtual std::string ToString();
 	private:
 		int m_whell;
 	};

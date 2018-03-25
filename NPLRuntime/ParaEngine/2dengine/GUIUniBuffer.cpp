@@ -833,7 +833,7 @@ bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 		m_utf16Text = start + wchar + end;
 	}
 
-
+	StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 	return true;
 }
 

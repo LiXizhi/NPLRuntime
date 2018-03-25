@@ -75,7 +75,7 @@ void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 void AppDelegate::handle_touch_input(AppDelegate* app, AInputEvent* event)
 {
 	int action = AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
-	int index = (AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> 8;
+	int index = (AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
 	int touchId = AMotionEvent_getPointerId(event, index);
 
 	TouchEvent::TouchEventMsgType touchType = TouchEvent::TouchEvent_POINTER_UP;
@@ -110,9 +110,27 @@ void AppDelegate::handle_touch_input(AppDelegate* app, AInputEvent* event)
 	float touchX = AMotionEvent_getX(event, index);
 	float touchY = AMotionEvent_getY(event, index);
 	TouchEvent touchEvent(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
-	// LOGI("Touch Event: %s", touchEvent.ToScriptCode().c_str());
+	
+	std::vector<TouchEventPtr> touchEvents;
 
-	app->OnTouch(touchEvent);
+	if (touchType == TouchEvent::TouchEvent_POINTER_UPDATE)
+	{
+		auto touchCount = AMotionEvent_getPointerCount(event);
+		for (int i = 0; i < touchCount; i++)
+		{
+			int32_t touchId = AMotionEvent_getPointerId(event, i);
+			float touchX = AMotionEvent_getX(event, i);
+			float touchY = AMotionEvent_getY(event, i);
+			TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
+			touchEvents.push_back(touchEvent);
+		}
+	}
+	else
+	{
+		TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
+		touchEvents.push_back(touchEvent);
+	}
+	app->OnTouch(touchEvents);
 }
 
 
@@ -510,14 +528,18 @@ void AppDelegate::OnWindowResized()
 	LOGI("app:OnWindowResized");
 }
 
-void ParaEngine::AppDelegate::OnTouch(const TouchEvent& event)
+void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 {
 	if (m_ParaEngineApp)
 	{
 		auto gui = CGUIRoot::GetInstance();
 		if (gui)
 		{
-			gui->handleTouchEvent(event);
+			for (auto& event : events)
+			{
+				// LOGI("Touch Event %s", event->ToScriptCode().c_str());
+				gui->handleTouchEvent(*event);
+			}
 		}
 	}
 }

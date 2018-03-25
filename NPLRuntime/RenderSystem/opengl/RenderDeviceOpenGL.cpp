@@ -69,7 +69,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	:m_AlphaBlendingChanged(true)
 	,m_EnableBlending(false)
 	,m_EnableSeparateAlphaBlending(false)
-	,m_BlendingChaned(true)
+	,m_BlendingChanged(true)
 	,m_BlendingSource(RSV_BLEND_SRCALPHA)
 	,m_BlendingDest(RSV_BLEND_INVSRCALPHA)
 	,m_BlendingAlphaSource(RSV_BLEND_SRCALPHA)
@@ -206,14 +206,14 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 	{
 		if (Value == m_BlendingSource)break;
 		m_BlendingSource = Value;
-		m_BlendingChaned = true;
+		m_BlendingChanged = true;
 	}
 	break;
 	case ERenderState::DESTBLEND:
 	{
 		if (Value == m_BlendingDest)break;
 		m_BlendingDest = Value;
-		m_BlendingChaned = true;
+		m_BlendingChanged = true;
 	}
 	break;
 	case ERenderState::STENCILENABLE:
@@ -611,12 +611,12 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 		uint32_t dst = ToGLBlendValue(m_BlendingDest);
 		glBlendFuncSeparate(src, dst, asrc, adst);
 		m_AlphaBlendingChanged = false;
-	}else if (m_BlendingChaned)
+	}else if (m_BlendingChanged)
 	{
 		uint32_t src = ToGLBlendValue(m_BlendingSource);
 		uint32_t dst = ToGLBlendValue(m_BlendingDest);
 		glBlendFunc(src, dst);
-		m_BlendingChaned = false;
+		m_BlendingChanged = false;
 	}
 
 }

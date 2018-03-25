@@ -103,7 +103,7 @@ namespace ParaEngine
 		void ApplyBlendingModeChange();
 	private:
 		bool m_AlphaBlendingChanged;
-		bool m_BlendingChaned;
+		bool m_BlendingChanged;
 		bool m_EnableBlending;
 		bool m_EnableSeparateAlphaBlending;
 		uint32_t m_BlendingSource;
