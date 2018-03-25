@@ -1,3 +1,5 @@
+include(cmake/ucm.cmake)
+
 if (ANDROID)
 	cmake_minimum_required(VERSION 3.10)
 else()
@@ -114,6 +116,12 @@ if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
 else()
 	option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 
+endif()
+
+
+
+if(MSVC)
+    ucm_set_runtime(STATIC)
 endif()
 
 

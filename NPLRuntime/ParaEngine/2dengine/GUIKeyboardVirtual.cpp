@@ -98,6 +98,7 @@ HRESULT ParaEngine::CGUIKeyboardVirtual::ReadBufferedData()
 		}
 	}
 	m_buffered_key_msgs_count = 0;
+	return S_OK;
 }
 
 HRESULT ParaEngine::CGUIKeyboardVirtual::ReadImmediateData()

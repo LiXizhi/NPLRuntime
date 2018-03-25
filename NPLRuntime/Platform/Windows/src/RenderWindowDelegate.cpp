@@ -9,7 +9,7 @@ IRenderWindow* CreateParaRenderWindow(const int width, const int height)
 	return new RenderWindowDelegate(g_hAppInstance, width, height);
 }
 
-void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state)
+void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y)
 {
 
 	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
@@ -17,7 +17,7 @@ void RenderWindowDelegate::OnMouseButton(EMouseButton button, EKeyState state)
 		return;
 	}
 
-	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state)));
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state,x,y)));
 }
 
 void RenderWindowDelegate::OnMouseMove(uint32_t x, uint32_t y)
@@ -35,7 +35,7 @@ void ParaEngine::RenderWindowDelegate::OnMouseWhell(float x, float y, float delt
 	{
 		return;
 	}
-	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWhellEvent(y)));
+	CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(y)));
 }
 
 void ParaEngine::RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)

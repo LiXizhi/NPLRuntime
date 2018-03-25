@@ -163,13 +163,12 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	RenderWindowWin32* window = g_WindowMap[hWnd];
 	assert(window);
 	assert(window->GetHandle() == hWnd);
-
+	float xPos = GET_X_LPARAM(lParam);
+	float yPos = GET_Y_LPARAM(lParam);
 	switch (message)
 	{
 	case WM_MOUSEMOVE:
 	{
-		float xPos = GET_X_LPARAM(lParam);
-		float yPos = GET_Y_LPARAM(lParam);
 		window->m_MousePos.x = xPos;
 		window->m_MousePos.y = yPos;
 		window->OnMouseMove(xPos, yPos);
@@ -177,32 +176,30 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		break;
 	case WM_LBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
-		window->OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS);
+		window->OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS,xPos,yPos);
 		break;
 	case WM_LBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
-		window->OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE);
+		window->OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, xPos, yPos);
 		break;
 	case WM_RBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
-		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS);
+		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, xPos, yPos);
 		break;
 	case WM_RBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
-		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE);
+		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, xPos, yPos);
 		break;
 	case WM_MBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
-		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS);
+		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, xPos, yPos);
 		break;
 	case WM_MBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
-		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE);
+		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, xPos, yPos);
 		break;
 	case WM_MOUSEWHEEL:
 	{
-		float xPos = GET_X_LPARAM(lParam);
-		float yPos = GET_Y_LPARAM(lParam);
 		float zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
 		window->OnMouseWhell(xPos, yPos, zDelta);
 	}
