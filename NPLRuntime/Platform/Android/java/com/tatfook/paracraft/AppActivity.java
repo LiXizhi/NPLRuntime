@@ -29,9 +29,10 @@ public class AppActivity extends NativeActivity{
 		System.loadLibrary(libname);
 
 		super.onCreate(icicle);  
+
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
 		
 		// TODO: add styles to remove both title and action bar
-		//getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
 		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
 	} 
