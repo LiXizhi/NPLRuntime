@@ -32,6 +32,8 @@ public class AppActivity extends NativeActivity{
 		System.loadLibrary(libname);
 
 		super.onCreate(icicle);  
+
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
 		
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
 
