@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------
 // Class:	CGUIRoot
-// Authors:	LiXizhi, Liu Weili
+// Authors:	LiXizhi, LiuWeili
 // Date: 2005.8.1, revised 2009.11.25
 //
-// desc: 
+// Desc: 
 // When rendering scene, root scene and the root GUI are rendered in sequence.  
 // We see that root scene is still the dominant entity in the ParaEngine. 
 // 
@@ -36,9 +36,9 @@ POINT       pt;
 
 Whenever a raw MSG (event) arrives at a given GUI object, it just calls ::MsgProc, which only process for the object itself(not children).
 MsgProc is a virtual function, but it generally does the following.
-- It first intepretes the raw message(event) to one Event_mapping event, according to its m_event status and event binding. Such as if two raw clicks are received, a double click event is generated.
+- It first interprets the raw message(event) to one Event_mapping event, according to its m_event status and event binding. Such as if two raw clicks are received, a double click event is generated.
 - It processes the interpreted event (one of the Event_mapping), usually via a switch struct.
-- It returns true if the event is processed, or false if the event is irrelavent to itself.
+- It returns true if the event is processed, or false if the event is irrelevant to itself.
 
 ---+++ About UI Mouse Focus
 Each container type object stores a mouse focus object, which can be NULL or one of its children.
@@ -973,7 +973,6 @@ void ParaEngine::CGUIRoot::ProcessIMEText()
 		CGUIBase* pKeyTarget = GetUIKeyFocus();
 		if (pKeyTarget) {
 			pKeyTarget->OnHandleWinMsgChars(m_sIMEText);
-			pKeyTarget->OnKeyUp(); // this is useful for broad casting the changes to scripting interface. 
 		}
 		m_sIMEText.clear();
 	}

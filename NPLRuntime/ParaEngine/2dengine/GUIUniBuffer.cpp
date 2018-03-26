@@ -295,6 +295,13 @@ bool CUniLine::RemoveChar( int nIndex )
 	return true;
 }
 
+bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+	m_pwszBuffer[nIndex] = wChar;
+	m_bAnalyseRequired = true;
+	return true;
+}
+
 
 //--------------------------------------------------------------------------------------
 // Inserts the first nCount characters of the string pStr at specified index.
@@ -548,7 +555,7 @@ CUniBuffer::~CUniBuffer()
 
 
 //--------------------------------------------------------------------------------------
-char16_t& CUniBuffer::operator[](int n)  // No param checking
+const char16_t& CUniBuffer::operator[](int n) // No param checking
 {
 	// This version of operator[] is called only
 	// if we are asking for write access, so
@@ -850,6 +857,18 @@ bool ParaEngine::CUniBuffer::RemoveChar(int nIndex)
 	return true;
 }
 
+
+
+bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+	if (nIndex < m_utf16Text.size())
+	{
+		m_utf16Text[nIndex] = wchar;
+		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
+	}
+	return true;
+}
+
 bool ParaEngine::CUniBuffer::InsertString(int nIndex, const char16_t *pStr, int nCount /*= -1*/)
 {
 	m_utf16Text = m_utf16Text.substr(0, nIndex) + pStr + m_utf16Text.substr(nIndex);
@@ -897,7 +916,7 @@ const char16_t* ParaEngine::CUniBuffer::GetBuffer() const
 	return m_utf16Text.c_str();
 }
 
-char16_t& ParaEngine::CUniBuffer::operator[](int n)
+const char16_t& ParaEngine::CUniBuffer::operator[](int n)
 {
 	if ((int)m_utf16Text.size() > n)
 		return m_utf16Text[n];

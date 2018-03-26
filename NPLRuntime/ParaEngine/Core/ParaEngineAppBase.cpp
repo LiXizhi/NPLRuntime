@@ -354,7 +354,11 @@ void ParaEngine::CParaEngineAppBase::Render()
 #endif
 		auto color = m_pRootScene->GetClearColor();
 		auto pDevice = CGlobals::GetRenderDevice();
+
+		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+
 		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		pDevice->SetClearDepth(1.0f);
 		pDevice->SetClearStencil(1);

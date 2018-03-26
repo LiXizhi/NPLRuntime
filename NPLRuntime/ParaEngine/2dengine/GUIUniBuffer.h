@@ -28,13 +28,14 @@ namespace ParaEngine
 		int GetBufferA(std::string& out) const;
 
 		const char16_t& operator[]( int n ) const { return m_pwszBuffer[n]; }
-		char16_t& operator[](int n);
+		
 		GUIFontElement* GetFontNode() const{ return m_pFontNode; }
 		void SetFontNode( GUIFontElement *pFontNode ) { m_pFontNode = pFontNode; }
 		void Clear();
 
 		bool InsertChar(int nIndex, char16_t wchar); // Inserts the char at specified index. If nIndex == -1, insert to the end.
 		bool RemoveChar( int nIndex );  // Removes the char at specified index. If nIndex == -1, remove the last char.
+		bool ReplaceChar(int nIndex, char16_t wchar);
 		bool InsertString(int nIndex, const char16_t *pStr, int nCount = -1);  // Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
 		bool InsertStringA(int nIndex, const char*pStr, int nCount = -1);  // Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
 		bool SetTextA( LPCSTR szText );
@@ -181,7 +182,7 @@ namespace ParaEngine
 		int  GetTextSize()const;
 		const char16_t* GetBuffer()const;
 
-		char16_t& operator[](int n);
+		const char16_t& operator[](int n);
 		/**
 		@param nLength:	[in] Specifies the size, in bytes, of the buffer pointed to by the lpMultiByteStr parameter. If this value is zero, the function returns the number of bytes required for the buffer. (In this case, the lpMultiByteStr buffer is not used.)
 		@return:
@@ -193,6 +194,7 @@ namespace ParaEngine
 		bool InsertChar(int nIndex, char16_t wchar); 
 		// Removes the char at specified index. If nIndex == -1, remove the last char.
 		bool RemoveChar(int nIndex);  
+		bool ReplaceChar(int nIndex, char16_t wchar);
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
 		bool InsertString(int nIndex, const char16_t *pStr, int nCount = -1);  
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.

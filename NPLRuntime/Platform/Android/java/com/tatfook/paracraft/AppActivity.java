@@ -15,6 +15,7 @@ public class AppActivity extends NativeActivity{
 	@Override   
 	protected void onCreate(Bundle icicle) {   
 
+		/*
 		String libname = "main";
 		ActivityInfo ai;
 
@@ -30,6 +31,7 @@ public class AppActivity extends NativeActivity{
         }
 
 		System.loadLibrary(libname);
+		*/
 
 		super.onCreate(icicle);  
 
@@ -51,4 +53,10 @@ public class AppActivity extends NativeActivity{
             return super.onKeyDown(keyCode, event);    
         }    
 	}
+
+	/* This is the static constructor used to load the
+     * 'Paracraft.so' library when the class is
+     * loaded.
+     */
+    static { System.loadLibrary("Paracraft"); }
 }
