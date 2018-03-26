@@ -353,10 +353,12 @@ void ParaEngine::CParaEngineAppBase::Render()
 		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 #endif
 		auto color = m_pRootScene->GetClearColor();
-		CGlobals::GetRenderDevice()->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
-		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
-		CGlobals::GetRenderDevice()->SetClearStencil(1);
-		CGlobals::GetRenderDevice()->Clear(true, true, true);
+		auto pDevice = CGlobals::GetRenderDevice();
+		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
+		pDevice->SetClearDepth(1.0f);
+		pDevice->SetClearStencil(1);
+		pDevice->Clear(true, true, true);
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{
 			PERF1("3D Scene Render");
