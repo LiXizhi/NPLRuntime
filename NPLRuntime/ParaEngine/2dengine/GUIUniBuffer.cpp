@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------
 // Class:	CGUIUniBuffer
-// Authors:	Liu Weili, LiXizhi
+// Authors:	LiXizhi, Liu Weili
 // Company: ParaEngine
 // Date:	2005.8.3
 // Revised: 2010.3.13
@@ -807,7 +807,7 @@ bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 	//m_bAnalyseRequired = true;
 
 	//return true;
-
+	
 	PE_ASSERT(nIndex >= 0);
 	if (nIndex < 0)
 		return false; // invalid index
@@ -919,8 +919,10 @@ HRESULT ParaEngine::CUniBuffer::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY)
 
 HRESULT ParaEngine::CUniBuffer::XYtoCP(int nX, int nY, int *pCP, int *pnTrail)
 {
+	// TODO: we will always position at the back of the line for the moment. 
+	// this is consistent with the draw function of GUIEdit which always draw caret at tail
 	if (*pCP)
-		*pCP = 0;
+		*pCP = m_utf16Text.size();
 	if (*pnTrail)
 		*pnTrail = 0;
 	return S_OK;

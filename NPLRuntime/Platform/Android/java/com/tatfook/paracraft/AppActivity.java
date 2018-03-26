@@ -1,3 +1,6 @@
+/**
+* name: LiXizhi
+*/
 package com.tatfook.paracraft;
 
 import android.view.WindowManager;
@@ -30,10 +33,10 @@ public class AppActivity extends NativeActivity{
 
 		super.onCreate(icicle);  
 		
-		// TODO: add styles to remove both title and action bar
-		//getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
-		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);   
 
+		// TODO: add styles to remove both title and action bar
+		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 	} 
 
 	@Override    
