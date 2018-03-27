@@ -2071,6 +2071,8 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			}
 		}
 	}
+
+	// skip scrollable container
 	if (mouse_new_x > -99999 && pLastUIObj && !pLastUIObj->IsScrollableOrHasMouseWheelRecursive())
 	{
 		// OUTPUT_LOG("touch click simulate offset %d(%d), %d(%d)\n", mouse_x, mouse_new_x - ui_mouse_x, mouse_y, mouse_new_y - ui_mouse_y);
