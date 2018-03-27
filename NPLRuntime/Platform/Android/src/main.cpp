@@ -1,4 +1,9 @@
-
+//----------------------------------------------------------------------
+// Class:	main native 
+// Authors:	LiXizhi@yeah.net
+// Company: tatfook
+// Date: 2018.3
+//-----------------------------------------------------------------------
 #include "android_native_app_glue.h"
 #include "AppDelegate.h"
 #include <android/log.h>
@@ -10,7 +15,7 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
 	return JNI_VERSION_1_4;
 }
 
-inline std::string jni_sting_to_std_string(JNIEnv* env, jstring jstr)
+inline std::string jni_string_to_std_string(JNIEnv* env, jstring jstr)
 {
 	if (!jstr)return "";
 	const char *tmp_str = env->GetStringUTFChars(jstr, 0);
@@ -38,12 +43,12 @@ std::string get_launcher_intent_data(struct android_app* state)
 		jmethodID method_get_action = env->GetMethodID(icl, "getAction", "()Ljava/lang/String;");
 		jstring action = (jstring)env->CallObjectMethod(intent, method_get_action);
 
-		std::string action_str = jni_sting_to_std_string(env, action);
+		std::string action_str = jni_string_to_std_string(env, action);
 		if (action_str == "android.intent.action.VIEW")
 		{
 			jmethodID method_get_data_string = env->GetMethodID(icl, "getDataString", "()Ljava/lang/String;");
 			jstring intent_data = (jstring)env->CallObjectMethod(intent, method_get_data_string);
-			std::string data_str = jni_sting_to_std_string(env, intent_data);
+			std::string data_str = jni_string_to_std_string(env, intent_data);
 			return data_str;
 		}
 	}

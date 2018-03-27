@@ -1,3 +1,10 @@
+//----------------------------------------------------------------------
+// Class:	AppDelegate
+// Authors:	YuanQuanwei, LiXizhi
+// Company: ParaEngine
+// Date: 2018.3
+//-----------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "AppDelegate.h"
 #include <android/log.h>

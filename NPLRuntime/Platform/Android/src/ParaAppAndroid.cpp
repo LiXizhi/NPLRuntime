@@ -1,3 +1,10 @@
+//----------------------------------------------------------------------
+// Class: main app file
+// Authors:	yuanquanwei
+// Company: ParaEngine
+// Date: 2018.3
+//-----------------------------------------------------------------------
+
 #include "ParaAppAndroid.h"
 using namespace  ParaEngine;
 

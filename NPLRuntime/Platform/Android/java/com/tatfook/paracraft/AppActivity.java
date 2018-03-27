@@ -14,8 +14,7 @@ import android.content.pm.ActivityInfo;
 public class AppActivity extends NativeActivity{  
 	@Override   
 	protected void onCreate(Bundle icicle) {   
-
-		/*
+	
 		String libname = "main";
 		ActivityInfo ai;
 
@@ -31,7 +30,7 @@ public class AppActivity extends NativeActivity{
         }
 
 		System.loadLibrary(libname);
-		*/
+		
 
 		super.onCreate(icicle);  
 
@@ -58,5 +57,5 @@ public class AppActivity extends NativeActivity{
      * 'Paracraft.so' library when the class is
      * loaded.
      */
-    static { System.loadLibrary("Paracraft"); }
+    // static { System.loadLibrary("Paracraft"); }
 }

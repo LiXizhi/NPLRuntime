@@ -2052,7 +2052,7 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			int nX = i*nStepSize + ui_mouse_x;
 			int nY = j*nStepSize + ui_mouse_y;
 			CGUIBase* pUIObj = GetUIObject(nX, nY);
-			if (pUIObj && !pUIObj->IsScrollableOrHasMouseWheelRecursive() && pUIObj->HasClickEvent())
+			if (pUIObj && (pUIObj->IsScrollableOrHasMouseWheelRecursive() || pUIObj->HasClickEvent()))
 			{
 				int nRadius = i*i + j*j;
 				if (nRadius < nLastRadius 
@@ -2071,7 +2071,7 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			}
 		}
 	}
-	if (mouse_new_x > -99999)
+	if (mouse_new_x > -99999 && pLastUIObj && !pLastUIObj->IsScrollableOrHasMouseWheelRecursive())
 	{
 		// OUTPUT_LOG("touch click simulate offset %d(%d), %d(%d)\n", mouse_x, mouse_new_x - ui_mouse_x, mouse_y, mouse_new_y - ui_mouse_y);
 		mouse_x += (int)((mouse_new_x - ui_mouse_x)*m_fUIScalingX);
