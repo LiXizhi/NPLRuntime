@@ -4,13 +4,19 @@
 // Company: ParaEngine
 // Date: 2018.3
 //-----------------------------------------------------------------------
-
 #include "ParaAppAndroid.h"
 using namespace  ParaEngine;
 
 IParaEngineApp* CreateParaEngineApp()
 {
 	return new CParaEngineAppAndroid(nullptr);
+}
+
+void ParaEngine::CParaEngineAppAndroid::GetScreenResolution(Vector2* pOut)
+{
+	// should return full render window 
+	pOut->x = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+	pOut->y = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 }
 
 ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid(struct android_app* state):m_appState(state)

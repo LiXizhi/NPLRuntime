@@ -74,10 +74,13 @@ target_link_libraries(sqlite ${Boost_LIBRARIES})
 
 # set(TEST_DIR "D:/code/npl/TableDB/")
 
-ADD_CUSTOM_COMMAND(
-	TARGET sqlite
-	POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${OUTPUT_BIN_DIR}
-	# COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${TEST_DIR}
-)
+if(SQLITE_STATICLIB)
+else()
+	ADD_CUSTOM_COMMAND(
+		TARGET sqlite
+		POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${OUTPUT_BIN_DIR}
+		# COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${TEST_DIR}
+	)
+endif()

@@ -118,6 +118,8 @@ namespace ParaEngine
 		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
 		uint32_t m_RenderTargetWidth;
 		uint32_t m_RenderTargetHeight;
+		uint32_t m_LastRenderTargetWidth;
+		uint32_t m_LastRenderTargetHeight;
 		bool m_isBeginRenderTarget ;
 		Rect m_CurrentViewPort;
 	};
