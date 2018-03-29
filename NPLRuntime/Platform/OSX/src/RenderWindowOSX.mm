@@ -2,6 +2,24 @@
 #include "RenderWindowOSX.h"
 #include "WindowDelegate.h"
 
+
+
+@interface GLWindow : NSWindow
+{
+
+}
+@end
+
+@implementation GLWindow
+-(BOOL) canBecomeKeyWindow
+{
+    return YES;
+}
+
+@end
+
+
+
 using namespace ParaEngine;
 
 
@@ -15,7 +33,6 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 ,m_shouldClose(false)
 {
     [NSApplication sharedApplication];
-    [NSApp activateIgnoringOtherApps:YES];
     
     // Menu
     /*NSString* appName = [NSString stringWithFormat:@"%s", "Paracraft"];
@@ -33,15 +50,22 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
     
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
-    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
+    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable | NSWindowStyleMaskBorderless;
     
     
-    m_window = [[NSWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
+    m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
     [m_window setTitle:@"Paracraft"];
-    [m_window makeKeyAndOrderFront:nil];
+    [NSApp activateIgnoringOtherApps:YES];
+    [NSApp arrangeInFront:m_window];
+    [m_window orderFront:nil];
+    
+    [m_window makeKeyWindow];
+    [m_window makeFirstResponder:m_window];
     RenderWindowOSX* renderWindow = this;
     WindowDelegate* winDelegate = [[WindowDelegate alloc] InitWithRenderWindow:renderWindow];
     [m_window setDelegate:winDelegate];
+    
+
     
 }
 
@@ -59,13 +83,13 @@ intptr_t RenderWindowOSX::GetNativeHandle() const
 
 unsigned int RenderWindowOSX::GetHeight() const
 {
-    return 600;
+    return m_window.contentView.frame.size.height;
 }
 
 
 unsigned int RenderWindowOSX::GetWidth() const
 {
-    return 800;
+    return m_window.contentView.frame.size.width;
 }
 
 bool RenderWindowOSX::ShouldClose() const
@@ -83,8 +107,36 @@ void RenderWindowOSX::PollEvents() {
     
     switch([(NSEvent *)event type])
     {
+            
+        case NSEventTypeLeftMouseDown:
+            NSLog(@"Left mouse down");
+            break;
+        case NSEventTypeLeftMouseUp:
+            NSLog(@"Left mouse up");
+            break;
+        case NSEventTypeRightMouseDown:
+            NSLog(@"Right mouse down");
+            break;
+        case NSEventTypeRightMouseUp:
+            NSLog(@"Right mouse up");
+            break;
+        case NSEventTypeMouseMoved:
+            NSLog(@"mouse moved");
+            break;
+        case NSEventTypeScrollWheel:
+            NSLog(@"mouse scroll whell");
+            break;
+        case NSEventTypeOtherMouseDown:
+            NSLog(@"other mouse down");
+            break;
+        case NSEventTypeOtherMouseUp:
+            NSLog(@"other mouse up");
+            break;
         case NSEventTypeKeyDown:
-            NSLog(@"Key Down Event Received!");
+            NSLog(@"Key Down!");
+            break;
+        case NSEventTypeKeyUp:
+            NSLog(@"Key Up!");
             break;
         default:
             break;

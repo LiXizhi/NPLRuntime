@@ -47,8 +47,9 @@ endif()
 
 if(APPLE)
     # making executable relocatable 
-    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    SET(CMAKE_BUILD "$ORIGIN/")
+    #SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    #SET(CMAKE_BUILD "$ORIGIN/")
+    set(CMAKE_MACOSX_RPATH TRUE)
 else()
     # making executable relocatable 
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
