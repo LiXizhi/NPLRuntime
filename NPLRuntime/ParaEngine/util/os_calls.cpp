@@ -441,7 +441,11 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 	return std::string();
 #endif
 */
+#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID && PARA_TARGET_PLATFORM != PARA_PLATFORM_IOS)
 	return boost::log::aux::get_process_name();
+#else
+	return std::string();
+#endif
 }
 
 PE_CORE_DECL bool ParaEngine::stdin_is_tty()

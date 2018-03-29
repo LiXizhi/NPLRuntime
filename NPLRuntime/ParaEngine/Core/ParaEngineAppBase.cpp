@@ -149,8 +149,10 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	FindParaEngineDirectory();
 	RegisterObjectClasses();
 	CFrameRateController::LoadFRCNormal();
+	
 	// loading packages
 	LoadPackages();
+	
 	BootStrapAndLoadConfig();
 	InitSystemModules();
 	// load config file
