@@ -438,7 +438,9 @@ PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 	return std::string();
 #endif
 */
-#if (PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID && PARA_TARGET_PLATFORM != PARA_PLATFORM_IOS)
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID) || defined(ANDROID)
+	return std::string();
+#elif (PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX) || (PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC) || defined(WIN32)
 	return boost::log::aux::get_process_name();
 #else
 	return std::string();
