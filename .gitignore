@@ -62,3 +62,4 @@ buildvm_arch.h
 settings.json
 /NPLRuntime/Platform/Android/assets
 /NPLRuntime/Platform/Android/assets*
+/NPLRuntime/externals/boost/prebuild
