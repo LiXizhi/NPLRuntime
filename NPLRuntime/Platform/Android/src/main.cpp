@@ -1,52 +1,25 @@
 
 #include "android_native_app_glue.h"
 #include "AppDelegate.h"
+#include "jni/JniHelper.h"
 #include <android/log.h>
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
 
-extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)
-{
-
-	return JNI_VERSION_1_4;
-}
-
-inline std::string jni_sting_to_std_string(JNIEnv* env, jstring jstr)
-{
-	if (!jstr)return "";
-	const char *tmp_str = env->GetStringUTFChars(jstr, 0);
-	std::string ret = tmp_str;
-	env->ReleaseStringUTFChars(jstr, tmp_str);
-	return ret;
-}
 
 
 std::string get_launcher_intent_data(struct android_app* state)
 {
-	JNIEnv *env;
-	state->activity->vm->AttachCurrentThread(&env, 0);
-	jobject me = state->activity->clazz;
-
-	jclass acl = env->GetObjectClass(me); //class pointer of NativeActivity
-	jmethodID giid = env->GetMethodID(acl, "getIntent", "()Landroid/content/Intent;");
-	jobject intent = env->CallObjectMethod(me, giid); //Got our intent
-
-	if (intent != nullptr)
+	ParaEngine::JniMethodInfo info;
+	if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getLauncherIntentData", "()Ljava/lang/String;"))
 	{
 
-		jclass icl = env->GetObjectClass(intent); //class pointer of Intent
+		jstring intent_data = (jstring) info.env->CallObjectMethod(state->activity->clazz, info.methodID);
+		auto ret = ParaEngine::JniHelper::jstring2string(intent_data);
+		info.env->DeleteLocalRef(info.classID);
+		info.env->DeleteLocalRef(intent_data);
 
-		jmethodID method_get_action = env->GetMethodID(icl, "getAction", "()Ljava/lang/String;");
-		jstring action = (jstring)env->CallObjectMethod(intent, method_get_action);
-
-		std::string action_str = jni_sting_to_std_string(env, action);
-		if (action_str == "android.intent.action.VIEW")
-		{
-			jmethodID method_get_data_string = env->GetMethodID(icl, "getDataString", "()Ljava/lang/String;");
-			jstring intent_data = (jstring)env->CallObjectMethod(intent, method_get_data_string);
-			std::string data_str = jni_sting_to_std_string(env, intent_data);
-			return data_str;
-		}
+		return ret;
 	}
+
 	return "";
 }
 

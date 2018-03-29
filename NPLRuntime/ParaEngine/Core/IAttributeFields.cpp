@@ -35,9 +35,7 @@ e.g. we can make the behavior of the property's set/get methods slightly differe
 #include "ParaEngineSettings.h"
 #include "DynamicAttributeField.h"
 #include "DynamicAttributesSet.h"
-#ifdef PARAENGINE_CLIENT
-#include "EditorHelper.h"
-#endif
+#include "Framework/Common/Helper/EditorHelper.h"
 #include "AttributeModelProxy.h"
 
 using namespace ParaEngine;
@@ -167,11 +165,7 @@ CAttributeClass* IAttributeFields::GetAttributeClass()
 
 bool IAttributeFields::OpenWithDefaultEditor( const char* sScriptFile, bool bWaitOnReturn)
 {
-#ifdef PARAENGINE_CLIENT
 	return CEditorHelper::OpenWithDefaultEditor(sScriptFile, bWaitOnReturn);
-#else
-	return true;
-#endif
 }
 
 CDynamicAttributeField* ParaEngine::IAttributeFields::GetDynamicField(const std::string& sName)

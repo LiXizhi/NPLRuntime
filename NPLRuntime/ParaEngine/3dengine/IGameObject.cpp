@@ -9,7 +9,7 @@
 #include "WorldInfo.h"
 #include "EventsCenter.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "EditorHelper.h"
+#include "Framework/Common/Helper/EditorHelper.h"
 #endif
 #include "terrain/GlobalTerrain.h"
 #include "ShapeAABB.h"

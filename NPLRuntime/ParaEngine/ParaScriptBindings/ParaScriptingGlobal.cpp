@@ -11,11 +11,12 @@
 #include "FileManager.h"
 #include "ParaUtils.hpp"
 #include "DynamicAttributeField.h"
+#include "Framework/Common/Helper/EditorHelper.h"
 
 #ifdef PARAENGINE_CLIENT
-#include "EditorHelper.h"
-#include "SceneObject.h"
+	#include "SceneObject.h"
 #endif
+
 #include "NPLHelper.h"
 #include "IParaEngineApp.h"
 #include "AttributesManager.h"
@@ -299,20 +300,12 @@ void ParaGlobal::SetGameLoopInterval(float fInterval)
 
 bool ParaGlobal::CreateProcess(const char* lpApplicationName, const char* lpCommandLine, bool bWaitOnReturn)
 {
-#ifdef PARAENGINE_CLIENT
 	return CEditorHelper::CreateProcess(lpApplicationName, lpCommandLine, bWaitOnReturn);
-#else
-	return false;
-#endif
 }
 
 bool ParaGlobal::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 {
-#ifdef PARAENGINE_CLIENT
 	return CEditorHelper::ShellExecute(lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd);
-#else
-	return false;
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

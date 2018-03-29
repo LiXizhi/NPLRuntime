@@ -2,11 +2,19 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 host_os=`uname -s | tr "[:upper:]" "[:lower:]"`
 
-SRCDIR=$DIR/code
+NDK_ROOT=/mnt/c/lib/Android/android-ndk-r9d-linux-x86_64/android-ndk-r9d
+
+
+
+SRCDIR=$DIR/code/src
+INCLUDEDIR=$DIR/include
 cd "$SRCDIR"
 
+
 NDK=$NDK_ROOT
-NDKABI=8
+
+
+NDKABI=9
 NDKVER=$NDK/toolchains/arm-linux-androideabi-4.8
 NDKP=$NDKVER/prebuilt/${host_os}-x86_64/bin/arm-linux-androideabi-
 NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-arm"
@@ -15,7 +23,7 @@ NDKF="--sysroot $NDK/platforms/android-$NDKABI/arch-arm"
 DESTDIR=$DIR/prebuilt/android/armeabi
 rm "$DESTDIR"/*.a
 make clean
-make HOST_CC="gcc -m32" CROSS=$NDKP TARGET_SYS=Linux TARGET_FLAGS="$NDKF"
+make HOST_CC="gcc -m32" CROSS="$NDKP" TARGET_SYS=Linux TARGET_FLAGS="$NDKF"
 
 if [ -f $SRCDIR/src/libluajit.a ]; then
     mv $SRCDIR/src/libluajit.a $DESTDIR/libluajit.a
@@ -26,7 +34,7 @@ NDKARCH="-march=armv7-a -mfloat-abi=softfp -Wl,--fix-cortex-a8"
 DESTDIR=$DIR/prebuilt/android/armeabi-v7a
 rm "$DESTDIR"/*.a
 make clean
-make HOST_CC="gcc -m32" CROSS=$NDKP TARGET_SYS=Linux TARGET_FLAGS="$NDKF $NDKARCH"
+make HOST_CC="gcc -m32" CROSS="$NDKP" TARGET_SYS=Linux TARGET_FLAGS="$NDKF $NDKARCH"
 
 if [ -f $SRCDIR/src/libluajit.a ]; then
     mv $SRCDIR/src/libluajit.a $DESTDIR/libluajit.a

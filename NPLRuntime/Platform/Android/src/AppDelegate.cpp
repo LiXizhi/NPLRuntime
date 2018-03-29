@@ -12,13 +12,11 @@
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"
 #include "RenderContextEGL.h"
+#include "jni/AppActivity.h"
 
 
 using namespace ParaEngine;
 
-
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
 
 
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
@@ -432,6 +430,9 @@ AppDelegate::~AppDelegate()
 	OUTPUT_LOG("~AppDelegate");
 }
 
+AppDelegate* AppDelegate::m_pCurrentApp = nullptr;
+
+
 void AppDelegate::Run(struct android_app* app)
 {
 	m_State = app;
@@ -439,6 +440,9 @@ void AppDelegate::Run(struct android_app* app)
 	app->onAppCmd = AppDelegate::app_handle_command;
 	app->onInputEvent = AppDelegate::app_handle_input;
 	LOGI("app:run");
+
+	AppActivity appActivity(app);
+
 	while (!m_State->destroyRequested)
 	{
 
@@ -463,6 +467,8 @@ void AppDelegate::Run(struct android_app* app)
 		{
 			m_ParaEngineApp->DoWork();
 		}
+
+		appActivity.processGLEventJNI(app);
 	}
 	LOGI("app:exit");
 }
@@ -498,6 +504,7 @@ void AppDelegate::OnDestroy()
 {
 	LOGI("app:OnDestroy");
 }
+
 
 void AppDelegate::OnInitWindow()
 {

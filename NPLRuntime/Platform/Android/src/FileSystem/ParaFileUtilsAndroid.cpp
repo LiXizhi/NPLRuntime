@@ -23,6 +23,9 @@
 #include "ParaAppAndroid.h"
 #include <android/asset_manager.h>
 #include <android/native_activity.h>
+#include "jni/JniHelper.h"
+
+
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
@@ -66,27 +69,21 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWriteAblePath()
 {
 	if (m_writeAblePath.empty())
 	{
+
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 		auto state = app->GetAndroidApp();
 
-		JNIEnv* jni;
-		state->activity->vm->AttachCurrentThread(&jni, NULL);
-		jclass activityClass = jni->GetObjectClass(state->activity->clazz);
-		jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
-		jobject fileObject = jni->CallObjectMethod(state->activity->clazz, getFilesDir);
-		jclass fileClass = jni->GetObjectClass(fileObject);
-		jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
-		jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
-		auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
-		m_writeAblePath = path;
-		jni->ReleaseStringUTFChars((jstring)pathObject, path);
-		jni->DeleteLocalRef(fileClass);
-		jni->DeleteLocalRef(fileObject);
-		jni->DeleteLocalRef(activityClass);
-		state->activity->vm->DetachCurrentThread();
-		
-		if (m_writeAblePath[m_writeAblePath.size() - 1] != '/')
-			m_writeAblePath += "/";
+		ParaEngine::JniMethodInfo info;
+		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getFileDirsPath", "()Ljava/lang/String;"))
+		{
+			jstring intent_data = (jstring)info.env->CallObjectMethod(state->activity->clazz, info.methodID);
+			m_writeAblePath = ParaEngine::JniHelper::jstring2string(intent_data);
+			info.env->DeleteLocalRef(info.classID);
+			info.env->DeleteLocalRef(intent_data);
+
+			if (m_writeAblePath[m_writeAblePath.size() - 1] != '/')
+				m_writeAblePath += "/";
+		}
 
 		/*
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
