@@ -413,9 +413,6 @@ PE_CORE_DECL size_t ParaEngine::GetCurrentMemoryUse()
 #endif
 }
 
-
-
-
 PE_CORE_DECL std::string ParaEngine::GetExecutablePath()
 {
 	/*

@@ -174,7 +174,6 @@ bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 			auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 			auto state = app->GetAndroidApp();
 			auto assetManager = state->activity->assetManager;
-			auto dir = AAssetManager_openDir(assetManager, filename.c_str());
 			const char* s = filename.c_str();
 
 			// Found "assets/" at the beginning of the path and we don't want it
