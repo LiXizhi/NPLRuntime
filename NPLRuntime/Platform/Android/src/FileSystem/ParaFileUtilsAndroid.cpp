@@ -75,12 +75,12 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getFileDirsPath", "()Ljava/lang/String;"))
 		{
 			jstring intent_data = (jstring)info.env->CallObjectMethod(state->activity->clazz, info.methodID);
-			m_writeAblePath = ParaEngine::JniHelper::jstring2string(intent_data);
+			m_writablePath = ParaEngine::JniHelper::jstring2string(intent_data);
 			info.env->DeleteLocalRef(info.classID);
 			info.env->DeleteLocalRef(intent_data);
 
-			if (m_writeAblePath[m_writeAblePath.size() - 1] != '/')
-				m_writeAblePath += "/";
+			if (m_writablePath[m_writablePath.size() - 1] != '/')
+				m_writablePath += "/";
 		}
 
 

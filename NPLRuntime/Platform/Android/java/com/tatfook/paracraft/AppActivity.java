@@ -148,7 +148,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 
 		System.loadLibrary(libname);
 
-		mNativeHandle = nativeInit(Looper.myLooper(), getAssets(), nativeSavedState);
+		mNativeHandle = nativeInit(Looper.myLooper(), getAbsolutePath(getExternalFilesDir(null)), getAssets(), nativeSavedState);
 		
 		if (mNativeHandle == 0) {
             throw new UnsatisfiedLinkError("Unable to init native handle");
@@ -160,6 +160,10 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 			mWebViewHelper = new ParaEngineWebViewHelper(mFrameLayout);
 	
 	}
+
+	private static String getAbsolutePath(File file) {
+        return (file != null) ? file.getAbsolutePath() : null;
+    }
 
 	public void runOnGLThread(final Runnable pRunnable) {
 
@@ -232,6 +236,19 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 	public static Context getContext()
 	{
 		return sContext;
+	}
+
+	@Override    
+    public boolean onKeyDown(int keyCode, KeyEvent event) {    
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {    
+             return false; 
+		}
+		else if (keyCode == KeyEvent.KEYCODE_MENU) {
+			return false;
+		}
+        else {    
+            return super.onKeyDown(keyCode, event);    
+        }    
 	}
 
 	@Override

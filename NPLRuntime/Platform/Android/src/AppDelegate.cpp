@@ -436,8 +436,6 @@ AppDelegate::~AppDelegate()
 	OUTPUT_LOG("~AppDelegate");
 }
 
-AppDelegate* AppDelegate::m_pCurrentApp = nullptr;
-
 
 void AppDelegate::Run(struct android_app* app)
 {
