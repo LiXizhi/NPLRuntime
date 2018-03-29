@@ -261,6 +261,8 @@ namespace ParaEngine
 			APP_SH_VIDEO_DIR = 19,
 			APP_DEV_DIR = 20,
 			APP_EXECUTABLE_DIR = 21,
+			// only used in android/iOS. This is a directory where we can save user files.
+			APP_EXTERNAL_STORAGE_DIR = 22,
 			APP_LAST_DIR,
 		};
 

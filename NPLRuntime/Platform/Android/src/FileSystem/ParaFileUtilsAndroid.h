@@ -1,5 +1,7 @@
 #pragma once
 #include "Framework/FileSystem/ParaFileUtils.h"
+#include "util/mutex.h"
+
 namespace ParaEngine
 {
 	class CParaFileUtilsAndroid : public CParaFileUtils
@@ -8,7 +10,7 @@ namespace ParaEngine
 	public:
 		virtual ParaEngine::FileData GetDataFromFile(const std::string& filename) override;
 		virtual bool IsAbsolutePath(const std::string& filename) override;
-		virtual std::string GetWriteAblePath() override;
+		virtual std::string GetWritablePath() override;
 		virtual std::string GetInitialDirectory() override;
 		virtual bool Exists(const std::string& filename) override;
 		virtual IReadFile* OpenFileForRead(const std::string& filename) override;
@@ -20,7 +22,12 @@ namespace ParaEngine
 		virtual bool Delete(const std::string& filename) override;
 		virtual int DeleteDirectory(const std::string& filename) override;
 		virtual std::string GetFullPathForFilename(const std::string &filename) override;
+
+		virtual std::string GetExternalStoragePath() override;
 	protected:
-		std::string m_writeAblePath;
+		std::string m_writablePath;
+		std::string m_externalStoragePath;
+		static std::string _defaultResRootPath;
+		ParaEngine::mutex m_fileMutex;
 	};
 }

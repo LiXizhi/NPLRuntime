@@ -2,7 +2,7 @@
 // Class:	AppDelegate
 // Authors:	YuanQuanwei, LanZhihong, LiXizhi
 // Company: ParaEngine
-// Date: 2018.3
+// Date: 2018.3.29
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "AppDelegate.h"
@@ -477,6 +477,7 @@ void AppDelegate::OnStart()
 {
 	LOGI("app:OnStart");
 }
+
 void AppDelegate::OnStop()
 {
 	LOGI("app:OnStop");
@@ -484,6 +485,7 @@ void AppDelegate::OnStop()
 	// TODO: kill app , this is temporary measures since we have not fixed the texture lost issue when app stopped. 
 	exit(0);
 }
+
 void AppDelegate::OnPause()
 {
 	LOGI("app:OnPause");
