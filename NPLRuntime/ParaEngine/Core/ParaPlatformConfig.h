@@ -20,6 +20,18 @@
 // Determine target platform by compile environment macro.
 #define PARA_TARGET_PLATFORM             PARA_PLATFORM_UNKNOWN
 
+// win32
+#if defined(WIN32)
+#undef  PARA_TARGET_PLATFORM
+#define PARA_TARGET_PLATFORM         PARA_PLATFORM_WIN32
+#endif
+
+// Linux
+#if defined(LINUX) || defined(__linux__)
+#undef  PARA_TARGET_PLATFORM
+#define PARA_TARGET_PLATFORM         PARA_PLATFORM_LINUX
+#endif
+
 // mac
 #if defined(PLATFORM_MAC)
 #undef  PARA_TARGET_PLATFORM
@@ -36,18 +48,6 @@
 #if defined(ANDROID)
 #undef  PARA_TARGET_PLATFORM
 #define PARA_TARGET_PLATFORM         PARA_PLATFORM_ANDROID
-#endif
-
-// win32
-#if defined(WIN32)
-#undef  PARA_TARGET_PLATFORM
-#define PARA_TARGET_PLATFORM         PARA_PLATFORM_WIN32
-#endif
-
-// Linux
-#if defined(LINUX) || defined(__linux__)
-#undef  PARA_TARGET_PLATFORM
-#define PARA_TARGET_PLATFORM         PARA_PLATFORM_LINUX
 #endif
 
 // marmalade
