@@ -81,7 +81,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 
 	private boolean mDestroyed = false;
 
-	private native long nativeInit(Looper looper, String externalDataPath, AssetManager assetMgr, byte[] savedState);
+	private native long nativeInit(Looper looper, String internalDataPath, String obbPath, String externalDataPath, int sdkVersion, AssetManager assetMgr, byte[] savedState);
 	private native void unloadNativeCode(long handle);
 	private native void onPauseNative(long handle);
 	private native void onResumeNative(long handle);
@@ -148,7 +148,13 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 
 		System.loadLibrary(libname);
 
-		mNativeHandle = nativeInit(Looper.myLooper(), getAbsolutePath(getExternalFilesDir(null)), getAssets(), nativeSavedState);
+		mNativeHandle = nativeInit(Looper.myLooper()
+			, getAbsolutePath(getFilesDir())
+			, getAbsolutePath(getObbDir())
+			, getAbsolutePath(getExternalFilesDir(null))
+			, Build.VERSION.SDK_INT
+			, getAssets()
+			, nativeSavedState);
 		
 		if (mNativeHandle == 0) {
             throw new UnsatisfiedLinkError("Unable to init native handle");

@@ -71,6 +71,7 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 		auto state = app->GetAndroidApp();
 
+		/*
 		ParaEngine::JniMethodInfo info;
 		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getFileDirsPath", "()Ljava/lang/String;"))
 		{
@@ -82,7 +83,11 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 			if (m_writablePath[m_writablePath.size() - 1] != '/')
 				m_writablePath += "/";
 		}
+		*/
 
+		m_writablePath = state->activity->internalDataPath;
+		if (m_writablePath[m_writablePath.size() - 1] != '/')
+			m_writablePath += "/";
 
 		/*
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());

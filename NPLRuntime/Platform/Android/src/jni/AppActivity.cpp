@@ -82,6 +82,8 @@ namespace ParaEngine {
 		int32_t lastWindowHeight;
 
 		std::string externalDataPathObj;
+		std::string internalDataPathObj;
+		std::string obbPathObj;
 
 		// These are used to wake up the main thread to process work.
 		int mainWorkRead;
@@ -384,7 +386,7 @@ extern "C" {
 
 	
 
-	JNIEXPORT jlong JNICALL Java_com_tatfook_paracraft_AppActivity_nativeInit(JNIEnv* env, jobject clazz, jobject jlooper, jstring externalDataPath, jobject jAssetMgr, jbyteArray savedState)
+	JNIEXPORT jlong JNICALL Java_com_tatfook_paracraft_AppActivity_nativeInit(JNIEnv* env, jobject clazz, jobject jlooper, jstring internalDataDir, jstring obbDir, jstring externalDataPath, jint sdkVersion, jobject jAssetMgr, jbyteArray savedState)
 	{
 		std::unique_ptr<NativeCode> code;
 		code.reset(new NativeCode());
@@ -428,13 +430,23 @@ extern "C" {
 		code->env = env;
 		code->clazz = env->NewGlobalRef(clazz);
 
+		code->internalDataPathObj = JniHelper::jstring2string(internalDataDir);
+		code->internalDataPath = code->internalDataPathObj.c_str();
+
 		if (externalDataPath != nullptr) {
 			code->externalDataPathObj = JniHelper::jstring2string(externalDataPath);
-			code->externalDataPath = code->externalDataPathObj.c_str();
 		}
+		code->externalDataPath = code->externalDataPathObj.c_str();
+
+		code->sdkVersion = sdkVersion;
 
 		code->javaAssetManager = env->NewGlobalRef(jAssetMgr);
 		code->assetManager = AAssetManager_fromJava(env, code->javaAssetManager);
+
+		if (obbDir != nullptr) {
+			code->obbPathObj = JniHelper::jstring2string(obbDir);
+		}
+		code->obbPath = code->obbPathObj.c_str();
 
 		jbyte* rawSavedState = nullptr;
 		jsize rawSavedSize = 0;
