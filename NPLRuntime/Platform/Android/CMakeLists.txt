@@ -24,7 +24,6 @@ target_link_libraries(Paracraft PUBLIC
     EGL 
     log
     cAudioEngine
-	#sqlite
 )
 target_compile_definitions(Paracraft PUBLIC 
     PARAENGINE_MOBILE
@@ -34,8 +33,8 @@ target_compile_definitions(Paracraft PUBLIC
 )
 set_target_properties(Paracraft PROPERTIES 
     ANDROID_GUI TRUE
-    ANDROID_NATIVE_LIB_DEPENDENCIES "sqlite.so"
-    ANDROID_ASSETS_DIRECTORIES ${CMAKE_BINARY_DIR}/assets
+    ## ANDROID_NATIVE_LIB_DEPENDENCIES "sqlite.so"
+    ## ANDROID_ASSETS_DIRECTORIES ${CMAKE_BINARY_DIR}/assets
 	ANDROID_JAVA_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/java
 )
 

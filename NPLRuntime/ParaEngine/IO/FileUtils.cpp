@@ -461,6 +461,9 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 		sFilePath = filename;
 	}
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	if (pFile == 0) {
+		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
@@ -545,11 +548,16 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 	return sRootDir;
 }
 
+std::string ParaEngine::CFileUtils::GetExternalStoragePath()
+{
+	return CParaFileUtils::GetInstance()->GetExternalStoragePath();
+}
+
 const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
 	if (s_writepath.empty())
 	{
-		s_writepath = CParaFileUtils::GetInstance()->GetWriteAblePath();
+		s_writepath = CParaFileUtils::GetInstance()->GetWritablePath();
 	}
 	return s_writepath;
 }

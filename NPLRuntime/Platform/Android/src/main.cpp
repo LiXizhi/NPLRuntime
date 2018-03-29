@@ -1,9 +1,13 @@
-
+//----------------------------------------------------------------------
+// Class:	main native 
+// Authors:	LiXizhi@yeah.net
+// Company: tatfook
+// Date: 2018.3
+//-----------------------------------------------------------------------
 #include "android_native_app_glue.h"
 #include "AppDelegate.h"
 #include "jni/JniHelper.h"
 #include <android/log.h>
-
 
 
 std::string get_launcher_intent_data(struct android_app* state)
@@ -16,7 +20,6 @@ std::string get_launcher_intent_data(struct android_app* state)
 		auto ret = ParaEngine::JniHelper::jstring2string(intent_data);
 		info.env->DeleteLocalRef(info.classID);
 		info.env->DeleteLocalRef(intent_data);
-
 		return ret;
 	}
 

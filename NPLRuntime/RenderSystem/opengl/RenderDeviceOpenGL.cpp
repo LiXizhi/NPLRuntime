@@ -425,21 +425,25 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 
 void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
 {
+	m_LastRenderTargetWidth = m_RenderTargetWidth;
+	m_LastRenderTargetHeight = m_RenderTargetHeight;
 	m_RenderTargetWidth = width;
 	m_RenderTargetHeight = height;
 	m_isBeginRenderTarget = true;
-
 }
 
 void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
 {
-	m_RenderTargetWidth = 0;
-	m_RenderTargetHeight = 0;
 	m_isBeginRenderTarget = false;
+	m_RenderTargetWidth = m_LastRenderTargetWidth;
+	m_RenderTargetHeight = m_LastRenderTargetHeight;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 {
+	// tricky: always render full screen
+	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	return true;
 }
 
@@ -515,7 +519,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetFVF(uint32_t FVF)
 
 void ParaEngine::RenderDeviceOpenGL::SetCursorPosition(int X, int Y, uint32_t Flags)
 {
-	
 }
 
 bool ParaEngine::RenderDeviceOpenGL::GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value)
@@ -533,8 +536,7 @@ Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 {
 	m_CurrentViewPort = viewport;
-	glViewport((GLint)(viewport.x), (GLint)(viewport.y), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
-	//auto error = glGetError();
+	glViewport((GLint)(viewport.x), (GLint)(m_RenderTargetHeight - viewport.y - (GLsizei)viewport.w), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
 	return true;
 }
 
@@ -559,16 +561,14 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil
 
 bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 {
-
-
 	if (!pRect || (pRect->left <= 0 && pRect->top <= 0 && pRect->right <= 0 && pRect->bottom <= 0))
 	{
 		glDisable(GL_SCISSOR_TEST);
 	}
 	else
 	{
-		int nScreenWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-		int nScreenHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+		int nScreenWidth = m_RenderTargetWidth;
+		int nScreenHeight = m_RenderTargetHeight;
 		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.y + m_CurrentViewPort.w);
 		glScissor((GLint)(pRect->left + m_CurrentViewPort.x), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}

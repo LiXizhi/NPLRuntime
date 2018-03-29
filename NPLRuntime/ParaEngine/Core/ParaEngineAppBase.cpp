@@ -149,8 +149,10 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	FindParaEngineDirectory();
 	RegisterObjectClasses();
 	CFrameRateController::LoadFRCNormal();
+	
 	// loading packages
 	LoadPackages();
+	
 	BootStrapAndLoadConfig();
 	InitSystemModules();
 	// load config file
@@ -353,10 +355,16 @@ void ParaEngine::CParaEngineAppBase::Render()
 		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
 #endif
 		auto color = m_pRootScene->GetClearColor();
-		CGlobals::GetRenderDevice()->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
-		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
-		CGlobals::GetRenderDevice()->SetClearStencil(1);
-		CGlobals::GetRenderDevice()->Clear(true, true, true);
+		auto pDevice = CGlobals::GetRenderDevice();
+
+		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
+		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+
+		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
+		pDevice->SetClearDepth(1.0f);
+		pDevice->SetClearStencil(1);
+		pDevice->Clear(true, true, true);
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{
 			PERF1("3D Scene Render");

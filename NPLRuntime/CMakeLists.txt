@@ -51,7 +51,7 @@ else()
 endif()
 
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
-if(NPLRUNTIME_STATIC_LIB)
+if(NPLRUNTIME_STATIC_LIB OR ANDROID)
 	set(SQLITE_STATICLIB TRUE)
 endif()
 

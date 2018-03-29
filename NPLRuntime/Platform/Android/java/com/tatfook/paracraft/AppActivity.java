@@ -81,7 +81,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 
 	private boolean mDestroyed = false;
 
-	private native long nativeInit(Looper looper, AssetManager assetMgr, byte[] savedState);
+	private native long nativeInit(Looper looper, String externalDataPath, AssetManager assetMgr, byte[] savedState);
 	private native void unloadNativeCode(long handle);
 	private native void onPauseNative(long handle);
 	private native void onResumeNative(long handle);

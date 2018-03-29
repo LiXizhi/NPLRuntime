@@ -81,6 +81,8 @@ namespace ParaEngine {
 		int32_t lastWindowWidth;
 		int32_t lastWindowHeight;
 
+		std::string externalDataPathObj;
+
 		// These are used to wake up the main thread to process work.
 		int mainWorkRead;
 		int mainWorkWrite;
@@ -382,7 +384,7 @@ extern "C" {
 
 	
 
-	JNIEXPORT jlong JNICALL Java_com_tatfook_paracraft_AppActivity_nativeInit(JNIEnv* env, jobject clazz, jobject jlooper, jobject jAssetMgr, jbyteArray savedState)
+	JNIEXPORT jlong JNICALL Java_com_tatfook_paracraft_AppActivity_nativeInit(JNIEnv* env, jobject clazz, jobject jlooper, jstring externalDataPath, jobject jAssetMgr, jbyteArray savedState)
 	{
 		std::unique_ptr<NativeCode> code;
 		code.reset(new NativeCode());
@@ -426,15 +428,18 @@ extern "C" {
 		code->env = env;
 		code->clazz = env->NewGlobalRef(clazz);
 
-		
+		if (externalDataPath != nullptr) {
+			code->externalDataPathObj = JniHelper::jstring2string(externalDataPath);
+			code->externalDataPath = code->externalDataPathObj.c_str();
+		}
 
 		code->javaAssetManager = env->NewGlobalRef(jAssetMgr);
 		code->assetManager = AAssetManager_fromJava(env, code->javaAssetManager);
 
-		jbyte* rawSavedState = NULL;
+		jbyte* rawSavedState = nullptr;
 		jsize rawSavedSize = 0;
-		if (savedState != NULL) {
-			rawSavedState = env->GetByteArrayElements(savedState, NULL);
+		if (savedState != nullptr) {
+			rawSavedState = env->GetByteArrayElements(savedState, nullptr);
 			rawSavedSize = env->GetArrayLength(savedState);
 		}
 
@@ -442,7 +447,7 @@ extern "C" {
 
 		ANativeActivity_onCreate(code.get(), rawSavedState, rawSavedSize);
 
-		if (rawSavedState != NULL) {
+		if (rawSavedState != nullptr) {
 			env->ReleaseByteArrayElements(savedState, rawSavedState, 0);
 		}
 		
