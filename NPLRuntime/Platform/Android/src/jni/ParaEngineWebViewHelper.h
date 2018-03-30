@@ -1,14 +1,17 @@
 #pragma once
 #include <jni.h>
 #include <string>
+#include <unordered_map>
 
 namespace ParaEngine {
 
 	class ParaEngineWebView : public IAttributeFields
 	{
 	public:
+		virtual ~ParaEngineWebView();
+
 		typedef ParaEngine::weak_ptr<IObject, ParaEngineWebView> WeakPtr_type;
-		static ParaEngineWebView* createWebView();
+		static ParaEngineWebView* createWebView(int x, int y, int w, int h);
 
 		/** a static string, describing the attribute class object's name */
 		virtual const char* GetAttributeClassName() { static const char name[] = "ParaEngineWebView"; return name; }
@@ -18,12 +21,21 @@ namespace ParaEngine {
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		void loadUrl(const std::string &url, bool cleanCachedData = false);
+		void setAlpha(float a);
 
+		// test interface
+		static bool openWebView(int x, int y, int w, int h, const std::string& url);
+		static bool closeWebView();
+
+
+		static void onCloseView(int handle);
 	private:
 		static const std::string classname;
+
+		static std::unordered_map<int, ParaEngineWebView*> m_views;
 	protected:
 		ParaEngineWebView();
-		virtual ~ParaEngineWebView();
+		
 
 		void setHandle(int handle) { m_handle = handle;  }
 

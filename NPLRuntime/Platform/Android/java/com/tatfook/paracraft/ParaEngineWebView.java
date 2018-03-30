@@ -8,6 +8,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.graphics.Bitmap;
+import android.view.KeyEvent; 
 
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -45,6 +47,23 @@ public class ParaEngineWebView extends WebView {
         this(context, -1);
     }
 
+	public int getViewTag() {
+		return mViewTag;
+	}
+
+	@Override    
+    public boolean onKeyUp(int keyCode, KeyEvent event) {    
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
+			Log.i("ParaEngine", "ParaEngineWebView::onKeyDown");
+
+			ParaEngineWebViewHelper._onCloseView(this);
+            return false; 
+		}
+        else {    
+            return super.onKeyDown(keyCode, event);    
+        }    
+	}
+
 	@SuppressLint("SetJavaScriptEnabled")
     public ParaEngineWebView(Context context, int viewTag) {
 		super(context);
@@ -57,6 +76,8 @@ public class ParaEngineWebView extends WebView {
         this.getSettings().setDomStorageEnabled(true);
         this.getSettings().setJavaScriptEnabled(true);
 
+		//this.setAlpha(0.5f);
+
         // `searchBoxJavaBridge_` has big security risk. http://jvn.jp/en/jp/JVN53768697
         try {
             Method method = this.getClass().getMethod("removeJavascriptInterface", new Class[]{String.class});
@@ -65,7 +86,7 @@ public class ParaEngineWebView extends WebView {
             Log.d(TAG, "This API level do not support `removeJavascriptInterface`");
         }
 
-        //this.setWebViewClient(new ParaEngineWebViewClient());
+        this.setWebViewClient(new ParaEngineWebViewClient());
         this.setWebChromeClient(new WebChromeClient());
 	}
 
@@ -73,8 +94,11 @@ public class ParaEngineWebView extends WebView {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, final String urlString) {
 
-            AppActivity activity = (AppActivity)getContext();
+			//view.loadUrl(urlString); 
+			//return true;
 
+            AppActivity activity = (AppActivity)getContext();
+		
             try {
                 URI uri = URI.create(urlString);
                 if (uri != null && uri.getScheme().equals(mJSScheme)) {
@@ -92,17 +116,22 @@ public class ParaEngineWebView extends WebView {
 
             boolean[] result = new boolean[] { true };
             CountDownLatch latch = new CountDownLatch(1);
-            // run worker on cocos thread
+            // run worker on gl thread
             activity.runOnGLThread(new ShouldStartLoadingWorker(latch, result, mViewTag, urlString));
-            // wait for result from cocos thread
+            // wait for result from gl thread
             try {
                 latch.await();
             } catch (InterruptedException ex) {
                 Log.d(TAG, "'shouldOverrideUrlLoading' failed");
             }
 
+			//if (result[0])
+			//	view.loadUrl(urlString);
+
             return result[0];
+			
         }
+
 
         @Override
         public void onPageFinished(WebView view, final String url) {

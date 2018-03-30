@@ -16,21 +16,51 @@ namespace ParaEngine {
 
 	const std::string AppActivity::classname = "com/tatfook/paracraft/AppActivity";
 
-	AppActivity::AppActivity(struct android_app* app)
+	AppActivity::AppActivity()
+		: inited(false)
+	{
+		
+	}
+	
+	AppActivity::~AppActivity()
 	{
 
 	}
-	
+
+	void AppActivity::init(struct android_app* app)
+	{
+		memset(&info, 0, sizeof(info));
+		if (JniHelper::getMethodInfo(info, app->activity->clazz, "processGLEvent", "()V"))
+		{
+			info.env->DeleteLocalRef(info.classID);
+			inited = true;
+		}
+	}
 
 	void AppActivity::processGLEventJNI(struct android_app* app)
 	{
-		JniMethodInfo info;
-		if (JniHelper::getMethodInfo(info, classname.c_str(), "processGLEvent", "()V"))
+		if (inited)
 		{
 			info.env->CallVoidMethod(app->activity->clazz, info.methodID);
-			info.env->DeleteLocalRef(info.classID);
 		}
 	}
+
+	std::string AppActivity::getLauncherIntentData(struct android_app* state)
+	{
+		ParaEngine::JniMethodInfo info;
+		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getLauncherIntentData", "()Ljava/lang/String;"))
+		{
+
+			jstring intent_data = (jstring)info.env->CallObjectMethod(state->activity->clazz, info.methodID);
+			auto ret = ParaEngine::JniHelper::jstring2string(intent_data);
+			info.env->DeleteLocalRef(info.classID);
+			info.env->DeleteLocalRef(intent_data);
+			return ret;
+		}
+
+		return "";
+	}
+
 
 	struct NativeCode : public ANativeActivity {
 		NativeCode()
