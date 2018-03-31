@@ -452,6 +452,18 @@ bool ParaEngine::CGUIRoot::HasKeyFocus()
 	return GetUIKeyFocus() != NULL;
 }
 
+int ParaEngine::CGUIRoot::GetKeyFocusObjectId()
+{
+	auto pObj = GetUIKeyFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
+}
+
+int ParaEngine::CGUIRoot::GetMouseFocusObjectId()
+{
+	auto pObj = GetUIMouseFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
+}
+
 void CGUIRoot::PushTopLevelControl(CGUIContainer* pTopLevelControl)
 {
 	if (pTopLevelControl == 0)
@@ -2301,7 +2313,9 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
-
+	pClass->AddField("MouseFocusObjectId", FieldType_Int, (void*)0, (void*)GetMouseFocusObjectId_s, NULL, NULL, bOverride);
+	pClass->AddField("KeyFocusObjectId", FieldType_Int, (void*)0, (void*)GetKeyFocusObjectId_s, NULL, NULL, bOverride);
+	
 	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);

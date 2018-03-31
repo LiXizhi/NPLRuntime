@@ -151,15 +151,8 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 	if (BeginBuffer())
 	{
 		// just in case viewport is scaled.
-		ParaViewport viewport;
-		auto vp = CGlobals::GetRenderDevice()->GetViewport();
-		viewport.X = vp.x;
-		viewport.Y = vp.y;
-		viewport.Width = vp.z;
-		viewport.Height = vp.w;
-
-		float fScalingX = (float)viewport.Width / CGlobals::GetGUI()->GetWidth();
-		float fScalingY = (float)viewport.Height / CGlobals::GetGUI()->GetHeight();
+		float fScalingX = (float)CGlobals::GetGUI()->GetUIScalingX();
+		float fScalingY = (float)CGlobals::GetGUI()->GetUIScalingY();
 
 		if (fScalingX != 1.f || fScalingY != 1.f)
 		{
@@ -276,6 +269,17 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 		{
 			ParaViewport viewport;
 			CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+
+			CViewport* pViewport = NULL;
+			if (GetIdentifier() == "overlay") {
+				// overlay always use the same viewport of the default 3d scene. 
+				pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(1);
+				viewport.X = pViewport->GetLeft();
+				viewport.Y = pViewport->GetTop();
+				viewport.Width = pViewport->GetWidth();
+				viewport.Height = pViewport->GetHeight();
+			}
+
 			// TODO: shall use the same buffer size as the current selected viewport?
 			pRenderTarget->SetRenderTargetSize(viewport.Width, viewport.Height);
 
@@ -287,6 +291,11 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 
 					CSceneObject* pScene = CGlobals::GetScene();
 					CBaseCamera* pCamera = pScene->GetCurrentCamera();
+					if (pViewport) {
+						pViewport->SetActive();
+						pViewport->ApplyCamera((CAutoCamera*)pCamera);
+						pViewport->ApplyViewport();
+					}
 					CGlobals::GetWorldMatrixStack().push(Matrix4::IDENTITY);
 					CGlobals::GetProjectionMatrixStack().push(*pCamera->GetProjMatrix());
 					CGlobals::GetViewMatrixStack().push(*pCamera->GetViewMatrix());

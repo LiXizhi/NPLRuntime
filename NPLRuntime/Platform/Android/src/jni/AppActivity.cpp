@@ -1,3 +1,9 @@
+//----------------------------------------------------------------------
+// Class:	AppActivity
+// Authors:	lanzhihong, LiXizhi
+// Date: 2018.3.30
+// Desc: main activity, customize this class for your app
+//----------------------------------------------------------------------
 #include "AppActivity.h"
 #include "JniHelper.h"
 #include <jni.h>
@@ -6,7 +12,6 @@
 #include <android/native_window_jni.h>
 #include <android/asset_manager_jni.h>
 #include <android/looper.h>
-
 
 #include <memory>
 #include <fcntl.h> 
@@ -18,9 +23,7 @@ namespace ParaEngine {
 
 	AppActivity::AppActivity(struct android_app* app)
 	{
-
 	}
-	
 
 	void AppActivity::processGLEventJNI(struct android_app* app)
 	{

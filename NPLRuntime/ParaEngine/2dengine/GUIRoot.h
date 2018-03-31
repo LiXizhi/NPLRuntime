@@ -102,6 +102,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, IsNonClient_s, bool*)	{ *p1 = cls->IsNonClient(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIsNonClient_s, bool)	{ cls->SetIsNonClient(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, GetKeyFocusObjectId_s, int*) { *p1 = cls->GetKeyFocusObjectId(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, GetMouseFocusObjectId_s, int*) { *p1 = cls->GetMouseFocusObjectId(); return S_OK; }
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CGUIMouseVirtual* GetMouse() { return m_pMouse; }
@@ -256,6 +259,9 @@ namespace ParaEngine
 		/** set UI key focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIKeyFocus(CGUIBase* control);
 
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetKeyFocusObjectId();
+
 		/**
 		* Gets the mouse focus of all controls. It searches all its descendant.
 		* @return: a pointer to the focused control
@@ -265,6 +271,9 @@ namespace ParaEngine
 
 		/** set UI mouse focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIMouseFocus(CGUIBase* control);
+
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetMouseFocusObjectId();
 
 		/** set whether to use default mouse cursor or not.*/
 		void UseDefaultMouseCursor(bool bUseDefaultMouseCursor);
