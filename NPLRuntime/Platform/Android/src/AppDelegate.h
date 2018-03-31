@@ -30,6 +30,7 @@ namespace ParaEngine
 		static void handle_touch_input(AppDelegate* app, AInputEvent* event);
 
 		void handle_mainloop_timer(const boost::system::error_code& err);
+		
     protected:
         // App commands
         virtual void OnStart();

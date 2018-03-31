@@ -40,6 +40,15 @@ namespace ParaEngine
 		virtual HRESULT RestoreDeviceObjects() override;
 		virtual HRESULT InvalidateDeviceObjects() override;
 		virtual HRESULT DeleteDeviceObjects() override;
+
+		/** return true if this is a render tick, otherwise false.
+		* @param pNextInterval: main_loop timer interval.
+		* @return frameDelta. if this is bigger than 0, we will render a frame.
+		*/
+		int CalculateRenderTime(double* pNextInterval);
+
+		double GetAppTime();
+		double GetElapsedTime();
 	protected:
 		void SetTouchInputting(bool bTouchInputting);
 		void AutoSetLocale();
@@ -54,9 +63,8 @@ namespace ParaEngine
 		void InitRenderEnvironment();
 		void ResetRenderEnvironment();
 
-		
-		
-		
+		virtual float GetFPS();
+		virtual void UpdateFrameStats(double fTime);
 		
 		void Render();
 		void HandleUserInput();
@@ -99,6 +107,11 @@ namespace ParaEngine
 		IRenderDevice* m_pRenderDevice;
 		IRenderWindow* m_pRenderWindow;
 		CFrameRateController m_doWorkFRC;
+		float			  m_fRefreshTimerInterval; //  in seconds. 
+		int				  m_nFrameRateControl;
+		double            m_fTime;             // Current time in seconds
+		double            m_fElapsedTime;      // Time elapsed since last frame
+		float m_fFPS;
 		bool m_bActive;
 
 #pragma region OLD_CODE
@@ -122,11 +135,11 @@ namespace ParaEngine
 		* 	Passing a value <= 0 to render in idle time.
 		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
 		*/
-		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0) { };
+		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
 
 		/** get the refresh timer.
 		*/
-		virtual float GetRefreshTimer()  { return 0; };
+		virtual float GetRefreshTimer();
 
 
 

@@ -11,7 +11,7 @@ namespace ParaEngine
 		void Start();	// to start the timer
 		void Stop();	// to stop (or pause) the timer
 		void Advance();	// to advance the timer by 0.1 seconds
-		double GetAbsoluteTime() const; // to get the absolute system time
+		static double GetAbsoluteTime(); // to get the absolute system time
 		double GetAppTime() const;	// to get the current time
 		double GetElapsedTime() const;	// to get the time that elapsed between GetElapsedTime() calls
 	private:

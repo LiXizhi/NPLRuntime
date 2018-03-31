@@ -34,11 +34,6 @@ void ParaEngine::CParaEngineAppAndroid::ClientToGame(int& inout_x, int & inout_y
 	//throw std::logic_error("The method or operation is not implemented.");
 }
 
-void ParaEngine::CParaEngineAppAndroid::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
-{
-	//throw std::logic_error("The method or operation is not implemented.");
-}
-
 bool ParaEngine::CParaEngineAppAndroid::AppHasFocus()
 {
 	//throw std::logic_error("The method or operation is not implemented.");
@@ -111,7 +106,6 @@ HRESULT ParaEngine::CParaEngineAppAndroid::DoWork()
 		FrameMove(fCurTime);
 		Render();
 		m_pRenderDevice->Present();
-
 		return S_OK;
 	}
 	else

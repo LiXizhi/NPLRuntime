@@ -93,9 +93,11 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
 	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
-	, m_bActive(true)
+	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
 {
 	g_pCurrentApp = this;
+	// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 
+	SetRefreshTimer(1 / 60.f, 0);
 }
 
 ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
@@ -111,9 +113,11 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
-	, m_bActive(true)
+	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
 {
 	g_pCurrentApp = this;
+	// we use high resolution timer (boost ASIO internally), hence FPS can be specified very accurately without eating all CPUs. 
+	SetRefreshTimer(1 / 60.f, 0);
 }
 
 ParaEngine::CParaEngineAppBase::~CParaEngineAppBase()
@@ -280,6 +284,26 @@ void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
 	RestoreDeviceObjects();
 }
 
+float ParaEngine::CParaEngineAppBase::GetFPS()
+{
+	return m_fFPS;
+}
+
+void ParaEngine::CParaEngineAppBase::UpdateFrameStats(double fTime)
+{
+	// Keep track of the frame count
+	static double fLastTime = 0.0f;
+	static DWORD dwFrames = 0;
+	++dwFrames;
+	// Update the scene stats once per second
+	if (fTime - fLastTime > 1.0f)
+	{
+		m_fFPS = (float)(dwFrames / (fTime - fLastTime));
+		fLastTime = fTime;
+		dwFrames = 0;
+}
+}
+
 HRESULT ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
 #if USE_DIRECTX_RENDERER
@@ -305,6 +329,137 @@ HRESULT ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
 #endif
 
 	return S_OK;
+}
+
+int ParaEngine::CParaEngineAppBase::CalculateRenderTime(double* pNextInterval)
+{
+	double fIdealInterval = GetRefreshTimer();
+	double fCurTime = ParaTimer::GetAbsoluteTime();
+	double fNextInterval = 0.f;
+	int nUpdateFrameDelta = 0;
+	int nFrameDelta = 1;
+
+	const bool USE_ADAPTIVE_INTERVAL = true;
+	if (USE_ADAPTIVE_INTERVAL)
+	{
+		// --------adaptive interval algorithm
+		// check FPS by modifying the interval adaptively until FPS is within a good range.
+		// we will adjust every 1 second
+		static double fLastTime = fCurTime;
+		static double fLastFrameTime = fCurTime;
+		static double fSeconds = fCurTime;
+
+		static double fAdaptiveInterval = 1 / 60.0; // initial value for tying
+		static double fLastIdealInterval = 1 / 30.0;
+		// static double fLastDrawTime = fCurTime;
+
+		if (fLastIdealInterval != fIdealInterval)
+		{
+			if (fLastIdealInterval > fIdealInterval)
+				fAdaptiveInterval = fIdealInterval;
+			fLastIdealInterval = fIdealInterval;
+		}
+
+		static int nFPS = 0;
+		nFPS++;
+
+		if ((fSeconds + 1) < fCurTime)
+		{
+			// adaptive delta
+			double fDelta = nFPS*fIdealInterval;
+
+			if (fDelta > 1.5)
+			{
+				fAdaptiveInterval = fAdaptiveInterval + 0.002f;
+			}
+			else if (fDelta > 1.3)
+			{
+				fAdaptiveInterval = fAdaptiveInterval + 0.001f;
+			}
+			else if (nFPS*fIdealInterval < 1)
+			{
+				fAdaptiveInterval = fAdaptiveInterval - 0.001f;
+				if (fAdaptiveInterval < 0)
+				{
+					fAdaptiveInterval = 0.f;
+				}
+			}
+			fSeconds = fCurTime;
+			nFPS = 0;
+		}
+		/** tricky: run the main_loop as fast as possible at least 100FPS, so that FPS is more accurate. */
+		fAdaptiveInterval = Math::Min(fAdaptiveInterval, 1 / 100.0);
+
+		fNextInterval = fAdaptiveInterval;
+
+		if ((fCurTime - fLastTime) > 1.f)
+		{
+			// too laggy
+			nFrameDelta = 2;
+			fLastFrameTime = fCurTime;
+			fLastTime = fCurTime;
+		}
+		else
+		{
+			nFrameDelta = (int)((fCurTime - fLastFrameTime) / fIdealInterval + 0.5);
+
+			fLastFrameTime = fLastFrameTime + (nFrameDelta * fIdealInterval);
+			fLastTime = fCurTime;
+		}
+	}
+	else
+	{
+		// --------fixed interval algorithm
+		// continue with next activation. 
+		static double s_next_time = 0;
+		fNextInterval = s_next_time - fCurTime;
+		if (fNextInterval <= 0)
+		{
+			s_next_time = fCurTime;
+			fNextInterval = 0;
+		}
+		else if (fNextInterval >= fIdealInterval)
+		{
+			fNextInterval = fIdealInterval;
+			s_next_time = fCurTime;
+		}
+		s_next_time = s_next_time + fIdealInterval;
+	}
+
+	/** define to output interval to log file to change timer implementation. */
+	// #define DEBUG_TIMER_INTERVAL
+#ifdef DEBUG_TIMER_INTERVAL
+	{
+		// debug timer
+		static double fLastTime = fCurTime;
+		static double fSeconds = fCurTime;
+		static int nFPS = 0;
+		nFPS++;
+		if ((fSeconds + 1) < fCurTime)
+		{
+			fSeconds = fCurTime;
+			OUTPUT_LOG("%d Second(FPS: %d)--------------\n", (int)(fSeconds), nFPS);
+			nFPS = 0;
+		}
+
+		OUTPUT_LOG("Tick: delta:%d, global:%d, next:%d\n", (int)((fCurTime - fLastTime) * 1000),
+			(int)(fCurTime * 1000), (int)(fNextInterval * 1000));
+		fLastTime = fCurTime;
+	}
+#endif	
+	if (pNextInterval)
+		*pNextInterval = fNextInterval;
+	return nFrameDelta;
+}
+
+double ParaEngine::CParaEngineAppBase::GetAppTime()
+{
+	return m_fTime;
+}
+
+double ParaEngine::CParaEngineAppBase::GetElapsedTime()
+{
+	return m_fElapsedTime;
 }
 
 HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
@@ -341,11 +496,13 @@ HRESULT ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 
 void ParaEngine::CParaEngineAppBase::Render()
 {
-	double fTime = m_Timer->GetAppTime();
+	double fTime = m_fTime;
+	UpdateFrameStats(fTime);
 	CMoviePlatform* pMoviePlatform = CGlobals::GetMoviePlatform();
 	pMoviePlatform->BeginCaptureFrame();
 
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
+	m_fElapsedTime = fElapsedTime;
 
 	m_pRenderDevice->BeginScene();
 	{
@@ -406,6 +563,7 @@ void ParaEngine::CParaEngineAppBase::ActivateApp(bool bActivate)
 
 bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 {
+	m_fTime = fTime;
 	if (GetAppState() == PEAppState_Stopped)
 		return true;
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
@@ -435,6 +593,7 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 	}
 
 	double fElapsedIOTime = CGlobals::GetFrameRateController(FRC_IO)->FrameMove(fTime);
+	// OUTPUT_LOG("curTime %f: elapsedIO: %f, simtTime: %f\n", fTime, fElapsedIOTime, fElapsedEnvSimTime);
 	if (fElapsedIOTime > 0)
 	{
 		HandleUserInput();
@@ -672,19 +831,24 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 
 HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 {
+	m_fTime = m_Timer->GetAppTime();
 	if (!IsAppActive()) 
 		return S_FALSE;
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;
-	double fCurTime = m_Timer->GetAppTime();
-	if (m_doWorkFRC.FrameMove(fCurTime) > 0)
+	
+	if (m_doWorkFRC.FrameMove(m_fTime) > 0)
 	{
-		FrameMove(fCurTime);
+		FrameMove(m_fTime);
 		Render();
 		m_pRenderDevice->Present();
+		return S_OK;
 	}
-
-	return S_OK;
+	else
+	{
+		return E_FAIL;
+	}
+	
 }
 
 void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)
@@ -695,6 +859,29 @@ void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)
 bool ParaEngine::CParaEngineAppBase::IsAppActive()
 {
 	return m_bActive;
+}
+
+void ParaEngine::CParaEngineAppBase::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
+{
+	if (nFrameRateControl == 1)
+	{
+		CFrameRateController::LoadFRCNormal(fTimeInterval);
+		m_doWorkFRC.SetType(CFrameRateController::FRC_CONSTANT_OR_BELOW);
+	}
+	else
+	{
+		CFrameRateController::LoadFRCRealtime(fTimeInterval);
+		m_doWorkFRC.SetType(CFrameRateController::FRC_NONE);
+	}
+
+	m_fRefreshTimerInterval = fTimeInterval;
+	m_nFrameRateControl = nFrameRateControl;
+	m_doWorkFRC.m_fConstDeltaTime = (m_fRefreshTimerInterval <= 0.f) ? IDEAL_FRAME_RATE : m_fRefreshTimerInterval;
+}
+
+float ParaEngine::CParaEngineAppBase::GetRefreshTimer()
+{
+	return m_fRefreshTimerInterval;
 }
 
 DWORD ParaEngine::CParaEngineAppBase::GetCoreUsage()

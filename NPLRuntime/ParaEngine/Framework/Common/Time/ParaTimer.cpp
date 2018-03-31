@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "ParaTimer.h"
 #include <ctime>
 ParaEngine::ParaTimer::ParaTimer()
@@ -51,10 +52,9 @@ void ParaEngine::ParaTimer::Advance()
 	m_fStopTime += 0.1f;
 }
 
-double ParaEngine::ParaTimer::GetAbsoluteTime() const
+double ParaEngine::ParaTimer::GetAbsoluteTime()
 {
-	std::clock_t t = std::clock();
-	double fTime = (double)t / CLOCKS_PER_SEC;
+	double fTime = ((double)GetTickCount()) / 1000.0;
 	return fTime;
 }
 

@@ -11,6 +11,7 @@
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"
 #include "RenderContextEGL.h"
+#include "ParaTime.h"
 
 #include <boost/bind.hpp>
 #include <android/log.h>
@@ -424,8 +425,6 @@ AppDelegate::AppDelegate()
 
 }
 
-
-
 AppDelegate::~AppDelegate()
 {
 	OUTPUT_LOG("~AppDelegate");
@@ -452,28 +451,15 @@ void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 				return;
 			}
 		}
-
 		m_appActivity.processGLEventJNI(m_State);
 
-
-		double fNextInterval = 0.f;
-
+		double fNextInterval = 0.033f; // as fast as possible
 		if (m_ParaEngineApp && !m_isPaused)
 		{
-			auto ret = m_ParaEngineApp->DoWork();
-			if (ret == S_FALSE)
-			{
-				fNextInterval = 0.1f;
-			}
-			else
-			{
-				fNextInterval = 1.f / ((1.f / m_fRefreshTimerInterval) + 20.0);
-			}
-
-		}
-		else
-		{
-			fNextInterval = 0.1f;
+			m_ParaEngineApp->DoWork();
+			fNextInterval = m_ParaEngineApp->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - m_ParaEngineApp->GetAppTime());
+			fNextInterval = std::min(0.1, std::max(0.0, fNextInterval));
+			// OUTPUT_LOG("%f", fNextInterval);
 		}
 
 		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval * 1000)));
@@ -494,11 +480,39 @@ void AppDelegate::Run(struct android_app* app)
 
 	LOGI("app:run");
 
+#define USE_ASYNC_TIMER_MAIN_LOOP
+#ifdef USE_ASYNC_TIMER_MAIN_LOOP
 	// start the main loop timer. 
 	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
 	m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
 
 	m_main_io_service.run();
+#else
+	while (!m_State->destroyRequested)
+	{
+		int ident = 0;
+		int events = 0;
+		struct android_poll_source* source = nullptr;
+		ident = ALooper_pollAll(0, NULL, &events, (void**)&source);
+		if (ident >= 0)
+		{
+			// Process this event.
+			if (source != NULL) {
+				source->process(m_State, source);
+			}
+			// Check if we are exiting
+			if (m_State->destroyRequested != 0) {
+				LOGI("app:destroy");
+				return;
+			}
+		}
+		if (m_ParaEngineApp && !m_isPaused)
+		{
+			m_ParaEngineApp->DoWork();
+		}
+		// appActivity.processGLEventJNI(app);
+	}
+#endif
 
 	LOGI("app:exit");
 }
