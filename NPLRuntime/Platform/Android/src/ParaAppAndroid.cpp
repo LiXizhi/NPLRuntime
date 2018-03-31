@@ -92,24 +92,7 @@ bool ParaEngine::CParaEngineAppAndroid::GetToggleSoundWhenNotFocused()
 	return true;
 }
 
-
 HRESULT ParaEngine::CParaEngineAppAndroid::DoWork()
 {
-	if (!IsAppActive())
-		return S_FALSE;
-	if (m_pRenderWindow == nullptr)
-		return S_FALSE;
-	double fCurTime = m_Timer->GetAppTime();
-	auto elapsedTime = m_doWorkFRC.FrameMove(fCurTime);
-	if (elapsedTime > 0)
-	{
-		FrameMove(fCurTime);
-		Render();
-		m_pRenderDevice->Present();
-		return S_OK;
-	}
-	else
-	{
-		return E_FAIL;
-	}
+	return CParaEngineAppBase::DoWork();
 }

@@ -27,11 +27,14 @@ ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 
 void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 {
-	// OUTPUT_LOG("%s \n", e->ToString().c_str());
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = e;
+		++m_buffered_mouse_msgs_count;
 	}
-	++m_buffered_mouse_msgs_count;
+	else
+	{
+		OUTPUT_LOG("PushMouseEvent: failed because buffer is full. msg: %s \n", e->ToString().c_str());
+	}
 }
 
 

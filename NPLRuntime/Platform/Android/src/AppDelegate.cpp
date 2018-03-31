@@ -23,9 +23,7 @@
 #include <ctime>
 #include <unordered_map>
 
-
 using namespace ParaEngine;
-
 
 
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
@@ -468,7 +466,6 @@ void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 }
 
 
-
 void AppDelegate::Run(struct android_app* app)
 {
 	m_State = app;
@@ -587,7 +584,7 @@ void AppDelegate::OnWindowResized()
 
 void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 {
-	if (m_ParaEngineApp)
+	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
 	{
 		auto gui = CGUIRoot::GetInstance();
 		if (gui)
@@ -603,6 +600,9 @@ void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 
 void ParaEngine::AppDelegate::OnKey(const EVirtualKey& key, const EKeyState& state)
 {
+	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
+	{
 
+	}
 }
 

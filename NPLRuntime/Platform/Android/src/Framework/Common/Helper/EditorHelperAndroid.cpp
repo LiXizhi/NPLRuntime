@@ -30,7 +30,7 @@ namespace ParaEngine {
 		if (!pView)
 			return false;
 
-		pView->setAlpha(0.7f);
+		pView->setAlpha(0.95f);
 		pView->loadUrl(url);
 		
 		return true;

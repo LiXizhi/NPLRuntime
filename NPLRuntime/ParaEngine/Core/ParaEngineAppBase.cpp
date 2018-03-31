@@ -540,12 +540,12 @@ void ParaEngine::CParaEngineAppBase::Render()
 
 void ParaEngine::CParaEngineAppBase::HandleUserInput()
 {
-	/** handle 2D GUI input: dispatch mouse and key event for gui objects. */
-	m_pGUIRoot->HandleUserInput();
-
 	// escape input if app does not have focus
 	if (!IsAppActive())
 		return;
+
+	/** handle 2D GUI input: dispatch mouse and key event for gui objects. */
+	m_pGUIRoot->HandleUserInput();
 
 	/** handle the camera user input. One can also block camera input and handle everything from script. */
 	CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
@@ -832,8 +832,6 @@ bool ParaEngine::CParaEngineAppBase::IsSlateMode()
 HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 {
 	m_fTime = m_Timer->GetAppTime();
-	if (!IsAppActive()) 
-		return S_FALSE;
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;
 	

@@ -71,8 +71,10 @@ public class ParaEngineWebView extends WebView {
 		this.setFocusable(true);
         this.setFocusableInTouchMode(true);
 
-        this.getSettings().setSupportZoom(false);
-
+		// this.getSettings().setBuiltInZoomControls(true);
+        this.getSettings().setSupportZoom(true);
+		this.getSettings().setLoadWithOverviewMode(true);
+		this.getSettings().setUseWideViewPort(true);
         this.getSettings().setDomStorageEnabled(true);
         this.getSettings().setJavaScriptEnabled(true);
 

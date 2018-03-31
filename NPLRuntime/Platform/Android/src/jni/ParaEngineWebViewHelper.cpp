@@ -15,7 +15,7 @@ namespace ParaEngine {
 	ParaEngineWebView::ParaEngineWebView()
 		: m_handle(-1)
 	{
-
+		CGlobals::GetApp()->ActivateApp(false);
 	}
 
 	ParaEngineWebView::~ParaEngineWebView()
@@ -24,6 +24,7 @@ namespace ParaEngine {
 		{
 			JniHelper::callStaticVoidMethod(classname, "removeWebView", m_handle);
 		}
+		CGlobals::GetApp()->ActivateApp(true);
 	}
 
 	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
@@ -73,6 +74,7 @@ namespace ParaEngine {
 			pView->Release();
 			m_views.erase(it);
 		}
+		CGlobals::GetApp()->ActivateApp(true);
 	}
 
 	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)

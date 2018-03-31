@@ -41,6 +41,9 @@ namespace ParaEngine
 		virtual HRESULT InvalidateDeviceObjects() override;
 		virtual HRESULT DeleteDeviceObjects() override;
 
+		/** whether the application is active or not. */
+		virtual bool IsAppActive() override;
+
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.
 		* @return frameDelta. if this is bigger than 0, we will render a frame.
@@ -73,8 +76,6 @@ namespace ParaEngine
 		*/
 		virtual void ActivateApp(bool bActivate) override;
 
-		/** whether the application is active or not. */
-		virtual bool IsAppActive() override;
 
 		virtual void DeleteInterface() { delete this; }
 
