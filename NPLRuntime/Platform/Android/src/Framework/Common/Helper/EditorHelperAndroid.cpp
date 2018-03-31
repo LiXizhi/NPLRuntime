@@ -22,17 +22,18 @@ namespace ParaEngine {
 
 	static bool openUrl(const char* url)
 	{
-		/*
-		auto pView = ParaEngineWebView::createWebView();
+		auto pWnd = CGlobals::GetApp()->GetRenderWindow();
+		int w = pWnd->GetWidth();
+		int h = pWnd->GetHeight();
+
+		auto pView = ParaEngineWebView::createWebView(-1, -1, w, h);
 		if (!pView)
 			return false;
 
+		pView->setAlpha(0.7f);
 		pView->loadUrl(url);
 		
 		return true;
-		*/
-
-		return false;
 	}
 
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)

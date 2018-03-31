@@ -4,6 +4,12 @@
 #include "RenderDeviceOpenGL.h"
 #include "EventClasses.h"
 #include "Framework/InputSystem/VirtualKey.h"
+#include "jni/AppActivity.h"
+
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/asio/steady_timer.hpp>
+
 namespace ParaEngine
 {
 	class CParaEngineAppAndroid;
@@ -14,7 +20,6 @@ namespace ParaEngine
     {
     public:
         AppDelegate();
-		AppDelegate(const std::string& intent_data);
         ~AppDelegate();
         void Run(android_app* app);
     private:
@@ -23,6 +28,8 @@ namespace ParaEngine
         static int32_t app_handle_input(struct android_app* app, AInputEvent* event);
 		static int32_t handle_key_input(AppDelegate* app, AInputEvent* event);
 		static void handle_touch_input(AppDelegate* app, AInputEvent* event);
+
+		void handle_mainloop_timer(const boost::system::error_code& err);
     protected:
         // App commands
         virtual void OnStart();
@@ -39,7 +46,15 @@ namespace ParaEngine
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
 		bool m_isPaused;
-		std::string m_intent_data;
+
+		/** the main game loop */
+		boost::asio::io_service m_main_io_service;
+		/** the main timer that ticks 30 times a second*/
+		boost::asio::steady_timer m_main_timer;
+
+		AppActivity m_appActivity;
+
+		float m_fRefreshTimerInterval; //  in seconds.
     };
 
 

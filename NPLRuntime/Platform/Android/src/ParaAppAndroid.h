@@ -71,6 +71,7 @@ namespace ParaEngine
 		virtual bool GetAutoLowerFrameRateWhenNotFocused() override;
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
+		virtual HRESULT DoWork() override;
 		virtual void GetScreenResolution(Vector2* pOut);
 	protected:
 		struct android_app* m_appState;

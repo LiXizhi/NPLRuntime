@@ -6,6 +6,13 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "AppDelegate.h"
+
+#include "ParaAppAndroid.h"
+#include "RenderWindowAndroid.h"
+#include "RenderDeviceEGL.h"
+#include "RenderContextEGL.h"
+
+#include <boost/bind.hpp>
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <cstdlib>
@@ -14,11 +21,6 @@
 #include <cassert>
 #include <ctime>
 #include <unordered_map>
-#include "ParaAppAndroid.h"
-#include "RenderWindowAndroid.h"
-#include "RenderDeviceEGL.h"
-#include "RenderContextEGL.h"
-#include "jni/AppActivity.h"
 
 
 using namespace ParaEngine;
@@ -416,15 +418,8 @@ AppDelegate::AppDelegate()
 	:m_State(nullptr)
 	, m_ParaEngineApp(nullptr)
 	, m_isPaused(false)
-{
-
-}
-
-AppDelegate::AppDelegate(const std::string& intent_data)
-	:m_State(nullptr)
-	, m_ParaEngineApp(nullptr)
-	, m_isPaused(false)
-	, m_intent_data(intent_data)
+	, m_main_timer(m_main_io_service)
+	, m_fRefreshTimerInterval(1.0f / 60.0f)
 {
 
 }
@@ -437,19 +432,10 @@ AppDelegate::~AppDelegate()
 }
 
 
-void AppDelegate::Run(struct android_app* app)
+void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 {
-	m_State = app;
-	app->userData = this;
-	app->onAppCmd = AppDelegate::app_handle_command;
-	app->onInputEvent = AppDelegate::app_handle_input;
-	LOGI("app:run");
-
-	AppActivity appActivity(app);
-
-	while (!m_State->destroyRequested)
+	if (!err && !m_State->destroyRequested)
 	{
-
 		int ident = 0;
 		int events = 0;
 		struct android_poll_source* source = nullptr;
@@ -467,13 +453,53 @@ void AppDelegate::Run(struct android_app* app)
 			}
 		}
 
+		m_appActivity.processGLEventJNI(m_State);
+
+
+		double fNextInterval = 0.f;
+
 		if (m_ParaEngineApp && !m_isPaused)
 		{
-			m_ParaEngineApp->DoWork();
+			auto ret = m_ParaEngineApp->DoWork();
+			if (ret == S_FALSE)
+			{
+				fNextInterval = 0.1f;
+			}
+			else
+			{
+				fNextInterval = 1.f / ((1.f / m_fRefreshTimerInterval) + 20.0);
+			}
+
+		}
+		else
+		{
+			fNextInterval = 0.1f;
 		}
 
-		appActivity.processGLEventJNI(app);
+		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval * 1000)));
+		m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
 	}
+}
+
+
+
+void AppDelegate::Run(struct android_app* app)
+{
+	m_State = app;
+	app->userData = this;
+	app->onAppCmd = AppDelegate::app_handle_command;
+	app->onInputEvent = AppDelegate::app_handle_input;
+
+	m_appActivity.init(app);
+
+	LOGI("app:run");
+
+	// start the main loop timer. 
+	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
+	m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
+
+	m_main_io_service.run();
+
 	LOGI("app:exit");
 }
 
@@ -519,7 +545,11 @@ void AppDelegate::OnInitWindow()
 	{
 		auto renderWindow = new RenderWindowAndroid(m_State->window);
 		m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
-		m_ParaEngineApp->InitApp(renderWindow, m_intent_data.c_str());
+
+		std::string intent_data = AppActivity::getLauncherIntentData(m_State);
+		LOGI("intent_data:%s", intent_data.c_str());
+
+		m_ParaEngineApp->InitApp(renderWindow, intent_data.c_str());
 	}
 	else
 	{

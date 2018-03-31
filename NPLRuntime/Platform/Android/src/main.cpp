@@ -10,22 +10,6 @@
 #include <android/log.h>
 
 
-std::string get_launcher_intent_data(struct android_app* state)
-{
-	ParaEngine::JniMethodInfo info;
-	if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getLauncherIntentData", "()Ljava/lang/String;"))
-	{
-
-		jstring intent_data = (jstring) info.env->CallObjectMethod(state->activity->clazz, info.methodID);
-		auto ret = ParaEngine::JniHelper::jstring2string(intent_data);
-		info.env->DeleteLocalRef(info.classID);
-		info.env->DeleteLocalRef(intent_data);
-		return ret;
-	}
-
-	return "";
-}
-
 
 /**
  * This is the main entry point of a native application that is using
@@ -37,9 +21,6 @@ void android_main(struct android_app* state) {
     // Make sure glue isn't stripped.
 	app_dummy();
 
-	std::string intent_data = get_launcher_intent_data(state);
-	LOGI("intent_data:%s", intent_data.c_str());
-
 	using namespace ParaEngine;
 	AppDelegate* app = nullptr;
 	if (state->savedState)
@@ -49,7 +30,7 @@ void android_main(struct android_app* state) {
 		LOGI("android main state saved");
 	}
 	else {
-		app = new AppDelegate(intent_data);
+		app = new AppDelegate();
 		LOGI("android main new state");
 	}	
 	app->Run(state);

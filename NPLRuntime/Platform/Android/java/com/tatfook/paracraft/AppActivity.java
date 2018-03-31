@@ -43,8 +43,7 @@ import java.util.ArrayList;
  * <p>A <a href="https://github.com/googlesamples/android-ndk/tree/master/native-activity">sample
  * native activity</a> is available in the NDK samples.
  */
-public class AppActivity extends Activity implements SurfaceHolder.Callback2,
-        InputQueue.Callback, OnGlobalLayoutListener {
+public class AppActivity extends Activity implements InputQueue.Callback, OnGlobalLayoutListener {
 
 	private static AppActivity sContext = null;
 	private static final String TAG = "ParaEngine";
@@ -105,6 +104,16 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 	private ArrayList<Runnable> mEventQueue = new ArrayList<Runnable>();
 
 
+	@Override    
+    public boolean onKeyUp(int keyCode, KeyEvent event) {    
+        if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
+            return false; 
+		}
+        else {    
+            return super.onKeyDown(keyCode, event);    
+        }    
+	}
+
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
 		
@@ -116,7 +125,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 
 		mIMM = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
 
-		getWindow().takeSurface(this);
+		//getWindow().takeSurface(this);
         getWindow().takeInputQueue(this);
         getWindow().setFormat(PixelFormat.RGB_565);
         getWindow().setSoftInputMode(
@@ -124,7 +133,8 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
                 | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mNativeContentView = new ParaEngineNativeView(this);
-        mNativeContentView.mActivity = this;
+       // mNativeContentView.mActivity = this;
+	   mNativeContentView.init(this);
         //setContentView(mNativeContentView);
 
 		this.initLayout();
@@ -244,18 +254,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
 		return sContext;
 	}
 
-	@Override    
-    public boolean onKeyDown(int keyCode, KeyEvent event) {    
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {    
-             return false; 
-		}
-		else if (keyCode == KeyEvent.KEYCODE_MENU) {
-			return false;
-		}
-        else {    
-            return super.onKeyDown(keyCode, event);    
-        }    
-	}
+	
 
 	@Override
     protected void onPause() {
@@ -314,6 +313,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
         }
     }
 
+	
 	public void surfaceCreated(SurfaceHolder holder) {
         if (!mDestroyed) {
             mCurSurfaceHolder = holder;
@@ -341,6 +341,7 @@ public class AppActivity extends Activity implements SurfaceHolder.Callback2,
             onSurfaceDestroyedNative(mNativeHandle);
         }
     }
+	
 
 	private static long getQueueNativePtr(InputQueue queue) {
 		
