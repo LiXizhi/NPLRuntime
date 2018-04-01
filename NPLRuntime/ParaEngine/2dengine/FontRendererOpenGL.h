@@ -20,7 +20,7 @@ namespace ParaEngine
 
 		void SetUTF16Text(const char16_t* strText);
 
-		bool UpdateLetterSprites();
+		bool UpdateLetterSprites(DWORD dwTextFormat);
 
 		void RenderLetterSprites(CSpriteRenderer* pSprite, DWORD color);
 

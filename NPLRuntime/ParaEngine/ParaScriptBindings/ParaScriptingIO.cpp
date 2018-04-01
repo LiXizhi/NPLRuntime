@@ -47,6 +47,12 @@ using namespace luabind;
 //@def the maximum number of bytes in a text file line.
 #define MAX_LINE_CHARACTER_NUM	512
 
+namespace ParaEngine
+{
+	extern time_t FileTimeToTimet(const FILETIME& ft);
+}
+
+
 namespace ParaScripting
 {
 	/// the current IO file.
@@ -525,8 +531,7 @@ namespace ParaScripting
 #else
 		if (pTime->dwHighDateTime == 0 && pTime->dwLowDateTime == 0)
 			return "2000-01-01-00-00";
-		std::time_t time;
-		memcpy(&time, pTime, sizeof(FILETIME));
+		std::time_t time = ParaEngine::FileTimeToTimet(*pTime);
 		auto pGmTime = std::localtime(&time);
 		if (pGmTime)
 		{

@@ -381,6 +381,14 @@ HRESULT CGUIText::Render(GUIState* pGUIState,float fElapsedTime )
 	tempRect.left += m_textOffsetX;
 	tempRect.right += m_textOffsetX;
 
+	/*
+	// for debugging rendering of a given text
+	std:string sTmp;
+	GetTextA(sTmp);
+	if (sTmp == "animation and game maker for everyone")
+	{
+		OUTPUT_LOG("1111111\n");
+	}*/
 	hr|=DrawText(m_szText.c_str(),m_objResource->GetFontElement(0),&tempRect, &rcWindow, m_bUseTextShadow,-1,m_textShadowQuality,m_textShadowColor);
 	if (m_position.IsRelativeTo3DObject()) 
 	{

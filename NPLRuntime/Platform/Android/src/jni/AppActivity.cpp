@@ -13,7 +13,6 @@
 #include <android/asset_manager_jni.h>
 #include <android/looper.h>
 
-
 #include <memory>
 #include <fcntl.h> 
 #include <poll.h>
@@ -30,7 +29,6 @@ namespace ParaEngine {
 	
 	AppActivity::~AppActivity()
 	{
-
 	}
 
 	void AppActivity::init(struct android_app* app)

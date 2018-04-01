@@ -144,9 +144,9 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	}
 	else
 	{
-		nScaledWidth = (int)(nWidth / GetFontScaling());
-		nScaledHeight = (int)(nHeight / GetFontScaling());
-		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling());
+		nScaledWidth = (int)(nWidth / GetFontScaling() + 0.999f);
+		nScaledHeight = (int)(nHeight / GetFontScaling() + 0.999f);
+		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling() + 0.999f);
 	}
 	// we will make the height at least of a single line height to prevent cocos start a new line in the front when calculating layout.
 	if (_commonLineHeight > nScaledHeight)
@@ -163,7 +163,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 
 	setAlignment(hAlignment_, vAlignment_);
 
-	if (UpdateLetterSprites())
+	if (UpdateLetterSprites(dwTextFormat))
 	{
 		if (dwTextFormat & DT_CALCRECT)
 		{
@@ -180,8 +180,8 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 			}
 			else
 			{
-				rect.right = rect.left + (int)(_contentSize.width * GetFontScaling());
-				rect.bottom = rect.top + (int)(nContentHeight * GetFontScaling());
+				rect.right = rect.left + (int)(_contentSize.width * GetFontScaling() + 0.999f);
+				rect.bottom = rect.top + (int)(nContentHeight * GetFontScaling() + 0.999f);
 			}
 			return true;
 		}
@@ -204,7 +204,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextA(CSpriteRenderer* pSprite, const 
 	return false;
 }
 
-bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites()
+bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites(DWORD dwTextFormat)
 {
 	if (_fontAtlas == nullptr || _currentUTF16String.empty())
 	{
@@ -220,7 +220,7 @@ bool ParaEngine::CFontRendererOpenGL::UpdateLetterSprites()
 	_fontAtlas->prepareLetterDefinitions(_currentUTF16String);
 
 	LabelTextFormatter::createStringSprites(this);
-	if (_maxLineWidth > 0 && _contentSize.width > _maxLineWidth && LabelTextFormatter::multilineText(this))
+	if (!(dwTextFormat & DT_SINGLELINE) &&  _maxLineWidth > 0 && _contentSize.width > _maxLineWidth && LabelTextFormatter::multilineText(this))
 		LabelTextFormatter::createStringSprites(this);
 
 	if (_labelWidth > 0 || (_currNumLines > 1 && _hAlignment != TextHAlignment::LEFT))
