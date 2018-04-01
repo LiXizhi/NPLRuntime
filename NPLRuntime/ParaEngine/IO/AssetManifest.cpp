@@ -686,7 +686,7 @@ void CAssetManifest::LoadManifest()
 	}
 	else
 	{
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
 		const char* sDefaultFile = "assets_manifest.txt";
 		if (CParaFile::DoesFileExist(sDefaultFile))
 		{

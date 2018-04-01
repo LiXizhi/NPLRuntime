@@ -8,6 +8,9 @@ ucm_add_dirs(assets TO ASSETS_FILES RECURSIVE ADDITIONAL_EXT *)
 set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources)
 
 add_executable(Paracraft ${OSX_SRC} ${RESOURCE_FILES} ${ASSETS_FILES})
+
+target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
+
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_ICON_FILE icon.icns

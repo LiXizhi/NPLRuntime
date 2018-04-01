@@ -4,6 +4,7 @@
 using namespace ParaEngine;
 int main(int argc, const char * argv[]) {
     
+
     RenderWindowOSX renderWinwow(960,540);
     CParaEngineAppOSX app;
     bool ret = app.InitApp(&renderWinwow, "");

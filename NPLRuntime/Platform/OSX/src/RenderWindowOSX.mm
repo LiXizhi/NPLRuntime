@@ -65,7 +65,9 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     WindowDelegate* winDelegate = [[WindowDelegate alloc] InitWithRenderWindow:renderWindow];
     [m_window setDelegate:winDelegate];
     
-
+    NSBundle* mainBundle = [NSBundle mainBundle];
+    NSString* bundlePath = [mainBundle resourcePath];
+    NSLog(@"resource path");
     
 }
 

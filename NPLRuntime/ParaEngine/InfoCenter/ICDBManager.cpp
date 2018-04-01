@@ -242,7 +242,7 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 {
 	m_nSQLite_OpenFlags = (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE );
 
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE) || defined(PLATFORM_MAC)
 	std::string sTempDiskFilename = ParaEngine::CParaFile::GetWritablePath() + filename;
 	if (ParaEngine::CParaFile::DoesFileExist(sTempDiskFilename.c_str(), false))
 	{
