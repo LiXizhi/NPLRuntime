@@ -89,6 +89,9 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 		if (m_writablePath[m_writablePath.size() - 1] != '/')
 			m_writablePath += "/";
 
+		if (m_writablePath[0] != '/')
+			m_writablePath = std::string("/") + m_writablePath;
+
 		/*
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 		auto state = app->GetAndroidApp();
@@ -135,6 +138,8 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
 		if (state->activity->externalDataPath)
 		{
 			m_externalStoragePath = state->activity->externalDataPath;
+			if (m_externalStoragePath[0] != '/')
+				m_externalStoragePath = std::string("/") + m_externalStoragePath;
 		}
 	}
 	return m_externalStoragePath;

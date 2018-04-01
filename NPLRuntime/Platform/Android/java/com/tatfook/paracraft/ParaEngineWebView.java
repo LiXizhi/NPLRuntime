@@ -1,3 +1,10 @@
+//-----------------------------------------------------------------------------
+// Class:	WebView
+// Authors:	LanZhiHong, LiXizhi
+// Emails:	LiXizhi@yeah.net
+// Company: ParaEngine
+// Date:	2018.3.31
+//-----------------------------------------------------------------------------
 package com.tatfook.paracraft;
 
 import android.annotation.SuppressLint;
@@ -71,14 +78,19 @@ public class ParaEngineWebView extends WebView {
 		this.setFocusable(true);
         this.setFocusableInTouchMode(true);
 
+		/** Note LiXizhi: we will set viewport width in each html pages by adding following viewport meta tag to the header 
+		<meta name="viewport" content="width=1020" />
+		*/
+
 		// this.getSettings().setBuiltInZoomControls(true);
+		// this.setInitialScale(1);
         this.getSettings().setSupportZoom(true);
 		this.getSettings().setLoadWithOverviewMode(true);
 		this.getSettings().setUseWideViewPort(true);
         this.getSettings().setDomStorageEnabled(true);
         this.getSettings().setJavaScriptEnabled(true);
 
-		//this.setAlpha(0.5f);
+		//this.setAlpha(0.95f);
 
         // `searchBoxJavaBridge_` has big security risk. http://jvn.jp/en/jp/JVN53768697
         try {

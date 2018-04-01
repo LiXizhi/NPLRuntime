@@ -59,9 +59,9 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	}
 	// TODO: force size to be 14. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
-	if (pFontRenderer->m_nFontSize <= 14)
+	if (pFontRenderer->m_nFontSize <= 20)
 	{
-		pFontRenderer->m_nRealFontSize = 14;
+		pFontRenderer->m_nRealFontSize = 20;
 	}
 	else
 	{
@@ -84,7 +84,12 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			return pFontRenderer;
 		}
 	}
-	OUTPUT_LOG("error: font file%s does not exist or invalid\n", fontFile.c_str());
+	OUTPUT_LOG("error: font file %s does not exist or invalid\n", fontFile.c_str());
+	if (sFontName != "System" && sFontName != "system")
+	{
+		OUTPUT_LOG("non-exist font %s is replaced with system font\n", sFontName.c_str());
+		return CFontRendererOpenGL::create("System", nFontSize);
+	}
 	return NULL;
 }
 

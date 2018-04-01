@@ -60,6 +60,11 @@ HRESULT ParaEngine::SpriteFontEntityOpenGL::InitDeviceObjects()
 	m_fontRenderer = CFontRendererOpenGL::create(GetFontName(), GetFontSize());
 	if(m_fontRenderer)
 		m_fontRenderer->addref();
+	else
+	{
+		OUTPUT_LOG("warning: failed to init font entity: %s;%d\n", GetFontName().c_str(), GetFontSize());
+	}
+
 	return S_OK;
 }
 

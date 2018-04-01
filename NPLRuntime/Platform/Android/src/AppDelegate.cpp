@@ -148,7 +148,7 @@ inline EVirtualKey toVirtualKey(int32_t keycode)
 		s_keymap[AKEYCODE_SOFT_LEFT] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_SOFT_RIGHT] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_HOME] = EVirtualKey::KEY_HOME;
-		s_keymap[AKEYCODE_BACK] = EVirtualKey::KEY_BACK;
+		s_keymap[AKEYCODE_BACK] = EVirtualKey::KEY_ESCAPE; // LiXizhi:  we will match back button to esc key on android
 		s_keymap[AKEYCODE_CALL] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_ENDCALL] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_0] = EVirtualKey::KEY_0;
@@ -384,9 +384,11 @@ int32_t AppDelegate::handle_key_input(AppDelegate* app, AInputEvent* event)
 	EVirtualKey key = EVirtualKey::KEY_UNKNOWN;
 	int32_t action = AKeyEvent_getAction(event);
 	if (action == AKEY_EVENT_ACTION_DOWN)
-	{
 		state = EKeyState::PRESS;
-	}
+	else if (action == AKEY_EVENT_ACTION_UP)
+		state = EKeyState::RELEASE;
+	else
+		return 0;
 	int32_t keycode = AKeyEvent_getKeyCode(event);
 	key = toVirtualKey(keycode);
 	app->OnKey(key, state);
@@ -602,7 +604,14 @@ void ParaEngine::AppDelegate::OnKey(const EVirtualKey& key, const EKeyState& sta
 {
 	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
 	{
-
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			if(state == EKeyState::PRESS)
+				gui->SendKeyDownEvent(key);
+			else if (state == EKeyState::RELEASE)
+				gui->SendKeyUpEvent(key);
+		}
 	}
 }
 
