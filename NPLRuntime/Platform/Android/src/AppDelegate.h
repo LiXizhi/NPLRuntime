@@ -19,10 +19,13 @@ namespace ParaEngine
     class AppDelegate 
     {
     public:
-        AppDelegate();
-        ~AppDelegate();
+		static AppDelegate& getInstance();
+        
         void Run(android_app* app);
     private:
+		AppDelegate();
+		~AppDelegate();
+
         struct android_app* m_State;
         static void app_handle_command(struct android_app* app, int32_t cmd);
         static int32_t app_handle_input(struct android_app* app, AInputEvent* event);

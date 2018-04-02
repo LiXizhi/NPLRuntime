@@ -22,7 +22,9 @@ void android_main(struct android_app* state) {
 	app_dummy();
 
 	using namespace ParaEngine;
-	AppDelegate* app = nullptr;
+	AppDelegate& app = AppDelegate::getInstance();
+
+	/*
 	if (state->savedState)
 	{
 		saved_state* savedState = (saved_state*)state->savedState;
@@ -33,6 +35,7 @@ void android_main(struct android_app* state) {
 		app = new AppDelegate();
 		LOGI("android main new state");
 	}	
-	app->Run(state);
+	*/
+	app.Run(state);
 }
 

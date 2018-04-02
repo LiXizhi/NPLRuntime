@@ -467,6 +467,12 @@ void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 	}
 }
 
+AppDelegate& AppDelegate::getInstance()
+{
+	static AppDelegate ins;
+	return ins;
+}
+
 
 void AppDelegate::Run(struct android_app* app)
 {
@@ -526,7 +532,7 @@ void AppDelegate::OnStop()
 	LOGI("app:OnStop");
 
 	// TODO: kill app , this is temporary measures since we have not fixed the texture lost issue when app stopped. 
-	exit(0);
+	//exit(0);
 }
 
 void AppDelegate::OnPause()
@@ -536,6 +542,8 @@ void AppDelegate::OnPause()
 	{
 		m_ParaEngineApp->OnPause();
 	}
+
+	//m_isPaused = true;
 }
 void AppDelegate::OnResume()
 {
@@ -544,6 +552,8 @@ void AppDelegate::OnResume()
 	{
 		m_ParaEngineApp->OnResume();
 	}
+
+	//m_isPaused = false;
 }
 void AppDelegate::OnDestroy()
 {
@@ -582,6 +592,16 @@ void AppDelegate::OnTermWindow()
 void AppDelegate::OnWindowResized()
 {
 	LOGI("app:OnWindowResized");
+	if (m_ParaEngineApp)
+	{
+		auto renderWindow = m_ParaEngineApp->GetRenderWindow();
+		Rect vp;
+		vp.x = 0; vp.y = 0;
+		vp.z = renderWindow->GetWidth();
+		vp.w = renderWindow->GetHeight();
+		CGlobals::GetRenderDevice()->SetViewport(vp);
+	}
+
 }
 
 void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
