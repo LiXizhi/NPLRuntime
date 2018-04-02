@@ -15,7 +15,6 @@ namespace ParaEngine {
 	ParaEngineWebView::ParaEngineWebView()
 		: m_handle(-1)
 	{
-		CGlobals::GetApp()->ActivateApp(false);
 	}
 
 	ParaEngineWebView::~ParaEngineWebView()
@@ -24,7 +23,6 @@ namespace ParaEngine {
 		{
 			JniHelper::callStaticVoidMethod(classname, "removeWebView", m_handle);
 		}
-		CGlobals::GetApp()->ActivateApp(true);
 	}
 
 	ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
@@ -37,11 +35,53 @@ namespace ParaEngine {
 			ParaEngineWebView* pView = new ParaEngineWebView();
 			pView->setHandle(handle);
 			m_views[handle] = pView;
+
+			if (m_views.size() >= 1)
+			{
+				OUTPUT_LOG("ParaEngineWebView: ActivateApp(false)");
+				CGlobals::GetApp()->ActivateApp(false);
+			}
+
 			return pView;
 		}
 		else
 		{
 			return nullptr;
+		}
+	}
+
+	int ParaEngineWebView::Release()
+	{
+		if (GetRefCount() <= 1)
+		{
+			auto it = m_views.find(m_handle);
+			if (it != m_views.end())
+			{
+				m_views.erase(it);
+			}
+
+			if (m_views.size() == 0 )
+			{
+				OUTPUT_LOG("ParaEngineWebView: ActivateApp(true)");
+				CGlobals::GetApp()->ActivateApp(true);
+			}
+		}
+
+		return IAttributeFields::Release();
+	}
+
+	void ParaEngineWebView::onCloseView(int handle)
+	{
+		auto it = m_views.find(handle);
+		if (it != m_views.end())
+		{
+			auto pView = it->second;
+			m_views.erase(it);
+
+			//OUTPUT_LOG("ParaEngineWebView: m_views size %d", m_views.size());
+
+			pView->m_handle = -1;
+			pView->Release();
 		}
 	}
 
@@ -64,18 +104,7 @@ namespace ParaEngine {
 		return S_OK;
 	}
 
-	void ParaEngineWebView::onCloseView(int handle)
-	{
-		auto it = m_views.find(handle);
-		if (it != m_views.end())
-		{
-			auto pView = it->second;
-			pView->m_handle = -1;
-			pView->Release();
-			m_views.erase(it);
-		}
-		CGlobals::GetApp()->ActivateApp(true);
-	}
+	
 
 	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
 	{
