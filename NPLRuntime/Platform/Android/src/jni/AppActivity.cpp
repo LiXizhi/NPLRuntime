@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------
 // Class:	AppActivity
-// Authors:	lanzhihong, LiXizhi
+// Authors:	LanZhihong, LiXizhi
 // Date: 2018.3.30
 // Desc: main activity, customize this class for your app
 //----------------------------------------------------------------------
@@ -24,7 +24,6 @@ namespace ParaEngine {
 	AppActivity::AppActivity()
 		: inited(false)
 	{
-		
 	}
 	
 	AppActivity::~AppActivity()

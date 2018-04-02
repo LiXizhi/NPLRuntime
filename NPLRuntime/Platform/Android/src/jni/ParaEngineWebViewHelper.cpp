@@ -32,7 +32,7 @@ namespace ParaEngine {
 		JniMethodInfo t;
 		if (JniHelper::getStaticMethodInfo(t, classname.c_str(), "createWebView", "(IIII)I")) 
 		{
-			jint handle = t.env->CallStaticIntMethod(t.classID, t.methodID);
+			jint handle = t.env->CallStaticIntMethod(t.classID, t.methodID, x, y, w, h);
 			t.env->DeleteLocalRef(t.classID);
 			ParaEngineWebView* pView = new ParaEngineWebView();
 			pView->setHandle(handle);

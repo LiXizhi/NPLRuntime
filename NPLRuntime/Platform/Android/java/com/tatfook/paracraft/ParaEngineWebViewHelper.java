@@ -11,7 +11,7 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 import android.view.ViewGroup.MarginLayoutParams;
 import android.webkit.WebViewClient;
-
+import android.util.Log;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -126,12 +126,9 @@ public class ParaEngineWebViewHelper {
 				}
 				else
 				{
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(   
-						        FrameLayout.LayoutParams.WRAP_CONTENT,   
-						        FrameLayout.LayoutParams.WRAP_CONTENT);   
-				    params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
-				    params.width = w;
-				    params.height = h;
+					// FrameLayout.LayoutParams.WRAP_CONTENT not supported
+					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(w, h);   
+				    // params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
 			        sLayout.addView(webView, params);
 				}
             }
@@ -147,10 +144,13 @@ public class ParaEngineWebViewHelper {
 
 	public static int createWebView(final int x, final int y, final int w, final int h) {
 		final int index = viewTag;
+		
 		sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ParaEngineWebView webView = new ParaEngineWebView(sActivity, index);
+
+				Log.i("ParaEngine", String.format("open web view with %d, %d, %d, %d", x,y, w, h));
 
 				if (x >= 0 && y >= 0)
 				{
@@ -163,12 +163,9 @@ public class ParaEngineWebViewHelper {
 				}
 				else
 				{
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(   
-						        FrameLayout.LayoutParams.WRAP_CONTENT,   
-						        FrameLayout.LayoutParams.WRAP_CONTENT);   
-				    params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
-				    params.width = w;
-				    params.height = h;
+					// FrameLayout.LayoutParams.WRAP_CONTENT not supported
+					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(w, h);   
+				    // params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
 			        sLayout.addView(webView, params);
 				}
 				webView.requestFocus();

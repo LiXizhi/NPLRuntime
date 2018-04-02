@@ -89,6 +89,7 @@ public class ParaEngineWebView extends WebView {
 		this.getSettings().setUseWideViewPort(true);
         this.getSettings().setDomStorageEnabled(true);
         this.getSettings().setJavaScriptEnabled(true);
+		this.setLayerType(LAYER_TYPE_HARDWARE, null);
 
 		//this.setAlpha(0.95f);
 
