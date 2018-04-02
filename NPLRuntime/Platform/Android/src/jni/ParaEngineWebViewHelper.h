@@ -20,6 +20,8 @@ namespace ParaEngine {
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
+		virtual int Release() override;
+
 		void loadUrl(const std::string &url, bool cleanCachedData = false);
 		void setAlpha(float a);
 

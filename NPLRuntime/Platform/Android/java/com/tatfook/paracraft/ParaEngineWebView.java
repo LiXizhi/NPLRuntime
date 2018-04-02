@@ -61,7 +61,6 @@ public class ParaEngineWebView extends WebView {
 	@Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
-			Log.i("ParaEngine", "ParaEngineWebView::onKeyDown");
 
 			ParaEngineWebViewHelper._onCloseView(this);
             return false; 
@@ -74,6 +73,8 @@ public class ParaEngineWebView extends WebView {
 	@SuppressLint("SetJavaScriptEnabled")
     public ParaEngineWebView(Context context, int viewTag) {
 		super(context);
+
+		mViewTag = viewTag;
 
 		this.setFocusable(true);
         this.setFocusableInTouchMode(true);

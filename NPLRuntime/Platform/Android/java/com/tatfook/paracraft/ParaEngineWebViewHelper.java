@@ -20,6 +20,8 @@ import java.util.concurrent.FutureTask;
 import com.tatfook.paracraft.AppActivity;
 import com.tatfook.paracraft.ParaEngineWebView;
 
+import android.util.Log;
+
 class HelloWebViewClient extends WebViewClient { 
 	@Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) { 
@@ -139,10 +141,18 @@ public class ParaEngineWebViewHelper {
 	}
 
 	public static void _onCloseView(ParaEngineWebView webView) {
-		int index = webView.getViewTag();
+		final int index = webView.getViewTag();
 		webViews.remove(index);
 		sLayout.removeView(webView);
-		onCloseView(index);
+		webView.destroy();
+
+		sActivity.runOnGLThread(new Runnable() {
+            @Override
+            public void run() {
+				onCloseView(index);
+			}
+		});
+		
 	}
 
 	public static int createWebView(final int x, final int y, final int w, final int h) {
@@ -186,6 +196,7 @@ public class ParaEngineWebViewHelper {
                 if (webView != null) {
                     webViews.remove(index);
                     sLayout.removeView(webView);
+					webView.destroy();
                 }
             }
         });
@@ -391,14 +402,17 @@ public class ParaEngineWebViewHelper {
 
 
 	public static void setViewAlpha(final int index, final float alpha) {
+
         sActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 ParaEngineWebView webView = webViews.get(index);
                 if (webView != null) {
-                    webView.setAlpha(alpha);
+                    //webView.setAlpha((int)(255 * alpha));
+					webView.setAlpha(alpha);
                 }
             }
         });
+		
     }
 }
