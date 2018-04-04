@@ -57,6 +57,8 @@
 #include "2dengine/GUIHighlight.h"
 #include "3dengine/AudioEngine2.h"
 #include "PluginAPI.h"
+#include "Core/EventsCenter.h"
+#include "Core/EventClasses.h"
 
 #if USE_DIRECTX_RENDERER
 //#include "Render/context/d3d9/RenderContextD3D9.h"
@@ -646,6 +648,11 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 
 	m_pParaWorldAsset->RendererRecreated();
 	m_pRootScene->RendererRecreated();
+
+
+	SystemEvent e(SystemEvent::SYS_RENDERER_RECREATED, "");
+	e.SetAsyncMode(false);
+	CGlobals::GetEventsCenter()->FireEvent(e);
 
 	ActivateApp(true);
 }

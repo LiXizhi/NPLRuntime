@@ -222,41 +222,48 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* d
 			{
 				program->setUniformLocationWith1i(uniform->location, *((const GLint*)(data)));
 
-				
+				PE_CHECK_GL_ERROR_DEBUG();
 			}
 			else if (uniform->type == GL_BOOL)
 			{
 				program->setUniformLocationWith1i(uniform->location, *((const bool*)(data)));
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (uniform->type == GL_FLOAT)
 			{
 				program->setUniformLocationWith1f(uniform->location, *((const GLfloat*)(data)));
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (uniform->type == GL_FLOAT_VEC3)
 			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (uniform->type == GL_FLOAT_VEC2)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (uniform->type == GL_FLOAT_VEC4)
 			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (uniform->type == GL_FLOAT_MAT4)
 			{
 				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else if (size > 0)
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), (uint32)((size + 1) / 2));
+				PE_CHECK_GL_ERROR_DEBUG();
 				
 			}
 			else
@@ -493,6 +500,8 @@ bool ParaEngine::CEffectFileOpenGL::use(int nTech, int nPass)
 	if (program)
 	{
 		program->use();
+
+		PE_CHECK_GL_ERROR_DEBUG();
 		
 		if (mTechniqueIndex != nTech)
 		{

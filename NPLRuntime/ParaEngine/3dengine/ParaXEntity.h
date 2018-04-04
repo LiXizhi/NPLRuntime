@@ -132,6 +132,12 @@ namespace ParaEngine
 
 		/** Get AABB bounding box of the asset object. if the asset contains an OOB, it will return true. */
 		virtual bool GetBoundingBox(Vector3* pMin, Vector3* pMax);
+
+
+		/** callback of listening the event that renderer was recreated on Android/WP8
+		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
+		*/
+		virtual HRESULT RendererRecreated();
 	private:
 		/// mesh objects in LOD list. each mesh may contain materials and textures, but you can simply 
 		/// ignore them. The default setting is rendering with materials. See CParaXStaticMesh for more details
