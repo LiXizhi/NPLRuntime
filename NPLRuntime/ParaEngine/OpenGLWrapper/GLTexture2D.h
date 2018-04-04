@@ -125,6 +125,8 @@ namespace ParaEngine
 		void bind();
 		void bindN(GLuint textureUnit);
 
+		void RendererRecreated();
+
 	private:
 		static GLTexture2D::PixelFormat g_defaultAlphaPixelFormat;
 

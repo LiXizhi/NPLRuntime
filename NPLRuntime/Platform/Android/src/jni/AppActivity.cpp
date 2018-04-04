@@ -12,7 +12,6 @@
 #include <android/native_window_jni.h>
 #include <android/asset_manager_jni.h>
 #include <android/looper.h>
-
 #include <memory>
 #include <fcntl.h> 
 #include <poll.h>

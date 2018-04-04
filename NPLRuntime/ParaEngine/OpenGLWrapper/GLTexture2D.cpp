@@ -1046,5 +1046,11 @@ void GLTexture2D::convertRGBA8888ToRGB5A1(const unsigned char* data, size_t data
 			| (data[i + 3] & 0x0080) >> 7;   //A
 	}
 }
+
+void GLTexture2D::RendererRecreated()
+{
+	_name = 0;
+}
+
 // converter function end
 //////////////////////////////////////////////////////////////////////////
