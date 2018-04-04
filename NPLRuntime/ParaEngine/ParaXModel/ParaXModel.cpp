@@ -2167,6 +2167,16 @@ int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
 	return nNextID;
 }
 
+HRESULT CParaXModel::RendererRecreated()
+{
+	m_pIndexBuffer.RendererRecreated();
+	m_pVertexBuffer.RendererRecreated();
+
+	this->SetVertexBufferDirty();
+
+	return S_OK;
+}
+
 HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
 {
 	if (m_objNum.nVertices == 0 || !m_indices)

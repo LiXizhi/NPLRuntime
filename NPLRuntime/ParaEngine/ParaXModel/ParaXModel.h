@@ -241,6 +241,8 @@ namespace ParaEngine
 
 		void SetVertexBufferDirty();
 
+		HRESULT RendererRecreated();
+
 		friend struct ModelRenderPass;
 
 	private:

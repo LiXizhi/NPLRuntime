@@ -155,6 +155,8 @@ namespace ParaEngine {
 
 	HRESULT CParaXStaticModel::RendererRecreated()
 	{
+		m_vertexBuffer.RendererRecreated();
+		m_indexBuffer.RendererRecreated();
 		BuildRenderBuffer();
 		return S_OK;
 	}

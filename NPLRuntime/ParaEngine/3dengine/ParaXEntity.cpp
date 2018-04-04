@@ -261,8 +261,15 @@ IAttributeFields* ParaXEntity::GetAttributeObject()
 
 HRESULT ParaXEntity::RendererRecreated()
 {
-	this->DeleteDeviceObjects();
-	this->InitDeviceObjects();
+	std::vector<MeshLOD>::iterator iCur, iEnd = m_MeshLODs.end();
+	for (iCur = m_MeshLODs.begin(); iCur != iEnd; ++iCur)
+	{
+		MeshLOD& lod = (*iCur);
+		if (lod.m_pParaXMesh)
+		{
+			lod.m_pParaXMesh->RendererRecreated();
+		}
+	}
 	return S_OK;
 }
 
