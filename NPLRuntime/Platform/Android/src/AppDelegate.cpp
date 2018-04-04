@@ -6,7 +6,6 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "AppDelegate.h"
-
 #include "ParaAppAndroid.h"
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"

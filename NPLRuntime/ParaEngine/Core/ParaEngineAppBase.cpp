@@ -651,7 +651,7 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 
 
 	SystemEvent e(SystemEvent::SYS_RENDERER_RECREATED, "");
-	e.SetAsyncMode(false);
+	// e.SetAsyncMode(false);
 	CGlobals::GetEventsCenter()->FireEvent(e);
 
 	ActivateApp(true);
