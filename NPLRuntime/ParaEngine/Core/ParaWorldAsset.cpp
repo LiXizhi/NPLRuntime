@@ -743,6 +743,8 @@ HRESULT ParaEngine::CParaWorldAsset::RendererRecreated()
 	GetVertexBufferPoolManager().RendererRecreated();
 	m_EffectsManager.RendererRecreated();
 	GetTextureManager().RendererRecreated();
+	GetMeshManager().RendererRecreated();
+	GetParaXManager().RendererRecreated();
 	GetFontManager().RendererRecreated();
 	// signal
 	OnRendererRecreated();

@@ -292,8 +292,6 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 }
 
 
-
-
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {
 	//glActiveTexture(GL_TEXTURE0 + stage);
@@ -483,6 +481,15 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
 
 	PE_CHECK_GL_ERROR_DEBUG();
+
+	/*
+	GLenum __error = glGetError();
+	if (__error)
+	{
+		*((char*)0) = 0;
+	}
+	*/
+
 	return true;
 }
 
@@ -556,6 +563,9 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil
 		fields |= GL_STENCIL_BUFFER_BIT;
 	}
 	glClear(fields);
+
+	PE_CHECK_GL_ERROR_DEBUG();
+
 	return true;
 }
 
@@ -584,18 +594,21 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
 	glClearColor(color.r, color.g, color.b, color.a);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearDepth(const float depth)
 {
 	glClearDepth(depth);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 {
 	glClearStencil(stencil);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 

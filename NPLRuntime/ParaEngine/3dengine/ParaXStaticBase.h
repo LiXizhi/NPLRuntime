@@ -171,6 +171,8 @@ namespace ParaEngine
 		// Rendering options
 		void    UseMeshMaterials(bool bFlag) { m_bUseMaterials = bFlag; }
 
+		virtual HRESULT RendererRecreated() = 0;
+
 
 		static XModelFileType GetFileTypeByFilename(const std::string& sFilename);
 	protected:

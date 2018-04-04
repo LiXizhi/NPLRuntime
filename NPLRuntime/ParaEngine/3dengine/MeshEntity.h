@@ -117,6 +117,7 @@ namespace ParaEngine
 		*/
 		HRESULT CreateMeshFromFile_Async(void* pContext, RenderDevicePtr pDev = NULL, const char* sFileName = NULL);
 
+		
 	public:
 		MeshEntity(const AssetKey& key)
 			:AssetEntity(key),m_nTechniqueHandle(-1), m_pParamBlock(NULL), m_vMin(0,0,0), m_vMax(0,0,0)
@@ -128,6 +129,10 @@ namespace ParaEngine
 		virtual HRESULT InvalidateDeviceObjects();
 		virtual HRESULT DeleteDeviceObjects();
 		virtual void Cleanup();
+		/** callback of listening the event that renderer was recreated on Android/WP8
+		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
+		*/
+		virtual HRESULT RendererRecreated() override;
 
 		virtual IAttributeFields* GetAttributeObject();
 

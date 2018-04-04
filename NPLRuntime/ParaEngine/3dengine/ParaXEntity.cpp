@@ -259,6 +259,13 @@ IAttributeFields* ParaXEntity::GetAttributeObject()
 	return this;
 }
 
+HRESULT ParaXEntity::RendererRecreated()
+{
+	this->DeleteDeviceObjects();
+	this->InitDeviceObjects();
+	return S_OK;
+}
+
 bool ParaEngine::ParaXEntity::GetBoundingBox(Vector3* pMin, Vector3* pMax)
 {
 	CParaXModel* pMesh = GetModel();

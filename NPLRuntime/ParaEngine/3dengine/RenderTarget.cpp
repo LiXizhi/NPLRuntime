@@ -471,6 +471,12 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 	return m_sCanvasTextureName;
 }
 
+HRESULT ParaEngine::CRenderTarget::RendererRecreated()
+{
+	m_bInitialized = false;
+	CBaseObject::RendererRecreated();
+}
+
 void ParaEngine::CRenderTarget::SetCanvasTextureName(const std::string& sValue)
 {
 	if (m_sCanvasTextureName != sValue){

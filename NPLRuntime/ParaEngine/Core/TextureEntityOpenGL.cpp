@@ -285,32 +285,32 @@ DeviceTexturePtr_type ParaEngine::TextureEntityOpenGL::GetTexture()
 	LoadAsset();
 	switch (SurfaceType)
 	{
-	case TextureSequence:
-	{
-		AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
-		if (pInfo != 0 && m_pTextureSequence != 0 && pInfo->m_nCurrentFrameIndex < pInfo->m_nFrameCount)
+		case TextureSequence:
 		{
-			if (pInfo->m_bAutoAnimation)
+			AnimatedTextureInfo* pInfo = GetAnimatedTextureInfo();
+			if (pInfo != 0 && m_pTextureSequence != 0 && pInfo->m_nCurrentFrameIndex < pInfo->m_nFrameCount)
 			{
-				if (pInfo->m_fFPS >= 0)
+				if (pInfo->m_bAutoAnimation)
 				{
-					pInfo->m_nCurrentFrameIndex = ((int)(globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
+					if (pInfo->m_fFPS >= 0)
+					{
+						pInfo->m_nCurrentFrameIndex = ((int)(globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
+					}
+					else
+					{
+						pInfo->m_nCurrentFrameIndex = pInfo->m_nFrameCount - 1 - ((int)(-globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
+					}
 				}
-				else
-				{
-					pInfo->m_nCurrentFrameIndex = pInfo->m_nFrameCount - 1 - ((int)(-globalTime * pInfo->m_fFPS / 1000)) % pInfo->m_nFrameCount;
-				}
+				auto tex = m_pTextureSequence[pInfo->m_nCurrentFrameIndex];
+				return tex;
 			}
-			auto tex = m_pTextureSequence[pInfo->m_nCurrentFrameIndex];
-			return tex;
+			break;
 		}
-		break;
-	}
-	default:
-	{
-		return m_texture;
-		break;
-	}
+		default:
+		{
+			return m_texture;
+			break;
+		}
 	}
 	return 0;
 }
@@ -513,6 +513,7 @@ bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelForm
 	// TODO:
 	return false;
 }
+
 
 bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {

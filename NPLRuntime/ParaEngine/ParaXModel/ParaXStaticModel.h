@@ -105,6 +105,8 @@ namespace ParaEngine
 			return S_OK; 
 		};
 
+		virtual HRESULT RendererRecreated();
+
 		virtual HRESULT Render(SceneState * pSceneState, CEffectFile *pEffect,
 			bool bDrawOpaqueSubsets = true,
 			bool bDrawAlphaSubsets = true, float fAlphaFactor = 1.0f, CParameterBlock* materialParams = nullptr);

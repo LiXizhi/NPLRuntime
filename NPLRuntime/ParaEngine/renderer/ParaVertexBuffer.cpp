@@ -169,12 +169,16 @@ void ParaEngine::ParaVertexBuffer::Unlock()
 			glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
 			glBufferData(GL_ARRAY_BUFFER, m_nBufferSize, m_buffer, GL_STATIC_DRAW);
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+			PE_CHECK_GL_ERROR_DEBUG();
 		}
 		else if (m_bufferType == BufferType_IndexBuffer)
 		{
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vertexBuffer);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_nBufferSize, m_buffer, GL_STATIC_DRAW);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+			PE_CHECK_GL_ERROR_DEBUG();
 		}
 		
 		SAFE_DELETE_ARRAY(m_buffer);
@@ -201,12 +205,16 @@ void ParaEngine::ParaVertexBuffer::UploadMemoryBuffer(const char* pBuffer, int32
 		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
 		glBufferData(GL_ARRAY_BUFFER, nBufSize, pBuffer, GL_STATIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		PE_CHECK_GL_ERROR_DEBUG();
 	}
 	else if (m_bufferType == BufferType_IndexBuffer)
 	{
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_vertexBuffer);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, nBufSize, pBuffer, GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		PE_CHECK_GL_ERROR_DEBUG();
 	}
 	
 #else
