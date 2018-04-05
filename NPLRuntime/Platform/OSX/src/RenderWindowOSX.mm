@@ -1,4 +1,5 @@
 #include "ParaEngine.h"
+#include "2dengine/GUIRoot.h"
 #include "RenderWindowOSX.h"
 #include "WindowDelegate.h"
 
@@ -52,22 +53,19 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
     NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable | NSWindowStyleMaskBorderless;
     
-    
     m_window = [[GLWindow alloc] initWithContentRect:CGRectMake(0, 0, width,height) styleMask:style backing:NSBackingStoreBuffered defer:NO];
     [m_window setTitle:@"Paracraft"];
     [NSApp activateIgnoringOtherApps:YES];
     [NSApp arrangeInFront:m_window];
     [m_window orderFront:nil];
-    
     [m_window makeKeyWindow];
     [m_window makeFirstResponder:m_window];
+    
+
     RenderWindowOSX* renderWindow = this;
     WindowDelegate* winDelegate = [[WindowDelegate alloc] InitWithRenderWindow:renderWindow];
     [m_window setDelegate:winDelegate];
     
-    NSBundle* mainBundle = [NSBundle mainBundle];
-    NSString* bundlePath = [mainBundle resourcePath];
-    NSLog(@"resource path");
     
 }
 
@@ -103,36 +101,41 @@ bool RenderWindowOSX::ShouldClose() const
 void RenderWindowOSX::PollEvents() { 
     if(m_window == nullptr || ShouldClose()) return;
     NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:nil
+                                        untilDate:[NSDate distantPast]
                                            inMode:NSDefaultRunLoopMode
                                           dequeue:YES];
-    
+
+    uint32_t mx = (uint32_t)[event locationInWindow].x;
+    uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y;
     switch([(NSEvent *)event type])
     {
             
         case NSEventTypeLeftMouseDown:
-            NSLog(@"Left mouse down");
+            OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeLeftMouseUp:
-            NSLog(@"Left mouse up");
+            OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeRightMouseDown:
-            NSLog(@"Right mouse down");
+            OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeRightMouseUp:
-            NSLog(@"Right mouse up");
+            OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeMouseMoved:
-            NSLog(@"mouse moved");
+        case NSEventTypeLeftMouseDragged:
+        case NSEventTypeRightMouseDragged:
+        case NSEventTypeOtherMouseDragged:
+            OnMouseMove(mx, my);
             break;
         case NSEventTypeScrollWheel:
-            NSLog(@"mouse scroll whell");
+            OnMouseWhell([event deltaX], [event deltaY]);
             break;
         case NSEventTypeOtherMouseDown:
-            NSLog(@"other mouse down");
+            OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeOtherMouseUp:
-            NSLog(@"other mouse up");
+            OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeKeyDown:
             NSLog(@"Key Down!");
@@ -153,6 +156,51 @@ bool RenderWindowOSX::OnShouldClose()
     m_shouldClose = true;
     return true;
 }
+
+void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine::EKeyState state, uint32_t x, uint32_t y)
+{
+ 
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return;
+    }
+    
+    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state,x,y)));
+}
+
+void RenderWindowOSX::OnChar(unsigned int character)
+{
+    
+}
+
+
+void RenderWindowOSX::OnKey(ParaEngine::EVirtualKey key, ParaEngine::EKeyState state)
+{
+    
+}
+
+
+void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
+{
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return;
+    }
+    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY)));
+}
+
+
+void RenderWindowOSX::OnMouseMove(uint32_t x, uint32_t y)
+{
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return;
+    }
+    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(x, y)));
+}
+
+
+
 
 
 
