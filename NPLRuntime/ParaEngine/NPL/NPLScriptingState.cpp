@@ -203,7 +203,11 @@ bool ParaScripting::CNPLScriptingState::CreateSetState(lua_State* pLuaState)
 	}
 
 	if (m_pState == NULL)
-		return false;
+    {
+        OUTPUT_LOG("Create lua state failed!");
+        return false;
+    }
+
 
 	LoadLuabind();
 	/// make this a reasonable size

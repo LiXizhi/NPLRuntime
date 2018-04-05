@@ -36,15 +36,3 @@ target_include_directories(RenderSystemD3D9 PUBLIC
 
 
 target_compile_definitions(RenderSystemD3D9 PUBLIC USE_DIRECTX_RENDERER PARAENGINE_CLIENT)
-
-
-
-
-IF(MSVC)
-    ucm_set_runtime(STATIC)
-    # enable multiprocessor build option /MP, this will greatly increase compile speed
-    SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MP")
-    SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /MP")
-    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MP")
-    SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
-ENDIF()

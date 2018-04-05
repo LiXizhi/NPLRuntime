@@ -114,6 +114,7 @@ namespace ParaEngine
 		double            m_fElapsedTime;      // Time elapsed since last frame
 		float m_fFPS;
 		bool m_bActive;
+		bool m_bAudioEngineInitialized;
 
 #pragma region OLD_CODE
 

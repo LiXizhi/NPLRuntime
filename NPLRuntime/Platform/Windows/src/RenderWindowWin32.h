@@ -39,7 +39,7 @@ namespace ParaEngine
 		virtual intptr_t GetNativeHandle() const override;
 
 	protected:
-		virtual void OnMouseButton(EMouseButton button, EKeyState state) {};
+		virtual void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y) {};
 		virtual void OnMouseMove(uint32_t x, uint32_t y) {};
 		virtual void OnMouseWhell(float x, float y, float delta) {};
 		virtual void OnKey(EVirtualKey key, EKeyState state) {};

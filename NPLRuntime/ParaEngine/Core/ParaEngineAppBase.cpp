@@ -165,23 +165,29 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	cm->LoadFromFile();
 
 	// init audio engine
-
+    
 #ifdef STATIC_PLUGIN_CAUDIOENGINE
 	IParaAudioEngine* pAudioEnginePlugin = (IParaAudioEngine*)AudioEngine_GetClassDesc()->Create();
 	if (CAudioEngine2::GetInstance()->InitAudioEngine(pAudioEnginePlugin) != S_OK)
 	{
 		OUTPUT_LOG("Audio engine init fail!\n");
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
-		return false;
-	}
+        m_bAudioEngineInitialized = false;
+    }else{
+        m_bAudioEngineInitialized = true;
+    }
 #else
 	if (CAudioEngine2::GetInstance()->InitAudioEngine() != S_OK)
 	{
 		OUTPUT_LOG("Audio engine init fail!\n");
 		CAudioEngine2::GetInstance()->CleanupAudioEngine();
-		return false;
-	}
+        m_bAudioEngineInitialized = false;
+    }else{
+        m_bAudioEngineInitialized = true;
+    }
 #endif
+	
+	
 
 	//----------------------------------------------------------
 	/// Create a blank root scene with certain dimensions
@@ -579,7 +585,8 @@ bool ParaEngine::CParaEngineAppBase::FrameMove(double fTime)
 		PERF_BEGIN("EnvironmentSim");
 		CGlobals::GetEnvSim()->Animate((float)fElapsedEnvSimTime);  // generate valid LLE from HLE
 		PERF_END("EnvironmentSim");
-		CAudioEngine2::GetInstance()->Update();
+		if(m_bAudioEngineInitialized)
+			CAudioEngine2::GetInstance()->Update();
 	}
 
 	{
@@ -978,7 +985,8 @@ bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 	//Performance Monitor
 	PERF_END("Program");
 	PERF_REPORT();
-	CAudioEngine2::GetInstance()->CleanupAudioEngine();
+	if(m_bAudioEngineInitialized)
+		CAudioEngine2::GetInstance()->CleanupAudioEngine();
 	return S_OK;
 }
 

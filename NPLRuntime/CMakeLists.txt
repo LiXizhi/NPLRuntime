@@ -1,3 +1,5 @@
+include(cmake/ucm.cmake)
+
 if (ANDROID)
 	cmake_minimum_required(VERSION 3.10)
 else()
@@ -19,7 +21,7 @@ set (CMAKE_C_STANDARD 11)
 if(WIN32)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
-	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)
+	option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
 # OSX Default Option
@@ -28,26 +30,28 @@ elseif(APPLE)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
 	option(NPLRUNTIME_PHYSICS "include physics" OFF)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
-    option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)	
+    option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)	
 elseif (ANDROID)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
     option(NPLRUNTIME_PHYSICS "include physics" OFF)
     option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
-    option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" OFF)
+    option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
 else()
     option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
     option(NPLRUNTIME_PHYSICS "include physics" OFF)
     option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
-    option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" OFF)
+    option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
 endif()
 
-if(WIN32)
+if(APPLE)
+    # making executable relocatable 
+    set(CMAKE_MACOSX_RPATH TRUE)
 else()
     # making executable relocatable 
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
+    SET(CMAKE_BUILD "$ORIGIN/")
 endif()
 
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
@@ -114,6 +118,12 @@ if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
 else()
 	option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 
+endif()
+
+
+
+if(MSVC)
+    ucm_set_runtime(STATIC)
 endif()
 
 

@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include <stdexcept>
 #include <cassert>
 #include <windowsx.h>

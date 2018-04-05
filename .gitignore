@@ -61,5 +61,7 @@ buildvm_arch.h
 .DS_Store
 settings.json
 /NPLRuntime/Platform/Android/assets
+/NPLRuntime/Platform/OSX/assets
+/NPLRuntime/Platform/iOS/assets
 /NPLRuntime/Platform/Android/assets*
 /NPLRuntime/externals/boost/prebuild

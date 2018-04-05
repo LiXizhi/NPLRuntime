@@ -37,10 +37,11 @@ if (NPLRUNTIME_ICONV)
 		list(APPEND ICONV_LIB_NAME iconv)
 	else()
 		add_subdirectory(libiconv)
-		list(APPEND ICONV_LIB_NAME libiconv)
+        list(APPEND ICONV_LIB_NAME libiconv)
+        target_compile_definitions(${ICONV_LIB_NAME} PUBLIC USE_ICONV)
 	endif()
 	
-	target_compile_definitions(${ICONV_LIB_NAME} PUBLIC USE_ICONV)
+	
 endif()
 
 set_property(GLOBAL PROPERTY ICONV_LIB_NAME ${ICONV_LIB_NAME})

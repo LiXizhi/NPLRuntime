@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <cstdint>
-//#include "Framework/Interface/Render/IRenderWindow.h"
 #include "ParaEngineRenderBase.h"
+#include "Framework/InputSystem/VirtualKey.h"
 
 @class NSWindow;
 namespace ParaEngine
@@ -11,15 +11,20 @@ namespace ParaEngine
     {
     public:
         RenderWindowOSX(const int width,const int height);
-        ~RenderWindowOSX();
+        virtual ~RenderWindowOSX() override;
     public:
-        virtual unsigned int GetWidth() const override ;
+        virtual unsigned int GetWidth() const override;
         virtual unsigned int GetHeight() const override;
         virtual intptr_t GetNativeHandle() const override;
         void PollEvents();
         bool ShouldClose() const;
     public:
-         bool OnShouldClose();
+        bool OnShouldClose();
+        void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
+        void OnMouseMove(uint32_t x, uint32_t y);
+        void OnMouseWhell(float deltaX, float deltaY);
+        void OnKey(EVirtualKey key, EKeyState state);
+        void OnChar(unsigned int character);
     private:
         bool m_shouldClose;
         NSWindow* m_window;
