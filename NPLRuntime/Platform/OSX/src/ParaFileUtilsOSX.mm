@@ -53,7 +53,7 @@ bool ParaEngine::CParaFileUtilsOSX::IsAbsolutePath(const std::string& filename)
 	return false;
 }
 
-std::string ParaEngine::CParaFileUtilsOSX::GetWriteAblePath()
+std::string ParaEngine::CParaFileUtilsOSX::GetWritablePath()
 {
 	if (m_writeAblePath.empty())
 	{
@@ -70,7 +70,7 @@ std::string ParaEngine::CParaFileUtilsOSX::GetInitialDirectory()
 
 bool ParaEngine::CParaFileUtilsOSX::Exists(const std::string& filename)
 {
-    auto fullPathInWriteable = GetWriteAblePath() + filename;
+    auto fullPathInWriteable = GetWritablePath() + filename;
     boost::system::error_code err_code;
     if (fs::exists(fullPathInWriteable, err_code))
     {
@@ -196,7 +196,7 @@ int ParaEngine::CParaFileUtilsOSX::DeleteDirectory(const std::string& filename)
 
 std::string ParaEngine::CParaFileUtilsOSX::GetFullPathForFilename(const std::string &filename)
 {
-	return GetWriteAblePath() + filename;
+	return GetWritablePath() + filename;
 }
 
 bool ParaEngine::CParaFileUtilsOSX::SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize)

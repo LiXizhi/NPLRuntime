@@ -4,7 +4,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 #SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 #SET(CMAKE_BUILD "@executable_path/../Frameworks")
 
-ucm_add_dirs(src TO OSX_SRC ADDITIONAL_EXT mm m)
+ucm_add_dirs(src TO OSX_SRC RECURSIVE ADDITIONAL_EXT mm m)
 
 ucm_add_dirs(res TO RESOURCE_FILES RECURSIVE ADDITIONAL_EXT *)
 ucm_add_dirs(assets TO ASSETS_FILES RECURSIVE ADDITIONAL_EXT *)

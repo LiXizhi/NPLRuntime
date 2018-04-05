@@ -344,7 +344,12 @@ void RenderWindowOSX::OnKey(ParaEngine::EVirtualKey key, ParaEngine::EKeyState s
         return;
     }
     bool pressed = state == EKeyState::PRESS ? true : false;
-    CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(key, pressed);
+    if(pressed)
+    {
+        CGUIRoot::GetInstance()->SendKeyDownEvent(key);
+    }else{
+        CGUIRoot::GetInstance()->SendKeyUpEvent(key);
+    }
 }
 
 

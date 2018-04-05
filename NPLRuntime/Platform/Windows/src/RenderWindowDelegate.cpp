@@ -40,12 +40,17 @@ void ParaEngine::RenderWindowDelegate::OnMouseWhell(float x, float y, float delt
 
 void ParaEngine::RenderWindowDelegate::OnKey(EVirtualKey key, EKeyState state)
 {
-	if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
-	{
-		return;
-	}
-	bool pressed = state == EKeyState::PRESS ? true : false;
-	CGUIRoot::GetInstance()->GetKeyboard()->SetKeyPressed(key, pressed);
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return;
+    }
+    bool pressed = state == EKeyState::PRESS ? true : false;
+    if(pressed)
+    {
+        CGUIRoot::GetInstance()->SendKeyDownEvent(key);
+    }else{
+        CGUIRoot::GetInstance()->SendKeyUpEvent(key);
+    }
 }
 
 void ParaEngine::RenderWindowDelegate::OnChar(unsigned int character)
