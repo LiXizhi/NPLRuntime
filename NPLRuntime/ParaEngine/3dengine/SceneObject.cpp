@@ -933,6 +933,11 @@ HRESULT CSceneObject::InvalidateDeviceObjects()
 
 HRESULT CSceneObject::RendererRecreated()
 {
+	for (auto it = m_miniSceneGraphs.begin(); it != m_miniSceneGraphs.end(); ++it)
+	{
+		(*it)->RendererRecreated();
+	}
+
 	CBaseObject::RendererRecreated();
 	m_pBlockWorldClient->RendererRecreated();
 	for (auto& skymesh : m_skymeshes)

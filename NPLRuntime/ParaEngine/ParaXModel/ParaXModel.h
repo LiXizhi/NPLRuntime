@@ -241,6 +241,8 @@ namespace ParaEngine
 
 		void SetVertexBufferDirty();
 
+		HRESULT RendererRecreated();
+
 		friend struct ModelRenderPass;
 
 	private:
@@ -365,12 +367,10 @@ namespace ParaEngine
 	private:
 		enum VERTEX_BUFFER_STATE
 		{
-			//
-			NOT_USE				= 0,
-			//
+			NOT_SET = 0,
 			NEED_INIT			= 1,
-			// 
 			INITED				= 2,
+			NOT_USE = 3,
 		};
 
 		VERTEX_BUFFER_STATE m_vbState;

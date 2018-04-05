@@ -1,7 +1,7 @@
 pushd .
 rem Build android 
-mkdir build\android_tegra\
-cd build\android_tegra
+mkdir bin\android_tegra\
+cd bin\android_tegra
 
-call "cmake.exe" -G "Visual Studio 14 2015" -DCMAKE_SYSTEM_NAME=Android ../../NPLRuntime
+call "cmake.exe" -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_NAME=Android -DNPLRUNTIME_PROJECT_NAME=NPLRuntime_android ../../NPLRuntime
 popd

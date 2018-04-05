@@ -571,14 +571,13 @@ void CGUIEvent::UpdateKey(int option)
 	}	
 	//copy the key events
 	for(DWORD i = 0; i < pKeyboard->GetElementsCount() && m_keyboard.Size<SAMPLE_BUFFER_SIZE; i++ ) {
-		if (((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)!=0&&(option&IGNORE_DOWN_EVENTS)==0)|| \
+		if (((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)!=0&&(option&IGNORE_DOWN_EVENTS)==0)||
 			((pKeyboard->GetDeviceObjectData()[i].dwData&0x80)==0&&(option&IGNORE_UP_EVENTS)==0)){
 				m_keyboard.KeyEvents[m_keyboard.Size]=pKeyboard->GetDeviceObjectData()[i];
 				m_keyboard.KeyEvents[m_keyboard.Size].uAppData=CEventBinding::ScancodeToKeyTable[pKeyboard->GetDeviceObjectData()[i].dwOfs];
 				m_keyboard.Size++;
 			}
 	}
-
 }
 /** Interprets the raw mouse or keyboard state to meaningful events.
  The interpreted mouse events are Click, Double Click, Hover, Mouse Enter, Drag Begin, Drag Over, Drag End

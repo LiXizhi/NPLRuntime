@@ -181,6 +181,12 @@ endif()
 get_property(ICONV_LIB_NAME GLOBAL PROPERTY "ICONV_LIB_NAME" ) 
 get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" ) 
 
+##############################
+# assimp
+if (NPLRUNTIME_SUPPORT_FBX)
+	list(APPEND NPLRUNTIME_LIBS assimp)
+endif()
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}

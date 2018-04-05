@@ -185,10 +185,10 @@ int ParaEngine::CViewport::InstallFields(CAttributeClass* pClass, bool bOverride
 	PE_ASSERT(pClass != NULL);
 
 	pClass->AddField("alignment", FieldType_String, (void*)SetAlignment_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("left", FieldType_Int, (void*)SetLeft_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("top", FieldType_Int, (void*)SetTop_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("width", FieldType_Int, (void*)SetWidth_s, NULL, NULL, NULL, bOverride);
-	pClass->AddField("height", FieldType_Int, (void*)SetHeight_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("left", FieldType_Int, (void*)SetLeft_s, (void*)GetLeft_s, NULL, NULL, bOverride);
+	pClass->AddField("top", FieldType_Int, (void*)SetTop_s, (void*)GetTop_s, NULL, NULL, bOverride);
+	pClass->AddField("width", FieldType_Int, (void*)SetWidth_s, (void*)GetWidth_s, NULL, NULL, bOverride);
+	pClass->AddField("height", FieldType_Int, (void*)SetHeight_s, (void*)GetHeight_s, NULL, NULL, bOverride);
 	pClass->AddField("ApplyViewport", FieldType_void, (void*)ApplyViewport_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("RenderScript", FieldType_String, (void*)SetRenderScript_s, (void*)GetRenderScript_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderTargetName", FieldType_String, (void*)SetRenderTargetName_s, (void*)GetRenderTargetName_s, NULL, NULL, bOverride);
@@ -208,8 +208,8 @@ void ParaEngine::CViewport::OnParentSizeChanged(int nWidth, int nHeight)
 	if (GetGUIRoot())
 	{
 		GetGUIRoot()->UpdateViewport(GetLeft(), GetTop(), GetWidth(), GetHeight(), true);
-		// ensure minimum screen size, with largest UI scaling 
-		GetGUIRoot()->SetUIScale(1, 1, true);
+		// ensure minimum screen size, with largest UI scaling,  it hava some problem on android, so we shield this code
+		//GetGUIRoot()->SetUIScale(1, 1, true);
 	}
 }
 

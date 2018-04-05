@@ -151,6 +151,8 @@ namespace ParaEngine
 
 		const std::string& GetCanvasTextureName();
 		void SetCanvasTextureName(const std::string& sValue);
+
+		virtual HRESULT RendererRecreated() override;
 	protected:
 		// whether device is created.
 		bool		m_bInitialized;

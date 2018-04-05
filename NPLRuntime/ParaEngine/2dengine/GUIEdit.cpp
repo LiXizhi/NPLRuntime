@@ -1131,7 +1131,7 @@ bool CGUIEditBox::MsgProc(MSG *event)
 							// Otherwise, we insert the char as normal.
 							if (!m_bInsertMode && m_nCaret < m_Buffer.GetTextSize())
 							{
-								m_Buffer[m_nCaret] = L'\n';
+								m_Buffer.ReplaceChar(m_nCaret, L'\n');
 								PlaceCaret(m_nCaret + 1);
 								m_nSelStart = m_nCaret;
 							}
@@ -1300,11 +1300,11 @@ HRESULT CGUIEditBox::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY, bool absolut
 			int nSize = m_Buffer.GetTextSize();
 			strPassword.resize(nSize, (char16_t)m_PasswordChar);
 			for (int i = 0; i < nSize; ++i)
-				m_Buffer[i] = (char16_t)m_PasswordChar;
+				m_Buffer.ReplaceChar(i, (char16_t)m_PasswordChar);
 
 			ret = m_Buffer.CPtoXY(nCP, bTrail, &retX, &retY);
 			for (int i = 0; i < nSize; ++i)
-				m_Buffer[i] = strPassword[i];
+				m_Buffer.ReplaceChar(i, strPassword[i]);
 			break;
 		}
 	}while (false);
@@ -1446,11 +1446,12 @@ HRESULT CGUIEditBox::XYtoCP(int nX, int nY, int *pCP, int *pnTrail, bool absolut
 			int nSize = m_Buffer.GetTextSize();
 			strPassword.resize(nSize, (char16_t)m_PasswordChar);
 			for (int i = 0; i < nSize; ++i)
-				m_Buffer[i] = (char16_t)m_PasswordChar;
+				m_Buffer.ReplaceChar(i, (char16_t)m_PasswordChar);
 
 			HRESULT res = m_Buffer.XYtoCP(nX, nY, pCP, pnTrail);
 			for (int i = 0; i < nSize; ++i)
-				m_Buffer[i] = strPassword[i];
+				m_Buffer.ReplaceChar(i, strPassword[i]);
+
 			return res;
 		}
 	} while (false);
@@ -1713,7 +1714,7 @@ void CGUIEditBox::InsertChar(WCHAR wChar, int index/* =-1 */)
 		// Otherwise, we insert the char as normal.
 		if (!m_bInsertMode && m_nCaret < m_Buffer.GetTextSize())
 		{
-			m_Buffer[m_nCaret] = wChar;
+			m_Buffer.ReplaceChar(m_nCaret, wChar);
 			PlaceCaret(m_nCaret + 1);
 			m_nSelStart = m_nCaret;
 		}
@@ -1732,7 +1733,7 @@ void CGUIEditBox::InsertChar(WCHAR wChar, int index/* =-1 */)
 	{
 		if (index < m_Buffer.GetTextSize())
 		{
-			m_Buffer[index] = wChar;
+			m_Buffer.ReplaceChar(index, wChar);
 		}
 		else
 		{
@@ -1787,7 +1788,7 @@ int ParaEngine::CGUIEditBox::OnHandleWinMsgChars(const std::wstring& sChars)
 			// Otherwise, we insert the char as normal.
 			if (!m_bInsertMode && m_nCaret < m_Buffer.GetTextSize())
 			{
-				m_Buffer[m_nCaret] = temp;
+				m_Buffer.ReplaceChar(m_nCaret, temp);
 				PlaceCaret(m_nCaret + 1);
 				m_nSelStart = m_nCaret;
 			}

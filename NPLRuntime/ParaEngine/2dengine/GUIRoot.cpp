@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------
 // Class:	CGUIRoot
-// Authors:	LiXizhi, Liu Weili
+// Authors:	LiXizhi, LiuWeili
 // Date: 2005.8.1, revised 2009.11.25
 //
-// desc: 
+// Desc: 
 // When rendering scene, root scene and the root GUI are rendered in sequence.  
 // We see that root scene is still the dominant entity in the ParaEngine. 
 // 
@@ -36,9 +36,9 @@ POINT       pt;
 
 Whenever a raw MSG (event) arrives at a given GUI object, it just calls ::MsgProc, which only process for the object itself(not children).
 MsgProc is a virtual function, but it generally does the following.
-- It first intepretes the raw message(event) to one Event_mapping event, according to its m_event status and event binding. Such as if two raw clicks are received, a double click event is generated.
+- It first interprets the raw message(event) to one Event_mapping event, according to its m_event status and event binding. Such as if two raw clicks are received, a double click event is generated.
 - It processes the interpreted event (one of the Event_mapping), usually via a switch struct.
-- It returns true if the event is processed, or false if the event is irrelavent to itself.
+- It returns true if the event is processed, or false if the event is irrelevant to itself.
 
 ---+++ About UI Mouse Focus
 Each container type object stores a mouse focus object, which can be NULL or one of its children.
@@ -72,6 +72,7 @@ The GUIRoot object contains the top level mouse focus object.
 #include "EventsCenter.h"
 #include "TouchSessions.h"
 #include "TouchGesturePinch.h"
+#include "StringHelper.h"
 #include "GUIRoot.h"
 #include "memdebug.h"
 
@@ -117,7 +118,7 @@ for CGUIRoot
 CGUIRoot::CGUIRoot(void)
 	: engine(NULL),
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
-	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false),
+	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
 	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false)
 {
 	if (!m_type){
@@ -444,6 +445,23 @@ CGUIBase* ParaEngine::CGUIRoot::GetUIObject(int nID)
 		//OUTPUT_LOG("warning: CGUIRoot::GetUIObject is called with an invalid  id\n");
 		return NULL;
 	}
+}
+
+bool ParaEngine::CGUIRoot::HasKeyFocus()
+{
+	return GetUIKeyFocus() != NULL;
+}
+
+int ParaEngine::CGUIRoot::GetKeyFocusObjectId()
+{
+	auto pObj = GetUIKeyFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
+}
+
+int ParaEngine::CGUIRoot::GetMouseFocusObjectId()
+{
+	auto pObj = GetUIMouseFocus();
+	return pObj != NULL ? pObj->GetID() : -1;
 }
 
 void CGUIRoot::PushTopLevelControl(CGUIContainer* pTopLevelControl)
@@ -938,14 +956,48 @@ void ParaEngine::CGUIRoot::SendKeyUpEvent(EVirtualKey nVirtualkey)
 	GetKeyboard()->SetKeyPressed(nVirtualkey, false);
 }
 
-bool ParaEngine::CGUIRoot::IsMouseButtonSwapped()
+void ParaEngine::CGUIRoot::SendInputMethodEvent(const char* pStr)
 {
-	return GetMouse()->IsMouseButtonSwapped();
+	CGUIBase* pKeyTarget = GetUIKeyFocus();
+	if (pKeyTarget && pStr)
+	{
+		string fromStr(pStr);
+		u16string sTextWide;
+		StringHelper::UTF8ToUTF16(fromStr, sTextWide);
+		wstring sTextWide2;
+		sTextWide2.resize(sTextWide.size());
+		for (int i = 0; i < (int)sTextWide.size(); ++i)
+		{
+			sTextWide2[i] = sTextWide[i];
+		}
+		m_sIMEText += sTextWide2;
+	}
+	else
+	{
+		m_sIMEText.clear();
+	}
 }
 
-void ParaEngine::CGUIRoot::SetMouseButtonSwapped(bool bSwapped)
+void ParaEngine::CGUIRoot::ProcessIMEText()
 {
-	GetMouse()->SetMouseButtonSwapped(bSwapped);
+	if (!m_sIMEText.empty())
+	{
+		CGUIBase* pKeyTarget = GetUIKeyFocus();
+		if (pKeyTarget) {
+			pKeyTarget->OnHandleWinMsgChars(m_sIMEText);
+		}
+		m_sIMEText.clear();
+	}
+}
+
+bool ParaEngine::CGUIRoot::IsTouchButtonSwapped()
+{
+	return m_bSwapTouchButton;
+}
+
+void ParaEngine::CGUIRoot::SetTouchButtonSwapped(bool bSwapped)
+{
+	m_bSwapTouchButton = bSwapped;
 }
 
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
@@ -957,8 +1009,10 @@ bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
 
 	CGUIBase* pKeyTarget = GetUIKeyFocus();
 
-	m_pKeyboard->Update();
+	ProcessIMEText();
 
+	m_pKeyboard->Update();
+	
 	s_bIMEKeyBoardUpdated = false;
 
 	{
@@ -1065,7 +1119,7 @@ int CGUIRoot::HandleUserInput()
 			default:
 				assert(false);
 				break;
-			case EMouseEventType::Unkonw:
+			case EMouseEventType::Unknown:
 				assert(false);
 				break;
 			case EMouseEventType::Button:
@@ -1892,14 +1946,11 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 			if (pTouchSession->GetTag() == 1)
 			{
-				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT,EKeyState::RELEASE, mouse_x, mouse_y)));
-
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT),EKeyState::RELEASE, mouse_x, mouse_y)));
 			}
 			else if (pTouchSession->GetTag() == 2)
 			{
-				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::RELEASE, mouse_x, mouse_y)));
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y)));
 			}
 			else if (pTouchSession->GetTag() == -1)
 			{
@@ -1909,18 +1960,14 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					// OUTPUT_LOG("touch translate to click\n");
 					// short tap for left mouse click
-					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::PRESS, mouse_x, mouse_y)));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::RELEASE, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, mouse_x, mouse_y)));
 				}
 				else
 				{
 					// long tap for right mouse click
-					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-					//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONUP, 0, MAKELPARAM(mouse_x, mouse_y));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::PRESS, mouse_x, mouse_y)));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::RELEASE, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y)));
 				}
 			}
 		}
@@ -1953,14 +2000,12 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						// press hold and drag for right button drag, drag directly for left button drag. 
 						if (pTouchSession->GetDuration() < 500)
 						{
-							//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_LBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::LEFT, EKeyState::PRESS, mouse_x, mouse_y)));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y)));
 							pTouchSession->SetTag(1);
 						}
 						else
 						{
-							//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_RBUTTONDOWN, 0, MAKELPARAM(mouse_x, mouse_y));
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(EMouseButton::RIGHT, EKeyState::PRESS, mouse_x, mouse_y)));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y)));
 							pTouchSession->SetTag(2);
 						}
 					}
@@ -1981,7 +2026,6 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					{
 						// vertical drag move is always mapped to mouse wheel anyway. 
 						int nScrollY = (int)(fOffsetY * WHEEL_DELTA / fMouseWheelDragStep);
-						//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
 						CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 						s_lastMouseWheelPosY = ui_mouse_y;
 						// OUTPUT_LOG("EM_MOUSE_WHEEL %d: delta: %d time:%d \n", pTouchSession->GetTouchId(), (int)(msg.lParam), touch.GetTime());
@@ -1995,7 +2039,6 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					// if mouse button down state is not determined, will reset mouse to make the mouse delta to 0 in the next frame. 
 					CGUIRoot::GetInstance()->GetMouse()->ResetLastMouseState();
 				}
-				//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEMOVE, 0, MAKELPARAM(mouse_x, mouse_y));
 				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(mouse_x,mouse_y)));
 
 			}
@@ -2021,7 +2064,7 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			int nX = i*nStepSize + ui_mouse_x;
 			int nY = j*nStepSize + ui_mouse_y;
 			CGUIBase* pUIObj = GetUIObject(nX, nY);
-			if (pUIObj && !pUIObj->IsScrollableOrHasMouseWheelRecursive() && pUIObj->HasClickEvent())
+			if (pUIObj && (pUIObj->IsScrollableOrHasMouseWheelRecursive() || pUIObj->HasClickEvent()))
 			{
 				int nRadius = i*i + j*j;
 				if (nRadius < nLastRadius 
@@ -2040,7 +2083,9 @@ bool ParaEngine::CGUIRoot::AutoLocateTouchClick(int ui_mouse_x, int ui_mouse_y, 
 			}
 		}
 	}
-	if (mouse_new_x > -99999)
+
+	// skip scrollable container
+	if (mouse_new_x > -99999 && pLastUIObj && !pLastUIObj->IsScrollableOrHasMouseWheelRecursive())
 	{
 		// OUTPUT_LOG("touch click simulate offset %d(%d), %d(%d)\n", mouse_x, mouse_new_x - ui_mouse_x, mouse_y, mouse_new_y - ui_mouse_y);
 		mouse_x += (int)((mouse_new_x - ui_mouse_x)*m_fUIScalingX);
@@ -2164,6 +2209,18 @@ void ParaEngine::CGUIRoot::TranslateMousePos(int &inout_x, int &inout_y)
 		inout_y = (int)((float)inout_y / m_fUIScalingY);
 }
 
+ParaEngine::EMouseButton ParaEngine::CGUIRoot::TranslateTouchButton(EMouseButton btn)
+{
+	if (IsTouchButtonSwapped())
+	{
+		if (btn == EMouseButton::LEFT)
+			return EMouseButton::RIGHT;
+		else if (btn == EMouseButton::RIGHT)
+			return EMouseButton::LEFT;
+	}
+	return btn;
+}
+
 void ParaEngine::CGUIRoot::TranslateMousePointInTouchEvent(TouchEvent &touch)
 {
 	int mouse_x = (int)touch.m_x;
@@ -2228,7 +2285,7 @@ bool ParaEngine::CGUIRoot::handleGesturePinch(CTouchGesturePinch& pinch_gesture)
 		int nScrollY = (int)(nDeltaPixels * WHEEL_DELTA / 20);
 		//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
 		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
-		// OUTPUT_LOG("handleGesturePinch %d\n", nScrollY);
+		// OUTPUT_LOG("` %d\n", nScrollY);
 		return true;
 	}
 	return false;
@@ -2256,10 +2313,13 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
-
+	pClass->AddField("MouseFocusObjectId", FieldType_Int, (void*)0, (void*)GetMouseFocusObjectId_s, NULL, NULL, bOverride);
+	pClass->AddField("KeyFocusObjectId", FieldType_Int, (void*)0, (void*)GetKeyFocusObjectId_s, NULL, NULL, bOverride);
+	
 	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
 	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
-	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
+	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("TouchButtonSwapped", FieldType_Bool, (void*)SetTouchButtonSwapped_s, (void*)IsTouchButtonSwapped_s, NULL, NULL, bOverride);
 
 	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);

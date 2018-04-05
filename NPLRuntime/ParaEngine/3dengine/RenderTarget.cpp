@@ -184,8 +184,11 @@ HRESULT ParaEngine::CRenderTarget::InvalidateDeviceObjects()
 	SAFE_RELEASE(m_pCanvasSurface);
 	m_pCanvasTexture->InvalidateDeviceObjects();
 #elif defined(USE_OPENGL_RENDERER)
-	glDeleteFramebuffers(1, &_FBO);
-	_FBO = 0;
+	if (_FBO != 0)
+	{
+		glDeleteFramebuffers(1, &_FBO);
+		_FBO = 0;
+	}
 	if (_depthRenderBufffer)
 	{
 		glDeleteRenderbuffers(1, &_depthRenderBufffer);
@@ -469,6 +472,14 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 		m_sCanvasTextureName += GetIdentifier();
 	}
 	return m_sCanvasTextureName;
+}
+
+HRESULT ParaEngine::CRenderTarget::RendererRecreated()
+{
+	m_bInitialized = false;
+	_FBO = 0;
+	_depthRenderBufffer = 0;
+	CBaseObject::RendererRecreated();
 }
 
 void ParaEngine::CRenderTarget::SetCanvasTextureName(const std::string& sValue)

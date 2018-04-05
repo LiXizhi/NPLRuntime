@@ -1,5 +1,18 @@
+//----------------------------------------------------------------------
+// Class:	AppDelegate
+// Authors:	YuanQuanwei, LanZhihong, LiXizhi
+// Company: ParaEngine
+// Date: 2018.3.29
+//-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "AppDelegate.h"
+#include "ParaAppAndroid.h"
+#include "RenderWindowAndroid.h"
+#include "RenderDeviceEGL.h"
+#include "RenderContextEGL.h"
+#include "ParaTime.h"
+
+#include <boost/bind.hpp>
 #include <android/log.h>
 #include <android/asset_manager.h>
 #include <cstdlib>
@@ -8,114 +21,117 @@
 #include <cassert>
 #include <ctime>
 #include <unordered_map>
-#include "ParaAppAndroid.h"
-#include "RenderWindowAndroid.h"
-#include "RenderDeviceEGL.h"
-#include "RenderContextEGL.h"
-
 
 using namespace ParaEngine;
 
 
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
-
-
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 {
-    AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);
-    switch(cmd)
-    {
-		case APP_CMD_SAVE_STATE:
-		{
-			//OUTPUT_LOG("save state");
-			saved_state state;
-			state.app = myApp;
-			app->savedState = malloc(sizeof(saved_state));
-			app->savedStateSize = sizeof(struct saved_state);
-			memcpy(app->savedState, &state, app->savedStateSize);
-			LOGI("state saved");
+	AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);
+	switch (cmd)
+	{
+	case APP_CMD_SAVE_STATE:
+	{
+		//OUTPUT_LOG("save state");
+		saved_state state;
+		state.app = myApp;
+		app->savedState = malloc(sizeof(saved_state));
+		app->savedStateSize = sizeof(struct saved_state);
+		memcpy(app->savedState, &state, app->savedStateSize);
+		LOGI("state saved");
 
-		}break;
-        case APP_CMD_START:
-        {
-            myApp->OnStart();
-        }break;
-        case APP_CMD_RESUME:
-        {
-            myApp->OnResume();
-        }break;
-        case APP_CMD_PAUSE:
-        {
-            myApp->OnPause();
-        }break;   
-        case APP_CMD_STOP:
-        {
-			myApp->OnStop();
-        }break;   
-        case APP_CMD_DESTROY:
-        {
-            myApp->OnDestroy();		
-        }break;  
-        case APP_CMD_INIT_WINDOW:
-        {
-            myApp->OnInitWindow();
-        }break;  
-        case APP_CMD_TERM_WINDOW:
-        {
-            myApp->OnTermWindow();
-        }break; 
-        case APP_CMD_WINDOW_RESIZED:
-        {
-            myApp->OnWindowResized();
-        }break;  
-
-
-
-    }
+	}break;
+	case APP_CMD_START:
+	{
+		myApp->OnStart();
+	}break;
+	case APP_CMD_RESUME:
+	{
+		myApp->OnResume();
+	}break;
+	case APP_CMD_PAUSE:
+	{
+		myApp->OnPause();
+	}break;
+	case APP_CMD_STOP:
+	{
+		myApp->OnStop();
+	}break;
+	case APP_CMD_DESTROY:
+	{
+		myApp->OnDestroy();
+	}break;
+	case APP_CMD_INIT_WINDOW:
+	{
+		myApp->OnInitWindow();
+	}break;
+	case APP_CMD_TERM_WINDOW:
+	{
+		myApp->OnTermWindow();
+	}break;
+	case APP_CMD_WINDOW_RESIZED:
+	{
+		myApp->OnWindowResized();
+	}break;
+	}
 }
 
 void AppDelegate::handle_touch_input(AppDelegate* app, AInputEvent* event)
 {
-	int action = AKeyEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+	int action = AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_MASK;
+	int index = (AMotionEvent_getAction(event) & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
+	int touchId = AMotionEvent_getPointerId(event, index);
+
 	TouchEvent::TouchEventMsgType touchType = TouchEvent::TouchEvent_POINTER_UP;
 	switch (action) {
 	case AMOTION_EVENT_ACTION_DOWN:
+	case AMOTION_EVENT_ACTION_POINTER_DOWN:
 	{
-		//LOGI("AMOTION_EVENT_ACTION_DOWN");
 		touchType = TouchEvent::TouchEvent_POINTER_DOWN;
+		break;
 	}
-	break;
 	case AMOTION_EVENT_ACTION_UP:
+	case AMOTION_EVENT_ACTION_POINTER_UP:
 	{
-		//LOGI("AMOTION_EVENT_ACTION_UP");
 		touchType = TouchEvent::TouchEvent_POINTER_UP;
+		break;
 	}
-	break;
 	case AMOTION_EVENT_ACTION_MOVE:
 	{
-		//LOGI("AMOTION_EVENT_ACTION_MOVE");
 		touchType = TouchEvent::TouchEvent_POINTER_UPDATE;
+		break;
 	}
-	break;
 	case AMOTION_EVENT_ACTION_CANCEL:
 	{
-		//LOGI("AMOTION_EVENT_ACTION_CANCEL");
 		touchType = TouchEvent::TouchEvent_POINTER_UP;
+		break;
 	}
-	break;
+	default:
+		return;
 	}
-	auto touchCount = AMotionEvent_getPointerCount(event);
-
+	
 	int msCurTime = ::GetTickCount();
+	float touchX = AMotionEvent_getX(event, index);
+	float touchY = AMotionEvent_getY(event, index);
+	TouchEvent touchEvent(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
+	
 	std::vector<TouchEventPtr> touchEvents;
-	for (int i = 0; i < touchCount; i++)
+
+	if (touchType == TouchEvent::TouchEvent_POINTER_UPDATE)
 	{
-		int32_t touchId = AMotionEvent_getPointerId(event, i);
-		float touchX = AMotionEvent_getX(event, i);
-		float touchY = AMotionEvent_getY(event, i);
+		auto touchCount = AMotionEvent_getPointerCount(event);
+		for (int i = 0; i < touchCount; i++)
+		{
+			int32_t touchId = AMotionEvent_getPointerId(event, i);
+			float touchX = AMotionEvent_getX(event, i);
+			float touchY = AMotionEvent_getY(event, i);
+			TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
+			touchEvents.push_back(touchEvent);
+		}
+	}
+	else
+	{
 		TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, touchType, touchId, touchX, touchY, msCurTime);
-		//LOGI("Touch Event: %s", touchEvent->ToScriptCode().c_str());
 		touchEvents.push_back(touchEvent);
 	}
 	app->OnTouch(touchEvents);
@@ -131,7 +147,7 @@ inline EVirtualKey toVirtualKey(int32_t keycode)
 		s_keymap[AKEYCODE_SOFT_LEFT] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_SOFT_RIGHT] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_HOME] = EVirtualKey::KEY_HOME;
-		s_keymap[AKEYCODE_BACK] = EVirtualKey::KEY_BACK;
+		s_keymap[AKEYCODE_BACK] = EVirtualKey::KEY_ESCAPE; // LiXizhi:  we will match back button to esc key on android
 		s_keymap[AKEYCODE_CALL] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_ENDCALL] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_0] = EVirtualKey::KEY_0;
@@ -362,14 +378,16 @@ inline EVirtualKey toVirtualKey(int32_t keycode)
 }
 
 int32_t AppDelegate::handle_key_input(AppDelegate* app, AInputEvent* event)
-{	
+{
 	EKeyState state = EKeyState::RELEASE;
 	EVirtualKey key = EVirtualKey::KEY_UNKNOWN;
 	int32_t action = AKeyEvent_getAction(event);
 	if (action == AKEY_EVENT_ACTION_DOWN)
-	{
 		state = EKeyState::PRESS;
-	}
+	else if (action == AKEY_EVENT_ACTION_UP)
+		state = EKeyState::RELEASE;
+	else
+		return 0;
 	int32_t keycode = AKeyEvent_getKeyCode(event);
 	key = toVirtualKey(keycode);
 	app->OnKey(key, state);
@@ -388,37 +406,72 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 			handle_touch_input(myApp, event);
 		}
 	}
-	else if(eventType == AINPUT_EVENT_TYPE_KEY)
+	else if (eventType == AINPUT_EVENT_TYPE_KEY)
 	{
 		handle_key_input(myApp, event);
 	}
-    return 0;
+	return 0;
 }
 
 
 AppDelegate::AppDelegate()
-:m_State(nullptr)
-,m_ParaEngineApp(nullptr)
-,m_isPaused(false)
-{
-
-}
-
-AppDelegate::AppDelegate(const std::string& intent_data)
 	:m_State(nullptr)
 	, m_ParaEngineApp(nullptr)
 	, m_isPaused(false)
-	, m_intent_data(intent_data)
+	, m_main_timer(m_main_io_service)
+	, m_fRefreshTimerInterval(1.0f / 60.0f)
 {
 
 }
-
-
 
 AppDelegate::~AppDelegate()
 {
 	OUTPUT_LOG("~AppDelegate");
 }
+
+
+void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
+{
+	if (!err && !m_State->destroyRequested)
+	{
+		int ident = 0;
+		int events = 0;
+		struct android_poll_source* source = nullptr;
+		ident = ALooper_pollAll(0, NULL, &events, (void**)&source);
+		if (ident >= 0)
+		{
+			// Process this event.
+			if (source != NULL) {
+				source->process(m_State, source);
+			}
+			// Check if we are exiting
+			if (m_State->destroyRequested != 0) {
+				LOGI("app:destroy");
+				return;
+			}
+		}
+		m_appActivity.processGLEventJNI(m_State);
+
+		double fNextInterval = 0.033f; // as fast as possible
+		if (m_ParaEngineApp && !m_isPaused)
+		{
+			m_ParaEngineApp->DoWork();
+			fNextInterval = m_ParaEngineApp->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - m_ParaEngineApp->GetAppTime());
+			fNextInterval = std::min(0.1, std::max(0.0, fNextInterval));
+			// OUTPUT_LOG("%f", fNextInterval);
+		}
+
+		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval * 1000)));
+		m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
+	}
+}
+
+AppDelegate& AppDelegate::getInstance()
+{
+	static AppDelegate ins;
+	return ins;
+}
+
 
 void AppDelegate::Run(struct android_app* app)
 {
@@ -426,74 +479,99 @@ void AppDelegate::Run(struct android_app* app)
 	app->userData = this;
 	app->onAppCmd = AppDelegate::app_handle_command;
 	app->onInputEvent = AppDelegate::app_handle_input;
-    LOGI("app:run");
-    while(!m_State->destroyRequested)
-    {
-		
-        int ident = 0;
-        int events = 0;
-        struct android_poll_source* source = nullptr;
-        ident = ALooper_pollAll(0, NULL, &events,(void**)&source);
-        if(ident>=0)
-        {
-            // Process this event.
-            if (source != NULL) {
-                source->process(m_State, source);
-            }
-            // Check if we are exiting
-            if (m_State->destroyRequested != 0) {
-                 LOGI("app:destroy");
-                return;
-            }
-        }
 
+	m_appActivity.init(app);
+
+	LOGI("app:run");
+
+#define USE_ASYNC_TIMER_MAIN_LOOP
+#ifdef USE_ASYNC_TIMER_MAIN_LOOP
+	// start the main loop timer. 
+	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
+	m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
+
+	m_main_io_service.run();
+#else
+	while (!m_State->destroyRequested)
+	{
+		int ident = 0;
+		int events = 0;
+		struct android_poll_source* source = nullptr;
+		ident = ALooper_pollAll(0, NULL, &events, (void**)&source);
+		if (ident >= 0)
+		{
+			// Process this event.
+			if (source != NULL) {
+				source->process(m_State, source);
+			}
+			// Check if we are exiting
+			if (m_State->destroyRequested != 0) {
+				LOGI("app:destroy");
+				return;
+			}
+		}
 		if (m_ParaEngineApp && !m_isPaused)
 		{
 			m_ParaEngineApp->DoWork();
 		}
-    }
-    LOGI("app:exit");
+		// appActivity.processGLEventJNI(app);
+	}
+#endif
+
+	LOGI("app:exit");
 }
 
 void AppDelegate::OnStart()
 {
-    LOGI("app:OnStart");
+	LOGI("app:OnStart");
 }
+
 void AppDelegate::OnStop()
 {
-    LOGI("app:OnStop");
-	// kill app , this is temporary measures
-	exit(0);
+	LOGI("app:OnStop");
+
+	// TODO: kill app , this is temporary measures since we have not fixed the texture lost issue when app stopped. 
+	//exit(0);
 }
+
 void AppDelegate::OnPause()
 {
-    LOGI("app:OnPause");
+	LOGI("app:OnPause");
 	if (m_ParaEngineApp)
 	{
 		m_ParaEngineApp->OnPause();
 	}
+
+	//m_isPaused = true;
 }
 void AppDelegate::OnResume()
 {
-    LOGI("app:OnResume");
+	LOGI("app:OnResume");
 	if (m_ParaEngineApp)
 	{
 		m_ParaEngineApp->OnResume();
 	}
+
+	//m_isPaused = false;
 }
 void AppDelegate::OnDestroy()
 {
-    LOGI("app:OnDestroy");
+	LOGI("app:OnDestroy");
 }
+
 
 void AppDelegate::OnInitWindow()
 {
-    LOGI("app:OnInitWindow");
+	LOGI("app:OnInitWindow");
 	if (m_ParaEngineApp == nullptr)
 	{
 		auto renderWindow = new RenderWindowAndroid(m_State->window);
 		m_ParaEngineApp = new CParaEngineAppAndroid(m_State);
-		m_ParaEngineApp->InitApp(renderWindow, m_intent_data.c_str());
+
+		std::string intent_data = AppActivity::getLauncherIntentData(m_State);
+		LOGI("intent_data:%s", intent_data.c_str());
+
+		m_ParaEngineApp->InitApp(renderWindow, intent_data.c_str());
 	}
 	else
 	{
@@ -512,37 +590,47 @@ void AppDelegate::OnTermWindow()
 }
 void AppDelegate::OnWindowResized()
 {
-    LOGI("app:OnWindowResized");
-}
+	LOGI("app:OnWindowResized");
+	if (m_ParaEngineApp)
+	{
+		auto renderWindow = m_ParaEngineApp->GetRenderWindow();
+		Rect vp;
+		vp.x = 0; vp.y = 0;
+		vp.z = renderWindow->GetWidth();
+		vp.w = renderWindow->GetHeight();
+		CGlobals::GetRenderDevice()->SetViewport(vp);
+	}
 
-
-void inline PostTouchEvents(const std::vector<TouchEventPtr>& events)
-{
-		auto gui = CGUIRoot::GetInstance();
-		if (gui)
-		{
-			for (int i = 0; i < events.size(); i++)
-			{
-				if (events[i])
-				{
-					TouchEvent event = *(events[i].get());
-					gui->handleTouchEvent(event);
-				}
-
-			}
-		}
 }
 
 void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 {
-	if (m_ParaEngineApp)
+	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
 	{
-		PostTouchEvents(events);
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			for (auto& event : events)
+			{
+				// LOGI("Touch Event %s", event->ToScriptCode().c_str());
+				gui->handleTouchEvent(*event);
+			}
+		}
 	}
 }
 
 void ParaEngine::AppDelegate::OnKey(const EVirtualKey& key, const EKeyState& state)
 {
-
+	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
+	{
+		auto gui = CGUIRoot::GetInstance();
+		if (gui)
+		{
+			if(state == EKeyState::PRESS)
+				gui->SendKeyDownEvent(key);
+			else if (state == EKeyState::RELEASE)
+				gui->SendKeyUpEvent(key);
+		}
+	}
 }
 

@@ -22,9 +22,7 @@ using namespace luabind;
 #include "NPLCompiler.h"
 #include "ParaScriptingNPL.h"
 #include "ParaScriptingGlobal.h"
-#ifdef PARAENGINE_CLIENT
-#include "EditorHelper.h"
-#endif
+#include "Framework/Common/Helper/EditorHelper.h"
 #include "NPLNetClient.h"
 #include "util/HttpUtility.h"
 #include "util/StringHelper.h"

@@ -103,7 +103,7 @@ namespace ParaEngine
 		void ApplyBlendingModeChange();
 	private:
 		bool m_AlphaBlendingChanged;
-		bool m_BlendingChaned;
+		bool m_BlendingChanged;
 		bool m_EnableBlending;
 		bool m_EnableSeparateAlphaBlending;
 		uint32_t m_BlendingSource;
@@ -118,6 +118,8 @@ namespace ParaEngine
 		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
 		uint32_t m_RenderTargetWidth;
 		uint32_t m_RenderTargetHeight;
+		uint32_t m_LastRenderTargetWidth;
+		uint32_t m_LastRenderTargetHeight;
 		bool m_isBeginRenderTarget ;
 		Rect m_CurrentViewPort;
 	};

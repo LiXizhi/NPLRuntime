@@ -1,6 +1,6 @@
 //----------------------------------------------------------------------
 // Class:	CGUIUniBuffer
-// Authors:	Liu Weili, LiXizhi
+// Authors:	LiXizhi, Liu Weili
 // Company: ParaEngine
 // Date:	2005.8.3
 // Revised: 2010.3.13
@@ -295,6 +295,13 @@ bool CUniLine::RemoveChar( int nIndex )
 	return true;
 }
 
+bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+	m_pwszBuffer[nIndex] = wChar;
+	m_bAnalyseRequired = true;
+	return true;
+}
+
 
 //--------------------------------------------------------------------------------------
 // Inserts the first nCount characters of the string pStr at specified index.
@@ -548,7 +555,7 @@ CUniBuffer::~CUniBuffer()
 
 
 //--------------------------------------------------------------------------------------
-char16_t& CUniBuffer::operator[](int n)  // No param checking
+const char16_t& CUniBuffer::operator[](int n) // No param checking
 {
 	// This version of operator[] is called only
 	// if we are asking for write access, so
@@ -807,7 +814,7 @@ bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 	//m_bAnalyseRequired = true;
 
 	//return true;
-
+	
 	PE_ASSERT(nIndex >= 0);
 	if (nIndex < 0)
 		return false; // invalid index
@@ -833,7 +840,7 @@ bool ParaEngine::CUniBuffer::InsertChar(int nIndex, char16_t wchar)
 		m_utf16Text = start + wchar + end;
 	}
 
-
+	StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 	return true;
 }
 
@@ -845,6 +852,18 @@ bool ParaEngine::CUniBuffer::RemoveChar(int nIndex)
 			m_utf16Text = m_utf16Text.substr(0, nIndex) + m_utf16Text.substr(nIndex + 1);
 		else
 			m_utf16Text = m_utf16Text.substr(0, m_utf16Text.size() - 1);
+		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
+	}
+	return true;
+}
+
+
+
+bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+	if (nIndex < m_utf16Text.size())
+	{
+		m_utf16Text[nIndex] = wchar;
 		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 	}
 	return true;
@@ -897,7 +916,7 @@ const char16_t* ParaEngine::CUniBuffer::GetBuffer() const
 	return m_utf16Text.c_str();
 }
 
-char16_t& ParaEngine::CUniBuffer::operator[](int n)
+const char16_t& ParaEngine::CUniBuffer::operator[](int n)
 {
 	if ((int)m_utf16Text.size() > n)
 		return m_utf16Text[n];
@@ -919,8 +938,10 @@ HRESULT ParaEngine::CUniBuffer::CPtoXY(int nCP, BOOL bTrail, int *pX, int *pY)
 
 HRESULT ParaEngine::CUniBuffer::XYtoCP(int nX, int nY, int *pCP, int *pnTrail)
 {
+	// TODO: we will always position at the back of the line for the moment. 
+	// this is consistent with the draw function of GUIEdit which always draw caret at tail
 	if (*pCP)
-		*pCP = 0;
+		*pCP = m_utf16Text.size();
 	if (*pnTrail)
 		*pnTrail = 0;
 	return S_OK;

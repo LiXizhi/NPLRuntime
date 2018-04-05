@@ -207,7 +207,9 @@ int CParaFile::DeleteFile(const std::string& sFilePattern, bool bSecureFolderOnl
 
 void CParaFile::ToCanonicalFilePath(char* filename, const char* sfilename, bool bBackSlash/*=true*/)
 {
-	
+	if (sfilename == NULL) {
+		return;
+	}
 	int i = 0;
 	int j = 0;
 #ifdef WIN32
@@ -1442,6 +1444,17 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 				sRootDir = CFileUtils::GetInitialDirectory();
 			}
 			g_CurDirs[dwDirectoryType] = sRootDir + paraengine_app_dir_[dwDirectoryType];
+			return g_CurDirs[dwDirectoryType];
+		}
+	}
+	else if (dwDirectoryType == APP_EXTERNAL_STORAGE_DIR)
+	{
+		// this will return "" on PC. 
+		if (!g_CurDirs[dwDirectoryType].empty())
+			return g_CurDirs[dwDirectoryType];
+		else
+		{
+			g_CurDirs[dwDirectoryType] = CFileUtils::GetExternalStoragePath();
 			return g_CurDirs[dwDirectoryType];
 		}
 	}

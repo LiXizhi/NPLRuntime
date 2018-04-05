@@ -90,8 +90,10 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyDownEvent_s, int) { cls->SendKeyDownEvent((EVirtualKey)p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SendKeyUpEvent_s, int) { cls->SendKeyUpEvent((EVirtualKey)p1); return S_OK; }
 		
-		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseButtonSwapped_s, bool*) { *p1 = cls->IsMouseButtonSwapped(); return S_OK; }
-		ATTRIBUTE_METHOD1(CGUIRoot, SetMouseButtonSwapped_s, bool) { cls->SetMouseButtonSwapped(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SendInputMethodEvent_s, const char*) { cls->SendInputMethodEvent(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, IsTouchButtonSwapped_s, bool*) { *p1 = cls->IsTouchButtonSwapped(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, SetTouchButtonSwapped_s, bool) { cls->SetTouchButtonSwapped(p1); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMinimumScreenSize_s, Vector2)		{ cls->SetMinimumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
 		
@@ -100,6 +102,9 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CGUIRoot, IsNonClient_s, bool*)	{ *p1 = cls->IsNonClient(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetIsNonClient_s, bool)	{ cls->SetIsNonClient(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, GetKeyFocusObjectId_s, int*) { *p1 = cls->GetKeyFocusObjectId(); return S_OK; }
+		ATTRIBUTE_METHOD1(CGUIRoot, GetMouseFocusObjectId_s, int*) { *p1 = cls->GetMouseFocusObjectId(); return S_OK; }
 	public:
 		ParaEngine::GUIState& GetGUIState() { return m_stateGUI; }
 		CGUIMouseVirtual* GetMouse() { return m_pMouse; }
@@ -248,8 +253,14 @@ namespace ParaEngine
 		*/
 		CGUIBase* GetUIKeyFocus();
 
+		/** whether this control has key focus. */
+		virtual bool HasKeyFocus();
+
 		/** set UI key focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIKeyFocus(CGUIBase* control);
+
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetKeyFocusObjectId();
 
 		/**
 		* Gets the mouse focus of all controls. It searches all its descendant.
@@ -260,6 +271,9 @@ namespace ParaEngine
 
 		/** set UI mouse focus to a given control. It will automatically refresh the mouse focus hierachy. */
 		void SetUIMouseFocus(CGUIBase* control);
+
+		/** get key focus control's object id. return -1 if not object  */
+		virtual int GetMouseFocusObjectId();
 
 		/** set whether to use default mouse cursor or not.*/
 		void UseDefaultMouseCursor(bool bUseDefaultMouseCursor);
@@ -282,9 +296,12 @@ namespace ParaEngine
 		*/
 		void SendKeyDownEvent(EVirtualKey nVirtualkey);
 		void SendKeyUpEvent(EVirtualKey nVirtualkey);
+		void SendInputMethodEvent(const char* pStr);
+		void ProcessIMEText();
+		
 		/** swap left/right mouse button and touch.*/
-		bool IsMouseButtonSwapped();
-		void SetMouseButtonSwapped(bool bSwapped);
+		bool IsTouchButtonSwapped();
+		void SetTouchButtonSwapped(bool bSwapped);
 
 
 		bool DispatchKeyboardMsg(bool bKeyHandled);
@@ -446,6 +463,7 @@ namespace ParaEngine
 
 		void TranslateMousePos(int &inout_x, int &inout_y);
 
+		EMouseButton TranslateTouchButton(EMouseButton btn);
 		void TranslateTouchEvent(const TouchEvent &touch);
 
 		/** we will simulate finger size, by testing in a 44*44 region around the current touch point. 
@@ -537,6 +555,8 @@ namespace ParaEngine
 		* CGUIContainer:SetNonClientArea(true) can be used to specify a non-client area. 
 		*/
 		bool m_bIsNonClient;
+		/* if false, touch and drag is left mouse button, if true, it is right button. */
+		bool m_bSwapTouchButton;
 		/** touch finger size in pixels. we will automatically click a button when it is within finger size. */
 		int m_nFingerSizePixels;
 		int m_nFingerStepSizePixels;
@@ -551,6 +571,8 @@ namespace ParaEngine
 		GUIState    m_stateGUI;
 		/** last active GUI object object who has onactivate event handler in script. */
 		CGUIBase*  m_pActiveWindow;
+		/** the emulated ime text sent via scripting interface */
+		std::wstring m_sIMEText;
 		
 		friend CGUIBase;
 	};

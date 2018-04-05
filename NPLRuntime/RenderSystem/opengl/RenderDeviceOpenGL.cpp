@@ -3,6 +3,7 @@
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
+#include "ViewportManager.h"
 #include "OpenGLWrapper/GLType.h"
 #include "OpenGLWrapper/GLTexture2D.h"
 //#include "math/ParaColor.h"
@@ -69,7 +70,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	:m_AlphaBlendingChanged(true)
 	,m_EnableBlending(false)
 	,m_EnableSeparateAlphaBlending(false)
-	,m_BlendingChaned(true)
+	,m_BlendingChanged(true)
 	,m_BlendingSource(RSV_BLEND_SRCALPHA)
 	,m_BlendingDest(RSV_BLEND_INVSRCALPHA)
 	,m_BlendingAlphaSource(RSV_BLEND_SRCALPHA)
@@ -206,14 +207,14 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderState(const ERenderState State, co
 	{
 		if (Value == m_BlendingSource)break;
 		m_BlendingSource = Value;
-		m_BlendingChaned = true;
+		m_BlendingChanged = true;
 	}
 	break;
 	case ERenderState::DESTBLEND:
 	{
 		if (Value == m_BlendingDest)break;
 		m_BlendingDest = Value;
-		m_BlendingChaned = true;
+		m_BlendingChanged = true;
 	}
 	break;
 	case ERenderState::STENCILENABLE:
@@ -283,6 +284,10 @@ bool ParaEngine::RenderDeviceOpenGL::SetClipPlane(uint32_t Index, const float* p
 
 bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
 {
+	// needs to invert Y, since opengl use upward Y.
+	ParaViewport viewport;
+	CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+	glReadPixels(nLeft, viewport.Height - nTop, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
 	return true;
 }
 
@@ -290,8 +295,6 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 {
 	return 4;
 }
-
-
 
 
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
@@ -463,21 +466,25 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 
 void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
 {
+	m_LastRenderTargetWidth = m_RenderTargetWidth;
+	m_LastRenderTargetHeight = m_RenderTargetHeight;
 	m_RenderTargetWidth = width;
 	m_RenderTargetHeight = height;
 	m_isBeginRenderTarget = true;
-
 }
 
 void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
 {
-	m_RenderTargetWidth = 0;
-	m_RenderTargetHeight = 0;
 	m_isBeginRenderTarget = false;
+	m_RenderTargetWidth = m_LastRenderTargetWidth;
+	m_RenderTargetHeight = m_LastRenderTargetHeight;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 {
+	// tricky: always render full screen
+	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	return true;
 }
 
@@ -505,6 +512,46 @@ int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 	return g_sStencilBits;
 }
 
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount)
+{
+	ApplyBlendingModeChange();
+
+	if (Type == EPrimitiveType::TRIANGLELIST)
+		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
+	else if (Type == EPrimitiveType::TRIANGLESTRIP)
+		glDrawElements(GL_TRIANGLE_STRIP, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
+	else if (Type == EPrimitiveType::TRIANGLEFAN)
+		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(sizeof(uint16)*indexStart));
+
+	PE_CHECK_GL_ERROR_DEBUG();
+
+	/*
+	GLenum __error = glGetError();
+	if (__error)
+	{
+		*((char*)0) = 0;
+	}
+	*/
+
+	return true;
+}
+
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+{
+	ApplyBlendingModeChange();
+	if (m_CurrentVertexDeclaration)
+	{
+		m_CurrentVertexDeclaration->ApplyAttribute(pVertexStreamZeroData);
+	}
+
+	if (PrimitiveType == EPrimitiveType::TRIANGLELIST)
+		glDrawElements(GL_TRIANGLES, PrimitiveCount * 3, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
+	else if (PrimitiveType == EPrimitiveType::TRIANGLESTRIP)
+		glDrawElements(GL_TRIANGLE_STRIP, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
+	else if (PrimitiveType == EPrimitiveType::TRIANGLEFAN)
+		glDrawElements(GL_TRIANGLE_FAN, PrimitiveCount + 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
+	else if (PrimitiveType == EPrimitiveType::LINELIST)
+		glDrawElements(GL_LINES, PrimitiveCount * 2, GL_UNSIGNED_SHORT, (GLvoid*)(pIndexData));
 
 
 bool ParaEngine::RenderDeviceOpenGL::SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix)
@@ -519,7 +566,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetFVF(uint32_t FVF)
 
 void ParaEngine::RenderDeviceOpenGL::SetCursorPosition(int X, int Y, uint32_t Flags)
 {
-	
 }
 
 bool ParaEngine::RenderDeviceOpenGL::GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value)
@@ -537,8 +583,7 @@ Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 {
 	m_CurrentViewPort = viewport;
-	glViewport((GLint)(viewport.x), (GLint)(viewport.y), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
-	//auto error = glGetError();
+	glViewport((GLint)(viewport.x), (GLint)(m_RenderTargetHeight - viewport.y - (GLsizei)viewport.w), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
 	return true;
 }
 
@@ -558,21 +603,22 @@ bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil
 		fields |= GL_STENCIL_BUFFER_BIT;
 	}
 	glClear(fields);
+
+	PE_CHECK_GL_ERROR_DEBUG();
+
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 {
-
-
 	if (!pRect || (pRect->left <= 0 && pRect->top <= 0 && pRect->right <= 0 && pRect->bottom <= 0))
 	{
 		glDisable(GL_SCISSOR_TEST);
 	}
 	else
 	{
-		int nScreenWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-		int nScreenHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+		int nScreenWidth = m_RenderTargetWidth;
+		int nScreenHeight = m_RenderTargetHeight;
 		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.y + m_CurrentViewPort.w);
 		glScissor((GLint)(pRect->left + m_CurrentViewPort.x), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}
@@ -588,18 +634,21 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
 	glClearColor(color.r, color.g, color.b, color.a);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearDepth(const float depth)
 {
 	glClearDepth(depth);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 {
 	glClearStencil(stencil);
+	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
 }
 
@@ -615,12 +664,12 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 		uint32_t dst = ToGLBlendValue(m_BlendingDest);
 		glBlendFuncSeparate(src, dst, asrc, adst);
 		m_AlphaBlendingChanged = false;
-	}else if (m_BlendingChaned)
+	}else if (m_BlendingChanged)
 	{
 		uint32_t src = ToGLBlendValue(m_BlendingSource);
 		uint32_t dst = ToGLBlendValue(m_BlendingDest);
 		glBlendFunc(src, dst);
-		m_BlendingChaned = false;
+		m_BlendingChanged = false;
 	}
 
 }

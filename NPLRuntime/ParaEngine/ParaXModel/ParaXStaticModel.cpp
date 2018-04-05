@@ -153,6 +153,14 @@ namespace ParaEngine {
 		return S_OK;
 	}
 
+	HRESULT CParaXStaticModel::RendererRecreated()
+	{
+		m_vertexBuffer.RendererRecreated();
+		m_indexBuffer.RendererRecreated();
+		BuildRenderBuffer();
+		return S_OK;
+	}
+
 	void CParaXStaticModel::BuildRenderBuffer()
 	{
 		m_vertexBuffer.ReleaseBuffer();

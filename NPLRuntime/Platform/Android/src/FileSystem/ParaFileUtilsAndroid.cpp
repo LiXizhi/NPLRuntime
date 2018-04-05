@@ -23,6 +23,8 @@
 #include "ParaAppAndroid.h"
 #include <android/asset_manager.h>
 #include <android/native_activity.h>
+#include <jni/JniHelper.h>
+
 namespace fs = boost::filesystem;
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 using namespace ParaEngine;
@@ -55,38 +57,40 @@ ParaEngine::FileData ParaEngine::CParaFileUtilsAndroid::GetDataFromFile(const st
 
 bool ParaEngine::CParaFileUtilsAndroid::IsAbsolutePath(const std::string& filename)
 {
-	/*if (filename.size() > 0)
+	if (filename.size() > 0)
 	{
 		return filename[0] == '/' || filename[0] == '\\';
-	}*/
+	}
 	return false;
 }
 
-std::string ParaEngine::CParaFileUtilsAndroid::GetWriteAblePath()
+std::string ParaEngine::CParaFileUtilsAndroid::GetWritablePath()
 {
-	if (m_writeAblePath.empty())
+	if (m_writablePath.empty())
 	{
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
 		auto state = app->GetAndroidApp();
 
-		JNIEnv* jni;
-		state->activity->vm->AttachCurrentThread(&jni, NULL);
-		jclass activityClass = jni->GetObjectClass(state->activity->clazz);
-		jmethodID getFilesDir = jni->GetMethodID(activityClass, "getFilesDir", "()Ljava/io/File;");
-		jobject fileObject = jni->CallObjectMethod(state->activity->clazz, getFilesDir);
-		jclass fileClass = jni->GetObjectClass(fileObject);
-		jmethodID getAbsolutePath = jni->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
-		jobject pathObject = jni->CallObjectMethod(fileObject, getAbsolutePath);
-		auto path = jni->GetStringUTFChars((jstring)pathObject, NULL);
-		m_writeAblePath = path;
-		jni->ReleaseStringUTFChars((jstring)pathObject, path);
-		jni->DeleteLocalRef(fileClass);
-		jni->DeleteLocalRef(fileObject);
-		jni->DeleteLocalRef(activityClass);
-		state->activity->vm->DetachCurrentThread();
-		
-		if (m_writeAblePath[m_writeAblePath.size() - 1] != '/')
-			m_writeAblePath += "/";
+		/*
+		ParaEngine::JniMethodInfo info;
+		if (ParaEngine::JniHelper::getMethodInfo(info, state->activity->clazz, "getFileDirsPath", "()Ljava/lang/String;"))
+		{
+			jstring intent_data = (jstring)info.env->CallObjectMethod(state->activity->clazz, info.methodID);
+			m_writablePath = ParaEngine::JniHelper::jstring2string(intent_data);
+			info.env->DeleteLocalRef(info.classID);
+			info.env->DeleteLocalRef(intent_data);
+
+			if (m_writablePath[m_writablePath.size() - 1] != '/')
+				m_writablePath += "/";
+		}
+		*/
+
+		m_writablePath = state->activity->internalDataPath;
+		if (m_writablePath[m_writablePath.size() - 1] != '/')
+			m_writablePath += "/";
+
+		if (m_writablePath[0] != '/')
+			m_writablePath = std::string("/") + m_writablePath;
 
 		/*
 		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
@@ -122,8 +126,27 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetWriteAblePath()
 		m_writeAblePath = sRootDir;
 		*/
 	}
-	return m_writeAblePath;
+	return m_writablePath;
 }
+
+std::string ParaEngine::CParaFileUtilsAndroid::GetExternalStoragePath()
+{
+	if (m_externalStoragePath.empty())
+	{
+		auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
+		auto state = app->GetAndroidApp();
+		if (state->activity->externalDataPath)
+		{
+			m_externalStoragePath = state->activity->externalDataPath;
+			if (m_externalStoragePath[0] != '/')
+				m_externalStoragePath = std::string("/") + m_externalStoragePath;
+		}
+	}
+	return m_externalStoragePath;
+}
+
+
+std::string ParaEngine::CParaFileUtilsAndroid::_defaultResRootPath = "assets/";
 
 std::string ParaEngine::CParaFileUtilsAndroid::GetInitialDirectory()
 {
@@ -133,34 +156,46 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetInitialDirectory()
 
 bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 {
-	auto file = OpenFileForRead(filename);
-	if (file->isOpen())
+	if (IsAbsolutePath(filename))
 	{
-		delete file;
-		file = nullptr;
-		return true;
-	}
-	else {
-		delete file;
-		file = nullptr;
-
-		auto fullName = GetWriteAblePath() + filename;
 		boost::system::error_code err_code;
-		if (fs::exists(fullName, err_code))
+		if (fs::exists(filename, err_code))
+			return true;
+	}
+	else
+	{
+		// find in writable directory first
+		std::string fullPath = GetWritablePath() + filename;
+		boost::system::error_code err_code;
+		if (fs::exists(fullPath, err_code))
 		{
 			return true;
-		}else
+		}
+		else
 		{
-			//auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
-			//auto state = app->GetAndroidApp();
-			//auto assetManager = state->activity->assetManager;
-			//auto dir = AAssetManager_openDir(assetManager, filename.c_str());
-			//if (dir)
-			//{
-			//	AAssetDir_close(dir);
-			//	dir = nullptr;
-			//	return true;
-			//}
+			// ParaEngine::Lock lock_(m_fileMutex); // AAssetManager is thread-safe according to andriod doc. 
+
+			// find in android asset directory. 
+			bool bFound = false;
+			auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
+			auto state = app->GetAndroidApp();
+			auto assetManager = state->activity->assetManager;
+			const char* s = filename.c_str();
+
+			// Found "assets/" at the beginning of the path and we don't want it
+			if (filename.find(_defaultResRootPath) == 0) 
+				s += strlen("assets/");
+
+			if (assetManager) {
+				AAsset* aa = AAssetManager_open(assetManager, s, AASSET_MODE_UNKNOWN);
+				if (aa)
+				{
+					bFound = true;
+					AAsset_close(aa);
+				}
+			}
+			if (bFound)
+				return true;
 		}
 	}
 	return false;
@@ -168,7 +203,7 @@ bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 
 ParaEngine::IReadFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForRead(const std::string& filename)
 {
-	std::string fullPath = GetWriteAblePath() + filename;
+	std::string fullPath = GetFullPathForFilename(filename);
 	boost::system::error_code err_code;
 	if (fs::exists(fullPath, err_code))
 	{
@@ -288,6 +323,10 @@ int ParaEngine::CParaFileUtilsAndroid::DeleteDirectory(const std::string& filena
 
 std::string ParaEngine::CParaFileUtilsAndroid::GetFullPathForFilename(const std::string &filename)
 {
-	return GetWriteAblePath() + filename;
+	if (!IsAbsolutePath(filename))
+		return GetWritablePath() + filename;
+	else
+		return filename;
 }
+
 

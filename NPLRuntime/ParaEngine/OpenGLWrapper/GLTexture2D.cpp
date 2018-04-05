@@ -474,23 +474,16 @@ GLuint GLTexture2D::getName() const
 
 void GLTexture2D::bind()
 {
-	if (this == nullptr)
-		return;
-
-	GL::bindTexture2D(this->_name);
+	GL::bindTexture2D(this == nullptr ? 0 : this->_name);
 }
-
+ 
 void GLTexture2D::bindN(GLuint textureUnit)
 {
-	if (this == nullptr)
-		return;
-
-	GL::bindTexture2DN(textureUnit, this->_name);
+	GL::bindTexture2DN(textureUnit, this == nullptr ? 0 : this->_name);
 }
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)
 {
-
 	GL::bindTexture2D(_name);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texParams.minFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texParams.magFilter);
@@ -1053,5 +1046,11 @@ void GLTexture2D::convertRGBA8888ToRGB5A1(const unsigned char* data, size_t data
 			| (data[i + 3] & 0x0080) >> 7;   //A
 	}
 }
+
+void GLTexture2D::RendererRecreated()
+{
+	_name = 0;
+}
+
 // converter function end
 //////////////////////////////////////////////////////////////////////////

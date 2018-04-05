@@ -76,6 +76,8 @@ namespace ParaEngine
 			SYS_WM_DESTROY = 3,
 			// when system settings changed. such as the slate mode is changed, mostly for intel 2in1 pad. 
 			SYS_WM_SETTINGCHANGE = 4,
+			// 
+			SYS_RENDERER_RECREATED = 5,
 		};
 	public:
 		SystemEvent(int nType, const string& sCode) :m_nType(nType), m_sCode(sCode), m_bIsAsyncMode(true){};

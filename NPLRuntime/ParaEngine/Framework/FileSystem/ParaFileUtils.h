@@ -14,7 +14,7 @@ namespace ParaEngine
 	public:
 		virtual	ParaEngine::FileData GetDataFromFile(const std::string& filename) = 0;
 		virtual bool IsAbsolutePath(const std::string& filename) = 0;
-		virtual std::string GetWriteAblePath() = 0;
+		virtual std::string GetWritablePath() = 0;
 		virtual std::string GetInitialDirectory() = 0;
 		virtual bool Exists(const std::string& filename) = 0;
 		virtual IReadFile* OpenFileForRead(const std::string& filename) = 0;
@@ -27,5 +27,7 @@ namespace ParaEngine
 		virtual bool Delete(const std::string& filename) = 0;
 		virtual int DeleteDirectory(const std::string& filename) = 0;
 		virtual std::string GetFullPathForFilename(const std::string &filename) = 0;
+
+		virtual std::string GetExternalStoragePath() { return ""; }
 	};
 }

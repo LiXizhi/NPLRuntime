@@ -22,6 +22,25 @@ using namespace ParaEngine;
 /** place holder for being loaded static models */
 #define DEFAULT_STATIC_MODEL		"model/common/editor/scalebox.x"
 
+HRESULT MeshEntity::RendererRecreated()
+{
+	if (IsValid() && GetPrimaryTechniqueHandle()>0)
+	{
+		std::vector<MeshLOD>::iterator iCur, iEnd = m_MeshLODs.end();
+		for (iCur = m_MeshLODs.begin(); iCur != iEnd; ++iCur)
+		{
+			MeshLOD& lod = (*iCur);
+
+			if (lod.m_pStaticMesh)
+			{
+				lod.m_pStaticMesh->RendererRecreated();
+			}
+		}
+	}
+
+	return S_OK;
+}
+
 HRESULT MeshEntity::InitDeviceObjects()
 {
 	if(m_bIsInitialized)

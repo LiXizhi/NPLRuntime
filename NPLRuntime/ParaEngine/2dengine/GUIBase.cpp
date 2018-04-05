@@ -2631,7 +2631,7 @@ int ParaEngine::CGUIBase::OnHandleWinMsgChars(const std::wstring& sChars)
 
 void ParaEngine::CGUIBase::SendInputMethodEvent(const std::wstring& sText)
 {
-	if (!sText.empty())
+	if (!sText.empty() && HasEvent(EM_WM_INPUT_METHOD))
 	{
 		u16string sTextWide;
 		sTextWide.resize(sText.size());
@@ -2642,13 +2642,10 @@ void ParaEngine::CGUIBase::SendInputMethodEvent(const std::wstring& sText)
 		string sTextUTF8;
 		if (StringHelper::UTF16ToUTF8(sTextWide, sTextUTF8))
 		{
-			if (HasEvent(EM_WM_INPUT_METHOD))
-			{
-				string sOutput;
-				NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, sTextUTF8);
-				sOutput = string("msg=") + sOutput + ";";
-				ActivateScript(sOutput, EM_WM_INPUT_METHOD);
-			}
+			string sOutput;
+			NPL::NPLHelper::EncodeStringInQuotation(sOutput, 0, sTextUTF8);
+			sOutput = string("msg=") + sOutput + ";";
+			ActivateScript(sOutput, EM_WM_INPUT_METHOD);
 		}
 	}
 }

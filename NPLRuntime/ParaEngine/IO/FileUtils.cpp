@@ -85,7 +85,39 @@ std::map<std::string, ParaEngine::CFileUtils::EmbeddedResource> ParaEngine::CFil
 namespace ParaEngine
 {
 	std::string ParaEngine::CFileUtils::s_writepath;
-	
+
+#define CHECK_BIT(x,y) (((x)&(y))>0)
+
+#ifndef Int32x32To64
+#define Int32x32To64(a, b)  (((int64_t)((int32_t)(a))) * ((int64_t)((int32_t)(b))))
+#endif
+
+	/**
+	A FILETIME is defined as : Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
+	*/
+	void TimetToFileTime(const std::time_t& t, FILETIME* pft)
+	{
+		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+		int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
+		pft->dwLowDateTime = (DWORD)ll;
+		pft->dwHighDateTime = ll >> 32;
+	}
+
+	/**
+	A FILETIME is defined as : Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
+	time_t is an integral value holding the number of seconds (not counting leap seconds) since 00:00, Jan 1 1970 UTC, corresponding to POSIX time
+	*/
+	time_t FileTimeToTimet(const FILETIME& ft)
+	{
+		// Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+		static const uint64_t EPOCH_DIFFERENCE_MICROS = 11644473600000000ull;
+
+		// First convert 100-ns intervals to microseconds, then adjust for the
+		// epoch difference
+		uint64_t total_us = (((uint64_t)ft.dwHighDateTime << 32) | (uint64_t)ft.dwLowDateTime) / 10;
+		total_us -= EPOCH_DIFFERENCE_MICROS;
+		return (time_t)(total_us / 1000000);
+	}
 }
 
 ParaEngine::CParaFileInfo::CParaFileInfo() 
@@ -461,6 +493,9 @@ ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bo
 		sFilePath = filename;
 	}
 	FILE* pFile = fopen(sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	if (pFile == 0) {
+		OUTPUT_LOG("failed to open file: %s with mode %s\n", sFilePath.c_str(), bRead ? (bWrite ? "w+b" : "rb") : "wb");
+	}
 	FileHandle fileHandle;
 	fileHandle.m_pFile = pFile;
 	return fileHandle;
@@ -545,11 +580,16 @@ std::string ParaEngine::CFileUtils::GetInitialDirectory()
 	return sRootDir;
 }
 
+std::string ParaEngine::CFileUtils::GetExternalStoragePath()
+{
+	return CParaFileUtils::GetInstance()->GetExternalStoragePath();
+}
+
 const std::string& ParaEngine::CFileUtils::GetWritablePath()
 {
 	if (s_writepath.empty())
 	{
-		s_writepath = CParaFileUtils::GetInstance()->GetWriteAblePath();
+		s_writepath = CParaFileUtils::GetInstance()->GetWritablePath();
 	}
 	return s_writepath;
 }
@@ -583,18 +623,6 @@ void ParaEngine::CFileUtils::SetWritablePath(const std::string& writable_path)
 	}
 }
 
-#define CHECK_BIT(x,y) (((x)&(y))>0)
-
-#ifndef Int32x32To64
-#define Int32x32To64(a, b)  (((int64_t)((int32_t)(a))) * ((int64_t)((int32_t)(b))))
-#endif
-
-void TimetToFileTime(const std::time_t& t, FILETIME* pft)
-{
-	int64_t ll = Int32x32To64(t, 10000000) + 116444736000000000;
-	pft->dwLowDateTime = (DWORD)ll;
-	pft->dwHighDateTime = ll >> 32;
-}
 
 void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, const std::string& reFilePattern, int nSubLevel)
 {
@@ -618,7 +646,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 					//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
 					DWORD file_attr = 0;
 					if (fs::is_directory(iter->status()))
@@ -639,7 +667,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 					std::string sFullPath = iter->path().string();
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
@@ -657,7 +685,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					nFileCount++;
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
-					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
+					ParaEngine::TimetToFileTime(lastWriteTime, &fileLastWriteTime);
 					std::string sFullPath = iter->path().string();
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);

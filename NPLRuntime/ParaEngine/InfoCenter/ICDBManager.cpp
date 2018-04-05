@@ -25,6 +25,7 @@
 #include "FileManager.h"
 #include "AsyncLoader.h"
 #include "util/StringHelper.h"
+#include "IO/FileUtils.h"
 
 using namespace ParaInfoCenter;
 
@@ -408,7 +409,8 @@ void DBEntity::OpenDB(const char* dbname)
 		SetCreateFile(true);
 	}
 
-	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8((ParaEngine::CParaFile::GetWritablePath() + diskfileName).c_str());
+	diskfileName = ParaEngine::CFileUtils::GetWritableFullPathForFilename(diskfileName);
+	string UTF8_Name = ParaEngine::StringHelper::AnsiToUTF8(diskfileName.c_str());
 	
 	int nMaxRetryTimes = IsCreateFile() ? 1 : 3;
 

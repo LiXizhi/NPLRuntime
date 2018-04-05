@@ -29,8 +29,12 @@ void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 {
 	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = e;
+		++m_buffered_mouse_msgs_count;
 	}
-	++m_buffered_mouse_msgs_count;
+	else
+	{
+		OUTPUT_LOG("PushMouseEvent: failed because buffer is full. msg: %s \n", e->ToString().c_str());
+	}
 }
 
 
@@ -47,24 +51,18 @@ void ParaEngine::CGUIMouseVirtual::SetLock(bool bLock)
 
 bool ParaEngine::CGUIMouseVirtual::IsButtonDown(const EMouseButton button)
 {
-	if (m_isTouchInputting)
-		return false;
-	else
+	if (m_bSwapMouseButton)
 	{
-
-		if (m_bSwapMouseButton)
+		if (button == EMouseButton::LEFT) {
+			return m_curMouseState.buttons[(int)EMouseButton::RIGHT] == EKeyState::PRESS; 
+		}else if(button == EMouseButton::RIGHT)
 		{
-			if (button == EMouseButton::LEFT) {
-				return m_curMouseState.buttons[(int)EMouseButton::RIGHT] == EKeyState::PRESS; 
-			}else if(button == EMouseButton::RIGHT)
-			{
-				return m_curMouseState.buttons[(int)EMouseButton::LEFT] == EKeyState::PRESS;
-			}
+			return m_curMouseState.buttons[(int)EMouseButton::LEFT] == EKeyState::PRESS;
 		}
-
-		return m_curMouseState.buttons[(int)button] == EKeyState::PRESS;
 	}
+	return m_curMouseState.buttons[(int)button] == EKeyState::PRESS;
 }
+
 int ParaEngine::CGUIMouseVirtual::GetMouseYDeltaSteps()
 {
 	return (int)(m_dims2.y);
@@ -135,23 +133,21 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 	bool bHasMouseMove = false;
 	m_dwElements = 0;
 	int lastX = m_curMouseState.x, lastY = m_curMouseState.y;
-	//translating windows message into DirextMouse-like events, in order to maintain consistency of the interface
+	//translating windows message into DirectMouse-like events, in order to maintain consistency of the interface
 	for (int a = 0; a < m_buffered_mouse_msgs_count; m_dwElements++, a++)
 	{
-
-
-		auto e = m_buffered_mouse_msgs[a];
+		auto& e = m_buffered_mouse_msgs[a];
 		switch (e->GetEventType())
 		{
 		default:
 			assert(false);
 			break;
-		case EMouseEventType::Unkonw:
+		case EMouseEventType::Unknown:
 			assert(false);
 			break;
 		case EMouseEventType::Button:
 		{
-			const DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
+			DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
 			m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
 			m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
 			ResetLastMouseState();
@@ -192,6 +188,19 @@ bool ParaEngine::CGUIMouseVirtual::ReadImmediateData()
 
 	// OUTPUT_LOG("dx %d,dy %d,dz %d: %d %d %d\n", m_dims2.lX, m_dims2.lY, m_dims2.lZ, m_dims2.rgbButtons[0], m_dims2.rgbButtons[1], m_dims2.rgbButtons[2]);
 	return true;
+}
+
+bool ParaEngine::CGUIMouseVirtual::IsMouseButtonSwapped()
+{
+	return m_bSwapMouseButton;
+}
+
+void ParaEngine::CGUIMouseVirtual::SetMouseButtonSwapped(bool bSwapped)
+{
+	if (m_bSwapMouseButton != bSwapped)
+	{
+		m_bSwapMouseButton = bSwapped;
+	}
 }
 
 void ParaEngine::CGUIMouseVirtual::GetDeviceCursorPos(int& x, int&y)
