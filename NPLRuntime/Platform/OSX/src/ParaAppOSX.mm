@@ -9,7 +9,7 @@ IParaEngineApp* CreateParaEngineApp()
 
 ParaEngine::CParaEngineAppOSX::CParaEngineAppOSX()
 {
-	SetTouchInputting(true);
+	// SetTouchInputting(true);
 }
 
 void ParaEngine::CParaEngineAppOSX::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)

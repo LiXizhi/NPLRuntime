@@ -50,56 +50,80 @@ ParaEngine::FileData CParaFileUtilsOSX::GetDataFromFile(const std::string& filen
 
 bool ParaEngine::CParaFileUtilsOSX::IsAbsolutePath(const std::string& filename)
 {
-	return false;
+    if (filename.size() > 0)
+    {
+        return filename[0] == '/' || filename[0] == '\\';
+    }
+    return false;
 }
 
 std::string ParaEngine::CParaFileUtilsOSX::GetWritablePath()
 {
-	if (m_writeAblePath.empty())
+	if (m_writablePath.empty())
 	{
         NSString* docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-        m_writeAblePath = std::string([docDir UTF8String]) + "/Paracraft/files/";
+        m_writablePath = std::string([docDir UTF8String]) + "/Paracraft/files/";
 	}
-	return m_writeAblePath;
+	return m_writablePath;
 }
 
 std::string ParaEngine::CParaFileUtilsOSX::GetInitialDirectory()
 {
-    return "/";
+    return GetAssetPath();
 }
 
 bool ParaEngine::CParaFileUtilsOSX::Exists(const std::string& filename)
 {
-    auto fullPathInWriteable = GetWritablePath() + filename;
-    boost::system::error_code err_code;
-    if (fs::exists(fullPathInWriteable, err_code))
+    if (IsAbsolutePath(filename))
     {
-        return true;
+        boost::system::error_code err_code;
+        if (fs::exists(filename, err_code))
+            return true;
     }
-    std::string resourcePath = [[[NSBundle mainBundle] resourcePath] UTF8String];
-    std::string fullPathInRes = resourcePath + "/assets/"+ filename;
-    if (fs::exists(fullPathInRes, err_code))
+    else
     {
-        return true;
+        // find in writable directory first
+        std::string fullPath = GetWritablePath() + filename;
+        boost::system::error_code err_code;
+        if (fs::exists(fullPath, err_code))
+        {
+            return true;
+        }
+        else
+        {
+            std::string fullPathInRes = GetAssetPath() + filename;
+            if (fs::exists(fullPathInRes, err_code))
+            {
+                return true;
+            }
+        }
     }
+    
     return false;
+}
+
+const std::string& ParaEngine::CParaFileUtilsOSX::GetAssetPath()
+{
+    if(m_assetPath.empty())
+    {
+        std::string resourcePath = [[[NSBundle mainBundle] resourcePath] UTF8String];
+        m_assetPath = resourcePath + "/assets/";
+    }
+    return m_assetPath;
 }
 
 ParaEngine::IReadFile* ParaEngine::CParaFileUtilsOSX::OpenFileForRead(const std::string& filename)
 {
     std::string fullPath = GetFullPathForFilename(filename);
     boost::system::error_code error_code;
-    if(fs::exists(filename,error_code))
+    if(fs::exists(fullPath,error_code))
     {
         return new CReadFileBoost(filename);
-    }else if(fs::exists(fullPath,error_code)){
-        return new CReadFileBoost(fullPath);
     }
-    
-    std::string resourcePath = [[[NSBundle mainBundle] resourcePath] UTF8String];
-    std::string fullPathInRes = resourcePath + "/assets/"+ filename;
-    
-	return new CReadFileBoost(fullPathInRes);
+    else
+    {
+        return new CReadFileBoost(GetAssetPath() + filename);
+    }
 }
 
 ParaEngine::IWriteFile* ParaEngine::CParaFileUtilsOSX::OpenFileForWrite(const std::string& filename)
@@ -196,7 +220,10 @@ int ParaEngine::CParaFileUtilsOSX::DeleteDirectory(const std::string& filename)
 
 std::string ParaEngine::CParaFileUtilsOSX::GetFullPathForFilename(const std::string &filename)
 {
-	return GetWritablePath() + filename;
+    if (!IsAbsolutePath(filename))
+        return GetWritablePath() + filename;
+    else
+        return filename;
 }
 
 bool ParaEngine::CParaFileUtilsOSX::SaveBufferToFile(const std::string& filename, bool replace, const char* buffer, uint32_t bufSize)

@@ -26,8 +26,10 @@ namespace ParaEngine
         
 
         
-
+    protected:
+        const std::string& GetAssetPath();
 	private:
-		std::string m_writeAblePath;
+		std::string m_writablePath;
+        std::string m_assetPath;
 	};
 }

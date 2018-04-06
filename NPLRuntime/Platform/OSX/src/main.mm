@@ -5,18 +5,14 @@ using namespace ParaEngine;
 int main(int argc, const char * argv[]) {
     
 
-    RenderWindowOSX renderWinwow(960,540);
+    RenderWindowOSX renderWindow(1280,720);
     CParaEngineAppOSX app;
-    bool ret = app.InitApp(&renderWinwow, "");
+    bool ret = app.InitApp(&renderWindow, "");
     if(!ret)
     {
         OUTPUT_LOG("Initialize ParaEngineApp failed.");
         return 1;
     }
-    while(!renderWinwow.ShouldClose())
-    {
-        renderWinwow.PollEvents();
-        app.DoWork();
-    }
-    return 0;
+    
+    return app.Run(0);
 }

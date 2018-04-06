@@ -92,7 +92,7 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	// Init effect
 	ret = GeneratePasses();
 	if (ret) {
-		OUTPUT_LOG("[%s] Generate passes sucessed.\n", GetFileName().c_str());
+		OUTPUT_LOG("[%s] Generate passes succeeded.\n", GetFileName().c_str());
 	}
 	else {
 		OUTPUT_LOG("[%s] Generate passes failed.\n", GetFileName().c_str());
