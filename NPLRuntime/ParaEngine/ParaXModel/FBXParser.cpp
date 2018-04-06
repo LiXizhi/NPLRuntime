@@ -401,7 +401,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				curPs = ps;
 				ps.emitter = nullptr;
 				
-				if ((int)curPs.emitter == ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER)
+				if ((intptr_t)(curPs.emitter) == ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER)
 					curPs.emitter = new SphereParticleEmitter(&curPs);
 				else
 					curPs.emitter = new PlaneParticleEmitter(&curPs);
