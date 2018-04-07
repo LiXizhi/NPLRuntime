@@ -1,5 +1,5 @@
 pushd .
 mkdir -p ./build/mac/
 cd build/mac
-cmake ../../NPLRuntime
+cmake -G "Xcode" ../../NPLRuntime
 popd

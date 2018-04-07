@@ -5,8 +5,8 @@
 
 #ifndef __OSINCLUDE_H
 #define __OSINCLUDE_H
-
-#include <Carbon/Carbon.h>
+#include <cassert>
+//#include <Carbon/Carbon.h>
 #include <pthread.h>
 #include <strings.h>
 
