@@ -848,7 +848,7 @@ bool ParaEngine::CUniBuffer::RemoveChar(int nIndex)
 {
 	if (m_utf16Text.size() > 0)
 	{
-		if (nIndex >= 0)
+		if (nIndex >= 0 && nIndex < m_utf16Text.size())
 			m_utf16Text = m_utf16Text.substr(0, nIndex) + m_utf16Text.substr(nIndex + 1);
 		else
 			m_utf16Text = m_utf16Text.substr(0, m_utf16Text.size() - 1);
