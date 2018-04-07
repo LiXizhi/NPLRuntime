@@ -296,6 +296,98 @@ void RenderWindowOSX::PollEvents() {
             OnKey(vk, EKeyState::RELEASE);
         }
             break;
+        case NSEventTypeFlagsChanged:
+        {
+            static uint32_t last_flags = 0;
+            uint32_t flags = (uint32_t)[event modifierFlags];
+            //////
+            if((flags & NSEventModifierFlagCapsLock) && !(last_flags & NSEventModifierFlagCapsLock))
+            {
+                OnKey(EVirtualKey::KEY_CAPITAL,EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagCapsLock) && (last_flags & NSEventModifierFlagCapsLock))
+            {
+                OnKey(EVirtualKey::KEY_CAPITAL, EKeyState::RELEASE);
+            }
+            ////////
+            if((flags & NSEventModifierFlagHelp) && !(last_flags & NSEventModifierFlagHelp))
+            {
+                NSLog(@"HELP press");
+            }
+            
+            if(!(flags & NSEventModifierFlagHelp) && (last_flags & NSEventModifierFlagHelp))
+            {
+                NSLog(@"HELP release");
+            }
+            
+            ///////
+            if((flags & NSEventModifierFlagShift) && !(last_flags & NSEventModifierFlagShift))
+            {
+                OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagShift) && (last_flags & NSEventModifierFlagShift))
+            {
+                OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::RELEASE);
+            }
+            
+            /////////
+            if((flags & NSEventModifierFlagOption) && !(last_flags & NSEventModifierFlagOption))
+            {
+                OnKey(EVirtualKey::KEY_LMENU, EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagOption) && (last_flags & NSEventModifierFlagOption))
+            {
+                OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
+            }
+            
+            /////////
+            if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
+            {
+                OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
+            {
+                OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
+            }
+            
+            ////////////
+            if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
+            {
+                OnKey(EVirtualKey::KEY_LWIN, EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
+            {
+                OnKey(EVirtualKey::KEY_LWIN, EKeyState::RELEASE);
+            }
+            
+            ///////////////
+            if((flags & NSEventModifierFlagFunction) && !(last_flags & NSEventModifierFlagFunction))
+            {
+                NSLog(@"Function press");
+            }
+            
+            if(!(flags & NSEventModifierFlagFunction) && (last_flags & NSEventModifierFlagFunction))
+            {
+                NSLog(@"Function release");
+            }
+            
+            ////////////////
+            if((flags & NSEventModifierFlagNumericPad) && !(last_flags & NSEventModifierFlagNumericPad))
+            {
+                OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::PRESS);
+            }
+            
+            if(!(flags & NSEventModifierFlagNumericPad) && (last_flags & NSEventModifierFlagNumericPad))
+            {
+                OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::RELEASE);
+            }
+            last_flags = flags;
+        }break;
         default:
             break;
     }
