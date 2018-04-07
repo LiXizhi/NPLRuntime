@@ -166,6 +166,8 @@ IRenderWindow* CreateParaRenderWindow(const int width, const int height)
 RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_window(nullptr)
 ,m_shouldClose(false)
+,m_scrollMouseX(0)
+,m_scrollMouseY(0)
 {
     [NSApplication sharedApplication];
     
@@ -193,7 +195,9 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [NSApp arrangeInFront:m_window];
     [m_window orderFront:nil];
     [m_window makeKeyWindow];
+    [m_window setAcceptsMouseMovedEvents:YES];
     [m_window makeFirstResponder:m_window];
+    //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
 
     RenderWindowOSX* renderWindow = this;
     WindowDelegate* winDelegate = [[WindowDelegate alloc] InitWithRenderWindow:renderWindow];
@@ -202,7 +206,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     
 }
 
-RenderWindowOSX::~RenderWindowOSX() noexcept
+RenderWindowOSX::~RenderWindowOSX()
 {
     [m_window release];
 }
@@ -240,8 +244,31 @@ void RenderWindowOSX::PollEvents() {
 
     uint32_t mx = (uint32_t)[event locationInWindow].x;
     uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y;
+    
+    
+   /* NSEventSubtype subType = [event subtype];
+    
+    if(subType == NSEventSubtypeMouseEvent)
+    {
+        NSLog(@"Mouse event");
+    }
+    if(subType == NSEventSubtypeTouch)
+    {
+        NSLog(@"touch event");
+    }*/
+    
+    
     switch([(NSEvent *)event type])
     {
+            
+            
+        case NSEventTypePressure:
+            //NSLog(@"Pressure");
+        {
+
+        }
+            break;
+            
             
         case NSEventTypeLeftMouseDown:
             OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
@@ -250,19 +277,49 @@ void RenderWindowOSX::PollEvents() {
             OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeRightMouseDown:
+            //NSLog(@"rightmouse down");
             OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeRightMouseUp:
+            //NSLog(@"rightmouse up");
             OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, mx, my);
             break;
+
+            
         case NSEventTypeMouseMoved:
         case NSEventTypeLeftMouseDragged:
         case NSEventTypeRightMouseDragged:
         case NSEventTypeOtherMouseDragged:
+        {
             OnMouseMove(mx, my);
+            m_scrollMouseX = mx;
+            m_scrollMouseY = my;
+        }
             break;
         case NSEventTypeScrollWheel:
+        {
             OnMouseWhell([event deltaX], [event deltaY]);
+            m_scrollMouseX+= [event deltaX]*4;
+            m_scrollMouseY+= [event deltaY]*4;
+            NSEventPhase phase = [event phase];
+            switch (phase) {
+                case NSEventPhaseMayBegin:
+                case NSEventPhaseBegan:
+                    OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                    break;
+                case NSEventPhaseChanged:
+                {
+                    OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                }
+                    break;
+                case NSEventPhaseEnded:
+                case NSEventPhaseCancelled:
+                    OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                    break;
+                default:
+                    break;
+            }
+        }
             break;
         case NSEventTypeOtherMouseDown:
             OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, mx, my);
@@ -410,6 +467,16 @@ void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine:
         return;
     }
     
+    if(button == EMouseButton::RIGHT)
+    {
+        if(state == EKeyState::PRESS)
+        {
+            NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
+        }else{
+             NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
+        }
+    }
+    
     CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(button,state,x,y)));
 }
 
@@ -457,6 +524,7 @@ void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
 
 void RenderWindowOSX::OnMouseMove(uint32_t x, uint32_t y)
 {
+    //NSLog(@"OnMouseMove: %d,%d",x,y);
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
     {
         return;
