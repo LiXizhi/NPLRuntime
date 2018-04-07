@@ -237,11 +237,16 @@ bool RenderWindowOSX::ShouldClose() const
 
 void RenderWindowOSX::PollEvents() { 
     if(m_window == nullptr || ShouldClose()) return;
-    NSEvent *event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                        untilDate:[NSDate distantPast]
+    NSEvent *event;
+    auto untilDate = [NSDate distantPast];
+    do{
+    event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                        untilDate:untilDate
                                            inMode:NSDefaultRunLoopMode
                                           dequeue:YES];
-
+    if(!event)
+        break;
+        
     uint32_t mx = (uint32_t)[event locationInWindow].x;
     uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y;
     
@@ -451,6 +456,7 @@ void RenderWindowOSX::PollEvents() {
     [NSApp sendEvent:event];
     [NSApp updateWindows];
     [event release];
+    }while(event);
 }
 
 bool RenderWindowOSX::OnShouldClose()
