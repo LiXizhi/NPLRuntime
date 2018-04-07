@@ -2,7 +2,7 @@
 
 if(ANDROID)
     add_subdirectory(Android)
-else(IOS)
+elseif(IOS)
     add_subdirectory(iOS)
 elseif(WIN32)
     add_subdirectory(Windows)
