@@ -92,7 +92,7 @@ namespace ParaEngine
 		virtual bool SetClearDepth(const float depth) = 0;
 		virtual bool SetClearStencil(const int stencil) = 0;
 
-		virtual bool Clear(bool color,bool depth,float stencil) = 0;
+		virtual bool Clear(bool color,bool depth,bool stencil) = 0;
 
 		virtual bool SetScissorRect(RECT* pRect) = 0;
 		virtual bool GetScissorRect(RECT* pRect) = 0;

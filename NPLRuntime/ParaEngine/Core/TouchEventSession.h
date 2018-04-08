@@ -31,6 +31,9 @@ namespace ParaEngine
 		bool IsHandledByGUI();
 		void SetHandledByGUI(bool bHandled);
 
+		const Vector2& GetMouseMoveOffset() const;
+		void SetMouseMoveOffset(const Vector2& val);
+
 		static int32 GetFingerSize();
 		static int32 GetTouchDistanceBetween(TouchEvent* touch1, TouchEvent* touch2);
 	public:
@@ -39,5 +42,8 @@ namespace ParaEngine
 		TouchEvent m_current_event;
 		float m_max_delta;
 		int32 m_tag;
+		
+	private:
+		Vector2 m_vMouseMoveOffset;
 	};
 }
