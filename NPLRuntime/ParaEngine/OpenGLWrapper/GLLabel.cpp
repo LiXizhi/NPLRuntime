@@ -17,7 +17,7 @@ const int GLLabel::DistanceFieldFontSize = 50;
 bool LabelTextFormatter::multilineText(GLLabel *theLabel)
 {
 	auto limit = theLabel->_limitShowCount;
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 
 	std::vector<char16_t> multiline_string;
 	multiline_string.reserve(limit);
@@ -169,7 +169,7 @@ bool LabelTextFormatter::alignText(GLLabel *theLabel)
 	int lineNumber = 0;
 	int strLen = theLabel->_limitShowCount;
 	std::vector<char16_t> lastLine;
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 
 	if (theLabel->_labelWidth > theLabel->_contentSize.width)
 	{
@@ -289,7 +289,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	int charYOffset = 0;
 	int charAdvance = 0;
 
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 	auto fontAtlas = theLabel->_fontAtlas;
 
 	FontLetterDefinition tempDefinition;

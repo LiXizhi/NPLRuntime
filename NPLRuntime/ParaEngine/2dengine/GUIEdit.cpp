@@ -98,8 +98,9 @@ void CGUIEditBox::Clone(IObject* pobj)const
 	pEditbox->m_Buffer.SetMultiline(m_Buffer.GetMultiline());
 	//pEditbox->m_Buffer.SetFontNode(m_Buffer.GetFontNode());
 	// Mod by LiXizhi 2007.10.2. Tricky. since font element is reference type. it can not be cloned.
-	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
 #endif
+	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
+
 	pEditbox->m_nBorder = m_nBorder;
 	pEditbox->m_nSpacing = m_nSpacing;
 	pEditbox->m_bNeedUpdate = true;
@@ -484,9 +485,7 @@ void CGUIEditBox::StaticInit()
 
 	pEditbox->m_objResource->SetCurrentState();
 	pEditbox->m_objResource->SetActiveLayer();
-#ifdef USE_DIRECTX_RENDERER
 	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
-#endif
 	pEditbox->PlaceCaret(pEditbox->m_nCaret);  // Call PlaceCaret now that we have the font info (node),
 
 	pOm->SetObject("default_CGUIEditBox", pEditbox);
@@ -744,6 +743,11 @@ void CGUIEditBox::UpdateRects()
 
 		break;
 	}
+
+#ifndef USE_DIRECTX_RENDERER
+	m_Buffer.SetRect(m_objResource->GetDrawingRects(9));
+#endif
+
 	m_bNeedUpdate = false;
 }
 
@@ -1603,7 +1607,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	if (m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
 	{
 		// Start the rectangle with insert mode caret
-#ifdef PARAENGINE_MOBILE
+#if defined( PARAENGINE_MOBILE) && 0
 		// mobile version does not support CPtoXY function, so we will just calculate the text width. 
 		RECT rcCaret = {0,0,0,0};
 		GetPainter(pGUIState)->CalcTextRect(texBuffer + m_nFirstVisible, pFontElement, &rcCaret, 0, m_nCaret - m_nFirstVisible);

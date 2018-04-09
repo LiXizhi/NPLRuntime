@@ -1,5 +1,8 @@
 #pragma once
 #include "SpriteFontEntity.h"
+#include "2dengine/FontRendererOpenGL.h"
+
+
 
 namespace ParaEngine
 {
@@ -22,6 +25,13 @@ namespace ParaEngine
 		virtual HRESULT InitDeviceObjects();
 
 		virtual HRESULT DeleteDeviceObjects();
+
+		//std::vector<GLLabel::LetterInfo>* GetLettersInfo(const char16_t* strText, int nCount, const RECT& rect, DWORD dwTextFormat, float& lableHeight);
+		bool GetLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, float& lableHeight
+			, const char16_t* strText, int nCount, const RECT& rect, DWORD dwTextFormat);
+
+		int GetLineHeight(const char16_t* strText, int nCount, const RECT& rect, DWORD dwTextFormat);
+		
 
 		/** callback of listening the event that renderer was recreated on Android/WP8
 		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
