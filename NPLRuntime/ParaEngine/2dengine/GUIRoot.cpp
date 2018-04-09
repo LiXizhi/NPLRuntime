@@ -1928,7 +1928,6 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 	{
 		return;
 	}
-	
 
 	// Note: we will only translate to mouse event when is not handled by GUI control in NPL. 
 	TouchEventSession* pTouchSession = TouchSessions::GetInstance().GetTouchSession(touch.GetTouchId());
@@ -1946,11 +1945,15 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 
 			if (pTouchSession->GetTag() == 1)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT),EKeyState::RELEASE, mouse_x, mouse_y)));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT),EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
 			}
 			else if (pTouchSession->GetTag() == 2)
 			{
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y)));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, (int)mousePos.x, (int)mousePos.y, true)));
 			}
 			else if (pTouchSession->GetTag() == -1)
 			{
@@ -1960,20 +1963,21 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 				{
 					// OUTPUT_LOG("touch translate to click\n");
 					// short tap for left mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y)));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y, true)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::RELEASE, mouse_x, mouse_y, true)));
 				}
 				else
 				{
 					// long tap for right mouse click
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y)));
-					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y, true)));
+					CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::RELEASE, mouse_x, mouse_y, true)));
 				}
 			}
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_DOWN)
 		{
 			s_lastMouseWheelPosY = ui_mouse_y;
+			pTouchSession->SetMouseMoveOffset(Vector2::ZERO);
 			pTouchSession->SetTag(-1);
 		}
 		else if (touch.m_nTouchType == TouchEvent::TouchEvent_POINTER_UPDATE)
@@ -1997,15 +2001,20 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 						//mouse_x = (int)pTouchSession->GetStartEvent().m_x;
 						//mouse_y = (int)pTouchSession->GetStartEvent().m_y;
 
+						pTouchSession->SetMouseMoveOffset(pTouchSession->GetOffsetFromStartLocation());
+
+						Vector2 mousePos((float)mouse_x, (float)mouse_y);
+						mousePos -= pTouchSession->GetMouseMoveOffset();
+
 						// press hold and drag for right button drag, drag directly for left button drag. 
 						if (pTouchSession->GetDuration() < 500)
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, mouse_x, mouse_y)));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::LEFT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
 							pTouchSession->SetTag(1);
 						}
 						else
 						{
-							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, mouse_x, mouse_y)));
+							CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseButtonEvent(TranslateTouchButton(EMouseButton::RIGHT), EKeyState::PRESS, (int)mousePos.x, (int)mousePos.y, true)));
 							pTouchSession->SetTag(2);
 						}
 					}
@@ -2039,7 +2048,9 @@ void ParaEngine::CGUIRoot::TranslateTouchEvent(const TouchEvent &touch)
 					// if mouse button down state is not determined, will reset mouse to make the mouse delta to 0 in the next frame. 
 					CGUIRoot::GetInstance()->GetMouse()->ResetLastMouseState();
 				}
-				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(mouse_x,mouse_y)));
+				Vector2 mousePos((float)mouse_x, (float)mouse_y);
+				mousePos -= pTouchSession->GetMouseMoveOffset();
+				CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent((int)mousePos.x, (int)mousePos.y)));
 
 			}
 		}

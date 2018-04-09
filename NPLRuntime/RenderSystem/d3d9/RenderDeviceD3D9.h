@@ -71,7 +71,7 @@ namespace ParaEngine
 		virtual bool SetClearStencil(const int stencil) override;
 
 
-		virtual bool Clear(bool color, bool depth, float stencil) override;
+		virtual bool Clear(bool color, bool depth, bool stencil) override;
 
 
 		virtual bool SetScissorRect(RECT* pRect) override;

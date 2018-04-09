@@ -263,11 +263,12 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	if (theLabel->_labelHeight > 0)
 	{
 		auto labelHeightPixel = theLabel->_labelHeight * contentScaleFactor;
+		/*
 		if (totalHeight > labelHeightPixel)
 		{
 			int numLines = labelHeightPixel / theLabel->_commonLineHeight;
 			totalHeight = numLines * theLabel->_commonLineHeight;
-		}
+		}*/
 		switch (theLabel->_vAlignment)
 		{
 		case TextVAlignment::TOP:
@@ -329,8 +330,10 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 			nextFontPositionY -= theLabel->_commonLineHeight;
 
 			theLabel->recordPlaceholderInfo(i);
+			/* when no clipping is enabled, we will not break. 
 			if (nextFontPositionY < theLabel->_commonLineHeight)
 				break;
+			*/
 
 			lineStart = true;
 			continue;

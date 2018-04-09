@@ -13,7 +13,7 @@ using namespace ParaEngine;
 const float default_finger_size = 10.f;
 
 ParaEngine::TouchEventSession::TouchEventSession(const TouchEvent& startEvent)
-	:m_max_delta(0.f), m_tag(0)
+	:m_max_delta(0.f), m_tag(0), m_vMouseMoveOffset(0.f,0.f)
 {
 	SetStartEvent(startEvent);
 }
@@ -141,7 +141,15 @@ int32 ParaEngine::TouchEventSession::GetTouchDistanceBetween(TouchEvent* touch1,
 	return 0;
 }
 
+const ParaEngine::Vector2& ParaEngine::TouchEventSession::GetMouseMoveOffset() const
+{
+	return m_vMouseMoveOffset;
+}
 
+void ParaEngine::TouchEventSession::SetMouseMoveOffset(const Vector2& val)
+{
+	m_vMouseMoveOffset = val;
+}
 
 
 
