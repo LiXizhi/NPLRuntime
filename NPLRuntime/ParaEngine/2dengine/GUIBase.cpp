@@ -2035,7 +2035,7 @@ int ParaEngine::CGUIBase::GetChildCount()
 
 bool ParaEngine::CGUIBase::HasClickEvent()
 {
-	return HasEvent(EM_MOUSE_CLICK);
+	return HasEvent(EM_MOUSE_CLICK) || HasEvent(EM_MOUSE_DOWN) || HasEvent(EM_MOUSE_UP);
 }
 
 bool ParaEngine::CGUIBase::IsAncestorOf(CGUIBase * pChild)
