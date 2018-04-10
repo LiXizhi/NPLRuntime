@@ -24,7 +24,6 @@
 
 using namespace ParaEngine;
 
-
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 {
 	AppDelegate* myApp = static_cast<AppDelegate*>(app->userData);

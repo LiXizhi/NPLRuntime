@@ -1755,7 +1755,7 @@ void CGUIEditBox::InsertChar(WCHAR wChar, int index/* =-1 */)
 
 void CGUIEditBox::InsertCharA(CHAR Char, int index/* =-1 */)
 {
-#ifdef PARAENGINE_CLIENT
+#ifdef WIN32
 	WCHAR wChar[2];
 	char tChar[2]; tChar[0] = Char; tChar[1] = '\0';
 	if (MultiByteToWideChar(DEFAULT_GUI_ENCODING, MB_PRECOMPOSED, tChar, -1, wChar, 2) == 0)
@@ -1763,6 +1763,9 @@ void CGUIEditBox::InsertCharA(CHAR Char, int index/* =-1 */)
 		OUTPUT_LOG("error: Can't translate: %d to wide char.\n", (int)Char);
 		InsertChar(wChar[1], index);
 	}
+#else
+	WCHAR wChar = Char;
+	InsertChar(wChar, index);
 #endif
 }
 

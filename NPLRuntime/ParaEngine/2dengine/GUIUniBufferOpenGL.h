@@ -15,11 +15,11 @@ namespace ParaEngine {
 		CUniLine(CUniBuffer* pParent, int nInitialSize = 0);
 		~CUniLine();
 
-		int  GetBufferSize() const;
-		bool SetBufferSize(int nSize);
 		int  GetTextSize()  const;
 
 		const char16_t* GetBuffer() const;
+
+		const std::string& GetUtf8Text() const;
 
 		/**
 		@param nLength:	[in] Specifies the size, in bytes, of the buffer pointed to by the lpMultiByteStr parameter. If this value is zero, the function returns the number of bytes required for the buffer. (In this case, the lpMultiByteStr buffer is not used.)
@@ -29,7 +29,7 @@ namespace ParaEngine {
 		*/
 		int GetBufferA(std::string& out) const;
 
-		const char16_t& operator[](size_t n) const { return m_pwszBuffer[n]; }
+		const char16_t& operator[](size_t n) const { return m_utf16Text[n]; }
 		void Clear();
 
 		bool InsertChar(int nIndex, char16_t wchar); // Inserts the char at specified index. If nIndex == -1, insert to the end.
@@ -50,14 +50,18 @@ namespace ParaEngine {
 
 		int GetHeight();
 
+
+		bool IsDirty() const;
+
 	private:
 		void updateLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, float& labelHeight) const;
 
 	private:
-		char16_t* m_pwszBuffer;    // Buffer to hold text
-		int    m_nBufferSize;   // Size of the buffer allocated, in characters
+		std::string m_utf8Text;
+		std::u16string m_utf16Text;
 		CUniBuffer* m_pParent;
 		int m_height;
+		bool m_isDirty;
 	};
 
 
@@ -72,21 +76,8 @@ namespace ParaEngine {
 		CUniBuffer(int nInitialSize = 1);
 		~CUniBuffer();
 
-		int  GetBufferSize() const {
-			if (!m_bMultiline) {
-				return m_lines.front()->GetBufferSize();
-			}
-			return -1;
-		}
-
-		bool SetBufferSize(int nSize);
 		int  GetTextSize()const;
-		const char16_t* GetBuffer()const {
-			if (!m_bMultiline) {
-				return m_lines.front()->GetBuffer();
-			}
-			return nullptr;
-		}
+		const char16_t* GetBuffer()const;
 
 		/**
 		@param nLength:	[in] Specifies the size, in bytes, of the buffer pointed to by the lpMultiByteStr parameter. If this value is zero, the function returns the number of bytes required for the buffer. (In this case, the lpMultiByteStr buffer is not used.)
@@ -126,8 +117,8 @@ namespace ParaEngine {
 		void GetPriorItemPos(int nCP, int *pPrior);
 		void GetNextItemPos(int nCP, int *pPrior);
 
-		bool GetMultiline()const { return m_bMultiline; }
-		void SetMultiline(bool multiline) { m_bMultiline = multiline; };
+		bool GetMultiline()const;
+		void SetMultiline(bool multiline);;
 
 		/**
 		* Finds which line the nIndex character is in;
@@ -137,12 +128,13 @@ namespace ParaEngine {
 		*/
 		int GetLineAt(int nIndex);
 
-		CUniLine *GetCurLine() const { return m_curLine; };
+		CUniLine *GetCurLine() const;;
 
 		bool IsEmpty();
 
 		void SetRect(const RECT& r) { m_rect = r;  };
 		const RECT& GetRect() const { return m_rect; };
+
 
 	private:
 		bool m_bMultiline;

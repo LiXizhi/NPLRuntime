@@ -12,142 +12,56 @@ namespace ParaEngine {
 	const size_t DXUT_MAX_EDITBOXLENGTH = 0xFFFF;
 
 	CUniLine::CUniLine(CUniBuffer* pParent, int nInitialSize)
-		: m_nBufferSize(0)
-		, m_pwszBuffer(nullptr)
-		, m_pParent(pParent)
-		, m_height(-1)
+		: m_pParent(pParent), m_isDirty(true), m_height(-1)
 	{
-		if (nInitialSize > 0)
-			SetBufferSize(nInitialSize);
-	}
-
-	bool CUniLine::SetBufferSize(int nNewSize)
-	{
-		// If the current size is already the maximum allowed,
-		// we can't possibly allocate more.
-		if (m_nBufferSize == DXUT_MAX_EDITBOXLENGTH)
-			return false;
-
-		if (m_nBufferSize > nNewSize && nNewSize >= 0)
-		{
-			return true;
-		}
-
-		int nAllocateSize = (nNewSize == -1 || nNewSize < m_nBufferSize * 2) ? (m_nBufferSize ? m_nBufferSize * 2 : 16) : nNewSize * 2;
-
-		// Cap the buffer size at the maximum allowed.
-		if (nAllocateSize > DXUT_MAX_EDITBOXLENGTH)
-			nAllocateSize = DXUT_MAX_EDITBOXLENGTH;
-
-		char16_t *pTempBuffer = new char16_t[nAllocateSize];
-
-		if (!pTempBuffer)
-			return false;
-
-		if (m_pwszBuffer)
-		{
-			if (m_nBufferSize > 0)
-			{
-				memcpy(pTempBuffer, m_pwszBuffer, m_nBufferSize * sizeof(char16_t));
-			}
-			delete[] m_pwszBuffer;
-		}
-		else
-		{
-			memset(pTempBuffer, 0, sizeof(char) * nAllocateSize);
-		}
-
-		m_pwszBuffer = pTempBuffer;
-		m_nBufferSize = nAllocateSize;
-
-		return true;
 	}
 
 	//--------------------------------------------------------------------------------------
 	CUniLine::~CUniLine()
 	{
-		SAFE_DELETE(m_pwszBuffer);
 	}
 
 	//--------------------------------------------------------------------------------------
 	void CUniLine::Clear()
 	{
-		*m_pwszBuffer = (char16_t)(L'\0');
-	}
-
-	static size_t widecslen(const char16_t* pStr)
-	{
-		auto pCur = pStr;
-		while (*pCur)
-			++pCur;
-		return pCur - pStr;
-	}
-
-	static HRESULT safeWidecscpy(char16_t* pDest, size_t cbDest, const char16_t* pSrc)
-	{
-		if (cbDest == 0)
-			return S_FALSE;
-
-		while (*pSrc)
-		{
-			if (cbDest == 0)
-				return S_FALSE;
-
-			*pDest = *pSrc;
-			++pDest;
-			++pSrc;
-			--cbDest;
-		}
-		
-		if (cbDest == 0)
-			return S_FALSE;
-
-		*pDest = 0;
-
-		return S_OK;
-
+		m_utf16Text.clear();
+		m_utf8Text.clear();
+		m_isDirty = true;
 	}
 
 	//--------------------------------------------------------------------------------------
 	// Inserts the char at specified index.
 	//--------------------------------------------------------------------------------------
-	bool CUniLine::InsertChar(int nIndex, char16_t wChar)
+	bool CUniLine::InsertChar(int nIndex, char16_t wchar)
 	{
 		PE_ASSERT(nIndex >= 0);
-
-
 		if (nIndex < 0)
-			return false;  // invalid index
-		int nTextSize = widecslen(m_pwszBuffer); //lstrlenW((WCHAR*)m_pwszBuffer);
+			return false; // invalid index
+
+		auto nTextSize = m_utf16Text.size();
+
 		if (nIndex > nTextSize)
 			return false;
 
-		// Check for maximum length allowed
-		if ((nTextSize + 1) >= DXUT_MAX_EDITBOXLENGTH)
-			return false;
-
-
-		if ((nTextSize + 1) >= m_nBufferSize)
+		if (nIndex == 0)
 		{
-			if (!SetBufferSize(-1))
-				return false;  // out of memory
+			m_utf16Text = wchar + m_utf16Text;
+		}
+		else if (nIndex == nTextSize)
+		{
+			m_utf16Text += wchar;
+		}
+		else
+		{
+			std::u16string start(m_utf16Text, nIndex);
+			std::u16string end(&m_utf16Text[nIndex]);
+
+			m_utf16Text = start + wchar + end;
 		}
 
-		PE_ASSERT(m_nBufferSize >= 2);
+		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 
-		// Shift the characters after the index, start by copying the null terminator
-		char16_t* dest = m_pwszBuffer + nTextSize + 1;
-		char16_t* stop = m_pwszBuffer + nIndex;
-		char16_t* src = dest - 1;
-
-		while (dest > stop)
-		{
-			*dest-- = *src--;
-		}
-
-		// Set new character
-		m_pwszBuffer[nIndex] = wChar;
-
+		m_isDirty = true;
 		return true;
 	}
 
@@ -157,19 +71,29 @@ namespace ParaEngine {
 	//--------------------------------------------------------------------------------------
 	bool CUniLine::RemoveChar(int nIndex)
 	{
-		auto len = widecslen(m_pwszBuffer);
-		if (!len || nIndex < 0 || nIndex >= len)
-			return false;  // Invalid index
+		if (m_utf16Text.size() > 0)
+		{
+			if (nIndex >= 0 && nIndex < m_utf16Text.size())
+				m_utf16Text = m_utf16Text.substr(0, nIndex) + m_utf16Text.substr(nIndex + 1);
+			else
+				m_utf16Text = m_utf16Text.substr(0, m_utf16Text.size() - 1);
+			StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 
-		memmove(m_pwszBuffer + nIndex, m_pwszBuffer + nIndex + 1, sizeof(char16_t)* (len - nIndex));
-
+			m_isDirty = true;
+		}
 		return true;
 	}
 
 
 	bool CUniLine::ReplaceChar(int nIndex, char16_t wchar)
 	{
-		m_pwszBuffer[nIndex] = wchar;
+		if (nIndex < m_utf16Text.size())
+		{
+			m_utf16Text[nIndex] = wchar;
+			StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
+
+			m_isDirty = true;
+		}
 		return true;
 	}
 
@@ -179,70 +103,41 @@ namespace ParaEngine {
 	//--------------------------------------------------------------------------------------
 	bool CUniLine::InsertString(int nIndex, const char16_t *pStr, int nCount)
 	{
-		PE_ASSERT(nIndex >= 0);
+		m_utf16Text = m_utf16Text.substr(0, nIndex) + pStr + m_utf16Text.substr(nIndex);
+		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 
-		auto curLen = widecslen(m_pwszBuffer);
-
-		if (nIndex > curLen)
-			return false;  // invalid index
-
-	
-		if (-1 == nCount)
-			nCount = widecslen(pStr);
-
-		// Check for maximum length allowed
-		if (GetTextSize() + nCount >= DXUT_MAX_EDITBOXLENGTH)
-			return false;
-
-		if (curLen + nCount >= m_nBufferSize)
-		{
-			if (!SetBufferSize(curLen + nCount + 1))
-				return false;  // out of memory
-		}
-
-		memmove(m_pwszBuffer + nIndex + nCount, m_pwszBuffer + nIndex, sizeof(char16_t)* (curLen - nIndex + 1));
-		memcpy(m_pwszBuffer + nIndex, pStr, nCount * sizeof(char16_t));
-
+		m_isDirty = true;
 		return true;
 	}
 
 	bool CUniLine::InsertStringA(int nIndex, const char *pStr, int nCount)
 	{
-		bool rvalue = InsertString(nIndex, (const char16_t*)StringHelper::MultiByteToWideChar(pStr, DEFAULT_GUI_ENCODING), nCount);
-		return rvalue;
+		if (nIndex >= 0)
+			m_utf8Text = m_utf8Text.substr(0, nIndex) + pStr + m_utf8Text.substr(nIndex);
+		else
+			m_utf8Text += pStr;
+		StringHelper::UTF8ToUTF16_Safe(m_utf8Text, m_utf16Text);
+
+		m_isDirty = true;
+		return true;
 	}
 
 	//--------------------------------------------------------------------------------------
 	bool CUniLine::SetTextA(LPCSTR szText)
 	{
-		PE_ASSERT(szText != nullptr);
-		bool rvalue = SetText((const char16_t*)StringHelper::MultiByteToWideChar(szText, DEFAULT_GUI_ENCODING));
-		return rvalue;
+		m_utf8Text = szText;
+		StringHelper::UTF8ToUTF16_Safe(m_utf8Text, m_utf16Text);
+
+		m_isDirty = true;
+		return true;
 	}
 
 	bool CUniLine::SetText(const char16_t* wszText)
 	{
-		PE_ASSERT(wszText != nullptr);
-
-		int nRequired = int(widecslen(wszText) + 1);
-
-		// Check for maximum length allowed
-		if (nRequired >= DXUT_MAX_EDITBOXLENGTH)
-			return false;
-
-		SetBufferSize(nRequired);
-
-		// Check again in case out of memory occurred inside while loop.
-		if (GetBufferSize() >= nRequired)
-		{
-			//StringCchCopyW((WCHAR*)m_pwszBuffer, GetBufferSize(), (WCHAR*)wszText);
-
-			safeWidecscpy(m_pwszBuffer, GetBufferSize(), wszText);
-
-			return true;
-		}
-		else
-			return false;
+		m_utf16Text = wszText;
+		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
+		m_isDirty = true;
+		return true;
 	}
 
 
@@ -253,8 +148,6 @@ namespace ParaEngine {
 		std::vector<GLLabel::LetterInfo>* lettersInfo;
 		int* horizontalKernings;
 		float labelHeight;
-
-	
 
 		updateLettersInfo(lettersInfo, horizontalKernings, labelHeight);
 
@@ -433,6 +326,11 @@ namespace ParaEngine {
 		return m_height;
 	}
 
+	bool CUniLine::IsDirty() const
+	{
+		return m_isDirty;
+	}
+
 	void CUniLine::updateLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, float& labelHeight) const
 	{
 		lettersInfo = nullptr;
@@ -476,34 +374,33 @@ namespace ParaEngine {
 
 	int CUniLine::GetBufferA(std::string& out) const
 	{
-		return StringHelper::UTF16ToUTF8(GetBuffer(), out) ? (int)out.size() : 0;
+		out = m_utf8Text;
+		return m_utf8Text.size();
 	}
 	
 	int CUniLine::GetTextSize() const
 	{
-		return widecslen(m_pwszBuffer);
+		return m_utf16Text.size();
 	}
 
 	bool CUniLine::IsEmpty()
 	{
-		return (m_nBufferSize == 0 || (m_pwszBuffer && m_pwszBuffer[0] == (L'\0')));
+		return m_utf16Text.empty();
 	}
-
-	int CUniLine::GetBufferSize() const
-	{
-		return m_nBufferSize;
-	}
-
+	
 	const char16_t* CUniLine::GetBuffer() const
 	{
-		return m_pwszBuffer;
+		return m_utf16Text.c_str();
 	}
 
+	const std::string& CUniLine::GetUtf8Text() const
+	{
+		return m_utf8Text;
+	}
 
 	//--------------------------------------------------------------------------------------
 	CUniBuffer::CUniBuffer(int nInitialSize)
-		: m_bMultiline(false)
-		, m_pFontNode(nullptr)
+		: m_bMultiline(false), m_curLine(NULL),m_pFontNode(nullptr)
 	{
 		CUniLine* line = new CUniLine(this, nInitialSize);
 		m_lines.push_back(line);
@@ -512,7 +409,10 @@ namespace ParaEngine {
 	//--------------------------------------------------------------------------------------
 	CUniBuffer::~CUniBuffer()
 	{
-		Clear();
+		for (auto iter = m_lines.begin(); iter != m_lines.end(); iter++) {
+			delete (*iter);
+		}
+		m_lines.clear();
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -530,24 +430,14 @@ namespace ParaEngine {
 			return (*GetCurLine())[charpos];
 
 	}
-
-	bool CUniBuffer::SetBufferSize(int nNewSize)
-	{
-		if (!m_bMultiline) {
-			return m_lines.front()->SetBufferSize(nNewSize);
-		}
-		return false;
-	}
-
+	
 	//--------------------------------------------------------------------------------------
 	void CUniBuffer::Clear()
 	{
-		list<CUniLine*>::iterator iter;
-		for (iter = m_lines.begin(); iter != m_lines.end(); iter++) {
-			delete (*iter);
+		for (auto iter = m_lines.begin(); iter != m_lines.end(); iter++) {
+			(*iter)->Clear();
 		}
-		m_lines.clear();
-
+		m_curLine = NULL;
 	}
 
 	int CUniBuffer::GetLineAt(int nIndex)
@@ -566,6 +456,11 @@ namespace ParaEngine {
 		return -1;
 	}
 
+	ParaEngine::CUniLine * CUniBuffer::GetCurLine() const
+	{
+		return m_curLine;
+	}
+
 	int CUniBuffer::GetTextSize()const
 	{
 		int charcount = 0;
@@ -574,6 +469,14 @@ namespace ParaEngine {
 			charcount += (*iter)->GetTextSize();
 		};
 		return charcount;
+	}
+
+	const char16_t* CUniBuffer::GetBuffer() const
+	{
+		if (!m_bMultiline) {
+			return m_lines.front()->GetBuffer();
+		}
+		return nullptr;
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -639,16 +542,23 @@ namespace ParaEngine {
 
 	bool CUniBuffer::InsertStringA(int nIndex, const char *pStr, int nCount)
 	{
-		bool rvalue = InsertString(nIndex, (const char16_t*)StringHelper::MultiByteToWideChar(pStr, DEFAULT_GUI_ENCODING), nCount);
-		return rvalue;
+		PE_ASSERT(nIndex >= 0);
+
+		int charpos;
+		if ((charpos = GetLineAt(nIndex)) == -1) {
+			return false;
+		}
+		else
+			return GetCurLine()->InsertStringA(charpos, pStr, nCount);
 	}
 
 	//--------------------------------------------------------------------------------------
 	bool CUniBuffer::SetTextA(const char* szText)
 	{
 		PE_ASSERT(szText != nullptr);
-		bool rvalue = SetText((const char16_t*)StringHelper::MultiByteToWideChar(szText, DEFAULT_GUI_ENCODING));
-		return rvalue;
+
+		return m_lines.front()->SetTextA(szText);
+		//TODO: multiline support
 	}
 
 	bool CUniBuffer::SetText(const char16_t* wszText)
@@ -656,7 +566,6 @@ namespace ParaEngine {
 		PE_ASSERT(wszText != nullptr);
 		return m_lines.front()->SetText(wszText);
 		//TODO: multiline support
-
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -699,7 +608,6 @@ namespace ParaEngine {
 		}
 
 		//OUTPUT_LOG("CUniBuffer::CPtoXY : nCP = %d pX = %d pY = %d", nCP, *pX, *pY);
-
 		return S_OK;
 	}
 
@@ -727,6 +635,16 @@ namespace ParaEngine {
 		//TODO: multiline support
 	}
 
+	bool CUniBuffer::GetMultiline() const
+	{
+		return m_bMultiline;
+	}
+
+	void CUniBuffer::SetMultiline(bool multiline)
+	{
+		m_bMultiline = multiline;
+	}
+
 	int CUniBuffer::GetBufferA(std::string& out) const
 	{
 		//TODO: multiline support
@@ -735,8 +653,7 @@ namespace ParaEngine {
 
 	bool CUniBuffer::IsEmpty()
 	{
-		list<CUniLine*>::const_iterator iter;
-		for (iter = m_lines.begin(); iter != m_lines.end(); iter++) {
+		for (auto iter = m_lines.begin(); iter != m_lines.end(); iter++) {
 			if (!((*iter)->IsEmpty()))
 				return false;
 		};
@@ -745,9 +662,10 @@ namespace ParaEngine {
 
 	const std::string& CUniBuffer::GetUtf8Text() const
 	{
-		static std::string s;
-		m_lines.front()->GetBufferA(s);
-		return s;
+		if(!m_lines.empty())
+			return m_lines.front()->GetUtf8Text();
+		else
+			return CGlobals::GetString(0);
 	}
 
 } // end namespace

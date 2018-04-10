@@ -1,11 +1,7 @@
 #pragma once
 #include "PEtypes.h"
 #include "GUIBase.h"
-#if defined(USE_DIRECTX_RENDERER)
-#include "GUIUniBufferDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "GUIUniBufferOpenGL.h"
-#endif
+#include "GUIUniBuffer.h"
 #include "GUIIMEDelegate.h"
 
 namespace ParaEngine
