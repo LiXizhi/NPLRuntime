@@ -8,6 +8,7 @@ namespace ParaEngine {
 
 	struct GUIFontElement;
 	class CUniBuffer;
+	struct SpriteFontEntityOpenGL;
 
 	class CUniLine
 	{
@@ -50,6 +51,7 @@ namespace ParaEngine {
 
 		int GetHeight();
 
+		SpriteFontEntityOpenGL* GetFontEntity() const;
 
 		bool IsDirty() const;
 

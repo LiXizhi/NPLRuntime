@@ -36,10 +36,12 @@ namespace ParaEngine
 		/** callback of listening the event that renderer was recreated on Android/WP8
 		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
 		*/
-		virtual HRESULT RendererRecreated();;
+		virtual HRESULT RendererRecreated();
 
 		virtual void Cleanup();
 
+		/** scaling of the real font */
+		float GetFontScaling();
 	protected:
 		// for text-related calculations 
 		CFontRendererOpenGL*    m_fontRenderer;

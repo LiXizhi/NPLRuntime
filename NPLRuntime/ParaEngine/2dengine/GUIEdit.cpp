@@ -1607,15 +1607,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	if (m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
 	{
 		// Start the rectangle with insert mode caret
-#if defined( PARAENGINE_MOBILE) && 0
-		// mobile version does not support CPtoXY function, so we will just calculate the text width. 
-		RECT rcCaret = {0,0,0,0};
-		GetPainter(pGUIState)->CalcTextRect(texBuffer + m_nFirstVisible, pFontElement, &rcCaret, 0, m_nCaret - m_nFirstVisible);
-		rcCaret.left = rcText.left + rcCaret.right;
-		rcCaret.right = rcCaret.left + 2;
-		rcCaret.top = rcText.top;
-		rcCaret.bottom = rcText.bottom;
-#else
+
 		RECT rcCaret = { rcText.left - nXFirst + nCaretX - 1, rcText.top,
 			rcText.left - nXFirst + nCaretX + 1, rcText.bottom };
 
@@ -1628,7 +1620,6 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 			CPtoXY(m_nCaret, TRUE, &nRightEdgeX, &nRightEdgeY, true);
 			rcCaret.right = rcText.left + nXFirst + nRightEdgeX;
 		}
-#endif
 		GetPainter(pGUIState)->DrawRect(&rcCaret, m_CaretColor, m_position.GetDepth());
 	}
 	return S_OK;

@@ -34,6 +34,11 @@ void ParaEngine::SpriteFontEntityOpenGL::Cleanup()
 	SAFE_RELEASE(m_fontRenderer);
 }
 
+float ParaEngine::SpriteFontEntityOpenGL::GetFontScaling()
+{
+	return m_fontRenderer ? m_fontRenderer->GetFontScaling() : 1.0f;
+}
+
 int ParaEngine::SpriteFontEntityOpenGL::GetLineHeight(const char16_t* strText, int nCount, const RECT& rect, DWORD dwTextFormat)
 {
 	LoadAsset();

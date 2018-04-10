@@ -166,7 +166,7 @@ namespace ParaEngine {
 		auto textSize = GetTextSize();
 		size_t i;
 		size_t j = 0;
-
+		float fX = 0.f;
 		for (i = 0;
 			(i < lettersInfo->size()) && ((i - j) < textSize);
 			i++)
@@ -192,11 +192,8 @@ namespace ParaEngine {
 
 			auto horizontalKerning = horizontalKernings[hIndex];
 
-			if (pX)
-			{
-				int result = (int)(info.position.x - info.def.offsetX - horizontalKerning / 2);
-				*pX = result;
-			}
+			int result = (int)(info.position.x - info.def.offsetX - horizontalKerning / 2);
+			fX = result;
 		}
 		else
 		{
@@ -206,17 +203,22 @@ namespace ParaEngine {
 
 				if (info.def.validDefinition)
 				{
-					if (pX)
-					{
-						int result = (int)(info.position.x - info.def.offsetX + info.def.xAdvance);
-						*pX = result;
-					}
+					int result = (int)(info.position.x - info.def.offsetX + info.def.xAdvance);
+					fX = result;
 					break;
 				}
 					
 			}
 		}
-
+		if (pX)
+		{
+			auto pFont = GetFontEntity();
+			if (pFont)
+			{
+				fX = fX * pFont->GetFontScaling();
+			}
+			*pX = fX;
+		}
 		return S_OK;
 	}
 
@@ -243,6 +245,13 @@ namespace ParaEngine {
 		auto textSize = GetTextSize();
 		bool bFound = false;
 		float fX = (float)nX;
+
+		auto pFont = GetFontEntity();
+		if (pFont)
+		{
+			fX = fX / pFont->GetFontScaling();
+		}
+
 		size_t i;
 		size_t j = 0;
 		int ret = 0;
@@ -306,24 +315,34 @@ namespace ParaEngine {
 	{
 		if (m_height == -1)
 		{
-			auto pFontNode = m_pParent->GetFontNode();
-			if (!pFontNode)
+			auto pFont = GetFontEntity();
+			if (pFont)
 			{
-				auto pFont = (SpriteFontEntityOpenGL*)pFontNode->GetFont();
-				if (pFont)
-				{
-					auto dwTextFormat = pFontNode->dwTextFormat;
-					auto& rect = m_pParent->GetRect();
+				auto dwTextFormat = m_pParent->GetFontNode()->dwTextFormat;
+				auto& rect = m_pParent->GetRect();
 
-					RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
+				RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
 
 
-					m_height = pFont->GetLineHeight(GetBuffer(), -1, textRect, dwTextFormat);
-				}
+				m_height = pFont->GetLineHeight(GetBuffer(), -1, textRect, dwTextFormat);
 			}
 		}
 
 		return m_height;
+	}
+
+	ParaEngine::SpriteFontEntityOpenGL* CUniLine::GetFontEntity() const
+	{
+		auto pFontNode = m_pParent->GetFontNode();
+		if (pFontNode)
+		{
+			auto pFont = (SpriteFontEntityOpenGL*)pFontNode->GetFont();
+			if (pFont)
+			{
+				return pFont;
+			}
+		}
+		return NULL;
 	}
 
 	bool CUniLine::IsDirty() const
@@ -337,24 +356,19 @@ namespace ParaEngine {
 		horizontalKernings = nullptr;
 		labelHeight = 0;
 
-		auto pFontNode = m_pParent->GetFontNode();
-		if (pFontNode)
+		auto pFont = GetFontEntity();
+		if (pFont)
 		{
-			auto pFont = (SpriteFontEntityOpenGL*)pFontNode->GetFont();
-			if (pFont)
-			{
-				auto dwTextFormat = pFontNode->dwTextFormat;
-				auto& rect = m_pParent->GetRect();
+			auto dwTextFormat = m_pParent->GetFontNode()->dwTextFormat;
+			auto& rect = m_pParent->GetRect();
 				
-				RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
+			RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
 
-				if (!pFont->GetLettersInfo(lettersInfo, horizontalKernings, labelHeight, GetBuffer(), -1, textRect, dwTextFormat))
-				{
-					lettersInfo = nullptr;
-					horizontalKernings = nullptr;
-					labelHeight = 0;
-				}
-				
+			if (!pFont->GetLettersInfo(lettersInfo, horizontalKernings, labelHeight, GetBuffer(), -1, textRect, dwTextFormat))
+			{
+				lettersInfo = nullptr;
+				horizontalKernings = nullptr;
+				labelHeight = 0;
 			}
 		}
 	}
