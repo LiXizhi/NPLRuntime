@@ -4,21 +4,23 @@
 #include "util/StringHelper.h"
 #include "GUIUniBufferOpenGL.h"
 #include "GUIResource.h"
-
-
+#include "OpenGLWrapper/GLFontAtlas.h"
+#include "OpenGLWrapper/GLFont.h"
 
 namespace ParaEngine {
 
 	const size_t DXUT_MAX_EDITBOXLENGTH = 0xFFFF;
 
 	CUniLine::CUniLine(CUniBuffer* pParent, int nInitialSize)
-		: m_pParent(pParent), m_isDirty(true), m_height(-1)
+		: m_pParent(pParent)
+		, m_isDirty(true)
 	{
 	}
 
 	//--------------------------------------------------------------------------------------
 	CUniLine::~CUniLine()
 	{
+
 	}
 
 	//--------------------------------------------------------------------------------------
@@ -47,13 +49,13 @@ namespace ParaEngine {
 		{
 			m_utf16Text = wchar + m_utf16Text;
 		}
-		else if (nIndex == nTextSize)
+		else if (nIndex >= nTextSize)
 		{
 			m_utf16Text += wchar;
 		}
 		else
 		{
-			std::u16string start(m_utf16Text, nIndex);
+			std::u16string start(m_utf16Text.c_str(), nIndex);
 			std::u16string end(&m_utf16Text[nIndex]);
 
 			m_utf16Text = start + wchar + end;
@@ -81,6 +83,25 @@ namespace ParaEngine {
 
 			m_isDirty = true;
 		}
+		return true;
+
+		//if (m_utf16Text.size() > 0)
+		//{
+		//	if (nIndex >= m_utf16Text.size() - 1)
+		//	{
+		//		m_utf16Text = m_utf16Text.substr(0, m_utf16Text.size() - 1);
+		//	}
+		//	else if (nIndex >= 0 && nIndex < m_utf16Text.size() - 1)
+		//	{
+		//		m_utf16Text = m_utf16Text.substr(0, nIndex) + m_utf16Text.substr(nIndex + 1);
+		//	}
+		//	else
+		//	{
+		//		m_utf16Text = std::u16string(m_utf16Text.begin() + 1, m_utf16Text.end());
+		//	}
+
+		//	m_isDirty = true;
+		//}
 		return true;
 	}
 
@@ -140,112 +161,153 @@ namespace ParaEngine {
 		return true;
 	}
 
+	void CUniLine::updateLettersInfo()
+	{
+		if (IsDirty())
+		{
+			m_lettersInfo.clear();
 
+			do
+			{
+				auto pFont = GetFontEntity();
+				if (!pFont)
+					break;
+
+				auto strText = GetBuffer();
+				if (!strText || strText[0] == 0)
+					break;
+
+				auto fontAtlas = pFont->GetLabel()->getFontAtlas();
+				if (fontAtlas == nullptr)
+					break;
+
+				std::u16string utf16Text = strText;
+				// remove all '\r', since cocos font rendering only support '\n', not "\r\n"
+				utf16Text.erase(std::remove(utf16Text.begin(), utf16Text.end(), '\r'), utf16Text.end());
+
+				int letterCount = 0;
+				auto horizontalKernings = fontAtlas->getFont()->getHorizontalKerningForTextUTF16(utf16Text, letterCount);
+
+				fontAtlas->prepareLetterDefinitions(utf16Text);
+
+				auto stringLen = utf16Text.size();
+
+				int nextFontPositionX = 0;
+
+				auto contentScaleFactor = GL_CONTENT_SCALE_FACTOR();
+
+				CCRect charRect;
+				int charAdvance = 0;
+
+				FontLetterDefinition tempDefinition;
+
+				m_lettersInfo.resize(stringLen);
+				for (size_t i = 0; i < stringLen; i++)
+				{
+					char16_t c = utf16Text[i];
+					if (fontAtlas->getLetterDefinitionForChar(c, tempDefinition))
+					{
+						charAdvance = tempDefinition.xAdvance;
+					}
+					else
+					{
+						charAdvance = -1;
+					}
+
+					auto& curInfo = m_lettersInfo[i];
+					curInfo.x = nextFontPositionX;
+					curInfo.y = charAdvance + horizontalKernings[i];
+					nextFontPositionX += charAdvance + horizontalKernings[i];
+				}
+
+				delete[] horizontalKernings;
+
+				m_isDirty = false;
+
+			} while (false);
+			
+		}
+	}
+
+	void CUniLine::SetDirty()
+	{
+		m_isDirty = true;
+	}
 
 	//--------------------------------------------------------------------------------------
 	HRESULT CUniLine::CPtoX(int nCP, BOOL bTrail, int *pX)
 	{
-		std::vector<GLLabel::LetterInfo>* lettersInfo;
-		int* horizontalKernings;
-		float labelHeight;
+		updateLettersInfo();
 
-		updateLettersInfo(lettersInfo, horizontalKernings, labelHeight);
-
-		if (!lettersInfo)
+		if (m_lettersInfo.size() == 0)
 		{
 			if (pX)
-			{
-					*pX = 0;
-			}
+				*pX = 0;
+
 			return S_OK;
 		}
 
+		bool bFront = false;
+
+		nCP--;
+
 		if (nCP < 0)
+		{
+			bFront = true;
 			nCP = 0;
-
-		auto textSize = GetTextSize();
-		size_t i;
-		size_t j = 0;
-		float fX = 0.f;
-		for (i = 0;
-			(i < lettersInfo->size()) && ((i - j) < textSize);
-			i++)
-		{
-			auto& curLetter = (*lettersInfo)[i];
-			if (!curLetter.def.validDefinition)
-			{
-				j++;
-				continue;
-			}
-
-			if (nCP == i - j) break;
 		}
+		if (nCP >= m_lettersInfo.size())
+			nCP = m_lettersInfo.size() - 1;
 
-		auto hIndex = i - j;
-		if (hIndex >= textSize)
-			hIndex = textSize - 1;
+		auto& letterInfo = m_lettersInfo[nCP];
 
-		auto index = i;
-		if (index < lettersInfo->size())
-		{
-			auto& info = (*lettersInfo)[index];
-
-			auto horizontalKerning = horizontalKernings[hIndex];
-
-			int result = (int)(info.position.x - info.def.offsetX - horizontalKerning / 2);
-			fX = result;
-		}
+		float ret;
+		if (bFront)
+			ret = letterInfo.x;
 		else
-		{
-			for (i = lettersInfo->size() - 1; i >= 0; i--)
-			{
-				auto& info = (*lettersInfo)[i];
+			ret = (letterInfo.x + letterInfo.y);
 
-				if (info.def.validDefinition)
-				{
-					int result = (int)(info.position.x - info.def.offsetX + info.def.xAdvance);
-					fX = result;
-					break;
-				}
-					
-			}
-		}
-		if (pX)
+
+
+		 if (pX)
 		{
 			auto pFont = GetFontEntity();
 			if (pFont)
 			{
-				fX = fX * pFont->GetFontScaling();
+				ret *= pFont->GetFontScaling();
 			}
-			*pX = (int)(fX+0.5f);
+			*pX = (int)(ret + 0.5f);
 		}
-		return S_OK;
+
+		 return S_OK;
 	}
 
 	//--------------------------------------------------------------------------------------
 	HRESULT CUniLine::XtoCP(int nX, int *pCP, int *pnTrail)
 	{
-		std::vector<GLLabel::LetterInfo>* lettersInfo;
-		int* horizontalKernings;
-		float labelHeight;
+		updateLettersInfo();
 
-
-		updateLettersInfo(lettersInfo, horizontalKernings, labelHeight);
-
-		if (!lettersInfo || !horizontalKernings)
+		if (m_lettersInfo.size() == 0)
 		{
 			if (pCP)
-				*pCP = GetTextSize(); 
+				*pCP = 0;
 			if (pnTrail)
 				*pnTrail = 0;
 
 			return S_OK;
 		}
 
-		auto textSize = GetTextSize();
-		bool bFound = false;
-		float fX = (float)nX;
+		if (nX < 0)
+		{
+			if (pCP)
+				*pCP = 0;
+			if (pnTrail)
+				*pnTrail = TRUE;
 
+			return S_OK;
+		}
+
+		float fX = (float)nX;
 		auto pFont = GetFontEntity();
 		if (pFont)
 		{
@@ -253,82 +315,41 @@ namespace ParaEngine {
 		}
 
 		size_t i;
-		size_t j = 0;
-		int ret = 0;
-
-		for (i = 0;
-			(i < lettersInfo->size()) && ((i - j) < textSize);
-			i++)
+		bool bBack = true;
+		for (i = 0; i < m_lettersInfo.size() - 1; i++)
 		{
-			auto& curLetter = (*lettersInfo)[i];
-			if (!curLetter.def.validDefinition)
+			auto& curInfo = m_lettersInfo[i];
+
+			if (fX >= curInfo.x && fX < curInfo.x + curInfo.y)
 			{
-				j++;
-				continue;
-			}
-
-			ret = (int)(i - j);
-
-			auto& def = curLetter.def;
-			auto& curPos = curLetter.position;
-			auto horizontalKerning = horizontalKernings[ret];
-			auto nextHorizontalKerning = 0;
-
-			if (ret + 1 < textSize)
-			{
-				nextHorizontalKerning = horizontalKernings[ret + 1];
-			}
-
-			auto x = curPos.x - def.offsetX - horizontalKerning / 2;
-			auto w = horizontalKerning / 2 + def.xAdvance + nextHorizontalKerning / 2;
-
-			
-
-			if (ret == 0 && fX < x)	break;
-			if (ret == textSize - 1 && fX >= x + w) break;
-
-			if (fX >= x && fX < x + w)
-			{
-				bFound = true;
+				bBack = false;
 				break;
 			}
 		}
 
-		if (bFound)
-		{
-			if (pnTrail)
-				*pnTrail = FALSE;
-		}
-		else
-		{
-			if (pnTrail)
-				*pnTrail = TRUE;
-		}
 		
+		if (pnTrail)
+			*pnTrail = bBack ? TRUE : FALSE;
 		if (pCP)
-			*pCP = ret;
-
+			*pCP = (int)i;
 		return S_OK;
 	}
 
 	int CUniLine::GetHeight()
 	{
-		if (m_height == -1)
+		updateLettersInfo();
+
+		auto pFont = GetFontEntity();
+		if (pFont)
 		{
-			auto pFont = GetFontEntity();
-			if (pFont)
+			auto fontAtlas = pFont->GetLabel()->getFontAtlas();
+			if (fontAtlas)
 			{
-				auto dwTextFormat = m_pParent->GetFontNode()->dwTextFormat;
-				auto& rect = m_pParent->GetRect();
-
-				RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
-
-
-				m_height = pFont->GetLineHeight(GetBuffer(), -1, textRect, dwTextFormat);
+				return (int)fontAtlas->getCommonLineHeight();
 			}
 		}
 
-		return m_height;
+		return 0;
 	}
 
 	ParaEngine::SpriteFontEntityOpenGL* CUniLine::GetFontEntity() const
@@ -350,28 +371,6 @@ namespace ParaEngine {
 		return m_isDirty;
 	}
 
-	void CUniLine::updateLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, float& labelHeight) const
-	{
-		lettersInfo = nullptr;
-		horizontalKernings = nullptr;
-		labelHeight = 0;
-
-		auto pFont = GetFontEntity();
-		if (pFont)
-		{
-			auto dwTextFormat = m_pParent->GetFontNode()->dwTextFormat;
-			auto& rect = m_pParent->GetRect();
-				
-			RECT textRect = { 0, 0, rect.right - rect.left, rect.bottom - rect.top };
-
-			if (!pFont->GetLettersInfo(lettersInfo, horizontalKernings, labelHeight, GetBuffer(), -1, textRect, dwTextFormat))
-			{
-				lettersInfo = nullptr;
-				horizontalKernings = nullptr;
-				labelHeight = 0;
-			}
-		}
-	}
 
 	//--------------------------------------------------------------------------------------
 	void CUniLine::GetPriorItemPos(int nCP, int *pPrior)

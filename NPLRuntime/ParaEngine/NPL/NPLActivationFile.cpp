@@ -23,6 +23,14 @@ extern "C"
 	NPL.activate("protocol/pb.cpp");
 	*/
 	extern PE_CORE_DECL NPL::NPLReturnCode NPL_activate_protocol_pb_cpp(NPL::INPLRuntimeState* pState);
+
+#ifdef ANDROID
+	/** to load the lib, please call:
+	NPL.call("LuaJavaBridge.cpp", {});
+	NPL.activate("LuaJavaBridge.cpp");
+	*/
+	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaJavaBridge_cpp(NPL::INPLRuntimeState* pState);
+#endif
 }
 
 
@@ -34,6 +42,9 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 	// Load callback table
 	m_callbackTable["NPL_activate_protocol_pb_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_protocol_pb_cpp;
 	
+#ifdef ANDROID
+	m_callbackTable["NPL_activate_LuaJavaBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaJavaBridge_cpp;
+#endif
 
 
 	SetFunctionByName(filename);

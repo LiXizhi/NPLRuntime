@@ -30,12 +30,6 @@ namespace ParaEngine
 
 		void RendererRecreated();
 
-		bool GetLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, const char16_t* strText, const RECT& rect, DWORD dwTextFormat);
-		int GetLineHeight(const char16_t* strText, const RECT& rect, DWORD dwTextFormat);
-
-	private:
-		bool updateTextWithoutDraw(const char16_t* strText, const RECT& rect, DWORD dwTextFormat);
-
 	protected:
 		int m_nFontSize;
 		// to minimize the total number of font used, the real font-size may be smaller than the m_nFontSize, and a scale factor is used during rendering. 

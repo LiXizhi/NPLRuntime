@@ -54,16 +54,16 @@ namespace ParaEngine {
 		SpriteFontEntityOpenGL* GetFontEntity() const;
 
 		bool IsDirty() const;
+		void SetDirty();
 
 	private:
-		void updateLettersInfo(std::vector<GLLabel::LetterInfo>*& lettersInfo, int*& horizontalKernings, float& labelHeight) const;
-
+		void updateLettersInfo();
 	private:
 		std::string m_utf8Text;
 		std::u16string m_utf16Text;
 		CUniBuffer* m_pParent;
-		int m_height;
 		bool m_isDirty;
+		std::vector<Vector2> m_lettersInfo;
 	};
 
 
