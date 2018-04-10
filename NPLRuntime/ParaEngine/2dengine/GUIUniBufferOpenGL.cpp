@@ -217,7 +217,7 @@ namespace ParaEngine {
 			{
 				fX = fX * pFont->GetFontScaling();
 			}
-			*pX = fX;
+			*pX = (int)(fX+0.5f);
 		}
 		return S_OK;
 	}
