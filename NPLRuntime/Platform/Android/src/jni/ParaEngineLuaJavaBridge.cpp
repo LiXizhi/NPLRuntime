@@ -8,6 +8,7 @@ extern "C" {
 	JNIEXPORT jint JNICALL Java_com_tatfook_paracraft_ParaEngineLuaJavaBridge_callLuaFunctionWithString(JNIEnv *env, jclass, jint luaFunctionId, jstring value)
 	{
 		std::string strValue = JniHelper::getStringUTFCharsJNI(env, value);
+		env->DeleteLocalRef(value);
 		int ret = LuaJavaBridge::callLuaFunctionById(luaFunctionId, strValue.c_str());
 		return ret;
 	}
