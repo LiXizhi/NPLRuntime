@@ -132,13 +132,74 @@ namespace ParaEngine {
 
 		} FunctionInfo;
 
+
+		struct JValues
+		{
+			JValues() : jargs(nullptr) {};
+			JValues(size_t i)
+				: jargs(nullptr)
+			{
+				create(i);
+			}
+
+			void create(size_t i)
+			{
+				jargs = new jvalue[i];
+			}
+
+			void clear()
+			{
+				if (!jargs)
+				{
+					for (size_t i = 0; i < releaseIndex.size(); i++)
+					{
+						auto index = releaseIndex[i];
+						auto jstr = jargs[index].l;
+
+						JniHelper::getEnv()->DeleteLocalRef(jstr);
+					}
+					
+					releaseIndex.clear();
+
+					delete[] jargs;
+					jargs = nullptr;
+				}
+			}
+
+			void needRelease(size_t i)
+			{
+				releaseIndex.push_back(i);
+			}
+
+			~JValues()
+			{
+				clear();
+			}
+
+
+			std::vector<size_t> releaseIndex;
+			jvalue *jargs;
+		};
+
 		struct JObject
 		{
-			JObject() 
-				: m_obj(nullptr)
+			struct Handle
 			{
-				
+				Handle(jobject o) : m_obj(o) {};
+				Handle() : m_obj(nullptr) {};
+				~Handle()
+				{
+					if (m_obj)
+						JniHelper::getEnv()->DeleteLocalRef(m_obj);
+				}
+
+				jobject m_obj;
 			};
+
+			JObject()
+			{
+
+			}
 
 			JObject(jobject o)
 			{
@@ -147,37 +208,37 @@ namespace ParaEngine {
 
 			JObject(JObject const&  other)
 			{
-				set(other.m_obj);
+				m_handle = other.m_handle;
 			}
 
 			JObject& operator=(JObject const& other)
 			{
-				set(other.m_obj);
+				m_handle = other.m_handle;
 			}
 
-
-			~JObject()
+			jobject get() const
 			{
-				if (m_obj)
-					JniHelper::getEnv()->DeleteLocalRef(m_obj);
-			}
-
-			jobject get() { return m_obj; };
-			void set(jobject o)
-			{ 
-				if (m_obj)
-					JniHelper::getEnv()->DeleteLocalRef(m_obj);
-
-				if (o)
-					m_obj = JniHelper::getEnv()->NewLocalRef(o);
+				if (m_handle.get())
+					return m_handle->m_obj;
 				else
-					m_obj = nullptr;
+					return nullptr;
 			};
 
-			jobject m_obj;
+			void set(jobject o)
+			{
+				auto cur = get();
+				if (o == cur)
+					return;
 
+				if (o)
+					o = JniHelper::getEnv()->NewLocalRef(o);
+				m_handle.reset(new Handle(o));
+			}
+
+
+			std::shared_ptr<Handle> m_handle;
 		};
-		
+
 		static luabind::object callJavaStaticMethod(const std::string& className, const std::string& functionName, const std::string& sig, const luabind::object& argvs, lua_State *L);
 		static luabind::object callJavaMethod(JObject& o, const std::string& functionName, const std::string& sig, const luabind::object& argvs, lua_State *L);
 		static void releaseJavaObjcet(jobject o);
@@ -185,8 +246,8 @@ namespace ParaEngine {
 
 		static int validateMethodSig(const std::string& sig, FunctionInfo& info);
 		static ValueType checkType(const std::string& sig, size_t *pos);
-		static bool convertType(JNIEnv* env, jvalue& value, ValueType type, const luabind::object& o);
-		static jvalue* buildJavaValues(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs);
+		static bool convertType(JNIEnv* env, JValues& values, size_t index, ValueType type, const luabind::object& o);
+		static bool buildJavaValues(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs, JValues& ret);
 
 		static bool callStaticVoidMethod(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs);
 		static bool callStaticIntMethod(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs, int& ret);

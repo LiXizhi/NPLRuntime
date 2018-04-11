@@ -9,9 +9,11 @@
 
 namespace ParaEngine {
 
-	bool LuaJavaBridge::convertType(JNIEnv* env, jvalue& value, ValueType type, const luabind::object& o)
+	bool LuaJavaBridge::convertType(JNIEnv* env, JValues& values, size_t index, ValueType type, const luabind::object& o)
 	{
 		auto objectType = luabind::type(o);
+
+		jvalue& value = values.jargs[index];
 
 		switch (type)
 		{
@@ -64,6 +66,8 @@ namespace ParaEngine {
 				if (objectType == LUA_TSTRING)
 				{
 					value.l = env->NewStringUTF(luabind::object_cast<const char*>(o));
+					values.needRelease(index);
+
 					return true;
 				}
 				else
@@ -149,35 +153,34 @@ namespace ParaEngine {
 		}
 	}
 
-	jvalue* LuaJavaBridge::buildJavaValues(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs)
+	bool LuaJavaBridge::buildJavaValues(JniMethodInfo& t, FunctionInfo& info, const luabind::object& argvs, JValues& ret)
 	{
 		auto count = info.argvs.size();
 
 		luabind::iterator itr(argvs), end;
 
-		jvalue *jargs = new jvalue[count];
+		ret.create(count);
 
 		for (size_t i = 0; i < count; i++)
 		{
 			if (itr == end)
 			{
 				OUTPUT_LOG("param not enough, need = %d, has = %d", (int)info.argvs.size(), (int)i);
-				delete[] jargs;
-				return nullptr;
+				return false;
 			}
 
 
 			auto& arg = info.argvs[i];
-			if (!convertType(t.env, jargs[i], arg, *itr))
+			if (!convertType(t.env, ret, i, arg, *itr))
 			{
 				OUTPUT_LOG("param type '%d' is not supported, index = %d", static_cast<int>(arg), (int)i);
-				delete[] jargs;
-				return nullptr;
+				return false;
 			}
 		}
 
-		return jargs;
+		return true;
 	}
+
 
 	bool LuaJavaBridge::callVoidMethod(JniMethodInfo& t, FunctionInfo& info, JObject& jobj, const luabind::object& argvs)
 	{
@@ -185,12 +188,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			t.env->CallVoidMethodA(jobj.get(), t.methodID, jargs);
-			delete[] jargs;
+			t.env->CallVoidMethodA(jobj.get(), t.methodID, v.jargs);
 		}
 		else
 		{
@@ -206,12 +208,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallIntMethodA(jobj.get(), t.methodID, jargs);
-			delete[] jargs;
+			ret = t.env->CallIntMethodA(jobj.get(), t.methodID, v.jargs);
 		}
 		else
 		{
@@ -227,12 +228,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallFloatMethodA(jobj.get(), t.methodID, jargs);
-			delete[] jargs;
+			ret = t.env->CallFloatMethodA(jobj.get(), t.methodID, v.jargs);
 		}
 		else
 		{
@@ -249,11 +249,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallBooleanMethodA(jobj.get(), t.methodID, jargs);
+			ret = t.env->CallBooleanMethodA(jobj.get(), t.methodID, v.jargs);
 		}
 		else
 		{
@@ -270,12 +270,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			jstring _ret = (jstring)t.env->CallObjectMethodA(jobj.get(), t.methodID, jargs);
-			delete[] jargs;
+			jstring _ret = (jstring)t.env->CallObjectMethodA(jobj.get(), t.methodID, v.jargs);
 
 			ret = JniHelper::jstring2string(_ret);
 			t.env->DeleteLocalRef(_ret);
@@ -296,14 +295,13 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			auto jo = t.env->CallObjectMethodA(jobj.get(), t.methodID, jargs);
+			auto jo = t.env->CallObjectMethodA(jobj.get(), t.methodID, v.jargs);
 			ret.set(jo);
 			t.env->DeleteLocalRef(jo);
-			delete[] jargs;
 		}
 		else
 		{
@@ -321,12 +319,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallStaticFloatMethodA(t.classID, t.methodID, jargs);
-			delete[] jargs;
+			ret = t.env->CallStaticFloatMethodA(t.classID, t.methodID, v.jargs);
 		}
 		else
 		{
@@ -342,14 +339,13 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			auto jobj = t.env->CallStaticObjectMethodA(t.classID, t.methodID, jargs);
+			auto jobj = t.env->CallStaticObjectMethodA(t.classID, t.methodID, v.jargs);
 			ret.set(jobj);
 			t.env->DeleteLocalRef(jobj);
-			delete[] jargs;
 		}
 		else
 		{
@@ -367,12 +363,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			jstring _ret = (jstring)t.env->CallStaticObjectMethodA(t.classID, t.methodID, jargs);
-			delete[] jargs;
+			jstring _ret = (jstring)t.env->CallStaticObjectMethodA(t.classID, t.methodID, v.jargs);
 
 			ret = JniHelper::jstring2string(_ret);
 			t.env->DeleteLocalRef(_ret);
@@ -394,11 +389,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallStaticBooleanMethodA(t.classID, t.methodID, jargs);
+			ret = t.env->CallStaticBooleanMethodA(t.classID, t.methodID, v.jargs);
 		}
 		else
 		{
@@ -414,12 +409,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			ret = t.env->CallStaticIntMethodA(t.classID, t.methodID, jargs);
-			delete[] jargs;
+			ret = t.env->CallStaticIntMethodA(t.classID, t.methodID, v.jargs);
 		}
 		else
 		{
@@ -436,12 +430,11 @@ namespace ParaEngine {
 
 		if (count > 0)
 		{
-			auto jargs = buildJavaValues(t, info, argvs);
-			if (!jargs)
+			JValues v;
+			if (!buildJavaValues(t, info, argvs, v))
 				return false;
 
-			t.env->CallStaticVoidMethodA(t.classID, t.methodID, jargs);
-			delete[] jargs;
+			t.env->CallStaticVoidMethodA(t.classID, t.methodID, v.jargs);
 		}
 		else
 		{
