@@ -77,19 +77,19 @@ ClassDescriptor* PhysicsBT_GetClassDesc()
 }
 
 // following is only compiled if dynamically linked 
-#if !defined(STATIC_LIBRARY)
-// forward declare of exported functions. 
-#ifdef __cplusplus
-extern "C" {
-#endif
-	CORE_EXPORT_DECL const char* LibDescription();
-	CORE_EXPORT_DECL int LibNumberClasses();
-	CORE_EXPORT_DECL unsigned long LibVersion();
-	CORE_EXPORT_DECL ParaEngine::ClassDescriptor* LibClassDesc(int i);
-	CORE_EXPORT_DECL void LibInit();
-	CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid);
-#ifdef __cplusplus
-}   /* extern "C" */
+#if !defined(PHYSICS_STATICLIB)
+	// forward declare of exported functions. 
+	#ifdef __cplusplus
+	extern "C" {
+	#endif
+		CORE_EXPORT_DECL const char* LibDescription();
+		CORE_EXPORT_DECL int LibNumberClasses();
+		CORE_EXPORT_DECL unsigned long LibVersion();
+		CORE_EXPORT_DECL ParaEngine::ClassDescriptor* LibClassDesc(int i);
+		CORE_EXPORT_DECL void LibInit();
+		CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid);
+	#ifdef __cplusplus
+	}   /* extern "C" */
 #endif
 
 GetClassDescMethod Plugins[] =

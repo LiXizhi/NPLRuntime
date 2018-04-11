@@ -318,7 +318,7 @@ IParaPhysicsActor* ParaEngine::CParaPhysicsWorld::RaycastClosestShape(const PARA
 	else
 	{
 		hit.m_vHitPointWorld = CONVERT_PARAVECTOR3(vTo);
-		hit.m_vHitNormalWorld = CONVERT_PARAVECTOR3(btVector3(1.0, 0.0, 0.0));
+		hit.m_vHitNormalWorld = PARAVECTOR3(1.0f, 1.0f, 1.0f); //CONVERT_PARAVECTOR3(btVector3(1.0, 0.0, 0.0));
 		return NULL;
 	}
 }

@@ -436,7 +436,7 @@ void CPhysicsWorld::ReleaseActor(IParaPhysicsActor* pActor)
 }
 
 // iOS does not support dynamically loaded dll, hence we will use statically linked plugin. 
-#if defined(STATIC_PLUGIN_PHYSICS_BT)
+#if defined(PHYSICS_STATICLIB)
 extern ClassDescriptor* PhysicsBT_GetClassDesc();
 #endif
 
@@ -445,7 +445,7 @@ IParaPhysics* CPhysicsWorld::GetPhysicsInterface()
 	if(m_pPhysicsWorld)
 		return m_pPhysicsWorld;
 
-#ifdef STATIC_PLUGIN_PHYSICS_BT
+#ifdef PHYSICS_STATICLIB
 	ClassDescriptor* pClassDesc = PhysicsBT_GetClassDesc();
 	if (pClassDesc && (strcmp(pClassDesc->ClassName(), "IParaPhysics") == 0))
 	{
