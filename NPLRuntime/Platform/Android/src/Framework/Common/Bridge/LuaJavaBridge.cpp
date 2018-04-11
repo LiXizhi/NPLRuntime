@@ -65,7 +65,8 @@ namespace ParaEngine {
 			{
 				if (objectType == LUA_TSTRING)
 				{
-					value.l = env->NewStringUTF(luabind::object_cast<const char*>(o));
+					const char* p = luabind::object_cast<const char*>(o);
+					value.l = env->NewStringUTF(p);
 					values.needRelease(index);
 
 					return true;
@@ -135,7 +136,7 @@ namespace ParaEngine {
 					try
 					{
 						JObject obj = luabind::object_cast<JObject>(o);
-						value.l = env->NewLocalRef(obj.get());
+						value.l = obj.get();
 					}
 					catch (...)
 					{

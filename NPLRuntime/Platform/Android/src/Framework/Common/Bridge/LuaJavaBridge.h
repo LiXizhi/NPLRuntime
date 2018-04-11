@@ -154,11 +154,10 @@ namespace ParaEngine {
 					for (size_t i = 0; i < releaseIndex.size(); i++)
 					{
 						auto index = releaseIndex[i];
-						auto jstr = jargs[index].l;
+						auto jstr = (jstring)jargs[index].l;
 
 						JniHelper::getEnv()->DeleteLocalRef(jstr);
 					}
-					
 					releaseIndex.clear();
 
 					delete[] jargs;
@@ -190,7 +189,7 @@ namespace ParaEngine {
 				~Handle()
 				{
 					if (m_obj)
-						JniHelper::getEnv()->DeleteLocalRef(m_obj);
+						JniHelper::getEnv()->DeleteGlobalRef(m_obj);
 				}
 
 				jobject m_obj;
@@ -226,12 +225,8 @@ namespace ParaEngine {
 
 			void set(jobject o)
 			{
-				auto cur = get();
-				if (o == cur)
-					return;
-
 				if (o)
-					o = JniHelper::getEnv()->NewLocalRef(o);
+					o = JniHelper::getEnv()->NewGlobalRef(o);
 				m_handle.reset(new Handle(o));
 			}
 
