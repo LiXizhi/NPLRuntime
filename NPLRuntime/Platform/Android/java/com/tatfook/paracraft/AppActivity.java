@@ -110,7 +110,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
             return false; 
 		}
         else {    
-            return super.onKeyDown(keyCode, event);    
+            return super.onKeyUp(keyCode, event);    
         }    
 	}
 
