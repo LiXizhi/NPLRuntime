@@ -157,7 +157,11 @@ elseif(WIN32)
         _WIN32_WINNT=0x0501
         _WINSOCK_DEPRECATED_NO_WARNINGS
     )
-elseif(APPLE)
+elseif(IOS)
+    set(PLATROM_SPEC_DEFINITIONS 
+        PLATFORM_IOS
+    ) 
+elseif(APPLE AND NOT IOS)
     set(PLATROM_SPEC_DEFINITIONS 
         PLATFORM_MAC
     )
