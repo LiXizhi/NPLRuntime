@@ -18,7 +18,7 @@
 #include <boost/system/system_error.hpp>
 #include <string>
 #include <deque>
-#include <boost/thread.hpp>
+#include <boost/thread.hpp>∫
 #include <CoreServices/CoreServices.h>
 
 namespace boost {
