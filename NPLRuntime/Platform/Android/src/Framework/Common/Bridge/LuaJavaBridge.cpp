@@ -177,6 +177,8 @@ namespace ParaEngine {
 				OUTPUT_LOG("param type '%d' is not supported, index = %d", static_cast<int>(arg), (int)i);
 				return false;
 			}
+
+			itr++;
 		}
 
 		return true;
@@ -564,7 +566,7 @@ namespace ParaEngine {
 		, lua_State *L)
 	{
 		JniMethodInfo mInfo;
-		if (!JniHelper::getMethodInfo(mInfo, className.c_str(), functionName.c_str(), sig.c_str()))
+		if (!JniHelper::getStaticMethodInfo(mInfo, className.c_str(), functionName.c_str(), sig.c_str()))
 		{
 			OUTPUT_LOG("callJavaStaticMethod: Failed to find method id of %s.%s %s", className.c_str(), functionName.c_str(), sig.c_str());
 			return object();
