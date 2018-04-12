@@ -285,7 +285,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetClipPlane(uint32_t Index, const float* p
 bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
 {
 	// needs to invert Y, since opengl use upward Y.
-	glReadPixels(nLeft, m_RenderTargetHeight - nTop, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
+	glReadPixels(nLeft, m_RenderTargetHeight - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
 	return true;
 }
 

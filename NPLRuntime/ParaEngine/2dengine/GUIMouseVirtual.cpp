@@ -132,43 +132,61 @@ bool ParaEngine::CGUIMouseVirtual::ReadBufferedData()
 	//Only immediate button data are read from direct input. */
 	bool bHasMouseMove = false;
 	m_dwElements = 0;
+	int nFirstMouseMoveIndex = -1;
 	int lastX = m_curMouseState.x, lastY = m_curMouseState.y;
 	//translating windows message into DirectMouse-like events, in order to maintain consistency of the interface
-	for (int a = 0; a < m_buffered_mouse_msgs_count; m_dwElements++, a++)
+	for (int a = 0; a < m_buffered_mouse_msgs_count; a++)
 	{
 		auto& e = m_buffered_mouse_msgs[a];
 		switch (e->GetEventType())
 		{
-		default:
-			assert(false);
-			break;
-		case EMouseEventType::Unknown:
-			assert(false);
-			break;
-		case EMouseEventType::Button:
-		{
-			DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
-			m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
-			m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
-			ResetLastMouseState();
-		}break;
-		case EMouseEventType::Move:
-		{
-			const DeviceMouseMoveEvent* moveEvent = (DeviceMouseMoveEvent*)(e.get());
-			m_curMouseState.x = moveEvent->GetX();
-			m_curMouseState.y = moveEvent->GetY();
-			m_dims2.x = m_curMouseState.x - lastX;
-			m_dims2.y = m_curMouseState.y - lastY;
-			bHasMouseMove = true;
-		}break;
-		case EMouseEventType::Wheel:
-		{
-			const DeviceMouseWheelEvent* whellEvent = (DeviceMouseWheelEvent*)(e.get());
-			m_curMouseState.z = whellEvent->GetWhell();
-			break;
+			case EMouseEventType::Button:
+			{
+				DeviceMouseButtonEvent* buttonEvent = (DeviceMouseButtonEvent*)(e.get());
+				m_curMouseState.buttons[(int)buttonEvent->GetButton()] = buttonEvent->GetKeyState();
+				m_curMouseState.x = buttonEvent->GetX(); m_curMouseState.y = buttonEvent->GetY();
+				ResetLastMouseState();
+				if (nFirstMouseMoveIndex > 0) {
+					// this will disable merging mouse move event, if there is any button event in the middle.
+					nFirstMouseMoveIndex = -1;
+				}
+				break;
+			}
+			case EMouseEventType::Move:
+			{
+				const DeviceMouseMoveEvent* moveEvent = (DeviceMouseMoveEvent*)(e.get());
+				m_curMouseState.x = moveEvent->GetX();
+				m_curMouseState.y = moveEvent->GetY();
+				m_dims2.x = m_curMouseState.x - lastX;
+				m_dims2.y = m_curMouseState.y - lastY;
+				if (nFirstMouseMoveIndex < 0)
+					nFirstMouseMoveIndex = m_dwElements;
+			
+				bHasMouseMove = true;
+				break;
+			}
+			case EMouseEventType::Wheel:
+			{
+				const DeviceMouseWheelEvent* whellEvent = (DeviceMouseWheelEvent*)(e.get());
+				m_curMouseState.z = whellEvent->GetWhell();
+				break;
+			}
+			case EMouseEventType::Unknown:
+			default:
+			{
+				assert(false);
+				break;
+			}
 		}
+
+		if (e->GetEventType() == EMouseEventType::Move && nFirstMouseMoveIndex>=0 && nFirstMouseMoveIndex != m_dwElements) {
+			// merge with previous mouse move event
+			m_didod[nFirstMouseMoveIndex] = e;
 		}
-		m_didod[m_dwElements] = e;
+		else {
+			m_didod[m_dwElements] = e;
+			m_dwElements++;
+		}
 	}
 	m_buffered_mouse_msgs_count = 0;
 	return S_OK;

@@ -479,7 +479,16 @@ bool ParaEngine::CFileUtils::FileExistRaw(const char* filename)
 
 int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 {
-	return (int)fs::file_size(sFilePath);
+	int nResult = 0;
+	try
+	{
+		nResult = (int)fs::file_size(sFilePath);
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("error: failed to get file size of %s\n", sFilePath);
+	}
+	return nResult;
 }
 
 ParaEngine::FileHandle ParaEngine::CFileUtils::OpenFile(const char* filename, bool bRead /*= false*/, bool bWrite/*=true*/)
