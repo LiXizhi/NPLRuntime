@@ -47,6 +47,10 @@ namespace ParaEngine
 		virtual void OnTouch(const std::vector<TouchEventPtr>& events);
 		virtual void OnKey(const EVirtualKey& key, const EKeyState& state);
 
+	private:
+		void onCmdLine(const std::string& cmd);
+
+
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
 		bool m_isPaused;

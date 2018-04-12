@@ -84,6 +84,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 	private native void unloadNativeCode(long handle);
 	private native void onPauseNative(long handle);
 	private native void onResumeNative(long handle);
+	//private native void onNewIntentNative(long handle);
 	private native void onStartNative(long handle);
 	private native void onStopNative(long handle);
 	private native void onConfigurationChangedNative(long handle);
@@ -93,6 +94,8 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 	private native void onSurfaceChangedNative(long handle, Surface surface, int format, int width, int height);
 	private native void onSurfaceRedrawNeededNative(long handle, Surface surface);
 	private native void onSurfaceDestroyedNative(long handle);
+	
+	
 
 	private native byte[] onSaveInstanceStateNative(long handle);
 
@@ -201,15 +204,19 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 		}
 	}
 
+	private boolean m_bFirstGet = true;
+
 	public String getLauncherIntentData() {
-		Intent intent = getIntent();
-		if (intent != null) {
-			String action = intent.getAction();
-			if ("android.intent.action.VIEW" == action) {
-				return intent.getDataString();
+		if (m_bFirstGet) { 
+			Intent intent = getIntent();
+			if (intent != null) {
+				String action = intent.getAction();
+				if ("android.intent.action.VIEW" == action) {
+					m_bFirstGet = false;
+					return intent.getDataString();
+				}
 			}
 		}
-
 		return "";
 	}
 
@@ -265,6 +272,9 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 	@Override
     protected void onResume() {
         super.onResume();
+
+		
+
         onResumeNative(mNativeHandle);
     }
 
