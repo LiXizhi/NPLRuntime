@@ -454,6 +454,8 @@ namespace ParaEngine {
 		, lua_State *L)
 	{
 		JniMethodInfo mInfo;
+		bool callSuccess = false;
+
 		if (!JniHelper::getMethodInfo(mInfo, jobj.get(), functionName.c_str(), sig.c_str()))
 		{
 			OUTPUT_LOG("callJavaMethod: Failed to find method id of %s %s", functionName.c_str(), sig.c_str());
@@ -545,18 +547,39 @@ namespace ParaEngine {
 
 				default:
 				{
+					goto error_end;
 					break;
 				}
 			}
 
+			if (mInfo.env->ExceptionCheck() == JNI_TRUE)
+			{
+				mInfo.env->ExceptionDescribe();
+				mInfo.env->ExceptionClear();
+				break;
+			}
+			else
+			{
+				callSuccess = true;
+			}
+
 			mInfo.env->DeleteLocalRef(mInfo.classID);
-			return ret;
+
+			auto t = luabind::newtable(L);
+			t["success"] = callSuccess;
+			t["result"] = ret;
+
+			return t;
 
 		} while (false);
 
 	error_end:
 		mInfo.env->DeleteLocalRef(mInfo.classID);
-		return object();
+
+
+		auto t = luabind::newtable(L);
+		t["success"] = false;
+		return t;
 	}
 
 	luabind::object LuaJavaBridge::callJavaStaticMethod(const std::string& className
@@ -566,6 +589,8 @@ namespace ParaEngine {
 		, lua_State *L)
 	{
 		JniMethodInfo mInfo;
+		bool callSuccess = false;
+
 		if (!JniHelper::getStaticMethodInfo(mInfo, className.c_str(), functionName.c_str(), sig.c_str()))
 		{
 			OUTPUT_LOG("callJavaStaticMethod: Failed to find method id of %s.%s %s", className.c_str(), functionName.c_str(), sig.c_str());
@@ -657,18 +682,38 @@ namespace ParaEngine {
 
 				default:
 				{
+					goto error_end;
 					break;
 				}
 			}
 
+			if (mInfo.env->ExceptionCheck() == JNI_TRUE)
+			{
+				mInfo.env->ExceptionDescribe();
+				mInfo.env->ExceptionClear();
+				break;
+			}
+			else
+			{
+				callSuccess = true;
+			}
+
 			mInfo.env->DeleteLocalRef(mInfo.classID);
-			return ret;
+
+			auto t = luabind::newtable(L);
+			t["success"] = callSuccess;
+			t["result"] = ret;
+
+			return t;
 
 		} while (false);
 
 	error_end:	
 		mInfo.env->DeleteLocalRef(mInfo.classID);
-		return object();
+
+		auto t = luabind::newtable(L);
+		t["success"] = false;
+		return t;
 	}
 
 	LuaJavaBridge::ValueType LuaJavaBridge::checkType(const std::string& sig, size_t *pos)
