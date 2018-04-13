@@ -742,10 +742,11 @@ HRESULT ParaEngine::CParaWorldAsset::RendererRecreated()
 {
 	GetVertexBufferPoolManager().RendererRecreated();
 	m_EffectsManager.RendererRecreated();
+	GetFontManager().RendererRecreated();
 	GetTextureManager().RendererRecreated();
 	GetMeshManager().RendererRecreated();
 	GetParaXManager().RendererRecreated();
-	GetFontManager().RendererRecreated();
+	
 	// signal
 	OnRendererRecreated();
 	return S_OK;
