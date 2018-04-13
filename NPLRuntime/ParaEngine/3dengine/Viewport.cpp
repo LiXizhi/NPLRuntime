@@ -208,7 +208,7 @@ void ParaEngine::CViewport::OnParentSizeChanged(int nWidth, int nHeight)
 	if (GetGUIRoot())
 	{
 		GetGUIRoot()->UpdateViewport(GetLeft(), GetTop(), GetWidth(), GetHeight(), true);
-		// ensure minimum screen size, with largest UI scaling,  it hava some problem on android, so we shield this code
+		// ensure minimum screen size, with largest UI scaling,  it has some problem on android, so we disabled this code
 		//GetGUIRoot()->SetUIScale(1, 1, true);
 	}
 }

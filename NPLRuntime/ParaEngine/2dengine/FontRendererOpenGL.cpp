@@ -77,8 +77,8 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			pFontRenderer->setFontScale(pFontRenderer->m_fFontScaling);
 			if (pFontRenderer->getFontAtlas())
 			{
-				// disable aliasing
-				pFontRenderer->getFontAtlas()->setAliasTexParameters();
+				// TODO: why disable aliasing? This should be enabled LiXizhi
+				// pFontRenderer->getFontAtlas()->setAliasTexParameters();
 			}
 			pFontRenderer->AddToAutoReleasePool();
 			return pFontRenderer;
@@ -172,8 +172,9 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 			int nContentHeight = _contentSize.height;
 			if (vAlignment_ == TextVAlignment::CENTER && nContentHeight > nMaxScaledHeight)
 			{
+				rect.top = rect.top - (int)((nContentHeight - nScaledHeight) / 2 * GetFontScaling());
 				// again preventing vertical center aligned text to exceed the total height.
-				nContentHeight = nMaxScaledHeight;
+				// nContentHeight = nMaxScaledHeight;
 			}
 			if (GetFontScaling() == 1.f)
 			{
@@ -276,6 +277,7 @@ void ParaEngine::CFontRendererOpenGL::RendererRecreated()
 void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD color)
 {
 	auto textures = _fontAtlas->getTextures();
+	
 	if (GetFontScaling() == 1.f)
 	{
 		for (int ctr = 0; ctr < _limitShowCount; ++ctr)
