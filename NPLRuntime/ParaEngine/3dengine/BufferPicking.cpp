@@ -57,6 +57,15 @@ DWORD ParaEngine::CBufferPicking::GetPickingID(int nIndex /*= 0*/)
 	return GetPickingCount() > nIndex ? m_pickingResult[nIndex] : 0;
 }
 
+void ParaEngine::CBufferPicking::FetchPickingResult(DWORD ** ppResult)
+{
+	CheckDoPick();
+	if (ppResult)
+	{
+		*ppResult = &m_pickingResult[0];
+	}
+}
+
 int ParaEngine::CBufferPicking::GetPickingCount()
 {
 	CheckDoPick();
@@ -406,6 +415,7 @@ int ParaEngine::CBufferPicking::InstallFields(CAttributeClass* pClass, bool bOve
 
 	pClass->AddField("PickingCount", FieldType_Int, (void*)0, (void*)GetPickingCount_s, NULL, "", bOverride);
 	pClass->AddField("PickingID", FieldType_DWORD, (void*)0, (void*)GetPickingID_s, NULL, "", bOverride);
+	pClass->AddField("FetchPickingResult", FieldType_void_pointer, (void*)0, (void*)FetchPickingResult_s, NULL, "", bOverride);
 	pClass->AddField("ClearPickingResult", FieldType_void, (void*)ClearPickingResult_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("CheckDoPick", FieldType_void, (void*)CheckDoPick_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("PickLeftTop", FieldType_Vector2, (void*)SetPickLeftTop_s, (void*)GetPickLeftTop_s, NULL, "", bOverride);

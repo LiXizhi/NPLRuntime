@@ -131,7 +131,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	// TODO: DT_NOCLIP | DT_SINGLELINE | DT_WORDBREAK | DT_CALCRECT
 	if ((dwTextFormat & DT_NOCLIP) > 0)
 	{
-		// cocos will not render out of range text,  even if no clip is true. so we just add a very big height here.
+		// we will not render out of range text,  even if no clip is true. so we just add a very big height here.
 		if (vAlignment_ == TextVAlignment::TOP && nHeight < 500)
 			nHeight = 500;
 	}
@@ -150,7 +150,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nScaledHeight = (int)(nHeight / GetFontScaling() + 0.999f);
 		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling() + 0.999f);
 	}
-	// we will make the height at least of a single line height to prevent cocos start a new line in the front when calculating layout.
+	// we will make the height at least of a single line height to prevent starting a new line in the front when calculating layout.
 	if (_commonLineHeight > nScaledHeight)
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)

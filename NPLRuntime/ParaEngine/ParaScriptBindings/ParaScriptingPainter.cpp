@@ -443,6 +443,21 @@ extern "C" {
 		ParaScripting::ParaPainter::Flush();
 	}
 
+	PE_CORE_DECL void ParaPainter_Save()
+	{
+		ParaScripting::ParaPainter::Save();
+	}
+
+	PE_CORE_DECL void ParaPainter_Restore()
+	{
+		ParaScripting::ParaPainter::Restore();
+	}
+
+	PE_CORE_DECL void ParaPainter_CallField(const char*  sFieldname)
+	{
+		ParaScripting::ParaPainter::CallField(sFieldname);
+	}
+
 	PE_CORE_DECL void ParaPainter_SetCompositionMode(int mode)
 	{
 		ParaScripting::ParaPainter::SetCompositionMode(mode);
