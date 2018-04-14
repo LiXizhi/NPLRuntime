@@ -7,7 +7,6 @@
 #include "GLLabel.h"
 
 
-#define CC_SIZE_PIXELS_TO_POINTS(a) a
 
 using namespace ParaEngine;
 
@@ -263,12 +262,14 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	if (theLabel->_labelHeight > 0)
 	{
 		auto labelHeightPixel = theLabel->_labelHeight * contentScaleFactor;
-		/*
+		
+		/*LiXizhi 2018.4.15: why rescaling the line spacing according to the control height. not necessary.
 		if (totalHeight > labelHeightPixel)
 		{
 			int numLines = labelHeightPixel / theLabel->_commonLineHeight;
 			totalHeight = numLines * theLabel->_commonLineHeight;
 		}*/
+
 		switch (theLabel->_vAlignment)
 		{
 		case TextVAlignment::TOP:
@@ -330,11 +331,11 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 			nextFontPositionY -= theLabel->_commonLineHeight;
 
 			theLabel->recordPlaceholderInfo(i);
-			/* when no clipping is enabled, we will not break. 
-			if (nextFontPositionY < theLabel->_commonLineHeight)
-				break;
-			*/
-
+			
+			// LiXizhi 2018.4.15: why we break here? it will not render multiple lines this way
+			//if (nextFontPositionY < theLabel->_commonLineHeight)
+			//	break;
+			
 			lineStart = true;
 			continue;
 		}
@@ -409,7 +410,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 		}
 	}
 
-	theLabel->setContentSize(CC_SIZE_PIXELS_TO_POINTS(tmpSize));
+	theLabel->setContentSize(tmpSize);
 
 	return true;
 }

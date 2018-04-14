@@ -151,7 +151,8 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling() + 0.999f);
 	}
 	// we will make the height at least of a single line height to prevent starting a new line in the front when calculating layout.
-	if (_commonLineHeight > nScaledHeight)
+	// unless nScaledHeight is 0, which means that we are calculating rect
+	if (_commonLineHeight > nScaledHeight && nScaledHeight > 0)
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)
 		{
