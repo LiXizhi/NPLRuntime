@@ -39,7 +39,15 @@
 
 LJLIB_CF(os_execute)
 {
-#if LJ_NO_SYSTEM
+  // For iOS 11 
+#if LJ_52
+  errno = ENOSYS;
+  return luaL_fileresult(L, 0, NULL);
+#else
+  lua_pushinteger(L, -1);
+  return 1;
+#endif
+/*#if LJ_NO_SYSTEM
 #if LJ_52
   errno = ENOSYS;
   return luaL_fileresult(L, 0, NULL);
@@ -58,7 +66,7 @@ LJLIB_CF(os_execute)
   setintV(L->top++, stat);
 #endif
   return 1;
-#endif
+#endif*/
 }
 
 LJLIB_CF(os_remove)

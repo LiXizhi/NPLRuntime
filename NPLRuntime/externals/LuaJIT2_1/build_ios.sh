@@ -1,51 +1,119 @@
-#!/bin/sh
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-LIPO="xcrun -sdk iphoneos lipo"
-STRIP="xcrun -sdk iphoneos strip"
 
-SRCDIR=$DIR/code
-DESTDIR=$DIR/prebuilt/ios
-IXCODE=`xcode-select -print-path`
-ISDK=$IXCODE/Platforms/iPhoneOS.platform/Developer
-INFOPLIST_PATH=$IXCODE/Platforms/iPhoneOS.platform/version.plist
-BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${INFOPLIST_PATH}")
-ISDKVER=iPhoneOS${BUNDLE_ID}.sdk
+#http://luajit.org/install.html#cross
 
-if [ "${ISDKVER}" = "iPhoneOS8.0.sdk" ] || [ "${ISDKVER}" = "iPhoneOS8.1.sdk" ]; then
-ISDKP=$IXCODE/usr/bin/
-else
-ISDKP=$ISDK/usr/bin/
-fi
+SOURCE_ROOT=./code
+CURRENT_DIR=`pwd`
+BUILD_DIR=$CURRENT_DIR/prebuilt/ios
+LOG_DIR=$CURRENT_DIR/log
+INCLUDEDIR=$CURRENT_DIR/include
 
-rm "$DESTDIR"/*.a
-cd $SRCDIR
+doneSection()
+{
+    echo
+    echo "Done"
+    echo "================================================================="
+    echo
+}
 
-make clean
-ISDKF="-arch armv7 -isysroot $ISDK/SDKs/$ISDKVER"
-if [ ${ISDKVER} = "iPhoneOS8.0.sdk" ] || [ ${ISDKVER} = "iPhoneOS8.1.sdk" ]; then
-make HOST_CC="gcc -m32 -arch i386" TARGET_FLAGS="$ISDKF" TARGET=arm TARGET_SYS=iOS
-else
-make HOST_CC="gcc -m32 -arch i386" CROSS=$ISDKP TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS
-fi
-mv "$SRCDIR"/src/libluajit.a "$DESTDIR"/libluajit-armv7.a
+cleanup()
+{
+    echo Cleaning everything
+    rm -rf $BUILD_DIR
+    mkdir -p $BUILD_DIR
+    rm *.a 1>/dev/null 2>/dev/null
+    rm -rf $LOG_DIR
+    mkdir -p $LOG_DIR
+}
 
-make clean
-ISDKF="-arch armv7s -isysroot $ISDK/SDKs/$ISDKVER"
-if [ ${ISDKVER} = "iPhoneOS8.0.sdk" ] || [ ${ISDKVER} = "iPhoneOS8.1.sdk" ]; then
-make HOST_CC="gcc -m32 -arch i386" TARGET_FLAGS="$ISDKF" TARGET=arm TARGET_SYS=iOS
-else
-make HOST_CC="gcc -m32 -arch i386" CROSS=$ISDKP TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS
-fi
-mv "$SRCDIR"/src/libluajit.a "$DESTDIR"/libluajit-armv7s.a
+buildLuajit_iphoneos()
+{
+    # Build Luajit for iphoneos
+    echo Build Luajit for iphoneos
+    
+    ISDKP=$(xcrun --sdk iphoneos --show-sdk-path)
+    ICC=$(xcrun --sdk iphoneos --find clang)
+   
+    # armv7
+    ISDKF="-arch armv7 -isysroot $ISDKP"
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32 " \
+        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
+    if [ $? != 0 ]; then echo "Error building iPhoneOS-armv7. Check log."; exit 1; fi
+    
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_armv7.a
+    
 
-make clean
-make CC="gcc -m32 -arch i386" clean all
-mv "$SRCDIR"/src/libluajit.a "$DESTDIR"/libluajit-i386.a
+    # armv7s
+    ISDKF="-arch armv7s -isysroot $ISDKP"
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32" \
+        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
+    if [ $? != 0 ]; then echo "Error building iPhoneOS-armv7s. Check log."; exit 1; fi
+    
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_armv7s.a
+   
+    # arm64
+    ISDKF="-arch arm64 -isysroot $ISDKP"
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang" \
+        CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS TARGET=arm64  >> "${LOG_DIR}/ios-build.log" 2>&1
+    if [ $? != 0 ]; then echo "Error building iPhoneOS-arm64. Check log."; exit 1; fi
+    
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_arm64.a
+    
+    lipo -create  $BUILD_DIR/libluajit_armv7.a $BUILD_DIR/libluajit_armv7s.a $BUILD_DIR/libluajit_arm64.a \
+        -output $BUILD_DIR/libluajit.a
+    rm -r $BUILD_DIR/libluajit_armv7.a
+    rm -r $BUILD_DIR/libluajit_armv7s.a
+    rm -r $BUILD_DIR/libluajit_arm64.a
+    mkdir -p $BUILD_DIR/iphoneos
+    mv  $BUILD_DIR/libluajit.a $BUILD_DIR/iphoneos/libluajit.a
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    doneSection
+}
 
-$LIPO -create "$DESTDIR"/libluajit-*.a -output "$DESTDIR"/libluajit.a
-$STRIP -S "$DESTDIR"/libluajit.a
-$LIPO -info "$DESTDIR"/libluajit.a
 
-rm "$DESTDIR"/libluajit-*.a
+buildLuajit_iphonesimulator()
+{
+    # Build Luajit for iphonesimulator
+    echo Build Luajit for iPhoneSimulator
+    
+    ISDKP=$(xcrun --sdk iphonesimulator --show-sdk-path)
+    ICC=$(xcrun --sdk iphonesimulator --find clang)
+   
+    # i386
+    ISDKF="-arch i386 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch i386" HOST_LDFLAGS="-arch i386" \
+     TARGET=x86 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
+    if [ $? != 0 ]; then echo "Error building iphonesim-i386. Check log."; exit 1; fi
+    
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_i386.a
+    
 
-make clean
+    # x86-64
+    ISDKF="-arch x86_64 -mios-simulator-version-min=10.0 -isysroot $ISDKP"
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CFLAGS="-arch x86_64" HOST_LDFLAGS="-arch x86_64" \
+     TARGET=x86_64 CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/iphonesim-build.log" 2>&1
+    if [ $? != 0 ]; then echo "Error building iphonesim-x86_64. Check log."; exit 1; fi
+    
+    mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_x86_64.a
+    
+   
+    lipo -create  $BUILD_DIR/libluajit_i386.a $BUILD_DIR/libluajit_x86_64.a \
+        -output $BUILD_DIR/libluajit.a
+    rm -r $BUILD_DIR/libluajit_x86_64.a
+    rm -r $BUILD_DIR/libluajit_i386.a
+
+    mkdir -p $BUILD_DIR/iphonesim
+    mv  $BUILD_DIR/libluajit.a $BUILD_DIR/iphonesim/libluajit.a
+    make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
+    doneSection
+}
+
+cleanup
+buildLuajit_iphoneos
+buildLuajit_iphonesimulator
+
+echo "Completed successfully"

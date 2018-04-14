@@ -4,13 +4,16 @@
 
 
 if(IOS)
-    set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/src/boost_1_64_0) 
-	set(BOOST_INCLUDEDIR ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/build/boost/.64.0/ios/prefix/include)
-	set(BOOST_LIBRARYDIR ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/build/boost/1.64.0/ios/prefix/lib)
+	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/src/boost_1_64_0)
+	if (IOS_PLATFORM STREQUAL "SIMULATOR")
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)
+	elseif(IOS_PLATFORM STREQUAL "OS")
+		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphone-build/stage/lib)
+	endif() 
+
 elseif(APPLE)
 	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/src/boost_1_64_0)
-	set(BOOST_INCLUDEDIR ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/build/boost/1.64.0/macos/prefix/include)
-	set(BOOST_LIBRARYDIR ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/build/boost/1.64.0/macos/prefix/lib)
+	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/macos-build/stage/lib)
 else()
 	if ("$ENV{BOOST_ROOT}" STRGREATER "")
 		set(BOOST_ROOT $ENV{BOOST_ROOT})

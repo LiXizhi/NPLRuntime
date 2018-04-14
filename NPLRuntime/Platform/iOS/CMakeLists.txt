@@ -1,30 +1,31 @@
-cmake_minimum_required(VERSION 3.11)
 
 
-project(GLDemo)
+include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
-set(SRC 
-    src/AppDelegate.h
-    src/AppDelegate.m
-    src/GLView.h
-    src/GLView.m
-    src/main.m
-    src/ViewController.h
-    src/ViewController.m
-)
+
+ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
+ucm_add_dirs(res TO RESOURCE_FILES RECURSIVE ADDITIONAL_EXT *)
+
+set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources)
+
 
 find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 
-add_executable(GLDemo MACOSX_BUNDLE ${SRC})
-target_link_libraries(GLDemo PRIVATE ${UIKit} ${OpenGLES} ${QuartzCore})
+add_executable(Paracraft MACOSX_BUNDLE ${app_src})
+target_link_libraries(Paracraft PRIVATE 
+    ${UIKit} ${OpenGLES} ${QuartzCore}
+    RenderSystemOpenGL
+    ParaEngine
+)
 
 
 
 
-set_target_properties(GLDemo PROPERTIES 
-MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/src/info.plist
+set_target_properties(Paracraft PROPERTIES 
+MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/info.plist
+RESOURCE "${RESOURCE_FILES}"
 )
 
 
