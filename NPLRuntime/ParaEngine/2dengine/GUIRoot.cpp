@@ -2297,9 +2297,8 @@ bool ParaEngine::CGUIRoot::handleGesturePinch(CTouchGesturePinch& pinch_gesture)
 		//CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(WM_MOUSEWHEEL, MAKEWPARAM(0, nScrollY), 0);
 		CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(nScrollY)));
 		// OUTPUT_LOG("` %d\n", nScrollY);
-		return true;
 	}
-	return false;
+	return true;
 }
 
 CGUIBase* ParaEngine::CGUIRoot::GetActiveWindow() const
