@@ -852,6 +852,8 @@ HRESULT ParaEngine::CEffectFileOpenGL::RendererRecreated()
 	}
 	mTechniques.clear();
 	m_bIsInitialized = false;
+	mTechniqueIndex = 0;
+	m_nActivePassIndex = 0;
 	return S_OK;
 }
 
