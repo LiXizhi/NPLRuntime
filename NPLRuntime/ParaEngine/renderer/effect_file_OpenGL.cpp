@@ -199,13 +199,11 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			int nOldPass = m_nActivePassIndex;
 			for (int i=0;i<nCount; ++i)
 			{
-				//BeginPass(i);
-				m_nActivePassIndex = i;
 				auto program = GetGLProgram(m_nTechniqueIndex, i);
 				if (program) {
+					m_nActivePassIndex = i;
 					result = func(program) || result;
 				}
-				//EndPass();
 			}
 			m_nActivePassIndex = nOldPass;
 		}
@@ -221,13 +219,11 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			int nCount = m_techniques[tech_index].m_passes.size();
 			for (int i = 0; i < nCount; ++i)
 			{
-				//BeginPass(i);
-				m_nActivePassIndex = i;
 				auto program = GetGLProgram(tech_index, i);
 				if (program) {
+					m_nActivePassIndex = i;
 					result = func(program) || result;
 				}
-				//EndPass();
 			}
 		}
 		m_nActivePassIndex = nOldPass;
@@ -866,22 +862,8 @@ void ParaEngine::CEffectFileOpenGL::CommitChanges()
 	}
 
 	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
-	if (program->isDirty())
+	if(program)
 		program->commit();
-
-	for (auto& t : m_techniques)
-	{
-		for (auto& p : t.m_passes)
-		{
-			if (p->isDirty())
-			{
-				p->use();
-				p->commit();
-			}
-		}
-	}
-
-	program->use();
 }
 
 void ParaEngine::CEffectFileOpenGL::EndPass(bool bForceEnd /*= false*/)
