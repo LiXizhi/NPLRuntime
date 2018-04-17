@@ -665,22 +665,6 @@ namespace ParaEngine
 			}
 			else if(pEffect != 0 && pEffect->begin(false))
 			{
-#ifdef USE_OPENGL_RENDERER
-				if (nRenderPass == BlockRenderPass_AlphaTest)
-				{
-					// ParaEngine's opengl renderer currently does not support shared uniforms between passes, so do this. 
-					// Remove this: when you support it. 
-					pEffect->BeginPass(g_transparentBlockPass);
-					pEffect->EndPass();
-				}
-				CGlobals::GetEffectManager()->applyFogParameters();
-				if (CGlobals::GetEffectManager()->IsUsingShadowMap())
-					CGlobals::GetEffectManager()->GetShadowMap()->SetShadowTexture(*pEffect, 1);
-				else
-					CGlobals::GetEffectManager()->GetShadowMap()->UnsetShadowTexture(1);
-#endif
-				
-
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 				CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
 

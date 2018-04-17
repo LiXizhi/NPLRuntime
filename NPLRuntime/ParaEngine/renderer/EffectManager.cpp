@@ -2197,6 +2197,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	case TECH_BLOCK:
 	{
 		pEffect->use(GetScene()->IsShadowMapEnabled()?1:0);
+		applyFogParameters();
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		pd3dDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );

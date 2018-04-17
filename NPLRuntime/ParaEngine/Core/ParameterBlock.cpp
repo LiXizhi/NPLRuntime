@@ -60,8 +60,8 @@ bool CParameterBlock::AddParameter( const CParameter& p )
 
 bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 {
-#ifdef PARAENGINE_CLIENT
-	if(!IsEmpty() && pEffectFile!=0 && pEffectFile->GetDXEffect()!=0)
+#if defined(USE_OPENGL_RENDERER) || defined(USE_DIRECTX_RENDERER)
+	if(!IsEmpty() && pEffectFile!=0 && pEffectFile->IsValid())
 	{
 		ParamIterator itCur, itEnd = EndIter();
 		for (itCur = BeginIter(); itCur!=itEnd; ++itCur)
@@ -69,6 +69,8 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 			CParameter& p = itCur->second;
 			if(p.m_type == CParameter::PARAM_TEXTURE_ENTITY)
 			{
+				// TODO: support in opengl
+#if defined(USE_DIRECTX_RENDERER)
 				// if it is texture parameter, the name must be numeric. 
 				const char* name = p.GetName().c_str();
 				TextureEntity* pTextureEntity = (TextureEntity*)p;
@@ -102,10 +104,11 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 						pEffectFile->GetDXEffect()->SetTexture(name, pTextureEntity->GetTexture());
 					}
 				}
+#endif
 			}
 			else
 			{
-				pEffectFile->GetDXEffect()->SetRawValue(p.GetName().c_str(), p.GetRawData(), 0, p.GetRawDataLength());
+				pEffectFile->SetRawValue(p.GetName().c_str(), p.GetRawData(), 0, p.GetRawDataLength());
 			}
 		}
 	}
@@ -312,7 +315,7 @@ std::string ParaEngine::CParameter::GetValueByString()
 
 void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* sValue_)
 {
-#ifdef PARAENGINE_CLIENT
+#if defined(USE_OPENGL_RENDERER) || defined(USE_DIRECTX_RENDERER)
 	const std::string sValue = sValue_;
 
 	if (sValue.find("mat4") == 0)
@@ -366,6 +369,7 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			ParaMatrixMultiply(&mat_, pWorld, pView);
 			mat = mat_.inverse();
 		}
+#if defined(USE_DIRECTX_RENDERER)
 		else if (sValue == "mat4ShadowMapTex")
 		{
 			ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
@@ -374,6 +378,7 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		{
 			ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
 		}
+#endif
 		else
 		{
 			mat = Matrix4::IDENTITY;
@@ -430,7 +435,17 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		Vector2 v(0, 0);
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
-		if (sValue == "vec2ScreenSize")
+
+		if (sValue == "vec2ViewportScale")
+		{
+			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(&v, NULL);
+		}
+		else if (sValue == "vec2ViewportOffset")
+		{
+			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(NULL, &v);
+		}
+#if defined(USE_DIRECTX_RENDERER)
+		else if (sValue == "vec2ScreenSize")
 		{
 			v.x = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width);
 			v.y = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height);
@@ -440,14 +455,7 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			v.x = (float)(CGlobals::GetEffectManager()->GetShadowMap()->GetShadowMapTexelSize());
 			v.y = (float)(1 / v.x);
 		}
-		else if (sValue == "vec2ViewportScale")
-		{
-			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(&v, NULL);
-		}
-		else if (sValue == "vec2ViewportOffset")
-		{
-			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(NULL, &v);
-		}
+#endif
 		SetParameter(sParamName, v);
 	}
 	else if (sValue.find("float") != string::npos)
