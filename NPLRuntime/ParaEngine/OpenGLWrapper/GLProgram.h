@@ -101,20 +101,6 @@ namespace ParaEngine
 		static const char* SHADER_3D_POSITION_TEXTURE;
 		static const char* SHADER_3D_SKINPOSITION_TEXTURE;
 
-		// uniform names
-		static const char* UNIFORM_NAME_P_MATRIX;
-		static const char* UNIFORM_NAME_MV_MATRIX;
-		static const char* UNIFORM_NAME_MVP_MATRIX;
-		static const char* UNIFORM_NAME_TIME;
-		static const char* UNIFORM_NAME_SIN_TIME;
-		static const char* UNIFORM_NAME_COS_TIME;
-		static const char* UNIFORM_NAME_RANDOM01;
-		static const char* UNIFORM_NAME_SAMPLER0;
-		static const char* UNIFORM_NAME_SAMPLER1;
-		static const char* UNIFORM_NAME_SAMPLER2;
-		static const char* UNIFORM_NAME_SAMPLER3;
-		static const char* UNIFORM_NAME_ALPHA_TEST_VALUE;
-
 		// Attribute names
 		static const char* ATTRIBUTE_NAME_COLOR;
 		static const char* ATTRIBUTE_NAME_POSITION;
@@ -296,18 +282,6 @@ namespace ParaEngine
 		bool              _hasShaderCompiler;
 		bool			  _dirty;
 
-
-
-		struct flag_struct {
-			unsigned int usesTime : 1;
-			unsigned int usesMVP : 1;
-			unsigned int usesMV : 1;
-			unsigned int usesP : 1;
-			unsigned int usesRandom : 1;
-
-			// handy way to initialize the bitfield
-			flag_struct() { memset(this, 0, sizeof(*this)); }
-		} _flags;
 
 		std::unordered_map<std::string, Uniform> _userUniforms;
 		std::unordered_map<std::string, VertexAttrib> _vertexAttribs;

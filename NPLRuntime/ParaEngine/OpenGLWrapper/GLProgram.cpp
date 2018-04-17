@@ -46,20 +46,6 @@ const char* GLProgram::SHADER_3D_POSITION_TEXTURE = "Shader3DPositionTexture";
 const char* GLProgram::SHADER_3D_SKINPOSITION_TEXTURE = "Shader3DSkinPositionTexture";
 
 
-// uniform names
-const char* GLProgram::UNIFORM_NAME_P_MATRIX = "CC_PMatrix";
-const char* GLProgram::UNIFORM_NAME_MV_MATRIX = "CC_MVMatrix";
-const char* GLProgram::UNIFORM_NAME_MVP_MATRIX = "CC_MVPMatrix";
-const char* GLProgram::UNIFORM_NAME_TIME = "CC_Time";
-const char* GLProgram::UNIFORM_NAME_SIN_TIME = "CC_SinTime";
-const char* GLProgram::UNIFORM_NAME_COS_TIME = "CC_CosTime";
-const char* GLProgram::UNIFORM_NAME_RANDOM01 = "CC_Random01";
-const char* GLProgram::UNIFORM_NAME_SAMPLER0 = "CC_Texture0";
-const char* GLProgram::UNIFORM_NAME_SAMPLER1 = "CC_Texture1";
-const char* GLProgram::UNIFORM_NAME_SAMPLER2 = "CC_Texture2";
-const char* GLProgram::UNIFORM_NAME_SAMPLER3 = "CC_Texture3";
-const char* GLProgram::UNIFORM_NAME_ALPHA_TEST_VALUE = "CC_alpha_value";
-
 // Attribute names
 const char* GLProgram::ATTRIBUTE_NAME_COLOR = "a_color";
 const char* GLProgram::ATTRIBUTE_NAME_POSITION = "a_position";
@@ -101,7 +87,6 @@ GLProgram::GLProgram()
 	, _vertShader(0)
 	, _fragShader(0)
 	, _hashForUniforms(nullptr)
-	, _flags()
 	, _dirty(false)
 {
 	memset(_builtInUniforms, 0, sizeof(_builtInUniforms));
@@ -265,10 +250,7 @@ void GLProgram::parseUniforms()
 				// Query uniform info.
 				glGetActiveUniform(_program, i, length, nullptr, &uniform.size, &uniform.type, uniformName);
 				uniformName[length] = '\0';
-				// Only add uniforms that are not built-in.
-				// The ones that start with 'CC_' are built-ins
-				if (strncmp("CC_", uniformName, 3) != 0) {
-
+				{
 					// remove possible array '[]' from uniform name
 					if (uniform.size > 1 && length > 3)
 					{
@@ -326,18 +308,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 #ifdef PARAENGINE_MOBILE
 		"precision highp float;\n"
 #endif
-		"uniform mat4 CC_PMatrix;\n"
-		"uniform mat4 CC_MVMatrix;\n"
-		"uniform mat4 CC_MVPMatrix;\n"
-		"uniform vec4 CC_Time;\n"
-		"uniform vec4 CC_SinTime;\n"
-		"uniform vec4 CC_CosTime;\n"
-		"uniform vec4 CC_Random01;\n"
-		"uniform sampler2D CC_Texture0;\n"
-		"uniform sampler2D CC_Texture1;\n"
-		"uniform sampler2D CC_Texture2;\n"
-		"uniform sampler2D CC_Texture3;\n"
-		"//CC INCLUDES END\n\n",
+		"//\n",
 		source,
 	};
 
@@ -388,42 +359,6 @@ void GLProgram::bindAttribLocation(const std::string &attributeName, GLuint inde
 
 void GLProgram::updateUniforms()
 {
-	_builtInUniforms[UNIFORM_P_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_P_MATRIX);
-	_builtInUniforms[UNIFORM_MV_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_MV_MATRIX);
-	_builtInUniforms[UNIFORM_MVP_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_MVP_MATRIX);
-
-	_builtInUniforms[UNIFORM_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_TIME);
-	_builtInUniforms[UNIFORM_SIN_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_SIN_TIME);
-	_builtInUniforms[UNIFORM_COS_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_COS_TIME);
-
-	_builtInUniforms[UNIFORM_RANDOM01] = glGetUniformLocation(_program, UNIFORM_NAME_RANDOM01);
-
-	_builtInUniforms[UNIFORM_SAMPLER0] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER0);
-	_builtInUniforms[UNIFORM_SAMPLER1] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER1);
-	_builtInUniforms[UNIFORM_SAMPLER2] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER2);
-	_builtInUniforms[UNIFORM_SAMPLER3] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER3);
-
-	_flags.usesP = _builtInUniforms[UNIFORM_P_MATRIX] != -1;
-	_flags.usesMV = _builtInUniforms[UNIFORM_MV_MATRIX] != -1;
-	_flags.usesMVP = _builtInUniforms[UNIFORM_MVP_MATRIX] != -1;
-	_flags.usesTime = (
-		_builtInUniforms[UNIFORM_TIME] != -1 ||
-		_builtInUniforms[UNIFORM_SIN_TIME] != -1 ||
-		_builtInUniforms[UNIFORM_COS_TIME] != -1
-		);
-	_flags.usesRandom = _builtInUniforms[UNIFORM_RANDOM01] != -1;
-
-	this->use();
-
-	// Since sample most probably won't change, set it to 0,1,2,3 now.
-	if (_builtInUniforms[UNIFORM_SAMPLER0] != -1)
-		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER0], 0);
-	if (_builtInUniforms[UNIFORM_SAMPLER1] != -1)
-		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER1], 1);
-	if (_builtInUniforms[UNIFORM_SAMPLER2] != -1)
-		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER2], 2);
-	if (_builtInUniforms[UNIFORM_SAMPLER3] != -1)
-		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER3], 3);
 }
 
 bool GLProgram::link()

@@ -2115,8 +2115,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_GUI_TEXT:
 	{
-		pEffect->use();
-		
 		if (nLastEffectHandle != TECH_GUI && nLastEffectHandle != TECH_GUI_TEXT)
 		{
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
@@ -2136,7 +2134,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_GUI:
 	{
-		pEffect->use();
 		if (nLastEffectHandle != TECH_GUI && nLastEffectHandle != TECH_GUI_TEXT)
 		{
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
@@ -2159,7 +2156,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SINGLE_COLOR:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2177,7 +2173,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_BMAX_MODEL:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2196,7 +2191,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_BLOCK:
 	{
-		pEffect->use(GetScene()->IsShadowMapEnabled()?1:0);
 		applyFogParameters();
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
@@ -2213,7 +2207,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_PARTICLES:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2233,7 +2226,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SKY_DOME:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0);
 		if (pDecl == 0)
 			return false;
@@ -2257,7 +2249,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SKY_MESH:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 		if (pDecl == 0)
 			return false;
@@ -2286,7 +2277,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	{
 		if (nLastEffectHandle != TECH_CHARACTER && nLastEffectHandle != TECH_SIMPLE_MESH_NORMAL)
 		{
-			pEffect->use();
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 			if (pDecl == 0)
 				return false;
@@ -2311,7 +2301,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_TERRAIN:
 	{
-		pEffect->use();
 		auto pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_TEX1);
 		if (pDecl == 0)
 			return false;

@@ -35,7 +35,6 @@ TO sources_commmon RECURSIVE
 )
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-#{
     set(RenderSystem RenderSystemOpenGL)
     ucm_add_dirs(
         OpenGLWrapper
@@ -49,9 +48,12 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
-#}
+
+	SOURCE_GROUP("ShaderFiles" FILES ${SHADER_FILES})
+	SET_SOURCE_FILES_PROPERTIES(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+	list(APPEND sources_rendersystem ${SHADER_FILES})
+
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-#{
     include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
     set(RenderSystem RenderSystemD3D9)
     ucm_add_dirs(
@@ -111,12 +113,9 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
         endif()
     endif()
 
-#}
 elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
-#{
     set(RenderSystem RenderSystemNull)
     list(APPEND sources_rendersystem ResourceEmbedded.cpp)
-#}  
 endif()
 
 

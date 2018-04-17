@@ -167,8 +167,6 @@ namespace ParaEngine
 
 		/** links the glProgram */
 		bool link(int nTech = 0, int nPass = 0);
-		/** it will call glUseProgram() */
-		bool use(int nTech = -1, int nPass = -1);
 		
 		/** add changes to shader parameters, those changes are commited to device when CommitChange() is called. */
 		template <typename ValueType>
@@ -195,6 +193,8 @@ namespace ParaEngine
 		GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
 		typedef std::function<int (GLProgram* pProgram)> ProgramCallbackFunction_t;
 		bool SetProgramParams(ProgramCallbackFunction_t func);
+		/** it will call glUseProgram() */
+		bool use(int nTech = -1, int nPass = -1);
 
 		bool setParameter(Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
 		bool MappingEffectUniforms(const std::vector<UniformInfo>& uniforms);

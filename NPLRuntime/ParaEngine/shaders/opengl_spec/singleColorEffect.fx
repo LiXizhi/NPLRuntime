@@ -1,5 +1,5 @@
 
-float4x4 PARA_MATRIX_MVP:worldviewprojection;
+float4x4 mWorldViewProj:worldviewprojection;
 
 
 struct appdata
@@ -19,7 +19,7 @@ struct v2f
 v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
-	o.vertex = mul(v.vertex, PARA_MATRIX_MVP);
+	o.vertex = mul(v.vertex, mWorldViewProj);
 	o.color = v.color;
 	return o;
 }

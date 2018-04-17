@@ -1,7 +1,7 @@
 
-float4x4 PARA_MATRIX_MVP:worldviewprojection;
-float4x4 PARA_MATRIX_MV:worldview;
-float4x4 PARA_MATRIX_M:world;
+float4x4 mWorldViewProj:worldviewprojection;
+float4x4 mWorldView:worldview;
+float4x4 mWorld:world;
 float4 sunvector:sunvector;
 float4 materialdiffuse:materialdiffuse;
 float4 ambientlight:ambientlight;
@@ -46,10 +46,10 @@ v2f vert(appdata v)
 	v2f o = (v2f)0;
 
 	// screen space position
-	o.vertex = mul(v.vertex, PARA_MATRIX_MVP);
+	o.vertex = mul(v.vertex, mWorldViewProj);
 	o.uv = v.uv;
-	float4 cameraPos = mul(v.vertex,PARA_MATRIX_MV);
-	float3 worldNormal = normalize( mul( v.normal, (float3x3)PARA_MATRIX_M ) ); 
+	float4 cameraPos = mul(v.vertex, mWorldView);
+	float3 worldNormal = normalize( mul( v.normal, (float3x3)mWorld ) ); 
 	o.color.xyz = max(0.0, dot( sunvector.xyz, worldNormal ))*materialdiffuse.xyz;
 	o.color.xyz += ambientlight.xyz;
 	//save the fog distance

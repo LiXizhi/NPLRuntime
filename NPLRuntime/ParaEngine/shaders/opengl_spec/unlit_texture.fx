@@ -1,5 +1,5 @@
 
-float4x4 PARA_MATRIX_MVP:worldviewprojection;
+float4x4 mWorldViewProj:worldviewprojection;
 
 // texture 0
 texture tex0 : TEXTURE; 
@@ -25,7 +25,7 @@ v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
 	// screen space position
-	o.vertex = mul(v.vertex, PARA_MATRIX_MVP);
+	o.vertex = mul(v.vertex, mWorldViewProj);
 	o.uv = v.uv;
 	return o;
 }
