@@ -17,9 +17,10 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.graphics.Bitmap;
 import android.view.KeyEvent; 
+import android.content.Intent;
 
 import java.lang.reflect.Method;
-import java.net.URI;
+import android.net.Uri; ;
 import java.util.concurrent.CountDownLatch;
 
 class ShouldStartLoadingWorker implements Runnable {
@@ -49,6 +50,7 @@ public class ParaEngineWebView extends WebView {
 
 	private int mViewTag;
     private String mJSScheme;
+	private static String mAppScheme = "paracraft";
 
 	public ParaEngineWebView(Context context) {
         this(context, -1);
@@ -110,22 +112,29 @@ public class ParaEngineWebView extends WebView {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, final String urlString) {
 
-			//view.loadUrl(urlString); 
-			//return true;
-
             AppActivity activity = (AppActivity)getContext();
 		
             try {
-                URI uri = URI.create(urlString);
-                if (uri != null && uri.getScheme().equals(mJSScheme)) {
-	                activity.runOnGLThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            ParaEngineWebViewHelper._onJsCallback(mViewTag, urlString);
-                        }
-                    });
-                    return true;
-                }
+                Uri uri =  Uri.parse(urlString);
+
+				if (uri != null)
+				{
+					if (uri.getScheme().equals(mAppScheme)) {
+						Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+						activity.startActivity(intent);
+						return true;
+					}
+					else if (uri.getScheme().equals(mJSScheme)) {
+
+						activity.runOnGLThread(new Runnable() {
+							@Override
+							public void run() {
+								ParaEngineWebViewHelper._onJsCallback(mViewTag, urlString);
+							}
+						});
+						return true;
+					}
+				}
             } catch (Exception e) {
                 Log.d(TAG, "Failed to create URI from url");
             }

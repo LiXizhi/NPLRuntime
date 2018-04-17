@@ -211,7 +211,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 			Intent intent = getIntent();
 			if (intent != null) {
 				String action = intent.getAction();
-				if ("android.intent.action.VIEW" == action) {
+				if (Intent.ACTION_VIEW == action) {
 					m_bFirstGet = false;
 					return intent.getDataString();
 				}
