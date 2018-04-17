@@ -200,6 +200,7 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			for (int i=0;i<nCount; ++i)
 			{
 				//BeginPass(i);
+				m_nActivePassIndex = i;
 				auto program = GetGLProgram(m_nTechniqueIndex, i);
 				if (program) {
 					result = func(program) || result;
@@ -221,6 +222,7 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			for (int i = 0; i < nCount; ++i)
 			{
 				//BeginPass(i);
+				m_nActivePassIndex = i;
 				auto program = GetGLProgram(tech_index, i);
 				if (program) {
 					result = func(program) || result;
