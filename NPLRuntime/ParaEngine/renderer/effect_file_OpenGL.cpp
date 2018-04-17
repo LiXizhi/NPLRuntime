@@ -199,12 +199,12 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			int nOldPass = m_nActivePassIndex;
 			for (int i=0;i<nCount; ++i)
 			{
-				BeginPass(i);
+				//BeginPass(i);
 				auto program = GetGLProgram(m_nTechniqueIndex, i);
 				if (program) {
 					result = func(program) || result;
 				}
-				EndPass();
+				//EndPass();
 			}
 			m_nActivePassIndex = nOldPass;
 		}
@@ -220,12 +220,12 @@ bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpen
 			int nCount = m_techniques[tech_index].m_passes.size();
 			for (int i = 0; i < nCount; ++i)
 			{
-				BeginPass(i);
+				//BeginPass(i);
 				auto program = GetGLProgram(tech_index, i);
 				if (program) {
 					result = func(program) || result;
 				}
-				EndPass();
+				//EndPass();
 			}
 		}
 		m_nActivePassIndex = nOldPass;
@@ -582,7 +582,7 @@ Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 
 void ParaEngine::CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
 {
-	SetProgramParams([&](GLProgram* program) {
+	//SetProgramParams([&](GLProgram* program) {
 		if (isParameterUsed(k_fogEnable))
 		{
 			setBool(k_fogEnable, bEnableFog);
@@ -600,13 +600,13 @@ void ParaEngine::CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Ve
 				setParameter(k_fogColor, fogColor);
 			}
 		}
-		return true;
-	});
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient /*= true*/)
 {
-	SetProgramParams([&](GLProgram* program) {
+	//SetProgramParams([&](GLProgram* program) {
 		if (pSurfaceMaterial)
 		{
 			// set material properties
@@ -650,13 +650,13 @@ void ParaEngine::CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSu
 				setParameter(k_specularMaterialPower, &d3dMaterial.Power);
 			}
 		}
-		return true;
-	});
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyCameraMatrices()
 {
-	SetProgramParams([&](GLProgram* program) {
+	//SetProgramParams([&](GLProgram* program) {
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -737,13 +737,13 @@ void ParaEngine::CEffectFileOpenGL::applyCameraMatrices()
 				setParameter(k_cameraFacing, &v);
 			}
 		}
-		return true;
-	});
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyWorldMatrices()
 {
-	SetProgramParams([&](GLProgram* program) {
+	//SetProgramParams([&](GLProgram* program) {
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -782,13 +782,13 @@ void ParaEngine::CEffectFileOpenGL::applyWorldMatrices()
 				setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
 			}
 		}
-		return true;
-	});
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 {
-	SetProgramParams([&](GLProgram* program) {
+	//SetProgramParams([&](GLProgram* program) {
 		// pass the lighting structure to the shader
 		if (isParameterUsed(k_sunColor))
 		{
@@ -815,8 +815,8 @@ void ParaEngine::CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 			Vector4 v(shadowFactor, 1 - shadowFactor, 0, 0);
 			setParameter(k_shadowFactor, &v);
 		}
-		return true;
-	});
+	//	return true;
+	//});
 }
 
 bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
@@ -827,15 +827,15 @@ bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD fla
 	{
 		if (bApplyParam)
 		{
-			SetProgramParams([&](GLProgram* program) {
+			//SetProgramParams([&](GLProgram* program) {
 				// set the lighting parameters
 				// from the global light manager
 				applyGlobalLightingData(pScene->GetSunLight());
 
 				// set the camera matrix
 				applyCameraMatrices();
-				return true;
-			});
+			//	return true;
+			//});
 		}
 
 		m_bIsBegin = true;
@@ -862,6 +862,24 @@ void ParaEngine::CEffectFileOpenGL::CommitChanges()
 		}
 		m_pendingChangesCount = 0;
 	}
+
+	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
+	if (program->isDirty())
+		program->commit();
+
+	for (auto& t : m_techniques)
+	{
+		for (auto& p : t.m_passes)
+		{
+			if (p->isDirty())
+			{
+				p->use();
+				p->commit();
+			}
+		}
+	}
+
+	program->use();
 }
 
 void ParaEngine::CEffectFileOpenGL::EndPass(bool bForceEnd /*= false*/)

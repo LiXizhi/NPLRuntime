@@ -449,6 +449,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 				{
 					// render all
 					pEffect->setTexture( 0, pTex);
+					pEffect->CommitChanges();
 
 					DrawInstanceSub(instancePS);
 				}
@@ -1133,6 +1134,8 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 				{
 					if(pEffect->BeginPass(0))
 					{
+						pEffect->CommitChanges();
+
 						if (pBufEntity->IsMemoryBuffer())
 							pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, nLockedNum / 2, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 						else

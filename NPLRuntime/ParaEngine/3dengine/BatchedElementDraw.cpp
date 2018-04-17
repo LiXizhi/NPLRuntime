@@ -219,6 +219,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 
+		pEffect->CommitChanges();
+
 		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
 			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
@@ -277,6 +279,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+
+		pEffect->CommitChanges();
 
 		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
 

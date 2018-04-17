@@ -245,6 +245,7 @@ void ParaEngine::CFontRendererOpenGL::RenderLetterSprites(CSpriteRenderer* pSpri
 			{
 				pEffectFile->begin();
 				pEffectFile->BeginPass(0);
+				pEffectFile->CommitChanges();
 			}
 			DoRender(pSprite, color);
 

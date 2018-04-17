@@ -327,6 +327,8 @@ void ParaEngine::CSpriteRendererOpenGL::PrepareDraw()
 		m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
 		m_bIsTextModeDevice = m_bIsTextMode;
 	}
+
+	m_pEffectFile->CommitChanges();
 }
 
 
