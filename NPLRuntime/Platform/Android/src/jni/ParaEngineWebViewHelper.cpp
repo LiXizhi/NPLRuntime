@@ -149,4 +149,10 @@ extern "C" {
 	{
 		return 0;
 	}
+
+	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass, jstring value)
+	{
+		std::string cmd = JniHelper::getStringUTFCharsJNI(env, value);
+		AppDelegate::getInstance().onCmdLine(cmd);
+	}
 } // end extern
