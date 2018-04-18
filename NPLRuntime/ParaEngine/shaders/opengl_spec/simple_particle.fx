@@ -22,7 +22,7 @@ struct Interpolants
 {
   float4 positionSS			: POSITION;         // Screen space position
   float2 tex				: TEXCOORD0;        // texture coordinates
-  half4	 colorDiffuse		: COLOR0;			// diffuse color
+  float4	 colorDiffuse		: COLOR0;			// diffuse color
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ struct Interpolants
 ////////////////////////////////////////////////////////////////////////////////
 
 Interpolants vertexShader(	float4	Pos			: POSITION,
-							half4	Color		: COLOR0,
+							float4	Color		: COLOR0,
 							float2	Tex			: TEXCOORD0)
 {
 	Interpolants o = (Interpolants)0;
@@ -50,10 +50,10 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 ////////////////////////////////////////////////////////////////////////////////
 
 
-half4 pixelShader(Interpolants i) : COLOR
+float4 pixelShader(Interpolants i) : COLOR
 {
-	half4 o;
-	half4 normalColor = tex2D(tex0Sampler, i.tex.xy);
+	float4 o;
+	float4 normalColor = tex2D(tex0Sampler, i.tex.xy);
 	normalColor *= i.colorDiffuse;
 	
 	if(g_bAlphaTesting)

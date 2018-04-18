@@ -65,11 +65,11 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 
 	if (g_bEnableSunLight)
 	{
-		o.colorDiffuse = colorDiffuse*dot(sun_vec.xyz, half3(0, 1, 0)) + colorAmbient;
+		o.colorDiffuse = colorDiffuse*dot(sun_vec.xyz, float3(0, 1, 0)) + colorAmbient;
 	}
 	else
 	{
-		o.colorDiffuse = half3(1,1,1);
+		o.colorDiffuse = float3(1,1,1);
 	}
 
 	o.colorDiffuse *= g_skycolorfactor;
@@ -88,17 +88,17 @@ Interpolants vertexShader(	float4	Pos			: POSITION,
 //                              Pixel Shader
 //
 ////////////////////////////////////////////////////////////////////////////////
-half CalcFogFactor( half d )
+float CalcFogFactor( float d )
 {
-    half fogCoeff = 0;
+    float fogCoeff = 0;
 	fogCoeff = (d - g_fogParam.x)/g_fogParam.y;
     return saturate( fogCoeff);
 }
 
-half4 pixelShader(Interpolants i) : COLOR
+float4 pixelShader(Interpolants i) : COLOR
 {
-	half4 o;
-	half4 normalColor = tex2D(tex0Sampler, i.tex.xy);
+	float4 o;
+	float4 normalColor = tex2D(tex0Sampler, i.tex.xy);
 	normalColor.xyz = normalColor.xyz*i.colorDiffuse;
 	
 	if (g_bAlphaTesting)
@@ -111,9 +111,9 @@ half4 pixelShader(Interpolants i) : COLOR
 	{
 		//calculate the fog factor
 		#ifdef NODISTORTION_FOG
-			half fog = CalcFogFactor(i.pos.y/length(i.pos.xz));
+			float fog = CalcFogFactor(i.pos.y/length(i.pos.xz));
 		#else	
-			half fog = CalcFogFactor(i.tex.z);
+			float fog = CalcFogFactor(i.tex.z);
 		#endif
 		
 		o.xyz = lerp(g_fogColor.xyz, normalColor.xyz, fog);

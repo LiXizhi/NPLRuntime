@@ -48,8 +48,12 @@ const char* GLProgram::SHADER_3D_SKINPOSITION_TEXTURE = "Shader3DSkinPositionTex
 
 // Attribute names
 const char* GLProgram::ATTRIBUTE_NAME_COLOR = "a_color";
+const char* GLProgram::ATTRIBUTE_NAME_COLOR1 = "a_color2";
 const char* GLProgram::ATTRIBUTE_NAME_POSITION = "a_position";
 const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD = "a_texCoord";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD1 = "a_texCoord2";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD2 = "a_texCoord3";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD3 = "a_texCoord4";
 const char* GLProgram::ATTRIBUTE_NAME_NORMAL = "a_normal";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_WEIGHT = "a_blendWeight";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_INDEX = "a_blendIndex";
@@ -185,7 +189,11 @@ void GLProgram::bindPredefinedVertexAttribs()
 	{
 		{ GLProgram::ATTRIBUTE_NAME_POSITION, GLProgram::VERTEX_ATTRIB_POSITION },
 		{ GLProgram::ATTRIBUTE_NAME_COLOR, GLProgram::VERTEX_ATTRIB_COLOR },
+		{ GLProgram::ATTRIBUTE_NAME_COLOR1, GLProgram::VERTEX_ATTRIB_COLOR1 },
 		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD, GLProgram::VERTEX_ATTRIB_TEX_COORD },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD1, GLProgram::VERTEX_ATTRIB_TEX_COORD1 },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD2, GLProgram::VERTEX_ATTRIB_TEX_COORD2 },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD3, GLProgram::VERTEX_ATTRIB_TEX_COORD3 },
 		{ GLProgram::ATTRIBUTE_NAME_NORMAL, GLProgram::VERTEX_ATTRIB_NORMAL },
 	};
 
@@ -359,6 +367,25 @@ void GLProgram::bindAttribLocation(const std::string &attributeName, GLuint inde
 
 void GLProgram::updateUniforms()
 {
+	_builtInUniforms[UNIFORM_SAMPLER0] = glGetUniformLocation(_program, "tex0Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER1] = glGetUniformLocation(_program, "tex1Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER2] = glGetUniformLocation(_program, "tex2Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER3] = glGetUniformLocation(_program, "tex3Sampler");
+
+	this->use();
+
+	// Since sample most probably won't change, set it to 0,1,2,3 now.
+	if (_builtInUniforms[UNIFORM_SAMPLER0] != -1)
+		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER0], 0);
+	if (_builtInUniforms[UNIFORM_SAMPLER1] != -1)
+		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER1], 1);
+	if (_builtInUniforms[UNIFORM_SAMPLER2] != -1)
+		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER2], 2);
+	if (_builtInUniforms[UNIFORM_SAMPLER3] != -1)
+		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER3], 3);
+
+	// clear any glErrors created by any not found uniforms
+	glGetError();
 }
 
 bool GLProgram::link()
