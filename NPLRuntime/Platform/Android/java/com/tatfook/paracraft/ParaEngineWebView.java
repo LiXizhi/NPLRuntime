@@ -108,10 +108,11 @@ public class ParaEngineWebView extends WebView {
         this.setWebChromeClient(new WebChromeClient());
 	}
 
+
+
 	class ParaEngineWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, final String urlString) {
-
             AppActivity activity = (AppActivity)getContext();
 		
             try {
@@ -120,8 +121,14 @@ public class ParaEngineWebView extends WebView {
 				if (uri != null)
 				{
 					if (uri.getScheme().equals(mAppScheme)) {
-						Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-						activity.startActivity(intent);
+						//Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+						//activity.startActivity(intent);
+						activity.runOnGLThread(new Runnable() {
+							@Override
+							public void run() {
+								ParaEngineWebViewHelper.transportCmdLine(urlString);
+							}
+						});
 						return true;
 					}
 					else if (uri.getScheme().equals(mJSScheme)) {
