@@ -1,9 +1,13 @@
+
+
+
 #include "ParaEngine.h"
 #include "GLImage.h"
 #include "s3tc.h"
-
 #include "jpeglib.h"
 #include "png.h"
+
+
 
 #ifdef WIN32
 // just for compatibility with previous version of libpng.lib built by earlier version of visual studio 2015
@@ -444,7 +448,7 @@ bool GLImage::initWithJpgData(const unsigned char * data, size_t dataLen)
 		/* reading the image header which contains image information */
 #if (JPEG_LIB_VERSION >= 90)
 		// libjpeg 0.9 adds stricter types.
-		jpeg_read_header(&cinfo, TRUE);
+		jpeg_read_header(&cinfo, (boolean)1);
 #else
 		jpeg_read_header(&cinfo, TRUE);
 #endif
