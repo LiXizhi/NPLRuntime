@@ -1095,6 +1095,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 	if (!m_Effect) return false;
 
 	static std::unordered_map<std::string, uint32> table;
+	if(table.empty())
 	{
 		table["world"] = k_worldMatrix;
 		table["worldinverse"] = k_worldInverseMatrix;
@@ -1160,8 +1161,6 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["specularPower"] = k_specularPower;
 		table["transitionFactor"] = k_transitionFactor;
 		table["LightParams"] = k_LightParams;
-
-
 	}
 
 	m_ID2Names.clear();
@@ -1190,8 +1189,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 
 		}
 		else {
-			//std::cout << std::endl << "can't parse uniform " << name << ", unkonw semantic " << sec << std::endl;
-			OUTPUT_LOG("can't parse uniform %s , unkonw semantic ", name.c_str(), sec.c_str());
+			OUTPUT_LOG("can't parse uniform %s , unknown semantic ", name.c_str(), sec.c_str());
 		}
 	}
 

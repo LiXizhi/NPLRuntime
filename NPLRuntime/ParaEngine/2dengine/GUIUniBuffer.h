@@ -6,26 +6,18 @@
 #include "GUIUniBufferOpenGL.h"
 #else
 
-#include "SpriteFontEntity.h"
-#include <vector>
-
 namespace ParaEngine
 {
-	struct GUIFontElement;
-
-
 	/** Null implementation. */
 	class CUniBuffer
 	{
-	public:
-		CUniBuffer();
 	public:
 		static void Initialize() {};
 		static void Uninitialize() {};
 		int  GetTextSize()const;
 		const char16_t* GetBuffer()const;
 
-		const char16_t& operator[](int n);
+		char16_t& operator[](int n);
 		/**
 		@param nLength:	[in] Specifies the size, in bytes, of the buffer pointed to by the lpMultiByteStr parameter. If this value is zero, the function returns the number of bytes required for the buffer. (In this case, the lpMultiByteStr buffer is not used.)
 		@return:
@@ -37,7 +29,6 @@ namespace ParaEngine
 		bool InsertChar(int nIndex, char16_t wchar);
 		// Removes the char at specified index. If nIndex == -1, remove the last char.
 		bool RemoveChar(int nIndex);
-		bool ReplaceChar(int nIndex, char16_t wchar);
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
 		bool InsertString(int nIndex, const char16_t *pStr, int nCount = -1);
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
@@ -58,24 +49,9 @@ namespace ParaEngine
 		const std::u16string& GetUtf16Text() const { return m_utf16Text; }
 
 		bool IsEmpty();
-
-		void SetFontNode(GUIFontElement *pFontNode);
-		void SetRect(const RECT& r);
-
-		bool IsDirty() const;
-
-	private:
-		void updateLettersInfo();
 	protected:
 		std::string m_utf8Text;
 		std::u16string m_utf16Text;
-		GUIFontElement* m_pFontNode;
-		RECT m_rect;
-		bool m_isDirty;
-		std::vector<GLLabel::LetterInfo>* m_pLettersInfo;
-		DWORD m_lastTextFormat;
-		float m_labelHeight;
-		int* m_horizontalKernings;
 	};
 }
 #endif

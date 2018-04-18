@@ -128,7 +128,7 @@ bool ParaEngine::RenderDeviceNull::SetClearStencil(const int stencil)
 	return true;
 }
 
-bool ParaEngine::RenderDeviceNull::Clear(bool color, bool depth, float stencil)
+bool ParaEngine::RenderDeviceNull::Clear(bool color, bool depth, bool stencil)
 {
 	return true;
 }
