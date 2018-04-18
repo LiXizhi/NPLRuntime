@@ -22,6 +22,8 @@ namespace ParaEngine
 		static AppDelegate& getInstance();
         
         void Run(android_app* app);
+
+		void onCmdLine(const std::string& cmd);
     private:
 		AppDelegate();
 		~AppDelegate();
@@ -46,10 +48,6 @@ namespace ParaEngine
         virtual void OnWindowResized();
 		virtual void OnTouch(const std::vector<TouchEventPtr>& events);
 		virtual void OnKey(const EVirtualKey& key, const EKeyState& state);
-
-	private:
-		void onCmdLine(const std::string& cmd);
-
 
 	protected:
 		CParaEngineAppAndroid* m_ParaEngineApp;
