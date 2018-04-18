@@ -10,7 +10,7 @@ if [ ! -d ./boost_1_65_0 ]; then
 	tar --bzip2 -xf boost_1_65_0.tar.bz2
 fi
 cd boost_1_65_0
-./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex"
+./bootstrap.sh --with-libraries="thread,date_time,filesystem,system,chrono,signals,serialization,iostreams,regex,log"
 ./b2 link=static threading=multi variant=release
 ./b2 install
 popd
