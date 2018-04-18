@@ -240,9 +240,9 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 {
 	if (m_listThickLines.size() == 0)
 		return;
+	CEffectFile* pEffect = NULL;
 #ifdef USE_OPENGL_RENDERER
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	CEffectFile* pEffect = NULL;
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
 	if (pEffect == 0 || !pEffect->begin() || !pEffect->BeginPass(0))
 	{
@@ -280,7 +280,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 
-		pEffect->CommitChanges();
+		if(pEffect)
+			pEffect->CommitChanges();
 
 		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
 

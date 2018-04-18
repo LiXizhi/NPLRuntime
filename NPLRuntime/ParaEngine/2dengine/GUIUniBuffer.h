@@ -8,6 +8,8 @@
 
 namespace ParaEngine
 {
+	struct GUIFontElement;
+
 	/** Null implementation. */
 	class CUniBuffer
 	{
@@ -29,6 +31,7 @@ namespace ParaEngine
 		bool InsertChar(int nIndex, char16_t wchar);
 		// Removes the char at specified index. If nIndex == -1, remove the last char.
 		bool RemoveChar(int nIndex);
+		bool ReplaceChar(int nIndex, char16_t wchar);
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
 		bool InsertString(int nIndex, const char16_t *pStr, int nCount = -1);
 		// Inserts the first nCount characters of the string pStr at specified index.  If nCount == -1, the entire string is inserted. If nIndex == -1, insert to the end.
@@ -49,6 +52,9 @@ namespace ParaEngine
 		const std::u16string& GetUtf16Text() const { return m_utf16Text; }
 
 		bool IsEmpty();
+
+		void SetFontNode(GUIFontElement *pFontNode) {};
+		void SetRect(const RECT& r) {};
 	protected:
 		std::string m_utf8Text;
 		std::u16string m_utf16Text;
