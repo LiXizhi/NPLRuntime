@@ -39,7 +39,7 @@ struct SimpleVSOut
 {
 	float4 pos	:POSITION;
 	float2 texcoord :	TEXCOORD0;
-	half4 color : COLOR0;
+	float4 color : COLOR0;
 };
 
 struct SelectBlockVertexLayout
@@ -70,8 +70,8 @@ float CalcFogFactor(float d)
 // color.x: sun light  color.y:block light  color.z*255 block_id; 
 SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 							float3	Norm	: NORMAL,
-							half4 color		: COLOR0,
-							half4 color2 : COLOR1,
+							float4 color		: COLOR0,
+							float4 color2 : COLOR1,
 							float2 texcoord	: TEXCOORD0)
 {
 	SimpleVSOut output;
@@ -105,8 +105,8 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 // color.x: sun light  color.y:block light  color.z*255 block_id; 
 SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 							float3	Norm	: NORMAL,
-							half4 color		: COLOR0,
-							half4 color2	: COLOR1,
+							float4 color		: COLOR0,
+							float4 color2	: COLOR1,
 							float2 texcoord	: TEXCOORD0)
 {
 	SimpleVSOut output;

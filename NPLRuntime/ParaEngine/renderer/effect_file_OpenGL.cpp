@@ -21,6 +21,7 @@
 #include "hlsl2glsl.h"
 #include "hlslCrossCompiler.h"
 #include "hlslLinker.h"
+
 using namespace ParaEngine;
 
 
@@ -1188,7 +1189,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 
 		}
 		else {
-			std::cout << std::endl << "can't parse uniform " << name << ", unknown semantic " << sec << std::endl;
+			OUTPUT_LOG("can't parse uniform %s , unknown semantic ", name.c_str(), sec.c_str());
 		}
 	}
 
@@ -1374,7 +1375,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 	if (m_Effect == NULL)return false;
 	auto techniques = m_Effect->getTechiques();
 	if (techniques.empty()) {
-		std::cout << std::endl << "no techinique" << std::endl;
+		//std::cout << std::endl << "no techinique" << std::endl;
+		OUTPUT_LOG("no techinique");
 		return false;
 	}
 
@@ -1384,7 +1386,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		auto passes = tec->getPasses();
 		if (passes.empty())
 		{
-			std::cout << std::endl << "no pass" << std::endl;
+			//std::cout << std::endl << "no pass" << std::endl;
+			OUTPUT_LOG("no pass");
 			return false;
 		}
 
@@ -1423,13 +1426,15 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 
 			if (vs_codeblock_name == "")
 			{
-				std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+				//std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+				OUTPUT_LOG("Vertex Shader Codeblock name can't be empty");
 				return false;
 			}
 
 			if (ps_codeblock_name == "")
 			{
-				std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+				//std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+				OUTPUT_LOG("Pixel Shader Codeblock name can't be empty");
 				return false;
 			}
 
@@ -1445,17 +1450,49 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 			bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms);
 			if (!ret || vscode == "")
 			{
-				std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				//std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name << "  shader:" << GetFileName() << std::endl;
+
+				OUTPUT_LOG("can't translate vertex shader %s  shader: %s", vs_codeblock_name.c_str(), GetFileName().c_str());
 				return false;
 			}
 			ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms);
-			if (!ret || vscode == "")
+			if (!ret || pscode == "")
 			{
-				std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				//std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+
+				OUTPUT_LOG("can't translate fragment shader %s  shader: %s", ps_codeblock_name.c_str(), GetFileName().c_str());
 				return false;
 			}
 
-			std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+			//std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+			OUTPUT_LOG("Compile Pass %d", nPass);
+
+			//{
+			//	auto size = vscode.size();
+			//	size_t i = 0;
+			//	while (size > 0)
+			//	{
+			//		auto len = (std::min)(size, (size_t)100);
+			//		std::string s(vscode.c_str() + i, len);
+			//		OUTPUT_LOG("%s", s.c_str());
+			//		i += len;
+			//		size -= len;
+			//	}
+			//}
+
+			//{
+			//	auto size = pscode.size();
+			//	size_t i = 0;
+			//	while (size > 0)
+			//	{
+			//		auto len = (std::min)(size, (size_t)100);
+			//		std::string s(pscode.c_str() + i, len);
+			//		OUTPUT_LOG("%s", s.c_str());
+			//		i += len;
+			//		size -= len;
+			//	}
+			//}
+
 			if (initWithByteArrays(vscode.c_str(), pscode.c_str(), tecIndex,nPass))
 			{
 				if (link(tecIndex, nPass))
@@ -1464,13 +1501,15 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 				}
 				else
 				{
-					std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+					//std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+					OUTPUT_LOG("[%s] link pass %d failed", m_filename.c_str(), nPass);
 					return false;
 				}
 			}
 			else
 			{
-				std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+				//std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+				OUTPUT_LOG("[%s] compile pass %d failed", m_filename.c_str(), nPass);
 				return false;
 			}
 		}
