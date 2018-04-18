@@ -123,7 +123,12 @@ public class ParaEngineWebView extends WebView {
 					if (uri.getScheme().equals(mAppScheme)) {
 						//Intent intent = new Intent(Intent.ACTION_VIEW, uri);
 						//activity.startActivity(intent);
-						ParaEngineWebViewHelper.transportCmdLine(urlString);
+						activity.runOnGLThread(new Runnable() {
+							@Override
+							public void run() {
+								ParaEngineWebViewHelper.transportCmdLine(urlString);
+							}
+						});
 						return true;
 					}
 					else if (uri.getScheme().equals(mJSScheme)) {
