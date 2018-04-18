@@ -1189,7 +1189,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 
 		}
 		else {
-			OUTPUT_LOG("can't parse uniform %s , unknown semantic ", name.c_str(), sec.c_str());
+			// OUTPUT_LOG("can't parse uniform %s , unknown semantic ", name.c_str(), sec.c_str());
 		}
 	}
 
