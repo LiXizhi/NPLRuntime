@@ -499,7 +499,7 @@ bool ParaEngine::CEffectFileOpenGL::link(int nTech, int nPass)
 	if (program)
 	{
 		// we need to support color2 for block shader
-		program->bindAttribLocation("a_color2", GLProgram::VERTEX_ATTRIB_MAX + 0);
+		//program->bindAttribLocation("a_color2", GLProgram::VERTEX_ATTRIB_MAX + 0);
 	}
 
 	if (program && program->link())
