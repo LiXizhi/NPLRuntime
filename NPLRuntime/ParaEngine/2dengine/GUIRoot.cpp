@@ -1741,12 +1741,12 @@ bool CGUIRoot::UpdateViewport(int nLeft, int nTop, int nWidth, int nHeight, bool
 	GetUIScale(&fScaleX, &fScaleY);
 	if (fScaleX != 1.f)
 	{
-		nWidth = (int)((float)(nWidth) / fScaleX + 0.5f) ;
+		nWidth = (int)((float)(nWidth) / fScaleX + 0.9f) ;
 	}
 
 	if (fScaleY != 1.f)
 	{
-		nHeight = (int)((float)(nHeight) / fScaleY + 0.5f);
+		nHeight = (int)((float)(nHeight) / fScaleY + 0.9f);
 	}
 	
 	bool bSizeChanged = (pGUIState->nBkbufWidth != nWidth || pGUIState->nBkbufHeight != nHeight);
