@@ -286,14 +286,14 @@ namespace ParaEngine
 		*/
 		PE_DEPRECATED_ATTRIBUTE virtual void GetCursorPosition(int* pX, int * pY, bool bInBackbuffer = true) = 0;
 
-		/** translate a postion from game coordination system to client window position. 
+		/** translate a position from game coordination system to client window position. 
 		* @param inout_x: in and out
 		* @param inout_y: in and out
 		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size. 
 		*/
 		virtual void GameToClient(int& inout_x,int & inout_y, bool bInBackbuffer = true) = 0;
 
-		/** translate a postion from client window position to game coordination system. 
+		/** translate a position from client window position to game coordination system. 
 		* @param inout_x: in and out
 		* @param inout_y: in and out
 		* @param bInBackbuffer: if true, it will scale the output according to the ratio of back buffer and current window size. 

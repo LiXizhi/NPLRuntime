@@ -8,6 +8,8 @@ elseif(WIN32)
     add_subdirectory(Windows)
 elseif(APPLE)
     add_subdirectory(OSX)
+else() #Linux
+    add_subdirectory(Linux)
 endif()
 
 

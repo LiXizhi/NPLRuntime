@@ -6,12 +6,10 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#if defined(PARAENGINE_SERVER)
 #include "BootStrapper.h"
 #include "ParaWorldAsset.h"
 #include "SceneObject.h"
 #include "2dengine/GUIRoot.h"
-#include "ParaEngineAppImp.h"
 #include "ViewportManager.h"
 #include "FrameRateController.h"
 #include "NPLRuntime.h"
@@ -22,25 +20,24 @@
 
 using namespace ParaEngine;
 
-ParaEngine::CParaEngineApp::CParaEngineApp(const char* lpCmdLine) 
+ParaEngine::CParaEngineServerApp::CParaEngineServerApp(const char* lpCmdLine)
 	: CParaEngineAppBase(lpCmdLine)
 {
 	StartApp(lpCmdLine);
 }
 
-DWORD ParaEngine::CParaEngineApp::GetCoreUsage()
+DWORD ParaEngine::CParaEngineServerApp::GetCoreUsage()
 {
 	return PE_USAGE_SERVICE;
 }
 
-CParaEngineApp::~CParaEngineApp()
+CParaEngineServerApp::~CParaEngineServerApp()
 {
 	StopApp();
 }
 
-bool ParaEngine::CParaEngineApp::StartApp(const char* sCommandLine /*= 0*/)
+bool ParaEngine::CParaEngineServerApp::StartApp(const char* sCommandLine)
 {
-	SetCurrentInstance(this);
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 	SetAppCommandLine(strCmd.c_str());
@@ -52,16 +49,16 @@ bool ParaEngine::CParaEngineApp::StartApp(const char* sCommandLine /*= 0*/)
 
 	OUTPUT_LOG1("ParaEngineServer started\n");
 	
-	return S_OK;
+	return true;
 }
 
 
-void CParaEngineApp::BootStrapAndLoadConfig()
+void CParaEngineServerApp::BootStrapAndLoadConfig()
 {
 	FindBootStrapper();
 }
 
-void CParaEngineApp::InitSystemModules()
+void CParaEngineServerApp::InitSystemModules()
 {
 	m_pParaWorldAsset.reset(new CParaWorldAsset());
 	CAISimulator::GetSingleton()->SetGameLoop(CBootStrapper::GetSingleton()->GetMainLoopFile());
@@ -71,11 +68,11 @@ void CParaEngineApp::InitSystemModules()
 	m_pViewportManager->SetLayout(VIEW_LAYOUT_DEFAULT, m_pRootScene.get(), m_pGUIRoot.get());
 }
 
-void ParaEngine::CParaEngineApp::StopApp()
+void ParaEngine::CParaEngineServerApp::StopApp()
 {
 	// if it is already stopped, we shall return
 	if (!m_pParaWorldAsset)
-		return S_OK;
+		return;
 
 	FinalCleanup();
 
@@ -83,11 +80,9 @@ void ParaEngine::CParaEngineApp::StopApp()
 	m_pRootScene.reset();
 	m_pGUIRoot.reset();
 	m_pViewportManager.reset();
-	
-	return S_OK;
 }
 
-HRESULT CParaEngineApp::FrameMove(double fTime)
+bool CParaEngineServerApp::FrameMove(double fTime)
 {
 	double fElapsedGameTime = CGlobals::GetFrameRateController(FRC_GAME)->FrameMove(fTime);
 	double fElapsedEnvSimTime = CGlobals::GetFrameRateController(FRC_SIM)->FrameMove(fTime);
@@ -105,8 +100,7 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 	}
 	OnFrameEnded();
 
-	return S_OK;
+	return true;
 }
-#endif
 
 

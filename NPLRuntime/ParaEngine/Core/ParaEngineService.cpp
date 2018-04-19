@@ -7,7 +7,7 @@
 // Desc: Cross platformed. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifndef PARAENGINE_MOBILE
+
 #include "util/ParaTime.h"
 #include <boost/bind.hpp>
 #include "util/keyboard.h"
@@ -266,4 +266,3 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 	}
 	return return_code;
 }
-#endif

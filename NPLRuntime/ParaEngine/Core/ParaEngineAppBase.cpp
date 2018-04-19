@@ -873,6 +873,66 @@ bool ParaEngine::CParaEngineAppBase::IsAppActive()
 	return m_bActive;
 }
 
+void ParaEngine::CParaEngineAppBase::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
+{
+
+}
+
+void ParaEngine::CParaEngineAppBase::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::AppHasFocus()
+{
+	return true;
+}
+
+void ParaEngine::CParaEngineAppBase::GetStats(string& output, DWORD dwFields)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
+{
+	return false;
+}
+
+void ParaEngine::CParaEngineAppBase::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
+{
+
+}
+
+const char* ParaEngine::CParaEngineAppBase::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
+{
+	return NULL;
+}
+
+bool ParaEngine::CParaEngineAppBase::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
+{
+	return false;
+}
+
+DWORD ParaEngine::CParaEngineAppBase::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
+{
+	return 0;
+}
+
+bool ParaEngine::CParaEngineAppBase::GetAutoLowerFrameRateWhenNotFocused()
+{
+	return false;
+}
+
+void ParaEngine::CParaEngineAppBase::SetToggleSoundWhenNotFocused(bool bEnabled)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::GetToggleSoundWhenNotFocused()
+{
+	return false;
+}
+
 void ParaEngine::CParaEngineAppBase::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 {
 	if (nFrameRateControl == 1)

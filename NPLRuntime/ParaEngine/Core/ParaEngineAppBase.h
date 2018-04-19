@@ -44,6 +44,19 @@ namespace ParaEngine
 		/** whether the application is active or not. */
 		virtual bool IsAppActive() override;
 
+		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
+		virtual void ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
+		virtual bool AppHasFocus() override;
+		virtual void GetStats(string& output, DWORD dwFields) override;
+		virtual bool WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value) override;
+		virtual void SetAutoLowerFrameRateWhenNotFocused(bool bEnabled) override;
+		virtual const char* ReadRegStr(const string& root_key, const string& sSubKey, const string& name) override;
+		virtual bool WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value) override;
+		virtual DWORD ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name) override;
+		virtual bool GetAutoLowerFrameRateWhenNotFocused() override;
+		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
+		virtual bool GetToggleSoundWhenNotFocused() override;
+		
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.
 		* @return frameDelta. if this is bigger than 0, we will render a frame.
@@ -397,7 +410,7 @@ namespace ParaEngine
 
 	public:
 		/** managing multiple 3d views */
-		CViewportManager * GetViewportManager();
+		CViewportManager * GetViewportManager() override;
 
 		virtual void VerifyCommandLine(const char* sCommandLine, std::string &strCmd);
 

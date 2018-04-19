@@ -476,8 +476,10 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 HRESULT ParaEngine::CRenderTarget::RendererRecreated()
 {
 	m_bInitialized = false;
+#ifdef USE_OPENGL_RENDERER
 	_FBO = 0;
 	_depthRenderBufffer = 0;
+#endif
 	CBaseObject::RendererRecreated();
 }
 
