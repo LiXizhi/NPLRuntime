@@ -2240,6 +2240,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
+
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
