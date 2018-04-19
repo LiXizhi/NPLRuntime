@@ -28,7 +28,7 @@ ucm_add_dirs(
     2dengine
     PaintEngine
     3dengine
-    Util
+    util
     WebSocket
     terrain
 TO sources_commmon RECURSIVE

@@ -19,6 +19,13 @@
 
 #include "util/keyboard.h"
 
+using namespace ParaEngine;
+
+ParaEngine::IParaEngineApp* CreateParaEngineApp()
+{
+	return new ParaEngine::CParaEngineServerApp();
+}
+
 int main(int argc, char **argv)
 {
 	int exit_code = 0;

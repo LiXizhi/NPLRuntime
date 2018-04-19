@@ -524,6 +524,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		pDevice->SetClearDepth(1.0f);

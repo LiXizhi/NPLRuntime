@@ -8,6 +8,13 @@
 //-----------------------------------------------------------------------
 
 #if !defined(USE_DIRECTX_RENDERER) && !defined(USE_OPENGL_RENDERER)
+#include "ParaEngine.h"
+#include "util/StringHelper.h"
+#include "GUIUniBuffer.h"
+
+using namespace ParaEngine;
+
+
 int ParaEngine::CUniBuffer::GetBufferA(std::string& out) const
 {
 	out = m_utf8Text;
@@ -56,6 +63,11 @@ bool ParaEngine::CUniBuffer::RemoveChar(int nIndex)
 		StringHelper::UTF16ToUTF8(m_utf16Text, m_utf8Text);
 	}
 	return true;
+}
+
+bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+
 }
 
 bool ParaEngine::CUniBuffer::InsertString(int nIndex, const char16_t *pStr, int nCount /*= -1*/)
