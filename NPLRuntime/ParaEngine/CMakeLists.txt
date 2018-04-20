@@ -201,7 +201,7 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite 
+    ParaSqlite 
 	${ICONV_LIB_NAME}
 )
 
