@@ -668,15 +668,15 @@ namespace ParaEngine
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 				CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
 
+				// set the wave time parameter
+				double time = CGlobals::GetGameTime();
+				// in case it loses accuracy, we will subtract integer number of 2*PI from time
+				// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
+				time = (int)(time * 1000) % 1000000;
+				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
-					//////////////////////////////////////////////////////////////////////////
-					// set the wave time parameter
-					double time = CGlobals::GetGameTime(); 
-					// in case it loses accuracy, we will subtract integer number of 2*PI from time
-					// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
-					time = (int)(time*1000) % 1000000;
-					pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 				}
 				else
 				{

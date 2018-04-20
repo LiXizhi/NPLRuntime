@@ -3,6 +3,10 @@
 
 #define ALPHA_TESTING_REF  0.95
 
+#define BLOCK_SIZE	1.0416666
+#define WAVING_GRASS
+#define WAVING_LEAVES
+
 /** undefine to use linear torch light, otherwise it is power */
 // #define POWER_LIGHT_TORCH
 
@@ -18,6 +22,10 @@ float4x4 mWorldViewProj : worldviewprojection;
 // for selection effect: light_params.x: sun_lightIntensity, light_params.y: damageDegree
 // for block effect: light_params.xyz: light color, light_params.w light intensity
 float4 light_params: ConstVector0; 
+// x for world time, y for rainStrength,
+float4 g_parameter0		: ConstVector1;
+// world position
+float4 vWorldPos		: worldpos;
 float4 sun_vec: sunvector;
 
 bool g_bEnableFog		:fogenable;
@@ -110,13 +118,64 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 							float2 texcoord	: TEXCOORD0)
 {
 	SimpleVSOut output;
-	output.pos = mul(pos, mWorldViewProj);
 	output.texcoord = texcoord;
 	
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
 	float3 torch_light = light_params.xyz * torch_light_strength;
 
+	// category id for block types 
+	int category_id = (int)(color.z * 255.0 + 0.4);
+	
+#ifdef WAVING_GRASS	
+	// convert to 60FPS ticks
+	float worldTime = g_parameter0.x / 60.0 * 3.14159265358979323846264;
+	// usually 0
+	float rainStrength = g_parameter0.y;
+	float3 world_pos = vWorldPos.xyz + pos.xyz * BLOCK_SIZE;
+
+	//Grass//
+	if (category_id == 31 && texcoord.y < 0.15)
+	{
+		float speed = 8.0;
+
+		float magnitude = sin((worldTime / (28.0)) + world_pos.x + world_pos.z) * 0.1 + 0.1;
+		float d0 = sin(worldTime / (122.0 * speed)) * 3.0 - 1.5 + world_pos.z;
+		float d1 = sin(worldTime / (152.0 * speed)) * 3.0 - 1.5 + world_pos.x;
+		float d2 = sin(worldTime / (122.0 * speed)) * 3.0 - 1.5 + world_pos.x;
+		float d3 = sin(worldTime / (152.0 * speed)) * 3.0 - 1.5 + world_pos.z;
+		pos.x += sin((worldTime / (28.0 * speed)) + (world_pos.x + d0) * 0.1 + (world_pos.z + d1) * 0.1) * magnitude * (1.0f + rainStrength * 1.4f);
+		pos.z += sin((worldTime / (28.0 * speed)) + (world_pos.z + d2) * 0.1 + (world_pos.x + d3) * 0.1) * magnitude * (1.0f + rainStrength * 1.4f);
+
+		//small leaf movement//
+		speed = 0.8;
+
+		magnitude = (sin(((world_pos.y + world_pos.x) / 2.0 + worldTime / ((28.0)))) * 0.05 + 0.15) * 0.4;
+		d0 = sin(worldTime / (112.0 * speed)) * 3.0 - 1.5;
+		d1 = sin(worldTime / (142.0 * speed)) * 3.0 - 1.5;
+		d2 = sin(worldTime / (112.0 * speed)) * 3.0 - 1.5;
+		d3 = sin(worldTime / (142.0 * speed)) * 3.0 - 1.5;
+		pos.x += sin((worldTime / (18.0 * speed)) + (-world_pos.x + d0)*1.6 + (world_pos.z + d1)*1.6) * magnitude * (1.0f + rainStrength * 1.7f);
+		pos.z += sin((worldTime / (18.0 * speed)) + (world_pos.z + d2)*1.6 + (-world_pos.x + d3)*1.6) * magnitude * (1.0f + rainStrength * 1.7f);
+		pos.y += sin((worldTime / (11.0 * speed)) + (world_pos.z + d2) + (world_pos.x + d3)) * (magnitude / 3.0) * (1.0f + rainStrength * 1.7f);
+	}
+#endif
+
+#ifdef WAVING_LEAVES
+	//Leaves//
+	if (category_id == 18) {
+		float speed = 1.0;
+		float magnitude = (sin((world_pos.y + world_pos.x + worldTime / ((28.0) * speed))) * 0.15 + 0.15) * 0.20;
+		float d0 = sin(worldTime / (112.0 * speed)) * 3.0 - 1.5;
+		float d1 = sin(worldTime / (142.0 * speed)) * 3.0 - 1.5;
+		float d2 = sin(worldTime / (132.0 * speed)) * 3.0 - 1.5;
+		float d3 = sin(worldTime / (122.0 * speed)) * 3.0 - 1.5;
+		pos.x += sin((worldTime / (18.0 * speed)) + (-world_pos.x + d0)*1.6 + (world_pos.z + d1)*1.6) * magnitude * (1.0f + rainStrength * 1.0f);
+		pos.z += sin((worldTime / (17.0 * speed)) + (world_pos.z + d2)*1.6 + (-world_pos.x + d3)*1.6) * magnitude * (1.0f + rainStrength * 1.0f);
+		pos.y += sin((worldTime / (11.0 * speed)) + (world_pos.z + d2) + (world_pos.x + d3)) * (magnitude / 2.0) * (1.0f + rainStrength * 1.0f);
+	}
+#endif	
+	output.pos = mul(pos, mWorldViewProj);
 	// sun light + sky(fog) light
 	float sun_light_strength = clamp(color.x*light_params.w, 0, 1); // normalize to 0,1 range
 	float3 sun_light = (float3(1,1,1) + g_fogColor.xyz * 0.05) * sun_light_strength;
