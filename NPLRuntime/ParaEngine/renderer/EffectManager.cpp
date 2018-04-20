@@ -2294,6 +2294,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 

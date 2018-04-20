@@ -1116,7 +1116,6 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["flareColor"] = k_lensFlareColor;
 		table["fogparameters"] = k_fogParameters;
 		table["fogColor"] = k_fogColor;
-		table["shadowfactor"] = k_shadowFactor;
 		table["LightStrength"] = k_LightStrength;
 		table["shadowfactor"] = k_shadowFactor;
 		table["LightStrength"] = k_LightStrength;
@@ -1138,9 +1137,11 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["worldpos"] = k_worldPos;
 		table["texCoordOffset"] = k_texCoordOffset;
 		table["curnumbones"] = k_boneInfluenceCount;
+		
 		table["fogenable"] = k_fogEnable;
 		table["alphatesting"] = k_bAlphaTesting;
-
+		table["alphablending"] = k_bAlphaBlending;
+		
 		// boolean
 		for (int i = 0; i < (k_bBooleanMAX - k_bBoolean0); i++)
 		{
