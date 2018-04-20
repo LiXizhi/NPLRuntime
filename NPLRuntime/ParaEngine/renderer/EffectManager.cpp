@@ -2263,8 +2263,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_CLAMP);
 		// used to be D3DTEXF_LINEAR in PC, but we force using POINT in mobile version. 
 		// since the sky texture is really low resolution. 
-		SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
-		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
+		//SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
+		//SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
