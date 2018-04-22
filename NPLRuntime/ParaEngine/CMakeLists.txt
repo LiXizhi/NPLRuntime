@@ -28,14 +28,13 @@ ucm_add_dirs(
     2dengine
     PaintEngine
     3dengine
-    Util
+    util
     WebSocket
     terrain
 TO sources_commmon RECURSIVE
 )
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
-#{
     set(RenderSystem RenderSystemOpenGL)
     ucm_add_dirs(
         OpenGLWrapper
@@ -49,9 +48,12 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
-#}
+
+	SOURCE_GROUP("ShaderFiles" FILES ${SHADER_FILES})
+	SET_SOURCE_FILES_PROPERTIES(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+	list(APPEND sources_rendersystem ${SHADER_FILES})
+
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-#{
     include(${PROJECT_SOURCE_DIR}/cmake/FindDirectX.cmake)
     set(RenderSystem RenderSystemD3D9)
     ucm_add_dirs(
@@ -111,12 +113,9 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
         endif()
     endif()
 
-#}
 elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
-#{
     set(RenderSystem RenderSystemNull)
     list(APPEND sources_rendersystem ResourceEmbedded.cpp)
-#}  
 endif()
 
 
@@ -192,6 +191,10 @@ if (NPLRUNTIME_SUPPORT_FBX)
 	list(APPEND NPLRUNTIME_LIBS assimp)
 endif()
 
+if (PHYSICS_STATICLIB)
+	list(APPEND NPLRUNTIME_LIBS PhysicsBT)
+endif()
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
@@ -203,7 +206,7 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite 
+    ParaSqlite 
 	${ICONV_LIB_NAME}
 )
 
@@ -214,9 +217,15 @@ if(WIN32 AND PARAENGINE_CLIENT_DLL)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_DLL)
 endif()
 
-if(NPLRUNTIME_STATIC_LIB)
-	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_STATICLIB)
+if (SQLITE_STATICLIB)
 	list(APPEND PARAENGINE_DEF_LIST SQLITE_STATICLIB)
+endif()
+
+if (PHYSICS_STATICLIB)
+	list(APPEND PARAENGINE_DEF_LIST PHYSICS_STATICLIB)
+endif()
+
+if(NPLRUNTIME_STATIC_LIB)
 	list(APPEND PARAENGINE_DEF_LIST CURL_STATICLIB)
 	list(APPEND PARAENGINE_DEF_LIST PE_CORE_EXPORTING)
 else()

@@ -207,6 +207,8 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+	if(pEffect)
+		pEffect->CommitChanges();
 #elif defined(USE_DIRECTX_RENDERER)
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
@@ -238,9 +240,9 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 {
 	if (m_listThickLines.size() == 0)
 		return;
+	CEffectFile* pEffect = NULL;
 #ifdef USE_OPENGL_RENDERER
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	CEffectFile* pEffect = NULL;
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
 	if (pEffect == 0 || !pEffect->begin() || !pEffect->BeginPass(0))
 	{
@@ -277,6 +279,9 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
+
+		if(pEffect)
+			pEffect->CommitChanges();
 
 		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
 

@@ -21,15 +21,13 @@
 #include "hlsl2glsl.h"
 #include "hlslCrossCompiler.h"
 #include "hlslLinker.h"
+
 using namespace ParaEngine;
 
 
-
-
-
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
-	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
-	, mTechniqueIndex(0)
+	: m_nActivePassIndex(0), m_bIsBegin(false), m_bIsBeginPass(false), m_pendingChangesCount(0)
+	, m_nTechniqueIndex(0)
 	,m_Effect(nullptr)
 {
 	SetFileName(filename);
@@ -38,7 +36,7 @@ ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const AssetKey& key)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
-	, mTechniqueIndex(0)
+	, m_nTechniqueIndex(0)
 	, m_Effect(nullptr)
 {
 	Init();
@@ -124,9 +122,9 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 {
 	if (nTech < 0)
 	{
-		for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
+		for (auto tech_index = 0; tech_index < (int)m_techniques.size(); ++tech_index)
 		{
-			auto & passes = mTechniques[tech_index].mPasses;
+			auto & passes = m_techniques[tech_index].m_passes;
 			if (nPass < 0)
 			{
 				for (auto program : passes)
@@ -145,9 +143,9 @@ void ParaEngine::CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
 			}
 		}
 	}
-	else if ((int)mTechniques.size()>nTech)
+	else if ((int)m_techniques.size()>nTech)
 	{
-		auto & passes = mTechniques[nTech].mPasses;
+		auto & passes = m_techniques[nTech].m_passes;
 		if (nPass < 0)
 		{
 			for (auto program : passes)
@@ -182,12 +180,62 @@ void ParaEngine::CEffectFileOpenGL::EnableSunLight(bool bEnableSunLight)
 
 }
 
+bool ParaEngine::CEffectFileOpenGL::SetProgramParams(ParaEngine::CEffectFileOpenGL::ProgramCallbackFunction_t func)
+{
+	bool result = false;
+	if (m_bIsBegin && m_bIsBeginPass && m_nActivePassIndex >= 0 && m_nTechniqueIndex>=0)
+	{
+		// set only current technique's current pass
+		auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
+		if (program) {
+			result = func(program);
+		}
+	}
+	else if (m_bIsBegin)
+	{
+		// set current technique's all passes
+		if ((int)m_techniques.size() > m_nTechniqueIndex && m_nTechniqueIndex>=0)
+		{
+			int nCount = m_techniques[m_nTechniqueIndex].m_passes.size();
+			int nOldPass = m_nActivePassIndex;
+			for (int i=0;i<nCount; ++i)
+			{
+				auto program = GetGLProgram(m_nTechniqueIndex, i);
+				if (program) {
+					m_nActivePassIndex = i;
+					result = func(program) || result;
+				}
+			}
+			m_nActivePassIndex = nOldPass;
+		}
+	}
+	else
+	{
+		// set all techniques and all passes
+		int nOldPass = m_nActivePassIndex;
+		int nOldTech = m_nTechniqueIndex;
+		for (auto tech_index = 0; tech_index < (int)m_techniques.size(); ++tech_index)
+		{
+			m_nTechniqueIndex = tech_index;
+			int nCount = m_techniques[tech_index].m_passes.size();
+			for (int i = 0; i < nCount; ++i)
+			{
+				auto program = GetGLProgram(tech_index, i);
+				if (program) {
+					m_nActivePassIndex = i;
+					result = func(program) || result;
+				}
+			}
+		}
+		m_nActivePassIndex = nOldPass;
+		m_nTechniqueIndex = nOldTech;
+	}
+	return result;
+}
+
 bool ParaEngine::CEffectFileOpenGL::setMatrix(eParameterHandles index, const Matrix4* data)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program){
 		if (program && data != 0)
 		{
 			Uniform* uniform = GetUniformByID(index);
@@ -197,12 +245,12 @@ bool ParaEngine::CEffectFileOpenGL::setMatrix(eParameterHandles index, const Mat
 				// Xizhi 2014.9.16: for some reason, it does not need to be transposed, opengl already packed data in our way.
 				// Matrix4 matTranposed = data->transpose();
 				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), 1);
-				
-				ret = true;
+
+				return true;
 			}
 		}
-	}
-	return ret;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
@@ -213,81 +261,77 @@ bool ParaEngine::CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 bool ParaEngine::CEffectFileOpenGL::setParameter(Uniform* uniform, const void* data, int32 size)
 {
 	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
+	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
+	if (uniform && program && data != 0)
 	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
-		if (uniform && program && data != 0)
+		if (uniform->type == GL_INT)
 		{
-			if (uniform->type == GL_INT)
-			{
-				program->setUniformLocationWith1i(uniform->location, *((const GLint*)(data)));
+			program->setUniformLocationWith1i(uniform->location, *((const GLint*)(data)));
 
-				PE_CHECK_GL_ERROR_DEBUG();
-			}
-			else if (uniform->type == GL_BOOL)
-			{
-				program->setUniformLocationWith1i(uniform->location, *((const bool*)(data)));
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (uniform->type == GL_FLOAT)
-			{
-				program->setUniformLocationWith1f(uniform->location, *((const GLfloat*)(data)));
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (uniform->type == GL_FLOAT_VEC3)
-			{
-				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (uniform->type == GL_FLOAT_VEC2)
-			{
-				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (uniform->type == GL_FLOAT_VEC4)
-			{
-				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (uniform->type == GL_FLOAT_MAT4)
-			{
-				program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), uniform->size);
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else if (size > 0)
-			{
-				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), (uint32)((size + 1) / 2));
-				PE_CHECK_GL_ERROR_DEBUG();
-				
-			}
-			else
-			{
-				OUTPUT_LOG("warn: unknown uniform size and type\n");
-			}
-			// 
-			ret = true;
+			PE_CHECK_GL_ERROR_DEBUG();
 		}
+		else if (uniform->type == GL_BOOL)
+		{
+			program->setUniformLocationWith1i(uniform->location, *((const bool*)(data)));
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (uniform->type == GL_FLOAT)
+		{
+			program->setUniformLocationWith1f(uniform->location, *((const GLfloat*)(data)));
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (uniform->type == GL_FLOAT_VEC3)
+		{
+			program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), uniform->size);
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (uniform->type == GL_FLOAT_VEC2)
+		{
+			program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), uniform->size);
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (uniform->type == GL_FLOAT_VEC4)
+		{
+			program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (uniform->type == GL_FLOAT_MAT4)
+		{
+			program->setUniformLocationWithMatrix4fv(uniform->location, (const GLfloat*)(data), uniform->size);
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else if (size > 0)
+		{
+			program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), (uint32)((size + 1) / 2));
+			PE_CHECK_GL_ERROR_DEBUG();
+				
+		}
+		else
+		{
+			OUTPUT_LOG("warn: unknown uniform size and type\n");
+		}
+		// 
+		ret = true;
 	}
 	return ret;
 }
 
 bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, int32 size /*= D3DX_DEFAULT*/)
 {
-	return setParameter(GetUniformByID(index), data, size);
+	return SetProgramParams([&](GLProgram* program) {
+		return setParameter(GetUniformByID(index), data, size);
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector2* data)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program && data != 0)
 		{
 			auto uniform = GetUniformByID(index);
@@ -295,19 +339,16 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			{
 				program->setUniformLocationWith2fv(uniform->location, (const GLfloat*)(data), 1);
 				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return ret;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector3* data)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program && data != 0)
 		{
 			auto uniform = GetUniformByID(index);
@@ -315,19 +356,16 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			{
 				program->setUniformLocationWith3fv(uniform->location, (const GLfloat*)(data), 1);
 				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return ret;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector4* data)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program && data != 0)
 		{
 			auto uniform = GetUniformByID(index);
@@ -335,19 +373,16 @@ bool ParaEngine::CEffectFileOpenGL::setParameter(eParameterHandles index, const 
 			{
 				program->setUniformLocationWith4fv(uniform->location, (const GLfloat*)(data), 1);
 				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return ret;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoolean)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program)
 		{
 			Uniform* uniform = GetUniformByID(index);
@@ -355,19 +390,16 @@ bool ParaEngine::CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoole
 			{
 				program->setUniformLocationWith1i(uniform->location, bBoolean ? 1 : 0);
 				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return ret;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setInt(eParameterHandles index, int nValue)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program)
 		{
 			Uniform* uniform = GetUniformByID(index);
@@ -375,31 +407,27 @@ bool ParaEngine::CEffectFileOpenGL::setInt(eParameterHandles index, int nValue)
 			{
 				program->setUniformLocationWith1i(uniform->location, nValue);
 				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return true;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::setFloat(eParameterHandles index, float fValue)
 {
-	bool ret = false;
-	for (auto tech_index = 0; tech_index < (int)mTechniques.size(); ++tech_index)
-	{
-		auto program = GetGLProgram(tech_index, m_nActivePassIndex);
+	return SetProgramParams([&](GLProgram* program) {
 		if (program)
 		{
 			Uniform* uniform = GetUniformByID(index);
 			if (uniform)
 			{
 				program->setUniformLocationWith1f(uniform->location, fValue);
-				
-				ret = true;
+				return true;
 			}
 		}
-	}
-	return true;
+		return false;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::isParameterUsed(eParameterHandles index)
@@ -443,11 +471,11 @@ bool ParaEngine::CEffectFileOpenGL::initWithFilenames(const std::string& vShader
 
 GLProgram* ParaEngine::CEffectFileOpenGL::GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist)
 {
-	if ((int)mTechniques.size() <= nTech)
+	if ((int)m_techniques.size() <= nTech)
 	{
-		mTechniques.resize(nTech + 1);
+		m_techniques.resize(nTech + 1);
 	}
-	auto & passes = mTechniques[nTech].mPasses;
+	auto & passes = m_techniques[nTech].m_passes;
 	if ((int)passes.size() <= nPass && bCreateIfNotExist)
 	{
 		passes.resize(nPass + 1, NULL);
@@ -471,7 +499,7 @@ bool ParaEngine::CEffectFileOpenGL::link(int nTech, int nPass)
 	if (program)
 	{
 		// we need to support color2 for block shader
-		program->bindAttribLocation("a_color2", GLProgram::VERTEX_ATTRIB_MAX + 0);
+		//program->bindAttribLocation("a_color2", GLProgram::VERTEX_ATTRIB_MAX + 0);
 	}
 
 	if (program && program->link())
@@ -493,7 +521,7 @@ bool ParaEngine::CEffectFileOpenGL::link(int nTech, int nPass)
 bool ParaEngine::CEffectFileOpenGL::use(int nTech, int nPass)
 {
 	if (-1 == nTech)
-		nTech = mTechniqueIndex;
+		nTech = m_nTechniqueIndex;
 	if (-1 == nPass)
 		nPass = m_nActivePassIndex;
 	auto program = GetGLProgram(nTech, nPass);
@@ -503,9 +531,9 @@ bool ParaEngine::CEffectFileOpenGL::use(int nTech, int nPass)
 
 		PE_CHECK_GL_ERROR_DEBUG();
 		
-		if (mTechniqueIndex != nTech)
+		if (m_nTechniqueIndex != nTech)
 		{
-			mTechniqueIndex = nTech;
+			m_nTechniqueIndex = nTech;
 		}
 		if (m_nActivePassIndex != nPass)
 		{
@@ -520,7 +548,7 @@ bool ParaEngine::CEffectFileOpenGL::use(int nTech, int nPass)
 void ParaEngine::CEffectFileOpenGL::updateUniforms(int nTech, int nPass)
 {
 	if (nTech < 0)
-		nTech = mTechniqueIndex;
+		nTech = m_nTechniqueIndex;
 	if (nPass < 0)
 		nPass = m_nActivePassIndex;
 	auto program = GetGLProgram(nTech, nPass);
@@ -543,7 +571,7 @@ Uniform* ParaEngine::CEffectFileOpenGL::GetUniformByID(eParameterHandles id)
 
 Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 {
-	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);
+	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
 	if (program)
 	{
 		return program->getUniform(sName);
@@ -553,254 +581,260 @@ Uniform* ParaEngine::CEffectFileOpenGL::GetUniform(const std::string& sName)
 
 void ParaEngine::CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
 {
-	if (isParameterUsed(k_fogEnable))
-	{
-		setBool(k_fogEnable, bEnableFog);
-	}
-	// unlike directx, we will apply for parameters regardless of whether fog is enabled.
-	// if (bEnableFog)
-	{
-		if (isParameterUsed(k_fogParameters) && (fogParam != 0))
+	//SetProgramParams([&](GLProgram* program) {
+		if (isParameterUsed(k_fogEnable))
 		{
-			setParameter(k_fogParameters, fogParam);
+			setBool(k_fogEnable, bEnableFog);
 		}
+		// unlike directx, we will apply for parameters regardless of whether fog is enabled.
+		// if (bEnableFog)
+		{
+			if (isParameterUsed(k_fogParameters) && (fogParam != 0))
+			{
+				setParameter(k_fogParameters, fogParam);
+			}
 
-		if (isParameterUsed(k_fogColor) && (fogColor != 0))
-		{
-			setParameter(k_fogColor, fogColor);
+			if (isParameterUsed(k_fogColor) && (fogColor != 0))
+			{
+				setParameter(k_fogColor, fogColor);
+			}
 		}
-	}
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient /*= true*/)
 {
-	if (pSurfaceMaterial)
-	{
-		// set material properties
-		const ParaMaterial & d3dMaterial = *pSurfaceMaterial;
-
-		if (isParameterUsed(k_ambientMaterialColor))
+	//SetProgramParams([&](GLProgram* program) {
+		if (pSurfaceMaterial)
 		{
-			if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
-				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
-			else
-				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
-		}
+			// set material properties
+			const ParaMaterial & d3dMaterial = *pSurfaceMaterial;
 
-		if (isParameterUsed(k_diffuseMaterialColor))
-		{
-			if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
+			if (isParameterUsed(k_ambientMaterialColor))
 			{
-				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
-				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+				if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
+					setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+				else
+					setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
 			}
-			else
+
+			if (isParameterUsed(k_diffuseMaterialColor))
 			{
-				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
-				Vector3 vEmpty(0, 0, 0);
-				setParameter(k_LightStrength, &vEmpty);
+				if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
+				{
+					setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
+					setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+				}
+				else
+				{
+					setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
+					Vector3 vEmpty(0, 0, 0);
+					setParameter(k_LightStrength, &vEmpty);
+				}
+			}
+
+			if (isParameterUsed(k_specularMaterialColor))
+			{
+				setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
+			}
+
+			if (isParameterUsed(k_emissiveMaterialColor))
+			{
+				setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
+			}
+
+			if (isParameterUsed(k_specularMaterialPower))
+			{
+				setParameter(k_specularMaterialPower, &d3dMaterial.Power);
 			}
 		}
-
-		if (isParameterUsed(k_specularMaterialColor))
-		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
-		}
-
-		if (isParameterUsed(k_emissiveMaterialColor))
-		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
-		}
-
-		if (isParameterUsed(k_specularMaterialPower))
-		{
-			setParameter(k_specularMaterialPower, &d3dMaterial.Power);
-		}
-	}
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyCameraMatrices()
 {
-	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+	//SetProgramParams([&](GLProgram* program) {
+		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
-	CBaseCamera* pCamera = pScene->GetCurrentCamera();
-	if (pCamera)
-	{
-		const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
-		const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
-		const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
-		Matrix4 ViewProj;
-		// set the world matrix
-		if (isMatrixUsed(k_worldMatrix))
+		CBaseCamera* pCamera = pScene->GetCurrentCamera();
+		if (pCamera)
 		{
-			setMatrix(k_worldMatrix, pWorld);
-		}
+			const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
+			const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
+			const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
+			Matrix4 ViewProj;
+			// set the world matrix
+			if (isMatrixUsed(k_worldMatrix))
+			{
+				setMatrix(k_worldMatrix, pWorld);
+			}
 
-		// set the world inverse matrix
-		if (isMatrixUsed(k_worldInverseMatrix))
-		{
-			Matrix4 mWorldInverse;
-			mWorldInverse = pWorld->inverse();
-			setMatrix(k_worldInverseMatrix, &mWorldInverse);
-		}
-		// set the world view matrix
-		if (isMatrixUsed(k_worldViewMatrix))
-		{
-			Matrix4 mWorldView;
-			ParaMatrixMultiply(&mWorldView, pWorld, pView);
-			setMatrix(k_worldViewMatrix, &mWorldView);
-		}
+			// set the world inverse matrix
+			if (isMatrixUsed(k_worldInverseMatrix))
+			{
+				Matrix4 mWorldInverse;
+				mWorldInverse = pWorld->inverse();
+				setMatrix(k_worldInverseMatrix, &mWorldInverse);
+			}
+			// set the world view matrix
+			if (isMatrixUsed(k_worldViewMatrix))
+			{
+				Matrix4 mWorldView;
+				ParaMatrixMultiply(&mWorldView, pWorld, pView);
+				setMatrix(k_worldViewMatrix, &mWorldView);
+			}
 
-		// set the combined matrix
-		if (isMatrixUsed(k_viewProjMatrix))
-		{
-			ParaMatrixMultiply(&ViewProj, pView, pProj);
-			setMatrix(k_viewProjMatrix, &ViewProj);
-		}
-
-		// set the world view projection matrix
-		if (isMatrixUsed(k_worldViewProjMatrix))
-		{
-			if (!isMatrixUsed(k_viewProjMatrix))
+			// set the combined matrix
+			if (isMatrixUsed(k_viewProjMatrix))
+			{
 				ParaMatrixMultiply(&ViewProj, pView, pProj);
-			Matrix4 mWorldViewProj;
-			ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
-			setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
-		}
+				setMatrix(k_viewProjMatrix, &ViewProj);
+			}
 
-		// set the view matrix
-		if (isMatrixUsed(k_viewMatrix))
-		{
-			setMatrix(k_viewMatrix, pView);
-		}
+			// set the world view projection matrix
+			if (isMatrixUsed(k_worldViewProjMatrix))
+			{
+				if (!isMatrixUsed(k_viewProjMatrix))
+					ParaMatrixMultiply(&ViewProj, pView, pProj);
+				Matrix4 mWorldViewProj;
+				ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
+				setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
+			}
 
-		// set the projection matrix
-		if (isMatrixUsed(k_projMatrix))
-		{
-			setMatrix(k_projMatrix, pProj);
-		}
+			// set the view matrix
+			if (isMatrixUsed(k_viewMatrix))
+			{
+				setMatrix(k_viewMatrix, pView);
+			}
 
-		// set the tex world view projection matrix
-		if (CGlobals::GetEffectManager()->IsUsingShadowMap() && isMatrixUsed(k_TexWorldViewProjMatrix))
-		{
-			Matrix4 mTex;
-			ParaMatrixMultiply(&mTex, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
-			setMatrix(k_TexWorldViewProjMatrix, &mTex);
-		}
+			// set the projection matrix
+			if (isMatrixUsed(k_projMatrix))
+			{
+				setMatrix(k_projMatrix, pProj);
+			}
 
-		// set the world camera position
-		if (isParameterUsed(k_cameraPos))
-		{
-			Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
-			setParameter(k_cameraPos, &vEye);
+			// set the tex world view projection matrix
+			if (CGlobals::GetEffectManager()->IsUsingShadowMap() && isMatrixUsed(k_TexWorldViewProjMatrix))
+			{
+				Matrix4 mTex;
+				ParaMatrixMultiply(&mTex, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
+				setMatrix(k_TexWorldViewProjMatrix, &mTex);
+			}
+
+			// set the world camera position
+			if (isParameterUsed(k_cameraPos))
+			{
+				Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
+				setParameter(k_cameraPos, &vEye);
+			}
+			// set the world camera facing vector
+			if (isParameterUsed(k_cameraFacing))
+			{
+				Vector3 v = pCamera->GetWorldAhead();
+				setParameter(k_cameraFacing, &v);
+			}
 		}
-		// set the world camera facing vector
-		if (isParameterUsed(k_cameraFacing))
-		{
-			Vector3 v = pCamera->GetWorldAhead();
-			setParameter(k_cameraFacing, &v);
-		}
-	}
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyWorldMatrices()
 {
-	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+	//SetProgramParams([&](GLProgram* program) {
+		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
-	CBaseCamera* pCamera = pScene->GetCurrentCamera();
-	if (pCamera)
-	{
-		const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
-		const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
-		const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
-		Matrix4 ViewProj;
-		// set the world matrix
-		if (isMatrixUsed(k_worldMatrix))
+		CBaseCamera* pCamera = pScene->GetCurrentCamera();
+		if (pCamera)
 		{
-			setMatrix(k_worldMatrix, pWorld);
-		}
+			const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
+			const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
+			const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
+			Matrix4 ViewProj;
+			// set the world matrix
+			if (isMatrixUsed(k_worldMatrix))
+			{
+				setMatrix(k_worldMatrix, pWorld);
+			}
 
-		// set the world inverse matrix
-		if (isMatrixUsed(k_worldInverseMatrix))
-		{
-			Matrix4 mWorldInverse;
-			mWorldInverse = pWorld->inverse();
-			setMatrix(k_worldInverseMatrix, &mWorldInverse);
+			// set the world inverse matrix
+			if (isMatrixUsed(k_worldInverseMatrix))
+			{
+				Matrix4 mWorldInverse;
+				mWorldInverse = pWorld->inverse();
+				setMatrix(k_worldInverseMatrix, &mWorldInverse);
+			}
+			// set the world view matrix
+			if (isMatrixUsed(k_worldViewMatrix))
+			{
+				Matrix4 mWorldView;
+				ParaMatrixMultiply(&mWorldView, pWorld, pView);
+				setMatrix(k_worldViewMatrix, &mWorldView);
+			}
+			// set the world view projection matrix
+			if (isMatrixUsed(k_worldViewProjMatrix))
+			{
+				ParaMatrixMultiply(&ViewProj, pView, pProj);
+				Matrix4 mWorldViewProj;
+				ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
+				setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
+			}
 		}
-		// set the world view matrix
-		if (isMatrixUsed(k_worldViewMatrix))
-		{
-			Matrix4 mWorldView;
-			ParaMatrixMultiply(&mWorldView, pWorld, pView);
-			setMatrix(k_worldViewMatrix, &mWorldView);
-		}
-		// set the world view projection matrix
-		if (isMatrixUsed(k_worldViewProjMatrix))
-		{
-			ParaMatrixMultiply(&ViewProj, pView, pProj);
-			Matrix4 mWorldViewProj;
-			ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
-			setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
-		}
-	}
+	//	return true;
+	//});
 }
 
 void ParaEngine::CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 {
-	// pass the lighting structure to the shader
-	if (isParameterUsed(k_sunColor))
-	{
-		LinearColor c = sunlight.GetSunColor();
-		setParameter(k_sunColor, &c);
-	}
+	//SetProgramParams([&](GLProgram* program) {
+		// pass the lighting structure to the shader
+		if (isParameterUsed(k_sunColor))
+		{
+			LinearColor c = sunlight.GetSunColor();
+			setParameter(k_sunColor, &c);
+		}
 
-	if (isParameterUsed(k_sunVector))
-	{
-		Vector3 vDir = -sunlight.GetSunDirection();
-		Vector4 v(vDir.x, vDir.y, vDir.z, 1.0f);
-		setParameter(k_sunVector, &v);
-	}
+		if (isParameterUsed(k_sunVector))
+		{
+			Vector3 vDir = -sunlight.GetSunDirection();
+			Vector4 v(vDir.x, vDir.y, vDir.z, 1.0f);
+			setParameter(k_sunVector, &v);
+		}
 
-	if (isParameterUsed(k_ambientLight))
-	{
-		setParameter(k_ambientLight, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
-	}
+		if (isParameterUsed(k_ambientLight))
+		{
+			setParameter(k_ambientLight, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+		}
 
 
-	if (isParameterUsed(k_shadowFactor))
-	{
-		float shadowFactor = sunlight.GetShadowFactor();
-		Vector4 v(shadowFactor, 1 - shadowFactor, 0, 0);
-		setParameter(k_shadowFactor,&v);
-	}
+		if (isParameterUsed(k_shadowFactor))
+		{
+			float shadowFactor = sunlight.GetShadowFactor();
+			Vector4 v(shadowFactor, 1 - shadowFactor, 0, 0);
+			setParameter(k_shadowFactor, &v);
+		}
+	//	return true;
+	//});
 }
 
 bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
-	auto program = GetGLProgram(mTechniqueIndex, m_nActivePassIndex);
+	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
 	if (program != 0)
 	{
-		if ((mTechniques.size() == 1)&&(mTechniques[0].mPasses.size() == 1))
-			program->use();
-		else
-		{
-			// TODO: multiple pass effect in opengl is implemented as shader arrays.
-			// uniform values are currently NOT shared among different passes like directX.
-			// hence DO NOT set any uniform between begin() and beginPass().
-			// TODO: In future: uniform values should be cached until Commit() is called.
-			program->use();
-		}
-		
-
 		if (bApplyParam)
 		{
-			// set the lighting parameters
-			// from the global light manager
-			applyGlobalLightingData(pScene->GetSunLight());
+			//SetProgramParams([&](GLProgram* program) {
+				// set the lighting parameters
+				// from the global light manager
+				applyGlobalLightingData(pScene->GetSunLight());
 
-			// set the camera matrix
-			applyCameraMatrices();
+				// set the camera matrix
+				applyCameraMatrices();
+			//	return true;
+			//});
 		}
 
 		m_bIsBegin = true;
@@ -812,7 +846,8 @@ bool ParaEngine::CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD fla
 
 bool ParaEngine::CEffectFileOpenGL::BeginPass(int nPass, bool bForceBegin /*= false*/)
 {
-	return use(mTechniqueIndex, nPass);
+	m_bIsBeginPass = true;
+	return use(m_nTechniqueIndex, nPass);
 }
 
 void ParaEngine::CEffectFileOpenGL::CommitChanges()
@@ -826,11 +861,15 @@ void ParaEngine::CEffectFileOpenGL::CommitChanges()
 		}
 		m_pendingChangesCount = 0;
 	}
+
+	auto program = GetGLProgram(m_nTechniqueIndex, m_nActivePassIndex);
+	if(program)
+		program->commit();
 }
 
 void ParaEngine::CEffectFileOpenGL::EndPass(bool bForceEnd /*= false*/)
 {
-
+	m_bIsBeginPass = false;
 }
 
 void ParaEngine::CEffectFileOpenGL::end(bool bForceEnd /*= false*/)
@@ -840,18 +879,20 @@ void ParaEngine::CEffectFileOpenGL::end(bool bForceEnd /*= false*/)
 
 HRESULT ParaEngine::CEffectFileOpenGL::RendererRecreated()
 {
-	for (auto & tech : mTechniques)
+	for (auto & tech : m_techniques)
 	{
-		for (auto program : tech.mPasses)
+		for (auto program : tech.m_passes)
 		{
 			if (program)
 				program->reset();
 			SAFE_RELEASE(program);
 		}
-		tech.mPasses.clear();
+		tech.m_passes.clear();
 	}
-	mTechniques.clear();
+	m_techniques.clear();
 	m_bIsInitialized = false;
+	m_nTechniqueIndex = 0;
+	m_nActivePassIndex = 0;
 	return S_OK;
 }
 
@@ -900,8 +941,8 @@ void ParaEngine::CEffectFileOpenGL::EnableAlphaTesting(bool bAlphaTesting)
 
 int ParaEngine::CEffectFileOpenGL::totalPasses() const
 {
-	if (mTechniqueIndex<(int)mTechniques.size())
-		return (int)mTechniques[mTechniqueIndex].mPasses.size();
+	if (m_nTechniqueIndex<(int)m_techniques.size())
+		return (int)m_techniques[m_nTechniqueIndex].m_passes.size();
 	else
 		return 0;
 }
@@ -987,17 +1028,17 @@ bool ParaEngine::CEffectFileOpenGL::SetMatrix(const char* hParameter, const Matr
 
 bool ParaEngine::CEffectFileOpenGL::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
 {
-	if (mTechniqueIndex >= (int)mTechniques.size())
+	if (m_nTechniqueIndex >= (int)m_techniques.size())
 		return false;
-	if (mTechniques[mTechniqueIndex].nCategory == nCat)
+	if (m_techniques[m_nTechniqueIndex].nCategory == nCat)
 		return true;
-	vector<TechniqueDescGL>::const_iterator itCur, itEnd = mTechniques.end();
+	vector<TechniqueDescGL>::const_iterator itCur, itEnd = m_techniques.end();
 	int i = 0;
-	for (itCur = mTechniques.begin(); itCur != itEnd; ++itCur, ++i)
+	for (itCur = m_techniques.begin(); itCur != itEnd; ++itCur, ++i)
 	{
 		if ((*itCur).nCategory == nCat)
 		{
-			mTechniqueIndex = i;
+			m_nTechniqueIndex = i;
 			return true;
 		}
 	}
@@ -1006,11 +1047,11 @@ bool ParaEngine::CEffectFileOpenGL::SetFirstValidTechniqueByCategory(TechniqueCa
 
 bool ParaEngine::CEffectFileOpenGL::SetTechniqueByIndex(int nIndex)
 {
-	if (mTechniqueIndex == nIndex)
+	if (m_nTechniqueIndex == nIndex)
 		return true;
-	else if ((int)mTechniques.size()>nIndex)
+	else if ((int)m_techniques.size()>nIndex)
 	{
-		mTechniqueIndex = nIndex;
+		m_nTechniqueIndex = nIndex;
 		return true;
 	}
 	else
@@ -1020,8 +1061,8 @@ bool ParaEngine::CEffectFileOpenGL::SetTechniqueByIndex(int nIndex)
 const ParaEngine::CEffectFileOpenGL::TechniqueDesc* ParaEngine::CEffectFileOpenGL::GetCurrentTechniqueDesc()
 {
 	static TechniqueDesc s_tech;
-	if (mTechniqueIndex<(int)mTechniques.size())
-		return &(mTechniques[mTechniqueIndex]);
+	if (m_nTechniqueIndex<(int)m_techniques.size())
+		return &(m_techniques[m_nTechniqueIndex]);
 	else
 		return &s_tech;
 }
@@ -1029,19 +1070,24 @@ const ParaEngine::CEffectFileOpenGL::TechniqueDesc* ParaEngine::CEffectFileOpenG
 bool ParaEngine::CEffectFileOpenGL::SetBoolean(int nIndex, bool value)
 {
 	PE_ASSERT(nIndex < (k_bBooleanMAX - k_bBoolean0));
-	if (isParameterUsed((eParameterHandles)(k_bBoolean0 + nIndex)))
-	{
-		return setBool((eParameterHandles)(k_bBoolean0 + nIndex), value);
-	}
-	return false;
+	return SetProgramParams([&](GLProgram* program) {
+		if (isParameterUsed((eParameterHandles)(k_bBoolean0 + nIndex)))
+		{
+			return setBool((eParameterHandles)(k_bBoolean0 + nIndex), value);
+		}
+		return false;
+	});
 }
 
 void ParaEngine::CEffectFileOpenGL::SetShadowMapSize(int nsize)
 {
-	if (isParameterUsed(k_nShadowmapSize))
-	{
-		setInt(k_nShadowmapSize, nsize);
-	}
+	SetProgramParams([&](GLProgram* program) {
+		if (isParameterUsed(k_nShadowmapSize))
+		{
+			setInt(k_nShadowmapSize, nsize);
+		}
+		return true;
+	});
 }
 
 bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<UniformInfo>& uniforms)
@@ -1049,6 +1095,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 	if (!m_Effect) return false;
 
 	static std::unordered_map<std::string, uint32> table;
+	if(table.empty())
 	{
 		table["world"] = k_worldMatrix;
 		table["worldinverse"] = k_worldInverseMatrix;
@@ -1069,7 +1116,6 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["flareColor"] = k_lensFlareColor;
 		table["fogparameters"] = k_fogParameters;
 		table["fogColor"] = k_fogColor;
-		table["shadowfactor"] = k_shadowFactor;
 		table["LightStrength"] = k_LightStrength;
 		table["shadowfactor"] = k_shadowFactor;
 		table["LightStrength"] = k_LightStrength;
@@ -1091,9 +1137,11 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["worldpos"] = k_worldPos;
 		table["texCoordOffset"] = k_texCoordOffset;
 		table["curnumbones"] = k_boneInfluenceCount;
+		
 		table["fogenable"] = k_fogEnable;
 		table["alphatesting"] = k_bAlphaTesting;
-
+		table["alphablending"] = k_bAlphaBlending;
+		
 		// boolean
 		for (int i = 0; i < (k_bBooleanMAX - k_bBoolean0); i++)
 		{
@@ -1114,8 +1162,6 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 		table["specularPower"] = k_specularPower;
 		table["transitionFactor"] = k_transitionFactor;
 		table["LightParams"] = k_LightParams;
-
-
 	}
 
 	m_ID2Names.clear();
@@ -1144,7 +1190,7 @@ bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<Unif
 
 		}
 		else {
-			std::cout << std::endl << "can't parse uniform " << name << ", unkonw semantic " << sec << std::endl;
+			// OUTPUT_LOG("can't parse uniform %s , unknown semantic ", name.c_str(), sec.c_str());
 		}
 	}
 
@@ -1330,7 +1376,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 	if (m_Effect == NULL)return false;
 	auto techniques = m_Effect->getTechiques();
 	if (techniques.empty()) {
-		std::cout << std::endl << "no techinique" << std::endl;
+		//std::cout << std::endl << "no techinique" << std::endl;
+		OUTPUT_LOG("no techinique");
 		return false;
 	}
 
@@ -1340,7 +1387,8 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 		auto passes = tec->getPasses();
 		if (passes.empty())
 		{
-			std::cout << std::endl << "no pass" << std::endl;
+			//std::cout << std::endl << "no pass" << std::endl;
+			OUTPUT_LOG("no pass");
 			return false;
 		}
 
@@ -1379,13 +1427,15 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 
 			if (vs_codeblock_name == "")
 			{
-				std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+				//std::cout << std::endl << "Vertex Shader Codeblock name can't be empty" << std::endl;
+				OUTPUT_LOG("Vertex Shader Codeblock name can't be empty");
 				return false;
 			}
 
 			if (ps_codeblock_name == "")
 			{
-				std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+				//std::cout << std::endl << "Pixel Shader Codeblock name can't be empty" << std::endl;
+				OUTPUT_LOG("Pixel Shader Codeblock name can't be empty");
 				return false;
 			}
 
@@ -1401,17 +1451,49 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 			bool ret = hlsl2glsl(codeblock, vs_codeblock_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms);
 			if (!ret || vscode == "")
 			{
-				std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				//std::cout << std::endl << "can't translate vertex shader " << vs_codeblock_name << "  shader:" << GetFileName() << std::endl;
+
+				OUTPUT_LOG("can't translate vertex shader %s  shader: %s", vs_codeblock_name.c_str(), GetFileName().c_str());
 				return false;
 			}
 			ret = hlsl2glsl(codeblock, ps_codeblock_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms);
-			if (!ret || vscode == "")
+			if (!ret || pscode == "")
 			{
-				std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+				//std::cout << std::endl << "can't translate fragment shader " << ps_codeblock_name << "  shader:" << GetFileName() << std::endl;
+
+				OUTPUT_LOG("can't translate fragment shader %s  shader: %s", ps_codeblock_name.c_str(), GetFileName().c_str());
 				return false;
 			}
 
-			std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+			//std::cout << std::endl << "Compile Pass " << nPass << std::endl;        // compile
+			OUTPUT_LOG("Compile Pass %d", nPass);
+
+			//{
+			//	auto size = vscode.size();
+			//	size_t i = 0;
+			//	while (size > 0)
+			//	{
+			//		auto len = (std::min)(size, (size_t)100);
+			//		std::string s(vscode.c_str() + i, len);
+			//		OUTPUT_LOG("%s", s.c_str());
+			//		i += len;
+			//		size -= len;
+			//	}
+			//}
+
+			//{
+			//	auto size = pscode.size();
+			//	size_t i = 0;
+			//	while (size > 0)
+			//	{
+			//		auto len = (std::min)(size, (size_t)100);
+			//		std::string s(pscode.c_str() + i, len);
+			//		OUTPUT_LOG("%s", s.c_str());
+			//		i += len;
+			//		size -= len;
+			//	}
+			//}
+
 			if (initWithByteArrays(vscode.c_str(), pscode.c_str(), tecIndex,nPass))
 			{
 				if (link(tecIndex, nPass))
@@ -1420,13 +1502,15 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 				}
 				else
 				{
-					std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+					//std::cout << "[" << m_filename << "] link pass " << nPass << " failed!" << std::endl;
+					OUTPUT_LOG("[%s] link pass %d failed", m_filename.c_str(), nPass);
 					return false;
 				}
 			}
 			else
 			{
-				std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+				//std::cout << "[" << m_filename << "] compile pass " << nPass << " failed!" << std::endl;
+				OUTPUT_LOG("[%s] compile pass %d failed", m_filename.c_str(), nPass);
 				return false;
 			}
 		}

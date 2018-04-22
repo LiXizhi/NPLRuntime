@@ -1,7 +1,5 @@
 #pragma once
 
-#if defined(PARAENGINE_SERVER)
-
 #include "ParaEngineAppBase.h"
 
 
@@ -16,21 +14,20 @@ namespace ParaEngine
 	class CViewportManager;
 }
 
-
 namespace ParaEngine
 {
-	class CParaEngineApp : public CParaEngineAppBase
+	class CParaEngineServerApp : public CParaEngineAppBase
 	{
 	public:
-		CParaEngineApp(const char* lpCmdLine = NULL);
-		virtual ~CParaEngineApp();
+		CParaEngineServerApp(const char* lpCmdLine = NULL);
+		virtual ~CParaEngineServerApp();
 
 	public:
-		virtual bool StartApp(const char* sCommandLine = 0);
-		virtual void StopApp();
-		virtual HRESULT FrameMove(double fTime);
+		virtual bool StartApp(const char* sCommandLine);
+		virtual void StopApp() override;
+		virtual bool FrameMove(double fTime) override;
 
-		virtual DWORD GetCoreUsage();
+		virtual DWORD GetCoreUsage() override;
 	protected:
 		void BootStrapAndLoadConfig();
 		void InitSystemModules();
@@ -46,6 +43,3 @@ namespace ParaEngine
 		ref_ptr<CParaWorldAsset>	  m_pParaWorldAsset;
 	};
 }
-
-#endif
-

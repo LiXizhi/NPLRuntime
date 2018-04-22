@@ -21,6 +21,7 @@
     <application android:label="@string/app_name" android:hasCode="True" android:debuggable="True" android:icon="@drawable/ic_launcher" >
         <!-- Consider:  com.tatfook.paracraft.AppActivity or android.app.NativeActivity -->
         <activity android:name="com.tatfook.paracraft.AppActivity"
+                android:launchMode="standard"
                 android:label="@string/app_name"
                 android:configChanges="orientation|keyboardHidden|screenSize"
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"

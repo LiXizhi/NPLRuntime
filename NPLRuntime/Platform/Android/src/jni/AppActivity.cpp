@@ -416,11 +416,11 @@ extern "C" {
 		}
 	}
 
-	
+	std::unique_ptr<NativeCode> code;
+
 
 	JNIEXPORT jlong JNICALL Java_com_tatfook_paracraft_AppActivity_nativeInit(JNIEnv* env, jobject clazz, jobject jlooper, jstring internalDataDir, jstring obbDir, jstring externalDataPath, jint sdkVersion, jobject jAssetMgr, jbyteArray savedState)
 	{
-		std::unique_ptr<NativeCode> code;
 		code.reset(new NativeCode());
 
 		int msgpipe[2];

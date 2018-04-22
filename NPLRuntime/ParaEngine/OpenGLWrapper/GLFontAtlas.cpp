@@ -447,6 +447,15 @@ void ParaEngine::GLFontAtlas::init()
 		texture->initWithData(_currentPageData, _currentPageDataSize,
 			pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
 
+		/*if (_antialiasEnabled)
+		{
+			texture->setAntiAliasTexParameters();
+		}
+		else
+		{
+			texture->setAliasTexParameters();
+		}*/
+
 		addTexture(texture, 0);
 		texture->Release();
 	}

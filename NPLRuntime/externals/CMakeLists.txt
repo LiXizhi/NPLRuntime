@@ -46,6 +46,11 @@ endif()
 
 set_property(GLOBAL PROPERTY ICONV_LIB_NAME ${ICONV_LIB_NAME})
 
+
+if(NPLRUNTIME_PHYSICS)
+	add_subdirectory(bullet3 ${PROJECT_BINARY_DIR}/bullet3)
+endif()
+
 if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux
 else()

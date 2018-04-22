@@ -77,11 +77,12 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 			// however directX packed color as BGRA, we will need to swizzle the B and R in color component.
 			if (elem.Type == D3DDECLTYPE_D3DCOLOR)
 			{
-				if (nColorIndex == 0)
-					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+				if (nColorIndex <= 1)
+					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR + nColorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 				else
 					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_MAX + 0, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 				nColorIndex++;
+
 			}
 		}
 		else if (elem.Usage == D3DDECLUSAGE_TEXCOORD)
@@ -127,11 +128,12 @@ void ParaEngine::CVertexDeclaration::SetVertexElement(const VertexElement* elems
 			}
 			else if (elem.Usage == D3DDECLUSAGE_COLOR)
 			{
-				if (nColorIndex == 0)
-					nAttributeIndex = GLProgram::VERTEX_ATTRIB_COLOR;
+				if (nColorIndex <= 1)
+					nAttributeIndex = GLProgram::VERTEX_ATTRIB_COLOR + nColorIndex;
 				else
 					nAttributeIndex = GLProgram::VERTEX_ATTRIB_MAX + 0;
 				nColorIndex++;
+
 			}
 			else if (elem.Usage == D3DDECLUSAGE_TEXCOORD)
 			{

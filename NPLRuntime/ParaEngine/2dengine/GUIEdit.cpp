@@ -98,8 +98,9 @@ void CGUIEditBox::Clone(IObject* pobj)const
 	pEditbox->m_Buffer.SetMultiline(m_Buffer.GetMultiline());
 	//pEditbox->m_Buffer.SetFontNode(m_Buffer.GetFontNode());
 	// Mod by LiXizhi 2007.10.2. Tricky. since font element is reference type. it can not be cloned.
-	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
 #endif
+	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
+
 	pEditbox->m_nBorder = m_nBorder;
 	pEditbox->m_nSpacing = m_nSpacing;
 	pEditbox->m_bNeedUpdate = true;
@@ -484,9 +485,7 @@ void CGUIEditBox::StaticInit()
 
 	pEditbox->m_objResource->SetCurrentState();
 	pEditbox->m_objResource->SetActiveLayer();
-#ifdef USE_DIRECTX_RENDERER
 	pEditbox->m_Buffer.SetFontNode(pEditbox->m_objResource->GetFontElement(0));
-#endif
 	pEditbox->PlaceCaret(pEditbox->m_nCaret);  // Call PlaceCaret now that we have the font info (node),
 
 	pOm->SetObject("default_CGUIEditBox", pEditbox);
@@ -744,6 +743,11 @@ void CGUIEditBox::UpdateRects()
 
 		break;
 	}
+
+#ifndef USE_DIRECTX_RENDERER
+	m_Buffer.SetRect(m_objResource->GetDrawingRects(9));
+#endif
+
 	m_bNeedUpdate = false;
 }
 
@@ -1603,15 +1607,7 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 	if (m_bHasFocus && m_bCaretOn && !IsHideCaret() && !m_bReadOnly)
 	{
 		// Start the rectangle with insert mode caret
-#ifdef PARAENGINE_MOBILE
-		// mobile version does not support CPtoXY function, so we will just calculate the text width. 
-		RECT rcCaret = {0,0,0,0};
-		GetPainter(pGUIState)->CalcTextRect(texBuffer + m_nFirstVisible, pFontElement, &rcCaret, 0, m_nCaret - m_nFirstVisible);
-		rcCaret.left = rcText.left + rcCaret.right;
-		rcCaret.right = rcCaret.left + 2;
-		rcCaret.top = rcText.top;
-		rcCaret.bottom = rcText.bottom;
-#else
+
 		RECT rcCaret = { rcText.left - nXFirst + nCaretX - 1, rcText.top,
 			rcText.left - nXFirst + nCaretX + 1, rcText.bottom };
 
@@ -1624,7 +1620,6 @@ HRESULT CGUIEditBox::Render(GUIState* pGUIState, float fElapsedTime)
 			CPtoXY(m_nCaret, TRUE, &nRightEdgeX, &nRightEdgeY, true);
 			rcCaret.right = rcText.left + nXFirst + nRightEdgeX;
 		}
-#endif
 		GetPainter(pGUIState)->DrawRect(&rcCaret, m_CaretColor, m_position.GetDepth());
 	}
 	return S_OK;
@@ -1751,7 +1746,7 @@ void CGUIEditBox::InsertChar(WCHAR wChar, int index/* =-1 */)
 
 void CGUIEditBox::InsertCharA(CHAR Char, int index/* =-1 */)
 {
-#ifdef PARAENGINE_CLIENT
+#ifdef WIN32
 	WCHAR wChar[2];
 	char tChar[2]; tChar[0] = Char; tChar[1] = '\0';
 	if (MultiByteToWideChar(DEFAULT_GUI_ENCODING, MB_PRECOMPOSED, tChar, -1, wChar, 2) == 0)
@@ -1759,6 +1754,9 @@ void CGUIEditBox::InsertCharA(CHAR Char, int index/* =-1 */)
 		OUTPUT_LOG("error: Can't translate: %d to wide char.\n", (int)Char);
 		InsertChar(wChar[1], index);
 	}
+#else
+	WCHAR wChar = Char;
+	InsertChar(wChar, index);
 #endif
 }
 

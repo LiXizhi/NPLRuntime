@@ -48,6 +48,7 @@ public class ParaEngineWebViewHelper {
 	private static native void didFinishLoading(int index, String message);
 	private static native boolean shouldStartLoading(int index, String message);
 	private static native void onCloseView(int index);
+	public  static native void transportCmdLine(String cmdStr);
 
 	public ParaEngineWebViewHelper(FrameLayout layout) {
 		ParaEngineWebViewHelper.sLayout = layout;

@@ -45,6 +45,7 @@ TextureEntityOpenGL::~TextureEntityOpenGL()
 HRESULT ParaEngine::TextureEntityOpenGL::RendererRecreated()
 {
 	m_bIsInitialized = false;
+	
 	if (m_texture)
 	{
 		m_texture->RendererRecreated();

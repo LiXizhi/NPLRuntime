@@ -77,8 +77,8 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			pFontRenderer->setFontScale(pFontRenderer->m_fFontScaling);
 			if (pFontRenderer->getFontAtlas())
 			{
-				// disable aliasing
-				pFontRenderer->getFontAtlas()->setAliasTexParameters();
+				// TODO: why disable aliasing? This should be enabled LiXizhi
+				// pFontRenderer->getFontAtlas()->setAliasTexParameters();
 			}
 			pFontRenderer->AddToAutoReleasePool();
 			return pFontRenderer;
@@ -103,6 +103,8 @@ void ParaEngine::CFontRendererOpenGL::SetUTF16Text(const char16_t* strText)
 {
 	_currentUTF16String = strText;
 }
+
+
 
 bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const char16_t* strText, RECT& rect, DWORD dwTextFormat, DWORD textColor)
 {
@@ -129,7 +131,7 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 	// TODO: DT_NOCLIP | DT_SINGLELINE | DT_WORDBREAK | DT_CALCRECT
 	if ((dwTextFormat & DT_NOCLIP) > 0)
 	{
-		// cocos will not render out of range text,  even if no clip is true. so we just add a very big height here.
+		// we will not render out of range text,  even if no clip is true. so we just add a very big height here.
 		if (vAlignment_ == TextVAlignment::TOP && nHeight < 500)
 			nHeight = 500;
 	}
@@ -148,8 +150,9 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 		nScaledHeight = (int)(nHeight / GetFontScaling() + 0.999f);
 		nMaxScaledHeight = (int)(nMaxHeight / GetFontScaling() + 0.999f);
 	}
-	// we will make the height at least of a single line height to prevent cocos start a new line in the front when calculating layout.
-	if (_commonLineHeight > nScaledHeight)
+	// we will make the height at least of a single line height to prevent starting a new line in the front when calculating layout.
+	// unless nScaledHeight is 0, which means that we are calculating rect
+	if (_commonLineHeight > nScaledHeight && nScaledHeight > 0)
 	{
 		if (vAlignment_ == TextVAlignment::CENTER)
 		{
@@ -170,8 +173,9 @@ bool ParaEngine::CFontRendererOpenGL::DrawTextW(CSpriteRenderer* pSprite, const 
 			int nContentHeight = _contentSize.height;
 			if (vAlignment_ == TextVAlignment::CENTER && nContentHeight > nMaxScaledHeight)
 			{
+				rect.top = rect.top - (int)((nContentHeight - nScaledHeight) / 2 * GetFontScaling());
 				// again preventing vertical center aligned text to exceed the total height.
-				nContentHeight = nMaxScaledHeight;
+				// nContentHeight = nMaxScaledHeight;
 			}
 			if (GetFontScaling() == 1.f)
 			{
@@ -241,6 +245,7 @@ void ParaEngine::CFontRendererOpenGL::RenderLetterSprites(CSpriteRenderer* pSpri
 			{
 				pEffectFile->begin();
 				pEffectFile->BeginPass(0);
+				pEffectFile->CommitChanges();
 			}
 			DoRender(pSprite, color);
 
@@ -274,6 +279,7 @@ void ParaEngine::CFontRendererOpenGL::RendererRecreated()
 void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD color)
 {
 	auto textures = _fontAtlas->getTextures();
+	
 	if (GetFontScaling() == 1.f)
 	{
 		for (int ctr = 0; ctr < _limitShowCount; ++ctr)

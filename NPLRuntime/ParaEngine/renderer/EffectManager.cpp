@@ -2115,8 +2115,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_GUI_TEXT:
 	{
-		pEffect->use();
-		
 		if (nLastEffectHandle != TECH_GUI && nLastEffectHandle != TECH_GUI_TEXT)
 		{
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
@@ -2136,7 +2134,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_GUI:
 	{
-		pEffect->use();
 		if (nLastEffectHandle != TECH_GUI && nLastEffectHandle != TECH_GUI_TEXT)
 		{
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
@@ -2159,7 +2156,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SINGLE_COLOR:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2177,7 +2173,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_BMAX_MODEL:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2196,7 +2191,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_BLOCK:
 	{
-		pEffect->use(GetScene()->IsShadowMapEnabled()?1:0);
+		applyFogParameters();
 		pEffect->EnableAlphaBlending(false);
 		pEffect->EnableAlphaTesting(false);
 		pd3dDevice->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
@@ -2212,7 +2207,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_PARTICLES:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0_COLOR);
 		if (pDecl == 0)
 			return false;
@@ -2232,7 +2226,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SKY_DOME:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_TEX0);
 		if (pDecl == 0)
 			return false;
@@ -2247,6 +2240,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
+		pd3dDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
+
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
@@ -2256,7 +2251,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_SKY_MESH:
 	{
-		pEffect->use();
 		VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 		if (pDecl == 0)
 			return false;
@@ -2269,8 +2263,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_CLAMP);
 		// used to be D3DTEXF_LINEAR in PC, but we force using POINT in mobile version. 
 		// since the sky texture is really low resolution. 
-		SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
-		SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
+		//SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT, true);
+		//SetSamplerState(0, ESamplerStateType::MAGFILTER, D3DTEXF_POINT, true);
 		pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 		pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
 		pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -2285,7 +2279,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	{
 		if (nLastEffectHandle != TECH_CHARACTER && nLastEffectHandle != TECH_SIMPLE_MESH_NORMAL)
 		{
-			pEffect->use();
 			VertexDeclarationPtr pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0);
 			if (pDecl == 0)
 				return false;
@@ -2301,6 +2294,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			pd3dDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 			pd3dDevice->SetRenderState(ERenderState::ZENABLE, TRUE);m_bZEnable = true;
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
+			pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 
@@ -2310,7 +2304,6 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 	}
 	case TECH_TERRAIN:
 	{
-		pEffect->use();
 		auto pDecl = GetVertexDeclaration(S0_POS_NORM_TEX0_TEX1);
 		if (pDecl == 0)
 			return false;

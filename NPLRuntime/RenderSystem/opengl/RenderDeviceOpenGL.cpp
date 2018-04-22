@@ -285,9 +285,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetClipPlane(uint32_t Index, const float* p
 bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
 {
 	// needs to invert Y, since opengl use upward Y.
-	ParaViewport viewport;
-	CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-	glReadPixels(nLeft, viewport.Height - nTop, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
+	glReadPixels(nLeft, m_RenderTargetHeight - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
 	return true;
 }
 
@@ -557,7 +555,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
 	return true;
 }
 
-bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, float stencil)
+bool ParaEngine::RenderDeviceOpenGL::Clear(bool color, bool depth, bool stencil)
 {
 	uint32_t fields = 0;
 	if (depth)

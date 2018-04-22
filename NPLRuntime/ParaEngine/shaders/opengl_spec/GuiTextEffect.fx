@@ -41,7 +41,7 @@ Interpolants vertexShader(	float4 Pos : POSITION,
 //                              Pixel Shader
 //
 ////////////////////////////////////////////////////////////////////////////////
-half4 pixelShader(Interpolants i) : COLOR
+float4 pixelShader(Interpolants i) : COLOR
 {
 	half4 normalColor = tex2D(tex0Sampler, i.tex.xy);
 	return float4(i.color.rgb,i.color.a * normalColor.a);

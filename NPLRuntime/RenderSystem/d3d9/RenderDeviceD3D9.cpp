@@ -161,7 +161,7 @@ bool ParaEngine::RenderDeviceD3D9::SetClearStencil(const int stencil)
 	return true;
 }
 
-bool ParaEngine::RenderDeviceD3D9::Clear(bool color, bool depth, float stencil)
+bool ParaEngine::RenderDeviceD3D9::Clear(bool color, bool depth, bool stencil)
 {
 	DWORD clearFlags = 0;
 	if (color)clearFlags |= D3DCLEAR_TARGET;

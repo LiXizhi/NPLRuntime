@@ -11,6 +11,7 @@
 #include "RenderDeviceEGL.h"
 #include "RenderContextEGL.h"
 #include "ParaTime.h"
+#include "NPLRuntime.h"
 
 #include <boost/bind.hpp>
 #include <android/log.h>
@@ -23,7 +24,6 @@
 #include <unordered_map>
 
 using namespace ParaEngine;
-
 
 void AppDelegate::app_handle_command(struct android_app* app, int32_t cmd)
 {
@@ -544,12 +544,34 @@ void AppDelegate::OnPause()
 
 	//m_isPaused = true;
 }
+
+void AppDelegate::onCmdLine(const std::string& cmd)
+{
+	LOGI("onCmdLine: intent_data:%s", cmd.c_str());
+
+	if (!cmd.empty())
+	{
+		// msg = command line.
+		string msg = "msg=";
+		NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
+		msg.append(";");
+		SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
+		CGlobals::GetEventsCenter()->FireEvent(event);
+	}
+}
+
 void AppDelegate::OnResume()
 {
 	LOGI("app:OnResume");
 	if (m_ParaEngineApp)
 	{
 		m_ParaEngineApp->OnResume();
+
+		if (m_State)
+		{
+			std::string intent_data = AppActivity::getLauncherIntentData(m_State);
+			onCmdLine(intent_data);
+		}
 	}
 
 	//m_isPaused = false;

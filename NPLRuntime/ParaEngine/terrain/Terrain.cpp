@@ -1741,7 +1741,7 @@ void Terrain::Render()
 						if(texGroup.nNumTriangles>0)
 						{
 							// render triangles for the current texture group 
-							//pEffectFile->CommitChanges();
+							pEffectFile->CommitChanges();
 							CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
 						}
 					}//for( itCurCP = 

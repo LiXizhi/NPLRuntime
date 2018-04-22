@@ -144,6 +144,7 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
 	// associate texture with FBO
+	m_pCanvasTexture->RestoreDeviceObjects();
 	auto pTex = m_pCanvasTexture->GetTexture();
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pTex ? pTex->getName() : 0, 0);
 
@@ -182,7 +183,6 @@ HRESULT ParaEngine::CRenderTarget::InvalidateDeviceObjects()
 #ifdef USE_DIRECTX_RENDERER
 	SAFE_RELEASE(m_pDepthStencilSurface);
 	SAFE_RELEASE(m_pCanvasSurface);
-	m_pCanvasTexture->InvalidateDeviceObjects();
 #elif defined(USE_OPENGL_RENDERER)
 	if (_FBO != 0)
 	{
@@ -195,19 +195,18 @@ HRESULT ParaEngine::CRenderTarget::InvalidateDeviceObjects()
 		_depthRenderBufffer = 0;
 	}
 #endif
+	m_pCanvasTexture->InvalidateDeviceObjects();
 	SetDirty(true);
 	return S_OK;
 }
 
 HRESULT ParaEngine::CRenderTarget::DeleteDeviceObjects()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (m_pCanvasTexture == 0)
 		return S_OK;
 	m_pCanvasTexture->DeleteDeviceObjects();
 	// Bug fixed: we should specify the texture size, otherwise the back buffer size is used. 
 	m_pCanvasTexture->SetTextureInfo(TextureEntity::TextureInfo(m_nTextureWidth, m_nTextureHeight, TextureEntity::TextureInfo::FMT_A8R8G8B8, TextureEntity::TextureInfo::TYPE_UNKNOWN));
-#endif
 	SetDirty(true);
 	return S_OK;
 }
@@ -477,8 +476,10 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 HRESULT ParaEngine::CRenderTarget::RendererRecreated()
 {
 	m_bInitialized = false;
+#ifdef USE_OPENGL_RENDERER
 	_FBO = 0;
 	_depthRenderBufffer = 0;
+#endif
 	CBaseObject::RendererRecreated();
 }
 
@@ -502,10 +503,6 @@ bool ParaEngine::CRenderTarget::InitWithWidthAndHeight(int width, int height, D3
 	m_pCanvasTexture->SetTextureInfo(TextureEntity::TextureInfo(m_nTextureWidth, m_nTextureHeight, TextureEntity::TextureInfo::FMT_A8R8G8B8, TextureEntity::TextureInfo::TYPE_UNKNOWN));
 	OUTPUT_LOG("CRenderTarget: %s render target renewed (%d %d)\n", sKey.c_str(), m_nTextureWidth, m_nTextureHeight);
 
-#ifdef USE_DIRECTX_RENDERER
-
-#elif defined(USE_OPENGL_RENDERER)
-#endif
 	return true;
 }
 
@@ -551,6 +548,9 @@ bool ParaEngine::CRenderTarget::Begin()
 
 	
 #elif defined(USE_OPENGL_RENDERER)
+	if (m_pCanvasTexture)
+		m_pCanvasTexture->SetHitCount(0);
+	
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
@@ -566,6 +566,7 @@ bool ParaEngine::CRenderTarget::Begin()
 		vp.w = GetTextureHeight();
 		pRenderDevice->SetViewport(vp);
 	}
+
 #endif
 	m_bIsBegin = true;
 	return true;
@@ -596,10 +597,6 @@ void ParaEngine::CRenderTarget::End()
 #elif defined(USE_OPENGL_RENDERER)
 	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
 	GETGL(pRenderDevice)->EndRenderTarget();
-	
-	// TODO: this should be removed, when we handle glClear() by ourselves instead of cocos. 
-	LinearColor color(CGlobals::GetScene()->GetClearColor());
-	glClearColor(color.r, color.g, color.b, color.a);
 #endif
 	// restore viewport
 	Rect vp;
@@ -629,6 +626,10 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 		pRenderDevice->SetClearColor(Color4f(color.r,color.g,color.b,color.a));
 		pRenderDevice->SetClearDepth(depthValue);
+
+		/*pRenderDevice->SetClearStencil(1);
+		pRenderDevice->Clear(true, true, true);
+		pRenderDevice->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);*/
 		pRenderDevice->Clear(true, true, false);
 	}
 	else

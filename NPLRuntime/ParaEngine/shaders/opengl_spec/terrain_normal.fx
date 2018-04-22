@@ -1,6 +1,6 @@
 
-float4x4 PARA_MATRIX_MVP:worldviewprojection;
-float4x4 PARA_MATRIX_M:world;
+float4x4 mWorldViewProj:worldviewprojection;
+float4x4 mWorld:world;
 float4 sunvector:sunvector;
 float4 ambientlight:ambientlight;
 float4 texCoordOffset:texCoordOffset;
@@ -60,12 +60,12 @@ float CalcFogFactor( float d )
 v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
-	o.vertex = mul(v.vertex, PARA_MATRIX_MVP);
+	o.vertex = mul(v.vertex, mWorldViewProj);
 	vec3 worldNormal = normalize(v.normal);
 
 	o.colorDiffuse.xyz = materialdiffuse.xyz * dot( sunvector.xyz, worldNormal ) + ambientlight.xyz;
 
-	vec3 worldPos = mul(v.vertex,PARA_MATRIX_M).xyz;
+	vec3 worldPos = mul(v.vertex,mWorld).xyz;
 	vec3 eyeVec = normalize(worldcamerapos - worldPos);
 	vec3 reflectVec = reflect(-sunvector.xyz,worldNormal);
 	float specular = max(dot(eyeVec,reflectVec),0.0);

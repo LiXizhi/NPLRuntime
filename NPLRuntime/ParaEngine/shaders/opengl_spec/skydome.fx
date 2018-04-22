@@ -1,4 +1,4 @@
-float4x4 PARA_MATRIX_MVP:worldviewprojection;
+float4x4 mWorldViewProj:worldviewprojection;
 float2 cloudOffset:cloudOffset;
 float skyDomeHeight:skyDomeHeight;
 float3 lightSkyColor:lightSkyColor;
@@ -45,7 +45,7 @@ v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
 	// screen space position
-	o.vertex = mul(v.vertex, PARA_MATRIX_MVP).xyww;
+	o.vertex = mul(v.vertex, mWorldViewProj).xyww;
 	o.uv.xy = v.uv;
 	o.uv.z = v.vertex.y / skyDomeHeight;
 	float2 flatVertexNormal = v.vertex.xz;

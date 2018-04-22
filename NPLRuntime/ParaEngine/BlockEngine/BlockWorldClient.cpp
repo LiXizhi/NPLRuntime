@@ -451,7 +451,7 @@ namespace ParaEngine
 		if (pCurRenderQueue == 0)
 			pCurRenderQueue = GetRenderQueueByPass(nRenderPass);
 		
-		auto pDevice = CGlobals::GetRenderDevice();;
+		auto pDevice = CGlobals::GetRenderDevice();
 		
 		if(pCurRenderQueue->size() > 0)
 		{
@@ -665,34 +665,18 @@ namespace ParaEngine
 			}
 			else if(pEffect != 0 && pEffect->begin(false))
 			{
-#ifdef USE_OPENGL_RENDERER
-				if (nRenderPass == BlockRenderPass_AlphaTest)
-				{
-					// ParaEngine's opengl renderer currently does not support shared uniforms between passes, so do this. 
-					// Remove this: when you support it. 
-					pEffect->BeginPass(g_transparentBlockPass);
-					pEffect->EndPass();
-				}
-				CGlobals::GetEffectManager()->applyFogParameters();
-				if (CGlobals::GetEffectManager()->IsUsingShadowMap())
-					CGlobals::GetEffectManager()->GetShadowMap()->SetShadowTexture(*pEffect, 1);
-				else
-					CGlobals::GetEffectManager()->GetShadowMap()->UnsetShadowTexture(1);
-#endif
-				
-
 				VertexDeclarationPtr pVertexLayout = GetVertexLayout();
 				CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
 
+				// set the wave time parameter
+				double time = CGlobals::GetGameTime();
+				// in case it loses accuracy, we will subtract integer number of 2*PI from time
+				// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
+				time = (int)(time * 1000) % 1000000;
+				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
-					//////////////////////////////////////////////////////////////////////////
-					// set the wave time parameter
-					double time = CGlobals::GetGameTime(); 
-					// in case it loses accuracy, we will subtract integer number of 2*PI from time
-					// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
-					time = (int)(time*1000) % 1000000;
-					pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
 				}
 				else
 				{
@@ -737,8 +721,8 @@ namespace ParaEngine
 					int32_t passId;
 					if(curTamplerId != pRenderTask->GetTemplateId())
 					{
-						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if(pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
+						BlockTemplate* pTemplate = pRenderTask->GetTemplate();
+						if(pTemplate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
 							passId = g_twoTexPass;
 						else if (nRenderPass == BlockRenderPass_AlphaTest)
 						{
@@ -747,12 +731,12 @@ namespace ParaEngine
 						else if (nRenderPass == BlockRenderPass_AlphaBlended || nRenderPass == BlockRenderPass_ReflectedWater)
 						{
 							passId = g_TexPass;
-							if (pTempate->GetCategoryID() == 8 && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+							if (pTemplate->GetCategoryID() == 8 && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 							{
 								passId = g_waterBlockPass;
 							}
 						}
-						else if (pTempate->GetNormalMap() && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
+						else if (pTemplate->GetNormalMap() && dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 						{
 							passId = g_bumpyBlockPass;
 						}
@@ -783,21 +767,21 @@ namespace ParaEngine
 							}
 						}
 
-						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
+						TextureEntity* pTexEntity = pTemplate->GetTexture0(pRenderTask->GetUserData());
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
 							CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
 						}
 
-						pTexEntity = pTempate->GetTexture1();
+						pTexEntity = pTemplate->GetTexture1();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
 							CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
 						}
 
-						pTexEntity = pTempate->GetNormalMap();
+						pTexEntity = pTemplate->GetNormalMap();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
 						{
 							pCurTex2 = pTexEntity->GetTexture();
@@ -807,7 +791,7 @@ namespace ParaEngine
 						}
 
 						// culling mode
-						if(pTempate->GetBlockModel().IsDisableFaceCulling())
+						if(pTemplate->GetBlockModel().IsDisableFaceCulling())
 						{
 							if(culling != RSV_CULL_NONE)
 							{

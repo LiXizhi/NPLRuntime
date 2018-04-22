@@ -33,7 +33,7 @@ target_compile_definitions(Paracraft PUBLIC
 )
 set_target_properties(Paracraft PROPERTIES 
     ANDROID_GUI TRUE
-    ## ANDROID_NATIVE_LIB_DEPENDENCIES "sqlite.so"
+    ## ANDROID_NATIVE_LIB_DEPENDENCIES "ParaSqlite.so"
     ## ANDROID_ASSETS_DIRECTORIES ${CMAKE_BINARY_DIR}/assets
 	ANDROID_JAVA_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/java
 )

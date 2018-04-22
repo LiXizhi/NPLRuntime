@@ -22,6 +22,8 @@ namespace ParaEngine
 		static AppDelegate& getInstance();
         
         void Run(android_app* app);
+
+		void onCmdLine(const std::string& cmd);
     private:
 		AppDelegate();
 		~AppDelegate();

@@ -11,7 +11,6 @@
 #include "RenderDeviceOpenGL.h"
 #include "StringHelper.h"
 #include "2dengine/GUIBase.h"
-#include "2dengine/FontRendererOpenGL.h"
 #include "SpriteFontEntity.h"
 #include "memdebug.h"
 
@@ -34,6 +33,19 @@ void ParaEngine::SpriteFontEntityOpenGL::Cleanup()
 {
 	SAFE_RELEASE(m_fontRenderer);
 }
+
+float ParaEngine::SpriteFontEntityOpenGL::GetFontScaling()
+{
+	return m_fontRenderer ? m_fontRenderer->GetFontScaling() : 1.0f;
+}
+
+CFontRendererOpenGL* ParaEngine::SpriteFontEntityOpenGL::GetLabel()
+{
+	LoadAsset();
+	return m_fontRenderer;
+}
+
+
 
 HRESULT ParaEngine::SpriteFontEntityOpenGL::DrawTextW(CSpriteRenderer* pSprite, const char16_t* strText, int nCount, RECT* rect, DWORD dwTextFormat, DWORD textColor)
 {

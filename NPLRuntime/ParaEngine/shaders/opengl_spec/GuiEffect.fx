@@ -4,7 +4,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
-float4x4 PARA_MVP: worldviewprojection;
+float4x4 mWorldViewProj: worldviewprojection;
 bool k_bBoolean0:boolean0;
 // texture 0
 texture tex0 : TEXTURE; 
@@ -32,7 +32,7 @@ struct appdata
 v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
-	o.vertex = 	mul(v.vertex, PARA_MVP);
+	o.vertex = 	mul(v.vertex, mWorldViewProj);
 	o.uv = v.uv;
     o.color = v.color;
 	return o;

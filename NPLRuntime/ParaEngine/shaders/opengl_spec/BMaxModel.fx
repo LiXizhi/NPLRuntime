@@ -22,7 +22,7 @@ float g_opacity : opacity = 1.f;
 struct VSOut
 {
 	float4 pos	:POSITION;
-	half4 color : COLOR0;
+	float4 color : COLOR0;
 };
 
 /////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ float CalcFogFactor(float d)
 
 VSOut MainVS(	float4 pos		: POSITION,
 				float3	Norm	: NORMAL,
-				half4 color		: COLOR0
+				float4 color		: COLOR0
 				)
 {
 	VSOut output;
@@ -73,7 +73,7 @@ float4 MainPS(VSOut input) :COLOR0
 
 void VertShadow(float4 Pos		: POSITION,
 				float3	Norm : NORMAL,
-				half4 color : COLOR0,
+				float4 color : COLOR0,
 				out float4 oPos : POSITION,
 				out float2 Depth : TEXCOORD1)
 {

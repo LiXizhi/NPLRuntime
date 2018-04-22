@@ -38,9 +38,6 @@
 namespace ParaEngine 
 {
 	using namespace ParaTerrain;
-#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER) && !defined(USE_OPENGL_RENDERER)
-	//extern HWND* g_pHwndHWND;
-#endif
 }
 #endif
 #include "ParaEngineAppBase.h"
@@ -294,18 +291,6 @@ HWND CGlobals::GetAppHWND()
 #else
 	return 0;
 #endif
-
-//#if defined (PLATFORM_WINDOWS) && !defined(PARAENGINE_SERVER) && !defined(USE_OPENGL_RENDERER)
-//	if (g_pHwndHWND != 0)
-//		return *g_pHwndHWND;
-//	else
-//		return 0;
-//#elif defined(USE_OPENGL_RENDERER)
-//	return 0;
-//#else
-//	return 0;
-//#endif
-	
 }
 
 #if defined(PLATFORM_WINDOWS) && defined(USE_DIRECTX_RENDERER)

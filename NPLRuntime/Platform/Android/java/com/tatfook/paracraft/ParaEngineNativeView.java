@@ -57,7 +57,7 @@ public class ParaEngineNativeView extends SurfaceView {
 
 	@Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
-		boolean bResult = super.onKeyDown(keyCode, event);
+		boolean bResult = super.onKeyUp(keyCode, event);
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {    
 			Log.i("ParaEngine", "ParaEngineNativeView::onKeyDown");
             return false; 

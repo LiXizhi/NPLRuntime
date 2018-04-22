@@ -524,6 +524,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
+		pDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		pDevice->SetClearDepth(1.0f);
@@ -871,6 +872,66 @@ void ParaEngine::CParaEngineAppBase::SetTouchInputting(bool bTouchInputting)
 bool ParaEngine::CParaEngineAppBase::IsAppActive()
 {
 	return m_bActive;
+}
+
+void ParaEngine::CParaEngineAppBase::GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
+{
+
+}
+
+void ParaEngine::CParaEngineAppBase::ClientToGame(int& inout_x, int & inout_y, bool bInBackbuffer /*= true*/)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::AppHasFocus()
+{
+	return true;
+}
+
+void ParaEngine::CParaEngineAppBase::GetStats(string& output, DWORD dwFields)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::WriteRegStr(const string& root_key, const string& sSubKey, const string& name, const string& value)
+{
+	return false;
+}
+
+void ParaEngine::CParaEngineAppBase::SetAutoLowerFrameRateWhenNotFocused(bool bEnabled)
+{
+
+}
+
+const char* ParaEngine::CParaEngineAppBase::ReadRegStr(const string& root_key, const string& sSubKey, const string& name)
+{
+	return NULL;
+}
+
+bool ParaEngine::CParaEngineAppBase::WriteRegDWORD(const string& root_key, const string& sSubKey, const string& name, DWORD value)
+{
+	return false;
+}
+
+DWORD ParaEngine::CParaEngineAppBase::ReadRegDWORD(const string& root_key, const string& sSubKey, const string& name)
+{
+	return 0;
+}
+
+bool ParaEngine::CParaEngineAppBase::GetAutoLowerFrameRateWhenNotFocused()
+{
+	return false;
+}
+
+void ParaEngine::CParaEngineAppBase::SetToggleSoundWhenNotFocused(bool bEnabled)
+{
+
+}
+
+bool ParaEngine::CParaEngineAppBase::GetToggleSoundWhenNotFocused()
+{
+	return false;
 }
 
 void ParaEngine::CParaEngineAppBase::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)

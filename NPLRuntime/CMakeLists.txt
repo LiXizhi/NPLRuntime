@@ -23,7 +23,7 @@ if(WIN32)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
-    option(NPLRUNTIME_PHYSICS "include physics" ON)
+	option(NPLRUNTIME_PHYSICS "include physics" ON)
 elseif(IOS)
     option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
@@ -40,9 +40,9 @@ elseif(APPLE)
 elseif (ANDROID)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
-    option(NPLRUNTIME_PHYSICS "include physics" OFF)
     option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
     option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
+	option(NPLRUNTIME_PHYSICS "include physics" ON)
 else()
     option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
@@ -63,6 +63,7 @@ endif()
 # Using static lib for other modules if main NPLRuntime is built as static lib. 
 if(NPLRUNTIME_STATIC_LIB OR ANDROID)
 	set(SQLITE_STATICLIB TRUE)
+	set(PHYSICS_STATICLIB TRUE)
 endif()
 
 # This is the directory to keep all binary
@@ -85,10 +86,8 @@ if (MSVC)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RelWithDebInfo ${CMAKE_BINARY_DIR}/bin)
 endif (MSVC)
 
-
-
-
-
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG -D_DEBUG")
 
 if(ANDROID) 
     set(CMAKE_ANDROID_API_MIN 19)

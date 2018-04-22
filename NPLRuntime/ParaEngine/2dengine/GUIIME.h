@@ -2,7 +2,7 @@
 #if defined(USE_DIRECTX_RENDERER) || 0
 #include "util/mutex.h"
 #include "GrowableArray.h"
-#include "GUIUniBuffer.h"
+#include "GUIUniBufferDirectX.h"
 
 namespace ParaEngine
 {

@@ -9,14 +9,6 @@
 #include "uthash.h"
 #include "FileUtils.h"
 
-#define CHECK_GL_ERROR_DEBUG() \
-do { \
-GLenum __error = glGetError(); \
-if(__error) { \
-OUTPUT_LOG("OpenGL error 0x%04X in %s %s %d\n", __error, __FILE__, __FUNCTION__, __LINE__); \
-} \
-} while (false)
-
 using namespace ParaEngine;
 
 namespace ParaEngine 
@@ -27,6 +19,8 @@ namespace ParaEngine
 		unsigned int    location;    // Key
 		UT_hash_handle  hh;          // hash entry
 		unsigned int	size;
+		GLenum			type;
+		bool			dirty;
 	} tHashUniformEntry;
 }
 
@@ -52,24 +46,14 @@ const char* GLProgram::SHADER_3D_POSITION_TEXTURE = "Shader3DPositionTexture";
 const char* GLProgram::SHADER_3D_SKINPOSITION_TEXTURE = "Shader3DSkinPositionTexture";
 
 
-// uniform names
-const char* GLProgram::UNIFORM_NAME_P_MATRIX = "CC_PMatrix";
-const char* GLProgram::UNIFORM_NAME_MV_MATRIX = "CC_MVMatrix";
-const char* GLProgram::UNIFORM_NAME_MVP_MATRIX = "CC_MVPMatrix";
-const char* GLProgram::UNIFORM_NAME_TIME = "CC_Time";
-const char* GLProgram::UNIFORM_NAME_SIN_TIME = "CC_SinTime";
-const char* GLProgram::UNIFORM_NAME_COS_TIME = "CC_CosTime";
-const char* GLProgram::UNIFORM_NAME_RANDOM01 = "CC_Random01";
-const char* GLProgram::UNIFORM_NAME_SAMPLER0 = "CC_Texture0";
-const char* GLProgram::UNIFORM_NAME_SAMPLER1 = "CC_Texture1";
-const char* GLProgram::UNIFORM_NAME_SAMPLER2 = "CC_Texture2";
-const char* GLProgram::UNIFORM_NAME_SAMPLER3 = "CC_Texture3";
-const char* GLProgram::UNIFORM_NAME_ALPHA_TEST_VALUE = "CC_alpha_value";
-
 // Attribute names
 const char* GLProgram::ATTRIBUTE_NAME_COLOR = "a_color";
+const char* GLProgram::ATTRIBUTE_NAME_COLOR1 = "a_color2";
 const char* GLProgram::ATTRIBUTE_NAME_POSITION = "a_position";
 const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD = "a_texCoord";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD1 = "a_texCoord1";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD2 = "a_texCoord2";
+const char* GLProgram::ATTRIBUTE_NAME_TEX_COORD3 = "a_texCoord3";
 const char* GLProgram::ATTRIBUTE_NAME_NORMAL = "a_normal";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_WEIGHT = "a_blendWeight";
 const char* GLProgram::ATTRIBUTE_NAME_BLEND_INDEX = "a_blendIndex";
@@ -107,7 +91,7 @@ GLProgram::GLProgram()
 	, _vertShader(0)
 	, _fragShader(0)
 	, _hashForUniforms(nullptr)
-	, _flags()
+	, _dirty(false)
 {
 	memset(_builtInUniforms, 0, sizeof(_builtInUniforms));
 }
@@ -205,7 +189,11 @@ void GLProgram::bindPredefinedVertexAttribs()
 	{
 		{ GLProgram::ATTRIBUTE_NAME_POSITION, GLProgram::VERTEX_ATTRIB_POSITION },
 		{ GLProgram::ATTRIBUTE_NAME_COLOR, GLProgram::VERTEX_ATTRIB_COLOR },
+		{ GLProgram::ATTRIBUTE_NAME_COLOR1, GLProgram::VERTEX_ATTRIB_COLOR1 },
 		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD, GLProgram::VERTEX_ATTRIB_TEX_COORD },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD1, GLProgram::VERTEX_ATTRIB_TEX_COORD1 },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD2, GLProgram::VERTEX_ATTRIB_TEX_COORD2 },
+		{ GLProgram::ATTRIBUTE_NAME_TEX_COORD3, GLProgram::VERTEX_ATTRIB_TEX_COORD3 },
 		{ GLProgram::ATTRIBUTE_NAME_NORMAL, GLProgram::VERTEX_ATTRIB_NORMAL },
 	};
 
@@ -270,10 +258,7 @@ void GLProgram::parseUniforms()
 				// Query uniform info.
 				glGetActiveUniform(_program, i, length, nullptr, &uniform.size, &uniform.type, uniformName);
 				uniformName[length] = '\0';
-				// Only add uniforms that are not built-in.
-				// The ones that start with 'CC_' are built-ins
-				if (strncmp("CC_", uniformName, 3) != 0) {
-
+				{
 					// remove possible array '[]' from uniform name
 					if (uniform.size > 1 && length > 3)
 					{
@@ -331,18 +316,7 @@ bool GLProgram::compileShader(GLuint * shader, GLenum type, const GLchar* source
 #ifdef PARAENGINE_MOBILE
 		"precision highp float;\n"
 #endif
-		"uniform mat4 CC_PMatrix;\n"
-		"uniform mat4 CC_MVMatrix;\n"
-		"uniform mat4 CC_MVPMatrix;\n"
-		"uniform vec4 CC_Time;\n"
-		"uniform vec4 CC_SinTime;\n"
-		"uniform vec4 CC_CosTime;\n"
-		"uniform vec4 CC_Random01;\n"
-		"uniform sampler2D CC_Texture0;\n"
-		"uniform sampler2D CC_Texture1;\n"
-		"uniform sampler2D CC_Texture2;\n"
-		"uniform sampler2D CC_Texture3;\n"
-		"//CC INCLUDES END\n\n",
+		"//\n",
 		source,
 	};
 
@@ -393,30 +367,10 @@ void GLProgram::bindAttribLocation(const std::string &attributeName, GLuint inde
 
 void GLProgram::updateUniforms()
 {
-	_builtInUniforms[UNIFORM_P_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_P_MATRIX);
-	_builtInUniforms[UNIFORM_MV_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_MV_MATRIX);
-	_builtInUniforms[UNIFORM_MVP_MATRIX] = glGetUniformLocation(_program, UNIFORM_NAME_MVP_MATRIX);
-
-	_builtInUniforms[UNIFORM_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_TIME);
-	_builtInUniforms[UNIFORM_SIN_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_SIN_TIME);
-	_builtInUniforms[UNIFORM_COS_TIME] = glGetUniformLocation(_program, UNIFORM_NAME_COS_TIME);
-
-	_builtInUniforms[UNIFORM_RANDOM01] = glGetUniformLocation(_program, UNIFORM_NAME_RANDOM01);
-
-	_builtInUniforms[UNIFORM_SAMPLER0] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER0);
-	_builtInUniforms[UNIFORM_SAMPLER1] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER1);
-	_builtInUniforms[UNIFORM_SAMPLER2] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER2);
-	_builtInUniforms[UNIFORM_SAMPLER3] = glGetUniformLocation(_program, UNIFORM_NAME_SAMPLER3);
-
-	_flags.usesP = _builtInUniforms[UNIFORM_P_MATRIX] != -1;
-	_flags.usesMV = _builtInUniforms[UNIFORM_MV_MATRIX] != -1;
-	_flags.usesMVP = _builtInUniforms[UNIFORM_MVP_MATRIX] != -1;
-	_flags.usesTime = (
-		_builtInUniforms[UNIFORM_TIME] != -1 ||
-		_builtInUniforms[UNIFORM_SIN_TIME] != -1 ||
-		_builtInUniforms[UNIFORM_COS_TIME] != -1
-		);
-	_flags.usesRandom = _builtInUniforms[UNIFORM_RANDOM01] != -1;
+	_builtInUniforms[UNIFORM_SAMPLER0] = glGetUniformLocation(_program, "tex0Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER1] = glGetUniformLocation(_program, "tex1Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER2] = glGetUniformLocation(_program, "tex2Sampler");
+	_builtInUniforms[UNIFORM_SAMPLER3] = glGetUniformLocation(_program, "tex3Sampler");
 
 	this->use();
 
@@ -429,6 +383,9 @@ void GLProgram::updateUniforms()
 		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER2], 2);
 	if (_builtInUniforms[UNIFORM_SAMPLER3] != -1)
 		setUniformLocationWith1i(_builtInUniforms[UNIFORM_SAMPLER3], 3);
+
+	// clear any glErrors created by any not found uniforms
+	glGetError();
 }
 
 bool GLProgram::link()
@@ -500,7 +457,7 @@ std::string GLProgram::getProgramLog() const
 
 // Uniform cache
 
-bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsigned int bytes)
+bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsigned int bytes, GLenum type, bool direct)
 {
 	if (location < 0)
 	{
@@ -521,6 +478,20 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 		// size
 		element->size = bytes;
 
+		// 
+		element->type = type;
+
+		if (!direct)
+		{
+			//
+			element->dirty = true;
+			_dirty = true;
+		}
+		else
+		{
+			element->dirty = false;
+		}
+
 		// value
 		element->value = malloc(bytes);
 		memcpy(element->value, data, bytes);
@@ -537,6 +508,17 @@ bool GLProgram::updateUniformLocation(GLint location, const GLvoid* data, unsign
 		{
 			element->value = realloc(element->value, bytes);
 			element->size = bytes;
+
+			if (!direct)
+			{
+				element->dirty = true;
+				_dirty = true;
+			}
+			else
+			{
+				element->dirty = false;
+			}
+
 			memcpy(element->value, data, bytes);
 		}
 	}
@@ -556,180 +538,180 @@ GLint GLProgram::getUniformLocationForName(const char* name) const
 	return ret;
 }
 
-void GLProgram::setUniformLocationWith1i(GLint location, GLint i1)
+void GLProgram::setUniformLocationWith1i(GLint location, GLint i1, bool direct)
 {
-	bool updated = updateUniformLocation(location, &i1, sizeof(i1) * 1);
+	bool updated = updateUniformLocation(location, &i1, sizeof(i1) * 1, GL_INT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform1i((GLint)location, i1);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith2i(GLint location, GLint i1, GLint i2)
+void GLProgram::setUniformLocationWith2i(GLint location, GLint i1, GLint i2, bool direct)
 {
 	GLint ints[2] = { i1,i2 };
-	bool updated = updateUniformLocation(location, ints, sizeof(ints));
+	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform2i((GLint)location, i1, i2);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith3i(GLint location, GLint i1, GLint i2, GLint i3)
+void GLProgram::setUniformLocationWith3i(GLint location, GLint i1, GLint i2, GLint i3, bool direct)
 {
 	GLint ints[3] = { i1,i2,i3 };
-	bool updated = updateUniformLocation(location, ints, sizeof(ints));
+	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform3i((GLint)location, i1, i2, i3);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith4i(GLint location, GLint i1, GLint i2, GLint i3, GLint i4)
+void GLProgram::setUniformLocationWith4i(GLint location, GLint i1, GLint i2, GLint i3, GLint i4, bool direct)
 {
 	GLint ints[4] = { i1,i2,i3,i4 };
-	bool updated = updateUniformLocation(location, ints, sizeof(ints));
+	bool updated = updateUniformLocation(location, ints, sizeof(ints), GL_INT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform4i((GLint)location, i1, i2, i3, i4);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith2iv(GLint location, GLint* ints, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith2iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, ints, sizeof(int) * 2 * numberOfArrays);
+	bool updated = updateUniformLocation(location, ints, sizeof(int) * 2 * numberOfArrays, GL_INT_VEC2, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform2iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith3iv(GLint location, GLint* ints, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith3iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, ints, sizeof(int) * 3 * numberOfArrays);
+	bool updated = updateUniformLocation(location, ints, sizeof(int) * 3 * numberOfArrays, GL_INT_VEC3, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform3iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith4iv(GLint location, GLint* ints, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith4iv(GLint location, GLint* ints, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, ints, sizeof(int) * 4 * numberOfArrays);
+	bool updated = updateUniformLocation(location, ints, sizeof(int) * 4 * numberOfArrays, GL_INT_VEC4, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform4iv((GLint)location, (GLsizei)numberOfArrays, ints);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith1f(GLint location, GLfloat f1)
+void GLProgram::setUniformLocationWith1f(GLint location, GLfloat f1, bool direct)
 {
-	bool updated = updateUniformLocation(location, &f1, sizeof(f1) * 1);
+	bool updated = updateUniformLocation(location, &f1, sizeof(f1) * 1, GL_FLOAT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform1f((GLint)location, f1);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith2f(GLint location, GLfloat f1, GLfloat f2)
+void GLProgram::setUniformLocationWith2f(GLint location, GLfloat f1, GLfloat f2, bool direct)
 {
 	GLfloat floats[2] = { f1,f2 };
-	bool updated = updateUniformLocation(location, floats, sizeof(floats));
+	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform2f((GLint)location, f1, f2);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith3f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3)
+void GLProgram::setUniformLocationWith3f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3, bool direct)
 {
 	GLfloat floats[3] = { f1,f2,f3 };
-	bool updated = updateUniformLocation(location, floats, sizeof(floats));
+	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform3f((GLint)location, f1, f2, f3);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith4f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3, GLfloat f4)
+void GLProgram::setUniformLocationWith4f(GLint location, GLfloat f1, GLfloat f2, GLfloat f3, GLfloat f4, bool direct)
 {
 	GLfloat floats[4] = { f1,f2,f3,f4 };
-	bool updated = updateUniformLocation(location, floats, sizeof(floats));
+	bool updated = updateUniformLocation(location, floats, sizeof(floats), GL_FLOAT, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform4f((GLint)location, f1, f2, f3, f4);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith2fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith2fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, floats, sizeof(float) * 2 * numberOfArrays);
+	bool updated = updateUniformLocation(location, floats, sizeof(float) * 2 * numberOfArrays, GL_FLOAT_VEC2, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform2fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith3fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith3fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, floats, sizeof(float) * 3 * numberOfArrays);
+	bool updated = updateUniformLocation(location, floats, sizeof(float) * 3 * numberOfArrays, GL_FLOAT_VEC3, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform3fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWith4fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays)
+void GLProgram::setUniformLocationWith4fv(GLint location, const GLfloat* floats, unsigned int numberOfArrays, bool direct)
 {
-	bool updated = updateUniformLocation(location, floats, sizeof(float) * 4 * numberOfArrays);
+	bool updated = updateUniformLocation(location, floats, sizeof(float) * 4 * numberOfArrays, GL_FLOAT_VEC4, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniform4fv((GLint)location, (GLsizei)numberOfArrays, floats);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
-void GLProgram::setUniformLocationWithMatrix2fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices) {
-	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 4 * numberOfMatrices);
+void GLProgram::setUniformLocationWithMatrix2fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices, bool direct) {
+	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 4 * numberOfMatrices, GL_FLOAT_MAT2, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniformMatrix2fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG(); 
 	}
 }
 
-void GLProgram::setUniformLocationWithMatrix3fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices) {
-	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 9 * numberOfMatrices);
+void GLProgram::setUniformLocationWithMatrix3fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices, bool direct) {
+	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 9 * numberOfMatrices, GL_FLOAT_MAT3, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniformMatrix3fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG();
@@ -737,17 +719,185 @@ void GLProgram::setUniformLocationWithMatrix3fv(GLint location, const GLfloat* m
 }
 
 
-void GLProgram::setUniformLocationWithMatrix4fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices)
+void GLProgram::setUniformLocationWithMatrix4fv(GLint location, const GLfloat* matrixArray, unsigned int numberOfMatrices, bool direct)
 {
-	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 16 * numberOfMatrices);
+	bool updated = updateUniformLocation(location, matrixArray, sizeof(float) * 16 * numberOfMatrices, GL_FLOAT_MAT4, direct);
 
-	if (updated)
+	if (updated && direct)
 	{
 		glUniformMatrix4fv((GLint)location, (GLsizei)numberOfMatrices, GL_FALSE, matrixArray);
 		PE_CHECK_GL_ERROR_DEBUG();
 	}
 }
 
+void GLProgram::commit()
+{
+	if (!_dirty)
+		return;
+
+	tHashUniformEntry *current_element, *tmp;
+
+	// Purge uniform hash
+	HASH_ITER(hh, _hashForUniforms, current_element, tmp)
+	{
+		if (!current_element->dirty)
+			continue;
+
+		switch (current_element->type)
+		{
+			case GL_INT:
+			{
+				auto count = current_element->size / sizeof(GLint);
+
+				if (count == 1)
+				{
+					// do not use GLint i = *((GLint*)current_element->value);
+					// it may be crash on android
+					GLint i;
+					memcpy(&i, current_element->value, sizeof(GLint));
+					glUniform1i(current_element->location, i);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 2)
+				{
+					GLint i[2];
+					memcpy(i, current_element->value, sizeof(GLint) * 2);
+					glUniform2i(current_element->location, i[0], i[1]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 3)
+				{
+					GLint i[3];
+					memcpy(i, current_element->value, sizeof(GLint) * 3);
+					glUniform3i(current_element->location, i[0], i[1], i[2]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 4)
+				{
+					GLint i[4];
+					memcpy(i, current_element->value, sizeof(GLint) * 4);
+					glUniform4i(current_element->location, i[0], i[1], i[2], i[3]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+
+				break;
+			}
+			case GL_FLOAT:
+			{
+				auto count = current_element->size / sizeof(GLfloat);
+
+				if (count == 1)
+				{
+					GLfloat i;
+					memcpy(&i, current_element->value, sizeof(GLfloat));
+					glUniform1f(current_element->location, i);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 2)
+				{
+					GLfloat i[2];
+					memcpy(i, current_element->value, sizeof(GLfloat) * 2);
+					glUniform2f(current_element->location, i[0], i[1]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 3)
+				{
+					GLfloat i[3];
+					memcpy(i, current_element->value, sizeof(GLfloat) * 3);
+					glUniform3f(current_element->location, i[0], i[1], i[2]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				else if (count == 4)
+				{
+					GLfloat i[4];
+					memcpy(i, current_element->value, sizeof(GLfloat) * 4);
+					glUniform4i(current_element->location, i[0], i[1], i[2], i[3]);
+					PE_CHECK_GL_ERROR_DEBUG();
+				}
+				break;
+			}
+
+			case GL_FLOAT_VEC2:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 2);
+				glUniform2fv(current_element->location, (GLsizei)count, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_FLOAT_VEC3:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 3);
+				glUniform3fv(current_element->location, (GLsizei)count, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_FLOAT_VEC4:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 4);
+				glUniform4fv(current_element->location, (GLsizei)count, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_INT_VEC2:
+			{
+				auto count = current_element->size / (sizeof(GLint) * 2);
+				glUniform2iv(current_element->location, (GLsizei)count, (GLint*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_INT_VEC3:
+			{
+				auto count = current_element->size / (sizeof(GLint) * 3);
+				glUniform3iv(current_element->location, (GLsizei)count, (GLint*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_INT_VEC4:
+			{
+				auto count = current_element->size / (sizeof(GLint) * 4);
+				glUniform4iv(current_element->location, (GLsizei)count, (GLint*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_FLOAT_MAT2:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 4);
+				glUniformMatrix2fv(current_element->location, (GLsizei)count, GL_FALSE, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_FLOAT_MAT3:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 9);
+				glUniformMatrix3fv(current_element->location, (GLsizei)count, GL_FALSE, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+			case GL_FLOAT_MAT4:
+			{
+				auto count = current_element->size / (sizeof(GLfloat) * 16);
+				glUniformMatrix4fv(current_element->location, (GLsizei)count, GL_FALSE, (GLfloat*)current_element->value);
+				PE_CHECK_GL_ERROR_DEBUG();
+				break;
+			}
+
+		default:
+			break;
+		}
+
+		current_element->dirty = false;
+	}
+
+	_dirty = false;
+}
 
 
 void GLProgram::reset()
@@ -771,4 +921,6 @@ void GLProgram::reset()
 		free(current_element);
 	}
 	_hashForUniforms = nullptr;
+
+	_dirty = false;
 }

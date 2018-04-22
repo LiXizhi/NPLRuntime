@@ -2,8 +2,6 @@
 #include "JniHelper.h"
 #include "StringHelper.h"
 
-
-#include <android/log.h>
 #include <string.h>
 #include <pthread.h>
 

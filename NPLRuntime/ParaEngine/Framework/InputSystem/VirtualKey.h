@@ -241,11 +241,11 @@ namespace ParaEngine
 	{
 
 	public:
-		DeviceMouseButtonEvent(const EMouseButton button, const EKeyState state, int x, int y)
+		DeviceMouseButtonEvent(const EMouseButton button, const EKeyState state, int x, int y, bool bSimulated = false)
 			: m_button(button)
 			, m_state(state) 
 			, m_x(x)
-			, m_y(y) {};
+			, m_y(y), m_bFromTouchInput(bSimulated){};
 		inline EMouseButton GetButton() const { return m_button; };
 		void SetButton(EMouseButton btn) { m_button = btn; }
 		inline EKeyState GetKeyState() const { return m_state; };
@@ -254,6 +254,7 @@ namespace ParaEngine
 		inline int GetY() const { return m_y; };
 
 		virtual EMouseEventType GetEventType() const { return EMouseEventType::Button; };
+		inline bool IsFromTouchInput() const { return m_bFromTouchInput; };
 
 		virtual std::string ToString();
 	private:
@@ -261,6 +262,8 @@ namespace ParaEngine
 		EKeyState m_state;
 		int m_x;
 		int m_y;
+		// whether this is simulated from touch input
+		bool m_bFromTouchInput;
 	};
 
 	class DeviceMouseWheelEvent : public DeviceMouseEvent

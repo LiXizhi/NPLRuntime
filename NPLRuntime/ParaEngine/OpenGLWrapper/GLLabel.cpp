@@ -7,7 +7,6 @@
 #include "GLLabel.h"
 
 
-#define CC_SIZE_PIXELS_TO_POINTS(a) a
 
 using namespace ParaEngine;
 
@@ -17,7 +16,7 @@ const int GLLabel::DistanceFieldFontSize = 50;
 bool LabelTextFormatter::multilineText(GLLabel *theLabel)
 {
 	auto limit = theLabel->_limitShowCount;
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 
 	std::vector<char16_t> multiline_string;
 	multiline_string.reserve(limit);
@@ -169,7 +168,7 @@ bool LabelTextFormatter::alignText(GLLabel *theLabel)
 	int lineNumber = 0;
 	int strLen = theLabel->_limitShowCount;
 	std::vector<char16_t> lastLine;
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 
 	if (theLabel->_labelWidth > theLabel->_contentSize.width)
 	{
@@ -263,11 +262,14 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	if (theLabel->_labelHeight > 0)
 	{
 		auto labelHeightPixel = theLabel->_labelHeight * contentScaleFactor;
+		
+		/*LiXizhi 2018.4.15: why rescaling the line spacing according to the control height. not necessary.
 		if (totalHeight > labelHeightPixel)
 		{
 			int numLines = labelHeightPixel / theLabel->_commonLineHeight;
 			totalHeight = numLines * theLabel->_commonLineHeight;
-		}
+		}*/
+
 		switch (theLabel->_vAlignment)
 		{
 		case TextVAlignment::TOP:
@@ -289,7 +291,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 	int charYOffset = 0;
 	int charAdvance = 0;
 
-	auto strWhole = theLabel->_currentUTF16String;
+	const auto& strWhole = theLabel->_currentUTF16String;
 	auto fontAtlas = theLabel->_fontAtlas;
 
 	FontLetterDefinition tempDefinition;
@@ -329,9 +331,11 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 			nextFontPositionY -= theLabel->_commonLineHeight;
 
 			theLabel->recordPlaceholderInfo(i);
-			if (nextFontPositionY < theLabel->_commonLineHeight)
-				break;
-
+			
+			// LiXizhi 2018.4.15: why we break here? it will not render multiple lines this way
+			//if (nextFontPositionY < theLabel->_commonLineHeight)
+			//	break;
+			
 			lineStart = true;
 			continue;
 		}
@@ -406,7 +410,7 @@ bool LabelTextFormatter::createStringSprites(GLLabel *theLabel)
 		}
 	}
 
-	theLabel->setContentSize(CC_SIZE_PIXELS_TO_POINTS(tmpSize));
+	theLabel->setContentSize(tmpSize);
 
 	return true;
 }
