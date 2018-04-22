@@ -1,17 +1,16 @@
-//
-//  AppDelegate.h
-//  ios_gl
-//
-//  Created by 袁全伟 on 2017/11/11.
-//  Copyright © 2017年 XRenderAPI. All rights reserved.
-//
 
 #import <UIKit/UIKit.h>
 
+namespace ParaEngine {
+    class CParaEngineAppiOS;
+}
+
+
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
-@property (strong, nonatomic) UIWindow *window;
-
+@property (strong,nonatomic)   UIWindow *window;
+@property (strong,nonatomic)    UIViewController* viewController;
+@property (nonatomic)    ParaEngine::CParaEngineAppiOS* app;
 
 @end
 

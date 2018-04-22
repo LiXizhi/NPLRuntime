@@ -34,7 +34,7 @@ buildLuajit_iphoneos()
     ICC=$(xcrun --sdk iphoneos --find clang)
    
     # armv7
-    ISDKF="-arch armv7 -isysroot $ISDKP"
+    ISDKF="-arch armv7 -isysroot $ISDKP -mios-simulator-version-min=10.0"
     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
     make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32 " \
         CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
@@ -44,7 +44,7 @@ buildLuajit_iphoneos()
     
 
     # armv7s
-    ISDKF="-arch armv7s -isysroot $ISDKP"
+    ISDKF="-arch armv7s -isysroot $ISDKP -mios-simulator-version-min=10.0"
     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
     make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang -m32" \
         CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS >> "${LOG_DIR}/ios-build.log" 2>&1
@@ -53,7 +53,7 @@ buildLuajit_iphoneos()
     mv $SOURCE_ROOT/src/libluajit.a $BUILD_DIR/libluajit_armv7s.a
    
     # arm64
-    ISDKF="-arch arm64 -isysroot $ISDKP"
+    ISDKF="-arch arm64 -isysroot $ISDKP -mios-simulator-version-min=10.0"
     make -C $SOURCE_ROOT clean 1>/dev/null 2>/dev/null
     make -C $SOURCE_ROOT DEFAULT_CC=clang HOST_CC="clang" \
         CROSS="$(dirname $ICC)/" TARGET_FLAGS="$ISDKF" TARGET_SYS=iOS TARGET=arm64  >> "${LOG_DIR}/ios-build.log" 2>&1

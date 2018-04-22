@@ -8,6 +8,10 @@
 
 #import "AppDelegate.h"
 #import "ViewController.h"
+#import "GLView.h"
+#include "ParaAppiOS.h"
+using namespace ParaEngine;
+
 @interface AppDelegate ()
 
 @end
@@ -18,13 +22,24 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    id rootViewController = [[ViewController alloc ] init];
-    self.window = [UIWindow new];
-    [self.window makeKeyAndVisible];
+    self.window = [[UIWindow alloc] initWithFrame: [UIScreen mainScreen].bounds];
     
-    self.window.frame = [UIScreen mainScreen].bounds;
-    self.window.rootViewController = rootViewController;
+    GLView* view = [[GLView alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    
+    self.viewController = [[ViewController alloc ] init];
+    self.viewController.wantsFullScreenLayout = YES;
+    self.viewController.view = view;
 
+    self.window.rootViewController = self.viewController;
+    [self.window makeKeyAndVisible];
+
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    
+    // Init app
+    self.app = new CParaEngineAppiOS();
+    
+    
+    
     return YES;
 }
 

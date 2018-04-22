@@ -17,8 +17,7 @@
 
 - (void)loadView
 {
-    GLView* view = [[GLView alloc] initWithFrame:[UIScreen mainScreen].bounds];
-    self.view = view;
+
 }
 
 - (void)viewDidLoad {
