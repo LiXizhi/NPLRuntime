@@ -116,7 +116,7 @@ public:
 		if (!bLoaded)
 		{
 			/**  plugin dll file path */
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(WIN32)
 			const char* SQLITE_DLL_FILE_PATH = "ParaSqlite_d.dll";
 #else
 			const char* SQLITE_DLL_FILE_PATH = "ParaSqlite.dll";
