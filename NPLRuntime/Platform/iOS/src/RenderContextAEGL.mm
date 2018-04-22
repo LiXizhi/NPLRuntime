@@ -1,3 +1,5 @@
+#import <UIKit/UIKit.h>
+
 #include "ParaEngine.h"
 #include "RenderContextAEGL.h"
 #include "RenderWindowiOS.h"
@@ -13,6 +15,10 @@ ParaEngine::IRenderContext* ParaEngine::IRenderContext::Create()
 
 IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
 {
+    RenderWindowiOS* renderWindow = static_cast<RenderWindowiOS*>(cfg.renderWindow);
+    UIView* view = renderWindow->GetView();
+    
+    
     return nullptr;
 }
 

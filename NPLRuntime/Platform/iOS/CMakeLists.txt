@@ -24,9 +24,27 @@ target_link_libraries(Paracraft PRIVATE
 
 
 set_target_properties(Paracraft PROPERTIES 
-MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/info.plist
-RESOURCE "${RESOURCE_FILES}"
+    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/info.plist
+    RESOURCE "${RESOURCE_FILES}"
+    INSTALL_RPATH "@executable_path/Frameworks/"
+    BUILD_WITH_INSTALL_RPATH TRUE
 )
 
 
 
+set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+
+
+set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
+set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
+set(DEST_FRAMEWORK_PATH "${APP_PATH}/Frameworks/")
+
+
+set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libsqlite.dylib")
+
+add_custom_command(TARGET Paracraft POST_BUILD 
+COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Resources/assets" 
+COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libsqlite.dylib"
+MAIN_DEPENDENCY Paracraft
+DEPENDS "${LIBLUA_DYPATH}"  "${LIBSQLITE_DYPATH}"
+)

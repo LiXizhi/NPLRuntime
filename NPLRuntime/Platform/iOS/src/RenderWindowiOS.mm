@@ -36,4 +36,8 @@ intptr_t ParaEngine::RenderWindowiOS::GetNativeHandle() const
 {
     return (intptr_t)m_view;
 }
+UIView* ParaEngine::RenderWindowiOS::GetView() const
+{
+    return m_view;
+}
 

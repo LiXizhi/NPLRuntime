@@ -10,6 +10,7 @@
 #import "ViewController.h"
 #import "GLView.h"
 #include "ParaAppiOS.h"
+#include "RenderWindowiOS.h"
 using namespace ParaEngine;
 
 @interface AppDelegate ()
@@ -35,9 +36,12 @@ using namespace ParaEngine;
 
     [[UIApplication sharedApplication] setStatusBarHidden:YES];
     
+    
+    RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
+    
     // Init app
     self.app = new CParaEngineAppiOS();
-    
+    self.app->InitApp(renderWindow, "");
     
     
     return YES;
