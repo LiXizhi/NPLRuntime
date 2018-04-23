@@ -20,6 +20,7 @@ IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
     
     CAEAGLLayer* glLayer = (CAEAGLLayer*)view.layer;
     glLayer.opaque = YES;
+    glLayer.contentsScale = [UIScreen mainScreen].scale;
     glLayer.drawableProperties = @{
                                    kEAGLDrawablePropertyRetainedBacking :[NSNumber numberWithBool:NO],
                                    kEAGLDrawablePropertyColorFormat : kEAGLColorFormatRGBA8

@@ -23,11 +23,15 @@ using namespace ParaEngine;
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    CGRect bounds = [UIScreen mainScreen].bounds;
+    
+    UIScreen* mainScreen = [UIScreen mainScreen];
+    id modes = [mainScreen availableModes];
+    
+    CGRect bounds = [[UIScreen mainScreen]bounds];
     
     self.window = [[UIWindow alloc] initWithFrame: bounds];
     
-    GLView* view = [[GLView alloc] initWithFrame:[UIScreen mainScreen].bounds];
+    GLView* view = [[GLView alloc] initWithFrame:bounds];
     
     self.viewController = [[ViewController alloc ] init];
     self.viewController.view = view;

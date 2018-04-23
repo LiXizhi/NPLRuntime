@@ -4,9 +4,27 @@
       "extent" : "full-screen",
       "idiom" : "iphone",
       "subtype" : "2436h",
+      "filename" : "1125.png",
+      "minimum-system-version" : "11.0",
+      "orientation" : "portrait",
+      "scale" : "3x"
+    },
+    {
+      "extent" : "full-screen",
+      "idiom" : "iphone",
+      "subtype" : "2436h",
       "filename" : "Default-812h@3x.png",
       "minimum-system-version" : "11.0",
       "orientation" : "landscape",
+      "scale" : "3x"
+    },
+    {
+      "extent" : "full-screen",
+      "idiom" : "iphone",
+      "subtype" : "736h",
+      "filename" : "1242X2208.png",
+      "minimum-system-version" : "8.0",
+      "orientation" : "portrait",
       "scale" : "3x"
     },
     {
@@ -17,6 +35,15 @@
       "minimum-system-version" : "8.0",
       "orientation" : "landscape",
       "scale" : "3x"
+    },
+    {
+      "extent" : "full-screen",
+      "idiom" : "iphone",
+      "subtype" : "667h",
+      "filename" : "750.png",
+      "minimum-system-version" : "8.0",
+      "orientation" : "portrait",
+      "scale" : "2x"
     },
     {
       "orientation" : "portrait",
@@ -33,6 +60,28 @@
       "filename" : "Default-568h@2x.png",
       "minimum-system-version" : "7.0",
       "orientation" : "portrait",
+      "scale" : "2x"
+    },
+    {
+      "orientation" : "portrait",
+      "idiom" : "iphone",
+      "filename" : "Default.png",
+      "extent" : "full-screen",
+      "scale" : "1x"
+    },
+    {
+      "orientation" : "portrait",
+      "idiom" : "iphone",
+      "filename" : "Default@2x-1.png",
+      "extent" : "full-screen",
+      "scale" : "2x"
+    },
+    {
+      "orientation" : "portrait",
+      "idiom" : "iphone",
+      "filename" : "Default-568h@2x的副本 4.png",
+      "extent" : "full-screen",
+      "subtype" : "retina4",
       "scale" : "2x"
     }
   ],

@@ -42,8 +42,8 @@
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
         CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x;
-        float touchY = location.y;
+        float touchX = location.x* [UIScreen mainScreen].scale;
+        float touchY = location.y* [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, touchId, touchX, touchY, msCurTime);
         touchId++;
         gui->handleTouchEvent(*touchEvent);
@@ -61,8 +61,8 @@
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
         CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x;
-        float touchY = location.y;
+        float touchX = location.x * [UIScreen mainScreen].scale;
+        float touchY = location.y * [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
         touchId++;
         gui->handleTouchEvent(*touchEvent);
@@ -79,8 +79,8 @@
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
         CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x;
-        float touchY = location.y;
+        float touchX = location.x* [UIScreen mainScreen].scale;
+        float touchY = location.y* [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE,touchId, touchX, touchY, msCurTime);
         touchId++;
         gui->handleTouchEvent(*touchEvent);
@@ -97,8 +97,8 @@
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
         CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x;
-        float touchY = location.y;
+        float touchX = location.x* [UIScreen mainScreen].scale;
+        float touchY = location.y* [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
         touchId++;
         gui->handleTouchEvent(*touchEvent);

@@ -24,12 +24,12 @@ ParaEngine::RenderWindowiOS::~RenderWindowiOS()
 
 unsigned int ParaEngine::RenderWindowiOS::GetWidth() const
 {
-    return (int)m_view.frame.size.width;
+    return (int)m_view.frame.size.width * [UIScreen mainScreen].scale;
 }
 
 unsigned int ParaEngine::RenderWindowiOS::GetHeight() const
 {
-    return (int)m_view.frame.size.height;
+    return (int)m_view.frame.size.height * [UIScreen mainScreen].scale;
 }
 
 intptr_t ParaEngine::RenderWindowiOS::GetNativeHandle() const
