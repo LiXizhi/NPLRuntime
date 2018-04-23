@@ -4,7 +4,9 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 
 ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
-ucm_add_dirs(res TO RESOURCE_FILES RECURSIVE ADDITIONAL_EXT *)
+
+set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/Images.xcassets)
+
 
 find_library(UIKit UIKit)
 find_library(OpenGLES OpenGLES)
