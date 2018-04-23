@@ -36,11 +36,11 @@ set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_E
 
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
-set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
+set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
 set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks/")
 
 set(LIBLUA_DYPATH "${DYLIB_PATH}/liblua.dylib")
-set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libsqlite.dylib")
+set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
 
 add_custom_command(TARGET Paracraft POST_BUILD 
 COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 

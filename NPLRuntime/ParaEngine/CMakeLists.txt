@@ -156,6 +156,25 @@ elseif(WIN32)
         _WIN32_WINNT=0x0501
         _WINSOCK_DEPRECATED_NO_WARNINGS
     )
+elseif(MAC_SERVER)
+	
+	set(PLATROM_SPEC_DEFINITIONS 
+        PLATFORM_MAC
+		MAC_SERVER
+    )
+	    ## Readline support
+    include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")
+    # FIND_PACKAGE(Readline)
+    IF(READLINE_FOUND)
+		LIST(APPEND PLATROM_SPEC_DEFINITIONS
+			 NPL_USE_READLINE
+		)
+		LIST(APPEND PLATFORM_SPE_LIBS ${Readline_LIBRARY})
+		MESSAGE("NPL_USE_READLINE read line is found and used")
+		INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
+	ELSE()
+		MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
+	ENDIF()	
 elseif(APPLE)
     set(PLATROM_SPEC_DEFINITIONS 
         PLATFORM_MAC
