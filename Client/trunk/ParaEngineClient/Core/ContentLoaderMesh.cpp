@@ -242,16 +242,17 @@ bool ParaEngine::CMeshProcessor::CreateMeshLODLevel(float fromDepth, const strin
 	MeshLOD meshLOD;
 	meshLOD.m_fromDepthSquared = fromDepth*fromDepth;
 	meshLOD.m_sMeshFileName = sFilename;
-#ifdef USE_DIRECTX_RENDERER
-	//meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
-	if (CParaXStaticBase::GetFileTypeByFilename(sFilename) == XModelFileType::FileType_FBX)
-		meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
-	else
-		meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
+	#ifdef USE_DIRECTX_RENDERER
+		//meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
+		if (CParaXStaticBase::GetFileTypeByFilename(sFilename) == XModelFileType::FileType_FBX)
+			meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
+		else
+			meshLOD.m_pStaticMesh = new CParaXStaticMesh(sFilename.c_str());
 
-#elif defined(USE_OPENGL_RENDERER)
-	meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
-#endif
+	#elif defined(USE_OPENGL_RENDERER)
+		meshLOD.m_pStaticMesh = new CParaXStaticModel(sFilename.c_str());
+	#endif
+
 	m_MeshLODs.push_back(meshLOD);
 
 	std::sort(m_MeshLODs.begin(), m_MeshLODs.end(), MeshLodSortLess());

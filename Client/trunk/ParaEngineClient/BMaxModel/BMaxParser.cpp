@@ -1032,10 +1032,13 @@ namespace ParaEngine
 			}
 		}
 
-		if (m_anims.size() > 0 && m_bones.size() > 0)
+		if (m_bones.size() > 0)
 		{
-			pMesh->anims = new ModelAnimation[m_anims.size()];
-			memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation)*m_anims.size());
+			if (m_anims.size() > 0)
+			{
+				pMesh->anims = new ModelAnimation[m_anims.size()];
+				memcpy(pMesh->anims, &(m_anims[0]), sizeof(ModelAnimation)*m_anims.size());
+			}
 			pMesh->animBones = true;
 			pMesh->animated = true;
 		}
