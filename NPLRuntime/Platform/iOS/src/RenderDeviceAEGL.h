@@ -1,14 +1,22 @@
 #pragma once
 #include "RenderDeviceOpenGL.h"
+@class EAGLContext;
+@class CAEAGLLayer;
 namespace ParaEngine
 {
-	class RenderDeviceEGL : public RenderDeviceOpenGL
+	class RenderDeviceAEGL : public RenderDeviceOpenGL
 	{
 	public:
-		RenderDeviceEGL();
-		~RenderDeviceEGL();
-
+		RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer* layer);
+		~RenderDeviceAEGL();
 		void Reset();
 		virtual bool Present() override;
+    private:
+        EAGLContext* m_Context;
+        CAEAGLLayer* m_GLLayer;
+        GLuint              m_FrameBuffer;
+        GLuint              m_ColorBuffer;
+        GLuint              m_DepthBuffer;
+        
 	};
 }

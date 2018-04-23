@@ -23,18 +23,18 @@ using namespace ParaEngine;
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    self.window = [[UIWindow alloc] initWithFrame: [UIScreen mainScreen].bounds];
+    CGRect bounds = [UIScreen mainScreen].bounds;
+    
+    self.window = [[UIWindow alloc] initWithFrame: bounds];
     
     GLView* view = [[GLView alloc] initWithFrame:[UIScreen mainScreen].bounds];
     
     self.viewController = [[ViewController alloc ] init];
-    self.viewController.wantsFullScreenLayout = YES;
     self.viewController.view = view;
 
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
 
-    [[UIApplication sharedApplication] setStatusBarHidden:YES];
     
     
     RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
@@ -43,10 +43,18 @@ using namespace ParaEngine;
     self.app = new CParaEngineAppiOS();
     self.app->InitApp(renderWindow, "");
     
+    self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
+    self.displayLink.paused = NO;
+    [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    
     
     return YES;
 }
 
+- (void) update
+{
+    self.app->DoWork();
+}
 
 - (void)applicationWillResignActive:(UIApplication *)application {
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
