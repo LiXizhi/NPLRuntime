@@ -45,7 +45,7 @@ set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
 add_custom_command(TARGET Paracraft POST_BUILD 
 COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 
 COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/liblua.dylib"
-COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libsqlite.dylib"
+COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libParaSqlite.dylib"
 MAIN_DEPENDENCY Paracraft
 DEPENDS "${LIBLUA_DYPATH}"  "${LIBSQLITE_DYPATH}"
 )
