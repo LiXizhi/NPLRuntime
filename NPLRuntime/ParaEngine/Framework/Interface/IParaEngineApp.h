@@ -405,7 +405,7 @@ namespace ParaEngine
 
 
 		/** whether the last mouse input is from touch or mouse. by default it is mouse mode. */
-		PE_DEPRECATED_ATTRIBUTE virtual void SetTouchInputting(bool bTouchInputting) {};
+		virtual void SetTouchInputting(bool bTouchInputting) {};
 
 
 		/** show a system message box to the user. mostly about fatal error.  */
