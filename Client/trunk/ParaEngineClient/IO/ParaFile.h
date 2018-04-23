@@ -260,7 +260,8 @@ namespace ParaEngine
 			APP_SH_PICTURE_DIR = 18,
 			APP_SH_VIDEO_DIR = 19,
 			APP_DEV_DIR = 20,
-			APP_LAST_DIR
+			APP_EXECUTABLE_DIR = 21,
+			APP_LAST_DIR,
 		};
 
 		/** get the current directory of the application. it allows querying a number of standard directories.

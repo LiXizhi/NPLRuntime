@@ -34,10 +34,19 @@ namespace ParaEngine
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		ATTRIBUTE_METHOD1(CViewport, SetAlignment_s, const char*)	{ cls->SetAlignment(p1); return S_OK; }
+		
 		ATTRIBUTE_METHOD1(CViewport, SetLeft_s, int)	{ cls->SetLeft(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetLeft_s, int*) { *p1 = cls->GetLeft(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CViewport, SetTop_s, int)	{ cls->SetTop(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetTop_s, int*) { *p1 = cls->GetTop(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CViewport, SetWidth_s, int)	{ cls->SetWidth(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetWidth_s, int*) { *p1 = cls->GetWidth(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CViewport, SetHeight_s, int)	{ cls->SetHeight(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CViewport, GetHeight_s, int*) { *p1 = cls->GetHeight(); return S_OK; }
+
 		ATTRIBUTE_METHOD(CViewport, ApplyViewport_s)	{ cls->ApplyViewport(); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CViewport, GetRenderScript_s, const char**)	{ *p1 = cls->GetRenderScript().c_str(); return S_OK; }

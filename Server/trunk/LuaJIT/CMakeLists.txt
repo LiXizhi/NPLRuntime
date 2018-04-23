@@ -148,7 +148,8 @@ target_link_libraries ( minilua ${LIBS} )
 
 # Dynasm
 set ( DASM ${CMAKE_CURRENT_SOURCE_DIR}/dynasm/dynasm.lua )
-set ( DASM_T ${CMAKE_CURRENT_SOURCE_DIR}/src/host/buildvm_arch.h )
+#set ( DASM_T ${CMAKE_CURRENT_SOURCE_DIR}/src/host/buildvm_arch.h )
+set ( DASM_T ${CMAKE_CURRENT_BINARY_DIR}/buildvm_arch.h )
 
 # 2DO: Proper detection of flags
 set ( DASM_VER "" )

@@ -469,7 +469,10 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 		}
 	}
 
-	pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	//pMesh->m_RenderMethod = pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM;
+	pMesh->SetRenderMethod(pMesh->HasAnimation() ? CParaXModel::SOFT_ANIM : CParaXModel::NO_ANIM);
+
+
 	// only enable bmax model, if there are vertex color channel.
 	if (m_bUsedVertexColor)
 		pMesh->SetBmaxModel();
@@ -1254,11 +1257,11 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 				
-				values.push_back(std::pair<int, float>(key, value));
-
+				values.push_back(std::pair<const int&, const float&>(key, value));
+				 
 				lua_pop(L, 1);
 			}
 
@@ -1310,10 +1313,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1366,10 +1369,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1423,10 +1426,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1479,10 +1482,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1533,10 +1536,10 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 			lua_pushnil(L);
 			while (lua_next(L, -2) != 0)
 			{
-				auto key = lua_isnil(L, -2) ? 0 : lua_tointeger(L, -2);
+				auto key = lua_isnil(L, -2) ? 0 : (int)lua_tointeger(L, -2);
 				auto value = lua_isnil(L, -1) ? 0 : (float)lua_tonumber(L, -1);
 
-				values.push_back(std::pair<int, float>(key, value));
+				values.push_back(std::pair<const int&, const float&>(key, value));
 
 				lua_pop(L, 1);
 			}
@@ -1996,21 +1999,23 @@ void FBXParser::CalculateMinMax(const Vector3& v)
 int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 {
 	int nBoneIndex = -1;
-	if (m_boneMapping.find(pNodeName) != m_boneMapping.end())
+	auto it = m_boneMapping.find(pNodeName);
+	if (it != m_boneMapping.end())
 	{
-		nBoneIndex = m_boneMapping[pNodeName];
+		nBoneIndex = it->second;
 	}
 	else
 	{
-		ParaEngine::Bone bone;
-		bone.nIndex = m_bones.size();
+		nBoneIndex = m_bones.size();
+		m_bones.resize(nBoneIndex + 1);
+
+		ParaEngine::Bone& bone = m_bones.back();
+		bone.nIndex = nBoneIndex;
 		bone.bUsePivot = false;
-		nBoneIndex = bone.nIndex;
 		bone.SetName(pNodeName);
 		bone.AutoSetBoneInfoFromName();
 		bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		m_boneMapping[pNodeName] = bone.nIndex;
-		m_bones.push_back(bone);
 	}
 	return nBoneIndex;
 }
@@ -2201,9 +2206,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			if (nBoneIndex >= 0)
 			{
 				ParaEngine::Bone& bone = m_bones[nBoneIndex];
-				Matrix4 offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
-				offsetMat = offsetMat.transpose();
-				bone.matOffset = offsetMat;
+				const Matrix4& offsetMat = reinterpret_cast<const Matrix4&>(fbxBone->mOffsetMatrix);
+				bone.matOffset = offsetMat.transpose();
 				bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 				bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 				bone.pivot = Vector3(0, 0, 0) * bone.matOffset.InvertPRMatrix();
@@ -2211,7 +2215,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
 			{
-				aiVertexWeight vertexWeight = fbxBone->mWeights[j];
+				aiVertexWeight& vertexWeight = fbxBone->mWeights[j];
 				int vertex_id = vertexWeight.mVertexId + vertex_start;
 				uint8 vertex_weight = (uint8)(vertexWeight.mWeight * 255);
 				int nTotalWeight = 0;

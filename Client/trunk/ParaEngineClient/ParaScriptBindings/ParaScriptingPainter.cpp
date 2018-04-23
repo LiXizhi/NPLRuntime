@@ -435,3 +435,89 @@ luabind::object ParaScripting::ParaPainter::GetField(const char* sFieldname, con
 	return att.GetField(sFieldname, output);
 }
 
+// for LuaJit, only for function that maybe called thousands of time per second
+extern "C" {
+
+	PE_CORE_DECL void ParaPainter_Flush()
+	{
+		ParaScripting::ParaPainter::Flush();
+	}
+
+	PE_CORE_DECL void ParaPainter_Save()
+	{
+		ParaScripting::ParaPainter::Save();
+	}
+
+	PE_CORE_DECL void ParaPainter_Restore()
+	{
+		ParaScripting::ParaPainter::Restore();
+	}
+
+	PE_CORE_DECL void ParaPainter_CallField(const char*  sFieldname)
+	{
+		ParaScripting::ParaPainter::CallField(sFieldname);
+	}
+
+	PE_CORE_DECL void ParaPainter_SetCompositionMode(int mode)
+	{
+		ParaScripting::ParaPainter::SetCompositionMode(mode);
+	}
+
+	PE_CORE_DECL int ParaPainter_GetCompositionMode()
+	{
+		return ParaScripting::ParaPainter::GetCompositionMode();
+	}
+
+	PE_CORE_DECL void ParaPainter_SetOpacity(float fOpacity) {
+		ParaScripting::ParaPainter::SetOpacity(fOpacity);
+	}
+	PE_CORE_DECL void ParaPainter_SetClipRegion(int x, int y, int w, int h) {
+		ParaScripting::ParaPainter::SetClipRegion(x, y, w, h);
+	}
+	PE_CORE_DECL void ParaPainter_SetClipping(bool enable) {
+		ParaScripting::ParaPainter::SetClipping(enable);
+	}
+	PE_CORE_DECL bool ParaPainter_HasClipping() {
+		return ParaScripting::ParaPainter::HasClipping();
+	}
+	PE_CORE_DECL void ParaPainter_Scale(float sx, float sy) {
+		ParaScripting::ParaPainter::Scale(sx, sy);
+	}
+	PE_CORE_DECL void ParaPainter_Shear(float sh, float sv) {
+		ParaScripting::ParaPainter::Shear(sh, sv);
+	}
+	PE_CORE_DECL void ParaPainter_Rotate(float a) {
+		ParaScripting::ParaPainter::Rotate(a);
+	}
+	PE_CORE_DECL void ParaPainter_Translate(float dx, float dy) {
+		ParaScripting::ParaPainter::Translate(dx, dy);
+	}
+	PE_CORE_DECL void ParaPainter_DrawPoint(float x, float y) {
+		ParaScripting::ParaPainter::DrawPoint(x, y);
+	}
+	PE_CORE_DECL void ParaPainter_DrawLine(float x1, float y1, float x2, float y2) {
+		ParaScripting::ParaPainter::DrawLine(x1, y1, x2, y2);
+	}
+	PE_CORE_DECL void ParaPainter_DrawRect(float x1, float y1, float w, float h) {
+		ParaScripting::ParaPainter::DrawRect(x1, y1, w, h);
+	}
+	PE_CORE_DECL void ParaPainter_DrawTriangleList(const Vector3* triangleList, int nTriangleCount, int nIndexOffset) {
+		if (nTriangleCount > 0)
+			ParaScripting::ParaPainter::GetPainter()->drawTriangles(triangleList + nIndexOffset, nTriangleCount);
+	}
+	PE_CORE_DECL void ParaPainter_DrawLineList(const Vector3* lineList, int nLineCount, int nIndexOffset) {
+		if (nLineCount > 0)
+			ParaScripting::ParaPainter::GetPainter()->drawLines(lineList + nIndexOffset, nLineCount);
+	}
+
+	PE_CORE_DECL void ParaPainter_DrawText(float x, float y, const char* s)
+	{
+		if (s != 0)
+			ParaScripting::ParaPainter::DrawText(x, y, s);
+	}
+	PE_CORE_DECL void ParaPainter_DrawText2(float x, float y, float w, float h, const char* s, int textOption)
+	{
+		if (s != 0)
+			ParaScripting::ParaPainter::DrawText2(x, y, w, h, s, textOption);
+	}
+};

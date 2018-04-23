@@ -34,6 +34,7 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingCount_s, int*)	{ *p1 = cls->GetPickingCount(); return S_OK; }
 		ATTRIBUTE_METHOD1(CBufferPicking, GetPickingID_s, DWORD*)	{ *p1 = cls->GetPickingID(-1); return S_OK; }
+		ATTRIBUTE_METHOD1(CBufferPicking, FetchPickingResult_s, void**) { cls->FetchPickingResult((DWORD **)p1); return S_OK; }
 		ATTRIBUTE_METHOD(CBufferPicking, ClearPickingResult_s)	{ cls->ClearPickingResult(); return S_OK; }
 		ATTRIBUTE_METHOD(CBufferPicking, CheckDoPick_s)	{ cls->CheckDoPick(); return S_OK; }
 		
@@ -80,6 +81,9 @@ namespace ParaEngine
 		* @param nIndex: if -1, it will use m_currentPickIndex;
 		*/
 		DWORD GetPickingID(int nIndex = 0);
+
+		/** @param ppResult: the caller needs to ensure that ppResult is at least GetPickingCount() big. Otherwise it will crash */
+		void FetchPickingResult(DWORD ** ppResult);
 
 		/** clear last picking result */
 		void ClearPickingResult();

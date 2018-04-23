@@ -61,6 +61,7 @@ else()
 	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
 endif()
 
+
 add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${NPLRuntime_BINARY_DIR}/lua-5.1.4)
 add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${NPLRuntime_BINARY_DIR}/LuaJIT)
 add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT-2.1 ${NPLRuntime_BINARY_DIR}/LuaJIT-2.1)

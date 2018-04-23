@@ -408,12 +408,14 @@ void ParaEngine::CUrlProcessor::SetCurlEasyOpt( CURL* handle )
 	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_TIME, 10L);
 	curl_easy_setopt(handle, CURLOPT_LOW_SPEED_LIMIT, 30L);
 
-	// time allowed to connect to server
-	curl_easy_setopt(handle,CURLOPT_CONNECTTIMEOUT,5);
+	// time allowed to connect to server, usually to resolve DNS and connect via IP. This can sometimes be very long on mobile devices on first use. 
+	curl_easy_setopt(handle,CURLOPT_CONNECTTIMEOUT, 20);
 	// progress callback is only used to terminate the url progress
 	curl_easy_setopt(handle,CURLOPT_NOPROGRESS, 0); 
 	curl_easy_setopt(handle, CURLOPT_PROGRESSFUNCTION, CUrl_progress_callback);
 	curl_easy_setopt(handle, CURLOPT_PROGRESSDATA, this);
+	/* enable all supported built-in compressions */
+	curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "");
 	
 	// The official doc says if multi-threaded use, this one should be set to 1. otherwise it may crash on certain conditions. 
 	curl_easy_setopt(handle, CURLOPT_NOSIGNAL, 1);

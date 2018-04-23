@@ -64,19 +64,14 @@ void ParaEngine::CGUIMouseVirtual::SetLock(bool bLock)
 
 bool ParaEngine::CGUIMouseVirtual::IsButtonDown(MOUSE_KEY_STD nMouseButton)
 {
-	if (m_isTouchInputting)
-		return false;
+	if (!m_bSwapMouseButton)
+	{
+		return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
+	}
 	else
 	{
-		if (!m_bSwapMouseButton)
-		{
-			return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
-		}
-		else
-		{
-			nMouseButton = (MOUSE_KEY_STD)(1 - nMouseButton);
-			return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
-		}
+		nMouseButton = (MOUSE_KEY_STD)(1 - nMouseButton);
+		return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
 	}
 }
 void CGUIMouseVirtual::UpdateX(int delta)
@@ -251,6 +246,16 @@ HRESULT ParaEngine::CGUIMouseVirtual::ReadImmediateData()
 
 	// OUTPUT_LOG("dx %d,dy %d,dz %d: %d %d %d\n", m_dims2.lX, m_dims2.lY, m_dims2.lZ, m_dims2.rgbButtons[0], m_dims2.rgbButtons[1], m_dims2.rgbButtons[2]);
 	return S_OK;
+}
+
+bool ParaEngine::CGUIMouseVirtual::IsMouseButtonSwapped()
+{
+	return m_bSwapMouseButton;
+}
+
+void ParaEngine::CGUIMouseVirtual::SetMouseButtonSwapped(bool bSwapped)
+{
+	m_bSwapMouseButton = bSwapped;
 }
 
 void ParaEngine::CGUIMouseVirtual::GetDeviceCursorPos(int& x, int&y)

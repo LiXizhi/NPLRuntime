@@ -80,6 +80,7 @@ The GUIRoot object contains the top level mouse focus object.
 #include "EventsCenter.h"
 #include "TouchSessions.h"
 #include "TouchGesturePinch.h"
+#include "StringHelper.h"
 #include "GUIRoot.h"
 #include "memdebug.h"
 
@@ -1070,6 +1071,43 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 {
 	CGUIContainer::DestroyChildren();
 	m_namemap.clear();
+}
+
+void ParaEngine::CGUIRoot::SendKeyDownEvent(int nVirtualkey)
+{
+}
+
+void ParaEngine::CGUIRoot::SendKeyUpEvent(int nVirtualkey)
+{
+}
+
+void ParaEngine::CGUIRoot::SendInputMethodEvent(const char* pStr)
+{
+	CGUIBase* pKeyTarget = GetUIKeyFocus();
+	if (pKeyTarget && pStr)
+	{
+		string fromStr(pStr);
+		u16string sTextWide;
+		StringHelper::UTF8ToUTF16(fromStr, sTextWide);
+		wstring sTextWide2;
+		sTextWide2.resize(sTextWide.size());
+		for (int i = 0; i < (int)sTextWide.size(); ++i)
+		{
+			sTextWide2[i] = sTextWide[i];
+		}
+		
+		pKeyTarget->OnHandleWinMsgChars(sTextWide2);
+	}
+}
+
+bool ParaEngine::CGUIRoot::IsMouseButtonSwapped()
+{
+	return GetMouse()->IsMouseButtonSwapped();
+}
+
+void ParaEngine::CGUIRoot::SetMouseButtonSwapped(bool bSwapped)
+{
+	GetMouse()->SetMouseButtonSwapped(bSwapped);
 }
 
 bool ParaEngine::CGUIRoot::DispatchKeyboardMsg(bool bKeyHandled)
@@ -2707,6 +2745,12 @@ int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("EnableIME", FieldType_Bool, (void*)SetEnableIME_s, (void*)GetEnableIME_s, NULL, NULL, bOverride);
 	pClass->AddField("UseSystemCursor", FieldType_Bool, (void*)SetUseSystemCursor_s, (void*)GetUseSystemCursor_s, NULL, NULL, bOverride);
 	pClass->AddField("CaptureMouse", FieldType_Bool, (void*)SetCaptureMouse_s, (void*)IsMouseCaptured_s, NULL, NULL, bOverride);
+
+	pClass->AddField("SendKeyDownEvent", FieldType_Int, (void*)SendKeyDownEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendKeyUpEvent", FieldType_Int, (void*)SendKeyUpEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("SendInputMethodEvent", FieldType_String, (void*)SendInputMethodEvent_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("MouseButtonSwapped", FieldType_Bool, (void*)SetMouseButtonSwapped_s, (void*)IsMouseButtonSwapped_s, NULL, NULL, bOverride);
+
 	pClass->AddField("IsNonClient", FieldType_Bool, (void*)SetIsNonClient_s, (void*)IsNonClient_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerSizePixels", FieldType_Int, (void*)SetFingerSizePixels_s, (void*)GetFingerSizePixels_s, NULL, NULL, bOverride);
 	pClass->AddField("FingerStepSizePixels", FieldType_Int, (void*)SetFingerStepSizePixels_s, (void*)GetFingerStepSizePixels_s, NULL, NULL, bOverride);
