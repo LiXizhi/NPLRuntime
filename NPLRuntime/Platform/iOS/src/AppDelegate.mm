@@ -25,14 +25,13 @@ using namespace ParaEngine;
     
     
     UIScreen* mainScreen = [UIScreen mainScreen];
-    id modes = [mainScreen availableModes];
-    
+
     CGRect bounds = [[UIScreen mainScreen]bounds];
     
     self.window = [[UIWindow alloc] initWithFrame: bounds];
     
     GLView* view = [[GLView alloc] initWithFrame:bounds];
-    
+    view.multipleTouchEnabled = YES;
     self.viewController = [[ViewController alloc ] init];
     self.viewController.view = view;
 

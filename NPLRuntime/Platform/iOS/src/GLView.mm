@@ -37,10 +37,10 @@
     if (!gui)return;
     
     int msCurTime = ::GetTickCount();
-    int32_t touchId = 0;
-    NSEnumerator * enumerator = [touches objectEnumerator];
+    NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
+        intptr_t touchId = (uintptr_t)touch;
         CGPoint location = [ touch locationInView: self ];
         float touchX = location.x* [UIScreen mainScreen].scale;
         float touchY = location.y* [UIScreen mainScreen].scale;
@@ -56,10 +56,10 @@
     if (!gui)return;
     
     int msCurTime = ::GetTickCount();
-    int32_t touchId = 0;
-    NSEnumerator * enumerator = [touches objectEnumerator];
+    NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
+        intptr_t touchId = (uintptr_t)touch;
         CGPoint location = [ touch locationInView: self ];
         float touchX = location.x * [UIScreen mainScreen].scale;
         float touchY = location.y * [UIScreen mainScreen].scale;
@@ -74,11 +74,11 @@
     if (!gui)return;
     
     int msCurTime = ::GetTickCount();
-    int32_t touchId = 0;
-    NSEnumerator * enumerator = [touches objectEnumerator];
+    NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
         CGPoint location = [ touch locationInView: self ];
+        intptr_t touchId = (uintptr_t)touch;
         float touchX = location.x* [UIScreen mainScreen].scale;
         float touchY = location.y* [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE,touchId, touchX, touchY, msCurTime);
@@ -92,15 +92,15 @@
     if (!gui)return;
     
     int msCurTime = ::GetTickCount();
-    int32_t touchId = 0;
-    NSEnumerator * enumerator = [touches objectEnumerator];
+   
+    NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
+        intptr_t touchId = (uintptr_t)touch;
         CGPoint location = [ touch locationInView: self ];
         float touchX = location.x* [UIScreen mainScreen].scale;
         float touchY = location.y* [UIScreen mainScreen].scale;
         TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
-        touchId++;
         gui->handleTouchEvent(*touchEvent);
     }
 }
