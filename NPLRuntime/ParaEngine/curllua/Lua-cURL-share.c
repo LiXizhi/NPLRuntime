@@ -23,7 +23,7 @@
 #include "Lua-cURL.h"
 #include "Lua-cURL-share.h"
 #include "Lua-utility.h"
-
+#include <string.h>
 static l_share_userdata* l_share_newuserdata(lua_State *L) { 
   l_share_userdata *share_userdata = (l_share_userdata *) lua_newuserdata(L, sizeof(l_share_userdata));
   luaL_getmetatable(L, LUACURL_SHAREMETATABLE);

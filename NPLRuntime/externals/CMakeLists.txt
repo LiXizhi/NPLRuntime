@@ -69,28 +69,12 @@ else()
 endif()
 
 add_subdirectory(EmbedResource)
-
+add_subdirectory(openssl)
 if(ANDROID)
-    #add_subdirectory(LuaJIT2_0)
-    add_subdirectory(openssl)
     add_subdirectory(cAudioEngine)
 else()
     set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
-	
-	
-    #if (NPLRUNTIME_LUAJIT21) 
-    #    add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT-2.1 ${PROJECT_BINARY_DIR}/LuaJIT-2.1)
-    #endif()
-	
-	#if (NPLRUNTIME_LUA51)
-	#	add_subdirectory (${SERVER_SOURCE_DIR}lua-5.1.4 ${PROJECT_BINARY_DIR}/lua-5.1.4)
-	#endif()
-		
-    #if(NPLRUNTIME_LUAJIT20)
-    #    add_subdirectory (${SERVER_SOURCE_DIR}LuaJIT ${PROJECT_BINARY_DIR}/LuaJIT)
-    #endif()
-    ## luabind
-    ## add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${PROJECT_BINARY_DIR}/luabind-0.9)
+
 
     if(NOT NPLRUNTIME_STATIC_LIB) 
         add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${PROJECT_BINARY_DIR}/NPLMono/NPLMono2)

@@ -156,6 +156,15 @@ elseif(WIN32)
         _WIN32_WINNT=0x0501
         _WINSOCK_DEPRECATED_NO_WARNINGS
     )
+elseif(IOS)
+    set(PLATROM_SPEC_DEFINITIONS
+        PARAENGINE_MOBILE
+        PLATFORM_IPHONE
+    ) 
+elseif(APPLE AND NOT IOS)
+    set(PLATROM_SPEC_DEFINITIONS 
+    PLATFORM_MAC
+    )
 elseif(MAC_SERVER)
 	
 	set(PLATROM_SPEC_DEFINITIONS 
@@ -175,10 +184,6 @@ elseif(MAC_SERVER)
 	ELSE()
 		MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
 	ENDIF()	
-elseif(APPLE)
-    set(PLATROM_SPEC_DEFINITIONS 
-        PLATFORM_MAC
-    )
 elseif(UNIX AND NOT ANDROID)
     ## Readline support
     include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")

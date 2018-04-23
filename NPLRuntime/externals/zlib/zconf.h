@@ -508,4 +508,8 @@ typedef uLong FAR uLongf;
   #pragma map(inflate_copyright,"INCOPY")
 #endif
 
+#if defined(__APPLE__) && !defined(_UNISTD_H_)
+#include <unistd.h>
+#endif
+
 #endif /* ZCONF_H */
