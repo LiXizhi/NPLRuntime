@@ -10,7 +10,7 @@ mkdir -p ./bin/mac
 cd bin/mac/
 # to build in parallel with 3 threads, use make -j3
 
-cmake -DCMAKE_BUILD_TYPE=Release -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=ON../../NPLRuntime/ && make --jobs=${JOBS:-1}
+cmake -DCMAKE_BUILD_TYPE=Release -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=ON ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 
