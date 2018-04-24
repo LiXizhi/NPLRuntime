@@ -57,10 +57,6 @@ if (APPLE)
 endif()
 
 
-if (MAC_SERVER)
-    MESSAGE("afsfsdfsd")
-endif()
-
 # Win32 Default Option
 if(WIN32)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
