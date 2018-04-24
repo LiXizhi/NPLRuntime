@@ -45,13 +45,13 @@ ENDIF()
 
 # the following will build it as dll under win32, since it will make the core game engine update more granular. 
 IF(WIN32)
-	SET(CMAKE_DEBUG_POSTFIX "_d")
-	
 	# To turn size optimisations on again
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref")
 ELSE(WIN32)
 	
 ENDIF(WIN32)
+
+SET(CMAKE_DEBUG_POSTFIX "_d")
 
 if(SQLITE_STATICLIB)
 	SET(SQLITE_LIB_MODE "STATIC")

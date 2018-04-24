@@ -22,12 +22,19 @@ using namespace ParaEngine;
 /** @def the plugin's class_id */
 #define AudioEngine_CLASS_ID Class_ID(0x2b903a29, 0x57e409cf)
 
+#if defined(WIN32)
+    #define DLL_FILE_EXT  "dll"
+#elif defined(PLATFORM_MAC)
+    #define DLL_FILE_EXT "dylib"
+#else
+    #define DLL_FILE_EXT "so"
+#endif
 
 #ifdef _DEBUG
 /** @def the plugin's file path under the working directory. It has external dependency on OpenAL*/
-#define AUDIO_ENGINE_DLL_PATH	"cAudioEngine_d.dll"
+const char* AUDIO_ENGINE_DLL_PATH =	("cAudioEngine_d." DLL_FILE_EXT);
 #else
-#define AUDIO_ENGINE_DLL_PATH	"cAudioEngine.dll"
+const char * AUDIO_ENGINE_DLL_PATH = ("cAudioEngine." DLL_FILE_EXT);
 #endif
 
 ParaEngine::CAudioEngine2::CAudioEngine2()

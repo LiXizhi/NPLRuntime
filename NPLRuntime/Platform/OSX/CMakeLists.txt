@@ -37,26 +37,41 @@ set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_E
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
-set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks/")
-
-
-
-
-
-
-
+set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks")
 
 add_custom_command(TARGET Paracraft POST_BUILD 
 	COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 
 )
 
 if (NOT SQLITE_STATICLIB)
-	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+
+    add_dependencies(Paracraft ParaSqlite)
+	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite_d.dylib")
+    if (NOT EXISTS ${LIBSQLITE_DYPATH})
+        set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+    endif()
+
 	add_custom_command(TARGET Paracraft POST_BUILD 
 		COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libParaSqlite.dylib"
 		MAIN_DEPENDENCY Paracraft
 		DEPENDS "${LIBSQLITE_DYPATH}"
 	)
+endif()
+
+if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
+
+    add_dependencies(Paracraft PhysicsBT)
+
+    set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT_d.dylib")
+    if (NOT EXISTS ${LIBSPHYSICS_DYPATH})
+        set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT.dylib")
+    endif()
+
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSPHYSICS_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libPhysicsBT.dylib"
+        MAIN_DEPENDENCY Paracraft
+        DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
+    )
 endif()
 
 if (NOT LUA_STATICLIB)

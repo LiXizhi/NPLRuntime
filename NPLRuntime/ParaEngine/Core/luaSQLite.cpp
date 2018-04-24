@@ -115,11 +115,18 @@ public:
 		static bool bLoaded = false;
 		if (!bLoaded)
 		{
+#if defined(WIN32)
+    #define DLL_FILE_EXT  "dll"
+#elif defined(PLATFORM_MAC)
+    #define DLL_FILE_EXT "dylib"
+#else
+    #define DLL_FILE_EXT "so"
+#endif
 			/**  plugin dll file path */
 #if defined(_DEBUG) && defined(WIN32)
-			const char* SQLITE_DLL_FILE_PATH = "ParaSqlite_d.dll";
+			const char* SQLITE_DLL_FILE_PATH = ("ParaSqlite_d." DLL_FILE_EXT);
 #else
-			const char* SQLITE_DLL_FILE_PATH = "ParaSqlite.dll";
+			const char* SQLITE_DLL_FILE_PATH = ("ParaSqlite." DLL_FILE_EXT);
 #endif
 			bLoaded = true;
 			DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->GetPluginEntity(SQLITE_DLL_FILE_PATH);

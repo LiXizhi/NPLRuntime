@@ -161,15 +161,22 @@ void DLLPlugInEntity::Init(const char* sFilename)
 
 	m_sDllFilePath = sFilename;
 	string sDLLPath = m_sDllFilePath; // CParaFile::ToCanonicalFilePath(m_sDllFilePath);
-#if defined(WIN32) ||  PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX
+#if defined(WIN32) ||  PARA_TARGET_PLATFORM == PARA_PLATFORM_LINUX || PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
 	// replace sDLLPath's file extension with 'dll', it is 'so'. remove the heading 'lib' if there is one
 	if(sDLLPath.size()>5)
 	{
-#ifdef WIN32
+#if defined(WIN32)
 		// remove the heading 'lib' if there is one
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		// replace sDLLPath's file extension with 'dll', it is 'so'
 		sDLLPath = regex_replace(sDLLPath, regex("so$"), "dll");
+#elif PARA_TARGET_PLATFORM == PARA_PLATFORM_MAC
+        /*
+        sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
+        sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
+        sDLLPath = regex_replace(sDLLPath, regex("dll$"), "dylib");
+        */
+        sDLLPath = "lib" + sDLLPath;
 #else
 		sDLLPath = regex_replace(sDLLPath, regex("lib([\\w\\.]*)$"), "$1");
 		sDLLPath = regex_replace(sDLLPath, regex("([\\w\\.]+)$"), "lib$1");
