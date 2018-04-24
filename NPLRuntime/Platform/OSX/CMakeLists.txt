@@ -62,9 +62,9 @@ endif()
 if (NOT LUA_STATICLIB)
 	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
 	foreach( luaLibName ${LUA_LIB_LIST} )
-		set(LIBLUA_DYPATH "${DYLIB_PATH}/${luaLibName}.dylib")
+		set(LIBLUA_DYPATH "${DYLIB_PATH}/lib${luaLibName}.dylib")
 		add_custom_command(TARGET Paracraft POST_BUILD 
-			COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/${luaLibName}.dylib"
+			COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/lib${luaLibName}.dylib"
 			DEPENDS "${LIBLUA_DYPATH}"  
 		)
 	endforeach( luaLibName ${LUA_LIB_LIST} )
