@@ -48,7 +48,18 @@ else()
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
 endif()
 
-set(MAC_SERVER APPLE AND ${NPLRUNTIME_RENDERER} STREQUAL "NULL")
+if (APPLE)
+    if(NPLRUNTIME_RENDERER STREQUAL "NULL")
+        option(MAC_SERVER "server mode" ON)
+    else()
+        option(MAC_SERVER "server mode" OFF)
+    endif()
+endif()
+
+
+if (MAC_SERVER)
+    MESSAGE("afsfsdfsd")
+endif()
 
 # Win32 Default Option
 if(WIN32)
