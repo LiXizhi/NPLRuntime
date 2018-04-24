@@ -44,14 +44,20 @@ set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks/")
 
 
 
-set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+
 
 add_custom_command(TARGET Paracraft POST_BUILD 
-COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 
-COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libParaSqlite.dylib"
-MAIN_DEPENDENCY Paracraft
-DEPENDS "${LIBSQLITE_DYPATH}"
+	COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 
 )
+
+if (NOT SQLITE_STATICLIB)
+	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+	add_custom_command(TARGET Paracraft POST_BUILD 
+		COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libParaSqlite.dylib"
+		MAIN_DEPENDENCY Paracraft
+		DEPENDS "${LIBSQLITE_DYPATH}"
+	)
+endif()
 
 get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
 foreach( luaLibName ${LUA_LIB_LIST} )
