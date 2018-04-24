@@ -524,7 +524,7 @@ void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
     {
         return;
     }
-    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY)));
+    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY * 120)));
 }
 
 
