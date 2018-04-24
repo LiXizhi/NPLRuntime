@@ -46,13 +46,11 @@ add_custom_command(TARGET Paracraft POST_BUILD
 if (NOT SQLITE_STATICLIB)
 
     add_dependencies(Paracraft ParaSqlite)
-	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite_d.dylib")
-    if (NOT EXISTS ${LIBSQLITE_DYPATH})
-        set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
-    endif()
+	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+    set(LIBSQLITE_DYNAME "libParaSqlite.dylib")
 
-	add_custom_command(TARGET Paracraft POST_BUILD 
-		COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libParaSqlite.dylib"
+	add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSQLITE_DYNAME}"
 		MAIN_DEPENDENCY Paracraft
 		DEPENDS "${LIBSQLITE_DYPATH}"
 	)
@@ -62,13 +60,11 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
 
     add_dependencies(Paracraft PhysicsBT)
 
-    set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT_d.dylib")
-    if (NOT EXISTS ${LIBSPHYSICS_DYPATH})
-        set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT.dylib")
-    endif()
+    set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT.dylib")
+    set(LIBSPHYSICS_DYNAME "libPhysicsBT.dylib")
 
     add_custom_command(TARGET Paracraft POST_BUILD
-        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSPHYSICS_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libPhysicsBT.dylib"
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSPHYSICS_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSPHYSICS_DYNAME}"
         MAIN_DEPENDENCY Paracraft
         DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
     )

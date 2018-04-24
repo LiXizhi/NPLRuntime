@@ -59,9 +59,9 @@ IF(MSVC)
 	SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /Zi")
 ENDIF(MSVC)
 
-#IF(WIN32)
+IF(WIN32)
     SET(CMAKE_DEBUG_POSTFIX "_d")
-#ENDIF()
+ENDIF()
 
 link_libraries(PhysicsBT  BulletDynamics BulletCollision LinearMath BulletSoftBody)
 

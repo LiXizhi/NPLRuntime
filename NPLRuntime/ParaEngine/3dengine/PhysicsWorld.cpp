@@ -58,7 +58,7 @@ using namespace ParaEngine;
 #endif
 
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(WIN32)
 const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT_d." DLL_FILE_EXT) ;
 #else
 const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT) ;

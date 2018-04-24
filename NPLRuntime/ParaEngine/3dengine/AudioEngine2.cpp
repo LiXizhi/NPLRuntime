@@ -30,7 +30,7 @@ using namespace ParaEngine;
     #define DLL_FILE_EXT "so"
 #endif
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(WIN32)
 /** @def the plugin's file path under the working directory. It has external dependency on OpenAL*/
 const char* AUDIO_ENGINE_DLL_PATH =	("cAudioEngine_d." DLL_FILE_EXT);
 #else
