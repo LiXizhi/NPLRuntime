@@ -86,5 +86,6 @@ namespace ParaEngine
 		*  - 4 for frame interlaved mode, where the odd frame is the left eye and even frame is the right image;
 		*/
 		virtual MOVIE_CAPTURE_MODE GetStereoCaptureMode() = 0;
+		
 	};
 }
