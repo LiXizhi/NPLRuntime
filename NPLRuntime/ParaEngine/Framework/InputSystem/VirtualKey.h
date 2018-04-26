@@ -192,9 +192,9 @@ namespace ParaEngine
 
 	struct DeviceMouseState
 	{
-		uint32_t x;
-		uint32_t y;
-		uint32_t z;
+		int32_t x;
+		int32_t y;
+		int32_t z;
 		EKeyState buttons[(int)EMouseButton::COUNT];
 		DeviceMouseState()
 			:x(0)

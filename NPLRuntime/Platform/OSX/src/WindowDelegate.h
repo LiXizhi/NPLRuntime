@@ -1,9 +1,32 @@
 #pragma once
 #import <Cocoa/Cocoa.h>
-#include "RenderWindowOSX.h"
-@interface WindowDelegate : NSObject <NSWindowDelegate>
-@property ParaEngine::RenderWindowOSX* renderWindow;
+#import "ConsoleWindowController.h"
 
-- (id)InitWithRenderWindow:(ParaEngine::RenderWindowOSX*) window;
+#include <string>
+
+namespace ParaEngine {
+    class RenderWindowOSX;
+    class CParaEngineAppOSX;
+}
+
+@interface WindowDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
+{
+    ParaEngine::RenderWindowOSX* _renderWindow;
+    ParaEngine::CParaEngineAppOSX* _app;
+    
+    //console
+    ConsoleWindowController* _consoleController;
+    
+    //console pipe
+    NSPipe* _pipe;
+    NSFileHandle* _pipeReadHandle;
+}
+
++ (WindowDelegate*) sharedDelegate;
++ (void) closeDelegate;
+
 
 @end
+
+
+

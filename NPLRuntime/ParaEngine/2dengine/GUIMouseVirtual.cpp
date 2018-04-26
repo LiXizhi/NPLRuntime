@@ -239,9 +239,9 @@ void ParaEngine::CGUIMouseVirtual::SetMousePosition(int x, int y)
 	float fScaleX = 1.f, fScaleY = 1.f;
 	CGlobals::GetGUI()->GetUIScale(&fScaleX, &fScaleY);
 	if (x>-500)
-		m_curMouseState.x = (fScaleX == 1.f) ? x : (uint32)(x*fScaleX);
+		m_curMouseState.x = (fScaleX == 1.f) ? x : (int32)(x*fScaleX);
 	if (y>-500)
-		m_curMouseState.y = (fScaleY == 1.f) ? y : (uint32)(y*fScaleY);
+		m_curMouseState.y = (fScaleY == 1.f) ? y : (int32)(y*fScaleY);
 
 	m_x = x;
 	m_y = y;

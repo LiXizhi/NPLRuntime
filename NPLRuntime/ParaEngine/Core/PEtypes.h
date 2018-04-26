@@ -92,7 +92,9 @@ typedef char TCHAR;
 typedef wchar_t WCHAR;
 typedef uint16_t WORD;
 typedef float               FLOAT;
-typedef signed char         BOOL;
+#if !defined(OBJC_BOOL_DEFINED)
+typedef signed char BOOL;
+#endif
 typedef unsigned char       BYTE;
 typedef int                 INT;
 typedef unsigned int        UINT;

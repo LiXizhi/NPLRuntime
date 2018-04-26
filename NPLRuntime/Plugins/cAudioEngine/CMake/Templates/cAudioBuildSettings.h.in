@@ -1,0 +1,41 @@
+#pragma once
+
+// CMake auto-generated configuration options
+
+#define CAUDIO_STATIC_LIB @CAUDIO_SET_STATIC@
+
+//! This define controls whether the Ogg/Vorbis decoder is compiled into the library.
+#define CAUDIO_COMPILE_WITH_OGG_DECODER @CAUDIO_SET_ENABLE_OGG@
+
+//! This define controls whether the RIFF/Wav decoder is compiled into the library.
+#define CAUDIO_COMPILE_WITH_WAV_DECODER @CAUDIO_SET_ENABLE_WAV@
+
+//! This define controls whether the default filesystem data source is compiled into the library
+#define CAUDIO_COMPILE_WITH_FILE_SOURCE @CAUDIO_SET_ENABLE_DEFAULT_FILESYSTEM@
+
+//! This define controls whether the default file logger (html) is compiled into the library
+#define CAUDIO_COMPILE_WITH_FILE_LOG_RECEIVER @CAUDIO_SET_ENABLE_DEFAULT_FILE_LOGGER@
+
+//! This define controls whether the default console logger is compiled into the library
+#define CAUDIO_COMPILE_WITH_CONSOLE_LOG_RECEIVER @CAUDIO_SET_ENABLE_DEFAULT_CONSOLE_LOGGER@
+
+//! Define for making the entire library Thread Safe, comment out to disable.  Will also disable internal threading by the library.
+#define CAUDIO_MAKE_THREAD_SAFE @CAUDIO_SET_ENABLE_THREAD_SAFETY@
+
+//! EFX support
+#define CAUDIO_EFX_ENABLED @CAUDIO_SET_ENABLE_EFX@
+
+//! Tells cAudio to use the C standard memory functions for allocations (memalloc and free)
+#define CAUDIO_MEMORY_USE_STD @CAUDIO_SET_ENABLE_STD_MEMORY_ALLOCATOR@
+
+//! Tells cAudio to reroute memory allocations from stl containers into the defined memory provider for cAudio, otherwise the standard std::allocator is used.
+#define CAUDIO_REROUTE_STL_ALLOCATIONS @CAUDIO_SET_ENABLE_REROUTE_STL_ALLOCATIONS@
+
+//! Activates the internal memory tracker, which can be used to detect and locate memory leaks.
+#define CAUDIO_USE_MEMORYTRACKER @CAUDIO_SET_ENABLE_MEMORYTRACKER@
+
+//! Tells the memory tracker to generate statistics on memory usage by cAudio
+#define CAUDIO_MEMORYTRACKER_GENERATE_STATISTICS @CAUDIO_SET_ENABLE_MEMORY_STATISTICS@
+
+//! Tells the memory tracker to log each and every allocation done by cAudio.  This can be very slow, use only if you are debugging an issue.
+#define CAUDIO_MEMORYTRACKER_LOG_ALL_ALLOCATIONS @CAUDIO_SET_ENABLE_MEMORY_LOG_ALL_ALLOCATIONS@

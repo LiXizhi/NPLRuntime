@@ -30,7 +30,10 @@ target_compile_definitions(Paracraft PUBLIC
     PLATFORM_ANDROID
     STATIC_PLUGIN_CAUDIOENGINE
     AUTOUPDATE_PARAENGINE
+	OPENAL_STATIC
 )
+
+
 set_target_properties(Paracraft PROPERTIES 
     ANDROID_GUI TRUE
     ## ANDROID_NATIVE_LIB_DEPENDENCIES "ParaSqlite.so"

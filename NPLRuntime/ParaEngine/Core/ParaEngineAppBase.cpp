@@ -1039,11 +1039,14 @@ bool ParaEngine::CParaEngineAppBase::FinalCleanup()
 
 	CGlobals::GetMoviePlatform()->Cleanup();
 
-	m_pGUIRoot->Release();		// GUI: 2D engine
-	m_pRootScene->Cleanup();
+    if (m_pGUIRoot.get())
+        m_pGUIRoot->Release();		// GUI: 2D engine
+    if (m_pRootScene.get())
+        m_pRootScene->Cleanup();
 	CSingleton<CObjectManager>::Instance().Finalize();
 	CSingleton<CGUIHighlightManager>::Instance().Finalize();
-	m_pParaWorldAsset->Cleanup();
+    if (m_pParaWorldAsset.get())
+        m_pParaWorldAsset->Cleanup();
 	//Performance Monitor
 	PERF_END("Program");
 	PERF_REPORT();
