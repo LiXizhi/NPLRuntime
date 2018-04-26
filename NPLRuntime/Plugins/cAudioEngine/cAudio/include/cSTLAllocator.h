@@ -120,7 +120,7 @@ namespace cAudio
 
 #if CAUDIO_REROUTE_STL_ALLOCATIONS == 1
 	//typedef std::basic_string< cAudioChar, std::char_traits<cAudioChar>, cSTLAllocator<cAudioChar> > cAudioString;
-	template<typename T1, typename T2> struct cAudioMap { typedef std::map< T1, T2, std::less< T1 >, cSTLAllocator< std::pair< T1, T2 > > > Type; };
+	template<typename T1, typename T2> struct cAudioMap { typedef std::map< T1, T2, std::less< T1 >, cSTLAllocator< std::pair< const T1 ,T2 > > > Type; };
 	template<typename T> struct cAudioSet { typedef std::set< T, std::less< T >, cSTLAllocator< T > > Type; };
 	template<typename T> struct cAudioList { typedef std::list< T, cSTLAllocator< T > > Type; };
 	template<typename T> struct cAudioVector { typedef std::vector< T, cSTLAllocator< T > > Type; };
