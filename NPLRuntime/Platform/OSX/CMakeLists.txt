@@ -56,6 +56,20 @@ if (NOT SQLITE_STATICLIB)
 	)
 endif()
 
+if (NPLRUNTIME_AUDIO AND NOT AUDIO_STATICLIB)
+
+    add_dependencies(Paracraft cAudioEngine)
+
+    set(LIBSAUDIO_DYPATH "${DYLIB_PATH}/libcAudioEngine.dylib")
+    set(LIBSAUDIO_DYNAME "libcAudioEngine.dylib")
+
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSAUDIO_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSAUDIO_DYNAME}"
+        MAIN_DEPENDENCY Paracraft
+        DEPENDS "${LIBSAUDIO_DYPATH}" cAudioEngine
+    )
+endif()
+
 if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
 
     add_dependencies(Paracraft PhysicsBT)
@@ -69,6 +83,7 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
         DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
     )
 endif()
+
 
 if (NOT LUA_STATICLIB)
 	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
