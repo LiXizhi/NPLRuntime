@@ -525,6 +525,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZENABLE, TRUE);
 		pDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
+		pDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 
 		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		pDevice->SetClearDepth(1.0f);

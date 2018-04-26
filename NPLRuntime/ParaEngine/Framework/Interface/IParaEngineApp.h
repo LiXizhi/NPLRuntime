@@ -9,6 +9,7 @@
 #include <string>
 #include <stdint.h>
 #include "BaseInterface.h"
+#include "IAttributeFields.h"
 
 #if defined(__GNUC__) && ((__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1)))
 	#define PE_DEPRECATED_ATTRIBUTE __attribute__((deprecated))
@@ -32,6 +33,7 @@ namespace ParaEngine
 	class CRefCounted;
 	class Vector2;
 	class IRenderWindow;
+	class IAttributeFields;
 
 	/** ParaEngine application state */
 	enum PEAppState
@@ -467,6 +469,9 @@ namespace ParaEngine
 
 		/* whether the window size is fixed. */
 		PE_DEPRECATED_ATTRIBUTE virtual void FixWindowSize(bool fixed) = 0;
+
+		/** get the attribute object of the main ParaEngine interface */
+		virtual IAttributeFields* GetAttributeObject() { return NULL; }
 
 		virtual bool AppHasFocus() = 0;
 
