@@ -66,12 +66,13 @@ else()
 		target_include_directories(assimp INTERFACE ${PROJECT_BINARY_DIR}/assimp-4.0.0/include)
 		target_compile_definitions(assimp INTERFACE SUPPORT_FBX_MODEL_FILE)
 	endif()
+
 endif()
 
 add_subdirectory(EmbedResource)
 add_subdirectory(openssl)
 if(ANDROID)
-    add_subdirectory(cAudioEngine)
+   
 else()
     set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
 

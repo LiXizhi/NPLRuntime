@@ -1,0 +1,53 @@
+
+# /
+/cAudio.ncb
+/cAudio.suo
+/cAudio.vcproj.Wildicv-PC.Wildicv.user
+/Build
+
+# /Samples/CSharpAudioPlayer/
+/Samples/CSharpAudioPlayer/_ReSharper.cAudioPlayer
+/Samples/CSharpAudioPlayer/*.user
+/Samples/CSharpAudioPlayer/*.suo
+/Samples/CSharpAudioPlayer/_ReSharper.CSharpDemos
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial1_2DSound/
+/Samples/CSharpAudioPlayer/CSharpTutorial1_2DSound/bin
+/Samples/CSharpAudioPlayer/CSharpTutorial1_2DSound/obj
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial2_3DSound/
+/Samples/CSharpAudioPlayer/CSharpTutorial2_3DSound/obj
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial3_MemoryPlayback/
+/Samples/CSharpAudioPlayer/CSharpTutorial3_MemoryPlayback/obj
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial4_AudioCapture/
+/Samples/CSharpAudioPlayer/CSharpTutorial4_AudioCapture/obj
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial6_CustomEventHandler/
+/Samples/CSharpAudioPlayer/CSharpTutorial6_CustomEventHandler/obj
+
+# /Samples/CSharpAudioPlayer/CSharpTutorial7_CustomLogReceiver/
+/Samples/CSharpAudioPlayer/CSharpTutorial7_CustomLogReceiver/obj
+
+# /Samples/CSharpAudioPlayer/bin/debug/
+/Samples/CSharpAudioPlayer/bin/debug/cAudioCSharp.dll
+/Samples/CSharpAudioPlayer/bin/debug/*.pdb
+/Samples/CSharpAudioPlayer/bin/debug/*.exe
+/Samples/CSharpAudioPlayer/bin/debug/*.html
+
+# /Samples/CSharpAudioPlayer/bin/release/
+/Samples/CSharpAudioPlayer/bin/release/cAudioCSharp.dll
+/Samples/CSharpAudioPlayer/bin/release/*.html
+/Samples/CSharpAudioPlayer/bin/release/*.exe
+/Samples/CSharpAudioPlayer/bin/release/*.pdb
+/Samples/CSharpAudioPlayer/bin/release/*.manifest
+
+# /Samples/CSharpAudioPlayer/cAudioPlayer/
+/Samples/CSharpAudioPlayer/cAudioPlayer/obj
+/Samples/CSharpAudioPlayer/cAudioPlayer/*.user
+/Samples/CSharpAudioPlayer/cAudioPlayer/bin
+
+# /cAudioCSharp/
+/cAudioCSharp/bin
+/cAudioCSharp/obj
