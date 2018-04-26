@@ -34,6 +34,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CFrameRateController, IsPaused_s, bool*) { *p1 = cls->IsPaused(); return S_OK; }
 		ATTRIBUTE_METHOD1(CFrameRateController, SetPaused_s, bool) { cls->SetPaused(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CFrameRateController, GetElapsedTime_s, double*) { *p1 = cls->GetElapsedTime(); return S_OK; }
+
 	public:
 		/** get the time in seconds*/
 		double	GetTimeSec();
@@ -41,8 +43,8 @@ namespace ParaEngine
 		virtual int GetTime() override;
 		virtual void SetTime(int nTime) override;
 
-		/** get the elapsed time: this function is disabled for a reason. Never use GetElapsedTime(). use FrameMove() instead.*/
-		//double	GetElapsedTime(){return m_fElapsedTime;}
+		/** get the elapsed time: use this function carefully, instead use FrameMove() instead.*/
+		double	GetElapsedTime() { return m_fElapsedTime; }
 	
 		virtual const std::string& GetIdentifier() override;
 		virtual void SetIdentifier(const std::string& sID) override;

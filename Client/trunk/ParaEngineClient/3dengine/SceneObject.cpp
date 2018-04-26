@@ -37,6 +37,7 @@
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
 #include "terrain/GlobalTerrain.h"
+#include "FrameRateController.h"
 #include "PhysicsWorld.h"
 #include "ManagedLoader.h"
 #include "MissileObject.h"
@@ -1234,6 +1235,10 @@ void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
 	/// Update the camera 
 	GetCurrentCamera()->FrameMove( (FLOAT)dTimeDelta );
 
+	// when game time is paused, also pause the scene delta time
+	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
+
 	if(m_bGamePaused)
 		return;
 
@@ -1251,7 +1256,7 @@ void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
 			CGlobals::GetReport()->SetString("PInfo", sDesc);
 		}
 	}
-
+	
 	for (CBaseObject* pChild : GetChildren())
 	{
 		pChild->Animate(dTimeDelta, nRenderNumber);
@@ -2073,6 +2078,10 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 {
 	if(!m_bInitialized)
 		return E_FAIL;
+
+	// when game time is paused, also pause the scene delta time
+	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
 	globalTime =  (int)(CGlobals::GetGameTime()*1000);
 	SceneState& sceneState = *(m_sceneState.get());

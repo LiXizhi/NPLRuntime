@@ -23,10 +23,10 @@ namespace ParaEngine
 	IO : first_order
 	simulation : first_order
 	*/
-	CFrameRateController g_renderFRC(CFrameRateController::FRC_CONSTANT, "render");
-	CFrameRateController g_ioFRC(CFrameRateController::FRC_CONSTANT, "io");
-	CFrameRateController g_simFRC(CFrameRateController::FRC_FIRSTORDER, "sim");
-	CFrameRateController g_gameTime(CFrameRateController::FRC_NONE, "game");
+	CFrameRateController g_renderFRC(CFrameRateController::FRC_CONSTANT, "renderFRC");
+	CFrameRateController g_ioFRC(CFrameRateController::FRC_CONSTANT, "ioFRC");
+	CFrameRateController g_simFRC(CFrameRateController::FRC_FIRSTORDER, "simFRC");
+	CFrameRateController g_gameTime(CFrameRateController::FRC_NONE, "gameFRC");
 }
 
 /// load the normal frame rate control configuration
@@ -167,9 +167,12 @@ return the desired elapsed time
 */
 double CFrameRateController::FrameMove(double time)
 {
-	if(m_fTime>=time)
-		return 0.f;
-	m_fTime = time;
+	if (!IsPaused())
+	{
+		if (m_fTime >= time)
+			return 0.f;
+		m_fTime = time;
+	}
 	
 	switch(m_nType)
 	{
@@ -323,5 +326,6 @@ int CFrameRateController::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
 	pClass->AddField("Paused", FieldType_Bool, (void*)SetPaused_s, (void*)IsPaused_s, NULL, NULL, bOverride);
+	pClass->AddField("ElapsedTime", FieldType_Double, (void*)0, (void*)GetElapsedTime_s, NULL, NULL, bOverride);
 	return S_OK;
 }

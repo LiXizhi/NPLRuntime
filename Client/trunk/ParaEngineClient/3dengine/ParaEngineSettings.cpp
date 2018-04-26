@@ -1179,7 +1179,7 @@ void ParaEngine::ParaEngineSettings::LoadNameIndex()
 	m_name_to_index["BufferPicking"] = 7;
 	m_name_to_index["OverlayPicking"] = 8;
 	m_name_to_index["AsyncLoader"] = 9;
-	m_name_to_index["GameFRC"] = 10;
+	m_name_to_index["gameFRC"] = 10;
 }
 
 IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const std::string& sName)
