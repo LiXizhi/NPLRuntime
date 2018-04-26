@@ -69,6 +69,8 @@ namespace ParaEngine
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual int Run(HINSTANCE hInstance) override;
+        
+        void onCmdLine(const std::string& cmd);
 	protected:
 
 	};

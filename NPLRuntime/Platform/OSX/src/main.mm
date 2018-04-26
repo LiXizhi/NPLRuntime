@@ -1,13 +1,20 @@
+#import <Cocoa/Cocoa.h>
 #include "ParaEngine.h"
 #include "RenderWindowOSX.h"
 #include "ParaAppOSX.h"
-using namespace ParaEngine;
-int main(int argc, const char * argv[]) {
-    
+#include "WindowDelegate.h"
 
+//using namespace ParaEngine;
+int main(int argc, const char * argv[]) {
+
+    /*
     RenderWindowOSX renderWindow(1280,720);
     CParaEngineAppOSX app;
-    bool ret = app.InitApp(&renderWindow, "");
+    auto url = renderWindow.getUrl();
+    
+    OUTPUT_LOG("url %s", url.c_str());
+    
+    bool ret = app.InitApp(&renderWindow, url.c_str());
     if(!ret)
     {
         OUTPUT_LOG("Initialize ParaEngineApp failed.");
@@ -15,4 +22,15 @@ int main(int argc, const char * argv[]) {
     }
     
     return app.Run(0);
+     */
+    auto pool  = [[NSAutoreleasePool alloc] init];
+
+    [NSApplication sharedApplication];
+    WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
+    [NSApp setDelegate:winDelegate];
+    [NSApp run];
+    [WindowDelegate closeDelegate];
+    [pool release];
+
+    return 0;
 }
