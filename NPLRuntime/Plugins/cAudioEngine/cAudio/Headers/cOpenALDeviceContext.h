@@ -19,13 +19,14 @@ namespace cAudio
 	public:
 		cOpenALDeviceContext(IAudioManager* audioManager);
 		virtual ~cOpenALDeviceContext();
-		virtual bool initialize(const char* deviceName, int outputFrequency, int eaxEffectSlots);
-		virtual void shutDown(); 
-		virtual void update();
-		virtual IAudioManager* getAudioManager() const;
-		virtual IAudioEffects* getEffects() const;
-		ALCcontext* getOpenALContext() const;
+		virtual bool initialize(const char* deviceName, int outputFrequency, int eaxEffectSlots) override;
+		virtual void shutDown() override;
+		virtual void update()override;
+		virtual IAudioManager* getAudioManager() const override;
+		virtual IAudioEffects* getEffects() const override;
+		ALCcontext* getOpenALContext() const ;
 
+        virtual void release() override;
 	private:
 		
 		//! Check for OpenAL errors

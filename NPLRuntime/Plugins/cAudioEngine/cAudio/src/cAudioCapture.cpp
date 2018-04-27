@@ -18,7 +18,7 @@ namespace cAudio
 									SampleSize(2), Ready(false), Capturing(false), 
 									CaptureDevice(NULL), AudioThread(NULL)
 	{
-
+        
 	}
 	cAudioCapture::~cAudioCapture()
 	{

@@ -17,7 +17,7 @@ target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
 
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
-	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/info.plist
+	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/Info.plist
     MACOSX_BUNDLE_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/res/icon.icns
     RESOURCE "${RESOURCE_FILES}"
     INSTALL_RPATH "@executable_path/../Frameworks/"
