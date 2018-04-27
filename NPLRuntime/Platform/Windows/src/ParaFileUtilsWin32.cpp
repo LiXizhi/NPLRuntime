@@ -58,7 +58,7 @@ bool ParaEngine::CParaFileUtilsWin32::IsAbsolutePath(const std::string& filename
 	return false;
 }
 
-std::string ParaEngine::CParaFileUtilsWin32::GetWriteAblePath()
+std::string ParaEngine::CParaFileUtilsWin32::GetWritablePath()
 {
 	if (m_writeAblePath.empty())
 	{

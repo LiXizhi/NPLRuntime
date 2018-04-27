@@ -1810,6 +1810,13 @@ namespace ParaEngine
 		return S_OK;
 	}
 
+	HRESULT CParaXStaticMesh::RendererRecreated()
+	{
+		// TODO:  CParaXStaticMesh::RendererRecreated
+		//throw std::logic_error("The method or operation is not implemented.");
+		return E_FAIL;
+	}
+
 	HRESULT CParaXStaticMesh::DrawSubSetEx(int nIndex, D3DXATTRIBUTERANGE* pAtts)
 	{
 		RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();

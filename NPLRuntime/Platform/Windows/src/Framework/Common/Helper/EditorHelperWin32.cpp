@@ -1,6 +1,10 @@
 #include "ParaEngine.h"
+#include "Globals.h"
+#include "ParaEngineSettings.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 
+#include <Shellapi.h>
+#undef ShellExecute
 namespace ParaEngine {
 	
 	bool CEditorHelper::OpenWithDefaultEditor(const char* sScriptFile, bool bWaitOnReturn)
@@ -257,7 +261,7 @@ namespace ParaEngine {
 		}
 		else
 		{
-			if (::ShellExecute((HWND)NULL, lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd) > ((HINSTANCE)32))
+			if (::ShellExecuteA((HWND)NULL, lpOperation, lpFile, lpParameters, lpDirectory, nShowCmd) > ((HINSTANCE)32))
 				return true;
 			else
 				return false;

@@ -15,7 +15,7 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     ucm_add_dirs(src/Render/context/d3d9 TO src_render_context)
 #}
 endif()
-
+ucm_add_dirs(src/Framework TO src_framework RECURSIVE)
 ucm_add_dirs(src TO src_platform)
 
 # Note: if true, we will produce dll instead of exe, only under win32
@@ -36,9 +36,9 @@ if (PARAENGINE_COMPILE_LIB)
 		set(NPLRUNTIME_LIB_MODE "SHARED")
 	endif()
 
-	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context})
+	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
 else()
-	add_executable(WindowsApplication ${src_platform} ${src_render_context})
+	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework})
 endif()
 
 target_compile_definitions(WindowsApplication PRIVATE 

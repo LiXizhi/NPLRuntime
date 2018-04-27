@@ -480,7 +480,7 @@ HRESULT ParaEngine::CRenderTarget::RendererRecreated()
 	_FBO = 0;
 	_depthRenderBufffer = 0;
 #endif
-	CBaseObject::RendererRecreated();
+	return CBaseObject::RendererRecreated();
 }
 
 void ParaEngine::CRenderTarget::SetCanvasTextureName(const std::string& sValue)
