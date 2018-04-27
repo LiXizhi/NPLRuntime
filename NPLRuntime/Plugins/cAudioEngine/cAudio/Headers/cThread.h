@@ -21,13 +21,14 @@ namespace cAudio
 	{
 	public:
 		cAudioThread(IThreadWorker* pWorker);
-		~cAudioThread();
+		virtual ~cAudioThread();
 
-		virtual bool start();
-		virtual void join();
-		virtual void shutdown();
-		virtual bool isRunning();
+		virtual bool start() override;
+		virtual void join() override;
+		virtual void shutdown() override;
+		virtual bool isRunning() override;
 
+        virtual void release() override;
 	protected:
 		void updateLoop();
 

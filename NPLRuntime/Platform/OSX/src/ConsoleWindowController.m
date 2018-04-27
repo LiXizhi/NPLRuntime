@@ -33,7 +33,7 @@ const int MAX_LINES_COUNT   = 1024;
 - (void)dealloc
 {
     [linesCount release];
-    [self dealloc];
+    [super dealloc];
 }
 
 - (void)windowDidLoad {

@@ -83,6 +83,8 @@ namespace cAudio
 			Device = NULL;
 			return false;
 		}
+        
+        Initialized = true;
 
 		getLogger()->logInfo("AudioManager", "OpenAL Version: %s", alGetString(AL_VERSION));
 		getLogger()->logInfo("AudioManager", "Vendor: %s", alGetString(AL_VENDOR));
@@ -131,7 +133,12 @@ namespace cAudio
 			Initialized = false;
 		}
 	}
-
+    
+    void cOpenALDeviceContext::release()
+    {
+        CAUDIO_DELETE this;
+    }
+    
 	void cOpenALDeviceContext::update()
 	{
 		
