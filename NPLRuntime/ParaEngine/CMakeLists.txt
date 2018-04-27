@@ -143,6 +143,7 @@ target_include_directories(ParaEngine PUBLIC
 )
 
 
+
 if(ANDROID)
     set(PLATROM_SPEC_DEFINITIONS 
         PARAENGINE_MOBILE
@@ -160,17 +161,14 @@ elseif(IOS)
         PARAENGINE_MOBILE
         PLATFORM_IPHONE
     ) 
-elseif(APPLE AND NOT IOS)
-    set(PLATROM_SPEC_DEFINITIONS 
-    PLATFORM_MAC
-    )
+
 elseif(MAC_SERVER)
-	
+
 	set(PLATROM_SPEC_DEFINITIONS 
-        PLATFORM_MAC
-		MAC_SERVER
+        PLATFORM_MAC MAC_SERVER
     )
-	    ## Readline support
+
+    ## Readline support
     include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")
     # FIND_PACKAGE(Readline)
     IF(READLINE_FOUND)
@@ -182,7 +180,11 @@ elseif(MAC_SERVER)
 		INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
 	ELSE()
 		MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
-	ENDIF()	
+	ENDIF()
+elseif(APPLE AND NOT IOS)
+    set(PLATROM_SPEC_DEFINITIONS
+    PLATFORM_MAC
+    )
 elseif(UNIX AND NOT ANDROID)
     ## Readline support
     include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")

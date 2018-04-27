@@ -76,7 +76,7 @@ elseif (MAC_SERVER)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
     option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
     option(NPLRUNTIME_PHYSICS "include physics" OFF)
-    option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
+    option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" OFF)
     option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
 	option(NPLRUNTIME_AUDIO "include audio" OFF)
 # OSX Default Option
