@@ -9,15 +9,16 @@ ucm_add_dirs(src TO OSX_SRC RECURSIVE ADDITIONAL_EXT mm m)
 ucm_add_dirs(res TO RESOURCE_FILES RECURSIVE ADDITIONAL_EXT *)
 ucm_add_dirs(assets TO ASSETS_FILES RECURSIVE ADDITIONAL_EXT *)
 
-set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources)
-
 add_executable(Paracraft ${OSX_SRC} ${RESOURCE_FILES} ${ASSETS_FILES})
+
+set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources)
 
 target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
 
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_ICON_FILE icon.icns
+	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/info.plist
+    MACOSX_BUNDLE_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/res/icon.icns
     RESOURCE "${RESOURCE_FILES}"
     INSTALL_RPATH "@executable_path/../Frameworks/"
     BUILD_WITH_INSTALL_RPATH TRUE
@@ -56,6 +57,20 @@ if (NOT SQLITE_STATICLIB)
 	)
 endif()
 
+if (NPLRUNTIME_AUDIO AND NOT AUDIO_STATICLIB)
+
+    add_dependencies(Paracraft cAudioEngine)
+
+    set(LIBSAUDIO_DYPATH "${DYLIB_PATH}/libcAudioEngine.dylib")
+    set(LIBSAUDIO_DYNAME "libcAudioEngine.dylib")
+
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSAUDIO_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSAUDIO_DYNAME}"
+        MAIN_DEPENDENCY Paracraft
+        DEPENDS "${LIBSAUDIO_DYPATH}" cAudioEngine
+    )
+endif()
+
 if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
 
     add_dependencies(Paracraft PhysicsBT)
@@ -69,6 +84,7 @@ if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
         DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
     )
 endif()
+
 
 if (NOT LUA_STATICLIB)
 	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )

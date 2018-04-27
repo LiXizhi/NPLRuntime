@@ -199,12 +199,12 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [m_window makeFirstResponder:m_window];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
 
-    RenderWindowOSX* renderWindow = this;
-    WindowDelegate* winDelegate = [[WindowDelegate alloc] InitWithRenderWindow:renderWindow];
+    
+    WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
-    
-    
+
 }
+
 
 RenderWindowOSX::~RenderWindowOSX()
 {
