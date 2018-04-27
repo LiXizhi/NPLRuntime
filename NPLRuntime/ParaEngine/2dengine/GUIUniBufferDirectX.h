@@ -10,6 +10,7 @@ namespace ParaEngine
 	class CUniLine{
 	public:
 		CUniLine( int nInitialSize = 0 );
+		char16_t & operator[](int n);
 		~CUniLine();
 
 		static void Initialize();
@@ -100,6 +101,7 @@ namespace ParaEngine
             }
 			return -1;
 		}
+		bool ReplaceChar(int nIndex, char16_t wchar);
 		bool SetBufferSize( int nSize );
 		int  GetTextSize()const;
 		const char16_t* GetBuffer()const { 

@@ -20,6 +20,7 @@
 #include "NPLHelper.h"
 #include "IParaEngineApp.h"
 #include "AttributesManager.h"
+#undef ShellExecute
 #include "ParaScriptingGlobal.h"
 #include "ParaScriptingScene.h"
 #include "ParaScriptingGUI.h"
@@ -40,6 +41,8 @@
 /**@def max number of characters in a single line */
 #define MAX_LINE	1024
 #endif
+
+
 
 
 extern "C"

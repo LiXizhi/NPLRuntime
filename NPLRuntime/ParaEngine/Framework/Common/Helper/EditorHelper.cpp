@@ -6,9 +6,11 @@
 // Notes: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#undef ShellExecute
 #include "NPLCommon.h"
 #include "ParaEngineSettings.h"
 #include "memdebug.h"
+
 #include "EditorHelper.h"
 #include <time.h>
 
