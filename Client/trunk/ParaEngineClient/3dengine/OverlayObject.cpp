@@ -15,7 +15,7 @@
 using namespace ParaEngine;
 
 ParaEngine::COverlayObject::COverlayObject()
-	:m_bIsTileObject(false)
+	:m_bIsTileObject(false), m_bIsSolid(false)
 {
 	SetAttribute(OBJ_SKIP_RENDER, true);
 }
@@ -47,7 +47,10 @@ int ParaEngine::COverlayObject::PrepareRender(CBaseCamera* pCamera, SceneState *
 	if (pViewClippingObject->TestCollision(pCamera))
 	{
 		float fObjectToCameraDist = pViewClippingObject->GetObjectToPointDistance(&(sceneState->vEye));
-		sceneState->listHeadonDisplayObject.push_back(PostRenderObjectWeakPtr(this, fObjectToCameraDist));
+		if(IsTransparent())
+			sceneState->listHeadonDisplayObject.push_back(PostRenderObjectWeakPtr(this, fObjectToCameraDist));
+		else
+			sceneState->listSolidOverlayObject.push_back(PostRenderObjectWeakPtr(this, fObjectToCameraDist));
 	}
 	return 0;
 }
@@ -67,6 +70,16 @@ CGUIBase* ParaEngine::COverlayObject::GetHeadOnUIObject(int nIndex /*= 0*/)
 		SetHeadOnOffest(Vector3::ZERO);
 	}
 	return m_pGUIObject.get();
+}
+
+bool ParaEngine::COverlayObject::IsTransparent()
+{
+	return !m_bIsSolid;
+}
+
+void ParaEngine::COverlayObject::SetTransparent(bool bIsTransparent)
+{
+	m_bIsSolid = !bIsTransparent;
 }
 
 int ParaEngine::COverlayObject::GetChildAttributeColumnCount()
