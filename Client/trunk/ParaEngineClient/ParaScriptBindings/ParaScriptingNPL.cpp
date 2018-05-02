@@ -522,12 +522,12 @@ namespace ParaScripting
 	const char* CNPL::GetNPLID()
 	{
 	#define TRUCK_STAR_D
-		//"Seer_Dev" for developer internal use
-		//"Seer" for release
+		//"Truck_Dev" for developer internal use
+		//"Truck" for release
 	#ifdef TRUCK_STAR_D
-		return "Seer_Dev";
+		return "Truck_Dev";
 	#else
-		return "Seer";
+		return "Truck";
 	#endif
 	}
 
