@@ -439,10 +439,10 @@ void ParaEngine::CRenderTarget::SetRenderTargetSize(int nWidth, int nHeight)
 {
 	if (m_nTextureWidth != nWidth || m_nTextureHeight != nHeight)
 	{
-		SetDirty(true);
-		Cleanup();
 		m_nTextureWidth = nWidth;
 		m_nTextureHeight = nHeight;
+		SetDirty(true);
+		Cleanup();
 	}
 }
 

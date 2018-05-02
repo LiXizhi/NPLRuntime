@@ -520,6 +520,7 @@ namespace ParaEngine
 		/// smaller objects are rendered after bigger objects are drawn for better occlusion.They are rendered from back to front.  
 		SceneState::List_AlphaPostRenderObject_Type	listPRSmallObject;
 		SceneState::List_HeadOnRenderObject_Type	listHeadonDisplayObject;
+		SceneState::List_HeadOnRenderObject_Type	listSolidOverlayObject;
 
 		/// transparent meshes (object) are usually rendered from back to front(far to near).
 		/// and they are rendered after all solid meshes have already been rendered. 
