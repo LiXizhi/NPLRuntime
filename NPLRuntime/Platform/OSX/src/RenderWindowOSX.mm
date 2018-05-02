@@ -101,7 +101,7 @@ EVirtualKey toVirtualKey(int32_t keycode)
         s_keymap[kVK_Return]= EVirtualKey::KEY_RETURN;
         s_keymap[kVK_Tab]=EVirtualKey::KEY_TAB;
         s_keymap[kVK_Space]=EVirtualKey::KEY_SPACE;
-        s_keymap[kVK_Delete]=EVirtualKey::KEY_DELETE;
+        s_keymap[kVK_Delete]=EVirtualKey::KEY_BACK;//EVirtualKey::KEY_DELETE;
         s_keymap[kVK_Escape]=EVirtualKey::KEY_ESCAPE;
         s_keymap[kVK_Command]=EVirtualKey::KEY_LWIN;
         s_keymap[kVK_Shift]=EVirtualKey::KEY_LSHIFT;
@@ -136,7 +136,7 @@ EVirtualKey toVirtualKey(int32_t keycode)
         s_keymap[kVK_Help]=EVirtualKey::KEY_UNKNOWN;
         s_keymap[kVK_Home]=EVirtualKey::KEY_HOME;
         s_keymap[kVK_PageUp]=EVirtualKey::KEY_PERIOD;
-        s_keymap[kVK_ForwardDelete]=EVirtualKey::KEY_BACK;
+        s_keymap[kVK_ForwardDelete]=EVirtualKey::KEY_DELETE; //EVirtualKey::KEY_BACK;
         s_keymap[kVK_F4]=EVirtualKey::KEY_F4;
         s_keymap[kVK_End]=EVirtualKey::KEY_END;
         s_keymap[kVK_F2]=EVirtualKey::KEY_F2;
@@ -334,6 +334,19 @@ void RenderWindowOSX::PollEvents() {
             break;
         case NSEventTypeKeyDown:
         {
+            NSString *chrs = [event characters];
+            
+            if([chrs length]>0)
+            {
+                int unicode = [chrs characterAtIndex:0];
+                if(unicode >= 32 && unicode <= 126)
+                {
+                    OnChar(unicode);
+                }
+                
+            }
+            
+            
             uint32_t keycode = (uint32_t)[event keyCode];
             EVirtualKey vk = toVirtualKey(keycode);
             OnKey(vk, EKeyState::PRESS);
@@ -343,7 +356,10 @@ void RenderWindowOSX::PollEvents() {
             break;
         case NSEventTypeKeyUp:
         {
+            
+            /*
             NSString *chrs = [event characters];
+
             if([chrs length]>0)
             {
                 int unicode = [chrs characterAtIndex:0];
@@ -353,6 +369,10 @@ void RenderWindowOSX::PollEvents() {
                 }
 
             }
+             
+             
+            */
+            
             uint32_t keycode = (uint32_t)[event keyCode];
             EVirtualKey vk = toVirtualKey(keycode);
             OnKey(vk, EKeyState::RELEASE);
