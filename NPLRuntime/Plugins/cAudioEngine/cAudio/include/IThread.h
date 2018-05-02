@@ -13,6 +13,7 @@ namespace cAudio
 		virtual void join() = 0;
 		virtual void shutdown() = 0;
 		virtual bool isRunning() = 0;
+        virtual void release() = 0;
 	};
 
 	class IThreadWorker

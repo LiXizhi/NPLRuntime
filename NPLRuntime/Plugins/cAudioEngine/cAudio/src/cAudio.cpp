@@ -144,19 +144,21 @@ namespace cAudio
 	// Logger section
 	//---------------------------------------------------------------------------------------
 
-	static cLogger Logger;
-	static bool FirstTimeLogInit(false);
 
-#if CAUDIO_COMPILE_WITH_CONSOLE_LOG_RECEIVER == 1
-	static cConsoleLogReceiver ConsoleLog;
-#endif
-
-#if CAUDIO_COMPILE_WITH_FILE_LOG_RECEIVER == 1
-	static cFileLogReceiver FileLog;
-#endif
 
 	CAUDIO_API ILogger* getLogger()
 	{
+        static cLogger Logger;
+        static bool FirstTimeLogInit(false);
+        
+#if CAUDIO_COMPILE_WITH_CONSOLE_LOG_RECEIVER == 1
+        static cConsoleLogReceiver ConsoleLog;
+#endif
+        
+#if CAUDIO_COMPILE_WITH_FILE_LOG_RECEIVER == 1
+        static cFileLogReceiver FileLog;
+#endif
+        
 		if(!FirstTimeLogInit)
 		{
 			FirstTimeLogInit = true;

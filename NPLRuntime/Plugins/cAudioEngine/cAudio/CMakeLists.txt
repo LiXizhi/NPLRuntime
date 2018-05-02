@@ -25,7 +25,7 @@ if(CAUDIO_ENABLE_OGG)
 else()
 	include_directories (include Headers ${CMAKE_BINARY_DIR}/include ${OPENAL_INCLUDE_DIRS})
 	target_link_libraries(cAudioEngine OpenAL)
-	add_dependencies(cAudioEngine VOpenAL)
+	add_dependencies(cAudioEngine OpenAL)
 endif()
 
 if (APPLE AND CAUDIO_IOS_BUILD)
@@ -38,6 +38,7 @@ install_all_targets(cAudioEngine)
 
 if(WIN32)
 	SET(CMAKE_DEBUG_POSTFIX "_d")
+	target_compile_definitions(cAudioEngine PUBLIC  AL_LIBTYPE_STATIC)
 endif()
 
 ####################################################

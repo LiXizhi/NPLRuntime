@@ -103,6 +103,9 @@ namespace ParaEngine
 		virtual HRESULT Render(SceneState * pSceneState, CEffectFile *pEffect,
 			bool bDrawOpaqueSubsets = true,
 			bool bDrawAlphaSubsets = true, float fAlphaFactor = 1.0f, CParameterBlock* materialParams = nullptr);
+
+		virtual HRESULT RendererRecreated() override;
+
 	public:
 		// Mesh access
 		LPD3DXMESH GetSysMemMesh()	{ return m_pSysMemMesh; }

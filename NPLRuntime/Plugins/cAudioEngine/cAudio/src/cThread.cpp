@@ -2,6 +2,7 @@
 // This file is part of the "cAudio Engine"
 // For conditions of distribution and use, see copyright notice in cAudio.h
 
+#include "cAudio.h"
 #include "cThread.h"
 #include "cAudioSleep.h"
 
@@ -16,6 +17,11 @@ namespace cAudio
 		if(IsInit)
 			shutdown();
 	}
+    
+    void cAudioThread::release()
+    {
+        CAUDIO_DELETE this;
+    }
 
 	bool cAudioThread::start()
 	{
@@ -56,11 +62,13 @@ namespace cAudio
 		{
 			IsInit = false;
 #ifdef CAUDIO_PLATFORM_WIN
-			_endthread();
+			//_endthread();
+            CloseHandle( ThreadHandle );
 #else
-			pthread_exit(0);
-#endif			
+			//pthread_exit(0);
+#endif
 		}
+
 	}
 	void cAudioThread::updateLoop()
 	{

@@ -29,7 +29,7 @@ namespace cAudio
 		};
 
 		cAudioCapture();
-		~cAudioCapture();
+		virtual ~cAudioCapture();
 
 		virtual bool initialize(const char* deviceName = 0x0, unsigned int frequency = 22050, AudioFormats format = EAF_16BIT_MONO, unsigned int internalBufferSize = 8192);
 		virtual bool isReady() { return Ready; }

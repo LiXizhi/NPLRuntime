@@ -59,7 +59,7 @@ namespace cAudio
 			if (AudioThread) // First wait for our update thread to finish up
 			{
 				AudioThread->join();
-				delete AudioThread;
+				AudioThread->release();
 				AudioThread = NULL;
 			} 
 
@@ -70,13 +70,13 @@ namespace cAudio
 			if (AudioContext)
 			{
 				AudioContext->shutDown();
-				CAUDIO_DELETE AudioContext;
+				AudioContext->release();
 				AudioContext = NULL;
 			}
 
 			Initialized = false;
 
-			getLogger()->logInfo("AudioManager", "Manager successfully shutdown.");
+			//getLogger()->logInfo("AudioManager", "Manager successfully shutdown.");
 		}
 	}
 

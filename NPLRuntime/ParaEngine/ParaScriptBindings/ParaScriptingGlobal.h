@@ -4,6 +4,7 @@
 // Description:	API for global objects
 //-----------------------------------------------------------------------------
 #pragma once
+
 #include "util/LogService.h"
 #include "IAttributeFields.h"
 #include <map>
@@ -11,7 +12,7 @@
 
 struct lua_State;
 
-
+#undef ShellExecute
 #pragma region StackObjectPtr
 
 namespace ParaScripting

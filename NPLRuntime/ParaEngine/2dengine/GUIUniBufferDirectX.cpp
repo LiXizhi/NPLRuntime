@@ -297,9 +297,9 @@ bool CUniLine::RemoveChar( int nIndex )
 	return true;
 }
 
-bool ParaEngine::CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+bool ParaEngine::CUniLine::ReplaceChar(int nIndex, char16_t wchar)
 {
-	m_pwszBuffer[nIndex] = wChar;
+	m_pwszBuffer[nIndex] = wchar;
 	m_bAnalyseRequired = true;
 	return true;
 }
@@ -557,7 +557,7 @@ CUniBuffer::~CUniBuffer()
 
 
 //--------------------------------------------------------------------------------------
-const char16_t& CUniBuffer::operator[](int n) // No param checking
+ char16_t& CUniBuffer::operator[](int n) // No param checking
 {
 	// This version of operator[] is called only
 	// if we are asking for write access, so
@@ -578,6 +578,16 @@ bool CUniBuffer::SetBufferSize( int nNewSize )
 		return m_lines.front()->SetBufferSize(nNewSize);
 	}
 	return false;
+}
+
+bool CUniBuffer::ReplaceChar(int nIndex, char16_t wchar)
+{
+	int charpos;
+	if ((charpos = GetLineAt(nIndex)) == -1) {
+		return false;
+	}
+	else
+		return GetCurLine()->ReplaceChar(charpos, wchar);
 }
 
 

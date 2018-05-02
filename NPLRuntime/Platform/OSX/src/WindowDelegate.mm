@@ -12,7 +12,6 @@ static WindowDelegate* sInstance = nil;
     if (!sInstance)
     {
         sInstance = [[self alloc] init];
-        [sInstance retain];
     }
     
     return sInstance;
@@ -33,24 +32,23 @@ static WindowDelegate* sInstance = nil;
         delete _app;
     if (_renderWindow)
         delete _renderWindow;
-}
-
-- (BOOL) windowShouldClose:(NSWindow *)sender
-{
-    return _renderWindow->OnShouldClose();
+    
+    [super dealloc];
 }
 
 
+/*
 - (void) windowWillClose:(NSNotification *)notification
 {
     [[NSRunningApplication currentApplication] terminate];
 }
+ 
 
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
 {
     return YES;
 }
-
+*/
 
 - (void) handleNotification : (NSNotification *)note
 {
@@ -64,6 +62,30 @@ static WindowDelegate* sInstance = nil;
     }
     
 }
+
+- (void) closeConsoleWindow
+{
+    if (_consoleController)
+    {
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:NSFileHandleReadCompletionNotification object:_pipeReadHandle];
+        //close([_pipeReadHandle fileDescriptor]);
+        _pipeReadHandle = nil;
+        _pipe = nil;
+        
+        [_consoleController close];
+        [_consoleController release];
+        _consoleController = nil;
+    }
+}
+
+- (BOOL) windowShouldClose:(NSWindow *)sender
+{
+#ifdef DEBUG
+    [self closeConsoleWindow];
+#endif
+    return _renderWindow->OnShouldClose();
+}
+
 
 - (void) openConsoleWindow
 {
@@ -105,6 +127,11 @@ static WindowDelegate* sInstance = nil;
     }
     
     _app->Run(0);
+    
+    SAFE_DELETE(_app);
+    SAFE_DELETE(_renderWindow);
+    
+    [NSApp terminate:self];
 }
 
 - (void) application:(NSApplication *)application openURLs:(nonnull NSArray<NSURL *> *)urls
