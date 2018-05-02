@@ -31,8 +31,6 @@ else()
 endif()
 
 
-message("LibDir:"${BOOST_LIBRARYDIR})
-
 if(ANDROID)
 	set(BOOST_LIBRARYDIR ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/android)
 endif()
