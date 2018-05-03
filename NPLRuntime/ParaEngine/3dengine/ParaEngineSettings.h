@@ -25,7 +25,11 @@ namespace ParaEngine
 		PORTUGUESE,
 		ARABIC,
 		NORWEGIAN,
-		POLISH
+		POLISH,
+		TURKISH,
+		UKRAINIAN,
+		ROMANIAN,
+		BULGARIAN
 	};
 
 	/**
