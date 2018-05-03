@@ -12,6 +12,7 @@
 #include "RenderContextEGL.h"
 #include "ParaTime.h"
 #include "NPLRuntime.h"
+#include "jni/ParaEngineHelper.h"
 
 #include <boost/bind.hpp>
 #include <android/log.h>
@@ -481,6 +482,7 @@ void AppDelegate::Run(struct android_app* app)
 	app->onInputEvent = AppDelegate::app_handle_input;
 
 	m_appActivity.init(app);
+	ParaEngineHelper::init();
 
 	LOGI("app:run");
 
