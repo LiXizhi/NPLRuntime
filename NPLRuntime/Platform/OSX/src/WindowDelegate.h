@@ -14,6 +14,7 @@ namespace ParaEngine {
     ParaEngine::RenderWindowOSX* _renderWindow;
     ParaEngine::CParaEngineAppOSX* _app;
     
+    std::string _url;
     //console
     ConsoleWindowController* _consoleController;
     

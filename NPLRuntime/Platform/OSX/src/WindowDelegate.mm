@@ -38,7 +38,7 @@ static WindowDelegate* sInstance = nil;
 
 
 /*
-- (void) windowWillClose:(NSNotification *)notification
+- (void) windowWillClose:(NSNotification *)notificationƒurl
 {
     [[NSRunningApplication currentApplication] terminate];
 }
@@ -113,13 +113,13 @@ static WindowDelegate* sInstance = nil;
 
 - (void) startup
 {
-    //RenderWindowOSX renderWindow(1280,720);
     _renderWindow = new RenderWindowOSX(1280, 720);
+    
+    _renderWindow->PollEvents();
+
     _app = new CParaEngineAppOSX();
     
-    //CParaEngineAppOSX app;
-    
-    bool ret = _app->InitApp(_renderWindow, "");
+    bool ret = _app->InitApp(_renderWindow, _url.c_str());
     if(!ret)
     {
         OUTPUT_LOG("Initialize ParaEngineApp failed.");
@@ -142,6 +142,13 @@ static WindowDelegate* sInstance = nil;
         {
             const char* cmdline = [[urls[i] relativeString] UTF8String];
             _app->onCmdLine(cmdline);
+        }
+    }
+    else
+    {
+        if ([urls count] > 0)
+        {
+            _url = [[urls[0] relativeString] UTF8String];
         }
     }
 
