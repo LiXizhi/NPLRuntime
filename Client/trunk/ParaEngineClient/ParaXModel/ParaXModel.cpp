@@ -774,29 +774,24 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	if (pPose)
 	{
 		// TODO: check if this is an valid character model.
-
 		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
 			if (nHeadAttachmentIndex >= 0)
 			{
 				int nParent = m_atts[nHeadAttachmentIndex].bone;
-				if (nParent >= 0)
+				int nSpine = m_boneLookup[Bone_Spine];
+				if (nParent >= 0 && nSpine>=0)
 				{
 					int nStart = nParent;
-					int nSpine = m_boneLookup[Bone_Spine];
 
-					// tricky code: try to find if there are at least 5 spline bones from head to spine
-					bool bHasEnoughSpineBones = true;
-					for (int i = 4; i >= 0 && nStart >= 0; i--)
+					// tricky code: try to find if there are at least 4 spline bones from head to spine, in most cases, it is head, neck, spline1, spline
+					int i = 4;
+					for (; i >= 0 && nStart >= 0 && (nSpine != nStart); i--)
 					{
-						if (nSpine == nStart && i > 0)
-						{
-							bHasEnoughSpineBones = false;
-							break;
-						}
-						nStart = bones[nStart].parent; // get its parent
+						nStart = bones[nStart].parent;
 					}
+					bool bHasEnoughSpineBones = (i==0);
 
 					if (!bHasEnoughSpineBones)
 					{
@@ -807,7 +802,12 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 					else
 					{
 						int nNeck = bones[nParent].parent; // get the NECK bone index
-						CBoneChain UpperBodyBoneChain(4);
+						int nRotateSpineBoneCount = 4;
+						// just in case, some animator connect Thigh bones to spine, we will rotate only 3 bones
+						if ((nSpine == nStart) && m_boneLookup[Bone_L_Thigh] > 0 && bones[m_boneLookup[Bone_L_Thigh]].parent == nSpine) {
+							nRotateSpineBoneCount = 3;
+						}
+						CBoneChain UpperBodyBoneChain(nRotateSpineBoneCount);
 						UpperBodyBoneChain.SetStartBone(bones, nNeck, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 					}

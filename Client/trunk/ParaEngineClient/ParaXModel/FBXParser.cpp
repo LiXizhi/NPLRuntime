@@ -2014,7 +2014,9 @@ int ParaEngine::FBXParser::CreateGetBoneIndex(const char* pNodeName)
 		bone.bUsePivot = false;
 		bone.SetName(pNodeName);
 		bone.AutoSetBoneInfoFromName();
-		bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
+		// if bone already has an ID, it is always a non-transform node. 
+		if(bone.GetBoneID()<=0)
+			bone.flags = ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
 		m_boneMapping[pNodeName] = bone.nIndex;
 	}
 	return nBoneIndex;
