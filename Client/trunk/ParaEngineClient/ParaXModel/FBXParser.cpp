@@ -2186,6 +2186,8 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 			nFaceStart += nFaceCount;
 			index_start += nFaceCount * 3;
 		}
+
+		vertex_start = nVertexOffset;
 	}
 
 	// add bones and vertex weight
