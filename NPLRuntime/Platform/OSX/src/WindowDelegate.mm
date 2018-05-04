@@ -78,6 +78,12 @@ static WindowDelegate* sInstance = nil;
     }
 }
 
+- (void)applicationWillTerminate:(NSNotification *)notification
+{
+    SAFE_DELETE(_app);
+    SAFE_DELETE(_renderWindow);
+}
+
 - (BOOL) windowShouldClose:(NSWindow *)sender
 {
 #ifdef DEBUG

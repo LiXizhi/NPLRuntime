@@ -172,7 +172,7 @@ namespace cAudio
 		if (error != AL_NO_ERROR)
 		{
 			errorString = alGetString(error);
-			getLogger()->logError("AudioManager", "OpenAL Error: %s.", errorString);
+            getLogger()->logError("AudioManager", "OpenAL Error: %s.", errorString ? errorString : "null");
 			return true;
 		}
 
