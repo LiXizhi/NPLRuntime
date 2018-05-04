@@ -237,6 +237,11 @@ namespace ParaEngine
 		*/
 		static bool StrEndsWith(const string& str, const string& sequence);
 
+		/** check whether str ends with sequence without spaces in front of it.
+		@param sequence: it may contain ?, which matches to 1 any character.
+		*/
+		static bool StrEndsWithWord(const string& str, const string& sequence);
+
 
 		private:
 			class _CodePageName
