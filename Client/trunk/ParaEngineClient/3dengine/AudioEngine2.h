@@ -86,6 +86,10 @@ namespace ParaEngine
 
 		/** whether the file is playing or not.*/
 		bool IsPlaying();
+
+		const std::string& GetFilename() const;
+		void SetFilename(const std::string& val);
+
 	public:
 		//////////////////////////////////////////////////////////////////////
 		//
@@ -108,15 +112,20 @@ namespace ParaEngine
 		/// This function is called when a source is paused.
 		virtual void onPause();
 
+		
 	public:
 
 		IParaAudioSource* m_pSource;
 		int m_nLoopCount;
 		bool m_bReleaseOnStop;
+		/** resource key name */
 		std::string m_name;
+		/** resource filename if any */
 		ParaAudioFlagsEnum m_status;
 		/** this is true, if an audio resource is being loop played but without being downloaded yet. */
 		bool m_bIsAsyncLoadingWhileLoopPlaying;
+private:
+	std::string m_filename;
 	};
 	typedef ParaIntrusivePtr<CAudioSource2> CAudioSource2_ptr;
 

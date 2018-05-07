@@ -75,6 +75,16 @@ CParaXSerializer::~CParaXSerializer(void)
 {
 }
 
+const std::string& CParaXSerializer::GetFilename() const
+{
+	return m_sFilename;
+}
+
+void CParaXSerializer::SetFilename(std::string val)
+{
+	m_sFilename = val;
+}
+
 void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 {
 	void* pMesh=NULL;
@@ -88,6 +98,7 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	try
 	{
 		XFileCharModelParser p(f.getBuffer(), f.getSize());
+		p.SetFilename(GetFilename());
 		pMesh = p.ParseParaXModel();
 	}
 	catch (runtime_error* e)
@@ -1167,7 +1178,7 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 				if ((bone.flags & 0x80000000) != 0)
 				{
 					bone.flags = bone.flags & (~0x80000000);
-					if (b.nOffsetPivot != 0)
+					if (b.nBoneName != 0)
 						bone.SetName((const char*)GetRawData(b.nBoneName));
 
 					if (bone.IsOffsetMatrixBone()) {

@@ -10,7 +10,7 @@
 #include "ModelRenderPass.h"
 
 namespace ParaEngine
-{ 
+{
 	class Bone;
 	class ParticleSystem;
 	class RibbonEmitter;
@@ -22,7 +22,7 @@ namespace ParaEngine
 	struct LightParams;
 	class CFaceGroup;
 	struct ModelAttachment;
-	
+
 
 	/**
 	* ParaX model is the model file for character animation, etc in the game world.
@@ -32,13 +32,14 @@ namespace ParaEngine
 	public:
 		CParaXModel(const ParaXHeaderDef& xheader);
 		virtual ~CParaXModel(void);
+		void SetHeader(const ParaXHeaderDef& xheader);
 
 		/** in what method to render the mesh */
-		enum RENDER_METHOD{
+		enum RENDER_METHOD {
 			/** using software skinning */
-			SOFT_ANIM = 0, 
+			SOFT_ANIM = 0,
 			/** using hardware skinning, need vertex shader 1.1 or later */
-			SHADER_ANIM, 
+			SHADER_ANIM,
 			/** render without animation. It is just a solid mesh. */
 			NO_ANIM,
 			/** BMAX model color model.*/
@@ -49,11 +50,11 @@ namespace ParaEngine
 		// implementation of IAttributeFields
 
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		virtual int GetAttributeClassID(){return ATTRIBUTE_CLASSID_CParaXModel;}
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CParaXModel; }
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){static const char name[] = "CParaXModel"; return name;}
+		virtual const char* GetAttributeClassName() { static const char name[] = "CParaXModel"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){static const char desc[] = ""; return desc;}
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
@@ -65,16 +66,16 @@ namespace ParaEngine
 		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 
-		ATTRIBUTE_METHOD1(CParaXModel, DumpTextureUsage_s, const char**)	{*p1 = cls->DumpTextureUsage(); return S_OK;}
-		ATTRIBUTE_METHOD1(CParaXModel, GetPolyCount_s, int*)	{*p1 = cls->GetPolyCount(); return S_OK;}
-		ATTRIBUTE_METHOD1(CParaXModel, GetPhysicsCount_s, int*)	{*p1 = cls->GetPhysicsCount(); return S_OK;}
-		ATTRIBUTE_METHOD1(CParaXModel, GetGeosetsCount_s, int*)	{ *p1 = (int)cls->geosets.size(); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPassesCount_s, int*)	{ *p1 = (int)cls->passes.size(); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetObjectNum_s, void**)	{ *p1 = (void*)(&(cls->GetObjectNum())); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetVertices_s, void**)	{ *p1 = (void*)(cls->m_origVertices); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPasses_s, void**)	{ *p1 = (void*)(&(cls->passes[0])); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetGeosets_s, void**)	{ *p1 = (void*)(&(cls->geosets[0])); return S_OK; }
-		ATTRIBUTE_METHOD1(CParaXModel, GetIndices_s, void**)	{ *p1 = (void*)(&(cls->m_indices[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, DumpTextureUsage_s, const char**) { *p1 = cls->DumpTextureUsage(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetPolyCount_s, int*) { *p1 = cls->GetPolyCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetPhysicsCount_s, int*) { *p1 = cls->GetPhysicsCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetGeosetsCount_s, int*) { *p1 = (int)cls->geosets.size(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPassesCount_s, int*) { *p1 = (int)cls->passes.size(); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetObjectNum_s, void**) { *p1 = (void*)(&(cls->GetObjectNum())); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetVertices_s, void**) { *p1 = (void*)(cls->m_origVertices); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetRenderPasses_s, void**) { *p1 = (void*)(&(cls->passes[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetGeosets_s, void**) { *p1 = (void*)(&(cls->geosets[0])); return S_OK; }
+		ATTRIBUTE_METHOD1(CParaXModel, GetIndices_s, void**) { *p1 = (void*)(&(cls->m_indices[0])); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, GetAnimations_s, void**) { *p1 = (void*)(cls->anims); return S_OK; }
 		ATTRIBUTE_METHOD1(CParaXModel, SaveToDisk_s, char*) { cls->SaveToDisk(p1); return S_OK; }
 	public:
@@ -86,10 +87,10 @@ namespace ParaEngine
 		const char* DumpTextureUsage();
 
 		/** get the number of objects in the model.*/
-		inline const ParaXModelObjNum& GetObjectNum() const {return m_objNum;};
-		inline const ParaXHeaderDef& GetHeader() const {return m_header;};
+		inline const ParaXModelObjNum& GetObjectNum() const { return m_objNum; };
+		inline const ParaXHeaderDef& GetHeader() const { return m_header; };
 		/** check the minimum file version. Return true if file version is equal or higher than the given one. */
-		bool CheckMinVersion(int v0, int v1=0, int v2=0, int v3=0);
+		bool CheckMinVersion(int v0, int v1 = 0, int v2 = 0, int v3 = 0);
 
 		/** file loading for ParaX file type*/
 		void initVertices(int nVertices, ModelVertex* pVertices);
@@ -97,7 +98,7 @@ namespace ParaEngine
 
 
 		/** call this function only once after the model data is loaded. It will search for translucent pass
-		* and build face groups to store them for later sorting and rendering. 
+		* and build face groups to store them for later sorting and rendering.
 		*/
 		void initTranslucentFaceGroups();
 
@@ -112,7 +113,7 @@ namespace ParaEngine
 		/** TODO: currently this is not implemented*/
 		bool DeleteDeviceObjects();
 
-		/** set the transform matrix for the specified attachment ID on this model. 
+		/** set the transform matrix for the specified attachment ID on this model.
 		* it is assumed that the transform of this model has already been set in the render device
 		* hence it will just multiple over the one in the device.
 		* return true, if the nID is a valid attachment point on the model.
@@ -120,7 +121,7 @@ namespace ParaEngine
 		bool SetupTransformByID(int nID);
 
 		void drawModel(SceneState * pSceneState, CParameterBlock* pMaterialParam = NULL, int nRenderMethod = -1);
-		
+
 		/** animate the entire model according to the current animation and blending settings.
 		* @param pPose: it will override the poses defined in the model.:*/
 		void animate(SceneState * pSceneState, CharacterPose* pPose, IAttributeFields* pAnimInstance = NULL);
@@ -130,7 +131,7 @@ namespace ParaEngine
 
 		/** Build Shadow Volume*/
 		void BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
-		
+
 		void updateEmitters(SceneState * pSceneState, float dt);
 		void drawBones();
 		void drawBoundingVolume();
@@ -144,7 +145,7 @@ namespace ParaEngine
 		* @param nBlendingAnim: the animation sequence with which the current animation should be blended.
 		* @param blendingFrame: an absolute ParaX frame number denoting the blending animation frame. It is always within
 		* the range of the blending animation sequence's start and end frame number.
-		* @param blendingFactor: by how much the blending frame should be blended with the current frame. 
+		* @param blendingFactor: by how much the blending frame should be blended with the current frame.
 		* 1.0 will use solely the blending frame, whereas 0.0 will use only the current frame.
 		* [0,1), blendingFrame*(blendingFactor)+(1-blendingFactor)*currentFrame
 		*/
@@ -158,17 +159,17 @@ namespace ParaEngine
 		/** calculate only specified bone in the attachment, all parent bones will also be calculated in order to get the matrix for the specified bone.
 		* @param pOut: the bone transform matrix.
 		* @param nAttachmentID: the bone index.
-		* @param bRecalcBone: whether we will recalculate bone chains according to the current animation pose. 
+		* @param bRecalcBone: whether we will recalculate bone chains according to the current animation pose.
 		* @return: NULL if not successful, otherwise it is pOut.
 		*/
 		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = NULL);
 
-		/** whether we have attachment matrix. 
-		* @param nAttachmentID: the attachment id. 
+		/** whether we have attachment matrix.
+		* @param nAttachmentID: the attachment id.
 		*/
 		bool HasAttachmentMatrix(int nAttachmentID);
 
-		/** 
+		/**
 		* @param nIndex: the index into the global indices.
 		*/
 		inline Vector3 GetWeightedVertexByIndex(unsigned short nIndex);
@@ -183,12 +184,12 @@ namespace ParaEngine
 
 		/** load textures */
 		void LoadTextures();
-	
-		/** return the animation index by animation ID. 
-		* the animation <ID, name> pairs are stored in the AnimDB table. 
+
+		/** return the animation index by animation ID.
+		* the animation <ID, name> pairs are stored in the AnimDB table.
 		* if the animation ID is not found, 0 (usually the stand animation) is returned.
 		* a sequential search is used for the specified animation. Below is some common mappings.
-		* <0, stand> <1, death> <2, spell> <3, stop> <4, walk> <5, run> 
+		* <0, stand> <1, death> <2, spell> <3, stop> <4, walk> <5, run>
 		* @retrun: return index of the animation. If the animation is not found, then -1 is returned.
 		*/
 		AnimIndex GetAnimIndexByID(int nAnimID);
@@ -196,7 +197,7 @@ namespace ParaEngine
 		* if there is no animation at the index, 0 (default animation ID) is returned.
 		*/
 		int GetAnimIDByIndex(int nAnimIndex);
-		
+
 		/** return NULL if not exist */
 		const ModelAnimation* GetModelAnimByIndex(int nAnimIndex);
 
@@ -204,9 +205,9 @@ namespace ParaEngine
 		float GetBoundingRadius();
 		/** whether the model has a specified attachment point */
 		bool canAttach(int id);
-	
+
 		void RenderNoAnim(SceneState* pSceneState);
-		void RenderSoftAnim(SceneState* pSceneState,CParameterBlock* pMaterialParams=NULL);
+		void RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
 		void RenderShaderAnim(SceneState* pSceneState);
 		void RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMaterialParams = NULL);
@@ -222,7 +223,7 @@ namespace ParaEngine
 
 		/** return the physics group id that is closest to nPhysicsGroup. or -1 if there is none. */
 		int GetNextPhysicsGroupID(int nPhysicsGroup = -1);
-		
+
 		/**
 		* Get the physics mesh in terms of vertices and indices.
 		* @param pNumVertices [out] number of vertices
@@ -366,8 +367,8 @@ namespace ParaEngine
 		enum VERTEX_BUFFER_STATE
 		{
 			NOT_SET = 0,
-			NEED_INIT			= 1,
-			INITED				= 2,
+			NEED_INIT = 1,
+			INITED = 2,
 			NOT_USE = 3,
 		};
 

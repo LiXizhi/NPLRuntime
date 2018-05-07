@@ -29,8 +29,8 @@ void Bone::RemoveRedundentKeys()
 		bUsePivot = (pivot != Vector3(0, 0, 0));
 
 #ifdef ONLY_REMOVE_EQUAL_KEYS
-	scale.SetConstantKey(Vector3(1.f,1.f,1.f));
-	trans.SetConstantKey(Vector3(0,0,0));
+	scale.SetConstantKey(Vector3(1.f, 1.f, 1.f));
+	trans.SetConstantKey(Vector3(0, 0, 0));
 #else
 	scale.SetConstantKey(Vector3(1.f, 1.f, 1.f), 0.0001f);
 	trans.SetConstantKey(Vector3(0, 0, 0), 0.00001f);
@@ -144,8 +144,8 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	Quaternion q;
 	Vector3 tr(0, 0, 0);
 	Vector3 sc(1.f, 1.f, 1.f);
-	
-	
+
+
 	if (pCurBone == NULL && pBlendBone == NULL)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -228,9 +228,9 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			{
 				// use pivot point
 				m.makeTrans(pivot*-1.0f);
-				
+
 				if (GetExternalScaling(pAnimInstance, sc) ||
-					(scale.used && (sc = scale.getValue(nCurrentAnim, currentFrame/*, nBlendingAnim, blendingFrame, blendingFactor*/)) != Vector3::UNIT_SCALE ))
+					(scale.used && (sc = scale.getValue(nCurrentAnim, currentFrame/*, nBlendingAnim, blendingFrame, blendingFactor*/)) != Vector3::UNIT_SCALE))
 				{
 					m.m[0][0] = sc.x;
 					m.m[1][1] = sc.y;
@@ -294,7 +294,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					else
 						m.identity();
 				}
-				
+
 				if (GetExternalTranslation(pAnimInstance, tr))
 				{
 					m.offsetTrans(tr);
@@ -521,7 +521,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 
 		if (parent >= 0) {
 			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
-			mat = m*allbones[parent].mat;
+			mat = m * allbones[parent].mat;
 		}
 		else
 			mat = m;
@@ -757,7 +757,7 @@ void ParaEngine::Bone::SetName(const std::string& val)
 
 void ParaEngine::Bone::AutoSetBoneInfoFromName()
 {
-	if (m_sIdentifer.empty() || GetBoneID()>0)
+	if (m_sIdentifer.empty() || GetBoneID() > 0)
 		return;
 	std::string sName = m_sIdentifer;
 	StringHelper::make_lower(sName);
@@ -790,7 +790,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		string sAttName = sName.substr(4);
 		if (sAttName == "lefthand")
 		{
-			SetBoneID(- ATT_ID_HAND_LEFT);
+			SetBoneID(-ATT_ID_HAND_LEFT);
 		}
 		else if (sAttName == "righthand")
 		{
@@ -1223,7 +1223,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("FinalMatrix", FieldType_Matrix4, (void*)0, (void*)GetFinalMatrix_s, NULL, "", bOverride);
 	pClass->AddField("FinalRotMatrix", FieldType_Matrix4, (void*)0, (void*)GetFinalRotMatrix_s, NULL, "", bOverride);
 	pClass->AddField("PivotRotMatrix", FieldType_Matrix4, (void*)0, (void*)GetPivotRotMatrix_s, NULL, "", bOverride);
-	
+
 	pClass->AddField("PivotPoint", FieldType_Vector3, (void*)0, (void*)GetPivotPoint_s, NULL, "", bOverride);
 	pClass->AddField("AnimatedPivotPoint", FieldType_Vector3, (void*)0, (void*)GetAnimatedPivotPoint_s, NULL, "", bOverride);
 	pClass->AddField("FinalRot", FieldType_Quaternion, (void*)SetFinalRot_s, (void*)GetFinalRot_s, NULL, "", bOverride);

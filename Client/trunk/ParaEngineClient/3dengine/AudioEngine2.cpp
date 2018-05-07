@@ -23,11 +23,19 @@ using namespace ParaEngine;
 #define AudioEngine_CLASS_ID Class_ID(0x2b903a29, 0x57e409cf)
 
 
-#ifdef _DEBUG
-/** @def the plugin's file path under the working directory. It has external dependency on OpenAL*/
-#define AUDIO_ENGINE_DLL_PATH	"cAudioEngine_d.dll"
+#if defined(WIN32)
+#define DLL_FILE_EXT  "dll"
+#elif defined(PLATFORM_MAC)
+#define DLL_FILE_EXT "dylib"
 #else
-#define AUDIO_ENGINE_DLL_PATH	"cAudioEngine.dll"
+#define DLL_FILE_EXT "so"
+#endif
+
+#if defined(_DEBUG) && defined(WIN32)
+/** @def the plugin's file path under the working directory. It has external dependency on OpenAL*/
+const char* AUDIO_ENGINE_DLL_PATH = ("cAudioEngine_d." DLL_FILE_EXT);
+#else
+const char* AUDIO_ENGINE_DLL_PATH = ("cAudioEngine." DLL_FILE_EXT);
 #endif
 
 ParaEngine::CAudioEngine2::CAudioEngine2()
@@ -242,6 +250,7 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 				{
 					pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
 				}
+				pWave->SetFilename(filename);
 			}
 			else
 			{
@@ -251,6 +260,7 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 				{
 					std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 					pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
+					pWave->SetFilename(pEntry->GetLocalFileName());
 				}
 			}
 			if(pSource)
@@ -268,6 +278,7 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 			IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, sWavePath, bStream);
 			if(pSource)
 			{
+				pWave->SetFilename(sWavePath);
 				pWave->SetSource(pSource);
 				bSucceed = true;
 			}
@@ -283,6 +294,7 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 				IParaAudioSource* pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
 				if(pSource)
 				{
+					pWave->SetFilename(sWavePath);
 					pWave->SetSource(pSource);
 					bSucceed = true;
 				}
@@ -354,6 +366,7 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 					{
 						pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
 					}
+					pWave->SetFilename(filename);
 				}
 				else
 				{
@@ -363,6 +376,7 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 					{
 						std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 						pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
+						pWave->SetFilename(pEntry->GetLocalFileName());
 					}
 				}
 				if(pSource)
@@ -598,6 +612,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				{
 					pSource = m_pAudioEngine->create(sName, filename.c_str(), bStream);
 				}
+				pWave->SetFilename(filename);
 			}
 			else
 			{
@@ -609,6 +624,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				{
 					std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 					pSource = m_pAudioEngine->createFromMemory(sName, file.getBuffer(), file.getSize(), file_extension.c_str());
+					pWave->SetFilename(sWavePath);
 				}
 				else
 				{
@@ -641,6 +657,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 			IParaAudioSource* pSource = m_pAudioEngine->create(sName, sWavePath, bStream);
 			if(pSource)
 			{
+				pWave->SetFilename(sWavePath);
 				pWave->SetSource(pSource);
 			}
 		}
@@ -658,6 +675,8 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				IParaAudioSource* pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
 				if(pSource)
 				{
+					// Note, this is from zip archive
+					pWave->SetFilename(sWavePath); 
 					pWave->SetSource(pSource);
 				}
 			}
@@ -918,6 +937,19 @@ bool ParaEngine::CAudioSource2::IsPlaying()
 		return m_pSource->isPlaying();
 	else
 		return IsAsyncLoadingWhileLoopPlaying();
+}
+
+const std::string& ParaEngine::CAudioSource2::GetFilename() const
+{
+	return !m_filename.empty() ? m_filename : m_name;
+}
+
+void ParaEngine::CAudioSource2::SetFilename(const std::string& val)
+{
+	if (m_name == val)
+		m_filename.clear();
+	else
+		m_filename = val;
 }
 
 void ParaEngine::CAudioEngine2::PauseAll()

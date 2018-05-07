@@ -40,17 +40,13 @@ namespace ParaEngine
 {
 	int globalTime = 0;
 	VertexDeclarationPtr CParaXModel::m_pVertexDeclaration = NULL;
-
 	CEffectFile* CParaXModel::m_pEffectFile = NULL;
 }
 using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
 
-CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
-	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
-	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
-	, m_vbState(NOT_SET)
+void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
 	// for xheader
 	m_header = xheader;
@@ -67,9 +63,16 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	animBones = (m_header.IsAnimated&(1 << 2)) > 0;
 	//to support arg channel only texture animation  -clayman 2011.8.5
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
+}
 
+CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
+	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
+	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
+	, m_vbState(NOT_SET)
+{
+	SetHeader(xheader);
 
-	if(IsBmaxModel())
+	if (IsBmaxModel())
 		m_RenderMethod = BMAX_MODEL;
 	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
@@ -227,16 +230,12 @@ void CParaXModel::LoadTextures()
 		asset_ptr<TextureEntity> pTexture = textures[i];
 		if (pTexture)
 		{
-			if (pTexture->GetRawData())
+			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
+			if (pTexture != textures[i] && pTexture->GetRawData())
 			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 				textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
 				// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
 				pTexture->GiveupRawDataOwnership();
-			}
-			else
-			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 			}
 		}
 	}
@@ -398,7 +397,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 		if (m_pVertexBuffer.IsValid()
 			|| m_pVertexBuffer.IsValid()
 			|| passes.size() == 0
-			|| m_origVertices == nullptr 
+			|| m_origVertices == nullptr
 			|| m_indices == nullptr)
 		{
 			break;
@@ -416,7 +415,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 
 			count += p.indexCount;
 		}
-		
+
 		if (!m_pVertexBuffer.CreateBuffer((uint32)(count * sizeof(mesh_vertex_normal)), 0, D3DUSAGE_WRITEONLY))
 			break;
 
@@ -426,7 +425,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 
 
 		size_t index = 0;
-		for (size_t pass= 0; pass < nPasses; pass++)
+		for (size_t pass = 0; pass < nPasses; pass++)
 		{
 			auto& p = passes[pass];
 
@@ -484,7 +483,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 	{
 		m_origVertices = new ModelVertex[nVertices];
 		if (m_origVertices != 0)
-			memcpy(m_origVertices, pVertices, nVertices*sizeof(ModelVertex));
+			memcpy(m_origVertices, pVertices, nVertices * sizeof(ModelVertex));
 		if (m_RenderMethod != BMAX_MODEL && m_RenderMethod != NO_ANIM)
 		{
 			m_frame_number_vertices = new int[nVertices];
@@ -506,12 +505,12 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
 			{
 				ModelVertex* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
 				{
-					memcpy(pBuffer, pVertices, nVertices*sizeof(ModelVertex));
+					memcpy(pBuffer, pVertices, nVertices * sizeof(ModelVertex));
 					m_pVertexBuffer.Unlock();
 				}
 			}
@@ -524,7 +523,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
 			{
 				mesh_vertex_normal* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
@@ -761,7 +760,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	// uncomment to fine tune performances for this part of code. 
 	//#define PERFOAMRNCE_TEST_calcBones
 #ifdef PERFOAMRNCE_TEST_calcBones
-	if(nBones<30)
+	if (nBones < 30)
 		return;
 	// PERF1("calcBones");
 
@@ -781,7 +780,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 			{
 				int nParent = m_atts[nHeadAttachmentIndex].bone;
 				int nSpine = m_boneLookup[Bone_Spine];
-				if (nParent >= 0 && nSpine>=0)
+				if (nParent >= 0 && nSpine >= 0)
 				{
 					int nStart = nParent;
 
@@ -791,7 +790,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 					{
 						nStart = bones[nStart].parent;
 					}
-					bool bHasEnoughSpineBones = (i==0);
+					bool bHasEnoughSpineBones = (i == 0);
 
 					if (!bHasEnoughSpineBones)
 					{
@@ -973,7 +972,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 	}
-	
+
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	size_t startVB = 0;
@@ -1069,7 +1068,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 										faceGroup.m_vUVScale.x = texAnim.sval.x;
 										faceGroup.m_vUVScale.y = texAnim.sval.y;
 									}
-									
+
 
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
@@ -1083,7 +1082,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if(pLastPass == NULL)
+						if (pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -1095,9 +1094,9 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 
 							startVB += p.indexCount;
 						}
-						else 
+						else
 						{
-							if ( (*pLastPass == p) )
+							if ((*pLastPass == p))
 							{
 								DrawPass_NoAnim_VB(p, startVB);
 								startVB += p.indexCount;
@@ -1128,7 +1127,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if(pLastPass != NULL)
+				if (pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -1368,7 +1367,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if(pLastPass == NULL)
+						if (pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -1377,9 +1376,9 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 								DrawPass(p);
 							}
 						}
-						else 
+						else
 						{
-							if ( (*pLastPass == p) )
+							if ((*pLastPass == p))
 							{
 								DrawPass(p);
 							}
@@ -1398,7 +1397,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
-							pEffect->onDrawPass(pMaterialParams,nPass);
+							pEffect->onDrawPass(pMaterialParams, nPass);
 							pEffect->CommitChanges();
 							DrawPass(p);
 							p.deinit_FX(pSceneState, pMaterialParams);
@@ -1407,7 +1406,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if(pLastPass != NULL)
+				if (pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -1441,7 +1440,7 @@ void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start)
 		DrawPass_NoAnim(p);
 		return;
 	}
-	
+
 	if (p.indexCount == 0)
 		return;
 
@@ -1733,7 +1732,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		}
 	}
 
-	
+
 
 	if (nRenderMethod < 0)
 		nRenderMethod = m_RenderMethod;
@@ -1764,16 +1763,16 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-		{
-			RenderSoftNoAnim(pSceneState, pMaterialParam);
-		}
-		break;
+	{
+		RenderSoftNoAnim(pSceneState, pMaterialParam);
+	}
+	break;
 	case BMAX_MODEL:
-		{
-			RenderBMaxModel(pSceneState, pMaterialParam);
-		}
-		
-		break;
+	{
+		RenderBMaxModel(pSceneState, pMaterialParam);
+	}
+
+	break;
 	default:
 		break;
 	}
@@ -1874,7 +1873,7 @@ void CParaXModel::BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* p
 
 			// Allocate a temporary edge list
 			std::unordered_set <EdgeHash, hash_compare_edge> m_edgeTable;
-			if (nUseCap>0)
+			if (nUseCap > 0)
 				pShadowVolume->ReserveNewBlock(&pVertices, nNumFaces * 3);
 
 			// the three vertices of each face
@@ -2114,10 +2113,10 @@ bool CParaXModel::HasAlphaBlendedObjects()
 
 int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
-	if (nColumnIndex == 0){
+	if (nColumnIndex == 0) {
 		return (int)GetObjectNum().nBones;
 	}
-	else if (nColumnIndex == 1){
+	else if (nColumnIndex == 1) {
 		return (int)GetObjectNum().nTextures;
 	}
 	return 0;
@@ -2238,7 +2237,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 		if (m_RenderMethod == SOFT_ANIM)
 		{
-			if(m_frame_number_vertices == 0)
+			if (m_frame_number_vertices == 0)
 				m_frame_number_vertices = new int[dwNumVx];
 			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
@@ -2259,7 +2258,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
 				int nVertexOffset = pass.GetVertexStart(this);
-				if(m_RenderMethod == SOFT_ANIM)
+				if (m_RenderMethod == SOFT_ANIM)
 				{
 					int nIndexOffset = pass.m_nIndexStart;
 					for (int i = 0; i < pass.indexCount; ++i)
@@ -2321,16 +2320,16 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 	}
 	// output result
-	if (pNumVertices != 0){
+	if (pNumVertices != 0) {
 		*pNumVertices = dwNumVx;
 	}
-	if (ppVerts != 0){
+	if (ppVerts != 0) {
 		*ppVerts = verts;
 	}
-	if (pNumTriangles != 0){
+	if (pNumTriangles != 0) {
 		*pNumTriangles = dwNumFaces;
 	}
-	if (ppIndices != 0){
+	if (ppIndices != 0) {
 		*ppIndices = indices;
 	}
 	return S_OK;
