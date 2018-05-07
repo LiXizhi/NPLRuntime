@@ -82,7 +82,9 @@ include(ConfigureBuild)
 
 if (CAUDIO_IOS_BUILD)
   # Set build variables
-  set(CMAKE_OSX_SYSROOT ${IOS_SDK})
+  if (NOT CMAKE_OSX_SYSROOT)
+	set(CMAKE_OSX_SYSROOT ${IOS_SDK})
+  endif()
   set(CMAKE_OSX_DEPLOYMENT_TARGET "")
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework CoreGraphics -framework QuartzCore -framework UIKit -framework OpenGLES")
   set(XCODE_ATTRIBUTE_SDKROOT ${IOS_SDK})
@@ -103,7 +105,9 @@ elseif (APPLE AND NOT CAUDIO_IOS_BUILD)
 
   # Set 10.5 as the base SDK by default
   set(XCODE_ATTRIBUTE_SDKROOT macosx)
-  set(CMAKE_OSX_SYSROOT macosx)
+  if (NOT CMAKE_OSX_SYSROOT)
+    set(CMAKE_OSX_SYSROOT macosx)
+  endif()	
   set(CMAKE_OSX_DEPLOYMENT_TARGET 10.5)
 
   if (NOT CMAKE_OSX_ARCHITECTURES)
