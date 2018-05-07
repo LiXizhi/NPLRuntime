@@ -4,8 +4,13 @@
 
 #pragma once
 
-#include <al.h>
-#include <alc.h>
+#ifdef PLATFORM_IPHONE
+    #include <OpenAL/al.h>
+    #include <OpenAL/alc.h>
+#else
+    #include <al.h>
+    #include <alc.h>
+#endif
 
 #include "IAudioDeviceContext.h"
 #include "cMemoryOverride.h"

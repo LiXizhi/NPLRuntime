@@ -4,8 +4,16 @@
 
 #pragma once
 
-#include <al.h>
-#include <alc.h>
+#ifdef PLATFORM_IPHONE
+    #include <OpenAL/al.h>
+    #include <OpenAL/alc.h>
+#else
+    #include <al.h>
+    #include <alc.h>
+#endif
+
+
+
 #include "cMutex.h"
 #include "cMemoryOverride.h"
 #include "IAudioCapture.h"
@@ -90,6 +98,7 @@ namespace cAudio
 
 		bool checkError();
 		ALenum convertAudioFormatEnum(AudioFormats format);
+
 		void signalEvent(Events sevent);
 	};
 };

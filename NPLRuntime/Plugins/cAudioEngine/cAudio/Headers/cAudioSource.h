@@ -6,9 +6,14 @@
 
 #include <list>
 #include <string>
-#include <vector>
-#include <al.h>
-#include <alc.h>
+
+#ifdef PLATFORM_IPHONE
+    #include <OpenAL/al.h>
+    #include <OpenAL/alc.h>
+#else
+    #include <al.h>
+    #include <alc.h>
+#endif
 
 #include "cMutex.h"
 #include "cEFXFunctions.h"

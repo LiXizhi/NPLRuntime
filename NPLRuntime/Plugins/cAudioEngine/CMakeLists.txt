@@ -96,7 +96,9 @@ if (CAUDIO_IOS_BUILD)
   set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.YOUR_COMPANY.\${PRODUCT_NAME:rfc1034identifier}")
 
   # set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_BIT))
-  set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_64_BIT))
+  if (NOT CMAKE_OSX_ARCHITECTURES)
+	set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_64_BIT))
+  endif()
 
   # add_definitions(-fno-regmove)
   # add_definitions(-falign-loops=16)
@@ -124,9 +126,12 @@ include(Dependencies)
 include(InstallDependencies)
 
 set(OPENAL_LIBTYPE "STATIC")
-add_subdirectory(DependenciesSource/openal-soft-1.18.2)
-set(OPENAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DependenciesSource/openal-soft-1.18.2)
-set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/AL)
+
+if (NOT IOS)
+	add_subdirectory(DependenciesSource/openal-soft-1.18.2)
+	set(OPENAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DependenciesSource/openal-soft-1.18.2)
+	set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/AL)
+endif()
 
 if(CAUDIO_ENABLE_OGG)
 	add_subdirectory(DependenciesSource/libogg-1.3.2)

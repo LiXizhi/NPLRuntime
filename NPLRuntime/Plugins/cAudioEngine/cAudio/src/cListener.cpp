@@ -4,7 +4,12 @@
 
 #include "cListener.h"
 #include "cEFXFunctions.h"
-#include <al.h>
+
+#ifdef PLATFORM_IPHONE
+    #include <OpenAL/al.h>
+#else
+    #include <al.h>
+#endif
 
 namespace cAudio
 {
