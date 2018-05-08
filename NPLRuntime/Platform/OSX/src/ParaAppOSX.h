@@ -49,9 +49,11 @@
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
 #include "ParaEngineAppBase.h"
+#include "MainLoopBase.h"
+
 namespace ParaEngine
 {
-	class CParaEngineAppOSX : public CParaEngineAppBase
+	class CParaEngineAppOSX : public CParaEngineAppBase, public MainLoopBase
 	{
 	public:
         CParaEngineAppOSX();
@@ -70,6 +72,7 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual int Run(HINSTANCE hInstance) override;
 
+        void handle_mainloop_timer(const boost::system::error_code& err);
 	protected:
 
 	};
