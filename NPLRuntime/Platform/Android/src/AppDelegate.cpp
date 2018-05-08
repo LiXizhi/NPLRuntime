@@ -549,16 +549,9 @@ void AppDelegate::OnPause()
 
 void AppDelegate::onCmdLine(const std::string& cmd)
 {
-	LOGI("onCmdLine: intent_data:%s", cmd.c_str());
-
-	if (!cmd.empty())
+	if (m_ParaEngineApp)
 	{
-		// msg = command line.
-		string msg = "msg=";
-		NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
-		msg.append(";");
-		SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-		CGlobals::GetEventsCenter()->FireEvent(event);
+		m_ParaEngineApp->onCmdLine(cmd);
 	}
 }
 
