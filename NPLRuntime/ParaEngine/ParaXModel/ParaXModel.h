@@ -32,6 +32,7 @@ namespace ParaEngine
 	public:
 		CParaXModel(const ParaXHeaderDef& xheader);
 		virtual ~CParaXModel(void);
+		void SetHeader(const ParaXHeaderDef& xheader);
 
 		/** in what method to render the mesh */
 		enum RENDER_METHOD{

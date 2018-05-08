@@ -47,10 +47,8 @@ using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
 
-CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
-	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
-	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
-	, m_vbState(NOT_SET)
+
+void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
 	// for xheader
 	m_header = xheader;
@@ -68,12 +66,21 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	//to support arg channel only texture animation  -clayman 2011.8.5
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
-	if(IsBmaxModel())
+	if (IsBmaxModel())
 		m_RenderMethod = BMAX_MODEL;
 	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
 	else
 		m_RenderMethod = NO_ANIM;
+}
+
+CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
+	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
+	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
+	, m_vbState(NOT_SET)
+{
+	// for xheader
+	m_header = xheader;
 
 	// set to default for all others.
 	memset(&m_objNum, 0, sizeof(m_objNum));
@@ -226,16 +233,12 @@ void CParaXModel::LoadTextures()
 		asset_ptr<TextureEntity> pTexture = textures[i];
 		if (pTexture)
 		{
-			if (pTexture->GetRawData())
+			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
+			if (pTexture != textures[i] && pTexture->GetRawData())
 			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 				textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
 				// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
 				pTexture->GiveupRawDataOwnership();
-			}
-			else
-			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 			}
 		}
 	}

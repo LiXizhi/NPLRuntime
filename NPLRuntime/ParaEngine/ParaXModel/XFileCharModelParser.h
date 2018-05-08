@@ -30,7 +30,7 @@ namespace ParaEngine
 		CParaXModel* LoadParaX_Body();
 		/** Finalize parser object. when the Parser will also be finalized in its destructor. */
 		void LoadParaX_Finalize();
-		
+
 	public:
 		/** get the raw data pointer at the specified offset.
 		* return NULL if raw data is not available
@@ -68,6 +68,9 @@ namespace ParaEngine
 		bool ReadAnimationBlock(const AnimationBlock* b, AnimatedShort& anims, int *gs);
 		bool ReadAnimationBlock(const AnimationBlock* b, Animated<float>& anims, int *gs);
 		bool ReadAnimationBlock(const AnimationBlock* b, Animated<Quaternion>& anims, int *gs);
+
+		const std::string& GetFilename() const;
+		void SetFilename(std::string val);
 	protected:
 		ParaXHeaderDef m_xheader;
 		const char*		 m_pRaw;
@@ -77,6 +80,7 @@ namespace ParaEngine
 		XFileDataObjectPtr m_pParaXRef;
 		XFileDataObjectPtr m_pD3DMesh;
 		XFileDataObjectPtr m_pD3DRootFrame;
+		std::string m_sFilename;
 		bool	m_bHeaderLoaded;
 	};
 }

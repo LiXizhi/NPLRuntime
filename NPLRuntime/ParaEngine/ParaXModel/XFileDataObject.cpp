@@ -31,7 +31,7 @@ void ParaEngine::XFileDataObject::Init(XFileParser& parser, const std::string& o
 		if (!ReadParaXHeader(parser))
 			OUTPUT_LOG("error loading vertices");
 	}
-	else if(objectName == "ParaXBody")
+	else if (objectName == "ParaXBody")
 	{
 		if (!ReadParaXBody(parser))
 			OUTPUT_LOG("error loading vertices");
@@ -127,7 +127,7 @@ void ParaEngine::XFileDataObject::Init(XFileParser& parser, const std::string& o
 	}
 	else if (objectName == "}")
 	{
-		
+
 	}
 	else
 	{
@@ -146,9 +146,9 @@ bool ParaEngine::XFileDataObject::ReadXDWORDArray(XFileParser& parser)
 {
 	// read count
 	int nCount = parser.ReadInt();
-	ResizeBuffer(nCount*4 + 4);
-	uint32* pData = (uint32*)(GetBuffer()+4);
-	for (int a = 0; a < nCount; a++){
+	ResizeBuffer(nCount * 4 + 4);
+	uint32* pData = (uint32*)(GetBuffer() + 4);
+	for (int a = 0; a < nCount; a++) {
 		pData[a] = (uint32)parser.ReadInt();
 	}
 	parser.ReadToEndOfDataObject();
@@ -252,6 +252,7 @@ bool XFileDataObject::ReadParaXHeader(XFileParser& parser)
 	xheader->IsAnimated = parser.ReadInt();
 	xheader->minExtent = parser.ReadVector3();
 	xheader->maxExtent = parser.ReadVector3();
+	xheader->nModelFormat = parser.ReadInt();
 	parser.ReadToEndOfDataObject();
 	return true;
 }
@@ -311,7 +312,7 @@ bool XFileDataObject::ReadXAttachments(XFileParser& parser)
 	int nAttachmentLookup = parser.ReadInt();
 	ResizeBuffer(8 + sizeof(ModelAttachmentDef)*nAttachments + 4 * nAttachmentLookup);
 	*((DWORD*)GetBuffer()) = nAttachments;
-	*((DWORD*)(GetBuffer()+4)) = nAttachmentLookup;
+	*((DWORD*)(GetBuffer() + 4)) = nAttachmentLookup;
 	ModelAttachmentDef *attachments = (ModelAttachmentDef *)(GetBuffer() + 8);
 	DWORD * attLookup = (DWORD *)(GetBuffer() + 8 + sizeof(ModelAttachmentDef)*nAttachments);
 
@@ -323,7 +324,7 @@ bool XFileDataObject::ReadXAttachments(XFileParser& parser)
 		ReadAnimationBlock(mad.unk, parser);
 	}
 	// attachment lookups
-	if (nAttachmentLookup > 0){
+	if (nAttachmentLookup > 0) {
 		for (int i = 0; i < nAttachmentLookup; ++i)
 		{
 			attLookup[i] = parser.ReadInt();
@@ -435,7 +436,7 @@ bool XFileDataObject::ReadXRenderPass(XFileParser& parser)
 			pass.blendmode = (int16)parser.ReadInt();
 			pass.order = parser.ReadInt();
 			pass.geoset = parser.ReadInt();
-			*(((DWORD*)&(pass.geoset))+1) = parser.ReadInt();
+			*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 		}
 	}
 	parser.ReadToEndOfDataObject();
@@ -519,7 +520,7 @@ bool XFileDataObject::ReadXParticleEmitters(XFileParser& parser)
 				ReadAnimationBlock(anim.params[a], parser);
 			}
 			anim.p.mid = parser.ReadFloat();
-			for (int i = 0; i < 3;++i)
+			for (int i = 0; i < 3; ++i)
 				anim.p.colors[i] = parser.ReadInt();
 			for (int i = 0; i < 3; ++i)
 				anim.p.sizes[i] = parser.ReadFloat();
@@ -639,7 +640,7 @@ bool XFileDataObject::ReadXAnimations(XFileParser& parser)
 		for (int i = 0; i < nAnimations; ++i)
 		{
 			ModelAnimation& anim = anims[i];
-			
+
 			anim.animID = parser.ReadInt();
 			anim.timeStart = parser.ReadInt();
 			anim.timeEnd = parser.ReadInt();
@@ -660,7 +661,7 @@ bool XFileDataObject::ReadXAnimations(XFileParser& parser)
 	return true;
 }
 
-void XFileDataObject::Write(ofstream& strm,XFileExporter& exporter)
+void XFileDataObject::Write(ofstream& strm, XFileExporter& exporter)
 {
 	if (m_sTemplateName.empty() && m_sName.empty())
 	{
@@ -680,19 +681,19 @@ void XFileDataObject::Write(ofstream& strm,XFileExporter& exporter)
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteChildren(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteChildren(ofstream& strm, XFileExporter& exporter)
 {
 	if (GetChildCount() > 0)
 	{
 		for (int i = 0; i < GetChildCount(); ++i)
 		{
 			auto pChildData = GetChild(i);
-			pChildData->Write(strm,exporter);
+			pChildData->Write(strm, exporter);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm, XFileExporter& exporter)
 {
 	if (m_buffer.empty())
 	{
@@ -701,85 +702,85 @@ void ParaEngine::XFileDataObject::WriteInfo(ofstream& strm,XFileExporter& export
 
 	if (m_sTemplateName == "ParaXHeader")
 	{
-		WriteParaXHeader(strm,exporter);
+		WriteParaXHeader(strm, exporter);
 	}
 	else if (m_sTemplateName == "ParaXBody")
 	{
-		WriteParaXBody(strm,exporter);
+		WriteParaXBody(strm, exporter);
 	}
 	else if (m_sTemplateName == "XDWORDArray")
 	{
-		WriteXDWORDArray(strm,exporter);
+		WriteXDWORDArray(strm, exporter);
 	}
 	else if (m_sTemplateName == "XVertices")
 	{
-		WriteXVertices(strm,exporter);
+		WriteXVertices(strm, exporter);
 	}
 	else if (m_sTemplateName == "XTextures")
 	{
-		WriteXTextures(strm,exporter);
+		WriteXTextures(strm, exporter);
 	}
 	else if (m_sTemplateName == "XAttachments")
 	{
-		WriteXAttachments(strm,exporter);
+		WriteXAttachments(strm, exporter);
 	}
 	else if (m_sTemplateName == "XTransparency")
 	{
-		WriteXTransparency(strm,exporter);
+		WriteXTransparency(strm, exporter);
 	}
 	else if (m_sTemplateName == "XViews")
 	{
-		WriteXViews(strm,exporter);
+		WriteXViews(strm, exporter);
 	}
 	else if (m_sTemplateName == "XIndices0")
 	{
-		WriteXIndices0(strm,exporter);
+		WriteXIndices0(strm, exporter);
 	}
 	else if (m_sTemplateName == "XGeosets")
 	{
-		WriteXGeosets(strm,exporter);
+		WriteXGeosets(strm, exporter);
 	}
 	else if (m_sTemplateName == "XRenderPass")
 	{
-		WriteXRenderPass(strm,exporter);
+		WriteXRenderPass(strm, exporter);
 	}
 	else if (m_sTemplateName == "XBones")
 	{
-		WriteXBones(strm,exporter);
+		WriteXBones(strm, exporter);
 	}
 	else if (m_sTemplateName == "XTexAnims")
 	{
-		WriteXTexAnims(strm,exporter);
+		WriteXTexAnims(strm, exporter);
 	}
 	else if (m_sTemplateName == "XParticleEmitters")
 	{
-		WriteXParticleEmitters(strm,exporter);
+		WriteXParticleEmitters(strm, exporter);
 	}
 	else if (m_sTemplateName == "XRibbonEmitters")
 	{
-		WriteXRibbonEmitters(strm,exporter);
+		WriteXRibbonEmitters(strm, exporter);
 	}
 	else if (m_sTemplateName == "XColors")
 	{
-		WriteXColors(strm,exporter);
+		WriteXColors(strm, exporter);
 	}
 	else if (m_sTemplateName == "XCameras")
 	{
-		WriteXCameras(strm,exporter);
+		WriteXCameras(strm, exporter);
 	}
 	else if (m_sTemplateName == "XLights")
 	{
-		WriteXLights(strm,exporter);
+		WriteXLights(strm, exporter);
 	}
 	else if (m_sTemplateName == "XAnimations")
 	{
-		WriteXAnimations(strm,exporter);
+		WriteXAnimations(strm, exporter);
 	}
 
 	exporter.WriteIntAndFloatArray(strm);
 }
 
-void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm, XFileExporter& exporter)
 {
 	ParaXHeaderDef* xheader = (ParaXHeaderDef*)GetBuffer();
 
@@ -792,7 +793,7 @@ void ParaEngine::XFileDataObject::WriteParaXHeader(ofstream& strm,XFileExporter&
 	exporter.WriteInt(strm, xheader->nModelFormat);
 }
 
-void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm, XFileExporter& exporter)
 {
 	// ParaXBody的子对象会在CParaXModelWriter中遍历导出
 	/*for (int i = 0;i<GetChildCount();++i)
@@ -803,7 +804,7 @@ void ParaEngine::XFileDataObject::WriteParaXBody(ofstream& strm,XFileExporter& e
 	}*/
 }
 
-void ParaEngine::XFileDataObject::WriteXDWORDArray(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXDWORDArray(ofstream& strm, XFileExporter& exporter)
 {
 	int nCount = (GetSize() - 4) / 4;
 	exporter.WriteInt(strm, nCount);
@@ -816,7 +817,7 @@ void ParaEngine::XFileDataObject::WriteXDWORDArray(ofstream& strm,XFileExporter&
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXVertices(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXVertices(ofstream& strm, XFileExporter& exporter)
 {
 	XVerticesDef* pData = (XVerticesDef*)GetBuffer();
 	exporter.WriteInt(strm, pData->nType);
@@ -825,7 +826,7 @@ void ParaEngine::XFileDataObject::WriteXVertices(ofstream& strm,XFileExporter& e
 	exporter.WriteInt(strm, pData->ofsVertices);
 }
 
-void ParaEngine::XFileDataObject::WriteXTextures(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXTextures(ofstream& strm, XFileExporter& exporter)
 {
 	struct ModelTextureDef_ {
 		uint32 type;
@@ -846,7 +847,7 @@ void ParaEngine::XFileDataObject::WriteXTextures(ofstream& strm,XFileExporter& e
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXAttachments(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXAttachments(ofstream& strm, XFileExporter& exporter)
 {
 	int nAttachments = *((DWORD*)GetBuffer());
 	int nAttachmentLookup = *((DWORD*)(GetBuffer() + 4));
@@ -859,7 +860,7 @@ void ParaEngine::XFileDataObject::WriteXAttachments(ofstream& strm,XFileExporter
 		exporter.WriteInt(strm, mad.id);
 		exporter.WriteInt(strm, mad.bone);
 		exporter.WriteVector3(strm, mad.pos);
-		WriteAnimationBlock(strm,exporter, mad.unk);
+		WriteAnimationBlock(strm, exporter, mad.unk);
 	}
 	// attachment lookups
 	if (nAttachmentLookup > 0) {
@@ -870,7 +871,7 @@ void ParaEngine::XFileDataObject::WriteXAttachments(ofstream& strm,XFileExporter
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXTransparency(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXTransparency(ofstream& strm, XFileExporter& exporter)
 {
 	int nTransparency = *((DWORD*)GetBuffer());
 	if (nTransparency > 0)
@@ -879,12 +880,12 @@ void ParaEngine::XFileDataObject::WriteXTransparency(ofstream& strm,XFileExporte
 		ModelTransDef *transDefs = (ModelTransDef*)(GetBuffer() + 4);
 		for (int i = 0; i < nTransparency; ++i)
 		{
-			WriteAnimationBlock(strm,exporter, transDefs[i].trans);
+			WriteAnimationBlock(strm, exporter, transDefs[i].trans);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXViews(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXViews(ofstream& strm, XFileExporter& exporter)
 {
 	// no need to do anything, since there is only one view. all view 0 information are duplicated in other nodes.
 	int nView = *((DWORD*)GetBuffer());
@@ -909,14 +910,14 @@ void ParaEngine::XFileDataObject::WriteXViews(ofstream& strm,XFileExporter& expo
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXIndices0(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXIndices0(ofstream& strm, XFileExporter& exporter)
 {
 	Indice0Def * pData = (Indice0Def*)GetBuffer();
 	exporter.WriteInt(strm, pData->nIndices);
 	exporter.WriteInt(strm, pData->ofsIndices);
 }
 
-void ParaEngine::XFileDataObject::WriteXGeosets(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXGeosets(ofstream& strm, XFileExporter& exporter)
 {
 	int nGeosets = *((DWORD*)GetBuffer());
 	if (nGeosets > 0)
@@ -941,7 +942,7 @@ void ParaEngine::XFileDataObject::WriteXGeosets(ofstream& strm,XFileExporter& ex
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXRenderPass(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXRenderPass(ofstream& strm, XFileExporter& exporter)
 {
 	int nRenderPasses = *((DWORD*)GetBuffer());
 	if (nRenderPasses > 0)
@@ -968,7 +969,7 @@ void ParaEngine::XFileDataObject::WriteXRenderPass(ofstream& strm,XFileExporter&
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXBones(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXBones(ofstream& strm, XFileExporter& exporter)
 {
 	int nBones = *((DWORD*)GetBuffer());
 	if (nBones > 0)
@@ -982,15 +983,15 @@ void ParaEngine::XFileDataObject::WriteXBones(ofstream& strm,XFileExporter& expo
 			exporter.WriteInt(strm, bone.flags);
 			exporter.WriteShort(strm, bone.parent);
 			exporter.WriteShort(strm, bone.boneid);
-			WriteAnimationBlock(strm,exporter, bone.translation);
-			WriteAnimationBlock(strm,exporter, bone.rotation);
-			WriteAnimationBlock(strm,exporter, bone.scaling);
+			WriteAnimationBlock(strm, exporter, bone.translation);
+			WriteAnimationBlock(strm, exporter, bone.rotation);
+			WriteAnimationBlock(strm, exporter, bone.scaling);
 			exporter.WriteVector3(strm, bone.pivot);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXTexAnims(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXTexAnims(ofstream& strm, XFileExporter& exporter)
 {
 	int nTexAnims = *((DWORD*)GetBuffer());
 	if (nTexAnims > 0)
@@ -1000,14 +1001,14 @@ void ParaEngine::XFileDataObject::WriteXTexAnims(ofstream& strm,XFileExporter& e
 		for (int i = 0; i < nTexAnims; ++i)
 		{
 			ModelTexAnimDef& anim = texanims[i];
-			WriteAnimationBlock(strm, exporter,anim.rot);
-			WriteAnimationBlock(strm, exporter,anim.trans);
-			WriteAnimationBlock(strm, exporter,anim.scale);
+			WriteAnimationBlock(strm, exporter, anim.rot);
+			WriteAnimationBlock(strm, exporter, anim.trans);
+			WriteAnimationBlock(strm, exporter, anim.scale);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXParticleEmitters(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXParticleEmitters(ofstream& strm, XFileExporter& exporter)
 {
 	int nParticleEmitters = *((DWORD*)GetBuffer());
 	if (nParticleEmitters > 0)
@@ -1034,7 +1035,7 @@ void ParaEngine::XFileDataObject::WriteXParticleEmitters(ofstream& strm,XFileExp
 			exporter.WriteInt(strm, anim.rows);
 			for (int a = 0; a < 10; a++)
 			{
-				WriteAnimationBlock(strm, exporter,anim.params[a]);
+				WriteAnimationBlock(strm, exporter, anim.params[a]);
 			}
 			exporter.WriteFloat(strm, anim.p.mid);
 			for (int i = 0; i < 3; ++i)
@@ -1051,12 +1052,12 @@ void ParaEngine::XFileDataObject::WriteXParticleEmitters(ofstream& strm,XFileExp
 			exporter.WriteFloat(strm, anim.p.rotation);
 			for (int i = 0; i < 16; ++i)
 				exporter.WriteFloat(strm, anim.p.f2[i]);
-			WriteAnimationBlock(strm, exporter,anim.unk);
+			WriteAnimationBlock(strm, exporter, anim.unk);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXRibbonEmitters(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXRibbonEmitters(ofstream& strm, XFileExporter& exporter)
 {
 	int nRibbonEmitters = *((DWORD*)GetBuffer());
 	if (nRibbonEmitters > 0)
@@ -1073,22 +1074,22 @@ void ParaEngine::XFileDataObject::WriteXRibbonEmitters(ofstream& strm,XFileExpor
 			exporter.WriteInt(strm, anim.ofsTextures);
 			exporter.WriteInt(strm, anim.nUnknown);
 			exporter.WriteInt(strm, anim.ofsUnknown);
-			WriteAnimationBlock(strm, exporter,anim.color);
-			WriteAnimationBlock(strm, exporter,anim.opacity);
-			WriteAnimationBlock(strm, exporter,anim.above);
-			WriteAnimationBlock(strm, exporter,anim.below);
+			WriteAnimationBlock(strm, exporter, anim.color);
+			WriteAnimationBlock(strm, exporter, anim.opacity);
+			WriteAnimationBlock(strm, exporter, anim.above);
+			WriteAnimationBlock(strm, exporter, anim.below);
 			exporter.WriteFloat(strm, anim.res);
 			exporter.WriteFloat(strm, anim.length);
 			exporter.WriteFloat(strm, anim.unk);
 			exporter.WriteInt(strm, anim.s1);
 			exporter.WriteInt(strm, anim.s2);
-			WriteAnimationBlock(strm, exporter,anim.unk1);
-			WriteAnimationBlock(strm, exporter,anim.unk2);
+			WriteAnimationBlock(strm, exporter, anim.unk1);
+			WriteAnimationBlock(strm, exporter, anim.unk2);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXColors(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXColors(ofstream& strm, XFileExporter& exporter)
 {
 	int nColors = *((DWORD*)GetBuffer());
 	if (nColors > 0)
@@ -1097,13 +1098,13 @@ void ParaEngine::XFileDataObject::WriteXColors(ofstream& strm,XFileExporter& exp
 		ModelColorDef *colorDefs = (ModelColorDef*)(GetBuffer() + 4);
 		for (int i = 0; i < nColors; ++i)
 		{
-			WriteAnimationBlock(strm, exporter,colorDefs[i].color);
-			WriteAnimationBlock(strm, exporter,colorDefs[i].opacity);
+			WriteAnimationBlock(strm, exporter, colorDefs[i].color);
+			WriteAnimationBlock(strm, exporter, colorDefs[i].opacity);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXCameras(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXCameras(ofstream& strm, XFileExporter& exporter)
 {
 	int nCameras = (GetSize() - 4) / sizeof(ModelCameraDef);
 	exporter.WriteInt(strm, nCameras);
@@ -1118,16 +1119,16 @@ void ParaEngine::XFileDataObject::WriteXCameras(ofstream& strm,XFileExporter& ex
 			exporter.WriteFloat(strm, camera.fov);
 			exporter.WriteFloat(strm, camera.farclip);
 			exporter.WriteFloat(strm, camera.nearclip);
-			WriteAnimationBlock(strm,exporter, camera.transPos);
+			WriteAnimationBlock(strm, exporter, camera.transPos);
 			exporter.WriteVector3(strm, camera.pos);
-			WriteAnimationBlock(strm, exporter,camera.transTarget);
+			WriteAnimationBlock(strm, exporter, camera.transTarget);
 			exporter.WriteVector3(strm, camera.target);
-			WriteAnimationBlock(strm, exporter,camera.rot);
+			WriteAnimationBlock(strm, exporter, camera.rot);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXLights(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXLights(ofstream& strm, XFileExporter& exporter)
 {
 	int nLights = *((DWORD*)GetBuffer());
 	if (nLights > 0)
@@ -1140,18 +1141,18 @@ void ParaEngine::XFileDataObject::WriteXLights(ofstream& strm,XFileExporter& exp
 			exporter.WriteInt(strm, light.type);
 			exporter.WriteInt(strm, light.bone);
 			exporter.WriteVector3(strm, light.pos);
-			WriteAnimationBlock(strm, exporter,light.ambColor);
-			WriteAnimationBlock(strm, exporter,light.ambIntensity);
-			WriteAnimationBlock(strm, exporter,light.color);
-			WriteAnimationBlock(strm, exporter,light.intensity);
-			WriteAnimationBlock(strm, exporter,light.attStart);
-			WriteAnimationBlock(strm, exporter,light.attEnd);
-			WriteAnimationBlock(strm, exporter,light.unk1);
+			WriteAnimationBlock(strm, exporter, light.ambColor);
+			WriteAnimationBlock(strm, exporter, light.ambIntensity);
+			WriteAnimationBlock(strm, exporter, light.color);
+			WriteAnimationBlock(strm, exporter, light.intensity);
+			WriteAnimationBlock(strm, exporter, light.attStart);
+			WriteAnimationBlock(strm, exporter, light.attEnd);
+			WriteAnimationBlock(strm, exporter, light.unk1);
 		}
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteXAnimations(ofstream& strm,XFileExporter& exporter)
+void ParaEngine::XFileDataObject::WriteXAnimations(ofstream& strm, XFileExporter& exporter)
 {
 	int nAnimations = *((DWORD*)GetBuffer());
 	if (nAnimations > 0)
@@ -1180,7 +1181,7 @@ void ParaEngine::XFileDataObject::WriteXAnimations(ofstream& strm,XFileExporter&
 	}
 }
 
-void ParaEngine::XFileDataObject::WriteAnimationBlock(ofstream& strm,XFileExporter& exporter, AnimationBlock& unk)
+void ParaEngine::XFileDataObject::WriteAnimationBlock(ofstream& strm, XFileExporter& exporter, AnimationBlock& unk)
 {
 	exporter.WriteShort(strm, unk.type);
 	exporter.WriteShort(strm, unk.seq);
