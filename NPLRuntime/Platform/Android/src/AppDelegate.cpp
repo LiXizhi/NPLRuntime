@@ -419,7 +419,6 @@ AppDelegate::AppDelegate()
 	:m_State(nullptr)
 	, m_ParaEngineApp(nullptr)
 	, m_isPaused(false)
-	, m_main_timer(m_main_io_service)
 	, m_fRefreshTimerInterval(1.0f / 60.0f)
 {
 
@@ -462,8 +461,8 @@ void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 			// OUTPUT_LOG("%f", fNextInterval);
 		}
 
-		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval * 1000)));
-		m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
+
+		NextLoop((int)(fNextInterval * 1000), &AppDelegate::handle_mainloop_timer, this);
 	}
 }
 
@@ -489,10 +488,10 @@ void AppDelegate::Run(struct android_app* app)
 #define USE_ASYNC_TIMER_MAIN_LOOP
 #ifdef USE_ASYNC_TIMER_MAIN_LOOP
 	// start the main loop timer. 
-	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
-	m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
 
-	m_main_io_service.run();
+	NextLoop(50, &AppDelegate::handle_mainloop_timer, this);
+	MainLoopRun();
+
 #else
 	while (!m_State->destroyRequested)
 	{
