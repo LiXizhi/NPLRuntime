@@ -9,7 +9,15 @@ namespace ParaEngine
 	class CAudioSource2 : public ParaEngine::intrusive_ptr_single_thread_base, public IAudioSourceEventHandler
 	{
 	public:
-		CAudioSource2(const char* sName, IParaAudioSource* pSource=NULL):m_name(sName), m_pSource(pSource), m_nLoopCount(0), m_status(AUDIO_FLAG_Uninitialized), m_bReleaseOnStop(false), m_bIsAsyncLoadingWhileLoopPlaying(false){}
+		CAudioSource2(const char* sName, IParaAudioSource* pSource=NULL)
+			:m_name(sName)
+			,m_pSource(pSource)
+			,m_nLoopCount(0)
+			,m_status(AUDIO_FLAG_Uninitialized)
+			,m_bReleaseOnStop(false)
+			,m_bIsAsyncLoadingWhileLoopPlaying(false)
+			,m_nStartFramNum(0)
+		{}
 		~CAudioSource2(){};
 		/**
 		* stop a wave file
@@ -124,9 +132,10 @@ namespace ParaEngine
 		ParaAudioFlagsEnum m_status;
 		/** this is true, if an audio resource is being loop played but without being downloaded yet. */
 		bool m_bIsAsyncLoadingWhileLoopPlaying;
-private:
-	std::string m_filename;
-	};
+		unsigned int m_nStartFramNum;
+	private:
+		std::string m_filename;	
+};
 	typedef ParaIntrusivePtr<CAudioSource2> CAudioSource2_ptr;
 
 	/**
@@ -317,6 +326,8 @@ private:
 
 		void PauseAll();
 		void ResumeAll();
+
+		const AudioFileMap_type& getAudioMap()const;
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;
