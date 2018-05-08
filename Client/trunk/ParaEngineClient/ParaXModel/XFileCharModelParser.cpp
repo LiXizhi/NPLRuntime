@@ -279,7 +279,7 @@ const std::string& ParaEngine::XFileCharModelParser::GetFilename() const
 	return m_sFilename;
 }
 
-void ParaEngine::XFileCharModelParser::SetFilename(std::string val)
+void ParaEngine::XFileCharModelParser::SetFilename(const std::string& val)
 {
 	m_sFilename = val;
 }
@@ -514,7 +514,8 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		xmesh.m_atts.reserve(nAttachments);
 		for (int i = 0; i < nAttachments; ++i) {
 			ModelAttachment att;
-			const ModelAttachmentDef& mad = attachments[i];
+			ModelAttachmentDef mad;
+			memcpy(&mad, attachments + i, sizeof(ModelAttachmentDef));
 			att.pos = mad.pos;
 			att.bone = mad.bone;
 			att.id = mad.id;

@@ -353,7 +353,7 @@ namespace ParaEngine
 
 		float m_trans;
 		std::vector<ModelAttachment> m_atts;
-		int m_attLookup[MAX_MODEL_ATTACHMENTS];
+		int32 m_attLookup[MAX_MODEL_ATTACHMENTS];
 
 		/** default to unitY */
 		Vector3 m_vNeckYawAxis;
@@ -361,7 +361,7 @@ namespace ParaEngine
 		Vector3 m_vNeckPitchAxis;
 
 		/** a mapping from known bone id to bone index. */
-		int m_boneLookup[MAX_KNOWN_BONE_NODE];
+		int32 m_boneLookup[MAX_KNOWN_BONE_NODE];
 
 	private:
 		enum VERTEX_BUFFER_STATE

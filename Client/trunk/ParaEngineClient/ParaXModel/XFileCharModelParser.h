@@ -71,7 +71,7 @@ namespace ParaEngine
 		bool ReadAnimationBlock(const AnimationBlock* b, Animated<Quaternion>& anims, int *gs);
 
 		const std::string& GetFilename() const;
-		void SetFilename(std::string val);
+		void SetFilename(const std::string& val);
 	protected:
 		ParaXHeaderDef m_xheader;
 		const char*		 m_pRaw;

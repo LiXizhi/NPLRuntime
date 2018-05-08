@@ -63,6 +63,13 @@ void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 	animBones = (m_header.IsAnimated&(1 << 2)) > 0;
 	//to support arg channel only texture animation  -clayman 2011.8.5
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
+
+	if (IsBmaxModel())
+		m_RenderMethod = BMAX_MODEL;
+	else if (animated)
+		m_RenderMethod = SOFT_ANIM;
+	else
+		m_RenderMethod = NO_ANIM;
 }
 
 CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
@@ -71,14 +78,7 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	, m_vbState(NOT_SET)
 {
 	SetHeader(xheader);
-
-	if (IsBmaxModel())
-		m_RenderMethod = BMAX_MODEL;
-	else if (animated)
-		m_RenderMethod = SOFT_ANIM;
-	else
-		m_RenderMethod = NO_ANIM;
-
+	
 	// set to default for all others.
 	memset(&m_objNum, 0, sizeof(m_objNum));
 	m_trans = 1.0f;
@@ -673,6 +673,10 @@ ModelAttachment& CParaXModel::NewAttachment(bool bOverwrite, int nAttachmentID, 
 
 			att.bone = nBoneIndex;
 			att.pos = pivotPoint;
+			m_objNum.nAttachments = (int)m_atts.size();
+
+			if((int)m_objNum.nAttachLookup <= nAttachmentID)
+				m_objNum.nAttachLookup = nAttachmentID + 1;
 			return att;
 		}
 	}
