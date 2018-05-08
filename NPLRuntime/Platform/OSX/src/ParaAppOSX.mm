@@ -98,15 +98,4 @@ int ParaEngine::CParaEngineAppOSX::Run(HINSTANCE hInstance)
 	return 0;
 }
 
-void  ParaEngine::CParaEngineAppOSX::onCmdLine(const std::string& cmd)
-{
-    OUTPUT_LOG("onCmdLine : %s", cmd.c_str());
-    if (!cmd.empty())
-    {
-        std::string msg = "msg=";
-        NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
-        msg.append(";");
-        SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-        CGlobals::GetEventsCenter()->FireEvent(event);
-    }
-}
+
