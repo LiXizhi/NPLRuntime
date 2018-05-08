@@ -74,22 +74,31 @@ option(CAUDIO_ENABLE_REROUTE_STL_ALLOCATIONS "Reroute STL memory allocations" TR
 option(CAUDIO_ENABLE_MEMORYTRACKER "Enable memory leak tracker" FALSE)
 option(CAUDIO_ENABLE_MEMORY_LOG_ALL_ALLOCATIONS "Enable log all memory allocations" FALSE)
 option(CAUDIO_ENABLE_MEMORY_STATISTICS "Enable memory statistics generator" FALSE)
-if(APPLE)
-	option(CAUDIO_IOS_BUILD "Build for ios" FALSE)
+#if(APPLE)
+#	option(CAUDIO_IOS_BUILD "Build for ios" FALSE)
+#endif()
+if (IOS)
+	set(CAUDIO_IOS_BUILD TRUE)
+else()
+	set(CAUDIO_IOS_BUILD FALSE)
 endif()
 
 include(ConfigureBuild)
 
 if (CAUDIO_IOS_BUILD)
   # Set build variables
-  set(CMAKE_OSX_SYSROOT ${IOS_SDK})
+  if (NOT CMAKE_OSX_SYSROOT)
+	set(CMAKE_OSX_SYSROOT ${IOS_SDK})
+  endif()
   set(CMAKE_OSX_DEPLOYMENT_TARGET "")
   set(CMAKE_EXE_LINKER_FLAGS "-framework Foundation -framework CoreGraphics -framework QuartzCore -framework UIKit -framework OpenGLES")
   set(XCODE_ATTRIBUTE_SDKROOT ${IOS_SDK})
   set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.YOUR_COMPANY.\${PRODUCT_NAME:rfc1034identifier}")
 
   # set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_BIT))
-  set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_64_BIT))
+  if (NOT CMAKE_OSX_ARCHITECTURES)
+	set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_64_BIT))
+  endif()
 
   # add_definitions(-fno-regmove)
   # add_definitions(-falign-loops=16)
@@ -103,7 +112,9 @@ elseif (APPLE AND NOT CAUDIO_IOS_BUILD)
 
   # Set 10.5 as the base SDK by default
   set(XCODE_ATTRIBUTE_SDKROOT macosx)
-  set(CMAKE_OSX_SYSROOT macosx)
+  if (NOT CMAKE_OSX_SYSROOT)
+    set(CMAKE_OSX_SYSROOT macosx)
+  endif()	
   set(CMAKE_OSX_DEPLOYMENT_TARGET 10.5)
 
   if (NOT CMAKE_OSX_ARCHITECTURES)
@@ -115,9 +126,12 @@ include(Dependencies)
 include(InstallDependencies)
 
 set(OPENAL_LIBTYPE "STATIC")
-add_subdirectory(DependenciesSource/openal-soft-1.18.2)
-set(OPENAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DependenciesSource/openal-soft-1.18.2)
-set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/AL)
+
+if (NOT IOS)
+	add_subdirectory(DependenciesSource/openal-soft-1.18.2)
+	set(OPENAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/DependenciesSource/openal-soft-1.18.2)
+	set(OPENAL_INCLUDE_DIRS ${OPENAL_DIR}/include ${OPENAL_DIR}/include/AL)
+endif()
 
 if(CAUDIO_ENABLE_OGG)
 	add_subdirectory(DependenciesSource/libogg-1.3.2)

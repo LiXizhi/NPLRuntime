@@ -56,6 +56,8 @@ namespace ParaEngine
 		virtual bool GetAutoLowerFrameRateWhenNotFocused() override;
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
+
+		virtual void onCmdLine(const std::string& cmd);
 		
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.

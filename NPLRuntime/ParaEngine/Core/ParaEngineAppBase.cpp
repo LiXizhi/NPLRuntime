@@ -935,6 +935,21 @@ bool ParaEngine::CParaEngineAppBase::GetToggleSoundWhenNotFocused()
 	return false;
 }
 
+void ParaEngine::CParaEngineAppBase::onCmdLine(const std::string& cmd)
+{
+	OUTPUT_LOG("onCmdLine: %s", cmd.c_str());
+
+	if (!cmd.empty())
+	{
+		// msg = command line.
+		string msg = "msg=";
+		NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
+		msg.append(";");
+		SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
+		CGlobals::GetEventsCenter()->FireEvent(event);
+	}
+}
+
 void ParaEngine::CParaEngineAppBase::SetRefreshTimer(float fTimeInterval, int nFrameRateControl /*= 0*/)
 {
 	if (nFrameRateControl == 1)

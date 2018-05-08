@@ -85,28 +85,31 @@ bool ParaEngine::CParaEngineAppOSX::GetToggleSoundWhenNotFocused()
 	return true;
 }
 
+void ParaEngine::CParaEngineAppOSX::handle_mainloop_timer(const boost::system::error_code& err)
+{
+    if (!err)
+    {
+        auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
+        if (!pWindow->ShouldClose())
+        {
+            pWindow->PollEvents();
+            
+            double fNextInterval = 0.033;
+            this->DoWork();
+            fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
+            fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
+            
+            NextLoop((int)(fNextInterval * 1000), &CParaEngineAppOSX::handle_mainloop_timer, this);
+        }
+    }
+}
+
 int ParaEngine::CParaEngineAppOSX::Run(HINSTANCE hInstance)
 {
-	auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
-
-	while (!pWindow->ShouldClose())
-	{
-		pWindow->PollEvents();
-		this->DoWork();
-	}
+    NextLoop(50, &CParaEngineAppOSX::handle_mainloop_timer, this);
+    MainLoopRun();
 	
 	return 0;
 }
 
-void  ParaEngine::CParaEngineAppOSX::onCmdLine(const std::string& cmd)
-{
-    OUTPUT_LOG("onCmdLine : %s", cmd.c_str());
-    if (!cmd.empty())
-    {
-        std::string msg = "msg=";
-        NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
-        msg.append(";");
-        SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-        CGlobals::GetEventsCenter()->FireEvent(event);
-    }
-}
+

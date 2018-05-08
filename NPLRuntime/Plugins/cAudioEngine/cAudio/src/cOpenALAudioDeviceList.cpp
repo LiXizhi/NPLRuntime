@@ -3,8 +3,14 @@
 // For conditions of distribution and use, see copyright notice in cAudio.h
 
 #include "cOpenALAudioDeviceList.h"
-#include <al.h>
-#include <alc.h>
+
+#ifdef PLATFORM_IPHONE
+    #include <OpenAL/al.h>
+    #include <OpenAL/alc.h>
+#else
+    #include <al.h>
+    #include <alc.h>
+#endif
 
 namespace cAudio
 {
