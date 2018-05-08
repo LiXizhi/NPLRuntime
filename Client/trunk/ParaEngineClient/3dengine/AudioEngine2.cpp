@@ -831,7 +831,6 @@ void ParaEngine::CAudioSource2::onRelease()
 
 void ParaEngine::CAudioSource2::onPlay()
 {
-	// record the start time in milliseconds
 #ifdef DEBUG_AUDIO
 	OUTPUT_LOG("audio source onPlay: %s \n", m_name.c_str());
 #endif
