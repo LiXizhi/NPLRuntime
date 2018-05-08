@@ -405,6 +405,15 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXHeader(XFileDataObjectPtr pDa
 	memcpy(pData->GetBuffer(), &(m_pMesh->GetHeader()), sizeof(ParaXHeaderDef));
 	ParaXHeaderDef* stHead = (ParaXHeaderDef*)pData->GetBuffer();
 	stHead->IsAnimated = CountIsAnimatedValue();
+
+	stHead->nModelFormat |= PARAX_FORMAT_EXTENDED_HEADER2;
+	ParaXHeaderDef2 header2;
+	memset(&header2, 0, sizeof(ParaXHeaderDef2));
+	header2.IsAnimated = stHead->IsAnimated;
+	header2.neck_yaw_axis = m_pMesh->m_vNeckYawAxis;
+	header2.neck_pitch_axis = m_pMesh->m_vNeckPitchAxis;
+	stHead->nOffsetAdditionalHeader = m_pRawData->AddRawData((const char*)(&header2), sizeof(ParaXHeaderDef2));
+
 	return true;
 }
 

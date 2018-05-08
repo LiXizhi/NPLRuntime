@@ -355,7 +355,7 @@ namespace ParaEngine
 
 		float m_trans;
 		std::vector<ModelAttachment> m_atts;
-		int m_attLookup[MAX_MODEL_ATTACHMENTS];
+		int32 m_attLookup[MAX_MODEL_ATTACHMENTS];
 
 		/** default to unitY */
 		Vector3 m_vNeckYawAxis;

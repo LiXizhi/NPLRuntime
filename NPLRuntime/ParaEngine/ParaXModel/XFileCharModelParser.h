@@ -18,7 +18,7 @@ namespace ParaEngine
 		~XFileCharModelParser();
 	public:
 		/** parse parax model */
-		CParaXModel* ParseParaXModel();
+		CParaXModel * ParseParaXModel();
 
 		/** Load through a ParaXParser object.
 		* enumerate all top-level nodes, and save ParaX header struct and nodes data pointers.
@@ -41,6 +41,7 @@ namespace ParaEngine
 		//** read the header to xheader. */
 		bool ReadParaXHeader(ParaXHeaderDef& xheader, XFileDataObjectPtr pFileData);
 		/** read all sub data*/
+		bool ReadParaXHeader2(CParaXModel& xmesh);
 		bool ReadXGlobalSequences(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
 		bool ReadXVertices(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
 		bool ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr pFileData);
@@ -70,7 +71,7 @@ namespace ParaEngine
 		bool ReadAnimationBlock(const AnimationBlock* b, Animated<Quaternion>& anims, int *gs);
 
 		const std::string& GetFilename() const;
-		void SetFilename(std::string val);
+		void SetFilename(const std::string& val);
 	protected:
 		ParaXHeaderDef m_xheader;
 		const char*		 m_pRaw;

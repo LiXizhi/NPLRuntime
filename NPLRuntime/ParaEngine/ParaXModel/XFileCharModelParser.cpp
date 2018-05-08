@@ -92,6 +92,20 @@ bool ParaEngine::XFileCharModelParser::LoadParaX_Header()
 }
 
 
+bool ParaEngine::XFileCharModelParser::ReadParaXHeader2(CParaXModel& xmesh)
+{
+	if (m_xheader.nModelFormat & PARAX_FORMAT_EXTENDED_HEADER2)
+	{
+		ParaXHeaderDef2 header2;
+		memcpy(&header2, GetRawData(m_xheader.nOffsetAdditionalHeader), sizeof(ParaXHeaderDef2));
+		m_xheader.IsAnimated = header2.IsAnimated;
+		xmesh.SetHeader(m_xheader);
+		xmesh.m_vNeckYawAxis = header2.neck_yaw_axis;
+		xmesh.m_vNeckPitchAxis = header2.neck_pitch_axis;
+	}
+	return true;
+}
+
 CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 {
 	// load header if not done so yet.
@@ -114,6 +128,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		if (m_xheader.type == PARAX_MODEL_ANIMATED || m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(m_xheader);
+			ReadParaXHeader2(*pMesh);
 
 			// Scan for data nodes inside the ParaXBody
 			int nCount = m_pParaXBody->GetChildCount();
@@ -212,7 +227,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 				{
 					ModelRenderPass& p = pMesh->passes[j];
 					int nLockedNum = p.indexCount / 3;
-					if (nLockedNum>0 && !(p.is_rigid_body))
+					if (nLockedNum > 0 && !(p.is_rigid_body))
 					{
 						bool bIsRigidBody = true;
 						ModelVertex * origVertices = pMesh->m_origVertices;
@@ -264,7 +279,7 @@ const std::string& ParaEngine::XFileCharModelParser::GetFilename() const
 	return m_sFilename;
 }
 
-void ParaEngine::XFileCharModelParser::SetFilename(std::string val)
+void ParaEngine::XFileCharModelParser::SetFilename(const std::string& val)
 {
 	m_sFilename = val;
 }
@@ -278,6 +293,7 @@ void ParaEngine::XFileCharModelParser::LoadParaX_Finalize()
 	m_pD3DRootFrame.reset();
 	m_pRoot.reset();
 }
+
 
 #define DEFINE_ReadAnimationBlock(DECL_TYPE, TYPE) \
 bool XFileCharModelParser::ReadAnimationBlock(const AnimationBlock* b, DECL_TYPE& anims,int *gs)\
@@ -498,7 +514,8 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		xmesh.m_atts.reserve(nAttachments);
 		for (int i = 0; i < nAttachments; ++i) {
 			ModelAttachment att;
-			const ModelAttachmentDef& mad = attachments[i];
+			ModelAttachmentDef mad;
+			memcpy(&mad, attachments + i, sizeof(ModelAttachmentDef));
 			att.pos = mad.pos;
 			att.bone = mad.bone;
 			att.id = mad.id;
@@ -736,7 +753,7 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 				}
 				bone.nIndex = i;
 
-				if (b.boneid>0 && b.boneid < MAX_KNOWN_BONE_NODE)
+				if (b.boneid > 0 && b.boneid < MAX_KNOWN_BONE_NODE)
 				{
 					xmesh.m_boneLookup[b.boneid] = i;
 					//bone.nBoneID = b.boneid;
