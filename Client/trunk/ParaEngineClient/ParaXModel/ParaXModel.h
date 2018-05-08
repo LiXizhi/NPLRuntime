@@ -361,7 +361,7 @@ namespace ParaEngine
 		Vector3 m_vNeckPitchAxis;
 
 		/** a mapping from known bone id to bone index. */
-		int32 m_boneLookup[MAX_KNOWN_BONE_NODE];
+		int m_boneLookup[MAX_KNOWN_BONE_NODE];
 
 	private:
 		enum VERTEX_BUFFER_STATE
