@@ -79,9 +79,8 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
 	, m_vbState(NOT_SET)
 {
-	// for xheader
-	m_header = xheader;
-
+	SetHeader(xheader);
+	
 	// set to default for all others.
 	memset(&m_objNum, 0, sizeof(m_objNum));
 	m_trans = 1.0f;
