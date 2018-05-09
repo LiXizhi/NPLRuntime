@@ -61,7 +61,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 
 		stTemplate.clear();
 		stTemplate.Init("ParaXHeader", UUID_ParaXHeader);
-		stTemplate.members.push_back(XFileTemplateMember_t("id", "CHAR","4"));
+		stTemplate.members.push_back(XFileTemplateMember_t("id", "CHAR", "4"));
 		stTemplate.members.push_back(XFileTemplateMember_t("version", "UCHAR", "4"));
 		stTemplate.members.push_back(XFileTemplateMember_t("type", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("AnimationBitwise", "DWORD"));
@@ -92,7 +92,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		stTemplate.clear();
 		stTemplate.Init("XViews", UUID_XViews);
 		stTemplate.members.push_back(XFileTemplateMember_t("nView", "DWORD"));
-		stTemplate.members.push_back(XFileTemplateMember_t("views", "ModelView","nView"));
+		stTemplate.members.push_back(XFileTemplateMember_t("views", "ModelView", "nView"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
@@ -105,7 +105,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		stTemplate.clear();
 		stTemplate.Init("XTextures", UUID_XTextures);
 		stTemplate.members.push_back(XFileTemplateMember_t("nTextures", "DWORD"));
-		stTemplate.members.push_back(XFileTemplateMember_t("textures", "ModelTextureDef","nTextures"));
+		stTemplate.members.push_back(XFileTemplateMember_t("textures", "ModelTextureDef", "nTextures"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
@@ -132,7 +132,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		stTemplate.Init("XAttachments", UUID_XAttachments);
 		stTemplate.members.push_back(XFileTemplateMember_t("nAttachments", "DWORD"));
 		stTemplate.members.push_back(XFileTemplateMember_t("nAttachLookup", "DWORD"));
-		stTemplate.members.push_back(XFileTemplateMember_t("attachments", "ModelAttachmentDef","nAttachments"));
+		stTemplate.members.push_back(XFileTemplateMember_t("attachments", "ModelAttachmentDef", "nAttachments"));
 		stTemplate.members.push_back(XFileTemplateMember_t("attLookup", "DWORD", "nAttachLookup"));
 		vec.push_back(stTemplate);
 
@@ -168,7 +168,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		stTemplate.clear();
 		stTemplate.Init("XGeosets", UUID_XGeosets);
 		stTemplate.members.push_back(XFileTemplateMember_t("nGeosets", "DWORD"));
-		stTemplate.members.push_back(XFileTemplateMember_t("geosets", "ModelGeoset","nGeosets"));
+		stTemplate.members.push_back(XFileTemplateMember_t("geosets", "ModelGeoset", "nGeosets"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
@@ -227,7 +227,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 		stTemplate.members.push_back(XFileTemplateMember_t("boxA", "Vector"));
 		stTemplate.members.push_back(XFileTemplateMember_t("boxB", "Vector"));
 		stTemplate.members.push_back(XFileTemplateMember_t("rad", "FLOAT"));
-		stTemplate.members.push_back(XFileTemplateMember_t("s", "WORD","2"));
+		stTemplate.members.push_back(XFileTemplateMember_t("s", "WORD", "2"));
 		vec.push_back(stTemplate);
 
 		stTemplate.clear();
@@ -244,7 +244,7 @@ void ParaEngine::XFileCharModelExporter::InitTemplates()
 	}
 }
 
-void ParaEngine::XFileCharModelExporter::UUIDToBin(UUID_t guid,char* bin)
+void ParaEngine::XFileCharModelExporter::UUIDToBin(UUID_t guid, char* bin)
 {
 	for (int i = 0; i < 4; ++i)
 	{
@@ -405,6 +405,15 @@ bool ParaEngine::XFileCharModelExporter::WriteParaXHeader(XFileDataObjectPtr pDa
 	memcpy(pData->GetBuffer(), &(m_pMesh->GetHeader()), sizeof(ParaXHeaderDef));
 	ParaXHeaderDef* stHead = (ParaXHeaderDef*)pData->GetBuffer();
 	stHead->IsAnimated = CountIsAnimatedValue();
+
+	stHead->nModelFormat |= PARAX_FORMAT_EXTENDED_HEADER2;
+	ParaXHeaderDef2 header2;
+	memset(&header2, 0, sizeof(ParaXHeaderDef2));
+	header2.IsAnimated = stHead->IsAnimated;
+	header2.neck_yaw_axis = m_pMesh->m_vNeckYawAxis;
+	header2.neck_pitch_axis = m_pMesh->m_vNeckPitchAxis;
+	stHead->nOffsetAdditionalHeader = m_pRawData->AddRawData((const char*)(&header2), sizeof(ParaXHeaderDef2));
+
 	return true;
 }
 
@@ -559,7 +568,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXVertices(XFileDataObjectPtr pData
 	pData->m_sTemplateName = "XVertices";
 	pData->m_sName = strName;
 
-	int nSize =sizeof(XVerticesDef);
+	int nSize = sizeof(XVerticesDef);
 	pData->ResizeBuffer(nSize);
 
 	int nVertices = m_pMesh->m_objNum.nVertices;
@@ -580,7 +589,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 {
 	struct ModelTextureDef_ {
 		uint32 type;
-		uint32 flags;
+		uint32 nOffsetEmbeddedTexture;
 		char sName;
 	};
 	int nTextures = m_pMesh->m_objNum.nTextures;
@@ -598,7 +607,8 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 
 		for (int i = 0; i < nTextures; ++i)
 		{
-			pBuffer->flags = 0; // unused
+			pBuffer->nOffsetEmbeddedTexture = 0;
+
 			if (m_pMesh->textures[i].get() == nullptr) {
 				pBuffer->type = m_pMesh->specialTextures[i];
 				pBuffer->sName = '\0';
@@ -607,6 +617,14 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 			else {
 				pBuffer->type = m_pMesh->specialTextures[i];
 				string name = m_pMesh->textures[i]->GetKey();
+				if (m_pMesh->textures[i]->GetRawData())
+				{
+					DWORD data[1] = { (DWORD)(m_pMesh->textures[i]->GetRawDataSize()) };
+					m_pRawData->AddRawData(data, 1);
+					pBuffer->nOffsetEmbeddedTexture = m_pRawData->AddRawData((const char*)m_pMesh->textures[i]->GetRawData(), m_pMesh->textures[i]->GetRawDataSize());
+					// shall we use a shorter name for embedded texture
+					name = CParaFile::GetFileName(name);
+				}
 				memcpy(&(pBuffer->sName), name.c_str(), name.size() + 1);
 				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + name.size() + 1);
 			}
@@ -790,7 +808,7 @@ bool ParaEngine::XFileCharModelExporter::WriteXBones(XFileDataObjectPtr pData, c
 			bones[i].boneid = bone.nBoneID;
 
 			bones[i].nBoneName = (!bone.GetName().empty()) ? m_pRawData->AddRawData(bone.GetName()) : 0;
-			
+
 			if (bone.IsOffsetMatrixBone())
 				bones[i].nOffsetMatrix = m_pRawData->AddRawData(&bone.matOffset, 1);
 			else

@@ -47,10 +47,8 @@ using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
 
-CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
-	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
-	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
-	, m_vbState(NOT_SET)
+
+void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
 	// for xheader
 	m_header = xheader;
@@ -68,12 +66,21 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	//to support arg channel only texture animation  -clayman 2011.8.5
 	animTexRGB = (m_header.IsAnimated&(1 << 4)) > 0;
 
-	if(IsBmaxModel())
+	if (IsBmaxModel())
 		m_RenderMethod = BMAX_MODEL;
 	else if (animated)
 		m_RenderMethod = SOFT_ANIM;
 	else
 		m_RenderMethod = NO_ANIM;
+}
+
+CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
+	: m_bIsValid(true), m_nCurrentFrameNumber(0), m_nHasAlphaBlendedRenderPass(-1), m_bTextureLoaded(false)
+	, m_vNeckYawAxis(Vector3::UNIT_Y), m_vNeckPitchAxis(Vector3::UNIT_Z)
+	, m_vbState(NOT_SET)
+{
+	// for xheader
+	m_header = xheader;
 
 	// set to default for all others.
 	memset(&m_objNum, 0, sizeof(m_objNum));
@@ -226,16 +233,12 @@ void CParaXModel::LoadTextures()
 		asset_ptr<TextureEntity> pTexture = textures[i];
 		if (pTexture)
 		{
-			if (pTexture->GetRawData())
+			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
+			if (pTexture != textures[i] && pTexture->GetRawData())
 			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 				textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
 				// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
 				pTexture->GiveupRawDataOwnership();
-			}
-			else
-			{
-				textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
 			}
 		}
 	}
@@ -673,6 +676,10 @@ ModelAttachment& CParaXModel::NewAttachment(bool bOverwrite, int nAttachmentID, 
 
 			att.bone = nBoneIndex;
 			att.pos = pivotPoint;
+			m_objNum.nAttachments = (int)m_atts.size();
+
+			if ((int)m_objNum.nAttachLookup <= nAttachmentID)
+				m_objNum.nAttachLookup = nAttachmentID + 1;
 			return att;
 		}
 	}
@@ -780,33 +787,38 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 			if (nHeadAttachmentIndex >= 0)
 			{
 				int nParent = m_atts[nHeadAttachmentIndex].bone;
-				if (nParent >= 0)
+				int nSpine = m_boneLookup[Bone_Spine];
+				if (nParent >= 0 && nSpine >= 0)
 				{
 					int nStart = nParent;
-					int nSpine = m_boneLookup[Bone_Spine];
 
-					// tricky code: try to find if there are at least 5 spline bones from head to spine
-					bool bHasEnoughSpineBones = true;
-					for (int i = 4; i >= 0 && nStart >= 0; i--)
+					// tricky code: try to find if there are at least 4 spline bones from head to spine, in most cases, it is head, neck, spline1, spline
+					int i = 4;
+					for (; i >= 0 && nStart >= 0 && (nSpine != nStart); i--)
 					{
-						if (nSpine == nStart && i > 0)
-						{
-							bHasEnoughSpineBones = false;
-							break;
-						}
-						nStart = bones[nStart].parent; // get its parent
+						nStart = bones[nStart].parent;
+					}
+					bool bHasEnoughSpineBones = (i == 0);
+
+					// just in case, some animator connect Thigh bones to spine and we have limited bones, we will ignore rotation
+					if (bHasEnoughSpineBones && (nSpine == nStart) && m_boneLookup[Bone_L_Thigh] > 0 && bones[m_boneLookup[Bone_L_Thigh]].parent == nSpine) {
+						bHasEnoughSpineBones = false;
 					}
 
 					if (!bHasEnoughSpineBones)
 					{
+						// rotate only head
+						int nHead = m_boneLookup[Bone_Head];
 						CBoneChain UpperBodyBoneChain(1);
-						UpperBodyBoneChain.SetStartBone(bones, nParent, m_boneLookup);
+						UpperBodyBoneChain.SetStartBone(bones, nHead, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 					}
 					else
 					{
 						int nNeck = bones[nParent].parent; // get the NECK bone index
-						CBoneChain UpperBodyBoneChain(4);
+						int nRotateSpineBoneCount = 4;
+
+						CBoneChain UpperBodyBoneChain(nRotateSpineBoneCount);
 						UpperBodyBoneChain.SetStartBone(bones, nNeck, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 					}

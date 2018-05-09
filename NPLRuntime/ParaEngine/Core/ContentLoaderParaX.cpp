@@ -354,6 +354,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				else
 				{
 					CParaXSerializer serializer;
+					serializer.SetFilename(iCur->m_sMeshFileName);
 #if  defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
 					ParaXParser parser(myFile, CAsyncLoader::GetSingleton().GetFileParser());
 					iCur->m_pParaXMesh = (CParaXModel*)serializer.LoadParaXMesh(myFile, parser);
