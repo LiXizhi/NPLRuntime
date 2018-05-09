@@ -13,6 +13,8 @@
 #include "util/StringHelper.h"
 #include "util/MidiMsg.h"
 #include "AudioEngine2.h"
+#include "ParaEngineCore.h"
+#include "IParaEngineApp.h"
 
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
@@ -867,6 +869,9 @@ bool ParaEngine::CAudioSource2::play2d( const bool& toLoop /*= false*/, bool bIg
 	{
 		if(!(bIgnoreIfPlaying && m_pSource->isPlaying()))
 		{
+			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+			auto pScene = pParaEngine->GetChildAttributeObject("Scene");
+			pScene->GetAttributeClass()->GetField("FrameNumber")->Get(pScene, &m_nStartFramNum);
 			return m_pSource->play2d(toLoop);
 		}
 	}
@@ -974,5 +979,10 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 			pAudioSrc->play();
 	}
 	m_paused_audios.clear();
+}
+
+const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
+{
+	return m_audio_file_map;
 }
 
