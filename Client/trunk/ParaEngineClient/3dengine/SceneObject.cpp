@@ -1239,7 +1239,7 @@ void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
 	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
 		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
-	if(m_bGamePaused)
+	if (m_bGamePaused)
 		return;
 
 	AutoGenPlayerRipple((float)dTimeDelta);

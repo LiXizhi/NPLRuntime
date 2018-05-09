@@ -582,7 +582,9 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 			xmesh.transparency = new ModelTransparency[nTransparency];
 			for (int i = 0; i < nTransparency; ++i)
 			{
-				ReadAnimationBlock(&transDefs[i].trans, xmesh.transparency[i].trans, xmesh.globalSequences);
+				ModelTransDef def;
+				memcpy(&def, transDefs + i, sizeof(ModelTransDef));
+				ReadAnimationBlock(&(def.trans), xmesh.transparency[i].trans, xmesh.globalSequences);
 			}
 		}
 	}

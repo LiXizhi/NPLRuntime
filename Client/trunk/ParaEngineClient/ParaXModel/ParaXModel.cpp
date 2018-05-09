@@ -796,20 +796,24 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 					}
 					bool bHasEnoughSpineBones = (i == 0);
 
+					// just in case, some animator connect Thigh bones to spine and we have limited bones, we will ignore rotation
+					if (bHasEnoughSpineBones && (nSpine == nStart) && m_boneLookup[Bone_L_Thigh] > 0 && bones[m_boneLookup[Bone_L_Thigh]].parent == nSpine) {
+						bHasEnoughSpineBones = false;
+					}
+
 					if (!bHasEnoughSpineBones)
 					{
+						// rotate only head
+						int nHead = m_boneLookup[Bone_Head];
 						CBoneChain UpperBodyBoneChain(1);
-						UpperBodyBoneChain.SetStartBone(bones, nParent, m_boneLookup);
+						UpperBodyBoneChain.SetStartBone(bones, nHead, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 					}
 					else
 					{
 						int nNeck = bones[nParent].parent; // get the NECK bone index
 						int nRotateSpineBoneCount = 4;
-						// just in case, some animator connect Thigh bones to spine, we will rotate only 3 bones
-						if ((nSpine == nStart) && m_boneLookup[Bone_L_Thigh] > 0 && bones[m_boneLookup[Bone_L_Thigh]].parent == nSpine) {
-							nRotateSpineBoneCount = 3;
-						}
+						
 						CBoneChain UpperBodyBoneChain(nRotateSpineBoneCount);
 						UpperBodyBoneChain.SetStartBone(bones, nNeck, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
@@ -1466,6 +1470,16 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 		ModelVertex *ov = m_origVertices;
 		int nNumLockedVertice;
 		int nNumFinishedVertice = 0;
+
+		int nIndexOffset = p.m_nIndexStart;
+
+		if (HasAnimation())
+		{
+			const ModelVertex& firstVertex = m_origVertices[m_indices[p.m_nIndexStart] + nVertexOffset];
+			Bone& single_bone = bones[ov->bones[0]];
+			CGlobals::GetWorldMatrixStack().push(single_bone.mat);
+		}
+
 		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		do
 		{
@@ -1506,6 +1520,10 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 			else
 				break;
 		} while (1);
+
+		if (HasAnimation()) {
+			CGlobals::GetWorldMatrixStack().pop();
+		}
 	}
 }
 
