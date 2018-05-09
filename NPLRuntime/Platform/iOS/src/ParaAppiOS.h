@@ -50,6 +50,8 @@
 #include "ObjectManager.h"
 #include "2dengine/GUIHighlight.h"
 #include "ParaEngineAppBase.h"
+
+
 namespace ParaEngine
 {
     class CParaEngineAppiOS : public CParaEngineAppBase
@@ -70,7 +72,9 @@ namespace ParaEngine
         virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
         virtual bool GetToggleSoundWhenNotFocused() override;
         virtual int Run(HINSTANCE hInstance) override;
+
+
     protected:
-        
+
     };
 }

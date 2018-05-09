@@ -93,6 +93,9 @@ namespace ParaEngine
 
 
 		virtual void DeleteInterface() override  { delete this; }
+        
+        void setRenderEnabled(bool b) { m_bRender = b; }
+        bool getRenderEnabled () const {return m_bRender;};
 
 	protected:
 		static IParaEngineApp* g_pCurrentApp;
@@ -129,6 +132,7 @@ namespace ParaEngine
 		double            m_fElapsedTime;      // Time elapsed since last frame
 		float m_fFPS;
 		bool m_bActive;
+        bool m_bRender;
 		bool m_bAudioEngineInitialized;
 
 #pragma region OLD_CODE

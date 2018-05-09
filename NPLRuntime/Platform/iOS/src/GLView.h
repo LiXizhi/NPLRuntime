@@ -10,8 +10,8 @@
 
 @interface GLView : UIView
 {
-    
-    
+
 }
+
 
 @end
