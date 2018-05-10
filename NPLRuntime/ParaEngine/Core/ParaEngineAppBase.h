@@ -413,6 +413,9 @@ namespace ParaEngine
 		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointX() override { return 0;  };
 		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointY() override { return 0; };
 
+		/** get the attribute object of the main ParaEngine interface */
+		virtual IAttributeFields* GetAttributeObject() override;
+
 
 	public:
 		/** managing multiple 3d views */

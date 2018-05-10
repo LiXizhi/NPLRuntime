@@ -742,6 +742,12 @@ void ParaEngine::CParaEngineAppBase::OnFrameEnded()
 	CObjectAutoReleasePool::GetInstance()->clear();
 }
 
+
+ParaEngine::IAttributeFields* ParaEngine::CParaEngineAppBase::GetAttributeObject()
+{
+	return &ParaEngineSettings::GetSingleton();
+}
+
 bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 {
 	const char* sWritablePath = GetAppCommandLineByParam("writablepath", NULL);
