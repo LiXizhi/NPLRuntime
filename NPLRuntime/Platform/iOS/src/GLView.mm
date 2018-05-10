@@ -24,6 +24,9 @@
     return [CAEAGLLayer class];
 }
 
+
+
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];

@@ -88,5 +88,11 @@ bool ParaEngine::CParaEngineAppiOS::GetToggleSoundWhenNotFocused()
 
 int ParaEngine::CParaEngineAppiOS::Run(HINSTANCE hInstance)
 {
+ 
     return 0;
 }
+
+
+
+
+
