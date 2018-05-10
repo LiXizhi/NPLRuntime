@@ -1473,13 +1473,6 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 
 		int nIndexOffset = p.m_nIndexStart;
 
-		if (HasAnimation())
-		{
-			const ModelVertex& firstVertex = m_origVertices[m_indices[p.m_nIndexStart] + nVertexOffset];
-			Bone& single_bone = bones[ov->bones[0]];
-			CGlobals::GetWorldMatrixStack().push(single_bone.mat);
-		}
-
 		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		do
 		{
@@ -1520,10 +1513,6 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 			else
 				break;
 		} while (1);
-
-		if (HasAnimation()) {
-			CGlobals::GetWorldMatrixStack().pop();
-		}
 	}
 }
 
@@ -1622,7 +1611,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 		return;
 	if (p.is_rigid_body)
 	{
-		// for rigid body, do not use skinning. 
+		// for rigid body with many vertices, do skinning on GPU instead of CPU. 
 		DrawPass_NoAnim(p);
 		return;
 	}
