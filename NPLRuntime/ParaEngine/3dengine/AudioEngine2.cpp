@@ -13,6 +13,8 @@
 #include "util/StringHelper.h"
 #include "util/MidiMsg.h"
 #include "AudioEngine2.h"
+#include "ParaEngineCore.h"
+#include "IParaEngineApp.h"
 
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
@@ -21,6 +23,7 @@ using namespace ParaEngine;
 
 /** @def the plugin's class_id */
 #define AudioEngine_CLASS_ID Class_ID(0x2b903a29, 0x57e409cf)
+
 
 #if defined(WIN32)
 #define DLL_FILE_EXT  "dll"
@@ -61,10 +64,10 @@ IParaAudioEngine* ParaEngine::CAudioEngine2::GetInterface()
 
 void ParaEngine::CAudioEngine2::Update()
 {
-	if(IsAudioEngineEnabled() && GetAutoMoveListener())
+	if (IsAudioEngineEnabled() && GetAutoMoveListener())
 	{
 		CBaseCamera* pCamera = CGlobals::GetScene()->GetCurrentCamera();
-		if(pCamera!=NULL)
+		if (pCamera != NULL)
 		{
 			//CAudioEngine2::GetInstance()->setPosition((const PARAVECTOR3&)(pCamera->GetEyePosition()));
 			Vector3 v = pCamera->GetEyePosition();
@@ -89,18 +92,18 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 		SAFE_RELEASE(m_pAudioEngine);
 		m_pAudioEngine = pInteface;
 	}
-	else if(m_pAudioEngine == 0)
+	else if (m_pAudioEngine == 0)
 	{
 		DLLPlugInEntity* pPluginEntity = CGlobals::GetPluginManager()->LoadDLL("audioengine", AUDIO_ENGINE_DLL_PATH);
-		if(pPluginEntity!=0)
+		if (pPluginEntity != 0)
 		{
-			for (int i=0; i < pPluginEntity->GetNumberOfClasses(); ++i)
+			for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
 			{
 				ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
 
-				if(pClassDesc && pClassDesc->ClassID()==AudioEngine_CLASS_ID)
+				if (pClassDesc && pClassDesc->ClassID() == AudioEngine_CLASS_ID)
 				{
-					m_pAudioEngine = (IParaAudioEngine*) pClassDesc->Create();
+					m_pAudioEngine = (IParaAudioEngine*)pClassDesc->Create();
 				}
 			}
 		}
@@ -140,7 +143,7 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 		// tell to use left handed coordinate system, which will invert the z axis. 
 		m_pAudioEngine->SetCoordinateSystem(0);
 	}
-	return (m_pAudioEngine!=0) ? S_OK : E_FAIL;
+	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }
 
 void ParaEngine::CAudioEngine2::CleanupAudioEngine()
@@ -152,21 +155,21 @@ void ParaEngine::CAudioEngine2::CleanupAudioEngine()
 
 bool ParaEngine::CAudioEngine2::IsValid()
 {
-	return (m_pAudioEngine!=0);
+	return (m_pAudioEngine != 0);
 }
 
-void ParaEngine::CAudioEngine2::EnableAudioEngine( bool bEnable )
+void ParaEngine::CAudioEngine2::EnableAudioEngine(bool bEnable)
 {
 	m_bEnableAudioEngine = bEnable;
 }
 
-void ParaEngine::CAudioEngine2::SetGlobalVolume( const float& volume )
+void ParaEngine::CAudioEngine2::SetGlobalVolume(const float& volume)
 {
-	if(m_fGlobalVolume!=volume)
+	if (m_fGlobalVolume != volume)
 	{
 		m_fGlobalVolume = volume;
 
-		if(m_pAudioEngine)
+		if (m_pAudioEngine)
 		{
 			m_pAudioEngine->setMasterVolume(volume);
 		}
@@ -178,14 +181,14 @@ void ParaEngine::CAudioEngine2::SetGlobalVolume( const float& volume )
 class CWaveFilePlayCallBackData2
 {
 public:
-	CWaveFilePlayCallBackData2(const char* sFileName, bool bLoop=false, bool bStream=false):m_sFileName(sFileName),m_bLoop(bLoop), m_bStream(bStream){}
+	CWaveFilePlayCallBackData2(const char* sFileName, bool bLoop = false, bool bStream = false) :m_sFileName(sFileName), m_bLoop(bLoop), m_bStream(bStream) {}
 	std::string m_sFileName;
 	bool m_bLoop;
 	bool m_bStream;
-	
+
 	void operator()(int nResult, AssetFileEntry* pAssetFileEntry)
 	{
-		if(nResult == 0)
+		if (nResult == 0)
 		{
 			CAudioSource2_ptr pWave = CAudioEngine2::GetInstance()->Get(m_sFileName.c_str());
 			if (pWave)
@@ -193,9 +196,9 @@ public:
 				// this fixed a bug, while a looping sound is stopped by the user while async loading. 
 				m_bLoop = m_bLoop  && pWave->IsWaveFileLoopPlaying();
 
-				if(CAudioEngine2::GetInstance()->PrepareWaveFile(pWave, m_sFileName.c_str(), m_bStream) == S_OK)
+				if (CAudioEngine2::GetInstance()->PrepareWaveFile(pWave, m_sFileName.c_str(), m_bStream) == S_OK)
 				{
-					if(m_bLoop)
+					if (m_bLoop)
 					{
 						// we will only play a wave file if it is looped and still in the playing list, without the user calling StopWaveFile() explicitly. 
 						// in most cases, it is a background music, which is usually played 10000 times. 
@@ -212,35 +215,35 @@ public:
 };
 
 
-HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, const char* sWavePath, bool bStream )
+HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile(CAudioSource2_ptr& pWave, const char* sWavePath, bool bStream)
 {
 	// prepare the wave file. 
 	bool bSucceed = false;
 
-	if(!pWave)
+	if (!pWave)
 		return E_FAIL;
 
-	if(pWave->GetSource() != NULL )
+	if (pWave->GetSource() != NULL)
 	{
 		OUTPUT_LOG("warning: repeated all to already prepared wave file %s\n", sWavePath);
 		return S_OK;
 	}
 
 	AssetFileEntry* pEntry = CAssetManifest::GetSingleton().GetFile(sWavePath);
-	if(pEntry)
+	if (pEntry)
 	{
-		if(pEntry->DoesFileExist())
+		if (pEntry->DoesFileExist())
 		{
 			// we already downloaded the file, so load it.
 			IParaAudioSource* pSource = NULL;
-			if(bStream)
+			if (bStream)
 			{
 				// Since local cache filename does not have file extension, however audio engine needs to have an extension in order to load from file. 
 				// so we will create a file with the proper extension in the same directory. 
-				std::string filename = pEntry->GetLocalFileName() + "."+ CParaFile::GetFileExtension(sWavePath);
-				if(!CParaFile::DoesFileExist(filename.c_str(), false))
+				std::string filename = pEntry->GetLocalFileName() + "." + CParaFile::GetFileExtension(sWavePath);
+				if (!CParaFile::DoesFileExist(filename.c_str(), false))
 				{
-					if(CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
+					if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
 					{
 						pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
 					}
@@ -255,14 +258,14 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 			{
 				// always load from memory if no streaming is specified. 
 				ParaEngine::CParaFile file(pEntry->GetLocalFileName().c_str());
-				if(!file.isEof())
+				if (!file.isEof())
 				{
 					std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 					pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
 					pWave->SetFilename(pEntry->GetLocalFileName());
 				}
 			}
-			if(pSource)
+			if (pSource)
 			{
 				pWave->SetSource(pSource);
 				bSucceed = true;
@@ -272,26 +275,26 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 	else
 	{
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
-		if(ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
+		if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 		{
 			IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, sWavePath, bStream);
-			if(pSource)
+			if (pSource)
 			{
 				pWave->SetFilename(sWavePath);
 				pWave->SetSource(pSource);
 				bSucceed = true;
 			}
 		}
-		else 
+		else
 #endif
 		{
 			// currently it will unzip file each time a zipped music is played. We may first check a fixed temp location and play it from there before extracting to it. 
 			ParaEngine::CParaFile file(sWavePath);
-			if(!file.isEof())
+			if (!file.isEof())
 			{
 				std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 				IParaAudioSource* pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
-				if(pSource)
+				if (pSource)
 				{
 					pWave->SetFilename(sWavePath);
 					pWave->SetSource(pSource);
@@ -303,24 +306,24 @@ HRESULT ParaEngine::CAudioEngine2::PrepareWaveFile( CAudioSource2_ptr& pWave, co
 	return (bSucceed) ? S_OK : E_FAIL;
 }
 
-HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLoop, bool bStream/*=false*/, int dwPlayOffset/*=0*/ )
+HRESULT ParaEngine::CAudioEngine2::PlayWaveFile(const char* sWavePath, bool bLoop, bool bStream/*=false*/, int dwPlayOffset/*=0*/)
 {
-	if(!IsValidAndEnabled() || GetGlobalVolume()<=0.f)
+	if (!IsValidAndEnabled() || GetGlobalVolume() <= 0.f)
 		return E_FAIL;
 	// check if the wave file is already prepared before
 	CAudioSource2_ptr pWave;
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(sWavePath);
-	if (iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		pWave = iter->second;
-		if(pWave && pWave->m_pSource)
+		if (pWave && pWave->m_pSource)
 		{
-			if(pWave->m_pSource->isPlaying())
+			if (pWave->m_pSource->isPlaying())
 			{
 				// already playing, so return. 
 #ifdef DEBUG_AUDIO
-				OUTPUT_LOG("PlayWaveFile: %s already playing. audio pos: %d, audio time:%f, total size %d, volume %f\n", sWavePath, 
-					pWave->m_pSource->getCurrentAudioPosition(), 
+				OUTPUT_LOG("PlayWaveFile: %s already playing. audio pos: %d, audio time:%f, total size %d, volume %f\n", sWavePath,
+					pWave->m_pSource->getCurrentAudioPosition(),
 					pWave->m_pSource->getCurrentAudioTime(),
 					pWave->m_pSource->getTotalAudioSize(),
 					pWave->m_pSource->getVolume());
@@ -343,20 +346,20 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 		bool bSucceed = false;
 
 		AssetFileEntry* pEntry = CAssetManifest::GetSingleton().GetFile(sWavePath);
-		if(pEntry)
+		if (pEntry)
 		{
-			if(pEntry->DoesFileExist())
+			if (pEntry->DoesFileExist())
 			{
 				// we already downloaded the file, so load it.
 				IParaAudioSource* pSource = NULL;
-				if(bStream)
+				if (bStream)
 				{
 					// Since local cache filename does not have file extension, however audio engine needs to have an extension in order to load from file. 
 					// so we will create a file with the proper extension in the same directory. 
 					std::string filename = pEntry->GetFullFilePath() + "." + CParaFile::GetFileExtension(sWavePath);
-					if(!CParaFile::DoesFileExist(filename.c_str(), false))
+					if (!CParaFile::DoesFileExist(filename.c_str(), false))
 					{
-						if(CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
+						if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), false))
 						{
 							pSource = m_pAudioEngine->create(sWavePath, filename.c_str(), bStream);
 						}
@@ -371,14 +374,14 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 				{
 					// always load from memory if no streaming is specified. 
 					ParaEngine::CParaFile file(pEntry->GetLocalFileName().c_str());
-					if(!file.isEof())
+					if (!file.isEof())
 					{
 						std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 						pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
 						pWave->SetFilename(pEntry->GetLocalFileName());
 					}
 				}
-				if(pSource)
+				if (pSource)
 				{
 					pWave = new CAudioSource2(sWavePath, pSource);
 					m_audio_file_map[sWavePath] = pWave;
@@ -397,10 +400,10 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 		else
 		{
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
-			if(ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
+			if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 			{
 				IParaAudioSource* pSource = m_pAudioEngine->create(sWavePath, sWavePath, bStream);
-				if(pSource)
+				if (pSource)
 				{
 					pWave = new CAudioSource2(sWavePath, pSource);
 					m_audio_file_map[sWavePath] = pWave;
@@ -410,16 +413,16 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 #endif
 				}
 			}
-			else 
+			else
 #endif
 			{
 				// currently it will unzip file each time a zipped music is played. We may first check a fixed temp location and play it from there before extracting to it. 
 				ParaEngine::CParaFile file(sWavePath);
-				if(!file.isEof())
+				if (!file.isEof())
 				{
 					std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 					IParaAudioSource* pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
-					if(pSource)
+					if (pSource)
 					{
 						pWave = new CAudioSource2(sWavePath, pSource);
 						m_audio_file_map[sWavePath] = pWave;
@@ -428,8 +431,8 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 				}
 			}
 		}
-		
-		if(!bSucceed)
+
+		if (!bSucceed)
 		{
 			m_audio_file_map[sWavePath] = CAudioSource2_ptr(new CAudioSource2(sWavePath));
 			OUTPUT_LOG("unable to prepare wave file %s\r\n", sWavePath);
@@ -437,37 +440,37 @@ HRESULT ParaEngine::CAudioEngine2::PlayWaveFile( const char* sWavePath, bool bLo
 		}
 	}
 	// play the sound
-	if(pWave)
+	if (pWave)
 	{
-		if( ! (pWave->play2d(bLoop, false)) )
+		if (!(pWave->play2d(bLoop, false)))
 		{
 			return E_FAIL;
 		}
 #ifdef DEBUG_AUDIO
-		if(pWave->m_pSource)
+		if (pWave->m_pSource)
 		{
-			OUTPUT_LOG("PlayWaveFile: play2d is called for %s. audio pos: %d, audio time:%f, total size %d, volume %f\n", sWavePath, 
-					pWave->m_pSource->getCurrentAudioPosition(), 
-					pWave->m_pSource->getCurrentAudioTime(),
-					pWave->m_pSource->getTotalAudioSize(),
-					pWave->m_pSource->getVolume());
+			OUTPUT_LOG("PlayWaveFile: play2d is called for %s. audio pos: %d, audio time:%f, total size %d, volume %f\n", sWavePath,
+				pWave->m_pSource->getCurrentAudioPosition(),
+				pWave->m_pSource->getCurrentAudioTime(),
+				pWave->m_pSource->getTotalAudioSize(),
+				pWave->m_pSource->getVolume());
 		}
 #endif
 	}
 	return S_OK;
 }
 
-HRESULT ParaEngine::CAudioEngine2::StopWaveFile( const char* sWavePath, ParaAudioFlagsEnum dwFlags )
+HRESULT ParaEngine::CAudioEngine2::StopWaveFile(const char* sWavePath, ParaAudioFlagsEnum dwFlags)
 {
-	if(!IsValidAndEnabled())
+	if (!IsValidAndEnabled())
 		return E_FAIL;
 
 	// check if the wave file is already prepared before
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(sWavePath);
-	if (iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		CAudioSource2_ptr pWave = iter->second;
-		if(pWave && pWave->m_pSource)
+		if (pWave && pWave->m_pSource)
 		{
 			pWave->m_pSource->stop();
 		}
@@ -477,17 +480,17 @@ HRESULT ParaEngine::CAudioEngine2::StopWaveFile( const char* sWavePath, ParaAudi
 	return S_OK;
 }
 
-HRESULT ParaEngine::CAudioEngine2::ReleaseWaveFile( const std::string& sWavePath )
+HRESULT ParaEngine::CAudioEngine2::ReleaseWaveFile(const std::string& sWavePath)
 {
-	if(!IsValidAndEnabled())
+	if (!IsValidAndEnabled())
 		return E_FAIL;
 
 	// check if the wave file is already prepared before
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(sWavePath);
-	if (iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		CAudioSource2_ptr pWave = iter->second;
-		if(pWave && pWave->m_pSource)
+		if (pWave && pWave->m_pSource)
 		{
 			m_pAudioEngine->release(pWave->m_pSource);
 			pWave->m_pSource = NULL;
@@ -498,17 +501,17 @@ HRESULT ParaEngine::CAudioEngine2::ReleaseWaveFile( const std::string& sWavePath
 	return S_OK;
 }
 
-bool ParaEngine::CAudioEngine2::IsWaveFileInQueue( const string& filename )
+bool ParaEngine::CAudioEngine2::IsWaveFileInQueue(const string& filename)
 {
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(filename);
-	return (iter!=m_audio_file_map.end());
+	return (iter != m_audio_file_map.end());
 }
 
 
-bool ParaEngine::CAudioEngine2::IsWaveFileLoopPlaying( const std::string& filename )
+bool ParaEngine::CAudioEngine2::IsWaveFileLoopPlaying(const std::string& filename)
 {
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(filename);
-	if(iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		return iter->second->IsWaveFileLoopPlaying();
 	}
@@ -519,30 +522,30 @@ bool ParaEngine::CAudioEngine2::IsWaveFileLoopPlaying( const std::string& filena
 class CWaveFileDownloadCallBackData2
 {
 public:
-	CWaveFileDownloadCallBackData2(const char* sName, const char* sFileName, bool bStream=false)
-		: m_sName(sName), m_sFileName(sFileName),m_bStream(bStream){}
+	CWaveFileDownloadCallBackData2(const char* sName, const char* sFileName, bool bStream = false)
+		: m_sName(sName), m_sFileName(sFileName), m_bStream(bStream) {}
 	std::string m_sName;
 	std::string m_sFileName;
 	bool m_bStream;
-	
+
 	void operator()(int nResult, AssetFileEntry* pAssetFileEntry)
 	{
-		if(nResult == 0)
+		if (nResult == 0)
 		{
-			if(pAssetFileEntry->DoesFileExist())
+			if (pAssetFileEntry->DoesFileExist())
 			{
 				// create again once finished. 
 				CAudioSource2_ptr pWave = CAudioEngine2::GetInstance()->Get(m_sName.c_str());
-				if(!pWave)
+				if (!pWave)
 				{
 					CAudioEngine2::GetInstance()->Create(m_sName.c_str(), m_sFileName.c_str(), m_bStream);
 				}
 				else
 				{
 					bool bIsLoopPlaying = pWave->IsWaveFileLoopPlaying();
-					if(CAudioEngine2::GetInstance()->PrepareWaveFile(pWave, m_sFileName.c_str(), m_bStream) == S_OK)
+					if (CAudioEngine2::GetInstance()->PrepareWaveFile(pWave, m_sFileName.c_str(), m_bStream) == S_OK)
 					{
-						if(bIsLoopPlaying)
+						if (bIsLoopPlaying)
 						{
 							pWave->play2d(true);
 						}
@@ -557,15 +560,15 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 {
 	CAudioSource2_ptr pWave;
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(sName);
-	if (iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		pWave = iter->second;
-		if(!pWave)
+		if (!pWave)
 		{
 			pWave = new CAudioSource2(sName);
 			iter->second = pWave;
 		}
-		if(pWave->m_pSource)
+		if (pWave->m_pSource)
 		{
 			pWave->m_pSource->stop();
 		}
@@ -575,13 +578,13 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 		pWave = new CAudioSource2(sName);
 		m_audio_file_map[sName] = pWave;
 	}
-	if(m_pAudioEngine == 0)
+	if (m_pAudioEngine == 0)
 		return pWave;
 
 	AssetFileEntry* pEntry = CAssetManifest::GetSingleton().GetFile(sWavePath);
-	if(pEntry)
+	if (pEntry)
 	{
-		if(pEntry->DoesFileExist())
+		if (pEntry->DoesFileExist())
 		{
 			// we already downloaded the file, so load it.
 			IParaAudioSource* pSource = NULL;
@@ -590,15 +593,15 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 			OUTPUT_LOG("streaming audio file %s is disabled since it is too slow on mobile disk\n", pEntry->GetLocalFileName().c_str());
 			bStream = false;
 #endif
-			if(bStream)
+			if (bStream)
 			{
 				// Since local cache filename does not have file extension, however audio engine needs to have an extension in order to load from file. 
 				// so we will create a file with the proper extension in the same directory. 
 				std::string filename = pEntry->GetFullFilePath() + "." + CParaFile::GetFileExtension(sWavePath);
 				// OUTPUT_LOG("info:streaming audio file from %s\n", filename.c_str());
-				if(!CParaFile::DoesFileExist(filename.c_str(), false))
+				if (!CParaFile::DoesFileExist(filename.c_str(), false))
 				{
-					if(CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), true))
+					if (CParaFile::CopyFile(pEntry->GetLocalFileName().c_str(), filename.c_str(), true))
 					{
 						pSource = m_pAudioEngine->create(sName, filename.c_str(), bStream);
 					}
@@ -619,7 +622,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 				ParaEngine::CParaFile file(pEntry->GetLocalFileName().c_str());
 				// OUTPUT_LOG("info:playing in memory audio file from %s\n", pEntry->GetLocalFileName().c_str());
 
-				if(!file.isEof())
+				if (!file.isEof())
 				{
 					std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 					pSource = m_pAudioEngine->createFromMemory(sName, file.getBuffer(), file.getSize(), file_extension.c_str());
@@ -630,12 +633,12 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 					OUTPUT_LOG("warning: failed to open audio file %s\n", pEntry->GetLocalFileName().c_str());
 				}
 			}
-			if(pSource)
+			if (pSource)
 			{
 				pWave->SetSource(pSource);
 
 				// if there is pending looped sound, we will play it. For non-looping sound that has just finished downloading, we will ignore it. 
-				if(pWave->m_bIsAsyncLoadingWhileLoopPlaying)
+				if (pWave->m_bIsAsyncLoadingWhileLoopPlaying)
 				{
 					pWave->play2d(true);
 				}
@@ -651,31 +654,31 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Create(const char* sName, const cha
 	else
 	{
 #if !(defined(STATIC_PLUGIN_CAUDIOENGINE)) && !(defined(PARAENGINE_MOBILE) && defined(WIN32))
-		if(ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
+		if (ParaEngine::CParaFile::DoesFileExist(sWavePath, false))
 		{
 			IParaAudioSource* pSource = m_pAudioEngine->create(sName, sWavePath, bStream);
-			if(pSource)
+			if (pSource)
 			{
 				pWave->SetFilename(sWavePath);
 				pWave->SetSource(pSource);
 			}
 		}
-		else 
+		else
 #endif
 		{
 			// currently it will unzip file each time a zipped music is played. We may first check a fixed temp location and play it from there before extracting to it. 
 			ParaEngine::CParaFile file(sWavePath);
-			if(!file.isEof())
+			if (!file.isEof())
 			{
 #ifdef PARAENGINE_MOBILE
 				OUTPUT_LOG("audio file opened: %s \n", sWavePath);
 #endif
 				std::string file_extension = CParaFile::GetFileExtension(sWavePath);
 				IParaAudioSource* pSource = m_pAudioEngine->createFromMemory(sWavePath, file.getBuffer(), file.getSize(), file_extension.c_str());
-				if(pSource)
+				if (pSource)
 				{
 					// Note, this is from zip archive
-					pWave->SetFilename(sWavePath); 
+					pWave->SetFilename(sWavePath);
 					pWave->SetSource(pSource);
 				}
 			}
@@ -688,7 +691,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Get(const char* sName)
 {
 	CAudioSource2_ptr pWave;
 	AudioFileMap_type::iterator iter = m_audio_file_map.find(sName);
-	if (iter!=m_audio_file_map.end())
+	if (iter != m_audio_file_map.end())
 	{
 		pWave = iter->second;
 		return pWave;
@@ -699,7 +702,7 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::Get(const char* sName)
 CAudioSource2_ptr ParaEngine::CAudioEngine2::CreateGet(const char* sName, const char* sWavePath, bool bStream)
 {
 	CAudioSource2_ptr pWave = Get(sName);
-	if(pWave)
+	if (pWave)
 	{
 		return pWave;
 	}
@@ -709,93 +712,93 @@ CAudioSource2_ptr ParaEngine::CAudioEngine2::CreateGet(const char* sName, const 
 	}
 }
 
-void ParaEngine::CAudioEngine2::release( CAudioSource2_ptr& audio_src )
+void ParaEngine::CAudioEngine2::release(CAudioSource2_ptr& audio_src)
 {
-	if(audio_src && audio_src->GetSource())
+	if (audio_src && audio_src->GetSource())
 	{
 		ReleaseWaveFile(audio_src->GetName());
 	}
 }
 
-void ParaEngine::CAudioEngine2::setPosition( const PARAVECTOR3& pos )
+void ParaEngine::CAudioEngine2::setPosition(const PARAVECTOR3& pos)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 		m_pAudioEngine->setPosition((pos));
 }
 
-void ParaEngine::CAudioEngine2::setDirection( const PARAVECTOR3& dir )
+void ParaEngine::CAudioEngine2::setDirection(const PARAVECTOR3& dir)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 		m_pAudioEngine->setDirection((dir));
 }
 
-void ParaEngine::CAudioEngine2::setUpVector( const PARAVECTOR3& up )
+void ParaEngine::CAudioEngine2::setUpVector(const PARAVECTOR3& up)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 		m_pAudioEngine->setUpVector((up));
 }
 
-void ParaEngine::CAudioEngine2::setVelocity( const PARAVECTOR3& vel )
+void ParaEngine::CAudioEngine2::setVelocity(const PARAVECTOR3& vel)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 		m_pAudioEngine->setVelocity((vel));
 }
 
-void ParaEngine::CAudioEngine2::move( const PARAVECTOR3& pos )
+void ParaEngine::CAudioEngine2::move(const PARAVECTOR3& pos)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 		m_pAudioEngine->move((pos));
 }
 
 ParaEngine::PARAVECTOR3 ParaEngine::CAudioEngine2::getPosition() const
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		return (m_pAudioEngine->getPosition());
 	}
-	return PARAVECTOR3(0,0,0);
+	return PARAVECTOR3(0, 0, 0);
 }
 
 ParaEngine::PARAVECTOR3 ParaEngine::CAudioEngine2::getDirection() const
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		return (m_pAudioEngine->getDirection());
 	}
-	return PARAVECTOR3(0,0,0);
+	return PARAVECTOR3(0, 0, 0);
 }
 
 ParaEngine::PARAVECTOR3 ParaEngine::CAudioEngine2::getUpVector() const
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		return (m_pAudioEngine->getUpVector());
 	}
-	return PARAVECTOR3(0,0,0);
+	return PARAVECTOR3(0, 0, 0);
 }
 
 ParaEngine::PARAVECTOR3 ParaEngine::CAudioEngine2::getVelocity() const
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		return (m_pAudioEngine->getVelocity());
 	}
-	return PARAVECTOR3(0,0,0);
+	return PARAVECTOR3(0, 0, 0);
 }
 
-void ParaEngine::CAudioEngine2::SetDistanceModel( ParaAudioDistanceModelEnum eDistModel )
+void ParaEngine::CAudioEngine2::SetDistanceModel(ParaAudioDistanceModelEnum eDistModel)
 {
-	if(m_pAudioEngine)
+	if (m_pAudioEngine)
 	{
 		m_pAudioEngine->SetDistanceModel(eDistModel);
 	}
 }
 
-void ParaEngine::CAudioEngine2::OnSwitch( bool bOn )
+void ParaEngine::CAudioEngine2::OnSwitch(bool bOn)
 {
-	if(bOn)
+	if (bOn)
 	{
-		if(m_fGlobalVolumeBeforeSwitch > 0.f)
+		if (m_fGlobalVolumeBeforeSwitch > 0.f)
 		{
 			CAudioEngine2::GetInstance()->SetGlobalVolume(m_fGlobalVolumeBeforeSwitch);
 		}
@@ -804,7 +807,7 @@ void ParaEngine::CAudioEngine2::OnSwitch( bool bOn )
 	{
 		float fVol = GetGlobalVolume();
 
-		if(fVol > 0.f)
+		if (fVol > 0.f)
 		{
 			SetGlobalVolume(0.f);
 			m_fGlobalVolumeBeforeSwitch = fVol;
@@ -838,7 +841,7 @@ void ParaEngine::CAudioSource2::onStop()
 #ifdef DEBUG_AUDIO
 	OUTPUT_LOG("audio source onStop: %s \n", m_name.c_str());
 #endif
-	if(m_bReleaseOnStop)
+	if (m_bReleaseOnStop)
 	{
 
 	}
@@ -853,19 +856,22 @@ void ParaEngine::CAudioSource2::onPause()
 
 bool ParaEngine::CAudioSource2::play()
 {
-	if(m_pSource)
+	if (m_pSource)
 	{
 		return m_pSource->play();
 	}
 	return false;
 }
 
-bool ParaEngine::CAudioSource2::play2d( const bool& toLoop /*= false*/, bool bIgnoreIfPlaying /*=true*/)
+bool ParaEngine::CAudioSource2::play2d(const bool& toLoop /*= false*/, bool bIgnoreIfPlaying /*=true*/)
 {
-	if(m_pSource)
+	if (m_pSource)
 	{
-		if(!(bIgnoreIfPlaying && m_pSource->isPlaying()))
+		if (!(bIgnoreIfPlaying && m_pSource->isPlaying()))
 		{
+			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+			auto pScene = pParaEngine->GetChildAttributeObject("Scene");
+			pScene->GetAttributeClass()->GetField("FrameNumber")->Get(pScene, &m_nStartFramNum);
 			return m_pSource->play2d(toLoop);
 		}
 	}
@@ -876,9 +882,9 @@ bool ParaEngine::CAudioSource2::play2d( const bool& toLoop /*= false*/, bool bIg
 	return false;
 }
 
-bool ParaEngine::CAudioSource2::play3d( const PARAVECTOR3& position, const float& soundstr /*= 1.0 */, const bool& toLoop /*= false*/ )
+bool ParaEngine::CAudioSource2::play3d(const PARAVECTOR3& position, const float& soundstr /*= 1.0 */, const bool& toLoop /*= false*/)
 {
-	if(m_pSource && !(m_pSource->isPlaying()))
+	if (m_pSource && !(m_pSource->isPlaying()))
 	{
 #ifdef PARAENGINE_MOBILE
 		/** 3d sound is disabled for mobile version */
@@ -893,7 +899,7 @@ bool ParaEngine::CAudioSource2::play3d( const PARAVECTOR3& position, const float
 
 void ParaEngine::CAudioSource2::pause()
 {
-	if(m_pSource)
+	if (m_pSource)
 	{
 		m_pSource->pause();
 	}
@@ -902,16 +908,16 @@ void ParaEngine::CAudioSource2::pause()
 
 void ParaEngine::CAudioSource2::stop()
 {
-	if(m_pSource)
+	if (m_pSource)
 	{
 		m_pSource->stop();
 	}
 	m_bIsAsyncLoadingWhileLoopPlaying = false;
 }
 
-void ParaEngine::CAudioSource2::loop( const bool& toLoop )
+void ParaEngine::CAudioSource2::loop(const bool& toLoop)
 {
-	if(m_pSource)
+	if (m_pSource)
 	{
 		m_pSource->loop(toLoop);
 	}
@@ -924,7 +930,7 @@ bool ParaEngine::CAudioSource2::IsAsyncLoadingWhileLoopPlaying()
 
 bool ParaEngine::CAudioSource2::IsWaveFileLoopPlaying()
 {
-	if(m_pSource)
+	if (m_pSource)
 		return m_pSource->isLooping() && m_pSource->isPlaying();
 	else
 		return IsAsyncLoadingWhileLoopPlaying();
@@ -932,7 +938,7 @@ bool ParaEngine::CAudioSource2::IsWaveFileLoopPlaying()
 
 bool ParaEngine::CAudioSource2::IsPlaying()
 {
-	if(m_pSource)
+	if (m_pSource)
 		return m_pSource->isPlaying();
 	else
 		return IsAsyncLoadingWhileLoopPlaying();
@@ -954,7 +960,7 @@ void ParaEngine::CAudioSource2::SetFilename(const std::string& val)
 void ParaEngine::CAudioEngine2::PauseAll()
 {
 	m_paused_audios.clear();
-	for (auto iter: m_audio_file_map)
+	for (auto iter : m_audio_file_map)
 	{
 		CAudioSource2_ptr pAudioSrc = iter.second;
 		if (pAudioSrc && pAudioSrc->IsPlaying())
@@ -973,5 +979,10 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 			pAudioSrc->play();
 	}
 	m_paused_audios.clear();
+}
+
+const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
+{
+	return m_audio_file_map;
 }
 

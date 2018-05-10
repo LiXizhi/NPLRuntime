@@ -230,9 +230,10 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 					if (nLockedNum > 0 && !(p.is_rigid_body))
 					{
 						bool bIsRigidBody = true;
+						int nVertexOffset = p.GetVertexStart(pMesh);
 						ModelVertex * origVertices = pMesh->m_origVertices;
 						ModelVertex * ov = NULL;
-						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart]].bones[0];
+						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
 
 						int nIndexOffset = p.m_nIndexStart;
 						for (int i = 0; i < nLockedNum && bIsRigidBody; ++i)
@@ -240,10 +241,10 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 							int nVB = 3 * i;
 							for (int k = 0; k < 3; ++k, ++nVB)
 							{
-								uint16 a = indices[nIndexOffset + nVB];
+								uint16 a = indices[nIndexOffset + nVB] + nVertexOffset;
 								ov = origVertices + a;
 								// weighted vertex
-								if (ov->weights[1] != 0 || ov->bones[0] != nLastBoneIndex)
+								if (ov->weights[0] != 0xff || ov->bones[0] != nLastBoneIndex)
 								{
 									bIsRigidBody = false;
 									break;
@@ -582,7 +583,9 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 			xmesh.transparency = new ModelTransparency[nTransparency];
 			for (int i = 0; i < nTransparency; ++i)
 			{
-				ReadAnimationBlock(&transDefs[i].trans, xmesh.transparency[i].trans, xmesh.globalSequences);
+				ModelTransDef def;
+				memcpy(&def, transDefs + i, sizeof(ModelTransDef));
+				ReadAnimationBlock(&(def.trans), xmesh.transparency[i].trans, xmesh.globalSequences);
 			}
 		}
 	}
