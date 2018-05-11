@@ -1,6 +1,7 @@
 #pragma once
 #include "IAttributeFields.h"	
 
+
 namespace ParaEngine
 {
 	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t *ft);
@@ -83,6 +84,9 @@ namespace ParaEngine
 		* Note: you can't add any more after calling this.
 		*/
 		DWORD close();
+
+		/** compress without zip header*/
+		static int Compress(std::string& outstring, const char* src, int nSrcSize, int compressionlevel = -1);
 
 	protected:
 		int SaveAndClose();

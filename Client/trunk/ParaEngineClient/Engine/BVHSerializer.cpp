@@ -274,7 +274,7 @@ bool CBVHSerializer::BuildInternalBones()
 
 	m_bones.resize(nBones);
 	for (int i=0; i<nBones; i++) {
-		m_pXMesh->bones[i].calc = false;
+		m_pXMesh->bones[i].MakeDirty();
 
 		// build child bones
 		m_bones[i].m_childBones.clear();

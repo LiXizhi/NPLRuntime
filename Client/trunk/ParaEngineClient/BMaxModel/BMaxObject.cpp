@@ -304,16 +304,23 @@ namespace ParaEngine
 		CParaXModel* pModel = m_pAnimatedMesh->GetModel(nIndex);
 		if (pModel == NULL)
 			return E_FAIL;
-
-		for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
-		{
-			m_pAnimatedMesh->GetModel()->specialTextures[i] = -1;
-			m_pAnimatedMesh->GetModel()->replaceTextures[i] = nullptr;
-		}
+		
+		int nRestoreSpecialTextures = -1;
 		for (auto const & tex : mReplaceTextures)
 		{
-			m_pAnimatedMesh->GetModel()->specialTextures[tex.first] = tex.first;
-			m_pAnimatedMesh->GetModel()->replaceTextures[tex.first] = tex.second;
+			if(pModel->specialTextures[tex.first] >= 0)
+				pModel->replaceTextures[pModel->specialTextures[tex.first]] = tex.second;
+			else
+			{
+				// if there is only one texture, we will force replace it even there is no special replaceable id redefined.
+				if (pModel->GetObjectNum().nTextures <= 1 && nRestoreSpecialTextures<0)
+				{
+					nRestoreSpecialTextures = tex.first;
+					pModel->specialTextures[tex.first] = tex.first;
+					pModel->replaceTextures[pModel->specialTextures[tex.first]] = tex.second;
+					break;
+				}
+			}
 		}
 
 		sceneState->SetCurrentSceneObject(this);
@@ -400,6 +407,12 @@ namespace ParaEngine
 			// just a single standing animation is supported now and looped. 
 			UpdateModel(sceneState);
 			pModel->draw(sceneState, p.GetParamsBlock()); 
+		}
+
+		if (nRestoreSpecialTextures >= 0)
+		{
+			pModel->specialTextures[nRestoreSpecialTextures] = -1;
+			pModel->replaceTextures[nRestoreSpecialTextures] = nullptr;
 		}
 
 		CGlobals::GetWorldMatrixStack().pop();

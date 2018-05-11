@@ -9,6 +9,14 @@
 #include "FileSearchResult.h"
 #include "ParaFile.h"
 
+#if defined(PARAENGINE_MOBILE)
+	#define USE_COCOS_FILE_API
+#else
+	#if !defined(WIN32) || !defined(PARAENGINE_CLIENT) //  || defined(_DEBUG)
+		#define USE_BOOST_FILE_API
+	#endif
+#endif
+
 namespace ParaEngine
 {
 	using namespace std;

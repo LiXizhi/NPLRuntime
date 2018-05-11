@@ -88,13 +88,10 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetEditingMode_s, bool)	{cls->SetEditingMode(p1); return S_OK;}
 		
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetLockWindowSize_s, bool)	{ cls->SetLockWindowSize(p1); return S_OK; }
-		
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsShowWindowTitleBar_s, bool*)	{ *p1 = cls->IsShowWindowTitleBar(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetShowWindowTitleBar_s, bool)	{ cls->SetShowWindowTitleBar(p1); return S_OK; }
 
-		ATTRIBUTE_METHOD1(ParaEngineSettings, FixWindowSize_s, bool) { cls->FixWindowSize(p1); return S_OK; }
-		
-		
 
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetGameEffectSet_s, int*)	{*p1 = cls->GetGameEffectSet(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, LoadGameEffectSet_s, int)	{cls->LoadGameEffectSet(p1); return S_OK;}
@@ -190,6 +187,9 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, IsMouseCaptured_s, bool*)	{ *p1 = cls->IsMouseCaptured(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, SetCaptureMouse_s, bool)	{ cls->SetCaptureMouse(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(ParaEngineSettings, IsSandboxMode_s, bool*) { *p1 = cls->IsSandboxMode(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetSandboxMode_s, bool) { if(p1) cls->SetSandboxMode(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetDisplayMode_s, const char**)	{*p1 = cls->GetDispalyMode().c_str(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetMonitorResolution_s, Vector2*)	{*p1 = cls->GetMonitorResolution(); return S_OK;}
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetWindowResolution_s, Vector2*)	{ *p1 = cls->GetWindowResolution(); return S_OK; }
@@ -214,13 +214,22 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetCurrentMemoryUse_s, int*)	{ *p1 = cls->GetCurrentMemoryUse(); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineSettings, GetVertexBufferPoolTotalBytes_s, int*)	{ *p1 = (int)cls->GetVertexBufferPoolTotalBytes(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, int*) { *p1 = cls->GetAppHWND(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetWritablePath_s, const char**) { *p1 = cls->GetWritablePath(); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineSettings, SetWritablePath_s, const char*) { cls->SetWritablePath(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(ParaEngineSettings, GetAppHWND_s, double*) { *p1 = (double)cls->GetAppHWND(); return S_OK; }
 	public:
+		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
+		static bool IsSandboxMode();
+
+		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
+		static void SetSandboxMode(bool val);
+
 		/** 
 		* @param dwTechnique: 0 for basic, the higher the more advanced. up to 3. */
 		static void SetOceanTechnique(DWORD dwTechnique);
 
-		/** set the default script editor file path for ParaEngine.The windows notepad.exe is used if not specifcied.  */
+		/** set the default script editor file path for ParaEngine.The windows notepad.exe is used if not specified.  */
 		void SetScriptEditor(const string& sEditorFilePath);
 		/** Get the default script editor for ParaEngine.*/
 		const string& GetScriptEditor();
@@ -673,10 +682,15 @@ namespace ParaEngine
 		bool HasClosingRequest();
 		void SetHasClosingRequest(bool val);
 
-		// 
-		void FixWindowSize(bool fixed);
+		/** get the current writable path */
+		const char* GetWritablePath();
 
-		static int GetAppHWND();
+		/** set current writable path. 
+		* TODO: This can be a security problem. use with care. 
+		*/
+		void SetWritablePath(const char* sPath);
+
+		static intptr_t GetAppHWND();
 	protected:
 		void LoadNameIndex();
 	private:
@@ -688,6 +702,8 @@ namespace ParaEngine
 		float m_ctorHeight;
 		float m_ctorSpeed;
 		bool m_bEditingMode;
+		/** if true, IO is restricted to current working directory and writable directory.  Under win32, this is true by default. */
+		static bool m_bSandboxMode;
 		/**default script editor executable file path*/
 		string m_sScriptEditorPath;
 		/** whether to inverse mouse*/

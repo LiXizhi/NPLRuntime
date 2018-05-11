@@ -1015,10 +1015,22 @@ bool CParaXSerializer::ReadXGeosets(CParaXModel& xmesh, LPFileData pFileData)
 		xmesh.geosets.resize(nGeosets);
 		if (nGeosets > 0) {
 			memcpy(&xmesh.geosets[0], pGeosets, sizeof(ModelGeoset)*nGeosets);
-			// disable vertex start for parax file, since we only support uint16 indices. 
-			for (int i = 1; i < nGeosets;++i)
+			if (xmesh.CheckMinVersion(1, 0, 0, 1))
 			{
-				xmesh.geosets[i].SetVertexStart(0);
+				/* since Intel is little endian.
+				for (int i = 0; i < nGeosets; ++i)
+				{
+					ModelGeoset& geoset = xmesh.geosets[i];
+					geoset.SetVertexStart((DWORD)geoset.d3 + ((DWORD)(geoset.d4) << 16));
+				}*/
+			}
+			else
+			{
+				// disable vertex start for all parax file version before 1.0.0.1, since we only support uint16 indices. 
+				for (int i = 0; i < nGeosets; ++i)
+				{
+					xmesh.geosets[i].SetVertexStart(0);
+				}
 			}
 		}
 			
@@ -1144,7 +1156,6 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 				Bone& bone = xmesh.bones[i];
 				const ModelBoneDef&b = mb[i];
 				bone.parent = b.parent;
-				bone.pivot = b.pivot;
 				bone.flags = b.flags;
 				bone.nIndex = i;
 				
@@ -1153,11 +1164,33 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 					xmesh.m_boneLookup[b.boneid] = i;
 					bone.nBoneID = b.boneid;
 				}
+				if ((bone.flags & 0x80000000) != 0)
+				{
+					bone.flags = bone.flags & (~0x80000000);
+					if (b.nOffsetPivot != 0)
+						bone.SetName((const char*)GetRawData(b.nBoneName));
+
+					if (bone.IsOffsetMatrixBone()) {
+						bone.matOffset = *((const Matrix4*)GetRawData(b.nOffsetMatrix));
+						bone.bUsePivot = false;
+					}
+
+					bone.pivot = *((const Vector3*)GetRawData(b.nOffsetPivot));
+					if (bone.IsStaticTransform())
+						bone.matTransform = *((const Matrix4*)GetRawData(b.ofsStaticMatrix));
+				}
+				else
+				{
+					bone.pivot = b.pivot;
+				}
 				
-				ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
-				ReadAnimationBlock(&b.rotation, bone.rot, xmesh.globalSequences);
-				ReadAnimationBlock(&b.scaling, bone.scale, xmesh.globalSequences);
-				bone.RemoveRedundentKeys();
+				if (!bone.IsStaticTransform())
+				{
+					ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
+					ReadAnimationBlock(&b.rotation, bone.rot, xmesh.globalSequences);
+					ReadAnimationBlock(&b.scaling, bone.scale, xmesh.globalSequences);
+					bone.RemoveRedundentKeys();
+				}
 			}
 		}
 	}

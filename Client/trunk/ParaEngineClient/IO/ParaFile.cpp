@@ -16,6 +16,7 @@
 #include "IParaEngineApp.h"
 #include "FileUtils.h"
 #include "util/StringBuilder.h"
+#include "ParaEngineSettings.h"
 #include "ParaFile.h"
 
 #if defined (WIN32) && !defined(PARAENGINE_MOBILE) && defined(PARAENGINE_CLIENT)
@@ -665,6 +666,50 @@ bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fi
 void* ParaEngine::CParaFile::GetHandlePtr()
 {
 	return m_handle.m_pVoidPtr;
+}
+
+bool ParaEngine::CParaFile::IsWritablePath(const std::string& sFilename, bool bLogWarning)
+{
+	bool bWritable = true;
+	
+	// TODO security alert: only verify on win32, linux is more permissive at the moment. 
+	if (ParaEngineSettings::IsSandboxMode())
+	{
+		// skip writable, application and dev directory when it is absolute path.
+		if (IsAbsolutePath(sFilename))
+		{
+			std::string output, writablePath;
+			writablePath = CParaFile::GetWritablePath();
+			ToCanonicalFilePath(writablePath, writablePath);
+			ToCanonicalFilePath(output, sFilename);
+
+			if (output.compare(0, writablePath.length(), writablePath) != 0)
+			{
+				ToCanonicalFilePath(writablePath, CParaFile::GetCurDirectory(0));
+				if (output.compare(0, writablePath.length(), writablePath) != 0)
+				{
+					if (!CParaFile::GetDevDirectory().empty())
+					{
+						ToCanonicalFilePath(writablePath, CParaFile::GetDevDirectory());
+						if (output.compare(0, writablePath.length(), writablePath) != 0)
+							bWritable = false;
+					}
+					else
+						bWritable = false;
+				}
+			}
+		}
+		else
+		{
+			// TODO: only allow move in some given folder. we will only allow deletion in the specified user directory
+		}
+	}
+
+	if (!bWritable && bLogWarning)
+	{
+		OUTPUT_LOG("security alert: some one is telling the engine to open a file %s which is not allowed\r\n", sFilename.c_str());
+	}
+	return true;
 }
 
 bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, bool bUseCompressed)
@@ -1480,9 +1525,15 @@ const string& CParaFile::GetCurDirectory(DWORD dwDirectoryType)
 	{
 		return GetDevDirectory();
 	}
-		
 	ParaEngine::Lock lock_(g_file_mutex);
 
+	if (dwDirectoryType == APP_EXECUTABLE_DIR)
+	{
+		if (g_CurDirs[dwDirectoryType].empty())
+			g_CurDirs[dwDirectoryType] = CGlobals::GetApp()->GetModuleDir();
+		return g_CurDirs[dwDirectoryType];
+	}
+	
 	if (dwDirectoryType<APP_SH_DESKTOP_DIR)
 	{
 		if (!g_CurDirs[dwDirectoryType].empty())
@@ -1888,7 +1939,7 @@ int CParaFile::WriteEncodedUInt(uint32_t value)
 	return write((const char*)buffer, count);
 }
 
-std::string CParaFile::GetWritablePath()
+const std::string& CParaFile::GetWritablePath()
 {
 	return CFileUtils::GetWritablePath();
 }

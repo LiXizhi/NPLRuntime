@@ -239,9 +239,12 @@ namespace ParaEngine
 	void CLogger::SetLogFile(const string& sFile)
 	{
 		std::string filepath = sFile;
-#if defined(PARAENGINE_MOBILE) && !defined(WIN32)
-		filepath = CParaFile::GetWritablePath() + filepath;
-#endif
+
+		if (!CParaFile::IsAbsolutePath(sFile))
+		{
+			filepath = CParaFile::GetWritablePath() + filepath;
+		}
+
 		if (filepath != m_log_file_name)
 		{
 			m_log_file_name = filepath;

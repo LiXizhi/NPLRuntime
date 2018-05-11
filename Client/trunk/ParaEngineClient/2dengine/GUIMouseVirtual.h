@@ -71,7 +71,8 @@ namespace ParaEngine
 		virtual int GetCursorSize(){ return 32; };
 
 		/** swap left/right button.*/
-		virtual bool IsMouseButtonSwapped() { return m_bSwapMouseButton; }
+		virtual bool IsMouseButtonSwapped();
+		virtual void SetMouseButtonSwapped(bool bSwapped);
 
 		/** get current cursor position. */
 		virtual void GetDeviceCursorPos(int& x, int&y);

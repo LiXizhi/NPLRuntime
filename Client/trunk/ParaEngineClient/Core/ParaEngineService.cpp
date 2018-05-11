@@ -222,7 +222,8 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 		m_pParaEngineApp = new CParaEngineApp(pCommandLine);
 	}
 
-	if (strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0)
+	bool bInteractiveMode = strcmp("true", m_pParaEngineApp->GetAppCommandLineByParam("i", "false")) == 0;
+	if (bInteractiveMode)
 	{
 		// run in interpreter and interactive mode. io.read() can be used to read input from standard io. 
 		AcceptKeyStroke(false);
@@ -260,7 +261,8 @@ int CParaEngineService::Run(const char* pCommandLine, CParaEngineApp* pApp)
 	// stop the service now. 
 	m_pParaEngineApp->FinalCleanup();
 
-	printf("Service is stopped             \n");
+	if (!bInteractiveMode)
+		printf("Service is stopped             \n");
 	int return_code = m_pParaEngineApp->GetReturnCode();
 	if (!pApp){
 		SAFE_DELETE(m_pParaEngineApp);

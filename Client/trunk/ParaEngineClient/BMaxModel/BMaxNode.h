@@ -25,9 +25,9 @@ namespace ParaEngine
 		};
 
 	public:
-		inline uint32 GetIndex()
+		inline uint64 GetIndex()
 		{
-			return (DWORD)x + ((DWORD)z << 8) + ((DWORD)y << 16);
+			return (uint64)x + ((uint64)z << 16) + ((uint64)y << 32);
 		}
 		virtual DWORD GetColor();
 		BlockModel *GetBlockModel();

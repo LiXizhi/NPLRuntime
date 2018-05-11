@@ -563,6 +563,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("openimage", & ParaIO::openimage),
 			def("openimage", &ParaIO::openimage2),
 			def("readline", & ParaIO::readline),
+			def("readline", &ParaIO::readline2),
 			def("WriteString", & ParaIO::WriteString),
 			def("write", & ParaIO::write),
 			def("DoesFileExist", & ParaIO::DoesFileExist),

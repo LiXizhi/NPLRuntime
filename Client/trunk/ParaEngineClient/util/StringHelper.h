@@ -80,8 +80,8 @@ namespace ParaEngine
 		*/
 		static bool UTF16ToUTF8(const std::u16string& utf16, std::string& outUtf8);
 
-		static const WCHAR* MultiByteToWideChar(const char* name, unsigned int nCodePage = 0);
-		static const char* WideCharToMultiByte(const WCHAR* name, unsigned int nCodePage = 0);
+		static const WCHAR* MultiByteToWideChar(const char* name, unsigned int nCodePage = 0, size_t* outLen = nullptr);
+		static const char* WideCharToMultiByte(const WCHAR* name, unsigned int nCodePage = 0, size_t* outLen = nullptr);
 		/**
 		* get the text of the control
 		* @param szText [out] buffer to receive the text
@@ -137,7 +137,7 @@ namespace ParaEngine
 		* local text = ParaMisc.EncodingConvert("HTML", "", "Chinese characters: &#24320;&#21457;")
 		* log(text);
 		*/
-		static const char* EncodingConvert(const char* srcEncoding, const char* dstEncoding, const char* bytes);
+		static const std::string& EncodingConvert(const std::string& srcEncoding, const std::string& dstEncoding, const std::string& bytes);
 
 		/** copy text to clipboard. Input is GUI UTF8 encoding */
 		static bool CopyTextToClipboard(const string& text);
@@ -236,5 +236,37 @@ namespace ParaEngine
 		@param sequence: it may contain ?, which matches to 1 any character.
 		*/
 		static bool StrEndsWith(const string& str, const string& sequence);
+
+
+		private:
+			class _CodePageName
+			{
+			public:
+				_CodePageName()
+				{
+#ifdef WIN32
+					auto cp = GetACP();
+					char tmp[30];
+					ParaEngine::StringHelper::fast_itoa((int)cp, tmp, 30);
+
+					name = "CP";
+					name += tmp;
+#else
+					name = "utf-8";
+#endif
+				}
+
+				const std::string& get() const
+				{
+					return name;
+				}
+
+			private:
+				std::string name;
+
+			};
+
+			static _CodePageName defaultCPName;
+
 	};
 }

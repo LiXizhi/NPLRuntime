@@ -106,7 +106,7 @@ void NPL::WebSocket::WebSocketWriter::generateHeaderBytes(WebSocketFrame& frame,
 	// masking key
 	if (frame.isMasked())
 	{
-		vector<byte> mask = frame.getMask();
+		vector<byte>& mask = frame.getMask();
 
 		int maskInt = 0;
 		for (byte maskByte : mask)

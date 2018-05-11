@@ -353,7 +353,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::DispatchMsg( NPLMsgIn& msg )
 	NPLRuntimeState_ptr pRuntime = ParaEngine::CGlobals::GetNPLRuntime()->GetRuntimeState(msg.m_rts_name);
 	if(pRuntime)
 	{
-		if(msg.method.size()>0 && ( ((byte)(msg.method[0])) > 127 || msg.method == "A"))
+		if(msg.method.size()>0 && ( ((byte)(msg.method[0])) > 127 /*== 0xff*/ || msg.method == "A"))
 		{
 			if(CheckPubFile(msg.m_filename, msg.m_n_filename))
 			{
@@ -391,7 +391,7 @@ NPL::NPLReturnCode NPL::CNPLDispatcher::DispatchMsg( NPLMsgIn& msg )
 			else
 			{
 				//#ifdef PARAENGINE_CLIENT
-				OUTPUT_LOG("error: NPL remote file access denied %s\n", msg.m_filename.c_str());
+				OUTPUT_LOG("error: NPL remote file access denied: %s(%d)\n", msg.m_filename.c_str(), msg.m_n_filename);
 				//#endif
 				return NPL_FileAccessDenied;
 			}

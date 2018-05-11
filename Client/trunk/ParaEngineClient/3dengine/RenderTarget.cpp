@@ -533,6 +533,7 @@ bool ParaEngine::CRenderTarget::Begin()
 	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
 	
 	pd3dDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
+#endif
 	//calculate viewport
 	{
 		ParaViewport myViewport;
@@ -542,7 +543,6 @@ bool ParaEngine::CRenderTarget::Begin()
 		myViewport.Height = GetTextureHeight();
 		pd3dDevice->SetViewport((D3DVIEWPORT9*)&myViewport);
 	}
-#endif
 	m_bIsBegin = true;
 	return true;
 }
