@@ -111,13 +111,17 @@ namespace ParaEngine
 		WORD CompressionMethod;
 		DWORD CompressedSize;
 		DWORD UncompressedSize;
+
+		DWORD LastModifiedTime;
+		string zipFileNameOriginal;
+
 #ifdef SAVE_ZIP_HEADER
 		SZIPFileHeader header;
 #endif 
 
 	public:
 		SZipFileEntry()
-			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0), zipFileName(nullptr), fileNameLen(0)
+			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0), zipFileName(nullptr), fileNameLen(0), LastModifiedTime(0)
 		{
 #ifdef SAVE_ZIP_HEADER
 			memset(&header, 0, sizeof(SZIPFileHeader)); 
@@ -312,8 +316,14 @@ namespace ParaEngine
 		/** get file size. */
 		virtual DWORD GetFileSize(FileHandle& handle);
 
+		/** get file name in the package */
+		virtual string GetNameInArchive(FileHandle& handle) = 0;
+
+		/** get file original name in the package (in case the name is converted lower-cases when case-insensitive). */
+		virtual string GetOriginalNameInArchive(FileHandle& handle) = 0;
+		
 		/** read file. */
-		virtual bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead);
+		virtual bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime);
 
 		/** read the raw (may be compressed file) 
 		* @param lppBuffer: the buffer to hold the (compressed) output data. one need to use the SAFE_DELETE_ARRAY() to delete the output data. 

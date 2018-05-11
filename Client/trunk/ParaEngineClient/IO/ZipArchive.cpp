@@ -797,6 +797,10 @@ bool CZipArchive::ReadEntries_pkg()
 		entry.RefreshHash(m_bIgnoreCase);
 		nameOffset += nNameSize + 1;
 
+#ifdef _DEBUG
+		OUTPUT_LOG("----pkg file read: %s\n", entry.zipFileName.c_str());
+#endif
+
 		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
 		m_pFile->read(&entry.CompressedSize, sizeof(DWORD));
 		m_pFile->read(&entry.UncompressedSize, sizeof(DWORD));
@@ -978,6 +982,24 @@ DWORD CZipArchive::GetFileSize(FileHandle& handle)
 	return 0;
 }
 
+string CZipArchive::GetNameInArchive(FileHandle& handle)
+{
+	if(handle.m_index!=-1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileName;
+	}
+	return 0;
+}
+
+string CZipArchive::GetOriginalNameInArchive(FileHandle& handle)
+{
+	if(handle.m_index!=-1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileNameOriginal;
+	}
+	return 0;
+}
+
 bool CZipArchive::ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
 {
 	ParaEngine::Lock lock_(m_mutex);
@@ -1058,7 +1080,7 @@ bool CZipArchive::Decompress( LPVOID lpCompressedBuffer, DWORD nCompressedSize, 
 /*
 this function is based on Nikolaus Gebhardt's CZipReader in the "Irrlicht Engine".
 */
-bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead)
+bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead,LPDWORD lpLastWriteTime)
 {
 	ParaEngine::Lock lock_(m_mutex);
 
@@ -1093,6 +1115,8 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 
 			DWORD uncompressedSize = m_FileList[index].m_pEntry->UncompressedSize;			
 			DWORD compressedSize = m_FileList[index].m_pEntry->CompressedSize;
+
+			DWORD lastWriteTime = m_FileList[index].m_pEntry->LastModifiedTime;
 
 			void* pBuf = lpBuffer;
 			bool bCopyBuffer = false;
@@ -1147,6 +1171,8 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 			{
 				if(lpNumberOfBytesRead)
 					(*lpNumberOfBytesRead) = nNumberOfBytesToRead;
+				if(lpLastWriteTime)
+					(*lpLastWriteTime) = lastWriteTime;
 				if(bCopyBuffer)
 				{
 					memcpy(lpBuffer, pBuf, nNumberOfBytesToRead);
@@ -1355,10 +1381,15 @@ bool CZipArchive::ReadEntries()
 		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 
 		entry.zipFileName = &m_nameBlock[nameOffset];
+		entry.zipFileNameOriginal = &m_nameBlock[nameOffset];
 		entry.fileNameLen = CentralDir.NameSize;
 		entry.RefreshHash(m_bIgnoreCase);
 		nameOffset += CentralDir.NameSize + 1;
-		
+
+#ifdef _DEBUG
+		OUTPUT_LOG("----zip file read: %s\n", entry.zipFileName.c_str());
+#endif
+
 
 #ifdef SAVE_ZIP_HEADER
 		/// fill header data
@@ -1374,6 +1405,7 @@ bool CZipArchive::ReadEntries()
 		entry.CompressionMethod = CentralDir.CompressionMethod;
 		entry.UncompressedSize = CentralDir.UnPackSize;
 		entry.CompressedSize = CentralDir.PackSize;
+		entry.LastModifiedTime = (CentralDir.LastModFileDate << 16) + (CentralDir.LastModFileTime & 0xffff);
 
 		int nExtraLength = 0;
 		if (CentralDir.ExtraSize > 0) {
