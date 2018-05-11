@@ -147,7 +147,7 @@ extern "C" {
 
 	JNIEXPORT jboolean JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_shouldStartLoading(JNIEnv *env, jclass, jint index, jstring jmessage)
 	{
-		return 0;
+		return JNI_TRUE;
 	}
 
 	JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineWebViewHelper_transportCmdLine(JNIEnv *env, jclass, jstring value)
