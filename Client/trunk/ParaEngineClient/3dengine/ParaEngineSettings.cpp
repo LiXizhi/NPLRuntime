@@ -1247,13 +1247,20 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 		{
 			
 			PBYTE iconData = (PBYTE)file.getBuffer();
-			int offset = LookupIconIdFromDirectoryEx(iconData, TRUE, 0, 0, LR_DEFAULTCOLOR);
-			if (offset != 0)
+
+			if (file.getSize() > (6 + 16))
 			{
 				BYTE w = *(iconData + 6);
 				BYTE h = *(iconData + 7);
-				hIcon = CreateIconFromResourceEx(iconData + offset, file.getSize() - offset, TRUE, 0x30000, w, h, LR_DEFAULTCOLOR);
+
+				int offset = LookupIconIdFromDirectoryEx(iconData, TRUE, w, h, LR_DEFAULTCOLOR);
+				if (offset != 0)
+				{
+					hIcon = CreateIconFromResourceEx(iconData + offset, file.getSize() - offset, TRUE, 0x30000, w, h, LR_DEFAULTCOLOR);
+				}
 			}
+
+			
 		}
 	}
 
