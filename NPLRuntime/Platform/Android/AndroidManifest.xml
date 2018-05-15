@@ -18,7 +18,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
   
   <!-- This .apk has no Java code itself, so set hasCode to False. -->
-    <application android:label="@string/app_name" android:hasCode="True" android:debuggable="True" android:icon="@drawable/ic_launcher" >
+    <application android:label="@string/app_name" android:hasCode="True" android:icon="@drawable/ic_launcher" android:name="com.tatfook.paracraft.ParaEngineApplication">
         <!-- Consider:  com.tatfook.paracraft.AppActivity or android.app.NativeActivity -->
         <activity android:name="com.tatfook.paracraft.AppActivity"
                 android:launchMode="standard"
@@ -40,6 +40,9 @@
             <data android:scheme="paracraft" />
           </intent-filter>
         </activity>
+
+      <meta-data android:name="PlguinWrapper"
+              android:value="@string/PluginInfo"/>
     </application>
 </manifest> 
 <!-- END_INCLUDE(manifest) -->

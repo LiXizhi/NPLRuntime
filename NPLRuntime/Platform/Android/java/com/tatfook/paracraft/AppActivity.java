@@ -117,11 +117,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
         }    
 	}
 
-	@Override
-    protected void onCreate(Bundle savedInstanceState) {
-		
-		sContext = this;
-
+	protected void _init(Bundle savedInstanceState) {
 		String libname = "main";
         String funcname = "ANativeActivity_onCreate";
         ActivityInfo ai;
@@ -173,11 +169,31 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
             throw new UnsatisfiedLinkError("Unable to init native handle");
         }
 
-		super.onCreate(savedInstanceState);
-
 		if (mWebViewHelper == null)
 			mWebViewHelper = new ParaEngineWebViewHelper(mFrameLayout);
-	
+	}
+
+	@Override
+    protected void onCreate(Bundle savedInstanceState) {
+		
+		sContext = this;
+
+		super.onCreate(savedInstanceState);
+
+		final Bundle si = savedInstanceState;
+
+		 // init plugin
+        if(!ParaEnginePluginWrapper.init(this, 
+                savedInstanceState ,
+                new ParaEnginePluginWrapper.PluginWrapperListener() {
+                    @Override
+                    public void onInit() {
+                        AppActivity.this._init(si);
+                    }
+                })) {
+            
+            this._init(si);
+        }
 	}
 
 	private static String getAbsolutePath(File file) {
@@ -254,6 +270,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
         }
         unloadNativeCode(mNativeHandle);
         super.onDestroy();
+		ParaEnginePluginWrapper.onDestroy();
     }
 
 	public static Context getContext()
@@ -266,21 +283,28 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 	@Override
     protected void onPause() {
         super.onPause();
+		ParaEnginePluginWrapper.onPause();
         onPauseNative(mNativeHandle);
     }
 
 	@Override
     protected void onResume() {
         super.onResume();
-
-		
-
+		ParaEnginePluginWrapper.onResume();
         onResumeNative(mNativeHandle);
     }
+
+	 @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		ParaEnginePluginWrapper.onActivityResult(requestCode, resultCode, data);
+	}
 
 	@Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+
+		ParaEnginePluginWrapper.onSaveInstanceState(outState);
         byte[] state = onSaveInstanceStateNative(mNativeHandle);
         if (state != null) {
             outState.putByteArray(KEY_NATIVE_SAVED_STATE, state);
@@ -290,12 +314,14 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 	@Override
     protected void onStart() {
         super.onStart();
+		ParaEnginePluginWrapper.onStart();
         onStartNative(mNativeHandle);
     }
 
 	@Override
     protected void onStop() {
         super.onStop();
+		ParaEnginePluginWrapper.onStop();
         onStopNative(mNativeHandle);
     }
 
