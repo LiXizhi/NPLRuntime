@@ -37,7 +37,9 @@ public class ParaEnginePluginWrapper {
 		return sContext;
 	}
 
-	protected static Object initPlugin(String classFullName) {
+	protected static Object initPlugin(String classFullName
+			, Map<String , Object> initParams
+			, boolean bDebug) {
 		Log.e(TAG, "class name : ----" + classFullName + "----");
 
 		if (sPlugins.containsKey(classFullName)) {
@@ -60,6 +62,10 @@ public class ParaEnginePluginWrapper {
 			Object o = c.getDeclaredConstructor(Context.class, Bundle.class).newInstance();
 			if (o != null) {
 				sPlugins.put(classFullName, o);
+
+				ParaEnginePluginInterface p = (ParaEnginePluginInterface)o;
+				p.onInit(initParams, bDebug);
+
 				return o;
 			} else {
 				Log.e(TAG, "Plugin " + classFullName + " wasn't initialized.");
@@ -98,12 +104,11 @@ public class ParaEnginePluginWrapper {
 			return false;
 		}
 		
-		Object p = initPlugin(classFullName);
+		Object p = initPlugin(classFullName, initParams, bDebug);
 		
 		if (p != null)
 		{
 			ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) p;
-			plugin.onInit(initParams, bDebug);
 
 			return plugin.onCreate(getContext(), null, listener);
 		}
@@ -134,10 +139,9 @@ public class ParaEnginePluginWrapper {
 		try {
 			for (int i = 0; i < pluginInfoList.size(); i++) {
 				PluginInfo info = pluginInfoList.get(i);
-				Object p = initPlugin(info.name);
+				Object p = initPlugin(info.name, info.initParams, info.debug);
 				if (p != null) {
 					ParaEnginePluginInterface plugin = (ParaEnginePluginInterface) p;
-					plugin.onInit(info.initParams, info.debug);
 
 					if (plugin.onCreate(sContext, savedInstanceState,
 							new ParaEnginePluginWrapper.PluginWrapperListener() {
