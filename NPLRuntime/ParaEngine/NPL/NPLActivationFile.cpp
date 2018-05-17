@@ -30,6 +30,7 @@ extern "C"
 	NPL.activate("LuaJavaBridge.cpp");
 	*/
 	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaJavaBridge_cpp(NPL::INPLRuntimeState* pState);
+	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_WebView_cpp(NPL::INPLRuntimeState* pState);
 #endif
 }
 
@@ -44,6 +45,7 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 	
 #ifdef ANDROID
 	m_callbackTable["NPL_activate_LuaJavaBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaJavaBridge_cpp;
+	m_callbackTable["NPL_activate_WebView_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_WebView_cpp;
 #endif
 
 
