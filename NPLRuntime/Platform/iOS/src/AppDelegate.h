@@ -1,12 +1,16 @@
 
 #import <UIKit/UIKit.h>
 
+
 namespace ParaEngine {
     class CParaEngineAppiOS;
 }
 
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
+{
+
+}
 
 @property (strong,nonatomic)   UIWindow *window;
 @property (strong,nonatomic)    UIViewController* viewController;
