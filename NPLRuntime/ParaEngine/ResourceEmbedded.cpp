@@ -18,6 +18,7 @@ using namespace ParaEngine;
 #if defined(USE_DIRECTX_RENDERER)
 		ADD_RESOURCE(":IDR_PARAXTEMPLATE", ParaXmodel_templates);
 		ADD_RESOURCE(":IDR_DEFAULT_CURSOR", cursor_tga);
+		ADD_RESOURCE(":IDR_PARAWORLD_ICO", paraworld_ico);
 		ADD_RESOURCE(":IDR_FX_OCEANWATER", ocean_water_fxo);
 		ADD_RESOURCE(":IDR_FX_OCCLUSION_TEST", occlusion_test_fxo);
 		ADD_RESOURCE(":IDR_FX_SIMPLE_MESH", simple_mesh_fxo);
