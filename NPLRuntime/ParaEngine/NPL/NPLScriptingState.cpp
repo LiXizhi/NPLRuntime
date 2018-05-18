@@ -293,6 +293,7 @@ void ParaScripting::CNPLScriptingState::LoadParaLib()
 	LoadHAPI_Audio();
 	LoadHAPI_Network();
 	LoadHAPI_AI();
+	LoadHAPI_WebView();
 }
 
 

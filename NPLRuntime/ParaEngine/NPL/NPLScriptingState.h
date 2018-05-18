@@ -82,6 +82,8 @@ namespace ParaScripting
 		void LoadHAPI_NPL();
 		/// load jabber related functions
 		void LoadHAPI_Jabber();
+
+		void LoadHAPI_WebView();
 	public:
 		/** get the NPL code buffer and size according to a given file. Please note that BOM is read from the beginning of the file. 
 		* if it is a utf8 encoded file with BOM byte mask, only the data section is returned 

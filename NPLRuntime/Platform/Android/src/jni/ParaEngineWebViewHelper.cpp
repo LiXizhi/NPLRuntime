@@ -23,6 +23,11 @@ namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
 	std::unordered_map<int, ParaEngineWebView*> ParaEngineWebView::m_views;
 
+	IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+	{
+		return ParaEngineWebView::createWebView(x, y, w, h);
+	}
+
 	ParaEngineWebView::ParaEngineWebView()
 		: m_handle(-1)
 	{
@@ -62,10 +67,6 @@ namespace ParaEngine {
 	}
 
 
-	ParaScripting::ParaAttributeObject ParaEngineWebView::GetAttributeObject()
-	{
-		return ParaScripting::ParaAttributeObject(this);
-	}
 
 	int ParaEngineWebView::Release()
 	{
@@ -98,7 +99,16 @@ namespace ParaEngine {
 			//OUTPUT_LOG("ParaEngineWebView: m_views size %d", m_views.size());
 
 			pView->m_handle = -1;
-			pView->Release();
+
+			if (pView->m_onClose == nullptr)
+				pView->Release();
+			else
+			{
+				if (!pView->m_onClose())
+				{
+					pView->Release();
+				}
+			}
 		}
 	}
 
@@ -121,8 +131,8 @@ namespace ParaEngine {
 
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
-		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData);
-	}
+		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
+	}  
 
 	int ParaEngineWebView::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
@@ -134,11 +144,20 @@ namespace ParaEngine {
 		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		pClass->AddField("Release", FieldType_void, (void*)Release_s, nullptr, nullptr, "", bOverride);
+		//pClass->AddField("Release", FieldType_void, (void*)Release_s, nullptr, nullptr, "", bOverride);
 
-		return S_OK; 
+		return S_OK;  
 	}
 
+	IAttributeFields* ParaEngineWebView::GetAttributeObject()
+	{
+		return this;
+	}
+
+	void ParaEngineWebView::addCloseListener(onCloseFunc fun)
+	{
+		m_onClose = fun;
+	}
 	 
 
 	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
@@ -153,28 +172,7 @@ namespace ParaEngine {
 		return true;
 	}
 
-	/*
-	static ParaAttributeObject createWebView(int x, int y, int w, int h)
-	{
-		return ParaAttributeObject(ParaEngineWebView::createWebView(x, y, w, h));
-	}
-	*/
 
-	void ParaEngineWebView::luaopen_webview(lua_State *L)
-	{
-		using namespace luabind;
-
-		module(L)
-		[
-			namespace_("WebView")
-			[
-				class_<ParaEngineWebView>("ParaEngineWebView")
-					. def("GetAttributeObject", &ParaEngineWebView::GetAttributeObject)
-					. def("loadUrl", &ParaEngineWebView::loadUrl)
-				, def("createWebView", ParaEngineWebView::createWebView)
-			]
-		];
-	}
 
 } // end namespace
 
@@ -214,18 +212,6 @@ extern "C" {
 		env->DeleteLocalRef(value);
 		AppDelegate::getInstance().onCmdLine(cmd);
 	}
-
-	/** to load the lib, please call:
-	NPL.call("WebView.cpp", {});
-	NPL.activate("WebView.cpp");
-	*/
-	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_WebView_cpp(NPL::INPLRuntimeState* pState)
-	{
-		auto pRuntimeState = ParaEngine::CGlobals::GetNPLRuntime()->GetRuntimeState(pState->GetName());
-		ParaEngine::ParaEngineWebView::luaopen_webview(pRuntimeState->GetLuaState());
-		OUTPUT_LOG("WebView loaded\n");
-		return NPL::NPL_OK;
-	};
 
 
 } // end extern
