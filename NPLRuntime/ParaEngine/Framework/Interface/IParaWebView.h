@@ -13,6 +13,7 @@ namespace ParaEngine {
 		virtual void setAlpha(float a) = 0;
 		virtual void setVisible(bool bVisible) = 0;
 		virtual void SetHideViewWhenClickBack(bool b) = 0;
+		virtual void Refresh() = 0;
 
 		// return false IParaWebView must auto release, return ture IParaWebView release by user
 		typedef std::function<bool()> onCloseFunc;
