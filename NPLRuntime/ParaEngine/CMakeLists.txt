@@ -88,6 +88,9 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
     list(APPEND EmbeddedResource_Files_D3D ${Resource})
 
+	embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_D3D ${Resource})
+
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
 
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
