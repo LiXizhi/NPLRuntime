@@ -45,7 +45,7 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 #ifdef ANDROID
 	m_callbackTable["NPL_activate_LuaJavaBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaJavaBridge_cpp;
 #endif
-
+	 
 
 	SetFunctionByName(filename);
 }

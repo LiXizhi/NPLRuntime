@@ -52,9 +52,20 @@ using namespace ParaEngine;
     
     RenderWindowiOS* renderWindow = new RenderWindowiOS(view);
     
+    const char* cmdline = "";
+    if  (launchOptions)
+    {
+        NSURL *url = [launchOptions objectForKey:UIApplicationLaunchOptionsURLKey];
+        if (url)
+        {
+            cmdline = [[url relativeString] UTF8String];
+        }
+    }
+    
+    
     // Init app
     self.app = new CParaEngineAppiOS();
-    self.app->InitApp(renderWindow, "");
+    self.app->InitApp(renderWindow, cmdline);
     
 
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
@@ -71,7 +82,24 @@ using namespace ParaEngine;
     self.app->DoWork();
 }
  
- 
+- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
+    
+    if (!url)
+        return NO;
+    
+    if (self.app)
+    {
+        const char* cmdline = [[url relativeString] UTF8String];
+        self.app->onCmdLine(cmdline);
+        
+        return YES;
+    }
+    else
+    {
+        return NO;
+    }
+
+}
 
 - (void)applicationWillResignActive:(UIApplication *)application {
     // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.

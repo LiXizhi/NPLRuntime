@@ -212,6 +212,18 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+	public static void SetHideViewWhenClickBack(final int index, final boolean b) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ParaEngineWebView webView = webViews.get(index);
+                if (webView != null) {
+                    webView.SetHideViewWhenClickBack(b);
+                }
+            }
+        });
+    }
+
 	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
         sActivity.runOnUiThread(new Runnable() {
             @Override

@@ -3,6 +3,17 @@
 #include "AppDelegate.h"
 #include "AttributeClass.h"
 #include "JniHelper.h"
+#include "NPLRuntime.h"
+#include "NPLScriptingState.h"
+
+
+#include <luabind/luabind.hpp>
+#include <luabind/out_value_policy.hpp>
+#include <luabind/return_reference_to_policy.hpp>
+#include <luabind/copy_policy.hpp>
+#include <luabind/adopt_policy.hpp>
+#include <luabind/function.hpp>
+
 #include <jni.h>
 #include <android/log.h>
 
@@ -11,6 +22,11 @@
 namespace ParaEngine {
 	const std::string ParaEngineWebView::classname = "com/tatfook/paracraft/ParaEngineWebViewHelper";
 	std::unordered_map<int, ParaEngineWebView*> ParaEngineWebView::m_views;
+
+	IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+	{
+		return ParaEngineWebView::createWebView(x, y, w, h);
+	}
 
 	ParaEngineWebView::ParaEngineWebView()
 		: m_handle(-1)
@@ -50,6 +66,8 @@ namespace ParaEngine {
 		}
 	}
 
+
+
 	int ParaEngineWebView::Release()
 	{
 		if (GetRefCount() <= 1)
@@ -81,7 +99,16 @@ namespace ParaEngine {
 			//OUTPUT_LOG("ParaEngineWebView: m_views size %d", m_views.size());
 
 			pView->m_handle = -1;
-			pView->Release();
+
+			if (pView->m_onClose == nullptr)
+				pView->Release();
+			else
+			{
+				if (!pView->m_onClose())
+				{
+					pView->Release();
+				}
+			}
 		}
 	}
 
@@ -90,10 +117,22 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "setViewAlpha", m_handle, a);
 	}
 
+	void ParaEngineWebView::setVisible(bool bVisible)
+	{
+		JniHelper::callStaticVoidMethod(classname, "setVisible", m_handle, bVisible);
+	}
+
+
+	void ParaEngineWebView::SetHideViewWhenClickBack(bool b)
+	{
+		JniHelper::callStaticVoidMethod(classname, "SetHideViewWhenClickBack", m_handle, b);
+	}
+
+
 	void ParaEngineWebView::loadUrl(const std::string &url, bool cleanCachedData)
 	{
-		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData);
-	}
+		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
+	}  
 
 	int ParaEngineWebView::InstallFields(CAttributeClass* pClass, bool bOverride)
 	{
@@ -101,10 +140,25 @@ namespace ParaEngine {
 		IAttributeFields::InstallFields(pClass, bOverride);
 		PE_ASSERT(pClass != nullptr);
 
-		return S_OK;
+		pClass->AddField("Url", FieldType_String, (void*)loadUrl_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
+		//pClass->AddField("Release", FieldType_void, (void*)Release_s, nullptr, nullptr, "", bOverride);
+
+		return S_OK;  
 	}
 
-	
+	IAttributeFields* ParaEngineWebView::GetAttributeObject()
+	{
+		return this;
+	}
+
+	void ParaEngineWebView::addCloseListener(onCloseFunc fun)
+	{
+		m_onClose = fun;
+	}
+	 
 
 	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
 	{
@@ -117,6 +171,8 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "closeWebView");
 		return true;
 	}
+
+
 
 } // end namespace
 
@@ -156,4 +212,6 @@ extern "C" {
 		env->DeleteLocalRef(value);
 		AppDelegate::getInstance().onCmdLine(cmd);
 	}
+
+
 } // end extern

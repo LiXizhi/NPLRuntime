@@ -119,7 +119,7 @@ ParaEngine::IReadFile* ParaEngine::CParaFileUtilsiOS::OpenFileForRead(const std:
     boost::system::error_code error_code;
     if(fs::exists(fullPath,error_code))
     {
-        return new CReadFileBoost(filename);
+        return new CReadFileBoost(fullPath);
     }
     else
     {

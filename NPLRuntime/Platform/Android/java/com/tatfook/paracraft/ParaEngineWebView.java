@@ -51,6 +51,7 @@ public class ParaEngineWebView extends WebView {
 	private int mViewTag;
     private String mJSScheme;
 	private static String mAppScheme = "paracraft";
+	private boolean mHideViewWhenClickBack = false;
 
 	public ParaEngineWebView(Context context) {
         this(context, -1);
@@ -60,11 +61,17 @@ public class ParaEngineWebView extends WebView {
 		return mViewTag;
 	}
 
+	public void SetHideViewWhenClickBack(boolean b) {
+		mHideViewWhenClickBack = b;
+	}
+
 	@Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
         if ((keyCode == KeyEvent.KEYCODE_BACK)) {   
-
-			ParaEngineWebViewHelper._onCloseView(this);
+			if (mHideViewWhenClickBack)
+				setVisibility( WebView.GONE);
+			else
+				ParaEngineWebViewHelper._onCloseView(this);
             return false; 
 		}
         else {    
@@ -129,7 +136,10 @@ public class ParaEngineWebView extends WebView {
 							}
 						});
 
-						ParaEngineWebViewHelper._onCloseView((ParaEngineWebView)view);
+						if (mHideViewWhenClickBack)
+							setVisibility( WebView.GONE);
+						else
+							ParaEngineWebViewHelper._onCloseView((ParaEngineWebView)view);
 
 						return false;
 					}

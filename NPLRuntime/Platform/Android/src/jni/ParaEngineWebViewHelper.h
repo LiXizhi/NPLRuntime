@@ -1,11 +1,15 @@
 #pragma once
+#include "ParaScriptingGlobal.h"
+#include "IParaWebView.h"
 #include <jni.h>
 #include <string>
 #include <unordered_map>
 
+
 namespace ParaEngine {
 
-	class ParaEngineWebView : public IAttributeFields
+
+	class ParaEngineWebView : public IParaWebView
 	{
 	public:
 		virtual ~ParaEngineWebView();
@@ -20,10 +24,21 @@ namespace ParaEngine {
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
+
+		ATTRIBUTE_METHOD1(ParaEngineWebView, loadUrl_s, const char*) { cls->loadUrl(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineWebView, setAlpha_s, float) { cls->setAlpha(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineWebView, setVisible_s, bool) { cls->setVisible(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(ParaEngineWebView, SetHideViewWhenClickBack_s, bool) { cls->SetHideViewWhenClickBack(p1); return S_OK; }
+		//ATTRIBUTE_METHOD(ParaEngineWebView, Release_s) { cls->Release(); return S_OK; }
+
 		virtual int Release() override;
 
-		void loadUrl(const std::string &url, bool cleanCachedData = false);
-		void setAlpha(float a);
+		virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
+		virtual void setAlpha(float a) override;
+		virtual void setVisible(bool bVisible) override;
+		virtual void SetHideViewWhenClickBack(bool b) override;
+		virtual IAttributeFields* GetAttributeObject() override;
+		virtual void addCloseListener(onCloseFunc fun) override;
 
 		// test interface
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);
@@ -31,10 +46,13 @@ namespace ParaEngine {
 
 
 		static void onCloseView(int handle);
+
+
 	private:
 		static const std::string classname;
-
 		static std::unordered_map<int, ParaEngineWebView*> m_views;
+
+		onCloseFunc m_onClose;
 	protected:
 		ParaEngineWebView();
 		
