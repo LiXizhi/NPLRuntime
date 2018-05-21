@@ -41,6 +41,7 @@
 #include "ViewportManager.h"
 #include "MoviePlatform.h"
 #include "Framework/Common/Time/ParaTimer.h"
+#include "Framework/Interface/IParaWebView.h"
 #include "EnvironmentSim.h"
 #include "AutoCamera.h"
 #include "BlockEngine/BlockWorldClient.h"
@@ -50,6 +51,13 @@
 #include "WindowsApplication.h"
 #include "RenderWindowDelegate.h"
 using namespace  ParaEngine;
+
+
+
+IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
+{
+	return nullptr;
+}
 
 HINSTANCE g_hAppInstance;
 
