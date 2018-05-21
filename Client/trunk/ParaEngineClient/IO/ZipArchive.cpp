@@ -798,7 +798,7 @@ bool CZipArchive::ReadEntries_pkg()
 		nameOffset += nNameSize + 1;
 
 #ifdef _DEBUG
-		OUTPUT_LOG("----pkg file read: %s\n", entry.zipFileName.c_str());
+		OUTPUT_LOG("----pkg file read: %s\n", entry.zipFileName);
 #endif
 
 		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
@@ -1387,7 +1387,7 @@ bool CZipArchive::ReadEntries()
 		nameOffset += CentralDir.NameSize + 1;
 
 #ifdef _DEBUG
-		OUTPUT_LOG("----zip file read: %s\n", entry.zipFileName.c_str());
+		OUTPUT_LOG("----zip file read: %s\n", entry.zipFileName);
 #endif
 
 
