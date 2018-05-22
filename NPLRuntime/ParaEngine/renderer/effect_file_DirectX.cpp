@@ -16,6 +16,7 @@
 #include "AutoCamera.h"
 #include "SunLight.h"
 #include "RenderDeviceD3D9.h"
+#include <boost/filesystem.hpp>
 
 #ifdef WIN32
 #define strcmpi		_strcmpi
@@ -23,6 +24,56 @@
 
 using namespace ParaEngine;
 using namespace std;
+
+
+
+
+class D3D9ShaderInclude : public ID3DXInclude
+{
+
+public: 
+	D3D9ShaderInclude(const std::string& sDir)
+	{
+		m_ShaderDir = sDir + "/";
+	}
+	STDMETHOD(Open)(D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes)
+	{
+		std::string path = m_ShaderDir + pFileName;
+		CParaFile file(path.c_str());
+		if (file.isEof())
+		{
+			return E_FAIL;
+		}
+
+
+		void* buffer = malloc(file.getSize());
+		memcpy(buffer, file.getBuffer(), file.getSize());
+
+		*ppData = buffer;
+		*pBytes = file.getSize();
+
+		return S_OK;
+
+	}
+	/// close an include file
+	STDMETHOD(Close)(LPCVOID pData)
+	{
+		if(pData)
+			free((void*)pData);
+		return S_OK;
+	}
+private:
+	std::string m_ShaderDir;
+};
+
+
+
+
+
+
+
+
+
 /**
 * Comments by LiXizhi
 * The DirectX control panel(in windows control panel) can toggle retail/debug version dll.
@@ -318,8 +369,23 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 	LPD3DXBUFFER pBufferErrors = NULL;
 	
 	HRESULT result=E_FAIL;
-	CParaFile file(m_filename.c_str());
-	if(!file.isEof())
+	
+	auto file = std::make_shared<CParaFile>(m_filename.c_str());
+	
+	// fxo 
+	if (file->isEof())
+	{
+		file = nullptr;
+		if (m_filename.find(".fxo") != std::string::npos)
+		{
+			std::string fxname = m_filename.substr(0, m_filename.size() - 1);
+			file = std::make_shared<CParaFile>(fxname.c_str());
+			const char* source = file->getBuffer();
+		}
+	}
+
+
+	if(!file->isEof())
 	{
 		/*
 		// Since we are loading a binary file here and this effect has already been compiled,
@@ -329,16 +395,19 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
 		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
 		*/
+		boost::filesystem::path p(m_filename);
+		auto shaderDir = p.parent_path();
+		D3D9ShaderInclude includeImpl(shaderDir.string());
 		result = D3DXCreateEffect(
 			pd3dDevice,
-			file.getBuffer(),
-			(UINT)file.getSize(), 
+			file->getBuffer(),
+			(UINT)file->getSize(),
 			NULL, //(D3DXMACRO*) (s_bUseHalfPrecision ? s_halfPrecisionMacroTable : s_fullPrecisionMacroTable), 
-			NULL, 
+			&includeImpl,
 			NULL, // D3DXSHADER_PREFER_FLOW_CONTROL | D3DXSHADER_OPTIMIZATION_LEVEL2,
-			0, 
-			&m_pEffect, 
-			&pBufferErrors );
+			0,
+			&m_pEffect,
+			&pBufferErrors);
 	}
 	else
 	{
