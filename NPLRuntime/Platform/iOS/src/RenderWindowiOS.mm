@@ -22,6 +22,16 @@ ParaEngine::RenderWindowiOS::~RenderWindowiOS()
 
 }
 
+float ParaEngine::RenderWindowiOS::GetScaleX() const
+{
+    return [UIScreen mainScreen].scale;
+}
+
+float ParaEngine::RenderWindowiOS::GetScaleY() const
+{
+    return [UIScreen mainScreen].scale;
+}
+
 unsigned int ParaEngine::RenderWindowiOS::GetWidth() const
 {
     return (int)m_view.frame.size.width * [UIScreen mainScreen].scale;
@@ -34,7 +44,7 @@ unsigned int ParaEngine::RenderWindowiOS::GetHeight() const
 
 intptr_t ParaEngine::RenderWindowiOS::GetNativeHandle() const
 {
-    return (intptr_t)m_view;
+    return (intptr_t)(__bridge void*)m_view; //(intptr_t)m_view;
 }
 UIView* ParaEngine::RenderWindowiOS::GetView() const
 {

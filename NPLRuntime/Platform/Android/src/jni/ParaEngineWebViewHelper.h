@@ -29,7 +29,7 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD1(ParaEngineWebView, setAlpha_s, float) { cls->setAlpha(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineWebView, setVisible_s, bool) { cls->setVisible(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(ParaEngineWebView, SetHideViewWhenClickBack_s, bool) { cls->SetHideViewWhenClickBack(p1); return S_OK; }
-		//ATTRIBUTE_METHOD(ParaEngineWebView, Release_s) { cls->Release(); return S_OK; }
+		ATTRIBUTE_METHOD(ParaEngineWebView, Refresh_s) { cls->Refresh(); return S_OK; }
 
 		virtual int Release() override;
 
@@ -39,6 +39,7 @@ namespace ParaEngine {
 		virtual void SetHideViewWhenClickBack(bool b) override;
 		virtual IAttributeFields* GetAttributeObject() override;
 		virtual void addCloseListener(onCloseFunc fun) override;
+		virtual void Refresh() override;
 
 		// test interface
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);

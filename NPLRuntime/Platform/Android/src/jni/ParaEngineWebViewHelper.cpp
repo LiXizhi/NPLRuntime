@@ -144,7 +144,7 @@ namespace ParaEngine {
 		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		//pClass->AddField("Release", FieldType_void, (void*)Release_s, nullptr, nullptr, "", bOverride);
+		pClass->AddField("Refresh", FieldType_void, (void*)Refresh_s, nullptr, nullptr, "", bOverride);
 
 		return S_OK;  
 	}
@@ -159,6 +159,10 @@ namespace ParaEngine {
 		m_onClose = fun;
 	}
 	 
+	void ParaEngineWebView::Refresh()
+	{
+		JniHelper::callStaticVoidMethod(classname, "reload", m_handle);
+	}
 
 	bool ParaEngineWebView::openWebView(int x, int y, int w, int h, const std::string& url)
 	{

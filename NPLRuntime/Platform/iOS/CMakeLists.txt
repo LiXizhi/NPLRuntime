@@ -13,7 +13,7 @@ find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 
 add_executable(Paracraft ${app_src} ${RESOURCE_FILES})
-target_link_libraries(Paracraft PRIVATE 
+target_link_libraries(Paracraft PUBLIC
     ${UIKit} ${OpenGLES} ${QuartzCore}
     RenderSystemOpenGL
     ParaEngine
@@ -32,6 +32,7 @@ set_target_properties(Paracraft PROPERTIES
     XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Automatic"
 )
 
+target_include_directories(Paracraft PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
 

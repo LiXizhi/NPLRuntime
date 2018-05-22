@@ -6,6 +6,10 @@ namespace ParaEngine
 	public:
 		CParaEngineRenderBase() {};
 		virtual ~CParaEngineRenderBase() {};
+        
+        
+        virtual float GetScaleX() const override { return 1.0f;};
+        virtual float GetScaleY() const override { return 1.0f;};
 	};
 
 } // end namespace
