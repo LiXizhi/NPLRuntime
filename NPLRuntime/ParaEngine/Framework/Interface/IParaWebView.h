@@ -8,7 +8,23 @@ namespace ParaEngine {
 	class IParaWebView : public IAttributeFields
 	{
 	public:
-		virtual IAttributeFields* GetAttributeObject() = 0;
+
+		/** a static string, describing the attribute class object's name */
+		virtual const char* GetAttributeClassName() { static const char name[] = "IParaWebView"; return name; }
+		/** a static string, describing the attribute class object */
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
+		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
+		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
+
+
+		ATTRIBUTE_METHOD1(IParaWebView, loadUrl_s, const char*) { cls->loadUrl(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(IParaWebView, setAlpha_s, float) { cls->setAlpha(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(IParaWebView, setVisible_s, bool) { cls->setVisible(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(IParaWebView, SetHideViewWhenClickBack_s, bool) { cls->SetHideViewWhenClickBack(p1); return S_OK; }
+		ATTRIBUTE_METHOD(IParaWebView, Refresh_s) { cls->Refresh(); return S_OK; }
+
+		IAttributeFields* GetAttributeObject();
+
 		virtual void loadUrl(const std::string &url, bool cleanCachedData = false) = 0;
 		virtual void setAlpha(float a) = 0;
 		virtual void setVisible(bool bVisible) = 0;
