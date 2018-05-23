@@ -37,6 +37,7 @@
 #include "NPLPackageConfig.h"
 #include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
+#include "ScriptParticle.h"
 
 using namespace ParaEngine;
 
@@ -189,6 +190,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
 	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
+	pAttManager->RegisterObjectFactory("CScriptParticle",new CDefaultObjectFactory<CScriptParticle>());
 	// TODO add more here: 
 }
 
