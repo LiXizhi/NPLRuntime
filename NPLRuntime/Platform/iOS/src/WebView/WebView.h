@@ -22,8 +22,7 @@ namespace ParaEngine {
         virtual ~ParaEngineWebView();
         
         static ParaEngineWebView* createWebView(int x, int y, int w, int h);
-        
-        virtual IAttributeFields* GetAttributeObject() override;
+
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
         virtual void setAlpha(float a) override;
         virtual void setVisible(bool bVisible) override;
@@ -33,14 +32,7 @@ namespace ParaEngine {
         virtual void addCloseListener(onCloseFunc fun) override;
         
 
-        virtual const char* GetAttributeClassName() override { return "ParaEngineWebView"; };
-        virtual const char* GetAttributeClassDescription() override { return ""; };
-        virtual int InstallFields(CAttributeClass* pClass, bool bOverride) override;
-        
-        ATTRIBUTE_METHOD1(ParaEngineWebView, loadUrl_s, const char*) {cls->loadUrl(p1); return S_OK;};
-        ATTRIBUTE_METHOD1(ParaEngineWebView, setAlpha_s, float) {cls->setAlpha(p1); return S_OK;};
-        ATTRIBUTE_METHOD1(ParaEngineWebView, setVisible_s, bool) {cls->setVisible(p1); return S_OK;};
-        ATTRIBUTE_METHOD(ParaEngineWebView, Refresh_s) {cls->Refresh(); return S_OK;};
+
         
     protected:
         ParaEngineWebView();
