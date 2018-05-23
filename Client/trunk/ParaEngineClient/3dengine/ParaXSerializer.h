@@ -96,6 +96,32 @@ namespace ParaEngine
 			}
 			return nOffset;
 		};
+		/** @param nCount: number of objects. */
+		unsigned int AddRawData(const Matrix4 * pData, int nCount) {
+			unsigned int nOffset = GetSize();
+			if (nCount > 0)
+			{
+				unsigned int nSize = nCount * sizeof(*pData);
+				m_RawData.resize(nOffset + nSize);
+				memcpy(&m_RawData[nOffset], pData, nSize);
+			}
+			return nOffset;
+		};
+
+		/** @param nCount: number of objects. */
+		unsigned int AddRawData(const char* pData, int nCount) {
+			unsigned int nOffset = GetSize();
+			if (nCount > 0)
+			{
+				unsigned int nSize = nCount * sizeof(*pData);
+				m_RawData.resize(nOffset + nSize);
+				memcpy(&m_RawData[nOffset], pData, nSize);
+			}
+			return nOffset;
+		};
+		unsigned int AddRawData(const std::string& str) {
+			return AddRawData(str.c_str(), str.size()+1);
+		};
 	};
 #ifdef USE_DIRECTX_RENDERER
 	/** in case, one want to selectively load from file. this struct keeps intermediary data.*/

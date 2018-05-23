@@ -147,6 +147,15 @@ uint32_t ByteBuffer::size() {
 	return buf.size();
 }
 
+
+uint32_t ByteBuffer::capacity()
+{
+	return buf.capacity();
+}
+void ByteBuffer::reserve(uint32_t newCapacity)
+{
+	buf.reserve(newCapacity);
+}
 // Replacement
 
 /**
@@ -371,4 +380,7 @@ void ByteBuffer::printPosition() {
 	uint32_t length = buf.size();
 	std::cout << "ByteBuffer " << name.c_str() << " Length: " << length << " Read Pos: " << rpos << ". Write Pos: " << wpos << std::endl;
 }
+
+
+
 #endif

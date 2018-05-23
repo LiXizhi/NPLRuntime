@@ -273,7 +273,7 @@ namespace ParaEngine {
 
 				int nFaceCount = 0;
 				{ // calculate face count in the material group
-					for (int nStartFaceIndex = 0; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
+					for (int nStartFaceIndex = nStartIndex/3; nStartFaceIndex < nTotalFaceCount; ++nStartFaceIndex)
 					{
 						if (mesh->mFaceMaterials[nStartFaceIndex] == nMaterialIndex)
 							++nFaceCount;

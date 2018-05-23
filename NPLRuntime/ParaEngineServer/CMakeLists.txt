@@ -13,6 +13,7 @@ set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../Client/trunk/ParaEngineClient
 set (ParaEngineServer_VERSION_MAJOR 1)
 set (ParaEngineServer_VERSION_MINOR 0)
 
+set(EXTRA_LIBRARIES )
 if (WIN32)
 	# Note: if true, we will produce dll instead of exe, only under win32
 	set(PARAENGINE_COMPILE_LIB    false)
@@ -216,6 +217,9 @@ include_directories("${luabind_SOURCE_DIR}")
 include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
+
+
+
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
 	include_directories("${CURL_SOURCE_DIR}/include/")
@@ -223,6 +227,18 @@ IF(WIN32)
 ELSE(WIN32)
 	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 ENDIF(WIN32)
+
+## Readline support
+include("${PROJECT_SOURCE_DIR}/../cmake/FindReadline.cmake")
+# FIND_PACKAGE(Readline)
+IF(READLINE_FOUND)
+  ADD_DEFINITIONS("-DNPL_USE_READLINE")
+  LIST(APPEND EXTRA_LIBRARIES ${Readline_LIBRARY})
+  MESSAGE("NPL_USE_READLINE read line is found and used")
+  INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
+ELSE()
+	MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
+ENDIF()
 
 IF(WIN32)
 	ADD_DEFINITIONS(-DPLATFORM_WINDOWS)
@@ -363,10 +379,29 @@ else()
     set(LUA_LIBRARY lua)
 endif()
 
+##############################
+# iconv
+option(NPLRUNTIME_ICONV "include iconv" ON)
 
+if(NPLRUNTIME_ICONV)
+	ADD_DEFINITIONS(-DUSE_ICONV)
+
+
+	if(APPLE)
+		list(APPEND EXTRA_LIBRARIES iconv)
+	#elseif (LINUX OR UNIX)
+	#	list(APPEND EXTRA_LIBRARIES libiconv)
+	else()
+		add_subdirectory(${SERVER_SOURCE_DIR}libiconv ${NPLRuntime_BINARY_DIR}/libiconv)
+		set(ICONV_INCLUDE_DIR ${SERVER_SOURCE_DIR}libiconv/include ${NPLRuntime_BINARY_DIR}/libiconv/include)
+		set(ICONV_SOURCE_DIR ${SERVER_SOURCE_DIR}libiconv/src ${NPLRuntime_BINARY_DIR}/libiconv/src)
+		include_directories("${ICONV_INCLUDE_DIR}")
+		list(APPEND EXTRA_LIBRARIES libiconv)
+	endif()
+endif()
 
 if (WIN32)
-  set(EXTRA_LIBRARIES
+  set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 			Ws2_32
 			winmm
 			wsock32
@@ -379,7 +414,7 @@ if (WIN32)
   )
 else (WIN32)
 	if(LINUX)
-		set(EXTRA_LIBRARIES
+		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 				rt
 				dl
 				resolv
@@ -388,7 +423,7 @@ else (WIN32)
 			pthread
 		)
 	else(LINUX)
-		set(EXTRA_LIBRARIES
+		set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES}
 				dl
 				resolv
 				z

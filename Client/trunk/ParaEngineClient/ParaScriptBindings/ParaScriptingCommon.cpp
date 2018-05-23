@@ -368,9 +368,10 @@ ParaScripting::ParaAttributeObject ParaScripting::ParaAssetObject::GetAttributeO
 
 void ParaScripting::ParaAssetObject::UnloadAsset()
 {
-	if(IsValid())
+	if(m_pAsset)
 	{
 		m_pAsset->UnloadAsset();
+		
 		// 2008.10.9: we will delete texture info for static texture as well. this corrects a bug when the dimension of the texture info changes.
 		if(m_pAsset->GetType()==AssetEntity::texture)
 		{
@@ -378,6 +379,12 @@ void ParaScripting::ParaAssetObject::UnloadAsset()
 			if(pTexture->SurfaceType == TextureEntity::StaticTexture)
 			{
 				SAFE_DELETE(pTexture->m_pTextureInfo);
+			}
+			// make valid again, because we will reload it
+			if (!m_pAsset->IsValid() && m_pAsset->GetState() == AssetEntity::ASSET_STATE_FAILED_TO_LOAD)
+			{
+				m_pAsset->SetState(AssetEntity::ASSET_STATE_NORMAL);
+				m_pAsset->m_bIsValid = true;
 			}
 		}
 	}
@@ -617,16 +624,16 @@ bool ParaAsset::OpenArchive(const char* strFileName)
 		return false;
 }
 
-bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
+bool ParaAsset::GeneratePkgFile_(const char* srcZip, const char* destPkg, int nVersion)
 {
 	bool bRes = false;
 	CZipArchive* pArchive = new CZipArchive(); // TODO
-	if(pArchive != NULL)
+	if (pArchive != NULL)
 	{
-		if(pArchive->Open(srcZip, 0))
+		if (pArchive->Open(srcZip, 0))
 		{
 			string pkgFile = CParaFile::ChangeFileExtension(srcZip, "pkg");
-			if(destPkg == 0)
+			if (destPkg == 0)
 			{
 				destPkg = pkgFile.c_str();
 			}
@@ -636,19 +643,29 @@ bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
 			CGlobals::GetFileManager()->CloseArchive(destPkg);
 			CGlobals::GetFileManager()->CloseArchive(CParaFile::ChangeFileExtension(destPkg, "zip"));
 
-			bRes = pArchive->GeneratePkgFile(destPkg);
-			if(!bRes)
+			if (nVersion == 1)
+				bRes = pArchive->GeneratePkgFile(destPkg);
+			else if (nVersion == 2)
+				bRes = pArchive->GeneratePkgFile2(destPkg);
+
+			if (!bRes)
 			{
 				OUTPUT_LOG("warning: failed generating pkg file from %s. Make sure the pkg file is not in use.\n", srcZip);
 			}
 		}
 		SAFE_DELETE(pArchive);
 	}
-	if(!bRes)
+	if (!bRes)
 	{
 		OUTPUT_LOG("warning: zip file %s is not found\n", srcZip);
 	}
 	return bRes;
+}
+
+bool ParaAsset::GeneratePkgFile( const char* srcZip, const char* destPkg )
+{
+	// default to version 2
+	return GeneratePkgFile_(srcZip, destPkg, 2);
 }
 
 bool ParaAsset::OpenArchive2(const char* strFileName, bool bUseRelativePath)

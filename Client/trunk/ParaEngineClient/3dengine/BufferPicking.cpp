@@ -53,6 +53,15 @@ DWORD ParaEngine::CBufferPicking::GetPickingID(int nIndex /*= 0*/)
 	return GetPickingCount() > nIndex ? m_pickingResult[nIndex] : 0;
 }
 
+void ParaEngine::CBufferPicking::FetchPickingResult(DWORD ** ppResult)
+{
+	CheckDoPick();
+	if (ppResult)
+	{
+		*ppResult = &m_pickingResult[0];
+	}
+}
+
 int ParaEngine::CBufferPicking::GetPickingCount()
 {
 	CheckDoPick();
@@ -136,6 +145,9 @@ DWORD ParaEngine::CBufferPicking::Pick(int nX, int nY, int nViewportId /*= -1*/)
 
 int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -1*/)
 {
+
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+
 	ClearPickingResult();
 	SetResultDirty(false);
 	QRect region = region_;
@@ -144,11 +156,8 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 	if (BeginBuffer())
 	{
 		// just in case viewport is scaled.
-		D3DVIEWPORT9 viewport;
-		CGlobals::GetRenderDevice()->GetViewport(&viewport);
-
-		float fScalingX = (float)viewport.Width / CGlobals::GetGUI()->GetWidth();
-		float fScalingY = (float)viewport.Height / CGlobals::GetGUI()->GetHeight();
+		float fScalingX = (float)CGlobals::GetGUI()->GetUIScalingX();
+		float fScalingY = (float)CGlobals::GetGUI()->GetUIScalingY();
 
 		if (fScalingX != 1.f || fScalingY != 1.f)
 		{
@@ -174,10 +183,10 @@ int ParaEngine::CBufferPicking::Pick(const QRect& region_, int nViewportId /*= -
 			byte blue = *byte_ptr++;
 			byte alpha = *byte_ptr;
 			result = (alpha << 24) | (red << 16) | (green << 8) | (blue);
-		}
+	}
 #endif
 		EndBuffer();
-	}
+}
 	return m_pickingResult.size();
 }
 
@@ -263,19 +272,38 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 		CRenderTarget* pRenderTarget = CreateGetRenderTarget();
 		if (pRenderTarget)
 		{
-			ParaViewport viewport;
-			CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
-			// TODO: shall use the same buffer size as the current selected viewport?
-			pRenderTarget->SetRenderTargetSize(viewport.Width, viewport.Height);
+			CViewport* pViewport = NULL;
+			if (GetIdentifier() == "overlay")
+			{
+				// overlay always use the same viewport of the default 3d scene. 
+				pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(1);
+
+				// always use the full screen viewport for overlay
+				auto pScreenViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
+				pRenderTarget->SetRenderTargetSize(pScreenViewport->GetWidth(), pScreenViewport->GetHeight());
+			}
+			else
+			{
+				// shall use the same buffer size as the current selected viewport
+				ParaViewport viewport;
+				CGlobals::GetViewportManager()->GetCurrentViewport(viewport);
+				pRenderTarget->SetRenderTargetSize(viewport.Width, viewport.Height);
+			}
+
 
 			if (pRenderTarget->GetPrimaryAsset())
 			{
 				if (pRenderTarget->Begin())
 				{
-					pRenderTarget->Clear(LinearColor(0,0,0,0));
+					pRenderTarget->Clear(LinearColor(0, 0, 0, 0));
 
 					CSceneObject* pScene = CGlobals::GetScene();
 					CBaseCamera* pCamera = pScene->GetCurrentCamera();
+					if (pViewport) {
+						pViewport->SetActive();
+						pViewport->ApplyCamera((CAutoCamera*)pCamera);
+						pViewport->ApplyViewport();
+					}
 					CGlobals::GetWorldMatrixStack().push(Matrix4::IDENTITY);
 					CGlobals::GetProjectionMatrixStack().push(*pCamera->GetProjMatrix());
 					CGlobals::GetViewMatrixStack().push(*pCamera->GetViewMatrix());
@@ -290,7 +318,7 @@ bool ParaEngine::CBufferPicking::BeginBuffer()
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -368,6 +396,7 @@ int ParaEngine::CBufferPicking::InstallFields(CAttributeClass* pClass, bool bOve
 
 	pClass->AddField("PickingCount", FieldType_Int, (void*)0, (void*)GetPickingCount_s, NULL, "", bOverride);
 	pClass->AddField("PickingID", FieldType_DWORD, (void*)0, (void*)GetPickingID_s, NULL, "", bOverride);
+	pClass->AddField("FetchPickingResult", FieldType_void_pointer, (void*)0, (void*)FetchPickingResult_s, NULL, "", bOverride);
 	pClass->AddField("ClearPickingResult", FieldType_void, (void*)ClearPickingResult_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("CheckDoPick", FieldType_void, (void*)CheckDoPick_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("PickLeftTop", FieldType_Vector2, (void*)SetPickLeftTop_s, (void*)GetPickLeftTop_s, NULL, "", bOverride);
