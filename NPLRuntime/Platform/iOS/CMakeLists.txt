@@ -5,14 +5,20 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
 
-set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res/Images.xcassets)
+set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
+set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 
-
-find_library(UIKit UIKit)
+find_library(UIKit UIKit) 
 find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
 
-add_executable(Paracraft ${app_src} ${RESOURCE_FILES})
+add_executable(Paracraft
+    ${app_src}
+    ${INFO_FILE}
+    ${IMAGES_FILE}
+    ${RESOURCE_FILES})
+
 target_link_libraries(Paracraft PUBLIC
     ${UIKit} ${OpenGLES} ${QuartzCore}
     RenderSystemOpenGL
@@ -20,10 +26,16 @@ target_link_libraries(Paracraft PUBLIC
 )
 
 
+SET_SOURCE_FILES_PROPERTIES(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources/res)
+SET_SOURCE_FILES_PROPERTIES(${INFO_FILE} PROPERTICES MACOSX_PACKAGE_LOCATION .)
+SET_SOURCE_FILES_PROPERTIES(${IMAGES_FILE} PROPERTICES MACOSX_PACKAGE_LOCATION Resources/Images.cassets)
+
+set(RESOURCE_LIST ${IMAGES_FILE} ${RESOURCE_FILES})
+
 set_target_properties(Paracraft PROPERTIES 
-    MACOSX_BUNDLE YES
-    MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/info.plist
-    RESOURCE "${RESOURCE_FILES}"
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_INFO_PLIST ${INFO_FILE}
+    RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/Frameworks/"
     BUILD_WITH_INSTALL_RPATH TRUE
     XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME "AppIcon"

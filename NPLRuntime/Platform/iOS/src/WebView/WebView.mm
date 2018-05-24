@@ -41,6 +41,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @property (nonatomic) std::function<void(const std::string& url)> didFinishLoading;
 @property (nonatomic) std::function<void(const std::string& url)> didFailLoading;
 @property (nonatomic) std::function<void(const std::string& url)> onJsCallback;
+@property (nonatomic) std::function<void()> onCloseCallback;
+
 
 @property(nonatomic, readonly, getter=canGoBack) BOOL canGoBack;
 @property(nonatomic, readonly, getter=canGoForward) BOOL canGoForward;
@@ -83,6 +85,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 @interface UIWebViewWrapper () <UIWebViewDelegate>
 @property(nonatomic, retain) UIWebView * uiWebView;
+@property(nonatomic, retain) UIButton* uiCloseBtn;
 @property(nonatomic, copy) NSString * jsScheme;
 @end
 
@@ -112,10 +115,32 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)dealloc
 {
-    self.uiWebView.delegate = nil;
-    [self.uiWebView removeFromSuperview];
-    self.uiWebView = nil;
+    if (self.uiWebView)
+    {
+        self.uiWebView.delegate = nil;
+        [self.uiWebView removeFromSuperview];
+        self.uiWebView = nil;
+        self.uiCloseBtn = nil;
+    }
+    
     self.jsScheme = nil;
+}
+
+- (void)onCloseBtn:(UIButton*)btn
+{
+    if (self.hideViewWhenClickClose)
+    {
+        [self setVisible:NO];
+    }
+    else
+    {
+        self.uiWebView.delegate = nil;
+        [self.uiWebView removeFromSuperview];
+        self.uiWebView = nil;
+        self.uiCloseBtn = nil;
+        if (self.onCloseCallback)
+            self.onCloseCallback();
+     }
 }
 
 - (void)setupWebView
@@ -135,6 +160,21 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
             GLView* view = (__bridge GLView*)p;
             [view addSubview:self.uiWebView];
         }
+    }
+    
+    if (!self.uiCloseBtn)
+    {
+        self.uiCloseBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+        [self.uiCloseBtn addTarget:self action:@selector(onCloseBtn:) forControlEvents:UIControlEventTouchUpInside];
+        NSBundle *bundle = [NSBundle mainBundle];
+        NSString *resPath = [bundle resourcePath];
+        resPath = [resPath stringByAppendingPathComponent:@"res/WebViewCloseBtn.png"];
+        UIImage* img = [UIImage imageWithContentsOfFile:resPath];
+        float w = img.size.width * img.scale;
+        float h = img.size.height * img.scale;
+        self.uiCloseBtn.frame = CGRectMake(0, 0, w, h);
+        [self.uiCloseBtn setImage:img forState:UIControlStateNormal];
+        [self.uiWebView addSubview:self.uiCloseBtn];
     }
 }
 
@@ -157,7 +197,10 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 {
     if (!self.uiWebView)
         [self setupWebView];
-
+    
+    float btnHeigh = self.uiCloseBtn.frame.size.height;
+    float btnY = (height - btnHeigh) / 2;
+    self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
     self.uiWebView.frame = CGRectMake(x, y, width , height);
 }
 
@@ -316,6 +359,16 @@ namespace ParaEngine {
     ParaEngineWebView::ParaEngineWebView()
     {
         _uiWebViewWrapper = [UIWebViewWrapper webViewWrapper];
+        
+        _uiWebViewWrapper.onCloseCallback = [this]() {
+            if (this->_onClose == nullptr)
+                this->Release();
+            else
+            {
+                if (!this->_onClose())
+                    this->Release();
+            }
+        };
     }
     
     ParaEngineWebView::~ParaEngineWebView()
