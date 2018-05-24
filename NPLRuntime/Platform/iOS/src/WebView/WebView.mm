@@ -49,7 +49,7 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 
 //HideCloseButton
-@property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton) BOOL HideCloseButton;
+@property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton:) BOOL HideCloseButton;
 @property(nonatomic) BOOL hideViewWhenClickClose;
 
 + (instancetype)webViewWrapper;
