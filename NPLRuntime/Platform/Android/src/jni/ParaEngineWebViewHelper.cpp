@@ -134,7 +134,10 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
 	}  
 
+	void ParaEngineWebView::hideCloseButton(bool bHide)
+	{
 
+	}
 
 	void ParaEngineWebView::addCloseListener(onCloseFunc fun)
 	{

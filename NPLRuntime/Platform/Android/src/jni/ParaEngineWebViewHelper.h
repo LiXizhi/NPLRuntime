@@ -25,6 +25,7 @@ namespace ParaEngine {
 		virtual void SetHideViewWhenClickBack(bool b) override;
 		virtual void addCloseListener(onCloseFunc fun) override;
 		virtual void Refresh() override;
+		virtual void hideCloseButton(bool bHide) override;
 
 		// test interface
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);
