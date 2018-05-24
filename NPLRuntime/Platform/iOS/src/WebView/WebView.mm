@@ -47,6 +47,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 @property(nonatomic, readonly, getter=canGoBack) BOOL canGoBack;
 @property(nonatomic, readonly, getter=canGoForward) BOOL canGoForward;
 
+
+//HideCloseButton
+@property(nonatomic, readwrite, getter = HideCloseButton,  setter = setHideCloseButton) BOOL HideCloseButton;
 @property(nonatomic) BOOL hideViewWhenClickClose;
 
 + (instancetype)webViewWrapper;
@@ -80,6 +83,9 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 - (void)setScalesPageToFit:(bool)scalesPageToFit;
 
 - (void)setAlpha:(float)a;
+
+
+
 
 @end
 
@@ -274,6 +280,20 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
     return self.uiWebView.canGoBack;
 }
 
+- (BOOL)HideCloseButton
+{
+   if (self.uiCloseBtn)
+       return self.uiCloseBtn.hidden;
+    else
+       return YES;
+}
+
+- (void)setHideCloseButton:(BOOL)bHide
+{
+    if (self.uiCloseBtn)
+        self.uiCloseBtn.hidden = bHide;
+}
+
 - (void)goBack
 {
     [self.uiWebView goBack];
@@ -385,6 +405,11 @@ namespace ParaEngine {
     void ParaEngineWebView::setAlpha(float a)
     {
         [this->_uiWebViewWrapper setAlpha:a];
+    }
+    
+    void ParaEngineWebView::hideCloseButton(bool bHide)
+    {
+        this->_uiWebViewWrapper.HideCloseButton = bHide;
     }
     
     void ParaEngineWebView::setVisible(bool bVisible)
