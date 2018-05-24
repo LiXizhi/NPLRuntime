@@ -1,11 +1,11 @@
 #pragma once
-#include "BaseObject.h"
+#include "TileObject.h"
 #include "ParticleElement.h"
 
 namespace ParaEngine
 {
 	class CScriptParticle
-		:public CBaseObject
+		:public CTileObject
 	{
 	public:
 		struct SParticleElement
@@ -15,8 +15,10 @@ namespace ParaEngine
 			Vector2 mSize;
 			Vector2 mUVOffset;
 			LinearColor mColour;
-			asset_ptr<TextureEntity> mTexture;
+			asset_ptr<TextureEntity> * mTexture;
 			Vector3 m_vRenderOffset;
+			SParticleElement();
+			~SParticleElement();
 			void draw(SceneState * sceneState);
 			// Í¨¹ý CParticleElement ¼Ì³Ð
 			virtual int RenderParticle(SPRITEVERTEX ** pVertexBuffer,SceneState * pSceneState) override;

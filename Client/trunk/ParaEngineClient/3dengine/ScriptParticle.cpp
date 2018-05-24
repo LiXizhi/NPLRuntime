@@ -5,6 +5,8 @@
 #include "Globals.h"
 #include "ParaWorldAsset.h"
 #include "IBatchedElementDraw.h"
+#include "BaseCamera.h"
+#include "SceneObject.h"
 #include "ScriptParticle.h"
 
 using namespace ParaEngine;
@@ -26,6 +28,8 @@ int ParaEngine::CScriptParticle::InstallFields(CAttributeClass * pClass,bool bOv
 	pClass->AddField("mParticleColourB",FieldType_Float,(void*)setParticleColourB_s,NULL,NULL,NULL,bOverride);
 	pClass->AddField("mParticleColourA",FieldType_Float,(void*)setParticleColourA_s,NULL,NULL,NULL,bOverride);
 	pClass->AddField("mTexture",FieldType_String,(void*)setParticleTexture_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleWidth",FieldType_Float,(void*)setParticleWidth_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleHeight",FieldType_Float,(void*)setParticleHeight_s,NULL,NULL,NULL,bOverride);
 	return S_OK;
 }
 
@@ -44,7 +48,10 @@ ParaEngine::CScriptParticle::~CScriptParticle()
 HRESULT ParaEngine::CScriptParticle::Draw(SceneState * sceneState)
 {
 	for(auto element:mActiveElements)
+	{
+		element->m_vRenderOffset=m_vPos;
 		element->draw(sceneState);
+	}
 	return S_OK;
 }
 
@@ -123,7 +130,7 @@ const Vector2 & ParaEngine::CScriptParticle::getParticleSize() const
 void ParaEngine::CScriptParticle::setParticleTexture(const string & filename)
 {
 	assert(mCurrentParticleElement);
-	mCurrentParticleElement->mTexture=CGlobals::GetAssetManager()->LoadTexture("",filename,TextureEntity::StaticTexture);
+	mCurrentParticleElement->mTexture=new asset_ptr<TextureEntity>(CGlobals::GetAssetManager()->LoadTexture("",filename,TextureEntity::StaticTexture));
 }
 
 CScriptParticle::SParticleElement * ParaEngine::CScriptParticle::_createOreRetrieve()
@@ -135,6 +142,22 @@ CScriptParticle::SParticleElement * ParaEngine::CScriptParticle::_createOreRetri
 	return ret;
 }
 
+ParaEngine::CScriptParticle::SParticleElement::SParticleElement()
+	:mTexture(nullptr)
+	,mPosition(0,0,0)
+	,mSize(0,0)
+	,mUVOffset(0,0)
+	,mColour(1,1,1,1)
+	,m_vRenderOffset(0,0,0)
+{
+	addref();
+}
+
+ParaEngine::CScriptParticle::SParticleElement::~SParticleElement()
+{
+	delete mTexture;
+}
+
 void ParaEngine::CScriptParticle::SParticleElement::draw(SceneState * sceneState)
 {
 	sceneState->GetBatchedElementDrawer()->AddParticle(this);
@@ -142,28 +165,24 @@ void ParaEngine::CScriptParticle::SParticleElement::draw(SceneState * sceneState
 
 int ParaEngine::CScriptParticle::SParticleElement::RenderParticle(SPRITEVERTEX ** ppVertexBuffer,SceneState * pSceneState)
 {
-	float vX=mPosition.x+m_vRenderOffset.x;
-	float vY=mPosition.y+m_vRenderOffset.y;
-	float vZ=mPosition.z+m_vRenderOffset.z;
+	auto billboard=pSceneState->mxView;
+	billboard.setTrans(Vector3::ZERO);
+	billboard=billboard.transpose();
 	DWORD color=Color(mColour);
-
 	SPRITEVERTEX* pVertexBuffer=*ppVertexBuffer;
-	// 2 triangle list with 6 vertices
-	Vector3 v;
-
 	BillBoardViewInfo& bbInfo=pSceneState->BillBoardInfo();
-	v.x=-mSize.x; v.y=-mSize.y; v.z=0;
-	v=bbInfo.TransformVertexWithoutY(v);
-	SetParticleVertex(pVertexBuffer[0],vX+v.x,vY+v.y,vZ+v.z,mUVOffset.x,mUVOffset.y+1.0f,color);
-	v.x=-mSize.x; v.y=mSize.y; v.z=0;
-	v=bbInfo.TransformVertexWithoutY(v);
-	SetParticleVertex(pVertexBuffer[1],vX+v.x,vY+v.y,vZ+v.z,mUVOffset.x,mUVOffset.y,color);
-	v.x=mSize.x; v.y=mSize.y; v.z=0;
-	v=bbInfo.TransformVertexWithoutY(v);
-	SetParticleVertex(pVertexBuffer[2],vX+v.x,vY+v.y,vZ+v.z,mUVOffset.x+1.0f,mUVOffset.y,color);
-	v.x=mSize.x; v.y=-mSize.y; v.z=0;
-	v=bbInfo.TransformVertexWithoutY(v);
-	SetParticleVertex(pVertexBuffer[3],vX+v.x,vY+v.y,vZ+v.z,mUVOffset.x+1.0f,mUVOffset.y+1.0f,color);
+
+	const Vector3 world_pos(mPosition+m_vRenderOffset-CGlobals::GetScene()->GetRenderOrigin());
+
+	Vector3 v[]={Vector3(-mSize.x/2,-mSize.y/2,0),Vector3(-mSize.x/2,mSize.y/2,0),Vector3(mSize.x/2,mSize.y/2,0),Vector3(mSize.x/2,-mSize.y/2,0)};
+	const Vector2 uv[]={Vector2(mUVOffset.x,mUVOffset.y+1.0f),Vector2(mUVOffset.x,mUVOffset.y),Vector2(mUVOffset.x+1.0f,mUVOffset.y),Vector2(mUVOffset.x+1.0f,mUVOffset.y+1.0f)};
+	for(int i=0;i<4;++i)
+	{
+		Vector3 v_t;
+		ParaVec3TransformCoord(&v_t,&v[i],&billboard);
+		auto wpos=world_pos+v_t;
+		SetParticleVertex(pVertexBuffer[i],wpos.x,wpos.y,wpos.z,uv[i].x,uv[i].y,color);
+	}
 
 	pVertexBuffer[4]=pVertexBuffer[0];
 	pVertexBuffer[5]=pVertexBuffer[2];
@@ -173,5 +192,8 @@ int ParaEngine::CScriptParticle::SParticleElement::RenderParticle(SPRITEVERTEX *
 
 TextureEntity * ParaEngine::CScriptParticle::SParticleElement::GetTexture()
 {
-	return mTexture.get();
+	if(mTexture)
+		return mTexture->get();
+	else
+		return nullptr;
 }
