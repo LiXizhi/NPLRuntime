@@ -17,7 +17,6 @@ namespace ParaEngine
 		virtual HRESULT InvalidateDeviceObjects();
 		virtual HRESULT DeleteDeviceObjects();
 
-		bool loadResource(); // load the resource from a file (or NULL to use the resource name)
 		bool saveResource(const char* filename=0);	// save the resource to a file (or NULL to use the resource name)
 
 		/** set inner file name, usually at the load time. */
@@ -56,8 +55,8 @@ namespace ParaEngine
 		/** a technique description */
 		struct TechniqueDescDX : public TechniqueDesc
 		{
-			D3DXHANDLE hTechnique;
-			D3DXTECHNIQUE_DESC techniqueDesc;
+			IParaEngine::TechniqueHandle hTechnique;
+			IParaEngine::TechniqueDesc techniqueDesc;
 		public:
 			TechniqueDescDX(){
 				memset(this, 0, sizeof(TechniqueDescDX));
@@ -93,7 +92,6 @@ namespace ParaEngine
 		bool isMatrixUsed(eParameterHandles index)const;
 		bool isTextureUsed(int index)const;
 		bool isTextureMatrixUsed(int index)const;
-		bool isShadowTextureUsed()const;
 
 		bool setParameter(eParameterHandles index, const void* data, INT32 size=D3DX_DEFAULT)const;
 		bool setBool(eParameterHandles index, BOOL bBoolean) const;
@@ -179,7 +177,7 @@ namespace ParaEngine
 		void EnableLightMap(bool bEnable);
 
 		/** get directX effect object associated with this object. */
-		LPD3DXEFFECT GetDXEffect() {return m_pEffect;};
+		LPD3DXEFFECT GetDXEffect();
 
 		/** get effect parameter block with this object. 
 		* @param bCreateIfNotExist: 
@@ -218,8 +216,11 @@ namespace ParaEngine
 		static bool s_bUseHalfPrecision; // set to TRUE to use half-precision floats in all shaders
 
 		// Private Data...
-		LPD3DXEFFECT m_pEffect;
-		D3DXEFFECT_DESC m_EffectDesc;
+		IParaEngine::EffectDesc m_EffectDesc;
+
+		std::shared_ptr<IParaEngine::IEffect> m_pEffect;
+
+
 		vector<TechniqueDescDX> m_techniques;
 		/** indicate whether a texture at a given index is locked. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.*/ 
 		vector<bool> m_LockedTextures;

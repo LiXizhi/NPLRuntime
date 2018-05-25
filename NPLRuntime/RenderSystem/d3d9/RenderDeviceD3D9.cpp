@@ -1,7 +1,47 @@
 
 #include "RenderDeviceD3D9.h"
 #include "D3DMapping.h"
+#include "EffectD3D9.h"
 using namespace ParaEngine;
+
+
+class D3D9ShaderInclude : public ID3DXInclude
+{
+
+public:
+	D3D9ShaderInclude(IParaEngine::IEffectInclude* pIncludeImpl)
+	{
+		m_pIncludeImpl = pIncludeImpl;
+	}
+	STDMETHOD(Open)(D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes)
+	{
+
+		if (m_pIncludeImpl)
+		{
+			if (m_pIncludeImpl->Open(pFileName, (void**)ppData, pBytes))
+			{
+				return S_OK;
+			}
+		}
+
+		return E_FAIL;
+
+	}
+	/// close an include file
+	STDMETHOD(Close)(LPCVOID pData)
+	{
+		if (m_pIncludeImpl)
+		{
+			m_pIncludeImpl->Close((void*)pData);
+			return S_OK;
+		}
+		return E_FAIL;
+	}
+private:
+	IParaEngine::IEffectInclude* m_pIncludeImpl;
+};
+
+
 
 bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const char* func, int nLine)
 {
@@ -232,4 +272,43 @@ bool ParaEngine::RenderDeviceD3D9::ReadPixels(int nLeft, int nTop, int nWidth, i
 int ParaEngine::RenderDeviceD3D9::GetMaxSimultaneousTextures()
 {
 	return 8;
+}
+
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
+{
+
+	std::shared_ptr<D3D9ShaderInclude> d3d9Include = nullptr;
+
+
+	LPD3DXEFFECT pEffect = NULL;
+	LPD3DXBUFFER pBufferErrors = NULL;
+
+	LPD3DXINCLUDE d3dInlcude = NULL;
+	if (include != nullptr)
+	{
+		d3d9Include = std::make_shared<D3D9ShaderInclude>(include);
+		d3dInlcude = d3d9Include.get();
+	}
+
+	HRESULT result = D3DXCreateEffect(
+		m_pD3DDevice,
+		pSrcData,
+		srcDataLen,
+		NULL, 
+		d3dInlcude,
+		NULL, // D3DXSHADER_PREFER_FLOW_CONTROL | D3DXSHADER_OPTIMIZATION_LEVEL2,
+		0,
+		&pEffect,
+		&pBufferErrors);
+
+
+	if (result != S_OK)
+	{
+		if (pBufferErrors != nullptr)
+		{
+			error = (char*)pBufferErrors->GetBufferPointer();
+		}
+		return nullptr;
+	}
+	return std::make_shared<EffectD3D9>(pEffect);
 }

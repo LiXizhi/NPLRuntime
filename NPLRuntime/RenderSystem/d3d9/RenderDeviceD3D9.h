@@ -103,6 +103,9 @@ namespace ParaEngine
 
 		virtual int GetMaxSimultaneousTextures() override;
 
+
+		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
+
 	private:
 		Color4f m_CurrentClearColor;
 		float m_CurrentDepth;

@@ -8,6 +8,7 @@
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
 #include "effect_file_DirectX.h"
+#include "ShaderIncludeHandle.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
@@ -16,6 +17,7 @@
 #include "AutoCamera.h"
 #include "SunLight.h"
 #include "RenderDeviceD3D9.h"
+#include "EffectD3D9.h"
 #include <boost/filesystem.hpp>
 
 #ifdef WIN32
@@ -25,46 +27,6 @@
 using namespace ParaEngine;
 using namespace std;
 
-
-
-
-class D3D9ShaderInclude : public ID3DXInclude
-{
-
-public: 
-	D3D9ShaderInclude(const std::string& sDir)
-	{
-		m_ShaderDir = sDir + "/";
-	}
-	STDMETHOD(Open)(D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID* ppData, UINT* pBytes)
-	{
-		std::string path = m_ShaderDir + pFileName;
-		CParaFile file(path.c_str());
-		if (file.isEof())
-		{
-			return E_FAIL;
-		}
-
-
-		void* buffer = malloc(file.getSize());
-		memcpy(buffer, file.getBuffer(), file.getSize());
-
-		*ppData = buffer;
-		*pBytes = file.getSize();
-
-		return S_OK;
-
-	}
-	/// close an include file
-	STDMETHOD(Close)(LPCVOID pData)
-	{
-		if(pData)
-			free((void*)pData);
-		return S_OK;
-	}
-private:
-	std::string m_ShaderDir;
-};
 
 
 
@@ -131,6 +93,13 @@ LPCSTR s_halfPrecisionMacroTable[]=
 	0, 0,
 };
 
+
+
+inline ID3DXEffect* GetD3DEffect(std::shared_ptr<IParaEngine::IEffect> effect)
+{
+	EffectD3D9* effd3d9 = static_cast<EffectD3D9*>(effect.get());
+	return effd3d9->GetD3DEffect();
+}
 
 CEffectFileDirectX::CEffectFileDirectX(const char* filename)
 :m_pEffect(0),m_bIsBegin(false),m_bSharedMode(false),m_nTechniqueIndex(0)
@@ -220,7 +189,7 @@ void CEffectFileDirectX::EnableLightMap(bool bEnable)
 //. Accessors ...................................................
 LPD3DXEFFECT CEffectFileDirectX::effect()const
 {
-	return m_pEffect;
+	return GetD3DEffect(m_pEffect);
 }
 
 bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
@@ -250,7 +219,7 @@ bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* 
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
-		return SUCCEEDED(m_pEffect->SetMatrixArray(m_paramHandle[index], data->GetConstPointer(), count));
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrixArray(m_paramHandle[index], data->GetConstPointer(), count));
 	}
 	return false;
 }
@@ -259,8 +228,8 @@ bool CEffectFileDirectX::setMatrixInArray(eParameterHandles index, UINT32 elemen
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
-		D3DXHANDLE subHandle = m_pEffect->GetParameterElement(m_paramHandle[index], element);
-		return SUCCEEDED(m_pEffect->SetMatrix(subHandle, data->GetConstPointer()));
+		D3DXHANDLE subHandle = GetD3DEffect(m_pEffect)->GetParameterElement(m_paramHandle[index], element);
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(subHandle, data->GetConstPointer()));
 	}
 	return false;
 }
@@ -269,7 +238,7 @@ bool CEffectFileDirectX::setVectorArray(eParameterHandles index,const Vector4* p
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		return SUCCEEDED(m_pEffect->SetVectorArray(m_paramHandle[index], (const DeviceVector4*)pVector, count));
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetVectorArray(m_paramHandle[index], (const DeviceVector4*)pVector, count));
 	}
 	return false;
 }
@@ -278,7 +247,7 @@ bool CEffectFileDirectX::setFloatArray(eParameterHandles index, const float* dat
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		return SUCCEEDED(m_pEffect->SetFloatArray(m_paramHandle[index], data, count));
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloatArray(m_paramHandle[index], data, count));
 	}
 	return false;
 }
@@ -287,8 +256,8 @@ bool CEffectFileDirectX::setFloatInArray(eParameterHandles index, UINT32 element
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		D3DXHANDLE subHandle = m_pEffect->GetParameterElement(m_paramHandle[index],element);
-		return SUCCEEDED(m_pEffect->SetFloat(subHandle, data));
+		D3DXHANDLE subHandle = GetD3DEffect(m_pEffect)->GetParameterElement(m_paramHandle[index],element);
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloat(subHandle, data));
 	}
 	return false;
 }
@@ -297,7 +266,7 @@ bool CEffectFileDirectX::setTextureMatrix(int index, const Matrix4* data)const
 {
 	if (m_pEffect && isTextureMatrixUsed(index))
 	{
-		return SUCCEEDED(m_pEffect->SetMatrix(m_paramHandle[k_tex_mat0+index], data->GetConstPointer()));
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(m_paramHandle[k_tex_mat0+index], data->GetConstPointer()));
 	}
 	return false;
 }
@@ -306,7 +275,7 @@ bool CEffectFileDirectX::setParameter(eParameterHandles index, const void* data,
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(m_pEffect->SetValue(m_paramHandle[index], data, size));
+		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetValue(m_paramHandle[index], data, size));
 
 		PE_ASSERT(result);
 		return result;
@@ -317,7 +286,7 @@ bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(m_pEffect->SetBool(m_paramHandle[index], bBoolean));
+		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetBool(m_paramHandle[index], bBoolean));
 		PE_ASSERT(result);
 		return result;
 	}
@@ -328,7 +297,7 @@ bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(m_pEffect->SetInt(m_paramHandle[index], nValue));
+		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetInt(m_paramHandle[index], nValue));
 		PE_ASSERT(result);
 		return result;
 	}
@@ -339,7 +308,7 @@ bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(m_pEffect->SetFloat(m_paramHandle[index], fValue));
+		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloat(m_paramHandle[index], fValue));
 		PE_ASSERT(result);
 		return result;
 	}
@@ -351,7 +320,7 @@ bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
-		return SUCCEEDED(m_pEffect->SetMatrix(m_paramHandle[index], data->GetConstPointer()));
+		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(m_paramHandle[index], data->GetConstPointer()));
 	}
 	return false;
 }
@@ -384,6 +353,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		}
 	}
 
+	std::string error = "";
 
 	if(!file->isEof())
 	{
@@ -397,17 +367,8 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		*/
 		boost::filesystem::path p(m_filename);
 		auto shaderDir = p.parent_path();
-		D3D9ShaderInclude includeImpl(shaderDir.string());
-		result = D3DXCreateEffect(
-			pd3dDevice,
-			file->getBuffer(),
-			(UINT)file->getSize(),
-			NULL, //(D3DXMACRO*) (s_bUseHalfPrecision ? s_halfPrecisionMacroTable : s_fullPrecisionMacroTable), 
-			&includeImpl,
-			NULL, // D3DXSHADER_PREFER_FLOW_CONTROL | D3DXSHADER_OPTIMIZATION_LEVEL2,
-			0,
-			&m_pEffect,
-			&pBufferErrors);
+		ShaderIncludeHandle includeImpl(shaderDir.string());
+		m_pEffect = CGlobals::GetRenderDevice()->CreateEffect(file->getBuffer(), file->getSize(), &includeImpl, error);
 	}
 	else
 	{
@@ -415,43 +376,41 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		return result;
 	}
 
-    if( !SUCCEEDED( result ) )
+    if(!m_pEffect)
 	{
-		char* error = (pBufferErrors!=0) ? (char*)pBufferErrors->GetBufferPointer() : "failed loading effect file\n";
-		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error);
-		SAFE_RELEASE(pBufferErrors);
+		char* error_str = (error!="") ? error.c_str() : "failed loading effect file\n";
+		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
         return result;
 	}
-	SAFE_RELEASE(pBufferErrors);
+
 
     // get the description
-	m_pEffect->GetDesc( &m_EffectDesc );
+	m_pEffect->GetDesc(&m_EffectDesc);
 
 	m_techniques.clear();
 	//////////////////////////////////////////////////////////////////////////
 	// get all valid techniques
 	TechniqueDescDX tech;
-	tech.hTechnique = NULL;
 	bool bHasDefaultTechnique = false;
-	while ((result = m_pEffect->FindNextValidTechnique(tech.hTechnique, &tech.hTechnique)) == S_OK)
+
+	for (int idx =0;idx<m_EffectDesc.Techniques;idx++)
 	{
-		// get some info about the technique
-		result = m_pEffect->GetTechniqueDesc(tech.hTechnique, &tech.techniqueDesc);
-		if( result == S_OK )
+		tech.hTechnique = m_pEffect->GetTechnique(idx);
+		if (m_pEffect->GetTechniqueDesc(tech.hTechnique, &tech.techniqueDesc))
 		{
-			if(strcmp(tech.techniqueDesc.Name, "GenShadowMap") == 0)
+			if (tech.techniqueDesc.Name == "GenShadowMap")
 			{
 				tech.nCategory = TechCategory_GenShadowMap;
 			}
-			else if(strcmp(tech.techniqueDesc.Name, "Vegetation") == 0)
+			else if (tech.techniqueDesc.Name == "Vegetation")
 			{
 				tech.nCategory = TechCategory_Vegetation;
 			}
-			else if(strcmp(tech.techniqueDesc.Name, "Character") == 0)
+			else if (tech.techniqueDesc.Name == "Character")
 			{
 				tech.nCategory = TechCategory_Character;
 			}
-			else if(strcmp(tech.techniqueDesc.Name, "DetailCharacter") == 0)
+			else if (tech.techniqueDesc.Name == "DetailCharacter")
 			{
 				tech.nCategory = TechCategory_DetailCharacter;
 			}
@@ -462,11 +421,11 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 			}
 			m_techniques.push_back(tech);
 		}
-		else
-		{
+		else {
 			OUTPUT_LOG("ERROR: effect file: %s failed getting its description.\n", m_filename.c_str());
 		}
 	}
+
 	if(!bHasDefaultTechnique)
 	{
 		// at least one default technique must be valid. "GenShadowMap" is not a default technique. 
@@ -480,8 +439,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		//////////////////////////////////////////////////////////////////////////
 		// activate the first valid technique
 		m_nTechniqueIndex = 0;
-		result = m_pEffect->SetTechnique(m_techniques[m_nTechniqueIndex].hTechnique);
-		if( result == S_OK)
+		if(m_pEffect->SetTechnique(m_techniques[m_nTechniqueIndex].hTechnique))
 		{
 			// parse the effect parameters to build a list of handles
 			parseParameters();
@@ -536,7 +494,7 @@ bool CEffectFileDirectX::SetFirstValidTechniqueByCategory(TechniqueCategory nCat
 }
 void CEffectFileDirectX::releaseEffect()
 {
-	SAFE_RELEASE(m_pEffect);
+	m_pEffect = nullptr;
 }
 
 // destroy the resource
@@ -552,7 +510,7 @@ HRESULT CEffectFileDirectX::InvalidateDeviceObjects()
 {
 	if (m_pEffect)
 	{
-		m_pEffect->OnLostDevice();
+		GetD3DEffect(m_pEffect)->OnLostDevice();
 	}
 	return S_OK;
 }
@@ -562,7 +520,7 @@ HRESULT CEffectFileDirectX::RestoreDeviceObjects()
 {
 	if (m_pEffect)
 	{
-		m_pEffect->OnResetDevice();
+		GetD3DEffect(m_pEffect)->OnResetDevice();
 	}
 	return S_OK;
 }
@@ -637,7 +595,7 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 		
 		if(bForceBegin|| !m_bSharedMode)
 		{
-			HRESULT result = m_pEffect->Begin(0, dwFlag);
+			HRESULT result = GetD3DEffect(m_pEffect)->Begin(0, dwFlag);
 			if( SUCCEEDED( result ) )
 			{
 				m_bIsBegin = true;
@@ -659,7 +617,7 @@ bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 {
 	if(bForceBegin || !m_bSharedMode)
 	{
-		HRESULT result = m_pEffect->BeginPass(pass);
+		HRESULT result = GetD3DEffect(m_pEffect)->BeginPass(pass);
 		if( !SUCCEEDED( result ) )
 		{
 			OUTPUT_LOG("error: CEffectFileDirectX::BeginPass failed: %s \n", m_filename.c_str());
@@ -671,7 +629,7 @@ bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 
 void CEffectFileDirectX::CommitChanges()
 {
-	m_pEffect->CommitChanges();
+	GetD3DEffect(m_pEffect)->CommitChanges();
 }
 
 void CEffectFileDirectX::EndPass(bool bForceEnd)
@@ -680,7 +638,7 @@ void CEffectFileDirectX::EndPass(bool bForceEnd)
 	{
 		if(m_bIsBegin)
 		{
-			if( ! (m_pEffect && SUCCEEDED(m_pEffect->EndPass())))
+			if( ! (m_pEffect && SUCCEEDED(GetD3DEffect(m_pEffect)->EndPass())))
 			{
 				OUTPUT_LOG("error: CEffectFileDirectX::EndPass failed: %s \n", m_filename.c_str());
 			}
@@ -700,7 +658,7 @@ void CEffectFileDirectX::end(bool bForceEnd)
 			{
 				OnSwitchOutShader();
 			}
-			if( !(m_pEffect && SUCCEEDED( m_pEffect->End() )) )
+			if( !(m_pEffect && SUCCEEDED(GetD3DEffect(m_pEffect)->End() )) )
 			{
 				OUTPUT_LOG("error: CEffectFileDirectX::end failed: %s \n", m_filename.c_str());
 				return;
@@ -754,8 +712,8 @@ void CEffectFileDirectX::parseParameters()
 
     for( UINT iParam = 0; iParam < m_EffectDesc.Parameters; iParam++ )
     {
-        hParam = m_pEffect->GetParameter ( NULL, iParam );
-        m_pEffect->GetParameterDesc( hParam, &ParamDesc );
+        hParam = GetD3DEffect(m_pEffect)->GetParameter ( NULL, iParam );
+		GetD3DEffect(m_pEffect)->GetParameterDesc( hParam, &ParamDesc );
         if( ParamDesc.Semantic != NULL && 
             ( ParamDesc.Class == D3DXPC_MATRIX_ROWS || ParamDesc.Class == D3DXPC_MATRIX_COLUMNS ) )
         {
@@ -1359,6 +1317,11 @@ const CEffectFileDirectX::TechniqueDesc* CEffectFileDirectX::GetCurrentTechnique
 		return &(m_techniques[m_nTechniqueIndex]);
 	else
 		return &g_techdesc;
+}
+
+LPD3DXEFFECT ParaEngine::CEffectFileDirectX::GetDXEffect()
+{
+	return effect();
 }
 
 CParameterBlock* ParaEngine::CEffectFileDirectX::GetParamBlock( bool bCreateIfNotExist /*= false*/ )

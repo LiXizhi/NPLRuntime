@@ -6,7 +6,7 @@
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
 #include "Core/PEtypes.h"
-
+#include "IEffect.h"
 
 
 #if defined(DEBUG)
@@ -106,6 +106,8 @@ namespace ParaEngine
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */
 		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);
+
+		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData,uint32_t srcDataLen, IParaEngine::IEffectInclude* include,std::string& error) = 0;
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;
