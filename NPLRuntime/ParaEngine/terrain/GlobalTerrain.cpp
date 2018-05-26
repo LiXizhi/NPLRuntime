@@ -32,6 +32,7 @@ namespace ParaTerrain
 	Matrix4		g_matTerrainModelview = Matrix4::IDENTITY;
 	Matrix4		g_matTerrainProjection = Matrix4::IDENTITY;
 	Matrix4		g_matTerrainViewProj;
+
 	const float		CGlobalTerrain::g_fTerrainInvisibleHeight = FLOAT_POS_INFINITY;
 }
 
@@ -675,6 +676,16 @@ void CGlobalTerrain::InvalidateDeviceObjects()
 			return m_pTerrainSingle->InvalidateDeviceObjects();
 	}
 }
+
+void CGlobalTerrain::RendererRecreated()
+{
+	InvalidateDeviceObjects();
+	DeleteDeviceObjects();
+	
+	InitDeviceObjects();
+	RestoreDeviceObjects();
+}
+
 
 /// \brief Returns the surface normal of the terrain at the specified point.
 /// \param x The x location of the point on the Terrain's surface in world units.

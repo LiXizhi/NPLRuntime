@@ -945,6 +945,7 @@ HRESULT CSceneObject::RendererRecreated()
 	{
 		skymesh->RendererRecreated();
 	}
+	m_globalTerrain->RendererRecreated();
 	return S_OK;
 }
 

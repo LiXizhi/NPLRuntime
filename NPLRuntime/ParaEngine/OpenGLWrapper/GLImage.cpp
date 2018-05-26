@@ -773,7 +773,7 @@ bool GLImage::initWithS3TCData(const unsigned char * data, size_t dataLen)
 		else
 		{   //if it is not gles or device do not support S3TC, decode texture by software
 
-			OUTPUT_LOG("Hardware S3TC decoder not present. Using software decoder");
+			// OUTPUT_LOG("Hardware S3TC decoder not present. Using software decoder");
 
 			int bytePerPixel = 4;
 			unsigned int stride = width * bytePerPixel;
