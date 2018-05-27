@@ -460,7 +460,7 @@ bool CEffectFileDirectX::SetTechniqueByIndex(int nIndex)
 {
 	if(m_nTechniqueIndex == nIndex)
 		return true;
-	else if(((int)m_techniques.size()>nIndex) && (m_pEffect->SetTechnique(m_techniques[nIndex].hTechnique) == S_OK))
+	else if(((int)m_techniques.size()>nIndex) && (m_pEffect->SetTechnique(m_techniques[nIndex].hTechnique)))
 	{
 		m_nTechniqueIndex = nIndex;
 		return true;
@@ -481,7 +481,7 @@ bool CEffectFileDirectX::SetFirstValidTechniqueByCategory(TechniqueCategory nCat
 	{
 		if ((*itCur).nCategory == nCat)
 		{
-			if(m_pEffect->SetTechnique(m_techniques[i].hTechnique) == S_OK)
+			if(m_pEffect->SetTechnique(m_techniques[i].hTechnique))
 			{
 				m_nTechniqueIndex = i;
 				return true;
@@ -620,6 +620,7 @@ bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 		HRESULT result = GetD3DEffect(m_pEffect)->BeginPass(pass);
 		if( !SUCCEEDED( result ) )
 		{
+		    auto curTech = GetD3DEffect(m_pEffect)->GetCurrentTechnique();
 			OUTPUT_LOG("error: CEffectFileDirectX::BeginPass failed: %s \n", m_filename.c_str());
 			return false;
 		}
