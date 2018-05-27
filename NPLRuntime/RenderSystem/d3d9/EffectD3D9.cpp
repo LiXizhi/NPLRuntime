@@ -87,11 +87,36 @@ bool EffectD3D9::GetTechniqueDesc(const IParaEngine::TechniqueHandle& handle, IP
 
 IParaEngine::ParameterHandle ParaEngine::EffectD3D9::GetParameter(uint32_t index)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	IParaEngine::ParameterHandle handle;
+	handle.idx = PARA_INVALID_HANDLE;
+	if (index >= 0 && index < m_ParameterHandles.size())
+	{
+		auto parameter_handle = m_ParameterHandles[index];
+		if (parameter_handle != NULL)
+		{
+			handle.idx = index;
+		}
+	}
+	return handle;
 }
 
-bool ParaEngine::EffectD3D9::GetParameterDesc(const IParaEngine::ParameterHandle & handle, IParaEngine::ParameterHandle * pOutDesc)
+bool ParaEngine::EffectD3D9::GetParameterDesc(const IParaEngine::ParameterHandle & handle, IParaEngine::ParameterDesc * pOutDesc)
 {
+	if (pOutDesc == NULL)return false;
+	if (!isValidHandle(handle))return false;
+	
+	if (handle.idx >= 0 && handle.idx < m_ParameterHandles.size())
+	{
+		D3DXPARAMETER_DESC desc;
+		D3DXHANDLE parameter_handle = m_ParameterHandles[handle.idx];
+		if (m_pEffect->GetParameterDesc(parameter_handle, &desc) == S_OK)
+		{
+			
+		}
+	}
+
+
+
 	return false;
 }
 

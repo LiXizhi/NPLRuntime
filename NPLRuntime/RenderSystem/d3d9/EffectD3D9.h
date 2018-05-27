@@ -14,7 +14,7 @@ namespace ParaEngine
 		virtual IParaEngine::TechniqueHandle GetTechnique(uint32_t index) override;
 		virtual bool GetTechniqueDesc(const IParaEngine::TechniqueHandle& handle, IParaEngine::TechniqueDesc* pOutDesc) override;
 		virtual IParaEngine::ParameterHandle GetParameter(uint32_t index) override;
-		virtual bool GetParameterDesc(const IParaEngine::ParameterHandle& handle, IParaEngine::ParameterHandle* pOutDesc) override;
+		virtual bool GetParameterDesc(const IParaEngine::ParameterHandle& handle, IParaEngine::ParameterDesc* pOutDesc) override;
 		ID3DXEffect* GetD3DEffect();
 		virtual bool SetTechnique(const IParaEngine::TechniqueHandle& handle) override;
 

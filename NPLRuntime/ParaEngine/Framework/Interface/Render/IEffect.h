@@ -23,9 +23,22 @@ namespace IParaEngine
 
 	enum EParameterType
 	{
+		BOOL,
+		INT,
+		FLOAT,
 		FLOAT2,
 		FLOAT3,
-		FLOAT4
+		FLOAT4,
+		FLOAT4x4,
+		FLOAT4x3,
+		FLOAT3x3,
+		TEXTURE2D,
+		TEXTURE3D,
+		TEXTURECUBE,
+		SAMPLER2D,
+		SAMPLER3D,
+		SAMPLERCUBE,
+		UNSUPPORTED
 	};
 
 	struct ParameterDesc
@@ -54,7 +67,7 @@ namespace IParaEngine
 		virtual bool GetTechniqueDesc(const TechniqueHandle& handle, TechniqueDesc* pOutDesc) = 0;
 
 		virtual ParameterHandle GetParameter(uint32_t index) = 0;
-		virtual bool GetParameterDesc(const ParameterHandle& handle, ParameterHandle* pOutDesc) = 0;
+		virtual bool GetParameterDesc(const ParameterHandle& handle, ParameterDesc* pOutDesc) = 0;
 		virtual bool SetTechnique(const TechniqueHandle& handle) = 0;
 	};
 }
