@@ -252,6 +252,7 @@ namespace ParaTerrain
 		void InitDeviceObjects();
 		void DeleteDeviceObjects();
 		void InvalidateDeviceObjects();
+		void RendererRecreated();
 
 		/// \brief Returns the height of the vertex closest to the specified point.
 		/// \param x The x location of the point on the Terrain's surface in world units.

@@ -525,6 +525,8 @@ namespace ParaTerrain
 		/// must call this function when device is invalid.
 		void InvalidateDeviceObjects();
 
+		void RendererRecreated();
+
 		/**
 		* Breaks the Terrain down into triangles strips.
 		* Based on the current viewing parameters, this method breaks the terrain down into a 

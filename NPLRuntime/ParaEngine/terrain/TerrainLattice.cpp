@@ -576,6 +576,15 @@ void TerrainLattice::InvalidateDeviceObjects()
 	}
 }
 
+void TerrainLattice::RendererRecreated()
+{
+	m_pIndices.RendererRecreated();
+	for (auto it = m_pCachedTerrains.begin(); it != m_pCachedTerrains.end(); ++it)
+	{
+		(*it).second.pTerrain->RendererRecreated();
+	}
+}
+
 void TerrainLattice::SetTileSize(float fTileSize)
 {
 	m_TerrainWidth = fTileSize;

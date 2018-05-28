@@ -679,11 +679,24 @@ void CGlobalTerrain::InvalidateDeviceObjects()
 
 void CGlobalTerrain::RendererRecreated()
 {
+	/*
 	InvalidateDeviceObjects();
 	DeleteDeviceObjects();
 	
 	InitDeviceObjects();
 	RestoreDeviceObjects();
+	*/
+
+	if (m_nTerrainType == LATTICED_TERRAIN)
+	{
+		if (m_pTerrainLattice)
+			return m_pTerrainLattice->RendererRecreated();
+	}
+	else if (m_nTerrainType == SINGLE_TERRAIN)
+	{
+		if (m_pTerrainSingle)
+			return m_pTerrainSingle->RendererRecreated();
+	}
 }
 
 
