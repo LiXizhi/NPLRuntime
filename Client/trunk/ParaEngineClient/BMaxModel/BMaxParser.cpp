@@ -861,6 +861,7 @@ namespace ParaEngine
 		int total_count = 0;
 		int nStartVertex = 0;
 
+		int nRootBoneIndex = 0;
 		for (uint32 i = 0; i < m_rectangles.size(); i++)
 		{
 			Rectangle *rectangle = m_rectangles[i].get();
@@ -895,7 +896,9 @@ namespace ParaEngine
 		
 				modelVertex.color0 = pVertices->color2;
 				//set bone and weight, only a single bone
-				modelVertex.bones[0] = rectangle->GetBoneIndexAt(k);
+				int nBoneIndex = rectangle->GetBoneIndexAt(k);
+				// if no bone is found, use the default root bone
+				modelVertex.bones[0] = (nBoneIndex != -1) ? nBoneIndex : nRootBoneIndex;
 				modelVertex.weights[0] = vertex_weight;
 
 				m_vertices.push_back(modelVertex);
@@ -913,7 +916,6 @@ namespace ParaEngine
 			nStartVertex += nVertices;
 		}
 
-		int nRootBoneIndex = 0;
 		for (uint32 i = 0; i < m_blockModels.size(); i++)
 		{
 			BlockModel* model = m_blockModels.at(i);
