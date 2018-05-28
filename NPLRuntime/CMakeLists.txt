@@ -16,6 +16,8 @@ cmake_minimum_required (VERSION 2.6)
 
 project (NPLRuntime)
 
+set(CMAKE_CXX_STANDARD 11)
+
 option(NPLRUNTIME_LUASQL "whether to build luasql" OFF)
 
 # this is the directory to keep all binary
@@ -27,7 +29,7 @@ endif()
 
 set(SERVER_SOURCE_DIR   ${NPLRuntime_SOURCE_DIR}/../Server/trunk/)
 
-# static linking to all libraries, such as boost, sqlite3, curl. This will produce big executable, but easy to deploy as binary. 
+# static linking to all libraries, such as boost, sqlite3, curl. This will produce big executable, but easy to deploy as binary.
 option(NPL_STATIC_LINK_ALL "link statically as much as possible" ON)
 
 # include boost if client is not defined, it allows us to use a different boost version than the client on the server build.
@@ -47,7 +49,7 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
-find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals serialization iostreams regex) 
+find_package( Boost 1.55 REQUIRED COMPONENTS thread date_time filesystem system chrono signals serialization iostreams regex)
 
 if (WIN32)
 	option(BUILD_CURL_EXE OFF)
@@ -56,7 +58,7 @@ if (WIN32)
     add_subdirectory (${SERVER_SOURCE_DIR}zlib-1.2.3 ${NPLRuntime_BINARY_DIR}/zlib-1.2.3)
 else()
 	FIND_PACKAGE(CURL REQUIRED)
-	# making executable relocatable 
+	# making executable relocatable
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 	SET(CMAKE_INSTALL_RPATH "$ORIGIN/")
 endif()
