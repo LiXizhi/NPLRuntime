@@ -99,15 +99,11 @@ namespace ParaEngine
 		bool setFloat(eParameterHandles index, float fValue) const;
 		bool setMatrix(eParameterHandles index, const Matrix4* data)const;
 		bool setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const;
-		bool setMatrixInArray(eParameterHandles index, UINT32 element, const Matrix4* data)const;
 		bool setFloatArray(eParameterHandles index, const float* data, UINT32 count)const;
 		bool setVectorArray(eParameterHandles index,const Vector4* pVector,UINT count)const;
-		bool setFloatInArray(eParameterHandles index, UINT32 element, float data)const;
 		bool setTexture(int index, TextureEntity* data);
 		bool setTexture(int index, LPDIRECT3DTEXTURE9 pTex);
 		bool setTextureInternal(int index, LPDIRECT3DTEXTURE9 pTex);
-		bool setTextureMatrix(int index, const Matrix4* data)const;
-		//bool setShadowTexture(const TextureEntity* data)const;
 		void SetShadowMapSize(int nsize);
 		/** set the shadow radius */
 		void SetShadowRadius(float fRadius);
@@ -177,7 +173,7 @@ namespace ParaEngine
 		void EnableLightMap(bool bEnable);
 
 		/** get directX effect object associated with this object. */
-		LPD3DXEFFECT GetDXEffect();
+		std::shared_ptr<IParaEngine::IEffect> GetDXEffect();
 
 		/** get effect parameter block with this object. 
 		* @param bCreateIfNotExist: 
@@ -199,16 +195,8 @@ namespace ParaEngine
 		bool IsTextureLocked(int nIndex) const;
 
 		/** get texture handle at the given index. */
-		D3DXHANDLE& GetTextureHandle(int nIndex);
+		IParaEngine::ParameterHandle& GetTextureHandle(int nIndex);
 
-		HRESULT SetRawValue(D3DXHANDLE hParameter, LPCVOID pData, UINT ByteOffset, UINT Bytes);
-		bool SetBool(D3DXHANDLE hParameter, BOOL bBoolean);
-		bool SetInt(D3DXHANDLE hParameter, int nValue);
-		bool SetFloat(D3DXHANDLE hParameter, float fValue);
-		bool SetVector2(D3DXHANDLE hParameter, const Vector2& vValue);
-		bool SetVector3(D3DXHANDLE hParameter, const Vector3& vValue);
-		bool SetVector4(D3DXHANDLE hParameter, const Vector4& vValue);
-		bool SetMatrix(D3DXHANDLE hParameter, const Matrix4& data);
 	private:
 		// effect file name
 		string m_filename;
@@ -240,7 +228,7 @@ namespace ParaEngine
 		*/
 		CParameterBlock m_SharedParamBlock;
 	
-		D3DXHANDLE m_paramHandle[k_max_param_handles];
+		IParaEngine::ParameterHandle m_paramHandle[k_max_param_handles];
 
 		// Private Functions...
 		void parseParameters();

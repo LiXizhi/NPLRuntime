@@ -185,8 +185,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			if(pEffectFile->BeginPass(0))
 			{
 				pEffectFile->setTexture(0, m_pRTHalfSizeTexture);
-				LPD3DXEFFECT fx = pEffectFile->GetDXEffect();
-				fx->SetFloat(fx->GetParameterByName(NULL,"glowThreshold"),fGlowThreshold);
+				auto fx = pEffectFile->GetDXEffect();
+				fx->SetFloat(fx->GetParameterByName("glowThreshold"),fGlowThreshold);
 				
 				pEffectFile->CommitChanges();
 
@@ -264,8 +264,8 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(1,m_pRTBlurVertTexture);
 
 			Vector4 glowParam = pEffectManager->GetGlowness();
-			LPD3DXEFFECT fx = pEffectFile->GetDXEffect();
-			fx->SetVector(fx->GetParameterByName(NULL,"glowParams"), (const DeviceVector4*)&glowParam);
+			auto fx = pEffectFile->GetDXEffect();
+			fx->SetVector(fx->GetParameterByName("glowParams"),(DeviceVector4*)&glowParam);
 
 			pEffectFile->CommitChanges();
 
@@ -330,9 +330,9 @@ void CGlowEffect::SetBlurEffectParameters(float dx,float dy,float blurAmount,CEf
 
 
 	//optimize code here!!!
-	LPD3DXEFFECT fx = pEffect->GetDXEffect();
-	fx->SetFloatArray(fx->GetParameterByName(NULL,"sampleWeight"),sampleWeights,sampleCount);
-	fx->SetFloatArray(fx->GetParameterByName(NULL,"sampleOffset"),sampleOffset,sampleCount * 2);
+	auto fx = pEffect->GetDXEffect();
+	fx->SetFloatArray(fx->GetParameterByName("sampleWeight"),sampleWeights,sampleCount);
+	fx->SetFloatArray(fx->GetParameterByName("sampleOffset"),sampleOffset,sampleCount * 2);
 }
 
 float CGlowEffect::ComputeGaussian(float n,float blurAmount)

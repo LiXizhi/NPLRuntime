@@ -1,7 +1,16 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include "Core/PEtypes.h"
+#include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Interface/Common.h"
+
+namespace ParaEngine
+{
+	class Matrix4;
+	class Vector4;
+}
+
 namespace IParaEngine
 {
 
@@ -20,32 +29,43 @@ namespace IParaEngine
 		uint16_t Techniques; // Number of techniques
 	};
 
-
 	enum EParameterType
 	{
-		BOOL,
-		INT,
-		FLOAT,
-		FLOAT2,
-		FLOAT3,
-		FLOAT4,
-		FLOAT4x4,
-		FLOAT4x3,
-		FLOAT3x3,
-		TEXTURE2D,
-		TEXTURE3D,
-		TEXTURECUBE,
-		SAMPLER2D,
-		SAMPLER3D,
-		SAMPLERCUBE,
-		UNSUPPORTED
+		PT_VOID,
+		PT_BOOL,
+		PT_INT,
+		PT_FLOAT,
+		PT_FLOAT2,
+		PT_FLOAT3,
+		PT_FLOAT4,
+		PT_FLOAT2x2,
+		PT_FLOAT2x3,
+		PT_FLOAT2x4,
+		PT_FLOAT3x3,
+		PT_FLOAT3x4,
+		PT_FLOAT4x2,
+		PT_FLOAT4x3,
+		PT_FLOAT4x4,
+		PT_TEXTURE,
+		PT_TEXTURE1D,
+		PT_TEXTURE2D,
+		PT_TEXTURE3D,
+		PT_TEXTURECUBE,
+		PT_SAMPLER,
+		PT_SAMPLER1D,
+		PT_SAMPLER2D,
+		PT_SAMPLER3D,
+		PT_SAMPLERCUBE,
+		PT_STRUCT,
+		PT_UNSUPPORTED
 	};
 
 	struct ParameterDesc
 	{
-		std::string Name;
-		std::string Semantic;
-		EParameterType Type;
+		std::string Name;		// Parameter name
+		std::string Semantic;	// Parameter semantic
+		EParameterType Type;	// Component type
+		uint32_t Elements;		// Number of array elements
 	};
 
 
@@ -67,7 +87,23 @@ namespace IParaEngine
 		virtual bool GetTechniqueDesc(const TechniqueHandle& handle, TechniqueDesc* pOutDesc) = 0;
 
 		virtual ParameterHandle GetParameter(uint32_t index) = 0;
+		virtual ParameterHandle GetParameterByName(const char* name) = 0;
 		virtual bool GetParameterDesc(const ParameterHandle& handle, ParameterDesc* pOutDesc) = 0;
 		virtual bool SetTechnique(const TechniqueHandle& handle) = 0;
+
+		virtual bool SetMatrixArray(const ParameterHandle& handle, const ParaEngine::DeviceMatrix* data, uint32_t count) = 0;
+		virtual bool SetMatrix(const ParameterHandle& handle, const ParaEngine::DeviceMatrix* data) = 0;
+		virtual bool SetVectorArray(const ParameterHandle& handle, const ParaEngine::DeviceVector4* data, uint32_t count) = 0;
+		virtual bool SetVector(const ParameterHandle& handle, const ParaEngine::DeviceVector4* data) = 0;
+		virtual bool SetFloatArray(const ParameterHandle& handle, const float* data, uint32_t count) = 0;
+		virtual bool SetValue(const ParameterHandle& handle, const void* data, uint32_t size) = 0;
+		virtual bool SetBool(const ParameterHandle& handle, bool value) = 0;
+		virtual bool SetInt(const ParameterHandle& handle, int value) = 0;
+		virtual bool SetFloat(const ParameterHandle& handle, float value) = 0;
+		virtual bool SetTexture(const ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture) = 0;
+		virtual bool SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture) = 0;
+		virtual bool SetRawValue(const ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size) = 0;
+		virtual bool SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size) = 0;
+
 	};
 }

@@ -19,6 +19,7 @@
 #include "RenderDeviceD3D9.h"
 #include "EffectD3D9.h"
 #include <boost/filesystem.hpp>
+#include <unordered_map>
 
 #ifdef WIN32
 #define strcmpi		_strcmpi
@@ -106,12 +107,20 @@ CEffectFileDirectX::CEffectFileDirectX(const char* filename)
 {
 	m_filename = filename;
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
+	for (int i =0;i<k_max_param_handles;i++)
+	{
+		m_paramHandle[i].idx = PARA_INVALID_HANDLE;
+	}
 }
 
 CEffectFileDirectX::CEffectFileDirectX(const AssetKey& key)
 :CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
 {
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
+	for (int i = 0; i < k_max_param_handles; i++)
+	{
+		m_paramHandle[i].idx = PARA_INVALID_HANDLE;
+	}
 }
 
 CEffectFileDirectX::~CEffectFileDirectX()
@@ -194,22 +203,22 @@ LPD3DXEFFECT CEffectFileDirectX::effect()const
 
 bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
 {
-	return m_paramHandle[index] != 0;
+	return isValidHandle(m_paramHandle[index]);
 }
 
 bool CEffectFileDirectX::isMatrixUsed(eParameterHandles index)const
 {
-	return m_paramHandle[index] != 0;
+	return isValidHandle(m_paramHandle[index]);
 }
 
 bool CEffectFileDirectX::isTextureUsed(int index)const
 {
-	return m_paramHandle[k_tex0 + index] != 0;
+	return isValidHandle(m_paramHandle[k_tex0 + index]);
 }
 
 bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
 {
-	return m_paramHandle[k_tex_mat0 + index] != 0;
+	return isValidHandle(m_paramHandle[k_tex_mat0 + index]);
 }
 
 
@@ -219,26 +228,17 @@ bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* 
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrixArray(m_paramHandle[index], data->GetConstPointer(), count));
+		return m_pEffect->SetMatrixArray(m_paramHandle[index], data->GetConstPointer(), count);
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setMatrixInArray(eParameterHandles index, UINT32 element, const Matrix4* data)const
-{
-	if (m_pEffect && isMatrixUsed(index))
-	{
-		D3DXHANDLE subHandle = GetD3DEffect(m_pEffect)->GetParameterElement(m_paramHandle[index], element);
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(subHandle, data->GetConstPointer()));
-	}
-	return false;
-}
 
 bool CEffectFileDirectX::setVectorArray(eParameterHandles index,const Vector4* pVector,UINT count) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetVectorArray(m_paramHandle[index], (const DeviceVector4*)pVector, count));
+		return m_pEffect->SetVectorArray(m_paramHandle[index],(DeviceVector4*)pVector, count);
 	}
 	return false;
 }
@@ -247,35 +247,18 @@ bool CEffectFileDirectX::setFloatArray(eParameterHandles index, const float* dat
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloatArray(m_paramHandle[index], data, count));
+		return m_pEffect->SetFloatArray(m_paramHandle[index], data, count);
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setFloatInArray(eParameterHandles index, UINT32 element, float data)const
-{
-	if (m_pEffect && isParameterUsed(index))
-	{
-		D3DXHANDLE subHandle = GetD3DEffect(m_pEffect)->GetParameterElement(m_paramHandle[index],element);
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloat(subHandle, data));
-	}
-	return false;
-}
 
-bool CEffectFileDirectX::setTextureMatrix(int index, const Matrix4* data)const
-{
-	if (m_pEffect && isTextureMatrixUsed(index))
-	{
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(m_paramHandle[k_tex_mat0+index], data->GetConstPointer()));
-	}
-	return false;
-}
 
 bool CEffectFileDirectX::setParameter(eParameterHandles index, const void* data, INT32 size)const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetValue(m_paramHandle[index], data, size));
+		bool result= m_pEffect->SetValue(m_paramHandle[index], data, size);
 
 		PE_ASSERT(result);
 		return result;
@@ -286,7 +269,7 @@ bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetBool(m_paramHandle[index], bBoolean));
+		bool result=m_pEffect->SetBool(m_paramHandle[index], bBoolean);
 		PE_ASSERT(result);
 		return result;
 	}
@@ -297,7 +280,7 @@ bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetInt(m_paramHandle[index], nValue));
+		bool result= m_pEffect->SetInt(m_paramHandle[index], nValue);
 		PE_ASSERT(result);
 		return result;
 	}
@@ -308,7 +291,7 @@ bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= SUCCEEDED(GetD3DEffect(m_pEffect)->SetFloat(m_paramHandle[index], fValue));
+		bool result= m_pEffect->SetFloat(m_paramHandle[index], fValue);
 		PE_ASSERT(result);
 		return result;
 	}
@@ -320,7 +303,7 @@ bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
-		return SUCCEEDED(GetD3DEffect(m_pEffect)->SetMatrix(m_paramHandle[index], data->GetConstPointer()));
+		return m_pEffect->SetMatrix(m_paramHandle[index], data->GetConstPointer());
 	}
 	return false;
 }
@@ -703,225 +686,338 @@ bool CEffectFileDirectX::GetNumber(LPCSTR str, int nBeginIndex, int* pOut)
 
 void CEffectFileDirectX::parseParameters()
 {
-    // Look at parameters for semantics and annotations that we know how to interpret
-    D3DXPARAMETER_DESC ParamDesc;
-    D3DXHANDLE hParam;
-	static char numerals[] = {'0','1','2','3','4','5','6','7','8','9'};
-	int nIndex = 0;
+	using namespace IParaEngine;
 
-	memset(m_paramHandle, 0, sizeof(m_paramHandle));
-
-    for( UINT iParam = 0; iParam < m_EffectDesc.Parameters; iParam++ )
-    {
-        hParam = GetD3DEffect(m_pEffect)->GetParameter ( NULL, iParam );
-		GetD3DEffect(m_pEffect)->GetParameterDesc( hParam, &ParamDesc );
-        if( ParamDesc.Semantic != NULL && 
-            ( ParamDesc.Class == D3DXPC_MATRIX_ROWS || ParamDesc.Class == D3DXPC_MATRIX_COLUMNS ) )
-        {
-            if( strcmpi( ParamDesc.Semantic, "world" ) == 0 )
-				m_paramHandle[k_worldMatrix] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "worldinverse" ) == 0 )
-				m_paramHandle[k_worldInverseMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "worldview" ) == 0 )
-				m_paramHandle[k_worldViewMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "worldviewprojection" ) == 0 )
-				m_paramHandle[k_worldViewProjMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "worldmatrixarray" ) == 0 )
-				m_paramHandle[k_worldMatrixArray] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "skyboxmatrix" ) == 0 )
-				m_paramHandle[k_skyBoxMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "view" ) == 0 )
-				m_paramHandle[k_viewMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "projection" ) == 0 )
-				m_paramHandle[k_projMatrix] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "viewprojection" ) == 0 )
-				m_paramHandle[k_viewProjMatrix] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "texworldviewproj" ) == 0 )
-				m_paramHandle[k_TexWorldViewProjMatrix] = hParam;
-			
+	static std::unordered_map<std::string, uint32> table;
+	if (table.empty())
+	{
+		table["world"] = k_worldMatrix;
+		table["worldinverse"] = k_worldInverseMatrix;
+		table["worldview"] = k_worldViewMatrix;
+		table["worldviewprojection"] = k_worldViewProjMatrix;
+		table["worldmatrixarray"] = k_worldMatrixArray;
+		table["skyboxmatrix"] = k_skyBoxMatrix;
+		table["view"] = k_viewMatrix;
+		table["projection"] = k_projMatrix;
+		table["viewprojection"] = k_viewProjMatrix;
+		table["texworldviewproj"] = k_TexWorldViewProjMatrix;
 
 
-			// look for texture matrices which are named texMatX
-			if (_strnicmp( ParamDesc.Semantic, "texmat", 6) ==0)
-			{
-				string name(ParamDesc.Name);
-				int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
+		table["materialambient"] = k_ambientMaterialColor;
+		table["materialdiffuse"] = k_diffuseMaterialColor;
+		table["materialspecular"] = k_specularMaterialColor;
+		table["materialemissive"] = k_emissiveMaterialColor;
+		table["posScaleOffset"] = k_posScaleOffset;
+		table["uvScaleOffset"] = k_uvScaleOffset;
+		table["flareColor"] = k_lensFlareColor;
+		table["fogparameters"] = k_fogParameters;
+		table["fogColor"] = k_fogColor;
+		table["LightStrength"] = k_LightStrength;
+		table["shadowfactor"] = k_shadowFactor;
+		table["LightStrength"] = k_LightStrength;
+		table["LightColors"] = k_LightColors;
+		table["LightPositions"] = k_LightPositions;
+		table["FresnelR0"] = k_fresnelR0;
+		table["ConstVector0"] = k_ConstVector0;
+		table["ConstVector1"] = k_ConstVector1;
+		table["ConstVector2"] = k_ConstVector2;
+		table["ConstVector3"] = k_ConstVector3;
+		table["sunvector"] = k_sunVector;
+		table["suncolor"] = k_sunColor;
+		table["worldcamerapos"] = k_cameraPos;
+		table["viewdistances"] = k_cameraDistances;
+		table["worldviewvector"] = k_cameraFacing;
+		table["ambientlight"] = k_ambientLight;
+		table["sunlight_inscatter"] = k_sunlightInscatter;
+		table["sunlight_extinction"] = k_sunlightExtinction;
+		table["worldpos"] = k_worldPos;
+		table["texCoordOffset"] = k_texCoordOffset;
+		table["curnumbones"] = k_boneInfluenceCount;
+
+		table["fogenable"] = k_fogEnable;
+		table["alphatesting"] = k_bAlphaTesting;
+		table["alphablending"] = k_bAlphaBlending;
+
+		// boolean
+		for (int i = 0; i < (k_bBooleanMAX - k_bBoolean0); i++)
+		{
+			char buf[64]{ 0 };
+			sprintf(buf, "boolean%d", i);
+			table[buf] = k_bBoolean0 + i;
+		}
+
+		table["sunlightenable"] = k_bSunlightEnable;
+		table["shadowmapsize"] = k_nShadowmapSize;
+		table["shadowradius"] = k_fShadowRadius;
+		table["materialpower"] = k_specularMaterialPower;
+		table["reflectfactor"] = k_reflectFactor;
+		table["locallightnum"] = k_LocalLightNum;
+		table["layersnum"] = k_LayersNum;
+		table["time"] = k_time;
+		table["opacity"] = k_opacity;
+		table["specularPower"] = k_specularPower;
+		table["transitionFactor"] = k_transitionFactor;
+		table["LightParams"] = k_LightParams;
+		table["AtmosphericLightingParams"] = k_atmosphericLighting;
+		table["patchCorners"] = k_patchCorners;
+	}
+
+
+	static char numerals[] = { '0','1','2','3','4','5','6','7','8','9' };
+	IParaEngine::ParameterDesc ParamDesc;
+	for (uint32_t index = 0; index<m_EffectDesc.Parameters; index++)
+	{
+		IParaEngine::ParameterHandle hParam = m_pEffect->GetParameter(index);
+		if (!IParaEngine::isValidHandle(hParam))continue;
+		if (!m_pEffect->GetParameterDesc(hParam, &ParamDesc)) continue;
+		auto it = table.find(ParamDesc.Semantic);
+		if (it != table.end())
+		{
+			m_paramHandle[it->second] = hParam;
+		}
+		else
+		{
+			if (ParamDesc.Type == EParameterType::PT_TEXTURE || ParamDesc.Type == EParameterType::PT_TEXTURE2D || ParamDesc.Type == EParameterType::PT_TEXTURE3D || ParamDesc.Type == PT_TEXTURECUBE) {
+				int iPos = (int)ParamDesc.Name.find_first_of(numerals, 0, sizeof(numerals));
 
 				if (iPos != string::npos)
 				{
 					int iTexture = atoi(&ParamDesc.Name[iPos]);
-					if (iTexture >= 0 && iTexture<(k_tex_mat_max - k_tex_mat0))
-					{
-						m_paramHandle[k_tex_mat0 + iTexture] = hParam;
-					}
-				}
-			}
-        }
-
-        if( ParamDesc.Semantic != NULL && 
-            ( ParamDesc.Class == D3DXPC_VECTOR ))
-        {
-			if((nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
-			{
-				if( strcmpi( ParamDesc.Semantic, "materialambient" ) == 0 )
-					m_paramHandle[k_ambientMaterialColor] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "materialdiffuse" ) == 0 )
-					m_paramHandle[k_diffuseMaterialColor] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "materialspecular" ) == 0 )
-					m_paramHandle[k_specularMaterialColor] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
-					m_paramHandle[k_emissiveMaterialColor] = hParam;
-			}
-            else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
-                m_paramHandle[k_posScaleOffset] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
-                m_paramHandle[k_uvScaleOffset] = hParam;
-
-            else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
-                m_paramHandle[k_lensFlareColor] = hParam;
-
-			//////////////////////////////////////////////////////////////////////////
-			// fog
-			else if( strcmpi( ParamDesc.Semantic, "fogparameters" ) == 0 )
-				m_paramHandle[k_fogParameters] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "fogColor" ) == 0 )
-				m_paramHandle[k_fogColor] = hParam;
-			//////////////////////////////////////////////////////////////////////////
-			//shadow
-			else if( strcmpi( ParamDesc.Semantic, "shadowfactor") == 0)
-				m_paramHandle[k_shadowFactor] = hParam;
-
-			//////////////////////////////////////////////////////////////////////////
-			// lights
-			else if( strcmpi( ParamDesc.Semantic, "LightStrength") == 0 )
-				m_paramHandle[k_LightStrength] = hParam;
-			else if((nIndex = BeginWith(ParamDesc.Semantic, "Light"))>0)
-			{
-				if( strcmpi( ParamDesc.Semantic, "LightColors" ) == 0 )
-					m_paramHandle[k_LightColors] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "LightPositions" ) == 0 )
-					m_paramHandle[k_LightPositions] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "LightParams" ) == 0 )
-					m_paramHandle[k_LightParams] = hParam;
-			}
-
-			else if( strcmpi( ParamDesc.Semantic, "FresnelR0" ) == 0 )
-				m_paramHandle[k_fresnelR0] = hParam;
-			else if((nIndex = BeginWith(ParamDesc.Semantic, "ConstVector"))>0)
-			{
-				if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
-					m_paramHandle[k_ConstVector0] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "ConstVector1" ) == 0 )
-					m_paramHandle[k_ConstVector1] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "ConstVector2" ) == 0 )
-					m_paramHandle[k_ConstVector2] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "ConstVector3" ) == 0 )
-					m_paramHandle[k_ConstVector3] = hParam;
-			}
-			
-            else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
-                m_paramHandle[k_sunVector] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
-                m_paramHandle[k_sunColor] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
-                m_paramHandle[k_cameraPos] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
-                m_paramHandle[k_cameraDistances] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
-                m_paramHandle[k_cameraFacing] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
-                m_paramHandle[k_ambientLight] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
-                m_paramHandle[k_sunlightInscatter] = hParam;
-            else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
-                m_paramHandle[k_sunlightExtinction] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "worldpos" ) == 0 )
-				m_paramHandle[k_worldPos] = hParam;
-			else if( strcmpi( ParamDesc.Semantic, "texCoordOffset" ) == 0 )
-				m_paramHandle[k_texCoordOffset] = hParam;
-		}
-
-        if(ParamDesc.Class == D3DXPC_SCALAR)
-        {
-			if( ParamDesc.Semantic == NULL)
-			{
-				if( strcmpi( ParamDesc.Name, "curnumbones" ) == 0 )
-				{
-					m_paramHandle[k_boneInfluenceCount] = hParam;
-				}
-			}
-			else
-			{
-				if( strcmpi( ParamDesc.Semantic, "fogenable" ) == 0 )
-					m_paramHandle[k_fogEnable] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "alphatesting" ) == 0 )
-					m_paramHandle[k_bAlphaTesting] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "alphablending" ) == 0 )
-					m_paramHandle[k_bAlphaBlending] = hParam;
-				else if((nIndex = BeginWith(ParamDesc.Semantic, "boolean"))>0)
-				{
-					int nvalue;
-					if(GetNumber(ParamDesc.Semantic, nIndex, &nvalue))
-					{
-						PE_ASSERT(0<=nvalue && nvalue<=(k_bBooleanMAX-k_bBoolean0));
-						m_paramHandle[k_bBoolean0+nvalue] = hParam;
-					}
-				}
-				else if( strcmpi( ParamDesc.Semantic, "sunlightenable" ) == 0 )
-					m_paramHandle[k_bSunlightEnable] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "shadowmapsize" ) == 0 )
-					m_paramHandle[k_nShadowmapSize] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "shadowradius" ) == 0 )
-					m_paramHandle[k_fShadowRadius] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "materialpower" ) == 0 )
-					m_paramHandle[k_specularMaterialPower] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "reflectfactor" ) == 0 )
-					m_paramHandle[k_reflectFactor] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "locallightnum" ) == 0 )
-					m_paramHandle[k_LocalLightNum] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "layersnum" ) == 0 )
-					m_paramHandle[k_LayersNum] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "time" ) == 0 )
-					m_paramHandle[k_time] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "opacity" ) == 0 )
-					m_paramHandle[k_opacity] = hParam;
-				else if( strcmpi( ParamDesc.Semantic, "specularPower" ) == 0 )
-					m_paramHandle[k_specularPower] = hParam;
-				else if( strcmpi(ParamDesc.Semantic,"transitionFactor") == 0)
-					m_paramHandle[k_transitionFactor] = hParam;
-			}
-		}
-
-        if( ParamDesc.Class == D3DXPC_OBJECT )
-        {
-			string name(ParamDesc.Name);
-			
-			if (ParamDesc.Type == D3DXPT_TEXTURE
-				|| ParamDesc.Type == D3DXPT_TEXTURE2D
-				|| ParamDesc.Type == D3DXPT_TEXTURE3D
-				|| ParamDesc.Type == D3DXPT_TEXTURECUBE)
-			{
-				int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
-
-				if (iPos != string::npos)
-				{
-					int iTexture = atoi(&ParamDesc.Name[iPos]);
-					if (iTexture>=0 && iTexture<(k_tex_max - k_tex0))
+					if (iTexture >= 0 && iTexture < (k_tex_max - k_tex0))
 					{
 						m_paramHandle[k_tex0 + iTexture] = hParam;
 					}
 				}
 			}
-        }
-
-		if ( ParamDesc.Class == D3DXPC_STRUCT)
-		{
-			if( strcmpi( ParamDesc.Semantic, "AtmosphericLightingParams" ) == 0 )
-				m_paramHandle[k_atmosphericLighting] = hParam;
-			else if ( strcmpi( ParamDesc.Semantic, "patchCorners") == 0 )
-				m_paramHandle[k_patchCorners] = hParam;
+			else {
+				OUTPUT_LOG("Warning: unsupported paramter::%s  at %s \n", ParamDesc.Name.c_str(),m_filename.c_str());
+			}
 		}
 	}
+
+
+
+
+
+    // Look at parameters for semantics and annotations that we know how to interpret
+ //   D3DXPARAMETER_DESC ParamDesc;
+ //   D3DXHANDLE hParam;
+	//static char numerals[] = {'0','1','2','3','4','5','6','7','8','9'};
+	//int nIndex = 0;
+
+	//memset(m_paramHandle, 0, sizeof(m_paramHandle));
+
+ //   for( UINT iParam = 0; iParam < m_EffectDesc.Parameters; iParam++ )
+ //   {
+ //       hParam = GetD3DEffect(m_pEffect)->GetParameter ( NULL, iParam );
+	//	GetD3DEffect(m_pEffect)->GetParameterDesc( hParam, &ParamDesc );
+ //       if( ParamDesc.Semantic != NULL && 
+ //           ( ParamDesc.Class == D3DXPC_MATRIX_ROWS || ParamDesc.Class == D3DXPC_MATRIX_COLUMNS ) )
+ //       {
+ //           if( strcmpi( ParamDesc.Semantic, "world" ) == 0 )
+	//			m_paramHandle[k_worldMatrix] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "worldinverse" ) == 0 )
+	//			m_paramHandle[k_worldInverseMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "worldview" ) == 0 )
+	//			m_paramHandle[k_worldViewMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "worldviewprojection" ) == 0 )
+	//			m_paramHandle[k_worldViewProjMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "worldmatrixarray" ) == 0 )
+	//			m_paramHandle[k_worldMatrixArray] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "skyboxmatrix" ) == 0 )
+	//			m_paramHandle[k_skyBoxMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "view" ) == 0 )
+	//			m_paramHandle[k_viewMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "projection" ) == 0 )
+	//			m_paramHandle[k_projMatrix] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "viewprojection" ) == 0 )
+	//			m_paramHandle[k_viewProjMatrix] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "texworldviewproj" ) == 0 )
+	//			m_paramHandle[k_TexWorldViewProjMatrix] = hParam;
+	//		
+
+
+	//		// look for texture matrices which are named texMatX
+	//		if (_strnicmp( ParamDesc.Semantic, "texmat", 6) ==0)
+	//		{
+	//			string name(ParamDesc.Name);
+	//			int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
+
+	//			if (iPos != string::npos)
+	//			{
+	//				int iTexture = atoi(&ParamDesc.Name[iPos]);
+	//				if (iTexture >= 0 && iTexture<(k_tex_mat_max - k_tex_mat0))
+	//				{
+	//					m_paramHandle[k_tex_mat0 + iTexture] = hParam;
+	//				}
+	//			}
+	//		}
+ //       }
+
+ //       if( ParamDesc.Semantic != NULL && 
+ //           ( ParamDesc.Class == D3DXPC_VECTOR ))
+ //       {
+	//		if((nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "materialambient" ) == 0 )
+	//				m_paramHandle[k_ambientMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialdiffuse" ) == 0 )
+	//				m_paramHandle[k_diffuseMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialspecular" ) == 0 )
+	//				m_paramHandle[k_specularMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
+	//				m_paramHandle[k_emissiveMaterialColor] = hParam;
+	//		}
+ //           else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
+ //               m_paramHandle[k_posScaleOffset] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
+ //               m_paramHandle[k_uvScaleOffset] = hParam;
+
+ //           else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
+ //               m_paramHandle[k_lensFlareColor] = hParam;
+
+	//		//////////////////////////////////////////////////////////////////////////
+	//		// fog
+	//		else if( strcmpi( ParamDesc.Semantic, "fogparameters" ) == 0 )
+	//			m_paramHandle[k_fogParameters] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "fogColor" ) == 0 )
+	//			m_paramHandle[k_fogColor] = hParam;
+	//		//////////////////////////////////////////////////////////////////////////
+	//		//shadow
+	//		else if( strcmpi( ParamDesc.Semantic, "shadowfactor") == 0)
+	//			m_paramHandle[k_shadowFactor] = hParam;
+
+	//		//////////////////////////////////////////////////////////////////////////
+	//		// lights
+	//		else if( strcmpi( ParamDesc.Semantic, "LightStrength") == 0 )
+	//			m_paramHandle[k_LightStrength] = hParam;
+	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "Light"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "LightColors" ) == 0 )
+	//				m_paramHandle[k_LightColors] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "LightPositions" ) == 0 )
+	//				m_paramHandle[k_LightPositions] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "LightParams" ) == 0 )
+	//				m_paramHandle[k_LightParams] = hParam;
+	//		}
+
+	//		else if( strcmpi( ParamDesc.Semantic, "FresnelR0" ) == 0 )
+	//			m_paramHandle[k_fresnelR0] = hParam;
+	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "ConstVector"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
+	//				m_paramHandle[k_ConstVector0] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector1" ) == 0 )
+	//				m_paramHandle[k_ConstVector1] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector2" ) == 0 )
+	//				m_paramHandle[k_ConstVector2] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector3" ) == 0 )
+	//				m_paramHandle[k_ConstVector3] = hParam;
+	//		}
+	//		
+ //           else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
+ //               m_paramHandle[k_sunVector] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
+ //               m_paramHandle[k_sunColor] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
+ //               m_paramHandle[k_cameraPos] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
+ //               m_paramHandle[k_cameraDistances] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
+ //               m_paramHandle[k_cameraFacing] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
+ //               m_paramHandle[k_ambientLight] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
+ //               m_paramHandle[k_sunlightInscatter] = hParam;
+ //           else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
+ //               m_paramHandle[k_sunlightExtinction] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "worldpos" ) == 0 )
+	//			m_paramHandle[k_worldPos] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "texCoordOffset" ) == 0 )
+	//			m_paramHandle[k_texCoordOffset] = hParam;
+	//	}
+
+ //       if(ParamDesc.Class == D3DXPC_SCALAR)
+ //       {
+	//		if( ParamDesc.Semantic == NULL)
+	//		{
+	//			if( strcmpi( ParamDesc.Name, "curnumbones" ) == 0 )
+	//			{
+	//				m_paramHandle[k_boneInfluenceCount] = hParam;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "fogenable" ) == 0 )
+	//				m_paramHandle[k_fogEnable] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "alphatesting" ) == 0 )
+	//				m_paramHandle[k_bAlphaTesting] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "alphablending" ) == 0 )
+	//				m_paramHandle[k_bAlphaBlending] = hParam;
+	//			else if((nIndex = BeginWith(ParamDesc.Semantic, "boolean"))>0)
+	//			{
+	//				int nvalue;
+	//				if(GetNumber(ParamDesc.Semantic, nIndex, &nvalue))
+	//				{
+	//					PE_ASSERT(0<=nvalue && nvalue<=(k_bBooleanMAX-k_bBoolean0));
+	//					m_paramHandle[k_bBoolean0+nvalue] = hParam;
+	//				}
+	//			}
+	//			else if( strcmpi( ParamDesc.Semantic, "sunlightenable" ) == 0 )
+	//				m_paramHandle[k_bSunlightEnable] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "shadowmapsize" ) == 0 )
+	//				m_paramHandle[k_nShadowmapSize] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "shadowradius" ) == 0 )
+	//				m_paramHandle[k_fShadowRadius] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialpower" ) == 0 )
+	//				m_paramHandle[k_specularMaterialPower] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "reflectfactor" ) == 0 )
+	//				m_paramHandle[k_reflectFactor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "locallightnum" ) == 0 )
+	//				m_paramHandle[k_LocalLightNum] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "layersnum" ) == 0 )
+	//				m_paramHandle[k_LayersNum] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "time" ) == 0 )
+	//				m_paramHandle[k_time] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "opacity" ) == 0 )
+	//				m_paramHandle[k_opacity] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "specularPower" ) == 0 )
+	//				m_paramHandle[k_specularPower] = hParam;
+	//			else if( strcmpi(ParamDesc.Semantic,"transitionFactor") == 0)
+	//				m_paramHandle[k_transitionFactor] = hParam;
+	//		}
+	//	}
+
+ //       if( ParamDesc.Class == D3DXPC_OBJECT )
+ //       {
+	//		string name(ParamDesc.Name);
+	//		
+	//		if (ParamDesc.Type == D3DXPT_TEXTURE
+	//			|| ParamDesc.Type == D3DXPT_TEXTURE2D
+	//			|| ParamDesc.Type == D3DXPT_TEXTURE3D
+	//			|| ParamDesc.Type == D3DXPT_TEXTURECUBE)
+	//		{
+	//			int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
+
+	//			if (iPos != string::npos)
+	//			{
+	//				int iTexture = atoi(&ParamDesc.Name[iPos]);
+	//				if (iTexture>=0 && iTexture<(k_tex_max - k_tex0))
+	//				{
+	//					m_paramHandle[k_tex0 + iTexture] = hParam;
+	//				}
+	//			}
+	//		}
+ //       }
+
+	//	if ( ParamDesc.Class == D3DXPC_STRUCT)
+	//	{
+	//		if( strcmpi( ParamDesc.Semantic, "AtmosphericLightingParams" ) == 0 )
+	//			m_paramHandle[k_atmosphericLighting] = hParam;
+	//		else if ( strcmpi( ParamDesc.Semantic, "patchCorners") == 0 )
+	//			m_paramHandle[k_patchCorners] = hParam;
+	//	}
+	//}
 }
 
 void CEffectFileDirectX::EnableSunLight(bool bEnableSunLight)
@@ -994,20 +1090,6 @@ void CEffectFileDirectX::applySurfaceMaterial(const ParaMaterial* pSurfaceMateri
 		{
 			setParameter(k_specularMaterialPower, &d3dMaterial.Power);
 		}
-
-		// TODO: set textures
-		/*
-		for (UINT32 i=0;i<k_max_texture_handles;++i)
-		{
-			if (TEST_BIT(pSurfaceMaterial->textureFlags(),i))
-			{
-				setTexture(i, pSurfaceMaterial->texture(i));
-			}
-			if (TEST_BIT(pSurfaceMaterial->textureMatrixFlags(),i))
-			{
-				setTextureMatrix(i, pSurfaceMaterial->textureMatrix(i));
-			}
-		}*/
 	}
 }
 
@@ -1320,9 +1402,9 @@ const CEffectFileDirectX::TechniqueDesc* CEffectFileDirectX::GetCurrentTechnique
 		return &g_techdesc;
 }
 
-LPD3DXEFFECT ParaEngine::CEffectFileDirectX::GetDXEffect()
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileDirectX::GetDXEffect()
 {
-	return effect();
+	return m_pEffect;
 }
 
 CParameterBlock* ParaEngine::CEffectFileDirectX::GetParamBlock( bool bCreateIfNotExist /*= false*/ )
@@ -1376,45 +1458,7 @@ bool ParaEngine::CEffectFileDirectX::IsTextureLocked( int nIndex ) const
 	return (nIndex < (int)(m_LockedTextures.size())) && m_LockedTextures[nIndex];
 }
 
-HRESULT ParaEngine::CEffectFileDirectX::SetRawValue( D3DXHANDLE hParameter, LPCVOID pData, UINT ByteOffset, UINT Bytes )
-{
-	return GetDXEffect()->SetRawValue(hParameter,pData, ByteOffset, Bytes);
-}
 
-bool ParaEngine::CEffectFileDirectX::SetBool( D3DXHANDLE hParameter, BOOL bBoolean )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &bBoolean, 0, sizeof(bBoolean)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetInt( D3DXHANDLE hParameter, int nValue )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &nValue, 0, sizeof(nValue)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetFloat( D3DXHANDLE hParameter, float fValue )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &fValue, 0, sizeof(fValue)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetVector2( D3DXHANDLE hParameter, const Vector2& vValue )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetVector3( D3DXHANDLE hParameter, const Vector3& vValue )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetVector4( D3DXHANDLE hParameter, const Vector4& vValue )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
-}
-
-bool ParaEngine::CEffectFileDirectX::SetMatrix( D3DXHANDLE hParameter, const Matrix4& data )
-{
-	return SUCCEEDED(SetRawValue(hParameter, &data, 0, sizeof(data)));
-}
 
 void ParaEngine::CEffectFileDirectX::OnSwitchInShader()
 {
@@ -1451,7 +1495,7 @@ void ParaEngine::CEffectFileDirectX::SetFileName(const std::string& filename)
 	m_filename = filename;
 }
 
-D3DXHANDLE& ParaEngine::CEffectFileDirectX::GetTextureHandle(int nIndex)
+IParaEngine::ParameterHandle& ParaEngine::CEffectFileDirectX::GetTextureHandle(int nIndex)
 {
 	return m_paramHandle[k_tex0 + nIndex];
 }

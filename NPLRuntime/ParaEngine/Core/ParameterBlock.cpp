@@ -101,6 +101,7 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 					else
 					{
 						// use custom texture
+						
 						pEffectFile->GetDXEffect()->SetTexture(name, pTextureEntity->GetTexture());
 					}
 				}
