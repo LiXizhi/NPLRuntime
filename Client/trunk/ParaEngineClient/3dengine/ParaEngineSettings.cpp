@@ -1240,6 +1240,31 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 		hIcon = LoadIcon(NULL, IDI_ERROR);
 	else if (sIcon == "IDI_WARNING")
 		hIcon = LoadIcon(NULL, IDI_WARNING);
+	else
+	{
+		CParaFile file(sIconFile);
+		if (!file.isEof())
+		{
+			
+			PBYTE iconData = (PBYTE)file.getBuffer();
+
+			if (file.getSize() > (6 + 16))
+			{
+				BYTE w = *(iconData + 6);
+				BYTE h = *(iconData + 7);
+
+				int offset = LookupIconIdFromDirectoryEx(iconData, TRUE, w, h, LR_DEFAULTCOLOR);
+				if (offset != 0)
+				{
+					hIcon = CreateIconFromResourceEx(iconData + offset, file.getSize() - offset, TRUE, 0x30000, w, h, LR_DEFAULTCOLOR);
+				}
+			}
+
+			
+		}
+	}
+
+
 	if (hIcon!=0)
 		SendMessage(CGlobals::GetAppHWND(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	else

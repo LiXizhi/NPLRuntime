@@ -1,5 +1,7 @@
 #pragma once
 
+#include<string>
+
 namespace ParaEngine
 {
 	/** Video capture mode	*/
@@ -28,19 +30,19 @@ namespace ParaEngine
 		/** get preferred codec */
 		virtual int GetCodec() = 0;
 
-		/** begin recording to a given file. 
-		* Please note that the height and width may be different. since it is internally converted to multiples of 4. 
+		/** begin recording to a given file.
+		* Please note that the height and width may be different. since it is internally converted to multiples of 4.
 		*/
 		virtual int BeginCapture(const char *filename, HWND nHwnd, int nLeft = 0, int nTop = 0, int width = 0, int height = 0, int m_nFPS = 0, int codec_id = 0) = 0;
 
-		/** capture the current frame. 
+		/** capture the current frame.
 		* @param pData: raw RGB array. 3 bytes per pixels
 		* @param nDataSize: data size in bytes. it must be width*height*3
 		*/
 		virtual int FrameCapture(const BYTE* pData, int nDataSize = 0, int* pnFrameCount = 0) = 0;
 
 		/** end recording for the current file. */
-		virtual int EndCapture() = 0;
+		virtual int EndCapture(std::string auidoMap = "") = 0;
 
 		/** if we are recording */
 		virtual bool IsRecording() = 0;
@@ -86,6 +88,6 @@ namespace ParaEngine
 		*  - 4 for frame interlaved mode, where the odd frame is the left eye and even frame is the right image;
 		*/
 		virtual MOVIE_CAPTURE_MODE GetStereoCaptureMode() = 0;
-		
+
 	};
 }

@@ -5,6 +5,9 @@
 #include "ParaXModel/ParaXModel.h"
 #include "Rectangle.h"
 
+#include <unordered_map>
+
+
 class TiXmlDocument;
 class TiXmlElement;
 class TiXmlNode;
@@ -155,7 +158,8 @@ namespace ParaEngine
 		BMaxParser* m_pParent;
 		std::string m_filename;
 		std::vector<BlockModel*> m_blockModels;
-		std::map<uint64, BMaxNodePtr> m_nodes;
+		std::unordered_map<uint64, BMaxNodePtr> m_nodes;
+		//std::map<uint64, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;
 		/*std::vector<RectanglePtr>m_originRectangles;
 		std::map<uint16, vector<RectanglePtr>>m_lodRectangles;*/

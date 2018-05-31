@@ -198,7 +198,7 @@ void FBXParser::AddColors(CParaXModel *pMesh)
 		ModelColor &color = pMesh->colors[0];
 		color.color.used = false;
 		color.color.type = 0;
-		color.color.seq = 0;
+		color.color.seq = -1;
 		color.color.globals = NULL;
 		color.color.ranges.push_back(AnimRange(0, 0));
 		color.color.times.push_back(0);
@@ -208,7 +208,7 @@ void FBXParser::AddColors(CParaXModel *pMesh)
 
 		color.opacity.used = false;
 		color.opacity.type = 0;
-		color.opacity.seq = 0;
+		color.opacity.seq = -1;
 		color.opacity.globals = NULL;
 		color.opacity.ranges.push_back(AnimRange(0, 0));
 		color.opacity.times.push_back(0);
@@ -244,7 +244,7 @@ void FBXParser::AddTransparency(CParaXModel *pMesh)
 
 		tran.trans.used = false;
 		tran.trans.type = 0;
-		tran.trans.seq = 0;
+		tran.trans.seq = -1;
 		tran.trans.globals = NULL;
 		tran.trans.ranges.push_back(AnimRange(0, 0));
 		tran.trans.times.push_back(0);
@@ -401,7 +401,7 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				curPs = ps;
 				ps.emitter = nullptr;
 
-				if ((int)curPs.emitter == ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER)
+				if ((intptr_t)curPs.emitter == ParticleEmitter::TYPE_SPHERE_PARTICLE_EMITTER)
 					curPs.emitter = new SphereParticleEmitter(&curPs);
 				else
 					curPs.emitter = new PlaneParticleEmitter(&curPs);
@@ -706,24 +706,24 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 	bool bNoOpacity = true;
 	for (unsigned int i = 0; i <= AI_TEXTURE_TYPE_MAX; ++i)
 	{
-		unsigned int iNum = 0;
-		while (true)
-		{
-			if (AI_SUCCESS != aiGetMaterialTexture(pfbxMaterial, (aiTextureType)i, iNum,
-				&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len))
-			{
-				break;
-			}
-			if (aiTextureType_OPACITY == i)bNoOpacity = false;
-			++iNum;
-		}
+	unsigned int iNum = 0;
+	while (true)
+	{
+	if (AI_SUCCESS != aiGetMaterialTexture(pfbxMaterial, (aiTextureType)i, iNum,
+	&szPath, NULL, &iUV, &fBlend, &eOp, NULL, NULL, &content_begin, &content_len))
+	{
+	break;
+	}
+	if (aiTextureType_OPACITY == i)bNoOpacity = false;
+	++iNum;
+	}
 	}
 
 	std::string texname = std::string(szPath.C_Str());
 	texname = GetTexturePath(texname);
 	std::string tex_content;
 	if (content_begin)
-		tex_content.append(content_begin, content_len);
+	tex_content.append(content_begin, content_len);
 
 	Material material;
 	material.mIsReference = false;
@@ -1007,7 +1007,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 
 			tran.trans.used = false;
 			tran.trans.type = 0;
-			tran.trans.seq = 0;
+			tran.trans.seq = -1;
 			tran.trans.globals = NULL;
 			tran.trans.ranges.push_back(AnimRange(0, 0));
 			tran.trans.times.push_back(0);
@@ -1043,7 +1043,7 @@ void FBXParser::ProcessFBXMaterial(const aiScene* pFbxScene, unsigned int iIndex
 	pass.cull = blendmode == BM_OPAQUE ? true : false;
 	pass.order = fbxMat.m_nOrder;
 	pass.geoset = -1; // make its geoset uninitialized
-	//*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
+					  //*(((DWORD*)&(pass.geoset)) + 1) = parser.ReadInt();
 
 	ParseUVAnimation(pass, pfbxMaterial, pMesh);
 	ParseParticleEmitter(pass, pfbxMaterial, pMesh, sMatName, texture_index);

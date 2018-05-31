@@ -267,6 +267,7 @@ namespace ParaEngine
 
 		/** read the header to xheader. */
 		bool ReadParaXHeader(ParaXHeaderDef& xheader, LPFileData pFileData);
+		
 		/** read all sub data*/
 		bool ReadXGlobalSequences(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXVertices(CParaXModel& xmesh, LPFileData pFileData);
