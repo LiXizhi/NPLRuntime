@@ -55,9 +55,11 @@ namespace ParaEngine
 		bool m_IsQuit;
 		static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 		static std::unordered_map<HWND, RenderWindowWin32*> g_WindowMap;
+		bool m_bLostFocus;
 	private:
 		void InitInput();
 		void ProcessInput(const MSG& msg);
+		void CheckFocus();
 		// Key State.
 		EKeyState m_MouseState[(uint32_t)EMouseButton::COUNT];
 		EKeyState m_KeyState[(uint32_t)EVirtualKey::COUNT];

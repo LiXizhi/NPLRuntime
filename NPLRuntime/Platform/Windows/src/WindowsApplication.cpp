@@ -134,14 +134,29 @@ bool ParaEngine::CWindowsApplication::GetToggleSoundWhenNotFocused()
 
 int ParaEngine::CWindowsApplication::Run(HINSTANCE hInstance)
 {
-	auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
-	assert(pWindow);
-
-	while (!pWindow->ShouldClose())
-	{
-		pWindow->PollEvents();
-		this->DoWork();
-	}
+	NextLoop(50, &CWindowsApplication::handle_mainloop_timer, this);
+	MainLoopRun();
 
 	return 0;
+}
+
+void ParaEngine::CWindowsApplication::handle_mainloop_timer(const boost::system::error_code& err)
+{
+	if (!err)
+	{
+		auto pWindow = (RenderWindowDelegate*)m_pRenderWindow;
+		assert(pWindow);
+
+		if (!pWindow->ShouldClose())
+		{
+			pWindow->PollEvents();
+			this->DoWork();
+
+			double fNextInterval = 0.033f; // as fast as possible
+			fNextInterval = this->GetRefreshTimer() - (ParaTimer::GetAbsoluteTime() - this->GetAppTime());
+			fNextInterval = (std::min)(0.1, (std::max)(0.0, fNextInterval));
+
+			NextLoop((int)(fNextInterval * 1000), &CWindowsApplication::handle_mainloop_timer, this);
+		}
+	}
 }

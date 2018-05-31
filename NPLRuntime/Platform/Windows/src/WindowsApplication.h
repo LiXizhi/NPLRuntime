@@ -1,8 +1,10 @@
 #pragma once
 #include "ParaEngineAppBase.h"
+#include "Core/MainLoopBase.h"
+
 namespace ParaEngine
 {
-	class CWindowsApplication : public CParaEngineAppBase
+	class CWindowsApplication : public CParaEngineAppBase, public MainLoopBase
 	{
 	public:
 
@@ -46,6 +48,8 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() override;
 
 		virtual int Run(HINSTANCE hInstance) override;
+
+		void handle_mainloop_timer(const boost::system::error_code& err);
 
 	};
 }

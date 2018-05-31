@@ -42,13 +42,6 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	CWindowsApplication app;
 	app.InitApp(&renderWindow, lpCmdLine);
 
-	/*
-	while (!renderWindow.ShouldClose())
-	{
-		renderWindow.PollEvents();
-		app.DoWork();
-	}
-	*/
 	app.Run(hInst);
 
 	return 0;
