@@ -15,6 +15,7 @@
 #include "AudioEngine2.h"
 #include "ParaEngineCore.h"
 #include "IParaEngineApp.h"
+#include "MCIController.h"
 
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
@@ -984,5 +985,11 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
 {
 	return m_audio_file_map;
+}
+
+MCIController* ParaEngine::CAudioEngine2::getMCIController()
+{
+	static MCIController controller;
+	return &controller;
 }
 
