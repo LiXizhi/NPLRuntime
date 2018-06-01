@@ -6,7 +6,7 @@ float4 ambientlight:ambientlight;
 float4 texCoordOffset:texCoordOffset;
 float3 worldcamerapos:worldcamerapos; 
 bool sunlightenable:sunlightenable;
-bool boolean10:boolean10;
+bool k_bBoolean10 : boolean10;
 bool fogenable:fogenable;
 float4 fogparameters:fogparameters;
 float4 materialdiffuse:materialdiffuse;
@@ -61,20 +61,20 @@ v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
 	o.vertex = mul(v.vertex, mWorldViewProj);
-	vec3 worldNormal = normalize(v.normal);
+	float3 worldNormal = normalize(v.normal);
 
 	o.colorDiffuse.xyz = materialdiffuse.xyz * dot( sunvector.xyz, worldNormal ) + ambientlight.xyz;
 
-	vec3 worldPos = mul(v.vertex,mWorld).xyz;
-	vec3 eyeVec = normalize(worldcamerapos - worldPos);
-	vec3 reflectVec = reflect(-sunvector.xyz,worldNormal);
+	float3 worldPos = mul(v.vertex,mWorld).xyz;
+	float3 eyeVec = normalize(worldcamerapos - worldPos);
+	float3 reflectVec = reflect(-sunvector.xyz,worldNormal);
 	float specular = max(dot(eyeVec,reflectVec),0.0);
 	o.colorDiffuse.w = pow(specular,12.0) * 0.6;
 
-	o.uv0.xy = a_texCoord.xy;
+	o.uv0.xy = v.uv0.xy;
 	o.uv0.z = CalcFogFactor(length(o.vertex.xyz));
-	o.uv1.xy = a_texCoord1.xy;
-	o.uv1.zw = vec2((v.vertex.x-texCoordOffset.x)/texCoordOffset.z, (v.vertex.z-texCoordOffset.y)/texCoordOffset.z);
+	o.uv1.xy = v.uv1.xy;
+	o.uv1.zw = float2((v.vertex.x-texCoordOffset.x)/texCoordOffset.z, (v.vertex.z-texCoordOffset.y)/texCoordOffset.z);
 
 	return o;
 }
@@ -91,7 +91,7 @@ float4 frag(v2f i) : COLOR
 	normalColor.xyz = color1.xyz * alpha;
 	float specularWeight = (1.0 - color1.a) * alpha;
 
-	ormalColor.xyz *= colorDif;
+	normalColor.xyz *= colorDif;
 	normalColor.xyz += (specularWeight * i.colorDiffuse.www) * materialdiffuse.xyz;
 
 	// multiple base layer

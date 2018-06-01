@@ -9,6 +9,7 @@
 #include "TextureEntity.h"
 #include "Texture.h"
 #include "memdebug.h"
+#include "ParaWorldAsset.h"
 
 using namespace ParaTerrain;
 using namespace std;
@@ -320,5 +321,6 @@ bool Texture::SetTextureEntity(TextureEntity* texture)
 
 DeviceTexturePtr_type ParaTerrain::Texture::GetDevicePointer()
 {
+
 	return (m_TextureID) ? m_TextureID->GetTexture() : 0;
 }

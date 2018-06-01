@@ -134,24 +134,9 @@ namespace ParaEngine {
 		JniHelper::callStaticVoidMethod(classname, "loadUrl", m_handle, url, cleanCachedData); 
 	}  
 
-	int ParaEngineWebView::InstallFields(CAttributeClass* pClass, bool bOverride)
+	void ParaEngineWebView::hideCloseButton(bool bHide)
 	{
-		// install parent fields if there are any. Please replace __super with your parent class name.
-		IAttributeFields::InstallFields(pClass, bOverride);
-		PE_ASSERT(pClass != nullptr);
 
-		pClass->AddField("Url", FieldType_String, (void*)loadUrl_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		pClass->AddField("Alpha", FieldType_Float, (void*)setAlpha_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		pClass->AddField("Visible", FieldType_Bool, (void*)setVisible_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		pClass->AddField("HideViewWhenClickBack", FieldType_Bool, (void*)SetHideViewWhenClickBack_s, (void*)nullptr, nullptr, nullptr, bOverride);
-		pClass->AddField("Refresh", FieldType_void, (void*)Refresh_s, nullptr, nullptr, "", bOverride);
-
-		return S_OK;  
-	}
-
-	IAttributeFields* ParaEngineWebView::GetAttributeObject()
-	{
-		return this;
 	}
 
 	void ParaEngineWebView::addCloseListener(onCloseFunc fun)

@@ -2,6 +2,7 @@
 #include "RenderWindowWin32.h"
 #include "resource.h"
 #include "Winuser.h"
+#include "2dengine/GUIRoot.h"
 #include <unordered_map>
 
 using namespace ParaEngine;
@@ -150,6 +151,8 @@ DWORD ParaEngine::ParaVKToWin32VirtualKey(EVirtualKey key)
 	return -1;
 }
 
+
+
 std::unordered_map<HWND,RenderWindowWin32*> RenderWindowWin32::g_WindowMap;
 const WCHAR* RenderWindowWin32::ClassName = L"ParaWorld";
 
@@ -177,26 +180,32 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 	case WM_LBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::PRESS;
 		window->OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS,xPos,yPos);
+		window->CheckFocus();
 		break;
 	case WM_LBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::LEFT] = EKeyState::RELEASE;
 		window->OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, xPos, yPos);
+		window->CheckFocus();
 		break;
 	case WM_RBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::PRESS;
 		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, xPos, yPos);
+		window->CheckFocus();
 		break;
 	case WM_RBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::RIGHT] = EKeyState::RELEASE;
 		window->OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, xPos, yPos);
+		window->CheckFocus();
 		break;
 	case WM_MBUTTONDOWN:
 		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::PRESS;
 		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, xPos, yPos);
+		window->CheckFocus();
 		break;
 	case WM_MBUTTONUP:
 		window->m_MouseState[(uint32_t)EMouseButton::MIDDLE] = EKeyState::RELEASE;
 		window->OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, xPos, yPos);
+		window->CheckFocus();
 		break;
 	case WM_MOUSEWHEEL:
 	{
@@ -220,6 +229,19 @@ LRESULT RenderWindowWin32::WindowProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		window->OnChar(code);
 	}
 	break;
+
+	case WM_KILLFOCUS:
+
+		window->m_bLostFocus = true;
+
+		break;
+
+	case WM_SETFOCUS:
+
+		window->m_bLostFocus = false;
+
+		break;
+
 	case WM_DESTROY:
 		// close the application entirely
 		PostQuitMessage(0);
@@ -242,6 +264,7 @@ RenderWindowWin32::RenderWindowWin32(HINSTANCE hInstance,int width, int height)
 	, m_Width(width)
 	, m_Height(height)
 	, m_IsQuit(false)
+	, m_bLostFocus(false)
 {
 	InitInput();
 
@@ -255,6 +278,8 @@ RenderWindowWin32::RenderWindowWin32(HINSTANCE hInstance,int width, int height)
 	wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 
 	RegisterClassW(&wndClass);
+
+	DWORD exStyle = WS_EX_APPWINDOW;
 
 	// Set the window's initial style
 	DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME |
@@ -272,10 +297,16 @@ RenderWindowWin32::RenderWindowWin32(HINSTANCE hInstance,int width, int height)
 		return;
 	}
 
-	m_hWnd = CreateWindowW(RenderWindowWin32::ClassName, L"ParaEngine Window", dwWindowStyle,
+	m_hWnd = CreateWindowExW(exStyle
+		, RenderWindowWin32::ClassName
+		, L"ParaEngine Window"
+		, dwWindowStyle,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		rect.right - rect.left ,rect.bottom - rect.top, 0,
-		NULL, hInstance, 0);
+		rect.right - rect.left ,rect.bottom - rect.top
+		, NULL
+		, NULL
+		, hInstance
+		, NULL);
 
 	g_WindowMap[m_hWnd] = this;
 
@@ -285,7 +316,8 @@ RenderWindowWin32::RenderWindowWin32(HINSTANCE hInstance,int width, int height)
 	m_hAccel = LoadAcceleratorsW(hInstance, MAKEINTRESOURCEW(IDR_MAIN_ACCEL));
 
 	
-
+	ShowWindow(m_hWnd, SW_SHOW);
+	UpdateWindow(m_hWnd);
 }
 
 RenderWindowWin32::~RenderWindowWin32()
@@ -298,7 +330,13 @@ RenderWindowWin32::~RenderWindowWin32()
 	m_hWnd = NULL;
 }
 
-
+void RenderWindowWin32::CheckFocus()
+{
+	if (m_bLostFocus)
+	{
+		::SetFocus(m_hWnd);
+	}
+}
 
 bool RenderWindowWin32::ShouldClose() const
 {
@@ -397,7 +435,7 @@ void ParaEngine::RenderWindowWin32::ProcessInput(const MSG& msg)
 
 }
 
-void RenderWindowWin32::InitInput()
+void ParaEngine::RenderWindowWin32::InitInput()
 {
 	// Init mouse state
 	for (uint32_t i = 0;i<(uint32_t)EMouseButton::COUNT;i++)

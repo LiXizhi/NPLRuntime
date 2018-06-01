@@ -442,7 +442,7 @@ macro(ucm_add_dir_impl result rec trim dirs_in additional_ext)
         endforeach()
         
         # find all sources and set them as result
-        FILE(GLOB found_sources RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+        FILE(GLOB _found_sources RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
         # https://gcc.gnu.org/onlinedocs/gcc-4.4.1/gcc/Overall-Options.html#index-file-name-suffix-71
         # sources
             "${cur_dir}*.cpp"
@@ -468,6 +468,13 @@ macro(ucm_add_dir_impl result rec trim dirs_in additional_ext)
             "${cur_dir}*.tcc"
             "${cur_dir}*.tpl"
             ${additional_file_extensions})
+		set(found_sources)
+		foreach(cur_file ${_found_sources})	
+			if (NOT IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${cur_file})
+				 list(APPEND found_sources ${cur_file})
+			endif()
+		endforeach()
+			
         SET(${result} ${${result}} ${found_sources})
         
         # set the proper filters

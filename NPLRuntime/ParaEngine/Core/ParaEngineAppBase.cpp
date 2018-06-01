@@ -531,7 +531,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 
 		pDevice->SetClearColor(Color4f(color.r, color.g, color.b, color.a));
 		pDevice->SetClearDepth(1.0f);
-		pDevice->SetClearStencil(1);
+		pDevice->SetClearStencil(0);
 		pDevice->Clear(true, true, true);
 		m_pViewportManager->UpdateViewport(m_pRenderWindow->GetWidth(), m_pRenderWindow->GetHeight());
 		{
