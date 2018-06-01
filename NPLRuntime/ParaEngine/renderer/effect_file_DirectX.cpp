@@ -125,7 +125,7 @@ CEffectFileDirectX::CEffectFileDirectX(const AssetKey& key)
 
 CEffectFileDirectX::~CEffectFileDirectX()
 {
-	PE_ASSERT(!m_pEffect);
+	m_pEffect = nullptr;
 }
 
 void CEffectFileDirectX::EnableShareMode(bool bEnable)
