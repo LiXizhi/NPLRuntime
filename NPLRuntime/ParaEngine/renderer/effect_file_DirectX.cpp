@@ -707,21 +707,21 @@ void CEffectFileDirectX::parseParameters()
 		table["materialdiffuse"] = k_diffuseMaterialColor;
 		table["materialspecular"] = k_specularMaterialColor;
 		table["materialemissive"] = k_emissiveMaterialColor;
-		table["posScaleOffset"] = k_posScaleOffset;
-		table["uvScaleOffset"] = k_uvScaleOffset;
-		table["flareColor"] = k_lensFlareColor;
+		table["posscaleoffset"] = k_posScaleOffset;
+		table["uvscaleoffset"] = k_uvScaleOffset;
+		table["flarecolor"] = k_lensFlareColor;
 		table["fogparameters"] = k_fogParameters;
-		table["fogColor"] = k_fogColor;
-		table["LightStrength"] = k_LightStrength;
+		table["fogcolor"] = k_fogColor;
+		table["lightstrength"] = k_LightStrength;
 		table["shadowfactor"] = k_shadowFactor;
-		table["LightStrength"] = k_LightStrength;
-		table["LightColors"] = k_LightColors;
-		table["LightPositions"] = k_LightPositions;
-		table["FresnelR0"] = k_fresnelR0;
-		table["ConstVector0"] = k_ConstVector0;
-		table["ConstVector1"] = k_ConstVector1;
-		table["ConstVector2"] = k_ConstVector2;
-		table["ConstVector3"] = k_ConstVector3;
+		table["lightstrength"] = k_LightStrength;
+		table["lightcolors"] = k_LightColors;
+		table["lightpositions"] = k_LightPositions;
+		table["fresnelr0"] = k_fresnelR0;
+		table["constvector0"] = k_ConstVector0;
+		table["constvector1"] = k_ConstVector1;
+		table["constvector2"] = k_ConstVector2;
+		table["constvector3"] = k_ConstVector3;
 		table["sunvector"] = k_sunVector;
 		table["suncolor"] = k_sunColor;
 		table["worldcamerapos"] = k_cameraPos;
@@ -731,7 +731,7 @@ void CEffectFileDirectX::parseParameters()
 		table["sunlight_inscatter"] = k_sunlightInscatter;
 		table["sunlight_extinction"] = k_sunlightExtinction;
 		table["worldpos"] = k_worldPos;
-		table["texCoordOffset"] = k_texCoordOffset;
+		table["texcoordoffset"] = k_texCoordOffset;
 		table["curnumbones"] = k_boneInfluenceCount;
 
 		table["fogenable"] = k_fogEnable;
@@ -757,9 +757,9 @@ void CEffectFileDirectX::parseParameters()
 		table["opacity"] = k_opacity;
 		table["specularPower"] = k_specularPower;
 		table["transitionFactor"] = k_transitionFactor;
-		table["LightParams"] = k_LightParams;
-		table["AtmosphericLightingParams"] = k_atmosphericLighting;
-		table["patchCorners"] = k_patchCorners;
+		table["lightparams"] = k_LightParams;
+		table["atmosphericlightingparams"] = k_atmosphericLighting;
+		table["patchcorners"] = k_patchCorners;
 	}
 
 
@@ -770,7 +770,13 @@ void CEffectFileDirectX::parseParameters()
 		IParaEngine::ParameterHandle hParam = m_pEffect->GetParameter(index);
 		if (!IParaEngine::isValidHandle(hParam))continue;
 		if (!m_pEffect->GetParameterDesc(hParam, &ParamDesc)) continue;
-		auto it = table.find(ParamDesc.Semantic);
+
+		std::string lower_sem = ParamDesc.Semantic;
+		std::transform(lower_sem.begin(), lower_sem.end(), lower_sem.begin(),
+			[](unsigned char c) { return std::tolower(c); }
+		);
+
+		auto it = table.find(lower_sem);
 		if (it != table.end())
 		{
 			m_paramHandle[it->second] = hParam;
@@ -790,7 +796,7 @@ void CEffectFileDirectX::parseParameters()
 				}
 			}
 			else {
-				OUTPUT_LOG("Warning: unsupported paramter::%s  at %s \n", ParamDesc.Name.c_str(),m_filename.c_str());
+				OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(),ParamDesc.Semantic.c_str(),m_filename.c_str());
 			}
 		}
 	}
@@ -798,61 +804,6 @@ void CEffectFileDirectX::parseParameters()
 
 
 
-
-    // Look at parameters for semantics and annotations that we know how to interpret
- //   D3DXPARAMETER_DESC ParamDesc;
- //   D3DXHANDLE hParam;
-	//static char numerals[] = {'0','1','2','3','4','5','6','7','8','9'};
-	//int nIndex = 0;
-
-	//memset(m_paramHandle, 0, sizeof(m_paramHandle));
-
- //   for( UINT iParam = 0; iParam < m_EffectDesc.Parameters; iParam++ )
- //   {
- //       hParam = GetD3DEffect(m_pEffect)->GetParameter ( NULL, iParam );
-	//	GetD3DEffect(m_pEffect)->GetParameterDesc( hParam, &ParamDesc );
- //       if( ParamDesc.Semantic != NULL && 
- //           ( ParamDesc.Class == D3DXPC_MATRIX_ROWS || ParamDesc.Class == D3DXPC_MATRIX_COLUMNS ) )
- //       {
- //           if( strcmpi( ParamDesc.Semantic, "world" ) == 0 )
-	//			m_paramHandle[k_worldMatrix] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "worldinverse" ) == 0 )
-	//			m_paramHandle[k_worldInverseMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "worldview" ) == 0 )
-	//			m_paramHandle[k_worldViewMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "worldviewprojection" ) == 0 )
-	//			m_paramHandle[k_worldViewProjMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "worldmatrixarray" ) == 0 )
-	//			m_paramHandle[k_worldMatrixArray] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "skyboxmatrix" ) == 0 )
-	//			m_paramHandle[k_skyBoxMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "view" ) == 0 )
-	//			m_paramHandle[k_viewMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "projection" ) == 0 )
-	//			m_paramHandle[k_projMatrix] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "viewprojection" ) == 0 )
-	//			m_paramHandle[k_viewProjMatrix] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "texworldviewproj" ) == 0 )
-	//			m_paramHandle[k_TexWorldViewProjMatrix] = hParam;
-	//		
-
-
-	//		// look for texture matrices which are named texMatX
-	//		if (_strnicmp( ParamDesc.Semantic, "texmat", 6) ==0)
-	//		{
-	//			string name(ParamDesc.Name);
-	//			int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
-
-	//			if (iPos != string::npos)
-	//			{
-	//				int iTexture = atoi(&ParamDesc.Name[iPos]);
-	//				if (iTexture >= 0 && iTexture<(k_tex_mat_max - k_tex_mat0))
-	//				{
-	//					m_paramHandle[k_tex_mat0 + iTexture] = hParam;
-	//				}
-	//			}
-	//		}
- //       }
 
  //       if( ParamDesc.Semantic != NULL && 
  //           ( ParamDesc.Class == D3DXPC_VECTOR ))
@@ -1499,5 +1450,51 @@ IParaEngine::ParameterHandle& ParaEngine::CEffectFileDirectX::GetTextureHandle(i
 {
 	return m_paramHandle[k_tex0 + nIndex];
 }
+
+
+bool ParaEngine::CEffectFileDirectX::SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes)
+{
+	return m_pEffect->SetRawValue(name, pData, ByteOffset, Bytes);
+}
+
+bool ParaEngine::CEffectFileDirectX::SetBool(const char* name, BOOL bBoolean)
+{
+	return SetRawValue(name, &bBoolean, 0, sizeof(bBoolean));
+}
+
+bool ParaEngine::CEffectFileDirectX::SetInt(const char* name, int nValue)
+{
+	return SetRawValue(name, &nValue, 0, sizeof(nValue));
+}
+
+
+bool ParaEngine::CEffectFileDirectX::SetFloat(const char* name, float fValue)
+{
+	return SetRawValue(name, &fValue, 0, sizeof(fValue));
+}
+
+bool ParaEngine::CEffectFileDirectX::SetVector2(const char* name, const Vector2& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileDirectX::SetVector3(const char* name, const Vector3& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileDirectX::SetVector4(const char* name, const Vector4& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileDirectX::SetMatrix(const char* name, const Matrix4& data)
+{
+	return SetRawValue(name, &data, 0, sizeof(data));
+}
+
 
 #endif

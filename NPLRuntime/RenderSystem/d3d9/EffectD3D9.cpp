@@ -241,7 +241,7 @@ bool ParaEngine::EffectD3D9::SetVectorArray(const ParameterHandle& handle, const
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetVectorArray(h, (D3DXVECTOR4*)data, count) == S_OK;
+	return m_pEffect->SetVectorArray(h,data, count) == S_OK;
 }
 
 
@@ -295,7 +295,8 @@ bool ParaEngine::EffectD3D9::SetTexture(const ParameterHandle& handle, ParaEngin
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetTexture(h, texture) == S_OK;
+	bool ret = m_pEffect->SetTexture(h, texture) == S_OK;
+	return ret;
 }
 
 

@@ -225,14 +225,14 @@ namespace ParaEngine
 		bool setInt(eParameterHandles index, int nValue)  { return false; };
 		bool setFloat(eParameterHandles index, float fValue)  { return false; };
 
-		HRESULT SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 Bytes)  { return S_OK; };
-		bool SetBool(const char* hParameter, BOOL bBoolean)  { return false; };
-		bool SetInt(const char* hParameter, int nValue)  { return false; };
-		bool SetFloat(const char* hParameter, float fValue)  { return false; };
-		bool SetVector2(const char* hParameter, const Vector2& vValue)  { return false; };
-		bool SetVector3(const char* hParameter, const Vector3& vValue)  { return false; };
-		bool SetVector4(const char* hParameter, const Vector4& vValue)  { return false; };
-		bool SetMatrix(const char* hParameter, const Matrix4& data)  { return false; };
+		virtual bool SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes) = 0;
+		virtual bool SetBool(const char* name, BOOL bBoolean) = 0;
+		virtual bool SetInt(const char* name, int nValue) = 0;
+		virtual bool SetFloat(const char* name, float fValue) = 0;
+		virtual bool SetVector2(const char* name, const Vector2& vValue) = 0;
+		virtual bool SetVector3(const char* name, const Vector3& vValue) = 0;
+		virtual bool SetVector4(const char* name, const Vector4& vValue) = 0;
+		virtual bool SetMatrix(const char* name, const Matrix4& data) = 0;
 
 		bool isParameterUsed(eParameterHandles index)  { return false; };
 		bool setMatrix(eParameterHandles index, const Matrix4* data) { return false; };

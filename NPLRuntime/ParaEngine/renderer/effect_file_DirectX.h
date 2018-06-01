@@ -197,6 +197,15 @@ namespace ParaEngine
 		/** get texture handle at the given index. */
 		IParaEngine::ParameterHandle& GetTextureHandle(int nIndex);
 
+		virtual bool SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes) override;
+		virtual bool SetBool(const char* name, BOOL bBoolean) override;
+		virtual bool SetInt(const char* name, int nValue) override;
+		virtual bool SetFloat(const char* name, float fValue) override;
+		virtual bool SetVector2(const char* name, const Vector2& vValue) override;
+		virtual bool SetVector3(const char* name, const Vector3& vValue) override;
+		virtual bool SetVector4(const char* name, const Vector4& vValue) override;
+		virtual bool SetMatrix(const char* name, const Matrix4& data) override;
+
 	private:
 		// effect file name
 		string m_filename;
