@@ -44,6 +44,9 @@ namespace ParaEngine
 		virtual bool SetClearColor(const Color4f& color) override;
 		virtual bool SetClearDepth(const float depth) override;
 		virtual bool SetClearStencil(const int stencil) override;
+
+		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
+
 	protected:
 		void ApplyBlendingModeChange();
 	private:

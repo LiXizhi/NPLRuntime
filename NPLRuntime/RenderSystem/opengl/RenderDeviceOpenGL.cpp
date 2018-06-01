@@ -620,6 +620,11 @@ bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 	return true;
 }
 
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 {
 	

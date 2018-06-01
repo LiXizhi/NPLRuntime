@@ -53,12 +53,6 @@
 using namespace  ParaEngine;
 
 
-
-IParaWebView* IParaWebView::createWebView(int x, int y, int w, int h)
-{
-	return nullptr;
-}
-
 HINSTANCE g_hAppInstance;
 
 IParaEngineApp* CreateParaEngineApp()

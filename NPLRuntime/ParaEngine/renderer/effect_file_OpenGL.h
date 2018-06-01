@@ -68,7 +68,7 @@ namespace ParaEngine
 		bool setInt(eParameterHandles index, int nValue);
 		bool setFloat(eParameterHandles index, float fValue);
 
-		HRESULT SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 Bytes);
+		bool SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 Bytes);
 		bool SetBool(const char* hParameter, BOOL bBoolean);
 		bool SetInt(const char* hParameter, int nValue);
 		bool SetFloat(const char* hParameter, float fValue);

@@ -980,7 +980,7 @@ bool ParaEngine::CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type 
 	return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
 }
 
-HRESULT ParaEngine::CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
+bool ParaEngine::CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
 {
 	auto uniform = GetUniform(hParameter);
 	if (uniform)
