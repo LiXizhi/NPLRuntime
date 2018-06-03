@@ -18,14 +18,18 @@ namespace ParaEngine
 
 		~MCIController();
 
-		void Start();
+		bool Start();
 
-		void Stop();
+		bool Stop();
 
 	  /** Save to the WAV file and close the MCI device as well.
 		* @param fileName: full file name with .wav extension.
 		*/
-		void Save(const char* fileName);
-	};
+		bool Save(const char* fileName);
 
+		class Interface;
+	private:
+		// Cross-platform independent interface implementation.
+		Interface* m_pImpl;
+	};
 }
