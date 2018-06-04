@@ -101,7 +101,10 @@ void CNPLScriptingState::LoadHAPI_Audio()
 				def("PlayWaveFile", &ParaAudio::PlayWaveFile1),
 				def("StopWaveFile", &ParaAudio::StopWaveFile),
 				def("StopWaveFile", &ParaAudio::StopWaveFile1),
-				def("ReleaseWaveFile", &ParaAudio::ReleaseWaveFile)
+				def("ReleaseWaveFile", &ParaAudio::ReleaseWaveFile),
+				def("StartRecording", &ParaAudio::StartRecording),
+				def("StopRecording", &ParaAudio::StopRecording),
+				def("SaveRecording", &ParaAudio::SaveRecording)
 			]
 		];
 }
