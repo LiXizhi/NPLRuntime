@@ -13,6 +13,7 @@
 #include "util/StringHelper.h"
 #include "util/MidiMsg.h"
 #include "AudioEngine2.h"
+#include "MCIController.h"
 
 /**@def define to log verbose. */
 // #define DEBUG_AUDIO
@@ -942,5 +943,11 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 			pAudioSrc->play();
 	}
 	m_paused_audios.clear();
+}
+
+MCIController* ParaEngine::CAudioEngine2::getMCIController()
+{
+	static MCIController controller;
+	return &controller;
 }
 

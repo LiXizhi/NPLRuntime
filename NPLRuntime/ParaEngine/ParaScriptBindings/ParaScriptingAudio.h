@@ -323,6 +323,12 @@ namespace ParaScripting
 		*/
 		static bool ReleaseWaveFile(const char* szWavePath);
 
+		/// ---------------- Audio Recorder ----------------
+		static void StartRecording();
+
+		static void StopRecording();
+
+		static void SaveRecording(const char* szWavePath);
 
 		//////////////////////////////////////////////////////////////////////////
 		//
