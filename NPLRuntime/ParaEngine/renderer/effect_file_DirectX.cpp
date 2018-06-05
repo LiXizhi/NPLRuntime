@@ -66,41 +66,7 @@ bool CEffectFileDirectX::s_bUseHalfPrecision = false;// half will be enough
 
 bool CEffectFileDirectX::g_bTextureEnabled = true;
 
-//
-// These macro tables define the SCALAR data type used in the
-// shaders to be either float or half precision values.
-//
-LPCSTR s_fullPrecisionMacroTable[]=
-{
-	"SCALAR", "float",
-	"SCALAR2", "float2",
-	"SCALAR3", "float3",
-	"SCALAR4", "float4",
-	"SCALAR2x2", "float2x2",
-	"SCALAR3x3", "float3x3",
-	"SCALAR4x4", "float4x4",
-	0, 0,
-};
 
-LPCSTR s_halfPrecisionMacroTable[]=
-{
-	"SCALAR", "half",
-	"SCALAR2", "half2",
-	"SCALAR3", "half3",
-	"SCALAR4", "half4",
-	"SCALAR2x2", "half2x2",
-	"SCALAR3x3", "half3x3",
-	"SCALAR4x4", "half4x4",
-	0, 0,
-};
-
-
-
-inline ID3DXEffect* GetD3DEffect(std::shared_ptr<IParaEngine::IEffect> effect)
-{
-	EffectD3D9* effd3d9 = static_cast<EffectD3D9*>(effect.get());
-	return effd3d9->GetD3DEffect();
-}
 
 CEffectFileDirectX::CEffectFileDirectX(const char* filename)
 :m_pEffect(0),m_bIsBegin(false),m_bSharedMode(false),m_nTechniqueIndex(0)
@@ -198,7 +164,12 @@ void CEffectFileDirectX::EnableLightMap(bool bEnable)
 //. Accessors ...................................................
 LPD3DXEFFECT CEffectFileDirectX::effect()const
 {
-	return GetD3DEffect(m_pEffect);
+	if (m_pEffect)
+	{
+		EffectD3D9* effd3d9 = static_cast<EffectD3D9*>(m_pEffect.get());
+		return effd3d9->GetD3DEffect();
+	}
+	return NULL;
 }
 
 bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
@@ -493,7 +464,7 @@ HRESULT CEffectFileDirectX::InvalidateDeviceObjects()
 {
 	if (m_pEffect)
 	{
-		GetD3DEffect(m_pEffect)->OnLostDevice();
+		m_pEffect->OnLostDevice();
 	}
 	return S_OK;
 }
@@ -503,7 +474,7 @@ HRESULT CEffectFileDirectX::RestoreDeviceObjects()
 {
 	if (m_pEffect)
 	{
-		GetD3DEffect(m_pEffect)->OnResetDevice();
+		m_pEffect->OnResetDevice();
 	}
 	return S_OK;
 }
@@ -578,8 +549,8 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 		
 		if(bForceBegin|| !m_bSharedMode)
 		{
-			HRESULT result = GetD3DEffect(m_pEffect)->Begin(0, dwFlag);
-			if( SUCCEEDED( result ) )
+			bool result =m_pEffect->Begin();
+			if(result)
 			{
 				m_bIsBegin = true;
 				return true;
@@ -600,10 +571,9 @@ bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 {
 	if(bForceBegin || !m_bSharedMode)
 	{
-		HRESULT result = GetD3DEffect(m_pEffect)->BeginPass(pass);
-		if( !SUCCEEDED( result ) )
+		bool result = m_pEffect->BeginPass(pass);
+		if(!result)
 		{
-		    auto curTech = GetD3DEffect(m_pEffect)->GetCurrentTechnique();
 			OUTPUT_LOG("error: CEffectFileDirectX::BeginPass failed: %s \n", m_filename.c_str());
 			return false;
 		}
@@ -613,7 +583,7 @@ bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
 
 void CEffectFileDirectX::CommitChanges()
 {
-	GetD3DEffect(m_pEffect)->CommitChanges();
+	m_pEffect->CommitChanges();
 }
 
 void CEffectFileDirectX::EndPass(bool bForceEnd)
@@ -622,7 +592,7 @@ void CEffectFileDirectX::EndPass(bool bForceEnd)
 	{
 		if(m_bIsBegin)
 		{
-			if( ! (m_pEffect && SUCCEEDED(GetD3DEffect(m_pEffect)->EndPass())))
+			if(!(m_pEffect && m_pEffect->EndPass()))
 			{
 				OUTPUT_LOG("error: CEffectFileDirectX::EndPass failed: %s \n", m_filename.c_str());
 			}
@@ -642,7 +612,7 @@ void CEffectFileDirectX::end(bool bForceEnd)
 			{
 				OnSwitchOutShader();
 			}
-			if( !(m_pEffect && SUCCEEDED(GetD3DEffect(m_pEffect)->End() )) )
+			if( !(m_pEffect && m_pEffect->End() ) )
 			{
 				OUTPUT_LOG("error: CEffectFileDirectX::end failed: %s \n", m_filename.c_str());
 				return;

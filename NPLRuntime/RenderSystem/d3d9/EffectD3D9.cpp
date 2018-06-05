@@ -330,6 +330,67 @@ bool ParaEngine::EffectD3D9::SetVector(const ParameterHandle& handle, const Para
 	return m_pEffect->SetVector(h,data) == S_OK;
 }
 
+
+void ParaEngine::EffectD3D9::OnLostDevice()
+{
+	m_pEffect->OnLostDevice();
+}
+
+
+void ParaEngine::EffectD3D9::OnResetDevice()
+{
+	m_pEffect->OnResetDevice();
+}
+
+
+bool ParaEngine::EffectD3D9::Begin()
+{
+	return m_pEffect->Begin(0, D3DXFX_DONOTSAVESTATE | D3DXFX_DONOTSAVESAMPLERSTATE | D3DXFX_DONOTSAVESHADERSTATE) == S_OK;
+}
+
+
+bool ParaEngine::EffectD3D9::BeginPass(const uint8_t pass)
+{
+	return m_pEffect->BeginPass(pass) == S_OK;
+}
+bool ParaEngine::EffectD3D9::EndPass()
+{
+	return m_pEffect->EndPass() == S_OK;
+}
+
+
+bool ParaEngine::EffectD3D9::End()
+{
+	return m_pEffect->End() == S_OK;
+}
+
+
+IParaEngine::TechniqueHandle ParaEngine::EffectD3D9::GetCurrentTechnique()
+{
+	TechniqueHandle handle;
+	handle.idx = PARA_INVALID_HANDLE;
+
+	auto hTech = m_pEffect->GetCurrentTechnique();
+	if (hTech != NULL)
+	{
+		for (size_t i = 0; i < m_TechniqueHandles.size(); i++)
+		{
+			if (m_TechniqueHandles[i] == hTech)
+			{
+				handle.idx = i;
+				return handle;
+			}
+		}
+	}
+	return handle;
+}
+
+
+bool ParaEngine::EffectD3D9::CommitChanges()
+{
+	return m_pEffect->CommitChanges() == S_OK;
+}
+
 bool ParaEngine::EffectD3D9::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)
 {
 	return m_pEffect->SetRawValue(name, data, offset, size) == S_OK;

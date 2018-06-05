@@ -15,6 +15,7 @@ namespace IParaEngine
 {
 
 	PARA_HANDLE(TechniqueHandle)
+
 	PARA_HANDLE(ParameterHandle)
 
 	struct TechniqueDesc
@@ -104,6 +105,15 @@ namespace IParaEngine
 		virtual bool SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture) = 0;
 		virtual bool SetRawValue(const ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size) = 0;
 		virtual bool SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size) = 0;
+
+		virtual void OnLostDevice() = 0;
+		virtual void OnResetDevice() = 0;
+		virtual bool Begin() = 0;
+		virtual bool BeginPass(const uint8_t pass) = 0;
+		virtual bool EndPass() = 0;
+		virtual bool End() = 0;
+		virtual TechniqueHandle GetCurrentTechnique() = 0;
+		virtual bool CommitChanges() = 0;
 
 	};
 }

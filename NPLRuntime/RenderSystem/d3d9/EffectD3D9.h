@@ -60,6 +60,30 @@ namespace ParaEngine
 
 		virtual bool SetVector(const IParaEngine::ParameterHandle& handle, const ParaEngine::DeviceVector4* data) override;
 
+
+		virtual void OnLostDevice() override;
+
+
+		virtual void OnResetDevice() override;
+
+
+		virtual bool Begin() override;
+
+
+		virtual bool BeginPass(const uint8_t pass) override;
+
+
+		virtual bool EndPass() override;
+
+
+		virtual bool End() override;
+
+
+		virtual IParaEngine::TechniqueHandle GetCurrentTechnique() override;
+
+
+		virtual bool CommitChanges() override;
+
 	private:
 		ID3DXEffect * m_pEffect;
 		std::vector<D3DXHANDLE> m_TechniqueHandles;
