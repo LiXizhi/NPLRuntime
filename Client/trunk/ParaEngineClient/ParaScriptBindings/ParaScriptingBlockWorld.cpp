@@ -98,6 +98,7 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 	bool bProvidePower = false;
 	bool bCustomBlockModel = false;
 	bool bIsVisible = true;
+	int nTile = -1;
 	Color under_water_color = 0;
 	if (type(params) == LUA_TNUMBER)
 	{
@@ -143,6 +144,8 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 			bIsVisible = object_cast<bool> (params["isVisible"]);	
 		if (type(params["under_water_color"]) == LUA_TSTRING)
 			under_water_color = Color::FromString(object_cast<const char*>(params["under_water_color"]));
+		if (type(params["tile"]) == LUA_TNUMBER)
+			nTile = (int)(object_cast<double> (params["tile"]));
 	}
 
 	if (bIsUpdating)
@@ -168,9 +171,11 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetLightOpacity(nOpacity);
 			if ((DWORD)dwMapColor !=0)
 				pTemplate->SetMapColor(dwMapColor);
-
 			if ((DWORD)under_water_color != 0)
 				pTemplate->setUnderWaterColor(under_water_color);
+			if (nTile >= 0) {
+				pTemplate->setTileSize(nTile);
+			}
 
 
 			bool bRefreshBlockTemplate = false;
@@ -230,6 +235,9 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 				pTemplate->SetMapColor(dwMapColor);
 			if ((DWORD)under_water_color != 0)
 				pTemplate->setUnderWaterColor(under_water_color);
+			if (nTile >= 0) {
+				pTemplate->setTileSize(nTile);
+			}
 
 			if (bCustomBlockModel && type(params["models"]) == LUA_TTABLE)
 			{

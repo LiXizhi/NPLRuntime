@@ -36,6 +36,7 @@
 #include "ParaWorldAsset.h"
 #include "RenderTarget.h"
 #include "EffectManager.h"
+#include "ViewportManager.h"
 #include "GUIIME.h"
 #include "memdebug.h"
 using namespace ParaEngine;
@@ -494,11 +495,36 @@ void CGUIBase::GetAbsolutePosition(CGUIPosition* pOut, const CGUIPosition* pIn)
 		//calculate 3d coordinates of the 3d object
 		Vector3 vIn,vOut;
 		ParaViewport  viewport;
-		//pIn->Relative.To3D.p3DSceneObject->GetRenderOffset();
-		// vIn.y+=pIn->Relative.To3D.p3DSceneObject->GetHeight();
 		vIn = *(Vector3*)(&(pIn->Relative.To3D.m_v3DPosition));
+		
+		CViewport* pViewport = CGlobals::GetViewportManager()->GetActiveViewPort();
 
-		CGlobals::GetRenderDevice()->GetViewport(reinterpret_cast<D3DVIEWPORT9*>(&viewport));
+		// find the closet scene viewport whose index is bigger than the current viewport
+		if (pViewport->GetScene() == 0)
+		{
+			int nCount = CGlobals::GetViewportManager()->GetViewportCount();
+			int nCurIndex = -1;
+			for (int i = 0; i < nCount; ++i)
+			{
+				CViewport* pViewport2 = CGlobals::GetViewportManager()->CreateGetViewPort(i);
+				if (pViewport2->GetScene())
+				{
+					pViewport = pViewport2;
+					if (nCurIndex >= 0)
+						break;
+				}
+				else if (pViewport == pViewport2)
+				{
+					nCurIndex = i;
+				}
+			}
+		}
+		viewport.X = pViewport->GetLeft();
+		viewport.Y = pViewport->GetTop();
+		viewport.Width = pViewport->GetWidth();
+		viewport.Height = pViewport->GetHeight();
+		
+
 		ParaVec3Project(&vOut, &vIn, &viewport, CGUIRoot::GetInstance()->Get3DViewProjMatrix(), NULL, NULL);
 		
 		int nWidth = pIn->rect.right - pIn->rect.left;

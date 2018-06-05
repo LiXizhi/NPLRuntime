@@ -20,7 +20,7 @@ namespace ParaEngine
 {
 	const uint16_t BlockTemplate::g_maxRenderPriority = 0xf;
 
-	BlockTemplate::BlockTemplate( uint16_t id,uint32_t attFlag, uint16_t category_id) :m_id(id),m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f),
+	BlockTemplate::BlockTemplate( uint16_t id,uint32_t attFlag, uint16_t category_id) :m_id(id),m_attFlag(attFlag), m_category_id(category_id), m_fPhysicalHeight(1.f), m_nTileSize(1),
 		m_pNormalMap(nullptr), m_renderPriority(0), m_lightScatterStep(1), m_lightOpacity(1), m_pBlockModelFilter(NULL), m_bIsShadowCaster(true), m_associated_blockid(0), 
 		m_bProvidePower(false), m_nLightValue(0xf), m_fSpeedReductionPercent(1.f), m_renderPass(BlockRenderPass_Opaque), m_dwMapColor(Color::White), m_UnderWaterColor(0)
 	{
@@ -161,7 +161,7 @@ namespace ParaEngine
 				if (regex_search(texName, num, r))
 				{
 					std::string str(num[1].first, num[1].second - num[1].first);
-					mTileSize = StringHelper::StrToInt(str.c_str());
+					setTileSize(StringHelper::StrToInt(str.c_str()));
 				}
 			}
 
@@ -575,4 +575,19 @@ namespace ParaEngine
 	{
 		return m_UnderWaterColor;
 	}
+
+	int BlockTemplate::getTileSize() const
+	{
+		return m_nTileSize;
+	}
+
+	void BlockTemplate::setTileSize(int nTile)
+	{
+		if (m_nTileSize != nTile)
+		{
+			m_nTileSize = nTile;
+			SetAttribute(batt_tiling, m_nTileSize > 1);
+		}
+	}
+
 }
