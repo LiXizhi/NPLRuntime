@@ -1,4 +1,5 @@
 #pragma once
+#include "PERef.h"
 #include "AttributeClassIDTable.h"
 #include "AttributeField.h"
 #include "AttributeClass.h"
@@ -53,8 +54,8 @@ namespace ParaEngine
 	The following virtual functions must be implemented: GetAttributeClassID(), GetAttributeClassName(), InstallFields()
 
 	Use following macros to define new class or adding new attributes:
-		ATTRIBUTE_DEFINE_CLASS(XXXX_classname)
-		Class destructor should be a virtual function 
+	ATTRIBUTE_DEFINE_CLASS(XXXX_classname)
+	Class destructor should be a virtual function
 	*/
 	class IAttributeFields : public IObject
 	{
@@ -70,10 +71,10 @@ namespace ParaEngine
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
 		virtual int GetAttributeClassID();
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){ static const char name[] = "IAttributeFields"; return name; }
+		virtual const char* GetAttributeClassName() { static const char name[] = "IAttributeFields"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){ static const char desc[] = ""; return desc; }
-		
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
+
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
@@ -85,16 +86,16 @@ namespace ParaEngine
 		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
 		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
 
-		ATTRIBUTE_METHOD1(IAttributeFields, GetName_s, const char**)	{ *p1 = cls->GetIdentifier().c_str(); return S_OK; }
-		ATTRIBUTE_METHOD1(IAttributeFields, SetName_s, const char*)	{ cls->SetIdentifier(p1); return S_OK; }
-		ATTRIBUTE_METHOD(IAttributeFields, PrintObject_s){ cls->PrintObject(); return S_OK; }
-		ATTRIBUTE_METHOD(IAttributeFields, AddRef_s){ cls->addref(); return S_OK; }
-		ATTRIBUTE_METHOD1(IAttributeFields, GetRefCount_s, int*)	{ *p1 = cls->GetRefCount(); return S_OK; }
+		ATTRIBUTE_METHOD1(IAttributeFields, GetName_s, const char**) { *p1 = cls->GetIdentifier().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(IAttributeFields, SetName_s, const char*) { cls->SetIdentifier(p1); return S_OK; }
+		ATTRIBUTE_METHOD(IAttributeFields, PrintObject_s) { cls->PrintObject(); return S_OK; }
+		ATTRIBUTE_METHOD(IAttributeFields, AddRef_s) { cls->addref(); return S_OK; }
+		ATTRIBUTE_METHOD1(IAttributeFields, GetRefCount_s, int*) { *p1 = cls->GetRefCount(); return S_OK; }
 
-		ATTRIBUTE_METHOD1(IAttributeFields, SetTime_s, int)	{ cls->SetTime(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(IAttributeFields, GetTime_s, int*)	{ *p1 = cls->GetTime(); return S_OK; }
+		ATTRIBUTE_METHOD1(IAttributeFields, SetTime_s, int) { cls->SetTime(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(IAttributeFields, GetTime_s, int*) { *p1 = cls->GetTime(); return S_OK; }
 
-		ATTRIBUTE_METHOD(IAttributeFields, Release_s){ cls->Release(); return S_OK; }
+		ATTRIBUTE_METHOD(IAttributeFields, Release_s) { cls->Release(); return S_OK; }
 	public:
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -106,21 +107,21 @@ namespace ParaEngine
 		virtual void SetIdentifier(const std::string& sID);
 
 		/** whether some of the fields are modified.It is up to the implementation class to provide this functionality if necessary. */
-		virtual bool IsModified(){ return false; };
+		virtual bool IsModified() { return false; };
 		/** set whether any field has been modified. */
-		virtual void SetModified(bool bModified){};
+		virtual void SetModified(bool bModified) {};
 
 		/** validate all fields and return true if validation passed. */
-		virtual bool ValidateFields(){ return true; };
+		virtual bool ValidateFields() { return true; };
 		/** get the recent validation message due to the most recent call to ValidateFields() */
-		virtual string GetValidationMessage(){ return ""; };
+		virtual string GetValidationMessage() { return ""; };
 
 		/**
 		* Reset the field to its initial or default value.
 		* @param nFieldID : field ID
 		* @return true if value is set; false if value not set.
 		*/
-		virtual bool ResetField(int nFieldID){ return false; };
+		virtual bool ResetField(int nFieldID) { return false; };
 
 		/**
 		* Invoke an (external) editor for a given field. This is usually for NPL script field
@@ -128,13 +129,13 @@ namespace ParaEngine
 		* @param sParameters : the parameter passed to the editor
 		* @return true if editor is invoked, false if failed or field has no editor.
 		*/
-		virtual bool InvokeEditor(int nFieldID, const std::string& sParameters){ return false; };
+		virtual bool InvokeEditor(int nFieldID, const std::string& sParameters) { return false; };
 
 		/** add child object. */
 		virtual bool AddChildAttributeObject(IAttributeFields* pChild, int nRowIndex = -1, int nColumnIndex = 0);
 
-		/** convert to object of a given type. 
-		* @param sObjectType: 
+		/** convert to object of a given type.
+		* @param sObjectType:
 		*/
 		virtual void* QueryObjectByName(const std::string& sObjectType);
 
@@ -198,7 +199,7 @@ namespace ParaEngine
 		virtual int LoadDynamicFieldsFromString(const std::string& input);
 	public:
 		/** get the main attribute class object. */
-		CAttributeClass* GetAttributeClass();
+		virtual CAttributeClass* GetAttributeClass();
 		/** print the content of this object to a text file at temp/doc/[ClassName].txt.
 		This is usually used for dumping and testing object attributes.*/
 		void PrintObject();
@@ -222,5 +223,5 @@ namespace ParaEngine
 		CDynamicAttributesSet* m_pDynamicAttributes;
 	};
 
-	
+
 }

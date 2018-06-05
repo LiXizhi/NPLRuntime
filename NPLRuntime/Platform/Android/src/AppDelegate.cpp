@@ -12,6 +12,7 @@
 #include "RenderContextEGL.h"
 #include "ParaTime.h"
 #include "NPLRuntime.h"
+#include "jni/ParaEngineHelper.h"
 
 #include <boost/bind.hpp>
 #include <android/log.h>
@@ -418,7 +419,6 @@ AppDelegate::AppDelegate()
 	:m_State(nullptr)
 	, m_ParaEngineApp(nullptr)
 	, m_isPaused(false)
-	, m_main_timer(m_main_io_service)
 	, m_fRefreshTimerInterval(1.0f / 60.0f)
 {
 
@@ -461,8 +461,8 @@ void AppDelegate::handle_mainloop_timer(const boost::system::error_code& err)
 			// OUTPUT_LOG("%f", fNextInterval);
 		}
 
-		m_main_timer.expires_from_now(std::chrono::milliseconds((int)(fNextInterval * 1000)));
-		m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
+
+		NextLoop((int)(fNextInterval * 1000), &AppDelegate::handle_mainloop_timer, this);
 	}
 }
 
@@ -481,16 +481,17 @@ void AppDelegate::Run(struct android_app* app)
 	app->onInputEvent = AppDelegate::app_handle_input;
 
 	m_appActivity.init(app);
+	ParaEngineHelper::init();
 
 	LOGI("app:run");
 
 #define USE_ASYNC_TIMER_MAIN_LOOP
 #ifdef USE_ASYNC_TIMER_MAIN_LOOP
 	// start the main loop timer. 
-	m_main_timer.expires_from_now(std::chrono::milliseconds(50));
-	m_main_timer.async_wait(boost::bind(&AppDelegate::handle_mainloop_timer, this, boost::asio::placeholders::error));
 
-	m_main_io_service.run();
+	NextLoop(50, &AppDelegate::handle_mainloop_timer, this);
+	MainLoopRun();
+
 #else
 	while (!m_State->destroyRequested)
 	{
@@ -547,16 +548,9 @@ void AppDelegate::OnPause()
 
 void AppDelegate::onCmdLine(const std::string& cmd)
 {
-	LOGI("onCmdLine: intent_data:%s", cmd.c_str());
-
-	if (!cmd.empty())
+	if (m_ParaEngineApp)
 	{
-		// msg = command line.
-		string msg = "msg=";
-		NPL::NPLHelper::EncodeStringInQuotation(msg, (int)msg.size(), cmd.c_str());
-		msg.append(";");
-		SystemEvent event(SystemEvent::SYS_COMMANDLINE, msg);
-		CGlobals::GetEventsCenter()->FireEvent(event);
+		m_ParaEngineApp->onCmdLine(cmd);
 	}
 }
 

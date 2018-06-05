@@ -6,26 +6,35 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO OSX_SRC RECURSIVE ADDITIONAL_EXT mm m)
 
-ucm_add_dirs(res TO RESOURCE_FILES RECURSIVE ADDITIONAL_EXT *)
-ucm_add_dirs(assets TO ASSETS_FILES RECURSIVE ADDITIONAL_EXT *)
+ucm_add_dirs(xib TO XIB_FILES RECURSIVE ADDITIONAL_EXT xib)
 
-set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources)
+set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
+set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 
-add_executable(Paracraft ${OSX_SRC} ${RESOURCE_FILES} ${ASSETS_FILES})
+
+add_executable(Paracraft ${OSX_SRC} ${RESOURCE_FILES} ${ASSETS_FILES} ${XIB_FILES})
+
+set_source_files_properties(${RESOURCE_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources/res)
+set_source_files_properties(${ASSETS_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources/assets)
+set_source_files_properties(${XIB_FILES} PROPERTICES MACOSX_PACKAGE_LOCATION Resources/xib)
+
 
 target_compile_definitions(Paracraft PUBLIC PLATFORM_MAC)
 
+set(RESOURCE_LIST ${RESOURCE_FILES} ${ASSETS_FILES} ${XIB_FILES})
+
 set_target_properties(Paracraft PROPERTIES 
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_ICON_FILE icon.icns
-    RESOURCE "${RESOURCE_FILES}"
+	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/res/Info.plist
+    MACOSX_BUNDLE_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/res/icon.icns
+    RESOURCE "${RESOURCE_LIST}"
     INSTALL_RPATH "@executable_path/../Frameworks/"
     BUILD_WITH_INSTALL_RPATH TRUE
     )
 
 find_library(COCOA_LIBRARY Cocoa required)
 FIND_LIBRARY(OPENGL_LIBRARY OpenGL)
-target_link_libraries(Paracraft PRIVATE
+target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
     ParaEngine
     ${COCOA_LIBRARY}
@@ -37,18 +46,60 @@ set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_E
 
 set(APP_PATH "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIGURATION>/Paracraft.app")
 set(DYLIB_PATH "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/$<CONFIGURATION>")
-set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks/")
+set(DEST_FRAMEWORK_PATH "${APP_PATH}/Contents/Frameworks")
 
-set(LIBLUA_DYPATH "${DYLIB_PATH}/liblua.dylib")
-set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libsqlite.dylib")
+if (NOT SQLITE_STATICLIB)
 
-add_custom_command(TARGET Paracraft POST_BUILD 
-COMMAND ${CMAKE_COMMAND} ARGS -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/assets" "${APP_PATH}/Contents/Resources/assets" 
-COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/liblua.dylib"
-COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/libsqlite.dylib"
-MAIN_DEPENDENCY Paracraft
-DEPENDS "${LIBLUA_DYPATH}"  "${LIBSQLITE_DYPATH}"
-)
+    add_dependencies(Paracraft ParaSqlite)
+	set(LIBSQLITE_DYPATH "${DYLIB_PATH}/libParaSqlite.dylib")
+    set(LIBSQLITE_DYNAME "libParaSqlite.dylib")
+
+	add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSQLITE_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSQLITE_DYNAME}"
+		MAIN_DEPENDENCY Paracraft
+		DEPENDS "${LIBSQLITE_DYPATH}"
+	)
+endif()
+
+if (NPLRUNTIME_AUDIO AND NOT AUDIO_STATICLIB)
+
+    add_dependencies(Paracraft cAudioEngine)
+
+    set(LIBSAUDIO_DYPATH "${DYLIB_PATH}/libcAudioEngine.dylib")
+    set(LIBSAUDIO_DYNAME "libcAudioEngine.dylib")
+
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSAUDIO_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSAUDIO_DYNAME}"
+        MAIN_DEPENDENCY Paracraft
+        DEPENDS "${LIBSAUDIO_DYPATH}" cAudioEngine
+    )
+endif()
+
+if (NPLRUNTIME_PHYSICS AND NOT PHYSICS_STATICLIB)
+
+    add_dependencies(Paracraft PhysicsBT)
+
+    set(LIBSPHYSICS_DYPATH "${DYLIB_PATH}/libPhysicsBT.dylib")
+    set(LIBSPHYSICS_DYNAME "libPhysicsBT.dylib")
+
+    add_custom_command(TARGET Paracraft POST_BUILD
+        COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBSPHYSICS_DYPATH}"  "${DEST_FRAMEWORK_PATH}/${LIBSPHYSICS_DYNAME}"
+        MAIN_DEPENDENCY Paracraft
+        DEPENDS "${LIBSPHYSICS_DYPATH}" PhysicsBT
+    )
+endif()
+
+
+if (NOT LUA_STATICLIB)
+	get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" )
+	foreach( luaLibName ${LUA_LIB_LIST} )
+		set(LIBLUA_DYPATH "${DYLIB_PATH}/lib${luaLibName}.dylib")
+		add_custom_command(TARGET Paracraft POST_BUILD 
+			COMMAND ${CMAKE_COMMAND} ARGS -E copy  "${LIBLUA_DYPATH}"     "${DEST_FRAMEWORK_PATH}/lib${luaLibName}.dylib"
+			DEPENDS "${LIBLUA_DYPATH}"  
+		)
+	endforeach( luaLibName ${LUA_LIB_LIST} )
+endif()
 
 
 

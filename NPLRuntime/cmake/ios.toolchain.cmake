@@ -96,7 +96,7 @@ set(CMAKE_THREAD_LIBS_INIT "-lpthread")
 set(CMAKE_HAVE_THREADS_LIBRARY 1)
 set(CMAKE_USE_WIN32_THREADS_INIT 0)
 set(CMAKE_USE_PTHREADS_INIT 1)
-set(IOS TRUE)
+
 
 # Get the Xcode version being used.
 execute_process(COMMAND xcodebuild -version
@@ -132,7 +132,7 @@ set(IOS_PLATFORM ${IOS_PLATFORM} CACHE STRING
 if (IOS_PLATFORM STREQUAL "OS")
   set(XCODE_IOS_PLATFORM iphoneos)
   if(NOT IOS_ARCH)
-    set(IOS_ARCH armv7 armv7s arm64)
+    set(IOS_ARCH armv7 arm64)
   endif()
 elseif (IOS_PLATFORM STREQUAL "SIMULATOR")
   set(XCODE_IOS_PLATFORM iphonesimulator)
@@ -281,6 +281,7 @@ if (IOS_PLATFORM STREQUAL "OS")
       "-mios-version-min=${IOS_DEPLOYMENT_TARGET}")
   else()
     # Xcode 7.0+ uses flags we can build directly from XCODE_IOS_PLATFORM.
+    # -miphoneos-version-min=11.1
     set(XCODE_IOS_PLATFORM_VERSION_FLAGS
       "-m${XCODE_IOS_PLATFORM}-version-min=${IOS_DEPLOYMENT_TARGET}")
   endif()
@@ -295,6 +296,16 @@ else()
   set(XCODE_IOS_PLATFORM_VERSION_FLAGS
     "-mios-simulator-version-min=${IOS_DEPLOYMENT_TARGET}")
 endif()
+
+if(CMAKE_GENERATOR MATCHES "Xcode")
+  set(CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET})
+  if(ENABLE_BITCODE)
+    set(CMAKE_XCODE_ATTRIBUTE_ENABLE_BITCODE "YES")
+  else()
+    set(CMAKE_XCODE_ATTRIBUTE_ENABLE_BITCODE "NO")
+  endif()
+endif()
+
 message(STATUS "Version flags set to: ${XCODE_IOS_PLATFORM_VERSION_FLAGS}")
 
 if (ENABLE_BITCODE)

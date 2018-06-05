@@ -98,7 +98,7 @@ CAISimulator* CGlobals::GetAISim()
 
 double CGlobals::GetGameTime()
 {
-	return (g_gameTime.GetTime());
+	return (g_gameTime.GetTimeSec());
 }
 
 CFileManager* CGlobals::GetFileManager()

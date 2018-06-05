@@ -98,6 +98,8 @@ namespace ParaScripting
 	- ("onmouseenter",&ParaUIObject::GetOnMouseEnter,&ParaUIObject::OnMouseEnter)
 	- ("onmouseleave",&ParaUIObject::GetOnMouseLeave,&ParaUIObject::OnMouseLeave)
 	- ("onselect",&ParaUIObject::GetOnSelect,&ParaUIObject::OnSelect)
+	- ("onfocusin",&ParaUIObject::GetOnFocusIn,&ParaUIObject::OnFocusIn)
+	- ("onfocusout",&ParaUIObject::GetOnFocusOut,&ParaUIObject::OnFocusOut)
 	- ("onmodify",&ParaUIObject::GetOnModify,&ParaUIObject::OnModify)
 	- ("ondestroy",&ParaUIObject::GetOnDestroy,&ParaUIObject::OnDestroy)
 	- ("onsize",&ParaUIObject::GetOnSize,&ParaUIObject::OnSize)
@@ -574,6 +576,10 @@ namespace ParaScripting
 		string GetOnChange()const;
 		void OnSelect(const object&  strScriptName);
 		string GetOnSelect()const;
+		void OnFocusIn(const object&  strScriptName);
+		string GetOnFocusIn()const;
+		void OnFocusOut(const object&  strScriptName);
+		string GetOnFocusOut()const;
 		void OnModify(const object&  strScriptName);
 		string GetOnModify()const;
 		void SetCanDrag(bool bCanDrag);

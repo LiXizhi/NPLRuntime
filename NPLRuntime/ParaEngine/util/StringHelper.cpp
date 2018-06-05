@@ -1467,6 +1467,27 @@ bool ParaEngine::StringHelper::StrEndsWith(const string& str, const string& sequ
 	return false;
 }
 
+
+bool ParaEngine::StringHelper::StrEndsWithWord(const string& str, const string& sequence)
+{
+	int nOffset = (int)(str.size() - sequence.size());
+	if (nOffset >= 0)
+	{
+		// it must ends with a given word with no heading spaces
+		if (nOffset > 0 && str[nOffset - 1] != ' ')
+			return false;
+
+		for (int i = (int)sequence.size() - 1; i >= 0; i--)
+		{
+			if (sequence[i] != '?' && sequence[i] != str[i + nOffset])
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
+
 bool ParaEngine::StringHelper::UTF8ToUTF16_Safe(const std::string& utf8, std::u16string& outUtf16)
 {
 	if (UTF8ToUTF16(utf8, outUtf16))

@@ -144,7 +144,7 @@ namespace ParaTerrain
 		void DeleteDeviceObjects();
 		/// must call this function when device is invalid.
 		void InvalidateDeviceObjects();
-
+		void RendererRecreated();
 		/** get the settings object to set and get terrain global parameters. Such as normal, etc.*/
 		Settings* GetSettings();
 

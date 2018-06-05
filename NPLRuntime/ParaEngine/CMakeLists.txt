@@ -88,6 +88,9 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
     list(APPEND EmbeddedResource_Files_D3D ${Resource})
 
+	embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_D3D ${Resource})
+
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
 
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
@@ -143,11 +146,11 @@ target_include_directories(ParaEngine PUBLIC
 )
 
 
+
 if(ANDROID)
     set(PLATROM_SPEC_DEFINITIONS 
         PARAENGINE_MOBILE
         PLATFORM_ANDROID
-        STATIC_PLUGIN_CAUDIOENGINE
         AUTOUPDATE_PARAENGINE
     )
 elseif(WIN32)
@@ -156,9 +159,34 @@ elseif(WIN32)
         _WIN32_WINNT=0x0501
         _WINSOCK_DEPRECATED_NO_WARNINGS
     )
-elseif(APPLE)
-    set(PLATROM_SPEC_DEFINITIONS 
-        PLATFORM_MAC
+elseif(IOS)
+    set(PLATROM_SPEC_DEFINITIONS
+        PARAENGINE_MOBILE
+        PLATFORM_IPHONE
+    ) 
+
+elseif(MAC_SERVER)
+
+	set(PLATROM_SPEC_DEFINITIONS 
+        PLATFORM_MAC MAC_SERVER
+    )
+
+    ## Readline support
+    include("${PROJECT_SOURCE_DIR}/cmake/FindReadline.cmake")
+    # FIND_PACKAGE(Readline)
+    IF(READLINE_FOUND)
+		LIST(APPEND PLATROM_SPEC_DEFINITIONS
+			 NPL_USE_READLINE
+		)
+		LIST(APPEND PLATFORM_SPE_LIBS ${Readline_LIBRARY})
+		MESSAGE("NPL_USE_READLINE read line is found and used")
+		INCLUDE_DIRECTORIES(${READLINE_INCLUDE_DIR})
+	ELSE()
+		MESSAGE("warning: NPL_USE_READLINE NOT FOUND please apt-get install libreadline6 libreadline6-dev")
+	ENDIF()
+elseif(APPLE AND NOT IOS)
+    set(PLATROM_SPEC_DEFINITIONS
+    PLATFORM_MAC
     )
 elseif(UNIX AND NOT ANDROID)
     ## Readline support
@@ -190,6 +218,10 @@ if (PHYSICS_STATICLIB)
 	list(APPEND NPLRUNTIME_LIBS PhysicsBT)
 endif()
 
+if (AUDIO_STATICLIB)
+	list(APPEND NPLRUNTIME_LIBS cAudioEngine)
+endif()
+
 target_link_libraries(ParaEngine PUBLIC 
     ${RenderSystem}
     ${Boost_LIBRARIES}
@@ -201,7 +233,7 @@ target_link_libraries(ParaEngine PUBLIC
     jsoncpp
     tinyxpath
     luabind
-    sqlite 
+    ParaSqlite 
 	${ICONV_LIB_NAME}
 )
 
@@ -220,6 +252,10 @@ if (PHYSICS_STATICLIB)
 	list(APPEND PARAENGINE_DEF_LIST PHYSICS_STATICLIB)
 endif()
 
+if (AUDIO_STATICLIB)
+	list(APPEND PARAENGINE_DEF_LIST STATIC_PLUGIN_CAUDIOENGINE)
+endif()
+
 if(NPLRUNTIME_STATIC_LIB)
 	list(APPEND PARAENGINE_DEF_LIST CURL_STATICLIB)
 	list(APPEND PARAENGINE_DEF_LIST PE_CORE_EXPORTING)
@@ -233,9 +269,6 @@ endif()
 target_compile_definitions(ParaEngine PUBLIC 
     ${PARAENGINE_DEF_LIST}
 )
-
-
-
 
 
 IF(MSVC)

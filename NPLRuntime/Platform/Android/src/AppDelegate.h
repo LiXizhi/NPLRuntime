@@ -6,9 +6,7 @@
 #include "Framework/InputSystem/VirtualKey.h"
 #include "jni/AppActivity.h"
 
-#include <boost/asio.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/asio/steady_timer.hpp>
+#include "Core/MainLoopBase.h"
 
 namespace ParaEngine
 {
@@ -16,7 +14,7 @@ namespace ParaEngine
 	class IRenderDevice;
 	class IRenderContext;
 	class IRenderWindow;
-    class AppDelegate 
+    class AppDelegate : public MainLoopBase
     {
     public:
 		static AppDelegate& getInstance();
@@ -53,10 +51,6 @@ namespace ParaEngine
 		CParaEngineAppAndroid* m_ParaEngineApp;
 		bool m_isPaused;
 
-		/** the main game loop */
-		boost::asio::io_service m_main_io_service;
-		/** the main timer that ticks 30 times a second*/
-		boost::asio::steady_timer m_main_timer;
 
 		AppActivity m_appActivity;
 

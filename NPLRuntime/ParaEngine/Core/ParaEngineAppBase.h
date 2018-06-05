@@ -56,6 +56,8 @@ namespace ParaEngine
 		virtual bool GetAutoLowerFrameRateWhenNotFocused() override;
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
+
+		virtual void onCmdLine(const std::string& cmd);
 		
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.
@@ -66,12 +68,12 @@ namespace ParaEngine
 		double GetAppTime();
 		double GetElapsedTime();
 	protected:
-		void SetTouchInputting(bool bTouchInputting);
+		virtual void SetTouchInputting(bool bTouchInputting) override;
 		void AutoSetLocale();
 		/** call this function at the end of the frame. */
 		virtual void OnFrameEnded();
-		virtual void WriteToLog(const char* sFormat, ...);
-		virtual void AppLog(const char* sFormat);
+		virtual void WriteToLog(const char* sFormat, ...) override;
+		virtual void AppLog(const char* sFormat) override;
 		/** set the current working directory. This function is called in the constructor to ensure that all IO directs to the right dir. */
 		virtual bool FindParaEngineDirectory(const char* sHint = NULL);
 		void BootStrapAndLoadConfig();
@@ -79,7 +81,7 @@ namespace ParaEngine
 		void InitRenderEnvironment();
 		void ResetRenderEnvironment();
 
-		virtual float GetFPS();
+		virtual float GetFPS() override;
 		virtual void UpdateFrameStats(double fTime);
 		
 		void Render();
@@ -90,7 +92,10 @@ namespace ParaEngine
 		virtual void ActivateApp(bool bActivate) override;
 
 
-		virtual void DeleteInterface() { delete this; }
+		virtual void DeleteInterface() override  { delete this; }
+        
+        void setRenderEnabled(bool b) { m_bRender = b; }
+        bool getRenderEnabled () const {return m_bRender;};
 
 	protected:
 		static IParaEngineApp* g_pCurrentApp;
@@ -127,6 +132,7 @@ namespace ParaEngine
 		double            m_fElapsedTime;      // Time elapsed since last frame
 		float m_fFPS;
 		bool m_bActive;
+        bool m_bRender;
 		bool m_bAudioEngineInitialized;
 
 #pragma region OLD_CODE
@@ -136,13 +142,13 @@ namespace ParaEngine
 
 		/** switch to ignore windows size change. default to false.
 		* if false, the user is allowed to adjust window size in windowed mode. */
-		virtual void SetIgnoreWindowSizeChange(bool bIgnoreSizeChange){};
+		virtual void SetIgnoreWindowSizeChange(bool bIgnoreSizeChange) override {};
 
 		/** return true if it is currently under windowed mode. */
-		virtual bool GetIgnoreWindowSizeChange(){ return false; };
+		virtual bool GetIgnoreWindowSizeChange() override { return false; };
 
 		/** get the module handle, it may be exe or the dll handle, depending on how the main host app is built. */
-		HINSTANCE GetModuleHandle() { return 0; };
+		HINSTANCE GetModuleHandle() override { return 0; };
 
 		/**
 		* Set the frame rate timer interval
@@ -150,11 +156,11 @@ namespace ParaEngine
 		* 	Passing a value <= 0 to render in idle time.
 		* @param nFrameRateControl: 0 for real time, 1 for ideal frame rate at 30 FPS no matter whatever time interval is set.
 		*/
-		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0);
+		virtual void SetRefreshTimer(float fTimeInterval, int nFrameRateControl = 0) override;
 
 		/** get the refresh timer.
 		*/
-		virtual float GetRefreshTimer();
+		virtual float GetRefreshTimer() override;
 
 
 
@@ -162,39 +168,39 @@ namespace ParaEngine
 		* [main thread only]
 		* @return see PE_USAGE
 		*/
-		virtual DWORD GetCoreUsage();
+		virtual DWORD GetCoreUsage() override;
 
 		/** Set the current ParaEngine app usage.
 		* [main thread only]
 		* @param dwUsage: bitwise of PE_USAGE
 		*/
-		virtual void SetCoreUsage(DWORD dwUsage) { };
+		virtual void SetCoreUsage(DWORD dwUsage) override  { };
 
 
 		/** Get the exit code that will be used when the standalone executable exit.
 		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
 		*/
-		virtual void SetReturnCode(int nReturnCode);
-		virtual int GetReturnCode();
+		virtual void SetReturnCode(int nReturnCode) override;
+		virtual int GetReturnCode() override;
 
 		/** show a system message box to the user. mostly about fatal error.  */
-		virtual void SystemMessageBox(const std::string& msg);
+		virtual void SystemMessageBox(const std::string& msg) override;
 
 		/** set string specifying the command line for the application, excluding the program name.
 		* calling this function multiple times with different command line is permitted. The latter settings will merge and override the previous ones.
 		* @param pCommandLine: such as   key="value" key2="value2"
 		*/
-		virtual void SetAppCommandLine(const char* pCommandLine);
+		virtual void SetAppCommandLine(const char* pCommandLine) override;
 
 		/** get string specifying the command line for the application, excluding the program name. */
-		virtual const char* GetAppCommandLine();
+		virtual const char* GetAppCommandLine() override;
 
 		/**
 		* return a specified parameter value in the command line of the application. If the parameter does not exist, the return value is NULL.
 		* @param pParam: key to get
 		* @param defaultValue: if the key does not exist, this value will be added and returned. This can be NULL.
 		*/
-		virtual const char* GetAppCommandLineByParam(const char* pParam, const char* defaultValue);
+		virtual const char* GetAppCommandLineByParam(const char* pParam, const char* defaultValue) override;
 	public:
 
 
@@ -202,20 +208,20 @@ namespace ParaEngine
 		* this is the recommended way of exiting application.
 		* this is mainly used for writing test cases. Where a return value of 0 means success, any other value means failure.
 		*/
-		virtual void Exit(int nReturnCode = 0);
+		virtual void Exit(int nReturnCode = 0) override;
 
-		virtual ParaEngine::PEAppState GetAppState();
-		virtual void SetAppState(ParaEngine::PEAppState state);
+		virtual ParaEngine::PEAppState GetAppState() override;
+		virtual void SetAppState(ParaEngine::PEAppState state) override;
 
 
 		/**
 		* This function should be called only once when the application end, one can destroy game objects here.
 		*/
-		virtual bool FinalCleanup();
+		virtual bool FinalCleanup() override;
 
 
 		/** only call this function if one does not want to manage game loop externally. */
-		virtual int Run(HINSTANCE hInstance){ return 0; };
+		virtual int Run(HINSTANCE hInstance) override { return 0; };
 
 
 		/** create d3d render device based on the current main window.
@@ -261,32 +267,32 @@ namespace ParaEngine
 		PE_DEPRECATED_ATTRIBUTE virtual LRESULT MsgProcApp(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override { return 0; };
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual void    EnablePassiveRendering(bool bEnable) { };
+		virtual void    EnablePassiveRendering(bool bEnable) override { };
 
 		/**  passive rendering, it will not render the scene, but simulation and time remains the same. Default is false*/
-		virtual bool	IsPassiveRenderingEnabled()  { return false; };
+		virtual bool	IsPassiveRenderingEnabled() override { return false; };
 
 		/** The BringWindowToTop current window to the top of the Z order. This function only works if IsFullScreenMode() is false.
 		*/
-		virtual void BringWindowToTop() { };
+		virtual void BringWindowToTop() override { };
 
 		/** whether the user can close the window (sending WM_CLOSE message). Default to true.
 		* When set to false, the scripting interface will receive WM_CLOSE message via system event. And can use ParaEngine.Exit() to quit the application after user confirmation, etc.
 		*/
-		virtual void SetAllowWindowClosing(bool bAllowClosing) { };
-		virtual bool IsWindowClosingAllowed()  { return false; };
+		virtual void SetAllowWindowClosing(bool bAllowClosing) override { };
+		virtual bool IsWindowClosingAllowed() override { return false; };
 
 		/** whether to use full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual void SetFullScreenMode(bool bFullscreen){};
-		virtual bool IsFullScreenMode(){ return false; };
+		virtual void SetFullScreenMode(bool bFullscreen) override {};
+		virtual bool IsFullScreenMode() override { return false; };
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual void GetScreenResolution(Vector2* pOut)  { *pOut = Vector2::ZERO; };
-		virtual void SetScreenResolution(const Vector2& vSize){};
+		virtual void GetScreenResolution(Vector2* pOut) override { *pOut = Vector2::ZERO; };
+		virtual void SetScreenResolution(const Vector2& vSize) override {};
 
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
-		virtual int GetMultiSampleType(){ return 0; };
-		virtual void SetMultiSampleType(int nType){};
+		virtual int GetMultiSampleType() override { return 0; };
+		virtual void SetMultiSampleType(int nType) override {};
 
 		/** anti-aliasing for both windowed and full screen mode. it does not immediately change the device, call UpdateScreenMode() to update the device.*/
 		PE_DEPRECATED_ATTRIBUTE virtual int GetMultiSampleQuality() override { return 0; };
@@ -297,13 +303,13 @@ namespace ParaEngine
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */
-		virtual bool SetWindowedMode(bool bWindowed){ return false; };
+		virtual bool SetWindowedMode(bool bWindowed) override  { return false; };
 		/** return true if it is currently under windowed mode. */
-		virtual bool IsWindowedMode(){ return true; };
+		virtual bool IsWindowedMode() override { return true; };
 		/** set the window title when at windowed mode */
-		virtual void SetWindowText(const char* pChar) {};
+		virtual void SetWindowText(const char* pChar) override {};
 		/** get the window title when at windowed mode */
-		virtual const char* GetWindowText() { return ""; };
+		virtual const char* GetWindowText() override { return ""; };
 		/* whether the window size is fixed. */
 		PE_DEPRECATED_ATTRIBUTE virtual void FixWindowSize(bool fixed) override {};
 
@@ -312,17 +318,17 @@ namespace ParaEngine
 		* config file at ./config.txt will be automatically loaded when the game engine starts.
 		* @param sFileName: if this is "", it will be the default config file at ./config.txt
 		*/
-		virtual void WriteConfigFile(const char* sFileName) {};
+		virtual void WriteConfigFile(const char* sFileName) override  {};
 
 		/** get whether ParaEngine is loaded from config/config.new.txt. if this is true, we need to ask the user to save to config/config.txt. This is usually done at start up. */
-		virtual bool HasNewConfig() { return false; };
+		virtual bool HasNewConfig() override  { return false; };
 
 		/** set whether ParaEngine is loaded from config/config.new.txt. if this is true, we need to ask the user to save to config/config.txt. This is usually done at start up. */
-		virtual void SetHasNewConfig(bool bHasNewConfig) {};
+		virtual void SetHasNewConfig(bool bHasNewConfig) override  {};
 
 
 		/** get the window creation size in default application config. */
-		virtual void GetWindowCreationSize(int * pWidth, int * pHeight) {};
+		virtual void GetWindowCreationSize(int * pWidth, int * pHeight) override {};
 
 		/** set the minimum UI resolution size. if the backbuffer is smaller than this, we will use automatically use UI scaling
 		* for example, if minimum width is 1024, and backbuffer it 800, then m_fUIScalingX will be automatically set to 1024/800.
@@ -332,11 +338,11 @@ namespace ParaEngine
 		* @param nHeight: the new height.
 		* @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size.
 		*/
-		virtual void SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) { };
+		virtual void SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) override { };
 
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
-		virtual void GetResolution(float* pX, float* pY) {};
-		virtual void SetResolution(float x, float y) {};
+		virtual void GetResolution(float* pX, float* pY) override {};
+		virtual void SetResolution(float x, float y)  override {};
 
 		/** get the NPL runtime system associate with the application. NPL provides communication framework across different language systems. */
 		virtual NPL::INPLRuntime* GetNPLRuntime();
@@ -344,13 +350,13 @@ namespace ParaEngine
 		/**
 		* we will automatically release singleton object when app stops, in the verse order when object is added to the pool.
 		*/
-		virtual CRefCounted* AddToSingletonReleasePool(CRefCounted* pObject);
+		virtual CRefCounted* AddToSingletonReleasePool(CRefCounted* pObject) override;
 
 		/** whether there is closing request in the message queue. In windows, the user clicks the close button.
 		* For long running task in the main thread, it is recommended to periodically check this value to end the task prematurely if necessary.
 		*/
-		virtual bool HasClosingRequest();
-		virtual void SetHasClosingRequest(bool val);
+		virtual bool HasClosingRequest() override;
+		virtual void SetHasClosingRequest(bool val) override;
 
 		/** load NPL package from a disk folder.
 		* it will first search the dev folder, then the current folder, and then the executable folder and all of its parent folders.
@@ -358,7 +364,7 @@ namespace ParaEngine
 		* @param sFilePath: for example, "npl_packages/main/" is always loaded on start up.
 		* @param pOutMainFile: output of the actual folder name or a main loader file path in the main loader. 
 		*/
-		virtual bool LoadNPLPackage(const char* sFilePath, std::string * pOutMainFile = NULL);
+		virtual bool LoadNPLPackage(const char* sFilePath, std::string * pOutMainFile = NULL) override;
 
 		/** check if there is bootstrapper file specified at command line, if not it will use NPL code wiki admin app. 
 		*/
@@ -370,10 +376,10 @@ namespace ParaEngine
 
 		/** render the current frame and does not return until everything is presented to screen.
 		* this function is usually used to draw the animated loading screen. */
-		virtual bool ForceRender();
+		virtual bool ForceRender() override;
 
 		/** get the NPL bin directory (main executable directory). this one ends with "/" */
-		virtual const char* GetModuleDir();
+		virtual const char* GetModuleDir() override;
 
 		/** set the hWnd on to which we will render and process window messages.
 		* this function should be called prior to Create().
@@ -406,6 +412,9 @@ namespace ParaEngine
 		/** obsoleted function: */
 		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointX() override { return 0;  };
 		PE_DEPRECATED_ATTRIBUTE virtual int32 GetTouchPointY() override { return 0; };
+
+		/** get the attribute object of the main ParaEngine interface */
+		virtual IAttributeFields* GetAttributeObject() override;
 
 
 	public:

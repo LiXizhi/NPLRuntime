@@ -16,7 +16,7 @@ namespace ParaEngine
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
 		virtual int GetMaxSimultaneousTextures() override;
-		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) ;
+		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
@@ -24,7 +24,7 @@ namespace ParaEngine
 		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl) override;
 		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) override;
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
-		void BeginRenderTarget(uint32_t width,uint32_t height);
+		void BeginRenderTarget(uint32_t width,uint32_t height) ;
 		void EndRenderTarget();
 		virtual bool BeginScene() override;
 		virtual bool EndScene() override;

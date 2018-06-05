@@ -32,6 +32,7 @@ namespace ParaEngine
 	public:
 		CParaXModel(const ParaXHeaderDef& xheader);
 		virtual ~CParaXModel(void);
+		void SetHeader(const ParaXHeaderDef& xheader);
 
 		/** in what method to render the mesh */
 		enum RENDER_METHOD{
@@ -354,7 +355,7 @@ namespace ParaEngine
 
 		float m_trans;
 		std::vector<ModelAttachment> m_atts;
-		int m_attLookup[MAX_MODEL_ATTACHMENTS];
+		int32 m_attLookup[MAX_MODEL_ATTACHMENTS];
 
 		/** default to unitY */
 		Vector3 m_vNeckYawAxis;

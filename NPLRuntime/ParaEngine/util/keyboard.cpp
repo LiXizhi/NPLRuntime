@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 
-#if defined(PLATFORM_MAC)
+#if defined(PLATFORM_MAC) && !defined(MAC_SERVER)
 // TODO: wangpeng for mac input
 int _kbhit()
 {
@@ -21,7 +21,10 @@ int _kbhit()
 #include <sys/select.h>
 #include <sys/ioctl.h>
 #include <termios.h>
-#include <stropts.h>
+
+#ifndef PLATFORM_MAC
+    #include <stropts.h>
+#endif
 
 int _kbhit()
 {

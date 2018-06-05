@@ -49,10 +49,19 @@ ray collision		<-> dSpaceCollide2(...);
 using namespace ParaEngine;
 
 /** the bullet physics engine plugin dll file path */
-#ifdef _DEBUG
-const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT_d.dll";
+#if defined(WIN32)
+    #define DLL_FILE_EXT  "dll"
+#elif defined(PLATFORM_MAC)
+    #define DLL_FILE_EXT "dylib"
 #else
-const char* PHYSICS_DLL_FILE_PATH = "PhysicsBT.dll";
+    #define DLL_FILE_EXT "so"
+#endif
+
+
+#if defined(_DEBUG) && defined(WIN32)
+const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT_d." DLL_FILE_EXT) ;
+#else
+const char* PHYSICS_DLL_FILE_PATH = ("PhysicsBT." DLL_FILE_EXT) ;
 #endif
 
 CPhysicsWorld::CPhysicsWorld()

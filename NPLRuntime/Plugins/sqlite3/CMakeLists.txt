@@ -5,7 +5,7 @@
 # we will build as dll in win32 and static linked lib under linux. 
 # Note: add #include "paraengine_sqlite3.h" at the very beginning of sqlite3.h and sqlite3.c to automatically define SQLITE_API according to ParaEngine usage macro. 
 include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
-PROJECT(sqlite)
+PROJECT(ParaSqlite)
 
 
 # add the binary tree to the search path for include files
@@ -45,13 +45,14 @@ ENDIF()
 
 # the following will build it as dll under win32, since it will make the core game engine update more granular. 
 IF(WIN32)
-	SET(CMAKE_DEBUG_POSTFIX "_d")
-	
+    SET(CMAKE_DEBUG_POSTFIX "_d")
 	# To turn size optimisations on again
 	SET(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /opt:ref")
 ELSE(WIN32)
 	
 ENDIF(WIN32)
+
+
 
 if(SQLITE_STATICLIB)
 	SET(SQLITE_LIB_MODE "STATIC")
@@ -60,9 +61,9 @@ else()
 	SET(SQLITE_LIB_MODE "SHARED")
 endif()
 
-add_library(sqlite ${SQLITE_LIB_MODE} ${sqlite_SRCS})
-target_include_directories(sqlite PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(sqlite ${Boost_LIBRARIES}) 
+add_library(ParaSqlite ${SQLITE_LIB_MODE} ${sqlite_SRCS})
+target_include_directories(ParaSqlite PUBLIC ${PROJECT_SOURCE_DIR})
+target_link_libraries(ParaSqlite ${Boost_LIBRARIES}) 
 
 
 # set(TEST_DIR "D:/code/npl/TableDB/")
@@ -70,10 +71,9 @@ target_link_libraries(sqlite ${Boost_LIBRARIES})
 if(SQLITE_STATICLIB)
 else()
 	ADD_CUSTOM_COMMAND(
-		TARGET sqlite
+		TARGET ParaSqlite
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${OUTPUT_BIN_DIR}
-		# COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:sqlite> ${TEST_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ParaSqlite> ${OUTPUT_BIN_DIR}
 	)
 endif()

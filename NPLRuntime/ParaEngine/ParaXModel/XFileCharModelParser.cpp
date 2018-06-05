@@ -30,7 +30,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::ParseParaXModel()
 {
 	CParaXModel* pMesh = NULL;
 
-	if (LoadParaX_Header()){
+	if (LoadParaX_Header()) {
 		pMesh = LoadParaX_Body();
 		LoadParaX_Finalize();
 	}
@@ -57,7 +57,7 @@ bool ParaEngine::XFileCharModelParser::LoadParaX_Header()
 		pData = m_pRoot->GetChild(i);
 		// Get the template type
 		const std::string& Type = pData->GetType();
-		
+
 		if (Type == "ParaXHeader")
 		{
 			m_bHeaderLoaded = ReadParaXHeader(m_xheader, pData);
@@ -92,6 +92,20 @@ bool ParaEngine::XFileCharModelParser::LoadParaX_Header()
 }
 
 
+bool ParaEngine::XFileCharModelParser::ReadParaXHeader2(CParaXModel& xmesh)
+{
+	if (m_xheader.nModelFormat & PARAX_FORMAT_EXTENDED_HEADER2)
+	{
+		ParaXHeaderDef2 header2;
+		memcpy(&header2, GetRawData(m_xheader.nOffsetAdditionalHeader), sizeof(ParaXHeaderDef2));
+		m_xheader.IsAnimated = header2.IsAnimated;
+		xmesh.SetHeader(m_xheader);
+		xmesh.m_vNeckYawAxis = header2.neck_yaw_axis;
+		xmesh.m_vNeckPitchAxis = header2.neck_pitch_axis;
+	}
+	return true;
+}
+
 CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 {
 	// load header if not done so yet.
@@ -114,6 +128,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 		if (m_xheader.type == PARAX_MODEL_ANIMATED || m_xheader.type == PARAX_MODEL_BMAX)
 		{
 			pMesh = new CParaXModel(m_xheader);
+			ReadParaXHeader2(*pMesh);
 
 			// Scan for data nodes inside the ParaXBody
 			int nCount = m_pParaXBody->GetChildCount();
@@ -124,73 +139,73 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 				{
 					const std::string& Type = pSubData->GetType();
 					// Get the template type
-					if (Type == "XDWORDArray")	{//XGlobalSequences
-						// Get the frame name (if any)
-						if (pSubData->GetName() == "XGlobalSequences"){
+					if (Type == "XDWORDArray") {//XGlobalSequences
+												// Get the frame name (if any)
+						if (pSubData->GetName() == "XGlobalSequences") {
 							ReadXGlobalSequences(*pMesh, pSubData);
 						}
 					}
-					else if (Type == "XVertices")	{//XVertices
+					else if (Type == "XVertices") {//XVertices
 						if (!ReadXVertices(*pMesh, pSubData))
 							OUTPUT_LOG("error loading vertices");
 					}
-					else if (Type == "XTextures")	{//XTextures
+					else if (Type == "XTextures") {//XTextures
 						if (!ReadXTextures(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XTextures");
 					}
-					else if (Type == "XAttachments")	{//XAttachments
+					else if (Type == "XAttachments") {//XAttachments
 						if (!ReadXAttachments(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XAttachments");
 					}
-					else if (Type == "XTransparency")	{//XTransparency
+					else if (Type == "XTransparency") {//XTransparency
 						if (!ReadXTransparency(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XTransparency");
 					}
-					else if (Type == "XViews")	{//XViews
+					else if (Type == "XViews") {//XViews
 						if (!ReadXViews(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XViews");
 					}
-					else if (Type == "XIndices0")	{//XIndices0
+					else if (Type == "XIndices0") {//XIndices0
 						if (!ReadXIndices0(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XIndices0");
 					}
-					else if (Type == "XGeosets")	{//XGeosets
+					else if (Type == "XGeosets") {//XGeosets
 						if (!ReadXGeosets(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XGeosets");
 					}
-					else if (Type == "XRenderPass")	{//XRenderPass
+					else if (Type == "XRenderPass") {//XRenderPass
 						if (!ReadXRenderPass(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XRenderPass");
 					}
-					else if (Type == "XBones")	{//XBones
+					else if (Type == "XBones") {//XBones
 						if (!ReadXBones(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XBones");
 					}
-					else if (Type == "XTexAnims")	{//XTexAnims
+					else if (Type == "XTexAnims") {//XTexAnims
 						if (!ReadXTexAnims(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XTexAnims");
 					}
-					else if (Type == "XParticleEmitters")	{//XParticleEmitters
+					else if (Type == "XParticleEmitters") {//XParticleEmitters
 						if (!ReadXParticleEmitters(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XParticleEmitters");
 					}
-					else if (Type == "XRibbonEmitters")	{//XRibbonEmitters
+					else if (Type == "XRibbonEmitters") {//XRibbonEmitters
 						if (!ReadXRibbonEmitters(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XRibbonEmitters");
 					}
-					else if (Type == "XColors")	{//XColors
+					else if (Type == "XColors") {//XColors
 						if (!ReadXColors(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XColors");
 					}
-					else if (Type == "XCameras")	{//XCameras
+					else if (Type == "XCameras") {//XCameras
 						if (!ReadXCameras(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XCameras");
 					}
-					else if (Type == "XLights")	{//XLights
+					else if (Type == "XLights") {//XLights
 						if (!ReadXLights(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XLights");
 					}
-					else if (Type == "XAnimations")	{//XAnimations
+					else if (Type == "XAnimations") {//XAnimations
 						if (!ReadXAnimations(*pMesh, pSubData))
 							OUTPUT_LOG("error loading XAnimations");
 					}
@@ -212,12 +227,13 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 				{
 					ModelRenderPass& p = pMesh->passes[j];
 					int nLockedNum = p.indexCount / 3;
-					if (nLockedNum>0 && !(p.is_rigid_body))
+					if (nLockedNum > 0 && !(p.is_rigid_body))
 					{
 						bool bIsRigidBody = true;
+						int nVertexOffset = p.GetVertexStart(pMesh);
 						ModelVertex * origVertices = pMesh->m_origVertices;
 						ModelVertex * ov = NULL;
-						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart]].bones[0];
+						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
 
 						int nIndexOffset = p.m_nIndexStart;
 						for (int i = 0; i < nLockedNum && bIsRigidBody; ++i)
@@ -225,10 +241,10 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 							int nVB = 3 * i;
 							for (int k = 0; k < 3; ++k, ++nVB)
 							{
-								uint16 a = indices[nIndexOffset + nVB];
+								uint16 a = indices[nIndexOffset + nVB] + nVertexOffset;
 								ov = origVertices + a;
 								// weighted vertex
-								if (ov->weights[1] != 0 || ov->bones[0] != nLastBoneIndex)
+								if (ov->weights[0] != 0xff || ov->bones[0] != nLastBoneIndex)
 								{
 									bIsRigidBody = false;
 									break;
@@ -259,6 +275,16 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 	return pMesh;
 }
 
+const std::string& ParaEngine::XFileCharModelParser::GetFilename() const
+{
+	return m_sFilename;
+}
+
+void ParaEngine::XFileCharModelParser::SetFilename(const std::string& val)
+{
+	m_sFilename = val;
+}
+
 void ParaEngine::XFileCharModelParser::LoadParaX_Finalize()
 {
 	m_pParaXBody.reset();
@@ -268,6 +294,7 @@ void ParaEngine::XFileCharModelParser::LoadParaX_Finalize()
 	m_pD3DRootFrame.reset();
 	m_pRoot.reset();
 }
+
 
 #define DEFINE_ReadAnimationBlock(DECL_TYPE, TYPE) \
 bool XFileCharModelParser::ReadAnimationBlock(const AnimationBlock* b, DECL_TYPE& anims,int *gs)\
@@ -362,7 +389,7 @@ bool XFileCharModelParser::ReadXGlobalSequences(CParaXModel& xmesh, XFileDataObj
 		xmesh.m_objNum.nGlobalSequences = _nGlobalSequences;
 		xmesh.globalSequences = new int[xmesh.m_objNum.nGlobalSequences];
 		if (xmesh.globalSequences)
-			memcpy(xmesh.globalSequences, pBuffer + 4, xmesh.m_objNum.nGlobalSequences*sizeof(DWORD));
+			memcpy(xmesh.globalSequences, pBuffer + 4, xmesh.m_objNum.nGlobalSequences * sizeof(DWORD));
 		else
 			return false;
 	}
@@ -398,12 +425,12 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 		DWORD _nTextures;
 		memcpy(&_nTextures, pBuffer, sizeof(DWORD));
 		int nTextures = _nTextures;
-		
+
 		xmesh.m_objNum.nTextures = nTextures;
 		struct ModelTextureDef_
 		{
 			uint32 type;
-			uint32 flags;
+			uint32 nOffsetEmbeddedTexture;
 			char sName;
 		};
 		if (nTextures > 0)
@@ -414,28 +441,43 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 
 			for (int i = 0; i < nTextures; ++i)
 			{
-				if (pTex->type == 0)
+				ModelTextureDef_ texInfo;
+				memcpy(&texInfo, pTex, sizeof(ModelTextureDef_));
+				if (texInfo.type != 0)
 				{
-					string sFilename(&pTex->sName); // for safety.
-					xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
-					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+					xmesh.specialTextures[i] = texInfo.type;
+					xmesh.useReplaceTextures[texInfo.type] = true;
 				}
-				else{
-					xmesh.specialTextures[i] = pTex->type;
-					xmesh.useReplaceTextures[pTex->type] = true;
-					string sFilename(&pTex->sName); // for safety.
-					if (!sFilename.empty())
+				string sFilename(((const char*)pTex) + 8); // for safety.
+				if (!sFilename.empty())
+				{
+					// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
+					// So that we do not need to supply the name elsewhere in order to display a model with replaceable textures.
+					if (texInfo.nOffsetEmbeddedTexture > 0)
 					{
-						// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
-						// So that we do not need to supply the name elsewhere in order to display a model with replaceable textures.
-						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
-						pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+						// TODO: for embedded textures, shall we use a different key name adding the file name.
+						std::string sFilename_ = GetFilename() + "/" + CParaFile::GetFileName(sFilename);
+						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename_.c_str(), TextureEntity::StaticTexture);
+						DWORD nSize = 0;
+						memcpy(&nSize, GetRawData(texInfo.nOffsetEmbeddedTexture - sizeof(DWORD)), sizeof(DWORD));
+						if (nSize > 0)
+						{
+							char* bufferCpy = new char[nSize];
+							memcpy(bufferCpy, GetRawData(texInfo.nOffsetEmbeddedTexture), nSize);
+							xmesh.textures[i]->SetRawData(bufferCpy, nSize);
+						}
 					}
 					else
 					{
-						pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
-						xmesh.textures[i].reset();
+						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
 					}
+
+					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+				}
+				else
+				{
+					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
+					xmesh.textures[i].reset();
 				}
 			}
 		}
@@ -462,7 +504,7 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		memcpy(&tmp, pBuffer + sizeof(DWORD), sizeof(DWORD));
 
 		int nAttachmentLookup = tmp;
-		
+
 		xmesh.m_objNum.nAttachments = nAttachments;
 		xmesh.m_objNum.nAttachLookup = nAttachmentLookup;
 
@@ -473,14 +515,15 @@ bool XFileCharModelParser::ReadXAttachments(CParaXModel& xmesh, XFileDataObjectP
 		xmesh.m_atts.reserve(nAttachments);
 		for (int i = 0; i < nAttachments; ++i) {
 			ModelAttachment att;
-			const ModelAttachmentDef& mad = attachments[i];
+			ModelAttachmentDef mad;
+			memcpy(&mad, attachments + i, sizeof(ModelAttachmentDef));
 			att.pos = mad.pos;
 			att.bone = mad.bone;
 			att.id = mad.id;
 			xmesh.m_atts.push_back(att);
 		}
 		// attachment lookups
-		if (nAttachmentLookup > 0){
+		if (nAttachmentLookup > 0) {
 			PE_ASSERT(nAttachmentLookup <= 40);
 			memcpy(xmesh.m_attLookup, attLookup, 4 * nAttachmentLookup);
 		}
@@ -501,7 +544,7 @@ bool XFileCharModelParser::ReadXColors(CParaXModel& xmesh, XFileDataObjectPtr pF
 		DWORD _nColors;
 		memcpy(&_nColors, pBuffer, sizeof(DWORD));
 		int nColors = _nColors;
-		
+
 		xmesh.m_objNum.nColors = nColors;
 		if (nColors > 0)
 		{ // at least one Bone
@@ -532,7 +575,7 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 		DWORD _nTransparency;
 		memcpy(&_nTransparency, pBuffer, sizeof(DWORD));
 		int nTransparency = _nTransparency;
-		
+
 		xmesh.m_objNum.nTransparency = nTransparency;
 		if (nTransparency > 0)
 		{ // at least one item
@@ -540,7 +583,9 @@ bool XFileCharModelParser::ReadXTransparency(CParaXModel& xmesh, XFileDataObject
 			xmesh.transparency = new ModelTransparency[nTransparency];
 			for (int i = 0; i < nTransparency; ++i)
 			{
-				ReadAnimationBlock(&transDefs[i].trans, xmesh.transparency[i].trans, xmesh.globalSequences);
+				ModelTransDef def;
+				memcpy(&def, transDefs + i, sizeof(ModelTransDef));
+				ReadAnimationBlock(&(def.trans), xmesh.transparency[i].trans, xmesh.globalSequences);
 			}
 		}
 	}
@@ -581,7 +626,7 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 		DWORD _nGeosets;
 		memcpy(&_nGeosets, pBuffer, sizeof(DWORD));
 		int nGeosets = _nGeosets;
-		
+
 		ModelGeoset* pGeosets = (ModelGeoset*)(pBuffer + 4);
 		xmesh.showGeosets = new bool[nGeosets];
 		for (int i = 0; i < nGeosets; ++i)
@@ -596,8 +641,8 @@ bool XFileCharModelParser::ReadXGeosets(CParaXModel& xmesh, XFileDataObjectPtr p
 				/* since Intel is little endian.
 				for (int i = 0; i < nGeosets; ++i)
 				{
-					ModelGeoset& geoset = xmesh.geosets[i];
-					geoset.SetVertexStart((DWORD)geoset.d3 + ((DWORD)(geoset.d4) << 16));
+				ModelGeoset& geoset = xmesh.geosets[i];
+				geoset.SetVertexStart((DWORD)geoset.d3 + ((DWORD)(geoset.d4) << 16));
 				}*/
 			}
 			else
@@ -627,7 +672,7 @@ bool XFileCharModelParser::ReadXRenderPass(CParaXModel& xmesh, XFileDataObjectPt
 		memcpy(&_nRenderPasses, pBuffer, sizeof(DWORD));
 
 		int nRenderPasses = _nRenderPasses;
-		
+
 		ModelRenderPass* passes = (ModelRenderPass*)(pBuffer + 4);
 		xmesh.passes.resize(nRenderPasses);
 		if (nRenderPasses > 0)
@@ -678,7 +723,7 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 
 			ModelBoneDef *mb = (ModelBoneDef*)(pBuffer + 4);
 
-			
+
 
 			for (int i = 0; i < nBones; ++i)
 			{
@@ -686,10 +731,10 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 				const ModelBoneDef&b = mb[i];
 				bone.parent = b.parent;
 				bone.flags = b.flags;
-				if ((bone.flags & 0x80000000)!=0)
+				if ((bone.flags & 0x80000000) != 0)
 				{
 					bone.flags = bone.flags & (~0x80000000);
-					if(b.nOffsetPivot!=0)
+					if (b.nBoneName != 0)
 						bone.SetName((const char*)GetRawData(b.nBoneName));
 
 					if (bone.IsOffsetMatrixBone()) {
@@ -711,13 +756,13 @@ bool XFileCharModelParser::ReadXBones(CParaXModel& xmesh, XFileDataObjectPtr pFi
 				}
 				bone.nIndex = i;
 
-				if (b.boneid>0 && b.boneid < MAX_KNOWN_BONE_NODE)
+				if (b.boneid > 0 && b.boneid < MAX_KNOWN_BONE_NODE)
 				{
 					xmesh.m_boneLookup[b.boneid] = i;
 					//bone.nBoneID = b.boneid;
 				}
 				bone.nBoneID = b.boneid;
-				
+
 				if (!bone.IsStaticTransform())
 				{
 					ReadAnimationBlock(&b.translation, bone.trans, xmesh.globalSequences);
@@ -857,7 +902,7 @@ bool XFileCharModelParser::ReadXRibbonEmitters(CParaXModel& xmesh, XFileDataObje
 		DWORD _nRibbonEmitters;
 		memcpy(&_nRibbonEmitters, pBuffer, sizeof(DWORD));
 		int nRibbonEmitters = _nRibbonEmitters;
-		
+
 		xmesh.m_objNum.nRibbonEmitters = nRibbonEmitters;
 		if (nRibbonEmitters > 0)
 		{ // at least one item
@@ -906,7 +951,7 @@ bool XFileCharModelParser::ReadXCameras(CParaXModel& xmesh, XFileDataObjectPtr p
 		DWORD _nCameras;
 		memcpy(&_nCameras, pBuffer, sizeof(DWORD));
 		int nCameras = _nCameras;
-		
+
 		xmesh.m_objNum.nCameras = nCameras;
 		if (nCameras > 0)
 		{ // at least one item
@@ -947,7 +992,7 @@ bool XFileCharModelParser::ReadXLights(CParaXModel& xmesh, XFileDataObjectPtr pF
 		DWORD _nLights;
 		memcpy(&_nLights, pBuffer, sizeof(DWORD));
 		int nLights = _nLights;
-	
+
 		xmesh.m_objNum.nLights = nLights;
 		if (nLights > 0)
 		{ // at least one item
@@ -987,12 +1032,12 @@ bool XFileCharModelParser::ReadXAnimations(CParaXModel& xmesh, XFileDataObjectPt
 		DWORD _nAnimations;
 		memcpy(&_nAnimations, pBuffer, sizeof(DWORD));
 		uint32 nAnimations = _nAnimations;
-		
+
 		xmesh.m_objNum.nAnimations = nAnimations;
 
 		ModelAnimation *anims = (ModelAnimation *)(pBuffer + 4);
 		xmesh.anims = new ModelAnimation[nAnimations];
-		if (xmesh.anims){
+		if (xmesh.anims) {
 			memcpy(xmesh.anims, anims, sizeof(ModelAnimation)*nAnimations);
 		}
 	}

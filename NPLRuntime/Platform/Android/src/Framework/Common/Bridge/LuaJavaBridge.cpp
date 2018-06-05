@@ -4,9 +4,6 @@
 #include "NPLScriptingState.h"
 
 
-
-
-
 namespace ParaEngine {
 
 	bool LuaJavaBridge::convertType(JNIEnv* env, JValues& values, size_t index, ValueType type, const luabind::object& o)

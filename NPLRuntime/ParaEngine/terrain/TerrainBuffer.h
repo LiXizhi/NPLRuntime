@@ -50,6 +50,8 @@ namespace ParaTerrain
 	public:
 		TerrainBuffer();
 		~TerrainBuffer();
+
+		void RendererRecreated();
 	public:
 
 		VertexBufferDevicePtr_type GetVertexBufferDevicePtr();

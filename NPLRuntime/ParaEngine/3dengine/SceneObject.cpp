@@ -40,6 +40,7 @@
 #include "SkyMesh.h"
 #include "ParaWorldAsset.h"
 #include "terrain/GlobalTerrain.h"
+#include "FrameRateController.h"
 #include "PhysicsWorld.h"
 #include "ManagedLoader.h"
 #include "MissileObject.h"
@@ -944,6 +945,7 @@ HRESULT CSceneObject::RendererRecreated()
 	{
 		skymesh->RendererRecreated();
 	}
+	m_globalTerrain->RendererRecreated();
 	return S_OK;
 }
 
@@ -1240,6 +1242,10 @@ void CSceneObject::Animate( double dTimeDelta, int nRenderNumber )
 
 	/// Update the camera 
 	GetCurrentCamera()->FrameMove( (FLOAT)dTimeDelta );
+
+	// when game time is paused, also pause the scene delta time
+	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
 
 	if(m_bGamePaused)
 		return;
@@ -2081,6 +2087,10 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	if(!m_bInitialized)
 		return E_FAIL;
 
+	// when game time is paused, also pause the scene delta time
+	if(CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
+
 	globalTime =  (int)(CGlobals::GetGameTime()*1000);
 	SceneState& sceneState = *(m_sceneState.get());
 	
@@ -2357,6 +2367,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
 	m_pBlockWorldClient->Render(BlockRenderPass_ReflectedWater);
 
+	// draw overlays solid
+	RenderHeadOnDisplay(2);
+
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
 	
@@ -2517,13 +2530,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 }
 
 template <class T>
-void RenderHeadOnDisplayList(T& renderlist, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnable = true, bool b3DText = false)
+void RenderHeadOnDisplayList(T& renderlist, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnable = true, bool b3DText = false, bool bZWriteEnable = false)
 {
 	typename T::const_iterator itCurCP, itEnd = renderlist.end();
-	for(itCurCP = renderlist.begin(); itCurCP !=itEnd; ++itCurCP)
+	for (itCurCP = renderlist.begin(); itCurCP != itEnd; ++itCurCP)
 	{
 		CBaseObject* pObj = (*itCurCP).m_pRenderObject;
-		if (pObj && pObj->HasHeadOnDisplay() && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText))
+		if (pObj && pObj->HasHeadOnDisplay() && !IHeadOn3D::DrawHeadOnUI(pObj, nObjCount, pSceneState, ppObjUITextDefault, bZEnable, b3DText, bZWriteEnable))
 			break;
 	}
 }
@@ -2586,6 +2599,19 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 					RenderHeadOnDisplayList(sceneState.listHeadonDisplayObject, nObjCount, &sceneState, &pObjUITextDefault, true, true);
 					IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
 				}
+			}
+		}
+		else if (nPass == 2)
+		{
+			// draw solid overlays, which is rendered before transparent objects. 
+			if (!sceneState.listSolidOverlayObject.empty())
+			{
+				CPushRenderState state(&sceneState);
+				nObjCount = 0;
+				CGUIRoot::GetInstance()->GetPainter()->Flush();
+				sceneState.SetRenderState(RenderState_Overlay);
+				RenderHeadOnDisplayList(sceneState.listSolidOverlayObject, nObjCount, &sceneState, &pObjUITextDefault, true, true, true);
+				IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
 			}
 		}
 		
