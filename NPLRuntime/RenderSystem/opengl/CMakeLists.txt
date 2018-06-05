@@ -17,11 +17,15 @@ elseif(APPLE)
     set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 
+ucm_add_dirs(effect TO EFFECT_SRC RECURSIVE)
+
+
 add_library(RenderSystemOpenGL 
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
     OpenGL.h
     ${PLATFORM_SRC}
+    ${EFFECT_SRC}
 )
 
 
