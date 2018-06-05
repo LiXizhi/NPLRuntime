@@ -385,8 +385,17 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 		{
 			Class<InputQueue> c = InputQueue.class;
 			Method m = c.getDeclaredMethod("getNativePtr");
-			return (Long)m.invoke(queue);
+
+			Object retValue = m.invoke(queue);
+
+			if (retValue instanceof Number)
+				return ((Number)retValue).longValue();
+
+			throw new UnsatisfiedLinkError("Unknow type of return value to call InputQueue.getNativePtr");
+
 		} catch (Exception e){
+			Log.e("ParaEngine", e.toString());
+
 			throw new UnsatisfiedLinkError("Unable to call InputQueue.getNativePtr");
 		}
 		
