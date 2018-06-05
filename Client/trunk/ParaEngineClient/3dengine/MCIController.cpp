@@ -1,10 +1,13 @@
 #include "ParaEngine.h"
 #include "MCIController.h"
 
-#include <Windows.h>
 #include <stdio.h>
 
 using namespace ParaEngine;
+
+#if defined(WIN32)
+
+#include <Windows.h>
 
 #define ALIAS "recsound"
 
@@ -74,6 +77,8 @@ bool Win32MCI::Save(const char* fileName)
 
 	return mci_error == 0 ? true : false;
 }
+
+#endif
 
 MCIController::MCIController()
 	:m_pImpl(nullptr)
