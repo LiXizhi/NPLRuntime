@@ -27,7 +27,16 @@ namespace ParaEngine
 		*/
 		bool Save(const char* fileName);
 
-		class Interface;
+		class Interface
+		{
+		public:
+
+			virtual bool Start() = 0;
+
+			virtual bool Stop() = 0;
+
+			virtual bool Save(const char* fileName) = 0;
+		};
 	private:
 		// Cross-platform independent interface implementation.
 		Interface* m_pImpl;

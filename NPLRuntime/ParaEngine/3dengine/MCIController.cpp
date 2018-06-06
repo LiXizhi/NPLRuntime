@@ -11,17 +11,6 @@ using namespace ParaEngine;
 
 #define ALIAS "recsound"
 
-class MCIController::Interface
-{
-public:
-	virtual ~Interface() {};
-
-	virtual bool Start() = 0;
-
-	virtual bool Stop() = 0;
-
-	virtual bool Save(const char* fileName) = 0;
-};
 
 class Win32MCI: public MCIController::Interface
 {
