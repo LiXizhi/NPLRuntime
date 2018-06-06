@@ -7,6 +7,12 @@ namespace ParaEngine
 {
 
 	struct UniformInfoGL;
+	struct UpdateParmeterCommand
+	{
+		IParaEngine::ParameterHandle handle;
+		void* data;
+		uint32_t size;
+	};
 
 	class EffectOpenGL : public IParaEngine::IEffect
 	{
@@ -47,9 +53,10 @@ namespace ParaEngine
 		DxEffectsTree* m_FxDesc;
 		static const int MAX_TECHNIQUES = 16;
 		static const int MAX_PASSES = 16;
+		static const int MAX_UNIFORMS = 64;
 		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
+		UpdateParmeterCommand m_ParameterCommands[MAX_UNIFORMS];
 		std::vector<UniformInfoGL> m_Uniforms;
-
 	// Runtime state
 	private:
 		IParaEngine::TechniqueHandle m_CurrentTechniqueHandle;

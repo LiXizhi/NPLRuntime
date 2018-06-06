@@ -244,6 +244,40 @@ bool hlsl2glsl(const std::string& inCode,
 
 
 
+
+
+
+
+inline void make_update_parameter_cmd(const ParameterHandle &handle, const void* data, const uint32_t size,UpdateParmeterCommand* pOutCmd)
+{
+	if (!pOutCmd)return;
+	pOutCmd->data = nullptr;
+	pOutCmd->size = 0;
+	pOutCmd->handle = handle;
+	if (!data)return;
+	if (size == 0)return;
+
+	pOutCmd->data = malloc(size);
+	if (!pOutCmd->data) return;
+
+	memcpy(pOutCmd->data, data, size);
+	pOutCmd->size = size;
+}
+
+inline void free_update_parameter_cmd(UpdateParmeterCommand& cmd)
+{
+	if (cmd.data && cmd.size>0)
+	{
+		free(cmd.data);
+	}
+	cmd.data = nullptr;
+	cmd.size = 0;
+	cmd.handle.idx = PARA_INVALID_HANDLE;
+}
+
+
+
+
 EffectOpenGL::~EffectOpenGL()
 {
 	if (m_FxDesc)
@@ -278,6 +312,7 @@ bool EffectOpenGL::GetDesc(IParaEngine::EffectDesc* pOutDesc)
 ParaEngine::EffectOpenGL::EffectOpenGL() :m_FxDesc(nullptr)
 {
 	memset(m_ShaderPrograms, 0, sizeof(m_ShaderPrograms));
+	memset(m_ParameterCommands, 0, sizeof(m_ParameterCommands));
 	m_CurrentTechniqueHandle.idx = PARA_INVALID_HANDLE;
 }
 
@@ -526,52 +561,51 @@ bool ParaEngine::EffectOpenGL::GetParameterDesc(const IParaEngine::ParameterHand
 
 bool ParaEngine::EffectOpenGL::SetMatrixArray(const ParameterHandle& handle, const ParaEngine::DeviceMatrix* data, uint32_t count)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, data, 0, sizeof(DeviceMatrix) * count);
 }
 
 
 bool ParaEngine::EffectOpenGL::SetMatrix(const ParameterHandle& handle, const ParaEngine::DeviceMatrix* data)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, data, 0, sizeof(DeviceMatrix));
 }
 
 
 bool ParaEngine::EffectOpenGL::SetVectorArray(const ParameterHandle& handle, const ParaEngine::DeviceVector4* data, uint32_t count)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, data, 0, sizeof(DeviceVector4) * count);
 }
 
 
 bool ParaEngine::EffectOpenGL::SetFloatArray(const ParameterHandle& handle, const float* data, uint32_t count)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, data, 0, sizeof(float) * count);
+
 }
 
 
 bool ParaEngine::EffectOpenGL::SetValue(const ParameterHandle& handle, const void* data, uint32_t size)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, data,0, size);
 }
 
 
 bool ParaEngine::EffectOpenGL::SetBool(const ParameterHandle& handle, bool value)
 {
-	if (!isValidHandle(handle))return false;
+	return SetRawValue(handle, &value, 0, sizeof(bool));
 
 }
 
 
 bool ParaEngine::EffectOpenGL::SetInt(const ParameterHandle& handle, int value)
 {
-	if (!isValidHandle(handle))return false;
-
+	return SetRawValue(handle, &value, 0, sizeof(value));
 }
 
 
 bool ParaEngine::EffectOpenGL::SetFloat(const ParameterHandle& handle, float value)
 {
-	if (!isValidHandle(handle))return false;
-
+	return SetRawValue(handle, &value, 0, sizeof(value));
 }
 
 
@@ -585,7 +619,13 @@ bool ParaEngine::EffectOpenGL::SetTexture(const ParameterHandle& handle, ParaEng
 bool ParaEngine::EffectOpenGL::SetRawValue(const ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size)
 {
 	if (!isValidHandle(handle))return false;
+	if (handle.idx < 0 || handle.idx >= m_Uniforms.size()) return false;
+	if (!data || size == 0)return false;
 
+	UpdateParmeterCommand cmd;
+	make_update_parameter_cmd(handle, data, size, &cmd);
+	free_update_parameter_cmd(m_ParameterCommands[handle.idx]);
+	m_ParameterCommands[handle.idx] = cmd;
 }
 
 
@@ -593,7 +633,14 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameterByName(const 
 {
 	ParameterHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
-
+	for (int i=0;i<m_Uniforms.size();i++)
+	{
+		if (m_Uniforms[i].name == name)
+		{
+			handle.idx = i;
+			return handle;
+		}
+	}
 	return handle;
 }
 
@@ -652,6 +699,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 
 bool ParaEngine::EffectOpenGL::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)
 {
+
 	return false;
 }
 
@@ -669,4 +717,3 @@ bool EffectOpenGL::SetTechnique(const TechniqueHandle& handle)
 	}
 	return false;
 }
-

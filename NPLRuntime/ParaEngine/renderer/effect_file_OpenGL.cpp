@@ -657,27 +657,31 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 
 bool CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
 {
-	return true;
+	m_bIsBegin = true;
+	return m_Effect->Begin();
 }
 
 bool CEffectFileOpenGL::BeginPass(int nPass, bool bForceBegin /*= false*/)
 {
-	return false;
+	m_bIsBeginPass = true;
+	return m_Effect->BeginPass(nPass);
 }
 
 void CEffectFileOpenGL::CommitChanges()
 {
-
+	m_Effect->CommitChanges();
 }
 
 void CEffectFileOpenGL::EndPass(bool bForceEnd /*= false*/)
 {
 	m_bIsBeginPass = false;
+	m_Effect->EndPass();
 }
 
 void CEffectFileOpenGL::end(bool bForceEnd /*= false*/)
 {
 	m_bIsBegin = false;
+	m_Effect->End();
 }
 
 HRESULT CEffectFileOpenGL::RendererRecreated()
@@ -759,42 +763,41 @@ bool CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type pTex)
 
 bool CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
 {
-
-	return E_FAIL;
+	return m_Effect->SetRawValue(hParameter, pData, ByteOffset, nBytes);
 }
 bool CEffectFileOpenGL::SetBool(const char* hParameter, BOOL bBoolean)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &bBoolean, 0, sizeof(bBoolean)));
+	return SetRawValue(hParameter, &bBoolean, 0, sizeof(bBoolean));
 }
 
 bool CEffectFileOpenGL::SetInt(const char* hParameter, int nValue)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &nValue, 0, sizeof(nValue)));
+	return SetRawValue(hParameter, &nValue, 0, sizeof(nValue));
 }
 
 bool CEffectFileOpenGL::SetFloat(const char* hParameter, float fValue)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &fValue, 0, sizeof(fValue)));
+	return SetRawValue(hParameter, &fValue, 0, sizeof(fValue));
 }
 
 bool CEffectFileOpenGL::SetVector2(const char* hParameter, const Vector2& vValue)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
+	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
 }
 
 bool CEffectFileOpenGL::SetVector3(const char* hParameter, const Vector3& vValue)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
+	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
 }
 
 bool CEffectFileOpenGL::SetVector4(const char* hParameter, const Vector4& vValue)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &vValue, 0, sizeof(vValue)));
+	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
 }
 
 bool CEffectFileOpenGL::SetMatrix(const char* hParameter, const Matrix4& data)
 {
-	return SUCCEEDED(SetRawValue(hParameter, &data, 0, sizeof(data)));
+	return SetRawValue(hParameter, &data, 0, sizeof(data));
 }
 
 
