@@ -13,9 +13,9 @@ using namespace std;
 
 
 /// some marco for key interpretation
-#define ShiftPressed (((CGUIEvent::KeyStates[EM_KEY_LSHIFT]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RSHIFT]&0x80)!=0))
-#define ControlPressed (((CGUIEvent::KeyStates[EM_KEY_LCONTROL]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RCONTROL]&0x80)!=0))
-#define AltPressed (((CGUIEvent::KeyStates[EM_KEY_LALT]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RALT]&0x80)!=0))
+#define ShiftPressed (((CGUIEvent::KeyStates[EM_KEY_LSHIFT]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RSHIFT]&0x80)!=0) || ((CGUIEvent::KeyStates[EM_KEY_SHIFT]&0x80)!=0))
+#define ControlPressed (((CGUIEvent::KeyStates[EM_KEY_LCONTROL]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RCONTROL]&0x80)!=0) || ((CGUIEvent::KeyStates[EM_KEY_CONTROL]&0x80)!=0))
+#define AltPressed (((CGUIEvent::KeyStates[EM_KEY_LALT]&0x80)!=0)||((CGUIEvent::KeyStates[EM_KEY_RALT]&0x80)!=0) || ((CGUIEvent::KeyStates[EM_KEY_ALT]&0x80)!=0))
 #define CapsLockPressed ((CGUIEvent::KeyStates[EM_KEY_CAPSLOCK]&0x01)!=0)
 #define NumLockPressed ((CGUIEvent::KeyStates[EM_KEY_NUMLOCK]&0x01)!=0)
 
