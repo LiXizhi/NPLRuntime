@@ -388,6 +388,8 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 
 			Object retValue = m.invoke(queue);
 
+			if (retValue instanceof Integer)
+				return ((Integer)retValue).intValue() & 0x0FFFFFFFFL;
 			if (retValue instanceof Number)
 				return ((Number)retValue).longValue();
 
