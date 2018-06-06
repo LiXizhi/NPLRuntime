@@ -156,72 +156,11 @@ namespace ParaEngine
 		/** get the current technique description. This function may return NULL*/
 		const TechniqueDesc* GetCurrentTechniqueDesc();
 
-	public:
-		/** Initializes the GLProgram with a vertex and fragment with bytes array
-		*/
-		bool initWithByteArrays(const char* vShaderByteArray, const char* fShaderByteArray, int nTech = 0, int nPass = 0);
-
-		/** Initializes the GLProgram with a vertex and fragment with contents of filenames
-		*/
-		bool initWithFilenames(const std::string& vShaderFilename, const std::string& fShaderFilename, int nTech = 0, int nPass = 0);
-
-		/** links the glProgram */
-		bool link(int nTech = 0, int nPass = 0);
-		
 		/** add changes to shader parameters, those changes are commited to device when CommitChange() is called. */
-		template <typename ValueType>
-		void AddParamChange(const std::string& sName, const ValueType& value)
-		{
-			for (uint32 i = 0; i < m_pendingChangesCount; ++i)
-			{
-				if (m_pendingChanges[i].GetName() == sName)
-				{
-					m_pendingChanges[i] = value;
-					return;
-				}
-			}
-			++ m_pendingChangesCount;
-			if (m_pendingChanges.size() < m_pendingChangesCount)
-				m_pendingChanges.resize(m_pendingChangesCount + 4);
-			m_pendingChanges[m_pendingChangesCount - 1].SetName(sName);
-			m_pendingChanges[m_pendingChangesCount - 1] = value;
-		}
 
 		void SetShadowMapSize(int nsize);
 
 	protected:
-		GLProgram* GetGLProgram(int nTech, int nPass, bool bCreateIfNotExist = false);
-		typedef std::function<int (GLProgram* pProgram)> ProgramCallbackFunction_t;
-		bool SetProgramParams(ProgramCallbackFunction_t func);
-		/** it will call glUseProgram() */
-		bool use(int nTech = -1, int nPass = -1);
-
-		bool setParameter(Uniform* uniform, const void* data, int32 size = D3DX_DEFAULT);
-		bool MappingEffectUniforms(const std::vector<UniformInfo>& uniforms);
-		bool GeneratePasses();
-
-		/** It will create 4 uniforms:
-		- kUniformPMatrix
-		- kUniformMVMatrix
-		- kUniformMVPMatrix
-		- GLProgram::UNIFORM_SAMPLER
-
-		And it will bind "GLProgram::UNIFORM_SAMPLER" to 0
-		@param nPass: if -1, it will update active pass, otherwise it will be current active pass.
-		*/
-		void updateUniforms(int nTech = -1, int nPass = -1);
-
-		Uniform* GetUniformByID(eParameterHandles id);
-		Uniform* GetUniform(const std::string& sName);
-	protected:
-		std::unordered_map<uint32, std::string> m_ID2Names;
-		DxEffectsTree* m_EffectTree;
-
-		struct TechniqueDescGL : public TechniqueDesc
-		{
-			std::vector<GLProgram*> m_passes;
-		};
-		std::vector<TechniqueDescGL> m_techniques;
 		int m_nTechniqueIndex;
 		/** current active pass */
 		int m_nActivePassIndex;
@@ -238,6 +177,11 @@ namespace ParaEngine
 		IParaEngine::EffectDesc m_EffectDesc;
 		std::shared_ptr<IParaEngine::IEffect> m_Effect;
 		std::vector<TechniqueDesc> m_Techniques;
+		IParaEngine::ParameterHandle m_ParamHandle[k_max_param_handles];
+
+	private:
+		void parseParameters();
+
 	};
 
 	

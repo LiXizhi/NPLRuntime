@@ -44,10 +44,15 @@ namespace ParaEngine
 		virtual IParaEngine::TechniqueHandle GetCurrentTechnique() override;
 		virtual bool CommitChanges() override;
 	private:
-		DxEffectsTree * m_FxDesc;
+		DxEffectsTree* m_FxDesc;
 		static const int MAX_TECHNIQUES = 16;
 		static const int MAX_PASSES = 16;
 		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
 		std::vector<UniformInfoGL> m_Uniforms;
+
+	// Runtime state
+	private:
+		IParaEngine::TechniqueHandle m_CurrentTechniqueHandle;
+
 	};
 }

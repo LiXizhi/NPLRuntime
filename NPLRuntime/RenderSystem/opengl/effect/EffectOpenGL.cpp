@@ -267,14 +267,18 @@ EffectOpenGL::~EffectOpenGL()
 }
 bool EffectOpenGL::GetDesc(IParaEngine::EffectDesc* pOutDesc)
 {
+	if (!pOutDesc) return false;
 
+	pOutDesc->Techniques = m_FxDesc->getTechiques().size();
+	pOutDesc->Parameters = m_Uniforms.size();
 
-	return false;
+	return true;
 }
 
 ParaEngine::EffectOpenGL::EffectOpenGL() :m_FxDesc(nullptr)
 {
 	memset(m_ShaderPrograms, 0, sizeof(m_ShaderPrograms));
+	m_CurrentTechniqueHandle.idx = PARA_INVALID_HANDLE;
 }
 
 
@@ -395,22 +399,31 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 	return pRet;
 }
 
+
 IParaEngine::TechniqueHandle ParaEngine::EffectOpenGL::GetTechnique(uint32_t index)
 {
 	IParaEngine::TechniqueHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
 
+	auto techniques = m_FxDesc->getTechiques();
+	if (index >= 0 && index < techniques.size())
+	{
+		handle.idx = index;
+	}
+
 	return handle;
 
 }
 
+
 bool EffectOpenGL::GetTechniqueDesc(const IParaEngine::TechniqueHandle& handle, IParaEngine::TechniqueDesc* pOutDesc)
 {
 	if (!pOutDesc)return false;
-	if (isValidHandle(handle))
-	{
-
-	}
+	if (!(isValidHandle(handle) && handle.idx >= 0 && handle.idx < m_FxDesc->getTechiques().size())) return false;
+	auto tech = m_FxDesc->getTechiques()[handle.idx];
+	pOutDesc->Name = tech->getName();
+	pOutDesc->Passes = tech->getPasses().size();
+	return true;
 	return false;
 }
 
@@ -418,6 +431,10 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameter(uint32_t ind
 {
 	IParaEngine::ParameterHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
+	if (index >= 0 && index < m_Uniforms.size())
+	{
+		handle.idx = index;
+	}
 
 	return handle;
 }
@@ -425,10 +442,84 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameter(uint32_t ind
 bool ParaEngine::EffectOpenGL::GetParameterDesc(const IParaEngine::ParameterHandle & handle, IParaEngine::ParameterDesc * pOutDesc)
 {
 	if (pOutDesc == NULL)return false;
-	if (!isValidHandle(handle))return false;
+	if (!isValidHandle(handle) || handle.idx<0 || handle.idx>=m_Uniforms.size()) return false;
+	UniformInfoGL uniform = m_Uniforms[handle.idx];
+
+	pOutDesc->Name = uniform.name;
+	pOutDesc->Semantic = uniform.semantic;
+	pOutDesc->Elements = uniform.Elements;
+	pOutDesc->Type = EParameterType::PT_UNSUPPORTED;
+	switch (uniform.type)
+	{
+	default:
+		break;
+	case EShTypeVoid:
+		pOutDesc->Type = EParameterType::PT_VOID;
+		break;
+	case EShTypeBool:
+		pOutDesc->Type = EParameterType::PT_BOOL;
+		break;
+	case EShTypeInt:
+		pOutDesc->Type = EParameterType::PT_INT;
+		break;
+	case EShTypeFloat:
+		pOutDesc->Type = EParameterType::PT_FLOAT;
+		break;
+	case EShTypeVec2:
+		pOutDesc->Type = EParameterType::PT_FLOAT2;
+		break;
+	case EShTypeVec3:
+		pOutDesc->Type = EParameterType::PT_FLOAT3;
+		break;
+	case EShTypeVec4:
+		pOutDesc->Type = EParameterType::PT_FLOAT4;
+		break;
+	case EShTypeMat2:
+		pOutDesc->Type = EParameterType::PT_FLOAT2x2;
+		break;
+	case EShTypeMat2x3:
+		pOutDesc->Type = EParameterType::PT_FLOAT2x3;
+		break;
+	case EShTypeMat2x4:
+		pOutDesc->Type = EParameterType::PT_FLOAT2x4;
+		break;
+	case EShTypeMat3:
+		pOutDesc->Type = EParameterType::PT_FLOAT3x3;
+		break;
+	case EShTypeMat3x4:
+		pOutDesc->Type = EParameterType::PT_FLOAT3x4;
+		break;
+	case EShTypeMat4x2:
+		pOutDesc->Type = EParameterType::PT_FLOAT4x2;
+		break;
+	case EShTypeMat4x3:
+		pOutDesc->Type = EParameterType::PT_FLOAT4x3;
+		break;
+	case EShTypeMat4x4:
+		pOutDesc->Type = EParameterType::PT_FLOAT4x4;
+		break;
+	case EShTypeSampler:
+		pOutDesc->Type = EParameterType::PT_TEXTURE;
+		break;
+	case EShTypeSampler1D:
+		pOutDesc->Type = EParameterType::PT_TEXTURE1D;
+		break;
+	case EShTypeSampler2D:
+		pOutDesc->Type = EParameterType::PT_TEXTURE2D;
+		break;
+	case EShTypeSampler3D:
+		pOutDesc->Type = EParameterType::PT_TEXTURE3D;
+		break;
+	case EShTypeSamplerCube:
+		pOutDesc->Type = EParameterType::PT_TEXTURECUBE;
+		break;
+	case EShTypeStruct:
+		pOutDesc->Type = EParameterType::PT_STRUCT;
+		break;
+	}
 
 
-	return false;
+	return true;
 }
 
 
@@ -550,11 +641,7 @@ bool ParaEngine::EffectOpenGL::End()
 
 IParaEngine::TechniqueHandle ParaEngine::EffectOpenGL::GetCurrentTechnique()
 {
-	TechniqueHandle handle;
-	handle.idx = PARA_INVALID_HANDLE;
-
-	
-	return handle;
+	return m_CurrentTechniqueHandle;
 }
 
 
@@ -575,9 +662,10 @@ bool ParaEngine::EffectOpenGL::SetTexture(const char* name, ParaEngine::DeviceTe
 
 bool EffectOpenGL::SetTechnique(const TechniqueHandle& handle)
 {
-	if (isValidHandle(handle))
+	if (isValidHandle(handle) && handle.idx>=0 && handle.idx<m_FxDesc->getTechiques().size())
 	{
-
+		m_CurrentTechniqueHandle.idx = handle.idx;
+		return true;
 	}
 	return false;
 }
