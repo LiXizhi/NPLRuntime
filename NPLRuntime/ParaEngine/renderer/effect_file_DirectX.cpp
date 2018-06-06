@@ -287,11 +287,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 {
 	m_bIsInitialized =true;
 	m_bIsValid = false;//set to true if created successfully.
-	auto pd3dDevice = GETD3D(CGlobals::GetRenderDevice());
-
-	LPD3DXBUFFER pBufferErrors = NULL;
-	
-	HRESULT result=E_FAIL;
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 	
 	auto file = std::make_shared<CParaFile>(m_filename.c_str());
 	
@@ -327,14 +323,14 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 	else
 	{
 		OUTPUT_LOG("ERROR: shader file %s not found\n", m_filename.c_str());
-		return result;
+		return E_FAIL;
 	}
 
     if(!m_pEffect)
 	{
 		char* error_str = (error!="") ? error.c_str() : "failed loading effect file\n";
 		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
-        return result;
+        return E_FAIL;
 	}
 
 
@@ -344,7 +340,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 	m_techniques.clear();
 	//////////////////////////////////////////////////////////////////////////
 	// get all valid techniques
-	TechniqueDescDX tech;
+	TechniqueDesc tech;
 	bool bHasDefaultTechnique = false;
 
 	for (int idx =0;idx<m_EffectDesc.Techniques;idx++)
@@ -379,6 +375,8 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 			OUTPUT_LOG("ERROR: effect file: %s failed getting its description.\n", m_filename.c_str());
 		}
 	}
+
+	HRESULT result = E_FAIL;
 
 	if(!bHasDefaultTechnique)
 	{
@@ -429,7 +427,7 @@ bool CEffectFileDirectX::SetFirstValidTechniqueByCategory(TechniqueCategory nCat
 		return false;
 	if(m_techniques[m_nTechniqueIndex].nCategory == nCat)
 		return true;
-	vector<TechniqueDescDX>::const_iterator itCur, itEnd = m_techniques.end();
+	vector<TechniqueDesc>::const_iterator itCur, itEnd = m_techniques.end();
 	int i=0;
 	for(itCur = m_techniques.begin(); itCur!=itEnd;++itCur,++i)
 	{
