@@ -10,7 +10,6 @@
 
 namespace ParaEngine
 {
-	using namespace std;
 	class CSunLight;
 
 	/**
@@ -179,8 +178,12 @@ namespace ParaEngine
 		struct TechniqueDesc
 		{
 			TechniqueCategory nCategory;
+			IParaEngine::TechniqueHandle hTechnique;
+			IParaEngine::TechniqueDesc techniqueDesc;
 		public:
 			TechniqueDesc() :nCategory(TechCategory_default){
+				hTechnique.idx = PARA_INVALID_HANDLE;
+				memset(&techniqueDesc, 0, sizeof(techniqueDesc));
 			}
 		};
 

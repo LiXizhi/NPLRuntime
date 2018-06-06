@@ -215,7 +215,7 @@ namespace ParaEngine
 		Uniform* GetUniform(const std::string& sName);
 	protected:
 		std::unordered_map<uint32, std::string> m_ID2Names;
-		DxEffectsTree* m_Effect;
+		DxEffectsTree* m_EffectTree;
 
 		struct TechniqueDescGL : public TechniqueDesc
 		{
@@ -231,6 +231,13 @@ namespace ParaEngine
 		
 		std::vector<CParameter> m_pendingChanges;
 		uint32 m_pendingChangesCount;
+
+
+	protected:
+		// Private Data...
+		IParaEngine::EffectDesc m_EffectDesc;
+		std::shared_ptr<IParaEngine::IEffect> m_Effect;
+		std::vector<TechniqueDesc> m_Techniques;
 	};
 
 	

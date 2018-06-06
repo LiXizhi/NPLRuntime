@@ -52,17 +52,6 @@ namespace ParaEngine
 		/** this is called when the shader is deselected by the pipeline. There may be many objects drawn using the same shader between switch in and out. */
 		void OnSwitchOutShader();
 
-		/** a technique description */
-		struct TechniqueDescDX : public TechniqueDesc
-		{
-			IParaEngine::TechniqueHandle hTechnique;
-			IParaEngine::TechniqueDesc techniqueDesc;
-		public:
-			TechniqueDescDX(){
-				memset(this, 0, sizeof(TechniqueDescDX));
-			}
-		};
-
 		/** 
 		* Set technique if it is different from the current one.
 		*@param nCat: @see TechniqueCategory
@@ -218,12 +207,12 @@ namespace ParaEngine
 		std::shared_ptr<IParaEngine::IEffect> m_pEffect;
 
 
-		vector<TechniqueDescDX> m_techniques;
+		std::vector<TechniqueDesc> m_techniques;
 		/** indicate whether a texture at a given index is locked. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.*/ 
-		vector<bool> m_LockedTextures;
+		std::vector<bool> m_LockedTextures;
 		/** it stores the last texture pointer passed to setTexture(), thus it will remove duplicated setTexture calls before passing to dx pipeline. 
 		When a shader is switched in, all m_LastTextures will be cleared. */
-		vector<void*> m_LastTextures;
+		std::vector<void*> m_LastTextures;
 
 		// the current technique index
 		int m_nTechniqueIndex;

@@ -30,7 +30,7 @@ using namespace ParaEngine;
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_bIsBeginPass(false), m_pendingChangesCount(0)
 	, m_nTechniqueIndex(0)
-	,m_Effect(nullptr)
+	, m_EffectTree(nullptr)
 {
 	SetFileName(filename);
 	Init();
@@ -39,17 +39,17 @@ ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
 ParaEngine::CEffectFileOpenGL::CEffectFileOpenGL(const AssetKey& key)
 	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
 	, m_nTechniqueIndex(0)
-	, m_Effect(nullptr)
+	, m_EffectTree(nullptr)
 {
 	Init();
 }
 
 ParaEngine::CEffectFileOpenGL::~CEffectFileOpenGL()
 {
-	if (m_Effect != nullptr)
+	if (m_EffectTree != nullptr)
 	{
-		delete m_Effect;
-		m_Effect = nullptr;
+		delete m_EffectTree;
+		m_EffectTree = nullptr;
 	}
 	releaseEffect();
 }
@@ -86,12 +86,12 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 
 
 	std::string shader_str(shaderFile.getBuffer(), shaderFile.getSize());
-	m_Effect = new DxEffectsTree();
-	DxEffectsParser::Driver parseDriver(*m_Effect);
+	m_EffectTree = new DxEffectsTree();
+	DxEffectsParser::Driver parseDriver(*m_EffectTree);
 	bool ret = parseDriver.parse_string(shader_str,GetFileName());
 	if (!ret)
 	{
-		delete m_Effect;
+		delete m_EffectTree;
 		m_Effect = nullptr;
 		OUTPUT_LOG("error: parse effect failed %s\n", GetFileName().c_str());
 		return false;
@@ -1104,7 +1104,7 @@ void ParaEngine::CEffectFileOpenGL::SetShadowMapSize(int nsize)
 
 bool ParaEngine::CEffectFileOpenGL::MappingEffectUniforms(const std::vector<UniformInfo>& uniforms)
 {
-	if (!m_Effect) return false;
+	if (!m_EffectTree) return false;
 
 	static std::unordered_map<std::string, uint32> table;
 	if(table.empty())
@@ -1385,8 +1385,8 @@ bool hlsl2glsl(const std::string& inCode, const std::string& enterpoint, EShLang
 bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 {
 
-	if (m_Effect == NULL)return false;
-	auto techniques = m_Effect->getTechiques();
+	if (m_EffectTree == NULL)return false;
+	auto techniques = m_EffectTree->getTechiques();
 	if (techniques.empty()) {
 		//std::cout << std::endl << "no techinique" << std::endl;
 		OUTPUT_LOG("no techinique");
@@ -1455,7 +1455,7 @@ bool ParaEngine::CEffectFileOpenGL::GeneratePasses()
 			// find code block
 			std::string vscode = "";
 			std::string pscode = "";
-			auto codeblock = m_Effect->getCodeBlock();
+			auto codeblock = m_EffectTree->getCodeBlock();
 			ETargetVersion targetVersion = ETargetGLSL_110;
 #if PARAENGINE_MOBILE
 			targetVersion = ETargetGLSL_ES_100;
