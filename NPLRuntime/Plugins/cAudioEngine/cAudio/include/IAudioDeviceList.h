@@ -18,9 +18,9 @@ namespace cAudio
 	{
 	public:
 		virtual unsigned int getDeviceCount() = 0;
-		virtual cAudioString getDeviceName(unsigned int idx) = 0;
-		virtual cAudioString getDeviceDescription(unsigned int idx) = 0;
-		virtual cAudioString getDefaultDeviceName() = 0;
+		virtual const cAudioString& getDeviceName(unsigned int idx) = 0;
+		virtual const cAudioString& getDeviceDescription(unsigned int idx) = 0;
+		virtual const cAudioString& getDefaultDeviceName() = 0;
 		virtual bool isSupported() = 0;
 	};
 }

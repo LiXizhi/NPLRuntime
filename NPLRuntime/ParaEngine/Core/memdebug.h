@@ -1,5 +1,5 @@
 #pragma once
-#ifdef PARAENGINE_CLIENT
+#if defined( PARAENGINE_CLIENT ) && false // this code  is removed, Now visual studio has better memory profiler
 // VC++ uses this macro as debug/release mode indicator 
 #ifdef _DEBUG 
 // Need to undef new if including crtdbg.h which redefines new itself 

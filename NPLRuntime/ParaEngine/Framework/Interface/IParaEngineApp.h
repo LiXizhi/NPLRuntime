@@ -269,7 +269,7 @@ namespace ParaEngine
 		PE_DEPRECATED_ATTRIBUTE virtual void SetMultiSampleQuality(int nType) = 0;
 
 		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
-		PE_DEPRECATED_ATTRIBUTE virtual bool UpdateScreenMode() = 0;
+		virtual bool UpdateScreenMode() = 0;
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */

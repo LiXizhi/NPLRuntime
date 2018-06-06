@@ -5,6 +5,8 @@ using namespace std;
 
 namespace ParaEngine
 {
+	class MCIController;
+	
 	/** it represent an audio engine source*/
 	class CAudioSource2 : public ParaEngine::intrusive_ptr_single_thread_base, public IAudioSourceEventHandler
 	{
@@ -327,7 +329,10 @@ namespace ParaEngine
 		void PauseAll();
 		void ResumeAll();
 
+		MCIController* getMCIController();
+    
 		const AudioFileMap_type& getAudioMap()const;
+    
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;

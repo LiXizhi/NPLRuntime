@@ -156,6 +156,12 @@ int TerrainBuffer::GetChunkVertexOffset(int x, int y)
 	}
 }
 
+
+void TerrainBuffer::RendererRecreated()
+{
+	m_pVertexBuffer.RendererRecreated();
+}
+
 /** this is the most time consuming task compared with tessellation and repair crack */
 void TerrainBuffer::RebuildBuffer()
 {

@@ -255,6 +255,22 @@ void Terrain::InitDeviceObjects()
 	m_bMaskFileInited = true;
 }
 
+void Terrain::RendererRecreated()
+{
+	m_TerrainBuffer.RendererRecreated();
+	m_pCollisionBuffer.RendererRecreated();
+	m_pEditorMeshVB.RendererRecreated();
+	DeleteDeviceObjects();
+
+	if (m_pTextureSet)
+	{
+		delete m_pTextureSet;
+		m_pTextureSet = new TextureSet();
+	}
+
+	InitDeviceObjects();
+}
+
 void Terrain::InvalidateDeviceObjects()
 {
 	if(m_useGeoMipmap)
@@ -282,9 +298,10 @@ void Terrain::DeleteDeviceObjects()
 	if(m_pDefaultBaseLayerMask)
 		m_pDefaultBaseLayerMask->Unbind();
 
+
 	// there is no need to delete these textures, since they are all ParaEngine's Managed Textures.
 #ifdef DONOT_USE_PARAENGINE_TEXTURE
-	if(m_pTextureSet)
+	if (m_pTextureSet)
 		m_pTextureSet->UnbindAllTextures();
 	if(m_pCommonTexture)
 		m_pCommonTexture->UnloadTexture();
@@ -3432,7 +3449,8 @@ void Terrain::LoadMaskFromDisk(bool bForceReload)
 		if(pEntry->DoesFileExist())
 		{
 			// we already downloaded the file, so load it. 
-			if(fileMask.OpenFile(pEntry->GetLocalFileName().c_str(), true, NULL))
+			auto& filename = pEntry->GetLocalFileName();
+			if(fileMask.OpenFile(filename.c_str(), true, NULL))
 			{
 				ReadMaskFile(fileMask);
 			}

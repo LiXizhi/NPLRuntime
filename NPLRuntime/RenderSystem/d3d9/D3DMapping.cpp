@@ -338,6 +338,10 @@ D3DFORMAT D3DMapping::toD3DFromat(PixelFormat format)
 		return D3DFMT_D32F_LOCKABLE;
 	case PixelFormat::D24FS8:
 		return D3DFMT_D24FS8;
+	case PixelFormat::INDEX16:
+		return D3DFMT_INDEX16;
+	case PixelFormat::INDEX32:
+		return D3DFMT_INDEX32;
 	default:
 		return D3DFMT_UNKNOWN;
 	}

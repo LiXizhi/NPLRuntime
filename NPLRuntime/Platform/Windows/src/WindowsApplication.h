@@ -1,11 +1,14 @@
 #pragma once
 #include "ParaEngineAppBase.h"
+#include "Core/MainLoopBase.h"
+#include "Render/IRenderContext.h"
+
 namespace ParaEngine
 {
-	class CWindowsApplication : public CParaEngineAppBase
+	class CWindowsApplication : public CParaEngineAppBase, public MainLoopBase
 	{
 	public:
-
+		CWindowsApplication(HINSTANCE hInstance);
 
 		virtual void GameToClient(int& inout_x, int & inout_y, bool bInBackbuffer = true) override;
 
@@ -47,5 +50,48 @@ namespace ParaEngine
 
 		virtual int Run(HINSTANCE hInstance) override;
 
+		virtual bool InitApp(IRenderWindow* pWindow, const char* sCommandLine /* = nullptr */) override;
+
+		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.
+		* config file at ./config.txt will be automatically loaded when the game engine starts.
+		* @param sFileName: if this is "", it will be the default config file at ./config.txt
+		*/
+		virtual void WriteConfigFile(const char* sFileName) override;
+
+		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
+		virtual void GetScreenResolution(Vector2* pOut) override;
+
+		virtual void SetScreenResolution(const Vector2& vSize) override;
+
+		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
+		virtual void GetResolution(float* pX, float* pY) override;
+		virtual void SetResolution(float x, float y)  override;
+
+		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
+		virtual bool UpdateScreenMode() override;
+
+		// ParaEngine pipeline routines
+		/** switch to either windowed mode or full screen mode. */
+		virtual bool SetWindowedMode(bool bWindowed) override;
+
+		/** return true if it is currently under windowed mode. */
+		virtual bool IsWindowedMode();
+		/** set the window title when at windowed mode */
+		virtual void SetWindowText(const char* pChar) override;
+		/** get the window title when at windowed mode */
+		virtual const char* GetWindowText() override;
+		virtual void FixWindowSize(bool fixed) override;
+
+	private:
+		void LoadAndApplySettings();
+		bool UpdateScreenDevice();
+		bool UpdateViewPort();
+		void handle_mainloop_timer(const boost::system::error_code& err);
+
+		HINSTANCE m_hInst;
+		RenderConfiguration m_cfg;
+
+		bool m_bUpdateScreenDevice;
+		bool m_bSizeChanged;
 	};
 }
