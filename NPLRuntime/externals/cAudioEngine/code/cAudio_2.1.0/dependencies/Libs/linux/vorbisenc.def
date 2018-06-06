@@ -1,5 +1,0 @@
-EXPORTS
-vorbis_encode_ctl
-vorbis_encode_init
-vorbis_encode_init_vbr
-
