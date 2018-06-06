@@ -16,9 +16,9 @@ namespace cAudio
 		virtual ~cOpenALAudioDeviceList();
 
 		virtual unsigned int getDeviceCount();
-		virtual cAudioString getDeviceName(unsigned int idx);
-		virtual cAudioString getDeviceDescription(unsigned int idx);
-		virtual cAudioString getDefaultDeviceName();
+		virtual const cAudioString& getDeviceName(unsigned int idx);
+		virtual const cAudioString& getDeviceDescription(unsigned int idx);
+		virtual const cAudioString& getDefaultDeviceName();
 		virtual bool isSupported();
 
 	private:

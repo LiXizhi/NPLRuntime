@@ -53,13 +53,13 @@ namespace cAudio
 			}
 
 			// Get the name of the 'default' capture device
-			DefaultDevice = fromUTF8(alcGetString(NULL, defaultDevice));
+			DefaultDevice = alcGetString(NULL, defaultDevice);
 		}
 	}
 
 	cOpenALAudioDeviceList::~cOpenALAudioDeviceList() {}
 
-	cAudioString cOpenALAudioDeviceList::getDefaultDeviceName()
+	const cAudioString& cOpenALAudioDeviceList::getDefaultDeviceName()
 	{
 		return DefaultDevice;
 	}
@@ -69,16 +69,18 @@ namespace cAudio
 		return (unsigned int)AvailableDevices.size();
 	}
 
-	cAudioString cOpenALAudioDeviceList::getDeviceName(unsigned int idx)
+	const cAudioString& cOpenALAudioDeviceList::getDeviceName(unsigned int idx)
 	{
 		if (AvailableDevices.size() > idx)
 		{
 			return AvailableDevices[idx];
 		}
-		return cAudioString(_CTEXT(""));
+
+		static cAudioString empty(_CTEXT(""));
+		return empty;
 	}
 
-	cAudioString cOpenALAudioDeviceList::getDeviceDescription(unsigned int idx)
+	const cAudioString& cOpenALAudioDeviceList::getDeviceDescription(unsigned int idx)
 	{
 		return getDeviceName(idx); // In OpenAL deviceName is human readable
 	}

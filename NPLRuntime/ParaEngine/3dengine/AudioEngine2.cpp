@@ -124,11 +124,11 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 			std::string deviceName = m_pAudioEngine->getAvailableDeviceName(i);
 			if (deviceName.compare(defaultDeviceName) == 0)
 			{
-				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
 			}
 			else
 			{
-				OUTPUT_LOG("%d : %s\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
 			}
 		}
 		unsigned int deviceSelection = 0;
