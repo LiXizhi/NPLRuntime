@@ -21,6 +21,8 @@
 #include "hlsl2glsl.h"
 #include "hlslCrossCompiler.h"
 #include "hlslLinker.h"
+#include "ShaderIncludeHandle.h"
+#include <boost/filesystem.hpp>
 
 using namespace ParaEngine;
 
@@ -73,6 +75,16 @@ HRESULT ParaEngine::CEffectFileOpenGL::InitDeviceObjects()
 	
 	// Load and parse effetcs.
 	CParaFile shaderFile(GetFileName().c_str());
+	std::string error = "";
+
+	boost::filesystem::path p(m_filename);
+	auto shaderDir = p.parent_path();
+	ShaderIncludeHandle includeImpl(shaderDir.string());
+	auto pEffect = CGlobals::GetRenderDevice()->CreateEffect(shaderFile.getBuffer(), shaderFile.getSize(), nullptr, error);
+
+
+
+
 	std::string shader_str(shaderFile.getBuffer(), shaderFile.getSize());
 	m_Effect = new DxEffectsTree();
 	DxEffectsParser::Driver parseDriver(*m_Effect);

@@ -24,6 +24,7 @@ add_library(RenderSystemOpenGL
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
     OpenGL.h
+    GLShaderDefine.h
     ${PLATFORM_SRC}
     ${EFFECT_SRC}
 )

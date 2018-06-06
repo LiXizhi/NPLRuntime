@@ -6,6 +6,7 @@
 #include "ViewportManager.h"
 #include "OpenGLWrapper/GLType.h"
 #include "OpenGLWrapper/GLTexture2D.h"
+#include "effect/EffectOpenGL.h"
 //#include "math/ParaColor.h"
 
 
@@ -622,7 +623,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 
 std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	std::string code((char*)pSrcData);
+	return EffectOpenGL::Create(code, include, error);
 }
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()

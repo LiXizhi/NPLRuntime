@@ -73,6 +73,7 @@ namespace IParaEngine
 	class IEffectInclude
 	{
 	public:
+		virtual ~IEffectInclude() = default;
 		virtual bool Open(const std::string& filename,void** ppData,uint32_t* pBytes) = 0;
 		virtual void Close(void* pData) = 0;
 	};
