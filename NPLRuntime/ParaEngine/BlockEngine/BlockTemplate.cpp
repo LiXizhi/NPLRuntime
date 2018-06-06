@@ -387,6 +387,15 @@ namespace ParaEngine
 			m_block_models[2].LoadModel("cross2/4");
 			m_block_models[3].LoadModel("seed3/4"); // this is flat seed here
 		}
+		else if (sModelName == "codeblock")
+		{
+			// set model filter
+			SAFE_DELETE(m_pBlockModelFilter);
+			const int nDataCount = 16;
+			m_pBlockModelFilter = new CLinearModelProvider(this, nDataCount);
+			m_block_models.resize(nDataCount, GetBlockModel());
+			m_block_models[0].SetTextureIndex(2);
+		}
 	}
 
 	void BlockTemplate::SetAssociatedBlock(uint16_t associated_blockid)
