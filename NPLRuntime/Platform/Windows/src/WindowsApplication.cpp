@@ -196,7 +196,7 @@ namespace ParaEngine {
 		if (FileName == nullptr || FileName[0] == '\0')
 			sFileName = "config/config.txt";
 		else
-			sFileName = sFileName;
+			sFileName = FileName;
 
 		{
 			// remove the read-only file attribute
