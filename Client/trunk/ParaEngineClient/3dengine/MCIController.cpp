@@ -1,15 +1,8 @@
-#include "ParaEngine.h"
 #include "MCIController.h"
 
 #include <stdio.h>
 
 using namespace ParaEngine;
-
-#if defined(WIN32)
-
-#include <Windows.h>
-
-#define ALIAS "recsound"
 
 class MCIController::Interface
 {
@@ -22,6 +15,13 @@ public:
 
 	virtual bool Save(const char* fileName) = 0;
 };
+
+#if defined(WIN32)
+
+#include <Windows.h>
+
+#define ALIAS "recsound"
+
 
 class Win32MCI: public MCIController::Interface
 {
