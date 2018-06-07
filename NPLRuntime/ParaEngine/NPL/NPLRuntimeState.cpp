@@ -118,6 +118,7 @@ void NPL::CNPLRuntimeState::Reset_Imp()
 	if (m_type != NPLRuntimeStateType_DLL)
 	{
 		DestroyState();
+		ClearNeuronFiles();
 		CreateSetState();
 	}
 	OUTPUT_LOG("NPL State %s is being reset\n", GetName().c_str());
@@ -136,6 +137,12 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 {
 	Stop();
 	SAFE_RELEASE(m_pMonoScriptingState);
+	ClearNeuronFiles();
+	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
+}
+
+void NPL::CNPLRuntimeState::ClearNeuronFiles()
+{
 	for (auto v : m_act_files_cpp)
 	{
 		SAFE_RELEASE(v.second);
@@ -148,7 +155,6 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	m_active_neuron_files.clear();
 
 	m_act_files_cpp.clear();
-	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
 }
 
 NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
@@ -623,7 +629,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 	bool bHasScriptFileExtension = nSize > 5 && filepath[nSize - 4] == '.' &&
 		((filepath[nSize - 3] == 'l' && filepath[nSize - 2] == 'u' && filepath[nSize - 1] == 'a') ||
 		(filepath[nSize - 3] == 'n' && filepath[nSize - 2] == 'p' && filepath[nSize - 1] == 'l'));
-		
+
 	if (nSize > 2 && filepath[nSize - 1] == '/')
 	{
 		// if it is a folder, we will add as NPL module
@@ -636,7 +642,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			return true;
 		}
-		if (!bNoReturn && L!=0)
+		if (!bNoReturn && L != 0)
 		{
 			// return false to scripting environment if module is not found. 
 			lua_pushboolean(L, 0);
@@ -715,7 +721,7 @@ bool NPL::CNPLRuntimeState::LoadFile_any(const StringType & filepath, bool bRelo
 			}
 			fullPath.append(filepath.c_str() + nOffset);
 		}
-		
+
 		if (!fullPath.empty())
 		{
 			// automatically add file extension if not. 
