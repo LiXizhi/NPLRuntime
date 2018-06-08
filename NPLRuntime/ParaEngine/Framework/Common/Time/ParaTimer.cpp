@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "ParaTimer.h"
+#include "ParaTime.h"
 #include <ctime>
 ParaEngine::ParaTimer::ParaTimer()
 	:m_bTimerInitialized(false)
@@ -17,7 +18,7 @@ ParaEngine::ParaTimer::~ParaTimer()
 
 void ParaEngine::ParaTimer::Reset()
 {
-	float fTime = 0;
+	double fTime = 0;
 	if (m_bTimerStopped){
 		fTime = m_fStopTime;
 	}else{
@@ -52,15 +53,20 @@ void ParaEngine::ParaTimer::Advance()
 	m_fStopTime += 0.1f;
 }
 
+
+
 double ParaEngine::ParaTimer::GetAbsoluteTime()
 {
-	double fTime = ((double)GetTickCount()) / 1000.0;
+	auto curTime = GetTimeUS();
+
+	double fTime = ((double)curTime) / 1000.0 / 1000.0;
+
 	return fTime;
 }
 
 double ParaEngine::ParaTimer::GetAppTime() const
 {
-	float fTime = 0;
+	double fTime = 0;
 	if (m_bTimerStopped) {
 		fTime = m_fStopTime;
 	}
@@ -73,7 +79,7 @@ double ParaEngine::ParaTimer::GetAppTime() const
 
 double ParaEngine::ParaTimer::GetElapsedTime() const
 {
-	float fTime = 0;
+	double fTime = 0;
 	if (m_bTimerStopped) {
 		fTime = m_fStopTime;
 	}
