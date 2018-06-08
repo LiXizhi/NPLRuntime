@@ -1,7 +1,7 @@
+#include "ParaEngine.h"
 #include "Win32MCI.h"
 
 #if defined(WIN32)
-#include "ParaEngine.h"
 #include <Windows.h>
 #include <stdio.h>
 
