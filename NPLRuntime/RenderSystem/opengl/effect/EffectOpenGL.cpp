@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "EffectOpenGL.h"
 #include "driver.h"
 #include "dxeffects.h"
@@ -6,6 +7,11 @@
 #include "hlslLinker.h"
 #include "OpenGL.h"
 #include "GLShaderDefine.h"
+
+#include "OpenGLWrapper/GLTexture2D.h"
+
+
+
 using namespace ParaEngine;
 using namespace IParaEngine;
 
@@ -167,7 +173,7 @@ void include_close(const char* file, void* data)
 
 
 bool hlsl2glsl(const std::string& inCode,
-	const std::string& enterpoint, 
+	const std::string& enterpoint,
 	EShLanguage toLang,
 	ETargetVersion toVersion,
 	std::string& outCode,
@@ -248,7 +254,7 @@ bool hlsl2glsl(const std::string& inCode,
 
 
 
-inline void make_update_parameter_cmd(const ParameterHandle &handle, const void* data, const uint32_t size,UpdateParmeterCommand* pOutCmd)
+inline void make_update_parameter_cmd(const ParameterHandle &handle, const void* data, const uint32_t size, UpdateParmeterCommand* pOutCmd)
 {
 	if (!pOutCmd)return;
 	pOutCmd->data = nullptr;
@@ -266,7 +272,7 @@ inline void make_update_parameter_cmd(const ParameterHandle &handle, const void*
 
 inline void free_update_parameter_cmd(UpdateParmeterCommand& cmd)
 {
-	if (cmd.data && cmd.size>0)
+	if (cmd.data && cmd.size > 0)
 	{
 		free(cmd.data);
 	}
@@ -283,7 +289,7 @@ EffectOpenGL::~EffectOpenGL()
 	if (m_FxDesc)
 	{
 		auto techniques = m_FxDesc->getTechiques();
-		for (int i =0;i<techniques.size();i++)
+		for (int i = 0; i < techniques.size(); i++)
 		{
 			auto passes = techniques[i]->getPasses();
 			for (int j = 0; j < passes.size(); j++)
@@ -309,7 +315,10 @@ bool EffectOpenGL::GetDesc(IParaEngine::EffectDesc* pOutDesc)
 	return true;
 }
 
-ParaEngine::EffectOpenGL::EffectOpenGL() :m_FxDesc(nullptr)
+ParaEngine::EffectOpenGL::EffectOpenGL()
+	:m_FxDesc(nullptr)
+	, m_IsBeginTechnique(false)
+	, m_IsBeginPass(false)
 {
 	memset(m_ShaderPrograms, 0, sizeof(m_ShaderPrograms));
 	memset(m_ParameterCommands, 0, sizeof(m_ParameterCommands));
@@ -328,22 +337,22 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 	// Parse FX
 	pRet->m_FxDesc = new DxEffectsTree();
 	DxEffectsParser::Driver parseDriver(*pRet->m_FxDesc);
-	bool ret = parseDriver.parse_string(src,"");
+	bool ret = parseDriver.parse_string(src, "");
 	if (!ret)
 	{
 		error = "Parse FX failed!";
 		return nullptr;
 	}
-	
+
 	// Translate To OpenGL
 	std::vector<UniformInfoGL> uniforms;
 	auto techniques = pRet->m_FxDesc->getTechiques();
 	auto codeblock = pRet->m_FxDesc->getCodeBlock();
-	for (int idxTech =0; idxTech<techniques.size(); idxTech++)
+	for (int idxTech = 0; idxTech < techniques.size(); idxTech++)
 	{
 		TechniqueNode* tech = techniques[idxTech];
 		auto passes = tech->getPasses();
-		for (int idxPass=0;idxPass<passes.size();idxPass++)
+		for (int idxPass = 0; idxPass < passes.size(); idxPass++)
 		{
 			auto pass = passes[idxPass];
 			std::string vs_name = find_pass_vertex_shader_name(pass);
@@ -364,19 +373,19 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 #if PARAENGINE_MOBILE
 			targetVersion = ETargetGLSL_ES_100;
 #endif
-			bool ret = hlsl2glsl(codeblock, vs_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms,error,include);
+			bool ret = hlsl2glsl(codeblock, vs_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms, error, include);
 			if (!ret || vscode == "")
 			{
 				error = "can't translate vertex shader " + vs_name + "\n" + error;
 				return false;
 			}
-			ret = hlsl2glsl(codeblock, ps_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms,error,include);
+			ret = hlsl2glsl(codeblock, ps_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms, error, include);
 			if (!ret || pscode == "")
 			{
 				error = "can't translate fragment shader " + ps_name + "\n" + error;
 				return false;
 			}
-		
+
 			GLuint vertex, fragment;
 			GLint  sucess;
 			GLchar infoLog[512];
@@ -431,6 +440,23 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 
 	pRet->m_Uniforms = uniforms;
 
+	// txture slot
+
+	for (int i = 0; i < uniforms.size(); i++)
+	{
+		UniformInfoGL info = uniforms[i];
+		if (info.type == EShType::EShTypeSampler ||
+			info.type == EShType::EShTypeSampler1D ||
+			info.type == EShType::EShTypeSampler2D ||
+			info.type == EShType::EShTypeSampler3D ||
+			info.type == EShType::EShTypeSamplerCube)
+		{
+			int nSlots = pRet->m_TextureSlotMap.size();
+			pRet->m_TextureSlotMap[info.name] = nSlots;
+		}
+	}
+
+
 	return pRet;
 }
 
@@ -459,7 +485,6 @@ bool EffectOpenGL::GetTechniqueDesc(const IParaEngine::TechniqueHandle& handle, 
 	pOutDesc->Name = tech->getName();
 	pOutDesc->Passes = tech->getPasses().size();
 	return true;
-	return false;
 }
 
 IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameter(uint32_t index)
@@ -477,7 +502,7 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameter(uint32_t ind
 bool ParaEngine::EffectOpenGL::GetParameterDesc(const IParaEngine::ParameterHandle & handle, IParaEngine::ParameterDesc * pOutDesc)
 {
 	if (pOutDesc == NULL)return false;
-	if (!isValidHandle(handle) || handle.idx<0 || handle.idx>=m_Uniforms.size()) return false;
+	if (!isValidHandle(handle) || handle.idx < 0 || handle.idx >= m_Uniforms.size()) return false;
 	UniformInfoGL uniform = m_Uniforms[handle.idx];
 
 	pOutDesc->Name = uniform.name;
@@ -586,7 +611,7 @@ bool ParaEngine::EffectOpenGL::SetFloatArray(const ParameterHandle& handle, cons
 
 bool ParaEngine::EffectOpenGL::SetValue(const ParameterHandle& handle, const void* data, uint32_t size)
 {
-	return SetRawValue(handle, data,0, size);
+	return SetRawValue(handle, data, 0, size);
 }
 
 
@@ -611,8 +636,8 @@ bool ParaEngine::EffectOpenGL::SetFloat(const ParameterHandle& handle, float val
 
 bool ParaEngine::EffectOpenGL::SetTexture(const ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture)
 {
-	if (!isValidHandle(handle))return false;
-
+	intptr_t* pptr = (intptr_t*)&texture;
+	return SetRawValue(handle, pptr, 0, sizeof(intptr_t));
 }
 
 
@@ -626,6 +651,7 @@ bool ParaEngine::EffectOpenGL::SetRawValue(const ParameterHandle& handle, const 
 	make_update_parameter_cmd(handle, data, size, &cmd);
 	free_update_parameter_cmd(m_ParameterCommands[handle.idx]);
 	m_ParameterCommands[handle.idx] = cmd;
+	return  true;
 }
 
 
@@ -633,7 +659,7 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameterByName(const 
 {
 	ParameterHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
-	for (int i=0;i<m_Uniforms.size();i++)
+	for (int i = 0; i < m_Uniforms.size(); i++)
 	{
 		if (m_Uniforms[i].name == name)
 		{
@@ -647,42 +673,87 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameterByName(const 
 
 bool ParaEngine::EffectOpenGL::SetVector(const ParameterHandle& handle, const ParaEngine::DeviceVector4* data)
 {
-	if (!isValidHandle(handle))return false;
-
+	return SetRawValue(handle, &data, 0, sizeof(ParaEngine::DeviceVector4));
 }
 
 
 void ParaEngine::EffectOpenGL::OnLostDevice()
 {
-	
+
 }
 
 
 void ParaEngine::EffectOpenGL::OnResetDevice()
 {
-	
+
 }
 
 
 bool ParaEngine::EffectOpenGL::Begin()
 {
-	return false;
+	if (m_IsBeginTechnique) return false;
+	if (m_IsBeginPass) return false;
+	if (!isValidHandle(m_CurrentTechniqueHandle) || m_CurrentTechniqueHandle.idx < 0 || m_CurrentTechniqueHandle.idx >= m_FxDesc->getTechiques().size())
+		return false;
+
+	m_IsBeginTechnique = true;
+
+	return true;
 }
 
 
 bool ParaEngine::EffectOpenGL::BeginPass(const uint8_t pass)
 {
-	return false;
+	if (!m_IsBeginTechnique) return false;
+	if (m_IsBeginPass) return false;
+	if (!isValidHandle(m_CurrentTechniqueHandle) || m_CurrentTechniqueHandle.idx < 0 || m_CurrentTechniqueHandle.idx >= m_FxDesc->getTechiques().size())
+		return false;
+
+	TechniqueNode* techNode = m_FxDesc->getTechiques()[m_CurrentTechniqueHandle.idx];
+	if (!techNode)return false;
+	int nPass = techNode->getPasses().size();
+	if (pass < 0 || pass >= nPass) return false;
+
+	GLuint program = m_ShaderPrograms[m_CurrentTechniqueHandle.idx][pass];
+
+	glUseProgram(program);
+
+	m_IsBeginPass = true;
+
+	m_CurrentPass = pass;
+
+	return true;
 }
 bool ParaEngine::EffectOpenGL::EndPass()
 {
-	return false;
+	if (!m_IsBeginTechnique) return false;
+	if (!m_IsBeginPass) return false;
+
+	glUseProgram(0);
+
+
+	m_IsBeginPass = false;
+	m_CurrentPass = 0;
+
+	return true;
 }
 
 
 bool ParaEngine::EffectOpenGL::End()
 {
-	return false;
+	if (m_IsBeginPass) return false;
+	if (!m_IsBeginTechnique) return false;
+
+	m_IsBeginTechnique = false;
+
+	int n = m_Uniforms.size();
+
+	for (int i = 0; i < n; i++)
+	{
+		free_update_parameter_cmd(m_ParameterCommands[i]);
+	}
+
+	return true;
 }
 
 
@@ -694,23 +765,169 @@ IParaEngine::TechniqueHandle ParaEngine::EffectOpenGL::GetCurrentTechnique()
 
 bool ParaEngine::EffectOpenGL::CommitChanges()
 {
-	return false;
+
+	if (!m_IsBeginTechnique) return false;
+	if (!m_IsBeginPass) return false;
+
+	int nUniforms = m_Uniforms.size();
+	for (int i = 0; i < nUniforms; i++)
+	{
+		UpdateParmeterCommand cmd = m_ParameterCommands[i];
+		if (!isValidHandle(cmd.handle)) continue;
+		if (cmd.handle.idx != i) continue;
+		if (cmd.data == nullptr) continue;
+		if (cmd.size == 0) continue;
+		UniformInfoGL uniform = m_Uniforms[i];
+		GLuint program = m_ShaderPrograms[m_CurrentTechniqueHandle.idx][m_CurrentPass];
+		const GLchar* name = uniform.name.c_str();
+		GLint location = glGetUniformLocation(program, name);
+		switch (uniform.type)
+		{
+		case EShTypeBool:
+		{
+			auto value = *((bool*)cmd.data);
+			glUniform1i(location, value ? 1 : 0);
+			break;
+		}
+		case EShTypeInt:
+		{
+			auto value = *((int*)cmd.data);
+			glUniform1i(location, value);
+			break;
+		}
+		case EShTypeFloat:
+		{
+			auto value = *((float*)cmd.data);
+			glUniform1f(location, value);
+			break;
+		}
+		case EShTypeVec2:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniform2fv(location, uniform.Elements + 1, value);
+			break;
+		}
+		case EShTypeVec3:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniform3fv(location, uniform.Elements + 1, value);
+			break;
+		}
+		case EShTypeVec4:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniform4fv(location, uniform.Elements + 1, value);
+			break;
+		}
+		case EShTypeMat2:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix2fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat2x3:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix2x3fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat2x4:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix2x4fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat3:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix3fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat3x4:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix3x4fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat4x2:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix4x2fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat4x3:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix4x3fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeMat4x4:
+		{
+
+			float* value = (float*)cmd.data;
+			glUniformMatrix4fv(location, uniform.Elements + 1, GL_FALSE, value);
+			break;
+		}
+		case EShTypeSampler:
+		case EShTypeSampler1D:
+		case EShTypeSampler2D:
+		case EShTypeSampler3D:
+		case EShTypeSamplerCube:
+		{
+			auto it = m_TextureSlotMap.find(name);
+			if (it != m_TextureSlotMap.end())
+			{
+				GLuint slot = it->second;
+				intptr_t* ptr = (intptr_t*)cmd.data;
+				GLTexture2D* texture = (GLTexture2D*)*ptr;
+				glUniform1i(location, slot);
+				texture->bindN(slot);
+			}
+			else {
+				return false;
+			}
+			break;
+		}
+		default:
+			return false;
+		}
+
+		auto error = glGetError();
+		if (error != GL_NO_ERROR)
+		{
+
+			return false;
+		}
+	}
+
+	return true;
 }
 
 bool ParaEngine::EffectOpenGL::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)
 {
-
-	return false;
+	auto handle = GetParameterByName(name);
+	return SetRawValue(handle, data, offset, size);
 }
 
 bool ParaEngine::EffectOpenGL::SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture)
 {
-	return false;
+	auto handle = GetParameterByName(name);
+	return SetTexture(handle, texture);
 }
 
 bool EffectOpenGL::SetTechnique(const TechniqueHandle& handle)
 {
-	if (isValidHandle(handle) && handle.idx>=0 && handle.idx<m_FxDesc->getTechiques().size())
+	if (isValidHandle(handle) && handle.idx >= 0 && handle.idx < m_FxDesc->getTechiques().size())
 	{
 		m_CurrentTechniqueHandle.idx = handle.idx;
 		return true;

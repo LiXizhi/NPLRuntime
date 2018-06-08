@@ -57,9 +57,13 @@ namespace ParaEngine
 		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
 		UpdateParmeterCommand m_ParameterCommands[MAX_UNIFORMS];
 		std::vector<UniformInfoGL> m_Uniforms;
+		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
 	// Runtime state
 	private:
 		IParaEngine::TechniqueHandle m_CurrentTechniqueHandle;
+		bool m_IsBeginTechnique;
+		bool m_IsBeginPass;
+		uint32_t m_CurrentPass;
 
 	};
 }

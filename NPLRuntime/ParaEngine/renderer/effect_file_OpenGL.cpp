@@ -56,6 +56,10 @@ CEffectFileOpenGL::~CEffectFileOpenGL()
 
 void CEffectFileOpenGL::Init()
 {
+	for (int i =0;i<k_max_param_handles;i++)
+	{
+		m_ParamHandle[i].idx = PARA_INVALID_HANDLE;
+	}
 }
 
 void CEffectFileOpenGL::SetFileName(const std::string& filename)
@@ -358,6 +362,10 @@ void CEffectFileOpenGL::EnableSunLight(bool bEnableSunLight)
 
 bool CEffectFileOpenGL::setMatrix(eParameterHandles index, const Matrix4* data)
 {
+	if (m_Effect && isMatrixUsed(index))
+	{
+		return m_Effect->SetMatrix(m_ParamHandle[index], data->GetConstPointer());
+	}
 	return false;
 }
 
@@ -369,41 +377,83 @@ bool CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 
 bool CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, int32 size /*= D3DX_DEFAULT*/)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetValue(m_ParamHandle[index], data, size);
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector2* data)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetValue(m_ParamHandle[index], data, sizeof(Vector2));
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector3* data)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetValue(m_ParamHandle[index], data, sizeof(Vector3));
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector4* data)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetVector(m_ParamHandle[index], (DeviceVector4*)data);
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 bool CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoolean)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetBool(m_ParamHandle[index], bBoolean);
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::setInt(eParameterHandles index, int nValue)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetInt(m_ParamHandle[index], nValue);
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::setFloat(eParameterHandles index, float fValue)
 {
+	if (m_Effect && isParameterUsed(index))
+	{
+		bool result = m_Effect->SetFloat(m_ParamHandle[index],fValue);
+		PE_ASSERT(result);
+		return result;
+	}
 	return false;
 }
 
 bool CEffectFileOpenGL::isParameterUsed(eParameterHandles index)
 {
-	return false;
+	return isValidHandle(m_ParamHandle[index]);
 }
 
 
@@ -492,7 +542,7 @@ void CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMateria
 
 void CEffectFileOpenGL::applyCameraMatrices()
 {
-	//SetProgramParams([&](GLProgram* program) {
+
 		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -573,8 +623,6 @@ void CEffectFileOpenGL::applyCameraMatrices()
 				setParameter(k_cameraFacing, &v);
 			}
 		}
-	//	return true;
-	//});
 }
 
 void CEffectFileOpenGL::applyWorldMatrices()
@@ -657,8 +705,24 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 
 bool CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
 {
-	m_bIsBegin = true;
-	return m_Effect->Begin();
+
+	if (m_Effect->Begin())
+	{
+		m_bIsBegin = true;
+		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+		if (bApplyParam)
+		{
+			//SetProgramParams([&](GLProgram* program) {
+			// set the lighting parameters
+			// from the global light manager
+			applyGlobalLightingData(pScene->GetSunLight());
+
+			// set the camera matrix
+			applyCameraMatrices();
+		}
+		return true;
+	}
+	return false;
 }
 
 bool CEffectFileOpenGL::BeginPass(int nPass, bool bForceBegin /*= false*/)
@@ -756,9 +820,18 @@ bool CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
 		return setTexture(index, (DeviceTexturePtr_type)0);
 }
 
+bool CEffectFileOpenGL::isTextureUsed(int index)const
+{
+	return isValidHandle(m_ParamHandle[k_tex0 + index]);
+}
+
 bool CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type pTex)
 {
-	return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
+	if ( m_Effect && isTextureUsed(index))
+	{
+		return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
+	}
+	return false;
 }
 
 bool CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)

@@ -161,6 +161,7 @@ namespace ParaEngine
 		void SetShadowMapSize(int nsize);
 
 	protected:
+		static bool g_bTextureEnabled;
 		int m_nTechniqueIndex;
 		/** current active pass */
 		int m_nActivePassIndex;
@@ -178,9 +179,21 @@ namespace ParaEngine
 		std::shared_ptr<IParaEngine::IEffect> m_Effect;
 		std::vector<TechniqueDesc> m_Techniques;
 		IParaEngine::ParameterHandle m_ParamHandle[k_max_param_handles];
+		/** indicate whether a texture at a given index is locked. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.*/
+		std::vector<bool> m_LockedTextures;
+		/** it stores the last texture pointer passed to setTexture(), thus it will remove duplicated setTexture calls before passing to dx pipeline.
+		When a shader is switched in, all m_LastTextures will be cleared. */
+		std::vector<void*> m_LastTextures;
 
 	private:
 		void parseParameters();
+		bool isTextureUsed(int index) const;
+		bool IsTextureLocked(int nIndex) const;
+		void LockTexture(int nIndex);
+		void UnLockTexture(int nIndex);
+		void OnSwitchInShader();
+		void OnSwitchOutShader();
+		void setTextureInternal(int index, DeviceTexturePtr_type pTex);
 
 	};
 
