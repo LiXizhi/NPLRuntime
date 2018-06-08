@@ -1,5 +1,7 @@
 #include "Win32MCI.h"
 
+#if defined(WIN32)
+
 #include <Windows.h>
 #include <stdio.h>
 
@@ -52,3 +54,5 @@ void Win32MCI::Release()
 {
 
 }
+
+#endif
