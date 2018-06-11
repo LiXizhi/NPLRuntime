@@ -871,8 +871,8 @@ bool ParaEngine::CAudioSource2::play2d( const bool& toLoop /*= false*/, bool bIg
 		if(!(bIgnoreIfPlaying && m_pSource->isPlaying()))
 		{
 			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
-			auto pScene = pParaEngine->GetChildAttributeObject("Scene");
-			pScene->GetAttributeClass()->GetField("FrameNumber")->Get(pScene, &m_nStartFramNum);
+			auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+			pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStartTime);
 			return m_pSource->play2d(toLoop);
 		}
 	}
