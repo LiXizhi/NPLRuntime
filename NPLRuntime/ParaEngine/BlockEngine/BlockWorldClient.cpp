@@ -673,7 +673,7 @@ namespace ParaEngine
 				// in case it loses accuracy, we will subtract integer number of 2*PI from time
 				// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
 				time = (int)(time * 1000) % 1000000;
-				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr(), sizeof(Vector4));
 
 				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
 				{
@@ -708,7 +708,7 @@ namespace ParaEngine
 
 				/** block light params and sun intensity*/
 				Vector4 vLightParams(m_vBlockLightColor.r, m_vBlockLightColor.g, m_vBlockLightColor.b, m_sunIntensity);
-				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams), sizeof(Vector4));
 				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
 				{
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
@@ -1152,7 +1152,7 @@ namespace ParaEngine
 					lightIntensity = abs(sin(time*0.0015f)) * 0.4f;
 				
 				Vector4 vLightParams(lightIntensity, 0,0,0);
-				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams), sizeof(Vector4));
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 				vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;

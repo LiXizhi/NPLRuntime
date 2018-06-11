@@ -697,7 +697,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				vOrigin.x = vOrigin.x - worldX;
 				vOrigin.z = vOrigin.z - worldZ;
 				Vector4 vTmp((float)time, fObjectHeight, vOrigin.x, vOrigin.z);
-				pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&vTmp);
+				pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&vTmp,sizeof(Vector4));
 			}
 			else
 			{

@@ -1742,7 +1742,7 @@ void Terrain::Render()
 			// render shadow map
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr(), sizeof(Vector3));
 				if(pEffectFile->BeginPass(0))
 				{
 					/** 
@@ -1774,8 +1774,8 @@ void Terrain::Render()
 			// render terrain 
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr());
-				pEffectFile->setParameter(CEffectFile::k_texCoordOffset, Vector3(m_vRenderOffset.x, m_vRenderOffset.z, GetWidth()).ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr(), sizeof(Vector3));
+				pEffectFile->setParameter(CEffectFile::k_texCoordOffset, Vector3(m_vRenderOffset.x, m_vRenderOffset.z, GetWidth()).ptr(), sizeof(Vector3));
 				
 				if(pEffectFile->BeginPass(bUseNormal ? 0 : 2))
 				{

@@ -219,7 +219,7 @@ namespace ParaEngine
 		void applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor) {};
 		void applyGlobalLightingData(CSunLight& sunlight) {};
 
-		bool setParameter(eParameterHandles index, const void* data, int32 size = D3DX_DEFAULT) { return false; };
+		bool setParameter(eParameterHandles index, const void* data, int32 size) { return false; };
 		bool setParameter(eParameterHandles index, const Vector2* data)  { return false; };
 		bool setParameter(eParameterHandles index, const Vector3* data)  { return false; };
 		bool setParameter(eParameterHandles index, const Vector4* data)  { return false; };

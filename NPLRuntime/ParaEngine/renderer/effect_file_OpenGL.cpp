@@ -375,8 +375,14 @@ bool CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
 }
 
 
-bool CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, int32 size /*= D3DX_DEFAULT*/)
+bool CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, int32 size)
 {
+	if (size <= 0)
+	{
+		return false;
+	}
+
+	PE_ASSERT(size > 0);
 	if (m_Effect && isParameterUsed(index))
 	{
 		bool result = m_Effect->SetValue(m_ParamHandle[index], data, size);
@@ -478,12 +484,12 @@ void CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogPa
 		{
 			if (isParameterUsed(k_fogParameters) && (fogParam != 0))
 			{
-				setParameter(k_fogParameters, fogParam);
+				setParameter(k_fogParameters, fogParam,sizeof(Vector4));
 			}
 
 			if (isParameterUsed(k_fogColor) && (fogColor != 0))
 			{
-				setParameter(k_fogColor, fogColor);
+				setParameter(k_fogColor, fogColor, sizeof(LinearColor));
 			}
 		}
 	//	return true;
@@ -501,39 +507,39 @@ void CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMateria
 			if (isParameterUsed(k_ambientMaterialColor))
 			{
 				if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
-					setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+					setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient, sizeof(LinearColor));
 				else
-					setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
+					setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient, sizeof(LinearColor));
 			}
 
 			if (isParameterUsed(k_diffuseMaterialColor))
 			{
 				if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
 				{
-					setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
-					setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+					setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse, sizeof(LinearColor));
+					setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(), sizeof(LinearColor));
 				}
 				else
 				{
-					setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
+					setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse,sizeof(LinearColor));
 					Vector3 vEmpty(0, 0, 0);
-					setParameter(k_LightStrength, &vEmpty);
+					setParameter(k_LightStrength, &vEmpty, sizeof(Vector3));
 				}
 			}
 
 			if (isParameterUsed(k_specularMaterialColor))
 			{
-				setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
+				setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
 			}
 
 			if (isParameterUsed(k_emissiveMaterialColor))
 			{
-				setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
+				setParameter(k_specularMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
 			}
 
 			if (isParameterUsed(k_specularMaterialPower))
 			{
-				setParameter(k_specularMaterialPower, &d3dMaterial.Power);
+				setParameter(k_specularMaterialPower, &d3dMaterial.Power, sizeof(float));
 			}
 		}
 	//	return true;
@@ -677,19 +683,19 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 		if (isParameterUsed(k_sunColor))
 		{
 			LinearColor c = sunlight.GetSunColor();
-			setParameter(k_sunColor, &c);
+			setParameter(k_sunColor, &c,sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_sunVector))
 		{
 			Vector3 vDir = -sunlight.GetSunDirection();
 			Vector4 v(vDir.x, vDir.y, vDir.z, 1.0f);
-			setParameter(k_sunVector, &v);
+			setParameter(k_sunVector, &v,sizeof(Vector4));
 		}
 
 		if (isParameterUsed(k_ambientLight))
 		{
-			setParameter(k_ambientLight, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+			setParameter(k_ambientLight, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient,sizeof(LinearColor));
 		}
 
 
@@ -697,7 +703,7 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 		{
 			float shadowFactor = sunlight.GetShadowFactor();
 			Vector4 v(shadowFactor, 1 - shadowFactor, 0, 0);
-			setParameter(k_shadowFactor, &v);
+			setParameter(k_shadowFactor, &v,sizeof(shadowFactor));
 		}
 	//	return true;
 	//});

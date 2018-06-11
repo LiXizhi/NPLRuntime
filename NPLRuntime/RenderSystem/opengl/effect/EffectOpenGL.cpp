@@ -673,7 +673,7 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameterByName(const 
 
 bool ParaEngine::EffectOpenGL::SetVector(const ParameterHandle& handle, const ParaEngine::DeviceVector4* data)
 {
-	return SetRawValue(handle, &data, 0, sizeof(ParaEngine::DeviceVector4));
+	return SetRawValue(handle, data, 0, sizeof(ParaEngine::DeviceVector4));
 }
 
 

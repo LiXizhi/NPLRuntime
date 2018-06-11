@@ -130,7 +130,7 @@ HRESULT CSkyMesh::Draw(SceneState * sceneState)
 					Vector4 fogParam(fFogHeightFrom, fFogHeightTo - fFogHeightFrom, 1.0f, 0.1f);
 					LinearColor fogColor = sceneState->GetScene()->GetFogColor();
 					pEffectFile->applyFogParameters((m_fFogBlendAngleFrom < m_fFogBlendAngleTo) && sceneState->GetScene()->IsFogEnabled(), &fogParam, &fogColor);
-					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
+					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor(),sizeof(LinearColor));
 
 					// enable texture wrapping for sub module
 					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
@@ -644,7 +644,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			LinearColor fogColor = sceneState->GetScene()->GetFogColor();
 			pEffectFile->applyFogParameters((m_fFogBlendAngleFrom < m_fFogBlendAngleTo) && sceneState->GetScene()->IsFogEnabled(), &fogParam, &fogColor);
 
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor(), sizeof(LinearColor));
 			m_pStaticMesh->SetPosition(DVector3(vPos));
 			DrawStaticMeshSkyInner(sceneState);
 

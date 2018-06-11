@@ -486,7 +486,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 									vLastUVOffset = Vector2::ZERO;
 
 								Vector4 vOffset(vLastUVOffset.x, vLastUVOffset.y, 0.f, 0.f);
-								pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&vOffset);
+								pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&vOffset,sizeof(Vector4));
 
 								//support texture uv rgb animation --clayman 2011.8.8
 								if(facegroup.m_UVRgbAnim)
@@ -500,7 +500,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 							{
 								vLastUVRotate = facegroup.m_vUVRotate;
 								Vector4 vOffset(vLastUVRotate.x, vLastUVRotate.y, vLastUVRotate.z, 0.f);
-								pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&vOffset);
+								pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&vOffset,sizeof(Vector4));
 							}
 
 							if (vLastUVScale != facegroup.m_vUVScale)
@@ -508,7 +508,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 								vLastUVScale = facegroup.m_vUVScale;
 
 								Vector4 vOffset(vLastUVScale.x, vLastUVScale.y, 0.f, 0.f);
-								pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vOffset);
+								pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vOffset, sizeof(Vector4));
 							}
 
 							//alpha value   --clayman
@@ -651,18 +651,18 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 			if(vLastUVOffset != Vector2::ZERO)
 			{
-				pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4::ZERO);
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4::ZERO, sizeof(Vector4));
 			}
 
 			if (vLastUVRotate != Vector3::ZERO)
 			{
-				pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4::ZERO);
+				pEffect->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4::ZERO, sizeof(Vector4));
 			}
 
 			if (vLastUVScale != Vector2::UNIT_SCALE)
 			{
 				Vector4 vec4(1.f, 1.f, 1.f, 1.f);
-				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vec4);
+				pEffect->setParameter(CEffectFile::k_ConstVector2, (const float*)&vec4, sizeof(Vector4));
 			}
 
 			if(restoreUVRgbAnim)
