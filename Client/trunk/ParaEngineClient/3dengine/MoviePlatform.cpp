@@ -1147,7 +1147,7 @@ bool CMoviePlatform::EndCapture()
 				memset(bits, 0, 64);
 				audioMapString += iter->second->GetFilename();;
 				audioMapString += ",";
-				itoa(iter->second->m_nStartFramNum, bits, 10);
+				itoa(iter->second->m_nStartTime, bits, 10);
 				audioMapString += bits;
 				audioMapString += ",";
 			}
