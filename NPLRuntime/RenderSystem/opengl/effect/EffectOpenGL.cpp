@@ -745,14 +745,6 @@ bool ParaEngine::EffectOpenGL::End()
 	if (!m_IsBeginTechnique) return false;
 
 	m_IsBeginTechnique = false;
-
-	int n = m_Uniforms.size();
-
-	for (int i = 0; i < n; i++)
-	{
-		free_update_parameter_cmd(m_ParameterCommands[i]);
-	}
-
 	return true;
 }
 
