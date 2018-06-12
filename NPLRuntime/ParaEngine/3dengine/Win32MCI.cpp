@@ -1,10 +1,11 @@
 
 #if defined(WIN32)
 
+#include "ParaEngine.h"
 #include "Win32MCI.h"
 #include <Windows.h>
 #include <stdio.h>
-#include "ParaEngine.h"
+
 
 #define ALIAS "recsound"
 
