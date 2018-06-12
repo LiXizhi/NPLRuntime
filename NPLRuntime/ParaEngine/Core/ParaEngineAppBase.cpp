@@ -861,13 +861,15 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;
 	
-	if (m_doWorkFRC.FrameMove(m_fTime) > 0)
+	auto d = m_doWorkFRC.FrameMove(m_fTime);
+
+	if (d > 0)
 	{
 		FrameMove(m_fTime);
         if (getRenderEnabled())
         {
-            Render();
-            m_pRenderDevice->Present();
+			Render();
+			m_pRenderDevice->Present();
         }
 		
 		return S_OK;

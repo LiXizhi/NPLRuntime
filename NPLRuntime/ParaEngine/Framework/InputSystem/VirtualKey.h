@@ -176,7 +176,12 @@ namespace ParaEngine
 		KEY_MYCOMPUTER = 235,  /* My Computer */
 		KEY_MAIL = 236,  /* Mail */
 		KEY_MEDIASELECT = 237,  /* Media Select */
-		COUNT = 238,
+
+		KEY_SHIFT,
+		KEY_CONTROL,
+		KEY_ALT,
+
+		COUNT = KEY_ALT + 1,
 	};
 
 	class DeviceKeyEvent

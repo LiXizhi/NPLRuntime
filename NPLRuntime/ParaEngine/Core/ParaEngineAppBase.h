@@ -299,7 +299,7 @@ namespace ParaEngine
 		PE_DEPRECATED_ATTRIBUTE virtual void SetMultiSampleQuality(int nType) override  {};
 
 		/** call this function to update changes of FullScreen Mode and Screen Resolution. */
-		PE_DEPRECATED_ATTRIBUTE virtual bool UpdateScreenMode() override { return false; };
+		virtual bool UpdateScreenMode() override { return false; };
 
 		// ParaEngine pipeline routines
 		/** switch to either windowed mode or full screen mode. */
@@ -311,7 +311,7 @@ namespace ParaEngine
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() override { return ""; };
 		/* whether the window size is fixed. */
-		PE_DEPRECATED_ATTRIBUTE virtual void FixWindowSize(bool fixed) override {};
+		virtual void FixWindowSize(bool fixed) override {};
 
 
 		/** write the current setting to config file. Such as graphics mode and whether full screen, etc.

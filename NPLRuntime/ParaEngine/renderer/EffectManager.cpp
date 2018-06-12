@@ -1398,6 +1398,10 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 			EnableLocalLighting(bEnableLight);
 		}
+
+		if (nHandle == TECH_NONE)
+			pRenderDevice->SetRenderState(ERenderState::LIGHTING, false);
+
 		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
 
 		break;

@@ -37,11 +37,10 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 
 	RedirectIOToConsole();
 
-	RenderWindowDelegate renderWindow(hInst,960,640);
+	RenderWindowDelegate renderWindow;
 
-	CWindowsApplication app;
+	CWindowsApplication app(hInst);
 	app.InitApp(&renderWindow, lpCmdLine);
-
 	app.Run(hInst);
 
 	return 0;
