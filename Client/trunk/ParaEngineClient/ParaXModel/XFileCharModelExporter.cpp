@@ -610,12 +610,18 @@ bool ParaEngine::XFileCharModelExporter::WriteXTextures(XFileDataObjectPtr pData
 			pBuffer->nOffsetEmbeddedTexture = 0;
 
 			if (m_pMesh->textures[i].get() == nullptr) {
-				pBuffer->type = m_pMesh->specialTextures[i];
+                if(m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
+				    pBuffer->type = m_pMesh->specialTextures[i];
+                else
+                    pBuffer->type = 0;
 				pBuffer->sName = '\0';
 				pBuffer = (ModelTextureDef_*)((char*)pBuffer + 8 + 1 + 1);
 			}
 			else {
-				pBuffer->type = m_pMesh->specialTextures[i];
+                if (m_pMesh->specialTextures[i] < CParaXModel::MAX_MODEL_TEXTURES)
+                    pBuffer->type = m_pMesh->specialTextures[i];
+                else
+                    pBuffer->type = 0;
 				string name = m_pMesh->textures[i]->GetKey();
 				if (m_pMesh->textures[i]->GetRawData())
 				{
