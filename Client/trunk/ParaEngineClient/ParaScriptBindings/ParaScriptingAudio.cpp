@@ -10,6 +10,7 @@
 #include "ParaScriptingAudio.h"
 #include "AudioEngine2.h"
 #include "util/MidiMsg.h"
+#include "MCIController.h"
 
 using namespace ParaEngine;
 using namespace ParaScripting;
@@ -110,6 +111,21 @@ ParaAudioSource ParaAudio::CreateGet(const char* sName, const char* sWavePath, b
 void ParaScripting::ParaAudio::SetDistanceModel( int eDistModel )
 {
 	return CAudioEngine2::GetInstance()->SetDistanceModel((ParaAudioDistanceModelEnum)eDistModel);
+}
+
+void ParaScripting::ParaAudio::StartRecording()
+{
+	CAudioEngine2::GetInstance()->getMCIController()->Start();
+}
+
+void ParaScripting::ParaAudio::StopRecording()
+{
+	CAudioEngine2::GetInstance()->getMCIController()->Stop();
+}
+
+void ParaScripting::ParaAudio::SaveRecording(const char* szWavePath)
+{
+	CAudioEngine2::GetInstance()->getMCIController()->Save(szWavePath);
 }
 
 /////////////////////////////////////////////////////////////////////////

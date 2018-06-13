@@ -97,14 +97,7 @@ CEnvironmentSim::Simulate(dTimeDelta){
 #include "SunLight.h"
 #include "EnvironmentSim.h"
 
-#include "memdebug.h"
-
 using namespace ParaEngine;
-
-namespace ParaEngine
-{
-	extern CFrameRateController g_gameTime;
-}
 
 /**
 @def The simulation time delta advance must be smaller than this value.
@@ -326,11 +319,16 @@ void CEnvironmentSim::Simulate(double dTimeDelta)
 	if((pScene == NULL) || pScene->IsScenePaused() || (!(pScene->IsSceneEnabled())) )
 		return;
 
+	// when game time is paused, also pause the scene delta time
+	if (CGlobals::GetFrameRateController(FRC_GAME)->IsPaused() && dTimeDelta > 0.f)
+		dTimeDelta = CGlobals::GetFrameRateController(FRC_GAME)->GetElapsedTime();
+
 	// physics engine frame move. 
 	CGlobals::GetPhysicsWorld()->StepSimulation(dTimeDelta);
 
 	/** advance the game time */
-	g_gameTime.FrameMoveDelta((float)dTimeDelta);
+	if(!CGlobals::GetFrameRateController(FRC_GAME)->IsPaused())
+		CGlobals::GetFrameRateController(FRC_GAME)->FrameMoveDelta((float)dTimeDelta);
 
 	// advance time of day
 	pScene->GetSunLight().AdvanceTimeOfDay((float)dTimeDelta);

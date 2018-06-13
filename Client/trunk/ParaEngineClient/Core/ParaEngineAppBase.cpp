@@ -216,6 +216,11 @@ bool ParaEngine::CParaEngineAppBase::Is3DRenderingEnabled()
 	return m_bEnable3DRendering;
 }
 
+ParaEngine::IAttributeFields* ParaEngine::CParaEngineAppBase::GetAttributeObject()
+{
+	return &ParaEngineSettings::GetSingleton();
+}
+
 void ParaEngine::CParaEngineAppBase::Enable3DRendering(bool val)
 {
 	m_bEnable3DRendering = val;

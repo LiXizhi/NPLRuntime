@@ -205,12 +205,12 @@ namespace ParaEngine
 		* @param b3DTextPass: whether to pass 3d text
 		* @return: true if object is drawn. 
 		*/
-		static bool DrawHeadOnUI(CBaseObject* pObj, int& nCounter, SceneState* pSceneState = NULL, CGUIText** ppObjUITextDefault = NULL, bool bZEnablePass = true, bool b3DTextPass = false);
+		static bool DrawHeadOnUI(CBaseObject* pObj, int& nCounter, SceneState* pSceneState = NULL, CGUIText** ppObjUITextDefault = NULL, bool bZEnablePass = true, bool b3DTextPass = false, bool bZWriteEnable = false);
 
 		/** HeadOn UI needs to be drawn between BeginPaint and EndPaint, which is usually automatically when the first and last head on UI is called. 
 		* Hence, one usually do not need to call this method. 
 		*/
-		static bool BeginPaint(SceneState* pSceneState, bool b3DTextPass, bool bZEnablePass);
+		static bool BeginPaint(SceneState* pSceneState, bool b3DTextPass, bool bZEnablePass, bool bZWriteEnable = false);
 		static void EndPaint(SceneState* pSceneState, bool b3DTextPass);
 
 	private:

@@ -118,6 +118,7 @@ void NPL::CNPLRuntimeState::Reset_Imp()
 	if (m_type != NPLRuntimeStateType_DLL)
 	{
 		DestroyState();
+		ClearNeuronFiles();
 		CreateSetState();
 	}
 	OUTPUT_LOG("NPL State %s is being reset\n", GetName().c_str());
@@ -136,6 +137,12 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 {
 	Stop();
 	SAFE_RELEASE(m_pMonoScriptingState);
+	ClearNeuronFiles();
+	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
+}
+
+void NPL::CNPLRuntimeState::ClearNeuronFiles()
+{
 	for (auto v : m_act_files_cpp)
 	{
 		SAFE_RELEASE(v.second);
@@ -148,7 +155,6 @@ NPL::CNPLRuntimeState::~CNPLRuntimeState()
 	m_active_neuron_files.clear();
 
 	m_act_files_cpp.clear();
-	OUTPUT_LOG("NPL State %s exited\n", GetName().c_str());
 }
 
 NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()

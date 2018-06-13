@@ -82,6 +82,7 @@ namespace ParaEngine
 		listPRTransparentObject.clear();
 		listPRSmallObject.clear();
 		listHeadonDisplayObject.clear();
+		listSolidOverlayObject.clear();
 		listShadowReceivers.clear();
 		listShadowCasters.clear();
 		listDeferredLightObjects.clear();

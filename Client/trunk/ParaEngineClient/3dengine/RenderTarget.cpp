@@ -428,10 +428,10 @@ void ParaEngine::CRenderTarget::SetRenderTargetSize(int nWidth, int nHeight)
 {
 	if (m_nTextureWidth != nWidth || m_nTextureHeight != nHeight)
 	{
-		SetDirty(true);
-		Cleanup();
 		m_nTextureWidth = nWidth;
 		m_nTextureHeight = nHeight;
+		SetDirty(true);
+		Cleanup();
 	}
 }
 
@@ -533,7 +533,7 @@ bool ParaEngine::CRenderTarget::Begin()
 	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
 	
 	pd3dDevice->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
-#endif
+
 	//calculate viewport
 	{
 		ParaViewport myViewport;
@@ -543,6 +543,8 @@ bool ParaEngine::CRenderTarget::Begin()
 		myViewport.Height = GetTextureHeight();
 		pd3dDevice->SetViewport((D3DVIEWPORT9*)&myViewport);
 	}
+#endif
+
 	m_bIsBegin = true;
 	return true;
 }

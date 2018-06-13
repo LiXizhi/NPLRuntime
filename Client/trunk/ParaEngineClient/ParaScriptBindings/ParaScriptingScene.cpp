@@ -2105,7 +2105,7 @@ ParaObject ParaScene::CreateCharacter(const char* strObjectName, ParaAssetObject
 			obj = (ParaScene::GetObject(sNewName.c_str()));
 			bCollide = obj.IsValid();
 		}
-		OUTPUT_LOG("warning: global object with the name %s already exists. Thus a new object named %s is created instead.\r\n", sObjName.c_str(), sNewName.c_str());
+		// OUTPUT_LOG("warning: global object with the name %s already exists. Thus a new object named %s is created instead.\r\n", sObjName.c_str(), sNewName.c_str());
 		sObjName = sNewName;
 	}
 

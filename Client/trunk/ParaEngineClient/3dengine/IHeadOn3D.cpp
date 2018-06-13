@@ -260,7 +260,7 @@ float ParaEngine::IHeadOn3D::GetHeadOn3DFacing( int nIndex /*= 0*/ )
 	return 	HasDataAt(nIndex) ? GetHeadOn3DData(nIndex)->m_f3DTextFacing : 0;
 }
 
-bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnablePass, bool b3DTextPass)
+bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, SceneState* pSceneState, CGUIText** ppObjUITextDefault, bool bZEnablePass, bool b3DTextPass, bool bZWriteEnable)
 {
 	using namespace ParaScripting;
 	if(pObj == NULL)
@@ -361,7 +361,7 @@ bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, Scen
 			if(nObjCount == 0)
 			{
 				// if this is the first time call, we will set up render states
-				if (!BeginPaint(pSceneState, b3DTextPass, bZEnablePass))
+				if (!BeginPaint(pSceneState, b3DTextPass, bZEnablePass, bZWriteEnable))
 					return false;
 			}
 			nObjCount++;
@@ -597,7 +597,7 @@ bool ParaEngine::IHeadOn3D::DrawHeadOnUI(CBaseObject* pObj, int& nObjCount, Scen
 	return true;
 }
 
-bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass, bool bZEnablePass)
+bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass, bool bZEnablePass, bool bZWriteEnable)
 {
 	RenderDevicePtr pD3dDevice = CGlobals::GetRenderDevice();
 
@@ -619,7 +619,7 @@ bool ParaEngine::IHeadOn3D::BeginPaint(SceneState* pSceneState, bool b3DTextPass
 	else
 	{
 		pD3dDevice->SetRenderState(D3DRS_ZENABLE, bZEnablePass ? TRUE : FALSE);
-		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, bZWriteEnable ? TRUE : FALSE);
 	}
 	
 	if (b3DTextPass)
@@ -646,7 +646,6 @@ void ParaEngine::IHeadOn3D::EndPaint(SceneState* pSceneState, bool b3DTextPass)
 	else
 	{
 		pD3dDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-		pD3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 	}
 
 	if (b3DTextPass)

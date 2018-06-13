@@ -26,6 +26,8 @@
 #include "util/os_calls.h"
 #include "SelectionManager.h"
 #include "BufferPicking.h"
+#include "FrameRateController.h"
+
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
 #include "OceanManager.h"
@@ -44,6 +46,9 @@
 using namespace ParaEngine;
 using namespace luabind;
 
+namespace ParaEngine{
+	extern CFrameRateController g_gameTime;
+}
 
 /** the default locale in this compilation. */
 #define DEFAULT_LOCALE	"zhCN"
@@ -1180,6 +1185,7 @@ void ParaEngine::ParaEngineSettings::LoadNameIndex()
 	m_name_to_index["BufferPicking"] = 7;
 	m_name_to_index["OverlayPicking"] = 8;
 	m_name_to_index["AsyncLoader"] = 9;
+	m_name_to_index["gameFRC"] = 10;
 }
 
 IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(const std::string& sName)
@@ -1210,6 +1216,8 @@ IAttributeFields* ParaEngine::ParaEngineSettings::GetChildAttributeObject(int nR
 		return CGlobals::GetAssetManager()->LoadBufferPick("overlay");
 	else if (nRowIndex == 9)
 		return &(CAsyncLoader::GetSingleton());
+	else if (nRowIndex == 10)
+		return &g_gameTime;
 	else
 		return NULL;
 }
@@ -1238,6 +1246,31 @@ void ParaEngine::ParaEngineSettings::SetIcon(const char* sIconFile)
 		hIcon = LoadIcon(NULL, IDI_ERROR);
 	else if (sIcon == "IDI_WARNING")
 		hIcon = LoadIcon(NULL, IDI_WARNING);
+	else
+	{
+		CParaFile file(sIconFile);
+		if (!file.isEof())
+		{
+			
+			PBYTE iconData = (PBYTE)file.getBuffer();
+
+			if (file.getSize() > (6 + 16))
+			{
+				BYTE w = *(iconData + 6);
+				BYTE h = *(iconData + 7);
+
+				int offset = LookupIconIdFromDirectoryEx(iconData, TRUE, w, h, LR_DEFAULTCOLOR);
+				if (offset != 0)
+				{
+					hIcon = CreateIconFromResourceEx(iconData + offset, file.getSize() - offset, TRUE, 0x30000, w, h, LR_DEFAULTCOLOR);
+				}
+			}
+
+			
+		}
+	}
+
+
 	if (hIcon!=0)
 		SendMessage(CGlobals::GetAppHWND(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	else

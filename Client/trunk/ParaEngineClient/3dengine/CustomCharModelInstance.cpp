@@ -148,7 +148,7 @@ bool CharModelInstance::InitBaseModel(ParaXEntity * pModel)
 	try {
 		const string& name = pModel->GetKey();
 
-		if (name.find("character/CC/") != std::string::npos)
+		if (false && name.find("character/CC/") != std::string::npos)
 			m_bHasCustomGeosets = true;
 		else
 			m_bHasCustomGeosets = false;

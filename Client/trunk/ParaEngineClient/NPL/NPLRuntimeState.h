@@ -345,6 +345,8 @@ namespace NPL
 		IMonoScriptingState* GetMonoState();
 		
 		void SetPreemptive(bool val);
+
+		void ClearNeuronFiles();
 	private:
 		typedef map<std::string, ParaEngine::DLLPlugInEntity*>	DLL_Plugin_Map_Type;
 		typedef std::vector<NPLTimer_ptr> NPLTimer_TempPool_Type;

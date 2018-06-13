@@ -34,7 +34,6 @@ namespace ParaEngine
 	{
 		XFileCharModelExporter::Export(filePath, pMesh);
 	}
-
 }
 
 using namespace ParaEngine;
@@ -75,6 +74,16 @@ CParaXSerializer::~CParaXSerializer(void)
 {
 }
 
+const std::string& CParaXSerializer::GetFilename() const
+{
+	return m_sFilename;
+}
+
+void CParaXSerializer::SetFilename(std::string val)
+{
+	m_sFilename = val;
+}
+
 void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 {
 	void* pMesh=NULL;
@@ -88,6 +97,7 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	try
 	{
 		XFileCharModelParser p(f.getBuffer(), f.getSize());
+		p.SetFilename(GetFilename());
 		pMesh = p.ParseParaXModel();
 	}
 	catch (runtime_error* e)
@@ -674,39 +684,67 @@ bool CParaXSerializer::ReadXTextures(CParaXModel& xmesh, LPFileData pFileData)
 		struct ModelTextureDef_
 		{
 			uint32 type;
-			uint32 flags;
+			uint32 nOffsetEmbeddedTexture;
 			char sName;
 		};
 		if(nTextures>0)
 		{ // at least one texture
 			typedef TextureEntity* LPTextureEntity;
 			xmesh.textures = new asset_ptr<TextureEntity>[nTextures];
-			ModelTextureDef_* pTex = (ModelTextureDef_*)(pBuffer+4);
+			ModelTextureDef_* pTex = (ModelTextureDef_*)(pBuffer + 4);
 
-			for (int i=0;i<nTextures;++i) 
+			for (int i = 0; i < nTextures; ++i)
 			{
-				if(pTex->type==0)
+				ModelTextureDef_ texInfo;
+				memcpy(&texInfo, pTex, sizeof(ModelTextureDef_));
+				if (texInfo.type != 0)
 				{
-					string sFilename(&pTex->sName); // for safety.
-					xmesh.textures[i] = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(sFilename.c_str());
-					pTex = (ModelTextureDef_*)(((byte*)pTex)+8+sFilename.size()+1);
-				}
-				else{
-					xmesh.specialTextures[i] = pTex->type;
-					xmesh.useReplaceTextures[pTex->type] = true;
-					string sFilename(&pTex->sName); // for safety.
-					if(!sFilename.empty())
+					if (texInfo.type < CParaXModel::MAX_MODEL_TEXTURES)
 					{
-						// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
-						// So that we do not need to supply the name elsewhere in order to display a model with replaceable textures.
-						xmesh.textures[i] = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(sFilename.c_str());
-						pTex = (ModelTextureDef_*)(((byte*)pTex)+8+sFilename.size()+1);
+						xmesh.specialTextures[i] = texInfo.type;
+						xmesh.useReplaceTextures[texInfo.type] = true;
 					}
 					else
 					{
-						pTex = (ModelTextureDef_*)(((byte*)pTex)+8+1);
-						xmesh.textures[i].reset();
+						xmesh.specialTextures[i] = -1;
+						xmesh.useReplaceTextures[i] = false;
 					}
+				}
+				else
+				{
+					xmesh.specialTextures[i] = -1;
+					xmesh.useReplaceTextures[i] = false;
+				}
+				string sFilename(((const char*)pTex) + 8); // for safety.
+				if (!sFilename.empty())
+				{
+					// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
+					// So that we do not need to supply the name elsewhere in order to display a model with replaceable textures.
+					if (texInfo.nOffsetEmbeddedTexture > 0)
+					{
+						// TODO: for embedded textures, shall we use a different key name adding the file name.
+						std::string sFilename_ = GetFilename() + "/" + CParaFile::GetFileName(sFilename);
+						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename_.c_str(), TextureEntity::StaticTexture);
+						DWORD nSize = 0;
+						memcpy(&nSize, GetRawData(texInfo.nOffsetEmbeddedTexture - sizeof(DWORD)), sizeof(DWORD));
+						if (nSize > 0)
+						{
+							char* bufferCpy = new char[nSize];
+							memcpy(bufferCpy, GetRawData(texInfo.nOffsetEmbeddedTexture), nSize);
+							xmesh.textures[i]->SetRawData(bufferCpy, nSize);
+						}
+					}
+					else
+					{
+						xmesh.textures[i] = CGlobals::GetAssetManager()->LoadTexture("", sFilename.c_str(), TextureEntity::StaticTexture);
+					}
+
+					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + sFilename.size() + 1);
+				}
+				else
+				{
+					pTex = (ModelTextureDef_*)(((byte*)pTex) + 8 + 1);
+					xmesh.textures[i].reset();
 				}
 			}
 		}
@@ -1167,7 +1205,7 @@ bool CParaXSerializer::ReadXBones(CParaXModel& xmesh, LPFileData pFileData)
 				if ((bone.flags & 0x80000000) != 0)
 				{
 					bone.flags = bone.flags & (~0x80000000);
-					if (b.nOffsetPivot != 0)
+					if (b.nBoneName != 0)
 						bone.SetName((const char*)GetRawData(b.nBoneName));
 
 					if (bone.IsOffsetMatrixBone()) {
@@ -1703,6 +1741,16 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 		{
 			pMesh = new CParaXModel(Parser.m_xheader);
 			
+			if (Parser.m_xheader.nModelFormat & PARAX_FORMAT_EXTENDED_HEADER2)
+			{
+				ParaXHeaderDef2 header2;
+				memcpy(&header2, GetRawData(Parser.m_xheader.nOffsetAdditionalHeader), sizeof(ParaXHeaderDef2));
+				Parser.m_xheader.IsAnimated = header2.IsAnimated;
+				pMesh->SetHeader(Parser.m_xheader);
+				pMesh->m_vNeckYawAxis = header2.neck_yaw_axis;
+				pMesh->m_vNeckPitchAxis = header2.neck_pitch_axis;
+			}
+
 			// Scan for data nodes inside the ParaXBody
 			SIZE_T nCount;
 			Parser.m_pParaXBody->GetChildren(&nCount);
@@ -1811,9 +1859,10 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 					if(nLockedNum>0 && !(p.is_rigid_body))
 					{
 						bool bIsRigidBody = true;
+						int nVertexOffset = p.GetVertexStart(pMesh);
 						ModelVertex * origVertices = pMesh->m_origVertices;
 						ModelVertex * ov = NULL;
-						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart]].bones[0];
+						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
 						
 						int nIndexOffset = p.m_nIndexStart;
 						for(int i=0;i<nLockedNum && bIsRigidBody;++i)
@@ -1821,7 +1870,7 @@ void* CParaXSerializer::LoadParaX_Body(ParaXParser& Parser)
 							int nVB = 3*i;
 							for(int k=0; k<3; ++k, ++nVB)
 							{
-								uint16 a = indices[nIndexOffset + nVB];
+								uint16 a = indices[nIndexOffset + nVB] + nVertexOffset;
 								ov = origVertices + a;
 								// weighted vertex
 								if( ov->weights[1] != 0 || ov->bones[0] != nLastBoneIndex)
