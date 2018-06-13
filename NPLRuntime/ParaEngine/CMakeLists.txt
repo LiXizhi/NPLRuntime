@@ -40,12 +40,25 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
         OpenGLWrapper
     TO sources_rendersystem RECURSIVE
     )
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/opengl_spec/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.fx)
+    file(GLOB SHADER_INLCUDES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.h)
+    list(APPEND SHADER_FILES ${SHADER_INLCUDES})
     foreach( src_file ${SHADER_FILES} )	
         embed_resources_abs(Resource ${src_file})
         list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
     endforeach( src_file ${SHADER_FILES} )
     list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
+
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/ParaXmodel.templates)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})	
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+
+	embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
 
@@ -65,10 +78,10 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     )
 
     # Embedded Resource For Direct3D
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/d3d9_spec/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.fx)
     foreach(src_file ${SHADER_FILES})
         get_filename_component(src_filename ${src_file} NAME_WE)
-        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
+        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fx")
 
         add_custom_command(
             OUTPUT ${out_file}
