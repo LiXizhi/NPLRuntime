@@ -6,26 +6,28 @@
 // Desc: The class is used to generate smooth framerate
 
 #include "ParaEngine.h"
-
 #include "FrameRateController.h"
+
+using namespace ParaEngine;
 
 namespace ParaEngine
 {
-/**
-define the frame controller for the rendering, IO and simulation modules.
-The best combination after experimentation is below
-rendering : constant
-IO : constant
-simulation : first_order
-Another acceptable configuration is:
-rendering : constant
-IO : first_order
-simulation : first_order
-*/
-CFrameRateController g_renderFRC(CFrameRateController::FRC_CONSTANT);
-CFrameRateController g_ioFRC(CFrameRateController::FRC_CONSTANT);
-CFrameRateController g_simFRC(CFrameRateController::FRC_FIRSTORDER);
-CFrameRateController g_gameTime(CFrameRateController::FRC_NONE);
+	/**
+	define the frame controller for the rendering, IO and simulation modules.
+	The best combination after experimentation is below
+	rendering : constant
+	IO : constant
+	simulation : first_order
+	Another acceptable configuration is:
+	rendering : constant
+	IO : first_order
+	simulation : first_order
+	*/
+	CFrameRateController g_renderFRC(CFrameRateController::FRC_CONSTANT, "renderFRC");
+	CFrameRateController g_ioFRC(CFrameRateController::FRC_CONSTANT, "ioFRC");
+	CFrameRateController g_simFRC(CFrameRateController::FRC_FIRSTORDER, "simFRC");
+	CFrameRateController g_gameTime(CFrameRateController::FRC_NONE, "gameFRC");
+}
 
 /// load the normal frame rate control configuration
 void CFrameRateController::LoadFRCNormal(float fIdealInterval)
@@ -96,9 +98,13 @@ void CFrameRateController::LoadFRCCapture(int nFPS)
 /************************************************************************/
 /* CFrameRateController class                                           */
 /************************************************************************/
-CFrameRateController::CFrameRateController(ControllerType type)
+CFrameRateController::CFrameRateController(ControllerType type, const char* sName)
+	:m_bPaused(false)
 {
 	SetType(type);
+	if (sName)
+		SetIdentifier(sName);
+
 	m_fConstDeltaTime = IDEAL_FRAME_RATE;		// 30 FPS is the ideal frame rate
 	m_fMaxDeltaTime = 0.99f;				// over 1 second lag is truncated to 1.
 	m_fMinDeltaTime = 1/60.0f;			// 60 FPS is the highest frame rate we allow
@@ -113,6 +119,7 @@ CFrameRateController::CFrameRateController(ControllerType type)
 }
 
 CFrameRateController::CFrameRateController(void)
+	:m_bPaused(false)
 {
 	SetType(FRC_CONSTANT);
 	m_fConstDeltaTime = IDEAL_FRAME_RATE;		// 30 FPS is the ideal frame rate
@@ -122,9 +129,29 @@ CFrameRateController::~CFrameRateController(void)
 {
 }
 
+const std::string& CFrameRateController::GetIdentifier()
+{
+	return m_sIdentifier;
+}
+
+void CFrameRateController::SetIdentifier(const std::string& sID)
+{
+	m_sIdentifier = sID;
+}
+
 void CFrameRateController::SetType(ControllerType nType)
 {
 	m_nType = nType;
+}
+
+int CFrameRateController::GetTime() 
+{
+	return (int)(m_fTime * 1000);
+}
+
+void CFrameRateController::SetTime(int nTime)
+{
+	m_fTime = nTime / 1000.0;
 }
 
 /** call this function to advance using delta time 
@@ -140,9 +167,12 @@ return the desired elapsed time
 */
 double CFrameRateController::FrameMove(double time)
 {
-	if(m_fTime>=time)
-		return 0.f;
-	m_fTime = time;
+	if (!IsPaused())
+	{
+		if (m_fTime >= time)
+			return 0.f;
+		m_fTime = time;
+	}
 	
 	switch(m_nType)
 	{
@@ -287,4 +317,15 @@ void CFrameRateController::SetConstDeltaTime( double fConstDeltaTime )
 	}
 }
 
+double CFrameRateController::GetTimeSec()
+{
+	return m_fTime;
+}
+
+int CFrameRateController::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	IAttributeFields::InstallFields(pClass, bOverride);
+	pClass->AddField("Paused", FieldType_Bool, (void*)SetPaused_s, (void*)IsPaused_s, NULL, NULL, bOverride);
+	pClass->AddField("ElapsedTime", FieldType_Double, (void*)0, (void*)GetElapsedTime_s, NULL, NULL, bOverride);
+	return S_OK;
 }

@@ -29,8 +29,8 @@ void Bone::RemoveRedundentKeys()
 		bUsePivot = (pivot != Vector3(0, 0, 0));
 
 #ifdef ONLY_REMOVE_EQUAL_KEYS
-	scale.SetConstantKey(Vector3(1.f,1.f,1.f));
-	trans.SetConstantKey(Vector3(0,0,0));
+	scale.SetConstantKey(Vector3(1.f, 1.f, 1.f));
+	trans.SetConstantKey(Vector3(0, 0, 0));
 #else
 	scale.SetConstantKey(Vector3(1.f, 1.f, 1.f), 0.0001f);
 	trans.SetConstantKey(Vector3(0, 0, 0), 0.00001f);
@@ -144,8 +144,8 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	Quaternion q;
 	Vector3 tr(0, 0, 0);
 	Vector3 sc(1.f, 1.f, 1.f);
-	
-	
+
+
 	if (pCurBone == NULL && pBlendBone == NULL)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -228,9 +228,9 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			{
 				// use pivot point
 				m.makeTrans(pivot*-1.0f);
-				
+
 				if (GetExternalScaling(pAnimInstance, sc) ||
-					(scale.used && (sc = scale.getValue(nCurrentAnim, currentFrame/*, nBlendingAnim, blendingFrame, blendingFactor*/)) != Vector3::UNIT_SCALE ))
+					(scale.used && (sc = scale.getValue(nCurrentAnim, currentFrame/*, nBlendingAnim, blendingFrame, blendingFactor*/)) != Vector3::UNIT_SCALE))
 				{
 					m.m[0][0] = sc.x;
 					m.m[1][1] = sc.y;
@@ -294,7 +294,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					else
 						m.identity();
 				}
-				
+
 				if (GetExternalTranslation(pAnimInstance, tr))
 				{
 					m.offsetTrans(tr);
@@ -521,7 +521,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 
 		if (parent >= 0) {
 			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
-			mat = m*allbones[parent].mat;
+			mat = m * allbones[parent].mat;
 		}
 		else
 			mat = m;
@@ -757,7 +757,7 @@ void ParaEngine::Bone::SetName(const std::string& val)
 
 void ParaEngine::Bone::AutoSetBoneInfoFromName()
 {
-	if (m_sIdentifer.empty() || GetBoneID()>0)
+	if (m_sIdentifer.empty() || GetBoneID() > 0)
 		return;
 	std::string sName = m_sIdentifer;
 	StringHelper::make_lower(sName);
@@ -790,7 +790,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		string sAttName = sName.substr(4);
 		if (sAttName == "lefthand")
 		{
-			SetBoneID(- ATT_ID_HAND_LEFT);
+			SetBoneID(-ATT_ID_HAND_LEFT);
 		}
 		else if (sAttName == "righthand")
 		{
@@ -849,12 +849,12 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 			SetBoneID(-ATT_ID_WAIST);
 		}
 	}
-	else if (StringHelper::StrEndsWith(sName, "mount") || StringHelper::StrEndsWith(sName, "shield"))
+	else if (StringHelper::StrEndsWithWord(sName, "mount") || StringHelper::StrEndsWithWord(sName, "shield"))
 	{
 		// Default Mount or shield position
 		SetBoneID(-ATT_ID_MOUNT00);
 	}
-	else if (StringHelper::StrEndsWith(sName, "mount?") || StringHelper::StrEndsWith(sName, "mount??"))
+	else if (StringHelper::StrEndsWithWord(sName, "mount?") || StringHelper::StrEndsWithWord(sName, "mount??"))
 	{
 		// additional mount position
 		int nMountBoneIndex = 0;
@@ -875,109 +875,114 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 	else
 	{
 		std::string::size_type nPos = -1;
-		if (StringHelper::StrEndsWith(sName, "r?hand"))
+		if (StringHelper::StrEndsWithWord(sName, "r?hand"))
 		{
 			SetBoneID(Bone_R_Hand);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?hand"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?hand"))
 		{
 			SetBoneID(Bone_L_Hand);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?foot"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?foot"))
 		{
 			SetBoneID(Bone_L_Foot);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?foot"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?foot"))
 		{
 			SetBoneID(Bone_R_Foot);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?upperarm"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?upperarm"))
 		{
 			SetBoneID(Bone_L_UpperArm);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?upperarm"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?upperarm"))
 		{
 			SetBoneID(Bone_R_UpperArm);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "pelvis"))
+		else if (StringHelper::StrEndsWithWord(sName, "pelvis"))
 		{
 			SetBoneID(Bone_Pelvis);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "spine"))
+		else if (StringHelper::StrEndsWithWord(sName, "spine"))
 		{
 			SetBoneID(Bone_Spine);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "spine1"))
+		else if (StringHelper::StrEndsWithWord(sName, "spine1"))
 		{
 			SetBoneID(Bone_Spine1);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "spine2"))
+		else if (StringHelper::StrEndsWithWord(sName, "spine2"))
 		{
 			SetBoneID(Bone_Spine2);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "spine3"))
+		else if (StringHelper::StrEndsWithWord(sName, "spine3"))
 		{
 			SetBoneID(Bone_Spine3);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?thigh"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?thigh"))
 		{
 			SetBoneID(Bone_L_Thigh);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?thigh"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?thigh"))
 		{
 			SetBoneID(Bone_R_Thigh);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?calf"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?calf"))
 		{
 			SetBoneID(Bone_L_Calf);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?calf"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?calf"))
 		{
 			SetBoneID(Bone_R_Calf);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?forearm"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?forearm"))
 		{
 			SetBoneID(Bone_L_Forearm);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?forearm"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?forearm"))
 		{
 			SetBoneID(Bone_R_Forearm);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?clavicle"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?clavicle"))
 		{
 			SetBoneID(Bone_L_Clavicle);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?clavicle"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?clavicle"))
 		{
 			SetBoneID(Bone_R_Clavicle);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "l?toe0"))
+		else if (StringHelper::StrEndsWithWord(sName, "l?toe0"))
 		{
 			SetBoneID(Bone_L_Toe0);
 			SetIdentifier("");
 		}
-		else if (StringHelper::StrEndsWith(sName, "r?toe0"))
+		else if (StringHelper::StrEndsWithWord(sName, "r?toe0"))
 		{
 			SetBoneID(Bone_R_Toe0);
+			SetIdentifier("");
+		}
+		else if (StringHelper::StrEndsWithWord(sName, "neck"))
+		{
+			SetBoneID(Bone_Neck);
 			SetIdentifier("");
 		}
 		else if ((nPos = sName.find("head")) != string::npos)
@@ -1218,7 +1223,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("FinalMatrix", FieldType_Matrix4, (void*)0, (void*)GetFinalMatrix_s, NULL, "", bOverride);
 	pClass->AddField("FinalRotMatrix", FieldType_Matrix4, (void*)0, (void*)GetFinalRotMatrix_s, NULL, "", bOverride);
 	pClass->AddField("PivotRotMatrix", FieldType_Matrix4, (void*)0, (void*)GetPivotRotMatrix_s, NULL, "", bOverride);
-	
+
 	pClass->AddField("PivotPoint", FieldType_Vector3, (void*)0, (void*)GetPivotPoint_s, NULL, "", bOverride);
 	pClass->AddField("AnimatedPivotPoint", FieldType_Vector3, (void*)0, (void*)GetAnimatedPivotPoint_s, NULL, "", bOverride);
 	pClass->AddField("FinalRot", FieldType_Quaternion, (void*)SetFinalRot_s, (void*)GetFinalRot_s, NULL, "", bOverride);

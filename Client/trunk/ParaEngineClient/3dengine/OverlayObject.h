@@ -41,9 +41,16 @@ namespace ParaEngine
 		virtual int PrepareRender(CBaseCamera* pCamera, SceneState * sceneState);
 
 		virtual CGUIBase* GetHeadOnUIObject(int nIndex = 0);
+
+
+		/** overlay is transparent by default. and rendered after other solid objects. */
+		virtual bool IsTransparent() override;
+		virtual void SetTransparent(bool bIsTransparent) override;
+
 	protected:
 		ref_ptr<CGUIButton> m_pGUIObject;
 		bool m_bIsTileObject;
+		bool m_bIsSolid;
 	};
 }
 

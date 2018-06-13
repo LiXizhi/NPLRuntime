@@ -5,11 +5,21 @@ using namespace std;
 
 namespace ParaEngine
 {
+	class MCIController;
+
 	/** it represent an audio engine source*/
 	class CAudioSource2 : public ParaEngine::intrusive_ptr_single_thread_base, public IAudioSourceEventHandler
 	{
 	public:
-		CAudioSource2(const char* sName, IParaAudioSource* pSource=NULL):m_name(sName), m_pSource(pSource), m_nLoopCount(0), m_status(AUDIO_FLAG_Uninitialized), m_bReleaseOnStop(false), m_bIsAsyncLoadingWhileLoopPlaying(false){}
+		CAudioSource2(const char* sName, IParaAudioSource* pSource=NULL)
+			:m_name(sName)
+			,m_pSource(pSource)
+			,m_nLoopCount(0)
+			,m_status(AUDIO_FLAG_Uninitialized)
+			,m_bReleaseOnStop(false)
+			,m_bIsAsyncLoadingWhileLoopPlaying(false)
+			,m_nStartTime(0)
+		{}
 		~CAudioSource2(){};
 		/**
 		* stop a wave file
@@ -86,6 +96,10 @@ namespace ParaEngine
 
 		/** whether the file is playing or not.*/
 		bool IsPlaying();
+
+		const std::string& GetFilename() const;
+		void SetFilename(const std::string& val);
+
 	public:
 		//////////////////////////////////////////////////////////////////////
 		//
@@ -108,16 +122,22 @@ namespace ParaEngine
 		/// This function is called when a source is paused.
 		virtual void onPause();
 
+		
 	public:
 
 		IParaAudioSource* m_pSource;
 		int m_nLoopCount;
 		bool m_bReleaseOnStop;
+		/** resource key name */
 		std::string m_name;
+		/** resource filename if any */
 		ParaAudioFlagsEnum m_status;
 		/** this is true, if an audio resource is being loop played but without being downloaded yet. */
 		bool m_bIsAsyncLoadingWhileLoopPlaying;
-	};
+		unsigned int m_nStartTime;
+	private:
+		std::string m_filename;	
+};
 	typedef ParaIntrusivePtr<CAudioSource2> CAudioSource2_ptr;
 
 	/**
@@ -308,6 +328,10 @@ namespace ParaEngine
 
 		void PauseAll();
 		void ResumeAll();
+
+		const AudioFileMap_type& getAudioMap()const;
+
+		MCIController* getMCIController();
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;

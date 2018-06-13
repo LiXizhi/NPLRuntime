@@ -35,6 +35,9 @@ namespace ParaEngine
 
 		void AutoSetLocale();
 
+		/** get the attribute object of the main ParaEngine interface */
+		virtual IAttributeFields* GetAttributeObject();
+
 		/** disable 3D rendering, do not present the scene.
 		* This is usually called before and after we show a standard win32 window during full screen mode, such as displaying a flash window
 		* @param bEnable: true to enable.

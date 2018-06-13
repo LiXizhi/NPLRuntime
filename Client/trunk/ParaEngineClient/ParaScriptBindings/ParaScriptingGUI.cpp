@@ -1333,6 +1333,29 @@ string ParaUIObject::GetOnSelect()const
 {
 	string code;GetEventScript(EM_CTRL_SELECT, code);return code;
 }
+
+void ParaUIObject::OnFocusIn(const object& objScriptName)
+{
+	const char* strScriptName = NPL::NPLHelper::LuaObjectToString(objScriptName);
+	SetEventScript(EM_CTRL_FOCUSIN, strScriptName);
+}
+
+std::string ParaUIObject::GetOnFocusIn() const
+{
+	string code; GetEventScript(EM_CTRL_FOCUSIN, code); return code;
+}
+
+void ParaUIObject::OnFocusOut(const object& objScriptName)
+{
+	const char* strScriptName = NPL::NPLHelper::LuaObjectToString(objScriptName);
+	SetEventScript(EM_CTRL_FOCUSOUT, strScriptName);
+}
+
+std::string ParaUIObject::GetOnFocusOut() const
+{
+	string code; GetEventScript(EM_CTRL_FOCUSOUT, code); return code;
+}
+
 string ParaUIObject::GetOnClick()const
 {
 	string code;GetEventScript(EM_MOUSE_CLICK, code);return code;

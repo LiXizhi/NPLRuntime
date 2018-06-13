@@ -1068,6 +1068,13 @@ HRESULT CParaEngineApp::FrameMove(double fTime)
 			m_pRootScene->Animate( (float)fElapsedIOTime );
 		}
 	}
+	else if(fElapsedGameTime > 0.f)
+	{
+		if (m_bActive)
+		{
+			m_pRootScene->Animate(0.f);
+		}
+	}
 #ifdef USE_XACT_AUDIO_ENGINE
 	/** for audio engine */
 	if(m_pAudioEngine && m_pAudioEngine->IsAudioEngineEnabled())

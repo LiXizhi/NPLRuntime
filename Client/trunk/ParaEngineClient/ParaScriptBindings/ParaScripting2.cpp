@@ -101,7 +101,10 @@ void CNPLScriptingState::LoadHAPI_Audio()
 				def("PlayWaveFile", &ParaAudio::PlayWaveFile1),
 				def("StopWaveFile", &ParaAudio::StopWaveFile),
 				def("StopWaveFile", &ParaAudio::StopWaveFile1),
-				def("ReleaseWaveFile", &ParaAudio::ReleaseWaveFile)
+				def("ReleaseWaveFile", &ParaAudio::ReleaseWaveFile),
+				def("StartRecording", &ParaAudio::StartRecording),
+				def("StopRecording", &ParaAudio::StopRecording),
+				def("SaveRecording", &ParaAudio::SaveRecording)
 			]
 		];
 }
@@ -333,6 +336,8 @@ void CNPLScriptingState::LoadHAPI_UI()
 				.property("onmouseleave",&ParaUIObject::GetOnMouseLeave,&ParaUIObject::OnMouseLeave)
 				.property("ontouch", &ParaUIObject::GetOnTouch, &ParaUIObject::OnTouch)
 				.property("onselect",&ParaUIObject::GetOnSelect,&ParaUIObject::OnSelect)
+				.property("onfocusin", &ParaUIObject::GetOnFocusIn, &ParaUIObject::OnFocusIn)
+				.property("onfocusout", &ParaUIObject::GetOnFocusOut, &ParaUIObject::OnFocusOut)
 				.property("onmodify",&ParaUIObject::GetOnModify,&ParaUIObject::OnModify)
 				.property("onactivate",&ParaUIObject::GetOnActivate,&ParaUIObject::OnActivate)
 				.property("ondestroy",&ParaUIObject::GetOnDestroy,&ParaUIObject::OnDestroy)

@@ -170,6 +170,7 @@ namespace ParaEngine
 	private:	
 		CParaRawData m_rawdata;
 		const byte*		 m_pRaw;
+		std::string m_sFilename;
 	public:
 		/** get the raw data pointer at the specified offset.
 		* return NULL if raw data is not available
@@ -182,6 +183,9 @@ namespace ParaEngine
 		* using new operator, one needs to delete it manually. If the function failed, NULL is returned
 		*/
 		void* LoadParaXMesh(CParaFile &f);
+
+		const std::string& GetFilename() const;
+		void SetFilename(std::string val);
 
 		static void ExportParaXMesh(const string& filePath, CParaXModel* pMesh);
 
@@ -263,6 +267,7 @@ namespace ParaEngine
 
 		/** read the header to xheader. */
 		bool ReadParaXHeader(ParaXHeaderDef& xheader, LPFileData pFileData);
+		
 		/** read all sub data*/
 		bool ReadXGlobalSequences(CParaXModel& xmesh, LPFileData pFileData);
 		bool ReadXVertices(CParaXModel& xmesh, LPFileData pFileData);

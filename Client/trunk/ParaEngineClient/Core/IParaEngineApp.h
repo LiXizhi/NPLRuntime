@@ -7,6 +7,7 @@
 //-----------------------------------------------------------------------------
 #include <string>
 #include "baseinterface.h"
+#include "IAttributeFields.h"
 #include <stdint.h>
 
 struct IDirect3DDevice9;
@@ -35,6 +36,7 @@ namespace ParaEngine
 	struct CWinRawMsg;
 	class CRefCounted;
 	class Vector2;
+	class IAttributeFields;
 
 	/** ParaEngine application state */
 	enum PEAppState
@@ -454,6 +456,9 @@ namespace ParaEngine
 
 		/* whether the window size is fixed. */
 		virtual void FixWindowSize(bool fixed) = 0;
+
+		/** get the attribute object of the main ParaEngine interface */
+		virtual IAttributeFields* GetAttributeObject() { return NULL; }
 	};
 
 }

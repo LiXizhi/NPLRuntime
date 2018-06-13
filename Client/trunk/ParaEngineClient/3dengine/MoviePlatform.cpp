@@ -29,6 +29,8 @@ using namespace ScreenShot;
 #include "PluginManager.h"
 #include "ViewportManager.h"
 #include "PluginAPI.h"
+#include "AudioEngine2.h"
+
 
 using namespace ParaEngine;
 
@@ -1134,7 +1136,23 @@ bool CMoviePlatform::EndCapture()
 		if (pMovieCodec)
 		{
 			// use ffmpeg external dll
-			pMovieCodec->EndCapture();
+			std::string audioMapString;
+			const ParaEngine::CAudioEngine2::AudioFileMap_type& audiomap = ParaEngine::CAudioEngine2::GetInstance()->getAudioMap();
+			ParaEngine::CAudioEngine2::AudioFileMap_type::const_iterator iter = audiomap.begin();
+			for (; iter != audiomap.end(); ++iter)
+			{
+				if (iter->first.empty())continue;
+				// simply encode audio map to a string
+				char bits[64];
+				memset(bits, 0, 64);
+				audioMapString += iter->second->GetFilename();;
+				audioMapString += ",";
+				itoa(iter->second->m_nStartTime, bits, 10);
+				audioMapString += bits;
+				audioMapString += ",";
+			}
+			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last 
+			pMovieCodec->EndCapture(audioMapString);
 		}
 		else
 		{

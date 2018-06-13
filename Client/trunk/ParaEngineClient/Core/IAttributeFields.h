@@ -1,4 +1,5 @@
 #pragma once
+#include "PERef.h"
 #include "AttributeClassIDTable.h"
 #include "AttributeField.h"
 #include "AttributeClass.h"
@@ -198,7 +199,7 @@ namespace ParaEngine
 		virtual int LoadDynamicFieldsFromString(const std::string& input);
 	public:
 		/** get the main attribute class object. */
-		CAttributeClass* GetAttributeClass();
+		virtual CAttributeClass* GetAttributeClass();
 		/** print the content of this object to a text file at temp/doc/[ClassName].txt.
 		This is usually used for dumping and testing object attributes.*/
 		void PrintObject();
