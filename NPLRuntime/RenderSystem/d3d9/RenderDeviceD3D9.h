@@ -5,14 +5,12 @@ namespace ParaEngine
 	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
-		RenderDeviceD3D9(IDirect3DDevice9* device,IDirect3D9* context)
-			:m_pD3DDevice(device)
-			,m_pContext(context)
-		{}
+		RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context);
+
 		virtual ~RenderDeviceD3D9() = default;
 	
-		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice; }
-		inline IDirect3D9* GetContext()const { return m_pContext; }
+		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice;  };
+		inline IDirect3D9* GetContext()const { return m_pContext; };
 	
 		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
 
@@ -56,10 +54,10 @@ namespace ParaEngine
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
 
 
-		virtual Rect GetViewport() override;
+		virtual ParaViewport GetViewport() override;
 
 
-		virtual bool SetViewport(const Rect& viewport) override;
+		virtual bool SetViewport(const ParaViewport& viewport) override;
 
 
 		virtual bool SetClearColor(const Color4f& color) override;
