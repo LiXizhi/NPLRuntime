@@ -91,7 +91,9 @@ namespace ParaEngine
 		*/
 		virtual void ActivateApp(bool bActivate) override;
 
-
+		virtual LifetimeType	LifetimeControl() override { return wantsRelease;  };
+		virtual BaseInterface*	AcquireInterface() override { addref();	return(BaseInterface*)this; };
+		virtual void			ReleaseInterface() override { if (delref()) { DeleteInterface(); } };
 		virtual void DeleteInterface() override  { delete this; }
         
         void setRenderEnabled(bool b) { m_bRender = b; }

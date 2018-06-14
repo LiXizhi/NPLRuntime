@@ -15,13 +15,19 @@ namespace ParaEngine
 	#define BASEINTERFACE_ID Interface_ID(0, 1)
 
 	/** Base class for those classes and interfaces in ParaEngine that can serve interfaces. */
+	/** Base class for those classes and interfaces in ParaEngine that can serve interfaces. */
+	class InterfaceServer
+	{
+	public:
+		virtual BaseInterface* GetInterface(Interface_ID id) { return nullptr; }
+	};
 
 	/**
 	*  The base class for interfaces in ParaEngine.  
 	*  Provides basic identity, sub-interface access, lifetime management and 
 	*  cloning methods.
 	*/
-	class BaseInterface
+	class BaseInterface : InterfaceServer
 	{
 	public:
 		// from InterfaceServer

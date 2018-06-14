@@ -35,8 +35,8 @@ namespace ParaEngine
 		virtual bool SetFVF(uint32_t FVF) override;
 		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
 		virtual bool GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value) override;
-		virtual Rect GetViewport() override;
-		virtual bool SetViewport(const Rect& viewport) override;
+		virtual ParaViewport GetViewport() override;
+		virtual bool SetViewport(const ParaViewport& viewport) override;
 		virtual bool Clear(bool color, bool depth, bool stencil) override;
 		virtual bool SetScissorRect(RECT* pRect) override;
 		virtual bool GetScissorRect(RECT* pRect) override;
@@ -66,7 +66,7 @@ namespace ParaEngine
 		uint32_t m_LastRenderTargetWidth;
 		uint32_t m_LastRenderTargetHeight;
 		bool m_isBeginRenderTarget ;
-		Rect m_CurrentViewPort;
+		ParaViewport m_CurrentViewPort;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)

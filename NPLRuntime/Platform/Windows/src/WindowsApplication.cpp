@@ -396,10 +396,10 @@ namespace ParaEngine {
 		if (m_pRenderDevice)
 		{ 
 			auto rc = m_pRenderDevice->GetViewport();
-			if (rc.z != m_cfg.screenWidth || rc.w != m_cfg.screenHeight)
+			if (rc.Width != m_cfg.screenWidth || rc.Height != m_cfg.screenHeight)
 			{
-				rc.z = m_cfg.screenWidth;
-				rc.w = m_cfg.screenHeight;
+				rc.Width = m_cfg.screenWidth;
+				rc.Height = m_cfg.screenHeight;
 
 				return m_pRenderDevice->SetViewport(rc);
 			}

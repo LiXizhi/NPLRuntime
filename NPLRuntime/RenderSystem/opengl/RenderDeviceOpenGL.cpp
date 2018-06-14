@@ -543,15 +543,15 @@ bool ParaEngine::RenderDeviceOpenGL::GetSamplerState(uint32_t stage, ESamplerSta
 	return true;
 }
 
-Rect ParaEngine::RenderDeviceOpenGL::GetViewport()
+ParaViewport ParaEngine::RenderDeviceOpenGL::GetViewport()
 {
 	return m_CurrentViewPort;
 }
 
-bool ParaEngine::RenderDeviceOpenGL::SetViewport(const Rect& viewport)
+bool ParaEngine::RenderDeviceOpenGL::SetViewport(const ParaViewport& viewport)
 {
 	m_CurrentViewPort = viewport;
-	glViewport((GLint)(viewport.x), (GLint)(m_RenderTargetHeight - viewport.y - (GLsizei)viewport.w), (GLsizei)(viewport.z), (GLsizei)(viewport.w));
+	glViewport((GLint)(viewport.X), (GLint)(m_RenderTargetHeight - viewport.Y - (GLsizei)viewport.Height), (GLsizei)(viewport.Width), (GLsizei)(viewport.Height));
 	return true;
 }
 
@@ -587,8 +587,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 	{
 		int nScreenWidth = m_RenderTargetWidth;
 		int nScreenHeight = m_RenderTargetHeight;
-		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.y + m_CurrentViewPort.w);
-		glScissor((GLint)(pRect->left + m_CurrentViewPort.x), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
+		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.Y + m_CurrentViewPort.Height);
+		glScissor((GLint)(pRect->left + m_CurrentViewPort.X), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}
 	return true;
 }

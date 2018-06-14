@@ -1344,11 +1344,8 @@ HRESULT CShadowMap::BeginShadowPass()
 //#ifdef USE_DIRECTX_RENDERER
 	//  preserve old viewport and back buffer
 	auto pd3dDevice =  CGlobals::GetRenderDevice();
-	auto rect = CGlobals::GetRenderDevice()->GetViewport();
-	oldViewport.X = rect.x;
-	oldViewport.Y = rect.y;
-	oldViewport.Width = rect.z;
-	oldViewport.Height = rect.w;
+	oldViewport = CGlobals::GetRenderDevice()->GetViewport();
+
 
 	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
 	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pZBuffer)))
@@ -1361,11 +1358,8 @@ HRESULT CShadowMap::BeginShadowPass()
 	
 	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-	auto vp = CGlobals::GetRenderDevice()->GetViewport();
-	oldViewport.X = vp.x;
-	oldViewport.Y = vp.y;
-	oldViewport.Width = vp.z;
-	oldViewport.Height = vp.w;
+	oldViewport = CGlobals::GetRenderDevice()->GetViewport();
+
 	glGetIntegerv(GL_FRAMEBUFFER_BINDING, reinterpret_cast<GLint*>(&mOldFrameBufferObject));
 	
 #endif
@@ -1402,12 +1396,8 @@ HRESULT CShadowMap::BeginShadowPass()
 	newViewport.Height = m_shadowTexHeight;
 	newViewport.MinZ = 0.0f;
 	newViewport.MaxZ = 1.0f;
-	Rect newvp;
-	newvp.x = newViewport.X;
-	newvp.y = newViewport.Y;
-	newvp.w = newViewport.Width;
-	newvp.z = newViewport.Height;
-	CGlobals::GetRenderDevice()->SetViewport(newvp);
+
+	CGlobals::GetRenderDevice()->SetViewport(newViewport);
 
 	float depthBias = float(m_iDepthBias) / 16777215.f;
 
@@ -1559,12 +1549,7 @@ HRESULT CShadowMap::EndShadowPass()
 #endif
 
 	// restore old view port
-	Rect vp;
-	vp.x = oldViewport .X;
-	vp.y = oldViewport.Y;
-	vp.w = oldViewport.Width;
-	vp.z = oldViewport.Height;
-	CGlobals::GetRenderDevice()->SetViewport(vp);
+	CGlobals::GetRenderDevice()->SetViewport(oldViewport);
 
 	//re enable color writes
 	if (m_bSupportsHWShadowMaps && !(m_bDisplayShadowMap || m_bBlurSMColorTexture))
