@@ -35,7 +35,9 @@ INT WINAPI WinMain( HINSTANCE hInst, HINSTANCE, LPSTR lpCmdLine, INT )
 	g_hAppInstance = hInst;
 	int exit_code = 0;
 
+#if defined(_DEBUG)
 	RedirectIOToConsole();
+#endif
 
 	RenderWindowDelegate renderWindow;
 
