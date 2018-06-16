@@ -321,14 +321,17 @@ void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)
 
 void ParaEngine::CSpriteRendererOpenGL::PrepareDraw()
 {
-	if (m_bIsTextMode != m_bIsTextModeDevice)
+	if (m_pEffectFile != nullptr)
 	{
-		Flush();
-		m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
-		m_bIsTextModeDevice = m_bIsTextMode;
-	}
+		if (m_bIsTextMode != m_bIsTextModeDevice)
+		{
+			Flush();
+			m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
+			m_bIsTextModeDevice = m_bIsTextMode;
+		}
 
-	m_pEffectFile->CommitChanges();
+		m_pEffectFile->CommitChanges();
+	}
 }
 
 

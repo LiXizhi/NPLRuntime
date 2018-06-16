@@ -398,15 +398,21 @@ public:
 	// per process globalpoolallocator, then it causes increased memory usage per compile
 	// it is essential to use "symbol = sym" to assign to symbol
 	TIntermSymbol(int i, const TString& sym, const TType& t) : 
-		TIntermTyped(t), id(i), info(0), global(false)
+		TIntermTyped(t), id(i), info(0), global(false),constvalue(nullptr)
 	{
 		symbol = sym;
 	} 
 	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t) : 
-		TIntermTyped(t), id(i), info(inf), global(false)
+		TIntermTyped(t), id(i), info(inf), global(false),constvalue(nullptr)
 	{
 		symbol = sym;
 	} 
+
+	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t, const TIntermConstant* value) :
+		TIntermTyped(t), id(i), info(inf), global(false),constvalue(value)
+	{
+		symbol = sym;
+	}
 
 	int getId() const { return id; }
 	const TString& getSymbol() const { return symbol; }
@@ -422,11 +428,16 @@ public:
 	{
 		return this;
 	}
+	const  TIntermConstant* GetConstValue()
+	{
+		return constvalue;
+	}
 protected:
 	int id;
 	bool global;
 	TString symbol;
 	const TTypeInfo *info;
+	const TIntermConstant* constvalue;
 };
 
 class TIntermDeclaration : public TIntermTyped {

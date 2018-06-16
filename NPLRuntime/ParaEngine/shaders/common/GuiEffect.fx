@@ -4,8 +4,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
+
 float4x4 mWorldViewProj: worldviewprojection;
 bool k_bBoolean0:boolean0;
+float g_opacity:opacity = 1.0f; 
 // texture 0
 texture tex0 : TEXTURE; 
 sampler tex0Sampler : register(s0) = sampler_state 

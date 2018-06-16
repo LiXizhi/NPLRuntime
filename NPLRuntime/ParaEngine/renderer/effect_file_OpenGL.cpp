@@ -556,7 +556,10 @@ bool CEffectFileOpenGL::BeginPass(int pass, bool bForceBegin)
 
 void CEffectFileOpenGL::CommitChanges()
 {
-	m_pEffect->CommitChanges();
+	if (m_pEffect)
+	{
+		m_pEffect->CommitChanges();
+	}
 }
 
 void CEffectFileOpenGL::EndPass(bool bForceEnd)
