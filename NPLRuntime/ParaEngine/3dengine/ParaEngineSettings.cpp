@@ -224,6 +224,7 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			}
 		}
 	}
+#endif
 	
 	g_nSetID = nSetID;
 	switch(nSetID)
@@ -306,13 +307,6 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 		CGlobals::GetEffectManager()->SetDefaultEffectMapping(30);
 		break;
 	}
-#elif defined(USE_OPENGL_RENDERER)
-	//CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
-	CGlobals::GetEffectManager()->SetDefaultEffectMapping(20);
-	ParaScripting::ParaScene::EnableLighting(true);
-	ParaScripting::ParaScene::SetShadowMethod(0);
-	CGlobals::GetScene()->EnableFullScreenGlow(false);
-#endif
 }
 
 void ParaEngineSettings::SetScriptEditor(const string& sEditorFilePath)

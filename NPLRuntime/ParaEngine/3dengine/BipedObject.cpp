@@ -1343,7 +1343,9 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 	}
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 
-	if (!pEffectManager->IsCurrentEffectValid() || GetPrimaryTechniqueHandle() < 0)
+	bool valid = pEffectManager->IsCurrentEffectValid();
+
+	if (!valid || GetPrimaryTechniqueHandle() < 0)
 	{
 		return E_FAIL;
 	}
