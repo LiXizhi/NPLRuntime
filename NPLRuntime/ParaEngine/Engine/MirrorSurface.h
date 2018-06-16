@@ -47,7 +47,7 @@ namespace ParaEngine
 		* when the reflection map is built this object will be disabled. 
 		* @return NULL if reflection texture is not ready.
 		*/
-		LPDIRECT3DTEXTURE9 GetReflectionTexture();
+		DeviceTexturePtr_type GetReflectionTexture();
 	protected:
 		/**
 		* set up the rendering matrices for ocean rendering.
@@ -92,7 +92,7 @@ namespace ParaEngine
 		int         m_reflectionTextureHeight;
 
 		LPDIRECT3DSURFACE9       m_pDepthStencilSurface;
-		LPDIRECT3DTEXTURE9       m_pReflectionTexture;
+		DeviceTexturePtr_type       m_pReflectionTexture;
 		LPDIRECT3DSURFACE9       m_pReflectionSurface;
 
 		Matrix4               m_reflectionProjectionMatrix;

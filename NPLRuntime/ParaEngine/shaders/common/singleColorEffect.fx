@@ -29,7 +29,7 @@ float4 frag(v2f i) : COLOR
 	return i.color;
 }
 
-technique default
+technique SimpleMesh_vs20_ps20
 {
 	pass P0
 	{

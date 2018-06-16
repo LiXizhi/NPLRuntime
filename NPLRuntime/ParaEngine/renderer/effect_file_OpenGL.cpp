@@ -7,71 +7,625 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
-#include "OpenGLWrapper/GLProgram.h"
+
+#include "effect_file_OpenGL.h"
+#include "ShaderIncludeHandle.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
+//#include "MirrorSurface.h"
 #include "SkyMesh.h"
 #include "AutoCamera.h"
-#include "effect_file_OpenGL.h"
 #include "SunLight.h"
-#include "driver.h"
-#include "dxeffects.h"
-#include "hlsl2glsl.h"
-#include "hlslCrossCompiler.h"
-#include "hlslLinker.h"
-#include "ShaderIncludeHandle.h"
+#include "RenderDeviceOpenGL.h"
 #include <boost/filesystem.hpp>
+#include <unordered_map>
 
 using namespace ParaEngine;
+using namespace std;
+
+
+/**
+* Comments by LiXizhi
+* The DirectX control panel(in windows control panel) can toggle retail/debug version dll.
+*	Only define DEBUG_VS| DEBUG_PS, if you are running with debug version dll. Otherwise the FX file will not be loaded on some machines.
+* instructions to debug effect files:
+* - Build using "DEBUG shaders" or define the following macros
+* - Setting break points in fx files.
+* - Run the program by Debug->Direct3D->Start with Direct3D debugging
+* - Run the game to the place, where sharder is used. Set the device to REF
+* - now that the debugger will break at the break points
+*/
+
+/** Uncomment this line to debug vertex shaders */
+//#define DEBUG_VS
+/** Uncomment this line to debug pixel shaders */
+//#define DEBUG_PS
+
+/**
+* if true, the shader will use half precision arithmetics,
+* if false, float4 will be used.
+*/
+bool CEffectFileOpenGL::s_bUseHalfPrecision = false;// half will be enough
+
+#define LIGHT_BOOLEAN_BASE			0
+													 /**@def max number of local lights.it can be up to 8 */
+#define MAX_SHADER_LIGHT_NUM		4
+
+bool CEffectFileOpenGL::g_bTextureEnabled = true;
+
 
 
 CEffectFileOpenGL::CEffectFileOpenGL(const char* filename)
-	: m_nActivePassIndex(0), m_bIsBegin(false), m_bIsBeginPass(false), m_pendingChangesCount(0)
-	, m_nTechniqueIndex(0)
-	, m_Effect(nullptr)
+	:m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
 {
-	SetFileName(filename);
-	Init();
+	m_filename = filename;
+	memset(m_paramHandle, 0, sizeof(m_paramHandle));
+	for (int i = 0; i<k_max_param_handles; i++)
+	{
+		m_paramHandle[i].idx = PARA_INVALID_HANDLE;
+	}
 }
 
 CEffectFileOpenGL::CEffectFileOpenGL(const AssetKey& key)
-	: m_nActivePassIndex(0), m_bIsBegin(false), m_pendingChangesCount(0)
-	, m_nTechniqueIndex(0)
-	, m_Effect(nullptr)
+	:CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
 {
-	Init();
+	memset(m_paramHandle, 0, sizeof(m_paramHandle));
+	for (int i = 0; i < k_max_param_handles; i++)
+	{
+		m_paramHandle[i].idx = PARA_INVALID_HANDLE;
+	}
 }
 
 CEffectFileOpenGL::~CEffectFileOpenGL()
 {
-	if (m_Effect != nullptr)
+	m_pEffect = nullptr;
+}
+
+void CEffectFileOpenGL::EnableShareMode(bool bEnable)
+{
+	m_bSharedMode = bEnable;
+}
+bool CEffectFileOpenGL::IsInShareMode()
+{
+	return m_bSharedMode;
+}
+
+void CEffectFileOpenGL::EnableTextures(bool bEnable)
+{
+	g_bTextureEnabled = bEnable;
+}
+bool CEffectFileOpenGL::AreTextureEnabled()
+{
+	return g_bTextureEnabled;
+}
+
+bool CEffectFileOpenGL::EnableEnvironmentMapping(bool bEnable)
+{
+	return SetBoolean(6, bEnable);
+}
+
+void CEffectFileOpenGL::SetReflectFactor(float fFactor)
+{
+	if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled())
+		setFloat(k_reflectFactor, fFactor);
+}
+
+bool CEffectFileOpenGL::EnableReflectionMapping(bool bEnable, float fSurfaceHeight)
+{
+	//if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled() && SetBoolean(5, bEnable))
+	//{
+	//	if (bEnable)
+	//	{
+	//		CMirrorSurface* pMirorSurface = CGlobals::GetScene()->GetMirrorSurface(0);
+	//		if (pMirorSurface != 0)
+	//		{
+	//			// TODO: here I just assume the reflection surface is centered on the world origin of the current rendered object. 
+	//			// TODO: if there are multiple surfaces, why not choose the one closest and above the camera eye? Currently it just choose the one rendered last
+
+	//			DVector3 vPos = CGlobals::GetSceneState()->GetCurrentSceneObject()->GetPosition();
+	//			vPos.y += fSurfaceHeight;
+	//			pMirorSurface->SetPosition(vPos);
+	//			// TODO: here I just assume texture sampler is on s1 register.
+	//			setTexture(1, pMirorSurface->GetReflectionTexture());
+	//		}
+	//	}
+	//	/*else
+	//	setTexture(1, (TextureEntity*)NULL);*/
+	//	return true;
+	//}
+	return false;
+}
+
+void CEffectFileOpenGL::EnableNormalMap(bool bEnable)
+{
+	// TODO:
+}
+void CEffectFileOpenGL::EnableLightMap(bool bEnable)
+{
+	// TODO:
+}
+
+
+bool CEffectFileOpenGL::isParameterUsed(eParameterHandles index)const
+{
+	return isValidHandle(m_paramHandle[index]);
+}
+
+bool CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)const
+{
+	return isValidHandle(m_paramHandle[index]);
+}
+
+bool CEffectFileOpenGL::isTextureUsed(int index)const
+{
+	return isValidHandle(m_paramHandle[k_tex0 + index]);
+}
+
+bool CEffectFileOpenGL::isTextureMatrixUsed(int index)const
+{
+	return isValidHandle(m_paramHandle[k_tex_mat0 + index]);
+}
+
+
+
+
+bool CEffectFileOpenGL::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
+{
+	if (m_pEffect && isMatrixUsed(index))
 	{
-		m_Effect = nullptr;
+		return m_pEffect->SetMatrixArray(m_paramHandle[index], data->GetConstPointer(), count);
 	}
+	return false;
+}
+
+
+bool CEffectFileOpenGL::setVectorArray(eParameterHandles index, const Vector4* pVector, UINT count) const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		return m_pEffect->SetVectorArray(m_paramHandle[index], (DeviceVector4*)pVector, count);
+	}
+	return false;
+}
+
+bool CEffectFileOpenGL::setFloatArray(eParameterHandles index, const float* data, UINT32 count)const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		return m_pEffect->SetFloatArray(m_paramHandle[index], data, count);
+	}
+	return false;
+}
+
+
+
+bool CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, INT32 size)const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		bool result = m_pEffect->SetValue(m_paramHandle[index], data, size);
+
+		PE_ASSERT(result);
+		return result;
+	}
+	return false;
+}
+bool CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoolean) const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		bool result = m_pEffect->SetBool(m_paramHandle[index], bBoolean);
+		PE_ASSERT(result);
+		return result;
+	}
+	return false;
+}
+
+bool CEffectFileOpenGL::setInt(eParameterHandles index, int nValue) const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		bool result = m_pEffect->SetInt(m_paramHandle[index], nValue);
+		PE_ASSERT(result);
+		return result;
+	}
+	return false;
+}
+
+bool CEffectFileOpenGL::setFloat(eParameterHandles index, float fValue) const
+{
+	if (m_pEffect && isParameterUsed(index))
+	{
+		bool result = m_pEffect->SetFloat(m_paramHandle[index], fValue);
+		PE_ASSERT(result);
+		return result;
+	}
+	return false;
+}
+
+
+bool CEffectFileOpenGL::setMatrix(eParameterHandles index, const Matrix4* data)const
+{
+	if (m_pEffect && isMatrixUsed(index))
+	{
+		return m_pEffect->SetMatrix(m_paramHandle[index], data->GetConstPointer());
+	}
+	return false;
+}
+
+/** load the resource from a file or win32 resource
+If the resource file name begins with ':', it is treated as a win32 resource.
+e.g.":IDR_FX_OCEANWATER". loads data from a resource of type "TEXTFILE". See MSDN for more information about Windows resources.
+*/
+HRESULT CEffectFileOpenGL::InitDeviceObjects()
+{
+	m_bIsInitialized = true;
+	m_bIsValid = false;//set to true if created successfully.
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+
+	auto file = std::make_shared<CParaFile>(m_filename.c_str());
+
+	// fxo 
+	if (file->isEof())
+	{
+		file = nullptr;
+		if (m_filename.find(".fxo") != std::string::npos)
+		{
+			std::string fxname = m_filename.substr(0, m_filename.size() - 1);
+			file = std::make_shared<CParaFile>(fxname.c_str());
+			const char* source = file->getBuffer();
+		}
+	}
+
+	std::string error = "";
+
+	if (!file->isEof())
+	{
+		/*
+		// Since we are loading a binary file here and this effect has already been compiled,
+		// you can not pass compiler flags here (for example to debug the shaders).
+		// To debug the shaders, one must pass these flags to the compiler that generated the
+		// binary (for example fxc.exe).
+		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
+		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
+		*/
+		boost::filesystem::path p(m_filename);
+		auto shaderDir = p.parent_path();
+		ShaderIncludeHandle includeImpl(shaderDir.string());
+		m_pEffect = CGlobals::GetRenderDevice()->CreateEffect(file->getBuffer(), file->getSize(), &includeImpl, error);
+	}
+	else
+	{
+		OUTPUT_LOG("ERROR: shader file %s not found\n", m_filename.c_str());
+		return E_FAIL;
+	}
+
+	if (!m_pEffect)
+	{
+		char* error_str = (error != "") ? error.c_str() : "failed loading effect file\n";
+		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
+		return E_FAIL;
+	}
+
+
+	// get the description
+	m_pEffect->GetDesc(&m_EffectDesc);
+
+	m_techniques.clear();
+	//////////////////////////////////////////////////////////////////////////
+	// get all valid techniques
+	TechniqueDesc tech;
+	bool bHasDefaultTechnique = false;
+
+	for (int idx = 0; idx<m_EffectDesc.Techniques; idx++)
+	{
+		tech.hTechnique = m_pEffect->GetTechnique(idx);
+		if (m_pEffect->GetTechniqueDesc(tech.hTechnique, &tech.techniqueDesc))
+		{
+			if (tech.techniqueDesc.Name == "GenShadowMap")
+			{
+				tech.nCategory = TechCategory_GenShadowMap;
+			}
+			else if (tech.techniqueDesc.Name == "Vegetation")
+			{
+				tech.nCategory = TechCategory_Vegetation;
+			}
+			else if (tech.techniqueDesc.Name == "Character")
+			{
+				tech.nCategory = TechCategory_Character;
+			}
+			else if (tech.techniqueDesc.Name == "DetailCharacter")
+			{
+				tech.nCategory = TechCategory_DetailCharacter;
+			}
+			else
+			{
+				tech.nCategory = TechCategory_default;
+				bHasDefaultTechnique = true;
+			}
+			m_techniques.push_back(tech);
+		}
+		else {
+			OUTPUT_LOG("ERROR: effect file: %s failed getting its description.\n", m_filename.c_str());
+		}
+	}
+
+	HRESULT result = E_FAIL;
+
+	if (!bHasDefaultTechnique)
+	{
+		// at least one default technique must be valid. "GenShadowMap" is not a default technique. 
+		// So if "GenShadowMap" is valid, but others are not valid, the technique is not considered valid.
+		OUTPUT_LOG("ERROR: effect file: %s not supported by your GPU.\n", m_filename.c_str());
+		releaseEffect();
+		result = E_FAIL;
+	}
+	else
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// activate the first valid technique
+		m_nTechniqueIndex = 0;
+		if (m_pEffect->SetTechnique(m_techniques[m_nTechniqueIndex].hTechnique))
+		{
+			// parse the effect parameters to build a list of handles
+			parseParameters();
+			m_bIsValid = true;
+		}
+		else
+		{
+			OUTPUT_LOG("ERROR: effect file: %s failed loading its technique.\n", m_filename.c_str());
+			releaseEffect();
+		}
+		result = S_OK;
+	}
+
+	return result;
+}
+
+bool CEffectFileOpenGL::SetTechniqueByIndex(int nIndex)
+{
+	if (m_nTechniqueIndex == nIndex)
+		return true;
+	else if (((int)m_techniques.size()>nIndex) && (m_pEffect->SetTechnique(m_techniques[nIndex].hTechnique)))
+	{
+		m_nTechniqueIndex = nIndex;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool CEffectFileOpenGL::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
+{
+	if (m_nTechniqueIndex >= (int)m_techniques.size())
+		return false;
+	if (m_techniques[m_nTechniqueIndex].nCategory == nCat)
+		return true;
+	vector<TechniqueDesc>::const_iterator itCur, itEnd = m_techniques.end();
+	int i = 0;
+	for (itCur = m_techniques.begin(); itCur != itEnd; ++itCur, ++i)
+	{
+		if ((*itCur).nCategory == nCat)
+		{
+			if (m_pEffect->SetTechnique(m_techniques[i].hTechnique))
+			{
+				m_nTechniqueIndex = i;
+				return true;
+			}
+			else
+				return false;
+		}
+	}
+	return false;
+}
+void CEffectFileOpenGL::releaseEffect()
+{
+	m_pEffect = nullptr;
+}
+
+// destroy the resource
+HRESULT CEffectFileOpenGL::DeleteDeviceObjects()
+{
 	releaseEffect();
+	m_bIsInitialized = false;
+	return S_OK;
 }
 
-
-void CEffectFileOpenGL::Init()
+// purge the resource from volatile memory
+HRESULT CEffectFileOpenGL::InvalidateDeviceObjects()
 {
-	for (int i =0;i<k_max_param_handles;i++)
+	if (m_pEffect)
 	{
-		m_ParamHandle[i].idx = PARA_INVALID_HANDLE;
+		m_pEffect->OnLostDevice();
+	}
+	return S_OK;
+}
+
+// prepare the resource for use (create any volatile memory objects needed)
+HRESULT CEffectFileOpenGL::RestoreDeviceObjects()
+{
+	if (m_pEffect)
+	{
+		m_pEffect->OnResetDevice();
+	}
+	return S_OK;
+}
+
+// save the resource to the file and return the size written
+bool CEffectFileOpenGL::saveResource(const char* filename)
+{
+	return 0;
+}
+int CEffectFileOpenGL::totalPasses()const
+{
+	if (m_pEffect == 0)
+	{
+		int i = 0;
+		OUTPUT_LOG("error");
+	}
+	//PE_ASSERT(m_pEffect);
+	if (m_nTechniqueIndex<(int)m_techniques.size())
+		return m_techniques[m_nTechniqueIndex].techniqueDesc.Passes;
+	else
+		return 0;
+}
+
+bool CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
+{
+	if (g_bTextureEnabled && m_pEffect && isTextureUsed(index) && !IsTextureLocked(index))
+	{
+		return setTextureInternal(index, (data != 0) ? data->GetTexture() : NULL);
+	}
+	return false;
+}
+bool CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type pTex)
+{
+	if (g_bTextureEnabled && m_pEffect && isTextureUsed(index) && !IsTextureLocked(index))
+	{
+		return setTextureInternal(index, pTex);
+	}
+	return false;
+}
+
+bool CEffectFileOpenGL::setTextureInternal(int index, DeviceTexturePtr_type pTex)
+{
+	if ((int)(m_LastTextures.size()) <= index)
+	{
+		m_LastTextures.resize(index + 1, NULL);
+	}
+	if (m_LastTextures[index] != pTex)
+	{
+		m_LastTextures[index] = pTex;
+		// TODO: implement statemanagerstate to set state, sampler and texture. This may be wrong if shader textures in hlsl are not written in the exact order. 
+		// so that they map to s0,s15 in the written order in the compiled shader code. 
+		//return SUCCEEDED(m_pEffect->SetTexture(m_paramHandle[k_tex0+index], (data!=0) ? data->GetTexture(): NULL));
+		return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
+	}
+	return true;
+}
+
+bool CEffectFileOpenGL::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin)
+{
+	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+	if (m_pEffect != NULL)
+	{
+		if (bApplyParam)
+		{
+			// set the lighting parameters
+			// from the global light manager
+			applyGlobalLightingData(pScene->GetSunLight());
+
+			// set the camera matrix
+			applyCameraMatrices();
+		}
+
+		if (bForceBegin || !m_bSharedMode)
+		{
+			bool result = m_pEffect->Begin();
+			if (result)
+			{
+				m_bIsBegin = true;
+				return true;
+			}
+			else
+			{
+				OUTPUT_LOG("error: CEffectFileOpenGL::begin failed: %s \n", m_filename.c_str());
+				return false;
+			}
+		}
+		return true;
+	}
+	else
+		return false;
+}
+
+bool CEffectFileOpenGL::BeginPass(int pass, bool bForceBegin)
+{
+	if (bForceBegin || !m_bSharedMode)
+	{
+		bool result = m_pEffect->BeginPass(pass);
+		if (!result)
+		{
+			OUTPUT_LOG("error: CEffectFileOpenGL::BeginPass failed: %s \n", m_filename.c_str());
+			return false;
+		}
+	}
+	return true;
+}
+
+void CEffectFileOpenGL::CommitChanges()
+{
+	m_pEffect->CommitChanges();
+}
+
+void CEffectFileOpenGL::EndPass(bool bForceEnd)
+{
+	if (bForceEnd || !m_bSharedMode)
+	{
+		if (m_bIsBegin)
+		{
+			if (!(m_pEffect && m_pEffect->EndPass()))
+			{
+				OUTPUT_LOG("error: CEffectFileOpenGL::EndPass failed: %s \n", m_filename.c_str());
+			}
+		}
 	}
 }
 
-void CEffectFileOpenGL::SetFileName(const std::string& filename)
+void CEffectFileOpenGL::end(bool bForceEnd)
 {
-	m_filename = filename;
+	if (bForceEnd || !m_bSharedMode)
+	{
+		if (m_bIsBegin)
+		{
+			// tricky: since d3dxeffect->BeginPass(0) will reset states such as Texture to NULL, 
+			// we need to call OnSwitchOutShader() when pass is end. 
+			if (!m_bSharedMode)
+			{
+				OnSwitchOutShader();
+			}
+			if (!(m_pEffect && m_pEffect->End()))
+			{
+				OUTPUT_LOG("error: CEffectFileOpenGL::end failed: %s \n", m_filename.c_str());
+				return;
+			}
+			m_bIsBegin = false;
+		}
+	}
 }
 
-const std::string& CEffectFileOpenGL::GetFileName()
+int CEffectFileOpenGL::BeginWith(LPCSTR str, LPCSTR searchStr)
 {
-	return m_filename;
+	int i = 0;
+	while (str[i] != 0)
+	{
+		if (searchStr[i] == 0)
+			return i;
+		else if (str[i] != searchStr[i])
+			return -1;
+		++i;
+	}
+	return -1;
 }
-
+bool CEffectFileOpenGL::GetNumber(LPCSTR str, int nBeginIndex, int* pOut)
+{
+	int i = nBeginIndex;
+	while (str[i] >= '0' && str[i] <= '9')
+		++i;
+	if (i>nBeginIndex)
+	{
+		int value = 0;
+		int nCount = i - nBeginIndex;
+		for (i = 0; i<nCount; ++i)
+		{
+			value += (int)((str[nBeginIndex + i] - '0'))*(int)pow((float)10, (nCount - i - 1));
+		}
+		*pOut = value;
+		return true;
+	}
+	return false;
+}
 
 void CEffectFileOpenGL::parseParameters()
 {
@@ -154,11 +708,11 @@ void CEffectFileOpenGL::parseParameters()
 
 	static char numerals[] = { '0','1','2','3','4','5','6','7','8','9' };
 	IParaEngine::ParameterDesc ParamDesc;
-	for (uint32_t index = 0; index < m_EffectDesc.Parameters; index++)
+	for (uint32_t index = 0; index<m_EffectDesc.Parameters; index++)
 	{
-		IParaEngine::ParameterHandle hParam = m_Effect->GetParameter(index);
+		IParaEngine::ParameterHandle hParam = m_pEffect->GetParameter(index);
 		if (!IParaEngine::isValidHandle(hParam))continue;
-		if (!m_Effect->GetParameterDesc(hParam, &ParamDesc)) continue;
+		if (!m_pEffect->GetParameterDesc(hParam, &ParamDesc)) continue;
 
 		std::string lower_sem = ParamDesc.Semantic;
 		std::transform(lower_sem.begin(), lower_sem.end(), lower_sem.begin(),
@@ -168,15 +722,11 @@ void CEffectFileOpenGL::parseParameters()
 		auto it = table.find(lower_sem);
 		if (it != table.end())
 		{
-			m_ParamHandle[it->second] = hParam;
+			m_paramHandle[it->second] = hParam;
 		}
 		else
 		{
-			if (   ParamDesc.Type == EParameterType::PT_TEXTURE 
-				|| ParamDesc.Type == EParameterType::PT_TEXTURE2D 
-				|| ParamDesc.Type == EParameterType::PT_TEXTURE3D 
-				|| ParamDesc.Type == PT_TEXTURECUBE) {
-
+			if (ParamDesc.Type == EParameterType::PT_TEXTURE || ParamDesc.Type == EParameterType::PT_TEXTURE2D || ParamDesc.Type == EParameterType::PT_TEXTURE3D || ParamDesc.Type == PT_TEXTURECUBE) {
 				int iPos = (int)ParamDesc.Name.find_first_of(numerals, 0, sizeof(numerals));
 
 				if (iPos != string::npos)
@@ -184,7 +734,7 @@ void CEffectFileOpenGL::parseParameters()
 					int iTexture = atoi(&ParamDesc.Name[iPos]);
 					if (iTexture >= 0 && iTexture < (k_tex_max - k_tex0))
 					{
-						m_ParamHandle[k_tex0 + iTexture] = hParam;
+						m_paramHandle[k_tex0 + iTexture] = hParam;
 					}
 				}
 			}
@@ -193,741 +743,701 @@ void CEffectFileOpenGL::parseParameters()
 			}
 		}
 	}
-}
 
 
 
-HRESULT CEffectFileOpenGL::InitDeviceObjects()
-{
-	m_bIsInitialized = true;
-	m_bIsValid = false;//set to true if created successfully.
-	auto pRenderDevice = CGlobals::GetRenderDevice();
-
-	auto file = std::make_shared<CParaFile>(m_filename.c_str());
-
-	// fxo 
-	if (file->isEof())
-	{
-		file = nullptr;
-		if (m_filename.find(".fxo") != std::string::npos)
-		{
-			std::string fxname = m_filename.substr(0, m_filename.size() - 1);
-			file = std::make_shared<CParaFile>(fxname.c_str());
-			const char* source = file->getBuffer();
-		}
-	}
-
-	std::string error = "";
-
-	if (!file->isEof())
-	{
-		/*
-		// Since we are loading a binary file here and this effect has already been compiled,
-		// you can not pass compiler flags here (for example to debug the shaders).
-		// To debug the shaders, one must pass these flags to the compiler that generated the
-		// binary (for example fxc.exe).
-		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
-		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
-		*/
-		boost::filesystem::path p(m_filename);
-		auto shaderDir = p.parent_path();
-		ShaderIncludeHandle includeImpl(shaderDir.string());
-		m_Effect = CGlobals::GetRenderDevice()->CreateEffect(file->getBuffer(), file->getSize(), &includeImpl, error);
-	}
-	else
-	{
-		OUTPUT_LOG("ERROR: shader file %s not found\n", m_filename.c_str());
-		return E_FAIL;
-	}
-
-	if (!m_Effect)
-	{
-		char* error_str = (error != "") ? error.c_str() : "failed loading effect file\n";
-		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
-		return E_FAIL;
-	}
 
 
-	// get the description
-	m_Effect->GetDesc(&m_EffectDesc);
+	//       if( ParamDesc.Semantic != NULL && 
+	//           ( ParamDesc.Class == D3DXPC_VECTOR ))
+	//       {
+	//		if((nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "materialambient" ) == 0 )
+	//				m_paramHandle[k_ambientMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialdiffuse" ) == 0 )
+	//				m_paramHandle[k_diffuseMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialspecular" ) == 0 )
+	//				m_paramHandle[k_specularMaterialColor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
+	//				m_paramHandle[k_emissiveMaterialColor] = hParam;
+	//		}
+	//           else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
+	//               m_paramHandle[k_posScaleOffset] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
+	//               m_paramHandle[k_uvScaleOffset] = hParam;
 
-	m_Techniques.clear();
-	//////////////////////////////////////////////////////////////////////////
-	// get all valid techniques
-	TechniqueDesc tech;
-	bool bHasDefaultTechnique = false;
+	//           else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
+	//               m_paramHandle[k_lensFlareColor] = hParam;
 
-	for (int idx = 0; idx<m_EffectDesc.Techniques; idx++)
-	{
-		tech.hTechnique = m_Effect->GetTechnique(idx);
-		if (m_Effect->GetTechniqueDesc(tech.hTechnique, &tech.techniqueDesc))
-		{
-			if (tech.techniqueDesc.Name == "GenShadowMap")
-			{
-				tech.nCategory = TechCategory_GenShadowMap;
-			}
-			else if (tech.techniqueDesc.Name == "Vegetation")
-			{
-				tech.nCategory = TechCategory_Vegetation;
-			}
-			else if (tech.techniqueDesc.Name == "Character")
-			{
-				tech.nCategory = TechCategory_Character;
-			}
-			else if (tech.techniqueDesc.Name == "DetailCharacter")
-			{
-				tech.nCategory = TechCategory_DetailCharacter;
-			}
-			else
-			{
-				tech.nCategory = TechCategory_default;
-				bHasDefaultTechnique = true;
-			}
-			m_Techniques.push_back(tech);
-		}
-		else {
-			OUTPUT_LOG("ERROR: effect file: %s failed getting its description.\n", m_filename.c_str());
-		}
-	}
+	//		//////////////////////////////////////////////////////////////////////////
+	//		// fog
+	//		else if( strcmpi( ParamDesc.Semantic, "fogparameters" ) == 0 )
+	//			m_paramHandle[k_fogParameters] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "fogColor" ) == 0 )
+	//			m_paramHandle[k_fogColor] = hParam;
+	//		//////////////////////////////////////////////////////////////////////////
+	//		//shadow
+	//		else if( strcmpi( ParamDesc.Semantic, "shadowfactor") == 0)
+	//			m_paramHandle[k_shadowFactor] = hParam;
 
-	HRESULT result = E_FAIL;
+	//		//////////////////////////////////////////////////////////////////////////
+	//		// lights
+	//		else if( strcmpi( ParamDesc.Semantic, "LightStrength") == 0 )
+	//			m_paramHandle[k_LightStrength] = hParam;
+	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "Light"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "LightColors" ) == 0 )
+	//				m_paramHandle[k_LightColors] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "LightPositions" ) == 0 )
+	//				m_paramHandle[k_LightPositions] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "LightParams" ) == 0 )
+	//				m_paramHandle[k_LightParams] = hParam;
+	//		}
 
-	if (!bHasDefaultTechnique)
-	{
-		// at least one default technique must be valid. "GenShadowMap" is not a default technique. 
-		// So if "GenShadowMap" is valid, but others are not valid, the technique is not considered valid.
-		OUTPUT_LOG("ERROR: effect file: %s not supported by your GPU.\n", m_filename.c_str());
-		releaseEffect();
-		result = E_FAIL;
-	}
-	else
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// activate the first valid technique
-		m_nTechniqueIndex = 0;
-		if (m_Effect->SetTechnique(m_Techniques[m_nTechniqueIndex].hTechnique))
-		{
-			// parse the effect parameters to build a list of handles
-			parseParameters();
-			m_bIsValid = true;
-		}
-		else
-		{
-			OUTPUT_LOG("ERROR: effect file: %s failed loading its technique.\n", m_filename.c_str());
-			releaseEffect();
-		}
-		result = S_OK;
-	}
+	//		else if( strcmpi( ParamDesc.Semantic, "FresnelR0" ) == 0 )
+	//			m_paramHandle[k_fresnelR0] = hParam;
+	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "ConstVector"))>0)
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
+	//				m_paramHandle[k_ConstVector0] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector1" ) == 0 )
+	//				m_paramHandle[k_ConstVector1] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector2" ) == 0 )
+	//				m_paramHandle[k_ConstVector2] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector3" ) == 0 )
+	//				m_paramHandle[k_ConstVector3] = hParam;
+	//		}
+	//		
+	//           else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
+	//               m_paramHandle[k_sunVector] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
+	//               m_paramHandle[k_sunColor] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
+	//               m_paramHandle[k_cameraPos] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
+	//               m_paramHandle[k_cameraDistances] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
+	//               m_paramHandle[k_cameraFacing] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
+	//               m_paramHandle[k_ambientLight] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
+	//               m_paramHandle[k_sunlightInscatter] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
+	//               m_paramHandle[k_sunlightExtinction] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "worldpos" ) == 0 )
+	//			m_paramHandle[k_worldPos] = hParam;
+	//		else if( strcmpi( ParamDesc.Semantic, "texCoordOffset" ) == 0 )
+	//			m_paramHandle[k_texCoordOffset] = hParam;
+	//	}
 
-	if (m_filename == ":IDR_FX_SIMPLE_MESH_NORMAL")
-	{
-		SetFloat("opacity", 1.f);
-	}
-	if (m_filename == ":IDR_FX_GUI")
-	{
-		SetBool("k_bBoolean0", true);
-	}
+	//       if(ParamDesc.Class == D3DXPC_SCALAR)
+	//       {
+	//		if( ParamDesc.Semantic == NULL)
+	//		{
+	//			if( strcmpi( ParamDesc.Name, "curnumbones" ) == 0 )
+	//			{
+	//				m_paramHandle[k_boneInfluenceCount] = hParam;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			if( strcmpi( ParamDesc.Semantic, "fogenable" ) == 0 )
+	//				m_paramHandle[k_fogEnable] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "alphatesting" ) == 0 )
+	//				m_paramHandle[k_bAlphaTesting] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "alphablending" ) == 0 )
+	//				m_paramHandle[k_bAlphaBlending] = hParam;
+	//			else if((nIndex = BeginWith(ParamDesc.Semantic, "boolean"))>0)
+	//			{
+	//				int nvalue;
+	//				if(GetNumber(ParamDesc.Semantic, nIndex, &nvalue))
+	//				{
+	//					PE_ASSERT(0<=nvalue && nvalue<=(k_bBooleanMAX-k_bBoolean0));
+	//					m_paramHandle[k_bBoolean0+nvalue] = hParam;
+	//				}
+	//			}
+	//			else if( strcmpi( ParamDesc.Semantic, "sunlightenable" ) == 0 )
+	//				m_paramHandle[k_bSunlightEnable] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "shadowmapsize" ) == 0 )
+	//				m_paramHandle[k_nShadowmapSize] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "shadowradius" ) == 0 )
+	//				m_paramHandle[k_fShadowRadius] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "materialpower" ) == 0 )
+	//				m_paramHandle[k_specularMaterialPower] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "reflectfactor" ) == 0 )
+	//				m_paramHandle[k_reflectFactor] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "locallightnum" ) == 0 )
+	//				m_paramHandle[k_LocalLightNum] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "layersnum" ) == 0 )
+	//				m_paramHandle[k_LayersNum] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "time" ) == 0 )
+	//				m_paramHandle[k_time] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "opacity" ) == 0 )
+	//				m_paramHandle[k_opacity] = hParam;
+	//			else if( strcmpi( ParamDesc.Semantic, "specularPower" ) == 0 )
+	//				m_paramHandle[k_specularPower] = hParam;
+	//			else if( strcmpi(ParamDesc.Semantic,"transitionFactor") == 0)
+	//				m_paramHandle[k_transitionFactor] = hParam;
+	//		}
+	//	}
 
-	return result;
-}
+	//       if( ParamDesc.Class == D3DXPC_OBJECT )
+	//       {
+	//		string name(ParamDesc.Name);
+	//		
+	//		if (ParamDesc.Type == D3DXPT_TEXTURE
+	//			|| ParamDesc.Type == D3DXPT_TEXTURE2D
+	//			|| ParamDesc.Type == D3DXPT_TEXTURE3D
+	//			|| ParamDesc.Type == D3DXPT_TEXTURECUBE)
+	//		{
+	//			int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
 
-HRESULT CEffectFileOpenGL::DeleteDeviceObjects()
-{
-	m_bIsInitialized = false;
-	releaseEffect();
-	return S_OK;
-}
+	//			if (iPos != string::npos)
+	//			{
+	//				int iTexture = atoi(&ParamDesc.Name[iPos]);
+	//				if (iTexture>=0 && iTexture<(k_tex_max - k_tex0))
+	//				{
+	//					m_paramHandle[k_tex0 + iTexture] = hParam;
+	//				}
+	//			}
+	//		}
+	//       }
 
-void CEffectFileOpenGL::releaseEffect(int nTech, int nPass)
-{
-	m_Effect = nullptr;
-}
-
-void CEffectFileOpenGL::EnableTextures(bool bEnable)
-{
-
-}
-
-bool CEffectFileOpenGL::AreTextureEnabled()
-{
-	return true;
+	//	if ( ParamDesc.Class == D3DXPC_STRUCT)
+	//	{
+	//		if( strcmpi( ParamDesc.Semantic, "AtmosphericLightingParams" ) == 0 )
+	//			m_paramHandle[k_atmosphericLighting] = hParam;
+	//		else if ( strcmpi( ParamDesc.Semantic, "patchCorners") == 0 )
+	//			m_paramHandle[k_patchCorners] = hParam;
+	//	}
+	//}
 }
 
 void CEffectFileOpenGL::EnableSunLight(bool bEnableSunLight)
 {
-
-}
-
-
-
-bool CEffectFileOpenGL::setMatrix(eParameterHandles index, const Matrix4* data)
-{
-	if (m_Effect && isMatrixUsed(index))
+	if (isParameterUsed(k_bSunlightEnable))
 	{
-		return m_Effect->SetMatrix(m_ParamHandle[index], data->GetConstPointer());
+		setBool(k_bSunlightEnable, bEnableSunLight);
 	}
-	return false;
-}
-
-bool CEffectFileOpenGL::isMatrixUsed(eParameterHandles index)
-{
-	return isParameterUsed(index);
-}
-
-
-bool CEffectFileOpenGL::setParameter(eParameterHandles index, const void* data, int32 size)
-{
-	if (size <= 0)
-	{
-		return false;
-	}
-
-	PE_ASSERT(size > 0);
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetValue(m_ParamHandle[index], data, size);
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector2* data)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetValue(m_ParamHandle[index], data, sizeof(Vector2));
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector3* data)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetValue(m_ParamHandle[index], data, sizeof(Vector3));
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::setParameter(eParameterHandles index, const Vector4* data)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetVector(m_ParamHandle[index], (DeviceVector4*)data);
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-bool CEffectFileOpenGL::setBool(eParameterHandles index, BOOL bBoolean)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetBool(m_ParamHandle[index], bBoolean);
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::setInt(eParameterHandles index, int nValue)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetInt(m_ParamHandle[index], nValue);
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::setFloat(eParameterHandles index, float fValue)
-{
-	if (m_Effect && isParameterUsed(index))
-	{
-		bool result = m_Effect->SetFloat(m_ParamHandle[index],fValue);
-		PE_ASSERT(result);
-		return result;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::isParameterUsed(eParameterHandles index)
-{
-	return isValidHandle(m_ParamHandle[index]);
-}
-
-
-
-
-
-
-
-
-
-
-
-void CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
-{
-	//SetProgramParams([&](GLProgram* program) {
-		if (isParameterUsed(k_fogEnable))
-		{
-			setBool(k_fogEnable, bEnableFog);
-		}
-		// unlike directx, we will apply for parameters regardless of whether fog is enabled.
-		// if (bEnableFog)
-		{
-			if (isParameterUsed(k_fogParameters) && (fogParam != 0))
-			{
-				setParameter(k_fogParameters, fogParam,sizeof(Vector4));
-			}
-
-			if (isParameterUsed(k_fogColor) && (fogColor != 0))
-			{
-				setParameter(k_fogColor, fogColor, sizeof(LinearColor));
-			}
-		}
-	//	return true;
-	//});
-}
-
-void CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient /*= true*/)
-{
-	//SetProgramParams([&](GLProgram* program) {
-		if (pSurfaceMaterial)
-		{
-			// set material properties
-			const ParaMaterial & d3dMaterial = *pSurfaceMaterial;
-
-			if (isParameterUsed(k_ambientMaterialColor))
-			{
-				if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
-					setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient, sizeof(LinearColor));
-				else
-					setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient, sizeof(LinearColor));
-			}
-
-			if (isParameterUsed(k_diffuseMaterialColor))
-			{
-				if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
-				{
-					setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse, sizeof(LinearColor));
-					setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(), sizeof(LinearColor));
-				}
-				else
-				{
-					setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse,sizeof(LinearColor));
-					Vector3 vEmpty(0, 0, 0);
-					setParameter(k_LightStrength, &vEmpty, sizeof(Vector3));
-				}
-			}
-
-			if (isParameterUsed(k_specularMaterialColor))
-			{
-				setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
-			}
-
-			if (isParameterUsed(k_emissiveMaterialColor))
-			{
-				setParameter(k_specularMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
-			}
-
-			if (isParameterUsed(k_specularMaterialPower))
-			{
-				setParameter(k_specularMaterialPower, &d3dMaterial.Power, sizeof(float));
-			}
-		}
-	//	return true;
-	//});
-}
-
-void CEffectFileOpenGL::applyCameraMatrices()
-{
-
-		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
-
-		CBaseCamera* pCamera = pScene->GetCurrentCamera();
-		if (pCamera)
-		{
-			const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
-			const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
-			const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
-			Matrix4 ViewProj;
-			// set the world matrix
-			if (isMatrixUsed(k_worldMatrix))
-			{
-				setMatrix(k_worldMatrix, pWorld);
-			}
-
-			// set the world inverse matrix
-			if (isMatrixUsed(k_worldInverseMatrix))
-			{
-				Matrix4 mWorldInverse;
-				mWorldInverse = pWorld->inverse();
-				setMatrix(k_worldInverseMatrix, &mWorldInverse);
-			}
-			// set the world view matrix
-			if (isMatrixUsed(k_worldViewMatrix))
-			{
-				Matrix4 mWorldView;
-				ParaMatrixMultiply(&mWorldView, pWorld, pView);
-				setMatrix(k_worldViewMatrix, &mWorldView);
-			}
-
-			// set the combined matrix
-			if (isMatrixUsed(k_viewProjMatrix))
-			{
-				ParaMatrixMultiply(&ViewProj, pView, pProj);
-				setMatrix(k_viewProjMatrix, &ViewProj);
-			}
-
-			// set the world view projection matrix
-			if (isMatrixUsed(k_worldViewProjMatrix))
-			{
-				if (!isMatrixUsed(k_viewProjMatrix))
-					ParaMatrixMultiply(&ViewProj, pView, pProj);
-				Matrix4 mWorldViewProj;
-				ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
-				setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
-			}
-
-			// set the view matrix
-			if (isMatrixUsed(k_viewMatrix))
-			{
-				setMatrix(k_viewMatrix, pView);
-			}
-
-			// set the projection matrix
-			if (isMatrixUsed(k_projMatrix))
-			{
-				setMatrix(k_projMatrix, pProj);
-			}
-
-			// set the tex world view projection matrix
-			if (CGlobals::GetEffectManager()->IsUsingShadowMap() && isMatrixUsed(k_TexWorldViewProjMatrix))
-			{
-				Matrix4 mTex;
-				ParaMatrixMultiply(&mTex, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
-				setMatrix(k_TexWorldViewProjMatrix, &mTex);
-			}
-
-			// set the world camera position
-			if (isParameterUsed(k_cameraPos))
-			{
-				Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
-				setParameter(k_cameraPos, &vEye);
-			}
-			// set the world camera facing vector
-			if (isParameterUsed(k_cameraFacing))
-			{
-				Vector3 v = pCamera->GetWorldAhead();
-				setParameter(k_cameraFacing, &v);
-			}
-		}
-}
-
-void CEffectFileOpenGL::applyWorldMatrices()
-{
-	//SetProgramParams([&](GLProgram* program) {
-		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
-
-		CBaseCamera* pCamera = pScene->GetCurrentCamera();
-		if (pCamera)
-		{
-			const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
-			const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
-			const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
-			Matrix4 ViewProj;
-			// set the world matrix
-			if (isMatrixUsed(k_worldMatrix))
-			{
-				setMatrix(k_worldMatrix, pWorld);
-			}
-
-			// set the world inverse matrix
-			if (isMatrixUsed(k_worldInverseMatrix))
-			{
-				Matrix4 mWorldInverse;
-				mWorldInverse = pWorld->inverse();
-				setMatrix(k_worldInverseMatrix, &mWorldInverse);
-			}
-			// set the world view matrix
-			if (isMatrixUsed(k_worldViewMatrix))
-			{
-				Matrix4 mWorldView;
-				ParaMatrixMultiply(&mWorldView, pWorld, pView);
-				setMatrix(k_worldViewMatrix, &mWorldView);
-			}
-			// set the world view projection matrix
-			if (isMatrixUsed(k_worldViewProjMatrix))
-			{
-				ParaMatrixMultiply(&ViewProj, pView, pProj);
-				Matrix4 mWorldViewProj;
-				ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
-				setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
-			}
-		}
-	//	return true;
-	//});
-}
-
-void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
-{
-	//SetProgramParams([&](GLProgram* program) {
-		// pass the lighting structure to the shader
-		if (isParameterUsed(k_sunColor))
-		{
-			LinearColor c = sunlight.GetSunColor();
-			setParameter(k_sunColor, &c,sizeof(LinearColor));
-		}
-
-		if (isParameterUsed(k_sunVector))
-		{
-			Vector3 vDir = -sunlight.GetSunDirection();
-			Vector4 v(vDir.x, vDir.y, vDir.z, 1.0f);
-			setParameter(k_sunVector, &v,sizeof(Vector4));
-		}
-
-		if (isParameterUsed(k_ambientLight))
-		{
-			setParameter(k_ambientLight, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient,sizeof(LinearColor));
-		}
-
-
-		if (isParameterUsed(k_shadowFactor))
-		{
-			float shadowFactor = sunlight.GetShadowFactor();
-			Vector4 v(shadowFactor, 1 - shadowFactor, 0, 0);
-			setParameter(k_shadowFactor, &v,sizeof(shadowFactor));
-		}
-	//	return true;
-	//});
-}
-
-bool CEffectFileOpenGL::begin(bool bApplyParam /*= true*/, DWORD flag /*= 0*/)
-{
-
-	if (m_Effect->Begin())
-	{
-		m_bIsBegin = true;
-		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
-		if (bApplyParam)
-		{
-			//SetProgramParams([&](GLProgram* program) {
-			// set the lighting parameters
-			// from the global light manager
-			applyGlobalLightingData(pScene->GetSunLight());
-
-			// set the camera matrix
-			applyCameraMatrices();
-		}
-		return true;
-	}
-	return false;
-}
-
-bool CEffectFileOpenGL::BeginPass(int nPass, bool bForceBegin /*= false*/)
-{
-	m_bIsBeginPass = true;
-	return m_Effect->BeginPass(nPass);
-}
-
-void CEffectFileOpenGL::CommitChanges()
-{
-	m_Effect->CommitChanges();
-}
-
-void CEffectFileOpenGL::EndPass(bool bForceEnd /*= false*/)
-{
-	m_bIsBeginPass = false;
-	m_Effect->EndPass();
-}
-
-void CEffectFileOpenGL::end(bool bForceEnd /*= false*/)
-{
-	m_bIsBegin = false;
-	m_Effect->End();
-}
-
-HRESULT CEffectFileOpenGL::RendererRecreated()
-{
-	return S_OK;
-}
-
-bool CEffectFileOpenGL::EnableEnvironmentMapping(bool bEnable)
-{
-	return true;
-}
-
-bool CEffectFileOpenGL::EnableReflectionMapping(bool bEnable, float fSurfaceHeight /*= 0.f*/)
-{
-	return true;
-}
-
-void CEffectFileOpenGL::SetReflectFactor(float fFactor)
-{
-
-}
-
-void CEffectFileOpenGL::EnableNormalMap(bool bEnable)
-{
-
-}
-
-void CEffectFileOpenGL::EnableLightMap(bool bEnable)
-{
-
 }
 
 void CEffectFileOpenGL::EnableAlphaBlending(bool bAlphaBlending)
 {
-
+	if (isParameterUsed(k_bAlphaBlending))
+	{
+		setBool(k_bAlphaBlending, bAlphaBlending);
+	}
 }
 
 void CEffectFileOpenGL::EnableAlphaTesting(bool bAlphaTesting)
 {
-}
-
-int CEffectFileOpenGL::totalPasses() const
-{
-	return 0;
-}
-
-bool CEffectFileOpenGL::setTexture(int index, TextureEntity* data)
-{
-	if (data != 0 && data->GetTexture())
+	if (isParameterUsed(k_bAlphaTesting))
 	{
-		setTexture(index, data->GetTexture());
-
-		// ensure that sampler states matches the one used in the texture. if not, change the texture sampler
-		// unless a texture is used with different sampler states during rendering, the glTexParameteri function is called at most once for a texture.
-		uint32_t dwValue = 0;
-		CGlobals::GetRenderDevice()->GetSamplerState(index, ESamplerStateType::MINFILTER, &dwValue);
-		if (dwValue == D3DTEXF_POINT && !data->IsSamplerStateBlocky())
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			data->SetSamplerStateBlocky(true);
-		}
-		else if ( dwValue == D3DTEXF_LINEAR && data->IsSamplerStateBlocky() )
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			data->SetSamplerStateBlocky(false);
-		}
-		return true;
+		setBool(k_bAlphaTesting, bAlphaTesting);
+		if (!CGlobals::GetEffectManager()->IsD3DAlphaTestingDisabled())
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHATESTENABLE, bAlphaTesting);
 	}
-	else
-		return setTexture(index, (DeviceTexturePtr_type)0);
 }
 
-bool CEffectFileOpenGL::isTextureUsed(int index)const
+void CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient)
 {
-	return isValidHandle(m_ParamHandle[k_tex0 + index]);
-}
-
-bool CEffectFileOpenGL::setTexture(int index, DeviceTexturePtr_type pTex)
-{
-	if ( m_Effect && isTextureUsed(index))
+	if (pSurfaceMaterial)
 	{
-		return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
-	}
-	return false;
-}
+		// set material properties
+		const ParaMaterial & d3dMaterial = *pSurfaceMaterial;
 
-bool CEffectFileOpenGL::SetRawValue(const char* hParameter, const void* pData, uint32 ByteOffset, uint32 nBytes)
-{
-	return m_Effect->SetRawValue(hParameter, pData, ByteOffset, nBytes);
-}
-bool CEffectFileOpenGL::SetBool(const char* hParameter, BOOL bBoolean)
-{
-	return SetRawValue(hParameter, &bBoolean, 0, sizeof(bBoolean));
-}
-
-bool CEffectFileOpenGL::SetInt(const char* hParameter, int nValue)
-{
-	return SetRawValue(hParameter, &nValue, 0, sizeof(nValue));
-}
-
-bool CEffectFileOpenGL::SetFloat(const char* hParameter, float fValue)
-{
-	return SetRawValue(hParameter, &fValue, 0, sizeof(fValue));
-}
-
-bool CEffectFileOpenGL::SetVector2(const char* hParameter, const Vector2& vValue)
-{
-	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
-}
-
-bool CEffectFileOpenGL::SetVector3(const char* hParameter, const Vector3& vValue)
-{
-	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
-}
-
-bool CEffectFileOpenGL::SetVector4(const char* hParameter, const Vector4& vValue)
-{
-	return SetRawValue(hParameter, &vValue, 0, sizeof(vValue));
-}
-
-bool CEffectFileOpenGL::SetMatrix(const char* hParameter, const Matrix4& data)
-{
-	return SetRawValue(hParameter, &data, 0, sizeof(data));
-}
-
-
-bool CEffectFileOpenGL::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
-{
-	if (m_nTechniqueIndex >= (int)m_Techniques.size())
-		return false;
-	if (m_Techniques[m_nTechniqueIndex].nCategory == nCat)
-		return true;
-	vector<TechniqueDesc>::const_iterator itCur, itEnd = m_Techniques.end();
-	int i = 0;
-	for (itCur = m_Techniques.begin(); itCur != itEnd; ++itCur, ++i)
-	{
-		if ((*itCur).nCategory == nCat)
+		if (isParameterUsed(k_ambientMaterialColor))
 		{
-			m_nTechniqueIndex = i;
-			return true;
+			if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
+				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+			else
+				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
+		}
+
+		if (isParameterUsed(k_diffuseMaterialColor))
+		{
+			if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
+			{
+				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
+				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+			}
+			else
+			{
+				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
+				Vector3 vEmpty(0, 0, 0);
+				setParameter(k_LightStrength, &vEmpty);
+			}
+		}
+
+		if (isParameterUsed(k_specularMaterialColor))
+		{
+			setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
+		}
+
+		if (isParameterUsed(k_emissiveMaterialColor))
+		{
+			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
+		}
+
+		if (isParameterUsed(k_specularMaterialPower))
+		{
+			setParameter(k_specularMaterialPower, &d3dMaterial.Power);
 		}
 	}
-	return false;
 }
 
-bool CEffectFileOpenGL::SetTechniqueByIndex(int nIndex)
+
+void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 {
-	if (m_nTechniqueIndex == nIndex)
-		return true;
-	else if ((int)m_Techniques.size()>nIndex)
+	// pass the lighting structure to the shader
+	if (isParameterUsed(k_atmosphericLighting))
 	{
-		m_nTechniqueIndex = nIndex;
-		return true;
+		setParameter(
+			k_atmosphericLighting,
+			sunlight.GetLightScatteringData()->getShaderData());
 	}
-	else
-		return false;
+
+	// pass the lighting structure to the shader
+	if (isParameterUsed(k_sunColor))
+	{
+		setParameter(
+			k_sunColor,
+			&(sunlight.GetSunColor()));
+	}
+
+	if (isParameterUsed(k_sunVector))
+	{
+		Vector3 vDir = -sunlight.GetSunDirection();
+		setParameter(
+			k_sunVector,
+			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f));
+	}
+
+	if (isParameterUsed(k_ambientLight))
+	{
+		setParameter(
+			k_ambientLight,
+			&CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+	}
+
+
+	if (isParameterUsed(k_shadowFactor))
+	{
+		float shadowFactor = sunlight.GetShadowFactor();
+		setParameter(
+			k_shadowFactor,
+			&Vector4(shadowFactor, 1 - shadowFactor, 0, 0)
+		);
+	}
 }
 
-const CEffectFileOpenGL::TechniqueDesc* CEffectFileOpenGL::GetCurrentTechniqueDesc()
+void CEffectFileOpenGL::applyWorldMatrices()
 {
-	static TechniqueDesc s_tech;
-	if (m_nTechniqueIndex<(int)m_Techniques.size())
-		return &(m_Techniques[m_nTechniqueIndex]);
-	else
-		return &s_tech;
+	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+
+	CBaseCamera* pCamera = pScene->GetCurrentCamera();
+	if (pCamera)
+	{
+		const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
+		const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
+		const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
+		Matrix4 ViewProj;
+		// set the world matrix
+		if (isMatrixUsed(k_worldMatrix))
+		{
+			setMatrix(k_worldMatrix, pWorld);
+		}
+
+		// set the world inverse matrix
+		if (isMatrixUsed(k_worldInverseMatrix))
+		{
+			Matrix4 mWorldInverse;
+			mWorldInverse = pWorld->inverse();
+			setMatrix(k_worldInverseMatrix, &mWorldInverse);
+		}
+		// set the world view matrix
+		if (isMatrixUsed(k_worldViewMatrix))
+		{
+			Matrix4 mWorldView;
+			ParaMatrixMultiply(&mWorldView, pWorld, pView);
+			setMatrix(k_worldViewMatrix, &mWorldView);
+		}
+		// set the world view projection matrix
+		if (isMatrixUsed(k_worldViewProjMatrix))
+		{
+			ParaMatrixMultiply(&ViewProj, pView, pProj);
+			Matrix4 mWorldViewProj;
+			ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
+			setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
+		}
+	}
 }
 
-bool CEffectFileOpenGL::SetBoolean(int nIndex, bool value)
+void CEffectFileOpenGL::applyCameraMatrices()
 {
-	return false;
+	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+
+	CBaseCamera* pCamera = pScene->GetCurrentCamera();
+	if (pCamera)
+	{
+		const Matrix4* pWorld = &(CGlobals::GetEffectManager()->GetWorldTransform());
+		const Matrix4* pView = &(CGlobals::GetEffectManager()->GetViewTransform());
+		const Matrix4* pProj = &(CGlobals::GetEffectManager()->GetProjTransform());
+		Matrix4 ViewProj;
+		// set the world matrix
+		if (isMatrixUsed(k_worldMatrix))
+		{
+			setMatrix(k_worldMatrix, pWorld);
+		}
+
+		// set the world inverse matrix
+		if (isMatrixUsed(k_worldInverseMatrix))
+		{
+			Matrix4 mWorldInverse;
+			mWorldInverse = pWorld->inverse();
+			setMatrix(k_worldInverseMatrix, &mWorldInverse);
+		}
+		// set the world view matrix
+		if (isMatrixUsed(k_worldViewMatrix))
+		{
+			Matrix4 mWorldView;
+			ParaMatrixMultiply(&mWorldView, pWorld, pView);
+			setMatrix(k_worldViewMatrix, &mWorldView);
+		}
+
+		// set the combined matrix
+		if (isMatrixUsed(k_viewProjMatrix))
+		{
+			ParaMatrixMultiply(&ViewProj, pView, pProj);
+			setMatrix(k_viewProjMatrix, &ViewProj);
+		}
+
+		// set the world view projection matrix
+		if (isMatrixUsed(k_worldViewProjMatrix))
+		{
+			if (!isMatrixUsed(k_viewProjMatrix))
+				ParaMatrixMultiply(&ViewProj, pView, pProj);
+			Matrix4 mWorldViewProj;
+			ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
+			setMatrix(k_worldViewProjMatrix, &mWorldViewProj);
+		}
+
+		// set the view matrix
+		if (isMatrixUsed(k_viewMatrix))
+		{
+			setMatrix(k_viewMatrix, pView);
+		}
+
+		// set the projection matrix
+		if (isMatrixUsed(k_projMatrix))
+		{
+			setMatrix(k_projMatrix, pProj);
+		}
+
+		// set the tex world view projection matrix
+		if (CGlobals::GetEffectManager()->IsUsingShadowMap() && isMatrixUsed(k_TexWorldViewProjMatrix))
+		{
+			Matrix4 mTex;
+			ParaMatrixMultiply(&mTex, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
+			setMatrix(k_TexWorldViewProjMatrix, &mTex);
+		}
+
+		// set the world camera position
+		if (isParameterUsed(k_cameraPos))
+		{
+			Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
+			setParameter(k_cameraPos, &Vector4(vEye.x, vEye.y, vEye.z, 1.0f));
+		}
+		// set the world camera facing vector
+		if (isParameterUsed(k_cameraFacing))
+		{
+			setParameter(k_cameraFacing, &pCamera->GetWorldAhead());
+		}
+
+		//// set the matrix used by sky boxes
+		//if (isMatrixUsed(k_skyBoxMatrix))
+		//{
+		//	setMatrix(k_skyBoxMatrix, &pCamera->skyBoxMatrix());
+		//}
+
+		/*cVector4 camDistances(
+		pCamera->nearPlane(),
+		pCamera->farPlane(),
+		pCamera->viewDistance(),
+		pCamera->invFarPlane());
+
+		if (isParameterUsed(k_cameraDistances))
+		{
+		setParameter(k_cameraDistances, &camDistances);
+		}*/
+	}
+}
+
+void CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
+{
+	if (isParameterUsed(k_fogEnable))
+	{
+		setBool(k_fogEnable, bEnableFog);
+	}
+	if (bEnableFog)
+	{
+		if (isParameterUsed(k_fogParameters) && (fogParam != 0))
+		{
+			setParameter(k_fogParameters, fogParam);
+		}
+
+		if (isParameterUsed(k_fogColor) && (fogColor != 0))
+		{
+			setParameter(k_fogColor, fogColor);
+		}
+	}
+}
+
+void CEffectFileOpenGL::applyLocalLightingData(const LightList* plights, int nLightNum)
+{
+	nLightNum = min(nLightNum, MAX_EFFECT_LIGHT_NUM);
+
+	if (isParameterUsed(k_LocalLightNum))
+	{
+		setInt(k_LocalLightNum, nLightNum);
+
+		//////////////////////////////////////////////////////////////////////////
+		// set local lights
+		if (plights != 0 && nLightNum>0)
+		{
+			const LightList& lights = *plights;
+			PE_ASSERT(nLightNum <= (int)lights.size());
+
+			Vector4 pos_ranges[MAX_EFFECT_LIGHT_NUM];
+			Vector4 colors[MAX_EFFECT_LIGHT_NUM];
+			Vector4 params[MAX_EFFECT_LIGHT_NUM];
+			for (int i = 0; i<nLightNum; ++i)
+			{
+				Vector3 pos = lights[i]->Position;
+				pos_ranges[i].x = pos.x;
+				pos_ranges[i].y = pos.y;
+				pos_ranges[i].z = pos.z;
+				pos_ranges[i].w = lights[i]->Range;
+				colors[i] = reinterpret_cast<const Vector4&> (lights[i]->Diffuse);
+				params[i].x = lights[i]->Attenuation0;
+				params[i].y = lights[i]->Attenuation1;
+				params[i].z = lights[i]->Attenuation2;
+				params[i].w = 1;
+			}
+			setVectorArray((eParameterHandles)(k_LightPositions), pos_ranges, nLightNum);
+			setVectorArray((eParameterHandles)(k_LightColors), colors, nLightNum);
+			setVectorArray((eParameterHandles)(k_LightParams), params, nLightNum);
+		}
+	}
+	/*for (int i =0;i<MAX_SHADER_LIGHT_NUM;++i)
+	{
+	SetBoolean(LIGHT_BOOLEAN_BASE+i, (i<nLightNum));
+	}*/
+}
+
+void CEffectFileOpenGL::applyLayersNum(int nLayers)
+{
+	if (isParameterUsed(k_LayersNum))
+	{
+		setInt(k_LayersNum, nLayers);
+	}
+}
+
+void CEffectFileOpenGL::applyTexWorldViewProj(const Matrix4* mat)
+{
+	if (isMatrixUsed(k_TexWorldViewProjMatrix))
+	{
+		setMatrix(k_TexWorldViewProjMatrix, mat);
+	}
 }
 
 void CEffectFileOpenGL::SetShadowMapSize(int nsize)
 {
-
+	if (isParameterUsed(k_nShadowmapSize))
+	{
+		setInt(k_nShadowmapSize, nsize);
+	}
 }
+
+void CEffectFileOpenGL::SetShadowRadius(float fRadius)
+{
+	if (isParameterUsed(k_fShadowRadius))
+	{
+		setFloat(k_fShadowRadius, fRadius);
+	}
+}
+
+void CEffectFileOpenGL::EnableShadowmap(int nShadowMethod)
+{
+#define SHADOW_BOOLEAN_BASE			8
+	SetBoolean(SHADOW_BOOLEAN_BASE, nShadowMethod > 0);
+	SetBoolean(SHADOW_BOOLEAN_BASE + 1, nShadowMethod == 1);
+}
+bool CEffectFileOpenGL::SetBoolean(int nIndex, bool value)
+{
+	PE_ASSERT(nIndex< (k_bBooleanMAX - k_bBoolean0));
+	if (isParameterUsed((eParameterHandles)(k_bBoolean0 + nIndex)))
+	{
+		return setBool((eParameterHandles)(k_bBoolean0 + nIndex), value);
+	}
+	return false;
+}
+int CEffectFileOpenGL::GetCurrentTechniqueIndex()
+{
+	return m_nTechniqueIndex;
+}
+const CEffectFileOpenGL::TechniqueDesc* CEffectFileOpenGL::GetCurrentTechniqueDesc()
+{
+	const static TechniqueDesc g_techdesc;
+	if (m_nTechniqueIndex<(int)m_techniques.size())
+		return &(m_techniques[m_nTechniqueIndex]);
+	else
+		return &g_techdesc;
+}
+
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileOpenGL::GetDXEffect()
+{
+	return m_pEffect;
+}
+
+CParameterBlock* ParaEngine::CEffectFileOpenGL::GetParamBlock(bool bCreateIfNotExist /*= false*/)
+{
+	return &m_SharedParamBlock;
+}
+
+void ParaEngine::CEffectFileOpenGL::LockTexture(int nIndex)
+{
+	if (nIndex <0)
+	{
+		// lock all 9 textures 
+		m_LockedTextures.resize(9);
+		int nSize = (int)m_LockedTextures.size();
+		for (int i = 0; i<nSize; ++i)
+		{
+			m_LockedTextures[i] = true;
+		}
+	}
+	else
+	{
+		if (nIndex >= (int)(m_LockedTextures.size()))
+		{
+			m_LockedTextures.resize(nIndex + 1, false);
+		}
+		m_LockedTextures[nIndex] = true;
+	}
+}
+
+void ParaEngine::CEffectFileOpenGL::UnLockTexture(int nIndex)
+{
+	if (nIndex <0)
+	{
+		int nSize = (int)m_LockedTextures.size();
+		for (int i = 0; i<nSize; ++i)
+		{
+			m_LockedTextures[i] = false;
+		}
+	}
+	else
+	{
+		if (nIndex < (int)(m_LockedTextures.size()))
+		{
+			m_LockedTextures[nIndex] = false;
+		}
+	}
+}
+
+bool ParaEngine::CEffectFileOpenGL::IsTextureLocked(int nIndex) const
+{
+	return (nIndex < (int)(m_LockedTextures.size())) && m_LockedTextures[nIndex];
+}
+
+
+
+void ParaEngine::CEffectFileOpenGL::OnSwitchInShader()
+{
+}
+
+void ParaEngine::CEffectFileOpenGL::OnSwitchOutShader()
+{
+	vector<void*>::iterator itCur, itEnd = m_LastTextures.end();
+	for (itCur = m_LastTextures.begin(); itCur != itEnd; ++itCur)
+	{
+		(*itCur) = NULL;
+	}
+}
+
+bool ParaEngine::CEffectFileOpenGL::BeginSharePassMode(bool bApplyParam /*= true*/, DWORD flag/*=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE*/, bool bForceBegin /*= true*/)
+{
+	EnableShareMode(true);
+	if (begin(bApplyParam, flag, bForceBegin))
+	{
+		return BeginPass(0, true);
+	}
+	return false;
+}
+
+void ParaEngine::CEffectFileOpenGL::EndSharePassMode()
+{
+	EnableShareMode(false);
+	EndPass(true);
+	end(true);
+}
+
+void ParaEngine::CEffectFileOpenGL::SetFileName(const std::string& filename)
+{
+	m_filename = filename;
+}
+
+IParaEngine::ParameterHandle& ParaEngine::CEffectFileOpenGL::GetTextureHandle(int nIndex)
+{
+	return m_paramHandle[k_tex0 + nIndex];
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes)
+{
+	return m_pEffect->SetRawValue(name, pData, ByteOffset, Bytes);
+}
+
+bool ParaEngine::CEffectFileOpenGL::SetBool(const char* name, BOOL bBoolean)
+{
+	return SetRawValue(name, &bBoolean, 0, sizeof(bBoolean));
+}
+
+bool ParaEngine::CEffectFileOpenGL::SetInt(const char* name, int nValue)
+{
+	return SetRawValue(name, &nValue, 0, sizeof(nValue));
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::SetFloat(const char* name, float fValue)
+{
+	return SetRawValue(name, &fValue, 0, sizeof(fValue));
+}
+
+bool ParaEngine::CEffectFileOpenGL::SetVector2(const char* name, const Vector2& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::SetVector3(const char* name, const Vector3& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::SetVector4(const char* name, const Vector4& vValue)
+{
+	return SetRawValue(name, &vValue, 0, sizeof(vValue));
+}
+
+
+bool ParaEngine::CEffectFileOpenGL::SetMatrix(const char* name, const Matrix4& data)
+{
+	return SetRawValue(name, &data, 0, sizeof(data));
+}
+
+
 #endif

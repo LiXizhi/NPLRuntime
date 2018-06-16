@@ -1067,78 +1067,22 @@ void EffectManager::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, b
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 	if(m_pCurrentEffect != 0)
 		m_pCurrentEffect->applySurfaceMaterial(pSurfaceMaterial,bUseGlobalAmbient);
-	else
-	{
-#ifdef USE_DIRECTX_RENDERER
-		if(bUseGlobalAmbient)
-		{
-			ParaMaterial mat = *pSurfaceMaterial;
-			mat.Ambient = GetScene()->GetSunLight().GetSunAmbientHue();
-			mat.Diffuse = GetScene()->GetSunLight().GetSunColor();
-			// because the red component of Emissive light is used for reflectivity. we should manually set the Emissive light to 0.
-			mat.Emissive = LinearColor(0,0,0,0);
-			// turn off specular lighting at the moment
-			mat.Specular = LinearColor(0,0,0,0);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&mat);
-		}
-		else
-		{
-			ParaMaterial mat = *pSurfaceMaterial;
-			// because the red component of Emissive light is used for reflectivity. we should manually set the Emissive light to 0.
-			mat.Emissive = LinearColor(0,0,0,0);
-			// turn off specular lighting at the moment
-			mat.Specular = LinearColor(0,0,0,0);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&mat);
-		}
-#endif
-	}
 }
 
 void EffectManager::applyLocalLightingData(const LightList* plights, int nLightNum)
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(m_pCurrentEffect != 0)
 		m_pCurrentEffect->applyLocalLightingData(plights, nLightNum);
-	else
-	{
-		//////////////////////////////////////////////////////////////////////////
-		// set d3d light for fixed function pipeline.
-		auto pd3dDevice = GETD3D(CGlobals::GetRenderDevice());
-		nLightNum = min(nLightNum, CEffectFile::MAX_EFFECT_LIGHT_NUM);
-
-		if(plights!=0)
-		{
-			//////////////////////////////////////////////////////////////////////////
-			// light 0 is reserved for global light, local lights begins with index 1
-			const LightList& lights = *plights;
-			for (int i=0;i<CEffectFile::MAX_EFFECT_LIGHT_NUM;++i)
-			{
-				bool bEnabled = i< nLightNum;
-				if(bEnabled)
-					pd3dDevice->SetLight(i+1, (const D3DLIGHT9*)lights[i]); 
-				pd3dDevice->LightEnable(i+1, bEnabled);
-			}
-		}
-		else if(nLightNum == 0)
-		{
-			for (int i=0;i<CEffectFile::MAX_EFFECT_LIGHT_NUM;++i)
-			{
-				pd3dDevice->LightEnable(i+1, false);
-			}
-		}
-	}
-#endif
 }
 void EffectManager::applyLocalLightingData()
 {
-#ifdef USE_DIRECTX_RENDERER
+
 	applyLocalLightingData(CGlobals::GetLightManager()->GetLastResult(), CGlobals::GetLightManager()->GetLastResultNum());
-#endif
+
 }
 
 void EffectManager::applyObjectLocalLighting(CBaseObject* pObj)
 {
-#ifdef USE_DIRECTX_RENDERER
 	if (IsLocalLightingEnabled() && CGlobals::GetLightManager()->GetNumLights()>0)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -1153,12 +1097,11 @@ void EffectManager::applyObjectLocalLighting(CBaseObject* pObj)
 	{
 		applyLocalLightingData(NULL, 0);
 	}
-#endif
 }
 
 bool EffectManager::BeginEffectFF(int nHandle)
 {
-#ifdef USE_DIRECTX_RENDERER
+
 	if(nHandle < 0)
 	{
 		return false;
@@ -1174,20 +1117,20 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::ALPHABLENDENABLE, TRUE );
 		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_ZERO );
 		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_ONE );
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,NULL);
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(OCCLUSION_VERTEX::FVF);
-		GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		CGlobals::GetRenderDevice()->SetTexture(0,NULL);
+		CGlobals::GetRenderDevice()->SetFVF(OCCLUSION_VERTEX::FVF);
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		break;
 
 	case TECH_SKY_DOME:
 		EnableLocalLighting(false);
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
+		CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_normal::FVF);
 		break;
 	case TECH_SKY_MESH:
 		EnableLocalLighting(false);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
+		CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_normal::FVF);
 		break;
 	case TECH_TERRAIN:
 		EnableLocalLighting(bEnableLight);
@@ -1210,28 +1153,28 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::ZFUNC, D3DCMP_LESSEQUAL);
 
 		// clamping should be enabled for base texture and alpha texture, which are in texture stage 0.
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_CLAMP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_CLAMP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_CLAMP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_CLAMP );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MINFILTER), D3DTEXF_LINEAR );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 1, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MAGFILTER), D3DTEXF_LINEAR );
+		CGlobals::GetRenderDevice()->SetSamplerState( 1, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR );
+		CGlobals::GetRenderDevice()->SetSamplerState( 1,ESamplerStateType::MINFILTER, D3DTEXF_LINEAR );
+		CGlobals::GetRenderDevice()->SetSamplerState( 1, ESamplerStateType::MAGFILTER, D3DTEXF_LINEAR );
 
 		// set vertex sources
 		if(!CGlobals::GetGlobalTerrain()->GetSettings()->UseNormals())
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(terrain_vertex::FVF);
+			CGlobals::GetRenderDevice()->SetFVF(terrain_vertex::FVF);
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE );
 
 		}
 		else
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(terrain_vertex_normal::FVF);
+			CGlobals::GetRenderDevice()->SetFVF(terrain_vertex_normal::FVF);
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 			ParaMaterial matTerrain = CGlobals::GetSceneState()->GetGlobalMaterial();
 			// matTerrain.Ambient = LinearColor(0.6f,0.6f,0.6f,1.f );
 			matTerrain.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&matTerrain);
+			//GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&matTerrain);
 		}
 		break;
 	case TECH_OCEAN_SIMPLE:
@@ -1247,14 +1190,14 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0,ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0,ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,          FALSE );
 		pRenderDevice->SetRenderState( ERenderState::FOGENABLE,        FALSE );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(SPRITEVERTEX::FVF);
-		GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&CGlobals::GetSceneState()->GetGlobalMaterial());
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
+		CGlobals::GetRenderDevice()->SetFVF(SPRITEVERTEX::FVF);
+		//CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&CGlobals::GetSceneState()->GetGlobalMaterial());
 
 		break;
 	case TECH_OCEAN_UNDERWATER:
@@ -1262,7 +1205,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			EnableLocalLighting(false);
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 			pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
+			CGlobals::GetRenderDevice()->SetTexture(0, NULL);
 
 			pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE); m_bZEnable = false;
 			pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,     FALSE );
@@ -1272,7 +1215,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
 			// Draw a big square
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF( UNDERWATER_VERTEX::FVF );
+			CGlobals::GetRenderDevice()->SetFVF( UNDERWATER_VERTEX::FVF );
 			break;
 		}
 	case TECH_CHARACTER:
@@ -1280,21 +1223,21 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 		if(bEnableLight)
 		{
-			ParaMaterial mat = CGlobals::GetSceneState()->GetGlobalMaterial();
+			//ParaMaterial mat = CGlobals::GetSceneState()->GetGlobalMaterial();
 			// matTerrain.Ambient = LinearColor(0.6f,0.6f,0.6f,1.f );
-			mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&mat);
+			//mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
+			//GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&mat);
 		}
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::ALPHAREF, (DWORD)0x0000000BE); // should be 0.3
 		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0,ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0,ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
 		SetCullingMode(true);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
+		CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_normal::FVF);
 		
 		break;
 	case TECH_PARTICLES:
@@ -1302,13 +1245,13 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 		SetCullingMode(false);
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, FALSE );
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(SPRITEVERTEX::FVF);
+		CGlobals::GetRenderDevice()->SetFVF(SPRITEVERTEX::FVF);
 		break;
 	case TECH_GUI:
 		EnableLocalLighting(false);
 		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
 		pRenderDevice->SetRenderState( ERenderState::FOGENABLE,      FALSE);
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
+		CGlobals::GetRenderDevice()->SetTexture(0, NULL);
 		
 		pRenderDevice->SetRenderState(ERenderState::ZENABLE, FALSE); m_bZEnable = false;
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE,     FALSE );
@@ -1317,7 +1260,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
 		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF( DXUT_SCREEN_VERTEX::FVF );
+		CGlobals::GetRenderDevice()->SetFVF( DXUT_SCREEN_VERTEX::FVF );
 		break;
 	case TECH_FULL_SCREEN_GLOW:
 		return false;
@@ -1330,7 +1273,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState(ERenderState::LIGHTING, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::FOGENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(bmax_vertex::FVF);
+		CGlobals::GetRenderDevice()->SetFVF(bmax_vertex::FVF);
 		SetCullingMode(true);
 		break;
 	case TECH_BLOCK_FANCY:
@@ -1341,7 +1284,7 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			ParaMaterial mat = CGlobals::GetSceneState()->GetGlobalMaterial();
 			// matTerrain.Ambient = LinearColor(0.6f,0.6f,0.6f,1.f );
 			mat.Diffuse = LinearColor(1.f,1.f,1.f,1.f);
-			GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&mat);
+			//CGlobals::GetRenderDevice()->SetMaterial((D3DMATERIAL9*)&mat);
 		}
 		pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
 		pRenderDevice->SetRenderState( ERenderState::LIGHTING, FALSE);
@@ -1351,15 +1294,15 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pRenderDevice->SetRenderState( ERenderState::SRCBLEND,  D3DBLEND_SRCALPHA );
 		pRenderDevice->SetRenderState( ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA );
 
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState(0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV), D3DTADDRESS_WRAP);
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MAGFILTER),  D3DTEXF_POINT );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MINFILTER),  D3DTEXF_POINT );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP);
+		CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::ADDRESSV, D3DTADDRESS_WRAP);
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::MAGFILTER,  D3DTEXF_POINT );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::MINFILTER,  D3DTEXF_POINT );
 
 		pRenderDevice->SetRenderState( ERenderState::ALPHAREF, 0);
 		pRenderDevice->SetRenderState(ERenderState::ALPHAFUNC, D3DCMP_GREATER);
 
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF( mesh_vertex_normal_color::FVF );
+		CGlobals::GetRenderDevice()->SetFVF( mesh_vertex_normal_color::FVF );
 		SetCullingMode(true);
 
 		break;
@@ -1380,9 +1323,9 @@ bool EffectManager::BeginEffectFF(int nHandle)
 	case TECH_SIMPLE_MESH_NORMAL_VEGETATION:
 	case TECH_SIMPLE_MESH_NORMAL_CTOR:*/
 		
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSU),  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::ADDRESSV),  D3DTADDRESS_WRAP );
-		GETD3D(CGlobals::GetRenderDevice())->SetSamplerState( 0, D3DMapping::toD3DSamplerSatetType(ESamplerStateType::MIPFILTER), D3DTEXF_LINEAR ); // use this or not?
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSV,  D3DTADDRESS_WRAP );
+		CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_LINEAR ); // use this or not?
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 		pRenderDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
 
@@ -1398,16 +1341,15 @@ bool EffectManager::BeginEffectFF(int nHandle)
 			pRenderDevice->SetRenderState( ERenderState::LIGHTING, bEnableLight );
 			EnableLocalLighting(bEnableLight);
 		}
-		GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_normal::FVF);
+		CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_normal::FVF);
 
 		break;
 	}
 	//pRenderDevice->SetSamplerState( 0, ESamplerStateType::MIPFILTER, D3DTEXF_NONE );
-	GETD3D(CGlobals::GetRenderDevice())->SetVertexShader( NULL );
-	GETD3D(CGlobals::GetRenderDevice())->SetPixelShader( NULL );
+	//CGlobals::GetRenderDevice()->SetVertexShader( NULL );
+	//CGlobals::GetRenderDevice()->SetPixelShader( NULL );
 	if(IsClipPlaneEnabled())
 		EnableClipPlaneImmediate(ClipPlane_Enabled_WorldSpace);
-#endif
 	return true;
 }
 
