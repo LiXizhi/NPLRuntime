@@ -81,6 +81,7 @@ public:
    baseName((bn=="")?bn:bn+"_")
    {
    }
+   virtual ~GlslSymbolOrStructMemberBase() = default;
    bool isArray() const { return (arraySize > 0); }
    int getArraySize() const { return arraySize; }
    const std::string &getSemantic() const { return semantic; }

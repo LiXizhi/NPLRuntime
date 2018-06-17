@@ -147,7 +147,8 @@ typedef struct
 	char *registerSpec;
 	EShType type;
 	int arraySize;
-	float *init;
+	char *init;
+	int initSize;
 } ShUniformInfo;
 
 

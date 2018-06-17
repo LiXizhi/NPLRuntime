@@ -1036,8 +1036,17 @@ void HlslLinker::buildUniformReflection(const std::vector<GlslSymbol*>& constant
 		
 		info.type = (EShType)s->getType();
 		info.arraySize = s->getArraySize();
-		info.init = 0;
+		info.init = nullptr;
+		info.initSize = 0;
+		if (s->getInitValueSize() > 0)
+		{
+			info.init = new char[s->getInitValueSize()];
+			memcpy(info.init, s->getInitValue(), s->getInitValueSize());
+			info.initSize = s->getInitValueSize();
+		}
+
 		uniforms.push_back(info);
+		
 	}
 }
 

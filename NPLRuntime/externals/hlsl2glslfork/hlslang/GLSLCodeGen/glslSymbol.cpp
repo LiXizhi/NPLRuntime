@@ -375,14 +375,16 @@ static bool IsGlslBuiltin (const std::string& name)
 	return false;
 }
 
-GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision prec, EGlslQualifier q, int as )
+GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision prec, EGlslQualifier q, const TIntermConstant* constValue, int as )
  : GlslSymbolOrStructMemberBase(n, s, t, q, prec, as),
    registerSpec(r),
    identifier(id),
    mangleCounter(0),
    structPtr(0),
    isParameter(false),
-   refCount(0)
+   refCount(0),
+   initValue(nullptr),
+   initValueSize(0)
 {
 	if (IsReservedGlslKeyword(n) || IsGlslBuiltin(n))
 	{
@@ -394,9 +396,76 @@ GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::s
 		mutableMangledName = "xlat_mutable" + mangledName;
 	else
 		mutableMangledName = mangledName;   
+
+	if (constValue != nullptr && constValue->getCount()>0)
+	{
+		auto valueCount = constValue->getCount();
+		int valueSize = 0;
+		// calc size
+		for (int j = 0; j < valueCount; j++)
+		{
+			auto value = constValue->getValue(j);
+			switch (value.type)
+			{
+			case EbtFloat:
+				valueSize += sizeof(float);
+				break;
+			case EbtInt:
+				valueSize += sizeof(int);
+				break;
+			case EbtBool:
+				valueSize += sizeof(float);
+				break;
+			}
+		}
+		this->initValue = new char[valueSize];
+		// copy values
+		int curPos = 0;
+		for (int j = 0; j < valueCount; j++)
+		{
+			auto value = constValue->getValue(j);
+			switch (value.type)
+			{
+			case EbtFloat:
+			{
+				float fValue = value.asFloat;
+				memcpy(this->initValue + curPos, &fValue, sizeof(float));
+				curPos += sizeof(float);
+				break;
+			}
+
+			case EbtInt:
+			{
+				int iValue = value.asInt;
+				memcpy(this->initValue + curPos, &iValue, sizeof(int));
+				curPos += sizeof(int);
+				break;
+			}
+			case EbtBool:
+			{
+				bool bValue = value.asBool;
+				memcpy(this->initValue + curPos, &bValue, sizeof(bool));
+				curPos += sizeof(bool);
+				break;
+			}
+			}
+		}
+		this->initValueSize = valueSize;
+	}
+
 }
 
 
+
+GlslSymbol::~GlslSymbol()
+{
+	if (this->initValue)
+	{
+		delete[] this->initValue;
+		this->initValue = nullptr;
+		this->initValueSize = 0;
+	}
+}
 
 void GlslSymbol::writeDecl (std::stringstream& out, WriteDeclMode mode)
 {

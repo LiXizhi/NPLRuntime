@@ -514,7 +514,7 @@ public:
 	const Value& getValue(unsigned i = 0) const { return values[i]; }
 	Value& getValue(unsigned i = 0) { return values[i]; }
 	
-	unsigned getCount() {
+	unsigned getCount() const {
 		return values.size();
 	}
 	

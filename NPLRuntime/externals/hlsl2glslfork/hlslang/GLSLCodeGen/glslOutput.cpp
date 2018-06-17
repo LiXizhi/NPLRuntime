@@ -581,7 +581,7 @@ void TGlslOutputTraverser::traverseSymbol(TIntermSymbol *node, TIntermTraverser 
 			}
 			
 			GlslSymbol * sym = new GlslSymbol( node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
-				translateType(node->getTypePointer()), goit->m_UsePrecision?node->getPrecision():EbpUndefined, translateQualifier(node->getQualifier()), array);
+				translateType(node->getTypePointer()), goit->m_UsePrecision?node->getPrecision():EbpUndefined, translateQualifier(node->getQualifier()),node->GetConstValue(), array);
 			sym->setIsGlobal(node->isGlobal());
 
 			current->addSymbol(sym);
@@ -624,7 +624,7 @@ void TGlslOutputTraverser::traverseParameterSymbol(TIntermSymbol *node, TIntermT
     }
 
    GlslSymbol * sym = new GlslSymbol( node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
-                                      translateType(node->getTypePointer()), prec, translateQualifier(node->getQualifier()), array);
+                                      translateType(node->getTypePointer()), prec, translateQualifier(node->getQualifier()),node->GetConstValue(), array);
    current->addParameter(sym);
 
    if (sym->getType() == EgstStruct)

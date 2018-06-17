@@ -7,7 +7,7 @@
 #include "hlslLinker.h"
 #include "OpenGL.h"
 #include "GLShaderDefine.h"
-
+#include "ParseHelper.h"
 #include "OpenGLWrapper/GLTexture2D.h"
 
 
@@ -68,9 +68,11 @@ inline void GetUniforms(ShHandle parser, std::vector<UniformInfoGL>& uniforms)
 			}
 			info.type = uni[i].type;
 			info.Elements = uni[i].arraySize;
-
 			if (std::find(uniforms.begin(), uniforms.end(), info) == uniforms.end()) {
 				uniforms.push_back(info);
+
+				
+
 			}
 		}
 	}
