@@ -40,6 +40,8 @@ namespace ParaEngine
 		std::string semantic;
 		EShType type;
 		int Elements;
+		char* initValue;
+		int initValueSize;
 		bool operator == (const UniformInfoGL& r)
 		{
 			return r.name == this->name;
@@ -68,11 +70,18 @@ inline void GetUniforms(ShHandle parser, std::vector<UniformInfoGL>& uniforms)
 			}
 			info.type = uni[i].type;
 			info.Elements = uni[i].arraySize;
+			info.initValue = nullptr;
+			info.initValueSize = 0;
 			if (std::find(uniforms.begin(), uniforms.end(), info) == uniforms.end()) {
-				uniforms.push_back(info);
-
 				
 
+				if (uni[i].init != nullptr)
+				{
+					info.initValue = new char[uni[i].initSize];
+					info.initValueSize = uni[i].initSize;
+					memcpy(info.initValue, uni[i].init, info.initValueSize);
+				}
+				uniforms.push_back(info);
 			}
 		}
 	}
@@ -301,6 +310,16 @@ EffectOpenGL::~EffectOpenGL()
 			}
 		}
 
+		for (auto it = m_Uniforms.begin(); it != m_Uniforms.end(); it++)
+		{
+			if (it->initValue != nullptr)
+			{
+				delete[] it->initValue;
+			}
+
+		}
+
+
 		delete m_FxDesc;
 		m_FxDesc = nullptr;
 	}
@@ -442,11 +461,13 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 
 	pRet->m_Uniforms = uniforms;
 
-	// txture slot
+	
 
 	for (int i = 0; i < uniforms.size(); i++)
 	{
 		UniformInfoGL info = uniforms[i];
+
+		// texture slot
 		if (info.type == EShType::EShTypeSampler ||
 			info.type == EShType::EShTypeSampler1D ||
 			info.type == EShType::EShTypeSampler2D ||
@@ -456,6 +477,12 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 			int nSlots = pRet->m_TextureSlotMap.size();
 			pRet->m_TextureSlotMap[info.name] = nSlots;
 		}
+		// apply init value
+		if (info.initValue != nullptr)
+		{
+			pRet->SetRawValue(info.name.c_str(),info.initValue,0, info.initValueSize);
+		}
+
 	}
 
 
