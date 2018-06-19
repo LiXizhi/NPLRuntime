@@ -275,24 +275,41 @@ static int read_tag(lua_State *L)
     return 2;
 }
 
-static const uint8_t* unpack_fixed32(const uint8_t* buffer, uint8_t* cache)
+
+template<typename T>
+static const T unpack_fixed32(const uint8_t* buffer, T& cache)
 {
+	static_assert(sizeof(T) == 4, "");
+	assert(buffer);
+
+	memcpy(&cache, buffer, 4);
 #ifdef IS_LITTLE_ENDIAN
-    return buffer;
+
 #else
-    *(uint32_t*)cache = le32toh(*(uint32_t*)buffer);
-    return cache;
+	uint32_t t = *((uint32_t*)&cache);
+	t = le32toh(t);
+	cache = *((T*)&t);
 #endif
+
+	return cache;
 }
 
-static const uint8_t* unpack_fixed64(const uint8_t* buffer, uint8_t* cache)
+template<typename T>
+static const T unpack_fixed64(const uint8_t* buffer, T& cache)
 {
+	static_assert(sizeof(T) == 8, "");
+	assert(buffer);
+
+	memcpy(&cache, buffer, 8);
 #ifdef IS_LITTLE_ENDIAN
-    return buffer;
+	
 #else
-    *(uint64_t*)cache = le64toh(*(uint64_t*)buffer);
-    return cache;
+	uint64_t t = *((uint64_t*)&cache);
+	t = le64toh(t);
+	cache = *((T*)&t);
 #endif
+
+	return cache;
 }
 
 static int struct_unpack(lua_State *L)
@@ -303,36 +320,41 @@ static int struct_unpack(lua_State *L)
     size_t pos = luaL_checkinteger(L, 3);
 
     buffer += pos;
-    uint8_t out[8];
     switch(format){
         case 'i':
             {
-                lua_pushinteger(L, *(int32_t*)unpack_fixed32(buffer, out));
+				int32_t out;
+				lua_pushinteger(L, unpack_fixed32(buffer, out));
                 break;
             }
         case 'q':
             {
-                lua_pushnumber(L, (lua_Number)*(int64_t*)unpack_fixed64(buffer, out));
+				int64_t out;
+				lua_pushnumber(L, (lua_Number)unpack_fixed64(buffer, out));
                 break;
             }
         case 'f':
             {
-                lua_pushnumber(L, (lua_Number)*(float*)unpack_fixed32(buffer, out));
+				float out;
+				lua_pushnumber(L, (lua_Number)unpack_fixed32(buffer, out));
                 break;
             }
         case 'd':
             {
-                lua_pushnumber(L, (lua_Number)*(double*)unpack_fixed64(buffer, out));
+				double out;
+                lua_pushnumber(L, (lua_Number)unpack_fixed64(buffer, out));
                 break;
             }
         case 'I':
             {
-                lua_pushnumber(L, *(uint32_t*)unpack_fixed32(buffer, out));
+				uint32_t out;
+				lua_pushnumber(L, (lua_Number)unpack_fixed32(buffer, out));
                 break;
             }
         case 'Q':
             {
-                lua_pushnumber(L, (lua_Number)*(uint64_t*)unpack_fixed64(buffer, out));
+				uint64_t out;
+				lua_pushnumber(L, (lua_Number)unpack_fixed64(buffer, out));
                 break;
             }
         default:
