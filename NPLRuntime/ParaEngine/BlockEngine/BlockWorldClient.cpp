@@ -682,7 +682,7 @@ namespace ParaEngine
 				{
 					Vector3 vDir = -CGlobals::GetScene()->GetSunLight().GetSunDirection();
 					Vector4 vDir_(vDir.x, vDir.y, vDir.z, 1.0f);
-					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_);
+					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_,sizeof(Vector4));
 				}
 				
 				IndexBufferDevicePtr_type pIndexBuffer =  GetIndexBuffer();
@@ -850,7 +850,7 @@ namespace ParaEngine
 						vWorldPos.x = vRenderOrigin.x + vWorldMatrix._41;
 						vWorldPos.y = vRenderOrigin.y + vWorldMatrix._42;
 						vWorldPos.z = vRenderOrigin.z + vWorldMatrix._43;
-						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
+						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos, sizeof(Vector4));
 					}
 
 					pEffect->CommitChanges();

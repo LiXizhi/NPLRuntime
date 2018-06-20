@@ -953,39 +953,39 @@ void CEffectFileOpenGL::applySurfaceMaterial(const ParaMaterial* pSurfaceMateria
 		if (isParameterUsed(k_ambientMaterialColor))
 		{
 			if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
-				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient, sizeof(LinearColor));
 			else
-				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
+				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_diffuseMaterialColor))
 		{
 			if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
 			{
-				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
-				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse, sizeof(LinearColor));
+				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(), sizeof(Vector3));
 			}
 			else
 			{
-				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
+				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse, sizeof(LinearColor));
 				Vector3 vEmpty(0, 0, 0);
-				setParameter(k_LightStrength, &vEmpty);
+				setParameter(k_LightStrength, &vEmpty, sizeof(Vector3));
 			}
 		}
 
 		if (isParameterUsed(k_specularMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
+			setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_emissiveMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
+			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_specularMaterialPower))
 		{
-			setParameter(k_specularMaterialPower, &d3dMaterial.Power);
+			setParameter(k_specularMaterialPower, &d3dMaterial.Power, sizeof(float));
 		}
 	}
 }
@@ -998,7 +998,7 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 	{
 		setParameter(
 			k_atmosphericLighting,
-			sunlight.GetLightScatteringData()->getShaderData());
+			sunlight.GetLightScatteringData()->getShaderData(), sizeof(sLightScatteringShaderParams));
 	}
 
 	// pass the lighting structure to the shader
@@ -1006,7 +1006,7 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 	{
 		setParameter(
 			k_sunColor,
-			&(sunlight.GetSunColor()));
+			&(sunlight.GetSunColor()),sizeof(LinearColor));
 	}
 
 	if (isParameterUsed(k_sunVector))
@@ -1014,14 +1014,14 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 		Vector3 vDir = -sunlight.GetSunDirection();
 		setParameter(
 			k_sunVector,
-			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f));
+			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f),sizeof(Vector4));
 	}
 
 	if (isParameterUsed(k_ambientLight))
 	{
 		setParameter(
 			k_ambientLight,
-			&CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+			&CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient,sizeof(LinearColor));
 	}
 
 
@@ -1030,7 +1030,8 @@ void CEffectFileOpenGL::applyGlobalLightingData(CSunLight& sunlight)
 		float shadowFactor = sunlight.GetShadowFactor();
 		setParameter(
 			k_shadowFactor,
-			&Vector4(shadowFactor, 1 - shadowFactor, 0, 0)
+			&Vector4(shadowFactor, 1 - shadowFactor, 0, 0),
+			sizeof(Vector4)
 		);
 	}
 }
@@ -1150,12 +1151,12 @@ void CEffectFileOpenGL::applyCameraMatrices()
 		if (isParameterUsed(k_cameraPos))
 		{
 			Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
-			setParameter(k_cameraPos, &Vector4(vEye.x, vEye.y, vEye.z, 1.0f));
+			setParameter(k_cameraPos, &Vector4(vEye.x, vEye.y, vEye.z, 1.0f),sizeof(Vector4));
 		}
 		// set the world camera facing vector
 		if (isParameterUsed(k_cameraFacing))
 		{
-			setParameter(k_cameraFacing, &pCamera->GetWorldAhead());
+			setParameter(k_cameraFacing, &pCamera->GetWorldAhead(),sizeof(Vector3));
 		}
 
 		//// set the matrix used by sky boxes
@@ -1187,12 +1188,12 @@ void CEffectFileOpenGL::applyFogParameters(bool bEnableFog, const Vector4* fogPa
 	{
 		if (isParameterUsed(k_fogParameters) && (fogParam != 0))
 		{
-			setParameter(k_fogParameters, fogParam);
+			setParameter(k_fogParameters, fogParam,sizeof(Vector4));
 		}
 
 		if (isParameterUsed(k_fogColor) && (fogColor != 0))
 		{
-			setParameter(k_fogColor, fogColor);
+			setParameter(k_fogColor, fogColor,sizeof(Vector4));
 		}
 	}
 }

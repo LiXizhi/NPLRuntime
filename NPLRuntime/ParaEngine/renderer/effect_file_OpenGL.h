@@ -86,7 +86,7 @@ namespace ParaEngine
 		bool isTextureUsed(int index)const;
 		bool isTextureMatrixUsed(int index)const;
 
-		bool setParameter(eParameterHandles index, const void* data, INT32 size = D3DX_DEFAULT)const;
+		bool setParameter(eParameterHandles index, const void* data, INT32 size)const;
 		bool setBool(eParameterHandles index, BOOL bBoolean) const;
 		bool setInt(eParameterHandles index, int nValue) const;
 		bool setFloat(eParameterHandles index, float fValue) const;

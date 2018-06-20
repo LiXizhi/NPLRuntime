@@ -199,7 +199,7 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 		if (color != -1)
 		{
 			Vector3 color_(ecol.x, ecol.y, ecol.z);
-			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_);
+			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_, sizeof(Vector3));
 		}
 
 		if (unlit) {
@@ -215,14 +215,14 @@ bool ModelRenderPass::init_FX(CParaXModel *m, SceneState* pSceneState,CParameter
 			//OUTPUT_LOG("UV off: %f  %f\n", texAnim.tval.x, texAnim.tval.y);
 			// it will interpolate between interval 1/30 second, hence when implementing blinking eye animation, make sure that the animation is still all right with intepolation on 1/30 texture UV animation. 
 			Vector4 v(texAnim.tval.x, texAnim.tval.y, 0.f, 0.f);
-			pEffect->setParameter(CEffectFile::k_ConstVector0, &v);
+			pEffect->setParameter(CEffectFile::k_ConstVector0, &v, sizeof(Vector4));
 			//pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(0.00000f,0.242f, 0.f, 0.f));
 		}
 
 		if (GetCategoryId() > 0)
 		{
 			Vector4 v((float)GetCategoryId(), 0.f, 0.f, 0.f);
-			pEffect->setParameter(CEffectFile::k_ConstVector1, &v);
+			pEffect->setParameter(CEffectFile::k_ConstVector1, &v, sizeof(Vector4));
 		}
 
 		if (pEffect->isParameterUsed(CEffectFile::k_transitionFactor) && pMaterialParams != NULL)
@@ -313,7 +313,7 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 			pEffect->EnableSunLight(CGlobals::GetScene()->IsLightEnabled());
 		}
 		if (texanim != -1) {
-			pEffect->setParameter(CEffectFile::k_ConstVector0, &Vector4::ZERO);
+			pEffect->setParameter(CEffectFile::k_ConstVector0, &Vector4::ZERO, sizeof(Vector4));
 		}
 		if (opacity != -1)
 		{
@@ -321,7 +321,7 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 		}
 		if (GetCategoryId() > 0)
 		{
-			pEffect->setParameter(CEffectFile::k_ConstVector1, &Vector4::ZERO);
+			pEffect->setParameter(CEffectFile::k_ConstVector1, &Vector4::ZERO, sizeof(Vector4));
 		}
 
 		if ((blendmode & BM_TEMP_FORCEALPHABLEND) == BM_TEMP_FORCEALPHABLEND)
@@ -334,7 +334,7 @@ void ModelRenderPass::deinit_FX(SceneState* pSceneState, CParameterBlock* pMater
 		if (color != -1)
 		{
 			Vector3 color_(0.f, 0.f, 0.f);
-			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_);
+			pEffect->setParameter(CEffectFile::k_emissiveMaterialColor, &color_, sizeof(Vector3));
 		}
 	}
 	else
