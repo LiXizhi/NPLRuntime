@@ -149,7 +149,7 @@ namespace ParaEngine {
 
 			void clear()
 			{
-				if (!jargs)
+				if (jargs)
 				{
 					for (size_t i = 0; i < releaseIndex.size(); i++)
 					{
