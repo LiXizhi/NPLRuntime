@@ -1,14 +1,20 @@
 #pragma once
 #include "effect_file.h"
+#include "ParameterBlock.h"
+#include "dxeffects.h"
+#include <unordered_map>
+#include <functional>
 
 namespace ParaEngine
 {
-	class CEffectFileDirectX : public CEffectFileBase
+
+
+	class CEffectFileImpl : public CEffectFileBase
 	{
 	public:
-		CEffectFileDirectX(const char* filename);
-		CEffectFileDirectX(const AssetKey& key);
-		virtual  ~CEffectFileDirectX();
+		CEffectFileImpl(const char* filename);
+		CEffectFileImpl(const AssetKey& key);
+		virtual  ~CEffectFileImpl();
 
 		// Operators...
 		// Mutators...
@@ -17,32 +23,32 @@ namespace ParaEngine
 		virtual HRESULT InvalidateDeviceObjects();
 		virtual HRESULT DeleteDeviceObjects();
 
-		bool saveResource(const char* filename=0);	// save the resource to a file (or NULL to use the resource name)
+		bool saveResource(const char* filename = 0);	// save the resource to a file (or NULL to use the resource name)
 
-		/** set inner file name, usually at the load time. */
+														/** set inner file name, usually at the load time. */
 		void SetFileName(const std::string& filename);
 
 		/**
 		@param bApplyParam: whether to apply current camera and lighting parameters to shader
 		@param flag: default is not saving any state
-		D3DXFX_DONOTSAVESTATE:  No state is saved when calling Begin or restored when calling End.  (1 << 0) 
-		D3DXFX_DONOTSAVESAMPLERSTATE:  A stateblock saves state when calling Begin and restores state when calling End. (1 << 2) 
-		D3DXFX_DONOTSAVESHADERSTATE: A stateblock saves state (except shaders and shader constants) when calling Begin and restores state when calling End. 
+		D3DXFX_DONOTSAVESTATE:  No state is saved when calling Begin or restored when calling End.  (1 << 0)
+		D3DXFX_DONOTSAVESAMPLERSTATE:  A stateblock saves state when calling Begin and restores state when calling End. (1 << 2)
+		D3DXFX_DONOTSAVESHADERSTATE: A stateblock saves state (except shaders and shader constants) when calling Begin and restores state when calling End.
 		@param bShare: if this false, it will only begin the effect if the effect file is not in shared mode.
 		*/
-		bool begin(bool bApplyParam = true, DWORD flag=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE, bool bForceBegin = false);
-		bool BeginPass(int pass,bool bForceBegin = false);
+		bool begin(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = false);
+		bool BeginPass(int pass, bool bForceBegin = false);
 		void CommitChanges();
 		void EndPass(bool bForceEnd = false);
 		void end(bool bForceEnd = false);
 		void EnableShareMode(bool bEnable);
 		bool IsInShareMode();
 
-		/** This is a handy function that calls EnableShareMode(true), begin() and then BeginPass(). 
+		/** This is a handy function that calls EnableShareMode(true), begin() and then BeginPass().
 		*/
-		bool BeginSharePassMode(bool bApplyParam = true, DWORD flag=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE, bool bForceBegin = true);
-	
-		/** This is a handy function that calls EnableShareMode(false), EndPass(true), end(true). 
+		bool BeginSharePassMode(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = true);
+
+		/** This is a handy function that calls EnableShareMode(false), EndPass(true), end(true).
 		*/
 		void EndSharePassMode();
 
@@ -52,7 +58,7 @@ namespace ParaEngine
 		/** this is called when the shader is deselected by the pipeline. There may be many objects drawn using the same shader between switch in and out. */
 		void OnSwitchOutShader();
 
-		/** 
+		/**
 		* Set technique if it is different from the current one.
 		*@param nCat: @see TechniqueCategory
 		*@return: return true if the technique is found and successfully set.
@@ -68,13 +74,11 @@ namespace ParaEngine
 		/** get the current technique description. This function may return NULL*/
 		const TechniqueDesc* GetCurrentTechniqueDesc();
 		/**
-		* current technique index. 
-		* @return 
+		* current technique index.
+		* @return
 		*/
 		int GetCurrentTechniqueIndex();
-	
-		// Accessors...
-		LPD3DXEFFECT effect()const;
+
 		int totalPasses()const;
 
 		bool isParameterUsed(eParameterHandles index)const;
@@ -82,17 +86,17 @@ namespace ParaEngine
 		bool isTextureUsed(int index)const;
 		bool isTextureMatrixUsed(int index)const;
 
-		bool setParameter(eParameterHandles index, const void* data, INT32 size=D3DX_DEFAULT)const;
+		bool setParameter(eParameterHandles index, const void* data, INT32 size)const;
 		bool setBool(eParameterHandles index, BOOL bBoolean) const;
 		bool setInt(eParameterHandles index, int nValue) const;
 		bool setFloat(eParameterHandles index, float fValue) const;
 		bool setMatrix(eParameterHandles index, const Matrix4* data)const;
 		bool setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const;
 		bool setFloatArray(eParameterHandles index, const float* data, UINT32 count)const;
-		bool setVectorArray(eParameterHandles index,const Vector4* pVector,UINT count)const;
+		bool setVectorArray(eParameterHandles index, const Vector4* pVector, UINT count)const;
 		bool setTexture(int index, TextureEntity* data);
-		bool setTexture(int index, LPDIRECT3DTEXTURE9 pTex);
-		bool setTextureInternal(int index, LPDIRECT3DTEXTURE9 pTex);
+		bool setTexture(int index, DeviceTexturePtr_type pTex);
+		bool setTextureInternal(int index, DeviceTexturePtr_type pTex);
 		void SetShadowMapSize(int nsize);
 		/** set the shadow radius */
 		void SetShadowRadius(float fRadius);
@@ -124,62 +128,62 @@ namespace ParaEngine
 		*/
 		void EnableShadowmap(int nShadowMethod);
 
-		/** set a boolean parameter. 
+		/** set a boolean parameter.
 		@param nIndex: range 0-15, value 0-7 is reserved for lights.
 		@return true if successful
 		*/
 		bool SetBoolean(int nIndex, bool value);
 
 		/**
-		* enable environment mapping 
-		* @param bEnable 
-		* @return true if successfully set. 
+		* enable environment mapping
+		* @param bEnable
+		* @return true if successfully set.
 		*/
 		bool EnableEnvironmentMapping(bool bEnable);
 		/**
-		* enable reflection mapping 
-		* @param bEnable 
-		* @param fSurfaceHeight: surface height in current model space. only used when bEnable is true. 
-		* @return true if successfully set. 
+		* enable reflection mapping
+		* @param bEnable
+		* @param fSurfaceHeight: surface height in current model space. only used when bEnable is true.
+		* @return true if successfully set.
 		*/
-		bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight=0.f);
-	
+		bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight = 0.f);
+
 		/**
 		* set shader parameter "reflectFactor"
 		* @param fFactor (0,1). 1 is fully reflective. 0 is not reflective.
 		*/
 		void SetReflectFactor(float fFactor);
 		/**
-		* whether to enable the use of normal map 
-		* @param bEnable 
+		* whether to enable the use of normal map
+		* @param bEnable
 		*/
 		void EnableNormalMap(bool bEnable);
 
 		/**
-		* whether to enable the use of light map 
-		* @param bEnable 
+		* whether to enable the use of light map
+		* @param bEnable
 		*/
 		void EnableLightMap(bool bEnable);
 
 		/** get directX effect object associated with this object. */
 		std::shared_ptr<IParaEngine::IEffect> GetDXEffect();
 
-		/** get effect parameter block with this object. 
-		* @param bCreateIfNotExist: 
+		/** get effect parameter block with this object.
+		* @param bCreateIfNotExist:
 		*/
 		virtual CParameterBlock* GetParamBlock(bool bCreateIfNotExist = false);
 
 		/** Lock a texture at a given index. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.
-		* @param nIndex: 0 based index of the texture registry. If -1 it will lock all. 
-		*/ 
+		* @param nIndex: 0 based index of the texture registry. If -1 it will lock all.
+		*/
 		void LockTexture(int nIndex);
 		/** UnLock a texture at a given index. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.
-		* @param nIndex: 0 based index of the texture registry. If -1 it will unlock all. 
-		*/ 
+		* @param nIndex: 0 based index of the texture registry. If -1 it will unlock all.
+		*/
 		void UnLockTexture(int nIndex);
 
-		/** check whether a given texture is locked at the given index. 
-		* @param nIndex: 0 based index of the texture registry. 
+		/** check whether a given texture is locked at the given index.
+		* @param nIndex: 0 based index of the texture registry.
 		*/
 		bool IsTextureLocked(int nIndex) const;
 
@@ -201,16 +205,16 @@ namespace ParaEngine
 		// Data Types & Constants...
 		static bool s_bUseHalfPrecision; // set to TRUE to use half-precision floats in all shaders
 
-		// Private Data...
+										 // Private Data...
 		IParaEngine::EffectDesc m_EffectDesc;
 
 		std::shared_ptr<IParaEngine::IEffect> m_pEffect;
 
 
 		std::vector<TechniqueDesc> m_techniques;
-		/** indicate whether a texture at a given index is locked. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.*/ 
+		/** indicate whether a texture at a given index is locked. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.*/
 		std::vector<bool> m_LockedTextures;
-		/** it stores the last texture pointer passed to setTexture(), thus it will remove duplicated setTexture calls before passing to dx pipeline. 
+		/** it stores the last texture pointer passed to setTexture(), thus it will remove duplicated setTexture calls before passing to dx pipeline.
 		When a shader is switched in, all m_LastTextures will be cleared. */
 		std::vector<void*> m_LastTextures;
 
@@ -221,11 +225,11 @@ namespace ParaEngine
 		bool m_bSharedMode;
 		static bool g_bTextureEnabled;
 
-		/** parameters that are shared by all objects using this effect.  When you call begin(), these parameters are set. 
-		* It will overridden predefined parameter names, however most user will set custom shader parameters and textures that are shared by all objects here. 
+		/** parameters that are shared by all objects using this effect.  When you call begin(), these parameters are set.
+		* It will overridden predefined parameter names, however most user will set custom shader parameters and textures that are shared by all objects here.
 		*/
 		CParameterBlock m_SharedParamBlock;
-	
+
 		IParaEngine::ParameterHandle m_paramHandle[k_max_param_handles];
 
 		// Private Functions...
@@ -235,15 +239,17 @@ namespace ParaEngine
 		int BeginWith(LPCSTR str, LPCSTR searchStr);
 		/** get the integer from string str+nBeginIndex, pOut is the integer. return true if succeeded. */
 		bool GetNumber(LPCSTR str, int nBeginIndex, int* pOut);
+
 	};
 
+	
 	// this is the actually class used externally. it does following:
-	// typedef CEffectFileDirectX CEffectFile;
-	class CEffectFile : public CEffectFileDirectX
+	// typedef CEffectFileOpenGL CEffectFile;
+	class CEffectFile : public CEffectFileImpl
 	{
 	public:
-		CEffectFile(const char* filename) :CEffectFileDirectX(filename){};
-		CEffectFile(const AssetKey& key) :CEffectFileDirectX(key){};
-		virtual  ~CEffectFile(){};
+		CEffectFile(const char* filename) :CEffectFileImpl(filename) {};
+		CEffectFile(const AssetKey& key) :CEffectFileImpl(key) {};
+		virtual  ~CEffectFile() {};
 	};
 } 

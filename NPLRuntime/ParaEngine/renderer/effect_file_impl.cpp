@@ -1,40 +1,28 @@
 //-----------------------------------------------------------------------------
-// Class:	CEffectFileDirectX
-// Authors:	Li, Xizhi
+// Class:	EffectFile opengl
+// Authors:	LiXizhi
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
-// Date:	2005.6.12
+// Date:	2014.9.12
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "effect_file_DirectX.h"
+#ifdef USE_OPENGL_RENDERER
+
+#include "effect_file_impl.h"
 #include "ShaderIncludeHandle.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
-#include "MirrorSurface.h"
+//#include "MirrorSurface.h"
 #include "SkyMesh.h"
 #include "AutoCamera.h"
 #include "SunLight.h"
-#include "RenderDeviceD3D9.h"
-#include "EffectD3D9.h"
+#include "RenderDeviceOpenGL.h"
 #include <boost/filesystem.hpp>
 #include <unordered_map>
 
-#ifdef WIN32
-#define strcmpi		_strcmpi
-#endif
-
 using namespace ParaEngine;
 using namespace std;
-
-
-
-
-
-
-
-
 
 
 /**
@@ -43,7 +31,7 @@ using namespace std;
 *	Only define DEBUG_VS| DEBUG_PS, if you are running with debug version dll. Otherwise the FX file will not be loaded on some machines.
 * instructions to debug effect files:
 * - Build using "DEBUG shaders" or define the following macros
-* - Setting break points in fx files. 
+* - Setting break points in fx files.
 * - Run the program by Debug->Direct3D->Start with Direct3D debugging
 * - Run the game to the place, where sharder is used. Set the device to REF
 * - now that the debugger will break at the break points
@@ -58,29 +46,29 @@ using namespace std;
 * if true, the shader will use half precision arithmetics,
 * if false, float4 will be used.
 */
-bool CEffectFileDirectX::s_bUseHalfPrecision = false;// half will be enough
+bool CEffectFileImpl::s_bUseHalfPrecision = false;// half will be enough
 
 #define LIGHT_BOOLEAN_BASE			0
-/**@def max number of local lights.it can be up to 8 */
+													 /**@def max number of local lights.it can be up to 8 */
 #define MAX_SHADER_LIGHT_NUM		4
 
-bool CEffectFileDirectX::g_bTextureEnabled = true;
+bool CEffectFileImpl::g_bTextureEnabled = true;
 
 
 
-CEffectFileDirectX::CEffectFileDirectX(const char* filename)
-:m_pEffect(0),m_bIsBegin(false),m_bSharedMode(false),m_nTechniqueIndex(0)
+CEffectFileImpl::CEffectFileImpl(const char* filename)
+	:m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
 {
 	m_filename = filename;
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
-	for (int i =0;i<k_max_param_handles;i++)
+	for (int i = 0; i<k_max_param_handles; i++)
 	{
 		m_paramHandle[i].idx = PARA_INVALID_HANDLE;
 	}
 }
 
-CEffectFileDirectX::CEffectFileDirectX(const AssetKey& key)
-:CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
+CEffectFileImpl::CEffectFileImpl(const AssetKey& key)
+	:CEffectFileBase(key), m_pEffect(0), m_bIsBegin(false), m_bSharedMode(false), m_nTechniqueIndex(0)
 {
 	memset(m_paramHandle, 0, sizeof(m_paramHandle));
 	for (int i = 0; i < k_max_param_handles; i++)
@@ -89,105 +77,92 @@ CEffectFileDirectX::CEffectFileDirectX(const AssetKey& key)
 	}
 }
 
-CEffectFileDirectX::~CEffectFileDirectX()
+CEffectFileImpl::~CEffectFileImpl()
 {
 	m_pEffect = nullptr;
 }
 
-void CEffectFileDirectX::EnableShareMode(bool bEnable)
+void CEffectFileImpl::EnableShareMode(bool bEnable)
 {
 	m_bSharedMode = bEnable;
 }
-bool CEffectFileDirectX::IsInShareMode()
+bool CEffectFileImpl::IsInShareMode()
 {
 	return m_bSharedMode;
 }
 
-void CEffectFileDirectX::EnableTextures(bool bEnable)
+void CEffectFileImpl::EnableTextures(bool bEnable)
 {
 	g_bTextureEnabled = bEnable;
 }
-bool CEffectFileDirectX::AreTextureEnabled()
+bool CEffectFileImpl::AreTextureEnabled()
 {
-	return g_bTextureEnabled ;
+	return g_bTextureEnabled;
 }
 
-bool CEffectFileDirectX::EnableEnvironmentMapping(bool bEnable)
+bool CEffectFileImpl::EnableEnvironmentMapping(bool bEnable)
 {
 	return SetBoolean(6, bEnable);
 }
 
-void CEffectFileDirectX::SetReflectFactor(float fFactor)
+void CEffectFileImpl::SetReflectFactor(float fFactor)
 {
-	if(CGlobals::GetEffectManager()->IsReflectionRenderingEnabled())
+	if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled())
 		setFloat(k_reflectFactor, fFactor);
 }
 
-bool CEffectFileDirectX::EnableReflectionMapping(bool bEnable, float fSurfaceHeight)
+bool CEffectFileImpl::EnableReflectionMapping(bool bEnable, float fSurfaceHeight)
 {
-	if(CGlobals::GetEffectManager()->IsReflectionRenderingEnabled() && SetBoolean(5, bEnable))
-	{
-		if(bEnable)
-		{
-			CMirrorSurface* pMirorSurface =  CGlobals::GetScene()->GetMirrorSurface(0);
-			if(pMirorSurface != 0)
-			{
-				// TODO: here I just assume the reflection surface is centered on the world origin of the current rendered object. 
-				// TODO: if there are multiple surfaces, why not choose the one closest and above the camera eye? Currently it just choose the one rendered last
-				
-				DVector3 vPos = CGlobals::GetSceneState()->GetCurrentSceneObject()->GetPosition();
-				vPos.y += fSurfaceHeight;
-				pMirorSurface->SetPosition(vPos);
-				// TODO: here I just assume texture sampler is on s1 register.
-				setTexture(1, pMirorSurface->GetReflectionTexture());
-			}
-		}
-		/*else
-			setTexture(1, (TextureEntity*)NULL);*/
-		return true;
-	}
+	//if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled() && SetBoolean(5, bEnable))
+	//{
+	//	if (bEnable)
+	//	{
+	//		CMirrorSurface* pMirorSurface = CGlobals::GetScene()->GetMirrorSurface(0);
+	//		if (pMirorSurface != 0)
+	//		{
+	//			// TODO: here I just assume the reflection surface is centered on the world origin of the current rendered object. 
+	//			// TODO: if there are multiple surfaces, why not choose the one closest and above the camera eye? Currently it just choose the one rendered last
+
+	//			DVector3 vPos = CGlobals::GetSceneState()->GetCurrentSceneObject()->GetPosition();
+	//			vPos.y += fSurfaceHeight;
+	//			pMirorSurface->SetPosition(vPos);
+	//			// TODO: here I just assume texture sampler is on s1 register.
+	//			setTexture(1, pMirorSurface->GetReflectionTexture());
+	//		}
+	//	}
+	//	/*else
+	//	setTexture(1, (TextureEntity*)NULL);*/
+	//	return true;
+	//}
 	return false;
 }
 
-void CEffectFileDirectX::EnableNormalMap(bool bEnable)
+void CEffectFileImpl::EnableNormalMap(bool bEnable)
 {
 	// TODO:
 }
-void CEffectFileDirectX::EnableLightMap(bool bEnable)
+void CEffectFileImpl::EnableLightMap(bool bEnable)
 {
 	// TODO:
 }
 
-/************************************************************************/
-/* In line Functions                                                    */
-/************************************************************************/
-//. Accessors ...................................................
-LPD3DXEFFECT CEffectFileDirectX::effect()const
-{
-	if (m_pEffect)
-	{
-		EffectD3D9* effd3d9 = static_cast<EffectD3D9*>(m_pEffect.get());
-		return effd3d9->GetD3DEffect();
-	}
-	return NULL;
-}
 
-bool CEffectFileDirectX::isParameterUsed(eParameterHandles index)const
+bool CEffectFileImpl::isParameterUsed(eParameterHandles index)const
 {
 	return isValidHandle(m_paramHandle[index]);
 }
 
-bool CEffectFileDirectX::isMatrixUsed(eParameterHandles index)const
+bool CEffectFileImpl::isMatrixUsed(eParameterHandles index)const
 {
 	return isValidHandle(m_paramHandle[index]);
 }
 
-bool CEffectFileDirectX::isTextureUsed(int index)const
+bool CEffectFileImpl::isTextureUsed(int index)const
 {
 	return isValidHandle(m_paramHandle[k_tex0 + index]);
 }
 
-bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
+bool CEffectFileImpl::isTextureMatrixUsed(int index)const
 {
 	return isValidHandle(m_paramHandle[k_tex_mat0 + index]);
 }
@@ -195,7 +170,7 @@ bool CEffectFileDirectX::isTextureMatrixUsed(int index)const
 
 
 
-bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
+bool CEffectFileImpl::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
@@ -205,16 +180,16 @@ bool CEffectFileDirectX::setMatrixArray(eParameterHandles index, const Matrix4* 
 }
 
 
-bool CEffectFileDirectX::setVectorArray(eParameterHandles index,const Vector4* pVector,UINT count) const
+bool CEffectFileImpl::setVectorArray(eParameterHandles index, const Vector4* pVector, UINT count) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		return m_pEffect->SetVectorArray(m_paramHandle[index],(DeviceVector4*)pVector, count);
+		return m_pEffect->SetVectorArray(m_paramHandle[index], (DeviceVector4*)pVector, count);
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setFloatArray(eParameterHandles index, const float* data, UINT32 count)const
+bool CEffectFileImpl::setFloatArray(eParameterHandles index, const float* data, UINT32 count)const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -225,44 +200,44 @@ bool CEffectFileDirectX::setFloatArray(eParameterHandles index, const float* dat
 
 
 
-bool CEffectFileDirectX::setParameter(eParameterHandles index, const void* data, INT32 size)const
+bool CEffectFileImpl::setParameter(eParameterHandles index, const void* data, INT32 size)const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= m_pEffect->SetValue(m_paramHandle[index], data, size);
+		bool result = m_pEffect->SetValue(m_paramHandle[index], data, size);
 
 		PE_ASSERT(result);
 		return result;
 	}
 	return false;
 }
-bool CEffectFileDirectX::setBool(eParameterHandles index, BOOL bBoolean) const
+bool CEffectFileImpl::setBool(eParameterHandles index, BOOL bBoolean) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result=m_pEffect->SetBool(m_paramHandle[index], bBoolean);
+		bool result = m_pEffect->SetBool(m_paramHandle[index], bBoolean);
 		PE_ASSERT(result);
 		return result;
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setInt(eParameterHandles index, int nValue) const
+bool CEffectFileImpl::setInt(eParameterHandles index, int nValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= m_pEffect->SetInt(m_paramHandle[index], nValue);
+		bool result = m_pEffect->SetInt(m_paramHandle[index], nValue);
 		PE_ASSERT(result);
 		return result;
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
+bool CEffectFileImpl::setFloat(eParameterHandles index, float fValue) const
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
-		bool result= m_pEffect->SetFloat(m_paramHandle[index], fValue);
+		bool result = m_pEffect->SetFloat(m_paramHandle[index], fValue);
 		PE_ASSERT(result);
 		return result;
 	}
@@ -270,7 +245,7 @@ bool CEffectFileDirectX::setFloat(eParameterHandles index, float fValue) const
 }
 
 
-bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)const
+bool CEffectFileImpl::setMatrix(eParameterHandles index, const Matrix4* data)const
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
@@ -283,14 +258,14 @@ bool CEffectFileDirectX::setMatrix(eParameterHandles index, const Matrix4* data)
 If the resource file name begins with ':', it is treated as a win32 resource.
 e.g.":IDR_FX_OCEANWATER". loads data from a resource of type "TEXTFILE". See MSDN for more information about Windows resources.
 */
-HRESULT CEffectFileDirectX::InitDeviceObjects()
+HRESULT CEffectFileImpl::InitDeviceObjects()
 {
-	m_bIsInitialized =true;
+	m_bIsInitialized = true;
 	m_bIsValid = false;//set to true if created successfully.
 	auto pRenderDevice = CGlobals::GetRenderDevice();
-	
+
 	auto file = std::make_shared<CParaFile>(m_filename.c_str());
-	
+
 	// fxo 
 	if (file->isEof())
 	{
@@ -305,13 +280,13 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 
 	std::string error = "";
 
-	if(!file->isEof())
+	if (!file->isEof())
 	{
 		/*
 		// Since we are loading a binary file here and this effect has already been compiled,
-		// you can not pass compiler flags here (for example to debug the shaders). 
+		// you can not pass compiler flags here (for example to debug the shaders).
 		// To debug the shaders, one must pass these flags to the compiler that generated the
-		// binary (for example fxc.exe). 
+		// binary (for example fxc.exe).
 		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
 		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
 		*/
@@ -326,15 +301,15 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		return E_FAIL;
 	}
 
-    if(!m_pEffect)
+	if (!m_pEffect)
 	{
-		char* error_str = (error!="") ? error.c_str() : "failed loading effect file\n";
+		char* error_str = (error != "") ? error.c_str() : "failed loading effect file\n";
 		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
-        return E_FAIL;
+		return E_FAIL;
 	}
 
 
-    // get the description
+	// get the description
 	m_pEffect->GetDesc(&m_EffectDesc);
 
 	m_techniques.clear();
@@ -343,7 +318,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 	TechniqueDesc tech;
 	bool bHasDefaultTechnique = false;
 
-	for (int idx =0;idx<m_EffectDesc.Techniques;idx++)
+	for (int idx = 0; idx<m_EffectDesc.Techniques; idx++)
 	{
 		tech.hTechnique = m_pEffect->GetTechnique(idx);
 		if (m_pEffect->GetTechniqueDesc(tech.hTechnique, &tech.techniqueDesc))
@@ -378,7 +353,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 
 	HRESULT result = E_FAIL;
 
-	if(!bHasDefaultTechnique)
+	if (!bHasDefaultTechnique)
 	{
 		// at least one default technique must be valid. "GenShadowMap" is not a default technique. 
 		// So if "GenShadowMap" is valid, but others are not valid, the technique is not considered valid.
@@ -391,7 +366,7 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		//////////////////////////////////////////////////////////////////////////
 		// activate the first valid technique
 		m_nTechniqueIndex = 0;
-		if(m_pEffect->SetTechnique(m_techniques[m_nTechniqueIndex].hTechnique))
+		if (m_pEffect->SetTechnique(m_techniques[m_nTechniqueIndex].hTechnique))
 		{
 			// parse the effect parameters to build a list of handles
 			parseParameters();
@@ -404,15 +379,15 @@ HRESULT CEffectFileDirectX::InitDeviceObjects()
 		}
 		result = S_OK;
 	}
-	
+
 	return result;
 }
 
-bool CEffectFileDirectX::SetTechniqueByIndex(int nIndex)
+bool CEffectFileImpl::SetTechniqueByIndex(int nIndex)
 {
-	if(m_nTechniqueIndex == nIndex)
+	if (m_nTechniqueIndex == nIndex)
 		return true;
-	else if(((int)m_techniques.size()>nIndex) && (m_pEffect->SetTechnique(m_techniques[nIndex].hTechnique)))
+	else if (((int)m_techniques.size()>nIndex) && (m_pEffect->SetTechnique(m_techniques[nIndex].hTechnique)))
 	{
 		m_nTechniqueIndex = nIndex;
 		return true;
@@ -421,19 +396,19 @@ bool CEffectFileDirectX::SetTechniqueByIndex(int nIndex)
 		return false;
 }
 
-bool CEffectFileDirectX::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
+bool CEffectFileImpl::SetFirstValidTechniqueByCategory(TechniqueCategory nCat)
 {
-	if(m_nTechniqueIndex>=(int)m_techniques.size())
+	if (m_nTechniqueIndex >= (int)m_techniques.size())
 		return false;
-	if(m_techniques[m_nTechniqueIndex].nCategory == nCat)
+	if (m_techniques[m_nTechniqueIndex].nCategory == nCat)
 		return true;
 	vector<TechniqueDesc>::const_iterator itCur, itEnd = m_techniques.end();
-	int i=0;
-	for(itCur = m_techniques.begin(); itCur!=itEnd;++itCur,++i)
+	int i = 0;
+	for (itCur = m_techniques.begin(); itCur != itEnd; ++itCur, ++i)
 	{
 		if ((*itCur).nCategory == nCat)
 		{
-			if(m_pEffect->SetTechnique(m_techniques[i].hTechnique))
+			if (m_pEffect->SetTechnique(m_techniques[i].hTechnique))
 			{
 				m_nTechniqueIndex = i;
 				return true;
@@ -444,21 +419,21 @@ bool CEffectFileDirectX::SetFirstValidTechniqueByCategory(TechniqueCategory nCat
 	}
 	return false;
 }
-void CEffectFileDirectX::releaseEffect()
+void CEffectFileImpl::releaseEffect()
 {
 	m_pEffect = nullptr;
 }
 
 // destroy the resource
-HRESULT CEffectFileDirectX::DeleteDeviceObjects()
+HRESULT CEffectFileImpl::DeleteDeviceObjects()
 {
 	releaseEffect();
-	m_bIsInitialized =false;
+	m_bIsInitialized = false;
 	return S_OK;
 }
 
 // purge the resource from volatile memory
-HRESULT CEffectFileDirectX::InvalidateDeviceObjects()
+HRESULT CEffectFileImpl::InvalidateDeviceObjects()
 {
 	if (m_pEffect)
 	{
@@ -468,7 +443,7 @@ HRESULT CEffectFileDirectX::InvalidateDeviceObjects()
 }
 
 // prepare the resource for use (create any volatile memory objects needed)
-HRESULT CEffectFileDirectX::RestoreDeviceObjects()
+HRESULT CEffectFileImpl::RestoreDeviceObjects()
 {
 	if (m_pEffect)
 	{
@@ -478,64 +453,64 @@ HRESULT CEffectFileDirectX::RestoreDeviceObjects()
 }
 
 // save the resource to the file and return the size written
-bool CEffectFileDirectX::saveResource(const char* filename)
+bool CEffectFileImpl::saveResource(const char* filename)
 {
 	return 0;
 }
-int CEffectFileDirectX::totalPasses()const
+int CEffectFileImpl::totalPasses()const
 {
-	if(m_pEffect==0)
+	if (m_pEffect == 0)
 	{
-		int i=0;
+		int i = 0;
 		OUTPUT_LOG("error");
 	}
 	//PE_ASSERT(m_pEffect);
-	if(m_nTechniqueIndex<(int)m_techniques.size())
+	if (m_nTechniqueIndex<(int)m_techniques.size())
 		return m_techniques[m_nTechniqueIndex].techniqueDesc.Passes;
 	else
 		return 0;
 }
 
-bool CEffectFileDirectX::setTexture(int index, TextureEntity* data)
+bool CEffectFileImpl::setTexture(int index, TextureEntity* data)
 {
 	if (g_bTextureEnabled && m_pEffect && isTextureUsed(index) && !IsTextureLocked(index))
 	{
-		return setTextureInternal(index,(data!=0) ? data->GetTexture(): NULL);
+		return setTextureInternal(index, (data != 0) ? data->GetTexture() : NULL);
 	}
 	return false;
 }
-bool CEffectFileDirectX::setTexture(int index, LPDIRECT3DTEXTURE9 pTex)
+bool CEffectFileImpl::setTexture(int index, DeviceTexturePtr_type pTex)
 {
 	if (g_bTextureEnabled && m_pEffect && isTextureUsed(index) && !IsTextureLocked(index))
 	{
-		return setTextureInternal(index,pTex);
+		return setTextureInternal(index, pTex);
 	}
 	return false;
 }
 
-bool CEffectFileDirectX::setTextureInternal(int index, LPDIRECT3DTEXTURE9 pTex)
+bool CEffectFileImpl::setTextureInternal(int index, DeviceTexturePtr_type pTex)
 {
-	if((int)(m_LastTextures.size()) <= index)
+	if ((int)(m_LastTextures.size()) <= index)
 	{
-		m_LastTextures.resize(index+1, NULL);
+		m_LastTextures.resize(index + 1, NULL);
 	}
-	if(m_LastTextures[index] != pTex)
+	if (m_LastTextures[index] != pTex)
 	{
 		m_LastTextures[index] = pTex;
 		// TODO: implement statemanagerstate to set state, sampler and texture. This may be wrong if shader textures in hlsl are not written in the exact order. 
 		// so that they map to s0,s15 in the written order in the compiled shader code. 
 		//return SUCCEEDED(m_pEffect->SetTexture(m_paramHandle[k_tex0+index], (data!=0) ? data->GetTexture(): NULL));
-		return SUCCEEDED(GETD3D(CGlobals::GetRenderDevice())->SetTexture(index,pTex));
+		return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
 	}
 	return true;
 }
 
-bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin )
+bool CEffectFileImpl::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin)
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
-	if(m_pEffect!=NULL)
+	if (m_pEffect != NULL)
 	{
-		if(bApplyParam)
+		if (bApplyParam)
 		{
 			// set the lighting parameters
 			// from the global light manager
@@ -544,18 +519,18 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 			// set the camera matrix
 			applyCameraMatrices();
 		}
-		
-		if(bForceBegin|| !m_bSharedMode)
+
+		if (bForceBegin || !m_bSharedMode)
 		{
-			bool result =m_pEffect->Begin();
-			if(result)
+			bool result = m_pEffect->Begin();
+			if (result)
 			{
 				m_bIsBegin = true;
 				return true;
 			}
 			else
 			{
-				OUTPUT_LOG("error: CEffectFileDirectX::begin failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileOpenGL::begin failed: %s \n", m_filename.c_str());
 				return false;
 			}
 		}
@@ -565,54 +540,57 @@ bool CEffectFileDirectX::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin 
 		return false;
 }
 
-bool CEffectFileDirectX::BeginPass(int pass,bool bForceBegin )
+bool CEffectFileImpl::BeginPass(int pass, bool bForceBegin)
 {
-	if(bForceBegin || !m_bSharedMode)
+	if (bForceBegin || !m_bSharedMode)
 	{
 		bool result = m_pEffect->BeginPass(pass);
-		if(!result)
+		if (!result)
 		{
-			OUTPUT_LOG("error: CEffectFileDirectX::BeginPass failed: %s \n", m_filename.c_str());
+			OUTPUT_LOG("error: CEffectFileOpenGL::BeginPass failed: %s \n", m_filename.c_str());
 			return false;
 		}
 	}
-    return true;
+	return true;
 }
 
-void CEffectFileDirectX::CommitChanges()
+void CEffectFileImpl::CommitChanges()
 {
-	m_pEffect->CommitChanges();
-}
-
-void CEffectFileDirectX::EndPass(bool bForceEnd)
-{
-	if(bForceEnd || !m_bSharedMode)
+	if (m_pEffect)
 	{
-		if(m_bIsBegin)
+		m_pEffect->CommitChanges();
+	}
+}
+
+void CEffectFileImpl::EndPass(bool bForceEnd)
+{
+	if (bForceEnd || !m_bSharedMode)
+	{
+		if (m_bIsBegin)
 		{
-			if(!(m_pEffect && m_pEffect->EndPass()))
+			if (!(m_pEffect && m_pEffect->EndPass()))
 			{
-				OUTPUT_LOG("error: CEffectFileDirectX::EndPass failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileOpenGL::EndPass failed: %s \n", m_filename.c_str());
 			}
 		}
 	}
 }
 
-void CEffectFileDirectX::end(bool bForceEnd)
+void CEffectFileImpl::end(bool bForceEnd)
 {
-	if(bForceEnd || !m_bSharedMode)
+	if (bForceEnd || !m_bSharedMode)
 	{
-		if(m_bIsBegin)
+		if (m_bIsBegin)
 		{
 			// tricky: since d3dxeffect->BeginPass(0) will reset states such as Texture to NULL, 
 			// we need to call OnSwitchOutShader() when pass is end. 
-			if(!m_bSharedMode)
+			if (!m_bSharedMode)
 			{
 				OnSwitchOutShader();
 			}
-			if( !(m_pEffect && m_pEffect->End() ) )
+			if (!(m_pEffect && m_pEffect->End()))
 			{
-				OUTPUT_LOG("error: CEffectFileDirectX::end failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileOpenGL::end failed: %s \n", m_filename.c_str());
 				return;
 			}
 			m_bIsBegin = false;
@@ -620,31 +598,31 @@ void CEffectFileDirectX::end(bool bForceEnd)
 	}
 }
 
-int CEffectFileDirectX::BeginWith(LPCSTR str, LPCSTR searchStr)
+int CEffectFileImpl::BeginWith(LPCSTR str, LPCSTR searchStr)
 {
 	int i = 0;
-	while(str[i]!=0)
+	while (str[i] != 0)
 	{
-		if(searchStr[i]==0)
+		if (searchStr[i] == 0)
 			return i;
-		else if(str[i] !=searchStr[i])
+		else if (str[i] != searchStr[i])
 			return -1;
-		++i; 
+		++i;
 	}
 	return -1;
 }
-bool CEffectFileDirectX::GetNumber(LPCSTR str, int nBeginIndex, int* pOut)
+bool CEffectFileImpl::GetNumber(LPCSTR str, int nBeginIndex, int* pOut)
 {
 	int i = nBeginIndex;
-	while(str[i]>='0' && str[i]<='9')
+	while (str[i] >= '0' && str[i] <= '9')
 		++i;
-	if(i>nBeginIndex)
+	if (i>nBeginIndex)
 	{
-		int value=0;
-		int nCount = i-nBeginIndex;
-		for (i=0;i<nCount;++i)
+		int value = 0;
+		int nCount = i - nBeginIndex;
+		for (i = 0; i<nCount; ++i)
 		{
-			value+=(int)((str[nBeginIndex+i]-'0'))*(int)pow((float)10,(nCount-i-1));
+			value += (int)((str[nBeginIndex + i] - '0'))*(int)pow((float)10, (nCount - i - 1));
 		}
 		*pOut = value;
 		return true;
@@ -652,7 +630,7 @@ bool CEffectFileDirectX::GetNumber(LPCSTR str, int nBeginIndex, int* pOut)
 	return false;
 }
 
-void CEffectFileDirectX::parseParameters()
+void CEffectFileImpl::parseParameters()
 {
 	using namespace IParaEngine;
 
@@ -764,7 +742,7 @@ void CEffectFileDirectX::parseParameters()
 				}
 			}
 			else {
-				OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(),ParamDesc.Semantic.c_str(),m_filename.c_str());
+				OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(), ParamDesc.Semantic.c_str(), m_filename.c_str());
 			}
 		}
 	}
@@ -773,9 +751,9 @@ void CEffectFileDirectX::parseParameters()
 
 
 
- //       if( ParamDesc.Semantic != NULL && 
- //           ( ParamDesc.Class == D3DXPC_VECTOR ))
- //       {
+	//       if( ParamDesc.Semantic != NULL && 
+	//           ( ParamDesc.Class == D3DXPC_VECTOR ))
+	//       {
 	//		if((nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
 	//		{
 	//			if( strcmpi( ParamDesc.Semantic, "materialambient" ) == 0 )
@@ -787,13 +765,13 @@ void CEffectFileDirectX::parseParameters()
 	//			else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
 	//				m_paramHandle[k_emissiveMaterialColor] = hParam;
 	//		}
- //           else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
- //               m_paramHandle[k_posScaleOffset] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
- //               m_paramHandle[k_uvScaleOffset] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
+	//               m_paramHandle[k_posScaleOffset] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
+	//               m_paramHandle[k_uvScaleOffset] = hParam;
 
- //           else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
- //               m_paramHandle[k_lensFlareColor] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
+	//               m_paramHandle[k_lensFlareColor] = hParam;
 
 	//		//////////////////////////////////////////////////////////////////////////
 	//		// fog
@@ -834,30 +812,30 @@ void CEffectFileDirectX::parseParameters()
 	//				m_paramHandle[k_ConstVector3] = hParam;
 	//		}
 	//		
- //           else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
- //               m_paramHandle[k_sunVector] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
- //               m_paramHandle[k_sunColor] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
- //               m_paramHandle[k_cameraPos] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
- //               m_paramHandle[k_cameraDistances] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
- //               m_paramHandle[k_cameraFacing] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
- //               m_paramHandle[k_ambientLight] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
- //               m_paramHandle[k_sunlightInscatter] = hParam;
- //           else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
- //               m_paramHandle[k_sunlightExtinction] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
+	//               m_paramHandle[k_sunVector] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
+	//               m_paramHandle[k_sunColor] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
+	//               m_paramHandle[k_cameraPos] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
+	//               m_paramHandle[k_cameraDistances] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
+	//               m_paramHandle[k_cameraFacing] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
+	//               m_paramHandle[k_ambientLight] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
+	//               m_paramHandle[k_sunlightInscatter] = hParam;
+	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
+	//               m_paramHandle[k_sunlightExtinction] = hParam;
 	//		else if( strcmpi( ParamDesc.Semantic, "worldpos" ) == 0 )
 	//			m_paramHandle[k_worldPos] = hParam;
 	//		else if( strcmpi( ParamDesc.Semantic, "texCoordOffset" ) == 0 )
 	//			m_paramHandle[k_texCoordOffset] = hParam;
 	//	}
 
- //       if(ParamDesc.Class == D3DXPC_SCALAR)
- //       {
+	//       if(ParamDesc.Class == D3DXPC_SCALAR)
+	//       {
 	//		if( ParamDesc.Semantic == NULL)
 	//		{
 	//			if( strcmpi( ParamDesc.Name, "curnumbones" ) == 0 )
@@ -907,8 +885,8 @@ void CEffectFileDirectX::parseParameters()
 	//		}
 	//	}
 
- //       if( ParamDesc.Class == D3DXPC_OBJECT )
- //       {
+	//       if( ParamDesc.Class == D3DXPC_OBJECT )
+	//       {
 	//		string name(ParamDesc.Name);
 	//		
 	//		if (ParamDesc.Type == D3DXPT_TEXTURE
@@ -927,7 +905,7 @@ void CEffectFileDirectX::parseParameters()
 	//				}
 	//			}
 	//		}
- //       }
+	//       }
 
 	//	if ( ParamDesc.Class == D3DXPC_STRUCT)
 	//	{
@@ -939,7 +917,7 @@ void CEffectFileDirectX::parseParameters()
 	//}
 }
 
-void CEffectFileDirectX::EnableSunLight(bool bEnableSunLight)
+void CEffectFileImpl::EnableSunLight(bool bEnableSunLight)
 {
 	if (isParameterUsed(k_bSunlightEnable))
 	{
@@ -947,7 +925,7 @@ void CEffectFileDirectX::EnableSunLight(bool bEnableSunLight)
 	}
 }
 
-void CEffectFileDirectX::EnableAlphaBlending(bool bAlphaBlending)
+void CEffectFileImpl::EnableAlphaBlending(bool bAlphaBlending)
 {
 	if (isParameterUsed(k_bAlphaBlending))
 	{
@@ -955,109 +933,110 @@ void CEffectFileDirectX::EnableAlphaBlending(bool bAlphaBlending)
 	}
 }
 
-void CEffectFileDirectX::EnableAlphaTesting(bool bAlphaTesting)
+void CEffectFileImpl::EnableAlphaTesting(bool bAlphaTesting)
 {
-	if (isParameterUsed(k_bAlphaTesting) )
+	if (isParameterUsed(k_bAlphaTesting))
 	{
 		setBool(k_bAlphaTesting, bAlphaTesting);
-		if(!CGlobals::GetEffectManager()->IsD3DAlphaTestingDisabled())
-			CGlobals::GetRenderDevice()->SetRenderState( ERenderState::ALPHATESTENABLE,  bAlphaTesting );
+		if (!CGlobals::GetEffectManager()->IsD3DAlphaTestingDisabled())
+			CGlobals::GetRenderDevice()->SetRenderState(ERenderState::ALPHATESTENABLE, bAlphaTesting);
 	}
 }
 
-void CEffectFileDirectX::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial,bool bUseGlobalAmbient)
+void CEffectFileImpl::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient)
 {
 	if (pSurfaceMaterial)
 	{
 		// set material properties
 		const ParaMaterial & d3dMaterial = *pSurfaceMaterial;
-		
+
 		if (isParameterUsed(k_ambientMaterialColor))
 		{
-			if(bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f) )
-				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+			if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
+				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient, sizeof(LinearColor));
 			else
-				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient);
+				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_diffuseMaterialColor))
 		{
-			if(CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
+			if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
 			{
-				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse);
-				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength());
+				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse, sizeof(LinearColor));
+				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(), sizeof(Vector3));
 			}
 			else
 			{
-				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse);
-				Vector3 vEmpty(0,0,0);
-				setParameter(k_LightStrength, &vEmpty);
+				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse, sizeof(LinearColor));
+				Vector3 vEmpty(0, 0, 0);
+				setParameter(k_LightStrength, &vEmpty, sizeof(Vector3));
 			}
 		}
 
 		if (isParameterUsed(k_specularMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Specular);
+			setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_emissiveMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive);
+			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_specularMaterialPower))
 		{
-			setParameter(k_specularMaterialPower, &d3dMaterial.Power);
+			setParameter(k_specularMaterialPower, &d3dMaterial.Power, sizeof(float));
 		}
 	}
 }
 
 
-void CEffectFileDirectX::applyGlobalLightingData(CSunLight& sunlight)
+void CEffectFileImpl::applyGlobalLightingData(CSunLight& sunlight)
 {
 	// pass the lighting structure to the shader
 	if (isParameterUsed(k_atmosphericLighting))
 	{
 		setParameter(
-		k_atmosphericLighting, 
-		sunlight.GetLightScatteringData()->getShaderData());
+			k_atmosphericLighting,
+			sunlight.GetLightScatteringData()->getShaderData(), sizeof(sLightScatteringShaderParams));
 	}
 
 	// pass the lighting structure to the shader
 	if (isParameterUsed(k_sunColor))
 	{
 		setParameter(
-			k_sunColor, 
-			&(sunlight.GetSunColor()));
+			k_sunColor,
+			&(sunlight.GetSunColor()),sizeof(LinearColor));
 	}
 
 	if (isParameterUsed(k_sunVector))
 	{
 		Vector3 vDir = -sunlight.GetSunDirection();
 		setParameter(
-			k_sunVector, 
-			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f));
+			k_sunVector,
+			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f),sizeof(Vector4));
 	}
 
 	if (isParameterUsed(k_ambientLight))
 	{
 		setParameter(
-			k_ambientLight, 
-			&CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient);
+			k_ambientLight,
+			&CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient,sizeof(LinearColor));
 	}
-	
 
-	if(isParameterUsed(k_shadowFactor))
+
+	if (isParameterUsed(k_shadowFactor))
 	{
 		float shadowFactor = sunlight.GetShadowFactor();
 		setParameter(
 			k_shadowFactor,
-			&Vector4(shadowFactor,1-shadowFactor,0,0)
-			);
+			&Vector4(shadowFactor, 1 - shadowFactor, 0, 0),
+			sizeof(Vector4)
+		);
 	}
 }
 
-void CEffectFileDirectX::applyWorldMatrices()
+void CEffectFileImpl::applyWorldMatrices()
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
@@ -1099,7 +1078,7 @@ void CEffectFileDirectX::applyWorldMatrices()
 	}
 }
 
-void CEffectFileDirectX::applyCameraMatrices()
+void CEffectFileImpl::applyCameraMatrices()
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 
@@ -1141,7 +1120,7 @@ void CEffectFileDirectX::applyCameraMatrices()
 		// set the world view projection matrix
 		if (isMatrixUsed(k_worldViewProjMatrix))
 		{
-			if(!isMatrixUsed(k_viewProjMatrix))
+			if (!isMatrixUsed(k_viewProjMatrix))
 				ParaMatrixMultiply(&ViewProj, pView, pProj);
 			Matrix4 mWorldViewProj;
 			ParaMatrixMultiply(&mWorldViewProj, pWorld, &ViewProj);
@@ -1167,17 +1146,17 @@ void CEffectFileDirectX::applyCameraMatrices()
 			ParaMatrixMultiply(&mTex, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
 			setMatrix(k_TexWorldViewProjMatrix, &mTex);
 		}
-		
+
 		// set the world camera position
 		if (isParameterUsed(k_cameraPos))
 		{
 			Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
-			setParameter(k_cameraPos, &Vector4(vEye.x,vEye.y, vEye.z, 1.0f));
+			setParameter(k_cameraPos, &Vector4(vEye.x, vEye.y, vEye.z, 1.0f),sizeof(Vector4));
 		}
 		// set the world camera facing vector
 		if (isParameterUsed(k_cameraFacing))
 		{
-			setParameter(k_cameraFacing, &pCamera->GetWorldAhead());
+			setParameter(k_cameraFacing, &pCamera->GetWorldAhead(),sizeof(Vector3));
 		}
 
 		//// set the matrix used by sky boxes
@@ -1187,49 +1166,49 @@ void CEffectFileDirectX::applyCameraMatrices()
 		//}
 
 		/*cVector4 camDistances(
-			pCamera->nearPlane(),
-			pCamera->farPlane(),
-			pCamera->viewDistance(),
-			pCamera->invFarPlane());
-			
+		pCamera->nearPlane(),
+		pCamera->farPlane(),
+		pCamera->viewDistance(),
+		pCamera->invFarPlane());
+
 		if (isParameterUsed(k_cameraDistances))
 		{
-			setParameter(k_cameraDistances, &camDistances);
+		setParameter(k_cameraDistances, &camDistances);
 		}*/
 	}
 }
 
-void CEffectFileDirectX::applyFogParameters( bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
+void CEffectFileImpl::applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor)
 {
 	if (isParameterUsed(k_fogEnable))
 	{
 		setBool(k_fogEnable, bEnableFog);
 	}
-	if(bEnableFog)
+	if (bEnableFog)
 	{
-		if (isParameterUsed(k_fogParameters) && (fogParam!=0))
+		if (isParameterUsed(k_fogParameters) && (fogParam != 0))
 		{
-			setParameter(k_fogParameters, fogParam);
+			setParameter(k_fogParameters, fogParam,sizeof(Vector4));
 		}
 
-		if (isParameterUsed(k_fogColor) && (fogColor!=0))
+		if (isParameterUsed(k_fogColor) && (fogColor != 0))
 		{
-			setParameter(k_fogColor, fogColor);
+			setParameter(k_fogColor, fogColor,sizeof(Vector4));
 		}
 	}
 }
 
-void CEffectFileDirectX::applyLocalLightingData(const LightList* plights, int nLightNum)
+void CEffectFileImpl::applyLocalLightingData(const LightList* plights, int nLightNum)
 {
 	nLightNum = min(nLightNum, MAX_EFFECT_LIGHT_NUM);
-	
+
 	if (isParameterUsed(k_LocalLightNum))
 	{
 		setInt(k_LocalLightNum, nLightNum);
 
 		//////////////////////////////////////////////////////////////////////////
 		// set local lights
-		if(plights!=0 && nLightNum>0)
+		if (plights != 0 && nLightNum>0)
 		{
 			const LightList& lights = *plights;
 			PE_ASSERT(nLightNum <= (int)lights.size());
@@ -1237,7 +1216,7 @@ void CEffectFileDirectX::applyLocalLightingData(const LightList* plights, int nL
 			Vector4 pos_ranges[MAX_EFFECT_LIGHT_NUM];
 			Vector4 colors[MAX_EFFECT_LIGHT_NUM];
 			Vector4 params[MAX_EFFECT_LIGHT_NUM];
-			for (int i=0;i<nLightNum;++i)
+			for (int i = 0; i<nLightNum; ++i)
 			{
 				Vector3 pos = lights[i]->Position;
 				pos_ranges[i].x = pos.x;
@@ -1250,18 +1229,18 @@ void CEffectFileDirectX::applyLocalLightingData(const LightList* plights, int nL
 				params[i].z = lights[i]->Attenuation2;
 				params[i].w = 1;
 			}
-			setVectorArray ( (eParameterHandles)(k_LightPositions), pos_ranges, nLightNum);
-			setVectorArray ( (eParameterHandles)(k_LightColors), colors, nLightNum);
-			setVectorArray ( (eParameterHandles)(k_LightParams), params, nLightNum);
+			setVectorArray((eParameterHandles)(k_LightPositions), pos_ranges, nLightNum);
+			setVectorArray((eParameterHandles)(k_LightColors), colors, nLightNum);
+			setVectorArray((eParameterHandles)(k_LightParams), params, nLightNum);
 		}
 	}
 	/*for (int i =0;i<MAX_SHADER_LIGHT_NUM;++i)
 	{
-		SetBoolean(LIGHT_BOOLEAN_BASE+i, (i<nLightNum));
+	SetBoolean(LIGHT_BOOLEAN_BASE+i, (i<nLightNum));
 	}*/
 }
 
-void CEffectFileDirectX::applyLayersNum(int nLayers)
+void CEffectFileImpl::applyLayersNum(int nLayers)
 {
 	if (isParameterUsed(k_LayersNum))
 	{
@@ -1269,7 +1248,7 @@ void CEffectFileDirectX::applyLayersNum(int nLayers)
 	}
 }
 
-void CEffectFileDirectX::applyTexWorldViewProj(const Matrix4* mat)
+void CEffectFileImpl::applyTexWorldViewProj(const Matrix4* mat)
 {
 	if (isMatrixUsed(k_TexWorldViewProjMatrix))
 	{
@@ -1277,7 +1256,7 @@ void CEffectFileDirectX::applyTexWorldViewProj(const Matrix4* mat)
 	}
 }
 
-void CEffectFileDirectX::SetShadowMapSize(int nsize)
+void CEffectFileImpl::SetShadowMapSize(int nsize)
 {
 	if (isParameterUsed(k_nShadowmapSize))
 	{
@@ -1285,7 +1264,7 @@ void CEffectFileDirectX::SetShadowMapSize(int nsize)
 	}
 }
 
-void CEffectFileDirectX::SetShadowRadius(float fRadius)
+void CEffectFileImpl::SetShadowRadius(float fRadius)
 {
 	if (isParameterUsed(k_fShadowRadius))
 	{
@@ -1293,173 +1272,173 @@ void CEffectFileDirectX::SetShadowRadius(float fRadius)
 	}
 }
 
-void CEffectFileDirectX::EnableShadowmap(int nShadowMethod)
+void CEffectFileImpl::EnableShadowmap(int nShadowMethod)
 {
 #define SHADOW_BOOLEAN_BASE			8
 	SetBoolean(SHADOW_BOOLEAN_BASE, nShadowMethod > 0);
-	SetBoolean(SHADOW_BOOLEAN_BASE+1, nShadowMethod == 1);
+	SetBoolean(SHADOW_BOOLEAN_BASE + 1, nShadowMethod == 1);
 }
-bool CEffectFileDirectX::SetBoolean(int nIndex, bool value)
+bool CEffectFileImpl::SetBoolean(int nIndex, bool value)
 {
-	PE_ASSERT(nIndex< (k_bBooleanMAX-k_bBoolean0));
-	if (isParameterUsed((eParameterHandles)(k_bBoolean0+nIndex)))
+	PE_ASSERT(nIndex< (k_bBooleanMAX - k_bBoolean0));
+	if (isParameterUsed((eParameterHandles)(k_bBoolean0 + nIndex)))
 	{
-		return setBool((eParameterHandles)(k_bBoolean0+nIndex), value);
+		return setBool((eParameterHandles)(k_bBoolean0 + nIndex), value);
 	}
 	return false;
 }
-int CEffectFileDirectX::GetCurrentTechniqueIndex()
+int CEffectFileImpl::GetCurrentTechniqueIndex()
 {
 	return m_nTechniqueIndex;
 }
-const CEffectFileDirectX::TechniqueDesc* CEffectFileDirectX::GetCurrentTechniqueDesc()
+const CEffectFileImpl::TechniqueDesc* CEffectFileImpl::GetCurrentTechniqueDesc()
 {
-	const static TechniqueDesc g_techdesc; 
-	if(m_nTechniqueIndex<(int)m_techniques.size())
+	const static TechniqueDesc g_techdesc;
+	if (m_nTechniqueIndex<(int)m_techniques.size())
 		return &(m_techniques[m_nTechniqueIndex]);
 	else
 		return &g_techdesc;
 }
 
-std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileDirectX::GetDXEffect()
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileImpl::GetDXEffect()
 {
 	return m_pEffect;
 }
 
-CParameterBlock* ParaEngine::CEffectFileDirectX::GetParamBlock( bool bCreateIfNotExist /*= false*/ )
+CParameterBlock* ParaEngine::CEffectFileImpl::GetParamBlock(bool bCreateIfNotExist /*= false*/)
 {
 	return &m_SharedParamBlock;
 }
 
-void ParaEngine::CEffectFileDirectX::LockTexture( int nIndex )
+void ParaEngine::CEffectFileImpl::LockTexture(int nIndex)
 {
-	if(nIndex <0)
+	if (nIndex <0)
 	{
 		// lock all 9 textures 
 		m_LockedTextures.resize(9);
 		int nSize = (int)m_LockedTextures.size();
-		for (int i=0;i<nSize;++i)
+		for (int i = 0; i<nSize; ++i)
 		{
 			m_LockedTextures[i] = true;
 		}
 	}
 	else
 	{
-		if(nIndex >= (int)(m_LockedTextures.size()))
+		if (nIndex >= (int)(m_LockedTextures.size()))
 		{
-			m_LockedTextures.resize(nIndex+1, false);
+			m_LockedTextures.resize(nIndex + 1, false);
 		}
 		m_LockedTextures[nIndex] = true;
 	}
 }
 
-void ParaEngine::CEffectFileDirectX::UnLockTexture( int nIndex )
+void ParaEngine::CEffectFileImpl::UnLockTexture(int nIndex)
 {
-	if(nIndex <0)
+	if (nIndex <0)
 	{
 		int nSize = (int)m_LockedTextures.size();
-		for (int i=0;i<nSize;++i)
+		for (int i = 0; i<nSize; ++i)
 		{
 			m_LockedTextures[i] = false;
 		}
 	}
 	else
 	{
-		if(nIndex < (int)(m_LockedTextures.size()))
+		if (nIndex < (int)(m_LockedTextures.size()))
 		{
 			m_LockedTextures[nIndex] = false;
 		}
 	}
 }
 
-bool ParaEngine::CEffectFileDirectX::IsTextureLocked( int nIndex ) const
+bool ParaEngine::CEffectFileImpl::IsTextureLocked(int nIndex) const
 {
 	return (nIndex < (int)(m_LockedTextures.size())) && m_LockedTextures[nIndex];
 }
 
 
 
-void ParaEngine::CEffectFileDirectX::OnSwitchInShader()
+void ParaEngine::CEffectFileImpl::OnSwitchInShader()
 {
 }
 
-void ParaEngine::CEffectFileDirectX::OnSwitchOutShader()
+void ParaEngine::CEffectFileImpl::OnSwitchOutShader()
 {
 	vector<void*>::iterator itCur, itEnd = m_LastTextures.end();
-	for (itCur = m_LastTextures.begin(); itCur!=itEnd; ++itCur)
+	for (itCur = m_LastTextures.begin(); itCur != itEnd; ++itCur)
 	{
 		(*itCur) = NULL;
 	}
 }
 
-bool ParaEngine::CEffectFileDirectX::BeginSharePassMode( bool bApplyParam /*= true*/, DWORD flag/*=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE*/, bool bForceBegin /*= true*/ )
+bool ParaEngine::CEffectFileImpl::BeginSharePassMode(bool bApplyParam /*= true*/, DWORD flag/*=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE*/, bool bForceBegin /*= true*/)
 {
 	EnableShareMode(true);
-	if(begin(bApplyParam, flag, bForceBegin))
+	if (begin(bApplyParam, flag, bForceBegin))
 	{
 		return BeginPass(0, true);
 	}
 	return false;
 }
 
-void ParaEngine::CEffectFileDirectX::EndSharePassMode()
+void ParaEngine::CEffectFileImpl::EndSharePassMode()
 {
 	EnableShareMode(false);
 	EndPass(true);
 	end(true);
 }
 
-void ParaEngine::CEffectFileDirectX::SetFileName(const std::string& filename)
+void ParaEngine::CEffectFileImpl::SetFileName(const std::string& filename)
 {
 	m_filename = filename;
 }
 
-IParaEngine::ParameterHandle& ParaEngine::CEffectFileDirectX::GetTextureHandle(int nIndex)
+IParaEngine::ParameterHandle& ParaEngine::CEffectFileImpl::GetTextureHandle(int nIndex)
 {
 	return m_paramHandle[k_tex0 + nIndex];
 }
 
 
-bool ParaEngine::CEffectFileDirectX::SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes)
+bool ParaEngine::CEffectFileImpl::SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes)
 {
 	return m_pEffect->SetRawValue(name, pData, ByteOffset, Bytes);
 }
 
-bool ParaEngine::CEffectFileDirectX::SetBool(const char* name, BOOL bBoolean)
+bool ParaEngine::CEffectFileImpl::SetBool(const char* name, BOOL bBoolean)
 {
 	return SetRawValue(name, &bBoolean, 0, sizeof(bBoolean));
 }
 
-bool ParaEngine::CEffectFileDirectX::SetInt(const char* name, int nValue)
+bool ParaEngine::CEffectFileImpl::SetInt(const char* name, int nValue)
 {
 	return SetRawValue(name, &nValue, 0, sizeof(nValue));
 }
 
 
-bool ParaEngine::CEffectFileDirectX::SetFloat(const char* name, float fValue)
+bool ParaEngine::CEffectFileImpl::SetFloat(const char* name, float fValue)
 {
 	return SetRawValue(name, &fValue, 0, sizeof(fValue));
 }
 
-bool ParaEngine::CEffectFileDirectX::SetVector2(const char* name, const Vector2& vValue)
+bool ParaEngine::CEffectFileImpl::SetVector2(const char* name, const Vector2& vValue)
 {
 	return SetRawValue(name, &vValue, 0, sizeof(vValue));
 }
 
 
-bool ParaEngine::CEffectFileDirectX::SetVector3(const char* name, const Vector3& vValue)
+bool ParaEngine::CEffectFileImpl::SetVector3(const char* name, const Vector3& vValue)
 {
 	return SetRawValue(name, &vValue, 0, sizeof(vValue));
 }
 
 
-bool ParaEngine::CEffectFileDirectX::SetVector4(const char* name, const Vector4& vValue)
+bool ParaEngine::CEffectFileImpl::SetVector4(const char* name, const Vector4& vValue)
 {
 	return SetRawValue(name, &vValue, 0, sizeof(vValue));
 }
 
 
-bool ParaEngine::CEffectFileDirectX::SetMatrix(const char* name, const Matrix4& data)
+bool ParaEngine::CEffectFileImpl::SetMatrix(const char* name, const Matrix4& data)
 {
 	return SetRawValue(name, &data, 0, sizeof(data));
 }

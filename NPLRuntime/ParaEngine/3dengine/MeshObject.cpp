@@ -16,7 +16,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "LightManager.h"
 // vegetation shader constant
-#include "shaders/d3d9_spec/simple_mesh_normal_vegetation.h"
+#include "shaders/common/simple_mesh_normal_vegetation.h"
 #include "ParaXAnimInstance.h"
 #include "ParaEngineSettings.h"
 #include "XRefObject.h"

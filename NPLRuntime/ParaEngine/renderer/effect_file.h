@@ -317,10 +317,8 @@ namespace ParaEngine
 	};
 }
 
-#ifdef USE_DIRECTX_RENDERER
-#include "effect_file_DirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "effect_file_OpenGL.h"
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+#include "effect_file_impl.h"
 #else
 namespace ParaEngine{
 	class CEffectFile : public CEffectFileBase {
