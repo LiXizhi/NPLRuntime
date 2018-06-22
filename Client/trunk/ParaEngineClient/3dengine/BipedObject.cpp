@@ -4620,9 +4620,29 @@ void ParaEngine::CBipedObject::SetAnimation(int nAnimID)
 	PlayAnimation(nAnimID, false, false);
 }
 
+void ParaEngine::CBipedObject::SetUpperAnimation(int nAnimID)
+{
+	if (m_pAI)
+	{
+		m_pAI->SetUpperAnimation(nAnimID);
+	}
+}
+
 int ParaEngine::CBipedObject::GetAnimation()
 {
 	return GetCurrentAnimation();
+}
+
+int ParaEngine::CBipedObject::GetUpperAnimation()
+{
+	if (m_pAI)
+	{
+		return m_pAI->GetUpperAnimation();
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 

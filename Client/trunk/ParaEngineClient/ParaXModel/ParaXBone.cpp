@@ -19,7 +19,7 @@
 using namespace ParaEngine;
 
 Bone::Bone()
-	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), pivot(0.f, 0.f, 0.f), matTransform(Matrix4::IDENTITY), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f)
+	:bUsePivot(true), nBoneID(0), nIndex(0), parent(-1), flags(0), calc(false), pivot(0.f, 0.f, 0.f), matTransform(Matrix4::IDENTITY), matOffset(Matrix4::IDENTITY), m_finalTrans(0, 0, 0), m_finalScaling(1.f, 1.f, 1.f), mIsUpper(false)
 {
 }
 
@@ -65,7 +65,7 @@ only the Bone_Root and facial bone's translation animation (which is also scaled
 This conforms to the BVH file format, where only the root node has translation and rotation animation, where all other nodes contains only rotation animation.
 This allows the same animation data to be applied to different models with different bone lengths, but the same topology.
 */
-bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
+bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
 {
 	if (calc)
 		return true;
@@ -78,7 +78,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	if (IsStaticTransform() && IsTransformationNode())
 	{
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 			mat = matTransform * allbones[parent].mat;
 		}
 		else
@@ -89,12 +89,27 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	if (!BlendingAnim.IsValid())
 		blendingFactor = 0.f;
 
+	if (!upperBlendingAnim.IsValid())
+		upperBlendingFactor = 0;
+
+	auto current_anim_ptr = &CurrentAnim;
+	auto current_blending_anim_ptr = &BlendingAnim;
+	auto current_blending_factor = blendingFactor;
+	if (mIsUpper&&upperAnim.IsValid())
+	{
+		current_anim_ptr = &upperAnim;
+		current_blending_anim_ptr = &upperBlendingAnim;
+		current_blending_factor = upperBlendingFactor;
+	}
+	auto & current_anim = *current_anim_ptr;
+	auto & current_blending_anim = *current_blending_anim_ptr;
+
 	CBoneAnimProvider* pCurProvider = NULL;
 	// the bone in the external bone provider that corresponding to the current bone. 
 	Bone* pCurBone = NULL;
-	if (CurrentAnim.Provider != 0)
+	if (current_anim.Provider != 0)
 	{
-		pCurProvider = CBoneAnimProvider::GetProviderByID(CurrentAnim.nIndex);
+		pCurProvider = CBoneAnimProvider::GetProviderByID(current_anim.nIndex);
 		if (pCurProvider)
 		{
 			if (nBoneID > 0)
@@ -118,9 +133,9 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	CBoneAnimProvider* pBlendingProvider = NULL;
 	// the bone in the external bone provider that corresponding to the current bone. 
 	Bone* pBlendBone = NULL;
-	if (BlendingAnim.Provider != 0 && BlendingAnim.IsValid())
+	if (current_blending_anim.Provider != 0 && current_blending_anim.IsValid())
 	{
-		pBlendingProvider = CBoneAnimProvider::GetProviderByID(BlendingAnim.nIndex);
+		pBlendingProvider = CBoneAnimProvider::GetProviderByID(current_blending_anim.nIndex);
 		if (pBlendingProvider)
 		{
 			if (nBoneID > 0)
@@ -151,10 +166,10 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		//////////////////////////////////////////////////////////////////////////
 		// Both current and blending anim are local
 		Matrix4 m, mLocalRot;
-		int nCurrentAnim = CurrentAnim.nIndex;
-		int currentFrame = CurrentAnim.nCurrentFrame;
-		int nBlendingAnim = BlendingAnim.nIndex;
-		int blendingFrame = BlendingAnim.nCurrentFrame;
+		int nCurrentAnim = current_anim.nIndex;
+		int currentFrame = current_anim.nCurrentFrame;
+		int nBlendingAnim = current_blending_anim.nIndex;
+		int blendingFrame = current_blending_anim.nCurrentFrame;
 
 		if (IsStaticTransform())
 		{
@@ -245,7 +260,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m = m.Multiply4x3(mLocalRot);
 				}
 				else if (rot.used) {
-					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 					mLocalRot = Matrix4(q.invertWinding());
 					m = m.Multiply4x3(mLocalRot);
 				}
@@ -255,7 +270,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m.offsetTrans(tr);
 				}
 				else if (trans.used) {
-					tr = trans.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+					tr = trans.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 					m.offsetTrans(tr);
 				}
 				m.offsetTrans(pivot);
@@ -274,7 +289,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 						m = m.Multiply4x3(mLocalRot);
 					}
 					else if (rot.used) {
-						q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+						q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 						mLocalRot = Matrix4(q.invertWinding());
 						m = m.Multiply4x3(mLocalRot);
 					}
@@ -287,7 +302,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 						m = mLocalRot;
 					}
 					else if (rot.used) {
-						q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+						q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 						mLocalRot = Matrix4(q.invertWinding());
 						m = mLocalRot;
 					}
@@ -300,7 +315,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m.offsetTrans(tr);
 				}
 				else if (trans.used) {
-					tr = trans.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+					tr = trans.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 					m.offsetTrans(tr);
 				}
 			}
@@ -311,7 +326,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		}
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else
@@ -324,10 +339,10 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		Matrix4 m, mLocalRot;
 		mLocalRot.identity();
 		m.identity();
-		int nCurrentAnim = CurrentAnim.nIndex;
-		int currentFrame = CurrentAnim.nCurrentFrame;
-		int nBlendingAnim = BlendingAnim.nIndex;
-		int blendingFrame = BlendingAnim.nCurrentFrame;
+		int nCurrentAnim = current_anim.nIndex;
+		int currentFrame = current_anim.nCurrentFrame;
+		int nBlendingAnim = current_blending_anim.nIndex;
+		int blendingFrame = current_blending_anim.nCurrentFrame;
 
 		// Compute transform matrix from SRT keys and the pivot point. m[column] = (pivot)*T*R*S*(-pivot)
 		if (bUsePivot)
@@ -337,7 +352,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			if (scale.used)
 			{
 				// always uses local scale
-				sc = scale.getValue(CurrentAnim);
+				sc = scale.getValue(current_anim);
 
 				m.m[0][0] = sc.x;
 				m.m[1][1] = sc.y;
@@ -360,34 +375,34 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 				Quaternion blendValue;
 				if (pCurBone != NULL)
 				{
-					currentValue = pCurBone->rot.getValue(pCurProvider->GetSubAnimID(), CurrentAnim.nCurrentFrame);
+					currentValue = pCurBone->rot.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
 				}
 				else
 				{
-					if (CurrentAnim.Provider == 0)
-						currentValue = rot.getValue(CurrentAnim);
+					if (current_anim.Provider == 0)
+						currentValue = rot.getValue(current_anim);
 					else
 						currentValue = rot.getDefaultValue();
 				}
-				if (blendingFactor != 0.f)
+				if (current_blending_factor != 0.f)
 				{
 					if (pBlendBone != NULL)
 					{
-						blendValue = pBlendBone->rot.getValue(pBlendingProvider->GetSubAnimID(), BlendingAnim.nCurrentFrame);
+						blendValue = pBlendBone->rot.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
 					}
 					else
 					{
-						if (BlendingAnim.Provider == 0)
-							blendValue = rot.getValue(BlendingAnim);
+						if (current_blending_anim.Provider == 0)
+							blendValue = rot.getValue(current_blending_anim);
 						else
 							blendValue = currentValue;
 					}
-					if (pCurBone == NULL && CurrentAnim.Provider != 0)
+					if (pCurBone == NULL && current_anim.Provider != 0)
 					{
 						currentValue = blendValue;
 					}
 				}
-				q = rot.BlendValues(currentValue, blendValue, blendingFactor);
+				q = rot.BlendValues(currentValue, blendValue, current_blending_factor);
 				mLocalRot = Matrix4(q.invertWinding());
 				m = m * mLocalRot;
 			}
@@ -396,7 +411,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 				if (!(nBoneID == Bone_Root || (nBoneID >= Bone_forehand && nBoneID <= Bone_chin)))
 				{
 					// this is any other bone, except the root bone and facial animation bone.
-					tr = trans.getValue(CurrentAnim, BlendingAnim, blendingFactor);
+					tr = trans.getValue(current_anim, current_blending_anim, current_blending_factor);
 					m.offsetTrans(tr);
 				}
 				else
@@ -408,7 +423,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 
 					if (pCurBone != NULL)
 					{
-						currentValue = pCurBone->trans.getValue(pCurProvider->GetSubAnimID(), CurrentAnim.nCurrentFrame);
+						currentValue = pCurBone->trans.getValue(pCurProvider->GetSubAnimID(), current_anim.nCurrentFrame);
 						if (nBoneID == Bone_Root)
 						{
 							// translation animation is scaled uniformly according to the pivot point Y values in the external animation file vs local file.
@@ -417,17 +432,17 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					}
 					else
 					{
-						if (CurrentAnim.Provider == 0)
-							currentValue = trans.getValue(CurrentAnim);
+						if (current_anim.Provider == 0)
+							currentValue = trans.getValue(current_anim);
 						else
 							currentValue = trans.getDefaultValue();
 					}
 
-					if (blendingFactor != 0.f)
+					if (current_blending_factor != 0.f)
 					{
 						if (pBlendBone != NULL)
 						{
-							blendValue = pBlendBone->trans.getValue(pBlendingProvider->GetSubAnimID(), BlendingAnim.nCurrentFrame);
+							blendValue = pBlendBone->trans.getValue(pBlendingProvider->GetSubAnimID(), current_blending_anim.nCurrentFrame);
 							if (nBoneID == Bone_Root)
 							{
 								// translation animation is scaled uniformly according to the pivot point Y values in the external animation file vs local file.
@@ -436,18 +451,18 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 						}
 						else
 						{
-							if (BlendingAnim.Provider == 0)
-								blendValue = trans.getValue(BlendingAnim);
+							if (current_blending_anim.Provider == 0)
+								blendValue = trans.getValue(current_blending_anim);
 							else
 								blendValue = currentValue;
 						}
-						if (pCurBone == NULL && CurrentAnim.Provider != 0)
+						if (pCurBone == NULL && current_anim.Provider != 0)
 						{
 							currentValue = blendValue;
 						}
 					}
 
-					tr = trans.BlendValues(currentValue, blendValue, blendingFactor);
+					tr = trans.BlendValues(currentValue, blendValue, current_blending_factor);
 					m.offsetTrans(tr);
 				}
 			}
@@ -483,7 +498,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 			if (scale.used)
 			{
 				// always uses local scale
-				sc = scale.getValue(CurrentAnim);
+				sc = scale.getValue(current_anim);
 
 				m.makeScale(sc);
 				if (GetExternalRot(pAnimInstance, q))
@@ -492,7 +507,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m = m.Multiply4x3(mLocalRot);
 				}
 				else if (rot.used) {
-					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 					mLocalRot = Matrix4(q.invertWinding());
 					m = m.Multiply4x3(mLocalRot);
 				}
@@ -505,7 +520,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m = mLocalRot;
 				}
 				else if (rot.used) {
-					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, blendingFactor);
+					q = rot.getValue(nCurrentAnim, currentFrame, nBlendingAnim, blendingFrame, current_blending_factor);
 					mLocalRot = Matrix4(q.invertWinding());
 					m = mLocalRot;
 				}
@@ -513,14 +528,14 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 					m.identity();
 			}
 			if (trans.used) {
-				tr = trans.getValue(CurrentAnim, BlendingAnim, blendingFactor);
+				tr = trans.getValue(current_anim, current_blending_anim, current_blending_factor);
 				m.offsetTrans(tr);
 			}
 		}
 
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else
@@ -790,15 +805,18 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		string sAttName = sName.substr(4);
 		if (sAttName == "lefthand")
 		{
-			SetBoneID(-ATT_ID_HAND_LEFT);
+			SetBoneID(- ATT_ID_HAND_LEFT);
+			mIsUpper = true;
 		}
 		else if (sAttName == "righthand")
 		{
 			SetBoneID(-ATT_ID_HAND_RIGHT);
+			mIsUpper = true;
 		}
 		else if (sAttName == "head")
 		{
 			SetBoneID(-ATT_ID_HEAD);
+			mIsUpper = true;
 		}
 		else if (sAttName == "text")
 		{
@@ -819,10 +837,12 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		else if (sAttName == "boots")
 		{
 			SetBoneID(-ATT_ID_BOOTS);
+			mIsUpper = true;
 		}
 		else if (sAttName == "neck")
 		{
 			SetBoneID(-ATT_ID_NECK);
+			mIsUpper = true;
 		}
 		else if (sAttName == "mouth")
 		{
@@ -871,6 +891,9 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 			nAttID = ATT_ID_MOUNT1 + (nMountBoneIndex - 1);
 		}
 		SetBoneID(-nAttID);
+
+		if (nMountBoneIndex >= 1 && nMountBoneIndex <= 7)
+			mIsUpper = true;
 	}
 	else
 	{
@@ -879,11 +902,13 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_R_Hand);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "l?hand"))
 		{
 			SetBoneID(Bone_L_Hand);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "l?foot"))
 		{
@@ -899,11 +924,13 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_L_UpperArm);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "r?upperarm"))
 		{
 			SetBoneID(Bone_R_UpperArm);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "pelvis"))
 		{
@@ -914,11 +941,13 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_Spine);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "spine1"))
 		{
 			SetBoneID(Bone_Spine1);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "spine2"))
 		{
@@ -954,21 +983,25 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_L_Forearm);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "r?forearm"))
 		{
 			SetBoneID(Bone_R_Forearm);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "l?clavicle"))
 		{
 			SetBoneID(Bone_L_Clavicle);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "r?clavicle"))
 		{
 			SetBoneID(Bone_R_Clavicle);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if (StringHelper::StrEndsWithWord(sName, "l?toe0"))
 		{
@@ -984,6 +1017,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		{
 			SetBoneID(Bone_Neck);
 			SetIdentifier("");
+			mIsUpper = true;
 		}
 		else if ((nPos = sName.find("head")) != string::npos)
 		{
@@ -992,6 +1026,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 			{
 				SetBoneID(Bone_Head);
 				SetIdentifier("");
+				mIsUpper = true;
 			}
 		}
 	}

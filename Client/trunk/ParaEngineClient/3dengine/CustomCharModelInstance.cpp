@@ -485,7 +485,7 @@ void CharModelInstance::UpdateTexturesToModel(CParaXModel* pModel)
 	}
 }
 
-bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& CurrentAnim, const AnimIndex& NextAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
+bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& CurrentAnim, const AnimIndex& NextAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
 {
 	ParaXEntity * pModelAsset = GetBaseModel();
 	if (pModelAsset == NULL)
@@ -511,6 +511,9 @@ bool CharModelInstance::AnimateModel(SceneState * sceneState, const AnimIndex& C
 	pModel->m_BlendingAnim = BlendingAnim;
 	pModel->blendingFactor = blendingFactor;
 
+	pModel->mUpperAnim = upperAnim;
+	pModel->mUpperBlendingAnim = upperBlendingAnim;
+	pModel->mUpperBlendingFactor = upperBlendingFactor;
 
 	if (m_bIsCustomModel)
 	{

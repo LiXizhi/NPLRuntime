@@ -13,7 +13,7 @@
 
 using namespace ParaEngine;
 
-void ParaEngine::CBoneChain::RotateBoneChain(const Vector3& vAxis, Bone* allBones, int nMaxBoneNum, float fAngle, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance /*= NULL*/)
+void ParaEngine::CBoneChain::RotateBoneChain(const Vector3& vAxis, Bone* allBones, int nMaxBoneNum, float fAngle, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance /*= NULL*/)
 {
 	for (int i = 0; i < m_nBoneCount; i++)
 	{
@@ -21,7 +21,7 @@ void ParaEngine::CBoneChain::RotateBoneChain(const Vector3& vAxis, Bone* allBone
 		if (nBoneID < nMaxBoneNum && nBoneID >= 0)
 		{
 			Bone & bone = allBones[nBoneID];
-			bone.calcMatrix(allBones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+			bone.calcMatrix(allBones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 			// just rotate one bone at most. 
 			Matrix4 mAfterRot(Quaternion(vAxis, fAngle));
 			if (bone.bUsePivot)

@@ -429,7 +429,7 @@ Matrix4* ParaEngine::CLightObject::GetAttachmentMatrix(Matrix4& matOut, int nAtt
 		if (pModel)
 		{
 			Matrix4* pOut = &matOut;
-			if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, AnimIndex(), 0.f))
+			if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, AnimIndex(), 0.f, m_CurrentAnim, AnimIndex(), 0.f))
 			{
 				Matrix4 matScale;
 				float fScaling = GetScaling();

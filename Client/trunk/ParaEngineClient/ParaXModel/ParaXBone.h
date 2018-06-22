@@ -107,7 +107,7 @@ namespace ParaEngine
 		* [0,1), blendingFrame*(blendingFactor)+(1-blendingFactor)*currentFrame
 		* @param pAnimInstance: if specified, we will use rotation variable in the animation instance if any.
 		*/
-		bool calcMatrix(Bone* allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance = NULL);
+		bool calcMatrix(Bone* allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = NULL);
 		/** for static bones */
 		void calcMatrix(Bone* allbones);
 
@@ -225,6 +225,10 @@ namespace ParaEngine
 		
 		bool calc;
 		bool bUsePivot;
+
+
+
+		bool mIsUpper;
 
 		/** max number of bones per vertex, currently this is 4. */
 		const static int s_MaxBonesPerVertex = 4;

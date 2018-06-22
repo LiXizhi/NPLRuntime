@@ -188,7 +188,10 @@ namespace ParaEngine
 		virtual bool HasAlphaBlendedObjects();
 		/** look for a valid animation ID for nAnimID. return -1 if no animation is found. e.g. if nAnimId 4 not found, 0 will be returned. */
 		virtual int GetValidAnimID(int nAnimID);
-		
+
+		virtual void SetUpperAnimation(int nAnimID);
+		virtual int GetUpperAnimation();
+
 	public:
 		/** current animation index, this is different from sequence ID
 		* an absolute ParaX frame number denoting the current animation frame. It is always within
@@ -223,6 +226,11 @@ namespace ParaEngine
 
 		/** current time for dynamic fields. */
 		int m_curTime;
+
+
+		AnimIndex mUpperAnim;
+		AnimIndex mUpperBlendingAnim;
+		float mUpperBlendingFactor;
 	private:
 		/// the type of the model 
 		ModelType m_modelType;

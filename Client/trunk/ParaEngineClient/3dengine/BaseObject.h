@@ -428,6 +428,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, GetAnimation_s, int*)		{*p1 = cls->GetAnimation(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetAnimation_s, int)		{cls->SetAnimation(p1); return S_OK;}
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetUpperAnimation_s, int*) { *p1 = cls->GetUpperAnimation(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetUpperAnimation_s, int) { cls->SetUpperAnimation(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, GetAnimFrame_s, int*)		{*p1 = cls->GetAnimFrame(); return S_OK;}
 	ATTRIBUTE_METHOD1(CBaseObject, SetAnimFrame_s, int)		{cls->SetAnimFrame(p1); return S_OK;}
 
@@ -1023,6 +1026,8 @@ public:
 	* @param nAnimID: 0 is default standing animation. 4 is walking, 5 is running. more information, please see AnimationID */
 	virtual void SetAnimation(int nAnimID){};
 
+	virtual void SetUpperAnimation(int nAnimID){}
+
 	/** set groups Mask used to filter physics objects, default to 0xffffffff*/
 	virtual void SetPhysicsGroupMask(DWORD dwValue); 
 
@@ -1031,6 +1036,8 @@ public:
 
 	/** get the scaling. */
 	virtual int GetAnimation(){return 0;};
+
+	virtual int GetUpperAnimation() { return 0; }
 
 	/** set the current animation frame number relative to the beginning of current animation. 
 	* @param nFrame: 0 means beginning. if nFrame is longer than the current animation length, it will wrap (modulate the length).
