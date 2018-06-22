@@ -1340,6 +1340,7 @@ bool TParseContext::executeInitializer(TSourceLoc line, TString& identifier, con
 	{
 		variable->constValue = initializer->getAsConstant();
 	}
+	variable->initValue = initializer;
 	
 //ACS: this was stopping non-type-explicit constant initializers from working (was that by design?)
 //  e.g. it allowed this: 

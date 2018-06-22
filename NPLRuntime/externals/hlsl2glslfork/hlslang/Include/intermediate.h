@@ -279,8 +279,8 @@ public:
 
 	virtual TIntermTyped*     getAsTyped() { return 0; }
 	virtual TIntermOperator*  getAsOperatorNode() { return 0; }
-	virtual TIntermConstant*     getAsConstant() { return 0; }
-	virtual TIntermAggregate* getAsAggregate() { return 0; }
+	virtual TIntermConstant*     getAsConstant()  { return 0; }
+	virtual TIntermAggregate* getAsAggregate()   { return 0; }
 	virtual TIntermBinary*    getAsBinaryNode() { return 0; }
 	virtual TIntermSelection* getAsSelectionNode() { return 0; }
 	virtual TIntermSymbol*    getAsSymbolNode() { return 0; }
@@ -408,7 +408,7 @@ public:
 		symbol = sym;
 	} 
 
-	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t, const TIntermConstant* value) :
+	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t,TIntermTyped* value) :
 		TIntermTyped(t), id(i), info(inf), global(false),constvalue(value)
 	{
 		symbol = sym;
@@ -428,7 +428,7 @@ public:
 	{
 		return this;
 	}
-	const  TIntermConstant* GetConstValue()
+	TIntermTyped* GetConstValue()
 	{
 		return constvalue;
 	}
@@ -437,7 +437,7 @@ protected:
 	bool global;
 	TString symbol;
 	const TTypeInfo *info;
-	const TIntermConstant* constvalue;
+	TIntermTyped* constvalue;
 };
 
 class TIntermDeclaration : public TIntermTyped {

@@ -29,9 +29,9 @@ TIntermSymbol* ir_add_symbol(const TVariable* var, TSourceLoc line)
 {
 	TIntermSymbol* node = NULL;
 
-	if (var->constValue != NULL)
+	if (var->initValue != NULL)
 	{
-		node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(),var->constValue, line);
+		node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(),var->initValue, line);
 	}
 	else {
 		node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(), line);
@@ -48,7 +48,7 @@ TIntermSymbol* ir_add_symbol_internal(int id, const TString& name, const TTypeIn
 	node->setLine(line);
 	return node;
 }
-TIntermSymbol* ir_add_symbol_internal(int id, const TString& name, const TTypeInfo *info, const TType& type, const TIntermConstant* constvalue, TSourceLoc line)
+TIntermSymbol* ir_add_symbol_internal(int id, const TString& name, const TTypeInfo *info, const TType& type,TIntermTyped* constvalue, TSourceLoc line)
 {
 	TIntermSymbol* node = new TIntermSymbol(id, name, info, type,constvalue);
 	node->setLine(line);

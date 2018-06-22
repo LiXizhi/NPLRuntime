@@ -7,7 +7,8 @@
 
 float4x4 mWorldViewProj: worldviewprojection;
 bool k_bBoolean0:boolean0;
-float g_opacity:opacity = 1.0f; 
+float2 g_TexScale	:ConstVector2 = float2(1.f, 1.f);
+float test = 1.5;
 // texture 0
 texture tex0 : TEXTURE; 
 sampler tex0Sampler : register(s0) = sampler_state 
@@ -35,7 +36,7 @@ v2f vert(appdata v)
 {
 	v2f o = (v2f)0;
 	o.vertex = 	mul(v.vertex, mWorldViewProj);
-	o.uv = v.uv;
+	o.uv = v.uv * g_TexScale;
     o.color = v.color;
 	return o;
 }

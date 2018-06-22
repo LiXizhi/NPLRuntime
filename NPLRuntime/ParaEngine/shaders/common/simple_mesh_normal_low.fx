@@ -30,7 +30,7 @@ float g_bReflectFactor	:reflectfactor;
 float3 g_EyePositionW	:worldcamerapos;
 float2 g_TexOffset		:ConstVector0; // TODO: for testing texture animation: x,y for translation
 float3 g_TexRot			:ConstVector1;
-float2 g_TexScale		:ConstVector2 = { 1.0f, 1.0f };
+float2 g_TexScale		:ConstVector2 = float2(1.f,1.f);
 //bool g_bNormalMap		:boolean6;
 float g_opacity			:opacity = 1.f; 
 

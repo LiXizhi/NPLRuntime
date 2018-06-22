@@ -580,7 +580,7 @@ void TGlslOutputTraverser::traverseSymbol(TIntermSymbol *node, TIntermTraverser 
 				registerSpec = node->getInfo()->getRegister().c_str();
 			}
 			
-			GlslSymbol * sym = new GlslSymbol( node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
+			GlslSymbol * sym = new GlslSymbol(node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
 				translateType(node->getTypePointer()), goit->m_UsePrecision?node->getPrecision():EbpUndefined, translateQualifier(node->getQualifier()),node->GetConstValue(), array);
 			sym->setIsGlobal(node->isGlobal());
 
