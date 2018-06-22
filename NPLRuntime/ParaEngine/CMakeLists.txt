@@ -106,6 +106,10 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
 
+    SOURCE_GROUP("ShaderFiles" FILES ${SHADER_FILES})
+	SET_SOURCE_FILES_PROPERTIES(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    list(APPEND sources_rendersystem ${SHADER_FILES})
+    
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
 
 
