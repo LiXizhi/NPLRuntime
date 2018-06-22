@@ -124,7 +124,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 	pEffectManager->BeginEffect(TECH_FULL_SCREEN_GLOW);
 	CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 	
-	if(pEffectFile != 0 && pEffectFile->begin(true, 0))
+	if(pEffectFile != 0 && pEffectFile->begin(true))
 	{
 		// full screen glow effect is completed in four steps.
 		assert(pEffectFile->totalPasses() == 4);
@@ -185,7 +185,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			if(pEffectFile->BeginPass(0))
 			{
 				pEffectFile->setTexture(0, m_pRTHalfSizeTexture);
-				auto fx = pEffectFile->GetDXEffect();
+				auto fx = pEffectFile->GetDeviceEffect();
 				fx->SetFloat(fx->GetParameterByName("glowThreshold"),fGlowThreshold);
 				
 				pEffectFile->CommitChanges();
@@ -264,8 +264,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 			pEffectFile->setTexture(1,m_pRTBlurVertTexture);
 
 			Vector4 glowParam = pEffectManager->GetGlowness();
-			auto fx = pEffectFile->GetDXEffect();
-			fx->SetVector(fx->GetParameterByName("glowParams"),(DeviceVector4*)&glowParam);
+			pEffectFile->SetRawValue("glowParams",(DeviceVector4*)&glowParam,0,sizeof(Vector4));
 
 			pEffectFile->CommitChanges();
 
@@ -330,7 +329,7 @@ void CGlowEffect::SetBlurEffectParameters(float dx,float dy,float blurAmount,CEf
 
 
 	//optimize code here!!!
-	auto fx = pEffect->GetDXEffect();
+	auto fx = pEffect->GetDeviceEffect();
 	fx->SetFloatArray(fx->GetParameterByName("sampleWeight"),sampleWeights,sampleCount);
 	fx->SetFloatArray(fx->GetParameterByName("sampleOffset"),sampleOffset,sampleCount * 2);
 }

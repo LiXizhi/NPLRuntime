@@ -1,7 +1,6 @@
 #pragma once
 #include "effect_file.h"
 #include "ParameterBlock.h"
-#include "dxeffects.h"
 #include <unordered_map>
 #include <functional>
 
@@ -11,42 +10,78 @@ namespace ParaEngine
 
 	class CEffectFileImpl : public CEffectFileBase
 	{
+
+
 	public:
 		CEffectFileImpl(const char* filename);
 		CEffectFileImpl(const AssetKey& key);
-		virtual  ~CEffectFileImpl();
+	public:
+		virtual  ~CEffectFileImpl() override;
+		virtual HRESULT InitDeviceObjects() override;
+		virtual HRESULT RestoreDeviceObjects() override;
+		virtual HRESULT InvalidateDeviceObjects() override;
+		virtual HRESULT DeleteDeviceObjects() override;
+		virtual void SetFileName(const std::string& filename) override;
 
-		// Operators...
-		// Mutators...
-		virtual HRESULT InitDeviceObjects();
-		virtual HRESULT RestoreDeviceObjects();
-		virtual HRESULT InvalidateDeviceObjects();
-		virtual HRESULT DeleteDeviceObjects();
+		virtual bool begin(bool bApplyParam = true, bool forceBegin = false) override;
+		virtual bool BeginPass(int pass, bool bForceBegin = false) override;
+		virtual void CommitChanges() override;
+		virtual void EndPass(bool bForceEnd = false) override;
+		virtual void end(bool bForceEnd = false) override;
 
-		bool saveResource(const char* filename = 0);	// save the resource to a file (or NULL to use the resource name)
+		virtual bool SetFirstValidTechniqueByCategory(TechniqueCategory nCat) override;
+		virtual bool SetTechniqueByIndex(int nIndex) override;
+		virtual const TechniqueDesc* GetCurrentTechniqueDesc() override;
 
-														/** set inner file name, usually at the load time. */
-		void SetFileName(const std::string& filename);
 
-		/**
-		@param bApplyParam: whether to apply current camera and lighting parameters to shader
-		@param flag: default is not saving any state
-		D3DXFX_DONOTSAVESTATE:  No state is saved when calling Begin or restored when calling End.  (1 << 0)
-		D3DXFX_DONOTSAVESAMPLERSTATE:  A stateblock saves state when calling Begin and restores state when calling End. (1 << 2)
-		D3DXFX_DONOTSAVESHADERSTATE: A stateblock saves state (except shaders and shader constants) when calling Begin and restores state when calling End.
-		@param bShare: if this false, it will only begin the effect if the effect file is not in shared mode.
-		*/
-		bool begin(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = false);
-		bool BeginPass(int pass, bool bForceBegin = false);
-		void CommitChanges();
-		void EndPass(bool bForceEnd = false);
-		void end(bool bForceEnd = false);
+		virtual bool setParameter(eParameterHandles index, const void* data, uint32_t size) override;
+		virtual bool setBool(eParameterHandles index, bool bBoolean)  override;
+		virtual bool setInt(eParameterHandles index, int nValue)  override;
+		virtual bool setFloat(eParameterHandles index, float fValue)  override;
+		virtual bool setMatrix(eParameterHandles index, const Matrix4* data) override;
+		virtual bool setMatrixArray(eParameterHandles index, const Matrix4* data, uint32_t count);
+		virtual bool setFloatArray(eParameterHandles index, const float* data, uint32_t count);
+		virtual bool setVectorArray(eParameterHandles index, const Vector4* pVector, uint32_t count);
+		virtual bool setTexture(int index, TextureEntity* data) override;
+		virtual bool setTexture(int index, DeviceTexturePtr_type pTex) override;
+
+
+		virtual bool SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes) override;
+		virtual bool SetBool(const char* name, bool bBoolean) override;
+		virtual bool SetInt(const char* name, int nValue) override;
+		virtual bool SetFloat(const char* name, float fValue) override;
+		virtual bool SetVector2(const char* name, const Vector2& vValue) override;
+		virtual bool SetVector3(const char* name, const Vector3& vValue) override;
+		virtual bool SetVector4(const char* name, const Vector4& vValue) override;
+		virtual bool SetMatrix(const char* name, const Matrix4& data) override;
+		virtual bool SetBoolean(int nIndex, bool value) override;
+
+		void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true) override;
+		void applyCameraMatrices() override;
+		void applyWorldMatrices() override;
+		void applyGlobalLightingData(CSunLight& sunlight) override;
+
+		void EnableAlphaBlending(bool bAlphaBlending) override;
+		virtual void EnableAlphaTesting(bool bAlphaTesting) override;
+		virtual void EnableSunLight(bool bEnableSunLight) override;
+		virtual bool EnableEnvironmentMapping(bool bEnable) override;
+		virtual bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight = 0.f) override;
+		virtual void SetReflectFactor(float fFactor) override;
+		virtual void EnableNormalMap(bool bEnable) override;
+		virtual void EnableLightMap(bool bEnable) override;
+
+	public:
+
+		// save the resource to a file (or NULL to use the resource name)
+		bool saveResource(const char* filename = 0);	
+	 	
 		void EnableShareMode(bool bEnable);
 		bool IsInShareMode();
 
+
 		/** This is a handy function that calls EnableShareMode(true), begin() and then BeginPass().
 		*/
-		bool BeginSharePassMode(bool bApplyParam = true, DWORD flag = 0, bool bForceBegin = true);
+		bool BeginSharePassMode(bool bApplyParam = true);
 
 		/** This is a handy function that calls EnableShareMode(false), EndPass(true), end(true).
 		*/
@@ -59,119 +94,35 @@ namespace ParaEngine
 		void OnSwitchOutShader();
 
 		/**
-		* Set technique if it is different from the current one.
-		*@param nCat: @see TechniqueCategory
-		*@return: return true if the technique is found and successfully set.
-		*/
-		bool SetFirstValidTechniqueByCategory(TechniqueCategory nCat);
-		/**
-		* Set technique if it is different from the current one.
-		* multiple calls to this function with the same index takes no effect.
-		* @param nIndex 0 based index.
-		* @return: return true if the technique is found and successfully set.
-		*/
-		bool SetTechniqueByIndex(int nIndex);
-		/** get the current technique description. This function may return NULL*/
-		const TechniqueDesc* GetCurrentTechniqueDesc();
-		/**
 		* current technique index.
 		* @return
 		*/
 		int GetCurrentTechniqueIndex();
 
-		int totalPasses()const;
+		int totalPasses() const;
 
 		bool isParameterUsed(eParameterHandles index)const;
 		bool isMatrixUsed(eParameterHandles index)const;
 		bool isTextureUsed(int index)const;
 		bool isTextureMatrixUsed(int index)const;
-
-		bool setParameter(eParameterHandles index, const void* data, INT32 size)const;
-		bool setBool(eParameterHandles index, BOOL bBoolean) const;
-		bool setInt(eParameterHandles index, int nValue) const;
-		bool setFloat(eParameterHandles index, float fValue) const;
-		bool setMatrix(eParameterHandles index, const Matrix4* data)const;
-		bool setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const;
-		bool setFloatArray(eParameterHandles index, const float* data, UINT32 count)const;
-		bool setVectorArray(eParameterHandles index, const Vector4* pVector, UINT count)const;
-		bool setTexture(int index, TextureEntity* data);
-		bool setTexture(int index, DeviceTexturePtr_type pTex);
 		bool setTextureInternal(int index, DeviceTexturePtr_type pTex);
-		void SetShadowMapSize(int nsize);
+		virtual void SetShadowMapSize(int nsize);
 		/** set the shadow radius */
 		void SetShadowRadius(float fRadius);
 
-		/**
-		* @param bUseGlobalAmbient: if true and that the ambient in pSurfaceMaterial is 0, the ambient in the material is ignored. and the scene's ambient color will be used.
-		*/
-		void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true);
-		void applyCameraMatrices();
-		void applyWorldMatrices();
-		void applyGlobalLightingData(CSunLight& sunlight);
-		void applyLocalLightingData(const LightList* lights, int nLightNum);
 		void applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor);
 		void applyLayersNum(int nLayers);
 		void applyTexWorldViewProj(const Matrix4* mat);
-
-		// texture alpha operation attribute
-		/** whether to enable alpha blending in shader. */
-		void EnableAlphaBlending(bool bAlphaBlending);
-		/** whether to enable alpha testing */
-		void EnableAlphaTesting(bool bAlphaTesting);
-		/** whether to enable sun light calculation */
-		void EnableSunLight(bool bEnableSunLight);
-		/** one occasion to disable textures is during the shadow pass. When textures are disabled all setTexture call will take no effect. */
+		void applyLocalLightingData(const LightList* lights, int nLightNum);
 		static void EnableTextures(bool bEnable);
 		static bool AreTextureEnabled();
-		/** whether to enable rendering with shadow map
-		*@param nShadowMethod: 0 disable shadow map; 1 hardware shadow map; 2 F32 shadow map
-		*/
 		void EnableShadowmap(int nShadowMethod);
-
-		/** set a boolean parameter.
-		@param nIndex: range 0-15, value 0-7 is reserved for lights.
-		@return true if successful
-		*/
-		bool SetBoolean(int nIndex, bool value);
-
-		/**
-		* enable environment mapping
-		* @param bEnable
-		* @return true if successfully set.
-		*/
-		bool EnableEnvironmentMapping(bool bEnable);
-		/**
-		* enable reflection mapping
-		* @param bEnable
-		* @param fSurfaceHeight: surface height in current model space. only used when bEnable is true.
-		* @return true if successfully set.
-		*/
-		bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight = 0.f);
-
-		/**
-		* set shader parameter "reflectFactor"
-		* @param fFactor (0,1). 1 is fully reflective. 0 is not reflective.
-		*/
-		void SetReflectFactor(float fFactor);
-		/**
-		* whether to enable the use of normal map
-		* @param bEnable
-		*/
-		void EnableNormalMap(bool bEnable);
-
-		/**
-		* whether to enable the use of light map
-		* @param bEnable
-		*/
-		void EnableLightMap(bool bEnable);
-
 		/** get directX effect object associated with this object. */
-		std::shared_ptr<IParaEngine::IEffect> GetDXEffect();
-
+		std::shared_ptr<IParaEngine::IEffect> GetDeviceEffect();
 		/** get effect parameter block with this object.
 		* @param bCreateIfNotExist:
 		*/
-		virtual CParameterBlock* GetParamBlock(bool bCreateIfNotExist = false);
+		CParameterBlock* GetParamBlock(bool bCreateIfNotExist = false);
 
 		/** Lock a texture at a given index. A locked texture will make all subsequent calls to setTexture takes no effect, thus preserving old value in video card.
 		* @param nIndex: 0 based index of the texture registry. If -1 it will lock all.
@@ -190,14 +141,6 @@ namespace ParaEngine
 		/** get texture handle at the given index. */
 		IParaEngine::ParameterHandle& GetTextureHandle(int nIndex);
 
-		virtual bool SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes) override;
-		virtual bool SetBool(const char* name, BOOL bBoolean) override;
-		virtual bool SetInt(const char* name, int nValue) override;
-		virtual bool SetFloat(const char* name, float fValue) override;
-		virtual bool SetVector2(const char* name, const Vector2& vValue) override;
-		virtual bool SetVector3(const char* name, const Vector3& vValue) override;
-		virtual bool SetVector4(const char* name, const Vector4& vValue) override;
-		virtual bool SetMatrix(const char* name, const Matrix4& data) override;
 
 	private:
 		// effect file name
@@ -244,7 +187,7 @@ namespace ParaEngine
 
 	
 	// this is the actually class used externally. it does following:
-	// typedef CEffectFileOpenGL CEffectFile;
+
 	class CEffectFile : public CEffectFileImpl
 	{
 	public:

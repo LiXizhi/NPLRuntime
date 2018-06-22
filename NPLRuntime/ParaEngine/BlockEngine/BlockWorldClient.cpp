@@ -321,7 +321,7 @@ namespace ParaEngine
 			// in case it loses accuracy, we will subtract integer number of 2*PI from time
 			// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
 			time = (int)(time*1000) % 1000000;
-			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr(),sizeof(Vector4));
 
 			IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
 			GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);

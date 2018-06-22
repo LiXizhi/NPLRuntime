@@ -1406,18 +1406,18 @@ namespace ParaEngine
 		OceanColor.g = 0.8f;
 		OceanColor.b = 0.96f;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)OceanColor,sizeof(LinearColor));
 		OceanColor.r*=0.7f;
 		OceanColor.g*=0.7f;
 		OceanColor.b*=0.7f;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor, sizeof(LinearColor));
 
 		// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 		Vector4 vBumpSpeed(0.f, 0.f, 0.f,0.f);
 		vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 		vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+		pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 
 		pEffectFile->setFloat(CEffectFile::k_time, m_fBumpTime);
 		//pEffectFile->setInt(CEffectFile::k_specularPower, 20);
@@ -1426,7 +1426,7 @@ namespace ParaEngine
 			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))), sizeof(Vector4));
 		
 		/** for under water surface rendering, we will use NONE culling, 
 		* for above water surface rendering, we will use CCW culling. */
@@ -1438,7 +1438,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1451,7 +1451,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 			int totalPasses = pEffectFile->totalPasses();
 
@@ -1522,7 +1522,7 @@ namespace ParaEngine
 								v[i].p -= vRenderOrig; // shift the render origin
 							}
 
-							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&Vector4((float)(((int)x)%8),(float)(((int)y)%8),0.f,0.f));
+							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&Vector4((float)(((int)x)%8),(float)(((int)y)%8),0.f,0.f), sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -1577,31 +1577,31 @@ namespace ParaEngine
 		OceanColor.g*=m_colorOcean.g;
 		OceanColor.b*=m_colorOcean.b;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor,sizeof(LinearColor));
 		{
 			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 		}
 
 		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, 
 			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))),sizeof(Vector4));
 		if(m_underwater)
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(-1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.20f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(5.0f, 0.65f, 0.65f, 0.0f));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(-1.0f, m_fBumpTime, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.20f, 0.0f, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(5.0f, 0.65f, 0.65f, 0.0f), sizeof(Vector4));
 		}
 		else
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.0977f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.0f, 0.0f, 1.0f, 0.0f));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(1.0f, m_fBumpTime, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.0977f, 0.0f, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.0f, 0.0f, 1.0f, 0.0f), sizeof(Vector4));
 		}
 
 		/** for under water surface rendering, we will use NONE culling, 
@@ -1614,7 +1614,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1627,7 +1627,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 
 			// activate the geometry buffers
@@ -1736,7 +1736,7 @@ namespace ParaEngine
 
 							pEffectFile->setParameter(
 								CEffectFile::k_posScaleOffset,
-								&scaleOffset);
+								&scaleOffset, sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -1798,16 +1798,16 @@ namespace ParaEngine
 		OceanColor.g*=m_colorOcean.g;
 		OceanColor.b*=m_colorOcean.b;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor, sizeof(Vector4));
 		{
 			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 		}
 
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, Vector4(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f).ptr());
+		pEffectFile->setParameter(CEffectFile::k_ConstVector1, Vector4(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f).ptr(), sizeof(Vector4));
 		
 		/** for under water surface rendering, we will use NONE culling, 
 		* for above water surface rendering, we will use CCW culling. */
@@ -1819,7 +1819,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1832,7 +1832,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 
 			// activate the geometry buffers
@@ -1918,7 +1918,7 @@ namespace ParaEngine
 
 							pEffectFile->setParameter(
 								CEffectFile::k_posScaleOffset,
-								&scaleOffset);
+								&scaleOffset, sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -2743,7 +2743,7 @@ namespace ParaEngine
 
 				int totalPasses = pEffectFile->totalPasses();
 
-				if (pEffectFile->begin(true, 0))
+				if (pEffectFile->begin(true))
 				{
 					for (int i=0; i<totalPasses; ++i)
 					{

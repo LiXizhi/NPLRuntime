@@ -201,35 +201,35 @@ namespace ParaEngine
 		virtual HRESULT DeleteDeviceObjects(){ return S_OK; };
 
 		/** set inner file name, usually at the load time. */
-		void SetFileName(const std::string& filename){};
+		virtual void SetFileName(const std::string& filename){};
 
 		static void EnableTextures(bool bEnable){};
 		static bool AreTextureEnabled(){ return true; };
 
-		int totalPasses()const { return 0; };
+		virtual int totalPasses()const { return 0; };
 
 		/** whether to enable sun light calculation */
-		void EnableSunLight(bool bEnableSunLight) {};
+		virtual void EnableSunLight(bool bEnableSunLight) {};
 		/**
 		* @param bUseGlobalAmbient: if true and that the ambient in pSurfaceMaterial is 0, the ambient in the material is ignored. and the scene's ambient color will be used.
 		*/
-		void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true) {};
-		void applyCameraMatrices() {};
-		void applyWorldMatrices() {};
-		void applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor) {};
-		void applyGlobalLightingData(CSunLight& sunlight) {};
+		virtual void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true) {};
+		virtual void applyCameraMatrices() {};
+		virtual void applyWorldMatrices() {};
+		virtual void applyFogParameters(bool bEnableFog, const Vector4* fogParam, const LinearColor* fogColor) {};
+		virtual void applyGlobalLightingData(CSunLight& sunlight) {};
 
-		bool setParameter(eParameterHandles index, const void* data, int32 size) { return false; };
-		bool setParameter(eParameterHandles index, const Vector2* data)  { return false; };
-		bool setParameter(eParameterHandles index, const Vector3* data)  { return false; };
-		bool setParameter(eParameterHandles index, const Vector4* data)  { return false; };
+		virtual bool setParameter(eParameterHandles index, const void* data, uint32_t size) { return false; };
+		virtual bool setParameter(eParameterHandles index, const Vector2* data)  { return false; };
+		virtual bool setParameter(eParameterHandles index, const Vector3* data)  { return false; };
+		virtual bool setParameter(eParameterHandles index, const Vector4* data)  { return false; };
 
-		bool setBool(eParameterHandles index, BOOL bBoolean)  { return false; };
-		bool setInt(eParameterHandles index, int nValue)  { return false; };
-		bool setFloat(eParameterHandles index, float fValue)  { return false; };
+		virtual bool setBool(eParameterHandles index, bool bBoolean)  { return false; };
+		virtual bool setInt(eParameterHandles index, int nValue)  { return false; };
+		virtual bool setFloat(eParameterHandles index, float fValue)  { return false; };
 
-		virtual bool SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes) = 0;
-		virtual bool SetBool(const char* name, BOOL bBoolean) = 0;
+		virtual bool SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes) = 0;
+		virtual bool SetBool(const char* name, bool bBoolean) = 0;
 		virtual bool SetInt(const char* name, int nValue) = 0;
 		virtual bool SetFloat(const char* name, float fValue) = 0;
 		virtual bool SetVector2(const char* name, const Vector2& vValue) = 0;
@@ -237,64 +237,64 @@ namespace ParaEngine
 		virtual bool SetVector4(const char* name, const Vector4& vValue) = 0;
 		virtual bool SetMatrix(const char* name, const Matrix4& data) = 0;
 
-		bool isParameterUsed(eParameterHandles index)  { return false; };
-		bool setMatrix(eParameterHandles index, const Matrix4* data) { return false; };
-		bool isMatrixUsed(eParameterHandles index) { return false; };
+		virtual bool isParameterUsed(eParameterHandles index)  { return false; };
+		virtual bool setMatrix(eParameterHandles index, const Matrix4* data) { return false; };
+		virtual bool isMatrixUsed(eParameterHandles index) { return false; };
 
-		bool setTexture(int index, TextureEntity* data) { return false; };
-		bool setTexture(int index, DeviceTexturePtr_type pTex) { return false; };
+		virtual bool setTexture(int index, TextureEntity* data) { return false; };
+		virtual bool setTexture(int index, DeviceTexturePtr_type pTex) { return false; };
 
-		bool SetBoolean(int nIndex, bool value) { return false; };
+		virtual bool SetBoolean(int nIndex, bool value) { return false; };
 
-		bool begin(bool bApplyParam = true, DWORD flag = 0) { return false; };
-		bool BeginPass(int pass, bool bForceBegin = false) { return false; };
-		void CommitChanges() {};
-		void EndPass(bool bForceEnd = false) {};
-		void end(bool bForceEnd = false) {};
+		virtual bool begin(bool bApplyParam, bool forceBegin) { return false; };
+		virtual bool BeginPass(int pass, bool bForceBegin = false) { return false; };
+		virtual void CommitChanges() {};
+		virtual void EndPass(bool bForceEnd = false) {};
+		virtual void end(bool bForceEnd = false) {};
 
-		bool LoadBuildinShader() { return true; };
+		virtual bool LoadBuildinShader() { return true; };
 
 		/**
 		* @param nPass: -1 to release all
 		*/
-		void releaseEffect(int nPass = -1) {};
+		virtual void releaseEffect(int nPass = -1) {};
 
 		/**
 		* enable environment mapping
 		* @param bEnable
 		* @return true if successfully set.
 		*/
-		bool EnableEnvironmentMapping(bool bEnable) { return false; };
+		virtual bool EnableEnvironmentMapping(bool bEnable) { return false; };
 		/**
 		* enable reflection mapping
 		* @param bEnable
 		* @param fSurfaceHeight: surface height in current model space. only used when bEnable is true.
 		* @return true if successfully set.
 		*/
-		bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight = 0.f) { return false; };
+		virtual bool EnableReflectionMapping(bool bEnable, float fSurfaceHeight = 0.f) { return false; };
 
 		/**
 		* set shader parameter "reflectFactor"
 		* @param fFactor (0,1). 1 is fully reflective. 0 is not reflective.
 		*/
-		void SetReflectFactor(float fFactor) {};
+		virtual void SetReflectFactor(float fFactor) {};
 		/**
 		* whether to enable the use of normal map
 		* @param bEnable
 		*/
-		void EnableNormalMap(bool bEnable) {};
+		virtual void EnableNormalMap(bool bEnable) {};
 
 		/**
 		* whether to enable the use of light map
 		* @param bEnable
 		*/
-		void EnableLightMap(bool bEnable) {};
+		virtual void EnableLightMap(bool bEnable) {};
 
 		/** whether to enable alpha blending in shader. */
-		void EnableAlphaBlending(bool bAlphaBlending) {};
+		virtual void EnableAlphaBlending(bool bAlphaBlending) {};
 
 		/** whether to enable alpha testing */
-		void EnableAlphaTesting(bool bAlphaTesting) {};
+		virtual void EnableAlphaTesting(bool bAlphaTesting) {};
 
 
 		/**
@@ -302,18 +302,18 @@ namespace ParaEngine
 		*@param nCat: @see TechniqueCategory
 		*@return: return true if the technique is found and successfully set.
 		*/
-		bool SetFirstValidTechniqueByCategory(TechniqueCategory nCat) { return false; };
+		virtual bool SetFirstValidTechniqueByCategory(TechniqueCategory nCat) { return false; };
 		/**
 		* Set technique if it is different from the current one.
 		* multiple calls to this function with the same index takes no effect.
 		* @param nIndex 0 based index.
 		* @return: return true if the technique is found and successfully set.
 		*/
-		bool SetTechniqueByIndex(int nIndex) { return false; };
+		virtual bool SetTechniqueByIndex(int nIndex) { return false; };
 		/** get the current technique description. This function may return NULL*/
-		const TechniqueDesc* GetCurrentTechniqueDesc() { return NULL; };
+		virtual const TechniqueDesc* GetCurrentTechniqueDesc() { return NULL; };
 
-		void onDrawPass(CParameterBlock* pMaterialParams,int passIndex);
+		virtual void onDrawPass(CParameterBlock* pMaterialParams,int passIndex);
 	};
 }
 

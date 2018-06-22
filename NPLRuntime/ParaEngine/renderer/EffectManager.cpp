@@ -1240,7 +1240,7 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		EnableLocalLighting(false);
 
 		// using a simple shader instead of fixed programming pipeline for occlusion testing
-		if(m_pCurrentEffect->begin(true, 0, false))
+		if(m_pCurrentEffect->begin(true))
 			m_pCurrentEffect->BeginPass(0);
 		break;
 	}

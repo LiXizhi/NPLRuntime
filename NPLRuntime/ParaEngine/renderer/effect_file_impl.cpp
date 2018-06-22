@@ -1,28 +1,39 @@
 //-----------------------------------------------------------------------------
-// Class:	EffectFile opengl
-// Authors:	LiXizhi
+// Class:	CEffectFileImpl
+// Authors:	Li, Xizhi
 // Emails:	LiXizhi@yeah.net
 // Company: ParaEngine
-// Date:	2014.9.12
+// Date:	2005.6.12
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
-
 #include "effect_file_impl.h"
 #include "ShaderIncludeHandle.h"
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
-//#include "MirrorSurface.h"
+#if USE_DIRECTX_RENDERER
+#include "MirrorSurface.h"
+#endif
 #include "SkyMesh.h"
 #include "AutoCamera.h"
 #include "SunLight.h"
-#include "RenderDeviceOpenGL.h"
 #include <boost/filesystem.hpp>
 #include <unordered_map>
 
+#ifdef WIN32
+#define strcmpi		_strcmpi
+#endif
+
 using namespace ParaEngine;
 using namespace std;
+
+
+
+
+
+
+
+
 
 
 /**
@@ -113,27 +124,33 @@ void CEffectFileImpl::SetReflectFactor(float fFactor)
 
 bool CEffectFileImpl::EnableReflectionMapping(bool bEnable, float fSurfaceHeight)
 {
-	//if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled() && SetBoolean(5, bEnable))
-	//{
-	//	if (bEnable)
-	//	{
-	//		CMirrorSurface* pMirorSurface = CGlobals::GetScene()->GetMirrorSurface(0);
-	//		if (pMirorSurface != 0)
-	//		{
-	//			// TODO: here I just assume the reflection surface is centered on the world origin of the current rendered object. 
-	//			// TODO: if there are multiple surfaces, why not choose the one closest and above the camera eye? Currently it just choose the one rendered last
 
-	//			DVector3 vPos = CGlobals::GetSceneState()->GetCurrentSceneObject()->GetPosition();
-	//			vPos.y += fSurfaceHeight;
-	//			pMirorSurface->SetPosition(vPos);
-	//			// TODO: here I just assume texture sampler is on s1 register.
-	//			setTexture(1, pMirorSurface->GetReflectionTexture());
-	//		}
-	//	}
-	//	/*else
-	//	setTexture(1, (TextureEntity*)NULL);*/
-	//	return true;
-	//}
+
+#if USE_DIRECTX_RENDERER
+	if (CGlobals::GetEffectManager()->IsReflectionRenderingEnabled() && SetBoolean(5, bEnable))
+	{
+		if (bEnable)
+		{
+			CMirrorSurface* pMirorSurface = CGlobals::GetScene()->GetMirrorSurface(0);
+			if (pMirorSurface != 0)
+			{
+				// TODO: here I just assume the reflection surface is centered on the world origin of the current rendered object. 
+				// TODO: if there are multiple surfaces, why not choose the one closest and above the camera eye? Currently it just choose the one rendered last
+
+				DVector3 vPos = CGlobals::GetSceneState()->GetCurrentSceneObject()->GetPosition();
+				vPos.y += fSurfaceHeight;
+				pMirorSurface->SetPosition(vPos);
+				// TODO: here I just assume texture sampler is on s1 register.
+				setTexture(1, pMirorSurface->GetReflectionTexture());
+			}
+		}
+		/*else
+		setTexture(1, (TextureEntity*)NULL);*/
+		return true;
+	}
+#endif
+
+
 	return false;
 }
 
@@ -170,7 +187,7 @@ bool CEffectFileImpl::isTextureMatrixUsed(int index)const
 
 
 
-bool CEffectFileImpl::setMatrixArray(eParameterHandles index, const Matrix4* data, UINT32 count)const
+bool CEffectFileImpl::setMatrixArray(eParameterHandles index, const Matrix4* data, uint32_t count)
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
@@ -180,7 +197,7 @@ bool CEffectFileImpl::setMatrixArray(eParameterHandles index, const Matrix4* dat
 }
 
 
-bool CEffectFileImpl::setVectorArray(eParameterHandles index, const Vector4* pVector, UINT count) const
+bool CEffectFileImpl::setVectorArray(eParameterHandles index, const Vector4* pVector, uint32_t count) 
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -189,7 +206,7 @@ bool CEffectFileImpl::setVectorArray(eParameterHandles index, const Vector4* pVe
 	return false;
 }
 
-bool CEffectFileImpl::setFloatArray(eParameterHandles index, const float* data, UINT32 count)const
+bool CEffectFileImpl::setFloatArray(eParameterHandles index, const float* data, uint32_t count)
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -200,7 +217,7 @@ bool CEffectFileImpl::setFloatArray(eParameterHandles index, const float* data, 
 
 
 
-bool CEffectFileImpl::setParameter(eParameterHandles index, const void* data, INT32 size)const
+bool CEffectFileImpl::setParameter(eParameterHandles index, const void* data, uint32_t size)
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -211,7 +228,7 @@ bool CEffectFileImpl::setParameter(eParameterHandles index, const void* data, IN
 	}
 	return false;
 }
-bool CEffectFileImpl::setBool(eParameterHandles index, BOOL bBoolean) const
+bool CEffectFileImpl::setBool(eParameterHandles index, bool bBoolean) 
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -222,7 +239,7 @@ bool CEffectFileImpl::setBool(eParameterHandles index, BOOL bBoolean) const
 	return false;
 }
 
-bool CEffectFileImpl::setInt(eParameterHandles index, int nValue) const
+bool CEffectFileImpl::setInt(eParameterHandles index, int nValue) 
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -233,7 +250,7 @@ bool CEffectFileImpl::setInt(eParameterHandles index, int nValue) const
 	return false;
 }
 
-bool CEffectFileImpl::setFloat(eParameterHandles index, float fValue) const
+bool CEffectFileImpl::setFloat(eParameterHandles index, float fValue) 
 {
 	if (m_pEffect && isParameterUsed(index))
 	{
@@ -245,7 +262,7 @@ bool CEffectFileImpl::setFloat(eParameterHandles index, float fValue) const
 }
 
 
-bool CEffectFileImpl::setMatrix(eParameterHandles index, const Matrix4* data)const
+bool CEffectFileImpl::setMatrix(eParameterHandles index, const Matrix4* data)
 {
 	if (m_pEffect && isMatrixUsed(index))
 	{
@@ -505,7 +522,7 @@ bool CEffectFileImpl::setTextureInternal(int index, DeviceTexturePtr_type pTex)
 	return true;
 }
 
-bool CEffectFileImpl::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin)
+bool CEffectFileImpl::begin(bool bApplyParam,bool bForceBegin)
 {
 	IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 	if (m_pEffect != NULL)
@@ -530,7 +547,7 @@ bool CEffectFileImpl::begin(bool bApplyParam, DWORD dwFlag, bool bForceBegin)
 			}
 			else
 			{
-				OUTPUT_LOG("error: CEffectFileOpenGL::begin failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileImpl::begin failed: %s \n", m_filename.c_str());
 				return false;
 			}
 		}
@@ -547,7 +564,7 @@ bool CEffectFileImpl::BeginPass(int pass, bool bForceBegin)
 		bool result = m_pEffect->BeginPass(pass);
 		if (!result)
 		{
-			OUTPUT_LOG("error: CEffectFileOpenGL::BeginPass failed: %s \n", m_filename.c_str());
+			OUTPUT_LOG("error: CEffectFileImpl::BeginPass failed: %s \n", m_filename.c_str());
 			return false;
 		}
 	}
@@ -556,10 +573,7 @@ bool CEffectFileImpl::BeginPass(int pass, bool bForceBegin)
 
 void CEffectFileImpl::CommitChanges()
 {
-	if (m_pEffect)
-	{
-		m_pEffect->CommitChanges();
-	}
+	m_pEffect->CommitChanges();
 }
 
 void CEffectFileImpl::EndPass(bool bForceEnd)
@@ -570,7 +584,7 @@ void CEffectFileImpl::EndPass(bool bForceEnd)
 		{
 			if (!(m_pEffect && m_pEffect->EndPass()))
 			{
-				OUTPUT_LOG("error: CEffectFileOpenGL::EndPass failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileImpl::EndPass failed: %s \n", m_filename.c_str());
 			}
 		}
 	}
@@ -590,7 +604,7 @@ void CEffectFileImpl::end(bool bForceEnd)
 			}
 			if (!(m_pEffect && m_pEffect->End()))
 			{
-				OUTPUT_LOG("error: CEffectFileOpenGL::end failed: %s \n", m_filename.c_str());
+				OUTPUT_LOG("error: CEffectFileImpl::end failed: %s \n", m_filename.c_str());
 				return;
 			}
 			m_bIsBegin = false;
@@ -746,175 +760,6 @@ void CEffectFileImpl::parseParameters()
 			}
 		}
 	}
-
-
-
-
-
-	//       if( ParamDesc.Semantic != NULL && 
-	//           ( ParamDesc.Class == D3DXPC_VECTOR ))
-	//       {
-	//		if((nIndex = BeginWith(ParamDesc.Semantic, "material"))>0)
-	//		{
-	//			if( strcmpi( ParamDesc.Semantic, "materialambient" ) == 0 )
-	//				m_paramHandle[k_ambientMaterialColor] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "materialdiffuse" ) == 0 )
-	//				m_paramHandle[k_diffuseMaterialColor] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "materialspecular" ) == 0 )
-	//				m_paramHandle[k_specularMaterialColor] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "materialemissive" ) == 0 )
-	//				m_paramHandle[k_emissiveMaterialColor] = hParam;
-	//		}
-	//           else if( strcmpi( ParamDesc.Semantic, "posScaleOffset" ) == 0 )
-	//               m_paramHandle[k_posScaleOffset] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "uvScaleOffset" ) == 0 )
-	//               m_paramHandle[k_uvScaleOffset] = hParam;
-
-	//           else if( strcmpi( ParamDesc.Semantic, "flareColor" ) == 0 )
-	//               m_paramHandle[k_lensFlareColor] = hParam;
-
-	//		//////////////////////////////////////////////////////////////////////////
-	//		// fog
-	//		else if( strcmpi( ParamDesc.Semantic, "fogparameters" ) == 0 )
-	//			m_paramHandle[k_fogParameters] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "fogColor" ) == 0 )
-	//			m_paramHandle[k_fogColor] = hParam;
-	//		//////////////////////////////////////////////////////////////////////////
-	//		//shadow
-	//		else if( strcmpi( ParamDesc.Semantic, "shadowfactor") == 0)
-	//			m_paramHandle[k_shadowFactor] = hParam;
-
-	//		//////////////////////////////////////////////////////////////////////////
-	//		// lights
-	//		else if( strcmpi( ParamDesc.Semantic, "LightStrength") == 0 )
-	//			m_paramHandle[k_LightStrength] = hParam;
-	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "Light"))>0)
-	//		{
-	//			if( strcmpi( ParamDesc.Semantic, "LightColors" ) == 0 )
-	//				m_paramHandle[k_LightColors] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "LightPositions" ) == 0 )
-	//				m_paramHandle[k_LightPositions] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "LightParams" ) == 0 )
-	//				m_paramHandle[k_LightParams] = hParam;
-	//		}
-
-	//		else if( strcmpi( ParamDesc.Semantic, "FresnelR0" ) == 0 )
-	//			m_paramHandle[k_fresnelR0] = hParam;
-	//		else if((nIndex = BeginWith(ParamDesc.Semantic, "ConstVector"))>0)
-	//		{
-	//			if( strcmpi( ParamDesc.Semantic, "ConstVector0" ) == 0 )
-	//				m_paramHandle[k_ConstVector0] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector1" ) == 0 )
-	//				m_paramHandle[k_ConstVector1] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector2" ) == 0 )
-	//				m_paramHandle[k_ConstVector2] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "ConstVector3" ) == 0 )
-	//				m_paramHandle[k_ConstVector3] = hParam;
-	//		}
-	//		
-	//           else if( strcmpi( ParamDesc.Semantic, "sunvector" ) == 0 )
-	//               m_paramHandle[k_sunVector] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "suncolor" ) == 0 )
-	//               m_paramHandle[k_sunColor] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "worldcamerapos" ) == 0 )
-	//               m_paramHandle[k_cameraPos] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "viewdistances" ) == 0 )
-	//               m_paramHandle[k_cameraDistances] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "worldviewvector" ) == 0 )
-	//               m_paramHandle[k_cameraFacing] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "ambientlight" ) == 0 )
-	//               m_paramHandle[k_ambientLight] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_inscatter" ) == 0 )
-	//               m_paramHandle[k_sunlightInscatter] = hParam;
-	//           else if( strcmpi( ParamDesc.Semantic, "sunlight_extinction" ) == 0 )
-	//               m_paramHandle[k_sunlightExtinction] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "worldpos" ) == 0 )
-	//			m_paramHandle[k_worldPos] = hParam;
-	//		else if( strcmpi( ParamDesc.Semantic, "texCoordOffset" ) == 0 )
-	//			m_paramHandle[k_texCoordOffset] = hParam;
-	//	}
-
-	//       if(ParamDesc.Class == D3DXPC_SCALAR)
-	//       {
-	//		if( ParamDesc.Semantic == NULL)
-	//		{
-	//			if( strcmpi( ParamDesc.Name, "curnumbones" ) == 0 )
-	//			{
-	//				m_paramHandle[k_boneInfluenceCount] = hParam;
-	//			}
-	//		}
-	//		else
-	//		{
-	//			if( strcmpi( ParamDesc.Semantic, "fogenable" ) == 0 )
-	//				m_paramHandle[k_fogEnable] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "alphatesting" ) == 0 )
-	//				m_paramHandle[k_bAlphaTesting] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "alphablending" ) == 0 )
-	//				m_paramHandle[k_bAlphaBlending] = hParam;
-	//			else if((nIndex = BeginWith(ParamDesc.Semantic, "boolean"))>0)
-	//			{
-	//				int nvalue;
-	//				if(GetNumber(ParamDesc.Semantic, nIndex, &nvalue))
-	//				{
-	//					PE_ASSERT(0<=nvalue && nvalue<=(k_bBooleanMAX-k_bBoolean0));
-	//					m_paramHandle[k_bBoolean0+nvalue] = hParam;
-	//				}
-	//			}
-	//			else if( strcmpi( ParamDesc.Semantic, "sunlightenable" ) == 0 )
-	//				m_paramHandle[k_bSunlightEnable] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "shadowmapsize" ) == 0 )
-	//				m_paramHandle[k_nShadowmapSize] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "shadowradius" ) == 0 )
-	//				m_paramHandle[k_fShadowRadius] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "materialpower" ) == 0 )
-	//				m_paramHandle[k_specularMaterialPower] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "reflectfactor" ) == 0 )
-	//				m_paramHandle[k_reflectFactor] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "locallightnum" ) == 0 )
-	//				m_paramHandle[k_LocalLightNum] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "layersnum" ) == 0 )
-	//				m_paramHandle[k_LayersNum] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "time" ) == 0 )
-	//				m_paramHandle[k_time] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "opacity" ) == 0 )
-	//				m_paramHandle[k_opacity] = hParam;
-	//			else if( strcmpi( ParamDesc.Semantic, "specularPower" ) == 0 )
-	//				m_paramHandle[k_specularPower] = hParam;
-	//			else if( strcmpi(ParamDesc.Semantic,"transitionFactor") == 0)
-	//				m_paramHandle[k_transitionFactor] = hParam;
-	//		}
-	//	}
-
-	//       if( ParamDesc.Class == D3DXPC_OBJECT )
-	//       {
-	//		string name(ParamDesc.Name);
-	//		
-	//		if (ParamDesc.Type == D3DXPT_TEXTURE
-	//			|| ParamDesc.Type == D3DXPT_TEXTURE2D
-	//			|| ParamDesc.Type == D3DXPT_TEXTURE3D
-	//			|| ParamDesc.Type == D3DXPT_TEXTURECUBE)
-	//		{
-	//			int iPos = (int)name.find_first_of (numerals, 0, sizeof(numerals));
-
-	//			if (iPos != string::npos)
-	//			{
-	//				int iTexture = atoi(&ParamDesc.Name[iPos]);
-	//				if (iTexture>=0 && iTexture<(k_tex_max - k_tex0))
-	//				{
-	//					m_paramHandle[k_tex0 + iTexture] = hParam;
-	//				}
-	//			}
-	//		}
-	//       }
-
-	//	if ( ParamDesc.Class == D3DXPC_STRUCT)
-	//	{
-	//		if( strcmpi( ParamDesc.Semantic, "AtmosphericLightingParams" ) == 0 )
-	//			m_paramHandle[k_atmosphericLighting] = hParam;
-	//		else if ( strcmpi( ParamDesc.Semantic, "patchCorners") == 0 )
-	//			m_paramHandle[k_patchCorners] = hParam;
-	//	}
-	//}
 }
 
 void CEffectFileImpl::EnableSunLight(bool bEnableSunLight)
@@ -953,39 +798,39 @@ void CEffectFileImpl::applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial,
 		if (isParameterUsed(k_ambientMaterialColor))
 		{
 			if (bUseGlobalAmbient && (d3dMaterial.Ambient.r < 0.01f))
-				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient, sizeof(LinearColor));
+				setParameter(k_ambientMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Ambient,sizeof(LinearColor));
 			else
-				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient, sizeof(LinearColor));
+				setParameter(k_ambientMaterialColor, &d3dMaterial.Ambient,sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_diffuseMaterialColor))
 		{
 			if (CGlobals::GetEffectManager()->GetScene()->GetSceneState()->HasLocalMaterial())
 			{
-				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse, sizeof(LinearColor));
-				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(), sizeof(Vector3));
+				setParameter(k_diffuseMaterialColor, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentMaterial().Diffuse,sizeof(LinearColor));
+				setParameter(k_LightStrength, &CGlobals::GetEffectManager()->GetScene()->GetSceneState()->GetCurrentLightStrength(),sizeof(Vector3));
 			}
 			else
 			{
-				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse, sizeof(LinearColor));
+				setParameter(k_diffuseMaterialColor, &d3dMaterial.Diffuse,sizeof(LinearColor));
 				Vector3 vEmpty(0, 0, 0);
-				setParameter(k_LightStrength, &vEmpty, sizeof(Vector3));
+				setParameter(k_LightStrength, &vEmpty,sizeof(Vector3));
 			}
 		}
 
 		if (isParameterUsed(k_specularMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Specular, sizeof(LinearColor));
+			setParameter(k_specularMaterialColor, &d3dMaterial.Specular,sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_emissiveMaterialColor))
 		{
-			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive, sizeof(LinearColor));
+			setParameter(k_specularMaterialColor, &d3dMaterial.Emissive,sizeof(LinearColor));
 		}
 
 		if (isParameterUsed(k_specularMaterialPower))
 		{
-			setParameter(k_specularMaterialPower, &d3dMaterial.Power, sizeof(float));
+			setParameter(k_specularMaterialPower, &d3dMaterial.Power,sizeof(float));
 		}
 	}
 }
@@ -998,7 +843,7 @@ void CEffectFileImpl::applyGlobalLightingData(CSunLight& sunlight)
 	{
 		setParameter(
 			k_atmosphericLighting,
-			sunlight.GetLightScatteringData()->getShaderData(), sizeof(sLightScatteringShaderParams));
+			sunlight.GetLightScatteringData()->getShaderData(),sizeof(sLightScatteringShaderParams));
 	}
 
 	// pass the lighting structure to the shader
@@ -1193,7 +1038,7 @@ void CEffectFileImpl::applyFogParameters(bool bEnableFog, const Vector4* fogPara
 
 		if (isParameterUsed(k_fogColor) && (fogColor != 0))
 		{
-			setParameter(k_fogColor, fogColor,sizeof(Vector4));
+			setParameter(k_fogColor, fogColor,sizeof(LinearColor));
 		}
 	}
 }
@@ -1300,7 +1145,7 @@ const CEffectFileImpl::TechniqueDesc* CEffectFileImpl::GetCurrentTechniqueDesc()
 		return &g_techdesc;
 }
 
-std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileImpl::GetDXEffect()
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileImpl::GetDeviceEffect()
 {
 	return m_pEffect;
 }
@@ -1371,10 +1216,10 @@ void ParaEngine::CEffectFileImpl::OnSwitchOutShader()
 	}
 }
 
-bool ParaEngine::CEffectFileImpl::BeginSharePassMode(bool bApplyParam /*= true*/, DWORD flag/*=D3DXFX_DONOTSAVESTATE|D3DXFX_DONOTSAVESAMPLERSTATE|D3DXFX_DONOTSAVESHADERSTATE*/, bool bForceBegin /*= true*/)
+bool ParaEngine::CEffectFileImpl::BeginSharePassMode(bool bApplyParam)
 {
 	EnableShareMode(true);
-	if (begin(bApplyParam, flag, bForceBegin))
+	if (begin(bApplyParam,true))
 	{
 		return BeginPass(0, true);
 	}
@@ -1399,12 +1244,12 @@ IParaEngine::ParameterHandle& ParaEngine::CEffectFileImpl::GetTextureHandle(int 
 }
 
 
-bool ParaEngine::CEffectFileImpl::SetRawValue(const char* name, const void* pData, uint32 ByteOffset, uint32 Bytes)
+bool ParaEngine::CEffectFileImpl::SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes)
 {
 	return m_pEffect->SetRawValue(name, pData, ByteOffset, Bytes);
 }
 
-bool ParaEngine::CEffectFileImpl::SetBool(const char* name, BOOL bBoolean)
+bool ParaEngine::CEffectFileImpl::SetBool(const char* name, bool bBoolean)
 {
 	return SetRawValue(name, &bBoolean, 0, sizeof(bBoolean));
 }
@@ -1442,6 +1287,3 @@ bool ParaEngine::CEffectFileImpl::SetMatrix(const char* name, const Matrix4& dat
 {
 	return SetRawValue(name, &data, 0, sizeof(data));
 }
-
-
-#endif

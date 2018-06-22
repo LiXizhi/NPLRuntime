@@ -296,7 +296,6 @@ object ParaScripting::ParaAssetObject::GetBoundingBox( const object& box )
 
 bool ParaScripting::ParaAssetObject::Begin()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		// fixed: end any previous effect. 
@@ -306,22 +305,19 @@ bool ParaScripting::ParaAssetObject::Begin()
 		pEffect->LoadAsset();
 		if(pEffect->IsValid())
 		{
-			return pEffect->begin(true, 0, true);
+			return pEffect->begin(true,true);
 		}
 	}
-#endif
 	return false;
 }
 
 bool ParaScripting::ParaAssetObject::BeginPass( int nPass )
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		CEffectFile* pEffect = (CEffectFile*) m_pAsset;
 		return pEffect->BeginPass(nPass, true);
 	}
-#endif
 	return false;
 }
 

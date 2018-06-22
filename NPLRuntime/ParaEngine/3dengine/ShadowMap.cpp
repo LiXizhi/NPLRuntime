@@ -1490,7 +1490,7 @@ HRESULT CShadowMap::EndShadowPass()
 		EffectManager* pEffectManager =  CGlobals::GetEffectManager();
 		pEffectManager->BeginEffect(TECH_SHADOWMAP_BLUR);
 		CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
-		if(pEffectFile != 0 && pEffectFile->begin(true, 0))
+		if(pEffectFile != 0 && pEffectFile->begin(true))
 		{
 			// full screen blur filter is completed in two passes.
 			mesh_vertex_plain quadVertices[4] = {
@@ -1508,7 +1508,7 @@ HRESULT CShadowMap::EndShadowPass()
 				quadVertices[i].uv.x += fhalfTexelWidth;
 				quadVertices[i].uv.y += fhalfTexelHeight;
 			}
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, Vector4(1.f/m_shadowTexWidth, 1.f/m_shadowTexHeight, 0.0f, 0.0f).ptr());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, Vector4(1.f/m_shadowTexWidth, 1.f/m_shadowTexHeight, 0.0f, 0.0f).ptr(),sizeof(Vector4));
 
 			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_pSMColorSurfaceBlurredHorizontal );
 			

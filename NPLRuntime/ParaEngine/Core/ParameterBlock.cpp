@@ -70,7 +70,7 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 			if(p.m_type == CParameter::PARAM_TEXTURE_ENTITY)
 			{
 				// TODO: support in opengl
-#if defined(USE_DIRECTX_RENDERER)
+
 				// if it is texture parameter, the name must be numeric. 
 				const char* name = p.GetName().c_str();
 				TextureEntity* pTextureEntity = (TextureEntity*)p;
@@ -95,17 +95,16 @@ bool CParameterBlock::ApplyToEffect( CEffectFile* pEffectFile )
 						between BeginPass() and EndPass() of any effect file, this may be inefficient since duplicated SetTexture calls may be called for the same sampler. 
 
 						*/
-						pEffectFile->GetDXEffect()->SetTexture(pEffectFile->GetTextureHandle(nIndex), pTextureEntity->GetTexture());
+						pEffectFile->GetDeviceEffect()->SetTexture(pEffectFile->GetTextureHandle(nIndex), pTextureEntity->GetTexture());
 						pEffectFile->LockTexture(nIndex);
 					}
 					else
 					{
 						// use custom texture
 						
-						pEffectFile->GetDXEffect()->SetTexture(name, pTextureEntity->GetTexture());
+						pEffectFile->GetDeviceEffect()->SetTexture(name, pTextureEntity->GetTexture());
 					}
 				}
-#endif
 			}
 			else
 			{

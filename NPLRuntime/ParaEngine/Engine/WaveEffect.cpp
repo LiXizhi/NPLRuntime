@@ -86,7 +86,7 @@ namespace ParaEngine
 		pEffectManager->BeginEffect(TECH_SCREEN_WAVE);
 		CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 
-		if(pEffectFile !=0 && pEffectFile->begin(true,0))
+		if(pEffectFile !=0 && pEffectFile->begin(true))
 		{
 			if(pEffectFile->BeginPass(0))
 			{

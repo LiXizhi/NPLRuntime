@@ -2090,7 +2090,7 @@ void Terrain::RenderGeoMipmap()
 			// render shadow map
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr(),sizeof(Vector3));
 				if(pEffectFile->BeginPass(0))
 				{
 
@@ -2118,7 +2118,7 @@ void Terrain::RenderGeoMipmap()
 			// render terrain 
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr(),sizeof(Vector3));
 
 				if(pEffectFile->BeginPass(bUseNormal ? 0 : 2))
 				{
