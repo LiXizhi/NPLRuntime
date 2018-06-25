@@ -415,6 +415,12 @@ namespace ParaScripting
 		}
 	}
 
+	void ParaCharacter::PlayAnimation2(int animid, bool bUpdateSpeed, bool bAppend)
+	{
+		m_pCharacter->PlayAnimation(animid, bUpdateSpeed, bAppend);
+	}
+
+
 	void ParaCharacter::Stop()
 	{
 		if (m_pCharacter) {
@@ -1311,6 +1317,14 @@ namespace ParaScripting
 		return m_pCharacter;
 	}
 
+	void ParaCharacter::EnableAutoAnimation(bool enable)
+	{
+		CBipedStateManager* pCharState = (m_pCharacter)->GetBipedStateManager();
+		if (pCharState)
+		{
+			pCharState->EnableAutoAnimation(enable);
+		}
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//

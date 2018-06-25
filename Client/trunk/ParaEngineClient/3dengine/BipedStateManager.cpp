@@ -40,7 +40,7 @@ namespace ParaEngine
 }
 
 CBipedStateManager::CBipedStateManager(void)
-	:m_pBiped(NULL), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f)
+	:m_pBiped(NULL), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f), m_EnableAutoAnimation(true)
 {
 	
 }
@@ -1006,7 +1006,7 @@ void  CBipedStateManager::Update(float fTimeDelta)
 	if(stateAnim == STATE_JUMP_IN_AIR && m_nLastAnimState == stateAnim)
 	{
 	}
-	else
+	else if (m_EnableAutoAnimation)
 	{
 		/** play animation */
 		if(GetStateAnimName(stateAnim, sAnimName))
@@ -1014,3 +1014,9 @@ void  CBipedStateManager::Update(float fTimeDelta)
 	}
 	m_nLastAnimState = stateAnim;
 }
+
+void CBipedStateManager::EnableAutoAnimation(bool enable)
+{
+	m_EnableAutoAnimation = enable;
+}
+

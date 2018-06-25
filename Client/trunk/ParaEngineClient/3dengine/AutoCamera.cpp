@@ -1896,6 +1896,7 @@ void CAutoCamera::HandleUserInput()
 	// process mouse input
 	int dx=0;
 	int dy=0;
+
 	CDirectKeyboard *pKeyboard = CGlobals::GetGUI()->m_pKeyboard;
 
 	// Fixed: 2009.11.11. I used to use this via event, however, some key event may be lost, so I switched to hardware key query. 
@@ -1912,28 +1913,30 @@ void CAutoCamera::HandleUserInput()
 		bIsKeyProcessed = bIsKeyProcessed || bAlterKeyPressed;
 	}
 
-	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD8) || pKeyboard->IsKeyPressed(DIK_UP)));
-	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD2) || pKeyboard->IsKeyPressed(DIK_DOWN)));
-	
-	if(IsShiftMoveSwitched())
+	if (GetEnableKeyboard())
 	{
-		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD7) || pKeyboard->IsKeyPressed(DIK_LEFT)));
-		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD9) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
-		SetKeyDownState(MOVE_LEFT, FALSE);
-		SetKeyDownState(MOVE_RIGHT, FALSE);
-	}
-	else
-	{
-		SetKeyDownState(SHIFT_LEFT, FALSE);
-		SetKeyDownState(SHIFT_RIGHT, FALSE);
-		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD4) || pKeyboard->IsKeyPressed(DIK_LEFT)));
-		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD6) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
-	}
-	SetKeyDownState(ZOOM_IN, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_IN)/*DIK_INSERT*/)));
-	SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
-	SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
-	SetKeyDownState(FLY_DOWNWARD,!bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(FLY_DOWNWARD))));
+		SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD8) || pKeyboard->IsKeyPressed(DIK_UP)));
+		SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD2) || pKeyboard->IsKeyPressed(DIK_DOWN)));
 
+		if (IsShiftMoveSwitched())
+		{
+			SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD7) || pKeyboard->IsKeyPressed(DIK_LEFT)));
+			SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD9) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
+			SetKeyDownState(MOVE_LEFT, FALSE);
+			SetKeyDownState(MOVE_RIGHT, FALSE);
+		}
+		else
+		{
+			SetKeyDownState(SHIFT_LEFT, FALSE);
+			SetKeyDownState(SHIFT_RIGHT, FALSE);
+			SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD4) || pKeyboard->IsKeyPressed(DIK_LEFT)));
+			SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD6) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
+		}
+		SetKeyDownState(ZOOM_IN, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_IN)/*DIK_INSERT*/)));
+		SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
+		SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
+		SetKeyDownState(FLY_DOWNWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(FLY_DOWNWARD))));
+	}
 
 	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
 	if (pMouse && CGlobals::GetGUI()->m_events.size()>0)

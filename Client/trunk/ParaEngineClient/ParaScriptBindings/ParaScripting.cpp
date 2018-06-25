@@ -212,6 +212,7 @@ void CNPLScriptingState::LoadParaScene()
 				.def("SetSkin", &ParaCharacter::SetSkin)
 				.def("GetSkin", &ParaCharacter::GetSkin)
 				.def("PlayAnimation", &ParaCharacter::PlayAnimation)
+				.def("PlayAnimation", &ParaCharacter::PlayAnimation2)
 				.def("Stop", &ParaCharacter::Stop)
 				.def("MoveTo", &ParaCharacter::MoveTo)
 				.def("MoveAndTurn", &ParaCharacter::MoveAndTurn)
@@ -265,7 +266,8 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetAnimID", &ParaCharacter::GetAnimID)
 				.def("GetAnimFileName", &ParaCharacter::GetAnimFileName)
 				.def("HasAnimation", &ParaCharacter::HasAnimation)
-				.def("IsValid", &ParaCharacter::IsValid),
+				.def("IsValid", &ParaCharacter::IsValid)
+				.def("EnableAutoAnimation", &ParaCharacter::EnableAutoAnimation),
 
 			// ParaMovieCtrler class declarations
 			class_<ParaMovieCtrler>("ParaMovieCtrler")
