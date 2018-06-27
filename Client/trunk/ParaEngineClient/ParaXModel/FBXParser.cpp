@@ -189,17 +189,6 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		ProcessFBXBoneNodes(pFbxScene, pFbxScene->mRootNode, -1, pMesh);
 
 		// MakeAxisY_UP();
-		if (!raf_bones.empty())
-		{
-			for (auto const & pair: raf_bonemapping)
-			{
-				assert(pair.second == m_boneMapping[pair.first]);
-				m_bones[pair.second].matTransform = raf_bones[pair.second].matTransform;
-				m_bones[pair.second].flags = raf_bones[pair.second].flags;
-				m_bones[pair.second].matOffset = raf_bones[pair.second].matOffset;
-				m_bones[pair.second].pivot = raf_bones[pair.second].pivot;
-			}
-		}
 
 
 		FillParaXModelData(pMesh, pFbxScene);
@@ -304,7 +293,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 	{
 		AnimIndex blendingAnim;
 		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
-		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f);
+		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
 		ParaEngine::Bone* bones = pMesh->bones;
@@ -346,25 +335,25 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 				bone.SetStaticTransform(bone.matTransform);
 			}
 		}
-		for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
-		{
-			Bone& bone = bones[i];
-			if (bone.IsStaticTransform() && bone.IsTransformationNode())
-			{
-				// try to collapse multiple transform node into one to save computation. 
-				while (bone.parent >= 0)
-				{
-					Bone& parent = bones[bone.parent];
-					if (parent.IsStaticTransform() && parent.IsTransformationNode())
-					{
-						bone.matTransform *= parent.matTransform;
-						bone.parent = parent.parent;
-					}
-					else
-						break;
-				}
-			}
-		}
+		//for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+		//{
+		//	Bone& bone = bones[i];
+		//	if (bone.IsStaticTransform() && bone.IsTransformationNode())
+		//	{
+		//		// try to collapse multiple transform node into one to save computation. 
+		//		while (bone.parent >= 0)
+		//		{
+		//			Bone& parent = bones[bone.parent];
+		//			if (parent.IsStaticTransform() && parent.IsTransformationNode())
+		//			{
+		//				bone.matTransform *= parent.matTransform;
+		//				bone.parent = parent.parent;
+		//			}
+		//			else
+		//				break;
+		//		}
+		//	}
+		//}
 
 	}
 
