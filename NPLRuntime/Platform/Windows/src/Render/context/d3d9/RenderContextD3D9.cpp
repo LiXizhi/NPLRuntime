@@ -202,7 +202,7 @@ RenderContextD3D9::RenderContextD3D9()
 {
 	m_D3D = Direct3DCreate9(D3D_SDK_VERSION);
 	assert(m_D3D);
-	if (m_D3D)
+	if (!m_D3D)
 	{
 		OUTPUT_LOG("Init Direct3D failed. \n");
 	}

@@ -178,7 +178,8 @@ void ParaEngine::CParaAudioEngine::SetCoordinateSystem( int nLeftHand )
 
 const char* ParaEngine::CParaAudioEngine::getAvailableDeviceName(unsigned int index)
 {
-	return toUTF8(m_deviceList->getDeviceName(index));
+	auto ret = m_deviceList->getDeviceName(index).c_str();
+	return ret;
 }
 
 unsigned int ParaEngine::CParaAudioEngine::getAvailableDeviceCount()
@@ -188,7 +189,7 @@ unsigned int ParaEngine::CParaAudioEngine::getAvailableDeviceCount()
 
 const char* ParaEngine::CParaAudioEngine::getDefaultDeviceName()
 {
-	return toUTF8(m_deviceList->getDefaultDeviceName());
+	return m_deviceList->getDefaultDeviceName().c_str();
 }
 
 bool ParaEngine::CParaAudioEngine::initialize(const char* deviceName /*= 0x0*/, int outputFrequency /*= -1*/, int eaxEffectSlots /*= 4*/)

@@ -7,6 +7,8 @@
 #include "Framework/Common/Math/Color4f.h"
 #include "Core/PEtypes.h"
 #include "IEffect.h"
+#include "math/ParaViewport.h"
+
 
 
 #if defined(DEBUG)
@@ -59,8 +61,8 @@ namespace ParaEngine
 		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, VertexDeclarationPtr* ppDecl) = 0;
 		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) = 0;
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) = 0;
-		virtual Rect GetViewport() = 0;
-		virtual bool SetViewport(const Rect& viewport) = 0;
+		virtual ParaViewport GetViewport() = 0;
+		virtual bool SetViewport(const ParaViewport& viewport) = 0;
 
 		virtual bool SetClearColor(const Color4f& color) = 0;
 		virtual bool SetClearDepth(const float depth) = 0;

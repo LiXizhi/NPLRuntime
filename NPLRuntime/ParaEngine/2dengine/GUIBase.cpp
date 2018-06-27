@@ -2295,14 +2295,20 @@ bool ParaEngine::CGUIBase::IsScrollable()
 
 bool ParaEngine::CGUIBase::IsScrollableOrHasMouseWheelRecursive()
 {
+	bool bCanDrag = false;
 	bool bScrollable = IsScrollable() || HasEvent(EM_MOUSE_WHEEL);
+	if(!bScrollable)
+		bCanDrag = bCanDrag || GetCandrag();
+
 	CGUIContainer* temp = GetParent();
 	while (!bScrollable && temp != NULL)
 	{
 		bScrollable = temp->IsScrollable() || temp->HasEvent(EM_MOUSE_WHEEL);
+		if (!bScrollable)
+			bCanDrag = bCanDrag || GetCandrag();
 		temp = temp->GetParent();
 	}
-	return bScrollable;
+	return (bScrollable && !bCanDrag);
 }
 
 CPaintEngine * ParaEngine::CGUIBase::paintEngine() const

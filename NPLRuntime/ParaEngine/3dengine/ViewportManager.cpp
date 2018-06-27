@@ -312,32 +312,20 @@ void ParaEngine::CViewportManager::SetActiveViewPort(CViewport* pViewport)
 
 void ParaEngine::CViewportManager::ApplyViewport()
 {
-	ParaViewport CurrentViewport;
-	auto vp = CGlobals::GetRenderDevice()->GetViewport();
-	CurrentViewport.X = vp.x;
-	CurrentViewport.Y = vp.y;
-	CurrentViewport.Width = vp.z;
-	CurrentViewport.Height = vp.w;
-	ParaViewport myViewport = CurrentViewport;
-	myViewport.X = 0;
-	myViewport.Y = 0;
-	myViewport.Width = GetWidth();
-	myViewport.Height = GetHeight();
-	//Rect vp;
-	vp.x = myViewport.X;
-	vp.y = myViewport.Y;
-	vp.w = myViewport.Width;
-	vp.z = myViewport.Height;
-	CGlobals::GetRenderDevice()->SetViewport(vp);
+
+	auto CurrentViewport = CGlobals::GetRenderDevice()->GetViewport();
+
+	CurrentViewport.X = 0;
+	CurrentViewport.Y = 0;
+	CurrentViewport.Width = GetWidth();
+	CurrentViewport.Height = GetHeight();
+
+	CGlobals::GetRenderDevice()->SetViewport(CurrentViewport);
 }
 
 void ParaEngine::CViewportManager::GetCurrentViewport(ParaViewport& out)
 {
-	auto vp = CGlobals::GetRenderDevice()->GetViewport();
-	out.X = vp.x;
-	out.Y = vp.y;
-	out.Width = vp.z;
-	out.Height = vp.w;
+	out = CGlobals::GetRenderDevice()->GetViewport();
 }
 
 int ParaEngine::CViewportManager::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)

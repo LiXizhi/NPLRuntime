@@ -513,11 +513,8 @@ bool ParaEngine::CRenderTarget::Begin()
 	CheckInit();
 
 	// save old viewport
-	auto vp = CGlobals::GetRenderDevice()->GetViewport();
-	m_oldViewport.X = vp.x;
-	m_oldViewport.Y = vp.y;
-	m_oldViewport.Width = vp.z;
-	m_oldViewport.Height = vp.w;
+	m_oldViewport = CGlobals::GetRenderDevice()->GetViewport();
+
 	// save old render origin
 	m_vOldRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
@@ -559,11 +556,13 @@ bool ParaEngine::CRenderTarget::Begin()
 	 GETGL(pRenderDevice)->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
 	//calculate viewport
 	{
-		Rect vp;
-		vp.x = 0;
-		vp.y = 0;
-		vp.z = GetTextureWidth();
-		vp.w = GetTextureHeight();
+		 ParaViewport vp;
+		vp.X = 0;
+		vp.Y = 0;
+		vp.Width = GetTextureWidth();
+		vp.Height = GetTextureHeight();
+		vp.MinZ = 0;
+		vp.MaxZ = 1.0f;
 		pRenderDevice->SetViewport(vp);
 	}
 
@@ -599,12 +598,7 @@ void ParaEngine::CRenderTarget::End()
 	GETGL(pRenderDevice)->EndRenderTarget();
 #endif
 	// restore viewport
-	Rect vp;
-	vp.x = m_oldViewport.X;
-	vp.y = m_oldViewport.Y;
-	vp.z = m_oldViewport.Width;
-	vp.w = m_oldViewport.Height;
-	pRenderDevice->SetViewport(vp);
+	pRenderDevice->SetViewport(m_oldViewport);
 }
 
 

@@ -429,25 +429,15 @@ void ParaEngine::CViewport::SetActive()
 
 ParaViewport ParaEngine::CViewport::SetViewport(DWORD x, DWORD y, DWORD width, DWORD height)
 {
-	ParaViewport CurrentViewport;
-	auto vp = CGlobals::GetRenderDevice()->GetViewport();
-	CurrentViewport.X = vp.x;
-	CurrentViewport.Y = vp.y;
-	CurrentViewport.Width = vp.z;
-	CurrentViewport.Height = vp.w;
+	auto CurrentViewport = CGlobals::GetRenderDevice()->GetViewport();
 
-	ParaViewport myViewport = CurrentViewport;
-	myViewport.X = x;
-	myViewport.Y = y;
-	myViewport.Width = width;
-	myViewport.Height = height;
+	CurrentViewport.X = x;
+	CurrentViewport.Y = y;
+	CurrentViewport.Width = width;
+	CurrentViewport.Height = height;
 
-	vp.x = myViewport.X;
-	vp.y = myViewport.Y;
-	vp.z = myViewport.Width;
-	vp.w = myViewport.Height;
-	CGlobals::GetRenderDevice()->SetViewport(vp);
-	return myViewport;
+	CGlobals::GetRenderDevice()->SetViewport(CurrentViewport);
+	return CurrentViewport;
 }
 
 const std::string& ParaEngine::CViewport::GetIdentifier()

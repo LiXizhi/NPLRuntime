@@ -445,8 +445,21 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 				memcpy(&texInfo, pTex, sizeof(ModelTextureDef_));
 				if (texInfo.type != 0)
 				{
-					xmesh.specialTextures[i] = texInfo.type;
-					xmesh.useReplaceTextures[texInfo.type] = true;
+					if (texInfo.type < CParaXModel::MAX_MODEL_TEXTURES)
+					{
+						xmesh.specialTextures[i] = texInfo.type;
+						xmesh.useReplaceTextures[texInfo.type] = true;
+					}
+					else
+					{
+						xmesh.specialTextures[i] = -1;
+						xmesh.useReplaceTextures[i] = false;
+					}
+				}
+				else
+				{
+					xmesh.specialTextures[i] = -1;
+					xmesh.useReplaceTextures[i] = false;
 				}
 				string sFilename(((const char*)pTex) + 8); // for safety.
 				if (!sFilename.empty())

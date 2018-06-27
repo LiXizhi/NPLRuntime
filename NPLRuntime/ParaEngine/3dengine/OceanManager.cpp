@@ -2082,12 +2082,8 @@ namespace ParaEngine
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
 			CGlobals::GetRenderDevice()->SetVertexDeclaration(CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS2_COLOR));
 
-			ParaViewport curViewport;
-			auto vp = CGlobals::GetRenderDevice()->GetViewport();
-			curViewport.X = vp.x;
-			curViewport.Y = vp.y;
-			curViewport.Width = vp.z;
-			curViewport.Height = vp.w;
+
+			auto curViewport = CGlobals::GetRenderDevice()->GetViewport();
 			FLOAT sx = (FLOAT)curViewport.Width;
 			FLOAT sy = (FLOAT)curViewport.Height;
 

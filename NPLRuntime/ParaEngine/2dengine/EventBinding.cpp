@@ -679,6 +679,10 @@ void CEventBinding::StaticInit()
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_NEXT]=EM_KEY_PAGE_DOWN;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_INSERT]=EM_KEY_INSERT;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_DELETE]=EM_KEY_DELETE;
+
+	ScancodeToKeyTable[(int)EVirtualKey::KEY_SHIFT] = EM_KEY_SHIFT;
+	ScancodeToKeyTable[(int)EVirtualKey::KEY_CONTROL] = EM_KEY_CONTROL;
+	ScancodeToKeyTable[(int)EVirtualKey::KEY_ALT] = EM_KEY_ALT;
 }
 
 CEventBinding::CEventBinding()

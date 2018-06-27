@@ -5,6 +5,8 @@ using namespace std;
 
 namespace ParaEngine
 {
+	class MCIController;
+	
 	/** it represent an audio engine source*/
 	class CAudioSource2 : public ParaEngine::intrusive_ptr_single_thread_base, public IAudioSourceEventHandler
 	{
@@ -16,7 +18,7 @@ namespace ParaEngine
 			, m_status(AUDIO_FLAG_Uninitialized)
 			, m_bReleaseOnStop(false)
 			, m_bIsAsyncLoadingWhileLoopPlaying(false)
-			, m_nStartFramNum(0)
+			, m_nStartTime(0)
 		{}
 		~CAudioSource2() {};
 		/**
@@ -132,7 +134,7 @@ namespace ParaEngine
 		ParaAudioFlagsEnum m_status;
 		/** this is true, if an audio resource is being loop played but without being downloaded yet. */
 		bool m_bIsAsyncLoadingWhileLoopPlaying;
-		unsigned int m_nStartFramNum;
+		unsigned int m_nStartTime;
 	private:
 		std::string m_filename;
 	};
@@ -327,7 +329,10 @@ namespace ParaEngine
 		void PauseAll();
 		void ResumeAll();
 
+		MCIController* getMCIController();
+    
 		const AudioFileMap_type& getAudioMap()const;
+    
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;

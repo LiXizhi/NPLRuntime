@@ -610,10 +610,12 @@ void AppDelegate::OnWindowResized()
 	if (m_ParaEngineApp)
 	{
 		auto renderWindow = m_ParaEngineApp->GetRenderWindow();
-		Rect vp;
-		vp.x = 0; vp.y = 0;
-		vp.z = renderWindow->GetWidth();
-		vp.w = renderWindow->GetHeight();
+		ParaViewport vp;
+		vp.X = 0; vp.Y = 0;
+		vp.Width = renderWindow->GetWidth();
+		vp.Height = renderWindow->GetHeight();
+		vp.MinZ = 0;
+		vp.MaxZ = 1.0f;
 		CGlobals::GetRenderDevice()->SetViewport(vp);
 	}
 

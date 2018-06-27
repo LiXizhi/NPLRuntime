@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "BaseInterface.h"
+
 namespace ParaEngine
 {
 	class IParaEngineApp;
@@ -14,7 +16,7 @@ namespace ParaEngine
 	/**
 	*  a table of virtual functions which are used by plug-ins to access the game engine 
 	*/
-	class IParaEngineCore
+	class IParaEngineCore :  BaseInterface
 	{
 	public:
 		virtual DWORD GetVersion()=0;
@@ -33,9 +35,9 @@ namespace ParaEngine
 		*/
 		virtual IParaEngineApp* CreateApp()=0;
 
-		virtual IRenderWindow* CreateRenderWindow(const int width, const int height) { return nullptr;  };
-
 		/** one should call this when you no longer need this application, usually as the last line of your code. */
 		virtual void Destroy() {};
+
+		virtual IRenderWindow* CreateRenderWindow(const int width, const int height) { return nullptr; };
 	};
 }

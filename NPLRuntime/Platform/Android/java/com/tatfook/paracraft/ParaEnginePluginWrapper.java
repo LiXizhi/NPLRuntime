@@ -59,7 +59,7 @@ public class ParaEnginePluginWrapper {
 
 		try {
 			
-			Object o = c.getDeclaredConstructor(Context.class, Bundle.class).newInstance();
+			Object o = c.newInstance();
 			if (o != null) {
 				sPlugins.put(classFullName, o);
 

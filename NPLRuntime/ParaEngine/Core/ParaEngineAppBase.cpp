@@ -268,10 +268,12 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
-	Rect vp;
-	vp.x = 0; vp.y = 0;
-	vp.z = m_pRenderWindow->GetWidth();
-	vp.w = m_pRenderWindow->GetHeight();
+	ParaViewport vp;
+	vp.X = 0; vp.Y = 0;
+	vp.Width = m_pRenderWindow->GetWidth();
+	vp.Height = m_pRenderWindow->GetHeight();
+	vp.MinZ = 0.0f;
+	vp.MaxZ = 1.0f;
 	m_pRenderDevice->SetViewport(vp);
 	
 	InitDeviceObjects();
@@ -652,10 +654,12 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 	cfg.renderWindow = m_pRenderWindow;
 	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
-	Rect vp;
-	vp.x = 0; vp.y = 0;
-	vp.z = m_pRenderWindow->GetWidth();
-	vp.w = m_pRenderWindow->GetHeight();
+	ParaViewport vp;
+	vp.X = 0; vp.Y = 0;
+	vp.Width = m_pRenderWindow->GetWidth();
+	vp.Height = m_pRenderWindow->GetHeight();
+	vp.MinZ = 0;
+	vp.MaxZ = 1.0f;
 	m_pRenderDevice->SetViewport(vp);
 
 
@@ -861,13 +865,15 @@ HRESULT ParaEngine::CParaEngineAppBase::DoWork()
 	if (m_pRenderWindow == nullptr)
 		return S_FALSE;
 	
-	if (m_doWorkFRC.FrameMove(m_fTime) > 0)
+	auto d = m_doWorkFRC.FrameMove(m_fTime);
+
+	if (d > 0)
 	{
 		FrameMove(m_fTime);
         if (getRenderEnabled())
         {
-            Render();
-            m_pRenderDevice->Present();
+			Render();
+			m_pRenderDevice->Present();
         }
 		
 		return S_OK;

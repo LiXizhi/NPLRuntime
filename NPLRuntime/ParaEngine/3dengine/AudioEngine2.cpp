@@ -13,6 +13,7 @@
 #include "util/StringHelper.h"
 #include "util/MidiMsg.h"
 #include "AudioEngine2.h"
+#include "MCIController.h"
 #include "ParaEngineCore.h"
 #include "IParaEngineApp.h"
 
@@ -123,11 +124,11 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 			std::string deviceName = m_pAudioEngine->getAvailableDeviceName(i);
 			if (deviceName.compare(defaultDeviceName) == 0)
 			{
-				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s [DEFAULT]\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
 			}
 			else
 			{
-				OUTPUT_LOG("%d : %s\n", i, StringHelper::AnsiToUTF8(deviceName.c_str()));
+				OUTPUT_LOG("%d : %s\n", i, StringHelper::UTF8ToAnsi(deviceName.c_str()));
 			}
 		}
 		unsigned int deviceSelection = 0;
@@ -870,8 +871,8 @@ bool ParaEngine::CAudioSource2::play2d(const bool& toLoop /*= false*/, bool bIgn
 		if (!(bIgnoreIfPlaying && m_pSource->isPlaying()))
 		{
 			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
-			auto pScene = pParaEngine->GetChildAttributeObject("Scene");
-			pScene->GetAttributeClass()->GetField("FrameNumber")->Get(pScene, &m_nStartFramNum);
+			auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+			pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStartTime);
 			return m_pSource->play2d(toLoop);
 		}
 	}
@@ -979,6 +980,13 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 			pAudioSrc->play();
 	}
 	m_paused_audios.clear();
+}
+
+
+MCIController* ParaEngine::CAudioEngine2::getMCIController()
+{
+	static MCIController controller;
+	return &controller;
 }
 
 const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
