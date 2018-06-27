@@ -48,6 +48,14 @@ bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const cha
 	return true;
 }
 
+
+ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context)
+	:m_pD3DDevice(device)
+	,m_pContext(context)
+{
+
+}
+
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
 {
 	return m_pD3DDevice->SetTexture(stage, texture) == S_OK;
@@ -161,25 +169,29 @@ bool ParaEngine::RenderDeviceD3D9::SetStreamSource(uint32_t StreamNumber, Vertex
 	return m_pD3DDevice->SetStreamSource(StreamNumber, pStreamData, OffsetInBytes, Stride) == S_OK;
 }
 
-Rect ParaEngine::RenderDeviceD3D9::GetViewport()
+ParaViewport ParaEngine::RenderDeviceD3D9::GetViewport()
 {
 	D3DVIEWPORT9 vp;
 	m_pD3DDevice->GetViewport(&vp);
-	Rect rect;
-	rect.x = (float)vp.X;
-	rect.y = (float)vp.Y;
-	rect.z = (float)vp.Width;
-	rect.w = (float)vp.Height;
-	return rect;
+	ParaViewport outVP;
+	outVP.X = vp.X;
+	outVP.Y = vp.Y;
+	outVP.Width = vp.Width;
+	outVP.Height = vp.Height;
+	outVP.MinZ = vp.MinZ;
+	outVP.MaxZ = vp.MaxZ;
+	return outVP;
 }
 
-bool ParaEngine::RenderDeviceD3D9::SetViewport(const Rect& viewport)
+bool ParaEngine::RenderDeviceD3D9::SetViewport(const ParaViewport& viewport)
 {
 	D3DVIEWPORT9 vp;
-	vp.X = (DWORD)viewport.x;
-	vp.Y = (DWORD)viewport.y;
-	vp.Width = (DWORD)viewport.z;
-	vp.Height = (DWORD)viewport.w;
+	vp.X = viewport.X;
+	vp.Y = viewport.Y;
+	vp.Width = viewport.Width;
+	vp.Height = viewport.Height;
+	vp.MinZ = viewport.MinZ;
+	vp.MaxZ = viewport.MaxZ;
 	return m_pD3DDevice->SetViewport(&vp) == S_OK;
 }
 
