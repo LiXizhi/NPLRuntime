@@ -2238,10 +2238,13 @@ bool CBipedObject::MoveTowards(double dTimeDelta, const DVector3& vPosTarget, fl
 			{
 				SetStandingState();
 				ForceStop();
-				if (bHeadUnderWater)
-					PlayAnimation('s', false);
-				else
-					PlayAnimation((const char*)NULL, false);
+				if (m_bAutoAnimation)
+				{
+					if (bHeadUnderWater)
+						PlayAnimation('s', false);
+					else
+						PlayAnimation((const char*)NULL, false);
+				}
 			}
 		}
 	}
@@ -5558,4 +5561,9 @@ int CBipedObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("BlendingFactor", FieldType_Float, (void*)SetBlendingFactor_s, NULL, NULL, "", bOverride);
 
 	return S_OK;
+}
+
+void CBipedObject::EnableAutoAnimation(bool enable)
+{
+	m_bAutoAnimation = enable;
 }

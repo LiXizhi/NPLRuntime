@@ -460,7 +460,7 @@ CBipedStateManager::BipedState CBipedStateManager::AddAction(ActionSymbols nAct,
 					SetWalkOrRun(false);
 				else if(actionKey->IsToggleToWalk())
 					SetWalkOrRun(true);
-				else
+				else if(m_EnableAutoAnimation)
 				{
 					// play immediately the animation.
 					int nAnimID = actionKey->ToAnimID();
@@ -1018,5 +1018,9 @@ void  CBipedStateManager::Update(float fTimeDelta)
 void CBipedStateManager::EnableAutoAnimation(bool enable)
 {
 	m_EnableAutoAnimation = enable;
+	auto biped = GetBiped();
+	if (biped)
+		biped->EnableAutoAnimation(m_EnableAutoAnimation);
+
 }
 

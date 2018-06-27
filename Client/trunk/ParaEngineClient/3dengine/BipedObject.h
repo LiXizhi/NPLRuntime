@@ -839,7 +839,7 @@ namespace ParaEngine
 		virtual bool IsPhysicsEnabled();
 		/** get the number of physics actors. If physics is not loaded, the returned value is 0. */
 		int GetStaticActorCount();
-
+		void EnableAutoAnimation(bool enable);
 	protected:
 		void AnimateIdle(double dTimeDelta);
 		void AnimateMoving(double dTimeDelta, bool bSharpTurning = false);
@@ -968,7 +968,7 @@ namespace ParaEngine
 		/** we will not simulate or changing the character's animation, etc, since the biped is controlled externally, such as a movie actor in the script*/
 		bool m_bIsControlledExternally : 1;
 		bool m_bCanAnimOpacity : 1;
-		
+		bool m_bAutoAnimation : 1;
 	};
 
 }
