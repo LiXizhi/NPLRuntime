@@ -87,13 +87,19 @@ void CParaXSerializer::SetFilename(std::string val)
 void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 {
 	void* pMesh=NULL;
+	
 #if defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
-	ParaXParser p(f);
-	if(LoadParaX_Header(p)){
-		pMesh = LoadParaX_Body(p);
-		LoadParaX_Finalize(p);
+	if ( GetFilename().compare(0, 5, "model") != 0)
+	{
+		ParaXParser p(f);
+		if (LoadParaX_Header(p)) {
+			pMesh = LoadParaX_Body(p);
+			LoadParaX_Finalize(p);
+		}
+		return pMesh;
 	}
-#else
+#endif
+	
 	try
 	{
 		XFileCharModelParser p(f.getBuffer(), f.getSize());
@@ -104,7 +110,6 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	{
 		OUTPUT_LOG("warn: LoadParaXMesh error:%s\n", e->what());
 	}
-#endif
 	return pMesh;
 }
 #ifdef USE_DIRECTX_RENDERER
