@@ -1,21 +1,13 @@
 #pragma once
-namespace ParaEngine
+#include "IRenderTarget.h"
+namespace IParaEngine
 {
-	class ITexture
+	class ITexture : public IRenderTarget
 	{
 	public:
-		ITexture();
-		~ITexture();
-
-	private:
-
+		ITexture() = default;
+		virtual ~ITexture() override = default;
+		virtual void* Lock(unsigned int level, unsigned int& pitch) = 0;
+		virtual void Unlock() = 0;
 	};
-
-	ITexture::ITexture()
-	{
-	}
-
-	ITexture::~ITexture()
-	{
-	}
 }

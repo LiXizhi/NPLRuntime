@@ -103,6 +103,14 @@ namespace ParaEngine
 		COUNT
 	};
 
+	enum ETextureFormat
+	{
+		A8R8G8B8,
+		ALPHA8,
+		X8R8G8B8,
+		UNKONWN
+	};
+
 	enum class MultiSampleType
 	{
 		None = 0,

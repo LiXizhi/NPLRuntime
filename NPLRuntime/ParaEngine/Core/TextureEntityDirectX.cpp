@@ -1081,6 +1081,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32
 		TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
 		if (pTextureEntity)
 		{
+			pTextureEntity->CreateTextureFromFile_Serial()
 			pTextureEntity->SetTexture(pTexture);
 			SAFE_RELEASE(pTexture);
 			pTextureEntity->AddToAutoReleasePool();

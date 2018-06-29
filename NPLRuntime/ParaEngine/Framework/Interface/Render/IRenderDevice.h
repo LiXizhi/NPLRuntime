@@ -19,6 +19,11 @@
 
 
 
+namespace IParaEngine
+{
+	class ITexture;
+}
+
 namespace ParaEngine
 {
 	class CVertexDeclaration;
@@ -84,6 +89,8 @@ namespace ParaEngine
 		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);
 
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData,uint32_t srcDataLen, IParaEngine::IEffectInclude* include,std::string& error) = 0;
+		
+		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, ETextureFormat format) = 0;
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

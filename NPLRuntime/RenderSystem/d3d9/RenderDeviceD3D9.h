@@ -104,6 +104,9 @@ namespace ParaEngine
 
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
 
+
+		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, ETextureFormat format) override;
+
 	private:
 		Color4f m_CurrentClearColor;
 		float m_CurrentDepth;

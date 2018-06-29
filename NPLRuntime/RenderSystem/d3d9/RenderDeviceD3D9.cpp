@@ -2,6 +2,7 @@
 #include "RenderDeviceD3D9.h"
 #include "D3DMapping.h"
 #include "EffectD3D9.h"
+#include "TextureD3D9.h"
 using namespace ParaEngine;
 
 
@@ -323,4 +324,9 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect
 		return nullptr;
 	}
 	return std::make_shared<EffectD3D9>(pEffect);
+}
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t width, uint32_t height, ETextureFormat format)
+{
+	return TextureD3D9::Create(m_pD3DDevice, width, height, format);
 }

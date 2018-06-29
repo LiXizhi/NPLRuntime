@@ -57,15 +57,9 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_twoTexPass = 1;
 	int32_t BlockWorldClient::g_TexNormalMapPass = 2;
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used. 
-#ifdef PARAENGINE_MOBILE
-	int32_t BlockWorldClient::g_transparentBlockPass = 3;
-	int32_t BlockWorldClient::g_waterBlockPass = 2;
-	int32_t BlockWorldClient::g_bumpyBlockPass = 1;
-#else
 	int32_t BlockWorldClient::g_transparentBlockPass = 3;
 	int32_t BlockWorldClient::g_waterBlockPass = 4;
 	int32_t BlockWorldClient::g_bumpyBlockPass = 5;
-#endif
 	
 	int32_t BlockWorldClient::g_selectBlockPass = 1;
 
