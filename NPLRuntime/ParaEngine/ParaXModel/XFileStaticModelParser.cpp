@@ -215,7 +215,7 @@ ParaEngine::CParaXModel* ParaEngine::XFileStaticModelParser::LoadParaXModelFromS
 	{ // at least one Bone
 		pMesh->bones[i] = ParaEngine::Bone();
 		pMesh->bones[i].parent = -1;
-		pMesh->bones[i].pivot = Vector3(0.f, pMesh->GetHeader().maxExtent.y*0.5f, 0.f);
+		pMesh->bones[i].pivot = Vector3(0.f, 0.f, 0.f);
 		pMesh->bones[i].bUsePivot = true;
 		pMesh->bones[i].SetStaticTransform(Matrix4::IDENTITY);
 	}
