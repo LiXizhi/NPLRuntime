@@ -284,7 +284,7 @@ ParaEngine::CParaXModel* ParaEngine::XFileStaticModelParser::LoadParaXModelFromS
 						texFile1 = packedFileNames;
 					int nFileSize = (int)texFile1.size();
 					pMesh->textures[i] = CGlobals::GetAssetManager()->LoadTexture("", texFile1.c_str(), TextureEntity::StaticTexture);
-
+					
 					// check if there is any replaceable texture ID in texFile2, texFile2 will be "[0-9]*"
 					// generally speaking, replaceable ID 0 is used for general purpose replaceable texture, ID 1 is for user defined. ID 2 is for custom skins.
 					if (!texFile2.empty() && texFile2[0] >= '0' && texFile2[0] <= '9')
@@ -296,7 +296,6 @@ ParaEngine::CParaXModel* ParaEngine::XFileStaticModelParser::LoadParaXModelFromS
 							assert(nID < 32);
 							pMesh->specialTextures[i] = nID;
 							pMesh->useReplaceTextures[i] = true;
-							pMesh->replaceTextures[nID] = CGlobals::GetAssetManager()->LoadTexture("", "Texture/whitedot.png", TextureEntity::StaticTexture);
 						}
 						catch (...)
 						{

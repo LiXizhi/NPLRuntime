@@ -89,16 +89,21 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 	void* pMesh=NULL;
 	
 #if defined(USE_DIRECTX_RENDERER) && !defined(_DEBUG)
-	if ( GetFilename().compare(0, 5, "model") != 0)
 	{
+		bool bIsStaticModel = false;
 		ParaXParser p(f);
 		if (LoadParaX_Header(p)) {
 			pMesh = LoadParaX_Body(p);
+			if (!pMesh && p.m_pD3DMesh)
+			{
+				bIsStaticModel = true;
+			}
 			LoadParaX_Finalize(p);
 		}
-		return pMesh;
+		if(!bIsStaticModel)
+			return pMesh;
 	}
-#endif
+ #endif
 	
 	try
 	{
