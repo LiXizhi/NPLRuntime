@@ -2203,16 +2203,16 @@ void CAutoCamera::HandleUserInput()
 		}
 	}
 
-	// added a movement mode, if both left and right button are down, we will assume the move forward
-	if(m_bMouseLButtonDown && m_bMouseRButtonDown)
-	{
-		SetKeyDownState(MOVE_FORWARD, true);
-		if(m_pTargetObject && m_pTargetObject->IsBiped())
-		{
-			CBipedObject* pBiped = ((CBipedObject*)m_pTargetObject);			
-			pBiped->SetFacing((float)m_fCameraRotY);
-		}
-	}
+	//// added a movement mode, if both left and right button are down, we will assume the move forward
+	//if(m_bMouseLButtonDown && m_bMouseRButtonDown)
+	//{
+	//	SetKeyDownState(MOVE_FORWARD, true);
+	//	if(m_pTargetObject && m_pTargetObject->IsBiped())
+	//	{
+	//		CBipedObject* pBiped = ((CBipedObject*)m_pTargetObject);			
+	//		pBiped->SetFacing((float)m_fCameraRotY);
+	//	}
+	//}
 
 }
 
