@@ -964,7 +964,7 @@ bool TextureEntityDirectX::StretchRect(TextureEntityDirectX * pSrcTexture, Textu
 	{
 		return pSrcTexture->GetTexture()->StretchRect(pDestTexture->GetTexture(), nullptr, nullptr, ETextureFilterType::Linear);
 	}
-
+	return false;
 }
 
 
@@ -1233,7 +1233,7 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 
 	D3DFORMAT dwTextureFormat = D3DMapping::toD3DFromat(format);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	ITexture** ppTexture = (ITexture**)ppTexture_;
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
@@ -1327,7 +1327,7 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 	default:
 	{
 
-		m_pTexture = pRenderDevice->CreateTexture(buffer, nFileSize, format, m_dwColorKey);
+		pTexture = pRenderDevice->CreateTexture(buffer, nFileSize, format, m_dwColorKey);
 		if (m_pTexture)
 		{
 			/** we will only set LOD if the texture file is larger than 40KB */
