@@ -102,7 +102,7 @@ void Matcher::CloseFeature()
 	pcl::PointCloud<pcl::PointNormal>::Ptr* obj = nullptr;
 	pcl::FPFHEstimationOMP<pcl::PointNormal, pcl::PointNormal, pcl::FPFHSignature33> fest;
 	pcl::PointCloud<pcl::FPFHSignature33>::Ptr object_features(new pcl::PointCloud<pcl::FPFHSignature33>());
-	fest.setRadiusSearch(2.0);
+	fest.setRadiusSearch(0.1);
 	if (m_CurrentModel == 0) {
 		obj = &tarObj;
 	}else if (m_CurrentModel == 1) {
@@ -119,7 +119,7 @@ void Matcher::CloseFeature()
 		Vector3f pts_v( pt.x, pt.y, pt.z );
 		VectorXf feat_v(nDim);
 		const pcl::FPFHSignature33 &feature = object_features->points[i];
-		memcpy(&feat_v(0), feature.histogram, nDim);
+		memcpy(&feat_v(0), feature.histogram, nDim*sizeof(float));
 		pointcloud_[m_CurrentModel].push_back(pts_v);
 		features_[m_CurrentModel].push_back(feat_v);
 	}

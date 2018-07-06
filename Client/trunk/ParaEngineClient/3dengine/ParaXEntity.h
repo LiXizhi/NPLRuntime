@@ -108,6 +108,12 @@ namespace ParaEngine
 		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
 		*/
 		CParaXModel* GetModel(int nLODIndex=0);
+
+		/** try to get the highest level mesh if LOD is enabled. without calling LoadAsset
+		*   so as to be called from other thread safe.
+		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
+		*/
+		CParaXModel* TryGetModel(int nLODIndex = 0);
 		
 		/** init the parax model. */
 		void Init(const char* filename=NULL);

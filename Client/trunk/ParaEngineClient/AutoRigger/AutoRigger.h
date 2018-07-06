@@ -7,6 +7,7 @@ namespace ParaEngine
 {
 
 	class ParaXEntity;
+	class CParaXModel;
 	class CAutoRigger : public CBaseObject
 	{
 	public:
@@ -23,18 +24,23 @@ namespace ParaEngine
 		void AutoRigModel();
 		void Clear();
 		
+		
 		ATTRIBUTE_METHOD1(CAutoRigger, AddModelTemplate_s, char*) { cls->AddModelTemplate(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CAutoRigger, RemoveModelTemplate_s, const char*) { cls->RemoveModelTemplate(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CAutoRigger, SetTargetModel_s, const char*) { cls->SetTargetModel(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CAutoRigger, AutoRigModel_s, const char*) { cls->AutoRigModel(); return S_OK; }
+		
 
 		int CAutoRigger::InstallFields(CAttributeClass* pClass, bool bOverride);
 
 	private:
 		void AutoRigThreadFunc();
 
+		void Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel);
+
 	private:
 		typedef std::map<std::string, ParaXEntity*> ModelTemplateMap;
-		ModelTemplateMap m_ModelTemplates;
+		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
 	};
 }

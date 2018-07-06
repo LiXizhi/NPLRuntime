@@ -170,7 +170,15 @@ CParaXModel* ParaXEntity::GetModel( int nLODIndex/*=0*/ )
 	if(IsValid() && ((int)m_MeshLODs.size())>nLODIndex && nLODIndex>=0)
 		return m_MeshLODs[nLODIndex].m_pParaXMesh.get();
 	else
-		return NULL;
+		return nullptr;
+}
+
+CParaXModel* ParaXEntity::TryGetModel(int nLODIndex)
+{
+	if (IsValid() && ((int)m_MeshLODs.size())>nLODIndex && nLODIndex >= 0)
+		return m_MeshLODs[nLODIndex].m_pParaXMesh.get();
+	else
+		return nullptr;
 }
 
 
