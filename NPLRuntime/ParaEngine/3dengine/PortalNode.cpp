@@ -219,7 +219,7 @@ HRESULT ParaEngine::CPortalNode::Draw( SceneState * sceneState )
 		GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
 		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,
-			nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16,pVertices, sizeof(LINEVERTEX));
+			nNumVertices, nLenCount, pIndexBuffer, EPixelFormat::INDEX16,pVertices, sizeof(LINEVERTEX));
 	}
 #endif
 	return S_OK;

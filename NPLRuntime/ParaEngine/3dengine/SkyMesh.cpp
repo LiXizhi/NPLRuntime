@@ -588,7 +588,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
 			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 0,
-				8, 8, pIndexBufferSides, PixelFormat::INDEX16, pVertices, sizeof(LINEVERTEX));
+				8, 8, pIndexBufferSides, EPixelFormat::INDEX16, pVertices, sizeof(LINEVERTEX));
 
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 

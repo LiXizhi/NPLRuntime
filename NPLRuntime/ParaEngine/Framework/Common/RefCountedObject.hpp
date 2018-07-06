@@ -33,6 +33,16 @@ namespace ParaEngine
 			return m_nRefCount;
 		}
 
+		void Release()
+		{
+			if (m_nRefCount == INIT_REF_COUNT)
+			{
+				OnRelease();
+				return;
+			}
+			DefRef();
+		}
+
 		void ResetRef()
 		{
 			m_nRefCount = 0;

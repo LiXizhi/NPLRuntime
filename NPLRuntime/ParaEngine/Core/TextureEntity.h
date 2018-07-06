@@ -156,7 +156,7 @@ namespace ParaEngine
 		// TODO: remove this function from base class after refactoring. 
 		// the caller needs to cast to implementation class to use this function. 
 		/** Get the texture for rendering */
-		virtual DeviceTexturePtr_type GetTexture() { return 0; };
+		virtual IParaEngine::ITexture* GetTexture() { return 0; };
 
 		virtual HRESULT InitDeviceObjects();
 		virtual HRESULT RestoreDeviceObjects();
@@ -165,14 +165,14 @@ namespace ParaEngine
 		/** load from memory buffer.
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object.
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL) { return E_FAIL; };
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, void** ppTexture = NULL) { return E_FAIL; };
 
 		
 		/**  Initializes a texture from an ImageEntity object.
 		* NOTE: It will not convert the pvr image file.
 		* @param dwTextureFormat: if 0, we will use the image file format. 
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
 
 
 		/** this function is mostly used internally.
@@ -185,7 +185,7 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		virtual HRESULT CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev = NULL, const char* sFileName = NULL, void** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = -1, Color dwColorKey = 0);
+		virtual HRESULT CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev = NULL, const char* sFileName = NULL, void** ppTexture = NULL, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, UINT nMipLevels = -1, Color dwColorKey = 0);
 
 		/** whether to async loading the texture. this is enabled by default. */
 		bool IsAsyncLoad() const;
@@ -298,7 +298,7 @@ namespace ParaEngine
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
 		*/
-		virtual bool SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);;
+		virtual bool SaveToFile(const char* filename, EPixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);;
 
 		/** load image of any format to buffer.
 		* @param sBufMemFile: the memory file buffer.

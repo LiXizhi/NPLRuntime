@@ -99,7 +99,7 @@ namespace ParaEngine
 				}
 				
 				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pBackbufferCopy);
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,m_pNoiseMap->GetTexture());
+				CGlobals::GetRenderDevice()->SetTexture(1,m_pNoiseMap->GetTexture());
 				
 
 				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);

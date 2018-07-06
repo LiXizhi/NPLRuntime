@@ -41,7 +41,7 @@ namespace ParaEngine
 	*          - the driver is allowed to consume more than the indicated
 	*            number of bits per Depth channel (but not Stencil channel).
 	*/
-	enum class PixelFormat
+	enum class EPixelFormat
 	{
 		Unkonwn,
 		R8G8B8,
@@ -100,15 +100,40 @@ namespace ParaEngine
 		VERTEXDATA,
 		INDEX16,
 		INDEX32,
+		R32F,
+		A16B16G16R16F,
 		COUNT
 	};
 
-	enum ETextureFormat
+	enum class ETextureFormat
 	{
 		A8R8G8B8,
 		ALPHA8,
 		X8R8G8B8,
 		UNKONWN
+	};
+	enum class ETextureUsage
+	{
+		Default,
+		RenderTarget,
+		DepthStencil,
+		Dynamic
+	};
+
+	enum class EImageFileFormat
+	{
+		BMP,
+		JPG,
+		TGA,
+		PNG,
+		DDS
+	};
+
+	enum class ETextureFilterType
+	{
+		None,
+		Point,
+		Linear
 	};
 
 	enum class MultiSampleType

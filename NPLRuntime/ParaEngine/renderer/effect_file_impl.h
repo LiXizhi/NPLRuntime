@@ -43,7 +43,7 @@ namespace ParaEngine
 		virtual bool setFloatArray(eParameterHandles index, const float* data, uint32_t count);
 		virtual bool setVectorArray(eParameterHandles index, const Vector4* pVector, uint32_t count);
 		virtual bool setTexture(int index, TextureEntity* data) override;
-		virtual bool setTexture(int index, DeviceTexturePtr_type pTex) override;
+		virtual bool setTexture(int index, IParaEngine::ITexture* pTex) override;
 
 
 		virtual bool SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes) override;
@@ -105,7 +105,7 @@ namespace ParaEngine
 		bool isMatrixUsed(eParameterHandles index)const;
 		bool isTextureUsed(int index)const;
 		bool isTextureMatrixUsed(int index)const;
-		bool setTextureInternal(int index, DeviceTexturePtr_type pTex);
+		bool setTextureInternal(int index, IParaEngine::ITexture* pTex);
 		virtual void SetShadowMapSize(int nsize);
 		/** set the shadow radius */
 		void SetShadowRadius(float fRadius);

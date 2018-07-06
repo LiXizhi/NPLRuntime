@@ -1678,15 +1678,15 @@ void Terrain::Render()
 
 				if (Settings::GetInstance()->IsBaseTextureEnabled())
 				{		
-					DeviceTexturePtr_type texId = pCell->BindTexture();
-					GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, texId );
+					auto texId = pCell->BindTexture();
+					CGlobals::GetRenderDevice()->SetTexture(0, texId );
 
 					if (m_pCommonTexture != NULL)
 					{
 						if (Settings::GetInstance()->IsBaseTextureEnabled())
 						{
-							DeviceTexturePtr_type cTexId = m_pCommonTexture->UploadTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, cTexId );
+							auto cTexId = m_pCommonTexture->UploadTexture();
+							CGlobals::GetRenderDevice()->SetTexture(1, cTexId );
 						}
 					}
 					// render triangles for the current texture group 
@@ -1706,8 +1706,8 @@ void Terrain::Render()
 
 					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
 					{
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pCell->BindMask(k) );
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, pCell->BindDetail(k) );
+						CGlobals::GetRenderDevice()->SetTexture(0, pCell->BindMask(k) );
+						CGlobals::GetRenderDevice()->SetTexture(1, pCell->BindDetail(k) );
 
 						// render triangles for the current texture group 
 						CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);

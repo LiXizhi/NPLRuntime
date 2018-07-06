@@ -16,6 +16,7 @@
 #include "PluginManager.h"
 #include "PluginAPI.h"
 #include "HtmlBrowserManager.h"
+#include "Framework/Interface/Render/ITexture.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
 #endif
@@ -50,7 +51,7 @@ CHTMLBrowserManager::CHTMLBrowserManager()
 	CEventBinding* pEventBinding =  new CEventBinding();
 	pEventBinding->InitEventMappingTable();
 	m_pEventbinding = EventBinding_cow_type(pEventBinding);
-	
+
 	SetMaxWindowNum(DEFAULT_MAX_BROWSER_WINDOW_COUNT);	
 }
 
@@ -383,10 +384,8 @@ ParaEngine::CHTMLBrowser::CHTMLBrowser( CHTMLBrowserManager* manager, int nBrows
 	m_fLastUsedTime = 0.f;
 	m_bTextureUpdated = false;
 	m_bNeedUpdate = false;
-
+	m_bUseDynamicTextures = false;
 	m_pTexture = NULL;
-	m_bUseDynamicTextures=false;
-	m_TextureFormat = D3DFMT_X8R8G8B8;
 }
 CHTMLBrowser::~CHTMLBrowser()
 {
@@ -566,11 +565,15 @@ const char* ParaEngine::CHTMLBrowser::GetName()
 
 void ParaEngine::CHTMLBrowser::InvalidateDeviceObjects()
 {
-	SAFE_RELEASE(m_pTexture);
+	if (m_pTexture)
+	{
+		m_pTexture->DefRef();
+
+	}
 	m_bTextureUpdated = false;
 }
 
-LPDIRECT3DTEXTURE9 ParaEngine::CHTMLBrowser::GetTexture()
+IParaEngine::ITexture* ParaEngine::CHTMLBrowser::GetTexture()
 {
 	m_fLastUsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->GetTime());
 	if(m_bNeedUpdate || !m_bTextureUpdated)
@@ -603,20 +606,16 @@ LPDIRECT3DTEXTURE9 ParaEngine::CHTMLBrowser::GetTexture()
 	return m_pTexture;
 }
 
-HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
+HRESULT ParaEngine::CHTMLBrowser::CreateTexture( IParaEngine::ITexture **ppTexture )
 {
 	// Create the texture that maps to this media type
 	HRESULT hr = E_UNEXPECTED;
-	UINT uintWidth = 2;
-	UINT uintHeight = 2;
+	uint32_t uintWidth = 2;
+	uint32_t uintHeight = 2;
 
 	// here let's check if we can use dynamic textures
-	D3DCAPS9 caps;
-	ZeroMemory( &caps, sizeof(D3DCAPS9));
-	auto pRenderDevice = static_cast<RenderDeviceD3D9*>(CGlobals::GetRenderDevice());
-	
-	hr = pRenderDevice->GetDirect3DDevice9()->GetDeviceCaps( &caps );
-	if( caps.Caps2 & D3DCAPS2_DYNAMICTEXTURES )
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	if(pRenderDevice->GetCaps().DynamicTextures)
 	{
 		m_bUseDynamicTextures = true;
 	}
@@ -624,7 +623,7 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	int nBufWidth = getBrowserWidth();
 	int nBufHeight = getBrowserHeight();
 
-	if(caps.TextureCaps & D3DPTEXTURECAPS_POW2 )
+	if(!pRenderDevice->GetCaps().NPOT)
 	{
 		while( (LONG)uintWidth < nBufWidth )
 		{
@@ -644,19 +643,17 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	// use the size in buffer
 	if( m_bUseDynamicTextures )
 	{
-		hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(uintWidth, uintHeight, 1, D3DUSAGE_DYNAMIC,
-			D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT,
-			ppTexture, NULL);
-		if( FAILED(hr))
+
+		*ppTexture = pRenderDevice->CreateTexture(uintWidth, uintHeight, EPixelFormat::X8R8G8B8,ETextureUsage::Dynamic);
+
+		if(*ppTexture == nullptr)
 		{
 			m_bUseDynamicTextures = FALSE;
 		}
 	}
 	else
 	{
-		hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(uintWidth, uintHeight, 1, 0,
-			D3DFMT_X8R8G8B8,D3DPOOL_MANAGED,
-			ppTexture, NULL);
+		*ppTexture = pRenderDevice->CreateTexture(uintWidth, uintHeight, EPixelFormat::X8R8G8B8, ETextureUsage::Default);
 	}
 
 	if( FAILED(hr))
@@ -666,53 +663,20 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( LPDIRECT3DTEXTURE9 *ppTexture )
 	}
 
 	// CreateTexture can silently change the parameters on us
-	D3DSURFACE_DESC ddsd;
-	ZeroMemory(&ddsd, sizeof(ddsd));
-
-	if ( FAILED( hr = (*ppTexture)->GetLevelDesc( 0, &ddsd ) ) ) {
-		OUTPUT_LOG(TEXT("Could not get level Description of D3DX texture! hr = 0x%x"), hr);
-		return hr;
-	}
-	
-	IDirect3DSurface9*  pSurf = NULL;
-
-	if (SUCCEEDED(hr = (*ppTexture)->GetSurfaceLevel(0, &pSurf)))
-		pSurf->GetDesc(&ddsd);
-
-	// Save format info
-	m_TextureFormat = ddsd.Format;
-
-	if (m_TextureFormat != D3DFMT_X8R8G8B8) {
-		OUTPUT_LOG(TEXT("Texture is format we can't handle! Format = 0x%x"), m_TextureFormat);
-		SAFE_RELEASE(pSurf);
-		return E_FAIL;
-	}
-	SAFE_RELEASE(pSurf);
-
 	{
 		// fill texture with white color
-		LPDIRECT3DTEXTURE9 pTexture = (*ppTexture);
-		D3DLOCKED_RECT rcLockedRect = { 0 };
-		RECT rc = { 0, 0, nBufWidth, nBufHeight};
-		if( m_bUseDynamicTextures )
-		{
-			if( FAILED(pTexture->LockRect(0, &rcLockedRect, 0, D3DLOCK_DISCARD)))
-				return E_FAIL;
-		}
-		else
-		{
-			if (FAILED(pTexture->LockRect(0, &rcLockedRect, 0, 0)))
-				return E_FAIL;
-		}
-		memset((BYTE*)rcLockedRect.pBits, 0xff, rcLockedRect.Pitch*uintHeight);
-		if (FAILED(pTexture->UnlockRect(0)))
-			return E_FAIL;
+		IParaEngine::ITexture* pTexture = (*ppTexture);
+		uint32_t pitch;
+		Rect rc = { 0, 0, nBufWidth, nBufHeight};
+		void* pBuffer = pTexture->Lock(0, pitch, &rc);
+		memset((BYTE*)pBuffer, 0xff, pitch*uintHeight);
+		pTexture->Unlock(0);
 	}
 
 	return S_OK;
 }
 
-HRESULT ParaEngine::CHTMLBrowser::UpdateTexture( LPDIRECT3DTEXTURE9 pTexture )
+HRESULT ParaEngine::CHTMLBrowser::UpdateTexture(IParaEngine::ITexture* pTexture )
 {
 	if(!m_bNeedUpdate && m_bTextureUpdated)
 		return S_OK;
@@ -720,35 +684,22 @@ HRESULT ParaEngine::CHTMLBrowser::UpdateTexture( LPDIRECT3DTEXTURE9 pTexture )
 	m_bTextureUpdated = true;
 	m_bNeedUpdate = false;
 	
-	if(pTexture == 0 ||  lpPixels == 0 || m_TextureFormat != D3DFMT_X8R8G8B8)
+	if(pTexture == 0 ||  lpPixels == 0 )
 		return E_FAIL;
 
-	D3DSURFACE_DESC d3dsd;
-	pTexture->GetLevelDesc(0, &d3dsd);
 
 	int nBufWidth = getBrowserWidth();
 	int nBufHeight = getBrowserHeight();
 
-	D3DLOCKED_RECT rcLockedRect = { 0 };
-	RECT rc = { 0, 0, nBufWidth, nBufHeight};
-
-	if( m_bUseDynamicTextures )
-	{
-		if( FAILED(pTexture->LockRect(0, &rcLockedRect, 0, D3DLOCK_DISCARD)))
-			return E_FAIL;
-	}
-	else
-	{
-		if (FAILED(pTexture->LockRect(0, &rcLockedRect, 0, 0)))
-			return E_FAIL;
-	}
-
+	uint32_t pitch;
+	Rect rc = { 0, 0, nBufWidth, nBufHeight };
+	void* pBuffer = pTexture->Lock(0, pitch, &rc);
 	{
 		// sometimes the rowspan != width * bytes per pixel (mBrowserWindowWidth)
 		int nBrowserRowSpan = getBrowserRowSpan(); // number of bytes per line.
 		int nBrowserDepth = getBrowserDepth(); // number of bytes per pixel.
 
-		BYTE* pTextureBits = (BYTE*)rcLockedRect.pBits;
+		BYTE* pTextureBits = (BYTE*)pBuffer;
 
 		if(nBrowserDepth == 3)
 		{
@@ -765,7 +716,7 @@ HRESULT ParaEngine::CHTMLBrowser::UpdateTexture( LPDIRECT3DTEXTURE9 pTexture )
 					pPixels++;
 					pBitmapBits += 3;
 				}
-				pLineTextureBits += rcLockedRect.Pitch;
+				pLineTextureBits += pitch;
 			}
 		}
 		else
@@ -783,14 +734,13 @@ HRESULT ParaEngine::CHTMLBrowser::UpdateTexture( LPDIRECT3DTEXTURE9 pTexture )
 					pPixels++;
 					pBitmapBits ++;
 				}
-				pLineTextureBits += rcLockedRect.Pitch;
+				pLineTextureBits += pitch;
 			}
 		}
 		
 	}
 	// Unlock the Texture
-	if (FAILED(pTexture->UnlockRect(0)))
-		return E_FAIL;
+	pTexture->Unlock(0);
 	return S_OK;
 }
 

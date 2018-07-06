@@ -61,7 +61,7 @@ GLTexture2D* ParaEngine::TextureEntityOpenGL::CreateTextureFromFile_Serial(const
 	CParaFile file;
 	if (file.OpenFile(sFileName.c_str(), true))
 	{
-		LoadFromMemory(file.getBuffer(), file.getSize(), 0, PixelFormat::Unkonwn, (void**)(&texture));
+		LoadFromMemory(file.getBuffer(), file.getSize(), 0, EPixelFormat::Unkonwn, (void**)(&texture));
 		if (texture){
 			texture->AddToAutoReleasePool();
 		}
@@ -198,7 +198,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 		DWORD width, height;
 		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
 
-		PixelFormat format = PixelFormat::A8R8G8B8;
+		EPixelFormat format = EPixelFormat::A8R8G8B8;
 
 		if (GetTextureInfo() != NULL)
 		{
@@ -211,7 +211,7 @@ HRESULT ParaEngine::TextureEntityOpenGL::RestoreDeviceObjects()
 			}
 			if (GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
-				format = PixelFormat::X8R8G8B8;
+				format = EPixelFormat::X8R8G8B8;
 			}
 		}
 		else
@@ -514,14 +514,14 @@ bool ParaEngine::TextureEntityOpenGL::LoadImageOfFormat(const std::string& sText
 	return false;
 }
 
-bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
+bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, EPixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
 	// TODO:
 	return false;
 }
 
 
-bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
+bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, EPixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
 	if (imageEntity && imageEntity->IsValid())
 	{
@@ -529,7 +529,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 		size_t nFileSize = imageEntity->getDataLen();
 		GLImage image;
 		bool bRet = false;
-		if (imageEntity->getRenderFormat() == PixelFormat::A8R8G8B8)
+		if (imageEntity->getRenderFormat() == EPixelFormat::A8R8G8B8)
 			bRet = image.initWithRawData((const unsigned char*)buffer, nFileSize, imageEntity->getWidth(), imageEntity->getHeight(), imageEntity->hasPremultipliedAlpha());
 		else
 			bRet = image.initWithImageData((const unsigned char*)buffer, nFileSize);
@@ -546,12 +546,12 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 				}
 			}
 			auto format = GLTexture2D::PixelFormat::AUTO;
-			if (dwTextureFormat != PixelFormat::Unkonwn){
-				if (dwTextureFormat == PixelFormat::DXT1)
+			if (dwTextureFormat != EPixelFormat::Unkonwn){
+				if (dwTextureFormat == EPixelFormat::DXT1)
 					format = GLTexture2D::PixelFormat::S3TC_DXT1;
-				else if (dwTextureFormat == PixelFormat::DXT3)
+				else if (dwTextureFormat == EPixelFormat::DXT3)
 					format = GLTexture2D::PixelFormat::S3TC_DXT3;
-				else if (dwTextureFormat == PixelFormat::DXT5)
+				else if (dwTextureFormat == EPixelFormat::DXT5)
 					format = GLTexture2D::PixelFormat::S3TC_DXT5;
 			}
 
@@ -610,7 +610,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 }
 
 
-HRESULT ParaEngine::TextureEntityOpenGL::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat, void** ppTexture /*= NULL*/)
+HRESULT ParaEngine::TextureEntityOpenGL::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat dwTextureFormat, void** ppTexture /*= NULL*/)
 {
 	ImageEntity image;
 	image.LoadFromMemory((const unsigned char*)buffer, nFileSize, false);

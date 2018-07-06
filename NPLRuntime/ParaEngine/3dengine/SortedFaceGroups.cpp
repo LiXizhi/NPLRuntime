@@ -174,7 +174,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 			CFaceGroupInstance& facegroup =  (*itCur);
 			//////////////////////////////////////////////////////////////////////////
 			// set up render attributes for this face group
-			DeviceTexturePtr_type pTexture = NULL;
+			IParaEngine::ITexture* pTexture = NULL;
 			if( facegroup.m_facegroup->m_pTexture )
 			{
 				pTexture = facegroup.m_facegroup->m_pTexture->GetTexture();
@@ -300,7 +300,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 
 						GETD3D(CGlobals::GetRenderDevice())->SetTransform( D3DTS_TEXTURE0, texMat.GetConstPointer() );
 					}
-					GETD3D(CGlobals::GetRenderDevice())->SetTexture( 0, pTexture);
+					CGlobals::GetRenderDevice()->SetTexture( 0, pTexture);
 				}
 			}
 			if(pTexture)

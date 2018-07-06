@@ -78,6 +78,7 @@ namespace IParaEngine
 		virtual void Close(void* pData) = 0;
 	};
 
+	class ITexture;
 	class IEffect
 	{
 	public:
@@ -102,8 +103,8 @@ namespace IParaEngine
 		virtual bool SetBool(const ParameterHandle& handle, bool value) = 0;
 		virtual bool SetInt(const ParameterHandle& handle, int value) = 0;
 		virtual bool SetFloat(const ParameterHandle& handle, float value) = 0;
-		virtual bool SetTexture(const ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture) = 0;
-		virtual bool SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture) = 0;
+		virtual bool SetTexture(const ParameterHandle& handle, ITexture* texture) = 0;
+		virtual bool SetTexture(const char* name, ITexture* texture) = 0;
 		virtual bool SetRawValue(const ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size) = 0;
 		virtual bool SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size) = 0;
 

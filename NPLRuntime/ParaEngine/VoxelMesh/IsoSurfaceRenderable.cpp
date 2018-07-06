@@ -145,7 +145,7 @@ HRESULT ParaEngine::IsoSurfaceRenderable::Render( SceneState * pSceneState, IRen
 	GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal) );
 
 	if(m_texture != 0)
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_texture->GetTexture());
+		CGlobals::GetRenderDevice()->SetTexture(0, m_texture->GetTexture());
 
 	// render
 	DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0,0, m_nVertexBufSize, 0, m_nIndexBufSize/3);

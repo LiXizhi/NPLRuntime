@@ -13,13 +13,13 @@ namespace ParaEngine
 		union
 		{
 			/// static texture
-			LPDIRECT3DTEXTURE9    m_pTexture;
+			IParaEngine::ITexture*    m_pTexture;
 			/// cube texture
 			LPDIRECT3DCUBETEXTURE9    m_pCubeTexture;
 			/// RenderTarget
 			LPDIRECT3DSURFACE9    m_pSurface;
 			/// animated texture sequence
-			LPDIRECT3DTEXTURE9*  m_pTextureSequence;
+			IParaEngine::ITexture**  m_pTextureSequence;
 		};
 
 	public:
@@ -39,7 +39,7 @@ namespace ParaEngine
 		/** load from memory buffer. 
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object. 
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL) override;
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, void** ppTexture = NULL) override;
 
 		/**
 		* most assets are loaded asynchronously. This allows us to check if an asset is loaded.
@@ -59,10 +59,10 @@ namespace ParaEngine
 		virtual const TextureInfo* GetTextureInfo();
 
 		/** Get the texture for rendering */
-		virtual DeviceTexturePtr_type GetTexture();
+		virtual IParaEngine::ITexture* GetTexture();
 
 		/** the internal texture managed. it will add reference to pSrcTexture*/
-		void SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture);
+		void SetTexture(IParaEngine::ITexture* pSrcTexture);
 
 		/** Copy pSrcTexture's surface to the current texture.
 		* the current texture must be created with TextureEntity::StaticTexture in order to use this function.
@@ -70,7 +70,7 @@ namespace ParaEngine
 		* this function is mostly used to dynamically compose textures for some avatars, please see ParaXAnimInstance.cpp for more information.
 		* @param pSrcTexture: it can be any texture, such as a render target.
 		*/
-		void CreateTexture(LPDIRECT3DTEXTURE9 pSrcTexture, D3DFORMAT dwFormat = D3DFMT_DXT3, int width = 256, int height = 256, UINT MipLevels = 0);
+		void CreateTexture(IParaEngine::ITexture* pSrcTexture, EPixelFormat dwFormat = EPixelFormat::DXT3, int width = 256, int height = 256, uint32_t MipLevels = 0);
 		
 		/** this function is mostly used internally. It will load the texture from disk, unpack it and create the texture.
 		* when this function returns, the texture will be already loaded to device pool.
@@ -81,12 +81,12 @@ namespace ParaEngine
 		* @param nMipLevels: Mip levels, default to D3DX_DEFAULT
 		* @param dwColorKey: color key. default to 0(disabled). Use COLOR_XRGB(0,0,0) if blank is treated transparent.
 		*/
-		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IDirect3DTexture9** ppTexture = NULL, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
+		HRESULT CreateTextureFromFile_Serial(IRenderDevice* pDev = NULL, const char* sFileName = NULL, IParaEngine::ITexture** ppTexture = NULL, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, UINT nMipLevels = D3DX_DEFAULT, Color dwColorKey = 0);
 
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
 		*/
-		virtual bool SaveToFile(const char* filename, D3DFORMAT dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = D3DX_DEFAULT, Color ColorKey = 0);
+		virtual bool SaveToFile(const char* filename, EPixelFormat format, int width, int height, UINT MipLevels = 1, DWORD Filter = D3DX_DEFAULT, Color ColorKey = 0);
 
 		/**
 		* determine the texture format and mip level from file name. the texture is usually static texture.
@@ -97,7 +97,7 @@ namespace ParaEngine
 		*   if file extension is "png" and file path contains "blocks", we will use 32bits texture and full mipmap levels. if filename further contains "leaves" it will only has 1 mip level. 
 		*	in all other cases, such as "tga", format is D3DFMT_UNKNOWN and mip level is D3DX_DEFAULT.
 		*/
-		 static void GetFormatAndMipLevelFromFileName(const string& filename, PixelFormat* pdwTextureFormat, UINT* pnMipLevels);
+		 static void GetFormatAndMipLevelFromFileName(const string& filename, EPixelFormat* pdwTextureFormat, UINT* pnMipLevels);
 
 		/**
 		* determine the texture format and mip level from file name. the texture is usually static texture.
@@ -107,7 +107,7 @@ namespace ParaEngine
 		*	if file extension is "png" and file name does not CONTAINS "_32bits", format is DXT3, complete mip level chain is created.
 		*	in all other cases, such as "tga", format is D3DFMT_UNKNOWN and mip level is D3DX_DEFAULT.
 		*/
-		static void GetFormatAndMipLevelFromFileNameEx(const string& filename, PixelFormat* pdwTextureFormat, UINT* pnMipLevels);
+		static void GetFormatAndMipLevelFromFileNameEx(const string& filename, EPixelFormat* pdwTextureFormat, UINT* pnMipLevels);
 
 		/** secretly, change the m_pSurface */
 		void SetSurface(LPDIRECT3DSURFACE9 pSurface);
@@ -116,7 +116,7 @@ namespace ParaEngine
 		LPDIRECT3DSURFACE9 GetSurface();
 
 		/** get d3d format */
-		D3DFORMAT GetD3DFormat();
+		EPixelFormat GetFormat();
 
 		/** load image of any format to buffer.
 		* @param sBufMemFile: the memory file buffer.

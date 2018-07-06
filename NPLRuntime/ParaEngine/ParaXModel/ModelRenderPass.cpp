@@ -386,7 +386,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 			bindtex = m->textures[tex].get();
 	}
 #ifdef USE_DIRECTX_RENDERER
-	LPDIRECT3DTEXTURE9 pTex = NULL;
+	IParaEngine::ITexture* pTex = NULL;
 	if(bindtex)
 		pTex = bindtex->GetTexture();
 

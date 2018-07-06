@@ -2,6 +2,7 @@
 #include "Framework/Interface/Render/IRenderDevice.h"
 namespace ParaEngine
 {
+	class TextureD3D9;
 	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
@@ -12,7 +13,7 @@ namespace ParaEngine
 		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice;  };
 		inline IDirect3D9* GetContext()const { return m_pContext; };
 	
-		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
+		virtual bool SetTexture(uint32_t stage, IParaEngine::ITexture* texture) override;
 
 
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
@@ -24,7 +25,7 @@ namespace ParaEngine
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 
 
-		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
+		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 
 
 		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
@@ -105,7 +106,31 @@ namespace ParaEngine
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
 
 
-		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, ETextureFormat format) override;
+		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage) override;
+
+
+		virtual IParaEngine::ITexture* CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey) override;
+
+
+		virtual const RenderDeviceCaps& GetCaps() override;
+
+
+		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;
+
+
+		virtual bool SetDepthStencil(IParaEngine::ITexture* target) override;
+
+
+		virtual IParaEngine::ITexture* GetRenderTarget(uint32_t index) override;
+
+
+		virtual IParaEngine::ITexture* GetDepthStencil() override;
+
+
+		virtual const IParaEngine::ITexture* GetBackbufferRenderTarget() override;
+
+
+		virtual const IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
 	private:
 		Color4f m_CurrentClearColor;
@@ -113,6 +138,13 @@ namespace ParaEngine
 		int m_CurrentStencil;
 		IDirect3DDevice9* m_pD3DDevice;
 		IDirect3D9* m_pContext;
+		RenderDeviceCaps m_Cpas;
+		TextureD3D9* m_backbufferRenderTarget;
+		TextureD3D9* m_backbufferDepthStencil;
+		TextureD3D9* m_CurrentRenderTargets[8];
+		TextureD3D9* m_CurrentDepthStencil;
+	private:
+		void InitCaps();
 	};
 
 	inline IDirect3DDevice9* GETD3D(IRenderDevice* pRenderDevice)

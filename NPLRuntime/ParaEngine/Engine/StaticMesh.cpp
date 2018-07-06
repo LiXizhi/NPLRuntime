@@ -1141,7 +1141,7 @@ namespace ParaEngine
 					continue;
 				}
 
-				LPDIRECT3DTEXTURE9 pTexture = NULL;
+				IParaEngine::ITexture* pTexture = NULL;
 				if (pMaterial->m_pTexture1 != 0)
 				{
 					if (pMaterial->m_nReplaceableTextureID<0)
@@ -1249,10 +1249,10 @@ namespace ParaEngine
 						zm = false;
 						}*/
 
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pTexture);
+						CGlobals::GetRenderDevice()->SetTexture(0, pTexture);
 					}
 					else
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
+						CGlobals::GetRenderDevice()->SetTexture(0, NULL);
 				}
 				if (pMaterial->hasAnyBillboard())
 				{
@@ -1303,7 +1303,7 @@ namespace ParaEngine
 					continue;
 				}
 
-				LPDIRECT3DTEXTURE9 pTexture = NULL;
+				IParaEngine::ITexture* pTexture = NULL;
 				if (pMaterial->m_pTexture1 != 0)
 				{
 					if (pMaterial->m_nReplaceableTextureID<0)
@@ -1325,7 +1325,7 @@ namespace ParaEngine
 					}
 				}
 				// Set the material and texture
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pTexture);
+				CGlobals::GetRenderDevice()->SetTexture(0, pTexture);
 				if (pTexture)
 				{
 					CGlobals::GetEffectManager()->applySurfaceMaterial(&pMaterial->mat);
@@ -1449,7 +1449,7 @@ namespace ParaEngine
 							continue;
 						}
 
-						LPDIRECT3DTEXTURE9 pTexture = NULL;
+						IParaEngine::ITexture* pTexture = NULL;
 						if (m_bUseMaterials)
 						{
 							if (pMaterial->mat.Diffuse.a < 1.0f) {
@@ -1717,7 +1717,7 @@ namespace ParaEngine
 							continue;
 						}
 
-						LPDIRECT3DTEXTURE9 pTexture = NULL;
+						IParaEngine::ITexture* pTexture = NULL;
 						// TODO: set materials
 						if (m_bUseMaterials)
 						{

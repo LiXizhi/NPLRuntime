@@ -48,7 +48,7 @@
 #include "ParaTime.h"
 #endif
 
-
+using namespace IParaEngine;
 
 namespace ParaEngine
 {
@@ -328,7 +328,7 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
+				ITexture* pCurTex0 = NULL;
 
 				if(pCurRenderQueue->size() > 0)
 				{
@@ -372,7 +372,7 @@ namespace ParaEngine
 							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,pCurTex0);
+								CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
 							}
 							
 							// culling mode
@@ -537,9 +537,9 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
-				IDirect3DTexture9* pCurTex1 = NULL;
-				IDirect3DTexture9* pCurTex2 = NULL;
+				ITexture* pCurTex0 = NULL;
+				ITexture* pCurTex1 = NULL;
+				ITexture* pCurTex2 = NULL;
 
 				
 				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
@@ -592,14 +592,14 @@ namespace ParaEngine
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,pCurTex0);
+							CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
 						}
 
 						pTexEntity = pTempate->GetTexture1();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,pCurTex1);
+							CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
 						}
 
 						/* fixed function never use normal map
@@ -686,9 +686,9 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				DeviceTexturePtr_type pCurTex0 = 0;
-				DeviceTexturePtr_type pCurTex1 = 0;
-				DeviceTexturePtr_type pCurTex2 = 0;
+				ITexture* pCurTex0 = 0;
+				ITexture* pCurTex1 = 0;
+				ITexture* pCurTex2 = 0;
 
 				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -1051,7 +1051,7 @@ namespace ParaEngine
 		{
 #ifdef USE_DIRECTX_RENDERER
 			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,highLightTexture->GetTexture());
+			CGlobals::GetRenderDevice()->SetTexture(0,highLightTexture->GetTexture());
 
 			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
@@ -1087,7 +1087,7 @@ namespace ParaEngine
 
 				if(curInstCount >= nMaxFaceCount)
 				{
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
@@ -1104,7 +1104,7 @@ namespace ParaEngine
 
 			if(curInstCount > 0)
 			{
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
@@ -1172,7 +1172,7 @@ namespace ParaEngine
 
 					if(curInstCount >= nMaxFaceCount)
 					{
-						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1189,7 +1189,7 @@ namespace ParaEngine
 
 				if(curInstCount > 0)
 				{
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				}
 
 				pEffect->EndPass();
@@ -1250,7 +1250,7 @@ namespace ParaEngine
 		if ( pEffect == 0)
 		{
 			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_damangeTexture->GetTexture());
+			CGlobals::GetRenderDevice()->SetTexture(0,m_damangeTexture->GetTexture());
 
 			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
@@ -1273,7 +1273,7 @@ namespace ParaEngine
 				instFloatCount++;
 				curInstCount++;
 			}
-			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
 			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
@@ -1295,7 +1295,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_damangeTexture->GetTexture());
+				CGlobals::GetRenderDevice()->SetTexture(0,m_damangeTexture->GetTexture());
 
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -1320,7 +1320,7 @@ namespace ParaEngine
 					instFloatCount++;
 					curInstCount++;
 				}
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				
 				pEffect->EndPass();
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,FALSE);
@@ -2230,7 +2230,7 @@ namespace ParaEngine
 				m_render_target_block_info = CGlobals::GetAssetManager()->LoadTexture("_BlockInfoRT", "_BlockInfoRT", TextureEntity::RenderTarget);
 				m_render_target_block_info->LoadAsset();
 				SAFE_RELEASE(m_render_target_block_info_surface);
-				m_render_target_block_info->GetTexture()->GetSurfaceLevel(0, &m_render_target_block_info_surface);
+				m_render_target_block_info_surface = m_render_target_block_info->GetTexture();
 			}
 
 			if(m_render_target_depth_tex == 0)
@@ -2238,14 +2238,14 @@ namespace ParaEngine
 				m_render_target_depth_tex = CGlobals::GetAssetManager()->LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", TextureEntity::RenderTarget);
 				m_render_target_depth_tex->LoadAsset();
 				SAFE_RELEASE(m_render_target_depth_tex_surface);
-				m_render_target_depth_tex->GetTexture()->GetSurfaceLevel(0, &m_render_target_depth_tex_surface);
+				m_render_target_depth_tex_surface= m_render_target_depth_tex->GetTexture();
 			}
 			if(m_render_target_normal == 0)
 			{
 				m_render_target_normal = CGlobals::GetAssetManager()->LoadTexture("_NormalRT", "_NormalRT", TextureEntity::RenderTarget);
 				m_render_target_normal->LoadAsset();
 				SAFE_RELEASE(m_render_target_normal_surface);
-				m_render_target_normal->GetTexture()->GetSurfaceLevel(0, &m_render_target_normal_surface);
+				m_render_target_normal_surface = m_render_target_normal->GetTexture();
 			}
 			
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
@@ -2288,9 +2288,9 @@ namespace ParaEngine
 
 			if (bSetRenderTarget)
 			{
-				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, m_render_target_depth_tex_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, m_render_target_block_info_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface)))
+				if (!CGlobals::GetRenderDevice()->SetRenderTarget(1, m_render_target_depth_tex_surface) ||
+					!CGlobals::GetRenderDevice()->SetRenderTarget(2, m_render_target_block_info_surface) ||
+					!CGlobals::GetRenderDevice()->SetRenderTarget(3, m_render_target_normal_surface))
 				{
 					return false;
 				}
@@ -2303,13 +2303,13 @@ namespace ParaEngine
 					if (nLastFrameCount != CGlobals::GetSceneState()->GetRenderFrameCount())
 					{
 						nLastFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
-						LPDIRECT3DSURFACE9 pOldRenderTarget = NULL;
-						pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_render_target_normal_surface);
-						GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0L);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, pOldRenderTarget);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface);
+
+						ITexture* pOldRenderTarget = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+						CGlobals::GetRenderDevice()->SetRenderTarget(3, NULL);
+						CGlobals::GetRenderDevice()->SetRenderTarget(0, m_render_target_normal_surface);
+						CGlobals::GetRenderDevice()->Clear(true,false,false);
+						CGlobals::GetRenderDevice()->SetRenderTarget(0, pOldRenderTarget);
+						CGlobals::GetRenderDevice()->SetRenderTarget(3, m_render_target_normal_surface);
 					}
 					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 				}

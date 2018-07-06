@@ -53,13 +53,35 @@ bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const cha
 ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context)
 	:m_pD3DDevice(device)
 	,m_pContext(context)
+	,m_backbufferDepthStencil(nullptr)
+	,m_backbufferRenderTarget(nullptr)
+	,m_CurrentDepthStencil(nullptr)
+	,m_CurrentRenderTargets()
 {
+	InitCaps();
+	memset(m_CurrentRenderTargets, 0, sizeof(m_CurrentRenderTargets));
 
+	// get backbuffer render target
+
+	LPDIRECT3DSURFACE9 renderTargetSurface,depthSurface;
+	device->GetRenderTarget(0, &renderTargetSurface);
+	device->GetDepthStencilSurface(&depthSurface);
+
+	m_backbufferRenderTarget = static_cast<TextureD3D9*>(TextureD3D9::Create(this, renderTargetSurface, ETextureUsage::RenderTarget));
+	m_backbufferDepthStencil = static_cast<TextureD3D9*>(TextureD3D9::Create(this, depthSurface, ETextureUsage::DepthStencil));
+
+	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
+	m_CurrentDepthStencil = m_backbufferDepthStencil;
 }
 
-bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
+bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
 {
-	return m_pD3DDevice->SetTexture(stage, texture) == S_OK;
+	LPDIRECT3DTEXTURE9 tex = NULL;
+	if (texture)
+	{
+		tex = (static_cast<TextureD3D9*>(texture))->GetTexture();
+	}
+	return m_pD3DDevice->SetTexture(stage, tex) == S_OK;
 }
 
 bool ParaEngine::RenderDeviceD3D9::DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount)
@@ -78,7 +100,7 @@ bool ParaEngine::RenderDeviceD3D9::DrawPrimitiveUP(EPrimitiveType PrimitiveType,
 	return m_pD3DDevice->DrawPrimitiveUP(D3DMapping::toD3DPrimitiveType(PrimitiveType), PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride) == S_OK;
 }
 
-bool ParaEngine::RenderDeviceD3D9::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+bool ParaEngine::RenderDeviceD3D9::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	return m_pD3DDevice->DrawIndexedPrimitiveUP(D3DMapping::toD3DPrimitiveType(PrimitiveType), MinVertexIndex,
 		NumVertices, PrimitiveCount, pIndexData, D3DMapping::toD3DFromat(IndexDataFormat), pVertexStreamZeroData, VertexStreamZeroStride) == S_OK;
@@ -326,7 +348,102 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect
 	return std::make_shared<EffectD3D9>(pEffect);
 }
 
-IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t width, uint32_t height, ETextureFormat format)
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
-	return TextureD3D9::Create(m_pD3DDevice, width, height, format);
+	return TextureD3D9::Create(this, width, height, format,usage);
+}
+
+
+const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceD3D9::GetCaps()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+
+bool ParaEngine::RenderDeviceD3D9::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
+{
+	LPDIRECT3DSURFACE9 surface = NULL;
+	if (target)
+	{
+		 surface = (static_cast<TextureD3D9*>(target))->GetSurface();
+	}
+	return m_pD3DDevice->SetRenderTarget(index, surface) == S_OK;
+}
+
+
+bool ParaEngine::RenderDeviceD3D9::SetDepthStencil(IParaEngine::ITexture* target)
+{
+	LPDIRECT3DSURFACE9 surface = NULL;
+	if (target)
+	{
+		surface = (static_cast<TextureD3D9*>(target))->GetSurface();
+	}
+	return m_pD3DDevice->SetDepthStencilSurface(surface);
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetRenderTarget(uint32_t index)
+{
+	return m_CurrentRenderTargets[index];
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetDepthStencil()
+{
+	return m_CurrentDepthStencil;
+}
+
+
+const IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferRenderTarget()
+{
+	return m_backbufferRenderTarget;
+}
+
+
+const IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferDepthStencil()
+{
+	return m_backbufferDepthStencil;
+}
+
+void ParaEngine::RenderDeviceD3D9::InitCaps()
+{
+	D3DCAPS9 caps;
+	ZeroMemory(&caps, sizeof(D3DCAPS9));
+	HRESULT hr = m_pD3DDevice->GetDeviceCaps(&caps);
+	if (hr != S_OK) return;
+
+	if (caps.Caps2 & D3DCAPS2_DYNAMICTEXTURES)
+	{
+		m_Cpas.DynamicTextures = true;
+	}
+
+	if (caps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL)
+	{
+		m_Cpas.NPOT = true;
+	}
+	if (caps.PrimitiveMiscCaps & D3DPMISCCAPS_MRTINDEPENDENTBITDEPTHS)
+	{
+		m_Cpas.MRT = true;
+	}
+}
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
+{
+	D3DFORMAT d3dFormat = D3DMapping::toD3DFromat(format);
+
+	LPDIRECT3DTEXTURE9 pTexture = nullptr;
+
+	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(m_pD3DDevice, buffer, size,
+		D3DX_DEFAULT, D3DX_DEFAULT, 1, 0, d3dFormat,
+		D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
+		colorKey, NULL, NULL, &(pTexture));
+
+
+	if (hr == S_OK && pTexture)
+	{
+		return TextureD3D9::Create(this,pTexture);
+	}
+
+
+	return nullptr;
 }

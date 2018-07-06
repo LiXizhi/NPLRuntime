@@ -222,7 +222,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
 
 		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
-			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
+			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), EPixelFormat::INDEX16,
 			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
 	}
 #ifdef USE_OPENGL_RENDERER

@@ -24,7 +24,7 @@ ParaEngine::ImageEntity::ImageEntity()
 	, _unpack(false)
 	, m_bIsOwnData(true)
 	, _fileType(0)
-	, _renderFormat(PixelFormat::Unkonwn)
+	, _renderFormat(EPixelFormat::Unkonwn)
 	, _hasPremultipliedAlpha(false)
 	, _numberOfMipmaps(0)
 {
@@ -80,7 +80,7 @@ bool ParaEngine::ImageEntity::LoadFromRawData(const unsigned char * data, size_t
 		_height = height;
 		_width = width;
 		_hasPremultipliedAlpha = preMulti;
-		_renderFormat = PixelFormat::A8R8G8B8;
+		_renderFormat = EPixelFormat::A8R8G8B8;
 
 		// only RGBA8888 supported
 		int bytesPerComponent = 4;
@@ -120,7 +120,7 @@ bool ParaEngine::ImageEntity::SaveToFile(const std::string &filename, bool isToR
 
 int ParaEngine::ImageEntity::getBitPerPixel()
 {
-	if (getRenderFormat() == PixelFormat::A8R8G8B8)
+	if (getRenderFormat() == EPixelFormat::A8R8G8B8)
 		return 32;
 	else
 		return 0;

@@ -30,12 +30,12 @@ namespace ParaEngine
 		* NOTE: It will not convert the pvr image file.
 		* @param dwTextureFormat: if 0, we will use the image file format.
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
 
 		/** load from memory buffer.
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object.
 		*/
-		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = NULL);
+		virtual HRESULT LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, void** ppTexture = NULL);
 
 		/** whether we will use blocky or non-blocky (anti-aliased) texture */
 		virtual void SetSamplerStateBlocky(bool bIsBlocky);
@@ -47,7 +47,7 @@ namespace ParaEngine
 		/**
 		* save any texture to a different texture file format and save with full mipmapping to disk.
 		*/
-		virtual bool SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);
+		virtual bool SaveToFile(const char* filename, EPixelFormat dwFormat, int width, int height, UINT MipLevels = 1, DWORD Filter = -1, Color ColorKey = 0);
 
 		void SetAliasTexParameters();
 	public:

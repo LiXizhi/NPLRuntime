@@ -11,6 +11,7 @@
 #include "ParaEngine.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #endif
 #if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
 
@@ -225,7 +226,7 @@ bool CShadowMap::PrepareAllSurfaces()
 				return false;
 		}
 		SAFE_RELEASE(m_pSMColorSurface);
-		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
+		m_pSMColorSurface = m_pSMColorTexture->GetTexture();
 
 		if(m_pSMZTexture == 0)
 		{
@@ -236,7 +237,7 @@ bool CShadowMap::PrepareAllSurfaces()
 				return false;
 		}
 		SAFE_RELEASE(m_pSMZSurface);
-		m_pSMZTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMZSurface);
+		m_pSMZSurface = m_pSMZTexture->GetTexture();
 #endif
 	}
 	else
@@ -252,11 +253,9 @@ bool CShadowMap::PrepareAllSurfaces()
 		}
 #ifdef USE_DIRECTX_RENDERER
 		SAFE_RELEASE(m_pSMColorSurface);
-		m_pSMColorTexture->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurface);
+		m_pSMColorSurface = m_pSMColorTexture->GetTexture();
 
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(m_shadowTexWidth, m_shadowTexHeight, zFormat,
-			D3DMULTISAMPLE_NONE, 0, FALSE, &m_pSMZSurface, NULL)))
-			return false;
+		m_pSMZSurface = pRenderDevice->CreateTexture(m_shadowTexWidth, m_shadowTexHeight, EPixelFormat::D24S8, ETextureUsage::DepthStencil);
 
 		if(!m_pSMColorSurface )
 			return false;
@@ -295,7 +294,7 @@ bool CShadowMap::PrepareAllSurfaces()
 				return false;
 		}
 		SAFE_RELEASE(m_pSMColorSurfaceBlurredHorizontal);
-		m_pSMColorTextureBlurredHorizontal->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurfaceBlurredHorizontal);
+		m_pSMColorSurfaceBlurredHorizontal = m_pSMColorTextureBlurredHorizontal->GetTexture();
 
 
 		if(m_pSMColorTextureBlurredVertical == 0)
@@ -307,7 +306,7 @@ bool CShadowMap::PrepareAllSurfaces()
 				return false;
 		}
 		SAFE_RELEASE(m_pSMColorSurfaceBlurredVertical);
-		m_pSMColorTextureBlurredVertical->GetTexture()->GetSurfaceLevel(0, &m_pSMColorSurfaceBlurredVertical);
+		m_pSMColorSurfaceBlurredVertical = m_pSMColorTextureBlurredVertical->GetTexture();
 	}
 #endif
 	return true;
@@ -1347,9 +1346,10 @@ HRESULT CShadowMap::BeginShadowPass()
 	oldViewport = CGlobals::GetRenderDevice()->GetViewport();
 
 
-	m_pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pZBuffer)))
-		return E_FAIL;
+	m_pBackBuffer = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+	m_pZBuffer = CGlobals::GetRenderDevice()->GetDepthStencil();
+	if (m_pZBuffer == nullptr) return E_FAIL;
+
 #else
 	Matrix4 texScaleBiasMat(0.5f, 0.0f, 0.0f, 0.0f,
 							0.0f,    0.5f,     0.0f,         0.0f,
@@ -1371,15 +1371,16 @@ HRESULT CShadowMap::BeginShadowPass()
 
 	//set render target to shadow map surfaces
 #ifdef USE_DIRECTX_RENDERER
-	if (FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pSMColorSurface)))
-		return E_FAIL;
 
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
+	bool ret = CGlobals::GetRenderDevice()->SetRenderTarget(0, m_pSMColorSurface);
+	if (!ret)return false;
+
+	CGlobals::GetRenderDevice()->SetRenderTarget(1,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(2,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(3,NULL);
 
 	//set depth stencil
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pSMZSurface)))
+	if(!CGlobals::GetRenderDevice()->SetDepthStencil(m_pSMZSurface))
 		return E_FAIL;
 #else
 	glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
@@ -1500,9 +1501,9 @@ HRESULT CShadowMap::EndShadowPass()
 			}
 			pEffectFile->setParameter(CEffectFile::k_ConstVector0, Vector4(1.f/m_shadowTexWidth, 1.f/m_shadowTexHeight, 0.0f, 0.0f).ptr(),sizeof(Vector4));
 
-			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_pSMColorSurfaceBlurredHorizontal );
+			CGlobals::GetRenderDevice()->SetRenderTarget(0, m_pSMColorSurfaceBlurredHorizontal );
 			
-			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
+			CGlobals::GetRenderDevice()->SetDepthStencil( NULL );
 			if(pEffectFile->BeginPass(0))
 			{
 				pEffectFile->setTexture(0, m_pSMColorTexture->GetTexture());
@@ -1513,10 +1514,10 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->EndPass();
 			}
 			// set texture 0 to NULL so same texture is never simultaneously a source and render target
-			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
+			pEffectFile->setTexture(0, (IParaEngine::ITexture*)nullptr);
 			
-			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget( 0, m_pSMColorSurfaceBlurredVertical );
-			GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( NULL );
+			CGlobals::GetRenderDevice()->SetRenderTarget( 0, m_pSMColorSurfaceBlurredVertical );
+			CGlobals::GetRenderDevice()->SetDepthStencil( NULL );
 			if(pEffectFile->BeginPass(1))
 			{
 				pEffectFile->setTexture(0, m_pSMColorTextureBlurredHorizontal->GetTexture());
@@ -1527,7 +1528,7 @@ HRESULT CShadowMap::EndShadowPass()
 				pEffectFile->EndPass();
 			}
 			// set texture 0 to NULL so same texture is never simultaneously a source and render target
-			pEffectFile->setTexture( 0, (LPDIRECT3DTEXTURE9)NULL );
+			pEffectFile->setTexture( 0, (IParaEngine::ITexture*)NULL );
 			pEffectFile->end();
 		}
 	}
@@ -1536,9 +1537,9 @@ HRESULT CShadowMap::EndShadowPass()
 
 	//set render target back to normal back buffer / depth buffer
 #ifdef USE_DIRECTX_RENDERER
-	if (FAILED(CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pBackBuffer)))
+	if (!pd3dDevice->SetRenderTarget(0, m_pBackBuffer))
 		return E_FAIL;
-	if(FAILED(GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pZBuffer)))
+	if(!pd3dDevice->SetDepthStencil(m_pZBuffer))
 		return E_FAIL;
 	SAFE_RELEASE(m_pZBuffer);
 #else
@@ -1563,7 +1564,7 @@ HRESULT CShadowMap::EndShadowPass()
 bool CShadowMap::SaveShadowMapToFile(string file)
 {
 #ifdef USE_DIRECTX_RENDERER
-	D3DXSaveTextureToFile(file.c_str(), D3DXIFF_JPG, m_pSMColorTexture->GetTexture(), NULL);
+	D3DXSaveTextureToFile(file.c_str(), D3DXIFF_JPG,GetD3DTex(m_pSMColorSurface), NULL);
 	return true;
 #else
 	return false;

@@ -529,7 +529,7 @@ void CMiniSceneGraph::Draw_Internal(float fDeltaTime)
 
 	
 
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pMask->GetTexture());
+			CGlobals::GetRenderDevice()->SetTexture(0, m_pMask->GetTexture());
 			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 

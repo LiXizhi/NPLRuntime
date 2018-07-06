@@ -37,7 +37,7 @@ namespace ParaEngine
 		inline unsigned char *   getData()              { return _data; }
 		inline size_t            getDataLen()            { return _dataLen; }
 		inline DWORD             getFileType()           { return _fileType; }
-		inline PixelFormat		 getRenderFormat()					{ return _renderFormat; }
+		inline EPixelFormat		 getRenderFormat()					{ return _renderFormat; }
 		inline int               getWidth()              { return _width; }
 		inline int               getHeight()             { return _height; }
 		inline int               getNumberOfMipmaps()    { return _numberOfMipmaps; }
@@ -63,7 +63,7 @@ namespace ParaEngine
 		int _height;
 		bool _unpack;
 		DWORD _fileType;
-		PixelFormat _renderFormat;
+		EPixelFormat _renderFormat;
 		int _numberOfMipmaps;
 		bool _hasPremultipliedAlpha;
 		std::string _filePath;

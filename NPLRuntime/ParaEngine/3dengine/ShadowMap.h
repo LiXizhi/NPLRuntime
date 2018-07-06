@@ -99,8 +99,12 @@ namespace ParaEngine
 	private:
 		static int g_nShadowMapTexelSizeLevel;
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DSURFACE9 m_pBackBuffer, m_pZBuffer; 
-		LPDIRECT3DSURFACE9 m_pSMColorSurface, m_pSMColorSurfaceBlurredHorizontal, m_pSMColorSurfaceBlurredVertical, m_pSMZSurface;
+		IParaEngine::ITexture* m_pBackBuffer;
+		IParaEngine::ITexture* m_pZBuffer;
+		IParaEngine::ITexture* m_pSMColorSurface;
+		IParaEngine::ITexture* m_pSMColorSurfaceBlurredHorizontal;
+		IParaEngine::ITexture* m_pSMColorSurfaceBlurredVertical;
+		IParaEngine::ITexture* m_pSMZSurface;
 #elif USE_OPENGL_RENDERER
 		GLuint mOldFrameBufferObject;
 		GLuint mSMFrameBufferObject,mSMDepthStencilBufferObject;

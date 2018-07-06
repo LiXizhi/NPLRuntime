@@ -25,6 +25,7 @@
 #endif
 
 using namespace ParaEngine;
+using namespace IParaEngine;
 using namespace std;
 
 
@@ -496,7 +497,7 @@ bool CEffectFileImpl::setTexture(int index, TextureEntity* data)
 	}
 	return false;
 }
-bool CEffectFileImpl::setTexture(int index, DeviceTexturePtr_type pTex)
+bool CEffectFileImpl::setTexture(int index, IParaEngine::ITexture* pTex)
 {
 	if (g_bTextureEnabled && m_pEffect && isTextureUsed(index) && !IsTextureLocked(index))
 	{
@@ -505,7 +506,7 @@ bool CEffectFileImpl::setTexture(int index, DeviceTexturePtr_type pTex)
 	return false;
 }
 
-bool CEffectFileImpl::setTextureInternal(int index, DeviceTexturePtr_type pTex)
+bool CEffectFileImpl::setTextureInternal(int index, ITexture* pTex)
 {
 	if ((int)(m_LastTextures.size()) <= index)
 	{

@@ -242,7 +242,7 @@ namespace ParaEngine
 		virtual bool isMatrixUsed(eParameterHandles index) { return false; };
 
 		virtual bool setTexture(int index, TextureEntity* data) { return false; };
-		virtual bool setTexture(int index, DeviceTexturePtr_type pTex) { return false; };
+		virtual bool setTexture(int index, IParaEngine::ITexture* pTex) { return false; };
 
 		virtual bool SetBoolean(int nIndex, bool value) { return false; };
 

@@ -262,13 +262,9 @@ namespace ParaEngine
 		m_pIndexBuffer = NULL;
 		m_pDepthStencilSurface = NULL;
 		m_waveReflectionTexture=NULL;
-		m_waveReflectionSurface = NULL;
 		m_waveRefractionTexture = NULL;
-		m_waveRefractionSurface = NULL;
 		m_waveReflectionNearTexture = NULL;
-		m_waveReflectionNearSurface = NULL;
 		m_waveRefractionNearTexture = NULL;
-		m_waveRefractionNearSurface = NULL;
 		memset(m_pAnimBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_water_meshes);
 		memset(m_pTerrainHeightmapBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_terrain_meshes);
 #endif
@@ -755,7 +751,7 @@ namespace ParaEngine
 				}
 			}
 		}
-
+		auto pDevice = CGlobals::GetRenderDevice();
 		if(GetRenderTechnique()>=OCEAN_TECH_REFLECTION)
 		{
 			int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
@@ -764,17 +760,20 @@ namespace ParaEngine
 			// that do not penetrate the surface of the water.
 			int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 			int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight, 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveReflectionTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveReflectionTexture", hr);  
 
-			hr = m_waveReflectionTexture->GetSurfaceLevel(0, &m_waveReflectionSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveReflectionSurface", hr);
-
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
-				D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-			CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
+			m_waveReflectionTexture = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::X8R8G8B8, ETextureUsage::RenderTarget);
+			
+			if (m_waveReflectionTexture)
+			{
+				OUTPUT_LOG("failed createTexture m_waveReflectionTexture");
+				return;
+			}
+			m_pDepthStencilSurface = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::RenderTarget);
+			if (m_pDepthStencilSurface)
+			{
+				OUTPUT_LOG("failed creating depth stencil buffer");
+				return;
+			}
 
 #ifdef WATER_RENDER_ENABLE_ALL
 			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(min(deviceWidth, m_refractionTextureWidth), 
@@ -833,12 +832,8 @@ namespace ParaEngine
 		SAFE_RELEASE(m_pDepthStencilSurface);
 		SAFE_RELEASE(m_waveReflectionTexture);
 		SAFE_RELEASE(m_waveRefractionTexture);
-		SAFE_RELEASE(m_waveReflectionSurface);
-		SAFE_RELEASE(m_waveRefractionSurface);
 		SAFE_RELEASE(m_waveReflectionNearTexture);
 		SAFE_RELEASE(m_waveRefractionNearTexture);
-		SAFE_RELEASE(m_waveReflectionNearSurface);
-		SAFE_RELEASE(m_waveRefractionNearSurface);
 #endif
 	}
 
@@ -1285,10 +1280,10 @@ namespace ParaEngine
 		}
 
 		// set render state
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pWaterColorTexture->GetTexture());
+		CGlobals::GetRenderDevice()->SetTexture(0,m_pWaterColorTexture->GetTexture());
 		
 		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0,
-			4, 2, pIndexBuffer, PixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
+			4, 2, pIndexBuffer, EPixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
 #endif
 	}
 
@@ -2335,7 +2330,7 @@ namespace ParaEngine
 		m_fLastReflectionTime = 0.f;
 		PERF1("render_reflection");
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		CSceneObject* pScene = CGlobals::GetScene();
 
@@ -2345,17 +2340,12 @@ namespace ParaEngine
 
 		//////////////////////////////////////////////////////////////////////////
 		// Render to the reflection map
-		LPDIRECT3DSURFACE9 pOldRenderTarget =  CGlobals::GetDirectXEngine().GetRenderTarget();
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_waveReflectionSurface);
+		auto pOldRenderTarget = pDevice->GetRenderTarget(0);
+		pDevice->SetRenderTarget(0, m_waveReflectionTexture);
 
 		// set depth surface
-		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
-		{
-			OUTPUT_LOG("GetDepthStencilSurface failed\r\n");
-			return false;
-		}
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
+		auto pOldZBuffer = pDevice->GetDepthStencil();
+		pDevice->SetDepthStencil( m_pDepthStencilSurface );
 
 		// Compute the field of view and use it
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -2512,15 +2502,15 @@ namespace ParaEngine
 		pCamera->UpdateFrustum();
 
 		// restore old depth surface
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
+		pDevice->SetDepthStencil( pOldZBuffer);
 		SAFE_RELEASE(pOldZBuffer);
 
 		//////////////////////////////////////////////////////////////////////////
 		// Restore the old render target: i.e. the backbuffer
-		HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
+		pDevice->SetRenderTarget(0, pOldRenderTarget);
 		/*if(bUseReflection)
 			pEffectManager->EnableReflectionRendering(true);*/
-		PE_ASSERT(hr == D3D_OK);
+
 #endif
 		return true;
 

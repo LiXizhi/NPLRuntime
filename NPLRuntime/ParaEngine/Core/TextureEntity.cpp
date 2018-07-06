@@ -72,7 +72,7 @@ bool TextureEntity::GiveupRawDataOwnership()
 	return true;
 }
 
-bool TextureEntity::LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
+bool TextureEntity::LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
 	if (image)
 	{
@@ -313,7 +313,7 @@ void TextureEntity::Refresh(const char* sFilename, bool bLazyLoad)
 }
 
 
-HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev /*= NULL*/, const char* sFileName /*= NULL*/, void** ppTexture /*= NULL*/, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels /*= D3DX_DEFAULT*/, Color dwColorKey /*= 0*/)
+HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDevicePtr pDev /*= NULL*/, const char* sFileName /*= NULL*/, void** ppTexture /*= NULL*/, EPixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels /*= D3DX_DEFAULT*/, Color dwColorKey /*= 0*/)
 {
 	if (GetRawData())
 	{
@@ -375,7 +375,7 @@ int32 TextureEntity::GetHeight()
 	return pInfo ? pInfo->GetHeight() : 0;
 }
 
-bool TextureEntity::SaveToFile(const char* filename, PixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
+bool TextureEntity::SaveToFile(const char* filename, EPixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
 	return false;
 }

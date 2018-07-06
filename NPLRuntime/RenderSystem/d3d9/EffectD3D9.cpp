@@ -1,4 +1,5 @@
 #include "EffectD3D9.h"
+#include "TextureD3D9.h"
 using namespace ParaEngine;
 using namespace IParaEngine;
 EffectD3D9::~EffectD3D9()
@@ -290,12 +291,13 @@ bool ParaEngine::EffectD3D9::SetFloat(const ParameterHandle& handle, float value
 }
 
 
-bool ParaEngine::EffectD3D9::SetTexture(const ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture)
+bool ParaEngine::EffectD3D9::SetTexture(const ParameterHandle& handle, IParaEngine::ITexture* texture)
 {
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	bool ret = m_pEffect->SetTexture(h, texture) == S_OK;
+	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
+	bool ret = m_pEffect->SetTexture(h, tex->GetTexture()) == S_OK;
 	return ret;
 }
 
@@ -396,9 +398,10 @@ bool ParaEngine::EffectD3D9::SetRawValue(const char* name, const void* data, uin
 	return m_pEffect->SetRawValue(name, data, offset, size) == S_OK;
 }
 
-bool ParaEngine::EffectD3D9::SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture)
+bool ParaEngine::EffectD3D9::SetTexture(const char* name, IParaEngine::ITexture* texture)
 {
-	return m_pEffect->SetTexture(name, texture) == S_OK;
+	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
+	return m_pEffect->SetTexture(name, tex->GetTexture()) == S_OK;
 }
 
 bool EffectD3D9::SetTechnique(const TechniqueHandle& handle)

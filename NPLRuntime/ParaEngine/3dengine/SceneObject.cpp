@@ -9,6 +9,7 @@
 #include "ParaEngine.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #endif
 #ifdef USE_DIRECTX_RENDERER
 #include "DirectXEngine.h"
@@ -3419,7 +3420,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					/* set vertex buffer, texture once and for all object in the bunch*/
 					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX) );
 					if(pObj->m_ppTexture)
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pObj->m_ppTexture->GetTexture());
+						CGlobals::GetRenderDevice()->SetTexture(0, pObj->m_ppTexture->GetTexture());
 					pObj->SetRenderState(pd3dDevice);
 				}
 
@@ -4257,7 +4258,7 @@ bool CSceneObject::ScreenShotReflection()
 	static unsigned short i=0;
 	string filename = "Screen Shots\\reflectionmap0.jpg";
 	filename[filename.size()-5] = '0'+(char)(++i);
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL );
+	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, GetD3DTex(CGlobals::GetOceanManager()->m_waveReflectionTexture), NULL );
 #endif
 	return true;
 }

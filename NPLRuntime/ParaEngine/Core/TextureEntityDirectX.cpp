@@ -32,6 +32,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #include "ViewportManager.h"
 #include "TextureEntityDirectX.h"
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #include "D3DMapping.h"
 
 #ifdef PARAENGINE_CLIENT
@@ -42,7 +43,7 @@ If your image has sharp transitions between multiple alpha levels (one pixel is 
 #define MAKE_LOWER(c)  if((c)>='A' && (c)<='Z'){(c) = (c)-'A'+'a';}
 
 using namespace ParaEngine;
-
+using namespace IParaEngine;
 namespace ParaEngine
 {
 	extern int globalTime;
@@ -67,17 +68,17 @@ TextureEntityDirectX::~TextureEntityDirectX()
 	}
 }
 
-D3DFORMAT TextureEntityDirectX::GetD3DFormat()
+EPixelFormat TextureEntityDirectX::GetFormat()
 {
 	auto format = m_pTextureInfo->GetFormat();
 	if (format == TextureInfo::FMT_A8R8G8B8)
-		return D3DFMT_A8R8G8B8;
+		return EPixelFormat::A8R8G8B8;
 	else if (format == TextureInfo::FMT_X8R8G8B8)
-		return D3DFMT_X8R8G8B8;
+		return EPixelFormat::X8R8G8B8;
 	else if (format == TextureInfo::FMT_UNKNOWN)
-		return D3DFMT_UNKNOWN;
+		return EPixelFormat::Unkonwn;
 	else
-		return D3DFMT_X8R8G8B8;
+		return EPixelFormat::X8R8G8B8;
 }
 
 LPDIRECT3DSURFACE9 TextureEntityDirectX::GetSurface()
@@ -91,10 +92,10 @@ LPDIRECT3DSURFACE9 TextureEntityDirectX::GetSurface()
 		return NULL;
 }
 
-DeviceTexturePtr_type TextureEntityDirectX::GetTexture()
+IParaEngine::ITexture* TextureEntityDirectX::GetTexture()
 {
 	++m_nHitCount;
-	DeviceTexturePtr_type tex = NULL;
+	ITexture* tex = NULL;
 	if(IsLocked())
 	{
 		return NULL;
@@ -175,7 +176,7 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 			GetAnimatedTextureInfo();
 			if( (m_pAnimatedTextureInfo && m_pAnimatedTextureInfo->m_width==0) )
 			{
-				LPDIRECT3DTEXTURE9 pTexture = NULL;
+				ITexture* pTexture = NULL;
 				if(IsLocked() || (pTexture = GetTexture()) == 0)
 				{
 					// if texture is locked (being downloaded)
@@ -186,12 +187,8 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 				{
 					if(pTexture)
 					{
-						D3DSURFACE_DESC desc;
-						if(SUCCEEDED(pTexture->GetLevelDesc(0, &desc)))
-						{
-							m_pAnimatedTextureInfo->m_width = desc.Width;
-							m_pAnimatedTextureInfo->m_height = desc.Height;
-						}
+						m_pAnimatedTextureInfo->m_width = pTexture->GetWidth();
+						m_pAnimatedTextureInfo->m_height = pTexture->GetHeight();
 					}
 				}
 			}
@@ -276,12 +273,8 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 					}
 					else if(m_pTexture)
 					{
-						D3DSURFACE_DESC desc;
-						if(SUCCEEDED(m_pTexture->GetLevelDesc(0, &desc)))
-						{
-							m_pTextureInfo->m_width = desc.Width;
-							m_pTextureInfo->m_height = desc.Height;
-						}
+						m_pTextureInfo->m_width = m_pTexture->GetWidth();
+						m_pTextureInfo->m_height = m_pTexture->GetHeight();
 					}
 				}
 			}
@@ -292,7 +285,7 @@ const TextureEntityDirectX::TextureInfo* TextureEntityDirectX::GetTextureInfo()
 	return m_pTextureInfo;
 }
 
-HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, const char* sFileName, IDirect3DTexture9** ppTexture, PixelFormat dwTextureFormat, UINT nMipLevels, Color dwColorKey )
+HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, const char* sFileName, ITexture** ppTexture, EPixelFormat dwTextureFormat, UINT nMipLevels, Color dwColorKey )
 {
 	// Load Texture sequentially
 	asset_ptr<TextureEntity> my_asset(this);
@@ -331,10 +324,10 @@ HRESULT TextureEntityDirectX::CreateTextureFromFile_Serial(IRenderDevice* pDev, 
 	return S_OK;
 }
 
-void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
+void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTextureFileName, EPixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
+	EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -344,14 +337,14 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = PixelFormat::Unkonwn;
+			dwTextureFormat = EPixelFormat::Unkonwn;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
 			If one wants to ensure high resolution texture, use TGA format instead. */
 			if(sTextureFileName.find("_32bits") != string::npos)
 			{
-				dwTextureFormat = PixelFormat::A8R8G8B8;
+				dwTextureFormat = EPixelFormat::A8R8G8B8;
 				MipLevels = 1;
 			}
 			//else if(sTextureFileName.find("blocks") != string::npos)
@@ -362,19 +355,19 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 			else if(sTextureFileName.find("_dxt1") != string::npos)
 			{
 				/** if the texture filename ends with "_dxt1.png", we will load with DXT1 */
-				dwTextureFormat = PixelFormat::DXT1;
+				dwTextureFormat = EPixelFormat::DXT1;
 				MipLevels = 1;
 			}
 			else
 			{
-				dwTextureFormat = PixelFormat::DXT3;
+				dwTextureFormat = EPixelFormat::DXT3;
 				MipLevels = 1;
 			}
 			
 		}
 		else if(c1=='j' && c2=='p' && c3=='g')
 		{
-			dwTextureFormat = PixelFormat::DXT1;
+			dwTextureFormat = EPixelFormat::DXT1;
 			MipLevels = 1;
 		}
 	}
@@ -384,10 +377,10 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileNameEx(const string& sTex
 		*pnMipLevels = MipLevels;
 }
 
-void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextureFileName, PixelFormat* pdwTextureFormat, UINT* pnMipLevels)
+void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextureFileName, EPixelFormat* pdwTextureFormat, UINT* pnMipLevels)
 {
 	int nSize = (int)sTextureFileName.size();
-	PixelFormat dwTextureFormat = PixelFormat::Unkonwn;
+	EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn;
 	UINT MipLevels = D3DX_DEFAULT;
 	if(nSize>4)
 	{
@@ -397,14 +390,14 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextu
 
 		// if it is png file we will use dxt3 internally since it contains alpha. 
 		if(c1=='d' && c2=='d' && c3=='s')
-			dwTextureFormat = PixelFormat::Unkonwn;
+			dwTextureFormat = EPixelFormat::Unkonwn;
 		else if(c1=='p' && c2=='n' && c3=='g')
 		{
 			/** whether we treat png file as DXT3 by default. if the texture filename ends with "_32bits.png", we will load with D3DFMT_A8R8G8B8 instead of DXT3. 
 			If one wants to ensure high resolution texture, use TGA format instead. */
 			if(nSize>11 && sTextureFileName[nSize-11]=='_' && sTextureFileName[nSize-10]=='3' && sTextureFileName[nSize-9]=='2' && sTextureFileName[nSize-8]=='b')
 			{
-				dwTextureFormat = g_bEnable32bitsTexture ? PixelFormat::A8R8G8B8 : PixelFormat::DXT3;
+				dwTextureFormat = g_bEnable32bitsTexture ? EPixelFormat::A8R8G8B8 : EPixelFormat::DXT3;
 				MipLevels = 1;
 			}
 			else if(sTextureFileName.find("blocks") != string::npos)
@@ -421,28 +414,28 @@ void TextureEntityDirectX::GetFormatAndMipLevelFromFileName(const string& sTextu
 				if(sTextureFileName.find("_dxt") != string::npos)
 				{
 					if(sTextureFileName.find("_dxt1") != string::npos)
-						dwTextureFormat = PixelFormat::DXT1;
+						dwTextureFormat = EPixelFormat::DXT1;
 					else
-						dwTextureFormat = PixelFormat::DXT3;
+						dwTextureFormat = EPixelFormat::DXT3;
 				}
 				else
-					dwTextureFormat = PixelFormat::A8R8G8B8;
+					dwTextureFormat = EPixelFormat::A8R8G8B8;
 			}
 			else if(nSize>9 && sTextureFileName[nSize-9]=='_'  && sTextureFileName[nSize-8]=='d' && sTextureFileName[nSize-7]=='x' && sTextureFileName[nSize-6]=='t' && sTextureFileName[nSize-5]=='1')
 			{
 				/** if the texture filename ends with "_dxt1.png", we will load with DXT1 */
-				dwTextureFormat = PixelFormat::DXT1;
+				dwTextureFormat = EPixelFormat::DXT1;
 				MipLevels = 1;
 			}
 			else
 			{
-				dwTextureFormat = PixelFormat::DXT3;
+				dwTextureFormat = EPixelFormat::DXT3;
 				MipLevels = 1;
 			}
 		}
 		else if(c1=='j' && c2=='p' && c3=='g')
 		{
-			dwTextureFormat = PixelFormat::DXT1;
+			dwTextureFormat = EPixelFormat::DXT1;
 			MipLevels = 1;
 		}
 	}
@@ -479,7 +472,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		if(m_pTexture == 0)
 		{
 			// Load Texture sequentially
-			PixelFormat dwTextureFormat;
+			EPixelFormat dwTextureFormat;
 			UINT MipLevels;
 			GetFormatAndMipLevelFromFileName(sTextureFileName, &dwTextureFormat, &MipLevels);
 			if(SurfaceType == TextureEntityDirectX::TerrainHighResTexture)
@@ -497,9 +490,9 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 		if(m_pSurface == 0)
 		{
 			if(!IsAsyncLoad())
-				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Serial(NULL, NULL, (&m_pTexture), EPixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 			else
-				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), PixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
+				return CreateTextureFromFile_Async(NULL, NULL, NULL, (void**)(&m_pTexture), EPixelFormat::Unkonwn, 0, GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/);
 		}
 		return S_OK;
 	}
@@ -522,8 +515,8 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 			{
 				if(m_pTextureSequence == 0)
 				{
-					m_pTextureSequence = new LPDIRECT3DTEXTURE9[nTotalTextureSequence];
-					memset(m_pTextureSequence, 0, sizeof(LPDIRECT3DTEXTURE9)*nTotalTextureSequence);
+					m_pTextureSequence = new ITexture*[nTotalTextureSequence];
+					memset(m_pTextureSequence, 0, sizeof(ITexture*)*nTotalTextureSequence);
 				}
 
 				// if there are texture sequence, export all bitmaps in the texture sequence. 
@@ -545,7 +538,7 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 					if(m_pTextureSequence[i-1] == 0)
 					{
 						// Load Texture sequentially
-						PixelFormat dwTextureFormat;
+						EPixelFormat dwTextureFormat;
 						UINT MipLevels;
 						GetFormatAndMipLevelFromFileNameEx(sTextureFileName, &dwTextureFormat, &MipLevels);
 
@@ -574,70 +567,32 @@ HRESULT TextureEntityDirectX::InitDeviceObjects()
 	return S_OK;
 }
 
-void TextureEntityDirectX::CreateTexture(LPDIRECT3DTEXTURE9 pSrcTexture, D3DFORMAT dwFormat, int width, int height, UINT MipLevels)
+void TextureEntityDirectX::CreateTexture(ITexture* pSrcTexture, EPixelFormat format, int width, int height, uint32_t MipLevels)
 {
-	// only StaticTexture should call this function. 
-	if(SurfaceType == TextureEntityDirectX::StaticTexture)
+
+	if (SurfaceType != TextureEntityDirectX::StaticTexture) return;
+	// PERF1("CreateTexture");
+	UnloadAsset();
+	m_bIsInitialized = true;
+
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+
+	
+
+	m_pTexture  = pRenderDevice->CreateTexture(width, height,format,ETextureUsage::Default);
+	if (m_pTexture == nullptr) return;
+
+	if (!pSrcTexture->CopyTo(m_pTexture))
 	{
-		// PERF1("CreateTexture");
-		UnloadAsset();
-		m_bIsInitialized = true;
-
-		auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-		HRESULT hr = pRenderDevice->CreateTexture(width, height,  MipLevels, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &m_pTexture,NULL);
-		if( SUCCEEDED(hr) )
-		{
-			LPDIRECT3DSURFACE9 pSrcSurface = NULL;
-			LPDIRECT3DSURFACE9 pDestSurface = NULL;
-			hr = pSrcTexture->GetSurfaceLevel(0, &pSrcSurface);
-			if( SUCCEEDED(hr) )
-			{
-				hr = m_pTexture->GetSurfaceLevel(0, &pDestSurface);
-				if( SUCCEEDED(hr) )
-				{
-					//PERF1("D3DXLoadSurfaceFromSurface");
-
-					//byte * pBuffer = new byte[width*height*4];
-					//D3DLOCKED_RECT lr;
-					//hr = pSrcSurface->LockRect(&lr, NULL, D3DLOCK_READONLY);
-					//if( SUCCEEDED(hr) )
-					//{
-					//	memcpy(pBuffer, lr.pBits, width*height*4);	
-					//	pSrcSurface->UnlockRect();
-					//}
-					//// RECT rect = {0,0,width, height};
-					//// D3DX_FILTER_NONE
-					//// D3DXLoadSurfaceFromMemory(pDestSurface, NULL, NULL, pBuffer, D3DFMT_A8R8G8B8, width*4, NULL, &rect,D3DX_DEFAULT, 0);
-					//CLogger::GetSingleton().Write((const char*)pBuffer, width*height*4);
-					//delete [] pBuffer;
-
-					// D3DXLoadSurfaceFromSurface is super slow. takes 0.042 seconds to run on 2.5 GHZ CPU. 
-					// this is because fetching data from render target is super slow. 
-					hr = D3DXLoadSurfaceFromSurface(pDestSurface, NULL, NULL, pSrcSurface, NULL, NULL, D3DX_DEFAULT, 0);
-					SAFE_RELEASE(pDestSurface);
-				}
-				SAFE_RELEASE(pSrcSurface);
-			}
-			if( SUCCEEDED(hr) )
-			{
-				// generate all mip levels
-				// TODO:
-				// m_pTexture->SetAutoGenFilterType(D3DTEXF_NONE);
-				m_pTexture->GenerateMipSubLevels();
-				
-				/** we will only set LOD if the texture file is larger than 40KB */
-				if(MipLevels!=1 && g_nTextureLOD>0 && width>128)
-				{
-					m_pTexture->SetLOD(g_nTextureLOD);
-				}
-
-				SAFE_DELETE(m_pTextureInfo);
-				m_pTextureInfo = new TextureInfo();
-				m_pTextureInfo->m_width = width;
-				m_pTextureInfo->m_height = height;
-			}
-		}
+		m_pTexture->DefRef();
+		m_pTexture = nullptr;
+		return;
 	}
+
+	SAFE_DELETE(m_pTextureInfo);
+	m_pTextureInfo = new TextureInfo();
+	m_pTextureInfo->m_width = width;
+	m_pTextureInfo->m_height = height;
 }
 
 void TextureEntityDirectX::SetSurface( LPDIRECT3DSURFACE9 pSurface )
@@ -657,7 +612,7 @@ VOID WINAPI ColorFill (D3DXVECTOR4* pOut, const D3DXVECTOR2* pTexCoord, const D3
 HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 {
 
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
 	if(m_bIsInitialized)
 		return S_OK;
@@ -665,10 +620,10 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 	{
 		m_bIsInitialized = true;
 
-		DWORD width,height;
+		uint32_t width=0,height=0;
 		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
 
-		D3DFORMAT format = D3DFMT_A8R8G8B8;
+		EPixelFormat format = EPixelFormat::A8B8G8R8;
 		
 		if(GetTextureInfo() != NULL)
 		{
@@ -681,7 +636,7 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 			}
 			if(GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
-				format = D3DFMT_X8R8G8B8;
+				format = EPixelFormat::X8R8G8B8;
 			}
 		}
 		else
@@ -693,21 +648,25 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 		/** if surface name contains  "_R32F", we will create using 32bits red channel format */
 		if(GetKey().find("_R32F") != std::string::npos )
 		{
-			format = D3DFMT_R32F;
+			format = EPixelFormat::R32F;
 		}
 		if (GetKey().find("_HDR") != std::string::npos)
 		{
-			format = D3DFMT_A16B16G16R16F;
+			format = EPixelFormat::A16B16G16R16F;
 		}
 
-		if( FAILED(pRenderDevice->CreateTexture(width,height,1,D3DUSAGE_RENDERTARGET,
-			format, D3DPOOL_DEFAULT,&m_pTexture,NULL)) )
+
+		m_pTexture = pRenderDevice->CreateTexture(width, height, format, ETextureUsage::RenderTarget);
+		if (m_pTexture == nullptr)
 		{
-			if(format == D3DFMT_A8R8G8B8 || format == D3DFMT_R32F)
+			if (format == EPixelFormat::A8R8G8B8 || format == EPixelFormat::R32F)
 			{
-				// try D3DFMT_X8R8G8B8 if FMT_A8R8G8B8 is not supported; perhaps D3DXCreateTexture already secretly does this for us. 
-				if( FAILED(pRenderDevice->CreateTexture(width,height,1,D3DUSAGE_RENDERTARGET,
-					D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT,&m_pTexture,NULL)) )
+				// try EPixelFormat::X8R8G8B8 if EPixelFormat::A8R8G8B8 is not supported; perhaps D3DXCreateTexture already secretly does this for us. 
+
+				
+				m_pTexture = pRenderDevice->CreateTexture(width, height, EPixelFormat::X8R8G8B8, ETextureUsage::RenderTarget);
+
+				if (m_pTexture == nullptr)
 				{
 					OUTPUT_LOG("failed creating render target for %s", GetKey().c_str());
 					m_bIsValid = false;
@@ -720,12 +679,21 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 				m_bIsValid = false;
 				return E_FAIL;
 			}
+
 		}
+
+
 		if(m_bIsValid && m_pTexture)
 		{
-			// Fill the texture with 0-alpha using D3DXFillTexture
-			if( FAILED(D3DXFillTexture (m_pTexture, ColorFill, NULL)) )
+			// Fill the texture with 0-alpha
+			unsigned  int pitch = 0;
+			char* buffer = (char*)m_pTexture->Lock(0, pitch, nullptr);
+			if(buffer!=nullptr)
 			{
+				memset(buffer, 0, width*height*pitch);
+				m_pTexture->Unlock(0);
+			}
+			else {
 				OUTPUT_LOG("failed filling render target %s with alpha value", GetKey().c_str());
 			}
 		}
@@ -734,10 +702,10 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 	{
 		m_bIsInitialized = true;
 
-		DWORD width,height;
+		uint32_t width=0,height=0;
 		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
 
-		D3DFORMAT format = D3DFMT_D24S8;
+		EPixelFormat format = EPixelFormat::D24S8;
 
 		if(GetTextureInfo() != NULL)
 		{
@@ -758,11 +726,11 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 		/** if surface name contains  "_R32F", we will create using 32bits red channel format */
 		if(GetKey().find("_R32F") != std::string::npos )
 		{
-			format = D3DFMT_R32F;
+			format = EPixelFormat::R32F;
 		}
 
-		if( FAILED(pRenderDevice->CreateTexture(width,height,1,D3DUSAGE_DEPTHSTENCIL,
-			format, D3DPOOL_DEFAULT,&m_pTexture,NULL)) )
+		m_pTexture = pRenderDevice->CreateTexture(width, height, format, ETextureUsage::DepthStencil);
+		if (m_pTexture == nullptr)
 		{
 			OUTPUT_LOG("failed creating depth stencil for %s", GetKey().c_str());
 			m_bIsValid = false;
@@ -848,31 +816,24 @@ HRESULT TextureEntityDirectX::DeleteDeviceObjects()
 void TextureEntityDirectX::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
 
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	HRESULT hr;
-	D3DSURFACE_DESC desc;
-	IDirect3DTexture9* pTexture = NULL;
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	ITexture* pTexture = NULL;
 
-	D3DFORMAT d3dFormat;
+	EPixelFormat format;
 	if (bAlpha)
-		d3dFormat = D3DFMT_A8R8G8B8;
+		format = EPixelFormat::A8R8G8B8;
 	else
-		d3dFormat = D3DFMT_R8G8B8;
+		format = EPixelFormat::R8G8B8;
 
 	// read from file
-	hr = D3DXCreateTextureFromFileInMemoryEx(pRenderDevice,sBufMemFile, sizeBuf,
-		0, 0, 1, 0, 
-		d3dFormat, D3DPOOL_SCRATCH, 
-		D3DX_FILTER_NONE, D3DX_FILTER_NONE,
-		0, NULL, NULL, &pTexture );
-	if( FAILED(hr) )
+	pTexture = pRenderDevice->CreateTexture(sBufMemFile, sizeBuf, format, 0);
+	if(pTexture == nullptr)
 		return;
 
-	pTexture->GetLevelDesc( 0, &desc ); 
 
 	// set size
-	width = desc.Width;
-	height = desc.Height;
+	width = pTexture->GetWidth();
+	height = pTexture->GetHeight();
 
 	byte *pBufferTemp = NULL;
 	int nSize;
@@ -884,16 +845,18 @@ void TextureEntityDirectX::LoadImage(char *sBufMemFile, int sizeBuf, int &width,
 
 	if(pBufferTemp==0)
 		return;
-	D3DLOCKED_RECT lockedRect;
 
-	hr = pTexture->LockRect( 0, &lockedRect, NULL, D3DLOCK_READONLY );
-	if( SUCCEEDED(hr) )
+
+	unsigned int pitch = 0;
+
+	void* pBits  = pTexture->Lock(0,pitch,nullptr);
+	if(pBits)
 	{
-		byte *pImagePixels = (byte *) lockedRect.pBits;
+		byte *pImagePixels = (byte *)pBits;
 		memcpy(pBufferTemp, pImagePixels, nSize);
 		//
 		*ppBuffer = pBufferTemp;
-		pTexture->UnlockRect( 0 );
+		pTexture->Unlock( 0 );
 	}
 	else
 	{
@@ -996,68 +959,27 @@ bool TextureEntityDirectX::LoadImageOfFormat(const std::string& sTextureFileName
 
 bool TextureEntityDirectX::StretchRect(TextureEntityDirectX * pSrcTexture, TextureEntityDirectX * pDestTexture)
 {
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	bool bReleaseSrc = false;
-	bool bReleaseDest = false;
-	bool res = false;
 
-	LPDIRECT3DSURFACE9 pSrcSurface = pSrcTexture->GetSurface();
-
-	LPDIRECT3DSURFACE9 pDestSurface = pDestTexture->GetSurface();
-	if (pSrcSurface == 0)
+	if (pSrcTexture->GetTexture() != nullptr && pDestTexture->GetTexture() != nullptr)
 	{
-		LPDIRECT3DTEXTURE9 pTex = pSrcTexture->GetTexture();
-		bReleaseSrc = pTex != 0 && SUCCEEDED(pTex->GetSurfaceLevel(0, &pSrcSurface));
-	}
-	if (pDestSurface == 0)
-	{
-		LPDIRECT3DTEXTURE9 pTex = pDestTexture->GetTexture();
-		bReleaseDest = pTex != 0 && SUCCEEDED(pTex->GetSurfaceLevel(0, &pDestSurface));
+		return pSrcTexture->GetTexture()->StretchRect(pDestTexture->GetTexture(), nullptr, nullptr, ETextureFilterType::Linear);
 	}
 
-	if (pSrcSurface && pDestSurface)
-	{
-		res = SUCCEEDED(pRenderDevice->StretchRect(pSrcSurface, NULL, pDestSurface, NULL, D3DTEXF_LINEAR));
-	}
-
-	if (bReleaseSrc)
-	{
-		SAFE_RELEASE(pSrcSurface);
-	}
-	if (bReleaseDest)
-	{
-		SAFE_RELEASE(pDestSurface);
-	}
-	return res;
 }
+
 
 
 bool TextureEntityDirectX::SetRenderTarget(int nIndex)
 {
-	bool bReleaseSrc = false;
-	bool res = false;
-	LPDIRECT3DSURFACE9 pSrcSurface = GetSurface();
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	if (pSrcSurface == 0)
-	{
-		LPDIRECT3DTEXTURE9 pTex = GetTexture();
-		bReleaseSrc = pTex != 0 && SUCCEEDED(pTex->GetSurfaceLevel(0, &pSrcSurface));
-	}
-	if (pSrcSurface)
-	{
-		res = SUCCEEDED(pRenderDevice->SetRenderTarget(nIndex, pSrcSurface));
-	}
-	if (bReleaseSrc)
-	{
-		SAFE_RELEASE(pSrcSurface);
-	}
+
+	bool res = CGlobals::GetRenderDevice()->SetRenderTarget(0, GetTexture());
 	if (res && nIndex == 0){
 		CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 	}
 	return res;
 }
 
-void TextureEntityDirectX::SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture)
+void TextureEntityDirectX::SetTexture(IParaEngine::ITexture* pSrcTexture)
 {
 	if (m_pTexture != pSrcTexture)
 	{
@@ -1073,37 +995,39 @@ void TextureEntityDirectX::SetTexture(LPDIRECT3DTEXTURE9 pSrcTexture)
 
 TextureEntity* TextureEntityDirectX::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
-	HRESULT hr = D3DXCreateTextureFromFileEx(pRenderDevice,pFileName, D3DX_DEFAULT, D3DX_DEFAULT, D3DX_FROM_FILE, 0, D3DFMT_UNKNOWN, D3DMapping::toD3DPool(dwCreatePool), D3DX_DEFAULT, D3DX_DEFAULT, 0, NULL, NULL, &pTexture);
-	if (SUCCEEDED(hr) && pTexture != NULL)
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+
+	CParaFile file;
+	if (file.OpenFile(pFileName, true))
 	{
-		TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
-		if (pTextureEntity)
+		ITexture* pTexture = pRenderDevice->CreateTexture(file.getBuffer(), file.getSize(), EPixelFormat::Unkonwn, 0);
+		if (pTexture != NULL)
 		{
-			pTextureEntity->CreateTextureFromFile_Serial()
-			pTextureEntity->SetTexture(pTexture);
-			SAFE_RELEASE(pTexture);
-			pTextureEntity->AddToAutoReleasePool();
-			return pTextureEntity;
+			TextureEntityDirectX* pTextureEntity = new TextureEntityDirectX(AssetKey(pFileName));
+			if (pTextureEntity)
+			{
+				pTextureEntity->SetTexture(pTexture);
+				SAFE_RELEASE(pTexture);
+				pTextureEntity->AddToAutoReleasePool();
+				return pTextureEntity;
+			}
 		}
 	}
-	else
-	{
-		OUTPUT_LOG("warn: failed to create texture: %s \n", pFileName);
-	}
+
+	OUTPUT_LOG("warn: failed to create texture: %s \n", pFileName);
 	return NULL;
 }
 
 
-bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
+bool TextureEntityDirectX::SaveToFile(const char* filename, EPixelFormat dwFormat, int width, int height, UINT MipLevels /*= 1*/, DWORD Filter /*= D3DX_DEFAULT*/, Color ColorKey /*= 0*/)
 {
-	DeviceTexturePtr_type pSrcTexture = GetTexture();
+	if (!GetTexture()) return false;
+	LPDIRECT3DTEXTURE9 pSrcTexture = static_cast<TextureD3D9*>(GetTexture())->GetTexture();
 	if (!pSrcTexture)
 		return false;
 	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
 	DeviceTexturePtr_type pDestTexture = NULL;
-	HRESULT hr = pRenderDevice->CreateTexture(width, height, 1, D3DUSAGE_AUTOGENMIPMAP, dwFormat, D3DPOOL_MANAGED, &pDestTexture,NULL);
+	HRESULT hr = pRenderDevice->CreateTexture(width, height, 1, D3DUSAGE_AUTOGENMIPMAP, D3DMapping::toD3DFromat(dwFormat), D3DPOOL_MANAGED, &pDestTexture,NULL);
 	if (SUCCEEDED(hr))
 	{
 		LPDIRECT3DSURFACE9 pSrcSurface = NULL;
@@ -1171,42 +1095,40 @@ bool TextureEntityDirectX::SaveToFile(const char* filename, D3DFORMAT dwFormat, 
 
 TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	ITexture* pTexture = NULL;
 
 	if (!pTexels)
 		return 0;
 
 	if (bytesPerPixel == 4)
 	{
-		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
-		if (FAILED(hr))
+		pTexture = pRenderDevice->CreateTexture(width, height,EPixelFormat::A8R8G8B8,ETextureUsage::Default);
+		if (!pTexture)
 		{
 			OUTPUT_LOG("failed creating terrain texture\n");
 		}
 		else
 		{
-			D3DLOCKED_RECT lr;
-			pTexture->LockRect(0, &lr, NULL, 0);
-			memcpy(lr.pBits, pTexels, width*height * 4);
-			pTexture->UnlockRect(0);
+			unsigned int pitch;
+			void* pBuffer = pTexture->Lock(0, pitch, nullptr);
+			memcpy(pBuffer, pTexels, width*height * 4);
+			pTexture->Unlock(0);
 		}
 	}
 	else if (bytesPerPixel == 3)
 	{
-		// please note, we will create D3DFMT_A8R8G8B8 instead of , D3DFMT_R8G8B8, since our device will use D3DFMT_A8R8G8B8 only
-		HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
-		if (FAILED(hr))
+		pTexture = pRenderDevice->CreateTexture(width, height, EPixelFormat::A8R8G8B8, ETextureUsage::Default);
+		if (!pTexture)
 		{
 			OUTPUT_LOG("failed creating terrain texture\n");
 		}
 		else
 		{
-			D3DLOCKED_RECT lockedRect;
-			pTexture->LockRect(0, &lockedRect, NULL, 0);
+			unsigned int pitch;
+			void* pBuffer = pTexture->Lock(0, pitch, nullptr);
 
-			//memcpy(lockedRect.pBits, pTexels, width*height*3);
-			uint8 *pp = (uint8*)lockedRect.pBits;
+			uint8 *pp = (uint8*)pBuffer;
 			int index = 0, x = 0, y = 0;
 
 			for (y = 0; y < height; y++)
@@ -1219,9 +1141,9 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 					pp[index++] = pTexels[n + 2];
 					pp[index++] = 0xff;
 				}
-				index += lockedRect.Pitch - (width * 4);
+				index += pitch - (width * 4);
 			}
-			pTexture->UnlockRect(0);
+			pTexture->Unlock(0);
 		}
 	}
 	else if (bytesPerPixel == 1)
@@ -1232,7 +1154,7 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		if (nSupportAlphaTexture == -1)
 		{
 			D3DFORMAT nDesiredFormat = D3DFMT_A8;
-			hr = D3DXCheckTextureRequirements(pRenderDevice,NULL, NULL, NULL, 0, &nDesiredFormat, D3DMapping::toD3DPool(dwCreatePool));
+			hr = D3DXCheckTextureRequirements(GETD3D(pRenderDevice),NULL, NULL, NULL, 0, &nDesiredFormat, D3DMapping::toD3DPool(dwCreatePool));
 			if (SUCCEEDED(hr))
 			{
 				if (nDesiredFormat == D3DFMT_A8)
@@ -1253,38 +1175,38 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 		if (nSupportAlphaTexture == 1)
 		{
 			// D3DFMT_A8 is supported
-			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
-			if (FAILED(hr))
+			pTexture = pRenderDevice->CreateTexture(width, height, EPixelFormat::A8, ETextureUsage::Default);
+			if (!pTexture)
 			{
-				OUTPUT_LOG("failed creating alpha terrain texture\n");
+				OUTPUT_LOG("failed creating terrain texture\n");
 			}
 			else
 			{
-				D3DLOCKED_RECT lr;
-				pTexture->LockRect(0, &lr, NULL, 0);
-				memcpy(lr.pBits, pTexels, width*height * 1);
-				pTexture->UnlockRect(0);
+				unsigned int pitch;
+				void* pBuffer = pTexture->Lock(0, pitch, nullptr);
+				memcpy(pBuffer, pTexels, width*height * 1);
+				pTexture->Unlock(0);
 			}
 		}
 		else if (nSupportAlphaTexture == 0)
 		{
 			// D3DFMT_A8 is not supported, try D3DFMT_A8R8G8B8
-			HRESULT hr = pRenderDevice->CreateTexture(width, height, 0, D3DUSAGE_AUTOGENMIPMAP, D3DFMT_A8R8G8B8, D3DMapping::toD3DPool(dwCreatePool), &pTexture,NULL);
-			if (FAILED(hr))
+			pTexture = pRenderDevice->CreateTexture(width, height, EPixelFormat::A8R8G8B8, ETextureUsage::Default);
+			if (!pTexture)
 			{
 				OUTPUT_LOG("failed creating alpha terrain texture\n");
 			}
 			else
 			{
-				D3DLOCKED_RECT lr;
-				pTexture->LockRect(0, &lr, NULL, 0);
+				unsigned int pitch;
+				void* pBuffer = pTexture->Lock(0, pitch, nullptr);
 				int nSize = width*height;
-				DWORD* pData = (DWORD*)(lr.pBits);
+				DWORD* pData = (DWORD*)(pBuffer);
 				for (int x = 0; x < nSize; ++x)
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				pTexture->UnlockRect(0);
+				pTexture->Unlock(0);
 			}
 		}
 	}
@@ -1306,117 +1228,113 @@ TextureEntity* TextureEntityDirectX::CreateTexture(const uint8 * pTexels, int wi
 	return NULL;
 }
 
-HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat format, void** ppTexture_)
+HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat format, void** ppTexture_)
 {
 
 	D3DFORMAT dwTextureFormat = D3DMapping::toD3DFromat(format);
 
 	HRESULT hr;
-	DeviceTexturePtr_type* ppTexture = (DeviceTexturePtr_type*)ppTexture_;
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
+	ITexture** ppTexture = (ITexture**)ppTexture_;
+	auto pRenderDevice = CGlobals::GetRenderDevice();
 
-	LPDIRECT3DTEXTURE9 pTexture = NULL;
+	ITexture* pTexture = NULL;
 
 	switch (SurfaceType)
 	{
 	case TextureEntity::SysMemoryTexture:
 	{
-		D3DXIMAGE_INFO SrcInfo;
-		if (GetTextureInfo())
-		{
-			SrcInfo.Width = GetTextureInfo()->GetWidth();
-			SrcInfo.Height = GetTextureInfo()->GetHeight();
-			SrcInfo.Format = GetD3DFormat();
-		}
-		else
-		{
-			if (FAILED(hr = D3DXGetImageInfoFromFileInMemory(buffer, nFileSize, &SrcInfo)))
-			{
-				OUTPUT_LOG("Could not D3DXGetImageInfoFromFileInMemory %s\n", GetKey().c_str());
-				break;
-			}
-			SrcInfo.Format = D3DFMT_X8R8G8B8;
-		}
+		//D3DXIMAGE_INFO SrcInfo;
+		//if (GetTextureInfo())
+		//{
+		//	SrcInfo.Width = GetTextureInfo()->GetWidth();
+		//	SrcInfo.Height = GetTextureInfo()->GetHeight();
+		//	SrcInfo.Format = GetD3DFormat();
+		//}
+		//else
+		//{
+		//	if (FAILED(hr = D3DXGetImageInfoFromFileInMemory(buffer, nFileSize, &SrcInfo)))
+		//	{
+		//		OUTPUT_LOG("Could not D3DXGetImageInfoFromFileInMemory %s\n", GetKey().c_str());
+		//		break;
+		//	}
+		//	SrcInfo.Format = D3DFMT_X8R8G8B8;
+		//}
 
-		hr = pRenderDevice->CreateOffscreenPlainSurface(SrcInfo.Width, SrcInfo.Height, SrcInfo.Format, D3DPOOL_SYSTEMMEM, &(m_pSurface), NULL);
-		if (SUCCEEDED(hr))
-		{
-			// Load the image again, this time with D3D to load directly to the surface
-			hr = D3DXLoadSurfaceFromFileInMemory(m_pSurface, NULL, NULL, buffer, nFileSize, NULL, D3DX_FILTER_NONE,
-				GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/, NULL);
-			if (SUCCEEDED(hr))
-			{
-				if (SrcInfo.Format == D3DFMT_A8R8G8B8)
-				{
-					/** discovered by clayman, xizhi: for unknown reasons, D3DXLoadSurfaceFromFileInMemory loaded alpha has randomly incorrect alpha values.
-					* the following code fix it in most cases.
-					*/
-					LPDIRECT3DSURFACE9 pCursorSurface = m_pSurface;
-					if (pCursorSurface)
-					{
-						D3DLOCKED_RECT data;
-						pCursorSurface->LockRect(&data, NULL, 0);
-						uint32* pData = (uint32*)data.pBits;
-						int count = SrcInfo.Width * SrcInfo.Height;
-						for (int i = 0; i<count; i++)
-						{
-							uint32 color = *pData;
-							uint32 alpha = color >> 24;
-							if (alpha > 127)
-							{
-								color |= 0xff000000;
-							}
-							else
-							{
-								color &= 0xffffff;
-							}
-							*pData = color;
-							pData++;
-						}
-						pCursorSurface->UnlockRect();
-					}
-				}
-			}
-			else
-			{
-				OUTPUT_LOG("Could not load the following bitmap to a surface %s\n", GetKey().c_str());
-			}
-		}
-		else
-		{
-			SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
-			OUTPUT_LOG("Unable to create a new surface for the bitmap %s\n", GetKey().c_str());
-		}
-		break;
+		//hr = pRenderDevice->CreateOffscreenPlainSurface(SrcInfo.Width, SrcInfo.Height, SrcInfo.Format, D3DPOOL_SYSTEMMEM, &(m_pSurface), NULL);
+		//if (SUCCEEDED(hr))
+		//{
+		//	// Load the image again, this time with D3D to load directly to the surface
+		//	hr = D3DXLoadSurfaceFromFileInMemory(m_pSurface, NULL, NULL, buffer, nFileSize, NULL, D3DX_FILTER_NONE,
+		//		GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/, NULL);
+		//	if (SUCCEEDED(hr))
+		//	{
+		//		if (SrcInfo.Format == D3DFMT_A8R8G8B8)
+		//		{
+		//			/** discovered by clayman, xizhi: for unknown reasons, D3DXLoadSurfaceFromFileInMemory loaded alpha has randomly incorrect alpha values.
+		//			* the following code fix it in most cases.
+		//			*/
+		//			LPDIRECT3DSURFACE9 pCursorSurface = m_pSurface;
+		//			if (pCursorSurface)
+		//			{
+		//				D3DLOCKED_RECT data;
+		//				pCursorSurface->LockRect(&data, NULL, 0);
+		//				uint32* pData = (uint32*)data.pBits;
+		//				int count = SrcInfo.Width * SrcInfo.Height;
+		//				for (int i = 0; i<count; i++)
+		//				{
+		//					uint32 color = *pData;
+		//					uint32 alpha = color >> 24;
+		//					if (alpha > 127)
+		//					{
+		//						color |= 0xff000000;
+		//					}
+		//					else
+		//					{
+		//						color &= 0xffffff;
+		//					}
+		//					*pData = color;
+		//					pData++;
+		//				}
+		//				pCursorSurface->UnlockRect();
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		OUTPUT_LOG("Could not load the following bitmap to a surface %s\n", GetKey().c_str());
+		//	}
+		//}
+		//else
+		//{
+		//	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
+		//	OUTPUT_LOG("Unable to create a new surface for the bitmap %s\n", GetKey().c_str());
+		//}
+		//break;
 	}
 	case TextureEntity::CubeTexture:
 	{
-		hr = D3DXCreateCubeTextureFromFileInMemoryEx(pRenderDevice,buffer, nFileSize,
-			D3DX_DEFAULT, D3DX_FROM_FILE /**D3DX_FROM_FILE:  mip-mapping from file */, 0, D3DFMT_UNKNOWN,
-			D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
-			0, NULL, NULL, &(m_pCubeTexture));
-		if (FAILED(hr))
-		{
-			SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
-			OUTPUT_LOG("failed creating cube texture for %s\n", GetKey().c_str());
-		}
-		break;
+		//hr = D3DXCreateCubeTextureFromFileInMemoryEx(pRenderDevice,buffer, nFileSize,
+		//	D3DX_DEFAULT, D3DX_FROM_FILE /**D3DX_FROM_FILE:  mip-mapping from file */, 0, D3DFMT_UNKNOWN,
+		//	D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
+		//	0, NULL, NULL, &(m_pCubeTexture));
+		//if (FAILED(hr))
+		//{
+		//	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
+		//	OUTPUT_LOG("failed creating cube texture for %s\n", GetKey().c_str());
+		//}
+		//break;
 	}
 	default:
 	{
-		// TextureEntity::StaticTexture
-		hr = D3DXCreateTextureFromFileInMemoryEx(pRenderDevice,buffer, nFileSize,
-			D3DX_DEFAULT, D3DX_DEFAULT, nMipLevels, 0, dwTextureFormat,
-			D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
-			m_dwColorKey, NULL, NULL, &(pTexture));
 
-		if (SUCCEEDED(hr))
+		m_pTexture = pRenderDevice->CreateTexture(buffer, nFileSize, format, m_dwColorKey);
+		if (m_pTexture)
 		{
 			/** we will only set LOD if the texture file is larger than 40KB */
-			if (nMipLevels != 1 && TextureEntity::g_nTextureLOD>0 && nFileSize>40000)
-			{
-				pTexture->SetLOD(TextureEntity::g_nTextureLOD);
-			}
+			//if (nMipLevels != 1 && TextureEntity::g_nTextureLOD>0 && nFileSize>40000)
+			//{
+			//	//pTexture->SetLOD(TextureEntity::g_nTextureLOD);
+			//}
 		}
 		else
 		{
@@ -1439,11 +1357,10 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 		{
 			if (m_pTextureInfo->m_width == -1 || m_pTextureInfo->m_height == -1)
 			{
-				D3DSURFACE_DESC desc;
-				if (pTexture != 0 && SUCCEEDED(pTexture->GetLevelDesc(0, &desc)))
+				if (pTexture != 0)
 				{
-					m_pTextureInfo->m_width = desc.Width;
-					m_pTextureInfo->m_height = desc.Height;
+					m_pTextureInfo->m_width = pTexture->GetWidth();
+					m_pTextureInfo->m_height = pTexture->GetHeight();
 				}
 			}
 		}
