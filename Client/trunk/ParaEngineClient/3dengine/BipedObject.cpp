@@ -33,6 +33,7 @@
 #include "ShapeAABB.h"
 #include "PhysicsWorld.h"
 #include <algorithm>
+#include "GeosetObject.h"
 
 using namespace ParaEngine;
 
@@ -4286,6 +4287,21 @@ void ParaEngine::CBipedObject::UpdateGeometry()
 				{
 					Vector3 vMin = pModel->GetHeader().minExtent;
 					Vector3 vMax = pModel->GetHeader().maxExtent;
+					for (auto child : m_children)
+					{
+						if (dynamic_cast<CGeosetObject*>(child))
+						{
+							if (static_cast<CGeosetObject*>(child)->getEntity()->GetModel())
+							{
+								vMin.x = std::min<>(vMin.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.x);
+								vMin.y = std::min<>(vMin.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.y);
+								vMin.z = std::min<>(vMin.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().minExtent.z);
+								vMax.x = std::max<>(vMax.x, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.x);
+								vMax.y = std::max<>(vMax.y, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.y);
+								vMax.z = std::max<>(vMax.z, static_cast<CGeosetObject*>(child)->getEntity()->GetModel()->GetHeader().maxExtent.z);
+							}
+						}
+					}
 					m_fAssetHeight = vMax.y*fScale;
 					Matrix4 mat;
 					GetLocalTransform(&mat);
