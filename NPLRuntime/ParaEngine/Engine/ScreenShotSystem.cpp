@@ -57,7 +57,7 @@
 //--
 //------------------------------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
+
 #include "ScreenShotSystem.h"
 #include "FileManager.h"
 #include "SceneState.h"
@@ -1746,13 +1746,13 @@ void SCREENSHOTSYSTEM::TakeScreenShot(const char* Filename)
 */
 int	SCREENSHOTSYSTEM::GetValidDeviceWidth()
 {
-	int width = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
+	int width = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
 	return (width - width%4);
 }
 
 int	SCREENSHOTSYSTEM::GetValidDeviceHeight()
 {
-	int height = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+	int height = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 	return (height - height%4);
 }
 

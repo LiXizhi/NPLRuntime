@@ -8,7 +8,6 @@
 // remark: pay attention to texel to pixel mapping. there is half texel offset issue with directX. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
 #include "EffectManager.h"
 #include "effect_file.h"
 #include "SceneObject.h"

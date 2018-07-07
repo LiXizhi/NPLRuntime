@@ -6,7 +6,6 @@
 // Date:	2006.7.2
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
 #include "SortedFaceGroups.h"
@@ -71,8 +70,8 @@ void CMirrorSurface::RestoreDeviceObjects()
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
-	int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+	int deviceWidth = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+	int deviceHeight = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
 

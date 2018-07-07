@@ -63,7 +63,6 @@
 #if USE_DIRECTX_RENDERER
 //#include "Render/context/d3d9/RenderContextD3D9.h"
 #include "RenderDeviceD3D9.h"
-#include "DirectXEngine.h"
 #endif
 
 using namespace ParaEngine;
@@ -318,11 +317,6 @@ void ParaEngine::CParaEngineAppBase::UpdateFrameStats(double fTime)
 
 HRESULT ParaEngine::CParaEngineAppBase::InitDeviceObjects()
 {
-#if USE_DIRECTX_RENDERER
-	// stage b.1
-	auto d3d9RenderDevice = static_cast<RenderDeviceD3D9*>(m_pRenderDevice);
-	CGlobals::GetDirectXEngine().InitDeviceObjects(d3d9RenderDevice->GetContext(), d3d9RenderDevice->GetDirect3DDevice9(), NULL);
-#endif
 	/// Asset must be the first to be initialized. Otherwise, the global device object will not be valid
 	m_pParaWorldAsset->InitDeviceObjects();
 	m_pRootScene->InitDeviceObjects();
@@ -336,10 +330,6 @@ HRESULT ParaEngine::CParaEngineAppBase::DeleteDeviceObjects()
 	m_pRootScene->DeleteDeviceObjects();
 	m_pGUIRoot->DeleteDeviceObjects();
 	m_pParaWorldAsset->DeleteDeviceObjects();
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().DeleteDeviceObjects();
-#endif
-
 	return S_OK;
 }
 
@@ -486,11 +476,6 @@ HRESULT ParaEngine::CParaEngineAppBase::RestoreDeviceObjects()
 	m_pGUIRoot->RestoreDeviceObjects(width, height);		// GUI: 2D engine
 	ParaTerrain::Settings::GetInstance()->SetScreenWidth(width);
 	ParaTerrain::Settings::GetInstance()->SetScreenHeight(height);
-
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().RestoreDeviceObjects();
-#endif
-
 	return S_OK;
 }
 
@@ -499,10 +484,6 @@ HRESULT ParaEngine::CParaEngineAppBase::InvalidateDeviceObjects()
 	m_pRootScene->InvalidateDeviceObjects();
 	m_pParaWorldAsset->InvalidateDeviceObjects();
 	m_pGUIRoot->InvalidateDeviceObjects();		// GUI: 2D engine
-#if USE_DIRECTX_RENDERER
-	CGlobals::GetDirectXEngine().InvalidateDeviceObjects();
-#endif
-
 	return S_OK;
 }
 
@@ -519,11 +500,10 @@ void ParaEngine::CParaEngineAppBase::Render()
 	m_pRenderDevice->BeginScene();
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime);
-#if USE_DIRECTX_RENDERER
-		GETD3D(m_pRenderDevice)->SetRenderTarget(0, CGlobals::GetDirectXEngine().GetRenderTarget(0)); // force setting render target to back buffer. and
-#endif
 		auto color = m_pRootScene->GetClearColor();
 		auto pDevice = CGlobals::GetRenderDevice();
+
+		CGlobals::GetRenderDevice()->SetRenderTarget(0, CGlobals::GetRenderDevice()->GetBackbufferRenderTarget());
 
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);

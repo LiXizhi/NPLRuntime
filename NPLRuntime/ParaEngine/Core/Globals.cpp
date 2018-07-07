@@ -29,7 +29,6 @@
 #include "Globals.h"
 
 #if PLATFORM_WINDOWS
-#include "DirectXEngine.h"
 
 #ifdef USE_XACT_AUDIO_ENGINE
 #include "AudioEngine.h"
@@ -294,12 +293,6 @@ HWND CGlobals::GetAppHWND()
 }
 
 #if defined(PLATFORM_WINDOWS) && defined(USE_DIRECTX_RENDERER)
-
-DirectXEngine& CGlobals::GetDirectXEngine()
-{
-	static DirectXEngine dxengine_;
-	return dxengine_;
-}
 
 CAudioEngine* CGlobals::GetAudioEngine()
 {

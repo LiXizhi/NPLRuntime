@@ -8,7 +8,7 @@
 #include "WaveEffect.h"
 #include "Globals.h"
 #include "EffectManager.h"
-#include "DirectXEngine.h"
+
 #include "ParaWorldAsset.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"

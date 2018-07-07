@@ -7,7 +7,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
 #include "ShadowMap.h"
 #endif
 #include "ParaWorldAsset.h"
@@ -447,8 +446,8 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 #if defined(USE_DIRECTX_RENDERER)
 		else if (sValue == "vec2ScreenSize")
 		{
-			v.x = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width);
-			v.y = (float)(CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height);
+			v.x = (float)(CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth());
+			v.y = (float)(CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight());
 		}
 		else if (sValue == "vec2ShadowMapSize")
 		{

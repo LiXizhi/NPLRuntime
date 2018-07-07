@@ -37,11 +37,17 @@ namespace ParaEngine
 		bool DynamicTextures;
 		bool MRT;
 		bool NPOT; // supports the use of 2D textures with dimensions that are not powers of two
+		uint32_t MaxSimultaneousTextures;
+		bool ScissorTest;
+		bool Stencil;
 
 		RenderDeviceCaps()
 			:DynamicTextures(false)
 			,MRT(false)
 			,NPOT(false)
+			,MaxSimultaneousTextures(0)
+			,ScissorTest(false)
+			,Stencil(false)
 		{
 
 		}
@@ -120,8 +126,8 @@ namespace ParaEngine
 		virtual IParaEngine::ITexture* GetRenderTarget(uint32_t index) = 0;
 		virtual IParaEngine::ITexture* GetDepthStencil() = 0;
 
-		virtual const IParaEngine::ITexture* GetBackbufferRenderTarget() = 0;
-		virtual const IParaEngine::ITexture* GetBackbufferDepthStencil() = 0;
+		virtual  IParaEngine::ITexture* GetBackbufferRenderTarget() = 0;
+		virtual  IParaEngine::ITexture* GetBackbufferDepthStencil() = 0;
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

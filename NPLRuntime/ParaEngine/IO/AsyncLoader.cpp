@@ -55,7 +55,7 @@ IndirectServerAddress=http://patch.paraengine.com/assets/
 #include "ParaEngine.h"
 #include "util/CSingleton.h"
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #include "GDIEngine.h"
 #include "ParaWorldAsset.h"
 #endif
@@ -483,11 +483,6 @@ int CAsyncLoader::Stop()
 #ifdef PARAENGINE_CLIENT
 	SAFE_RELEASE(m_pXFileParser);
 
-	if(m_pEngine)
-	{
-		m_pEngine->Destroy();
-		SAFE_DELETE(m_pEngine);
-	}
 
 	if(m_pGDIEngine)
 	{
@@ -529,16 +524,6 @@ int CAsyncLoader::Start(int nWorkerCount)
 	return 0;
 }
 #ifdef PARAENGINE_CLIENT
-CDirectXEngine* CAsyncLoader::GetEngine() 
-{
-	if(m_pEngine == 0)
-	{
-		m_pEngine = new CDirectXEngine();
-		m_pEngine->Create();
-	}
-	return m_pEngine;
-}
-
 CGDIEngine* CAsyncLoader::GetGDIEngine()
 {
 	if(m_pGDIEngine == 0)

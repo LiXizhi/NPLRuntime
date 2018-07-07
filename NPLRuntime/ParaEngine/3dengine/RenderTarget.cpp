@@ -7,9 +7,6 @@
 // Revised: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
 #include "SceneObject.h"
 #include "ViewportManager.h"
 #include "ParaWorldAsset.h"

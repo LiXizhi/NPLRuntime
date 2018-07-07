@@ -13,7 +13,6 @@
 #include "ShadowMap.h"
 #ifdef USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
-#include "DirectXEngine.h"
 #endif
 #include "SunLight.h"
 #include "BaseCamera.h"

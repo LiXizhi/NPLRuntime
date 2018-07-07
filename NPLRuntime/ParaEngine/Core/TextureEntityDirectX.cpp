@@ -17,7 +17,6 @@ If your image has 1-bit (on or off) alpha information, use DXT1 with one-bit alp
 If your image has smooth gradations of alpha (fading in/out slowly), DXT5 is almost certainly your best bet, as it will give you the most accurate transparency representation. 
 If your image has sharp transitions between multiple alpha levels (one pixel is 100%, the next one is 50%, and another neighbor is 12%), DXT3 is probably your best bet. You may want to compare the alpha results in DXT1, DXT3 and DXT5 compression, however, to make sure. 
 */
-#include "DirectXEngine.h"
 #ifdef USE_FLASH_MANAGER
 #include "FlashTextureManager.h"
 #endif
@@ -623,7 +622,7 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 		uint32_t width=0,height=0;
 		// Default: create the render target with alpha. this will allow some mini scene graphs to render alpha pixels. 
 
-		EPixelFormat format = EPixelFormat::A8B8G8R8;
+		EPixelFormat format = EPixelFormat::A8R8G8B8;
 		
 		if(GetTextureInfo() != NULL)
 		{
@@ -631,8 +630,8 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 			height = GetTextureInfo()->m_height;
 			if(width == 0 || height == 0)
 			{
-				width = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-				height = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+				width = pRenderDevice->GetBackbufferRenderTarget()->GetWidth();
+				height = pRenderDevice->GetBackbufferRenderTarget()->GetHeight();
 			}
 			if(GetTextureInfo()->m_format == TextureInfo::FMT_X8R8G8B8)
 			{
@@ -641,8 +640,8 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 		}
 		else
 		{
-			width = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-			height = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+			width = pRenderDevice->GetBackbufferRenderTarget()->GetWidth();
+			height = pRenderDevice->GetBackbufferRenderTarget()->GetHeight();
 		}
 
 		/** if surface name contains  "_R32F", we will create using 32bits red channel format */
@@ -713,14 +712,14 @@ HRESULT TextureEntityDirectX::RestoreDeviceObjects()
 			height = GetTextureInfo()->m_height;
 			if(width == 0 || height == 0)
 			{
-				width = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-				height = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+				width = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+				height = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 			}
 		}
 		else
 		{
-			width = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-			height = CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+			width = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+			height = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 		}
 
 		/** if surface name contains  "_R32F", we will create using 32bits red channel format */

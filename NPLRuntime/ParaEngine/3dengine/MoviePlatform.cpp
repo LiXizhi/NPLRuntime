@@ -9,9 +9,10 @@
 #if USE_DIRECTX_RENDERER
 //#include "d3d9.h"
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #endif
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
+
 #include "ScreenShotSystem.h"
 #ifdef USE_FREEIMAGE
 #include <FreeImage.h>
@@ -318,7 +319,7 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 #ifdef USE_DIRECTX_RENDERER
 #define SCREENSHOT_FROM_BACKBUFFER
 #ifdef SCREENSHOT_FROM_BACKBUFFER
-	LPDIRECT3DSURFACE9  pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
+	IParaEngine::ITexture*  pBackBuffer = CGlobals::GetRenderDevice()->GetRenderTarget(0);
 	if(pBackBuffer)
 	{
 		string Filename = filename;
@@ -362,7 +363,7 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		if(CParaFile::CreateDirectory(Filename.c_str()))
 		{
 			// save texture
-			if(SUCCEEDED( D3DXSaveSurfaceToFile(Filename.c_str(), FileFormat, pBackBuffer, NULL,NULL)))
+			if(SUCCEEDED( D3DXSaveSurfaceToFile(Filename.c_str(), FileFormat, GetD3DSurface(pBackBuffer), NULL,NULL)))
 			{
 				return true;
 			}
@@ -430,7 +431,7 @@ bool CMoviePlatform::TakeScreenShot_FromGDI(const string& filename, std::vector<
 {
 #if defined(USE_DIRECTX_RENDERER) && defined(USE_FREEIMAGE)
 	// force same resolution as current back buffer.  
-	LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
+	LPDIRECT3DSURFACE9 pFromSurface = GetD3DSurface(CGlobals::GetRenderDevice()->GetRenderTarget(0));
 	D3DSURFACE_DESC desc;
 	if (!pFromSurface)
 	{
@@ -700,7 +701,7 @@ bool CMoviePlatform::SetCaptureTarget()
 			if (m_pCaptureSurface != NULL)
 			{
 				// save old render target
-				m_pBackBufferSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
+				m_pBackBufferSurface = GetD3DSurface(CGlobals::GetRenderDevice()->GetRenderTarget(0));
 				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pOldDepthStencilSurface)))
 					return false;
 

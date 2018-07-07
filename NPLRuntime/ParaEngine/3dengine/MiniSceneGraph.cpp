@@ -7,9 +7,6 @@
 // Revised: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
 #endif

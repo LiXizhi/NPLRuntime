@@ -32,6 +32,7 @@ IParaEngine::ITexture* ParaEngine::TextureD3D9::Create(RenderDeviceD3D9* device,
 	tex->m_Height = desc.Height;
 	tex->m_Usage = usage;
 	tex->m_Format = D3DMapping::toPixelFormat(desc.Format);
+	return tex;
 }
 
 IParaEngine::ITexture* ParaEngine::TextureD3D9::Create(RenderDeviceD3D9* device,LPDIRECT3DTEXTURE9 texture)
@@ -108,12 +109,12 @@ bool ParaEngine::TextureD3D9::CopyTo(ITexture* target)
 	return hr == S_OK;
 }
 
-uint32_t ParaEngine::TextureD3D9::GetWidth()
+uint32_t ParaEngine::TextureD3D9::GetWidth() const
 {
 	return m_Width;
 }
 
-uint32_t ParaEngine::TextureD3D9::GetHeight()
+uint32_t ParaEngine::TextureD3D9::GetHeight() const
 {
 	return m_Height;
 }
@@ -179,10 +180,13 @@ bool ParaEngine::TextureD3D9::InnerCreate(uint32_t width, uint32_t height, EPixe
 		break;
 	}
 
+	//			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight, 
+	//1, D3DUSAGE_RENDERTARGET,
+	//	D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveReflectionTexture, NULL);
 
 	LPDIRECT3DTEXTURE9 deviceTexture;
 	LPDIRECT3DDEVICE9 d3dDevice = m_Device->GetDirect3DDevice9();
-	HRESULT hr = d3dDevice->CreateTexture(width, height, 0, d3dUsage, d3dFormat, D3DPOOL_MANAGED, &deviceTexture, NULL);
+	HRESULT hr = d3dDevice->CreateTexture(width, height, 1, d3dUsage, d3dFormat, D3DPOOL_DEFAULT, &deviceTexture, NULL);
 	if (hr != S_OK) return false;
 
 	m_Texture = deviceTexture;

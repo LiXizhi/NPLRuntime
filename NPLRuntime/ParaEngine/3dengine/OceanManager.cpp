@@ -8,7 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
 #include "OcclusionQueryBank.h"
 #endif
 #if USE_DIRECTX_RENDERER
@@ -754,8 +753,8 @@ namespace ParaEngine
 		auto pDevice = CGlobals::GetRenderDevice();
 		if(GetRenderTechnique()>=OCEAN_TECH_REFLECTION)
 		{
-			int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-			int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+			int deviceWidth = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+			int deviceHeight = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 			// Create the wave reflection and refraction textures for objects
 			// that do not penetrate the surface of the water.
 			int nWidth = min(deviceWidth, m_reflectionTextureWidth);
@@ -763,13 +762,13 @@ namespace ParaEngine
 
 			m_waveReflectionTexture = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::X8R8G8B8, ETextureUsage::RenderTarget);
 			
-			if (m_waveReflectionTexture)
+			if (!m_waveReflectionTexture)
 			{
 				OUTPUT_LOG("failed createTexture m_waveReflectionTexture");
 				return;
 			}
 			m_pDepthStencilSurface = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::RenderTarget);
-			if (m_pDepthStencilSurface)
+			if (!m_pDepthStencilSurface)
 			{
 				OUTPUT_LOG("failed creating depth stencil buffer");
 				return;

@@ -15,9 +15,6 @@
 #endif
 #if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
 
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
 #include <float.h>
 #include "ShapeFrustum.h"
 
@@ -202,9 +199,6 @@ bool CShadowMap::PrepareAllSurfaces()
 #ifdef USE_F32_SHADOWMAP
 	m_bSupportsHWShadowMaps = false;
 #endif
-
-	const D3DCAPS9& deviceCaps = CGlobals::GetDirectXEngine().m_d3dCaps;
-
 
 	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
 #else

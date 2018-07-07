@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
+
 #endif
 #include "Painter.h"
 #include "qvectorpath.h"
@@ -89,14 +89,9 @@ void ParaEngine::CPaintEngineGPU::Cleanup()
 
 void ParaEngine::CPaintEngineGPU::InitDeviceObjects()
 {
-#ifdef USE_DIRECTX_RENDERER
 	//initialize the device capabilities
-	CPaintEngineGPU::s_IsScissorRectSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.RasterCaps&D3DPRASTERCAPS_SCISSORTEST) != 0;
-	CPaintEngineGPU::s_IsStencilSupported = (CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps&(D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE)) == (D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE);
-#elif defined(USE_OPENGL_RENDERER)
-	CPaintEngineGPU::s_IsScissorRectSupported = true;
-	CPaintEngineGPU::s_IsStencilSupported = GETGL(CGlobals::GetRenderDevice())->GetStencilBits() > 0;
-#endif
+	CPaintEngineGPU::s_IsScissorRectSupported = CGlobals::GetRenderDevice()->GetCaps().ScissorTest;
+	CPaintEngineGPU::s_IsStencilSupported = CGlobals::GetRenderDevice()->GetCaps().Stencil;
 	m_pSprite->InitDeviceObjects();
 }
 

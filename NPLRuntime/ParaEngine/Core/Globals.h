@@ -4,7 +4,6 @@
 #include "Framework/Interface/IParaEngineApp.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
 #include "3dengine/OceanManager.h"
-#include "Engine/DirectXEngine.h"
 namespace ParaEngine
 {
 	class TransformStack;
@@ -109,9 +108,6 @@ namespace ParaEngine
 		static HWND GetAppHWND();
 #ifdef PLATFORM_WINDOWS
 		static CAudioEngine* GetAudioEngine();
-	public:
-		/** get directX engine parameters */
-		static DirectXEngine& GetDirectXEngine();
 #endif
 
 

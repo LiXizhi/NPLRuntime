@@ -24,10 +24,10 @@ namespace ParaEngine
 		virtual bool CopyTo(IParaEngine::ITexture* target) override;
 
 
-		virtual uint32_t GetWidth() override;
+		virtual uint32_t GetWidth() const override;
 
 
-		virtual uint32_t GetHeight() override;
+		virtual uint32_t GetHeight() const override;
 
 
 		virtual bool StretchRect(IParaEngine::ITexture* target, const ParaEngine::Rect* srcRect, const ParaEngine::Rect* targetRect, const ETextureFilterType filter) override;
@@ -51,5 +51,12 @@ namespace ParaEngine
 		if (tex == nullptr) return nullptr;
 
 		return static_cast<TextureD3D9*>(tex)->GetTexture();
+	}
+
+	inline LPDIRECT3DSURFACE9 GetD3DSurface(IParaEngine::ITexture* tex)
+	{
+		if (tex == nullptr) return nullptr;
+
+		return static_cast<TextureD3D9*>(tex)->GetSurface();
 	}
 };

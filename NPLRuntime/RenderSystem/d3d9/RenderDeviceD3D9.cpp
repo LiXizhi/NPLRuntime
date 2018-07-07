@@ -341,7 +341,7 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect
 	{
 		if (pBufferErrors != nullptr)
 		{
-			error = (char*)pBufferErrors->GetBufferPointer();
+		error = (char*)pBufferErrors->GetBufferPointer();
 		}
 		return nullptr;
 	}
@@ -350,7 +350,7 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
-	return TextureD3D9::Create(this, width, height, format,usage);
+	return TextureD3D9::Create(this, width, height, format, usage);
 }
 
 
@@ -365,9 +365,14 @@ bool ParaEngine::RenderDeviceD3D9::SetRenderTarget(uint32_t index, IParaEngine::
 	LPDIRECT3DSURFACE9 surface = NULL;
 	if (target)
 	{
-		 surface = (static_cast<TextureD3D9*>(target))->GetSurface();
+		surface = (static_cast<TextureD3D9*>(target))->GetSurface();
 	}
-	return m_pD3DDevice->SetRenderTarget(index, surface) == S_OK;
+	bool ret = m_pD3DDevice->SetRenderTarget(index, surface) == S_OK;
+	if (ret)
+	{
+		m_CurrentRenderTargets[index] = target;
+	}
+	return ret;
 }
 
 
@@ -378,7 +383,12 @@ bool ParaEngine::RenderDeviceD3D9::SetDepthStencil(IParaEngine::ITexture* target
 	{
 		surface = (static_cast<TextureD3D9*>(target))->GetSurface();
 	}
-	return m_pD3DDevice->SetDepthStencilSurface(surface);
+	bool ret = m_pD3DDevice->SetDepthStencilSurface(surface) == S_OK;
+	if (ret)
+	{
+		m_CurrentDepthStencil = target;
+	}
+	return ret;
 }
 
 
@@ -394,13 +404,13 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetDepthStencil()
 }
 
 
-const IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferRenderTarget()
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferRenderTarget()
 {
 	return m_backbufferRenderTarget;
 }
 
 
-const IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferDepthStencil()
+IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferDepthStencil()
 {
 	return m_backbufferDepthStencil;
 }
@@ -425,6 +435,17 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 	{
 		m_Cpas.MRT = true;
 	}
+	if (caps.RasterCaps&D3DPRASTERCAPS_SCISSORTEST)
+	{
+		m_Cpas.ScissorTest = true;
+	}
+	if ((caps.StencilCaps&(D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE)) == (D3DSTENCILCAPS_KEEP | D3DSTENCILCAPS_ZERO | D3DSTENCILCAPS_REPLACE))
+	{
+		m_Cpas.Stencil = true;
+	}
+
+
+	m_Cpas.MaxSimultaneousTextures = caps.MaxSimultaneousTextures;
 }
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)

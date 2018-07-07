@@ -36,7 +36,7 @@ extern "C"
 using namespace luabind;
 
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #include "EffectManager.h"
 #endif
 

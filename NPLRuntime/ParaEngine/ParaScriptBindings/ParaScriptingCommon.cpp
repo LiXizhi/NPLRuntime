@@ -22,7 +22,7 @@
 #endif
 
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #endif
 
 extern "C"

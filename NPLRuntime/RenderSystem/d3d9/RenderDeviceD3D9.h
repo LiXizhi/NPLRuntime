@@ -115,7 +115,7 @@ namespace ParaEngine
 		virtual const RenderDeviceCaps& GetCaps() override;
 
 
-		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;
+		virtual bool SetRenderTarget(uint32_t index,IParaEngine::ITexture* target) override;
 
 
 		virtual bool SetDepthStencil(IParaEngine::ITexture* target) override;
@@ -127,10 +127,10 @@ namespace ParaEngine
 		virtual IParaEngine::ITexture* GetDepthStencil() override;
 
 
-		virtual const IParaEngine::ITexture* GetBackbufferRenderTarget() override;
+		virtual  IParaEngine::ITexture* GetBackbufferRenderTarget() override;
 
 
-		virtual const IParaEngine::ITexture* GetBackbufferDepthStencil() override;
+		virtual  IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
 	private:
 		Color4f m_CurrentClearColor;
@@ -141,8 +141,8 @@ namespace ParaEngine
 		RenderDeviceCaps m_Cpas;
 		TextureD3D9* m_backbufferRenderTarget;
 		TextureD3D9* m_backbufferDepthStencil;
-		TextureD3D9* m_CurrentRenderTargets[8];
-		TextureD3D9* m_CurrentDepthStencil;
+		IParaEngine::ITexture* m_CurrentRenderTargets[8];
+		IParaEngine::ITexture* m_CurrentDepthStencil;
 	private:
 		void InitCaps();
 	};
