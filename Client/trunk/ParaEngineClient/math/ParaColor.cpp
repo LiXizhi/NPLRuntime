@@ -340,6 +340,24 @@ uint32 ParaEngine::Color::convert16_32(uint16 rgb)
 	return (a | r | g | b);
 }
 
+uint8 ParaEngine::Color::convert32_8(uint32 rgb)
+{
+	uint32 a = ((rgb & 0xC0000000) >> 24);
+	uint32 r = ((rgb & 0x00C00000) >> 18);
+	uint32 g = ((rgb & 0x0000C000) >> 12);
+	uint32 b = ((rgb & 0x000000C0) >>  6);
+	return (uint8)(a | r | g | b);
+}
+
+uint32 ParaEngine::Color::convert8_32(uint8 rgb)
+{
+	uint32 a = ((rgb & 0xC0) << 24);
+	uint32 r = ((rgb & 0x30) << 18);
+	uint32 g = ((rgb & 0xC ) << 12);
+	uint32 b = ((rgb & 0x3 ) <<  6);
+	return (a | r | g | b);
+}
+
 void ComputeAndFixedColorAndIntensity(const LinearColor& InLinearColor, Color& OutColor, float& OutIntensity)
 {
 	float MaxComponent = Math::Max(DELTA, Math::Max(InLinearColor.r, Math::Max(InLinearColor.g, InLinearColor.b)));

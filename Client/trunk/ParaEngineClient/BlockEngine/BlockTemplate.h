@@ -41,10 +41,9 @@ namespace ParaEngine
 			batt_framemove = 0x0020000,	// whether the block has a frame move function.
 			batt_onload = 0x0040000,	// whether the block has a OnBlockLoaded function.
 			batt_color_data = 0x0080000,	// whether the block contains color in its block data.
-
 			batt_invisible = 0x0100000,// whether the block is invisible.
-
 			batt_tiling = 0x0200000,
+			batt_color8_data = 0x0400000,	// whether the block uses only the high 8 bits as color in its block data.
 		};
 
 		BlockTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id);
@@ -93,7 +92,14 @@ namespace ParaEngine
 		*/
 		inline bool HasColorData() const
 		{
-			return ((m_attFlag & batt_color_data) == batt_color_data);
+			return ((m_attFlag & batt_color_data) != 0);
+		}
+
+		/* by default, color uses the full 16bits block data. in some cases, It only use the high 8bits of the user data,
+		* so that the low 8bits can still be used to store other block specific data. */
+		inline bool IsColorData8Bits() const
+		{
+			return ((m_attFlag & batt_color8_data) != 0);
 		}
 
 		/**
