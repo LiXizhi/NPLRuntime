@@ -223,7 +223,7 @@ namespace ParaEngine
 	BlockModel& BlockTemplate::GetBlockModelByData(uint32 nData)
 	{
 		if (m_pBlockModelFilter != 0)
-			return m_pBlockModelFilter->GetBlockModelByData(nData);
+			return m_pBlockModelFilter->GetBlockModelByData(nData & 0xff);
 		else
 			return m_block_models[0];
 	}
