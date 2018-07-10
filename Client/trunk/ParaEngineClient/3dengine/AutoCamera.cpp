@@ -766,7 +766,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 					const bool bRotateCameraWithKey = true;
 
 					// this is tricky: if any movement button is down, we will enforce camera behind. 
-					bool bIsCamAlwaysBehindObject = (((bRotateCameraWithKey || !m_bUseRightButtonBipedFacing) && bAnyMovementButton) || m_bIsCamAlwaysBehindObject) && !m_bMouseLButtonDown;
+					bool bIsCamAlwaysBehindObject = (((bRotateCameraWithKey || !m_bUseRightButtonBipedFacing) && bAnyMovementButton) || m_bIsCamAlwaysBehindObject); // && !m_bMouseLButtonDown;
 
 					if(bIsCamAlwaysBehindObject)
 					{
