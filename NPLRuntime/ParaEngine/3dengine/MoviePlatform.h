@@ -298,11 +298,10 @@ namespace ParaEngine
 		std::mutex m_performMutex;
 		
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DTEXTURE9 m_pCaptureTexture;
-		LPDIRECT3DSURFACE9 m_pCaptureSurface;
-		LPDIRECT3DSURFACE9 m_pBackBufferSurface;
-		LPDIRECT3DSURFACE9 m_pOldDepthStencilSurface, m_pDepthStencilSurface; 
-		LPDIRECT3DSURFACE9 m_pOffScreenSurface;
+		IParaEngine::ITexture* m_pCaptureTexture;
+		IParaEngine::ITexture* m_pBackBufferSurface;
+		IParaEngine::ITexture* m_pOldDepthStencilSurface, *m_pDepthStencilSurface;
+		IParaEngine::ITexture* m_pOffScreenSurface;
 		HDC m_CompatibleHDC;
 		HBITMAP m_BitmapHandle;
 #endif

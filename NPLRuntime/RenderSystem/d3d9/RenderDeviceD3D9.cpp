@@ -444,7 +444,7 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 		m_Cpas.Stencil = true;
 	}
 
-
+	m_Cpas.NumSimultaneousRTs = caps.NumSimultaneousRTs;
 	m_Cpas.MaxSimultaneousTextures = caps.MaxSimultaneousTextures;
 }
 

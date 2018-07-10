@@ -349,29 +349,16 @@ namespace ParaEngine
 	void COceanManager::SetRenderTechnique(DWORD dwTechnique)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		DWORD PixelShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.PixelShaderVersion;
-		DWORD VertexShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion;
+
 		if(dwTechnique==OCEAN_TECH_FULL || dwTechnique==OCEAN_TECH_REFLECTION || dwTechnique==OCEAN_TECH_SIMPLE)
 		{
-			if(PixelShaderVersion<D3DPS_VERSION(2,0) || VertexShaderVersion<D3DVS_VERSION(2,0))
-			{
-				dwTechnique=OCEAN_TECH_FFT;
-			}
-			else if(PixelShaderVersion<D3DPS_VERSION(3,0) || VertexShaderVersion<D3DVS_VERSION(3,0))
-			{
-				m_dwTechnique = OCEAN_TECH_SIMPLE;
-				return;
-			}
+
+		m_dwTechnique = OCEAN_TECH_SIMPLE;
 		}
 		if(dwTechnique==OCEAN_TECH_FFT)
 		{
-			if(VertexShaderVersion<D3DVS_VERSION(1,1)){
-				dwTechnique=OCEAN_TECH_QUAD;
-			}
-			else{
-				m_dwTechnique = dwTechnique;
-				return;
-			}
+			m_dwTechnique = dwTechnique;
+			return;
 		}
 		if(dwTechnique==OCEAN_TECH_CLOUD)
 		{
@@ -713,7 +700,6 @@ namespace ParaEngine
 	void COceanManager::RestoreDeviceObjects()
 	{
 #ifdef USE_DIRECTX_RENDERER
-		HRESULT hr;
 		auto pD3dDevice = CGlobals::GetRenderDevice();
 		int i=0;
 		/**

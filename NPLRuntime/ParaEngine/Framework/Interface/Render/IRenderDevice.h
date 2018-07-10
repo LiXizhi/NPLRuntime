@@ -40,6 +40,7 @@ namespace ParaEngine
 		uint32_t MaxSimultaneousTextures;
 		bool ScissorTest;
 		bool Stencil;
+		uint32_t NumSimultaneousRTs;
 
 		RenderDeviceCaps()
 			:DynamicTextures(false)
@@ -48,6 +49,7 @@ namespace ParaEngine
 			,MaxSimultaneousTextures(0)
 			,ScissorTest(false)
 			,Stencil(false)
+			,NumSimultaneousRTs(0)
 		{
 
 		}

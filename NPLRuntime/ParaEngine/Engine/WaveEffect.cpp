@@ -17,7 +17,7 @@
 namespace ParaEngine
 {
 	WaveEffect::WaveEffect()
-		:m_pBackbufferCopy(NULL),m_pBackbufferCopySurface(NULL)
+		:m_pBackbufferCopy(NULL)
 	{
 		m_waveParam[0] = 0;
 		m_waveParam[1] = 0.5f;
@@ -32,7 +32,6 @@ namespace ParaEngine
 
 	HRESULT WaveEffect::InvalidateDeviceObjects()
 	{
-		SAFE_RELEASE(m_pBackbufferCopySurface);
 		SAFE_RELEASE(m_pBackbufferCopy);
 		return S_OK;
 	}
@@ -41,19 +40,15 @@ namespace ParaEngine
 	{
 		auto* pDevice = CGlobals::GetRenderDevice();
 
-		D3DFORMAT surfaceFmt = D3DFMT_A8R8G8B8;
-		D3DVIEWPORT9 viewport;
-		GETD3D(CGlobals::GetRenderDevice())->GetViewport(&viewport);
+		EPixelFormat surfaceFmt = EPixelFormat::A8R8G8B8;
+		auto viewport = CGlobals::GetRenderDevice()->GetViewport();
 
-		HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(viewport.Width,viewport.Height,1,D3DUSAGE_RENDERTARGET,surfaceFmt,
-			D3DPOOL_DEFAULT,&m_pBackbufferCopy,NULL);
+		m_pBackbufferCopy = CGlobals::GetRenderDevice()->CreateTexture(viewport.Width, viewport.Height, surfaceFmt, ETextureUsage::RenderTarget);
 
-		if(FAILED(hr))
+
+		if(!m_pBackbufferCopy)
 			return E_FAIL;
 
-		hr = m_pBackbufferCopy->GetSurfaceLevel(0,&m_pBackbufferCopySurface);
-		if(FAILED(hr))
-			return E_FAIL;
 
 		if(m_pNoiseMap == NULL)
 			m_pNoiseMap = CGlobals::GetAssetManager()->LoadTexture("","Texture/Aries/ShaderResource/waveMap.dds",TextureEntity::StaticTexture);
@@ -90,15 +85,15 @@ namespace ParaEngine
 		{
 			if(pEffectFile->BeginPass(0))
 			{
-				IDirect3DSurface9* pBackBuffer = CGlobals::GetDirectXEngine().GetRenderTarget();
-				HRESULT hr = GETD3D(CGlobals::GetRenderDevice())->StretchRect(pBackBuffer,NULL,m_pBackbufferCopySurface,NULL,D3DTEXF_LINEAR);
-				if(FAILED(hr))
+				auto pBackBuffer = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+				
+				if(!pBackBuffer->StretchRect(m_pBackbufferCopy, NULL, NULL, ETextureFilterType::Linear))
 				{
 					OUTPUT_LOG("wave effect StretchRect() failed!\r\n");
-					return hr;
+					return E_FAIL;
 				}
 				
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pBackbufferCopy);
+				CGlobals::GetRenderDevice()->SetTexture(0,m_pBackbufferCopy);
 				CGlobals::GetRenderDevice()->SetTexture(1,m_pNoiseMap->GetTexture());
 				
 

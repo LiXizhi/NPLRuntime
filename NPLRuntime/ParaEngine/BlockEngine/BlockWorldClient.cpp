@@ -2337,21 +2337,17 @@ namespace ParaEngine
 
 	bool BlockWorldClient::CanUseAdvancedShading()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if( CGlobals::GetDirectXEngine().GetVertexShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().GetPixelShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().m_d3dCaps.NumSimultaneousRTs >=3)
+
+		if (CGlobals::GetRenderDevice()->GetCaps().MRT && CGlobals::GetRenderDevice()->GetCaps().NumSimultaneousRTs >= 3)
 		{
 			return true;
 		}
-#endif
 		return false;
 	}
 
 	void BlockWorldClient::SetUseSunlightShadowMap( bool bEnable )
 	{
 		m_bUseSunlightShadowMap = bEnable;
-#ifdef USE_DIRECTX_RENDERER
 		if(GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
@@ -2360,7 +2356,6 @@ namespace ParaEngine
 				CGlobals::GetScene()->SetShadow(m_bUseSunlightShadowMap);
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::HasSunlightShadowMap()

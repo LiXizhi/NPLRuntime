@@ -144,6 +144,8 @@ bool ParaEngine::RenderDevice::ReadPixels(int nLeft, int nTop, int nWidth, int n
 	//	}
 	//	return nIndex != 0;
 	//}
+
+	return E_FAIL;
 }
 
 #endif

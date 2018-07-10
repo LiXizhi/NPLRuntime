@@ -226,7 +226,7 @@ namespace ParaScripting
 		static TextureEntityDirectX g_rt;
 		static ParaAssetObject g_rt_wrapper(&g_rt);
 		g_rt.SurfaceType = TextureEntity::TextureSurface;
-		g_rt.SetSurface( CGlobals::GetDirectXEngine().GetRenderTarget() );
+		g_rt.SetTexture(CGlobals::GetRenderDevice()->GetRenderTarget(0));
 		return g_rt_wrapper;
 #else
 		return ParaAssetObject();

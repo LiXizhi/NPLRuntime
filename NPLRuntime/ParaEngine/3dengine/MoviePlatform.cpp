@@ -51,7 +51,7 @@ using namespace ParaEngine;
 CMoviePlatform::CMoviePlatform(void)
 	:m_bCaptureGUI(false), m_isLeftEye(true),
 #ifdef USE_DIRECTX_RENDERER
-m_pCaptureTexture(NULL), m_pCaptureSurface(NULL), m_pBackBufferSurface(NULL), m_pDepthStencilSurface(NULL), m_pOldDepthStencilSurface(NULL), m_pOffScreenSurface(NULL), m_CompatibleHDC(NULL), m_BitmapHandle(NULL),
+m_pCaptureTexture(NULL), m_pBackBufferSurface(NULL), m_pDepthStencilSurface(NULL), m_pOldDepthStencilSurface(NULL), m_pOffScreenSurface(NULL), m_CompatibleHDC(NULL), m_BitmapHandle(NULL),
 #endif
 m_bRenderBorder(true), m_bAllowCodecSelection(false), m_fLastRefreshInterval(-1.f), m_pMovieCodec(NULL), m_nMarginLeft(16), m_nMarginRight(16), m_nMarginTop(16), m_nMarginBottom(16), m_bUseGDI(true)
 {
@@ -621,7 +621,6 @@ HRESULT CMoviePlatform::InvalidateDeviceObjects()
 	else
 	{
 #ifdef USE_DIRECTX_RENDERER
-		SAFE_RELEASE(m_pCaptureSurface);
 		SAFE_RELEASE(m_pCaptureTexture);
 		SAFE_RELEASE(m_pDepthStencilSurface);
 		GSSHOTSYSTEM->SetCaptureTexture(NULL);
@@ -647,38 +646,37 @@ HRESULT CMoviePlatform::RestoreDeviceObjects()
 			else
 			{
 #ifdef USE_DIRECTX_RENDERER
-				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateOffscreenPlainSurface(captureTexWidth, captureTexHeight, D3DFMT_X8R8G8B8,
-					D3DPOOL_SYSTEMMEM, &m_pOffScreenSurface, NULL)))
-				{
-					m_pOffScreenSurface = NULL;
-				}
+
+				m_pOffScreenSurface = CGlobals::GetRenderDevice()->CreateTexture(captureTexWidth, captureTexHeight, EPixelFormat::X8R8G8B8, ETextureUsage::Default);
 #endif
 			}
 		}
 		else
 		{
 #ifdef USE_DIRECTX_RENDERER
-			D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
+			EPixelFormat colorFormat = EPixelFormat::A8R8G8B8;
 
 			int captureTexWidth = GetScreenWidth();
 			int captureTexHeight = GetScreenHeight();
 
-			if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateTexture(captureTexWidth, captureTexHeight, 1, D3DUSAGE_RENDERTARGET, colorFormat,
-				D3DPOOL_DEFAULT, &m_pCaptureTexture, NULL)))
-				return E_FAIL;
+			auto pDevice = CGlobals::GetRenderDevice();
 
-			if (FAILED(GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(captureTexWidth, captureTexHeight, D3DFMT_D24S8,
-				D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL)))
+			m_pCaptureTexture = pDevice->CreateTexture(captureTexWidth, captureTexHeight, colorFormat, ETextureUsage::RenderTarget);
+			if (!m_pCaptureTexture)
+			{
+				return E_FAIL;
+			}
+
+			m_pDepthStencilSurface = pDevice->CreateTexture(captureTexWidth, captureTexHeight, EPixelFormat::D24S8, ETextureUsage::DepthStencil);
+
+			if (!m_pDepthStencilSurface)
 			{
 				OUTPUT_LOG("failed creating depth stencil buffer for Movie Platform\r\n");
 				return E_FAIL;
 			}
 
-			// Retrieve top-level surfaces of our capture buffer (need these for use with SetRenderTarget)
-			if (FAILED(m_pCaptureTexture->GetSurfaceLevel(0, &m_pCaptureSurface)))
-				return E_FAIL;
 
-			GSSHOTSYSTEM->SetCaptureTexture(m_pCaptureTexture);
+			GSSHOTSYSTEM->SetCaptureTexture(GetD3DTex(m_pCaptureTexture));
 #endif
 		}
 	}
@@ -698,16 +696,15 @@ bool CMoviePlatform::SetCaptureTarget()
 		else
 		{
 #ifdef USE_DIRECTX_RENDERER
-			if (m_pCaptureSurface != NULL)
+			if (m_pCaptureTexture != NULL)
 			{
 				// save old render target
-				m_pBackBufferSurface = GetD3DSurface(CGlobals::GetRenderDevice()->GetRenderTarget(0));
-				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pOldDepthStencilSurface)))
-					return false;
+				m_pBackBufferSurface = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+				m_pOldDepthStencilSurface = CGlobals::GetRenderDevice()->GetDepthStencil();
 
 				// set new render target
-				CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pCaptureSurface);
-				GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pDepthStencilSurface);
+				CGlobals::GetRenderDevice()->SetRenderTarget(0, m_pCaptureTexture);
+				CGlobals::GetRenderDevice()->SetDepthStencil(m_pDepthStencilSurface);
 
 				return true;
 			}
@@ -721,11 +718,11 @@ bool CMoviePlatform::SetCaptureTarget()
 bool CMoviePlatform::UnsetCaptureTarget()
 {
 #ifdef USE_DIRECTX_RENDERER
-	if(IsInCaptureSession() && m_pCaptureSurface!=NULL)
+	if(IsInCaptureSession() && m_pCaptureTexture!=NULL)
 	{
 		// restore old render target
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pBackBufferSurface);
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pOldDepthStencilSurface );
+		CGlobals::GetRenderDevice()->SetRenderTarget(0, m_pBackBufferSurface);
+		CGlobals::GetRenderDevice()->SetDepthStencil( m_pOldDepthStencilSurface );
 		SAFE_RELEASE(m_pOldDepthStencilSurface);
 
 		return true;
@@ -786,7 +783,7 @@ void CMoviePlatform::RenderCaptured()
 				v[i].h = 1.0f;
 			}
 
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, m_pCaptureTexture);
+			CGlobals::GetRenderDevice()->SetTexture(0, m_pCaptureTexture);
 			CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, v, sizeof(DXUT_SCREEN_VERTEX) );
 
 			//////////////////////////////////////////////////////////////////////////
@@ -922,13 +919,9 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 	{
 #ifdef USE_DIRECTX_RENDERER
 		// force same resolution as current back buffer.  
-		LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
-		D3DSURFACE_DESC desc;
-		if (SUCCEEDED(pFromSurface->GetDesc(&desc)))
-		{
-			m_nScreenWidth = desc.Width;
-			m_nScreenHeight = desc.Height;
-		}
+		auto pFromSurface = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+		m_nScreenWidth = pFromSurface->GetWidth();
+		m_nScreenHeight = pFromSurface->GetHeight();
 #endif
 	}
 
@@ -1019,8 +1012,8 @@ void CMoviePlatform::FrameCaptureDX(IMovieCodec* pMovieCodec)
 	if (m_pOffScreenSurface)
 	{
 		// capture using DirectX surface: this is slow when reading from video memory to system memory for large image
-		LPDIRECT3DSURFACE9 pFromSurface = CGlobals::GetDirectXEngine().GetRenderTarget(0);
-		if (SUCCEEDED(D3DXLoadSurfaceFromSurface(m_pOffScreenSurface, NULL, NULL, pFromSurface, NULL, NULL, D3DX_FILTER_NONE, 0)))
+		auto pFromSurface = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+		if (SUCCEEDED(D3DXLoadSurfaceFromSurface(GetD3DSurface(m_pOffScreenSurface), NULL, NULL, GetD3DSurface(pFromSurface), NULL, NULL, D3DX_FILTER_NONE, 0)))
 		{
 			// Lock the Texture
 			BYTE  *pBmpBuffer = NULL;
@@ -1038,7 +1031,7 @@ void CMoviePlatform::FrameCaptureDX(IMovieCodec* pMovieCodec)
 			size_t bmpsize = nWidth*nHeight * 3;
 
 			D3DLOCKED_RECT d3dlr;
-			if (SUCCEEDED(m_pOffScreenSurface->LockRect(&d3dlr, 0, D3DLOCK_READONLY)))
+			if (SUCCEEDED(GetD3DSurface(m_pOffScreenSurface)->LockRect(&d3dlr, 0, D3DLOCK_READONLY)))
 			{
 				// Get the texture buffer & pitch
 				BYTE  * pbD = NULL;
@@ -1079,7 +1072,7 @@ void CMoviePlatform::FrameCaptureDX(IMovieCodec* pMovieCodec)
 
 				pBmpBuffer = &(g_buffer[0]);
 
-				m_pOffScreenSurface->UnlockRect();
+				GetD3DSurface(m_pOffScreenSurface)->UnlockRect();
 			}
 
 			if (pBmpBuffer)

@@ -878,7 +878,7 @@ HRESULT CSceneObject::RestoreDeviceObjects()
 {
 	CBaseObject::RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	g_bShaderVersion3 = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(3,0);
+	g_bShaderVersion3 = true;
 #endif
 	ResetCameraAndFog();
 
@@ -1519,11 +1519,7 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneSta
 	// fNewViewRadius = (fR>0.2f) ? m_fCoefK*fR : m_fCoefN;
 	m_fCoefF = m_fFogEnd;
 	m_fCoefN = m_fFogStart;
-#ifdef USE_DIRECTX_RENDERER
-	uint32 nViewHeight = CGlobals::GetDirectXEngine().GetBackBufferHeight();
-#else
-	uint32 nViewHeight = 560;
-#endif
+	uint32 nViewHeight = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 	m_fCoefK = 1 / tanf(m_fCullingPixelsHeight / nViewHeight * (pCamera->GetFieldOfView() / pCamera->GetAspectRatio()));
 
 	// set rough testing view's center
@@ -2808,28 +2804,6 @@ void CSceneObject::RenderShadows()
 						{
 							if(pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_PASS)
 							{
-								/// Z-Pass 
-								if(( CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED ) != 0 )
-								{
-									// With 2-sided stencil, we can avoid rendering twice:
-									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
-
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, TRUE );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFUNC,  D3DCMP_ALWAYS );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR );
-
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_NONE );
-
-									// Draw both sides of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
-
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, FALSE );
-								}
-								else
 								{
 									// render front faces on z pass
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );

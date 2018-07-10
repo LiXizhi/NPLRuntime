@@ -208,7 +208,7 @@ CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequ
 CAsyncLoader::CAsyncLoader()
 :m_NumOutstandingResources(0), m_nRemainingBytes(0),
 #ifdef PARAENGINE_CLIENT
-m_pXFileParser(NULL), m_pEngine(NULL), m_pGDIEngine(NULL),
+m_pXFileParser(NULL), m_pGDIEngine(NULL),
 #endif
 m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
 {
