@@ -22,8 +22,8 @@
 #include "XRefObject.h"
 #include "ViewCullingObject.h"
 #include "util/StringHelper.h"
+#include "DynamicAttributeField.h"
 
-#include "memdebug.h"
 using namespace ParaEngine;
 
 
@@ -814,6 +814,17 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 		}
 	}
 	
+	CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+	if (pField)
+	{
+		sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+		pField = GetDynamicField("colorAmbient");
+		if (pField)
+			sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
+
+		sceneState->EnableLocalMaterial(true);
+	}
+
 	if (bUsePointTextureFilter)
 	{
 		pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);

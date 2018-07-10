@@ -32,6 +32,7 @@
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "PhysicsWorld.h"
+#include "DynamicAttributeField.h"
 #include <algorithm>
 
 using namespace ParaEngine;
@@ -1517,6 +1518,16 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			}
 		}
 		
+		CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+		if (pField)
+		{
+			sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+			pField = GetDynamicField("colorAmbient");
+			if (pField)
+				sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
+			sceneState->EnableLocalMaterial(true);
+		}
+
 		if (bUsePointTextureFilter)
 		{
 			pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);
