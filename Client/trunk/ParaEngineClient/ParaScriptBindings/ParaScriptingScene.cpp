@@ -2269,6 +2269,38 @@ int ParaScene::SelectObject1( int nGroupIndex, float x1,float y1, float z1,float
 	return CGlobals::GetScene()->SelectObject(nGroupIndex, obb, GetFilterFuncByName(sFilterFunc));
 }
 
+ParaObject ParaScene::Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc)
+{
+	if (!CGlobals::GetGUI()->GetMouseInClient())
+		return ParaObject(NULL);
+
+	CBaseObject* pObj = NULL;
+	OBJECT_FILTER_CALLBACK pFilterFunc = GetFilterFuncByName(sFilterFunc);
+	if (strcmp(sFilterFunc, "point") == 0 || strcmp(sFilterFunc, "walkpoint") == 0 || strcmp(sFilterFunc, "terrain") == 0)
+	{
+		static CSphereObject obj;
+		Vector3 vIntersectPos(0, 0, 0);
+		float fDist = CGlobals::GetScene()->PickClosest({ rayX, rayY, rayZ }, {dirX, dirY, dirZ}, &pObj, &vIntersectPos, NULL, false, fMaxDistance, GetPhysicsGroupMaskByName(sFilterFunc));
+		if (fDist<0)
+		{
+			return ParaObject(NULL);
+		}
+		else
+		{
+			// one can retrieve the intersection point and distance by position and scaling. 
+			obj.SetPosition(DVector3(vIntersectPos));
+			obj.SetScaling(fDist);
+			obj.SetIdentifier(pObj ? pObj->GetIdentifier() : "");
+			return ParaObject(&obj);
+		}
+	}
+
+	Vector3 dir = { dirX, dirY, dirZ };
+	dir.normalise();
+	CGlobals::GetScene()->PickObject({ { rayX, rayY, rayZ } ,dir }, &pObj, fMaxDistance, pFilterFunc);
+	return ParaObject(pObj);
+}
+
 ParaObject ParaScene::MousePick(float fMaxDistance, const char* sFilterFunc)
 {
 	if(!CGlobals::GetGUI()->GetMouseInClient())
