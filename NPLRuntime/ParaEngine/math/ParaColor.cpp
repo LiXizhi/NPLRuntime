@@ -334,9 +334,13 @@ uint16 ParaEngine::Color::convert32_16(uint32 rgb)
 uint32 ParaEngine::Color::convert16_32(uint16 rgb)
 {
 	uint32 a = ((rgb & 0xF000) << 16);
+	a = a | (a >> 4);
 	uint32 r = ((rgb & 0x0F00) << 12);
+	r = r | (r >> 4);
 	uint32 g = ((rgb & 0x00F0) << 8);
+	g = g | (g >> 4);
 	uint32 b = ((rgb & 0x000F) << 4);
+	b = b | (b >> 4);
 	return (a | r | g | b);
 }
 
@@ -352,9 +356,13 @@ uint8 ParaEngine::Color::convert32_8(uint32 rgb)
 uint32 ParaEngine::Color::convert8_32(uint8 rgb)
 {
 	uint32 a = ((rgb & 0xC0) << 24);
+	a = a | (a >> 2) | (a >> 4) | (a >> 6);
 	uint32 r = ((rgb & 0x30) << 18);
+	r = r | (r >> 2) | (r >> 4) | (r >> 6);
 	uint32 g = ((rgb & 0xC) << 12);
+	g = g | (g >> 2) | (g >> 4) | (g >> 6);
 	uint32 b = ((rgb & 0x3) << 6);
+	b = b | (b >> 2) | (b >> 4) | (b >> 6);
 	return (a | r | g | b);
 }
 
