@@ -39,6 +39,8 @@ BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(int nIndex /*= 0*/)
 
 BlockModel& ParaEngine::CSlopeModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks /*= NULL*/)
 {
+	nBlockData = nBlockData & 0xff;
+
 	const int type_index = nBlockData / 8;
 	const int block_index = nBlockData % 8;
 	BlockModel * model = mEdgeBlockModels;
@@ -62,13 +64,13 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
 	int block_index = 0;
-	for (auto& model : mEdgeBlockModels){
+	for (auto& model : mEdgeBlockModels) {
 		model.ClearVertices();
 	}
 	/*
-	   /|
-	  / |
-	 /  |
+	/|
+	/ |
+	/  |
 	/___|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
@@ -111,9 +113,9 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	/*
 	____
 	\	|
-	 \  |
-	  \ |
-	   \|
+	\  |
+	\ |
+	\|
 	*/
 	mEdgeBlockModels[block_index] = cube_mode;
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_leftLB].SetPosition(cube_mode.Vertices()[BlockModel::g_rightRB].position[0], cube_mode.Vertices()[BlockModel::g_rightRB].position[1], cube_mode.Vertices()[BlockModel::g_rightRB].position[2]);
@@ -180,7 +182,7 @@ void ParaEngine::CSlopeModelProvider::_buildEdgeBlockModels()
 	mEdgeBlockModels[block_index].Vertices()[BlockModel::g_rightRT] = cube_mode.Vertices()[BlockModel::g_rightRB];
 	++block_index;
 
-	for (auto& model : mEdgeBlockModels){
+	for (auto& model : mEdgeBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
@@ -192,14 +194,14 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
 	int block_index = 0;
-	for (auto& model : mOuterCornerBlockModels){
+	for (auto& model : mOuterCornerBlockModels) {
 		model.ClearVertices();
 	}
 	//90degree is inner
 	/*
-	   /|
-	  / |
-	 /__|
+	/|
+	/ |
+	/__|
 	/___|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
@@ -266,9 +268,9 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	/*
 	____
 	\___|
-	 \  |
-	  \ |
-	   \|
+	\  |
+	\ |
+	\|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
@@ -288,9 +290,9 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 
 	//90degree is outer
 	/*
-	   /|
-	  / |
-	 /__|
+	/|
+	/ |
+	/__|
 	/___|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
@@ -357,9 +359,9 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	/*
 	____
 	\___|
-	 \  |
-	  \ |
-	   \|
+	\  |
+	\ |
+	\|
 	*/
 	mOuterCornerBlockModels[block_index] = cube_mode;
 	for (int i = 0; i < 4; ++i)
@@ -377,7 +379,7 @@ void ParaEngine::CSlopeModelProvider::_builOuterCornerBlockModels()
 	mOuterCornerBlockModels[block_index].Vertices()[BlockModel::g_frtLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_frtRB].texcoord[0], cube_mode.Vertices()[BlockModel::g_frtRB].texcoord[1]);
 	++block_index;
 
-	for (auto& model : mOuterCornerBlockModels){
+	for (auto& model : mOuterCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
@@ -389,7 +391,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	BlockModel cube_mode;
 	cube_mode.LoadModelByTexture(0);
 	int block_index = 0;
-	for (auto& model : mInnerCornerBlockModels){
+	for (auto& model : mInnerCornerBlockModels) {
 		model.ClearVertices();
 	}
 	//shift FRT to FRB
@@ -457,7 +459,7 @@ void ParaEngine::CSlopeModelProvider::_buildInnerCornerBlockModels()
 	mInnerCornerBlockModels[block_index].Vertices()[BlockModel::g_btmLB].SetTexcoord(cube_mode.Vertices()[BlockModel::g_btmRT].texcoord[0], cube_mode.Vertices()[BlockModel::g_btmRT].texcoord[1]);
 	++block_index;
 
-	for (auto& model : mInnerCornerBlockModels){
+	for (auto& model : mInnerCornerBlockModels) {
 		model.SetFaceCount(model.Vertices().size() / 4);
 		model.SetUseAmbientOcclusion(false);
 		model.SetUniformLighting(true);
