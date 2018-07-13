@@ -125,8 +125,8 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	hr = m_pCanvasTexture->RestoreDeviceObjects();
 	CHECK_RETURN_CODE("CreateTexture Canvas Texture", hr);
 
-	bool ret = CGlobals::GetRenderDevice()->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::DepthStencil);
-	if (!ret)
+	m_pDepthStencilSurface = CGlobals::GetRenderDevice()->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::DepthStencil);
+	if (!m_pDepthStencilSurface)
 	{
 		OUTPUT_LOG("failed creating depth stencil buffer");
 		return E_FAIL;

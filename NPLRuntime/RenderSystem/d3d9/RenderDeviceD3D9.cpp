@@ -356,7 +356,7 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t widt
 
 const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceD3D9::GetCaps()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	return m_Cpas;
 }
 
 
