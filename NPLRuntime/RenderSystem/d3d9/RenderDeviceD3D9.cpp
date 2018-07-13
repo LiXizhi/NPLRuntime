@@ -70,6 +70,9 @@ ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9(IDirect3DDevice9* device, IDirect
 	m_backbufferRenderTarget = static_cast<TextureD3D9*>(TextureD3D9::Create(this, renderTargetSurface, ETextureUsage::RenderTarget));
 	m_backbufferDepthStencil = static_cast<TextureD3D9*>(TextureD3D9::Create(this, depthSurface, ETextureUsage::DepthStencil));
 
+	m_backbufferRenderTarget->AddRef();
+	m_backbufferDepthStencil->AddRef();
+
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
 }
@@ -383,6 +386,13 @@ bool ParaEngine::RenderDeviceD3D9::SetDepthStencil(IParaEngine::ITexture* target
 	{
 		surface = (static_cast<TextureD3D9*>(target))->GetSurface();
 	}
+
+	if (surface == NULL)
+	{
+		int i = 0;
+		i++;
+	}
+
 	bool ret = m_pD3DDevice->SetDepthStencilSurface(surface) == S_OK;
 	if (ret)
 	{
@@ -400,18 +410,21 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetRenderTarget(uint32_t in
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetDepthStencil()
 {
+	m_CurrentDepthStencil->AddRef();
 	return m_CurrentDepthStencil;
 }
 
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferRenderTarget()
 {
+	m_backbufferRenderTarget->AddRef();
 	return m_backbufferRenderTarget;
 }
 
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferDepthStencil()
 {
+	m_backbufferRenderTarget->AddRef();
 	return m_backbufferDepthStencil;
 }
 

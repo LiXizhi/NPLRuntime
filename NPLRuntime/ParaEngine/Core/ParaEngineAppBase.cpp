@@ -503,7 +503,8 @@ void ParaEngine::CParaEngineAppBase::Render()
 		auto color = m_pRootScene->GetClearColor();
 		auto pDevice = CGlobals::GetRenderDevice();
 
-		CGlobals::GetRenderDevice()->SetRenderTarget(0, CGlobals::GetRenderDevice()->GetBackbufferRenderTarget());
+		pDevice->SetRenderTarget(0, pDevice->GetBackbufferRenderTarget());
+		pDevice->SetDepthStencil(pDevice->GetBackbufferDepthStencil());
 
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);
