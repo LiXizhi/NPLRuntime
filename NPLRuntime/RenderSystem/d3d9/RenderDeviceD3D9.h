@@ -3,12 +3,13 @@
 namespace ParaEngine
 {
 	class TextureD3D9;
+
 	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
 		RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context);
 
-		virtual ~RenderDeviceD3D9() = default;
+		virtual ~RenderDeviceD3D9() override;
 	
 		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice;  };
 		inline IDirect3D9* GetContext()const { return m_pContext; };
@@ -143,6 +144,7 @@ namespace ParaEngine
 		TextureD3D9* m_backbufferDepthStencil;
 		IParaEngine::ITexture* m_CurrentRenderTargets[8];
 		IParaEngine::ITexture* m_CurrentDepthStencil;
+		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 	private:
 		void InitCaps();
 	};

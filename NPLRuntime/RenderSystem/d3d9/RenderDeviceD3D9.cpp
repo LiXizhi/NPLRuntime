@@ -75,6 +75,19 @@ ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9(IDirect3DDevice9* device, IDirect
 
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
+
+	m_Resources.push_back(m_backbufferDepthStencil);
+	m_Resources.push_back(m_backbufferRenderTarget);
+}
+
+
+ParaEngine::RenderDeviceD3D9::~RenderDeviceD3D9()
+{
+	for (auto pRes : m_Resources)
+	{
+		delete pRes;
+	}
+	m_Resources.clear();
 }
 
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
@@ -353,7 +366,13 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
-	return TextureD3D9::Create(this, width, height, format, usage);
+	auto ret = TextureD3D9::Create(this, width, height, format, usage);
+	if (ret)
+	{
+		m_Resources.push_back(ret);
+	}
+
+	return ret;
 }
 
 
@@ -475,7 +494,12 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* b
 
 	if (hr == S_OK && pTexture)
 	{
-		return TextureD3D9::Create(this,pTexture);
+		auto ret = TextureD3D9::Create(this,pTexture);
+		if (ret)
+		{
+			m_Resources.push_back(ret);
+		}
+		return ret;
 	}
 
 

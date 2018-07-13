@@ -1,8 +1,8 @@
 #pragma once
-#include "Framework/Common/RefCountedObject.hpp"
+#include "Framework/Interface/Render/IDeviceResource.h"
 namespace IParaEngine
 {
-	class IRenderTarget : public ParaEngine::RefCountedObject
+	class IRenderTarget : public IDeviceResource
 	{
 	public:
 		IRenderTarget() = default;
