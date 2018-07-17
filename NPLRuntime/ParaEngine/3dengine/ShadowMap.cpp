@@ -254,21 +254,21 @@ bool CShadowMap::PrepareAllSurfaces()
 		if(!m_pSMColorSurface )
 			return false;
 #else
-		glDeleteFramebuffers(1, &mSMFrameBufferObject);
-		glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
-		glGenFramebuffers(1, &mSMFrameBufferObject);
-		glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
-		m_pSMColorTexture->GetTexture()->bind();
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture()->getName(), 0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glGenRenderbuffers(1, &mSMDepthStencilBufferObject);
-		glBindRenderbuffer(GL_RENDERBUFFER, mSMDepthStencilBufferObject);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, tex_info.GetWidth(), tex_info.GetHeight());
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glDeleteFramebuffers(1, &mSMFrameBufferObject);
+		//glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
+		//glGenFramebuffers(1, &mSMFrameBufferObject);
+		//glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
+		//m_pSMColorTexture->GetTexture()->bind();
+		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture()->getName(), 0);
+		//glBindTexture(GL_TEXTURE_2D, 0);
+		//glGenRenderbuffers(1, &mSMDepthStencilBufferObject);
+		//glBindRenderbuffer(GL_RENDERBUFFER, mSMDepthStencilBufferObject);
+		//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, tex_info.GetWidth(), tex_info.GetHeight());
+		//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
+		//glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		PE_CHECK_GL_ERROR_DEBUG();
+		//PE_CHECK_GL_ERROR_DEBUG();
 		
 #endif
 	}

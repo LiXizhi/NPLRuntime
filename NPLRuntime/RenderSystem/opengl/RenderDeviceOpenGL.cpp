@@ -296,11 +296,11 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 }
 
 
-bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
+bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
 {
 	//glActiveTexture(GL_TEXTURE0 + stage);
 	//glBindTexture(GL_TEXTURE_2D, texture);
-	texture->bindN(stage);
+	//texture->bindN(stage);
 
 	PE_CHECK_GL_ERROR_DEBUG();
 	//auto error = glGetError();
@@ -309,7 +309,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr
 
 
 
-bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
 	if (m_CurrentVertexDeclaration)
@@ -625,6 +625,59 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffe
 {
 	std::string code((char*)pSrcData);
 	return EffectOpenGL::Create(code, include, error);
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
+{
+	return NULL;
+}
+
+
+bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
+{
+	return false;
+}
+
+
+bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* target)
+{
+	return false;
+}
+
+
+const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceOpenGL::GetCaps()
+{
+	throw std::logic_error("The method or operation is not implemented.");
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetRenderTarget(uint32_t index)
+{
+	return nullptr;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetDepthStencil()
+{
+	return nullptr;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferRenderTarget()
+{
+	return nullptr;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil()
+{
+	return nullptr;
+}
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
+{
+	return nullptr;
 }
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()

@@ -382,19 +382,13 @@ bool TextureEntity::SaveToFile(const char* filename, EPixelFormat dwFormat, int 
 
 void TextureEntity::LoadImage(char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, bool bAlpha)
 {
-#ifdef USE_DIRECTX_RENDERER
-	TextureEntityDirectX::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
-#elif defined(USE_OPENGL_RENDERER)
-	TextureEntityOpenGL::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
-#endif
+	TextureEntityImpl::LoadImage(sBufMemFile, sizeBuf, width, height, ppBuffer, bAlpha);
 }
 
 TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool/*= D3DPOOL_MANAGED*/, DWORD nFormat /*= 0*/)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
-#elif defined(USE_OPENGL_RENDERER)
-	return TextureEntityOpenGL::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+	return TextureEntityImpl::CreateTexture(pTexels, width, height, rowLength, bytesPerPixel, nMipLevels, dwCreatePool, nFormat);
 #else
 	return NULL;
 #endif
@@ -402,10 +396,8 @@ TextureEntity* TextureEntity::CreateTexture(const uint8 * pTexels, int width, in
 
 TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLevels /*= 0*/, EPoolType dwCreatePool /*= D3DPOOL_MANAGED*/)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::CreateTexture(pFileName, nMipLevels, dwCreatePool);
-#elif defined(USE_OPENGL_RENDERER)
-	return TextureEntityOpenGL::CreateTexture(pFileName, nMipLevels, dwCreatePool);
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+	return TextureEntityImpl::CreateTexture(pFileName, nMipLevels, dwCreatePool);
 #else
 	return NULL;
 #endif
@@ -414,7 +406,7 @@ TextureEntity* TextureEntity::CreateTexture(const char* pFileName, uint32 nMipLe
 bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat, ImageExtendInfo *info)
 {
 #ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
+	return TextureEntityImpl::LoadImageOfFormatEx(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat, info);
 #else
 	return false;
 #endif
@@ -422,10 +414,8 @@ bool TextureEntity::LoadImageOfFormatEx(const std::string& sTextureFileName, cha
 
 bool TextureEntity::LoadImageOfFormat(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel, int nFormat)
 {
-#ifdef USE_DIRECTX_RENDERER
-	return TextureEntityDirectX::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
-#elif defined(USE_OPENGL_RENDERER)
-	return TextureEntityOpenGL::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+	return TextureEntityImpl::LoadImageOfFormat(sTextureFileName, sBufMemFile, sizeBuf, width, height, ppBuffer, pBytesPerPixel, nFormat);
 #else
 	return false;
 #endif

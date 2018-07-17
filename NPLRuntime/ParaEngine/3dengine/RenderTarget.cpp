@@ -132,41 +132,41 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 		return E_FAIL;
 	}
 #elif defined(USE_OPENGL_RENDERER)
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
+	//glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
 
-	glGetIntegerv(GL_RENDERBUFFER_BINDING, &_oldRBO);
+	//glGetIntegerv(GL_RENDERBUFFER_BINDING, &_oldRBO);
 
-	// generate FBO
-	glGenFramebuffers(1, &_FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
+	//// generate FBO
+	//glGenFramebuffers(1, &_FBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
-	// associate texture with FBO
-	m_pCanvasTexture->RestoreDeviceObjects();
-	auto pTex = m_pCanvasTexture->GetTexture();
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pTex ? pTex->getName() : 0, 0);
+	//// associate texture with FBO
+	//m_pCanvasTexture->RestoreDeviceObjects();
+	//auto pTex = m_pCanvasTexture->GetTexture();
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pTex ? pTex->getName() : 0, 0);
 
-	if (m_depthStencilFormat != 0)
-	{
-		GLuint depthStencilFormat = GL_DEPTH24_STENCIL8;
-		//create and attach depth buffer
-		glGenRenderbuffers(1, &_depthRenderBufffer);
-		glBindRenderbuffer(GL_RENDERBUFFER, _depthRenderBufffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, depthStencilFormat, (GLsizei)nWidth, (GLsizei)nHeight);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
+	//if (m_depthStencilFormat != 0)
+	//{
+	//	GLuint depthStencilFormat = GL_DEPTH24_STENCIL8;
+	//	//create and attach depth buffer
+	//	glGenRenderbuffers(1, &_depthRenderBufffer);
+	//	glBindRenderbuffer(GL_RENDERBUFFER, _depthRenderBufffer);
+	//	glRenderbufferStorage(GL_RENDERBUFFER, depthStencilFormat, (GLsizei)nWidth, (GLsizei)nHeight);
+	//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
 
-		// if depth format is the one with stencil part, bind same render buffer as stencil attachment
-		if (depthStencilFormat == GL_DEPTH24_STENCIL8)
-		{
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
-		}
-	}
-	// check if it worked (probably worth doing :) )
-	PE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+	//	// if depth format is the one with stencil part, bind same render buffer as stencil attachment
+	//	if (depthStencilFormat == GL_DEPTH24_STENCIL8)
+	//	{
+	//		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
+	//	}
+	//}
+	//// check if it worked (probably worth doing :) )
+	//PE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-	((TextureEntityOpenGL*)m_pCanvasTexture.get())->SetAliasTexParameters();
+	//((TextureEntityOpenGL*)m_pCanvasTexture.get())->SetAliasTexParameters();
 
-	glBindRenderbuffer(GL_RENDERBUFFER, _oldRBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
+	//glBindRenderbuffer(GL_RENDERBUFFER, _oldRBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
 
 #endif
 	return S_OK;

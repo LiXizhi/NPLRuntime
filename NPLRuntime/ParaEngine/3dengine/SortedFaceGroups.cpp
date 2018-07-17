@@ -389,7 +389,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 					CFaceGroupInstance& facegroup =  (*itCur);
 					//////////////////////////////////////////////////////////////////////////
 					// set up render attributes for this face group
-					DeviceTexturePtr_type pTexture = 0;
+					IParaEngine::ITexture* pTexture = 0;
 					if( facegroup.m_facegroup->m_pTexture )
 					{
 						pTexture = facegroup.m_facegroup->m_pTexture->GetTexture();

@@ -16,7 +16,7 @@ namespace ParaEngine
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
 		virtual int GetMaxSimultaneousTextures() override;
-		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) override;
+		virtual bool SetTexture(uint32_t stage, IParaEngine::ITexture* texture) override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
@@ -30,7 +30,7 @@ namespace ParaEngine
 		virtual bool EndScene() override;
 		int GetStencilBits();
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) override;
-		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
+		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
 		virtual bool SetFVF(uint32_t FVF) override;
 		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
@@ -46,6 +46,33 @@ namespace ParaEngine
 		virtual bool SetClearStencil(const int stencil) override;
 
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
+
+
+		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage) override;
+
+
+		virtual IParaEngine::ITexture* CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey) override;
+
+
+		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;
+
+
+		virtual bool SetDepthStencil(IParaEngine::ITexture* target) override;
+
+
+		virtual const RenderDeviceCaps& GetCaps() override;
+
+
+		virtual IParaEngine::ITexture* GetRenderTarget(uint32_t index) override;
+
+
+		virtual IParaEngine::ITexture* GetDepthStencil() override;
+
+
+		virtual IParaEngine::ITexture* GetBackbufferRenderTarget() override;
+
+
+		virtual IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
 	protected:
 		void ApplyBlendingModeChange();

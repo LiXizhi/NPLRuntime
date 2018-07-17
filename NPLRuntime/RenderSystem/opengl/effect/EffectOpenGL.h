@@ -35,8 +35,8 @@ namespace ParaEngine
 		virtual bool SetBool(const IParaEngine::ParameterHandle& handle, bool value) override;
 		virtual bool SetInt(const IParaEngine::ParameterHandle& handle, int value) override;
 		virtual bool SetFloat(const IParaEngine::ParameterHandle& handle, float value) override;
-		virtual bool SetTexture(const IParaEngine::ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture) override;
-		virtual bool SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture) override;
+		virtual bool SetTexture(const IParaEngine::ParameterHandle& handle, IParaEngine::ITexture* texture) override;
+		virtual bool SetTexture(const char* name, IParaEngine::ITexture* texture) override;
 		virtual bool SetRawValue(const IParaEngine::ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size) override;
 		virtual bool SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size) override;
 		virtual IParaEngine::ParameterHandle GetParameterByName(const char* name) override;

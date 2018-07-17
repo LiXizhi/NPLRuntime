@@ -60,7 +60,7 @@ HRESULT ParaEngine::CSpriteRendererDirectX::DrawRect(const RECT* pRect, Color co
 
 HRESULT ParaEngine::CSpriteRendererDirectX::DrawQuad(TextureEntity* pTexture_, const RECT* pSrcRect, const Vector3* vCenter, const Vector3* pPosition, Color color)
 {
-	TextureEntityDirectX* pTexture = ((TextureEntityDirectX*)pTexture_);
+	TextureEntityImpl* pTexture = ((TextureEntityImpl*)pTexture_);
 	if (pTexture && m_pSprite)
 	{
 		auto pTex = pTexture->GetTexture();

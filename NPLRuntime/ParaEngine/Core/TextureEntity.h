@@ -324,10 +324,8 @@ namespace ParaEngine
 }
 
 // chose an implementation as Texture Manager
-#ifdef USE_DIRECTX_RENDERER
-#include "TextureEntityDirectX.h"
-#elif defined(USE_OPENGL_RENDERER)
-#include "TextureEntityOpenGL.h"
+#if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
+#include "TextureEntityImpl.h"
 #else
 namespace ParaEngine{
 	typedef AssetManager<TextureEntity, TextureEntity> TextureAssetManager;

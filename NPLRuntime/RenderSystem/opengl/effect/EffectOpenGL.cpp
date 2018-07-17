@@ -663,7 +663,7 @@ bool ParaEngine::EffectOpenGL::SetFloat(const ParameterHandle& handle, float val
 }
 
 
-bool ParaEngine::EffectOpenGL::SetTexture(const ParameterHandle& handle, ParaEngine::DeviceTexturePtr_type texture)
+bool ParaEngine::EffectOpenGL::SetTexture(const ParameterHandle& handle, IParaEngine::ITexture* texture)
 {
 	intptr_t* pptr = (intptr_t*)&texture;
 	return SetRawValue(handle, pptr, 0, sizeof(intptr_t));
@@ -908,11 +908,11 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			auto it = m_TextureSlotMap.find(name);
 			if (it != m_TextureSlotMap.end())
 			{
-				GLuint slot = it->second;
-				intptr_t* ptr = (intptr_t*)cmd.data;
-				GLTexture2D* texture = (GLTexture2D*)*ptr;
-				glUniform1i(location, slot);
-				texture->bindN(slot);
+				//GLuint slot = it->second;
+				//intptr_t* ptr = (intptr_t*)cmd.data;
+				//GLTexture2D* texture = (GLTexture2D*)*ptr;
+				//glUniform1i(location, slot);
+				//texture->bindN(slot);
 			}
 			else {
 				return false;
@@ -940,7 +940,7 @@ bool ParaEngine::EffectOpenGL::SetRawValue(const char* name, const void* data, u
 	return SetRawValue(handle, data, offset, size);
 }
 
-bool ParaEngine::EffectOpenGL::SetTexture(const char* name, ParaEngine::DeviceTexturePtr_type texture)
+bool ParaEngine::EffectOpenGL::SetTexture(const char* name, IParaEngine::ITexture* texture)
 {
 	auto handle = GetParameterByName(name);
 	return SetTexture(handle, texture);

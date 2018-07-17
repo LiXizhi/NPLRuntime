@@ -223,7 +223,7 @@ namespace ParaScripting
 	ParaAssetObject CParaEngine::GetRenderTarget()
 	{
 #ifdef USE_DIRECTX_RENDERER
-		static TextureEntityDirectX g_rt;
+		static TextureEntityImpl g_rt;
 		static ParaAssetObject g_rt_wrapper(&g_rt);
 		g_rt.SurfaceType = TextureEntity::TextureSurface;
 		g_rt.SetTexture(CGlobals::GetRenderDevice()->GetRenderTarget(0));
@@ -270,9 +270,9 @@ namespace ParaScripting
 		if(pSrcRenderTarget.IsValid() && pDestRenderTarget.IsValid() )
 		{
 #ifdef USE_DIRECTX_RENDERER
-			TextureEntityDirectX * pSrcTexture = (TextureEntityDirectX*)(pSrcRenderTarget.m_pAsset);
-			TextureEntityDirectX * pDestTexture = (TextureEntityDirectX*)(pDestRenderTarget.m_pAsset);
-			return TextureEntityDirectX::StretchRect(pSrcTexture, pDestTexture);
+			TextureEntityImpl * pSrcTexture = (TextureEntityImpl*)(pSrcRenderTarget.m_pAsset);
+			TextureEntityImpl * pDestTexture = (TextureEntityImpl*)(pDestRenderTarget.m_pAsset);
+			return TextureEntityImpl::StretchRect(pSrcTexture, pDestTexture);
 #endif
 		}
 		return false;

@@ -504,6 +504,10 @@ void ParaEngine::CParaEngineAppBase::Render()
 		auto pDevice = CGlobals::GetRenderDevice();
 
 		auto pBackRT = pDevice->GetBackbufferRenderTarget();
+		if (!pBackRT)
+		{
+			return;
+		}
 		pDevice->SetRenderTarget(0, pBackRT);
 		pBackRT->Release();
 

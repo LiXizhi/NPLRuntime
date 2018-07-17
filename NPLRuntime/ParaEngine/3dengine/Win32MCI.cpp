@@ -5,6 +5,7 @@
 #include "Win32MCI.h"
 #include <Windows.h>
 #include <stdio.h>
+#include <mciapi.h>
 
 
 #define ALIAS "recsound"

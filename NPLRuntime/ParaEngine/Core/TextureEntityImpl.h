@@ -7,7 +7,7 @@ namespace ParaEngine
 	/// Texture Entity distinguish one template from other
 	/// The following type are all supported by texture entity
 	//--------------------------------------------------------
-	struct TextureEntityDirectX : public TextureEntity
+	struct TextureEntityImpl : public TextureEntity
 	{
 	public:
 		union
@@ -15,9 +15,9 @@ namespace ParaEngine
 			/// static texture
 			IParaEngine::ITexture*    m_pTexture;
 			/// cube texture
-			LPDIRECT3DCUBETEXTURE9    m_pCubeTexture;
+			//LPDIRECT3DCUBETEXTURE9    m_pCubeTexture;
 			/// RenderTarget
-			LPDIRECT3DSURFACE9    m_pSurface;
+			//LPDIRECT3DSURFACE9    m_pSurface;
 			/// animated texture sequence
 			IParaEngine::ITexture**  m_pTextureSequence;
 		};
@@ -27,9 +27,9 @@ namespace ParaEngine
 	public:
 		
 
-		TextureEntityDirectX(const AssetKey& key);
-		TextureEntityDirectX();
-		virtual ~TextureEntityDirectX();
+		TextureEntityImpl(const AssetKey& key);
+		TextureEntityImpl();
+		virtual ~TextureEntityImpl();
 
 		virtual HRESULT InitDeviceObjects();
 		virtual HRESULT RestoreDeviceObjects();
@@ -110,10 +110,10 @@ namespace ParaEngine
 		static void GetFormatAndMipLevelFromFileNameEx(const string& filename, EPixelFormat* pdwTextureFormat, UINT* pnMipLevels);
 
 		/** secretly, change the m_pSurface */
-		void SetSurface(LPDIRECT3DSURFACE9 pSurface);
+		void SetSurface(IParaEngine::ITexture* pSurface);
 
 		/** Get the surface*/
-		LPDIRECT3DSURFACE9 GetSurface();
+		IParaEngine::ITexture* GetSurface();
 
 		/** get d3d format */
 		EPixelFormat GetFormat();
@@ -135,7 +135,7 @@ namespace ParaEngine
 		static bool LoadImageOfFormatEx(const std::string& sTextureFileName, char *sBufMemFile, int sizeBuf, int &width, int &height, byte ** ppBuffer, int* pBytesPerPixel = NULL, int nFormat = -1, ImageExtendInfo *info = nullptr);
 
 		/** Copy render target content from one surface to another. they may be of different resolution */
-		static bool StretchRect(TextureEntityDirectX * pSrcTexture, TextureEntityDirectX * pDestTexture);
+		static bool StretchRect(TextureEntityImpl * pSrcTexture, TextureEntityImpl * pDestTexture);
 
 		/** create a texture entity from memory buffer. */
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
@@ -143,5 +143,5 @@ namespace ParaEngine
 	};
 
 	// the manager class
-	typedef AssetManager<TextureEntity, TextureEntityDirectX> TextureAssetManager;
+	typedef AssetManager<TextureEntity, TextureEntityImpl> TextureAssetManager;
 }
