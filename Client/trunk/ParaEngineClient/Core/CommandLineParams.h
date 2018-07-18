@@ -27,6 +27,12 @@ namespace ParaEngine
 		*/
 		void SetAppCommandLine(const char* pCommandLine);
 
+		/**
+		* Convert other possible command line formats to paraengine-compliant form
+		* Currently only alternative splitters are replaced with spaces
+		*/
+		void ConvertToCanonicalForm(void);
+
 	private:
 		/** string specifying the command line for the application, excluding the program name.
 		* such as XX="YY" aa="pp"

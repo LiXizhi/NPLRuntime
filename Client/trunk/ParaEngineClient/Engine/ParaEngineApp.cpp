@@ -379,7 +379,7 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 
-#ifdef WIN32
+#if defined(WIN32) && defined(TRUCK_PARAM_FROM_CMDLINE)
 	std::string sTruckConfigString = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Truck\" isDevEnv=\"true\"";
 
 	std::string strCmdTruncated = strCmd.substr(0, 113);

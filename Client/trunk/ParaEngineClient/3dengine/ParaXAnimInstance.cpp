@@ -668,7 +668,8 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 							}
 							else
 							{
-								LoadAnimationByIndex(IdleAnimIndex);
+								//stop on last frame
+								//LoadAnimationByIndex(IdleAnimIndex);
 							}
 						}
 						else
