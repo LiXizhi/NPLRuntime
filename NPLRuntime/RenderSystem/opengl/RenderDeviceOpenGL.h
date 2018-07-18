@@ -76,6 +76,7 @@ namespace ParaEngine
 
 	protected:
 		void ApplyBlendingModeChange();
+		void InitCpas();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -97,6 +98,10 @@ namespace ParaEngine
 		uint32_t m_LastRenderTargetHeight;
 		bool m_isBeginRenderTarget ;
 		ParaViewport m_CurrentViewPort;
+
+		RenderDeviceCaps m_DeviceCpas;
+
+
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)

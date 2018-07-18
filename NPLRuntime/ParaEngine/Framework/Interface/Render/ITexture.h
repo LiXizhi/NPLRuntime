@@ -1,6 +1,7 @@
 #pragma once
 #include "IRenderTarget.h"
 #include "Framework/Common/Math/Rect.h"
+#include "Framework/RenderSystem/RenderTypes.h"
 namespace IParaEngine
 {
 	class ITexture : public IRenderTarget

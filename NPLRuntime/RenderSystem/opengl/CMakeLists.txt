@@ -18,6 +18,7 @@ elseif(APPLE)
 endif()
 
 ucm_add_dirs(effect TO EFFECT_SRC RECURSIVE)
+ucm_add_dirs(texture TO TEXTURE_SRC RECURSIVE)
 
 
 add_library(RenderSystemOpenGL 
@@ -27,6 +28,7 @@ add_library(RenderSystemOpenGL
     GLShaderDefine.h
     ${PLATFORM_SRC}
     ${EFFECT_SRC}
+    ${TEXTURE_SRC}
 )
 
 

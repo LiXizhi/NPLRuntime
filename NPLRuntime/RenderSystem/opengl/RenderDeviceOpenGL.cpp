@@ -7,6 +7,7 @@
 #include "OpenGLWrapper/GLType.h"
 #include "OpenGLWrapper/GLTexture2D.h"
 #include "effect/EffectOpenGL.h"
+#include "Framework/Codec/ImageParser.h"
 //#include "math/ParaColor.h"
 
 
@@ -90,6 +91,8 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 		}
 	}
 
+
+	InitCpas();
 	
 }
 
@@ -677,6 +680,7 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
 {
+	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
 	return nullptr;
 }
 
@@ -700,5 +704,21 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 		m_BlendingChanged = false;
 	}
 
+}
+
+void ParaEngine::RenderDeviceOpenGL::InitCpas()
+{
+	m_DeviceCpas.DynamicTextures = true;
+
+	GLint maxAttch = 0;
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttch);
+	if (GL_MAX_COLOR_ATTACHMENTS > 1)
+	{
+		m_DeviceCpas.MRT = true;
+	}
+	m_DeviceCpas.MaxSimultaneousTextures = 8;
+	m_DeviceCpas.ScissorTest = true;
+	m_DeviceCpas.Stencil = true;
+	m_DeviceCpas.NumSimultaneousRTs = GL_MAX_COLOR_ATTACHMENTS;
 }
 
