@@ -8,8 +8,7 @@
 #include "OpenGLWrapper/GLTexture2D.h"
 #include "effect/EffectOpenGL.h"
 #include "Framework/Codec/ImageParser.h"
-//#include "math/ParaColor.h"
-
+#include "texture/TextureOpenGL.h"
 
 
 using namespace ParaEngine;
@@ -301,12 +300,15 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
 {
-	//glActiveTexture(GL_TEXTURE0 + stage);
-	//glBindTexture(GL_TEXTURE_2D, texture);
-	//texture->bindN(stage);
+
+	if (!texture) return false;
+
+	TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
+
+	glActiveTexture(GL_TEXTURE0 + stage);
+	glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
 
 	PE_CHECK_GL_ERROR_DEBUG();
-	//auto error = glGetError();
 	return true;
 }
 
@@ -651,7 +653,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* targ
 
 const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceOpenGL::GetCaps()
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	return m_DeviceCpas;
 }
 
 
@@ -681,7 +683,7 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
 {
 	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
-	return nullptr;
+	return TextureOpenGL::CreateWithImage(image);
 }
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()

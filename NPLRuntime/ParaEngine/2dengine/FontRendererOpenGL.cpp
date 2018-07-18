@@ -321,7 +321,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 
 			if (letterDef.validDefinition)
 			{
-				// TODO:
+				// TODOO:
 
 				//TextureEntityOpenGL tex(textures[letterDef.textureID]);
 				//RECT rect;
@@ -332,7 +332,8 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				//// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				//Vector3 vPos(_lettersInfo[ctr].position.x, (getHeight() - _lettersInfo[ctr].position.y), 0);
 				//pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
-				assert(false);
+
+				//assert(false);
 			}
 		}
 		pSprite->SetTransform(matOld);

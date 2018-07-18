@@ -504,12 +504,11 @@ void ParaEngine::CParaEngineAppBase::Render()
 		auto pDevice = CGlobals::GetRenderDevice();
 
 		auto pBackRT = pDevice->GetBackbufferRenderTarget();
-		if (!pBackRT)
+		if (pBackRT)
 		{
-			return;
+			pDevice->SetRenderTarget(0, pBackRT);
+			pBackRT->Release();
 		}
-		pDevice->SetRenderTarget(0, pBackRT);
-		pBackRT->Release();
 
 		// NOTE: on android devices will ignore all gl calls after the last draw call, so we need to restore everything to default settings
 		pDevice->SetRenderState(ERenderState::ZWRITEENABLE, TRUE);

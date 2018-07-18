@@ -1339,7 +1339,7 @@ HRESULT TextureEntityImpl::LoadFromMemory(const char* buffer, DWORD nFileSize, U
 	{
 
 		pTexture = pRenderDevice->CreateTexture(buffer, nFileSize, format, m_dwColorKey);
-		if (m_pTexture)
+		if (pTexture)
 		{
 			/** we will only set LOD if the texture file is larger than 40KB */
 			//if (nMipLevels != 1 && TextureEntity::g_nTextureLOD>0 && nFileSize>40000)
