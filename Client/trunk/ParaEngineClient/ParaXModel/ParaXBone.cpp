@@ -65,7 +65,7 @@ only the Bone_Root and facial bone's translation animation (which is also scaled
 This conforms to the BVH file format, where only the root node has translation and rotation animation, where all other nodes contains only rotation animation.
 This allows the same animation data to be applied to different models with different bone lengths, but the same topology.
 */
-bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
+bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimIndex & BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
 {
 	if (calc)
 		return true;
@@ -78,7 +78,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	if (IsStaticTransform() && IsTransformationNode())
 	{
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = matTransform * allbones[parent].mat;
 		}
 		else
@@ -89,20 +89,9 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 	if (!BlendingAnim.IsValid())
 		blendingFactor = 0.f;
 
-	if (!upperBlendingAnim.IsValid())
-		upperBlendingFactor = 0;
-
-	auto current_anim_ptr = &CurrentAnim;
-	auto current_blending_anim_ptr = &BlendingAnim;
 	auto current_blending_factor = blendingFactor;
-	if (mIsUpper&&upperAnim.IsValid())
-	{
-		current_anim_ptr = &upperAnim;
-		current_blending_anim_ptr = &upperBlendingAnim;
-		current_blending_factor = upperBlendingFactor;
-	}
-	auto & current_anim = *current_anim_ptr;
-	auto & current_blending_anim = *current_blending_anim_ptr;
+	auto & current_anim = CurrentAnim;
+	auto & current_blending_anim = BlendingAnim;
 
 	CBoneAnimProvider* pCurProvider = NULL;
 	// the bone in the external bone provider that corresponding to the current bone. 
@@ -326,7 +315,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		}
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else
@@ -535,7 +524,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 
 
 		if (parent >= 0) {
-			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			mat = m * allbones[parent].mat;
 		}
 		else
@@ -1019,6 +1008,30 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 			SetIdentifier("");
 			mIsUpper = true;
 		}
+		else if (StringHelper::StrEndsWithWord(sName, "l?finger0"))
+		{
+			SetBoneID(Bone_L_Finger0);
+			SetIdentifier("");
+			mIsUpper = true;
+		}
+		else if (StringHelper::StrEndsWithWord(sName, "r?finger0"))
+		{
+			SetBoneID(Bone_R_Finger0);
+			SetIdentifier("");
+			mIsUpper = true;
+		}
+		else if (StringHelper::StrEndsWithWord(sName, "l?finger1"))
+		{
+			SetBoneID(Bone_L_Finger1);
+			SetIdentifier("");
+			mIsUpper = true;
+		}
+		else if (StringHelper::StrEndsWithWord(sName, "r?finger1"))
+		{
+			SetBoneID(Bone_R_Finger1);
+			SetIdentifier("");
+			mIsUpper = true;
+		}
 		else if ((nPos = sName.find("head")) != string::npos)
 		{
 			if ((nPos == (sName.size() - 4)) &&
@@ -1028,6 +1041,10 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 				SetIdentifier("");
 				mIsUpper = true;
 			}
+		}
+		else if (StringHelper::StrEndsWithWord(sName, "upper"))
+		{
+			mIsUpper = true;
 		}
 	}
 }

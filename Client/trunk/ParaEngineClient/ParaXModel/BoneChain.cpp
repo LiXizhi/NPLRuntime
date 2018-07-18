@@ -21,7 +21,10 @@ void ParaEngine::CBoneChain::RotateBoneChain(const Vector3& vAxis, Bone* allBone
 		if (nBoneID < nMaxBoneNum && nBoneID >= 0)
 		{
 			Bone & bone = allBones[nBoneID];
-			bone.calcMatrix(allBones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			if (bone.mIsUpper&&upperAnim.IsValid())
+				bone.calcMatrix(allBones, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			else
+				bone.calcMatrix(allBones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
 			// just rotate one bone at most. 
 			Matrix4 mAfterRot(Quaternion(vAxis, fAngle));
 			if (bone.bUsePivot)

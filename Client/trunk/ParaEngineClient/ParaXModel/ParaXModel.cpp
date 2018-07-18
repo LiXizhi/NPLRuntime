@@ -719,7 +719,7 @@ Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, cons
 					bones[i].MakeDirty();
 				}
 			}
-			if (bones[nBoneIndex].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance))
+			if (bones[nBoneIndex].calcMatrix(bones, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid())?upperAnim:CurrentAnim, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid()) ? upperBlendingAnim : BlendingAnim, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid()) ? upperBlendingFactor : blendingFactor, pAnimInstance))
 			{
 				Matrix4 mat, mat1;
 				mat1 = (bones[nBoneIndex].mat);
@@ -849,8 +849,28 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 #ifdef PERFOAMRNCE_TEST_calcBones
 	PERF1("calcBones");
 #endif
+	vector<Matrix4> lower_mats;
+	vector<Matrix4> upper_mats;
+	lower_mats.reserve(nBones);
 	for (uint32 i = 0; i < nBones; i++) {
-		bones[i].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+		bones[i].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+		lower_mats.push_back(bones[i].mat);
+	}
+	if (upperAnim.IsValid())
+	{
+		for (uint32 i = 0; i < nBones; i++) {
+			bones[i].MakeDirty();
+		}
+		for (uint32 i = 0; i < nBones; i++) {
+			bones[i].calcMatrix(bones, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			upper_mats.push_back(bones[i].mat);
+		}
+		for (uint32 i = 0; i < nBones; i++) {
+			if (bones[i].mIsUpper)
+				bones[i].mat = upper_mats[i];
+			else
+				bones[i].mat = lower_mats[i];
+		}
 	}
 	PostCalculateBoneMatrix(nBones);
 }
