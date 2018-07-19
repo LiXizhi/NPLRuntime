@@ -129,11 +129,15 @@ namespace ParaEngine
 		DDS
 	};
 
-	enum class ETextureFilterType
+	enum class ETextureFilter
 	{
-		None,
 		Point,
 		Linear
+	};
+	enum class ETextureWrapMode
+	{
+		Clamp,
+		Repeat,
 	};
 
 	enum class MultiSampleType

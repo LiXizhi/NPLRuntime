@@ -635,7 +635,7 @@ std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffe
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
-	return NULL;
+	return TextureOpenGL::Create(width, height, format, usage);
 }
 
 

@@ -685,22 +685,6 @@ HRESULT TextureEntityImpl::RestoreDeviceObjects()
 			}
 
 		}
-
-
-		if(m_bIsValid && m_pTexture)
-		{
-			// Fill the texture with 0-alpha
-			unsigned  int pitch = 0;
-			char* buffer = (char*)m_pTexture->Lock(0, pitch, nullptr);
-			if(buffer!=nullptr)
-			{
-				memset(buffer, 0, width*height*pitch);
-				m_pTexture->Unlock(0);
-			}
-			else {
-				OUTPUT_LOG("failed filling render target %s with alpha value", GetKey().c_str());
-			}
-		}
 	}
 	else if(SurfaceType == TextureEntityImpl::DEPTHSTENCIL)
 	{
@@ -852,15 +836,13 @@ void TextureEntityImpl::LoadImage(char *sBufMemFile, int sizeBuf, int &width, in
 
 
 	unsigned int pitch = 0;
-
-	void* pBits  = pTexture->Lock(0,pitch,nullptr);
-	if(pBits)
+	auto image = pTexture->GetImage(0);
+	if(image)
 	{
-		byte *pImagePixels = (byte *)pBits;
+		byte *pImagePixels = (byte *)image->data;
 		memcpy(pBufferTemp, pImagePixels, nSize);
 		//
 		*ppBuffer = pBufferTemp;
-		pTexture->Unlock( 0 );
 	}
 	else
 	{
@@ -966,7 +948,7 @@ bool TextureEntityImpl::StretchRect(TextureEntityImpl * pSrcTexture, TextureEnti
 
 	if (pSrcTexture->GetTexture() != nullptr && pDestTexture->GetTexture() != nullptr)
 	{
-		return pSrcTexture->GetTexture()->StretchRect(pDestTexture->GetTexture(), nullptr, nullptr, ETextureFilterType::Linear);
+		return pSrcTexture->GetTexture()->StretchRect(pDestTexture->GetTexture(), nullptr, nullptr, ETextureFilter::Linear);
 	}
 	return false;
 }
@@ -1121,10 +1103,7 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 		}
 		else
 		{
-			unsigned int pitch;
-			void* pBuffer = pTexture->Lock(0, pitch, nullptr);
-			memcpy(pBuffer, pTexels, width*height * 4);
-			pTexture->Unlock(0);
+			pTexture->UpdateImage(0, 0, 0, width, height, pTexels);
 		}
 	}
 	else if (bytesPerPixel == 3)
@@ -1136,10 +1115,8 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 		}
 		else
 		{
-			unsigned int pitch;
-			void* pBuffer = pTexture->Lock(0, pitch, nullptr);
-
-			uint8 *pp = (uint8*)pBuffer;
+			unsigned int pitch = 4 * width;
+			unsigned char* pp = new unsigned char[width*height*4];
 			int index = 0, x = 0, y = 0;
 
 			for (y = 0; y < height; y++)
@@ -1154,7 +1131,9 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 				}
 				index += pitch - (width * 4);
 			}
-			pTexture->Unlock(0);
+			pTexture->UpdateImage(0, 0, 0, width, height, pp);
+			delete[] pp;
+
 		}
 	}
 	else if (bytesPerPixel == 1)
@@ -1194,10 +1173,7 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 			}
 			else
 			{
-				unsigned int pitch;
-				void* pBuffer = pTexture->Lock(0, pitch, nullptr);
-				memcpy(pBuffer, pTexels, width*height * 1);
-				pTexture->Unlock(0);
+				pTexture->UpdateImage(0, 0, 0, width, height, pTexels);
 			}
 		}
 		else if (nSupportAlphaTexture == 0)
@@ -1210,15 +1186,16 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 			}
 			else
 			{
-				unsigned int pitch;
-				void* pBuffer = pTexture->Lock(0, pitch, nullptr);
+				unsigned int pitch = 4 * width;
+				unsigned char* pp = new unsigned char[width*height * 4];
 				int nSize = width*height;
-				DWORD* pData = (DWORD*)(pBuffer);
+				DWORD* pData = (DWORD*)(pp);
 				for (int x = 0; x < nSize; ++x)
 				{
 					pData[x] = (pTexels[x]) << 24;
 				}
-				pTexture->Unlock(0);
+				pTexture->UpdateImage(0, 0, 0, width, height,pp);
+				delete[] pp;
 			}
 		}
 	}

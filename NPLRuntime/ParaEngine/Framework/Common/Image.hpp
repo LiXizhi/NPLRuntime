@@ -17,7 +17,8 @@ namespace ParaEngine
 			IPF_L8,//GRAY
 			IPF_A8L8,//ALPHA,GRAY
 			IPF_R8G8B8,
-			IPF_R8G8B8A8
+			IPF_R8G8B8A8,
+			IPF_B8G8R8A8
 		};
 
 
