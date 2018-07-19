@@ -1037,7 +1037,7 @@ public:
 	/** get the scaling. */
 	virtual int GetAnimation(){return 0;};
 
-	virtual int GetUpperAnimation() { return 0; }
+	virtual int GetUpperAnimation() { return -1; }
 
 	/** set the current animation frame number relative to the beginning of current animation. 
 	* @param nFrame: 0 means beginning. if nFrame is longer than the current animation length, it will wrap (modulate the length).

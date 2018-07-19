@@ -281,7 +281,7 @@ namespace ParaEngine
 		bool IsAnimationEnabled() const;
 
 		virtual void SetUpperAnimation(int nAnimID){}
-		virtual int GetUpperAnimation() { return 0; }
+		virtual int GetUpperAnimation() { return -1; }
 
 	};
 }

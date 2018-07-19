@@ -242,7 +242,7 @@ void ParaEngine::CParaXAnimInstance::SetUpperAnimation(int nAnimID)
 
 int ParaEngine::CParaXAnimInstance::GetUpperAnimation()
 {
-	return mUpperAnim.nAnimID;
+	return mUpperAnim.IsValid()?mUpperAnim.nAnimID:-1;
 }
 
 bool CParaXAnimInstance::HasAnimId(int nAnimID)

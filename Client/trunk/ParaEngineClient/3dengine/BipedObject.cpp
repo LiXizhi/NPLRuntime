@@ -4660,7 +4660,7 @@ int ParaEngine::CBipedObject::GetUpperAnimation()
 	}
 	else
 	{
-		return 0;
+		return -1;
 	}
 }
 
