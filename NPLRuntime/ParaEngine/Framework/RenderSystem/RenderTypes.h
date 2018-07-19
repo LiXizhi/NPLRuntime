@@ -95,6 +95,24 @@ namespace ParaEngine
 		VERTEXDATA,
 		INDEX16,
 		INDEX32,
+
+		PVRTC4,
+		//! 4-bit PVRTC-compressed texture: PVRTC4 (has alpha channel)
+		PVRTC4A,
+		//! 2-bit PVRTC-compressed texture: PVRTC2
+		PVRTC2,
+		//! 2-bit PVRTC-compressed texture: PVRTC2 (has alpha channel)
+		PVRTC2A,
+
+		ETC1, 
+
+		ATC_RGB,
+		//! ATITC-compressed texture: ATC_EXPLICIT_ALPHA
+		ATC_EXPLICIT_ALPHA,
+		//! ATITC-compressed texture: ATC_INTERPOLATED_ALPHA
+		ATC_INTERPOLATED_ALPHA,
+		//! Default texture format: AUTO
+
 		COUNT
 	};
 

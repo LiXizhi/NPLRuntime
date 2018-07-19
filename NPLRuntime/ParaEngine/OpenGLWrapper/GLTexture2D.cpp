@@ -11,51 +11,51 @@ namespace {
 	typedef GLTexture2D::PixelFormatInfoMap::value_type PixelFormatInfoMapValue;
 	static const PixelFormatInfoMapValue TexturePixelFormatInfoTablesValue[] =
 	{
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::BGRA8888, GLTexture2D::PixelFormatInfo(GL_BGRA, GL_BGRA, GL_UNSIGNED_BYTE, 32, false, true)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::RGBA8888, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 32, false, true)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::RGBA4444, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 16, false, true)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::RGB5A1, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 16, false, true)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::RGB565, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 16, false, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::RGB888, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 24, false, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::A8, GLTexture2D::PixelFormatInfo(GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 8, false, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::I8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE, 8, false, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::AI88, GLTexture2D::PixelFormatInfo(GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 16, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::A8B8G8R8, GLTexture2D::PixelFormatInfo(GL_BGRA, GL_BGRA, GL_UNSIGNED_BYTE, 32, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::A8R8G8B8, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, 32, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::A4R4G4B4, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, 16, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::A1R5G5B5, GLTexture2D::PixelFormatInfo(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1, 16, false, true)),
+		PixelFormatInfoMapValue(PixelFormat::R5G6B5, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 16, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::R8G8B8, GLTexture2D::PixelFormatInfo(GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, 24, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::A8, GLTexture2D::PixelFormatInfo(GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, 8, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE, GL_LUMINANCE, GL_UNSIGNED_BYTE, 8, false, false)),
+		PixelFormatInfoMapValue(PixelFormat::A8L8, GLTexture2D::PixelFormatInfo(GL_LUMINANCE_ALPHA, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, 16, false, true)),
 
 #ifdef GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::PVRTC2, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 2, true, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::PVRTC2A, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 2, true, true)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::PVRTC4, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::PVRTC4A, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, true)),
+		PixelFormatInfoMapValue(PixelFormat::PVRTC2, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 2, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::PVRTC2A, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 2, true, true)),
+		PixelFormatInfoMapValue(PixelFormat::PVRTC4, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::PVRTC4A, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, true)),
 #endif
 
 #ifdef GL_ETC1_RGB8_OES
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::ETC, GLTexture2D::PixelFormatInfo(GL_ETC1_RGB8_OES, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::ETC1, GLTexture2D::PixelFormatInfo(GL_ETC1_RGB8_OES, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
 #endif
 
 #ifdef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::S3TC_DXT1, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::DXT1, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
 #endif
 
 #ifdef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::S3TC_DXT3, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::DXT3, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
 #endif
 
 #ifdef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::S3TC_DXT5, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
+		PixelFormatInfoMapValue(PixelFormat::DXT5, GLTexture2D::PixelFormatInfo(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, 0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
 #endif
 
 #ifdef GL_ATC_RGB_AMD
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::ATC_RGB, GLTexture2D::PixelFormatInfo(GL_ATC_RGB_AMD,
+		PixelFormatInfoMapValue(PixelFormat::ATC_RGB, GLTexture2D::PixelFormatInfo(GL_ATC_RGB_AMD,
 		0xFFFFFFFF, 0xFFFFFFFF, 4, true, false)),
 #endif
 
 #ifdef GL_ATC_RGBA_EXPLICIT_ALPHA_AMD
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::ATC_EXPLICIT_ALPHA, GLTexture2D::PixelFormatInfo(GL_ATC_RGBA_EXPLICIT_ALPHA_AMD,
+		PixelFormatInfoMapValue(PixelFormat::ATC_EXPLICIT_ALPHA, GLTexture2D::PixelFormatInfo(GL_ATC_RGBA_EXPLICIT_ALPHA_AMD,
 		0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
 #endif
 
 #ifdef GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD
-		PixelFormatInfoMapValue(GLTexture2D::PixelFormat::ATC_INTERPOLATED_ALPHA, GLTexture2D::PixelFormatInfo(GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD,
+		PixelFormatInfoMapValue(PixelFormat::ATC_INTERPOLATED_ALPHA, GLTexture2D::PixelFormatInfo(GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD,
 		0xFFFFFFFF, 0xFFFFFFFF, 8, true, false)),
 #endif
 	};
@@ -67,7 +67,7 @@ const GLTexture2D::PixelFormatInfoMap GLTexture2D::_pixelFormatInfoTables(Textur
 
 // If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
 // Default is: RGBA8888 (32-bit textures)
-GLTexture2D::PixelFormat GLTexture2D::g_defaultAlphaPixelFormat = GLTexture2D::PixelFormat::DEFAULT;
+PixelFormat GLTexture2D::g_defaultAlphaPixelFormat = PixelFormat::Unkonwn;
 
 const GLTexture2D::PixelFormatInfoMap& GLTexture2D::getPixelFormatInfoMap()
 {
@@ -89,7 +89,7 @@ int ccNextPOT(int x)
 
 
 GLTexture2D::GLTexture2D()
-	: _pixelFormat(GLTexture2D::PixelFormat::DEFAULT)
+	: _pixelFormat(PixelFormat::Unkonwn)
 	, _pixelsWide(0)
 	, _pixelsHigh(0)
 	, _name(0)
@@ -149,7 +149,7 @@ bool GLTexture2D::initWithImage(GLImage *image, PixelFormat format)
 
 	unsigned char*   tempData = image->getData();
 	Size             imageSize = Size((float)imageWidth, (float)imageHeight);
-	PixelFormat      pixelFormat = ((PixelFormat::NONE == format) || (PixelFormat::AUTO == format)) ? image->getRenderFormat() : format;
+	PixelFormat      pixelFormat = ((PixelFormat::Unkonwn == format) || (PixelFormat::COUNT == format)) ? image->getRenderFormat() : format;
 	PixelFormat      renderFormat = image->getRenderFormat();
 	size_t           tempDataLen = image->getDataLen();
 
@@ -252,10 +252,10 @@ void GLTexture2D::setAntiAliasTexParameters()
 }
 
 
-GLTexture2D::PixelFormat GLTexture2D::convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen)
+PixelFormat GLTexture2D::convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 {
 	// don't need to convert
-	if (format == originFormat || format == PixelFormat::AUTO)
+	if (format == originFormat || format == PixelFormat::Unkonwn)
 	{
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
@@ -264,13 +264,13 @@ GLTexture2D::PixelFormat GLTexture2D::convertDataToFormat(const unsigned char* d
 
 	switch (originFormat)
 	{
-	case PixelFormat::I8:
+	case PixelFormat::L8:
 		return convertI8ToFormat(data, dataLen, format, outData, outDataLen);
-	case PixelFormat::AI88:
+	case PixelFormat::A8L8:
 		return convertAI88ToFormat(data, dataLen, format, outData, outDataLen);
-	case PixelFormat::RGB888:
+	case PixelFormat::R8G8B8:
 		return convertRGB888ToFormat(data, dataLen, format, outData, outDataLen);
-	case PixelFormat::RGBA8888:
+	case PixelFormat::A8R8G8B8:
 		return convertRGBA8888ToFormat(data, dataLen, format, outData, outDataLen);
 	default:
 		OUTPUT_LOG("unsupported conversion from format %d to format %d", static_cast<int>(originFormat), static_cast<int>(format));
@@ -303,7 +303,7 @@ int  GLTexture2D::getPixelsHigh() const
 
 
 
-bool GLTexture2D::initWithData(const void *data, size_t dataLen, GLTexture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize)
+bool GLTexture2D::initWithData(const void *data, size_t dataLen, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize)
 {
 	PE_ASSERT2(dataLen>0 && pixelsWide>0 && pixelsHigh>0, "Invalid size");
 
@@ -318,7 +318,7 @@ bool GLTexture2D::initWithMipmaps(MipmapInfo* mipmaps, int mipmapsNum, PixelForm
 {
 
 	//the pixelFormat must be a certain value
-	PE_ASSERT2(pixelFormat != PixelFormat::NONE && pixelFormat != PixelFormat::AUTO, "the \"pixelFormat\" param must be a certain value!");
+	PE_ASSERT2(pixelFormat != PixelFormat::COUNT && pixelFormat != PixelFormat::Unkonwn, "the \"pixelFormat\" param must be a certain value!");
 	PE_ASSERT2(pixelsWide>0 && pixelsHigh>0, "Invalid size");
 
 	if (mipmapsNum <= 0)
@@ -527,70 +527,70 @@ void GLTexture2D::setAliasTexParameters()
 	PE_CHECK_GL_ERROR_DEBUG();
 }
 
-GLTexture2D::PixelFormat GLTexture2D::convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
+PixelFormat GLTexture2D::convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 {
 	switch (format)
 	{
-	case PixelFormat::RGBA8888:
+	case PixelFormat::A8R8G8B8:
 		*outDataLen = dataLen * 4;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToRGBA8888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB888:
+	case PixelFormat::R8G8B8:
 		*outDataLen = dataLen * 3;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToRGB888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB565:
+	case PixelFormat::R5G6B5:
 		*outDataLen = dataLen * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToRGB565(data, dataLen, *outData);
 		break;
-	case PixelFormat::AI88:
+	case PixelFormat::A8L8:
 		*outDataLen = dataLen * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToAI88(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGBA4444:
+	case PixelFormat::A4R4G4B4:
 		*outDataLen = dataLen * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToRGBA4444(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB5A1:
+	case PixelFormat::A1R5G5B5:
 		*outDataLen = dataLen * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertI8ToRGB5A1(data, dataLen, *outData);
 		break;
 	default:
 		// unsupported conversion or don't need to convert
-		if (format != PixelFormat::AUTO && format != PixelFormat::I8)
+		if (format != PixelFormat::Unkonwn && format != PixelFormat::L8)
 		{
 			OUTPUT_LOG("Can not convert image format PixelFormat::I8 to format ID:%d, we will use it's origin format PixelFormat::I8", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
-		return PixelFormat::I8;
+		return PixelFormat::L8;
 	}
 
 	return format;
 }
 
-GLTexture2D::PixelFormat GLTexture2D::convertAI88ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
+PixelFormat GLTexture2D::convertAI88ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 {
 	switch (format)
 	{
-	case PixelFormat::RGBA8888:
+	case PixelFormat::A8R8G8B8:
 		*outDataLen = dataLen * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToRGBA8888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB888:
+	case PixelFormat::R8G8B8:
 		*outDataLen = dataLen / 2 * 3;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToRGB888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB565:
+	case PixelFormat::R5G6B5:
 		*outDataLen = dataLen;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToRGB565(data, dataLen, *outData);
@@ -600,47 +600,47 @@ GLTexture2D::PixelFormat GLTexture2D::convertAI88ToFormat(const unsigned char* d
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToA8(data, dataLen, *outData);
 		break;
-	case PixelFormat::I8:
+	case PixelFormat::L8:
 		*outDataLen = dataLen / 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToI8(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGBA4444:
+	case PixelFormat::A4R4G4B4:
 		*outDataLen = dataLen;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToRGBA4444(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB5A1:
+	case PixelFormat::A1R5G5B5:
 		*outDataLen = dataLen;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertAI88ToRGB5A1(data, dataLen, *outData);
 		break;
 	default:
 		// unsupported conversion or don't need to convert
-		if (format != PixelFormat::AUTO && format != PixelFormat::AI88)
+		if (format != PixelFormat::Unkonwn && format != PixelFormat::A8L8)
 		{
 			OUTPUT_LOG("Can not convert image format PixelFormat::AI88 to format ID:%d, we will use it's origin format PixelFormat::AI88", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
-		return PixelFormat::AI88;
+		return PixelFormat::A8L8;
 		break;
 	}
 
 	return format;
 }
 
-GLTexture2D::PixelFormat GLTexture2D::convertRGB888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
+PixelFormat GLTexture2D::convertRGB888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 {
 	switch (format)
 	{
-	case PixelFormat::RGBA8888:
+	case PixelFormat::A8R8G8B8:
 		*outDataLen = dataLen / 3 * 4;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToRGBA8888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB565:
+	case PixelFormat::R5G6B5:
 		*outDataLen = dataLen / 3 * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToRGB565(data, dataLen, *outData);
@@ -650,51 +650,51 @@ GLTexture2D::PixelFormat GLTexture2D::convertRGB888ToFormat(const unsigned char*
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToA8(data, dataLen, *outData);
 		break;
-	case PixelFormat::I8:
+	case PixelFormat::L8:
 		*outDataLen = dataLen / 3;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToI8(data, dataLen, *outData);
 		break;
-	case PixelFormat::AI88:
+	case PixelFormat::A8L8:
 		*outDataLen = dataLen / 3 * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToAI88(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGBA4444:
+	case PixelFormat::A4R4G4B4:
 		*outDataLen = dataLen / 3 * 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToRGBA4444(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB5A1:
+	case PixelFormat::A1R5G5B5:
 		*outDataLen = dataLen;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGB888ToRGB5A1(data, dataLen, *outData);
 		break;
 	default:
 		// unsupported conversion or don't need to convert
-		if (format != PixelFormat::AUTO && format != PixelFormat::RGB888)
+		if (format != PixelFormat::Unkonwn && format != PixelFormat::R8G8B8)
 		{
 			OUTPUT_LOG("Can not convert image format PixelFormat::RGB888 to format ID:%d, we will use it's origin format PixelFormat::RGB888", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
-		return PixelFormat::RGB888;
+		return PixelFormat::R8G8B8;
 	}
 	return format;
 }
 
-GLTexture2D::PixelFormat GLTexture2D::convertRGBA8888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
+PixelFormat GLTexture2D::convertRGBA8888ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen)
 {
 
 	switch (format)
 	{
-	case PixelFormat::RGB888:
+	case PixelFormat::R8G8B8:
 		*outDataLen = dataLen / 4 * 3;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToRGB888(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB565:
+	case PixelFormat::R5G6B5:
 		*outDataLen = dataLen / 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToRGB565(data, dataLen, *outData);
@@ -704,36 +704,36 @@ GLTexture2D::PixelFormat GLTexture2D::convertRGBA8888ToFormat(const unsigned cha
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToA8(data, dataLen, *outData);
 		break;
-	case PixelFormat::I8:
+	case PixelFormat::L8:
 		*outDataLen = dataLen / 4;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToI8(data, dataLen, *outData);
 		break;
-	case PixelFormat::AI88:
+	case PixelFormat::A8L8:
 		*outDataLen = dataLen / 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToAI88(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGBA4444:
+	case PixelFormat::A4R4G4B4:
 		*outDataLen = dataLen / 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToRGBA4444(data, dataLen, *outData);
 		break;
-	case PixelFormat::RGB5A1:
+	case PixelFormat::A1R5G5B5:
 		*outDataLen = dataLen / 2;
 		*outData = (unsigned char*)malloc(sizeof(unsigned char) * (*outDataLen));
 		convertRGBA8888ToRGB5A1(data, dataLen, *outData);
 		break;
 	default:
 		// unsupported conversion or don't need to convert
-		if (format != PixelFormat::AUTO && format != PixelFormat::RGBA8888)
+		if (format != PixelFormat::Unkonwn && format != PixelFormat::A8R8G8B8)
 		{
 			OUTPUT_LOG("Can not convert image format PixelFormat::RGBA8888 to format ID:%d, we will use it's origin format PixelFormat::RGBA8888", static_cast<int>(format));
 		}
 
 		*outData = (unsigned char*)data;
 		*outDataLen = dataLen;
-		return PixelFormat::RGBA8888;
+		return PixelFormat::A8R8G8B8;
 	}
 
 	return format;
