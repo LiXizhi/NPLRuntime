@@ -479,7 +479,6 @@ int CEffectFileImpl::totalPasses()const
 {
 	if (m_pEffect == 0)
 	{
-		int i = 0;
 		OUTPUT_LOG("error");
 	}
 	//PE_ASSERT(m_pEffect);

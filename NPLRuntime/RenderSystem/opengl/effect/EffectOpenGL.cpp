@@ -8,6 +8,7 @@
 #include "OpenGL.h"
 #include "GLShaderDefine.h"
 #include "ParseHelper.h"
+#include "texture/TextureOpenGL.h"
 #include "OpenGLWrapper/GLTexture2D.h"
 
 
@@ -300,10 +301,10 @@ EffectOpenGL::~EffectOpenGL()
 	if (m_FxDesc)
 	{
 		auto techniques = m_FxDesc->getTechiques();
-		for (int i = 0; i < techniques.size(); i++)
+		for (size_t i = 0; i < techniques.size(); i++)
 		{
 			auto passes = techniques[i]->getPasses();
-			for (int j = 0; j < passes.size(); j++)
+			for (size_t j = 0; j < passes.size(); j++)
 			{
 				GLuint program = m_ShaderPrograms[i][j];
 				glDeleteProgram(program);
@@ -330,8 +331,8 @@ bool EffectOpenGL::GetDesc(IParaEngine::EffectDesc* pOutDesc)
 {
 	if (!pOutDesc) return false;
 
-	pOutDesc->Techniques = m_FxDesc->getTechiques().size();
-	pOutDesc->Parameters = m_Uniforms.size();
+	pOutDesc->Techniques = (uint16_t)m_FxDesc->getTechiques().size();
+	pOutDesc->Parameters = (uint16_t)m_Uniforms.size();
 
 	return true;
 }
@@ -369,11 +370,11 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 	std::vector<UniformInfoGL> uniforms;
 	auto techniques = pRet->m_FxDesc->getTechiques();
 	auto codeblock = pRet->m_FxDesc->getCodeBlock();
-	for (int idxTech = 0; idxTech < techniques.size(); idxTech++)
+	for (size_t idxTech = 0; idxTech < techniques.size(); idxTech++)
 	{
 		TechniqueNode* tech = techniques[idxTech];
 		auto passes = tech->getPasses();
-		for (int idxPass = 0; idxPass < passes.size(); idxPass++)
+		for (size_t idxPass = 0; idxPass < passes.size(); idxPass++)
 		{
 			auto pass = passes[idxPass];
 			std::string vs_name = find_pass_vertex_shader_name(pass);
@@ -463,7 +464,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 
 	
 
-	for (int i = 0; i < uniforms.size(); i++)
+	for (size_t i = 0; i < uniforms.size(); i++)
 	{
 		UniformInfoGL info = uniforms[i];
 
@@ -512,7 +513,7 @@ bool EffectOpenGL::GetTechniqueDesc(const IParaEngine::TechniqueHandle& handle, 
 	if (!(isValidHandle(handle) && handle.idx >= 0 && handle.idx < m_FxDesc->getTechiques().size())) return false;
 	auto tech = m_FxDesc->getTechiques()[handle.idx];
 	pOutDesc->Name = tech->getName();
-	pOutDesc->Passes = tech->getPasses().size();
+	pOutDesc->Passes = (uint8_t)tech->getPasses().size();
 	return true;
 }
 
@@ -688,11 +689,11 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameterByName(const 
 {
 	ParameterHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
-	for (int i = 0; i < m_Uniforms.size(); i++)
+	for (size_t i = 0; i < m_Uniforms.size(); i++)
 	{
 		if (m_Uniforms[i].name == name)
 		{
-			handle.idx = i;
+			handle.idx = (uint16_t)i;
 			return handle;
 		}
 	}
@@ -908,11 +909,12 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			auto it = m_TextureSlotMap.find(name);
 			if (it != m_TextureSlotMap.end())
 			{
-				//GLuint slot = it->second;
-				//intptr_t* ptr = (intptr_t*)cmd.data;
-				//GLTexture2D* texture = (GLTexture2D*)*ptr;
-				//glUniform1i(location, slot);
-				//texture->bindN(slot);
+				GLuint slot = it->second;
+				intptr_t* ptr = (intptr_t*)cmd.data;
+				IParaEngine::ITexture* texture = (IParaEngine::ITexture*)*ptr;
+				TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
+				glActiveTexture(GL_TEXTURE0 + slot);
+				glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
 			}
 			else {
 				return false;
