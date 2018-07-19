@@ -266,7 +266,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     FontLetterDefinition tempDef;
 
     auto scaleFactor = GL_CONTENT_SCALE_FACTOR();
-    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? GLTexture2D::PixelFormat::AI88 : GLTexture2D::PixelFormat::A8;
+    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? PixelFormat::A8L8 : PixelFormat::A8;
 
     float startY = _currentPageOrigY;
 
@@ -289,7 +289,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                 if (_currentPageOrigY + _lineHeight + _letterPadding + _letterEdgeExtend >= CacheTextureHeight)
                 {
                     unsigned char *data = nullptr;
-                    if (pixelFormat == GLTexture2D::PixelFormat::AI88)
+                    if (pixelFormat == PixelFormat::A8L8)
                     {
                         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
                     }
@@ -357,7 +357,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     }
 
     unsigned char *data = nullptr;
-    if (pixelFormat == GLTexture2D::PixelFormat::AI88)
+    if (pixelFormat == PixelFormat::A8L8)
     {
         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
     }
@@ -443,7 +443,7 @@ void ParaEngine::GLFontAtlas::init()
 		_currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
 		memset(_currentPageData, 0, _currentPageDataSize);
 
-		auto  pixelFormat = outlineSize > 0 ? GLTexture2D::PixelFormat::AI88 : GLTexture2D::PixelFormat::A8;
+		auto  pixelFormat = outlineSize > 0 ? PixelFormat::A8L8 : PixelFormat::A8;
 		texture->initWithData(_currentPageData, _currentPageDataSize,
 			pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
 

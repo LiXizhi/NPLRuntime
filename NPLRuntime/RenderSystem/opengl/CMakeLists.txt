@@ -37,8 +37,6 @@ target_link_libraries(RenderSystemOpenGL PUBLIC
     ${LIBGL}
     ParaEngine
     freetype
-    libjpeg
-    libpng
     GLSLCodeGen
     fxParser
 )

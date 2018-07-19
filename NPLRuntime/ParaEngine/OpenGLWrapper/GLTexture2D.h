@@ -12,56 +12,6 @@ namespace ParaEngine
 	class GLTexture2D : public CRefCountedOne
 	{
 	public:
-		enum class PixelFormat
-		{
-			//! auto detect the type
-			AUTO,
-			//! 32-bit texture: BGRA8888
-			BGRA8888,
-			//! 32-bit texture: RGBA8888
-			RGBA8888,
-			//! 24-bit texture: RGBA888
-			RGB888,
-			//! 16-bit texture without Alpha channel
-			RGB565,
-			//! 8-bit textures used as masks
-			A8,
-			//! 8-bit intensity texture
-			I8,
-			//! 16-bit textures used as masks
-			AI88,
-			//! 16-bit textures: RGBA4444
-			RGBA4444,
-			//! 16-bit textures: RGB5A1
-			RGB5A1,
-			//! 4-bit PVRTC-compressed texture: PVRTC4
-			PVRTC4,
-			//! 4-bit PVRTC-compressed texture: PVRTC4 (has alpha channel)
-			PVRTC4A,
-			//! 2-bit PVRTC-compressed texture: PVRTC2
-			PVRTC2,
-			//! 2-bit PVRTC-compressed texture: PVRTC2 (has alpha channel)
-			PVRTC2A,
-			//! ETC-compressed texture: ETC
-			ETC,
-			//! S3TC-compressed texture: S3TC_Dxt1
-			S3TC_DXT1,
-			//! S3TC-compressed texture: S3TC_Dxt3
-			S3TC_DXT3,
-			//! S3TC-compressed texture: S3TC_Dxt5
-			S3TC_DXT5,
-			//! ATITC-compressed texture: ATC_RGB
-			ATC_RGB,
-			//! ATITC-compressed texture: ATC_EXPLICIT_ALPHA
-			ATC_EXPLICIT_ALPHA,
-			//! ATITC-compressed texture: ATC_INTERPOLATED_ALPHA
-			ATC_INTERPOLATED_ALPHA,
-			//! Default texture format: AUTO
-			DEFAULT = AUTO,
-
-			NONE = -1
-		};
-
 
 		struct PixelFormatInfo {
 
@@ -82,7 +32,7 @@ namespace ParaEngine
 			bool alpha;
 		};
 
-		typedef std::map<GLTexture2D::PixelFormat, const PixelFormatInfo> PixelFormatInfoMap;
+		typedef std::map<PixelFormat, const PixelFormatInfo> PixelFormatInfoMap;
 
 
 		typedef struct _TexParams {
@@ -110,7 +60,7 @@ namespace ParaEngine
 		int getPixelsHigh() const;
 
 
-		bool initWithData(const void *data, size_t dataLen, GLTexture2D::PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
+		bool initWithData(const void *data, size_t dataLen, PixelFormat pixelFormat, int pixelsWide, int pixelsHigh, const Size& contentSize);
 
 		bool updateWithData(const void *data, int offsetX, int offsetY, int width, int height);
 
@@ -128,10 +78,10 @@ namespace ParaEngine
 		void RendererRecreated();
 
 	private:
-		static GLTexture2D::PixelFormat g_defaultAlphaPixelFormat;
+		static PixelFormat g_defaultAlphaPixelFormat;
 
 		/** pixel format of the texture */
-		GLTexture2D::PixelFormat _pixelFormat;
+		PixelFormat _pixelFormat;
 
 		/** width in pixels */
 		int _pixelsWide;
@@ -175,7 +125,7 @@ namespace ParaEngine
 
 		void setGLProgram(GLProgram* shaderProgram);
 
-		static GLTexture2D::PixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen);
+		static PixelFormat convertDataToFormat(const unsigned char* data, size_t dataLen, PixelFormat originFormat, PixelFormat format, unsigned char** outData, size_t* outDataLen);
 
 		static PixelFormat convertI8ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
 		static PixelFormat convertAI88ToFormat(const unsigned char* data, size_t dataLen, PixelFormat format, unsigned char** outData, size_t* outDataLen);
