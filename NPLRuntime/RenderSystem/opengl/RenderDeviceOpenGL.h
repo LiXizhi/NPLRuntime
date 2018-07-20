@@ -5,6 +5,7 @@
 
 namespace ParaEngine
 {
+	class TextureOpenGL;
 	class RenderDeviceOpenGL : public IRenderDevice
 	{
 
@@ -40,7 +41,7 @@ namespace ParaEngine
 		virtual bool Clear(bool color, bool depth, bool stencil) override;
 		virtual bool SetScissorRect(RECT* pRect) override;
 		virtual bool GetScissorRect(RECT* pRect) override;
-		virtual bool Present() override  = 0;
+		virtual bool Present() override;
 		virtual bool SetClearColor(const Color4f& color) override;
 		virtual bool SetClearDepth(const float depth) override;
 		virtual bool SetClearStencil(const int stencil) override;
@@ -77,6 +78,7 @@ namespace ParaEngine
 	protected:
 		void ApplyBlendingModeChange();
 		void InitCpas();
+		void InitFrameBuffer();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -101,7 +103,13 @@ namespace ParaEngine
 
 		RenderDeviceCaps m_DeviceCpas;
 
+		TextureOpenGL* m_backbufferRenderTarget;
+		TextureOpenGL* m_backbufferDepthStencil;
+		IParaEngine::ITexture* m_CurrentRenderTargets[8];
+		IParaEngine::ITexture* m_CurrentDepthStencil;
+		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 
+		GLuint m_FBO;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)

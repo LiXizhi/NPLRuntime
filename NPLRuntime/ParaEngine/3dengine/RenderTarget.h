@@ -166,17 +166,10 @@ namespace ParaEngine
 		DWORD		m_depthStencilFormat;
 		/** render target*/
 		asset_ptr<TextureEntity> m_pCanvasTexture;
-#ifdef USE_DIRECTX_RENDERER
 		IParaEngine::ITexture*      m_pDepthStencilSurface;
 
 		IParaEngine::ITexture* m_pOldRenderTarget;
 		IParaEngine::ITexture* m_pOldZBuffer;
-#elif defined USE_OPENGL_RENDERER
-		GLuint       _FBO;
-		GLuint       _depthRenderBufffer;
-		GLint        _oldFBO;
-		GLint		 _oldRBO;
-#endif
 		ParaViewport m_oldViewport;
 		Vector3 m_vOldRenderOrigin;
 

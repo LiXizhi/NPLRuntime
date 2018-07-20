@@ -17,36 +17,14 @@ namespace ParaEngine
 
 		virtual bool UpdateImage(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels) override;
 		virtual ParaEngine::ImagePtr GetImage(uint32_t level) override;
-
-
 		virtual ParaEngine::ETextureFilter GetMinFilter() const override;
-
-
 		virtual ParaEngine::ETextureFilter GetMagFilter() const override;
-
-
-
 		virtual bool SetMinFilter(ParaEngine::ETextureFilter type) override;
-
-
-	
-
 		virtual bool SetMagFilter(ParaEngine::ETextureFilter type) override;
-
-
 		virtual ParaEngine::ETextureWrapMode GetAddressU() const override;
-
-
 		virtual ParaEngine::ETextureWrapMode GetAddressV() const override;
-
-
-
 		virtual bool SetAddressU(ParaEngine::ETextureWrapMode mode) override;
-
-
 		virtual bool SetAddressV(ParaEngine::ETextureWrapMode mode) override;
-
-
 	public:
 		static TextureOpenGL* Create(uint32_t width,uint32_t height,EPixelFormat format,ETextureUsage usage);
 		static TextureOpenGL* CreateWithImage(ImagePtr image);
@@ -64,5 +42,6 @@ namespace ParaEngine
 		ETextureFilter m_MinFilter;
 		ETextureWrapMode m_AddressU;
 		ETextureWrapMode m_AddressV;
+		ETextureUsage m_Usage;
 	};
 }

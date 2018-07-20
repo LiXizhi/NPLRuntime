@@ -92,6 +92,7 @@ namespace ParaEngine
 		static void SetLoading(bool bIsLoading);
 
 		static IRenderDevice* GetRenderDevice();
+		static IRenderWindow* GetRenderWindow();
 		static EffectManager* GetEffectManager();
 
 		static CAttributesManager* GetAttributesManager();
@@ -101,6 +102,7 @@ namespace ParaEngine
 
 
 		static void SetRenderDevice(IRenderDevice* device);
+		static void SetRenderWindow(IRenderWindow* window);
 
 		/**
 		* @return application handle
@@ -113,6 +115,7 @@ namespace ParaEngine
 
 	private:
 		static IRenderDevice* g_RenderDevice;
+		static IRenderWindow* g_RenderWindow;
 
 	};
 

@@ -81,6 +81,9 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	,m_CurrentIndexBuffer(-1)
 	,m_CurrentVertexBuffer(-1)
 	,m_CurrentVertexDeclaration(0)
+	,m_CurrentDepthStencil(nullptr)
+	,m_backbufferDepthStencil(nullptr)
+	,m_backbufferRenderTarget(nullptr)
 {
 	for (int i = 0;i<8;i++)
 	{
@@ -89,15 +92,23 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 			m_SamplerStates[i][j] = 0;
 		}
 	}
-
+	memset(m_CurrentRenderTargets, 0, sizeof(m_CurrentRenderTargets));
 
 	InitCpas();
+	InitFrameBuffer();
 	
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 {
 	GL::ClearCache();
+	for (auto pRes : m_Resources)
+	{
+		delete pRes;
+	}
+	m_Resources.clear();
+
+	glDeleteFramebuffers(1, &m_FBO);
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -605,6 +616,22 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 	return true;
 }
 
+
+bool ParaEngine::RenderDeviceOpenGL::Present()
+{
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+	GLint width = m_backbufferRenderTarget->GetWidth();
+	GLint height = m_backbufferRenderTarget->GetHeight();
+
+	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	PE_CHECK_GL_ERROR_DEBUG();
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+	return true;
+}
+
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
 	glClearColor(color.r, color.g, color.b, color.a);
@@ -641,13 +668,38 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t wi
 
 bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
 {
-	return false;
+	if (target == m_CurrentRenderTargets[index]) return true;
+	m_CurrentRenderTargets[index] = target;
+
+	GLuint id = 0;
+	if (target != nullptr)
+	{
+		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
+		id = tex->GetTextureID();
+	}
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
+
+	return true;
 }
 
 
 bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* target)
 {
-	return false;
+
+	if (target == m_CurrentDepthStencil) return true;
+	m_CurrentDepthStencil = target;
+
+
+
+	GLuint id = 0;
+	if (target != nullptr)
+	{
+		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
+		id = tex->GetTextureID();
+	}
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
+
+	return true;
 }
 
 
@@ -659,25 +711,32 @@ const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceOpenGL::GetCaps()
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetRenderTarget(uint32_t index)
 {
-	return nullptr;
+	if (m_CurrentRenderTargets[index])
+	{
+		m_CurrentRenderTargets[index]->AddRef();
+	}
+	return m_CurrentRenderTargets[index];
 }
 
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetDepthStencil()
 {
-	return nullptr;
+	m_CurrentDepthStencil->AddRef();
+	return m_CurrentDepthStencil;
 }
 
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferRenderTarget()
 {
-	return nullptr;
+	m_backbufferRenderTarget->AddRef();
+	return m_backbufferRenderTarget;
 }
 
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil()
 {
-	return nullptr;
+	m_backbufferDepthStencil->AddRef();
+	return m_backbufferDepthStencil;
 }
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
@@ -722,5 +781,33 @@ void ParaEngine::RenderDeviceOpenGL::InitCpas()
 	m_DeviceCpas.ScissorTest = true;
 	m_DeviceCpas.Stencil = true;
 	m_DeviceCpas.NumSimultaneousRTs = GL_MAX_COLOR_ATTACHMENTS;
+}
+
+void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
+{
+
+	auto pWindow = CGlobals::GetRenderWindow();
+
+
+	m_backbufferRenderTarget = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::A8R8G8B8, ETextureUsage::RenderTarget);
+	m_backbufferDepthStencil = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::D24S8, ETextureUsage::DepthStencil);
+	
+	
+	glGenFramebuffers(1, &m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_backbufferRenderTarget->GetTextureID(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		assert(false);
+	}
+
+	m_Resources.push_back(m_backbufferDepthStencil);
+	m_Resources.push_back(m_backbufferRenderTarget);
+
+	m_CurrentDepthStencil = m_backbufferDepthStencil;
+	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 }
 

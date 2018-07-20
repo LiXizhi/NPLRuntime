@@ -12,6 +12,7 @@ ParaEngine::TextureOpenGL::TextureOpenGL()
 	, m_MinFilter(ETextureFilter::Linear)
 	, m_AddressU(ETextureWrapMode::Clamp)
 	, m_AddressV(ETextureWrapMode::Clamp)
+	, m_Usage(ETextureUsage::Default)
 {
 
 }
@@ -256,6 +257,9 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 		break;
 	case EPixelFormat::A8L8:
 		glFormat = GL_LUMINANCE_ALPHA;
+	case EPixelFormat::D24S8:
+		glFormat = GL_DEPTH24_STENCIL8;
+		break;
 	default:
 		break;
 	}
@@ -265,7 +269,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glFormat, GL_UNSIGNED_BYTE,nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, usage == ETextureUsage::DepthStencil ? GL_DEPTH_STENCIL : glFormat, usage == ETextureUsage::DepthStencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_BYTE,nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -277,18 +281,18 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-
+	
 	TextureOpenGL* tex = new TextureOpenGL();
 
 	tex->m_TextureID = textureID;
 	tex->m_Width = width;
 	tex->m_Height = height;
 	tex->m_GLFormat = glFormat;
+	tex->m_Usage = usage;
+	tex->m_Format = format;
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+
 	return tex;
-
-	
-
 }
 
 ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr image)

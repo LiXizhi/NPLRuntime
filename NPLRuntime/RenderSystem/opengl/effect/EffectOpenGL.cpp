@@ -9,9 +9,6 @@
 #include "GLShaderDefine.h"
 #include "ParseHelper.h"
 #include "texture/TextureOpenGL.h"
-#include "OpenGLWrapper/GLTexture2D.h"
-
-
 
 using namespace ParaEngine;
 using namespace IParaEngine;

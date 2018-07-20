@@ -56,6 +56,7 @@ namespace ParaEngine
 
 
 	IRenderDevice* CGlobals::g_RenderDevice = nullptr;
+	IRenderWindow* CGlobals::g_RenderWindow = nullptr;
 
 }
 using namespace ParaEngine;
@@ -277,9 +278,21 @@ CMoviePlatform* CGlobals::GetMoviePlatform()
 	return &CMoviePlatform::GetSingleton();
 }
 
+
+ParaEngine::IRenderWindow* ParaEngine::CGlobals::GetRenderWindow()
+{
+	return CGlobals::g_RenderWindow;
+}
+
 void ParaEngine::CGlobals::SetRenderDevice(IRenderDevice * device)
 {
 	CGlobals::g_RenderDevice = device;
+}
+
+
+void ParaEngine::CGlobals::SetRenderWindow(IRenderWindow* window)
+{
+	CGlobals::g_RenderWindow = window;
 }
 
 HWND CGlobals::GetAppHWND()

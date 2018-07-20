@@ -149,6 +149,7 @@ bool ParaEngine::CParaEngineAppBase::InitApp(IRenderWindow* pWindow, const char*
 	VerifyCommandLine(sCommandLine, cmd);
 	SetAppCommandLine(cmd.c_str());
 	m_pRenderWindow = pWindow;
+	CGlobals::SetRenderWindow(pWindow);
 	InitCommandLineParams();
 	CStaticInitRes::StaticInit();
 	srand((unsigned long)time(NULL));

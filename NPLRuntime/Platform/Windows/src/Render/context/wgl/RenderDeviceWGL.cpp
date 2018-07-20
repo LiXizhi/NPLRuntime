@@ -13,6 +13,7 @@ ParaEngine::RenderDeviceOpenWGL::~RenderDeviceOpenWGL()
 
 bool ParaEngine::RenderDeviceOpenWGL::Present()
 {
+	if (!RenderDeviceOpenGL::Present()) return false;
 	bool ret = SwapBuffers(m_WGLContext);
 	return ret;
 }
