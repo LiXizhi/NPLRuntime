@@ -520,6 +520,72 @@ bool ParaEngine::TextureEntityOpenGL::SaveToFile(const char* filename, PixelForm
 	return false;
 }
 
+bool ParaEngine::TextureEntityOpenGL::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture /*= nullptr*/)
+{
+	GLTexture2D* texture = new GLTexture2D();
+	{
+		// tricky: this fixed a cocos bug inside initWithImage() where a previous opengl error will lead to loading empty image. 
+		auto errorCode = glGetError();
+		if (errorCode) {
+			OUTPUT_LOG("unknown opengl error: 0x%04X before LoadTexture: \n", errorCode);
+		}
+	}
+
+	const ParaImage& image = *pImage;
+
+	auto format = dwTextureFormat;
+	if (texture && texture->initWithImage(pImage, format))
+	{
+		if (texture->getPixelsWide() == 0) {
+			OUTPUT_LOG("warn: texture %d invalid size:%s (size:%d %d, image_mipmap: %d, image_size:%d,%d, format:%d)\n", (int)(texture->getName()), GetKey().c_str(), texture->getPixelsWide(), texture->getPixelsHigh(), image.getNumberOfMipmaps(), image.getWidth(), image.getHeight(), image.getRenderFormat());
+		}
+	}
+	else
+	{
+		OUTPUT_LOG("error: Couldn't create texture for file:%s \n", GetKey().c_str());
+	}
+
+	if (texture)
+	{
+		if (texture == NULL || texture->getName() == 0)
+		{
+
+		}
+		else
+		{
+			if (GetKey().find("blocks") != string::npos)
+			{
+				// if texture filename contains "blocks" either in folder name or filename, we will force POINT mip mapping
+				//Texture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
+				GLTexture2D::TexParams s_block_texture_params = { GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT };
+				texture->setTexParameters(s_block_texture_params);
+				SetSamplerStateBlocky(true);
+			}
+			else
+			{
+				GL::bindTexture2D(texture->getName());
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				SetSamplerStateBlocky(false);
+			}
+		}
+		if (ppTexture != NULL)
+		{
+			if (texture)
+				texture->addref();
+			(*ppTexture) = (void*)texture;
+		}
+		else
+		{
+			SetInnerTexture(texture);
+		}
+		SAFE_RELEASE(texture);
+		return true;
+	}
+
+	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
+	return false;
+}
 
 bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, PixelFormat dwTextureFormat /*= D3DFMT_UNKNOWN*/, UINT nMipLevels, void** ppTexture)
 {
@@ -600,6 +666,7 @@ bool ParaEngine::TextureEntityOpenGL::LoadFromImage(ImageEntity * imageEntity, P
 	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
 	return false;
 }
+
 
 
 HRESULT ParaEngine::TextureEntityOpenGL::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, PixelFormat dwTextureFormat, void** ppTexture /*= NULL*/)

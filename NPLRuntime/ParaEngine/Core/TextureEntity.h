@@ -4,6 +4,7 @@
 namespace ParaEngine
 {
 	class ImageEntity;
+	class ParaImage;
 
 	struct ImageExtendInfo
 	{
@@ -138,6 +139,9 @@ namespace ParaEngine
 		/** raw data size */
 		int32 m_nRawDataSize;
 
+		/*image data*/
+		ParaImage* m_pImage;
+
 		// this value will be increased by one every time GetTexture() or GetSurface() is called. 
 		int32 m_nHitCount;
 		// the color key(default to 0):  Color value to replace with transparent black, or 0 to disable the color key. This is always a 32-bit ARGB color, 
@@ -172,7 +176,9 @@ namespace ParaEngine
 		* NOTE: It will not convert the pvr image file.
 		* @param dwTextureFormat: if 0, we will use the image file format. 
 		*/
-		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = nullptr);
+
+		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr);
 
 
 		/** this function is mostly used internally.
@@ -213,6 +219,17 @@ namespace ParaEngine
 
 		/** whether the asset is being loaded. */
 		bool IsPending();
+
+
+		/** set image from which to load the texture. image ownership is transfered to this entity. the caller should never delete the image. instead
+		this entity will delete the image. */
+		void SetImage(ParaImage* pImage);
+		/* set raw texture data form which to load the texture, data will load by ParaImage */
+		bool SetRawDataForImage(const char* pData, int nSize, bool bDeleteData = true);
+		/* get image */
+		const ParaImage* GetImage() const;
+		/* */
+		void SwapImage(TextureEntity* other);
 
 		/** set raw texture data from which to load the texture. data ownership is transfered to this entity. the caller should never delete the data. instead
 		this entity will delete the data. */

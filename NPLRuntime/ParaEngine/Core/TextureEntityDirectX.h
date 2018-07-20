@@ -1,5 +1,6 @@
 #pragma once
 #include "TextureEntity.h"
+#include "ParaImage.h"
 
 namespace ParaEngine
 {
@@ -140,6 +141,9 @@ namespace ParaEngine
 		/** create a texture entity from memory buffer. */
 		static TextureEntity* CreateTexture(const uint8 * pTexels, int width, int height, int rowLength, int bytesPerPixel, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed, DWORD nFormat = 0);
 		static TextureEntity* CreateTexture(const char* pFileName, uint32 nMipLevels = 0, EPoolType dwCreatePool = EPoolType::Managed);
+
+		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr) override;
+
 	};
 
 	// the manager class

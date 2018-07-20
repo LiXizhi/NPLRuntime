@@ -233,11 +233,19 @@ void CParaXModel::LoadTextures()
 		if (pTexture)
 		{
 			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
-			if (pTexture != textures[i] && pTexture->GetRawData())
+			if (pTexture != textures[i] )
 			{
-				textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
-				// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
-				pTexture->GiveupRawDataOwnership();
+				if (pTexture->GetRawData())
+				{
+					textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
+					// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
+					pTexture->GiveupRawDataOwnership();
+				}
+
+				if (pTexture->GetImage())
+				{
+					pTexture->SwapImage(textures[i].get());
+				}
 			}
 		}
 	}
