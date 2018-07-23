@@ -312,12 +312,18 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
 {
 
-	if (!texture) return false;
+	if (texture)
+	{
 
-	TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
+		TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
+		glActiveTexture(GL_TEXTURE0 + stage);
+		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
 
-	glActiveTexture(GL_TEXTURE0 + stage);
-	glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+	}
+	else {
+		glActiveTexture(GL_TEXTURE0 + stage);
+		glBindTexture(GL_TEXTURE_2D,0);
+	}
 
 	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
@@ -568,7 +574,7 @@ ParaViewport ParaEngine::RenderDeviceOpenGL::GetViewport()
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const ParaViewport& viewport)
 {
 	m_CurrentViewPort = viewport;
-	glViewport((GLint)(viewport.X), (GLint)(m_RenderTargetHeight - viewport.Y - (GLsizei)viewport.Height), (GLsizei)(viewport.Width), (GLsizei)(viewport.Height));
+	glViewport((GLint)(viewport.X), (GLint)viewport.Y ,(GLsizei)(viewport.Width), (GLsizei)(viewport.Height));
 	return true;
 }
 
@@ -625,15 +631,19 @@ bool ParaEngine::RenderDeviceOpenGL::Present()
 	GLint width = m_backbufferRenderTarget->GetWidth();
 	GLint height = m_backbufferRenderTarget->GetHeight();
 
-	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
-	PE_CHECK_GL_ERROR_DEBUG();
+	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	return true;
 }
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
+	
+	PE_CHECK_GL_ERROR_DEBUG();
+	
+	
 	glClearColor(color.r, color.g, color.b, color.a);
 	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
@@ -668,6 +678,7 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t wi
 
 bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
 {
+
 	if (target == m_CurrentRenderTargets[index]) return true;
 	m_CurrentRenderTargets[index] = target;
 
@@ -677,19 +688,29 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine
 		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
 		id = tex->GetTextureID();
 	}
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		assert(false);
+	}
 
+	ParaViewport vp;
+	vp.X = 0;
+	vp.Y = 0;
+	vp.Width = target->GetWidth();
+	vp.Height = target->GetHeight();
+	vp.MinZ = 1;
+	vp.MaxZ = 0;
+	SetViewport(vp);
 	return true;
 }
 
 
 bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* target)
 {
-
 	if (target == m_CurrentDepthStencil) return true;
 	m_CurrentDepthStencil = target;
-
-
 
 	GLuint id = 0;
 	if (target != nullptr)
@@ -697,8 +718,12 @@ bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* targ
 		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
 		id = tex->GetTextureID();
 	}
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
-
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		assert(false);
+	}
 	return true;
 }
 
@@ -791,8 +816,8 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 
 	m_backbufferRenderTarget = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::A8R8G8B8, ETextureUsage::RenderTarget);
 	m_backbufferDepthStencil = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::D24S8, ETextureUsage::DepthStencil);
-	
-	
+
+
 	glGenFramebuffers(1, &m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 
@@ -809,5 +834,11 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
+
+
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 }
 

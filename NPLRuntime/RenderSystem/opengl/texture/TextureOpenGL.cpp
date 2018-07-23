@@ -8,8 +8,8 @@ ParaEngine::TextureOpenGL::TextureOpenGL()
 	, m_Height(0)
 	, m_Format(EPixelFormat::Unkonwn)
 	, m_GLFormat(0)
-	, m_MagFilter(ETextureFilter::Linear)
-	, m_MinFilter(ETextureFilter::Linear)
+	, m_MagFilter(ETextureFilter::Point)
+	, m_MinFilter(ETextureFilter::Point)
 	, m_AddressU(ETextureWrapMode::Clamp)
 	, m_AddressV(ETextureWrapMode::Clamp)
 	, m_Usage(ETextureUsage::Default)
@@ -53,7 +53,7 @@ bool ParaEngine::TextureOpenGL::UpdateImage(uint32_t level, uint32_t xoffset, ui
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pixels);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 0);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 	return true;
 }
 
@@ -271,8 +271,8 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, usage == ETextureUsage::DepthStencil ? GL_DEPTH_STENCIL : glFormat, usage == ETextureUsage::DepthStencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_BYTE,nullptr);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
