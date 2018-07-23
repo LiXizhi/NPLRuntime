@@ -31,6 +31,7 @@ namespace ParaEngine
 		* @param dwTextureFormat: if 0, we will use the image file format.
 		*/
 		virtual bool LoadFromImage(ImageEntity * image, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
+		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr) override;
 
 		/** load from memory buffer.
 		* @param ppTexture: if NULL, we will save to current asset, if not we will save to this object.

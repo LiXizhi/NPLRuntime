@@ -14,7 +14,7 @@ namespace ParaEngine
 		float       MinZ;         /* Min/max of clip Volume */
 		float       MaxZ;
 	public:
-		ParaViewport() :X(0), Y(0), Width(0), Height(0), MinZ(0.f), MaxZ(0.f){};
+		ParaViewport() :X(0), Y(0), Width(0), Height(0), MinZ(0.f), MaxZ(1.f){};
 
 		//ParaViewport(const D3DVIEWPORT9& v){
 		//	*this = reinterpret_cast<const ParaViewport&>(v);
