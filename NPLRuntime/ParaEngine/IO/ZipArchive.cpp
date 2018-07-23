@@ -288,6 +288,8 @@ void CZipArchive::SetRootDirectory( const string& filename )
 
 void CZipArchive::ReBuild()
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	if (m_bDirty)
 	{
 
@@ -904,8 +906,7 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 		}
 	}
 
-
-
+	
 	ReBuild();
 
 	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)
