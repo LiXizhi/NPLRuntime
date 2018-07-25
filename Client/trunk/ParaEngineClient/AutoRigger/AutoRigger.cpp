@@ -4,49 +4,391 @@
 #include "Matcher.h"
 #include "ParaXModel/ParaXBone.h"
 #include "ParaXModel/ParaXModel.h"
+#include "skeleton.h"
+
+#include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/surface/gp3.h>
 
 #include <thread>
 #include <functional>
 
+#include <fstream>
+
 using namespace ParaEngine;
+
+const float VERY_SMALL = 1e-8;
+
+bool RayIntersectsTriangle(Vector3 rayOrigin,
+	Vector3 rayVector,
+	int tri,
+	CParaXModel* xmodel,
+	Vector3& outIntersectionPoint)
+{
+	const float EPSILON = 0.0000001;
+	Vector3 v0 = xmodel->m_origVertices[xmodel->m_indices[tri++]].pos;
+	Vector3 v1 = xmodel->m_origVertices[xmodel->m_indices[tri++]].pos;
+	Vector3 v2 = xmodel->m_origVertices[xmodel->m_indices[tri]].pos;
+	Vector3 e1, e2, h, s, q;
+	float a, f, u, v;
+	e1 = v1 - v0;
+	e2 = v2 - v0;
+	h = rayVector.crossProduct(e2);
+	a = e1.dotProduct(h);
+	if (a > -EPSILON && a < EPSILON)
+		return false;
+	f = 1 / a;
+	s = rayOrigin - v0;
+	u = f * (s.dotProduct(h));
+	if (u < 0.0 || u > 1.0)
+		return false;
+	q = s.crossProduct(e1);
+	v = f * rayVector.dotProduct(q);
+	if (v < 0.0 || u + v > 1.0)
+		return false;
+	// At this stage we can compute t to find out where the intersection point is on the line.
+	float t = f * e2.dotProduct(q);
+	if (t > EPSILON) // ray intersection
+	{
+		outIntersectionPoint = rayOrigin + rayVector * t;
+		return true;
+	}
+	else // This means that there is a line intersection but not a ray intersection.
+		return false;
+}
+
+struct MMData
+{
+	float data[4];
+};
+typedef std::vector<MMData> FieldData;
+
+void ExtractPoints(TreeType::Node* node, FieldData& fieldData)
+{
+	if (node == nullptr) return;
+	for (int i = 0; i < 8; ++i) {
+		MMData e;
+		const PVector3& v = node->getRect().getCorner(i);
+		e.data[0] = (float)v[0];
+		e.data[1] = (float)v[1];
+		e.data[2] = (float)v[2];
+		e.data[3] = (float)node->getValue(i);
+		fieldData.push_back(e);
+	}
+	for (int i = 0; i < 8; ++i) {
+		ExtractPoints(node->getChild(i), fieldData);
+	}
+}
 
 class RigHelper
 {
 public:
-	static Mesh* ExtractPataXMesh(CParaXModel* xmodel)
+	static void OutputTriangles(const CParaXModel* xmodel, const std::string& fileName)
 	{
-		Mesh* pMesh = new Mesh();	
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < xmodel->m_objNum.nIndices; ++i) {
+			int j = xmodel->m_indices[i];
+			fout.write((char*)&(xmodel->m_origVertices[j].pos.x), sizeof(float));
+			fout.write((char*)&(xmodel->m_origVertices[j].pos.y), sizeof(float));
+			fout.write((char*)&(xmodel->m_origVertices[j].pos.z), sizeof(float));
+		}
+		fout.close();
+	}
+
+	static void OutputTriangles(const Mesh* pMesh, const std::string& fileName)
+	{
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
+		fout.open(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < pMesh->edges.size(); ++i) {
+			int j = pMesh->edges[i].vertex;
+			float x = (float)pMesh->vertices[j].pos[0];
+			float y = (float)pMesh->vertices[j].pos[1];
+			float z = (float)pMesh->vertices[j].pos[2];
+
+			fout.write((char*)&x, sizeof(float));
+			fout.write((char*)&y, sizeof(float));
+			fout.write((char*)&z, sizeof(float));
+		}
+		fout.close();
+	}
+
+	static void OutputVertices(const std::vector<PVector3>& vertices, const std::string& fileName, PVector3 offset = PVector3(), float scale = 1.0)
+	{
+		std::ofstream fout;
+		fout.open(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < (int)vertices.size(); ++i) {
+			//vertices[i] = offset + vertices[i] * scale;
+			float x = (float)vertices[i][0] * scale + offset[0];
+			float y = (float)vertices[i][1] * scale + offset[0];
+			float z = (float)vertices[i][2] * scale + offset[0];
+
+			fout.write((char*)&x, sizeof(float));
+			fout.write((char*)&y, sizeof(float));
+			fout.write((char*)&z, sizeof(float));
+		}
+		fout.close();
+	}
+
+	static void OutputDistantField(TreeType* df)
+	{
+		FieldData data;
+		ExtractPoints(df, data);
+
+		// output original triangles
+		std::string fileName("D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.field");
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < data.size(); ++i) {
+			fout.write((char*)data[i].data, sizeof(MMData));
+		}
+
+		fout.close();
+	}
+
+	static void OutputBoneRelation(const Skeleton* given, const std::string& fileName)
+	{
+		std::ofstream fout;
+		fout.open(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < given->fGraph().verts.size(); ++i) {
+			int j = given->fPrev()[i];
+			if (j >= 0) {
+				float x = (float)given->fGraph().verts[i][0];
+				float y = (float)given->fGraph().verts[i][1];
+				float z = (float)given->fGraph().verts[i][2];
+
+				fout.write((char*)&x, sizeof(float));
+				fout.write((char*)&y, sizeof(float));
+				fout.write((char*)&z, sizeof(float));
+
+				x = (float)given->fGraph().verts[j][0];
+				y = (float)given->fGraph().verts[j][1];
+				z = (float)given->fGraph().verts[j][2];
+
+				fout.write((char*)&x, sizeof(float));
+				fout.write((char*)&y, sizeof(float));
+				fout.write((char*)&z, sizeof(float));
+			}
+		}
+		fout.close();
+	}
+
+	static void OutputBoneRelation(const CParaXModel* skeletonModel, const std::string& fileName)
+	{
+		std::ofstream fout;
+		fout.open(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+			int j = skeletonModel->bones[i].GetParentIndex();
+			if (j >= 0) {
+				float x = skeletonModel->bones[i].pivot.x;
+				float y = skeletonModel->bones[i].pivot.y;
+				float z = skeletonModel->bones[i].pivot.z;
+
+				fout.write((char*)&x, sizeof(float));
+				fout.write((char*)&y, sizeof(float));
+				fout.write((char*)&z, sizeof(float));
+
+				x = skeletonModel->bones[j].pivot.x;
+				y = skeletonModel->bones[j].pivot.y;
+				z = skeletonModel->bones[j].pivot.z;
+
+				fout.write((char*)&x, sizeof(float));
+				fout.write((char*)&y, sizeof(float));
+				fout.write((char*)&z, sizeof(float));
+			}
+		}
+		fout.close();
+	}
+
+	static void OutputSkinningRelation(const CParaXModel* targetModel, const std::string& fileName)
+	{
+		std::ofstream fout;
+		fout.open(fileName, std::ios::binary | std::ios::out);
+		for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+			if (targetModel->m_origVertices[i].bones[0] > 200) {
+				// beyond 200 means this bone is unbinded
+				continue;
+			}
+			float x = (float)targetModel->m_origVertices[i].pos[0];
+			float y = (float)targetModel->m_origVertices[i].pos[1];
+			float z = (float)targetModel->m_origVertices[i].pos[2];
+
+			fout.write((char*)&x, sizeof(float));
+			fout.write((char*)&y, sizeof(float));
+			fout.write((char*)&z, sizeof(float));
+
+			Vector3 piviot = targetModel->bones[targetModel->m_origVertices[i].bones[0]].pivot;
+
+			x = piviot.x;
+			y = piviot.y;
+			z = piviot.z;
+
+			fout.write((char*)&x, sizeof(float));
+			fout.write((char*)&y, sizeof(float));
+			fout.write((char*)&z, sizeof(float));
+		}
+		fout.close();
+	}
+
+	static Mesh* ExtractParaXMesh(CParaXModel* xmodel)
+	{
+		// squeeze points that very close to each other into one 
 		int numVert = xmodel->m_objNum.nVertices;
-		pMesh->vertices.resize(numVert);
+		float refDis = xmodel->m_origVertices[0].pos.distance(xmodel->m_origVertices[1].pos)*0.1;
+		std::vector<int> idx(numVert, 0);
 		for (int i = 0; i < numVert; ++i) {
 			Vector3& v = xmodel->m_origVertices[i].pos;
-			pMesh->vertices[i].pos = PVector3(v.x, v.y, v.z);
-		}
-
-		int numEdges = xmodel->m_objNum.nIndices;
-		pMesh->edges.resize(numEdges);
-		for (int i = 0; i < numEdges; i++) {
-			int ver = (i - i % 3) + (i + 1) % 3;
-			pMesh->edges[i].vertex = xmodel->m_indices[ver];
-		}
-
-		for (int i = 0; i < (int)pMesh->edges.size(); ++i) { //make sure all vertex indices are valid
-			if (pMesh->edges[i].vertex < 0 || pMesh->edges[i].vertex >= numVert) {
-				Debugging::out() << "Error: invalid vertex index " << pMesh->edges[i].vertex << endl;
-				OUT;
+			idx[i] = i;
+			for (int j = i - 1; j >= 0; --j) {
+				Vector3& pre = xmodel->m_origVertices[j].pos;
+				if (idx[j] == j && pre.distance(v) < refDis) {
+					idx[i] = j;
+					break;
+				}
 			}
 		}
 
+		// populate the squeezed points into mesh
+		Mesh* pMesh = new Mesh();
+		for (int i = 0; i < idx.size(); ++i) {
+			if (idx[i] != i) continue;
+			MeshVertex vertex;
+			Vector3& v = xmodel->m_origVertices[i].pos;
+			vertex.pos = PVector3(v.x, v.y, v.z);// Y up
+			pMesh->vertices.push_back(vertex);
+		}
+
+		// fix the indices after squeezing
+		std::vector<int> fixValue(idx.size(), 0);
+		for (int i = 0, j = 0; i < idx.size(); ++i) {
+			fixValue[i] = j;
+			if (idx[i] != i)++j;
+		}
+		std::vector<int> newIndices(xmodel->m_objNum.nIndices, -1);
+		for (int i = 0; i < xmodel->m_objNum.nIndices; ++i) {
+			int j = idx[xmodel->m_indices[i]];
+			newIndices[i] = j - fixValue[j];
+		}
+
+		// output the squeezed points for visulization
+		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.vert";
+		RigHelper::OutputTriangles(pMesh, fileName);
+
+		struct TRIANGLE {
+			TRIANGLE() :_computedNormal(false) {}
+
+			void ComputeNormal(Mesh* pMesh)
+			{
+				if (!_computedNormal) {
+					PVector3& p01 = pMesh->vertices[_v[1]].pos - pMesh->vertices[_v[0]].pos;
+					PVector3& p02 = pMesh->vertices[_v[2]].pos - pMesh->vertices[_v[0]].pos;
+					_n = (p01 % p02).normalize();
+					_computedNormal = true;
+				}
+			}
+
+			bool IsOverlap(const TRIANGLE& rhs, Mesh* pMesh)
+			{
+				int sharedVerts = 0;
+				int M[3] = { -1, -1, -1 };
+				int N[3] = { -1, -1, -1 };
+				for (int i = 0; i < 3 && sharedVerts < 2; ++i) {
+					for (int j = 0; j < 3; ++j) {
+						if (_v[i] == rhs._v[j]) {
+							++sharedVerts;
+							M[i] = j;
+							N[j] = i;
+						}
+					}
+				}
+
+				if (sharedVerts < 2) {
+					return false;
+				}
+				else if (sharedVerts > 2) {
+					return true;
+				}
+				else {
+					PVector3 p0, p1, p2;
+					for (int i = 0; i < 3; ++i) {
+						if (M[i] > 0) p0 = pMesh->vertices[_v[i]].pos;
+						if (M[i] < 0) p1 = pMesh->vertices[_v[i]].pos;
+						if (N[i] < 0) p2 = pMesh->vertices[rhs._v[i]].pos;
+					}
+					PVector3& cross = _n % rhs._n;
+					double dot = (p1 - p0) * (p2 - p0);
+					return cross.length() < VERY_SMALL && dot > VERY_SMALL ? true : false;
+				}
+
+
+			}
+			int _e[3];
+			int _v[3];
+			PVector3 _n;
+			bool _computedNormal;
+		};
+
+		// populate the original edges and triangles
+		std::vector<MeshEdge> originalEdges(newIndices.size(), MeshEdge());
+		std::vector<TRIANGLE> tris(newIndices.size() / 3, TRIANGLE());
+		for (int i = 0; i < newIndices.size(); ++i) {
+			int id = i / 3;
+			originalEdges[i].vertex = newIndices[i];
+			tris[id]._e[i % 3] = i;
+			tris[id]._v[i % 3] = newIndices[i];
+		}
+
+		// compute triangles normals
+		for (int i = 0; i < tris.size(); ++i) {
+			tris[i].ComputeNormal(pMesh);
+		}
+
+		// mark the triangles to remove
+		std::vector<bool> TrisToRemove(tris.size(), false);
+		for (int i = 0; i < tris.size(); ++i) {
+			if (TrisToRemove[i])continue;
+			int k = -1;
+			for (int j = i + 1; j < tris.size(); ++j) {
+				if (TrisToRemove[j])continue;
+				if (tris[i].IsOverlap(tris[j], pMesh)) {
+					k = j;
+					break;
+				}
+			}
+			if (k > 0) {
+				TrisToRemove[i] = true;
+				TrisToRemove[k] = true;
+			}
+		}
+
+		// mark the edges to remove
+		std::vector<bool> edgesToRemove(originalEdges.size(), false);
+		for (int i = 0; i < tris.size(); ++i) {
+			if (TrisToRemove[i]) {
+				edgesToRemove[tris[i]._e[0]] = true;
+				edgesToRemove[tris[i]._e[1]] = true;
+				edgesToRemove[tris[i]._e[2]] = true;
+			}
+		}
+
+		// populate the edges to pMesh after removing the undesired ones
+		for (int i = 0; i < originalEdges.size(); ++i) {
+			if (edgesToRemove[i])continue;
+			pMesh->edges.push_back(originalEdges[i]);
+		}
+
 		pMesh->fixDupFaces();
-
 		pMesh->computeTopology();
+		if (!pMesh->integrityCheck()) {
+			// say something
+		}
 
-		if (pMesh->integrityCheck())
-			int a = 0;// place holder
-		else
-			int b = 0;// place holder
-		pMesh->normalizeBoundingBox();
 		pMesh->computeVertexNormals();
+		pMesh->normalizeBoundingBox();
+
+
+		// output the trimed triangles
+		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.mesh";
+		RigHelper::OutputTriangles(pMesh, fileName);
 
 		return pMesh;
 	}
@@ -58,14 +400,14 @@ public:
 		std::vector<int> refMap;
 		refMap.resize(numBones);
 		for (int i = 0; i < numBones; ++i) {
-			int parent = (bones+i)->parent;
+			int parent = (bones + i)->parent;
 			++refMap[bones[i].parent];
 		}
-		
+
 		std::vector<Bone*> orderedBones;
 		orderedBones.reserve(numBones);
 		for (int i = 0; i < refMap.size(); ++i) {
-			int index = -1,  val = -1;
+			int index = -1, val = -1;
 			for (int j = 0; j < refMap.size(); ++j) {
 				if (val <= refMap[j]) {
 					val = refMap[j];
@@ -75,6 +417,7 @@ public:
 			orderedBones.push_back(&bones[index]);
 			refMap[index] = -2;
 		}
+
 		Skeleton* skeleton = new Skeleton();
 		for (int i = 0; i < numBones; ++i) {
 			Bone* bone = orderedBones[i];
@@ -83,29 +426,104 @@ public:
 				parentName = bones[bone->GetParentIndex()].GetName();
 			}
 			const Vector3& v = bone->GetPivotPoint();
-			PVector3 pivot(v.x, v.y, v.z);
+			PVector3 pivot(v.x, v.y, v.z);// Y up
+
 			skeleton->makeJoint(bone->GetName(), pivot, parentName);
 		}
 
 		//symmetry
-		//makeSymmetric("lthigh", "rthigh");
-		//makeSymmetric("lhknee", "rhknee");
-		//makeSymmetric("lhfoot", "rhfoot");
+		skeleton->makeSymmetric("Left_h_shoulder", "Right_h_shoulder");
+		skeleton->makeSymmetric("Left_f_shoulder", "Right_f_shoulder");
+		skeleton->makeSymmetric("Left_h_foot", "Right_h_foot");
+		skeleton->makeSymmetric("Left_f_foot", "Right_f_foot");
 
 		skeleton->initCompressed();
 
-		//setFoot("lhfoot");
-		//setFoot("rhfoot");
-		//setFoot("lffoot");
-		//setFoot("rffoot");
+		skeleton->setFoot("Left_f_foot");
+		skeleton->setFoot("Left_h_foot");
+		skeleton->setFoot("Right_h_foot");
+		skeleton->setFoot("Right_f_foot");
 
-		//setFat("hips");
-		//setFat("shoulders");
-		//setFat("head");
+		skeleton->setFat("hip");
+		skeleton->setFat("bone_p0");
 
 		return skeleton;
 	}
+
+	static void RefineEmbedding(CParaXModel* xmodel, Mesh* m, vector<PVector3>& embedding, VisTester<TreeType>* tester)
+	{
+		std::vector<PVector3> vertices;
+
+
+
+
+		int numVert = xmodel->m_objNum.nVertices;
+		for (int i = 0; i < numVert; i++) {
+			Vector3& v = xmodel->m_origVertices[i].pos;
+			PVector3 p(v.x, v.y, v.z);
+			vertices.push_back(p);
+		}
+
+		Rect3 boundingBox = Rect3(vertices.begin(), vertices.end());
+		m_cscale = .9 / boundingBox.getSize().accumulate(ident<double>(), maximum<double>());
+		m_ctoAdd = PVector3(0.5, 0.5, 0.5) - boundingBox.getCenter() * m_cscale;
+
+		// output the trimed triangles
+		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.inter";
+		RigHelper::OutputVertices(vertices, fileName);
+
+		double cubeEdgeLength = (vertices[1] - vertices[0]).length();
+		typedef std::pair<int, double> DisIndexPair;
+		for (int i = 0; i < embedding.size(); ++i) {
+			std::vector<DisIndexPair> disList;
+			for (int j = 0; j < vertices.size(); ++j) {
+				DisIndexPair dis;
+				dis.first = j;
+				dis.second = (vertices[j] - embedding[i]).length();
+				disList.push_back(dis);
+			}
+			std::sort(disList.begin(), disList.end(), [](DisIndexPair& p1, DisIndexPair& p2) -> bool {return p1.second < p2.second; });
+
+			DisIndexPair nearest[8];
+			nearest[0] = disList[0];
+			for (int j = 1, k = 1; k < 8 && j < disList.size(); ++j) {
+				bool needContinue = false;
+				for (int t = k; t > 0; --t) {
+					double dis = (vertices[disList[j].first] - vertices[nearest[t].first]).length();
+					if (dis < cubeEdgeLength*0.1) {
+						// we ignore the points that too close
+						needContinue = true;
+						break;
+					}
+				}
+				if (needContinue)continue;
+
+				PVector3 v = vertices[disList[j].first] - embedding[i];
+				v[0] = std::abs(v[0]) - cubeEdgeLength;
+				v[1] = std::abs(v[1]) - cubeEdgeLength;
+				v[2] = std::abs(v[2]) - cubeEdgeLength;
+
+				if (v[0] > 0.0 || v[1] > 0.0 || v[2] > 0.0) continue;
+
+				nearest[k++] = disList[j];
+			}
+
+			Rect3 bb;
+			for (int j = 0; j < 8; ++j) {
+				bb |= vertices[nearest[j].first];
+			}
+			//avg /= 8.0;
+			embedding[i] = bb.getCenter();
+		}
+	}
+
+	// used to recover the coordinates
+	static double m_cscale;
+	static PVector3 m_ctoAdd;
 };
+
+double RigHelper::m_cscale = 1.0;
+PVector3 RigHelper::m_ctoAdd = PVector3();
 
 CAutoRigger::CAutoRigger()
 	:m_pTargetModel(nullptr)
@@ -135,6 +553,7 @@ void CAutoRigger::RemoveModelTemplate(const char* fileName)
 void CAutoRigger::SetTargetModel(const char* fileName)
 {
 	m_pTargetModel = CParaWorldAsset::GetSingleton()->LoadParaX("", std::string(fileName));
+	m_pTargetModel->SetMergeCoplanerBlockFace(false);
 	m_pTargetModel->LoadAsset();
 }
 
@@ -170,8 +589,8 @@ void CAutoRigger::AutoRigThreadFunc()
 	this->addref();
 	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) return;
 	while (!m_pTargetModel->IsLoaded()) std::this_thread::sleep_for(std::chrono::milliseconds(25));
-	Matcher matcher;
 
+	Matcher matcher;
 	// constructing target model feature
 	matcher.SetModelFeatureType(0);
 	CParaXModel* target = m_pTargetModel->GetModel();
@@ -208,22 +627,81 @@ void CAutoRigger::AutoRigThreadFunc()
 	// auto rigging using the matched source model bones for the target model
 	if (bestMatch != m_ModelTemplates->end()) {
 		Skeleton* given = RigHelper::ExtractPataXSkeleton(bestMatch->second->GetModel());
-		Mesh* mesh = RigHelper::ExtractPataXMesh(bestMatch->second->GetModel());
-		PinocchioOutput rig = autorig(*given, *mesh);
 		
-		int numBones = bestMatch->second->GetModel()->m_objNum.nBones;
-		Bone* bones = bestMatch->second->GetModel()->bones;
-		for (int i = 0; i < numBones; ++i) {
-			bones[i].pivot.x = rig.embedding[i][0];
-			bones[i].pivot.y = rig.embedding[i][1];
-			bones[i].pivot.z = rig.embedding[i][2];
+		Mesh* mesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
+
+		PinocchioOutput rig;
+
+		Mesh newMesh = prepareMesh(*mesh);
+		TreeType *distanceField = constructDistanceField(newMesh);
+		//discretization
+		vector<PSphere> medialSurface = sampleMedialSurface(distanceField);
+		vector<PSphere> spheres = packSpheres(medialSurface);
+		PtGraph graph = connectSamples(distanceField, spheres);
+
+		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.graph";
+		RigHelper::OutputVertices(graph.verts, fileName);
+
+		//discrete embedding
+		vector<vector<int> > possibilities = computePossibilities(graph, spheres, *given);
+
+		//constraints can be set by respecifying possibilities for skeleton joints:
+		//to constrain joint i to sphere j, use: possiblities[i] = vector<int>(1, j);
+		vector<int> embeddingIndices = discreteEmbed(graph, spheres, *given, possibilities);
+
+		if (embeddingIndices.size() == 0) { // failure
+			delete distanceField;
+			// an error log should be added here
 		}
+
+		rig.embedding = splitPaths(embeddingIndices, graph, *given);
+	
+
+		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.dis";
+		RigHelper::OutputVertices(rig.embedding, fileName);
+		
+		RigHelper::OutputDistantField(distanceField);
+
+		VisTester<TreeType>* tester = new VisTester<TreeType>(distanceField);
+		RigHelper::RefineEmbedding(m_pTargetModel->GetModel(), mesh, rig.embedding, tester);
+
+		CParaXModel* skeletonModel = bestMatch->second->GetModel();
+		
+		// recover the bone pivots position from transformed coordinates
+		std::map<string, int> boneNameIndexMap;
+		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+			boneNameIndexMap[skeletonModel->bones[i].GetName()] = i;
+		}
+
+		for (int i = 0; i < rig.embedding.size(); ++i) {
+			//rig.embedding[i] = (rig.embedding[i] - RigHelper::m_ctoAdd) / RigHelper::m_cscale;
+			int j = boneNameIndexMap[given->indexNameMap[i]];
+			skeletonModel->bones[j].pivot.x = rig.embedding[i][0];
+			skeletonModel->bones[j].pivot.y = rig.embedding[i][1];
+			skeletonModel->bones[j].pivot.z = rig.embedding[i][2];
+		}
+
+		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.boneconct";
+		RigHelper::OutputBoneRelation(skeletonModel, fileName);
+
+		// output the bones joints
+		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.bone";
+		RigHelper::OutputVertices(rig.embedding, fileName);
+
+		int numVert = skeletonModel->m_objNum.nVertices;
+		
+		this->Rigging(m_pTargetModel->GetModel(), bestMatch->second->GetModel(), newMesh, tester);
+
+		//cleanup
+		delete tester;
+		delete distanceField;
 	}
 	this->delref();
 }
 
-void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel)
+void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh,  void* vistester)
 {
+	VisTester<TreeType>* tester = static_cast<VisTester<TreeType>*>(vistester);
 	// header settings
 	targetModel->m_header.type = skeletonModel->m_header.type;
 	targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
@@ -248,18 +726,110 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel)
 	targetModel->anims = skeletonModel->anims;
 	//targetModel->specialTextures = skeletonModel->specialTextures;
 
-	targetModel->m_CurrentAnim.Reset(); 
+	targetModel->m_CurrentAnim.Reset();
 	targetModel->m_NextAnim.MakeInvalid();
 	targetModel->m_BlendingAnim.Reset();
 	targetModel->blendingFactor = 0;
 	targetModel->fBlendingTime = 0.25f;	// this is the default value.
 
-	// skinning
-	int numVert = targetModel->m_objNum.nVertices;
-	for (int i = 0; i < numVert; ++i) {
-		targetModel->m_origVertices[i].bones[0] = 2;
-		targetModel->m_origVertices[i].weights[0] = 255;
+										// modify vertices
+	int countSee = 0;
+	std::vector<ModelVertex> newVertices;
+	newVertices.reserve(newMesh.vertices.size());
+	for (int i = 0; i < newMesh.vertices.size(); ++i) {
+		PVector3 v = newMesh.vertices[i].pos;
+		//v = (v - mesh->toAdd) / mesh->scale;
+		ModelVertex modelVertex;
+		memset(&modelVertex, 0, sizeof(ModelVertex));
+		modelVertex.pos.x = v[0];
+		modelVertex.pos.y = v[1];
+		modelVertex.pos.z = v[2];
+
+		PVector3& n = newMesh.vertices[i].normal;
+		modelVertex.normal.x = n[0];
+		modelVertex.normal.y = n[1];
+		modelVertex.normal.z = n[2];
+
+		modelVertex.color0 = 123;
+
+
+		newVertices.push_back(modelVertex);
+	}
+	targetModel->initVertices(newVertices.size(), &(newVertices[0]));
+	targetModel->geosets[0].icount = newVertices.size();
+
+
+	// moddify indices
+	vector<uint16> newIndices(newMesh.edges.size(), 0);
+	for (int i = 0; i < newMesh.edges.size(); ++i) {
+		newIndices[i] = (uint16)newMesh.edges[i].vertex;
+	}
+	targetModel->initIndices(newIndices.size(), &(newIndices[0]));
+	targetModel->passes[0].indexCount = newIndices.size();
+
+	std::vector<int> omitedInFirstRound;
+	// first round 
+	for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+		ModelVertex& modelVertex = targetModel->m_origVertices[i];
+		int nearest = -1;
+		float minDis = 999.0;
+		for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
+			Vector3 p = targetModel->bones[k].pivot;
+			Vector3 v = modelVertex.pos;
+			float dis = p.distance(v);
+
+			v = p + (v - p)*0.8;
+
+			bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
+
+			if (dis < minDis && canSee) {
+				minDis = dis;
+				nearest = k;
+			}
+		}
+		if (nearest < 0) {
+			// if couldn't find the direct bone just continue and wait for the next round to fixed it
+			countSee++;
+			modelVertex.bones[0] = 255;
+			omitedInFirstRound.push_back(i);
+			continue;
+		}
+		//int j = boneNameIndexMap[given->indexNameMap[nearest]];
+		modelVertex.bones[0] = nearest;
+		modelVertex.weights[0] = 255;
 	}
 
+	// second round
+	for (int i = 0; i < omitedInFirstRound.size(); ++i) {
+		int index = omitedInFirstRound[i];
+		ModelVertex& modelVertex = targetModel->m_origVertices[index];
+		int nearest = -1;
+		float minDis = 1.0;
+		for (int j = 0; j < targetModel->m_objNum.nVertices; ++j) {
+			if (targetModel->m_origVertices[j].bones[0] > 200) {
+				// beyond 200 means this bone slot is unbinded
+				continue;
+			}
+			float dist = modelVertex.pos.distance(targetModel->m_origVertices[j].pos);
+			if (dist < minDis) {
+				nearest = j;
+				minDis = dist;
+			}
+		}
+		if (nearest > 0) {
+			modelVertex.bones[0] = targetModel->m_origVertices[nearest].bones[0];
+			modelVertex.weights[0] = 255;
+		}
+		else {
+			modelVertex.bones[0] = 0;
+			modelVertex.weights[0] = 255;
+		}
+	}
+
+	// output the trimed triangles
+	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.line";
+	RigHelper::OutputSkinningRelation(targetModel, fileName);
+
+	//skeletonModel->SaveToDisk("D:/Projects/3rdParty/npl_dev/Fork/NPLRuntime/Client/build/lib/Release/worlds/DesignHouse/test/morph_result1.x");
 	targetModel->SaveToDisk("D:/Projects/3rdParty/npl_dev/Fork/NPLRuntime/Client/build/lib/Release/worlds/DesignHouse/test/morph_result2.x");
 }

@@ -61,25 +61,21 @@ namespace ParaEngine
 		void AdvancedMatching();
 		Eigen::Matrix4f GetTrans();
 		double OptimizePairwise(bool decrease_mu_, int numIter_);
-		void SearchFLANNTree(flann::Index<flann::L2<float>>* index,
-			Eigen::VectorXf& input,
-			std::vector<int>& indices,
-			std::vector<float>& dists,
-			int nn);
+		void SearchFLANNTree(flann::Index<flann::L2<float>>* index, Eigen::VectorXf& input,
+			std::vector<int>& indices, std::vector<float>& dists, int nn);
 	private:
 		// containers
-		std::vector<Points> pointcloud_;
-		std::vector<Feature> features_;
-		Eigen::Matrix4f TransOutput_;
-		std::vector<std::pair<int, int>> corres_;
+		std::vector<Points> m_PointCloud;
+		std::vector<Feature> m_Features;
+		Eigen::Matrix4f m_TransOutput;
+		std::vector<std::pair<int, int>> m_Corres;
 
 		// for normalization
-		Points Means;
-		float GlobalScale;
-		float StartScale;
+		Points m_Means;
+		float m_GlobalScale;
+		float m_StartScale;
 
 		unsigned int m_CurrentModel;
 
 	};
-
 }

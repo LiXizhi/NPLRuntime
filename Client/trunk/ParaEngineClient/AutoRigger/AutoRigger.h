@@ -3,6 +3,8 @@
 #include "ParaEngine.h"
 #include "BaseObject.h"
 
+class Mesh;
+
 namespace ParaEngine
 {
 
@@ -36,7 +38,7 @@ namespace ParaEngine
 	private:
 		void AutoRigThreadFunc();
 
-		void Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel);
+		void Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* tester);
 
 	private:
 		typedef std::map<std::string, ParaXEntity*> ModelTemplateMap;
