@@ -30,9 +30,9 @@
 #include "Matcher.h"
 
 #include "pcl/features/feature.h"
+#include "pcl/features/fpfh_omp.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
-#include "pcl/features/fpfh_omp.h"
 
 #define DIV_FACTOR			1.4		// Division factor used for graduated non-convexity
 #define USE_ABSOLUTE_SCALE	0		// Measure distance in absolute scale (1) or in scale relative to the diameter of the model (0)

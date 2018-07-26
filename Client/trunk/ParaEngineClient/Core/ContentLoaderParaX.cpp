@@ -302,7 +302,12 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				if (sExt == "bmax")
 				{
 					// block max model. 
-					BMaxParser p(myFile.getBuffer(), myFile.getSize());
+					BMaxParser p;
+					ParaXEntity* pParaEntity = dynamic_cast<ParaXEntity*>(m_asset.get());
+					if (pParaEntity != nullptr) {
+						p.SetMergeCoplanerBlockFace(pParaEntity->GetMergeCoplanerBlockFace());
+					}
+					p.Load(myFile.getBuffer(), myFile.getSize());
 					iCur->m_pParaXMesh = p.ParseParaXModel();
 					auto pParaXMesh = iCur->m_pParaXMesh;
 

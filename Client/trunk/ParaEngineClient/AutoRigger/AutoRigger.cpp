@@ -17,6 +17,7 @@
 #include <fstream>
 
 using namespace ParaEngine;
+using namespace Pinocchio;
 
 const float VERY_SMALL = 1e-8;
 
@@ -99,12 +100,11 @@ public:
 	static void OutputTriangles(const Mesh* pMesh, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		fout.open(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < pMesh->edges.size(); ++i) {
-			int j = pMesh->edges[i].vertex;
-			float x = (float)pMesh->vertices[j].pos[0];
-			float y = (float)pMesh->vertices[j].pos[1];
-			float z = (float)pMesh->vertices[j].pos[2];
+		for (int i = 0; i < pMesh->m_Edges.size(); ++i) {
+			int j = pMesh->m_Edges[i].vertex;
+			float x = (float)pMesh->m_Vertices[j].pos[0];
+			float y = (float)pMesh->m_Vertices[j].pos[1];
+			float z = (float)pMesh->m_Vertices[j].pos[2];
 
 			fout.write((char*)&x, sizeof(float));
 			fout.write((char*)&y, sizeof(float));
@@ -115,8 +115,7 @@ public:
 
 	static void OutputVertices(const std::vector<PVector3>& vertices, const std::string& fileName, PVector3 offset = PVector3(), float scale = 1.0)
 	{
-		std::ofstream fout;
-		fout.open(fileName, std::ios::binary | std::ios::out);
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
 		for (int i = 0; i < (int)vertices.size(); ++i) {
 			//vertices[i] = offset + vertices[i] * scale;
 			float x = (float)vertices[i][0] * scale + offset[0];
@@ -147,8 +146,7 @@ public:
 
 	static void OutputBoneRelation(const Skeleton* given, const std::string& fileName)
 	{
-		std::ofstream fout;
-		fout.open(fileName, std::ios::binary | std::ios::out);
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
 		for (int i = 0; i < given->fGraph().verts.size(); ++i) {
 			int j = given->fPrev()[i];
 			if (j >= 0) {
@@ -174,8 +172,7 @@ public:
 
 	static void OutputBoneRelation(const CParaXModel* skeletonModel, const std::string& fileName)
 	{
-		std::ofstream fout;
-		fout.open(fileName, std::ios::binary | std::ios::out);
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
 		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
 			int j = skeletonModel->bones[i].GetParentIndex();
 			if (j >= 0) {
@@ -201,8 +198,7 @@ public:
 
 	static void OutputSkinningRelation(const CParaXModel* targetModel, const std::string& fileName)
 	{
-		std::ofstream fout;
-		fout.open(fileName, std::ios::binary | std::ios::out);
+		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
 		for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
 			if (targetModel->m_origVertices[i].bones[0] > 200) {
 				// beyond 200 means this bone is unbinded
@@ -254,7 +250,7 @@ public:
 			MeshVertex vertex;
 			Vector3& v = xmodel->m_origVertices[i].pos;
 			vertex.pos = PVector3(v.x, v.y, v.z);// Y up
-			pMesh->vertices.push_back(vertex);
+			pMesh->m_Vertices.push_back(vertex);
 		}
 
 		// fix the indices after squeezing
@@ -279,8 +275,8 @@ public:
 			void ComputeNormal(Mesh* pMesh)
 			{
 				if (!_computedNormal) {
-					PVector3& p01 = pMesh->vertices[_v[1]].pos - pMesh->vertices[_v[0]].pos;
-					PVector3& p02 = pMesh->vertices[_v[2]].pos - pMesh->vertices[_v[0]].pos;
+					PVector3& p01 = pMesh->m_Vertices[_v[1]].pos - pMesh->m_Vertices[_v[0]].pos;
+					PVector3& p02 = pMesh->m_Vertices[_v[2]].pos - pMesh->m_Vertices[_v[0]].pos;
 					_n = (p01 % p02).normalize();
 					_computedNormal = true;
 				}
@@ -310,9 +306,9 @@ public:
 				else {
 					PVector3 p0, p1, p2;
 					for (int i = 0; i < 3; ++i) {
-						if (M[i] > 0) p0 = pMesh->vertices[_v[i]].pos;
-						if (M[i] < 0) p1 = pMesh->vertices[_v[i]].pos;
-						if (N[i] < 0) p2 = pMesh->vertices[rhs._v[i]].pos;
+						if (M[i] > 0) p0 = pMesh->m_Vertices[_v[i]].pos;
+						if (M[i] < 0) p1 = pMesh->m_Vertices[_v[i]].pos;
+						if (N[i] < 0) p2 = pMesh->m_Vertices[rhs._v[i]].pos;
 					}
 					PVector3& cross = _n % rhs._n;
 					double dot = (p1 - p0) * (p2 - p0);
@@ -373,7 +369,7 @@ public:
 		// populate the edges to pMesh after removing the undesired ones
 		for (int i = 0; i < originalEdges.size(); ++i) {
 			if (edgesToRemove[i])continue;
-			pMesh->edges.push_back(originalEdges[i]);
+			pMesh->m_Edges.push_back(originalEdges[i]);
 		}
 
 		pMesh->fixDupFaces();
@@ -453,10 +449,6 @@ public:
 	static void RefineEmbedding(CParaXModel* xmodel, Mesh* m, vector<PVector3>& embedding, VisTester<TreeType>* tester)
 	{
 		std::vector<PVector3> vertices;
-
-
-
-
 		int numVert = xmodel->m_objNum.nVertices;
 		for (int i = 0; i < numVert; i++) {
 			Vector3& v = xmodel->m_origVertices[i].pos;
@@ -467,6 +459,10 @@ public:
 		Rect3 boundingBox = Rect3(vertices.begin(), vertices.end());
 		m_cscale = .9 / boundingBox.getSize().accumulate(ident<double>(), maximum<double>());
 		m_ctoAdd = PVector3(0.5, 0.5, 0.5) - boundingBox.getCenter() * m_cscale;
+
+		for (int i = 0; i < vertices.size(); ++i) {
+			vertices[i] = vertices[i] * m_cscale + m_ctoAdd;
+		}
 
 		// output the trimed triangles
 		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.inter";
@@ -632,29 +628,29 @@ void CAutoRigger::AutoRigThreadFunc()
 
 		PinocchioOutput rig;
 
-		Mesh newMesh = prepareMesh(*mesh);
-		TreeType *distanceField = constructDistanceField(newMesh);
+		Mesh newMesh = PrepareMesh(*mesh);
+		TreeType *distanceField = ConstructDistanceField(newMesh);
 		//discretization
-		vector<PSphere> medialSurface = sampleMedialSurface(distanceField);
-		vector<PSphere> spheres = packSpheres(medialSurface);
-		PtGraph graph = connectSamples(distanceField, spheres);
+		vector<PSphere> medialSurface = SampleMedialSurface(distanceField);
+		vector<PSphere> spheres = PackSpheres(medialSurface);
+		PtGraph graph = ConnectSamples(distanceField, spheres);
 
 		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.graph";
 		RigHelper::OutputVertices(graph.verts, fileName);
 
 		//discrete embedding
-		vector<vector<int> > possibilities = computePossibilities(graph, spheres, *given);
+		vector<vector<int> > possibilities = ComputePossibilities(graph, spheres, *given);
 
 		//constraints can be set by respecifying possibilities for skeleton joints:
 		//to constrain joint i to sphere j, use: possiblities[i] = vector<int>(1, j);
-		vector<int> embeddingIndices = discreteEmbed(graph, spheres, *given, possibilities);
+		vector<int> embeddingIndices = DiscreteEmbed(graph, spheres, *given, possibilities);
 
 		if (embeddingIndices.size() == 0) { // failure
 			delete distanceField;
 			// an error log should be added here
 		}
 
-		rig.embedding = splitPaths(embeddingIndices, graph, *given);
+		rig.embedding = SplitPaths(embeddingIndices, graph, *given);
 	
 
 		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.dis";
@@ -735,9 +731,9 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 										// modify vertices
 	int countSee = 0;
 	std::vector<ModelVertex> newVertices;
-	newVertices.reserve(newMesh.vertices.size());
-	for (int i = 0; i < newMesh.vertices.size(); ++i) {
-		PVector3 v = newMesh.vertices[i].pos;
+	newVertices.reserve(newMesh.m_Vertices.size());
+	for (int i = 0; i < newMesh.m_Vertices.size(); ++i) {
+		PVector3 v = newMesh.m_Vertices[i].pos;
 		//v = (v - mesh->toAdd) / mesh->scale;
 		ModelVertex modelVertex;
 		memset(&modelVertex, 0, sizeof(ModelVertex));
@@ -745,7 +741,7 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 		modelVertex.pos.y = v[1];
 		modelVertex.pos.z = v[2];
 
-		PVector3& n = newMesh.vertices[i].normal;
+		PVector3& n = newMesh.m_Vertices[i].normal;
 		modelVertex.normal.x = n[0];
 		modelVertex.normal.y = n[1];
 		modelVertex.normal.z = n[2];
@@ -760,9 +756,9 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 
 
 	// moddify indices
-	vector<uint16> newIndices(newMesh.edges.size(), 0);
-	for (int i = 0; i < newMesh.edges.size(); ++i) {
-		newIndices[i] = (uint16)newMesh.edges[i].vertex;
+	vector<uint16> newIndices(newMesh.m_Edges.size(), 0);
+	for (int i = 0; i < newMesh.m_Edges.size(); ++i) {
+		newIndices[i] = (uint16)newMesh.m_Edges[i].vertex;
 	}
 	targetModel->initIndices(newIndices.size(), &(newIndices[0]));
 	targetModel->passes[0].indexCount = newIndices.size();
