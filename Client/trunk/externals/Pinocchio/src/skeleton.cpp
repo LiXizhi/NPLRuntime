@@ -53,14 +53,14 @@ void Skeleton::initCompressed()
     //lengths/fraction computation
     for(i = 1; i < (int)m_cPrevV.size(); ++i) {
         int cur = m_cfMapV[i];
-        hash_map<int, double> lengths;
+		unordered_map<int, double> lengths;
         do {
             lengths[cur] = (m_fGraphV.verts[cur] - m_fGraphV.verts[m_fPrevV[cur]]).length();
             m_cLengthV[i] += lengths[cur];
             cur = m_fPrevV[cur];
         } while(m_fcMapV[cur] == -1);
         
-        for(hash_map<int, double>::iterator it = lengths.begin(); it != lengths.end(); ++it)
+        for(unordered_map<int, double>::iterator it = lengths.begin(); it != lengths.end(); ++it)
             m_fcFractionV[it->first] = it->second / m_cLengthV[i];
     }
 }

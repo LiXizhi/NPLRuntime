@@ -506,14 +506,27 @@ public:
         ((*this)[1] < o[1] || ((*this)[1] == o[1] && (*this)[2] < o[2]))); }
 };
 
-MAKE_HASH(StlVtx, return (int)(p[0] * 100000. + p[1] * 200000. + p[2] * 400000.););
+//MAKE_HASH(StlVtx, return (int)(p[0] * 100000. + p[1] * 200000. + p[2] * 400000.););
+
+// specialize the std::hash template for our StlVtx - type.
+namespace std {
+	template <>
+	struct hash<StlVtx>
+	{
+		std::size_t operator()(const StlVtx& p) const
+		{
+			return (int)(p[0] * 100000. + p[1] * 200000. + p[2] * 400000.);
+		}
+	};
+
+}
 
 void Mesh::readStl(istream &strm)
 {
     int i;
     int lineNum = 0;
     
-    hash_map<StlVtx, int> vertexIdx;
+	unordered_map<StlVtx, int> vertexIdx;
     
     vector<int> lastIdxs;
     
