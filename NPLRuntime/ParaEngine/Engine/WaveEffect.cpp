@@ -87,7 +87,7 @@ namespace ParaEngine
 			{
 				auto pBackBuffer = CGlobals::GetRenderDevice()->GetRenderTarget(0);
 				
-				if(!pBackBuffer->StretchRect(m_pBackbufferCopy, NULL, NULL, ETextureFilterType::Linear))
+				if(!pBackBuffer->StretchRect(m_pBackbufferCopy, NULL, NULL, ETextureFilter::Linear))
 				{
 					OUTPUT_LOG("wave effect StretchRect() failed!\r\n");
 					return E_FAIL;

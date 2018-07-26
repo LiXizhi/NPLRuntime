@@ -150,7 +150,7 @@ ImagePtr PNGParser::Parse(const unsigned char* buffer, size_t buffer_size)
 		png_destroy_read_struct(&png_ptr, (info_ptr) ? &info_ptr : 0, 0);
 		return nullptr;
 	}
-
+	// flip vertical
 	for (unsigned short i = 0; i < height; ++i)
 	{
 		row_pointers[i] = _data + i * rowbytes;

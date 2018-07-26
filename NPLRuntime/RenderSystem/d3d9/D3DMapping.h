@@ -20,6 +20,6 @@ namespace ParaEngine
 		static D3DPOOL toD3DPool(const EPoolType& pool);
 		static D3DSAMPLERSTATETYPE toD3DSamplerSatetType(const ESamplerStateType type);
 		static D3DPRIMITIVETYPE toD3DPrimitiveType(const EPrimitiveType type);
-		static D3DTEXTUREFILTERTYPE toD3DTextureFilter(const ETextureFilterType type);
+		static D3DTEXTUREFILTERTYPE toD3DTextureFilter(const ETextureFilter type);
 	};
 }

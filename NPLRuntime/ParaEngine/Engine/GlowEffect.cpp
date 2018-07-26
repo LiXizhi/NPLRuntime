@@ -90,7 +90,7 @@ HRESULT CGlowEffect::Render(float fGlowThreshold, float fGlowAmount, bool bUseAl
 
 	// Copy scene to lower resolution render target texture
 	
-	if(!m_pBackBuffer->StretchRect(m_pRTHalfSizeTexture, NULL, NULL, ETextureFilterType::Linear)) {
+	if(!m_pBackBuffer->StretchRect(m_pRTHalfSizeTexture, NULL, NULL, ETextureFilter::Linear)) {
 		OUTPUT_LOG("StretchRect() failed!\r\n");
 		return hr;
 	}

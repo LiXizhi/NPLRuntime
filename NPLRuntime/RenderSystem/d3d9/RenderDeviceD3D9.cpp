@@ -3,6 +3,7 @@
 #include "D3DMapping.h"
 #include "EffectD3D9.h"
 #include "TextureD3D9.h"
+#include "Framework/Codec/ImageParser.h"
 using namespace ParaEngine;
 
 
@@ -482,26 +483,33 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
 {
-	D3DFORMAT d3dFormat = D3DMapping::toD3DFromat(format);
+	//D3DFORMAT d3dFormat = D3DMapping::toD3DFromat(format);
 
-	LPDIRECT3DTEXTURE9 pTexture = nullptr;
+	//LPDIRECT3DTEXTURE9 pTexture = nullptr;
 
-	HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(m_pD3DDevice, buffer, size,
-		D3DX_DEFAULT, D3DX_DEFAULT, 1, 0, d3dFormat,
-		D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
-		colorKey, NULL, NULL, &(pTexture));
+	//HRESULT hr = D3DXCreateTextureFromFileInMemoryEx(m_pD3DDevice, buffer, size,
+	//	D3DX_DEFAULT, D3DX_DEFAULT, 1, 0, d3dFormat,
+	//	D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
+	//	colorKey, NULL, NULL, &(pTexture));
 
 
-	if (hr == S_OK && pTexture)
+	//if (hr == S_OK && pTexture)
+	//{
+	//	auto ret = TextureD3D9::Create(this,pTexture);
+	//	if (ret)
+	//	{
+	//		m_Resources.push_back(ret);
+	//	}
+	//	return ret;
+	//}
+
+
+	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
+	if (!image)return nullptr;
+	auto ret = TextureD3D9::CreateWithImage(this, image);
+	if (ret)
 	{
-		auto ret = TextureD3D9::Create(this,pTexture);
-		if (ret)
-		{
-			m_Resources.push_back(ret);
-		}
-		return ret;
+		m_Resources.push_back(ret);
 	}
-
-
-	return nullptr;
+	return ret;
 }

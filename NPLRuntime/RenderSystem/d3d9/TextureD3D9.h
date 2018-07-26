@@ -11,11 +11,10 @@ namespace ParaEngine
 		static ITexture* Create(RenderDeviceD3D9* device,uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);
 		static ITexture* Create(RenderDeviceD3D9* device,LPDIRECT3DTEXTURE9 texture);
 		static ITexture* Create(RenderDeviceD3D9* device,LPDIRECT3DSURFACE9 surface, ETextureUsage usage);
+		static ITexture* CreateWithImage(RenderDeviceD3D9* device,ImagePtr image);
 		TextureD3D9();
 		virtual ~TextureD3D9() override = default;
 		virtual void OnRelease();
-		virtual void* Lock(unsigned int level, unsigned int& pitch, const ParaEngine::Rect* rect) override;
-		virtual void Unlock(unsigned int level) override;
 
 		LPDIRECT3DSURFACE9 GetSurface() const;
 		LPDIRECT3DTEXTURE9 GetTexture() const;
@@ -30,7 +29,37 @@ namespace ParaEngine
 		virtual uint32_t GetHeight() const override;
 
 
-		virtual bool StretchRect(IParaEngine::ITexture* target, const ParaEngine::Rect* srcRect, const ParaEngine::Rect* targetRect, const ETextureFilterType filter) override;
+		virtual bool StretchRect(IParaEngine::ITexture* target, const ParaEngine::Rect* srcRect, const ParaEngine::Rect* targetRect, const ETextureFilter filter) override;
+
+
+		virtual bool UpdateImage(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels) override;
+
+
+		virtual ParaEngine::ImagePtr GetImage(uint32_t level) override;
+
+
+		virtual ParaEngine::ETextureFilter GetMinFilter() const override;
+
+
+		virtual ParaEngine::ETextureFilter GetMagFilter() const override;
+
+
+		virtual bool SetMinFilter(ParaEngine::ETextureFilter type) override;
+
+
+		virtual bool SetMagFilter(ParaEngine::ETextureFilter type) override;
+
+
+		virtual ParaEngine::ETextureWrapMode GetAddressU() const override;
+
+
+		virtual ParaEngine::ETextureWrapMode GetAddressV() const override;
+
+
+		virtual bool SetAddressU(ParaEngine::ETextureWrapMode mode) override;
+
+
+		virtual bool SetAddressV(ParaEngine::ETextureWrapMode mode) override;
 
 	protected:
 		LPDIRECT3DTEXTURE9 m_Texture;

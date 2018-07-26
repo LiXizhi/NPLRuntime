@@ -616,19 +616,14 @@ ParaEngine::EPixelFormat ParaEngine::D3DMapping::toPixelFormat(D3DFORMAT format)
 	}
 }
 
-D3DTEXTUREFILTERTYPE ParaEngine::D3DMapping::toD3DTextureFilter(const ETextureFilterType type)
+D3DTEXTUREFILTERTYPE ParaEngine::D3DMapping::toD3DTextureFilter(const ETextureFilter type)
 {
 	switch (type)
 	{
-	default:
-		break;
-	case ETextureFilterType::None:
-		return D3DTEXF_NONE;
-		break;
-	case ETextureFilterType::Point:
+	case ETextureFilter::Point:
 		return D3DTEXF_POINT;
 		break;
-	case ETextureFilterType::Linear:
+	case ETextureFilter::Linear:
 		return D3DTEXF_LINEAR;
 		break;
 	}

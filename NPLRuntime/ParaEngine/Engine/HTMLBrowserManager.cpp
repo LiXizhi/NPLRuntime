@@ -666,11 +666,11 @@ HRESULT ParaEngine::CHTMLBrowser::CreateTexture( IParaEngine::ITexture **ppTextu
 	{
 		// fill texture with white color
 		IParaEngine::ITexture* pTexture = (*ppTexture);
-		uint32_t pitch;
-		Rect rc = { 0, 0, nBufWidth, nBufHeight};
-		void* pBuffer = pTexture->Lock(0, pitch, &rc);
-		memset((BYTE*)pBuffer, 0xff, pitch*uintHeight);
-		pTexture->Unlock(0);
+		unsigned char* tempBuffer = new unsigned char[nBufWidth*nBufHeight * 4];
+		memset(tempBuffer, 0xff, nBufWidth*nBufHeight * 4);
+		pTexture->UpdateImage(0, 0, 0, nBufWidth, nBufHeight, tempBuffer);
+		delete[] tempBuffer;
+
 	}
 
 	return S_OK;
@@ -691,15 +691,14 @@ HRESULT ParaEngine::CHTMLBrowser::UpdateTexture(IParaEngine::ITexture* pTexture 
 	int nBufWidth = getBrowserWidth();
 	int nBufHeight = getBrowserHeight();
 
-	uint32_t pitch;
-	Rect rc = { 0, 0, nBufWidth, nBufHeight };
-	void* pBuffer = pTexture->Lock(0, pitch, &rc);
+	
 	{
 		// sometimes the rowspan != width * bytes per pixel (mBrowserWindowWidth)
 		int nBrowserRowSpan = getBrowserRowSpan(); // number of bytes per line.
 		int nBrowserDepth = getBrowserDepth(); // number of bytes per pixel.
 
-		BYTE* pTextureBits = (BYTE*)pBuffer;
+		BYTE* pTextureBits = new BYTE[nBufWidth*nBufHeight * 4];
+		uint32_t pitch = nBufWidth * 4;
 
 		if(nBrowserDepth == 3)
 		{
@@ -737,10 +736,9 @@ HRESULT ParaEngine::CHTMLBrowser::UpdateTexture(IParaEngine::ITexture* pTexture 
 				pLineTextureBits += pitch;
 			}
 		}
-		
+		pTexture->UpdateImage(0, 0, 0, nBufWidth, nBufHeight, pTextureBits);
+		delete[] pTextureBits;
 	}
-	// Unlock the Texture
-	pTexture->Unlock(0);
 	return S_OK;
 }
 

@@ -246,7 +246,9 @@ target_link_libraries(ParaEngine PUBLIC
     ${PLATFORM_SPE_LIBS}
 	${LUA_LIB_LIST}
     zlib
-	libcurl
+    libcurl
+    libjpeg
+    libpng
     jsoncpp
     tinyxpath
     luabind
