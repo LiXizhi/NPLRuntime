@@ -2,6 +2,8 @@
 #include "pinocchioApi.h"
 #include "debugging.h"
 
+#include <algorithm>
+
 using namespace Pinocchio;
 
 struct FP //information for penalty functions
