@@ -218,7 +218,16 @@ include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 
-
+#AutoRigger
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/Eigen")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/flann-1.8.4-src/src/cpp/")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/Pinocchio/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/common/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/search/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/octree/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/surface/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/kdtree/include")
+include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/features/include")
 
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
@@ -442,6 +451,7 @@ endif (WIN32)
 target_link_libraries (ParaEngineServer
     ${Boost_LIBRARIES} ${LUA_LIBRARY}
 	sqlite jsoncpp tinyxpath luabind
+	pcl_common pcl_features Pinocchio
 	${OPENGL_LIBRARIES}
 	${EXTRA_LIBRARIES}
 )

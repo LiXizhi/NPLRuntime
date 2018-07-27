@@ -77,6 +77,9 @@ add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${NPLRuntime_BINARY_DIR}/s
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${NPLRuntime_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${NPLRuntime_BINARY_DIR}/tinyxpath_1_3_1)
 #add_subdirectory (${SERVER_SOURCE_DIR}luaprofiler-2.0.2  ${NPLRuntime_BINARY_DIR}/luaprofiler-2.0.2)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/pcl/common ${CLIENT_BINARY_DIR}/common)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/pcl/features ${CLIENT_BINARY_DIR}/features)
+add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/Pinocchio ${CLIENT_BINARY_DIR}/Pinocchio)
 
 if(NPLRUNTIME_LUASQL)
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${NPLRuntime_BINARY_DIR}/luasql)
