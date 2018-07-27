@@ -1,6 +1,8 @@
 #include "graphutils.h"
 #include "debugging.h"
 
+#include <algorithm>
+
 #define CHECK(pred) { if(!(pred)) { Debugging::out() << "Graph integrity error: " #pred << " in line " << __LINE__ << endl; return false; } }
 
 bool PtGraph::integrityCheck() const
@@ -15,7 +17,7 @@ bool PtGraph::integrityCheck() const
             CHECK(cur < (int)edges.size());
             CHECK(cur != i); //no self edges
             
-            vector<int>::const_iterator it = find(edges[cur].begin(), edges[cur].end(), i);
+            vector<int>::const_iterator it = std::find(edges[cur].begin(), edges[cur].end(), i);
             CHECK(it != edges[cur].end());
             
             for(k = 0; k < j; ++k) //duplicates
