@@ -2,6 +2,7 @@
 #include "pinocchioApi.h"
 #include "deriv.h"
 #include "debugging.h"
+#include <algorithm>
 
 using namespace Pinocchio;
 

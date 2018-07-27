@@ -15,6 +15,7 @@
 #include "rect.h"
 #include "vecutils.h"
 #include "debugging.h"
+#include <algorithm>
 
 struct Vec3Object
 {
