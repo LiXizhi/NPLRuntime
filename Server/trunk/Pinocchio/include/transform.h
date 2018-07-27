@@ -136,7 +136,7 @@ public:
     Self operator*(const Real &x) { Self out(S(0)); for(int i = 0; i < 9; ++i) out[i] = m_m[i] * x; return out; }
     Self operator/(const Real &x) { Self out(S(0)); for(int i = 0; i < 9; ++i) out[i] = m_m[i] / x; return out; }
 
-#define OPAS(op, typ, idx) Self &operator op(const typ &x) { for(int i = 0; i < 9; ++i) m[i] op x idx; return *this; }
+#define OPAS(op, typ, idx) Self &operator op(const typ &x) { for(int i = 0; i < 9; ++i) m_m[i] op x idx; return *this; }
     OPAS(+=, Self, [i])
     OPAS(-=, Self, [i])
     OPAS(*=, Real, )

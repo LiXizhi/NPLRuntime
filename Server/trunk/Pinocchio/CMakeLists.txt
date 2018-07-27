@@ -4,7 +4,7 @@ project(Pinocchio)
 
 file (GLOB header_files 
 	include/attachment.h
-	include/debugging.hpp
+	include/debugging.h
 	include/deriv.h
 	include/dtree.h
 	include/graphutils.h
@@ -19,9 +19,9 @@ file (GLOB header_files
 	include/pinocchioApi.h
 	include/pointprojector.h
 	include/quaddisttree.h
-	include/rect.h.h
-	include/skeleton.h.h
-	include/transform.h.h
+	include/rect.h
+	include/skeleton.h
+	include/transform.h
 	include/utils.h
 	include/vector.h
 	include/vecutils.h
