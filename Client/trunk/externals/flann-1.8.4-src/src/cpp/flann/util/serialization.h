@@ -5,10 +5,12 @@
 #include <map>
 #include <stdio.h>
 
+
 namespace flann
 {
 namespace serialization
 {
+
 
 struct access 
 {
@@ -89,6 +91,7 @@ BASIC_TYPE_SERIALIZER(unsigned long);
 BASIC_TYPE_SERIALIZER(float);
 BASIC_TYPE_SERIALIZER(double);
 BASIC_TYPE_SERIALIZER(bool);
+BASIC_TYPE_SERIALIZER(unsigned long long);
 
 
 
