@@ -11,36 +11,37 @@
 
 #include "mathutils.h"
 
-#ifndef _WIN32
-//#include <unordered_map>
-#include <ext/unordered_map>
-//#include <undorderd_set>
-#include <ext/hash_set>
+//#ifndef _WIN32
+////#include <unordered_map>
+//#include <ext/unordered_map>
+////#include <undorderd_set>
+//#include <ext/hash_set>
+//
+//#define _HASH_NAMESPACE __gnu_cxx
+//
+//using namespace _HASH_NAMESPACE;
+//
+//namespace _HASH_NAMESPACE {
+//    template<class T1, class T2> struct hash<pair<T1, T2> >
+//    {
+//        size_t operator()(const pair<T1, T2> &p) const { return hash<T1>()(p.first) + 37 * hash<T2>()(p.second); }
+//    };
+//
+//    template<class T> struct hash<T *>
+//    {
+//        size_t operator()(T *p) const { return (size_t)p; }
+//    };
+//}
+//
+//#define MAKE_HASH(type, code) \
+//    namespace _HASH_NAMESPACE { \
+//        template<> struct hash<type> \
+//        { \
+//            size_t operator()(const type &p) const { code } \
+//        }; \
+//    }
+//#else //MICROSOFT VC 2005
 
-#define _HASH_NAMESPACE __gnu_cxx
-
-using namespace _HASH_NAMESPACE;
-
-namespace _HASH_NAMESPACE {
-    template<class T1, class T2> struct hash<pair<T1, T2> >
-    {
-        size_t operator()(const pair<T1, T2> &p) const { return hash<T1>()(p.first) + 37 * hash<T2>()(p.second); }
-    };
-
-    template<class T> struct hash<T *>
-    {
-        size_t operator()(T *p) const { return (size_t)p; }
-    };
-}
-
-#define MAKE_HASH(type, code) \
-    namespace _HASH_NAMESPACE { \
-        template<> struct hash<type> \
-        { \
-            size_t operator()(const type &p) const { code } \
-        }; \
-    }
-#else //MICROSOFT VC 2005
 #include <unordered_map>
 #include <unordered_set>
 
@@ -81,6 +82,6 @@ namespace _HASH_NAMESPACE {
             bool operator()(const type &p1, const type &p2) const { return p1 < p2; } \
         }; \
     }
-#endif
+//#endif
 
 #endif //HASHUTILS_H
