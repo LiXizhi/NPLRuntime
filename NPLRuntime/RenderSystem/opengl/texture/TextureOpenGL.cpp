@@ -48,12 +48,46 @@ GLuint ParaEngine::TextureOpenGL::GetTextureID() const
 	return m_TextureID;
 }
 
+
 bool ParaEngine::TextureOpenGL::UpdateImage(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
 {
+	// flip vectical
+	uint32_t bpp = 0;
+	switch (m_GLFormat)
+	{
+	case GL_RGB:
+		bpp = 3;
+		break;
+	case GL_RGBA:
+	case GL_BGRA:
+		bpp = 4;
+		break;
+	case GL_ALPHA:
+	case GL_LUMINANCE:
+		bpp = 1;
+		break;
+	case GL_LUMINANCE_ALPHA:
+		bpp = 2;
+		break;
+	break;
+	default:
+		break;
+	}
+	uint32_t pitch = width * bpp;
+	const unsigned char* pSrc = pixels;
+	unsigned char* pDest = new unsigned  char[height * pitch];
+	for (int y =0;y<height;y++)
+	{
+		memcpy(pDest+y*pitch, pSrc+(height-1-y)*pitch, pitch);
+	}
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pixels);
+
+	uint32_t offy = m_Height - yoffset - height;
+
+	glTexSubImage2D(GL_TEXTURE_2D, level,xoffset, offy, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pDest);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	delete[] pDest;
 	return true;
 }
 
@@ -77,33 +111,33 @@ ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 	break;
 	case GL_RGBA:
 	{
-		pitch = 3 * sizeof(unsigned char) * width;
+		pitch = 4 * sizeof(unsigned char) * width;
 		format = Image::IPF_R8G8B8A8;
 	}
 	break;
 	case GL_BGRA:
 	{
-		pitch = 3 * sizeof(unsigned char) * width;
+		pitch = 4 * sizeof(unsigned char) * width;
 		format = Image::IPF_B8G8R8A8;
 	}
 	break;
 	case GL_ALPHA:
 	{
-		pitch = 3 * sizeof(unsigned char) * width;
+		pitch = 1 * sizeof(unsigned char) * width;
 		format = Image::IPF_A8;
 
 	}
 	break;
 	case GL_LUMINANCE:
 	{
-		pitch = 3 * sizeof(unsigned char) * width;
+		pitch = 1 * sizeof(unsigned char) * width;
 		format = Image::IPF_L8;
 
 	}
 	break;
 	case GL_LUMINANCE_ALPHA:
 	{
-		pitch = 3 * sizeof(unsigned char) * width;
+		pitch = 2 * sizeof(unsigned char) * width;
 		format = Image::IPF_A8L8;
 
 	}
@@ -298,43 +332,31 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr image)
 {
 	if (image == nullptr) return nullptr;
-
-	TextureOpenGL* tex = new TextureOpenGL();
-	GLuint textureID = 0;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	GLenum glformat = GL_RGB;
 	EPixelFormat format = EPixelFormat::Unkonwn;
 	switch (image->Format)
 	{
 	case  Image::IPF_L8:
 		{
-			glformat = GL_LUMINANCE;
 			format = EPixelFormat::L8;
 		}
 		break;
 	case  Image::IPF_A8:
 		{
-			glformat = GL_ALPHA;
 			format = EPixelFormat::A8;
 		}
 		break;
 	case  Image::IPF_A8L8:
 		{
-			glformat = GL_LUMINANCE_ALPHA;
 			format = EPixelFormat::A8L8;
 		}
 		break;
 	case  Image::IPF_R8G8B8:
 		{
-			glformat = GL_RGB;
 			format = EPixelFormat::R8G8B8;
 		}
 		break;
 	case  Image::IPF_R8G8B8A8:
 		{
-			glformat = GL_RGBA;
 			format = EPixelFormat::A8R8G8B8;
 		}
 		break;
@@ -343,26 +365,9 @@ ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr 
 		break;
 	}
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, glformat, image->width, image->height,0, glformat, GL_UNSIGNED_BYTE, image->data);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	tex->m_TextureID = textureID;
-	tex->m_Width = image->width;
-	tex->m_Height = image->height;
-	tex->m_Format = format;
-	tex->m_GLFormat = glformat;
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	TextureOpenGL* tex = TextureOpenGL::Create(image->width,image->height, format, ETextureUsage::Default);
+	if (!tex)return nullptr;
+	tex->UpdateImage(0, 0, 0, image->width, image->height, (unsigned char*)image->data);
 	return tex;
 }
 
