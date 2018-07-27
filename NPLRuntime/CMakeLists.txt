@@ -12,7 +12,9 @@
 # rm -f Server/trunk/curl-7.47.1/include/curl/curlbuild.h
 # apt-get install freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.1)
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_C_STANDARD 11)
 
 project (NPLRuntime)
 

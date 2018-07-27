@@ -153,5 +153,6 @@ BlockModel& ParaEngine::CCarpetModelProvider::GetBlockModel(int nIndex /*= 0*/)
 
 BlockModel& ParaEngine::CCarpetModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks /*= NULL*/)
 {
+	nBlockData = nBlockData & 0xff;
 	return (nBlockData<m_nModelCount) ? m_block_models[nBlockData] : m_block_models[0];
 }
