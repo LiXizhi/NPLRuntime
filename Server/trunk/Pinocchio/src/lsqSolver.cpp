@@ -212,7 +212,7 @@ LLTMatrix *SPDMatrix::factor() const
         }
     }
     for(i = 0; i < sz; ++i)
-        sort(pm[i].begin(), pm[i].end());
+        std::sort(pm[i].begin(), pm[i].end());
 
     //prepare for decomposition
     vector<vector<pair<int, double> > > cols(sz);
@@ -242,7 +242,7 @@ LLTMatrix *SPDMatrix::factor() const
                 }
             }
         }
-        sort(columnsAdded.begin(), columnsAdded.end());
+        std::sort(columnsAdded.begin(), columnsAdded.end());
 
         for(j = 0; j < (int)columnsAdded.size(); ++j) {//add the columns and clear added
             added[columnsAdded[j]] = false;

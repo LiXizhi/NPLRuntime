@@ -55,7 +55,7 @@ public:
             orders[d].reserve(m_Objs.size());
             for(i = 0; i < (int)m_Objs.size(); ++i)
                 orders[d].push_back(i);
-            sort(orders[d].begin(), orders[d].end(), DLess(d, m_Objs));
+            std::sort(orders[d].begin(), orders[d].end(), DLess(d, m_Objs));
         }
     
         m_rNodes.reserve((int)m_Objs.size() * 2 - 1);

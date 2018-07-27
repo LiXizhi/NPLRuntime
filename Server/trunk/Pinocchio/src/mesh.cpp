@@ -139,7 +139,7 @@ struct MFace
     MFace(int v1, int v2, int v3)
     {
         v[0] = v1; v[1] = v2; v[2] = v3;
-        sort(v, v + 3);
+        std::sort(v, v + 3);
     }
     
     bool operator<(const MFace &f) const { return lexicographical_compare(v, v + 3, f.v, f.v + 3); }

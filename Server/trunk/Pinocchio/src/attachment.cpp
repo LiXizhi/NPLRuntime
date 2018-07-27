@@ -140,7 +140,7 @@ public:
 
             A[i].push_back(make_pair(i, sum + H[i] / D[i]));
 
-            sort(A[i].begin(), A[i].end());
+            std::sort(A[i].begin(), A[i].end());
         }
 
         nzweights.resize(nv);

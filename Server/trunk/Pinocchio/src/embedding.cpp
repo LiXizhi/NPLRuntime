@@ -73,7 +73,7 @@ vector<vector<int> > Pinocchio::ComputePossibilities(const PtGraph &graph, const
     vector<double> rads;
     for(i = 0; i < (int)graph.verts.size(); ++i)
         rads.push_back(spheres[i].radius);
-    sort(rads.begin(), rads.end());
+    std::sort(rads.begin(), rads.end());
     double cutoff = (int)rads.size() < 50 ? 0. : rads[rads.size() - 50];
     for(i = 0; i < (int)graph.verts.size(); ++i)
         if(spheres[i].radius >= cutoff)
@@ -219,7 +219,7 @@ vector<PVector3> splitPath(FP *fp, int joint, int curIdx, int prevIdx)
     do {
         uncompIdx.push_back(fp->given.fPrev()[uncompIdx.back()]);
     } while(fp->given.fcMap()[uncompIdx.back()] == -1);
-    reverse(uncompIdx.begin(), uncompIdx.end());
+    std::reverse(uncompIdx.begin(), uncompIdx.end());
 
     vector<PVector3> pathPts(uncompIdx.size(), fp->graph.verts[newPath[0]]);
     
@@ -365,7 +365,7 @@ public:
         do {
             uncompIdx.push_back(fp->given.fPrev()[uncompIdx.back()]);
         } while(fp->given.fcMap()[uncompIdx.back()] == -1);
-        reverse(uncompIdx.begin(), uncompIdx.end());
+        std::reverse(uncompIdx.begin(), uncompIdx.end());
         
         vector<PVector3> dirs = computeDirs(fp, cur, next, idx);
         if(dirs.size() == 0)

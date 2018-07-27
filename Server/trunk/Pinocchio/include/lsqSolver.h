@@ -280,7 +280,7 @@ public:
                     continue;
                 m_SoftMatrix[idx].push_back(make_pair(varMap[it2->first], it2->second));
             }
-            sort(m_SoftMatrix[idx].begin(), m_SoftMatrix[idx].end());
+            std::sort(m_SoftMatrix[idx].begin(), m_SoftMatrix[idx].end());
         }
 
         //add the rhs transforms for the hard constraints
