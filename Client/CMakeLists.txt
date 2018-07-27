@@ -187,9 +187,9 @@ add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${CLIENT_BINARY_DIR}/luabind-0
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${CLIENT_BINARY_DIR}/sqlite-3.6.23.1)
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/pcl/common ${CLIENT_BINARY_DIR}/common)
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/pcl/features ${CLIENT_BINARY_DIR}/features)
-add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/Pinocchio ${CLIENT_BINARY_DIR}/Pinocchio)
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common ${CLIENT_BINARY_DIR}/common)
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${CLIENT_BINARY_DIR}/features)
+add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${CLIENT_BINARY_DIR}/Pinocchio)
 
 
 
