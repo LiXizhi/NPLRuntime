@@ -50,6 +50,7 @@ namespace ParaEngine
 			assert(false);//Unkonw blend value
 			break;
 		}
+		
 		return 0;
 	}
 }
@@ -806,6 +807,16 @@ void ParaEngine::RenderDeviceOpenGL::InitCpas()
 	m_DeviceCpas.ScissorTest = true;
 	m_DeviceCpas.Stencil = true;
 	m_DeviceCpas.NumSimultaneousRTs = GL_MAX_COLOR_ATTACHMENTS;
+	GLint numExtes = 0;
+	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtes);
+	for (GLint i =0;i<numExtes;i++)
+	{
+		const char* extName = (const char*)glGetStringi(GL_EXTENSIONS, i);
+		m_GLExtes.push_back(extName);
+	}
+
+	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
+
 }
 
 void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
@@ -840,5 +851,12 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+}
+
+bool ParaEngine::RenderDeviceOpenGL::IsSupportExt(const char* extName)
+{
+	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
+	if (it != m_GLExtes.end()) return true;
+	return false;
 }
 

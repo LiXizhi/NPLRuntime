@@ -165,11 +165,14 @@ ImagePtr PNGParser::Parse(const unsigned char* buffer, size_t buffer_size)
 	}
 
 	auto image = std::make_shared<Image>();
-	image->width = width;
-	image->height = height;
 	image->Format = image_format;
 	image->data = _data;
-	image->data_size = dataLen;
+	ImageMipmap mipmap;
+	mipmap.width = width;
+	mipmap.height = height;
+	mipmap.offset = 0;
+	mipmap.size = dataLen;
+	image->mipmaps.push_back(mipmap);
 	return image;
 }
 

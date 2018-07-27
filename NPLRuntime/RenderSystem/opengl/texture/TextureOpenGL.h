@@ -38,6 +38,8 @@ namespace ParaEngine
 		uint32_t m_Height;
 		EPixelFormat m_Format;
 		GLenum m_GLFormat;
+		GLenum m_GLDataType;
+		GLenum m_GLPixelFomat;
 		ETextureFilter m_MagFilter;
 		ETextureFilter m_MinFilter;
 		ETextureWrapMode m_AddressU;

@@ -3,7 +3,7 @@
 
 #include "ParaEngine.h"
 #include "GLImage.h"
-#include "s3tc.h"
+#include "Framework/Codec/s3tc.h"
 #include "jpeglib.h"
 #include "png.h"
 

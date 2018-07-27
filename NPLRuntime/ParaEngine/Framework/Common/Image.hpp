@@ -2,10 +2,25 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 namespace ParaEngine
 {
 
-	
+	struct ImageMipmap
+	{
+		uint32_t offset;
+		uint32_t size;
+		uint32_t width;
+		uint32_t height;
+		ImageMipmap()
+			:offset(0)
+			,size(0)
+			,width(0)
+			,height(0)
+		{
+
+		}
+	};
 
 	class Image
 	{
@@ -18,14 +33,15 @@ namespace ParaEngine
 			IPF_A8L8,//ALPHA,GRAY
 			IPF_R8G8B8,
 			IPF_R8G8B8A8,
-			IPF_B8G8R8A8
+			IPF_B8G8R8A8,
+			IPF_COMPRESSED_DXT1,
+			IPF_COMPRESSED_DXT3,
+			IPF_COMPRESSED_DXT5
 		};
 
 
 		Image()
 			:data(nullptr)
-			,width(0)
-			,height(0)
 			,data_size(0)
 			,Format(IPF_R8G8B8A8)
 		{
@@ -38,18 +54,15 @@ namespace ParaEngine
 				delete[] data;
 				data = nullptr;
 			}
-			width = 0;
-			height = 0;
 			data_size = 0;
 			Format = IPF_R8G8B8A8;
+			mipmaps.clear();
 		}
 	public:
 		void* data;
-		uint32_t width;
-		uint32_t height;
 		size_t data_size;
 		EImagePixelFormat Format;
+		std::vector<ImageMipmap> mipmaps;
 	};
-
 	using ImagePtr = std::shared_ptr<Image>;
 }

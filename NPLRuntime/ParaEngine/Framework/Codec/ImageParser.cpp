@@ -53,10 +53,10 @@ ImageParser::ImageFormat ImageParser::DetectFormat(const unsigned char* buffer, 
 	// isS3TC
 	if (buffer_size > 4)
 	{
-		static const char S3TC_SIGNATURE[] = {'D','D','S','\0'};
+		static const char S3TC_SIGNATURE[] = {'D','D','S'};
 		if (memcmp(S3TC_SIGNATURE, buffer, sizeof(S3TC_SIGNATURE)) == 0)
 		{
-			return ImageFormat::PNG;
+			return ImageFormat::S3TC;
 		}
 	}
 	// Unkown

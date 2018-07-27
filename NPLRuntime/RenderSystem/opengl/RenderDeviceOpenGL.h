@@ -79,6 +79,7 @@ namespace ParaEngine
 		void ApplyBlendingModeChange();
 		void InitCpas();
 		void InitFrameBuffer();
+		bool IsSupportExt(const char* extName);
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -108,7 +109,7 @@ namespace ParaEngine
 		IParaEngine::ITexture* m_CurrentRenderTargets[8];
 		IParaEngine::ITexture* m_CurrentDepthStencil;
 		std::vector<IParaEngine::IDeviceResource*> m_Resources;
-
+		std::vector<std::string> m_GLExtes;
 		GLuint m_FBO;
 	};
 

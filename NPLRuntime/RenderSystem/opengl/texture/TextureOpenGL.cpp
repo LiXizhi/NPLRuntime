@@ -8,6 +8,8 @@ ParaEngine::TextureOpenGL::TextureOpenGL()
 	, m_Height(0)
 	, m_Format(EPixelFormat::Unkonwn)
 	, m_GLFormat(0)
+	, m_GLDataType(0)
+	, m_GLPixelFomat(0)
 	, m_MagFilter(ETextureFilter::Point)
 	, m_MinFilter(ETextureFilter::Point)
 	, m_AddressU(ETextureWrapMode::Clamp)
@@ -155,11 +157,15 @@ ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 	glBindTexture(GL_TEXTURE_2D,0);
 
 	auto img = std::make_shared<Image>();
-	img->width = width;
-	img->height = height;
+	ImageMipmap mipmap;
+	mipmap.width = width;
+	mipmap.height = height;
+	mipmap.offset = 0;
+	mipmap.size = buffer_size;
 	img->data = buffer;
 	img->data_size = buffer_size;
 	img->Format = format;
+	img->mipmaps.push_back(mipmap);
 	return img;
 }
 
@@ -269,32 +275,48 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 
 TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
-	
 
 	GLenum glFormat = 0;
+	GLenum glDataType = 0;
+	GLenum glPixelFormat = 0;
 	switch (format)
 	{
 	case EPixelFormat::R8G8B8:
 		glFormat = GL_RGB;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_RGB;
 		break;
 	case EPixelFormat::A8R8G8B8:
 		glFormat = GL_RGBA;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_RGBA;
 		break;
 	case EPixelFormat::A8B8G8R8:
 		glFormat = GL_BGRA;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_BGRA;
 		break;
 	case EPixelFormat::A8:
 		glFormat = GL_ALPHA;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_ALPHA;
 		break;
 	case EPixelFormat::L8:
 		glFormat = GL_LUMINANCE;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_RED;
 		break;
 	case EPixelFormat::A8L8:
 		glFormat = GL_LUMINANCE_ALPHA;
+		glDataType = GL_UNSIGNED_BYTE;
+		glPixelFormat = GL_RG;
 	case EPixelFormat::D24S8:
 		glFormat = GL_DEPTH24_STENCIL8;
+		glDataType = GL_UNSIGNED_INT_24_8;
+		glPixelFormat = GL_DEPTH_STENCIL;
 		break;
 	default:
+		return nullptr;
 		break;
 	}
 	if (glFormat == 0) return nullptr;
@@ -303,7 +325,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	
-	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, usage == ETextureUsage::DepthStencil ? GL_DEPTH_STENCIL : glFormat, usage == ETextureUsage::DepthStencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_BYTE,nullptr);
+	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat,glDataType,nullptr);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -360,14 +382,31 @@ ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr 
 			format = EPixelFormat::A8R8G8B8;
 		}
 		break;
-
+	case Image::IPF_COMPRESSED_DXT1:
+	{
+		format = EPixelFormat::DXT1;
+	}
+	break;
+	case Image::IPF_COMPRESSED_DXT3:
+	{
+		format = EPixelFormat::DXT3;
+	}
+	break;
+	case Image::IPF_COMPRESSED_DXT5:
+	{
+		format = EPixelFormat::DXT5;
+	}
+	break;
 	default:
 		break;
 	}
 
-	TextureOpenGL* tex = TextureOpenGL::Create(image->width,image->height, format, ETextureUsage::Default);
+	TextureOpenGL* tex = TextureOpenGL::Create(image->mipmaps[0].width, image->mipmaps[0].height, format, ETextureUsage::Default);
 	if (!tex)return nullptr;
-	tex->UpdateImage(0, 0, 0, image->width, image->height, (unsigned char*)image->data);
+	for (int i =0;i<image->mipmaps.size();i++)
+	{
+		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
+	}
 	return tex;
 }
 

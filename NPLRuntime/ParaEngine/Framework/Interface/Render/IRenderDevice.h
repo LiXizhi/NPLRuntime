@@ -41,6 +41,7 @@ namespace ParaEngine
 		bool ScissorTest;
 		bool Stencil;
 		uint32_t NumSimultaneousRTs;
+		bool SupportS3TC;
 
 		RenderDeviceCaps()
 			:DynamicTextures(false)
@@ -50,6 +51,7 @@ namespace ParaEngine
 			,ScissorTest(false)
 			,Stencil(false)
 			,NumSimultaneousRTs(0)
+			,SupportS3TC(false)
 		{
 
 		}
