@@ -1,15 +1,12 @@
+#include "ParaEngine.h"
 #include "AutoRigger.h"
-#include "pinocchioApi.h"
 #include "ParaWorldAsset.h"
 #include "Matcher.h"
 #include "ParaXModel/ParaXBone.h"
 #include "ParaXModel/ParaXModel.h"
+#include "pinocchioApi.h"
 #include "skeleton.h"
 
-#include <pcl/point_types.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/surface/gp3.h>
 
 #include <thread>
 #include <functional>
@@ -826,6 +823,6 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.line";
 	RigHelper::OutputSkinningRelation(targetModel, fileName);
 
-	//skeletonModel->SaveToDisk("D:/Projects/3rdParty/npl_dev/Fork/NPLRuntime/Client/build/lib/Release/worlds/DesignHouse/test/morph_result1.x");
-	targetModel->SaveToDisk("D:/Projects/3rdParty/npl_dev/Fork/NPLRuntime/Client/build/lib/Release/worlds/DesignHouse/test/morph_result2.x");
+	//skeletonModel->SaveToDisk("D:/Projects/npl_dev_fork/Client/build/lib/Release/worlds/DesignHouse/test/morph_result1.x");
+	targetModel->SaveToDisk("D:/Projects/npl_dev_fork/Client/build/lib/Release/worlds/DesignHouse/test/morph_result2.x");
 }

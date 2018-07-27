@@ -22,7 +22,10 @@ using namespace ParaEngine;
 /** place holder for being loaded parax models */
 #define DEFAULT_PARAX_MODEL			"character/common/tag/tag.x"
 
-ParaEngine::ParaXEntity::ParaXEntity(const AssetKey& key) :AssetEntity(key), m_nTechniqueHandle(-1)
+ParaEngine::ParaXEntity::ParaXEntity(const AssetKey& key)
+	: AssetEntity(key)
+	, m_nTechniqueHandle(-1)
+	, m_bMergeCoplanerBlockFace(true)
 {
 
 }
@@ -184,7 +187,7 @@ CParaXModel* ParaXEntity::TryGetModel(int nLODIndex)
 
 bool ParaXEntity::IsLoaded()
 {
-	return GetModel()!=0;
+	return TryGetModel()!=0;
 }
 
 void ParaXEntity::CreateMeshLODLevel( float fromDepth, const string& sFilename )
@@ -317,6 +320,16 @@ int ParaEngine::ParaXEntity::InstallFields(CAttributeClass* pClass, bool bOverri
 	pClass->AddField("PolyCount", FieldType_Int, NULL, (void*)GetPolyCount_s, NULL, NULL, bOverride);
 	pClass->AddField("PhysicsCount", FieldType_Int, NULL, (void*)GetPhysicsCount_s, NULL, NULL, bOverride);
 	return S_OK;
+}
+
+void ParaEngine::ParaXEntity::SetMergeCoplanerBlockFace(bool val)
+{
+	m_bMergeCoplanerBlockFace = val;
+}
+
+bool ParaEngine::ParaXEntity::GetMergeCoplanerBlockFace()
+{
+	return m_bMergeCoplanerBlockFace;
 }
 
 

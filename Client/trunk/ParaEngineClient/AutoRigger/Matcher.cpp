@@ -27,6 +27,7 @@
 // IN THE SOFTWARE.
 // ----------------------------------------------------------------------------
 
+#include "ParaEngine.h"
 #include "Matcher.h"
 
 #include "pcl/features/feature.h"

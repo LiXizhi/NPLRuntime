@@ -109,8 +109,8 @@ namespace ParaEngine
 		*/
 		CParaXModel* GetModel(int nLODIndex=0);
 
-		/** try to get the highest level mesh if LOD is enabled. without calling LoadAsset
-		*   so as to be called from other thread safe.
+		/** try to get the highest level mesh if LOD is enabled without calling LoadAsset().
+		* It can be called from other thread safely.
 		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
 		*/
 		CParaXModel* TryGetModel(int nLODIndex = 0);
@@ -138,6 +138,9 @@ namespace ParaEngine
 
 		/** Get AABB bounding box of the asset object. if the asset contains an OOB, it will return true. */
 		virtual bool GetBoundingBox(Vector3* pMin, Vector3* pMax);
+
+		void SetMergeCoplanerBlockFace(bool val);
+		bool GetMergeCoplanerBlockFace();
 	private:
 		/// mesh objects in LOD list. each mesh may contain materials and textures, but you can simply 
 		/// ignore them. The default setting is rendering with materials. See CParaXStaticMesh for more details
@@ -145,6 +148,9 @@ namespace ParaEngine
 
 		/** the primary technique handle*/
 		int m_nTechniqueHandle;
+
+		/** an option whether merge coplaner block faces when loading a bmax model*/
+		bool m_bMergeCoplanerBlockFace;
 	};
 
 	typedef AssetManager<ParaXEntity>  ParaXEntityManager;

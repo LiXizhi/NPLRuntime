@@ -15,7 +15,8 @@ namespace ParaEngine
 	bool ParaXModelExporter::BmaxExportToSTL(const std::string& input_bmax_filename, const std::string& out_filename, bool binary /*= false*/)
 	{
 		CParaFile file(input_bmax_filename.c_str());
-		BMaxParser p(file.getBuffer(), file.getSize());
+		BMaxParser p;
+		p.Load(file.getBuffer(), file.getSize());
 		std::string filename = out_filename.empty() ? input_bmax_filename + ".stl" : out_filename;
 		return ExportSTL_Internal(filename, p.ParseParaXModel(), binary);
 	}
