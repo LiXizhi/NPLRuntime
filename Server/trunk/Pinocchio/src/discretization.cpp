@@ -2,6 +2,8 @@
 #include "deriv.h"
 #include "debugging.h"
 
+#include <algorithm>
+
 using namespace Pinocchio;
 
 //fits mesh inside unit cube, makes sure there's exactly one connected component
@@ -133,7 +135,7 @@ vector<PSphere> Pinocchio::SampleMedialSurface(TreeType *distanceField, double t
     
     Debugging::out() << "Medial axis points = " << out.size() << endl;
     
-    sort(out.begin(), out.end(), sphereComp);
+    std::sort(out.begin(), out.end(), sphereComp);
 
     return out;
 }
