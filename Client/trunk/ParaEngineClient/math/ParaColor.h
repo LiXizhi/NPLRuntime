@@ -363,6 +363,12 @@ namespace ParaEngine
 		/** conversion between 32bits color and 16 bits color */
 		static uint32 convert16_32(uint16 rgb);
 
+		/** conversion between 32bits color and 8 bits color */
+		static uint8 convert32_8(uint32 rgb);
+
+		/** conversion between 32bits color and 8 bits color */
+		static uint32 convert8_32(uint8 rgb);
+
 		/**
 		* Makes a random but quite nice color.
 		*/
