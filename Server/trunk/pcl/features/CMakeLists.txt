@@ -19,14 +19,15 @@ file (GLOB src_files
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${CLIENT_SOURCE_DIR}/trunk/externals/pcl/common/include)
-include_directories("$ENV{BOOST_ROOT}")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/Eigen")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/flann-1.8.4-src/src/cpp/")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/search/include")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/octree/include")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/surface/include")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/pcl/kdtree/include")
+include_directories("${Boost_INCLUDE_DIRS}")
+include_directories("${SERVER_SOURCE_DIR}/Eigen")
+include_directories("${SERVER_SOURCE_DIR}/flann-1.8.4-src/src/cpp/")
+include_directories("${SERVER_SOURCE_DIR}/pcl/common/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/search/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/octree/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/surface/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/kdtree/include")
+
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies

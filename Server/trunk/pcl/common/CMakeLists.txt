@@ -21,9 +21,8 @@ file (GLOB src_files
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories("$ENV{BOOST_ROOT}")
-include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/Eigen")
-#include_directories("${CLIENT_SOURCE_DIR}/trunk/externals/flann-1.8.4-src/src/cpp/")
+include_directories("${Boost_INCLUDE_DIRS}")
+include_directories("${SERVER_SOURCE_DIR}/Eigen")
 
 IF(MSVC)
 	# statically link MSVC to reduce dependancies
