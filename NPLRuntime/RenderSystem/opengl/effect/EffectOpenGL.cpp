@@ -209,7 +209,7 @@ bool hlsl2glsl(const std::string& inCode,
 
 	const char* sourceStr = inCode.c_str();
 	const char* infoLog = nullptr;
-	int opt = ETranslateOpBGRAVertexColor;
+	int opt = ETranslateOpBGRAVertexColor | ETranslateOpFlipUVVertical;
 	Hlsl2Glsl_ParseCallbacks callback;
 
 	callback.data = (void*)include;
