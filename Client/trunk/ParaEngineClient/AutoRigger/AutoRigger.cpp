@@ -262,10 +262,14 @@ public:
 			newIndices[i] = j - fixValue[j];
 		}
 
-		// output the squeezed points for visulization
-		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.vert";
-		RigHelper::OutputTriangles(pMesh, fileName);
-
+#ifdef OUTPUT_DEBUG_FILE
+		{
+			// output the squeezed points for visulization
+			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.vert";
+			RigHelper::OutputTriangles(pMesh, fileName);
+		}
+#endif // OUTPUT_DEBUG_FILE
+	
 		struct TRIANGLE {
 			TRIANGLE() :_computedNormal(false) {}
 
@@ -378,11 +382,13 @@ public:
 		pMesh->computeVertexNormals();
 		pMesh->normalizeBoundingBox();
 
-
-		// output the trimed triangles
-		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.mesh";
-		RigHelper::OutputTriangles(pMesh, fileName);
-
+#ifdef OUTPUT_DEBUG_FILE
+		{
+			// output the trimed triangles
+			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.mesh";
+			RigHelper::OutputTriangles(pMesh, fileName);
+		}
+#endif // OUTPUT_DEBUG_FILE
 		return pMesh;
 	}
 
@@ -454,16 +460,20 @@ public:
 		}
 
 		Rect3 boundingBox = Rect3(vertices.begin(), vertices.end());
-		m_cscale = .9 / boundingBox.getSize().accumulate(ident<double>(), maximum<double>());
-		m_ctoAdd = PVector3(0.5, 0.5, 0.5) - boundingBox.getCenter() * m_cscale;
+		m_cScale = .9 / boundingBox.getSize().accumulate(ident<double>(), maximum<double>());
+		m_cToAdd = PVector3(0.5, 0.5, 0.5) - boundingBox.getCenter() * m_cScale;
 
 		for (int i = 0; i < vertices.size(); ++i) {
-			vertices[i] = vertices[i] * m_cscale + m_ctoAdd;
+			vertices[i] = vertices[i] * m_cScale + m_cToAdd;
 		}
 
-		// output the trimed triangles
-		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.inter";
-		RigHelper::OutputVertices(vertices, fileName);
+#ifdef OUTPUT_DEBUG_FILE
+		{
+			// output the trimed triangles
+			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.inter";
+			RigHelper::OutputVertices(vertices, fileName);
+		}
+#endif // OUTPUT_DEBUG_FILE
 
 		double cubeEdgeLength = (vertices[1] - vertices[0]).length();
 		typedef std::pair<int, double> DisIndexPair;
@@ -511,12 +521,12 @@ public:
 	}
 
 	// used to recover the coordinates
-	static double m_cscale;
-	static PVector3 m_ctoAdd;
+	static double m_cScale;
+	static PVector3 m_cToAdd;
 };
 
-double RigHelper::m_cscale = 1.0;
-PVector3 RigHelper::m_ctoAdd = PVector3();
+double RigHelper::m_cScale = 1.0;
+PVector3 RigHelper::m_cToAdd = PVector3();
 
 CAutoRigger::CAutoRigger()
 	:m_pTargetModel(nullptr)
@@ -548,6 +558,11 @@ void CAutoRigger::SetTargetModel(const char* fileName)
 	m_pTargetModel = CParaWorldAsset::GetSingleton()->LoadParaX("", std::string(fileName));
 	m_pTargetModel->SetMergeCoplanerBlockFace(false);
 	m_pTargetModel->LoadAsset();
+}
+
+void  CAutoRigger::SetOutputFilePath(const char* filePath)
+{
+	m_OutputFilePath = filePath;
 }
 
 void CAutoRigger::SetThreshold()
@@ -632,9 +647,6 @@ void CAutoRigger::AutoRigThreadFunc()
 		vector<PSphere> spheres = PackSpheres(medialSurface);
 		PtGraph graph = ConnectSamples(distanceField, spheres);
 
-		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.graph";
-		RigHelper::OutputVertices(graph.verts, fileName);
-
 		//discrete embedding
 		vector<vector<int> > possibilities = ComputePossibilities(graph, spheres, *given);
 
@@ -648,12 +660,6 @@ void CAutoRigger::AutoRigThreadFunc()
 		}
 
 		rig.embedding = SplitPaths(embeddingIndices, graph, *given);
-	
-
-		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.dis";
-		RigHelper::OutputVertices(rig.embedding, fileName);
-		
-		RigHelper::OutputDistantField(distanceField);
 
 		VisTester<TreeType>* tester = new VisTester<TreeType>(distanceField);
 		RigHelper::RefineEmbedding(m_pTargetModel->GetModel(), mesh, rig.embedding, tester);
@@ -667,23 +673,34 @@ void CAutoRigger::AutoRigThreadFunc()
 		}
 
 		for (int i = 0; i < rig.embedding.size(); ++i) {
-			//rig.embedding[i] = (rig.embedding[i] - RigHelper::m_ctoAdd) / RigHelper::m_cscale;
 			int j = boneNameIndexMap[given->indexNameMap[i]];
 			skeletonModel->bones[j].pivot.x = rig.embedding[i][0];
 			skeletonModel->bones[j].pivot.y = rig.embedding[i][1];
 			skeletonModel->bones[j].pivot.z = rig.embedding[i][2];
 		}
 
-		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.boneconct";
-		RigHelper::OutputBoneRelation(skeletonModel, fileName);
-
-		// output the bones joints
-		fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.bone";
-		RigHelper::OutputVertices(rig.embedding, fileName);
-
 		int numVert = skeletonModel->m_objNum.nVertices;
 		
 		this->Rigging(m_pTargetModel->GetModel(), bestMatch->second->GetModel(), newMesh, tester);
+
+#ifdef OUTPUT_DEBUG_FILE
+		{
+			// output the discreted graph
+			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.graph";
+			RigHelper::OutputVertices(graph.verts, fileName);
+
+			// output bone connections
+			fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.boneconct";
+			RigHelper::OutputBoneRelation(skeletonModel, fileName);
+
+			// output the bones joints
+			fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.bone";
+			RigHelper::OutputVertices(rig.embedding, fileName);
+
+			// output distant field 
+			RigHelper::OutputDistantField(distanceField);
+		}
+#endif // OUTPUT_DEBUG_FILE
 
 		//cleanup
 		delete tester;
@@ -731,7 +748,6 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 	newVertices.reserve(newMesh.m_Vertices.size());
 	for (int i = 0; i < newMesh.m_Vertices.size(); ++i) {
 		PVector3 v = newMesh.m_Vertices[i].pos;
-		//v = (v - mesh->toAdd) / mesh->scale;
 		ModelVertex modelVertex;
 		memset(&modelVertex, 0, sizeof(ModelVertex));
 		modelVertex.pos.x = v[0];
@@ -744,7 +760,6 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 		modelVertex.normal.z = n[2];
 
 		modelVertex.color0 = 123;
-
 
 		newVertices.push_back(modelVertex);
 	}
@@ -819,10 +834,13 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 		}
 	}
 
-	// output the trimed triangles
-	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.line";
-	RigHelper::OutputSkinningRelation(targetModel, fileName);
+#ifdef OUTPUT_DEBUG_FILE
+	{
+		// output the trimed triangles
+		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.line";
+		RigHelper::OutputSkinningRelation(targetModel, fileName);
+	}
+#endif // OUTPUT_DEBUG_FILE
 
-	//skeletonModel->SaveToDisk("D:/Projects/npl_dev_fork/Client/build/lib/Release/worlds/DesignHouse/test/morph_result1.x");
-	targetModel->SaveToDisk("D:/Projects/npl_dev_fork/Client/build/lib/Release/worlds/DesignHouse/test/morph_result2.x");
+	targetModel->SaveToDisk(m_OutputFilePath.c_str());
 }
