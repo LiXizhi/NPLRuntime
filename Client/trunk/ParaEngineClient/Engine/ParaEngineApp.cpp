@@ -2339,11 +2339,19 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 			{
 				// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
 				// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
-				if(CGlobals::GetRenderDevice())
+				//if(CGlobals::GetRenderDevice())
+				//{
+				//	// ::SetCursor( NULL );
+				//	CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
+				//	// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
+				//}
+
+				// d3ddeivec::ShowCursor can not hide cursor after changing resolution(only tested in win10)
+				BOOL show = wParam == 1;
+				if (m_bIsCursorShown != show)
 				{
-					// ::SetCursor( NULL );
-					CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
-					// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
+					m_bIsCursorShown = show;
+					ShowCursor(m_bIsCursorShown);
 				}
 				break;
 			}
