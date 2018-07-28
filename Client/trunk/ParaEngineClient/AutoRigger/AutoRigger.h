@@ -35,7 +35,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAutoRigger, AutoRigModel_s, const char*) { cls->AutoRigModel(); return S_OK; }
 		
 
-		int CAutoRigger::InstallFields(CAttributeClass* pClass, bool bOverride);
+		int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 	private:
 		void AutoRigThreadFunc();
