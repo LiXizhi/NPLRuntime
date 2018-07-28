@@ -276,8 +276,8 @@ public:
 			void ComputeNormal(Mesh* pMesh)
 			{
 				if (!_computedNormal) {
-					PVector3& p01 = pMesh->m_Vertices[_v[1]].pos - pMesh->m_Vertices[_v[0]].pos;
-					PVector3& p02 = pMesh->m_Vertices[_v[2]].pos - pMesh->m_Vertices[_v[0]].pos;
+					PVector3 p01 = pMesh->m_Vertices[_v[1]].pos - pMesh->m_Vertices[_v[0]].pos;
+					PVector3 p02 = pMesh->m_Vertices[_v[2]].pos - pMesh->m_Vertices[_v[0]].pos;
 					_n = (p01 % p02).normalize();
 					_computedNormal = true;
 				}
@@ -311,9 +311,9 @@ public:
 						if (M[i] < 0) p1 = pMesh->m_Vertices[_v[i]].pos;
 						if (N[i] < 0) p2 = pMesh->m_Vertices[rhs._v[i]].pos;
 					}
-					PVector3& cross = _n % rhs._n;
+					double len = (_n % rhs._n).length();
 					double dot = (p1 - p0) * (p2 - p0);
-					return cross.length() < VERY_SMALL && dot > VERY_SMALL ? true : false;
+					return len < VERY_SMALL && dot > VERY_SMALL ? true : false;
 				}
 
 
