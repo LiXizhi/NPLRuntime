@@ -176,6 +176,12 @@ file (GLOB ParaEngineServer_WebSocket_FILES ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp
 SOURCE_GROUP("WebSocket" FILES ${ParaEngineServer_WebSocket_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_WebSocket_FILES})
 
+##############################
+#AutoRigger
+file (GLOB ParaEngineClient_AutoRigger_FILES ${CLIENT_SOURCE_DIR}/AutoRigger/*.cpp ${CLIENT_SOURCE_DIR}/AutoRigger/*.h)
+SOURCE_GROUP("AutoRigger" FILES ${ParaEngineClient_AutoRigger_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_AutoRigger_FILES})
+
 #######################################
 # PCH: precompiled header under msvc
 if (MSVC)
