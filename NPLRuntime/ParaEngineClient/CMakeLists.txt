@@ -156,6 +156,12 @@ file (GLOB ParaEngineClient_WebSocket_FILES ${ParaEngineClient_SOURCE_DIR}/WebSo
 SOURCE_GROUP("WebSocket" FILES ${ParaEngineClient_WebSocket_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_WebSocket_FILES})
 
+##############################
+#AutoRigger
+file (GLOB ParaEngineClient_AutoRigger_FILES ${ParaEngineClient_SOURCE_DIR}/AutoRigger/*.cpp ${ParaEngineClient_SOURCE_DIR}/AutoRigger/*.h)
+SOURCE_GROUP("AutoRigger" FILES ${ParaEngineClient_AutoRigger_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_AutoRigger_FILES})
+
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 # OPENGL Renderer Source
@@ -367,6 +373,7 @@ SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_FILES})
 ##############################
 # add the binary tree to the search path for include files
 include_directories("${ParaEngineClient_SOURCE_DIR}")
+include_directories("${ParaEngineClient_SOURCE_DIR}/AutoRigger")
 include_directories("${ParaEngineClient_SOURCE_DIR}/Core")
 include_directories("${ParaEngineClient_SOURCE_DIR}/renderer")
 include_directories("${ParaEngineClient_SOURCE_DIR}/3dengine")
@@ -385,6 +392,16 @@ include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 include_directories("${Boost_INCLUDE_DIRS}")
 
+#AutoRigger
+include_directories("${SERVER_SOURCE_DIR}/Eigen")
+include_directories("${SERVER_SOURCE_DIR}/flann-1.8.4-src/src/cpp/")
+include_directories("${SERVER_SOURCE_DIR}/Pinocchio/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/common/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/search/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/octree/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/surface/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/kdtree/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/features/include")
 
 if(NPLRUNTIME_SUPPORT_FBX)
 	include_directories("${Assimp_SOURCE_DIR}/include/")
@@ -428,7 +445,6 @@ if(APPLE)
 	include_directories(${CURL_INCLUDE_DIR})
 	list(APPEND ParaEngineClient_LIBS ${CURL_LIBRARIES})
 endif()
-
 
 if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
 
@@ -643,8 +659,12 @@ endif()
 # EXTRA_LIBRARIES
 if(WIN32)
 	list(APPEND ParaEngineClient_LIBS Ws2_32 winmm wsock32 Dnsapi Secur32 Crypt32 Wldap32 zlib libcurl
-	sqlite jsoncpp tinyxpath luabind)
+	sqlite jsoncpp tinyxpath luabind )
 endif()
+
+##############################
+# AutoRigger 
+list(APPEND ParaEngineClient_LIBS pcl_common pcl_features Pinocchio)
 	
 if(APPLE)
 	list(APPEND ParaEngineClient_LIBS dl resolv z pthread sqlite jsoncpp tinyxpath luabind)
