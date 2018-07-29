@@ -58,11 +58,27 @@ namespace ParaEngine
 			Format = IPF_R8G8B8A8;
 			mipmaps.clear();
 		}
+
+		static bool IsCompressedImageFormat(EImagePixelFormat format);
 	public:
 		void* data;
 		size_t data_size;
 		EImagePixelFormat Format;
 		std::vector<ImageMipmap> mipmaps;
 	};
+
+	bool Image::IsCompressedImageFormat(EImagePixelFormat format)
+	{
+		if (format == Image::IPF_COMPRESSED_DXT1 ||
+			format == Image::IPF_COMPRESSED_DXT3 ||
+			format == Image::IPF_COMPRESSED_DXT5)
+		{
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
 	using ImagePtr = std::shared_ptr<Image>;
 }

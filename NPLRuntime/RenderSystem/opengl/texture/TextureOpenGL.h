@@ -31,6 +31,11 @@ namespace ParaEngine
 
 	protected:
 		virtual void OnRelease() override;
+		bool UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels);
+		bool UpdateImageComressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels);
+
+		static TextureOpenGL* CreateUnComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);
+		static TextureOpenGL* CreateComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);
 
 	private:
 		GLuint m_TextureID;
