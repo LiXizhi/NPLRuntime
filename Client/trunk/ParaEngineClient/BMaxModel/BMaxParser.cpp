@@ -34,14 +34,21 @@ namespace ParaEngine
 	const int BMaxParser::MaxBoneLengthHorizontal = 50;
 	const int BMaxParser::MaxBoneLengthVertical = 100;
 
-	BMaxParser::BMaxParser(const char* pBuffer, int32 nSize, const char* filename, BMaxParser* pParent)
-		: m_bAutoScale(true), m_nHelperBlockId(90), m_pAnimGenerator(NULL), m_pParent(pParent),
-		m_bHasAnimation(false), m_centerPos(0, 0, 0), m_fScale(1.f), m_nLodLevel(0)
+	BMaxParser::BMaxParser(const char* filename, BMaxParser* pParent)
+		: m_bAutoScale(true)
+		, m_nHelperBlockId(90)
+		, m_pAnimGenerator(NULL)
+		, m_pParent(pParent)
+		, m_bHasAnimation(false)
+		, m_centerPos(0, 0, 0)
+		, m_fScale(1.f)
+		, m_nLodLevel(0)
+		, m_bMergeCoplanerBlockFace(true)
 	{
 		m_bHasBoneBlock = false;
 		if (filename)
 			SetFilename(filename);
-		Load(pBuffer, nSize);
+		//Load(pBuffer, nSize);
 	}
 
 	BMaxParser::~BMaxParser(void)
@@ -90,7 +97,11 @@ namespace ParaEngine
 				ParseBlocks_Internal(value);
 				ParseBlockFrames();
 				CalculateBoneWeights();
-				MergeCoplanerBlockFace();
+				if (m_bMergeCoplanerBlockFace) {
+					MergeCoplanerBlockFace();
+				}else {
+					CreatRectanglesFromBlocks();
+				}
 			}
 		}
 	}
@@ -432,6 +443,36 @@ namespace ParaEngine
 			rectangle->ScaleVertices(fScale);
 		}
 		// OUTPUT_LOG("rect count %d \n", m_rectangles.size());
+	}
+
+	void BMaxParser::CreatRectanglesFromBlocks()
+	{
+		ParseVisibleBlocks();
+
+		m_rectangles.clear();
+		for (auto& item : m_nodes)
+		{
+			BMaxNode *node = item.second.get();
+			if (node->GetBlockModel())
+			{
+				for (int i = 0; i < 6; i++)
+				{
+					RectanglePtr rectangle(new Rectangle(node, i));
+					rectangle->CloneNodes();
+					m_rectangles.push_back(rectangle);
+				}
+			}
+		}
+
+		float fScale = m_fScale;
+		if (m_nLodLevel > 0) {
+			fScale *= (float)pow(2, m_nLodLevel);
+		}
+
+		for (RectanglePtr& rectangle : m_rectangles)
+		{
+			rectangle->ScaleVertices(fScale);
+		}
 	}
 
 
@@ -1584,7 +1625,8 @@ namespace ParaEngine
 			CParaFile file;
 			if (file.OpenFile(sFullFilename.c_str()))
 			{
-				BMaxParser parser(file.getBuffer(), file.getSize(), sFilename.c_str(), this);
+				BMaxParser parser(sFilename.c_str(), this);
+				parser.Load(file.getBuffer(), file.getSize());
 				pModel.reset(parser.ParseParaXModel());
 			}
 			else
@@ -1596,6 +1638,11 @@ namespace ParaEngine
 			return pModel.get();
 		}
 		return NULL;
+	}
+
+	void BMaxParser::SetMergeCoplanerBlockFace(bool val)
+	{
+		m_bMergeCoplanerBlockFace = val;
 	}
 
 
