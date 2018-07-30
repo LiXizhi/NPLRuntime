@@ -27,7 +27,7 @@
 #include <cstring>
 
 //Decode S3TC encode block to 4x4 RGB32 pixels
-static void s3tc_decode_block(uint8_t **blockData,
+static void s3tc_decode_block(const uint8_t** blockData,
                        uint32_t *decodeBlockData,
                        unsigned int stride,
                        bool oneBitAlphaFlag,
@@ -140,7 +140,7 @@ static void s3tc_decode_block(uint8_t **blockData,
 }
 
 //Decode S3TC encode data to RGB32
-void s3tc_decode(uint8_t *encodeData,             //in_data
+void s3tc_decode(const uint8_t *encodeData,             //in_data
                  uint8_t *decodeData,             //out_data
                  const int pixelsWidth,
                  const int pixelsHeight,

@@ -1,6 +1,214 @@
 #include "TextureOpenGL.h"
+#include <algorithm>
 using namespace ParaEngine;
 using namespace IParaEngine;
+
+
+
+
+
+
+
+struct DXTColBlock {
+	uint16_t col0;
+	uint16_t col1;
+
+	uint8_t row[4];
+};
+
+struct DXT3AlphaBlock {
+	uint16_t row[4];
+};
+
+
+struct DXT5AlphaBlock {
+	uint8_t alpha0;
+	uint8_t alpha1;
+	uint8_t row[6];
+};
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// flip a DXT1 color block
+void flip_blocks_dxtc1(DXTColBlock *line, unsigned int numBlocks) {
+	DXTColBlock *curblock = line;
+
+	for (unsigned int i = 0; i < numBlocks; i++) {
+		std::swap(curblock->row[0], curblock->row[3]);
+		std::swap(curblock->row[1], curblock->row[2]);
+
+		curblock++;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// flip a DXT3 color block
+void flip_blocks_dxtc3(DXTColBlock *line, unsigned int numBlocks) {
+	DXTColBlock *curblock = line;
+	DXT3AlphaBlock *alphablock;
+
+	for (unsigned int i = 0; i < numBlocks; i++) {
+		alphablock = (DXT3AlphaBlock*)curblock;
+
+		std::swap(alphablock->row[0], alphablock->row[3]);
+		std::swap(alphablock->row[1], alphablock->row[2]);
+
+		curblock++;
+
+		std::swap(curblock->row[0], curblock->row[3]);
+		std::swap(curblock->row[1], curblock->row[2]);
+
+		curblock++;
+	}
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// flip a DXT5 alpha block
+void flip_dxt5_alpha(DXT5AlphaBlock *block) {
+	uint8_t gBits[4][4];
+
+	const uint32_t mask = 0x00000007;          // bits = 00 00 01 11
+	uint32_t bits = 0;
+	memcpy(&bits, &block->row[0], sizeof(uint8_t) * 3);
+
+	gBits[0][0] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[0][1] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[0][2] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[0][3] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[1][0] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[1][1] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[1][2] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[1][3] = (uint8_t)(bits & mask);
+
+	bits = 0;
+	memcpy(&bits, &block->row[3], sizeof(uint8_t) * 3);
+
+	gBits[2][0] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[2][1] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[2][2] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[2][3] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[3][0] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[3][1] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[3][2] = (uint8_t)(bits & mask);
+	bits >>= 3;
+	gBits[3][3] = (uint8_t)(bits & mask);
+
+	uint32_t *pBits = ((uint32_t*) &(block->row[0]));
+
+	*pBits = *pBits | (gBits[3][0] << 0);
+	*pBits = *pBits | (gBits[3][1] << 3);
+	*pBits = *pBits | (gBits[3][2] << 6);
+	*pBits = *pBits | (gBits[3][3] << 9);
+
+	*pBits = *pBits | (gBits[2][0] << 12);
+	*pBits = *pBits | (gBits[2][1] << 15);
+	*pBits = *pBits | (gBits[2][2] << 18);
+	*pBits = *pBits | (gBits[2][3] << 21);
+
+	pBits = ((uint32_t*) &(block->row[3]));
+
+#ifdef MACOS
+	*pBits &= 0x000000ff;
+#else
+	*pBits &= 0xff000000;
+#endif
+
+	*pBits = *pBits | (gBits[1][0] << 0);
+	*pBits = *pBits | (gBits[1][1] << 3);
+	*pBits = *pBits | (gBits[1][2] << 6);
+	*pBits = *pBits | (gBits[1][3] << 9);
+
+	*pBits = *pBits | (gBits[0][0] << 12);
+	*pBits = *pBits | (gBits[0][1] << 15);
+	*pBits = *pBits | (gBits[0][2] << 18);
+	*pBits = *pBits | (gBits[0][3] << 21);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// flip a DXT5 color block
+void flip_blocks_dxtc5(DXTColBlock *line, unsigned int numBlocks) {
+	DXTColBlock *curblock = line;
+	DXT5AlphaBlock *alphablock;
+
+	for (unsigned int i = 0; i < numBlocks; i++) {
+		alphablock = (DXT5AlphaBlock*)curblock;
+
+		flip_dxt5_alpha(alphablock);
+
+		curblock++;
+
+		std::swap(curblock->row[0], curblock->row[3]);
+		std::swap(curblock->row[1], curblock->row[2]);
+
+		curblock++;
+	}
+}
+
+
+
+uint8_t* flip_dxt_image(const uint8_t* pSrc, uint32_t width, uint32_t height,uint32_t size, Image::EImagePixelFormat format)
+{
+
+	uint32_t blockSize = 0;
+	void(*flipblocks)(DXTColBlock*, unsigned int);
+	switch (format)
+	{
+	case Image::IPF_COMPRESSED_DXT1:
+		blockSize = 8;
+		flipblocks = flip_blocks_dxtc1;
+		break;
+	case Image::IPF_COMPRESSED_DXT3:
+		flipblocks = flip_blocks_dxtc3;
+		blockSize = 16;
+		break;
+	case Image::IPF_COMPRESSED_DXT5:
+		flipblocks = flip_blocks_dxtc5;
+		blockSize = 16;
+		break;
+	}
+
+	unsigned int xblocks = width / 4;
+	unsigned int yblocks = height / 4;
+	uint32_t linesize = xblocks * blockSize;
+	DXTColBlock *top;
+	DXTColBlock *bottom;
+	uint8_t *tmp = new uint8_t[linesize];
+	uint8_t* pDest = new uint8_t[size];
+	memcpy(pDest,pSrc,size);
+	for (unsigned int j = 0; j < (yblocks >> 1); j++) {
+		top = (DXTColBlock*)((uint8_t*)pDest + j * linesize);
+		bottom = (DXTColBlock*)((uint8_t*)pDest + (((yblocks - j) - 1) * linesize));
+
+		flipblocks(top, xblocks);
+		flipblocks(bottom, xblocks);
+
+		// swap
+		memcpy(tmp, bottom, linesize);
+		memcpy(bottom, top, linesize);
+		memcpy(top, tmp, linesize);
+	}
+	delete[] tmp;
+	return pDest;
+}
+
+
+
 
 
 bool IsComressedFormat(EPixelFormat format)
@@ -422,16 +630,20 @@ bool TextureOpenGL::UpdateImageComressed(uint32_t level, uint32_t xoffset, uint3
 {
 	
 	uint32_t blockSize = 0;
+	Image::EImagePixelFormat imgFormat;
 	switch (m_Format)
 	{
 	case ParaEngine::EPixelFormat::DXT1:
 		blockSize = 8;
+		imgFormat = Image::IPF_COMPRESSED_DXT1;
 		break;
 	case ParaEngine::EPixelFormat::DXT3:
 		blockSize = 16;
+		imgFormat = Image::IPF_COMPRESSED_DXT3;
 		break;
 	case ParaEngine::EPixelFormat::DXT5:
 		blockSize = 16;
+		imgFormat = Image::IPF_COMPRESSED_DXT5;
 		break;
 	default:
 		return false;
@@ -439,10 +651,14 @@ bool TextureOpenGL::UpdateImageComressed(uint32_t level, uint32_t xoffset, uint3
 
 
 	GLuint size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+	uint32_t offy = m_Height - yoffset - height;
+
+	uint8_t* pDest = flip_dxt_image(pixels, width, height, size, imgFormat);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, m_GLFormat, size, pixels);
+	glCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, offy, width, height, m_GLFormat, size, pixels);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	delete[] pDest;
 	return true;
 }
 
@@ -523,8 +739,10 @@ TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
 	for (int i =0;i<image->mipmaps.size();i++)
 	{
 
-		glCompressedTexImage2D(GL_TEXTURE_2D, i, glFormat, image->mipmaps[i].width, image->mipmaps[i].height, 0, image->mipmaps[i].size, ((unsigned char*)image->data) + image->mipmaps[i].offset);
-
+		ImageMipmap& mp = image->mipmaps[i];
+		uint8_t* pDest = flip_dxt_image((uint8_t*)image->data + mp.offset, mp.width, mp.height, mp.size, image->Format);
+		glCompressedTexImage2D(GL_TEXTURE_2D, i, glFormat, mp.width, mp.height, 0, mp.size,pDest);
+		delete[] pDest;
 	}
 
 

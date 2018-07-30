@@ -102,7 +102,48 @@ uint32_t make_four_cc(char ch0, char ch1, char ch2, char ch3)
 
 ImagePtr soft_decode(const unsigned char* buffer, uint32_t buffer_size, S3TCDecodeFlag s3tc_format,uint32_t width,uint32_t height,uint32_t mipmaps)
 {
-	return nullptr;
+	uint32_t blockSize = s3tc_format == S3TCDecodeFlag::DXT1 ? 8 : 16;
+
+
+
+	ImagePtr img = std::make_shared<Image>();
+	uint32_t mipmap_width = width;
+	uint32_t mipmap_height = height;
+	uint32_t mipmap_offset = 0;
+	// calc data size
+	for (int i =0;i<mipmaps;i++)
+	{
+		if (mipmap_width == 0) mipmap_width = 1;
+		if (mipmap_height == 0) mipmap_height = 1;
+
+		uint32_t bpp = 4;
+		uint32_t pitch = mipmap_width * bpp;
+		uint32_t mipmap_size = height * pitch;
+
+		ImageMipmap mipmap;
+		mipmap.width = mipmap_width;
+		mipmap.height = mipmap_height;
+		mipmap.offset = mipmap_offset;
+		img->mipmaps.push_back(mipmap);
+
+		// next
+		mipmap_offset += mipmap_size;
+		mipmap_width /= 2;
+		mipmap_height /= 2;
+	}
+	img->data_size = mipmap_offset;
+	img->data = new unsigned char[img->data_size];
+
+	uint32_t offset = 0;
+	for ( int i =0;i<img->mipmaps.size();i++)
+	{
+		ImageMipmap& mipmap = img->mipmaps[i];
+		uint32_t size = ((mipmap.width + 3) / 4)*((mipmap.height + 3) / 4)*blockSize;
+		s3tc_decode(buffer + offset,((unsigned char*)img->data)+mipmap.offset, mipmap.width, mipmap.height, s3tc_format);
+		offset += size;
+	}
+	img->Format = Image::IPF_R8G8B8A8;
+	return img;
 }
 ImagePtr hardware_decode(const unsigned char* buffer,uint32_t buffer_size,S3TCDecodeFlag s3tc_format, uint32_t width, uint32_t height, uint32_t mipmaps)
 {
