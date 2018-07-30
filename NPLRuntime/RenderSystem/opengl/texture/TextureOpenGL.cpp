@@ -67,7 +67,13 @@ GLuint ParaEngine::TextureOpenGL::GetTextureID() const
 
 bool ParaEngine::TextureOpenGL::UpdateImage(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
 {
-
+	if (IsComressedFormat(m_Format))
+	{
+		return UpdateImageComressed(level, xoffset, yoffset, width, height, pixels);
+	}
+	else {
+		return UpdateImageUncomressed(level, xoffset, yoffset, width, height, pixels);
+	}
 }
 
 ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
@@ -253,184 +259,6 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
 
-	if (IsComressedFormat(format))
-	{
-		return CreateComressedImage(width, height, format, usage);
-	}
-	else {
-		return CreateUnComressedImage(width, height, format, usage);
-	}
-}
-
-ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr image)
-{
-	if (image == nullptr) return nullptr;
-	EPixelFormat format = EPixelFormat::Unkonwn;
-	switch (image->Format)
-	{
-	case  Image::IPF_L8:
-		{
-			format = EPixelFormat::L8;
-		}
-		break;
-	case  Image::IPF_A8:
-		{
-			format = EPixelFormat::A8;
-		}
-		break;
-	case  Image::IPF_A8L8:
-		{
-			format = EPixelFormat::A8L8;
-		}
-		break;
-	case  Image::IPF_R8G8B8:
-		{
-			format = EPixelFormat::R8G8B8;
-		}
-		break;
-	case  Image::IPF_R8G8B8A8:
-		{
-			format = EPixelFormat::A8R8G8B8;
-		}
-		break;
-	case Image::IPF_COMPRESSED_DXT1:
-	{
-		format = EPixelFormat::DXT1;
-	}
-	break;
-	case Image::IPF_COMPRESSED_DXT3:
-	{
-		format = EPixelFormat::DXT3;
-	}
-	break;
-	case Image::IPF_COMPRESSED_DXT5:
-	{
-		format = EPixelFormat::DXT5;
-	}
-	break;
-	default:
-		break;
-	}
-
-	TextureOpenGL* tex = TextureOpenGL::Create(image->mipmaps[0].width, image->mipmaps[0].height, format, ETextureUsage::Default);
-	if (!tex)return nullptr;
-	for (int i =0;i<image->mipmaps.size();i++)
-	{
-		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
-	}
-	return tex;
-}
-
-void ParaEngine::TextureOpenGL::OnRelease()
-{
-	glDeleteTextures(1, &m_TextureID);
-	m_TextureID = 0;
-	m_Width = 0;
-	m_Height = 0;
-	m_Format = EPixelFormat::Unkonwn;
-}
-
-
-bool TextureOpenGL::UpdateImageComressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
-{
-
-}
-
-bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
-{
-	// flip vectical
-	uint32_t bpp = 0;
-	switch (m_GLFormat)
-	{
-	case GL_RGB:
-		bpp = 3;
-		break;
-	case GL_RGBA:
-	case GL_BGRA:
-		bpp = 4;
-		break;
-	case GL_ALPHA:
-	case GL_LUMINANCE:
-		bpp = 1;
-		break;
-	case GL_LUMINANCE_ALPHA:
-		bpp = 2;
-		break;
-		break;
-	default:
-		break;
-	}
-	uint32_t pitch = width * bpp;
-	const unsigned char* pSrc = pixels;
-	unsigned char* pDest = new unsigned  char[height * pitch];
-	for (int y = 0; y < height; y++)
-	{
-		memcpy(pDest + y * pitch, pSrc + (height - 1 - y)*pitch, pitch);
-	}
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	uint32_t offy = m_Height - yoffset - height;
-
-	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, offy, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pDest);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-	delete[] pDest;
-	return true;
-}
-
-TextureOpenGL* TextureOpenGL::CreateComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
-{
-	GLenum glFormat = 0;
-	GLenum glDataType = 0;
-	GLenum glPixelFormat = 0;
-	switch (format)
-	{
-	case EPixelFormat::DXT1:
-		glFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		break;
-	case EPixelFormat::DXT3:
-		glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		break;
-	case EPixelFormat::DXT5:
-		glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		break;
-	default:
-		return nullptr;
-		break;
-	}
-	if (glFormat == 0) return nullptr;
-
-	GLuint textureID = 0;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
-	
-	glCompressedTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, 0, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-
-	TextureOpenGL* tex = new TextureOpenGL();
-
-	tex->m_TextureID = textureID;
-	tex->m_Width = width;
-	tex->m_Height = height;
-	tex->m_GLFormat = glFormat;
-	tex->m_Usage = usage;
-	tex->m_Format = format;
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-}
-
-TextureOpenGL* TextureOpenGL::CreateUnComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
-{
 	GLenum glFormat = 0;
 	GLenum glDataType = 0;
 	GLenum glPixelFormat = 0;
@@ -505,3 +333,221 @@ TextureOpenGL* TextureOpenGL::CreateUnComressedImage(uint32_t width, uint32_t he
 
 	return tex;
 }
+
+ParaEngine::TextureOpenGL * ParaEngine::TextureOpenGL::CreateWithImage(ImagePtr image)
+{
+	if (image == nullptr) return nullptr;
+
+	if (image->Format == Image::IPF_COMPRESSED_DXT1 ||
+		image->Format == Image::IPF_COMPRESSED_DXT3 ||
+		image->Format == Image::IPF_COMPRESSED_DXT5)
+	{
+		return CreateComressedTextureWithImage(image);
+	}
+	else {
+		return CreateUnCompressedTextureWithImage(image);
+	}
+
+}
+
+void ParaEngine::TextureOpenGL::OnRelease()
+{
+	glDeleteTextures(1, &m_TextureID);
+	m_TextureID = 0;
+	m_Width = 0;
+	m_Height = 0;
+	m_Format = EPixelFormat::Unkonwn;
+}
+
+
+ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureWithImage(ImagePtr image)
+{
+	EPixelFormat format = EPixelFormat::Unkonwn;
+	switch (image->Format)
+	{
+	case  Image::IPF_L8:
+	{
+		format = EPixelFormat::L8;
+	}
+	break;
+	case  Image::IPF_A8:
+	{
+		format = EPixelFormat::A8;
+	}
+	break;
+	case  Image::IPF_A8L8:
+	{
+		format = EPixelFormat::A8L8;
+	}
+	break;
+	case  Image::IPF_R8G8B8:
+	{
+		format = EPixelFormat::R8G8B8;
+	}
+	break;
+	case  Image::IPF_R8G8B8A8:
+	{
+		format = EPixelFormat::A8R8G8B8;
+	}
+	break;
+	case Image::IPF_COMPRESSED_DXT1:
+	{
+		format = EPixelFormat::DXT1;
+	}
+	break;
+	case Image::IPF_COMPRESSED_DXT3:
+	{
+		format = EPixelFormat::DXT3;
+	}
+	break;
+	case Image::IPF_COMPRESSED_DXT5:
+	{
+		format = EPixelFormat::DXT5;
+	}
+	break;
+	default:
+		break;
+	}
+
+	TextureOpenGL* tex = TextureOpenGL::Create(image->mipmaps[0].width, image->mipmaps[0].height, format, ETextureUsage::Default);
+	if (!tex)return nullptr;
+	for (int i = 0; i < image->mipmaps.size(); i++)
+	{
+		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
+	}
+	return tex;
+}
+
+bool TextureOpenGL::UpdateImageComressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
+{
+	
+	uint32_t blockSize = 0;
+	switch (m_Format)
+	{
+	case ParaEngine::EPixelFormat::DXT1:
+		blockSize = 8;
+		break;
+	case ParaEngine::EPixelFormat::DXT3:
+		blockSize = 16;
+		break;
+	case ParaEngine::EPixelFormat::DXT5:
+		blockSize = 16;
+		break;
+	default:
+		return false;
+	}
+
+
+	GLuint size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glCompressedTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, m_GLFormat, size, pixels);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	return true;
+}
+
+bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
+{
+	// flip vectical
+	uint32_t bpp = 0;
+	switch (m_GLFormat)
+	{
+	case GL_RGB:
+		bpp = 3;
+		break;
+	case GL_RGBA:
+	case GL_BGRA:
+		bpp = 4;
+		break;
+	case GL_ALPHA:
+	case GL_LUMINANCE:
+		bpp = 1;
+		break;
+	case GL_LUMINANCE_ALPHA:
+		bpp = 2;
+		break;
+		break;
+	default:
+		break;
+	}
+	uint32_t pitch = width * bpp;
+	const unsigned char* pSrc = pixels;
+	unsigned char* pDest = new unsigned  char[height * pitch];
+	for (int y = 0; y < height; y++)
+	{
+		memcpy(pDest + y * pitch, pSrc + (height - 1 - y)*pitch, pitch);
+	}
+	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	uint32_t offy = m_Height - yoffset - height;
+
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, offy, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pDest);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	delete[] pDest;
+	return true;
+}
+
+TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
+{
+
+	GLenum glFormat = 0;
+	GLenum glDataType = 0;
+	GLenum glPixelFormat = 0;
+	EPixelFormat format;
+	switch (image->Format)
+	{
+	case Image::IPF_COMPRESSED_DXT1:
+		glFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+		format = EPixelFormat::DXT1;
+		break;
+	case Image::IPF_COMPRESSED_DXT3:
+		glFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+		format = EPixelFormat::DXT3;
+		break;
+	case Image::IPF_COMPRESSED_DXT5:
+		glFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+		format = EPixelFormat::DXT5;
+		break;
+	default:
+		return nullptr;
+		break;
+	}
+	if (glFormat == 0) return nullptr;
+
+	GLuint textureID = 0;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+
+	for (int i =0;i<image->mipmaps.size();i++)
+	{
+
+		glCompressedTexImage2D(GL_TEXTURE_2D, i, glFormat, image->mipmaps[i].width, image->mipmaps[i].height, 0, image->mipmaps[i].size, ((unsigned char*)image->data) + image->mipmaps[i].offset);
+
+	}
+
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	TextureOpenGL* tex = new TextureOpenGL();
+
+	tex->m_TextureID = textureID;
+	tex->m_Width = image->mipmaps[0].width;
+	tex->m_Height = image->mipmaps[0].height;
+	tex->m_GLFormat = glFormat;
+	tex->m_Usage = ETextureUsage::Default;
+	tex->m_Format = format;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	return tex;
+}
+

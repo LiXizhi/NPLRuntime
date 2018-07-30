@@ -1,3 +1,4 @@
+#pragma once
 #include "Framework/Interface/Render/ITexture.h"
 #include "Framework/Common/Image.hpp"
 #include "OpenGL.h"
@@ -34,8 +35,8 @@ namespace ParaEngine
 		bool UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels);
 		bool UpdateImageComressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels);
 
-		static TextureOpenGL* CreateUnComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);
-		static TextureOpenGL* CreateComressedImage(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);
+		static TextureOpenGL* CreateUnCompressedTextureWithImage(ImagePtr image);
+		static TextureOpenGL* CreateComressedTextureWithImage(ImagePtr image);
 
 	private:
 		GLuint m_TextureID;

@@ -116,10 +116,13 @@ ImagePtr hardware_decode(const unsigned char* buffer,uint32_t buffer_size,S3TCDe
 	uint32_t mipmap_width = width;
 	uint32_t mipmap_height = height;
 	uint32_t mipmap_offset = 0;
-	for ( int i = 0;i<mipmaps;i++)
+	for ( int i = 0;i<mipmaps && (mipmap_width || mipmap_height);i++)
 	{
+		if (mipmap_width == 0) mipmap_width = 1;
+		if (mipmap_height == 0) mipmap_height = 1;
+
 		ImageMipmap mipmap;
-		uint32_t mipmap_size = ((width + 3) / 4)*((height + 3) / 4)*blockSize;
+		uint32_t mipmap_size = ((mipmap_width + 3) / 4)*((mipmap_height + 3) / 4)*blockSize;
 		mipmap.width = mipmap_width;
 		mipmap.height = mipmap_height;
 		mipmap.size = mipmap_size;
@@ -128,10 +131,9 @@ ImagePtr hardware_decode(const unsigned char* buffer,uint32_t buffer_size,S3TCDe
 		
 		// next
 		mipmap_offset += mipmap_size;
-		width  /= 2;
-		height /= 2;
-		if (width == 0) width = 1;
-		if (height == 0) height = 1;
+		mipmap_width /= 2;
+		mipmap_height /= 2;
+
 	}
 	switch (s3tc_format)
 	{
@@ -160,7 +162,7 @@ ImagePtr S3TCParser::Parse(const unsigned char* buffer, size_t buffer_size)
 
 	uint32_t img_width = header->ddsd.width;
 	uint32_t img_height = header->ddsd.height;
-	uint32_t img_mipmaps = header->ddsd.DUMMYUNIONNAMEN2.mipMapCount + 1;
+	uint32_t img_mipmaps = header->ddsd.DUMMYUNIONNAMEN2.mipMapCount <=0 ? 1  : header->ddsd.DUMMYUNIONNAMEN2.mipMapCount;
 	S3TCDecodeFlag img_fmt = S3TCDecodeFlag::DXT1;
 	uint32_t fourcc = header->ddsd.DUMMYUNIONNAMEN4.ddpfPixelFormat.fourCC;
 	if (fourcc == FOURCC_DXT1){
