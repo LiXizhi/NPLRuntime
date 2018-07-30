@@ -768,7 +768,12 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
 {
 	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
-	return TextureOpenGL::CreateWithImage(image);
+	auto tex= TextureOpenGL::CreateWithImage(image);
+	if (tex)
+	{
+		m_Resources.push_back(tex);
+	}
+	return tex;
 }
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
