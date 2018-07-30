@@ -274,6 +274,7 @@ source_group("Config Files" FILES ${ParaEngineClient_CONFIG_FILES})
 set_source_files_properties(${ParaEngineClient_CONFIG_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_CONFIG_FILES})
 
+##############################
 file (GLOB ParaEngineClient_Cad_FILES ${PROJECT_SOURCE_DIR}/CadModel/*.*)
 SOURCE_GROUP("Externals\\CadModel" FILES ${ParaEngineClient_Cad_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Cad_FILES})
@@ -323,6 +324,9 @@ include_directories("${CLIENT_SOURCE_DIR}/dxsdk_feb2005_extras/DirectShow/Includ
 #include_directories("${FCollada_SOURCE_DIR}/FCollada/LibXML/include/")
 #include_directories("${FCollada_SOURCE_DIR}")
 #include_directories("${jblib_SOURCE_DIR}/src/")
+
+
+
 
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 IF(WIN32)
@@ -492,6 +496,7 @@ if (WIN32)
 			VFW32.lib
 			SHLWAPI.lib
 			gdiplus.lib
+			
   )
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		# for 64bits libs

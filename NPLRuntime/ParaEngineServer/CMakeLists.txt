@@ -176,6 +176,12 @@ file (GLOB ParaEngineServer_WebSocket_FILES ${CLIENT_SOURCE_DIR}/WebSocket/*.cpp
 SOURCE_GROUP("WebSocket" FILES ${ParaEngineServer_WebSocket_FILES})
 list(APPEND ParaEngineServer_SRCS ${ParaEngineServer_WebSocket_FILES})
 
+##############################
+#AutoRigger
+file (GLOB ParaEngineClient_AutoRigger_FILES ${CLIENT_SOURCE_DIR}/AutoRigger/*.cpp ${CLIENT_SOURCE_DIR}/AutoRigger/*.h)
+SOURCE_GROUP("AutoRigger" FILES ${ParaEngineClient_AutoRigger_FILES})
+list(APPEND ParaEngineServer_SRCS ${ParaEngineClient_AutoRigger_FILES})
+
 #######################################
 # PCH: precompiled header under msvc
 if (MSVC)
@@ -211,6 +217,7 @@ include_directories("${CLIENT_SOURCE_DIR}/ParaScriptBindings")
 include_directories("${CLIENT_SOURCE_DIR}/NPL")
 include_directories("${CLIENT_SOURCE_DIR}/2dengine/Video")
 include_directories("${CLIENT_SOURCE_DIR}/common")
+include_directories("${CLIENT_SOURCE_DIR}/AutoRigger")
 include_directories("${sqlite_SOURCE_DIR}")
 include_directories("${Boost_INCLUDE_DIRS}")
 include_directories("${luabind_SOURCE_DIR}")
@@ -218,7 +225,16 @@ include_directories("${tinyxpath_SOURCE_DIR}")
 include_directories("${lua_SOURCE_DIR}/src/")
 include_directories("${jsoncpp_SOURCE_DIR}/include")
 
-
+#AutoRigger
+include_directories("${SERVER_SOURCE_DIR}/Eigen")
+include_directories("${SERVER_SOURCE_DIR}/flann-1.8.4-src/src/cpp/")
+include_directories("${SERVER_SOURCE_DIR}/Pinocchio/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/common/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/search/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/octree/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/surface/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/kdtree/include")
+include_directories("${SERVER_SOURCE_DIR}/pcl/features/include")
 
 IF(WIN32)
 	include_directories("${ZLIB_SOURCE_DIR}")
@@ -442,6 +458,7 @@ endif (WIN32)
 target_link_libraries (ParaEngineServer
     ${Boost_LIBRARIES} ${LUA_LIBRARY}
 	sqlite jsoncpp tinyxpath luabind
+	pcl_common pcl_features Pinocchio
 	${OPENGL_LIBRARIES}
 	${EXTRA_LIBRARIES}
 )
