@@ -848,6 +848,9 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
+	// restore mouse
+	auto mouse = CGUIRoot::GetInstance()->GetMouse();
+	mouse->SetCursorFromFile(mouse->GetCursorFile(),0,0,true);
 #endif
 	/* -------end of paraworld code ----------------------------*/
 	return S_OK;
@@ -2339,19 +2342,11 @@ LRESULT CParaEngineApp::MsgProcWinThreadCustom( UINT uMsg, WPARAM wParam, LPARAM
 			{
 				// this will cause warning of DirectX, when setting debug level to middle, because it is calling a d3d function
 				// in another thread. However, this warning can be ignored, since otherwise d3d ShowCursor will not be shown if not calling from win thread.
-				//if(CGlobals::GetRenderDevice())
-				//{
-				//	// ::SetCursor( NULL );
-				//	CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
-				//	// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
-				//}
-
-				// d3ddeivec::ShowCursor can not hide cursor after changing resolution(only tested in win10)
-				BOOL show = wParam == 1;
-				if (m_bIsCursorShown != show)
+				if(CGlobals::GetRenderDevice())
 				{
-					m_bIsCursorShown = show;
-					ShowCursor(m_bIsCursorShown);
+					// ::SetCursor( NULL );
+					CGlobals::GetRenderDevice()->ShowCursor(wParam == 1);
+					// OUTPUT_LOG1("PE_WM_SHOWCURSOR\n");
 				}
 				break;
 			}

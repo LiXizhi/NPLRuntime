@@ -557,7 +557,6 @@ namespace ParaEngine
 
 		ITouchInputTranslator* LoadTouchInputPlug();
 
-		BOOL m_bIsCursorShown = TRUE;
 	};
 
 }
