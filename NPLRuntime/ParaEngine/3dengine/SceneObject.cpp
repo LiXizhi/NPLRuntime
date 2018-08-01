@@ -103,13 +103,6 @@ the mouse ray picking distance for onclick event. usually 30-100 meters.*/
 /** the default distance from the eye, within which shadow map will be used. This should match the value in shadow map shader. */
 #define DEFAULT_SHADOW_RADIUS		40.f
 
-#ifdef DEBUG_SELECTION_GROUP
-	#ifdef CHECK_SELECTION
-	#undef CHECK_SELECTION
-	const DWORD m_dwRenderGroupMask = RENDER_MESH_FRONT_TO_BACK | RENDER_MESH_BACK_TO_FRONT;
-	#define CHECK_SELECTION(x) ((dwSelection&(x)&m_dwRenderGroupMask)>0)
-	#endif
-#endif
 
 namespace ParaEngine
 {
@@ -3097,8 +3090,11 @@ bool CSceneObject::HandleUserInput()
 				{
 					mouse_wheel_event.m_MouseState = pMsg->message;
 
-					// please note: mouse move is delta value. 
-					mouse_wheel_event.m_x = (int)pMsg->lParam / 120;
+					// please note: mouse move is delta value.
+                    int nDelta = ((int32)(pMsg->lParam))/120;
+                    if(nDelta == 0)
+                        nDelta = ((int32)(pMsg->lParam)) > 0 ? 1 : -1;
+					mouse_wheel_event.m_x = nDelta;
 					mouse_wheel_event.m_y = 0;
 
 					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
