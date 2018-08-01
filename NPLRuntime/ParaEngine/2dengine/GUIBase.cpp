@@ -846,17 +846,7 @@ void ParaEngine::CGUIBase::MakeActivate(int nState)
 {
 	if (nState > 0)
 	{
-		CGUIBase* pLastWindow = CGUIRoot::GetInstance()->GetActiveWindow();
-		CGUIBase* pWindow = GetWindow();
-		if (pLastWindow != pWindow)
-		{
-			if (pLastWindow)
-				pLastWindow->OnActivate(0);
-			
-			CGUIRoot::GetInstance()->SetActiveWindow(pWindow);
-			if (pWindow)
-				pWindow->OnActivate(nState);
-		}
+		CGUIRoot::GetInstance()->SetActiveWindow(GetWindow());
 	}
 }
 
