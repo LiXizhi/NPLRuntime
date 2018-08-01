@@ -843,17 +843,7 @@ void ParaEngine::CGUIBase::MakeActivate(int nState)
 {
 	if (nState > 0)
 	{
-		CGUIBase* pLastWindow = CGUIRoot::GetInstance()->GetActiveWindow();
-		CGUIBase* pWindow = GetWindow();
-		if (pLastWindow != pWindow)
-		{
-			if (pLastWindow)
-				pLastWindow->OnActivate(0);
-			
-			CGUIRoot::GetInstance()->SetActiveWindow(pWindow);
-			if (pWindow)
-				pWindow->OnActivate(nState);
-		}
+		CGUIRoot::GetInstance()->SetActiveWindow(GetWindow());
 	}
 }
 
@@ -1095,21 +1085,36 @@ void ParaEngine::CGUIBase::SetInputMethodEnabled(bool val)
 	if (m_bInputMethodEnabled != val)
 	{
 		m_bInputMethodEnabled = val;
-		SetCanHaveFocus(m_bInputMethodEnabled);
-		if (!m_bInputMethodEnabled)
+		if (HasFocus()) 
 		{
-			if (CGUIRoot::GetInstance()->GetIMEFocus() == this)
+			if (!m_bInputMethodEnabled)
 			{
-				LostFocus();
+				CGUIIME::OnFocusOut();
+				if (CGUIRoot::GetInstance()->GetIMEFocus() == this)
+				{
+					CGUIRoot::GetInstance()->SetIMEFocus(NULL);
+				}
 			}
-		}
-		else
-		{
-			if(HasFocus())
-				OnFocusIn();
+			else
+			{
+				CGUIRoot::GetInstance()->SetIMEFocus(this);
+				CGUIIME::OnFocusIn();
+
+				bool bIMEEnabled = CGUIIME::IsEnableImeSystem();
+				if (!CGlobals::GetApp()->IsWindowedMode() && !bIMEEnabled)
+				{
+					CGUIIME::EnableImeSystem(true);
+				}
+				if (!bIMEEnabled)
+				{
+					QPoint pt = GetCompositionPoint();
+					CGUIBase::SetCompositionPoint(pt);
+				}
+			}
 		}
 	}
 }
+
 bool CGUIBase::OnModify()
 {
 	if( !HasEvent(EM_CTRL_MODIFY) )

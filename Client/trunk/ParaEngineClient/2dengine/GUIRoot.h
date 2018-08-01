@@ -416,7 +416,16 @@ namespace ParaEngine
 		bool IsCursorClipped();
 
 		CGUIBase* GetActiveWindow() const;
-		void SetActiveWindow(CGUIBase* val);
+
+		/**
+		* The framework calls this member function when a window is being activated or deactivated.
+		* @param nState: Specifies whether the window is being activated or deactivated. It can be one of the following values:
+		*  - 0  The window is being deactivated.
+		*  - 1  The window is being activated by a mouse click.
+		*  - 2  The window is being activated through some method other than a mouse click.
+		*/
+		void SetActiveWindow(CGUIBase* val, int nState = 1);
+
 	public:
 		virtual ~CGUIRoot(void);
 
