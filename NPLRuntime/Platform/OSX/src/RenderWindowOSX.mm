@@ -239,6 +239,7 @@ void RenderWindowOSX::PollEvents() {
     if(m_window == nullptr || ShouldClose()) return;
     NSEvent *event;
     auto untilDate = [NSDate distantPast];
+    bool bIsProcessed = false;
     do{
     event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                         untilDate:untilDate
@@ -350,6 +351,7 @@ void RenderWindowOSX::PollEvents() {
             uint32_t keycode = (uint32_t)[event keyCode];
             EVirtualKey vk = toVirtualKey(keycode);
             OnKey(vk, EKeyState::PRESS);
+            bIsProcessed = true;
             
         }
             
@@ -376,6 +378,7 @@ void RenderWindowOSX::PollEvents() {
             uint32_t keycode = (uint32_t)[event keyCode];
             EVirtualKey vk = toVirtualKey(keycode);
             OnKey(vk, EKeyState::RELEASE);
+            bIsProcessed = true;
         }
             break;
         case NSEventTypeFlagsChanged:
@@ -473,7 +476,10 @@ void RenderWindowOSX::PollEvents() {
         default:
             break;
     }
-    [NSApp sendEvent:event];
+    if(!bIsProcessed)
+    {
+        [NSApp sendEvent:event];
+    }
     [NSApp updateWindows];
     [event release];
     }while(event);
