@@ -154,7 +154,7 @@ typedef struct _FILETIME
 	DWORD dwLowDateTime;
 	DWORD dwHighDateTime;
 } 	FILETIME;
-#define MAX_PATH          260
+#define MAX_PATH          1024
 #endif // WIN32
 
 #ifndef SUCCEEDED

@@ -119,7 +119,7 @@ void CGUIContainer::Clone(IObject* pobj)const
 		pContainer->m_HScroll->m_parent = pContainer;
 		pContainer->m_HScroll->m_sIdentifer = m_HScroll->m_sIdentifer;
 	}
-
+    
 }
 
 IObject* CGUIContainer::Clone()const

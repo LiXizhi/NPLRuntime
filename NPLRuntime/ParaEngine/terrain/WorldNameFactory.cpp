@@ -11,6 +11,7 @@
 
 using namespace ParaTerrain;
 using namespace ParaEngine;
+#define maxPathLength 1024
 
 CWorldNameFactory::CWorldNameFactory(void)
 {
@@ -82,48 +83,48 @@ void CWorldNameFactory::ResetWorldName(const string& sWorldConfigFile)
 
 string CWorldNameFactory::GetTerrainConfigFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/config/%d_%d.config.txt", m_strWorldPath.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/config/%d_%d.config.txt", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/config/%s_%d_%d.config.txt", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/config/%s_%d_%d.config.txt", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainElevationFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/elev/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/elev/%d_%d.raw", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/elev/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/elev/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainOnloadFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/script/%d_%d.onload.lua", m_strWorldPath.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/script/%d_%d.onload.lua", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/script/%s_%d_%d.onload.lua", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/script/%s_%d_%d.onload.lua", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainMaskFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/config/%d_%d.mask", m_strWorldPath.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/config/%d_%d.mask", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/config/%s_%d_%d.mask", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, maxPathLength, "%s/config/%s_%d_%d.mask", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 	
 string CWorldNameFactory::GetDefaultWorldConfigName()
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/worldconfig.txt", m_strWorldPath.c_str());
+		snprintf(tmp, maxPathLength, "%s/worldconfig.txt", m_strWorldPath.c_str());
 	else
-		snprintf(tmp, MAX_PATH, "%s/%s.worldconfig.txt", m_strWorldPath.c_str(), m_strWorldName.c_str());
+		snprintf(tmp, maxPathLength, "%s/%s.worldconfig.txt", m_strWorldPath.c_str(), m_strWorldName.c_str());
 	return string(tmp);
 }
 
@@ -134,8 +135,8 @@ string CWorldNameFactory::GetWorldDirectory()
 
 string CWorldNameFactory::GetWorldCharacterDirectory()
 {
-	char tmp[MAX_PATH+1];
-	snprintf(tmp, MAX_PATH, "%s/character/", m_strWorldPath.c_str());
+	char tmp[maxPathLength+1];
+	snprintf(tmp, maxPathLength, "%s/character/", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
@@ -148,30 +149,30 @@ string CWorldNameFactory::GetDefaultTileConfigName()
 
 string CWorldNameFactory::GetTerrainInfoDataFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/elev/%d_%d_%s.raw", m_strWorldPath.c_str(), x, y,"info");
+		snprintf(tmp, maxPathLength, "%s/elev/%d_%d_%s.raw", m_strWorldPath.c_str(), x, y,"info");
 	else
-		snprintf(tmp, MAX_PATH, "%s/elev/%s_%d_%d_%s.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y,"info");
+		snprintf(tmp, maxPathLength, "%s/elev/%s_%d_%d_%s.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y,"info");
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetBlockRegionFileName(int x,int y,bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(m_strWorldName.empty())
 	{
 		if(usingTempFile)
-			snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+			snprintf(tmp, maxPathLength, "%s/blockWorld.lastsave/%d_%d.raw", m_strWorldPath.c_str(), x, y);
 		else	
-			snprintf(tmp, MAX_PATH, "%s/blockWorld/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+			snprintf(tmp, maxPathLength, "%s/blockWorld/%d_%d.raw", m_strWorldPath.c_str(), x, y);
 	}
 	else
 	{
 		if(usingTempFile)
-			snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+			snprintf(tmp, maxPathLength, "%s/blockWorld.lastsave/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 		else	
-			snprintf(tmp, MAX_PATH, "%s/blockWorld/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+			snprintf(tmp, maxPathLength, "%s/blockWorld/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	}
 	
 	return string(tmp);
@@ -179,21 +180,21 @@ string CWorldNameFactory::GetBlockRegionFileName(int x,int y,bool usingTempFile)
 
 string CWorldNameFactory::GetBlockGameSaveDir(bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(usingTempFile)
-		snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/", m_strWorldPath.c_str());
+		snprintf(tmp, maxPathLength, "%s/blockWorld.lastsave/", m_strWorldPath.c_str());
 	else	
-		snprintf(tmp, MAX_PATH, "%s/blockWorld/", m_strWorldPath.c_str());
+		snprintf(tmp, maxPathLength, "%s/blockWorld/", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetBlockTemplateFileName(bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
+	char tmp[maxPathLength+1];
 	if(usingTempFile)
-		snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/blockTemplate.xml", m_strWorldPath.c_str());
+		snprintf(tmp, maxPathLength, "%s/blockWorld.lastsave/blockTemplate.xml", m_strWorldPath.c_str());
 	else
-		snprintf(tmp, MAX_PATH, "%s/blockWorld/blockTemplate.xml", m_strWorldPath.c_str());
+		snprintf(tmp, maxPathLength, "%s/blockWorld/blockTemplate.xml", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
