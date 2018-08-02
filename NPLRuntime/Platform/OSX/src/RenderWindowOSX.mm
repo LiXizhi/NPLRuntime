@@ -302,28 +302,46 @@ void RenderWindowOSX::PollEvents() {
             m_scrollMouseY = my;
         }
             break;
+        case NSEventTypeSwipe:
+        {
+            float deltaX = [event deltaX];
+            float deltaY = [event deltaY];
+            if(deltaY != 0){
+                OnMouseWhell(deltaX, deltaY);
+            }
+            break;
+        }
         case NSEventTypeScrollWheel:
         {
-            OnMouseWhell([event deltaX], [event deltaY]);
-            m_scrollMouseX+= [event deltaX]*4;
-            m_scrollMouseY+= [event deltaY]*4;
             NSEventPhase phase = [event phase];
-            switch (phase) {
-                case NSEventPhaseMayBegin:
-                case NSEventPhaseBegan:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                case NSEventPhaseChanged:
-                {
-                    OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+            NSEventPhase momentumPhase = [event momentumPhase];
+            
+            if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
+            {
+                OnMouseWhell([event deltaX], [event deltaY]);
+            }
+            else if(phase != NSEventPhaseNone)
+            {
+                m_scrollMouseX+= [event deltaX]*4;
+                m_scrollMouseY+= [event deltaY]*4;
+                
+                switch (phase) {
+                    case NSEventPhaseMayBegin:
+                    case NSEventPhaseBegan:
+                        OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                        break;
+                    case NSEventPhaseChanged:
+                    {
+                        OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                    }
+                        break;
+                    case NSEventPhaseEnded:
+                    case NSEventPhaseCancelled:
+                        OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                        break;
+                    default:
+                        break;
                 }
-                    break;
-                case NSEventPhaseEnded:
-                case NSEventPhaseCancelled:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                default:
-                    break;
             }
         }
             break;
@@ -503,9 +521,9 @@ void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine:
     {
         if(state == EKeyState::PRESS)
         {
-            NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
+            //NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
         }else{
-             NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
+            //NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
         }
     }
     
