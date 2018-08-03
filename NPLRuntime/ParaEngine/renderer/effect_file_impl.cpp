@@ -282,9 +282,19 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 	m_bIsValid = false;//set to true if created successfully.
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
-	auto file = std::make_shared<CParaFile>(m_filename.c_str());
+	
+	auto file = std::make_shared<CParaFile>();
 
-	// fxo 
+#if USE_OPENGL_RENDERER
+	if (m_filename.find(".fxo") != std::string::npos)
+	{
+		std::string fxname = m_filename.substr(0, m_filename.size() - 1);
+		file = std::make_shared<CParaFile>(fxname.c_str());
+	}else {
+		file = make_shared<CParaFile>(m_filename.c_str());
+	}
+
+#else
 	if (file->isEof())
 	{
 		file = nullptr;
@@ -292,22 +302,17 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 		{
 			std::string fxname = m_filename.substr(0, m_filename.size() - 1);
 			file = std::make_shared<CParaFile>(fxname.c_str());
-			const char* source = file->getBuffer();
 		}
 	}
+#endif
+
+	// fxo 
+
 
 	std::string error = "";
 
 	if (!file->isEof())
 	{
-		/*
-		// Since we are loading a binary file here and this effect has already been compiled,
-		// you can not pass compiler flags here (for example to debug the shaders).
-		// To debug the shaders, one must pass these flags to the compiler that generated the
-		// binary (for example fxc.exe).
-		- From within the Solution Explorer window, right click on *.fx and select Properties from the context menu.
-		- Select Configuration Properties/Custom Build Step to view the custom build step directives.
-		*/
 		boost::filesystem::path p(m_filename);
 		auto shaderDir = p.parent_path();
 		ShaderIncludeHandle includeImpl(shaderDir.string());

@@ -332,7 +332,7 @@ namespace ParaEngine
 
 		ParaIndexBuffer m_sharedIndexBuffer;
 
-#ifdef USE_DIRECTX_RENDERER
+
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_color;
 		/** HDR render target */
@@ -359,7 +359,7 @@ namespace ParaEngine
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];
-#endif
+
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
 		Uint16x3 m_damagedBlockId;

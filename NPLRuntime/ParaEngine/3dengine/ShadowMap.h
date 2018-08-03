@@ -98,17 +98,12 @@ namespace ParaEngine
 		void AddShadowCasterPoint(const CShapeAABB& aabb);
 	private:
 		static int g_nShadowMapTexelSizeLevel;
-#ifdef USE_DIRECTX_RENDERER
 		IParaEngine::ITexture* m_pBackBuffer;
 		IParaEngine::ITexture* m_pZBuffer;
 		IParaEngine::ITexture* m_pSMColorSurface;
 		IParaEngine::ITexture* m_pSMColorSurfaceBlurredHorizontal;
 		IParaEngine::ITexture* m_pSMColorSurfaceBlurredVertical;
 		IParaEngine::ITexture* m_pSMZSurface;
-#elif USE_OPENGL_RENDERER
-		GLuint mOldFrameBufferObject;
-		GLuint mSMFrameBufferObject,mSMDepthStencilBufferObject;
-#endif
 		asset_ptr<TextureEntity> m_pSMColorTexture, m_pSMColorTextureBlurredHorizontal, m_pSMColorTextureBlurredVertical, m_pSMZTexture;
 		int m_shadowTexWidth, m_shadowTexHeight;
 		// light direction

@@ -317,7 +317,9 @@ float CGlowEffect::ComputeGaussian(float n,float blurAmount)
 
 void CGlowEffect::SaveGlowTexturesToFile(const string& filename)
 {
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, GetD3DTex(m_pRTGlowSourceTexture), NULL );
-	D3DXSaveTextureToFile((filename+"halfsize.jpg").c_str(),D3DXIFF_JPG, GetD3DTex(m_pRTHalfSizeTexture), NULL );
-	D3DXSaveTextureToFile((filename+"horiz.jpg").c_str(),D3DXIFF_JPG, GetD3DTex(m_pRTBlurHorizTexture), NULL );
+#ifdef USE_DIRECTX_RENDERER
+	D3DXSaveTextureToFile(filename.c_str(), D3DXIFF_JPG, GetD3DTex(m_pRTGlowSourceTexture), NULL);
+	D3DXSaveTextureToFile((filename + "halfsize.jpg").c_str(), D3DXIFF_JPG, GetD3DTex(m_pRTHalfSizeTexture), NULL);
+	D3DXSaveTextureToFile((filename + "horiz.jpg").c_str(), D3DXIFF_JPG, GetD3DTex(m_pRTBlurHorizTexture), NULL);
+#endif // USE_DIRECTX_RENDERER
 }

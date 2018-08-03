@@ -864,25 +864,17 @@ bool ParaAsset::DeleteBoneAnimProvider( int nAnimID )
 
 ParaScripting::ParaAssetObject ParaAsset::LoadEffectFile( const char* strAssetName, const char* strFilePath )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	if(pEffect == 0)
 		pEffect = CGlobals::GetAssetManager()->LoadEffectFile(strAssetName, strFilePath);//"shaders/simple_mesh_normal_low.fx"
 
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 ParaScripting::ParaAssetObject ParaAsset::GetEffectFile( const char* strAssetName )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 int ParaAsset::PrintToFile( const char* strFileName, DWORD dwSelection )

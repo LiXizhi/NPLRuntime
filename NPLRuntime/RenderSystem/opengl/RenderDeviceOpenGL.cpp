@@ -693,17 +693,22 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		assert(false);
+		//assert(false);
+		return false;
 	}
 
-	ParaViewport vp;
-	vp.X = 0;
-	vp.Y = 0;
-	vp.Width = target->GetWidth();
-	vp.Height = target->GetHeight();
-	vp.MinZ = 1;
-	vp.MaxZ = 0;
-	SetViewport(vp);
+	if (target != nullptr)
+	{
+		ParaViewport vp;
+		vp.X = 0;
+		vp.Y = 0;
+		vp.Width = target->GetWidth();
+		vp.Height = target->GetHeight();
+		vp.MinZ = 1;
+		vp.MaxZ = 0;
+		SetViewport(vp);
+	}
+
 	return true;
 }
 
