@@ -147,7 +147,7 @@ typedef struct _FILETIME
 	DWORD dwLowDateTime;
 	DWORD dwHighDateTime;
 } 	FILETIME;
-#define MAX_PATH          260
+#define MAX_PATH          1024
 #endif // WIN32
 
 #ifndef SUCCEEDED
@@ -177,6 +177,12 @@ typedef struct _FILETIME
 #ifndef UCHAR_MAX
 #define UCHAR_MAX     0xff      /* maximum unsigned char value */
 #endif
+
+#ifndef MAX_PATH_LENGTH
+/* this is fix for win32 MAX_PATH=260 limitation */
+#define MAX_PATH_LENGTH     1024      
+#endif
+
 
 namespace ParaEngine
 {

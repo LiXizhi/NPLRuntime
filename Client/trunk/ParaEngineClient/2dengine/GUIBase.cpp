@@ -1303,7 +1303,10 @@ bool CGUIBase::MsgProc(MSG *event)
 			bHandled=OnModify();
 		}else if (m_event->IsMapTo(nEvent,EM_MOUSE_WHEEL)) {
 			// modified 2007.10.12 LXZ: so that the message can be leaked to its container during scrolling
-			bHandled=OnMouseWheel(int(event->lParam)/120,m_event->m_mouse.x,m_event->m_mouse.y);
+			int nDelta = ((int32)(event->lParam)) / 120;
+			if (nDelta == 0)
+				nDelta = ((int32)(event->lParam)) > 0 ? 1 : -1;
+			bHandled = OnMouseWheel(nDelta, m_event->m_mouse.x, m_event->m_mouse.y);
 		}
 		if (m_event->IsMapTo(nEvent,EM_CTRL_FOCUSIN)) {
 			//by default, we map the Left click to focus in.

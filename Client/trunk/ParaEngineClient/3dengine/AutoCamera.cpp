@@ -1998,7 +1998,10 @@ void CAutoCamera::HandleUserInput()
 				{
 					if(GetEnableMouseWheel())
 					{
-						m_nMouseWheelDelta  = (int)pMsg->lParam/120;
+						int nDelta = ((int32)(pMsg->lParam)) / 120;
+						if (nDelta == 0)
+							nDelta = ((int32)(pMsg->lParam)) > 0 ? 1 : -1;
+						m_nMouseWheelDelta = nDelta;
 						m_nForceNoRollbackFrames = 1;
 					}
 				}
