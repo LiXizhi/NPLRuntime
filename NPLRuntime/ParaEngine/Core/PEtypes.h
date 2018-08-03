@@ -189,6 +189,12 @@ typedef struct _FILETIME
 #define UCHAR_MAX     0xff      /* maximum unsigned char value */
 #endif
 
+#ifndef MAX_PATH_LENGTH
+/* this is fix for win32 MAX_PATH=260 limitation */
+#define MAX_PATH_LENGTH     1024      
+#endif
+
+
 namespace ParaEngine
 {
 	/** event type */
