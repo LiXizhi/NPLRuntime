@@ -859,11 +859,16 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		}
 		sRelativePath[nLastSlash + 1] = '\0';
 
-		if (sRelativePath[0] != '\0')
+		int nRelativePathLength = nLastSlash + 1;
+		int nFilenameLength = j;
+		if (sRelativePath[0] != '\0' && (nRelativePathLength + nFilenameLength) < MAX_PATH_LENGTH)
 		{
-			string sPath = sRelativePath;
-			sPath.append(filename);
-			strncpy(filename, sPath.c_str(), MAX_PATH_LENGTH);
+			// prepend relative path to filename
+			for (int i = nFilenameLength-1; i>=0 ; i--)
+				filename[i + nRelativePathLength] = filename[i];
+			for (int i = 0; i < nRelativePathLength; i++)
+				filename[i] = sRelativePath[i];
+			filename[nRelativePathLength + nFilenameLength] = '\0';
 		}
 	}
 
