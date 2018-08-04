@@ -14,7 +14,7 @@
 	<key>CFBundleIconFile</key>
 	<string>res/icon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.tatfook.paracraft</string>
+	<string>com.tatfook.paracraftmac</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
