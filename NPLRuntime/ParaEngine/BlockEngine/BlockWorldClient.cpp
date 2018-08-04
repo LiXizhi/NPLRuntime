@@ -2119,7 +2119,7 @@ namespace ParaEngine
 
 	void BlockWorldClient::InvalidateDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
+
 		SAFE_RELEASE(m_render_target_block_info_surface);
 		SAFE_RELEASE(m_render_target_depth_tex_surface);
 		SAFE_RELEASE(m_render_target_normal_surface);
@@ -2130,7 +2130,7 @@ namespace ParaEngine
 		m_render_target_block_info.reset();
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
-#endif
+
 	}
 
 
@@ -2157,7 +2157,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::DoPostRenderingProcessing(BlockRenderPass nRenderPass)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if(IsInBlockWorld() && GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
 		{
 			if (nRenderPass == BlockRenderPass_Opaque)
@@ -2173,12 +2172,11 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::PrepareAllRenderTargets( bool bSetRenderTarget /*= true*/ )
 	{
-#ifdef USE_DIRECTX_RENDERER
+
 		if(GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
 		{
 			RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
@@ -2295,7 +2293,6 @@ namespace ParaEngine
 				}
 			}
 		}
-#endif
 		return  true;
 	}
 
@@ -2406,7 +2403,7 @@ namespace ParaEngine
 	void BlockWorldClient::GetMaxBlockHeightWatchingSky(uint16_t blockX_ws, uint16_t blockZ_ws, ChunkMaxHeight* pResult)
 	{
 		CBlockWorld::GetMaxBlockHeightWatchingSky(blockX_ws, blockZ_ws, pResult);
-#ifdef PARAENGINE_CLIENT
+
 		ParaTerrain::CGlobalTerrain *pTerrain = CGlobals::GetGlobalTerrain();
 		uint16_t mask = 0;
 		if (pTerrain->TerrainRenderingEnabled())
@@ -2459,7 +2456,6 @@ namespace ParaEngine
 			}
 		}
 		pResult[5].SetHeight(mask);
-#endif
 	}
 
 	void BlockWorldClient::UpdateVisibleChunks(bool bIsShadowPass /*= false*/)

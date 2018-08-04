@@ -210,7 +210,7 @@ int ParaEngineSettings::GetGameEffectSet()
 
 void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 {
-#ifdef USE_DIRECTX_RENDERER
+
 	int ShaderVersion = 2;
 	if(ShaderVersion != 0 && nSetID!=1024)
 	{
@@ -228,7 +228,7 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			}
 		}
 	}
-#endif
+
 	
 	g_nSetID = nSetID;
 	switch(nSetID)

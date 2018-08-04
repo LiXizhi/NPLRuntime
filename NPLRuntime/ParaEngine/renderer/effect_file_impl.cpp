@@ -284,7 +284,7 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 
 	
 	auto file = std::make_shared<CParaFile>();
-
+	OUTPUT_LOG("INFO: Load effect %s\n", m_filename.c_str());
 #if USE_OPENGL_RENDERER
 	if (m_filename.find(".fxo") != std::string::npos)
 	{

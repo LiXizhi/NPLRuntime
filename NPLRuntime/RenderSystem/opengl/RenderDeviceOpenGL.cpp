@@ -666,7 +666,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 
 std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
 {
-	std::string code((char*)pSrcData);
+	std::string code((char*)pSrcData,srcDataLen);
 	return EffectOpenGL::Create(code, include, error);
 }
 

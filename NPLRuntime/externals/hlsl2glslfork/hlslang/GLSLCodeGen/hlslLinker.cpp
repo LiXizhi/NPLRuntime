@@ -1110,7 +1110,17 @@ void HlslLinker::emitInputNonStructParam(GlslSymbol* sym, EShLanguage lang, bool
 	}
 	else if ( m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (attrSem == EAttrSemColor0 || attrSem == EAttrSemColor1 || attrSem == EAttrSemColor2 || attrSem == EAttrSemColor3))
 	{
-		call << ctor << "(" << name << ".bgra" << ")";
+		if (ctor=="vec4")
+		{
+			call << ctor << "(" << name << ".bgra" << ")";
+		}
+		else if (ctor == "vec3") {
+			call << ctor << "(" << name << ".bgr" << ")";
+		}
+		else {
+			call << ctor << "(" << name << ")";
+		}
+
 	}
 	else if (m_Options & ETranslateOpFlipUVVertical && lang == EShLangVertex && (attrSem >= EAttrSemTex0 && attrSem <= EAttrSemTex9))
 	{
@@ -1214,7 +1224,17 @@ bool HlslLinker::emitInputStruct(const GlslStruct* str, std::string parentName, 
 			}
 			else if (m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (memberSem == EAttrSemColor0 || memberSem == EAttrSemColor1 || memberSem == EAttrSemColor2 || memberSem == EAttrSemColor3))
 			{
-				preamble << " = " << ctor << "("  <<name <<".bgra" << ");\n";
+				
+				if (ctor == "vec4")
+				{
+					preamble << " = " << ctor << "(" << name << ".bgra" << ");\n";
+				}
+				else if (ctor == "vec3") {
+					preamble << " = " << ctor << "(" << name << ".bgr" << ");\n";
+				}
+				else {
+					preamble << " = " << ctor << "(" << name << ");\n";
+				}
 			}
 			else if (m_Options & ETranslateOpFlipUVVertical && lang == EShLangVertex && (memberSem >= EAttrSemTex0 && memberSem <= EAttrSemTex9))
 			{

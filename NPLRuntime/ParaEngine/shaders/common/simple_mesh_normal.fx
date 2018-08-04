@@ -271,3 +271,4 @@ technique GenShadowMap
         FogEnable = false;
     }
 }
+
