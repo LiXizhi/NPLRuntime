@@ -138,9 +138,9 @@ void ParaEngine::CFileUtils::MakeFileNameFromRelativePath(char * output, const c
 				nLastSlash = i;
 		}
 	}
-	if (filename != 0)
+	if (filename != 0 && filename[0] != '\0')
 	{
-		strncpy(output + nLastSlash + 1, filename, MAX_PATH_LENGTH);
+		strncpy(output + nLastSlash + 1, filename, MAX_PATH_LENGTH - nLastSlash - 1);
 	}
 	else
 	{
