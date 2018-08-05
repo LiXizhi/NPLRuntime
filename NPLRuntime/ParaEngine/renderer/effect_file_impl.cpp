@@ -761,7 +761,7 @@ void CEffectFileImpl::parseParameters()
 				}
 			}
 			else {
-				OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(), ParamDesc.Semantic.c_str(), m_filename.c_str());
+			//	OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(), ParamDesc.Semantic.c_str(), m_filename.c_str());
 			}
 		}
 	}

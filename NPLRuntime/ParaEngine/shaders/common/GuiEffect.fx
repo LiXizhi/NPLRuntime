@@ -15,6 +15,7 @@ sampler tex0Sampler : register(s0) = sampler_state
     texture = <tex0>;
 };
 
+
 struct v2f
 {
   float4 vertex			: POSITION;         // Screen space position
@@ -58,9 +59,10 @@ technique SimpleMesh_vs20_ps20
 	pass P0
 	{
 		// shaders
+		ZEnable = false;
+		ZWriteEnable = false;
+		AlphaBlendEnable = true;
 		VertexShader = compile vs_2_0 vert();
 		PixelShader  = compile ps_2_0 frag();
-		
-		FogEnable = false;
 	}
 }

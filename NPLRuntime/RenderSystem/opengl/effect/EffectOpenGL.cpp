@@ -165,7 +165,7 @@ bool include_open(bool isSystem, const char* fname, const char* parentfname, con
 	uint32_t size = 0;
 	if (include->Open(fname, &pData, &size))
 	{
-		output = (const char*)pData;
+		output = std::string((const char*)pData,size);
 		free(pData);
 		return true;
 	}
@@ -749,6 +749,10 @@ bool ParaEngine::EffectOpenGL::BeginPass(const uint8_t pass)
 
 	m_CurrentPass = pass;
 
+	m_LastRenderState = GetCurrentRenderState();
+	auto passState = GetPassRenderState(techNode->getPasses()[pass]);
+	ApplyRenderState(passState);
+
 	return true;
 }
 bool ParaEngine::EffectOpenGL::EndPass()
@@ -761,7 +765,7 @@ bool ParaEngine::EffectOpenGL::EndPass()
 
 	m_IsBeginPass = false;
 	m_CurrentPass = 0;
-
+	ApplyRenderState(m_LastRenderState);
 	return true;
 }
 
@@ -931,6 +935,134 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 	}
 
 	return true;
+}
+
+
+const ParaEngine::EffectRenderState EffectOpenGL::GetPassRenderState(PassNode* pass)
+{
+
+	auto states = pass->getStateAssignments();
+	EffectRenderState rs;
+	for (size_t i = 0; i < states.size(); i++)
+	{
+		StateAssignmentNode* state = states[i];
+		const std::string name = string_to_lower(state->getName());
+		if (name == "cullmode")
+		{
+			std::string value = string_to_lower(state->getValue()->toString());
+			if (value == "none")
+			{
+				rs.CullMode = ECullMode::None;
+			}
+			else if (value == "cw")
+			{
+				rs.CullMode = ECullMode::CW;
+			}
+			else if (value == "ccw")
+			{
+				rs.CullMode = ECullMode::CCW;
+			}
+		}
+		else if(name == "zenable")
+		{
+			bool value = static_cast<const StateBooleanValue*>(state->getValue())->getValue();
+			rs.ZTest = value;
+		}
+		else if (name == "zwriteenable")
+		{
+			bool value = static_cast<const StateBooleanValue*>(state->getValue())->getValue();
+			rs.ZWrite = value;
+		}
+		else if (name == "alphablendenable")
+		{
+			bool value = static_cast<const StateBooleanValue*>(state->getValue())->getValue();
+			rs.AlphaBlend = value;
+		}
+
+		
+
+	}
+	return rs;
+}
+
+
+const ParaEngine::EffectRenderState ParaEngine::EffectOpenGL::GetCurrentRenderState()
+{
+
+	EffectRenderState rs;
+
+	GLboolean ZTest = false;
+	glGetBooleanv(GL_DEPTH_TEST, &ZTest);
+	rs.ZTest = ZTest;
+
+	GLboolean ZWrite = false;
+	glGetBooleanv(GL_DEPTH_WRITEMASK, &ZWrite);
+	rs.ZWrite = ZWrite;
+
+	GLboolean AlphaBlend = false;
+	glGetBooleanv(GL_BLEND, &AlphaBlend);
+	rs.AlphaBlend = AlphaBlend;
+
+	GLboolean Cull = false;
+	glGetBooleanv(GL_CULL_FACE, &Cull);
+
+	GLint face = 0;
+	if (Cull)
+	{
+		glGetIntegerv(GL_FRONT_FACE, &face);
+		if (face == GL_CW)
+		{
+			rs.CullMode = ECullMode::CW;
+		}else if (face = GL_CCW)
+		{
+			rs.CullMode = ECullMode::CCW;
+		}
+		else {
+			rs.CullMode = ECullMode::None;
+		}
+	}
+	else {
+		rs.CullMode = ECullMode::None;
+	}
+	return rs;
+
+}
+
+
+void ParaEngine::EffectOpenGL::ApplyRenderState(const EffectRenderState& rs)
+{
+	if (rs.ZTest)
+	{
+		glEnable(GL_DEPTH_TEST);
+	}
+	else {
+		glDisable(GL_DEPTH_TEST);
+	}
+
+	glDepthMask(rs.ZWrite ? GL_TRUE : GL_FALSE);
+
+	if (rs.AlphaBlend)
+	{
+		glEnable(GL_BLEND);
+	}
+	else {
+		glDisable(GL_BLEND);
+	}
+
+	if (rs.CullMode == ECullMode::None)
+	{
+		glDisable(GL_CULL_FACE);
+	}
+	else if (rs.CullMode == ECullMode::CW)
+	{
+		glEnable(GL_CULL_FACE);
+		glFrontFace(GL_CW);
+	}else if (rs.CullMode == ECullMode::CCW)
+	{
+		glEnable(GL_CULL_FACE);
+		glFrontFace(GL_CCW);
+	}
+
 }
 
 bool ParaEngine::EffectOpenGL::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)

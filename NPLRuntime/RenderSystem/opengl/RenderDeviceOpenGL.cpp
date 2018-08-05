@@ -98,6 +98,13 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	InitCpas();
 	InitFrameBuffer();
 	
+	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
+	std::string error;
+	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
+	if (!m_DownSampleEffect)
+	{
+		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
+	}
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -430,6 +437,30 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 	return true;
 }
 
+
+
+bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect)
+{
+
+
+
+
+	auto oldTarget = GetRenderTarget(0);
+	SetRenderTarget(0, dest);
+
+	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
+	m_DownSampleEffect->Begin();
+	m_DownSampleEffect->SetTexture("ColorTextureSampler", source);
+	m_DownSampleEffect->BeginPass(0);
+	m_DownSampleEffect->CommitChanges();
+	DrawQuad();
+	m_DownSampleEffect->EndPass();
+	m_DownSampleEffect->End();
+
+	SetRenderTarget(0, oldTarget);
+	return true;
+}
+
 bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl)
 {
 	CVertexDeclaration* pDecl = new CVertexDeclaration(pVertexElements);
@@ -626,13 +657,21 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 
 bool ParaEngine::RenderDeviceOpenGL::Present()
 {
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
+
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
+	m_DownSampleEffect->Begin();
+	m_DownSampleEffect->SetTexture("ColorTextureSampler", m_CurrentRenderTargets[0]);
+	m_DownSampleEffect->BeginPass(0);
+	m_DownSampleEffect->CommitChanges();
+	
+	DrawQuad();
 
-	GLint width = m_backbufferRenderTarget->GetWidth();
-	GLint height = m_backbufferRenderTarget->GetHeight();
+	m_DownSampleEffect->EndPass();
+	m_DownSampleEffect->End();
 
-	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
@@ -770,6 +809,7 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil
 	return m_backbufferDepthStencil;
 }
 
+
 IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
 {
 	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
@@ -868,5 +908,34 @@ bool ParaEngine::RenderDeviceOpenGL::IsSupportExt(const char* extName)
 	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
 	if (it != m_GLExtes.end()) return true;
 	return false;
+}
+
+void ParaEngine::RenderDeviceOpenGL::DrawQuad()
+{
+	static GLfloat quadVertices[] = {
+		-1,-1,0,
+		1, -1, 0,
+		-1, 1, 0,
+		1, 1, 0,
+	};
+
+	static VertexElement vertexdesc_pos[] =
+	{
+		// base data (stream 0)
+		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
+		D3DDECL_END()
+	};
+
+
+	VertexDeclarationPtr pDecl = nullptr;
+	if (pDecl == nullptr)
+	{
+		CreateVertexDeclaration(vertexdesc_pos, &pDecl);
+	}
+
+	if (pDecl == nullptr) return ;
+
+	SetVertexDeclaration(pDecl);
+	DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(GLfloat) * 3);
 }
 

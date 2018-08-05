@@ -75,11 +75,15 @@ namespace ParaEngine
 
 		virtual IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
+
+		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) override;
+
 	protected:
 		void ApplyBlendingModeChange();
 		void InitCpas();
 		void InitFrameBuffer();
 		bool IsSupportExt(const char* extName);
+		void DrawQuad();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -111,6 +115,8 @@ namespace ParaEngine
 		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 		std::vector<std::string> m_GLExtes;
 		GLuint m_FBO;
+
+		std::shared_ptr<IParaEngine::IEffect> m_DownSampleEffect;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)

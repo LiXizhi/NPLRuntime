@@ -112,7 +112,7 @@ namespace ParaEngine
 		virtual bool EndScene() = 0;
 
 		virtual bool Present() = 0;
-
+		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) = 0;
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */
 		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);

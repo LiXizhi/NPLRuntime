@@ -948,7 +948,7 @@ bool TextureEntityImpl::StretchRect(TextureEntityImpl * pSrcTexture, TextureEnti
 
 	if (pSrcTexture->GetTexture() != nullptr && pDestTexture->GetTexture() != nullptr)
 	{
-		return pSrcTexture->GetTexture()->StretchRect(pDestTexture->GetTexture(), nullptr, nullptr, ETextureFilter::Linear);
+		return CGlobals::GetRenderDevice()->StretchRect(pSrcTexture->GetTexture(), pDestTexture->GetTexture(), nullptr, nullptr);
 	}
 	return false;
 }

@@ -319,12 +319,21 @@ bool ParaEngine::CViewport::DrawQuad()
 		{ Vector3(fX*2 - 1, -fY*2+1, 0), Vector2(fX, fY) },
 		{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight, fY) },
 	};*/
-	mesh_vertex_plain quadVertices[4] = {
+	//mesh_vertex_plain quadVertices[4] = {
+	//	{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
+	//	{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
+	//	{ Vector3(-1, 1, 0), Vector2(fX, fY) },
+	//	{ Vector3(1, 1, 0), Vector2(fRight, fY) },
+	//};
+
+
+	 mesh_vertex_plain quadVertices[4] = {
 		{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
 		{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
 		{ Vector3(-1, 1, 0), Vector2(fX, fY) },
 		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
 	};
+
 
 	// this is done in shader code
 	//
@@ -333,9 +342,11 @@ bool ParaEngine::CViewport::DrawQuad()
 	// float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
 	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
 	bool bSucceed = false;
-#ifdef USE_DIRECTX_RENDERER
-	bSucceed = SUCCEEDED(CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain)));
-#endif
+	auto pRenderDevice = CGlobals::GetRenderDevice();
+	auto  layout = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);
+	pRenderDevice->SetVertexDeclaration(layout);
+	
+	bSucceed = pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 
 	return bSucceed;
 }

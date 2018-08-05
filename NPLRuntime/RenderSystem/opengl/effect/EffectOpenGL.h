@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 class DxEffectsTree;
+class PassNode;
 namespace ParaEngine
 {
 
@@ -13,6 +14,25 @@ namespace ParaEngine
 		void* data;
 		uint32_t size;
 	};
+
+
+	struct EffectRenderState
+	{
+		bool ZTest;
+		bool ZWrite;
+		ECullMode CullMode;
+		bool AlphaBlend;
+
+		EffectRenderState()
+			: ZTest(true)
+			, ZWrite(true)
+			, CullMode(ECullMode::None)
+			, AlphaBlend(false)
+		{
+
+		}
+	};
+
 
 	class EffectOpenGL : public IParaEngine::IEffect
 	{
@@ -58,12 +78,17 @@ namespace ParaEngine
 		UpdateParmeterCommand m_ParameterCommands[MAX_UNIFORMS];
 		std::vector<UniformInfoGL> m_Uniforms;
 		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
+	private:
+		const EffectRenderState GetPassRenderState(PassNode* pass);
+		const EffectRenderState GetCurrentRenderState();
+		void ApplyRenderState(const EffectRenderState& rs);
+
 	// Runtime state
 	private:
 		IParaEngine::TechniqueHandle m_CurrentTechniqueHandle;
 		bool m_IsBeginTechnique;
 		bool m_IsBeginPass;
 		uint32_t m_CurrentPass;
-
+		EffectRenderState m_LastRenderState;
 	};
 }

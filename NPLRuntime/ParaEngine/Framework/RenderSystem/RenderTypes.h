@@ -395,6 +395,13 @@ namespace ParaEngine
 		TEXTURE6,
 		TEXTURE7,
 	};
+
+	enum class ECullMode
+	{
+		None,
+		CW,
+		CCW
+	};
 }
 
 
