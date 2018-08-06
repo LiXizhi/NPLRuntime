@@ -121,9 +121,9 @@ static WindowDelegate* sInstance = nil;
 {
     _renderWindow = new RenderWindowOSX(1280, 720);
     
-    _renderWindow->PollEvents();
-
     _app = new CParaEngineAppOSX();
+    
+    _renderWindow->PollEvents();
     
     bool ret = _app->InitApp(_renderWindow, _url.c_str());
     if(!ret)

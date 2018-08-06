@@ -30,7 +30,8 @@
 - (instancetype)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
-    
+    // enable multi-touch
+    self.multipleTouchEnabled = true;
     return self;
 }
 
@@ -43,13 +44,14 @@
     NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
-        intptr_t touchId = (uintptr_t)touch;
-        CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x* [UIScreen mainScreen].scale;
-        float touchY = location.y* [UIScreen mainScreen].scale;
-        TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, touchId, touchX, touchY, msCurTime);
-        touchId++;
-        gui->handleTouchEvent(*touchEvent);
+        if(touch.phase == UITouchPhaseBegan){
+            intptr_t touchId = (uintptr_t)touch;
+            CGPoint location = [ touch locationInView: self ];
+            float touchX = location.x* [UIScreen mainScreen].scale;
+            float touchY = location.y* [UIScreen mainScreen].scale;
+            TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_DOWN, touchId, touchX, touchY, msCurTime);
+            gui->handleTouchEvent(*touchEvent);
+        }
     }
 }
 
@@ -62,13 +64,14 @@
     NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
-        intptr_t touchId = (uintptr_t)touch;
-        CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x * [UIScreen mainScreen].scale;
-        float touchY = location.y * [UIScreen mainScreen].scale;
-        TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
-        touchId++;
-        gui->handleTouchEvent(*touchEvent);
+        if(touch.phase == UITouchPhaseEnded){
+            intptr_t touchId = (uintptr_t)touch;
+            CGPoint location = [ touch locationInView: self ];
+            float touchX = location.x * [UIScreen mainScreen].scale;
+            float touchY = location.y * [UIScreen mainScreen].scale;
+            TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
+            gui->handleTouchEvent(*touchEvent);
+        }
     }
 }
 -(void) touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
@@ -80,13 +83,14 @@
     NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
-        CGPoint location = [ touch locationInView: self ];
-        intptr_t touchId = (uintptr_t)touch;
-        float touchX = location.x* [UIScreen mainScreen].scale;
-        float touchY = location.y* [UIScreen mainScreen].scale;
-        TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE,touchId, touchX, touchY, msCurTime);
-        touchId++;
-        gui->handleTouchEvent(*touchEvent);
+        if(touch.phase == UITouchPhaseMoved){
+            CGPoint location = [ touch locationInView: self ];
+            intptr_t touchId = (uintptr_t)touch;
+            float touchX = location.x* [UIScreen mainScreen].scale;
+            float touchY = location.y* [UIScreen mainScreen].scale;
+            TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UPDATE,touchId, touchX, touchY, msCurTime);
+            gui->handleTouchEvent(*touchEvent);
+        }
     }
 }
 -(void) touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
@@ -99,12 +103,14 @@
     NSEnumerator* enumerator = [[event allTouches] objectEnumerator];
     UITouch * touch = nil;
     while (touch = [enumerator nextObject]) {
-        intptr_t touchId = (uintptr_t)touch;
-        CGPoint location = [ touch locationInView: self ];
-        float touchX = location.x* [UIScreen mainScreen].scale;
-        float touchY = location.y* [UIScreen mainScreen].scale;
-        TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
-        gui->handleTouchEvent(*touchEvent);
+        if(touch.phase == UITouchPhaseCancelled){
+            intptr_t touchId = (uintptr_t)touch;
+            CGPoint location = [ touch locationInView: self ];
+            float touchX = location.x* [UIScreen mainScreen].scale;
+            float touchY = location.y* [UIScreen mainScreen].scale;
+            TouchEventPtr touchEvent = std::make_shared<TouchEvent>(EH_TOUCH, TouchEvent::TouchEvent_POINTER_UP, touchId, touchX, touchY, msCurTime);
+            gui->handleTouchEvent(*touchEvent);
+        }
     }
 }
 

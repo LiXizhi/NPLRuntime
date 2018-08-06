@@ -131,16 +131,16 @@ void ParaEngine::CFileUtils::MakeFileNameFromRelativePath(char * output, const c
 	if (relativePath != NULL)
 	{
 		char c;
-		for (int i = 0; (c = relativePath[i]) != '\0' && i < MAX_PATH; i++)
+		for (int i = 0; (c = relativePath[i]) != '\0' && i < MAX_PATH_LENGTH; i++)
 		{
 			output[i] = c;
 			if ((c == '/') || (c == '\\'))
 				nLastSlash = i;
 		}
 	}
-	if (filename != 0)
+	if (filename != 0 && filename[0] != '\0')
 	{
-		strncpy(output + nLastSlash + 1, filename, MAX_PATH);
+		strncpy(output + nLastSlash + 1, filename, MAX_PATH_LENGTH - nLastSlash - 1);
 	}
 	else
 	{

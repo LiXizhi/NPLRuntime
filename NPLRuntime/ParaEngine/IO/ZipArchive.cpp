@@ -874,12 +874,11 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	}
 
 
-	const size_t max_path = 1024;
-	char tmp[max_path + 1];
+	char tmp[MAX_PATH_LENGTH + 1];
 	if (m_bIgnoreCase)
 	{
 		size_t i = 0;
-		for (; filename[i] != 0 && i < max_path; i++)
+		for (; filename[i] != 0 && i < MAX_PATH_LENGTH; i++)
 		{
 			tmp[i] = filename[i];
 			if (tmp[i] >= 'A' && tmp[i] <= 'Z')

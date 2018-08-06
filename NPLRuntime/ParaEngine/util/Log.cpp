@@ -187,7 +187,7 @@ namespace ParaEngine
 		m_bForceFlush = false; 
 #endif
 #else
-#if defined(PARAENGINE_CLIENT)
+#if defined(PARAENGINE_CLIENT) || defined(PLATFORM_MAC)
 		m_bForceFlush = true;
 		m_is_first_time_open = true;
 #else
