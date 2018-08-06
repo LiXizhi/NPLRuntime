@@ -469,7 +469,7 @@ void ParaEngine::CScriptParticle::SParticleElement::genVertices(const Vector3 * 
 	else if(mContainer->mRotationType==BBR_VERTEX)
 	{
 		// TODO: Cache axis when billboard type is BBT_POINT or BBT_PERPENDICULAR_COMMON
-		Vector3 axis=(offsets[3]-offsets[0]).crossProduct(offsets[2]-offsets[1]).normalisedCopy();
+		Vector3 axis=(offsets[3]-offsets[1]).crossProduct(offsets[2]-offsets[0]).normalisedCopy();
 
 		Quaternion rotation;
 		rotation.FromAngleAxis(Radian(mRotation),axis);
