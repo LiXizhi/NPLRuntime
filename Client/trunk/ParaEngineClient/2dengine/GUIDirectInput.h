@@ -60,7 +60,7 @@ namespace ParaEngine
 		* @param XHotSpot [in] X-coordinate offset (in pixels) that marks the center of the cursor. The offset is relative to the upper-left corner of the cursor. When the cursor is given a new position, the image is drawn at an offset from this new position determined by subtracting the hot spot coordinates from the position. 
 		* @param YHotSpot [in] Y-coordinate offset (in pixels) that marks the center of the cursor. The offset is relative to the upper-left corner of the cursor. When the cursor is given a new position, the image is drawn at an offset from this new position determined by subtracting the hot spot coordinates from the position. 
 		*/
-		void SetCursorFromFile(const char *szCursor, int XHotSpot=0, int YHotSpot=0);
+		void SetCursorFromFile(const char *szCursor, int XHotSpot=0, int YHotSpot=0, bool force = false);
 		/*
 		* get the current cursor file. 
 		* @param pXHotSpot: if not NULL, it will return the hot spot X

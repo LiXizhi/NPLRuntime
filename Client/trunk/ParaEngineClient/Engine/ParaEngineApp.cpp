@@ -848,6 +848,9 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
+	// restore mouse
+	auto mouse = CGUIRoot::GetInstance()->GetMouse();
+	mouse->SetCursorFromFile(mouse->GetCursorFile(),0,0,true);
 #endif
 	/* -------end of paraworld code ----------------------------*/
 	return S_OK;

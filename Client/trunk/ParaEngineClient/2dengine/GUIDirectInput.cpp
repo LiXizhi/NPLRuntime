@@ -616,7 +616,7 @@ bool ParaEngine::CDirectMouse::IsButtonDown(MOUSE_KEY_STD nMouseButton)
 	}
 }
 
-void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHotSpot)
+void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHotSpot, bool force)
 {
 #ifdef USE_DIRECTX_RENDERER
 	HRESULT hr = E_FAIL;
@@ -631,7 +631,7 @@ void CDirectMouse::SetCursorFromFile(const char *szCursor, int XHotSpot, int YHo
 	}
 	else
 	{
-		if(m_szCursorName == szCursor && ((XHotSpot<0 || m_XHotSpot == XHotSpot) && (YHotSpot<0 || m_YHotSpot == YHotSpot)))
+		if(m_szCursorName == szCursor && ((XHotSpot<0 || m_XHotSpot == XHotSpot) && (YHotSpot<0 || m_YHotSpot == YHotSpot)) && !force)
 		{
 			return;
 		}

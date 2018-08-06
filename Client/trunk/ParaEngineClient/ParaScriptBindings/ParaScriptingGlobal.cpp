@@ -1844,7 +1844,14 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 				if (object_cast<bool>(Value))
 				{
 					bIsSavingFile = true;
-					ofn.Flags = OFN_PATHMUSTEXIST;
+					ofn.Flags &= ~OFN_FILEMUSTEXIST;
+				}
+			}
+			else if (sKey == "multi")
+			{
+				if (object_cast<bool>(Value))
+				{
+					ofn.Flags |= OFN_ALLOWMULTISELECT | OFN_EXPLORER;
 				}
 			}
 		}
@@ -1875,6 +1882,14 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 	{
 		if (ofn.lpstrFile)
 		{
+			if ((ofn.Flags & OFN_ALLOWMULTISELECT) != 0)
+			{
+				for (int i = 0; i < MAX_LINE; ++i)
+				{
+					if (ofn.lpstrFile[i] == 0 && ofn.lpstrFile[i + 1] != 0)
+						ofn.lpstrFile[i] = ' ';
+				}
+			}
 			string filename = ofn.lpstrFile;
 			inout["filename"] = filename;
 		}
