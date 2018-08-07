@@ -383,7 +383,7 @@ bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fi
 		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
 		if (_GetFileInfo_(sAbsFilePath.c_str(), fileInfo))
 		{
-			fileInfo.m_sFullpath = sAbsFilePath;
+			fileInfo.m_dwFileAttributes = 0;
 			return true;
 		}
 	}
@@ -392,6 +392,24 @@ bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fi
 		fileInfo.m_sFullpath = filename;
 		return true;
 	}
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+	else if (!IsAbsolutePath(filename))
+	{
+		// we will also search in asset folder in APK file for android version only. 
+		ParaEngine::IReadFile* pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
+		if (pFile)
+		{
+			bool bExist = pFile->isOpen();
+			if (bExist)
+			{
+				fileInfo.m_dwFileSize = pFile->getSize();
+				fileInfo.m_mode = CParaFileInfo::ModeFileInZip;
+			}
+			SAFE_DELETE(pFile);
+			return bExist;
+		}
+	}
+#endif
 	return false;
 }
 

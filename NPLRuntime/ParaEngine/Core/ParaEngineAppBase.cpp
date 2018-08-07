@@ -1194,6 +1194,17 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				{
 					sPKGDir = sFullDir;
 				}
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+				else if( !CParaFile::IsAbsolutePath(sFullDir))
+				{
+					// this fixed a special condition on android, when npl_packages are deployed to asset folder, where current directory is ""
+					std::string packageFile = sFullDir + "/package.npl";
+					if (CParaFile::DoesFileExist2(packageFile.c_str(), FILE_ON_DISK))
+					{
+						sPKGDir = sFullDir;
+					}
+				}
+#endif
 
 				if (sPKGDir.empty() && !m_sModuleDir.empty())
 				{
