@@ -31,7 +31,7 @@ namespace ParaEngine {
         virtual void Refresh() override;
         virtual void hideCloseButton(bool bHide) override;
         virtual void addCloseListener(onCloseFunc fun) override;
-        
+        virtual void bringToTop() override;
         
     protected:
         void openWindow(int x, int y, int w, int h);
