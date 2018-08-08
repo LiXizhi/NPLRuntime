@@ -183,6 +183,20 @@ NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
 				m_pMonoScriptingState = (NPL::IMonoScriptingState*) pClassDesc->Create();
 			}
 		}
+		if (m_pMonoScriptingState == 0)
+		{
+			OUTPUT_LOG("warn: required Mono class: %d %d can not be found in the dll\n", NPL_Mono_CLASS_ID.PartA(), NPL_Mono_CLASS_ID.PartB());
+			for (int i = 0; i < pPluginEntity->GetNumberOfClasses(); ++i)
+			{
+				ClassDescriptor* pClassDesc = pPluginEntity->GetClassDescriptor(i);
+
+				if (pClassDesc)
+				{
+					OUTPUT_LOG("Mono class:%d %d in the loaded dll is used instead. class name: %s\n", pClassDesc->ClassID().PartA(), pClassDesc->ClassID().PartB(), pClassDesc->ClassName());
+					m_pMonoScriptingState = (NPL::IMonoScriptingState*) pClassDesc->Create();
+				}
+			}
+		}
 	}
 
 	if (m_pMonoScriptingState != 0)

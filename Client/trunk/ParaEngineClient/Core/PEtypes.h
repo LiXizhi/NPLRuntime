@@ -245,15 +245,15 @@ namespace ParaEngine
 	*/
 	class Class_ID 
 	{
-		unsigned long a,b;
+		uint32 a,b;
 	public:
 		Class_ID() { a = b = 0xffffffff; }
 		Class_ID(const Class_ID& cid) { a = cid.a; b = cid.b;	}
-		Class_ID(unsigned long  aa, unsigned long  bb) { a = aa; b = bb; }
-		unsigned long  PartA() { return a; }
-		unsigned long  PartB() { return b; }
-		void SetPartA( unsigned long  aa ) { a = aa; } //-- Added 11/21/96 GG
-		void SetPartB( unsigned long  bb ) { b = bb; }
+		Class_ID(uint32 aa, uint32  bb) { a = aa; b = bb; }
+		uint32  PartA() { return a; }
+		uint32  PartB() { return b; }
+		void SetPartA( uint32  aa ) { a = aa; } //-- Added 11/21/96 GG
+		void SetPartB( uint32  bb ) { b = bb; }
 		int operator==(const Class_ID& cid) const { return (a==cid.a&&b==cid.b); }
 		int operator!=(const Class_ID& cid) const { return (a!=cid.a||b!=cid.b); }
 		Class_ID& operator=(const Class_ID& cid)  { a=cid.a; b = cid.b; return (*this); }
@@ -272,15 +272,15 @@ namespace ParaEngine
 	*/
 	class Interface_ID 
 	{
-		unsigned long a,b;
+		uint32 a,b;
 	public:
 		Interface_ID() { a = b = 0xffffffff; }
 		Interface_ID(const Interface_ID& iid) { a = iid.a; b = iid.b;	}
-		Interface_ID(unsigned long  aa, unsigned long  bb) { a = aa; b = bb; }
-		unsigned long  PartA() { return a; }
-		unsigned long  PartB() { return b; }
-		void SetPartA( unsigned long  aa ) { a = aa; }
-		void SetPartB( unsigned long  bb ) { b = bb; }
+		Interface_ID(uint32  aa, uint32  bb) { a = aa; b = bb; }
+		uint32  PartA() { return a; }
+		uint32  PartB() { return b; }
+		void SetPartA( uint32  aa ) { a = aa; }
+		void SetPartB( uint32  bb ) { b = bb; }
 		int operator==(const Interface_ID& iid) const { return (a==iid.a&&b==iid.b); }
 		int operator!=(const Interface_ID& iid) const { return (a!=iid.a||b!=iid.b); }
 		Interface_ID& operator=(const Interface_ID& iid)  { a=iid.a; b = iid.b; return (*this); }
