@@ -32,6 +32,7 @@
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "PhysicsWorld.h"
+#include "DynamicAttributeField.h"
 #include <algorithm>
 #include "GeosetObject.h"
 
@@ -1518,6 +1519,16 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 			}
 		}
 		
+		CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+		if (pField)
+		{
+			sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+			pField = GetDynamicField("colorAmbient");
+			if (pField)
+				sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
+			sceneState->EnableLocalMaterial(true);
+		}
+
 		if (bUsePointTextureFilter)
 		{
 			pEffectManager->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_POINT);

@@ -2728,9 +2728,19 @@ CGUIBase* ParaEngine::CGUIRoot::GetActiveWindow() const
 	return m_pActiveWindow;
 }
 
-void ParaEngine::CGUIRoot::SetActiveWindow(CGUIBase* val)
+void ParaEngine::CGUIRoot::SetActiveWindow(CGUIBase* val, int nState)
 {
-	m_pActiveWindow = val;
+	if (m_pActiveWindow != val)
+	{
+		if (m_pActiveWindow) {
+			m_pActiveWindow->OnActivate(0);
+		}
+		m_pActiveWindow = val;
+
+		if (m_pActiveWindow) {
+			m_pActiveWindow->OnActivate(nState);
+		}
+	}
 }
 
 int ParaEngine::CGUIRoot::InstallFields(CAttributeClass* pClass, bool bOverride)

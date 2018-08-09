@@ -1,6 +1,6 @@
 #pragma once
 #include "modelheaders.h"
-#include "XFileParser.h"
+#include "XFileStaticModelParser.h"
 #include "animated.h"
 
 namespace ParaEngine
@@ -8,7 +8,7 @@ namespace ParaEngine
 	class CParaXModel;
 
 	/** parsing character parax model: binary file only. */
-	class XFileCharModelParser : public XFileParser
+	class XFileCharModelParser : public XFileStaticModelParser
 	{
 	public:
 		/** Constructor. Creates a data structure out of the XFile given in the memory block.

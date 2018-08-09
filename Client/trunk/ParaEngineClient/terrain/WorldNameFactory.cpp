@@ -34,31 +34,31 @@ void CWorldNameFactory::ResetWorldName(const string& sWorldConfigFile)
 	m_strWorldPath.clear();
 	int nSize = (int)sWorldConfigFile.size();
 
-	if(CParaFile::GetFileExtension(sWorldConfigFile) != "")
+	if (CParaFile::GetFileExtension(sWorldConfigFile) != "")
 	{
 		/*int nFrom = 0;
 		int i;
 		for(i=0; i<nSize; ++i)
 		{
-			if(sWorldConfigFile[i]=='\\' || sWorldConfigFile[i]=='/')
-			{
-				if(i==0)
-					++nFrom;
-				else
-					break;
-			}
+		if(sWorldConfigFile[i]=='\\' || sWorldConfigFile[i]=='/')
+		{
+		if(i==0)
+		++nFrom;
+		else
+		break;
+		}
 		}
 		if(i>nFrom)
-			m_strWorldPath = sWorldConfigFile.substr(nFrom, i-nFrom);
+		m_strWorldPath = sWorldConfigFile.substr(nFrom, i-nFrom);
 		else
-			m_strWorldPath = "unknown";*/
+		m_strWorldPath = "unknown";*/
 
 		m_strWorldPath = CParaFile::GetParentDirectoryFromPath(sWorldConfigFile);
-		if(m_strWorldPath.size()>1)
-			m_strWorldPath = m_strWorldPath.substr(0, m_strWorldPath.size()-1);
+		if (m_strWorldPath.size()>1)
+			m_strWorldPath = m_strWorldPath.substr(0, m_strWorldPath.size() - 1);
 
 		m_strWorldName = CParaFile::GetFileName(sWorldConfigFile);
-		if(m_strWorldName == "worldconfig.txt")
+		if (m_strWorldName == "worldconfig.txt")
 		{
 			// use empty worldname if worldconfig also does not contain the world name. 
 			// all worlds created since 2013.12.30 has this turned on.  
@@ -82,122 +82,122 @@ void CWorldNameFactory::ResetWorldName(const string& sWorldConfigFile)
 
 string CWorldNameFactory::GetTerrainConfigFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/config/%d_%d.config.txt", m_strWorldPath.c_str(), x, y);
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/config/%d_%d.config.txt", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/config/%s_%d_%d.config.txt", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/config/%s_%d_%d.config.txt", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainElevationFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/elev/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/elev/%d_%d.raw", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/elev/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/elev/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainOnloadFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/script/%d_%d.onload.lua", m_strWorldPath.c_str(), x, y);
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/script/%d_%d.onload.lua", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/script/%s_%d_%d.onload.lua", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/script/%s_%d_%d.onload.lua", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
 string CWorldNameFactory::GetTerrainMaskFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/config/%d_%d.mask", m_strWorldPath.c_str(), x, y);
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/config/%d_%d.mask", m_strWorldPath.c_str(), x, y);
 	else
-		snprintf(tmp, MAX_PATH, "%s/config/%s_%d_%d.mask", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/config/%s_%d_%d.mask", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	return string(tmp);
 }
-	
+
 string CWorldNameFactory::GetDefaultWorldConfigName()
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/worldconfig.txt", m_strWorldPath.c_str());
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/worldconfig.txt", m_strWorldPath.c_str());
 	else
-		snprintf(tmp, MAX_PATH, "%s/%s.worldconfig.txt", m_strWorldPath.c_str(), m_strWorldName.c_str());
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/%s.worldconfig.txt", m_strWorldPath.c_str(), m_strWorldName.c_str());
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetWorldDirectory()
 {
-	return (m_strWorldPath+"/");
+	return (m_strWorldPath + "/");
 }
 
 string CWorldNameFactory::GetWorldCharacterDirectory()
 {
-	char tmp[MAX_PATH+1];
-	snprintf(tmp, MAX_PATH, "%s/character/", m_strWorldPath.c_str());
+	char tmp[MAX_PATH_LENGTH + 1];
+	snprintf(tmp, MAX_PATH_LENGTH, "%s/character/", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetDefaultTileConfigName()
 {
-	string filename = m_strWorldPath+"/flat.txt";
+	string filename = m_strWorldPath + "/flat.txt";
 	return filename;
 }
 
 
 string CWorldNameFactory::GetTerrainInfoDataFile(int x, int y)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
-		snprintf(tmp, MAX_PATH, "%s/elev/%d_%d_%s.raw", m_strWorldPath.c_str(), x, y,"info");
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/elev/%d_%d_%s.raw", m_strWorldPath.c_str(), x, y, "info");
 	else
-		snprintf(tmp, MAX_PATH, "%s/elev/%s_%d_%d_%s.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y,"info");
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/elev/%s_%d_%d_%s.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y, "info");
 	return string(tmp);
 }
 
-string CWorldNameFactory::GetBlockRegionFileName(int x,int y,bool usingTempFile)
+string CWorldNameFactory::GetBlockRegionFileName(int x, int y, bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
-	if(m_strWorldName.empty())
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (m_strWorldName.empty())
 	{
-		if(usingTempFile)
-			snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/%d_%d.raw", m_strWorldPath.c_str(), x, y);
-		else	
-			snprintf(tmp, MAX_PATH, "%s/blockWorld/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+		if (usingTempFile)
+			snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld.lastsave/%d_%d.raw", m_strWorldPath.c_str(), x, y);
+		else
+			snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld/%d_%d.raw", m_strWorldPath.c_str(), x, y);
 	}
 	else
 	{
-		if(usingTempFile)
-			snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
-		else	
-			snprintf(tmp, MAX_PATH, "%s/blockWorld/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		if (usingTempFile)
+			snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld.lastsave/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
+		else
+			snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld/%s_%d_%d.raw", m_strWorldPath.c_str(), m_strWorldName.c_str(), x, y);
 	}
-	
+
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetBlockGameSaveDir(bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
-	if(usingTempFile)
-		snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/", m_strWorldPath.c_str());
-	else	
-		snprintf(tmp, MAX_PATH, "%s/blockWorld/", m_strWorldPath.c_str());
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (usingTempFile)
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld.lastsave/", m_strWorldPath.c_str());
+	else
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld/", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
 string CWorldNameFactory::GetBlockTemplateFileName(bool usingTempFile)
 {
-	char tmp[MAX_PATH+1];
-	if(usingTempFile)
-		snprintf(tmp, MAX_PATH, "%s/blockWorld.lastsave/blockTemplate.xml", m_strWorldPath.c_str());
+	char tmp[MAX_PATH_LENGTH + 1];
+	if (usingTempFile)
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld.lastsave/blockTemplate.xml", m_strWorldPath.c_str());
 	else
-		snprintf(tmp, MAX_PATH, "%s/blockWorld/blockTemplate.xml", m_strWorldPath.c_str());
+		snprintf(tmp, MAX_PATH_LENGTH, "%s/blockWorld/blockTemplate.xml", m_strWorldPath.c_str());
 	return string(tmp);
 }
 
-void ParaTerrain::CWorldNameFactory::SetWorldName( const string& sWorldName )
+void ParaTerrain::CWorldNameFactory::SetWorldName(const string& sWorldName)
 {
 	m_strWorldName = sWorldName;
 }

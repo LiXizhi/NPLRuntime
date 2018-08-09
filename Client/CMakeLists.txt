@@ -27,14 +27,15 @@ if(WIN32)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
-
+	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
+	
 endif()
 # OSX Default Option
 if(APPLE)
-
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
 	option(NPLRUNTIME_PHYSICS "include physics" OFF)
+	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" ON)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)	
 
@@ -187,6 +188,9 @@ add_subdirectory (${SERVER_SOURCE_DIR}luabind-0.9 ${CLIENT_BINARY_DIR}/luabind-0
 add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${CLIENT_BINARY_DIR}/sqlite-3.6.23.1)
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${CLIENT_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${CLIENT_BINARY_DIR}/tinyxpath_1_3_1)
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common ${CLIENT_BINARY_DIR}/common)
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${CLIENT_BINARY_DIR}/features)
+add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${CLIENT_BINARY_DIR}/Pinocchio)
 
 
 
@@ -199,8 +203,6 @@ if(NPLRUNTIME_SUPPORT_FBX)
 endif()
 
 
-
-
 # main NPL runtime using ParaEngineClient
 add_subdirectory (${CLIENT_SOURCE_DIR}/../NPLRuntime/ParaEngineClient ${CLIENT_BINARY_DIR}/ParaEngineClient)
 
@@ -211,7 +213,11 @@ if(NPLRUNTIME_PHYSICS)
 	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/externals/bullet3 ${CLIENT_BINARY_DIR}/bullet3)
 	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/PhysicsBT ${CLIENT_BINARY_DIR}/PhysicsBT)
 endif()
-	
+
+if(NPLRUNTIME_CAUDIOENGINE)
+	add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/cAudio_2.1.0 ${CLIENT_BINARY_DIR}/cAudio_2.1.0)
+endif()	
+
 if(PARAENGINE_CLIENT_DLL)
 	if(NOT NPLRUNTIME_STATIC_LIB) 
 		# this app is for testing the client dll

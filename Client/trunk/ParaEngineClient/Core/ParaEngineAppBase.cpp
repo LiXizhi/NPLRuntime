@@ -38,6 +38,7 @@
 #include "NPLPackageConfig.h"
 #include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
+#include "AutoRigger.h"
 #include "ScriptParticle.h"
 
 using namespace ParaEngine;
@@ -207,6 +208,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("COverlayObject", new CDefaultObjectFactory<COverlayObject>());
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
 	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
+	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
 	pAttManager->RegisterObjectFactory("CScriptParticle",new CDefaultObjectFactory<CScriptParticle>());
 	// TODO add more here: 
 }
@@ -432,6 +434,15 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 				if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
 				{
 					sPKGDir = sFullDir;
+				}
+				else if (!CParaFile::IsAbsolutePath(sFullDir))
+				{
+					// this fixed a special condition on android, when npl_packages are deployed to asset folder, where current directory is ""
+					std::string packageFile = sFullDir + "/package.npl";
+					if (CParaFile::DoesFileExist2(packageFile.c_str(), FILE_ON_DISK))
+					{
+						sPKGDir = sFullDir;
+					}
 				}
 
 				if (sPKGDir.empty() && !m_sModuleDir.empty())

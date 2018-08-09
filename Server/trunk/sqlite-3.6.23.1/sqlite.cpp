@@ -1,3 +1,4 @@
+#if !defined(LINUX) && !defined(__linux__)
 #ifdef WIN32
 #	ifndef _CRT_SECURE_NO_WARNINGS
 #		define _CRT_SECURE_NO_WARNINGS
@@ -36,12 +37,12 @@ using namespace ParaEngine;
  
  HINSTANCE Instance = NULL;
 
- ClassDescriptor* HelloWorldPlugin_GetClassDesc();
+ ClassDescriptor* SqlitePlugin_GetClassDesc();
  typedef ClassDescriptor* (*GetClassDescMethod)();
 
  GetClassDescMethod Plugins[] = 
  {
- 	HelloWorldPlugin_GetClassDesc,
+ 	SqlitePlugin_GetClassDesc,
  };
 
 
@@ -55,9 +56,9 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
 /** This has to be unique, change this id for each new plugin.
 */
-#define HelloWorld_CLASS_ID Class_ID(0x2b905a29, 0x47b409af)
+#define Sqlite_CLASS_ID Class_ID(0x25905a29, 0x45b409af)
 
-class HelloWorldPluginDesc :public ClassDescriptor
+class SqlitePluginDesc :public ClassDescriptor
 {
 public:
 	void* Create(bool loading = FALSE)
@@ -67,7 +68,7 @@ public:
 
 	const char* ClassName()
 	{
-		return "IHelloWorld";
+		return "Sqlite3";
 	}
 
 	SClass_ID SuperClassID()
@@ -77,17 +78,17 @@ public:
 
 	Class_ID ClassID()
 	{
-		return HelloWorld_CLASS_ID;
+		return Sqlite_CLASS_ID;
 	}
 
 	const char* Category()
 	{
-		return "HelloWorld";
+		return "Sqlite";
 	}
 
 	const char* InternalName()
 	{
-		return "HelloWorld";
+		return "Sqlite";
 	}
 
 	HINSTANCE HInstance()
@@ -98,15 +99,15 @@ public:
 };
 
 
-ClassDescriptor* HelloWorldPlugin_GetClassDesc()
+ClassDescriptor* SqlitePlugin_GetClassDesc()
 {
-	static HelloWorldPluginDesc s_desc;
+	static SqlitePluginDesc s_desc;
 	return &s_desc;
 }
 
 CORE_EXPORT_DECL const char* LibDescription()
 {
-	return "ParaEngine HelloWorld Ver 1.0.0";
+	return "ParaEngine Sqlite Ver 1.0.0";
 }
 
 CORE_EXPORT_DECL unsigned long LibVersion()
@@ -177,3 +178,4 @@ extern "C" {
 		}
 	}
 }
+#endif

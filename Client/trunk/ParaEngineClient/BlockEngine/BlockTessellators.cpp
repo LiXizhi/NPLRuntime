@@ -17,8 +17,8 @@
 
 using namespace ParaEngine;
 
-ParaEngine::BlockTessellatorBase::BlockTessellatorBase(CBlockWorld* pWorld) 
-	: m_pWorld(pWorld), m_pCurBlockTemplate(0), m_pCurBlockModel(0), m_blockId_ws(0, 0, 0), m_nBlockData(0), m_pChunk(0), m_blockId_cs(0,0,0)
+ParaEngine::BlockTessellatorBase::BlockTessellatorBase(CBlockWorld* pWorld)
+	: m_pWorld(pWorld), m_pCurBlockTemplate(0), m_pCurBlockModel(0), m_blockId_ws(0, 0, 0), m_nBlockData(0), m_pChunk(0), m_blockId_cs(0, 0, 0)
 {
 	memset(neighborBlocks, 0, sizeof(neighborBlocks));
 }
@@ -97,7 +97,7 @@ void ParaEngine::BlockTessellatorBase::FetchNearbyBlockInfo(BlockChunk* pChunk, 
 	if (nNearbyBlockCount > 1)
 	{
 		memset(neighborBlocks + 1, 0, sizeof(Block*) * (nNearbyBlockCount - 1));
-		pChunk->QueryNeighborBlockData(blockId_cs, neighborBlocks+1, 1, nNearbyBlockCount - 1);
+		pChunk->QueryNeighborBlockData(blockId_cs, neighborBlocks + 1, 1, nNearbyBlockCount - 1);
 	}
 	//neighbor light info
 	if (!m_pCurBlockModel->IsUsingSelfLighting())
@@ -253,7 +253,7 @@ uint32_t ParaEngine::BlockTessellatorBase::CalculateCubeAO()
 	{
 		if (pCurBlock->GetTemplate()->IsMatchAttributes(BlockTemplate::batt_solid | BlockTemplate::batt_invisible, BlockTemplate::batt_solid))
 			aoFlags |= BlockModel::evf_bottomBack;
-	}	
+	}
 	return aoFlags;
 }
 
@@ -297,8 +297,8 @@ int32 ParaEngine::BlockGeneralTessellator::TessellateBlock(BlockChunk* pChunk, u
 		}
 	}
 	int nFaceCount = tessellatedModel.GetFaceCount();
-	if (nFaceCount > 0 )
-	{ 
+	if (nFaceCount > 0)
+	{
 		tessellatedModel.TranslateVertices(m_blockId_cs.x, m_blockId_cs.y, m_blockId_cs.z);
 		*pOutputData = tessellatedModel.GetVertices();
 	}
@@ -320,6 +320,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 	int32_t max_sun_light = 0;
 	int32_t max_block_light = 0;
 
+	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
+	const bool bHasColorData = dwBlockColor != Color::White;
+
 	if (dwShaderID == BLOCK_RENDER_FIXED_FUNCTION)
 	{
 		max_light = GetMeshBrightness(m_pCurBlockTemplate, &(blockBrightness[rbp_center]));
@@ -333,7 +336,13 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 			int nFirstVertex = face * 4;
 			for (int v = 0; v < 4; ++v)
 			{
-				tessellatedModel.SetLightIntensity(nFirstVertex + v, fLightValue);
+				int nIndex = nFirstVertex + v;
+				tessellatedModel.SetLightIntensity(nIndex, fLightValue);
+
+				if (bHasColorData)
+				{
+					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+				}
 			}
 		}
 	}
@@ -349,7 +358,12 @@ void ParaEngine::BlockGeneralTessellator::TessellateUniformLightingCustomModel(B
 			int nFirstVertex = face * 4;
 			for (int v = 0; v < 4; ++v)
 			{
-				tessellatedModel.SetVertexLight(nFirstVertex + v, block_lightvalue, sun_lightvalue);
+				int nIndex = nFirstVertex + v;
+				tessellatedModel.SetVertexLight(nIndex, block_lightvalue, sun_lightvalue);
+				if (bHasColorData)
+				{
+					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+				}
 			}
 		}
 	}
@@ -360,6 +374,9 @@ void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(Bloc
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 19, 0);
 	tessellatedModel.CloneVertices(m_pCurBlockTemplate->GetBlockModel(m_pWorld, m_blockId_ws.x, m_blockId_ws.y, m_blockId_ws.z, (uint16)m_nBlockData, neighborBlocks));
 
+	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
+	const bool bHasColorData = dwBlockColor != Color::White;
+
 	if (m_pCurBlockModel->IsUseAmbientOcclusion())
 	{
 		uint32 aoFlags = CalculateCubeAO();
@@ -368,6 +385,10 @@ void ParaEngine::BlockGeneralTessellator::TessellateSelfLightingCustomModel(Bloc
 		{
 			int nIndex = face * 4;
 			tessellatedModel.SetVertexShadowFromAOFlags(nIndex, nIndex, aoFlags);
+			if (bHasColorData)
+			{
+				tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
+			}
 		}
 	}
 }
@@ -402,7 +423,7 @@ int32 VertexVerticalScaleMaskMap[] = {
 void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMethod dwShaderID)
 {
 	FetchNearbyBlockInfo(m_pChunk, m_blockId_cs, 27);
-	
+
 	uint32 aoFlags = 0;
 	if (m_pCurBlockModel->IsUseAmbientOcclusion())
 	{
@@ -413,7 +434,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 	PE_ASSERT(nFaceCount <= 6);
 
 	bool bHasTopScale = false;
-	float TopFaceVerticalScales[] = {1.f, 1.f, 1.f, 1.f};
+	float TopFaceVerticalScales[] = { 1.f, 1.f, 1.f, 1.f };
 
 	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
 	const bool bHasColorData = dwBlockColor != Color::White;
@@ -425,13 +446,13 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 
 		Block* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
 
-		if (!(pCurBlock && 
-			( (pCurBlock->GetTemplate()->IsAssociatedBlockID(m_pCurBlockTemplate->GetID()) 
-			// TODO: we should show the face when two transparent color blocks with different color are side by side.
-			// However, since we are not doing face sorting anyway, this feature is turned off at the moment. 
-			// && pCurBlock->GetTemplate()->GetDiffuseColor(pCurBlock->GetUserData()) == dwBlockColor
-			)
-			|| (face != 0 && pCurBlock->GetTemplate()->IsFullyOpaque()))))
+		if (!(pCurBlock &&
+			((pCurBlock->GetTemplate()->IsAssociatedBlockID(m_pCurBlockTemplate->GetID())
+				// TODO: we should show the face when two transparent color blocks with different color are side by side.
+				// However, since we are not doing face sorting anyway, this feature is turned off at the moment. 
+				// && pCurBlock->GetTemplate()->GetDiffuseColor(pCurBlock->GetUserData()) == dwBlockColor
+				)
+				|| (face != 0 && pCurBlock->GetTemplate()->IsFullyOpaque()))))
 		{
 			int32_t baseIdx = nFirstVertex * 4;
 			int32_t v1 = blockBrightness[BlockCommon::NeighborLightOrder[baseIdx]];
@@ -451,14 +472,14 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 					// if both of the two adjacent blocks to the edge vertex are empty, we will scale that edge vertex to 0 height.  
 					Block* b2;
 					Block* b3;
-					if (v == 0){
+					if (v == 0) {
 						b2 = neighborBlocks[rbp_nX];
 						b3 = neighborBlocks[rbp_nZ];
 						if (!((b2 && b2->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_obstruction | BlockTemplate::batt_liquid)) ||
 							(b3 && b3->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_obstruction | BlockTemplate::batt_liquid))))
 						{
 							// BlockModel::evf_NxyNz
-							TopFaceVerticalScales[3] = 0.4f; 
+							TopFaceVerticalScales[3] = 0.4f;
 							bHasTopScale = true;
 						}
 						else
@@ -473,7 +494,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 							}
 						}
 					}
-					else if (v == 1){
+					else if (v == 1) {
 						b2 = neighborBlocks[rbp_nX];
 						b3 = neighborBlocks[rbp_pZ];
 						if (!((b2 && b2->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_obstruction | BlockTemplate::batt_liquid)) ||
@@ -495,7 +516,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 							}
 						}
 					}
-					else if (v == 2){
+					else if (v == 2) {
 						b2 = neighborBlocks[rbp_pX];
 						b3 = neighborBlocks[rbp_pZ];
 						if (!((b2 && b2->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_obstruction | BlockTemplate::batt_liquid)) ||
@@ -517,7 +538,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateLiquidOrIce(BlockRenderMetho
 							}
 						}
 					}
-					else if (v == 3){
+					else if (v == 3) {
 						b2 = neighborBlocks[rbp_pX];
 						b3 = neighborBlocks[rbp_nZ];
 						if (!((b2 && b2->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_solid | BlockTemplate::batt_obstruction | BlockTemplate::batt_liquid)) ||
@@ -601,7 +622,7 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 	PE_ASSERT(nFaceCount <= 6);
 
 	DWORD dwBlockColor = m_pCurBlockTemplate->GetDiffuseColor(m_nBlockData);
-	const bool bHasColorData = dwBlockColor!=Color::White;
+	const bool bHasColorData = dwBlockColor != Color::White;
 
 	int tileSize = m_pCurBlockTemplate->getTileSize();
 	float uvScale = (tileSize == 1) ? 1.0f : (1.0f / tileSize);

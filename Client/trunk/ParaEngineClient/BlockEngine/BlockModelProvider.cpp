@@ -39,6 +39,7 @@ int CGrassModelProvider::GetModelIndex( CBlockWorld* pBlockManager, uint16_t blo
 
 int CLinearModelProvider::GetModelIndex( CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks/*=NULL*/  )
 {
+	nBlockData = nBlockData & 0xff;
 	if(nBlockData<m_nModelCount)
 		return nBlockData;
 	else
@@ -47,6 +48,7 @@ int CLinearModelProvider::GetModelIndex( CBlockWorld* pBlockManager, uint16_t bl
 
 BlockModel& ParaEngine::CLinearModelProvider::GetBlockModelByData(uint32 nBlockData)
 {
+	nBlockData = nBlockData & 0xff;
 	return m_pBlockTemplate->GetBlockModel(nBlockData);
 }
 
