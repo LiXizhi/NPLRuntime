@@ -310,8 +310,6 @@ namespace ParaScripting
 		ParaAssetObject GetDefaultReplaceableTexture(int ReplaceableTextureID); 
 
 		void SetCallback(int callbackType,const char * func);
-
-		int GetPixel(int x,int y);
 	};
 
 
