@@ -23,31 +23,31 @@ using namespace ParaEngine;
 #define CORE_EXPORT_DECL
 #endif
 
- // forward declare of exported functions. 
- extern "C" {
- 	CORE_EXPORT_DECL const char* LibDescription();
- 	CORE_EXPORT_DECL int LibNumberClasses();
- 	CORE_EXPORT_DECL unsigned long LibVersion();
- 	CORE_EXPORT_DECL ParaEngine::ClassDescriptor* LibClassDesc(int i);
- 	CORE_EXPORT_DECL void LibInit();
- 	CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid);
- 	CORE_EXPORT_DECL void LibInitParaEngine(ParaEngine::IParaEngineCore* pCoreInterface);
- }
- 
- HINSTANCE Instance = NULL;
+// forward declare of exported functions. 
+extern "C" {
+	CORE_EXPORT_DECL const char* LibDescription();
+	CORE_EXPORT_DECL int LibNumberClasses();
+	CORE_EXPORT_DECL unsigned long LibVersion();
+	CORE_EXPORT_DECL ParaEngine::ClassDescriptor* LibClassDesc(int i);
+	CORE_EXPORT_DECL void LibInit();
+	CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid);
+	CORE_EXPORT_DECL void LibInitParaEngine(ParaEngine::IParaEngineCore* pCoreInterface);
+}
 
- ClassDescriptor* HelloWorldPlugin_GetClassDesc();
- typedef ClassDescriptor* (*GetClassDescMethod)();
+HINSTANCE Instance = NULL;
 
- GetClassDescMethod Plugins[] = 
- {
- 	HelloWorldPlugin_GetClassDesc,
- };
+ClassDescriptor* SqlitePlugin_GetClassDesc();
+typedef ClassDescriptor* (*GetClassDescMethod)();
+
+GetClassDescMethod Plugins[] =
+{
+	SqlitePlugin_GetClassDesc,
+};
 
 
 CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 {
-	if(nType == ParaEngine::PluginActType_STATE)
+	if (nType == ParaEngine::PluginActType_STATE)
 	{
 	}
 }
@@ -55,9 +55,9 @@ CORE_EXPORT_DECL void LibActivate(int nType, void* pVoid)
 
 /** This has to be unique, change this id for each new plugin.
 */
-#define HelloWorld_CLASS_ID Class_ID(0x2b905a29, 0x47b409af)
+#define Sqlite_CLASS_ID Class_ID(0x25905a29, 0x45b409af)
 
-class HelloWorldPluginDesc :public ClassDescriptor
+class SqlitePluginDesc :public ClassDescriptor
 {
 public:
 	void* Create(bool loading = FALSE)
@@ -67,7 +67,7 @@ public:
 
 	const char* ClassName()
 	{
-		return "IHelloWorld";
+		return "Sqlite3";
 	}
 
 	SClass_ID SuperClassID()
@@ -77,17 +77,17 @@ public:
 
 	Class_ID ClassID()
 	{
-		return HelloWorld_CLASS_ID;
+		return Sqlite_CLASS_ID;
 	}
 
 	const char* Category()
 	{
-		return "HelloWorld";
+		return "Sqlite";
 	}
 
 	const char* InternalName()
 	{
-		return "HelloWorld";
+		return "Sqlite";
 	}
 
 	HINSTANCE HInstance()
@@ -98,15 +98,15 @@ public:
 };
 
 
-ClassDescriptor* HelloWorldPlugin_GetClassDesc()
+ClassDescriptor* SqlitePlugin_GetClassDesc()
 {
-	static HelloWorldPluginDesc s_desc;
+	static SqlitePluginDesc s_desc;
 	return &s_desc;
 }
 
 CORE_EXPORT_DECL const char* LibDescription()
 {
-	return "ParaEngine HelloWorld Ver 1.0.0";
+	return "ParaEngine Sqlite Ver 1.0.0";
 }
 
 CORE_EXPORT_DECL unsigned long LibVersion()
@@ -157,8 +157,8 @@ void __attribute__((constructor)) DllMain()
 #endif
 {
 #ifdef WIN32
-	Instance = hinstDLL;				// Hang on to this DLL's instance handle.
-	return (TRUE);
+Instance = hinstDLL;				// Hang on to this DLL's instance handle.
+return (TRUE);
 #endif
 }
 */
@@ -166,7 +166,7 @@ void __attribute__((constructor)) DllMain()
 extern "C" {
 	/** this is an example of c function calling NPL core interface */
 	void WriteLog(const char* zFormat, ...) {
-		if(GetCoreInterface()) {
+		if (GetCoreInterface()) {
 			va_list args;
 			va_start(args, zFormat);
 			char buffer[2050] = { '\0' };
