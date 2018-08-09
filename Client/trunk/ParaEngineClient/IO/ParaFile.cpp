@@ -393,7 +393,7 @@ int CParaFile::OpenAssetFile(const char* filename, bool bDownloadIfNotUpToDate, 
 		if (nRes == 0)
 		{
 			// try relative path if not exist. 
-			char sNewFilename[MAX_PATH * 2];
+			char sNewFilename[MAX_PATH_LENGTH];
 			CFileUtils::MakeFileNameFromRelativePath(sNewFilename, filename, relativePath);
 
 			nRes = OpenAssetFile(sNewFilename, bDownloadIfNotUpToDate);
@@ -603,7 +603,7 @@ bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fi
 			return bFound;
 		}
 	}
-	char filename[MAX_PATH];
+	char filename[MAX_PATH_LENGTH];
 
 	int i = 0;
 	int j = 0;
@@ -614,7 +614,7 @@ bool ParaEngine::CParaFile::GetFileInfo(const char* sfilename, CParaFileInfo& fi
 #endif
 
 	// replace '\\' with '/'
-	for (; sfilename[i] != '\0' && j < (MAX_PATH - 1); i++, j++)
+	for (; sfilename[i] != '\0' && j < (MAX_PATH_LENGTH - 1); i++, j++)
 	{
 		if (sfilename[i] == '\\')
 			filename[j] = '/';
@@ -831,7 +831,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 	}
 #endif
 	m_bIsOwner = true;
-	char filename[MAX_PATH];
+	char filename[MAX_PATH_LENGTH];
 
 	int i = 0;
 	int j = 0;
@@ -842,7 +842,7 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 #endif
 
 	// replace '\\' with '/'
-	for (; sfilename[i] != '\0' && j<(MAX_PATH - 1); i++, j++)
+	for (; sfilename[i] != '\0' && j<(MAX_PATH_LENGTH - 1); i++, j++)
 	{
 		if (sfilename[i] == '\\')
 			filename[j] = '/';
@@ -862,9 +862,9 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 	/// append the relative path
 	if (relativePath != NULL)
 	{
-		char sRelativePath[MAX_PATH];
+		char sRelativePath[MAX_PATH_LENGTH];
 		int nLastSlash = -1;
-		for (int i = 0; relativePath[i] != '\0' && i<(MAX_PATH - 1); i++)
+		for (int i = 0; relativePath[i] != '\0' && i<(MAX_PATH_LENGTH - 1); i++)
 		{
 			if (relativePath[i] == '\\')
 				sRelativePath[i] = '/';
@@ -875,11 +875,16 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 		}
 		sRelativePath[nLastSlash + 1] = '\0';
 
-		if (sRelativePath[0] != '\0')
+		int nRelativePathLength = nLastSlash + 1;
+		int nFilenameLength = j;
+		if (sRelativePath[0] != '\0' && (nRelativePathLength + nFilenameLength) < MAX_PATH_LENGTH)
 		{
-			string sPath = sRelativePath;
-			sPath.append(filename);
-			strncpy(filename, sPath.c_str(), MAX_PATH);
+			// prepend relative path to filename
+			for (int i = nFilenameLength-1; i>=0 ; i--)
+				filename[i + nRelativePathLength] = filename[i];
+			for (int i = 0; i < nRelativePathLength; i++)
+				filename[i] = sRelativePath[i];
+			filename[nRelativePathLength + nFilenameLength] = '\0';
 		}
 	}
 

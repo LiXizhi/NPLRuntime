@@ -346,6 +346,16 @@ ParaEngine::XFileDataObjectPtr ParaEngine::XFileParser::CreateEnumObject()
 			node->Init(*this, objectName);
 			root->AddChild(node);
 		}
+		else if (objectName == "Mesh")
+		{
+			// stop on Mesh, it is a static ParaXModel. 
+			SAFE_DELETE(mScene);
+			mScene = new Scene;
+			Mesh* mesh = new Mesh;
+			ParseDataObjectMesh(mesh);
+			mScene->mGlobalMeshes.push_back(mesh);
+			return root;
+		}
 		else if (objectName == "template")
 		{
 			ParseUnknownDataObject();

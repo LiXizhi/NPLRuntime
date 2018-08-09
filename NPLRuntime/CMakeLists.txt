@@ -12,7 +12,9 @@
 # rm -f Server/trunk/curl-7.47.1/include/curl/curlbuild.h
 # apt-get install freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.1)
+set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_C_STANDARD 11)
 
 project (NPLRuntime)
 
@@ -75,7 +77,9 @@ add_subdirectory (${SERVER_SOURCE_DIR}sqlite-3.6.23.1 ${NPLRuntime_BINARY_DIR}/s
 add_subdirectory (${SERVER_SOURCE_DIR}jsoncpp-0.5.0 ${NPLRuntime_BINARY_DIR}/jsoncpp-0.5.0)
 add_subdirectory (${SERVER_SOURCE_DIR}tinyxpath_1_3_1  ${NPLRuntime_BINARY_DIR}/tinyxpath_1_3_1)
 #add_subdirectory (${SERVER_SOURCE_DIR}luaprofiler-2.0.2  ${NPLRuntime_BINARY_DIR}/luaprofiler-2.0.2)
-
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/common ${NPLRuntime_BINARY_DIR}/common)
+add_subdirectory (${SERVER_SOURCE_DIR}/pcl/features ${NPLRuntime_BINARY_DIR}/features)
+add_subdirectory (${SERVER_SOURCE_DIR}/Pinocchio ${NPLRuntime_BINARY_DIR}/Pinocchio)
 if(NPLRUNTIME_LUASQL)
 	add_subdirectory (${SERVER_SOURCE_DIR}luasql ${NPLRuntime_BINARY_DIR}/luasql)
 endif()

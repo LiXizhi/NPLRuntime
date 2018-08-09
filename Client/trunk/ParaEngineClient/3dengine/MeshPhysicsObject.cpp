@@ -860,6 +860,36 @@ void ParaEngine::CMeshPhysicsObject::SetPersistent( bool bPersistent )
 	m_bIsPersistent = bPersistent;
 }
 
+ParaEngine::IAttributeFields* ParaEngine::CMeshPhysicsObject::GetChildAttributeObject(const std::string& sName)
+{
+	if (sName == "meshobject") {
+		return m_pMeshObject;
+	}
+	return CBaseObject::GetChildAttributeObject(sName);
+}
+
+int ParaEngine::CMeshPhysicsObject::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
+{
+	if (nColumnIndex == 1) {
+		return 1;
+	}
+	return CBaseObject::GetChildAttributeObjectCount(nColumnIndex);
+}
+
+int ParaEngine::CMeshPhysicsObject::GetChildAttributeColumnCount()
+{
+	return 2;
+}
+
+ParaEngine::IAttributeFields* ParaEngine::CMeshPhysicsObject::GetChildAttributeObject(int nRowIndex, int nColumnIndex /*= 0*/)
+{
+	if (nColumnIndex == 1) {
+		if (nRowIndex == 0)
+			return m_pMeshObject;
+	}
+	return CBaseObject::GetChildAttributeObject(nRowIndex, nColumnIndex);
+}
+
 void ParaEngine::CMeshPhysicsObject::SetFaceCullingDisabled( bool bDisableFaceCulling )
 {
 	if(m_pMeshObject)

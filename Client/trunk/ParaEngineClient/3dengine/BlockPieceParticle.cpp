@@ -11,6 +11,7 @@
 #include "ParaWorldAsset.h"
 #include "FastRandom.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "DynamicAttributeField.h"
 #include "BlockPieceParticle.h"
 
 using namespace ParaEngine;
@@ -143,8 +144,17 @@ int ParaEngine::CBlockPieceParticle::RenderParticle(SPRITEVERTEX** ppVertexBuffe
 	uint8 brightness;
 	BlockWorldClient::GetInstance()->GetBlockBrightness(m_vBlockPos, &brightness, 1, -1);
 	brightness *= 16;
-	DWORD color = Color(brightness, brightness, brightness, (uint8)(255*CalculateOpacity()));
 
+	DWORD color = Color(brightness, brightness, brightness, (uint8)(255 * CalculateOpacity()));
+
+	CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+	if (pField)
+	{
+		Color diffuseColor((DWORD)(*pField));
+		color = (Color)(Color(color).ReinterpretAsLinear() * diffuseColor.ReinterpretAsLinear());
+	}
+
+	
 	SPRITEVERTEX* pVertexBuffer = *ppVertexBuffer;
 	// 2 triangle list with 6 vertices
 	Vector3 v;

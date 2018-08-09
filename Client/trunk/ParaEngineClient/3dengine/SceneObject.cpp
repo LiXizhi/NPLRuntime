@@ -3094,8 +3094,10 @@ bool CSceneObject::HandleUserInput()
 					mouse_wheel_event.m_MouseState = pMsg->message;
 
 					// please note: mouse move is delta value. 
-					mouse_wheel_event.m_x = (int)pMsg->lParam / 120;
-					mouse_wheel_event.m_y = 0;
+					int nDelta = ((int32)(pMsg->lParam)) / 120;
+					if (nDelta == 0)
+						nDelta = ((int32)(pMsg->lParam)) > 0 ? 1 : -1;
+					mouse_wheel_event.m_x = nDelta;
 
 					mouse_wheel_event.m_nEventType = EVENT_MOUSE_WHEEL;
 				}

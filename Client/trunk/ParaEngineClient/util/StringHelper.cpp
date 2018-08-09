@@ -435,29 +435,7 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 		return "";
 	nFrom--;
 	nTo--;
-#if defined(WIN32) && !defined(PARAENGINE_MOBILE)
-	const int MaxCharacterNum = 1024;
-	WCHAR wszText[MaxCharacterNum + 1];
-	wszText[MaxCharacterNum] = 0;
-	int nCharCount = ::MultiByteToWideChar(CP_UTF8, 0, szText, -1, wszText, MaxCharacterNum);
-	if (nCharCount <= 0)
-	{
-		return "";
-	}
-	if (nTo < 0 || nTo >= nCharCount)
-		nTo = nCharCount - 1;
-	if (nFrom >= 0 && nTo < nCharCount && (nTo - nFrom) >= 0)
-	{
-		wszText[nTo + 1] = L'\0';
-		char result[MaxCharacterNum * 2 + 2];
-		int nResult = ::WideCharToMultiByte(CP_UTF8, 0, &(wszText[nFrom]), (nTo - nFrom) + 1, result, MaxCharacterNum * 2, NULL, NULL);
-		if (nResult > 0)
-		{
-			result[nResult] = 0;
-			return result;
-		}
-	}
-#else
+
 	std::u16string wideStr;
 	if (UTF8ToUTF16(szText, wideStr) && (int)wideStr.size()>nFrom)
 	{
@@ -466,7 +444,6 @@ std::string StringHelper::UniSubString(const char* szText, int nFrom, int nTo)
 		if (UTF16ToUTF8(wideStr, str))
 			return str;
 	}
-#endif
 	return "";
 }
 

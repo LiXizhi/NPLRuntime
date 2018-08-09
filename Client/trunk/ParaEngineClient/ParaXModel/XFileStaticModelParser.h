@@ -4,6 +4,7 @@
 namespace ParaEngine
 {
 	struct ParaXRefObject;
+	class CParaXModel;
 
 	/** parsing static model: both binary and text format supported */
 	class XFileStaticModelParser : public XFileParser
@@ -16,6 +17,7 @@ namespace ParaEngine
 		~XFileStaticModelParser();
 	public:
 		XFile::Scene* ParseParaXStaticModel();
+		CParaXModel* LoadParaXModelFromScene(XFile::Scene* pScene);
 
 		bool ParseXRefSection();
 
