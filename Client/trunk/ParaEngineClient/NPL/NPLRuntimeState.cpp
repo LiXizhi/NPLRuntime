@@ -192,8 +192,7 @@ NPL::IMonoScriptingState* NPL::CNPLRuntimeState::GetMonoState()
 
 				if (pClassDesc)
 				{
-					OUTPUT_LOG("Mono class:%d %d in the loaded dll is used instead. class name: %s\n", pClassDesc->ClassID().PartA(), pClassDesc->ClassID().PartB(), pClassDesc->ClassName());
-					m_pMonoScriptingState = (NPL::IMonoScriptingState*) pClassDesc->Create();
+					OUTPUT_LOG("Mono class:%d %d in the loaded dll has class name: %s\n", pClassDesc->ClassID().PartA(), pClassDesc->ClassID().PartB(), pClassDesc->ClassName());
 				}
 			}
 		}
