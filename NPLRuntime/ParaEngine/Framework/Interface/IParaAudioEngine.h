@@ -1,5 +1,6 @@
 #pragma once
 #include "PEtypes.h"
+#include <functional>
 
 namespace ParaEngine
 {
@@ -273,6 +274,8 @@ namespace ParaEngine
 		virtual void unRegisterAllEventHandlers() = 0;
 	};
 
+
+
 	/** ParaAudioEngine core interface. 
 	*/
 	class IParaAudioEngine
@@ -349,6 +352,9 @@ namespace ParaEngine
 		@return A pointer to an Audio Source or NULL if creation failed.
 		*/
 		virtual IParaAudioSource* createFromRaw(const char* name, const char* data, size_t length, unsigned int frequency, ParaAudioFormats format) = 0;
+
+
+		virtual void registerLogReceiver(std::function<void(const char * msg)> receiver) = 0;
 
 	public:
 		/**

@@ -389,6 +389,8 @@ namespace ParaEngine
 		* and 1, if it is the right handed coordinate system which is OpenAL(and OpenGL) uses.
 		*/
 		virtual void SetCoordinateSystem(int nLeftHand);
+
+		void registerLogReceiver(std::function<void(const char * msg)> receiver);
 	public:
 		/**
 		* set the audio distance model. 
