@@ -858,6 +858,8 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 	{
 		filename[j] = '\0';
 	}
+	// move j backward, ensuring that j always points to '\0'
+	j++;
 
 	/// append the relative path
 	if (relativePath != NULL)
