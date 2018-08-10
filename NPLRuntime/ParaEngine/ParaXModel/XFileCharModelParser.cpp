@@ -840,7 +840,7 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 	{
 		//int nParticleEmitters = *(DWORD*)(pBuffer);
 		DWORD _nParticleEmitters;
-		memcpy(&_nParticleEmitters, pBuffer, sizeof(pBuffer));
+		memcpy(&_nParticleEmitters, pBuffer, sizeof(DWORD));
 		int nParticleEmitters = _nParticleEmitters;
 
 
