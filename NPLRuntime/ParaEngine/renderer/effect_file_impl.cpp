@@ -282,10 +282,15 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 	m_bIsValid = false;//set to true if created successfully.
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
+
+
+
+
 	
-	auto file = std::make_shared<CParaFile>();
+	
 	OUTPUT_LOG("INFO: Load effect %s\n", m_filename.c_str());
 #if USE_OPENGL_RENDERER
+	auto file = std::make_shared<CParaFile>();
 	if (m_filename.find(".fxo") != std::string::npos)
 	{
 		std::string fxname = m_filename.substr(0, m_filename.size() - 1);
@@ -295,6 +300,7 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 	}
 
 #else
+	auto file = std::make_shared<CParaFile>(m_filename.c_str());
 	if (file->isEof())
 	{
 		file = nullptr;
@@ -521,8 +527,7 @@ bool CEffectFileImpl::setTextureInternal(int index, ITexture* pTex)
 		m_LastTextures[index] = pTex;
 		// TODO: implement statemanagerstate to set state, sampler and texture. This may be wrong if shader textures in hlsl are not written in the exact order. 
 		// so that they map to s0,s15 in the written order in the compiled shader code. 
-		//return SUCCEEDED(m_pEffect->SetTexture(m_paramHandle[k_tex0+index], (data!=0) ? data->GetTexture(): NULL));
-		return CGlobals::GetRenderDevice()->SetTexture(index, pTex);
+		return m_pEffect->SetTexture(m_paramHandle[k_tex0+index],pTex);
 	}
 	return true;
 }
@@ -725,6 +730,15 @@ void CEffectFileImpl::parseParameters()
 		table["lightparams"] = k_LightParams;
 		table["atmosphericlightingparams"] = k_atmosphericLighting;
 		table["patchcorners"] = k_patchCorners;
+
+		// boolean
+		for (int i = 0; i < (k_tex_max - k_tex0); i++)
+		{
+			char buf[64]{ 0 };
+			sprintf(buf, "texture%d", i);
+			table[buf] = k_tex0 + i;
+		}
+
 	}
 
 
@@ -748,21 +762,7 @@ void CEffectFileImpl::parseParameters()
 		}
 		else
 		{
-			if (ParamDesc.Type == EParameterType::PT_TEXTURE || ParamDesc.Type == EParameterType::PT_TEXTURE2D || ParamDesc.Type == EParameterType::PT_TEXTURE3D || ParamDesc.Type == PT_TEXTURECUBE) {
-				int iPos = (int)ParamDesc.Name.find_first_of(numerals, 0, sizeof(numerals));
-
-				if (iPos != string::npos)
-				{
-					int iTexture = atoi(&ParamDesc.Name[iPos]);
-					if (iTexture >= 0 && iTexture < (k_tex_max - k_tex0))
-					{
-						m_paramHandle[k_tex0 + iTexture] = hParam;
-					}
-				}
-			}
-			else {
-			//	OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(), ParamDesc.Semantic.c_str(), m_filename.c_str());
-			}
+			OUTPUT_LOG("Warning: unsupported paramter::%s :%s  at %s \n", ParamDesc.Name.c_str(), ParamDesc.Semantic.c_str(), m_filename.c_str());
 		}
 	}
 }

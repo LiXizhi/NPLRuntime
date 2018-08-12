@@ -91,15 +91,6 @@ ParaEngine::RenderDeviceD3D9::~RenderDeviceD3D9()
 	m_Resources.clear();
 }
 
-bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
-{
-	LPDIRECT3DTEXTURE9 tex = NULL;
-	if (texture)
-	{
-		tex = (static_cast<TextureD3D9*>(texture))->GetTexture();
-	}
-	return m_pD3DDevice->SetTexture(stage, tex) == S_OK;
-}
 
 bool ParaEngine::RenderDeviceD3D9::DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount)
 {
@@ -448,6 +439,17 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::GetBackbufferDepthStencil()
 	return m_backbufferDepthStencil;
 }
 
+bool ParaEngine::RenderDeviceD3D9::StretchRect(IParaEngine::ITexture * source, IParaEngine::ITexture * dest, RECT * srcRect, RECT * destRect)
+{
+
+	TextureD3D9* texSrc = static_cast<TextureD3D9*>(source);
+	TextureD3D9* texDest = static_cast<TextureD3D9*>(dest);
+
+	HRESULT hr = m_pD3DDevice->StretchRect(texSrc->GetSurface(), NULL, texDest->GetSurface(), NULL, D3DTEXF_LINEAR);
+	
+	return hr == S_OK;
+}
+
 void ParaEngine::RenderDeviceD3D9::InitCaps()
 {
 	D3DCAPS9 caps;
@@ -479,6 +481,12 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 
 	m_Cpas.NumSimultaneousRTs = caps.NumSimultaneousRTs;
 	m_Cpas.MaxSimultaneousTextures = caps.MaxSimultaneousTextures;
+}
+
+bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t slot, IParaEngine::ITexture * texture)
+{
+	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
+	return m_pD3DDevice->SetTexture(0, tex->GetTexture()) == S_OK;
 }
 
 IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)

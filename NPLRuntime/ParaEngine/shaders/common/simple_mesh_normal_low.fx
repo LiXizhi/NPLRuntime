@@ -36,7 +36,7 @@ float g_opacity			:opacity = 1.f;
 
 // texture 0
 texture tex0 : TEXTURE; 
-sampler tex0Sampler : register(s0) = sampler_state 
+sampler tex0Sampler : TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
 };

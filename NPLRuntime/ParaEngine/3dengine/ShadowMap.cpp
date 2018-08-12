@@ -1330,10 +1330,6 @@ HRESULT CShadowMap::BeginShadowPass()
 	if (m_pZBuffer == nullptr) return E_FAIL;
 
 
-	// restore other textures
-	CGlobals::GetRenderDevice()->SetTexture(1, NULL);
-	CGlobals::GetRenderDevice()->SetTexture(2, NULL);
-	CGlobals::GetRenderDevice()->SetTexture(3, NULL);
 
 	//set render target to shadow map surfaces
 

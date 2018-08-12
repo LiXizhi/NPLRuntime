@@ -25,14 +25,10 @@ float4   g_fogParam : fogparameters; // (fogstart, fogrange, fogDensity, reserve
 float4   g_fogColor : fogColor;
 float4x4 mWorld: world;
 
-// texture 0
-texture tex0 : TEXTURE; 
-sampler tex0Sampler: register(s0) = sampler_state 
+texture tex0;
+sampler tex0Sampler: TEXTURE0 = sampler_state 
 {
 	Texture = <tex0>;
-
-	MinFilter = POINT;
-	MagFilter = POINT;
 };
 
 struct SimpleVSOut

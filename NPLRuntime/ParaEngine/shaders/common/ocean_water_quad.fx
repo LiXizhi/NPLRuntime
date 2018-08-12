@@ -24,7 +24,7 @@ float3 texCoordOffset : texCoordOffset;
 
 //normal map
 Texture tex0 : TEXTURE;
-sampler2D tex0Sampler  :register(s0) = sampler_state{
+sampler2D tex0Sampler  :TEXTURE0 = sampler_state{
 	texture = <tex0>;
 	mipfilter = linear;
 	minfilter = linear;

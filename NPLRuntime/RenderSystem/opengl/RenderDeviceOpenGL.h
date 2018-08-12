@@ -17,7 +17,6 @@ namespace ParaEngine
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
 		virtual int GetMaxSimultaneousTextures() override;
-		virtual bool SetTexture(uint32_t stage, IParaEngine::ITexture* texture) override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;

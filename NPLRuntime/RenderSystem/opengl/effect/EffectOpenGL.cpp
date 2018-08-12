@@ -367,6 +367,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 	std::vector<UniformInfoGL> uniforms;
 	auto techniques = pRet->m_FxDesc->getTechiques();
 	auto codeblock = pRet->m_FxDesc->getCodeBlock();
+	std::vector<GLuint> programs;
 	for (size_t idxTech = 0; idxTech < techniques.size(); idxTech++)
 	{
 		TechniqueNode* tech = techniques[idxTech];
@@ -453,6 +454,9 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 				error = infoLog;
 				return false;
 			}
+
+
+			programs.push_back(program);
 			pRet->m_ShaderPrograms[idxTech][idxPass] = program;
 		}
 	}
@@ -474,6 +478,14 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 		{
 			int nSlots = pRet->m_TextureSlotMap.size();
 			pRet->m_TextureSlotMap[info.name] = nSlots;
+			for (size_t j=0;j<programs.size();j++)
+			{
+				glUseProgram(programs[j]);
+				GLint location = glGetUniformLocation(programs[j], info.name.c_str());
+				glUniform1i(location,nSlots);
+			}
+
+
 		}
 		// apply init value
 		if (info.initValue != nullptr)
@@ -483,7 +495,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 
 	}
 
-
+	glUseProgram(0);
 	return pRet;
 }
 
@@ -926,12 +938,12 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			return false;
 		}
 
-		auto error = glGetError();
-		if (error != GL_NO_ERROR)
-		{
+		//auto error = glGetError();
+		//if (error != GL_NO_ERROR)
+		//{
 
-			return false;
-		}
+		//	return false;
+		//}
 	}
 
 	return true;

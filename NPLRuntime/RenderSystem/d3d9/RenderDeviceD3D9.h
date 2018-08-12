@@ -14,8 +14,6 @@ namespace ParaEngine
 		inline IDirect3DDevice9* GetDirect3DDevice9() const { return m_pD3DDevice;  };
 		inline IDirect3D9* GetContext()const { return m_pContext; };
 	
-		virtual bool SetTexture(uint32_t stage, IParaEngine::ITexture* texture) override;
-
 
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
 
@@ -133,6 +131,10 @@ namespace ParaEngine
 
 		virtual  IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
+
+		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect);
+
+
 	private:
 		Color4f m_CurrentClearColor;
 		float m_CurrentDepth;
@@ -147,7 +149,10 @@ namespace ParaEngine
 		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 	private:
 		void InitCaps();
-	};
+
+		// Í¨¹ý IRenderDevice ¼Ì³Ð
+		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture * texture) override;
+};
 
 	inline IDirect3DDevice9* GETD3D(IRenderDevice* pRenderDevice)
 	{

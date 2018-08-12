@@ -45,10 +45,14 @@ IParaEngine::ITexture* ParaEngine::TextureD3D9::CreateWithImage(RenderDeviceD3D9
 	default:
 		break;
 	}
-	auto tex = TextureD3D9::Create(device, image->width, image->height,format, ETextureUsage::Default);
+	auto tex = TextureD3D9::Create(device, image->mipmaps[0].width, image->mipmaps[0].height,format, ETextureUsage::Default);
 	if (!tex) return nullptr;
 
-	tex->UpdateImage(0, 0, 0, image->width, image->height, (unsigned char*)image->data);
+	for (size_t i = 0; i < image->mipmaps.size(); i++)
+	{
+		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, (unsigned char*)image->data + image->mipmaps[i].offset);
+	}
+	
 	return tex;
 }
 

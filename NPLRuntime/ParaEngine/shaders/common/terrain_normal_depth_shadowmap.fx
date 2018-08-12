@@ -58,7 +58,7 @@ int		g_nShadowMapSize:	shadowmapsize;
 
 // texture 0
 texture BaseTex0 : TEXTURE; 
-sampler BaseTexSampler : register(s0) = sampler_state 
+sampler BaseTexSampler : TEXTURE0 = sampler_state 
 {
     texture = <BaseTex0>;
     MinFilter = Linear;  
@@ -70,7 +70,7 @@ sampler BaseTexSampler : register(s0) = sampler_state
 
 // texture 1
 texture DetailTex1 : TEXTURE; 
-sampler DetailTex1Sampler: register(s1) = sampler_state 
+sampler DetailTex1Sampler: TEXTURE1 = sampler_state 
 {
     texture = <DetailTex1>;
     MinFilter = Linear;  
@@ -82,7 +82,7 @@ sampler DetailTex1Sampler: register(s1) = sampler_state
 
 // texture 2
 texture ShadowMap2 : TEXTURE; 
-sampler ShadowMapSampler: register(s2) = sampler_state 
+sampler ShadowMapSampler: TEXTURE2 = sampler_state 
 {
     texture = <ShadowMap2>;
     MinFilter = Linear;  
@@ -95,7 +95,7 @@ sampler ShadowMapSampler: register(s2) = sampler_state
 
 // texture 3
 texture AlphaTex3 : TEXTURE; 
-sampler AlphaTex3Sampler : register(s3)= sampler_state 
+sampler AlphaTex3Sampler : TEXTURE3= sampler_state 
 {
     texture = <AlphaTex3>;
     MinFilter = Linear;  
@@ -107,7 +107,7 @@ sampler AlphaTex3Sampler : register(s3)= sampler_state
 
 // texture 4
 texture DetailTex4 : TEXTURE; 
-sampler DetailTex4Sampler : register(s4)= sampler_state 
+sampler DetailTex4Sampler : TEXTURE4= sampler_state 
 {
     texture = <DetailTex4>;
     MinFilter = Linear;  
@@ -119,7 +119,7 @@ sampler DetailTex4Sampler : register(s4)= sampler_state
 
 // texture 5
 texture AlphaTex5 : TEXTURE; 
-sampler AlphaTex5Sampler : register(s5)= sampler_state 
+sampler AlphaTex5Sampler :TEXTURE5= sampler_state 
 {
     texture = <AlphaTex5>;
     MinFilter = Linear;  
@@ -131,7 +131,7 @@ sampler AlphaTex5Sampler : register(s5)= sampler_state
 
 // texture 6
 texture DetailTex6 : TEXTURE; 
-sampler DetailTex6Sampler : register(s6)= sampler_state 
+sampler DetailTex6Sampler : TEXTURE6= sampler_state 
 {
     texture = <DetailTex6>;
     MinFilter = Linear;  
@@ -142,7 +142,7 @@ sampler DetailTex6Sampler : register(s6)= sampler_state
 };
 // texture 7
 texture AlphaTex7 : TEXTURE; 
-sampler AlphaTex7Sampler : register(s7)= sampler_state 
+sampler AlphaTex7Sampler : TEXTURE7= sampler_state 
 {
 	texture = <AlphaTex7>;
 	MinFilter = Linear;  
@@ -154,7 +154,7 @@ sampler AlphaTex7Sampler : register(s7)= sampler_state
 #ifdef SIMULTANEOUS_TEXTURE_12
 	// texture 8
 	texture DetailTex8 : TEXTURE; 
-	sampler DetailTex8Sampler : register(s8)= sampler_state 
+	sampler DetailTex8Sampler : TEXTURE8= sampler_state 
 	{
 		texture = <DetailTex8>;
 		MinFilter = Linear;  
@@ -166,7 +166,7 @@ sampler AlphaTex7Sampler : register(s7)= sampler_state
 
 	// texture 9
 	texture AlphaTex9 : TEXTURE; 
-	sampler AlphaTex9Sampler : register(s9)= sampler_state 
+	sampler AlphaTex9Sampler : TEXTURE9= sampler_state 
 	{
 		texture = <AlphaTex9>;
 		MinFilter = Linear;  
@@ -178,7 +178,7 @@ sampler AlphaTex7Sampler : register(s7)= sampler_state
 
 	// texture 10
 	texture DetailTex10 : TEXTURE; 
-	sampler DetailTex10Sampler : register(s10)= sampler_state 
+	sampler DetailTex10Sampler : TEXTURE10= sampler_state 
 	{
 		texture = <DetailTex10>;
 		MinFilter = Linear;  

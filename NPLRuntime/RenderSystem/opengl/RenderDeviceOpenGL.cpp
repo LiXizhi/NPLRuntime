@@ -317,25 +317,25 @@ int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 }
 
 
-bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
-{
-
-	if (texture)
-	{
-
-		TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
-		glActiveTexture(GL_TEXTURE0 + stage);
-		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
-
-	}
-	else {
-		glActiveTexture(GL_TEXTURE0 + stage);
-		glBindTexture(GL_TEXTURE_2D,0);
-	}
-
-	PE_CHECK_GL_ERROR_DEBUG();
-	return true;
-}
+//bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
+//{
+//
+//	if (texture)
+//	{
+//
+//		TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
+//		glActiveTexture(GL_TEXTURE0 + stage);
+//		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+//
+//	}
+//	else {
+//		glActiveTexture(GL_TEXTURE0 + stage);
+//		glBindTexture(GL_TEXTURE_2D,0);
+//	}
+//
+//	PE_CHECK_GL_ERROR_DEBUG();
+//	return true;
+//}
 
 
 

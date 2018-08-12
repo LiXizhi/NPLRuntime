@@ -1046,7 +1046,8 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 
 
 	// texture
-	pd3dDevice->SetTexture(0, GetDeviceTexture());
+	auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	pEffect->setTexture(0, GetDeviceTexture());
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
 	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );

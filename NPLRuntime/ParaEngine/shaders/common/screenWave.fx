@@ -8,7 +8,7 @@
 float3 waveParam  :register(vs,c0) = float3(1,0.4,0.045);
 
 Texture2D albedoMap; 
-sampler2D albedoSpl : register(s0) = sampler_state 
+sampler2D albedoSpl : TEXTURE0 = sampler_state 
 {
     texture = <albedoMap>;
     AddressU  = clamp;        
@@ -20,7 +20,7 @@ sampler2D albedoSpl : register(s0) = sampler_state
 };
 
 texture noiseMap; 
-sampler noiseSpl : register(s1) = sampler_state 
+sampler noiseSpl : TEXTURE1 = sampler_state 
 {
     texture = <noiseMap>;
     AddressU  =	wrap;        

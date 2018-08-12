@@ -20,8 +20,8 @@ float4 glowParams = float4(1,1,1,1);
 
 
 // texture 0
-texture GlowMap0 : TEXTURE; 
-sampler GlowSamp1 : register(s0) = sampler_state 
+texture GlowMap0; 
+sampler GlowSamp1 : TEXTURE0 = sampler_state 
 {
     texture = <GlowMap0>;
     AddressU  = CLAMP;        
@@ -33,8 +33,8 @@ sampler GlowSamp1 : register(s0) = sampler_state
 };
 
 // texture 1
-texture GlowMap1 : TEXTURE; 
-sampler GlowSamp2 : register(s1) = sampler_state 
+texture GlowMap1; 
+sampler GlowSamp2 : TEXTURE1 = sampler_state 
 {
     texture = <GlowMap1>;
     AddressU  = CLAMP;        

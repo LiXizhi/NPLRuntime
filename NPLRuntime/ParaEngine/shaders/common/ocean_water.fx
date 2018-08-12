@@ -46,7 +46,7 @@ bool g_bUseBumpMap	:boolean0;
 
 texture tex0 : TEXTURE; 
 // reflection map
-sampler reflectionSampler = sampler_state 
+sampler reflectionSampler:TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -59,7 +59,7 @@ sampler reflectionSampler = sampler_state
 
 texture tex1 : TEXTURE; 
 // normal map
-sampler normalSampler = sampler_state 
+sampler normalSampler:TEXTURE1 = sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        
@@ -72,7 +72,7 @@ sampler normalSampler = sampler_state
 #ifdef SHORELINE_TEXTURE
 texture tex2 : TEXTURE; 
 // normal map
-sampler shorelineSampler = sampler_state 
+sampler shorelineSamplerTEXTURE2 = sampler_state 
 {
     texture = <tex2>;
     AddressU  = wrap;        

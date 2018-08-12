@@ -27,7 +27,7 @@ const float2 g_bumpSpeed = {-1, 0.0};
 const float2 g_textureScale = {0.01,0.01};
 
 texture tex0 : TEXTURE; 
-sampler sunsetGlowSpl : register(s0) = sampler_state 
+sampler sunsetGlowSpl : TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -40,7 +40,7 @@ sampler sunsetGlowSpl : register(s0) = sampler_state
 
 texture tex1 : TEXTURE; 
 // cloud map
-sampler cloudSampler : register(s1) = sampler_state 
+sampler cloudSampler : TEXTURE1 = sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        

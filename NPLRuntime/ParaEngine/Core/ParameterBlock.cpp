@@ -6,9 +6,7 @@
 // Date:	2005.6.12
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef PARAENGINE_CLIENT
 #include "ShadowMap.h"
-#endif
 #include "ParaWorldAsset.h"
 #include "effect_file.h"
 #include "EffectManager.h"
@@ -368,7 +366,7 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			ParaMatrixMultiply(&mat_, pWorld, pView);
 			mat = mat_.inverse();
 		}
-#if defined(USE_DIRECTX_RENDERER)
+
 		else if (sValue == "mat4ShadowMapTex")
 		{
 			ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
@@ -377,7 +375,6 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		{
 			ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
 		}
-#endif
 		else
 		{
 			mat = Matrix4::IDENTITY;
@@ -443,7 +440,6 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		{
 			CGlobals::GetViewportManager()->GetActiveViewPort()->GetViewportTransform(NULL, &v);
 		}
-#if defined(USE_DIRECTX_RENDERER)
 		else if (sValue == "vec2ScreenSize")
 		{
 			v.x = (float)(CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth());
@@ -454,7 +450,6 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 			v.x = (float)(CGlobals::GetEffectManager()->GetShadowMap()->GetShadowMapTexelSize());
 			v.y = (float)(1 / v.x);
 		}
-#endif
 		SetParameter(sParamName, v);
 	}
 	else if (sValue.find("float") != string::npos)

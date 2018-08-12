@@ -33,7 +33,7 @@ float sunsetGlowWeight:sunsetGlowWeight; //to control how much sunset glow you w
 
 // texture 0
 texture tex0 : TEXTURE; 
-sampler sunsetGlowSpl : register(s0) = sampler_state 
+sampler sunsetGlowSpl : TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
     MinFilter = Linear;
@@ -45,7 +45,7 @@ sampler sunsetGlowSpl : register(s0) = sampler_state
 
 // texture 1
 texture tex1 : TEXTURE; 
-sampler cloudSampler : register(s1) = sampler_state 
+sampler cloudSampler : TEXTURE1 = sampler_state 
 {
     texture = <tex1>;
     MinFilter = Linear;

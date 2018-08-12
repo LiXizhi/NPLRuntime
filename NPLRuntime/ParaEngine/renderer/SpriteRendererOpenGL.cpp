@@ -286,7 +286,8 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 		// do the rendering with opengl
 		{
-			pRenderDevice->SetTexture(0, m_sprites[start].texture);
+			m_pEffectFile->setTexture(0, m_sprites[start].texture);
+			m_pEffectFile->CommitChanges();
 			DrawTriangles(&m_vertices[6 * start], count * 2);
 		}
 	}

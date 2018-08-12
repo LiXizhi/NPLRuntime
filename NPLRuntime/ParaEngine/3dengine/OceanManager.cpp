@@ -2056,7 +2056,9 @@ namespace ParaEngine
 			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
 			//GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
-			CGlobals::GetRenderDevice()->SetTexture(0, pWhiteTexture->GetTexture());
+			auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+			pEffect->setTexture(0, pWhiteTexture->GetTexture());
+
 
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);

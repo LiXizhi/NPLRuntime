@@ -36,14 +36,14 @@ float3 g_EyePositionW	:worldcamerapos;
 
 // texture 0
 texture tex0 : TEXTURE; 
-sampler tex0Sampler : register(s0) = sampler_state 
+sampler tex0Sampler : TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
 };
 
 // texture 1 for light or reflection or normal map 
 texture tex1 : TEXTURE; 
-sampler tex1Sampler : register(s1) = sampler_state 
+sampler tex1Sampler : TEXTURE1 = sampler_state 
 {
     texture = <tex1>;
 };

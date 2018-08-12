@@ -70,7 +70,6 @@ namespace ParaEngine
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) = 0;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) = 0;
 		virtual int GetMaxSimultaneousTextures() = 0;
-		virtual bool SetTexture(uint32_t stage, IParaEngine::ITexture* texture) = 0;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount,const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
@@ -113,6 +112,7 @@ namespace ParaEngine
 
 		virtual bool Present() = 0;
 		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) = 0;
+		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture* texture) = 0;
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */
 		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);

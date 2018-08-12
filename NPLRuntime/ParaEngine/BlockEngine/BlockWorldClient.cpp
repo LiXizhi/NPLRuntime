@@ -369,7 +369,7 @@ namespace ParaEngine
 							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
+								pEffect->setTexture(0, pCurTex0);
 							}
 							
 							// culling mode
@@ -760,14 +760,14 @@ namespace ParaEngine
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
+							pEffect->setTexture(0, pCurTex0);
 						}
 
 						pTexEntity = pTemplate->GetTexture1();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
+							pEffect->setTexture(1, pCurTex1);
 						}
 
 						pTexEntity = pTemplate->GetNormalMap();
@@ -775,7 +775,7 @@ namespace ParaEngine
 						{
 							pCurTex2 = pTexEntity->GetTexture();
 							if (dwRenderMethod  == BLOCK_RENDER_FANCY_SHADER){
-								CGlobals::GetRenderDevice()->SetTexture(2,pCurTex2);
+								pEffect->setTexture(2, pCurTex2);
 							}
 						}
 
@@ -1126,7 +1126,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 							
-				CGlobals::GetRenderDevice()->SetTexture(0,highLightTexture->GetTexture());
+				pEffect->setTexture(0, highLightTexture->GetTexture());
 					
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,TRUE);
 				pDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
@@ -1287,8 +1287,7 @@ namespace ParaEngine
 					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
 					matViewProj = (pView) * (pProj);
 				}
-
-				CGlobals::GetRenderDevice()->SetTexture(0,m_damangeTexture->GetTexture());
+				pEffect->setTexture(0, m_damangeTexture->GetTexture());
 
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);

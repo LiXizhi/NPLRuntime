@@ -216,7 +216,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	// set render state
 	{
 		// pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		CGlobals::GetRenderDevice()->SetTexture(0, 0);
+		//CGlobals::GetRenderDevice()->SetTexture(0, 0);
 
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
@@ -274,7 +274,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		CGlobals::GetRenderDevice()->SetTexture(0, 0);
+		//CGlobals::GetRenderDevice()->SetTexture(0, 0);
 
 		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
 		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);

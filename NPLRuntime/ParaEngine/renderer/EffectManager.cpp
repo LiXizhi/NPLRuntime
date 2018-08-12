@@ -1801,12 +1801,6 @@ void EffectManager::EndEffect()
 			break;
 		case TECH_TERRAIN:
 			{
-				// restore texture states
-				for(int i=0;i<8;++i)
-				{
-					CGlobals::GetRenderDevice()->SetTexture( i, NULL );
-				}
-			
 				pd3dDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 				pd3dDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 				CGlobals::GetRenderDevice()->SetSamplerState( 0, ESamplerStateType::ADDRESSU,  D3DTADDRESS_WRAP );
@@ -1935,8 +1929,6 @@ void EffectManager::EndEffect()
 					{
 						EnableUsingShadowMap(false);
 						m_pCurrentEffect->EnableShadowmap(0);
-						// restore texture states
-						CGlobals::GetRenderDevice()->SetTexture( 2, NULL );
 					}
 				}
 			}
@@ -1976,10 +1968,6 @@ void EffectManager::EndEffect()
 
 		case TECH_TERRAIN:
 			{
-				for(int i=0;i<8;++i)
-				{
-					CGlobals::GetRenderDevice()->SetTexture( i, NULL );
-				}
 				if(GetScene()->IsShadowMapEnabled())
 				{
 					CShadowMap* pShadowMap = GetShadowMap();
@@ -2018,10 +2006,6 @@ void EffectManager::EndEffect()
 				pd3dDevice->SetRenderState( ERenderState::FOGENABLE, GetScene()->IsFogEnabled() );
 				CGlobals::GetRenderDevice()->SetStreamSource(0,NULL,0,0);
 				CGlobals::GetRenderDevice()->SetIndices(NULL);
-				CGlobals::GetRenderDevice()->SetTexture(0,NULL);
-				CGlobals::GetRenderDevice()->SetTexture(1,NULL);
-				CGlobals::GetRenderDevice()->SetTexture(2,NULL);
-				CGlobals::GetRenderDevice()->SetTexture(3,NULL);
 				break;
 			}
 		case TECH_SHADOWMAP_BLUR:

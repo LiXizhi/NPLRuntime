@@ -31,7 +31,7 @@ const float2 g_textureScale = {0.08,0.08};
 
 texture tex0 : TEXTURE; 
 // reflection map
-sampler reflectionSampler = sampler_state 
+sampler reflectionSampler : TEXTURE0 = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -44,7 +44,7 @@ sampler reflectionSampler = sampler_state
 
 texture tex1 : TEXTURE; 
 // normal map
-sampler normalSampler = sampler_state 
+sampler normalSampler  : TEXTURE1= sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        
