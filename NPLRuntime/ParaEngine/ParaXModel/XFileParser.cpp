@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "zlib.h"
-#include "util/ByteSwap.h"
+#include "util/MyByteSwap.h"
 #include "util/fast_atof.h"
 #include "util/StringHelper.h"
 #include "modelheaders.h"
