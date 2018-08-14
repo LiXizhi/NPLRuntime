@@ -54,7 +54,11 @@ VSOut MainVS(	float4 pos		: POSITION,
 	output.color.xyz = color.rgb * sun_lightmap;
 
 	// calculate the fog factor
-	output.color.w = CalcFogFactor(length(output.pos.xyz));
+	if (g_bEnableFog)
+		output.color.w = CalcFogFactor(length(output.pos.xyz));
+	else
+		output.color.w = 0.0;
+
 	return output;
 }
 
