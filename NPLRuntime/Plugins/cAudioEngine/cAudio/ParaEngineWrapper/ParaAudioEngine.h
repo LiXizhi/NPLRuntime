@@ -324,7 +324,7 @@ namespace ParaEngine
 		virtual void shutDown() {m_audio_manager->shutDown();};
 
 		//! If threading is disabled, you must call this function every frame to update the playback buffers of audio sources.  Otherwise it should not be called.
-		virtual void update() {m_audio_manager->update();};
+		virtual void update() {/*m_audio_manager->update();*/};
 
 		//! Returns an Audio Source by its "name" and NULL if the name is not found
 		/**
@@ -389,6 +389,8 @@ namespace ParaEngine
 		* and 1, if it is the right handed coordinate system which is OpenAL(and OpenGL) uses.
 		*/
 		virtual void SetCoordinateSystem(int nLeftHand);
+
+		void registerLogReceiver(std::function<void(const char * msg)> receiver);
 	public:
 		/**
 		* set the audio distance model. 

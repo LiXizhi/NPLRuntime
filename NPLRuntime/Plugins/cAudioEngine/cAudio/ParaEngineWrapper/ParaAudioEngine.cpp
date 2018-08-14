@@ -8,6 +8,7 @@
 #include "ParaAudioEngine.h"
 #include "cMP3Plugin.h"
 #include "cPluginManager.h"
+#include "ILogReceiver.h"
 
 using namespace ParaEngine;
 using namespace cAudio;
@@ -57,6 +58,30 @@ CParaAudioEngine::~CParaAudioEngine()
 void CParaAudioEngine::Release()
 {
 	delete this;
+}
+
+
+void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const char * msg)> receiver)
+{
+	class R : public ILogReceiver
+	{
+	public:
+		R(std::function<void(const char * msg)> receiver) : m_r(receiver) {};
+		virtual bool OnLogMessage(const char* sender, const char* message, LogLevel level, float time)
+		{
+			//std::cout << "[" << LogLevelStrings[level] << "] " << message << std::endl;
+			if (m_r)
+			{
+				m_r(message);
+			}
+		}
+
+	private:
+		std::function<void(const char * msg)>  m_r;
+	};
+	static R r(receiver);
+	getLogger()->registerLogReceiver(&r, "ParaEngine");
+
 }
 
 void ParaEngine::CParaAudioEngine::SetDistanceModel( ParaAudioDistanceModelEnum eDistModel )

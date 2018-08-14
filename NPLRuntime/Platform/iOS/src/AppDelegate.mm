@@ -11,6 +11,8 @@
 #import "GLView.h"
 #include "ParaAppiOS.h"
 #include "RenderWindowiOS.h"
+#include "ParaEngineSettings.h"
+
 using namespace ParaEngine;
 
 @interface AppDelegate ()
@@ -19,6 +21,95 @@ using namespace ParaEngine;
 
 @implementation AppDelegate
 
+- (void)InitLanguage
+{
+    NSArray *appLangs = [[NSUserDefaults standardUserDefaults] objectForKey:@"AppleLanguages"];
+    NSString *langName = [appLangs objectAtIndex:0];
+	
+	// get the current language code.(such as English is "en", Chinese is "zh" and so on)
+    NSDictionary* temp = [NSLocale componentsFromLocaleIdentifier:langName];
+    NSString * languageCode = [temp objectForKey:NSLocaleLanguageCode];
+    
+	LanguageType ret = LanguageType::ENGLISH;
+	if ([languageCode isEqualToString:@"zh"])
+	{
+		ret = LanguageType::CHINESE;
+	}
+	else if ([languageCode isEqualToString:@"en"])
+	{
+		ret = LanguageType::ENGLISH;
+	}
+	else if ([languageCode isEqualToString:@"fr"])
+	{
+		ret = LanguageType::FRENCH;
+	}
+	else if ([languageCode isEqualToString:@"it"])
+	{
+		ret = LanguageType::ITALIAN;
+	}
+	else if ([languageCode isEqualToString:@"de"])
+	{
+		ret = LanguageType::GERMAN;
+	}
+	else if ([languageCode isEqualToString:@"es"])
+	{
+		ret = LanguageType::SPANISH;
+	}
+	else if ([languageCode isEqualToString:@"ru"])
+	{
+		ret = LanguageType::RUSSIAN;
+	}
+	else if ([languageCode isEqualToString:@"nl"])
+	{
+		ret = LanguageType::DUTCH;
+	}
+	else if ([languageCode isEqualToString:@"ko"])
+	{
+		ret = LanguageType::KOREAN;
+	}
+	else if ([languageCode isEqualToString:@"ja"])
+	{
+		ret = LanguageType::JAPANESE;
+	}
+	else if ([languageCode isEqualToString:@"hu"])
+	{
+		ret = LanguageType::HUNGARIAN;
+	}
+	else if ([languageCode isEqualToString:@"pt"])
+	{
+		ret = LanguageType::PORTUGUESE;
+	}
+	else if ([languageCode isEqualToString:@"ar"])
+	{
+		ret = LanguageType::ARABIC;
+	}
+	else if ([languageCode isEqualToString:@"nb"])
+	{
+		ret = LanguageType::NORWEGIAN;
+	}
+	else if ([languageCode isEqualToString:@"pl"])
+	{
+		ret = LanguageType::POLISH;
+	}
+	else if ([languageCode isEqualToString:@"tr"])
+	{
+		ret = LanguageType::TURKISH;
+	}
+	else if ([languageCode isEqualToString:@"uk"])
+	{
+		ret = LanguageType::UKRAINIAN;
+	}
+	else if ([languageCode isEqualToString:@"ro"])
+	{
+		ret = LanguageType::ROMANIAN;
+	}
+	else if ([languageCode isEqualToString:@"bg"])
+	{
+		ret = LanguageType::BULGARIAN;
+	}
+	
+	ParaEngineSettings::GetSingleton().SetCurrentLanguage(ret);
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
@@ -62,6 +153,7 @@ using namespace ParaEngine;
         }
     }
     
+    [self InitLanguage];
     
     // Init app
     self.app = new CParaEngineAppiOS();
