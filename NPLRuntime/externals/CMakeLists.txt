@@ -86,7 +86,11 @@ else()
 endif()
 
 
+option(ENABLE_FXCONVERTER "hlsl2glsl test" OFF)
 
+if(ENABLE_FXCONVERTER)
+	add_subdirectory(FxConverter)
+endif()
 
 
 
