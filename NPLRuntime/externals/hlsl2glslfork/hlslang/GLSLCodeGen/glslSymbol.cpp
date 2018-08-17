@@ -415,6 +415,10 @@ GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::s
 				if (node->getAsConstant())
 				{
 					constants.push_back(node->getAsConstant());
+				}else if (node->getAsInitItem())
+				{
+					TIntermInitItem* item = node->getAsInitItem();
+					initializerList.push_back(std::make_tuple<std::string, std::string>(item->GetLeft().c_str(), item->GetRight().c_str()));
 				}
 				else {
 					constants.clear();

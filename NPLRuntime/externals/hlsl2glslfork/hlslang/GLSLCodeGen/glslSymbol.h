@@ -9,6 +9,8 @@
 #include "glslCommon.h"
 #include "glslStruct.h"
 
+
+
 class GlslSymbol : public GlslSymbolOrStructMemberBase
 {
 public:
@@ -33,6 +35,7 @@ public:
 	int getId() const { return identifier; }
 	const char* getInitValue() {return initValue;}
 	const int getInitValueSize() { return initValueSize; }
+	std::vector<std::tuple<std::string, std::string>> getInitializerList() const { return initializerList; }
 
 	TPrecision getPrecision() const { return precision; }
 
@@ -67,6 +70,7 @@ private:
 	bool isParameter;
 	int refCount;
 	bool isGlobal;
+	std::vector<std::tuple<std::string, std::string>> initializerList;
 };
 
 #endif //GLSL_SYMBOL_H

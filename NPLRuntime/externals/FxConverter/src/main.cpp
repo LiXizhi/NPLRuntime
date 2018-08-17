@@ -252,7 +252,7 @@ int main(int argc, const char** argv)
 			std::string ps_name = find_pass_pixel_shader_name(pass);
 			if (vs_name == "")
 			{
-				error = "Vertex Shader Codeblock name can't be empty";
+				std::cout << "Vertex Shader Codeblock name can't be empty" << std::endl;
 				delete fxDesc;
 				return 1;
 			}
@@ -275,20 +275,27 @@ int main(int argc, const char** argv)
 			bool ret = hlsl2glsl(codeblock, vs_name, EShLanguage::EShLangVertex, targetVersion, vscode, uniforms, error);
 			if (!ret || vscode == "")
 			{
-				error = "can't translate vertex shader " + vs_name + "\n" + error;
+				std::cout << "can't translate vertex shader " + vs_name + "\n" + error << std::endl;;
 				delete fxDesc;
 				return 1;
 			}
 			ret = hlsl2glsl(codeblock, ps_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms, error);
 			if (!ret || pscode == "")
 			{
-				error = "can't translate fragment shader " + ps_name + "\n" + error;
+				std::cout<<"can't translate fragment shader " + ps_name + "\n" + error<<std::endl;
 				delete fxDesc;
 				return 1;
 			}
 		}
 	}
+	std::cout << "Uniforms:" << std::endl;
+	for (size_t i = 0; i < uniforms.size(); i++)
+	{
+		UniformInfoGL info = uniforms[i];
+		std::cout << info.name << std::endl;
+	
 
+	}
 	delete fxDesc;
 	return 0;
 }

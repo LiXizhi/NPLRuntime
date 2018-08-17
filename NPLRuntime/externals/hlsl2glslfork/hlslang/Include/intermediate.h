@@ -259,6 +259,7 @@ class TIntermTyped;
 class TIntermSymbol;
 class TInfoSink;
 class TIntermDeclaration;
+class TIntermInitItem;
 
 //
 // Base class for the tree nodes
@@ -285,6 +286,7 @@ public:
 	virtual TIntermSelection* getAsSelectionNode() { return 0; }
 	virtual TIntermSymbol*    getAsSymbolNode() { return 0; }
 	virtual TIntermDeclaration* getAsDeclaration() { return 0; }
+	virtual TIntermInitItem* getAsInitItem() { return 0; }
 	virtual ~TIntermNode() { }
 
 protected:
@@ -298,8 +300,31 @@ struct TIntermNodePair
 	TIntermNode* node2;
 };
 
+
+
+
 class TIntermSymbol;
 class TIntermBinary;
+
+
+class TIntermInitItem : public TIntermNode
+{
+public:
+	TIntermInitItem(const TString &l, const TString &r)
+		:left(l),right(r)
+	{
+
+	}
+	virtual void traverse(TIntermTraverser*) {}
+	TString GetLeft() const { return left; }
+	TString GetRight() const  { return right; }
+	
+	virtual TIntermInitItem* getAsInitItem() { return this; }
+
+protected:
+	TString left;
+	TString right;
+};
 
 //
 // Intermediate class for nodes that have a type.
@@ -428,6 +453,8 @@ public:
 	{
 		return this;
 	}
+	void SetConstValue(TIntermTyped* v) { constvalue = v; }
+
 	TIntermTyped* GetConstValue()
 	{
 		return constvalue;
@@ -439,6 +466,7 @@ protected:
 	const TTypeInfo *info;
 	TIntermTyped* constvalue;
 };
+
 
 class TIntermDeclaration : public TIntermTyped {
 public:
@@ -473,6 +501,7 @@ public:
 private:
 	TIntermTyped* _declaration;
 };
+
 
 class TIntermConstant : public TIntermTyped
 {

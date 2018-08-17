@@ -770,39 +770,39 @@ static const yytype_int16 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   175,   175,   213,   216,   221,   226,   231,   237,   240,
-     304,   307,   394,   404,   417,   431,   547,   550,   568,   572,
-     579,   583,   590,   599,   611,   619,   646,   658,   668,   671,
-     681,   691,   709,   744,   745,   746,   747,   753,   754,   755,
-     756,   760,   761,   762,   766,   767,   768,   772,   773,   774,
-     775,   776,   780,   781,   782,   786,   787,   791,   792,   796,
-     797,   801,   802,   806,   807,   811,   812,   816,   817,   832,
-     833,   847,   848,   849,   850,   851,   852,   853,   854,   855,
-     856,   857,   861,   864,   875,   883,   884,   888,   921,   958,
-     961,   968,   976,   997,  1029,  1040,  1053,  1065,  1077,  1095,
-    1124,  1129,  1139,  1144,  1154,  1157,  1160,  1163,  1169,  1176,
-    1179,  1197,  1221,  1249,  1276,  1309,  1343,  1346,  1364,  1387,
-    1413,  1439,  1469,  1517,  1520,  1537,  1540,  1543,  1546,  1549,
-    1557,  1560,  1575,  1578,  1581,  1584,  1587,  1590,  1593,  1604,
-    1615,  1626,  1630,  1634,  1638,  1642,  1646,  1650,  1654,  1658,
-    1662,  1666,  1670,  1674,  1678,  1682,  1686,  1690,  1695,  1700,
-    1705,  1709,  1714,  1719,  1724,  1728,  1732,  1737,  1742,  1747,
-    1751,  1756,  1761,  1766,  1770,  1774,  1779,  1784,  1789,  1793,
-    1798,  1803,  1808,  1812,  1815,  1818,  1821,  1824,  1827,  1830,
-    1833,  1836,  1839,  1842,  1845,  1848,  1851,  1854,  1857,  1861,
-    1873,  1883,  1891,  1894,  1909,  1942,  1946,  1952,  1957,  1963,
-    1973,  1989,  1990,  1991,  1995,  1999,  2000,  2006,  2007,  2008,
-    2009,  2010,  2014,  2015,  2015,  2015,  2023,  2024,  2029,  2032,
-    2040,  2043,  2049,  2050,  2054,  2062,  2066,  2076,  2081,  2098,
-    2098,  2103,  2103,  2110,  2110,  2123,  2126,  2132,  2135,  2141,
-    2145,  2152,  2159,  2166,  2173,  2193,  2204,  2208,  2215,  2218,
-    2221,  2225,  2225,  2314,  2317,  2324,  2328,  2332,  2336,  2343,
-    2347,  2353,  2357,  2364,  2370,  2371,  2372,  2373,  2374,  2375,
-    2376,  2377,  2378,  2379,  2380,  2381,  2382,  2383,  2384,  2385,
-    2386,  2387,  2388,  2389,  2390,  2394,  2395,  2396,  2397,  2401,
-    2404,  2407,  2413,  2417,  2418,  2422,  2426,  2432,  2436,  2437,
-    2438,  2439,  2440,  2441,  2442,  2443,  2447,  2452,  2457,  2458,
-    2462,  2463,  2464,  2465,  2466,  2467
+       0,   176,   176,   214,   217,   222,   227,   232,   238,   241,
+     305,   308,   395,   405,   418,   432,   548,   551,   569,   573,
+     580,   584,   591,   600,   612,   620,   647,   659,   669,   672,
+     682,   692,   710,   745,   746,   747,   748,   754,   755,   756,
+     757,   761,   762,   763,   767,   768,   769,   773,   774,   775,
+     776,   777,   781,   782,   783,   787,   788,   792,   793,   797,
+     798,   802,   803,   807,   808,   812,   813,   817,   818,   833,
+     834,   848,   849,   850,   851,   852,   853,   854,   855,   856,
+     857,   858,   862,   865,   876,   884,   885,   889,   922,   959,
+     962,   969,   977,   998,  1030,  1041,  1054,  1066,  1078,  1096,
+    1125,  1130,  1140,  1145,  1155,  1158,  1161,  1164,  1170,  1177,
+    1180,  1198,  1222,  1250,  1277,  1310,  1344,  1347,  1365,  1388,
+    1414,  1440,  1470,  1532,  1535,  1552,  1555,  1558,  1561,  1564,
+    1572,  1575,  1590,  1593,  1596,  1599,  1602,  1605,  1608,  1619,
+    1630,  1641,  1645,  1649,  1653,  1657,  1661,  1665,  1669,  1673,
+    1677,  1681,  1685,  1689,  1693,  1697,  1701,  1705,  1710,  1715,
+    1720,  1724,  1729,  1734,  1739,  1743,  1747,  1752,  1757,  1762,
+    1766,  1771,  1776,  1781,  1785,  1789,  1794,  1799,  1804,  1808,
+    1813,  1818,  1823,  1827,  1830,  1833,  1836,  1839,  1842,  1845,
+    1848,  1851,  1854,  1857,  1860,  1863,  1866,  1869,  1872,  1876,
+    1888,  1898,  1906,  1909,  1924,  1957,  1961,  1967,  1972,  1978,
+    1988,  2004,  2005,  2006,  2010,  2014,  2015,  2021,  2022,  2023,
+    2024,  2025,  2029,  2030,  2030,  2030,  2038,  2039,  2044,  2047,
+    2055,  2058,  2064,  2065,  2069,  2077,  2081,  2091,  2096,  2113,
+    2113,  2118,  2118,  2125,  2125,  2138,  2141,  2147,  2150,  2156,
+    2160,  2167,  2174,  2181,  2188,  2208,  2219,  2223,  2230,  2233,
+    2236,  2240,  2240,  2329,  2332,  2339,  2343,  2347,  2351,  2358,
+    2362,  2368,  2372,  2379,  2385,  2386,  2387,  2388,  2389,  2390,
+    2391,  2392,  2393,  2394,  2395,  2396,  2397,  2398,  2399,  2400,
+    2401,  2402,  2403,  2404,  2405,  2409,  2410,  2411,  2412,  2416,
+    2419,  2422,  2428,  2432,  2433,  2437,  2441,  2447,  2451,  2452,
+    2453,  2454,  2455,  2456,  2457,  2458,  2462,  2465,  2470,  2475,
+    2482,  2485,  2488,  2491,  2494,  2497
 };
 #endif
 
@@ -2537,7 +2537,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 175 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 176 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // The symbol table search was done in the lexical phase
         const TSymbol* symbol = (yyvsp[(1) - (1)].lex).symbol;
@@ -2578,7 +2578,7 @@ yyreduce:
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 213 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 214 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -2587,7 +2587,7 @@ yyreduce:
   case 4:
 
 /* Line 1455 of yacc.c  */
-#line 216 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 217 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TIntermConstant* constant = ir_add_constant(TType(EbtInt, EbpUndefined, EvqConst), (yyvsp[(1) - (1)].lex).line);
 		constant->setValue((yyvsp[(1) - (1)].lex).i);
@@ -2598,7 +2598,7 @@ yyreduce:
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 221 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 222 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TIntermConstant* constant = ir_add_constant(TType(EbtFloat, EbpUndefined, EvqConst), (yyvsp[(1) - (1)].lex).line);
 		constant->setValue((yyvsp[(1) - (1)].lex).f);
@@ -2609,7 +2609,7 @@ yyreduce:
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 226 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 227 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TIntermConstant* constant = ir_add_constant(TType(EbtBool, EbpUndefined, EvqConst), (yyvsp[(1) - (1)].lex).line);
 		constant->setValue((yyvsp[(1) - (1)].lex).b);
@@ -2620,7 +2620,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 231 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 232 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(2) - (3)].interm.intermTypedNode);
     ;}
@@ -2629,7 +2629,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 237 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 238 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { 
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -2638,7 +2638,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 240 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 241 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (!(yyvsp[(1) - (4)].interm.intermTypedNode)) {
             parseContext.error((yyvsp[(2) - (4)].lex).line, " left of '[' is null ", "expression", "");
@@ -2708,7 +2708,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 304 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 305 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -2717,7 +2717,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 307 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 308 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (!(yyvsp[(1) - (3)].interm.intermTypedNode)) {
             parseContext.error((yyvsp[(3) - (3)].lex).line, "field selection on null object", ".", "");
@@ -2810,7 +2810,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 394 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 395 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.lValueErrorCheck((yyvsp[(2) - (2)].lex).line, "++", (yyvsp[(1) - (2)].interm.intermTypedNode)))
             parseContext.recover();
@@ -2826,7 +2826,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 404 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 405 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.lValueErrorCheck((yyvsp[(2) - (2)].lex).line, "--", (yyvsp[(1) - (2)].interm.intermTypedNode)))
             parseContext.recover();
@@ -2842,7 +2842,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 417 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 418 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.scalarErrorCheck((yyvsp[(1) - (1)].interm.intermTypedNode), "[]"))
             parseContext.recover();
@@ -2859,7 +2859,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 431 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 432 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TFunction* fnCall = (yyvsp[(1) - (1)].interm).function;
         TOperator op = fnCall->getBuiltInOp();
@@ -2978,7 +2978,7 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 547 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 548 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(1) - (1)].interm);
     ;}
@@ -2987,7 +2987,7 @@ yyreduce:
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 550 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 551 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(1) - (3)].interm.intermTypedNode)->isArray() && (yyvsp[(3) - (3)].interm).function->getName() == "length") {
             //
@@ -3008,7 +3008,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 568 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 569 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(1) - (2)].interm);
         (yyval.interm).line = (yyvsp[(2) - (2)].lex).line;
@@ -3018,7 +3018,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 572 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 573 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(1) - (2)].interm);
         (yyval.interm).line = (yyvsp[(2) - (2)].lex).line;
@@ -3028,7 +3028,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 579 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 580 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm).function = (yyvsp[(1) - (2)].interm.function);
         (yyval.interm).intermNode = 0;
@@ -3038,7 +3038,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 583 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 584 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm).function = (yyvsp[(1) - (1)].interm.function);
         (yyval.interm).intermNode = 0;
@@ -3048,7 +3048,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 590 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 591 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (!(yyvsp[(2) - (2)].interm.intermTypedNode)) {
           YYERROR;
@@ -3063,7 +3063,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 599 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 600 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (!(yyvsp[(3) - (3)].interm.intermTypedNode)) {
           YYERROR;
@@ -3078,7 +3078,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 611 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 612 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.function) = (yyvsp[(1) - (2)].interm.function);
     ;}
@@ -3087,7 +3087,7 @@ yyreduce:
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 619 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 620 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //
         // Constructor
@@ -3120,7 +3120,7 @@ yyreduce:
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 646 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 647 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (parseContext.reservedErrorCheck((yyvsp[(1) - (1)].lex).line, *(yyvsp[(1) - (1)].lex).string)) 
 			parseContext.recover();
@@ -3138,7 +3138,7 @@ yyreduce:
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 658 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 659 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (parseContext.reservedErrorCheck((yyvsp[(1) - (1)].lex).line, *(yyvsp[(1) - (1)].lex).string)) 
 			parseContext.recover();
@@ -3151,7 +3151,7 @@ yyreduce:
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 668 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 669 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -3160,7 +3160,7 @@ yyreduce:
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 671 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 672 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (parseContext.lValueErrorCheck((yyvsp[(1) - (2)].lex).line, "++", (yyvsp[(2) - (2)].interm.intermTypedNode)))
 			parseContext.recover();
@@ -3176,7 +3176,7 @@ yyreduce:
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 681 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 682 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.lValueErrorCheck((yyvsp[(1) - (2)].lex).line, "--", (yyvsp[(2) - (2)].interm.intermTypedNode)))
             parseContext.recover();
@@ -3192,7 +3192,7 @@ yyreduce:
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 691 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 692 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if ((yyvsp[(1) - (2)].interm).op != EOpNull) {
 			(yyval.interm.intermTypedNode) = ir_add_unary_math((yyvsp[(1) - (2)].interm).op, (yyvsp[(2) - (2)].interm.intermTypedNode), (yyvsp[(1) - (2)].interm).line, parseContext);
@@ -3216,7 +3216,7 @@ yyreduce:
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 709 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 710 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // cast operator, insert constructor
         TOperator op = ir_get_constructor_op((yyvsp[(2) - (4)].interm.type), parseContext, true);
@@ -3253,28 +3253,28 @@ yyreduce:
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 744 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 745 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpNull; ;}
     break;
 
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 745 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 746 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpNegative; ;}
     break;
 
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 746 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 747 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpLogicalNot; ;}
     break;
 
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 747 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 748 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("~", (yyvsp[(1) - (1)].lex).line);
               (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpBitwiseNot; ;}
     break;
@@ -3282,224 +3282,224 @@ yyreduce:
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 753 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 754 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 754 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 755 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpMul, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "*", false); ;}
     break;
 
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 755 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 756 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpDiv, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "/", false); ;}
     break;
 
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 756 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 757 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpMod, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "%", false); ;}
     break;
 
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 760 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 761 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 761 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 762 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpAdd, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "+", false); ;}
     break;
 
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 762 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 763 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpSub, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "-", false); ;}
     break;
 
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 766 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 767 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 767 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 768 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLeftShift, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "<<", false); ;}
     break;
 
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 768 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 769 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpRightShift, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, ">>", false); ;}
     break;
 
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 772 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 773 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 48:
 
 /* Line 1455 of yacc.c  */
-#line 773 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 774 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLessThan, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "<", true); ;}
     break;
 
   case 49:
 
 /* Line 1455 of yacc.c  */
-#line 774 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 775 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpGreaterThan, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, ">", true); ;}
     break;
 
   case 50:
 
 /* Line 1455 of yacc.c  */
-#line 775 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 776 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLessThanEqual, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "<=", true); ;}
     break;
 
   case 51:
 
 /* Line 1455 of yacc.c  */
-#line 776 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 777 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpGreaterThanEqual, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, ">=", true); ;}
     break;
 
   case 52:
 
 /* Line 1455 of yacc.c  */
-#line 780 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 781 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 53:
 
 /* Line 1455 of yacc.c  */
-#line 781 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 782 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpEqual, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "==", true); ;}
     break;
 
   case 54:
 
 /* Line 1455 of yacc.c  */
-#line 782 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 783 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpNotEqual, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "!=", true); ;}
     break;
 
   case 55:
 
 /* Line 1455 of yacc.c  */
-#line 786 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 787 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 56:
 
 /* Line 1455 of yacc.c  */
-#line 787 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 788 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpAnd, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "&", false); ;}
     break;
 
   case 57:
 
 /* Line 1455 of yacc.c  */
-#line 791 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 792 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 58:
 
 /* Line 1455 of yacc.c  */
-#line 792 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 793 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpExclusiveOr, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "^", false); ;}
     break;
 
   case 59:
 
 /* Line 1455 of yacc.c  */
-#line 796 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 797 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 60:
 
 /* Line 1455 of yacc.c  */
-#line 797 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 798 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpInclusiveOr, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "|", false); ;}
     break;
 
   case 61:
 
 /* Line 1455 of yacc.c  */
-#line 801 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 802 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 62:
 
 /* Line 1455 of yacc.c  */
-#line 802 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 803 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLogicalAnd, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "&&", true); ;}
     break;
 
   case 63:
 
 /* Line 1455 of yacc.c  */
-#line 806 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 807 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 64:
 
 /* Line 1455 of yacc.c  */
-#line 807 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 808 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLogicalXor, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "^^", true); ;}
     break;
 
   case 65:
 
 /* Line 1455 of yacc.c  */
-#line 811 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 812 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 66:
 
 /* Line 1455 of yacc.c  */
-#line 812 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 813 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = parseContext.add_binary(EOpLogicalOr, (yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line, "||", true); ;}
     break;
 
   case 67:
 
 /* Line 1455 of yacc.c  */
-#line 816 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 817 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 68:
 
 /* Line 1455 of yacc.c  */
-#line 817 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 818 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
        if (parseContext.boolOrVectorErrorCheck((yyvsp[(2) - (5)].lex).line, (yyvsp[(1) - (5)].interm.intermTypedNode)))
             parseContext.recover();
@@ -3517,14 +3517,14 @@ yyreduce:
   case 69:
 
 /* Line 1455 of yacc.c  */
-#line 832 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 833 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 70:
 
 /* Line 1455 of yacc.c  */
-#line 833 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 834 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {        
         if (parseContext.lValueErrorCheck((yyvsp[(2) - (3)].interm).line, "assign", (yyvsp[(1) - (3)].interm.intermTypedNode)))
             parseContext.recover();
@@ -3541,84 +3541,84 @@ yyreduce:
   case 71:
 
 /* Line 1455 of yacc.c  */
-#line 847 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 848 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpAssign; ;}
     break;
 
   case 72:
 
 /* Line 1455 of yacc.c  */
-#line 848 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 849 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpMulAssign; ;}
     break;
 
   case 73:
 
 /* Line 1455 of yacc.c  */
-#line 849 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 850 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpDivAssign; ;}
     break;
 
   case 74:
 
 /* Line 1455 of yacc.c  */
-#line 850 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 851 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("%=", (yyvsp[(1) - (1)].lex).line);  (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpModAssign; ;}
     break;
 
   case 75:
 
 /* Line 1455 of yacc.c  */
-#line 851 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 852 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpAddAssign; ;}
     break;
 
   case 76:
 
 /* Line 1455 of yacc.c  */
-#line 852 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 853 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpSubAssign; ;}
     break;
 
   case 77:
 
 /* Line 1455 of yacc.c  */
-#line 853 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 854 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("<<=", (yyvsp[(1) - (1)].lex).line); (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpLeftShiftAssign; ;}
     break;
 
   case 78:
 
 /* Line 1455 of yacc.c  */
-#line 854 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 855 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("<<=", (yyvsp[(1) - (1)].lex).line); (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpRightShiftAssign; ;}
     break;
 
   case 79:
 
 /* Line 1455 of yacc.c  */
-#line 855 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 856 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("&=",  (yyvsp[(1) - (1)].lex).line); (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpAndAssign; ;}
     break;
 
   case 80:
 
 /* Line 1455 of yacc.c  */
-#line 856 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 857 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("^=",  (yyvsp[(1) - (1)].lex).line); (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpExclusiveOrAssign; ;}
     break;
 
   case 81:
 
 /* Line 1455 of yacc.c  */
-#line 857 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 858 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { UNSUPPORTED_FEATURE("|=",  (yyvsp[(1) - (1)].lex).line); (yyval.interm).line = (yyvsp[(1) - (1)].lex).line; (yyval.interm).op = EOpInclusiveOrAssign; ;}
     break;
 
   case 82:
 
 /* Line 1455 of yacc.c  */
-#line 861 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 862 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -3627,7 +3627,7 @@ yyreduce:
   case 83:
 
 /* Line 1455 of yacc.c  */
-#line 864 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 865 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = ir_add_comma((yyvsp[(1) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(2) - (3)].lex).line);
         if ((yyval.interm.intermTypedNode) == 0) {
@@ -3641,7 +3641,7 @@ yyreduce:
   case 84:
 
 /* Line 1455 of yacc.c  */
-#line 875 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 876 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.constErrorCheck((yyvsp[(1) - (1)].interm.intermTypedNode)))
             parseContext.recover();
@@ -3652,21 +3652,21 @@ yyreduce:
   case 85:
 
 /* Line 1455 of yacc.c  */
-#line 883 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 884 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermDeclaration) = 0; ;}
     break;
 
   case 86:
 
 /* Line 1455 of yacc.c  */
-#line 884 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 885 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermDeclaration) = (yyvsp[(1) - (2)].interm.intermDeclaration); ;}
     break;
 
   case 87:
 
 /* Line 1455 of yacc.c  */
-#line 888 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 889 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //
         // Multiple declarations of the same function are allowed.
@@ -3705,7 +3705,7 @@ yyreduce:
   case 88:
 
 /* Line 1455 of yacc.c  */
-#line 921 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 922 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //
         // Multiple declarations of the same function are allowed.
@@ -3745,7 +3745,7 @@ yyreduce:
   case 89:
 
 /* Line 1455 of yacc.c  */
-#line 958 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 959 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.function) = (yyvsp[(1) - (1)].interm.function);
     ;}
@@ -3754,7 +3754,7 @@ yyreduce:
   case 90:
 
 /* Line 1455 of yacc.c  */
-#line 961 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 962 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.function) = (yyvsp[(1) - (1)].interm.function);
     ;}
@@ -3763,7 +3763,7 @@ yyreduce:
   case 91:
 
 /* Line 1455 of yacc.c  */
-#line 968 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 969 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // Add the parameter
         (yyval.interm.function) = (yyvsp[(1) - (2)].interm.function);
@@ -3777,7 +3777,7 @@ yyreduce:
   case 92:
 
 /* Line 1455 of yacc.c  */
-#line 976 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 977 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //
         // Only first parameter of one-parameter functions can be void
@@ -3801,7 +3801,7 @@ yyreduce:
   case 93:
 
 /* Line 1455 of yacc.c  */
-#line 997 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 998 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(1) - (3)].interm.type).qualifier != EvqGlobal && (yyvsp[(1) - (3)].interm.type).qualifier != EvqTemporary) {
 			if ((yyvsp[(1) - (3)].interm.type).qualifier == EvqConst || (yyvsp[(1) - (3)].interm.type).qualifier == EvqStatic)
@@ -3835,7 +3835,7 @@ yyreduce:
   case 94:
 
 /* Line 1455 of yacc.c  */
-#line 1029 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1030 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(1) - (2)].interm.type).type == EbtVoid) {
             parseContext.error((yyvsp[(2) - (2)].lex).line, "illegal use of type 'void'", (yyvsp[(2) - (2)].lex).string->c_str(), "");
@@ -3852,7 +3852,7 @@ yyreduce:
   case 95:
 
 /* Line 1455 of yacc.c  */
-#line 1040 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1041 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(1) - (4)].interm.type).type == EbtVoid) {
             parseContext.error((yyvsp[(2) - (4)].lex).line, "illegal use of type 'void'", (yyvsp[(2) - (4)].lex).string->c_str(), "");
@@ -3871,7 +3871,7 @@ yyreduce:
   case 96:
 
 /* Line 1455 of yacc.c  */
-#line 1053 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1054 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // Parameter with register
         if ((yyvsp[(1) - (3)].interm.type).type == EbtVoid) {
@@ -3889,7 +3889,7 @@ yyreduce:
   case 97:
 
 /* Line 1455 of yacc.c  */
-#line 1065 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1066 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //Parameter with semantic
         if ((yyvsp[(1) - (4)].interm.type).type == EbtVoid) {
@@ -3907,7 +3907,7 @@ yyreduce:
   case 98:
 
 /* Line 1455 of yacc.c  */
-#line 1077 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1078 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // Check that we can make an array out of this type
         if (parseContext.arrayTypeErrorCheck((yyvsp[(3) - (5)].lex).line, (yyvsp[(1) - (5)].interm.type)))
@@ -3931,7 +3931,7 @@ yyreduce:
   case 99:
 
 /* Line 1455 of yacc.c  */
-#line 1095 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1096 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // Check that we can make an array out of this type
         if (parseContext.arrayTypeErrorCheck((yyvsp[(3) - (7)].lex).line, (yyvsp[(1) - (7)].interm.type)))
@@ -3955,7 +3955,7 @@ yyreduce:
   case 100:
 
 /* Line 1455 of yacc.c  */
-#line 1124 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1125 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(3) - (3)].interm);
         if (parseContext.paramErrorCheck((yyvsp[(3) - (3)].interm).line, (yyvsp[(1) - (3)].interm.type).qualifier, (yyvsp[(2) - (3)].interm.qualifier), (yyval.interm).param.type))
@@ -3966,7 +3966,7 @@ yyreduce:
   case 101:
 
 /* Line 1455 of yacc.c  */
-#line 1129 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1130 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(2) - (2)].interm);
         if (parseContext.parameterSamplerErrorCheck((yyvsp[(2) - (2)].interm).line, (yyvsp[(1) - (2)].interm.qualifier), *(yyvsp[(2) - (2)].interm).param.type))
@@ -3979,7 +3979,7 @@ yyreduce:
   case 102:
 
 /* Line 1455 of yacc.c  */
-#line 1139 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1140 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(3) - (3)].interm);
         if (parseContext.paramErrorCheck((yyvsp[(3) - (3)].interm).line, (yyvsp[(1) - (3)].interm.type).qualifier, (yyvsp[(2) - (3)].interm.qualifier), (yyval.interm).param.type))
@@ -3990,7 +3990,7 @@ yyreduce:
   case 103:
 
 /* Line 1455 of yacc.c  */
-#line 1144 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1145 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm) = (yyvsp[(2) - (2)].interm);
         if (parseContext.parameterSamplerErrorCheck((yyvsp[(2) - (2)].interm).line, (yyvsp[(1) - (2)].interm.qualifier), *(yyvsp[(2) - (2)].interm).param.type))
@@ -4003,7 +4003,7 @@ yyreduce:
   case 104:
 
 /* Line 1455 of yacc.c  */
-#line 1154 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1155 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.qualifier) = EvqIn;
     ;}
@@ -4012,7 +4012,7 @@ yyreduce:
   case 105:
 
 /* Line 1455 of yacc.c  */
-#line 1157 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1158 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.qualifier) = EvqIn;
     ;}
@@ -4021,7 +4021,7 @@ yyreduce:
   case 106:
 
 /* Line 1455 of yacc.c  */
-#line 1160 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1161 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.qualifier) = EvqOut;
     ;}
@@ -4030,7 +4030,7 @@ yyreduce:
   case 107:
 
 /* Line 1455 of yacc.c  */
-#line 1163 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1164 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.qualifier) = EvqInOut;
     ;}
@@ -4039,7 +4039,7 @@ yyreduce:
   case 108:
 
 /* Line 1455 of yacc.c  */
-#line 1169 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1170 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TParameter param = { 0, 0, new TType((yyvsp[(1) - (1)].interm.type)) };
         (yyval.interm).param = param;
@@ -4049,7 +4049,7 @@ yyreduce:
   case 109:
 
 /* Line 1455 of yacc.c  */
-#line 1176 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1177 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermDeclaration) = (yyvsp[(1) - (1)].interm.intermDeclaration);
     ;}
@@ -4058,7 +4058,7 @@ yyreduce:
   case 110:
 
 /* Line 1455 of yacc.c  */
-#line 1179 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1180 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (4)].interm.intermDeclaration));
 		
@@ -4082,7 +4082,7 @@ yyreduce:
   case 111:
 
 /* Line 1455 of yacc.c  */
-#line 1197 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1198 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (6)].interm.intermDeclaration));
 		
@@ -4112,7 +4112,7 @@ yyreduce:
   case 112:
 
 /* Line 1455 of yacc.c  */
-#line 1221 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1222 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (7)].interm.intermDeclaration));
 		
@@ -4146,7 +4146,7 @@ yyreduce:
   case 113:
 
 /* Line 1455 of yacc.c  */
-#line 1249 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1250 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (8)].interm.intermDeclaration));
 		
@@ -4179,7 +4179,7 @@ yyreduce:
   case 114:
 
 /* Line 1455 of yacc.c  */
-#line 1276 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1277 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (9)].interm.intermDeclaration));
 		int array_size;
@@ -4218,7 +4218,7 @@ yyreduce:
   case 115:
 
 /* Line 1455 of yacc.c  */
-#line 1309 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1310 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		TPublicType type = ir_get_decl_type_noarray((yyvsp[(1) - (6)].interm.intermDeclaration));
 		
@@ -4255,7 +4255,7 @@ yyreduce:
   case 116:
 
 /* Line 1455 of yacc.c  */
-#line 1343 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1344 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.interm.intermDeclaration) = 0;
     ;}
@@ -4264,7 +4264,7 @@ yyreduce:
   case 117:
 
 /* Line 1455 of yacc.c  */
-#line 1346 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1347 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {				
 		bool error = false;
         if (error &= parseContext.structQualifierErrorCheck((yyvsp[(2) - (3)].lex).line, (yyvsp[(1) - (3)].interm.type)))
@@ -4288,7 +4288,7 @@ yyreduce:
   case 118:
 
 /* Line 1455 of yacc.c  */
-#line 1364 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1365 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (5)].lex).line, (yyvsp[(1) - (5)].interm.type)))
             parseContext.recover();
@@ -4317,7 +4317,7 @@ yyreduce:
   case 119:
 
 /* Line 1455 of yacc.c  */
-#line 1387 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1388 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (6)].lex).line, (yyvsp[(1) - (6)].interm.type)))
             parseContext.recover();
@@ -4349,7 +4349,7 @@ yyreduce:
   case 120:
 
 /* Line 1455 of yacc.c  */
-#line 1413 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1414 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (7)].lex).line, (yyvsp[(1) - (7)].interm.type)))
 			parseContext.recover();
@@ -4381,7 +4381,7 @@ yyreduce:
   case 121:
 
 /* Line 1455 of yacc.c  */
-#line 1439 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1440 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (8)].lex).line, (yyvsp[(1) - (8)].interm.type)))
             parseContext.recover();
@@ -4417,7 +4417,7 @@ yyreduce:
   case 122:
 
 /* Line 1455 of yacc.c  */
-#line 1469 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1470 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (5)].lex).line, (yyvsp[(1) - (5)].interm.type)))
 			parseContext.recover();
@@ -4443,12 +4443,26 @@ yyreduce:
 			if (parseContext.nonInitErrorCheck((yyvsp[(2) - (5)].lex).line, *(yyvsp[(2) - (5)].lex).string, (yyvsp[(3) - (5)].interm.typeInfo), (yyvsp[(1) - (5)].interm.type)))
 				parseContext.recover();
 				
+			
 			TSymbol* symbol = parseContext.symbolTable.find(*(yyvsp[(2) - (5)].lex).string);
-			if (symbol) {
-				(yyval.interm.intermDeclaration) = ir_add_declaration(symbol, NULL, (yyvsp[(2) - (5)].lex).line, parseContext);
-			} else {
+			if (symbol)
+			{
+				TIntermSymbol* intermSymbol;
+				TVariable* var = static_cast<TVariable*>(symbol);
+				if (!parseContext.executeInitializer((yyvsp[(2) - (5)].lex).line, *(yyvsp[(2) - (5)].lex).string, (yyvsp[(3) - (5)].interm.typeInfo), (yyvsp[(1) - (5)].interm.type), (yyvsp[(5) - (5)].interm.intermTypedNode), intermSymbol,var)) {
+					if (intermSymbol)
+						(yyval.interm.intermDeclaration) = ir_add_declaration(intermSymbol,NULL, (yyvsp[(4) - (5)].lex).line, parseContext);
+					else
+						(yyval.interm.intermDeclaration) = 0;
+				} else {
+					parseContext.recover();
+					(yyval.interm.intermDeclaration) = 0;
+				}			
+			}else{
 				(yyval.interm.intermDeclaration) = 0;
 			}
+
+			
 		}
     ;}
     break;
@@ -4456,7 +4470,7 @@ yyreduce:
   case 123:
 
 /* Line 1455 of yacc.c  */
-#line 1517 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1532 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type) = (yyvsp[(1) - (1)].interm.type);
     ;}
@@ -4465,7 +4479,7 @@ yyreduce:
   case 124:
 
 /* Line 1455 of yacc.c  */
-#line 1520 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1535 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(2) - (2)].interm.type).array && parseContext.arrayQualifierErrorCheck((yyvsp[(2) - (2)].interm.type).line, (yyvsp[(1) - (2)].interm.type))) {
             parseContext.recover();
@@ -4485,7 +4499,7 @@ yyreduce:
   case 125:
 
 /* Line 1455 of yacc.c  */
-#line 1537 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1552 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type).setBasic(EbtVoid, EvqConst, (yyvsp[(1) - (1)].lex).line);
     ;}
@@ -4494,7 +4508,7 @@ yyreduce:
   case 126:
 
 /* Line 1455 of yacc.c  */
-#line 1540 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1555 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type).setBasic(EbtVoid, EvqStatic, (yyvsp[(1) - (1)].lex).line);
     ;}
@@ -4503,7 +4517,7 @@ yyreduce:
   case 127:
 
 /* Line 1455 of yacc.c  */
-#line 1543 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1558 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type).setBasic(EbtVoid, EvqConst, (yyvsp[(1) - (2)].lex).line); // same as "const" really
     ;}
@@ -4512,7 +4526,7 @@ yyreduce:
   case 128:
 
 /* Line 1455 of yacc.c  */
-#line 1546 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1561 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type).setBasic(EbtVoid, EvqConst, (yyvsp[(1) - (2)].lex).line); // same as "const" really
     ;}
@@ -4521,7 +4535,7 @@ yyreduce:
   case 129:
 
 /* Line 1455 of yacc.c  */
-#line 1549 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1564 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.globalErrorCheck((yyvsp[(1) - (1)].lex).line, parseContext.symbolTable.atGlobalLevel(), "uniform"))
             parseContext.recover();
@@ -4532,7 +4546,7 @@ yyreduce:
   case 130:
 
 /* Line 1455 of yacc.c  */
-#line 1557 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1572 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type) = (yyvsp[(1) - (1)].interm.type);
     ;}
@@ -4541,7 +4555,7 @@ yyreduce:
   case 131:
 
 /* Line 1455 of yacc.c  */
-#line 1560 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1575 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type) = (yyvsp[(1) - (4)].interm.type);
 
@@ -4559,7 +4573,7 @@ yyreduce:
   case 132:
 
 /* Line 1455 of yacc.c  */
-#line 1575 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1590 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtVoid,EbpUndefined);
     ;}
@@ -4568,7 +4582,7 @@ yyreduce:
   case 133:
 
 /* Line 1455 of yacc.c  */
-#line 1578 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1593 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
     ;}
@@ -4577,7 +4591,7 @@ yyreduce:
   case 134:
 
 /* Line 1455 of yacc.c  */
-#line 1581 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1596 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
     ;}
@@ -4586,7 +4600,7 @@ yyreduce:
   case 135:
 
 /* Line 1455 of yacc.c  */
-#line 1584 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1599 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
     ;}
@@ -4595,7 +4609,7 @@ yyreduce:
   case 136:
 
 /* Line 1455 of yacc.c  */
-#line 1587 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1602 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtInt,EbpHigh);
     ;}
@@ -4604,7 +4618,7 @@ yyreduce:
   case 137:
 
 /* Line 1455 of yacc.c  */
-#line 1590 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1605 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtBool,EbpHigh);
     ;}
@@ -4613,7 +4627,7 @@ yyreduce:
   case 138:
 
 /* Line 1455 of yacc.c  */
-#line 1593 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1608 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TQualifier qual = parseContext.getDefaultQualifier();
         if ( (yyvsp[(5) - (6)].lex).i > 4 || (yyvsp[(5) - (6)].lex).i < 1 ) {
@@ -4630,7 +4644,7 @@ yyreduce:
   case 139:
 
 /* Line 1455 of yacc.c  */
-#line 1604 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1619 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TQualifier qual = parseContext.getDefaultQualifier();
         if ( (yyvsp[(5) - (6)].lex).i > 4 || (yyvsp[(5) - (6)].lex).i < 1 ) {
@@ -4647,7 +4661,7 @@ yyreduce:
   case 140:
 
 /* Line 1455 of yacc.c  */
-#line 1615 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1630 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TQualifier qual = parseContext.getDefaultQualifier();
         if ( (yyvsp[(5) - (6)].lex).i > 4 || (yyvsp[(5) - (6)].lex).i < 1 ) {
@@ -4664,7 +4678,7 @@ yyreduce:
   case 141:
 
 /* Line 1455 of yacc.c  */
-#line 1626 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1641 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setVector(2);
@@ -4674,7 +4688,7 @@ yyreduce:
   case 142:
 
 /* Line 1455 of yacc.c  */
-#line 1630 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1645 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setVector(3);
@@ -4684,7 +4698,7 @@ yyreduce:
   case 143:
 
 /* Line 1455 of yacc.c  */
-#line 1634 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1649 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setVector(4);
@@ -4694,7 +4708,7 @@ yyreduce:
   case 144:
 
 /* Line 1455 of yacc.c  */
-#line 1638 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1653 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setVector(2);
@@ -4704,7 +4718,7 @@ yyreduce:
   case 145:
 
 /* Line 1455 of yacc.c  */
-#line 1642 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1657 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setVector(3);
@@ -4714,7 +4728,7 @@ yyreduce:
   case 146:
 
 /* Line 1455 of yacc.c  */
-#line 1646 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1661 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setVector(4);
@@ -4724,7 +4738,7 @@ yyreduce:
   case 147:
 
 /* Line 1455 of yacc.c  */
-#line 1650 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1665 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setVector(2);
@@ -4734,7 +4748,7 @@ yyreduce:
   case 148:
 
 /* Line 1455 of yacc.c  */
-#line 1654 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1669 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setVector(3);
@@ -4744,7 +4758,7 @@ yyreduce:
   case 149:
 
 /* Line 1455 of yacc.c  */
-#line 1658 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1673 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setVector(4);
@@ -4754,7 +4768,7 @@ yyreduce:
   case 150:
 
 /* Line 1455 of yacc.c  */
-#line 1662 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1677 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtBool,EbpHigh);
         (yyval.interm.type).setVector(2);
@@ -4764,7 +4778,7 @@ yyreduce:
   case 151:
 
 /* Line 1455 of yacc.c  */
-#line 1666 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1681 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtBool,EbpHigh);
         (yyval.interm.type).setVector(3);
@@ -4774,7 +4788,7 @@ yyreduce:
   case 152:
 
 /* Line 1455 of yacc.c  */
-#line 1670 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1685 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtBool,EbpHigh);
         (yyval.interm.type).setVector(4);
@@ -4784,7 +4798,7 @@ yyreduce:
   case 153:
 
 /* Line 1455 of yacc.c  */
-#line 1674 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1689 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtInt,EbpHigh);
         (yyval.interm.type).setVector(2);
@@ -4794,7 +4808,7 @@ yyreduce:
   case 154:
 
 /* Line 1455 of yacc.c  */
-#line 1678 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1693 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtInt,EbpHigh);
         (yyval.interm.type).setVector(3);
@@ -4804,7 +4818,7 @@ yyreduce:
   case 155:
 
 /* Line 1455 of yacc.c  */
-#line 1682 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1697 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtInt,EbpHigh);
         (yyval.interm.type).setVector(4);
@@ -4814,7 +4828,7 @@ yyreduce:
   case 156:
 
 /* Line 1455 of yacc.c  */
-#line 1686 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1701 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setMatrix(2, 2);
@@ -4824,7 +4838,7 @@ yyreduce:
   case 157:
 
 /* Line 1455 of yacc.c  */
-#line 1690 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1705 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float2x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4835,7 +4849,7 @@ yyreduce:
   case 158:
 
 /* Line 1455 of yacc.c  */
-#line 1695 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1710 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float2x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4846,7 +4860,7 @@ yyreduce:
   case 159:
 
 /* Line 1455 of yacc.c  */
-#line 1700 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1715 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float3x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4857,7 +4871,7 @@ yyreduce:
   case 160:
 
 /* Line 1455 of yacc.c  */
-#line 1705 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1720 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setMatrix(3, 3);
@@ -4867,7 +4881,7 @@ yyreduce:
   case 161:
 
 /* Line 1455 of yacc.c  */
-#line 1709 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1724 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float3x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4878,7 +4892,7 @@ yyreduce:
   case 162:
 
 /* Line 1455 of yacc.c  */
-#line 1714 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1729 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float4x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4889,7 +4903,7 @@ yyreduce:
   case 163:
 
 /* Line 1455 of yacc.c  */
-#line 1719 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1734 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("float4x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
@@ -4900,7 +4914,7 @@ yyreduce:
   case 164:
 
 /* Line 1455 of yacc.c  */
-#line 1724 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1739 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpHigh);
         (yyval.interm.type).setMatrix(4, 4);
@@ -4910,7 +4924,7 @@ yyreduce:
   case 165:
 
 /* Line 1455 of yacc.c  */
-#line 1728 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1743 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setMatrix(2, 2);
@@ -4920,7 +4934,7 @@ yyreduce:
   case 166:
 
 /* Line 1455 of yacc.c  */
-#line 1732 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1747 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half2x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4931,7 +4945,7 @@ yyreduce:
   case 167:
 
 /* Line 1455 of yacc.c  */
-#line 1737 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1752 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half2x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4942,7 +4956,7 @@ yyreduce:
   case 168:
 
 /* Line 1455 of yacc.c  */
-#line 1742 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1757 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half3x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4953,7 +4967,7 @@ yyreduce:
   case 169:
 
 /* Line 1455 of yacc.c  */
-#line 1747 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1762 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setMatrix(3, 3);
@@ -4963,7 +4977,7 @@ yyreduce:
   case 170:
 
 /* Line 1455 of yacc.c  */
-#line 1751 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1766 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half3x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4974,7 +4988,7 @@ yyreduce:
   case 171:
 
 /* Line 1455 of yacc.c  */
-#line 1756 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1771 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half4x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4985,7 +4999,7 @@ yyreduce:
   case 172:
 
 /* Line 1455 of yacc.c  */
-#line 1761 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1776 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("half4x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
@@ -4996,7 +5010,7 @@ yyreduce:
   case 173:
 
 /* Line 1455 of yacc.c  */
-#line 1766 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1781 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpMedium);
         (yyval.interm.type).setMatrix(4, 4);
@@ -5006,7 +5020,7 @@ yyreduce:
   case 174:
 
 /* Line 1455 of yacc.c  */
-#line 1770 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1785 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setMatrix(2, 2);
@@ -5016,7 +5030,7 @@ yyreduce:
   case 175:
 
 /* Line 1455 of yacc.c  */
-#line 1774 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1789 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed2x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5027,7 +5041,7 @@ yyreduce:
   case 176:
 
 /* Line 1455 of yacc.c  */
-#line 1779 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1794 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed2x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5038,7 +5052,7 @@ yyreduce:
   case 177:
 
 /* Line 1455 of yacc.c  */
-#line 1784 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1799 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed3x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5049,7 +5063,7 @@ yyreduce:
   case 178:
 
 /* Line 1455 of yacc.c  */
-#line 1789 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1804 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setMatrix(3, 3);
@@ -5059,7 +5073,7 @@ yyreduce:
   case 179:
 
 /* Line 1455 of yacc.c  */
-#line 1793 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1808 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed3x4", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5070,7 +5084,7 @@ yyreduce:
   case 180:
 
 /* Line 1455 of yacc.c  */
-#line 1798 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1813 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed4x2", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5081,7 +5095,7 @@ yyreduce:
   case 181:
 
 /* Line 1455 of yacc.c  */
-#line 1803 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1818 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		NONSQUARE_MATRIX_CHECK("fixed4x3", (yyvsp[(1) - (1)].lex).line);
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
@@ -5092,7 +5106,7 @@ yyreduce:
   case 182:
 
 /* Line 1455 of yacc.c  */
-#line 1808 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1823 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtFloat,EbpLow);
         (yyval.interm.type).setMatrix(4, 4);
@@ -5102,7 +5116,7 @@ yyreduce:
   case 183:
 
 /* Line 1455 of yacc.c  */
-#line 1812 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1827 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtTexture,EbpUndefined);
     ;}
@@ -5111,7 +5125,7 @@ yyreduce:
   case 184:
 
 /* Line 1455 of yacc.c  */
-#line 1815 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1830 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerGeneric,EbpUndefined);
     ;}
@@ -5120,7 +5134,7 @@ yyreduce:
   case 185:
 
 /* Line 1455 of yacc.c  */
-#line 1818 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1833 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler1D,EbpUndefined);
     ;}
@@ -5129,7 +5143,7 @@ yyreduce:
   case 186:
 
 /* Line 1455 of yacc.c  */
-#line 1821 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1836 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler2D,EbpUndefined);
     ;}
@@ -5138,7 +5152,7 @@ yyreduce:
   case 187:
 
 /* Line 1455 of yacc.c  */
-#line 1824 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1839 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler2D,EbpMedium);
 	;}
@@ -5147,7 +5161,7 @@ yyreduce:
   case 188:
 
 /* Line 1455 of yacc.c  */
-#line 1827 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1842 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler2D,EbpHigh);
 	;}
@@ -5156,7 +5170,7 @@ yyreduce:
   case 189:
 
 /* Line 1455 of yacc.c  */
-#line 1830 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1845 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler3D,EbpLow);
     ;}
@@ -5165,7 +5179,7 @@ yyreduce:
   case 190:
 
 /* Line 1455 of yacc.c  */
-#line 1833 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1848 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerCube,EbpUndefined);
     ;}
@@ -5174,7 +5188,7 @@ yyreduce:
   case 191:
 
 /* Line 1455 of yacc.c  */
-#line 1836 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1851 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerCube,EbpMedium);
 	;}
@@ -5183,7 +5197,7 @@ yyreduce:
   case 192:
 
 /* Line 1455 of yacc.c  */
-#line 1839 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1854 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerCube,EbpHigh);
 	;}
@@ -5192,7 +5206,7 @@ yyreduce:
   case 193:
 
 /* Line 1455 of yacc.c  */
-#line 1842 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1857 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerRect,EbpUndefined);
     ;}
@@ -5201,7 +5215,7 @@ yyreduce:
   case 194:
 
 /* Line 1455 of yacc.c  */
-#line 1845 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1860 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSamplerRectShadow,EbpLow); // ES3 doesn't have default precision for shadow samplers, so always emit lowp
     ;}
@@ -5210,7 +5224,7 @@ yyreduce:
   case 195:
 
 /* Line 1455 of yacc.c  */
-#line 1848 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1863 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler1DShadow,EbpLow); // ES3 doesn't have default precision for shadow samplers, so always emit lowp
     ;}
@@ -5219,7 +5233,7 @@ yyreduce:
   case 196:
 
 /* Line 1455 of yacc.c  */
-#line 1851 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1866 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler2DShadow,EbpLow); // ES3 doesn't have default precision for shadow samplers, so always emit lowp
     ;}
@@ -5228,7 +5242,7 @@ yyreduce:
   case 197:
 
 /* Line 1455 of yacc.c  */
-#line 1854 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1869 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		SET_BASIC_TYPE((yyval.interm.type),(yyvsp[(1) - (1)].lex),EbtSampler2DArray,EbpLow);
 	;}
@@ -5237,7 +5251,7 @@ yyreduce:
   case 198:
 
 /* Line 1455 of yacc.c  */
-#line 1857 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1872 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.type) = (yyvsp[(1) - (1)].interm.type);
         (yyval.interm.type).qualifier = parseContext.getDefaultQualifier();
@@ -5247,7 +5261,7 @@ yyreduce:
   case 199:
 
 /* Line 1455 of yacc.c  */
-#line 1861 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1876 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //
         // This is for user defined type names.  The lexical phase looked up the
@@ -5262,7 +5276,7 @@ yyreduce:
   case 200:
 
 /* Line 1455 of yacc.c  */
-#line 1873 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1888 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TType* structure = new TType((yyvsp[(4) - (5)].interm.typeList), *(yyvsp[(2) - (5)].lex).string, EbpUndefined, (yyvsp[(2) - (5)].lex).line);
         TVariable* userTypeDef = new TVariable((yyvsp[(2) - (5)].lex).string, *structure, true);
@@ -5278,7 +5292,7 @@ yyreduce:
   case 201:
 
 /* Line 1455 of yacc.c  */
-#line 1883 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1898 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TType* structure = new TType((yyvsp[(3) - (4)].interm.typeList), TString(""), EbpUndefined, (yyvsp[(1) - (4)].lex).line);
         (yyval.interm.type).setBasic(EbtStruct, EvqTemporary, (yyvsp[(1) - (4)].lex).line);
@@ -5289,7 +5303,7 @@ yyreduce:
   case 202:
 
 /* Line 1455 of yacc.c  */
-#line 1891 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1906 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeList) = (yyvsp[(1) - (1)].interm.typeList);
     ;}
@@ -5298,7 +5312,7 @@ yyreduce:
   case 203:
 
 /* Line 1455 of yacc.c  */
-#line 1894 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1909 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeList) = (yyvsp[(1) - (2)].interm.typeList);
         for (unsigned int i = 0; i < (yyvsp[(2) - (2)].interm.typeList)->size(); ++i) {
@@ -5316,7 +5330,7 @@ yyreduce:
   case 204:
 
 /* Line 1455 of yacc.c  */
-#line 1909 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1924 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeList) = (yyvsp[(2) - (3)].interm.typeList);
 
@@ -5352,7 +5366,7 @@ yyreduce:
   case 205:
 
 /* Line 1455 of yacc.c  */
-#line 1942 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1957 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeList) = NewPoolTTypeList();
         (yyval.interm.typeList)->push_back((yyvsp[(1) - (1)].interm.typeLine));
@@ -5362,7 +5376,7 @@ yyreduce:
   case 206:
 
 /* Line 1455 of yacc.c  */
-#line 1946 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1961 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeList)->push_back((yyvsp[(3) - (3)].interm.typeLine));
     ;}
@@ -5371,7 +5385,7 @@ yyreduce:
   case 207:
 
 /* Line 1455 of yacc.c  */
-#line 1952 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1967 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeLine).type = new TType(EbtVoid, EbpUndefined);
         (yyval.interm.typeLine).line = (yyvsp[(1) - (1)].lex).line;
@@ -5382,7 +5396,7 @@ yyreduce:
   case 208:
 
 /* Line 1455 of yacc.c  */
-#line 1957 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1972 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeLine).type = new TType(EbtVoid, EbpUndefined);
         (yyval.interm.typeLine).line = (yyvsp[(1) - (3)].lex).line;
@@ -5394,7 +5408,7 @@ yyreduce:
   case 209:
 
 /* Line 1455 of yacc.c  */
-#line 1963 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1978 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeLine).type = new TType(EbtVoid, EbpUndefined);
         (yyval.interm.typeLine).line = (yyvsp[(1) - (4)].lex).line;
@@ -5410,7 +5424,7 @@ yyreduce:
   case 210:
 
 /* Line 1455 of yacc.c  */
-#line 1973 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 1988 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.typeLine).type = new TType(EbtVoid, EbpUndefined);
         (yyval.interm.typeLine).line = (yyvsp[(1) - (6)].lex).line;
@@ -5427,105 +5441,105 @@ yyreduce:
   case 211:
 
 /* Line 1455 of yacc.c  */
-#line 1989 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2004 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 212:
 
 /* Line 1455 of yacc.c  */
-#line 1990 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2005 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 213:
 
 /* Line 1455 of yacc.c  */
-#line 1991 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2006 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode); ;}
     break;
 
   case 214:
 
 /* Line 1455 of yacc.c  */
-#line 1995 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2010 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermDeclaration); ;}
     break;
 
   case 215:
 
 /* Line 1455 of yacc.c  */
-#line 1999 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2014 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermAggregate); ;}
     break;
 
   case 216:
 
 /* Line 1455 of yacc.c  */
-#line 2000 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2015 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 217:
 
 /* Line 1455 of yacc.c  */
-#line 2006 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2021 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 218:
 
 /* Line 1455 of yacc.c  */
-#line 2007 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2022 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 219:
 
 /* Line 1455 of yacc.c  */
-#line 2008 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2023 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 220:
 
 /* Line 1455 of yacc.c  */
-#line 2009 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2024 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 221:
 
 /* Line 1455 of yacc.c  */
-#line 2010 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2025 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 222:
 
 /* Line 1455 of yacc.c  */
-#line 2014 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2029 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermAggregate) = 0; ;}
     break;
 
   case 223:
 
 /* Line 1455 of yacc.c  */
-#line 2015 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2030 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { parseContext.symbolTable.push(); ;}
     break;
 
   case 224:
 
 /* Line 1455 of yacc.c  */
-#line 2015 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2030 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { parseContext.symbolTable.pop(); ;}
     break;
 
   case 225:
 
 /* Line 1455 of yacc.c  */
-#line 2015 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2030 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(3) - (5)].interm.intermAggregate) != 0)
             (yyvsp[(3) - (5)].interm.intermAggregate)->setOperator(EOpSequence);
@@ -5536,21 +5550,21 @@ yyreduce:
   case 226:
 
 /* Line 1455 of yacc.c  */
-#line 2023 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2038 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 227:
 
 /* Line 1455 of yacc.c  */
-#line 2024 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2039 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode); ;}
     break;
 
   case 228:
 
 /* Line 1455 of yacc.c  */
-#line 2029 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2044 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = 0;
     ;}
@@ -5559,7 +5573,7 @@ yyreduce:
   case 229:
 
 /* Line 1455 of yacc.c  */
-#line 2032 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2047 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if ((yyvsp[(2) - (3)].interm.intermAggregate))
             (yyvsp[(2) - (3)].interm.intermAggregate)->setOperator(EOpSequence);
@@ -5570,7 +5584,7 @@ yyreduce:
   case 230:
 
 /* Line 1455 of yacc.c  */
-#line 2040 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2055 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermAggregate) = ir_make_aggregate((yyvsp[(1) - (1)].interm.intermNode), gNullSourceLoc); 
     ;}
@@ -5579,7 +5593,7 @@ yyreduce:
   case 231:
 
 /* Line 1455 of yacc.c  */
-#line 2043 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2058 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { 
         (yyval.interm.intermAggregate) = ir_grow_aggregate((yyvsp[(1) - (2)].interm.intermAggregate), (yyvsp[(2) - (2)].interm.intermNode), gNullSourceLoc);
     ;}
@@ -5588,21 +5602,21 @@ yyreduce:
   case 232:
 
 /* Line 1455 of yacc.c  */
-#line 2049 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2064 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = 0; ;}
     break;
 
   case 233:
 
 /* Line 1455 of yacc.c  */
-#line 2050 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2065 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = static_cast<TIntermNode*>((yyvsp[(1) - (2)].interm.intermTypedNode)); ;}
     break;
 
   case 234:
 
 /* Line 1455 of yacc.c  */
-#line 2054 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2069 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.boolErrorCheck((yyvsp[(1) - (5)].lex).line, (yyvsp[(3) - (5)].interm.intermTypedNode)))
             parseContext.recover();
@@ -5613,7 +5627,7 @@ yyreduce:
   case 235:
 
 /* Line 1455 of yacc.c  */
-#line 2062 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2077 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.nodePair).node1 = (yyvsp[(1) - (3)].interm.intermNode);
         (yyval.interm.nodePair).node2 = (yyvsp[(3) - (3)].interm.intermNode);
@@ -5623,7 +5637,7 @@ yyreduce:
   case 236:
 
 /* Line 1455 of yacc.c  */
-#line 2066 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2081 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.nodePair).node1 = (yyvsp[(1) - (1)].interm.intermNode);
         (yyval.interm.nodePair).node2 = 0;
@@ -5633,7 +5647,7 @@ yyreduce:
   case 237:
 
 /* Line 1455 of yacc.c  */
-#line 2076 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2091 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
         if (parseContext.boolErrorCheck((yyvsp[(1) - (1)].interm.intermTypedNode)->getLine(), (yyvsp[(1) - (1)].interm.intermTypedNode)))
@@ -5644,7 +5658,7 @@ yyreduce:
   case 238:
 
 /* Line 1455 of yacc.c  */
-#line 2081 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2096 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TIntermSymbol* symbol;
         if (parseContext.structQualifierErrorCheck((yyvsp[(2) - (4)].lex).line, (yyvsp[(1) - (4)].interm.type)))
@@ -5664,14 +5678,14 @@ yyreduce:
   case 239:
 
 /* Line 1455 of yacc.c  */
-#line 2098 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2113 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { parseContext.symbolTable.push(); ++parseContext.loopNestingLevel; ;}
     break;
 
   case 240:
 
 /* Line 1455 of yacc.c  */
-#line 2098 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2113 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         parseContext.symbolTable.pop();
         (yyval.interm.intermNode) = ir_add_loop(ELoopWhile, (yyvsp[(4) - (6)].interm.intermTypedNode), 0, (yyvsp[(6) - (6)].interm.intermNode), (yyvsp[(1) - (6)].lex).line);
@@ -5682,14 +5696,14 @@ yyreduce:
   case 241:
 
 /* Line 1455 of yacc.c  */
-#line 2103 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2118 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { ++parseContext.loopNestingLevel; ;}
     break;
 
   case 242:
 
 /* Line 1455 of yacc.c  */
-#line 2103 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2118 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.boolErrorCheck((yyvsp[(8) - (8)].lex).line, (yyvsp[(6) - (8)].interm.intermTypedNode)))
             parseContext.recover();
@@ -5702,14 +5716,14 @@ yyreduce:
   case 243:
 
 /* Line 1455 of yacc.c  */
-#line 2110 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2125 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { parseContext.symbolTable.push(); ++parseContext.loopNestingLevel; ;}
     break;
 
   case 244:
 
 /* Line 1455 of yacc.c  */
-#line 2110 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2125 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         parseContext.symbolTable.pop();
         (yyval.interm.intermNode) = ir_make_aggregate((yyvsp[(4) - (7)].interm.intermNode), (yyvsp[(2) - (7)].lex).line);
@@ -5725,7 +5739,7 @@ yyreduce:
   case 245:
 
 /* Line 1455 of yacc.c  */
-#line 2123 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2138 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode);
     ;}
@@ -5734,7 +5748,7 @@ yyreduce:
   case 246:
 
 /* Line 1455 of yacc.c  */
-#line 2126 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2141 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode);
     ;}
@@ -5743,7 +5757,7 @@ yyreduce:
   case 247:
 
 /* Line 1455 of yacc.c  */
-#line 2132 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2147 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = (yyvsp[(1) - (1)].interm.intermTypedNode);
     ;}
@@ -5752,7 +5766,7 @@ yyreduce:
   case 248:
 
 /* Line 1455 of yacc.c  */
-#line 2135 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2150 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermTypedNode) = 0;
     ;}
@@ -5761,7 +5775,7 @@ yyreduce:
   case 249:
 
 /* Line 1455 of yacc.c  */
-#line 2141 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2156 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.nodePair).node1 = (yyvsp[(1) - (2)].interm.intermTypedNode);
         (yyval.interm.nodePair).node2 = 0;
@@ -5771,7 +5785,7 @@ yyreduce:
   case 250:
 
 /* Line 1455 of yacc.c  */
-#line 2145 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2160 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.nodePair).node1 = (yyvsp[(1) - (3)].interm.intermTypedNode);
         (yyval.interm.nodePair).node2 = (yyvsp[(3) - (3)].interm.intermTypedNode);
@@ -5781,7 +5795,7 @@ yyreduce:
   case 251:
 
 /* Line 1455 of yacc.c  */
-#line 2152 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2167 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.loopNestingLevel <= 0) {
             parseContext.error((yyvsp[(1) - (2)].lex).line, "continue statement only allowed in loops", "", "");
@@ -5794,7 +5808,7 @@ yyreduce:
   case 252:
 
 /* Line 1455 of yacc.c  */
-#line 2159 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2174 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         if (parseContext.loopNestingLevel <= 0) {
             parseContext.error((yyvsp[(1) - (2)].lex).line, "break statement only allowed in loops", "", "");
@@ -5807,7 +5821,7 @@ yyreduce:
   case 253:
 
 /* Line 1455 of yacc.c  */
-#line 2166 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2181 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = ir_add_branch(EOpReturn, (yyvsp[(1) - (2)].lex).line);
         if (parseContext.currentFunctionType->getBasicType() != EbtVoid) {
@@ -5820,7 +5834,7 @@ yyreduce:
   case 254:
 
 /* Line 1455 of yacc.c  */
-#line 2173 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2188 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TIntermTyped *temp = (yyvsp[(2) - (3)].interm.intermTypedNode);
         if (parseContext.currentFunctionType->getBasicType() == EbtVoid) {
@@ -5846,7 +5860,7 @@ yyreduce:
   case 255:
 
 /* Line 1455 of yacc.c  */
-#line 2193 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2208 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		// Jim: using discard when compiling vertex shaders should not be considered a syntactic error, instead,
 		// we should issue a semantic error only if the code path is actually executed. (Not yet implemented)
@@ -5858,7 +5872,7 @@ yyreduce:
   case 256:
 
 /* Line 1455 of yacc.c  */
-#line 2204 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2219 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode);
         parseContext.treeRoot = (yyval.interm.intermNode);
@@ -5868,7 +5882,7 @@ yyreduce:
   case 257:
 
 /* Line 1455 of yacc.c  */
-#line 2208 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2223 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = ir_grow_aggregate((yyvsp[(1) - (2)].interm.intermNode), (yyvsp[(2) - (2)].interm.intermNode), gNullSourceLoc);
         parseContext.treeRoot = (yyval.interm.intermNode);
@@ -5878,7 +5892,7 @@ yyreduce:
   case 258:
 
 /* Line 1455 of yacc.c  */
-#line 2215 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2230 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermNode);
     ;}
@@ -5887,7 +5901,7 @@ yyreduce:
   case 259:
 
 /* Line 1455 of yacc.c  */
-#line 2218 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2233 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.intermNode) = (yyvsp[(1) - (1)].interm.intermDeclaration);
     ;}
@@ -5896,14 +5910,14 @@ yyreduce:
   case 260:
 
 /* Line 1455 of yacc.c  */
-#line 2221 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2236 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.intermNode) = 0; ;}
     break;
 
   case 261:
 
 /* Line 1455 of yacc.c  */
-#line 2225 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2240 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         TFunction& function = *((yyvsp[(1) - (1)].interm).function);
         TFunction* prevDec = static_cast<TFunction*>(parseContext.symbolTable.find(function.getMangledName()));
@@ -5978,7 +5992,7 @@ yyreduce:
   case 262:
 
 /* Line 1455 of yacc.c  */
-#line 2294 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2309 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //?? Check that all paths return a value if return type != void ?
         //   May be best done as post process phase on intermediate code
@@ -6001,7 +6015,7 @@ yyreduce:
   case 263:
 
 /* Line 1455 of yacc.c  */
-#line 2314 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2329 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.interm.intermTypedNode) = (yyvsp[(2) - (3)].interm.intermAggregate);
     ;}
@@ -6010,7 +6024,7 @@ yyreduce:
   case 264:
 
 /* Line 1455 of yacc.c  */
-#line 2317 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2332 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.interm.intermTypedNode) = (yyvsp[(2) - (4)].interm.intermAggregate);
     ;}
@@ -6019,7 +6033,7 @@ yyreduce:
   case 265:
 
 /* Line 1455 of yacc.c  */
-#line 2324 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2339 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //create a new aggNode
        (yyval.interm.intermAggregate) = ir_make_aggregate( (yyvsp[(1) - (1)].interm.intermTypedNode), (yyvsp[(1) - (1)].interm.intermTypedNode)->getLine());       
@@ -6029,7 +6043,7 @@ yyreduce:
   case 266:
 
 /* Line 1455 of yacc.c  */
-#line 2328 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2343 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
        //take the inherited aggNode and return it
        (yyval.interm.intermAggregate) = (yyvsp[(1) - (1)].interm.intermTypedNode)->getAsAggregate();
@@ -6039,7 +6053,7 @@ yyreduce:
   case 267:
 
 /* Line 1455 of yacc.c  */
-#line 2332 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2347 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         // append to the aggNode
        (yyval.interm.intermAggregate) = ir_grow_aggregate( (yyvsp[(1) - (3)].interm.intermAggregate), (yyvsp[(3) - (3)].interm.intermTypedNode), (yyvsp[(3) - (3)].interm.intermTypedNode)->getLine());       
@@ -6049,7 +6063,7 @@ yyreduce:
   case 268:
 
 /* Line 1455 of yacc.c  */
-#line 2336 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2351 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
        // append all children or $3 to $1
        (yyval.interm.intermAggregate) = parseContext.mergeAggregates( (yyvsp[(1) - (3)].interm.intermAggregate), (yyvsp[(3) - (3)].interm.intermTypedNode)->getAsAggregate());
@@ -6059,7 +6073,7 @@ yyreduce:
   case 269:
 
 /* Line 1455 of yacc.c  */
-#line 2343 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2358 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         //empty annotation
       (yyval.interm.ann) = 0;
@@ -6069,7 +6083,7 @@ yyreduce:
   case 270:
 
 /* Line 1455 of yacc.c  */
-#line 2347 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2362 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
       (yyval.interm.ann) = (yyvsp[(2) - (3)].interm.ann);
     ;}
@@ -6078,7 +6092,7 @@ yyreduce:
   case 271:
 
 /* Line 1455 of yacc.c  */
-#line 2353 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2368 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.interm.ann) = new TAnnotation;
 		(yyval.interm.ann)->addKey( *(yyvsp[(1) - (1)].lex).string);
@@ -6088,7 +6102,7 @@ yyreduce:
   case 272:
 
 /* Line 1455 of yacc.c  */
-#line 2357 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2372 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyvsp[(1) - (2)].interm.ann)->addKey( *(yyvsp[(2) - (2)].lex).string);
 		(yyval.interm.ann) = (yyvsp[(1) - (2)].interm.ann);
@@ -6098,7 +6112,7 @@ yyreduce:
   case 273:
 
 /* Line 1455 of yacc.c  */
-#line 2364 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2379 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.lex).string = (yyvsp[(2) - (5)].lex).string;
     ;}
@@ -6107,182 +6121,182 @@ yyreduce:
   case 274:
 
 /* Line 1455 of yacc.c  */
-#line 2370 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2385 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 275:
 
 /* Line 1455 of yacc.c  */
-#line 2371 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2386 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 276:
 
 /* Line 1455 of yacc.c  */
-#line 2372 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2387 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 277:
 
 /* Line 1455 of yacc.c  */
-#line 2373 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2388 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 278:
 
 /* Line 1455 of yacc.c  */
-#line 2374 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2389 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 279:
 
 /* Line 1455 of yacc.c  */
-#line 2375 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2390 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 280:
 
 /* Line 1455 of yacc.c  */
-#line 2376 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2391 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 281:
 
 /* Line 1455 of yacc.c  */
-#line 2377 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2392 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 282:
 
 /* Line 1455 of yacc.c  */
-#line 2378 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2393 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 283:
 
 /* Line 1455 of yacc.c  */
-#line 2379 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2394 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 284:
 
 /* Line 1455 of yacc.c  */
-#line 2380 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2395 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 285:
 
 /* Line 1455 of yacc.c  */
-#line 2381 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2396 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 286:
 
 /* Line 1455 of yacc.c  */
-#line 2382 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2397 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 287:
 
 /* Line 1455 of yacc.c  */
-#line 2383 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2398 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 288:
 
 /* Line 1455 of yacc.c  */
-#line 2384 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2399 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 289:
 
 /* Line 1455 of yacc.c  */
-#line 2385 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2400 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 290:
 
 /* Line 1455 of yacc.c  */
-#line 2386 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2401 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 291:
 
 /* Line 1455 of yacc.c  */
-#line 2387 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2402 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 292:
 
 /* Line 1455 of yacc.c  */
-#line 2388 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2403 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 293:
 
 /* Line 1455 of yacc.c  */
-#line 2389 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2404 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 294:
 
 /* Line 1455 of yacc.c  */
-#line 2390 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2405 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 295:
 
 /* Line 1455 of yacc.c  */
-#line 2394 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2409 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 296:
 
 /* Line 1455 of yacc.c  */
-#line 2395 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2410 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 297:
 
 /* Line 1455 of yacc.c  */
-#line 2396 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2411 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 298:
 
 /* Line 1455 of yacc.c  */
-#line 2397 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2412 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 299:
 
 /* Line 1455 of yacc.c  */
-#line 2401 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2416 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.lex).f = (float)(yyvsp[(1) - (1)].lex).i;
 	;}
@@ -6291,7 +6305,7 @@ yyreduce:
   case 300:
 
 /* Line 1455 of yacc.c  */
-#line 2404 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2419 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.lex).f = ((yyvsp[(1) - (1)].lex).b) ? 1.0f : 0.0f;
 	;}
@@ -6300,7 +6314,7 @@ yyreduce:
   case 301:
 
 /* Line 1455 of yacc.c  */
-#line 2407 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2422 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 		(yyval.lex).f = (yyvsp[(1) - (1)].lex).f;
 	;}
@@ -6309,35 +6323,35 @@ yyreduce:
   case 302:
 
 /* Line 1455 of yacc.c  */
-#line 2413 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2428 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 303:
 
 /* Line 1455 of yacc.c  */
-#line 2417 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2432 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 304:
 
 /* Line 1455 of yacc.c  */
-#line 2418 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2433 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 305:
 
 /* Line 1455 of yacc.c  */
-#line 2422 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2437 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {;}
     break;
 
   case 306:
 
 /* Line 1455 of yacc.c  */
-#line 2426 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2441 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
         (yyval.lex) = (yyvsp[(4) - (5)].lex);
     ;}
@@ -6346,81 +6360,79 @@ yyreduce:
   case 307:
 
 /* Line 1455 of yacc.c  */
-#line 2432 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2447 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.lex).string = (yyvsp[(2) - (2)].lex).string;;}
     break;
 
   case 308:
 
 /* Line 1455 of yacc.c  */
-#line 2436 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2451 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = 0;;}
     break;
 
   case 309:
 
 /* Line 1455 of yacc.c  */
-#line 2437 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2452 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( *(yyvsp[(1) - (1)].lex).string, 0); ;}
     break;
 
   case 310:
 
 /* Line 1455 of yacc.c  */
-#line 2438 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2453 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( "", *(yyvsp[(1) - (1)].lex).string, 0); ;}
     break;
 
   case 311:
 
 /* Line 1455 of yacc.c  */
-#line 2439 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2454 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( "", (yyvsp[(1) - (1)].interm.ann)); ;}
     break;
 
   case 312:
 
 /* Line 1455 of yacc.c  */
-#line 2440 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2455 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( *(yyvsp[(1) - (2)].lex).string, (yyvsp[(2) - (2)].interm.ann)); ;}
     break;
 
   case 313:
 
 /* Line 1455 of yacc.c  */
-#line 2441 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2456 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( *(yyvsp[(1) - (2)].lex).string, *(yyvsp[(2) - (2)].lex).string, 0); ;}
     break;
 
   case 314:
 
 /* Line 1455 of yacc.c  */
-#line 2442 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2457 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( "", *(yyvsp[(1) - (2)].lex).string, (yyvsp[(2) - (2)].interm.ann)); ;}
     break;
 
   case 315:
 
 /* Line 1455 of yacc.c  */
-#line 2443 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2458 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     { (yyval.interm.typeInfo) = new TTypeInfo( *(yyvsp[(1) - (3)].lex).string, *(yyvsp[(2) - (3)].lex).string, (yyvsp[(3) - (3)].interm.ann)); ;}
     break;
 
   case 316:
 
 /* Line 1455 of yacc.c  */
-#line 2447 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2462 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
-		TIntermConstant* constant = ir_add_constant(TType(EbtFloat, EbpUndefined, EvqConst, 1), (yyvsp[(1) - (4)].lex).line);
-		constant->setValue(0.f);
-		(yyval.interm.intermTypedNode) = constant;
+		(yyval.interm.intermTypedNode) = (yyvsp[(3) - (4)].interm.intermAggregate)
 	;}
     break;
 
   case 317:
 
 /* Line 1455 of yacc.c  */
-#line 2452 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2465 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
     {
 	;}
     break;
@@ -6428,63 +6440,82 @@ yyreduce:
   case 318:
 
 /* Line 1455 of yacc.c  */
-#line 2457 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    { ;}
+#line 2470 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    { 
+		TIntermAggregate* paramNodes = new TIntermAggregate;
+		paramNodes->getNodes().push_back((yyvsp[(1) - (1)].interm.intermNode));
+		(yyval.interm.intermAggregate) = paramNodes;
+	;}
     break;
 
   case 319:
 
 /* Line 1455 of yacc.c  */
-#line 2458 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    { ;}
+#line 2475 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    { 
+		(yyvsp[(1) - (2)].interm.intermAggregate)->getNodes().push_back((yyvsp[(2) - (2)].interm.intermNode));
+		(yyval.interm.intermAggregate) = (yyvsp[(1) - (2)].interm.intermAggregate);
+	;}
     break;
 
   case 320:
 
 /* Line 1455 of yacc.c  */
-#line 2462 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2482 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem(*(yyvsp[(1) - (4)].lex).string,*(yyvsp[(3) - (4)].lex).string);
+	;}
     break;
 
   case 321:
 
 /* Line 1455 of yacc.c  */
-#line 2463 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2485 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem(*(yyvsp[(1) - (6)].lex).string,*(yyvsp[(4) - (6)].lex).string);
+	;}
     break;
 
   case 322:
 
 /* Line 1455 of yacc.c  */
-#line 2464 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2488 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem(*(yyvsp[(1) - (6)].lex).string,*(yyvsp[(4) - (6)].lex).string);
+	;}
     break;
 
   case 323:
 
 /* Line 1455 of yacc.c  */
-#line 2465 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2491 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem("texture",*(yyvsp[(3) - (4)].lex).string);
+	;}
     break;
 
   case 324:
 
 /* Line 1455 of yacc.c  */
-#line 2466 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2494 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem("texture",*(yyvsp[(4) - (6)].lex).string);
+	;}
     break;
 
   case 325:
 
 /* Line 1455 of yacc.c  */
-#line 2467 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
-    {;}
+#line 2497 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+    {
+		(yyval.interm.intermNode) = new TIntermInitItem("texture",*(yyvsp[(4) - (6)].lex).string);
+	;}
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 6488 "hlslang.tab.c"
+#line 6519 "hlslang.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -6696,6 +6727,6 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 2470 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
+#line 2502 "F:/GitRepos/NPLRuntime/NPLRuntime/externals/hlsl2glslfork/hlslang/MachineIndependent/hlslang.y"
 
 

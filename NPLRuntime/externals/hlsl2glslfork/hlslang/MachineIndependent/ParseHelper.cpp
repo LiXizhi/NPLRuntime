@@ -1226,7 +1226,28 @@ bool TParseContext::executeInitializer(TSourceLoc line, TString& identifier, con
 {
 	AdjustTypeQualifier (pType);
 
+
+
+
+	if (pType.type > EbtGuardSamplerBegin && pType.type < EbtGuardSamplerEnd
+		&& initializer != NULL && pType.qualifier == EvqUniform)
+	{
+		TIntermSymbol* intermSymbol = ir_add_symbol(variable, line);
+		intermNode = intermSymbol;
+		if (intermNode != NULL)
+		{
+			intermNode->SetConstValue(initializer);
+		}
+		else {
+			return true;
+		}
+
+		return false;
+	}
+
+
 	TType type = TType(pType);
+
 	if (variable == 0)
 	{
 		if (reservedErrorCheck(line, identifier))
@@ -1360,6 +1381,11 @@ bool TParseContext::executeInitializer(TSourceLoc line, TString& identifier, con
 
 	TIntermSymbol* intermSymbol = ir_add_symbol(variable, line);
 	intermNode = intermSymbol;
+
+
+
+
+
 	return false;
 }
 
