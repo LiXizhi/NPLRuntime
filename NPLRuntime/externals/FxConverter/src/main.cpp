@@ -194,20 +194,20 @@ bool hlsl2glsl(const std::string& inCode,
 	}
 	outCode = Hlsl2Glsl_GetShader(parser);
 
-	// remove #line and #version
-	std::stringstream outss;
-	std::istringstream iss(outCode);
-	char buf[1024] = { 0 };
-	while (iss.getline(buf, sizeof(buf))) {
-		std::string line(buf);
-		if (line.find("#line ") != std::string::npos ||
-			line.find("#version ") != std::string::npos)
-		{
-			continue;
-		}
-		outss << line << std::endl;
-	}
-	outCode = outss.str();
+	//// remove #line and #version
+	//std::stringstream outss;
+	//std::istringstream iss(outCode);
+	//char buf[1024] = { 0 };
+	//while (iss.getline(buf, sizeof(buf))) {
+	//	std::string line(buf);
+	//	if (line.find("#line ") != std::string::npos ||
+	//		line.find("#version ") != std::string::npos)
+	//	{
+	//		continue;
+	//	}
+	//	outss << line << std::endl;
+	//}
+	//outCode = outss.str();
 
 	GetUniforms(parser, uniforms);
 	Hlsl2Glsl_DestructCompiler(parser);
@@ -279,6 +279,12 @@ int main(int argc, const char** argv)
 				delete fxDesc;
 				return 1;
 			}
+
+			std::cout << "Vertex Shader GLSL Code" << std::endl;
+			std::cout << "===============================================" << std::endl;
+			std::cout << vscode << std::endl;
+
+
 			ret = hlsl2glsl(codeblock, ps_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms, error);
 			if (!ret || pscode == "")
 			{
@@ -286,6 +292,10 @@ int main(int argc, const char** argv)
 				delete fxDesc;
 				return 1;
 			}
+
+			std::cout << "Pixel Shader GLSL Code" << std::endl;
+			std::cout << "===============================================" << std::endl;
+			std::cout << pscode << std::endl;
 		}
 	}
 	std::cout << "Uniforms:" << std::endl;

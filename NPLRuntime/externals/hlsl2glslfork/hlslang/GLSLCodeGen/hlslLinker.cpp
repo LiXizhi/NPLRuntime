@@ -1596,7 +1596,7 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 	EShLanguage lang = compiler->getLanguage();
 	std::string entryPoint = GetEntryName (entryFunc);
 	
-	
+
 	// figure out all relevant functions
 	GlslFunction* globalFunction = NULL;
 	std::vector<GlslFunction*> functionList;
@@ -1732,6 +1732,9 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 			shaderPrefix << "#extension " << *it << " : require" << std::endl;
 	}
 
+
+	
+
 	EmitIfNotEmpty (shader, uniform);
 	EmitIfNotEmpty (shader, attrib);
 	EmitIfNotEmpty (shader, varying);
@@ -1739,6 +1742,9 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 	shader << preamble.str() << "\n";
 	shader << call.str() << "\n";
 	shader << postamble.str() << "\n";
+
+
+	
 
 	return true;
 }

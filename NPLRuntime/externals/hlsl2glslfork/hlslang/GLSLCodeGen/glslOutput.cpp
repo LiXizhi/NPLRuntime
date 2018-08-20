@@ -592,10 +592,14 @@ void TGlslOutputTraverser::traverseSymbol(TIntermSymbol *node, TIntermTraverser 
 			}
 		}
 	}
+	// Skip texture
+	if (node->getType().getBasicType() != EbtTexture)
+	{
+		// If we're at the global scope, emit the non-mutable names of uniforms.
+		bool globalScope = current == goit->global;
+		out << current->getSymbol(node->getId()).getName(!globalScope);
+	}
 
-	// If we're at the global scope, emit the non-mutable names of uniforms.
-	bool globalScope = current == goit->global;
-	out << current->getSymbol(node->getId()).getName(!globalScope);
 }
 
 
