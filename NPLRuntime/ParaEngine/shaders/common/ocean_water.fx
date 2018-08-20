@@ -44,9 +44,9 @@ const float2 g_textureScale = {0.08,0.08};
 
 bool g_bUseBumpMap	:boolean0;
 
-texture tex0 : TEXTURE; 
+texture tex0 :TEXTURE0;
 // reflection map
-sampler reflectionSampler:TEXTURE0 = sampler_state 
+sampler reflectionSampler = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -57,9 +57,9 @@ sampler reflectionSampler:TEXTURE0 = sampler_state
 };
 
 
-texture tex1 : TEXTURE; 
+texture tex1 :TEXTURE1;
 // normal map
-sampler normalSampler:TEXTURE1 = sampler_state 
+sampler normalSampler = sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        

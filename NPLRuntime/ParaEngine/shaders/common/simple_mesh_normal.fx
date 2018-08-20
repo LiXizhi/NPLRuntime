@@ -41,22 +41,22 @@ float2 g_TexScale		:ConstVector2 = {1.0f, 1.0f};
 float g_opacity			:opacity = 1.f; 
 
 // texture 0
-texture tex0 : TEXTURE; 
-sampler tex0Sampler : TEXTURE0 = sampler_state 
+texture tex0 : TEXTURE0; 
+sampler tex0Sampler = sampler_state 
 {
     texture = <tex0>;
 };
 
 // texture 1 for reflection or normal map 
-texture tex1 : TEXTURE; 
-sampler tex1Sampler : TEXTURE1 = sampler_state 
+texture tex1 : TEXTURE1; 
+sampler tex1Sampler = sampler_state 
 {
     texture = <tex1>;
 };
 
 // cubic environment map.
-texture tex2 : TEXTURE; 
-samplerCUBE texCubeSampler : TEXTURE2 = sampler_state 
+texture tex2 : TEXTURE2; 
+samplerCUBE texCubeSampler = sampler_state 
 {
     texture = <tex2>;
 };

@@ -23,8 +23,8 @@ float time	: time;
 float3 texCoordOffset : texCoordOffset;
 
 //normal map
-Texture tex0 : TEXTURE;
-sampler2D tex0Sampler  :TEXTURE0 = sampler_state{
+Texture tex0 : TEXTURE0;
+sampler2D tex0Sampler   = sampler_state{
 	texture = <tex0>;
 	mipfilter = linear;
 	minfilter = linear;

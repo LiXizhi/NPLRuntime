@@ -29,9 +29,9 @@ const float4 g_bumpSpeed : ConstVector3;// default is {-0.02, 0.0};
 const float2 g_textureScale = {0.08,0.08};
 //const float2 g_textureScale = {0.16,0.16};
 
-texture tex0 : TEXTURE; 
+texture tex0  : TEXTURE0;
 // reflection map
-sampler reflectionSampler : TEXTURE0 = sampler_state 
+sampler reflectionSampler = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -42,9 +42,9 @@ sampler reflectionSampler : TEXTURE0 = sampler_state
 };
 
 
-texture tex1 : TEXTURE; 
+texture tex1  : TEXTURE1;
 // normal map
-sampler normalSampler  : TEXTURE1= sampler_state 
+sampler normalSampler = sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        

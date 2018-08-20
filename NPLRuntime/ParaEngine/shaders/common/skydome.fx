@@ -32,8 +32,8 @@ float cloudThickness:cloudThickness= 1; //control cloud thickness, 0 means no cl
 float sunsetGlowWeight:sunsetGlowWeight; //to control how much sunset glow you want. This value should usually equals to normalized y position of the sun.
 
 // texture 0
-texture tex0 : TEXTURE; 
-sampler sunsetGlowSpl : TEXTURE0 = sampler_state 
+texture tex0 : TEXTURE0; 
+sampler sunsetGlowSpl = sampler_state 
 {
     texture = <tex0>;
     MinFilter = Linear;
@@ -44,8 +44,8 @@ sampler sunsetGlowSpl : TEXTURE0 = sampler_state
 };
 
 // texture 1
-texture tex1 : TEXTURE; 
-sampler cloudSampler : TEXTURE1 = sampler_state 
+texture tex1 : TEXTURE1; 
+sampler cloudSampler = sampler_state 
 {
     texture = <tex1>;
     MinFilter = Linear;

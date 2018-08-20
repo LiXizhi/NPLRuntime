@@ -77,6 +77,9 @@ namespace ParaEngine
 
 		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) override;
 
+
+		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture* texture) override;
+
 	protected:
 		void ApplyBlendingModeChange();
 		void InitCpas();

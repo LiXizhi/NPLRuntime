@@ -31,8 +31,8 @@ float3 g_EyePositionW	:worldcamerapos;
 //bool g_bNormalMap		:boolean6;
 
 // texture 0
-texture tex0 : TEXTURE; 
-sampler tex0Sampler : TEXTURE0 = sampler_state 
+texture tex0 : TEXTURE0; 
+sampler tex0Sampler = sampler_state 
 {
     texture = <tex0>;
 };

@@ -926,8 +926,17 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 				intptr_t* ptr = (intptr_t*)cmd.data;
 				IParaEngine::ITexture* texture = (IParaEngine::ITexture*)*ptr;
 				TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
-				glActiveTexture(GL_TEXTURE0 + slot);
-				glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+				if (tex != nullptr)
+				{
+					glActiveTexture(GL_TEXTURE0 + slot);
+					glEnable(GL_TEXTURE_2D);
+					glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+				}
+				else {
+					glActiveTexture(GL_TEXTURE0 + slot);
+					glDisable(GL_TEXTURE_2D);
+				}
+
 			}
 			else {
 				return false;

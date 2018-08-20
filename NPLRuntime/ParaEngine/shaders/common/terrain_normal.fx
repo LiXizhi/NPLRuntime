@@ -48,8 +48,8 @@ float2	g_shadowFactor :shadowfactor = float2(0.35,0.65);
 
 
 // texture 0
-texture AlphaTex0 : TEXTURE; 
-sampler AlphaTex0Sampler : TEXTURE0 = sampler_state 
+texture AlphaTex0 : TEXTURE0; 
+sampler AlphaTex0Sampler = sampler_state 
 {
     texture = <AlphaTex0>;
     MinFilter = Linear;  
@@ -60,8 +60,8 @@ sampler AlphaTex0Sampler : TEXTURE0 = sampler_state
 };
 
 // texture 1
-texture DetailTex1 : TEXTURE; 
-sampler DetailTex1Sampler: TEXTURE1 = sampler_state 
+texture DetailTex1 : TEXTURE1; 
+sampler DetailTex1Sampler = sampler_state 
 {
     texture = <DetailTex1>;
     MinFilter = Linear;  
@@ -72,8 +72,8 @@ sampler DetailTex1Sampler: TEXTURE1 = sampler_state
 };
 
 // texture 2
-texture ShadowMap2 : TEXTURE; 
-sampler ShadowMapSampler: TEXTURE2 = sampler_state 
+texture ShadowMap2 : TEXTURE2; 
+sampler ShadowMapSampler = sampler_state 
 {
     texture = <ShadowMap2>;
     MinFilter = Linear;  
@@ -85,8 +85,8 @@ sampler ShadowMapSampler: TEXTURE2 = sampler_state
 };
 
 // texture 3
-texture AlphaTex3 : TEXTURE; 
-sampler AlphaTex3Sampler : TEXTURE3= sampler_state 
+texture AlphaTex3 : TEXTURE3; 
+sampler AlphaTex3Sampler= sampler_state 
 {
     texture = <AlphaTex3>;
     MinFilter = Linear;  
@@ -97,8 +97,8 @@ sampler AlphaTex3Sampler : TEXTURE3= sampler_state
 };
 
 // texture 4
-texture DetailTex4 : TEXTURE; 
-sampler DetailTex4Sampler : TEXTURE4= sampler_state 
+texture DetailTex4 : TEXTURE4; 
+sampler DetailTex4Sampler= sampler_state 
 {
     texture = <DetailTex4>;
     MinFilter = Linear;  
@@ -109,8 +109,8 @@ sampler DetailTex4Sampler : TEXTURE4= sampler_state
 };
 
 // texture 5
-texture AlphaTex5 : TEXTURE; 
-sampler AlphaTex5Sampler : TEXTURE5= sampler_state 
+texture AlphaTex5 : TEXTURE5; 
+sampler AlphaTex5Sampler= sampler_state 
 {
     texture = <AlphaTex5>;
     MinFilter = Linear;  
@@ -121,8 +121,8 @@ sampler AlphaTex5Sampler : TEXTURE5= sampler_state
 };
 
 // texture 6
-texture DetailTex6 : TEXTURE; 
-sampler DetailTex6Sampler : TEXTURE6= sampler_state 
+texture DetailTex6 : TEXTURE6; 
+sampler DetailTex6Sampler= sampler_state 
 {
     texture = <DetailTex6>;
     MinFilter = Linear;  
@@ -132,8 +132,8 @@ sampler DetailTex6Sampler : TEXTURE6= sampler_state
     AddressV  = wrap;
 };
 // texture 7
-texture BaseTex7 : TEXTURE; 
-sampler BaseTex7Sampler : TEXTURE7= sampler_state 
+texture BaseTex7 : TEXTURE7; 
+sampler BaseTex7Sampler= sampler_state 
 {
 	texture = <BaseTex7>;
 	MinFilter = Linear;  

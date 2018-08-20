@@ -27,15 +27,15 @@ bool g_bEnableFog		:fogenable;
 float3 g_EyePositionW	:worldcamerapos;
 
 // texture 0
-texture tex0 : TEXTURE; 
-sampler tex0Sampler :TEXTURE0 = sampler_state 
+texture tex0 : TEXTURE0;
+sampler tex0Sampler = sampler_state 
 {
     texture = <tex0>;
 };
 
 // texture 1 for reflection or normal map 
-texture tex1 : TEXTURE; 
-sampler tex1Sampler : TEXTURE1 = sampler_state 
+texture tex1 : TEXTURE1; 
+sampler tex1Sampler = sampler_state 
 {
     texture = <tex1>;
 };

@@ -34,22 +34,22 @@ float g_bReflectFactor	:reflectfactor;
 float2	g_shadwoFactor :shadowfactor = float2(0.35,0.65);
 
 // texture 0
-texture tex0 : TEXTURE; 
-sampler tex0Sampler : TEXTURE0 = sampler_state 
+texture tex0 : TEXTURE0; 
+sampler tex0Sampler = sampler_state 
 {
     texture = <tex0>;
 };
 
 // texture 1 for reflection or normal map 
-texture tex1 : TEXTURE; 
-sampler tex1Sampler : TEXTURE1 = sampler_state 
+texture tex1 : TEXTURE1; 
+sampler tex1Sampler = sampler_state 
 {
     texture = <tex1>;
 };
 
 // texture 2
-texture ShadowMap2 : TEXTURE; 
-sampler ShadowMapSampler: register(s2) = sampler_state 
+texture ShadowMap2 : TEXTURE2; 
+sampler ShadowMapSampler= sampler_state 
 {
     texture = <ShadowMap2>;
     MinFilter = Linear;  

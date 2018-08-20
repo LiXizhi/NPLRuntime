@@ -24,9 +24,8 @@ bool g_bEnableFog		:fogenable;
 float4   g_fogParam : fogparameters; // (fogstart, fogrange, fogDensity, reserved)
 float4   g_fogColor : fogColor;
 float4x4 mWorld: world;
-
-texture tex0;
-sampler tex0Sampler: TEXTURE0 = sampler_state 
+texture tex0: TEXTURE0;
+sampler tex0Sampler = sampler_state 
 {
 	Texture = <tex0>;
 };

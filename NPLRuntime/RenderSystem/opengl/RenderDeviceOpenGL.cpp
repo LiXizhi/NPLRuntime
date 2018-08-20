@@ -461,6 +461,27 @@ bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, 
 	return true;
 }
 
+
+bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITexture* texture)
+{
+	if (texture != nullptr)
+	{
+		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+	}
+	else {
+		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glDisable(GL_TEXTURE_2D);
+	}
+
+
+
+	return true;
+}
+
 bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl)
 {
 	CVertexDeclaration* pDecl = new CVertexDeclaration(pVertexElements);

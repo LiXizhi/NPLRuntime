@@ -13,8 +13,8 @@ const float2 TexelIncrements : ConstVector0;
 
 
 // texture 0
-texture GlowMap0 : TEXTURE; 
-sampler GlowSamp1 : TEXTURE0 = sampler_state 
+texture GlowMap0 : TEXTURE0;
+sampler GlowSamp1  = sampler_state 
 {
     texture = <GlowMap0>;
     AddressU  = CLAMP;        

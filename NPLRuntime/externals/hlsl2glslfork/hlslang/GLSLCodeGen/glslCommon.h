@@ -35,7 +35,6 @@ enum EGlslSymbolType
    EgstFloat4x2,
    EgstFloat4x3,
    EgstFloat4x4,
-   EgstTexture,
    EgstSamplerGeneric,
    EgstSampler1D,
    EgstSampler1DShadow,
@@ -47,6 +46,7 @@ enum EGlslSymbolType
    EgstSamplerRectShadow,
    EgstSampler2DArray,
    EgstStruct,
+   EgstTexture,
    EgstTypeCount
 };
 

@@ -26,8 +26,8 @@ const float2 g_bumpSpeed = {-1, 0.0};
 // since the ocean size is 100, texture scale has to be 0.01*n, where n is integer.
 const float2 g_textureScale = {0.01,0.01};
 
-texture tex0 : TEXTURE; 
-sampler sunsetGlowSpl : TEXTURE0 = sampler_state 
+texture tex0  : TEXTURE0;
+sampler sunsetGlowSpl = sampler_state 
 {
     texture = <tex0>;
     AddressU  = clamp;        
@@ -38,9 +38,9 @@ sampler sunsetGlowSpl : TEXTURE0 = sampler_state
 };
 
 
-texture tex1 : TEXTURE; 
+texture tex1  : TEXTURE1;
 // cloud map
-sampler cloudSampler : TEXTURE1 = sampler_state 
+sampler cloudSampler = sampler_state 
 {
     texture = <tex1>;
     AddressU  = wrap;        
