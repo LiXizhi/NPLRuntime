@@ -10,6 +10,8 @@
 #include "ParseHelper.h"
 #include "texture/TextureOpenGL.h"
 
+#include <cassert>
+
 using namespace ParaEngine;
 using namespace IParaEngine;
 
@@ -40,6 +42,7 @@ namespace ParaEngine
 		int Elements;
 		char* initValue;
 		int initValueSize;
+		std::vector<std::tuple<std::string, std::string>> initializer;
 		bool operator == (const UniformInfoGL& r)
 		{
 			return r.name == this->name;
@@ -49,6 +52,83 @@ namespace ParaEngine
 			return r.name != this->name;
 		}
 	};
+
+	struct SamplerInitialzerInfo
+	{
+		std::string TextureName;
+		ETextureFilter MinFilter;
+		ETextureFilter MagFilter;
+		ETextureFilter MipFilter;
+		ETextureWrapMode AddressU;
+		ETextureWrapMode AddressV;
+		uint32_t BorderColor;
+
+		SamplerInitialzerInfo()
+		{
+			MinFilter = ETextureFilter::Linear;
+			MagFilter = ETextureFilter::Linear;
+			MipFilter = ETextureFilter::Point;
+			AddressU = ETextureWrapMode::Clamp;
+			AddressV = ETextureWrapMode::Clamp;
+			BorderColor = 0;
+		}
+	};
+}
+
+
+inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std::tuple<std::string, std::string>> initializer)
+{
+	for (std::tuple<std::string, std::string> kv: initializer)
+	{
+		std::string key = std::get<0>(kv);
+		std::string value = std::get<1>(kv);
+		if (key == "texture")
+		{
+			info.TextureName = value;
+		}else if (key == "MinFilter" || key == "MagFilter" || key == "MipFilter")
+		{
+			ETextureFilter filter = ETextureFilter::Point;
+			if (value == "Linear")
+			{
+				filter = ETextureFilter::Linear;
+			}
+	
+
+			if (key == "MinFilter")
+			{
+				info.MinFilter = filter;
+			}else if (key == "MagFilter")
+			{
+				info.MagFilter = filter;
+			}
+			else if (key == "MipFilter")
+			{
+				info.MipFilter = filter;
+			}
+		}else if (key == "AddressU" || key == "AddressV")
+		{
+			ETextureWrapMode warpMode = ETextureWrapMode::Clamp;
+			if (value == "WRAP")
+			{
+				warpMode = ETextureWrapMode::Repeat;
+			}else if (value == "BORDER")
+			{
+				warpMode = ETextureWrapMode::Border;
+			}
+			if (key == "AddressU")
+			{
+				info.AddressU = warpMode;
+			}else if (key == "AddressV")
+			{
+				info.AddressV = warpMode;
+			}
+		}
+		else if (key == "BorderColor")
+		{
+			info.BorderColor = stoi(value);
+		}
+	}
+	return true;
 }
 
 
@@ -70,6 +150,7 @@ inline void GetUniforms(ShHandle parser, std::vector<UniformInfoGL>& uniforms)
 			info.Elements = uni[i].arraySize;
 			info.initValue = nullptr;
 			info.initValueSize = 0;
+			info.initializer = uni[i].initializer;
 			if (std::find(uniforms.begin(), uniforms.end(), info) == uniforms.end()) {
 				
 
@@ -263,7 +344,7 @@ bool hlsl2glsl(const std::string& inCode,
 
 
 
-inline void make_update_parameter_cmd(const ParameterHandle &handle, const void* data, const uint32_t size, UpdateParmeterCommand* pOutCmd)
+inline void make_update_parameter_cmd(const ParameterHandle &handle, const void* data, const uint32_t size, ParmeterValueCache* pOutCmd)
 {
 	if (!pOutCmd)return;
 	pOutCmd->data = nullptr;
@@ -279,7 +360,7 @@ inline void make_update_parameter_cmd(const ParameterHandle &handle, const void*
 	pOutCmd->size = size;
 }
 
-inline void free_update_parameter_cmd(UpdateParmeterCommand& cmd)
+inline void free_update_parameter_cmd(ParmeterValueCache& cmd)
 {
 	if (cmd.data && cmd.size > 0)
 	{
@@ -340,7 +421,7 @@ ParaEngine::EffectOpenGL::EffectOpenGL()
 	, m_IsBeginPass(false)
 {
 	memset(m_ShaderPrograms, 0, sizeof(m_ShaderPrograms));
-	memset(m_ParameterCommands, 0, sizeof(m_ParameterCommands));
+	memset(m_ParametersValueCache, 0, sizeof(m_ParametersValueCache));
 	m_CurrentTechniqueHandle.idx = PARA_INVALID_HANDLE;
 }
 
@@ -470,11 +551,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 		UniformInfoGL info = uniforms[i];
 
 		// texture slot
-		if (info.type == EShType::EShTypeSampler ||
-			info.type == EShType::EShTypeSampler1D ||
-			info.type == EShType::EShTypeSampler2D ||
-			info.type == EShType::EShTypeSampler3D ||
-			info.type == EShType::EShTypeSamplerCube)
+		if (info.type == EShType::EshTypeTexture)
 		{
 			int nSlots = pRet->m_TextureSlotMap.size();
 			pRet->m_TextureSlotMap[info.name] = nSlots;
@@ -492,7 +569,23 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 		{
 			pRet->SetRawValue(info.name.c_str(),info.initValue,0, info.initValueSize);
 		}
-
+		if (info.type == EShType::EShTypeSampler ||
+			info.type == EShType::EShTypeSampler1D ||
+			info.type == EShType::EShTypeSampler2D ||
+			info.type == EShType::EShTypeSampler3D ||
+			info.type == EShType::EShTypeSamplerCube)
+		{
+			SamplerInitialzerInfo initializer;
+			if (ParseSamplerInitializer(initializer, info.initializer))
+			{
+				pRet->m_Texture2SamplerMap[initializer.TextureName] = info.name;
+				pRet->m_SamplersInfo[info.name] = initializer;
+			}
+			else {
+				glUseProgram(0);
+				return nullptr;
+			}
+		}
 	}
 
 	glUseProgram(0);
@@ -598,26 +691,27 @@ bool ParaEngine::EffectOpenGL::GetParameterDesc(const IParaEngine::ParameterHand
 		pOutDesc->Type = EParameterType::PT_FLOAT4x4;
 		break;
 	case EShTypeSampler:
-		pOutDesc->Type = EParameterType::PT_TEXTURE;
+		pOutDesc->Type = EParameterType::PT_SAMPLER;
 		break;
 	case EShTypeSampler1D:
-		pOutDesc->Type = EParameterType::PT_TEXTURE1D;
+		pOutDesc->Type = EParameterType::PT_SAMPLER1D;
 		break;
 	case EShTypeSampler2D:
-		pOutDesc->Type = EParameterType::PT_TEXTURE2D;
+		pOutDesc->Type = EParameterType::PT_SAMPLER2D;
 		break;
 	case EShTypeSampler3D:
-		pOutDesc->Type = EParameterType::PT_TEXTURE3D;
+		pOutDesc->Type = EParameterType::PT_SAMPLER3D;
 		break;
 	case EShTypeSamplerCube:
-		pOutDesc->Type = EParameterType::PT_TEXTURECUBE;
+		pOutDesc->Type = EParameterType::PT_SAMPLERCUBE;
+		break;
+	case EshTypeTexture:
+		pOutDesc->Type = EParameterType::PT_TEXTURE;
 		break;
 	case EShTypeStruct:
 		pOutDesc->Type = EParameterType::PT_STRUCT;
 		break;
 	}
-
-
 	return true;
 }
 
@@ -682,14 +776,18 @@ bool ParaEngine::EffectOpenGL::SetTexture(const ParameterHandle& handle, IParaEn
 
 bool ParaEngine::EffectOpenGL::SetRawValue(const ParameterHandle& handle, const void* data, uint32_t offset, uint32_t size)
 {
+
+
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_Uniforms.size()) return false;
 	if (!data || size == 0)return false;
 
-	UpdateParmeterCommand cmd;
+
+
+	ParmeterValueCache cmd;
 	make_update_parameter_cmd(handle, data, size, &cmd);
-	free_update_parameter_cmd(m_ParameterCommands[handle.idx]);
-	m_ParameterCommands[handle.idx] = cmd;
+	free_update_parameter_cmd(m_ParametersValueCache[handle.idx]);
+	m_ParametersValueCache[handle.idx] = cmd;
 	return  true;
 }
 
@@ -801,21 +899,39 @@ IParaEngine::TechniqueHandle ParaEngine::EffectOpenGL::GetCurrentTechnique()
 bool ParaEngine::EffectOpenGL::CommitChanges()
 {
 
-	if (!m_IsBeginTechnique) return false;
-	if (!m_IsBeginPass) return false;
+	if (!m_IsBeginTechnique) {
+		assert(false);
+		return false;
+	}
+	if (!m_IsBeginPass)
+	{
+		assert(false);
+		return false;
+	}
 
 	int nUniforms = m_Uniforms.size();
 	for (int i = 0; i < nUniforms; i++)
 	{
-		UpdateParmeterCommand cmd = m_ParameterCommands[i];
+		ParmeterValueCache cmd = m_ParametersValueCache[i];
 		if (!isValidHandle(cmd.handle)) continue;
 		if (cmd.handle.idx != i) continue;
 		if (cmd.data == nullptr) continue;
 		if (cmd.size == 0) continue;
 		UniformInfoGL uniform = m_Uniforms[i];
 		GLuint program = m_ShaderPrograms[m_CurrentTechniqueHandle.idx][m_CurrentPass];
-		const GLchar* name = uniform.name.c_str();
-		GLint location = glGetUniformLocation(program, name);
+		std::string name  = uniform.name.c_str();
+		if (uniform.type == EshTypeTexture)
+		{
+			auto it = m_Texture2SamplerMap.find(name);
+			if (it == m_Texture2SamplerMap.end()) {
+				assert(false);
+				return false;
+			}
+			name = it->second;
+		}
+
+
+		GLint location = glGetUniformLocation(program, name.c_str());
 		switch (uniform.type)
 		{
 		case EShTypeBool:
@@ -913,13 +1029,9 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			glUniformMatrix4fv(location, uniform.Elements + 1, GL_FALSE, value);
 			break;
 		}
-		case EShTypeSampler:
-		case EShTypeSampler1D:
-		case EShTypeSampler2D:
-		case EShTypeSampler3D:
-		case EShTypeSamplerCube:
+		case EshTypeTexture:
 		{
-			auto it = m_TextureSlotMap.find(name);
+			auto it = m_TextureSlotMap.find(uniform.name);
 			if (it != m_TextureSlotMap.end())
 			{
 				GLuint slot = it->second;
@@ -929,21 +1041,23 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 				if (tex != nullptr)
 				{
 					glActiveTexture(GL_TEXTURE0 + slot);
-					glEnable(GL_TEXTURE_2D);
+					//glEnable(GL_TEXTURE_2D);
 					glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
 				}
 				else {
-					glActiveTexture(GL_TEXTURE0 + slot);
-					glDisable(GL_TEXTURE_2D);
+					//glActiveTexture(GL_TEXTURE0 + slot);
+					//glDisable(GL_TEXTURE_2D);
 				}
 
 			}
 			else {
+				assert(false);
 				return false;
 			}
 			break;
 		}
 		default:
+			assert(false);
 			return false;
 		}
 
@@ -1089,13 +1203,17 @@ void ParaEngine::EffectOpenGL::ApplyRenderState(const EffectRenderState& rs)
 bool ParaEngine::EffectOpenGL::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)
 {
 	auto handle = GetParameterByName(name);
-	return SetRawValue(handle, data, offset, size);
+	bool ret= SetRawValue(handle, data, offset, size);
+	assert(ret);
+	return ret;
 }
 
 bool ParaEngine::EffectOpenGL::SetTexture(const char* name, IParaEngine::ITexture* texture)
 {
 	auto handle = GetParameterByName(name);
-	return SetTexture(handle, texture);
+	bool ret = SetTexture(handle, texture);
+	assert(ret);
+	return ret;
 }
 
 bool EffectOpenGL::SetTechnique(const TechniqueHandle& handle)

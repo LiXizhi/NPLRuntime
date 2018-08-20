@@ -529,7 +529,11 @@ bool CEffectFileImpl::setTextureInternal(int index, ITexture* pTex)
 		// so that they map to s0,s15 in the written order in the compiled shader code. 
 		return m_pEffect->SetTexture(m_paramHandle[k_tex0+index],pTex);
 	}
-	return true;
+	else {
+		return true;
+	}
+	assert(false);
+	return false;
 }
 
 bool CEffectFileImpl::begin(bool bApplyParam,bool bForceBegin)

@@ -27,7 +27,7 @@ float4x4 mWorld: world;
 texture tex0: TEXTURE0;
 sampler tex0Sampler = sampler_state 
 {
-	Texture = <tex0>;
+	texture = <tex0>;
 };
 
 struct SimpleVSOut

@@ -1,6 +1,6 @@
 
 // texture 0
-texture tex0;
+texture tex0 : TEXTURE0;
 sampler ColorTextureSampler = sampler_state 
 {
     texture = <tex0>;

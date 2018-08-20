@@ -138,6 +138,7 @@ namespace ParaEngine
 	{
 		Clamp,
 		Repeat,
+		Border
 	};
 
 	enum class MultiSampleType

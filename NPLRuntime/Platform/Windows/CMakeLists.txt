@@ -1,5 +1,6 @@
 include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
+set(ThisTarget Paracraft)
 
 set(src_render_context)
 
@@ -37,12 +38,12 @@ if (PARAENGINE_COMPILE_LIB)
 		set(NPLRUNTIME_LIB_MODE "SHARED")
 	endif()
 
-	add_library(WindowsApplication ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
+	add_library(${ThisTarget} ${NPLRUNTIME_LIB_MODE} ${src_platform} ${src_render_context} ${src_framework})
 else()
-	add_executable(WindowsApplication ${src_platform} ${src_render_context} ${src_framework})
+	add_executable(${ThisTarget} ${src_platform} ${src_render_context} ${src_framework})
 endif()
 
-target_compile_definitions(WindowsApplication PRIVATE 
+target_compile_definitions(${ThisTarget} PRIVATE 
     PLATFORM_WINDOWS
     USE_WINDOWS_SSPI
     WIN32_LEAN_AND_MEAN
@@ -50,7 +51,7 @@ target_compile_definitions(WindowsApplication PRIVATE
     _WINSOCK_DEPRECATED_NO_WARNINGS
 )
 
-target_link_libraries(WindowsApplication PRIVATE
+target_link_libraries(${ThisTarget} PRIVATE
     ${RenderSystem}
     ParaEngine
     gdiplus.lib
@@ -70,9 +71,9 @@ target_link_libraries(WindowsApplication PRIVATE
     Wldap32
 )
 
-target_include_directories(WindowsApplication PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(${ThisTarget} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set_target_properties(WindowsApplication PROPERTIES WIN32_EXECUTABLE true)
+set_target_properties(${ThisTarget} PROPERTIES WIN32_EXECUTABLE true)
 
 if(MSVC)
     ucm_set_runtime(STATIC)
@@ -83,12 +84,18 @@ if(MSVC)
     SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /MP")
 endif()
 
-set_property(GLOBAL PROPERTY WindowsApplicationName WindowsApplication)
+set_property(GLOBAL PROPERTY WindowsApplicationName ${ThisTarget})
 
 # Copy files Link the executable to the libraries. 
 ADD_CUSTOM_COMMAND(
-   TARGET WindowsApplication
+   TARGET ${ThisTarget}
    POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E make_directory ${OUTPUT_BIN_DIR}
-   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:WindowsApplication> ${OUTPUT_BIN_DIR}
+   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${ThisTarget}> ${OUTPUT_BIN_DIR}
+)
+set(Paracraft_Install_Dir Bin CACHE PATH "")
+
+install(TARGETS ${ThisTarget}
+	ARCHIVE DESTINATION ${Paracraft_Install_Dir}
+	RUNTIME DESTINATION ${Paracraft_Install_Dir}
 )

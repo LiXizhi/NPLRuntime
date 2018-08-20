@@ -2497,6 +2497,9 @@ sampler_init_item
 	| TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON {
 		$$ = new TIntermInitItem("texture",*$4.string);
 	}
+	| IDENTIFIER EQUAL INTCONSTANT  SEMICOLON {
+		$$ = new TIntermInitItem(*$1.string,std::to_string($4.i).c_str());
+	}
 	;
 
 %%

@@ -428,6 +428,7 @@ Grammar
   322                  | TEXTURE EQUAL IDENTIFIER SEMICOLON
   323                  | TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON
   324                  | TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON
+  325                  | IDENTIFIER EQUAL INTCONSTANT SEMICOLON
 
 
 Terminals, with rules where they appear
@@ -520,10 +521,10 @@ TEXTURE (340) 182 322 323 324
 SAMPLERSTATE (341) 315 316
 IDENTIFIER (342) 1 25 87 92 93 94 95 96 97 98 109 110 111 112 113 114
     116 117 118 119 120 121 199 206 207 208 209 237 272 305 306 319
-    320 321 322 323 324
+    320 321 322 323 324 325
 TYPE_NAME (343) 198
 FLOATCONSTANT (344) 4 300
-INTCONSTANT (345) 3 137 138 139 298
+INTCONSTANT (345) 3 137 138 139 298 325
 BOOLCONSTANT (346) 5 299
 STRINGCONSTANT (347) 295
 FIELD_SELECTION (348) 10 26
@@ -561,9 +562,9 @@ COMMA (377) 22 82 91 109 110 111 112 113 114 137 138 139 205 263 266
     267 303
 COLON (378) 67 87 96 98 207 209 305 306
 EQUAL (379) 70 94 112 113 114 119 120 121 237 272 319 320 321 322 323
-    324
+    324 325
 SEMICOLON (380) 84 85 203 231 232 241 248 249 250 251 252 253 254 259
-    272 319 320 321 322 323 324
+    272 319 320 321 322 323 324 325
 BANG (381) 34
 DASH (382) 33 42
 TILDE (383) 35
@@ -773,7 +774,7 @@ sampler_initializer (229)
 sampler_init_list (230)
     on left: 317 318, on right: 315 318
 sampler_init_item (231)
-    on left: 319 320 321 322 323 324, on right: 317 318
+    on left: 319 320 321 322 323 324 325, on right: 317 318
 
 
 state 0
@@ -10806,6 +10807,7 @@ state 423
   319 sampler_init_item: IDENTIFIER . EQUAL IDENTIFIER SEMICOLON
   320                  | IDENTIFIER . EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON
   321                  | IDENTIFIER . EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON
+  325                  | IDENTIFIER . EQUAL INTCONSTANT SEMICOLON
 
     EQUAL  shift, and go to state 449
 
@@ -11477,10 +11479,12 @@ state 449
   319 sampler_init_item: IDENTIFIER EQUAL . IDENTIFIER SEMICOLON
   320                  | IDENTIFIER EQUAL . LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON
   321                  | IDENTIFIER EQUAL . LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON
+  325                  | IDENTIFIER EQUAL . INTCONSTANT SEMICOLON
 
-    IDENTIFIER  shift, and go to state 472
-    LEFT_PAREN  shift, and go to state 473
-    LEFT_ANGLE  shift, and go to state 474
+    IDENTIFIER   shift, and go to state 472
+    INTCONSTANT  shift, and go to state 473
+    LEFT_PAREN   shift, and go to state 474
+    LEFT_ANGLE   shift, and go to state 475
 
 
 state 450
@@ -11530,7 +11534,7 @@ state 456
    82 expression: expression . COMMA assign_expression
   241 iteration_statement: DO $@4 statement WHILE LEFT_PAREN expression . RIGHT_PAREN SEMICOLON
 
-    RIGHT_PAREN  shift, and go to state 475
+    RIGHT_PAREN  shift, and go to state 476
     COMMA        shift, and go to state 313
 
 
@@ -11645,7 +11649,7 @@ state 457
     log_or_expression                     go to state 166
     cond_expression                       go to state 191
     assign_expression                     go to state 192
-    expression                            go to state 476
+    expression                            go to state 477
     type_specifier                        go to state 169
     type_specifier_nonarray               go to state 81
     struct_specifier                      go to state 82
@@ -11787,7 +11791,7 @@ state 458
     struct_specifier                      go to state 82
     declaration_statement                 go to state 197
     simple_statement                      go to state 461
-    statement_no_new_scope                go to state 477
+    statement_no_new_scope                go to state 478
     compound_statement_no_new_scope       go to state 463
     expression_statement                  go to state 202
     selection_statement                   go to state 203
@@ -11930,7 +11934,7 @@ state 459
     type_specifier_nonarray               go to state 81
     struct_specifier                      go to state 82
     declaration_statement                 go to state 197
-    statement                             go to state 478
+    statement                             go to state 479
     simple_statement                      go to state 199
     compound_statement                    go to state 200
     expression_statement                  go to state 202
@@ -12052,7 +12056,7 @@ state 460
     type_specifier                        go to state 169
     type_specifier_nonarray               go to state 81
     struct_specifier                      go to state 82
-    initializer                           go to state 479
+    initializer                           go to state 480
     initialization_list                   go to state 335
     sampler_initializer                   go to state 336
 
@@ -12107,7 +12111,7 @@ state 467
     INTCONSTANT    shift, and go to state 413
     BOOLCONSTANT   shift, and go to state 414
 
-    ann_numerical_constant  go to state 480
+    ann_numerical_constant  go to state 481
 
 
 state 468
@@ -12115,7 +12119,7 @@ state 468
   301 ann_literal_constructor: ann_type LEFT_PAREN ann_value_list . RIGHT_PAREN
   303 ann_value_list: ann_value_list . COMMA ann_numerical_constant
 
-    RIGHT_PAREN  shift, and go to state 481
+    RIGHT_PAREN  shift, and go to state 482
     COMMA        shift, and go to state 467
 
 
@@ -12123,52 +12127,59 @@ state 469
 
   322 sampler_init_item: TEXTURE EQUAL IDENTIFIER . SEMICOLON
 
-    SEMICOLON  shift, and go to state 482
+    SEMICOLON  shift, and go to state 483
 
 
 state 470
 
   324 sampler_init_item: TEXTURE EQUAL LEFT_PAREN . IDENTIFIER RIGHT_PAREN SEMICOLON
 
-    IDENTIFIER  shift, and go to state 483
+    IDENTIFIER  shift, and go to state 484
 
 
 state 471
 
   323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE . IDENTIFIER RIGHT_ANGLE SEMICOLON
 
-    IDENTIFIER  shift, and go to state 484
+    IDENTIFIER  shift, and go to state 485
 
 
 state 472
 
   319 sampler_init_item: IDENTIFIER EQUAL IDENTIFIER . SEMICOLON
 
-    SEMICOLON  shift, and go to state 485
+    SEMICOLON  shift, and go to state 486
 
 
 state 473
 
-  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN . IDENTIFIER RIGHT_PAREN SEMICOLON
+  325 sampler_init_item: IDENTIFIER EQUAL INTCONSTANT . SEMICOLON
 
-    IDENTIFIER  shift, and go to state 486
+    SEMICOLON  shift, and go to state 487
 
 
 state 474
 
-  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE . IDENTIFIER RIGHT_ANGLE SEMICOLON
+  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN . IDENTIFIER RIGHT_PAREN SEMICOLON
 
-    IDENTIFIER  shift, and go to state 487
+    IDENTIFIER  shift, and go to state 488
 
 
 state 475
 
-  241 iteration_statement: DO $@4 statement WHILE LEFT_PAREN expression RIGHT_PAREN . SEMICOLON
+  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE . IDENTIFIER RIGHT_ANGLE SEMICOLON
 
-    SEMICOLON  shift, and go to state 488
+    IDENTIFIER  shift, and go to state 489
 
 
 state 476
+
+  241 iteration_statement: DO $@4 statement WHILE LEFT_PAREN expression RIGHT_PAREN . SEMICOLON
+
+    SEMICOLON  shift, and go to state 490
+
+
+state 477
 
    82 expression: expression . COMMA assign_expression
   249 for_rest_statement: conditionopt SEMICOLON expression .
@@ -12178,140 +12189,147 @@ state 476
     $default  reduce using rule 249 (for_rest_statement)
 
 
-state 477
+state 478
 
   243 iteration_statement: FOR LEFT_PAREN $@5 for_init_statement for_rest_statement RIGHT_PAREN statement_no_new_scope .
 
     $default  reduce using rule 243 (iteration_statement)
 
 
-state 478
+state 479
 
   234 selection_rest_statement: statement ELSE statement .
 
     $default  reduce using rule 234 (selection_rest_statement)
 
 
-state 479
+state 480
 
   237 condition: fully_specified_type IDENTIFIER EQUAL initializer .
 
     $default  reduce using rule 237 (condition)
 
 
-state 480
+state 481
 
   303 ann_value_list: ann_value_list COMMA ann_numerical_constant .
 
     $default  reduce using rule 303 (ann_value_list)
 
 
-state 481
+state 482
 
   301 ann_literal_constructor: ann_type LEFT_PAREN ann_value_list RIGHT_PAREN .
 
     $default  reduce using rule 301 (ann_literal_constructor)
 
 
-state 482
+state 483
 
   322 sampler_init_item: TEXTURE EQUAL IDENTIFIER SEMICOLON .
 
     $default  reduce using rule 322 (sampler_init_item)
 
 
-state 483
+state 484
 
   324 sampler_init_item: TEXTURE EQUAL LEFT_PAREN IDENTIFIER . RIGHT_PAREN SEMICOLON
 
-    RIGHT_PAREN  shift, and go to state 489
-
-
-state 484
-
-  323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE IDENTIFIER . RIGHT_ANGLE SEMICOLON
-
-    RIGHT_ANGLE  shift, and go to state 490
+    RIGHT_PAREN  shift, and go to state 491
 
 
 state 485
+
+  323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE IDENTIFIER . RIGHT_ANGLE SEMICOLON
+
+    RIGHT_ANGLE  shift, and go to state 492
+
+
+state 486
 
   319 sampler_init_item: IDENTIFIER EQUAL IDENTIFIER SEMICOLON .
 
     $default  reduce using rule 319 (sampler_init_item)
 
 
-state 486
-
-  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER . RIGHT_PAREN SEMICOLON
-
-    RIGHT_PAREN  shift, and go to state 491
-
-
 state 487
 
-  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER . RIGHT_ANGLE SEMICOLON
+  325 sampler_init_item: IDENTIFIER EQUAL INTCONSTANT SEMICOLON .
 
-    RIGHT_ANGLE  shift, and go to state 492
+    $default  reduce using rule 325 (sampler_init_item)
 
 
 state 488
+
+  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER . RIGHT_PAREN SEMICOLON
+
+    RIGHT_PAREN  shift, and go to state 493
+
+
+state 489
+
+  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER . RIGHT_ANGLE SEMICOLON
+
+    RIGHT_ANGLE  shift, and go to state 494
+
+
+state 490
 
   241 iteration_statement: DO $@4 statement WHILE LEFT_PAREN expression RIGHT_PAREN SEMICOLON .
 
     $default  reduce using rule 241 (iteration_statement)
 
 
-state 489
-
-  324 sampler_init_item: TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN . SEMICOLON
-
-    SEMICOLON  shift, and go to state 493
-
-
-state 490
-
-  323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE . SEMICOLON
-
-    SEMICOLON  shift, and go to state 494
-
-
 state 491
 
-  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN . SEMICOLON
+  324 sampler_init_item: TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN . SEMICOLON
 
     SEMICOLON  shift, and go to state 495
 
 
 state 492
 
-  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE . SEMICOLON
+  323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE . SEMICOLON
 
     SEMICOLON  shift, and go to state 496
 
 
 state 493
 
+  321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN . SEMICOLON
+
+    SEMICOLON  shift, and go to state 497
+
+
+state 494
+
+  320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE . SEMICOLON
+
+    SEMICOLON  shift, and go to state 498
+
+
+state 495
+
   324 sampler_init_item: TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON .
 
     $default  reduce using rule 324 (sampler_init_item)
 
 
-state 494
+state 496
 
   323 sampler_init_item: TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON .
 
     $default  reduce using rule 323 (sampler_init_item)
 
 
-state 495
+state 497
 
   321 sampler_init_item: IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON .
 
     $default  reduce using rule 321 (sampler_init_item)
 
 
-state 496
+state 498
 
   320 sampler_init_item: IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON .
 

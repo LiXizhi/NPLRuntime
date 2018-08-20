@@ -8,12 +8,16 @@ namespace ParaEngine
 {
 
 	struct UniformInfoGL;
-	struct UpdateParmeterCommand
+	struct SamplerInitialzerInfo;
+
+	struct ParmeterValueCache
 	{
 		IParaEngine::ParameterHandle handle;
 		void* data;
 		uint32_t size;
 	};
+
+
 
 
 	struct EffectRenderState
@@ -69,15 +73,7 @@ namespace ParaEngine
 		virtual bool End() override;
 		virtual IParaEngine::TechniqueHandle GetCurrentTechnique() override;
 		virtual bool CommitChanges() override;
-	private:
-		DxEffectsTree* m_FxDesc;
-		static const int MAX_TECHNIQUES = 16;
-		static const int MAX_PASSES = 16;
-		static const int MAX_UNIFORMS = 64;
-		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
-		UpdateParmeterCommand m_ParameterCommands[MAX_UNIFORMS];
-		std::vector<UniformInfoGL> m_Uniforms;
-		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
+
 	private:
 		const EffectRenderState GetPassRenderState(PassNode* pass);
 		const EffectRenderState GetCurrentRenderState();
@@ -90,5 +86,17 @@ namespace ParaEngine
 		bool m_IsBeginPass;
 		uint32_t m_CurrentPass;
 		EffectRenderState m_LastRenderState;
+
+		DxEffectsTree* m_FxDesc;
+		static const int MAX_TECHNIQUES = 16;
+		static const int MAX_PASSES = 16;
+		static const int MAX_UNIFORMS = 64;
+		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
+		ParmeterValueCache m_ParametersValueCache[MAX_UNIFORMS];
+		std::vector<UniformInfoGL> m_Uniforms;
+		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
+		std::unordered_map<std::string, std::string> m_Texture2SamplerMap;
+		std::unordered_map<std::string, SamplerInitialzerInfo> m_SamplersInfo;
+
 	};
 }

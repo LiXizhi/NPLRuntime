@@ -684,7 +684,7 @@ bool ParaEngine::RenderDeviceOpenGL::Present()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
 	m_DownSampleEffect->Begin();
-	m_DownSampleEffect->SetTexture("ColorTextureSampler", m_CurrentRenderTargets[0]);
+	m_DownSampleEffect->SetTexture("tex0", m_CurrentRenderTargets[0]);
 	m_DownSampleEffect->BeginPass(0);
 	m_DownSampleEffect->CommitChanges();
 	
