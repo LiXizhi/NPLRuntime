@@ -76,7 +76,8 @@ typedef enum
 	EShTypeSamplerRect,
 	EShTypeSamplerRectShadow,
 	EShTypeSampler2DArray,
-	EShTypeStruct
+	EShTypeStruct,
+	EshTypeTexture,
 } EShType;
 
 
