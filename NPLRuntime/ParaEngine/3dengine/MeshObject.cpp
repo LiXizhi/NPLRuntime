@@ -805,8 +805,15 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 			fLightness *= pBlockWorldClient->GetSunIntensity();
 			fLightness = Math::Max(fLightness, fBlockLightness);
 			
-			sceneState->GetLocalMaterial().Ambient = LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f);
-			sceneState->GetLocalMaterial().Diffuse = LinearColor(fLightness*0.35f, fLightness*0.35f, fLightness*0.35f, 1.f);
+			if (!sceneState->IsDeferredShading())
+			{
+				sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
+				sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+			}
+			else
+			{
+				sceneState->GetLocalMaterial().Diffuse = LinearColor::White;
+			}
 			
 			sceneState->EnableLocalMaterial(true);
 			
@@ -817,11 +824,23 @@ HRESULT CMeshObject::Draw( SceneState * sceneState)
 	CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
 	if (pField)
 	{
-		sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
-		pField = GetDynamicField("colorAmbient");
-		if (pField)
-			sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
-
+		if (sceneState->IsDeferredShading())
+		{
+			// for deferred shading merge ambient and diffuse
+			sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+			pField = GetDynamicField("colorAmbient");
+			if (pField) {
+				sceneState->GetLocalMaterial().Diffuse += LinearColor((DWORD)(*pField));
+				sceneState->GetLocalMaterial().Ambient = LinearColor::Black;
+			}
+		}
+		else
+		{
+			sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+			pField = GetDynamicField("colorAmbient");
+			if (pField)
+				sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
+		}
 		sceneState->EnableLocalMaterial(true);
 	}
 
