@@ -492,7 +492,7 @@ bool TGlslOutputTraverser::traverseDeclaration(bool preVisit, TIntermDeclaration
 	TType& type = *decl->getTypePointer();
 	if (type.getBasicType() == EbtTexture)
 	{
-		// right now we can't do anything with "texture" type, just skip it
+		decl->getDeclaration()->traverse(goit);
 		return false;
 	}
 	

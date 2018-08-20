@@ -165,6 +165,8 @@ EGlslSymbolType translateType( const TType *type )
          return EGlslSymbolType(EgstInt + (type->getRowsCount() - 1));
       case EbtFloat:
          return EGlslSymbolType(EgstFloat + (type->getRowsCount() - 1));
+	  case EbtTexture:
+		  return EgstTexture;
       case EbtSamplerGeneric:
          return EgstSamplerGeneric;
       case EbtSampler1D:

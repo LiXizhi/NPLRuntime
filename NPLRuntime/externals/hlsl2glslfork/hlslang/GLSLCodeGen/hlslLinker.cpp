@@ -1044,7 +1044,7 @@ void HlslLinker::buildUniformReflection(const std::vector<GlslSymbol*>& constant
 			memcpy(info.init, s->getInitValue(), s->getInitValueSize());
 			info.initSize = s->getInitValueSize();
 		}
-
+		info.initializer = s->getInitializerList();
 		uniforms.push_back(info);
 		
 	}

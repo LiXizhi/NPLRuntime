@@ -149,6 +149,7 @@ typedef struct
 	int arraySize;
 	char *init;
 	int initSize;
+	std::vector<std::tuple<std::string, std::string>> initializer;
 } ShUniformInfo;
 
 
