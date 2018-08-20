@@ -157,7 +157,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			BlockWorldClient* pBlockWorldClient=BlockWorldClient::GetInstance();
 			if(pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 			{
-				Vector3 vPos=GetPosition();
+				Vector3 vPos=mParent->GetPosition();
 				vPos.y+=0.1f;
 				Uint16x3 blockId_ws(0,0,0);
 				BlockCommon::ConvertToBlockIndex(vPos.x,vPos.y,vPos.z,blockId_ws.x,blockId_ws.y,blockId_ws.z);
