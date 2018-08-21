@@ -118,8 +118,14 @@ bool ParaEngine::EffectD3D9::GetParameterDesc(const IParaEngine::ParameterHandle
 		if (m_pEffect->GetParameterDesc(parameter_handle, &desc) == S_OK)
 		{
 			pOutDesc->Name = desc.Name;
-			if(desc.Semantic!=NULL)
+			if (desc.Semantic != NULL)
+			{
 				pOutDesc->Semantic = desc.Semantic;
+			}
+			else {
+				pOutDesc->Semantic = "";
+			}
+
 			pOutDesc->Type = EParameterType::PT_UNSUPPORTED;
 			pOutDesc->Elements = desc.Elements;
 			if (desc.Type == D3DXPT_FLOAT)
@@ -224,7 +230,9 @@ bool ParaEngine::EffectD3D9::SetMatrixArray(const ParameterHandle& handle, const
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetMatrixArray(h, data, count) == S_OK;
+	bool ret = m_pEffect->SetMatrixArray(h, data, count) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -233,7 +241,9 @@ bool ParaEngine::EffectD3D9::SetMatrix(const ParameterHandle& handle, const Para
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetMatrix(h, data) == S_OK;
+	bool ret = m_pEffect->SetMatrix(h, data) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -242,7 +252,9 @@ bool ParaEngine::EffectD3D9::SetVectorArray(const ParameterHandle& handle, const
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetVectorArray(h,data, count) == S_OK;
+	bool ret = m_pEffect->SetVectorArray(h,data, count) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -251,7 +263,9 @@ bool ParaEngine::EffectD3D9::SetFloatArray(const ParameterHandle& handle, const 
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetFloatArray(h, data, count) == S_OK;
+	bool ret = m_pEffect->SetFloatArray(h, data, count) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -260,7 +274,9 @@ bool ParaEngine::EffectD3D9::SetValue(const ParameterHandle& handle, const void*
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetValue(h, data, size) == S_OK;
+	bool ret= m_pEffect->SetValue(h, data, size) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -269,7 +285,9 @@ bool ParaEngine::EffectD3D9::SetBool(const ParameterHandle& handle, bool value)
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetBool(h, value) == S_OK;
+	bool ret = m_pEffect->SetBool(h, value) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -278,7 +296,9 @@ bool ParaEngine::EffectD3D9::SetInt(const ParameterHandle& handle, int value)
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetInt(h, value) == S_OK;
+	bool ret = m_pEffect->SetInt(h, value) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -287,7 +307,9 @@ bool ParaEngine::EffectD3D9::SetFloat(const ParameterHandle& handle, float value
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetFloat(h, value) == S_OK;
+	bool ret = m_pEffect->SetFloat(h, value) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -297,7 +319,18 @@ bool ParaEngine::EffectD3D9::SetTexture(const ParameterHandle& handle, IParaEngi
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
 	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
-	bool ret = m_pEffect->SetTexture(h, tex->GetTexture()) == S_OK;
+	bool ret = false;
+	if (tex != nullptr)
+	{
+		IParaEngine::ParameterDesc desc;
+		GetParameterDesc(handle, &desc);
+		HRESULT hr = m_pEffect->SetTexture(h, tex->GetTexture());
+		ret =  hr == S_OK;
+	}
+	else {
+		ret = m_pEffect->SetTexture(h,NULL) == S_OK;
+	}
+	assert(ret);
 	return ret;
 }
 
@@ -307,7 +340,9 @@ bool ParaEngine::EffectD3D9::SetRawValue(const ParameterHandle& handle, const vo
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetRawValue(h, data, offset, size) == S_OK;
+	bool ret= m_pEffect->SetRawValue(h, data, offset, size) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 
@@ -329,7 +364,9 @@ bool ParaEngine::EffectD3D9::SetVector(const ParameterHandle& handle, const Para
 	if (!isValidHandle(handle))return false;
 	if (handle.idx < 0 || handle.idx >= m_ParameterHandles.size()) return false;
 	auto h = m_ParameterHandles[handle.idx];
-	return m_pEffect->SetVector(h,data) == S_OK;
+	bool ret = m_pEffect->SetVector(h,data) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 

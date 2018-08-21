@@ -513,11 +513,17 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceD3D9::CreateTexture(const char* b
 
 
 	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
-	if (!image)return nullptr;
+	if (!image)
+	{
+		return nullptr;
+	}
 	auto ret = TextureD3D9::CreateWithImage(this, image);
 	if (ret)
 	{
 		m_Resources.push_back(ret);
+	}
+	else {
+		return nullptr;
 	}
 	return ret;
 }
