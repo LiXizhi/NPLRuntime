@@ -26,6 +26,18 @@ namespace ParaEngine
 		virtual ParaEngine::ETextureWrapMode GetAddressV() const override;
 		virtual bool SetAddressU(ParaEngine::ETextureWrapMode mode) override;
 		virtual bool SetAddressV(ParaEngine::ETextureWrapMode mode) override;
+
+		virtual ParaEngine::ETextureFilter GetMipFilter() const override;
+
+
+		virtual bool SetMipFilter(ParaEngine::ETextureFilter type) override;
+
+
+		virtual bool SetBorderColor(const ParaEngine::Color4f& color) override;
+
+
+		virtual ParaEngine::Color4f GetBorderColor() const override;
+
 	public:
 		static TextureOpenGL* Create(uint32_t width,uint32_t height,EPixelFormat format,ETextureUsage usage);
 		static TextureOpenGL* CreateWithImage(ImagePtr image);
@@ -48,8 +60,10 @@ namespace ParaEngine
 		GLenum m_GLPixelFomat;
 		ETextureFilter m_MagFilter;
 		ETextureFilter m_MinFilter;
+		ETextureFilter m_MipFilter;
 		ETextureWrapMode m_AddressU;
 		ETextureWrapMode m_AddressV;
 		ETextureUsage m_Usage;
+		Color4f m_BorderColor;
 	};
 }

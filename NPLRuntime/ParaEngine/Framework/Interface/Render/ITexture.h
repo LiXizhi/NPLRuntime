@@ -3,6 +3,7 @@
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Common/Image.hpp"
+#include "Framework/Common/Math/Color4f.h"
 namespace IParaEngine
 {
 	class ITexture : public IRenderTarget
@@ -18,17 +19,20 @@ namespace IParaEngine
 
 		virtual ParaEngine::ETextureFilter GetMinFilter() const = 0;
 		virtual ParaEngine::ETextureFilter GetMagFilter() const = 0;
+		virtual ParaEngine::ETextureFilter GetMipFilter() const = 0;
 
 		virtual bool SetMinFilter(ParaEngine::ETextureFilter type) = 0;
+		virtual bool SetMipFilter(ParaEngine::ETextureFilter type) = 0;
 		virtual bool SetMagFilter(ParaEngine::ETextureFilter type) = 0;
 
 		virtual ParaEngine::ETextureWrapMode GetAddressU() const = 0;
 		virtual ParaEngine::ETextureWrapMode GetAddressV() const = 0;
 
-
 		virtual bool SetAddressU(ParaEngine::ETextureWrapMode mode) = 0;
 		virtual bool SetAddressV(ParaEngine::ETextureWrapMode mode) = 0;
 
+		virtual bool SetBorderColor(const ParaEngine::Color4f& color) = 0;
+		virtual ParaEngine::Color4f GetBorderColor() const = 0;
 
 	};
 }

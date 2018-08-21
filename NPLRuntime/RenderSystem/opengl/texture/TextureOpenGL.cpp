@@ -234,6 +234,7 @@ ParaEngine::TextureOpenGL::TextureOpenGL()
 	, m_GLPixelFomat(0)
 	, m_MagFilter(ETextureFilter::Point)
 	, m_MinFilter(ETextureFilter::Point)
+	, m_MipFilter(ETextureFilter::Point)
 	, m_AddressU(ETextureWrapMode::Clamp)
 	, m_AddressV(ETextureWrapMode::Clamp)
 	, m_Usage(ETextureUsage::Default)
@@ -373,10 +374,15 @@ ParaEngine::ETextureFilter ParaEngine::TextureOpenGL::GetMagFilter() const
 
 bool ParaEngine::TextureOpenGL::SetMinFilter(ParaEngine::ETextureFilter type)
 {
+	if (type == ETextureFilter::None) return false;
+	if (m_MipFilter != ETextureFilter::None) {
+		m_MinFilter = type;
+		return true;
+	}
 	if (type == m_MinFilter) return true;
-	m_MinFilter = type;
+	
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
-	switch (m_MinFilter)
+	switch (type)
 	{
 	case ParaEngine::ETextureFilter::Point:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -388,6 +394,7 @@ bool ParaEngine::TextureOpenGL::SetMinFilter(ParaEngine::ETextureFilter type)
 		break;
 	}
 	glBindTexture(GL_TEXTURE_2D,0);
+	m_MinFilter = type;
 	return true;
 }
 
@@ -430,11 +437,17 @@ bool ParaEngine::TextureOpenGL::SetAddressU(ParaEngine::ETextureWrapMode mode)
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	switch (m_AddressU)
 	{
-	case ParaEngine::ETextureWrapMode::Clamp:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	case ETextureWrapMode::Clamp:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		break;
-	case ParaEngine::ETextureWrapMode::Repeat:
+	case ETextureWrapMode::Repeat:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		break;
+	case ETextureWrapMode::Mirror:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+		break;
+	case ETextureWrapMode::Border:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		break;
 	default:
 		break;
@@ -451,10 +464,16 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 	switch (m_AddressV)
 	{
 	case ParaEngine::ETextureWrapMode::Clamp:
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 		break;
 	case ParaEngine::ETextureWrapMode::Repeat:
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		break;
+	case ETextureWrapMode::Mirror:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+		break;
+	case ETextureWrapMode::Border:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		break;
 	default:
 		break;
@@ -463,6 +482,66 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 	return true;
 }
 
+
+ParaEngine::ETextureFilter ParaEngine::TextureOpenGL::GetMipFilter() const
+{
+	return m_MipFilter;
+}
+
+
+bool ParaEngine::TextureOpenGL::SetMipFilter(ParaEngine::ETextureFilter type)
+{
+	if (type == m_MipFilter) return true;
+	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+
+	
+	switch (type)
+	{
+	case ParaEngine::ETextureFilter::Point:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		break;
+	case ParaEngine::ETextureFilter::Linear:
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		break;
+	case ETextureFilter::None:
+	{
+		if (m_MinFilter == ETextureFilter::Linear)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		}else if (m_MinFilter == ETextureFilter::Point)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		}
+		else {
+			return false;
+		}
+	}
+	break;
+	default:
+		break;
+	}
+	glBindTexture(GL_TEXTURE_2D, 0);
+	m_MipFilter = type;
+	return true;
+}
+
+
+bool ParaEngine::TextureOpenGL::SetBorderColor(const ParaEngine::Color4f& color)
+{
+	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	GLfloat col[] = {color.r,color.g,color.b,color.a};
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, col);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	m_BorderColor = color;
+	return true;
+}
+
+
+ParaEngine::Color4f ParaEngine::TextureOpenGL::GetBorderColor() const
+{
+	return m_BorderColor;
+}
 
 TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {

@@ -277,15 +277,8 @@ namespace ParaEngine
 	public:
 		// Variables.
 #if PLATFORM_LITTLE_ENDIAN
-#if _MSC_VER
 		// Win32 x86
 		union { struct{ uint8 b, g, r, a; }; uint32 AlignmentDummy; };
-#else
-		// Linux x86, etc
-		/*uint8 b GCC_ALIGN(4);
-		uint8 g, r, a;*/
-		union { struct{ uint8 b, g, r, a; }; uint32 AlignmentDummy; };
-#endif
 #else // PLATFORM_LITTLE_ENDIAN
 		union { struct{ uint8 a, r, g, b; }; uint32 AlignmentDummy; };
 #endif

@@ -1,7 +1,8 @@
 #include <iostream>
 #include <string>
-#include<algorithm>
-
+#include <algorithm>
+#include <fstream>
+#include <sstream>
 #include "driver.h"
 #include "dxeffects.h"
 #include "hlsl2glsl.h"
@@ -131,8 +132,17 @@ inline std::string find_pass_pixel_shader_name(PassNode* pass)
 
 bool include_open(bool isSystem, const char* fname, const char* parentfname, const char* parent, std::string& output, void* data)
 {
+	std::ifstream in(fname);
+	if (!in.good()) return false;
 
-	return false;
+	std::stringstream vShaderStream;
+	vShaderStream << in.rdbuf();
+
+	output = vShaderStream.str();
+
+	in.close();
+
+	return true;
 }
 void include_close(const char* file, void* data)
 {
@@ -193,21 +203,6 @@ bool hlsl2glsl(const std::string& inCode,
 		return false;
 	}
 	outCode = Hlsl2Glsl_GetShader(parser);
-
-	//// remove #line and #version
-	//std::stringstream outss;
-	//std::istringstream iss(outCode);
-	//char buf[1024] = { 0 };
-	//while (iss.getline(buf, sizeof(buf))) {
-	//	std::string line(buf);
-	//	if (line.find("#line ") != std::string::npos ||
-	//		line.find("#version ") != std::string::npos)
-	//	{
-	//		continue;
-	//	}
-	//	outss << line << std::endl;
-	//}
-	//outCode = outss.str();
 
 	GetUniforms(parser, uniforms);
 	Hlsl2Glsl_DestructCompiler(parser);

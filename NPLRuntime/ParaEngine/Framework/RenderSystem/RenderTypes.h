@@ -131,6 +131,7 @@ namespace ParaEngine
 
 	enum class ETextureFilter
 	{
+		None,
 		Point,
 		Linear
 	};
@@ -138,7 +139,8 @@ namespace ParaEngine
 	{
 		Clamp,
 		Repeat,
-		Border
+		Border,
+		Mirror
 	};
 
 	enum class MultiSampleType
