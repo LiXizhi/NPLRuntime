@@ -97,6 +97,6 @@ namespace ParaEngine
 		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
 		std::unordered_map<std::string, std::string> m_Texture2SamplerMap;
 		std::unordered_map<std::string, SamplerInitialzerInfo> m_SamplersInfo;
-
+		std::unordered_map<IParaEngine::ITexture*, SamplerInitialzerInfo> m_TextureOldSamplerState;
 	};
 }

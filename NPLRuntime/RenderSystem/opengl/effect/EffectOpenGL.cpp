@@ -880,6 +880,21 @@ bool ParaEngine::EffectOpenGL::EndPass()
 	m_IsBeginPass = false;
 	m_CurrentPass = 0;
 	ApplyRenderState(m_LastRenderState);
+
+	// restore texture sampler state
+	for (auto kv : m_TextureOldSamplerState)
+	{
+		ITexture* tex = kv.first;
+		SamplerInitialzerInfo info = kv.second;
+		tex->SetAddressU(info.AddressU);
+		tex->SetAddressV(info.AddressV);
+		tex->SetMinFilter(info.MinFilter);
+		tex->SetMagFilter(info.MagFilter);
+		tex->SetMipFilter(info.MipFilter);
+		tex->SetBorderColor(Color4f(info.BorderColor));
+	}
+
+	m_TextureOldSamplerState.clear();
 	return true;
 }
 
@@ -890,6 +905,9 @@ bool ParaEngine::EffectOpenGL::End()
 	if (!m_IsBeginTechnique) return false;
 
 	m_IsBeginTechnique = false;
+
+
+
 	return true;
 }
 
@@ -1044,12 +1062,13 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 				TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
 				if (tex != nullptr)
 				{
-					auto AddressU = tex->GetAddressU();
-					auto AddressV = tex->GetAddressV();
-					auto MinFilter = tex->GetMinFilter();
-					auto MipFilter = tex->GetMipFilter();
-					auto MagFilter = tex->GetMagFilter();
-					auto BorderColor = tex->GetBorderColor();
+					SamplerInitialzerInfo oldSamplerInfo;
+					oldSamplerInfo.AddressU = tex->GetAddressU();
+					oldSamplerInfo.AddressV = tex->GetAddressV();
+					oldSamplerInfo.MinFilter = tex->GetMinFilter();
+					oldSamplerInfo.MipFilter = tex->GetMipFilter();
+					oldSamplerInfo.MagFilter = tex->GetMagFilter();
+					oldSamplerInfo.BorderColor = tex->GetBorderColor().GetDWColor();
 					// apply sampler state
 					SamplerInitialzerInfo samplerInfo = m_SamplersInfo[uniform.name];
 					Color4f color(samplerInfo.BorderColor);
@@ -1060,20 +1079,12 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 					tex->SetMinFilter(samplerInfo.MinFilter);
 					tex->SetMagFilter(samplerInfo.MagFilter);
 					tex->SetMipFilter(samplerInfo.MipFilter);
+					m_TextureOldSamplerState[tex] = oldSamplerInfo;
 
 					glActiveTexture(GL_TEXTURE0 + slot);
 					glEnable(GL_TEXTURE_2D);
 					glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
-
-					// restore sampler state
-
-					tex->SetBorderColor(BorderColor);
-					tex->SetAddressU(AddressU);
-					tex->SetAddressV(AddressV);
-					tex->SetMinFilter(MinFilter);
-					tex->SetMagFilter(MagFilter);
-					tex->SetMipFilter(MipFilter);
-
+					
 				}
 				else {
 					glActiveTexture(GL_TEXTURE0 + slot);
