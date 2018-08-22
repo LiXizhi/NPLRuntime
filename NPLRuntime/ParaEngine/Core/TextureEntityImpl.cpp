@@ -1303,7 +1303,6 @@ bool TextureEntityImpl::LoadFromImage(const ImagePtr pImage, UINT nMipLevels, EP
 	{
 		if (m_pTextureInfo->m_width == -1 || m_pTextureInfo->m_height == -1)
 		{
-			D3DSURFACE_DESC desc;
 			if (pTexture != 0 )
 			{
 				m_pTextureInfo->m_width = pTexture->GetWidth();

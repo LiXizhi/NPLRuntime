@@ -4,8 +4,6 @@
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
 #include "ViewportManager.h"
-#include "OpenGLWrapper/GLType.h"
-#include "OpenGLWrapper/GLTexture2D.h"
 #include "effect/EffectOpenGL.h"
 #include "Framework/Codec/ImageParser.h"
 #include "texture/TextureOpenGL.h"
@@ -109,7 +107,6 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 {
-	GL::ClearCache();
 	for (auto pRes : m_Resources)
 	{
 		delete pRes;
@@ -836,9 +833,8 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil
 }
 
 
-IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey)
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const ImagePtr& image)
 {
-	auto image = ImageParser::ParseImage((const unsigned char*)buffer, size);
 	auto tex= TextureOpenGL::CreateWithImage(image);
 	if (tex)
 	{

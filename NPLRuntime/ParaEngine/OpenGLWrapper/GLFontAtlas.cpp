@@ -2,7 +2,6 @@
 #include "iconv.h"
 #include "GLFontAtlas.h"
 #include "GLFont.h"
-#include "GLTexture2D.h"
 #include "GLFontFreeType.h"
 #include "StringHelper.h"
 

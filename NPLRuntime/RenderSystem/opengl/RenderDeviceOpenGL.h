@@ -51,7 +51,7 @@ namespace ParaEngine
 		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage) override;
 
 
-		virtual IParaEngine::ITexture* CreateTexture(const char* buffer, uint32_t size, EPixelFormat format, uint32_t colorKey) override;
+		virtual IParaEngine::ITexture* CreateTexture(const ImagePtr& image) override;
 
 
 		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;

@@ -7,11 +7,6 @@
 // Desc: Some of the code is based on cocos2d CCImage.cpp
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_OPENGL_RENDERER
-#include "RenderDeviceOpenGL.h"
-#include "OpenGLWrapper/GLImage.h"
-#endif
-
 #include "ImageEntity.h"
 
 using namespace ParaEngine;
@@ -100,22 +95,25 @@ bool ParaEngine::ImageEntity::LoadFromRawData(const unsigned char * data, size_t
 bool ParaEngine::ImageEntity::SaveToFile(const std::string &filename, bool isToRGB /*= true*/)
 {
 #ifdef USE_OPENGL_RENDERER
-	std::string filepath = CParaFile::GetWritablePath() + filename;
-	CParaFile::CreateDirectory(filepath.c_str());
-	GLImage image;
-	image.initWithRawData(getData(), getDataLen(), getWidth(), getHeight(), getBitPerPixel());
-	bool res =image.saveToFile(filepath, isToRGB);
-	if (res){
-		OUTPUT_LOG("successfully saved image to file :%s\n", filepath.c_str());
-	}
-	else
-	{
-		OUTPUT_LOG("failed to save image to file :%s\n", filepath.c_str());
-	}
-	return res;
+	// TODO:
+	//std::string filepath = CParaFile::GetWritablePath() + filename;
+	//CParaFile::CreateDirectory(filepath.c_str());
+	//GLImage image;
+	//image.initWithRawData(getData(), getDataLen(), getWidth(), getHeight(), getBitPerPixel());
+	//bool res =image.saveToFile(filepath, isToRGB);
+	//if (res){
+	//	OUTPUT_LOG("successfully saved image to file :%s\n", filepath.c_str());
+	//}
+	//else
+	//{
+	//	OUTPUT_LOG("failed to save image to file :%s\n", filepath.c_str());
+	//}
+	//return res;
 #else
 	return false;
 #endif
+
+	return false;
 }
 
 int ParaEngine::ImageEntity::getBitPerPixel()
