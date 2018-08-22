@@ -32,6 +32,7 @@
 #include "ShapeOBB.h"
 #include "ShapeAABB.h"
 #include "PhysicsWorld.h"
+#include "DynamicAttributeField.h"
 #include <algorithm>
 
 using namespace ParaEngine;
@@ -1510,15 +1511,46 @@ HRESULT CBipedObject::Draw(SceneState * sceneState)
 				{
 					m_dwLastBlockHash = dwPositionHash;
 				}
-				sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
-				sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
-
+				
+				if (!sceneState->IsDeferredShading())
+				{
+					sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
+					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+				}
+				else
+				{
+					sceneState->GetLocalMaterial().Diffuse = LinearColor::White;
+				}
+				
 				sceneState->EnableLocalMaterial(true);
 				
 				bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
 			}
 		}
 		
+		CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+		if (pField)
+		{
+			if (sceneState->IsDeferredShading())
+			{
+				// for deferred shading merge ambient and diffuse
+				sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+				pField = GetDynamicField("colorAmbient");
+				if (pField) {
+					sceneState->GetLocalMaterial().Diffuse += LinearColor((DWORD)(*pField));
+					sceneState->GetLocalMaterial().Ambient = LinearColor::Black;
+				}
+			}
+			else
+			{
+				sceneState->GetLocalMaterial().Diffuse = LinearColor((DWORD)(*pField));
+				pField = GetDynamicField("colorAmbient");
+				if (pField)
+					sceneState->GetLocalMaterial().Ambient = LinearColor((DWORD)(*pField));
+			}
+			sceneState->EnableLocalMaterial(true);
+		}
+
 		if (bUsePointTextureFilter)
 		{
 			pEffectManager->SetSamplerState(0, ESamplerStateType::MINFILTER, D3DTEXF_POINT);

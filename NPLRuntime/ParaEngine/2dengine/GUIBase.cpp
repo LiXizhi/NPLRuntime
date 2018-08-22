@@ -846,17 +846,7 @@ void ParaEngine::CGUIBase::MakeActivate(int nState)
 {
 	if (nState > 0)
 	{
-		CGUIBase* pLastWindow = CGUIRoot::GetInstance()->GetActiveWindow();
-		CGUIBase* pWindow = GetWindow();
-		if (pLastWindow != pWindow)
-		{
-			if (pLastWindow)
-				pLastWindow->OnActivate(0);
-			
-			CGUIRoot::GetInstance()->SetActiveWindow(pWindow);
-			if (pWindow)
-				pWindow->OnActivate(nState);
-		}
+		CGUIRoot::GetInstance()->SetActiveWindow(GetWindow());
 	}
 }
 
@@ -1088,21 +1078,36 @@ void ParaEngine::CGUIBase::SetInputMethodEnabled(bool val)
 	if (m_bInputMethodEnabled != val)
 	{
 		m_bInputMethodEnabled = val;
-		SetCanHaveFocus(m_bInputMethodEnabled);
-		if (!m_bInputMethodEnabled)
+		if (HasFocus())
 		{
-			if (CGUIRoot::GetInstance()->GetIMEFocus() == this)
+			if (!m_bInputMethodEnabled)
 			{
-				LostFocus();
+				CGUIIME::OnFocusOut();
+				if (CGUIRoot::GetInstance()->GetIMEFocus() == this)
+				{
+					CGUIRoot::GetInstance()->SetIMEFocus(NULL);
+				}
 			}
-		}
-		else
-		{
-			if(HasFocus())
-				OnFocusIn();
+			else
+			{
+				CGUIRoot::GetInstance()->SetIMEFocus(this);
+				CGUIIME::OnFocusIn();
+
+				bool bIMEEnabled = CGUIIME::IsEnableImeSystem();
+				if (!CGlobals::GetApp()->IsWindowedMode() && !bIMEEnabled)
+				{
+					CGUIIME::EnableImeSystem(true);
+				}
+				if (!bIMEEnabled)
+				{
+					QPoint pt = GetCompositionPoint();
+					CGUIBase::SetCompositionPoint(pt);
+				}
+			}
 		}
 	}
 }
+
 bool CGUIBase::OnModify()
 {
 	if( !HasEvent(EM_CTRL_MODIFY) )
@@ -1291,7 +1296,10 @@ bool CGUIBase::MsgProc(MSG *event)
 			bHandled=OnModify();
 		}else if (m_event->IsMapTo(nEvent,EM_MOUSE_WHEEL)) {
 			// modified 2007.10.12 LXZ: so that the message can be leaked to its container during scrolling
-			bHandled=OnMouseWheel(int(event->lParam)/120,m_event->m_mouse.x,m_event->m_mouse.y);
+            int nDelta = ((int32)(event->lParam))/120;
+            if(nDelta == 0)
+                nDelta = ((int32)(event->lParam)) > 0 ? 1 : -1;
+			bHandled=OnMouseWheel(nDelta, m_event->m_mouse.x,m_event->m_mouse.y);
 		}
 		if (m_event->IsMapTo(nEvent,EM_CTRL_FOCUSIN)) {
 			//by default, we map the Left click to focus in.

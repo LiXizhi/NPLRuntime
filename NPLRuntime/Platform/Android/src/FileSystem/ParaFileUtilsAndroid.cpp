@@ -150,8 +150,10 @@ std::string ParaEngine::CParaFileUtilsAndroid::_defaultResRootPath = "assets/";
 
 std::string ParaEngine::CParaFileUtilsAndroid::GetInitialDirectory()
 {
-	fs::path workingDir = fs::initial_path();
-	return workingDir.string();
+	// on Android this will return "/", which is not right. we should return "" instead, so that current working directory is used. 
+	// fs::path workingDir = fs::initial_path();
+	// return workingDir.string();
+	return "";
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)

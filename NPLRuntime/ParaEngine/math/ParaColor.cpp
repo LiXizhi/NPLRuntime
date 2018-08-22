@@ -47,7 +47,7 @@ LinearColor::LinearColor(const class Color& C)
 }
 
 LinearColor::LinearColor(const class Vector3& Vector) :
-r(Vector.x),g(Vector.y),b(Vector.z),a(1.0f)
+	r(Vector.x), g(Vector.y), b(Vector.z), a(1.0f)
 {}
 
 
@@ -84,7 +84,7 @@ Color LinearColor::Quantize() const
 		(uint8)Math::Clamp<int32>(Math::Trunc(g*255.f), 0, 255),
 		(uint8)Math::Clamp<int32>(Math::Trunc(b*255.f), 0, 255),
 		(uint8)Math::Clamp<int32>(Math::Trunc(a*255.f), 0, 255)
-		);
+	);
 }
 
 /**
@@ -222,7 +222,7 @@ void ParaEngine::Color::operator=(const LinearColor& color)
 // fast, for more accuracy use LinearColor::ToColor()
 // TODO: doesn't handle negative colors well, implicit constructor can cause
 // accidental conversion (better use .ToColor(true))
-ParaEngine::Color::Color(const LinearColor& C) 
+ParaEngine::Color::Color(const LinearColor& C)
 {
 	*this = C.Quantize();
 
@@ -266,7 +266,7 @@ uint8 fromHexStr(const char* s)
 
 Color ParaEngine::Color::FromString(const char* sColor)
 {
-	if (sColor && sColor[0]!='\0')
+	if (sColor && sColor[0] != '\0')
 	{
 		if (sColor[0] != '#')
 		{
@@ -281,7 +281,7 @@ Color ParaEngine::Color::FromString(const char* sColor)
 			// #RGBA  or #RGB
 			++sColor;
 			int nLength = 0;
-			while (sColor[nLength++]!='\0' && nLength<8)
+			while (sColor[nLength++] != '\0' && nLength<8)
 			{
 			}
 			if (nLength >= 8)
@@ -334,9 +334,35 @@ uint16 ParaEngine::Color::convert32_16(uint32 rgb)
 uint32 ParaEngine::Color::convert16_32(uint16 rgb)
 {
 	uint32 a = ((rgb & 0xF000) << 16);
+	a = a | (a >> 4);
 	uint32 r = ((rgb & 0x0F00) << 12);
+	r = r | (r >> 4);
 	uint32 g = ((rgb & 0x00F0) << 8);
+	g = g | (g >> 4);
 	uint32 b = ((rgb & 0x000F) << 4);
+	b = b | (b >> 4);
+	return (a | r | g | b);
+}
+
+uint8 ParaEngine::Color::convert32_8(uint32 rgb)
+{
+	uint32 a = ((rgb & 0xC0000000) >> 24);
+	uint32 r = ((rgb & 0x00C00000) >> 18);
+	uint32 g = ((rgb & 0x0000C000) >> 12);
+	uint32 b = ((rgb & 0x000000C0) >> 6);
+	return (uint8)(a | r | g | b);
+}
+
+uint32 ParaEngine::Color::convert8_32(uint8 rgb)
+{
+	uint32 a = ((rgb & 0xC0) << 24);
+	a = a | (a >> 2) | (a >> 4) | (a >> 6);
+	uint32 r = ((rgb & 0x30) << 18);
+	r = r | (r >> 2) | (r >> 4) | (r >> 6);
+	uint32 g = ((rgb & 0xC) << 12);
+	g = g | (g >> 2) | (g >> 4) | (g >> 6);
+	uint32 b = ((rgb & 0x3) << 6);
+	b = b | (b >> 2) | (b >> 4) | (b >> 6);
 	return (a | r | g | b);
 }
 
@@ -419,7 +445,7 @@ ParaEngine::LinearColor::LinearColor(const float * colors)
 	a = colors[3];
 }
 
-ParaEngine::LinearColor::operator uint32() const 
+ParaEngine::LinearColor::operator uint32() const
 {
 	return (uint32)ToColor().DWColor();
 }
@@ -432,10 +458,10 @@ ParaEngine::Vector3 ParaEngine::LinearColor::ToVector3() const
 
 #ifdef __D3DX9_H__
 ParaEngine::LinearColor::LinearColor(const D3DCOLORVALUE& color)
-:r(color.r), g(color.g), b(color.b), a(color.a)
+	:r(color.r), g(color.g), b(color.b), a(color.a)
 {
 }
-ParaEngine::LinearColor::operator const D3DCOLORVALUE&() const 
+ParaEngine::LinearColor::operator const D3DCOLORVALUE&() const
 {
 	return reinterpret_cast<const D3DCOLORVALUE&>(*this);
 }

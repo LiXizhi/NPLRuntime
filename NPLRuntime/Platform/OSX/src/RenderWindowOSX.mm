@@ -239,6 +239,7 @@ void RenderWindowOSX::PollEvents() {
     if(m_window == nullptr || ShouldClose()) return;
     NSEvent *event;
     auto untilDate = [NSDate distantPast];
+    bool bIsProcessed = false;
     do{
     event = [NSApp nextEventMatchingMask:NSEventMaskAny
                                         untilDate:untilDate
@@ -276,18 +277,20 @@ void RenderWindowOSX::PollEvents() {
             
             
         case NSEventTypeLeftMouseDown:
-            OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::LEFT, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeLeftMouseUp:
-            OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::LEFT, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeRightMouseDown:
-            //NSLog(@"rightmouse down");
-            OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeRightMouseUp:
-            //NSLog(@"rightmouse up");
-            OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, mx, my);
             break;
 
             
@@ -296,63 +299,92 @@ void RenderWindowOSX::PollEvents() {
         case NSEventTypeRightMouseDragged:
         case NSEventTypeOtherMouseDragged:
         {
-            OnMouseMove(mx, my);
-            m_scrollMouseX = mx;
-            m_scrollMouseY = my;
-        }
+            if(event.window == m_window){
+                OnMouseMove(mx, my);
+                m_scrollMouseX = mx;
+                m_scrollMouseY = my;
+            }
             break;
+        }
+        case NSEventTypeSwipe:
+        {
+            if(event.window == m_window){
+                float deltaX = [event deltaX];
+                float deltaY = [event deltaY];
+                if(deltaY != 0){
+                    OnMouseWhell(deltaX, deltaY);
+                }
+            }
+            break;
+        }
         case NSEventTypeScrollWheel:
         {
-            OnMouseWhell([event deltaX], [event deltaY]);
-            m_scrollMouseX+= [event deltaX]*4;
-            m_scrollMouseY+= [event deltaY]*4;
-            NSEventPhase phase = [event phase];
-            switch (phase) {
-                case NSEventPhaseMayBegin:
-                case NSEventPhaseBegan:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                case NSEventPhaseChanged:
+            if(event.window == m_window)
+            {
+                NSEventPhase phase = [event phase];
+                NSEventPhase momentumPhase = [event momentumPhase];
+                
+                if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
                 {
-                    OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                    OnMouseWhell([event deltaX], [event deltaY]);
                 }
-                    break;
-                case NSEventPhaseEnded:
-                case NSEventPhaseCancelled:
-                    OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
-                    break;
-                default:
-                    break;
+                else if(phase != NSEventPhaseNone)
+                {
+                    m_scrollMouseX+= [event deltaX]*4;
+                    m_scrollMouseY+= [event deltaY]*4;
+                    
+                    switch (phase) {
+                        case NSEventPhaseMayBegin:
+                        case NSEventPhaseBegan:
+                            OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                            break;
+                        case NSEventPhaseChanged:
+                        {
+                            OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                        }
+                            break;
+                        case NSEventPhaseEnded:
+                        case NSEventPhaseCancelled:
+                            OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                            break;
+                        default:
+                            break;
+                    }
+                }
             }
         }
             break;
         case NSEventTypeOtherMouseDown:
-            OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::MIDDLE, EKeyState::PRESS, mx, my);
             break;
         case NSEventTypeOtherMouseUp:
-            OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, mx, my);
+            if(event.window == m_window)
+                OnMouseButton(EMouseButton::MIDDLE, EKeyState::RELEASE, mx, my);
             break;
         case NSEventTypeKeyDown:
         {
-            NSString *chrs = [event characters];
-            
-            if([chrs length]>0)
+            if(event.window == m_window)
             {
-                int unicode = [chrs characterAtIndex:0];
-                if(unicode >= 32 && unicode <= 126)
+                NSString *chrs = [event characters];
+                
+                if([chrs length]>0)
                 {
-                    OnChar(unicode);
+                    int unicode = [chrs characterAtIndex:0];
+                    if(unicode >= 32 && unicode <= 126)
+                    {
+                        OnChar(unicode);
+                    }
+                    
                 }
                 
+                
+                uint32_t keycode = (uint32_t)[event keyCode];
+                EVirtualKey vk = toVirtualKey(keycode);
+                OnKey(vk, EKeyState::PRESS);
+                bIsProcessed = true;
             }
-            
-            
-            uint32_t keycode = (uint32_t)[event keyCode];
-            EVirtualKey vk = toVirtualKey(keycode);
-            OnKey(vk, EKeyState::PRESS);
-            
         }
-            
             break;
         case NSEventTypeKeyUp:
         {
@@ -369,111 +401,119 @@ void RenderWindowOSX::PollEvents() {
                 }
 
             }
-             
-             
             */
-            
-            uint32_t keycode = (uint32_t)[event keyCode];
-            EVirtualKey vk = toVirtualKey(keycode);
-            OnKey(vk, EKeyState::RELEASE);
+            if(event.window == m_window)
+            {
+                uint32_t keycode = (uint32_t)[event keyCode];
+                EVirtualKey vk = toVirtualKey(keycode);
+                OnKey(vk, EKeyState::RELEASE);
+                bIsProcessed = true;
+            }
         }
             break;
         case NSEventTypeFlagsChanged:
         {
-            static uint32_t last_flags = 0;
-            uint32_t flags = (uint32_t)[event modifierFlags];
-            //////
-            if((flags & NSEventModifierFlagCapsLock) && !(last_flags & NSEventModifierFlagCapsLock))
+            if(event.window == m_window)
             {
-                OnKey(EVirtualKey::KEY_CAPITAL,EKeyState::PRESS);
+                static uint32_t last_flags = 0;
+                uint32_t flags = (uint32_t)[event modifierFlags];
+                //////
+                if((flags & NSEventModifierFlagCapsLock) && !(last_flags & NSEventModifierFlagCapsLock))
+                {
+                    OnKey(EVirtualKey::KEY_CAPITAL,EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagCapsLock) && (last_flags & NSEventModifierFlagCapsLock))
+                {
+                    OnKey(EVirtualKey::KEY_CAPITAL, EKeyState::RELEASE);
+                }
+                ////////
+                if((flags & NSEventModifierFlagHelp) && !(last_flags & NSEventModifierFlagHelp))
+                {
+                    NSLog(@"HELP press");
+                }
+                
+                if(!(flags & NSEventModifierFlagHelp) && (last_flags & NSEventModifierFlagHelp))
+                {
+                    NSLog(@"HELP release");
+                }
+                
+                ///////
+                if((flags & NSEventModifierFlagShift) && !(last_flags & NSEventModifierFlagShift))
+                {
+                    OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagShift) && (last_flags & NSEventModifierFlagShift))
+                {
+                    OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::RELEASE);
+                }
+                
+                /////////
+                if((flags & NSEventModifierFlagOption) && !(last_flags & NSEventModifierFlagOption))
+                {
+                    OnKey(EVirtualKey::KEY_LMENU, EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagOption) && (last_flags & NSEventModifierFlagOption))
+                {
+                    OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
+                }
+                
+                /////////
+                if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
+                {
+                    OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
+                {
+                    OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
+                }
+                
+                ////////////
+                if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
+                {
+                    OnKey(EVirtualKey::KEY_LWIN, EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
+                {
+                    OnKey(EVirtualKey::KEY_LWIN, EKeyState::RELEASE);
+                }
+                
+                ///////////////
+                if((flags & NSEventModifierFlagFunction) && !(last_flags & NSEventModifierFlagFunction))
+                {
+                    NSLog(@"Function press");
+                }
+                
+                if(!(flags & NSEventModifierFlagFunction) && (last_flags & NSEventModifierFlagFunction))
+                {
+                    NSLog(@"Function release");
+                }
+                
+                ////////////////
+                if((flags & NSEventModifierFlagNumericPad) && !(last_flags & NSEventModifierFlagNumericPad))
+                {
+                    OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::PRESS);
+                }
+                
+                if(!(flags & NSEventModifierFlagNumericPad) && (last_flags & NSEventModifierFlagNumericPad))
+                {
+                    OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::RELEASE);
+                }
+                last_flags = flags;
             }
-            
-            if(!(flags & NSEventModifierFlagCapsLock) && (last_flags & NSEventModifierFlagCapsLock))
-            {
-                OnKey(EVirtualKey::KEY_CAPITAL, EKeyState::RELEASE);
-            }
-            ////////
-            if((flags & NSEventModifierFlagHelp) && !(last_flags & NSEventModifierFlagHelp))
-            {
-                NSLog(@"HELP press");
-            }
-            
-            if(!(flags & NSEventModifierFlagHelp) && (last_flags & NSEventModifierFlagHelp))
-            {
-                NSLog(@"HELP release");
-            }
-            
-            ///////
-            if((flags & NSEventModifierFlagShift) && !(last_flags & NSEventModifierFlagShift))
-            {
-                OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::PRESS);
-            }
-            
-            if(!(flags & NSEventModifierFlagShift) && (last_flags & NSEventModifierFlagShift))
-            {
-                OnKey(EVirtualKey::KEY_LSHIFT, EKeyState::RELEASE);
-            }
-            
-            /////////
-            if((flags & NSEventModifierFlagOption) && !(last_flags & NSEventModifierFlagOption))
-            {
-                OnKey(EVirtualKey::KEY_LMENU, EKeyState::PRESS);
-            }
-            
-            if(!(flags & NSEventModifierFlagOption) && (last_flags & NSEventModifierFlagOption))
-            {
-                OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
-            }
-            
-            /////////
-            if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
-            {
-                OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
-            }
-            
-            if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
-            {
-                OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
-            }
-            
-            ////////////
-            if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
-            {
-                OnKey(EVirtualKey::KEY_LWIN, EKeyState::PRESS);
-            }
-            
-            if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
-            {
-                OnKey(EVirtualKey::KEY_LWIN, EKeyState::RELEASE);
-            }
-            
-            ///////////////
-            if((flags & NSEventModifierFlagFunction) && !(last_flags & NSEventModifierFlagFunction))
-            {
-                NSLog(@"Function press");
-            }
-            
-            if(!(flags & NSEventModifierFlagFunction) && (last_flags & NSEventModifierFlagFunction))
-            {
-                NSLog(@"Function release");
-            }
-            
-            ////////////////
-            if((flags & NSEventModifierFlagNumericPad) && !(last_flags & NSEventModifierFlagNumericPad))
-            {
-                OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::PRESS);
-            }
-            
-            if(!(flags & NSEventModifierFlagNumericPad) && (last_flags & NSEventModifierFlagNumericPad))
-            {
-                OnKey(EVirtualKey::KEY_NUMLOCK, EKeyState::RELEASE);
-            }
-            last_flags = flags;
-        }break;
+            break;
+        }
         default:
             break;
     }
-    [NSApp sendEvent:event];
+    if(!bIsProcessed)
+    {
+        [NSApp sendEvent:event];
+    }
     [NSApp updateWindows];
     [event release];
     }while(event);
@@ -497,9 +537,9 @@ void RenderWindowOSX::OnMouseButton(ParaEngine::EMouseButton button, ParaEngine:
     {
         if(state == EKeyState::PRESS)
         {
-            NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
+            //NSLog(@"OnRightMouse PRESS: %d,%d",x,y);
         }else{
-             NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
+            //NSLog(@"OnRightMouse RELEASE: %d,%d",x,y);
         }
     }
     

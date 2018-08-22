@@ -223,7 +223,7 @@ namespace ParaEngine
 	BlockModel& BlockTemplate::GetBlockModelByData(uint32 nData)
 	{
 		if (m_pBlockModelFilter != 0)
-			return m_pBlockModelFilter->GetBlockModelByData(nData);
+			return m_pBlockModelFilter->GetBlockModelByData(nData & 0xff);
 		else
 			return m_block_models[0];
 	}
@@ -553,6 +553,10 @@ namespace ParaEngine
 		{
 			dwBlockColor = 0xff000000 | Color::convert16_32((uint16)blockData);
 		}
+		else if (IsColorData8Bits())
+		{
+			dwBlockColor = 0xff000000 | (~Color::convert8_32((uint8)(blockData >> 8)));
+		}
 		else
 		{
 			dwBlockColor = GetMapColor();
@@ -566,6 +570,10 @@ namespace ParaEngine
 		if (HasColorData())
 		{
 			dwBlockColor = 0xff000000 | Color::convert16_32((uint16)blockData);
+		}
+		else if (IsColorData8Bits())
+		{
+			dwBlockColor = 0xff000000 | (~Color::convert8_32((uint8)(blockData >> 8)));
 		}
 		return dwBlockColor;
 	}

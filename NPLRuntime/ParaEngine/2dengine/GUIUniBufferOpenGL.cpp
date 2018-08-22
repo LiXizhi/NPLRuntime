@@ -316,7 +316,7 @@ namespace ParaEngine {
 
 		size_t i;
 		bool bBack = true;
-		for (i = 0; i < m_lettersInfo.size() - 1; i++)
+		for (i = 0; i < m_lettersInfo.size(); i++)
 		{
 			auto& curInfo = m_lettersInfo[i];
 

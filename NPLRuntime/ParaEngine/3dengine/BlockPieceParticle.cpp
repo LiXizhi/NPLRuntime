@@ -11,6 +11,7 @@
 #include "ParaWorldAsset.h"
 #include "FastRandom.h"
 #include "BlockEngine/BlockWorldClient.h"
+#include "DynamicAttributeField.h"
 #include "BlockPieceParticle.h"
 
 using namespace ParaEngine;
@@ -22,12 +23,12 @@ using namespace ParaEngine;
 /////////////////////////////////////////////////
 ParaEngine::CBlockPieceParticleElement::CBlockPieceParticleElement(CBlockPieceParticle* pParent) : m_pParent(pParent)
 {
-	
+
 }
 
 ParaEngine::CBlockPieceParticleElement::~CBlockPieceParticleElement()
 {
-	
+
 }
 
 int ParaEngine::CBlockPieceParticleElement::RenderParticle(SPRITEVERTEX** pVertexBuffer, SceneState* pSceneState)
@@ -143,7 +144,16 @@ int ParaEngine::CBlockPieceParticle::RenderParticle(SPRITEVERTEX** ppVertexBuffe
 	uint8 brightness;
 	BlockWorldClient::GetInstance()->GetBlockBrightness(m_vBlockPos, &brightness, 1, -1);
 	brightness *= 16;
-	DWORD color = Color(brightness, brightness, brightness, (uint8)(255*CalculateOpacity()));
+
+	DWORD color = Color(brightness, brightness, brightness, (uint8)(255 * CalculateOpacity()));
+
+	CDynamicAttributeField* pField = GetDynamicField("colorDiffuse");
+	if (pField)
+	{
+		Color diffuseColor((DWORD)(*pField));
+		color = (Color)(Color(color).ReinterpretAsLinear() * diffuseColor.ReinterpretAsLinear());
+	}
+
 
 	SPRITEVERTEX* pVertexBuffer = *ppVertexBuffer;
 	// 2 triangle list with 6 vertices
@@ -162,7 +172,7 @@ int ParaEngine::CBlockPieceParticle::RenderParticle(SPRITEVERTEX** ppVertexBuffe
 	v.x = width; v.y = -height; v.z = 0;
 	v = bbInfo.TransformVertexWithoutY(v);
 	CParticleElement::SetParticleVertex(pVertexBuffer[3], vX + v.x, vY + v.y, vZ + v.z, uv.tc[3].x, uv.tc[3].y, color);
-		
+
 	pVertexBuffer[4] = pVertexBuffer[0];
 	pVertexBuffer[5] = pVertexBuffer[2];
 	nNumOfParticles = 1;

@@ -23,6 +23,7 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD1(IParaWebView, SetHideViewWhenClickBack_s, bool) { cls->SetHideViewWhenClickBack(p1); return S_OK; }
 		ATTRIBUTE_METHOD(IParaWebView, Refresh_s) { cls->Refresh(); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebView, hideCloseButton_s, bool) { cls->hideCloseButton(p1); return S_OK; }
+		ATTRIBUTE_METHOD(IParaWebView, bringToTop_s) { cls->bringToTop(); return S_OK; }
 
 		IAttributeFields* GetAttributeObject();
 
@@ -32,6 +33,7 @@ namespace ParaEngine {
 		virtual void SetHideViewWhenClickBack(bool b) = 0;
 		virtual void Refresh() = 0;
         virtual void hideCloseButton(bool bHide) = 0;
+		virtual void bringToTop() = 0;
 
 		// return false IParaWebView must auto release, return ture IParaWebView release by user
 		typedef std::function<bool()> onCloseFunc;

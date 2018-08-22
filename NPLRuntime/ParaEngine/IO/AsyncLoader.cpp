@@ -85,6 +85,8 @@ using namespace ParaEngine;
 #define DEFAULT_AUDIOFILE_THREAD_COUNT	1
 #endif
 
+const int DEFAULT_IO_THREADS = 1;
+
 /** easy define :-) */
 #define ASSETS_LOG(nLevel, ...) if(m_nLogLevel<=nLevel){ SERVICE_LOG1(g_asset_logger, ## __VA_ARGS__) }
 
@@ -211,6 +213,7 @@ CAsyncLoader::CAsyncLoader()
 m_pXFileParser(NULL), m_pGDIEngine(NULL),
 #endif
 m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
+, m_UsedIOThread(0)
 {
 #ifdef _DEBUG
 	// SetLogLevel(Log_All);
@@ -450,15 +453,20 @@ int CAsyncLoader::Stop()
 	}
 	m_workers.clear();
 
-	if(m_io_thread.get()!=0)
-	{
-		ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
-		m_IOQueue.push(msg);
 
-		m_io_thread->join();
-		m_io_thread.reset();
-		OUTPUT_LOG("CAsyncLoader IO thread is exited\n");
+	auto count = m_io_threads.size();
+	if (count > 0)
+	{
+		SetIOThreadCount(count);
+		for (size_t i = 0; i < count; i++)
+		{
+			ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
+			m_IOQueue.push(msg);
+			m_io_threads[i]->join();
+		}
+		m_io_threads.clear();
 	}
+
 
 	// clear all queued messages,  since we already called WaitForAllItems(). the following should never be needed. 
 	// however, for safety we just empty all queued items. 
@@ -493,6 +501,25 @@ int CAsyncLoader::Stop()
 	return 0;
 }
 
+void CAsyncLoader::SetIOThreadCount(int count)
+{
+	if (m_io_threads.size() < 1)
+		return;
+
+	if (count < 1)
+		count = 1;
+	if (count > m_io_threads.size())
+		count = m_io_threads.size();
+
+	if (count != m_UsedIOThread)
+	{
+		//m_io_semaphore.reset(count);
+		m_UsedIOThread = count;
+	}
+}
+
+
+
 int CAsyncLoader::Start(int nWorkerCount)
 {
 	if((int)(m_workers.size()) != 0 || nWorkerCount <= 0)
@@ -505,7 +532,21 @@ int CAsyncLoader::Start(int nWorkerCount)
 	m_bInterruptSignal = false;
 
 	// start the io thread
-	m_io_thread.reset(new boost::thread(boost::bind(&CAsyncLoader::FileIOThreadProc, this)));
+	//m_io_thread.reset(new boost::thread(boost::bind(&CAsyncLoader::FileIOThreadProc, this)));
+	{
+		auto count = (std::max)(std::thread::hardware_concurrency() -1, (unsigned int)1);
+		m_io_threads.resize(count);
+		m_UsedIOThread = DEFAULT_IO_THREADS;
+		//m_io_semaphore.reset(1);
+
+		for (unsigned int i = 0; i < count; i++)
+		{
+			auto& t = m_io_threads[i];
+			t.reset(new std::thread(&CAsyncLoader::FileIOThreadProc, this, i + 1));
+		}
+
+		m_io_threads[0]->detach();
+	}
 
 	// queue[0] is for local CPU intensive tasks like unzip. (only one thread process it)
 	CreateWorkerThreads(ResourceRequestID_Local, DEFAULT_LOCAL_THREAD_COUNT); 
@@ -622,7 +663,7 @@ int CAsyncLoader::FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRe
 	return hr;
 }
 
-int CAsyncLoader::FileIOThreadProc()
+int CAsyncLoader::FileIOThreadProc(unsigned int id)
 {
 	ResourceRequest_ptr ResourceRequest;
 	HRESULT hr = S_OK;
@@ -632,12 +673,18 @@ int CAsyncLoader::FileIOThreadProc()
 	int nRes = 0;
 	while(nRes != -1)
 	{
+		//m_io_semaphore.wait();
+		while (id > m_UsedIOThread)
+			std::this_thread::sleep_for(std::chrono::milliseconds(3));
+
 		m_IOQueue.wait_and_pop(ResourceRequest);
 		if(ResourceRequest->m_nType == ResourceRequestType_Quit)
 		{
 			break;
 		}
 		hr = FileIOThreadProc_HandleRequest(ResourceRequest);
+
+		//m_io_semaphore.post();
 	}
 	return 0;
 }
@@ -982,6 +1029,9 @@ int ParaEngine::CAsyncLoader::InstallFields(CAttributeClass * pClass, bool bOver
 	pClass->AddField("LogLevel", FieldType_Int, (void*)SetLogLevel_s, (void*)GetLogLevel_s, NULL, "", bOverride);
 	pClass->AddField("log", FieldType_String, (void*)log_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("WaitForAllItems", FieldType_void, (void*)WaitForAllItems_s, (void*)0, NULL, "", bOverride);
+
+	pClass->AddField("IOThreadsCount", FieldType_Int, (void*)SetIOThreadCount_s, (void*)0, NULL, "", bOverride);
+	
 	return S_OK;
 	return 0;
 }

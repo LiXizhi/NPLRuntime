@@ -16,7 +16,7 @@ namespace ParaEngine
 	class CMeshPhysicsObject : public CTileObject
 	{
 	public:
-		virtual CBaseObject::_SceneObjectType GetType(){ return CBaseObject::MeshPhysicsObject; };
+		virtual CBaseObject::_SceneObjectType GetType() { return CBaseObject::MeshPhysicsObject; };
 		virtual std::string ToString(DWORD nMethod);
 		CMeshPhysicsObject(void);
 		virtual ~CMeshPhysicsObject(void);
@@ -41,18 +41,25 @@ namespace ParaEngine
 		// implementation of IAttributeFields
 
 		/** attribute class ID should be identical, unless one knows how overriding rules work.*/
-		virtual int GetAttributeClassID(){ return ATTRIBUTE_CLASSID_CMeshPhysicsObject; }
+		virtual int GetAttributeClassID() { return ATTRIBUTE_CLASSID_CMeshPhysicsObject; }
 		/** a static string, describing the attribute class object's name */
-		virtual const char* GetAttributeClassName(){ static const char name[] = "CMeshPhysicsObject"; return name; }
+		virtual const char* GetAttributeClassName() { static const char name[] = "CMeshPhysicsObject"; return name; }
 		/** a static string, describing the attribute class object */
-		virtual const char* GetAttributeClassDescription(){ static const char desc[] = ""; return desc; }
+		virtual const char* GetAttributeClassDescription() { static const char desc[] = ""; return desc; }
 		/** this class should be implemented if one wants to add new attribute. This function is always called internally.*/
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CMeshPhysicsObject);
-		ATTRIBUTE_METHOD1(CMeshPhysicsObject, IsFaceCullingDisabled_s, bool*)		{ *p1 = cls->IsFaceCullingDisabled(); return S_OK; }
-		ATTRIBUTE_METHOD1(CMeshPhysicsObject, SetFaceCullingDisabled_s, bool)		{ cls->SetFaceCullingDisabled(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CMeshPhysicsObject, IsFaceCullingDisabled_s, bool*) { *p1 = cls->IsFaceCullingDisabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CMeshPhysicsObject, SetFaceCullingDisabled_s, bool) { cls->SetFaceCullingDisabled(p1); return S_OK; }
 
+		/** get attribute by child object. used to iterate across the attribute field hierarchy. */
+		virtual IAttributeFields* GetChildAttributeObject(const std::string& sName);
+		/** get the number of child objects (row count) in the given column. please note different columns can have different row count. */
+		virtual int GetChildAttributeObjectCount(int nColumnIndex = 0);
+		/** we support multi-dimensional child object. by default objects have only one column. */
+		virtual int GetChildAttributeColumnCount();
+		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 	public:
 		/** whether we will turn off any material level face culling setting. but use the current face culling setting in the effect manager. */
 		void SetFaceCullingDisabled(bool bDisableFaceCulling);
@@ -321,7 +328,7 @@ namespace ParaEngine
 
 		unsigned int m_nPhysicsGroup;
 		/// pointer to a mesh object.
-		union{
+		union {
 			CMeshObject * m_pMeshObject;
 		};
 

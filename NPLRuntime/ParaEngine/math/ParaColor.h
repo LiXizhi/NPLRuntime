@@ -11,7 +11,7 @@ namespace ParaEngine
 	*/
 	struct LinearColor
 	{
-		float	r,		g,		b,		a;
+		float	r, g, b, a;
 
 		/** Static lookup table used for color -> LinearColor conversion. */
 		static float PowOneOver255Table[256];
@@ -31,7 +31,7 @@ namespace ParaEngine
 		operator const D3DCOLORVALUE& () const;
 #endif		
 		operator const float*() const;
-	
+
 		// Operators.
 
 		inline float& Component(int32 Index)
@@ -56,7 +56,7 @@ namespace ParaEngine
 				this->g + ColorB.g,
 				this->b + ColorB.b,
 				this->a + ColorB.a
-				);
+			);
 		}
 		inline LinearColor& operator+=(const LinearColor& ColorB)
 		{
@@ -74,7 +74,7 @@ namespace ParaEngine
 				this->g - ColorB.g,
 				this->b - ColorB.b,
 				this->a - ColorB.a
-				);
+			);
 		}
 		inline LinearColor& operator-=(const LinearColor& ColorB)
 		{
@@ -92,7 +92,7 @@ namespace ParaEngine
 				this->g * ColorB.g,
 				this->b * ColorB.b,
 				this->a * ColorB.a
-				);
+			);
 		}
 		inline LinearColor& operator*=(const LinearColor& ColorB)
 		{
@@ -110,7 +110,7 @@ namespace ParaEngine
 				this->g * Scalar,
 				this->b * Scalar,
 				this->a * Scalar
-				);
+			);
 		}
 
 		inline LinearColor& operator*=(float Scalar)
@@ -129,7 +129,7 @@ namespace ParaEngine
 				this->g / ColorB.g,
 				this->b / ColorB.b,
 				this->a / ColorB.a
-				);
+			);
 		}
 		inline LinearColor& operator/=(const LinearColor& ColorB)
 		{
@@ -148,7 +148,7 @@ namespace ParaEngine
 				this->g * InvScalar,
 				this->b * InvScalar,
 				this->a * InvScalar
-				);
+			);
 		}
 		inline LinearColor& operator/=(float Scalar)
 		{
@@ -280,12 +280,12 @@ namespace ParaEngine
 		// Win32 x86
 		union { struct{ uint8 b, g, r, a; }; uint32 AlignmentDummy; };
 #else // PLATFORM_LITTLE_ENDIAN
-		union { struct{ uint8 a, r, g, b; }; uint32 AlignmentDummy; };
+		union { struct { uint8 a, r, g, b; }; uint32 AlignmentDummy; };
 #endif
 
 		uint32& DWColor(void) { return *((uint32*)this); }
 		const uint32& DWColor(void) const { return *((uint32*)this); }
-		operator const uint32 () const { return DWColor(); };
+		operator const uint32() const { return DWColor(); };
 		void operator=(const uint32 color);
 		void operator=(const LinearColor& color);
 
@@ -356,6 +356,12 @@ namespace ParaEngine
 		/** conversion between 32bits color and 16 bits color */
 		static uint32 convert16_32(uint16 rgb);
 
+		/** conversion between 32bits color and 8 bits color */
+		static uint8 convert32_8(uint32 rgb);
+
+		/** conversion between 32bits color and 8 bits color */
+		static uint32 convert8_32(uint8 rgb);
+
 		/**
 		* Makes a random but quite nice color.
 		*/
@@ -366,7 +372,7 @@ namespace ParaEngine
 		*/
 		static Color MakeRedToGreenColorFromScalar(float Scalar);
 
-		
+
 		/**
 		* Reinterprets the color as a linear color.
 		*

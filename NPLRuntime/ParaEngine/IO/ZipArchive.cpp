@@ -288,6 +288,8 @@ void CZipArchive::SetRootDirectory( const string& filename )
 
 void CZipArchive::ReBuild()
 {
+	ParaEngine::Lock lock_(m_mutex);
+
 	if (m_bDirty)
 	{
 
@@ -872,12 +874,11 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 	}
 
 
-	const size_t max_path = 1024;
-	char tmp[max_path + 1];
+	char tmp[MAX_PATH_LENGTH + 1];
 	if (m_bIgnoreCase)
 	{
 		size_t i = 0;
-		for (; filename[i] != 0 && i < max_path; i++)
+		for (; filename[i] != 0 && i < MAX_PATH_LENGTH; i++)
 		{
 			tmp[i] = filename[i];
 			if (tmp[i] >= 'A' && tmp[i] <= 'Z')
@@ -904,8 +905,7 @@ int CZipArchive::findFile(const ArchiveFileFindItem* item)
 		}
 	}
 
-
-
+	
 	ReBuild();
 
 	auto it = std::lower_bound(m_FileList.begin(), m_FileList.end(), hash, [](const SZipFileEntryPtr& a, const uint32& hash)

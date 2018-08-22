@@ -12,6 +12,8 @@
 #include "ParaWorldAsset.h"
 #include "ImageEntity.h"
 #include "TextureEntity.h"
+#include "ParaImage.h"
+
 
 using namespace ParaEngine;
 
@@ -29,6 +31,7 @@ TextureEntity::TextureEntity(const AssetKey& key)
 	:AssetEntity(key), SurfaceType(StaticTexture), 	
 	m_bAsyncLoad(true),
 	m_pRawData(NULL), m_nRawDataSize(0),
+	m_pImage(nullptr),
 	m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0)
 {
 }
@@ -36,6 +39,7 @@ TextureEntity::TextureEntity(const AssetKey& key)
 TextureEntity::TextureEntity()
 	: SurfaceType(StaticTexture), m_pTextureInfo(NULL), m_nHitCount(0), m_dwColorKey(0), 
 	m_pRawData(NULL), m_nRawDataSize(0),
+	m_pImage(nullptr),
 	m_bAsyncLoad(true)
 {
 }
@@ -43,7 +47,44 @@ TextureEntity::TextureEntity()
 TextureEntity::~TextureEntity()
 {
 	SAFE_DELETE_ARRAY(m_pRawData);
+	SAFE_RELEASE(m_pImage);
 	SAFE_DELETE(m_pTextureInfo);
+}
+
+void TextureEntity::SetImage(ParaImage* pImage)
+{
+	SAFE_RELEASE(m_pImage);
+	m_pImage = pImage;
+}
+
+bool TextureEntity::SetRawDataForImage(const char* pData, int nSize, bool bDeleteData)
+{
+	SAFE_RELEASE(m_pImage);
+	auto pImage = new ParaImage();
+
+	auto ret = pImage->initWithImageData((const unsigned char*)pData, nSize);
+	if (!ret)
+	{
+		SAFE_RELEASE(pImage);
+	}
+
+	if (bDeleteData)
+		SAFE_DELETE_ARRAY(pData);
+
+	m_pImage = pImage;
+
+	return ret;
+}
+
+const ParaImage* TextureEntity::GetImage() const
+{
+	return m_pImage;
+}
+
+
+void TextureEntity::SwapImage(TextureEntity* other)
+{
+	std::swap(m_pImage, other->m_pImage);
 }
 
 char* TextureEntity::GetRawData()
@@ -79,6 +120,11 @@ bool TextureEntity::LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFor
 		if (LoadFromMemory((const char*)(image->getData()), image->getDataLen(), nMipLevels, dwTextureFormat, ppTexture) == S_OK)
 			return true;
 	}
+	return false;
+}
+
+bool TextureEntity::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat, void** ppTexture)
+{
 	return false;
 }
 
@@ -318,6 +364,12 @@ HRESULT TextureEntity::CreateTextureFromFile_Async(void* pContext, RenderDeviceP
 	if (GetRawData())
 	{
 		LoadFromMemory(GetRawData(), GetRawDataSize(), nMipLevels, dwTextureFormat, ppTexture);
+		return S_OK;
+	}
+
+	if (GetImage())
+	{
+		LoadFromImage(GetImage(), nMipLevels, dwTextureFormat, ppTexture);
 		return S_OK;
 	}
 

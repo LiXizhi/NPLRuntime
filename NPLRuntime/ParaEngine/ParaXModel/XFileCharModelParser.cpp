@@ -12,12 +12,13 @@
 #include "ParaXBone.h"
 #include "particle.h"
 #include "XFileParsing.inl"
+#include "XFileHelper.h"
 #include "XFileCharModelParser.h"
 
 using namespace ParaEngine;
 
 ParaEngine::XFileCharModelParser::XFileCharModelParser(const char* pBuffer, int32 nSize)
-	:XFileParser(pBuffer, nSize), m_bHeaderLoaded(false), m_pRaw(NULL)
+	:XFileStaticModelParser(pBuffer, nSize), m_bHeaderLoaded(false), m_pRaw(NULL)
 {
 }
 
@@ -271,6 +272,12 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 			m_pRaw = NULL;
 			m_pParaXRawData->Unlock();
 		}
+	}
+	else if (mScene != 0)
+	{
+		memcpy(&mScene->m_header, &m_xheader, sizeof(ParaXHeaderDef));
+		pMesh = LoadParaXModelFromScene(mScene);
+		SAFE_DELETE(mScene);
 	}
 	return pMesh;
 }
@@ -833,7 +840,7 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 	{
 		//int nParticleEmitters = *(DWORD*)(pBuffer);
 		DWORD _nParticleEmitters;
-		memcpy(&_nParticleEmitters, pBuffer, sizeof(pBuffer));
+		memcpy(&_nParticleEmitters, pBuffer, sizeof(DWORD));
 		int nParticleEmitters = _nParticleEmitters;
 
 

@@ -449,11 +449,9 @@ void FBXParser::FillParaXModelData(CParaXModel *pMesh, const aiScene *pFbxScene)
 				if (nSize > 0)
 				{
 					TextureEntity *texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(m_textures[i]);
-					char* bufferCpy = new char[nSize];
 
 					auto src = m_textureContentMapping[m_textures[i]].c_str();
-					memcpy(bufferCpy, src, nSize);
-					texEntity->SetRawData(bufferCpy, nSize);
+					texEntity->SetRawDataForImage(src, nSize, false);
 					pMesh->textures[i] = texEntity;
 				}
 			}
@@ -659,9 +657,7 @@ void FBXParser::ProcessStaticFBXMaterial(const aiScene* pFbxScene, unsigned int 
 			if (!texEntity)
 			{
 				texEntity = CGlobals::GetAssetManager()->GetTextureManager().NewEntity(diffuseTexName);
-				char* bufferCpy = new char[content_len];
-				memcpy(bufferCpy, content_begin, content_len);
-				texEntity->SetRawData(bufferCpy, content_len);
+				texEntity->SetRawDataForImage(content_begin, content_len, false);
 				CGlobals::GetAssetManager()->GetTextureManager().AddEntity(diffuseTexName, texEntity);
 			}
 

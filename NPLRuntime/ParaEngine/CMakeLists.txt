@@ -253,6 +253,8 @@ target_link_libraries(ParaEngine PUBLIC
     tinyxpath
     luabind
     ParaSqlite 
+	libjpeg
+    libpng
 	${ICONV_LIB_NAME}
 )
 

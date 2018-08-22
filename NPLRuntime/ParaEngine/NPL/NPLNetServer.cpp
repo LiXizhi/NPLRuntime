@@ -29,16 +29,16 @@
 #define IDLE_TIMEOUT_TIMER_INTERVAL 2000
 
 NPL::CNPLNetServer::CNPLNetServer()
-:	m_io_service_dispatcher(),
-m_acceptor(m_io_service_dispatcher),
-m_resolver(m_io_service_dispatcher),
-m_idle_timer(m_io_service_dispatcher),
-m_connection_manager(),
-m_msg_dispatcher(this), // TODO: this gives a warning. find a better way to pass this pointer.
-m_strServer(NPL_DEFAULT_SERVER), 
-m_strPort(NPL_DEFAULT_PORT), 
-m_nMaxPendingConnections(DEFAULT_MAX_PENDING_CONNECTIONS), m_bIsServerStarted(false),
-m_bTCPKeepAlive(false),m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS)
+	: m_io_service_dispatcher(),
+	m_acceptor(m_io_service_dispatcher),
+	m_resolver(m_io_service_dispatcher),
+	m_idle_timer(m_io_service_dispatcher),
+	m_connection_manager(),
+	m_msg_dispatcher(this), // TODO: this gives a warning. find a better way to pass this pointer.
+	m_strServer(NPL_DEFAULT_SERVER),
+	m_strPort(NPL_DEFAULT_PORT),
+	m_nMaxPendingConnections(DEFAULT_MAX_PENDING_CONNECTIONS), m_bIsServerStarted(false),
+	m_bTCPKeepAlive(false), m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS)
 {
 }
 
@@ -50,7 +50,7 @@ NPL::CNPLNetServer::~CNPLNetServer()
 void NPL::CNPLNetServer::SetTCPKeepAlive(bool bEnable)
 {
 	m_bTCPKeepAlive = bEnable;
-	if(m_acceptor.is_open())
+	if (m_acceptor.is_open())
 	{
 		// Implements the SOL_SOCKET/SO_KEEPALIVE socket option. 
 		boost::asio::socket_base::keep_alive option(bEnable);
@@ -68,7 +68,7 @@ void NPL::CNPLNetServer::SetKeepAlive(bool bEnable)
 {
 	m_bKeepAlive = bEnable;
 
-	if(m_bKeepAlive)
+	if (m_bKeepAlive)
 	{
 		EnableIdleTimeout(true);
 	}
@@ -92,7 +92,7 @@ bool NPL::CNPLNetServer::IsIdleTimeoutEnabled()
 void NPL::CNPLNetServer::SetIdleTimeoutPeriod(int nMilliseconds)
 {
 	m_nIdleTimeoutMS = nMilliseconds;
-	if(m_nIdleTimeoutMS<=0){
+	if (m_nIdleTimeoutMS <= 0) {
 		OUTPUT_LOG("warning: IdleTimeoutPeriod is 0, we will disable idle time out, otherwise connection will be closed immediately.\n");
 		m_bEnableIdleTimeout = false;
 	}
@@ -107,7 +107,7 @@ void NPL::CNPLNetServer::handle_idle_timeout(const boost::system::error_code& er
 {
 	if (!err)
 	{
-		if(IsIdleTimeoutEnabled())
+		if (IsIdleTimeoutEnabled())
 		{
 			m_connection_manager.CheckIdleTimeout();
 		}
@@ -118,29 +118,29 @@ void NPL::CNPLNetServer::handle_idle_timeout(const boost::system::error_code& er
 	}
 }
 
-void NPL::CNPLNetServer::start( const char* server/*=NULL*/, const char* port/*=NULL*/ )
+void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=NULL*/)
 {
-	if(m_dispatcherThread.get()!=0)
+	if (m_dispatcherThread.get() != 0)
 	{
 		// One can only start the server once, unless we are listening to a new port
-		if(m_strPort == "0" && port!=0)
+		if (m_strPort == "0" && port != 0)
 		{
 			if (strcmp(port, "0") != 0)
 			{
-				OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(),  m_strPort.c_str());
+				OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(), m_strPort.c_str());
 				boost::asio::ip::tcp::resolver::query query(m_strServer, m_strPort);
 				m_resolver.async_resolve(query,
 					boost::bind(&CNPLNetServer::handle_resolve_local, this,
-					boost::asio::placeholders::error,
-					boost::asio::placeholders::iterator));
+						boost::asio::placeholders::error,
+						boost::asio::placeholders::iterator));
 			}
 		}
 		return;
 	}
 
-	if(server!=0)
+	if (server != 0)
 		m_strServer = server;
-	if(port!=0)
+	if (port != 0)
 		m_strPort = port;
 
 	// add localhost to trusted runtime addresses, so that the local runtime can connect to itself. 
@@ -154,15 +154,15 @@ void NPL::CNPLNetServer::start( const char* server/*=NULL*/, const char* port/*=
 	m_msg_dispatcher.AddNPLRuntimeAddress(address);
 
 	// if the port is "0", we will not listen for incoming connections. 
-	if(m_strPort != "0")
+	if (m_strPort != "0")
 	{
 		OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(), m_strPort.c_str());
 
 		boost::asio::ip::tcp::resolver::query query(m_strServer, m_strPort);
 		m_resolver.async_resolve(query,
 			boost::bind(&CNPLNetServer::handle_resolve_local, this,
-			boost::asio::placeholders::error,
-			boost::asio::placeholders::iterator));
+				boost::asio::placeholders::error,
+				boost::asio::placeholders::iterator));
 	}
 
 	OUTPUT_LOG("TCPKeepAlive: %s\n", IsTCPKeepAliveEnabled() ? "true" : "false");
@@ -173,7 +173,7 @@ void NPL::CNPLNetServer::start( const char* server/*=NULL*/, const char* port/*=
 	OUTPUT_LOG("UseCompression(incoming): %s\n", GetDispatcher().IsUseCompressionIncomingConnection() ? "true" : "false");
 	OUTPUT_LOG("CompressionLevel: %d\n", GetDispatcher().GetCompressionLevel());
 	OUTPUT_LOG("CompressionThreshold: %d\n", GetDispatcher().GetCompressionThreshold());
-	
+
 	m_idle_timer.expires_from_now(boost::chrono::milliseconds(GetIdleTimeoutPeriod()));
 	m_idle_timer.async_wait(boost::bind(&NPL::CNPLNetServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 
@@ -184,7 +184,7 @@ void NPL::CNPLNetServer::start( const char* server/*=NULL*/, const char* port/*=
 
 void NPL::CNPLNetServer::stop()
 {
-	if(m_dispatcherThread.get()!=0)
+	if (m_dispatcherThread.get() != 0)
 	{
 		// cancel timer
 		m_idle_timer.cancel();
@@ -202,7 +202,7 @@ void NPL::CNPLNetServer::stop()
 }
 
 
-void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& err,boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
+void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& err, boost::asio::ip::tcp::resolver::iterator endpoint_iterator)
 {
 	if (!err)
 	{
@@ -219,7 +219,7 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 			m_acceptor.set_option(option);
 			m_acceptor.bind(endpoint);
 
-			if(IsTCPKeepAliveEnabled())
+			if (IsTCPKeepAliveEnabled())
 			{
 				// Implements the SOL_SOCKET/SO_KEEPALIVE socket option. 
 				boost::asio::socket_base::keep_alive option(true);
@@ -246,18 +246,18 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 		}
 		if (!m_new_connection)
 			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher)),
-		m_acceptor.async_accept(m_new_connection->socket(),
-			boost::bind(&CNPLNetServer::handle_accept, this,
-			boost::asio::placeholders::error));
+			m_acceptor.async_accept(m_new_connection->socket(),
+				boost::bind(&CNPLNetServer::handle_accept, this,
+					boost::asio::placeholders::error));
 	}
 	else
 	{
 		string sError = err.message();
-		OUTPUT_LOG( "warning: CNPLNetServer unable to resolve TCP end point %s \n", sError.c_str());
+		OUTPUT_LOG("warning: CNPLNetServer unable to resolve TCP end point %s \n", sError.c_str());
 	}
 }
 
-void NPL::CNPLNetServer::handle_accept( const boost::system::error_code& err )
+void NPL::CNPLNetServer::handle_accept(const boost::system::error_code& err)
 {
 	if (!err)
 	{
@@ -271,31 +271,31 @@ void NPL::CNPLNetServer::handle_accept( const boost::system::error_code& err )
 			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher));
 			m_acceptor.async_accept(m_new_connection->socket(),
 				boost::bind(&CNPLNetServer::handle_accept, this,
-				boost::asio::placeholders::error));
+					boost::asio::placeholders::error));
 		}
 	}
-	else if(err == boost::asio::error::connection_aborted)
+	else if (err == boost::asio::error::connection_aborted)
 	{
 		string sError = err.message();
-		OUTPUT_LOG( "warning: CNPLNetServer aborted incoming connection, because: %s\n", sError.c_str());
-		OUTPUT_LOG( "current connections %d\n", m_connection_manager.get_connection_count());
+		OUTPUT_LOG("warning: CNPLNetServer aborted incoming connection, because: %s\n", sError.c_str());
+		OUTPUT_LOG("current connections %d\n", m_connection_manager.get_connection_count());
 
 		// QUESTION: is m_new_connection.reset() really needed here?
 		/*m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher,m_connection_manager,m_msg_dispatcher));
-		m_acceptor.async_accept(m_new_connection->socket(), 
-		boost::bind(&CNPLNetServer::handle_accept, this, 
+		m_acceptor.async_accept(m_new_connection->socket(),
+		boost::bind(&CNPLNetServer::handle_accept, this,
 		boost::asio::placeholders::error)); */
 	}
 	else
 	{
 		string sError = err.message();
-		OUTPUT_LOG( "error: CNPLNetServer unable to accept incoming connection, because: %s\n", sError.c_str());
-		OUTPUT_LOG( "current connections %d\n", m_connection_manager.get_connection_count());
+		OUTPUT_LOG("error: CNPLNetServer unable to accept incoming connection, because: %s\n", sError.c_str());
+		OUTPUT_LOG("current connections %d\n", m_connection_manager.get_connection_count());
 
 		// QUESTION: is m_new_connection.reset() really needed here?
 		/*m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher,m_connection_manager,m_msg_dispatcher));
-		m_acceptor.async_accept(m_new_connection->socket(), 
-		boost::bind(&CNPLNetServer::handle_accept, this, 
+		m_acceptor.async_accept(m_new_connection->socket(),
+		boost::bind(&CNPLNetServer::handle_accept, this,
 		boost::asio::placeholders::error)); */
 	}
 }
@@ -315,45 +315,50 @@ void NPL::CNPLNetServer::handle_stop()
 	}
 	/* In some rare computer, async_accept can not be closed in any way, the following code does not help.
 	if (m_new_connection){
-		m_new_connection->stop(false);
-		m_new_connection.reset();
+	m_new_connection->stop(false);
+	m_new_connection.reset();
 	}*/
-		
+
 	m_connection_manager.stop_all();
 }
 
 std::string NPL::CNPLNetServer::GetExternalIP()
 {
 	using boost::asio::ip::tcp;
+	std::string firstIP;
 	try
 	{
 		boost::asio::io_service io_service;
 
 		tcp::resolver resolver(io_service);
-		tcp::resolver::query query(boost::asio::ip::host_name(),"");
-		tcp::resolver::iterator it=resolver.resolve(query);
+		tcp::resolver::query query(boost::asio::ip::host_name(), "");
+		tcp::resolver::iterator it = resolver.resolve(query);
 
-		while(it!=tcp::resolver::iterator())
+		while (it != tcp::resolver::iterator())
 		{
-			boost::asio::ip::address addr=(it++)->endpoint().address();
+			boost::asio::ip::address addr = (it++)->endpoint().address();
+			if (firstIP.empty() && addr.is_v4())
+			{
+				firstIP = addr.to_string().c_str();
+			}
 			OUTPUT_LOG("ip %s\n", addr.to_string().c_str());
 		}
 	}
-	catch(...)
+	catch (...)
 	{
 		OUTPUT_LOG1("warning: failed getting external ip in CNPLNetServer::GetExternalIP()\n");
 	}
-	return "NOT SUPPORTED YET, CHECK LOG";
+	return firstIP;
 }
 
 const std::string& NPL::CNPLNetServer::GetHostPort()
 {
-	return m_strServer;
+	return m_strPort;
 }
 
 const std::string& NPL::CNPLNetServer::GetHostIP()
 {
-	return m_strPort;
+	return m_strServer;
 }
 
 bool NPL::CNPLNetServer::IsServerStarted()
@@ -366,9 +371,9 @@ void NPL::CNPLNetServer::Cleanup()
 	m_msg_dispatcher.Cleanup();
 }
 
-NPL::NPLConnection_ptr NPL::CNPLNetServer::CreateConnection( NPLRuntimeAddress_ptr pAddress)
+NPL::NPLConnection_ptr NPL::CNPLNetServer::CreateConnection(NPLRuntimeAddress_ptr pAddress)
 {
-	NPLConnection_ptr pConnection(new CNPLConnection(m_io_service_dispatcher,m_connection_manager,m_msg_dispatcher));
+	NPLConnection_ptr pConnection(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher));
 	pConnection->SetNPLRuntimeAddress(pAddress);
 	m_connection_manager.add(pConnection);
 	pConnection->connect();
@@ -380,7 +385,7 @@ bool NPL::CNPLNetServer::IsAnsiMode()
 	return CNPLMsgOut_gen::g_enable_ansi_mode;
 }
 
-void NPL::CNPLNetServer::EnableAnsiMode( bool bEnable )
+void NPL::CNPLNetServer::EnableAnsiMode(bool bEnable)
 {
 	CNPLMsgOut_gen::g_enable_ansi_mode = bEnable;
 }

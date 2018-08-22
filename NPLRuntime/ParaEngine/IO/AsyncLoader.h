@@ -8,6 +8,9 @@
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <thread>
+#include <atomic>
+
 
 /** try again */
 #define E_TRYAGAIN  -123456
@@ -94,6 +97,8 @@ namespace ParaEngine
 
 		ATTRIBUTE_METHOD1(CAsyncLoader, log_s, const char*) { cls->log(p1); return S_OK; }
 		ATTRIBUTE_METHOD(CAsyncLoader, WaitForAllItems_s) { cls->WaitForAllItems(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CAsyncLoader, SetIOThreadCount_s, int) { cls->SetIOThreadCount(p1); return S_OK; }
 		
 	private:
 		struct ProcessorWorkerThread;
@@ -237,6 +242,9 @@ namespace ParaEngine
 		*/
 		int GetBytesProcessed(int nItemType = -1);
 
+		/* count >= 1 and count <= cpu number - 1  */
+		void SetIOThreadCount(int count);
+
 	protected:
 
 		/** 
@@ -248,7 +256,7 @@ namespace ParaEngine
 		// of resource data from temporary system memory buffer (or memory mapped pointer) into
 		// the locked data of the resource.
 		*/
-		int FileIOThreadProc();
+		int FileIOThreadProc(unsigned int id);
 		/** this is usually called by FileIOThreadProc(), but may be called by other thread as well if IsDeviceObject() is false.*/
 		int FileIOThreadProc_HandleRequest(ResourceRequest_ptr& ResourceRequest);
 
@@ -291,7 +299,10 @@ namespace ParaEngine
 
 		/** Thread used for running the m_io_service_dispatcher 's run loop for dispatching messages for all NPL Jabber Clients */
 		Boost_Thread_ptr_type m_io_thread;
-		
+		std::vector<boost::shared_ptr<std::thread>> m_io_threads;
+		//int m_UsedIOThread;
+		//Semaphore m_io_semaphore;
+		std::atomic_int m_UsedIOThread;
 
 		/** the worker thread. */
 		struct ProcessorWorkerThread : public IProcessorWorkerData

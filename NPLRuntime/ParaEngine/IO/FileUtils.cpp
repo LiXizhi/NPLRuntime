@@ -131,16 +131,16 @@ void ParaEngine::CFileUtils::MakeFileNameFromRelativePath(char * output, const c
 	if (relativePath != NULL)
 	{
 		char c;
-		for (int i = 0; (c = relativePath[i]) != '\0' && i < MAX_PATH; i++)
+		for (int i = 0; (c = relativePath[i]) != '\0' && i < MAX_PATH_LENGTH; i++)
 		{
 			output[i] = c;
 			if ((c == '/') || (c == '\\'))
 				nLastSlash = i;
 		}
 	}
-	if (filename != 0)
+	if (filename != 0 && filename[0] != '\0')
 	{
-		strncpy(output + nLastSlash + 1, filename, MAX_PATH);
+		strncpy(output + nLastSlash + 1, filename, MAX_PATH_LENGTH - nLastSlash - 1);
 	}
 	else
 	{
@@ -383,7 +383,7 @@ bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fi
 		std::string sAbsFilePath = CParaFile::GetDevDirectory() + filename;
 		if (_GetFileInfo_(sAbsFilePath.c_str(), fileInfo))
 		{
-			fileInfo.m_sFullpath = sAbsFilePath;
+			fileInfo.m_dwFileAttributes = 0;
 			return true;
 		}
 	}
@@ -392,6 +392,24 @@ bool ParaEngine::CFileUtils::GetFileInfo(const char* filename, CParaFileInfo& fi
 		fileInfo.m_sFullpath = filename;
 		return true;
 	}
+#if (PARA_TARGET_PLATFORM == PARA_PLATFORM_ANDROID)
+	else if (!IsAbsolutePath(filename))
+	{
+		// we will also search in asset folder in APK file for android version only. 
+		ParaEngine::IReadFile* pFile = CParaFileUtils::GetInstance()->OpenFileForRead(filename);
+		if (pFile)
+		{
+			bool bExist = pFile->isOpen();
+			if (bExist)
+			{
+				fileInfo.m_dwFileSize = pFile->getSize();
+				fileInfo.m_mode = CParaFileInfo::ModeFileInZip;
+			}
+			SAFE_DELETE(pFile);
+			return bExist;
+		}
+	}
+#endif
 	return false;
 }
 

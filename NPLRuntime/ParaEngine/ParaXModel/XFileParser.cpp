@@ -7,7 +7,7 @@
 //-----------------------------------------------------------------------
 #include "ParaEngine.h"
 #include "zlib.h"
-#include "util/ByteSwap.h"
+#include "util/MyByteSwap.h"
 #include "util/fast_atof.h"
 #include "util/StringHelper.h"
 #include "modelheaders.h"
@@ -22,11 +22,11 @@ using namespace ParaEngine::XFile;
 #define MSZIP_BLOCK 32786
 // ------------------------------------------------------------------------------------------------
 // Dummy memory wrappers for use with zlib
-static void* dummy_alloc(void* /*opaque*/, unsigned int items, unsigned int size)	{
+static void* dummy_alloc(void* /*opaque*/, unsigned int items, unsigned int size) {
 	return ::operator new(items*size);
 }
 
-static void  dummy_free(void* /*opaque*/, void* address)	{
+static void  dummy_free(void* /*opaque*/, void* address) {
 	return ::operator delete(address);
 }
 
@@ -120,7 +120,7 @@ void ParaEngine::XFileParser::ParseDataObjectParaXHeader(ParaXHeaderDef& header)
 {
 	std::string name;
 	readHeadOfDataObject(&name);
-	
+
 	ReadCharArray(header.id, 4);
 	ReadCharArray((char*)(header.version), 4);
 
@@ -345,6 +345,16 @@ ParaEngine::XFileDataObjectPtr ParaEngine::XFileParser::CreateEnumObject()
 			XFileDataObjectPtr node(new XFileDataObject());
 			node->Init(*this, objectName);
 			root->AddChild(node);
+		}
+		else if (objectName == "Mesh")
+		{
+			// stop on Mesh, it is a static ParaXModel. 
+			SAFE_DELETE(mScene);
+			mScene = new Scene;
+			Mesh* mesh = new Mesh;
+			ParseDataObjectMesh(mesh);
+			mScene->mGlobalMeshes.push_back(mesh);
+			return root;
 		}
 		else if (objectName == "template")
 		{
@@ -706,7 +716,7 @@ void XFileParser::ParseDataObjectMaterial(Material* pMaterial)
 		ParaEngine::StringHelper::fast_itoa(mLineNumber, temp, 10);
 		matName = std::string("material") + temp;
 	}
-		
+
 	pMaterial->mName = matName;
 	pMaterial->mIsReference = false;
 
@@ -724,7 +734,7 @@ void XFileParser::ParseDataObjectMaterial(Material* pMaterial)
 		if (objectName.size() == 0)
 			ThrowException("Unexpected end of file while parsing mesh material");
 		else if (objectName == "}")
-				break; // material finished
+			break; // material finished
 		else if (objectName == "TextureFilename" || objectName == "TextureFileName")
 		{
 			// some exporters write "TextureFileName" instead.
@@ -1180,9 +1190,9 @@ float XFileParser::ReadFloat()
 	else
 		if (strncmp(P, "1.#QNAN0", 8) == 0)
 		{
-		P += 8;
-		CheckForSeparator();
-		return 0.0f;
+			P += 8;
+			CheckForSeparator();
+			return 0.0f;
 		}
 
 	float result = 0.0f;
@@ -1245,10 +1255,10 @@ Vector3 XFileParser::ReadRGB()
 // Throws an exception with a line number and the given text.
 void XFileParser::ThrowException(const std::string& pText)
 {
-	if (mIsBinaryFormat){
+	if (mIsBinaryFormat) {
 		OUTPUT_LOG("XFileParser::ThrowException %s\n", pText.c_str());
 	}
-	else{
+	else {
 		OUTPUT_LOG("XFileParser::ThrowException Line %d: %s \n", mLineNumber, pText.c_str());
 	}
 	throw DeadlyImportError(pText);

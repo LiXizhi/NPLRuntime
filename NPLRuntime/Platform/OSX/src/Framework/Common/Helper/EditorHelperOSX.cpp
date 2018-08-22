@@ -1,5 +1,6 @@
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
+#include "IParaWebView.h"
 
 namespace ParaEngine {
 
@@ -21,7 +22,19 @@ namespace ParaEngine {
 
 	static bool openUrl(const char* url)
 	{
-		
+        auto pWnd = CGlobals::GetApp()->GetRenderWindow();
+        int w = pWnd->GetWidth();
+        int h = pWnd->GetHeight();
+        auto scaleX = pWnd->GetScaleX();
+        auto scaleY = pWnd->GetScaleY();
+        
+        auto pView = IParaWebView::createWebView(0, 0, w / scaleX, h / scaleY);
+        if (!pView)
+            return false;
+        
+        pView->loadUrl(url);
+        pView->setAlpha(0.95f);
+
 		return true;
 	}
 

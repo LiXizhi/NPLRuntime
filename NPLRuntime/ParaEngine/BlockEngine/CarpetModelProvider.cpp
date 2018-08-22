@@ -32,7 +32,7 @@ ParaEngine::CCarpetModelProvider::CCarpetModelProvider(BlockTemplate* pBlockTemp
 
 	// local id: 1: posX, 0: negX, 3:posZ, 4:negZ
 	const int id[] = { 3, 4, 1, 5 };
-	const int nextid[] = { 2, 3, 1, 0};
+	const int nextid[] = { 2, 3, 1, 0 };
 	const int id_to_face[] = { 3, 4, 1, 5 };
 
 	// one plate on the ground, the other on one of the four side
@@ -46,7 +46,7 @@ ParaEngine::CCarpetModelProvider::CCarpetModelProvider(BlockTemplate* pBlockTemp
 		// add the 5 faces from the side plate model
 		const BlockModel& sidemodel = m_block_models[id[nLocalId]];
 		m_block_models[i].IncrementFaceCount(5);
-		
+
 		CShapeAABB aabb = sidemodel.GetAABB();
 		aabb.Extend(Vector3(BlockConfig::g_half_blockSize, BlockConfig::g_half_blockSize, BlockConfig::g_half_blockSize));
 		m_block_models[i].SetAABB(aabb.GetMin(), aabb.GetMax());
@@ -69,7 +69,7 @@ ParaEngine::CCarpetModelProvider::CCarpetModelProvider(BlockTemplate* pBlockTemp
 		// add the 5 faces from the side plate model
 		const BlockModel& sidemodel = m_block_models[id[nLocalId]];
 		m_block_models[i].IncrementFaceCount(5);
-		
+
 		CShapeAABB aabb = sidemodel.GetAABB();
 		aabb.Extend(Vector3(BlockConfig::g_half_blockSize, BlockConfig::g_half_blockSize, BlockConfig::g_half_blockSize));
 		m_block_models[i].SetAABB(aabb.GetMin(), aabb.GetMax());
@@ -148,10 +148,11 @@ ParaEngine::CCarpetModelProvider::~CCarpetModelProvider()
 
 BlockModel& ParaEngine::CCarpetModelProvider::GetBlockModel(int nIndex /*= 0*/)
 {
-	return (nIndex<m_nModelCount) ? m_block_models[nIndex] : m_block_models[0];
+	return (nIndex < m_nModelCount) ? m_block_models[nIndex] : m_block_models[0];
 }
 
 BlockModel& ParaEngine::CCarpetModelProvider::GetBlockModel(CBlockWorld* pBlockManager, uint16_t block_id, uint16_t bx, uint16_t by, uint16_t bz, uint16_t nBlockData /*= 0*/, Block** neighborBlocks /*= NULL*/)
 {
-	return (nBlockData<m_nModelCount) ? m_block_models[nBlockData] : m_block_models[0];
+	nBlockData = nBlockData & 0xff;
+	return (nBlockData < m_nModelCount) ? m_block_models[nBlockData] : m_block_models[0];
 }

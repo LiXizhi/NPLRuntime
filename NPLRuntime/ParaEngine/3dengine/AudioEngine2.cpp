@@ -143,6 +143,10 @@ HRESULT ParaEngine::CAudioEngine2::InitAudioEngine(IParaAudioEngine* pInteface)
 
 		// tell to use left handed coordinate system, which will invert the z axis. 
 		m_pAudioEngine->SetCoordinateSystem(0);
+
+		m_pAudioEngine->registerLogReceiver([](const char* msg) {
+			OUTPUT_LOG(msg);
+		});
 	}
 	return (m_pAudioEngine != 0) ? S_OK : E_FAIL;
 }

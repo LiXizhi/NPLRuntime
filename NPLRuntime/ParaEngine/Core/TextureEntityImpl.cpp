@@ -1217,6 +1217,218 @@ TextureEntity* TextureEntityImpl::CreateTexture(const uint8 * pTexels, int width
 	return NULL;
 }
 
+static void copySurfaceRGB(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height)
+{
+	BYTE* pDst = (BYTE*)pDest;
+	const BYTE* data = (const BYTE*)pSrc;
+
+	int index = 0, x = 0, y = 0;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			int n = (y * 3 * width) + 3 * x;
+			pDst[index++] = data[n];
+			pDst[index++] = data[n + 1];
+			pDst[index++] = data[n + 2];
+			pDst[index++] = 0xff;
+		}
+		index += pitch - (width * 4);
+	}
+}
+
+static void copySurface(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height, UINT bpp)
+{
+	BYTE* pDst = (BYTE*)pDest;
+	const BYTE* data = (const BYTE*)pSrc;
+
+	for (UINT h = 0; h < height; h++)
+	{
+		memcpy(pDst, data, bpp * width / 8);
+
+		data += bpp * width / 8;
+		pDst += pitch;
+	}
+}
+
+static void copySurfaceCompressed(void* pDest, const void* pSrc, UINT pitch, UINT width, UINT height, UINT blockSize)
+{
+	BYTE* pRow = (BYTE*)pDest;
+	const BYTE* pSrcRow = (const BYTE*)pSrc;
+
+	UINT blocksX = (width + 3) / 4; // Account for images not a multiple of 4 pixels wide
+
+	UINT blocksY = (height + 3) / 4; // Account for images not a multiple of 4 pixels high
+
+	for (UINT y = 0; y < blocksY; ++y)
+	{
+		memcpy(pRow, pSrcRow, blocksX * blockSize);
+		pRow += pitch;
+		pSrcRow += blocksX * blockSize;
+	}
+}
+
+bool TextureEntityDirectX::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture_/* = nullptr*/)
+{
+	if (SurfaceType == TextureEntity::SysMemoryTexture || SurfaceType == TextureEntity::CubeTexture)
+	{
+		return false;
+	}
+	
+	PixelFormat		pixelFormat = ((PixelFormat::Unkonwn == dwTextureFormat) || (PixelFormat::COUNT == dwTextureFormat)) ? pImage->getRenderFormat() : dwTextureFormat;
+	PixelFormat     renderFormat = pImage->getRenderFormat();
+
+	HRESULT hr;
+	DeviceTexturePtr_type* ppTexture = (DeviceTexturePtr_type*)ppTexture_;
+	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
+	auto d3dTexFormat = D3DMapping::toD3DFromat(pixelFormat);
+
+	LPDIRECT3DTEXTURE9 pTexture = nullptr;
+
+	// TextureEntity::StaticTexture
+	UINT width = (UINT)pImage->getWidth();
+	UINT height = (UINT)pImage->getHeight();
+	UINT numberOfMipmaps = pImage->getNumberOfMipmaps();
+
+	hr = D3DXCreateTexture(pRenderDevice
+		, width
+		, height
+		, (std::max)(numberOfMipmaps, (UINT)1)
+		, 0
+		, d3dTexFormat
+		, D3DPOOL_MANAGED
+		, &(pTexture));
+
+	if (SUCCEEDED(hr))
+	{
+		const MipmapInfo* mipmaps;
+		MipmapInfo info;
+		info.address = pImage->getData();
+		info.len = pImage->getDataLen();
+		if (numberOfMipmaps == 0)
+		{
+			mipmaps = &info;
+			numberOfMipmaps = 1;
+		}
+		else
+		{
+			mipmaps = pImage->getMipmaps();
+		}
+
+		for (UINT i = 0; i < numberOfMipmaps; i++)
+		{
+			D3DLOCKED_RECT lockedRect;
+			pTexture->LockRect(i, &lockedRect, nullptr, 0);
+
+			unsigned char *tempData = mipmaps[i].address;
+			auto tempDataLen = mipmaps[i].len;
+			unsigned char *pDst = (unsigned char*)lockedRect.pBits;
+
+			unsigned char* outTempData = nullptr;
+			size_t outTempDataLen = 0;
+
+			auto format = ParaImage::convertDataToFormat(tempData, tempDataLen, renderFormat, pixelFormat, &outTempData, &outTempDataLen);
+
+			if (format == pixelFormat)
+			{
+				switch (format)
+				{
+				case PixelFormat::R8G8B8:
+					copySurfaceRGB(pDst, outTempData, lockedRect.Pitch, width, height);
+					break;
+				case PixelFormat::A8R8G8B8:
+				case PixelFormat::X8R8G8B8:
+				case PixelFormat::A2B10G10R10:
+				case PixelFormat::A8B8G8R8:
+				case PixelFormat::X8B8G8R8:
+				case PixelFormat::G16R16:
+				case PixelFormat::A2R10G10B10:
+					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 32);
+					break;
+				case PixelFormat::R5G6B5:
+				case PixelFormat::X1R5G5B5:
+				case PixelFormat::A1R5G5B5:
+				case PixelFormat::A4R4G4B4:
+				case PixelFormat::A8R3G3B2:
+				case PixelFormat::X4R4G4B4:
+				case PixelFormat::A8P8:
+				case PixelFormat::A8L8:
+					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 16);
+					break;
+
+				case PixelFormat::R3G3B2:
+				case PixelFormat::A8:
+				case PixelFormat::P8:
+				case PixelFormat::L8:
+				case PixelFormat::A4L4:
+					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 8);
+					break;
+				case PixelFormat::A16B16G16R16:
+					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 64);
+					break;
+
+				case PixelFormat::DXT1:
+					copySurfaceCompressed(pDst, outTempData, lockedRect.Pitch, width, height, 8);
+					break;
+				case PixelFormat::DXT2:
+				case PixelFormat::DXT3:
+				case PixelFormat::DXT4:
+				case PixelFormat::DXT5:
+					copySurfaceCompressed(pDst, outTempData, lockedRect.Pitch, width, height, 16);
+					break;
+				default:
+					OUTPUT_LOG("unsupported texture format %d", static_cast<int>(format));
+					break;
+				}
+			}
+
+			if (outTempData != nullptr && outTempData != tempData)
+			{
+				free(outTempData);
+			}
+
+			pTexture->UnlockRect(i);
+
+			width = (std::max)(width >> 1, (UINT)1);
+			height = (std::max)(height >> 1, (UINT)1);
+		}
+	}
+	else
+	{
+		SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
+		OUTPUT_LOG("failed creating texture for %s\n", GetKey().c_str());
+	}
+	if (ppTexture)
+	{
+		SAFE_RELEASE(*ppTexture);
+		*ppTexture = pTexture;
+	}
+	else
+	{
+		SAFE_RELEASE(m_pTexture);
+		m_pTexture = pTexture;
+	}
+
+	// update texture info
+	if (m_pTextureInfo)
+	{
+		if (m_pTextureInfo->m_width == -1 || m_pTextureInfo->m_height == -1)
+		{
+			D3DSURFACE_DESC desc;
+			if (pTexture != 0 && SUCCEEDED(pTexture->GetLevelDesc(0, &desc)))
+			{
+				m_pTextureInfo->m_width = desc.Width;
+				m_pTextureInfo->m_height = desc.Height;
+			}
+		}
+	}
+
+	return SUCCEEDED(hr);
+
+}
+
+
 HRESULT TextureEntityImpl::LoadFromMemory(const char* buffer, DWORD nFileSize, UINT nMipLevels, EPixelFormat format, void** ppTexture_)
 {
 

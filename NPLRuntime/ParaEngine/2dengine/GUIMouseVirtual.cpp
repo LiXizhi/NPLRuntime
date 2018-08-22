@@ -27,7 +27,22 @@ ParaEngine::CGUIMouseVirtual::~CGUIMouseVirtual()
 
 void CGUIMouseVirtual::PushMouseEvent(const DeviceMouseEventPtr& e)
 {
-	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2) {
+	if (m_buffered_mouse_msgs_count < SAMPLE_BUFFER_SIZE / 2)
+    {
+        // merge all mouse wheel events
+        if(e->GetEventType() == EMouseEventType::Wheel)
+        {
+            for (int i=0;i<m_buffered_mouse_msgs_count; i++)
+            {
+                if(m_buffered_mouse_msgs[i]->GetEventType() == EMouseEventType::Wheel)
+                {
+                    int delta = (static_cast<const DeviceMouseWheelEvent*>(e.get()))->GetWhell();
+                    delta += (static_cast<const DeviceMouseWheelEvent*>(m_buffered_mouse_msgs[i].get()))->GetWhell();
+                    m_buffered_mouse_msgs[i] = DeviceMouseEventPtr(new DeviceMouseWheelEvent(delta));
+                    return;
+                }
+            }
+        }
 		m_buffered_mouse_msgs[m_buffered_mouse_msgs_count] = e;
 		++m_buffered_mouse_msgs_count;
 	}
