@@ -1,12 +1,12 @@
 #pragma once
-#include "IRenderTarget.h"
+#include "Framework/Interface/Render/IDeviceResource.h"
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Common/Image.hpp"
 #include "Framework/Common/Math/Color4f.h"
 namespace IParaEngine
 {
-	class ITexture : public IRenderTarget
+	class ITexture : public IDeviceResource
 	{
 	public:
 		ITexture() = default;
@@ -33,6 +33,9 @@ namespace IParaEngine
 
 		virtual bool SetBorderColor(const ParaEngine::Color4f& color) = 0;
 		virtual ParaEngine::Color4f GetBorderColor() const = 0;
+
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
 
 	};
 }

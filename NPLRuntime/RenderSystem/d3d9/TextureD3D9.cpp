@@ -245,44 +245,73 @@ ParaEngine::ImagePtr ParaEngine::TextureD3D9::GetImage(uint32_t level)
 
 ParaEngine::ETextureFilter ParaEngine::TextureD3D9::GetMinFilter() const
 {
-	return ETextureFilter::Point;
+	return m_MinFilter;
 }
 
 ParaEngine::ETextureFilter ParaEngine::TextureD3D9::GetMagFilter() const
 {
-	return ETextureFilter::Point;
+	return m_MagFilter;
 }
 
 bool ParaEngine::TextureD3D9::SetMinFilter(ParaEngine::ETextureFilter type)
 {
+	m_MinFilter = type;
 	return true;
 }
 
 bool ParaEngine::TextureD3D9::SetMagFilter(ParaEngine::ETextureFilter type)
 {
+	m_MagFilter = type;
 	return true;
 }
 
 ParaEngine::ETextureWrapMode ParaEngine::TextureD3D9::GetAddressU() const
 {
-	return ETextureWrapMode::Repeat;
+	return m_AddressU;
 }
 
 ParaEngine::ETextureWrapMode ParaEngine::TextureD3D9::GetAddressV() const
 {
-	return ETextureWrapMode::Clamp;
+	return m_AddressV;
 }
 
 bool ParaEngine::TextureD3D9::SetAddressU(ParaEngine::ETextureWrapMode mode)
 {
+	m_AddressU = mode;
 	return true;
 }
 
 bool ParaEngine::TextureD3D9::SetAddressV(ParaEngine::ETextureWrapMode mode)
 {
+	m_AddressV = mode;
 	return true;
 }
 
+
+ParaEngine::ETextureFilter ParaEngine::TextureD3D9::GetMipFilter() const
+{
+	return m_MipFilter;
+}
+
+
+bool ParaEngine::TextureD3D9::SetMipFilter(ParaEngine::ETextureFilter type)
+{
+	m_MipFilter = type;
+	return true;
+}
+
+
+bool ParaEngine::TextureD3D9::SetBorderColor(const ParaEngine::Color4f& color)
+{
+	m_BorderColor = color;
+	return true;
+}
+
+
+ParaEngine::Color4f ParaEngine::TextureD3D9::GetBorderColor() const
+{
+	return m_BorderColor;
+}
 
 bool ParaEngine::TextureD3D9::InnerCreate(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
@@ -341,6 +370,12 @@ TextureD3D9::TextureD3D9()
 	,m_Format(EPixelFormat::Unkonwn)
 	,m_Width(0)
 	,m_Height(0)
+	,m_Usage(ETextureUsage::Default)
+	,m_MagFilter(ETextureFilter::Point)
+	,m_MinFilter(ETextureFilter::Point)
+	,m_MipFilter(ETextureFilter::None)
+	,m_AddressU(ETextureWrapMode::Clamp)
+	,m_AddressV(ETextureWrapMode::Clamp)
 {
 
 }

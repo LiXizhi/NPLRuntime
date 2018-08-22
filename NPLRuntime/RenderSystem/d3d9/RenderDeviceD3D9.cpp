@@ -486,6 +486,24 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t slot, IParaEngine::ITexture * texture)
 {
 	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
+
+	if (tex->GetTexture() != nullptr)
+	{
+		// Apply sampler state
+		auto AddressU = D3DMapping::toD3DTextureAddress(tex->GetAddressU());
+		auto AddressV = D3DMapping::toD3DTextureAddress(tex->GetAddressU());
+		auto MinFilter = D3DMapping::toD3DTextureFilter(tex->GetMinFilter());
+		auto MipFilter = D3DMapping::toD3DTextureFilter(tex->GetMipFilter());
+		auto MagFilter = D3DMapping::toD3DTextureFilter(tex->GetMagFilter());
+
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_ADDRESSU, AddressU);
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_ADDRESSV, AddressV);
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_MINFILTER, MinFilter);
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_MIPFILTER, MipFilter);
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_MAGFILTER, MagFilter);
+		m_pD3DDevice->SetSamplerState(slot, D3DSAMP_BORDERCOLOR, tex->GetBorderColor().GetDWColor());
+	}
+
 	return m_pD3DDevice->SetTexture(0, tex->GetTexture()) == S_OK;
 }
 

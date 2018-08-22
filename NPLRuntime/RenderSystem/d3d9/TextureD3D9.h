@@ -61,6 +61,18 @@ namespace ParaEngine
 
 		virtual bool SetAddressV(ParaEngine::ETextureWrapMode mode) override;
 
+
+		virtual ParaEngine::ETextureFilter GetMipFilter() const override;
+
+
+		virtual bool SetMipFilter(ParaEngine::ETextureFilter type) override;
+
+
+		virtual bool SetBorderColor(const ParaEngine::Color4f& color) override;
+
+
+		virtual ParaEngine::Color4f GetBorderColor() const override;
+
 	protected:
 		LPDIRECT3DTEXTURE9 m_Texture;
 		LPDIRECT3DSURFACE9 m_Surface;
@@ -69,7 +81,12 @@ namespace ParaEngine
 		uint32_t m_Width;
 		uint32_t m_Height;
 		ETextureUsage m_Usage;
-		
+		ETextureFilter m_MagFilter;
+		ETextureFilter m_MinFilter;
+		ETextureFilter m_MipFilter;
+		ETextureWrapMode m_AddressU;
+		ETextureWrapMode m_AddressV;
+		Color4f m_BorderColor;
 
 	private:
 		bool InnerCreate(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage);

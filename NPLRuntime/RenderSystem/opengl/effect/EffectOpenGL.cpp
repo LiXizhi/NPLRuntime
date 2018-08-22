@@ -67,7 +67,7 @@ namespace ParaEngine
 		{
 			MinFilter = ETextureFilter::Linear;
 			MagFilter = ETextureFilter::Linear;
-			MipFilter = ETextureFilter::Point;
+			MipFilter = ETextureFilter::None;
 			AddressU = ETextureWrapMode::Clamp;
 			AddressV = ETextureWrapMode::Clamp;
 			BorderColor = 0;
@@ -75,55 +75,64 @@ namespace ParaEngine
 	};
 }
 
+inline const std::string string_to_lower(const std::string& str)
+{
+	std::string data = str;
+	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+	return data;
+}
 
 inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std::tuple<std::string, std::string>> initializer)
 {
 	for (std::tuple<std::string, std::string> kv: initializer)
 	{
-		std::string key = std::get<0>(kv);
-		std::string value = std::get<1>(kv);
+		std::string key = string_to_lower(std::get<0>(kv));
+		std::string value = string_to_lower(std::get<1>(kv));
 		if (key == "texture")
 		{
 			info.TextureName = value;
-		}else if (key == "MinFilter" || key == "MagFilter" || key == "MipFilter")
+		}else if (key == "minfilter" || key == "magfilter" || key == "mipfilter")
 		{
 			ETextureFilter filter = ETextureFilter::Point;
-			if (value == "Linear")
+			if (value == "linear")
 			{
 				filter = ETextureFilter::Linear;
 			}
-	
+			else if (value == "none")
+			{
+				filter = ETextureFilter::None;
+			}
 
-			if (key == "MinFilter")
+			if (key == "minFilter")
 			{
 				info.MinFilter = filter;
-			}else if (key == "MagFilter")
+			}else if (key == "magfilter")
 			{
 				info.MagFilter = filter;
 			}
-			else if (key == "MipFilter")
+			else if (key == "mipfilter")
 			{
 				info.MipFilter = filter;
 			}
-		}else if (key == "AddressU" || key == "AddressV")
+		}else if (key == "addressu" || key == "addressv")
 		{
 			ETextureWrapMode warpMode = ETextureWrapMode::Clamp;
-			if (value == "WRAP")
+			if (value == "wrap")
 			{
 				warpMode = ETextureWrapMode::Repeat;
-			}else if (value == "BORDER")
+			}else if (value == "border")
 			{
 				warpMode = ETextureWrapMode::Border;
 			}
-			if (key == "AddressU")
+			if (key == "addressu")
 			{
 				info.AddressU = warpMode;
-			}else if (key == "AddressV")
+			}else if (key == "addressv")
 			{
 				info.AddressV = warpMode;
 			}
 		}
-		else if (key == "BorderColor")
+		else if (key == "bordercolor")
 		{
 			info.BorderColor = stoi(value);
 		}
@@ -167,12 +176,7 @@ inline void GetUniforms(ShHandle parser, std::vector<UniformInfoGL>& uniforms)
 }
 
 
-inline const std::string string_to_lower(const std::string& str)
-{
-	std::string data = str;
-	std::transform(data.begin(), data.end(), data.begin(), ::tolower);
-	return data;
-}
+
 
 inline std::string find_pass_vertex_shader_name(PassNode* pass)
 {
@@ -1040,13 +1044,40 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 				TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
 				if (tex != nullptr)
 				{
+					auto AddressU = tex->GetAddressU();
+					auto AddressV = tex->GetAddressV();
+					auto MinFilter = tex->GetMinFilter();
+					auto MipFilter = tex->GetMipFilter();
+					auto MagFilter = tex->GetMagFilter();
+					auto BorderColor = tex->GetBorderColor();
+					// apply sampler state
+					SamplerInitialzerInfo samplerInfo = m_SamplersInfo[uniform.name];
+					Color4f color(samplerInfo.BorderColor);
+
+					tex->SetBorderColor(color);
+					tex->SetAddressU(samplerInfo.AddressU);
+					tex->SetAddressV(samplerInfo.AddressV);
+					tex->SetMinFilter(samplerInfo.MinFilter);
+					tex->SetMagFilter(samplerInfo.MagFilter);
+					tex->SetMipFilter(samplerInfo.MipFilter);
+
 					glActiveTexture(GL_TEXTURE0 + slot);
-					//glEnable(GL_TEXTURE_2D);
+					glEnable(GL_TEXTURE_2D);
 					glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+
+					// restore sampler state
+
+					tex->SetBorderColor(BorderColor);
+					tex->SetAddressU(AddressU);
+					tex->SetAddressV(AddressV);
+					tex->SetMinFilter(MinFilter);
+					tex->SetMagFilter(MagFilter);
+					tex->SetMipFilter(MipFilter);
+
 				}
 				else {
-					//glActiveTexture(GL_TEXTURE0 + slot);
-					//glDisable(GL_TEXTURE_2D);
+					glActiveTexture(GL_TEXTURE0 + slot);
+					glDisable(GL_TEXTURE_2D);
 				}
 
 			}

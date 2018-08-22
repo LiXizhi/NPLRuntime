@@ -629,3 +629,22 @@ D3DTEXTUREFILTERTYPE ParaEngine::D3DMapping::toD3DTextureFilter(const ETextureFi
 	}
 	return D3DTEXF_NONE;
 }
+
+D3DTEXTUREADDRESS ParaEngine::D3DMapping::toD3DTextureAddress(const ETextureWrapMode type)
+{
+	switch (type)
+	{
+	default:
+		break;
+	case ETextureWrapMode::Clamp:
+		return D3DTADDRESS_CLAMP;
+	case ETextureWrapMode::Repeat:
+		return D3DTADDRESS_WRAP;
+	case ETextureWrapMode::Border:
+		return D3DTADDRESS_BORDER;
+	case ETextureWrapMode::Mirror:
+		return D3DTADDRESS_MIRROR;
+	}
+
+	return D3DTADDRESS_CLAMP;
+}

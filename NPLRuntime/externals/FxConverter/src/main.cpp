@@ -215,6 +215,8 @@ bool hlsl2glsl(const std::string& inCode,
 int main(int argc, const char** argv)
 {
 
+
+
 	if (argc < 2) return 0;
 
 	std::string fileName = argv[1];

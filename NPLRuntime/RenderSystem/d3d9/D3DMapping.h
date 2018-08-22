@@ -21,5 +21,6 @@ namespace ParaEngine
 		static D3DSAMPLERSTATETYPE toD3DSamplerSatetType(const ESamplerStateType type);
 		static D3DPRIMITIVETYPE toD3DPrimitiveType(const EPrimitiveType type);
 		static D3DTEXTUREFILTERTYPE toD3DTextureFilter(const ETextureFilter type);
+		static D3DTEXTUREADDRESS toD3DTextureAddress(const ETextureWrapMode type);
 	};
 }
