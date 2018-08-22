@@ -6,6 +6,7 @@
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
 #include "Framework/Interface/Render/ITexture.h"
+#include "Framework/Common/Image.hpp"
 #include "Core/PEtypes.h"
 #include "IEffect.h"
 #include "math/ParaViewport.h"
@@ -120,7 +121,7 @@ namespace ParaEngine
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData,uint32_t srcDataLen, IParaEngine::IEffectInclude* include,std::string& error) = 0;
 		
 		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, EPixelFormat format,ETextureUsage usage) = 0;
-		virtual IParaEngine::ITexture* CreateTexture(const char* buffer,uint32_t size, EPixelFormat format, uint32_t colorKey) = 0;
+		virtual IParaEngine::ITexture* CreateTexture(const ImagePtr& image) = 0;
 
 		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) = 0;
 		virtual bool SetDepthStencil(IParaEngine::ITexture* target) = 0;

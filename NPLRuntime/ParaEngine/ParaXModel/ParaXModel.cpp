@@ -40,11 +40,20 @@ namespace ParaEngine
 {
 	int globalTime = 0;
 	VertexDeclarationPtr CParaXModel::m_pVertexDeclaration = NULL;
+
+
+
 	CEffectFile* CParaXModel::m_pEffectFile = NULL;
 }
 using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
+
+
+HRESULT CParaXModel::RendererRecreated()
+{
+	return S_OK;
+}
 
 void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
@@ -927,7 +936,8 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 			if (p.init(this, pSceneState))
 			{
 				// we don't want to render completely transparent parts
-				RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				//RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+				pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 				p.deinit();
 			}
 		}
@@ -948,7 +958,8 @@ void CParaXModel::RenderNoAnim(SceneState* pSceneState)
 					{
 						// we don't want to render completely transparent parts
 						pEffect->CommitChanges();
-						RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+						//RenderDevice::DrawIndexedPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
+						pd3dDevice->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, m_objNum.nVertices, p.m_nIndexStart, p.indexCount / 3);
 						p.deinit_FX(pSceneState);
 					}
 				}
@@ -1438,7 +1449,8 @@ void CParaXModel::DrawPass_BMax_VB(ModelRenderPass &p, size_t start)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	//RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
 void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start)
@@ -1453,7 +1465,8 @@ void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	//RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
+	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
 
@@ -1499,9 +1512,9 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 				pBufEntity->Unlock();
 
 				if (pBufEntity->IsMemoryBuffer())
-					RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+					pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 				else
-					RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 				if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 				{
@@ -1587,9 +1600,9 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+			pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1692,9 +1705,9 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 			pBufEntity->Unlock();
 
 			if (pBufEntity->IsMemoryBuffer())
-				RenderDevice::DrawPrimitiveUP(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-				RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1718,9 +1731,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 	if (passes.size() == 0)
 		return;
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect == 0)
-		CGlobals::GetRenderDevice()->SetTransform(D3DTS_WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
-	else
+	if (pEffect != 0)
 	{
 		/// apply surface materials
 		bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();

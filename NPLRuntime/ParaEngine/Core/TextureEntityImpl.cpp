@@ -7,6 +7,7 @@
 // Revised: 2006.7.12, 2009.8.18(AsyncLoader added)
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "Framework/Codec/ImageParser.h"
 
 #if defined(USE_DIRECTX_RENDERER) || defined(USE_OPENGL_RENDERER)
 /**
@@ -814,7 +815,8 @@ void TextureEntityImpl::LoadImage(char *sBufMemFile, int sizeBuf, int &width, in
 		format = EPixelFormat::R8G8B8;
 
 	// read from file
-	pTexture = pRenderDevice->CreateTexture(sBufMemFile, sizeBuf, format, 0);
+	auto img = ImageParser::ParseImage((const unsigned char*)sBufMemFile, sizeBuf);
+	pTexture = pRenderDevice->CreateTexture(img);
 	if(pTexture == nullptr)
 		return;
 
@@ -836,10 +838,10 @@ void TextureEntityImpl::LoadImage(char *sBufMemFile, int sizeBuf, int &width, in
 
 
 	unsigned int pitch = 0;
-	auto image = pTexture->GetImage(0);
+	ImagePtr image = pTexture->GetImage(0);
 	if(image)
 	{
-		byte *pImagePixels = (byte *)image->data;
+		byte* pImagePixels = (byte*)image->data;
 		memcpy(pBufferTemp, pImagePixels, nSize);
 		//
 		*ppBuffer = pBufferTemp;
@@ -986,7 +988,8 @@ TextureEntity* TextureEntityImpl::CreateTexture(const char* pFileName, uint32 nM
 	CParaFile file;
 	if (file.OpenFile(pFileName, true))
 	{
-		ITexture* pTexture = pRenderDevice->CreateTexture(file.getBuffer(), file.getSize(), EPixelFormat::Unkonwn, 0);
+		auto image = ImageParser::ParseImage((const unsigned char*)file.getBuffer(), file.getSize());
+		ITexture* pTexture = pRenderDevice->CreateTexture(image);
 		if (pTexture != NULL)
 		{
 			TextureEntityImpl* pTextureEntity = new TextureEntityImpl(AssetKey(pFileName));
@@ -1269,140 +1272,24 @@ static void copySurfaceCompressed(void* pDest, const void* pSrc, UINT pitch, UIN
 	}
 }
 
-bool TextureEntityDirectX::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture_/* = nullptr*/)
+bool TextureEntityImpl::LoadFromImage(const ImagePtr pImage, UINT nMipLevels, EPixelFormat dwTextureFormat/* = PixelFormat::Unkonwn*/, void** ppTexture_/* = nullptr*/)
 {
 	if (SurfaceType == TextureEntity::SysMemoryTexture || SurfaceType == TextureEntity::CubeTexture)
 	{
 		return false;
 	}
 	
-	PixelFormat		pixelFormat = ((PixelFormat::Unkonwn == dwTextureFormat) || (PixelFormat::COUNT == dwTextureFormat)) ? pImage->getRenderFormat() : dwTextureFormat;
-	PixelFormat     renderFormat = pImage->getRenderFormat();
 
-	HRESULT hr;
-	DeviceTexturePtr_type* ppTexture = (DeviceTexturePtr_type*)ppTexture_;
-	auto pRenderDevice = GETD3D(CGlobals::GetRenderDevice());
-	auto d3dTexFormat = D3DMapping::toD3DFromat(pixelFormat);
+	ITexture** ppTexture = (ITexture**)ppTexture_;
 
-	LPDIRECT3DTEXTURE9 pTexture = nullptr;
 
-	// TextureEntity::StaticTexture
-	UINT width = (UINT)pImage->getWidth();
-	UINT height = (UINT)pImage->getHeight();
-	UINT numberOfMipmaps = pImage->getNumberOfMipmaps();
+	ITexture* pTexture = CGlobals::GetRenderDevice()->CreateTexture(pImage);
 
-	hr = D3DXCreateTexture(pRenderDevice
-		, width
-		, height
-		, (std::max)(numberOfMipmaps, (UINT)1)
-		, 0
-		, d3dTexFormat
-		, D3DPOOL_MANAGED
-		, &(pTexture));
-
-	if (SUCCEEDED(hr))
-	{
-		const MipmapInfo* mipmaps;
-		MipmapInfo info;
-		info.address = pImage->getData();
-		info.len = pImage->getDataLen();
-		if (numberOfMipmaps == 0)
-		{
-			mipmaps = &info;
-			numberOfMipmaps = 1;
-		}
-		else
-		{
-			mipmaps = pImage->getMipmaps();
-		}
-
-		for (UINT i = 0; i < numberOfMipmaps; i++)
-		{
-			D3DLOCKED_RECT lockedRect;
-			pTexture->LockRect(i, &lockedRect, nullptr, 0);
-
-			unsigned char *tempData = mipmaps[i].address;
-			auto tempDataLen = mipmaps[i].len;
-			unsigned char *pDst = (unsigned char*)lockedRect.pBits;
-
-			unsigned char* outTempData = nullptr;
-			size_t outTempDataLen = 0;
-
-			auto format = ParaImage::convertDataToFormat(tempData, tempDataLen, renderFormat, pixelFormat, &outTempData, &outTempDataLen);
-
-			if (format == pixelFormat)
-			{
-				switch (format)
-				{
-				case PixelFormat::R8G8B8:
-					copySurfaceRGB(pDst, outTempData, lockedRect.Pitch, width, height);
-					break;
-				case PixelFormat::A8R8G8B8:
-				case PixelFormat::X8R8G8B8:
-				case PixelFormat::A2B10G10R10:
-				case PixelFormat::A8B8G8R8:
-				case PixelFormat::X8B8G8R8:
-				case PixelFormat::G16R16:
-				case PixelFormat::A2R10G10B10:
-					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 32);
-					break;
-				case PixelFormat::R5G6B5:
-				case PixelFormat::X1R5G5B5:
-				case PixelFormat::A1R5G5B5:
-				case PixelFormat::A4R4G4B4:
-				case PixelFormat::A8R3G3B2:
-				case PixelFormat::X4R4G4B4:
-				case PixelFormat::A8P8:
-				case PixelFormat::A8L8:
-					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 16);
-					break;
-
-				case PixelFormat::R3G3B2:
-				case PixelFormat::A8:
-				case PixelFormat::P8:
-				case PixelFormat::L8:
-				case PixelFormat::A4L4:
-					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 8);
-					break;
-				case PixelFormat::A16B16G16R16:
-					copySurface(pDst, outTempData, lockedRect.Pitch, width, height, 64);
-					break;
-
-				case PixelFormat::DXT1:
-					copySurfaceCompressed(pDst, outTempData, lockedRect.Pitch, width, height, 8);
-					break;
-				case PixelFormat::DXT2:
-				case PixelFormat::DXT3:
-				case PixelFormat::DXT4:
-				case PixelFormat::DXT5:
-					copySurfaceCompressed(pDst, outTempData, lockedRect.Pitch, width, height, 16);
-					break;
-				default:
-					OUTPUT_LOG("unsupported texture format %d", static_cast<int>(format));
-					break;
-				}
-			}
-
-			if (outTempData != nullptr && outTempData != tempData)
-			{
-				free(outTempData);
-			}
-
-			pTexture->UnlockRect(i);
-
-			width = (std::max)(width >> 1, (UINT)1);
-			height = (std::max)(height >> 1, (UINT)1);
-		}
-	}
-	else
-	{
-		SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
-		OUTPUT_LOG("failed creating texture for %s\n", GetKey().c_str());
-	}
 	if (ppTexture)
 	{
 		SAFE_RELEASE(*ppTexture);
 		*ppTexture = pTexture;
+
 	}
 	else
 	{
@@ -1410,21 +1297,22 @@ bool TextureEntityDirectX::LoadFromImage(const ParaImage* pImage, UINT nMipLevel
 		m_pTexture = pTexture;
 	}
 
+
 	// update texture info
 	if (m_pTextureInfo)
 	{
 		if (m_pTextureInfo->m_width == -1 || m_pTextureInfo->m_height == -1)
 		{
 			D3DSURFACE_DESC desc;
-			if (pTexture != 0 && SUCCEEDED(pTexture->GetLevelDesc(0, &desc)))
+			if (pTexture != 0 )
 			{
-				m_pTextureInfo->m_width = desc.Width;
-				m_pTextureInfo->m_height = desc.Height;
+				m_pTextureInfo->m_width = pTexture->GetWidth();
+				m_pTextureInfo->m_height = pTexture->GetHeight();
 			}
 		}
 	}
 
-	return SUCCEEDED(hr);
+	return true;
 
 }
 
@@ -1442,92 +1330,12 @@ HRESULT TextureEntityImpl::LoadFromMemory(const char* buffer, DWORD nFileSize, U
 	switch (SurfaceType)
 	{
 	case TextureEntity::SysMemoryTexture:
-	{
-		//D3DXIMAGE_INFO SrcInfo;
-		//if (GetTextureInfo())
-		//{
-		//	SrcInfo.Width = GetTextureInfo()->GetWidth();
-		//	SrcInfo.Height = GetTextureInfo()->GetHeight();
-		//	SrcInfo.Format = GetD3DFormat();
-		//}
-		//else
-		//{
-		//	if (FAILED(hr = D3DXGetImageInfoFromFileInMemory(buffer, nFileSize, &SrcInfo)))
-		//	{
-		//		OUTPUT_LOG("Could not D3DXGetImageInfoFromFileInMemory %s\n", GetKey().c_str());
-		//		break;
-		//	}
-		//	SrcInfo.Format = D3DFMT_X8R8G8B8;
-		//}
-
-		//hr = pRenderDevice->CreateOffscreenPlainSurface(SrcInfo.Width, SrcInfo.Height, SrcInfo.Format, D3DPOOL_SYSTEMMEM, &(m_pSurface), NULL);
-		//if (SUCCEEDED(hr))
-		//{
-		//	// Load the image again, this time with D3D to load directly to the surface
-		//	hr = D3DXLoadSurfaceFromFileInMemory(m_pSurface, NULL, NULL, buffer, nFileSize, NULL, D3DX_FILTER_NONE,
-		//		GetColorKey() /*COLOR_XRGB(0,0,0) this makes black transparent*/, NULL);
-		//	if (SUCCEEDED(hr))
-		//	{
-		//		if (SrcInfo.Format == D3DFMT_A8R8G8B8)
-		//		{
-		//			/** discovered by clayman, xizhi: for unknown reasons, D3DXLoadSurfaceFromFileInMemory loaded alpha has randomly incorrect alpha values.
-		//			* the following code fix it in most cases.
-		//			*/
-		//			LPDIRECT3DSURFACE9 pCursorSurface = m_pSurface;
-		//			if (pCursorSurface)
-		//			{
-		//				D3DLOCKED_RECT data;
-		//				pCursorSurface->LockRect(&data, NULL, 0);
-		//				uint32* pData = (uint32*)data.pBits;
-		//				int count = SrcInfo.Width * SrcInfo.Height;
-		//				for (int i = 0; i<count; i++)
-		//				{
-		//					uint32 color = *pData;
-		//					uint32 alpha = color >> 24;
-		//					if (alpha > 127)
-		//					{
-		//						color |= 0xff000000;
-		//					}
-		//					else
-		//					{
-		//						color &= 0xffffff;
-		//					}
-		//					*pData = color;
-		//					pData++;
-		//				}
-		//				pCursorSurface->UnlockRect();
-		//			}
-		//		}
-		//	}
-		//	else
-		//	{
-		//		OUTPUT_LOG("Could not load the following bitmap to a surface %s\n", GetKey().c_str());
-		//	}
-		//}
-		//else
-		//{
-		//	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
-		//	OUTPUT_LOG("Unable to create a new surface for the bitmap %s\n", GetKey().c_str());
-		//}
-		//break;
-	}
 	case TextureEntity::CubeTexture:
-	{
-		//hr = D3DXCreateCubeTextureFromFileInMemoryEx(pRenderDevice,buffer, nFileSize,
-		//	D3DX_DEFAULT, D3DX_FROM_FILE /**D3DX_FROM_FILE:  mip-mapping from file */, 0, D3DFMT_UNKNOWN,
-		//	D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
-		//	0, NULL, NULL, &(m_pCubeTexture));
-		//if (FAILED(hr))
-		//{
-		//	SetState(AssetEntity::ASSET_STATE_FAILED_TO_LOAD);
-		//	OUTPUT_LOG("failed creating cube texture for %s\n", GetKey().c_str());
-		//}
-		//break;
-	}
 	default:
 	{
 
-		pTexture = pRenderDevice->CreateTexture(buffer, nFileSize, format, m_dwColorKey);
+		auto image = ImageParser::ParseImage((const unsigned char*)buffer, nFileSize);
+		pTexture = pRenderDevice->CreateTexture(image);
 		if (pTexture)
 		{
 			/** we will only set LOD if the texture file is larger than 40KB */

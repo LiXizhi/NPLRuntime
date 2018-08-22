@@ -12,8 +12,7 @@
 #include "ParaWorldAsset.h"
 #include "ImageEntity.h"
 #include "TextureEntity.h"
-#include "ParaImage.h"
-
+#include "Framework/Codec/ImageParser.h"
 
 using namespace ParaEngine;
 
@@ -47,36 +46,22 @@ TextureEntity::TextureEntity()
 TextureEntity::~TextureEntity()
 {
 	SAFE_DELETE_ARRAY(m_pRawData);
-	SAFE_RELEASE(m_pImage);
 	SAFE_DELETE(m_pTextureInfo);
 }
 
-void TextureEntity::SetImage(ParaImage* pImage)
+void TextureEntity::SetImage(ImagePtr pImage)
 {
-	SAFE_RELEASE(m_pImage);
 	m_pImage = pImage;
 }
 
 bool TextureEntity::SetRawDataForImage(const char* pData, int nSize, bool bDeleteData)
 {
-	SAFE_RELEASE(m_pImage);
-	auto pImage = new ParaImage();
-
-	auto ret = pImage->initWithImageData((const unsigned char*)pData, nSize);
-	if (!ret)
-	{
-		SAFE_RELEASE(pImage);
-	}
-
-	if (bDeleteData)
-		SAFE_DELETE_ARRAY(pData);
-
-	m_pImage = pImage;
-
-	return ret;
+	m_pImage = ImageParser::ParseImage((const unsigned char*)pData, nSize);
+	if (m_pImage) return true;
+	return false;
 }
 
-const ParaImage* TextureEntity::GetImage() const
+const ImagePtr TextureEntity::GetImage() const
 {
 	return m_pImage;
 }
@@ -123,7 +108,7 @@ bool TextureEntity::LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFor
 	return false;
 }
 
-bool TextureEntity::LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat, void** ppTexture)
+bool TextureEntity::LoadFromImage(const ImagePtr pImage, UINT nMipLevels, EPixelFormat dwTextureFormat, void** ppTexture)
 {
 	return false;
 }

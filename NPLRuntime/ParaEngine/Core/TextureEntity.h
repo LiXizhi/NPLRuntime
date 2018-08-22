@@ -1,10 +1,9 @@
 #pragma once
 #include "AssetEntity.h"
-
+#include "Framework/Common/Image.hpp"
 namespace ParaEngine
 {
 	class ImageEntity;
-	class ParaImage;
 
 	struct ImageExtendInfo
 	{
@@ -140,7 +139,7 @@ namespace ParaEngine
 		int32 m_nRawDataSize;
 
 		/*image data*/
-		ParaImage* m_pImage;
+		ImagePtr m_pImage;
 
 		// this value will be increased by one every time GetTexture() or GetSurface() is called. 
 		int32 m_nHitCount;
@@ -178,7 +177,7 @@ namespace ParaEngine
 		*/
 		virtual bool LoadFromImage(ImageEntity * image, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, UINT nMipLevels = 0, void** ppTexture = NULL);
 
-		virtual bool LoadFromImage(const ParaImage* pImage, UINT nMipLevels, PixelFormat dwTextureFormat = PixelFormat::Unkonwn, void** ppTexture = nullptr);
+		virtual bool LoadFromImage(const ImagePtr pImage, UINT nMipLevels, EPixelFormat dwTextureFormat = EPixelFormat::Unkonwn, void** ppTexture = nullptr);
 
 
 		/** this function is mostly used internally.
@@ -223,11 +222,11 @@ namespace ParaEngine
 
 		/** set image from which to load the texture. image ownership is transfered to this entity. the caller should never delete the image. instead
 		this entity will delete the image. */
-		void SetImage(ParaImage* pImage);
+		void SetImage(ImagePtr pImage);
 		/* set raw texture data form which to load the texture, data will load by ParaImage */
 		bool SetRawDataForImage(const char* pData, int nSize, bool bDeleteData = true);
 		/* get image */
-		const ParaImage* GetImage() const;
+		const ImagePtr GetImage() const;
 		/* */
 		void SwapImage(TextureEntity* other);
 

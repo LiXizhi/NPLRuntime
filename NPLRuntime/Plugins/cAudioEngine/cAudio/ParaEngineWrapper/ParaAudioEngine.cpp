@@ -74,6 +74,7 @@ void ParaEngine::CParaAudioEngine::registerLogReceiver(std::function<void(const 
 			{
 				m_r(message);
 			}
+			return true;
 		}
 
 	private:
