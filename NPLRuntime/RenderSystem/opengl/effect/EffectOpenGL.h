@@ -31,7 +31,7 @@ namespace ParaEngine
 			: ZTest(true)
 			, ZWrite(true)
 			, CullMode(ECullMode::None)
-			, AlphaBlend(false)
+			, AlphaBlend(true)
 		{
 
 		}
