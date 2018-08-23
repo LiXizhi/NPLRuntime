@@ -20,7 +20,6 @@ float4x4 mWorldViewProj : worldviewprojection;
 float4 light_params: ConstVector0; 
 float3 sun_vec: sunvector;
 
-bool g_bEnableFog		:fogenable;
 float4   g_fogParam : fogparameters; // (fogstart, fogrange, fogDensity, reserved)
 float4   g_fogColor : fogColor;
 float4x4 mWorld: world;

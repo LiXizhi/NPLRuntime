@@ -555,7 +555,11 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 		UniformInfoGL info = uniforms[i];
 
 		// texture slot
-		if (info.type == EShType::EshTypeTexture)
+		if (info.type == EShType::EShTypeSampler ||
+			info.type == EShType::EShTypeSampler1D ||
+			info.type == EShType::EShTypeSampler2D ||
+			info.type == EShType::EShTypeSampler3D ||
+			info.type == EShType::EShTypeSamplerCube)
 		{
 			int nSlots = pRet->m_TextureSlotMap.size();
 			pRet->m_TextureSlotMap[info.name] = nSlots;
@@ -932,6 +936,10 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 	}
 
 	int nUniforms = m_Uniforms.size();
+
+
+	//<slot,tex id>
+	std::unordered_map<GLuint, GLuint> textureBindMap;
 	for (int i = 0; i < nUniforms; i++)
 	{
 		ParmeterValueCache cmd = m_ParametersValueCache[i];
@@ -952,8 +960,13 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			name = it->second;
 		}
 
-
 		GLint location = glGetUniformLocation(program, name.c_str());
+		if (location == -1)
+		{
+			// unsed shader const
+			//assert(false);
+			continue;
+		}
 		switch (uniform.type)
 		{
 		case EShTypeBool:
@@ -1053,7 +1066,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 		}
 		case EshTypeTexture:
 		{
-			auto it = m_TextureSlotMap.find(uniform.name);
+			auto it = m_TextureSlotMap.find(name);
 			if (it != m_TextureSlotMap.end())
 			{
 				GLuint slot = it->second;
@@ -1080,15 +1093,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 					tex->SetMagFilter(samplerInfo.MagFilter);
 					tex->SetMipFilter(samplerInfo.MipFilter);
 					m_TextureOldSamplerState[tex] = oldSamplerInfo;
-
-					glActiveTexture(GL_TEXTURE0 + slot);
-					glEnable(GL_TEXTURE_2D);
-					glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
-					
-				}
-				else {
-					glActiveTexture(GL_TEXTURE0 + slot);
-					glDisable(GL_TEXTURE_2D);
+					textureBindMap[slot] = tex->GetTextureID();	
 				}
 
 			}
@@ -1102,15 +1107,18 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			assert(false);
 			return false;
 		}
-
-		//auto error = glGetError();
-		//if (error != GL_NO_ERROR)
-		//{
-
-		//	return false;
-		//}
 	}
 
+
+	for (auto kv : textureBindMap)
+	{
+		GLuint slot = kv.first;
+		GLuint texID = kv.second;
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, texID);
+
+	}
 	return true;
 }
 

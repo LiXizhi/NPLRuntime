@@ -27,7 +27,6 @@ bool g_bAlphaTesting	:alphatesting;
 bool g_bEnableFog		:fogenable;
 bool g_bRGBOnlyTexturAnim  :boolean7;
 float g_bReflectFactor	:reflectfactor;
-float3 g_EyePositionW	:worldcamerapos;
 float2 g_TexOffset		:ConstVector0; // TODO: for testing texture animation: x,y for translation
 float3 g_TexRot			:ConstVector1;
 float2 g_TexScale		:ConstVector2 = float2(1.f,1.f);

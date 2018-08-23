@@ -6,9 +6,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
 float4x4 mWorldViewProj: worldviewprojection;
-//float4x4 mViewProj: viewprojection;
-float4x4 mWorldView: worldview;
-float4x4 mWorld: world;
 
 float3 sun_vec: sunvector;
 
