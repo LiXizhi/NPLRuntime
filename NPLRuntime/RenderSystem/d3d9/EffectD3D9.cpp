@@ -427,18 +427,24 @@ IParaEngine::TechniqueHandle ParaEngine::EffectD3D9::GetCurrentTechnique()
 
 bool ParaEngine::EffectD3D9::CommitChanges()
 {
-	return m_pEffect->CommitChanges() == S_OK;
+	bool ret =  m_pEffect->CommitChanges() == S_OK;
+	assert(ret);
+	return ret;
 }
 
 bool ParaEngine::EffectD3D9::SetRawValue(const char* name, const void* data, uint32_t offset, uint32_t size)
 {
-	return m_pEffect->SetRawValue(name, data, offset, size) == S_OK;
+	bool ret = m_pEffect->SetRawValue(name, data, offset, size) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 bool ParaEngine::EffectD3D9::SetTexture(const char* name, IParaEngine::ITexture* texture)
 {
 	TextureD3D9* tex = static_cast<TextureD3D9*>(texture);
-	return m_pEffect->SetTexture(name, tex->GetTexture()) == S_OK;
+	bool ret= m_pEffect->SetTexture(name, tex->GetTexture()) == S_OK;
+	assert(ret);
+	return ret;
 }
 
 bool EffectD3D9::SetTechnique(const TechniqueHandle& handle)
@@ -455,7 +461,7 @@ bool EffectD3D9::SetTechnique(const TechniqueHandle& handle)
 			}
 		}
 	}
-
+	assert(false);
 	return false;
 }
 

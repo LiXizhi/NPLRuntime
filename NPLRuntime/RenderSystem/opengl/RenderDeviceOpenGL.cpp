@@ -447,7 +447,7 @@ bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, 
 
 	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
 	m_DownSampleEffect->Begin();
-	m_DownSampleEffect->SetTexture("ColorTextureSampler", source);
+	m_DownSampleEffect->SetTexture("tex0", source);
 	m_DownSampleEffect->BeginPass(0);
 	m_DownSampleEffect->CommitChanges();
 	DrawQuad();
