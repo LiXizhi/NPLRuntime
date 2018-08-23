@@ -90,7 +90,7 @@ inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std
 		std::string value = string_to_lower(std::get<1>(kv));
 		if (key == "texture")
 		{
-			info.TextureName = value;
+			info.TextureName = std::get<1>(kv);
 		}else if (key == "minfilter" || key == "magfilter" || key == "mipfilter")
 		{
 			ETextureFilter filter = ETextureFilter::Point;
