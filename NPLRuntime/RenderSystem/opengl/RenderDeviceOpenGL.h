@@ -112,7 +112,7 @@ namespace ParaEngine
 
 		TextureOpenGL* m_backbufferRenderTarget;
 		TextureOpenGL* m_backbufferDepthStencil;
-		IParaEngine::ITexture* m_CurrentRenderTargets[8];
+		IParaEngine::ITexture** m_CurrentRenderTargets;
 		IParaEngine::ITexture* m_CurrentDepthStencil;
 		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 		std::vector<std::string> m_GLExtes;

@@ -83,6 +83,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	,m_CurrentDepthStencil(nullptr)
 	,m_backbufferDepthStencil(nullptr)
 	,m_backbufferRenderTarget(nullptr)
+,	 m_CurrentRenderTargets(nullptr)
 {
 	for (int i = 0;i<8;i++)
 	{
@@ -91,7 +92,6 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 			m_SamplerStates[i][j] = 0;
 		}
 	}
-	memset(m_CurrentRenderTargets, 0, sizeof(m_CurrentRenderTargets));
 
 	InitCpas();
 	InitFrameBuffer();
@@ -112,7 +112,7 @@ ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 		delete pRes;
 	}
 	m_Resources.clear();
-
+	delete[] m_CurrentRenderTargets;
 	glDeleteFramebuffers(1, &m_FBO);
 }
 
@@ -310,29 +310,8 @@ bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth,
 
 int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 {
-	return 4;
+	return m_DeviceCpas.MaxSimultaneousTextures;
 }
-
-
-//bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, IParaEngine::ITexture* texture)
-//{
-//
-//	if (texture)
-//	{
-//
-//		TextureOpenGL* tex = static_cast<TextureOpenGL*>(texture);
-//		glActiveTexture(GL_TEXTURE0 + stage);
-//		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
-//
-//	}
-//	else {
-//		glActiveTexture(GL_TEXTURE0 + stage);
-//		glBindTexture(GL_TEXTURE_2D,0);
-//	}
-//
-//	PE_CHECK_GL_ERROR_DEBUG();
-//	return true;
-//}
 
 
 
@@ -438,13 +417,13 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 
 bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect)
 {
-
-
-
-
-	auto oldTarget = GetRenderTarget(0);
+	std::vector<IParaEngine::ITexture*> oldTargets;
+	for (int i =0;i<m_DeviceCpas.NumSimultaneousRTs;i++)
+	{
+		oldTargets.push_back(m_CurrentRenderTargets[i]);
+		SetRenderTarget(i, nullptr);
+	}
 	SetRenderTarget(0, dest);
-
 	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
 	m_DownSampleEffect->Begin();
 	m_DownSampleEffect->SetTexture("tex0", source);
@@ -454,7 +433,10 @@ bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, 
 	m_DownSampleEffect->EndPass();
 	m_DownSampleEffect->End();
 
-	SetRenderTarget(0, oldTarget);
+	for (int i = 0; i < m_DeviceCpas.NumSimultaneousRTs; i++)
+	{
+		SetRenderTarget(i,oldTargets[i]);
+	}
 	return true;
 }
 
@@ -741,15 +723,27 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t wi
 
 bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
 {
-
+	if (index >= m_DeviceCpas.NumSimultaneousRTs) return false;
 	if (target == m_CurrentRenderTargets[index]) return true;
 	m_CurrentRenderTargets[index] = target;
-
+	static GLenum* drawBufers = nullptr;
+	if (drawBufers == nullptr)
+	{
+		drawBufers = new GLenum[m_DeviceCpas.NumSimultaneousRTs];
+		for (int i =0;i<m_DeviceCpas.NumSimultaneousRTs;i++)
+		{
+			drawBufers[i] = GL_NONE;
+		}
+		drawBufers[0] = GL_COLOR_ATTACHMENT0;
+	}
 	GLuint id = 0;
 	if (target != nullptr)
 	{
 		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
 		id = tex->GetTextureID();
+	}
+	else {
+		drawBufers[index] = GL_NONE;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
@@ -758,7 +752,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine
 		//assert(false);
 		return false;
 	}
-
+	drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
 	if (target != nullptr)
 	{
 		ParaViewport vp;
@@ -771,6 +765,7 @@ bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine
 		SetViewport(vp);
 	}
 
+	glDrawBuffers(m_DeviceCpas.NumSimultaneousRTs, drawBufers);
 	return true;
 }
 
@@ -869,16 +864,24 @@ void ParaEngine::RenderDeviceOpenGL::InitCpas()
 {
 	m_DeviceCpas.DynamicTextures = true;
 
-	GLint maxAttch = 0;
-	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxAttch);
-	if (GL_MAX_COLOR_ATTACHMENTS > 1)
+
+	GLint maxDrawBuffers = 0;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
+
+	if (maxDrawBuffers > 1)
 	{
 		m_DeviceCpas.MRT = true;
 	}
-	m_DeviceCpas.MaxSimultaneousTextures = 8;
+
+	GLint texture_units = 0;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
+
+	m_DeviceCpas.MaxSimultaneousTextures = texture_units;
 	m_DeviceCpas.ScissorTest = true;
 	m_DeviceCpas.Stencil = true;
-	m_DeviceCpas.NumSimultaneousRTs = GL_MAX_COLOR_ATTACHMENTS;
+
+
+	m_DeviceCpas.NumSimultaneousRTs = maxDrawBuffers;
 	GLint numExtes = 0;
 	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtes);
 	for (GLint i =0;i<numExtes;i++)
@@ -916,6 +919,10 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 	m_Resources.push_back(m_backbufferRenderTarget);
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
+
+
+	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
+	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 
 
