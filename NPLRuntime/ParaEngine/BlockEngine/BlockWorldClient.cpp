@@ -2474,7 +2474,6 @@ namespace ParaEngine
 
 		if (bIsShadowPass)
 		{
-#ifdef USE_DIRECTX_RENDERER
 			frustum = &caster_frustum;
 			Vector3 vCenter = camWorldPos - renderOrig;
 			float fRadius = min(CGlobals::GetScene()->GetShadowRadius(), 50.f);
@@ -2482,9 +2481,6 @@ namespace ParaEngine
 			frustum->UpdateFrustum(CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
 			camMin = Vector3(vCenter.x - fRadius, vCenter.y - fRadius, vCenter.z - fRadius);
 			camMax = Vector3(vCenter.x + fRadius, vCenter.y + fRadius, vCenter.z + fRadius);
-#else	
-			return;
-#endif
 		}
 		else
 		{
