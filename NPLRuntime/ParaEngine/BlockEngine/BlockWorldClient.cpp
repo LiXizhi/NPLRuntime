@@ -252,10 +252,10 @@ namespace ParaEngine
 	void BlockWorldClient::RenderShadowMap()
 	{
 
-		// only render shadow map for fancy shader mode. 
-		if( (GetBlockRenderMethod() !=  BLOCK_RENDER_FANCY_SHADER) || 
-			! GetUseSunlightShadowMap())
-			return;
+		//// only render shadow map for fancy shader mode. 
+		//if( (GetBlockRenderMethod() !=  BLOCK_RENDER_FANCY_SHADER) || 
+		//	! GetUseSunlightShadowMap())
+		//	return;
 		// prepare shadow pass 
 		PreRender(true);
 		// make sure all shaders are replaced. 
@@ -264,9 +264,7 @@ namespace ParaEngine
 		if (m_alphaTestRenderTasks.size() == 0 && m_solidRenderTasks.size() == 0 && m_alphaBlendRenderTasks.size() == 0)
 			return;
 
-		if(m_block_effect_fancy == 0)
-			return;
-		m_block_effect_fancy->LoadAsset();
+
 
 		const float fBlockSize = BlockConfig::g_blockSize;
 		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
@@ -295,7 +293,7 @@ namespace ParaEngine
 		}
 
 		CEffectFile* pEffect = NULL;
-		pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect);
+		pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
 		if(pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
@@ -685,6 +683,8 @@ namespace ParaEngine
 					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
 					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
 					
+					pEffect->setMatrix(CEffectFile::k_worldMatrix,&vWorldMatrix);
+
 					Matrix4 mWorldViewProj;
 					mWorldViewProj = vWorldMatrix * matViewProj;
 
@@ -700,6 +700,11 @@ namespace ParaEngine
 						Matrix4 mTex;
 						ParaMatrixMultiply(&mTex, &vWorldMatrix, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
 						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
+					}
+					if (pEffect->isMatrixUsed(CEffectFile::k_shadowVP))
+					{
+						pEffect->setMatrix(CEffectFile::k_shadowVP, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+						pEffect->setTexture(CEffectFile::k_tex_shadowMap, CGlobals::GetEffectManager()->GetShadowMap()->GetDepthTexture());
 					}
 					{
 						// set the new render origin

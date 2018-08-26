@@ -14,7 +14,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 //  Per frame parameters
 float4x4 mWorldViewProj : worldviewprojection;
+float4x4 mShadowVP : shadowvp;
 
+bool g_bAlphaTesting : alphatesting;
 // for selection effect: light_params.x: sun_lightIntensity, light_params.y: damageDegree
 // for block effect: light_params.xyz: light color, light_params.w light intensity
 float4 light_params: ConstVector0; 
@@ -28,11 +30,17 @@ sampler tex0Sampler = sampler_state
 {
 	texture = <tex0>;
 };
+texture shadowMapTex : shadowmaptex;
+sampler2D shadomMapTexSampler = sampler_state
+{
+	texture = <shadowMapTex>;
+};
 
 struct SimpleVSOut
 {
 	float4 pos	:POSITION;
 	float2 texcoord :	TEXCOORD0;
+	float2 shadowUV :   TEXCOORD1;
 	half4 color : COLOR0;
 };
 
@@ -71,6 +79,9 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	SimpleVSOut output;
 	output.pos = mul(pos, mWorldViewProj);
 	output.texcoord = texcoord;
+	float4 worldPos = mul(pos, mWorld);
+	float4 shadowClipPos = mul(worldPos, mShadowVP);
+	output.shadowUV = shadowClipPos.xy*0.5 + 0.5;
 	
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
@@ -106,6 +117,11 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 	SimpleVSOut output;
 	output.pos = mul(pos, mWorldViewProj);
 	output.texcoord = texcoord;
+
+	float4 worldPos = mul(pos, mWorld);
+	float4 shadowClipPos = mul(worldPos, mShadowVP);
+	output.shadowUV = shadowClipPos.xy*0.5 + 0.5;
+
 	
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
@@ -129,6 +145,9 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 
 float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 {
+
+	float depth = tex2D(shadomMapTexSampler,input.shadowUV);
+return float4(depth, depth, depth, 1);
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
 
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
@@ -175,31 +194,67 @@ float4 DamagedBlockPS(SelectBlockVSOut input) :COLOR0
 	return color;
 }
 
+
+void VertShadow(float4	Pos			: POSITION,
+	float2	Tex : TEXCOORD0,
+	out float4 oPos : POSITION,
+	out float2	outTex : TEXCOORD0,
+	out float2 Depth : TEXCOORD1)
+{
+	oPos = mul(Pos, mWorldViewProj);
+	outTex = Tex;
+	Depth.xy = oPos.zw;
+}
+
+float4 PixShadow(float2	inTex		: TEXCOORD0,
+	float2 Depth : TEXCOORD1) : COLOR
+{
+	half alpha = tex2D(tex0Sampler, inTex.xy).w;
+
+	if (g_bAlphaTesting)
+	{
+		// alpha testing
+		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
+		clip(alpha - 0.5);
+	}
+	float d = Depth.x / Depth.y;
+	return float4(d);
+}
+
+
+
+
+
+
 technique SimpleMesh_vs20_ps20
 {
 	pass P0
 	{
 		VertexShader = compile vs_2_0 SimpleMainVS();
 		PixelShader  = compile ps_2_0 SimpleMainPS();
-		FogEnable = false;
 	}
 	pass P1
 	{
 		VertexShader = compile vs_2_0 SelectBlockVS();
 		PixelShader  = compile ps_2_0 SelectBlockPS();
-		FogEnable = false;
 	}
 	pass P2
 	{
 		VertexShader = compile vs_2_0 SelectBlockVS();
 		PixelShader  = compile ps_2_0 DamagedBlockPS();
-		FogEnable = false;
 	}
 	pass P3
 	{
 		VertexShader = compile vs_2_0 TransparentSimpleMainVS();
 		PixelShader  = compile ps_2_0 TransparentMainPS();
-		FogEnable = false;
 	}
 }
 
+technique GenShadowMap
+{
+	pass p0
+	{
+		VertexShader = compile vs_2_0 VertShadow();
+		PixelShader = compile ps_2_0 PixShadow();
+	}
+}

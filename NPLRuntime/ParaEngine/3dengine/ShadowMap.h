@@ -96,6 +96,9 @@ namespace ParaEngine
 
 		/** add a shadow caster point. */
 		void AddShadowCasterPoint(const CShapeAABB& aabb);
+
+		IParaEngine::ITexture* GetDepthTexture() const;
+
 	private:
 		static int g_nShadowMapTexelSizeLevel;
 		IParaEngine::ITexture* m_pBackBuffer;

@@ -179,8 +179,8 @@ float4 PixShadow( float2	inTex		: TEXCOORD0,
 		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
 		clip(alpha-0.5);
 	}
-    float d = Depth.x / Depth.y;
-    return float4(0, d.xx,alpha);
+	float d = Depth.x / Depth.y;
+	return float4(d);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

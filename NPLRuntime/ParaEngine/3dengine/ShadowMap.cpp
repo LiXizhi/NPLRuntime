@@ -53,6 +53,9 @@ const float W_EPSILON = 0.001f;
 #define IS_SPECIAL(F)  ((FLT_AS_DW(F) & 0x7f800000L)==0x7f800000L)
 namespace ParaEngine
 {
+
+
+
 	int CShadowMap::g_nShadowMapTexelSizeLevel = 0;
 }
 
@@ -298,6 +301,12 @@ bool CShadowMap::PrepareAllSurfaces()
 #endif
 	return true;
 }
+
+IParaEngine::ITexture* CShadowMap::GetDepthTexture() const
+{
+	return m_pSMColorSurface;
+}
+
 //-----------------------------------------------------------------------------
 // Name: InvalidateDeviceObjects()
 // Desc:

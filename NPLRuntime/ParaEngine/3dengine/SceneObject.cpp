@@ -1374,7 +1374,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	// if an object has a home zone, it must not be shadow caster
 	// if object is visible, it is shadow caster already.
 	Vector3 vSunDir = GetSunLight().GetSunDirection();
-	bIsShadowCaster = ( m_bRenderMeshShadow && pObj->IsShadowCaster() && pObj->GetHomeZone()==0)
+	bIsShadowCaster = ( pObj->IsShadowCaster() && pObj->GetHomeZone()==0)
 		&& ((pViewClippingObject->TestCollisionSphere(& (sceneState.vEye), GetShadowRadius(),1) 
 					&& pViewClippingObject->TestShadowSweptSphere(pCamera, &(vSunDir))));
 	
@@ -1613,7 +1613,7 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneSta
 				{
 					queueTiles.push(pTile->m_subtiles[i]);
 				}
-				else if (m_bRenderMeshShadow &&
+				else if (
 					!bEyeCenteredTest && pTile->m_subtiles[i]->TestCollisionSphere(&(sceneState.vEye), SHADOW_RADIUS))
 				{
 					// ensure all sub tiles with potential shadow casters are enabled.
@@ -1927,12 +1927,10 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	{
 		/** number of shadow casters and receivers are now reported to the console in the format:
 		*/
-		if(m_bRenderMeshShadow)
-		{
+
 			static char sNumReport[50];
 			snprintf(sNumReport, 50, "casters:%d receivers:%d", (int)sceneState.listShadowCasters.size(), (int)sceneState.listShadowReceivers.size());
 			CGlobals::GetReport()->SetString("shadow:", sNumReport);
-		}
 	}
 
 	// update the GUI's view projection matrix for calculating 3d GUI object position
@@ -2229,12 +2227,14 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	//////////////////////////////////////////////////////////////////////////
 	// render the shadow map
-	if( IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
-	{
-		sceneState.GetFaceGroups()->Clear();
-		sceneState.m_bEnableTranslucentFaceSorting = false;
-		RenderShadowMap();
-	}
+	//if( IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
+	//{
+
+	//}
+
+	sceneState.GetFaceGroups()->Clear();
+	sceneState.m_bEnableTranslucentFaceSorting = false;
+	RenderShadowMap();
 
 	m_sceneState->dTimeDelta = oldDelta;
 	
@@ -3752,7 +3752,7 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 		}
 	}
 
-	CGlobals::GetEffectManager()->EnableUsingShadowMap(m_bRenderMeshShadow);
+	CGlobals::GetEffectManager()->EnableUsingShadowMap(true);
 	if(m_bRenderMeshShadow)
 	{
 		SetShadowMapTexelSizeLevel(0);
@@ -3762,6 +3762,7 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 
 bool CSceneObject::IsShadowMapEnabled()
 {
+	return true;
 	if(!m_bRenderMeshShadow)
 		return m_bRenderMeshShadow;
 	else

@@ -164,7 +164,8 @@ namespace ParaEngine
 			k_tex_mat14,
 			k_tex_mat15,
 			k_tex_mat_max,
-
+			k_shadowVP,
+			k_tex_shadowMap,
 			// last one
 			k_max_param_handles
 		};

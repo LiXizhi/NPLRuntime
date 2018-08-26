@@ -11,6 +11,7 @@
 #include "AutoCamera.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
+#include "ShadowMap.h"
 #if USE_DIRECTX_RENDERER
 #include "MirrorSurface.h"
 #endif
@@ -551,6 +552,10 @@ bool CEffectFileImpl::begin(bool bApplyParam,bool bForceBegin)
 			applyCameraMatrices();
 		}
 
+
+
+
+
 		if (bForceBegin || !m_bSharedMode)
 		{
 			bool result = m_pEffect->Begin();
@@ -734,6 +739,9 @@ void CEffectFileImpl::parseParameters()
 		table["lightparams"] = k_LightParams;
 		table["atmosphericlightingparams"] = k_atmosphericLighting;
 		table["patchcorners"] = k_patchCorners;
+		table["shadowmaptex"] = k_tex_shadowMap;
+		table["shadowvp"] = k_shadowVP;
+
 
 		// boolean
 		for (int i = 0; i < (k_tex_max - k_tex0); i++)
@@ -1295,4 +1303,15 @@ bool ParaEngine::CEffectFileImpl::SetVector4(const char* name, const Vector4& vV
 bool ParaEngine::CEffectFileImpl::SetMatrix(const char* name, const Matrix4& data)
 {
 	return SetRawValue(name, &data, 0, sizeof(data));
+}
+
+void ParaEngine::CEffectFileImpl::applyShadow()
+{
+	if (isParameterUsed(k_shadowVP) && isParameterUsed(k_tex_shadowMap))
+	{
+		CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();	
+		setMatrix(k_worldInverseMatrix, pShadowMap->GetViewProjMatrix());
+		setTexture(k_tex_shadowMap, pShadowMap->GetDepthTexture());
+
+	}
 }

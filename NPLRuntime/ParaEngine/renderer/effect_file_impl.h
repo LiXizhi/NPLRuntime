@@ -59,6 +59,7 @@ namespace ParaEngine
 		void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true) override;
 		void applyCameraMatrices() override;
 		void applyWorldMatrices() override;
+		void applyShadow();
 		void applyGlobalLightingData(CSunLight& sunlight) override;
 
 		void EnableAlphaBlending(bool bAlphaBlending) override;

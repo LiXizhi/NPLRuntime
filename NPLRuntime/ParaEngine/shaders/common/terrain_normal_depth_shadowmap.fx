@@ -535,7 +535,7 @@ float4 PixShadow( float2	inTex		: TEXCOORD0,
 				 float2 Depth		: TEXCOORD1) : COLOR
 {
 	float d = Depth.x / Depth.y;
-    return float4(d.xx,1,1);
+	return float4(d);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
