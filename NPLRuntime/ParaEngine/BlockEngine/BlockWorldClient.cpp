@@ -521,136 +521,6 @@ namespace ParaEngine
 					SetBlockRenderMethod(BLOCK_RENDER_FIXED_FUNCTION);
 					return;
 				}
-				//////////////////////////////////////////////////////////////////////////
-				// render using fixed function pipeline
-
-				//CGlobals::GetRenderDevice()->SetFVF(block_vertex::FVF);
-
-				//IDirect3DIndexBuffer9* pIndexBuffer =  GetIndexBuffer();
-				//CGlobals::GetRenderDevice()->SetIndices(pIndexBuffer);
-
-				//IDirect3DVertexBuffer9* pCurVB = NULL;
-				//uint16_t curTamplerId = 0;
-				//int32_t curPass = -1;
-				//ERSVCULL culling = RSV_CULL_CCW;
-				//ITexture* pCurTex0 = NULL;
-				//ITexture* pCurTex1 = NULL;
-				//ITexture* pCurTex2 = NULL;
-
-				//
-				//for(uint32_t i=0;i<pCurRenderQueue->size();i++)
-				//{
-				//	BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
-				//	IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
-				//	if(pVB != pCurVB)
-				//	{
-				//		CGlobals::GetRenderDevice()->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
-				//		pCurVB = pVB;
-				//	}
-				//	int32_t passId;
-				//	if(curTamplerId != pRenderTask->GetTemplateId())
-				//	{
-				//		BlockTemplate* pTempate = pRenderTask->GetTemplate();
-				//		if(pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
-				//			passId = g_twoTexPass;
-				//		else if(pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
-				//			passId = g_transparentBlockPass;
-				//		else
-				//			passId = g_TexPass;
-
-				//		if(curPass != passId)
-				//		{
-				//			curPass = passId;
-				//			if(passId == 0)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-				//			}
-				//			else if(passId == 1)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-				//			}
-				//			else if(passId == 2)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-				//			}
-				//			else if(passId == 3)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-				//			}
-				//			else
-				//			{
-				//				curPass = -1;
-				//				continue;
-				//			}
-				//		}
-
-				//		TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-				//		if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
-				//		{
-				//			pCurTex0 = pTexEntity->GetTexture();
-				//			CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
-				//		}
-
-				//		pTexEntity = pTempate->GetTexture1();
-				//		if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
-				//		{
-				//			pCurTex1 = pTexEntity->GetTexture();
-				//			CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
-				//		}
-
-				//		/* fixed function never use normal map
-				//		pTexEntity = pTempate->GetNormalMap();
-				//		if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
-				//		{
-				//			pCurTex2 = pTexEntity->GetTexture();
-				//			pDevice->SetTexture(2,pCurTex2);
-				//		}*/
-
-
-				//		// culling mode 
-				//		if(pTempate->GetBlockModel().IsDisableFaceCulling())
-				//		{
-				//			if(culling != RSV_CULL_NONE)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
-				//				culling = RSV_CULL_NONE;
-				//			}
-				//		}
-				//		else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
-				//			&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
-				//		{
-				//			if(culling != RSV_CULL_CW)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
-				//				culling = RSV_CULL_CW;
-				//			}
-				//		}
-				//		else
-				//		{
-				//			if(culling != RSV_CULL_CCW)
-				//			{
-				//				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-				//				culling = RSV_CULL_CCW;
-				//			}
-				//		}
-				//	}
-
-
-				//	Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-				//	
-				//	Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
-				//	vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-				//	vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
-				//	vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-				//	vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
-
-				//	CGlobals::GetRenderDevice()->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-
-				//	CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
-				//		pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
-				//}
-				//
-				//pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
 			}
 			else if(pEffect != 0 && pEffect->begin(false))
 			{
@@ -3055,7 +2925,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderDeferredLights()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
@@ -3117,7 +2986,6 @@ namespace ParaEngine
 		if (pEffectFile) {
 			pEffectFile->end();
 		}
-#endif
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

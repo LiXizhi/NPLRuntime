@@ -4,6 +4,10 @@ texture tex0 : TEXTURE0;
 sampler ColorTextureSampler = sampler_state 
 {
     texture = <tex0>;
+	MinFilter = POINT;
+	MagFilter = POINT;
+	AddressU = clamp;
+	AddressV = clamp;
 };
 
 struct appdata

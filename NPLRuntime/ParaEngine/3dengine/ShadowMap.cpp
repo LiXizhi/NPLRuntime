@@ -1312,12 +1312,17 @@ HRESULT CShadowMap::BeginShadowPass()
 	float fOffsetY = 0.5f + (0.5f / (float)(m_shadowTexHeight));
 	unsigned int range = 1;
 	float fBias    = 0.0f;
-
+#ifdef USE_DIRECTX_RENDERER
 	Matrix4 texScaleBiasMat(0.5f, 0.0f, 0.0f, 0.0f,
 							0.0f,    -0.5f,     0.0f,         0.0f,
 							0.0f,     0.0f,     (float)range, 0.0f,
 							fOffsetX, fOffsetY, 0.0f,         1.0f );
-	
+#else
+	Matrix4 texScaleBiasMat(0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, (float)range, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+#endif
 	ParaMatrixMultiply(&m_textureMatrix, &m_LightViewProj, &texScaleBiasMat);
 //#ifdef USE_DIRECTX_RENDERER
 	//  preserve old viewport and back buffer

@@ -313,12 +313,12 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
 
-	/*mesh_vertex_plain quadVertices[4] = {
-		{ Vector3(fX*2-1, -fBottom*2+1, 0), Vector2(fX, fBottom) },
+	mesh_vertex_plain quadVertices[4] = {
+		{ Vector3(fX * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fX, fBottom) },
 		{ Vector3(fRight * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fRight, fBottom) },
-		{ Vector3(fX*2 - 1, -fY*2+1, 0), Vector2(fX, fY) },
+		{ Vector3(fX * 2 - 1, -fY * 2 + 1, 0), Vector2(fX, fY) },
 		{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight, fY) },
-	};*/
+	};
 	//mesh_vertex_plain quadVertices[4] = {
 	//	{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
 	//	{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
@@ -327,12 +327,12 @@ bool ParaEngine::CViewport::DrawQuad()
 	//};
 
 
-	 mesh_vertex_plain quadVertices[4] = {
-		{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
-		{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
-		{ Vector3(-1, 1, 0), Vector2(fX, fY) },
-		{ Vector3(1, 1, 0), Vector2(fRight, fY) },
-	};
+	// mesh_vertex_plain quadVertices[4] = {
+	//	{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
+	//	{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
+	//	{ Vector3(-1, 1, 0), Vector2(fX, fY) },
+	//	{ Vector3(1, 1, 0), Vector2(fRight, fY) },
+	//};
 
 
 	// this is done in shader code

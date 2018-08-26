@@ -2086,11 +2086,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
-#endif
+
+	CGlobals::GetRenderDevice()->SetRenderTarget(1,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(2,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(3,NULL);
+
 	if(nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -2176,19 +2176,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	CGlobals::GetEffectManager()->EnableFog(IsFogEnabled());
 	CGlobals::GetEffectManager()->SetD3DFogState();
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 
-
-	if(IsUseWireFrame())
-	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_WIREFRAME );
-	}
-	else
-	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_SOLID );
-	}
-#endif
 	/////////////////////////////////////////////////////////////////
 	// still renderings
 
@@ -2351,6 +2339,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		RenderSelection(RENDER_MISSILES);
 	}
 
+
+	CGlobals::GetRenderDevice()->SetRenderTarget(1, NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(2, NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(3, NULL);
+
+
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
@@ -2358,6 +2352,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	// draw overlays solid
 	RenderHeadOnDisplay(2);
+
+
+
 
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
@@ -2370,9 +2367,16 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		nCharacterRendered += RenderSelection(RENDER_TRANSPARENT_CHARACTERS);
 	}
 
+
+
+
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
 
 	m_pBlockWorldClient->RenderDeferredLights();
+
+
+
+
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);
@@ -2515,6 +2519,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	auto entity = BufferPickingManager::GetInstance().GetEntity("backbuffer");
 	if (entity)
 		entity->SetResultDirty();
+
+
 	return S_OK;
 }
 

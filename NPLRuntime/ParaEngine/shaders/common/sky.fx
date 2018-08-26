@@ -135,7 +135,8 @@ technique SimpleMesh_vs20_ps20
 		// shaders
 		VertexShader = compile vs_2_0 vertexShader();
 		PixelShader  = compile ps_2_0 pixelShader();
-		
+		ZEnable = true;
+		ZWriteEnable = false;
 		FogEnable = false;
 	}
 }
