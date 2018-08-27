@@ -15,6 +15,7 @@
 //  Per frame parameters
 float4x4 mWorldViewProj : worldviewprojection;
 float4x4 mShadowVP : shadowvp;
+float2   mShadowMapTexelSize : ShadowMapTexelSize;
 
 bool g_bAlphaTesting : alphatesting;
 // for selection effect: light_params.x: sun_lightIntensity, light_params.y: damageDegree
@@ -40,7 +41,7 @@ struct SimpleVSOut
 {
 	float4 pos	:POSITION;
 	float2 texcoord :	TEXCOORD0;
-	float2 shadowUV :   TEXCOORD1;
+	float3 shadowPos :  TEXCOORD1; // pos in shadow space
 	half4 color : COLOR0;
 };
 
@@ -80,8 +81,9 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	output.pos = mul(pos, mWorldViewProj);
 	output.texcoord = texcoord;
 	float4 worldPos = mul(pos, mWorld);
-	float4 shadowClipPos = mul(worldPos, mShadowVP);
-	output.shadowUV = shadowClipPos.xy*0.5 + 0.5;
+	float4 shadowClipPos =  mul(worldPos, mShadowVP);
+	output.shadowPos = shadowClipPos.xyz / shadowClipPos.w;
+
 	
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
@@ -106,6 +108,22 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	output.color.w = CalcFogFactor(length(output.pos.xyz));
 	return output;
 }
+
+float4 SimpleMainPS(SimpleVSOut input) :COLOR0
+{
+
+
+	float2 shadowUV = input.shadowPos.xy*0.5+0.5;
+	float depth = tex2D(shadomMapTexSampler,shadowUV);
+	float testDepth = input.shadowPos.z*0.5+0.5;
+	
+	return float4(depth,0,0,1);
+	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
+	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
+	return oColor;
+}
+
+
 
 // color.x: sun light  color.y:block light  color.z*255 block_id; 
 SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
@@ -143,16 +161,6 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 	return output;
 }
 
-float4 SimpleMainPS(SimpleVSOut input) :COLOR0
-{
-
-	float depth = tex2D(shadomMapTexSampler,input.shadowUV);
-return float4(depth, depth, depth, 1);
-	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
-
-	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
-	return oColor;
-}
 
 float4 TransparentMainPS(SimpleVSOut input) :COLOR0
 {
@@ -217,7 +225,7 @@ float4 PixShadow(float2	inTex		: TEXCOORD0,
 		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
 		clip(alpha - 0.5);
 	}
-	float d = Depth.x / Depth.y;
+	float d = (Depth.x / Depth.y)*0.5+0.5;
 	return float4(d);
 }
 

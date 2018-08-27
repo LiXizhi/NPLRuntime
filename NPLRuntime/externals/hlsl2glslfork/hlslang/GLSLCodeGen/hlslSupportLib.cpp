@@ -128,6 +128,13 @@ void insertPre130TextureLookups()
 		);
 	hlslSupportLibExtensionsESOverrides->insert (std::make_pair(EOpTexCubeGrad, std::make_pair("GL_EXT_shader_texture_lod","GL_EXT_shader_texture_lod")));
 
+
+	// texture2D
+
+	hlslSupportLib->insert(CodeMap::value_type(EOpTex2D,
+		"vec4 xll_texture2D(sampler2D s,vec2 coord){return texture2D(s,vec2(coord.x,1 - coord.y));}"
+	));
+
     // shadow2D / shadow2Dproj
     hlslSupportLib->insert(CodeMap::value_type(EOpShadow2D,
         "float xll_shadow2D(sampler2DShadow s, vec3 coord) { return shadow2D (s, coord).r; }\n"

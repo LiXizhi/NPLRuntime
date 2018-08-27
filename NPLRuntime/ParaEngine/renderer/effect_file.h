@@ -166,6 +166,7 @@ namespace ParaEngine
 			k_tex_mat_max,
 			k_shadowVP,
 			k_tex_shadowMap,
+			k_ShadowMapTexelSize,
 			// last one
 			k_max_param_handles
 		};
@@ -228,7 +229,7 @@ namespace ParaEngine
 		virtual bool setBool(eParameterHandles index, bool bBoolean)  { return false; };
 		virtual bool setInt(eParameterHandles index, int nValue)  { return false; };
 		virtual bool setFloat(eParameterHandles index, float fValue)  { return false; };
-
+		virtual bool setTexture(eParameterHandles index, IParaEngine::ITexture* texture) { return false; };
 		virtual bool SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes) = 0;
 		virtual bool SetBool(const char* name, bool bBoolean) = 0;
 		virtual bool SetInt(const char* name, int nValue) = 0;

@@ -1122,10 +1122,6 @@ void HlslLinker::emitInputNonStructParam(GlslSymbol* sym, EShLanguage lang, bool
 		}
 
 	}
-	else if (m_Options & ETranslateOpFlipUVVertical && lang == EShLangVertex && (attrSem >= EAttrSemTex0 && attrSem <= EAttrSemTex9))
-	{
-		call << ctor <<  "(" << name << ".x,1-" << name << ".y" << ")";
-	}
 	// For "in" parameters, just call directly to the main
 	else if ( sym->getQualifier() != EqtInOut )
 	{
@@ -1235,10 +1231,6 @@ bool HlslLinker::emitInputStruct(const GlslStruct* str, std::string parentName, 
 				else {
 					preamble << " = " << ctor << "(" << name << ");\n";
 				}
-			}
-			else if (m_Options & ETranslateOpFlipUVVertical && lang == EShLangVertex && (memberSem >= EAttrSemTex0 && memberSem <= EAttrSemTex9))
-			{
-				preamble << " = " << ctor << "(" << name << ".x,1-"<<name<<".y"<< ");\n";
 			}
 			else
 			{

@@ -44,6 +44,7 @@ namespace ParaEngine
 		virtual bool setVectorArray(eParameterHandles index, const Vector4* pVector, uint32_t count);
 		virtual bool setTexture(int index, TextureEntity* data) override;
 		virtual bool setTexture(int index, IParaEngine::ITexture* pTex) override;
+		virtual bool setTexture(eParameterHandles index, IParaEngine::ITexture* texture) override;
 
 
 		virtual bool SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes) override;
@@ -59,7 +60,6 @@ namespace ParaEngine
 		void applySurfaceMaterial(const ParaMaterial* pSurfaceMaterial, bool bUseGlobalAmbient = true) override;
 		void applyCameraMatrices() override;
 		void applyWorldMatrices() override;
-		void applyShadow();
 		void applyGlobalLightingData(CSunLight& sunlight) override;
 
 		void EnableAlphaBlending(bool bAlphaBlending) override;

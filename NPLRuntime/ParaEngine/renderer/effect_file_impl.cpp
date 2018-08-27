@@ -741,6 +741,7 @@ void CEffectFileImpl::parseParameters()
 		table["patchcorners"] = k_patchCorners;
 		table["shadowmaptex"] = k_tex_shadowMap;
 		table["shadowvp"] = k_shadowVP;
+		table["shadowmaptexelsize"] = k_ShadowMapTexelSize;
 
 
 		// boolean
@@ -1261,6 +1262,15 @@ IParaEngine::ParameterHandle& ParaEngine::CEffectFileImpl::GetTextureHandle(int 
 }
 
 
+bool ParaEngine::CEffectFileImpl::setTexture(eParameterHandles index, IParaEngine::ITexture* texture)
+{
+	if (isParameterUsed(index))
+	{
+		return m_pEffect->SetTexture(m_paramHandle[index], texture);
+	}
+	return false;
+}
+
 bool ParaEngine::CEffectFileImpl::SetRawValue(const char* name, const void* pData, uint32_t ByteOffset, uint32_t Bytes)
 {
 	return m_pEffect->SetRawValue(name, pData, ByteOffset, Bytes);
@@ -1303,15 +1313,4 @@ bool ParaEngine::CEffectFileImpl::SetVector4(const char* name, const Vector4& vV
 bool ParaEngine::CEffectFileImpl::SetMatrix(const char* name, const Matrix4& data)
 {
 	return SetRawValue(name, &data, 0, sizeof(data));
-}
-
-void ParaEngine::CEffectFileImpl::applyShadow()
-{
-	if (isParameterUsed(k_shadowVP) && isParameterUsed(k_tex_shadowMap))
-	{
-		CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();	
-		setMatrix(k_worldInverseMatrix, pShadowMap->GetViewProjMatrix());
-		setTexture(k_tex_shadowMap, pShadowMap->GetDepthTexture());
-
-	}
 }

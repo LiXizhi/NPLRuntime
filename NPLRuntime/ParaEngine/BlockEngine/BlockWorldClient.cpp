@@ -702,9 +702,15 @@ namespace ParaEngine
 						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
 					}
 					if (pEffect->isMatrixUsed(CEffectFile::k_shadowVP))
-					{
-						pEffect->setMatrix(CEffectFile::k_shadowVP, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
-						pEffect->setTexture(CEffectFile::k_tex_shadowMap, CGlobals::GetEffectManager()->GetShadowMap()->GetDepthTexture());
+					{	
+						auto shadowMapTex = CGlobals::GetEffectManager()->GetShadowMap()->GetDepthTexture();
+						if (shadowMapTex)
+						{
+							pEffect->setMatrix(CEffectFile::k_shadowVP, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+							pEffect->setTexture(CEffectFile::k_tex_shadowMap,shadowMapTex);
+							Vector2 shadowMapTexelSize(1.0f / shadowMapTex->GetWidth(), 1.0f / shadowMapTex->GetHeight());
+							pEffect->setParameter(CEffectFile::k_ShadowMapTexelSize, &shadowMapTexelSize, sizeof(Vector2));
+						}
 					}
 					{
 						// set the new render origin
