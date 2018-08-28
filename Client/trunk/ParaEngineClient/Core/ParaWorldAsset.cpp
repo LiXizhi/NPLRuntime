@@ -236,6 +236,8 @@ void ParaEngine::CParaWorldAsset::CreateAttributeModel()
 
 	m_attribute_models.push_back(CGlobals::GetFileManager());
 
+	m_attribute_models.push_back(&CAssetManifest::GetSingleton());
+
 #ifdef USE_DIRECTX_RENDERER
 	GetVoxelTerrainManager().SetIdentifier("VoxelTerrainManager");
 	m_attribute_models.push_back(&GetVoxelTerrainManager());
