@@ -25,7 +25,9 @@ v2f vert(appdata i)
 {
 	v2f o = (v2f)0;
     o.pos =  float4(i.vertex,1);
-    o.uv = float2(i.vertex.xy/2+0.5);
+    o.uv  =  float2(i.vertex.xy * 0.5 + 0.5);
+	// flip vertical
+	o.uv = float2(o.uv.x,1 - o.uv.y);
 	return o;
 }
 
