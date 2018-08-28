@@ -2,7 +2,7 @@
 // Desc: 2013/6
 
 #define ALPHA_TESTING_REF  0.95
-#define SHADOW_BIAS 0.0025f
+#define SHADOW_BIAS 0.00025f
 /** undefine to use linear torch light, otherwise it is power */
 // #define POWER_LIGHT_TORCH
 
@@ -122,7 +122,7 @@ float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
 
 	// apply shadow
-	oColor.rgb = clamp(oColor.rgb  * (1 - shadow),0,1);
+	oColor.rgb =oColor.rgb  * (1 - shadow*0.2) ;
 
 
 	return oColor;
