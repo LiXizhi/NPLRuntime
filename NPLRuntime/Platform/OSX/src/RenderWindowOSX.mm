@@ -371,11 +371,10 @@ void RenderWindowOSX::PollEvents() {
                 if([chrs length]>0)
                 {
                     int unicode = [chrs characterAtIndex:0];
-                    if(unicode >= 32 && unicode <= 126)
+                    if((unicode >= 32 && unicode <= 126) || unicode > 255)
                     {
                         OnChar(unicode);
                     }
-                    
                 }
                 
                 
