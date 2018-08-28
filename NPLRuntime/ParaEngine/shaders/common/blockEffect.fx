@@ -2,7 +2,7 @@
 // Desc: 2013/6
 
 #define ALPHA_TESTING_REF  0.95
-
+#define SHADOW_BIAS 0.0025f
 /** undefine to use linear torch light, otherwise it is power */
 // #define POWER_LIGHT_TORCH
 
@@ -113,13 +113,18 @@ float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 {
 
 
-	float2 shadowUV = input.shadowPos.xy*0.5+0.5;
+	float2 shadowUV = float2(input.shadowPos.x*0.5+0.5,1 - (input.shadowPos.y*0.5+0.5));
 	float depth = tex2D(shadomMapTexSampler,shadowUV);
 	float testDepth = input.shadowPos.z*0.5+0.5;
-	
-	return float4(depth,0,0,1);
+	float shadow =step(depth, (testDepth - SHADOW_BIAS));
+
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
+
+	// apply shadow
+	oColor.rgb = clamp(oColor.rgb  * (1 - shadow),0,1);
+
+
 	return oColor;
 }
 
@@ -137,10 +142,10 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 	output.texcoord = texcoord;
 
 	float4 worldPos = mul(pos, mWorld);
-	float4 shadowClipPos = mul(worldPos, mShadowVP);
-	output.shadowUV = shadowClipPos.xy*0.5 + 0.5;
+	float4 shadowClipPos =  mul(worldPos, mShadowVP);
+	output.shadowPos = shadowClipPos.xyz / shadowClipPos.w;
 
-	
+
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
 	float3 torch_light = light_params.xyz * torch_light_strength;
