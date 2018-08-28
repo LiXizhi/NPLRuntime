@@ -1,6 +1,7 @@
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 #include "IParaWebView.h"
+#include <Cocoa/Cocoa.h>
 
 namespace ParaEngine {
 
@@ -22,6 +23,7 @@ namespace ParaEngine {
 
 	static bool openUrl(const char* url)
 	{
+#ifdef USE_BUILDIN_WEBBROWSER        
         auto pWnd = CGlobals::GetApp()->GetRenderWindow();
         int w = pWnd->GetWidth();
         int h = pWnd->GetHeight();
@@ -34,14 +36,25 @@ namespace ParaEngine {
         
         pView->loadUrl(url);
         pView->setAlpha(0.95f);
-
+#else
+        NSString* sUrl = [NSString stringWithCString:url encoding:[NSString defaultCStringEncoding]];
+        [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString:sUrl]];
+        [sUrl release];
+#endif
 		return true;
 	}
 
+    
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-
-		return false;
+        std::string sCmdName = lpFile;
+        if(sCmdName == "explorer.exe" && lpParameters)
+        {
+            NSString* sFilename = [NSString stringWithCString:lpParameters encoding:[NSString defaultCStringEncoding]];
+            [[NSWorkspace sharedWorkspace] openFile:(sFilename)];
+            [sFilename release];
+        }
+        return false;
 	}
 
 
