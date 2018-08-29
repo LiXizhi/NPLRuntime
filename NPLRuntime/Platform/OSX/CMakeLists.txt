@@ -50,11 +50,13 @@ set_target_properties(Paracraft PROPERTIES
 
 find_library(COCOA_LIBRARY Cocoa required)
 FIND_LIBRARY(OPENGL_LIBRARY OpenGL)
+find_library(WebView WebKit)
 target_link_libraries(Paracraft PUBLIC
     RenderSystemOpenGL
     ParaEngine
     ${COCOA_LIBRARY}
     ${OPENGL_LIBRARY}
+    ${WebView}
 )
 
 set(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")

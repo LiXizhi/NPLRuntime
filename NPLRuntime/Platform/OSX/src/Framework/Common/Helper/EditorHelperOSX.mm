@@ -19,7 +19,7 @@ namespace ParaEngine {
 	{
 		return false;
 	}
-
+#define USE_BUILDIN_WEBBROWSER
 
 	static bool openUrl(const char* url)
 	{
