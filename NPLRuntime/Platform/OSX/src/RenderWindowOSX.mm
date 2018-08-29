@@ -368,18 +368,18 @@ void RenderWindowOSX::PollEvents() {
             {
                 NSString *chrs = [event characters];
                 
+                uint32_t keycode = (uint32_t)[event keyCode];
+                EVirtualKey vk = toVirtualKey(keycode);
+                
                 if([chrs length]>0)
                 {
                     int unicode = [chrs characterAtIndex:0];
-                    if((unicode >= 32 && unicode <= 126) || unicode > 255)
+                    if((unicode >= 32 && unicode <= 126) || (vk!=EVirtualKey::KEY_UP && vk!=EVirtualKey::KEY_DOWN && vk!=EVirtualKey::KEY_LEFT && vk!=EVirtualKey::KEY_RIGHT && unicode > 255))
                     {
                         OnChar(unicode);
                     }
                 }
                 
-                
-                uint32_t keycode = (uint32_t)[event keyCode];
-                EVirtualKey vk = toVirtualKey(keycode);
                 OnKey(vk, EKeyState::PRESS);
                 bIsProcessed = true;
             }
