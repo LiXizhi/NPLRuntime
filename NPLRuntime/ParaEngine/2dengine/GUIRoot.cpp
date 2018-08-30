@@ -86,7 +86,7 @@ using namespace ParaEngine;
 
 DWORD CGUIRoot::WheelScrollLines = 3;
 DWORD CGUIRoot::KeyDelay = 200;
-DWORD CGUIRoot::KeyRepeat = 30;
+DWORD CGUIRoot::KeyRepeat = 300;
 DWORD CGUIRoot::MouseHover = 200;
 int CGUIRoot::MouseThreshold1 = 1000;
 int CGUIRoot::MouseThreshold2 = 1000;
