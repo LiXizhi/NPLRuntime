@@ -2,6 +2,7 @@
 #include "WindowDelegate.h"
 #include "RenderWindowOSX.h"
 #include "ParaAppOSX.h"
+#include "ParaEngineSettings.h"
 
 static WindowDelegate* sInstance = nil;
 
@@ -117,9 +118,99 @@ static WindowDelegate* sInstance = nil;
     }
 }
 
+- (void)InitLanguage
+{
+    NSArray *appLangs = [[NSUserDefaults standardUserDefaults] objectForKey:@"AppleLanguages"];
+    NSString *langName = [appLangs objectAtIndex:0];
+    
+    // get the current language code.(such as English is "en", Chinese is "zh" and so on)
+    NSDictionary* temp = [NSLocale componentsFromLocaleIdentifier:langName];
+    NSString * languageCode = [temp objectForKey:NSLocaleLanguageCode];
+    
+    LanguageType ret = LanguageType::ENGLISH;
+    if ([languageCode isEqualToString:@"zh"])
+    {
+        ret = LanguageType::CHINESE;
+    }
+    else if ([languageCode isEqualToString:@"en"])
+    {
+        ret = LanguageType::ENGLISH;
+    }
+    else if ([languageCode isEqualToString:@"fr"])
+    {
+        ret = LanguageType::FRENCH;
+    }
+    else if ([languageCode isEqualToString:@"it"])
+    {
+        ret = LanguageType::ITALIAN;
+    }
+    else if ([languageCode isEqualToString:@"de"])
+    {
+        ret = LanguageType::GERMAN;
+    }
+    else if ([languageCode isEqualToString:@"es"])
+    {
+        ret = LanguageType::SPANISH;
+    }
+    else if ([languageCode isEqualToString:@"ru"])
+    {
+        ret = LanguageType::RUSSIAN;
+    }
+    else if ([languageCode isEqualToString:@"nl"])
+    {
+        ret = LanguageType::DUTCH;
+    }
+    else if ([languageCode isEqualToString:@"ko"])
+    {
+        ret = LanguageType::KOREAN;
+    }
+    else if ([languageCode isEqualToString:@"ja"])
+    {
+        ret = LanguageType::JAPANESE;
+    }
+    else if ([languageCode isEqualToString:@"hu"])
+    {
+        ret = LanguageType::HUNGARIAN;
+    }
+    else if ([languageCode isEqualToString:@"pt"])
+    {
+        ret = LanguageType::PORTUGUESE;
+    }
+    else if ([languageCode isEqualToString:@"ar"])
+    {
+        ret = LanguageType::ARABIC;
+    }
+    else if ([languageCode isEqualToString:@"nb"])
+    {
+        ret = LanguageType::NORWEGIAN;
+    }
+    else if ([languageCode isEqualToString:@"pl"])
+    {
+        ret = LanguageType::POLISH;
+    }
+    else if ([languageCode isEqualToString:@"tr"])
+    {
+        ret = LanguageType::TURKISH;
+    }
+    else if ([languageCode isEqualToString:@"uk"])
+    {
+        ret = LanguageType::UKRAINIAN;
+    }
+    else if ([languageCode isEqualToString:@"ro"])
+    {
+        ret = LanguageType::ROMANIAN;
+    }
+    else if ([languageCode isEqualToString:@"bg"])
+    {
+        ret = LanguageType::BULGARIAN;
+    }
+    
+    ParaEngineSettings::GetSingleton().SetCurrentLanguage(ret);
+}
+
 - (void) startup
 {
-    _renderWindow = new RenderWindowOSX(1280, 720);
+     _renderWindow = new RenderWindowOSX(1280, 720);
     
     _app = new CParaEngineAppOSX();
     
@@ -162,7 +253,7 @@ static WindowDelegate* sInstance = nil;
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification
 {
-    
+    [self InitLanguage];
 #ifdef DEBUG
     [self openConsoleWindow];
 #endif

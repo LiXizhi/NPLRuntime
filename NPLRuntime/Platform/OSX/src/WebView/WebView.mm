@@ -11,16 +11,26 @@
 #include "ParaEngine.h"
 #include "WebView.h"
 
+
+
 @interface WebViewWindowController : NSWindowController
+{
+    std::function<void()> _onCloseCallback;
+}
+
 @end
 
 @interface WebViewWindowController () <WKNavigationDelegate, WKUIDelegate>
 {
     WKWebView *webView;
+
+    
 }
 @property (assign) IBOutlet WKWebView *webView;
-@property (nonatomic) std::function<void()> onCloseCallback;
+//@property (nonatomic) std::function<void()> onCloseCallback;
 @property (nonatomic) BOOL hideViewWhenClickClose;
+
+- (void) setCloseCB: (const std::function<void()>&) cb;
 @end
 
 
@@ -28,6 +38,10 @@
 @implementation WebViewWindowController
 @synthesize webView;
 @synthesize hideViewWhenClickClose;
+
+- (void) setCloseCB: (const std::function<void()>&) cb {
+    _onCloseCallback = cb;
+}
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
     NSLog(@"%s", __FUNCTION__);
@@ -45,8 +59,8 @@
         return NO;
     }
     
-    if (self.onCloseCallback)
-        self.onCloseCallback();
+    if (_onCloseCallback)
+        _onCloseCallback();
     return YES;
 }
 
@@ -73,11 +87,15 @@ namespace ParaEngine {
         if (!_webViewController)
         {
             _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindow"];
-            
+
             _webViewController.hideViewWhenClickClose = FALSE;
+
             _webViewController.webView.navigationDelegate = _webViewController;
+
             _webViewController.webView.UIDelegate = _webViewController;
-            _webViewController.onCloseCallback = [this]() {
+            
+            auto cb = [this]() {
+                
                 if (this->_onClose == nullptr)
                     this->Release();
                 else
@@ -86,8 +104,13 @@ namespace ParaEngine {
                         this->Release();
                 }
             };
+
+            [_webViewController setCloseCB:cb];
+
+
         }
         [_webViewController.window orderFront:nil];
+
     }
     
     ParaEngineWebView::ParaEngineWebView()
