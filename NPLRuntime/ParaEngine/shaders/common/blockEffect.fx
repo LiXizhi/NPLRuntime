@@ -82,7 +82,7 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	output.texcoord = texcoord;
 	float4 worldPos = mul(pos, mWorld);
 	float4 shadowClipPos =  mul(worldPos, mShadowVP);
-	output.shadowPos = shadowClipPos.xyz / shadowClipPos.w;
+	output.shadowPos =shadowClipPos.xyz / shadowClipPos.w;
 
 	
 	// emissive block light received by this block. 
@@ -115,7 +115,8 @@ float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 
 	float2 shadowUV = float2(input.shadowPos.x*0.5+0.5,1 - (input.shadowPos.y*0.5+0.5));
 	float depth = tex2D(shadomMapTexSampler,shadowUV);
-	float testDepth = input.shadowPos.z*0.5+0.5;
+	float testDepth = input.shadowPos.z;
+
 	float shadow =step(depth, (testDepth - SHADOW_BIAS));
 
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
@@ -230,8 +231,8 @@ float4 PixShadow(float2	inTex		: TEXCOORD0,
 		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
 		clip(alpha - 0.5);
 	}
-	float d = (Depth.x / Depth.y)*0.5+0.5;
-	return float4(d);
+	float d = (Depth.x / Depth.y);
+	return float4(d,d,d,d);
 }
 
 
@@ -243,21 +244,29 @@ technique SimpleMesh_vs20_ps20
 {
 	pass P0
 	{
+		ZEnable = TRUE;
+		ZWriteEnable = TRUE;
 		VertexShader = compile vs_2_0 SimpleMainVS();
 		PixelShader  = compile ps_2_0 SimpleMainPS();
 	}
 	pass P1
 	{
+		ZEnable = TRUE;
+		ZWriteEnable = TRUE;
 		VertexShader = compile vs_2_0 SelectBlockVS();
 		PixelShader  = compile ps_2_0 SelectBlockPS();
 	}
 	pass P2
 	{
+		ZEnable = TRUE;
+		ZWriteEnable = TRUE;
 		VertexShader = compile vs_2_0 SelectBlockVS();
 		PixelShader  = compile ps_2_0 DamagedBlockPS();
 	}
 	pass P3
 	{
+		ZEnable = TRUE;
+		AlphaBlendEnable = TRUE;
 		VertexShader = compile vs_2_0 TransparentSimpleMainVS();
 		PixelShader  = compile ps_2_0 TransparentMainPS();
 	}

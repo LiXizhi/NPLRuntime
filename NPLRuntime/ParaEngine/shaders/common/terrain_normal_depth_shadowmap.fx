@@ -534,8 +534,8 @@ void VertShadow( float4	Pos			: POSITION,
 float4 PixShadow( float2	inTex		: TEXCOORD0,
 				 float2 Depth		: TEXCOORD1) : COLOR
 {
-	float d = Depth.x / Depth.y;
-	return float4(d);
+	float d = (Depth.x / Depth.y);
+	return float4(d,d,d,d);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

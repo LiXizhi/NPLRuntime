@@ -83,8 +83,8 @@ void VertShadow(float4 Pos		: POSITION,
 
 float4 PixShadow(float2 Depth : TEXCOORD1) : COLOR
 {
-	float d = Depth.x / Depth.y;
-	return float4(0.0, d.xx, 1.0);
+	float d = (Depth.x / Depth.y);
+	return float4(d,0,0,0);
 }
 
 technique SimpleMesh_vs20_ps20
