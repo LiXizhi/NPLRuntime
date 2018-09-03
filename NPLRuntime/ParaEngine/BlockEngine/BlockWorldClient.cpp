@@ -293,7 +293,10 @@ namespace ParaEngine
 		}
 
 		CEffectFile* pEffect = NULL;
-		pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
+		if (!pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect))
+		{
+			pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
+		}	
 		if(pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
