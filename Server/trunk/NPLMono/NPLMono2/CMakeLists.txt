@@ -86,6 +86,14 @@ else()
 		set(BUILD_NPLMONO2 false)
 	endif()
 
+
+	message("_MONO_INCLUDE_DIRS  ${_MONO_INCLUDE_DIRS}")
+	message("_MONO_LIBRARY_DIRS  ${_MONO_LIBRARY_DIRS}")
+	message("_MONO_LIBRARIES  ${_MONO_LIBRARIES}")
+	message("MONO_INCLUDE_DIRS  ${MONO_INCLUDE_DIRS}")
+	message("MONO_LIBRARIES  ${MONO_LIBRARIES}")
+
+
     if(BUILD_NPLMONO2)
         SET(MONO_VERSION_MAJOR)
         SET(MONO_VERSION_MINOR)
@@ -102,7 +110,7 @@ else()
             LIST(GET MONO_VERSION 2 MONO_VERSION_PATCH)
 
             MESSAGE(STATUS "MONO version: " ${MONO_VERSION})
-            if (MONO_VERSION_MAJOR GREATER 3)
+            if (MONO_VERSION_MAJOR GREATER 4)
                 MESSAGE(STATUS "MAJOR:" ${MONO_VERSION_MAJOR})
             else()
                 MESSAGE(STATUS "MONO version 5.0 or above is required")

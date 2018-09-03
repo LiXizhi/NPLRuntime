@@ -9,6 +9,7 @@
 
 // ParaEngine includes
 #include "PluginAPI.h"
+#include "IParaEngineApp.h"
 #include "MonoScriptingState.h"
 
 using namespace ParaEngine;
@@ -21,32 +22,42 @@ using namespace ParaEngine;
 class CMonoClassDesc : public ClassDescriptor 
 {
 public:
-	void* Create(bool loading = FALSE) 
+	virtual void* Create(bool loading = FALSE)
 	{ 
-		return new CMonoScriptingState(); 
+		OUTPUT_LOG("NPLMono2: Creating Mono interface\n");
+		CMonoScriptingState* pInstance = new CMonoScriptingState();
+		if (pInstance)
+		{
+			OUTPUT_LOG("NPLMono2: Mono interface created\n");
+		}
+		else
+		{
+			OUTPUT_LOG("Error: NPLMono2: failed to create CMonoScriptingState\n");
+		}
+		return pInstance;
 	}
 
-	const char* ClassName() 
+	virtual const char* ClassName()
 	{ 
-		return "CMonoScriptingState"; 
+		return "NPLMono2:CMonoScriptingState"; 
 	}
 
-	SClass_ID SuperClassID() 
+	virtual SClass_ID SuperClassID()
 	{ 
 		return OBJECT_MODIFIER_CLASS_ID; 
 	}
 
-	Class_ID ClassID() 
-	{ 
+	virtual Class_ID ClassID() 
+	{
 		return NPL_Mono2_CLASS_ID;
 	}
 
-	const char* Category() 
+	virtual const char* Category()
 	{ 
 		return "NPLFile"; 
 	}
 
-	const char* InternalName() 
+	virtual const char* InternalName()
 	{ 
 		return "NPLMono2"; 
 	}	

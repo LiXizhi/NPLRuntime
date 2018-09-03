@@ -10,7 +10,7 @@
 #ifdef WIN32
 #ifndef PARAENGINE_CLIENT
 #ifndef WIN32_LEAN_AND_MEAN
-/* Prevent inclusion of winsock.h in windows.h, otherwise boost::Asio will produce error in ParaEngineServer project: WinSock.h has already been included*/ 
+/* Prevent inclusion of winsock.h in windows.h, otherwise boost::Asio will produce error in ParaEngineServer project: WinSock.h has already been included*/
 #define WIN32_LEAN_AND_MEAN    
 #endif
 #endif
@@ -187,8 +187,8 @@ typedef struct _FILETIME
 namespace ParaEngine
 {
 	/** event type */
-	enum EventType{
-		EVENT_MOUSE=0, // mouse click
+	enum EventType {
+		EVENT_MOUSE = 0, // mouse click
 		EVENT_KEY,
 		EVENT_EDITOR,
 		EVENT_SYSTEM,
@@ -206,24 +206,24 @@ namespace ParaEngine
 	enum EventHandler_type
 	{
 		EH_MOUSE = 0x1, // mouse click
-		EH_KEY = 0x1<<1,
-		EH_EDITOR = 0x1<<2,
-		EH_SYSTEM = 0x1<<3,
-		EH_NETWORK = 0x1<<4,
-		EH_MOUSE_MOVE = 0x1<<5,
-		EH_MOUSE_DOWN = 0x1<<6,
-		EH_MOUSE_UP = 0x1<<7,
-		EH_KEY_UP = 0x1<<8,
-		EH_MOUSE_WHEEL = 0x1<<9,
+		EH_KEY = 0x1 << 1,
+		EH_EDITOR = 0x1 << 2,
+		EH_SYSTEM = 0x1 << 3,
+		EH_NETWORK = 0x1 << 4,
+		EH_MOUSE_MOVE = 0x1 << 5,
+		EH_MOUSE_DOWN = 0x1 << 6,
+		EH_MOUSE_UP = 0x1 << 7,
+		EH_KEY_UP = 0x1 << 8,
+		EH_MOUSE_WHEEL = 0x1 << 9,
 		EH_TOUCH = 0x1 << 10,
 		EH_ACCELEROMETER = 0x1 << 11,
 		EH_ALL = 0xffff,
 	};
 
 	/**
-	* class ID for built-in classes only. 
+	* class ID for built-in classes only.
 	*/
-	typedef int SClass_ID;  
+	typedef int SClass_ID;
 
 
 	/** activation file type in the plug-in's Activate() function. */
@@ -231,36 +231,36 @@ namespace ParaEngine
 	{
 		PluginActType_NONE = 0,
 		/// this is obsoleted, use PluginActType_STATE
-		PluginActType_SCODE, 
+		PluginActType_SCODE,
 		/// from the NPL activate function call. the second paramter to LibActivate() will be pointer of INPLRuntimeState. Use GetCurrentMsg() and GetCurrentMsgLength() to retrieve the message. 
-		PluginActType_STATE, 
+		PluginActType_STATE,
 	};
 
 	/**
-	* This class represents the unique class ID for a ParaEngine plug-in. A plug-ins Class_ID must be unique. 
-	A Class_ID consists of two unsigned 32-bit quantities. The constructor assigns a value to each of these, 
+	* This class represents the unique class ID for a ParaEngine plug-in. A plug-ins Class_ID must be unique.
+	A Class_ID consists of two unsigned 32-bit quantities. The constructor assigns a value to each of these,
 	for example Class_ID(0x11261982, 0x19821126).
-	@remark: Only the built-in classes (those that ship with ParaEngine) should have the second 32 bits equal to 0. 
+	@remark: Only the built-in classes (those that ship with ParaEngine) should have the second 32 bits equal to 0.
 	All plug-in developers should use both 32 bit quantities.
 	*/
-	class Class_ID 
+	class Class_ID
 	{
-		unsigned long a,b;
+		unsigned long a, b;
 	public:
 		Class_ID() { a = b = 0xffffffff; }
-		Class_ID(const Class_ID& cid) { a = cid.a; b = cid.b;	}
+		Class_ID(const Class_ID& cid) { a = cid.a; b = cid.b; }
 		Class_ID(unsigned long  aa, unsigned long  bb) { a = aa; b = bb; }
 		unsigned long  PartA() { return a; }
 		unsigned long  PartB() { return b; }
-		void SetPartA( unsigned long  aa ) { a = aa; } //-- Added 11/21/96 GG
-		void SetPartB( unsigned long  bb ) { b = bb; }
-		int operator==(const Class_ID& cid) const { return (a==cid.a&&b==cid.b); }
-		int operator!=(const Class_ID& cid) const { return (a!=cid.a||b!=cid.b); }
-		Class_ID& operator=(const Class_ID& cid)  { a=cid.a; b = cid.b; return (*this); }
+		void SetPartA(unsigned long  aa) { a = aa; } //-- Added 11/21/96 GG
+		void SetPartB(unsigned long  bb) { b = bb; }
+		int operator==(const Class_ID& cid) const { return (a == cid.a&&b == cid.b); }
+		int operator!=(const Class_ID& cid) const { return (a != cid.a || b != cid.b); }
+		Class_ID& operator=(const Class_ID& cid) { a = cid.a; b = cid.b; return (*this); }
 		// less operator - allows for ordering Class_IDs (used by stl maps for example) 
 		bool operator<(const Class_ID& rhs) const
 		{
-			if ( a < rhs.a || ( a == rhs.a && b < rhs.b ) )
+			if (a < rhs.a || (a == rhs.a && b < rhs.b))
 				return true;
 
 			return false;
@@ -268,54 +268,54 @@ namespace ParaEngine
 	};
 
 	/**
-	* an interface ID 
+	* an interface ID
 	*/
-	class Interface_ID 
+	class Interface_ID
 	{
-		unsigned long a,b;
+		unsigned long a, b;
 	public:
 		Interface_ID() { a = b = 0xffffffff; }
-		Interface_ID(const Interface_ID& iid) { a = iid.a; b = iid.b;	}
+		Interface_ID(const Interface_ID& iid) { a = iid.a; b = iid.b; }
 		Interface_ID(unsigned long  aa, unsigned long  bb) { a = aa; b = bb; }
 		unsigned long  PartA() { return a; }
 		unsigned long  PartB() { return b; }
-		void SetPartA( unsigned long  aa ) { a = aa; }
-		void SetPartB( unsigned long  bb ) { b = bb; }
-		int operator==(const Interface_ID& iid) const { return (a==iid.a&&b==iid.b); }
-		int operator!=(const Interface_ID& iid) const { return (a!=iid.a||b!=iid.b); }
-		Interface_ID& operator=(const Interface_ID& iid)  { a=iid.a; b = iid.b; return (*this); }
+		void SetPartA(unsigned long  aa) { a = aa; }
+		void SetPartB(unsigned long  bb) { b = bb; }
+		int operator==(const Interface_ID& iid) const { return (a == iid.a&&b == iid.b); }
+		int operator!=(const Interface_ID& iid) const { return (a != iid.a || b != iid.b); }
+		Interface_ID& operator=(const Interface_ID& iid) { a = iid.a; b = iid.b; return (*this); }
 		// less operator - allows for ordering Class_IDs (used by stl maps for example) 
 		bool operator<(const Interface_ID& rhs) const
 		{
-			if ( a < rhs.a || ( a == rhs.a && b < rhs.b ) )
+			if (a < rhs.a || (a == rhs.a && b < rhs.b))
 				return true;
 
 			return false;
 		}
 	};
 
-	struct PARAVECTOR2	{
+	struct PARAVECTOR2 {
 		float x;
 		float y;
-		PARAVECTOR2(float x_, float y_):x(x_), y(y_){}
-		PARAVECTOR2(){};
+		PARAVECTOR2(float x_, float y_) :x(x_), y(y_) {}
+		PARAVECTOR2() {};
 	};
 
-	struct PARAVECTOR3	{
+	struct PARAVECTOR3 {
 		float x;
 		float y;
 		float z;
-		PARAVECTOR3(float x_, float y_, float z_):x(x_), y(y_),z(z_){}
-		PARAVECTOR3(){};
+		PARAVECTOR3(float x_, float y_, float z_) :x(x_), y(y_), z(z_) {}
+		PARAVECTOR3() {};
 	};
 
-	struct PARAVECTOR4	{
+	struct PARAVECTOR4 {
 		float x;
 		float y;
 		float z;
 		float w;
-		PARAVECTOR4(float x_, float y_, float z_, float w_) :x(x_), y(y_), z(z_), w(w_){}
-		PARAVECTOR4(){};
+		PARAVECTOR4(float x_, float y_, float z_, float w_) :x(x_), y(y_), z(z_), w(w_) {}
+		PARAVECTOR4() {};
 	};
 
 	struct PARAMATRIX {
@@ -355,7 +355,7 @@ namespace ParaEngine
 		float a;
 	};
 
-	
+
 #if defined(WIN32) && defined(PARAENGINE_CLIENT)
 	typedef D3DXMATRIX   DeviceMatrix;
 	typedef D3DXMATRIX*   DeviceMatrix_ptr;
@@ -478,7 +478,7 @@ namespace ParaEngine
 	class CViewportManager;
 }
 
-namespace ParaTerrain{
+namespace ParaTerrain {
 	class CGlobalTerrain;
 }
 
@@ -506,13 +506,13 @@ namespace NPL
 	struct NPLTimer;
 }
 
-namespace ParaInfoCenter{
+namespace ParaInfoCenter {
 	class CICConfigManager;
 }
 
 namespace luabind
 {
-	namespace adl{
+	namespace adl {
 		class object;
 	}
 	using adl::object;
@@ -527,7 +527,7 @@ struct lua_State;
 class TiXmlNode;
 namespace luabind
 {
-	namespace adl{
+	namespace adl {
 		class object;
 	}
 	using adl::object;
