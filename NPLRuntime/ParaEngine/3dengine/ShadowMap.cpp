@@ -101,26 +101,7 @@ CShadowMap::CShadowMap(void)
 CShadowMap::~CShadowMap(void)
 {
 }
-#ifdef USE_DIRECTX_RENDERER
-HRESULT CShadowMap::CheckResourceFormatSupport(D3DFORMAT fmt, D3DRESOURCETYPE resType, DWORD dwUsage)
-{
-	//HRESULT hr = S_OK;
-	//IDirect3D9* tempD3D = NULL;
-	//auto pRenderDevice = CGlobals::GetRenderDevice();
-	//
-	//pRenderDevice->GetDirect3D(&tempD3D);
-	//const D3DCAPS9& devCaps = CGlobals::GetDirectXEngine().m_d3dCaps;
-	//
-	//D3DDISPLAYMODE displayMode;
-	//tempD3D->GetAdapterDisplayMode(devCaps.AdapterOrdinal, &displayMode);
 
-	//hr = tempD3D->CheckDeviceFormat(devCaps.AdapterOrdinal, devCaps.DeviceType, displayMode.Format, dwUsage, resType, fmt);
-
-	//tempD3D->Release(), tempD3D = NULL;
-
-	return S_OK;
-}
-#endif
 int CShadowMap::GetShadowMapTexelSize()
 {
 	return m_shadowTexWidth;
@@ -171,35 +152,10 @@ bool CShadowMap::PrepareAllSurfaces()
 
 	if (m_pSMColorSurface)
 		return true;
-#ifdef USE_DIRECTX_RENDERER
-	auto pRenderDevice = CGlobals::GetRenderDevice();
-	
 
-	//  hardware shadow maps are enabled by creating a texture with a depth format (D16, D24X8, D24S8),
-	//  with usage DEPTHSTENCIL set.
-	//  set this texture as the depth/stencil buffer when rendering the shadow map, and as a texture
-	//  when performing the shadow comparison.
-
-	D3DFORMAT zFormat = D3DFMT_D24S8;
-	m_bitDepth = 24;
-
-	if(FAILED(CheckResourceFormatSupport(zFormat, D3DRTYPE_TEXTURE, D3DUSAGE_DEPTHSTENCIL)))
-	{
-		OUTPUT_LOG("warning: Device/driver does not support hardware shadow maps, using R32F.\r\n");
-		m_bSupportsHWShadowMaps = false;
-	}
-	else
-		m_bSupportsHWShadowMaps = true;
-
-#define USE_F32_SHADOWMAP
-#ifdef USE_F32_SHADOWMAP
 	m_bSupportsHWShadowMaps = false;
-#endif
+	m_bBlurSMColorTexture = false;
 
-	D3DFORMAT colorFormat = D3DFMT_A8R8G8B8;
-#else
-	m_bSupportsHWShadowMaps = false;
-#endif
 	TextureEntity::TextureInfo tex_info;
 	tex_info.m_width = m_shadowTexWidth;
 	tex_info.m_height = m_shadowTexHeight;
@@ -250,55 +206,8 @@ bool CShadowMap::PrepareAllSurfaces()
 		if(!m_pSMColorSurface )
 			return false;
 
-		//glDeleteFramebuffers(1, &mSMFrameBufferObject);
-		//glDeleteRenderbuffers(1, &mSMDepthStencilBufferObject);
-		//glGenFramebuffers(1, &mSMFrameBufferObject);
-		//glBindFramebuffer(GL_FRAMEBUFFER, mSMFrameBufferObject);
-		//m_pSMColorTexture->GetTexture()->bind();
-		//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_pSMColorTexture->GetTexture()->getName(), 0);
-		//glBindTexture(GL_TEXTURE_2D, 0);
-		//glGenRenderbuffers(1, &mSMDepthStencilBufferObject);
-		//glBindRenderbuffer(GL_RENDERBUFFER, mSMDepthStencilBufferObject);
-		//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, tex_info.GetWidth(), tex_info.GetHeight());
-		//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, mSMDepthStencilBufferObject);
-		//glBindRenderbuffer(GL_RENDERBUFFER, 0);
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		//PE_CHECK_GL_ERROR_DEBUG();
-		
-#endif
+	
 	}
-#ifdef USE_DIRECTX_RENDERER
-	if (m_bBlurSMColorTexture)
-	{
-		TextureEntity::TextureInfo tex_info;
-		tex_info.m_width = m_shadowTexWidth;
-		tex_info.m_height = m_shadowTexHeight;
-
-		if(m_pSMColorTextureBlurredHorizontal == 0)
-		{
-			m_pSMColorTextureBlurredHorizontal = CGlobals::GetAssetManager()->LoadTexture("_SMColorSurfaceBlurredHorizontal", "_SMColorSurfaceBlurredHorizontal", TextureEntity::RenderTarget);
-			m_pSMColorTextureBlurredHorizontal->SetTextureInfo(tex_info);
-			m_pSMColorTextureBlurredHorizontal->LoadAsset();
-			if(!m_pSMColorTextureBlurredHorizontal->IsValid())
-				return false;
-		}
-		SAFE_RELEASE(m_pSMColorSurfaceBlurredHorizontal);
-		m_pSMColorSurfaceBlurredHorizontal = m_pSMColorTextureBlurredHorizontal->GetTexture();
-
-
-		if(m_pSMColorTextureBlurredVertical == 0)
-		{
-			m_pSMColorTextureBlurredVertical = CGlobals::GetAssetManager()->LoadTexture("_SMColorTextureBlurredVertical", "_SMColorTextureBlurredVertical", TextureEntity::RenderTarget);
-			m_pSMColorTextureBlurredVertical->SetTextureInfo(tex_info);
-			m_pSMColorTextureBlurredVertical->LoadAsset();
-			if(!m_pSMColorTextureBlurredVertical->IsValid())
-				return false;
-		}
-		SAFE_RELEASE(m_pSMColorSurfaceBlurredVertical);
-		m_pSMColorSurfaceBlurredVertical = m_pSMColorTextureBlurredVertical->GetTexture();
-	}
-#endif
 	return true;
 }
 
@@ -1000,11 +909,7 @@ bool CShadowMap::BuildPSMProjectionMatrix()
 	{
 		virtualCameraView = Matrix4::IDENTITY;
 		ParaMatrixPerspectiveFovLH( &virtualCameraProj, 
-#ifdef USE_DIRECTX_RENDERER
-			D3DXToRadian(60.f)
-#else
 			60.f/180.f*3.1415926f
-#endif
 			, m_fAspect, m_zNear, m_zFar);
 	}
 
@@ -1385,7 +1290,7 @@ HRESULT CShadowMap::BeginShadowPass()
 	{
 		CGlobals::GetRenderDevice()->SetClearColor(Color4f(1,1,1,1));
 		CGlobals::GetRenderDevice()->SetClearDepth(1.0f);
-		CGlobals::GetRenderDevice()->Clear(true, true,false);
+		CGlobals::GetRenderDevice()->Clear(true,true,true);
 	}
 
 	
@@ -1423,10 +1328,6 @@ HRESULT CShadowMap::EndShadowPass()
 
 
 	auto pd3dDevice = CGlobals::GetRenderDevice();
-
-	float fTemp = 0.0f;
-	pd3dDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&fTemp);
-	pd3dDevice->SetRenderState(ERenderState::SLOPESCALEDEPTHBIAS, *(DWORD*)&fTemp);
 
 
 	if (m_bBlurSMColorTexture &&
@@ -1598,3 +1499,4 @@ void CShadowMap::UnsetShadowTexture(int nTextureIndex)
 	*/
 }
 
+#endif

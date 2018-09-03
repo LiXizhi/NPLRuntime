@@ -49,9 +49,9 @@ using namespace ParaEngine;
 		ADD_RESOURCE(":IDR_FX_OCEANWATER_CLOUD", ocean_water_cloud_fx);
 		ADD_RESOURCE(":IDR_FX_BMAXMODEL", BMaxModel_fx);
 		ADD_RESOURCE(":IDR_FX_DOWNSAMPLE", downsample_fx);
-
-#ifdef USE_OPENGL_RENDERER
 		ADD_RESOURCE(":IDR_FX_SINGLECOLOR", singleColorEffect_fx);
+#ifdef USE_OPENGL_RENDERER
+
 		ADD_RESOURCE(":IDR_FX_GUI", GuiEffect_fx);
 		ADD_RESOURCE(":IDR_FX_GUI_TEXT", GuiTextEffect_fx);
 #endif // USE_OPENGL_RENDERER

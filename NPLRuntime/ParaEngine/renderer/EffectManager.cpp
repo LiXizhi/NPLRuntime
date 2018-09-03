@@ -2303,9 +2303,10 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 		MapHandleToEffect(TECH_BMAX_MODEL, pEffect);
 	}
 
-#if defined(USE_OPENGL_RENDERER)
 	pEffect = GetEffectByName("singleColor");
 	MapHandleToEffect(TECH_SINGLE_COLOR, pEffect);
+#if defined(USE_OPENGL_RENDERER)d3d
+
 	pEffect = GetEffectByName("guiEffect");
 	MapHandleToEffect(TECH_GUI, pEffect);
 	MapHandleToEffect(TECH_NONE, pEffect);

@@ -1083,7 +1083,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 					oldSamplerInfo.MagFilter = tex->GetMagFilter();
 					oldSamplerInfo.BorderColor = tex->GetBorderColor().GetDWColor();
 					// apply sampler state
-					SamplerInitialzerInfo samplerInfo = m_SamplersInfo[uniform.name];
+					SamplerInitialzerInfo samplerInfo = m_SamplersInfo[name];
 					Color4f color(samplerInfo.BorderColor);
 
 					tex->SetBorderColor(color);

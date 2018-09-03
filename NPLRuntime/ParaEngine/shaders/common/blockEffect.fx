@@ -35,13 +35,19 @@ texture shadowMapTex : shadowmaptex;
 sampler2D shadomMapTexSampler = sampler_state
 {
 	texture = <shadowMapTex>;
+	MinFilter = Linear;  
+	MagFilter = Linear;
+	MipFilter = None;
+	AddressU  = BORDER;
+	AddressV  = BORDER;
+	BorderColor = 0xffffffff;
 };
 
 struct SimpleVSOut
 {
 	float4 pos	:POSITION;
 	float2 texcoord :	TEXCOORD0;
-	float3 shadowPos :  TEXCOORD1; // pos in shadow space
+	float4 shadowPos :  TEXCOORD1; // pos in shadow space
 	half4 color : COLOR0;
 };
 
@@ -70,6 +76,10 @@ float CalcFogFactor(float d)
 	return clamp(fogCoeff, 0.0, 1.0);
 }
 
+
+
+
+
 // color.x: sun light  color.y:block light  color.z*255 block_id; 
 SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 							float3	Norm	: NORMAL,
@@ -81,10 +91,8 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	output.pos = mul(pos, mWorldViewProj);
 	output.texcoord = texcoord;
 	float4 worldPos = mul(pos, mWorld);
-	float4 shadowClipPos =  mul(worldPos, mShadowVP);
-	output.shadowPos =shadowClipPos.xyz / shadowClipPos.w;
+	output.shadowPos =  mul(worldPos, mShadowVP);
 
-	
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
 	float3 torch_light = light_params.xyz * torch_light_strength;
@@ -109,23 +117,31 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	return output;
 }
 
+float ShadowCalculation(float4 fragPosLightSpace)
+{
+	float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+	projCoords = projCoords * 0.5 + 0.5;
+	if (projCoords.z > 1.0 || projCoords.z < 0)
+	{
+		return 0;
+	}
+	
+	float closestDepth = tex2D(shadomMapTexSampler, float2(projCoords.x,1-projCoords.y)).r;
+	float currentDepth = projCoords.z;
+	float bias = 0.005;
+	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+	return shadow;
+}
+
 float4 SimpleMainPS(SimpleVSOut input) :COLOR0
 {
 
-
-	float2 shadowUV = float2(input.shadowPos.x*0.5+0.5,1 - (input.shadowPos.y*0.5+0.5));
-	float depth = tex2D(shadomMapTexSampler,shadowUV);
-	float testDepth = input.shadowPos.z;
-
-	float shadow =step(depth, (testDepth - SHADOW_BIAS));
-
+	float shadow = ShadowCalculation(input.shadowPos);
 	float4 albedoColor = tex2D(tex0Sampler,input.texcoord);
 	float4 oColor = float4(lerp(float3(albedoColor.xyz * input.color.xyz), g_fogColor.xyz, input.color.w), albedoColor.a);
 
 	// apply shadow
 	oColor.rgb =oColor.rgb  * (1 - shadow*0.2) ;
-
-
 	return oColor;
 }
 
@@ -143,9 +159,7 @@ SimpleVSOut TransparentSimpleMainVS(	float4 pos		: POSITION,
 	output.texcoord = texcoord;
 
 	float4 worldPos = mul(pos, mWorld);
-	float4 shadowClipPos =  mul(worldPos, mShadowVP);
-	output.shadowPos = shadowClipPos.xyz / shadowClipPos.w;
-
+	output.shadowPos =  mul(worldPos, mShadowVP);
 
 	// emissive block light received by this block. 
 	float torch_light_strength = color.y;
@@ -220,8 +234,8 @@ void VertShadow(float4	Pos			: POSITION,
 	Depth.xy = oPos.zw;
 }
 
-float4 PixShadow(float2	inTex		: TEXCOORD0,
-	float2 Depth : TEXCOORD1) : COLOR
+float4 PixShadow(float2	inTex: TEXCOORD0,
+	float2 Depth : TEXCOORD1) : COLOR0
 {
 	half alpha = tex2D(tex0Sampler, inTex.xy).w;
 
@@ -231,8 +245,8 @@ float4 PixShadow(float2	inTex		: TEXCOORD0,
 		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
 		clip(alpha - 0.5);
 	}
-	float d = (Depth.x / Depth.y);
-	return float4(d,d,d,d);
+	float d = (Depth.x / Depth.y) * 0.5 + 0.5;
+	return float4(d,0,0,0);
 }
 
 
@@ -278,5 +292,6 @@ technique GenShadowMap
 	{
 		VertexShader = compile vs_2_0 VertShadow();
 		PixelShader = compile ps_2_0 PixShadow();
+		FogEnable = false;
 	}
 }

@@ -107,7 +107,7 @@ void VertShadow( float4	Pos			: POSITION,
 }
 
 float4 PixShadow( float2	inTex		: TEXCOORD0,
-				 float2 Depth		: TEXCOORD1) : COLOR
+				 float2 Depth		: TEXCOORD1) : COLOR0
 {
 	half alpha = tex2D(tex0Sampler, inTex.xy).w;
 	
@@ -117,8 +117,8 @@ float4 PixShadow( float2	inTex		: TEXCOORD0,
 		alpha = lerp(1,0, alpha < ALPHA_TESTING_REF);
 		clip(alpha-0.5);
 	}
-    float d = (Depth.x / Depth.y);
-    return float4(d,d,d,d);
+    float d = (Depth.x / Depth.y) * 0.5 + 0.5;
+    return float4(d,0,0,0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
