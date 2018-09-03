@@ -34,7 +34,7 @@ struct MeshEdge
 
 class PINOCCHIO_API Mesh {
 public:
-    Mesh() : m_Scale(1.) {}
+	Mesh();
     Mesh(const string &file);
 
     bool integrityCheck() const;
@@ -42,23 +42,17 @@ public:
     void computeVertexNormals();
     void normalizeBoundingBox();
     void computeTopology();
-    void writeObj(const string &filename) const;
 	void fixDupFaces();
 	void sortEdges(); //sort edges so that triplets forming faces are adjacent
     
-private:
-    void readObj(istream &strm);
-    void readOff(istream &strm);
-    void readPly(istream &strm);
-    void readGts(istream &strm);
-    void readStl(istream &strm);
-
 public: //data
     vector<MeshVertex> m_Vertices;
     vector<MeshEdge> m_Edges; //halfEdges, really
 
     PVector3 m_ToAdd;
     double m_Scale;
+	bool m_Normalized;
+	bool m_ComputedNormal;
 };
 
 #endif

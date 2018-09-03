@@ -52,9 +52,14 @@ pcl::PointCloud<pcl::PointNormal>::Ptr tarObj(new pcl::PointCloud<pcl::PointNorm
 pcl::PointCloud<pcl::PointNormal>::Ptr srcObj(new pcl::PointCloud<pcl::PointNormal>());
 
 Matcher::Matcher()
-	:m_CurrentModel(-1)
-	,m_GlobalScale(1)
-	,m_StartScale(1)
+	: m_CurrentModel(-1)
+	, m_GlobalScale(1)
+	, m_StartScale(1)
+	, m_FirstMatch(0)
+	, m_CrossMatch(0)
+	, m_TupleMatch(0)
+	, m_ijDist(0.0)
+	, m_jiDist(0.0)
 {
 	m_PointCloud.push_back(Points());// target model point cloud
 	m_PointCloud.push_back(Points());// source model point cloud
@@ -70,10 +75,11 @@ Matcher::~Matcher()
 
 int Matcher::Match()
 {
-	this->NormalizePoints();
-	this->AdvancedMatching();
-	this->OptimizePairwise(true, ITERATION_NUMBER);
-	return m_Corres.size();
+	//this->NormalizePoints();
+	//this->AdvancedMatching();
+	//this->OptimizePairwise(true, ITERATION_NUMBER);
+	this->ComputeTargetToSourceDistances();
+	return this->EvaluateSimilarity();
 }
 
 void Matcher::SetModelFeatureType(unsigned int type)
@@ -103,7 +109,7 @@ void Matcher::CloseFeature()
 	pcl::PointCloud<pcl::PointNormal>::Ptr* obj = nullptr;
 	pcl::FPFHEstimationOMP<pcl::PointNormal, pcl::PointNormal, pcl::FPFHSignature33> fest;
 	pcl::PointCloud<pcl::FPFHSignature33>::Ptr object_features(new pcl::PointCloud<pcl::FPFHSignature33>());
-	fest.setRadiusSearch(0.1);
+	//fest.setRadiusSearch(0.15);
 	if (m_CurrentModel == 0) {
 		obj = &tarObj;
 	}else if (m_CurrentModel == 1) {
@@ -156,7 +162,7 @@ void Matcher::AdvancedMatching()
 	int fi = 0;
 	int fj = 1;
 
-	printf("Advanced matching : [%d - %d]\n", fi, fj);
+	OUTPUT_LOG("Advanced matching : [%d - %d]\n", fi, fj);
 	bool swapped = false;
 
 	if (m_PointCloud[fj].size() > m_PointCloud[fi].size())
@@ -248,7 +254,8 @@ void Matcher::AdvancedMatching()
 	for (int j = 0; j < ncorres_ji; ++j)
 		corres.push_back(std::pair<int, int>(corres_ji[j].first, corres_ji[j].second));
 
-	printf("points are remained : %d\n", (int)corres.size());
+	OUTPUT_LOG("points are remained : %d\n", (int)corres.size());
+	m_FirstMatch = (int)corres.size();
 
 	///////////////////////////
 	/// CROSS CHECK
@@ -257,7 +264,7 @@ void Matcher::AdvancedMatching()
 	///////////////////////////
 	if (crosscheck)
 	{
-		printf("\t[cross check] ");
+		OUTPUT_LOG("\t[cross check] ");
 
 		// build data structure for cross check
 		corres.clear();
@@ -295,7 +302,8 @@ void Matcher::AdvancedMatching()
 				}
 			}
 		}
-		printf("points are remained : %d\n", (int)corres.size());
+		OUTPUT_LOG("points are remained : %d\n", (int)corres.size());
+		m_CrossMatch = (int)corres.size();
 	}
 
 	///////////////////////////
@@ -307,7 +315,7 @@ void Matcher::AdvancedMatching()
 	{
 		srand(time(NULL));
 
-		printf("\t[tuple constraint] ");
+		OUTPUT_LOG("\t[tuple constraint] ");
 		int rand0, rand1, rand2;
 		int idi0, idi1, idi2;
 		int idj0, idj1, idj2;
@@ -363,7 +371,8 @@ void Matcher::AdvancedMatching()
 				break;
 		}
 
-		printf("%d tuples (%d trial, %d actual) \n", cnt, number_of_trial, i);
+		OUTPUT_LOG("%d tuples (%d trial, %d actual) \n", cnt, number_of_trial, i);
+		m_TupleMatch = i;
 		corres.clear();
 
 		for (int i = 0; i < corres_tuple.size(); ++i)
@@ -379,7 +388,7 @@ void Matcher::AdvancedMatching()
 		corres = temp;
 	}
 
-	printf("\t[final] matches %d \n", (int)corres.size());
+	OUTPUT_LOG("\t[final] matches %d \n", (int)corres.size());
 	m_Corres = corres;
 }
 
@@ -439,7 +448,7 @@ void Matcher::NormalizePoints()
 		m_GlobalScale = scale; // second choice: we keep the maximum scale.
 		m_StartScale = 1.0f;
 	}
-	printf("normalize points :: global scale : %f\n", m_GlobalScale);
+	OUTPUT_LOG("normalize points :: global scale : %f\n", m_GlobalScale);
 
 	for (int i = 0; i < num; ++i)
 	{
@@ -455,7 +464,7 @@ void Matcher::NormalizePoints()
 
 double Matcher::OptimizePairwise(bool decrease_mu_, int numIter_)
 {
-	printf("Pairwise rigid pose optimization\n");
+	OUTPUT_LOG("Pairwise rigid pose optimization\n");
 
 	double par;
 	int numIter = numIter_;
@@ -586,3 +595,55 @@ Eigen::Matrix4f Matcher::GetTrans()
     return transtemp;
 }
    
+int Matcher::EvaluateSimilarity()
+{
+	//return m_FirstMatch / 2 + m_CrossMatch + m_TupleMatch * 2 + m_Corres.size() * 10;
+	return m_ijDist /*+ m_jiDist*/;
+}
+
+void Matcher::ComputeTargetToSourceDistances()
+{
+	int rows = m_PointCloud[0].size();
+	int dim = 3;
+	//std::vector<float> dataset_pc0(rows *3);
+	//flann::Matrix<float> dataset_mat_pc0(&dataset_pc0[0], rows, dim);
+
+	//for (int i = 0; i < rows; i++)
+	//	for (int j = 0; j < dim; j++)
+	//		dataset_pc0[i * dim + j] = m_PointCloud[0][i][j];
+
+	//flann::Index<flann::L2_Simple<float>> feature_tree_0(dataset_mat_pc0, flann::KDTreeSingleIndexParams(15));
+	//feature_tree_0.buildIndex();
+
+	rows = m_PointCloud[1].size();
+	dim = 3;
+	std::vector<float> dataset_pc1(rows * 3);
+	flann::Matrix<float> dataset_mat_pc1(&dataset_pc1[0], rows, dim);
+
+	for (int i = 0; i < rows; i++)
+		for (int j = 0; j < dim; j++)
+			dataset_pc1[i * dim + j] = m_PointCloud[1][i][j];
+
+	flann::Index<flann::L2_Simple<float>> feature_tree_1(dataset_mat_pc1, flann::KDTreeSingleIndexParams(15));
+	feature_tree_1.buildIndex();
+
+	m_ijDist = 0.0;
+	for (int i = 0; i < m_PointCloud[0].size(); ++i) {
+		float d[3] = { m_PointCloud[0][i].x(), m_PointCloud[0][i].y(), m_PointCloud[0][i].z() };
+		flann::Matrix<float> query_mat(d, 1, 3);
+		std::vector< std::vector<int> > indices;
+		std::vector<std::vector<float> > dists;
+		feature_tree_1.knnSearch(query_mat, indices, dists, 1, flann::SearchParams(128));
+		m_ijDist += dists[0][0];
+	}
+
+	/*m_jiDist = 0.0;
+	for (int i = 0; i < m_PointCloud[1].size(); ++i) {
+		float d[3] = { m_PointCloud[1][i].x(), m_PointCloud[1][i].y(), m_PointCloud[1][i].z() };
+		flann::Matrix<float> query_mat(d, 1, 3);
+		std::vector< std::vector<int> > indices;
+		std::vector<std::vector<float> > dists;
+		feature_tree_0.knnSearch(query_mat, indices, dists, 1, flann::SearchParams(128));
+		m_jiDist += dists[0][0];
+	}*/
+}
