@@ -325,7 +325,7 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 		fs::path sSrc(src);
 		boost::system::error_code err_code;
 		fs::rename(sSrc, fs::path(dest), err_code);
-		OUTPUT_LOG("info: boost moving file/directory result message: %s\n", err_code.message().c_str());
+		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src, dest, err_code.message().c_str());
 		return err_code.value() == 0;
 	}
 	catch (...)
