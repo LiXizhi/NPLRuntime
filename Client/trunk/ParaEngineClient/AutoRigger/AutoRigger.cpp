@@ -7,6 +7,7 @@
 #include "AISimulator.h"
 #include "pinocchioApi.h"
 #include "skeleton.h"
+#include "ShapeAABB.h"
 
 #include <thread>
 #include <functional>
@@ -755,13 +756,11 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* target
 
 void CAutoRigger::AutoRigThreadFunc()
 {
-	// lots of goto here, don't worry about it. actually only one label "end" in this scope
-	// when goto, goto end
-
 	this->addref();
 
 	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) {
-		goto end;
+		this->delref();
+		return;
 	}
 
 	while (!m_pTargetModel->IsLoaded()) {
@@ -771,7 +770,8 @@ void CAutoRigger::AutoRigThreadFunc()
 	Mesh* targetMesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
 	if (targetMesh == nullptr) {
 		OUTPUT_LOG( "Target bmax model yields a bad mesh. Try another model...\n");
-		goto end;
+		this->delref();
+		return;
 	}
 
 	// auto rigging using the matched source model bones for the target model
@@ -781,7 +781,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		Mesh newMesh = PrepareMesh(*targetMesh);
 		if (newMesh.m_Vertices.empty()) {
 			OUTPUT_LOG("Target mesh: failed to pass connection test.\n");
-			goto end;
+			this->delref();
+			return;
 		}
 		// prepare skeleton
 		Mesh* srcMesh = RigHelper::ExtractParaXMesh(bestMatch->second->GetModel(), true);
@@ -790,7 +791,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		Skeleton* given = RigHelper::ExtractPataXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
 		if (given == nullptr) {
 			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
-			goto end;
+			this->delref();
+			return;
 		}
 		
 		TreeType* distanceField = ConstructDistanceField(newMesh);
@@ -812,7 +814,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		if (embeddingIndices.size() == 0) { // failure
 			delete distanceField;
 			OUTPUT_LOG("Failed to embed given seleton to target model.\n");
-			goto end;
+			this->delref();
+			return;
 		}
 
 		PinocchioOutput rigger;
@@ -865,7 +868,6 @@ void CAutoRigger::AutoRigThreadFunc()
 		delete distanceField;
 	}
 
-	end:
 	this->delref();
 }
 
