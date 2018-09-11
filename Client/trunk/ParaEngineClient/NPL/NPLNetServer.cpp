@@ -198,6 +198,9 @@ void NPL::CNPLNetServer::stop()
 
 		m_dispatcherThread->join();
 		m_dispatcherThread.reset();
+
+		Cleanup();
+		m_io_service_dispatcher.reset();
 	}
 }
 
