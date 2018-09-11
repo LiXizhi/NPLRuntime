@@ -189,6 +189,7 @@ void NPL::CNPLDispatcher::Cleanup()
 	ParaEngine::Lock lock_(m_mutex);
 
 	m_active_connection_map.clear();
+	m_server_address_map.clear();
 }
 
 NPL::NPLRuntimeAddress_ptr NPL::CNPLDispatcher::GetNPLRuntimeAddress(const string& sNID)
