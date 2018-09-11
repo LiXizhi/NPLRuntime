@@ -156,7 +156,7 @@ vector<PVector3> Intersector::intersect(const PVector3 &pt, vector<int> *outIndi
 			double r2 = (p1[0] - p2[0])*(p0[1] - p2[1]);
 			double r = r1 - r2;
 			sign[j] = (r < 0.0);
-			if (std::abs(r) < VERY_SMALL) t = j;
+			if (abs(r) < VERY_SMALL) t = j;
 		}
 
 		if (t >= 0 && sign[(t + 1) % 3] == sign[(t + 2) % 3]) sign[t] = sign[(t + 1) % 3];
