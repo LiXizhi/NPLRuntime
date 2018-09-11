@@ -19,6 +19,8 @@ namespace ParaEngine
 			,m_bReleaseOnStop(false)
 			,m_bIsAsyncLoadingWhileLoopPlaying(false)
 			,m_nStartTime(0)
+			,m_nStopTime(-1)
+			,m_nSeekPos(0)
 		{}
 		~CAudioSource2(){};
 		/**
@@ -94,6 +96,9 @@ namespace ParaEngine
 		/** whether the file should be loop playing.*/
 		bool IsWaveFileLoopPlaying();
 
+		/** whether the file is looping or not.*/
+		bool IsLooping();
+
 		/** whether the file is playing or not.*/
 		bool IsPlaying();
 
@@ -134,7 +139,9 @@ namespace ParaEngine
 		ParaAudioFlagsEnum m_status;
 		/** this is true, if an audio resource is being loop played but without being downloaded yet. */
 		bool m_bIsAsyncLoadingWhileLoopPlaying;
-		unsigned int m_nStartTime;
+		int m_nStartTime;
+		int m_nStopTime;
+		int m_nSeekPos;
 	private:
 		std::string m_filename;	
 };
@@ -148,8 +155,6 @@ namespace ParaEngine
 	class CAudioEngine2
 	{
 	public:
-		typedef std::map<std::string, CAudioSource2_ptr> AudioFileMap_type;
-
 		CAudioEngine2();
 		~CAudioEngine2();
 
@@ -222,6 +227,82 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////////////////
 		// handy functions for playback
 		//////////////////////////////////////////////////////////////////////////
+
+		/**
+		* an archive class to record history playing events.
+		*/
+		class CAudioPlaybackHistory
+		{
+		public:
+			CAudioPlaybackHistory(){}
+
+			~CAudioPlaybackHistory() {}
+
+			void AddRecord(CAudioSource2* pWave)
+			{
+				Record arecord(pWave->GetFilename(), pWave->m_nStartTime,
+					pWave->m_nStopTime, pWave->m_nSeekPos, pWave->IsLooping());
+				m_HistoryRecords.emplace_back(arecord);
+			}
+
+			struct Record
+			{
+				Record()
+					: m_WaveFileName("")
+					, m_nStartTime(0)
+					, m_nEndTime(-1)
+					, m_nSeekPos(0)
+					, m_bIsLoop(false)
+				{
+
+				}
+
+				Record(const std::string& waveFile, int start, int end, int seek, bool isLoop = false)
+					: m_WaveFileName(waveFile)
+					, m_nStartTime(start)
+					, m_nEndTime(end)
+					, m_nSeekPos(seek)
+					, m_bIsLoop(isLoop)
+				{
+
+				}
+
+				std::string m_WaveFileName; // audio file name that has been played
+				int m_nStartTime; // the game time when starts playing the audio file with name m_WaveFileName
+				int m_nEndTime; // the game time when stops playing the audio file with name m_WaveFileName
+				int m_nSeekPos; // the seek positon where it starts when the audio engines play the audio file with name m_WaveFileName
+				bool m_bIsLoop;
+			};
+
+			typedef std::list<Record> Records;
+			const Records& GetRecords() const
+			{
+				return m_HistoryRecords;
+			}
+			/** find the last element that matches */
+			bool SearchLastRecord( const std::string& waveFile)
+			{
+				Records::iterator result = m_HistoryRecords.end();
+				for (Records::iterator iter = m_HistoryRecords.begin(); iter != m_HistoryRecords.end(); ++iter) {
+					if (iter->m_WaveFileName == waveFile) result = iter;
+				}
+				return result != m_HistoryRecords.end();
+			}
+
+			void RemoveRecord(const std::string& waveFile)
+			{
+				Records::iterator result = m_HistoryRecords.end();
+				for (Records::iterator iter = m_HistoryRecords.begin(); iter != m_HistoryRecords.end(); ++iter) {
+					if (iter->m_WaveFileName == waveFile) result = iter;
+				}
+				if(result != m_HistoryRecords.end()) m_HistoryRecords.erase(result);
+			}
+			
+		private:
+			Records m_HistoryRecords;
+		};
+
+		CAudioPlaybackHistory& GetPlaybackHistory();
 		
 		/**
 		* Prepare and play a wave object from a standard audio file (WAV, OGG, mp3).
@@ -329,13 +410,16 @@ namespace ParaEngine
 		void PauseAll();
 		void ResumeAll();
 
-		const AudioFileMap_type& getAudioMap()const;
-
 		MCIController* getMCIController();
 	private:
 		IParaAudioEngine* m_pAudioEngine;
 		bool m_bEnableAudioEngine;
+
+		typedef std::map<std::string, CAudioSource2_ptr> AudioFileMap_type;
 		AudioFileMap_type m_audio_file_map;
+
+		CAudioPlaybackHistory m_PlaybackHistory;
+
 		std::vector<CAudioSource2_ptr> m_paused_audios;
 		float m_fGlobalVolume;
 		float m_fGlobalVolumeBeforeSwitch;
