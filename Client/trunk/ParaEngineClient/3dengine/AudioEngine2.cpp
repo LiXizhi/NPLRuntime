@@ -923,7 +923,7 @@ void ParaEngine::CAudioSource2::stop()
 		m_pSource->stop();
 
 		// record this event to the playback history
-		if (CAudioEngine2::GetInstance()->GetPlaybackHistory().SearchLastRecord(this->GetFilename())) {
+		if (CAudioEngine2::GetInstance()->GetPlaybackHistory().FindLastRecord(this->GetFilename())) {
 			CAudioEngine2::GetInstance()->GetPlaybackHistory().RemoveRecord(this->GetFilename());
 		}	
 		auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
