@@ -4,57 +4,21 @@
 #include "Matcher.h"
 #include "ParaXModel/ParaXBone.h"
 #include "ParaXModel/ParaXModel.h"
+#include "AISimulator.h"
 #include "pinocchioApi.h"
 #include "skeleton.h"
-
+#include "ShapeAABB.h"
 
 #include <thread>
 #include <functional>
-
+#include <list>
 #include <fstream>
+#include <algorithm>
 
 using namespace ParaEngine;
 using namespace Pinocchio;
 
 const float VERY_SMALL = 1e-8;
-
-bool RayIntersectsTriangle(Vector3 rayOrigin,
-	Vector3 rayVector,
-	int tri,
-	CParaXModel* xmodel,
-	Vector3& outIntersectionPoint)
-{
-	const float EPSILON = 0.0000001;
-	Vector3 v0 = xmodel->m_origVertices[xmodel->m_indices[tri++]].pos;
-	Vector3 v1 = xmodel->m_origVertices[xmodel->m_indices[tri++]].pos;
-	Vector3 v2 = xmodel->m_origVertices[xmodel->m_indices[tri]].pos;
-	Vector3 e1, e2, h, s, q;
-	float a, f, u, v;
-	e1 = v1 - v0;
-	e2 = v2 - v0;
-	h = rayVector.crossProduct(e2);
-	a = e1.dotProduct(h);
-	if (a > -EPSILON && a < EPSILON)
-		return false;
-	f = 1 / a;
-	s = rayOrigin - v0;
-	u = f * (s.dotProduct(h));
-	if (u < 0.0 || u > 1.0)
-		return false;
-	q = s.crossProduct(e1);
-	v = f * rayVector.dotProduct(q);
-	if (v < 0.0 || u + v > 1.0)
-		return false;
-	// At this stage we can compute t to find out where the intersection point is on the line.
-	float t = f * e2.dotProduct(q);
-	if (t > EPSILON) // ray intersection
-	{
-		outIntersectionPoint = rayOrigin + rayVector * t;
-		return true;
-	}
-	else // This means that there is a line intersection but not a ray intersection.
-		return false;
-}
 
 struct MMData
 {
@@ -222,10 +186,13 @@ public:
 		fout.close();
 	}
 
-	static Mesh* ExtractParaXMesh(CParaXModel* xmodel)
+	static Mesh* ExtractParaXMesh(CParaXModel* xmodel, bool rawMesh = false)
 	{
 		// squeeze points that very close to each other into one 
 		int numVert = xmodel->m_objNum.nVertices;
+		// refDis is 1/10 of cubic edge length
+		// two points would be considered as one if the distance between each other less than refDis 
+		// we keep this info in idx vector
 		float refDis = xmodel->m_origVertices[0].pos.distance(xmodel->m_origVertices[1].pos)*0.1;
 		std::vector<int> idx(numVert, 0);
 		for (int i = 0; i < numVert; ++i) {
@@ -241,6 +208,10 @@ public:
 		}
 
 		// populate the squeezed points into mesh
+		// why bother to squeeze points? cause we want a well-connected mesh
+		// the original parax model has too many points in the same posiotn
+		// which produces a lot redundant connections
+		// thoese redundant connections make the mesh traversal almost impossible
 		Mesh* pMesh = new Mesh();
 		for (int i = 0; i < idx.size(); ++i) {
 			if (idx[i] != i) continue;
@@ -300,11 +271,9 @@ public:
 
 				if (sharedVerts < 2) {
 					return false;
-				}
-				else if (sharedVerts > 2) {
+				}else if (sharedVerts > 2) {
 					return true;
-				}
-				else {
+				}else {
 					PVector3 p0, p1, p2;
 					for (int i = 0; i < 3; ++i) {
 						if (M[i] > 0) p0 = pMesh->m_Vertices[_v[i]].pos;
@@ -373,27 +342,40 @@ public:
 			pMesh->m_Edges.push_back(originalEdges[i]);
 		}
 
-		pMesh->fixDupFaces();
-		pMesh->computeTopology();
-		if (!pMesh->integrityCheck()) {
-			// say something
-		}
+		if (!rawMesh) {
+			pMesh->fixDupFaces();
+			pMesh->computeTopology();
+			if (!pMesh->integrityCheck()) {
+				OUTPUT_LOG("Failed to pass mesh integrity check!\n");
+				delete pMesh;
+				pMesh = nullptr;
+				return pMesh;
+			}
 
-		pMesh->computeVertexNormals();
-		pMesh->normalizeBoundingBox();
+			pMesh->computeVertexNormals();
+			pMesh->normalizeBoundingBox();
 
+			if (pMesh->m_Vertices.empty()) {
+				// delete the bad mesh 
+				delete pMesh;
+				pMesh = nullptr;
+			}
 #ifdef OUTPUT_DEBUG_FILE
-		{
-			// output the trimed triangles
-			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.mesh";
-			RigHelper::OutputTriangles(pMesh, fileName);
-		}
+			{
+				// output the trimed triangles
+				std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.mesh";
+				RigHelper::OutputTriangles(pMesh, fileName);
+			}
 #endif // OUTPUT_DEBUG_FILE
+		}
+
 		return pMesh;
 	}
 
-	static Skeleton* ExtractPataXSkeleton(CParaXModel* xmodel)
+	static Skeleton* ExtractPataXSkeleton(CParaXModel* xmodel, const PVector3& off, double scale)
 	{
+		Skeleton* skeleton = new Skeleton();
+
 		Bone* bones = xmodel->bones;
 		int numBones = xmodel->m_objNum.nBones;
 		std::vector<int> refMap;
@@ -402,9 +384,8 @@ public:
 			int parent = (bones + i)->parent;
 			++refMap[bones[i].parent];
 		}
-
-		std::vector<Bone*> orderedBones;
-		orderedBones.reserve(numBones);
+	
+		std::list<Bone*> orderedBones;
 		for (int i = 0; i < refMap.size(); ++i) {
 			int index = -1, val = -1;
 			for (int j = 0; j < refMap.size(); ++j) {
@@ -417,34 +398,70 @@ public:
 			refMap[index] = -2;
 		}
 
-		Skeleton* skeleton = new Skeleton();
-		for (int i = 0; i < numBones; ++i) {
-			Bone* bone = orderedBones[i];
+		// move root node to beginning position
+		for (std::list<Bone*>::iterator iter = orderedBones.begin();
+			iter != orderedBones.end(); ++iter) {
+			if ((*iter)->GetParentIndex() == -1 && iter != orderedBones.begin()) {
+				orderedBones.insert(orderedBones.begin(), *iter);
+				orderedBones.erase(iter);
+				break;
+			}
+		}
+		
+		orderedBones.reverse();	
+		// sort by parent index
+		for (std::list<Bone*>::iterator iter = orderedBones.begin(); 
+			iter != orderedBones.end(); ++iter) {
+			bool parentAhead = false;
+			std::list<Bone*>::iterator fIter = iter;
+			while (++fIter != orderedBones.end()) {
+				if ((*fIter)->GetBoneIndex() == (*iter)->GetParentIndex()) {
+					parentAhead = true;
+					break;
+				}
+			}
+			if (!parentAhead) {
+				std::list<Bone*>::iterator bIter = orderedBones.begin();
+				while (bIter != iter) {
+					if ((*bIter)->GetBoneIndex() == (*iter)->GetParentIndex()) {
+						std::list<Bone*>::iterator ffIter = fIter;
+						++ffIter;
+						orderedBones.insert(ffIter, *bIter);
+						orderedBones.erase(bIter);
+						break;
+					}
+					++bIter;
+				}
+			}
+		}
+		
+		orderedBones.reverse();
+		
+		for (std::list<Bone*>::iterator iter = orderedBones.begin(); iter != orderedBones.end(); ++iter) {
+			Bone* bone = *iter;
 			std::string parentName;
 			if (bone->GetParentIndex() > 0) {
 				parentName = bones[bone->GetParentIndex()].GetName();
 			}
 			const Vector3& v = bone->GetPivotPoint();
 			PVector3 pivot(v.x, v.y, v.z);// Y up
-
-			skeleton->makeJoint(bone->GetName(), pivot, parentName);
+			pivot = off + pivot * scale;
+			skeleton->MakeJoint(bone->GetName(), pivot, parentName);
 		}
 
-		//symmetry
-		skeleton->makeSymmetric("Left_h_shoulder", "Right_h_shoulder");
-		skeleton->makeSymmetric("Left_f_shoulder", "Right_f_shoulder");
-		skeleton->makeSymmetric("Left_h_foot", "Right_h_foot");
-		skeleton->makeSymmetric("Left_f_foot", "Right_f_foot");
+		if (!skeleton->IsWellConnected()) {
+			delete skeleton;
+			skeleton = nullptr;
+			return skeleton;
+		}
 
-		skeleton->initCompressed();
+		// this method must called before InitCompressed()
+		skeleton->MakeSymmetric();
 
-		skeleton->setFoot("Left_f_foot");
-		skeleton->setFoot("Left_h_foot");
-		skeleton->setFoot("Right_h_foot");
-		skeleton->setFoot("Right_f_foot");
+		// this method must called before MarkLabels()
+		skeleton->InitCompressed();
 
-		skeleton->setFat("hip");
-		skeleton->setFat("bone_p0");
+		skeleton->MarkLabels();
 
 		return skeleton;
 	}
@@ -459,12 +476,8 @@ public:
 			vertices.push_back(p);
 		}
 
-		Rect3 boundingBox = Rect3(vertices.begin(), vertices.end());
-		m_cScale = .9 / boundingBox.getSize().accumulate(ident<double>(), maximum<double>());
-		m_cToAdd = PVector3(0.5, 0.5, 0.5) - boundingBox.getCenter() * m_cScale;
-
 		for (int i = 0; i < vertices.size(); ++i) {
-			vertices[i] = vertices[i] * m_cScale + m_cToAdd;
+			vertices[i] = vertices[i] * m->m_Scale + m->m_ToAdd;
 		}
 
 #ifdef OUTPUT_DEBUG_FILE
@@ -520,13 +533,53 @@ public:
 		}
 	}
 
-	// used to recover the coordinates
-	static double m_cScale;
-	static PVector3 m_cToAdd;
-};
+	static void NormalizeVertices(vector<PVector3>& verts)
+	{
+		Rect3 boundingBox = Rect3(verts.begin(), verts.end());
+		PVector3 extents = boundingBox.getSize();
+		PVector3 center = boundingBox.getCenter();
+		double scale = std::max(std::max(extents[0], extents[1]), extents[2]);
+		std::transform(verts.begin(), verts.end(), verts.begin(),
+			[center, scale](const PVector3& v) { return (v - center) / scale; });
+	}
 
-double RigHelper::m_cScale = 1.0;
-PVector3 RigHelper::m_cToAdd = PVector3();
+	static bool RayIntersectsTriangle(Vector3 rayOrigin,
+		Vector3 rayVector,
+		int tri,
+		CParaXModel* xmodel,
+		Vector3& outIntersectionPoint)
+	{
+		const float EPSILON = 0.0000001;
+		Vector3 v0 = xmodel->m_origVertices[xmodel->m_indices[tri]].pos;
+		Vector3 v1 = xmodel->m_origVertices[xmodel->m_indices[tri + 1]].pos;
+		Vector3 v2 = xmodel->m_origVertices[xmodel->m_indices[tri + 2]].pos;
+		Vector3 e1, e2, h, s, q;
+		float a, f, u, v;
+		e1 = v1 - v0;
+		e2 = v2 - v0;
+		h = rayVector.crossProduct(e2);
+		a = e1.dotProduct(h);
+		if (std::abs(a) < EPSILON)return false;
+
+		f = 1 / a;
+		s = rayOrigin - v0;
+		u = f * (s.dotProduct(h));
+		if (u < 0.0 || u > 1.0)return false;
+
+		q = s.crossProduct(e1);
+		v = f * rayVector.dotProduct(q);
+		if (v < 0.0 || u + v > 1.0)return false;
+
+		// At this stage we can compute t to find out where the intersection point is on the line.
+		float t = f * e2.dotProduct(q);
+		if (t > EPSILON) {// ray intersection
+			outIntersectionPoint = rayOrigin + rayVector * t;
+			return true;
+		}
+		else // This means that there is a line intersection but not a ray intersection.
+			return false;
+	}
+};
 
 CAutoRigger::CAutoRigger()
 	:m_pTargetModel(nullptr)
@@ -582,35 +635,54 @@ void CAutoRigger::Clear()
 	m_pTargetModel = nullptr;
 }
 
+void CAutoRigger::On_AddRiggedFile()
+{
+	ScriptCallback* pCallback = GetScriptCallback(Type_AddRiggedFile);
+	if (pCallback)
+	{
+		const std::string& sFile = pCallback->GetFileName();
+		const std::string& sCode = pCallback->GetCode();
+		CGlobals::GetAISim()->NPLActivate(sFile.c_str(), sCode.c_str(), sCode.size());
+	}
+}
+
 int CAutoRigger::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	CBaseObject::InstallFields(pClass, bOverride);
 	pClass->AddField("AddModelTemplate", FieldType_String, (void*)AddModelTemplate_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("RemoveModelTemplate", FieldType_String, (void*)RemoveModelTemplate_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("SetTargetModel", FieldType_String, (void*)SetTargetModel_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("SetOutputFilePath", FieldType_String, (void*)SetOutputFilePath_s, (void*)0, NULL, "", bOverride);
 	pClass->AddField("AutoRigModel", FieldType_String, (void*)AutoRigModel_s, (void*)0, NULL, "", bOverride);
+	pClass->AddField("On_AddRiggedFile", FieldType_String, (void*)SetAddRiggedFile_s, (void*)GetAddRiggedFile_s, NULL, "", bOverride);
 	return S_OK;
 }
 
-void CAutoRigger::AutoRigThreadFunc()
+CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch(Mesh* targetMesh)
 {
-	this->addref();
-	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) return;
-	while (!m_pTargetModel->IsLoaded()) std::this_thread::sleep_for(std::chrono::milliseconds(25));
-
 	Matcher matcher;
 	// constructing target model feature
 	matcher.SetModelFeatureType(0);
-	CParaXModel* target = m_pTargetModel->GetModel();
-	const int numVert = target->m_objNum.nVertices;
+	const int numVert = targetMesh->m_Vertices.size();
 	for (int i = 0; i < numVert; ++i) {
-		Vector3& v = target->m_origVertices[i].pos;
-		Vector3& n = target->m_origVertices[i].normal;
-		matcher.AddFeature(v.x, v.y, v.z, n.x, n.y, n.z);
+		PVector3 v = targetMesh->m_Vertices[i].pos;
+		PVector3 n = targetMesh->m_Vertices[i].normal;
+		v = (v - targetMesh->m_ToAdd) / targetMesh->m_Scale;
+		matcher.AddFeature(v[0], v[1], v[2], n[0], n[1], n[2]);
 	}
-	matcher.CloseFeature();
 
-	int matchness = -1;
+	//CParaXModel* target = m_pTargetModel->GetModel();
+	//const int numVert = target->m_objNum.nVertices;
+	//for (int i = 0; i < numVert; ++i) {
+	//	Vector3& v = target->m_origVertices[i].pos;
+	//	Vector3& n = target->m_origVertices[i].normal;
+	//	matcher.AddFeature(v.x, v.y, v.z, n.x, n.y, n.z);
+	//}
+
+	//matcher.CloseFeature();
+
+	// match the most close model template to the target model
+	int matchness = std::numeric_limits<int>::max();
 	ModelTemplateMap::iterator bestMatch = m_ModelTemplates->end();
 	ModelTemplateMap::iterator iter = m_ModelTemplates->begin();
 	for (; iter != m_ModelTemplates->end(); ++iter) {
@@ -624,45 +696,133 @@ void CAutoRigger::AutoRigThreadFunc()
 			Vector3& n = source->m_origVertices[i].normal;
 			matcher.AddFeature(v.x, v.y, v.z, n.x, n.y, n.z);
 		}
-		matcher.CloseFeature();
+		//matcher.CloseFeature();
 		int temp = matcher.Match();
-		if (matchness < temp) {
+		if (matchness > temp) {
 			matchness = temp;
 			bestMatch = iter;
 		}
 	}
+	
+	return bestMatch;
+}
+
+CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* targetMesh)
+{
+	//Matcher matcher;
+	//// normalize the target mesh vertices
+	//vector<PVector3> targetVerts;
+	//targetVerts.reserve(targetMesh->m_Vertices.size());
+	//for (int i = 0; i < (int)targetMesh->m_Vertices.size(); ++i) {
+	//	targetVerts.push_back(targetMesh->m_Vertices[i].pos);
+	//}
+	//RigHelper::NormalizeVertices(targetVerts);
+
+	// match the most close model template to the target model
+	// we take the minmum matchness as the best match candidate
+	double matchness = std::numeric_limits<double>::max();
+	TreeType* tarDistField = ConstructDistanceField(*targetMesh);
+	ModelTemplateMap::iterator bestMatch = m_ModelTemplates->end();
+	ModelTemplateMap::iterator iter = m_ModelTemplates->begin();
+	for (; iter != m_ModelTemplates->end(); ++iter) {
+		while (!iter->second->IsLoaded()) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(25));
+		}
+		// constructing source model feature	
+		CParaXModel* source = iter->second->GetModel();
+		Mesh* srcMesh = RigHelper::ExtractParaXMesh(source, true);
+		srcMesh->normalizeBoundingBox();
+
+		double curDisSum = 0.0;
+		for (int i = 0; i < srcMesh->m_Vertices.size(); ++i) {
+			PVector3 v = srcMesh->m_Vertices[i].pos;
+			double dis = tarDistField->locate(v)->evaluate(v);
+			curDisSum += std::abs(dis);
+		}
+		//curDisSum /= srcMesh->m_Vertices.size();
+
+		if (matchness > curDisSum) {
+			matchness = curDisSum;
+			bestMatch = iter;
+		}
+		
+		delete srcMesh;
+	}
+	delete tarDistField;
+	
+	return bestMatch;
+	
+}
+
+void CAutoRigger::AutoRigThreadFunc()
+{
+	this->addref();
+
+	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) {
+		this->delref();
+		return;
+	}
+
+	while (!m_pTargetModel->IsLoaded()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(25));
+	}
+
+	Mesh* targetMesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
+	if (targetMesh == nullptr) {
+		OUTPUT_LOG( "Target bmax model yields a bad mesh. Try another model...\n");
+		this->delref();
+		return;
+	}
 
 	// auto rigging using the matched source model bones for the target model
+	ModelTemplateMap::iterator bestMatch = this->FindBestMatch2(targetMesh);
 	if (bestMatch != m_ModelTemplates->end()) {
-		Skeleton* given = RigHelper::ExtractPataXSkeleton(bestMatch->second->GetModel());
+		// prepare mesh
+		Mesh newMesh = PrepareMesh(*targetMesh);
+		if (newMesh.m_Vertices.empty()) {
+			OUTPUT_LOG("Target mesh: failed to pass connection test.\n");
+			this->delref();
+			return;
+		}
+		// prepare skeleton
+		Mesh* srcMesh = RigHelper::ExtractParaXMesh(bestMatch->second->GetModel(), true);
+		srcMesh->normalizeBoundingBox();
+
+		Skeleton* given = RigHelper::ExtractPataXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
+		if (given == nullptr) {
+			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
+			this->delref();
+			return;
+		}
 		
-		Mesh* mesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
+		TreeType* distanceField = ConstructDistanceField(newMesh);
 
-		PinocchioOutput rig;
+		// output distant field 
+		RigHelper::OutputDistantField(distanceField);
 
-		Mesh newMesh = PrepareMesh(*mesh);
-		TreeType *distanceField = ConstructDistanceField(newMesh);
-		//discretization
-		vector<PSphere> medialSurface = SampleMedialSurface(distanceField);
-		vector<PSphere> spheres = PackSpheres(medialSurface);
+		std::vector<PSphere> medialSurface = SampleMedialSurface(distanceField);
+		std::vector<PSphere> spheres = PackSpheres(medialSurface);
 		PtGraph graph = ConnectSamples(distanceField, spheres);
 
 		//discrete embedding
-		vector<vector<int> > possibilities = ComputePossibilities(graph, spheres, *given);
+		std::vector<std::vector<int>> possibilities = ComputePossibilities(graph, spheres, *given);
 
 		//constraints can be set by respecifying possibilities for skeleton joints:
-		//to constrain joint i to sphere j, use: possiblities[i] = vector<int>(1, j);
-		vector<int> embeddingIndices = DiscreteEmbed(graph, spheres, *given, possibilities);
+		//to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
+		std::vector<int> embeddingIndices = DiscreteEmbed(graph, spheres, *given, possibilities);
 
 		if (embeddingIndices.size() == 0) { // failure
 			delete distanceField;
-			// an error log should be added here
+			OUTPUT_LOG("Failed to embed given seleton to target model.\n");
+			this->delref();
+			return;
 		}
 
-		rig.embedding = SplitPaths(embeddingIndices, graph, *given);
+		PinocchioOutput rigger;
+		rigger.embedding = SplitPaths(embeddingIndices, graph, *given);
 
 		VisTester<TreeType>* tester = new VisTester<TreeType>(distanceField);
-		RigHelper::RefineEmbedding(m_pTargetModel->GetModel(), mesh, rig.embedding, tester);
+		RigHelper::RefineEmbedding(m_pTargetModel->GetModel(), targetMesh, rigger.embedding, tester);
 
 		CParaXModel* skeletonModel = bestMatch->second->GetModel();
 		
@@ -672,16 +832,16 @@ void CAutoRigger::AutoRigThreadFunc()
 			boneNameIndexMap[skeletonModel->bones[i].GetName()] = i;
 		}
 
-		for (int i = 0; i < rig.embedding.size(); ++i) {
-			int j = boneNameIndexMap[given->indexNameMap[i]];
-			skeletonModel->bones[j].pivot.x = rig.embedding[i][0];
-			skeletonModel->bones[j].pivot.y = rig.embedding[i][1];
-			skeletonModel->bones[j].pivot.z = rig.embedding[i][2];
+		for (int i = 0; i < rigger.embedding.size(); ++i) {
+			int j = boneNameIndexMap[given->m_IndexNameMap[i]];
+			skeletonModel->bones[j].pivot.x = rigger.embedding[i][0];
+			skeletonModel->bones[j].pivot.y = rigger.embedding[i][1];
+			skeletonModel->bones[j].pivot.z = rigger.embedding[i][2];
 		}
 
-		int numVert = skeletonModel->m_objNum.nVertices;
-		
-		this->Rigging(m_pTargetModel->GetModel(), bestMatch->second->GetModel(), newMesh, tester);
+		this->FullRigging(m_pTargetModel->GetModel(), skeletonModel, newMesh, tester);
+
+		this->On_AddRiggedFile();
 
 #ifdef OUTPUT_DEBUG_FILE
 		{
@@ -695,7 +855,7 @@ void CAutoRigger::AutoRigThreadFunc()
 
 			// output the bones joints
 			fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.bone";
-			RigHelper::OutputVertices(rig.embedding, fileName);
+			RigHelper::OutputVertices(rigger.embedding, fileName);
 
 			// output distant field 
 			RigHelper::OutputDistantField(distanceField);
@@ -703,13 +863,15 @@ void CAutoRigger::AutoRigThreadFunc()
 #endif // OUTPUT_DEBUG_FILE
 
 		//cleanup
+		delete srcMesh;
 		delete tester;
 		delete distanceField;
 	}
+
 	this->delref();
 }
 
-void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh,  void* vistester)
+void CAutoRigger::RiggingWithoutColorAssignement(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* vistester)
 {
 	VisTester<TreeType>* tester = static_cast<VisTester<TreeType>*>(vistester);
 	// header settings
@@ -786,7 +948,7 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 			Vector3 v = modelVertex.pos;
 			float dis = p.distance(v);
 
-			v = p + (v - p)*0.8;
+			v = p + (v - p)*0.95;
 
 			bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
 
@@ -835,12 +997,359 @@ void CAutoRigger::Rigging(CParaXModel* targetModel, CParaXModel* skeletonModel, 
 	}
 
 #ifdef OUTPUT_DEBUG_FILE
-	{
-		// output the trimed triangles
-		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.line";
-		RigHelper::OutputSkinningRelation(targetModel, fileName);
+	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
+	RigHelper::OutputSkinningRelation(targetModel,fileName);
+#endif
+
+	// recover coordinates
+	Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
+	for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+		ModelVertex& modelVertex = targetModel->m_origVertices[i];
+		modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
 	}
-#endif // OUTPUT_DEBUG_FILE
+	for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
+		targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
+	}
+
+	targetModel->SaveToDisk(m_OutputFilePath.c_str());
+}
+
+void CAutoRigger::FullRigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* vistester)
+{
+	VisTester<TreeType>* tester = static_cast<VisTester<TreeType>*>(vistester);
+	// header settings
+	targetModel->m_header.type = skeletonModel->m_header.type;
+	targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
+	targetModel->animated = targetModel->m_header.IsAnimated > 0;
+	targetModel->animGeometry = (targetModel->m_header.IsAnimated&(1 << 0)) > 0;
+	targetModel->animTextures = (targetModel->m_header.IsAnimated&(1 << 1)) > 0;
+	targetModel->animBones = (targetModel->m_header.IsAnimated&(1 << 2)) > 0;
+	//to support arg channel only texture animation  -clayman 2011.8.5
+	targetModel->animTexRGB = (targetModel->m_header.IsAnimated&(1 << 4)) > 0;
+	if (targetModel->IsBmaxModel())
+		targetModel->m_RenderMethod = CParaXModel::BMAX_MODEL;
+	else if (targetModel->animated)
+		targetModel->m_RenderMethod = CParaXModel::SOFT_ANIM;
+	else
+		targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
+
+	targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
+	targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
+
+	targetModel->bones = skeletonModel->bones;
+	targetModel->texanims = skeletonModel->texanims;
+	targetModel->anims = skeletonModel->anims;
+	//targetModel->specialTextures = skeletonModel->specialTextures;
+
+	targetModel->m_CurrentAnim.Reset();
+	targetModel->m_NextAnim.MakeInvalid();
+	targetModel->m_BlendingAnim.Reset();
+	targetModel->blendingFactor = 0;
+	targetModel->fBlendingTime = 0.25f;	// this is the default value.
+
+
+	// transform vertices into distance field space 
+	int numVerts = targetModel->m_objNum.nVertices;
+	Vector3 toAdd(newMesh.m_ToAdd[0], newMesh.m_ToAdd[1], newMesh.m_ToAdd[2]);
+	for (int i = 0; i < numVerts; ++i) {
+		//m_Vertices[i].pos = ctoAdd + m_Vertices[i].pos * cscale;
+		Vector3& pos = targetModel->m_origVertices[i].pos;
+		pos = toAdd + pos * newMesh.m_Scale;
+	}
+	float edgeLen = 1.05 * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
+	
+	struct Cube
+	{
+		int verts[32];
+		Vector3 center;
+		uint8 bones[4];
+		DWORD color;// debug use
+		Color cc;// debug use
+		float neighborRange;
+		bool rigged;
+
+		bool IsNeighborOf(const Cube& other) 
+		{
+			return (this->center - other.center).length() < neighborRange;
+		}
+
+		bool IsSameColor(const Cube& other)
+		{
+			LinearColor c1(color);
+			LinearColor c2(other.color);
+
+			if (c1 == LinearColor::Black && c2 != LinearColor::Black || c1 != LinearColor::Black && c2 == LinearColor::Black) return false;
+
+			std::vector<float> ratio(3, 0.0);
+			if (c1.r > c2.r || c1.g > c2.g || c1.b > c2.b) {
+				ratio[0] = std::abs((c2.r != 0.0) ? c1.r / c2.r : 0.0);
+				ratio[1] = std::abs((c2.g != 0.0) ? c1.g / c2.g : 0.0);
+				ratio[2] = std::abs((c2.b != 0.0) ? c1.b / c2.b : 0.0);
+			}else {
+				ratio[0] = std::abs((c1.r != 0.0) ? c2.r / c1.r : 0.0);
+				ratio[1] = std::abs((c1.g != 0.0) ? c2.g / c1.g : 0.0);
+				ratio[2] = std::abs((c1.b != 0.0) ? c2.b / c1.b : 0.0);
+			}
+			std::sort(ratio.begin(), ratio.end());
+
+			float verySmall = 0.000001;
+
+			if (ratio[0] > 0.0) {
+				return (ratio[1] - ratio[0] < verySmall && ratio[2] - ratio[1] < verySmall) ? true : false;
+			}else if (ratio[1] > 0.0) {
+				return (ratio[2] - ratio[1] < verySmall) ? true : false;
+			}else {// what if the color has only one component above zero? is still the same color? hope for the best.
+				return true;
+			}	
+		}
+	};
+	typedef std::vector<Cube> CubeVector;
+	CubeVector cubes;
+	int numVertPerCube = 24;
+	int numIndicesPerCube = 36;
+	int numIndices = targetModel->m_objNum.nIndices;
+	for (int i = 0; i < numIndices; i += numIndicesPerCube) {
+		std::set<int> filter;
+		for (int j = 0; j < numIndicesPerCube; ++j) {
+			filter.insert((int)(targetModel->m_indices[i+j]));
+		}
+		if (filter.size() != numVertPerCube) {
+			OUTPUT_LOG("Wrong cube vertex number.\n");
+		}else {
+			Cube cube;
+			CShapeBox bb;
+			std::set<int>::iterator iter = filter.begin();
+			for (int k = 0; k < numVertPerCube; ++k, ++iter) {
+				cube.verts[k] = (*iter);
+				bb.Extend(targetModel->m_origVertices[(*iter)].pos);
+			}
+			cube.color = targetModel->m_origVertices[*(filter.begin())].color0;
+			cube.cc = Color(cube.color);
+			cube.center = bb.GetCenter();
+			cube.rigged = false;
+			cube.neighborRange = edgeLen;
+			cubes.push_back(cube);
+			PVector3 pv(cube.center.x, cube.center.y, cube.center.z );
+		}
+	}
+
+	// first round 
+	for (int i = 0; i < cubes.size(); ++i) {
+		int nearest = -1;
+		float minDis = 999.0;
+		for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
+			Vector3 p = targetModel->bones[k].pivot;
+			Vector3 v = cubes[i].center;
+			float dis = p.distance(v);
+			v = p + (v - p)*0.95;
+			bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
+
+			if (canSee && dis < minDis ) {
+				minDis = dis;
+				nearest = k;
+			}
+		}
+		if (nearest >= 0 && minDis < 0.2*edgeLen) {
+			cubes[i].rigged = true;
+			cubes[i].bones[0] = (uint8)nearest;
+			for (int j = 0; j < numVertPerCube; ++j) {
+				targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
+				targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
+			}
+		}else {
+			// if couldn't find the direct bone just continue and wait for the next round to fixed it
+		}
+	}// end for
+
+
+	// second round
+	typedef std::vector<std::vector<int>> ColorVector;
+	ColorVector colors;
+	for (int i = 0; i < cubes.size(); ++i) {
+		bool clustered = false;
+		for (auto& group : colors) {
+			if (cubes[group[0]].IsSameColor(cubes[i])) {
+				group.push_back(i);
+				clustered = true;
+				break;
+			}
+		}
+		if (!clustered) {
+			colors.resize(colors.size() + 1);
+			colors.back().push_back(i);
+		}
+	}
+
+	std::vector<std::vector<int>> clusters;
+	for (ColorVector::iterator iter = colors.begin(); iter != colors.end(); ++iter) {
+		std::vector<int>& blocks = *iter;
+		while (!blocks.empty()) {
+			std::vector<int> cluster;
+			std::queue<int> todo;
+			std::vector<bool> taken(blocks.size(), false);
+			cluster.push_back(blocks[0]);
+			todo.push(blocks[0]);
+			taken[0] = true;
+			while (!todo.empty()) {
+				int cur = todo.front();
+				todo.pop();
+				// find one neighbor
+				for (int i = 0; i < blocks.size(); ++i ) {
+					if ( !taken[i] && cubes[blocks[i]].IsNeighborOf(cubes[cur])) {
+						cluster.push_back(blocks[i]);
+						todo.push(blocks[i]);
+						taken[i] = true;
+					}
+				}
+			}
+			clusters.emplace_back(cluster);
+			std::vector<int> remains;
+			for (int i = 0; i < blocks.size(); ++i) {
+				if (!taken[i])remains.push_back(blocks[i]);
+			}
+			blocks.swap(remains);	
+		}// outer while
+	}
+
+	std::list<int> leftClusters;
+	std::vector<int> riggedClusters;
+	for (int c = 0; c < clusters.size(); ++c) {
+		int rigged = -1;
+		for (auto index : clusters[c]) {
+			if (cubes[index].rigged) {
+				rigged = index;
+				break;
+			}
+		}
+
+		if (rigged >= 0) {
+			for (int i = 0; i < clusters[c].size(); ++i) {
+				int idx = clusters[c][i];
+				for (int j = 0; j < numVertPerCube; ++j) {
+					targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[rigged].bones[0];
+					targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
+				}
+				cubes[idx].rigged = true;
+				cubes[idx].bones[0] = cubes[rigged].bones[0];
+			}
+			riggedClusters.push_back(c);
+		}else {
+			leftClusters.push_back(c);
+		}
+	}
+
+	while (!leftClusters.empty()) {
+		std::vector<int>& left = clusters[leftClusters.back()];
+		int neighbor = -1;
+		for (int i = 0; i < riggedClusters.size(); ++i) {
+			std::vector<int>& riggedCluster = clusters[riggedClusters[i]];
+			for (int j = 0; j < left.size(); ++j) {
+				for (int k = 0; k < riggedCluster.size(); ++k) {
+					if (cubes[left[j]].IsNeighborOf(cubes[riggedCluster[k]])) {
+						neighbor = riggedClusters[i];
+						break;
+					}
+				}
+				if (neighbor >= 0)break;
+			}
+			if (neighbor >= 0)break;
+		}
+		if (neighbor >= 0) {
+			int dst = clusters[neighbor].front();
+			for (int i = 0; i < left.size(); ++i) {
+				int idx = left[i];
+				for (int j = 0; j < numVertPerCube; ++j) {
+					targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[dst].bones[0];
+					targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
+				}
+				cubes[idx].rigged = true;
+				cubes[idx].bones[0] = cubes[dst].bones[0];
+			}
+		}
+		leftClusters.pop_back();
+	}
+
+	if (0) {
+		std::list<int> leftList;
+		// first round 
+		for (int i = 0; i < cubes.size(); ++i) {
+			int nearest = -1;
+			float minDis = 999.0;
+			for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
+				Vector3 p = targetModel->bones[k].pivot;
+				Vector3 v = cubes[i].center;
+				float dis = p.distance(v);
+				v = p + (v - p)*0.95;
+				bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
+
+				if (canSee && dis < minDis) {
+					minDis = dis;
+					nearest = k;
+				}
+			}
+			if (nearest >= 0) {
+				cubes[i].rigged = true;
+				cubes[i].bones[0] = (uint8)nearest;
+				for (int j = 0; j < numVertPerCube; ++j) {
+					targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
+					targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
+				}
+			}
+			else {
+				// if couldn't find the direct bone just continue and wait for the next round to fixed it
+				leftList.push_back(i);
+			}
+		}// end for
+
+
+		while (!leftList.empty()) {
+			std::list<int>::iterator iter = leftList.begin();
+			int firstNearest = -1;
+			for (; iter != leftList.end(); ++iter) {
+				firstNearest = -1;
+				std::vector<int> candidates;
+				for (int i = 0; i < cubes.size(); ++i) {
+					if (!cubes[i].rigged || i == *iter)continue;
+					if ((cubes[i].center - cubes[*iter].center).length() < edgeLen /*&& cubes[i].color == cubes[*iter].color*/) {
+						firstNearest = i;
+						candidates.push_back(i);
+					}
+				}
+				if (candidates.size() > 1) {
+
+				}
+				else {
+
+				}
+			}
+
+			if (firstNearest >= 0) {
+				for (int j = 0; j < numVertPerCube; ++j) {
+					targetModel->m_origVertices[cubes[*iter].verts[j]].bones[0] = cubes[firstNearest].bones[0];
+					targetModel->m_origVertices[cubes[*iter].verts[j]].weights[0] = 255;
+				}
+				cubes[*iter].rigged = true;
+				cubes[*iter].bones[0] = cubes[firstNearest].bones[0];
+				leftList.erase(iter);
+			}
+		}// end while
+	}
+
+
+#ifdef OUTPUT_DEBUG_FILE
+	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
+	RigHelper::OutputSkinningRelation(targetModel, fileName);
+#endif
+
+	//// recover coordinates
+	//Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
+	//for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+	//	ModelVertex& modelVertex = targetModel->m_origVertices[i];
+	//	modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
+	//}
+	//for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
+	//	targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
+	//}
 
 	targetModel->SaveToDisk(m_OutputFilePath.c_str());
 }

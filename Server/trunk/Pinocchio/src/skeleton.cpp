@@ -1,9 +1,10 @@
 #include "skeleton.h"
 #include "utils.h"
 #include "debugging.h"
-#include <fstream>
 
-void Skeleton::initCompressed()
+#include <algorithm>
+
+void Skeleton::InitCompressed()
 {
     int i;
 
@@ -65,7 +66,7 @@ void Skeleton::initCompressed()
     }
 }
 
-void Skeleton::scale(double factor)
+void Skeleton::Scale(double factor)
 {
     int i;
     for(i = 0; i < (int)m_fGraphV.verts.size(); ++i)
@@ -76,282 +77,125 @@ void Skeleton::scale(double factor)
     }
 }
 
-void Skeleton::makeJoint(const string &name, const PVector3 &pos, const string &previous)
+void Skeleton::InsertJointNameMap(const std::string& name, int index)
 {
-    int cur = m_fSymV.size();
-    m_fSymV.push_back(-1);
-    m_fGraphV.verts.push_back(pos * 0.5); //skeletons specified in [-1,1] will be fit to object in [0,1]
-    m_fGraphV.edges.resize(cur + 1);
-    jointNames[name] = cur;
-	indexNameMap[cur] = name;
-    
-    if(previous == string("")) {
-        m_fPrevV.push_back(-1);
-    } else { //add a bone
-        int prev = jointNames[previous];
-        m_fGraphV.edges[cur].push_back(prev);
-        m_fGraphV.edges[prev].push_back(cur);
-        m_fPrevV.push_back(prev);
-    }
+	m_JointNames[name] = index;
+	m_IndexNameMap[index] = name;
+	m_fGraphV.edges.resize(m_JointNames.size());
 }
 
-void Skeleton::makeSymmetric(const string &name1, const string &name2)
+void Skeleton::MakeJoint(const string &name, const PVector3 &pos, const string &previous)
 {
-    int i1 = jointNames[name1];
-    int i2 = jointNames[name2];
+	int cur = m_fSymV.size();
+	m_fSymV.push_back(-1);
+	m_fGraphV.verts.push_back(pos); //skeletons specified in [-1,1] will be fit to object in [0,1]
+	m_fGraphV.edges.resize(cur + 1);
+	m_JointNames[name] = cur;
+	m_IndexNameMap[cur] = name;
 
-    if(i1 > i2)
-        swap(i1, i2);
-    m_fSymV[i2] = i1;
+	if (previous == string("")) {
+		m_fPrevV.push_back(-1);
+	}
+	else { //add a bone
+		int prev = m_JointNames[previous];
+		m_fGraphV.edges[cur].push_back(prev);
+		m_fGraphV.edges[prev].push_back(cur);
+		m_fPrevV.push_back(prev);
+	}
 }
 
-void Skeleton::setFoot(const string &name)
+void Skeleton::MakeSymmetric()
 {
-    int i = jointNames[name];
+	typedef std::vector < std::pair< std::string, std::string> > NamePairs;
+	NamePairs leftNames;
+	NamePairs rightNames;
+	map<string, int>::iterator iter = m_JointNames.begin();
+	for (; iter != m_JointNames.end(); ++iter) {
+		std::string str = iter->first;
+		std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+		std::string::size_type  strIt = str.find("LEFT");
+		if (strIt != std::string::npos)leftNames.push_back(std::make_pair(str, iter->first));
+		strIt = str.find("RIGHT");
+		if (strIt != std::string::npos)rightNames.push_back(std::make_pair(str, iter->first));
+	}
+	// mark symmetric
+	for (int i = 0; i < leftNames.size(); ++i) {
+		std::string left = leftNames[i].first;
+		std::string::size_type pL = left.find("LEFT");
+		left = left.erase(pL, 4);
+		for (int j = 0; j < rightNames.size(); ++j) {
+			std::string right = rightNames[j].first;
+			std::string::size_type pR = right.find("RIGHT");
+			right = right.erase(pR, 5);
+			if (right.compare(left) == 0) {
+				int i1 = m_JointNames[leftNames[i].second];
+				int i2 = m_JointNames[rightNames[j].second];
+				if (i1 > i2)
+					swap(i1, i2);
+				m_fSymV[i2] = i1;
+			}
+		}
+	}
+
+}
+
+void Skeleton::SetFoot(const string &name)
+{
+    int i = m_JointNames[name];
     m_cFeetV[m_fcMapV[i]] = true;
 }
 
-void Skeleton::setFat(const string &name)
+void Skeleton::SetFat(const string &name)
 {
-    int i = jointNames[name];
+    int i = m_JointNames[name];
     m_cFatV[m_fcMapV[i]] = true;
 }
 
-//-----------------actual skeletons-------------------
-
-HumanSkeleton::HumanSkeleton()
+bool Skeleton::IsWellConnected()
 {
-    //order of makeJoint calls is very important
-    makeJoint("shoulders",  PVector3(0., 0.5, 0.));                          //0
-    makeJoint("back",       PVector3(0., 0.15, 0.),      "shoulders");       //1
-    makeJoint("hips",       PVector3(0., 0., 0.),        "back");            //2
-    makeJoint("head",       PVector3(0., 0.7, 0.),       "shoulders");       //3
-    
-    makeJoint("lthigh",     PVector3(-0.1, 0., 0.),      "hips");            //4
-    makeJoint("lknee",      PVector3(-0.15, -0.35, 0.),  "lthigh");          //5
-    makeJoint("lankle",      PVector3(-0.15, -0.8, 0.),  "lknee");           //6
-    makeJoint("lfoot",      PVector3(-0.15, -0.8, 0.1),  "lankle");          //7
-    
-    makeJoint("rthigh",     PVector3(0.1, 0., 0.),       "hips");            //8
-    makeJoint("rknee",      PVector3(0.15, -0.35, 0.),   "rthigh");          //9
-    makeJoint("rankle",      PVector3(0.15, -0.8, 0.),   "rknee");           //10
-    makeJoint("rfoot",      PVector3(0.15, -0.8, 0.1),   "rankle");          //11
-    
-    makeJoint("lshoulder",  PVector3(-0.2, 0.5, 0.),     "shoulders");       //12
-    makeJoint("lelbow",     PVector3(-0.4, 0.25, 0.075), "lshoulder");       //13
-    makeJoint("lhand",      PVector3(-0.6, 0.0, 0.15),   "lelbow");          //14
-    
-    makeJoint("rshoulder",  PVector3(0.2, 0.5, 0.),      "shoulders");       //15
-    makeJoint("relbow",     PVector3(0.4, 0.25, 0.075),  "rshoulder");       //16
-    makeJoint("rhand",      PVector3(0.6, 0.0, 0.15),    "relbow");          //17
-    
-    //symmetry
-    makeSymmetric("lthigh", "rthigh");
-    makeSymmetric("lknee", "rknee");
-    makeSymmetric("lankle", "rankle");
-    makeSymmetric("lfoot", "rfoot");
-    
-    makeSymmetric("lshoulder", "rshoulder");
-    makeSymmetric("lelbow", "relbow");
-    makeSymmetric("lhand", "rhand");
+	// check root number
+	int numRoot = 0;
+	for (int i = 0; i < m_fPrevV.size(); ++i) {
+		if (m_fPrevV[i] == -1)numRoot++;
+	}
+	if (numRoot != 1) return false;
 
-    initCompressed();
+	// check whether each node can reach root
+	bool allReach = true;
+	for (int i = 0; i < m_fPrevV.size(); ++i) {
+		int numPassed = 0;// detect circles
+		int parent = m_fPrevV[i];
+		while (parent != -1 && numPassed < m_fPrevV.size()) {
+			parent = m_fPrevV[parent];
+			++numPassed;
+		}
+		if (parent >= 0) {
+			allReach = false;
+			break;
+		}
+	}
 
-    setFoot("lfoot");
-    setFoot("rfoot");
-
-    setFat("hips");
-    setFat("shoulders");
-    setFat("head");
+	return allReach;
 }
 
-QuadSkeleton::QuadSkeleton()
+void Skeleton::MarkLabels()
 {
-    //order of makeJoint calls is very important
-    makeJoint("shoulders",  PVector3(0., 0., 0.5));
-    makeJoint("back",       PVector3(0., 0., 0.),         "shoulders");
-    makeJoint("hips",       PVector3(0., 0., -0.5),       "back");
-    makeJoint("neck",       PVector3(0., 0.2, 0.63),      "shoulders");
-    makeJoint("head",       PVector3(0., 0.2, 0.9),       "neck");
-    
-    makeJoint("lthigh",     PVector3(-0.15, 0., -0.5),     "hips");
-    makeJoint("lhknee",     PVector3(-0.2, -0.4, -0.5),   "lthigh");
-    makeJoint("lhfoot",     PVector3(-0.2, -0.8, -0.5),   "lhknee");
-    
-    makeJoint("rthigh",     PVector3(0.15, 0., -0.5),      "hips");
-    makeJoint("rhknee",     PVector3(0.2, -0.4, -0.5),    "rthigh");
-    makeJoint("rhfoot",     PVector3(0.2, -0.8, -0.5),    "rhknee");
-    
-    makeJoint("lshoulder",  PVector3(-0.2, 0., 0.5),      "shoulders");
-    makeJoint("lfknee",     PVector3(-0.2, -0.4, 0.5),    "lshoulder");
-    makeJoint("lffoot",      PVector3(-0.2, -0.8, 0.5),   "lfknee");
-    
-    makeJoint("rshoulder",  PVector3(0.2, 0.0, 0.5),      "shoulders");
-    makeJoint("rfknee",     PVector3(0.2, -0.4, 0.5),     "rshoulder");
-    makeJoint("rffoot",      PVector3(0.2, -0.8, 0.5),    "rfknee");
-    
-    makeJoint("tail",       PVector3(0., 0., -0.7),       "hips");
-    
-    //symmetry
-    makeSymmetric("lthigh", "rthigh");
-    makeSymmetric("lhknee", "rhknee");
-    makeSymmetric("lhfoot", "rhfoot");
-    
-    makeSymmetric("lshoulder", "rshoulder");
-    makeSymmetric("lfknee", "rfknee");
-    makeSymmetric("lffoot", "rffoot");
-    
-    initCompressed();
-
-    setFoot("lhfoot");
-    setFoot("rhfoot");
-    setFoot("lffoot");
-    setFoot("rffoot");
-
-    setFat("hips");
-    setFat("shoulders");
-    setFat("head");
-}
-
-HorseSkeleton::HorseSkeleton()
-{
-    //order of makeJoint calls is very important
-    makeJoint("shoulders",  PVector3(0., 0., 0.5));
-    makeJoint("back",       PVector3(0., 0., 0.),         "shoulders");
-    makeJoint("hips",       PVector3(0., 0., -0.5),       "back");
-    makeJoint("neck",       PVector3(0., 0.2, 0.63),      "shoulders");
-    makeJoint("head",       PVector3(0., 0.2, 0.9),       "neck");
-    
-    makeJoint("lthigh",     PVector3(-0.15, 0., -0.5),     "hips");
-    makeJoint("lhknee",     PVector3(-0.2, -0.2, -0.45),  "lthigh");
-    makeJoint("lhheel",     PVector3(-0.2, -0.4, -0.5),   "lhknee");
-    makeJoint("lhfoot",     PVector3(-0.2, -0.8, -0.5),   "lhheel");
-    
-    makeJoint("rthigh",     PVector3(0.15, 0., -0.5),      "hips");
-    makeJoint("rhknee",     PVector3(0.2, -0.2, -0.45),   "rthigh");
-    makeJoint("rhheel",     PVector3(0.2, -0.4, -0.5),    "rhknee");
-    makeJoint("rhfoot",     PVector3(0.2, -0.8, -0.5),    "rhheel");
-    
-    makeJoint("lshoulder",  PVector3(-0.2, 0., 0.5),      "shoulders");
-    makeJoint("lfknee",     PVector3(-0.2, -0.4, 0.5),    "lshoulder");
-    makeJoint("lffoot",      PVector3(-0.2, -0.8, 0.5),   "lfknee");
-    
-    makeJoint("rshoulder",  PVector3(0.2, 0.0, 0.5),      "shoulders");
-    makeJoint("rfknee",     PVector3(0.2, -0.4, 0.5),     "rshoulder");
-    makeJoint("rffoot",      PVector3(0.2, -0.8, 0.5),    "rfknee");
-    
-    makeJoint("tail",       PVector3(0., 0., -0.7),       "hips");
-    
-    //symmetry
-    makeSymmetric("lthigh", "rthigh");
-    makeSymmetric("lhknee", "rhknee");
-    makeSymmetric("lhheel", "rhheel");
-    makeSymmetric("lhfoot", "rhfoot");
-    
-    makeSymmetric("lshoulder", "rshoulder");
-    makeSymmetric("lfknee", "rfknee");
-    makeSymmetric("lffoot", "rffoot");
-    
-    initCompressed();
-
-    setFoot("lhfoot");
-    setFoot("rhfoot");
-    setFoot("lffoot");
-    setFoot("rffoot");
-
-    setFat("hips");
-    setFat("shoulders");
-    setFat("head");
-}
-
-CentaurSkeleton::CentaurSkeleton()
-{
-    //order of makeJoint calls is very important
-    makeJoint("shoulders",  PVector3(0., 0., 0.5));                      //0
-    makeJoint("back",       PVector3(0., 0., 0.),         "shoulders");  //1
-    makeJoint("hips",       PVector3(0., 0., -0.5),       "back");       //2
-
-    makeJoint("hback",      PVector3(0., 0.25, 0.5),      "shoulders");  //3
-    makeJoint("hshoulders", PVector3(0., 0.5, 0.5),       "hback");      //4
-    makeJoint("head",       PVector3(0., 0.7, 0.5),       "hshoulders"); //5
-    
-    makeJoint("lthigh",     PVector3(-0.15, 0., -0.5),    "hips");       //6
-    makeJoint("lhknee",     PVector3(-0.2, -0.4, -0.45),  "lthigh");     //7
-    makeJoint("lhfoot",     PVector3(-0.2, -0.8, -0.5),   "lhknee");     //8
-    
-    makeJoint("rthigh",     PVector3(0.15, 0., -0.5),     "hips");       //9
-    makeJoint("rhknee",     PVector3(0.2, -0.4, -0.45),   "rthigh");     //10
-    makeJoint("rhfoot",     PVector3(0.2, -0.8, -0.5),    "rhknee");     //11
-    
-    makeJoint("lshoulder",  PVector3(-0.2, 0., 0.5),      "shoulders");  //12
-    makeJoint("lfknee",     PVector3(-0.2, -0.4, 0.5),    "lshoulder");  //13
-    makeJoint("lffoot",     PVector3(-0.2, -0.8, 0.5),    "lfknee");     //14
-    
-    makeJoint("rshoulder",  PVector3(0.2, 0.0, 0.5),      "shoulders");  //15
-    makeJoint("rfknee",     PVector3(0.2, -0.4, 0.5),     "rshoulder");  //16
-    makeJoint("rffoot",     PVector3(0.2, -0.8, 0.5),     "rfknee");     //17
-    
-    makeJoint("hlshoulder", PVector3(-0.2, 0.5, 0.5),     "hshoulders"); //18
-    makeJoint("lelbow",     PVector3(-0.4, 0.25, 0.575),  "hlshoulder"); //19
-    makeJoint("lhand",      PVector3(-0.6, 0.0, 0.65),    "lelbow");     //20
-    
-    makeJoint("hrshoulder", PVector3(0.2, 0.5, 0.5),      "hshoulders"); //21
-    makeJoint("relbow",     PVector3(0.4, 0.25, 0.575),   "hrshoulder"); //22
-    makeJoint("rhand",      PVector3(0.6, 0.0, 0.65),     "relbow");     //23
-
-    makeJoint("tail",       PVector3(0., 0., -0.7),       "hips");       //24
-
-    //symmetry
-    makeSymmetric("lthigh", "rthigh");
-    makeSymmetric("lhknee", "rhknee");
-    makeSymmetric("lhheel", "rhheel");
-    makeSymmetric("lhfoot", "rhfoot");
-    
-    makeSymmetric("lshoulder", "rshoulder");
-    makeSymmetric("lfknee", "rfknee");
-    makeSymmetric("lffoot", "rffoot");
-
-    makeSymmetric("hlshoulder", "hrshoulder");
-    makeSymmetric("lelbow", "relbow");
-    makeSymmetric("lhand", "rhand");    
-    
-    initCompressed();
-
-    setFoot("lhfoot");
-    setFoot("rhfoot");
-    setFoot("lffoot");
-    setFoot("rffoot");
-
-    setFat("hips");
-    setFat("shoulders");
-    setFat("hshoulders");
-    setFat("head");
-}
-
-FileSkeleton::FileSkeleton(const std::string &filename)
-{
-    ifstream strm(filename.c_str());
-  
-    if(!strm.is_open()) {
-        Debugging::out() << "Error opening file " << filename << endl;
-        return;
-    }
-
-    while(!strm.eof()) {
-        vector<string> line = readWords(strm);
-        if(line.size() < 5)
-            continue; //error
-
-        PVector3 p;
-        sscanf(line[1].c_str(), "%lf", &(p[0]));
-        sscanf(line[2].c_str(), "%lf", &(p[1]));
-        sscanf(line[3].c_str(), "%lf", &(p[2]));
-
-        if(line[4] == "-1")
-            line[4] = std::string();
-
-        makeJoint(line[0], p * 2., line[4]);
-    }
-
-    initCompressed();
+	typedef std::vector < std::pair< std::string, std::string> > NamePairs;
+	NamePairs leftNames;
+	NamePairs rightNames;
+	map<string, int>::iterator iter = m_JointNames.begin();
+	for (; iter != m_JointNames.end(); ++iter) {
+		std::string str = iter->first;
+		std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+		std::string::size_type  strIt = str.find("LEFT");
+		if (strIt != std::string::npos)leftNames.push_back(std::make_pair(str, iter->first));
+		strIt = str.find("RIGHT");
+		if (strIt != std::string::npos)rightNames.push_back(std::make_pair(str, iter->first));
+		// mark foot
+		strIt = str.find("FOOT");
+		if(strIt != std::string::npos)this->SetFoot(iter->first);
+		// mark fat
+		strIt = str.find("FAT");
+		if (strIt != std::string::npos)this->SetFat(iter->first);
+	}
 }

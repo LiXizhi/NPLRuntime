@@ -27,17 +27,15 @@ public:
 
     virtual bool canSee(const PVector3 &v1, const PVector3 &v2) const //faster when v2 is farther inside than v1
     {
-        const double maxVal = 0.002;// original 0.002
+        const double maxVal = 0.01;// original 0.002
         double atV2 = m_Tree->locate(v2)->evaluate(v2);
+		double step = 100.0;
         double left = (v2 - v1).length();
-        double leftInc = left / 100.;
-        PVector3 diff = (v2 - v1) / 100.;
+        double leftInc = left / step;
+        PVector3 diff = (v2 - v1) / step;
         PVector3 cur = v1 + diff;
         while(left >= 0.) {
             double curDist = m_Tree->locate(cur)->evaluate(cur);
-			if (curDist < 0.0) {
-				int a = 0;
-			}
             if(curDist > maxVal)
                 return false;
             //if curDist and atV2 are so negative that distance won't reach above maxVal, return true

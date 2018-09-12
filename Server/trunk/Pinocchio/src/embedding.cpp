@@ -45,51 +45,20 @@ public:
 vector<vector<int> > Pinocchio::ComputePossibilities(const PtGraph &graph, const vector<PSphere> &spheres,
                                           const Skeleton &skeleton)
 {
-    int i, j;
-
     vector<vector<int> > out(skeleton.cGraph().verts.size());
-    vector<int> allVerts, limbVerts, fatVerts;
-    for(i = 0; i < (int)graph.verts.size(); ++i) {
-        allVerts.push_back(i);
-        const vector<int> &edg = graph.edges[i];
-        double rad = spheres[i].radius;
-        PVector3 cur = graph.verts[i];
-        for(j = 0; j < (int)edg.size(); ++j) {
-            PVector3 e1 = graph.verts[edg[j]];
-            int k;
-            for(k = 0; k < (int)edg.size(); ++k) {
-                if(rad > 2. * spheres[edg[k]].radius)
-                    continue;
-                PVector3 e2 = graph.verts[edg[k]];
-                if((e2 - cur).normalize() * (cur - e1).normalize() > 0.8)
-                    break;
-            }
-            if(k < (int)edg.size())
-                continue;
-            limbVerts.push_back(i);
-            break;
-        }
-    }
-    vector<double> rads;
-    for(i = 0; i < (int)graph.verts.size(); ++i)
-        rads.push_back(spheres[i].radius);
-    std::sort(rads.begin(), rads.end());
-    double cutoff = (int)rads.size() < 50 ? 0. : rads[rads.size() - 50];
-    for(i = 0; i < (int)graph.verts.size(); ++i)
-        if(spheres[i].radius >= cutoff)
-            fatVerts.push_back(i);
-    Debugging::out() << "Extrem, fat verts " << limbVerts.size() << " " << fatVerts.size() << endl;
-    
-    for(i = 0; i < (int)out.size(); ++i) {
-        bool limb = (skeleton.cGraph().edges[i].size() == 1);
-        bool fat = skeleton.cFat()[i];
-
-        if(fat)
-            out[i] = fatVerts;
-        else if(limb)
-            out[i] = limbVerts;
-        else
-            out[i] = allVerts;
+    for(int i = 0; i < (int)out.size(); ++i) {
+		std::vector<int> candidates;
+		std::vector<double> dists;
+		for (int j = 0; j < graph.verts.size(); ++j) {
+			double len = (skeleton.cGraph().verts[i] - graph.verts[j]).length();
+			if (len < 0.3) {
+				candidates.push_back(j);
+				dists.push_back(len);
+			}
+		}
+		std::sort(candidates.begin(), candidates.end(), [dists](int& p1, int& p2) {return dists[p1] <= dists[p2]; });
+		if (candidates.size() > 60)candidates.resize(60);
+		out[i] = candidates;
     }
 
     return out;

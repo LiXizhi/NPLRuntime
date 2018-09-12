@@ -31,7 +31,7 @@ public:
     Real out(0);
     for(int i = 0; i < num; ++i) {
         PVector<Real, Dim> corner;
-        BitComparator<Dim>::assignCorner(i, v, PVector<Real, Dim>(1.) - v, corner);
+        BitComparator<Dim>::assignCorner(i, v, PVector<Real, Dim>(1.0) - v, corner);
         Real factor = corner.accumulate(ident<Real>(), multiplies<Real>());
         out += (factor * Real(values[i]));
     }

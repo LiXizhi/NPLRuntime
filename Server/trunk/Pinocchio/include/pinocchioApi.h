@@ -35,7 +35,7 @@ namespace Pinocchio
 
 
 	typedef DRootNode<DistData<3>, 3, ArrayIndexer> TreeType; //our distance field octree type
-	static const double defaultTreeTol = 0.003;
+	static const double defaultTreeTol = 0.01;// 0.003
 
 	//constructs a distance field on an octree--user responsible for deleting output
 	TreeType PINOCCHIO_API *ConstructDistanceField(const Mesh &m, double tol = defaultTreeTol);

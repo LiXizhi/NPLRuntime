@@ -1137,21 +1137,24 @@ bool CMoviePlatform::EndCapture()
 		{
 			// use ffmpeg external dll
 			std::string audioMapString;
-			const ParaEngine::CAudioEngine2::AudioFileMap_type& audiomap = ParaEngine::CAudioEngine2::GetInstance()->getAudioMap();
-			ParaEngine::CAudioEngine2::AudioFileMap_type::const_iterator iter = audiomap.begin();
-			for (; iter != audiomap.end(); ++iter)
+			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory& audiomap = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
+			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records& records = audiomap.GetRecords();
+			ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records::const_iterator iter = records.begin();
+			for (; iter != records.end(); ++iter)
 			{
-				if (iter->first.empty())continue;
-				// simply encode audio map to a string
-				char bits[64];
-				memset(bits, 0, 64);
-				audioMapString += iter->second->GetFilename();;
-				audioMapString += ",";
-				itoa(iter->second->m_nStartTime, bits, 10);
-				audioMapString += bits;
-				audioMapString += ",";
+				// simply encode audio record to a string
+				char record[64]; 
+				std::sprintf(record, "%s,%d,%d,%d,%d,",
+					iter->m_WaveFileName.c_str(),
+					iter->m_nStartTime,
+					iter->m_nEndTime,
+					iter->m_nSeekPos,
+					(int)iter->m_bIsLoop
+					);
+				audioMapString += record;
+				
 			}
-			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last 
+			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last ","
 			pMovieCodec->EndCapture(audioMapString);
 		}
 		else

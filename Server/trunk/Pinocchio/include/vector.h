@@ -13,9 +13,11 @@
 #include <functional>
 #include <vector>
 #include <numeric>
+
 #include "hashutils.h"
 #include "mathutils.h"
 
+// using namespace in a header file is not recomended, MUST be fixed ！
 using namespace std;
 
 namespace _VectorPrivate {

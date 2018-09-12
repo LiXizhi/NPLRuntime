@@ -14,6 +14,7 @@
 #include "multilinear.h"
 #include "intersector.h"
 #include "pointprojector.h"
+
 #include <numeric>
 #include <map>
 
@@ -45,61 +46,88 @@ public:
 
     void init() { }
 
+	template<class Eval, template<typename Node, int IDim> class Indexer>
+	void fullSplit1(const Eval &eval, double tol, DRootNode<DistData<Dim>, Dim, Indexer> *rootNode, int level = 0, bool cropOutside = false)
+	{
+		const Rect<double, Dim> &rect = m_Node->getRect();
+		m_Node->initFunc(eval, rect);
+
+		bool nextCropOutside = cropOutside;
+		if (cropOutside && level > 0) {
+			double center = eval(rect.getCenter());
+			double len = rect.getSize().length() * 0.5;
+			if (center > len)
+				return;
+			if (center < -len)
+				nextCropOutside = false;
+		}
+
+		if (level == (32 / Dim)) return;// depth control
+			
+		bool doSplit = false;
+		if (m_Node->getParent() == NULL) doSplit = true;
+			
+		if (!doSplit) {
+			int idx[Dim + 1];
+			for (int i = 0; i < Dim + 1; ++i) idx[i] = 0;		
+			PVector<double, Dim> center = rect.getCenter();
+			while (idx[Dim] == 0) {
+				PVector<double, Dim> cur;
+				bool anyMid = false;
+				for (int i = 0; i < Dim; ++i) {
+					switch (idx[i]) {
+					case 0: cur[i] = rect.getLo()[i]; break;
+					case 1: cur[i] = rect.getHi()[i]; break;
+					case 2: cur[i] = center[i]; anyMid = true; break;
+					}
+				}
+				if (anyMid && fabs(evaluate(cur) - eval(cur)) > tol) {
+					doSplit = true;
+					break;
+				}
+				for (int i = 0; i < Dim + 1; ++i) {
+					if (idx[i] != 2) {
+						idx[i] += 1;
+						for (--i; i >= 0; --i)idx[i] = 0;							
+						break;
+					}
+				}
+			}
+		}
+		if (!doSplit)return;
+			
+		rootNode->split(m_Node);
+		for (int i = 0; i < NodeType::numChildren; ++i) {
+			eval.setRect(Rect<double, Dim>(rect.getCorner(i)) | Rect<double, Dim>(rect.getCenter()));
+			m_Node->getChild(i)->fullSplit(eval, tol, rootNode, level + 1, nextCropOutside);
+		}
+	}
+
     template<class Eval, template<typename Node, int IDim> class Indexer>
     void fullSplit(const Eval &eval, double tol, DRootNode<DistData<Dim>, Dim, Indexer> *rootNode, int level = 0, bool cropOutside = false)
     {
-        int i;
         const Rect<double, Dim> &rect = m_Node->getRect();
         m_Node->initFunc(eval, rect);
-        
+
+		double a = eval(PVector3(0.0, 0.5, 0.5));
+		if (level == (32 / Dim))return;// depth control
+		if (rect.getSize().length() < tol) return;// too small to split
+
         bool nextCropOutside = cropOutside;
-        if(cropOutside && level > 0) {
-            double center = eval(rect.getCenter());
-            double len = rect.getSize().length() * 0.5;
-            if(center > len)
-                return;
-            if(center < -len)
-                nextCropOutside = false;
-        }
-        
-        if(level == (32 / Dim))// why ?
-            return;
+        //if(cropOutside && level > 0) {
+        //    double center = eval(rect.getCenter());
+        //    double len = rect.getSize().length() * 0.5;
+        //    if(center > len) return;  
+        //    if(center < -len) nextCropOutside = false;    
+        //}
+             
         bool doSplit = false;
-        if(m_Node->getParent() == NULL)
-            doSplit = true;
-        if(!doSplit) {
-            int idx[Dim + 1];
-            for(i = 0; i < Dim + 1; ++i)
-                idx[i] = 0;
-            PVector<double, Dim> center = rect.getCenter();
-            while(idx[Dim] == 0) {
-                PVector<double, Dim> cur;
-                bool anyMid = false;
-                for(i = 0; i < Dim; ++i) {
-                    switch(idx[i]) {
-                        case 0: cur[i] = rect.getLo()[i]; break;
-                        case 1: cur[i] = rect.getHi()[i]; break;
-                        case 2: cur[i] = center[i]; anyMid = true; break;
-                    }
-                }
-                if(anyMid && fabs(evaluate(cur) - eval(cur)) > tol) {
-                    doSplit = true;
-                    break;
-                }
-                for(i = 0; i < Dim + 1; ++i) {
-                    if(idx[i] != 2) {
-                        idx[i] += 1;
-                        for(--i; i >= 0; --i)
-                            idx[i] = 0;
-                        break;
-                    }
-                }
-            }
-        }
-        if(!doSplit)
-            return;
+        if(m_Node->getParent() == nullptr /*|| rect.getSize().length() > 0.1*/) doSplit = true;
+		if (!doSplit)doSplit = eval.getProjector().intersected(rect);
+        if(!doSplit) return;
+           
         rootNode->split(m_Node);
-        for(i = 0; i < NodeType::numChildren; ++i) {
+        for(int i = 0; i < NodeType::numChildren; ++i) {
             eval.setRect(Rect<double, Dim>(rect.getCorner(i)) | Rect<double, Dim>(rect.getCenter()));
             m_Node->getChild(i)->fullSplit(eval, tol, rootNode, level + 1, nextCropOutside);
         }
@@ -107,15 +135,12 @@ public:
 
     template<class Real> Real evaluate(const PVector<Real, Dim> &v)
     {
-        if(m_Node->getChild(0) == NULL) {
-            return super::evaluate((v - m_Node->getRect().getLo()).apply(divides<Real>(),
-                                                                       m_Node->getRect().getSize()));
-        }
+		if (m_Node->getChild(0) == NULL) {
+			return super::evaluate((v - m_Node->getRect().getLo()).apply(divides<Real>(), m_Node->getRect().getSize()));
+		}
         PVector<Real, Dim> center = m_Node->getRect().getCenter();
         int idx = 0;
-        for(int i = 0; i < Dim; ++i)
-            if(v[i] > center[i])
-                idx += (1 << i);
+        for(int i = 0; i < Dim; ++i) if (v[i] > center[i])idx += (1 << i);         
         return m_Node->getChild(idx)->evaluate(v);
     }
 
@@ -172,7 +197,7 @@ private:
     class DistObjEval
     {
     public:
-        DistObjEval(const ObjectProjector<3, Tri3Object> &inProj, const Mesh &m) : m_Proj(inProj), m_Intersector(m, PVector3(1, 1, 1))
+        DistObjEval(const ObjectProjector<3, Tri3Object> &inProj, const Mesh &m) : m_Proj(inProj), m_Intersector(m, PVector3(1.0, 0.0, 0.0))
         {
             m_Level = 0;
             m_Rects[0] = Rect3(PVector3(), PVector3(1.));
@@ -184,8 +209,7 @@ private:
             unsigned int cur = ROUND(vec[0] * 1023.) + 1024 * (ROUND(vec[1] * 1023.) + 1024 * ROUND(vec[2] * 1023.));
             unsigned int sz = m_Cache.size();
             double &d = m_Cache[cur];
-            if(sz == m_Cache.size())
-                return d;
+            if(sz == m_Cache.size()) return d;       
             return d = compute(vec);
         }
 
@@ -208,24 +232,31 @@ private:
             m_Rects[m_Level] = r;
         }
 
+		const ObjectProjector<3, Tri3Object>& getProjector() const
+		{
+			return m_Proj;
+		}
+
     private:
         double compute(const PVector3 &vec) const
         {
-            int i, ins = m_Inside[m_Level];
-            if(!ins) {
+            //int ins = m_Inside[m_Level];
+            //if(!ins) {
 				// Count the number of triangles the ray intersection where the x - coordinate( the coordinate thrown out) is greater than the x - coordinate of the point.
 				// An even number of intersections means it is outside the mesh.
 				// An odd number of intersections means it is inside the mesh.
-                ins = 1;
+                int  ins = 1;
                 vector<PVector3> isecs = m_Intersector.intersect(vec);
-                for(i = 0; i < (int)isecs.size(); ++i) {
-                    //if(isecs[i][0] > vec[0])
-                    //    ins = -ins;
-					if ( (isecs[i] - vec) * m_Intersector.getDir() > 0 ) {
-						ins = -ins;
-					}
+                for(int i = 0; i < (int)isecs.size(); ++i) {
+                    //if(isecs[i][0] > vec[0]) ins = -ins;
+   			
+					if ( (isecs[i] - vec) * m_Intersector.getDir() > 0 ) ins = -ins;
                 }
-            }
+            //}
+
+				if (vec[0] < 0.1 && ins < 0.0) {
+					int a = 0;
+				}
             
             return (vec - m_Proj.project(vec)).length() * ins;
         }
