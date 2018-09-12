@@ -234,15 +234,19 @@ namespace ParaEngine
 		class CAudioPlaybackHistory
 		{
 		public:
-			CAudioPlaybackHistory(){}
+			CAudioPlaybackHistory()
+				: m_bEnable(false)
+			{}
 
 			~CAudioPlaybackHistory() {}
 
 			void AddRecord(CAudioSource2* pWave)
 			{
-				Record arecord(pWave->GetFilename(), pWave->m_nStartTime,
-					pWave->m_nStopTime, pWave->m_nSeekPos, pWave->IsLooping());
-				m_HistoryRecords.emplace_back(arecord);
+				if (m_bEnable) {
+					Record arecord(pWave->GetFilename(), pWave->m_nStartTime,
+						pWave->m_nStopTime, pWave->m_nSeekPos, pWave->IsLooping());
+					m_HistoryRecords.emplace_back(arecord);
+				}	
 			}
 
 			struct Record
@@ -280,7 +284,7 @@ namespace ParaEngine
 				return m_HistoryRecords;
 			}
 			/** find the last element that matches */
-			bool SearchLastRecord( const std::string& waveFile)
+			bool FindLastRecord( const std::string& waveFile)
 			{
 				Records::iterator result = m_HistoryRecords.end();
 				for (Records::iterator iter = m_HistoryRecords.begin(); iter != m_HistoryRecords.end(); ++iter) {
@@ -297,9 +301,19 @@ namespace ParaEngine
 				}
 				if(result != m_HistoryRecords.end()) m_HistoryRecords.erase(result);
 			}
+
+			bool Enable() { return m_bEnable; }
+
+			void SetEnable(bool val) { m_bEnable = true; }
+
+			void Clear()
+			{
+				m_HistoryRecords.clear();
+			}
 			
 		private:
 			Records m_HistoryRecords;
+			bool m_bEnable;
 		};
 
 		CAudioPlaybackHistory& GetPlaybackHistory();

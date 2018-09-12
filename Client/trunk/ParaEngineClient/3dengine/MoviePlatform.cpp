@@ -907,6 +907,7 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 {
 	if(IsInCaptureSession())
 		return true;
+
 	IMovieCodec* pMovieCodec = GetMovieCodec();
 
 	if (pMovieCodec)
@@ -961,6 +962,8 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 
 	if (pMovieCodec)
 	{
+
+
 		// use ffmpeg external dll
 		int captureTexWidth = GetScreenWidth();
 		int captureTexHeight = GetScreenHeight();
@@ -971,6 +974,11 @@ bool CMoviePlatform::BeginCapture(const string& sFileName)
 			InvalidateDeviceObjects();
 			return false;
 		}
+
+		ParaEngine::CAudioEngine2::CAudioPlaybackHistory& playbackHistory = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
+		playbackHistory.Clear();
+		playbackHistory.SetEnable(true);
+		
 #endif
 	}
 	else
@@ -1137,8 +1145,8 @@ bool CMoviePlatform::EndCapture()
 		{
 			// use ffmpeg external dll
 			std::string audioMapString;
-			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory& audiomap = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
-			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records& records = audiomap.GetRecords();
+			ParaEngine::CAudioEngine2::CAudioPlaybackHistory& playbackHistory = ParaEngine::CAudioEngine2::GetInstance()->GetPlaybackHistory();
+			const ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records& records = playbackHistory.GetRecords();
 			ParaEngine::CAudioEngine2::CAudioPlaybackHistory::Records::const_iterator iter = records.begin();
 			for (; iter != records.end(); ++iter)
 			{
@@ -1156,6 +1164,8 @@ bool CMoviePlatform::EndCapture()
 			}
 			if (audioMapString.size() > 0)audioMapString.resize(audioMapString.size()-1); // remove the last ","
 			pMovieCodec->EndCapture(audioMapString);
+			playbackHistory.Clear();
+			playbackHistory.SetEnable(false);
 		}
 		else
 		{
