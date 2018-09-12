@@ -304,7 +304,7 @@ namespace ParaEngine
 
 			bool Enable() { return m_bEnable; }
 
-			bool SetEnable(bool val) { m_bEnable = true; }
+			void SetEnable(bool val) { m_bEnable = true; }
 
 			void Clear()
 			{
