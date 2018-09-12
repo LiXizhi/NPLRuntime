@@ -20,14 +20,14 @@ void getBasis(const PVector<Real, 3> &n, PVector<Real, 3> &v1, PVector<Real, 3> 
         return;
     }
     if(fabs(n[0]) <= fabs(n[1]) && fabs(n[0]) <= fabs(n[2]))
-        v2 = PVector<Real, 3>(1., 0., 0.);
+        v1 = PVector<Real, 3>(1., 0., 0.);
     else if(fabs(n[1]) <= fabs(n[2]))
-        v2 = PVector<Real, 3>(0., 1., 0.);
+		v1 = PVector<Real, 3>(0., 1., 0.);
     else
-        v2 = PVector<Real, 3>(0., 0., 1.);
+		v1 = PVector<Real, 3>(0., 0., 1.);
     
-    v1 = (n % v2).normalize(); //first basis vector
-    v2 = (n % v1).normalize(); //second basis vector
+    v2 = (n % v1).normalize(); //first basis vector
+    v1 = (v2 % n).normalize(); //second basis vector
 }
 
 template<class Real, int Dim>
@@ -69,14 +69,12 @@ PVector<Real, Dim> projToSeg(const PVector<Real, Dim> &v, const PVector<Real, Di
 
   Vec dir = p2 - p1;
 
-  if((p2 - v) * dir < Real())
-    return p2;
-
+  if((p2 - v) * dir < Real())  return p2;
+   
   Real dot = (v - p1) * dir;
 
-  if(dot <= Real())
-    return p1;
-
+  if(dot <= Real()) return p1;
+   
   return p1 + (dot / dir.lengthsq()) * dir;
 }
 
@@ -115,21 +113,19 @@ PVector<Real, 3> projToTri(const PVector<Real, 3> &from, const PVector<Real, 3> 
         bool s3 = (p3p1 % (from - p3)) * normal <= Real();
         
         if(s2 && s3) {
-            if(normal.lengthsq() < tolsq)
-                return p1; //incorrect, but whatever...
-        
+            if(normal.lengthsq() < tolsq)  return p1; //incorrect, but whatever...never happens
             double dot = (from - p3) * normal;
             return from - (dot / normal.lengthsq()) * normal;
         }
-        if(!s3 && (s2 || (from - p3) * p3p1 >= Real()))
-            return projToSeg(from, p3, p1);
+        if(!s3 && (s2 || (from - p3) * p3p1 >= Real())) return projToSeg(from, p3, p1);
+           
         return projToSeg(from, p2, p3);
     }
     //outside s1
-    if((from - p1) * p2p1 < Real())
-        return projToSeg(from, p3, p1);
-    if((from - p2) * p2p1 > Real())
-        return projToSeg(from, p2, p3);
+    if((from - p1) * p2p1 < Real()) return projToSeg(from, p3, p1);
+      
+    if((from - p2) * p2p1 > Real()) return projToSeg(from, p2, p3);
+       
     return projToLine(from, p1, p2p1);
 }
 

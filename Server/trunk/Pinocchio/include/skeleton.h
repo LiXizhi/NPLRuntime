@@ -32,22 +32,30 @@ public:
     const vector<double> &fcFraction() const { return m_fcFractionV; }
     const vector<double> &cLength() const { return m_cLengthV; }
 
-    int getJointForName(const std::string &name) const { if(jointNames.count(name)) return jointNames.find(name)->second; return -1; }
+    int GetJointForName(const std::string &name) const { if(m_JointNames.count(name)) return m_JointNames.find(name)->second; return -1; }
     
-    void scale(double factor);
+    void Scale(double factor);
     
-    void initCompressed();
+    void InitCompressed();
+
+	/** By well connected we mean that the bone graph has one and only one root and each node can have one and only one parent and can reach the root.*/
+	bool IsWellConnected();
+
+	/** Mark labels such as "sysmetrc","foot", "fat" for a better embedding. */
+	void MarkLabels();
     
-    //help for creation
-    map<string, int> jointNames;
-	map<int, string> indexNameMap;
-    void makeJoint(const string &name, const PVector3 &pos, const string &previous = string());
-    void makeSymmetric(const string &name1, const string &name2);
-    void setFoot(const string &name);
-    void setFat(const string &name);
+	//help for creation
+	void InsertJointNameMap(const std::string& name, int index);
+    void MakeJoint(const string &name, const PVector3 &pos, const string &previous = string());
+    void MakeSymmetric();
+    void SetFoot(const string &name);
+    void SetFat(const string &name);
+
+	map<string, int> m_JointNames;
+	map<int, string> m_IndexNameMap;
     
 private:
-     //full
+    //full
     PtGraph m_fGraphV;
     vector<int> m_fPrevV; //previous vertices
     vector<int> m_fSymV; //symmetry

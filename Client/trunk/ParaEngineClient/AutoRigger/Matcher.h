@@ -63,6 +63,8 @@ namespace ParaEngine
 		double OptimizePairwise(bool decrease_mu_, int numIter_);
 		void SearchFLANNTree(flann::Index<flann::L2<float>>* index, Eigen::VectorXf& input,
 			std::vector<int>& indices, std::vector<float>& dists, int nn);
+		int EvaluateSimilarity();
+		void ComputeTargetToSourceDistances();
 	private:
 		// containers
 		std::vector<Points> m_PointCloud;
@@ -77,5 +79,11 @@ namespace ParaEngine
 
 		unsigned int m_CurrentModel;
 
+		// similarity evaluator(s)
+		int m_FirstMatch;
+		int m_CrossMatch;
+		int m_TupleMatch;
+		float m_ijDist;
+		float m_jiDist;
 	};
 }
