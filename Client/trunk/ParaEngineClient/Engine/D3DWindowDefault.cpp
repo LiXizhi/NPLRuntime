@@ -289,6 +289,22 @@ void CD3DWindowDefault::handle_mainloop_timer(const boost::system::error_code& e
 	{
 		ParaEngine::Lock lock_(m_win_thread_mutex);
 
+		//duely fetch and dispatch messages
+		//NOTICE: qq game plugin depends on this behavior,
+		//        it won't be able to receive messages from qq game lobby otherwise
+		MSG  msg;
+		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			//qqgame message id: #define WM_COMMUNICATOR_MSG  (WM_USER + 100)
+			// if (msg.message == WM_USER + 100)
+			// {
+			//	int aabb = 0;
+			//	aabb++;
+			// }
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
+
 		PEAppState dwState = m_pApp->GetAppState();
 		if (dwState == PEAppState_Ready)
 		{
