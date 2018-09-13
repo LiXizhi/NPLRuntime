@@ -236,6 +236,10 @@ namespace ParaEngine
 		*/
 		virtual void BringWindowToTop() = 0;
 
+		/** Show or hide current window. This function only works if IsFullScreenMode() is false.
+		 */
+		virtual void ShowWindow(bool bShow) = 0;
+
 		/** whether the user can close the window (sending WM_CLOSE message). Default to true. 
 		* When set to false, the scripting interface will receive WM_CLOSE message via system event. And can use ParaEngine.Exit() to quit the application after user confirmation, etc. 
 		*/
