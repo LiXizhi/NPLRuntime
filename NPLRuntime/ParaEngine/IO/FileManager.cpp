@@ -46,7 +46,6 @@ CFileManager * CFileManager::GetInstance()
 bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRootDir)
 {
 	{
-		const char* cpath = path.c_str();
 		Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 		/// we will not reopen it.
 		std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
@@ -62,22 +61,29 @@ bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRo
 	string sArchiveName = path;
 	int nLen = (int)sArchiveName.size();
 	bool bRes = true;
-	if(nLen>4)
+	if (nLen > 4)
 	{
-		string sFileExt = sArchiveName.substr(nLen-3,3);
+		string sFileExt = sArchiveName.substr(nLen - 3, 3);
 		CArchive* pArchive = NULL;
-		if(sFileExt == "zip" || sFileExt == "pkg")
+		if (sFileExt == "zip" || sFileExt == "pkg")
 			pArchive = new CZipArchive(); // TODO
-		if(pArchive != NULL)
+		if (pArchive != NULL)
 		{
 			bRes = pArchive->Open(sArchiveName, ++m_priority);
-			if(! sRootDir.empty())
-				pArchive->SetRootDirectory(sRootDir);
+			if (bRes)
+			{
+				if (!sRootDir.empty())
+					pArchive->SetRootDirectory(sRootDir);
 
-			Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
-			m_archivers.push_back(pArchive);
+				Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+				m_archivers.push_back(pArchive);
+			}
+			else
+			{
+				SAFE_DELETE(pArchive);
+			}
 		}
-		else 
+		else
 			bRes = false;
 	}
 	return bRes;
@@ -93,9 +99,9 @@ void CFileManager::CloseArchive(const std::string&  path)
 	Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
-	for( itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 	{
-		if((*itCurCP)->GetArchiveName().compare(path) == 0)
+		if ((*itCurCP)->GetArchiveName().compare(path) == 0)
 		{
 			(*itCurCP)->Close();
 			delete (*itCurCP);
@@ -120,7 +126,7 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 
 	while (filename[i])
 	{
-		tempStr[i] = filename[i] == '\\' ?  '/' : filename[i];
+		tempStr[i] = filename[i] == '\\' ? '/' : filename[i];
 		i++;
 	};
 	tempStr[i] = 0;
@@ -130,7 +136,7 @@ bool CFileManager::OpenFile(const char* filename, FileHandle& handle)
 
 	Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 	std::list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
-	for( itCurCP = m_archivers.begin(); (!bOpened) && itCurCP != itEndCP; ++ itCurCP)
+	for (itCurCP = m_archivers.begin(); (!bOpened) && itCurCP != itEndCP; ++itCurCP)
 	{
 		CArchive* pArchive = (*itCurCP);
 		//PERF_BEGIN("ZIP_Search");
@@ -152,28 +158,28 @@ bool CFileManager::DoesFileExist(const char* filename)
 
 DWORD CFileManager::GetFileSize(FileHandle& handle)
 {
-	if(handle.m_pArchive)
+	if (handle.m_pArchive)
 		return handle.m_pArchive->GetFileSize(handle);
 	return 0;
 }
 
-bool CFileManager::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead)
+bool CFileManager::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead)
 {
-	if(handle.m_pArchive)
+	if (handle.m_pArchive)
 		return handle.m_pArchive->ReadFile(handle, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead);
 	return false;
 }
 
-bool CFileManager::ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
+bool CFileManager::ReadFileRaw(FileHandle& handle, LPVOID* lppBuffer, LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
 {
-	if(handle.m_pArchive)
+	if (handle.m_pArchive)
 		return handle.m_pArchive->ReadFileRaw(handle, lppBuffer, pnCompressedSize, pnUncompressedSize);
 	return false;
 }
 
 bool CFileManager::CloseFile(FileHandle& hFile)
 {
-	if(hFile.m_pArchive)
+	if (hFile.m_pArchive)
 		return hFile.m_pArchive->CloseFile(hFile);
 	return false;
 }
@@ -227,7 +233,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 	{
 		// search in the given zip file
 		{
-			Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock); 
+			Scoped_ReadLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
 			list<CArchive*>::iterator itCurCP, itEndCP = m_archivers.end();
 			for (itCurCP = m_archivers.begin(); itCurCP != itEndCP; ++itCurCP)
 			{
@@ -238,7 +244,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 				}
 			}
 		}
-		
+
 		if (CParaFile::DoesFileExist(sZipArchive.c_str()) && CParaFile::GetFileExtension(sZipArchive.c_str()) == "zip")
 		{
 			// if the zip file is not loaded before, we will just load it and then unload after the search.
