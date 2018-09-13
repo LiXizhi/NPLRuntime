@@ -127,6 +127,7 @@ void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=N
 		{
 			if (strcmp(port, "0") != 0)
 			{
+				m_strPort = port;
 				OUTPUT_LOG("NPL server %s is listening on %s:%s\n", NPL_SERVER_VERSION, m_strServer.c_str(), m_strPort.c_str());
 				boost::asio::ip::tcp::resolver::query query(m_strServer, m_strPort);
 				m_resolver.async_resolve(query,
