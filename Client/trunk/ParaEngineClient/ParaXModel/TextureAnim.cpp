@@ -43,3 +43,16 @@ void TextureAnim::setup()
 #endif
 }
 
+TextureAnim& TextureAnim::operator=(const TextureAnim& other)
+{
+	trans = other.trans;
+	rot = other.rot;
+	scale = other.scale;
+
+	tval = other.tval;
+	rval = other.rval;
+	sval = other.sval;
+
+	return *this;
+}
+

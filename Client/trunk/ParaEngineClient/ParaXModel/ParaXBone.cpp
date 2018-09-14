@@ -1236,3 +1236,40 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	return S_OK;
 }
+
+Bone& ParaEngine::Bone::operator=(const Bone& other)
+{
+	m_sIdentifer = other.m_sIdentifer;
+	m_sRotName = other.m_sRotName;
+	m_sTransName = other.m_sTransName;
+	m_sScaleName = other.m_sScaleName;
+
+	trans = other.trans;
+	rot = other.rot;
+	scale = other.scale;
+
+	pivot = other.pivot;
+	matOffset = other.matOffset;
+	matTransform = other.matTransform;
+
+	parent = other.parent;
+	nBoneID = other.nBoneID;
+	nIndex = other.nIndex;
+
+	flags = other.flags;
+
+	mat = other.mat;
+
+	mrot = other.mrot;
+
+	m_finalRot = other.m_finalRot;
+
+	m_finalTrans = other.m_finalTrans;
+
+	m_finalScaling = other.m_finalScaling;
+
+	calc = other.calc;
+	bUsePivot = other.bUsePivot;
+
+	return *this;
+}
