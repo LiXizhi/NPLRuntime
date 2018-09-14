@@ -11,6 +11,8 @@ namespace ParaEngine
 		void calc(int anim, int time);
 		void init(CParaFile &f, ModelTexAnimDef &mta, int *global);
 		void setup();
+
+		TextureAnim& operator=(const TextureAnim& other);
 	};
 }
 

@@ -26,6 +26,57 @@ struct MMData
 };
 typedef std::vector<MMData> FieldData;
 
+struct Cube
+{
+	int verts[32];
+	Vector3 center;
+	PVector3 center2;
+	uint8 bones[4];
+	DWORD color;// debug use
+	Color cc;// debug use
+	float neighborRange;
+	bool rigged;
+
+	bool IsNeighborOf(const Cube& other)
+	{
+		return (this->center - other.center).length() < neighborRange;
+	}
+
+	bool IsSameColor(const Cube& other)
+	{
+		LinearColor c1(color);
+		LinearColor c2(other.color);
+
+		if (c1 == LinearColor::Black && c2 != LinearColor::Black || c1 != LinearColor::Black && c2 == LinearColor::Black) return false;
+
+		std::vector<float> ratio(3, 0.0);
+		if (c1.r > c2.r || c1.g > c2.g || c1.b > c2.b) {
+			ratio[0] = std::abs((c2.r != 0.0) ? c1.r / c2.r : 0.0);
+			ratio[1] = std::abs((c2.g != 0.0) ? c1.g / c2.g : 0.0);
+			ratio[2] = std::abs((c2.b != 0.0) ? c1.b / c2.b : 0.0);
+		}
+		else {
+			ratio[0] = std::abs((c1.r != 0.0) ? c2.r / c1.r : 0.0);
+			ratio[1] = std::abs((c1.g != 0.0) ? c2.g / c1.g : 0.0);
+			ratio[2] = std::abs((c1.b != 0.0) ? c2.b / c1.b : 0.0);
+		}
+		std::sort(ratio.begin(), ratio.end());
+
+		float verySmall = 0.000001;
+
+		if (ratio[0] > 0.0) {
+			return (ratio[1] - ratio[0] < verySmall && ratio[2] - ratio[1] < verySmall) ? true : false;
+		}
+		else if (ratio[1] > 0.0) {
+			return (ratio[2] - ratio[1] < verySmall) ? true : false;
+		}
+		else {// what if the color has only one component above zero? is still the same color? hope for the best.
+			return true;
+		}
+	}
+};
+typedef std::vector<Cube> CubeVector;
+
 void ExtractPoints(TreeType::Node* node, FieldData& fieldData)
 {
 	if (node == nullptr) return;
@@ -533,6 +584,63 @@ public:
 		}
 	}
 
+	static void RefineEmbedding2(CParaXModel* targetModel, Mesh* newMesh, vector<PVector3>& embedding, VisTester<TreeType>* tester)
+	{
+		// transform vertices into distance field space 
+		std::vector<PVector3> vertices;
+		int numVerts = targetModel->m_objNum.nVertices;
+		for (int i = 0; i < numVerts; i++) {
+			Vector3& v = targetModel->m_origVertices[i].pos;
+			PVector3 p(v.x, v.y, v.z);
+			p = newMesh->m_ToAdd + p * newMesh->m_Scale;
+			vertices.push_back(p);
+		}
+
+		double edgeLen = 1.05 * (vertices[0] - vertices[1]).length();
+
+		CubeVector cubes;
+		int numVertPerCube = 24;
+		int numIndicesPerCube = 36;
+		int numIndices = targetModel->m_objNum.nIndices;
+		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
+			std::set<int> filter;
+			for (int j = 0; j < numIndicesPerCube; ++j) {
+				filter.insert((int)(targetModel->m_indices[i + j]));
+			}
+			if (filter.size() != numVertPerCube) {
+				OUTPUT_LOG("Wrong cube vertex number.\n");
+			}
+			else {
+				Cube cube;
+				Rect3 bb; 
+				std::set<int>::iterator iter = filter.begin();
+				for (int k = 0; k < numVertPerCube; ++k, ++iter) {
+					cube.verts[k] = (*iter);
+					bb |= (vertices[(*iter)]);
+				}
+				cube.center2 = bb.getCenter();
+				cube.rigged = false;
+				cube.neighborRange = edgeLen;
+				cubes.push_back(cube);
+			}
+		}
+
+		// center the embeddings in a cube
+		double cubeEdgeLength = (vertices[1] - vertices[0]).length();
+		for (int i = 0; i < embedding.size(); ++i) {
+			int k = -1;
+			double minDist = std::numeric_limits<double>::max();
+			for (int j = 0; j < cubes.size(); ++j) {
+				double dis = (cubes[j].center2 - embedding[i]).length();
+				if (minDist > dis) {
+					minDist = dis;
+					k = j;
+				}
+			}
+			embedding[i] = cubes[k].center2;
+		}	
+	}
+
 	static void NormalizeVertices(vector<PVector3>& verts)
 	{
 		Rect3 boundingBox = Rect3(verts.begin(), verts.end());
@@ -797,8 +905,12 @@ void CAutoRigger::AutoRigThreadFunc()
 		
 		TreeType* distanceField = ConstructDistanceField(newMesh);
 
-		// output distant field 
-		RigHelper::OutputDistantField(distanceField);
+#ifdef OUTPUT_DEBUG_FILE
+		{
+			// output distant field 
+			RigHelper::OutputDistantField(distanceField);
+		}
+#endif // OUTPUT_DEBUG_FILE
 
 		std::vector<PSphere> medialSurface = SampleMedialSurface(distanceField);
 		std::vector<PSphere> spheres = PackSpheres(medialSurface);
@@ -822,24 +934,318 @@ void CAutoRigger::AutoRigThreadFunc()
 		rigger.embedding = SplitPaths(embeddingIndices, graph, *given);
 
 		VisTester<TreeType>* tester = new VisTester<TreeType>(distanceField);
-		RigHelper::RefineEmbedding(m_pTargetModel->GetModel(), targetMesh, rigger.embedding, tester);
-
-		CParaXModel* skeletonModel = bestMatch->second->GetModel();
 		
+		CParaXModel* skeletonModel = bestMatch->second->GetModel();
+		CParaXModel* targetModel = m_pTargetModel->GetModel();
+		RigHelper::RefineEmbedding2(targetModel, targetMesh, rigger.embedding, tester);
+		
+#pragma region RIGGERING
+		// header settings
+		targetModel->m_header.type = skeletonModel->m_header.type;
+		targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
+		targetModel->animated = targetModel->m_header.IsAnimated > 0;
+		targetModel->animGeometry = (targetModel->m_header.IsAnimated&(1 << 0)) > 0;
+		targetModel->animTextures = (targetModel->m_header.IsAnimated&(1 << 1)) > 0;
+		targetModel->animBones = (targetModel->m_header.IsAnimated&(1 << 2)) > 0;
+		//to support arg channel only texture animation  -clayman 2011.8.5
+		targetModel->animTexRGB = (targetModel->m_header.IsAnimated&(1 << 4)) > 0;
+		if (targetModel->IsBmaxModel())
+			targetModel->m_RenderMethod = CParaXModel::BMAX_MODEL;
+		else if (targetModel->animated)
+			targetModel->m_RenderMethod = CParaXModel::SOFT_ANIM;
+		else
+			targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
+
+		// transform vertices into distance field space 
+		int numVerts = targetModel->m_objNum.nVertices;
+		Vector3 toAdd(newMesh.m_ToAdd[0], newMesh.m_ToAdd[1], newMesh.m_ToAdd[2]);
+		for (int i = 0; i < numVerts; ++i) {
+			//m_Vertices[i].pos = ctoAdd + m_Vertices[i].pos * cscale;
+			Vector3& pos = targetModel->m_origVertices[i].pos;
+			pos = toAdd + pos * newMesh.m_Scale;
+		}
+
+		// get cubes
+		float edgeLen = 1.05 * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
+		CubeVector cubes;
+		int numVertPerCube = 24;
+		int numIndicesPerCube = 36;
+		int numIndices = targetModel->m_objNum.nIndices;
+		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
+			std::set<int> filter;
+			for (int j = 0; j < numIndicesPerCube; ++j) {
+				filter.insert((int)(targetModel->m_indices[i + j]));
+			}
+			if (filter.size() != numVertPerCube) {
+				OUTPUT_LOG("Wrong cube vertex number.\n");
+			}
+			else {
+				Cube cube;
+				CShapeBox bb;
+				std::set<int>::iterator iter = filter.begin();
+				for (int k = 0; k < numVertPerCube; ++k, ++iter) {
+					cube.verts[k] = (*iter);
+					bb.Extend(targetModel->m_origVertices[(*iter)].pos);
+				}
+				cube.color = targetModel->m_origVertices[*(filter.begin())].color0;
+				cube.cc = Color(cube.color);
+				cube.center = bb.GetCenter();
+				cube.rigged = false;
+				cube.neighborRange = edgeLen;
+				cubes.push_back(cube);
+			}
+		}
+
+		// take bones	
+		targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
+		Bone* bones = new Bone[skeletonModel->m_objNum.nBones];
+		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+			bones[i] = skeletonModel->bones[i];
+		}
 		// recover the bone pivots position from transformed coordinates
 		std::map<string, int> boneNameIndexMap;
 		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
 			boneNameIndexMap[skeletonModel->bones[i].GetName()] = i;
 		}
-
 		for (int i = 0; i < rigger.embedding.size(); ++i) {
 			int j = boneNameIndexMap[given->m_IndexNameMap[i]];
-			skeletonModel->bones[j].pivot.x = rigger.embedding[i][0];
-			skeletonModel->bones[j].pivot.y = rigger.embedding[i][1];
-			skeletonModel->bones[j].pivot.z = rigger.embedding[i][2];
+			bones[j].pivot.x = rigger.embedding[i][0];
+			bones[j].pivot.y = rigger.embedding[i][1];
+			bones[j].pivot.z = rigger.embedding[i][2];
+		}
+		// line the feet and knees
+		std::vector<int> feet;
+		for (int i = 0; i < given->fGraph().verts.size(); ++i) {
+			if (given->cFeet()[i]) feet.push_back(i);
+		}
+		for (int i = 0; i < feet.size(); ++i) {
+			int pre = given->fPrev()[feet[i]];
+			int foot = boneNameIndexMap[given->m_IndexNameMap[feet[i]]];
+			int knee = boneNameIndexMap[given->m_IndexNameMap[pre]];
+			Vector2 footXZ(bones[foot].pivot.x, bones[foot].pivot.z);
+			Vector2 kneeXZ(bones[knee].pivot.x, bones[knee].pivot.z);
+			if ((footXZ - kneeXZ).length() > 0.5 * edgeLen) { // need to line the foot and knee
+				std::vector<int> cubesAboveFoot;
+				float threshold = 0.2 * edgeLen;
+				for (int j = 0; j < cubes.size(); ++j) {
+					Vector2 XZ(cubes[j].center.x, cubes[j].center.z);
+					if ((XZ - footXZ).length() < threshold && fabs(cubes[j].center.y - bones[foot].pivot.y) > threshold) {
+						cubesAboveFoot.push_back(j);
+					}
+				}
+				int k = -1;
+				double maxDist = std::numeric_limits<double>::min();
+				for (int j = 0; j < cubesAboveFoot.size(); ++j) {
+					int idx = cubesAboveFoot[j];
+					PVector3 pvFoot(bones[foot].pivot.x, bones[foot].pivot.y, bones[foot].pivot.z);
+					PVector3 pvKnee(cubes[idx].center.x, cubes[idx].center.y, cubes[idx].center.z);
+					if (!tester->canSee(pvFoot, pvKnee)) continue;
+					double dist = (pvFoot - pvKnee).length();
+					if (maxDist < dist) {
+						maxDist = dist;
+						k = idx;
+					}
+				}
+				if (k > 0) {
+					bones[knee].pivot = cubes[k].center;
+				}
+			}
+		}
+		targetModel->bones = bones;
+
+		// take animations
+		targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
+		ModelAnimation* anims = new ModelAnimation[skeletonModel->m_objNum.nAnimations];
+		for (int i = 0; i < skeletonModel->m_objNum.nAnimations; ++i) {
+			anims[i] = skeletonModel->anims[i];
+		}
+		targetModel->anims = anims;
+
+		// take texture anims
+		targetModel->m_objNum.nTexAnims = skeletonModel->m_objNum.nTexAnims;
+		TextureAnim* texanims = new TextureAnim[skeletonModel->m_objNum.nTexAnims];
+		for (int i = 0; i < skeletonModel->m_objNum.nTexAnims; ++i) {
+			texanims[i] = skeletonModel->texanims[i];
+		}
+		targetModel->texanims = texanims;
+
+		//targetModel->specialTextures = skeletonModel->specialTextures;
+
+		targetModel->m_CurrentAnim.Reset();
+		targetModel->m_NextAnim.MakeInvalid();
+		targetModel->m_BlendingAnim.Reset();
+		targetModel->blendingFactor = 0;
+		targetModel->fBlendingTime = 0.25f;	// this is the default value.
+
+		// first round : light the cube that contains a bone piviot
+		for (int i = 0; i < cubes.size(); ++i) {
+			int nearest = -1;
+			float minDis = std::numeric_limits<float>::max();
+			for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
+				Vector3 p = targetModel->bones[k].pivot;
+				Vector3 v = cubes[i].center;
+				float dis = p.distance(v);
+				v = p + (v - p)*0.95;
+				bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
+
+				if (canSee && dis < minDis) {
+					minDis = dis;
+					nearest = k;
+				}
+			}
+			if (nearest >= 0 && minDis < 0.2*edgeLen) {
+				cubes[i].rigged = true;
+				cubes[i].bones[0] = (uint8)nearest;
+				for (int j = 0; j < numVertPerCube; ++j) {
+					targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
+					targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
+				}
+			}
+			else {
+				// if couldn't find the direct bone just continue and wait for the next round to fixed it
+			}
+		}// end for
+
+
+		 // second round
+		typedef std::vector<std::vector<int>> ColorVector;
+		ColorVector colors;
+		for (int i = 0; i < cubes.size(); ++i) {
+			bool clustered = false;
+			for (auto& group : colors) {
+				if (cubes[group[0]].IsSameColor(cubes[i])) {
+					group.push_back(i);
+					clustered = true;
+					break;
+				}
+			}
+			if (!clustered) {
+				colors.resize(colors.size() + 1);
+				colors.back().push_back(i);
+			}
 		}
 
-		this->FullRigging(m_pTargetModel->GetModel(), skeletonModel, newMesh, tester);
+		std::vector<std::vector<int>> clusters;
+		for (ColorVector::iterator iter = colors.begin(); iter != colors.end(); ++iter) {
+			std::vector<int>& blocks = *iter;
+			while (!blocks.empty()) {
+				std::vector<int> cluster;
+				std::queue<int> todo;
+				std::vector<bool> taken(blocks.size(), false);
+				cluster.push_back(blocks[0]);
+				todo.push(blocks[0]);
+				taken[0] = true;
+				while (!todo.empty()) {
+					int cur = todo.front();
+					todo.pop();
+					// find one neighbor
+					for (int i = 0; i < blocks.size(); ++i) {
+						if (!taken[i] && cubes[blocks[i]].IsNeighborOf(cubes[cur])) {
+							cluster.push_back(blocks[i]);
+							todo.push(blocks[i]);
+							taken[i] = true;
+						}
+					}
+				}
+				clusters.emplace_back(cluster);
+				std::vector<int> remains;
+				for (int i = 0; i < blocks.size(); ++i) {
+					if (!taken[i])remains.push_back(blocks[i]);
+				}
+				blocks.swap(remains);
+			}// outer while
+		}
+
+		std::list<int> leftClusters;
+		std::vector<int> riggedClusters;
+		for (int c = 0; c < clusters.size(); ++c) {
+			std::vector<int> boneCubes;
+			for (auto index : clusters[c]) {
+				if (cubes[index].rigged) {
+					boneCubes.push_back(index);
+				}
+			}
+
+			if (boneCubes.size() > 0) {
+				for (int i = 0; i < clusters[c].size(); ++i) {
+					int idx = clusters[c][i];
+					// find nearest bone cube
+					int nearest = -1;
+					float minDist = std::numeric_limits<float>::max();
+					for (int j = 0; j < boneCubes.size(); ++j) {
+						float dist = (cubes[boneCubes[j]].center - cubes[idx].center).length();
+						if (minDist > dist) {
+							minDist = dist;
+							nearest = j;
+						}
+					}
+					int nidx = boneCubes[nearest];
+					for (int j = 0; j < numVertPerCube; ++j) {
+						targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[nidx].bones[0];
+						targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
+					}
+					cubes[idx].rigged = true;
+					cubes[idx].bones[0] = cubes[nidx].bones[0];
+				}
+				riggedClusters.push_back(c);
+			}
+			else {
+				leftClusters.push_back(c);
+			}
+		}
+
+		while (!leftClusters.empty()) {
+			std::vector<int>& left = clusters[leftClusters.back()];
+			int neighbor = -1;
+			for (int i = 0; i < riggedClusters.size(); ++i) {
+				std::vector<int>& riggedCluster = clusters[riggedClusters[i]];
+				for (int j = 0; j < left.size(); ++j) {
+					for (int k = 0; k < riggedCluster.size(); ++k) {
+						if (cubes[left[j]].IsNeighborOf(cubes[riggedCluster[k]])) {
+							neighbor = riggedClusters[i];
+							break;
+						}
+					}
+					if (neighbor >= 0)break;
+				}
+				if (neighbor >= 0)break;
+			}
+			if (neighbor >= 0) {
+				int dst = clusters[neighbor].front();
+				for (int i = 0; i < left.size(); ++i) {
+					int idx = left[i];
+					for (int j = 0; j < numVertPerCube; ++j) {
+						targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[dst].bones[0];
+						targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
+					}
+					cubes[idx].rigged = true;
+					cubes[idx].bones[0] = cubes[dst].bones[0];
+				}
+				riggedClusters.push_back(leftClusters.back());
+			}
+			else {
+				leftClusters.push_front(leftClusters.back());
+			}
+			leftClusters.pop_back();
+		}
+
+#ifdef OUTPUT_DEBUG_FILE
+		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
+		RigHelper::OutputSkinningRelation(targetModel, fileName);
+#endif
+
+		// recover coordinates
+		Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
+		for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+			ModelVertex& modelVertex = targetModel->m_origVertices[i];
+			modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
+		}
+		for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
+			targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
+		}
+
+		targetModel->SaveToDisk(m_OutputFilePath.c_str());
+#pragma endregion
 
 		this->On_AddRiggedFile();
 
@@ -869,487 +1275,4 @@ void CAutoRigger::AutoRigThreadFunc()
 	}
 
 	this->delref();
-}
-
-void CAutoRigger::RiggingWithoutColorAssignement(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* vistester)
-{
-	VisTester<TreeType>* tester = static_cast<VisTester<TreeType>*>(vistester);
-	// header settings
-	targetModel->m_header.type = skeletonModel->m_header.type;
-	targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
-	targetModel->animated = targetModel->m_header.IsAnimated > 0;
-	targetModel->animGeometry = (targetModel->m_header.IsAnimated&(1 << 0)) > 0;
-	targetModel->animTextures = (targetModel->m_header.IsAnimated&(1 << 1)) > 0;
-	targetModel->animBones = (targetModel->m_header.IsAnimated&(1 << 2)) > 0;
-	//to support arg channel only texture animation  -clayman 2011.8.5
-	targetModel->animTexRGB = (targetModel->m_header.IsAnimated&(1 << 4)) > 0;
-	if (targetModel->IsBmaxModel())
-		targetModel->m_RenderMethod = CParaXModel::BMAX_MODEL;
-	else if (targetModel->animated)
-		targetModel->m_RenderMethod = CParaXModel::SOFT_ANIM;
-	else
-		targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
-
-	targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
-	targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
-
-	targetModel->bones = skeletonModel->bones;
-	targetModel->texanims = skeletonModel->texanims;
-	targetModel->anims = skeletonModel->anims;
-	//targetModel->specialTextures = skeletonModel->specialTextures;
-
-	targetModel->m_CurrentAnim.Reset();
-	targetModel->m_NextAnim.MakeInvalid();
-	targetModel->m_BlendingAnim.Reset();
-	targetModel->blendingFactor = 0;
-	targetModel->fBlendingTime = 0.25f;	// this is the default value.
-
-										// modify vertices
-	int countSee = 0;
-	std::vector<ModelVertex> newVertices;
-	newVertices.reserve(newMesh.m_Vertices.size());
-	for (int i = 0; i < newMesh.m_Vertices.size(); ++i) {
-		PVector3 v = newMesh.m_Vertices[i].pos;
-		ModelVertex modelVertex;
-		memset(&modelVertex, 0, sizeof(ModelVertex));
-		modelVertex.pos.x = v[0];
-		modelVertex.pos.y = v[1];
-		modelVertex.pos.z = v[2];
-
-		PVector3& n = newMesh.m_Vertices[i].normal;
-		modelVertex.normal.x = n[0];
-		modelVertex.normal.y = n[1];
-		modelVertex.normal.z = n[2];
-
-		modelVertex.color0 = 123;
-
-		newVertices.push_back(modelVertex);
-	}
-	targetModel->initVertices(newVertices.size(), &(newVertices[0]));
-	targetModel->geosets[0].icount = newVertices.size();
-
-
-	// moddify indices
-	vector<uint16> newIndices(newMesh.m_Edges.size(), 0);
-	for (int i = 0; i < newMesh.m_Edges.size(); ++i) {
-		newIndices[i] = (uint16)newMesh.m_Edges[i].vertex;
-	}
-	targetModel->initIndices(newIndices.size(), &(newIndices[0]));
-	targetModel->passes[0].indexCount = newIndices.size();
-
-	std::vector<int> omitedInFirstRound;
-	// first round 
-	for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
-		ModelVertex& modelVertex = targetModel->m_origVertices[i];
-		int nearest = -1;
-		float minDis = 999.0;
-		for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
-			Vector3 p = targetModel->bones[k].pivot;
-			Vector3 v = modelVertex.pos;
-			float dis = p.distance(v);
-
-			v = p + (v - p)*0.95;
-
-			bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
-
-			if (dis < minDis && canSee) {
-				minDis = dis;
-				nearest = k;
-			}
-		}
-		if (nearest < 0) {
-			// if couldn't find the direct bone just continue and wait for the next round to fixed it
-			countSee++;
-			modelVertex.bones[0] = 255;
-			omitedInFirstRound.push_back(i);
-			continue;
-		}
-		//int j = boneNameIndexMap[given->indexNameMap[nearest]];
-		modelVertex.bones[0] = nearest;
-		modelVertex.weights[0] = 255;
-	}
-
-	// second round
-	for (int i = 0; i < omitedInFirstRound.size(); ++i) {
-		int index = omitedInFirstRound[i];
-		ModelVertex& modelVertex = targetModel->m_origVertices[index];
-		int nearest = -1;
-		float minDis = 1.0;
-		for (int j = 0; j < targetModel->m_objNum.nVertices; ++j) {
-			if (targetModel->m_origVertices[j].bones[0] > 200) {
-				// beyond 200 means this bone slot is unbinded
-				continue;
-			}
-			float dist = modelVertex.pos.distance(targetModel->m_origVertices[j].pos);
-			if (dist < minDis) {
-				nearest = j;
-				minDis = dist;
-			}
-		}
-		if (nearest > 0) {
-			modelVertex.bones[0] = targetModel->m_origVertices[nearest].bones[0];
-			modelVertex.weights[0] = 255;
-		}
-		else {
-			modelVertex.bones[0] = 0;
-			modelVertex.weights[0] = 255;
-		}
-	}
-
-#ifdef OUTPUT_DEBUG_FILE
-	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
-	RigHelper::OutputSkinningRelation(targetModel,fileName);
-#endif
-
-	// recover coordinates
-	Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
-	for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
-		ModelVertex& modelVertex = targetModel->m_origVertices[i];
-		modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
-	}
-	for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
-		targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
-	}
-
-	targetModel->SaveToDisk(m_OutputFilePath.c_str());
-}
-
-void CAutoRigger::FullRigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* vistester)
-{
-	VisTester<TreeType>* tester = static_cast<VisTester<TreeType>*>(vistester);
-	// header settings
-	targetModel->m_header.type = skeletonModel->m_header.type;
-	targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
-	targetModel->animated = targetModel->m_header.IsAnimated > 0;
-	targetModel->animGeometry = (targetModel->m_header.IsAnimated&(1 << 0)) > 0;
-	targetModel->animTextures = (targetModel->m_header.IsAnimated&(1 << 1)) > 0;
-	targetModel->animBones = (targetModel->m_header.IsAnimated&(1 << 2)) > 0;
-	//to support arg channel only texture animation  -clayman 2011.8.5
-	targetModel->animTexRGB = (targetModel->m_header.IsAnimated&(1 << 4)) > 0;
-	if (targetModel->IsBmaxModel())
-		targetModel->m_RenderMethod = CParaXModel::BMAX_MODEL;
-	else if (targetModel->animated)
-		targetModel->m_RenderMethod = CParaXModel::SOFT_ANIM;
-	else
-		targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
-
-	targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
-	targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
-
-	targetModel->bones = skeletonModel->bones;
-	targetModel->texanims = skeletonModel->texanims;
-	targetModel->anims = skeletonModel->anims;
-	//targetModel->specialTextures = skeletonModel->specialTextures;
-
-	targetModel->m_CurrentAnim.Reset();
-	targetModel->m_NextAnim.MakeInvalid();
-	targetModel->m_BlendingAnim.Reset();
-	targetModel->blendingFactor = 0;
-	targetModel->fBlendingTime = 0.25f;	// this is the default value.
-
-
-	// transform vertices into distance field space 
-	int numVerts = targetModel->m_objNum.nVertices;
-	Vector3 toAdd(newMesh.m_ToAdd[0], newMesh.m_ToAdd[1], newMesh.m_ToAdd[2]);
-	for (int i = 0; i < numVerts; ++i) {
-		//m_Vertices[i].pos = ctoAdd + m_Vertices[i].pos * cscale;
-		Vector3& pos = targetModel->m_origVertices[i].pos;
-		pos = toAdd + pos * newMesh.m_Scale;
-	}
-	float edgeLen = 1.05 * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
-	
-	struct Cube
-	{
-		int verts[32];
-		Vector3 center;
-		uint8 bones[4];
-		DWORD color;// debug use
-		Color cc;// debug use
-		float neighborRange;
-		bool rigged;
-
-		bool IsNeighborOf(const Cube& other) 
-		{
-			return (this->center - other.center).length() < neighborRange;
-		}
-
-		bool IsSameColor(const Cube& other)
-		{
-			LinearColor c1(color);
-			LinearColor c2(other.color);
-
-			if (c1 == LinearColor::Black && c2 != LinearColor::Black || c1 != LinearColor::Black && c2 == LinearColor::Black) return false;
-
-			std::vector<float> ratio(3, 0.0);
-			if (c1.r > c2.r || c1.g > c2.g || c1.b > c2.b) {
-				ratio[0] = std::abs((c2.r != 0.0) ? c1.r / c2.r : 0.0);
-				ratio[1] = std::abs((c2.g != 0.0) ? c1.g / c2.g : 0.0);
-				ratio[2] = std::abs((c2.b != 0.0) ? c1.b / c2.b : 0.0);
-			}else {
-				ratio[0] = std::abs((c1.r != 0.0) ? c2.r / c1.r : 0.0);
-				ratio[1] = std::abs((c1.g != 0.0) ? c2.g / c1.g : 0.0);
-				ratio[2] = std::abs((c1.b != 0.0) ? c2.b / c1.b : 0.0);
-			}
-			std::sort(ratio.begin(), ratio.end());
-
-			float verySmall = 0.000001;
-
-			if (ratio[0] > 0.0) {
-				return (ratio[1] - ratio[0] < verySmall && ratio[2] - ratio[1] < verySmall) ? true : false;
-			}else if (ratio[1] > 0.0) {
-				return (ratio[2] - ratio[1] < verySmall) ? true : false;
-			}else {// what if the color has only one component above zero? is still the same color? hope for the best.
-				return true;
-			}	
-		}
-	};
-	typedef std::vector<Cube> CubeVector;
-	CubeVector cubes;
-	int numVertPerCube = 24;
-	int numIndicesPerCube = 36;
-	int numIndices = targetModel->m_objNum.nIndices;
-	for (int i = 0; i < numIndices; i += numIndicesPerCube) {
-		std::set<int> filter;
-		for (int j = 0; j < numIndicesPerCube; ++j) {
-			filter.insert((int)(targetModel->m_indices[i+j]));
-		}
-		if (filter.size() != numVertPerCube) {
-			OUTPUT_LOG("Wrong cube vertex number.\n");
-		}else {
-			Cube cube;
-			CShapeBox bb;
-			std::set<int>::iterator iter = filter.begin();
-			for (int k = 0; k < numVertPerCube; ++k, ++iter) {
-				cube.verts[k] = (*iter);
-				bb.Extend(targetModel->m_origVertices[(*iter)].pos);
-			}
-			cube.color = targetModel->m_origVertices[*(filter.begin())].color0;
-			cube.cc = Color(cube.color);
-			cube.center = bb.GetCenter();
-			cube.rigged = false;
-			cube.neighborRange = edgeLen;
-			cubes.push_back(cube);
-			PVector3 pv(cube.center.x, cube.center.y, cube.center.z );
-		}
-	}
-
-	// first round 
-	for (int i = 0; i < cubes.size(); ++i) {
-		int nearest = -1;
-		float minDis = 999.0;
-		for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
-			Vector3 p = targetModel->bones[k].pivot;
-			Vector3 v = cubes[i].center;
-			float dis = p.distance(v);
-			v = p + (v - p)*0.95;
-			bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
-
-			if (canSee && dis < minDis ) {
-				minDis = dis;
-				nearest = k;
-			}
-		}
-		if (nearest >= 0 && minDis < 0.2*edgeLen) {
-			cubes[i].rigged = true;
-			cubes[i].bones[0] = (uint8)nearest;
-			for (int j = 0; j < numVertPerCube; ++j) {
-				targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
-				targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
-			}
-		}else {
-			// if couldn't find the direct bone just continue and wait for the next round to fixed it
-		}
-	}// end for
-
-
-	// second round
-	typedef std::vector<std::vector<int>> ColorVector;
-	ColorVector colors;
-	for (int i = 0; i < cubes.size(); ++i) {
-		bool clustered = false;
-		for (auto& group : colors) {
-			if (cubes[group[0]].IsSameColor(cubes[i])) {
-				group.push_back(i);
-				clustered = true;
-				break;
-			}
-		}
-		if (!clustered) {
-			colors.resize(colors.size() + 1);
-			colors.back().push_back(i);
-		}
-	}
-
-	std::vector<std::vector<int>> clusters;
-	for (ColorVector::iterator iter = colors.begin(); iter != colors.end(); ++iter) {
-		std::vector<int>& blocks = *iter;
-		while (!blocks.empty()) {
-			std::vector<int> cluster;
-			std::queue<int> todo;
-			std::vector<bool> taken(blocks.size(), false);
-			cluster.push_back(blocks[0]);
-			todo.push(blocks[0]);
-			taken[0] = true;
-			while (!todo.empty()) {
-				int cur = todo.front();
-				todo.pop();
-				// find one neighbor
-				for (int i = 0; i < blocks.size(); ++i ) {
-					if ( !taken[i] && cubes[blocks[i]].IsNeighborOf(cubes[cur])) {
-						cluster.push_back(blocks[i]);
-						todo.push(blocks[i]);
-						taken[i] = true;
-					}
-				}
-			}
-			clusters.emplace_back(cluster);
-			std::vector<int> remains;
-			for (int i = 0; i < blocks.size(); ++i) {
-				if (!taken[i])remains.push_back(blocks[i]);
-			}
-			blocks.swap(remains);	
-		}// outer while
-	}
-
-	std::list<int> leftClusters;
-	std::vector<int> riggedClusters;
-	for (int c = 0; c < clusters.size(); ++c) {
-		int rigged = -1;
-		for (auto index : clusters[c]) {
-			if (cubes[index].rigged) {
-				rigged = index;
-				break;
-			}
-		}
-
-		if (rigged >= 0) {
-			for (int i = 0; i < clusters[c].size(); ++i) {
-				int idx = clusters[c][i];
-				for (int j = 0; j < numVertPerCube; ++j) {
-					targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[rigged].bones[0];
-					targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
-				}
-				cubes[idx].rigged = true;
-				cubes[idx].bones[0] = cubes[rigged].bones[0];
-			}
-			riggedClusters.push_back(c);
-		}else {
-			leftClusters.push_back(c);
-		}
-	}
-
-	while (!leftClusters.empty()) {
-		std::vector<int>& left = clusters[leftClusters.back()];
-		int neighbor = -1;
-		for (int i = 0; i < riggedClusters.size(); ++i) {
-			std::vector<int>& riggedCluster = clusters[riggedClusters[i]];
-			for (int j = 0; j < left.size(); ++j) {
-				for (int k = 0; k < riggedCluster.size(); ++k) {
-					if (cubes[left[j]].IsNeighborOf(cubes[riggedCluster[k]])) {
-						neighbor = riggedClusters[i];
-						break;
-					}
-				}
-				if (neighbor >= 0)break;
-			}
-			if (neighbor >= 0)break;
-		}
-		if (neighbor >= 0) {
-			int dst = clusters[neighbor].front();
-			for (int i = 0; i < left.size(); ++i) {
-				int idx = left[i];
-				for (int j = 0; j < numVertPerCube; ++j) {
-					targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[dst].bones[0];
-					targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
-				}
-				cubes[idx].rigged = true;
-				cubes[idx].bones[0] = cubes[dst].bones[0];
-			}
-		}
-		leftClusters.pop_back();
-	}
-
-	if (0) {
-		std::list<int> leftList;
-		// first round 
-		for (int i = 0; i < cubes.size(); ++i) {
-			int nearest = -1;
-			float minDis = 999.0;
-			for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
-				Vector3 p = targetModel->bones[k].pivot;
-				Vector3 v = cubes[i].center;
-				float dis = p.distance(v);
-				v = p + (v - p)*0.95;
-				bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
-
-				if (canSee && dis < minDis) {
-					minDis = dis;
-					nearest = k;
-				}
-			}
-			if (nearest >= 0) {
-				cubes[i].rigged = true;
-				cubes[i].bones[0] = (uint8)nearest;
-				for (int j = 0; j < numVertPerCube; ++j) {
-					targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
-					targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
-				}
-			}
-			else {
-				// if couldn't find the direct bone just continue and wait for the next round to fixed it
-				leftList.push_back(i);
-			}
-		}// end for
-
-
-		while (!leftList.empty()) {
-			std::list<int>::iterator iter = leftList.begin();
-			int firstNearest = -1;
-			for (; iter != leftList.end(); ++iter) {
-				firstNearest = -1;
-				std::vector<int> candidates;
-				for (int i = 0; i < cubes.size(); ++i) {
-					if (!cubes[i].rigged || i == *iter)continue;
-					if ((cubes[i].center - cubes[*iter].center).length() < edgeLen /*&& cubes[i].color == cubes[*iter].color*/) {
-						firstNearest = i;
-						candidates.push_back(i);
-					}
-				}
-				if (candidates.size() > 1) {
-
-				}
-				else {
-
-				}
-			}
-
-			if (firstNearest >= 0) {
-				for (int j = 0; j < numVertPerCube; ++j) {
-					targetModel->m_origVertices[cubes[*iter].verts[j]].bones[0] = cubes[firstNearest].bones[0];
-					targetModel->m_origVertices[cubes[*iter].verts[j]].weights[0] = 255;
-				}
-				cubes[*iter].rigged = true;
-				cubes[*iter].bones[0] = cubes[firstNearest].bones[0];
-				leftList.erase(iter);
-			}
-		}// end while
-	}
-
-
-#ifdef OUTPUT_DEBUG_FILE
-	std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
-	RigHelper::OutputSkinningRelation(targetModel, fileName);
-#endif
-
-	//// recover coordinates
-	//Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
-	//for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
-	//	ModelVertex& modelVertex = targetModel->m_origVertices[i];
-	//	modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
-	//}
-	//for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
-	//	targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
-	//}
-
-	targetModel->SaveToDisk(m_OutputFilePath.c_str());
 }

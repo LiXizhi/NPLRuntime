@@ -45,12 +45,7 @@ namespace ParaEngine
 		ModelTemplateMap::iterator FindBestMatch(Mesh* targetMesh);
 		ModelTemplateMap::iterator FindBestMatch2(Mesh* targetModel);
 		void AutoRigThreadFunc();
-		
-		void RiggingWithoutColorAssignement(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* tester);
-		void FullRigging(CParaXModel* targetModel, CParaXModel* skeletonModel, Mesh& newMesh, void* tester);
 
-
-		
 		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
 		std::string m_OutputFilePath;
