@@ -410,6 +410,7 @@ namespace ParaEngine
 
 						vWorldMatrix = vWorldMatrix * matViewProj;
 
+						pEffect->setMatrix(CEffectFile::k_viewProjMatrix, &matViewProj);
 						pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &vWorldMatrix);
 
 						pEffect->CommitChanges();
@@ -559,11 +560,13 @@ namespace ParaEngine
 				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
 				Matrix4 matViewProj;
+				Matrix4 matView;
 				if (pCamera)
 				{
 					const Matrix4& pView = (CGlobals::GetEffectManager()->GetViewTransform());
 					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
 					matViewProj = (pView) * (pProj);
+					matView = pView;
 				}
 
 				/** block light params and sun intensity*/
@@ -687,15 +690,19 @@ namespace ParaEngine
 					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
 					
 					pEffect->setMatrix(CEffectFile::k_worldMatrix,&vWorldMatrix);
+					
 
 					Matrix4 mWorldViewProj;
 					mWorldViewProj = vWorldMatrix * matViewProj;
 
 					pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &mWorldViewProj);
+					pEffect->setMatrix(CEffectFile::k_viewMatrix, &matView);
+					pEffect->setMatrix(CEffectFile::k_viewProjMatrix, &matViewProj);
+			
 					if(pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
 					{
 						Matrix4 mWorldView;
-						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
+						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);			
 						pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
 					}
 					if (CGlobals::GetEffectManager()->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))

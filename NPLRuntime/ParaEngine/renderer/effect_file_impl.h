@@ -115,6 +115,7 @@ namespace ParaEngine
 		void applyLayersNum(int nLayers);
 		void applyTexWorldViewProj(const Matrix4* mat);
 		void applyLocalLightingData(const LightList* lights, int nLightNum);
+		void applyBuiltinVariables();
 		static void EnableTextures(bool bEnable);
 		static bool AreTextureEnabled();
 		void EnableShadowmap(int nShadowMethod);

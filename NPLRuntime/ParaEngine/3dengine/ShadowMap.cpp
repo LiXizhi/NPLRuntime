@@ -56,6 +56,10 @@ namespace ParaEngine
 
 
 
+
+
+
+
 	int CShadowMap::g_nShadowMapTexelSizeLevel = 0;
 }
 
@@ -1182,6 +1186,9 @@ bool CShadowMap::BuildOrthoShadowProjectionMatrix()
 		min_pt.y, max_pt.y,
 		min_pt.z - 100.0f, max_pt.z);
 	ParaMatrixMultiply(&m_LightViewProj, &fake_light_view, &fake_light_proj);
+
+	m_LightView = fake_light_view;
+	m_LightProj = fake_light_proj;
 #endif
 	return true;
 }
@@ -1433,9 +1440,18 @@ const Matrix4* CShadowMap::GetTexViewProjMatrix()
 	return &m_textureMatrix;
 }
 
+const ParaEngine::Matrix4* CShadowMap::GetViewMatrix()
+{
+	return &m_LightView;
+}
+
 const Matrix4* CShadowMap::GetViewProjMatrix()
 {
 	return &m_LightViewProj;
+}
+const ParaEngine::Matrix4* CShadowMap::GetProjMatrix()
+{
+	return &m_LightProj;
 }
 
 HRESULT CShadowMap::SetShadowTexture(CEffectFile& pEffect, int nTextureIndex, int nUseBlur)

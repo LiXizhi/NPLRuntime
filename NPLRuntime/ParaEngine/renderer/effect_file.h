@@ -167,6 +167,7 @@ namespace ParaEngine
 			k_shadowVP,
 			k_tex_shadowMap,
 			k_ShadowMapTexelSize,
+			k_ProjectionParams,// x is fov ,y is near plane ,z is far plane ,w is aspect
 			// last one
 			k_max_param_handles
 		};

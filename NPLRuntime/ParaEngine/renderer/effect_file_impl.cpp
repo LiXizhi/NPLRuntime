@@ -592,6 +592,7 @@ bool CEffectFileImpl::BeginPass(int pass, bool bForceBegin)
 
 void CEffectFileImpl::CommitChanges()
 {
+	applyBuiltinVariables();
 	m_pEffect->CommitChanges();
 }
 
@@ -742,6 +743,7 @@ void CEffectFileImpl::parseParameters()
 		table["shadowmaptex"] = k_tex_shadowMap;
 		table["shadowvp"] = k_shadowVP;
 		table["shadowmaptexelsize"] = k_ShadowMapTexelSize;
+		table["projectionparams"] = k_ProjectionParams;
 
 
 		// boolean
@@ -1161,6 +1163,25 @@ const CEffectFileImpl::TechniqueDesc* CEffectFileImpl::GetCurrentTechniqueDesc()
 		return &(m_techniques[m_nTechniqueIndex]);
 	else
 		return &g_techdesc;
+}
+
+
+void ParaEngine::CEffectFileImpl::applyBuiltinVariables()
+{
+	if (isParameterUsed(k_ProjectionParams))
+	{
+		IScene* pScene = CGlobals::GetEffectManager()->GetScene();
+		CBaseCamera* pCamera = pScene->GetCurrentCamera();
+		if (pCamera)
+		{
+			float fov = pCamera->GetFieldOfView();
+			float nearPlane = pCamera->GetNearPlane();
+			float farPlane = pCamera->GetFarPlane();
+			float aspect = pCamera->GetAspectRatio();
+			float p[] = {fov,nearPlane,farPlane,aspect};
+			setParameter(k_ProjectionParams, p, sizeof(p));
+		}
+	}
 }
 
 std::shared_ptr<IParaEngine::IEffect> ParaEngine::CEffectFileImpl::GetDeviceEffect()

@@ -33,6 +33,8 @@ namespace ParaEngine
 
 		const Matrix4* GetTexViewProjMatrix();
 		const Matrix4* GetViewProjMatrix();
+		const Matrix4* GetViewMatrix();
+		const Matrix4* GetProjMatrix();
 		
 		/**
 		* apply the current shadow map to the selected effect file at the specified texture index
@@ -122,6 +124,8 @@ namespace ParaEngine
 
 		// Transforms
 		Matrix4 m_LightViewProj;
+		Matrix4 m_LightView;
+		Matrix4 m_LightProj;
 
 		// this value can only be set when this instance is being created
 		bool m_bSupportsHWShadowMaps;

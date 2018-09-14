@@ -373,14 +373,23 @@ void CParameterBlock::SetParamByStringValue(const char* sParamName, const char* 
 		}
 		else if (sValue == "mat4ShadowMapViewProj")
 		{
-			ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+			//ParaMatrixMultiply(&mat, pWorld, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+			mat = *CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix();
+		}else if (sValue == "mat4ShadowMapView")
+		{
+			mat = *CGlobals::GetEffectManager()->GetShadowMap()->GetViewMatrix();
 		}
+		else if (sValue == "mat4ShadowMapProj")
+		{
+			mat = *CGlobals::GetEffectManager()->GetShadowMap()->GetProjMatrix();
+		}
+
 		else
 		{
 			mat = Matrix4::IDENTITY;
 		}
 		// it is column matrix, so transpose it. 
-		mat = mat.transpose();
+		//mat = mat.transpose();
 		SetParameter(sParamName, mat);
 	}
 	else if (sValue.find("vec3") != string::npos)
