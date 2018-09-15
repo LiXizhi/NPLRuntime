@@ -960,7 +960,7 @@ bool TextureEntityImpl::StretchRect(TextureEntityImpl * pSrcTexture, TextureEnti
 bool TextureEntityImpl::SetRenderTarget(int nIndex)
 {
 
-	bool res = CGlobals::GetRenderDevice()->SetRenderTarget(0, GetTexture());
+	bool res = CGlobals::GetRenderDevice()->SetRenderTarget(nIndex, GetTexture());
 	if (res && nIndex == 0){
 		CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 	}
