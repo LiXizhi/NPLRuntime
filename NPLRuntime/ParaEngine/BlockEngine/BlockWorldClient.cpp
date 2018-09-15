@@ -536,10 +536,7 @@ namespace ParaEngine
 				time = (int)(time * 1000) % 1000000;
 				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr(), sizeof(Vector4));
 
-				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
-				{
-				}
-				else
+				if (dwRenderMethod != BLOCK_RENDER_FANCY_SHADER)
 				{
 					Vector3 vDir = -CGlobals::GetScene()->GetSunLight().GetSunDirection();
 					Vector4 vDir_(vDir.x, vDir.y, vDir.z, 1.0f);

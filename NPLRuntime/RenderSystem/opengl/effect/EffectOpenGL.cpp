@@ -68,8 +68,8 @@ namespace ParaEngine
 			MinFilter = ETextureFilter::Linear;
 			MagFilter = ETextureFilter::Linear;
 			MipFilter = ETextureFilter::None;
-			AddressU = ETextureWrapMode::Clamp;
-			AddressV = ETextureWrapMode::Clamp;
+			AddressU = ETextureWrapMode::Repeat;
+			AddressV = ETextureWrapMode::Repeat;
 			BorderColor = 0;
 		}
 	};
@@ -116,13 +116,17 @@ inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std
 			}
 		}else if (key == "addressu" || key == "addressv")
 		{
-			ETextureWrapMode warpMode = ETextureWrapMode::Clamp;
+			ETextureWrapMode warpMode = ETextureWrapMode::Repeat;
 			if (value == "wrap")
 			{
 				warpMode = ETextureWrapMode::Repeat;
 			}else if (value == "border")
 			{
 				warpMode = ETextureWrapMode::Border;
+			}
+			else if(value == "clamp")
+			{
+				warpMode = ETextureWrapMode::Clamp;
 			}
 			if (key == "addressu")
 			{
