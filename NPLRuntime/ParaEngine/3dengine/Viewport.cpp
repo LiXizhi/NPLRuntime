@@ -313,34 +313,31 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
 
+
+
+
+
+#if USE_DIRECTX_RENDERER
+	// D3D9用了像素左上角作为原点,所以需要偏移0.5个像素
+	float fhalfTexelWidth = 0.5f / fWidth;
+	float fhalfTexelHeight = 0.5f / fHeight;
 	mesh_vertex_plain quadVertices[4] = {
-		{ Vector3(fX * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fX, fBottom) },
-		{ Vector3(fRight * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fRight, fBottom) },
-		{ Vector3(fX * 2 - 1, -fY * 2 + 1, 0), Vector2(fX, fY) },
-		{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight, fY) },
+	{ Vector3(fX * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fX+ fhalfTexelWidth, fBottom + fhalfTexelHeight) }, //LB
+	{ Vector3(fRight * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fRight + fhalfTexelWidth, fBottom + fhalfTexelHeight) }, //RB
+	{ Vector3(fX * 2 - 1, -fY * 2 + 1, 0), Vector2(fX + fhalfTexelWidth, fY + fhalfTexelHeight) }, //LT
+	{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight + fhalfTexelWidth, fY + fhalfTexelHeight) },//RT
 	};
-	//mesh_vertex_plain quadVertices[4] = {
-	//	{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
-	//	{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
-	//	{ Vector3(-1, 1, 0), Vector2(fX, fY) },
-	//	{ Vector3(1, 1, 0), Vector2(fRight, fY) },
-	//};
+#else 
+	// OpenGL用了像素中心作为原点
+	mesh_vertex_plain quadVertices[4] = {
+	{ Vector3(fX * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fX, fBottom) }, //LB
+	{ Vector3(fRight * 2 - 1, -fBottom * 2 + 1, 0), Vector2(fRight, fBottom) }, //RB
+	{ Vector3(fX * 2 - 1, -fY * 2 + 1, 0), Vector2(fX, fY) }, //LT
+	{ Vector3(fRight * 2 - 1, -fY * 2 + 1, 0), Vector2(fRight, fY) },//RT
+	};
+#endif
 
 
-	// mesh_vertex_plain quadVertices[4] = {
-	//	{ Vector3(-1, -1, 0), Vector2(fX, fBottom) },
-	//	{ Vector3(1, -1, 0), Vector2(fRight, fBottom) },
-	//	{ Vector3(-1, 1, 0), Vector2(fX, fY) },
-	//	{ Vector3(1, 1, 0), Vector2(fRight, fY) },
-	//};
-
-
-	// this is done in shader code
-	//
-	// offset the texture coordinate by half texel in order to match texel to pixel. 
-	// This takes me hours to figure out. :-(
-	// float fhalfTexelWidth = 0.5f/m_glowtextureWidth;
-	// float fhalfTexelHeight = 0.5f/m_glowtextureHeight;
 	bool bSucceed = false;
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 	auto  layout = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS_TEX0);

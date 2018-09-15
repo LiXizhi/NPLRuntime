@@ -1333,5 +1333,7 @@ bool ParaEngine::CEffectFileImpl::SetVector4(const char* name, const Vector4& vV
 
 bool ParaEngine::CEffectFileImpl::SetMatrix(const char* name, const Matrix4& data)
 {
-	return SetRawValue(name, &data, 0, sizeof(data));
+	IParaEngine::ParameterHandle handle = m_pEffect->GetParameterByName(name);
+	return m_pEffect->SetMatrix(handle, data.GetConstPointer());
+
 }
