@@ -590,6 +590,11 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 		glDataType = GL_FLOAT;
 		glPixelFormat = GL_RED;
 		break;
+	case EPixelFormat::A16B16G16R16F:
+		glFormat = GL_RGBA16F;
+		glDataType = GL_FLOAT;
+		glPixelFormat = GL_RGBA;
+		break;
 	default:
 		return nullptr;
 		break;
