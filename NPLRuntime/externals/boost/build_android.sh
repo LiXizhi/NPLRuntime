@@ -1,5 +1,6 @@
 #!/bin/bash
-#use mingw (msys2) on windows
+#USE MINGW (MSYS2) on Windows
+#NDK VERSION: r12b_x64
 CURRENT_DIR=`pwd`
 BOOST_SRC="./prebuild/android/src/boost_1_64_0"
 IOS_OUTPUT_DIR="$OUTPUT_DIR/ios"
@@ -46,8 +47,8 @@ $TOOLCHAIN_DIR/bin/clang++
 <compileflags>-DNDEBUG
 <compileflags>-O2
 #<compileflags>-g
-<compileflags>-I$TOOLCHAIN_DIR/include/C++/4.6
-<compileflags>-I$TOOLCHAIN_DIR/include/C++/4.6/arm-linux-androideabi
+<compileflags>-I$TOOLCHAIN_DIR/include/C++/4.9x
+<compileflags>-I$TOOLCHAIN_DIR/include/C++/4.9x/arm-linux-androideabi
 <architecture>arm
 <compileflags>-fvisibility=hidden
 <compileflags>-fvisibility-inlines-hidden
@@ -74,7 +75,7 @@ makeToolchain()
 {
     if [ ! -d $TOOLCHAIN_DIR ]; then
         echo Making android ndk toolchain 
-        $ANDROID_NDK\\build\\tools\\make-standalone-toolchain.sh --toolchain=arm-linux-androideabi-clang3.4 --arch=arm  --platform=android-19 --install-dir=$TOOLCHAIN_DIR
+        $ANDROID_NDK\\build\\tools\\make-standalone-toolchain.sh --use-llvm  --arch=arm  --platform=android-21 --install-dir=$TOOLCHAIN_DIR
     fi
 }
 
