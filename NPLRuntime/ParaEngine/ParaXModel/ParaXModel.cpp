@@ -240,11 +240,19 @@ void CParaXModel::LoadTextures()
 		if (pTexture)
 		{
 			textures[i] = CGlobals::GetAssetManager()->LoadTexture("", pTexture->GetKey(), TextureEntity::StaticTexture);
-			if (pTexture != textures[i] && pTexture->GetRawData())
+			if (pTexture != textures[i] )
 			{
-				textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
-				// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
-				pTexture->GiveupRawDataOwnership();
+				if (pTexture->GetRawData())
+				{
+					textures[i]->SetRawData(pTexture->GetRawData(), pTexture->GetRawDataSize());
+					// OUTPUT_LOG("%s assigned buffer from raw data \n", pTexture->GetKey().c_str());
+					pTexture->GiveupRawDataOwnership();
+				}
+
+				if (pTexture->GetImage())
+				{
+					pTexture->SwapImage(textures[i].get());
+				}
 			}
 		}
 	}
@@ -406,7 +414,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 		if (m_pVertexBuffer.IsValid()
 			|| m_pVertexBuffer.IsValid()
 			|| passes.size() == 0
-			|| m_origVertices == nullptr
+			|| m_origVertices == nullptr 
 			|| m_indices == nullptr)
 		{
 			break;
@@ -424,7 +432,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 
 			count += p.indexCount;
 		}
-
+		
 		if (!m_pVertexBuffer.CreateBuffer((uint32)(count * sizeof(mesh_vertex_normal)), 0, D3DUSAGE_WRITEONLY))
 			break;
 
@@ -434,7 +442,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 
 
 		size_t index = 0;
-		for (size_t pass = 0; pass < nPasses; pass++)
+		for (size_t pass= 0; pass < nPasses; pass++)
 		{
 			auto& p = passes[pass];
 
@@ -492,7 +500,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 	{
 		m_origVertices = new ModelVertex[nVertices];
 		if (m_origVertices != 0)
-			memcpy(m_origVertices, pVertices, nVertices * sizeof(ModelVertex));
+			memcpy(m_origVertices, pVertices, nVertices*sizeof(ModelVertex));
 		if (m_RenderMethod != BMAX_MODEL && m_RenderMethod != NO_ANIM)
 		{
 			m_frame_number_vertices = new int[nVertices];
@@ -514,12 +522,12 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(ModelVertex), 0, D3DUSAGE_WRITEONLY))
 			{
 				ModelVertex* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
 				{
-					memcpy(pBuffer, pVertices, nVertices * sizeof(ModelVertex));
+					memcpy(pBuffer, pVertices, nVertices*sizeof(ModelVertex));
 					m_pVertexBuffer.Unlock();
 				}
 			}
@@ -532,7 +540,7 @@ void CParaXModel::initVertices(int nVertices, ModelVertex* pVertices)
 		*/
 		if (!m_pVertexBuffer.IsValid())
 		{
-			if (m_pVertexBuffer.CreateBuffer(nVertices * sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
+			if (m_pVertexBuffer.CreateBuffer(nVertices*sizeof(mesh_vertex_normal), 0, D3DUSAGE_WRITEONLY))
 			{
 				mesh_vertex_normal* pBuffer = NULL;
 				if (m_pVertexBuffer.Lock((void**)&pBuffer, 0, 0))
@@ -684,7 +692,7 @@ ModelAttachment& CParaXModel::NewAttachment(bool bOverwrite, int nAttachmentID, 
 			att.pos = pivotPoint;
 			m_objNum.nAttachments = (int)m_atts.size();
 
-			if((int)m_objNum.nAttachLookup <= nAttachmentID)
+			if ((int)m_objNum.nAttachLookup <= nAttachmentID)
 				m_objNum.nAttachLookup = nAttachmentID + 1;
 			return att;
 		}
@@ -773,7 +781,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	// uncomment to fine tune performances for this part of code. 
 	//#define PERFOAMRNCE_TEST_calcBones
 #ifdef PERFOAMRNCE_TEST_calcBones
-	if (nBones < 30)
+	if(nBones<30)
 		return;
 	// PERF1("calcBones");
 
@@ -786,6 +794,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 	if (pPose)
 	{
 		// TODO: check if this is an valid character model.
+
 		if (pPose->m_fUpperBodyFacingAngle != 0.f && m_vNeckYawAxis != Vector3::ZERO)
 		{
 			int nHeadAttachmentIndex = m_attLookup[ATT_ID_HEAD];
@@ -822,7 +831,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 					{
 						int nNeck = bones[nParent].parent; // get the NECK bone index
 						int nRotateSpineBoneCount = 4;
-						
+
 						CBoneChain UpperBodyBoneChain(nRotateSpineBoneCount);
 						UpperBodyBoneChain.SetStartBone(bones, nNeck, m_boneLookup);
 						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
@@ -991,7 +1000,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		pd3dDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(mesh_vertex_normal));
 	}
-
+	
 
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 	size_t startVB = 0;
@@ -1087,7 +1096,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 										faceGroup.m_vUVScale.x = texAnim.sval.x;
 										faceGroup.m_vUVScale.y = texAnim.sval.y;
 									}
-
+									
 
 									//support texture uv rgb animation --clayman 2011.8.8
 									if (animTexRGB)
@@ -1101,7 +1110,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if (pLastPass == NULL)
+						if(pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -1113,9 +1122,9 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 
 							startVB += p.indexCount;
 						}
-						else
+						else 
 						{
-							if ((*pLastPass == p))
+							if ( (*pLastPass == p) )
 							{
 								DrawPass_NoAnim_VB(p, startVB);
 								startVB += p.indexCount;
@@ -1146,7 +1155,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if (pLastPass != NULL)
+				if(pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -1214,7 +1223,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 				{
 					ModelRenderPass &p = passes[nPass];
 
-					if (p.geoset >=0 && showGeosets[p.geoset])
+					if (p.geoset >= 0 && showGeosets[p.geoset])
 					{
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_bmax_FX(this, pSceneState, pMaterialParams))
@@ -1386,7 +1395,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						}
 #ifdef COMBINE_RENDER_PASS
 						// we shall combine render pass if current one is same as previous, using the overloaded p.operator == 
-						if (pLastPass == NULL)
+						if(pLastPass == NULL)
 						{
 							if (p.init_FX(this))
 							{
@@ -1395,9 +1404,9 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 								DrawPass(p);
 							}
 						}
-						else
+						else 
 						{
-							if ((*pLastPass == p))
+							if ( (*pLastPass == p) )
 							{
 								DrawPass(p);
 							}
@@ -1416,7 +1425,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_FX(this, pSceneState, pMaterialParams))
 						{
-							pEffect->onDrawPass(pMaterialParams, nPass);
+							pEffect->onDrawPass(pMaterialParams,nPass);
 							pEffect->CommitChanges();
 							DrawPass(p);
 							p.deinit_FX(pSceneState, pMaterialParams);
@@ -1425,7 +1434,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 					}
 				}
 #ifdef COMBINE_RENDER_PASS
-				if (pLastPass != NULL)
+				if(pLastPass != NULL)
 				{
 					pLastPass->deinit_FX(pSceneState, pMaterialParams);
 				}
@@ -1449,7 +1458,6 @@ void CParaXModel::DrawPass_BMax_VB(ModelRenderPass &p, size_t start)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	//RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
 	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
@@ -1460,12 +1468,11 @@ void CParaXModel::DrawPass_NoAnim_VB(ModelRenderPass &p, size_t start)
 		DrawPass_NoAnim(p);
 		return;
 	}
-
+	
 	if (p.indexCount == 0)
 		return;
 
 	RenderDevicePtr pd3dDevice = CGlobals::GetRenderDevice();
-	//RenderDevice::DrawPrimitive(pd3dDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, (UINT)start, p.indexCount / 3);
 	pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, (UINT)start, p.indexCount / 3);
 }
 
@@ -1483,9 +1490,6 @@ void CParaXModel::DrawPass_NoAnim(ModelRenderPass &p)
 		ModelVertex *ov = m_origVertices;
 		int nNumLockedVertice;
 		int nNumFinishedVertice = 0;
-
-		int nIndexOffset = p.m_nIndexStart;
-
 		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_NORM);
 		do
 		{
@@ -1602,7 +1606,7 @@ void CParaXModel::DrawPass_BMax(ModelRenderPass &p)
 			if (pBufEntity->IsMemoryBuffer())
 				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
-			pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
 
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
@@ -1624,7 +1628,7 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 		return;
 	if (p.is_rigid_body)
 	{
-		// for rigid body with many vertices, do skinning on GPU instead of CPU. 
+		// for rigid body, do not use skinning. 
 		DrawPass_NoAnim(p);
 		return;
 	}
@@ -1708,7 +1712,6 @@ void CParaXModel::DrawPass(ModelRenderPass &p)
 				pd3dDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
 			else
 				pd3dDevice->DrawPrimitive(EPrimitiveType::TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
-
 			if ((p.indexCount - nNumFinishedVertice) > nNumLockedVertice)
 			{
 				nNumFinishedVertice += nNumLockedVertice;
@@ -1731,7 +1734,9 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 	if (passes.size() == 0)
 		return;
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect != 0)
+	if (pEffect == 0)
+		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
+	else
 	{
 		/// apply surface materials
 		bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();
@@ -1754,7 +1759,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		}
 	}
 
-
+	
 
 	if (nRenderMethod < 0)
 		nRenderMethod = m_RenderMethod;
@@ -1785,16 +1790,16 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 		RenderSoftAnim(pSceneState, pMaterialParam);
 		break;
 	case NO_ANIM:
-	{
-		RenderSoftNoAnim(pSceneState, pMaterialParam);
-	}
-	break;
+		{
+			RenderSoftNoAnim(pSceneState, pMaterialParam);
+		}
+		break;
 	case BMAX_MODEL:
-	{
-		RenderBMaxModel(pSceneState, pMaterialParam);
-	}
-
-	break;
+		{
+			RenderBMaxModel(pSceneState, pMaterialParam);
+		}
+		
+		break;
 	default:
 		break;
 	}
@@ -1895,7 +1900,7 @@ void CParaXModel::BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* p
 
 			// Allocate a temporary edge list
 			std::unordered_set <EdgeHash, hash_compare_edge> m_edgeTable;
-			if (nUseCap > 0)
+			if (nUseCap>0)
 				pShadowVolume->ReserveNewBlock(&pVertices, nNumFaces * 3);
 
 			// the three vertices of each face
@@ -2135,10 +2140,10 @@ bool CParaXModel::HasAlphaBlendedObjects()
 
 int CParaXModel::GetChildAttributeObjectCount(int nColumnIndex /*= 0*/)
 {
-	if (nColumnIndex == 0) {
+	if (nColumnIndex == 0){
 		return (int)GetObjectNum().nBones;
 	}
-	else if (nColumnIndex == 1) {
+	else if (nColumnIndex == 1){
 		return (int)GetObjectNum().nTextures;
 	}
 	return 0;
@@ -2190,6 +2195,16 @@ int CParaXModel::GetNextPhysicsGroupID(int nPhysicsGroup)
 	return nNextID;
 }
 
+HRESULT CParaXModel::RendererRecreated()
+{
+	m_pIndexBuffer.RendererRecreated();
+	m_pVertexBuffer.RendererRecreated();
+
+	this->SetVertexBufferDirty();
+
+	return S_OK;
+}
+
 HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup /*= NULL*/, int* pnTotalMeshGroupCount /*= NULL*/)
 {
 	if (m_objNum.nVertices == 0 || !m_indices)
@@ -2225,7 +2240,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 	int nVertexCount = 0;
 	for (ModelRenderPass& pass : passes)
 	{
-		if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
+		if (pass.geoset >= 0 && pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 		{
 			dwNumFaces += pass.indexCount / 3;
 		}
@@ -2259,7 +2274,7 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 		if (m_RenderMethod == SOFT_ANIM)
 		{
-			if (m_frame_number_vertices == 0)
+			if(m_frame_number_vertices == 0)
 				m_frame_number_vertices = new int[dwNumVx];
 			memset(m_frame_number_vertices, 0, sizeof(int)*dwNumVx);
 		}
@@ -2277,10 +2292,10 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 
 		for (ModelRenderPass& pass : passes)
 		{
-			if (pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
+			if (pass.geoset >= 0 && pass.hasPhysics() && (pnMeshPhysicsGroup == 0 || ((*pnMeshPhysicsGroup) == pass.GetPhysicsGroup())))
 			{
 				int nVertexOffset = pass.GetVertexStart(this);
-				if (m_RenderMethod == SOFT_ANIM)
+				if(m_RenderMethod == SOFT_ANIM)
 				{
 					int nIndexOffset = pass.m_nIndexStart;
 					for (int i = 0; i < pass.indexCount; ++i)
@@ -2342,16 +2357,16 @@ HRESULT CParaXModel::ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, D
 		}
 	}
 	// output result
-	if (pNumVertices != 0) {
+	if (pNumVertices != 0){
 		*pNumVertices = dwNumVx;
 	}
-	if (ppVerts != 0) {
+	if (ppVerts != 0){
 		*ppVerts = verts;
 	}
-	if (pNumTriangles != 0) {
+	if (pNumTriangles != 0){
 		*pNumTriangles = dwNumFaces;
 	}
-	if (ppIndices != 0) {
+	if (ppIndices != 0){
 		*ppIndices = indices;
 	}
 	return S_OK;

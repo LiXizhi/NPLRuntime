@@ -1,6 +1,7 @@
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 #include "IParaWebView.h"
+#include <Cocoa/Cocoa.h>
 
 namespace ParaEngine {
 
@@ -19,29 +20,45 @@ namespace ParaEngine {
 		return false;
 	}
 
-
 	static bool openUrl(const char* url)
 	{
-        auto pWnd = CGlobals::GetApp()->GetRenderWindow();
-        int w = pWnd->GetWidth();
-        int h = pWnd->GetHeight();
-        auto scaleX = pWnd->GetScaleX();
-        auto scaleY = pWnd->GetScaleY();
-        
-        auto pView = IParaWebView::createWebView(0, 0, w / scaleX, h / scaleY);
-        if (!pView)
-            return false;
-        
-        pView->loadUrl(url);
-        pView->setAlpha(0.95f);
-
+        std::string url_(url);
+        const bool USE_BUILDIN_BROWSER_FOR_LOCALHOST = true;
+        if(USE_BUILDIN_BROWSER_FOR_LOCALHOST && (url_.find("http://localhost") == 0 || url_.find("http://127.0.0.1") == 0))
+        {
+            auto pWnd = CGlobals::GetApp()->GetRenderWindow();
+            int w = pWnd->GetWidth();
+            int h = pWnd->GetHeight();
+            auto scaleX = pWnd->GetScaleX();
+            auto scaleY = pWnd->GetScaleY();
+            
+            auto pView = IParaWebView::createWebView(0, 0, w / scaleX, h / scaleY);
+            if (!pView)
+                return false;
+            
+            pView->loadUrl(url);
+            pView->setAlpha(0.95f);
+        }
+        else
+        {
+            NSString* sUrl = [NSString stringWithCString:url encoding:[NSString defaultCStringEncoding]];
+            [[NSWorkspace sharedWorkspace] openURL: [NSURL URLWithString:sUrl]];
+            [sUrl release];
+        }
 		return true;
 	}
 
+    
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-
-		return false;
+        std::string sCmdName = lpFile;
+        if(sCmdName == "explorer.exe" && lpParameters)
+        {
+            NSString* sFilename = [NSString stringWithCString:lpParameters encoding:[NSString defaultCStringEncoding]];
+            [[NSWorkspace sharedWorkspace] openFile:(sFilename)];
+            [sFilename release];
+        }
+        return false;
 	}
 
 

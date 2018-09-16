@@ -460,10 +460,13 @@ int CAsyncLoader::Stop()
 		SetIOThreadCount(count);
 		for (size_t i = 0; i < count; i++)
 		{
-			ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
-			m_IOQueue.push(msg);
-			m_io_threads[i]->join();
+            ResourceRequest_ptr msg(new ResourceRequest(ResourceRequestType_Quit));
+            m_IOQueue.push(msg);
 		}
+        for (size_t i = 0; i < count; i++)
+        {
+            m_io_threads[i]->join();
+        }
 		m_io_threads.clear();
 	}
 
@@ -544,8 +547,6 @@ int CAsyncLoader::Start(int nWorkerCount)
 			auto& t = m_io_threads[i];
 			t.reset(new std::thread(&CAsyncLoader::FileIOThreadProc, this, i + 1));
 		}
-
-		m_io_threads[0]->detach();
 	}
 
 	// queue[0] is for local CPU intensive tasks like unzip. (only one thread process it)

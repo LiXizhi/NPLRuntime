@@ -67,3 +67,4 @@ settings.json
 /NPLRuntime/externals/boost/prebuild
 NPLRuntime/externals/LuaJIT2_0/log/
 NPLRuntime/externals/LuaJIT2_1/log/
+*.entitlements

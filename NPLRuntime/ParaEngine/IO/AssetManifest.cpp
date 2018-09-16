@@ -35,9 +35,9 @@ void MakeValidFileName(string& inout)
 	StringHelper::make_lower(inout);
 	int nSize = (int)(inout.size());
 	// replace '\\' with '/'
-	for(int i=0; i<nSize;i++)
+	for (int i = 0; i < nSize; i++)
 	{
-		if(inout[i] == '\\')
+		if (inout[i] == '\\')
 			inout[i] = '/';
 	}
 }
@@ -48,8 +48,8 @@ void MakeValidFileName(string& inout)
 //
 //////////////////////////////////////////////////////////////////////////
 
-AssetFileEntry::AssetFileEntry():m_bIsZipFile(false), m_nDownloadCount(0), m_nFileSize(0), m_file_type(AssetFileType_default),
-	m_sync_callback(NULL), m_nStatus(AssetFileStatus_Unknown)
+AssetFileEntry::AssetFileEntry() :m_bIsZipFile(false), m_nDownloadCount(0), m_nFileSize(0), m_file_type(AssetFileType_default),
+m_sync_callback(NULL), m_nStatus(AssetFileStatus_Unknown)
 {
 }
 
@@ -60,7 +60,7 @@ AssetFileEntry::~AssetFileEntry()
 
 bool AssetFileEntry::DoesFileExist()
 {
-	if(m_nStatus == AssetFileStatus_Unknown)
+	if (m_nStatus == AssetFileStatus_Unknown)
 	{
 		if (CParaFile::DoesFileExist2(m_localFileName.c_str(), FILE_ON_DISK))
 		{
@@ -70,33 +70,33 @@ bool AssetFileEntry::DoesFileExist()
 		else
 		{
 #ifdef PARAENGINE_CLIENT
-			/** 
-			since FAT32 has a limit of 65535 files per folder, and if file name is long, 
-			it can be as few as 15000 files per folder. so I separate files into 36 folders according to 
-			file md5's first letter. 
+			/**
+			since FAT32 has a limit of 65535 files per folder, and if file name is long,
+			it can be as few as 15000 files per folder. so I separate files into 36 folders according to
+			file md5's first letter.
 
-			For backward compatibility, we will move files in cache folder to corresponding sub folder. 
+			For backward compatibility, we will move files in cache folder to corresponding sub folder.
 			*/
 
 			// if the files does not exist in "temp/cache/[a-z]/"
 			int nSize = (int)(m_localFileName.size());
-			if(nSize > 13)
+			if (nSize > 13)
 			{
 				char filename[256];
-				for (int i=0;i<11;i++)
+				for (int i = 0; i < 11; i++)
 				{
 					filename[i] = m_localFileName[i];
 				}
-				for (int i=13;i<nSize;i++)
+				for (int i = 13; i < nSize; i++)
 				{
-					filename[i-2] = m_localFileName[i];
+					filename[i - 2] = m_localFileName[i];
 				}
-				filename[nSize-2] = '\0';
-				if(CParaFile::DoesFileExist(filename, false))
+				filename[nSize - 2] = '\0';
+				if (CParaFile::DoesFileExist(filename, false))
 				{
-					if(!CParaFile::MoveFile(filename, m_localFileName.c_str()))
+					if (!CParaFile::MoveFile(filename, m_localFileName.c_str()))
 					{
-						if(!CParaFile::CopyFile(filename, m_localFileName.c_str(), true))
+						if (!CParaFile::CopyFile(filename, m_localFileName.c_str(), true))
 						{
 							OUTPUT_LOG("failed moving or copying file from %s to %s\n", filename, m_localFileName.c_str());
 							return false;
@@ -117,7 +117,7 @@ bool AssetFileEntry::DoesFileExist()
 
 string AssetFileEntry::GetAbsoluteUrl()
 {
-	if(m_url.find_first_of(' ') == string::npos)
+	if (m_url.find_first_of(' ') == string::npos)
 	{
 		return AssetEntity::GetAssetServerUrl() + m_url;
 	}
@@ -141,7 +141,7 @@ bool AssetFileEntry::AddDownloadCount()
 
 bool AssetFileEntry::CheckSyncFile()
 {
-	if(DoesFileExist())
+	if (DoesFileExist())
 	{
 		return true;
 	}
@@ -156,11 +156,11 @@ bool AssetFileEntry::SyncFile()
 	string url = GetAbsoluteUrl();
 
 	// download the file here. 
-	while(!HasReachedMaxRetryCount())
+	while (!HasReachedMaxRetryCount())
 	{
 		AddDownloadCount();
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
-		if(pAsyncLoader->interruption_requested())
+		if (pAsyncLoader->interruption_requested())
 			return false;
 		string sTmp = string("AssetFile Sync Started:") + url + "\n";
 		pAsyncLoader->log(sTmp);
@@ -169,7 +169,7 @@ bool AssetFileEntry::SyncFile()
 
 		loader.SetUrl(url.c_str());
 		processor.SetUrl(url.c_str());
-		if(pAsyncLoader->RunWorkItem( &loader, &processor, NULL, NULL) != S_OK)
+		if (pAsyncLoader->RunWorkItem(&loader, &processor, NULL, NULL) != S_OK)
 		{
 			string sTmp = string("AssetFile Sync Failed:") + url + "\n";
 			pAsyncLoader->log(sTmp);
@@ -178,9 +178,9 @@ bool AssetFileEntry::SyncFile()
 		else
 		{
 			// save to disk
-			if(processor.m_responseCode == 200 && processor.GetData().size()>0)
+			if (processor.m_responseCode == 200 && processor.GetData().size() > 0)
 			{
-				if(SaveToDisk(&(processor.GetData()[0]), (int)(processor.GetData().size())))
+				if (SaveToDisk(&(processor.GetData()[0]), (int)(processor.GetData().size())))
 				{
 					string sTmp = string("AssetFile Sync Completed:") + url + "\n";
 					pAsyncLoader->log(sTmp);
@@ -214,7 +214,7 @@ namespace ParaEngine
 
 		virtual ~CAssetFileEntryUserData()
 		{
-			if(m_bDeleteUserData)
+			if (m_bDeleteUserData)
 			{
 				SAFE_DELETE(m_pUserData);
 			}
@@ -232,22 +232,22 @@ bool AssetFileEntry::IsUrlFileCompressed()
 	const std::string& url = GetUrl();
 	int nSize = (int)(url.size());
 	//  we will assume url file is a compressed file unless the file name ends with .p 
-	return !(nSize>3 && url[nSize-1] == 'p' && url[nSize-1] == '.');
+	return !(nSize > 3 && url[nSize - 1] == 'p' && url[nSize - 1] == '.');
 }
 
 DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrlProcessorUserData* lpUserData)
 {
 	bool bSucceed = false;
-	if(lpUserData)
+	if (lpUserData)
 	{
-		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*) lpUserData;
+		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*)lpUserData;
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
 		string url = pData->m_pAssetFileEntry->GetAbsoluteUrl();
 
-		if(nResult == CURLE_OK && pRequest->m_responseCode == 200 && pRequest->GetData().size()>0)
+		if (nResult == CURLE_OK && pRequest->m_responseCode == 200 && pRequest->GetData().size() > 0)
 		{
-			if(pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
+			if (pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
 			{
 				string sTmp = string("AssetFile ASync Completed:") + url + "\n";
 				pAsyncLoader->log(sTmp);
@@ -265,7 +265,7 @@ DWORD AssetFileEntry_Request_CallBack(int nResult, CUrlProcessor* pRequest, CUrl
 			pAsyncLoader->log(sTmp);
 		}
 
-		if(pData->m_pFuncCallback)
+		if (pData->m_pFuncCallback)
 		{
 			return pData->m_pFuncCallback(bSucceed ? 0 : -1, pRequest, pData->m_pUserData);
 		}
@@ -303,12 +303,12 @@ HRESULT AssetFileEntry::SyncFile_Async(URL_LOADER_CALLBACK pFuncCallback, CUrlPr
 	// we need to download from the web server. 
 	CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
-	if(pAsyncLoader->interruption_requested())
+	if (pAsyncLoader->interruption_requested())
 		return E_FAIL;
 
 	string sTmp = string("AssetFile ASync Started:") + url + "\n";
 	pAsyncLoader->log(sTmp);
-	
+
 	CUrlLoader* pLoader = new CUrlLoader();
 	pLoader->SetEstimatedSizeInBytes(m_nFileSize);
 	CUrlProcessor* pProcessor = new CUrlProcessor();
@@ -317,22 +317,22 @@ HRESULT AssetFileEntry::SyncFile_Async(URL_LOADER_CALLBACK pFuncCallback, CUrlPr
 	pProcessor->SetUrl(url.c_str());
 	pProcessor->SetCallBack(AssetFileEntry_Request_CallBack, new CAssetFileEntryUserData(this, pFuncCallback, pUserData, bDeleteUserData), true);
 
-	return pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL, GetRequestQueueID());
+	return pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, GetRequestQueueID());
 }
 
 DWORD AssetFileEntry_Request_Signal_CallBack(int nResult, CUrlProcessor* pRequest, CUrlProcessorUserData* lpUserData)
 {
 	bool bSucceed = false;
-	if(lpUserData)
+	if (lpUserData)
 	{
-		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*) lpUserData;
+		CAssetFileEntryUserData * pData = (CAssetFileEntryUserData*)lpUserData;
 		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
 		string url = pData->m_pAssetFileEntry->GetAbsoluteUrl();
 
-		if(nResult == CURLE_OK && pRequest->m_responseCode == 200 && pRequest->GetData().size()>0)
+		if (nResult == CURLE_OK && pRequest->m_responseCode == 200 && pRequest->GetData().size() > 0)
 		{
-			if(pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
+			if (pData->m_pAssetFileEntry->SaveToDisk(&(pRequest->GetData()[0]), (int)(pRequest->GetData().size())))
 			{
 				string sTmp = string("AssetFile ASync Completed:") + url + "\n";
 				pAsyncLoader->log(sTmp);
@@ -364,9 +364,9 @@ bool AssetFileEntry::IsDownloading()
 // this function is NOT thread-safe, because it uses boost.signal 
 HRESULT AssetFileEntry::SyncFile_Async(const SyncFile_Callback_t::slot_type& slot)
 {
-	if(m_sync_callback == 0)
+	if (m_sync_callback == 0)
 	{
-		if(DoesFileExist())
+		if (DoesFileExist())
 		{
 			// if already downloaded. invoke the callback with complete data. 
 			SyncFile_Callback_t callback_;
@@ -374,22 +374,22 @@ HRESULT AssetFileEntry::SyncFile_Async(const SyncFile_Callback_t::slot_type& slo
 			callback_(0, this);
 			return S_OK;
 		}
-		
+
 		// start downloading the file.  
-		if(!HasReachedMaxRetryCount())
+		if (!HasReachedMaxRetryCount())
 		{
 			AddDownloadCount();
-			
+
 			m_sync_callback = new SyncFile_Callback_t();
 			m_sync_callback->connect(slot);
-			
+
 			// start the download. 
 			string url = GetAbsoluteUrl();
 
 			// we need to download from the web server. 
 			CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
 
-			if(pAsyncLoader->interruption_requested())
+			if (pAsyncLoader->interruption_requested())
 				return E_FAIL;
 
 			string sTmp = string("AssetFile ASync Started:") + url + "\n";
@@ -403,7 +403,7 @@ HRESULT AssetFileEntry::SyncFile_Async(const SyncFile_Callback_t::slot_type& slo
 			pProcessor->SetUrl(url.c_str());
 			pProcessor->SetCallBack(AssetFileEntry_Request_Signal_CallBack, new CAssetFileEntryUserData(this, NULL, NULL, false), true);
 
-			return pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL, GetRequestQueueID());
+			return pAsyncLoader->AddWorkItem(pLoader, pProcessor, NULL, NULL, GetRequestQueueID());
 		}
 		else
 		{
@@ -420,7 +420,7 @@ HRESULT AssetFileEntry::SyncFile_Async(const SyncFile_Callback_t::slot_type& slo
 
 void AssetFileEntry::SignalComplete(int nResult)
 {
-	if(m_sync_callback)
+	if (m_sync_callback)
 	{
 		(*m_sync_callback)(nResult, this);
 
@@ -437,18 +437,18 @@ bool AssetFileEntry::CheckMD5AndSize(const char* buffer, int nSize)
 	int nCount = (int)file_size.size();
 
 	int nFileNameCount = (int)m_localFileName.size();
-	if(nFileNameCount <= nCount)
+	if (nFileNameCount <= nCount)
 		return false;
 
-	for(int i=0;i<nCount; ++i)
+	for (int i = 0; i < nCount; ++i)
 	{
-		if(file_size[i] != m_localFileName[nFileNameCount-nCount+i])
+		if (file_size[i] != m_localFileName[nFileNameCount - nCount + i])
 			return false;
 	}
 
 	// compare the md5 part
-	int nFrom = (int)(m_localFileName.find_last_of('/')+1);
-	nCount = nFileNameCount-nFrom-nCount;
+	int nFrom = (int)(m_localFileName.find_last_of('/') + 1);
+	nCount = nFileNameCount - nFrom - nCount;
 	string md5_str = m_localFileName.substr(nFrom, nCount);
 
 	ParaEngine::MD5 md5_hash;
@@ -470,7 +470,7 @@ std::string AssetFileEntry::GetFullFilePath()
 
 bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 {
-	if(bCheckMD5 && !CheckMD5AndSize(buffer, nSize))
+	if (bCheckMD5 && !CheckMD5AndSize(buffer, nSize))
 	{
 		string sTmp = string("Asset md5 check Failed:") + m_url + "\n";
 		CAsyncLoader::GetSingleton().log(sTmp);
@@ -483,12 +483,12 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	ParaEngine::Lock lock_(s_save_file_mutex);
 
 	string tmpName = GetLocalFileName() + ".tmp";
-	if(m_bIsZipFile)
+	if (m_bIsZipFile)
 	{
 		// for zipped file
-		if(CParaFile::UnzipMemToFile(buffer, nSize, tmpName.c_str(), false))
+		if (CParaFile::UnzipMemToFile(buffer, nSize, tmpName.c_str(), false))
 		{
-			if(CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
+			if (CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
 			{
 				m_nStatus = AssetFileStatus_Downloaded;
 				return true;
@@ -509,11 +509,11 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	{
 		CParaFile file;
 		// save file to temp/cache directory.
-		if(file.CreateNewFile(tmpName.c_str(), false))
+		if (file.CreateNewFile(tmpName.c_str(), false))
 		{
 			file.write(buffer, nSize);
 			file.close();
-			if(CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
+			if (CParaFile::MoveFile(tmpName.c_str(), GetLocalFileName().c_str()))
 			{
 				m_nStatus = AssetFileStatus_Downloaded;
 				return true;
@@ -534,19 +534,19 @@ bool AssetFileEntry::SaveToDisk(const char* buffer, int nSize, bool bCheckMD5)
 	return false;
 }
 
-AssetFileEntry::AssetFileTypeEnum AssetFileEntry::SetFileType( const std::string& file_extension )
+AssetFileEntry::AssetFileTypeEnum AssetFileEntry::SetFileType(const std::string& file_extension)
 {
-	if(file_extension == "ogg" || file_extension == "wav" || file_extension == "mp3")
+	if (file_extension == "ogg" || file_extension == "wav" || file_extension == "mp3")
 		m_file_type = AssetFileType_audio;
-	else 
+	else
 	{
-		if(GetFileSize() < BIG_FILE_THESHOLD)
+		if (GetFileSize() < BIG_FILE_THESHOLD)
 		{
-			if(file_extension == "dds")
+			if (file_extension == "dds")
 				m_file_type = AssetFileType_dds_file;
-			else if(file_extension == "x")
+			else if (file_extension == "x")
 				m_file_type = AssetFileType_x_file;
-			else if(file_extension == "png")
+			else if (file_extension == "png")
 				m_file_type = AssetFileType_ui_texture;
 		}
 		else
@@ -585,7 +585,7 @@ void CAssetManifest::SetUseLocalFileFirst(bool val)
 void CAssetManifest::CleanUp()
 {
 	Asset_Manifest_Map_Type::iterator itCur, itEnd = m_files.end();
-	for(itCur = m_files.begin(); itCur!=itEnd; ++itCur)
+	for (itCur = m_files.begin(); itCur != itEnd; ++itCur)
 	{
 		SAFE_DELETE(itCur->second);
 	}
@@ -598,20 +598,20 @@ CAssetManifest& CAssetManifest::GetSingleton()
 	return g_instance;
 }
 
-void CAssetManifest::EnableManifest(bool bEnable) 
+void CAssetManifest::EnableManifest(bool bEnable)
 {
 	m_bEnableManifest = bEnable;
 }
 
 void CAssetManifest::PrintStat()
 {
-	OUTPUT_LOG("CAssetManifest loaded %d files\n", (int)(m_files.size()) );
+	OUTPUT_LOG("CAssetManifest loaded %d files\n", (int)(m_files.size()));
 }
 
 int CAssetManifest::CheckSyncFile(const char* filename)
 {
 	AssetFileEntry* pEntry = GetFile(filename);
-	if(pEntry)
+	if (pEntry)
 	{
 		return pEntry->CheckSyncFile() ? 1 : -1;
 	}
@@ -672,14 +672,14 @@ void CAssetManifest::PrepareCacheFolders()
 void CAssetManifest::LoadManifest()
 {
 	CSearchResult* result = CFileManager::GetInstance()->SearchFiles(
-		CParaFile::GetCurDirectory(0), 
+		CParaFile::GetCurDirectory(0),
 		ASSETS_MANIFEST_FILE_PATTERN, "", 0, 1000, 0);
 
 	int nNum = 0;
 	if (result != 0 && result->GetNumOfResult() > 0)
 	{
 		nNum = result->GetNumOfResult();
-		for (int i=0; i<nNum; ++i)
+		for (int i = 0; i < nNum; ++i)
 		{
 			LoadManifestFile(result->GetItem(i));
 		}
@@ -703,16 +703,16 @@ void CAssetManifest::LoadManifestFile(const string& filename)
 {
 	OUTPUT_LOG("Asset manifest file %s is loaded\n", filename.c_str());
 	CParaFile file(filename.c_str());
-	if(file.isEof())
+	if (file.isEof())
 		return;
 	char line[512];
-	while(file.GetNextLine(line, 511))
+	while (file.GetNextLine(line, 511))
 	{
 		AddEntry(line);
 	}
 }
 
-/** replacement of following code, to make it faster in debug mode. 
+/** replacement of following code, to make it faster in debug mode.
 static regex re("([^,]+),([^,]+),([^,]+)");
 smatch result;
 string sFilename = filename;
@@ -732,12 +732,12 @@ bool CAssetManifest::ParseAssetEntryStr(const string &sFilename, string &fileKey
 	for (int i = 0; i < nSize; ++i)
 	{
 		char c = line[i];
-		if (c == ','){
-			if (fileKey.empty()){
+		if (c == ',') {
+			if (fileKey.empty()) {
 				fileKey = sFilename.substr(nFromPos, i - nFromPos);
-				nFromPos = i+1;
+				nFromPos = i + 1;
 			}
-			else if (md5.empty()){
+			else if (md5.empty()) {
 				md5 = sFilename.substr(nFromPos, i - nFromPos);
 				nFromPos = i + 1;
 				filesize = sFilename.substr(nFromPos);
@@ -751,7 +751,7 @@ bool CAssetManifest::ParseAssetEntryStr(const string &sFilename, string &fileKey
 
 void CAssetManifest::AddEntry(const char* filename)
 {
-	if(filename==0)
+	if (filename == 0)
 		return;
 	string sFilename = filename;
 	string fileKey;
@@ -767,51 +767,51 @@ void CAssetManifest::AddEntry(const char* filename)
 
 		bool bIsZipfile = false;
 		int nLen = (int)(fileKey.size());
-		if(nLen > 2 && fileKey[nLen-2] == '.')
+		if (nLen > 2 && fileKey[nLen - 2] == '.')
 		{
-			if( fileKey[nLen-1] == 'p')
+			if (fileKey[nLen - 1] == 'p')
 			{
 				// non-compressed file
-				fileKey.resize(nLen-2);
+				fileKey.resize(nLen - 2);
 			}
-			else if( fileKey[nLen-1] == 'z')
+			else if (fileKey[nLen - 1] == 'z')
 			{
 				// compressed file
 				bIsZipfile = true;
-				fileKey.resize(nLen-2);
+				fileKey.resize(nLen - 2);
 			}
 		}
-		
+
 		int nFileSize = atoi(filesize.c_str());
-		if(nFileSize == 0)
+		if (nFileSize == 0)
 		{
 			// ignore file whose size is 0.
 			return;
 		}
 
 		Asset_Manifest_Map_Type::iterator iter = m_files.find(fileKey);
-		if(iter != m_files.end())
+		if (iter != m_files.end())
 		{
 			// replace old one. 
 			SAFE_DELETE(iter->second);
 		}
 
 		// extract file extension and parent directory
-		for(int i=(int)fileKey.size()-1;i>=0;--i)
+		for (int i = (int)fileKey.size() - 1; i >= 0; --i)
 		{
 			char ch = fileKey[i];
-			if(ch=='.' && file_extension.empty())
+			if (ch == '.' && file_extension.empty())
 			{
-				int nCount = (int)fileKey.size()-(i+1);
-				if(nCount>0)
-					file_extension = fileKey.substr(i+1,nCount);
+				int nCount = (int)fileKey.size() - (i + 1);
+				if (nCount > 0)
+					file_extension = fileKey.substr(i + 1, nCount);
 			}
-			else if(ch=='/')
+			else if (ch == '/')
 			{
 				// also add parent directory to list, so that DoesAssetFileExist() will return true for directory entries as well. 
 				string sParentDir = fileKey.substr(0, i);
 				iter = m_files.find(sParentDir);
-				if(iter == m_files.end())
+				if (iter == m_files.end())
 				{
 					AssetFileEntry* pEntry = new AssetFileEntry();
 					pEntry->m_url = sParentDir;
@@ -821,10 +821,10 @@ void CAssetManifest::AddEntry(const char* filename)
 				break;
 			}
 		}
-				
+
 		AssetFileEntry* pEntry = new AssetFileEntry();
 		pEntry->m_url = filename;
-		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size()+63);
+		pEntry->m_localFileName.reserve(pEntry->m_localFileName.size() + 63);
 		pEntry->m_localFileName += "temp/cache/a/";
 		pEntry->m_localFileName[11] = md5[0];
 		pEntry->m_localFileName += md5;
@@ -834,7 +834,7 @@ void CAssetManifest::AddEntry(const char* filename)
 		pEntry->m_nFileSize = nFileSize;
 		pEntry->SetFileType(file_extension); // note: this function must be called after file size is set. 
 		m_files[fileKey] = pEntry;
-		
+
 		// OUTPUT_LOG("asset manifest: %s, %s, ziped:%d\n", pEntry->m_url.c_str(), pEntry->m_localFileName.c_str(), pEntry->m_bIsZipFile ? 1 : 0);
 	}
 }
@@ -843,18 +843,18 @@ bool CAssetManifest::DoesFileExist(const char* filename)
 {
 	if (!filename)
 		return false;
-	if(!IsEnabled())
+	if (!IsEnabled())
 		return false;
 	string filename_ = filename;
 	MakeValidFileName(filename_);
-	
+
 	Asset_Manifest_Map_Type::const_iterator iter = m_files.find(filename_);
 	return (iter != m_files.end());
 }
 
 bool CAssetManifest::DoesFileExist(const string& filename)
 {
-	if(!IsEnabled())
+	if (!IsEnabled())
 		return false;
 
 	string filename_ = filename;
@@ -866,11 +866,11 @@ bool CAssetManifest::DoesFileExist(const string& filename)
 
 AssetFileEntry* CAssetManifest::GetFile(const string& filename, bool bUseReplaceMap, bool bIgnoreLocalFile)
 {
-	if(!IsEnabled())
+	if (!IsEnabled())
 		return NULL;
-	
+
 	string filename_ = filename;
-	if(bUseReplaceMap)
+	if (bUseReplaceMap)
 		CFileReplaceMap::GetSingleton().ReplaceFile(filename_);
 
 	if (!bIgnoreLocalFile && IsUseLocalFileFirst())
@@ -883,7 +883,7 @@ AssetFileEntry* CAssetManifest::GetFile(const string& filename, bool bUseReplace
 	MakeValidFileName(filename_);
 
 	Asset_Manifest_Map_Type::iterator iter = m_files.find(filename_);
-	if(iter != m_files.end())
+	if (iter != m_files.end())
 	{
 		return iter->second;
 	}
@@ -923,7 +923,7 @@ bool CFileReplaceMap::IsEmpty()
 bool CFileReplaceMap::ReplaceFile(string& inout)
 {
 	Asset_Replace_Map_Type::const_iterator iter = m_replace_map.find(inout);
-	if(iter != m_replace_map.end())
+	if (iter != m_replace_map.end())
 	{
 		inout = iter->second;
 		return true;
@@ -941,19 +941,19 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 			OUTPUT_LOG("all replacement files are cleared.\n");
 		}
 	}
-	if(filename.empty())
+	if (filename.empty())
 		return;
 	string::size_type nCommaPos = filename.find(",");
-	if( nCommaPos!= string::npos)
+	if (nCommaPos != string::npos)
 	{
 		// if filename contains ",", we will simply replace the two specified file separated by comma. 
 		string sFromFile = filename.substr(0, nCommaPos);
-		string sToFile = filename.substr(nCommaPos+1);
+		string sToFile = filename.substr(nCommaPos + 1);
 		bool bIsChanged = false;
-		if(sToFile.empty())
+		if (sToFile.empty())
 		{
 			auto iterLastFile = m_replace_map.end();
-			if((iterLastFile = m_replace_map.find(sFromFile))!=m_replace_map.end())
+			if ((iterLastFile = m_replace_map.find(sFromFile)) != m_replace_map.end())
 			{
 				m_replace_map.erase(iterLastFile);
 				bIsChanged = true;
@@ -967,8 +967,8 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 				bIsChanged = true;
 			}
 		}
-		
-		if(bIsChanged && CGlobals::GetAssetManager()->UnloadAssetByKeyName(sFromFile))
+
+		if (bIsChanged && CGlobals::GetAssetManager()->UnloadAssetByKeyName(sFromFile))
 		{
 #ifdef _DEBUG
 			// OUTPUT_LOG("Replace asset file %s->%s\n", sFromFile.c_str(), sToFile.c_str());
@@ -979,13 +979,13 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 
 	CParaFile file;
 
-	if(file.OpenAssetFile(filename.c_str()))
+	if (file.OpenAssetFile(filename.c_str()))
 	{
 		regex re("([^,]+),([^,]+)");
-		
+
 		int nCount = 0;
 		char line[1024];
-		while(file.GetNextLine(line, 1023))
+		while (file.GetNextLine(line, 1023))
 		{
 			string sLine = line;
 			smatch result;
@@ -995,14 +995,14 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 				string fileTo = result.str(2);
 
 				Asset_Replace_Map_Type::iterator iter = m_replace_map.find(fileFrom);
-				if( iter == m_replace_map.end())
+				if (iter == m_replace_map.end())
 				{
-					nCount ++;
+					nCount++;
 					m_replace_map[fileFrom] = fileTo;
 				}
 				else
 				{
-					if(iter->second == fileTo)
+					if (iter->second == fileTo)
 					{
 						// OUTPUT_LOG("warning: recursive file replace found: %s->%s\n", fileFrom.c_str(), fileTo.c_str());
 					}
@@ -1010,7 +1010,7 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 					{
 						// overwrite old one with new mapping. 
 						iter->second = fileTo;
-						if(CGlobals::GetAssetManager()->UnloadAssetByKeyName(fileFrom))
+						if (CGlobals::GetAssetManager()->UnloadAssetByKeyName(fileFrom))
 						{
 #ifdef _DEBUG
 							OUTPUT_LOG("warning: unload a replace asset file %s->%s\n", fileFrom.c_str(), fileTo.c_str());
@@ -1024,4 +1024,17 @@ void CFileReplaceMap::LoadReplaceFile(const string& filename, bool bReplaceExist
 
 	}
 
+}
+
+int CAssetManifest::InstallFields(CAttributeClass* pClass, bool bOverride)
+{
+	IAttributeFields::InstallFields(pClass, bOverride);
+
+	pClass->AddField("Clear", FieldType_void, (void*)Clear_s, NULL, NULL, NULL, bOverride);
+	pClass->AddField("LoadManifest", FieldType_void, (void*)LoadManifest_s, NULL, NULL, NULL, bOverride);
+
+	pClass->AddField("LoadManifestFile", FieldType_String, (void*)LoadManifestFile_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("Enabled", FieldType_Bool, (void*)SetEnabled_s, (void*)IsEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("UseLocalFileFirst", FieldType_Bool, (void*)SetUseLocalFileFirst_s, (void*)IsUseLocalFileFirst_s, NULL, NULL, bOverride);
+	return S_OK;
 }

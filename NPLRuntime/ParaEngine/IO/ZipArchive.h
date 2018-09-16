@@ -268,6 +268,14 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CZipArchive, GetRootDirectory_s, const char**) { *p1 = cls->GetRootDirectory().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CZipArchive, SetRootDirectory_s, const char*) { cls->SetRootDirectory(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CZipArchive, GeneratePkgFileV1_s, const char*) { cls->GeneratePkgFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, GeneratePkgFileV2_s, const char*) { cls->GeneratePkgFile2(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CZipArchive, GetFileCount_s, int*) { *p1 = cls->GetFileCount(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CZipArchive, IsIgnoreCase_s, bool*) { *p1 = cls->IsIgnoreCase(); return S_OK; }
+		
+
 
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
 		
