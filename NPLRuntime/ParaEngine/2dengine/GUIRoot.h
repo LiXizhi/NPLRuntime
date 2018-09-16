@@ -365,7 +365,9 @@ namespace ParaEngine
 
 		bool IsKeyboardProcessed();
 		bool IsMouseProcessed();
-
+        /** thread safe: if mouse is over scrollable ui in the most recent mouse position */
+        bool IsMouseOverScrollableUI() const;
+        
 		/** whether the mouse is in non-client area, we will allow the user to drag the window if this is true.
 		* CGUIContainer:SetNonClientArea(true) can be used to specify a non-client area.
 		*/
@@ -537,6 +539,7 @@ namespace ParaEngine
 		bool m_bWindowChanging;//when window moved or resize, it is set true;
 		bool m_bRenderImageCursor;
 		bool m_bUseSystemCursor;
+        bool m_bMouseOverScrollableUI;
 		// delete queue id
 		vector<int> m_deleteQueue;
 
