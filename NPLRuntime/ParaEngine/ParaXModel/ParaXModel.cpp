@@ -49,12 +49,6 @@ using namespace ParaEngine;
 
 size_t CParaXModel::m_uUsedVB = 0;
 
-
-HRESULT CParaXModel::RendererRecreated()
-{
-	return S_OK;
-}
-
 void CParaXModel::SetHeader(const ParaXHeaderDef& xheader)
 {
 	// for xheader
