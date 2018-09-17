@@ -1,6 +1,7 @@
 #!/bin/bash
 #USE MINGW (MSYS2) on Windows
-#NDK VERSION: r12b_x64
+#NDK VERSION: r14b_x64
+export PATH=/c/Python27:$PATH
 CURRENT_DIR=`pwd`
 BOOST_SRC="./prebuild/android/src/boost_1_64_0"
 IOS_OUTPUT_DIR="$OUTPUT_DIR/ios"
@@ -75,7 +76,7 @@ makeToolchain()
 {
     if [ ! -d $TOOLCHAIN_DIR ]; then
         echo Making android ndk toolchain 
-        $ANDROID_NDK\\build\\tools\\make-standalone-toolchain.sh --use-llvm  --arch=arm  --platform=android-21 --install-dir=$TOOLCHAIN_DIR
+         $ANDROID_NDK\\build\\tools\\make_standalone_toolchain.py  --arch arm --api 21 --stl libc++ --force --install-dir $TOOLCHAIN_DIR
     fi
 }
 
