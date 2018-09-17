@@ -76,7 +76,7 @@ makeToolchain()
 {
     if [ ! -d $TOOLCHAIN_DIR ]; then
         echo Making android ndk toolchain 
-         $ANDROID_NDK\\build\\tools\\make_standalone_toolchain.py  --arch arm --api 21 --stl libc++ --force --install-dir $TOOLCHAIN_DIR
+         $ANDROID_NDK\\build\\tools\\make_standalone_toolchain.py  --arch arm --api 21 --stl gnustl --force --install-dir $TOOLCHAIN_DIR
     fi
 }
 
