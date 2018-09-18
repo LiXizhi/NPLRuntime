@@ -59,7 +59,7 @@ namespace ParaEngine
 			mipmaps.clear();
 		}
 	public:
-		void* data;
+		unsigned char* data;
 		size_t data_size;
 		EImagePixelFormat Format;
 		std::vector<ImageMipmap> mipmaps;

@@ -11,6 +11,7 @@
 #include "texture/TextureOpenGL.h"
 
 #include <cassert>
+#include <cstdlib>
 
 using namespace ParaEngine;
 using namespace IParaEngine;
@@ -138,7 +139,7 @@ inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std
 		}
 		else if (key == "bordercolor")
 		{
-			info.BorderColor = stoi(value);
+			info.BorderColor = std::stoi(value);
 		}
 	}
 	return true;
@@ -1202,7 +1203,7 @@ const ParaEngine::EffectRenderState ParaEngine::EffectOpenGL::GetCurrentRenderSt
 		if (face == GL_CW)
 		{
 			rs.CullMode = ECullMode::CW;
-		}else if (face = GL_CCW)
+		}else if (face == GL_CCW)
 		{
 			rs.CullMode = ECullMode::CCW;
 		}
