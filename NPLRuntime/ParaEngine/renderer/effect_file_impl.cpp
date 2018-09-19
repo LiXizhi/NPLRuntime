@@ -333,7 +333,7 @@ HRESULT CEffectFileImpl::InitDeviceObjects()
 
 	if (!m_pEffect)
 	{
-		char* error_str = (error != "") ? error.c_str() : "failed loading effect file\n";
+		const char* error_str = (error != "") ? error.c_str() : "failed loading effect file\n";
 		OUTPUT_LOG("Failed Loading Effect file %s: error is %s\n", m_filename.c_str(), error_str);
 		return E_FAIL;
 	}

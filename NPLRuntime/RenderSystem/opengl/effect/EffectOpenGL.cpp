@@ -487,13 +487,13 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 			if (!ret || vscode == "")
 			{
 				error = "can't translate vertex shader " + vs_name + "\n" + error;
-				return false;
+				return nullptr;
 			}
 			ret = hlsl2glsl(codeblock, ps_name, EShLanguage::EShLangFragment, targetVersion, pscode, uniforms, error, include);
 			if (!ret || pscode == "")
 			{
 				error = "can't translate fragment shader " + ps_name + "\n" + error;
-				return false;
+				return nullptr;
 			}
 
 			GLuint vertex, fragment;
@@ -512,7 +512,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 				glGetShaderInfoLog(vertex, 512, NULL, infoLog);
 				glDeleteShader(vertex);
 				error = infoLog;
-				return false;
+				return nullptr;
 			}
 			// pixel shader
 			fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -524,7 +524,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 				glGetShaderInfoLog(fragment, 512, NULL, infoLog);
 				glDeleteShader(fragment);
 				error = infoLog;
-				return false;
+				return nullptr;
 			}
 			// link,shader program
 			GLuint program = glCreateProgram();
@@ -542,7 +542,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 				glGetProgramInfoLog(program, 512, NULL, infoLog);
 				glDeleteProgram(program);
 				error = infoLog;
-				return false;
+				return nullptr;
 			}
 
 

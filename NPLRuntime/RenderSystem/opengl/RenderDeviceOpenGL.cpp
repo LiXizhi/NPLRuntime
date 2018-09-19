@@ -658,22 +658,15 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 bool ParaEngine::RenderDeviceOpenGL::Present()
 {
 
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
 	m_DownSampleEffect->Begin();
 	m_DownSampleEffect->SetTexture("tex0", m_CurrentRenderTargets[0]);
 	m_DownSampleEffect->BeginPass(0);
 	m_DownSampleEffect->CommitChanges();
-	
 	DrawQuad();
-
 	m_DownSampleEffect->EndPass();
 	m_DownSampleEffect->End();
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	return true;
 }

@@ -2305,8 +2305,8 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 
 	pEffect = GetEffectByName("singleColor");
 	MapHandleToEffect(TECH_SINGLE_COLOR, pEffect);
-#if defined(USE_OPENGL_RENDERER)d3d
 
+#if defined(USE_OPENGL_RENDERER)
 	pEffect = GetEffectByName("guiEffect");
 	MapHandleToEffect(TECH_GUI, pEffect);
 	MapHandleToEffect(TECH_NONE, pEffect);

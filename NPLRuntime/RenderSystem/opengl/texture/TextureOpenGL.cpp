@@ -583,7 +583,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	case EPixelFormat::D24S8:
 		glFormat = GL_DEPTH24_STENCIL8;
 		glDataType = GL_UNSIGNED_INT_24_8;
-		glPixelFormat = GL_DEPTH_STENCIL;
+		glPixelFormat = GL_DEPTH24_STENCIL8;
 		break;
 	case EPixelFormat::R32F:
 		glFormat = GL_R32F;

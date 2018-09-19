@@ -47,7 +47,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	if (!numConfigs)
 	{
 		LOGW("Unable to retrieve EGL config");
-		return false;
+		return nullptr;
 	}
 
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
