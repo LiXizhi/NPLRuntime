@@ -15,10 +15,14 @@ set(NPLRUNTIME_PROJECT_NAME "NPLRuntime" CACHE STRING "Custom Project Name")
 option(PARAENGINE_CLIENT_DLL "Generate Dll Or Exe" OFF)
 option(NPLRUNTIME_STATIC_LIB "static lib or not" OFF)
 option(NPLRUNTIME_ICONV "include iconv" ON)
+option(NPLRUNTIME_SERVER "Generate server ver" OFF)
 
 project(${NPLRUNTIME_PROJECT_NAME})
 
-if(ANDROID) 
+if (NPLRUNTIME_SERVER)
+	set(NPLRUNTIME_RENDERER "NULL" CACHE STRING "Render API")
+    set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
+elseif(ANDROID) 
     set(CMAKE_ANDROID_API_MIN 21)
     set(CMAKE_ANDROID_API 21)
     set(CMAKE_ANDROID_STL_TYPE "gnustl_shared")
@@ -49,7 +53,7 @@ else()
 endif()
 
 if (APPLE)
-    if(NPLRUNTIME_RENDERER STREQUAL "NULL")
+    if(NPLRUNTIME_SERVER)
         option(MAC_SERVER "server mode" ON)
     else()
         option(MAC_SERVER "server mode" OFF)
@@ -57,8 +61,15 @@ if (APPLE)
 endif()
 
 
+if (NPLRUNTIME_SERVER)
+	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" ON)
+    option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" OFF)
+    option(NPLRUNTIME_PHYSICS "include physics" OFF)
+    option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" OFF)
+    option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
+	option(NPLRUNTIME_AUDIO "include audio" OFF)
 # Win32 Default Option
-if(WIN32)
+elseif(WIN32)
 	option(NPLRUNTIME_LUAJIT21 "build luajit21 support GC64" OFF)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
@@ -100,7 +111,6 @@ else()
     option(NPLRUNTIME_PHYSICS "include physics" OFF)
     option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
     option(NPLRUNTIME_LUA51   "build lua5.1.5" OFF)
-	option(NPLRUNTIME_AUDIO "include audio" ON)
 	option(NPLRUNTIME_AUDIO "include audio" OFF)
 endif()
 
@@ -152,6 +162,13 @@ else()
 
 endif()
 
+if (NOT ANDROID AND NOT NPLRUNTIME_STATIC_LIB)
+	set(NPLRUNTIME_NPLMono2 TRUE)
+endif()
+
+if (NPLRUNTIME_SERVER)
+	set(NPLRUNTIME_NPLMono2 TRUE)
+endif ()
 
 
 if(MSVC)

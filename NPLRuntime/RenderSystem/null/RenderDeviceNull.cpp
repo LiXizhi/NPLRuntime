@@ -102,12 +102,12 @@ bool ParaEngine::RenderDeviceNull::SetStreamSource(uint32_t StreamNumber, Vertex
 	return true;
 }
 
-Rect ParaEngine::RenderDeviceNull::GetViewport()
+ParaViewport ParaEngine::RenderDeviceNull::GetViewport()
 {
 	return m_ViewPort;
 }
 
-bool ParaEngine::RenderDeviceNull::SetViewport(const Rect& viewport)
+bool ParaEngine::RenderDeviceNull::SetViewport(const ParaViewport& viewport)
 {
 	m_ViewPort = viewport;
 	return true;
