@@ -43,22 +43,35 @@ typedef const GLubyte * (GL_APIENTRYP PFNGLGETSTRINGIPROC)(GLenum name, GLuint i
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX2X3FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX2X3FVPROC para_glUniformMatrix2x3fv;
 #define glUniformMatrix2x3fv para_glUniformMatrix2x3fv
+
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX3X2FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX3X2FVPROC para_glUniformMatrix3x2fv;
 #define glUniformMatrix3x2fv para_glUniformMatrix3x2fv
+
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX2X4FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX2X4FVPROC para_glUniformMatrix2x4fv;
 #define glUniformMatrix2x4fv para_glUniformMatrix2x4fv
+
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX4X2FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX4X2FVPROC para_glUniformMatrix4x2fv;
 #define glUniformMatrix4x2fv para_glUniformMatrix4x2fv
+
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX3X4FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX3X4FVPROC para_glUniformMatrix3x4fv;
 #define glUniformMatrix3x4fv para_glUniformMatrix3x4fv
+
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX4X3FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 extern PFNGLUNIFORMMATRIX4X3FVPROC para_glUniformMatrix4x3fv;
 #define glUniformMatrix4x3fv para_glUniformMatrix4x3fv
 
+typedef void (GL_APIENTRYP PFNGLGETTEXLEVELPARAMETERIVPROC)(GLenum target, GLint level, GLenum pname, GLint *params);
+extern PFNGLGETTEXLEVELPARAMETERIVPROC para_glGetTexLevelParameteriv;
+#define glGetTexLevelParameteriv para_glGetTexLevelParameteriv
+
+
+typedef void (GL_APIENTRYP PFNGLDRAWBUFFERSPROC)(GLsizei n, const GLenum *bufs);
+extern PFNGLDRAWBUFFERSPROC para_glDrawBuffers;
+#define glDrawBuffers para_glDrawBuffers
 
 
 extern PFNGLGENVERTEXARRAYSOESPROC para_glGenVertexArraysOES;
@@ -72,6 +85,5 @@ extern PFNGLGETSTRINGIPROC para_glGetStringi;
 #define glDeleteVertexArrays para_glDeleteVertexArraysOES
 #define glGetTexImage para_glGetTexImage;
 #define glClearDepth glClearDepthf
-#define glDrawBuffers glDrawBuffersNV
 #define glGetStringi para_glGetStringi
 #endif // __GL_ANROID_SPEC_H__

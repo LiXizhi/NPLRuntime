@@ -76,7 +76,7 @@ makeToolchain()
 {
     if [ ! -d $TOOLCHAIN_DIR ]; then
         echo Making android ndk toolchain 
-         $ANDROID_NDK\\build\\tools\\make_standalone_toolchain.py  --arch arm --api 21 --stl gnustl --force --install-dir $TOOLCHAIN_DIR
+         $ANDROID_NDK\\build\\tools\\make_standalone_toolchain.py  --arch arm --api 21 --stl libc++ --force --install-dir $TOOLCHAIN_DIR
     fi
 }
 
@@ -91,7 +91,7 @@ buildAndroid()
     toolset=clang-android \
     target-os=linux \
     threadapi=pthread \
-    threading=multi link=static runtime-link=static \
+    threading=multi link=static runtime-link=shared \
     --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-regex --with-serialization --with-iostreams --with-log \
     >> $LOG_PATH 2>&1
     if [ $? != 0 ]; then echo "Error staging Android. Check log."; exit 1; fi

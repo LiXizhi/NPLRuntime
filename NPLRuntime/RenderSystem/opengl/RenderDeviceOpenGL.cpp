@@ -918,10 +918,6 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 
-
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_FBO);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 }
 

@@ -18,7 +18,7 @@ namespace ParaEngine
 	class CEffectFileBase : public AssetEntity,public IObjectScriptingInterface
 	{
 	public:
-		const static int MAX_EFFECT_LIGHT_NUM = 4;
+		const int MAX_EFFECT_LIGHT_NUM = 4;
 
 		/** The game engine will identified some predefined technique name from the the effect file, and given them a category number
 		* e.g. a technique called, GenShadowMap, will be assigned to the shadow map category. if the technique name is not identified
