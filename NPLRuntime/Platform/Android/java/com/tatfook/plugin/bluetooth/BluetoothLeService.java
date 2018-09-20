@@ -32,6 +32,10 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import org.json.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
@@ -62,10 +66,45 @@ public class BluetoothLeService extends Service {
     public final static String ON_CHARACTERISTIC_UUID = "plugin.Bluetooth.CharacteristicId";
 	public final static String ON_CHARACTERISTIC_IO = "plugin.Bluetooth.CharacteristicIo";
 	public final static String ON_CHARACTERISTIC_STATUS = "plugin.Bluetooth.CharacteristicStatus";
+	public final static String ON_CHARACTERISTIC_DATA = "plugin.Bluetooth.CharacteristicData";
 
     public final static String ON_DESCRIPTOR_UUID = "plugin.Bluetooth.DescriptorId";
 	public final static String ON_DESCRIPTOR_IO = "plugin.Bluetooth.DescriptorIo";
 	public final static String ON_DESCRIPTOR_STATUS = "plugin.Bluetooth.DescriptorStatus";
+
+
+	public static String Bytes2HexString(byte[] data)
+	{
+		String currDataStr = "";
+		final StringBuilder stringBuilder = new StringBuilder(data.length);
+		for(int i=0;i<data.length;i++)
+		{
+			byte byteChar = data[i];
+			String str = String.format("%02X ", byteChar);
+			stringBuilder.append(str);
+			str = str.trim(); 
+			currDataStr  += str;
+		}
+		return currDataStr;
+	}
+
+	public static String characteristicData2JsStrValue(byte[] data)
+	{
+		String currDataStr = Bytes2HexString(data);
+
+		JSONObject lua_js = new JSONObject();
+		try
+		{
+			lua_js.put("data", currDataStr);
+			lua_js.put("len", data.length);
+		}
+		catch(JSONException e) 
+		{
+			e.printStackTrace();
+		}
+
+		return lua_js.toString();
+	}
 
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() 
 	{
@@ -108,32 +147,43 @@ public class BluetoothLeService extends Service {
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "r");
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, status);
+
+			final byte[] data = characteristic.getValue();
+			String currDataStr = characteristicData2JsStrValue(data);
+			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA, currDataStr);
+
 			sendBroadcast(intent);
         }
-        
+
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) 
 		{
         	Log.e(TAG, "onCharacteristicChanged uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
 
-			final byte[] data = characteristic.getValue();
-			String data_str = new String(data);
-
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "c");
-			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, data_str);
+			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, "");
+
+			final byte[] data = characteristic.getValue();
+			String currDataStr = characteristicData2JsStrValue(data);
+			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA, currDataStr);
+			
 			sendBroadcast(intent);
         }
 
 
-        public void onCharacteristicWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattCharacteristic paramBluetoothGattCharacteristic, int paramInt)
+        public void onCharacteristicWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattCharacteristic characteristic, int paramInt)
         {
         	Log.e(TAG, "onCharacteristicWrite: ");
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
-			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, paramBluetoothGattCharacteristic.getUuid().toString());
+			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "w");
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_STATUS, "" + paramInt);
+
+			final byte[] data = characteristic.getValue();
+			String currDataStr = characteristicData2JsStrValue(data);
+			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_DATA, "");
 			sendBroadcast(intent);
         }
 
