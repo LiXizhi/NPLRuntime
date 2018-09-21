@@ -745,5 +745,9 @@ namespace ParaScripting
 		* @param output: {method="zlib|gzip", content=string, [level=number, windowBits=number,] result=string}
 		*/
 		static bool Decompress(const object& output);
+		/**  get the lua state in the runtime state
+		* @param name: the name of runtime state, if "", it's an anonymous runtime state. otherwise it should be a unique name.
+		*/
+		static int GetLuaState(const string& name);
 	};
 }
