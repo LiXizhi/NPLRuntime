@@ -70,11 +70,18 @@ bool CFileManager::OpenArchiveEx(const std::string& path, const std::string& sRo
 		if(pArchive != NULL)
 		{
 			bRes = pArchive->Open(sArchiveName, ++m_priority);
-			if(! sRootDir.empty())
-				pArchive->SetRootDirectory(sRootDir);
+			if (bRes)
+			{
+				if (!sRootDir.empty())
+					pArchive->SetRootDirectory(sRootDir);
 
-			Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
-			m_archivers.push_back(pArchive);
+				Scoped_WriteLock<BlockReadWriteLock> lock_(*m_pArchiveLock);
+				m_archivers.push_back(pArchive);
+			}
+			else
+			{
+				SAFE_DELETE(pArchive);
+			}
 		}
 		else 
 			bRes = false;
