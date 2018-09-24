@@ -260,9 +260,9 @@ public:
 
 		// populate the squeezed points into mesh
 		// why bother to squeeze points? cause we want a well-connected mesh
-		// the original parax model has too many points in the same posiotn
+		// the original parax model has too many points in the same position
 		// which produces a lot redundant connections
-		// thoese redundant connections make the mesh traversal almost impossible
+		// these redundant connections make the mesh traversal almost impossible
 		Mesh* pMesh = new Mesh();
 		for (int i = 0; i < idx.size(); ++i) {
 			if (idx[i] != i) continue;
@@ -286,7 +286,7 @@ public:
 
 #ifdef OUTPUT_DEBUG_FILE
 		{
-			// output the squeezed points for visulization
+			// output the squeezed points for visualization
 			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.vert";
 			RigHelper::OutputTriangles(pMesh, fileName);
 		}
@@ -423,7 +423,7 @@ public:
 		return pMesh;
 	}
 
-	static Skeleton* ExtractPataXSkeleton(CParaXModel* xmodel, const PVector3& off, double scale)
+	static Skeleton* ExtractParaXSkeleton(CParaXModel* xmodel, const PVector3& off, double scale)
 	{
 		Skeleton* skeleton = new Skeleton();
 
@@ -433,7 +433,8 @@ public:
 		refMap.resize(numBones);
 		for (int i = 0; i < numBones; ++i) {
 			int parent = (bones + i)->parent;
-			++refMap[bones[i].parent];
+			if(parent>=0)
+				++refMap[bones[i].parent];
 		}
 	
 		std::list<Bone*> orderedBones;
@@ -473,12 +474,15 @@ public:
 			}
 			if (!parentAhead) {
 				std::list<Bone*>::iterator bIter = orderedBones.begin();
-				while (bIter != iter) {
+				while (bIter != iter && bIter!= orderedBones.end() && iter!= orderedBones.end()) {
 					if ((*bIter)->GetBoneIndex() == (*iter)->GetParentIndex()) {
 						std::list<Bone*>::iterator ffIter = fIter;
-						++ffIter;
-						orderedBones.insert(ffIter, *bIter);
-						orderedBones.erase(bIter);
+						if (ffIter != orderedBones.end())
+						{
+							++ffIter;
+							orderedBones.insert(ffIter, *bIter);
+							orderedBones.erase(bIter);
+						}
 						break;
 					}
 					++bIter;
@@ -896,7 +900,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		Mesh* srcMesh = RigHelper::ExtractParaXMesh(bestMatch->second->GetModel(), true);
 		srcMesh->normalizeBoundingBox();
 
-		Skeleton* given = RigHelper::ExtractPataXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
+		Skeleton* given = RigHelper::ExtractParaXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
 		if (given == nullptr) {
 			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
 			this->delref();
@@ -919,7 +923,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		//discrete embedding
 		std::vector<std::vector<int>> possibilities = ComputePossibilities(graph, spheres, *given);
 
-		//constraints can be set by respecifying possibilities for skeleton joints:
+		//constraints can be set by re-specifying possibilities for skeleton joints:
 		//to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
 		std::vector<int> embeddingIndices = DiscreteEmbed(graph, spheres, *given, possibilities);
 

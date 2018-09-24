@@ -8,7 +8,7 @@ class Mesh;
 namespace ParaEngine
 {
 
-	class ParaXEntity;
+	struct ParaXEntity;
 	class CParaXModel;
 	class CAutoRigger : public CBaseObject
 	{
