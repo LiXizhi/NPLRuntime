@@ -10,6 +10,11 @@ if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
     list(APPEND RenderSystem  glad_ext_wgl opengl32.lib)
     ucm_add_dirs(src/Render/context/wgl TO src_render_context)
 #}
+elseif(NPLRUNTIME_RENDERER STREQUAL "OPENGLES")
+#{
+    set(RenderSystem RenderSystemOpenGL)
+	ucm_add_dirs(src/Render/context/egl TO src_render_context)
+#}
 elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 #{
     set(RenderSystem RenderSystemD3D9)

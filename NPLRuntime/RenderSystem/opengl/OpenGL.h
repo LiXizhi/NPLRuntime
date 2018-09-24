@@ -5,7 +5,9 @@ extern "C" {
 
 #ifdef ANDROID
 #include "gl_android_spec.h"
-#elif _WIN32
+#elif  defined(_WIN32) && defined(GLES)
+#include "gl_android_spec.h"
+#elif defined(_WIN32)
 #include "glad/glad.h"
 #elif __APPLE__
 #import "TargetConditionals.h"

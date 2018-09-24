@@ -32,16 +32,6 @@ if(ANDROID)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
     # Disable everything for fix compile errors.
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-everything>)
-    #add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-zero-length-array>)
-    #add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-nullability-extension>)
-    
-
-   # add_compile_options(-fexceptions -frtti  -fsigned-char -Wdeprecated-register 
-   # -Winconsistent-missing-override -Wgnu-include-next -Wnullability-extension
-   # -Wzero-length-array 
-   # -Wnested-anon-types
-   # )
-    message(FLAGS ${CMAKE_CXX_FLAGS})
     add_definitions(-D__ANDROID__ -DANDROID)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL)
@@ -53,12 +43,14 @@ elseif(APPLE)
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
 elseif(WIN32)
     # Ugly warnings
-    IF(MSVC)
-        ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
-        ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
-    ENDIF()
+    if(MSVC)
+        add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+        add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+        #add_definitions(-D__STDC__ )
+        #add_compile_options(/Za)
+    endif()
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
-    set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL NULL)
+    set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS DIRECTX OPENGL OPENGLES NULL)
 else()
     set(NPLRUNTIME_RENDERER "NULL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)

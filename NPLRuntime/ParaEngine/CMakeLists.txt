@@ -34,7 +34,7 @@ ucm_add_dirs(
 TO sources_commmon RECURSIVE
 )
 
-if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+if(NPLRUNTIME_RENDERER STREQUAL "OPENGL" OR NPLRUNTIME_RENDERER STREQUAL "OPENGLES")
     set(RenderSystem RenderSystemOpenGL)
     ucm_add_dirs(
         OpenGLWrapper
