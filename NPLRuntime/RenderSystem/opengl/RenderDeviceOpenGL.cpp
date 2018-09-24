@@ -903,7 +903,26 @@ void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_backbufferRenderTarget->GetTextureID(), 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+
+	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
+	{
+		assert(false);
+	}
+	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS)
+	{
+		assert(false);
+	}
+	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
+	{
+		assert(false);
+	}
+	if (fbStatus == GL_FRAMEBUFFER_UNSUPPORTED)
+	{
+		assert(false);
+	}
+	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
 		assert(false);
 	}
