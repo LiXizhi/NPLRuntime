@@ -71,6 +71,9 @@ namespace ParaEngine
 
 	protected:
 		void ApplyBlendingModeChange();
+		bool IsSupportExt(const char* extName);
+	private:
+		void InitGLExtList();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;

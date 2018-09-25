@@ -93,7 +93,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 		}
 	}
 
-
+	InitGLExtList();
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -717,6 +717,24 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 
 }
 
+
+bool ParaEngine::RenderDeviceOpenGL::IsSupportExt(const char* extName)
+{
+	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
+	if (it != m_GLExtes.end()) return true;
+	return false;
+}
+
+void ParaEngine::RenderDeviceOpenGL::InitGLExtList()
+{
+	const GLchar* extensions = (const GLchar*)glGetString(GL_EXTENSIONS);
+	std::istringstream f(extensions);
+	std::string s;
+	while (std::getline(f, s, ' '))
+	{
+		m_GLExtes.push_back(s);
+	}
+}
 
 
 

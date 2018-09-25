@@ -5,6 +5,9 @@
 #include "glad/glad.h"
 #include "glad/glad_wgl.h"
 
+#include <sstream>
+#include <iostream>
+
 
 #if GLAD_CORE_DEBUG
 void _post_call_callback_default(const char *name, void *funcptr, int len_args, ...) {
@@ -17,7 +20,7 @@ void _post_call_callback_default(const char *name, void *funcptr, int len_args, 
 }
 #endif
 
-ParaEngine::RenderDeviceOpenWGL::RenderDeviceOpenWGL(HDC context):m_WGLContext(context)
+ParaEngine::RenderDeviceOpenWGL::RenderDeviceOpenWGL(HDC context):m_WGLContext(context),m_FBO(0)
 
 {
 #if GLAD_CORE_DEBUG
@@ -217,19 +220,15 @@ void ParaEngine::RenderDeviceOpenWGL::DrawQuad()
 }
 
 
-bool ParaEngine::RenderDeviceOpenWGL::IsSupportExt(const char* extName)
-{
-	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
-	if (it != m_GLExtes.end()) return true;
-	return false;
-}
+
 
 
 void ParaEngine::RenderDeviceOpenWGL::InitCpas()
 {
+
+
+
 	m_DeviceCpas.DynamicTextures = true;
-
-
 	GLint maxDrawBuffers = 0;
 	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
 
@@ -244,19 +243,8 @@ void ParaEngine::RenderDeviceOpenWGL::InitCpas()
 	m_DeviceCpas.MaxSimultaneousTextures = texture_units;
 	m_DeviceCpas.ScissorTest = true;
 	m_DeviceCpas.Stencil = true;
-
-
 	m_DeviceCpas.NumSimultaneousRTs = maxDrawBuffers;
-	GLint numExtes = 0;
-	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtes);
-	for (GLint i = 0; i < numExtes; i++)
-	{
-		const char* extName = (const char*)glGetStringi(GL_EXTENSIONS, i);
-		m_GLExtes.push_back(extName);
-	}
-
 	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
-
 }
 
 
