@@ -723,29 +723,35 @@ ParaEngine::FileData ParaEngine::CFileUtils::GetDataFromFile(const char* filenam
 	return data;
 #elif defined(USE_BOOST_FILE_API)
 	FileData data;
-	fs::ifstream file;
-	if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
+	try
 	{
-		file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
-		if (!file.is_open())
+		fs::ifstream file;
+		if (!CParaFile::GetDevDirectory().empty() && !IsAbsolutePath(filename))
+		{
+			file.open(CParaFile::GetDevDirectory() + filename, ios::in | ios::binary | ios::ate);
+			if (!file.is_open())
+			{
+				file.open(filename, ios::in | ios::binary | ios::ate);
+			}
+		}
+		else
 		{
 			file.open(filename, ios::in | ios::binary | ios::ate);
 		}
-	}
-	else 
-	{
-		file.open(filename, ios::in | ios::binary | ios::ate);
-	}
 
-	if(file.is_open())
+		if (file.is_open())
+		{
+			size_t nSize = (size_t)file.tellg();
+			char* pBuffer = new char[nSize + 1];
+			pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
+			file.seekg(0, ios::beg);
+			file.read(pBuffer, nSize);
+			file.close();
+			data.SetOwnBuffer(pBuffer, nSize);
+		}
+	}
+	catch (...)
 	{
-		size_t nSize = (size_t)file.tellg();
-		char* pBuffer = new char[nSize + 1];
-		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
-		file.seekg (0, ios::beg);
-		file.read(pBuffer, nSize);
-		file.close();
-		data.SetOwnBuffer(pBuffer, nSize);
 	}
 	return data;
 #else
@@ -903,7 +909,12 @@ int ParaEngine::CFileUtils::GetFileSize(const char* sFilePath)
 #ifdef USE_COCOS_FILE_API
 	return 0;
 #elif defined USE_BOOST_FILE_API
-	return (int)fs::file_size(sFilePath);
+	int nSize = 0;
+	try {
+		nSize = (int)fs::file_size(sFilePath);
+	}
+	catch (...)	{}
+	return nSize;
 #else
 	DWORD dwFileSize = 0;
 	HANDLE hFile = ::CreateFile(sFilePath, FILE_READ_DATA/*GENERIC_READ*/, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);

@@ -338,7 +338,7 @@ void CParaXModel::InitVertexBuffer_BMAX()
 		{
 			auto& p = passes[i];
 
-			if (!showGeosets[p.geoset])
+			if (p.geoset < 0 || !showGeosets[p.geoset])
 				continue;
 
 			count += p.indexCount;
@@ -356,7 +356,7 @@ void CParaXModel::InitVertexBuffer_BMAX()
 		{
 			auto& p = passes[pass];
 
-			if (!showGeosets[p.geoset])
+			if (p.geoset < 0 || !showGeosets[p.geoset])
 				continue;
 
 			size_t nLockedNum = p.indexCount / 3;
@@ -414,7 +414,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 		{
 			auto& p = passes[i];
 
-			if (!showGeosets[p.geoset])
+			if (p.geoset < 0 || !showGeosets[p.geoset])
 				continue;
 
 			count += p.indexCount;
@@ -433,7 +433,7 @@ void CParaXModel::InitVertexBuffer_NOANIM()
 		{
 			auto& p = passes[pass];
 
-			if (!showGeosets[p.geoset])
+			if (p.geoset < 0 || !showGeosets[p.geoset])
 				continue;
 
 			size_t nLockedNum = p.indexCount / 3;
@@ -1016,7 +1016,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 		{
 			ModelRenderPass &p = passes[nPass];
 
-			if (showGeosets[p.geoset])
+			if (p.geoset >= 0 && showGeosets[p.geoset])
 			{
 				// skip and build for translucent pass
 				if (pSceneState->m_bEnableTranslucentFaceSorting &&
@@ -1076,7 +1076,7 @@ void CParaXModel::RenderSoftNoAnim(SceneState* pSceneState, CParameterBlock* pMa
 				{
 					ModelRenderPass &p = passes[nPass];
 
-					if (showGeosets[p.geoset])
+					if (p.geoset >= 0 && showGeosets[p.geoset])
 					{
 						// skip and build for translucent pass
 						if (pSceneState->m_bEnableTranslucentFaceSorting &&
@@ -1201,7 +1201,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 		for (int nPass = 0; nPass < nPasses; nPass++)
 		{
 			ModelRenderPass &p = passes[nPass];
-			if (showGeosets[p.geoset])
+			if (p.geoset >= 0 && showGeosets[p.geoset])
 			{
 				if (p.init_bmax_FX(this, pSceneState))
 				{
@@ -1227,7 +1227,7 @@ void CParaXModel::RenderBMaxModel(SceneState* pSceneState, CParameterBlock* pMat
 				{
 					ModelRenderPass &p = passes[nPass];
 
-					if (showGeosets[p.geoset])
+					if (p.geoset >=0 && showGeosets[p.geoset])
 					{
 						// do not combine render pass. this appears to be faster than combined render passes. 
 						if (p.init_bmax_FX(this, pSceneState, pMaterialParams))
@@ -1272,7 +1272,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 		{
 			ModelRenderPass &p = passes[nPass];
 
-			if (showGeosets[p.geoset])
+			if (p.geoset >= 0 && showGeosets[p.geoset])
 			{
 				// skip and build for translucent pass
 				if (pSceneState->m_bEnableTranslucentFaceSorting &&
@@ -1340,7 +1340,7 @@ void CParaXModel::RenderSoftAnim(SceneState* pSceneState, CParameterBlock* pMate
 				{
 					ModelRenderPass &p = passes[nPass];
 
-					if (showGeosets[p.geoset])
+					if (p.geoset >= 0 && showGeosets[p.geoset])
 					{
 						// skip and build for translucent pass
 						if (pSceneState->m_bEnableTranslucentFaceSorting &&
@@ -1896,7 +1896,7 @@ void CParaXModel::BuildShadowVolume(ShadowVolume * pShadowVolume, LightParams* p
 		* we will render it anyway if the geoset is 0, which is usually the base model.
 		* this is just a work around. In future, I will specify a certain geoset ID as the shadow model and render it only.
 		*/
-		if (showGeosets[p.geoset] && (p.blendmode == BM_OPAQUE || (p.geoset == 0 && !bBaseModelRendered)))
+		if ((p.geoset >= 0 && showGeosets[p.geoset]) && (p.blendmode == BM_OPAQUE || (p.geoset == 0 && !bBaseModelRendered)))
 		{
 			if (p.geoset == 0)
 				bBaseModelRendered = true;
@@ -2389,7 +2389,6 @@ int CParaXModel::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Geosets", FieldType_void_pointer, (void*)0, (void*)GetGeosets_s, NULL, NULL, bOverride);
 	pClass->AddField("Indices", FieldType_void_pointer, (void*)0, (void*)GetIndices_s, NULL, NULL, bOverride);
 	pClass->AddField("Animations", FieldType_void_pointer, (void*)0, (void*)GetAnimations_s, NULL, NULL, bOverride);
-	//pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, (void*)SaveToDisk_s, NULL, NULL, bOverride);
 	pClass->AddField("SaveToDisk", FieldType_String, (void*)SaveToDisk_s, NULL, NULL, NULL, bOverride);
 
 	return S_OK;

@@ -1672,5 +1672,9 @@ int ParaEngine::CZipArchive::InstallFields(CAttributeClass* pClass, bool bOverri
 
 	pClass->AddField("SetBaseDirectory", FieldType_String, (void*)SetBaseDirectory_s, NULL, NULL, NULL, bOverride);
 	pClass->AddField("RootDirectory", FieldType_String, (void*)SetRootDirectory_s, (void*)GetRootDirectory_s, NULL, NULL, bOverride);
+	pClass->AddField("GeneratePkgFileV1", FieldType_String, (void*)GeneratePkgFileV1_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("GeneratePkgFileV2", FieldType_String, (void*)GeneratePkgFileV2_s, (void*)0, NULL, NULL, bOverride);
+	pClass->AddField("FileCount", FieldType_Int, (void*)0, (void*)GetFileCount_s, NULL, NULL, bOverride);
+	pClass->AddField("IsIgnoreCase", FieldType_Bool, (void*)0, (void*)IsIgnoreCase_s, NULL, NULL, bOverride);
 	return S_OK;
 }

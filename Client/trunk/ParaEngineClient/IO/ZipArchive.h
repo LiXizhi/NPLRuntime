@@ -13,9 +13,9 @@ namespace ParaEngine
 	using namespace std;
 	class IReadFile;
 
-	const WORD ZIP_FILE_ENCRYPTED =			0x0001; // set if the file is encrypted
-	const WORD ZIP_INFO_IN_DATA_DESCRITOR =	0x0008; // the fields crc-32, compressed size
-	/// Size of end of central record (excluding variable fields)
+	const WORD ZIP_FILE_ENCRYPTED = 0x0001; // set if the file is encrypted
+	const WORD ZIP_INFO_IN_DATA_DESCRITOR = 0x0008; // the fields crc-32, compressed size
+													/// Size of end of central record (excluding variable fields)
 	const int ZIP_CONST_ENDHDR = 22;
 	/// local file header
 	const int ZIP_CONST_LOCALHEADERSIG = 'P' | ('K' << 8) | (3 << 16) | (4 << 24);
@@ -121,13 +121,13 @@ namespace ParaEngine
 
 	public:
 		SZipFileEntry()
-			: fileDataPosition(0), CompressedSize(0),UncompressedSize(0),CompressionMethod(0) , hashValue(0), zipFileName(nullptr), fileNameLen(0), LastModifiedTime(0)
+			: fileDataPosition(0), CompressedSize(0), UncompressedSize(0), CompressionMethod(0), hashValue(0), zipFileName(nullptr), fileNameLen(0), LastModifiedTime(0)
 		{
 #ifdef SAVE_ZIP_HEADER
-			memset(&header, 0, sizeof(SZIPFileHeader)); 
+			memset(&header, 0, sizeof(SZIPFileHeader));
 #endif 
 		};
-		~SZipFileEntry(){};
+		~SZipFileEntry() {};
 
 		void SetFileName(const char* str, WORD len)
 		{
@@ -186,9 +186,9 @@ namespace ParaEngine
 	{
 		SZipFileEntry* m_pEntry;
 	public:
-		SZipFileEntryPtr():m_pEntry(NULL){};
-		SZipFileEntryPtr(const SZipFileEntryPtr& entry):m_pEntry(entry.m_pEntry){};
-		SZipFileEntryPtr(SZipFileEntry* pEntry):m_pEntry(pEntry){};
+		SZipFileEntryPtr() :m_pEntry(NULL) {};
+		SZipFileEntryPtr(const SZipFileEntryPtr& entry) :m_pEntry(entry.m_pEntry) {};
+		SZipFileEntryPtr(SZipFileEntry* pEntry) :m_pEntry(pEntry) {};
 	};
 
 	// check src data is zip file data
@@ -198,7 +198,7 @@ namespace ParaEngine
 	bool GetFirstFileData(const char* src, std::string& out);
 
 	/**
-	Both the zip and ParaEngine's pkg file encryption logics are supported. pkg file is a slightly encrypted version of zip file. 
+	Both the zip and ParaEngine's pkg file encryption logics are supported. pkg file is a slightly encrypted version of zip file.
 
 	Load Archive File Logics
 	========================
@@ -206,7 +206,7 @@ namespace ParaEngine
 	Load "[filename].pkg"
 	return
 	end
-	Suppose the loaded sArchiveName is "[filename].zip", 
+	Suppose the loaded sArchiveName is "[filename].zip",
 	if(At debug mode) then
 	if "[filename].zip" does not exist then
 	if "[filename].pkg" exists then
@@ -222,7 +222,7 @@ namespace ParaEngine
 	generate a new file called "[filename].pkg" based on "[filename].zip"
 	end
 	end
-	else 
+	else
 	if "[filename].zip" exist then
 	Load "[filename].zip"
 	else if "[filename].pkg" exist then
@@ -234,15 +234,15 @@ namespace ParaEngine
 
 	ZIP file logics
 	========================
-	It uses the ZIP file's CentralDirectory record at the end of the zip file to build the 
-	file list for random file access. 
+	It uses the ZIP file's CentralDirectory record at the end of the zip file to build the
+	file list for random file access.
 
 	ParaEngine pkg File Format
 	========================
 	char[4] <file type id> ".pkg"
 	byte[4] <pkg file version> 0.0.0.1
 	[int] <length of string>
-	[string] "ParaEngine Tech Studio Package File Format. Please note that content in 
+	[string] "ParaEngine Tech Studio Package File Format. Please note that content in
 	this file is meant to be protected and copyrighted by their author(s). Decoding this pkg file is illegal."
 	[int] reserved1
 	[int] reserved2
@@ -257,24 +257,32 @@ namespace ParaEngine
 	...
 	[data n]
 	*/
-	class CZipArchive :	public CArchive
-	{ 
+	class CZipArchive : public CArchive
+	{
 	public:
 		CZipArchive(void);
 		CZipArchive(bool bIgnoreCase);
 		virtual ~CZipArchive(void);
 		inline static DWORD TypeID() { return 2; };
-		virtual DWORD GetType(){ return TypeID(); };
+		virtual DWORD GetType() { return TypeID(); };
 
 		ATTRIBUTE_DEFINE_CLASS(CZipArchive);
-		ATTRIBUTE_METHOD1(CZipArchive, SetBaseDirectory_s, const char*)	{ cls->SetBaseDirectory(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, SetBaseDirectory_s, const char*) { cls->SetBaseDirectory(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CZipArchive, GetRootDirectory_s, const char**) { *p1 = cls->GetRootDirectory().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CZipArchive, SetRootDirectory_s, const char*) { cls->SetRootDirectory(p1); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CZipArchive, GeneratePkgFileV1_s, const char*) { cls->GeneratePkgFile(p1); return S_OK; }
+		ATTRIBUTE_METHOD1(CZipArchive, GeneratePkgFileV2_s, const char*) { cls->GeneratePkgFile2(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CZipArchive, GetFileCount_s, int*) { *p1 = cls->GetFileCount(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CZipArchive, IsIgnoreCase_s, bool*) { *p1 = cls->IsIgnoreCase(); return S_OK; }
+
+
 
 		virtual int InstallFields(CAttributeClass* pClass, bool bOverride);
-		
+
 	public:
 		/** open archive */
 		virtual bool Open(const string& sArchiveName, int nPriority);
@@ -289,7 +297,7 @@ namespace ParaEngine
 		virtual bool DoesFileExist(const string& filename);
 
 		/**
-		* Open a file for immediate reading. It could be either a zip file or a pkg file. 
+		* Open a file for immediate reading. It could be either a zip file or a pkg file.
 		* call getBuffer() to retrieval the data
 		* @param filename: the file name to open
 		* @param handle to the opened file.
@@ -306,12 +314,12 @@ namespace ParaEngine
 		*/
 		virtual bool OpenFile(const ArchiveFileFindItem* item, FileHandle& handle);
 
-		/* open a zip file in memory 
-		* @param buffer: 
+		/* open a zip file in memory
+		* @param buffer:
 		* @param nLen: size in byte of the buffer
 		* @param bDeleteBuffer: true if the zip file will take the ownership of the buffer and will delete it on exit.
 		*/
-		bool OpenMemFile(const char* buffer, DWORD nLen, bool bDeleteBuffer=true);
+		bool OpenMemFile(const char* buffer, DWORD nLen, bool bDeleteBuffer = true);
 
 		/** get file size. */
 		virtual DWORD GetFileSize(FileHandle& handle);
@@ -323,15 +331,15 @@ namespace ParaEngine
 		virtual string GetOriginalNameInArchive(FileHandle& handle);
 		
 		/** read file. */
-		virtual bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime);
+		virtual bool ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime);
 
-		/** read the raw (may be compressed file) 
-		* @param lppBuffer: the buffer to hold the (compressed) output data. one need to use the SAFE_DELETE_ARRAY() to delete the output data. 
+		/** read the raw (may be compressed file)
+		* @param lppBuffer: the buffer to hold the (compressed) output data. one need to use the SAFE_DELETE_ARRAY() to delete the output data.
 		* @param pnCompressedSize: output the size of the compressed data
-		* @param pnUncompressedSize:output the size of the uncompressed data. if 0, it means that the data is not compressed. 
-		* @return true if succeed. 
+		* @param pnUncompressedSize:output the size of the uncompressed data. if 0, it means that the data is not compressed.
+		* @return true if succeed.
 		*/
-		virtual bool ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize);
+		virtual bool ReadFileRaw(FileHandle& handle, LPVOID* lppBuffer, LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize);
 
 		/** decompress a file buffer */
 		static bool Decompress(LPVOID lpCompressedBuffer, DWORD nCompressedSize, LPVOID lpUnCompressedBuffer, DWORD nUncompressedSize);
@@ -339,7 +347,7 @@ namespace ParaEngine
 		/** close file. */
 		virtual bool CloseFile(FileHandle& hFile);
 
-		/** set root directory 
+		/** set root directory
 		* @param filename: the parent directory filename will be regarded as the root directory.
 		* m_bRelativePath will be set to false if filename or its parent directory is ""; otherwise it will be set to true.
 		*/
@@ -348,13 +356,13 @@ namespace ParaEngine
 		/** get root directory. all relative file path in zip files is regarded as relative to this directory. */
 		const std::string& GetRootDirectory();
 
-		/** set the base directory to be removed from the relative path of all files in the zip file. 
+		/** set the base directory to be removed from the relative path of all files in the zip file.
 		* call this function only once, it will actually modify the relative file path.
 		*/
 		virtual void SetBaseDirectory(const char * filename);
 
-		/** 
-		* this is a recursive function. Finding a file inside the zip. 
+		/**
+		* this is a recursive function. Finding a file inside the zip.
 		* search files at once. @see CSearchResult
 		* the current version of this function can support only one query at a time. The search result is invalid if called intermittently
 		* @param sRootPath: the parent path inside the zip where to search for. for example: "", "xmodel/","xmodel/models/". Other format is not acceptable
@@ -365,8 +373,8 @@ namespace ParaEngine
 		virtual void FindFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel);
 
 		/**
-		* Generate a pkg file which is equivalent to the currently loaded zip file. 
-		* This function can only be called, when a zip file has been successfully loaded. 
+		* Generate a pkg file which is equivalent to the currently loaded zip file.
+		* This function can only be called, when a zip file has been successfully loaded.
 		* @param filename the pkg file name to be generated. It will overwrite existing file
 		* @return true if successful.
 		*/
@@ -376,9 +384,9 @@ namespace ParaEngine
 		/** get total file count. */
 		int GetFileCount();
 
-		virtual bool IsIgnoreCase() const { return m_bIgnoreCase;  }
+		virtual bool IsIgnoreCase() const { return m_bIgnoreCase; }
 	private:
-		IReadFile* m_pFile;
+		IReadFile * m_pFile;
 		vector<SZipFileEntryPtr> m_FileList;
 		bool m_bDirty;
 		SZipFileEntry* m_pEntries;
@@ -406,7 +414,7 @@ namespace ParaEngine
 		bool OpenPkgFile(const string& filename);
 
 		void ReBuild();
-		/**  
+		/**
 		* search the last occurrence of a integer signature in the range [endLocation-minimumBlockSize-maximumVariableData, endLocation-minimumBlockSize]
 		* -1 is returned if not found.
 		*/

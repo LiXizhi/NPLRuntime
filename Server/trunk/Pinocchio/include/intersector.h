@@ -18,12 +18,13 @@ public:
     Intersector(const Mesh &m, const PVector3 &inDir) : m_Mesh(&m), m_Dir(inDir.normalize()) { init(); }
     
     vector<PVector3> intersect(const PVector3 &pt, vector<int> *outIndices = NULL) const;    
-    const PVector3 &getDir() const { return m_Dir; }
+	vector<PVector3> intersect_orig(const PVector3 &pt, vector<int> *outIndices = NULL) const;
+    const PVector3& getDir() const { return m_Dir; }
 private:
     void init();
     void getIndex(const PVector2 &pt, int &x, int &y) const;
     
-    const Mesh *m_Mesh;
+    const Mesh* m_Mesh;
     PVector3 m_Dir;
     PVector3 m_V1, m_V2; //basis
     Rect2 m_Bounds; //within the basis

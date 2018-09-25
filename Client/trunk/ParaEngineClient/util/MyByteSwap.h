@@ -9,8 +9,9 @@ All rights reserved.
 /** @file Helper class tp perform various byte oder swappings 
    (e.g. little to big endian) */
 #pragma once
-#include "ParaEngine.h"
 
+#include "ParaPlatformMacros.h"
+#include "PEtypes.h"
 #if _MSC_VER >= 1400 
 #include <stdlib.h>
 #endif

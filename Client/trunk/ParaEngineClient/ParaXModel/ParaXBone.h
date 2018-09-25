@@ -158,6 +158,9 @@ namespace ParaEngine
 		void MakeDirty(bool bForce = false);
 
 		friend class CBVHSerializer;
+
+		Bone& operator=(const Bone& other);
+	
 	public:
 		enum BONE_FLAGS
 		{

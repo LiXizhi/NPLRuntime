@@ -816,6 +816,11 @@ void ParaEngine::CAudioEngine2::OnSwitch( bool bOn )
 	}
 }
 
+ParaEngine::CAudioEngine2::CAudioPlaybackHistory& ParaEngine::CAudioEngine2::GetPlaybackHistory() 
+{
+	return m_PlaybackHistory;
+}
+
 void ParaEngine::CAudioSource2::onUpdate()
 {
 #ifdef DEBUG_AUDIO
@@ -873,6 +878,10 @@ bool ParaEngine::CAudioSource2::play2d( const bool& toLoop /*= false*/, bool bIg
 			auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
 			auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
 			pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStartTime);
+
+			// record this event to the playback history
+			CAudioEngine2::GetInstance()->GetPlaybackHistory().AddRecord(this);
+
 			return m_pSource->play2d(toLoop);
 		}
 	}
@@ -912,6 +921,15 @@ void ParaEngine::CAudioSource2::stop()
 	if(m_pSource)
 	{
 		m_pSource->stop();
+
+		// record this event to the playback history
+		if (CAudioEngine2::GetInstance()->GetPlaybackHistory().FindLastRecord(this->GetFilename())) {
+			CAudioEngine2::GetInstance()->GetPlaybackHistory().RemoveRecord(this->GetFilename());
+		}	
+		auto pParaEngine = CParaEngineCore::GetInstance()->GetAppInterface()->GetAttributeObject();
+		auto pGameFRC = pParaEngine->GetChildAttributeObject("gameFRC");
+		pGameFRC->GetAttributeClass()->GetField("Time")->Get(pGameFRC, &m_nStopTime);
+		CAudioEngine2::GetInstance()->GetPlaybackHistory().AddRecord(this);
 	}
 	m_bIsAsyncLoadingWhileLoopPlaying = false;
 }
@@ -935,6 +953,12 @@ bool ParaEngine::CAudioSource2::IsWaveFileLoopPlaying()
 		return m_pSource->isLooping() && m_pSource->isPlaying();
 	else
 		return IsAsyncLoadingWhileLoopPlaying();
+}
+
+/** whether the file is looping or not.*/
+bool ParaEngine::CAudioSource2::IsLooping()
+{
+	return m_pSource ? m_pSource->isLooping() : false;
 }
 
 bool ParaEngine::CAudioSource2::IsPlaying()
@@ -980,11 +1004,6 @@ void ParaEngine::CAudioEngine2::ResumeAll()
 			pAudioSrc->play();
 	}
 	m_paused_audios.clear();
-}
-
-const ParaEngine::CAudioEngine2::AudioFileMap_type& ParaEngine::CAudioEngine2::getAudioMap()const
-{
-	return m_audio_file_map;
 }
 
 MCIController* ParaEngine::CAudioEngine2::getMCIController()
