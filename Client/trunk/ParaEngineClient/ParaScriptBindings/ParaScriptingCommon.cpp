@@ -470,28 +470,6 @@ void ParaScripting::ParaAssetObject::SetCallback(int callbackType,const char * f
 	}
 }
 
-int ParaScripting::ParaAssetObject::GetPixel(int x,int y)
-{
-	int ret=-1;
-	if(IsValid()&&m_pAsset->GetType()==AssetEntity::texture)
-	{
-		TextureEntity* tex=(TextureEntity*)m_pAsset;
-		int pixel_size=0;
-		switch(tex->GetTextureInfo()->GetFormat())
-		{
-		case TextureEntity::TextureInfo::FMT_A8R8G8B8:
-		case TextureEntity::TextureInfo::FMT_X8R8G8B8:
-			pixel_size=4;
-			break;
-		case TextureEntity::TextureInfo::FMT_ALPHA8:
-			pixel_size=1;
-			break;
-		}
-		ret=*(int*)&tex->GetRawData()[(y*tex->GetWidth()+x)*pixel_size];
-	}
-	return ret;
-}
-
 #pragma endregion ParaAssetObject
 #pragma region ParaParamsBlock
 /////////////////////////////////////////////////////////////

@@ -208,6 +208,9 @@ namespace ParaScripting
 		/* crash on purpose for debug convenience */
 		static void Crash();
 
+		/* show or hide the main window */
+		static void ShowWindow(bool bShow);
+
 		/**
 		* NOTE: the function name is "this" in NPL, not "this_". 
 		* associate a user defined function as the activation function of this file.

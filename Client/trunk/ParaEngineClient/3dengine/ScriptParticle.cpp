@@ -7,6 +7,7 @@
 #include "IBatchedElementDraw.h"
 #include "BaseCamera.h"
 #include "SceneObject.h"
+#include "util/StringHelper.h"
 #include "ScriptParticle.h"
 
 using namespace ParaEngine;
@@ -18,57 +19,73 @@ int ParaEngine::CScriptParticle::InstallFields(CAttributeClass * pClass,bool bOv
 	pClass->AddField("beginParticle",FieldType_void,(void*)beginParticle_s,NULL,NULL,NULL,bOverride);
 	pClass->AddField("endParticle",FieldType_void,(void*)endParticle_s,NULL,NULL,NULL,bOverride);
 	pClass->AddField("mParticlePositionX",FieldType_Float,(void*)setParticlePositionX_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticlePositionY",FieldType_Float,(void*)setParticlePositionY_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticlePositionZ",FieldType_Float,(void*)setParticlePositionZ_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticlePositionZ",FieldType_Float,(void*)setParticlePositionZ_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleUVOffsetX",FieldType_Float,(void*)setParticleUVOffsetX_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleUVOffsetY",FieldType_Float,(void*)setParticleUVOffsetY_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleUVScaleX",FieldType_Float,(void*)setParticleUVScaleX_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleUVScaleY",FieldType_Float,(void*)setParticleUVScaleY_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleColourR",FieldType_Float,(void*)setParticleColourR_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleColourG",FieldType_Float,(void*)setParticleColourG_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleColourB",FieldType_Float,(void*)setParticleColourB_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleColourA",FieldType_Float,(void*)setParticleColourA_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleWidth",FieldType_Float,(void*)setParticleWidth_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleHeight",FieldType_Float,(void*)setParticleHeight_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mParticleRotation",FieldType_Float,(void*)setParticleRotation_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticlePositionY",FieldType_Float,(void*)setParticlePositionY_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticlePositionZ",FieldType_Float,(void*)setParticlePositionZ_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticlePositionZ",FieldType_Float,(void*)setParticlePositionZ_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleUVOffsetX",FieldType_Float,(void*)setParticleUVOffsetX_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleUVOffsetY",FieldType_Float,(void*)setParticleUVOffsetY_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleUVScaleX",FieldType_Float,(void*)setParticleUVScaleX_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleUVScaleY",FieldType_Float,(void*)setParticleUVScaleY_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleColourR",FieldType_Float,(void*)setParticleColourR_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleColourG",FieldType_Float,(void*)setParticleColourG_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleColourB",FieldType_Float,(void*)setParticleColourB_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleColourA",FieldType_Float,(void*)setParticleColourA_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleWidth",FieldType_Float,(void*)setParticleWidth_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleHeight",FieldType_Float,(void*)setParticleHeight_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mParticleRotation",FieldType_Float,(void*)setParticleRotation_s,NULL,NULL,NULL,bOverride);
 
-		pClass->AddField("mTexture",FieldType_String,(void*)setTexture_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mBillboardType",FieldType_String,(void*)setBillboardType_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonDirectionX",FieldType_Float,(void*)setCommonDirectionX_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonDirectionY",FieldType_Float,(void*)setCommonDirectionY_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonDirectionZ",FieldType_Float,(void*)setCommonDirectionZ_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonUpVectorX",FieldType_Float,(void*)setCommonUpX_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonUpVectorY",FieldType_Float,(void*)setCommonUpY_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mCommonUpVectorZ",FieldType_Float,(void*)setCommonUpZ_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mPointRendering",FieldType_Bool,(void*)setPointRenderingEnable_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mRotationType",FieldType_String,(void*)setRotationType_s,NULL,NULL,NULL,bOverride);
-		pClass->AddField("mAccurateFacing",FieldType_Bool,(void*)setAccurateFacing_s,NULL,NULL,NULL,bOverride);
-		return S_OK;
-	}
+	pClass->AddField("mTexture",FieldType_String,(void*)setTexture_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mBillboardType",FieldType_String,(void*)setBillboardType_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonDirectionX",FieldType_Float,(void*)setCommonDirectionX_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonDirectionY",FieldType_Float,(void*)setCommonDirectionY_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonDirectionZ",FieldType_Float,(void*)setCommonDirectionZ_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonUpVectorX",FieldType_Float,(void*)setCommonUpX_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonUpVectorY",FieldType_Float,(void*)setCommonUpY_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mCommonUpVectorZ",FieldType_Float,(void*)setCommonUpZ_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mPointRendering",FieldType_Bool,(void*)setPointRenderingEnable_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mRotationType",FieldType_String,(void*)setRotationType_s,NULL,NULL,NULL,bOverride);
+	pClass->AddField("mAccurateFacing",FieldType_Bool,(void*)setAccurateFacing_s,NULL,NULL,NULL,bOverride);
+	return S_OK;
+}
 
-	ParaEngine::CScriptParticle::CScriptParticle()
-		:mCurrentParticleElement(nullptr)
-		,mBillboardType(BBT_POINT)
-		,mCommonDirection(Vector3::UNIT_Z)
-		,mCommonUpVector(Vector3::UNIT_Y)
-		,mPointRendering(false)
-		,mAccurateFacing(false)
-		,mRotationType(BBR_TEXCOORD)
-	{
-	}
+ParaEngine::CScriptParticle::CScriptParticle()
+	:mCurrentParticleElement(nullptr)
+	,mBillboardType(BBT_POINT)
+	,mCommonDirection(Vector3::UNIT_Z)
+	,mCommonUpVector(Vector3::UNIT_Y)
+	,mPointRendering(false)
+	,mAccurateFacing(false)
+	,mRotationType(BBR_TEXCOORD)
+{
+	memset(&mTextureRect,0,sizeof(mTextureRect));
+}
 
-	ParaEngine::CScriptParticle::~CScriptParticle()
-	{
-		clear();
-		for(auto element:mFreeElements)
-			delete element;
-	}
+ParaEngine::CScriptParticle::~CScriptParticle()
+{
+	clear();
+	for(auto element:mFreeElements)
+		delete element;
+}
 
 HRESULT ParaEngine::CScriptParticle::Draw(SceneState * sceneState)
 {
+	Vector2 uv_offset(0,0);
+	Vector2 uv_scale(0,0);
+	if(mTexture.get()&&(mTextureRect.right!=0))
+	{
+		uv_offset.x=static_cast<float>(mTextureRect.left)/mTexture->GetTextureInfo()->GetWidth();
+		uv_offset.y=static_cast<float>(mTextureRect.top)/mTexture->GetTextureInfo()->GetHeight();
+		uv_scale.x=static_cast<float>(mTextureRect.right-mTextureRect.left)/mTexture->GetTextureInfo()->GetWidth();
+		uv_scale.y=static_cast<float>(mTextureRect.bottom-mTextureRect.top)/mTexture->GetTextureInfo()->GetHeight();
+	}
+	auto need_update_uv=(uv_offset!=Vector2::ZERO)||(uv_scale!=Vector2::ZERO);
 	for(auto element:mActiveElements)
 	{
+		if(need_update_uv)
+		{
+			element->mUVOffset=uv_offset;
+			element->mUVScale=uv_scale;
+		}
 		element->m_vRenderOffset=m_vPos;
 		element->draw(sceneState);
 	}
@@ -168,7 +185,16 @@ void ParaEngine::CScriptParticle::setParticleRotation(float radian)
 
 void ParaEngine::CScriptParticle::setTexture(const string & filename)
 {
-	mTexture=CGlobals::GetAssetManager()->LoadTexture("",filename,TextureEntity::StaticTexture);
+	string real_file_name;
+	if(!filename.empty())
+	{
+		memset(&mTextureRect,0,sizeof(mTextureRect));
+		ParaEngine::StringHelper::GetImageAndRect(filename,real_file_name,&mTextureRect);
+	}
+	if((mTexture=CGlobals::GetAssetManager()->GetTexture(real_file_name))==NULL)
+	{
+		mTexture=CGlobals::GetAssetManager()->LoadTexture(real_file_name,real_file_name,TextureEntity::StaticTexture);
+	}
 }
 
 void ParaEngine::CScriptParticle::setBillboardType(const std::string & val)

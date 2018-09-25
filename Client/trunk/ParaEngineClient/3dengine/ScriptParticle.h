@@ -60,6 +60,7 @@ namespace ParaEngine
 		SParticleElement * mCurrentParticleElement;
 
 		asset_ptr<TextureEntity> mTexture;
+		RECT mTextureRect;
 		BillboardType mBillboardType;
 		Vector3 mCommonDirection;
 		Vector3 mCommonUpVector;
