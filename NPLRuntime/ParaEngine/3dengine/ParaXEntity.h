@@ -108,6 +108,12 @@ namespace ParaEngine
 		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
 		*/
 		CParaXModel* GetModel(int nLODIndex=0);
+
+		/** try to get the highest level mesh if LOD is enabled without calling LoadAsset().
+		* It can be called from other thread safely.
+		* @param nLODIndex: default to 0, where the lowest LOD level mesh is returned.
+		*/
+		CParaXModel* TryGetModel(int nLODIndex = 0);
 		
 		/** init the parax model. */
 		void Init(const char* filename=NULL);
@@ -133,6 +139,8 @@ namespace ParaEngine
 		/** Get AABB bounding box of the asset object. if the asset contains an OOB, it will return true. */
 		virtual bool GetBoundingBox(Vector3* pMin, Vector3* pMax);
 
+		void SetMergeCoplanerBlockFace(bool val);
+		bool GetMergeCoplanerBlockFace();
 
 		/** callback of listening the event that renderer was recreated on Android/WP8
 		all opengl related id has already become invalid at this time, no need to release them, just recreate them all in this function.
@@ -145,6 +153,9 @@ namespace ParaEngine
 
 		/** the primary technique handle*/
 		int m_nTechniqueHandle;
+
+		/** an option whether merge coplaner block faces when loading a bmax model*/
+		bool m_bMergeCoplanerBlockFace;
 	};
 
 	typedef AssetManager<ParaXEntity>  ParaXEntityManager;
