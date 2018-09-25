@@ -53,8 +53,8 @@ vector<vector<int> > Pinocchio::ComputePossibilities(const PtGraph &graph, const
 			double len = (skeleton.cGraph().verts[i] - graph.verts[j]).length();
 			if (len < 0.3) {
 				candidates.push_back(j);
-				dists.push_back(len);
 			}
+			dists.push_back(len);
 		}
 		std::sort(candidates.begin(), candidates.end(), [dists](int& p1, int& p2) {return dists[p1] <= dists[p2]; });
 		if (candidates.size() > 60)candidates.resize(60);

@@ -8,7 +8,7 @@ class Mesh;
 namespace ParaEngine
 {
 
-	class ParaXEntity;
+	struct ParaXEntity;
 	class CParaXModel;
 	class CAutoRigger : public CBaseObject
 	{
@@ -34,7 +34,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CAutoRigger, RemoveModelTemplate_s, const char*) { cls->RemoveModelTemplate(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CAutoRigger, SetTargetModel_s, const char*) { cls->SetTargetModel(p1); return S_OK; }
 		ATTRIBUTE_METHOD1(CAutoRigger, SetOutputFilePath_s, const char*) { cls->SetOutputFilePath(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CAutoRigger, AutoRigModel_s, const char*) { cls->AutoRigModel(); return S_OK; }
+		ATTRIBUTE_METHOD(CAutoRigger, AutoRigModel_s) { cls->AutoRigModel(); return S_OK; }
 
 		DEFINE_SCRIPT_EVENT(CAutoRigger, AddRiggedFile);
 		
