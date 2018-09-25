@@ -1,13 +1,12 @@
 #include <stdexcept>
 #include "ParaEngine.h"
-#include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
 #include "ViewportManager.h"
 #include "effect/EffectOpenGL.h"
 #include "Framework/Codec/ImageParser.h"
 #include "texture/TextureOpenGL.h"
-
+#include "renderer/VertexDeclarationOpenGL.h"
 
 using namespace ParaEngine;
 
@@ -83,7 +82,8 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	,m_CurrentDepthStencil(nullptr)
 	,m_backbufferDepthStencil(nullptr)
 	,m_backbufferRenderTarget(nullptr)
-,	 m_CurrentRenderTargets(nullptr)
+	,m_CurrentRenderTargets(nullptr)
+
 {
 	for (int i = 0;i<8;i++)
 	{
@@ -93,16 +93,7 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 		}
 	}
 
-	InitCpas();
-	InitFrameBuffer();
-	
-	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
-	std::string error;
-	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
-	if (!m_DownSampleEffect)
-	{
-		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
-	}
+
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -113,7 +104,6 @@ ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 	}
 	m_Resources.clear();
 	delete[] m_CurrentRenderTargets;
-	glDeleteFramebuffers(1, &m_FBO);
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -304,13 +294,13 @@ bool ParaEngine::RenderDeviceOpenGL::SetClipPlane(uint32_t Index, const float* p
 bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
 {
 	// needs to invert Y, since opengl use upward Y.
-	glReadPixels(nLeft, m_RenderTargetHeight - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
+	glReadPixels(nLeft, GetRenderTarget(0)->GetHeight() - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
 	return true;
 }
 
 int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 {
-	return m_DeviceCpas.MaxSimultaneousTextures;
+	return GetCaps().MaxSimultaneousTextures;
 }
 
 
@@ -415,31 +405,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 
 
 
-bool ParaEngine::RenderDeviceOpenGL::StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect)
-{
-	std::vector<IParaEngine::ITexture*> oldTargets;
-	for (int i =0;i<m_DeviceCpas.NumSimultaneousRTs;i++)
-	{
-		oldTargets.push_back(m_CurrentRenderTargets[i]);
-		SetRenderTarget(i, nullptr);
-	}
-	SetRenderTarget(0, dest);
-	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
-	m_DownSampleEffect->Begin();
-	m_DownSampleEffect->SetTexture("tex0", source);
-	m_DownSampleEffect->BeginPass(0);
-	m_DownSampleEffect->CommitChanges();
-	DrawQuad();
-	m_DownSampleEffect->EndPass();
-	m_DownSampleEffect->End();
-
-	for (int i = 0; i < m_DeviceCpas.NumSimultaneousRTs; i++)
-	{
-		SetRenderTarget(i,oldTargets[i]);
-	}
-	return true;
-}
-
 
 bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITexture* texture)
 {
@@ -503,27 +468,9 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	
 }
 
-void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
-{
-	m_LastRenderTargetWidth = m_RenderTargetWidth;
-	m_LastRenderTargetHeight = m_RenderTargetHeight;
-	m_RenderTargetWidth = width;
-	m_RenderTargetHeight = height;
-	m_isBeginRenderTarget = true;
-}
-
-void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
-{
-	m_isBeginRenderTarget = false;
-	m_RenderTargetWidth = m_LastRenderTargetWidth;
-	m_RenderTargetHeight = m_LastRenderTargetHeight;
-}
 
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 {
-	// tricky: always render full screen
-	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	return true;
 }
 
@@ -640,8 +587,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 	}
 	else
 	{
-		int nScreenWidth = m_RenderTargetWidth;
-		int nScreenHeight = m_RenderTargetHeight;
+		int nScreenWidth = GetRenderTarget(0)->GetWidth();
+		int nScreenHeight = GetRenderTarget(0)->GetHeight();
 		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.Y + m_CurrentViewPort.Height);
 		glScissor((GLint)(pRect->left + m_CurrentViewPort.X), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}
@@ -655,21 +602,6 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 }
 
 
-bool ParaEngine::RenderDeviceOpenGL::Present()
-{
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	m_DownSampleEffect->SetTechnique(m_DownSampleEffect->GetTechnique(0));
-	m_DownSampleEffect->Begin();
-	m_DownSampleEffect->SetTexture("tex0", m_CurrentRenderTargets[0]);
-	m_DownSampleEffect->BeginPass(0);
-	m_DownSampleEffect->CommitChanges();
-	DrawQuad();
-	m_DownSampleEffect->EndPass();
-	m_DownSampleEffect->End();
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	return true;
-}
 
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
@@ -714,74 +646,6 @@ IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t wi
 }
 
 
-bool ParaEngine::RenderDeviceOpenGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
-{
-	if (index >= m_DeviceCpas.NumSimultaneousRTs) return false;
-	if (target == m_CurrentRenderTargets[index]) return true;
-	m_CurrentRenderTargets[index] = target;
-	static GLenum* drawBufers = nullptr;
-	if (drawBufers == nullptr)
-	{
-		drawBufers = new GLenum[m_DeviceCpas.NumSimultaneousRTs];
-		for (int i =0;i<m_DeviceCpas.NumSimultaneousRTs;i++)
-		{
-			drawBufers[i] = GL_NONE;
-		}
-		drawBufers[0] = GL_COLOR_ATTACHMENT0;
-	}
-	GLuint id = 0;
-	if (target != nullptr)
-	{
-		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
-		id = tex->GetTextureID();
-	}
-	else {
-		drawBufers[index] = GL_NONE;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		//assert(false);
-		return false;
-	}
-	drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
-	if (target != nullptr)
-	{
-		ParaViewport vp;
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width = target->GetWidth();
-		vp.Height = target->GetHeight();
-		vp.MinZ = 1;
-		vp.MaxZ = 0;
-		SetViewport(vp);
-	}
-
-	glDrawBuffers(m_DeviceCpas.NumSimultaneousRTs, drawBufers);
-	return true;
-}
-
-
-bool ParaEngine::RenderDeviceOpenGL::SetDepthStencil(IParaEngine::ITexture* target)
-{
-	if (target == m_CurrentDepthStencil) return true;
-	m_CurrentDepthStencil = target;
-
-	GLuint id = 0;
-	if (target != nullptr)
-	{
-		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
-		id = tex->GetTextureID();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		assert(false);
-	}
-	return true;
-}
 
 
 const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceOpenGL::GetCaps()
@@ -853,126 +717,9 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 
 }
 
-void ParaEngine::RenderDeviceOpenGL::InitCpas()
-{
-	m_DeviceCpas.DynamicTextures = true;
 
 
-	GLint maxDrawBuffers = 0;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
-
-	if (maxDrawBuffers > 1)
-	{
-		m_DeviceCpas.MRT = true;
-	}
-
-	GLint texture_units = 0;
-	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
-
-	m_DeviceCpas.MaxSimultaneousTextures = texture_units;
-	m_DeviceCpas.ScissorTest = true;
-	m_DeviceCpas.Stencil = true;
 
 
-	m_DeviceCpas.NumSimultaneousRTs = maxDrawBuffers;
-	GLint numExtes = 0;
-	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtes);
-	for (GLint i =0;i<numExtes;i++)
-	{
-		const char* extName = (const char*)glGetStringi(GL_EXTENSIONS, i);
-		m_GLExtes.push_back(extName);
-	}
 
-	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
-
-}
-
-void ParaEngine::RenderDeviceOpenGL::InitFrameBuffer()
-{
-
-	auto pWindow = CGlobals::GetRenderWindow();
-
-
-	m_backbufferRenderTarget = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::A8R8G8B8, ETextureUsage::RenderTarget);
-	m_backbufferDepthStencil = TextureOpenGL::Create(pWindow->GetWidth(), pWindow->GetHeight(), EPixelFormat::D24S8, ETextureUsage::DepthStencil);
-
-
-	glGenFramebuffers(1, &m_FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_backbufferRenderTarget->GetTextureID(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
-
-	GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-
-	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-	{
-		assert(false);
-	}
-	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS)
-	{
-		assert(false);
-	}
-	if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-	{
-		assert(false);
-	}
-	if (fbStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-	{
-		assert(false);
-	}
-	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
-	{
-		assert(false);
-	}
-
-	m_Resources.push_back(m_backbufferDepthStencil);
-	m_Resources.push_back(m_backbufferRenderTarget);
-
-	m_CurrentDepthStencil = m_backbufferDepthStencil;
-
-
-	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
-	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
-	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-}
-
-bool ParaEngine::RenderDeviceOpenGL::IsSupportExt(const char* extName)
-{
-	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
-	if (it != m_GLExtes.end()) return true;
-	return false;
-}
-
-void ParaEngine::RenderDeviceOpenGL::DrawQuad()
-{
-	static GLfloat quadVertices[] = {
-		-1,-1,0,
-		1, -1, 0,
-		-1, 1, 0,
-		1, 1, 0,
-	};
-
-	static VertexElement vertexdesc_pos[] =
-	{
-		// base data (stream 0)
-		{ 0, 0, D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },
-		D3DDECL_END()
-	};
-
-
-	VertexDeclarationPtr pDecl = nullptr;
-	if (pDecl == nullptr)
-	{
-		CreateVertexDeclaration(vertexdesc_pos, &pDecl);
-	}
-
-	if (pDecl == nullptr) return ;
-
-	SetVertexDeclaration(pDecl);
-	DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(GLfloat) * 3);
-}
 

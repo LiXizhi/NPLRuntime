@@ -24,8 +24,6 @@ namespace ParaEngine
 		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl) override;
 		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) override;
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
-		void BeginRenderTarget(uint32_t width,uint32_t height) ;
-		void EndRenderTarget();
 		virtual bool BeginScene() override;
 		virtual bool EndScene() override;
 		int GetStencilBits();
@@ -40,7 +38,7 @@ namespace ParaEngine
 		virtual bool Clear(bool color, bool depth, bool stencil) override;
 		virtual bool SetScissorRect(RECT* pRect) override;
 		virtual bool GetScissorRect(RECT* pRect) override;
-		virtual bool Present() override;
+
 		virtual bool SetClearColor(const Color4f& color) override;
 		virtual bool SetClearDepth(const float depth) override;
 		virtual bool SetClearStencil(const int stencil) override;
@@ -52,13 +50,6 @@ namespace ParaEngine
 
 
 		virtual IParaEngine::ITexture* CreateTexture(const ImagePtr& image) override;
-
-
-		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;
-
-
-		virtual bool SetDepthStencil(IParaEngine::ITexture* target) override;
-
 
 		virtual const RenderDeviceCaps& GetCaps() override;
 
@@ -75,17 +66,11 @@ namespace ParaEngine
 		virtual IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
 
-		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) override;
-
 
 		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture* texture) override;
 
 	protected:
 		void ApplyBlendingModeChange();
-		void InitCpas();
-		void InitFrameBuffer();
-		bool IsSupportExt(const char* extName);
-		void DrawQuad();
 	private:
 		bool m_AlphaBlendingChanged;
 		bool m_BlendingChanged;
@@ -101,24 +86,15 @@ namespace ParaEngine
 		ParaEngine::CVertexDeclaration* m_CurrentVertexDeclaration;
 		VertexBufferDevicePtr_type m_CurrentVertexBuffer;
 		IndexBufferDevicePtr_type m_CurrentIndexBuffer;
-		uint32_t m_RenderTargetWidth;
-		uint32_t m_RenderTargetHeight;
-		uint32_t m_LastRenderTargetWidth;
-		uint32_t m_LastRenderTargetHeight;
-		bool m_isBeginRenderTarget ;
 		ParaViewport m_CurrentViewPort;
-
+	protected:
+		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 		RenderDeviceCaps m_DeviceCpas;
-
 		TextureOpenGL* m_backbufferRenderTarget;
 		TextureOpenGL* m_backbufferDepthStencil;
 		IParaEngine::ITexture** m_CurrentRenderTargets;
 		IParaEngine::ITexture* m_CurrentDepthStencil;
-		std::vector<IParaEngine::IDeviceResource*> m_Resources;
 		std::vector<std::string> m_GLExtes;
-		GLuint m_FBO;
-
-		std::shared_ptr<IParaEngine::IEffect> m_DownSampleEffect;
 	};
 
 	inline RenderDeviceOpenGL* GETGL(IRenderDevice* device)
