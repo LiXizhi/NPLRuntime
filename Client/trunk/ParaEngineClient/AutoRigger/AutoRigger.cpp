@@ -480,9 +480,9 @@ public:
 					break;
 				}
 			}
-			if (!parentAhead) {
+			if (!parentAhead && fIter != orderedBones.end()) {
 				std::list<Bone*>::iterator bIter = orderedBones.begin();
-				while (bIter != iter) {
+				while (bIter != iter ) {
 					if ((*bIter)->GetBoneIndex() == (*iter)->GetParentIndex()) {
 						std::list<Bone*>::iterator ffIter = fIter;
 						++ffIter;
