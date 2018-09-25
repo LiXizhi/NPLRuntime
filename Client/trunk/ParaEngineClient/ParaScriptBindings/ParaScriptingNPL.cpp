@@ -1474,15 +1474,15 @@ namespace ParaScripting
 		return false;
 	}
 
-	int CNPL::GetLuaState(const string& name)
+	luabind::object CNPL::GetLuaState(const string& name, const object& output)
 	{
 		auto pRuntimeState = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(name);
 		if (pRuntimeState)
 		{
 			lua_State* L = pRuntimeState->GetLuaState();
-			return (int)L;
+			output["value"] = (LUA_INTEGER)L;
 		}
-		return 0;
+		return output;
 	}
 
 	luabind::object CNPL::LoadTableFromString(const object& input)
