@@ -18,7 +18,7 @@
 using namespace ParaEngine;
 using namespace Pinocchio;
 
-const float VERY_SMALL = 1e-8;
+const double VERY_SMALL = 1e-8;
 
 struct MMData
 {
@@ -49,7 +49,7 @@ struct Cube
 
 		if (c1 == LinearColor::Black && c2 != LinearColor::Black || c1 != LinearColor::Black && c2 == LinearColor::Black) return false;
 
-		std::vector<float> ratio(3, 0.0);
+		std::vector<double> ratio(3, 0.0);
 		if (c1.r > c2.r || c1.g > c2.g || c1.b > c2.b) {
 			ratio[0] = std::abs((c2.r != 0.0) ? c1.r / c2.r : 0.0);
 			ratio[1] = std::abs((c2.g != 0.0) ? c1.g / c2.g : 0.0);
@@ -62,7 +62,7 @@ struct Cube
 		}
 		std::sort(ratio.begin(), ratio.end());
 
-		float verySmall = 0.000001;
+		double verySmall = 0.000001;
 
 		if (ratio[0] > 0.0) {
 			return (ratio[1] - ratio[0] < verySmall && ratio[2] - ratio[1] < verySmall) ? true : false;
@@ -92,6 +92,16 @@ void ExtractPoints(TreeType::Node* node, FieldData& fieldData)
 	for (int i = 0; i < 8; ++i) {
 		ExtractPoints(node->getChild(i), fieldData);
 	}
+}
+
+Vector3 PVectorToParaVector( const PVector3& pv)
+{
+	return Vector3((float)pv[0], (float)pv[1], (float)pv[2]);
+}
+
+PVector3 ParaVectorToPVector(const Vector3& v)
+{
+	return PVector3((double)v.x, (double)v.y, (double)v.z );
 }
 
 class RigHelper
@@ -260,7 +270,7 @@ public:
 
 		// populate the squeezed points into mesh
 		// why bother to squeeze points? cause we want a well-connected mesh
-		// the original parax model has too many points in the same position
+		// the original parax model has too many points in the same posiotn
 		// which produces a lot redundant connections
 		// these redundant connections make the mesh traversal almost impossible
 		Mesh* pMesh = new Mesh();
@@ -429,12 +439,10 @@ public:
 
 		Bone* bones = xmodel->bones;
 		int numBones = xmodel->m_objNum.nBones;
-		std::vector<int> refMap;
-		refMap.resize(numBones);
+		std::vector<int> refMap(numBones, 0);
 		for (int i = 0; i < numBones; ++i) {
-			int parent = (bones + i)->parent;
-			if(parent>=0)
-				++refMap[bones[i].parent];
+			int parent = bones[i].parent;
+			if(parent >= 0 ) ++refMap[bones[i].parent];
 		}
 	
 		std::list<Bone*> orderedBones;
@@ -472,17 +480,14 @@ public:
 					break;
 				}
 			}
-			if (!parentAhead) {
+			if (!parentAhead && fIter != orderedBones.end()) {
 				std::list<Bone*>::iterator bIter = orderedBones.begin();
-				while (bIter != iter && bIter!= orderedBones.end() && iter!= orderedBones.end()) {
+				while (bIter != iter ) {
 					if ((*bIter)->GetBoneIndex() == (*iter)->GetParentIndex()) {
 						std::list<Bone*>::iterator ffIter = fIter;
-						if (ffIter != orderedBones.end())
-						{
-							++ffIter;
-							orderedBones.insert(ffIter, *bIter);
-							orderedBones.erase(bIter);
-						}
+						++ffIter;
+						orderedBones.insert(ffIter, *bIter);
+						orderedBones.erase(bIter);
 						break;
 					}
 					++bIter;
@@ -521,7 +526,7 @@ public:
 		return skeleton;
 	}
 
-	static void RefineEmbedding(CParaXModel* xmodel, Mesh* m, vector<PVector3>& embedding, VisTester<TreeType>* tester)
+	static void RefineEmbedding(CParaXModel* xmodel, Mesh* m, vector<PVector3>& embedding)
 	{
 		std::vector<PVector3> vertices;
 		int numVert = xmodel->m_objNum.nVertices;
@@ -588,7 +593,7 @@ public:
 		}
 	}
 
-	static void RefineEmbedding2(CParaXModel* targetModel, Mesh* newMesh, vector<PVector3>& embedding, VisTester<TreeType>* tester)
+	static void RefineEmbedding2(CParaXModel* targetModel, Mesh* newMesh, vector<PVector3>& embedding)
 	{
 		// transform vertices into distance field space 
 		std::vector<PVector3> vertices;
@@ -603,9 +608,9 @@ public:
 		double edgeLen = 1.05 * (vertices[0] - vertices[1]).length();
 
 		CubeVector cubes;
-		int numVertPerCube = 24;
-		int numIndicesPerCube = 36;
-		int numIndices = targetModel->m_objNum.nIndices;
+		const unsigned int numVertPerCube = 24;
+		const unsigned int numIndicesPerCube = 36;
+		const unsigned int numIndices = targetModel->m_objNum.nIndices;
 		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
 			std::set<int> filter;
 			for (int j = 0; j < numIndicesPerCube; ++j) {
@@ -630,7 +635,6 @@ public:
 		}
 
 		// center the embeddings in a cube
-		double cubeEdgeLength = (vertices[1] - vertices[0]).length();
 		for (int i = 0; i < embedding.size(); ++i) {
 			int k = -1;
 			double minDist = std::numeric_limits<double>::max();
@@ -661,7 +665,7 @@ public:
 		CParaXModel* xmodel,
 		Vector3& outIntersectionPoint)
 	{
-		const float EPSILON = 0.0000001;
+		const double EPSILON = 0.0000001;
 		Vector3 v0 = xmodel->m_origVertices[xmodel->m_indices[tri]].pos;
 		Vector3 v1 = xmodel->m_origVertices[xmodel->m_indices[tri + 1]].pos;
 		Vector3 v2 = xmodel->m_origVertices[xmodel->m_indices[tri + 2]].pos;
@@ -802,8 +806,8 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch(Mesh* targetM
 		// constructing source model feature
 		matcher.SetModelFeatureType(1);
 		CParaXModel* source = iter->second->GetModel();
-		const int numVert = source->m_objNum.nVertices;
-		for (int i = 0; i < numVert; ++i) {
+		const int numVertsSource = source->m_objNum.nVertices;
+		for (int i = 0; i < numVertsSource; ++i) {
 			Vector3& v = source->m_origVertices[i].pos;
 			Vector3& n = source->m_origVertices[i].normal;
 			matcher.AddFeature(v.x, v.y, v.z, n.x, n.y, n.z);
@@ -920,11 +924,11 @@ void CAutoRigger::AutoRigThreadFunc()
 		std::vector<PSphere> spheres = PackSpheres(medialSurface);
 		PtGraph graph = ConnectSamples(distanceField, spheres);
 
-		//discrete embedding
+		// discrete embedding
 		std::vector<std::vector<int>> possibilities = ComputePossibilities(graph, spheres, *given);
 
-		//constraints can be set by re-specifying possibilities for skeleton joints:
-		//to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
+		// constraints can be set by re-specifying possibilities for skeleton joints:
+		// to constrain joint i to sphere j, use: possiblities[i] = std::vector<int>(1, j);
 		std::vector<int> embeddingIndices = DiscreteEmbed(graph, spheres, *given, possibilities);
 
 		if (embeddingIndices.size() == 0) { // failure
@@ -941,7 +945,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		
 		CParaXModel* skeletonModel = bestMatch->second->GetModel();
 		CParaXModel* targetModel = m_pTargetModel->GetModel();
-		RigHelper::RefineEmbedding2(targetModel, targetMesh, rigger.embedding, tester);
+		RigHelper::RefineEmbedding2(targetModel, targetMesh, rigger.embedding);
 		
 #pragma region RIGGERING
 		// header settings
@@ -972,9 +976,9 @@ void CAutoRigger::AutoRigThreadFunc()
 		// get cubes
 		float edgeLen = 1.05 * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
 		CubeVector cubes;
-		int numVertPerCube = 24;
-		int numIndicesPerCube = 36;
-		int numIndices = targetModel->m_objNum.nIndices;
+		const unsigned int numVertPerCube = 24;
+		const unsigned int numIndicesPerCube = 36;
+		const unsigned int numIndices = targetModel->m_objNum.nIndices;
 		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
 			std::set<int> filter;
 			for (int j = 0; j < numIndicesPerCube; ++j) {
@@ -1089,7 +1093,7 @@ void CAutoRigger::AutoRigThreadFunc()
 				Vector3 p = targetModel->bones[k].pivot;
 				Vector3 v = cubes[i].center;
 				float dis = p.distance(v);
-				v = p + (v - p)*0.95;
+				v = p + (v - p)*0.95f;
 				bool canSee = tester->canSee(PVector3(v.x, v.y, v.z), PVector3(p.x, p.y, p.z));
 
 				if (canSee && dis < minDis) {
@@ -1234,8 +1238,10 @@ void CAutoRigger::AutoRigThreadFunc()
 		}
 
 #ifdef OUTPUT_DEBUG_FILE
-		std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
-		RigHelper::OutputSkinningRelation(targetModel, fileName);
+		{
+			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.skin";
+			RigHelper::OutputSkinningRelation(targetModel, fileName);
+		}	
 #endif
 
 		// recover coordinates
