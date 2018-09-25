@@ -312,7 +312,26 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					auto pParaXMesh = iCur->m_pParaXMesh;
 
 #ifdef ENABLE_BMAX_AUTO_LOD
-					if (m_MeshLODs.size() == 1)
+					// generate LOD
+					bool bGenerateLOD = true;
+					if (iCur == pMeshLODs.begin())
+					{
+						if (m_MeshLODs.size() > 1)
+						{
+							for (int i = 1; i < (int)m_MeshLODs.size(); ++i)
+							{
+								if (!m_MeshLODs[i].m_sMeshFileName.empty())
+								{
+									bGenerateLOD = false;
+								}
+							}
+							if (bGenerateLOD)
+							{
+								m_MeshLODs.resize(1);
+							}
+						}
+					}
+					if (bGenerateLOD)
 					{
 						// each LOD at least cut triangle count in half and no bigger than a given count. 
 						// by default, generate lod in range 30, 60, 90, 120 meters;
