@@ -1120,9 +1120,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 		GLuint slot = kv.first;
 		GLuint texID = kv.second;
 		glActiveTexture(GL_TEXTURE0 + slot);
-		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, texID);
-
 	}
 	return true;
 }

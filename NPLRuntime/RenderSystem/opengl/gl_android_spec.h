@@ -25,4 +25,5 @@ extern PFNGLDELETEVERTEXARRAYSOESPROC para_glDeleteVertexArraysOES;
 #define glGenVertexArrays glGenVertexArraysOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
 #define glClearDepth glClearDepthf
+
 #endif // __GL_ANROID_SPEC_H__

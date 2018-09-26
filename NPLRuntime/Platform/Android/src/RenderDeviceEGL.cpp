@@ -99,27 +99,15 @@ bool ParaEngine::RenderDeviceEGL::StretchRect(IParaEngine::ITexture* source, IPa
 
 bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
 {
-	if (index >= m_DeviceCpas.NumSimultaneousRTs) return false;
+	if (index >= 1) return false;
+	if (target == nullptr) return false;
 	if (target == m_CurrentRenderTargets[index]) return true;
 	m_CurrentRenderTargets[index] = target;
-	static GLenum* drawBufers = nullptr;
-	if (drawBufers == nullptr)
-	{
-		drawBufers = new GLenum[m_DeviceCpas.NumSimultaneousRTs];
-		for (size_t i = 0; i < m_DeviceCpas.NumSimultaneousRTs; i++)
-		{
-			drawBufers[i] = GL_NONE;
-		}
-		drawBufers[0] = GL_COLOR_ATTACHMENT0;
-	}
 	GLuint id = 0;
 	if (target != nullptr)
 	{
 		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
 		id = tex->GetTextureID();
-	}
-	else {
-		drawBufers[index] = GL_NONE;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
@@ -128,7 +116,6 @@ bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::I
 		assert(false);
 		return false;
 	}
-	drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
 	if (target != nullptr)
 	{
 		ParaViewport vp;
@@ -140,8 +127,6 @@ bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::I
 		vp.MaxZ = 0;
 		SetViewport(vp);
 	}
-
-	//glDrawBuffers(m_DeviceCpas.NumSimultaneousRTs, drawBufers);
 	return true;
 }
 
@@ -239,15 +224,7 @@ void ParaEngine::RenderDeviceEGL::InitCpas()
 {
 	m_DeviceCpas.DynamicTextures = true;
 
-
-	GLint maxDrawBuffers = 0;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
-
-	if (maxDrawBuffers > 1)
-	{
-		m_DeviceCpas.MRT = true;
-	}
-
+	m_DeviceCpas.MRT = false;
 	GLint texture_units = 0;
 	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
 
@@ -256,7 +233,7 @@ void ParaEngine::RenderDeviceEGL::InitCpas()
 	m_DeviceCpas.Stencil = true;
 
 
-	m_DeviceCpas.NumSimultaneousRTs = maxDrawBuffers;
+	m_DeviceCpas.NumSimultaneousRTs = 1;
 	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
 	m_DeviceCpas.NPOT = IsSupportExt("GL_OES_texture_npot");
 }
