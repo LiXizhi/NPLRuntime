@@ -169,7 +169,7 @@ bool CShadowMap::PrepareAllSurfaces()
 
 		if (m_pSMColorTexture == 0)
 		{
-			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
+			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture", "_SMColorTexture", TextureEntity::RenderTarget);
 			m_pSMColorTexture->SetTextureInfo(tex_info);
 			m_pSMColorTexture->LoadAsset();
 			if(!m_pSMColorTexture->IsValid())
@@ -195,7 +195,7 @@ bool CShadowMap::PrepareAllSurfaces()
 		//  use R32F & shaders instead of depth textures
 		if(m_pSMColorTexture == 0)
 		{
-			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture_R32F", "_SMColorTexture_R32F", TextureEntity::RenderTarget);
+			m_pSMColorTexture = CGlobals::GetAssetManager()->LoadTexture("_SMColorTexture", "_SMColorTexture", TextureEntity::RenderTarget);
 			m_pSMColorTexture->SetTextureInfo(tex_info);
 			m_pSMColorTexture->LoadAsset();
 			if(!m_pSMColorTexture->IsValid())

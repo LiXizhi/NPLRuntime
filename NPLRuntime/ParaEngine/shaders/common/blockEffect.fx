@@ -117,6 +117,11 @@ SimpleVSOut SimpleMainVS(	float4 pos		: POSITION,
 	return output;
 }
 
+
+float DecodeFloatRGBA( float4 rgba ) {
+  return dot( rgba, float4(1.0, 1/255.0, 1/65025.0, 1/16581375.0) );
+}
+
 float ShadowCalculation(float4 fragPosLightSpace)
 {
 	float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -126,7 +131,7 @@ float ShadowCalculation(float4 fragPosLightSpace)
 		return 0;
 	}
 	
-	float closestDepth = tex2D(shadomMapTexSampler, float2(projCoords.x,1-projCoords.y)).r;
+	float closestDepth = DecodeFloatRGBA(tex2D(shadomMapTexSampler, float2(projCoords.x,1-projCoords.y)));
 	float currentDepth = projCoords.z;
 	float bias = 0.005;
 	float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
@@ -234,6 +239,15 @@ void VertShadow(float4	Pos			: POSITION,
 	Depth.xy = oPos.zw;
 }
 
+
+float4 EncodeFloatRGBA( float v ) {
+  float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
+  enc = frac(enc);
+  enc -= enc.yzww * float4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);
+  return enc;
+}
+
+
 float4 PixShadow(float2	inTex: TEXCOORD0,
 	float2 Depth : TEXCOORD1) : COLOR0
 {
@@ -246,7 +260,7 @@ float4 PixShadow(float2	inTex: TEXCOORD0,
 		clip(alpha - 0.5);
 	}
 	float d = (Depth.x / Depth.y) * 0.5 + 0.5;
-	return float4(d,0,0,0);
+	return EncodeFloatRGBA(d);
 }
 
 
