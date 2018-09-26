@@ -1,3 +1,11 @@
+//-----------------------------------------------------------------------------
+// Class:	Auto anims interface class
+// Authors:	Cheng Yuanchu, LiXizhi
+// Emails:	LiXizhi@yeah.net
+// Company: ParaEngine
+// Date:	2018.9.10
+//-----------------------------------------------------------------------------
+
 #include "ParaEngine.h"
 #include "AutoRigger.h"
 #include "ParaWorldAsset.h"
@@ -8,8 +16,8 @@
 #include "pinocchioApi.h"
 #include "skeleton.h"
 #include "ShapeAABB.h"
+#include "util/StringHelper.h"
 
-#include <thread>
 #include <functional>
 #include <list>
 #include <fstream>
@@ -110,7 +118,7 @@ public:
 	static void OutputTriangles(const CParaXModel* xmodel, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < xmodel->m_objNum.nIndices; ++i) {
+		for (int i = 0; i < (int)xmodel->m_objNum.nIndices; ++i) {
 			int j = xmodel->m_indices[i];
 			fout.write((char*)&(xmodel->m_origVertices[j].pos.x), sizeof(float));
 			fout.write((char*)&(xmodel->m_origVertices[j].pos.y), sizeof(float));
@@ -122,7 +130,7 @@ public:
 	static void OutputTriangles(const Mesh* pMesh, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < pMesh->m_Edges.size(); ++i) {
+		for (int i = 0; i < (int)pMesh->m_Edges.size(); ++i) {
 			int j = pMesh->m_Edges[i].vertex;
 			float x = (float)pMesh->m_Vertices[j].pos[0];
 			float y = (float)pMesh->m_Vertices[j].pos[1];
@@ -140,9 +148,9 @@ public:
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
 		for (int i = 0; i < (int)vertices.size(); ++i) {
 			//vertices[i] = offset + vertices[i] * scale;
-			float x = (float)vertices[i][0] * scale + offset[0];
-			float y = (float)vertices[i][1] * scale + offset[0];
-			float z = (float)vertices[i][2] * scale + offset[0];
+			float x = (float)vertices[i][0] * scale + (float)offset[0];
+			float y = (float)vertices[i][1] * scale + (float)offset[0];
+			float z = (float)vertices[i][2] * scale + (float)offset[0];
 
 			fout.write((char*)&x, sizeof(float));
 			fout.write((char*)&y, sizeof(float));
@@ -159,7 +167,7 @@ public:
 		// output original triangles
 		std::string fileName("D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.field");
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < data.size(); ++i) {
+		for (int i = 0; i < (int)data.size(); ++i) {
 			fout.write((char*)data[i].data, sizeof(MMData));
 		}
 
@@ -169,7 +177,7 @@ public:
 	static void OutputBoneRelation(const Skeleton* given, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < given->fGraph().verts.size(); ++i) {
+		for (int i = 0; i < (int)given->fGraph().verts.size(); ++i) {
 			int j = given->fPrev()[i];
 			if (j >= 0) {
 				float x = (float)given->fGraph().verts[i][0];
@@ -195,7 +203,7 @@ public:
 	static void OutputBoneRelation(const CParaXModel* skeletonModel, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+		for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
 			int j = skeletonModel->bones[i].GetParentIndex();
 			if (j >= 0) {
 				float x = skeletonModel->bones[i].pivot.x;
@@ -221,7 +229,7 @@ public:
 	static void OutputSkinningRelation(const CParaXModel* targetModel, const std::string& fileName)
 	{
 		std::ofstream fout(fileName, std::ios::binary | std::ios::out);
-		for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+		for (int i = 0; i < (int)targetModel->m_objNum.nVertices; ++i) {
 			if (targetModel->m_origVertices[i].bones[0] > 200) {
 				// beyond 200 means this bone is unbinded
 				continue;
@@ -254,7 +262,7 @@ public:
 		// refDis is 1/10 of cubic edge length
 		// two points would be considered as one if the distance between each other less than refDis 
 		// we keep this info in idx vector
-		float refDis = xmodel->m_origVertices[0].pos.distance(xmodel->m_origVertices[1].pos)*0.1;
+		float refDis = xmodel->m_origVertices[0].pos.distance(xmodel->m_origVertices[1].pos)*0.1f;
 		std::vector<int> idx(numVert, 0);
 		for (int i = 0; i < numVert; ++i) {
 			Vector3& v = xmodel->m_origVertices[i].pos;
@@ -274,7 +282,7 @@ public:
 		// which produces a lot redundant connections
 		// these redundant connections make the mesh traversal almost impossible
 		Mesh* pMesh = new Mesh();
-		for (int i = 0; i < idx.size(); ++i) {
+		for (int i = 0; i < (int)idx.size(); ++i) {
 			if (idx[i] != i) continue;
 			MeshVertex vertex;
 			Vector3& v = xmodel->m_origVertices[i].pos;
@@ -284,12 +292,12 @@ public:
 
 		// fix the indices after squeezing
 		std::vector<int> fixValue(idx.size(), 0);
-		for (int i = 0, j = 0; i < idx.size(); ++i) {
+		for (int i = 0, j = 0; i < (int)idx.size(); ++i) {
 			fixValue[i] = j;
 			if (idx[i] != i)++j;
 		}
 		std::vector<int> newIndices(xmodel->m_objNum.nIndices, -1);
-		for (int i = 0; i < xmodel->m_objNum.nIndices; ++i) {
+		for (int i = 0; i < (int)xmodel->m_objNum.nIndices; ++i) {
 			int j = idx[xmodel->m_indices[i]];
 			newIndices[i] = j - fixValue[j];
 		}
@@ -357,7 +365,7 @@ public:
 		// populate the original edges and triangles
 		std::vector<MeshEdge> originalEdges(newIndices.size(), MeshEdge());
 		std::vector<TRIANGLE> tris(newIndices.size() / 3, TRIANGLE());
-		for (int i = 0; i < newIndices.size(); ++i) {
+		for (int i = 0; i < (int)newIndices.size(); ++i) {
 			int id = i / 3;
 			originalEdges[i].vertex = newIndices[i];
 			tris[id]._e[i % 3] = i;
@@ -365,16 +373,16 @@ public:
 		}
 
 		// compute triangles normals
-		for (int i = 0; i < tris.size(); ++i) {
+		for (int i = 0; i < (int)tris.size(); ++i) {
 			tris[i].ComputeNormal(pMesh);
 		}
 
 		// mark the triangles to remove
 		std::vector<bool> TrisToRemove(tris.size(), false);
-		for (int i = 0; i < tris.size(); ++i) {
+		for (int i = 0; i < (int)tris.size(); ++i) {
 			if (TrisToRemove[i])continue;
 			int k = -1;
-			for (int j = i + 1; j < tris.size(); ++j) {
+			for (int j = i + 1; j < (int)tris.size(); ++j) {
 				if (TrisToRemove[j])continue;
 				if (tris[i].IsOverlap(tris[j], pMesh)) {
 					k = j;
@@ -389,7 +397,7 @@ public:
 
 		// mark the edges to remove
 		std::vector<bool> edgesToRemove(originalEdges.size(), false);
-		for (int i = 0; i < tris.size(); ++i) {
+		for (int i = 0; i < (int)tris.size(); ++i) {
 			if (TrisToRemove[i]) {
 				edgesToRemove[tris[i]._e[0]] = true;
 				edgesToRemove[tris[i]._e[1]] = true;
@@ -398,7 +406,7 @@ public:
 		}
 
 		// populate the edges to pMesh after removing the undesired ones
-		for (int i = 0; i < originalEdges.size(); ++i) {
+		for (int i = 0; i < (int)originalEdges.size(); ++i) {
 			if (edgesToRemove[i])continue;
 			pMesh->m_Edges.push_back(originalEdges[i]);
 		}
@@ -446,9 +454,9 @@ public:
 		}
 	
 		std::list<Bone*> orderedBones;
-		for (int i = 0; i < refMap.size(); ++i) {
+		for (int i = 0; i < (int)refMap.size(); ++i) {
 			int index = -1, val = -1;
-			for (int j = 0; j < refMap.size(); ++j) {
+			for (int j = 0; j < (int)refMap.size(); ++j) {
 				if (val <= refMap[j]) {
 					val = refMap[j];
 					index = j;
@@ -536,7 +544,7 @@ public:
 			vertices.push_back(p);
 		}
 
-		for (int i = 0; i < vertices.size(); ++i) {
+		for (int i = 0; i < (int)vertices.size(); ++i) {
 			vertices[i] = vertices[i] * m->m_Scale + m->m_ToAdd;
 		}
 
@@ -550,9 +558,9 @@ public:
 
 		double cubeEdgeLength = (vertices[1] - vertices[0]).length();
 		typedef std::pair<int, double> DisIndexPair;
-		for (int i = 0; i < embedding.size(); ++i) {
+		for (int i = 0; i < (int)embedding.size(); ++i) {
 			std::vector<DisIndexPair> disList;
-			for (int j = 0; j < vertices.size(); ++j) {
+			for (int j = 0; j < (int)vertices.size(); ++j) {
 				DisIndexPair dis;
 				dis.first = j;
 				dis.second = (vertices[j] - embedding[i]).length();
@@ -562,7 +570,7 @@ public:
 
 			DisIndexPair nearest[8];
 			nearest[0] = disList[0];
-			for (int j = 1, k = 1; k < 8 && j < disList.size(); ++j) {
+			for (int j = 1, k = 1; k < 8 && j < (int)disList.size(); ++j) {
 				bool needContinue = false;
 				for (int t = k; t > 0; --t) {
 					double dis = (vertices[disList[j].first] - vertices[nearest[t].first]).length();
@@ -611,7 +619,7 @@ public:
 		const unsigned int numVertPerCube = 24;
 		const unsigned int numIndicesPerCube = 36;
 		const unsigned int numIndices = targetModel->m_objNum.nIndices;
-		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
+		for (int i = 0; i < (int)numIndices; i += numIndicesPerCube) {
 			std::set<int> filter;
 			for (int j = 0; j < numIndicesPerCube; ++j) {
 				filter.insert((int)(targetModel->m_indices[i + j]));
@@ -629,16 +637,16 @@ public:
 				}
 				cube.center2 = bb.getCenter();
 				cube.rigged = false;
-				cube.neighborRange = edgeLen;
+				cube.neighborRange = (float)edgeLen;
 				cubes.push_back(cube);
 			}
 		}
 
 		// center the embeddings in a cube
-		for (int i = 0; i < embedding.size(); ++i) {
+		for (int i = 0; i < (int)embedding.size(); ++i) {
 			int k = -1;
 			double minDist = std::numeric_limits<double>::max();
-			for (int j = 0; j < cubes.size(); ++j) {
+			for (int j = 0; j < (int)cubes.size(); ++j) {
 				double dis = (cubes[j].center2 - embedding[i]).length();
 				if (minDist > dis) {
 					minDist = dis;
@@ -705,6 +713,10 @@ CAutoRigger::CAutoRigger()
 
 CAutoRigger::~CAutoRigger()
 {
+	if (m_workerThread.joinable())
+	{
+		m_workerThread.join();
+	}
 }
 
 void CAutoRigger::AddModelTemplate(const char* fileName)
@@ -741,8 +753,14 @@ void CAutoRigger::SetThreshold()
 
 void CAutoRigger::AutoRigModel()
 {
-	std::thread workThread = std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this));
-	workThread.detach();
+	try 
+	{
+		m_workerThread = std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this));
+	}
+	catch (...)
+	{
+		OUTPUT_LOG("error: AutoRigModel worker thread unknown error\n");
+	}
 }
 
 void CAutoRigger::Clear()
@@ -751,13 +769,17 @@ void CAutoRigger::Clear()
 	m_pTargetModel = nullptr;
 }
 
-void CAutoRigger::On_AddRiggedFile()
+void CAutoRigger::On_AddRiggedFile(int nResultCount, const char* sFilenames, const char* msg)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_AddRiggedFile);
 	if (pCallback)
 	{
 		const std::string& sFile = pCallback->GetFileName();
-		const std::string& sCode = pCallback->GetCode();
+		std::string sCode;
+		char sMsg[2048];
+		StringHelper::fast_sprintf(sMsg, "msg={count=%d,filenames='%s',msg='%s'};", nResultCount, (sFilenames!=0 ? sFilenames : ""), (msg != 0 ? msg : ""));
+		sCode.append(sMsg);
+		sCode.append(pCallback->GetCode());
 		CGlobals::GetAISim()->NPLActivate(sFile.c_str(), sCode.c_str(), sCode.size());
 	}
 }
@@ -784,7 +806,7 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch(Mesh* targetM
 		PVector3 v = targetMesh->m_Vertices[i].pos;
 		PVector3 n = targetMesh->m_Vertices[i].normal;
 		v = (v - targetMesh->m_ToAdd) / targetMesh->m_Scale;
-		matcher.AddFeature(v[0], v[1], v[2], n[0], n[1], n[2]);
+		matcher.AddFeature((float)v[0], (float)v[1], (float)v[2], (float)n[0], (float)n[1], (float)n[2]);
 	}
 
 	//CParaXModel* target = m_pTargetModel->GetModel();
@@ -850,7 +872,7 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* target
 		srcMesh->normalizeBoundingBox();
 
 		double curDisSum = 0.0;
-		for (int i = 0; i < srcMesh->m_Vertices.size(); ++i) {
+		for (int i = 0; i < (int)srcMesh->m_Vertices.size(); ++i) {
 			PVector3 v = srcMesh->m_Vertices[i].pos;
 			double dis = tarDistField->locate(v)->evaluate(v);
 			curDisSum += std::abs(dis);
@@ -872,10 +894,8 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* target
 
 void CAutoRigger::AutoRigThreadFunc()
 {
-	this->addref();
-
 	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) {
-		this->delref();
+		On_AddRiggedFile(0, NULL, "empty model templates");
 		return;
 	}
 
@@ -886,18 +906,19 @@ void CAutoRigger::AutoRigThreadFunc()
 	Mesh* targetMesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
 	if (targetMesh == nullptr) {
 		OUTPUT_LOG( "Target bmax model yields a bad mesh. Try another model...\n");
-		this->delref();
+		On_AddRiggedFile(0, NULL, "bad input");
 		return;
 	}
 
 	// auto rigging using the matched source model bones for the target model
 	ModelTemplateMap::iterator bestMatch = this->FindBestMatch2(targetMesh);
-	if (bestMatch != m_ModelTemplates->end()) {
+	if (bestMatch != m_ModelTemplates->end()) 
+	{
 		// prepare mesh
 		Mesh newMesh = PrepareMesh(*targetMesh);
 		if (newMesh.m_Vertices.empty()) {
 			OUTPUT_LOG("Target mesh: failed to pass connection test.\n");
-			this->delref();
+			On_AddRiggedFile(0, NULL, "input mesh failed to pass connection test");
 			return;
 		}
 		// prepare skeleton
@@ -907,7 +928,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		Skeleton* given = RigHelper::ExtractParaXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
 		if (given == nullptr) {
 			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
-			this->delref();
+			On_AddRiggedFile(0, NULL, "failed to extract template model skeleton");
 			return;
 		}
 		
@@ -933,8 +954,8 @@ void CAutoRigger::AutoRigThreadFunc()
 
 		if (embeddingIndices.size() == 0) { // failure
 			delete distanceField;
-			OUTPUT_LOG("Failed to embed given seleton to target model.\n");
-			this->delref();
+			OUTPUT_LOG("Failed to embed given skeleton to target model.\n");
+			On_AddRiggedFile(0, NULL, "Failed to embed skeleton to input model");
 			return;
 		}
 
@@ -966,20 +987,20 @@ void CAutoRigger::AutoRigThreadFunc()
 
 		// transform vertices into distance field space 
 		int numVerts = targetModel->m_objNum.nVertices;
-		Vector3 toAdd(newMesh.m_ToAdd[0], newMesh.m_ToAdd[1], newMesh.m_ToAdd[2]);
-		for (int i = 0; i < numVerts; ++i) {
+		Vector3 toAdd((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
+		for (int i = 0; i < (int)numVerts; ++i) {
 			//m_Vertices[i].pos = ctoAdd + m_Vertices[i].pos * cscale;
 			Vector3& pos = targetModel->m_origVertices[i].pos;
-			pos = toAdd + pos * newMesh.m_Scale;
+			pos = toAdd + pos * (float)newMesh.m_Scale;
 		}
 
 		// get cubes
-		float edgeLen = 1.05 * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
+		float edgeLen = 1.05f * (targetModel->m_origVertices[0].pos - targetModel->m_origVertices[1].pos).length();
 		CubeVector cubes;
 		const unsigned int numVertPerCube = 24;
 		const unsigned int numIndicesPerCube = 36;
 		const unsigned int numIndices = targetModel->m_objNum.nIndices;
-		for (int i = 0; i < numIndices; i += numIndicesPerCube) {
+		for (int i = 0; i < (int)numIndices; i += numIndicesPerCube) {
 			std::set<int> filter;
 			for (int j = 0; j < numIndicesPerCube; ++j) {
 				filter.insert((int)(targetModel->m_indices[i + j]));
@@ -1007,35 +1028,35 @@ void CAutoRigger::AutoRigThreadFunc()
 		// take bones	
 		targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
 		Bone* bones = new Bone[skeletonModel->m_objNum.nBones];
-		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+		for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
 			bones[i] = skeletonModel->bones[i];
 		}
 		// recover the bone pivots position from transformed coordinates
 		std::map<string, int> boneNameIndexMap;
-		for (int i = 0; i < skeletonModel->m_objNum.nBones; ++i) {
+		for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
 			boneNameIndexMap[skeletonModel->bones[i].GetName()] = i;
 		}
-		for (int i = 0; i < rigger.embedding.size(); ++i) {
+		for (int i = 0; i < (int)rigger.embedding.size(); ++i) {
 			int j = boneNameIndexMap[given->m_IndexNameMap[i]];
-			bones[j].pivot.x = rigger.embedding[i][0];
-			bones[j].pivot.y = rigger.embedding[i][1];
-			bones[j].pivot.z = rigger.embedding[i][2];
+			bones[j].pivot.x = (float)rigger.embedding[i][0];
+			bones[j].pivot.y = (float)rigger.embedding[i][1];
+			bones[j].pivot.z = (float)rigger.embedding[i][2];
 		}
 		// line the feet and knees
 		std::vector<int> feet;
-		for (int i = 0; i < given->fGraph().verts.size(); ++i) {
+		for (int i = 0; i < (int)given->fGraph().verts.size(); ++i) {
 			if (given->cFeet()[i]) feet.push_back(i);
 		}
-		for (int i = 0; i < feet.size(); ++i) {
+		for (int i = 0; i < (int)feet.size(); ++i) {
 			int pre = given->fPrev()[feet[i]];
 			int foot = boneNameIndexMap[given->m_IndexNameMap[feet[i]]];
 			int knee = boneNameIndexMap[given->m_IndexNameMap[pre]];
 			Vector2 footXZ(bones[foot].pivot.x, bones[foot].pivot.z);
 			Vector2 kneeXZ(bones[knee].pivot.x, bones[knee].pivot.z);
-			if ((footXZ - kneeXZ).length() > 0.5 * edgeLen) { // need to line the foot and knee
+			if ((footXZ - kneeXZ).length() > 0.5f * edgeLen) { // need to line the foot and knee
 				std::vector<int> cubesAboveFoot;
-				float threshold = 0.2 * edgeLen;
-				for (int j = 0; j < cubes.size(); ++j) {
+				float threshold = 0.2f * edgeLen;
+				for (int j = 0; j < (int)cubes.size(); ++j) {
 					Vector2 XZ(cubes[j].center.x, cubes[j].center.z);
 					if ((XZ - footXZ).length() < threshold && fabs(cubes[j].center.y - bones[foot].pivot.y) > threshold) {
 						cubesAboveFoot.push_back(j);
@@ -1043,7 +1064,7 @@ void CAutoRigger::AutoRigThreadFunc()
 				}
 				int k = -1;
 				double maxDist = std::numeric_limits<double>::min();
-				for (int j = 0; j < cubesAboveFoot.size(); ++j) {
+				for (int j = 0; j < (int)cubesAboveFoot.size(); ++j) {
 					int idx = cubesAboveFoot[j];
 					PVector3 pvFoot(bones[foot].pivot.x, bones[foot].pivot.y, bones[foot].pivot.z);
 					PVector3 pvKnee(cubes[idx].center.x, cubes[idx].center.y, cubes[idx].center.z);
@@ -1064,7 +1085,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		// take animations
 		targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
 		ModelAnimation* anims = new ModelAnimation[skeletonModel->m_objNum.nAnimations];
-		for (int i = 0; i < skeletonModel->m_objNum.nAnimations; ++i) {
+		for (int i = 0; i < (int)skeletonModel->m_objNum.nAnimations; ++i) {
 			anims[i] = skeletonModel->anims[i];
 		}
 		targetModel->anims = anims;
@@ -1072,7 +1093,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		// take texture anims
 		targetModel->m_objNum.nTexAnims = skeletonModel->m_objNum.nTexAnims;
 		TextureAnim* texanims = new TextureAnim[skeletonModel->m_objNum.nTexAnims];
-		for (int i = 0; i < skeletonModel->m_objNum.nTexAnims; ++i) {
+		for (int i = 0; i < (int)skeletonModel->m_objNum.nTexAnims; ++i) {
 			texanims[i] = skeletonModel->texanims[i];
 		}
 		targetModel->texanims = texanims;
@@ -1086,10 +1107,10 @@ void CAutoRigger::AutoRigThreadFunc()
 		targetModel->fBlendingTime = 0.25f;	// this is the default value.
 
 		// first round : light the cube that contains a bone piviot
-		for (int i = 0; i < cubes.size(); ++i) {
+		for (int i = 0; i < (int)cubes.size(); ++i) {
 			int nearest = -1;
 			float minDis = std::numeric_limits<float>::max();
-			for (int k = 0; k < targetModel->m_objNum.nBones; ++k) {
+			for (int k = 0; k < (int)targetModel->m_objNum.nBones; ++k) {
 				Vector3 p = targetModel->bones[k].pivot;
 				Vector3 v = cubes[i].center;
 				float dis = p.distance(v);
@@ -1104,7 +1125,7 @@ void CAutoRigger::AutoRigThreadFunc()
 			if (nearest >= 0 && minDis < 0.2*edgeLen) {
 				cubes[i].rigged = true;
 				cubes[i].bones[0] = (uint8)nearest;
-				for (int j = 0; j < numVertPerCube; ++j) {
+				for (int j = 0; j < (int)numVertPerCube; ++j) {
 					targetModel->m_origVertices[cubes[i].verts[j]].bones[0] = nearest;
 					targetModel->m_origVertices[cubes[i].verts[j]].weights[0] = 255;
 				}
@@ -1118,7 +1139,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		 // second round
 		typedef std::vector<std::vector<int>> ColorVector;
 		ColorVector colors;
-		for (int i = 0; i < cubes.size(); ++i) {
+		for (int i = 0; i < (int)cubes.size(); ++i) {
 			bool clustered = false;
 			for (auto& group : colors) {
 				if (cubes[group[0]].IsSameColor(cubes[i])) {
@@ -1147,7 +1168,7 @@ void CAutoRigger::AutoRigThreadFunc()
 					int cur = todo.front();
 					todo.pop();
 					// find one neighbor
-					for (int i = 0; i < blocks.size(); ++i) {
+					for (int i = 0; i < (int)blocks.size(); ++i) {
 						if (!taken[i] && cubes[blocks[i]].IsNeighborOf(cubes[cur])) {
 							cluster.push_back(blocks[i]);
 							todo.push(blocks[i]);
@@ -1157,7 +1178,7 @@ void CAutoRigger::AutoRigThreadFunc()
 				}
 				clusters.emplace_back(cluster);
 				std::vector<int> remains;
-				for (int i = 0; i < blocks.size(); ++i) {
+				for (int i = 0; i < (int)blocks.size(); ++i) {
 					if (!taken[i])remains.push_back(blocks[i]);
 				}
 				blocks.swap(remains);
@@ -1166,7 +1187,7 @@ void CAutoRigger::AutoRigThreadFunc()
 
 		std::list<int> leftClusters;
 		std::vector<int> riggedClusters;
-		for (int c = 0; c < clusters.size(); ++c) {
+		for (int c = 0; c < (int)clusters.size(); ++c) {
 			std::vector<int> boneCubes;
 			for (auto index : clusters[c]) {
 				if (cubes[index].rigged) {
@@ -1175,12 +1196,12 @@ void CAutoRigger::AutoRigThreadFunc()
 			}
 
 			if (boneCubes.size() > 0) {
-				for (int i = 0; i < clusters[c].size(); ++i) {
+				for (int i = 0; i < (int)clusters[c].size(); ++i) {
 					int idx = clusters[c][i];
 					// find nearest bone cube
 					int nearest = -1;
 					float minDist = std::numeric_limits<float>::max();
-					for (int j = 0; j < boneCubes.size(); ++j) {
+					for (int j = 0; j < (int)boneCubes.size(); ++j) {
 						float dist = (cubes[boneCubes[j]].center - cubes[idx].center).length();
 						if (minDist > dist) {
 							minDist = dist;
@@ -1188,7 +1209,7 @@ void CAutoRigger::AutoRigThreadFunc()
 						}
 					}
 					int nidx = boneCubes[nearest];
-					for (int j = 0; j < numVertPerCube; ++j) {
+					for (int j = 0; j < (int)numVertPerCube; ++j) {
 						targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[nidx].bones[0];
 						targetModel->m_origVertices[cubes[idx].verts[j]].weights[0] = 255;
 					}
@@ -1205,10 +1226,10 @@ void CAutoRigger::AutoRigThreadFunc()
 		while (!leftClusters.empty()) {
 			std::vector<int>& left = clusters[leftClusters.back()];
 			int neighbor = -1;
-			for (int i = 0; i < riggedClusters.size(); ++i) {
+			for (int i = 0; i < (int)riggedClusters.size(); ++i) {
 				std::vector<int>& riggedCluster = clusters[riggedClusters[i]];
-				for (int j = 0; j < left.size(); ++j) {
-					for (int k = 0; k < riggedCluster.size(); ++k) {
+				for (int j = 0; j < (int)left.size(); ++j) {
+					for (int k = 0; k < (int)riggedCluster.size(); ++k) {
 						if (cubes[left[j]].IsNeighborOf(cubes[riggedCluster[k]])) {
 							neighbor = riggedClusters[i];
 							break;
@@ -1220,7 +1241,7 @@ void CAutoRigger::AutoRigThreadFunc()
 			}
 			if (neighbor >= 0) {
 				int dst = clusters[neighbor].front();
-				for (int i = 0; i < left.size(); ++i) {
+				for (int i = 0; i < (int)left.size(); ++i) {
 					int idx = left[i];
 					for (int j = 0; j < numVertPerCube; ++j) {
 						targetModel->m_origVertices[cubes[idx].verts[j]].bones[0] = cubes[dst].bones[0];
@@ -1246,22 +1267,22 @@ void CAutoRigger::AutoRigThreadFunc()
 
 		// recover coordinates
 		Vector3 offset((float)newMesh.m_ToAdd[0], (float)newMesh.m_ToAdd[1], (float)newMesh.m_ToAdd[2]);
-		for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+		for (int i = 0; i < (int)targetModel->m_objNum.nVertices; ++i) {
 			ModelVertex& modelVertex = targetModel->m_origVertices[i];
-			modelVertex.pos = (modelVertex.pos - offset) / newMesh.m_Scale;
+			modelVertex.pos = (modelVertex.pos - offset) / (float)newMesh.m_Scale;
 		}
-		for (int i = 0; i < targetModel->m_objNum.nBones; ++i) {
-			targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / newMesh.m_Scale;
+		for (int i = 0; i < (int)targetModel->m_objNum.nBones; ++i) {
+			targetModel->bones[i].pivot = (targetModel->bones[i].pivot - offset) / (float)newMesh.m_Scale;
 		}
 
 		targetModel->SaveToDisk(m_OutputFilePath.c_str());
 #pragma endregion
 
-		this->On_AddRiggedFile();
+		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), bestMatch->second->GetFileName().c_str());
 
 #ifdef OUTPUT_DEBUG_FILE
 		{
-			// output the discreted graph
+			// output the discrete graph
 			std::string fileName = "D:/Projects/3rdParty/OpenSceneGraph/bin/big_cube.graph";
 			RigHelper::OutputVertices(graph.verts, fileName);
 
@@ -1283,6 +1304,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		delete tester;
 		delete distanceField;
 	}
-
-	this->delref();
+	else
+	{
+		this->On_AddRiggedFile(0, NULL, "no matches");
+	}
 }

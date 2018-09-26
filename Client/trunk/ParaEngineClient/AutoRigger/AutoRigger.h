@@ -2,6 +2,7 @@
 
 #include "ParaEngine.h"
 #include "BaseObject.h"
+#include <thread>
 
 class Mesh;
 
@@ -27,7 +28,12 @@ namespace ParaEngine
 		void AutoRigModel();
 		void Clear();
 
-		void On_AddRiggedFile();
+		/* callback on scripting side.
+		* msg = {count=[0-1], filenames=sFilenames, msg=sMsg}
+		* @param sFilenames: colon separated list of filenames
+		* @param sMsg: additional message like error message or the filename hint.
+		*/
+		void On_AddRiggedFile(int nResultCount = 0, const char* sFilenames = 0, const char* sMsg = 0);
 		
 		
 		ATTRIBUTE_METHOD1(CAutoRigger, AddModelTemplate_s, char*) { cls->AddModelTemplate(p1); return S_OK; }
@@ -49,5 +55,6 @@ namespace ParaEngine
 		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
 		std::string m_OutputFilePath;
+		std::thread m_workerThread;
 	};
 }
