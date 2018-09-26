@@ -2,7 +2,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 
 if(ANDROID)
-    set(LIBGL GLESv2 EGL)
+    set(LIBGL GLESv2 EGL glad_core)
     set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
 elseif(IOS)
     find_library(OPENGL_LIBRARY OpenGLES)

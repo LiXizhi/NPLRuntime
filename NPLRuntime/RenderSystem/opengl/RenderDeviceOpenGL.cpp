@@ -730,9 +730,11 @@ void ParaEngine::RenderDeviceOpenGL::InitGLExtList()
 	const GLchar* extensions = (const GLchar*)glGetString(GL_EXTENSIONS);
 	std::istringstream f(extensions);
 	std::string s;
+	OUTPUT_LOG("OpenGL Extensions:\n");
 	while (std::getline(f, s, ' '))
 	{
 		m_GLExtes.push_back(s);
+		OUTPUT_LOG("%s\n", s.c_str());
 	}
 }
 

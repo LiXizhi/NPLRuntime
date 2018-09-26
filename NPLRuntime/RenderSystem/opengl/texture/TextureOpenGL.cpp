@@ -1,3 +1,5 @@
+#include "ParaEngine.h"
+
 #include "TextureOpenGL.h"
 #include <algorithm>
 using namespace ParaEngine;
@@ -546,6 +548,18 @@ ParaEngine::Color4f ParaEngine::TextureOpenGL::GetBorderColor() const
 TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
 {
 
+	if (format == EPixelFormat::R32F && !CGlobals::GetRenderDevice()->GetCaps().Texture_R32F)
+	{
+		return nullptr;
+	}
+
+
+	if (format == EPixelFormat::A16B16G16R16F && !CGlobals::GetRenderDevice()->GetCaps().Texture_RGBA16F)
+	{
+		return nullptr;
+	}
+
+
 	GLenum glFormat = 0;
 	GLenum glDataType = 0;
 	GLenum glPixelFormat = 0;
@@ -557,7 +571,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 		glPixelFormat = GL_RGB;
 		break;
 	case EPixelFormat::A8R8G8B8:
-		glFormat = GL_RGBA;
+ 		glFormat = GL_RGBA;
 		glDataType = GL_UNSIGNED_BYTE;
 		glPixelFormat = GL_RGBA;
 		break;
@@ -605,7 +619,19 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
+
+
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
+
+	//GLenum error = glGetError();
+	//if (error != GL_NO_ERROR)
+	//{
+	//	OUTPUT_LOG("Create texture failed error:%x\n", error);
+	//	glDeleteTextures(GL_TEXTURE_2D,&textureID);
+	//	glBindTexture(GL_TEXTURE_2D,0);
+	//	return nullptr;
+	//}
+
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

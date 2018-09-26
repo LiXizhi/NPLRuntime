@@ -4,11 +4,28 @@
 #include "RenderDeviceEGL.h"
 
 
+#if GLAD_CORE_DEBUG
+void _post_call_callback_default(const char *name, void *funcptr, int len_args, ...) {
+	GLenum error_code;
+	error_code = glad_glGetError();
+
+	if (error_code != GL_NO_ERROR) {
+		OUTPUT_LOG("GL ERROR %x in %s\n", error_code, name);
+	}
+}
+#endif
+
+
 ParaEngine::RenderDeviceEGL::RenderDeviceEGL(EGLDisplay display, EGLSurface surface)
 	:m_Display(display)
 	,m_Surface(surface)
 	, m_FBO(0)
 {
+
+#if GLAD_CORE_DEBUG
+	glad_set_post_callback(_post_call_callback_default);
+#endif
+
 	InitCpas();
 	InitFrameBuffer();
 

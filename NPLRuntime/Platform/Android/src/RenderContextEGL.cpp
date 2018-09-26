@@ -57,6 +57,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	const EGLint context_attrib_list[] = {
 		// request a context using Open GL ES 2.0
 		EGL_CONTEXT_CLIENT_VERSION, 2,
+		GL_CONTEXT_FLAG_DEBUG_BIT_KHR,
 		EGL_NONE
 	};
 	context = eglCreateContext(display, config, NULL, context_attrib_list);
