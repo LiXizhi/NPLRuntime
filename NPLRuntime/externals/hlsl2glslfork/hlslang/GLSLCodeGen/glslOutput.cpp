@@ -490,13 +490,17 @@ bool TGlslOutputTraverser::traverseDeclaration(bool preVisit, TIntermDeclaration
 	}
 
 	TType& type = *decl->getTypePointer();
+
+	
+	current->beginStatement();
+
 	if (type.getBasicType() == EbtTexture)
 	{
+		out << "//";
 		decl->getDeclaration()->traverse(goit);
 		return false;
 	}
-	
-	current->beginStatement();
+
 	
 	if (type.getQualifier() != EvqTemporary && type.getQualifier() != EvqGlobal)
 		out << type.getQualifierString() << " ";

@@ -43,8 +43,14 @@ bool ParaEngine::RenderDeviceEGL::Present()
 	DrawQuad();
 	m_DownSampleEffect->EndPass();
 	m_DownSampleEffect->End();
+	
+	if (!eglSwapBuffers(m_Display, m_Surface))
+	{
+		return false;
+	}
+
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	eglSwapBuffers(m_Display, m_Surface);
+	return true;
 }
 
 
@@ -102,7 +108,7 @@ bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::I
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		//assert(false);
+		assert(false);
 		return false;
 	}
 	drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
@@ -118,7 +124,7 @@ bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::I
 		SetViewport(vp);
 	}
 
-	glDrawBuffers(m_DeviceCpas.NumSimultaneousRTs, drawBufers);
+	//glDrawBuffers(m_DeviceCpas.NumSimultaneousRTs, drawBufers);
 	return true;
 }
 
@@ -135,7 +141,8 @@ bool ParaEngine::RenderDeviceEGL::SetDepthStencil(IParaEngine::ITexture* target)
 		id = tex->GetTextureID();
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, id, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, id, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		assert(false);
@@ -157,23 +164,10 @@ void ParaEngine::RenderDeviceEGL::InitFrameBuffer()
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_backbufferRenderTarget->GetTextureID(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
-
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_backbufferDepthStencil->GetTextureID(), 0);
 	GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-
-	//if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-	//{
-	//	assert(false);
-	//}
-	//if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-	//{
-	//	assert(false);
-	//}
-	//if (fbStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-	//{
-	//	assert(false);
-	//}
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
 		assert(false);
@@ -222,12 +216,6 @@ void ParaEngine::RenderDeviceEGL::DrawQuad()
 }
 
 
-bool ParaEngine::RenderDeviceEGL::IsSupportExt(const char* extName)
-{
-	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
-	if (it != m_GLExtes.end()) return true;
-	return false;
-}
 
 
 void ParaEngine::RenderDeviceEGL::InitCpas()
@@ -252,14 +240,6 @@ void ParaEngine::RenderDeviceEGL::InitCpas()
 
 
 	m_DeviceCpas.NumSimultaneousRTs = maxDrawBuffers;
-	GLint numExtes = 0;
-	glGetIntegerv(GL_NUM_EXTENSIONS, &numExtes);
-	for (GLint i = 0; i < numExtes; i++)
-	{
-		const char* extName = (const char*)glGetStringi(GL_EXTENSIONS, i);
-		m_GLExtes.push_back(extName);
-	}
-
 	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
-
+	m_DeviceCpas.NPOT = IsSupportExt("GL_OES_texture_npot");
 }

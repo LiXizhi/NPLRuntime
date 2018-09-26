@@ -17,7 +17,6 @@ namespace ParaEngine
 	private:
 		void InitCpas();
 		void InitFrameBuffer();
-		bool IsSupportExt(const char* extName);
 		void DrawQuad();
 	private:
 		EGLDisplay m_Display;

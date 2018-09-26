@@ -43,7 +43,6 @@ namespace ParaEngine
 		bool Stencil;
 		uint32_t NumSimultaneousRTs;
 		bool SupportS3TC;
-
 		RenderDeviceCaps()
 			:DynamicTextures(false)
 			,MRT(false)
@@ -56,7 +55,6 @@ namespace ParaEngine
 		{
 
 		}
-
 	};
 
 

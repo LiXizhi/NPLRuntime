@@ -47,14 +47,14 @@ void insertPre130TextureLookups()
 
     hlslSupportLib->insert( CodeMap::value_type( EOpTex2DLod,
         "vec4 xll_tex2Dlod(sampler2D s, vec4 coord) {\n"
-        "   return texture2DLod( s, vec2(coord.x,1-coord.y), coord.w);\n"
+        "   return texture2DLod( s, vec2(coord.x,1.0-coord.y), coord.w);\n"
         "}\n\n" )
         );
     hlslSupportLibExtensions->insert (std::make_pair(EOpTex2DLod, std::make_pair("","GL_ARB_shader_texture_lod")));
 
     hlslSupportLibESOverrides->insert( CodeMap::value_type( EOpTex2DLod,
         "vec4 xll_tex2Dlod(sampler2D s, vec4 coord) {\n"
-        "   return texture2DLodEXT( s, vec2(coord.x,1-coord.y), coord.w);\n"
+        "   return texture2DLodEXT( s, vec2(coord.x,1.0-coord.y), coord.w);\n"
         "}\n\n" )
         );
     hlslSupportLibExtensionsESOverrides->insert (std::make_pair(EOpTex2DLod, std::make_pair("","GL_EXT_shader_texture_lod")));
@@ -132,7 +132,7 @@ void insertPre130TextureLookups()
 	// texture2D
 
 	hlslSupportLib->insert(CodeMap::value_type(EOpTex2D,
-		"vec4 xll_texture2D(sampler2D s,vec2 coord){return texture2D(s,vec2(coord.x,1 - coord.y));}"
+		"vec4 xll_texture2D(sampler2D s,vec2 coord){return texture2D(s,vec2(coord.x,1.0 - coord.y));}"
 	));
 
     // shadow2D / shadow2Dproj

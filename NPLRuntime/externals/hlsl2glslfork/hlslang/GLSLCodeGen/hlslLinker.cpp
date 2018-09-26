@@ -1584,6 +1584,19 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 		return false;
 	
 	const bool usePrecision = Hlsl2Glsl_VersionUsesPrecision(targetVersion);
+
+
+	if (targetVersion == ETargetGLSL_ES_100 || targetVersion == ETargetGLSL_ES_300)
+	{
+		std::stringstream precision; // for GLES
+		precision << "precision highp float;" << std::endl;
+		precision << "precision highp int;" << std::endl;
+		shader << precision.str();
+		
+	}
+
+
+
 	
 	EShLanguage lang = compiler->getLanguage();
 	std::string entryPoint = GetEntryName (entryFunc);
@@ -1622,13 +1635,18 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 	// Generate a main function that calls the specified entrypoint.
 	// That main function uses semantics on the arguments and return values to
 	// connect items appropriately.	
-	
+
 	std::stringstream attrib;
 	std::stringstream uniform;
 	std::stringstream preamble;
 	std::stringstream postamble;
 	std::stringstream varying;
 	std::stringstream call;
+
+
+
+
+
 
 	markDuplicatedInSemantics(funcMain);
 
