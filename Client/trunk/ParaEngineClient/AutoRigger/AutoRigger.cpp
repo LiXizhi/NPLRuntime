@@ -1278,7 +1278,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		targetModel->SaveToDisk(m_OutputFilePath.c_str());
 #pragma endregion
 
-		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), bestMatch->second->GetFileName().c_str());
+		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), bestMatch->second->GetKey().c_str());
 
 #ifdef OUTPUT_DEBUG_FILE
 		{
