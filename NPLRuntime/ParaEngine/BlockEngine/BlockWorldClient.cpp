@@ -2202,8 +2202,8 @@ namespace ParaEngine
 
 	bool BlockWorldClient::CanUseAdvancedShading()
 	{
-
-		if (CGlobals::GetRenderDevice()->GetCaps().MRT && CGlobals::GetRenderDevice()->GetCaps().NumSimultaneousRTs >= 3)
+		auto caps = CGlobals::GetRenderDevice()->GetCaps();
+		if (caps.MRT && caps.NumSimultaneousRTs >= 4 && caps.Texture_R32F && caps.Texture_RGBA16F)
 		{
 			return true;
 		}
