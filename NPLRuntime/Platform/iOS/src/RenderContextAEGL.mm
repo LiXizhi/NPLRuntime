@@ -30,6 +30,12 @@ IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
     EAGLContext * glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     [EAGLContext setCurrentContext:glContext];
     
+    if(!loadGL())
+    {
+         NSLog(@"Can't load gl");
+        return nullptr;
+    }
+    
     RenderDeviceAEGL* device = new RenderDeviceAEGL(glContext,glLayer);
     
     return device;

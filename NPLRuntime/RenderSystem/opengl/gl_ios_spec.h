@@ -1,8 +1,9 @@
 #pragma once
 #ifndef __GL_IOS_SPEC_H__
 #define __GL_IOS_SPEC_H__
-#import <OpenGLES/ES2/gl.h>
-#import <OpenGLES/ES2/glext.h>
+
+#include "glad/glad.h"
+
 #define glBindVertexArray glBindVertexArrayOES
 #define glClearDepth glClearDepthf
 #define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
