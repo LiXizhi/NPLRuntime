@@ -16,11 +16,6 @@
 #define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
 #define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
 
-
-extern PFNGLGENVERTEXARRAYSOESPROC para_glGenVertexArraysOES;
-extern PFNGLBINDVERTEXARRAYOESPROC para_glBindVertexArrayOES;
-extern PFNGLDELETEVERTEXARRAYSOESPROC para_glDeleteVertexArraysOES;
-
 #define glBindVertexArray glBindVertexArrayOES
 #define glGenVertexArrays glGenVertexArraysOES
 #define glDeleteVertexArrays glDeleteVertexArraysOES
