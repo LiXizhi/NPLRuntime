@@ -498,7 +498,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 
 			GLuint vertex, fragment;
 			GLint  sucess;
-			GLchar infoLog[512];
+			GLchar infoLog[1024];
 			const GLchar* vShaderCode = vscode.c_str();
 			const GLchar* fShaderCode = pscode.c_str();
 
@@ -539,7 +539,7 @@ std::shared_ptr<EffectOpenGL> ParaEngine::EffectOpenGL::Create(const std::string
 			glGetProgramiv(program, GL_LINK_STATUS, &sucess);
 			if (!sucess)
 			{
-				glGetProgramInfoLog(program, 512, NULL, infoLog);
+				glGetProgramInfoLog(program, 1024, NULL, infoLog);
 				glDeleteProgram(program);
 				error = infoLog;
 				return nullptr;

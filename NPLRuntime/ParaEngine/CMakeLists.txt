@@ -289,9 +289,8 @@ endif()
 
 target_compile_definitions(ParaEngine PUBLIC 
     ${PARAENGINE_DEF_LIST}
+
 )
-
-
 IF(MSVC)
     ucm_set_runtime(STATIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed

@@ -19,7 +19,7 @@ elseif(WIN32)
     endif()
 elseif(APPLE)
     find_library(OPENGL_LIBRARY OpenGL)
-    set(LIBGL ${OpenGL})
+    set(LIBGL ${OpenGL} glad_core)
     set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
 

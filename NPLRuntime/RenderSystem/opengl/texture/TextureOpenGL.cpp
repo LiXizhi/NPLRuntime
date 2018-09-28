@@ -623,14 +623,14 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
 
-	//GLenum error = glGetError();
-	//if (error != GL_NO_ERROR)
-	//{
-	//	OUTPUT_LOG("Create texture failed error:%x\n", error);
-	//	glDeleteTextures(GL_TEXTURE_2D,&textureID);
-	//	glBindTexture(GL_TEXTURE_2D,0);
-	//	return nullptr;
-	//}
+	GLenum error = glGetError();
+	if (error != GL_NO_ERROR)
+	{
+		OUTPUT_LOG("Create texture failed error:%x\n", error);
+		glDeleteTextures(GL_TEXTURE_2D,&textureID);
+		glBindTexture(GL_TEXTURE_2D,0);
+		return nullptr;
+	}
 
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

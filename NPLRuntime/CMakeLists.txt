@@ -38,9 +38,12 @@ if(ANDROID)
 elseif(IOS)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)   
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-temporary>)
 elseif(APPLE)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-temporary>)
+
 elseif(WIN32)
     # Ugly warnings
     if(MSVC)
