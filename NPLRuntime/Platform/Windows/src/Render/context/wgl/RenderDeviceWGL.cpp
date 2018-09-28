@@ -92,6 +92,7 @@ bool ParaEngine::RenderDeviceOpenWGL::SetRenderTarget(uint32_t index, IParaEngin
 	{
 		TextureOpenGL* tex = static_cast<TextureOpenGL*>(target);
 		id = tex->GetTextureID();
+		drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
 	}
 	else {
 		drawBufers[index] = GL_NONE;
@@ -100,10 +101,9 @@ bool ParaEngine::RenderDeviceOpenWGL::SetRenderTarget(uint32_t index, IParaEngin
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, GL_TEXTURE_2D, id, 0);
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		//assert(false);
+		assert(false);
 		return false;
 	}
-	drawBufers[index] = GL_COLOR_ATTACHMENT0 + index;
 	if (target != nullptr)
 	{
 		ParaViewport vp;
