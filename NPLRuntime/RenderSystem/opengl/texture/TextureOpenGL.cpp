@@ -289,6 +289,7 @@ bool ParaEngine::TextureOpenGL::UpdateImage(uint32_t level, uint32_t xoffset, ui
 
 ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 {
+	if (glGetTexImage == nullptr || glGetTexLevelParameteriv == nullptr) return nullptr;
 	uint32_t pitch = 0;
 	Image::EImagePixelFormat format = Image::IPF_A8;
 
