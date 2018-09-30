@@ -627,7 +627,9 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
+
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
+
 
 	GLenum error = glGetError();
 	if (error != GL_NO_ERROR)
@@ -688,7 +690,42 @@ void ParaEngine::TextureOpenGL::OnRelease()
 	m_Height = 0;
 	m_Format = EPixelFormat::Unkonwn;
 }
-
+inline uint32_t GetBPP(GLenum format)
+{
+    uint32_t bpp = 0;
+    switch (format)
+    {
+        case GL_RGB:
+            bpp = 3;
+            break;
+        case GL_RGBA:
+        case GL_BGRA:
+            bpp = 4;
+            break;
+        case GL_ALPHA:
+        case GL_LUMINANCE:
+            bpp = 1;
+            break;
+        case GL_LUMINANCE_ALPHA:
+            bpp = 2;
+            break;
+        default:
+            break;
+    }
+    return bpp;
+}
+inline unsigned char* flipImageData(const unsigned char* pSrcData,GLenum format,uint32_t width,uint32_t height)
+{
+    // flip vectical
+    uint32_t bpp = GetBPP(format);
+    uint32_t pitch = width * bpp;
+    unsigned char* pDest = new unsigned  char[height * pitch];
+    for (int y = 0; y < height; y++)
+    {
+        memcpy(pDest + y * pitch, pSrcData + (height - 1 - y)*pitch, pitch);
+    }
+    return pDest;
+}
 
 ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureWithImage(ImagePtr image)
 {
@@ -739,12 +776,116 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
 		break;
 	}
 
-	TextureOpenGL* tex = TextureOpenGL::Create(image->mipmaps[0].width, image->mipmaps[0].height, format, ETextureUsage::Default);
-	if (!tex)return nullptr;
-	for (int i = 0; i < image->mipmaps.size(); i++)
-	{
-		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
-	}
+    
+    
+    GLenum glFormat = 0;
+    GLenum glDataType = 0;
+    GLenum glPixelFormat = 0;
+    switch (format)
+    {
+        case EPixelFormat::R8G8B8:
+            glFormat = GL_RGB;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_RGB;
+            break;
+        case EPixelFormat::A8R8G8B8:
+            glFormat = GL_RGBA;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_RGBA;
+            break;
+        case EPixelFormat::A8B8G8R8:
+            glFormat = GL_BGRA;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_BGRA;
+            break;
+        case EPixelFormat::A8:
+            glFormat = GL_ALPHA;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_ALPHA;
+            break;
+        case EPixelFormat::L8:
+            glFormat = GL_LUMINANCE;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_RED;
+            break;
+        case EPixelFormat::A8L8:
+            glFormat = GL_LUMINANCE_ALPHA;
+            glDataType = GL_UNSIGNED_BYTE;
+            glPixelFormat = GL_RG;
+        case EPixelFormat::D24S8:
+            glFormat = GL_DEPTH_STENCIL;
+            glDataType = GL_UNSIGNED_INT_24_8;
+            glPixelFormat = GL_DEPTH_STENCIL;
+            break;
+        case EPixelFormat::R32F:
+            glFormat = GL_R32F;
+            glDataType = GL_FLOAT;
+            glPixelFormat = GL_RED;
+            break;
+        case EPixelFormat::A16B16G16R16F:
+            glFormat = GL_RGBA16F;
+            glDataType = GL_FLOAT;
+            glPixelFormat = GL_RGBA;
+            break;
+        default:
+            return nullptr;
+            break;
+    }
+    if (glFormat == 0) return nullptr;
+    
+    GLuint textureID = 0;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    
+    for (int i = 0; i < image->mipmaps.size(); i++)
+    {
+        auto img = image->mipmaps[i];
+       // tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
+        
+        const unsigned char* pSrc= ((unsigned char*)image->data) + image->mipmaps[i].offset;
+        unsigned char* pDest = flipImageData(pSrc, glFormat, img.width, img.height);
+        glTexImage2D(GL_TEXTURE_2D, 0, glFormat, img.width, img.height, 0, glPixelFormat, glDataType,pDest);
+        delete [] pDest;
+    }
+    
+    
+    
+
+    
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR)
+    {
+        OUTPUT_LOG("Create texture failed error:%x\n", error);
+        glDeleteTextures(GL_TEXTURE_2D,&textureID);
+        glBindTexture(GL_TEXTURE_2D,0);
+        return nullptr;
+    }
+    
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    
+    TextureOpenGL* tex = new TextureOpenGL();
+    
+    tex->m_TextureID = textureID;
+    tex->m_Width = image->mipmaps[0].width;
+    tex->m_Height = image->mipmaps[0].height;
+    tex->m_GLFormat = glFormat;
+    tex->m_GLDataType = glDataType;
+    tex->m_GLPixelFomat = glPixelFormat;
+    tex->m_Usage = ETextureUsage::Default;
+    tex->m_Format = format;
+
+    
+
 	return tex;
 }
 
@@ -784,38 +925,18 @@ bool TextureOpenGL::UpdateImageComressed(uint32_t level, uint32_t xoffset, uint3
 	return true;
 }
 
+
+
+
+
 bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uint32_t yoffset, uint32_t width, uint32_t height, const unsigned char* pixels)
 {
-	// flip vectical
-	uint32_t bpp = 0;
-	switch (m_GLFormat)
-	{
-	case GL_RGB:
-		bpp = 3;
-		break;
-	case GL_RGBA:
-	case GL_BGRA:
-		bpp = 4;
-		break;
-	case GL_ALPHA:
-	case GL_LUMINANCE:
-		bpp = 1;
-		break;
-	case GL_LUMINANCE_ALPHA:
-		bpp = 2;
-		break;
-	default:
-		break;
-	}
-	uint32_t pitch = width * bpp;
-	const unsigned char* pSrc = pixels;
-	unsigned char* pDest = new unsigned  char[height * pitch];
-	for (int y = 0; y < height; y++)
-	{
-		memcpy(pDest + y * pitch, pSrc + (height - 1 - y)*pitch, pitch);
-	}
+
+    unsigned char* pDest = flipImageData(pixels, m_GLFormat, width, height);
+
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
-    glActiveTexture(GL_TEXTURE0);
+    
+    
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	uint32_t offy = m_Height - yoffset - height;
@@ -830,8 +951,6 @@ TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
 {
 
 	GLenum glFormat = 0;
-	GLenum glDataType = 0;
-	GLenum glPixelFormat = 0;
 	EPixelFormat format;
 	switch (image->Format)
 	{
