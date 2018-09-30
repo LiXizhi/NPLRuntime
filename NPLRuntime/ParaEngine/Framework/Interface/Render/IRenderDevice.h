@@ -45,6 +45,7 @@ namespace ParaEngine
 		bool SupportS3TC;
 		bool Texture_R32F;
 		bool Texture_RGBA16F;
+        bool BorderClamp;
 		RenderDeviceCaps()
 			:DynamicTextures(false)
 			,MRT(false)
@@ -54,8 +55,9 @@ namespace ParaEngine
 			,Stencil(false)
 			,NumSimultaneousRTs(0)
 			,SupportS3TC(false)
-			, Texture_R32F(false)
-			, Texture_RGBA16F(false)
+			,Texture_R32F(false)
+			,Texture_RGBA16F(false)
+            ,BorderClamp(false)
 		{
 
 		}

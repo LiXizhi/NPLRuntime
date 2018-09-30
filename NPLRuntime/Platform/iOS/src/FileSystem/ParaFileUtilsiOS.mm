@@ -1,4 +1,5 @@
-#include <UIKit/UIKit.h>
+#include "glad/glad.h"
+#include <Foundation/Foundation.h>
 #include "ParaEngine.h"
 #include "ParaFileUtilsiOS.h"
 #include <zlib.h>

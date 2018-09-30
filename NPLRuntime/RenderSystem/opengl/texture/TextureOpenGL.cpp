@@ -289,7 +289,7 @@ bool ParaEngine::TextureOpenGL::UpdateImage(uint32_t level, uint32_t xoffset, ui
 
 ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 {
-	if (glGetTexImage == nullptr || glGetTexLevelParameteriv == nullptr) return nullptr;
+
 	uint32_t pitch = 0;
 	Image::EImagePixelFormat format = Image::IPF_A8;
 
@@ -436,6 +436,7 @@ ParaEngine::ETextureWrapMode ParaEngine::TextureOpenGL::GetAddressV() const
 bool ParaEngine::TextureOpenGL::SetAddressU(ParaEngine::ETextureWrapMode mode)
 {
 	if (mode == m_AddressU) return true;
+    if(mode == ETextureWrapMode::Border && !CGlobals::GetRenderDevice()->GetCaps().BorderClamp) return false;
 	m_AddressU = mode;
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	switch (m_AddressU)
@@ -462,6 +463,7 @@ bool ParaEngine::TextureOpenGL::SetAddressU(ParaEngine::ETextureWrapMode mode)
 bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 {
 	if (mode == m_AddressV) return true;
+    if(mode == ETextureWrapMode::Border && !CGlobals::GetRenderDevice()->GetCaps().BorderClamp) return false;
 	m_AddressV = mode;
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	switch (m_AddressV)
@@ -532,6 +534,11 @@ bool ParaEngine::TextureOpenGL::SetMipFilter(ParaEngine::ETextureFilter type)
 
 bool ParaEngine::TextureOpenGL::SetBorderColor(const ParaEngine::Color4f& color)
 {
+    if (!CGlobals::GetRenderDevice()->GetCaps().BorderClamp)
+    {
+        return false;
+    }
+    
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
 	GLfloat col[] = {color.r,color.g,color.b,color.a};
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, col);
@@ -596,7 +603,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 		glDataType = GL_UNSIGNED_BYTE;
 		glPixelFormat = GL_RG;
 	case EPixelFormat::D24S8:
-		glFormat = GL_DEPTH24_STENCIL8;
+		glFormat = GL_DEPTH_STENCIL;
 		glDataType = GL_UNSIGNED_INT_24_8;
 		glPixelFormat = GL_DEPTH_STENCIL;
 		break;
@@ -620,8 +627,6 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 
-
-
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
 
 	GLenum error = glGetError();
@@ -639,11 +644,10 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-
+    
 
 	TextureOpenGL* tex = new TextureOpenGL();
 
@@ -651,6 +655,8 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	tex->m_Width = width;
 	tex->m_Height = height;
 	tex->m_GLFormat = glFormat;
+    tex->m_GLDataType = glDataType;
+    tex->m_GLPixelFomat = glPixelFormat;
 	tex->m_Usage = usage;
 	tex->m_Format = format;
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
@@ -798,7 +804,6 @@ bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uin
 	case GL_LUMINANCE_ALPHA:
 		bpp = 2;
 		break;
-		break;
 	default:
 		break;
 	}
@@ -810,11 +815,12 @@ bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uin
 		memcpy(pDest + y * pitch, pSrc + (height - 1 - y)*pitch, pitch);
 	}
 	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+    glActiveTexture(GL_TEXTURE0);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	uint32_t offy = m_Height - yoffset - height;
 
-	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, offy, width, height, m_GLFormat, GL_UNSIGNED_BYTE, pDest);
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, offy, width, height, m_GLFormat, m_GLDataType, pDest);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 	delete[] pDest;
 	return true;
@@ -867,21 +873,17 @@ TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-
 	TextureOpenGL* tex = new TextureOpenGL();
-
 	tex->m_TextureID = textureID;
 	tex->m_Width = image->mipmaps[0].width;
 	tex->m_Height = image->mipmaps[0].height;
 	tex->m_GLFormat = glFormat;
 	tex->m_Usage = ETextureUsage::Default;
 	tex->m_Format = format;
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 	return tex;
 }
 

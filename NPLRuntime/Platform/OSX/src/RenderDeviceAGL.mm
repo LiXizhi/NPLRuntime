@@ -257,6 +257,7 @@ void ParaEngine::RenderDeviceAGL::InitCpas()
 	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
 	m_DeviceCpas.Texture_R32F = true;
 	m_DeviceCpas.Texture_RGBA16F = true;
+	m_DeviceCpas.BorderClamp = IsSupportExt("GL_ARB_texture_border_clamp");
 }
 
 

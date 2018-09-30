@@ -2,6 +2,16 @@
 #ifndef __GL_IOS_SPEC_H__
 #define __GL_IOS_SPEC_H__
 
+
+#ifdef USE_GLAD
+
+#include "KHR/khrplatform.h"
+#include "glad/glad.h"
+
+
+
+#else
+
 #import <OpenGLES/ES2/gl.h>
 #import <OpenGLES/ES2/glext.h>
 
@@ -12,8 +22,7 @@
 #define GL_TEXTURE_BORDER_COLOR 0x1004
 #define GL_RED 0x1903
 #define GL_RG 0x8227
-#define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
-#define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
+
 #define GL_R16F 0x822D
 #define GL_R32F 0x822E
 #define GL_RGBA16F 0x881A
@@ -24,12 +33,6 @@
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
-
-#define glBindVertexArray glBindVertexArrayOES
-#define glClearDepth glClearDepthf
-#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
-
-
 
 
 typedef void (GL_APIENTRYP PFNGLUNIFORMMATRIX2X3FVPROC)(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
@@ -68,5 +71,15 @@ extern PFNGLDRAWBUFFERSPROC para_glDrawBuffers;
 typedef void (GL_APIENTRYP PFNGLGETTEXIMAGEPROC)(GLenum target, GLint level, GLenum format, GLenum type, void *pixels);
 extern PFNGLGETTEXIMAGEPROC para_glGetTexImage;
 #define glGetTexImage para_glGetTexImage;
+
+#endif
+
+
+#define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
+#define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
+#define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
+
+#define glBindVertexArray glBindVertexArrayOES
+#define glClearDepth glClearDepthf
 
 #endif //__GL_IOS_SPEC_H__

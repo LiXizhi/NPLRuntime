@@ -1,6 +1,24 @@
 #include "OpenGL.h"
 
 
+
+#ifdef USE_GLAD
+
+#include <dlfcn.h>
+ void* NSGLGetProcAddress(const char *functionName) {
+    static void *handle = NULL;
+    if (!handle) {
+        handle = dlopen(NULL, RTLD_LAZY);
+    }
+    return handle ? (void*)dlsym(handle, functionName) : NULL;
+}
+int loadGL()
+{
+	return gladLoadGLES2Loader(NSGLGetProcAddress);
+}
+
+#else
+
     PFNGLGETTEXIMAGEPROC para_glGetTexImage;
     PFNGLUNIFORMMATRIX2X3FVPROC para_glUniformMatrix2x3fv;
     PFNGLUNIFORMMATRIX3X2FVPROC para_glUniformMatrix3x2fv;
@@ -26,3 +44,4 @@ int loadGL()
 
 	return 1;
 }
+#endif

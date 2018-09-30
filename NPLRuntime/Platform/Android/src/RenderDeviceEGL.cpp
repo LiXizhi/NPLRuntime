@@ -236,4 +236,5 @@ void ParaEngine::RenderDeviceEGL::InitCpas()
 	m_DeviceCpas.NumSimultaneousRTs = 1;
 	m_DeviceCpas.SupportS3TC = IsSupportExt("GL_EXT_texture_compression_s3tc");
 	m_DeviceCpas.NPOT = IsSupportExt("GL_OES_texture_npot");
+	m_DeviceCpas.BorderClamp = IsSupportExt("GL_OES_texture_border_clamp");
 }
