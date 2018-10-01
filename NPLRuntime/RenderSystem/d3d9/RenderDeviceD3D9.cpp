@@ -483,6 +483,7 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 	m_Cpas.MaxSimultaneousTextures = caps.MaxSimultaneousTextures;
 	m_Cpas.Texture_R32F = true;
 	m_Cpas.Texture_RGBA16F = true;
+	m_Cpas.BorderClamp = true;
 }
 
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t slot, IParaEngine::ITexture * texture)
