@@ -106,6 +106,13 @@ void VertShadow( float4	Pos			: POSITION,
     Depth.xy = oPos.zw;
 }
 
+float4 EncodeFloatRGBA(float v) {
+	float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
+	enc = frac(enc);
+	enc -= enc.yzww * float4(1.0 / 255.0, 1.0 / 255.0, 1.0 / 255.0, 0.0);
+	return enc;
+}
+
 float4 PixShadow( float2	inTex		: TEXCOORD0,
 				 float2 Depth		: TEXCOORD1) : COLOR0
 {
@@ -120,12 +127,7 @@ float4 PixShadow( float2	inTex		: TEXCOORD0,
     float d = (Depth.x / Depth.y) * 0.5 + 0.5;
     return EncodeFloatRGBA(d);
 }
-float4 EncodeFloatRGBA( float v ) {
-  float4 enc = float4(1.0, 255.0, 65025.0, 16581375.0) * v;
-  enc = frac(enc);
-  enc -= enc.yzww * float4(1.0/255.0,1.0/255.0,1.0/255.0,0.0);
-  return enc;
-}
+
 ////////////////////////////////////////////////////////////////////////////////
 //
 //                              Technique
