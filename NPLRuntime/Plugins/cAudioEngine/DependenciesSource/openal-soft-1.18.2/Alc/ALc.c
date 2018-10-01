@@ -1192,8 +1192,12 @@ void *Android_GetJNIEnv(void)
     return env;
 }
 
+#ifdef AL_LIBTYPE_STATIC
+JNIEXPORT jint JNICALL OpenAL_Init(JavaVM *jvm, void* UNUSED(reserved))
+#else
 /* Automatically called by JNI. */
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void* UNUSED(reserved))
+#endif
 {
     void *env;
     int err;
