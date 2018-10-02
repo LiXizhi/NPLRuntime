@@ -119,7 +119,7 @@ CGUIRoot::CGUIRoot(void)
 	: engine(NULL),
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
-	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false)
+	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false)
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -1345,7 +1345,7 @@ int CGUIRoot::HandleUserInput()
 			}
 		}
 	}
-
+    m_bMouseOverScrollableUI = (GetUIMouseFocus() != NULL) && GetUIMouseFocus()->IsScrollableOrHasMouseWheelRecursive();
 	m_bKeyboardProcessed = (bKeyHandled || (GetUIKeyFocus() != NULL));
 	m_bMouseProcessed = (bMouseHandled || (GetUIMouseFocus() != NULL) || (pdrag->pDragging != NULL));
 
@@ -1901,6 +1901,11 @@ void ParaEngine::CGUIRoot::SetCaptureMouse(bool bCapture)
 bool ParaEngine::CGUIRoot::IsMouseCaptured()
 {
 	return m_bMouseCaptured;
+}
+
+bool ParaEngine::CGUIRoot::IsMouseOverScrollableUI() const
+{
+    return m_bMouseOverScrollableUI;
 }
 
 bool ParaEngine::CGUIRoot::PushEvent(const MSG& msg)

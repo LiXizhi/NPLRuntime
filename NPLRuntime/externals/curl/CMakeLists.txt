@@ -1,3 +1,5 @@
+
+
 if(ANDROID)
 	add_library(libcurl INTERFACE)
     target_include_directories(libcurl INTERFACE include/android)
@@ -23,6 +25,11 @@ elseif(WIN32)
 	
 	target_include_directories(libcurl INTERFACE "${CURL_SOURCE_DIR}/include/")
 	target_include_directories(libcurl INTERFACE "${CURL_BINARY_DIR}/include/curl/")
+elseif (NPLRUNTIME_SERVER)
+	FIND_PACKAGE(CURL REQUIRED)
+	 add_library(libcurl INTERFACE)
+	 target_include_directories(libcurl INTERFACE ${CURL_INCLUDE_DIR})
+	 target_link_libraries(libcurl INTERFACE ${CURL_LIBRARIES})
 elseif(APPLE)
 	 FIND_PACKAGE(CURL REQUIRED)
 	 add_library(libcurl INTERFACE)

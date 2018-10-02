@@ -5,6 +5,9 @@
 #include "ParaXModel/ParaXModel.h"
 #include "Rectangle.h"
 
+#include <unordered_map>
+
+
 class TiXmlDocument;
 class TiXmlElement;
 class TiXmlNode;
@@ -38,13 +41,17 @@ namespace ParaEngine
 			BlockModelBlockId = 254,
 		};
 
-		BMaxParser(const char* pBuffer, int32 nSize, const char* filename = NULL, BMaxParser* pParent = NULL);
+		BMaxParser( const char* filename = NULL, BMaxParser* pParent = NULL);
 		virtual ~BMaxParser(void);
 		CParaXModel* ParseParaXModel();
 		CParaXModel* ParseParaXModel(uint32 nMaxTriangleCount);
 		
 		const std::string& GetFilename() const;
 		void SetFilename(const std::string& val);
+
+		void SetMergeCoplanerBlockFace(bool val);
+
+		void Load(const char* pBuffer, int32 nSize);
 	protected:
 		/** check if the given filename belongs to one of its parent's filename*/
 		bool IsFileNameRecursiveLoaded(const std::string& filename);
@@ -57,6 +64,8 @@ namespace ParaEngine
 		bool IsAutoScale();
 		const Vector3& GetCenterPos() const;
 
+		/** It will create 6 recangles from cube (centered later node's x, y, z) for each bmax node without merging coplaner block faces. */
+		void CreatRectanglesFromBlocks();
 		void MergeCoplanerBlockFace();
 		bool IsCoplaneNode(BMaxNode* node1, BMaxNode* node2, int nFaceIndex);
 		void FindCoplanerFace(BMaxNode* node, uint32 nFaceIndex);
@@ -88,7 +97,7 @@ namespace ParaEngine
 		}
 		/** return node index*/
 		int64 InsertNode(BMaxNodePtr& nodePtr);
-		void Load(const char* pBuffer, int32 nSize);
+
 		void ParseBlocks(BMaxXMLDocument& doc);
 		void ParseBlocks_Internal(const char* value);
 		
@@ -155,7 +164,8 @@ namespace ParaEngine
 		BMaxParser* m_pParent;
 		std::string m_filename;
 		std::vector<BlockModel*> m_blockModels;
-		std::map<uint64, BMaxNodePtr> m_nodes;
+		std::unordered_map<uint64, BMaxNodePtr> m_nodes;
+		//std::map<uint64, BMaxNodePtr> m_nodes;
 		std::map<std::string, ref_ptr<CParaXModel> > m_refModels;
 		/*std::vector<RectanglePtr>m_originRectangles;
 		std::map<uint16, vector<RectanglePtr>>m_lodRectangles;*/
@@ -188,6 +198,8 @@ namespace ParaEngine
 		int m_nHelperBlockId;
 		int m_nLodLevel;
 		BMaxAnimGenerator* m_pAnimGenerator;
+
+		bool m_bMergeCoplanerBlockFace;
 
 		static const int  MaxBoneLengthHorizontal;
 		static const int  MaxBoneLengthVertical;

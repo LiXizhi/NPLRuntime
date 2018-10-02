@@ -4,6 +4,7 @@
 #include "ParaEngine.h"
 #include "Win32MCI.h"
 #include <Windows.h>
+#include <mmsystem.h>
 #include <stdio.h>
 #include <mciapi.h>
 

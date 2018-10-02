@@ -202,6 +202,8 @@ void NPL::CNPLNetServer::stop()
 
 		Cleanup();
 		m_io_service_dispatcher.reset();
+		m_new_connection.reset();
+		m_bIsServerStarted = false;
 	}
 }
 

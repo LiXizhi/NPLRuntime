@@ -51,6 +51,10 @@ if(NPLRUNTIME_PHYSICS)
 	add_subdirectory(bullet3 ${PROJECT_BINARY_DIR}/bullet3)
 endif()
 
+add_subdirectory(freetype-2.8.1)
+add_subdirectory(jpeg)
+add_subdirectory(png)
+
 if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
     # exclude graphics lib if no renderer are specified, such as under linux
 else()
@@ -75,15 +79,17 @@ add_subdirectory(openssl)
 if(ANDROID)
    
 else()
-    set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
+    #set(SERVER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../Server/trunk/)
 
 
-    if(NOT NPLRUNTIME_STATIC_LIB) 
-        add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${PROJECT_BINARY_DIR}/NPLMono/NPLMono2)
-    endif()
-    if(NOT NPLRUNTIME_STATIC_LIB) 
-        # add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
-    endif()
+    #if(NOT NPLRUNTIME_STATIC_LIB) 
+	#	include(../cmake/ucm.cmake)
+	#	include(../cmake/ConfigBoost.cmake)
+    #    add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${PROJECT_BINARY_DIR}/NPLMono/NPLMono2)
+    #endif()
+    #if(NOT NPLRUNTIME_STATIC_LIB) 
+    #    # add_subdirectory (${SERVER_SOURCE_DIR}luasql ${PROJECT_BINARY_DIR}/luasql)
+    #endif()
 endif()
 
 

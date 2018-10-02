@@ -10,7 +10,7 @@ mkdir -p ./bin/mac
 cd bin/mac/
 # to build in parallel with 3 threads, use make -j3
 
-cmake -DCMAKE_BUILD_TYPE=Release -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=ON ../../NPLRuntime/ && make --jobs=${JOBS:-1}
+cmake -DCMAKE_BUILD_TYPE=Release -DNPLRUNTIME_SERVER=ON -DNPLRUNTIME_RENDERER=NULL -DMAC_SERVER=ON ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 
@@ -30,6 +30,24 @@ if [ $result == 0 ]; then
         ls -l $npl_exe_path
     fi
     popd
+	
+	if [ -f ./libParaSqlite.so ]; then
+        if [ ! -e $npl_sql_path ] && [ ! -L $npl_sql_path ];  then
+            ln -s $(pwd)/libParaSqlite.so $npl_sql_path
+        else
+            echo "libParaSqlite already exist at $npl_sql_path"
+        fi
+        ls -l $npl_sql_path
+    fi
+	
+	if [ -f ./ParaEngineServer ]; then
+        if [ ! -e $npl_exe_path ] && [ ! -L $npl_exe_path ];  then
+            ln -s $(pwd)/ParaEngineServer $npl_exe_path
+        else
+            echo "NPL runtime already exist at $npl_exe_path"
+        fi
+        ls -l $npl_exe_path
+    fi
 
     # run all NPL tests
     echo "you can test npl runtime by typing: npl NPLRuntime/tests/helloworld.lua"

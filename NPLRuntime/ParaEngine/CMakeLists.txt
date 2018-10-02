@@ -286,6 +286,10 @@ else()
 	list(APPEND PARAENGINE_DEF_LIST PE_CORE_EXPORTING)
 endif()
 
+if (NPLRUNTIME_SERVER)
+	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_SERVER)
+endif()
+
 
 target_compile_definitions(ParaEngine PUBLIC 
     ${PARAENGINE_DEF_LIST}

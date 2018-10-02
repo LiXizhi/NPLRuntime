@@ -117,7 +117,7 @@ HRESULT ParaEngine::CParaXProcessor::LockDeviceObject()
 	return E_FAIL;
 }
 
-IRenderDevice* ParaEngine::CParaXProcessor::GetRenderDevice()
+RenderDevicePtr ParaEngine::CParaXProcessor::GetRenderDevice()
 {
 	return (m_pDevice != 0) ? m_pDevice : CGlobals::GetRenderDevice();
 }
@@ -302,12 +302,36 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				if (sExt == "bmax")
 				{
 					// block max model. 
-					BMaxParser p(myFile.getBuffer(), myFile.getSize());
+					BMaxParser p;
+					ParaXEntity* pParaEntity = dynamic_cast<ParaXEntity*>(m_asset.get());
+					if (pParaEntity != nullptr) {
+						p.SetMergeCoplanerBlockFace(pParaEntity->GetMergeCoplanerBlockFace());
+					}
+					p.Load(myFile.getBuffer(), myFile.getSize());
 					iCur->m_pParaXMesh = p.ParseParaXModel();
 					auto pParaXMesh = iCur->m_pParaXMesh;
 
 #ifdef ENABLE_BMAX_AUTO_LOD
-					if (m_MeshLODs.size() == 1)
+					// generate LOD
+					bool bGenerateLOD = true;
+					if (iCur == pMeshLODs.begin())
+					{
+						if (m_MeshLODs.size() > 1)
+						{
+							for (int i = 1; i < (int)m_MeshLODs.size(); ++i)
+							{
+								if (!m_MeshLODs[i].m_sMeshFileName.empty())
+								{
+									bGenerateLOD = false;
+								}
+							}
+							if (bGenerateLOD)
+							{
+								m_MeshLODs.resize(1);
+							}
+						}
+					}
+					if (bGenerateLOD)
 					{
 						// each LOD at least cut triangle count in half and no bigger than a given count. 
 						// by default, generate lod in range 30, 60, 90, 120 meters;

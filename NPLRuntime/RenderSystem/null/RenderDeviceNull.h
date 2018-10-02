@@ -64,10 +64,10 @@ namespace ParaEngine
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
 
 
-		virtual Rect GetViewport() override;
+		virtual ParaViewport GetViewport() override;
 
 
-		virtual bool SetViewport(const Rect& viewport) override;
+		virtual bool SetViewport(const ParaViewport& viewport) override;
 
 
 		virtual bool SetClearColor(const Color4f& color) override;
@@ -96,6 +96,6 @@ namespace ParaEngine
 
 		virtual bool Present() override;
 	protected:
-		Rect m_ViewPort;
+		ParaViewport m_ViewPort;
 	};
 }

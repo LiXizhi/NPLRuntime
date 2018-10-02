@@ -1,6 +1,7 @@
 
-
-if(ANDROID)
+if (NPLRUNTIME_SERVER)
+	add_subdirectory(Linux)
+elseif(ANDROID)
     add_subdirectory(Android)
 elseif(IOS)
     add_subdirectory(iOS)

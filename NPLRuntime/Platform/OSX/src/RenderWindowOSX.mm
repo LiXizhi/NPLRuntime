@@ -266,15 +266,12 @@ void RenderWindowOSX::PollEvents() {
     
     switch([(NSEvent *)event type])
     {
-            
-            
         case NSEventTypePressure:
             //NSLog(@"Pressure");
         {
 
         }
-            break;
-            
+        break;
             
         case NSEventTypeLeftMouseDown:
             if(event.window == m_window)
@@ -324,6 +321,12 @@ void RenderWindowOSX::PollEvents() {
                 NSEventPhase phase = [event phase];
                 NSEventPhase momentumPhase = [event momentumPhase];
                 
+                static bool s_bMouseOverScrollableUI = false;
+                if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+                {
+                    s_bMouseOverScrollableUI = CGUIRoot::GetInstance()->IsMouseOverScrollableUI();
+                }
+                
                 if(phase == NSEventPhaseNone && momentumPhase == NSEventPhaseNone)
                 {
                     OnMouseWhell([event deltaX], [event deltaY]);
@@ -333,22 +336,32 @@ void RenderWindowOSX::PollEvents() {
                     m_scrollMouseX+= [event deltaX]*4;
                     m_scrollMouseY+= [event deltaY]*4;
                     
-                    switch (phase) {
-                        case NSEventPhaseMayBegin:
-                        case NSEventPhaseBegan:
-                            OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
-                            break;
-                        case NSEventPhaseChanged:
+                    if(s_bMouseOverScrollableUI)
+                    {
+                        if(phase == NSEventPhaseChanged)
                         {
-                            OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                            OnMouseWhell([event deltaX], [event deltaY]);
                         }
-                            break;
-                        case NSEventPhaseEnded:
-                        case NSEventPhaseCancelled:
-                            OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
-                            break;
-                        default:
-                            break;
+                    }
+                    else
+                    {
+                        switch (phase) {
+                            //case NSEventPhaseMayBegin:
+                            case NSEventPhaseBegan:
+                                OnMouseButton(EMouseButton::RIGHT, EKeyState::PRESS, m_scrollMouseX, m_scrollMouseY);
+                                break;
+                            case NSEventPhaseChanged:
+                            {
+                                OnMouseMove(m_scrollMouseX, m_scrollMouseY);
+                            }
+                                break;
+                            case NSEventPhaseEnded:
+                            //case NSEventPhaseCancelled:
+                                OnMouseButton(EMouseButton::RIGHT, EKeyState::RELEASE, m_scrollMouseX, m_scrollMouseY);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
             }
@@ -583,7 +596,11 @@ void RenderWindowOSX::OnMouseWhell(float deltaX, float deltaY)
     {
         return;
     }
-    CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY * 120)));
+    
+    if(deltaY != 0.f)
+    {
+        CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseWheelEvent(deltaY * 120)));
+    }
 }
 
 

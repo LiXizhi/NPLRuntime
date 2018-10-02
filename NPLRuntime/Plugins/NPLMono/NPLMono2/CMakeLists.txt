@@ -22,7 +22,7 @@
 # ---+++ Build in Linux:
 # it is much easier to build on linux and NPLMono is currently recommended to use only on server side. Install Mono from source in the official way.  Make sure pkg-config is installed.
 # Run the default cmake, the NPLMono2 will automatically find all mono libraries installed on the machine.
-
+include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
 set(BUILD_NPLMONO2 true)
 
 if(WIN32)
@@ -116,7 +116,8 @@ endif()
 if(BUILD_NPLMONO2)
 PROJECT(NPLMono2)
 
-set (CLIENT_SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../../../Client/trunk/ParaEngineClient)
+
+set(CLIENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../ParaEngine)
 
 #####################################
 ##----- source files for NPLMono---##
@@ -177,6 +178,8 @@ list(APPEND NPLMono2_SRCS ${NPLMono2_interface_bin_Files} ${NPLMono2_interface_F
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${CLIENT_SOURCE_DIR}")
 include_directories("${CLIENT_SOURCE_DIR}/Core")
+include_directories("${CLIENT_SOURCE_DIR}/util")
+include_directories("${CLIENT_SOURCE_DIR}/Framework/Interface")
 include_directories("${Boost_INCLUDE_DIRS}")
 
 IF(MSVC)
