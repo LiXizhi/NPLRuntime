@@ -425,7 +425,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 		///////////////////////////////////////////////////////////////////////////
 		// fixed function pipeline
 		/// Set the texture
-		DeviceTexturePtr_type pTex = GetDeviceTexture();
+		auto pTex = GetDeviceTexture();
 		if(pTex)
 		{
 			pd3dDevice->SetTexture(0, pTex);
@@ -439,7 +439,7 @@ void ParticleSystem::drawInstance(ParticleList* instancePS)
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// programmable pipeline
-		DeviceTexturePtr_type pTex = GetDeviceTexture();
+		auto pTex = GetDeviceTexture();
 		// OUTPUT_LOG("texture : %s %d %d \n", texture->GetKey().c_str(), (int)pTex, texture->IsLocked() ? 1 : 0);
 		if(pTex)
 		{
@@ -963,7 +963,7 @@ TextureEntity* ParaEngine::RibbonEmitter::GetTexture()
 	return NULL;
 }
 
-ParaEngine::DeviceTexturePtr_type ParaEngine::RibbonEmitter::GetDeviceTexture()
+IParaEngine::ITexture* ParaEngine::RibbonEmitter::GetDeviceTexture()
 {
 	auto pTexture = GetTexture();
 	return pTexture != 0 ? pTexture->GetTexture() : 0;
@@ -1046,7 +1046,8 @@ void RibbonEmitter::draw(SceneState * pSceneState)
 
 
 	// texture
-	pd3dDevice->SetTexture(0, GetDeviceTexture());
+	auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+	pEffect->setTexture(0, GetDeviceTexture());
 
 	DynamicVertexBufferEntity* pBufEntity =  CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_TEX1_DIF);
 	pd3dDevice->SetStreamSource( 0, pBufEntity->GetBuffer(), 0, pBufEntity->m_nUnitSize );
@@ -1187,7 +1188,7 @@ TextureEntity* ParaEngine::ParticleSystem::GetTexture()
 	return NULL;
 }
 
-ParaEngine::DeviceTexturePtr_type ParaEngine::ParticleSystem::GetDeviceTexture()
+IParaEngine::ITexture* ParaEngine::ParticleSystem::GetDeviceTexture()
 {
 	auto pTexture = GetTexture();
 	return pTexture != 0 ? pTexture->GetTexture() : 0;

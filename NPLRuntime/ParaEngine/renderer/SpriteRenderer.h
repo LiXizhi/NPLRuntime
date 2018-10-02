@@ -14,7 +14,7 @@ namespace ParaEngine
 
 	struct SpriteQuad
 	{
-		DeviceTexturePtr_type texture;
+		IParaEngine::ITexture* texture;
 		UINT texw, texh;
 		RECT rect;
 		Vector3 center;
@@ -25,7 +25,7 @@ namespace ParaEngine
 
 	struct SpriteTriangle
 	{
-		DeviceTexturePtr_type texture;
+		IParaEngine::ITexture* texture;
 		UINT texw, texh;
 		RECT rect;
 		Vector3 vertices[3];
@@ -35,7 +35,7 @@ namespace ParaEngine
 
 	struct SpriteThickLine
 	{
-		DeviceTexturePtr_type texture;
+		IParaEngine::ITexture* texture;
 		UINT texw, texh;
 		RECT rect;
 		Vector3 vStart;

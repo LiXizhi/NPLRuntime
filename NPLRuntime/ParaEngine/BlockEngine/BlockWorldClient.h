@@ -332,24 +332,24 @@ namespace ParaEngine
 
 		ParaIndexBuffer m_sharedIndexBuffer;
 
-#ifdef USE_DIRECTX_RENDERER
+
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_color;
 		/** HDR render target */
 		asset_ptr<TextureEntity> m_render_target_color_hdr;
 		/** depth, block_id, block_light, sun_light*/
 		asset_ptr<TextureEntity> m_render_target_block_info;
-		LPDIRECT3DSURFACE9       m_render_target_block_info_surface;
+		IParaEngine::ITexture*       m_render_target_block_info_surface;
 		/** 32bits for the red channel, writing depth info to this texture. */
 		asset_ptr<TextureEntity> m_render_target_depth_tex;
-		LPDIRECT3DSURFACE9       m_render_target_depth_tex_surface;
+		IParaEngine::ITexture*       m_render_target_depth_tex_surface;
 		/** normal render target */
 		asset_ptr<TextureEntity> m_render_target_normal;
-		LPDIRECT3DSURFACE9       m_render_target_normal_surface;
+		IParaEngine::ITexture*       m_render_target_normal_surface;
 		/** depth surface */
-		LPDIRECT3DSURFACE9 m_pDepthStencilSurface; 
-		LPDIRECT3DSURFACE9 m_pOldRenderTarget; 
-		LPDIRECT3DSURFACE9 m_pOldZBuffer; 
+		IParaEngine::ITexture* m_pDepthStencilSurface;
+		IParaEngine::ITexture* m_pOldRenderTarget;
+		IParaEngine::ITexture* m_pOldZBuffer;
 
 		/** block effect used for rendering fancy effect. */
 		asset_ptr<CEffectFile> m_block_effect_fancy;
@@ -359,7 +359,7 @@ namespace ParaEngine
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];
-#endif
+
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
 		Uint16x3 m_damagedBlockId;

@@ -6,8 +6,8 @@ namespace ParaEngine
 	struct RenderConfiguration
 	{
 		bool isWindowed;
-		PixelFormat colorFormat;
-		PixelFormat depthStencilFormat;
+		EPixelFormat colorFormat;
+		EPixelFormat depthStencilFormat;
 		uint32_t msaaSamples; ///< MSAA samples
 		uint32_t screenWidth;
 		uint32_t screenHeight;
@@ -16,8 +16,8 @@ namespace ParaEngine
 
 		RenderConfiguration()
 			:isWindowed(true)
-			, colorFormat(PixelFormat::A8R8G8B8)
-			, depthStencilFormat(PixelFormat::D24S8)
+			, colorFormat(EPixelFormat::A8R8G8B8)
+			, depthStencilFormat(EPixelFormat::D24S8)
 			, msaaSamples(0)
 			, screenWidth(1024)
 			, screenHeight(768)

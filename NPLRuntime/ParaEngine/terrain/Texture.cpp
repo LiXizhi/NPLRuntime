@@ -115,7 +115,7 @@ int Texture::GetFormat()
 	return m_TextureFormat;
 }
 
-DeviceTexturePtr_type Texture::UploadTexture()
+IParaEngine::ITexture* Texture::UploadTexture()
 {
 	if (!m_TextureID && !m_bIsParaEngineEntity)
 	{
@@ -319,7 +319,7 @@ bool Texture::SetTextureEntity(TextureEntity* texture)
 	return false;
 }
 
-DeviceTexturePtr_type ParaTerrain::Texture::GetDevicePointer()
+IParaEngine::ITexture* ParaTerrain::Texture::GetDevicePointer()
 {
 
 	return (m_TextureID) ? m_TextureID->GetTexture() : 0;

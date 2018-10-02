@@ -288,15 +288,21 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 
 			if (letterDef.validDefinition)
 			{
-				TextureEntityOpenGL tex(textures[letterDef.textureID]);
+				// TODO:
+
+
+				TextureEntityImpl tex;
+				tex.SetTexture(textures[letterDef.textureID]);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;
 				rect.right = rect.left + letterDef.width;
 				rect.bottom = rect.top + letterDef.height;
-				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
-				Vector3 vPos(_lettersInfo[ctr].position.x + getPositionX(), (getHeight() - _lettersInfo[ctr].position.y) + getPositionY(), 0);
+				//directX and opengGL screen space y differs by 1 - y, so we need to set to getHeight() - y.
+					Vector3 vPos(_lettersInfo[ctr].position.x + getPositionX(), (getHeight() - _lettersInfo[ctr].position.y) + getPositionY(), 0);
 				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+
+				assert(false);
 			}
 		}
 	}
@@ -316,7 +322,9 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 
 			if (letterDef.validDefinition)
 			{
-				TextureEntityOpenGL tex(textures[letterDef.textureID]);
+	
+				TextureEntityImpl tex;
+				tex.SetTexture(textures[letterDef.textureID]);
 				RECT rect;
 				rect.left = letterDef.U;
 				rect.top = letterDef.V;
@@ -325,6 +333,7 @@ void ParaEngine::CFontRendererOpenGL::DoRender(CSpriteRenderer* pSprite, DWORD c
 				// directX and opengGL screen space y differs by 1-y, so we need to set to getHeight() - y.
 				Vector3 vPos(_lettersInfo[ctr].position.x, (getHeight() - _lettersInfo[ctr].position.y), 0);
 				pSprite->DrawQuad(&tex, &rect, NULL, &vPos, color);
+
 			}
 		}
 		pSprite->SetTransform(matOld);

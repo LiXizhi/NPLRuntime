@@ -7,20 +7,18 @@
 #define GL_GLEXT_PROTOTYPES 1  
 #endif  
 
-#include <GLES2/gl2platform.h>
-#include <GLES2/gl2.h>
-#include <GLES2/gl2ext.h>
+#include "glad/glad.h"
+
+
 
 #define GL_BGRA GL_BGRA_EXT
 #define GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_OES
+#define GL_DEPTH_STENCIL GL_DEPTH_STENCIL_OES
+#define GL_UNSIGNED_INT_24_8 GL_UNSIGNED_INT_24_8_OES
+
+#define glBindVertexArray glBindVertexArrayOES
+#define glGenVertexArrays glGenVertexArraysOES
+#define glDeleteVertexArrays glDeleteVertexArraysOES
 #define glClearDepth glClearDepthf
-
-extern PFNGLGENVERTEXARRAYSOESPROC para_glGenVertexArraysOES;
-extern PFNGLBINDVERTEXARRAYOESPROC para_glBindVertexArrayOES;
-extern PFNGLDELETEVERTEXARRAYSOESPROC para_glDeleteVertexArraysOES;
-
-#define glBindVertexArray para_glBindVertexArrayOES
-#define glGenVertexArrays para_glGenVertexArraysOES
-#define glDeleteVertexArrays para_glDeleteVertexArraysOES
 
 #endif // __GL_ANROID_SPEC_H__

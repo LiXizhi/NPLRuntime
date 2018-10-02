@@ -137,7 +137,8 @@ extern void yyerror(TParseContext&, const char*);
 %type <interm.intermTypedNode> function_call initializer condition conditionopt
 
 %type <interm.intermTypedNode> initialization_list sampler_initializer
-%type <interm.intermAggregate> initializer_list
+%type <interm.intermAggregate> initializer_list sampler_init_list
+%type <interm.intermNode> sampler_init_item
 
 %type <interm.intermNode> translation_unit function_definition
 %type <interm.intermNode> statement simple_statement
@@ -1491,12 +1492,26 @@ single_declaration
 			if (parseContext.nonInitErrorCheck($2.line, *$2.string, $3, $1))
 				parseContext.recover();
 				
+			
 			TSymbol* symbol = parseContext.symbolTable.find(*$2.string);
-			if (symbol) {
-				$$ = ir_add_declaration(symbol, NULL, $2.line, parseContext);
-			} else {
+			if (symbol)
+			{
+				TIntermSymbol* intermSymbol;
+				TVariable* var = static_cast<TVariable*>(symbol);
+				if (!parseContext.executeInitializer($2.line, *$2.string, $3, $1, $5, intermSymbol,var)) {
+					if (intermSymbol)
+						$$ = ir_add_declaration(intermSymbol,NULL, $4.line, parseContext);
+					else
+						$$ = 0;
+				} else {
+					parseContext.recover();
+					$$ = 0;
+				}			
+			}else{
 				$$ = 0;
 			}
+
+			
 		}
     }
     ;
@@ -2445,26 +2460,46 @@ type_info
 
 sampler_initializer
 	: SAMPLERSTATE LEFT_BRACE sampler_init_list RIGHT_BRACE {
-		TIntermConstant* constant = ir_add_constant(TType(EbtFloat, EbpUndefined, EvqConst, 1), $1.line);
-		constant->setValue(0.f);
-		$$ = constant;
+		$$ = $3
 	}
 	| SAMPLERSTATE LEFT_BRACE RIGHT_BRACE {
 	}
 	;
 
 sampler_init_list
-	: sampler_init_item { }
-	| sampler_init_list sampler_init_item { }
+	: sampler_init_item { 
+		TIntermAggregate* paramNodes = new TIntermAggregate;
+		paramNodes->getNodes().push_back($1);
+		$$ = paramNodes;
+	}
+	| sampler_init_list sampler_init_item { 
+		$1->getNodes().push_back($2);
+		$$ = $1;
+	}
 	;
 
 sampler_init_item
-	: IDENTIFIER EQUAL IDENTIFIER SEMICOLON {}
-	| IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON {}
-	| IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON {}
-	| TEXTURE EQUAL IDENTIFIER SEMICOLON {}
-	| TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON {}
-	| TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON {}
+	: IDENTIFIER EQUAL IDENTIFIER SEMICOLON {
+		$$ = new TIntermInitItem(*$1.string,*$3.string);
+	}
+	| IDENTIFIER EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON {
+		$$ = new TIntermInitItem(*$1.string,*$4.string);
+	}
+	| IDENTIFIER EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON {
+		$$ = new TIntermInitItem(*$1.string,*$4.string);
+	}
+	| TEXTURE EQUAL IDENTIFIER SEMICOLON {
+		$$ = new TIntermInitItem("texture",*$3.string);
+	}
+	| TEXTURE EQUAL LEFT_ANGLE IDENTIFIER RIGHT_ANGLE SEMICOLON {
+		$$ = new TIntermInitItem("texture",*$4.string);
+	}
+	| TEXTURE EQUAL LEFT_PAREN IDENTIFIER RIGHT_PAREN SEMICOLON {
+		$$ = new TIntermInitItem("texture",*$4.string);
+	}
+	| IDENTIFIER EQUAL INTCONSTANT  SEMICOLON {
+		$$ = new TIntermInitItem(*$1.string,std::to_string($4.i).c_str());
+	}
 	;
 
 %%

@@ -76,7 +76,8 @@ typedef enum
 	EShTypeSamplerRect,
 	EShTypeSamplerRectShadow,
 	EShTypeSampler2DArray,
-	EShTypeStruct
+	EShTypeStruct,
+	EshTypeTexture,
 } EShType;
 
 
@@ -147,7 +148,9 @@ typedef struct
 	char *registerSpec;
 	EShType type;
 	int arraySize;
-	float *init;
+	char *init;
+	int initSize;
+	std::vector<std::tuple<std::string, std::string>> initializer;
 } ShUniformInfo;
 
 
@@ -209,7 +212,9 @@ enum TTranslateOptions
 	//  we will output "appdata_t_texcoord"
 	ETranslateOpPropogateOriginalAttribNames = (1<<4),
 
-	ETranslateOpBGRAVertexColor = (1<<5)
+	ETranslateOpBGRAVertexColor = (1<<5),
+
+	ETranslateOpFlipUVVertical = (1<<6)
 };
 
 

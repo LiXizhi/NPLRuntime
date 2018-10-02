@@ -200,7 +200,7 @@ public:
 	void ClearAllInstances();
 
 	/** get associated texture */
-	DeviceTexturePtr_type GetDeviceTexture();
+	IParaEngine::ITexture* GetDeviceTexture();
 	TextureEntity* GetTexture();
 
 	/**
@@ -286,7 +286,7 @@ public:
 
 
 	/** get associated texture */
-	DeviceTexturePtr_type GetDeviceTexture();
+	IParaEngine::ITexture* GetDeviceTexture();
 	TextureEntity* GetTexture();
 };
 }

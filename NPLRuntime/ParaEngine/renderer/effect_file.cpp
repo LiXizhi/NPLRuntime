@@ -9,6 +9,7 @@
 
 using namespace ParaEngine;
 
+
 void CEffectFileBase::onDrawPass(CParameterBlock* pMaterialParams, int passIndex)
 {
 	ScriptCallback* pCallback = GetScriptCallback(Type_DrawPass);

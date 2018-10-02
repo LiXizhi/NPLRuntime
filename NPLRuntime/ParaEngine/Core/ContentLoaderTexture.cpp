@@ -13,7 +13,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CTextureLoader::CTextureLoader(asset_ptr<TextureEntity>& pAsset, const char* sFileName)
-	:m_pData(NULL), m_cBytes(0), m_pAssetFileEntry(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
+	:m_pData(NULL), m_cBytes(0), m_pAssetFileEntry(NULL), m_ppTexture(NULL), m_dwTextureFormat(EPixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
 {
 	m_asset = pAsset;
 	if (sFileName)
@@ -68,12 +68,12 @@ class STextureCallBackData
 {
 public:
 	STextureCallBackData(TextureEntity * pAsset_) :pAsset(pAsset_),
-		m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0) {}
+		m_ppTexture(NULL), m_dwTextureFormat(EPixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0) {}
 
 	TextureEntity * pAsset;
 
 	/// the format of the texture, default to D3DFMT_UNKNOWN
-	PixelFormat m_dwTextureFormat;
+	EPixelFormat m_dwTextureFormat;
 	///  Mip levels, default to D3DX_DEFAULT
 	UINT m_nMipLevels;
 	// the color key(default to 0):  Color value to replace with transparent black, or 0 to disable the color key. This is always a 32-bit ARGB color, 
@@ -159,7 +159,7 @@ HRESULT ParaEngine::CTextureLoader::Load()
 //
 //////////////////////////////////////////////////////////////////////////
 ParaEngine::CTextureProcessor::CTextureProcessor(asset_ptr<TextureEntity>& pAsset)
-	:m_cBytes(0), m_pData(NULL), m_pDevice(NULL), m_ppTexture(NULL), m_dwTextureFormat(PixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
+	:m_cBytes(0), m_pData(NULL), m_pDevice(NULL), m_ppTexture(NULL), m_dwTextureFormat(EPixelFormat::Unkonwn), m_nMipLevels(D3DX_DEFAULT), m_dwColorKey(0)
 {
 	m_asset = pAsset;
 }

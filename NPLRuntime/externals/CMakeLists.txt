@@ -60,8 +60,8 @@ if(${NPLRUNTIME_RENDERER} STREQUAL "NULL")
 else()
     add_subdirectory(dxEffectsParser)
     add_subdirectory(hlsl2glslfork)
-    
-    add_subdirectory(glad)
+	add_subdirectory(glad)
+	add_subdirectory(GLES)
 	if(NPLRUNTIME_SUPPORT_FBX) 
 		add_subdirectory(assimp-4.0.0 ${PROJECT_BINARY_DIR}/assimp-4.0.0)
 		target_include_directories(assimp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/assimp-4.0.0/include)
@@ -90,7 +90,11 @@ else()
 endif()
 
 
+option(ENABLE_FXCONVERTER "hlsl2glsl test" OFF)
 
+if(ENABLE_FXCONVERTER)
+	add_subdirectory(FxConverter)
+endif()
 
 
 

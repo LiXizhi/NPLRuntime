@@ -375,14 +375,16 @@ static bool IsGlslBuiltin (const std::string& name)
 	return false;
 }
 
-GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision prec, EGlslQualifier q, int as )
+GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision prec, EGlslQualifier q, TIntermTyped* constValue, int as )
  : GlslSymbolOrStructMemberBase(n, s, t, q, prec, as),
    registerSpec(r),
    identifier(id),
    mangleCounter(0),
    structPtr(0),
    isParameter(false),
-   refCount(0)
+   refCount(0),
+   initValue(nullptr),
+   initValueSize(0)
 {
 	if (IsReservedGlslKeyword(n) || IsGlslBuiltin(n))
 	{
@@ -394,9 +396,126 @@ GlslSymbol::GlslSymbol( const std::string &n, const std::string &s, const std::s
 		mutableMangledName = "xlat_mutable" + mangledName;
 	else
 		mutableMangledName = mangledName;   
+
+	if (constValue != nullptr)
+	{
+
+		std::vector<TIntermConstant*> constants;
+		if (constValue->getAsConstant())
+		{
+			constants.push_back(constValue->getAsConstant());
+		}
+		else if (constValue->getAsAggregate())
+		{
+			TIntermAggregate* agg = constValue->getAsAggregate();
+			TNodeArray nodes = agg->getNodes();
+			for (int i =0;i<nodes.size();i++)
+			{
+				TIntermNode* node = nodes.at(i);
+				if (node->getAsConstant())
+				{
+					constants.push_back(node->getAsConstant());
+				}else if (node->getAsInitItem())
+				{
+					TIntermInitItem* item = node->getAsInitItem();
+					initializerList.push_back(std::make_tuple<std::string, std::string>(item->GetLeft().c_str(), item->GetRight().c_str()));
+				}
+				else {
+					constants.clear();
+					break;
+				}
+			}
+		}
+
+		this->initValue = nullptr;
+		this->initValueSize = 0;
+
+		if (constants.size() > 0)
+		{
+			int valueSize = 0;
+			for (int i = 0; i < constants.size(); i++)
+			{
+				auto valueCount = constants[i]->getCount();
+
+				// calc size
+				for (int j = 0; j < valueCount; j++)
+				{
+					auto value = constants[i]->getValue(j);
+					switch (value.type)
+					{
+					case EbtFloat:
+						valueSize += sizeof(float);
+						break;
+					case EbtInt:
+						valueSize += sizeof(int);
+						break;
+					case EbtBool:
+						valueSize += sizeof(float);
+						break;
+					}
+				}
+
+			}
+
+
+
+
+			this->initValue = new char[valueSize];
+			// copy values
+			int curPos = 0;
+
+			for (int i = 0; i < constants.size(); i++)
+			{
+				auto valueCount = constants[i]->getCount();
+				for (int j = 0; j < valueCount; j++)
+				{
+					auto value = constants[i]->getValue(j);
+					switch (value.type)
+					{
+					case EbtFloat:
+					{
+						float fValue = value.asFloat;
+						memcpy(this->initValue + curPos, &fValue, sizeof(float));
+						curPos += sizeof(float);
+						break;
+					}
+
+					case EbtInt:
+					{
+						int iValue = value.asInt;
+						memcpy(this->initValue + curPos, &iValue, sizeof(int));
+						curPos += sizeof(int);
+						break;
+					}
+					case EbtBool:
+					{
+						bool bValue = value.asBool;
+						memcpy(this->initValue + curPos, &bValue, sizeof(bool));
+						curPos += sizeof(bool);
+						break;
+					}
+					}
+				}
+			}
+			this->initValueSize = valueSize;
+		}
+		
+
+	}
+
 }
 
 
+
+GlslSymbol::~GlslSymbol()
+{
+	if (this->initValue)
+	{
+		delete[] this->initValue;
+		this->initValue = nullptr;
+		this->initValueSize = 0;
+	}
+}
 
 void GlslSymbol::writeDecl (std::stringstream& out, WriteDeclMode mode)
 {

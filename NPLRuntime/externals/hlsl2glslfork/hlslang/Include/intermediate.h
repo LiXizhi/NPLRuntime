@@ -259,6 +259,7 @@ class TIntermTyped;
 class TIntermSymbol;
 class TInfoSink;
 class TIntermDeclaration;
+class TIntermInitItem;
 
 //
 // Base class for the tree nodes
@@ -279,12 +280,13 @@ public:
 
 	virtual TIntermTyped*     getAsTyped() { return 0; }
 	virtual TIntermOperator*  getAsOperatorNode() { return 0; }
-	virtual TIntermConstant*     getAsConstant() { return 0; }
-	virtual TIntermAggregate* getAsAggregate() { return 0; }
+	virtual TIntermConstant*     getAsConstant()  { return 0; }
+	virtual TIntermAggregate* getAsAggregate()   { return 0; }
 	virtual TIntermBinary*    getAsBinaryNode() { return 0; }
 	virtual TIntermSelection* getAsSelectionNode() { return 0; }
 	virtual TIntermSymbol*    getAsSymbolNode() { return 0; }
 	virtual TIntermDeclaration* getAsDeclaration() { return 0; }
+	virtual TIntermInitItem* getAsInitItem() { return 0; }
 	virtual ~TIntermNode() { }
 
 protected:
@@ -298,8 +300,31 @@ struct TIntermNodePair
 	TIntermNode* node2;
 };
 
+
+
+
 class TIntermSymbol;
 class TIntermBinary;
+
+
+class TIntermInitItem : public TIntermNode
+{
+public:
+	TIntermInitItem(const TString &l, const TString &r)
+		:left(l),right(r)
+	{
+
+	}
+	virtual void traverse(TIntermTraverser*) {}
+	TString GetLeft() const { return left; }
+	TString GetRight() const  { return right; }
+	
+	virtual TIntermInitItem* getAsInitItem() { return this; }
+
+protected:
+	TString left;
+	TString right;
+};
 
 //
 // Intermediate class for nodes that have a type.
@@ -398,15 +423,21 @@ public:
 	// per process globalpoolallocator, then it causes increased memory usage per compile
 	// it is essential to use "symbol = sym" to assign to symbol
 	TIntermSymbol(int i, const TString& sym, const TType& t) : 
-		TIntermTyped(t), id(i), info(0), global(false)
+		TIntermTyped(t), id(i), info(0), global(false),constvalue(nullptr)
 	{
 		symbol = sym;
 	} 
 	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t) : 
-		TIntermTyped(t), id(i), info(inf), global(false)
+		TIntermTyped(t), id(i), info(inf), global(false),constvalue(nullptr)
 	{
 		symbol = sym;
 	} 
+
+	TIntermSymbol(int i, const TString& sym, const TTypeInfo *inf, const TType& t,TIntermTyped* value) :
+		TIntermTyped(t), id(i), info(inf), global(false),constvalue(value)
+	{
+		symbol = sym;
+	}
 
 	int getId() const { return id; }
 	const TString& getSymbol() const { return symbol; }
@@ -422,12 +453,20 @@ public:
 	{
 		return this;
 	}
+	void SetConstValue(TIntermTyped* v) { constvalue = v; }
+
+	TIntermTyped* GetConstValue()
+	{
+		return constvalue;
+	}
 protected:
 	int id;
 	bool global;
 	TString symbol;
 	const TTypeInfo *info;
+	TIntermTyped* constvalue;
 };
+
 
 class TIntermDeclaration : public TIntermTyped {
 public:
@@ -462,6 +501,7 @@ public:
 private:
 	TIntermTyped* _declaration;
 };
+
 
 class TIntermConstant : public TIntermTyped
 {
@@ -503,7 +543,7 @@ public:
 	const Value& getValue(unsigned i = 0) const { return values[i]; }
 	Value& getValue(unsigned i = 0) { return values[i]; }
 	
-	unsigned getCount() {
+	unsigned getCount() const {
 		return values.size();
 	}
 	

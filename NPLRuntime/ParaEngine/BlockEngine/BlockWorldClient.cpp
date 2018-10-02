@@ -13,7 +13,6 @@
 #include "ShadowMap.h"
 #ifdef USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
-#include "DirectXEngine.h"
 #endif
 #include "SunLight.h"
 #include "BaseCamera.h"
@@ -48,7 +47,7 @@
 #include "ParaTime.h"
 #endif
 
-
+using namespace IParaEngine;
 
 namespace ParaEngine
 {
@@ -57,15 +56,9 @@ namespace ParaEngine
 	int32_t BlockWorldClient::g_twoTexPass = 1;
 	int32_t BlockWorldClient::g_TexNormalMapPass = 2;
 	int32_t BlockWorldClient::g_twoTexNormalMapPass = 3; // not used. 
-#ifdef PARAENGINE_MOBILE
-	int32_t BlockWorldClient::g_transparentBlockPass = 3;
-	int32_t BlockWorldClient::g_waterBlockPass = 2;
-	int32_t BlockWorldClient::g_bumpyBlockPass = 1;
-#else
 	int32_t BlockWorldClient::g_transparentBlockPass = 3;
 	int32_t BlockWorldClient::g_waterBlockPass = 4;
 	int32_t BlockWorldClient::g_bumpyBlockPass = 5;
-#endif
 	
 	int32_t BlockWorldClient::g_selectBlockPass = 1;
 
@@ -85,9 +78,7 @@ namespace ParaEngine
 		m_nMaxVisibleVertexBufferBytes(100 * 1024 * 1024),
 		m_nAlwaysInVertexBufferChunkRadius(2),
 		m_pMultiFrameRenderer(NULL),
-#ifdef USE_DIRECTX_RENDERER
 		m_pDepthStencilSurface(NULL), m_render_target_block_info_surface(NULL), m_render_target_depth_tex_surface(NULL), m_render_target_normal_surface(NULL), m_pOldRenderTarget(NULL), m_pOldZBuffer(NULL),
-#endif
 		m_bUseSunlightShadowMap(true), m_bUseWaterReflection(true), m_bMovieOutputMode(false), m_bAsyncChunkMode(true)
 	{
 		g_pInstance = this;
@@ -260,11 +251,11 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderShadowMap()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		// only render shadow map for fancy shader mode. 
-		if( (GetBlockRenderMethod() !=  BLOCK_RENDER_FANCY_SHADER) || 
-			! GetUseSunlightShadowMap())
-			return;
+
+		//// only render shadow map for fancy shader mode. 
+		//if( (GetBlockRenderMethod() !=  BLOCK_RENDER_FANCY_SHADER) || 
+		//	! GetUseSunlightShadowMap())
+		//	return;
 		// prepare shadow pass 
 		PreRender(true);
 		// make sure all shaders are replaced. 
@@ -273,9 +264,7 @@ namespace ParaEngine
 		if (m_alphaTestRenderTasks.size() == 0 && m_solidRenderTasks.size() == 0 && m_alphaBlendRenderTasks.size() == 0)
 			return;
 
-		if(m_block_effect_fancy == 0)
-			return;
-		m_block_effect_fancy->LoadAsset();
+
 
 		const float fBlockSize = BlockConfig::g_blockSize;
 		Vector3 renderOfs  = CGlobals::GetScene()->GetRenderOrigin();
@@ -304,11 +293,14 @@ namespace ParaEngine
 		}
 
 		CEffectFile* pEffect = NULL;
-		pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect);
+		if (!pEffectManager->BeginEffect(TECH_BLOCK_FANCY, &pEffect))
+		{
+			pEffectManager->BeginEffect(TECH_BLOCK, &pEffect);
+		}	
 		if(pEffect != 0 && pEffect->begin(false))
 		{
 			VertexDeclarationPtr pVertexLayout =  GetVertexLayout();
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pVertexLayout);
+			CGlobals::GetRenderDevice()->SetVertexDeclaration(pVertexLayout);
 
 			// turn off alpha blending to enable early-Z on modern graphic cards. 
 			pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_ONE);
@@ -321,31 +313,31 @@ namespace ParaEngine
 			// in case it loses accuracy, we will subtract integer number of 2*PI from time
 			// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
 			time = (int)(time*1000) % 1000000;
-			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+			pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr(),sizeof(Vector4));
 
-			IDirect3DIndexBuffer9* pIndexBuffer = GetIndexBuffer();
-			GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
+			auto pIndexBuffer = GetIndexBuffer();
+			CGlobals::GetRenderDevice()->SetIndices(pIndexBuffer);
 
 			for (int nRenderPass = 0; nRenderPass<=BlockRenderPass_AlphaBlended; nRenderPass++)
 			{
 				std::vector<BlockRenderTask*>* pCurRenderQueue = GetRenderQueueByPass((BlockRenderPass)nRenderPass);
 
-				IDirect3DVertexBuffer9* pCurVB = NULL;
+				VertexBufferDevicePtr_type pCurVB = NULL;
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
+				ITexture* pCurTex0 = NULL;
 
 				if(pCurRenderQueue->size() > 0)
 				{
 					for(uint32_t i=0;i<pCurRenderQueue->size();i++)
 					{
 						BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
-						IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
+						auto pVB = pRenderTask->GetVertexBuffer();
 
 						if(pVB != pCurVB)
 						{
-							GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
+							CGlobals::GetRenderDevice()->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
 							pCurVB = pVB;
 						}
 						int32_t passId = 0;
@@ -378,7 +370,7 @@ namespace ParaEngine
 							if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 							{
 								pCurTex0 = pTexEntity->GetTexture();
-								GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,pCurTex0);
+								pEffect->setTexture(0, pCurTex0);
 							}
 							
 							// culling mode
@@ -418,6 +410,7 @@ namespace ParaEngine
 
 						vWorldMatrix = vWorldMatrix * matViewProj;
 
+						pEffect->setMatrix(CEffectFile::k_viewProjMatrix, &matViewProj);
 						pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &vWorldMatrix);
 
 						pEffect->CommitChanges();
@@ -437,7 +430,6 @@ namespace ParaEngine
 			pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pEffect->end();
 		}
-#endif
 	}
 
 	void BlockWorldClient::Render(BlockRenderPass nRenderPass, std::vector<BlockRenderTask*>* pCurRenderQueue, int nRenderMethod)
@@ -525,143 +517,12 @@ namespace ParaEngine
 
 			if ( pEffect == 0)
 			{
-#ifdef USE_DIRECTX_RENDERER
+
 				if (dwRenderMethod != BLOCK_RENDER_FIXED_FUNCTION)
 				{
 					SetBlockRenderMethod(BLOCK_RENDER_FIXED_FUNCTION);
 					return;
 				}
-				//////////////////////////////////////////////////////////////////////////
-				// render using fixed function pipeline
-
-				GETD3D(CGlobals::GetRenderDevice())->SetFVF(block_vertex::FVF);
-
-				IDirect3DIndexBuffer9* pIndexBuffer =  GetIndexBuffer();
-				GETD3D(CGlobals::GetRenderDevice())->SetIndices(pIndexBuffer);
-
-				IDirect3DVertexBuffer9* pCurVB = NULL;
-				uint16_t curTamplerId = 0;
-				int32_t curPass = -1;
-				ERSVCULL culling = RSV_CULL_CCW;
-				IDirect3DTexture9* pCurTex0 = NULL;
-				IDirect3DTexture9* pCurTex1 = NULL;
-				IDirect3DTexture9* pCurTex2 = NULL;
-
-				
-				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
-				{
-					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
-					IDirect3DVertexBuffer9* pVB = pRenderTask->GetVertexBuffer();
-					if(pVB != pCurVB)
-					{
-						GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,pVB,0,sizeof(BlockVertexCompressed));
-						pCurVB = pVB;
-					}
-					int32_t passId;
-					if(curTamplerId != pRenderTask->GetTemplateId())
-					{
-						BlockTemplate* pTempate = pRenderTask->GetTemplate();
-						if(pTempate->IsMatchAttribute(BlockTemplate::batt_twoTexture))
-							passId = g_twoTexPass;
-						else if(pTempate->IsMatchAttribute(BlockTemplate::batt_transparent))
-							passId = g_transparentBlockPass;
-						else
-							passId = g_TexPass;
-
-						if(curPass != passId)
-						{
-							curPass = passId;
-							if(passId == 0)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-							}
-							else if(passId == 1)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else if(passId == 2)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else if(passId == 3)
-							{
-								pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-							}
-							else
-							{
-								curPass = -1;
-								continue;
-							}
-						}
-
-						TextureEntity* pTexEntity = pTempate->GetTexture0(pRenderTask->GetUserData());
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
-						{
-							pCurTex0 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,pCurTex0);
-						}
-
-						pTexEntity = pTempate->GetTexture1();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
-						{
-							pCurTex1 = pTexEntity->GetTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1,pCurTex1);
-						}
-
-						/* fixed function never use normal map
-						pTexEntity = pTempate->GetNormalMap();
-						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex2)
-						{
-							pCurTex2 = pTexEntity->GetTexture();
-							pDevice->SetTexture(2,pCurTex2);
-						}*/
-
-
-						// culling mode 
-						if(pTempate->GetBlockModel().IsDisableFaceCulling())
-						{
-							if(culling != RSV_CULL_NONE)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_NONE);
-								culling = RSV_CULL_NONE;
-							}
-						}
-						else if (nRenderPass != BlockRenderPass_Opaque && m_isUnderLiquid
-							&& pRenderTask->GetTemplate()->IsMatchAttribute(BlockTemplate::batt_liquid))
-						{
-							if(culling != RSV_CULL_CW)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CW);
-								culling = RSV_CULL_CW;
-							}
-						}
-						else
-						{
-							if(culling != RSV_CULL_CCW)
-							{
-								pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-								culling = RSV_CULL_CCW;
-							}
-						}
-					}
-
-
-					Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-					
-					Uint16x3& vMinPos = pRenderTask->GetMinBlockPos();
-					vWorldMatrix._11 = vWorldMatrix._22 = vWorldMatrix._33 = fBlockSize;
-					vWorldMatrix._41 = (vMinPos.x - renderBlockOfs.x)*fBlockSize - renderBlockOfs_remain.x;
-					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
-					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
-
-					GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
-
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, pRenderTask->GetVertexOfs(),
-						pRenderTask->GetVertexCount(),pRenderTask->GetIndexOfs(),pRenderTask->GetPrimitiveCount());
-				}
-				
-				pDevice->SetRenderState(ERenderState::CULLMODE,RSV_CULL_CCW);
-#endif
 			}
 			else if(pEffect != 0 && pEffect->begin(false))
 			{
@@ -673,16 +534,13 @@ namespace ParaEngine
 				// in case it loses accuracy, we will subtract integer number of 2*PI from time
 				// time -= ((int)(time / (2*MATH_PI)))*(2*MATH_PI);
 				time = (int)(time * 1000) % 1000000;
-				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr());
+				pEffect->setParameter(CEffectFile::k_ConstVector1, Vector4((float)time, 0.f, 0.f, 0.f).ptr(), sizeof(Vector4));
 
-				if (dwRenderMethod == BLOCK_RENDER_FANCY_SHADER)
-				{
-				}
-				else
+				if (dwRenderMethod != BLOCK_RENDER_FANCY_SHADER)
 				{
 					Vector3 vDir = -CGlobals::GetScene()->GetSunLight().GetSunDirection();
 					Vector4 vDir_(vDir.x, vDir.y, vDir.z, 1.0f);
-					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_);
+					pEffect->setParameter(CEffectFile::k_sunVector, &vDir_,sizeof(Vector4));
 				}
 				
 				IndexBufferDevicePtr_type pIndexBuffer =  GetIndexBuffer();
@@ -692,23 +550,25 @@ namespace ParaEngine
 				uint16_t curTamplerId = 0;
 				int32_t curPass = -1;
 				ERSVCULL culling = RSV_CULL_CCW;
-				DeviceTexturePtr_type pCurTex0 = 0;
-				DeviceTexturePtr_type pCurTex1 = 0;
-				DeviceTexturePtr_type pCurTex2 = 0;
+				ITexture* pCurTex0 = 0;
+				ITexture* pCurTex1 = 0;
+				ITexture* pCurTex2 = 0;
 
 				IScene* pScene = CGlobals::GetEffectManager()->GetScene();
 				CBaseCamera* pCamera = pScene->GetCurrentCamera();
 				Matrix4 matViewProj;
+				Matrix4 matView;
 				if (pCamera)
 				{
 					const Matrix4& pView = (CGlobals::GetEffectManager()->GetViewTransform());
 					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
 					matViewProj = (pView) * (pProj);
+					matView = pView;
 				}
 
 				/** block light params and sun intensity*/
 				Vector4 vLightParams(m_vBlockLightColor.r, m_vBlockLightColor.g, m_vBlockLightColor.b, m_sunIntensity);
-				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams), sizeof(Vector4));
 				for(uint32_t i=0;i<pCurRenderQueue->size();i++)
 				{
 					BlockRenderTask* pRenderTask = (*pCurRenderQueue)[i];
@@ -771,14 +631,14 @@ namespace ParaEngine
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex0)
 						{
 							pCurTex0 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(0,pCurTex0);
+							pEffect->setTexture(0, pCurTex0);
 						}
 
 						pTexEntity = pTemplate->GetTexture1();
 						if(pTexEntity && pTexEntity->GetTexture()!=pCurTex1)
 						{
 							pCurTex1 = pTexEntity->GetTexture();
-							CGlobals::GetRenderDevice()->SetTexture(1,pCurTex1);
+							pEffect->setTexture(1, pCurTex1);
 						}
 
 						pTexEntity = pTemplate->GetNormalMap();
@@ -786,7 +646,7 @@ namespace ParaEngine
 						{
 							pCurTex2 = pTexEntity->GetTexture();
 							if (dwRenderMethod  == BLOCK_RENDER_FANCY_SHADER){
-								CGlobals::GetRenderDevice()->SetTexture(2,pCurTex2);
+								pEffect->setTexture(2, pCurTex2);
 							}
 						}
 
@@ -826,14 +686,20 @@ namespace ParaEngine
 					vWorldMatrix._42 = vMinPos.y * fBlockSize - renderOfs.y + verticalOffset;
 					vWorldMatrix._43 = (vMinPos.z - renderBlockOfs.z)*fBlockSize - renderBlockOfs_remain.z;
 					
+					pEffect->setMatrix(CEffectFile::k_worldMatrix,&vWorldMatrix);
+					
+
 					Matrix4 mWorldViewProj;
 					mWorldViewProj = vWorldMatrix * matViewProj;
 
 					pEffect->setMatrix(CEffectFile::k_worldViewProjMatrix, &mWorldViewProj);
+					pEffect->setMatrix(CEffectFile::k_viewMatrix, &matView);
+					pEffect->setMatrix(CEffectFile::k_viewProjMatrix, &matViewProj);
+			
 					if(pEffect->isMatrixUsed(CEffectFile::k_worldViewMatrix))
 					{
 						Matrix4 mWorldView;
-						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);
+						ParaMatrixMultiply(&mWorldView, &vWorldMatrix, &matViewProj);			
 						pEffect->setMatrix(CEffectFile::k_worldViewMatrix, &mWorldView);
 					}
 					if (CGlobals::GetEffectManager()->IsUsingShadowMap() && pEffect->isMatrixUsed(CEffectFile::k_TexWorldViewProjMatrix))
@@ -841,6 +707,17 @@ namespace ParaEngine
 						Matrix4 mTex;
 						ParaMatrixMultiply(&mTex, &vWorldMatrix, CGlobals::GetEffectManager()->GetTexViewProjMatrix());
 						pEffect->setMatrix(CEffectFile::k_TexWorldViewProjMatrix, &mTex);
+					}
+					if (pEffect->isMatrixUsed(CEffectFile::k_shadowVP))
+					{	
+						auto shadowMapTex = CGlobals::GetEffectManager()->GetShadowMap()->GetDepthTexture();
+						if (shadowMapTex)
+						{
+							pEffect->setMatrix(CEffectFile::k_shadowVP, CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
+							pEffect->setTexture(CEffectFile::k_tex_shadowMap,shadowMapTex);
+							Vector2 shadowMapTexelSize(1.0f / shadowMapTex->GetWidth(), 1.0f / shadowMapTex->GetHeight());
+							pEffect->setParameter(CEffectFile::k_ShadowMapTexelSize, &shadowMapTexelSize, sizeof(Vector2));
+						}
 					}
 					{
 						// set the new render origin
@@ -850,7 +727,7 @@ namespace ParaEngine
 						vWorldPos.x = vRenderOrigin.x + vWorldMatrix._41;
 						vWorldPos.y = vRenderOrigin.y + vWorldMatrix._42;
 						vWorldPos.z = vRenderOrigin.z + vWorldMatrix._43;
-						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos);
+						pEffect->setParameter(CEffectFile::k_worldPos, &vWorldPos, sizeof(Vector4));
 					}
 
 					pEffect->CommitChanges();
@@ -1055,9 +932,8 @@ namespace ParaEngine
 
 		if ( pEffect == 0)
 		{
-#ifdef USE_DIRECTX_RENDERER
 			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,highLightTexture->GetTexture());
+			/*CGlobals::GetRenderDevice()->SetTexture(0,highLightTexture->GetTexture());
 
 			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
@@ -1065,7 +941,7 @@ namespace ParaEngine
 			pDevice->SetRenderState(ERenderState::DESTBLEND,D3DBLEND_ONE);
 			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_plain::FVF);
+			CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_plain::FVF);
 
 			uint32_t time = CGlobals::GetSceneState()->GetGlobalTime();
 			uint8 lightScaler = (bColorAnimate) ?  (uint8)(abs(sin(time*0.0015f)) * 0.4f * 255) : 0xff;
@@ -1076,7 +952,7 @@ namespace ParaEngine
 			vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
 			vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
+			CGlobals::GetRenderDevice()->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 			
 
 			int nMaxFaceCount = (m_maxSelectBlockPerBatch-1)*6;
@@ -1093,7 +969,7 @@ namespace ParaEngine
 
 				if(curInstCount >= nMaxFaceCount)
 				{
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 					curInstCount = 0;
 					instFloatCount = 0;
 				}
@@ -1110,7 +986,7 @@ namespace ParaEngine
 
 			if(curInstCount > 0)
 			{
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST,0,curInstCount * 4,curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 			}
 
 			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
@@ -1118,9 +994,8 @@ namespace ParaEngine
 			pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 			pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 			pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
-			pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
+			pDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);*/
 
-#endif
 		}
 		else if(pEffect != 0 && pEffect->begin(false))
 		{
@@ -1139,7 +1014,7 @@ namespace ParaEngine
 					matViewProj = (pView) * (pProj);
 				}
 							
-				CGlobals::GetRenderDevice()->SetTexture(0,highLightTexture->GetTexture());
+				pEffect->setTexture(0, highLightTexture->GetTexture());
 					
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,TRUE);
 				pDevice->SetRenderState(ERenderState::SRCBLEND,D3DBLEND_ONE);
@@ -1152,7 +1027,7 @@ namespace ParaEngine
 					lightIntensity = abs(sin(time*0.0015f)) * 0.4f;
 				
 				Vector4 vLightParams(lightIntensity, 0,0,0);
-				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams));
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const void*)(&vLightParams), sizeof(Vector4));
 
 				Matrix4 vWorldMatrix(Matrix4::IDENTITY);
 				vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
@@ -1178,7 +1053,7 @@ namespace ParaEngine
 
 					if(curInstCount >= nMaxFaceCount)
 					{
-						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+						CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 						curInstCount = 0;
 						instFloatCount = 0;
 					}
@@ -1195,7 +1070,7 @@ namespace ParaEngine
 
 				if(curInstCount > 0)
 				{
-					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+					CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP( EPrimitiveType::TRIANGLELIST, 0, curInstCount * 4, curInstCount * 2, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				}
 
 				pEffect->EndPass();
@@ -1215,7 +1090,7 @@ namespace ParaEngine
 	{
 		if(m_damageDegree <= 0)
 			return;
-#ifdef USE_DIRECTX_RENDERER
+
 		RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
 		float blockSize = BlockConfig::g_blockSize;
 
@@ -1256,38 +1131,38 @@ namespace ParaEngine
 		if ( pEffect == 0)
 		{
 			// fixed function pipeline
-			GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_damangeTexture->GetTexture());
+			//CGlobals::GetRenderDevice()->SetTexture(0,m_damangeTexture->GetTexture());
 
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
+			//pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
+			//pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, FALSE);
+			//pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 
-			GETD3D(CGlobals::GetRenderDevice())->SetFVF(mesh_vertex_plain::FVF);
+			//CGlobals::GetRenderDevice()->SetFVF(mesh_vertex_plain::FVF);
 
-			Matrix4 vWorldMatrix(Matrix4::IDENTITY);
-			vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
-			vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
+			//Matrix4 vWorldMatrix(Matrix4::IDENTITY);
+			//vWorldMatrix._41 = - renderBlockOfs_remain.x - (fScaledBlockSize - fBlockSize)*0.5f;
+			//vWorldMatrix._42 = - renderBlockOfs_remain.y - (fScaledBlockSize - fBlockSize)*0.5f;
+			//vWorldMatrix._43 = - renderBlockOfs_remain.z - (fScaledBlockSize - fBlockSize)*0.5f;
 
-			GETD3D(CGlobals::GetRenderDevice())->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
+			//CGlobals::GetRenderDevice()->SetTransform(D3DTS_WORLD, vWorldMatrix.GetPointer());
 
-			int curInstCount = 0;
-			int instFloatCount = 0;
-			{
-				Vector3 vOffset((m_damagedBlockId.x  - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z  - renderBlockOfs_z) * fBlockSize);
-				FillSelectBlockVertice(NULL, 0,0,0, &(m_select_block_vertices[instFloatCount*24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree-0.1f,0.f)*8))/8.f, 1/8.f);
-				instFloatCount++;
-				curInstCount++;
-			}
-			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+			//int curInstCount = 0;
+			//int instFloatCount = 0;
+			//{
+			//	Vector3 vOffset((m_damagedBlockId.x  - renderBlockOfs_x) * fBlockSize, (m_damagedBlockId.y  - renderBlockOfs_y) * fBlockSize + verticalOffset, (m_damagedBlockId.z  - renderBlockOfs_z) * fBlockSize);
+			//	FillSelectBlockVertice(NULL, 0,0,0, &(m_select_block_vertices[instFloatCount*24]), vOffset, fScaledBlockSize, ((int)(max(m_damageDegree-0.1f,0.f)*8))/8.f, 1/8.f);
+			//	instFloatCount++;
+			//	curInstCount++;
+			//}
+			//CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(  EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 
-			pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
-			pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-			pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
+			//pDevice->SetRenderState(ERenderState::ALPHATESTENABLE, TRUE);
+			//pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
+			//pDevice->SetRenderState(ERenderState::ZWRITEENABLE,TRUE);
 		}
 		else if(pEffect != 0 && pEffect->begin(false))
 		{
-			GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(GetSelectBlockVertexLayout());
+			CGlobals::GetRenderDevice()->SetVertexDeclaration(GetSelectBlockVertexLayout());
 
 			if(pEffect->BeginPass(2))
 			{
@@ -1300,8 +1175,7 @@ namespace ParaEngine
 					const Matrix4& pProj = (CGlobals::GetEffectManager()->GetProjTransform());
 					matViewProj = (pView) * (pProj);
 				}
-
-				GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_damangeTexture->GetTexture());
+				pEffect->setTexture(0, m_damangeTexture->GetTexture());
 
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 				pDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
@@ -1326,7 +1200,7 @@ namespace ParaEngine
 					instFloatCount++;
 					curInstCount++;
 				}
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), PixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,curInstCount * 24,curInstCount * 12, &(m_select_block_indices[0]), EPixelFormat::INDEX16, &(m_select_block_vertices[0]), sizeof(SelectBlockVertex));
 				
 				pEffect->EndPass();
 				pDevice->SetRenderState(ERenderState::ALPHABLENDENABLE,FALSE);
@@ -1334,7 +1208,6 @@ namespace ParaEngine
 			}
 			pEffect->end();
 		}
-#endif
 	}
 
 
@@ -1944,19 +1817,11 @@ namespace ParaEngine
 					return true;
 				}
 			}
-#ifdef USE_DIRECTX_RENDERER
 			return CGlobals::GetOceanManager()->IsPointUnderWater(vPos);
-#else
-			return false;
-#endif
 		}
 		else
 		{
-#ifdef USE_DIRECTX_RENDERER
 			return CGlobals::GetOceanManager()->IsPointUnderWater(vPos);
-#else
-			return false;
-#endif
 		}
 	}
 
@@ -1964,7 +1829,7 @@ namespace ParaEngine
 	{
 
 		float fWaterLevel = -1000.f;
-#ifdef USE_DIRECTX_RENDERER
+
 		if(m_isInWorld)
 		{
 			Uint16x3 blockIdx;
@@ -1995,13 +1860,12 @@ namespace ParaEngine
 					fWaterLevel = fLevel;
 			}
 		}
-#endif
 		return fWaterLevel;
 	}
 
 	void BlockWorldClient::SetBlockRenderMethod( BlockRenderMethod method )
 	{
-#ifdef USE_DIRECTX_RENDERER
+
 		if(m_dwBlockRenderMethod != method)
 		{
 			if(method == BLOCK_RENDER_FANCY_SHADER)
@@ -2073,17 +1937,14 @@ namespace ParaEngine
 				m_render_target_block_info.reset();
 				m_render_target_depth_tex.reset();
 				m_render_target_normal.reset();
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
-				GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(1,NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(2,NULL);
+				CGlobals::GetRenderDevice()->SetRenderTarget(3,NULL);
 			}
 			m_dwBlockRenderMethod = method;
 
 			ClearBlockRenderCache();
 		}
-#elif defined(USE_OPENGL_RENDERER)
-		CGlobals::GetSettings().LoadGameEffectSet(0);
-#endif
 	}
 
 	void BlockWorldClient::ClearBlockRenderCache()
@@ -2145,7 +2006,7 @@ namespace ParaEngine
 
 	void BlockWorldClient::InvalidateDeviceObjects()
 	{
-#ifdef USE_DIRECTX_RENDERER
+
 		SAFE_RELEASE(m_render_target_block_info_surface);
 		SAFE_RELEASE(m_render_target_depth_tex_surface);
 		SAFE_RELEASE(m_render_target_normal_surface);
@@ -2156,7 +2017,7 @@ namespace ParaEngine
 		m_render_target_block_info.reset();
 		m_render_target_depth_tex.reset();
 		m_render_target_normal.reset();
-#endif
+
 	}
 
 
@@ -2183,7 +2044,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::DoPostRenderingProcessing(BlockRenderPass nRenderPass)
 	{
-#ifdef USE_DIRECTX_RENDERER
 		if(IsInBlockWorld() && GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
 		{
 			if (nRenderPass == BlockRenderPass_Opaque)
@@ -2199,12 +2059,11 @@ namespace ParaEngine
 					CGlobals::GetNPLRuntime()->GetMainRuntimeState()->DoString(m_sPostProcessorAlphaCallbackScript.c_str(), (int)m_sPostProcessorAlphaCallbackScript.size());
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::PrepareAllRenderTargets( bool bSetRenderTarget /*= true*/ )
 	{
-#ifdef USE_DIRECTX_RENDERER
+
 		if(GetBlockRenderMethod() ==  BLOCK_RENDER_FANCY_SHADER)
 		{
 			RenderDevicePtr pDevice = CGlobals::GetRenderDevice();
@@ -2236,7 +2095,7 @@ namespace ParaEngine
 				m_render_target_block_info = CGlobals::GetAssetManager()->LoadTexture("_BlockInfoRT", "_BlockInfoRT", TextureEntity::RenderTarget);
 				m_render_target_block_info->LoadAsset();
 				SAFE_RELEASE(m_render_target_block_info_surface);
-				m_render_target_block_info->GetTexture()->GetSurfaceLevel(0, &m_render_target_block_info_surface);
+				m_render_target_block_info_surface = m_render_target_block_info->GetTexture();
 			}
 
 			if(m_render_target_depth_tex == 0)
@@ -2244,14 +2103,14 @@ namespace ParaEngine
 				m_render_target_depth_tex = CGlobals::GetAssetManager()->LoadTexture("_DepthTexRT_R32F", "_DepthTexRT_R32F", TextureEntity::RenderTarget);
 				m_render_target_depth_tex->LoadAsset();
 				SAFE_RELEASE(m_render_target_depth_tex_surface);
-				m_render_target_depth_tex->GetTexture()->GetSurfaceLevel(0, &m_render_target_depth_tex_surface);
+				m_render_target_depth_tex_surface= m_render_target_depth_tex->GetTexture();
 			}
 			if(m_render_target_normal == 0)
 			{
 				m_render_target_normal = CGlobals::GetAssetManager()->LoadTexture("_NormalRT", "_NormalRT", TextureEntity::RenderTarget);
 				m_render_target_normal->LoadAsset();
 				SAFE_RELEASE(m_render_target_normal_surface);
-				m_render_target_normal->GetTexture()->GetSurfaceLevel(0, &m_render_target_normal_surface);
+				m_render_target_normal_surface = m_render_target_normal->GetTexture();
 			}
 			
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
@@ -2294,9 +2153,9 @@ namespace ParaEngine
 
 			if (bSetRenderTarget)
 			{
-				if (FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, m_render_target_depth_tex_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, m_render_target_block_info_surface)) ||
-					FAILED(GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface)))
+				if (!CGlobals::GetRenderDevice()->SetRenderTarget(1, m_render_target_depth_tex_surface) ||
+					!CGlobals::GetRenderDevice()->SetRenderTarget(2, m_render_target_block_info_surface) ||
+					!CGlobals::GetRenderDevice()->SetRenderTarget(3, m_render_target_normal_surface))
 				{
 					return false;
 				}
@@ -2309,19 +2168,18 @@ namespace ParaEngine
 					if (nLastFrameCount != CGlobals::GetSceneState()->GetRenderFrameCount())
 					{
 						nLastFrameCount = CGlobals::GetSceneState()->GetRenderFrameCount();
-						LPDIRECT3DSURFACE9 pOldRenderTarget = NULL;
-						pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, m_render_target_normal_surface);
-						GETD3D(CGlobals::GetRenderDevice())->Clear(0L, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0L);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(0, pOldRenderTarget);
-						GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, m_render_target_normal_surface);
+
+						ITexture* pOldRenderTarget = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+						CGlobals::GetRenderDevice()->SetRenderTarget(3, NULL);
+						CGlobals::GetRenderDevice()->SetRenderTarget(0, m_render_target_normal_surface);
+						CGlobals::GetRenderDevice()->Clear(true,false,false);
+						CGlobals::GetRenderDevice()->SetRenderTarget(0, pOldRenderTarget);
+						CGlobals::GetRenderDevice()->SetRenderTarget(3, m_render_target_normal_surface);
 					}
 					CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 				}
 			}
 		}
-#endif
 		return  true;
 	}
 
@@ -2344,21 +2202,17 @@ namespace ParaEngine
 
 	bool BlockWorldClient::CanUseAdvancedShading()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		if( CGlobals::GetDirectXEngine().GetVertexShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().GetPixelShaderVersion()>=3 &&
-			CGlobals::GetDirectXEngine().m_d3dCaps.NumSimultaneousRTs >=3)
+		auto caps = CGlobals::GetRenderDevice()->GetCaps();
+		if (caps.MRT && caps.NumSimultaneousRTs >= 4 && caps.Texture_R32F && caps.Texture_RGBA16F)
 		{
 			return true;
 		}
-#endif
 		return false;
 	}
 
 	void BlockWorldClient::SetUseSunlightShadowMap( bool bEnable )
 	{
 		m_bUseSunlightShadowMap = bEnable;
-#ifdef USE_DIRECTX_RENDERER
 		if(GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER)
 		{
 			CShadowMap* pShadowMap = CGlobals::GetEffectManager()->GetShadowMap();
@@ -2367,7 +2221,6 @@ namespace ParaEngine
 				CGlobals::GetScene()->SetShadow(m_bUseSunlightShadowMap);
 			}
 		}
-#endif
 	}
 
 	bool BlockWorldClient::HasSunlightShadowMap()
@@ -2437,7 +2290,7 @@ namespace ParaEngine
 	void BlockWorldClient::GetMaxBlockHeightWatchingSky(uint16_t blockX_ws, uint16_t blockZ_ws, ChunkMaxHeight* pResult)
 	{
 		CBlockWorld::GetMaxBlockHeightWatchingSky(blockX_ws, blockZ_ws, pResult);
-#ifdef PARAENGINE_CLIENT
+
 		ParaTerrain::CGlobalTerrain *pTerrain = CGlobals::GetGlobalTerrain();
 		uint16_t mask = 0;
 		if (pTerrain->TerrainRenderingEnabled())
@@ -2490,7 +2343,6 @@ namespace ParaEngine
 			}
 		}
 		pResult[5].SetHeight(mask);
-#endif
 	}
 
 	void BlockWorldClient::UpdateVisibleChunks(bool bIsShadowPass /*= false*/)
@@ -2510,7 +2362,6 @@ namespace ParaEngine
 
 		if (bIsShadowPass)
 		{
-#ifdef USE_DIRECTX_RENDERER
 			frustum = &caster_frustum;
 			Vector3 vCenter = camWorldPos - renderOrig;
 			float fRadius = min(CGlobals::GetScene()->GetShadowRadius(), 50.f);
@@ -2518,9 +2369,6 @@ namespace ParaEngine
 			frustum->UpdateFrustum(CGlobals::GetEffectManager()->GetShadowMap()->GetViewProjMatrix());
 			camMin = Vector3(vCenter.x - fRadius, vCenter.y - fRadius, vCenter.z - fRadius);
 			camMax = Vector3(vCenter.x + fRadius, vCenter.y + fRadius, vCenter.z + fRadius);
-#else	
-			return;
-#endif
 		}
 		else
 		{
@@ -3095,7 +2943,6 @@ namespace ParaEngine
 
 	void BlockWorldClient::RenderDeferredLights()
 	{
-#ifdef USE_DIRECTX_RENDERER
 		SceneState* sceneState = CGlobals::GetSceneState();
 		if (!sceneState->IsDeferredShading() || sceneState->listDeferredLightObjects.empty())
 			return;
@@ -3147,7 +2994,7 @@ namespace ParaEngine
 					// first time, we will switch to declaration
 					auto pDecl = CGlobals::GetEffectManager()->GetVertexDeclaration(EffectManager::S0_POS);
 					if (pDecl)
-						GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pDecl);
+						CGlobals::GetRenderDevice()->SetVertexDeclaration(pDecl);
 				}
 				pEffectFile = m_lightgeometry_effects[lightObject->GetLightType() - 1].get();
 				pEffectFile->begin();
@@ -3157,7 +3004,6 @@ namespace ParaEngine
 		if (pEffectFile) {
 			pEffectFile->end();
 		}
-#endif
 	}
 
 	int BlockWorldClient::InstallFields(CAttributeClass* pClass, bool bOverride)

@@ -8,6 +8,8 @@ add_library(RenderSystemD3D9
     RenderDeviceD3D9.h
     TextureD3D9.h
     TextureD3D9.cpp
+    EffectD3D9.h
+    EffectD3D9.cpp
 )
 
 #d3dx9 d3dxof dxguid dinput8 dxerr x3daudio

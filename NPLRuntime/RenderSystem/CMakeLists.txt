@@ -1,5 +1,5 @@
 
-if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+if(NPLRUNTIME_RENDERER STREQUAL "OPENGL" OR NPLRUNTIME_RENDERER STREQUAL "OPENGLES")
 #{
     add_subdirectory(opengl)
 #}
@@ -12,5 +12,3 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
     add_subdirectory(null)
 #}
 endif()
-
-

@@ -16,7 +16,7 @@
 #include "BlockEngine/BlockWorldClient.h"
 #include "LightManager.h"
 // vegetation shader constant
-#include "shaders/d3d9_spec/simple_mesh_normal_vegetation.h"
+#include "shaders/common/simple_mesh_normal_vegetation.h"
 #include "ParaXAnimInstance.h"
 #include "ParaEngineSettings.h"
 #include "XRefObject.h"
@@ -505,7 +505,6 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 			int nSelectionEffectStyle = GetSelectionEffect();
 			if(nSelectionEffectStyle == RenderSelectionStyle_border)
 			{
-#ifdef USE_DIRECTX_RENDERER
 				// Let us render the border using the same technique as rendering text shadow.
 				// i.e. render 4 times shifting 2 pixels around the border. 
 				CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_BORDER, &(sceneState->m_pCurrentEffect));
@@ -526,7 +525,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 						for(int y=-1; y<=1; y+=2)
 						{
 							Vector3 vOffsets(x*border_width, y*border_width, 0.f);
-							pEffectFile->GetDXEffect()->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
+							pEffectFile->GetDeviceEffect()->SetRawValue("g_offsets", &vOffsets, 0, sizeof(Vector3));
 							pMesh->Render(sceneState, pEffectFile, true, true,sceneState->fAlphaFactor);
 						}
 					}
@@ -536,7 +535,6 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				}
 
 				pRenderDevice->SetRenderState( ERenderState::ZWRITEENABLE, TRUE );
-#endif
 				// change back to primary technique
 				CGlobals::GetEffectManager()->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));
 
@@ -556,13 +554,12 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 			}
 			else if(nSelectionEffectStyle == RenderSelectionStyle_unlit)
 			{
-#ifdef USE_DIRECTX_RENDERER
 				CGlobals::GetEffectManager()->BeginEffect(TECH_SIMPLE_MESH_NORMAL_UNLIT, &(sceneState->m_pCurrentEffect));
 				pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 				if(pEffectFile!=0)
 				{
 					Vector3 vColorAdd(0.2f, 0.2f, 0.2f);
-					pEffectFile->GetDXEffect()->SetRawValue("g_color_add", &vColorAdd, 0, sizeof(Vector3));
+					pEffectFile->GetDeviceEffect()->SetRawValue("g_color_add", &vColorAdd, 0, sizeof(Vector3));
 
 					if(pMxWorld!=0)
 						CGlobals::GetWorldMatrixStack().push(*pMxWorld);
@@ -587,7 +584,6 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 						CGlobals::GetWorldMatrixStack().pop();
 					bIsRendered = true;
 				}
-#endif
 				// change back to primary technique
 				CGlobals::GetEffectManager()->BeginEffect(GetPrimaryTechniqueHandle(), &(sceneState->m_pCurrentEffect));
 			}
@@ -614,7 +610,6 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 		CEffectFile* pEffectFile = CGlobals::GetEffectManager()->GetCurrentEffectFile();
 		if ( pEffectFile == 0)
 		{
-#ifdef USE_DIRECTX_RENDERER
 			//////////////////////////////////////////////////////////////////////////
 			// fixed programming pipeline
 			if(pMxWorld!=0)
@@ -650,7 +645,6 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 
 			if(pMxWorld!=0)
 				CGlobals::GetWorldMatrixStack().pop();
-#endif
 		}
 		else
 		{
@@ -697,7 +691,7 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 				vOrigin.x = vOrigin.x - worldX;
 				vOrigin.z = vOrigin.z - worldZ;
 				Vector4 vTmp((float)time, fObjectHeight, vOrigin.x, vOrigin.z);
-				pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&vTmp);
+				pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&vTmp,sizeof(Vector4));
 			}
 			else
 			{
@@ -728,14 +722,12 @@ HRESULT CMeshObject::DrawInner( SceneState * sceneState, const Matrix4* pMxWorld
 
 			if(materialParams!=0)
 			{
-#ifdef USE_DIRECTX_RENDERER
 				CParameter* pParams = materialParams->GetParameter("g_opacity");
 				if(pParams && ((float)(*pParams)) < 1.f )
 				{
 					float fOpacity = 1.f;
-					pEffectFile->GetDXEffect()->SetRawValue(pParams->GetName().c_str(), &fOpacity, 0, pParams->GetRawDataLength());
+					pEffectFile->GetDeviceEffect()->SetRawValue(pParams->GetName().c_str(), &fOpacity, 0, pParams->GetRawDataLength());
 				}
-#endif
 			}
 
 			if(pMxWorld!=0)

@@ -34,9 +34,9 @@ namespace ParaTerrain
 		void SetTexture(Texture *);
 
 		/// \brief Binds the mask layer to an OpenGL texture object.
-		DeviceTexturePtr_type BindMask();
+		IParaEngine::ITexture* BindMask();
 		/// \brief Binds the detail texture to an OpenGL texture object.
-		DeviceTexturePtr_type BindTexture();
+		IParaEngine::ITexture* BindTexture();
 		/// \brief Unloads both the mask and detail OpenGL texture objects.
 		void Unbind();
 		/// \brief Gets the alpha mask layer.

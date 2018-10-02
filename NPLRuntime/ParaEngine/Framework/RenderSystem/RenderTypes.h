@@ -1,6 +1,11 @@
 #pragma  once
 #include <cstdint>
 #include "Framework/Interface/Render/IRenderWindow.h"
+
+#if defined(USE_DIRECTX_RENDERER)
+#include <d3d9.h>
+#endif
+
 namespace ParaEngine
 {
 	/* Formats
@@ -36,7 +41,7 @@ namespace ParaEngine
 	*          - the driver is allowed to consume more than the indicated
 	*            number of bits per Depth channel (but not Stencil channel).
 	*/
-	enum class PixelFormat
+	enum class EPixelFormat
 	{
 		Unkonwn,
 		R8G8B8,
@@ -95,25 +100,47 @@ namespace ParaEngine
 		VERTEXDATA,
 		INDEX16,
 		INDEX32,
-
-		PVRTC4,
-		//! 4-bit PVRTC-compressed texture: PVRTC4 (has alpha channel)
-		PVRTC4A,
-		//! 2-bit PVRTC-compressed texture: PVRTC2
-		PVRTC2,
-		//! 2-bit PVRTC-compressed texture: PVRTC2 (has alpha channel)
-		PVRTC2A,
-
-		ETC1, 
-
-		ATC_RGB,
-		//! ATITC-compressed texture: ATC_EXPLICIT_ALPHA
-		ATC_EXPLICIT_ALPHA,
-		//! ATITC-compressed texture: ATC_INTERPOLATED_ALPHA
-		ATC_INTERPOLATED_ALPHA,
-		//! Default texture format: AUTO
-
+		R32F,
+		A16B16G16R16F,
 		COUNT
+	};
+
+	enum class ETextureFormat
+	{
+		A8R8G8B8,
+		ALPHA8,
+		X8R8G8B8,
+		UNKONWN
+	};
+	enum class ETextureUsage
+	{
+		Default,
+		RenderTarget,
+		DepthStencil,
+		Dynamic
+	};
+
+	enum class EImageFileFormat
+	{
+		BMP,
+		JPG,
+		TGA,
+		PNG,
+		DDS
+	};
+
+	enum class ETextureFilter
+	{
+		None,
+		Point,
+		Linear
+	};
+	enum class ETextureWrapMode
+	{
+		Clamp,
+		Repeat,
+		Border,
+		Mirror
 	};
 
 	enum class MultiSampleType
@@ -371,5 +398,41 @@ namespace ParaEngine
 		TEXTURE6,
 		TEXTURE7,
 	};
+
+	enum class ECullMode
+	{
+		None,
+		CW,
+		CCW
+	};
+}
+
+
+
+namespace ParaEngine
+{
+#if defined(USE_DIRECTX_RENDERER)
+	using DeviceTexturePtr_type = IDirect3DTexture9 * ;
+	using VertexBufferDevicePtr_type = IDirect3DVertexBuffer9 * ;
+	using IndexBufferDevicePtr_type = IDirect3DIndexBuffer9 * ;
+	using VertexDeclarationPtr = IDirect3DVertexDeclaration9 * ;
+	using VertexElement = D3DVERTEXELEMENT9;
+#elif defined(USE_OPENGL_RENDERER)
+
+	struct VertexElement;
+	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
+	class GLTexture2D;
+
+	typedef GLTexture2D* DeviceTexturePtr_type;
+	typedef uint32_t VertexBufferDevicePtr_type;
+	typedef uint32_t IndexBufferDevicePtr_type;
+#else
+	struct VertexElement;
+	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
+
+	typedef uint32_t DeviceTexturePtr_type;
+	typedef uint32_t VertexBufferDevicePtr_type;
+	typedef uint32_t IndexBufferDevicePtr_type;
+#endif
 }
 

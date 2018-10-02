@@ -120,6 +120,7 @@ IDirect3D9* ParaEngine::RenderContextD3D9::GetD3D() const
 
 bool ParaEngine::RenderContextD3D9::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
 {
+	return true;
 	assert(cfg.renderWindow);
 
 	RenderWindowWin32* pWin = static_cast<RenderWindowWin32*>(cfg.renderWindow);

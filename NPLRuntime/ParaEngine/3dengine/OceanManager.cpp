@@ -8,7 +8,6 @@
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
 #include "OcclusionQueryBank.h"
 #endif
 #if USE_DIRECTX_RENDERER
@@ -262,13 +261,9 @@ namespace ParaEngine
 		m_pIndexBuffer = NULL;
 		m_pDepthStencilSurface = NULL;
 		m_waveReflectionTexture=NULL;
-		m_waveReflectionSurface = NULL;
 		m_waveRefractionTexture = NULL;
-		m_waveRefractionSurface = NULL;
 		m_waveReflectionNearTexture = NULL;
-		m_waveReflectionNearSurface = NULL;
 		m_waveRefractionNearTexture = NULL;
-		m_waveRefractionNearSurface = NULL;
 		memset(m_pAnimBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_water_meshes);
 		memset(m_pTerrainHeightmapBuffer, NULL, sizeof(LPDIRECT3DVERTEXBUFFER9)*k_total_terrain_meshes);
 #endif
@@ -354,29 +349,16 @@ namespace ParaEngine
 	void COceanManager::SetRenderTechnique(DWORD dwTechnique)
 	{
 #ifdef USE_DIRECTX_RENDERER
-		DWORD PixelShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.PixelShaderVersion;
-		DWORD VertexShaderVersion = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion;
+
 		if(dwTechnique==OCEAN_TECH_FULL || dwTechnique==OCEAN_TECH_REFLECTION || dwTechnique==OCEAN_TECH_SIMPLE)
 		{
-			if(PixelShaderVersion<D3DPS_VERSION(2,0) || VertexShaderVersion<D3DVS_VERSION(2,0))
-			{
-				dwTechnique=OCEAN_TECH_FFT;
-			}
-			else if(PixelShaderVersion<D3DPS_VERSION(3,0) || VertexShaderVersion<D3DVS_VERSION(3,0))
-			{
-				m_dwTechnique = OCEAN_TECH_SIMPLE;
-				return;
-			}
+
+		m_dwTechnique = OCEAN_TECH_SIMPLE;
 		}
 		if(dwTechnique==OCEAN_TECH_FFT)
 		{
-			if(VertexShaderVersion<D3DVS_VERSION(1,1)){
-				dwTechnique=OCEAN_TECH_QUAD;
-			}
-			else{
-				m_dwTechnique = dwTechnique;
-				return;
-			}
+			m_dwTechnique = dwTechnique;
+			return;
 		}
 		if(dwTechnique==OCEAN_TECH_CLOUD)
 		{
@@ -718,7 +700,6 @@ namespace ParaEngine
 	void COceanManager::RestoreDeviceObjects()
 	{
 #ifdef USE_DIRECTX_RENDERER
-		HRESULT hr;
 		auto pD3dDevice = CGlobals::GetRenderDevice();
 		int i=0;
 		/**
@@ -755,26 +736,29 @@ namespace ParaEngine
 				}
 			}
 		}
-
+		auto pDevice = CGlobals::GetRenderDevice();
 		if(GetRenderTechnique()>=OCEAN_TECH_REFLECTION)
 		{
-			int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-			int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+			int deviceWidth = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+			int deviceHeight = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 			// Create the wave reflection and refraction textures for objects
 			// that do not penetrate the surface of the water.
 			int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 			int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight, 
-				1, D3DUSAGE_RENDERTARGET, 
-				D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_waveReflectionTexture, NULL);
-			CHECK_RETURN_CODE("CreateTexture m_waveReflectionTexture", hr);  
 
-			hr = m_waveReflectionTexture->GetSurfaceLevel(0, &m_waveReflectionSurface);
-			CHECK_RETURN_CODE("GetSurfaceLevel m_waveReflectionSurface", hr);
-
-			hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16, 
-				D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-			CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
+			m_waveReflectionTexture = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::X8R8G8B8, ETextureUsage::RenderTarget);
+			
+			if (!m_waveReflectionTexture)
+			{
+				OUTPUT_LOG("failed createTexture m_waveReflectionTexture");
+				return;
+			}
+			m_pDepthStencilSurface = pDevice->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::RenderTarget);
+			if (!m_pDepthStencilSurface)
+			{
+				OUTPUT_LOG("failed creating depth stencil buffer");
+				return;
+			}
 
 #ifdef WATER_RENDER_ENABLE_ALL
 			hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(min(deviceWidth, m_refractionTextureWidth), 
@@ -833,12 +817,8 @@ namespace ParaEngine
 		SAFE_RELEASE(m_pDepthStencilSurface);
 		SAFE_RELEASE(m_waveReflectionTexture);
 		SAFE_RELEASE(m_waveRefractionTexture);
-		SAFE_RELEASE(m_waveReflectionSurface);
-		SAFE_RELEASE(m_waveRefractionSurface);
 		SAFE_RELEASE(m_waveReflectionNearTexture);
 		SAFE_RELEASE(m_waveRefractionNearTexture);
-		SAFE_RELEASE(m_waveReflectionNearSurface);
-		SAFE_RELEASE(m_waveRefractionNearSurface);
 #endif
 	}
 
@@ -1285,10 +1265,10 @@ namespace ParaEngine
 		}
 
 		// set render state
-		GETD3D(CGlobals::GetRenderDevice())->SetTexture(0,m_pWaterColorTexture->GetTexture());
+		CGlobals::GetRenderDevice()->SetTexture(0,m_pWaterColorTexture->GetTexture());
 		
 		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST, 0,
-			4, 2, pIndexBuffer, PixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
+			4, 2, pIndexBuffer, EPixelFormat::INDEX16,vertices, sizeof(SPRITEVERTEX));
 #endif
 	}
 
@@ -1406,18 +1386,18 @@ namespace ParaEngine
 		OceanColor.g = 0.8f;
 		OceanColor.b = 0.96f;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)OceanColor,sizeof(LinearColor));
 		OceanColor.r*=0.7f;
 		OceanColor.g*=0.7f;
 		OceanColor.b*=0.7f;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor, sizeof(LinearColor));
 
 		// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 		Vector4 vBumpSpeed(0.f, 0.f, 0.f,0.f);
 		vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 		vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+		pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 
 		pEffectFile->setFloat(CEffectFile::k_time, m_fBumpTime);
 		//pEffectFile->setInt(CEffectFile::k_specularPower, 20);
@@ -1426,7 +1406,7 @@ namespace ParaEngine
 			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))), sizeof(Vector4));
 		
 		/** for under water surface rendering, we will use NONE culling, 
 		* for above water surface rendering, we will use CCW culling. */
@@ -1438,7 +1418,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1451,7 +1431,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 			int totalPasses = pEffectFile->totalPasses();
 
@@ -1522,7 +1502,7 @@ namespace ParaEngine
 								v[i].p -= vRenderOrig; // shift the render origin
 							}
 
-							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&Vector4((float)(((int)x)%8),(float)(((int)y)%8),0.f,0.f));
+							pEffectFile->setParameter(CEffectFile::k_texCoordOffset, (const float*)&Vector4((float)(((int)x)%8),(float)(((int)y)%8),0.f,0.f), sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -1577,31 +1557,31 @@ namespace ParaEngine
 		OceanColor.g*=m_colorOcean.g;
 		OceanColor.b*=m_colorOcean.b;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor,sizeof(LinearColor));
 		{
 			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 		}
 
 		pEffectFile->setParameter(CEffectFile::k_uvScaleOffset, 
 			(const float*)&Vector4((1.0f /  m_reflectionMapOverdraw), 
 			(1.0f / m_reflectionMapOverdraw),
 			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw)),
-			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))));
+			.5f * (1.0f - (1.0f / m_reflectionMapOverdraw))),sizeof(Vector4));
 		if(m_underwater)
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(-1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.20f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(5.0f, 0.65f, 0.65f, 0.0f));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(-1.0f, m_fBumpTime, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.20f, 0.0f, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(5.0f, 0.65f, 0.65f, 0.0f), sizeof(Vector4));
 		}
 		else
 		{
-			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(1.0f, m_fBumpTime, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.0977f, 0.0f, 0.0f, 0.0f));
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.0f, 0.0f, 1.0f, 0.0f));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector1, (const float*)&Vector4(1.0f, m_fBumpTime, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_fresnelR0, (const float*)&Vector4(0.0977f, 0.0f, 0.0f, 0.0f), sizeof(Vector4));
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.0f, 0.0f, 1.0f, 0.0f), sizeof(Vector4));
 		}
 
 		/** for under water surface rendering, we will use NONE culling, 
@@ -1614,7 +1594,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1627,7 +1607,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 
 			// activate the geometry buffers
@@ -1736,7 +1716,7 @@ namespace ParaEngine
 
 							pEffectFile->setParameter(
 								CEffectFile::k_posScaleOffset,
-								&scaleOffset);
+								&scaleOffset, sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -1798,16 +1778,16 @@ namespace ParaEngine
 		OceanColor.g*=m_colorOcean.g;
 		OceanColor.b*=m_colorOcean.b;
 		OceanColor.a = 1.0f;
-		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor);
+		pEffectFile->setParameter(CEffectFile::k_ConstVector2, (const float*)OceanColor, sizeof(Vector4));
 		{
 			// direction and speed of the wind. how many U,V per second. Since, time is time % 100; x,y has to be 0.01*n, where n is integer.
 			Vector4 vBumpSpeed(-0.02f, 0.f, 0.f,0.f);
 			vBumpSpeed.x = ((float)((int)(m_fWindSpeed*m_fWindX/10.f)))*0.01f;
 			vBumpSpeed.y = ((float)((int)(m_fWindSpeed*m_fWindY/10.f)))*0.01f;
-			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector3, vBumpSpeed.ptr(), sizeof(Vector4));
 		}
 
-		pEffectFile->setParameter(CEffectFile::k_ConstVector1, Vector4(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f).ptr());
+		pEffectFile->setParameter(CEffectFile::k_ConstVector1, Vector4(0.f, m_fBumpTime / 100.f, m_fBumpTime / 100.f, 0.0f).ptr(), sizeof(Vector4));
 		
 		/** for under water surface rendering, we will use NONE culling, 
 		* for above water surface rendering, we will use CCW culling. */
@@ -1819,7 +1799,7 @@ namespace ParaEngine
 		//////////////////////////////////////////////////////////////
 		// unlike regular objects, we do not render through the render
 		// queue. Instead, we render on-demand using our internal settings
-		if (pEffectFile->begin(true, 0))
+		if (pEffectFile->begin(true))
 		{
 			// supply our material to the render method
 			pEffectFile->applySurfaceMaterial(&pSceneState->GetGlobalMaterial());
@@ -1832,7 +1812,7 @@ namespace ParaEngine
 				vWorldPos.y = m_fGlobalWaterLevel-vRenderOrig.y; // render space position is in y component
 				pEffectFile->setParameter(
 					CEffectFile::k_worldPos,
-					&vWorldPos);
+					&vWorldPos, sizeof(Vector4));
 			}
 
 			// activate the geometry buffers
@@ -1918,7 +1898,7 @@ namespace ParaEngine
 
 							pEffectFile->setParameter(
 								CEffectFile::k_posScaleOffset,
-								&scaleOffset);
+								&scaleOffset, sizeof(Vector4));
 
 							pEffectFile->CommitChanges();
 
@@ -2076,7 +2056,9 @@ namespace ParaEngine
 			painter->setCompositionMode(CPainter::CompositionMode_SourceBlend);
 			//GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, NULL);
 			auto pWhiteTexture = CGlobals::GetAssetManager()->GetDefaultTexture(0);
-			CGlobals::GetRenderDevice()->SetTexture(0, pWhiteTexture->GetTexture());
+			auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+			pEffect->setTexture(0, pWhiteTexture->GetTexture());
+
 
 			pd3dDevice->SetRenderState(ERenderState::ZWRITEENABLE, FALSE);
 			//pd3dDevice->SetFVF(UNDERWATER_VERTEX::FVF);
@@ -2335,7 +2317,7 @@ namespace ParaEngine
 		m_fLastReflectionTime = 0.f;
 		PERF1("render_reflection");
 
-		auto pd3dDevice = CGlobals::GetRenderDevice();
+		auto pDevice = CGlobals::GetRenderDevice();
 		EffectManager* pEffectManager = CGlobals::GetEffectManager();
 		CSceneObject* pScene = CGlobals::GetScene();
 
@@ -2345,17 +2327,12 @@ namespace ParaEngine
 
 		//////////////////////////////////////////////////////////////////////////
 		// Render to the reflection map
-		LPDIRECT3DSURFACE9 pOldRenderTarget =  CGlobals::GetDirectXEngine().GetRenderTarget();
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_waveReflectionSurface);
+		auto pOldRenderTarget = pDevice->GetRenderTarget(0);
+		pDevice->SetRenderTarget(0, m_waveReflectionTexture);
 
 		// set depth surface
-		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
-		{
-			OUTPUT_LOG("GetDepthStencilSurface failed\r\n");
-			return false;
-		}
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
+		auto pOldZBuffer = pDevice->GetDepthStencil();
+		pDevice->SetDepthStencil( m_pDepthStencilSurface );
 
 		// Compute the field of view and use it
 		CBaseCamera* pCamera = pScene->GetCurrentCamera();
@@ -2512,15 +2489,15 @@ namespace ParaEngine
 		pCamera->UpdateFrustum();
 
 		// restore old depth surface
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
+		pDevice->SetDepthStencil( pOldZBuffer);
 		SAFE_RELEASE(pOldZBuffer);
 
 		//////////////////////////////////////////////////////////////////////////
 		// Restore the old render target: i.e. the backbuffer
-		HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
+		pDevice->SetRenderTarget(0, pOldRenderTarget);
 		/*if(bUseReflection)
 			pEffectManager->EnableReflectionRendering(true);*/
-		PE_ASSERT(hr == D3D_OK);
+
 #endif
 		return true;
 
@@ -2739,7 +2716,7 @@ namespace ParaEngine
 
 				int totalPasses = pEffectFile->totalPasses();
 
-				if (pEffectFile->begin(true, 0))
+				if (pEffectFile->begin(true))
 				{
 					for (int i=0; i<totalPasses; ++i)
 					{

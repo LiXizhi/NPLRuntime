@@ -9,11 +9,14 @@
 #include "glslCommon.h"
 #include "glslStruct.h"
 
+
+
 class GlslSymbol : public GlslSymbolOrStructMemberBase
 {
 public:
-	GlslSymbol( const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision precision, EGlslQualifier q, int as = 0 );
-
+	
+	GlslSymbol(const std::string &n, const std::string &s, const std::string &r, int id, EGlslSymbolType t, TPrecision precision, EGlslQualifier q,TIntermTyped* value, int as = 0);
+	virtual ~GlslSymbol() override;
 	bool getIsParameter() const { return isParameter; }
 	void setIsParameter( bool param ) { isParameter = param; }
 
@@ -30,6 +33,9 @@ public:
 	const std::string &getRegister() const { return registerSpec; }
 
 	int getId() const { return identifier; }
+	const char* getInitValue() {return initValue;}
+	const int getInitValueSize() { return initValueSize; }
+	std::vector<std::tuple<std::string, std::string>> getInitializerList() const { return initializerList; }
 
 	TPrecision getPrecision() const { return precision; }
 
@@ -59,9 +65,12 @@ private:
 	int identifier;
 	int mangleCounter;
 	GlslStruct *structPtr;
+	char* initValue;
+	int initValueSize;
 	bool isParameter;
 	int refCount;
 	bool isGlobal;
+	std::vector<std::tuple<std::string, std::string>> initializerList;
 };
 
 #endif //GLSL_SYMBOL_H

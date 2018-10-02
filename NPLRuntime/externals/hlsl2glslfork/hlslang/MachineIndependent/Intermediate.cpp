@@ -27,7 +27,17 @@ static TPrecision GetHigherPrecision (TPrecision left, TPrecision right) {
 // Add a terminal node for an identifier in an expression.
 TIntermSymbol* ir_add_symbol(const TVariable* var, TSourceLoc line)
 {
-	TIntermSymbol* node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(), line);
+	TIntermSymbol* node = NULL;
+
+	if (var->initValue != NULL)
+	{
+		node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(),var->initValue, line);
+	}
+	else {
+		node = ir_add_symbol_internal(var->getUniqueId(), var->getName(), var->getInfo(), var->getType(), line);
+	}
+
+	
 	node->setGlobal(var->isGlobal());
 	return node;
 }
@@ -35,6 +45,12 @@ TIntermSymbol* ir_add_symbol(const TVariable* var, TSourceLoc line)
 TIntermSymbol* ir_add_symbol_internal(int id, const TString& name, const TTypeInfo *info, const TType& type, TSourceLoc line)
 {
 	TIntermSymbol* node = new TIntermSymbol(id, name, info, type);
+	node->setLine(line);
+	return node;
+}
+TIntermSymbol* ir_add_symbol_internal(int id, const TString& name, const TTypeInfo *info, const TType& type,TIntermTyped* constvalue, TSourceLoc line)
+{
+	TIntermSymbol* node = new TIntermSymbol(id, name, info, type,constvalue);
 	node->setLine(line);
 	return node;
 }

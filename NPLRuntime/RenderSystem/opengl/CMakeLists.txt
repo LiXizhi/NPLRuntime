@@ -2,26 +2,44 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 
 if(ANDROID)
-    set(LIBGL GLESv2 EGL)
+    set(LIBGL GLESv2 EGL glad_core)
     set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h)
 elseif(IOS)
     find_library(OPENGL_LIBRARY OpenGLES)
-    set(LIBGL ${OpenGL})
+    set(LIBGL ${OpenGL} )
     set(PLATFORM_SRC gl_ios_spec.c gl_ios_spec.h)
+    if(NPLRUNTIME_USE_GLAD)
+        list(APPEND LIBGL glad_core)
+        set(PLATFORM_DEFINITIONS USE_GLAD)
+    endif()
+
 elseif(WIN32)
-    set(LIBGL glad_core)
-    set(PLATFORM_SRC gl_glad_spec.c)
+    if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+        set(LIBGL glad_core)
+        set(PLATFORM_SRC gl_glad_spec.c)
+    elseif(NPLRUNTIME_RENDERER STREQUAL "OPENGLES")
+        set(LIBGL OpenGLES)
+        set(PLATFORM_SRC gl_android_spec.c gl_android_spec.h) 
+        set(PLATFORM_DEFINITIONS GLES)
+    endif()
 elseif(APPLE)
     find_library(OPENGL_LIBRARY OpenGL)
-    set(LIBGL ${OpenGL})
+    set(LIBGL ${OpenGL} glad_core)
     set(PLATFORM_SRC gl_osx_spec.c gl_osx_spec.h)
 endif()
+
+ucm_add_dirs(effect TO EFFECT_SRC RECURSIVE)
+ucm_add_dirs(texture TO TEXTURE_SRC RECURSIVE)
+
 
 add_library(RenderSystemOpenGL 
     RenderDeviceOpenGL.cpp
     RenderDeviceOpenGL.h
     OpenGL.h
+    GLShaderDefine.h
     ${PLATFORM_SRC}
+    ${EFFECT_SRC}
+    ${TEXTURE_SRC}
 )
 
 
@@ -40,4 +58,4 @@ target_link_libraries(RenderSystemOpenGL PUBLIC
     GLSLCodeGen
     fxParser
 )
-target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER)
+target_compile_definitions(RenderSystemOpenGL PUBLIC USE_OPENGL_RENDERER ${PLATFORM_DEFINITIONS})

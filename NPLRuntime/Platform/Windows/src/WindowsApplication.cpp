@@ -40,6 +40,7 @@
 #include "ViewportManager.h"
 #include "MoviePlatform.h"
 #include "Framework/Common/Time/ParaTimer.h"
+#include "Framework/Interface/IParaWebView.h"
 #include "EnvironmentSim.h"
 #include "AutoCamera.h"
 #include "BlockEngine/BlockWorldClient.h"
@@ -50,6 +51,7 @@
 #include "RenderWindowDelegate.h"
 #include "DynamicAttributeField.h"
 #include "ParaEngineInfo.h"
+
 
 HINSTANCE g_hAppInstance;
 
@@ -438,7 +440,12 @@ namespace ParaEngine {
 					return false;
 
 				InvalidateDeviceObjects();
-				m_pRenderContext->ResetDevice(m_pRenderDevice, m_cfg);
+				bool ret = m_pRenderContext->ResetDevice(m_pRenderDevice, m_cfg);
+				if (!ret)
+				{
+					OUTPUT_LOG("reset d3d device failed because Restor func failed\n");
+					return false;
+				}
 				auto hr = RestoreDeviceObjects();
 
 				if (FAILED(hr))

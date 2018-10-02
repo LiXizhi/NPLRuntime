@@ -23,7 +23,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
 		EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
-		EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24, EGL_NONE };
+		EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24,EGL_STENCIL_SIZE,8, EGL_NONE };
 	EGLint w, h, format;
 	EGLint numConfigs;
 	EGLConfig config;
@@ -47,7 +47,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	if (!numConfigs)
 	{
 		LOGW("Unable to retrieve EGL config");
-		return false;
+		return nullptr;
 	}
 
 	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
@@ -77,7 +77,7 @@ IRenderDevice* RenderContextEGL::CreateDevice(const RenderConfiguration & cfg)
 	m_surface = surface;
 	m_context = context;
 	m_display = display;
-
+	eglSwapBuffers(display, surface);
 	return new RenderDeviceEGL(m_display, m_surface);
 }
 

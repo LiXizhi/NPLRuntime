@@ -1036,8 +1036,17 @@ void HlslLinker::buildUniformReflection(const std::vector<GlslSymbol*>& constant
 		
 		info.type = (EShType)s->getType();
 		info.arraySize = s->getArraySize();
-		info.init = 0;
+		info.init = nullptr;
+		info.initSize = 0;
+		if (s->getInitValueSize() > 0)
+		{
+			info.init = new char[s->getInitValueSize()];
+			memcpy(info.init, s->getInitValue(), s->getInitValueSize());
+			info.initSize = s->getInitValueSize();
+		}
+		info.initializer = s->getInitializerList();
 		uniforms.push_back(info);
+		
 	}
 }
 
@@ -1101,7 +1110,17 @@ void HlslLinker::emitInputNonStructParam(GlslSymbol* sym, EShLanguage lang, bool
 	}
 	else if ( m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (attrSem == EAttrSemColor0 || attrSem == EAttrSemColor1 || attrSem == EAttrSemColor2 || attrSem == EAttrSemColor3))
 	{
-		call << ctor << "(" << name << ".bgra" << ")";
+		if (ctor=="vec4")
+		{
+			call << ctor << "(" << name << ".bgra" << ")";
+		}
+		else if (ctor == "vec3") {
+			call << ctor << "(" << name << ".bgr" << ")";
+		}
+		else {
+			call << ctor << "(" << name << ")";
+		}
+
 	}
 	// For "in" parameters, just call directly to the main
 	else if ( sym->getQualifier() != EqtInOut )
@@ -1201,7 +1220,17 @@ bool HlslLinker::emitInputStruct(const GlslStruct* str, std::string parentName, 
 			}
 			else if (m_Options &ETranslateOpBGRAVertexColor && lang == EShLangVertex && (memberSem == EAttrSemColor0 || memberSem == EAttrSemColor1 || memberSem == EAttrSemColor2 || memberSem == EAttrSemColor3))
 			{
-				preamble <<" = " <<ctor << "("  <<name <<".bgra" << ");\n";
+				
+				if (ctor == "vec4")
+				{
+					preamble << " = " << ctor << "(" << name << ".bgra" << ");\n";
+				}
+				else if (ctor == "vec3") {
+					preamble << " = " << ctor << "(" << name << ".bgr" << ");\n";
+				}
+				else {
+					preamble << " = " << ctor << "(" << name << ");\n";
+				}
 			}
 			else
 			{
@@ -1555,11 +1584,24 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 		return false;
 	
 	const bool usePrecision = Hlsl2Glsl_VersionUsesPrecision(targetVersion);
+
+
+	if (targetVersion == ETargetGLSL_ES_100 || targetVersion == ETargetGLSL_ES_300)
+	{
+		std::stringstream precision; // for GLES
+		precision << "precision highp float;" << std::endl;
+		precision << "precision highp int;" << std::endl;
+		shader << precision.str();
+		
+	}
+
+
+
 	
 	EShLanguage lang = compiler->getLanguage();
 	std::string entryPoint = GetEntryName (entryFunc);
 	
-	
+
 	// figure out all relevant functions
 	GlslFunction* globalFunction = NULL;
 	std::vector<GlslFunction*> functionList;
@@ -1593,13 +1635,18 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 	// Generate a main function that calls the specified entrypoint.
 	// That main function uses semantics on the arguments and return values to
 	// connect items appropriately.	
-	
+
 	std::stringstream attrib;
 	std::stringstream uniform;
 	std::stringstream preamble;
 	std::stringstream postamble;
 	std::stringstream varying;
 	std::stringstream call;
+
+
+
+
+
 
 	markDuplicatedInSemantics(funcMain);
 
@@ -1695,6 +1742,9 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 			shaderPrefix << "#extension " << *it << " : require" << std::endl;
 	}
 
+
+	
+
 	EmitIfNotEmpty (shader, uniform);
 	EmitIfNotEmpty (shader, attrib);
 	EmitIfNotEmpty (shader, varying);
@@ -1702,6 +1752,9 @@ bool HlslLinker::link(HlslCrossCompiler* compiler, const char* entryFunc, ETarge
 	shader << preamble.str() << "\n";
 	shader << call.str() << "\n";
 	shader << postamble.str() << "\n";
+
+
+	
 
 	return true;
 }

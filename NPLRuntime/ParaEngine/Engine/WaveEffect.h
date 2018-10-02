@@ -29,8 +29,7 @@ namespace ParaEngine
 
 	private:
 		asset_ptr<TextureEntity> m_pNoiseMap;
-		IDirect3DTexture9* m_pBackbufferCopy;
-		IDirect3DSurface9* m_pBackbufferCopySurface;
+		IParaEngine::ITexture* m_pBackbufferCopy;
 		float m_waveParam[4];
 		mesh_vertex_plain m_quadVertices[4];
 	};

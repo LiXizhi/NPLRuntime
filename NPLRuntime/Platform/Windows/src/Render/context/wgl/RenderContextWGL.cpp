@@ -214,5 +214,5 @@ ParaEngine::IRenderDevice* ParaEngine::RenderContextWGL::CreateDevice(const Rend
 
 bool ParaEngine::RenderContextWGL::ResetDevice(IRenderDevice* device, const RenderConfiguration& cfg)
 {
-	throw std::logic_error("The method or operation is not implemented.");
+	return true;
 }

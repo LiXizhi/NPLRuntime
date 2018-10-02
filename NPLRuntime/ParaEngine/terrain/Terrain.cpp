@@ -1678,15 +1678,15 @@ void Terrain::Render()
 
 				if (Settings::GetInstance()->IsBaseTextureEnabled())
 				{		
-					DeviceTexturePtr_type texId = pCell->BindTexture();
-					GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, texId );
+					auto texId = pCell->BindTexture();
+					CGlobals::GetRenderDevice()->SetTexture(0, texId );
 
 					if (m_pCommonTexture != NULL)
 					{
 						if (Settings::GetInstance()->IsBaseTextureEnabled())
 						{
-							DeviceTexturePtr_type cTexId = m_pCommonTexture->UploadTexture();
-							GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, cTexId );
+							auto cTexId = m_pCommonTexture->UploadTexture();
+							CGlobals::GetRenderDevice()->SetTexture(1, cTexId );
 						}
 					}
 					// render triangles for the current texture group 
@@ -1706,8 +1706,8 @@ void Terrain::Render()
 
 					for (int k = 0; k < pCell->GetNumberOfDetails(); k++)
 					{
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pCell->BindMask(k) );
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(1, pCell->BindDetail(k) );
+						CGlobals::GetRenderDevice()->SetTexture(0, pCell->BindMask(k) );
+						CGlobals::GetRenderDevice()->SetTexture(1, pCell->BindDetail(k) );
 
 						// render triangles for the current texture group 
 						CGlobals::GetRenderDevice()->DrawPrimitive(EPrimitiveType::TRIANGLELIST, texGroup.nStartIndex*3, texGroup.nNumTriangles);
@@ -1742,7 +1742,7 @@ void Terrain::Render()
 			// render shadow map
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr(), sizeof(Vector3));
 				if(pEffectFile->BeginPass(0))
 				{
 					/** 
@@ -1774,8 +1774,8 @@ void Terrain::Render()
 			// render terrain 
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr());
-				pEffectFile->setParameter(CEffectFile::k_texCoordOffset, Vector3(m_vRenderOffset.x, m_vRenderOffset.z, GetWidth()).ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, Vector3(0,0,0).ptr(), sizeof(Vector3));
+				pEffectFile->setParameter(CEffectFile::k_texCoordOffset, Vector3(m_vRenderOffset.x, m_vRenderOffset.z, GetWidth()).ptr(), sizeof(Vector3));
 				
 				if(pEffectFile->BeginPass(bUseNormal ? 0 : 2))
 				{
@@ -2090,7 +2090,7 @@ void Terrain::RenderGeoMipmap()
 			// render shadow map
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr(),sizeof(Vector3));
 				if(pEffectFile->BeginPass(0))
 				{
 
@@ -2118,7 +2118,7 @@ void Terrain::RenderGeoMipmap()
 			// render terrain 
 			if(pEffectFile->begin(true))
 			{
-				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr());
+				pEffectFile->setParameter(CEffectFile::k_posScaleOffset, m_vRenderOffset.ptr(),sizeof(Vector3));
 
 				if(pEffectFile->BeginPass(bUseNormal ? 0 : 2))
 				{

@@ -240,108 +240,112 @@ ERenderState D3DMapping::toRenderState(D3DRENDERSTATETYPE format)
 }
 
 
-D3DFORMAT D3DMapping::toD3DFromat(PixelFormat format)
+D3DFORMAT D3DMapping::toD3DFromat(EPixelFormat format)
 {
 	switch (format)
 	{
-	case PixelFormat::Unkonwn:
+	case EPixelFormat::Unkonwn:
 		return D3DFMT_UNKNOWN;
-	case PixelFormat::R8G8B8:
+	case EPixelFormat::R8G8B8:
 		return D3DFMT_R8G8B8;
-	case PixelFormat::A8R8G8B8:
+	case EPixelFormat::A8R8G8B8:
 		return D3DFMT_A8R8G8B8;
-	case PixelFormat::X8R8G8B8:
+	case EPixelFormat::X8R8G8B8:
 		return D3DFMT_X8R8G8B8;
-	case PixelFormat::R5G6B5:
+	case EPixelFormat::R5G6B5:
 		return D3DFMT_R5G6B5;
-	case PixelFormat::X1R5G5B5:
+	case EPixelFormat::X1R5G5B5:
 		return D3DFMT_X1R5G5B5;
-	case PixelFormat::A1R5G5B5:
+	case EPixelFormat::A1R5G5B5:
 		return D3DFMT_A1R5G5B5;
-	case PixelFormat::A4R4G4B4:
+	case EPixelFormat::A4R4G4B4:
 		return D3DFMT_A4R4G4B4;
-	case PixelFormat::R3G3B2:
+	case EPixelFormat::R3G3B2:
 		return D3DFMT_R3G3B2;
-	case PixelFormat::A8:
+	case EPixelFormat::A8:
 		return D3DFMT_A8;
-	case PixelFormat::A8R3G3B2:
+	case EPixelFormat::A8R3G3B2:
 		return D3DFMT_A8R3G3B2;
-	case PixelFormat::X4R4G4B4:
+	case EPixelFormat::X4R4G4B4:
 		return D3DFMT_X4R4G4B4;
-	case PixelFormat::A2B10G10R10:
+	case EPixelFormat::A2B10G10R10:
 		return D3DFMT_A2B10G10R10;
-	case PixelFormat::A8B8G8R8:
+	case EPixelFormat::A8B8G8R8:
 		return D3DFMT_A8B8G8R8;
-	case PixelFormat::X8B8G8R8:
+	case EPixelFormat::X8B8G8R8:
 		return D3DFMT_X8B8G8R8;
-	case PixelFormat::G16R16:
+	case EPixelFormat::G16R16:
 		return D3DFMT_G16R16;
-	case PixelFormat::A2R10G10B10:
+	case EPixelFormat::A2R10G10B10:
 		return D3DFMT_A2R10G10B10;
-	case PixelFormat::A16B16G16R16:
+	case EPixelFormat::A16B16G16R16:
 		return D3DFMT_A16B16G16R16;
-	case PixelFormat::A8P8:
+	case EPixelFormat::A8P8:
 		return D3DFMT_A8P8;
-	case PixelFormat::P8:
+	case EPixelFormat::P8:
 		return D3DFMT_P8;
-	case PixelFormat::L8:
+	case EPixelFormat::L8:
 		return D3DFMT_L8;
-	case PixelFormat::A8L8:
+	case EPixelFormat::A8L8:
 		return D3DFMT_A8L8;
-	case PixelFormat::A4L4:
+	case EPixelFormat::A4L4:
 		return D3DFMT_A4L4;
-	case PixelFormat::V8U8:
+	case EPixelFormat::V8U8:
 		return D3DFMT_V8U8;
-	case PixelFormat::L6V5U5:
+	case EPixelFormat::L6V5U5:
 		return D3DFMT_L6V5U5;
-	case PixelFormat::X8L8V8U8:
+	case EPixelFormat::X8L8V8U8:
 		return D3DFMT_X8L8V8U8;
-	case PixelFormat::Q8W8V8U8:
+	case EPixelFormat::Q8W8V8U8:
 		return D3DFMT_Q8W8V8U8;
-	case PixelFormat::V16U16:
+	case EPixelFormat::V16U16:
 		return D3DFMT_V16U16;
-	case PixelFormat::A2W10V10U10:
+	case EPixelFormat::A2W10V10U10:
 		return D3DFMT_A2W10V10U10;
-	case PixelFormat::UYVY:
+	case EPixelFormat::UYVY:
 		return D3DFMT_UYVY;
-	case PixelFormat::R8G8_B8G8:
+	case EPixelFormat::R8G8_B8G8:
 		return D3DFMT_R8G8_B8G8;
-	case PixelFormat::YUY2:
+	case EPixelFormat::YUY2:
 		return D3DFMT_YUY2;
-	case PixelFormat::G8R8_G8B8:
+	case EPixelFormat::G8R8_G8B8:
 		return D3DFMT_G8R8_G8B8;
-	case PixelFormat::DXT1:
+	case EPixelFormat::DXT1:
 		return D3DFMT_DXT1;
-	case PixelFormat::DXT2:
+	case EPixelFormat::DXT2:
 		return D3DFMT_DXT2;
-	case PixelFormat::DXT3:
+	case EPixelFormat::DXT3:
 		return D3DFMT_DXT3;
-	case PixelFormat::DXT4:
+	case EPixelFormat::DXT4:
 		return D3DFMT_DXT4;
-	case PixelFormat::DXT5:
+	case EPixelFormat::DXT5:
 		return D3DFMT_DXT5;
-	case PixelFormat::D16_LOCKABLE:
+	case EPixelFormat::D16_LOCKABLE:
 		return D3DFMT_D16_LOCKABLE;
-	case PixelFormat::D32:
+	case EPixelFormat::D32:
 		return D3DFMT_D32;
-	case PixelFormat::D15S1:
+	case EPixelFormat::D15S1:
 		return D3DFMT_D15S1;
-	case PixelFormat::D24S8:
+	case EPixelFormat::D24S8:
 		return D3DFMT_D24S8;
-	case PixelFormat::D24X8:
+	case EPixelFormat::D24X8:
 		return D3DFMT_D24X8;
-	case PixelFormat::D24X4S4:
+	case EPixelFormat::D24X4S4:
 		return D3DFMT_D24X4S4;
-	case PixelFormat::D16:
+	case EPixelFormat::D16:
 		return D3DFMT_D16;
-	case PixelFormat::D32F_LOCKABLE:
+	case EPixelFormat::D32F_LOCKABLE:
 		return D3DFMT_D32F_LOCKABLE;
-	case PixelFormat::D24FS8:
+	case EPixelFormat::D24FS8:
 		return D3DFMT_D24FS8;
-	case PixelFormat::INDEX16:
+	case EPixelFormat::INDEX16:
 		return D3DFMT_INDEX16;
-	case PixelFormat::INDEX32:
+	case EPixelFormat::INDEX32:
 		return D3DFMT_INDEX32;
+	case  EPixelFormat::R32F:
+		return D3DFMT_R32F;
+	case  EPixelFormat::A16B16G16R16F:
+		return D3DFMT_A16B16G16R16F;
 	default:
 		return D3DFMT_UNKNOWN;
 	}
@@ -501,4 +505,146 @@ D3DPRIMITIVETYPE D3DMapping::toD3DPrimitiveType(const EPrimitiveType type)
 	case EPrimitiveType::TRIANGLEFAN:
 		return D3DPT_TRIANGLEFAN;
 	}
+}
+
+ParaEngine::EPixelFormat ParaEngine::D3DMapping::toPixelFormat(D3DFORMAT format)
+{
+	switch (format)
+	{
+	case D3DFMT_R8G8B8:
+		return EPixelFormat::R8G8B8;
+	case D3DFMT_A8R8G8B8:
+		return EPixelFormat::A8R8G8B8;
+	case D3DFMT_X8R8G8B8:
+		return EPixelFormat::X8R8G8B8;
+	case D3DFMT_R5G6B5:
+		return EPixelFormat::R5G6B5;
+	case D3DFMT_X1R5G5B5:
+		return EPixelFormat::X1R5G5B5;
+	case D3DFMT_A1R5G5B5:
+		return EPixelFormat::A1R5G5B5;
+	case D3DFMT_A4R4G4B4:
+		return EPixelFormat::A4R4G4B4;
+	case D3DFMT_R3G3B2:
+		return EPixelFormat::R3G3B2;
+	case D3DFMT_A8:
+		return EPixelFormat::A8;
+	case D3DFMT_A8R3G3B2:
+		return EPixelFormat::A8R3G3B2;
+	case D3DFMT_X4R4G4B4:
+		return EPixelFormat::X4R4G4B4;
+	case D3DFMT_A2B10G10R10:
+		return EPixelFormat::A2B10G10R10;
+	case D3DFMT_A8B8G8R8:
+		return EPixelFormat::A8B8G8R8;
+	case D3DFMT_X8B8G8R8:
+		return EPixelFormat::X8B8G8R8;
+	case D3DFMT_G16R16:
+		return EPixelFormat::G16R16;
+	case D3DFMT_A2R10G10B10:
+		return EPixelFormat::A2R10G10B10;
+	case D3DFMT_A16B16G16R16:
+		return EPixelFormat::A16B16G16R16;
+	case D3DFMT_A8P8:
+		return EPixelFormat::A8P8;
+	case D3DFMT_P8:
+		return EPixelFormat::P8;
+	case D3DFMT_L8:
+		return EPixelFormat::L8;
+	case D3DFMT_A8L8:
+		return EPixelFormat::A8L8;
+	case D3DFMT_A4L4:
+		return EPixelFormat::A4L4;
+	case D3DFMT_V8U8:
+		return EPixelFormat::V8U8;
+	case D3DFMT_L6V5U5:
+		return EPixelFormat::L6V5U5;
+	case D3DFMT_X8L8V8U8:
+		return EPixelFormat::X8L8V8U8;
+	case D3DFMT_Q8W8V8U8:
+		return EPixelFormat::Q8W8V8U8;
+	case D3DFMT_V16U16:
+		return EPixelFormat::V16U16;
+	case D3DFMT_A2W10V10U10:
+		return EPixelFormat::A2W10V10U10;
+	case D3DFMT_UYVY:
+		return EPixelFormat::UYVY;
+	case D3DFMT_R8G8_B8G8:
+		return EPixelFormat::R8G8_B8G8;
+	case D3DFMT_YUY2:
+		return EPixelFormat::YUY2;
+	case D3DFMT_G8R8_G8B8:
+		return EPixelFormat::G8R8_G8B8;
+	case D3DFMT_DXT1:
+		return EPixelFormat::DXT1;
+	case D3DFMT_DXT2:
+		return EPixelFormat::DXT2;
+	case D3DFMT_DXT3:
+		return EPixelFormat::DXT3;
+	case D3DFMT_DXT4:
+		return EPixelFormat::DXT4;
+	case D3DFMT_DXT5:
+		return EPixelFormat::DXT5;
+	case D3DFMT_D16_LOCKABLE:
+		return EPixelFormat::D16_LOCKABLE;
+	case D3DFMT_D32:
+		return EPixelFormat::D32;
+	case D3DFMT_D15S1:
+		return EPixelFormat::D15S1;
+	case D3DFMT_D24S8:
+		return EPixelFormat::D24S8;
+	case D3DFMT_D24X8:
+		return EPixelFormat::D24X8;
+	case D3DFMT_D24X4S4:
+		return EPixelFormat::D24X4S4;
+	case D3DFMT_D16:
+		return EPixelFormat::D16;
+	case D3DFMT_D32F_LOCKABLE:
+		return EPixelFormat::D32F_LOCKABLE;
+	case D3DFMT_D24FS8:
+		return EPixelFormat::D24FS8;
+	case D3DFMT_INDEX16:
+		return EPixelFormat::INDEX16;
+	case D3DFMT_INDEX32:
+		return EPixelFormat::INDEX32;
+	case D3DFMT_R32F:
+		return EPixelFormat::R32F;
+	case D3DFMT_A16B16G16R16F:
+		return EPixelFormat::A16B16G16R16F;
+	default:
+		return EPixelFormat::Unkonwn;
+	}
+}
+
+D3DTEXTUREFILTERTYPE ParaEngine::D3DMapping::toD3DTextureFilter(const ETextureFilter type)
+{
+	switch (type)
+	{
+	case ETextureFilter::Point:
+		return D3DTEXF_POINT;
+		break;
+	case ETextureFilter::Linear:
+		return D3DTEXF_LINEAR;
+		break;
+	}
+	return D3DTEXF_NONE;
+}
+
+D3DTEXTUREADDRESS ParaEngine::D3DMapping::toD3DTextureAddress(const ETextureWrapMode type)
+{
+	switch (type)
+	{
+	default:
+		break;
+	case ETextureWrapMode::Clamp:
+		return D3DTADDRESS_CLAMP;
+	case ETextureWrapMode::Repeat:
+		return D3DTADDRESS_WRAP;
+	case ETextureWrapMode::Border:
+		return D3DTADDRESS_BORDER;
+	case ETextureWrapMode::Mirror:
+		return D3DTADDRESS_MIRROR;
+	}
+
+	return D3DTADDRESS_CLAMP;
 }

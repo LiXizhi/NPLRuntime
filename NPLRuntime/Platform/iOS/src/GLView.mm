@@ -5,7 +5,7 @@
 //  Created by 袁全伟 on 2017/11/12.
 //  Copyright © 2017年 XRenderAPI. All rights reserved.
 //
-
+#include "OpenGL.h"
 #import "GLView.h"
 #include "ParaEngine.h"
 #include "ParaAppiOS.h"

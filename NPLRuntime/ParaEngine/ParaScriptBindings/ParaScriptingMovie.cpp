@@ -9,7 +9,7 @@
 
 #include "ParaEngine.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
+
 #include "ScreenShotSystem.h"
 using namespace ScreenShot;
 #endif

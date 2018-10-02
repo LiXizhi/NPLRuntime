@@ -140,7 +140,7 @@ int ParaEngineSettings::GetVertexShaderVersion()
 {
 
 #ifdef USE_DIRECTX_RENDERER
-		return CGlobals::GetDirectXEngine().GetVertexShaderVersion();
+		return 2;
 #elif defined(USE_OPENGL_RENDERER)
 		return 2;
 #else
@@ -151,7 +151,7 @@ int ParaEngineSettings::GetVertexShaderVersion()
 int ParaEngineSettings::GetPixelShaderVersion()
 {	
 #ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().GetPixelShaderVersion();
+	return 2;
 #elif defined(USE_OPENGL_RENDERER)
 	return 2;
 #else
@@ -162,28 +162,30 @@ int ParaEngineSettings::GetPixelShaderVersion()
 const std::string& ParaEngineSettings::GetDispalyMode()
 {
 #ifdef USE_DIRECTX_RENDERER
-	D3DDISPLAYMODE *pDisplayModes = 0;
-	int modeCount = 0;
-	CGlobals::GetDirectXEngine().GetDisplayMode(&pDisplayModes,modeCount);
-	
-	if(modeCount < 1)
-		return CGlobals::GetString(0);
-	else
-	{
-		std::stringstream ss;
-		for (int i = 0;i<modeCount;i++)
-		{
-			if(i>0)
-				ss<<",";
-			ss<<pDisplayModes[i].Width<<" "<<pDisplayModes[i].Height<<" "<<pDisplayModes[i].RefreshRate;
-		}
+	// TODO:
+	//D3DDISPLAYMODE *pDisplayModes = 0;
+	//int modeCount = 0;
+	//CGlobals::GetDirectXEngine().GetDisplayMode(&pDisplayModes,modeCount);
+	//
+	//if(modeCount < 1)
+	//	return CGlobals::GetString(0);
+	//else
+	//{
+	//	std::stringstream ss;
+	//	for (int i = 0;i<modeCount;i++)
+	//	{
+	//		if(i>0)
+	//			ss<<",";
+	//		ss<<pDisplayModes[i].Width<<" "<<pDisplayModes[i].Height<<" "<<pDisplayModes[i].RefreshRate;
+	//	}
 
-		if(pDisplayModes!=0)
-			delete[] pDisplayModes;
-		
-		m_displayModes = ss.str();
-		return m_displayModes;
-	}
+	//	if(pDisplayModes!=0)
+	//		delete[] pDisplayModes;
+	//	
+	//	m_displayModes = ss.str();
+	//	return m_displayModes;
+	//}
+	return CGlobals::GetString(0);
 #else
 	return CGlobals::GetString(0);
 #endif
@@ -192,7 +194,9 @@ const std::string& ParaEngineSettings::GetDispalyMode()
 Vector2 ParaEngineSettings::GetMonitorResolution()
 {
 #ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().GetMonitorResolution();
+	// TODO:
+	//return CGlobals::GetDirectXEngine().GetMonitorResolution();
+	return Vector2(0, 0);
 #else
 	return Vector2(0, 0);
 #endif
@@ -206,8 +210,8 @@ int ParaEngineSettings::GetGameEffectSet()
 
 void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 {
-#ifdef USE_DIRECTX_RENDERER
-	int ShaderVersion = min(CGlobals::GetDirectXEngine().GetVertexShaderVersion(), CGlobals::GetDirectXEngine().GetPixelShaderVersion());
+
+	int ShaderVersion = 2;
 	if(ShaderVersion != 0 && nSetID!=1024)
 	{
 		if(ShaderVersion < 2 )
@@ -224,6 +228,7 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 			}
 		}
 	}
+
 	
 	g_nSetID = nSetID;
 	switch(nSetID)
@@ -306,13 +311,6 @@ void ParaEngineSettings::LoadGameEffectSet(int nSetID)
 		CGlobals::GetEffectManager()->SetDefaultEffectMapping(30);
 		break;
 	}
-#elif defined(USE_OPENGL_RENDERER)
-	//CGlobals::GetEffectManager()->SetDefaultEffectMapping(0);
-	CGlobals::GetEffectManager()->SetDefaultEffectMapping(20);
-	ParaScripting::ParaScene::EnableLighting(true);
-	ParaScripting::ParaScene::SetShadowMethod(0);
-	CGlobals::GetScene()->EnableFullScreenGlow(false);
-#endif
 }
 
 void ParaEngineSettings::SetScriptEditor(const string& sEditorFilePath)
@@ -327,10 +325,9 @@ const string& ParaEngineSettings::GetScriptEditor()
 
 void ParaEngineSettings::GetClientSize(int* width, int* height)
 {
-#ifdef USE_DIRECTX_RENDERER
-	*width=CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	*height=CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
-#endif
+
+	*width = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+	*height = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 }
 bool ParaEngineSettings::IsDebugging()
 {

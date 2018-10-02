@@ -315,15 +315,15 @@ static bool SafeEquals(const char* a, const char* b)
 
 void TGlslOutputTraverser::outputLineDirective (const TSourceLoc& line)
 {
-	if (line.line <= 0 || !current)
-		return;
-	if (SafeEquals(line.file, m_LastLineOutput.file) && std::abs(line.line - m_LastLineOutput.line) < 4) // don't sprinkle too many #line directives ;)
-		return;
-	std::stringstream& out = current->getActiveOutput();
-	out << '\n';
-	current->indent(); // without this we could dry the code out further to put the preceeding CRLF in the shared function
-	OutputLineDirective(out, line);
-	m_LastLineOutput = line;
+	//if (line.line <= 0 || !current)
+	//	return;
+	//if (SafeEquals(line.file, m_LastLineOutput.file) && std::abs(line.line - m_LastLineOutput.line) < 4) // don't sprinkle too many #line directives ;)
+	//	return;
+	//std::stringstream& out = current->getActiveOutput();
+	//out << '\n';
+	//current->indent(); // without this we could dry the code out further to put the preceeding CRLF in the shared function
+	//OutputLineDirective(out, line);
+	//m_LastLineOutput = line;
 }
 
 
@@ -490,13 +490,17 @@ bool TGlslOutputTraverser::traverseDeclaration(bool preVisit, TIntermDeclaration
 	}
 
 	TType& type = *decl->getTypePointer();
-	if (type.getBasicType() == EbtTexture)
-	{
-		// right now we can't do anything with "texture" type, just skip it
-		return false;
-	}
+
 	
 	current->beginStatement();
+
+	if (type.getBasicType() == EbtTexture)
+	{
+		out << "//";
+		decl->getDeclaration()->traverse(goit);
+		return false;
+	}
+
 	
 	if (type.getQualifier() != EvqTemporary && type.getQualifier() != EvqGlobal)
 		out << type.getQualifierString() << " ";
@@ -580,8 +584,8 @@ void TGlslOutputTraverser::traverseSymbol(TIntermSymbol *node, TIntermTraverser 
 				registerSpec = node->getInfo()->getRegister().c_str();
 			}
 			
-			GlslSymbol * sym = new GlslSymbol( node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
-				translateType(node->getTypePointer()), goit->m_UsePrecision?node->getPrecision():EbpUndefined, translateQualifier(node->getQualifier()), array);
+			GlslSymbol * sym = new GlslSymbol(node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
+				translateType(node->getTypePointer()), goit->m_UsePrecision?node->getPrecision():EbpUndefined, translateQualifier(node->getQualifier()),node->GetConstValue(), array);
 			sym->setIsGlobal(node->isGlobal());
 
 			current->addSymbol(sym);
@@ -592,10 +596,14 @@ void TGlslOutputTraverser::traverseSymbol(TIntermSymbol *node, TIntermTraverser 
 			}
 		}
 	}
+	// Skip texture
+	if (node->getType().getBasicType() != EbtTexture)
+	{
+		// If we're at the global scope, emit the non-mutable names of uniforms.
+		bool globalScope = current == goit->global;
+		out << current->getSymbol(node->getId()).getName(!globalScope);
+	}
 
-	// If we're at the global scope, emit the non-mutable names of uniforms.
-	bool globalScope = current == goit->global;
-	out << current->getSymbol(node->getId()).getName(!globalScope);
 }
 
 
@@ -624,7 +632,7 @@ void TGlslOutputTraverser::traverseParameterSymbol(TIntermSymbol *node, TIntermT
     }
 
    GlslSymbol * sym = new GlslSymbol( node->getSymbol().c_str(), semantic, registerSpec, node->getId(),
-                                      translateType(node->getTypePointer()), prec, translateQualifier(node->getQualifier()), array);
+                                      translateType(node->getTypePointer()), prec, translateQualifier(node->getQualifier()),node->GetConstValue(), array);
    current->addParameter(sym);
 
    if (sym->getType() == EgstStruct)
@@ -1608,7 +1616,8 @@ bool TGlslOutputTraverser::traverseAggregate( bool preVisit, TIntermAggregate *n
           if(usePost120TextureLookups) {       
               writeTex( "texture", node, goit);
           } else {
-              writeTex( "texture2D", node, goit);
+			  current->addLibFunction(EOpTex2D);
+              writeTex( "xll_texture2D", node, goit);
           }
       }
       else

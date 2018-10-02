@@ -36,7 +36,7 @@ extern "C"
 using namespace luabind;
 
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #include "EffectManager.h"
 #endif
 
@@ -222,15 +222,11 @@ namespace ParaScripting
 
 	ParaAssetObject CParaEngine::GetRenderTarget()
 	{
-#ifdef USE_DIRECTX_RENDERER
-		static TextureEntityDirectX g_rt;
+		static TextureEntityImpl g_rt;
 		static ParaAssetObject g_rt_wrapper(&g_rt);
 		g_rt.SurfaceType = TextureEntity::TextureSurface;
-		g_rt.SetSurface( CGlobals::GetDirectXEngine().GetRenderTarget() );
+		g_rt.SetTexture(CGlobals::GetRenderDevice()->GetRenderTarget(0));
 		return g_rt_wrapper;
-#else
-		return ParaAssetObject();
-#endif
 	}
 
 	bool CParaEngine::SetRenderTarget( ParaAssetObject& pSrcRenderTarget )
@@ -246,12 +242,10 @@ namespace ParaScripting
 	{
 		if (!render_targetname || render_targetname[0] == '\0')
 		{
-#ifdef USE_DIRECTX_RENDERER
-			GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(nIndex, NULL);
+			CGlobals::GetRenderDevice()->SetRenderTarget(nIndex, NULL);
 			if (nIndex == 0){
 				CGlobals::GetViewportManager()->GetActiveViewPort()->ApplyViewport();
 			}
-#endif
 			return true;
 		}
 		else
@@ -269,22 +263,16 @@ namespace ParaScripting
 	{
 		if(pSrcRenderTarget.IsValid() && pDestRenderTarget.IsValid() )
 		{
-#ifdef USE_DIRECTX_RENDERER
-			TextureEntityDirectX * pSrcTexture = (TextureEntityDirectX*)(pSrcRenderTarget.m_pAsset);
-			TextureEntityDirectX * pDestTexture = (TextureEntityDirectX*)(pDestRenderTarget.m_pAsset);
-			return TextureEntityDirectX::StretchRect(pSrcTexture, pDestTexture);
-#endif
+			TextureEntityImpl * pSrcTexture = (TextureEntityImpl*)(pSrcRenderTarget.m_pAsset);
+			TextureEntityImpl * pDestTexture = (TextureEntityImpl*)(pDestRenderTarget.m_pAsset);
+			return TextureEntityImpl::StretchRect(pSrcTexture, pDestTexture);
 		}
 		return false;
 	}
 
 	bool CParaEngine::SetVertexDeclaration( int nIndex )
 	{
-#ifdef USE_DIRECTX_RENDERER
-		return SUCCEEDED(CGlobals::GetEffectManager()->SetVertexDeclaration(nIndex));
-#else
-		return false;
-#endif
+		return CGlobals::GetEffectManager()->SetVertexDeclaration(nIndex);
 	}
 
 	// draw in the current viewport

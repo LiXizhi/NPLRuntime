@@ -6,7 +6,6 @@
 // Date:	2006.7.2
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#include "DirectXEngine.h"
 #include "SceneObject.h"
 #include "ParaWorldAsset.h"
 #include "SortedFaceGroups.h"
@@ -37,7 +36,7 @@ using namespace ParaEngine;
 CMirrorSurface::CMirrorSurface(void)
 :m_vPos(0,0,0),m_reflectionPlane(0,1,0,0), m_reflectionMapOverdraw(REFLECTION_MAP_OVERDRAW),m_bInitialized(false),
 m_reflectionTextureWidth(MAX_REFLECTION_MAP_WIDTH), m_reflectionTextureHeight(MAX_REFLECTION_MAP_HEIGHT),
-m_pDepthStencilSurface(NULL), m_pReflectionTexture(NULL),m_pReflectionSurface(NULL),m_bEnable(false),m_bDisableFogInReflection(false)
+m_pDepthStencilSurface(NULL), m_pReflectionTexture(NULL),m_bEnable(false),m_bDisableFogInReflection(false)
 {
 
 }
@@ -47,7 +46,7 @@ CMirrorSurface::~CMirrorSurface(void)
 	Cleanup();
 }
 
-LPDIRECT3DTEXTURE9 CMirrorSurface::GetReflectionTexture()
+IParaEngine::ITexture* CMirrorSurface::GetReflectionTexture()
 {
 	return m_pReflectionTexture;
 }
@@ -71,21 +70,25 @@ void CMirrorSurface::RestoreDeviceObjects()
 
 	auto pRenderDevice = CGlobals::GetRenderDevice();
 
-	int deviceWidth = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Width;
-	int deviceHeight = (int)CGlobals::GetDirectXEngine().m_d3dsdBackBuffer.Height;
+	int deviceWidth = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetWidth();
+	int deviceHeight = (int)CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 	int nWidth = min(deviceWidth, m_reflectionTextureWidth);
 	int nHeight = min(deviceHeight, m_reflectionTextureHeight);
-	hr = GETD3D(CGlobals::GetRenderDevice())->CreateTexture(nWidth, 	nHeight,
-		1, D3DUSAGE_RENDERTARGET, 
-		D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pReflectionTexture, NULL);
-	CHECK_RETURN_CODE("CreateTexture Reflection Texture", hr);  
 
-	hr = m_pReflectionTexture->GetSurfaceLevel(0, &m_pReflectionSurface);
-	CHECK_RETURN_CODE("GetSurfaceLevel Reflection Surface", hr);
+	m_pReflectionTexture = pRenderDevice->CreateTexture(nWidth, nHeight, EPixelFormat::X8R8G8B8, ETextureUsage::RenderTarget);
 
-	hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
-		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
+	if (!m_pReflectionTexture)
+	{
+		OUTPUT_LOG("failed createTexture reflection texture");
+		return;
+	}
+
+	m_pDepthStencilSurface = pRenderDevice->CreateTexture(nWidth, nHeight, EPixelFormat::D16, ETextureUsage::DepthStencil);
+	if (!m_pDepthStencilSurface)
+	{
+		OUTPUT_LOG("failed creating depth stencil buffe");
+		return;
+	}
 	m_bInitialized=true;
 }
 
@@ -94,7 +97,6 @@ void CMirrorSurface::InvalidateDeviceObjects()
 	m_bInitialized=false;
 	SAFE_RELEASE(m_pDepthStencilSurface);
 	SAFE_RELEASE(m_pReflectionTexture);
-	SAFE_RELEASE(m_pReflectionSurface);
 }
 
 void CMirrorSurface::DeleteDeviceObjects()
@@ -199,14 +201,15 @@ void CMirrorSurface::RenderReflectionTexture()
 
 		//////////////////////////////////////////////////////////////////////////
 		// Render to the reflection map
-		LPDIRECT3DSURFACE9 pOldRenderTarget =  CGlobals::GetDirectXEngine().GetRenderTarget();
-		CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pReflectionSurface);
+		auto pOldRenderTarget = pRenderDevice->GetRenderTarget(0);
+		pRenderDevice->SetRenderTarget(0, m_pReflectionTexture);
 
 		// set depth surface
-		LPDIRECT3DSURFACE9 pOldZBuffer = NULL;
-		if(FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&pOldZBuffer)))
+		IParaEngine::ITexture* pOldZBuffer = pRenderDevice->GetDepthStencil();
+		
+		if(!pOldZBuffer)
 			return;
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( m_pDepthStencilSurface );
+		CGlobals::GetRenderDevice()->SetDepthStencil( m_pDepthStencilSurface );
 
 		// Compute the field of view and use it
 		CAutoCamera* pCamera = ((CAutoCamera*)(CGlobals::GetScene()->GetCurrentCamera()));
@@ -284,13 +287,13 @@ void CMirrorSurface::RenderReflectionTexture()
 		pCamera->UpdateFrustum();
 
 		// restore old depth surface
-		GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface( pOldZBuffer);
+		pRenderDevice->SetDepthStencil( pOldZBuffer);
 		SAFE_RELEASE(pOldZBuffer);
 
 		//////////////////////////////////////////////////////////////////////////
 		// Restore the old render target: i.e. the backbuffer
-		HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, pOldRenderTarget);
-		assert(hr == D3D_OK);
+		pRenderDevice->SetRenderTarget(0, pOldRenderTarget);
+
 
 		if(bUseReflection)
 			pEffectManager->EnableReflectionRendering(true);

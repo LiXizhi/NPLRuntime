@@ -34,18 +34,31 @@ ucm_add_dirs(
 TO sources_commmon RECURSIVE
 )
 
-if(NPLRUNTIME_RENDERER STREQUAL "OPENGL")
+if(NPLRUNTIME_RENDERER STREQUAL "OPENGL" OR NPLRUNTIME_RENDERER STREQUAL "OPENGLES")
     set(RenderSystem RenderSystemOpenGL)
     ucm_add_dirs(
         OpenGLWrapper
     TO sources_rendersystem RECURSIVE
     )
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/opengl_spec/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.fx)
+    file(GLOB SHADER_INLCUDES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.h)
+    list(APPEND SHADER_FILES ${SHADER_INLCUDES})
     foreach( src_file ${SHADER_FILES} )	
         embed_resources_abs(Resource ${src_file})
         list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
     endforeach( src_file ${SHADER_FILES} )
     list(APPEND EmbeddedResource_Files_OPENGL ResourceEmbedded.cpp)
+
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/ParaXmodel.templates)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})	
+
+    embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/cursor.tga)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+
+	embed_resources_abs(Resource ${CMAKE_CURRENT_SOURCE_DIR}/res/paraworld.ico)
+    list(APPEND EmbeddedResource_Files_OPENGL ${Resource})
+
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_OPENGL})
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_OPENGL})
 
@@ -65,10 +78,10 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
     )
 
     # Embedded Resource For Direct3D
-    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/d3d9_spec/*.fx)
+    file(GLOB SHADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/shaders/common/*.fx)
     foreach(src_file ${SHADER_FILES})
         get_filename_component(src_filename ${src_file} NAME_WE)
-        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fxo")
+        set(out_file "${CMAKE_CURRENT_BINARY_DIR}/shaders/${src_filename}.fx")
 
         add_custom_command(
             OUTPUT ${out_file}
@@ -93,6 +106,10 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
     SOURCE_GROUP("ResEmbedded" FILES ${EmbeddedResource_Files_D3D})
 
+    SOURCE_GROUP("ShaderFiles" FILES ${SHADER_FILES})
+	SET_SOURCE_FILES_PROPERTIES(${SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+    list(APPEND sources_rendersystem ${SHADER_FILES})
+    
     list(APPEND sources_rendersystem ${EmbeddedResource_Files_D3D})
 
 
@@ -229,7 +246,9 @@ target_link_libraries(ParaEngine PUBLIC
     ${PLATFORM_SPE_LIBS}
 	${LUA_LIB_LIST}
     zlib
-	libcurl
+    libcurl
+    libjpeg
+    libpng
     jsoncpp
     tinyxpath
     luabind
@@ -274,9 +293,8 @@ endif()
 
 target_compile_definitions(ParaEngine PUBLIC 
     ${PARAENGINE_DEF_LIST}
+
 )
-
-
 IF(MSVC)
     ucm_set_runtime(STATIC)
     # enable multiprocessor build option /MP, this will greatly increase compile speed

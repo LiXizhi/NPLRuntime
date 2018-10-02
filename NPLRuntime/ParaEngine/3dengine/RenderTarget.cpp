@@ -7,9 +7,6 @@
 // Revised: 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
-#ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
-#endif
 #include "SceneObject.h"
 #include "ViewportManager.h"
 #include "ParaWorldAsset.h"
@@ -18,11 +15,11 @@
 #include "RenderTarget.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #endif
 
 #if USE_OPENGL_RENDERER
 #include "RenderDeviceOpenGL.h"
-#include "OpenGLWrapper/GLTexture2D.h"
 #endif
 
 /** @def default canvas map width in pixels */
@@ -42,17 +39,9 @@ ParaEngine::CRenderTarget::CRenderTarget()
 	m_bActiveRendering(false), m_bIsDirty(true), m_nLifeTime(-1), m_bPersistentRenderTarget(false),
 	m_depthStencilFormat(D3DFMT_D24S8)
 {
-#ifdef USE_DIRECTX_RENDERER
 	m_pDepthStencilSurface = NULL;
-	m_pCanvasSurface = NULL;
 	m_pOldRenderTarget = NULL;
 	m_pOldZBuffer = NULL;
-#elif defined(USE_OPENGL_RENDERER)
-	_FBO = 0;
-	_depthRenderBufffer = 0;
-	_oldFBO = 0;
-	_oldRBO = 0;
-#endif
 	m_vOldRenderOrigin = Vector3::ZERO;
 }
 
@@ -114,64 +103,17 @@ HRESULT ParaEngine::CRenderTarget::RestoreDeviceObjects()
 	int nWidth = m_nTextureWidth;
 	int nHeight = m_nTextureHeight;
 
-#ifdef USE_DIRECTX_RENDERER
 	HRESULT hr;
-	
-	/*hr = pRenderDevice->CreateTexture(nWidth, 	nHeight,
-	1, D3DUSAGE_RENDERTARGET,
-	D3DFMT_X8R8G8B8, D3DPOOL_DEFAULT, &m_pCanvasTexture, NULL);
-	CHECK_RETURN_CODE("CreateTexture Canvas Texture", hr);
-
-	hr = m_pCanvasTexture->GetSurfaceLevel(0, &m_pCanvasSurface);
-	CHECK_RETURN_CODE("GetSurfaceLevel Canvas Surface", hr);*/
 
 	hr = m_pCanvasTexture->RestoreDeviceObjects();
 	CHECK_RETURN_CODE("CreateTexture Canvas Texture", hr);
 
-	hr = m_pCanvasTexture->GetTexture()->GetSurfaceLevel(0, &m_pCanvasSurface);
-	CHECK_RETURN_CODE("GetSurfaceLevel Canvas Surface", hr);
-
-	hr = GETD3D(CGlobals::GetRenderDevice())->CreateDepthStencilSurface(nWidth, nHeight, D3DFMT_D16,
-		D3DMULTISAMPLE_NONE, 0, FALSE, &m_pDepthStencilSurface, NULL);
-	CHECK_RETURN_CODE("failed creating depth stencil buffer", hr);
-#elif defined(USE_OPENGL_RENDERER)
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
-
-	glGetIntegerv(GL_RENDERBUFFER_BINDING, &_oldRBO);
-
-	// generate FBO
-	glGenFramebuffers(1, &_FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
-
-	// associate texture with FBO
-	m_pCanvasTexture->RestoreDeviceObjects();
-	auto pTex = m_pCanvasTexture->GetTexture();
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pTex ? pTex->getName() : 0, 0);
-
-	if (m_depthStencilFormat != 0)
+	m_pDepthStencilSurface = CGlobals::GetRenderDevice()->CreateTexture(nWidth, nHeight, EPixelFormat::D24S8, ETextureUsage::DepthStencil);
+	if (!m_pDepthStencilSurface)
 	{
-		GLuint depthStencilFormat = GL_DEPTH24_STENCIL8;
-		//create and attach depth buffer
-		glGenRenderbuffers(1, &_depthRenderBufffer);
-		glBindRenderbuffer(GL_RENDERBUFFER, _depthRenderBufffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, depthStencilFormat, (GLsizei)nWidth, (GLsizei)nHeight);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
-
-		// if depth format is the one with stencil part, bind same render buffer as stencil attachment
-		if (depthStencilFormat == GL_DEPTH24_STENCIL8)
-		{
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, _depthRenderBufffer);
-		}
+		OUTPUT_LOG("failed creating depth stencil buffer");
+		return E_FAIL;
 	}
-	// check if it worked (probably worth doing :) )
-	PE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-
-	((TextureEntityOpenGL*)m_pCanvasTexture.get())->SetAliasTexParameters();
-
-	glBindRenderbuffer(GL_RENDERBUFFER, _oldRBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
-
-#endif
 	return S_OK;
 }
 
@@ -180,21 +122,7 @@ HRESULT ParaEngine::CRenderTarget::InvalidateDeviceObjects()
 	if (m_pCanvasTexture == 0)
 		return S_OK;
 	m_bInitialized = false;
-#ifdef USE_DIRECTX_RENDERER
 	SAFE_RELEASE(m_pDepthStencilSurface);
-	SAFE_RELEASE(m_pCanvasSurface);
-#elif defined(USE_OPENGL_RENDERER)
-	if (_FBO != 0)
-	{
-		glDeleteFramebuffers(1, &_FBO);
-		_FBO = 0;
-	}
-	if (_depthRenderBufffer)
-	{
-		glDeleteRenderbuffers(1, &_depthRenderBufffer);
-		_depthRenderBufffer = 0;
-	}
-#endif
 	m_pCanvasTexture->InvalidateDeviceObjects();
 	SetDirty(true);
 	return S_OK;
@@ -217,7 +145,7 @@ void ParaEngine::CRenderTarget::Cleanup()
 	DeleteDeviceObjects();
 }
 
-HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageWidth /*= 0*/, int nImageHeight /*= 0*/, PixelFormat dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
+HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageWidth /*= 0*/, int nImageHeight /*= 0*/, EPixelFormat dwFormat /*= 3*/, UINT MipLevels /*= 0*/, int srcLeft /*= 0*/, int srcTop /*= 0*/, int srcWidth /*= 0*/, int srcHeight /*= 0*/)
 {
 	if (m_pCanvasTexture == 0)
 		return E_FAIL;
@@ -246,7 +174,8 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 
 	if ((FileFormat != D3DXIFF_DDS) && (nImageWidth <= 0 || nImageWidth >= m_nTextureWidth) && srcWidth == 0)
 	{
-		if (SUCCEEDED(D3DXSaveTextureToFile(sFile.c_str(), FileFormat, m_pCanvasTexture->GetTexture(), NULL)))
+		HRESULT hr = D3DXSaveTextureToFile(sFile.c_str(), FileFormat, GetD3DTex(m_pCanvasTexture->GetTexture()), NULL);
+		if (SUCCEEDED(hr))
 		{
 			OUTPUT_LOG("miniscenegraph portrait %d taken for %s", m_nTextureWidth, sFile.c_str());
 		}
@@ -254,17 +183,17 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 	else if (FileFormat == D3DXIFF_DDS  && srcWidth == 0)
 	{
 		if ((int)dwFormat == 1)
-			dwFormat = PixelFormat::DXT1;
+			dwFormat = EPixelFormat::DXT1;
 		else if ((int)dwFormat == 2)
-			dwFormat = PixelFormat::DXT2;
+			dwFormat = EPixelFormat::DXT2;
 		else if ((int)dwFormat == 3)
-			dwFormat = PixelFormat::DXT3;
+			dwFormat = EPixelFormat::DXT3;
 		else if ((int)dwFormat == 4)
-			dwFormat = PixelFormat::DXT4;
+			dwFormat = EPixelFormat::DXT4;
 		else if ((int)dwFormat == 5)
-			dwFormat = PixelFormat::DXT5;
+			dwFormat = EPixelFormat::DXT5;
 		else
-			dwFormat = PixelFormat::DXT3;
+			dwFormat = EPixelFormat::DXT3;
 
 		if (m_pCanvasTexture->GetTexture())
 		{
@@ -297,7 +226,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 			nImageHeight = (m_nTextureHeight * nImageWidth) / m_nTextureWidth;
 		}
 
-		LPDIRECT3DTEXTURE9 pTex = m_pCanvasTexture->GetTexture();
+		LPDIRECT3DTEXTURE9 pTex = GetD3DTex(m_pCanvasTexture->GetTexture());
 		if (pTex)
 		{
 			LPDIRECT3DSURFACE9 pSur = NULL;
@@ -355,83 +284,7 @@ HRESULT ParaEngine::CRenderTarget::SaveToFile(const char* sFileName, int nImageW
 
 ImageEntity* ParaEngine::CRenderTarget::NewImage(bool bFlipImage, Color colorKey)
 {
-#ifdef USE_OPENGL_RENDERER
-	if (nullptr == GetTexture())
-	{
-		return nullptr;
-	}
-	// auto _texture = ((TextureEntityOpenGL*)GetTexture())->m_texture;
-	Vector2 s = GetRenderTargetSize();
-
-	// to get the image size to save
-	//        if the saving image domain exceeds the buffer texture domain,
-	//        it should be cut
-	int savedBufferWidth = (int)s.x;
-	int savedBufferHeight = (int)s.y;
-
-	GLubyte *buffer = nullptr;
-	
-	ImageEntity* image = new ImageEntity();
-	do
-	{
-		if(!(buffer = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
-			break;
-
-		glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
-		glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
-
-		glPixelStorei(GL_PACK_ALIGNMENT, 1);
-		glReadPixels(0, 0, savedBufferWidth, savedBufferHeight, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
-
-		if ((DWORD)colorKey != 0)
-		{
-			// make colorKey transparent
-			int nSize = savedBufferWidth * savedBufferHeight;
-			DWORD* pPixelData = (DWORD*)(buffer);
-			DWORD dwTransparentColorKey = colorKey;
-			for (int i = 0; i < nSize; ++i, ++pPixelData)
-			{
-				if (*pPixelData == dwTransparentColorKey)
-					*pPixelData = 0;
-			}
-		}
-
-		// flip is required when saving image to file. 
-		if (bFlipImage) 
-		{
-			GLubyte *tempData = nullptr;
-			if (!(tempData = new (std::nothrow) GLubyte[savedBufferWidth * savedBufferHeight * 4]))
-			{
-				delete[] buffer;
-				buffer = nullptr;
-				break;
-			}
-
-			// to get the actual texture data
-			// #640 the image read from render target is dirty
-			for (int i = 0; i < savedBufferHeight; ++i)
-			{
-				memcpy(&tempData[i * savedBufferWidth * 4],
-					&buffer[(savedBufferHeight - i - 1) * savedBufferWidth * 4],
-					savedBufferWidth * 4);
-			}
-			image->LoadFromRawData(tempData, savedBufferWidth * savedBufferHeight * 4, savedBufferWidth, savedBufferHeight, 8);
-			SAFE_DELETE_ARRAY(tempData);
-		}
-		else
-		{
-			image->LoadFromRawData(buffer, savedBufferWidth * savedBufferHeight * 4, savedBufferWidth, savedBufferHeight, 8);
-		}
-
-	} while (0);
-	
-	SAFE_DELETE_ARRAY(buffer);
-
-	return image;
-#else
 	return nullptr;
-#endif
 }
 
 
@@ -476,10 +329,6 @@ const std::string& ParaEngine::CRenderTarget::GetCanvasTextureName()
 HRESULT ParaEngine::CRenderTarget::RendererRecreated()
 {
 	m_bInitialized = false;
-#ifdef USE_OPENGL_RENDERER
-	_FBO = 0;
-	_depthRenderBufffer = 0;
-#endif
 	return CBaseObject::RendererRecreated();
 }
 
@@ -518,55 +367,31 @@ bool ParaEngine::CRenderTarget::Begin()
 	// save old render origin
 	m_vOldRenderOrigin = CGlobals::GetScene()->GetRenderOrigin();
 
-#ifdef USE_DIRECTX_RENDERER
 	m_pOldRenderTarget = NULL;
 	m_pOldZBuffer = NULL;
-	if (m_pCanvasSurface == 0 || m_pDepthStencilSurface == 0)
+	if (m_pCanvasTexture == 0 || m_pDepthStencilSurface == 0)
 		return false;
 	if (m_pCanvasTexture)
 	{
 		m_pCanvasTexture->SetHitCount(0);
 	}
 
-	m_pOldRenderTarget = CGlobals::GetDirectXEngine().GetRenderTarget();
-	CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pCanvasSurface);
+	m_pOldRenderTarget = pRenderDevice->GetRenderTarget(0);
+	
+	pRenderDevice->SetRenderTarget(0, m_pCanvasTexture->GetTexture());
 
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2, NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3, NULL);
+	pRenderDevice->SetRenderTarget(1, NULL);
+	pRenderDevice->SetRenderTarget(2, NULL);
+	pRenderDevice->SetRenderTarget(3, NULL);
 
+	m_pOldZBuffer = pRenderDevice->GetDepthStencil();
 	// set depth surface
-	if (FAILED(GETD3D(CGlobals::GetRenderDevice())->GetDepthStencilSurface(&m_pOldZBuffer)))
+	if (m_pOldZBuffer == nullptr)
 	{
 		OUTPUT_LOG("error: can not get GetDepthStencilSurface in miniscene graph.\n");
 		return false;
 	}
-	GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pDepthStencilSurface);
-
-	
-#elif defined(USE_OPENGL_RENDERER)
-	if (m_pCanvasTexture)
-		m_pCanvasTexture->SetHitCount(0);
-	
-	glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
-	// no need to bind depth buffer, since it is automatically bind by opengl when frame buffer is bind. 
-	
-	 GETGL(pRenderDevice)->BeginRenderTarget(m_nTextureWidth, m_nTextureHeight);
-	//calculate viewport
-	{
-		 ParaViewport vp;
-		vp.X = 0;
-		vp.Y = 0;
-		vp.Width = GetTextureWidth();
-		vp.Height = GetTextureHeight();
-		vp.MinZ = 0;
-		vp.MaxZ = 1.0f;
-		pRenderDevice->SetViewport(vp);
-	}
-
-#endif
+	CGlobals::GetRenderDevice()->SetDepthStencil(m_pDepthStencilSurface);
 	m_bIsBegin = true;
 	return true;
 }
@@ -583,20 +408,14 @@ void ParaEngine::CRenderTarget::End()
 	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 	// restore render origin
 	CGlobals::GetScene()->RegenerateRenderOrigin(m_vOldRenderOrigin);
-#ifdef USE_DIRECTX_RENDERER
 	
 	// restore old depth surface
-	GETD3D(CGlobals::GetRenderDevice())->SetDepthStencilSurface(m_pOldZBuffer);
+	CGlobals::GetRenderDevice()->SetDepthStencil(m_pOldZBuffer);
 	SAFE_RELEASE(m_pOldZBuffer);
 	// Restore the old render target: i.e. the backbuffer
-	HRESULT hr = CGlobals::GetDirectXEngine().SetRenderTarget(0, m_pOldRenderTarget);
-	PE_ASSERT(hr == D3D_OK);
+	bool ret  = pRenderDevice->SetRenderTarget(0, m_pOldRenderTarget);
+	PE_ASSERT(ret);
 	m_pOldRenderTarget = NULL;
-
-#elif defined(USE_OPENGL_RENDERER)
-	glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
-	GETGL(pRenderDevice)->EndRenderTarget();
-#endif
 	// restore viewport
 	pRenderDevice->SetViewport(m_oldViewport);
 }
@@ -620,11 +439,8 @@ void ParaEngine::CRenderTarget::Clear(const LinearColor& color, float depthValue
 		RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
 		pRenderDevice->SetClearColor(Color4f(color.r,color.g,color.b,color.a));
 		pRenderDevice->SetClearDepth(depthValue);
-
-		/*pRenderDevice->SetClearStencil(1);
+		pRenderDevice->SetClearStencil(stencilValue);
 		pRenderDevice->Clear(true, true, true);
-		pRenderDevice->SetRenderState(ERenderState::SCISSORTESTENABLE, FALSE);*/
-		pRenderDevice->Clear(true, true, false);
 	}
 	else
 	{

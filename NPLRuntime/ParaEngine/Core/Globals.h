@@ -4,7 +4,6 @@
 #include "Framework/Interface/IParaEngineApp.h"
 #include "Framework/Interface/Render/IRenderDevice.h"
 #include "3dengine/OceanManager.h"
-#include "Engine/DirectXEngine.h"
 namespace ParaEngine
 {
 	class TransformStack;
@@ -93,6 +92,7 @@ namespace ParaEngine
 		static void SetLoading(bool bIsLoading);
 
 		static IRenderDevice* GetRenderDevice();
+		static IRenderWindow* GetRenderWindow();
 		static EffectManager* GetEffectManager();
 
 		static CAttributesManager* GetAttributesManager();
@@ -102,6 +102,7 @@ namespace ParaEngine
 
 
 		static void SetRenderDevice(IRenderDevice* device);
+		static void SetRenderWindow(IRenderWindow* window);
 
 		/**
 		* @return application handle
@@ -109,14 +110,12 @@ namespace ParaEngine
 		static HWND GetAppHWND();
 #ifdef PLATFORM_WINDOWS
 		static CAudioEngine* GetAudioEngine();
-	public:
-		/** get directX engine parameters */
-		static DirectXEngine& GetDirectXEngine();
 #endif
 
 
 	private:
 		static IRenderDevice* g_RenderDevice;
+		static IRenderWindow* g_RenderWindow;
 
 	};
 

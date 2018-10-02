@@ -195,42 +195,29 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedLines(bool bClear)
 	IRenderDevice* pRenderDevice = CGlobals::GetRenderDevice();
 	if (!pRenderDevice)
 		return;
-#ifdef USE_OPENGL_RENDERER
+
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	CEffectFile* pEffect = NULL;
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
+	if (pEffect == nullptr)
+	{
+		return;
+	}
 	if (pEffect == 0 || !pEffect->begin() || !pEffect->BeginPass(0))
 	{
 		if (bClear)
 			ClearLines();
+		return;
 	}
 	pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
 	if(pEffect)
 		pEffect->CommitChanges();
-#elif defined(USE_DIRECTX_RENDERER)
-	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
-#endif
-	// set render state
-	{
-		// pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		CGlobals::GetRenderDevice()->SetTexture(0, 0);
-
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
-
-		CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
-			(int)m_lines_vertex_array.size(), m_nLineCount, &(m_lines_index_array[0]), PixelFormat::INDEX16,
-			&(m_lines_vertex_array[0]), sizeof(LINEVERTEX));
-	}
-#ifdef USE_OPENGL_RENDERER
 	pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
 	pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
 	pEffect->EndPass();
 	pEffect->end();
-#endif
 	if(bClear)
 		ClearLines();
 }
@@ -241,7 +228,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 	if (m_listThickLines.size() == 0)
 		return;
 	CEffectFile* pEffect = NULL;
-#ifdef USE_OPENGL_RENDERER
+
 	EffectManager* pEffectManager = CGlobals::GetEffectManager();
 	pEffectManager->BeginEffect(TECH_SINGLE_COLOR, &pEffect);
 	if (pEffect == 0 || !pEffect->begin() || !pEffect->BeginPass(0))
@@ -249,160 +236,9 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedThickLines(bool bClear /*= true
 		if (bClear)
 			m_listThickLines.clear();
 	}
-#elif defined(USE_DIRECTX_RENDERER)
-	EffectManager* pEffectManager = CGlobals::GetEffectManager();
-	pEffectManager->BeginEffect(TECH_NONE, &(CGlobals::GetSceneState()->m_pCurrentEffect));
-#endif
-	// set render state
-	RenderDevicePtr pRenderDevice = CGlobals::GetRenderDevice();
-	if (pRenderDevice)
-	{
-		float ViewportSizeX = (float)CGlobals::GetViewportManager()->GetActiveViewPort()->GetWidth();
-		Matrix4 viewProjMatrix = CGlobals::GetViewMatrixStack().SafeGetTop() * CGlobals::GetProjectionMatrixStack().SafeGetTop();
-		Matrix4 InverseViewProjMatrix;
-		InverseViewProjMatrix = viewProjMatrix.inverse();
-		Vector3 CameraX, CameraY, CameraEye;
-		ParaVec3TransformCoord(&CameraX, &Vector3::UNIT_X, &InverseViewProjMatrix);
-		ParaVec3TransformCoord(&CameraY, &Vector3::UNIT_Y, &InverseViewProjMatrix);
-		ParaVec3TransformCoord(&CameraEye, &Vector3::ZERO, &InverseViewProjMatrix);
-		CameraX -= CameraEye;
-		CameraY -= CameraEye;
-		CameraX.normalise();
-		CameraY.normalise();
 
-
-		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
-		pRenderDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
-		pRenderDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
-		CGlobals::GetRenderDevice()->SetTexture(0, 0);
-
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetIdentityMatrix()->GetConstPointer());
-		CGlobals::GetRenderDevice()->SetFVF(LINEVERTEX::FVF);
-		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_NONE);
-
-		if(pEffect)
-			pEffect->CommitChanges();
-
-		float OrthoZoomFactor = 1.f; //  tan(fAspectRatio*0.5f);
-
-		const Matrix4& matProj = CGlobals::GetProjectionMatrixStack().SafeGetTop();
-		const bool bIsPerspective = matProj._44 < 1.0f ? true : false;
-		if (!bIsPerspective)
-		{
-			OrthoZoomFactor = 1.0f / matProj._11;
-		}
-
-		int32 LineIndex = 0;
-		const int32 MaxLinesPerBatch = 512;
-		while (LineIndex < (int)m_listThickLines.size())
-		{
-			int32 FirstLineThisBatch = LineIndex;
-			float DepthBiasThisBatch = m_listThickLines[LineIndex].DepthBias;
-			while (++LineIndex < (int)m_listThickLines.size())
-			{
-				if ((m_listThickLines[LineIndex].DepthBias != DepthBiasThisBatch)
-					|| ((LineIndex - FirstLineThisBatch) >= MaxLinesPerBatch))
-				{
-					break;
-				}
-			}
-			int32 NumLinesThisBatch = LineIndex - FirstLineThisBatch;
-
-			const bool bEnableMSAA = true;
-			const bool bEnableLineAA = false;
-
-			s_VertexData.resize(8 * 3 * sizeof(LINEVERTEX) * NumLinesThisBatch);
-
-			LINEVERTEX* ThickVertices = (LINEVERTEX*)(&s_VertexData[0]);
-
-			for (int i = 0; i < NumLinesThisBatch; ++i)
-			{
-				const BatchedThickLines& Line = m_listThickLines[FirstLineThisBatch + i];
-				const float Thickness = Math::Abs(Line.Thickness);
-
-				float StartW = 1.f;
-				float EndW = 1.f;
-				if (Line.IsScreenSpace())
-				{
-					Vector4 vStart, vEnd;
-					vStart = Vector4(Line.vStart.x, Line.vStart.y, Line.vStart.z, 1.f) * viewProjMatrix;
-					vEnd = Vector4(Line.vEnd.x, Line.vEnd.y, Line.vEnd.z, 1.f) * viewProjMatrix;
-					StartW = vStart.w;
-					EndW = vEnd.w;
-				}
-				const float ScalingStart = Line.IsScreenSpace() ? StartW / ViewportSizeX : 1.0f;
-				const float ScalingEnd = Line.IsScreenSpace() ? EndW / ViewportSizeX : 1.0f;
-
-				OrthoZoomFactor = Line.IsScreenSpace() ? OrthoZoomFactor : 1.0f;
-
-				const float ScreenSpaceScaling = Line.IsScreenSpace() ? 2.0f : 1.0f;
-
-				const float StartThickness = Thickness * ScreenSpaceScaling * OrthoZoomFactor * ScalingStart;
-				const float EndThickness = Thickness * ScreenSpaceScaling * OrthoZoomFactor * ScalingEnd;
-
-				const Vector3 WorldPointXS = CameraX * StartThickness * 0.5f;
-				const Vector3 WorldPointYS = CameraY * StartThickness * 0.5f;
-
-				const Vector3 WorldPointXE = CameraX * EndThickness * 0.5f;
-				const Vector3 WorldPointYE = CameraY * EndThickness * 0.5f;
-
-				// Generate vertices for the point such that the post-transform point size is constant.
-
-				Vector3 vStart(Line.vStart.x, Line.vStart.y, Line.vStart.z);
-				Vector3 vEnd(Line.vEnd.x, Line.vEnd.y, Line.vEnd.z);
-				DWORD color = Line.Color;
-
-				// Begin point
-				ThickVertices[0].p = vStart + WorldPointXS - WorldPointYS; ThickVertices[0].color = color; // 0S
-				ThickVertices[1].p = vStart + WorldPointXS + WorldPointYS; ThickVertices[1].color = color;  // 1S
-				ThickVertices[2].p = vStart - WorldPointXS - WorldPointYS; ThickVertices[2].color = color;  // 2S
-
-				ThickVertices[3].p = vStart + WorldPointXS + WorldPointYS; ThickVertices[3].color = color;  // 1S
-				ThickVertices[4].p = vStart - WorldPointXS - WorldPointYS; ThickVertices[4].color = color;  // 2S
-				ThickVertices[5].p = vStart - WorldPointXS + WorldPointYS; ThickVertices[5].color = color;  // 3S
-
-				// Ending point
-				ThickVertices[0 + 6].p = vEnd + WorldPointXE - WorldPointYE; ThickVertices[6].color = color; // 0E
-				ThickVertices[1 + 6].p = vEnd + WorldPointXE + WorldPointYE; ThickVertices[7].color = color; // 1E
-				ThickVertices[2 + 6].p = vEnd - WorldPointXE - WorldPointYE; ThickVertices[8].color = color; // 2E
-
-				ThickVertices[3 + 6].p = vEnd + WorldPointXE + WorldPointYE; ThickVertices[9].color = color; // 1E
-				ThickVertices[4 + 6].p = vEnd - WorldPointXE - WorldPointYE; ThickVertices[10].color = color; // 2E
-				ThickVertices[5 + 6].p = vEnd - WorldPointXE + WorldPointYE; ThickVertices[11].color = color; // 3E
-
-				// First part of line
-				ThickVertices[0 + 12].p = vStart - WorldPointXS - WorldPointYS; ThickVertices[12].color = color; // 2S
-				ThickVertices[1 + 12].p = vStart + WorldPointXS + WorldPointYS; ThickVertices[13].color = color; // 1S
-				ThickVertices[2 + 12].p = vEnd - WorldPointXE - WorldPointYE; ThickVertices[14].color = color; // 2E
-
-				ThickVertices[3 + 12].p = vStart + WorldPointXS + WorldPointYS; ThickVertices[15].color = color; // 1S
-				ThickVertices[4 + 12].p = vEnd + WorldPointXE + WorldPointYE; ThickVertices[16].color = color; // 1E
-				ThickVertices[5 + 12].p = vEnd - WorldPointXE - WorldPointYE; ThickVertices[17].color = color; // 2E
-
-				// Second part of line
-				ThickVertices[0 + 18].p = vStart - WorldPointXS + WorldPointYS; ThickVertices[18].color = color; // 3S
-				ThickVertices[1 + 18].p = vStart + WorldPointXS - WorldPointYS; ThickVertices[19].color = color; // 0S
-				ThickVertices[2 + 18].p = vEnd - WorldPointXE + WorldPointYE; ThickVertices[20].color = color; // 3E
-
-				ThickVertices[3 + 18].p = vStart + WorldPointXS - WorldPointYS; ThickVertices[21].color = color; // 0S
-				ThickVertices[4 + 18].p = vEnd + WorldPointXE - WorldPointYE; ThickVertices[22].color = color; // 0E
-				ThickVertices[5 + 18].p = vEnd - WorldPointXE + WorldPointYE; ThickVertices[23].color = color; // 3E
-
-				ThickVertices += 24;
-			}
-			pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, *(DWORD*)&DepthBiasThisBatch);
-			CGlobals::GetRenderDevice()->DrawPrimitiveUP( EPrimitiveType::TRIANGLELIST,
-				8 * NumLinesThisBatch, (LINEVERTEX*)(&s_VertexData[0]), sizeof(LINEVERTEX));
-		}
-		pRenderDevice->SetRenderState(ERenderState::CULLMODE, RSV_CULL_CCW);
-		pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
-		pRenderDevice->SetRenderState(ERenderState::DEPTHBIAS, 0);
-	}
-#ifdef USE_OPENGL_RENDERER
 	pEffect->EndPass();
 	pEffect->end();
-#endif
-
 	if (bClear)
 		m_listThickLines.clear();
 }

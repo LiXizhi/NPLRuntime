@@ -50,20 +50,20 @@ namespace ParaTerrain
 		bool RemoveAllDetail();
 		
 		/// \brief Binds the overall texture to a texture object. Used for rendering
-		DeviceTexturePtr_type BindTexture();
+		IParaEngine::ITexture* BindTexture();
 		/// \brief Binds the overall mask to a texture object.Used for rendering
-		DeviceTexturePtr_type BindMask();
+		IParaEngine::ITexture* BindMask();
 
 		/// \brief Gets the number of DetailTexture layers that have been added.
 		int GetNumberOfDetails();
 		/** Binds the mask of the specified DetailTexture layer.
 		* @param index: if this is -1, the base layer is binded
 		*/
-		DeviceTexturePtr_type BindMask(int index);
+		IParaEngine::ITexture* BindMask(int index);
 		/** Binds the detail texture of the specified DetailTexture layer. 
 		* @param index: if this is -1, the base layer is binded
 		*/
-		DeviceTexturePtr_type BindDetail(int index);
+		IParaEngine::ITexture* BindDetail(int index);
 		/// \brief Unbinds the overall texture and all DetailTexture masks and detail textures.
 		void UnbindAll();
 		/** Gets the specified DetailTexture layer.

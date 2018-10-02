@@ -10,8 +10,7 @@
 #ifdef USE_OPENGL_RENDERER
 #include "RenderDeviceOpenGL.h"
 #include "TextureEntity.h"
-#include "OpenGLWrapper/GLProgram.h"
-#include "OpenGLWrapper/GLTexture2D.h"
+#include "GLShaderDefine.h"
 //#include "CGUIRootLayer.h"
 #include "EffectManager.h"
 #include "ParaWorldAsset.h"
@@ -286,7 +285,8 @@ void ParaEngine::CSpriteRendererOpenGL::FlushQuads()
 
 		// do the rendering with opengl
 		{
-			pRenderDevice->SetTexture(0, m_sprites[start].texture);
+			m_pEffectFile->setTexture(0, m_sprites[start].texture);
+			m_pEffectFile->CommitChanges();
 			DrawTriangles(&m_vertices[6 * start], count * 2);
 		}
 	}
@@ -302,11 +302,11 @@ void ParaEngine::CSpriteRendererOpenGL::DrawTriangles(const sprite_vertex* pVert
 {
 #define kQuadSize sizeof(sprite_vertex)
 	// vertices
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
+	glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->pos));
 	// colors
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
+	glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_COLOR, 4, GL_UNSIGNED_BYTE, GL_TRUE, kQuadSize, (GLvoid*)&(pVertices->col));
 	// tex coords
-	glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
+	glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_TEX_COORD, 2, GL_FLOAT, GL_FALSE, kQuadSize, (GLvoid*)&(pVertices->tex));
 
 	CGlobals::GetRenderDevice()->DrawPrimitive( EPrimitiveType::TRIANGLELIST, 0, nTriangleCount);
 }
@@ -321,14 +321,17 @@ void ParaEngine::CSpriteRendererOpenGL::SetTextMode(bool bIsTextMode /*= true*/)
 
 void ParaEngine::CSpriteRendererOpenGL::PrepareDraw()
 {
-	if (m_bIsTextMode != m_bIsTextModeDevice)
+	if (m_pEffectFile != nullptr)
 	{
-		Flush();
-		m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
-		m_bIsTextModeDevice = m_bIsTextMode;
-	}
+		if (m_bIsTextMode != m_bIsTextModeDevice)
+		{
+			Flush();
+			m_pEffectFile->SetBool("k_bBoolean0", !m_bIsTextMode);
+			m_bIsTextModeDevice = m_bIsTextMode;
+		}
 
-	m_pEffectFile->CommitChanges();
+		m_pEffectFile->CommitChanges();
+	}
 }
 
 
