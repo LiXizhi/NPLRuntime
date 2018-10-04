@@ -507,9 +507,9 @@ namespace ParaEngine
 		Note: post rendering are performed in the order listed above.
 		*/
 		SceneState::List_PostRenderObject_TrackRef_Type		listPostRenderingObjects;   /// list of general post rendering object
-#ifdef USE_DIRECTX_RENDERER
+
 		SceneState::List_CSpriteObjectPtr_Type	listPRSprite;				/// list of Post Rendering object: Sprite
-#endif
+
 		SceneState::List_PostRenderObject_TrackRef_Type		listPRBiped;				/// list of Post Rendering object: biped
 		SceneState::List_PostRenderObject_TrackRef_Type		listPRTransparentBiped;		/// list of Post Rendering object: biped with alpha blending
 

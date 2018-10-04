@@ -119,7 +119,7 @@ Texture *DetailTexture::GetTexture()
 	return m_pTexture;
 }
 
-DeviceTexturePtr_type DetailTexture::BindMask()
+IParaEngine::ITexture* DetailTexture::BindMask()
 {
 	if(m_pMask)
 		return m_pMask->UploadTexture();
@@ -127,7 +127,7 @@ DeviceTexturePtr_type DetailTexture::BindMask()
 		return 0;
 }
 
-DeviceTexturePtr_type DetailTexture::BindTexture()
+IParaEngine::ITexture* DetailTexture::BindTexture()
 {
 	if(m_pTexture)
 		return m_pTexture->UploadTexture();

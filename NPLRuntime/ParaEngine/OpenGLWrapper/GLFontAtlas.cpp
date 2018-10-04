@@ -2,7 +2,6 @@
 #include "iconv.h"
 #include "GLFontAtlas.h"
 #include "GLFont.h"
-#include "GLTexture2D.h"
 #include "GLFontFreeType.h"
 #include "StringHelper.h"
 
@@ -266,7 +265,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     FontLetterDefinition tempDef;
 
     auto scaleFactor = GL_CONTENT_SCALE_FACTOR();
-    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ? PixelFormat::A8L8 : PixelFormat::A8;
+    auto  pixelFormat = _fontFreeType->getOutlineSize() > 0 ?EPixelFormat::A8L8 : EPixelFormat::A8;
 
     float startY = _currentPageOrigY;
 
@@ -289,7 +288,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                 if (_currentPageOrigY + _lineHeight + _letterPadding + _letterEdgeExtend >= CacheTextureHeight)
                 {
                     unsigned char *data = nullptr;
-                    if (pixelFormat == PixelFormat::A8L8)
+                    if (pixelFormat == EPixelFormat::A8L8)
                     {
                         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
                     }
@@ -297,25 +296,16 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
                     {
                         data = _currentPageData + CacheTextureWidth * (int)startY;
                     }
-                    _atlasTextures[_currentPage]->updateWithData(data, 0, startY,
-                        CacheTextureWidth, CacheTextureHeight - startY);
+      
+					_atlasTextures[_currentPage]->UpdateImage(0, 0, startY, CacheTextureWidth, CacheTextureHeight - startY, data);
 
                     startY = 0.0f;
 
                     _currentPageOrigY = 0;
                     memset(_currentPageData, 0, _currentPageDataSize);
                     _currentPage++;
-                    auto tex = new (std::nothrow) GLTexture2D;
-                    if (_antialiasEnabled)
-                    {
-                        tex->setAntiAliasTexParameters();
-                    }
-                    else
-                    {
-                        tex->setAliasTexParameters();
-                    }
-                    tex->initWithData(_currentPageData, _currentPageDataSize,
-                        pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
+					auto tex = CGlobals::GetRenderDevice()->CreateTexture(CacheTextureWidth, CacheTextureHeight,pixelFormat,ETextureUsage::Default);
+					tex->UpdateImage(0, 0, 0, CacheTextureWidth, CacheTextureHeight, _currentPageData);
                     addTexture(tex, _currentPage);
                     tex->Release();
                 }
@@ -357,7 +347,7 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     }
 
     unsigned char *data = nullptr;
-    if (pixelFormat == PixelFormat::A8L8)
+    if (pixelFormat == EPixelFormat::A8L8)
     {
         data = _currentPageData + CacheTextureWidth * (int)startY * 2;
     }
@@ -365,18 +355,18 @@ bool GLFontAtlas::prepareLetterDefinitions(const std::u16string& utf16Text)
     {
         data = _currentPageData + CacheTextureWidth * (int)startY;
     }
-    _atlasTextures[_currentPage]->updateWithData(data, 0, startY, CacheTextureWidth, _currentPageOrigY - startY + _currLineHeight);
+    _atlasTextures[_currentPage]->UpdateImage(0, 0, startY, CacheTextureWidth, _currentPageOrigY - startY + _currLineHeight,data);
 
     return true;
 }
 
-void GLFontAtlas::addTexture(GLTexture2D *texture, int slot)
+void GLFontAtlas::addTexture(IParaEngine::ITexture *texture, int slot)
 {
-    texture->addref();
+    texture->AddRef();
     _atlasTextures[slot] = texture;
 }
 
-GLTexture2D* GLFontAtlas::getTexture(int slot)
+IParaEngine::ITexture* GLFontAtlas::getTexture(int slot)
 {
 	init();
     return _atlasTextures[slot];
@@ -395,7 +385,8 @@ void GLFontAtlas::setAliasTexParameters()
         _antialiasEnabled = false;
         for (const auto & tex : _atlasTextures)
         {
-            tex.second->setAliasTexParameters();
+			tex.second->SetMinFilter(ETextureFilter::Point);
+			tex.second->SetMagFilter(ETextureFilter::Point);
         }
     }
 }
@@ -408,7 +399,8 @@ void GLFontAtlas::setAntiAliasTexParameters()
         _antialiasEnabled = true;
         for (const auto & tex : _atlasTextures)
         {
-            tex.second->setAntiAliasTexParameters();
+			tex.second->SetMinFilter(ETextureFilter::Linear);
+			tex.second->SetMagFilter(ETextureFilter::Linear);
         }
     }
 }
@@ -421,7 +413,7 @@ void ParaEngine::GLFontAtlas::init()
 	{
 		_lineHeight = _font->getFontMaxHeight();
 		_fontAscender = _fontFreeType->getFontAscender();
-		auto texture = new (std::nothrow) GLTexture2D;
+	
 		_currentPage = 0;
 		_currentPageOrigX = 0;
 		_currentPageOrigY = 0;
@@ -442,19 +434,20 @@ void ParaEngine::GLFontAtlas::init()
 
 		_currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
 		memset(_currentPageData, 0, _currentPageDataSize);
+		auto  pixelFormat = outlineSize > 0 ? EPixelFormat::A8L8 : EPixelFormat::A8;
+		auto texture = CGlobals::GetRenderDevice()->CreateTexture(CacheTextureWidth, CacheTextureHeight, pixelFormat, ETextureUsage::Default);
+		texture->UpdateImage(0,0, 0, CacheTextureWidth, CacheTextureHeight, _currentPageData);
 
-		auto  pixelFormat = outlineSize > 0 ? PixelFormat::A8L8 : PixelFormat::A8;
-		texture->initWithData(_currentPageData, _currentPageDataSize,
-			pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth, CacheTextureHeight));
-
-		/*if (_antialiasEnabled)
+		if (_antialiasEnabled)
 		{
-			texture->setAntiAliasTexParameters();
+			texture->SetMinFilter(ETextureFilter::Linear);
+			texture->SetMagFilter(ETextureFilter::Linear);
 		}
 		else
 		{
-			texture->setAliasTexParameters();
-		}*/
+			texture->SetMinFilter(ETextureFilter::Point);
+			texture->SetMagFilter(ETextureFilter::Point);
+		}
 
 		addTexture(texture, 0);
 		texture->Release();

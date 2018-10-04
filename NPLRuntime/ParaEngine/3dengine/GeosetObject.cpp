@@ -109,7 +109,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 							for(int y=-1; y<=1; y+=2)
 							{
 								Vector3 vOffsets(x*border_width,y*border_width,0.f);
-								pEffectFile->GetDXEffect()->SetRawValue("g_offsets",&vOffsets,0,sizeof(Vector3));
+								pEffectFile->GetDeviceEffect()->SetRawValue("g_offsets",&vOffsets,0,sizeof(Vector3));
 								_draw(sceneState,mat);
 							}
 						}
@@ -128,7 +128,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 					if(pEffectFile!=0)
 					{
 						Vector3 vColorAdd(0.2f,0.2f,0.2f);
-						pEffectFile->GetDXEffect()->SetRawValue("g_color_add",&vColorAdd,0,sizeof(Vector3));
+						pEffectFile->GetDeviceEffect()->SetRawValue("g_color_add",&vColorAdd,0,sizeof(Vector3));
 
 						_draw(sceneState,mat);
 						bIsRendered=true;

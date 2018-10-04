@@ -82,7 +82,7 @@ namespace ParaEngine
 					pEffectFile->BeginPass(currentPass);
 				}
 
-				pEffectFile->setParameter(CEffectFile::k_diffuseMaterialColor,(const float*)&(m_pModel->m_modelParts[i]->GetDiffuseColor()));	
+				pEffectFile->setParameter(CEffectFile::k_diffuseMaterialColor,(const float*)&(m_pModel->m_modelParts[i]->GetDiffuseColor()),sizeof(LinearColor));	
 				pEffectFile->CommitChanges();
 				modelPart->SubmitGeometry(CGlobals::GetRenderDevice());
 			}

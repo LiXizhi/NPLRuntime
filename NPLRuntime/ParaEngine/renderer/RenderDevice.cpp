@@ -8,7 +8,7 @@
 #include "ParaEngine.h"
 #include "RenderDevice.h"
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
+
 #endif
 using namespace ParaEngine;
 
@@ -34,13 +34,7 @@ void ParaEngine::RenderDeviceBase::IncrementDrawBatchAndVertices(int nDrawCount,
 
 int ParaEngine::RenderDeviceBase::GetMaxSimultaneousTextures()
 {
-#ifdef USE_DIRECTX_RENDERER
-	return CGlobals::GetDirectXEngine().m_d3dCaps.MaxSimultaneousTextures;
-#elif defined (USE_OPENGL_RENDERER)
-	return 4;
-#else
-	return 0;
-#endif
+	return CGlobals::GetRenderDevice()->GetCaps().MaxSimultaneousTextures;
 }
 
 

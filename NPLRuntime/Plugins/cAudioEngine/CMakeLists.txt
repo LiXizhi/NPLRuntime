@@ -110,12 +110,12 @@ if (CAUDIO_IOS_BUILD)
   add_definitions(-DSTATIC_LIBRARY)
 elseif (APPLE AND NOT CAUDIO_IOS_BUILD)
 
-  # Set 10.5 as the base SDK by default
+  # Set 10.14 as the base SDK by default
   set(XCODE_ATTRIBUTE_SDKROOT macosx)
   if (NOT CMAKE_OSX_SYSROOT)
     set(CMAKE_OSX_SYSROOT macosx)
   endif()	
-  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.5)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
 
   #if (NOT CMAKE_OSX_ARCHITECTURES)
   #  set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_64_BIT))

@@ -3,7 +3,7 @@
 namespace ParaEngine
 {
 #ifdef USE_DIRECTX_RENDERER
-	#include "shaders/d3d9_spec/light_scattering_constants.h"
+	#include "shaders/common/light_scattering_constants.h"
 #else
 	//
 	// Define a structure used by both C++ and HLSL

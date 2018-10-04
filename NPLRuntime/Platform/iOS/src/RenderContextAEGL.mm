@@ -1,5 +1,4 @@
 #import <UIKit/UIKit.h>
-
 #include "ParaEngine.h"
 #include "RenderContextAEGL.h"
 #include "RenderWindowiOS.h"
@@ -29,6 +28,12 @@ IRenderDevice* RenderContextAEGL::CreateDevice(const RenderConfiguration & cfg)
     
     EAGLContext * glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
     [EAGLContext setCurrentContext:glContext];
+    
+    if(!loadGL())
+    {
+         NSLog(@"Can't load gl");
+        return nullptr;
+    }
     
     RenderDeviceAEGL* device = new RenderDeviceAEGL(glContext,glLayer);
     

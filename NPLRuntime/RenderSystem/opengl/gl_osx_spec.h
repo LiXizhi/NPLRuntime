@@ -1,7 +1,9 @@
 #pragma once
 #ifndef __GL_OSX_SPEC_H__
 #define __GL_OSX_SPEC_H__
-#import <OpenGL/gl.h>
+
+#include "glad/glad.h"
+
 
 #define glBindVertexArray glBindVertexArrayAPPLE
 #define glGenVertexArrays glGenVertexArraysAPPLE

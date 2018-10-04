@@ -43,8 +43,8 @@ namespace ParaEngine
 				if(pEffect->BeginPass(0))
 				{
 					auto pDevice = CGlobals::GetRenderDevice();
-					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource(0,m_pGeometryBuffer,0,sizeof(VertexPositionIndex));
-					GETD3D(CGlobals::GetRenderDevice())->SetIndices(m_pIndexBuffer);
+					CGlobals::GetRenderDevice()->SetStreamSource(0,m_pGeometryBuffer,0,sizeof(VertexPositionIndex));
+					CGlobals::GetRenderDevice()->SetIndices(m_pIndexBuffer);
 
 					//step 1:
 					pDevice->SetRenderState(ERenderState::ZWRITEENABLE,false);
@@ -95,19 +95,22 @@ namespace ParaEngine
 
 	void DropShadowRenderer::DrawAllBatch(IRenderDevice* pDevice)
 	{
-		
+#ifdef USE_DIRECTX_RENDERER
 		uint32_t batchCount = m_instanceCount / g_maxInstancePerBatch + 1;
-		for(uint32_t i=0;i<batchCount;i++)
+		for (uint32_t i = 0; i < batchCount; i++)
 		{
-			int currentInstancCount = (i<(batchCount-1))?g_maxInstancePerBatch:(m_instanceCount - i*g_maxInstancePerBatch);
-			
-			if(currentInstancCount > 0)
+			int currentInstancCount = (i < (batchCount - 1)) ? g_maxInstancePerBatch : (m_instanceCount - i * g_maxInstancePerBatch);
+
+			if (currentInstancCount > 0)
 			{
 				uint32_t offset = i * g_maxInstancePerBatch * 4 * 3;
-				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(20,&m_constantBuffer[offset] ,currentInstancCount*3);
-				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST,0,0,currentInstancCount*m_instanceVertexCount,0,currentInstancCount*m_instanceIndexCount/3);
+				GETD3D(CGlobals::GetRenderDevice())->SetVertexShaderConstantF(20, &m_constantBuffer[offset], currentInstancCount * 3);
+				CGlobals::GetRenderDevice()->DrawIndexedPrimitive(EPrimitiveType::TRIANGLELIST, 0, 0, currentInstancCount*m_instanceVertexCount, 0, currentInstancCount*m_instanceIndexCount / 3);
 			}
 		}
+#endif
+		
+
 	}
 
 	//called at the beginning of each frame
@@ -186,8 +189,11 @@ namespace ParaEngine
 
 	void DropShadowRenderer::DeleteDeviceObjects()
 	{
+#ifdef USE_DIRECTX_RENDERER
 		SAFE_RELEASE(m_pGeometryBuffer);
 		SAFE_RELEASE(m_pIndexBuffer);
+#endif
+
 	}
 
 	void DropShadowRenderer::Cleanup()
@@ -198,6 +204,7 @@ namespace ParaEngine
 
 	void DropShadowRenderer::CreateBuffer()
 	{
+#ifdef USE_DIRECTX_RENDERER
 		DeleteDeviceObjects();
 
 		int tesselationFactor = 16;
@@ -249,6 +256,7 @@ namespace ParaEngine
 		}
 		m_pIndexBuffer->Unlock();
 		delete[] pIndices;
+#endif
 	}
 	
 	void DropShadowRenderer::CreateCylinder(float height,float radius,int tesselationFactor,Vector3* pVertices,uint16_t* pIndices)

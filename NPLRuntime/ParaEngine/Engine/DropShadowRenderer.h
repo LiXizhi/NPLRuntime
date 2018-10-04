@@ -39,8 +39,8 @@ namespace ParaEngine
 		static const uint32_t g_maxInstancePerBatch = 70;
 		static const uint32_t g_maxInstanceCount = 100;
 
-		IDirect3DVertexBuffer9* m_pGeometryBuffer;
-		IDirect3DIndexBuffer9* m_pIndexBuffer;
+		VertexBufferDevicePtr_type m_pGeometryBuffer;
+		IndexBufferDevicePtr_type m_pIndexBuffer;
 		
 		uint16_t m_instanceVertexCount;
 		uint16_t m_instanceIndexCount;

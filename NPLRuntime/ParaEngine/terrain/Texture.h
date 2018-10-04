@@ -59,7 +59,7 @@ namespace ParaTerrain
 
 		/// If SetBufferPersistent() has been called on this Texture object, then the associated 2D image data is maintained in system RAM for later calls to UploadTexture(). Otherwise, the image data is freed from system RAM and only the OpenGL texture remains (hopefully residing in video RAM.)
 		/// \return The texture id of the OpenGL texture object.
-		 DeviceTexturePtr_type UploadTexture();
+		 IParaEngine::ITexture*  UploadTexture();
 		/// \brief Unbinds the OpenGL texture object, releasing texture memory. 
 
 		/// If SetBufferPersistent() has been called on this Texture object, it can be rebound by calling UploadTexture().
@@ -149,7 +149,7 @@ namespace ParaTerrain
 		bool SetTextureEntity(TextureEntity* texture);
 
 		/// get Texture device pointer
-		DeviceTexturePtr_type GetDevicePointer();
+		IParaEngine::ITexture* GetDevicePointer();
 		bool IsEqual(ParaEngine::TextureEntity* pEntity);
 	private:
 		void Init(const uint8 * pBuffer, int width, int height, int stride, int borderSize, bool bClamp, bool useCompression, bool useAlpha = false);

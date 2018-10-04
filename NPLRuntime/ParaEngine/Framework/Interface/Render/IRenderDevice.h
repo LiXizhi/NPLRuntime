@@ -5,8 +5,12 @@
 #include "Framework/RenderSystem/RenderTypes.h"
 #include "Framework/Common/Math/Rect.h"
 #include "Framework/Common/Math/Color4f.h"
+#include "Framework/Interface/Render/ITexture.h"
+#include "Framework/Common/Image.hpp"
 #include "Core/PEtypes.h"
+#include "IEffect.h"
 #include "math/ParaViewport.h"
+
 
 
 
@@ -16,39 +20,49 @@
 	#define PE_CHECK_GL_ERROR_DEBUG() ((void)0)
 #endif
 
-namespace ParaEngine
+
+
+namespace IParaEngine
 {
-#if defined(USE_DIRECTX_RENDERER)
-using DeviceTexturePtr_type = IDirect3DTexture9*;
-using VertexBufferDevicePtr_type = IDirect3DVertexBuffer9* ;
-using IndexBufferDevicePtr_type =IDirect3DIndexBuffer9*  ;
-using VertexDeclarationPtr = IDirect3DVertexDeclaration9* ;
-using VertexElement = D3DVERTEXELEMENT9 ;
-#elif defined(USE_OPENGL_RENDERER)
-
-	struct VertexElement;
-	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
-	class GLTexture2D;
-
-	typedef GLTexture2D* DeviceTexturePtr_type;
-	typedef uint32_t VertexBufferDevicePtr_type;
-	typedef uint32_t IndexBufferDevicePtr_type;
-#else
-	struct VertexElement;
-	class CVertexDeclaration; typedef CVertexDeclaration* VertexDeclarationPtr;
-
-	typedef uint32_t DeviceTexturePtr_type;
-	typedef uint32_t VertexBufferDevicePtr_type;
-	typedef uint32_t IndexBufferDevicePtr_type;
-#endif
+	class ITexture;
 }
-
 
 namespace ParaEngine
 {
 	class CVertexDeclaration;
 	class ParaViewport;
 	class IRenderContext;
+
+	struct RenderDeviceCaps
+	{
+		bool DynamicTextures;
+		bool MRT;
+		bool NPOT; // supports the use of 2D textures with dimensions that are not powers of two
+		uint32_t MaxSimultaneousTextures;
+		bool ScissorTest;
+		bool Stencil;
+		uint32_t NumSimultaneousRTs;
+		bool SupportS3TC;
+		bool Texture_R32F;
+		bool Texture_RGBA16F;
+        bool BorderClamp;
+		RenderDeviceCaps()
+			:DynamicTextures(false)
+			,MRT(false)
+			,NPOT(false)
+			,MaxSimultaneousTextures(0)
+			,ScissorTest(false)
+			,Stencil(false)
+			,NumSimultaneousRTs(0)
+			,SupportS3TC(false)
+			,Texture_R32F(false)
+			,Texture_RGBA16F(false)
+            ,BorderClamp(false)
+		{
+
+		}
+	};
+
 
 	class IRenderDevice
 	{
@@ -61,7 +75,6 @@ namespace ParaEngine
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) = 0;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) = 0;
 		virtual int GetMaxSimultaneousTextures() = 0;
-		virtual bool SetTexture(uint32_t stage, DeviceTexturePtr_type texture) = 0;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) = 0;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount,const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) = 0;
@@ -71,7 +84,7 @@ namespace ParaEngine
 			uint32_t NumVertices,
 			uint32_t PrimitiveCount,
 			const void * pIndexData,
-			PixelFormat IndexDataFormat,
+			EPixelFormat IndexDataFormat,
 			const void* pVertexStreamZeroData,
 			uint32_t VertexStreamZeroStride) = 0;
 
@@ -103,10 +116,27 @@ namespace ParaEngine
 		virtual bool EndScene() = 0;
 
 		virtual bool Present() = 0;
-
+		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) = 0;
+		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture* texture) = 0;
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */
 		static bool CheckRenderError(const char* filename = NULL, const char* func = NULL, int nLine = 0);
+
+		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData,uint32_t srcDataLen, IParaEngine::IEffectInclude* include,std::string& error) = 0;
+		
+		virtual IParaEngine::ITexture* CreateTexture(uint32_t width, uint32_t height, EPixelFormat format,ETextureUsage usage) = 0;
+		virtual IParaEngine::ITexture* CreateTexture(const ImagePtr& image) = 0;
+
+		virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) = 0;
+		virtual bool SetDepthStencil(IParaEngine::ITexture* target) = 0;
+
+		virtual const RenderDeviceCaps& GetCaps() = 0;
+
+		virtual IParaEngine::ITexture* GetRenderTarget(uint32_t index) = 0;
+		virtual IParaEngine::ITexture* GetDepthStencil() = 0;
+
+		virtual  IParaEngine::ITexture* GetBackbufferRenderTarget() = 0;
+		virtual  IParaEngine::ITexture* GetBackbufferDepthStencil() = 0;
 	};
 
 	using IRenderDevicePtr = std::shared_ptr<IRenderDevice>;

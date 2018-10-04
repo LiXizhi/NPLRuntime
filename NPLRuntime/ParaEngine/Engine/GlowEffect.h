@@ -36,17 +36,13 @@ namespace ParaEngine
 		void SaveGlowTexturesToFile(const string& filename);
 	private:
 		/** holding the current back buffer information. */
-		LPDIRECT3DSURFACE9 m_pBackBuffer, m_pZBuffer; 
+		IParaEngine::ITexture* m_pBackBuffer, *m_pZBuffer; 
 
-		LPDIRECT3DTEXTURE9 m_pRTHalfSizeTexture;
-		LPDIRECT3DTEXTURE9 m_pRTGlowSourceTexture;
-		LPDIRECT3DTEXTURE9 m_pRTBlurHorizTexture;
-		LPDIRECT3DTEXTURE9 m_pRTBlurVertTexture; // usually same RT texture as m_pRTGlowSourceTexture
+		IParaEngine::ITexture* m_pRTHalfSizeTexture;
+		IParaEngine::ITexture* m_pRTGlowSourceTexture;
+		IParaEngine::ITexture* m_pRTBlurHorizTexture;
+		IParaEngine::ITexture* m_pRTBlurVertTexture; // usually same RT texture as m_pRTGlowSourceTexture
 
-		LPDIRECT3DSURFACE9 m_pRTHalfSizeSurface;
-		LPDIRECT3DSURFACE9 m_pRTGlowSourceSurface;
-		LPDIRECT3DSURFACE9 m_pRTBlurHorizSurface;
-		LPDIRECT3DSURFACE9 m_pRTBlurVertSurface;
 		
 		float m_glowtextureWidth;
 		float m_glowtextureHeight;

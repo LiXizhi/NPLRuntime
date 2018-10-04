@@ -1,14 +1,12 @@
 #include <stdexcept>
 #include "ParaEngine.h"
-#include "renderer/VertexDeclarationOpenGL.h"
 #include "math/ParaViewport.h"
 #include "RenderDeviceOpenGL.h"
 #include "ViewportManager.h"
-#include "OpenGLWrapper/GLType.h"
-#include "OpenGLWrapper/GLTexture2D.h"
-//#include "math/ParaColor.h"
-
-
+#include "effect/EffectOpenGL.h"
+#include "Framework/Codec/ImageParser.h"
+#include "texture/TextureOpenGL.h"
+#include "renderer/VertexDeclarationOpenGL.h"
 
 using namespace ParaEngine;
 
@@ -49,6 +47,7 @@ namespace ParaEngine
 			assert(false);//Unkonw blend value
 			break;
 		}
+		
 		return 0;
 	}
 }
@@ -80,6 +79,11 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	,m_CurrentIndexBuffer(-1)
 	,m_CurrentVertexBuffer(-1)
 	,m_CurrentVertexDeclaration(0)
+	,m_CurrentDepthStencil(nullptr)
+	,m_backbufferDepthStencil(nullptr)
+	,m_backbufferRenderTarget(nullptr)
+	,m_CurrentRenderTargets(nullptr)
+
 {
 	for (int i = 0;i<8;i++)
 	{
@@ -89,12 +93,17 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 		}
 	}
 
-	
+	InitGLExtList();
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 {
-	GL::ClearCache();
+	for (auto pRes : m_Resources)
+	{
+		delete pRes;
+	}
+	m_Resources.clear();
+	delete[] m_CurrentRenderTargets;
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -285,30 +294,18 @@ bool ParaEngine::RenderDeviceOpenGL::SetClipPlane(uint32_t Index, const float* p
 bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat /*= 0*/, uint32_t nDataType /*= 0*/)
 {
 	// needs to invert Y, since opengl use upward Y.
-	glReadPixels(nLeft, m_RenderTargetHeight - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
+	glReadPixels(nLeft, GetRenderTarget(0)->GetHeight() - nTop - nHeight, nWidth, nHeight, GL_RGBA, GL_UNSIGNED_BYTE, (GLvoid*)(pDataOut));
 	return true;
 }
 
 int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
 {
-	return 4;
-}
-
-
-bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t stage, DeviceTexturePtr_type texture)
-{
-	//glActiveTexture(GL_TEXTURE0 + stage);
-	//glBindTexture(GL_TEXTURE_2D, texture);
-	texture->bindN(stage);
-
-	PE_CHECK_GL_ERROR_DEBUG();
-	//auto error = glGetError();
-	return true;
+	return GetCaps().MaxSimultaneousTextures;
 }
 
 
 
-bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, PixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
+bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
 	ApplyBlendingModeChange();
 	if (m_CurrentVertexDeclaration)
@@ -406,6 +403,29 @@ bool ParaEngine::RenderDeviceOpenGL::SetVertexDeclaration(CVertexDeclaration* pV
 	return true;
 }
 
+
+
+
+bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITexture* texture)
+{
+	if (texture != nullptr)
+	{
+		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+	}
+	else {
+		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glDisable(GL_TEXTURE_2D);
+	}
+
+
+
+	return true;
+}
+
 bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl)
 {
 	CVertexDeclaration* pDecl = new CVertexDeclaration(pVertexElements);
@@ -448,27 +468,9 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 	
 }
 
-void ParaEngine::RenderDeviceOpenGL::BeginRenderTarget(uint32_t width, uint32_t height)
-{
-	m_LastRenderTargetWidth = m_RenderTargetWidth;
-	m_LastRenderTargetHeight = m_RenderTargetHeight;
-	m_RenderTargetWidth = width;
-	m_RenderTargetHeight = height;
-	m_isBeginRenderTarget = true;
-}
-
-void ParaEngine::RenderDeviceOpenGL::EndRenderTarget()
-{
-	m_isBeginRenderTarget = false;
-	m_RenderTargetWidth = m_LastRenderTargetWidth;
-	m_RenderTargetHeight = m_LastRenderTargetHeight;
-}
 
 bool ParaEngine::RenderDeviceOpenGL::BeginScene()
 {
-	// tricky: always render full screen
-	m_RenderTargetWidth = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-	m_RenderTargetHeight = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
 	return true;
 }
 
@@ -551,7 +553,7 @@ ParaViewport ParaEngine::RenderDeviceOpenGL::GetViewport()
 bool ParaEngine::RenderDeviceOpenGL::SetViewport(const ParaViewport& viewport)
 {
 	m_CurrentViewPort = viewport;
-	glViewport((GLint)(viewport.X), (GLint)(m_RenderTargetHeight - viewport.Y - (GLsizei)viewport.Height), (GLsizei)(viewport.Width), (GLsizei)(viewport.Height));
+	glViewport((GLint)(viewport.X), (GLint)viewport.Y ,(GLsizei)(viewport.Width), (GLsizei)(viewport.Height));
 	return true;
 }
 
@@ -585,8 +587,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetScissorRect(RECT* pRect)
 	}
 	else
 	{
-		int nScreenWidth = m_RenderTargetWidth;
-		int nScreenHeight = m_RenderTargetHeight;
+		int nScreenWidth = GetRenderTarget(0)->GetWidth();
+		int nScreenHeight = GetRenderTarget(0)->GetHeight();
 		int nViewportOffsetY = nScreenHeight - (m_CurrentViewPort.Y + m_CurrentViewPort.Height);
 		glScissor((GLint)(pRect->left + m_CurrentViewPort.X), (GLint)(nViewportOffsetY + nScreenHeight - pRect->bottom), (GLsizei)(pRect->right - pRect->left), (GLsizei)(pRect->bottom - pRect->top));
 	}
@@ -599,8 +601,14 @@ bool ParaEngine::RenderDeviceOpenGL::GetScissorRect(RECT* pRect)
 	return true;
 }
 
+
+
 bool ParaEngine::RenderDeviceOpenGL::SetClearColor(const Color4f& color)
 {
+	
+	PE_CHECK_GL_ERROR_DEBUG();
+	
+	
 	glClearColor(color.r, color.g, color.b, color.a);
 	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
@@ -618,6 +626,73 @@ bool ParaEngine::RenderDeviceOpenGL::SetClearStencil(const int stencil)
 	glClearStencil(stencil);
 	PE_CHECK_GL_ERROR_DEBUG();
 	return true;
+}
+
+std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceOpenGL::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
+{
+	std::string code((char*)pSrcData,srcDataLen);
+	return EffectOpenGL::Create(code, include, error);
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(uint32_t width, uint32_t height, EPixelFormat format, ETextureUsage usage)
+{
+	auto tex = TextureOpenGL::Create(width, height, format, usage);
+	if (tex != nullptr)
+	{
+		m_Resources.push_back(tex);
+	}
+	return tex;
+}
+
+
+
+
+const ParaEngine::RenderDeviceCaps& ParaEngine::RenderDeviceOpenGL::GetCaps()
+{
+	return m_DeviceCpas;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetRenderTarget(uint32_t index)
+{
+	if (m_CurrentRenderTargets[index])
+	{
+		m_CurrentRenderTargets[index]->AddRef();
+	}
+	return m_CurrentRenderTargets[index];
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetDepthStencil()
+{
+	m_CurrentDepthStencil->AddRef();
+	return m_CurrentDepthStencil;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferRenderTarget()
+{
+	m_backbufferRenderTarget->AddRef();
+	return m_backbufferRenderTarget;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::GetBackbufferDepthStencil()
+{
+	m_backbufferDepthStencil->AddRef();
+	return m_backbufferDepthStencil;
+}
+
+
+IParaEngine::ITexture* ParaEngine::RenderDeviceOpenGL::CreateTexture(const ImagePtr& image)
+{
+	auto tex= TextureOpenGL::CreateWithImage(image);
+	if (tex)
+	{
+		m_Resources.push_back(tex);
+	}
+	return tex;
 }
 
 void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
@@ -641,4 +716,30 @@ void ParaEngine::RenderDeviceOpenGL::ApplyBlendingModeChange()
 	}
 
 }
+
+
+bool ParaEngine::RenderDeviceOpenGL::IsSupportExt(const char* extName)
+{
+	auto it = std::find(m_GLExtes.begin(), m_GLExtes.end(), extName);
+	if (it != m_GLExtes.end()) return true;
+	return false;
+}
+
+void ParaEngine::RenderDeviceOpenGL::InitGLExtList()
+{
+	const GLchar* extensions = (const GLchar*)glGetString(GL_EXTENSIONS);
+	std::istringstream f(extensions);
+	std::string s;
+	OUTPUT_LOG("OpenGL Extensions:\n");
+	while (std::getline(f, s, ' '))
+	{
+		m_GLExtes.push_back(s);
+		OUTPUT_LOG("%s\n", s.c_str());
+	}
+}
+
+
+
+
+
 

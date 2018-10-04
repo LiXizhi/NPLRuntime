@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <mmsystem.h>
 #include <stdio.h>
+#include <mciapi.h>
 
 
 #define ALIAS "recsound"

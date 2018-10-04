@@ -24,7 +24,7 @@ namespace ParaEngine
 		void** m_ppTexture;
 
 		/// the format of the texture, default to D3DFMT_UNKNOWN
-		PixelFormat m_dwTextureFormat;
+		EPixelFormat m_dwTextureFormat;
 		///  Mip levels, default to D3DX_DEFAULT
 		UINT m_nMipLevels;
 		// the color key(default to 0):  Color value to replace with transparent black, or 0 to disable the color key. This is always a 32-bit ARGB color, 
@@ -81,7 +81,7 @@ namespace ParaEngine
 		void** m_ppTexture;
 
 		/// the format of the texture, default to D3DFMT_UNKNOWN
-		PixelFormat m_dwTextureFormat;
+		EPixelFormat m_dwTextureFormat;
 		///  Mip levels, default to D3DX_DEFAULT
 		UINT m_nMipLevels;
 		// the color key(default to 0):  Color value to replace with transparent black, or 0 to disable the color key. This is always a 32-bit ARGB color, 

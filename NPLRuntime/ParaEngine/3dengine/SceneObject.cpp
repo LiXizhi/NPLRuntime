@@ -9,9 +9,9 @@
 #include "ParaEngine.h"
 #if USE_DIRECTX_RENDERER
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 #endif
 #ifdef USE_DIRECTX_RENDERER
-#include "DirectXEngine.h"
 #include "SpriteObject.h"
 #include "ShadowMap.h"
 #include "GlowEffect.h"
@@ -871,7 +871,7 @@ HRESULT CSceneObject::RestoreDeviceObjects()
 {
 	CBaseObject::RestoreDeviceObjects();
 #ifdef USE_DIRECTX_RENDERER
-	g_bShaderVersion3 = CGlobals::GetDirectXEngine().m_d3dCaps.VertexShaderVersion >= D3DVS_VERSION(3,0);
+	g_bShaderVersion3 = true;
 #endif
 	ResetCameraAndFog();
 
@@ -1374,7 +1374,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	// if an object has a home zone, it must not be shadow caster
 	// if object is visible, it is shadow caster already.
 	Vector3 vSunDir = GetSunLight().GetSunDirection();
-	bIsShadowCaster = ( m_bRenderMeshShadow && pObj->IsShadowCaster() && pObj->GetHomeZone()==0)
+	bIsShadowCaster = ( pObj->IsShadowCaster() && pObj->GetHomeZone()==0)
 		&& ((pViewClippingObject->TestCollisionSphere(& (sceneState.vEye), GetShadowRadius(),1) 
 					&& pViewClippingObject->TestShadowSweptSphere(pCamera, &(vSunDir))));
 	
@@ -1512,11 +1512,7 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneSta
 	// fNewViewRadius = (fR>0.2f) ? m_fCoefK*fR : m_fCoefN;
 	m_fCoefF = m_fFogEnd;
 	m_fCoefN = m_fFogStart;
-#ifdef USE_DIRECTX_RENDERER
-	uint32 nViewHeight = CGlobals::GetDirectXEngine().GetBackBufferHeight();
-#else
-	uint32 nViewHeight = 560;
-#endif
+	uint32 nViewHeight = CGlobals::GetRenderDevice()->GetBackbufferRenderTarget()->GetHeight();
 	m_fCoefK = 1 / tanf(m_fCullingPixelsHeight / nViewHeight * (pCamera->GetFieldOfView() / pCamera->GetAspectRatio()));
 
 	// set rough testing view's center
@@ -1617,7 +1613,7 @@ void CSceneObject::PrepareTileObjects(CBaseCamera* pCamera, SceneState &sceneSta
 				{
 					queueTiles.push(pTile->m_subtiles[i]);
 				}
-				else if (m_bRenderMeshShadow &&
+				else if (
 					!bEyeCenteredTest && pTile->m_subtiles[i]->TestCollisionSphere(&(sceneState.vEye), SHADOW_RADIUS))
 				{
 					// ensure all sub tiles with potential shadow casters are enabled.
@@ -1931,12 +1927,10 @@ int CSceneObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 	{
 		/** number of shadow casters and receivers are now reported to the console in the format:
 		*/
-		if(m_bRenderMeshShadow)
-		{
+
 			static char sNumReport[50];
 			snprintf(sNumReport, 50, "casters:%d receivers:%d", (int)sceneState.listShadowCasters.size(), (int)sceneState.listShadowReceivers.size());
 			CGlobals::GetReport()->SetString("shadow:", sNumReport);
-		}
 	}
 
 	// update the GUI's view projection matrix for calculating 3d GUI object position
@@ -2090,11 +2084,11 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	sceneState.SetCurrentRenderPipeline(nPipelineOrder);
 	auto pd3dDevice = CGlobals::GetRenderDevice();
 
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(1,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(2,NULL);
-	GETD3D(CGlobals::GetRenderDevice())->SetRenderTarget(3,NULL);
-#endif
+
+	CGlobals::GetRenderDevice()->SetRenderTarget(1,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(2,NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(3,NULL);
+
 	if(nPipelineOrder == PIPELINE_POST_UI_3D_SCENE)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -2180,19 +2174,7 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	CGlobals::GetEffectManager()->EnableFog(IsFogEnabled());
 	CGlobals::GetEffectManager()->SetD3DFogState();
-#ifdef USE_DIRECTX_RENDERER
-	GETD3D(CGlobals::GetRenderDevice())->SetMaterial((D3DMATERIAL9*)&(sceneState.GetGlobalMaterial()));
 
-
-	if(IsUseWireFrame())
-	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_WIREFRAME );
-	}
-	else
-	{
-		CGlobals::GetRenderDevice()->SetRenderState( ERenderState::FILLMODE, D3DFILL_SOLID );
-	}
-#endif
 	/////////////////////////////////////////////////////////////////
 	// still renderings
 
@@ -2245,12 +2227,14 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	//////////////////////////////////////////////////////////////////////////
 	// render the shadow map
-	if( IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
-	{
-		sceneState.GetFaceGroups()->Clear();
-		sceneState.m_bEnableTranslucentFaceSorting = false;
-		RenderShadowMap();
-	}
+	//if( IsShadowMapEnabled() && (!(sceneState.m_bSkipTerrain) || BlockWorldClient::GetInstance()->GetBlockRenderMethod() == BLOCK_RENDER_FANCY_SHADER))
+	//{
+
+	//}
+
+	sceneState.GetFaceGroups()->Clear();
+	sceneState.m_bEnableTranslucentFaceSorting = false;
+	RenderShadowMap();
 
 	m_sceneState->dTimeDelta = oldDelta;
 	
@@ -2355,6 +2339,12 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		RenderSelection(RENDER_MISSILES);
 	}
 
+
+	CGlobals::GetRenderDevice()->SetRenderTarget(1, NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(2, NULL);
+	CGlobals::GetRenderDevice()->SetRenderTarget(3, NULL);
+
+
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
@@ -2362,6 +2352,9 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	// draw overlays solid
 	RenderHeadOnDisplay(2);
+
+
+
 
 	// draw transparent particles
 	m_pBatchedElementDraw->DrawBatchedParticles(true);
@@ -2374,9 +2367,16 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		nCharacterRendered += RenderSelection(RENDER_TRANSPARENT_CHARACTERS);
 	}
 
+
+
+
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
 
 	m_pBlockWorldClient->RenderDeferredLights();
+
+
+
+
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);
@@ -2519,6 +2519,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 	auto entity = BufferPickingManager::GetInstance().GetEntity("backbuffer");
 	if (entity)
 		entity->SetResultDirty();
+
+
 	return S_OK;
 }
 
@@ -2801,28 +2803,6 @@ void CSceneObject::RenderShadows()
 						{
 							if(pShadowVolume->m_shadowMethod == ShadowVolume::SHADOW_Z_PASS)
 							{
-								/// Z-Pass 
-								if(( CGlobals::GetDirectXEngine().m_d3dCaps.StencilCaps & D3DSTENCILCAPS_TWOSIDED ) != 0 )
-								{
-									// With 2-sided stencil, we can avoid rendering twice:
-									pd3dDevice->SetRenderState( ERenderState::STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::STENCILPASS,      D3DSTENCILOP_INCR );
-
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, TRUE );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFUNC,  D3DCMP_ALWAYS );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILZFAIL, D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILFAIL,  D3DSTENCILOP_KEEP );
-									pd3dDevice->SetRenderState( ERenderState::CCW_STENCILPASS, D3DSTENCILOP_DECR );
-
-									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_NONE );
-
-									// Draw both sides of shadow volume in stencil/z only
-									pShadowVolume->Render( &sceneState );
-
-									pd3dDevice->SetRenderState( ERenderState::TWOSIDEDSTENCILMODE, FALSE );
-								}
-								else
 								{
 									// render front faces on z pass
 									pd3dDevice->SetRenderState( ERenderState::CULLMODE,  RSV_CULL_CCW );
@@ -3415,7 +3395,7 @@ int CSceneObject::RenderSelection(DWORD dwSelection, double dTimeDelta)
 					/* set vertex buffer, texture once and for all object in the bunch*/
 					GETD3D(CGlobals::GetRenderDevice())->SetStreamSource( 0, pObj->m_pSprite->GetVB(), 0, sizeof(SPRITEVERTEX) );
 					if(pObj->m_ppTexture)
-						GETD3D(CGlobals::GetRenderDevice())->SetTexture(0, pObj->m_ppTexture->GetTexture());
+						CGlobals::GetRenderDevice()->SetTexture(0, pObj->m_ppTexture->GetTexture());
 					pObj->SetRenderState(pd3dDevice);
 				}
 
@@ -3772,7 +3752,7 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 		}
 	}
 
-	CGlobals::GetEffectManager()->EnableUsingShadowMap(m_bRenderMeshShadow);
+	CGlobals::GetEffectManager()->EnableUsingShadowMap(true);
 	if(m_bRenderMeshShadow)
 	{
 		SetShadowMapTexelSizeLevel(0);
@@ -3782,6 +3762,7 @@ void CSceneObject::SetShadow(bool bRenderShadow)
 
 bool CSceneObject::IsShadowMapEnabled()
 {
+	return true;
 	if(!m_bRenderMeshShadow)
 		return m_bRenderMeshShadow;
 	else
@@ -4253,7 +4234,7 @@ bool CSceneObject::ScreenShotReflection()
 	static unsigned short i=0;
 	string filename = "Screen Shots\\reflectionmap0.jpg";
 	filename[filename.size()-5] = '0'+(char)(++i);
-	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, CGlobals::GetOceanManager()->m_waveReflectionTexture, NULL );
+	D3DXSaveTextureToFile(filename.c_str(),D3DXIFF_JPG, GetD3DTex(CGlobals::GetOceanManager()->m_waveReflectionTexture), NULL );
 #endif
 	return true;
 }

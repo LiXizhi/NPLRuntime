@@ -247,7 +247,7 @@ int TextureCell::GetNumberOfDetails()
 {
 	return (int)m_DetailTextures.size();
 }
-DeviceTexturePtr_type TextureCell::BindTexture()
+IParaEngine::ITexture* TextureCell::BindTexture()
 {
 	if(m_pBaseLayer)
 		return m_pBaseLayer->BindTexture();
@@ -255,7 +255,7 @@ DeviceTexturePtr_type TextureCell::BindTexture()
 		return 0;
 }
 
-DeviceTexturePtr_type TextureCell::BindMask()
+IParaEngine::ITexture* TextureCell::BindMask()
 {
 	if(m_pBaseLayer)
 		return m_pBaseLayer->BindMask();
@@ -264,7 +264,7 @@ DeviceTexturePtr_type TextureCell::BindMask()
 }
 
 
-DeviceTexturePtr_type TextureCell::BindMask(int index)
+IParaEngine::ITexture* TextureCell::BindMask(int index)
 {
 	DetailTexture* pTexture =  GetDetail(index);
 	if(pTexture)
@@ -273,7 +273,7 @@ DeviceTexturePtr_type TextureCell::BindMask(int index)
 		return 0;
 }
 
-DeviceTexturePtr_type TextureCell::BindDetail(int index)
+IParaEngine::ITexture* TextureCell::BindDetail(int index)
 {
 	DetailTexture* pTexture =  GetDetail(index);
 	if(pTexture)

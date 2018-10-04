@@ -42,6 +42,13 @@ ParaEngine::IRenderDevice *RenderContxtAGL::CreateDevice(const ParaEngine::Rende
     
     NSOpenGLContext* openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
     [openGLContext makeCurrentContext];
+    
+    if(!loadGL())
+    {
+         NSLog(@"Can't load gl");
+        return nullptr;
+    }
+    
     printf("OpenGL version supported by this platform (%s): \n",
            glGetString(GL_VERSION));
     

@@ -175,9 +175,6 @@ namespace ParaEngine
 		/** get the file parser used by the IO thread. */
 		inline LPD3DXFILE GetFileParser() { return m_pXFileParser; };
 
-		/** get directX device used in the IO thread for background texture composition.*/
-		CDirectXEngine* GetEngine();
-
 		/** get GDI device used in the IO thread for background texture composition.*/
 		CGDIEngine* GetGDIEngine();
 #endif
@@ -380,9 +377,6 @@ namespace ParaEngine
 #ifdef PARAENGINE_CLIENT
 		/** another parax file parser used in the IO thread */
 		LPD3DXFILE m_pXFileParser;
-
-		/** another directX device used in the IO thread for background texture composition.*/
-		CDirectXEngine* m_pEngine;
 
 		/** another GDI+ device used in the IO thread for background texture composition.*/
 		CGDIEngine* m_pGDIEngine;

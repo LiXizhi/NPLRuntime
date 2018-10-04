@@ -130,7 +130,7 @@ HRESULT CSkyMesh::Draw(SceneState * sceneState)
 					Vector4 fogParam(fFogHeightFrom, fFogHeightTo - fFogHeightFrom, 1.0f, 0.1f);
 					LinearColor fogColor = sceneState->GetScene()->GetFogColor();
 					pEffectFile->applyFogParameters((m_fFogBlendAngleFrom < m_fFogBlendAngleTo) && sceneState->GetScene()->IsFogEnabled(), &fogParam, &fogColor);
-					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
+					pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor(),sizeof(LinearColor));
 
 					// enable texture wrapping for sub module
 					CGlobals::GetRenderDevice()->SetSamplerState(0, ESamplerStateType::ADDRESSU, D3DTADDRESS_WRAP);
@@ -588,7 +588,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
 			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 0,
-				8, 8, pIndexBufferSides, PixelFormat::INDEX16, pVertices, sizeof(LINEVERTEX));
+				8, 8, pIndexBufferSides, EPixelFormat::INDEX16, pVertices, sizeof(LINEVERTEX));
 
 			pRenderDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, FALSE);
 
@@ -644,7 +644,7 @@ void ParaEngine::CSkyMesh::DrawStaticMeshSky(EffectManager* pEffectManager, Scen
 			LinearColor fogColor = sceneState->GetScene()->GetFogColor();
 			pEffectFile->applyFogParameters((m_fFogBlendAngleFrom < m_fFogBlendAngleTo) && sceneState->GetScene()->IsFogEnabled(), &fogParam, &fogColor);
 
-			pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor());
+			pEffectFile->setParameter(CEffectFile::k_ConstVector0, &GetSkyColorFactor(), sizeof(LinearColor));
 			m_pStaticMesh->SetPosition(DVector3(vPos));
 			DrawStaticMeshSkyInner(sceneState);
 
@@ -785,7 +785,6 @@ void ParaEngine::CSkyMesh::DrawSimulatedSky(EffectManager* pEffectManager, Scene
 			pEffectFile->end();
 		}
 		CGlobals::GetRenderDevice()->SetIndices(0);
-		CGlobals::GetRenderDevice()->SetTexture(1, 0);
 		CGlobals::GetWorldMatrixStack().pop();
 	}
 }

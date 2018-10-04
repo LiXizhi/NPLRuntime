@@ -22,7 +22,7 @@
 #endif
 
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #endif
 
 extern "C"
@@ -296,7 +296,6 @@ object ParaScripting::ParaAssetObject::GetBoundingBox( const object& box )
 
 bool ParaScripting::ParaAssetObject::Begin()
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		// fixed: end any previous effect. 
@@ -306,22 +305,19 @@ bool ParaScripting::ParaAssetObject::Begin()
 		pEffect->LoadAsset();
 		if(pEffect->IsValid())
 		{
-			return pEffect->begin(true, 0, true);
+			return pEffect->begin(true,true);
 		}
 	}
-#endif
 	return false;
 }
 
 bool ParaScripting::ParaAssetObject::BeginPass( int nPass )
 {
-#ifdef USE_DIRECTX_RENDERER
 	if(IsValid() && m_pAsset->GetType()==AssetEntity::effectfile)
 	{
 		CEffectFile* pEffect = (CEffectFile*) m_pAsset;
 		return pEffect->BeginPass(nPass, true);
 	}
-#endif
 	return false;
 }
 
@@ -868,25 +864,17 @@ bool ParaAsset::DeleteBoneAnimProvider( int nAnimID )
 
 ParaScripting::ParaAssetObject ParaAsset::LoadEffectFile( const char* strAssetName, const char* strFilePath )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	if(pEffect == 0)
 		pEffect = CGlobals::GetAssetManager()->LoadEffectFile(strAssetName, strFilePath);//"shaders/simple_mesh_normal_low.fx"
 
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 ParaScripting::ParaAssetObject ParaAsset::GetEffectFile( const char* strAssetName )
 {
-#ifdef PARAENGINE_CLIENT
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetByName(strAssetName);
 	return ParaAssetObject(pEffect);
-#else
-	return ParaAssetObject();
-#endif
 }
 
 int ParaAsset::PrintToFile( const char* strFileName, DWORD dwSelection )

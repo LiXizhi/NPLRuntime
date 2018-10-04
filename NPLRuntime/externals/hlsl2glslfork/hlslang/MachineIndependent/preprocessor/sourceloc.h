@@ -49,7 +49,8 @@ StreamType& operator<<(StreamType& s, const TSourceLoc& l)
 
 inline void OutputLineDirective(std::stringstream& s, const TSourceLoc& l)
 {
-	s << "#line " << l.line;
+	
+	//s << "#line " << l.line;
 	
 	// GLSL spec (1.10 & 1.20) doesn't allow printing file name here; only an integer "string number".
 	//if(l.file)
@@ -58,7 +59,7 @@ inline void OutputLineDirective(std::stringstream& s, const TSourceLoc& l)
 	//	s << l.file;
 	//}
 	
-	s << '\n';
+	//s << '\n';
 }
 
 #endif

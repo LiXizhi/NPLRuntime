@@ -12,6 +12,7 @@
 #include "2dengine/GUIRoot.h"
 #include "SpriteRendererDirectX.h"
 #include "RenderDeviceD3D9.h"
+#include "TextureD3D9.h"
 
 
 using namespace ParaEngine;
@@ -59,13 +60,14 @@ HRESULT ParaEngine::CSpriteRendererDirectX::DrawRect(const RECT* pRect, Color co
 
 HRESULT ParaEngine::CSpriteRendererDirectX::DrawQuad(TextureEntity* pTexture_, const RECT* pSrcRect, const Vector3* vCenter, const Vector3* pPosition, Color color)
 {
-	TextureEntityDirectX* pTexture = ((TextureEntityDirectX*)pTexture_);
+	TextureEntityImpl* pTexture = ((TextureEntityImpl*)pTexture_);
 	if (pTexture && m_pSprite)
 	{
 		auto pTex = pTexture->GetTexture();
 		if (pTex != 0)
 		{
-			return m_pSprite->Draw(pTex, pSrcRect, (const DeviceVector3*)vCenter, (const DeviceVector3*)pPosition, (DWORD)color);
+			auto pD3DTexture = static_cast<TextureD3D9*>(pTex)->GetTexture();
+			return m_pSprite->Draw(pD3DTexture, pSrcRect, (const DeviceVector3*)vCenter, (const DeviceVector3*)pPosition, (DWORD)color);
 		}
 	}
 	return S_OK;

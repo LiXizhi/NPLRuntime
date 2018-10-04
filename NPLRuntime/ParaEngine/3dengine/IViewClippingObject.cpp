@@ -77,7 +77,7 @@ void	IViewClippingObject::DrawOcclusionObject(SceneState * sceneState)
 		nLenCount = 12;
 #ifdef USE_DIRECTX_RENDERER
 	CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::LINELIST, 0,
-		nNumVertices, nLenCount, pIndexBuffer, PixelFormat::INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
+		nNumVertices, nLenCount, pIndexBuffer, EPixelFormat::INDEX16,pVertices, sizeof(OCCLUSION_VERTEX));
 #endif
 	
 #else 

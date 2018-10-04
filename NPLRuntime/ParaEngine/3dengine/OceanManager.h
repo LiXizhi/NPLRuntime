@@ -372,15 +372,11 @@ namespace ParaEngine
 		int                      m_refractionTextureWidth;
 		int                      m_refractionTextureHeight;
 #ifdef USE_DIRECTX_RENDERER
-		LPDIRECT3DSURFACE9       m_pDepthStencilSurface;
-		LPDIRECT3DTEXTURE9       m_waveReflectionTexture;
-		LPDIRECT3DSURFACE9       m_waveReflectionSurface;
-		LPDIRECT3DTEXTURE9       m_waveRefractionTexture;
-		LPDIRECT3DSURFACE9       m_waveRefractionSurface;
-		LPDIRECT3DTEXTURE9       m_waveReflectionNearTexture;
-		LPDIRECT3DSURFACE9       m_waveReflectionNearSurface;
-		LPDIRECT3DTEXTURE9       m_waveRefractionNearTexture;
-		LPDIRECT3DSURFACE9       m_waveRefractionNearSurface;
+		IParaEngine::ITexture*       m_pDepthStencilSurface;
+		IParaEngine::ITexture*       m_waveReflectionTexture;
+		IParaEngine::ITexture*       m_waveRefractionTexture;
+		IParaEngine::ITexture*       m_waveReflectionNearTexture;
+		IParaEngine::ITexture*       m_waveRefractionNearTexture;
 #endif
 		// procedure ripples on the surface. 
 		//LPDIRECT3DVERTEXBUFFER9	 m_lpVBRipples; 

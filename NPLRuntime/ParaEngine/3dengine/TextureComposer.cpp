@@ -100,7 +100,7 @@ bool ParaEngine::TextureComposeTask::UpdateToStaticTexture(CRenderTarget* pRende
 			TextureEntity* pTexture = GetTexture();
 			if (pTexture)
 			{
-				if (pTexture->LoadFromImage(image, PixelFormat::DXT3))
+				if (pTexture->LoadFromImage(image, EPixelFormat::DXT3))
 					res = true;
 				else
 				{

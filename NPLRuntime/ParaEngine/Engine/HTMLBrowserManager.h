@@ -72,11 +72,11 @@ namespace ParaEngine
 		/** this function will return when the video is initialized and its size is known. 
 		* Internally it will wait for the codec to be ready. 
 		* @note: there is a timeout of 100 milliseconds, if the codec still has no idea of the media type, it will return E_UNEXPECTED.*/
-		HRESULT CreateTexture(LPDIRECT3DTEXTURE9 *ppTexture);
+		HRESULT CreateTexture(IParaEngine::ITexture** ppTexture);
 
 		/** update the texture with the latest content. It is safe to call this function at higher frequency than the movie frame rate. 
 		* it will internally detect if the current frame has changed since the last invocation of this function. */
-		HRESULT UpdateTexture(LPDIRECT3DTEXTURE9 pTexture);
+		HRESULT UpdateTexture(IParaEngine::ITexture* pTexture);
 
 	public:
 		/** get window id */
@@ -100,7 +100,7 @@ namespace ParaEngine
 		void InvalidateDeviceObjects();
 
 		/// get the texture. 
-		LPDIRECT3DTEXTURE9 GetTexture();
+		IParaEngine::ITexture* GetTexture();
 
 		/** the last url when navigateTo() is called. default is ""*/
 		const string& GetLastNavURL(){ return m_LastNavURL;}
@@ -119,8 +119,7 @@ namespace ParaEngine
 		float m_fLastUsedTime;
 
 		/// dynamic d3d texture
-		LPDIRECT3DTEXTURE9 m_pTexture;
-		D3DFORMAT m_TextureFormat;
+		IParaEngine::ITexture* m_pTexture;
 		bool m_bUseDynamicTextures;
 
 		/// whether the texture has been update in this rendering frame. if there are multiple calls to GetTexture()

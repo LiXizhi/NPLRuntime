@@ -8,7 +8,8 @@
 #include "ParaEngine.h"
 #include "SpriteRenderer.h"
 #include "TextureEntity.h"
-
+#include "effect_file.h"
+#include "EffectManager.h"
 #ifdef USE_DIRECTX_RENDERER
 #include "SpriteRendererDirectX.h"
 #include "RenderDeviceD3D9.h"
@@ -238,7 +239,9 @@ void ParaEngine::CSpriteRenderer::FlushTriangles()
 		{
 			auto pRenderDevice = CGlobals::GetRenderDevice();
 
-			CGlobals::GetRenderDevice()->SetTexture(0, m_triangles[start].texture);
+			auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+			pEffect->setTexture(0, m_triangles[start].texture);
+			pEffect->CommitChanges();
 
 			
 			DrawTriangles(&m_vertices[verticesPerTriangle * start], count * verticesPerTriangle / 3);
@@ -355,8 +358,9 @@ void ParaEngine::CSpriteRenderer::FlushThickLines()
 
 		// do the rendering with opengl
 		{
-			auto pRenderDevice =CGlobals::GetRenderDevice();
-			CGlobals::GetRenderDevice()->SetTexture(0, m_thickLines[start].texture);
+			auto pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+			pEffect->setTexture(0, m_thickLines[start].texture);
+			pEffect->CommitChanges();
 			DrawTriangles(&m_vertices[verticesPerLine * start], count * verticesPerLine / 3);
 		}
 	}

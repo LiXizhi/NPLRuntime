@@ -8,7 +8,6 @@ namespace ParaEngine
 {
 
 	class Font;
-	class GLTexture2D;
 	class FontFreeType;
 
 	class GLFontAtlas : public CRefCountedOne
@@ -27,14 +26,14 @@ namespace ParaEngine
 
 		bool prepareLetterDefinitions(const std::u16string& utf16String);
 
-		inline const std::unordered_map<size_t, GLTexture2D*>& getTextures() const { return _atlasTextures; }
-		void  addTexture(GLTexture2D *texture, int slot);
+		inline const std::unordered_map<size_t, IParaEngine::ITexture*>& getTextures() const { return _atlasTextures; }
+		void  addTexture(IParaEngine::ITexture *texture, int slot);
 		float getLineHeight() const { return _lineHeight; }
 		void  setLineHeight(float newHeight);
 
 
 
-		GLTexture2D* getTexture(int slot);
+		IParaEngine::ITexture* getTexture(int slot);
 		const Font* getFont() const { return _font; }
 
 
@@ -77,7 +76,7 @@ namespace ParaEngine
 		 */
 		void scaleFontLetterDefinition(float scaleFactor);
 
-		std::unordered_map<size_t, GLTexture2D*> _atlasTextures;
+		std::unordered_map<size_t, IParaEngine::ITexture*> _atlasTextures;
 		std::unordered_map<char16_t, FontLetterDefinition> _letterDefinitions;
 		float _lineHeight;
 		Font* _font;

@@ -55,7 +55,7 @@ IndirectServerAddress=http://patch.paraengine.com/assets/
 #include "ParaEngine.h"
 #include "util/CSingleton.h"
 #ifdef PARAENGINE_CLIENT
-#include "DirectXEngine.h"
+
 #include "GDIEngine.h"
 #include "ParaWorldAsset.h"
 #endif
@@ -210,7 +210,7 @@ CResourceRequestQueue::BufferStatus CResourceRequestQueue::try_push(ResourceRequ
 CAsyncLoader::CAsyncLoader()
 :m_NumOutstandingResources(0), m_nRemainingBytes(0),
 #ifdef PARAENGINE_CLIENT
-m_pXFileParser(NULL), m_pEngine(NULL), m_pGDIEngine(NULL),
+m_pXFileParser(NULL), m_pGDIEngine(NULL),
 #endif
 m_bDone(false), m_bProcessThreadDone(false), m_bIOThreadDone(false), m_bInterruptSignal(false), m_default_processor_worker_data(NULL), m_nLogLevel(CAsyncLoader::Log_Warn)
 , m_UsedIOThread(0)
@@ -494,11 +494,6 @@ int CAsyncLoader::Stop()
 #ifdef PARAENGINE_CLIENT
 	SAFE_RELEASE(m_pXFileParser);
 
-	if(m_pEngine)
-	{
-		m_pEngine->Destroy();
-		SAFE_DELETE(m_pEngine);
-	}
 
 	if(m_pGDIEngine)
 	{
@@ -571,16 +566,6 @@ int CAsyncLoader::Start(int nWorkerCount)
 	return 0;
 }
 #ifdef PARAENGINE_CLIENT
-CDirectXEngine* CAsyncLoader::GetEngine() 
-{
-	if(m_pEngine == 0)
-	{
-		m_pEngine = new CDirectXEngine();
-		m_pEngine->Create();
-	}
-	return m_pEngine;
-}
-
 CGDIEngine* CAsyncLoader::GetGDIEngine()
 {
 	if(m_pGDIEngine == 0)

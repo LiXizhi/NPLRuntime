@@ -11,10 +11,9 @@
 using namespace ParaEngine;
 
 #ifdef USE_OPENGL_RENDERER
-
-#include "OpenGLWrapper/GLProgram.h"
+#include "GLShaderDefine.h"
 #include "VertexDeclarationOpenGL.h"
-
+#include "OpenGLWrapper/GLType.h"
 
 bool ParaEngine::VertexElement::IsEndDeclare() const
 {
@@ -46,6 +45,7 @@ ParaEngine::CVertexDeclaration::CVertexDeclaration(const VertexElement* elems)
 
 ParaEngine::CVertexDeclaration::~CVertexDeclaration()
 {
+	GL::ClearCache();
 }
 
 
@@ -67,9 +67,9 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 		if (elem.Usage == D3DDECLUSAGE_POSITION)
 		{
 			if (elem.Type == D3DDECLTYPE_FLOAT3)
-				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+				glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_POSITION, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 			else if (elem.Type == D3DDECLTYPE_FLOAT4)
-				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_POSITION, 4, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+				glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_POSITION, 4, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 		}
 		else if (elem.Usage == D3DDECLUSAGE_COLOR)
 		{
@@ -78,9 +78,9 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 			if (elem.Type == D3DDECLTYPE_D3DCOLOR)
 			{
 				if (nColorIndex <= 1)
-					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_COLOR + nColorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+					glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_COLOR + nColorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 				else
-					glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_MAX + 0, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+					glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_MAX + 0, 4, GL_UNSIGNED_BYTE, GL_TRUE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 				nColorIndex++;
 
 			}
@@ -88,14 +88,14 @@ void ParaEngine::CVertexDeclaration::ApplyAttribute(const void* pVertexStreamZer
 		else if (elem.Usage == D3DDECLUSAGE_TEXCOORD)
 		{
 			if (elem.Type == D3DDECLTYPE_FLOAT2){
-				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_TEX_COORD + nTextureIndex, 2, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+				glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_TEX_COORD + nTextureIndex, 2, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 				nTextureIndex++;
 			}
 		}
 		else if (elem.Usage == D3DDECLUSAGE_NORMAL)
 		{
 			if (elem.Type == D3DDECLTYPE_FLOAT3)
-				glVertexAttribPointer(GLProgram::VERTEX_ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
+				glVertexAttribPointer((GLuint)EGLVertexAttrib::ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, m_nSize, OFFSET_OF(pVertexStreamZeroData, elem.Offset));
 		}
 	}
 
@@ -124,25 +124,25 @@ void ParaEngine::CVertexDeclaration::SetVertexElement(const VertexElement* elems
 			int nAttributeIndex = 0;
 			if (elem.Usage == D3DDECLUSAGE_POSITION)
 			{
-				nAttributeIndex = GLProgram::VERTEX_ATTRIB_POSITION;
+				nAttributeIndex = (GLuint)EGLVertexAttrib::ATTRIB_POSITION;
 			}
 			else if (elem.Usage == D3DDECLUSAGE_COLOR)
 			{
 				if (nColorIndex <= 1)
-					nAttributeIndex = GLProgram::VERTEX_ATTRIB_COLOR + nColorIndex;
+					nAttributeIndex = (GLuint)EGLVertexAttrib::ATTRIB_COLOR + nColorIndex;
 				else
-					nAttributeIndex = GLProgram::VERTEX_ATTRIB_MAX + 0;
+					nAttributeIndex = (GLuint)EGLVertexAttrib::ATTRIB_MAX + 0;
 				nColorIndex++;
 
 			}
 			else if (elem.Usage == D3DDECLUSAGE_TEXCOORD)
 			{
-				nAttributeIndex = GLProgram::VERTEX_ATTRIB_TEX_COORD + nTextureIndex;
+				nAttributeIndex = (GLuint)EGLVertexAttrib::ATTRIB_TEX_COORD + nTextureIndex;
 				nTextureIndex++;
 			}
 			else if (elem.Usage == D3DDECLUSAGE_NORMAL)
 			{
-				nAttributeIndex = GLProgram::VERTEX_ATTRIB_NORMAL;
+				nAttributeIndex = (GLuint)EGLVertexAttrib::ATTRIB_NORMAL;
 			}
 			m_dwAttributes |= (1 << nAttributeIndex);
 		}

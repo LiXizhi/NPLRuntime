@@ -175,7 +175,7 @@ HRESULT ParaEngine::CZoneNode::Draw( SceneState * sceneState )
 			GETD3D(CGlobals::GetRenderDevice())->SetFVF(LINEVERTEX::FVF);
 
 			CGlobals::GetRenderDevice()->DrawIndexedPrimitiveUP(EPrimitiveType::TRIANGLELIST,0,
-				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), PixelFormat::INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
+				nPlaneCount*2, nPlaneCount, &(IndexBuffer[0]), EPixelFormat::INDEX16,&(vertices[0]), sizeof(LINEVERTEX));
 		}
 #endif
 	}
