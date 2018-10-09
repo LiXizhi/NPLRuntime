@@ -1732,7 +1732,7 @@ void Terrain::Render()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = pRenderDevice->GetMaxSimultaneousTextures();
+		int nMaxNumGPUTextures = pRenderDevice->GetCaps().MaxSimultaneousTextures;
 		// my shader only support 8, so ...
 		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
 			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;

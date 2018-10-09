@@ -16,7 +16,6 @@ namespace ParaEngine
 		virtual bool SetRenderState(const ERenderState State, const uint32_t Value) override;
 		virtual bool SetClipPlane(uint32_t Index, const float* pPlane) override;
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
-		virtual int GetMaxSimultaneousTextures() override;
 		virtual bool DrawPrimitive(EPrimitiveType PrimitiveType, uint32_t StartVertex, uint32_t PrimitiveCount) override;
 		virtual bool DrawPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t PrimitiveCount, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
@@ -24,14 +23,9 @@ namespace ParaEngine
 		virtual bool CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl) override;
 		virtual bool SetIndices(IndexBufferDevicePtr_type pIndexData) override;
 		virtual bool SetStreamSource(uint32_t StreamNumber, VertexBufferDevicePtr_type pStreamData, uint32_t OffsetInBytes, uint32_t Stride) override;
-		virtual bool BeginScene() override;
-		virtual bool EndScene() override;
 		int GetStencilBits();
 		virtual bool DrawIndexedPrimitive(EPrimitiveType Type, int BaseVertexIndex, uint32_t MinIndex, uint32_t NumVertices, uint32_t indexStart, uint32_t PrimitiveCount) override;
 		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
-		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
-		virtual bool SetFVF(uint32_t FVF) override;
-		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
 		virtual bool GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value) override;
 		virtual ParaViewport GetViewport() override;
 		virtual bool SetViewport(const ParaViewport& viewport) override;

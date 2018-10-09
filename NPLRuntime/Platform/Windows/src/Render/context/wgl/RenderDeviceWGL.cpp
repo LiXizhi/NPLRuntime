@@ -4,9 +4,210 @@
 #include "RenderDeviceWGL.h"
 #include "glad/glad.h"
 #include "glad/glad_wgl.h"
+#include "RenderWindowWin32.h"
 
 #include <sstream>
 #include <iostream>
+
+using namespace ParaEngine;
+
+
+
+LRESULT CALLBACK TempWindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	return DefWindowProc(hWnd, message, wParam, lParam);
+}
+
+
+IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
+{
+
+	HINSTANCE hInstance = GetModuleHandle(NULL);
+
+	// 创建临时窗口
+	WNDCLASSEX wc;
+	memset(&wc,0 ,sizeof(WNDCLASSEX));
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.hInstance = hInstance;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
+	wc.lpszClassName = _T("ParaEngineGL");
+	wc.lpfnWndProc = TempWindowProc;
+	RegisterClassEx(&wc);
+	HWND hWndTemp = CreateWindowExW(0,
+		L"ParaEngineGL",      // name of the window class
+		L"ParaEngineGL-TempWindow",             // title of the window
+		WS_OVERLAPPEDWINDOW,              // window style
+		CW_USEDEFAULT,                    // x-position of the window
+		CW_USEDEFAULT,                    // y-position of the window
+		400,             // width of the window
+		300,            // height of the window
+		NULL,                             // we have no parent window, NULL
+		NULL,                             // we aren't using menus, NULL
+		hInstance,                        // application handle
+		NULL);                            // used with multiple windows, NULL
+
+
+										  ///////////////////////
+										  //// 创建临时上下文
+
+	HDC deviceContext;
+	PIXELFORMATDESCRIPTOR pixelFormatDesc;
+	int error;
+
+	deviceContext = GetDC(hWndTemp);
+	if (!deviceContext)
+	{
+		DestroyWindow(hWndTemp);
+		hWndTemp = nullptr;
+		return nullptr;
+	}
+	// 设置一个临时的默认像素格式
+	error = SetPixelFormat(deviceContext, 1, &pixelFormatDesc);
+	if (error != 1)
+	{
+		DestroyWindow(hWndTemp);
+		hWndTemp = nullptr;
+		return nullptr;
+	}
+
+	// 创建一个临时渲染上下文
+	HGLRC tempRenderingContext = wglCreateContext(deviceContext);
+	if (!tempRenderingContext)
+	{
+		DestroyWindow(hWndTemp);
+		hWndTemp = nullptr;
+		return nullptr;
+	}
+
+	// 将刚才创建的临时渲染上下文,设置为这个窗口的当前渲染上下文.
+	error = wglMakeCurrent(deviceContext, tempRenderingContext);
+	if (error != 1)
+	{
+		wglDeleteContext(tempRenderingContext);
+		tempRenderingContext = nullptr;
+		DestroyWindow(hWndTemp);
+		hWndTemp = nullptr;
+		return nullptr;
+	}
+
+	///////////////////////
+	// 加载WGL
+	///////////////////////
+
+	if (!gladLoadWGL(deviceContext))
+	{
+		wglDeleteContext(tempRenderingContext);
+		tempRenderingContext = nullptr;
+		DestroyWindow(hWndTemp);
+		hWndTemp = nullptr;
+		return nullptr;
+	}
+	// 销毁临时窗口
+	DestroyWindow(hWndTemp);
+	hWndTemp = nullptr;
+
+
+	RenderWindowWin32* pWindow = (RenderWindowWin32*)cfg.renderWindow;
+	HWND hWnd = pWindow->GetHandle();
+	deviceContext = GetDC(hWnd);
+	if (!deviceContext) {
+		return nullptr;
+	}
+
+	int attrib[] = { 
+		WGL_SUPPORT_OPENGL_ARB,TRUE,
+		WGL_DRAW_TO_WINDOW_ARB,TRUE,
+		WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
+		WGL_COLOR_BITS_ARB,24,
+		WGL_DEPTH_BITS_ARB,24,
+		WGL_STENCIL_BITS_ARB,8,
+		WGL_DOUBLE_BUFFER_ARB,TRUE,
+		WGL_SWAP_METHOD_ARB,WGL_SWAP_EXCHANGE_ARB,
+		WGL_PIXEL_TYPE_ARB,WGL_TYPE_RGBA_ARB,
+		0
+	};
+
+	int pixelFormat[1];
+	uint32_t formatCount = 0;
+	// Query for a pixel format that fits the attributes we want.
+	int result = wglChoosePixelFormatARB(deviceContext, attrib, NULL, 1, pixelFormat, &formatCount);
+	if (!result)
+	{
+		ReleaseDC(hWnd, deviceContext);
+		return nullptr;
+	}
+	result = SetPixelFormat(deviceContext, pixelFormat[0], &pixelFormatDesc);
+	if (!result)
+	{
+		ReleaseDC(hWnd, deviceContext);
+		return nullptr;
+	}
+
+	int contextAttriutes[] = {
+		WGL_CONTEXT_MAJOR_VERSION_ARB,2,
+		WGL_CONTEXT_MINOR_VERSION_ARB,0,
+		0
+	};
+
+	// Create a OpenGL 2.0 rendering context.
+	HGLRC renderingContext = wglCreateContextAttribsARB(deviceContext, 0, contextAttriutes);
+	if (!renderingContext) {
+		return nullptr;
+	}
+	result = wglMakeCurrent(deviceContext, renderingContext);
+	if (!result)
+	{
+		ReleaseDC(hWnd, deviceContext);
+		wglDeleteContext(renderingContext);
+		return nullptr;
+	}
+
+	if (!gladLoadGL())
+	{
+		ReleaseDC(hWnd, deviceContext);
+		wglDeleteContext(renderingContext);
+		return nullptr;
+	}
+
+	RenderDeviceOpenWGL* renderDevice = new RenderDeviceOpenWGL();
+	
+	renderDevice->m_GLRenderingContext = renderingContext;
+	renderDevice->m_DeviceContext = deviceContext;
+
+	if (!renderDevice->Initialize())
+	{
+		ReleaseDC(hWnd, deviceContext);
+		wglDeleteContext(renderingContext);
+		delete renderDevice;
+		return nullptr;
+	}
+
+	return renderDevice;
+}
+
+bool ParaEngine::RenderDeviceOpenWGL::Reset(const RenderConfiguration& cfg)
+{
+
+	auto it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferRenderTarget);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+	it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferDepthStencil);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+
+
+	m_backbufferRenderTarget->Release();
+	m_backbufferDepthStencil->Release();
+
+	return InitFrameBuffer();
+}
+
 
 
 #if GLAD_CORE_DEBUG
@@ -20,23 +221,13 @@ void _post_call_callback_default(const char *name, void *funcptr, int len_args, 
 }
 #endif
 
-ParaEngine::RenderDeviceOpenWGL::RenderDeviceOpenWGL(HDC context):m_WGLContext(context),m_FBO(0)
+ParaEngine::RenderDeviceOpenWGL::RenderDeviceOpenWGL()
+	:m_DeviceContext(NULL)
+	,m_GLRenderingContext(NULL)
+	,m_FBO(0)
 
 {
-#if GLAD_CORE_DEBUG
-	glad_set_post_callback(_post_call_callback_default);
-#endif
 
-	InitCpas();
-	InitFrameBuffer();
-
-	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
-	std::string error;
-	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
-	if (!m_DownSampleEffect)
-	{
-		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
-	}
 }
 
 ParaEngine::RenderDeviceOpenWGL::~RenderDeviceOpenWGL()
@@ -70,6 +261,8 @@ bool ParaEngine::RenderDeviceOpenWGL::StretchRect(IParaEngine::ITexture* source,
 	}
 	return true;
 }
+
+
 
 
 bool ParaEngine::RenderDeviceOpenWGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
@@ -141,7 +334,7 @@ bool ParaEngine::RenderDeviceOpenWGL::SetDepthStencil(IParaEngine::ITexture* tar
 	return true;
 }
 
-void ParaEngine::RenderDeviceOpenWGL::InitFrameBuffer()
+bool ParaEngine::RenderDeviceOpenWGL::InitFrameBuffer()
 {
 
 	auto pWindow = CGlobals::GetRenderWindow();
@@ -159,35 +352,21 @@ void ParaEngine::RenderDeviceOpenWGL::InitFrameBuffer()
 
 	GLenum fbStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-
-	//if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT)
-	//{
-	//	assert(false);
-	//}
-	//if (fbStatus == GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-	//{
-	//	assert(false);
-	//}
-	//if (fbStatus == GL_FRAMEBUFFER_UNSUPPORTED)
-	//{
-	//	assert(false);
-	//}
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
 		assert(false);
+		return false;
 	}
 
 	m_Resources.push_back(m_backbufferDepthStencil);
 	m_Resources.push_back(m_backbufferRenderTarget);
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
-
-
-	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
-	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+
+	return true;
 }
 
 void ParaEngine::RenderDeviceOpenWGL::DrawQuad()
@@ -222,6 +401,34 @@ void ParaEngine::RenderDeviceOpenWGL::DrawQuad()
 
 
 
+
+bool ParaEngine::RenderDeviceOpenWGL::Initialize()
+{
+#if GLAD_CORE_DEBUG
+	glad_set_post_callback(_post_call_callback_default);
+#endif
+
+
+	InitCpas();
+
+	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
+	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
+
+	if (!InitFrameBuffer())
+	{
+		return false;
+	}
+
+	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
+	std::string error;
+	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
+	if (!m_DownSampleEffect)
+	{
+		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
+		return false;
+	}
+	return true;
+}
 
 void ParaEngine::RenderDeviceOpenWGL::InitCpas()
 {
@@ -264,7 +471,7 @@ bool ParaEngine::RenderDeviceOpenWGL::Present()
 	m_DownSampleEffect->EndPass();
 	m_DownSampleEffect->End();
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
-	bool ret = SwapBuffers(m_WGLContext);
+	bool ret = SwapBuffers(m_DeviceContext);
 	return ret;
 }
 

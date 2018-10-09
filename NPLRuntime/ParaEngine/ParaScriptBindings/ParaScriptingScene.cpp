@@ -2972,12 +2972,8 @@ void ParaMiniSceneGraph::Draw( float fDeltaTime )
 {
 	if(IsValid())
 	{
-		if(CGlobals::GetRenderDevice()->BeginScene())
-		{
-			m_pSceneGraph->Draw(fDeltaTime);
 
-			CGlobals::GetRenderDevice()->EndScene();
-		}
+		m_pSceneGraph->Draw(fDeltaTime);
 	}
 }
 
