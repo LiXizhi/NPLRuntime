@@ -13,7 +13,7 @@ namespace ParaEngine
 			: screenWidth(960)
 			, screenHeight(540)
 			, renderWindow(nullptr)
-			, isWindowed(false)
+			, isWindowed(true)
 		{
 
 		}

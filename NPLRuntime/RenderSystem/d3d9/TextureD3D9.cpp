@@ -15,6 +15,7 @@ ITexture* ParaEngine::TextureD3D9::Create(RenderDeviceD3D9* device,uint32_t widt
 	{
 		return texture;
 	}
+	texture->Release();
 	delete texture;
 	return nullptr;
 }
@@ -52,7 +53,6 @@ IParaEngine::ITexture* ParaEngine::TextureD3D9::CreateWithImage(RenderDeviceD3D9
 	{
 		tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, (unsigned char*)image->data + image->mipmaps[i].offset);
 	}
-	
 	return tex;
 }
 
@@ -384,9 +384,15 @@ void TextureD3D9::OnRelease()
 {
 	if (m_Texture)
 	{
-		m_Surface->Release();
-		m_Texture->Release();
+
+		int ref2 = m_Texture->Release();
 	}
+
+	if (m_Surface)
+	{
+		int ref = m_Surface->Release();
+	}
+
 	m_Texture = NULL;
 	m_Surface = NULL;
 	m_Width = 0;

@@ -13,7 +13,7 @@ namespace ParaEngine
 		}
 		virtual ~RefCountedObject()
 		{
-			assert(m_nRefCount == INIT_REF_COUNT);
+			assert(m_nRefCount == 0);
 		}
 
 		uint32_t AddRef()
@@ -24,7 +24,7 @@ namespace ParaEngine
 		uint32_t DefRef()
 		{
 			--m_nRefCount;
-			assert(m_nRefCount >= INIT_REF_COUNT);
+			assert(m_nRefCount >= 0);
 			return m_nRefCount;
 		}
 
@@ -38,7 +38,6 @@ namespace ParaEngine
 			if (m_nRefCount == INIT_REF_COUNT)
 			{
 				OnRelease();
-				return;
 			}
 			DefRef();
 		}

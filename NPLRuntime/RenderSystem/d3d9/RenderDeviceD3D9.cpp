@@ -4,6 +4,7 @@
 #include "EffectD3D9.h"
 #include "TextureD3D9.h"
 #include "Framework/Codec/ImageParser.h"
+
 using namespace ParaEngine;
 
 
@@ -51,34 +52,18 @@ bool ParaEngine::IRenderDevice::CheckRenderError(const char* filename, const cha
 }
 
 
-ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context)
-	:m_pD3DDevice(device)
-	,m_pContext(context)
-	,m_backbufferDepthStencil(nullptr)
+
+
+
+
+
+ParaEngine::RenderDeviceD3D9::RenderDeviceD3D9()
+	:m_backbufferDepthStencil(nullptr)
 	,m_backbufferRenderTarget(nullptr)
 	,m_CurrentDepthStencil(nullptr)
 	,m_CurrentRenderTargets()
 {
-	InitCaps();
-	memset(m_CurrentRenderTargets, 0, sizeof(m_CurrentRenderTargets));
 
-	// get backbuffer render target
-
-	LPDIRECT3DSURFACE9 renderTargetSurface,depthSurface;
-	device->GetRenderTarget(0, &renderTargetSurface);
-	device->GetDepthStencilSurface(&depthSurface);
-
-	m_backbufferRenderTarget = static_cast<TextureD3D9*>(TextureD3D9::Create(this, renderTargetSurface, ETextureUsage::RenderTarget));
-	m_backbufferDepthStencil = static_cast<TextureD3D9*>(TextureD3D9::Create(this, depthSurface, ETextureUsage::DepthStencil));
-
-	m_backbufferRenderTarget->AddRef();
-	m_backbufferDepthStencil->AddRef();
-
-	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
-	m_CurrentDepthStencil = m_backbufferDepthStencil;
-
-	m_Resources.push_back(m_backbufferDepthStencil);
-	m_Resources.push_back(m_backbufferRenderTarget);
 }
 
 
@@ -114,61 +99,7 @@ bool ParaEngine::RenderDeviceD3D9::DrawIndexedPrimitiveUP(EPrimitiveType Primiti
 		NumVertices, PrimitiveCount, pIndexData, D3DMapping::toD3DFromat(IndexDataFormat), pVertexStreamZeroData, VertexStreamZeroStride) == S_OK;
 }
 
-bool ParaEngine::RenderDeviceD3D9::SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix)
-{
-	D3DTRANSFORMSTATETYPE state = D3DTS_VIEW;
-	switch (State)
-	{
-	case ParaEngine::ETransformsStateType::WORLD:
-		state = D3DTS_WORLD;
-		break;
-	case ParaEngine::ETransformsStateType::VIEW:
-		state = D3DTS_VIEW;
-		break;
-	case ParaEngine::ETransformsStateType::PROJECTION:
-		state = D3DTS_PROJECTION;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE0:
-		state = D3DTS_TEXTURE0;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE1:
-		state = D3DTS_TEXTURE1;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE2:
-		state = D3DTS_TEXTURE2;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE3:
-		state = D3DTS_TEXTURE3;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE4:
-		state = D3DTS_TEXTURE4;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE5:
-		state = D3DTS_TEXTURE5;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE6:
-		state = D3DTS_TEXTURE6;
-		break;
-	case ParaEngine::ETransformsStateType::TEXTURE7:
-		state = D3DTS_TEXTURE7;
-		break;
-	default:
-		break;
-	}
 
-	HRESULT hr = m_pD3DDevice->SetTransform(state,pMatrix);
-	return hr == S_OK;
-}
-
-bool ParaEngine::RenderDeviceD3D9::SetFVF(uint32_t FVF)
-{
-	return m_pD3DDevice->SetFVF(FVF) == S_OK;
-}
-
-void ParaEngine::RenderDeviceD3D9::SetCursorPosition(int X, int Y, uint32_t Flags)
-{
-	m_pD3DDevice->SetCursorPosition(X, Y, Flags);
-}
 
 bool ParaEngine::RenderDeviceD3D9::SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value)
 {
@@ -264,19 +195,13 @@ bool ParaEngine::RenderDeviceD3D9::GetScissorRect(RECT* pRect)
 	return m_pD3DDevice->GetScissorRect(pRect) == S_OK;
 }
 
-bool ParaEngine::RenderDeviceD3D9::BeginScene()
-{
-	return m_pD3DDevice->BeginScene() == S_OK;
-}
-
-bool ParaEngine::RenderDeviceD3D9::EndScene()
-{
-	return  m_pD3DDevice->EndScene() == S_OK;
-}
 
 bool ParaEngine::RenderDeviceD3D9::Present()
 {
-	return m_pD3DDevice->Present(NULL, NULL, NULL, NULL) == S_OK;
+	m_pD3DDevice->EndScene();
+	bool ret = m_pD3DDevice->Present(NULL, NULL, NULL, NULL) == S_OK;
+	m_pD3DDevice->BeginScene();
+	return ret;
 }
 
 
@@ -312,10 +237,6 @@ bool ParaEngine::RenderDeviceD3D9::ReadPixels(int nLeft, int nTop, int nWidth, i
 	return false;
 }
 
-int ParaEngine::RenderDeviceD3D9::GetMaxSimultaneousTextures()
-{
-	return 8;
-}
 
 std::shared_ptr<IParaEngine::IEffect> ParaEngine::RenderDeviceD3D9::CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error)
 {
@@ -450,6 +371,18 @@ bool ParaEngine::RenderDeviceD3D9::StretchRect(IParaEngine::ITexture * source, I
 	return hr == S_OK;
 }
 
+
+bool ParaEngine::RenderDeviceD3D9::Initialize()
+{
+	InitCaps();
+	memset(m_CurrentRenderTargets, 0, sizeof(m_CurrentRenderTargets));
+
+	if (!InitBackbuffers()) return false;
+
+	m_pD3DDevice->BeginScene();
+	return true;
+}
+
 void ParaEngine::RenderDeviceD3D9::InitCaps()
 {
 	D3DCAPS9 caps;
@@ -484,6 +417,27 @@ void ParaEngine::RenderDeviceD3D9::InitCaps()
 	m_Cpas.Texture_R32F = true;
 	m_Cpas.Texture_RGBA16F = true;
 	m_Cpas.BorderClamp = true;
+}
+
+
+bool ParaEngine::RenderDeviceD3D9::InitBackbuffers()
+{
+	LPDIRECT3DSURFACE9 renderTargetSurface, depthSurface;
+	m_pD3DDevice->GetRenderTarget(0, &renderTargetSurface);
+	m_pD3DDevice->GetDepthStencilSurface(&depthSurface);
+
+	m_backbufferRenderTarget = static_cast<TextureD3D9*>(TextureD3D9::Create(this, renderTargetSurface, ETextureUsage::RenderTarget));
+	m_backbufferDepthStencil = static_cast<TextureD3D9*>(TextureD3D9::Create(this, depthSurface, ETextureUsage::DepthStencil));
+
+	m_backbufferRenderTarget->AddRef();
+	m_backbufferDepthStencil->AddRef();
+
+	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
+	m_CurrentDepthStencil = m_backbufferDepthStencil;
+
+	m_Resources.push_back(m_backbufferDepthStencil);
+	m_Resources.push_back(m_backbufferRenderTarget);
+	return true;
 }
 
 bool ParaEngine::RenderDeviceD3D9::SetTexture(uint32_t slot, IParaEngine::ITexture * texture)

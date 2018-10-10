@@ -267,8 +267,8 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
-	vp.Width = m_pRenderWindow->GetWidth();
-	vp.Height = m_pRenderWindow->GetHeight();
+	vp.Width = m_pRenderDevice->GetBackbufferRenderTarget()->GetWidth();
+	vp.Height = m_pRenderDevice->GetBackbufferRenderTarget()->GetHeight();
 	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
 	m_pRenderDevice->SetViewport(vp);

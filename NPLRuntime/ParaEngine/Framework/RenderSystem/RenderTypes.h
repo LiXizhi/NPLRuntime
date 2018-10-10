@@ -384,20 +384,6 @@ namespace ParaEngine
 		DMAPOFFSET = 13,	
 	};
 	
-	enum class ETransformsStateType
-	{
-		WORLD,
-		VIEW,
-		PROJECTION,
-		TEXTURE0,
-		TEXTURE1,
-		TEXTURE2,
-		TEXTURE3,
-		TEXTURE4,
-		TEXTURE5,
-		TEXTURE6,
-		TEXTURE7,
-	};
 
 	enum class ECullMode
 	{
