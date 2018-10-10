@@ -198,9 +198,11 @@ bool ParaEngine::RenderDeviceEGL::Reset(const RenderConfiguration& cfg)
 		m_Resources.erase(it);
 	}
 
-
 	m_backbufferRenderTarget->Release();
 	m_backbufferDepthStencil->Release();
+
+	delete m_backbufferRenderTarget;
+	delete m_backbufferDepthStencil;
 
 	return InitFrameBuffer();
 }

@@ -60,8 +60,8 @@ namespace ParaEngine
 		virtual IParaEngine::ITexture* GetBackbufferDepthStencil() override;
 
 
-
 		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture* texture) override;
+
 
 	protected:
 		void ApplyBlendingModeChange();

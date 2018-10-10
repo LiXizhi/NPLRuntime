@@ -420,6 +420,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITex
 	return true;
 }
 
+
+
 bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl)
 {
 	CVertexDeclaration* pDecl = new CVertexDeclaration(pVertexElements);

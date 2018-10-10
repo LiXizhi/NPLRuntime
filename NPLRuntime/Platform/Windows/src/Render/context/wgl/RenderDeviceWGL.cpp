@@ -24,7 +24,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 
 	HINSTANCE hInstance = GetModuleHandle(NULL);
 
-	// ´´½¨ÁÙÊ±´°¿Ú
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 	WNDCLASSEX wc;
 	memset(&wc,0 ,sizeof(WNDCLASSEX));
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -50,7 +50,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 
 
 										  ///////////////////////
-										  //// ´´½¨ÁÙÊ±ÉÏÏÂÎÄ
+										  //// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
 	HDC deviceContext;
 	PIXELFORMATDESCRIPTOR pixelFormatDesc;
@@ -63,7 +63,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 		hWndTemp = nullptr;
 		return nullptr;
 	}
-	// ÉèÖÃÒ»¸öÁÙÊ±µÄÄ¬ÈÏÏñËØ¸ñÊ½
+	// ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½Ø¸ï¿½Ê½
 	error = SetPixelFormat(deviceContext, 1, &pixelFormatDesc);
 	if (error != 1)
 	{
@@ -72,7 +72,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 		return nullptr;
 	}
 
-	// ´´½¨Ò»¸öÁÙÊ±äÖÈ¾ÉÏÏÂÎÄ
+	// ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	HGLRC tempRenderingContext = wglCreateContext(deviceContext);
 	if (!tempRenderingContext)
 	{
@@ -81,7 +81,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 		return nullptr;
 	}
 
-	// ½«¸Õ²Å´´½¨µÄÁÙÊ±äÖÈ¾ÉÏÏÂÎÄ,ÉèÖÃÎªÕâ¸ö´°¿ÚµÄµ±Ç°äÖÈ¾ÉÏÏÂÎÄ.
+	// ï¿½ï¿½ï¿½Õ²Å´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÚµÄµï¿½Ç°ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	error = wglMakeCurrent(deviceContext, tempRenderingContext);
 	if (error != 1)
 	{
@@ -93,7 +93,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 	}
 
 	///////////////////////
-	// ¼ÓÔØWGL
+	// ï¿½ï¿½ï¿½ï¿½WGL
 	///////////////////////
 
 	if (!gladLoadWGL(deviceContext))
@@ -104,7 +104,7 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 		hWndTemp = nullptr;
 		return nullptr;
 	}
-	// Ïú»ÙÁÙÊ±´°¿Ú
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 	DestroyWindow(hWndTemp);
 	hWndTemp = nullptr;
 
@@ -204,6 +204,9 @@ bool ParaEngine::RenderDeviceOpenWGL::Reset(const RenderConfiguration& cfg)
 
 	m_backbufferRenderTarget->Release();
 	m_backbufferDepthStencil->Release();
+
+	delete m_backbufferRenderTarget;
+	delete m_backbufferDepthStencil;
 
 	return InitFrameBuffer();
 }
