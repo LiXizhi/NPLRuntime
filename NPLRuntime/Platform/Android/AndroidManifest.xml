@@ -49,11 +49,14 @@
 
       <meta-data android:name="PlguinWrapper"
               android:value="@string/PluginInfo"/>
-
+      <!--
       <service
           android:name="io.dcloud.common.adapter.io.MiniServerService"
           android:exported="true" />
       <service android:name="plugin.Bluetooth.BluetoothLeService" android:enabled="true"/>
+      
+       -->
     </application>
+     
 </manifest> 
 <!-- END_INCLUDE(manifest) -->

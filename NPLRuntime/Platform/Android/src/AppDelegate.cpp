@@ -621,7 +621,7 @@ void AppDelegate::OnWindowResized()
 
 }
 
-void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
+void AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 {
 	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
 	{
@@ -637,7 +637,7 @@ void ParaEngine::AppDelegate::OnTouch(const std::vector<TouchEventPtr>& events)
 	}
 }
 
-void ParaEngine::AppDelegate::OnKey(const EVirtualKey& key, const EKeyState& state)
+void AppDelegate::OnKey(const EVirtualKey& key, const EKeyState& state)
 {
 	if (m_ParaEngineApp && m_ParaEngineApp->IsAppActive())
 	{
