@@ -2,8 +2,14 @@
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "texture/TextureOpenGL.h"
 #include "RenderDeviceEGL.h"
+#include "RenderWindowAndroid.h"
+#include <EGL/egl.h>
+#include <android/log.h>
 
+#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
+#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "ParaEngine", __VA_ARGS__))
 
+using namespace  ParaEngine;
 #if GLAD_CORE_DEBUG
 void _post_call_callback_default(const char *name, void *funcptr, int len_args, ...) {
 	GLenum error_code;
@@ -16,38 +22,120 @@ void _post_call_callback_default(const char *name, void *funcptr, int len_args, 
 #endif
 
 
-ParaEngine::RenderDeviceEGL::RenderDeviceEGL(EGLDisplay display, EGLSurface surface)
-	:m_Display(display)
-	,m_Surface(surface)
-	, m_FBO(0)
+IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 {
 
-#if GLAD_CORE_DEBUG
-	glad_set_post_callback(_post_call_callback_default);
-#endif
+	RenderWindowAndroid* renderWindow = static_cast<RenderWindowAndroid*>(cfg.renderWindow);
+	ANativeWindow* nativeWindow = renderWindow->GetNativeWindow();
+	const EGLint attribs[] = { EGL_RENDERABLE_TYPE,
+		EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+		EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 24,EGL_STENCIL_SIZE,8, EGL_NONE };
+	EGLint w, h, format;
+	EGLint numConfigs;
+	EGLConfig config;
+	EGLSurface surface;
+	EGLContext context;
+	EGLDisplay display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	eglInitialize(display, 0, 0);
+	eglChooseConfig(display, attribs, &config, 1, &numConfigs);
 
-	InitCpas();
-	InitFrameBuffer();
-
-	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
-	std::string error;
-	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
-	if (!m_DownSampleEffect)
+	if (!numConfigs)
 	{
-		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
+		//Fall back to 16bit depth buffer
+		const EGLint attribs_d16[] = { EGL_RENDERABLE_TYPE,
+			EGL_OPENGL_ES2_BIT, //Request opengl ES2.0
+			EGL_SURFACE_TYPE, EGL_WINDOW_BIT, EGL_BLUE_SIZE, 8, EGL_GREEN_SIZE, 8,
+			EGL_RED_SIZE, 8, EGL_DEPTH_SIZE, 16, EGL_NONE };
+		eglChooseConfig(display, attribs_d16, &config, 1, &numConfigs);
 	}
+
+
+	if (!numConfigs)
+	{
+		LOGW("Unable to retrieve EGL config");
+		return nullptr;
+	}
+
+	eglGetConfigAttrib(display, config, EGL_NATIVE_VISUAL_ID, &format);
+
+	ANativeWindow_setBuffersGeometry(nativeWindow, 0, 0, format);
+	surface = eglCreateWindowSurface(display, config, nativeWindow, NULL);
+	const EGLint context_attrib_list[] = {
+		// request a context using Open GL ES 2.0
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+	context = eglCreateContext(display, config, NULL, context_attrib_list);
+
+	if (eglMakeCurrent(display, surface, surface, context) == EGL_FALSE) {
+		LOGW("Unable to eglMakeCurrent");
+		return nullptr;
+	}
+
+	if (!loadGL())
+	{
+		LOGW("Unable to load gl ext.");
+	}
+
+	auto version = glGetString(GL_VERSION);
+	LOGI("GL_VERSION:%s", version);
+
+
+	RenderDeviceEGL* pDevice = new RenderDeviceEGL();
+	pDevice->m_Surface = surface;
+	pDevice->m_Context = context;
+	pDevice->m_Display = display;
+	
+	
+	if (!pDevice->Initialize())
+	{
+		delete pDevice;
+		return nullptr;
+	}
+	eglSwapBuffers(display, surface);
+	return pDevice;
+}
+
+
+ParaEngine::RenderDeviceEGL::RenderDeviceEGL()
+	:m_Display(EGL_NO_DISPLAY)
+	,m_Surface(EGL_NO_SURFACE)
+	,m_Context(EGL_NO_CONTEXT)
+	,m_FBO(0)
+{
+
+
 }
 
 ParaEngine::RenderDeviceEGL::~RenderDeviceEGL()
 {
-	glDeleteFramebuffers(1, &m_FBO);
+
+	if (m_FBO != 0)
+	{
+		glDeleteFramebuffers(1, &m_FBO);
+	}
+
+	if (m_Display != EGL_NO_DISPLAY)
+	{
+		eglMakeCurrent(m_Display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+		if (m_Context != EGL_NO_CONTEXT)
+		{
+			eglDestroyContext(m_Display, m_Context);
+		}
+		if (m_Surface != EGL_NO_SURFACE)
+		{
+			eglDestroySurface(m_Display, m_Surface);
+		}
+		eglTerminate(m_Display);
+	}
+
+	m_Display = EGL_NO_DISPLAY;
+	m_Context = EGL_NO_CONTEXT;
+	m_Surface = EGL_NO_SURFACE;
+	
 }
 
-void ParaEngine::RenderDeviceEGL::Reset(EGLDisplay display, EGLSurface surface)
-{
-	m_Display = display;
-	m_Surface = surface;
-}
 
 bool ParaEngine::RenderDeviceEGL::Present()
 {
@@ -96,6 +184,26 @@ bool ParaEngine::RenderDeviceEGL::StretchRect(IParaEngine::ITexture* source, IPa
 	return true;
 }
 
+
+bool ParaEngine::RenderDeviceEGL::Reset(const RenderConfiguration& cfg)
+{
+	auto it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferRenderTarget);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+	it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferDepthStencil);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+
+
+	m_backbufferRenderTarget->Release();
+	m_backbufferDepthStencil->Release();
+
+	return InitFrameBuffer();
+}
 
 bool ParaEngine::RenderDeviceEGL::SetRenderTarget(uint32_t index, IParaEngine::ITexture* target)
 {
@@ -152,7 +260,7 @@ bool ParaEngine::RenderDeviceEGL::SetDepthStencil(IParaEngine::ITexture* target)
 	return true;
 }
 
-void ParaEngine::RenderDeviceEGL::InitFrameBuffer()
+bool ParaEngine::RenderDeviceEGL::InitFrameBuffer()
 {
 
 	auto pWindow = CGlobals::GetRenderWindow();
@@ -172,7 +280,7 @@ void ParaEngine::RenderDeviceEGL::InitFrameBuffer()
 
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
-		assert(false);
+		return false;
 	}
 
 	m_Resources.push_back(m_backbufferDepthStencil);
@@ -180,12 +288,10 @@ void ParaEngine::RenderDeviceEGL::InitFrameBuffer()
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
 
-
-	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
-	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, m_FBO);
+	return true;
 }
 
 void ParaEngine::RenderDeviceEGL::DrawQuad()
@@ -219,6 +325,38 @@ void ParaEngine::RenderDeviceEGL::DrawQuad()
 
 
 
+
+bool ParaEngine::RenderDeviceEGL::Initialize()
+{
+#if GLAD_CORE_DEBUG
+	glad_set_post_callback(_post_call_callback_default);
+#endif
+
+	InitCpas();
+
+	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
+	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
+
+
+
+
+
+	if (!InitFrameBuffer())
+	{
+		return false;
+	}
+
+	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
+	std::string error;
+	m_DownSampleEffect = CreateEffect(file->getBuffer(), file->getSize(), nullptr, error);
+	if (!m_DownSampleEffect)
+	{
+		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
+		return false;
+	}
+
+	return true;
+}
 
 void ParaEngine::RenderDeviceEGL::InitCpas()
 {
