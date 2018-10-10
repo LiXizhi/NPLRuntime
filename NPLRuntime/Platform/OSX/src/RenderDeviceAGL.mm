@@ -253,7 +253,7 @@ bool ParaEngine::RenderDeviceAGL::SetDepthStencil(IParaEngine::ITexture* target)
 	return true;
 }
 
-void ParaEngine::RenderDeviceAGL::InitFrameBuffer()
+bool ParaEngine::RenderDeviceAGL::InitFrameBuffer()
 {
 
 	auto pWindow = CGlobals::GetRenderWindow();
@@ -273,13 +273,15 @@ void ParaEngine::RenderDeviceAGL::InitFrameBuffer()
 
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
-		assert(false);
+        return false;
 	}
 
 	m_Resources.push_back(m_backbufferDepthStencil);
 	m_Resources.push_back(m_backbufferRenderTarget);
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
+    
+    return true;
 }
 
 void ParaEngine::RenderDeviceAGL::DrawQuad()
