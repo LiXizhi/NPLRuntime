@@ -869,17 +869,20 @@ void CEffectFileImpl::applyGlobalLightingData(CSunLight& sunlight)
 	// pass the lighting structure to the shader
 	if (isParameterUsed(k_sunColor))
 	{
+		auto color = sunlight.GetSunColor();
 		setParameter(
 			k_sunColor,
-			&(sunlight.GetSunColor()),sizeof(LinearColor));
+			&color,sizeof(LinearColor));
 	}
 
 	if (isParameterUsed(k_sunVector))
 	{
 		Vector3 vDir = -sunlight.GetSunDirection();
+		Vector4 v4Dir = Vector4(vDir.x, vDir.y, vDir.z, 1.0f);
+
 		setParameter(
 			k_sunVector,
-			&Vector4(vDir.x, vDir.y, vDir.z, 1.0f),sizeof(Vector4));
+			&v4Dir,sizeof(Vector4));
 	}
 
 	if (isParameterUsed(k_ambientLight))
@@ -893,9 +896,10 @@ void CEffectFileImpl::applyGlobalLightingData(CSunLight& sunlight)
 	if (isParameterUsed(k_shadowFactor))
 	{
 		float shadowFactor = sunlight.GetShadowFactor();
+		Vector4 v = Vector4(shadowFactor, 1 - shadowFactor, 0, 0);
 		setParameter(
 			k_shadowFactor,
-			&Vector4(shadowFactor, 1 - shadowFactor, 0, 0),
+			&v,
 			sizeof(Vector4)
 		);
 	}
@@ -1016,12 +1020,14 @@ void CEffectFileImpl::applyCameraMatrices()
 		if (isParameterUsed(k_cameraPos))
 		{
 			Vector3 vEye = pCamera->GetRenderEyePosition() - pScene->GetRenderOrigin();
-			setParameter(k_cameraPos, &Vector4(vEye.x, vEye.y, vEye.z, 1.0f),sizeof(Vector4));
+			Vector4 v = Vector4(vEye.x, vEye.y, vEye.z, 1.0f);
+			setParameter(k_cameraPos, &v,sizeof(Vector4));
 		}
 		// set the world camera facing vector
 		if (isParameterUsed(k_cameraFacing))
 		{
-			setParameter(k_cameraFacing, &pCamera->GetWorldAhead(),sizeof(Vector3));
+			auto v = pCamera->GetWorldAhead();
+			setParameter(k_cameraFacing, &v,sizeof(Vector3));
 		}
 
 		//// set the matrix used by sky boxes
