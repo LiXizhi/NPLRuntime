@@ -449,9 +449,6 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		texMat = Matrix4::IDENTITY;
 		texMat._31 = texAnim.tval.x;
 		texMat._32 = texAnim.tval.y;
-		GETD3D(pd3dDevice)->SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 	D3DTTFF_COUNT2);
-		pd3dDevice->SetTransform( ETransformsStateType::TEXTURE0, texMat.GetConstPointer() );
-		//pd3dDevice->SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, D3DTSS_TCI_PASSTHRU );
 	}
 
 	// color
@@ -460,53 +457,7 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE);
 	}
 
-	// TODO: how to programmatically set alpha to ocol.w in fixed function ? right now, it is either on or off. 
-	//if(opacity != -1)
-	//{
-	//	/*pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_BLENDFACTORALPHA );
-	//	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-	//	pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
-	//	
-	//	pd3dDevice->SetRenderState(ERenderState::TEXTUREFACTOR, (DWORD)(LinearColor(1.f, 1.f, 1.f, ocol.w)));*/
 
-	//	ParaMaterial mtrl;
-	//	ZeroMemory( &mtrl, sizeof(mtrl) );
-
-	//	// if a material is used, SetRenderState must be used
-	//	// vertex color = light diffuse color * material diffuse color
-	//	mtrl.Diffuse.r = 1.f;
-	//	mtrl.Diffuse.g = 1.f;
-	//	mtrl.Diffuse.b = 1.f;
-	//	mtrl.Diffuse.a = ocol.w;
-
-	//	/*mtrl.Emissive.r = 1.0f;
-	//	mtrl.Emissive.g = 1.0f;
-	//	mtrl.Emissive.b = 1.0f;*/
-	//	
-	//	pd3dDevice->SetMaterial( &mtrl );
-
-	//	pd3dDevice->SetRenderState(ERenderState::COLORVERTEX, TRUE);
-	//	
-	//	pd3dDevice->SetRenderState(ERenderState::DIFFUSEMATERIALSOURCE, D3DMCS_MATERIAL);
-	//	pd3dDevice->SetRenderState(ERenderState::EMISSIVEMATERIALSOURCE, D3DMCS_MATERIAL);
-
-	//	//pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
-	//	// pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
-	//}
-
-#ifdef TODO
-	/// TODO: set texture addressing
-	if (swrap) {
-
-	}
-	if (twrap) {
-
-	}
-	if (useenvmap) {
-		// environment mapping
-		// TODO: this is not implemented yet.
-	}
-#endif
 
 	if(is_rigid_body)
 	{
@@ -516,12 +467,11 @@ bool ModelRenderPass::init(CParaXModel *m, SceneState* pSceneState)
 			mat1 = m->bones[(m->m_origVertices[m->m_indices[m_nIndexStart] + GetVertexStart(m)]).bones[0]].mat;
 			mat = mat1 * CGlobals::GetWorldMatrixStack().SafeGetTop();
 			CGlobals::GetWorldMatrixStack().push(mat);
-			pd3dDevice->SetTransform(ETransformsStateType::WORLD, mat.GetConstPointer());
+
 		}
 		else
 		{
 			CGlobals::GetWorldMatrixStack().push(CGlobals::GetWorldMatrixStack().SafeGetTop());
-			pd3dDevice->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 		}
 	}
 #endif
@@ -535,7 +485,6 @@ void ModelRenderPass::deinit()
 	if(is_rigid_body)
 	{
 		CGlobals::GetWorldMatrixStack().pop();
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
 	}
 
 	switch (blendmode) {

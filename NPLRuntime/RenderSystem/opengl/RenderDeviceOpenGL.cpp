@@ -298,12 +298,6 @@ bool ParaEngine::RenderDeviceOpenGL::ReadPixels(int nLeft, int nTop, int nWidth,
 	return true;
 }
 
-int ParaEngine::RenderDeviceOpenGL::GetMaxSimultaneousTextures()
-{
-	return GetCaps().MaxSimultaneousTextures;
-}
-
-
 
 bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride)
 {
@@ -426,6 +420,8 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITex
 	return true;
 }
 
+
+
 bool ParaEngine::RenderDeviceOpenGL::CreateVertexDeclaration(VertexElement* pVertexElements, CVertexDeclaration** ppDecl)
 {
 	CVertexDeclaration* pDecl = new CVertexDeclaration(pVertexElements);
@@ -469,19 +465,6 @@ bool ParaEngine::RenderDeviceOpenGL::SetStreamSource(uint32_t StreamNumber, Vert
 }
 
 
-bool ParaEngine::RenderDeviceOpenGL::BeginScene()
-{
-	return true;
-}
-
-bool ParaEngine::RenderDeviceOpenGL::EndScene()
-{
-	return true;
-
-}
-
-
-
 int ParaEngine::RenderDeviceOpenGL::GetStencilBits()
 {
 	static bool once = true;
@@ -523,20 +506,6 @@ bool ParaEngine::RenderDeviceOpenGL::DrawIndexedPrimitive(EPrimitiveType Type, i
 }
 
 
-
-bool ParaEngine::RenderDeviceOpenGL::SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix)
-{
-	return true;
-}
-
-bool ParaEngine::RenderDeviceOpenGL::SetFVF(uint32_t FVF)
-{
-	return true;
-}
-
-void ParaEngine::RenderDeviceOpenGL::SetCursorPosition(int X, int Y, uint32_t Flags)
-{
-}
 
 bool ParaEngine::RenderDeviceOpenGL::GetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t* value)
 {

@@ -6,7 +6,7 @@ namespace ParaEngine
     class RenderDeviceAGL : public RenderDeviceOpenGL
     {
     public:
-        RenderDeviceAGL(NSOpenGLContext* context);
+        RenderDeviceAGL();
         ~RenderDeviceAGL();
         
         virtual bool Present() override;
@@ -14,10 +14,14 @@ namespace ParaEngine
         virtual bool SetRenderTarget(uint32_t index, IParaEngine::ITexture* target) override;
 		virtual bool SetDepthStencil(IParaEngine::ITexture* target) override;
 		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect) override;
+        virtual bool Reset(const RenderConfiguration& cfg) override;
 	private:
+        friend class IRenderDevice;
 		void InitCpas();
-		void InitFrameBuffer();
+		bool InitFrameBuffer();
 		void DrawQuad();
+    protected:
+		virtual bool Initialize() override;
 	private:
 		GLuint m_FBO;
 		std::shared_ptr<IParaEngine::IEffect> m_DownSampleEffect;

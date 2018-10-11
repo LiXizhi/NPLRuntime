@@ -91,7 +91,6 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase()
 	, m_hasClosingRequest(false)
 	, m_Timer(nullptr)
 	, m_pRenderWindow(nullptr)
-	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
@@ -112,7 +111,6 @@ ParaEngine::CParaEngineAppBase::CParaEngineAppBase(const char* sCmd)
 	, m_hasClosingRequest(false)
 	, m_Timer(nullptr)
 	, m_pRenderWindow(nullptr)
-	, m_pRenderContext(nullptr)
 	, m_pRenderDevice(nullptr)
 	, m_doWorkFRC(CFrameRateController::FRC_CONSTANT_OR_BELOW)
 	, m_bActive(true), m_fFPS(0.f), m_fTime(0.f), m_fElapsedTime(0.f), m_fRefreshTimerInterval(-1.f), m_nFrameRateControl(0)
@@ -262,16 +260,15 @@ void ParaEngine::CParaEngineAppBase::InitRenderEnvironment()
 {
 
 	// Create RenderDevice
-	m_pRenderContext = IRenderContext::Create();
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
-	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	m_pRenderDevice = IRenderDevice::Create(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
-	vp.Width = m_pRenderWindow->GetWidth();
-	vp.Height = m_pRenderWindow->GetHeight();
+	vp.Width = m_pRenderDevice->GetBackbufferRenderTarget()->GetWidth();
+	vp.Height = m_pRenderDevice->GetBackbufferRenderTarget()->GetHeight();
 	vp.MinZ = 0.0f;
 	vp.MaxZ = 1.0f;
 	m_pRenderDevice->SetViewport(vp);
@@ -286,7 +283,7 @@ void ParaEngine::CParaEngineAppBase::ResetRenderEnvironment()
 	InvalidateDeviceObjects();
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
-	if (!m_pRenderContext->ResetDevice(m_pRenderDevice, cfg))
+	if (!m_pRenderDevice->Reset(cfg))
 	{
 		OUTPUT_LOG("reset d3d device failed because Reset function failed\n");
 		return;
@@ -498,7 +495,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 	float fElapsedTime = (float)(CGlobals::GetFrameRateController(FRC_RENDER)->FrameMove(fTime));
 	m_fElapsedTime = fElapsedTime;
 
-	m_pRenderDevice->BeginScene();
+	
 	{
 		CGlobals::GetAssetManager()->RenderFrameMove(fElapsedTime);
 		auto color = m_pRootScene->GetClearColor();
@@ -534,7 +531,7 @@ void ParaEngine::CParaEngineAppBase::Render()
 			m_pViewportManager->Render(fElapsedTime, PIPELINE_POST_UI_3D_SCENE);
 		}
 	}
-	m_pRenderDevice->EndScene();
+
 	pMoviePlatform->EndCaptureFrame();
 }
 
@@ -635,10 +632,9 @@ void ParaEngine::CParaEngineAppBase::OnRendererRecreated(IRenderWindow * renderW
 {
 	ActivateApp(false);
 	m_pRenderWindow = renderWindow;
-	m_pRenderContext = IRenderContext::Create();
 	RenderConfiguration cfg;
 	cfg.renderWindow = m_pRenderWindow;
-	m_pRenderDevice = m_pRenderContext->CreateDevice(cfg);
+	m_pRenderDevice = IRenderDevice::Create(cfg);
 	CGlobals::SetRenderDevice(m_pRenderDevice);
 	ParaViewport vp;
 	vp.X = 0; vp.Y = 0;
@@ -671,12 +667,6 @@ void ParaEngine::CParaEngineAppBase::OnRendererDestroyed()
 		delete m_pRenderDevice;
 		m_pRenderDevice = nullptr;
 		CGlobals::SetRenderDevice(nullptr);
-	}
-
-	if (m_pRenderContext)
-	{
-		delete m_pRenderContext;
-		m_pRenderContext = nullptr;
 	}
 
 	if (m_pRenderWindow)
