@@ -965,7 +965,18 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			name = it->second;
 		}
 
-		GLint location = glGetUniformLocation(program, name.c_str());
+		uint32_t locationCacheKey = m_CurrentTechniqueHandle.idx * 10000 + m_CurrentPass * 1000 + i;
+		auto it = m_UniformLocaltionCache.find(locationCacheKey);
+		GLint location = -1;
+		if (it != m_UniformLocaltionCache.end())
+		{
+			location = it->second;
+		}
+		else {
+			location = glGetUniformLocation(program, name.c_str());
+			m_UniformLocaltionCache[locationCacheKey] = location;
+		}
+		
 		if (location == -1)
 		{
 			// unsed shader const
