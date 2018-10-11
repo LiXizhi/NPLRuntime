@@ -1728,9 +1728,7 @@ void CParaXModel::drawModel(SceneState * pSceneState, CParameterBlock* pMaterial
 	if (passes.size() == 0)
 		return;
 	CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	if (pEffect == 0)
-		CGlobals::GetRenderDevice()->SetTransform(ETransformsStateType::WORLD, CGlobals::GetWorldMatrixStack().SafeGetTop().GetConstPointer());
-	else
+	if (pEffect != 0)
 	{
 		/// apply surface materials
 		bool bEnableLight = pSceneState->GetScene()->IsLightEnabled();

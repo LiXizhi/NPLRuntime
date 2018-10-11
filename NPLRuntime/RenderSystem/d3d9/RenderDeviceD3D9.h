@@ -7,7 +7,7 @@ namespace ParaEngine
 	class RenderDeviceD3D9 : public IRenderDevice
 	{
 	public:
-		RenderDeviceD3D9(IDirect3DDevice9* device, IDirect3D9* context);
+		RenderDeviceD3D9();
 
 		virtual ~RenderDeviceD3D9() override;
 	
@@ -26,14 +26,6 @@ namespace ParaEngine
 
 		virtual bool DrawIndexedPrimitiveUP(EPrimitiveType PrimitiveType, uint32_t MinVertexIndex, uint32_t NumVertices, uint32_t PrimitiveCount, const void * pIndexData, EPixelFormat IndexDataFormat, const void* pVertexStreamZeroData, uint32_t VertexStreamZeroStride) override;
 
-
-		virtual bool SetTransform(ETransformsStateType State, DeviceMatrix_ptr pMatrix) override;
-
-
-		virtual bool SetFVF(uint32_t FVF) override;
-
-
-		virtual void SetCursorPosition(int X, int Y, uint32_t Flags) override;
 
 
 		virtual bool SetSamplerState(uint32_t stage, ESamplerStateType type, uint32_t value) override;
@@ -78,12 +70,6 @@ namespace ParaEngine
 		virtual bool GetScissorRect(RECT* pRect) override;
 
 
-		virtual bool BeginScene() override;
-
-
-		virtual bool EndScene() override;
-
-
 		virtual bool Present() override;
 
 
@@ -97,9 +83,6 @@ namespace ParaEngine
 
 
 		virtual bool ReadPixels(int nLeft, int nTop, int nWidth, int nHeight, void* pDataOut, uint32_t nDataFormat = 0, uint32_t nDataType = 0) override;
-
-
-		virtual int GetMaxSimultaneousTextures() override;
 
 
 		virtual std::shared_ptr<IParaEngine::IEffect> CreateEffect(const void* pSrcData, uint32_t srcDataLen, IParaEngine::IEffectInclude* include, std::string& error) override;
@@ -135,7 +118,8 @@ namespace ParaEngine
 		virtual bool StretchRect(IParaEngine::ITexture* source, IParaEngine::ITexture* dest, RECT* srcRect, RECT* destRect);
 
 
-	private:
+	protected:
+		
 		Color4f m_CurrentClearColor;
 		float m_CurrentDepth;
 		int m_CurrentStencil;
@@ -147,8 +131,14 @@ namespace ParaEngine
 		IParaEngine::ITexture* m_CurrentRenderTargets[8];
 		IParaEngine::ITexture* m_CurrentDepthStencil;
 		std::vector<IParaEngine::IDeviceResource*> m_Resources;
+
+		virtual bool Initialize() override;
+		bool InitBackbuffers();
+
 	private:
+		friend class IRenderDevice;
 		void InitCaps();
+
 
 		// Í¨¹ý IRenderDevice ¼Ì³Ð
 		virtual bool SetTexture(uint32_t slot, IParaEngine::ITexture * texture) override;

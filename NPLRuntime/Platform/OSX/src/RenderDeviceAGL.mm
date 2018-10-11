@@ -2,16 +2,61 @@
 #include "renderer/VertexDeclarationOpenGL.h"
 #include "texture/TextureOpenGL.h"
 #include "OpenGL.h"
-
-#include <sstream>
-#include <iostream>
+#include "RenderWindowOSX.h"
 #include "RenderDeviceAGL.h"
 #import <Cocoa/Cocoa.h>
+#include <sstream>
+#include <iostream>
 using namespace ParaEngine;
 
 
-
-
+IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
+{
+    RenderWindowOSX* renderWindow = static_cast<RenderWindowOSX*>(cfg.renderWindow);
+    
+    NSOpenGLPixelFormatAttribute attrs[] = {
+        NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersionLegacy,
+        NSOpenGLPFAColorSize,32,
+        NSOpenGLPFADepthSize,16,
+        NSOpenGLPFADoubleBuffer,
+        NSOpenGLPFAAccelerated,
+        0
+    };
+    
+    NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    if(pixelFormat == nil)
+    {
+        NSLog(@"No valid matching OpenGL Pixel Format found");
+        return nullptr;
+    }
+    
+    NSOpenGLContext* openGLContext = [[NSOpenGLContext alloc] initWithFormat:pixelFormat shareContext:nil];
+    [openGLContext makeCurrentContext];
+    
+    if(!loadGL())
+    {
+         NSLog(@"Can't load gl");
+        return nullptr;
+    }
+    
+    printf("OpenGL version supported by this platform (%s): \n",
+           glGetString(GL_VERSION));
+    
+    NSWindow* window = (NSWindow*)renderWindow->GetNativeHandle();
+    NSView* view = [[NSView alloc] initWithFrame:CGRectMake(0, 0, cfg.screenWidth, cfg.screenHeight)];
+    [window setContentView:view];
+    [openGLContext setView:view];
+    [openGLContext update];
+    
+    RenderDeviceAGL* device = new RenderDeviceAGL();
+	device->m_GLContext = openGLContext;
+	if(!device->Initialize())
+	{
+		delete device;
+		return nullptr;
+	}
+	return device;
+}
 
 
 #if GLAD_CORE_DEBUG
@@ -25,16 +70,31 @@ void _post_call_callback_default(const char *name, void *funcptr, int len_args, 
 }
 #endif
 
-RenderDeviceAGL::RenderDeviceAGL(NSOpenGLContext *context)
+RenderDeviceAGL::RenderDeviceAGL()
 :m_FBO(0)
-,m_GLContext(context)
+,m_GLContext(nullptr)
+{
+
+}
+
+
+bool RenderDeviceAGL::Initialize()
 {
 #if GLAD_CORE_DEBUG
     	glad_set_post_callback(_post_call_callback_default);
 #endif
 
 	InitCpas();
-	InitFrameBuffer();
+
+
+	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
+	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
+	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
+
+	if(!InitFrameBuffer())
+	{
+		return false;
+	}
 
 	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
 	std::string error;
@@ -42,8 +102,36 @@ RenderDeviceAGL::RenderDeviceAGL(NSOpenGLContext *context)
 	if (!m_DownSampleEffect)
 	{
 		OUTPUT_LOG("load downsample fx failed.\n%s\n", error.c_str());
+		return false;
 	}
+	return true;
 }
+
+
+bool ParaEngine::RenderDeviceAGL::Reset(const RenderConfiguration& cfg)
+{
+	auto it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferRenderTarget);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+	it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferDepthStencil);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+
+
+	m_backbufferRenderTarget->Release();
+	m_backbufferDepthStencil->Release();
+
+	delete m_backbufferRenderTarget;
+	delete m_backbufferDepthStencil;
+
+
+	return InitFrameBuffer();
+}
+
 
 RenderDeviceAGL::~RenderDeviceAGL()
 {
@@ -165,7 +253,7 @@ bool ParaEngine::RenderDeviceAGL::SetDepthStencil(IParaEngine::ITexture* target)
 	return true;
 }
 
-void ParaEngine::RenderDeviceAGL::InitFrameBuffer()
+bool ParaEngine::RenderDeviceAGL::InitFrameBuffer()
 {
 
 	auto pWindow = CGlobals::GetRenderWindow();
@@ -185,19 +273,15 @@ void ParaEngine::RenderDeviceAGL::InitFrameBuffer()
 
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
-		assert(false);
+        return false;
 	}
 
 	m_Resources.push_back(m_backbufferDepthStencil);
 	m_Resources.push_back(m_backbufferRenderTarget);
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
-
-
-	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
-	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
-	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
-
+    
+    return true;
 }
 
 void ParaEngine::RenderDeviceAGL::DrawQuad()

@@ -9,6 +9,48 @@
 #include <iostream>
 
 #include "RenderDeviceAEGL.h"
+#include "RenderWindowiOS.h"
+
+using namespace ParaEngine;
+
+
+IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
+{
+	RenderWindowiOS* renderWindow = static_cast<RenderWindowiOS*>(cfg.renderWindow);
+    UIView* view = renderWindow->GetView();
+    
+    CAEAGLLayer* glLayer = (CAEAGLLayer*)view.layer;
+    glLayer.opaque = YES;
+    glLayer.contentsScale = [UIScreen mainScreen].scale;
+    glLayer.drawableProperties = @{
+                                   kEAGLDrawablePropertyRetainedBacking :[NSNumber numberWithBool:NO],
+                                   kEAGLDrawablePropertyColorFormat : kEAGLColorFormatRGBA8
+                                   };
+    
+    
+    EAGLContext * glContext = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    [EAGLContext setCurrentContext:glContext];
+    
+    if(!loadGL())
+    {
+         NSLog(@"Can't load gl");
+        return nullptr;
+    }
+    
+    RenderDeviceAEGL* device = new RenderDeviceAEGL();
+	device->m_GLContext = glContext;
+	device->m_GLLayer = glLayer;
+
+	if(!device->Initialize())
+	{
+		delete device;
+		return nullptr;
+	}
+    
+    return device;
+}
+
+
 
 
 #if GLAD_CORE_DEBUG
@@ -23,13 +65,47 @@ void _post_call_callback_default(const char *name, void *funcptr, int len_args, 
 #endif
 
 
-ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer* layer)
-:m_GLContext(context)
-,m_GLLayer(layer)
+
+
+ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL()
+:m_GLContext(0)
+,m_GLLayer(0)
 ,m_FrameBuffer(0)
 ,m_FBO(0)
 ,m_ColorBuffer(0)
 ,m_DepthBuffer(0)
+{
+
+    
+}
+
+
+
+bool ParaEngine::RenderDeviceAEGL::Reset(const RenderConfiguration& cfg)
+{
+	auto it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferRenderTarget);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+	it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferDepthStencil);
+	if (it != m_Resources.end())
+	{
+		m_Resources.erase(it);
+	}
+
+	m_backbufferRenderTarget->Release();
+	m_backbufferDepthStencil->Release();
+
+	delete m_backbufferRenderTarget;
+	delete m_backbufferDepthStencil;
+
+	return InitFrameBuffer();
+}
+
+
+
+bool ParaEngine::RenderDeviceAEGL::Initialize()
 {
 #if GLAD_CORE_DEBUG
     glad_set_post_callback(_post_call_callback_default);
@@ -68,13 +144,20 @@ ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer*
     if(status != GL_FRAMEBUFFER_COMPLETE)
     {
         NSLog(@"failed to make complete frame buffer object %x", status);
-        exit(1);
+       	return false;
     }
     
     glBindRenderbuffer(GL_RENDERBUFFER, m_ColorBuffer);
 
 	InitCpas();
-	InitFrameBuffer();
+
+	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
+	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
+
+	if(!InitFrameBuffer())
+	{
+		return false;
+	}
 
 	auto file = std::make_shared<CParaFile>(":IDR_FX_DOWNSAMPLE");
 	std::string error_str;
@@ -82,11 +165,14 @@ ParaEngine::RenderDeviceAEGL::RenderDeviceAEGL(EAGLContext* context,CAEAGLLayer*
 	if (!m_DownSampleEffect)
 	{
 		OUTPUT_LOG("load downsample fx failed.\n%s\n", error_str.c_str());
+		return false;
 	}
 
-
-    
+	return true;
 }
+
+
+
 
 ParaEngine::RenderDeviceAEGL::~RenderDeviceAEGL()
 {
@@ -193,7 +279,7 @@ bool ParaEngine::RenderDeviceAEGL::SetDepthStencil(IParaEngine::ITexture* target
 	return true;
 }
 
-void ParaEngine::RenderDeviceAEGL::InitFrameBuffer()
+bool ParaEngine::RenderDeviceAEGL::InitFrameBuffer()
 {
 
 	auto pWindow = CGlobals::GetRenderWindow();
@@ -217,18 +303,15 @@ void ParaEngine::RenderDeviceAEGL::InitFrameBuffer()
 
 	if (fbStatus != GL_FRAMEBUFFER_COMPLETE)
 	{
-		assert(false);
+		return false;
 	}
 
 	m_Resources.push_back(m_backbufferDepthStencil);
 	m_Resources.push_back(m_backbufferRenderTarget);
 
 	m_CurrentDepthStencil = m_backbufferDepthStencil;
-
-
-	m_CurrentRenderTargets = new IParaEngine::ITexture*[m_DeviceCpas.NumSimultaneousRTs];
-	memset(m_CurrentRenderTargets, 0, sizeof(IParaEngine::ITexture*) * m_DeviceCpas.NumSimultaneousRTs);
 	m_CurrentRenderTargets[0] = m_backbufferRenderTarget;
+	return true;
 
 }
 

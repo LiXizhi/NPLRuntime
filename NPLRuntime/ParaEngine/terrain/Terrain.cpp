@@ -1732,7 +1732,7 @@ void Terrain::Render()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = pRenderDevice->GetMaxSimultaneousTextures();
+		int nMaxNumGPUTextures = pRenderDevice->GetCaps().MaxSimultaneousTextures;
 		// my shader only support 8, so ...
 		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
 			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;
@@ -2080,7 +2080,7 @@ void Terrain::RenderGeoMipmap()
 	{
 		//////////////////////////////////////////////////////////////////////////
 		// render using programmable pipeline
-		int nMaxNumGPUTextures = pRenderDevice->GetMaxSimultaneousTextures(); // usually 4, 8 or above
+		int nMaxNumGPUTextures = pRenderDevice->GetCaps().MaxSimultaneousTextures; // usually 4, 8 or above
 		// my shader only support 8, so ...
 		if(nMaxNumGPUTextures >SIMULTANEOUS_TEXTURE_NUM)
 			nMaxNumGPUTextures = SIMULTANEOUS_TEXTURE_NUM;

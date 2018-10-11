@@ -124,7 +124,6 @@ namespace ParaEngine
 		/** asset manager */
 		ref_ptr<CParaWorldAsset>	  m_pParaWorldAsset;
 		ParaTimer* m_Timer;
-		IRenderContext* m_pRenderContext;
 		IRenderDevice* m_pRenderDevice;
 		IRenderWindow* m_pRenderWindow;
 		CFrameRateController m_doWorkFRC;

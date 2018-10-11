@@ -9,7 +9,6 @@
 #include "ParaAppAndroid.h"
 #include "RenderWindowAndroid.h"
 #include "RenderDeviceEGL.h"
-#include "RenderContextEGL.h"
 #include "ParaTime.h"
 #include "NPLRuntime.h"
 #include "jni/ParaEngineHelper.h"
