@@ -68,7 +68,7 @@ COMPILER="$XCODE_ROOT/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++"
 THREADS="-j8"
 
 CURRENT_DIR=`pwd`
-SRCDIR="$CURRENT_DIR/src"
+SRCDIR="$CURRENT_DIR/../src"
 
 IOS_ARM_DEV_CMD="xcrun --sdk iphoneos"
 IOS_SIM_DEV_CMD="xcrun --sdk iphonesimulator"
@@ -896,7 +896,7 @@ EXTRA_TVOS_FLAGS="$EXTRA_FLAGS -mtvos-version-min=$MIN_TVOS_VERSION"
 EXTRA_MACOS_FLAGS="$EXTRA_FLAGS -mmacosx-version-min=$MIN_MACOS_VERSION"
 
 BOOST_VERSION2="${BOOST_VERSION//./_}"
-BOOST_TARBALL="$CURRENT_DIR/boost_$BOOST_VERSION2.tar.bz2"
+BOOST_TARBALL="$CURRENT_DIR/../src/boost_$BOOST_VERSION2.tar.bz2"
 BOOST_SRC="$SRCDIR/boost_${BOOST_VERSION2}"
 OUTPUT_DIR="$CURRENT_DIR/build/boost/$BOOST_VERSION"
 IOS_OUTPUT_DIR="$OUTPUT_DIR/ios"

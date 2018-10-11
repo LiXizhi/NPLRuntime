@@ -1,35 +1,34 @@
 #Boost
 ################################
 
+set(Boost_Version 1.65.0)
+
+if ("$ENV{BOOST_ROOT}" STRGREATER "")
+	set(BOOST_ROOT $ENV{BOOST_ROOT})
+	string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
+else()
+	set(Boost_Path boost_1_65_0)
+	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/src/${Boost_Path})
+endif()
 
 
 if(IOS)
-	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/src/boost_1_64_0)
 	if (IOS_PLATFORM STREQUAL "SIMULATOR")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphonesim-build/stage/lib)
 	elseif(IOS_PLATFORM STREQUAL "OS")
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/iphone-build/stage/lib)
 	endif() 
 elseif(APPLE)
-	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/apple/src/boost_1_64_0)
 	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/macos-build/stage/lib)
 elseif(WIN32 AND NOT ANDROID)
-	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/win32/src/boost_1_64_0)
 	if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/build_win32/stage/x64/lib)	
 	else()
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/build_win32/stage/x86/lib)	
 	endif()
 elseif(ANDROID)
-	set(BOOST_ROOT ${PROJECT_SOURCE_DIR}/externals/boost/prebuild/android/src/boost_1_64_0)
 	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/android-build/stage/lib)
 else()
-	if ("$ENV{BOOST_ROOT}" STRGREATER "")
-		set(BOOST_ROOT $ENV{BOOST_ROOT})
-		string(REPLACE "\\" "/" BOOST_ROOT ${BOOST_ROOT})
-	else()
-		set(BOOST_ROOT CACHE PATH "boost root path")
-	endif()
 	message(STATUS "BOOST_ROOT  is at: ${BOOST_ROOT}")
 endif()
 
@@ -47,11 +46,11 @@ endif()
 # Add more boost components here. Boost 1.65.1 or above is recommended. 1.55 is minimum for server build
 
 if(IOS)
-find_host_package(Boost 1.64.0 REQUIRED 
+find_host_package(Boost ${Boost_Version} REQUIRED 
 COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log
 )
 else()
-find_package(Boost 1.64.0 REQUIRED 
+find_package(Boost ${Boost_Version} REQUIRED 
 COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log
 ) 
 endif()
