@@ -94,6 +94,10 @@ namespace ParaEngine
 		uint32_t m_ShaderPrograms[MAX_TECHNIQUES][MAX_PASSES];
 		ParmeterValueCache m_ParametersValueCache[MAX_UNIFORMS];
 		std::vector<UniformInfoGL> m_Uniforms;
+		// Key = techinique*10000*pass*1000+uniformid
+		std::unordered_map<uint32_t, int> m_UniformLocaltionCache;
+		std::unordered_map<uint32_t, bool> m_UniformValueCacheDirty;
+
 		std::unordered_map<std::string, uint8_t> m_TextureSlotMap;
 		std::unordered_map<std::string, std::string> m_Texture2SamplerMap;
 		std::unordered_map<std::string, SamplerInitialzerInfo> m_SamplersInfo;

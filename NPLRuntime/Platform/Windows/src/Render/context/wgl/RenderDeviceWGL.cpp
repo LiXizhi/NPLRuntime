@@ -5,7 +5,7 @@
 #include "glad/glad.h"
 #include "glad/glad_wgl.h"
 #include "RenderWindowWin32.h"
-
+#include "GLWrapper.h"
 #include <sstream>
 #include <iostream>
 
@@ -190,6 +190,9 @@ IRenderDevice* IRenderDevice::Create(const RenderConfiguration& cfg)
 bool ParaEngine::RenderDeviceOpenWGL::Reset(const RenderConfiguration& cfg)
 {
 
+
+
+
 	auto it = std::find(m_Resources.begin(), m_Resources.end(), m_backbufferRenderTarget);
 	if (it != m_Resources.end())
 	{
@@ -202,11 +205,20 @@ bool ParaEngine::RenderDeviceOpenWGL::Reset(const RenderConfiguration& cfg)
 	}
 
 
-	m_backbufferRenderTarget->Release();
-	m_backbufferDepthStencil->Release();
-
+	while (m_backbufferRenderTarget->GetRef() > 0)
+	{
+		m_backbufferRenderTarget->Release();
+	}
 	delete m_backbufferRenderTarget;
+
+	while (m_backbufferDepthStencil->GetRef() > 0)
+	{
+		m_backbufferDepthStencil->Release();
+	}
 	delete m_backbufferDepthStencil;
+
+
+	LibGL::ClearCache();
 
 	return InitFrameBuffer();
 }
