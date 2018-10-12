@@ -18,10 +18,12 @@
 #include "memdebug.h"
 #include "Framework/InputSystem/VirtualKey.h"
 
+
+
 using namespace std;
 using namespace ParaEngine;
-map<string,int> CEventBinding::StringToEventTable;
-map<int,string> CEventBinding::EventToStringTable;
+unordered_map<string,int> CEventBinding::StringToEventTable;
+unordered_map<int,string> CEventBinding::EventToStringTable;
 DWORD CEventBinding::ScancodeToKeyTable[(int)EVirtualKey::COUNT];
 
 void CEventBinding::InitMsg(MSG *pevent,DWORD time,DWORD message,POINT& pt)
@@ -34,6 +36,7 @@ void CEventBinding::InitMsg(MSG *pevent,DWORD time,DWORD message,POINT& pt)
 }
 void CEventBinding::StaticInit()
 {
+	
 	CObjectManager *pOm=&CSingleton<CObjectManager>::Instance();
 	CEventBinding *pEvent=new CEventBinding();
 	pEvent->InitEventMappingTable(false);
@@ -43,6 +46,7 @@ void CEventBinding::StaticInit()
 	SAFE_RELEASE(pEvent);
 	//release done
 
+	
 	//building the event to string and string to event table
 	EventToStringTable[EM_NONE]="EM_NONE";
 	StringToEventTable["EM_NONE"]=EM_NONE;
@@ -571,7 +575,7 @@ void CEventBinding::StaticInit()
 	EventToStringTable[EM_MOUSE_MIDDLE]="EM_MOUSE_MIDDLE";
 	StringToEventTable["EM_MOUSE_MIDDLE"]=EM_MOUSE_MIDDLE;
 	EventToStringTable[EM_MOUSE]="EM_MOUSE";
-	StringToEventTable["EM_MOUSE"]=EM_MOUSE;
+	StringToEventTable["EM_MOUSE"]=EM_MOUSE; 
 
 	//building the scan code mapping table
 	ZeroMemory(ScancodeToKeyTable,sizeof(ScancodeToKeyTable));
@@ -683,6 +687,7 @@ void CEventBinding::StaticInit()
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_SHIFT] = EM_KEY_SHIFT;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_CONTROL] = EM_KEY_CONTROL;
 	ScancodeToKeyTable[(int)EVirtualKey::KEY_ALT] = EM_KEY_ALT;
+
 }
 
 CEventBinding::CEventBinding()
@@ -738,16 +743,16 @@ bool CEventBinding::Equals(const IObject *obj)const
 }
 int CEventBinding::StringToEventValue(const string &str)
 {
-	map<string,int>::iterator iter;
-	if ((iter=StringToEventTable.find(str))!=StringToEventTable.end()) {
+	auto iter = StringToEventTable.find(str);
+	if (iter != StringToEventTable.end()) {
 		return iter->second;
 	}
 	return 0;
 }
 string& CEventBinding::EventValueToString(int value)
 {
-	map<int,string>::iterator iter;
-	if ((iter=EventToStringTable.find(value))!=EventToStringTable.end()) {
+	auto iter = EventToStringTable.find(value);
+	if (iter != EventToStringTable.end()) {
 		return iter->second;
 	}
 
