@@ -885,7 +885,7 @@ bool ParaEngine::EffectOpenGL::BeginPass(const uint8_t pass)
 
 	GLuint program = m_ShaderPrograms[m_CurrentTechniqueHandle.idx][pass];
 
-	glUseProgram(program);
+	LibGL::UseProgram(program);
 
 	m_IsBeginPass = true;
 
@@ -901,8 +901,6 @@ bool ParaEngine::EffectOpenGL::EndPass()
 {
 	if (!m_IsBeginTechnique) return false;
 	if (!m_IsBeginPass) return false;
-
-	glUseProgram(0);
 
 
 	m_IsBeginPass = false;
