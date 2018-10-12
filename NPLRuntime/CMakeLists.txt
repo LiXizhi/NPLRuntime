@@ -36,6 +36,11 @@ elseif(ANDROID)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
     # Disable everything for fix compile errors.
     #add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-everything>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmacro-redefined>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Winconsistent-missing-override>)
+
+	
+	
     add_definitions(-D__ANDROID__ -DANDROID)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL)
