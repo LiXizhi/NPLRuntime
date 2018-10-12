@@ -9,6 +9,7 @@
 #include "GLShaderDefine.h"
 #include "ParseHelper.h"
 #include "texture/TextureOpenGL.h"
+#include "GLWrapper.h"
 
 #include <cassert>
 #include <cstdlib>
@@ -795,12 +796,30 @@ bool ParaEngine::EffectOpenGL::SetRawValue(const ParameterHandle& handle, const 
 	if (handle.idx < 0 || handle.idx >= m_Uniforms.size()) return false;
 	if (!data || size == 0)return false;
 
+	ParmeterValueCache& lastCache = m_ParametersValueCache[handle.idx];
+	// 如果已经提交过，且数据没发生变化，则设置dirty为false
+	int key =m_CurrentTechniqueHandle.idx * 10000 + m_CurrentPass * 1000 + handle.idx;
+
+	if (size == lastCache.size && memcmp(data, lastCache.data, size) == 0)
+	{
+		if (m_UniformValueCacheDirty.find(key) != m_UniformValueCacheDirty.end())
+		{
+			m_UniformValueCacheDirty[key] = false;
+		}
+		return true;
+	}
 
 
 	ParmeterValueCache cmd;
 	make_update_parameter_cmd(handle, data, size, &cmd);
 	free_update_parameter_cmd(m_ParametersValueCache[handle.idx]);
 	m_ParametersValueCache[handle.idx] = cmd;
+
+	if (m_UniformValueCacheDirty.find(key) != m_UniformValueCacheDirty.end())
+	{
+		m_UniformValueCacheDirty[key] = true;
+	}
+
 	return  true;
 }
 
@@ -965,7 +984,17 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 			name = it->second;
 		}
 
-		uint32_t locationCacheKey = m_CurrentTechniqueHandle.idx * 10000 + m_CurrentPass * 1000 + i;
+		uint32_t locationCacheKey = m_CurrentTechniqueHandle.idx * 10000 + m_CurrentPass * 1000 + cmd.handle.idx;
+
+		if (m_UniformValueCacheDirty.find(locationCacheKey) != m_UniformValueCacheDirty.end() && !m_UniformValueCacheDirty[locationCacheKey]
+			 && uniform.type != EshTypeTexture)
+		{
+			continue;
+		}
+
+		m_UniformValueCacheDirty[locationCacheKey] = false;
+
+
 		auto it = m_UniformLocaltionCache.find(locationCacheKey);
 		GLint location = -1;
 		if (it != m_UniformLocaltionCache.end())
@@ -1130,8 +1159,7 @@ bool ParaEngine::EffectOpenGL::CommitChanges()
 	{
 		GLuint slot = kv.first;
 		GLuint texID = kv.second;
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glBindTexture(GL_TEXTURE_2D, texID);
+		LibGL::BindTexture2D(slot, texID);
 	}
 	return true;
 }

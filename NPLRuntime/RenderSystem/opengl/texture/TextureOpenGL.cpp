@@ -1,6 +1,7 @@
 #include "ParaEngine.h"
 
 #include "TextureOpenGL.h"
+#include "GLWrapper.h"
 #include <algorithm>
 using namespace ParaEngine;
 using namespace IParaEngine;
@@ -295,7 +296,7 @@ ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 
 	GLint width = 0;
 	GLint height = 0;
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0, m_TextureID);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &width);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &height);
 	switch (m_GLFormat)
@@ -349,7 +350,7 @@ ParaEngine::ImagePtr ParaEngine::TextureOpenGL::GetImage(uint32_t level)
 	
 	
 	glGetTexImage(GL_TEXTURE_2D, level, m_GLFormat, GL_UNSIGNED_BYTE,buffer);
-	glBindTexture(GL_TEXTURE_2D,0);
+
 
 	auto img = std::make_shared<Image>();
 	ImageMipmap mipmap;
@@ -383,8 +384,7 @@ bool ParaEngine::TextureOpenGL::SetMinFilter(ParaEngine::ETextureFilter type)
 		return true;
 	}
 	if (type == m_MinFilter) return true;
-	
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
 	switch (type)
 	{
 	case ParaEngine::ETextureFilter::Point:
@@ -396,7 +396,6 @@ bool ParaEngine::TextureOpenGL::SetMinFilter(ParaEngine::ETextureFilter type)
 	default:
 		break;
 	}
-	glBindTexture(GL_TEXTURE_2D,0);
 	m_MinFilter = type;
 	return true;
 }
@@ -406,7 +405,7 @@ bool ParaEngine::TextureOpenGL::SetMagFilter(ParaEngine::ETextureFilter type)
 {
 	if (type == m_MagFilter) return true;
 	m_MagFilter = type;
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
 	switch (m_MagFilter)
 	{
 	case ParaEngine::ETextureFilter::Point:
@@ -418,7 +417,7 @@ bool ParaEngine::TextureOpenGL::SetMagFilter(ParaEngine::ETextureFilter type)
 	default:
 		break;
 	}
-	glBindTexture(GL_TEXTURE_2D, 0);
+
 	return true;
 }
 
@@ -438,7 +437,7 @@ bool ParaEngine::TextureOpenGL::SetAddressU(ParaEngine::ETextureWrapMode mode)
 	if (mode == m_AddressU) return true;
     if(mode == ETextureWrapMode::Border && !CGlobals::GetRenderDevice()->GetCaps().BorderClamp) return false;
 	m_AddressU = mode;
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
 	switch (m_AddressU)
 	{
 	case ETextureWrapMode::Clamp:
@@ -456,7 +455,6 @@ bool ParaEngine::TextureOpenGL::SetAddressU(ParaEngine::ETextureWrapMode mode)
 	default:
 		break;
 	}
-	glBindTexture(GL_TEXTURE_2D, 0);
 	return true;
 }
 
@@ -465,7 +463,7 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 	if (mode == m_AddressV) return true;
     if(mode == ETextureWrapMode::Border && !CGlobals::GetRenderDevice()->GetCaps().BorderClamp) return false;
 	m_AddressV = mode;
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
 	switch (m_AddressV)
 	{
 	case ParaEngine::ETextureWrapMode::Clamp:
@@ -483,7 +481,6 @@ bool ParaEngine::TextureOpenGL::SetAddressV(ParaEngine::ETextureWrapMode mode)
 	default:
 		break;
 	}
-	glBindTexture(GL_TEXTURE_2D, 0);
 	return true;
 }
 
@@ -497,7 +494,7 @@ ParaEngine::ETextureFilter ParaEngine::TextureOpenGL::GetMipFilter() const
 bool ParaEngine::TextureOpenGL::SetMipFilter(ParaEngine::ETextureFilter type)
 {
 	if (type == m_MipFilter) return true;
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
 
 	
 	switch (type)
@@ -526,7 +523,6 @@ bool ParaEngine::TextureOpenGL::SetMipFilter(ParaEngine::ETextureFilter type)
 	default:
 		break;
 	}
-	glBindTexture(GL_TEXTURE_2D, 0);
 	m_MipFilter = type;
 	return true;
 }
@@ -539,10 +535,14 @@ bool ParaEngine::TextureOpenGL::SetBorderColor(const ParaEngine::Color4f& color)
         return false;
     }
     
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	if (color.r == m_BorderColor.r && color.g == m_BorderColor.g && color.b == m_BorderColor.b && color.a == m_BorderColor.a)
+	{
+		return true;
+	}
+
+	LibGL::BindTexture2D(0,m_TextureID);
 	GLfloat col[] = {color.r,color.g,color.b,color.a};
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, col);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	m_BorderColor = color;
 	return true;
 }
@@ -625,7 +625,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 
 	GLuint textureID = 0;
 	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	LibGL::BindTexture2D(0,textureID);
 
 
 	glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, glPixelFormat, glDataType, nullptr);
@@ -636,7 +636,6 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	{
 		OUTPUT_LOG("Create texture failed error:%x\n", error);
 		glDeleteTextures(GL_TEXTURE_2D,&textureID);
-		glBindTexture(GL_TEXTURE_2D,0);
 		return nullptr;
 	}
 
@@ -648,7 +647,7 @@ TextureOpenGL* TextureOpenGL::Create(uint32_t width, uint32_t height, EPixelForm
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+
     
 
 	TextureOpenGL* tex = new TextureOpenGL();
@@ -835,7 +834,7 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
     
     GLuint textureID = 0;
     glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
+	LibGL::BindTexture2D(0,textureID);
     
     
     for (int i = 0; i < image->mipmaps.size(); i++)
@@ -858,7 +857,6 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
     {
         OUTPUT_LOG("Create texture failed error:%x\n", error);
         glDeleteTextures(GL_TEXTURE_2D,&textureID);
-        glBindTexture(GL_TEXTURE_2D,0);
         return nullptr;
     }
     
@@ -870,7 +868,7 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     
     
-    glBindTexture(GL_TEXTURE_2D, 0);
+
     
     
     TextureOpenGL* tex = new TextureOpenGL();
@@ -934,7 +932,7 @@ bool TextureOpenGL::UpdateImageUncomressed(uint32_t level, uint32_t xoffset, uin
 
     unsigned char* pDest = flipImageData(pixels, m_GLFormat, width, height);
 
-	glBindTexture(GL_TEXTURE_2D, m_TextureID);
+	LibGL::BindTexture2D(0,m_TextureID);
     
     
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -974,7 +972,7 @@ TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
 
 	GLuint textureID = 0;
 	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
+	LibGL::BindTexture2D(0,textureID);
 
 
 	for (int i =0;i<image->mipmaps.size();i++)
@@ -995,7 +993,6 @@ TextureOpenGL* TextureOpenGL::CreateComressedTextureWithImage(ImagePtr image)
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 
-	glBindTexture(GL_TEXTURE_2D, 0);
 	TextureOpenGL* tex = new TextureOpenGL();
 	tex->m_TextureID = textureID;
 	tex->m_Width = image->mipmaps[0].width;

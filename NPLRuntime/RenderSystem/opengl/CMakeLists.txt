@@ -37,6 +37,8 @@ add_library(RenderSystemOpenGL
     RenderDeviceOpenGL.h
     OpenGL.h
     GLShaderDefine.h
+    GLWrapper.cpp
+    GLWrapper.h
     ${PLATFORM_SRC}
     ${EFFECT_SRC}
     ${TEXTURE_SRC}

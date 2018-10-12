@@ -7,7 +7,7 @@
 #include "Framework/Codec/ImageParser.h"
 #include "texture/TextureOpenGL.h"
 #include "renderer/VertexDeclarationOpenGL.h"
-
+#include "GLWrapper.h"
 using namespace ParaEngine;
 
 
@@ -94,6 +94,8 @@ ParaEngine::RenderDeviceOpenGL::RenderDeviceOpenGL()
 	}
 
 	InitGLExtList();
+
+	
 }
 
 ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
@@ -104,6 +106,7 @@ ParaEngine::RenderDeviceOpenGL::~RenderDeviceOpenGL()
 	}
 	m_Resources.clear();
 	delete[] m_CurrentRenderTargets;
+	LibGL::ClearCache();
 }
 
 uint32_t ParaEngine::RenderDeviceOpenGL::GetRenderState(const ERenderState& State)
@@ -411,18 +414,11 @@ bool ParaEngine::RenderDeviceOpenGL::SetTexture(uint32_t slot, IParaEngine::ITex
 	if (texture != nullptr)
 	{
 		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, tex->GetTextureID());
+		LibGL::BindTexture2D(slot, tex->GetTextureID());
 	}
 	else {
-		TextureOpenGL*tex = static_cast<TextureOpenGL*>(texture);
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glDisable(GL_TEXTURE_2D);
+		LibGL::BindTexture2D(slot,0);
 	}
-
-
-
 	return true;
 }
 

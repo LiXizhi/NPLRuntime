@@ -4,7 +4,6 @@
 #include "RenderDeviceWGL.h"
 #include "glad/glad.h"
 #include "glad/glad_wgl.h"
-
 #include <sstream>
 #include <iostream>
 
