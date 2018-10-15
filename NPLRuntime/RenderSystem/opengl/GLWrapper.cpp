@@ -1,6 +1,7 @@
 #include "GLWrapper.h"
 #include "OpenGL.h"
 #include <cassert>
+#include <memory.h>
 using namespace ParaEngine;
 
 #define  MAX_TEXTURE_SLOT 16
@@ -21,7 +22,7 @@ void LibGL::BindTexture2D(int slot, int texture)
 
 void LibGL::ClearCache()
 {
-	memset(s_texture_cache, 0, sizeof(s_texture_cache));
+	memset((void*)s_texture_cache, 0, sizeof(s_texture_cache));
 	s_current_program = -1;
 }
 
