@@ -57,7 +57,7 @@ vector<vector<int> > Pinocchio::ComputePossibilities(const PtGraph &graph, const
 			dists.push_back(len);
 		}
 		std::sort(candidates.begin(), candidates.end(), [dists](int& p1, int& p2) {return dists[p1] < dists[p2]; });
-		if (candidates.size() > 60)candidates.resize(60);
+		if (candidates.size() > 10)candidates.resize(10);
 		out[i] = candidates;
     }
 
@@ -69,16 +69,13 @@ vector<PenaltyFunction *> getPenaltyFunctions(FP *fp); //user responsible for de
 double computePenalty(const vector<PenaltyFunction *> &penaltyFunctions,
                       const PartialMatch &cur, int next, int idx = -1)
 {
-    if(idx == -1)
-        idx = cur.match.size();
-    if(idx == 0)
-        return 0;
+    if(idx == -1) idx = cur.match.size();    
+    if(idx == 0) return 0;
 
-    double out = 0.;
+    double out = 0.0;
     for(int i = 0; i < (int)penaltyFunctions.size(); ++i) {
         double penalty = penaltyFunctions[i]->get(cur, next, idx) * penaltyFunctions[i]->weight;
-        if(penalty > 1.)
-            return 2.;
+        if(penalty > 1.) return 2.0;  
         out += penalty;
     }
     return out;
@@ -87,16 +84,15 @@ double computePenalty(const vector<PenaltyFunction *> &penaltyFunctions,
 vector<int> Pinocchio::DiscreteEmbed(const PtGraph &graph, const vector<PSphere> &spheres,
                           const Skeleton &skeleton, const vector<vector<int> > &possibilities)
 {
-    int i, j;
     FP fp(graph, skeleton, spheres);
 
     fp.footBase = 1.;
-    for(i = 0; i < (int)graph.verts.size(); ++i)
+    for(int i = 0; i < (int)graph.verts.size(); ++i)
         fp.footBase = min(fp.footBase, graph.verts[i][1]);
 
     vector<PenaltyFunction *> penaltyFunctions = getPenaltyFunctions(&fp);
 
-    int toMatch = skeleton.cGraph().verts.size();
+    const int toMatch = skeleton.cGraph().verts.size();
     
     Debugging::out() << "Matching!" << endl;
     
@@ -105,8 +101,7 @@ vector<int> Pinocchio::DiscreteEmbed(const PtGraph &graph, const vector<PSphere>
     PartialMatch output(graph.verts.size());
     todo.push(output);
     
-    int maxSz = 0;
-    
+    int maxSz = 0; 
     while(!todo.empty()) {
         PartialMatch cur = todo.top();
         todo.pop();
@@ -116,8 +111,7 @@ vector<int> Pinocchio::DiscreteEmbed(const PtGraph &graph, const vector<PSphere>
         int curSz = (int)log((double)todo.size());
         if(curSz > maxSz) {
             maxSz = curSz;
-            if(maxSz > 3)
-                Debugging::out() << "Reached " << todo.size() << endl;
+            if(maxSz > 3) Debugging::out() << "Reached " << todo.size() << endl;    
         }
         
         if(idx == toMatch) {
@@ -126,54 +120,50 @@ vector<int> Pinocchio::DiscreteEmbed(const PtGraph &graph, const vector<PSphere>
             break;
         }
         
-        for(i = 0; i < (int)possibilities[idx].size(); ++i) {
+        for(int i = 0; i < (int)possibilities[idx].size(); ++i) {
             int candidate = possibilities[idx][i];
-            int k;
             double extraPenalty = computePenalty(penaltyFunctions, cur, candidate);
 
-            if(extraPenalty < 0)
-                Debugging::out() << "ERR = " << extraPenalty << endl;
+            if(extraPenalty < 0) Debugging::out() << "ERR = " << extraPenalty << endl;
+               
             if(cur.penalty + extraPenalty < 1.) {
                 PartialMatch next = cur;
                 next.match.push_back(candidate);
                 next.penalty += extraPenalty;
                 next.heuristic = next.penalty;
                 
-                //compute taken vertices and edges
+                // compute taken vertices and edges
                 if(idx > 0) {
                     vector<int> path = fp.paths.path(candidate, next.match[skeleton.cPrev()[idx]]);
-                    for(j = 0; j < (int)path.size(); ++j)
+                    for(int j = 0; j < (int)path.size(); ++j)
                         next.vTaken[path[j]] = true;
                 }
 
-                //compute heuristic
-                for(j = idx + 1; j < toMatch; ++j) {
-                    if(skeleton.cPrev()[j] > idx)
-                        continue;
-                    double minP = 1e37;
-                    for(k = 0; k < (int)possibilities[j].size(); ++k) {
+                // compute heuristic
+                for(int j = idx + 1; j < toMatch; ++j) {
+                    if(skeleton.cPrev()[j] > idx) continue;
+                    double minP = std::numeric_limits<double>::max();
+                    for(int k = 0; k < (int)possibilities[j].size(); ++k) {
                         minP = min(minP, computePenalty(penaltyFunctions, next, possibilities[j][k], j));
                     }
                     next.heuristic += minP;
-                    if(next.heuristic > 1.)
-                        break;
+                    if(next.heuristic > 1.) break;  
                 }
 
-                if(next.heuristic > 1.)
-                    continue;
-
+                if(next.heuristic > 1.) continue;
+                  
                 todo.push(next);
             }
         }
     }
     
-    if(output.match.size() == 0)
-    {
+    if(output.match.size() == 0) {
         Debugging::out() << "No Match" << endl;
     }
 
-    for(i = 0; i < (int)penaltyFunctions.size(); ++i)
-        delete penaltyFunctions[i];
+	for (int i = 0; i < (int)penaltyFunctions.size(); ++i) {
+		delete penaltyFunctions[i];
+	}   
 
     return output.match;
 }

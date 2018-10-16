@@ -508,7 +508,7 @@ public:
 		for (std::list<Bone*>::iterator iter = orderedBones.begin(); iter != orderedBones.end(); ++iter) {
 			Bone* bone = *iter;
 			std::string parentName;
-			if (bone->GetParentIndex() > 0) {
+			if (bone->GetParentIndex() >= 0) {
 				parentName = bones[bone->GetParentIndex()].GetName();
 			}
 			const Vector3& v = bone->GetPivotPoint();
@@ -847,15 +847,6 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch(Mesh* targetM
 
 CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* targetMesh)
 {
-	//Matcher matcher;
-	//// normalize the target mesh vertices
-	//vector<PVector3> targetVerts;
-	//targetVerts.reserve(targetMesh->m_Vertices.size());
-	//for (int i = 0; i < (int)targetMesh->m_Vertices.size(); ++i) {
-	//	targetVerts.push_back(targetMesh->m_Vertices[i].pos);
-	//}
-	//RigHelper::NormalizeVertices(targetVerts);
-
 	// match the most close model template to the target model
 	// we take the minmum matchness as the best match candidate
 	double matchness = std::numeric_limits<double>::max();
@@ -905,8 +896,9 @@ void CAutoRigger::AutoRigThreadFunc()
 
 	Mesh* targetMesh = RigHelper::ExtractParaXMesh(m_pTargetModel->GetModel());
 	if (targetMesh == nullptr) {
-		OUTPUT_LOG( "Target bmax model yields a bad mesh. Try another model...\n");
-		On_AddRiggedFile(0, NULL, "bad input");
+		OUTPUT_LOG("Target bmax model yields a bad mesh. Use default model...\n");
+		this->BindTargetModelDefault();
+		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
 		return;
 	}
 
@@ -917,8 +909,9 @@ void CAutoRigger::AutoRigThreadFunc()
 		// prepare mesh
 		Mesh newMesh = PrepareMesh(*targetMesh);
 		if (newMesh.m_Vertices.empty()) {
-			OUTPUT_LOG("Target mesh: failed to pass connection test.\n");
-			On_AddRiggedFile(0, NULL, "input mesh failed to pass connection test");
+			OUTPUT_LOG("Target mesh: failed to pass connection test. Use default model...\n");
+			this->BindTargetModelDefault();
+			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
 			return;
 		}
 		// prepare skeleton
@@ -928,7 +921,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		Skeleton* given = RigHelper::ExtractParaXSkeleton(bestMatch->second->GetModel(), srcMesh->m_ToAdd, srcMesh->m_Scale);
 		if (given == nullptr) {
 			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
-			On_AddRiggedFile(0, NULL, "failed to extract template model skeleton");
+			this->BindTargetModelDefault();
+			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
 			return;
 		}
 		
@@ -955,7 +949,8 @@ void CAutoRigger::AutoRigThreadFunc()
 		if (embeddingIndices.size() == 0) { // failure
 			delete distanceField;
 			OUTPUT_LOG("Failed to embed given skeleton to target model.\n");
-			On_AddRiggedFile(0, NULL, "Failed to embed skeleton to input model");
+			this->BindTargetModelDefault();
+			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
 			return;
 		}
 
@@ -1303,9 +1298,79 @@ void CAutoRigger::AutoRigThreadFunc()
 		delete srcMesh;
 		delete tester;
 		delete distanceField;
+	}else{
+		this->BindTargetModelDefault();
+		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "No match.");
 	}
+}
+
+void CAutoRigger::BindTargetModelDefault()
+{
+	std::string defaultModelName = "character/AutoAnims/Q_chong.x";
+	while (!m_pTargetModel->IsLoaded()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(25));
+	}
+	while (!(*m_ModelTemplates)[defaultModelName]->IsLoaded()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(25));
+	}
+	CParaXModel* skeletonModel = (*m_ModelTemplates)[defaultModelName]->GetModel();
+	CParaXModel* targetModel = m_pTargetModel->GetModel();
+
+	// header settings
+	targetModel->m_header.type = skeletonModel->m_header.type;
+	targetModel->m_header.IsAnimated = skeletonModel->m_header.IsAnimated;
+	targetModel->animated = targetModel->m_header.IsAnimated > 0;
+	targetModel->animGeometry = (targetModel->m_header.IsAnimated&(1 << 0)) > 0;
+	targetModel->animTextures = (targetModel->m_header.IsAnimated&(1 << 1)) > 0;
+	targetModel->animBones = (targetModel->m_header.IsAnimated&(1 << 2)) > 0;
+	//to support arg channel only texture animation  -clayman 2011.8.5
+	targetModel->animTexRGB = (targetModel->m_header.IsAnimated&(1 << 4)) > 0;
+	if (targetModel->IsBmaxModel())
+		targetModel->m_RenderMethod = CParaXModel::BMAX_MODEL;
+	else if (targetModel->animated)
+		targetModel->m_RenderMethod = CParaXModel::SOFT_ANIM;
 	else
-	{
-		this->On_AddRiggedFile(0, NULL, "no matches");
+		targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
+
+	// take bones	
+	targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
+	Bone* bones = new Bone[skeletonModel->m_objNum.nBones];
+	for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
+		bones[i] = skeletonModel->bones[i];
 	}
+	targetModel->bones = bones;
+
+	// take animations
+	targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
+	ModelAnimation* anims = new ModelAnimation[skeletonModel->m_objNum.nAnimations];
+	for (int i = 0; i < (int)skeletonModel->m_objNum.nAnimations; ++i) {
+		anims[i] = skeletonModel->anims[i];
+	}
+	targetModel->anims = anims;
+
+	// take texture anims
+	targetModel->m_objNum.nTexAnims = skeletonModel->m_objNum.nTexAnims;
+	TextureAnim* texanims = new TextureAnim[skeletonModel->m_objNum.nTexAnims];
+	for (int i = 0; i < (int)skeletonModel->m_objNum.nTexAnims; ++i) {
+		texanims[i] = skeletonModel->texanims[i];
+	}
+	targetModel->texanims = texanims;
+
+	// targetModel->specialTextures = skeletonModel->specialTextures;
+
+	targetModel->m_CurrentAnim.Reset();
+	targetModel->m_NextAnim.MakeInvalid();
+	targetModel->m_BlendingAnim.Reset();
+	targetModel->blendingFactor = 0;
+	targetModel->fBlendingTime = 0.25f;	// this is the default value.
+
+	for (int i = 0; i < targetModel->m_objNum.nVertices; ++i) {
+		// bind all the vertices to bone 0
+		targetModel->m_origVertices[i].bones[0] = 0;
+		targetModel->m_origVertices[i].weights[0] = 255;
+	}
+
+	targetModel->SaveToDisk(m_OutputFilePath.c_str());
+
+
 }
