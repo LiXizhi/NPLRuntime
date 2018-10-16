@@ -1020,11 +1020,17 @@ void CAutoRigger::AutoRigThreadFunc()
 			}
 		}
 
+		// compute model size ratio between target model and skeleton model
+		float ratio = targetModel->GetBoundingRadius() / skeletonModel->GetBoundingRadius();
+
 		// take bones	
 		targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
 		Bone* bones = new Bone[skeletonModel->m_objNum.nBones];
 		for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
 			bones[i] = skeletonModel->bones[i];
+			for (int j = 0; j < bones[i].trans.data.size(); ++j) {
+				bones[i].trans.data[j] *= ratio;
+			}
 		}
 		// recover the bone pivots position from transformed coordinates
 		std::map<string, int> boneNameIndexMap;
@@ -1082,6 +1088,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		ModelAnimation* anims = new ModelAnimation[skeletonModel->m_objNum.nAnimations];
 		for (int i = 0; i < (int)skeletonModel->m_objNum.nAnimations; ++i) {
 			anims[i] = skeletonModel->anims[i];
+			if (anims[i].moveSpeed != 0.0f) anims[i].moveSpeed *= ratio;
 		}
 		targetModel->anims = anims;
 
@@ -1332,19 +1339,26 @@ void CAutoRigger::BindTargetModelDefault()
 	else
 		targetModel->m_RenderMethod = CParaXModel::NO_ANIM;
 
+	// compute model size ratio between target model and skeleton model
+	float ratio = targetModel->GetBoundingRadius() / skeletonModel->GetBoundingRadius();
+
 	// take bones	
 	targetModel->m_objNum.nBones = skeletonModel->m_objNum.nBones;
 	Bone* bones = new Bone[skeletonModel->m_objNum.nBones];
 	for (int i = 0; i < (int)skeletonModel->m_objNum.nBones; ++i) {
 		bones[i] = skeletonModel->bones[i];
+		for (int j = 0; j < bones[i].trans.data.size(); ++j) {
+			bones[i].trans.data[j] *= ratio;
+		}
 	}
-	targetModel->bones = bones;
+	targetModel->bones = bones; 
 
 	// take animations
 	targetModel->m_objNum.nAnimations = skeletonModel->m_objNum.nAnimations;
 	ModelAnimation* anims = new ModelAnimation[skeletonModel->m_objNum.nAnimations];
 	for (int i = 0; i < (int)skeletonModel->m_objNum.nAnimations; ++i) {
 		anims[i] = skeletonModel->anims[i];
+		if (anims[i].moveSpeed != 0.0f) anims[i].moveSpeed *= ratio;
 	}
 	targetModel->anims = anims;
 
