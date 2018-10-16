@@ -51,6 +51,8 @@ namespace ParaEngine
 		ModelTemplateMap::iterator FindBestMatch(Mesh* targetMesh);
 		ModelTemplateMap::iterator FindBestMatch2(Mesh* targetModel);
 		void AutoRigThreadFunc();
+		/** bind the target model to the default template which simply has one bone when the system failed to match the target with any given templates. */
+		void BindTargetModelDefault();
 
 		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
