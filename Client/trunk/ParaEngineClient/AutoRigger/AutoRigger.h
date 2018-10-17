@@ -57,6 +57,8 @@ namespace ParaEngine
 		ModelTemplateMap* m_ModelTemplates;
 		ParaXEntity* m_pTargetModel;
 		std::string m_OutputFilePath;
-		std::shared_ptr<std::thread> m_workerThread;
+		std::thread m_workerThread;
+
+		std::atomic_bool m_bIsRunnging;
 	};
 }

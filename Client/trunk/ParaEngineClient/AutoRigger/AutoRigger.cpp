@@ -706,17 +706,19 @@ public:
 };
 
 CAutoRigger::CAutoRigger()
-	:m_pTargetModel(nullptr)
+	: m_pTargetModel(nullptr)
 	, m_ModelTemplates(new ModelTemplateMap())
+	, m_bIsRunnging(false)
 {
 }
 
 CAutoRigger::~CAutoRigger()
 {
-	if (m_workerThread && m_workerThread->joinable())
-	{
-		m_workerThread->join();
+	if (m_workerThread.joinable()){
+		m_workerThread.join();
 	}
+	m_ModelTemplates->clear();
+	delete m_ModelTemplates;
 }
 
 void CAutoRigger::AddModelTemplate(const char* fileName)
@@ -753,20 +755,19 @@ void CAutoRigger::SetThreshold()
 
 void CAutoRigger::AutoRigModel()
 {
-	try 
-	{
-		if (m_workerThread && m_workerThread->joinable())
-		{
-			m_workerThread->detach();
+	if (m_bIsRunnging) {
+		OUTPUT_LOG("error: Another task is running! \n");
+		On_AddRiggedFile(0, NULL, "Thread busy!");
+	}else {
+		try {
+			m_workerThread = std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this));
+			m_workerThread.detach();
+		}catch (std::exception& e) {
+			OUTPUT_LOG("error: AutoRigModel worker thread error %s\n", e.what());
+			On_AddRiggedFile(0, NULL, "unknown thread error");
 		}
-
-		m_workerThread.reset(new std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this)));
 	}
-	catch (std::exception& e)
-	{
-		OUTPUT_LOG("error: AutoRigModel worker thread error %s\n", e.what());
-		On_AddRiggedFile(0, NULL, "unknown thread error");
-	}
+	
 }
 
 void CAutoRigger::Clear()
@@ -891,8 +892,10 @@ CAutoRigger::ModelTemplateMap::iterator CAutoRigger::FindBestMatch2(Mesh* target
 
 void CAutoRigger::AutoRigThreadFunc()
 {
+	m_bIsRunnging = true;
 	if (m_pTargetModel == nullptr || m_ModelTemplates->empty()) {
 		On_AddRiggedFile(0, NULL, "empty model templates");
+		m_bIsRunnging = false;
 		return;
 	}
 
@@ -905,6 +908,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		OUTPUT_LOG("Target bmax model yields a bad mesh. Use default model...\n");
 		this->BindTargetModelDefault();
 		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
+		m_bIsRunnging = false;
 		return;
 	}
 
@@ -918,6 +922,7 @@ void CAutoRigger::AutoRigThreadFunc()
 			OUTPUT_LOG("Target mesh: failed to pass connection test. Use default model...\n");
 			this->BindTargetModelDefault();
 			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
+			m_bIsRunnging = false;
 			return;
 		}
 		// prepare skeleton
@@ -929,6 +934,7 @@ void CAutoRigger::AutoRigThreadFunc()
 			OUTPUT_LOG("Failed to extract template parax model skeleton, %s.\n", bestMatch->second->GetAttributeClassName());
 			this->BindTargetModelDefault();
 			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
+			m_bIsRunnging = false;
 			return;
 		}
 		
@@ -957,6 +963,7 @@ void CAutoRigger::AutoRigThreadFunc()
 			OUTPUT_LOG("Failed to embed given skeleton to target model.\n");
 			this->BindTargetModelDefault();
 			this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "default");
+			m_bIsRunnging = false;
 			return;
 		}
 
@@ -1143,7 +1150,6 @@ void CAutoRigger::AutoRigThreadFunc()
 			}
 		}// end for
 
-
 		 // second round
 		typedef std::vector<std::vector<int>> ColorVector;
 		ColorVector colors;
@@ -1315,6 +1321,7 @@ void CAutoRigger::AutoRigThreadFunc()
 		this->BindTargetModelDefault();
 		this->On_AddRiggedFile(1, m_OutputFilePath.c_str(), "No match.");
 	}
+	m_bIsRunnging = false;
 }
 
 void CAutoRigger::BindTargetModelDefault()
