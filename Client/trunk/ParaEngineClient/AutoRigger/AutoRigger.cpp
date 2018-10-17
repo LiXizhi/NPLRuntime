@@ -757,15 +757,14 @@ void CAutoRigger::AutoRigModel()
 	{
 		if (m_workerThread && m_workerThread->joinable())
 		{
-			m_workerThread->join();
 			m_workerThread->detach();
 		}
 
 		m_workerThread.reset(new std::thread(std::bind(&CAutoRigger::AutoRigThreadFunc, this)));
 	}
-	catch (...)
+	catch (std::exception& e)
 	{
-		OUTPUT_LOG("error: AutoRigModel worker thread unknown error\n");
+		OUTPUT_LOG("error: AutoRigModel worker thread error %s\n", e.what());
 		On_AddRiggedFile(0, NULL, "unknown thread error");
 	}
 }

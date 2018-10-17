@@ -316,18 +316,18 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 					bool bGenerateLOD = true;
 					if (iCur == pMeshLODs.begin())
 					{
-						if (m_MeshLODs.size() > 1)
+						if (pMeshLODs.size() > 1)
 						{
-							for (int i = 1; i < (int)m_MeshLODs.size(); ++i)
+							for (int i = 1; i < (int)pMeshLODs.size(); ++i)
 							{
-								if (!m_MeshLODs[i].m_sMeshFileName.empty())
+								if (!pMeshLODs[i].m_sMeshFileName.empty())
 								{
 									bGenerateLOD = false;
 								}
 							}
 							if (bGenerateLOD)
 							{
-								m_MeshLODs.resize(1);
+								pMeshLODs.resize(1);
 							}
 						}
 					}
