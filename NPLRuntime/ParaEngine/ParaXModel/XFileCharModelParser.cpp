@@ -426,6 +426,7 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 	DWORD       dwSize;
 	const char       *pBuffer = NULL;
 	// Get the template data
+
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
 		//int nTextures = *(DWORD*)(pBuffer);
@@ -434,14 +435,21 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 		int nTextures = _nTextures;
 
 		xmesh.m_objNum.nTextures = nTextures;
+
+
+#pragma pack(push) 
+#pragma pack(1)
 		struct ModelTextureDef_
 		{
 			uint32 type;
 			uint32 nOffsetEmbeddedTexture;
-			char sName;
+			char sName[1];
 		};
+#pragma pack(pop)
+
 		if (nTextures > 0)
 		{ // at least one texture
+
 			typedef TextureEntity* LPTextureEntity;
 			xmesh.textures = new asset_ptr<TextureEntity>[nTextures];
 			ModelTextureDef_* pTex = (ModelTextureDef_*)(pBuffer + 4);
@@ -450,6 +458,7 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 			{
 				ModelTextureDef_ texInfo;
 				memcpy(&texInfo, pTex, sizeof(ModelTextureDef_));
+
 				if (texInfo.type != 0)
 				{
 					if (texInfo.type < CParaXModel::MAX_MODEL_TEXTURES)
@@ -468,7 +477,9 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 					xmesh.specialTextures[i] = -1;
 					xmesh.useReplaceTextures[i] = false;
 				}
-				string sFilename(((const char*)pTex) + 8); // for safety.
+				//string sFilename(((const char*)pTex) + 8); // for safety.
+				string sFilename = pTex->sName;
+
 				if (!sFilename.empty())
 				{
 					// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
