@@ -1887,7 +1887,7 @@ bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 				for (int i = 0; i < MAX_LINE; ++i)
 				{
 					if (ofn.lpstrFile[i] == 0 && ofn.lpstrFile[i + 1] != 0)
-						ofn.lpstrFile[i] = ' ';
+						ofn.lpstrFile[i] = '|';
 				}
 			}
 			string filename = ofn.lpstrFile;
