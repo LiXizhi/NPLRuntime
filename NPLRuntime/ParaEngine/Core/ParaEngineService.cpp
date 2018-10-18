@@ -261,8 +261,5 @@ int CParaEngineService::Run(const char* pCommandLine, IParaEngineApp* pApp)
 	if (!bInteractiveMode)
 		printf("Service is stopped             \n");
 	int return_code = m_pParaEngineApp->GetReturnCode();
-	if (!pApp){
-		SAFE_DELETE(m_pParaEngineApp);
-	}
 	return return_code;
 }

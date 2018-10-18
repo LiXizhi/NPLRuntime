@@ -315,7 +315,7 @@ namespace cAudio
 
 				case ON_INIT: 
 					
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onInit();
 					}
 
@@ -323,7 +323,7 @@ namespace cAudio
 				
 				case ON_UPDATE:
 
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onUpdate();
 					}
 
@@ -331,7 +331,7 @@ namespace cAudio
 
 				case ON_RELEASE:
 
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onRelease();
 					}
 
@@ -339,7 +339,7 @@ namespace cAudio
 
 				case ON_BEGINCAPTURE:
 
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onBeginCapture();
 					}
 
@@ -348,7 +348,7 @@ namespace cAudio
 
 				case ON_ENDCAPTURE:
 
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onEndCapture();
 					}
 
@@ -356,7 +356,7 @@ namespace cAudio
 
 				case ON_USERREQUESTEDBUFFER:
 
-					for(it; it != eventHandlerList.end(); it++){
+					for(; it != eventHandlerList.end(); it++){
 						(*it)->onUserRequestBuffer();
 					}
 

@@ -36,9 +36,10 @@ elseif(ANDROID)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
     # Disable everything for fix compile errors.
     #add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-everything>)
-	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmacro-redefined>)
-	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Winconsistent-missing-override>)
-
+	#add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wmacro-redefined>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-include-next>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-null-conversion>)
 	
 	
     add_definitions(-D__ANDROID__ -DANDROID)
@@ -48,10 +49,16 @@ elseif(IOS)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)   
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-temporary>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-include-next>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-null-conversion>)
 elseif(APPLE)
     set(NPLRUNTIME_RENDERER "OPENGL" CACHE STRING "Render API")
     set_property(CACHE NPLRUNTIME_RENDERER PROPERTY STRINGS OPENGL NULL)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-address-of-temporary>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-inconsistent-missing-override>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-gnu-include-next>)
+	add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-null-conversion>)
 
 elseif(WIN32)
     # Ugly warnings

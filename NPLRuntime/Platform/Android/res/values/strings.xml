@@ -3,7 +3,11 @@
     <string name="app_name">Paracraft</string>
 
     <string name="PluginInfo">
-
+      [{
+      "packname": "plugin.Bluetooth.InterfaceBluetooth",
+      "key": "test",
+      "debug": true
+      }]
     </string>
 
   <!--

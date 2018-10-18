@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 #include "Framework/Common/Image.hpp"
 #include "Framework/Interface/IImageParser.hpp"
 namespace ParaEngine
