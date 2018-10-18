@@ -67,6 +67,8 @@ ImagePtr JPGParser::Parse(const unsigned char* buffer, size_t buffer_size)
 	/* setup decompression process and source, then read JPEG header */
 	jpeg_create_decompress(&cinfo);
 
+	jpeg_mem_src(&cinfo, const_cast<unsigned char*>(buffer), buffer_size);
+
 
 	/* reading the image header which contains image information */
 #if (JPEG_LIB_VERSION >= 90)
