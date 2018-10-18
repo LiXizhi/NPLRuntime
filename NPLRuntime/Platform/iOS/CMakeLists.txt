@@ -13,6 +13,7 @@ set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 find_library(UIKit UIKit) 
 find_library(OpenGLES OpenGLES)
 find_library(QuartzCore QuartzCore)
+find_library(CoreBluetooth CoreBluetooth)
 
 add_executable(Paracraft
     ${app_src}
@@ -22,7 +23,7 @@ add_executable(Paracraft
     ${ASSETS_FILES})
 
 target_link_libraries(Paracraft PUBLIC
-    ${UIKit} ${OpenGLES} ${QuartzCore}
+    ${UIKit} ${OpenGLES} ${QuartzCore} ${CoreBluetooth}
     RenderSystemOpenGL
     ParaEngine
 )
