@@ -613,7 +613,7 @@ IParaEngine::TechniqueHandle ParaEngine::EffectOpenGL::GetTechnique(uint32_t ind
 	handle.idx = PARA_INVALID_HANDLE;
 
 	auto techniques = m_FxDesc->getTechiques();
-	if (index >= 0 && index < techniques.size())
+	if (/*index >= 0 &&*/ index < techniques.size())
 	{
 		handle.idx = index;
 	}
@@ -637,7 +637,7 @@ IParaEngine::ParameterHandle ParaEngine::EffectOpenGL::GetParameter(uint32_t ind
 {
 	IParaEngine::ParameterHandle handle;
 	handle.idx = PARA_INVALID_HANDLE;
-	if (index >= 0 && index < m_Uniforms.size())
+	if (/*index >= 0 && */ index < m_Uniforms.size())
 	{
 		handle.idx = index;
 	}

@@ -1151,6 +1151,8 @@ int CGUIRoot::HandleUserInput()
 						CGUIEvent::KeyStates[EM_MOUSE_MIDDLEDOWN] = buttonEvent->GetKeyState() == EKeyState::PRESS ? 0x80 : 0x00;
 						bCollapseMouseMove = false;
 					}break;
+					default:
+						break;
 				}
 			}break;
 			case EMouseEventType::Move:

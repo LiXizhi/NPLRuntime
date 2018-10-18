@@ -184,6 +184,8 @@ uint8_t* flip_dxt_image(const uint8_t* pSrc, uint32_t width, uint32_t height,uin
 		flipblocks = flip_blocks_dxtc5;
 		blockSize = 16;
 		break;
+	default:
+		break;
 	}
 
 	unsigned int xblocks = width / 4;
