@@ -99,10 +99,10 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 
 	        @Override
 	        public void onServiceConnected(ComponentName componentName, IBinder service) {
-				Log.e(LogTag, "AppActivity: onServiceConnectedonServiceConnectedonServiceConnectedonServiceConnected");
+				Log.i(LogTag, "AppActivity: onServiceConnectedonServiceConnectedonServiceConnectedonServiceConnected");
 	            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
 	            if (!mBluetoothLeService.initialize()) {
-	                Log.e("appactivity", "Unable to initialize Bluetooth");
+	                Log.i("appactivity", "Unable to initialize Bluetooth");
 	                mMainActivity.finish();
 	            }
 	            // Automatically connects to the device upon successful start-up initialization.
@@ -121,13 +121,13 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 	            final String action = intent.getAction();
 	            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) 
 				{
-					Log.e(LogTag, "!-------AppActivity: blue :connect");
+					Log.i(LogTag, "!-------AppActivity: blue :connect");
 	            	mConnected = true;
 					callBaseBridge(SET_BLUE_STATUS, "1");
 	            } 
 				else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) 
 				{
-					Log.e(LogTag, "!-------AppActivity: blue :disconnect");
+					Log.i(LogTag, "!-------AppActivity: blue :disconnect");
 	            	mConnected = false;
 					callBaseBridge(SET_BLUE_STATUS, "0");
 
@@ -137,7 +137,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 				else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) 
 				{
 	            	enableTXNotification(mBluetoothLeService.getSupportedGattServices());
-	            	Log.e(LogTag, "!-------AppActivity: blue start:find serverice");    		
+	            	Log.i(LogTag, "!-------AppActivity: blue start:find serverice");    		
 	            } 
 				else if(BluetoothLeService.ACTION_DATA_CHARACTERISTIC.equals(action))
 	            {
@@ -157,7 +157,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 					{
 						e.printStackTrace();
 					}
-					Log.e(LogTag, "!-------ACTION_DATA_CHARACTERISTIC status:" + status);  
+					Log.i(LogTag, "!-------ACTION_DATA_CHARACTERISTIC status:" + status);  
 					callBaseBridge(ON_CHARACTERISTIC, luajs_value.toString());
 	            }
 				else if (BluetoothLeService.ACTION_DATA_DESCRIPTOR.equals(action)) 
@@ -213,14 +213,12 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 
 	public void onInit(Map<String, Object> cpInfo, boolean bDebug)
 	{
-		 Log.e(LogTag, "onInit:");
+		 Log.i(LogTag, "onInit:");
 	}
 
 	String mLuaPath;
 	public static void registerLuaCall(String luaPath)
 	{
-		//mLuaFunction = new LuaFunction(luaFunc);
-		//Log.e(LogTag, "luaFunc:" + luaFunc);
 		mSingle.mLuaPath = luaPath;
 	}
 
@@ -263,7 +261,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 
 	public static void writeToCharacteristic(String ser_uuid, String cha_uuid, String wdata_str)
 	{
-		Log.e(LogTag, "writeToCharacteristic: writeToCharacteristic" + ser_uuid);
+		//Log.i(LogTag, "writeToCharacteristic: writeToCharacteristic:" + ser_uuid);
 		BluetoothGattCharacteristic wcharacteristic = getCharacteristic(ser_uuid, cha_uuid);
 		if(wcharacteristic != null)
 		{
@@ -273,7 +271,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
     		mSingle.mBluetoothLeService.writeCharacteristic(wcharacteristic);
 		}
 		else
-			Log.e(LogTag, "writeToCharacteristic: wcharacteristic null null null");
+			Log.e(LogTag, "writeToCharacteristic: wcharacteristic is null");
 	}
 
 
@@ -298,7 +296,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		{
 			final byte[] data = characteristic.getValue();
 			String currDataStr = BluetoothLeService.characteristicData2JsStrValue(data);
-			Log.e(LogTag, "characteristicGetStrValue currDataStr:" + currDataStr);
+			Log.i(LogTag, "characteristicGetStrValue currDataStr:" + currDataStr);
 
 			return currDataStr;
 		}
@@ -332,7 +330,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 			mSingle.mBluetoothLeService.readCharacteristic(rcharacteristic);
 		}        
 		else
-			Log.e(LogTag, "rcharacteristic null null null-----------" + ser_uuid + "," + cha_uuid);
+			Log.e(LogTag, "readCharacteristic is null" + ser_uuid + "," + cha_uuid);
 	}
 
 	public static void setCharacteristicNotification(String ser_uuid, String cha_uuid, boolean isNotify)
@@ -340,7 +338,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
 		if(characteristic != null)
 		{
-			Log.e(LogTag, "setCharacteristicNotification-----------:" + ser_uuid + "," + cha_uuid + "," + isNotify);
+			Log.i(LogTag, "setCharacteristicNotification-----------:" + ser_uuid + "," + cha_uuid + "," + isNotify);
 			mSingle.mBluetoothLeService.setCharacteristicNotification(characteristic, isNotify);
 		}
 	}
@@ -359,34 +357,27 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		return mSingle.mConnected;
 	}
 
-	static Map<String,List<String>> s_checkUuids = new HashMap<String,List<String>>();
+	static ArrayList<String> s_checkUuids = new ArrayList<String>();
+
 	static String s_deviceName = null;
 
 	public static void setDeviceName(String deviceName)
 	{
-		Log.e(LogTag, "setDeviceName setDeviceName-----------:" + deviceName);
+		Log.i(LogTag, "setDeviceName setDeviceName-----------:" + deviceName);
 		s_deviceName = deviceName;
 	}
 
 	public static void setupBluetoothDelegate()
 	{
-		Log.e(LogTag, "setupBluetoothDelegate setupBluetoothDelegate-----------:");
+		Log.i(LogTag, "setupBluetoothDelegate setupBluetoothDelegate-----------:");
 		mSingle.searchBlueDevice();
 	}
 
 	
 	public static void setCharacteristicsUuid(String serUuid, String chaUuid)
 	{
-		List<String> chaUuids = s_checkUuids.get(serUuid);
-		if(chaUuids == null)
-		{
-			chaUuids = new ArrayList<String>();
-			chaUuids.add(chaUuid);
-			s_checkUuids.put(serUuid, chaUuids);
-		}
-		else{
-			chaUuids.add(chaUuid);
-		}
+		s_checkUuids.add(serUuid);
+		s_checkUuids.add(chaUuid);
 	}
 
     public static String readAllBlueGatt()
@@ -405,7 +396,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 			for (BluetoothGattService gattService : gattServices) 
 			{
 				uuid = gattService.getUuid().toString();
-				Log.e(LogTag, "charas-gattService-uuid:" + uuid);
+				Log.i(LogTag, "charas-gattService-uuid:" + uuid);
 
 				JSONObject serviceChild_js = new JSONObject();
 
@@ -413,7 +404,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 				for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics)
 				{
 					String uuid_cha = gattCharacteristic.getUuid().toString();
-					Log.e(LogTag, "charas-gattCharacteristic-uuid:" + uuid_cha);
+					Log.i(LogTag, "charas-gattCharacteristic-uuid:" + uuid_cha);
 
 					luaTableMap.put(uuid_cha, uuid);
 
@@ -458,29 +449,20 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 
     private void enableTXNotification(List<BluetoothGattService> gattServices) 
 	{
-		  for (Map.Entry<String,List<String>> entry : s_checkUuids.entrySet()) 
-		  {
-				String ser_uuid = entry.getKey();
-				List<String> check_uuids = entry.getValue();
-				for (String cha_uuid : check_uuids)
-				{
-					BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
-
-					if(characteristic != null)
-					{
-						mSingle.mBluetoothLeService.setCharacteristicNotification(characteristic, true);
-					
-						List<BluetoothGattDescriptor> gattDescriptors = characteristic.getDescriptors();
-						for (BluetoothGattDescriptor gattDescriptor : gattDescriptors)
-						{
-							mSingle.mBluetoothLeService.setCharacteristicDescriptor(characteristic, gattDescriptor.getUuid());
-						}
-					}
-				}
-		  }
-				
-
-		callBaseBridge(ON_READ_CHARACTERISTIC_FINSH, "");
+		 for (int i = 0; i < s_checkUuids.size(); i += 2) 
+		 {
+			String ser_uuid = s_checkUuids.get(i);
+			String cha_uuid = s_checkUuids.get(i+1);
+			BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
+			mSingle.mBluetoothLeService.setCharacteristicNotification(characteristic, true);
+			List<BluetoothGattDescriptor> gattDescriptors = characteristic.getDescriptors();
+			for (BluetoothGattDescriptor gattDescriptor : gattDescriptors)
+			{
+				//Log.i(LogTag, "-----------------------------------set notify ser:" + ser_uuid +",cha:" + cha_uuid + ",desc:"+gattDescriptor.getUuid());
+				mSingle.mBluetoothLeService.setCharacteristicDescriptor(characteristic, gattDescriptor.getUuid());
+			}
+			mSingle.mBluetoothLeService.readCharacteristic(characteristic);
+		}
     }
 
 	private void _stopScanLeDevice()
@@ -492,7 +474,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 			{
 				BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 				bluetoothLeScanner.stopScan(mLeScanCallback);
-				Log.e(LogTag, "-------------stop scanning");
+				//Log.i(LogTag, "-------------stop scanning");
 			}
 		}		
 	}
@@ -506,7 +488,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 			{
 				BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
 				bluetoothLeScanner.startScan(mLeScanCallback);
-				Log.e(LogTag, "-------------start scanning");
+				//Log.i(LogTag, "-------------start scanning");
 			}
 		}
 	}
@@ -553,13 +535,13 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		if(!mConnected)
 		{
 			//searchBlueDevice();
-		    Log.e(LogTag, "onResume2");
+		    Log.i(LogTag, "onResume");
 		    mMainActivity.registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 			if (mBluetoothLeService != null) {
 			    if(mDeviceAddress!=null)
 			    {
 			    	final boolean result = mBluetoothLeService.connect(mDeviceAddress);
-					Log.d("appactivity:", "Connect request result=" + result);
+					Log.d(LogTag, "Connect request result=" + result);
 			    }
 			}
 		}
@@ -567,7 +549,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 	
 
 	public void onDestroy() {
-		Log.e(LogTag, "appactivity-onDestroy");
+		Log.i(LogTag, "appactivity-onDestroy");
 
 		if(mBluetoothLeService!=null)
 		{
@@ -645,8 +627,6 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		    if(mBluetoothAdapter!=null)
 		    {
 		    	Intent gattServiceIntent = new Intent(mMainActivity, BluetoothLeService.class);
-
-				Log.e(LogTag, "AppActivity: bindServicebindServicebindServicebindServicebindService");
 		    	mMainActivity.bindService(gattServiceIntent, mServiceConnection, mMainActivity.BIND_AUTO_CREATE);
 		    }
 		}

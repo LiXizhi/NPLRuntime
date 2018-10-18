@@ -40,7 +40,7 @@ public class ParaEnginePluginWrapper {
 	protected static Object initPlugin(String classFullName
 			, Map<String , Object> initParams
 			, boolean bDebug) {
-		Log.e(TAG, "class name : ----" + classFullName + "----");
+		Log.i(TAG, "class name : ----" + classFullName + "----");
 
 		if (sPlugins.containsKey(classFullName)) {
 			return sPlugins.get(classFullName);
@@ -52,7 +52,7 @@ public class ParaEnginePluginWrapper {
 			String fullName = classFullName.replace('/', '.');
 			c = Class.forName(fullName);
 		} catch (ClassNotFoundException e) {
-			Log.e(TAG, "Class " + classFullName + " not found.");
+			Log.i(TAG, "Class " + classFullName + " not found.");
 			e.printStackTrace();
 			return null;
 		}
@@ -68,7 +68,7 @@ public class ParaEnginePluginWrapper {
 
 				return o;
 			} else {
-				Log.e(TAG, "Plugin " + classFullName + " wasn't initialized.");
+				Log.i(TAG, "Plugin " + classFullName + " wasn't initialized.");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
