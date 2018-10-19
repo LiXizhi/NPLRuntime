@@ -124,6 +124,11 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 					Log.i(LogTag, "!-------AppActivity: blue :connect");
 	            	mConnected = true;
 					callBaseBridge(SET_BLUE_STATUS, "1");
+
+					for(int i = 0; i < s_checkUuids.size(); ++i)
+					{
+						s_checkUuidsForWarp.add(s_checkUuids.get(i));
+					}
 	            } 
 				else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) 
 				{
@@ -131,6 +136,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 	            	mConnected = false;
 					callBaseBridge(SET_BLUE_STATUS, "0");
 
+					s_checkUuidsForWarp.clear();
 
 					searchBlueDevice();    		
 	            } 
@@ -162,6 +168,9 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 	            }
 				else if (BluetoothLeService.ACTION_DATA_DESCRIPTOR.equals(action)) 
 				{
+					///////////////////////////////////
+					warpCheckUUid();
+					//////////////////////////////////
 	            	String uuid = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_UUID);
 					String io = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_IO);
 					String status = intent.getStringExtra(BluetoothLeService.ON_DESCRIPTOR_STATUS);
@@ -358,6 +367,7 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 	}
 
 	static ArrayList<String> s_checkUuids = new ArrayList<String>();
+	static ArrayList<String> s_checkUuidsForWarp = new ArrayList<String>();
 
 	static String s_deviceName = null;
 
@@ -447,22 +457,29 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		}
 	}
 
-    private void enableTXNotification(List<BluetoothGattService> gattServices) 
+	private void warpCheckUUid()
 	{
-		 for (int i = 0; i < s_checkUuids.size(); i += 2) 
-		 {
-			String ser_uuid = s_checkUuids.get(i);
-			String cha_uuid = s_checkUuids.get(i+1);
+		if(s_checkUuidsForWarp.size() >= 2)
+		{
+			String ser_uuid = s_checkUuidsForWarp.get(0);
+			String cha_uuid = s_checkUuidsForWarp.get(1);
 			BluetoothGattCharacteristic characteristic = getCharacteristic(ser_uuid, cha_uuid);
 			mSingle.mBluetoothLeService.setCharacteristicNotification(characteristic, true);
 			List<BluetoothGattDescriptor> gattDescriptors = characteristic.getDescriptors();
 			for (BluetoothGattDescriptor gattDescriptor : gattDescriptors)
 			{
-				//Log.i(LogTag, "-----------------------------------set notify ser:" + ser_uuid +",cha:" + cha_uuid + ",desc:"+gattDescriptor.getUuid());
+				Log.i(LogTag, "-----------------------------------set notify ser:" + ser_uuid +",cha:" + cha_uuid + ",desc:"+gattDescriptor.getUuid());
 				mSingle.mBluetoothLeService.setCharacteristicDescriptor(characteristic, gattDescriptor.getUuid());
 			}
-			mSingle.mBluetoothLeService.readCharacteristic(characteristic);
+			//mSingle.mBluetoothLeService.readCharacteristic(characteristic);
+			s_checkUuidsForWarp.remove(0);
+			s_checkUuidsForWarp.remove(0);
 		}
+	}
+
+    private void enableTXNotification(List<BluetoothGattService> gattServices) 
+	{
+		warpCheckUUid();
     }
 
 	private void _stopScanLeDevice()
