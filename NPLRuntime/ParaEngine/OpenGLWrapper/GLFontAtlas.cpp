@@ -30,11 +30,10 @@ GLFontAtlas::GLFontAtlas(Font &theFont)
 
 GLFontAtlas::~GLFontAtlas()
 {
-    _font->Release();
+	SAFE_RELEASE(_font);
     releaseTextures();
 
-    delete []_currentPageData;
-
+	SAFE_DELETE_ARRAY(_currentPageData);
 
 	if (_iconv)
 	{
@@ -408,12 +407,13 @@ void GLFontAtlas::setAntiAliasTexParameters()
 void ParaEngine::GLFontAtlas::init()
 {
 	if (_inited)return;
-	_inited = true;
+	
+
+
 	if (_fontFreeType)
 	{
 		_lineHeight = _font->getFontMaxHeight();
 		_fontAscender = _fontFreeType->getFontAscender();
-	
 		_currentPage = 0;
 		_currentPageOrigX = 0;
 		_currentPageOrigY = 0;
@@ -424,6 +424,7 @@ void ParaEngine::GLFontAtlas::init()
 		{
 			_letterPadding += 2 * FontFreeType::DistanceMapSpread;
 		}
+
 		_currentPageDataSize = CacheTextureWidth * CacheTextureHeight;
 		auto outlineSize = _fontFreeType->getOutlineSize();
 		if (outlineSize > 0)
@@ -432,10 +433,18 @@ void ParaEngine::GLFontAtlas::init()
 			_currentPageDataSize *= 2;
 		}
 
+		SAFE_DELETE_ARRAY(_currentPageData);
 		_currentPageData = new (std::nothrow) unsigned char[_currentPageDataSize];
 		memset(_currentPageData, 0, _currentPageDataSize);
+
 		auto  pixelFormat = outlineSize > 0 ? EPixelFormat::A8L8 : EPixelFormat::A8;
 		auto texture = CGlobals::GetRenderDevice()->CreateTexture(CacheTextureWidth, CacheTextureHeight, pixelFormat, ETextureUsage::Default);
+
+		if (!texture)
+		{
+			return;
+		}
+
 		texture->UpdateImage(0,0, 0, CacheTextureWidth, CacheTextureHeight, _currentPageData);
 
 		if (_antialiasEnabled)
@@ -449,8 +458,12 @@ void ParaEngine::GLFontAtlas::init()
 			texture->SetMagFilter(ETextureFilter::Point);
 		}
 
+
 		addTexture(texture, 0);
+
 		texture->Release();
+
 	}
 
+	_inited = true;
 }

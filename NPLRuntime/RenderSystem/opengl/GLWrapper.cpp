@@ -22,7 +22,12 @@ void LibGL::BindTexture2D(int slot, int texture)
 
 void LibGL::ClearCache()
 {
-	memset((void*)s_texture_cache, 0, sizeof(s_texture_cache));
+	//memset((void*)s_texture_cache, 0, sizeof(s_texture_cache));
+	for (size_t i = 0; i < MAX_TEXTURE_SLOT; i++)
+	{
+		s_texture_cache[i] = -1;
+	}
+
 	s_current_program = -1;
 }
 
