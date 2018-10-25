@@ -300,7 +300,7 @@ void CParaEngineApp::LoadAndApplySettings()
 		//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
 		m_dwCreationWidth = 1600;
 #else
-		m_dwCreationWidth = 1280;
+		m_dwCreationWidth = 622;
 #endif
 	}
         
@@ -311,7 +311,7 @@ void CParaEngineApp::LoadAndApplySettings()
 #ifdef PARAENGINE_MOBILE
 		m_dwCreationHeight = 900;
 #else
-		m_dwCreationHeight = 720;
+		m_dwCreationHeight = 382;
 #endif
 	}
 
