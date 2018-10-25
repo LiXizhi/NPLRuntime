@@ -12,6 +12,7 @@ using namespace ParaEngine;
 
 ParaEngine::CGeosetObject::CGeosetObject()
 	:mParent(nullptr)
+	,mNeedUpdateGeometry(true)
 {}
 
 ParaEngine::CGeosetObject::~CGeosetObject()
@@ -24,6 +25,12 @@ void ParaEngine::CGeosetObject::SetAssetFileName(const std::string & sFilename)
 
 HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 {
+	if(mNeedUpdateGeometry&&mParent&&mEntity->GetModel())
+	{
+		mParent->SetGeometryDirty(true);
+		mParent->UpdateGeometry();
+		mNeedUpdateGeometry=false;
+	}
 	if(!ViewTouch()||GetOpacity()==0.f)
 	{
 		return E_FAIL;

@@ -12,6 +12,7 @@ namespace ParaEngine
 		asset_ptr<ParaXEntity> mEntity;
 		CBipedObject * mParent;
 		std::map<uint32,TextureEntity*> mReplaceTextures;
+		bool mNeedUpdateGeometry;
 	public:
 		ATTRIBUTE_DEFINE_CLASS(CGeosetObject);
 		ATTRIBUTE_SUPPORT_CREATE_FACTORY(CGeosetObject);
