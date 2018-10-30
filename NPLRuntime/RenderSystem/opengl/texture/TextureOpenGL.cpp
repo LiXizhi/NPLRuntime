@@ -841,12 +841,12 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
     
     for (int i = 0; i < image->mipmaps.size(); i++)
     {
-        auto img = image->mipmaps[i];
+        auto& imgMipmapsInfo = image->mipmaps[i];
        // tex->UpdateImage(i, 0, 0, image->mipmaps[i].width, image->mipmaps[i].height, ((unsigned char*)image->data) + image->mipmaps[i].offset);
         
-        const unsigned char* pSrc= ((unsigned char*)image->data) + image->mipmaps[i].offset;
-        unsigned char* pDest = flipImageData(pSrc, glFormat, img.width, img.height);
-        glTexImage2D(GL_TEXTURE_2D, 0, glFormat, img.width, img.height, 0, glPixelFormat, glDataType,pDest);
+        const unsigned char* pSrc= ((unsigned char*)image->data) + imgMipmapsInfo.offset;
+        unsigned char* pDest = flipImageData(pSrc, glFormat, imgMipmapsInfo.width, imgMipmapsInfo.height);
+        glTexImage2D(GL_TEXTURE_2D, 0, glFormat, imgMipmapsInfo.width, imgMipmapsInfo.height, 0, glPixelFormat, glDataType,pDest);
         delete [] pDest;
     }
     

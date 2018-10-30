@@ -139,7 +139,9 @@ ImagePtr PNGParser::Parse(const unsigned char* buffer, size_t buffer_size)
 	rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
 	uint32_t dataLen = rowbytes * height;
-	unsigned char* _data = static_cast<unsigned char*>(malloc(dataLen * sizeof(unsigned char)));
+	//unsigned char* _data = static_cast<unsigned char*>(malloc(dataLen * sizeof(unsigned char)));
+    unsigned char* _data = new unsigned char[dataLen];
+    
 	if (!_data)
 	{
 		if (row_pointers != nullptr)
