@@ -837,6 +837,34 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
     GLuint textureID = 0;
     glGenTextures(1, &textureID);
 	LibGL::BindTexture2D(0,textureID);
+
+	if (image->mipmaps.size() == 1)
+	{
+		auto& imgMipmapsInfo = image->mipmaps[0];
+		uint32_t bpp = GetBPP(glFormat);
+		unsigned int bytesPerRow = imgMipmapsInfo.width * bpp;
+
+		if (bytesPerRow % 8 == 0)
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+		}
+		else if (bytesPerRow % 4 == 0)
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		}
+		else if (bytesPerRow % 2 == 0)
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+		}
+		else
+		{
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		}
+	}
+	else
+	{
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	}
     
     
     for (int i = 0; i < image->mipmaps.size(); i++)
@@ -846,13 +874,10 @@ ParaEngine::TextureOpenGL* ParaEngine::TextureOpenGL::CreateUnCompressedTextureW
         
         const unsigned char* pSrc= ((unsigned char*)image->data) + imgMipmapsInfo.offset;
         unsigned char* pDest = flipImageData(pSrc, glFormat, imgMipmapsInfo.width, imgMipmapsInfo.height);
-        glTexImage2D(GL_TEXTURE_2D, 0, glFormat, imgMipmapsInfo.width, imgMipmapsInfo.height, 0, glPixelFormat, glDataType,pDest);
+        glTexImage2D(GL_TEXTURE_2D, i, glFormat, imgMipmapsInfo.width, imgMipmapsInfo.height, 0, glPixelFormat, glDataType,pDest);
         delete [] pDest;
     }
     
-    
-    
-
     
     GLenum error = glGetError();
     if (error != GL_NO_ERROR)
