@@ -84,9 +84,9 @@ inline const std::string string_to_lower(const std::string& str)
 	return data;
 }
 
-inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, std::vector<std::tuple<std::string, std::string>> initializer)
+inline bool ParseSamplerInitializer(SamplerInitialzerInfo& info, const std::vector<std::tuple<std::string, std::string>>& initializer)
 {
-	for (std::tuple<std::string, std::string> kv: initializer)
+	for (const std::tuple<std::string, std::string>& kv: initializer)
 	{
 		std::string key = string_to_lower(std::get<0>(kv));
 		std::string value = string_to_lower(std::get<1>(kv));
