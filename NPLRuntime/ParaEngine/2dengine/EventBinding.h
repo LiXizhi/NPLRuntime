@@ -4,6 +4,7 @@
 #include <bitset>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <boost/array.hpp>
 #include "util/cow_ptr.hpp"
 #include "Framework/InputSystem/VirtualKey.h"
@@ -135,8 +136,8 @@ namespace ParaEngine
 		EventScriptMap_type m_pEventToScript;
 		
 		EventMapping_cow_type m_pEventMappingTable;
-		static map<string,int> StringToEventTable;
-		static map<int,string> EventToStringTable;
+		static unordered_map<string,int> StringToEventTable;
+		static unordered_map<int,string> EventToStringTable;
 	};
 
 	// since most event binding is stored as copy on write pointer. 

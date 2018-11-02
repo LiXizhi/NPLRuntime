@@ -216,7 +216,7 @@ ParaEngine::IReadFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForRead(const 
 
 ParaEngine::IWriteFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForWrite(const std::string& filename)
 {
-	
+	return nullptr;
 }
 
 bool ParaEngine::CParaFileUtilsAndroid::MakeDirectoryFromFilePath(const std::string filename)

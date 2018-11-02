@@ -20,8 +20,8 @@
 
 using namespace std;
 using namespace ParaEngine;
-map<string,int> CEventBinding::StringToEventTable;
-map<int,string> CEventBinding::EventToStringTable;
+unordered_map<string,int> CEventBinding::StringToEventTable;
+unordered_map<int,string> CEventBinding::EventToStringTable;
 DWORD CEventBinding::ScancodeToKeyTable[(int)EVirtualKey::COUNT];
 
 void CEventBinding::InitMsg(MSG *pevent,DWORD time,DWORD message,POINT& pt)
@@ -738,16 +738,16 @@ bool CEventBinding::Equals(const IObject *obj)const
 }
 int CEventBinding::StringToEventValue(const string &str)
 {
-	map<string,int>::iterator iter;
-	if ((iter=StringToEventTable.find(str))!=StringToEventTable.end()) {
+	auto iter = StringToEventTable.find(str);
+	if (iter != StringToEventTable.end()) {
 		return iter->second;
 	}
 	return 0;
 }
 string& CEventBinding::EventValueToString(int value)
 {
-	map<int,string>::iterator iter;
-	if ((iter=EventToStringTable.find(value))!=EventToStringTable.end()) {
+	auto iter = EventToStringTable.find(value);
+	if (iter != EventToStringTable.end()) {
 		return iter->second;
 	}
 

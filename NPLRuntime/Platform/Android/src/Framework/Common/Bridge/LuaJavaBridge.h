@@ -213,6 +213,7 @@ namespace ParaEngine {
 			JObject& operator=(JObject const& other)
 			{
 				m_handle = other.m_handle;
+				return *this;
 			}
 
 			jobject get() const
