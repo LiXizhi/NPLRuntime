@@ -634,14 +634,16 @@ namespace cAudio
 				{					
 					audioSources.erase(audioSources.begin()+i);		
 
-					if (source->getReferenceCount() <= 1)
-						CAUDIO_DELETE source;
-					else
-						source->drop();
+					
 
 					break;
 				}
 			}
+            
+            if (source->getReferenceCount() <= 1)
+                CAUDIO_DELETE source;
+            else
+                source->drop();
 		}
 	}
 };
