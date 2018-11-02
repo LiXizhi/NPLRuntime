@@ -15,7 +15,7 @@ if [ $# -gt 0 ]; then
 fi
 echo "parallel build with ${JOBS:-1} jobs, you can set JOBS=6 or ./build_linux.sh 6"
 
-cmake -DCMAKE_BUILD_TYPE=${2:-Release} ../../NPLRuntime/ && make --jobs=${JOBS:-1}
+cmake -DCMAKE_BUILD_TYPE=${2:-Release} -DNPLRUNTIME_SERVER=ON ../../NPLRuntime/ && make --jobs=${JOBS:-1}
 result=$?
 popd
 
@@ -25,9 +25,29 @@ if [ $result == 0 ]; then
     pushd ParaWorld/bin64/
     ls -l
     npl_exe_path=/usr/local/bin/npl
-	nplc_exe_path=/usr/local/bin/nplc
+	npl_lua_path=/usr/lib/libluajit21.so
+	npl_sql_path=/usr/lib/libParaSqlite.so
+	
     echo "install executable to $npl_exe_path"
-    if [ -f ./ParaEngineServer ]; then
+    if [ -f ./libluajit21.so ]; then
+        if [ ! -e $npl_lua_path ] && [ ! -L $npl_lua_path ];  then
+            ln -s $(pwd)/libluajit21.so $npl_lua_path
+        else
+            echo "lua already exist at $npl_lua_path"
+        fi
+        ls -l $npl_lua_path
+    fi
+	
+	if [ -f ./libParaSqlite.so ]; then
+        if [ ! -e $npl_sql_path ] && [ ! -L $npl_sql_path ];  then
+            ln -s $(pwd)/libParaSqlite.so $npl_sql_path
+        else
+            echo "libParaSqlite already exist at $npl_sql_path"
+        fi
+        ls -l $npl_sql_path
+    fi
+	
+	if [ -f ./ParaEngineServer ]; then
         if [ ! -e $npl_exe_path ] && [ ! -L $npl_exe_path ];  then
             ln -s $(pwd)/ParaEngineServer $npl_exe_path
         else
@@ -35,18 +55,8 @@ if [ $result == 0 ]; then
         fi
         ls -l $npl_exe_path
     fi
-	if [ ! -f ./nplc.sh ]; then
-		cp -f ../../npl_packages/main/script/ide/System/nplcmd/nplc.sh  nplc.sh
-		chmod +x nplc.sh
-		ln -s $(pwd)/nplc.sh $nplc_exe_path
-	fi
-    ls -l $nplc_exe_path
 	
-    if [ -f ./libluajit21.so ]; then
-        echo "Force using LJ_GC64 in 64bits system"
-        cp liblua.so libluajit20.so
-        cp -f libluajit21.so liblua.so
-    fi
+	
     popd
 
     # run all NPL tests

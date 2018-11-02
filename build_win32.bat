@@ -10,44 +10,12 @@ rem - To build client version: open `Client/cmakelist.txt` with cmake-gui or sim
 
 pushd .
 
-rem Install cmake
-if NOT EXIST "bin\cmake" (
-	pushd bin
-	powershell -Command "Invoke-WebRequest https://cmake.org/files/v3.10/cmake-3.10.0-win64-x64.zip -OutFile cmake.zip"
-	7z x cmake.zip -obin > nul
-	move bin\cmake-* cmake
-	cmake\bin\cmake.exe --version
-	popd
-)
-
-rem Install Boost
-if NOT EXIST "bin\boost" (
-	pushd bin
-	powershell -Command "Invoke-WebRequest http://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z -OutFile boost.7z"
-	7z x boost.7z -obin > nul
-	move bin\boost_* boost
-	cd boost
-	bootstrap.bat
-	b2 address-model=32 runtime-link=static threading=multi variant=release --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-serialization --with-iostreams --with-regex stage
-	popd
-)
-set BOOST_ROOT=%~dp0bin\boost
-
 rem Build main executable
-mkdir bin\client_win32
-cd bin\client_win32
+mkdir build\win32
+cd build\win32
 
-call "..\cmake\bin\cmake.exe" ../../Client/
-msbuild  %~dp0\bin\client_win32\CLIENT.sln /verbosity:minimal /property:Configuration=Release
-
+call "cmake.exe" ../../NPLRuntime
 popd
-
-pushd ParaWorld\bin32\
-	if NOT EXIST "npl.exe" ( mklink npl.exe ParaEngineClient.exe )
-	if NOT EXIST "nplc.bat" ( copy ..\..\npl_packages\main\script\ide\System\nplcmd\nplc.bat  nplc.bat )
-	dir
-popd
-
 
 
 

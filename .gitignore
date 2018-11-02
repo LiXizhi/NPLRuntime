@@ -39,25 +39,6 @@ Tests/
 !NPLRuntime/tests
 WanDeploy/
 WebAPI/
-!Client/
-Client/*
-!Client/CMakeLists.txt
-!Client/trunk/
-Client/trunk/*
-!Client/trunk/ParaEngineClient/
-!Client/trunk/ParaEngineClientApp/
-!Client/trunk/PhysicsBT/
-!Client/trunk/externals/
-Client/trunk/externals/*
-!Client/trunk/externals/assimp*
-!Client/trunk/externals/bullet-2.75/
-!Client/trunk/externals/bullet3/
-!Client/trunk/externals/png*
-!Client/trunk/externals/jpeg*
-!Client/trunk/externals/freetype2*
-!Client/trunk/externals/gl*
-!Client/trunk/externals/icon/
-!Client/trunk/externals/FreeImage_3120/
 
 !Server/
 Server/*
@@ -77,12 +58,13 @@ Server/trunk/*
 
 build/
 buildvm_arch.h
-
 .DS_Store
-
 settings.json
-core
-Client/trunk/ParaEngineClient/shaders/glsl/blockEffect.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/BMaxModel.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/simple_particle.fx.glsl
-Client/trunk/ParaEngineClient/shaders/glsl/sky.fx.glsl
+/NPLRuntime/Platform/Android/assets
+/NPLRuntime/Platform/OSX/assets
+/NPLRuntime/Platform/iOS/assets
+/NPLRuntime/Platform/Android/assets*
+/NPLRuntime/externals/boost/prebuild
+NPLRuntime/externals/LuaJIT2_0/log/
+NPLRuntime/externals/LuaJIT2_1/log/
+*.entitlements

@@ -1,0 +1,47 @@
+if(WIN32 OR APPLE AND NOT IOS)
+    include(${PROJECT_SOURCE_DIR}/cmake/ConfigBoost.cmake)
+    find_package(Boost COMPONENTS filesystem REQUIRED)
+    include_directories("${Boost_INCLUDE_DIRS}")
+    add_executable(embed-resource  embedresource.cpp embedresource.h README.md)
+    target_link_libraries(embed-resource ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY})
+    set(EMBED_RES_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+endif()
+
+## embed with absolute path
+function(embed_resources_abs out_var)
+    set(result)
+    if(ANDROID)
+        if( ${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+            set(TOOL ${PROJECT_SOURCE_DIR}/externals/EmbedResource/prebuild/win32/embed-resource.exe)
+        endif()
+    elseif(IOS)
+        set(TOOL ${PROJECT_SOURCE_DIR}/externals/EmbedResource/prebuild/osx/embed-resource)
+    else()
+        set(TOOL embed-resource)
+    endif()
+    #message("Tool:" ${TOOL})
+    foreach(in_f ${ARGN})
+        set(src_f ${in_f})
+		get_filename_component(filename ${src_f} NAME)
+        set(out_f "${CMAKE_CURRENT_BINARY_DIR}/resource_embedded/${filename}.cxx")
+        add_custom_command(OUTPUT ${out_f}
+                COMMAND ${TOOL} ${out_f} ${src_f}
+                DEPENDS ${in_f}
+                COMMENT "Building binary file for embedding ${out_f}")
+        list(APPEND result "${out_f}")
+    endforeach()
+    set(${out_var} "${result}" PARENT_SCOPE)
+endfunction()
+
+IF(MSVC)
+	# statically link MSVC to reduce dependancies
+	foreach(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+	 	if(${flag_var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	 	endif(${flag_var} MATCHES "/MD")
+	 	if(${flag_var} MATCHES "/MDd")
+	 		string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+		endif(${flag_var} MATCHES "/MDd")
+	endforeach(flag_var)
+ENDIF()
+

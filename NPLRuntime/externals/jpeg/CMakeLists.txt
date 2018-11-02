@@ -1,0 +1,25 @@
+add_library(libjpeg INTERFACE)
+
+
+if(ANDROID)
+	target_include_directories(libjpeg INTERFACE include/android)
+	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/android/${CMAKE_ANDROID_ARCH_ABI}/libjpeg.a)
+elseif(WIN32)
+	target_include_directories(libjpeg INTERFACE include/win32)
+	if(CMAKE_CL_64)
+		target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/x64/libjpeg.lib)
+	else()
+		target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/win32/x86/libjpeg.lib)
+	endif()
+elseif(IOS)
+	target_include_directories(libjpeg INTERFACE include/ios)
+	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/ios/libjpeg.a)
+elseif(APPLE)
+	target_include_directories(libjpeg INTERFACE include/mac)
+	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/mac/libjpeg.a)
+elseif(NPLRUNTIME_SERVER)
+	target_include_directories(libjpeg INTERFACE include/linux)
+	target_link_libraries(libjpeg INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/prebuilt/linux/libjpeg.a)
+endif()
+
+
