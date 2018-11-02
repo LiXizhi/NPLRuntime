@@ -260,7 +260,20 @@ typedef void noreturn_t;
 #define TRUE	1
 #endif
 #else
+
+#ifdef TRUE
+    #define OLD_TRUE TRUE
+    #define OLD_FALSE FALSE
+    #undef TRUE
+    #undef FALSE
+#endif
 typedef enum { FALSE = 0, TRUE = 1 } boolean;
+#ifdef OLD_TRUE
+    #define TRUE OLD_TRUE
+    #define FALSE OLD_FALSE
+    #undef OLD_TRUE
+    #undef OLD_FALSE
+#endif
 #endif
 
 
