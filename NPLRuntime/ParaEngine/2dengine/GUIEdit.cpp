@@ -1833,12 +1833,14 @@ bool ParaEngine::CGUIEditBox::attachWithIME()
 {
 	//bool ret = GUIIMEDelegate::attachWithIME();
 	//return ret;
+	return true;
 }
 
 bool ParaEngine::CGUIEditBox::detachWithIME()
 {
 	//bool ret = GUIIMEDelegate::detachWithIME();
 	//return ret;
+	return true;
 }
 
 bool ParaEngine::CGUIEditBox::canAttachWithIME()

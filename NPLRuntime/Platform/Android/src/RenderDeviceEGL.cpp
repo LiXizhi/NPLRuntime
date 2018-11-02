@@ -21,6 +21,7 @@ void ParaEngine::RenderDeviceEGL::Reset(EGLDisplay display, EGLSurface surface)
 
 bool ParaEngine::RenderDeviceEGL::Present()
 {
-	eglSwapBuffers(m_Display, m_Surface);
+	return eglSwapBuffers(m_Display, m_Surface) == EGL_TRUE;
+
 }
 
