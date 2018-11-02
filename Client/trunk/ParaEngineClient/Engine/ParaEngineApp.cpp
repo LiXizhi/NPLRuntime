@@ -295,23 +295,29 @@ void CParaEngineApp::LoadAndApplySettings()
 		m_dwCreationWidth = (int)(*pField);
 	else
 	{
-#ifdef PARAENGINE_MOBILE
+//#define CHECK_QQ_PARAMS
+
+#if defined(PARAENGINE_MOBILE)
 		//cellfy: this setting has no effect on real mobile devices, it only affects the emulator program
 		//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
 		m_dwCreationWidth = 1600;
-#else
+#elif defined(CHECK_QQ_PARAMS)
 		m_dwCreationWidth = 622;
+#else
+		m_dwCreationWidth = 1280;
 #endif
 	}
-        
+	
 	if ((pField = settings.GetDynamicField("ScreenHeight")))
 		m_dwCreationHeight = (int)(*pField);
 	else
 	{
-#ifdef PARAENGINE_MOBILE
+#if defined(PARAENGINE_MOBILE)
 		m_dwCreationHeight = 900;
-#else
+#elif defined(CHECK_QQ_PARAMS)
 		m_dwCreationHeight = 382;
+#else
+		m_dwCreationHeight = 720;
 #endif
 	}
 
