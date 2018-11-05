@@ -23,14 +23,8 @@ namespace ParaEngineInfo
 	string g_sWaterMark = "Powered by ParaEngine - Demo Version";
 	string g_sPublicKey = "PARAENGINE_LiXizhi";
 
-#define LICENSE_ZJU
-#ifdef LICENSE_ZJU
-	string g_sAuthorizedTo = "测试用户";
-	string g_sCopyright = "深圳国际技术创新研究院ParaEngine工作室授权杭州商学院项目开发专用版,授权有效期至2007年12月。";
-#else
-	string g_sAuthorizedTo = "ParaEngine开发员";
-	string g_sCopyright = "深圳国际技术创新研究院ParaEngine工作室授权内部测试版";
-#endif
+	string g_sAuthorizedTo = "ParaEngine Dev Team";
+	string g_sCopyright = "Copyright(c) 2005-2018";
 
 	string CParaEngineInfo::GetVersion(){
 		if(g_sVersion.empty())

@@ -3,6 +3,7 @@
 
 #if defined(WIN32)
 #include <Windows.h>
+#include <mmsystem.h>
 #include <stdio.h>
 
 #define ALIAS "recsound"

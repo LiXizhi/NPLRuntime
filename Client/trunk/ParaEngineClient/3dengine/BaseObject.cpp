@@ -261,7 +261,7 @@ void CBaseObject::SetBoundRect(float fWidth ,float fHeight, float fFacing)
 void CBaseObject::GetBoundRect(float* fWidth ,float* fHeight, float* fFacing)
 {
 	*fWidth = GetWidth();
-	*fHeight = GetHeight();
+	*fHeight = GetDepth();
 	*fFacing = GetFacing();
 }
 
