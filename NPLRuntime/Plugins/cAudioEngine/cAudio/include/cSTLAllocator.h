@@ -62,7 +62,7 @@ namespace cAudio
 		pointer allocate( size_type count, typename std::allocator<void>::const_pointer ptr = 0 )
 		{
             (void)ptr;
-			register size_type size = count*sizeof( T );
+			size_type size = count*sizeof( T );
 			pointer p  = static_cast<pointer>(CAUDIO_MALLOC(size));
 			return p;
 		}

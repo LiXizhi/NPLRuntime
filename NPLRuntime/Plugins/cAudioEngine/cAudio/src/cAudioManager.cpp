@@ -508,7 +508,7 @@ namespace cAudio
 			{
 				case ON_INIT: 
 					
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onInit();
 					}
@@ -517,7 +517,7 @@ namespace cAudio
 				
 				case ON_UPDATE:
 
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onUpdate();
 					}
@@ -526,7 +526,7 @@ namespace cAudio
 
 				case ON_RELEASE:
 
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onRelease();
 					}
@@ -535,7 +535,7 @@ namespace cAudio
 
 				case ON_SOURCECREATE:
 
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onSourceCreate();
 					}
@@ -544,7 +544,7 @@ namespace cAudio
 
 				case ON_DECODERREGISTER:
 
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onDecoderRegister();
 					}
@@ -553,7 +553,7 @@ namespace cAudio
 
 				case ON_DATASOURCEREGISTER:
 
-					for(it; it != eventHandlerList.end(); it++)
+					for(; it != eventHandlerList.end(); it++)
 					{
 						(*it)->onDataSourceRegister();
 					}

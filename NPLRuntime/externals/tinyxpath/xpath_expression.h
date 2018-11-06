@@ -106,6 +106,8 @@ public :
          case e_node_set :
             ns_set = er_2 . ns_set;
             break;
+		 default:
+			 break;
       }
       #ifdef TINYXPATH_DEBUG
          S_comment = er_2 . S_comment;
