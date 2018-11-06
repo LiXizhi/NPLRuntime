@@ -434,12 +434,15 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 		int nTextures = _nTextures;
 
 		xmesh.m_objNum.nTextures = nTextures;
+#pragma pack(push) 
+#pragma pack(1)
 		struct ModelTextureDef_
 		{
 			uint32 type;
 			uint32 nOffsetEmbeddedTexture;
-			char sName;
+			char sName[1];
 		};
+#pragma pack(pop)
 		if (nTextures > 0)
 		{ // at least one texture
 			typedef TextureEntity* LPTextureEntity;
