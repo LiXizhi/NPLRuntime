@@ -133,14 +133,14 @@ public class BluetoothLeService extends Service {
 				final Intent intent = new Intent(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
 				sendBroadcast(intent);   
             } else {
-                Log.e(TAG, "onServicesDiscovered received: " + status);
+                Log.i(TAG, "onServicesDiscovered received: " + status);
             }
         }
         
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) 
 		{
-        	Log.e(TAG, "onCharacteristicRead uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
+        	Log.i(TAG, "onCharacteristicRead uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
 
 
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
@@ -158,7 +158,7 @@ public class BluetoothLeService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) 
 		{
-        	Log.e(TAG, "onCharacteristicChanged uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
+        	Log.i(TAG, "onCharacteristicChanged uuid: " + characteristic.getUuid().toString() + ",data:" + new String(characteristic.getValue()) );
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
 
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
@@ -175,7 +175,7 @@ public class BluetoothLeService extends Service {
 
         public void onCharacteristicWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattCharacteristic characteristic, int paramInt)
         {
-        	Log.e(TAG, "onCharacteristicWrite: ");
+        	Log.i(TAG, "onCharacteristicWrite: ");
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_CHARACTERISTIC);
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_UUID, characteristic.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_CHARACTERISTIC_IO, "w");
@@ -190,10 +190,9 @@ public class BluetoothLeService extends Service {
 		
         public void onDescriptorWrite(BluetoothGatt paramBluetoothGatt, BluetoothGattDescriptor paramBluetoothGattDescriptor, int paramInt)
         {
-        	Log.e(TAG, "onDescriptorWrite: ");
+        	Log.i(TAG, "onDescriptorWrite: ");
 			super.onDescriptorWrite(paramBluetoothGatt, paramBluetoothGattDescriptor, paramInt);
 
-			Log.e(TAG, "onDescriptorWrite-gogogo:" + paramBluetoothGattDescriptor.getCharacteristic().getUuid().toString());
 			final Intent intent = new Intent(BluetoothLeService.ACTION_DATA_DESCRIPTOR);
 			intent.putExtra(BluetoothLeService.ON_DESCRIPTOR_UUID, paramBluetoothGattDescriptor.getUuid().toString());
 			intent.putExtra(BluetoothLeService.ON_DESCRIPTOR_IO, "w");
@@ -323,8 +322,7 @@ public class BluetoothLeService extends Service {
         }
         
         boolean isWrite = mBluetoothGatt.writeCharacteristic(characteristic);
-        Log.e(TAG, "mBluetoothGatt writeCharacteristic="+isWrite);
-        
+        Log.i(TAG, "mBluetoothGatt writeCharacteristic="+isWrite);
     }
 
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enabled) 
@@ -335,12 +333,11 @@ public class BluetoothLeService extends Service {
             return;
         }
 
-        characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-		mBluetoothGatt.setCharacteristicNotification(characteristic, false);
-		mBluetoothGatt.readCharacteristic(characteristic);
-
-		characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-        mBluetoothGatt.setCharacteristicNotification(characteristic, true); 
+       // characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+		//mBluetoothGatt.setCharacteristicNotification(characteristic, false);
+		//mBluetoothGatt.readCharacteristic(characteristic);
+		//characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+        mBluetoothGatt.setCharacteristicNotification(characteristic, enabled); 
     }
 
 	public void setCharacteristicDescriptor(BluetoothGattCharacteristic characteristic, UUID desc_uuid)
@@ -348,7 +345,6 @@ public class BluetoothLeService extends Service {
 		BluetoothGattDescriptor descriptor = characteristic.getDescriptor(desc_uuid);
 		if(descriptor!=null)
 		{
-			Log.e(TAG, "BluetoothAdapter initialized");
 			descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
 			this.mBluetoothGatt.writeDescriptor(descriptor);
 		}
