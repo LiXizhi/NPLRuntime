@@ -111,14 +111,11 @@ void ParaEngine::CBlockWorld::EnterWorld(const string& sWorldDir, float x, float
 	else
 		m_worldInfo.ResetWorldName(CWorldInfo::GetSingleton().GetDefaultWorldConfigName());
 
-	//init data
-#if defined(PARAENGINE_MOBILE)
-	m_maxCacheRegionCount = 4;
-#else
+
 	// m_maxCacheRegionCount = 16;
 	// only use more region cache on 64 bits system.
 	m_maxCacheRegionCount = (sizeof(void*) > 4) ? 16 : 9;
-#endif
+
 	/** only cache 4 region for networked world*/
 	if(IsRemote())
 		m_maxCacheRegionCount = 4;

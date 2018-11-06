@@ -55,7 +55,7 @@ void CTileObject::SetBoundRect(float fWidth, float fHeight, float fFacing)
 void CTileObject::GetBoundRect(float* fWidth, float* fHeight, float* fFacing)
 {
 	*fWidth = m_aabb.GetWidth();
-	*fHeight = m_aabb.GetHeight();
+	*fHeight = m_aabb.GetDepth();
 	*fFacing = m_fYaw;
 }
 
