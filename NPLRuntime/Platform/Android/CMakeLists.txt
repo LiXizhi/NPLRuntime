@@ -33,6 +33,17 @@ target_compile_definitions(Paracraft PUBLIC
 	OPENAL_STATIC
 )
 
+CHECK_SYMBOL_EXISTS(__swbuf, stdio.h, HAVE_SWBUF)
+CHECK_SYMBOL_EXISTS(__srget, stdio.h, HAVE_SRGET)
+
+if (NOT HAVE_SWBUF)
+	ADD_DEFINITIONS(-DNOT_HAVE_SWBUF)
+endif()
+
+if (NOT HAVE_SRGET)
+	ADD_DEFINITIONS(-DNOT_HAVE_SRGET)
+endif()
+
 
 set_target_properties(Paracraft PROPERTIES 
     ANDROID_GUI TRUE
