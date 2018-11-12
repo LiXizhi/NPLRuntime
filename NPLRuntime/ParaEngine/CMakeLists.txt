@@ -31,6 +31,7 @@ ucm_add_dirs(
     util
     WebSocket
     terrain
+	AutoRigger
 TO sources_commmon RECURSIVE
 )
 
@@ -121,6 +122,8 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
     list(APPEND sources_rendersystem ResourceEmbedded.cpp)
 endif()
 
+list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/Pinocchio/include)
+
 
 
 ###################################################################
@@ -141,6 +144,7 @@ target_include_directories(ParaEngine PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ParaScriptBindings
     ${CMAKE_CURRENT_SOURCE_DIR}/NPL
     ${CMAKE_CURRENT_SOURCE_DIR}/Framework/Interface
+	${CMAKE_CURRENT_SOURCE_DIR}/AutoRigger
     ${Boost_INCLUDE_DIRS}
     ${NPLRUNTIME_INCLUDES}
 )
@@ -236,6 +240,7 @@ target_link_libraries(ParaEngine PUBLIC
     ParaSqlite 
 	libjpeg
     libpng
+	Pinocchio
 	${ICONV_LIB_NAME}
 )
 
