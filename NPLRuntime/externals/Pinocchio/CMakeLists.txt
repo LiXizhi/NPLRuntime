@@ -19,7 +19,7 @@ file (GLOB header_files
 	include/pinocchioApi.h
 	include/pointprojector.h
 	include/quaddisttree.h
-	include/rect.h
+	include/prect.h
 	include/skeleton.h
 	include/transform.h
 	include/utils.h
