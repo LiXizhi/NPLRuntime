@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "vector.h"
+#include "pvector.h"
 
 namespace Pinocchio {
 

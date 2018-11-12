@@ -9,7 +9,7 @@
 #ifndef VECUTILS_H_INCLUDED
 #define VECUTILS_H_INCLUDED
 
-#include "vector.h"
+#include "pvector.h"
 
 template<class Real>
 void getBasis(const PVector<Real, 3> &n, PVector<Real, 3> &v1, PVector<Real, 3> &v2)
