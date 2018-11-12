@@ -9,7 +9,7 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 
-#include "vector.h"
+#include "pvector.h"
 
 template<class Real = double>
 class Quaternion //normalized quaternion for representing rotations

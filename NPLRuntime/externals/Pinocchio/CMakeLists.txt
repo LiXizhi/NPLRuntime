@@ -23,7 +23,7 @@ file (GLOB header_files
 	include/skeleton.h
 	include/transform.h
 	include/utils.h
-	include/vector.h
+	include/pvector.h
 	include/vecutils.h
 )
 
