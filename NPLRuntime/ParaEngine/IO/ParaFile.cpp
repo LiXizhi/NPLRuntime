@@ -758,9 +758,9 @@ bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, b
 bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* relativePath, bool bUseCompressed, uint32 dwWhereToOpen)
 {
 	int32 dwFoundPlace = FILE_NOT_FOUND;
-	if (!GetDevDirectory().empty() && dwWhereToOpen != FILE_ON_ZIP_ARCHIVE && ((dwWhereToOpen & FILE_ON_ZIP_ARCHIVE) > 0))
+	if (dwWhereToOpen != FILE_ON_ZIP_ARCHIVE && ((dwWhereToOpen & FILE_ON_ZIP_ARCHIVE) > 0))
 	{
-		// in development version, find in current directory and search path and then zip archive
+		// find in current directory and search path and then zip archive
 		dwWhereToOpen &= (~((uint32)FILE_ON_ZIP_ARCHIVE));
 		return OpenFile(sfilename, bReadyOnly, relativePath, bUseCompressed, dwWhereToOpen) ||
 			OpenFile(m_filename.empty() ? sfilename : m_filename.c_str(), bReadyOnly, relativePath, bUseCompressed, FILE_ON_ZIP_ARCHIVE);
