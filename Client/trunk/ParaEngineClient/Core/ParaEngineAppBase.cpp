@@ -445,24 +445,24 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					}
 				}
 
-				if (sPKGDir.empty() && !m_sModuleDir.empty())
-				{
-					std::string workingDir = m_sModuleDir;
-					// search for all parent directory for at most 5 levels
-					for (int i = 0; i < 5 && !workingDir.empty(); ++i)
-					{
-						std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
-						if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
-						{
-							sPKGDir = sFullDir;
-							break;
-						}
-						else
-						{
-							workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
-						}
-					}
-				}
+				// if (sPKGDir.empty() && !m_sModuleDir.empty())
+				// {
+				// 	std::string workingDir = m_sModuleDir;
+				// 	// search for all parent directory for at most 5 levels
+				// 	for (int i = 0; i < 5 && !workingDir.empty(); ++i)
+				// 	{
+				// 		std::string sFullDir = CParaFile::GetAbsolutePath(sDirName, workingDir);
+				// 		if (CParaFile::DoesFileExist2(sFullDir.c_str(), FILE_ON_DISK))
+				// 		{
+				// 			sPKGDir = sFullDir;
+				// 			break;
+				// 		}
+				// 		else
+				// 		{
+				// 			workingDir = CParaFile::GetParentDirectoryFromPath(workingDir, 1);
+				// 		}
+				// 	}
+				// }
 			}
 		}
 		if (sPKGDir.empty())
