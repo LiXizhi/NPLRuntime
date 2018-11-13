@@ -167,8 +167,12 @@ void EncodeMaskBuffer(const byte* input, int nInputSize, byte** output, int* nOu
 
 	if(bCanEncode)
 	{
-		*(int*)(g_output) = 1;
-		*((int*)(g_output)+1) = nInputSize;
+		//*(int*)(g_output) = 1;
+		//*((int*)(g_output)+1) = nInputSize;
+		int num = 1;
+		memcpy(g_output, &num, sizeof(int));
+		memcpy(g_output + sizeof(int), &nInputSize, sizeof(int));
+
 		g_output[8] = c;
 
 		*nOutbutSize = 1+8;
@@ -182,8 +186,11 @@ void EncodeMaskBuffer(const byte* input, int nInputSize, byte** output, int* nOu
 			*nOutbutSize = 0;
 			return;
 		}
-		*(int*)(g_output) = nInputSize;
-		*((int*)(g_output)+1) = nInputSize;
+		//*(int*)(g_output) = nInputSize;
+		//*((int*)(g_output)+1) = nInputSize;
+		memcpy(g_output, &nInputSize, sizeof(int));
+		memcpy(g_output + sizeof(int), &nInputSize, sizeof(int));
+
 		memcpy(&(g_output[8]), input, nInputSize);
 
 		*nOutbutSize = nInputSize+8;
@@ -199,8 +206,14 @@ void EncodeMaskBuffer(const byte* input, int nInputSize, byte** output, int* nOu
 */
 void DecodeMaskBuffer(const byte* input, int* nInputRead, byte** output, int* nOutbufSize)
 {
-	int nByteCount = *(int*)(input);
-	int nOutSize = *((int*)(input)+1);
+	//int nByteCount = *(int*)(input);
+	//int nOutSize = *((int*)(input)+1);
+
+	int nByteCount;
+	memcpy(&nByteCount, input, sizeof(int));
+	int nOutSize;
+	memcpy(&nOutSize, input + sizeof(int), sizeof(int));
+
 	if(nByteCount==1)
 	{
 		if(input[8] == 0xff)
