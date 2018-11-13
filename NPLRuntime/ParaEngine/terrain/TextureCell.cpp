@@ -154,7 +154,10 @@ void TextureCell::ReadMask(CParaFile& file, Terrain * pTerrain)
 	if(numDetails>0)
 	{
 		// peek the texture Index.
-		DWORD dwHeader = (*(DWORD*)(file.getPointer()));
+		//DWORD dwHeader = (*(DWORD*)(file.getPointer()));
+		DWORD dwHeader;
+		memcpy(&dwHeader, file.getPointer(), sizeof(DWORD));
+
 		if((dwHeader & 0xff) == 0xff)
 		{
 			// read mask for base layer 0, if there are further data: for backward compatibilities, we need to allow blank of this segment of data during reading. 
