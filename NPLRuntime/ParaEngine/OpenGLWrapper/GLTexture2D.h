@@ -79,6 +79,8 @@ namespace ParaEngine
 
 		void RendererRecreated();
 
+		static int ccNextPOT(int x);
+
 	private:
 		static PixelFormat g_defaultAlphaPixelFormat;
 

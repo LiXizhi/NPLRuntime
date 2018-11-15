@@ -75,7 +75,7 @@ const GLTexture2D::PixelFormatInfoMap& GLTexture2D::getPixelFormatInfoMap()
 	return _pixelFormatInfoTables;
 }
 
-int ccNextPOT(int x)
+int GLTexture2D::ccNextPOT(int x)
 {
 	x = x - 1;
 	x = x | (x >> 1);
@@ -358,8 +358,8 @@ bool GLTexture2D::initWithMipmaps(const MipmapInfo* mipmaps, int mipmapsNum, Pix
 	}
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _antialiasEnabled ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 #if CC_ENABLE_CACHE_TEXTURE_DATA
 	if (_antialiasEnabled)
@@ -460,6 +460,7 @@ void GLTexture2D::bindN(GLuint textureUnit)
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)
 {
+
 	GL::bindTexture2D(_name);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texParams.minFilter);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texParams.magFilter);
