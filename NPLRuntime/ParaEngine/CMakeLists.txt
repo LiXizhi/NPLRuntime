@@ -98,24 +98,29 @@ elseif(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
 
 
     # FreeImage
-    if (WIN32)
-        option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
+	list(APPEND NPLRUNTIME_LIBS FreeImage)
+	if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
+		ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
+	endif()
 
-        if (NPLRUNTIME_FREEIMAGE)
-            ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
-            if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
-                ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
-            endif()
-            if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
-                SET(FREEIMAGE_DASM_FLAGS "x64")
-            else()
-                SET(FREEIMAGE_DASM_FLAGS "x32")
-            endif()
-            list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
-            list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
-            configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
-        endif()
-    endif()
+    #if (WIN32)
+    #    option(NPLRUNTIME_FREEIMAGE "include FreeImage" ON)
+
+    #   if (NPLRUNTIME_FREEIMAGE)
+    #        ADD_DEFINITIONS(-DUSE_FREEIMAGE) # for reading image files
+    #       if(NPLRUNTIME_RENDERER STREQUAL "DIRECTX")
+    #            ADD_DEFINITIONS(-DUSE_GDI_COMPOSER) # for css skin, etc
+    #        endif()
+    #        if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    #            SET(FREEIMAGE_DASM_FLAGS "x64")
+    #        else()
+    #            SET(FREEIMAGE_DASM_FLAGS "x32")
+    #        endif()
+    #        list(APPEND NPLRUNTIME_INCLUDES ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS})
+    #        list(APPEND NPLRUNTIME_LIBS ${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.lib)
+    #        configure_file("${PROJECT_SOURCE_DIR}/externals/FreeImage_3170/Dist/${FREEIMAGE_DASM_FLAGS}/FreeImage.dll" "${OUTPUT_BIN_DIR}/FreeImage.dll" COPYONLY)
+    #    endif()
+    #endif()
 
 elseif(NPLRUNTIME_RENDERER STREQUAL "NULL")
     set(RenderSystem RenderSystemNull)
@@ -245,7 +250,7 @@ target_link_libraries(ParaEngine PUBLIC
 )
 
 set(PARAENGINE_DEF_LIST)
-list(APPEND PARAENGINE_DEF_LIST USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
+list(APPEND PARAENGINE_DEF_LIST USE_FREEIMAGE USE_ICONV TIXML_USE_STL BOOST_SIGNALS_NO_DEPRECATION_WARNING _CRT_SECURE_NO_WARNINGS NPLRUNTIME ${PLATROM_SPEC_DEFINITIONS})
 
 if(WIN32 AND PARAENGINE_CLIENT_DLL)
 	list(APPEND PARAENGINE_DEF_LIST NPLRUNTIME_DLL)

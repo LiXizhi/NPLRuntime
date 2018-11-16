@@ -46,7 +46,7 @@ CRegionLayer::~CRegionLayer()
 
 void CRegionLayer::LoadFromFile(const char* filename, int nBytesPerPixel)
 {
-#ifdef USE_FREEIMAGE
+#if defined(USE_FREEIMAGE) && defined(WIN32)
 	if(filename == 0)
 		return;
 	string sTextureFileName = filename;
