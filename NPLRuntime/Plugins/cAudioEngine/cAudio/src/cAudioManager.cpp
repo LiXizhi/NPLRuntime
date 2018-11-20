@@ -321,9 +321,6 @@ namespace cAudio
 			IAudioSource* audio = createAudioSource(decoder, audioName, _CTEXT("cMemorySource"));
 			if(audio != NULL)
 				return audio;
-
-			if(source)
-				source->drop();
 		}
 		return NULL;
     }
