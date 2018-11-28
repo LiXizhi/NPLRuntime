@@ -12,23 +12,38 @@ float4 fogparameters:fogparameters;
 float4 materialdiffuse:materialdiffuse;
 float4 fogColor:fogColor;
 
-// texture 0
+// texture 0: alpha layer
 texture tex0 : TEXTURE; 
 sampler tex0Sampler : register(s0) = sampler_state 
 {
     texture = <tex0>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	MipFilter = Linear;
+	AddressU = Clamp;
+	AddressV = Clamp;
 };
-// texture 1
+// texture 1: detail layer
 texture tex1 : TEXTURE; 
 sampler tex1Sampler : register(s0) = sampler_state 
 {
     texture = <tex1>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	MipFilter = Linear;
+	AddressU = wrap;
+	AddressV = wrap;
 };
-// texture 2
+// texture 2: base layer
 texture tex2 : TEXTURE; 
 sampler tex2Sampler : register(s0) = sampler_state 
 {
     texture = <tex2>;
+	MinFilter = Linear;
+	MagFilter = Linear;
+	MipFilter = Linear;
+	AddressU = Clamp;
+	AddressV = Clamp;
 };
 
 struct appdata
