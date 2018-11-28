@@ -93,6 +93,12 @@ namespace ParaEngine
 			k_ConstVector1,
 			k_ConstVector2,
 			k_ConstVector3,
+			k_ConstVector4,
+			k_ConstVector5,
+			k_ConstVector6,
+			k_ConstVector7,
+			k_ConstVector8,
+			k_ConstVectorMax=k_ConstVector8,
 			k_time, // scaler
 			k_specularPower, // specular scaler
 			k_texCoordOffset, // vector
