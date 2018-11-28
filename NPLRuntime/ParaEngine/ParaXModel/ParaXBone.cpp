@@ -521,7 +521,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 
 		if (parent >= 0) {
 			allbones[parent].calcMatrix(allbones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
-			mat = m*allbones[parent].mat;
+			mat = m * allbones[parent].mat;
 		}
 		else
 			mat = m;
@@ -536,7 +536,7 @@ bool Bone::calcMatrix(Bone *allbones, const AnimIndex & CurrentAnim, const AnimI
 		Matrix4 mtransWorld = CGlobals::GetWorldMatrixStack().SafeGetTop();
 		mtransWorld = mat * mtransWorld; // added 
 
-										 // convert everything to model space, so that we have look, up, right vector in model space.  
+		// convert everything to model space, so that we have look, up, right vector in model space.  
 		mtrans = mtransWorld * mtrans;
 		mtrans.invert();
 		Vector3 camera = Vector3(0, 0, 0) * mtrans;
@@ -1038,7 +1038,14 @@ bool ParaEngine::Bone::GetExternalRot(IAttributeFields* pAnimInstance, Quaternio
 		CDynamicAttributeField* pVarField = pAnimInstance->GetDynamicField(GetRotName());
 		if (pVarField)
 		{
-			return pVarField->GetValueByTime(pAnimInstance->GetTime(), outQuat);
+			int nTime = pAnimInstance->GetTime();
+			CDynamicAttributeField* pTimeField = pAnimInstance->GetDynamicField(GetTimeName());
+			if (pTimeField != 0) {
+				nTime = (int)((double)(*pTimeField));
+				if(nTime < 0)
+					nTime = pAnimInstance->GetTime();
+			}
+			return pVarField->GetValueByTime(nTime, outQuat);
 		}
 	}
 	return false;
@@ -1051,7 +1058,14 @@ bool ParaEngine::Bone::GetExternalTranslation(IAttributeFields* pAnimInstance, V
 		CDynamicAttributeField* pVarField = pAnimInstance->GetDynamicField(GetTransName());
 		if (pVarField)
 		{
-			return pVarField->GetValueByTime(pAnimInstance->GetTime(), outTrans);
+			int nTime = pAnimInstance->GetTime();
+			CDynamicAttributeField* pTimeField = pAnimInstance->GetDynamicField(GetTimeName());
+			if (pTimeField != 0) {
+				nTime = (int)((double)(*pTimeField));
+				if (nTime < 0)
+					nTime = pAnimInstance->GetTime();
+			}
+			return pVarField->GetValueByTime(nTime, outTrans);
 		}
 	}
 	return false;
@@ -1064,7 +1078,14 @@ bool ParaEngine::Bone::GetExternalScaling(IAttributeFields* pAnimInstance, Vecto
 		CDynamicAttributeField* pVarField = pAnimInstance->GetDynamicField(GetScaleName());
 		if (pVarField)
 		{
-			return pVarField->GetValueByTime(pAnimInstance->GetTime(), outScaling);
+			int nTime = pAnimInstance->GetTime();
+			CDynamicAttributeField* pTimeField = pAnimInstance->GetDynamicField(GetTimeName());
+			if (pTimeField != 0) {
+				nTime = (int)((double)(*pTimeField));
+				if (nTime < 0)
+					nTime = pAnimInstance->GetTime();
+			}
+			return pVarField->GetValueByTime(nTime, outScaling);
 		}
 	}
 	return false;
@@ -1203,6 +1224,15 @@ const std::string& ParaEngine::Bone::GetScaleName()
 	return m_sScaleName;
 }
 
+const std::string& ParaEngine::Bone::GetTimeName()
+{
+	if (m_sTimeName.empty())
+	{
+		m_sTimeName = GetIdentifier() + "_time";
+	}
+	return m_sTimeName;
+}
+
 int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 {
 	IAttributeFields::InstallFields(pClass, bOverride);
@@ -1210,6 +1240,7 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("RotName", FieldType_String, (void*)0, (void*)GetRotName_s, NULL, "", bOverride);
 	pClass->AddField("TransName", FieldType_String, (void*)0, (void*)GetTransName_s, NULL, "", bOverride);
 	pClass->AddField("ScaleName", FieldType_String, (void*)0, (void*)GetScaleName_s, NULL, "", bOverride);
+	pClass->AddField("TimeName", FieldType_String, (void*)0, (void*)GetTimeName_s, NULL, "", bOverride);
 
 	pClass->AddField("IsBillBoarded", FieldType_Bool, (void*)0, (void*)IsBillBoarded_s, NULL, "", bOverride);
 	pClass->AddField("IsPivotBone", FieldType_Bool, (void*)0, (void*)IsPivotBone_s, NULL, "", bOverride);
@@ -1235,4 +1266,41 @@ int ParaEngine::Bone::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("BoneID", FieldType_Int, (void*)SetBoneID_s, (void*)GetBoneID_s, NULL, "", bOverride);
 
 	return S_OK;
+}
+
+Bone& ParaEngine::Bone::operator=(const Bone& other)
+{
+	m_sIdentifer = other.m_sIdentifer;
+	m_sRotName = other.m_sRotName;
+	m_sTransName = other.m_sTransName;
+	m_sScaleName = other.m_sScaleName;
+
+	trans = other.trans;
+	rot = other.rot;
+	scale = other.scale;
+
+	pivot = other.pivot;
+	matOffset = other.matOffset;
+	matTransform = other.matTransform;
+
+	parent = other.parent;
+	nBoneID = other.nBoneID;
+	nIndex = other.nIndex;
+
+	flags = other.flags;
+
+	mat = other.mat;
+
+	mrot = other.mrot;
+
+	m_finalRot = other.m_finalRot;
+
+	m_finalTrans = other.m_finalTrans;
+
+	m_finalScaling = other.m_finalScaling;
+
+	calc = other.calc;
+	bUsePivot = other.bUsePivot;
+
+	return *this;
 }
