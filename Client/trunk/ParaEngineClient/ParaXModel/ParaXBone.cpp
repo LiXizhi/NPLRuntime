@@ -1323,5 +1323,7 @@ Bone& ParaEngine::Bone::operator=(const Bone& other)
 	calc = other.calc;
 	bUsePivot = other.bUsePivot;
 
+	mIsUpper=other.mIsUpper;
+
 	return *this;
 }
