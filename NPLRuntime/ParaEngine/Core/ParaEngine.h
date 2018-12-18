@@ -26,6 +26,7 @@
 #include "util/intrusive_ptr.h"
 namespace NPL
 {
+	typedef boost::shared_ptr<CNPLUDPRoute> NPLUDPRoute_ptr;
 	typedef boost::shared_ptr<CNPLConnection> NPLConnection_ptr;
 	typedef boost::shared_ptr<CNPLRuntimeState> NPLRuntimeState_ptr;
 	typedef boost::shared_ptr<NPLServerInfo> NPLServerInfo_ptr;

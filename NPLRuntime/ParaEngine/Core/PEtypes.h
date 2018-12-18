@@ -497,6 +497,7 @@ namespace NPL
 {
 	struct NPLAddress;
 	class CNPLConnection;
+	class CNPLUDPRoute;
 	class CNPLConnectionManager;
 	class CNPLDispatcher;
 	struct NPLFileName;

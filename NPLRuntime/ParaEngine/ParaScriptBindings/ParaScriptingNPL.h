@@ -348,9 +348,11 @@ namespace ParaScripting
 		* @param port: if nil, it defaults to "60001"; if "0", we will not listen or accept incoming connections. This is usually the setting for pure client application. 
 		*/
 		static void StartNetServer(const object& server, const object& port);
+		static void StartNetUDPServer(const object& server, const object& port);
 
 		/** stop the net server */
 		static void StopNetServer();
+		static void StopNetUDPServer();
 
 		/** add a nID, filename pair to the public file list. 
 		* we only allow remote NPL runtime to activate files in the public file list. 
