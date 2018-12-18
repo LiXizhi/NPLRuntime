@@ -148,8 +148,8 @@ namespace NPL
 			if(begin != end && result == c_res_code_body)
 			{
 				// we can read to end or length instead of doing the lexical work one char at a time. 
-				int nOldSize = req.m_code.size();
-				int nByteCount = end-begin;
+				size_t nOldSize = req.m_code.size();
+				size_t nByteCount = end-begin;
 				if(req.m_nLength < (nOldSize+nByteCount))
 				{
 					nByteCount = req.m_nLength - nOldSize;
