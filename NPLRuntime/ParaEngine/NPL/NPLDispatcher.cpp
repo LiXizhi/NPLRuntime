@@ -350,6 +350,9 @@ int NPL::CNPLDispatcher::PostNetworkEvent(NPLReturnCode nNPLNetworkCode, const c
 
 NPL::NPLReturnCode NPL::CNPLDispatcher::DispatchMsg(NPLMsgIn& msg)
 {
+	if (!msg.bUseConnection)
+		return NPL_Error;
+
 	// this is a local activation
 	NPLRuntimeState_ptr pRuntime = ParaEngine::CGlobals::GetNPLRuntime()->GetRuntimeState(msg.m_rts_name);
 	if (pRuntime)
