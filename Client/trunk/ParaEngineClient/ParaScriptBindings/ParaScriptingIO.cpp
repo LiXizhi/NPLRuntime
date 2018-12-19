@@ -21,6 +21,7 @@
 #include "TextureEntity.h"
 #include "util/StringHelper.h"
 #include "NPLWriter.h"
+#include "NPLHelper.h"
 #include <boost/thread/tss.hpp>
 
 #include <vector>
@@ -162,7 +163,7 @@ namespace ParaScripting
 		return file;
 	}
 
-	ParaScripting::ParaFileObject ParaIO::openimage( const char * filename, const char *mode )
+	ParaScripting::ParaFileObject ParaIO::openimage(const object& filename, const char *mode )
 	{
 		return ParaIO::open(filename, "image");
 	}
@@ -276,9 +277,16 @@ namespace ParaScripting
 		ParaEngine::CFileReplaceMap::GetSingleton().LoadReplaceFile(filename, bReplaceExistingOnes);
 	}
 
-	ParaFileObject ParaIO::open( const char * filename, const char *mode )
+	ParaFileObject ParaIO::open( const object& obj, const char *mode )
 	{
 		ParaFileObject file;
+
+		if (type(obj) != LUA_TSTRING)
+			return file;
+
+		int len = 0;
+		auto filename = NPL::NPLHelper::LuaObjectToString(obj, &len);
+
 		if(filename == NULL)
 			return file;
 		if (!CParaFile::IsWritablePath(filename))
@@ -372,6 +380,11 @@ namespace ParaScripting
 				}
 			}
 		}
+		else if (strcmp(mode, "buffer") == 0)
+		{
+			file.m_pFile.reset(new CParaFile((char*)filename, len, false));
+		}
+
 		return file;
 	}
 
@@ -1331,6 +1344,26 @@ namespace ParaScripting
 		{
 			int32 data;
 			m_pFile->read(&data, 4);
+			return data;
+		}
+		return 0;
+	}
+
+
+	void ParaFileObject::WriteByte(unsigned char value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 1);
+		}
+	}
+
+	unsigned char ParaFileObject::ReadByte()
+	{
+		if (IsValid())
+		{
+			unsigned char data;
+			m_pFile->read(&data, 1);
 			return data;
 		}
 		return 0;
