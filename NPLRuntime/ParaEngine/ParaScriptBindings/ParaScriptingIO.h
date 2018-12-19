@@ -139,7 +139,7 @@ namespace ParaScripting
 		/** read a binary string of length nCount from current position. 
 		* @param nCount: nCount in bytes. if -1, it defaults to end of file.
 		*/
-		const std::string& ReadString(int nCount);
+		object ReadString(int nCount, lua_State* L);
 
 		/** write a string to the current file. */
 		void WriteString(const char* str);
