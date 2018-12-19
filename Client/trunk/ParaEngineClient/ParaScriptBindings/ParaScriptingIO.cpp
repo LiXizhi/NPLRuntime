@@ -1140,10 +1140,9 @@ namespace ParaScripting
 		return m_sTempBuffer;
 	}
 
-	const std::string& ParaFileObject::ReadString(int nCount)
+	object ParaFileObject::ReadString(int nCount, lua_State* L)
 	{
 		// this is now thread-safe and multiple instance can be used at the same time
-		m_sTempBuffer.clear();
 		if (IsValid())
 		{
 			int fromPos = (int)m_pFile->getPos();
@@ -1151,13 +1150,23 @@ namespace ParaScripting
 			int nSize = (int)m_pFile->getSize();
 			if (nCount < 0)
 				nCount = nSize - fromPos;
+			else if (nCount > nSize - fromPos)
+			{
+				nCount = nSize - fromPos;
+			}
+
 			if (nCount > 0)
 			{
-				m_sTempBuffer.resize(nCount);
-				m_pFile->read((char*)(&(m_sTempBuffer[0])), nCount);
+				m_pFile->seek(fromPos + nCount);
+	
+				lua_pushlstring(L, m_pFile->getBuffer() + fromPos, nCount);
+				object o(from_stack(L, -1));
+				lua_pop(L, 1);
+
+				return o;
 			}
 		}
-		return m_sTempBuffer;
+		return object(L, "");
 	}
 
 	void ParaFileObject::WriteString2(const char* buffer, int nSize)
