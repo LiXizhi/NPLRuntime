@@ -185,6 +185,10 @@ namespace ParaScripting
 		void WriteShort(int value);
 		int ReadShort();
 
+		///
+		void WriteByte(unsigned char value);
+		unsigned char ReadByte();
+
 		/** integer is 32 bits unsigned*/
 		void WriteUInt(unsigned int value);
 		unsigned int ReadUInt();
@@ -456,7 +460,7 @@ namespace ParaScripting
 		*  - "a" append to the end of an existing file. if file does not exist, a new one is created.
 		* @return file object is returned.
 		*/
-		static ParaFileObject open(const char * filename, const char *mode);
+		static ParaFileObject open(const object& obj, const char *mode);
 
 		/**
 		* open an image file. The r,g,b can then be retrieved as bytes arrays using ReadBytes() function.
@@ -466,7 +470,7 @@ namespace ParaScripting
 		*  - "a8r8g8b8": each pixel is a four bytes of A,R,G,B
 		*  - "float32": each pixel is a four bytes of float. [Not supported yet]
 		*/
-		static ParaFileObject openimage(const char * filename, const char *mode);
+		static ParaFileObject openimage(const object& filename, const char *mode);
 		/* like openimage, but can get exinfo*/
 		/*
 			local exinfo = {};
