@@ -33,7 +33,7 @@ namespace helper {
             if (condition)
             {
                 DWORD last_error = GetLastError();
-                boost::system::system_error e(boost::system::error_code(last_error, boost::system::get_system_category()), msg);
+                boost::system::system_error e(boost::system::error_code(last_error, boost::system::system_category()), msg);
                 boost::throw_exception(e);
             }
         }
