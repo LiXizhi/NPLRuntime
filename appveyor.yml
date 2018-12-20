@@ -34,11 +34,11 @@ install:
 #----------------------------#
 # manually install boost     #
 #----------------------------#
-#    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.65.0/source/boost_1_65_1.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
+#    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.tar.bz2 -FileName "C:\projects\nplruntime\Server\trunk\boost.tar.bz2"
 #    7z x C:\projects\nplruntime\Server\trunk\boost.tar.bz2 -oC:\projects\nplruntime\Server\trunk\
 #    7z x C:\projects\nplruntime\Server\trunk\boost.tar -oC:\projects\nplruntime\Server\trunk\
-#    cd C:\projects\nplruntime\Server\trunk\boost_1_65_1\
-#    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_65_1"
+#    cd C:\projects\nplruntime\Server\trunk\boost_1_68_0\
+#    set BOOST_ROOT="C:\projects\nplruntime\Server\trunk\boost_1_68_0"
 
 - cmd: >-
     git submodule init
@@ -51,9 +51,9 @@ install:
 
     rmdir "C:/Program Files/PostgreSQL" /s /q
     
-    cd C:\Libraries\boost_1_65_1\
+    cd C:\Libraries\boost_1_68_0\
 
-    set BOOST_ROOT=C:\Libraries\boost_1_65_1
+    set BOOST_ROOT=C:\Libraries\boost_1_68_0
 
     bootstrap.bat
 
