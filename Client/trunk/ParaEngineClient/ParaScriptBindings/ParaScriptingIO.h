@@ -186,8 +186,15 @@ namespace ParaScripting
 		int ReadShort();
 
 		///
+		void WriteUShort(unsigned short value);
+		unsigned short ReadUShort();
+
+		///
 		void WriteByte(unsigned char value);
 		unsigned char ReadByte();
+
+		void WriteChar(char value);
+		char  ReadChar();
 
 		/** integer is 32 bits unsigned*/
 		void WriteUInt(unsigned int value);
