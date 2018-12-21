@@ -1127,6 +1127,16 @@ bool CNPLRuntime::IsTCPKeepAliveEnabled()
 	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->IsTCPKeepAliveEnabled();
 }
 
+void CNPLRuntime::SetTCPNoDelay(bool bEnable)
+{
+	GetNetServer()->SetTCPNodelay(bEnable);
+}
+
+bool CNPLRuntime::IsTCPNoDelay()
+{
+	return GetNetServer()->IsTcpNodelay();
+}
+
 void CNPLRuntime::SetKeepAlive(bool bEnable)
 {
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->SetKeepAlive(bEnable);
@@ -1260,7 +1270,8 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 
 	PE_ASSERT(pClass!=NULL);
 	pClass->AddField("TCPKeepAlive",FieldType_Bool, (void*)SetTCPKeepAlive_s, (void*)IsTCPKeepAliveEnabled_s, NULL, NULL, bOverride);
-	pClass->AddField("KeepAlive",FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("KeepAlive", FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("TCPNoDelay",FieldType_Bool, (void*)SetTCPNoDelay_s, (void*)IsTCPNoDelay_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeout",FieldType_Bool, (void*)EnableIdleTimeout_s, (void*)IsIdleTimeoutEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeoutPeriod",FieldType_Int, (void*)SetIdleTimeoutPeriod_s, (void*)GetIdleTimeoutPeriod_s, NULL, NULL, bOverride);
 	pClass->AddField("CompressionThreshold",FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);

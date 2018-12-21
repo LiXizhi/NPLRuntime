@@ -70,6 +70,11 @@ namespace NPL
 		*/
 		bool IsTCPKeepAliveEnabled();
 
+
+		/// 
+		void SetTCPNodelay(bool bEnable);
+		bool IsTcpNodelay();
+
 		/** enable application level keep alive. we will use a global idle timer to detect if a connection has been inactive for GetIdleTimeoutPeriod(),
 		* if so, we may send the keep alive message. 
 		* @param bEnable: enable keep alive will automatically enable EnableIdleTimeout()
@@ -150,6 +155,9 @@ namespace NPL
 
 		/** whether application level keep alive is enabled.*/
 		bool m_bKeepAlive;
+
+		///
+		bool m_bNodelay;
 
 		/** whether idle timeout is enabled. */
 		bool m_bEnableIdleTimeout;
