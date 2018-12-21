@@ -31,6 +31,14 @@ namespace NPL
 
 		}
 
+		NPLUDPAddress(unsigned int host, unsigned short port, const string& sNID)
+			: m_ep(boost::asio::ip::address_v4(host), port)
+			, m_sNID(sNID)
+		{
+
+		}
+
+
 		NPLUDPAddress(const boost::asio::ip::udp::endpoint& ep, const string& sNID) 
 			: m_ep(ep)
 			, m_sNID(sNID)

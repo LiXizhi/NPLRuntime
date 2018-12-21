@@ -177,6 +177,9 @@ namespace NPL {
 					{
 						msg_->m_code.append(',');
 					}
+
+					msg_->m_code.append("isUDP=true,");
+
 					// add nid or tid so that the runtime state can have access to the current connection object. 
 					// we append last to msg, so that nid or tid in the input message is overridden by the real value. 
 					//if (msg.m_pConnection->IsAuthenticated())
@@ -241,6 +244,7 @@ namespace NPL {
 					msg_->m_code.append("rcode=");
 					msg_->m_code.append(msg.m_n_filename);
 					msg_->m_code.append(",");
+
 
 					// add headers
 					int nCount = (int)msg.headers.size();
