@@ -1363,6 +1363,44 @@ namespace ParaScripting
 		return 0;
 	}
 
+	void ParaFileObject::WriteUShort(unsigned short value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 2);
+		}
+	}
+
+	unsigned short ParaFileObject::ReadUShort()
+	{
+		if (IsValid())
+		{
+			unsigned short data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteChar(char value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 1);
+		}
+	}
+
+	char ParaFileObject::ReadChar()
+	{
+		if (IsValid())
+		{
+			char data;
+			m_pFile->read(&data, 1);
+			return data;
+		}
+		return 0;
+	}
+
 
 	void ParaFileObject::WriteByte(unsigned char value)
 	{
