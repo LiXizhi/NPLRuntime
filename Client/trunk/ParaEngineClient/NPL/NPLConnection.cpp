@@ -40,7 +40,7 @@ NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLCon
 	: m_socket(io_service), m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn(0), m_totalBytesOut(0),
 	m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected),
 	m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
-	m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0),
+	m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0), m_bNodelay(false),
 	m_protocolType(NPL)
 {
 	m_queueOutput.SetUseEvent(false);
@@ -59,6 +59,19 @@ NPL::CNPLConnection::~CNPLConnection()
 boost::asio::ip::tcp::socket& NPL::CNPLConnection::socket()
 {
 	return m_socket;
+}
+
+void NPL::CNPLConnection::SetNodelay(bool bEnable)
+{
+	m_bNodelay = bEnable;
+	// Implements the SOL_SOCKET/SO_KEEPALIVE socket option. 
+	boost::asio::ip::tcp::no_delay  option(bEnable);
+	m_socket.set_option(option);
+}
+
+bool NPL::CNPLConnection::IsNodelay()
+{
+	return m_bNodelay;
 }
 
 void NPL::CNPLConnection::SetTCPKeepAlive(bool bEnable)

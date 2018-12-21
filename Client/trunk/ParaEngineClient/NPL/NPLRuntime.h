@@ -111,8 +111,11 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPKeepAliveEnabled_s, bool*)	{*p1 = cls->IsTCPKeepAliveEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPKeepAlive_s, bool)	{cls->SetTCPKeepAlive(p1); return S_OK;}
 
-		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*)	{*p1 = cls->IsKeepAliveEnabled(); return S_OK;}
-		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool)	{cls->SetKeepAlive(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPNoDelay_s, bool*) { *p1 = cls->IsTCPNoDelay(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPNoDelay_s, bool) { cls->SetTCPNoDelay(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*) { *p1 = cls->IsKeepAliveEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool) { cls->SetKeepAlive(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsIdleTimeoutEnabled_s, bool*)	{*p1 = cls->IsIdleTimeoutEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableIdleTimeout_s, bool)	{cls->EnableIdleTimeout(p1); return S_OK;}
@@ -266,7 +269,8 @@ namespace NPL
 		/** whether the NPL runtime's udp server is started. */
 		bool IsUDPServerStarted();
 
-		
+		void SetTCPNoDelay(bool bEnable);
+		bool IsTCPNoDelay();
 
 		//////////////////////////////////////////////////////////////////////////
 		//
