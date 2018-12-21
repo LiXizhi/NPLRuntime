@@ -42,6 +42,10 @@ install:
 #    7z x C:\projects\nplruntime\Server\trunk\boost.7z -oC:\Libraries\
 
 - cmd: >-
+    appveyor DownloadFile http://dl.bintray.com/boostorg/release/1.68.0/source/boost_1_68_0.7z -FileName "C:\projects\nplruntime\Server\trunk\boost.7z"
+    
+    7z x C:\projects\nplruntime\Server\trunk\boost.7z -oC:\Libraries\
+
     git submodule init
 
     git submodule update --init --recursive
