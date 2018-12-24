@@ -332,6 +332,7 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("load", &CNPL::load),
 				def("StartNetServer", &CNPL::StartNetServer),
 				def("StopNetServer", &CNPL::StopNetServer),
+				def("Ping", &CNPL::Ping),
 				def("AddPublicFile", &CNPL::AddPublicFile),
 				def("ClearPublicFiles", &CNPL::ClearPublicFiles),
 				def("AddNPLRuntimeAddress", &CNPL::AddNPLRuntimeAddress),

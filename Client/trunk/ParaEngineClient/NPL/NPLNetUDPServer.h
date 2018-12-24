@@ -84,6 +84,12 @@ namespace NPL
 		//
 		NPLUDPRoute_ptr CreateRoute(NPLUDPAddress_ptr pAddress);
 
+
+		/* ping a host, if host is alive return delay time,  otherwise return -1
+
+		*/
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000);
+
 	private:
 		/** Handle idle timer timeout.*/
 		void handle_idle_timeout(const boost::system::error_code& err);

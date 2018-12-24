@@ -1539,6 +1539,11 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_StopNetServer();
 	}
 
+	int CNPL::Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp)
+	{
+		return NPL::CNPLRuntime::NPL_Ping(host, port, waitTime, bTcp);
+	}
+
 	void CNPL::StopNetUDPServer()
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_StopNetUDPServer();

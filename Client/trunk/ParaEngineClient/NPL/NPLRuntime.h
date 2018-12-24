@@ -634,6 +634,9 @@ namespace NPL
 		*/
 		virtual void NPL_GetChannelProperty(int channel_ID, int* priority, int* reliability);
 
+		///
+		static int NPL_Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp);
+
 		/**
 		* OBSOLETED: Enable the network, by default the network layer is disabled.
 		* calling this function multiple time with different CenterName will restart the network layer with a different center name.

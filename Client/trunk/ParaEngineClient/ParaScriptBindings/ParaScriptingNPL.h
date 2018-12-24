@@ -354,6 +354,9 @@ namespace ParaScripting
 		static void StopNetServer();
 		static void StopNetUDPServer();
 
+		///
+		static int Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp);
+
 		/** add a nID, filename pair to the public file list. 
 		* we only allow remote NPL runtime to activate files in the public file list. 
 		* Each public file has a user defined ID. The NPL network layer always try to use its ID for transmission to minimize bandwidth. 

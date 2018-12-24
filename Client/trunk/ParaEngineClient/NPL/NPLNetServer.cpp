@@ -38,7 +38,7 @@ NPL::CNPLNetServer::CNPLNetServer()
 	m_strServer(NPL_DEFAULT_SERVER),
 	m_strPort(NPL_DEFAULT_PORT),
 	m_nMaxPendingConnections(DEFAULT_MAX_PENDING_CONNECTIONS), m_bIsServerStarted(false),
-	m_bTCPKeepAlive(false), m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS), m_bNodelay(false)
+	m_bTCPKeepAlive(false), m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nIdleTimeoutMS(DEFAULT_IDLE_TIMEOUT_MS), m_bNoDelay(false)
 {
 }
 
@@ -64,9 +64,9 @@ bool NPL::CNPLNetServer::IsTCPKeepAliveEnabled()
 }
 
 
-void NPL::CNPLNetServer::SetTCPNodelay(bool bEnable)
+void NPL::CNPLNetServer::SetTCPNoDelay(bool bEnable)
 {
-	m_bNodelay = bEnable;
+	m_bNoDelay = bEnable;
 	if (m_acceptor.is_open())
 	{
 		boost::asio::ip::tcp::no_delay  option(bEnable);
@@ -74,9 +74,9 @@ void NPL::CNPLNetServer::SetTCPNodelay(bool bEnable)
 	}
 }
 
-bool NPL::CNPLNetServer::IsTcpNodelay()
+bool NPL::CNPLNetServer::IsTcpNoDelay()
 {
-	return m_bNodelay;
+	return m_bNoDelay;
 }
 
 void NPL::CNPLNetServer::SetKeepAlive(bool bEnable)
@@ -133,6 +133,36 @@ void NPL::CNPLNetServer::handle_idle_timeout(const boost::system::error_code& er
 	}
 }
 
+int NPL::CNPLNetServer::Ping(const char* host, const char* port, unsigned int waitTime/* = 1000*/)
+{
+	if (!host || !port)
+		return -1;
+
+	auto time = GetTickCount();
+	boost::asio::io_context io_context;
+	boost::asio::ip::tcp::resolver resolver(io_context);
+
+	try
+	{
+		boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, port);
+		boost::asio::ip::tcp::socket socket(io_context);
+		boost::asio::connect(socket, endpoints);
+		//OUTPUT_LOG("connectd\n");
+	}
+	catch (std::exception& /*e*/)
+	{
+		//OUTPUT_LOG("connect error : %s\n", e.what());
+		return -1;
+	}
+
+	auto ret = GetTickCount() - time;
+
+	OUTPUT_LOG("time : %d\n", ret);
+
+	return ret;
+
+}
+
 void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=NULL*/)
 {
 	if (m_dispatcherThread.get() != 0)
@@ -184,7 +214,7 @@ void NPL::CNPLNetServer::start(const char* server/*=NULL*/, const char* port/*=N
 	OUTPUT_LOG("TCPKeepAlive: %s\n", IsTCPKeepAliveEnabled() ? "true" : "false");
 	OUTPUT_LOG("AppKeepAlive: %s\n", IsKeepAliveEnabled() ? "true" : "false");
 	OUTPUT_LOG("IdleTimeout: %s\n", IsIdleTimeoutEnabled() ? "true" : "false");
-	OUTPUT_LOG("TCPNodelay: %s\n", IsTcpNodelay() ? "true" : "false");
+	OUTPUT_LOG("TCPNoDelay: %s\n", IsTcpNoDelay() ? "true" : "false");
 	OUTPUT_LOG("IdleTimeoutPeriod: %d\n", GetIdleTimeoutPeriod());
 
 	OUTPUT_LOG("UseCompression(incoming): %s\n", GetDispatcher().IsUseCompressionIncomingConnection() ? "true" : "false");
@@ -248,7 +278,7 @@ void NPL::CNPLNetServer::handle_resolve_local(const boost::system::error_code& e
 				m_acceptor.set_option(option);
 			}
 
-			if (IsTcpNodelay())
+			if (IsTcpNoDelay())
 			{
 				// Implements the SOL_SOCKET/SO_KEEPALIVE socket option. 
 				boost::asio::ip::tcp::no_delay option(true);
@@ -295,7 +325,7 @@ void NPL::CNPLNetServer::handle_accept(const boost::system::error_code& err)
 			m_new_connection->EnableIdleTimeout(IsIdleTimeoutEnabled());
 			m_new_connection->SetIdleTimeoutPeriod(GetIdleTimeoutPeriod());
 			m_new_connection->SetKeepAlive(IsKeepAliveEnabled());
-			m_new_connection->SetNodelay(IsTcpNodelay());
+			m_new_connection->SetNoDelay(IsTcpNoDelay());
 
 			m_connection_manager.start(m_new_connection);
 			m_new_connection.reset(new CNPLConnection(m_io_service_dispatcher, m_connection_manager, m_msg_dispatcher));
