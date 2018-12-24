@@ -380,6 +380,14 @@ void CNPLRuntime::NPL_StopNetUDPServer()
 	m_net_udp_server->stop();
 }
 
+int CNPLRuntime::NPL_Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp)
+{
+	if (bTcp)
+		return CNPLNetServer::Ping(host, port, waitTime);
+	else
+		return CNPLNetUDPServer::Ping(host, port, waitTime);
+}
+
 void CNPLRuntime::NPL_AddPublicFile( const string& filename, int nID )
 {
 	m_net_server->GetDispatcher().AddPublicFile(filename, nID);
@@ -1129,12 +1137,12 @@ bool CNPLRuntime::IsTCPKeepAliveEnabled()
 
 void CNPLRuntime::SetTCPNoDelay(bool bEnable)
 {
-	GetNetServer()->SetTCPNodelay(bEnable);
+	GetNetServer()->SetTCPNoDelay(bEnable);
 }
 
 bool CNPLRuntime::IsTCPNoDelay()
 {
-	return GetNetServer()->IsTcpNodelay();
+	return GetNetServer()->IsTcpNoDelay();
 }
 
 void CNPLRuntime::SetKeepAlive(bool bEnable)
@@ -1289,8 +1297,7 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("UDPCompressionLevel", FieldType_Int, (void*)SetUDPCompressionLevel_s, (void*)GetUDPCompressionLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("IsUDPServerStarted", FieldType_Bool, (void*)0, (void*)IsUDPServerStarted_s, NULL, NULL, bOverride);
 	pClass->AddField("UDPHostIP", FieldType_String, (void*)0, (void*)GetUDPHostIP_s, NULL, NULL, bOverride);
-	pClass->AddField("UDPHostPort", FieldType_String, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
-	pClass->AddField("UDPHostPort", FieldType_String, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
+	pClass->AddField("UDPHostPort", FieldType_Int, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
 	pClass->AddField("UDPUseCompression", FieldType_Bool, (void*)SetUDPUseCompression_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("EnableUDPServer", FieldType_Int, (void*)EnableUDPServer_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("DisableUDPServer", FieldType_void, (void*)DisableUDPServer_s, NULL, NULL, NULL, bOverride);
