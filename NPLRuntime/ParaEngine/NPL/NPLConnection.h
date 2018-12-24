@@ -187,8 +187,8 @@ namespace NPL
 		bool IsKeepAliveEnabled();
 
 		///
-		void SetNodelay(bool bEnable);
-		bool IsNodelay();
+		void SetNoDelay(bool bEnable);
+		bool IsNoDelay();
 
 		/** Enable idle timeout. This is the application level timeout setting. 
 		* We will create a global timer which examines all send/receive time of all open connections, if a
@@ -349,7 +349,7 @@ namespace NPL
 		bool m_bKeepAlive;
 
 		///
-		bool m_bNodelay;
+		bool m_bNoDelay;
 
 		/** whether idle timeout is enabled. */
 		bool m_bEnableIdleTimeout;
