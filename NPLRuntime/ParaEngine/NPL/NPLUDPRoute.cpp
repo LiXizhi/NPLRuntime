@@ -35,7 +35,6 @@ namespace NPL {
 		, m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD)
 		, m_bEnableIdleTimeout(true)
 		, m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0)
-		, m_broadcast_port(-1)
 	{
 		m_queueOutput.SetUseEvent(false);
 		// init common fields for input message. 
@@ -102,11 +101,6 @@ namespace NPL {
 			return m_address->GetHost();
 		else
 			return ParaEngine::CGlobals::GetString(0);
-	}
-
-	int CNPLUDPRoute::GetBroadcastPort() const
-	{
-		return m_broadcast_port;
 	}
 
 	unsigned short CNPLUDPRoute::GetPort()
@@ -197,8 +191,11 @@ namespace NPL {
 		return CNPLRuntime::GetInstance()->GetLogLevel();
 	}
 
-	void CNPLUDPRoute::start_broadcast(unsigned short port)
+	void CNPLUDPRoute::start_send(const char* ip, unsigned short port)
 	{
+		boost::asio::ip::udp::endpoint broadcast_ep(boost::asio::ip::make_address_v4(ip), port);
+		m_address.reset(new NPLUDPAddress(broadcast_ep, "send_to"));
+
 		// update the start time and last send/receive time
 		m_nStartTime = GetTickCount();
 		m_nLastActiveTime = m_nStartTime;
@@ -211,8 +208,25 @@ namespace NPL {
 			SetCompressionLevel(m_msg_dispatcher.GetCompressionLevel());
 			SetCompressionThreshold(m_msg_dispatcher.GetCompressionThreshold());
 		}
+	}
 
-		m_broadcast_port = port;
+	void CNPLUDPRoute::start_broadcast(unsigned short port)
+	{
+		boost::asio::ip::udp::endpoint broadcast_ep(boost::asio::ip::address_v4::broadcast(), port);
+		m_address.reset(new NPLUDPAddress(broadcast_ep, "broadcast"));
+
+		// update the start time and last send/receive time
+		m_nStartTime = GetTickCount();
+		m_nLastActiveTime = m_nStartTime;
+
+		// set use compression. 
+		bool bUseCompression = m_msg_dispatcher.IsUseCompressionRoute();
+		SetUseCompression(bUseCompression);
+		if (bUseCompression)
+		{
+			SetCompressionLevel(m_msg_dispatcher.GetCompressionLevel());
+			SetCompressionThreshold(m_msg_dispatcher.GetCompressionThreshold());
+		}
 	}
 
 	void CNPLUDPRoute::start()
@@ -350,10 +364,7 @@ namespace NPL {
 			NPLMsgOut_ptr* msg = NULL;
 			if (m_queueOutput.try_next(&msg) && msg != NULL)
 			{
-				if (m_broadcast_port == -1)
-					m_udp_server.SendTo((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size(), shared_from_this());
-				else
-					m_udp_server.broadcast((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size(), shared_from_this());
+				m_udp_server.SendTo((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size(), shared_from_this());
 			}
 			else
 			{
@@ -504,10 +515,7 @@ namespace NPL {
 			// LXZ: very tricky code to ensure thread-safety to the buffer.
 			// only start the sending task when the buffer is empty, otherwise we will wait for previous send task. 
 			// i.e. inside handle_send handler. 
-			if (m_broadcast_port == -1)
-				m_udp_server.SendTo((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size(), shared_from_this());
-			else
-				m_udp_server.broadcast((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size(), shared_from_this());
+			m_udp_server.SendTo((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size(), shared_from_this());
 		}
 		else if (bufStatus == RingBuffer_Type::BufferOverFlow)
 		{
