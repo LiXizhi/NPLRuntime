@@ -112,6 +112,8 @@ namespace NPL
 	public:
 		/** get extern IP address of this computer. */
 		std::string GetExternalIP();
+		/** get extern IP address lsit of this computer. use ',' to separate */
+		static std::string GetExternalIPList();
 
 		/** get the host port of this NPL runtime */
 		virtual const std::string& GetHostPort();

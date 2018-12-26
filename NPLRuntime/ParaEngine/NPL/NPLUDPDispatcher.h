@@ -92,6 +92,8 @@ namespace NPL
 		* @return if failed, such as the runtime state does not exist, etc.
 		*/
 		NPLReturnCode Activate_Async(const NPLFileName& file_name, const char * code = nullptr, int nLength = 0, int priority = 0);
+		NPLReturnCode Activate_Async2(const NPLFileName& file_name, const char* ip, unsigned short port, const char * code = nullptr, int nLength = 0, int priority = 0);
+
 		NPLReturnCode Broadcast_Async(const NPLFileName& file_name, unsigned short port, const char * code = nullptr, int nLength = 0, int priority = 0);
 	
 	protected:

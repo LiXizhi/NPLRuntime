@@ -31,6 +31,8 @@
 #include "memdebug.h"
 #endif
 
+#include <regex>
+
 /** define this to enable debugging of NPL code in visual studio */
 //#define DEBUG_NPL_GLIA_FILE
 
@@ -248,6 +250,26 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 
 					return m_net_udp_server->GetDispatcher().Broadcast_Async(FullName, port, code, nLength, priority);
 				}
+				else if (FullName.sNID[0] == '\\')
+				{
+					std::regex reg("\\\\\\\\(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d{1,5})");
+					std::smatch m;
+					auto bMatch = std::regex_match(FullName.sNID, m, reg);
+
+
+					if (bMatch)
+					{
+						auto ip = m.str(1);
+						auto port = atoi(m.str(2).c_str());
+
+
+						return m_net_udp_server->GetDispatcher().Activate_Async2(FullName, ip.c_str(), port, code, nLength, priority);
+					}
+					else
+					{
+						return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
+					}
+				}
 				else
 				{
 					return m_net_udp_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
@@ -334,6 +356,26 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 					}
 
 					return m_net_udp_server->GetDispatcher().Broadcast_Async(FullName, port, code, nLength, priority);
+				}
+				else if (FullName.sNID[0] == '\\')
+				{
+					std::regex reg("\\\\\\\\(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d{1,5})");
+					std::smatch m;
+					auto bMatch = std::regex_match(FullName.sNID, m, reg);
+
+
+					if (bMatch)
+					{
+						auto ip = m.str(1);
+						auto port = atoi(m.str(2).c_str());
+
+
+						return m_net_udp_server->GetDispatcher().Activate_Async2(FullName, ip.c_str(), port, code, nLength, priority);
+					}
+					else
+					{
+						return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
+					}
 				}
 				else
 				{
@@ -1269,6 +1311,13 @@ ParaEngine::IAttributeFields* CNPLRuntime::GetChildAttributeObject(int nRowIndex
 	return NULL;
 }
 
+const std::string& CNPLRuntime::GetExternalIPList()
+{
+	static std::string s;
+	s = CNPLNetServer::GetExternalIPList();
+	return s;
+}
+
 int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
 {
 	using namespace ParaEngine;
@@ -1301,5 +1350,7 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("UDPUseCompression", FieldType_Bool, (void*)SetUDPUseCompression_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("EnableUDPServer", FieldType_Int, (void*)EnableUDPServer_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("DisableUDPServer", FieldType_void, (void*)DisableUDPServer_s, NULL, NULL, NULL, bOverride);
+
+	pClass->AddField("ExternalIPList", FieldType_String, (void*)0, (void*)GetExternalIPList_s, NULL, NULL, bOverride);
 	return S_OK;
 }

@@ -94,6 +94,8 @@ namespace NPL
 		void start();
 		///
 		void start_broadcast(unsigned short port);
+		///
+		void start_send(const char* ip, unsigned short port);
 
 		/** Stop all asynchronous operations associated with the route.
 		* @param bRemoveConnection: if true(default), route will be immediately removed from CNPLUDPRouteManager
@@ -154,9 +156,7 @@ namespace NPL
 		*/
 		unsigned short GetPort();
 
-		///
-		int GetBroadcastPort() const;
-
+	
 		/** set nid of this route. If one renames a route, such as changing from a temporary nid to authenticated nid.
 		it will automatically update the nid to route  mapping in the dispatcher. */
 		bool SetNID(const char* sNID);
@@ -322,10 +322,6 @@ namespace NPL
 
 			/** when does this route started */
 			uint32 m_nStartTime;
-
-			// broadcast port
-			int m_broadcast_port;
-
 
 	}; // class NPLUDPRoute
 

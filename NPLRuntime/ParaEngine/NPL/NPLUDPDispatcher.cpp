@@ -343,6 +343,12 @@ namespace NPL {
 		return m_broadcast_route->SendMessage(file_name, code, nLength, priority);
 	}
 
+	NPLReturnCode CNPLUDPDispatcher::Activate_Async2(const NPLFileName& file_name, const char* ip, unsigned short port, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
+	{
+		m_broadcast_route->start_send(ip, port);
+		return m_broadcast_route->SendMessage(file_name, code, nLength, priority);
+	}
+
 	NPLReturnCode CNPLUDPDispatcher::Activate_Async(const NPLFileName& file_name, const char * code /*= NULL*/, int nLength/*=0*/, int priority/*=0*/)
 	{
 		if (file_name.sNID.empty())
