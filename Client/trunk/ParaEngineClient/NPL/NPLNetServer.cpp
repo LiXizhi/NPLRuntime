@@ -382,6 +382,39 @@ void NPL::CNPLNetServer::handle_stop()
 	m_connection_manager.stop_all();
 }
 
+
+std::string NPL::CNPLNetServer::GetExternalIPList()
+{
+	using boost::asio::ip::tcp;
+	std::string firstIP;
+	try
+	{
+		boost::asio::io_service io_service;
+
+		tcp::resolver resolver(io_service);
+		tcp::resolver::query query(boost::asio::ip::host_name(), "");
+		tcp::resolver::iterator it = resolver.resolve(query);
+
+		while (it != tcp::resolver::iterator())
+		{
+			boost::asio::ip::address addr = (it++)->endpoint().address();
+			if (addr.is_v4())
+			{
+				if (firstIP.empty())
+					firstIP = addr.to_string();
+				else
+					firstIP += "," + addr.to_string();
+			}
+		}
+
+	}
+	catch (...)
+	{
+		OUTPUT_LOG1("warning: failed getting external ip in CNPLNetServer::GetExternalIPList()\n");
+	}
+	return firstIP;
+}
+
 std::string NPL::CNPLNetServer::GetExternalIP()
 {
 	using boost::asio::ip::tcp;

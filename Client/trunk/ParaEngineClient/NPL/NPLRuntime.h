@@ -154,7 +154,8 @@ namespace NPL
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableUDPServer_s, int) { cls->NPL_StartNetUDPServer(nullptr, p1); return S_OK; }
 		ATTRIBUTE_METHOD(CNPLRuntime, DisableUDPServer_s) { cls->NPL_StopNetUDPServer(); return S_OK; }
-		
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetExternalIPList_s, const char**) { *p1 = CNPLRuntime::GetExternalIPList().c_str(); return S_OK; }
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
@@ -271,6 +272,9 @@ namespace NPL
 
 		void SetTCPNoDelay(bool bEnable);
 		bool IsTCPNoDelay();
+
+		/** get extern IP address lsit of this computer. use ',' to separate */
+		static const std::string& GetExternalIPList();
 
 		//////////////////////////////////////////////////////////////////////////
 		//
