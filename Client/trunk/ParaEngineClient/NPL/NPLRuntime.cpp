@@ -31,6 +31,8 @@
 #include "memdebug.h"
 #endif
 
+#include <regex>
+
 /** define this to enable debugging of NPL code in visual studio */
 //#define DEBUG_NPL_GLIA_FILE
 
@@ -248,6 +250,26 @@ int CNPLRuntime::Activate( INPLRuntimeState* pRuntimeState, const char * sNeuron
 
 					return m_net_udp_server->GetDispatcher().Broadcast_Async(FullName, port, code, nLength, priority);
 				}
+				else if (FullName.sNID[0] == '\\')
+				{
+					std::regex reg("\\\\\\\\(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d{1,5})");
+					std::smatch m;
+					auto bMatch = std::regex_match(FullName.sNID, m, reg);
+
+
+					if (bMatch)
+					{
+						auto ip = m.str(1);
+						auto port = atoi(m.str(2).c_str());
+
+
+						return m_net_udp_server->GetDispatcher().Activate_Async2(FullName, ip.c_str(), port, code, nLength, priority);
+					}
+					else
+					{
+						return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
+					}
+				}
 				else
 				{
 					return m_net_udp_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
@@ -335,6 +357,26 @@ int CNPLRuntime::NPL_Activate(NPLRuntimeState_ptr runtime_state, const char * sN
 
 					return m_net_udp_server->GetDispatcher().Broadcast_Async(FullName, port, code, nLength, priority);
 				}
+				else if (FullName.sNID[0] == '\\')
+				{
+					std::regex reg("\\\\\\\\(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}) (\\d{1,5})");
+					std::smatch m;
+					auto bMatch = std::regex_match(FullName.sNID, m, reg);
+
+
+					if (bMatch)
+					{
+						auto ip = m.str(1);
+						auto port = atoi(m.str(2).c_str());
+
+
+						return m_net_udp_server->GetDispatcher().Activate_Async2(FullName, ip.c_str(), port, code, nLength, priority);
+					}
+					else
+					{
+						return m_net_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
+					}
+				}
 				else
 				{
 					return m_net_udp_server->GetDispatcher().Activate_Async(FullName, code, nLength, priority);
@@ -378,6 +420,14 @@ void CNPLRuntime::NPL_StopNetServer()
 void CNPLRuntime::NPL_StopNetUDPServer()
 {
 	m_net_udp_server->stop();
+}
+
+int CNPLRuntime::NPL_Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp)
+{
+	if (bTcp)
+		return CNPLNetServer::Ping(host, port, waitTime);
+	else
+		return CNPLNetUDPServer::Ping(host, port, waitTime);
 }
 
 void CNPLRuntime::NPL_AddPublicFile( const string& filename, int nID )
@@ -1127,6 +1177,16 @@ bool CNPLRuntime::IsTCPKeepAliveEnabled()
 	return NPL::CNPLRuntime::GetInstance()->GetNetServer()->IsTCPKeepAliveEnabled();
 }
 
+void CNPLRuntime::SetTCPNoDelay(bool bEnable)
+{
+	GetNetServer()->SetTCPNoDelay(bEnable);
+}
+
+bool CNPLRuntime::IsTCPNoDelay()
+{
+	return GetNetServer()->IsTcpNoDelay();
+}
+
 void CNPLRuntime::SetKeepAlive(bool bEnable)
 {
 	NPL::CNPLRuntime::GetInstance()->GetNetServer()->SetKeepAlive(bEnable);
@@ -1251,6 +1311,13 @@ ParaEngine::IAttributeFields* CNPLRuntime::GetChildAttributeObject(int nRowIndex
 	return NULL;
 }
 
+const std::string& CNPLRuntime::GetExternalIPList()
+{
+	static std::string s;
+	s = CNPLNetServer::GetExternalIPList();
+	return s;
+}
+
 int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
 {
 	using namespace ParaEngine;
@@ -1260,7 +1327,8 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 
 	PE_ASSERT(pClass!=NULL);
 	pClass->AddField("TCPKeepAlive",FieldType_Bool, (void*)SetTCPKeepAlive_s, (void*)IsTCPKeepAliveEnabled_s, NULL, NULL, bOverride);
-	pClass->AddField("KeepAlive",FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("KeepAlive", FieldType_Bool, (void*)SetKeepAlive_s, (void*)IsKeepAliveEnabled_s, NULL, NULL, bOverride);
+	pClass->AddField("TCPNoDelay",FieldType_Bool, (void*)SetTCPNoDelay_s, (void*)IsTCPNoDelay_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeout",FieldType_Bool, (void*)EnableIdleTimeout_s, (void*)IsIdleTimeoutEnabled_s, NULL, NULL, bOverride);
 	pClass->AddField("IdleTimeoutPeriod",FieldType_Int, (void*)SetIdleTimeoutPeriod_s, (void*)GetIdleTimeoutPeriod_s, NULL, NULL, bOverride);
 	pClass->AddField("CompressionThreshold",FieldType_Int, (void*)SetCompressionThreshold_s, (void*)GetCompressionThreshold_s, NULL, NULL, bOverride);
@@ -1278,10 +1346,11 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("UDPCompressionLevel", FieldType_Int, (void*)SetUDPCompressionLevel_s, (void*)GetUDPCompressionLevel_s, NULL, NULL, bOverride);
 	pClass->AddField("IsUDPServerStarted", FieldType_Bool, (void*)0, (void*)IsUDPServerStarted_s, NULL, NULL, bOverride);
 	pClass->AddField("UDPHostIP", FieldType_String, (void*)0, (void*)GetUDPHostIP_s, NULL, NULL, bOverride);
-	pClass->AddField("UDPHostPort", FieldType_String, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
-	pClass->AddField("UDPHostPort", FieldType_String, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
+	pClass->AddField("UDPHostPort", FieldType_Int, (void*)0, (void*)GetUDPHostPort_s, NULL, NULL, bOverride);
 	pClass->AddField("UDPUseCompression", FieldType_Bool, (void*)SetUDPUseCompression_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("EnableUDPServer", FieldType_Int, (void*)EnableUDPServer_s, nullptr, NULL, NULL, bOverride);
 	pClass->AddField("DisableUDPServer", FieldType_void, (void*)DisableUDPServer_s, NULL, NULL, NULL, bOverride);
+
+	pClass->AddField("ExternalIPList", FieldType_String, (void*)0, (void*)GetExternalIPList_s, NULL, NULL, bOverride);
 	return S_OK;
 }

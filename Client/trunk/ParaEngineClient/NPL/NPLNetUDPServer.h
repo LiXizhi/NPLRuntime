@@ -67,9 +67,6 @@ namespace NPL
 		void SendTo(const char* buff, size_t size, const boost::asio::ip::udp::endpoint& ep);
 		void SendTo(const char* buff, size_t size, NPLUDPAddress_ptr pAddress);
 		void SendTo(const char* buff, size_t size, NPLUDPRoute_ptr pRoute);
-		///
-		void broadcast(const char* buff, size_t size, NPLUDPRoute_ptr pRoute);
-
 
 		///
 		boost::asio::io_context& GetIoService();
@@ -83,6 +80,12 @@ namespace NPL
 
 		//
 		NPLUDPRoute_ptr CreateRoute(NPLUDPAddress_ptr pAddress);
+
+
+		/* ping a host, if host is alive return delay time,  otherwise return -1
+
+		*/
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000);
 
 	private:
 		/** Handle idle timer timeout.*/

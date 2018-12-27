@@ -106,18 +106,6 @@ namespace NPL {
 
 	}
 
-	void CNPLNetUDPServer::broadcast(const char* buff, size_t size, NPLUDPRoute_ptr pRoute)
-	{
-		boost::asio::ip::udp::endpoint broadcast_ep(boost::asio::ip::address_v4::broadcast(), pRoute->GetBroadcastPort());
-
-		m_udp.async_send_to(boost::asio::buffer(buff, size), broadcast_ep,
-			boost::bind(&CNPLUDPRoute::handle_send, pRoute
-				, boost::asio::placeholders::error
-				, boost::asio::placeholders::bytes_transferred
-				, buff
-				, size));
-	}
-
 	void CNPLNetUDPServer::SendTo(const char* buff, size_t size, NPLUDPRoute_ptr pRoute)
 	{
 		m_udp.async_send_to(boost::asio::buffer(buff, size), pRoute->GetNPLUDPAddress()->GetEndPoint(),
@@ -237,6 +225,52 @@ namespace NPL {
 	void CNPLNetUDPServer::handle_send(const boost::system::error_code& error, size_t bytes_transferred, const char* buff, size_t buff_size)
 	{
 
+	}
+
+	int CNPLNetUDPServer::Ping(const char* host, const char* port, unsigned int waitTime /*= 1000*/)
+	{
+		return -1;
+		//if (!host || !port)
+		//	return -1;
+
+		//auto time = GetTickCount();
+		//boost::asio::io_context io_context;
+		//boost::asio::ip::udp::resolver resolver(io_context);
+
+		//try
+		//{
+		//	boost::asio::ip::udp::resolver::results_type endpoints = resolver.resolve(host, port);
+		//	boost::asio::ip::udp::socket socket(io_context);
+		//	socket.open(boost::asio::ip::udp::v4());
+		//	boost::array<char, 128> recv_buf;
+		//	boost::array<char, 0> send_buf;
+
+		//	for (auto it = endpoints.begin(); it != endpoints.end(); ++it)
+		//	{
+		//		socket.send_to(boost::asio::buffer(send_buf), it->endpoint());
+		//		//socket.receive_from(boost::asio::buffer(recv_buf), it->endpoint());
+
+		//		OUTPUT_LOG("%s\n", recv_buf.data());
+		//	}
+
+		//	//for (auto it = endpoints.begin(); it != endpoints.end(); ++it)
+		//	//	socket.send_to(boost::asio::buffer("", 1), *it);
+
+		//	//boost::asio::connect(socket, endpoints);
+
+		//	//OUTPUT_LOG("connectd\n");
+		//}
+		//catch (std::exception& e)
+		//{
+		//	OUTPUT_LOG("connect error : %s\n", e.what());
+		//	return -1;
+		//}
+
+		//auto ret = GetTickCount() - time;
+
+		//OUTPUT_LOG("time : %d\n", ret);
+
+		//return ret;
 	}
 
 	/** Handle idle timer timeout.*/

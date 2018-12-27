@@ -111,8 +111,11 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPKeepAliveEnabled_s, bool*)	{*p1 = cls->IsTCPKeepAliveEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPKeepAlive_s, bool)	{cls->SetTCPKeepAlive(p1); return S_OK;}
 
-		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*)	{*p1 = cls->IsKeepAliveEnabled(); return S_OK;}
-		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool)	{cls->SetKeepAlive(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPNoDelay_s, bool*) { *p1 = cls->IsTCPNoDelay(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPNoDelay_s, bool) { cls->SetTCPNoDelay(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*) { *p1 = cls->IsKeepAliveEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool) { cls->SetKeepAlive(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsIdleTimeoutEnabled_s, bool*)	{*p1 = cls->IsIdleTimeoutEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableIdleTimeout_s, bool)	{cls->EnableIdleTimeout(p1); return S_OK;}
@@ -151,7 +154,8 @@ namespace NPL
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableUDPServer_s, int) { cls->NPL_StartNetUDPServer(nullptr, p1); return S_OK; }
 		ATTRIBUTE_METHOD(CNPLRuntime, DisableUDPServer_s) { cls->NPL_StopNetUDPServer(); return S_OK; }
-		
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetExternalIPList_s, const char**) { *p1 = CNPLRuntime::GetExternalIPList().c_str(); return S_OK; }
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
@@ -266,7 +270,11 @@ namespace NPL
 		/** whether the NPL runtime's udp server is started. */
 		bool IsUDPServerStarted();
 
-		
+		void SetTCPNoDelay(bool bEnable);
+		bool IsTCPNoDelay();
+
+		/** get extern IP address lsit of this computer. use ',' to separate */
+		static const std::string& GetExternalIPList();
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -629,6 +637,9 @@ namespace NPL
 		* @param reliability [out]
 		*/
 		virtual void NPL_GetChannelProperty(int channel_ID, int* priority, int* reliability);
+
+		///
+		static int NPL_Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp);
 
 		/**
 		* OBSOLETED: Enable the network, by default the network layer is disabled.
