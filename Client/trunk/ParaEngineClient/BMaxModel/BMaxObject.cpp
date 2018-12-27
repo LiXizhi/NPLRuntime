@@ -385,8 +385,15 @@ namespace ParaEngine
 					{
 						m_dwLastBlockHash = dwPositionHash;
 					}
-					sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
-					sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+					if (!sceneState->IsDeferredShading())
+					{
+						sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
+						sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+					}
+					else
+					{
+						sceneState->GetLocalMaterial().Diffuse = LinearColor::White;
+					}
 
 					sceneState->EnableLocalMaterial(true);
 					bUsePointTextureFilter = bUsePointTextureFilter || pBlockWorldClient->GetUsePointTextureFiltering();
