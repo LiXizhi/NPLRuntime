@@ -35,10 +35,6 @@
 #define LUA_NUMBER_FMT		"%.14g"
 #endif
 
-#ifdef WIN32
-#define snprintf _snprintf
-#endif
-
 
 namespace NPLInterface
 {
