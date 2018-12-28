@@ -231,8 +231,15 @@ namespace ParaEngine
 			fLightness *= pBlockWorldClient->GetSunIntensity();
 			fLightness = Math::Max(fLightness, fBlockLightness);
 
-			sceneState->GetLocalMaterial().Ambient = LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f);
-			sceneState->GetLocalMaterial().Diffuse = LinearColor(fLightness*0.35f, fLightness*0.35f, fLightness*0.35f, 1.f);
+			if (!sceneState->IsDeferredShading())
+			{
+				sceneState->GetLocalMaterial().Ambient = (LinearColor(fLightness*0.7f, fLightness*0.7f, fLightness*0.7f, 1.f));
+				sceneState->GetLocalMaterial().Diffuse = (LinearColor(fLightness*0.4f, fLightness*0.4f, fLightness*0.4f, 1.f));
+			}
+			else
+			{
+				sceneState->GetLocalMaterial().Diffuse = LinearColor::White;
+			}
 
 			sceneState->EnableLocalMaterial(true);
 		}
@@ -337,7 +344,7 @@ namespace ParaEngine
 		CEffectFile* pEffectFile = pEffectManager->GetCurrentEffectFile();
 		CGlobals::GetWorldMatrixStack().push(mxWorld);
 
-		ApplyBlockLighting(sceneState);
+		// ApplyBlockLighting(sceneState);
 
 		
 		CApplyObjectLevelParamBlock p(GetEffectParamBlock());

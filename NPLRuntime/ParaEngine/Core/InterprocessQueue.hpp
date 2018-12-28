@@ -14,12 +14,6 @@
 #include <boost/array.hpp>
 #include "util/Mutex.hpp"
 
-#ifdef WIN32
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
-#endif
-
 namespace ParaEngine
 {
 #pragma region Msg Header

@@ -47,11 +47,11 @@ endif()
 
 if(IOS)
 find_host_package(Boost ${Boost_Version} REQUIRED 
-COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log
+COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 )
 else()
 find_package(Boost ${Boost_Version} REQUIRED 
-COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams log
+COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 ) 
 endif()
 

@@ -167,7 +167,7 @@ def buildAndroid():
 	print "Building Boost for Android \n";
 	
 	params = "--user-config=android-config.jam --build-dir=android-build --stagedir=android-build/stage toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=shared ";
-	params += "--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-regex --with-serialization --with-iostreams --with-log";
+	params += "--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 	
 	ret = 0;
 	if (platform.system() == "Windows"):
@@ -211,7 +211,7 @@ def buildWin32(b32):
 		
 	os.system("bootstrap --with-toolset=gcc");
 	params = "stage link=static runtime-link=static threading=multi address-model=%d --abbreviate-paths cflags=-D_WIN32_WINNT=0x0501 --build-dir=%s --stagedir=%s" % (address_model, build_dir, stage_dir);
-	params += " --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-regex --with-serialization --with-iostreams --with-log";
+	params += " --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 	ret = os.system("b2 %s --abbreviate-paths" % (params));
 	
 	os.chdir(CURRENT_DIR);
@@ -227,7 +227,7 @@ def buildLinux():
 	os.chdir(BOOST_SRC);
 	os.system("./bootstrap.sh --with-toolset=gcc");
 	params = "link=static threading=multi variant=release --build-dir=linux-build --stagedir=linux-build/stage";
-	params += " --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-regex --with-serialization --with-iostreams --with-log";
+	params += " --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 	ret = os.system("./b2 %s" % (params));
 	if (ret == 0):
 		ret = os.system("./b2 install --build-dir=linux-build --stagedir=linux-build/stage");
@@ -242,7 +242,7 @@ def buildLinux():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='manual to this script')
 	parser.add_argument('--platform', type=str, default = "android");
-	parser.add_argument('--boost_version', type=str, default = "1.65.0");
+	parser.add_argument('--boost_version', type=str, default = "1.69.0");
 	
 	args = parser.parse_args();
 	
