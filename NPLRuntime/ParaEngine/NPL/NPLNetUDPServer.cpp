@@ -155,6 +155,8 @@ namespace NPL {
 			// stop the work on dispatcher. 
 			m_work_lifetime.reset();
 
+			m_io_service_dispatcher.stop();
+
 			m_dispatcherThread->join();
 			m_dispatcherThread.reset();
 
