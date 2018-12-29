@@ -454,6 +454,13 @@ namespace NPL {
 		//	}
 		//}
 		//else
+		if (code[0] == '\0')
+		{
+			writer.AddFirstLine(file_name, file_id, "B ");
+			nLength--;
+			writer.AddBody(code + 1, nLength, (nLength <= m_nCompressionThreshold ? 0 : m_nCompressionLevel));
+		}
+		else
 		{
 			// for NPL message 
 			writer.AddFirstLine(file_name, file_id);

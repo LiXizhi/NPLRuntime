@@ -69,7 +69,7 @@ namespace NPL
 		
 		void AddFirstLine(const char* method, const char* uri);
 		/** @param file_id: if not -1, the filename will be sent as id */
-		void AddFirstLine(const NPLFileName& file_name, int file_id=-1);
+		void AddFirstLine(const NPLFileName& file_name, int file_id=-1, const char* method = nullptr);
 
 		/** add a header name value pair to the message. */
 		void AddHeaderPair(const char* name, const char* value);

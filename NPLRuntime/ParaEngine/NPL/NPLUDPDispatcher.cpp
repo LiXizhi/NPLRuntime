@@ -158,7 +158,7 @@ namespace NPL {
 		auto pRuntime = ParaEngine::CGlobals::GetNPLRuntime()->GetRuntimeState(msg.m_rts_name);
 		if (pRuntime)
 		{
-			if (msg.method.size()>0 && (((byte)(msg.method[0])) > 127 /*== 0xff*/ || msg.method == "A"))
+			if (msg.method.size()>0 && (((byte)(msg.method[0])) > 127 /*== 0xff*/ || msg.method == "A" || msg.method == "B"))
 			{
 				if (CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().CheckPubFile(msg.m_filename, msg.m_n_filename))
 				{
@@ -168,14 +168,25 @@ namespace NPL {
 					NPLMessage_ptr msg_(new NPLMessage());
 					msg_->m_filename = msg.m_filename;
 					int nSize = (int)(msg.m_code.size());
-					msg_->m_code.reserve(nSize + 36);
-					msg_->m_code.append("msg={");
+					
 
-					msg_->m_code.append(msg.m_code);
-
-					if (nSize > 0 && msg.m_code[nSize - 1] != ',')
+					if (msg.method == "B")
 					{
+						msg_->m_code.reserve(nSize * 2 + 72);
+						msg_->m_code.append("msg={data=");
+						NPL::NPLHelper::EncodeStringInQuotation(msg_->m_code, msg_->m_code.size(), msg.m_code.c_str(), msg.m_code.size());
 						msg_->m_code.append(',');
+					}
+					else
+					{
+						msg_->m_code.reserve(nSize + 72);
+						msg_->m_code.append("msg={");
+						msg_->m_code.append(msg.m_code);
+
+						if (nSize > 0 && msg.m_code[nSize - 1] != ',')
+						{
+							msg_->m_code.append(',');
+						}
 					}
 
 					msg_->m_code.append("isUDP=true,");
