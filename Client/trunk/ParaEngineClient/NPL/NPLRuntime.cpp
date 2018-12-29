@@ -65,6 +65,8 @@ namespace NPL
 using namespace NPL;
 using namespace ParaScripting;
 
+std::string CNPLRuntime::m_tempString;
+
 /**
 * command line: local="config/local.ini"
 */
@@ -1313,10 +1315,16 @@ ParaEngine::IAttributeFields* CNPLRuntime::GetChildAttributeObject(int nRowIndex
 
 const std::string& CNPLRuntime::GetExternalIPList()
 {
-	static std::string s;
-	s = CNPLNetServer::GetExternalIPList();
-	return s;
+	m_tempString = CNPLNetServer::GetExternalIPList();
+	return m_tempString;
 }
+
+const std::string& CNPLRuntime::GetBroadcastAddressList()
+{
+	m_tempString = CNPLNetServer::GetBroadcastAddressList();
+	return m_tempString;
+}
+
 
 int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverride)
 {
@@ -1352,5 +1360,6 @@ int CNPLRuntime::InstallFields(ParaEngine::CAttributeClass* pClass, bool bOverri
 	pClass->AddField("DisableUDPServer", FieldType_void, (void*)DisableUDPServer_s, NULL, NULL, NULL, bOverride);
 
 	pClass->AddField("ExternalIPList", FieldType_String, (void*)0, (void*)GetExternalIPList_s, NULL, NULL, bOverride);
+	pClass->AddField("BroadcastAddressList", FieldType_String, (void*)0, (void*)GetBroadcastAddressList_s, NULL, NULL, bOverride);
 	return S_OK;
 }

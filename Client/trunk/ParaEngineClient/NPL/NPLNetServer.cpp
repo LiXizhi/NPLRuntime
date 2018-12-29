@@ -382,6 +382,50 @@ void NPL::CNPLNetServer::handle_stop()
 	m_connection_manager.stop_all();
 }
 
+std::string NPL::CNPLNetServer::GetBroadcastAddressList()
+{
+	using boost::asio::ip::tcp;
+	std::string firstIP;
+	try
+	{
+		boost::asio::io_service io_service;
+
+		tcp::resolver resolver(io_service);
+		tcp::resolver::query query(boost::asio::ip::host_name(), "");
+		tcp::resolver::iterator it = resolver.resolve(query);
+
+		while (it != tcp::resolver::iterator())
+		{
+			boost::asio::ip::address addr = (it++)->endpoint().address();
+			if (addr.is_v4())
+			{
+				auto bytes = addr.to_v4().to_bytes();
+
+				if ((bytes[0] == 10)
+					|| (bytes[0] == 172 && (bytes[1] >= 16 && bytes[1] <= 31))
+					|| (bytes[0] == 192 && bytes[1] == 168))
+				{
+					{
+						// this is temporary algorithm,  broadcast address = ip | (~mask)
+						bytes[3] = 0xff;
+					}
+
+					addr = boost::asio::ip::make_address_v4(bytes);
+
+					if (firstIP.empty())
+						firstIP = addr.to_string();
+					else
+						firstIP += "," + addr.to_string();
+				}
+			}
+		}
+	}
+	catch (...)
+	{
+		OUTPUT_LOG1("warning: failed getting external ip in CNPLNetServer::GetExternalIPList()\n");
+	}
+	return firstIP;
+}
 
 std::string NPL::CNPLNetServer::GetExternalIPList()
 {
