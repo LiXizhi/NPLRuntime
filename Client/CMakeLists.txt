@@ -133,7 +133,7 @@ set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 
 # Add more boost components here
-find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system chrono signals regex serialization iostreams) 
+find_package( Boost 1.61 REQUIRED COMPONENTS thread date_time filesystem system chrono regex serialization iostreams) 
 
 # End of boost
 
