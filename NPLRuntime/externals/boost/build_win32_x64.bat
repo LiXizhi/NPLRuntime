@@ -25,7 +25,7 @@ IF EXIST build_win32/stage/x64 (
 rem build
 echo Building for win64
 call bootstrap.bat
-b2 stage link=static runtime-link=static threading=multi address-model=64 --abbreviate-paths cflags=-D_WIN32_WINNT=0x0501 --build-dir=build_win32/build/x64 --stagedir=build_win32/stage/x64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-signals --with-regex --with-serialization --with-iostreams --with-log
+b2 stage link=static runtime-link=static threading=multi address-model=64 --abbreviate-paths cflags=-D_WIN32_WINNT=0x0501 --build-dir=build_win32/build/x64 --stagedir=build_win32/stage/x64 --with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log
 popd
 rem done
 echo =====================
