@@ -30,13 +30,11 @@ namespace NPL {
 		, m_udp_server(udp_server)
 		, m_msg_dispatcher(msg_dispatcher)
 		, m_totalBytesIn(0), m_totalBytesOut(0)
-		, m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE)
 		, m_nCompressionLevel(0)
 		, m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD)
 		, m_bEnableIdleTimeout(true)
 		, m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0)
 	{
-		m_queueOutput.SetUseEvent(false);
 		// init common fields for input message. 
 		m_input_msg.reset();
 		m_input_msg.npl_version_major = NPL_VERSION_MAJOR;
@@ -357,25 +355,14 @@ namespace NPL {
 
 			m_nFinishedCount++;
 
-			// Initiate graceful connection closure.
-			//boost::system::error_code ignored_ec;
-			//m_socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ignored_ec);
-			// send more from the buffer, until the output queue is empty
-			NPLMsgOut_ptr* msg = NULL;
-			if (m_queueOutput.try_next(&msg) && msg != NULL)
-			{
-				m_udp_server.SendTo((*msg)->GetBuffer().c_str(), (*msg)->GetBuffer().size(), shared_from_this());
-			}
-			else
-			{
-				if (m_bCloseAfterSend)
-					stop(true);
-			}
+
+			if (m_bCloseAfterSend)
+				stop(true);
 		}
 		else
 		{
 			if (GetLogLevel() > 0) {
-				OUTPUT_LOG("warning: handle_write operation aborted. nid %s \n", GetNID().c_str());
+				OUTPUT_LOG("warning: handle_send operation aborted. nid %s  msg : \n", GetNID().c_str(), error.message().c_str());
 			}
 		}
 	}
@@ -506,33 +493,8 @@ namespace NPL {
 
 	
 		int nLength = (int)msg->GetBuffer().size();
-		NPLMsgOut_ptr * pFront = NULL;
 		m_nSendCount++;
-		RingBuffer_Type::BufferStatus bufStatus = m_queueOutput.try_push_get_front(msg, &pFront);
-
-		if (bufStatus == RingBuffer_Type::BufferFirst)
-		{
-
-			PE_ASSERT(pFront != NULL);
-
-			// This mutex fix a tricky bug that: boost::asio::async_write may crash 
-			// if m_socket is closed by the io service thread when this function is called
-			ParaEngine::mutex::ScopedLock lock_(m_mutex);
-
-			// LXZ: very tricky code to ensure thread-safety to the buffer.
-			// only start the sending task when the buffer is empty, otherwise we will wait for previous send task. 
-			// i.e. inside handle_send handler. 
-			m_udp_server.SendTo((*pFront)->GetBuffer().c_str(), (*pFront)->GetBuffer().size(), shared_from_this());
-		}
-		else if (bufStatus == RingBuffer_Type::BufferOverFlow)
-		{
-			m_nSendCount--;
-			if (GetLogLevel() > 0) {
-				OUTPUT_LOG("NPL SendMessage error because the output msg queue is full. The route nid is %s \n", GetNID().c_str());
-			}
-			// too many messages to send.
-			return NPL_QueueIsFull;
-		}
+		m_udp_server.SendTo(msg->GetBuffer().c_str(), msg->GetBuffer().size(), shared_from_this());
 
 		m_totalBytesOut += nLength;
 		return NPL_OK;
