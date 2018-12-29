@@ -89,17 +89,24 @@ namespace NPL{
 		Append(const_strings::crlf);
 	}
 
-	void CNPLMsgOut_gen::AddFirstLine( const NPLFileName& file_name, int file_id )
+	void CNPLMsgOut_gen::AddFirstLine( const NPLFileName& file_name, int file_id, const char* method)
 	{
-		if(g_enable_ansi_mode)
+		if (method)
 		{
-			Append("A ");
+			Append(method, 2);
 		}
 		else
 		{
-			// 0xff is the binary version for NPL append
-			byte method[] = {0xff, ' '};
-			Append((const char*)method, 2);
+			if (g_enable_ansi_mode)
+			{
+				Append("A ");
+			}
+			else
+			{
+				// 0xff is the binary version for NPL append
+				byte method_[] = { 0xff, ' ' };
+				Append((const char*)method_, 2);
+			}
 		}
 
 		if(!file_name.sRuntimeStateName.empty())
