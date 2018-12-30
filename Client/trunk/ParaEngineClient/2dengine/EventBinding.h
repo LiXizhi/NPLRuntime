@@ -124,6 +124,7 @@ namespace ParaEngine
 
 		/** converting a windows virtual key to direct input key scan code. */
 		static DWORD TranslateVKToDIK(DWORD dwVKey);
+		static DWORD TranslateDIKToVK(DWORD dwVKey);
 
 		static DWORD ScancodeToKeyTable[256];
 
