@@ -39,6 +39,7 @@ using namespace ParaEngine;
 CDirectKeyboard::CDirectKeyboard(HWND hDlg)
 : m_pDI(NULL), m_pKeyboard(NULL)
 {
+	memset(m_keystateUserDefined, 0, sizeof(m_keystateUserDefined));
 	CreateDevice(hDlg); 
 };
 
@@ -221,6 +222,24 @@ HRESULT CDirectKeyboard::ReadImmediateData(  )
 	m_keystate[DIK_SCROLL]=(m_keystate[DIK_SCROLL]&0xf0)|(GetKeyState(VK_SCROLL)&0x0f);
 	m_keystate[DIK_CAPITAL]=(m_keystate[DIK_CAPITAL]&0xf0)|(GetKeyState(VK_CAPITAL)&0x0f);
 	return S_OK;
+}
+
+
+bool CDirectKeyboard::IsKeyPressed(DWORD nKey)
+{
+	return ((m_keystateUserDefined[nKey] & 0x80) != 0) || CGUIKeyboardVirtual::IsKeyPressed(nKey);
+}
+
+void CDirectKeyboard::SetKeyPressed(DWORD nKey, bool bPressed)
+{
+	m_keystateUserDefined[nKey] = bPressed ? 0x80 : 0;
+	CGUIKeyboardVirtual::SetKeyPressed(nKey, bPressed);
+}
+
+void CDirectKeyboard::Reset()
+{
+	memset(m_keystateUserDefined, 0, sizeof(m_keystateUserDefined));
+	CGUIKeyboardVirtual::Reset();
 }
 
 //////////////////////////////////////////////////////////////////////////
