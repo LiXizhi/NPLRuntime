@@ -81,7 +81,6 @@ namespace NPL
 
 	public:
 		friend class CNPLUDPDispatcher;
-		typedef concurrent_ptr_queue<NPLMsgOut_ptr, dummy_condition_variable> RingBuffer_Type;
 
 		~CNPLUDPRoute();
 
@@ -279,8 +278,6 @@ namespace NPL
 		/// The parser for the incoming message.
 		NPLMsgIn_parser m_parser;
 
-		/** the output message queue. a queue that is filled by SendMessage() function */
-		RingBuffer_Type m_queueOutput;
 
 		/** this mutex is only used for determine the state. */
 		ParaEngine::mutex m_mutex;

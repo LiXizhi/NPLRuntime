@@ -156,6 +156,7 @@ namespace NPL
 		ATTRIBUTE_METHOD(CNPLRuntime, DisableUDPServer_s) { cls->NPL_StopNetUDPServer(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetExternalIPList_s, const char**) { *p1 = CNPLRuntime::GetExternalIPList().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetBroadcastAddressList_s, const char**) { *p1 = CNPLRuntime::GetBroadcastAddressList().c_str(); return S_OK; }
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
@@ -275,6 +276,8 @@ namespace NPL
 
 		/** get extern IP address lsit of this computer. use ',' to separate */
 		static const std::string& GetExternalIPList();
+		/* get broadcast address lsit of this computer. use ',' to separate */
+		static const std::string& GetBroadcastAddressList();
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -800,6 +803,8 @@ namespace NPL
 		ParaEngine::mutex m_mutex;
 
 		static NPLRuntimeStateType m_defaultNPLStateType;
+
+		static std::string m_tempString;
 	};
 
 }

@@ -6,7 +6,7 @@
 namespace NPL {
 
 	/// @def default NPL server IP or domain name
-	const std::string NPL_DEFAULT_UDP_SERVER = "127.0.0.1";
+	const std::string NPL_DEFAULT_UDP_SERVER = "0.0.0.0";
 	/// @def default NPL server version
 	const std::string NPL_UDP_SERVER_VERSION = "0.1";
 	
@@ -57,7 +57,6 @@ namespace NPL {
 					m_strServer = server;
 
 				m_nPort = port;
-				OUTPUT_LOG("NPL UDP server %s is listening on %s:%d\n", NPL_UDP_SERVER_VERSION.c_str(), m_strServer.c_str(), m_nPort);
 
 				boost::asio::ip::udp::endpoint local_add;
 				if (server && m_strServer != "0")
@@ -69,6 +68,8 @@ namespace NPL {
 				{
 					local_add = boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port);
 				}
+
+				OUTPUT_LOG("NPL UDP server %s is listening on %s:%d\n", NPL_UDP_SERVER_VERSION.c_str(), local_add.address().to_v4().to_string().c_str(), m_nPort);
 
 				m_udp.open(local_add.protocol());
 				m_udp.bind(local_add);
@@ -153,6 +154,8 @@ namespace NPL {
 
 			// stop the work on dispatcher. 
 			m_work_lifetime.reset();
+
+			m_io_service_dispatcher.stop();
 
 			m_dispatcherThread->join();
 			m_dispatcherThread.reset();
