@@ -21,9 +21,15 @@ namespace ParaEngine
 		void Free();
 		virtual HRESULT ReadBufferedData( );
 		virtual HRESULT ReadImmediateData( );
-		
+
+		virtual bool IsKeyPressed(DWORD nKey);
+		virtual void SetKeyPressed(DWORD nKey, bool bPressed);
+		virtual void Reset();
+
 		LPDIRECTINPUT8       m_pDI; // The DirectInput object         
 		LPDIRECTINPUTDEVICE8 m_pKeyboard; // The keyboard device 
+
+		BYTE  m_keystateUserDefined[256];   // DirectInput keyboard state buffer 
 	};
 	
 	/** mouse object */

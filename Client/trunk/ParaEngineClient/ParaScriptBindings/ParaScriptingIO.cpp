@@ -21,6 +21,7 @@
 #include "TextureEntity.h"
 #include "util/StringHelper.h"
 #include "NPLWriter.h"
+#include "NPLHelper.h"
 #include <boost/thread/tss.hpp>
 
 #include <vector>
@@ -162,7 +163,7 @@ namespace ParaScripting
 		return file;
 	}
 
-	ParaScripting::ParaFileObject ParaIO::openimage( const char * filename, const char *mode )
+	ParaScripting::ParaFileObject ParaIO::openimage(const object& filename, const char *mode )
 	{
 		return ParaIO::open(filename, "image");
 	}
@@ -276,9 +277,16 @@ namespace ParaScripting
 		ParaEngine::CFileReplaceMap::GetSingleton().LoadReplaceFile(filename, bReplaceExistingOnes);
 	}
 
-	ParaFileObject ParaIO::open( const char * filename, const char *mode )
+	ParaFileObject ParaIO::open( const object& obj, const char *mode )
 	{
 		ParaFileObject file;
+
+		if (type(obj) != LUA_TSTRING)
+			return file;
+
+		int len = 0;
+		auto filename = NPL::NPLHelper::LuaObjectToString(obj, &len);
+
 		if(filename == NULL)
 			return file;
 		if (!CParaFile::IsWritablePath(filename))
@@ -372,6 +380,11 @@ namespace ParaScripting
 				}
 			}
 		}
+		else if (strcmp(mode, "buffer") == 0)
+		{
+			file.m_pFile.reset(new CParaFile((char*)filename, len, false));
+		}
+
 		return file;
 	}
 
@@ -1127,10 +1140,9 @@ namespace ParaScripting
 		return m_sTempBuffer;
 	}
 
-	const std::string& ParaFileObject::ReadString(int nCount)
+	object ParaFileObject::ReadString(int nCount, lua_State* L)
 	{
 		// this is now thread-safe and multiple instance can be used at the same time
-		m_sTempBuffer.clear();
 		if (IsValid())
 		{
 			int fromPos = (int)m_pFile->getPos();
@@ -1138,13 +1150,23 @@ namespace ParaScripting
 			int nSize = (int)m_pFile->getSize();
 			if (nCount < 0)
 				nCount = nSize - fromPos;
+			else if (nCount > nSize - fromPos)
+			{
+				nCount = nSize - fromPos;
+			}
+
 			if (nCount > 0)
 			{
-				m_sTempBuffer.resize(nCount);
-				m_pFile->read((char*)(&(m_sTempBuffer[0])), nCount);
+				m_pFile->seek(fromPos + nCount);
+	
+				lua_pushlstring(L, m_pFile->getBuffer() + fromPos, nCount);
+				object o(from_stack(L, -1));
+				lua_pop(L, 1);
+
+				return o;
 			}
 		}
-		return m_sTempBuffer;
+		return object(L, "");
 	}
 
 	void ParaFileObject::WriteString2(const char* buffer, int nSize)
@@ -1331,6 +1353,64 @@ namespace ParaScripting
 		{
 			int32 data;
 			m_pFile->read(&data, 4);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteUShort(unsigned short value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 2);
+		}
+	}
+
+	unsigned short ParaFileObject::ReadUShort()
+	{
+		if (IsValid())
+		{
+			unsigned short data;
+			m_pFile->read(&data, 2);
+			return data;
+		}
+		return 0;
+	}
+
+	void ParaFileObject::WriteChar(char value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 1);
+		}
+	}
+
+	char ParaFileObject::ReadChar()
+	{
+		if (IsValid())
+		{
+			char data;
+			m_pFile->read(&data, 1);
+			return data;
+		}
+		return 0;
+	}
+
+
+	void ParaFileObject::WriteByte(unsigned char value)
+	{
+		if (IsValid())
+		{
+			m_pFile->write(&value, 1);
+		}
+	}
+
+	unsigned char ParaFileObject::ReadByte()
+	{
+		if (IsValid())
+		{
+			unsigned char data;
+			m_pFile->read(&data, 1);
 			return data;
 		}
 		return 0;

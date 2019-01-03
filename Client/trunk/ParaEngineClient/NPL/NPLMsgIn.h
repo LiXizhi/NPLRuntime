@@ -26,7 +26,14 @@ namespace NPL
 		std::string m_code;
 
 		/** the connection object from which this message is received. */
-		CNPLConnection * m_pConnection;
+		union {
+			CNPLConnection * m_pConnection;
+			CNPLUDPRoute * m_pRoute;
+		};
+
+		bool bUseConnection;
+
+		NPLMsgIn() : bUseConnection(true), m_pConnection(nullptr) {};
 	public:
 		void reset()
 		{

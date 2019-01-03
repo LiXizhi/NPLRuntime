@@ -70,6 +70,11 @@ namespace NPL
 		*/
 		bool IsTCPKeepAliveEnabled();
 
+
+		/// 
+		void SetTCPNoDelay(bool bEnable);
+		bool IsTcpNoDelay();
+
 		/** enable application level keep alive. we will use a global idle timer to detect if a connection has been inactive for GetIdleTimeoutPeriod(),
 		* if so, we may send the keep alive message. 
 		* @param bEnable: enable keep alive will automatically enable EnableIdleTimeout()
@@ -99,9 +104,18 @@ namespace NPL
 		/** queue size of the acceptor's queue. */
 		int GetMaxPendingConnections() const;
 		void SetMaxPendingConnections(int val);
+
+		/* ping a host, if host is alive return delay time,  otherwise return -1
+
+		*/
+		static int Ping(const char* host, const char* port, unsigned int waitTime = 1000);
 	public:
 		/** get extern IP address of this computer. */
 		std::string GetExternalIP();
+		/** get extern IP address lsit of this computer. use ',' to separate */
+		static std::string GetExternalIPList();
+		/* get broadcast address lsit of this computer. use ',' to separate */
+		static std::string GetBroadcastAddressList();
 
 		/** get the host port of this NPL runtime */
 		virtual const std::string& GetHostPort();
@@ -150,6 +164,9 @@ namespace NPL
 
 		/** whether application level keep alive is enabled.*/
 		bool m_bKeepAlive;
+
+		///
+		bool m_bNoDelay;
 
 		/** whether idle timeout is enabled. */
 		bool m_bEnableIdleTimeout;
