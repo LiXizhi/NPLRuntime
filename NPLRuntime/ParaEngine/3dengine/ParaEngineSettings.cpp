@@ -1245,7 +1245,7 @@ void ParaEngine::ParaEngineSettings::SetShowWindowTitleBar(bool bEnabled)
 		LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
 		if (bEnabled)
 		{
-			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX);
+			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 		}
 		else
 		{
