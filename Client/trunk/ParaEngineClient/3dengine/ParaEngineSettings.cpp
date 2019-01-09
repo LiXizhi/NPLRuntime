@@ -735,7 +735,7 @@ Vector2 ParaEngine::ParaEngineSettings::GetScreenResolution()
 	//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
 	Vector2 res(1600, 900);
 #elif defined(CHECK_QQ_PARAMS)
-	Vector2 res(622, 382);
+	Vector2 res(800, 500);
 #else
 	Vector2 res(1280, 720);
 #endif
