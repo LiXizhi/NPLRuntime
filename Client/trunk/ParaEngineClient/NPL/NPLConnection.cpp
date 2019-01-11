@@ -128,7 +128,9 @@ const string& NPL::CNPLConnection::GetNID() const
 
 string NPL::CNPLConnection::GetIP()
 {
-	if (m_address)
+	if (!m_resolved_address.empty())
+		return m_resolved_address;
+	else if (m_address)
 		return m_address->GetHost();
 	else
 		return ParaEngine::CGlobals::GetString(0);
@@ -240,6 +242,8 @@ void NPL::CNPLConnection::start()
 	// update the start time and last send/receive time
 	m_nStartTime = GetTickCount();
 	m_nLastActiveTime = m_nStartTime;
+
+	m_resolved_address.clear();
 
 	if (m_address)
 	{
@@ -524,7 +528,7 @@ void NPL::CNPLConnection::handle_resolve(const boost::system::error_code& err, b
 		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
 		m_socket.async_connect(endpoint,
 			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, ++endpoint_iterator));
+				boost::asio::placeholders::error, endpoint_iterator));
 	}
 	else
 	{
@@ -545,8 +549,12 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 
 		// connection successfully established, let us start reading from the socket. 
 		start();
+
+		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
+		m_resolved_address = endpoint.address().to_string();
+
 	}
-	else if (endpoint_iterator != boost::asio::ip::tcp::resolver::iterator())
+	else if ((++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
 	{
 		// That endpoint didn't work, try the next one.
 		boost::system::error_code ec;
