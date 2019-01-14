@@ -302,6 +302,8 @@ namespace NPL
 
 		/// the address of the NPL runtime, which this connection represents. The address is only available when the connection is authenticated and the npl runtime name is known.
 		NPLRuntimeAddress_ptr m_address;
+		///
+		std::string m_resolved_address;
 
 		/// Buffer for incoming data.
 		Buffer_Type m_buffer;
