@@ -306,7 +306,7 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 	try
 	{
 		fs::path sSrc(src_path);
-		fs::copy_file(sSrc, fs::path(dest_path));
+		fs::copy_file(sSrc, fs::path(dest_path), fs::copy_option::overwrite_if_exists);
 		return fs::remove(sSrc);
 	}
 	catch (...)
@@ -318,7 +318,7 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 	try
 	{
 		fs::path sSrc(src);
-		fs::copy_file(sSrc, fs::path(dest));
+		fs::copy_file(sSrc, fs::path(dest), fs::copy_option::overwrite_if_exists);
 		return fs::remove(sSrc);
 	}
 	catch (...)

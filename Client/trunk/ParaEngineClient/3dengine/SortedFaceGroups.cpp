@@ -310,6 +310,7 @@ void ParaEngine::CSortedFaceGroups::Render()
 				CGlobals::GetRenderDevice()->SetTransform( D3DTS_WORLD, facegroup.m_transform.GetConstPointer());
 
 				int nTotalVertices = facegroup.m_facegroup->m_nNumTriangles*3;
+				nNumFinishedVertice = 0;
 				do
 				{
 					if( (nNumLockedVertice = pBufEntity->Lock((nTotalVertices - nNumFinishedVertice), 
@@ -539,6 +540,8 @@ void ParaEngine::CSortedFaceGroups::Render()
 						pEffect->CommitChanges();
 						
 						int nTotalVertices = facegroup.m_facegroup->m_nNumTriangles*3;
+						nNumFinishedVertice = 0;
+
 						do
 						{
 							if( (nNumLockedVertice = pBufEntity->Lock((nTotalVertices - nNumFinishedVertice), 

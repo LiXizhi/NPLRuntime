@@ -1075,10 +1075,26 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 
 void ParaEngine::CGUIRoot::SendKeyDownEvent(int nVirtualkey)
 {
+	MSG newMsg;
+	newMsg.hwnd = CGlobals::GetAppHWND();
+	newMsg.lParam = 0;
+	newMsg.wParam = CEventBinding::TranslateDIKToVK(nVirtualkey);
+	newMsg.time = GetTickCount();
+	newMsg.message = WM_KEYDOWN;
+	GetKeyboard()->PushKeyEvent(newMsg);
+	GetKeyboard()->SetKeyPressed(nVirtualkey, true);
 }
 
 void ParaEngine::CGUIRoot::SendKeyUpEvent(int nVirtualkey)
 {
+	MSG newMsg;
+	newMsg.hwnd = CGlobals::GetAppHWND();
+	newMsg.lParam = 0;
+	newMsg.wParam = CEventBinding::TranslateDIKToVK(nVirtualkey);
+	newMsg.time = GetTickCount();
+	newMsg.message = WM_KEYUP;
+	GetKeyboard()->PushKeyEvent(newMsg);
+	GetKeyboard()->SetKeyPressed(nVirtualkey, false);
 }
 
 void ParaEngine::CGUIRoot::SendInputMethodEvent(const char* pStr)

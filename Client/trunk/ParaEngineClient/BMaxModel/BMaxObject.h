@@ -100,7 +100,7 @@ namespace ParaEngine
 		/** ignore selected state for bmaxobject
 		virtual void OnSelect(int nGroupID)override{}
 		virtual void OnDeSelect()override{}
-
+		*/
 	private:
 		/** size scale */
 		float	m_fScale;

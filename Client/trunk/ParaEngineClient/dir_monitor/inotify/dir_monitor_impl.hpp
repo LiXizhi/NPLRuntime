@@ -44,7 +44,7 @@ public:
         int wd = inotify_add_watch(fd_, dirname.c_str(), IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO);
         if (wd == -1)
         {
-            boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::dir_monitor_impl::add_directory: inotify_add_watch failed");
+            boost::system::system_error e(boost::system::error_code(errno, boost::system::system_category()), "boost::asio::dir_monitor_impl::add_directory: inotify_add_watch failed");
             boost::throw_exception(e);
         }
 
@@ -131,7 +131,7 @@ private:
         int fd = inotify_init();
         if (fd == -1)
         {
-            boost::system::system_error e(boost::system::error_code(errno, boost::system::get_system_category()), "boost::asio::dir_monitor_impl::init_fd: init_inotify failed");
+            boost::system::system_error e(boost::system::error_code(errno, boost::system::system_category()), "boost::asio::dir_monitor_impl::init_fd: init_inotify failed");
             boost::throw_exception(e);
         }
         return fd;

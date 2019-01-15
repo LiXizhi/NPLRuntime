@@ -710,7 +710,7 @@ void ParaEngine::IViewClippingObject::GetFacing3D( Vector3 *pV )
 void ParaEngine::IViewClippingObject::GetBoundRect( FLOAT* fWidth ,FLOAT* fHeight, FLOAT* fFacing )
 {
 	*fWidth = GetWidth();
-	*fHeight = GetHeight();
+	*fHeight = GetDepth();
 	*fFacing = GetFacing();
 }
 

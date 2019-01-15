@@ -234,7 +234,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 						int nVertexOffset = p.GetVertexStart(pMesh);
 						ModelVertex * origVertices = pMesh->m_origVertices;
 						ModelVertex * ov = NULL;
-						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart]+ nVertexOffset].bones[0];
+						uint8 nLastBoneIndex = origVertices[indices[p.m_nIndexStart] + nVertexOffset].bones[0];
 
 						int nIndexOffset = p.m_nIndexStart;
 						for (int i = 0; i < nLockedNum && bIsRigidBody; ++i)
@@ -273,7 +273,7 @@ CParaXModel* ParaEngine::XFileCharModelParser::LoadParaX_Body()
 			m_pParaXRawData->Unlock();
 		}
 	}
-	else if (mScene!=0)
+	else if (mScene != 0)
 	{
 		memcpy(&mScene->m_header, &m_xheader, sizeof(ParaXHeaderDef));
 		pMesh = LoadParaXModelFromScene(mScene);
@@ -426,6 +426,7 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 	DWORD       dwSize;
 	const char       *pBuffer = NULL;
 	// Get the template data
+
 	if ((pFileData->Lock(&dwSize, (&pBuffer))))
 	{
 		//int nTextures = *(DWORD*)(pBuffer);
@@ -434,14 +435,21 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 		int nTextures = _nTextures;
 
 		xmesh.m_objNum.nTextures = nTextures;
+
+
+#pragma pack(push) 
+#pragma pack(1)
 		struct ModelTextureDef_
 		{
 			uint32 type;
 			uint32 nOffsetEmbeddedTexture;
-			char sName;
+			char sName[1];
 		};
+#pragma pack(pop)
+
 		if (nTextures > 0)
 		{ // at least one texture
+
 			typedef TextureEntity* LPTextureEntity;
 			xmesh.textures = new asset_ptr<TextureEntity>[nTextures];
 			ModelTextureDef_* pTex = (ModelTextureDef_*)(pBuffer + 4);
@@ -450,6 +458,7 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 			{
 				ModelTextureDef_ texInfo;
 				memcpy(&texInfo, pTex, sizeof(ModelTextureDef_));
+
 				if (texInfo.type != 0)
 				{
 					if (texInfo.type < CParaXModel::MAX_MODEL_TEXTURES)
@@ -468,7 +477,9 @@ bool XFileCharModelParser::ReadXTextures(CParaXModel& xmesh, XFileDataObjectPtr 
 					xmesh.specialTextures[i] = -1;
 					xmesh.useReplaceTextures[i] = false;
 				}
-				string sFilename(((const char*)pTex) + 8); // for safety.
+				//string sFilename(((const char*)pTex) + 8); // for safety.
+				string sFilename = pTex->sName;
+
 				if (!sFilename.empty())
 				{
 					// 2006.9.11 by LXZ: we will save the default replaceable texture in m_textures, if it exists. 
@@ -840,7 +851,7 @@ bool XFileCharModelParser::ReadXParticleEmitters(CParaXModel& xmesh, XFileDataOb
 	{
 		//int nParticleEmitters = *(DWORD*)(pBuffer);
 		DWORD _nParticleEmitters;
-		memcpy(&_nParticleEmitters, pBuffer, sizeof(pBuffer));
+		memcpy(&_nParticleEmitters, pBuffer, sizeof(DWORD));
 		int nParticleEmitters = _nParticleEmitters;
 
 
