@@ -186,6 +186,10 @@ namespace NPL
 		void SetKeepAlive(bool bEnable);
 		bool IsKeepAliveEnabled();
 
+		///
+		void SetNoDelay(bool bEnable);
+		bool IsNoDelay();
+
 		/** Enable idle timeout. This is the application level timeout setting. 
 		* We will create a global timer which examines all send/receive time of all open connections, if a
 		* connection is inactive (idle for GetIdleTimeoutPeriod()) we will 
@@ -298,6 +302,8 @@ namespace NPL
 
 		/// the address of the NPL runtime, which this connection represents. The address is only available when the connection is authenticated and the npl runtime name is known.
 		NPLRuntimeAddress_ptr m_address;
+		///
+		std::string m_resolved_address;
 
 		/// Buffer for incoming data.
 		Buffer_Type m_buffer;
@@ -343,6 +349,9 @@ namespace NPL
 
 		/** whether SO_KEEPALIVE is enabled.*/
 		bool m_bKeepAlive;
+
+		///
+		bool m_bNoDelay;
 
 		/** whether idle timeout is enabled. */
 		bool m_bEnableIdleTimeout;

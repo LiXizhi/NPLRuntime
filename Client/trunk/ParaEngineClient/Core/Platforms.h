@@ -22,7 +22,6 @@
 #ifdef WIN32
 
 #define vsnprintf _vsnprintf
-#define snprintf _snprintf
 #define vsnwprintf _vsnwprintf
 #if _MSC_VER >= 1400 //vc8.0 use new secure
 #define snwprintf _snwprintf_s

@@ -26,6 +26,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(Bone, GetRotName_s, const char**)		{ *p1 = cls->GetRotName().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, GetTransName_s, const char**)		{ *p1 = cls->GetTransName().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, GetScaleName_s, const char**)		{ *p1 = cls->GetScaleName().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(Bone, GetTimeName_s, const char**) { *p1 = cls->GetTimeName().c_str(); return S_OK; }
 
 		ATTRIBUTE_METHOD1(Bone, IsBillBoarded_s, bool*)		{ *p1 = cls->IsBillBoarded(); return S_OK; }
 		ATTRIBUTE_METHOD1(Bone, IsPivotBone_s, bool*)		{ *p1 = cls->IsPivotBone(); return S_OK; }
@@ -183,9 +184,11 @@ namespace ParaEngine
 		std::string	m_sRotName;
 		std::string	m_sTransName;
 		std::string	m_sScaleName;
+		std::string	m_sTimeName;
 		const std::string& GetRotName();
 		const std::string& GetTransName();
 		const std::string& GetScaleName();
+		const std::string& GetTimeName();
 
 		Animated<Vector3> trans;
 		Animated<Quaternion> rot;

@@ -830,6 +830,13 @@ DWORD CEventBinding::TranslateVKToDIK(DWORD dwVKey)
 	return WinVirtualKeyToDIK[dwVKey];
 }
 
+
+DWORD ParaEngine::CEventBinding::TranslateDIKToVK(DWORD dwVKey)
+{
+	return DIKToWinVirtualKey[dwVKey];
+}
+
+
 CEventBinding::CEventBinding(const CEventBinding& eventbinding)
 {
 	eventbinding.Clone(this);

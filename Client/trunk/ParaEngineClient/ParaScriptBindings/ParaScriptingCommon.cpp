@@ -371,6 +371,7 @@ void ParaScripting::ParaAssetObject::UnloadAsset()
 	if(m_pAsset)
 	{
 		m_pAsset->UnloadAsset();
+		m_pAsset->Cleanup();
 		
 		// 2008.10.9: we will delete texture info for static texture as well. this corrects a bug when the dimension of the texture info changes.
 		if(m_pAsset->GetType()==AssetEntity::texture)
