@@ -508,7 +508,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 	// true if the camera needs to be updated
 	bool bDoUpdateView = true;
 	// whether to ignore eye's near plane above global terrain check.
-	bool bIgnoreGlobalTerrain = IsEnableTerrainCollision();
+	bool bIgnoreGlobalTerrain = !IsEnableTerrainCollision();
 
 	if(m_currentCameraMode==CameraCameraFirstPerson)
 	{// camera's first person mode
