@@ -1223,7 +1223,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 			
 			Vector3 vHitPoint, vHitNormal(0.f,0.f,0.f);
 			float fLineOfSightLen;
-			fLineOfSightLen = CGlobals::GetScene()->PickClosest(vLookAt, vReverseLineOfSight, NULL, &vHitPoint,&vHitNormal, false, 0, GetPhysicsGroupMask());
+			fLineOfSightLen = CGlobals::GetScene()->PickClosest(vLookAt, vReverseLineOfSight, NULL, &vHitPoint,&vHitNormal, false, 0, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 
 			if(((fLineOfSightLen-m_fNearPlane) >= fDesiredLineOfSightLen) || (fLineOfSightLen<0))
 			{
@@ -1603,7 +1603,6 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 				fShiftHeight = -FLT_TOLERANCE;
 		}
 		
-
 		/**
 		* check for physical meshes.
 		*/
@@ -1612,12 +1611,12 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 			// the distance to check is m_fNearPlane*2, which is far larger than the near plane height
 			/// we will check three points around the near plane.
 			vPt=(vecFrustum[0]+vecFrustum[3])/2;
-			float fDist = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask()); 
+			float fDist = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			vPt = (vecFrustum[0]+vecFrustum[2])/2;
-			float fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask());
+			float fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			fDist = min(fDistTmp, fDist);
 			vPt = (vecFrustum[1]+vecFrustum[3])/2;
-			fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask());
+			fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			fDist = min(fDistTmp, fDist);
 			
 			if(fDist>0)
