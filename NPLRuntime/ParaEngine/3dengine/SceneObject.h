@@ -478,6 +478,7 @@ namespace ParaEngine
 
 		void AddConsoleStr(const char * pStr);
 		void ClearConsoleStr();
+		const char* GetConsoleString() const;
 				
 		/** when the device used by the scene have been initialized and ready for drawing. */
 		bool IsInitialized();
@@ -733,10 +734,10 @@ namespace ParaEngine
 		* @params dwGroupMask: groups Mask used to filter physics objects, default to 0xFFFFffff
 		* @return : return the distance from the interaction point to the ray origin. A negative value (-1) is returned if it hits nothing.
 		*/
-		float PickClosest(const Vector3& vPickRayOrig, const Vector3& vPickRayDir , CBaseObject** pTouchedObject, Vector3* vIntersectPos, Vector3* vImpactNormal = NULL, bool bTestObject=false, float fMaxDistance = 0, DWORD dwGroupMask=0xffffffff);
+		float PickClosest(const Vector3& vPickRayOrig, const Vector3& vPickRayDir , CBaseObject** pTouchedObject, Vector3* vIntersectPos, Vector3* vImpactNormal = NULL, bool bTestObject=false, float fMaxDistance = 0, DWORD dwGroupMask=0xffffffff, bool bEnableGlobalTerrain = true);
 
 		/** picking using a screen point instead of a ray */
-		float PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal = NULL, bool bTestObject=false, float fMaxDistance=0, DWORD dwGroupMask=0xffffffff);
+		float PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal = NULL, bool bTestObject=false, float fMaxDistance=0, DWORD dwGroupMask=0xffffffff, bool bEnableGlobalTerrain = true);
 		/**
 		* Pick object using view clipping object. 
 		* pick the smallest intersected object which is un-occluded by any objects. Object A is considered occluded by object B only if 
@@ -1053,9 +1054,6 @@ namespace ParaEngine
 		* the object add itself to dead object pool for the root scene to safely remove it at the end of the frame. */
 		void AddToDeadObjectPool(CBaseObject* pObject);
 		void RemoveDeadObjects();
-
-		const char* GetConsoleString() const;
-
 	private:
 
 		/** whether to block all user input (both key and mouse). Input is usually blocked as a game logics, such as we do not want the user to control the player anymore. */
@@ -1318,6 +1316,7 @@ namespace ParaEngine
 		float m_fPostRenderQueueOrder;
 		/** attribute models in the second column*/
 		unordered_ref_array<IAttributeFields*> m_attribute_models;
+		friend class CParaEngineApp;
 	};
 
 }

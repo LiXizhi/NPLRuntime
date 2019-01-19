@@ -1215,6 +1215,12 @@ void Terrain::SetCommonTexture(const char* fileName)
 {
 	if(fileName==0)
 		return;
+	if (!CParaFile::DoesAssetFileExist2(fileName, true))
+	{
+		OUTPUT_LOG("error: terrain common texture file %s is not found. One needs to fix %s\n", fileName, m_sConfigFile.c_str());
+		fileName = "Texture/whitedot.png";
+		OUTPUT_LOG("default terrain common texture file %s is used instead\n", fileName);
+	}
 	TextureEntity* pTex = CGlobals::GetAssetManager()->LoadTexture("", fileName, TextureEntity::StaticTexture);
 	m_sCommonTextureFile = fileName;
 	if(pTex)
