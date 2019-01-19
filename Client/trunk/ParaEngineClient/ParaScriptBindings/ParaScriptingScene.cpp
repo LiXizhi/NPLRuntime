@@ -2749,12 +2749,12 @@ void ParaCamera::GetLookAtPosition(float* x, float* y, float* z)
 
 void ParaCamera::SetKeyMap( int key, int scancode )
 {
-	CGlobals::GetScene()->GetCurrentCamera()->SetKeyMap((CharacterAndCameraKeys)key, (BYTE)scancode);
+	CGlobals::GetScene()->GetCurrentCamera()->SetKeyMap((CharacterAndCameraKeys)key, (EVirtualKey)scancode);
 }
 
 int ParaCamera::GetKeyMap( int key )
 {
-	return CGlobals::GetScene()->GetCurrentCamera()->GetKeyMap((CharacterAndCameraKeys)key);
+	return (int)CGlobals::GetScene()->GetCurrentCamera()->GetKeyMap((CharacterAndCameraKeys)key);
 }
 
 //////////////////////////////////////////////////////////////////////////

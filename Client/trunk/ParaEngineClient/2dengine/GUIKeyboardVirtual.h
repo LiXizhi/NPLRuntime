@@ -1,4 +1,5 @@
 #pragma once
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define SAMPLE_BUFFER_SIZE 1024
 #define KEY_PRESSED(x,y) (((x)[(y)]&0x80)!=0)
@@ -30,8 +31,8 @@ namespace ParaEngine
 
 		/** return true if the key is being pressed at the time of calling.
 		* @param nKey: a direct input key, such as DIK_SPACE. */
-		virtual bool IsKeyPressed(DWORD nKey);
-		virtual void SetKeyPressed(DWORD nKey, bool bPressed);
+		virtual bool IsKeyPressed(const EVirtualKey& nKey);
+		virtual void SetKeyPressed(const EVirtualKey& nKey, bool bPressed);
 		virtual void Reset();
 
 		virtual HRESULT ReadBufferedData();

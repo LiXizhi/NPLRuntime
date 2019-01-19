@@ -478,6 +478,7 @@ namespace ParaEngine
 
 		void AddConsoleStr(const char * pStr);
 		void ClearConsoleStr();
+		const char* GetConsoleString() const;
 				
 		/** when the device used by the scene have been initialized and ready for drawing. */
 		bool IsInitialized();

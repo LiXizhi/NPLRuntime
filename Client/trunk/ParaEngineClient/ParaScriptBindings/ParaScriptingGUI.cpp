@@ -2909,10 +2909,10 @@ bool ParaUI::SetHighlightParam(const char* szEffectName, const char* szParamName
 
 bool ParaUI::IsKeyPressed( int nDikScanCode )
 {
-	CDirectKeyboard *pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
+	auto pKeyboard=CGlobals::GetGUI()->m_pKeyboard;
 	if(pKeyboard)
 	{
-		return pKeyboard->IsKeyPressed(nDikScanCode);
+		return pKeyboard->IsKeyPressed((EVirtualKey)nDikScanCode);
 	}
 	return false;
 }
@@ -2922,7 +2922,7 @@ bool ParaUI::IsMousePressed(int nButton)
 	CDirectMouse *pMouse=CGlobals::GetGUI()->m_pMouse;
 	if(pMouse)
 	{
-		return pMouse->IsButtonDown((CDirectMouse::MOUSE_KEY_STD)nButton);
+		return pMouse->IsButtonDown((EMouseButton)nButton);
 	}
 	return false;
 }

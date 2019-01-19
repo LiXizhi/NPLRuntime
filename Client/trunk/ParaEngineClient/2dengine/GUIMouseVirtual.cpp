@@ -62,16 +62,15 @@ void ParaEngine::CGUIMouseVirtual::SetLock(bool bLock)
 	m_bLock = bLock;
 }
 
-bool ParaEngine::CGUIMouseVirtual::IsButtonDown(MOUSE_KEY_STD nMouseButton)
+bool ParaEngine::CGUIMouseVirtual::IsButtonDown(const EMouseButton nMouseButton)
 {
 	if (!m_bSwapMouseButton)
 	{
-		return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
+		return ((m_curMouseState.rgbButtons[(BYTE)nMouseButton] & 0x80) != 0);
 	}
 	else
 	{
-		nMouseButton = (MOUSE_KEY_STD)(1 - nMouseButton);
-		return ((m_curMouseState.rgbButtons[nMouseButton] & 0x80) != 0);
+		return ((m_curMouseState.rgbButtons[(1 - (BYTE)nMouseButton)] & 0x80) != 0);
 	}
 }
 void CGUIMouseVirtual::UpdateX(int delta)
