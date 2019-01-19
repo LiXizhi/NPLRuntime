@@ -211,7 +211,7 @@ namespace ParaEngine
 		return true;
 	}
 
-	float CSceneObject::PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask)
+	float CSceneObject::PickClosest(int nScreenX, int nScreenY, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask, bool bEnableGlobalTerrain)
 	{
 		if (!CGlobals::GetViewportManager())
 		{
@@ -236,10 +236,10 @@ namespace ParaEngine
 		ptCursor.y = y;
 		GetCurrentCamera()->GetMouseRay(vPickRayOrig, vPickRayDir, ptCursor,nWidth, nHeight, &matWorld);
 
-		return PickClosest(vPickRayOrig+GetRenderOrigin(), vPickRayDir, pPickedObject, vIntersectPos, vImpactNormal, bTestObject, fMaxDistance, dwGroupMask);
+		return PickClosest(vPickRayOrig+GetRenderOrigin(), vPickRayDir, pPickedObject, vIntersectPos, vImpactNormal, bTestObject, fMaxDistance, dwGroupMask, bEnableGlobalTerrain);
 	}
 
-	float CSceneObject::PickClosest(const Vector3& vPickRayOrig, const Vector3& vPickRayDir, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask)
+	float CSceneObject::PickClosest(const Vector3& vPickRayOrig, const Vector3& vPickRayDir, CBaseObject** pPickedObject, Vector3* vIntersectPos, Vector3* vImpactNormal, bool bTestObject, float fMaxDistance, DWORD dwGroupMask, bool bEnableGlobalTerrain)
 	{
 		if(fMaxDistance<=0)
 		{
@@ -247,7 +247,7 @@ namespace ParaEngine
 		}
 		bool bPicked = false;
 		// test the global terrain, fDist may be negative
-		float fDist = m_globalTerrain->IntersectRay(vPickRayOrig.x, vPickRayOrig.y, vPickRayOrig.z, vPickRayDir.x, vPickRayDir.y, vPickRayDir.z, vIntersectPos->x, vIntersectPos->y, vIntersectPos->z, fMaxDistance);
+		float fDist = bEnableGlobalTerrain ? m_globalTerrain->IntersectRay(vPickRayOrig.x, vPickRayOrig.y, vPickRayOrig.z, vPickRayDir.x, vPickRayDir.y, vPickRayDir.z, vIntersectPos->x, vIntersectPos->y, vIntersectPos->z, fMaxDistance) : -1.f;
 
 		// test all geometry in the physical mesh
 		if(dwGroupMask!=0)

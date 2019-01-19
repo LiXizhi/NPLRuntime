@@ -113,7 +113,18 @@ bool CGlobalTerrain::IsTerrainEngineEnabled() const
 
 void CGlobalTerrain::EnableTerrainEngine(bool val)
 {
-	m_bEnableTerrainEngine = val;
+	if (m_bEnableTerrainEngine != val)
+	{
+		m_bEnableTerrainEngine = val;
+
+		if (m_bEnableTerrainEngine && IsTerrainEngineEnabled())
+		{
+			if (!m_pTerrainLattice && m_pTerrainLoader)
+			{
+				m_pTerrainLattice = new TerrainLattice(m_pTerrainLoader, m_useGeoMipmap);
+			}
+		}
+	}
 }
 
 bool CGlobalTerrain::TerrainRenderingEnabled()
