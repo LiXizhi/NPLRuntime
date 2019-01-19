@@ -149,7 +149,7 @@ void CAutoCamera::CameraConstraint::BoundToFocusConstraint(Vector3* pEye, Vector
 CAutoCamera::CAutoCamera()
 	:m_fLookAtShiftY(0),m_event(NULL), m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), 
 	m_bEnableMouseLeftDrag(true), m_bEnableMouseRightDrag(true), m_bUseCharacterLookup(false), m_bUseCharacterLookupWhenMounted(true), m_nCharacterLookupBoneIndex(-1),
-	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
+	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bEnableTerrainCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
 {
 	m_bUseRightButtonBipedFacing = true;
 	m_pTargetObject = NULL;
@@ -508,7 +508,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 	// true if the camera needs to be updated
 	bool bDoUpdateView = true;
 	// whether to ignore eye's near plane above global terrain check.
-	bool bIgnoreGlobalTerrain = false;
+	bool bIgnoreGlobalTerrain = IsEnableTerrainCollision();
 
 	if(m_currentCameraMode==CameraCameraFirstPerson)
 	{// camera's first person mode
@@ -2450,6 +2450,16 @@ void ParaEngine::CAutoCamera::SetEnableBlockCollision(bool val)
 	m_bEnableBlockCollision = val;
 }
 
+bool ParaEngine::CAutoCamera::IsEnableTerrainCollision() const
+{
+	return m_bEnableTerrainCollision;
+}
+
+void ParaEngine::CAutoCamera::SetEnableTerrainCollision(bool val)
+{
+	m_bEnableTerrainCollision = val;
+}
+
 void ParaEngine::CAutoCamera::UpdateBipedFlyDir(CBipedObject * pBiped)
 {
 	if (!pBiped)
@@ -2542,6 +2552,7 @@ int CAutoCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("ControlBiped", FieldType_Bool, (void*)SetControlBiped_s, (void*)IsControlBiped_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableBlockCollision", FieldType_Bool, (void*)SetEnableBlockCollision_s, (void*)IsEnableBlockCollision_s, NULL, NULL, bOverride);
+	pClass->AddField("EnableTerrainCollision", FieldType_Bool, (void*)SetEnableTerrainCollision_s, (void*)IsEnableTerrainCollision_s, NULL, NULL, bOverride);
 	pClass->AddField("IgnoreEyeBlockCollisionInSunlight", FieldType_Bool, (void*)SetIgnoreEyeBlockCollisionInSunlight_s, (void*)IsIgnoreEyeBlockCollisionInSunlight_s, NULL, NULL, bOverride);
 	pClass->AddField("UpdateBipedFlyDir", FieldType_void, (void*)UpdateBipedFlyDir_s, NULL, NULL, NULL, bOverride);
 
