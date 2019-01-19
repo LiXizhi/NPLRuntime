@@ -3,6 +3,8 @@
 #include "GUIContainer.h"
 #include "GUIScript.h"
 #include "GUIToolTip.h"
+#include "GUIMouseVirtual.h"
+#include "GUIKeyboardVirtual.h"
 #include "SpriteRenderer.h"
 #include "util/mutex.h"
 #include <vector>

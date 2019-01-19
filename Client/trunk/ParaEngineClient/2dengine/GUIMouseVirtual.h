@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define L_PRESSED(x) (((x)->m_dims2.rgbButtons[0]&0x80)!=0)
 #define R_PRESSED(x) (((x)->m_dims2.rgbButtons[1]&0x80)!=0)
@@ -17,12 +17,6 @@ namespace ParaEngine
 		CGUIMouseVirtual();
 		virtual ~CGUIMouseVirtual();
 	public:
-		/** this is just traditional mouse key mapping.*/
-		enum MOUSE_KEY_STD{
-			LEFT_BUTTON = 0,
-			RIGHT_BUTTON = 1,
-			MIDDLE_BUTTON = 2
-		};
 		virtual HRESULT ReadBufferedData();
 		virtual HRESULT ReadImmediateData();
 		virtual void Update();
@@ -30,7 +24,7 @@ namespace ParaEngine
 		virtual void ResetLastMouseState();
 
 		virtual void Reset();
-		virtual bool IsButtonDown(MOUSE_KEY_STD nMouseButton);
+		virtual bool IsButtonDown(const EMouseButton nMouseButton);
 		/** the current mouse wheel delta in steps, such as -2,-1,0,1,2 */
 		virtual int	 GetMouseWheelDeltaSteps();
 		/** the current mouse X delta in steps, such as -2,-1,0,1,2 */
@@ -40,7 +34,7 @@ namespace ParaEngine
 
 		virtual bool IsLocked();
 		/** true to lock the mouse at its current location*/
-		virtual void SetLock(bool bLock);;
+		virtual void SetLock(bool bLock);
 
 		virtual void UpdateX(int delta);
 		virtual void UpdateY(int delta);

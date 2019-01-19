@@ -6,6 +6,7 @@
 #include <map>
 #include <boost/array.hpp>
 #include "util/cow_ptr.hpp"
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define EventCount 512
 using namespace std;

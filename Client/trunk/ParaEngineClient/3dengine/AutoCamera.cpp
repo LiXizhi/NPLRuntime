@@ -18,7 +18,6 @@
 #include "BipedStateManager.h"
 #include "OceanManager.h"
 #include "2dengine/GUIRoot.h"
-#include "2dengine/GUIDirectInput.h"
 #include "BlockEngine/BlockWorldClient.h"
 #include "BlockEngine/BlockCommon.h"
 #include "IParaEngineApp.h"
@@ -149,7 +148,7 @@ void CAutoCamera::CameraConstraint::BoundToFocusConstraint(Vector3* pEye, Vector
 CAutoCamera::CAutoCamera()
 	:m_fLookAtShiftY(0),m_event(NULL), m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK), 
 	m_bEnableMouseLeftDrag(true), m_bEnableMouseRightDrag(true), m_bUseCharacterLookup(false), m_bUseCharacterLookupWhenMounted(true), m_nCharacterLookupBoneIndex(-1),
-	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
+	m_bBlockInput(false), m_bAlwaysRotateCameraWhenFPS(false), m_bFirstPerson(false), m_vLookAtOffset(0, 0, 0), m_vAdditionalCameraRotate(0, 0, 0), m_fAllowedCharYShift(0), m_fLastCharY(0), m_fLastUsedCharY(0), m_bipedFlyNormal(0, 1, 0), m_fMaxYShiftSpeed(1.f), m_bEnableBlockCollision(true), m_bEnableTerrainCollision(true), m_bIgnoreEyeBlockCollisionInSunlight(true), m_bLockMouseWhenDragging(false)
 {
 	m_bUseRightButtonBipedFacing = true;
 	m_pTargetObject = NULL;
@@ -508,7 +507,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 	// true if the camera needs to be updated
 	bool bDoUpdateView = true;
 	// whether to ignore eye's near plane above global terrain check.
-	bool bIgnoreGlobalTerrain = false;
+	bool bIgnoreGlobalTerrain = !IsEnableTerrainCollision();
 
 	if(m_currentCameraMode==CameraCameraFirstPerson)
 	{// camera's first person mode
@@ -1223,7 +1222,7 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 			
 			Vector3 vHitPoint, vHitNormal(0.f,0.f,0.f);
 			float fLineOfSightLen;
-			fLineOfSightLen = CGlobals::GetScene()->PickClosest(vLookAt, vReverseLineOfSight, NULL, &vHitPoint,&vHitNormal, false, 0, GetPhysicsGroupMask());
+			fLineOfSightLen = CGlobals::GetScene()->PickClosest(vLookAt, vReverseLineOfSight, NULL, &vHitPoint,&vHitNormal, false, 0, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 
 			if(((fLineOfSightLen-m_fNearPlane) >= fDesiredLineOfSightLen) || (fLineOfSightLen<0))
 			{
@@ -1603,7 +1602,6 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 				fShiftHeight = -FLT_TOLERANCE;
 		}
 		
-
 		/**
 		* check for physical meshes.
 		*/
@@ -1612,12 +1610,12 @@ VOID CAutoCamera::FrameMove( FLOAT fElapsedTime )
 			// the distance to check is m_fNearPlane*2, which is far larger than the near plane height
 			/// we will check three points around the near plane.
 			vPt=(vecFrustum[0]+vecFrustum[3])/2;
-			float fDist = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask()); 
+			float fDist = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			vPt = (vecFrustum[0]+vecFrustum[2])/2;
-			float fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask());
+			float fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			fDist = min(fDistTmp, fDist);
 			vPt = (vecFrustum[1]+vecFrustum[3])/2;
-			fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask());
+			fDistTmp = CGlobals::GetScene()->PickClosest(vPt, Vector3(0,-1,0), NULL, &vHitPoint, NULL, false, m_fNearPlane*2, GetPhysicsGroupMask(), !bIgnoreGlobalTerrain);
 			fDist = min(fDistTmp, fDist);
 			
 			if(fDist>0)
@@ -1896,7 +1894,7 @@ void CAutoCamera::HandleUserInput()
 	// process mouse input
 	int dx=0;
 	int dy=0;
-	CDirectKeyboard *pKeyboard = CGlobals::GetGUI()->m_pKeyboard;
+	CGUIKeyboardVirtual* pKeyboard = (CGUIKeyboardVirtual*) (CGlobals::GetGUI()->m_pKeyboard);
 
 	// Fixed: 2009.11.11. I used to use this via event, however, some key event may be lost, so I switched to hardware key query. 
 	bool bIsKeyProcessed = CGlobals::GetGUI()->IsKeyboardProcessed();
@@ -1905,20 +1903,20 @@ void CAutoCamera::HandleUserInput()
 	bool bAlterKeyPressed = false;
 	if (pKeyboard)
 	{
-		bAlterKeyPressed = pKeyboard->IsKeyPressed(DIK_LCONTROL) || pKeyboard->IsKeyPressed(DIK_RCONTROL) ||
+		bAlterKeyPressed = pKeyboard->IsKeyPressed(EVirtualKey::KEY_LCONTROL) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RCONTROL) ||
 			// we still needs shift toggle run/walk movement
-			// pKeyboard->IsKeyPressed(DIK_LSHIFT) || pKeyboard->IsKeyPressed(DIK_RSHIFT) ||
-			pKeyboard->IsKeyPressed(DIK_LMENU) || pKeyboard->IsKeyPressed(DIK_RMENU);
+			// pKeyboard->IsKeyPressed(EVirtualKey::DIK_LSHIFT) || pKeyboard->IsKeyPressed(EVirtualKey::DIK_RSHIFT) ||
+			pKeyboard->IsKeyPressed(EVirtualKey::KEY_LMENU) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RMENU);
 		bIsKeyProcessed = bIsKeyProcessed || bAlterKeyPressed;
 	}
 
-	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD8) || pKeyboard->IsKeyPressed(DIK_UP)));
-	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD2) || pKeyboard->IsKeyPressed(DIK_DOWN)));
+	SetKeyDownState(MOVE_FORWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_FORWARD)/*DIK_W*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD8) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_UP)));
+	SetKeyDownState(MOVE_BACKWARD, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_BACKWARD)/*DIK_S*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD2) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_DOWN)));
 	
 	if(IsShiftMoveSwitched())
 	{
-		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD7) || pKeyboard->IsKeyPressed(DIK_LEFT)));
-		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(DIK_NUMPAD9) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
+		SetKeyDownState(SHIFT_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_LEFT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD7) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(SHIFT_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(SHIFT_RIGHT)) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD9) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
 		SetKeyDownState(MOVE_LEFT, FALSE);
 		SetKeyDownState(MOVE_RIGHT, FALSE);
 	}
@@ -1926,8 +1924,8 @@ void CAutoCamera::HandleUserInput()
 	{
 		SetKeyDownState(SHIFT_LEFT, FALSE);
 		SetKeyDownState(SHIFT_RIGHT, FALSE);
-		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD4) || pKeyboard->IsKeyPressed(DIK_LEFT)));
-		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(DIK_NUMPAD6) || pKeyboard->IsKeyPressed(DIK_RIGHT)));
+		SetKeyDownState(MOVE_LEFT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_LEFT)/*DIK_A*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD4) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_LEFT)));
+		SetKeyDownState(MOVE_RIGHT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(MOVE_RIGHT)/*DIK_D*/) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_NUMPAD6) || pKeyboard->IsKeyPressed(EVirtualKey::KEY_RIGHT)));
 	}
 	SetKeyDownState(ZOOM_IN, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_IN)/*DIK_INSERT*/)));
 	SetKeyDownState(ZOOM_OUT, !bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(ZOOM_OUT)/*DIK_DELETE*/)));
@@ -1935,7 +1933,7 @@ void CAutoCamera::HandleUserInput()
 	SetKeyDownState(FLY_DOWNWARD,!bIsKeyProcessed && (pKeyboard->IsKeyPressed(GetKeyMap(FLY_DOWNWARD))));
 
 
-	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+	CGUIMouseVirtual* pMouse = (CGUIMouseVirtual*)(CGlobals::GetGUI()->m_pMouse);
 	if (pMouse && CGlobals::GetGUI()->m_events.size()>0)
 	{
 		GUIMsgEventList_type::const_iterator iter=CGlobals::GetGUI()->m_events.begin(),iterend=CGlobals::GetGUI()->m_events.end();
@@ -2184,7 +2182,7 @@ void CAutoCamera::HandleUserInput()
 	UpdateMouseDelta(dx, dy);
 
 	// double check the device if the mouse button is down, in case we lost the mouse focus.
-	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(CDirectMouse::LEFT_BUTTON))) 
+	if(m_bMouseLButtonDown && !( pMouse->IsButtonDown(EMouseButton::LEFT)))
 	{
 		m_bMouseLButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
@@ -2193,7 +2191,7 @@ void CAutoCamera::HandleUserInput()
 			SetMouseDragLock(false);
 		}
 	}
-	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(CDirectMouse::RIGHT_BUTTON))) 
+	if(m_bMouseRButtonDown && !( pMouse->IsButtonDown(EMouseButton::RIGHT)))
 	{
 		m_bMouseRButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
@@ -2284,7 +2282,7 @@ void ParaEngine::CAutoCamera::EnableMouseLeftButton( bool bValue )
 	m_bEnableMouseLeftButton = bValue;
 	if(!bValue)
 	{
-		CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+		CGUIMouseVirtual* pMouse = (CGUIMouseVirtual*)(CGlobals::GetGUI()->m_pMouse);
 		m_bMouseRButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
@@ -2299,7 +2297,7 @@ void ParaEngine::CAutoCamera::EnableMouseRightButton( bool bValue )
 	m_bEnableMouseRightButton = bValue;
 	if(!bValue)
 	{
-		CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
+		CGUIMouseVirtual* pMouse = (CGUIMouseVirtual*)(CGlobals::GetGUI()->m_pMouse);
 		m_bMouseLButtonDown=false;
 		if (!(IsFirstPersonView() && GetAlwaysRotateCameraWhenFPS()))
 		{
@@ -2345,7 +2343,6 @@ bool ParaEngine::CAutoCamera::IsBlockInput()
 void ParaEngine::CAutoCamera::ClearMouseStates()
 {
 	// clear any pressed state. 
-	CDirectMouse* pMouse=CGlobals::GetGUI()->m_pMouse;
 	m_bMouseLButtonDown=false;
 	m_bMouseRButtonDown=false;
 	m_nMouseDragDistance = 0;
@@ -2359,7 +2356,7 @@ void ParaEngine::CAutoCamera::SetMouseDragLock(bool bLock)
 {
 	if (IsLockMouseWhenDragging())
 	{
-		auto pMouse = CGlobals::GetGUI()->m_pMouse;
+		CGUIMouseVirtual* pMouse = (CGUIMouseVirtual*)(CGlobals::GetGUI()->m_pMouse);
 		if (pMouse) {
 			pMouse->SetLock(bLock);
 			//pMouse->ShowCursor(!bLock);
@@ -2448,6 +2445,16 @@ bool ParaEngine::CAutoCamera::IsEnableBlockCollision() const
 void ParaEngine::CAutoCamera::SetEnableBlockCollision(bool val)
 {
 	m_bEnableBlockCollision = val;
+}
+
+bool ParaEngine::CAutoCamera::IsEnableTerrainCollision() const
+{
+	return m_bEnableTerrainCollision;
+}
+
+void ParaEngine::CAutoCamera::SetEnableTerrainCollision(bool val)
+{
+	m_bEnableTerrainCollision = val;
 }
 
 void ParaEngine::CAutoCamera::UpdateBipedFlyDir(CBipedObject * pBiped)
@@ -2542,6 +2549,7 @@ int CAutoCamera::InstallFields(CAttributeClass* pClass, bool bOverride)
 
 	pClass->AddField("ControlBiped", FieldType_Bool, (void*)SetControlBiped_s, (void*)IsControlBiped_s, NULL, NULL, bOverride);
 	pClass->AddField("EnableBlockCollision", FieldType_Bool, (void*)SetEnableBlockCollision_s, (void*)IsEnableBlockCollision_s, NULL, NULL, bOverride);
+	pClass->AddField("EnableTerrainCollision", FieldType_Bool, (void*)SetEnableTerrainCollision_s, (void*)IsEnableTerrainCollision_s, NULL, NULL, bOverride);
 	pClass->AddField("IgnoreEyeBlockCollisionInSunlight", FieldType_Bool, (void*)SetIgnoreEyeBlockCollisionInSunlight_s, (void*)IsIgnoreEyeBlockCollisionInSunlight_s, NULL, NULL, bOverride);
 	pClass->AddField("UpdateBipedFlyDir", FieldType_void, (void*)UpdateBipedFlyDir_s, NULL, NULL, NULL, bOverride);
 

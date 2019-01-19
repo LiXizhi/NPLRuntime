@@ -65,6 +65,11 @@ SOURCE_GROUP("renderer" FILES ${ParaEngineClient_renderer_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_renderer_FILES})
 
 ##############################
+file (GLOB ParaEngineClient_Framework_FILES ${ParaEngineClient_SOURCE_DIR}/Framework/InputSystem/*.*)
+SOURCE_GROUP("Framework" FILES ${ParaEngineClient_Framework_FILES})
+list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_Framework_FILES})
+
+##############################
 file (GLOB ParaEngineClient_pb_FILES ${ParaEngineClient_SOURCE_DIR}/protocol/*.h ${ParaEngineClient_SOURCE_DIR}/protocol/*.cpp)
 SOURCE_GROUP("protocol" FILES ${ParaEngineClient_pb_FILES})
 list(APPEND ParaEngineClient_SRCS ${ParaEngineClient_pb_FILES})
