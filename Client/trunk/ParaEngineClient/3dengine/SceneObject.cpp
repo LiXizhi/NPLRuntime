@@ -987,6 +987,11 @@ void CSceneObject::ClearConsoleStr()
 	m_sConsoleString[0] = '\0';
 }
 
+const char * ParaEngine::CSceneObject::GetConsoleString() const
+{
+	return m_sConsoleString;
+}
+
 void CSceneObject::SetBackGroundColor( const LinearColor& bgColor )
 {
 	m_dwBackGroundColor = bgColor;

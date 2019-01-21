@@ -28,6 +28,7 @@ namespace ParaEngine
 namespace NPL
 {
 	class CNPLNetServer;
+	class CNPLNetUDPServer;
 	using namespace ParaScripting;
 	class INPLStimulationPipe;
 	class CNPLNameSpaceBinding;
@@ -103,23 +104,44 @@ namespace NPL
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetHostIP_s, const char**) { *p1 = cls->GetHostIP().c_str(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetHostPort_s, const char**) { *p1 = cls->GetHostPort().c_str(); return S_OK; }
 
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsUDPServerStarted_s, bool*) { *p1 = cls->IsUDPServerStarted(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetUDPHostIP_s, const char**) { *p1 = cls->GetUDPHostIP().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetUDPHostPort_s, int*) { *p1 = cls->GetUDPHostPort(); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPKeepAliveEnabled_s, bool*)	{*p1 = cls->IsTCPKeepAliveEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPKeepAlive_s, bool)	{cls->SetTCPKeepAlive(p1); return S_OK;}
 
-		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*)	{*p1 = cls->IsKeepAliveEnabled(); return S_OK;}
-		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool)	{cls->SetKeepAlive(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsTCPNoDelay_s, bool*) { *p1 = cls->IsTCPNoDelay(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetTCPNoDelay_s, bool) { cls->SetTCPNoDelay(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsKeepAliveEnabled_s, bool*) { *p1 = cls->IsKeepAliveEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetKeepAlive_s, bool) { cls->SetKeepAlive(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsIdleTimeoutEnabled_s, bool*)	{*p1 = cls->IsIdleTimeoutEnabled(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableIdleTimeout_s, bool)	{cls->EnableIdleTimeout(p1); return S_OK;}
 
+		ATTRIBUTE_METHOD1(CNPLRuntime, IsUDPIdleTimeoutEnabled_s, bool*) { *p1 = cls->IsUDPIdleTimeoutEnabled(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, EnableUDPIdleTimeout_s, bool) { cls->EnableUDPIdleTimeout(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetUDPUseCompression_s, bool) { cls->SetUDPUseCompression(p1); return S_OK; }
+
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetIdleTimeoutPeriod_s, int*)	{*p1 = cls->GetIdleTimeoutPeriod(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetIdleTimeoutPeriod_s, int)	{cls->SetIdleTimeoutPeriod(p1); return S_OK;}
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetUDPIdleTimeoutPeriod_s, int*) { *p1 = cls->GetUDPIdleTimeoutPeriod(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetUDPIdleTimeoutPeriod_s, int) { cls->SetUDPIdleTimeoutPeriod(p1); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetCompressionLevel_s, int*) { *p1 = cls->GetCompressionLevel(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetCompressionLevel_s, int) { cls->SetCompressionLevel(p1); return S_OK; }
 		
-		ATTRIBUTE_METHOD1(CNPLRuntime, GetCompressionLevel_s, int*)	{*p1 = cls->GetCompressionLevel(); return S_OK;}
-		ATTRIBUTE_METHOD1(CNPLRuntime, SetCompressionLevel_s, int)	{cls->SetCompressionLevel(p1); return S_OK;}
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetUDPCompressionLevel_s, int*)	{*p1 = cls->GetUDPCompressionLevel(); return S_OK;}
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetUDPCompressionLevel_s, int)	{cls->SetUDPCompressionLevel(p1); return S_OK;}
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetCompressionThreshold_s, int*)	{*p1 = cls->GetCompressionThreshold(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetCompressionThreshold_s, int)	{cls->SetCompressionThreshold(p1); return S_OK;}
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetUDPCompressionThreshold_s, int*) { *p1 = cls->GetUDPCompressionThreshold(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, SetUDPCompressionThreshold_s, int) { cls->SetUDPCompressionThreshold(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CNPLRuntime, IsAnsiMode_s, bool*)	{*p1 = cls->IsAnsiMode(); return S_OK;}
 		ATTRIBUTE_METHOD1(CNPLRuntime, EnableAnsiMode_s, bool)	{cls->EnableAnsiMode(p1); return S_OK;}
@@ -129,13 +151,20 @@ namespace NPL
 			
 		ATTRIBUTE_METHOD1(CNPLRuntime, GetLogLevel_s, int*) { *p1 = cls->GetLogLevel(); return S_OK; }
 		ATTRIBUTE_METHOD1(CNPLRuntime, SetLogLevel_s, int) { cls->SetLogLevel(p1); return S_OK; }
-		
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, EnableUDPServer_s, int) { cls->NPL_StartNetUDPServer(nullptr, p1); return S_OK; }
+		ATTRIBUTE_METHOD(CNPLRuntime, DisableUDPServer_s) { cls->NPL_StopNetUDPServer(); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetExternalIPList_s, const char**) { *p1 = CNPLRuntime::GetExternalIPList().c_str(); return S_OK; }
+		ATTRIBUTE_METHOD1(CNPLRuntime, GetBroadcastAddressList_s, const char**) { *p1 = CNPLRuntime::GetBroadcastAddressList().c_str(); return S_OK; }
 	public:
 		/** whether to use compression on transport layer for incoming and outgoing connections
 		* @param bCompressIncoming: if true, compression is used for all incoming connections. default to false.
 		* @param bCompressIncoming: if true, compression is used for all outgoing connections. default to false.
 		*/
 		virtual void SetUseCompression(bool bCompressIncoming, bool bCompressOutgoing);
+		void SetUDPUseCompression(bool bCompress);
+		
 
 		/**
 		* set the compression method of incoming the outgoing messages. 
@@ -160,6 +189,8 @@ namespace NPL
 		*/
 		virtual void SetCompressionLevel(int nLevel);
 		virtual int GetCompressionLevel();
+		void SetUDPCompressionLevel(int nLevel);
+		int GetUDPCompressionLevel();
 
 		/** set the default compression threshold for all connections on this machine. 
 		* when the message size is bigger than this number of bytes, we will use m_nCompressionLevel for compression. 
@@ -167,6 +198,8 @@ namespace NPL
 		*/
 		virtual void SetCompressionThreshold(int nThreshold);
 		virtual int GetCompressionThreshold();
+		void SetUDPCompressionThreshold(int nThreshold);
+		int GetUDPCompressionThreshold();
 
 		/** System level Enable/disable SO_KEEPALIVE. 
 		* one needs set following values in linux procfs or windows registry in order to work as expected. 
@@ -204,10 +237,14 @@ namespace NPL
 		*/
 		virtual void EnableIdleTimeout(bool bEnable);
 		virtual bool IsIdleTimeoutEnabled();
+		void EnableUDPIdleTimeout(bool bEnable);
+		bool IsUDPIdleTimeoutEnabled();
 
 		/** how many milliseconds of inactivity to assume this connection should be timed out. if 0 it is never timed out. */
 		virtual void SetIdleTimeoutPeriod(int nMilliseconds);
 		virtual int GetIdleTimeoutPeriod();
+		void SetUDPIdleTimeoutPeriod(int nMilliseconds);
+		int GetUDPIdleTimeoutPeriod();
 
 		/** whether the first line of the NPL protocol is in ansi code page. 
 		because NPL protocol is compatible with HTTP protocol in ansi mode, some interception web cache servers may cache request even the port number is not 80, 
@@ -226,7 +263,21 @@ namespace NPL
 		virtual const std::string& GetHostIP();
 		/** whether the NPL runtime's http server is started. */
 		virtual bool IsServerStarted();
-		
+
+		/** get the host port of this NPL runtime */
+		unsigned short GetUDPHostPort();
+		/** get the host IP of this NPL runtime */
+		const std::string& GetUDPHostIP();
+		/** whether the NPL runtime's udp server is started. */
+		bool IsUDPServerStarted();
+
+		void SetTCPNoDelay(bool bEnable);
+		bool IsTCPNoDelay();
+
+		/** get extern IP address lsit of this computer. use ',' to separate */
+		static const std::string& GetExternalIPList();
+		/* get broadcast address lsit of this computer. use ',' to separate */
+		static const std::string& GetBroadcastAddressList();
 
 		//////////////////////////////////////////////////////////////////////////
 		//
@@ -318,9 +369,12 @@ namespace NPL
 		* @param port: default to "60001"
 		*/
 		void NPL_StartNetServer(const char* server=NULL, const char* port=NULL);
+		///
+		void NPL_StartNetUDPServer(const char* server = nullptr, unsigned short port = 8099);
 
 		/** stop the net server */
 		void NPL_StopNetServer();
+		void NPL_StopNetUDPServer();
 
 		/** add a nID, filename pair to the public file list. 
 		* we only allow remote NPL runtime to activate files in the public file list. 
@@ -587,6 +641,9 @@ namespace NPL
 		*/
 		virtual void NPL_GetChannelProperty(int channel_ID, int* priority, int* reliability);
 
+		///
+		static int NPL_Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp);
+
 		/**
 		* OBSOLETED: Enable the network, by default the network layer is disabled.
 		* calling this function multiple time with different CenterName will restart the network layer with a different center name.
@@ -671,6 +728,7 @@ namespace NPL
 
 		/** get the NPL net server */
 		CNPLNetServer* GetNetServer() {return m_net_server.get();};
+		CNPLNetUDPServer* GetNetUDPServer() { return m_net_udp_server.get(); };
 
 		/** get the Net client implementation.*/
 		ParaEngine::CNPLNetClient* GetNetClient();
@@ -720,6 +778,9 @@ namespace NPL
 
 		/// the network server, the main NPL networking implementation. 
 		boost::scoped_ptr<CNPLNetServer> m_net_server;
+
+		/// the network udp server, 
+		boost::scoped_ptr<CNPLNetUDPServer> m_net_udp_server;
 		
 		/// all NPL runtime states in the NPL runtime
 		NPLRuntime_Pool_Type m_runtime_states;
@@ -742,6 +803,8 @@ namespace NPL
 		ParaEngine::mutex m_mutex;
 
 		static NPLRuntimeStateType m_defaultNPLStateType;
+
+		static std::string m_tempString;
 	};
 
 }

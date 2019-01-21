@@ -1,4 +1,3 @@
-
 #include "GUIBase.h"
 #include "GUIResource.h"
 #include "ParaEngine.h"
@@ -21,9 +20,15 @@ namespace ParaEngine
 		void Free();
 		virtual HRESULT ReadBufferedData( );
 		virtual HRESULT ReadImmediateData( );
-		
+
+		virtual bool IsKeyPressed(const EVirtualKey& nKey);
+		virtual void SetKeyPressed(const EVirtualKey& nKey, bool bPressed);
+		virtual void Reset();
+
 		LPDIRECTINPUT8       m_pDI; // The DirectInput object         
 		LPDIRECTINPUTDEVICE8 m_pKeyboard; // The keyboard device 
+
+		BYTE  m_keystateUserDefined[256];   // DirectInput keyboard state buffer 
 	};
 	
 	/** mouse object */
@@ -51,7 +56,7 @@ namespace ParaEngine
 		virtual void GetDeviceCursorPos(int& x, int&y);
 		virtual void SetDeviceCursorPos(int x, int y);
 
-		virtual bool IsButtonDown(MOUSE_KEY_STD nMouseButton);
+		virtual bool IsButtonDown(EMouseButton nMouseButton);
 
 		/**
 		* Set the current cursor to use. One can call very often, since it will does nothing with identical cursor file and hot spot. 

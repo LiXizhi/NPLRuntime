@@ -190,7 +190,6 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 
 		// MakeAxisY_UP();
 
-
 		FillParaXModelData(pMesh, pFbxScene);
 
 		PostProcessParaXModelData(pMesh);
@@ -335,25 +334,29 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 				bone.SetStaticTransform(bone.matTransform);
 			}
 		}
-		//for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
-		//{
-		//	Bone& bone = bones[i];
-		//	if (bone.IsStaticTransform() && bone.IsTransformationNode())
-		//	{
-		//		// try to collapse multiple transform node into one to save computation. 
-		//		while (bone.parent >= 0)
-		//		{
-		//			Bone& parent = bones[bone.parent];
-		//			if (parent.IsStaticTransform() && parent.IsTransformationNode())
-		//			{
-		//				bone.matTransform *= parent.matTransform;
-		//				bone.parent = parent.parent;
-		//			}
-		//			else
-		//				break;
-		//		}
-		//	}
-		//}
+#define COLLAPSE_STATIC_TRANSFORM_NODE false
+		if (COLLAPSE_STATIC_TRANSFORM_NODE) 
+		{
+			for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)
+			{
+				Bone& bone = bones[i];
+				if (bone.IsStaticTransform() && bone.IsTransformationNode())
+				{
+					// try to collapse multiple transform node into one to save computation. 
+					while (bone.parent >= 0)
+					{
+						Bone& parent = bones[bone.parent];
+						if (parent.IsStaticTransform() && parent.IsTransformationNode())
+						{
+							bone.matTransform *= parent.matTransform;
+							bone.parent = parent.parent;
+						}
+						else
+							break;
+					}
+				}
+			}
+		}
 
 	}
 

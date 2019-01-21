@@ -1075,10 +1075,26 @@ void ParaEngine::CGUIRoot::DestroyChildren()
 
 void ParaEngine::CGUIRoot::SendKeyDownEvent(int nVirtualkey)
 {
+	MSG newMsg;
+	newMsg.hwnd = CGlobals::GetAppHWND();
+	newMsg.lParam = 0;
+	newMsg.wParam = CEventBinding::TranslateDIKToVK(nVirtualkey);
+	newMsg.time = GetTickCount();
+	newMsg.message = WM_KEYDOWN;
+	GetKeyboard()->PushKeyEvent(newMsg);
+	GetKeyboard()->SetKeyPressed((EVirtualKey)nVirtualkey, true);
 }
 
 void ParaEngine::CGUIRoot::SendKeyUpEvent(int nVirtualkey)
 {
+	MSG newMsg;
+	newMsg.hwnd = CGlobals::GetAppHWND();
+	newMsg.lParam = 0;
+	newMsg.wParam = CEventBinding::TranslateDIKToVK(nVirtualkey);
+	newMsg.time = GetTickCount();
+	newMsg.message = WM_KEYUP;
+	GetKeyboard()->PushKeyEvent(newMsg);
+	GetKeyboard()->SetKeyPressed((EVirtualKey)nVirtualkey, false);
 }
 
 void ParaEngine::CGUIRoot::SendInputMethodEvent(const char* pStr)
@@ -1399,7 +1415,7 @@ int CGUIRoot::HandleUserInput()
 				{
 					if (pdrag->m_bIsCandicateOnly)
 					{
-						if (m_pMouse->IsButtonDown(CDirectMouse::LEFT_BUTTON))
+						if (m_pMouse->IsButtonDown(EMouseButton::LEFT))
 						{
 							((CGUIBase*)pdrag->pDragging)->MsgProc(&newMsg);
 							bMouseHandled = true;

@@ -39,6 +39,7 @@ using namespace ParaEngine;
 CDirectKeyboard::CDirectKeyboard(HWND hDlg)
 : m_pDI(NULL), m_pKeyboard(NULL)
 {
+	memset(m_keystateUserDefined, 0, sizeof(m_keystateUserDefined));
 	CreateDevice(hDlg); 
 };
 
@@ -221,6 +222,24 @@ HRESULT CDirectKeyboard::ReadImmediateData(  )
 	m_keystate[DIK_SCROLL]=(m_keystate[DIK_SCROLL]&0xf0)|(GetKeyState(VK_SCROLL)&0x0f);
 	m_keystate[DIK_CAPITAL]=(m_keystate[DIK_CAPITAL]&0xf0)|(GetKeyState(VK_CAPITAL)&0x0f);
 	return S_OK;
+}
+
+
+bool CDirectKeyboard::IsKeyPressed(const EVirtualKey& nKey)
+{
+	return ((m_keystateUserDefined[(BYTE)nKey] & 0x80) != 0) || CGUIKeyboardVirtual::IsKeyPressed(nKey);
+}
+
+void CDirectKeyboard::SetKeyPressed(const EVirtualKey& nKey, bool bPressed)
+{
+	m_keystateUserDefined[(BYTE)nKey] = bPressed ? 0x80 : 0;
+	CGUIKeyboardVirtual::SetKeyPressed(nKey, bPressed);
+}
+
+void CDirectKeyboard::Reset()
+{
+	memset(m_keystateUserDefined, 0, sizeof(m_keystateUserDefined));
+	CGUIKeyboardVirtual::Reset();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -598,7 +617,7 @@ void ParaEngine::CDirectMouse::SetDeviceCursorPos(int x, int y)
 	CGlobals::GetRenderDevice()->SetCursorPosition(x, y, D3DCURSOR_IMMEDIATE_UPDATE);
 }
 
-bool ParaEngine::CDirectMouse::IsButtonDown(MOUSE_KEY_STD nMouseButton)
+bool ParaEngine::CDirectMouse::IsButtonDown(const EMouseButton nMouseButton)
 {
 	if (m_isTouchInputting)
 		return false;
@@ -606,12 +625,11 @@ bool ParaEngine::CDirectMouse::IsButtonDown(MOUSE_KEY_STD nMouseButton)
 	{
 		if (!m_bSwapMouseButton)
 		{
-			return ((m_dims2.rgbButtons[nMouseButton] & 0x80) != 0);
+			return ((m_dims2.rgbButtons[(BYTE)nMouseButton] & 0x80) != 0);
 		}
 		else
 		{
-			nMouseButton = (MOUSE_KEY_STD)(1 - nMouseButton);
-			return ((m_dims2.rgbButtons[nMouseButton] & 0x80) != 0);
+			return ((m_dims2.rgbButtons[(BYTE)(1 - (BYTE)nMouseButton)] & 0x80) != 0);
 		}
 	}
 }

@@ -6,6 +6,7 @@
 #include <map>
 #include <boost/array.hpp>
 #include "util/cow_ptr.hpp"
+#include "Framework/InputSystem/VirtualKey.h"
 
 #define EventCount 512
 using namespace std;
@@ -124,6 +125,7 @@ namespace ParaEngine
 
 		/** converting a windows virtual key to direct input key scan code. */
 		static DWORD TranslateVKToDIK(DWORD dwVKey);
+		static DWORD TranslateDIKToVK(DWORD dwVKey);
 
 		static DWORD ScancodeToKeyTable[256];
 

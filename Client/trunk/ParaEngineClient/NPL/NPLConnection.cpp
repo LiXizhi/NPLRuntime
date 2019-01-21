@@ -40,7 +40,7 @@ NPL::CNPLConnection::CNPLConnection(boost::asio::io_service& io_service, CNPLCon
 	: m_socket(io_service), m_connection_manager(manager), m_msg_dispatcher(msg_dispatcher), m_totalBytesIn(0), m_totalBytesOut(0),
 	m_queueOutput(DEFAULT_NPL_OUTPUT_QUEUE_SIZE), m_state(ConnectionDisconnected),
 	m_bDebugConnection(false), m_nCompressionLevel(0), m_nCompressionThreshold(NPL_AUTO_COMPRESSION_THRESHOLD),
-	m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0),
+	m_bKeepAlive(false), m_bEnableIdleTimeout(true), m_nSendCount(0), m_nFinishedCount(0), m_bCloseAfterSend(false), m_nIdleTimeoutMS(0), m_nLastActiveTime(0), m_nStopReason(0), m_bNoDelay(false),
 	m_protocolType(NPL)
 {
 	m_queueOutput.SetUseEvent(false);
@@ -59,6 +59,19 @@ NPL::CNPLConnection::~CNPLConnection()
 boost::asio::ip::tcp::socket& NPL::CNPLConnection::socket()
 {
 	return m_socket;
+}
+
+void NPL::CNPLConnection::SetNoDelay(bool bEnable)
+{
+	m_bNoDelay = bEnable;
+	// Implements the SOL_SOCKET/SO_KEEPALIVE socket option. 
+	boost::asio::ip::tcp::no_delay  option(bEnable);
+	m_socket.set_option(option);
+}
+
+bool NPL::CNPLConnection::IsNoDelay()
+{
+	return m_bNoDelay;
 }
 
 void NPL::CNPLConnection::SetTCPKeepAlive(bool bEnable)
@@ -115,7 +128,9 @@ const string& NPL::CNPLConnection::GetNID() const
 
 string NPL::CNPLConnection::GetIP()
 {
-	if (m_address)
+	if (!m_resolved_address.empty())
+		return m_resolved_address;
+	else if (m_address)
 		return m_address->GetHost();
 	else
 		return ParaEngine::CGlobals::GetString(0);
@@ -227,6 +242,8 @@ void NPL::CNPLConnection::start()
 	// update the start time and last send/receive time
 	m_nStartTime = GetTickCount();
 	m_nLastActiveTime = m_nStartTime;
+
+	m_resolved_address.clear();
 
 	if (m_address)
 	{
@@ -511,7 +528,7 @@ void NPL::CNPLConnection::handle_resolve(const boost::system::error_code& err, b
 		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
 		m_socket.async_connect(endpoint,
 			boost::bind(&CNPLConnection::handle_connect, shared_from_this(),
-				boost::asio::placeholders::error, ++endpoint_iterator));
+				boost::asio::placeholders::error, endpoint_iterator));
 	}
 	else
 	{
@@ -532,8 +549,12 @@ void NPL::CNPLConnection::handle_connect(const boost::system::error_code& err,
 
 		// connection successfully established, let us start reading from the socket. 
 		start();
+
+		boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
+		m_resolved_address = endpoint.address().to_string();
+
 	}
-	else if (endpoint_iterator != boost::asio::ip::tcp::resolver::iterator())
+	else if ((++endpoint_iterator) != boost::asio::ip::tcp::resolver::iterator())
 	{
 		// That endpoint didn't work, try the next one.
 		boost::system::error_code ec;

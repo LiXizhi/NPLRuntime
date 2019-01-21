@@ -19,6 +19,8 @@ using namespace luabind;
 
 #include "NPLRuntime.h"
 #include "NPLNetServer.h"
+#include "NPLNetUDPServer.h"
+#include "NPLUDPRoute.h"
 #include "NPLHelper.h"
 #include "NPLCompiler.h"
 #include "ParaScriptingNPL.h"
@@ -1498,6 +1500,22 @@ namespace ParaScripting
 		return false;
 	}
 
+	luabind::object CNPL::GetLuaState(const string& name, const object& output)
+	{
+		auto pRuntimeState = NPL::CNPLRuntime::GetInstance()->GetRuntimeState(name);
+		if (pRuntimeState)
+		{
+			lua_State* L = pRuntimeState->GetLuaState();
+			LUA_INTEGER v = (LUA_INTEGER)L;
+			output["value"] = v;
+
+			output["high"] = (LUA_INTEGER)(((uint64_t)L & 0xFFFFFFFF00000000LL) >> 32);
+			output["low"] = (LUA_INTEGER)((uint64_t)L & 0xFFFFFFFFLL);
+
+		}
+		return output;
+	}
+
 	luabind::object CNPL::LoadTableFromString(const object& input)
 	{
 		if(type(input) == LUA_TSTRING) 
@@ -1551,9 +1569,24 @@ namespace ParaScripting
 		NPL::CNPLRuntime::GetInstance()->NPL_StartNetServer(NPL::NPLHelper::LuaObjectToString(server), NPL::NPLHelper::LuaObjectToString(port));
 	}
 
+	void CNPL::StartNetUDPServer(const object& server, const object& port)
+	{
+		NPL::CNPLRuntime::GetInstance()->NPL_StartNetUDPServer(NPL::NPLHelper::LuaObjectToString(server), object_cast<unsigned short>(port));
+	}
+
 	void CNPL::StopNetServer()
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_StopNetServer();
+	}
+
+	int CNPL::Ping(const char* host, const char* port, unsigned int waitTime, bool bTcp)
+	{
+		return NPL::CNPLRuntime::NPL_Ping(host, port, waitTime, bTcp);
+	}
+
+	void CNPL::StopNetUDPServer()
+	{
+		NPL::CNPLRuntime::GetInstance()->NPL_StopNetUDPServer();
 	}
 
 	void CNPL::AddPublicFile( const string& filename, int nID )
@@ -1584,14 +1617,29 @@ namespace ParaScripting
 				nid = object_cast<const char*>(npl_address["nid"]);
 			}
 
+			bool isUDP = false;
+			if (type(npl_address["isUDP"]) == LUA_TBOOLEAN) {
+				isUDP = object_cast<bool>(npl_address["isUDP"]);
+			}
+
 			if(host == 0)
 				host = "127.0.0.1";
 			if(port == 0)
 				port = "60001";
 			if(nid == 0)
 				nid = "localhost";
-			NPL::NPLRuntimeAddress_ptr address(new NPL::NPLRuntimeAddress(host, port, nid));
-			return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().AddNPLRuntimeAddress(address);
+
+			if (isUDP)
+			{
+				NPL::NPLUDPAddress_ptr address(new NPL::NPLUDPAddress(host, atoi(port), nid));
+				return NPL::CNPLRuntime::GetInstance()->GetNetUDPServer()->GetDispatcher().AddNPLUDPAddress(address);
+			}
+			else
+			{
+				NPL::NPLRuntimeAddress_ptr address(new NPL::NPLRuntimeAddress(host, port, nid));
+				return NPL::CNPLRuntime::GetInstance()->GetNetServer()->GetDispatcher().AddNPLRuntimeAddress(address);
+			}
+			
 		}
 		return false;
 	}

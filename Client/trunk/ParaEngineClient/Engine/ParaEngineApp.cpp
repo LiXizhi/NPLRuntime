@@ -1136,6 +1136,35 @@ bool CParaEngineApp::UpdateScreenDevice()
 {
 	if(m_bUpdateScreenDevice)
 	{
+/**@def TODO: refine this in future. define this to never enter fullscreen mode. need a way to go backward */
+#define USE_WINDOWMODE_TO_SIMULATE_FULLSCREENMODE
+#ifdef USE_WINDOWMODE_TO_SIMULATE_FULLSCREENMODE
+#ifdef USE_DIRECTX_RENDERER
+		if (m_nWindowedDesired == 0) 
+		{
+			m_nWindowedDesired = -1;
+			LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
+			dwAttr &= (~(WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZE | WS_MAXIMIZEBOX));
+			SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
+			auto vSize = CGlobals::GetDirectXEngine().GetMonitorResolution();
+			int cx = (int)vSize.x; //  GetSystemMetric(SM_CXSCREEN);
+			int cy = (int)vSize.y; //  GetSystemMetric(SM_CYSCREEN);
+			SetWindowPos(CGlobals::GetAppHWND(), HWND_TOPMOST, 0, 0, cx, cy, 0);
+		}
+		else if (m_nWindowedDesired == 1) 
+		{
+			m_nWindowedDesired = -1;
+			LONG dwAttr = GetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE);
+			dwAttr |= (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
+			SetWindowLong(CGlobals::GetAppHWND(), GWL_STYLE, dwAttr);
+			int cx = (int)m_dwCreationWidth;
+			int cy = (int)m_dwCreationHeight;
+			SetWindowPos(CGlobals::GetAppHWND(), HWND_NOTOPMOST, 0, 0, cx, cy, 0);
+			SetScreenResolution(Vector2((float)m_dwCreationWidth, (float)m_dwCreationHeight));
+		}
+#endif
+#endif
+
 		OUTPUT_LOG("update screen device to (%d, %d) windowed: %s\n", m_dwCreationWidth, m_dwCreationHeight, m_nWindowedDesired==1 ? "true":"false");
 		m_bUpdateScreenDevice = false;
 		if(IsWindowedMode() && (m_nWindowedDesired!=0))
