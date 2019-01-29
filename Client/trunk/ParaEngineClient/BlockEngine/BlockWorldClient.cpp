@@ -2288,6 +2288,15 @@ namespace ParaEngine
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
 
+			if (m_effect_light_spot == 0)
+			{
+				m_effect_light_spot = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_light_spot", "script/apps/Aries/Creator/Game/Shaders/DeferredShadingSpotLighting.fxo");
+				m_effect_light_spot->LoadAsset();
+			}
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_SPOT, m_effect_light_spot.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, m_effect_light_spot.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_POINT, m_effect_light_spot.get());
+
 			if (m_bmax_model_effect_fancy == 0)
 			{
 				m_bmax_model_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("bmax_model_effect_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_bmax_model.fxo");

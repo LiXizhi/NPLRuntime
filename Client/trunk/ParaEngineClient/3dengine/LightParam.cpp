@@ -33,6 +33,30 @@ void CLightParam::MakeWhitePointLight()
 	Range = 7.f;
 }
 
+void ParaEngine::CLightParam::MakeWhiteSpotLight()
+{
+	Type = D3DLIGHT_SPOT;
+	Ambient = LinearColor(0, 0, 0, 0);
+	Diffuse = LinearColor(1.0f, 1.0f, 0, 1.0f); // actually yellow light.
+	Position = Vector3(0, 0, 0);
+	Attenuation0 = 0.3f;
+	Attenuation1 = 0.1f;
+	Attenuation2 = 1.f;
+	Range = 7.f;
+}
+
+void ParaEngine::CLightParam::MakeWhiteDirectionalLight()
+{
+	Type = D3DLIGHT_DIRECTIONAL;
+	Ambient = LinearColor(0, 0, 0, 0);
+	Diffuse = LinearColor(1.0f, 1.0f, 0, 1.0f); // actually yellow light.
+	Position = Vector3(0, 0, 0);
+	Attenuation0 = 0.3f;
+	Attenuation1 = 0.1f;
+	Attenuation2 = 1.f;
+	Range = 7.f;
+}
+
 const char* CLightParam::ToString()
 {
 	static char sParams[MAX_LIGHT_PARAM_STRING_LENGTH+1];

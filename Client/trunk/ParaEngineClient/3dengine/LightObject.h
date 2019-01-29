@@ -65,6 +65,7 @@ namespace ParaEngine
 		/** reset the object to its default settings.*/
 		virtual void Reset();
 
+		int GetPrimaryTechniqueHandle();
 
 		/**
 		* Init from light struct.

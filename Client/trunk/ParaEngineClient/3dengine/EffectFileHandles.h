@@ -76,6 +76,9 @@ namespace ParaEngine
 		TECH_GUI_TEXT,
 		// block max model
 		TECH_BMAX_MODEL,
+		TECH_LIGHT_SPOT,
+		TECH_LIGHT_DIRECTIONAL,
+		TECH_LIGHT_POINT,
 		// for external unknown effect. 
 		TECH_UNKNOWN,
 	};
