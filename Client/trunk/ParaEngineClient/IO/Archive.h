@@ -75,7 +75,7 @@ namespace ParaEngine
 		virtual DWORD GetFileSize(FileHandle& handle) = 0;
 
 		/** read file. */
-		virtual bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead) = 0;
+		virtual bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime) = 0;
 		
 		/** read the raw (may be compressed file) 
 		* @param lppBuffer: the buffer to hold the (compressed) output data. one need to use the SAFE_DELETE_ARRAY() to delete the output data. 
