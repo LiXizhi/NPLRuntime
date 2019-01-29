@@ -2,6 +2,8 @@
 #include "BlockWorld.h"
 #include "effect_file.h"
 
+#define MAX_LIGHT_NUM 100
+
 namespace ParaEngine
 {
 	class BlockRegion;
@@ -128,7 +130,10 @@ namespace ParaEngine
 		void Render(BlockRenderPass nRenderPass = BlockRenderPass_Opaque, std::vector<BlockRenderTask*>* pCurRenderQueue = NULL, int nRenderMethod = -1);
 
 		/** render light geometry. */
-		void RenderDeferredLights();
+		void RenderDeferredLightsMesh();
+
+		/** do deferred lighting */
+		void RenderDeferredLighting();
 
 		std::vector<BlockRenderTask*>* GetRenderQueueByPass(BlockRenderPass nRenderPass);
 
@@ -356,12 +361,20 @@ namespace ParaEngine
 		asset_ptr<CEffectFile> m_normal_mesh_effect_fancy;
 		asset_ptr<CEffectFile> m_bmax_model_effect_fancy;
 		asset_ptr<CEffectFile> m_terrain_fancy;
+
+		/** 3 kinds of light geometry shader in deferred shading */
+		asset_ptr<CEffectFile> m_effect_light_point;
 		asset_ptr<CEffectFile> m_effect_light_spot;
 		asset_ptr<CEffectFile> m_effect_light_directional;
-		asset_ptr<CEffectFile> m_effect_light_point;
+
+		/** deferred lighting shader */
+		asset_ptr<CEffectFile> m_effect_deferred_lighting;
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];
+
+		/** parameters that pass into deferred light shaders */
+		float lights_parameters[24 * MAX_LIGHT_NUM];
 #endif
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
