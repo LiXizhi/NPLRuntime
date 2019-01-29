@@ -64,7 +64,7 @@ int CSphereObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	CBaseObject::InstallFields(pClass, bOverride);
 
 	PE_ASSERT(pClass!=NULL);
-	pClass->AddField("position", FieldType_Vector3, (void*)SetPosition_s, (void*)GetPosition_s, NULL, "global position of the character", bOverride);
+	pClass->AddField("position", FieldType_DVector3, (void*)SetPosition_s, (void*)GetPosition_s, NULL, "global position of the character", bOverride);
 	return S_OK;
 }
 

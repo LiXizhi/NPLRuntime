@@ -1802,6 +1802,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			return false;
 		GETD3D(CGlobals::GetRenderDevice())->SetVertexDeclaration(pDecl);
 		DisableD3DAlphaTesting(true);
+		
+		pEffect->EnableAlphaBlending(true);
+		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
 		break;
 	}
 	case TECH_OCEAN_SIMPLE:
