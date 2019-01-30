@@ -60,6 +60,7 @@
 #include "Core/EventsCenter.h"
 #include "Core/EventClasses.h"
 #include "AutoRigger.h"
+#include "ScriptParticle.h"
 
 #if USE_DIRECTX_RENDERER
 //#include "Render/context/d3d9/RenderContextD3D9.h"
@@ -838,6 +839,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
 	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
+	pAttManager->RegisterObjectFactory("CScriptParticle", new CDefaultObjectFactory<CScriptParticle>());
 	// TODO add more here: 
 }
 
