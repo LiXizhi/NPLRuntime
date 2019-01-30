@@ -86,7 +86,7 @@ namespace ParaEngine
 		PE_CORE_DECL DWORD GetFileSize(FileHandle& handle);
 
 		/** read file. */
-		PE_CORE_DECL bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead);
+		PE_CORE_DECL bool ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime);
 
 		/** read the raw (may be compressed file) 
 		* @param lppBuffer: the buffer to hold the (compressed) output data. one need to use the SAFE_DELETE_ARRAY() to delete the output data. 
