@@ -12,6 +12,7 @@
 #include "AsyncLoader.h"
 #include "AssetManifest.h"
 #include "ZipArchive.h"
+#include "ZipWriter.h"
 #include "IParaEngineApp.h"
 #include "FileUtils.h"
 #include "util/StringBuilder.h"
@@ -79,6 +80,9 @@ CParaFile::CParaFile()
 	m_bIsOwner = true;
 	m_bIsCompressed = false;
 	m_uncompressed_size = 0;
+
+	m_lastModifiedTime = 0;
+	m_restoreLastModifiedTimeAfterClose = false;
 
 	m_bDiskFileOpened = false;
 	synchBits();
@@ -530,7 +534,8 @@ bool CParaFile::UnzipMemToFile(const char* buffer, int nSize, const char* destFi
 		{
 			// skip zero length file. 
 			char * buffer = new char[nSize];
-			if (zip_file.ReadFile(file_handle, buffer, nSize, &nBytesRead))
+			DWORD lastWriteTime;
+			if (zip_file.ReadFile(file_handle, buffer, nSize, &nBytesRead, &lastWriteTime))
 			{
 				CParaFile file;
 				// save file to temp/cache directory.
@@ -739,9 +744,12 @@ bool ParaEngine::CParaFile::OpenFile(CArchive *pArchive, const char* filename, b
 		{
 			DWORD s = pFileManager->GetFileSize(m_handle);
 			DWORD bytesRead = 0;
+			DWORD lastWriteTime = 0;
+
 			m_buffer = new char[s + 1];
 			m_buffer[s] = '\0';
-			pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead);
+
+			pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead, &lastWriteTime);
 			pFileManager->CloseFile(m_handle);
 			m_size = (size_t)bytesRead;
 			m_eof = false;
@@ -901,11 +909,13 @@ bool CParaFile::OpenFile(const char* sfilename, bool bReadyOnly, const char* rel
 					{
 						DWORD s = pFileManager->GetFileSize(m_handle);
 						DWORD bytesRead = 0;
+						DWORD lastWriteTime = 0;
 						m_buffer = new char[s + 1];
 						m_buffer[s] = '\0';
-						pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead);
+						pFileManager->ReadFile(m_handle, m_buffer, s, &bytesRead, &lastWriteTime);
 						pFileManager->CloseFile(m_handle);
 						m_size = (size_t)bytesRead;
+						m_lastModifiedTime = lastWriteTime;
 						m_eof = false;
 					}
 
@@ -1158,6 +1168,16 @@ void CParaFile::close()
 	if (m_bDiskFileOpened)
 	{
 		CFileUtils::CloseFile(m_handle);
+		if (m_restoreLastModifiedTimeAfterClose && m_lastModifiedTime > 0)
+		{
+			m_restoreLastModifiedTimeAfterClose = false;
+			time_t standard_time;
+			DWORD lastWriteTime = m_lastModifiedTime;
+			WORD dosdate = lastWriteTime>>16;
+			WORD dostime = lastWriteTime&0xffff;
+			dosdatetime2filetime(dosdate, dostime, &standard_time);
+			CFileUtils::WriteLastModifiedTimeToDisk(m_handle, m_filename, standard_time);
+		}
 	}
 	else if (m_bMemoryFile && m_handle.m_pVoidPtr!=NULL)
 	{
@@ -1251,6 +1271,52 @@ bool CParaFile::GetExtractFileProperty()
 const string& CParaFile::GetFileName()
 {
 	return m_filename;
+}
+
+DWORD CParaFile::GetLastModifiedTime() const
+{
+	return m_lastModifiedTime;
+}
+
+bool CParaFile::SetLastModifiedTime(DWORD lastWriteTime)
+{
+	if (m_lastModifiedTime != lastWriteTime)
+	{
+		m_lastModifiedTime = lastWriteTime;
+		return true;
+	}
+	return false;
+}
+
+bool CParaFile::WriteLastModifiedTime(DWORD lastWriteTime)
+{
+	SetLastModifiedTime(lastWriteTime);
+
+	bool result = false;
+	if(lastWriteTime>0 && m_bDiskFileOpened)
+	{
+		if(m_handle.IsValid())
+		{
+			time_t standard_time;
+			WORD dosdate = lastWriteTime>>16;
+			WORD dostime = lastWriteTime&0xffff;
+			dosdatetime2filetime(dosdate, dostime, &standard_time);
+			result = CFileUtils::WriteLastModifiedTimeToDisk(m_handle, m_filename, standard_time);
+			if (result)
+				m_restoreLastModifiedTimeAfterClose = true;
+		}
+	}
+	return result;
+}
+
+bool CParaFile::GetRestoreLastModifiedTimeAfterClose() const
+{
+	return m_restoreLastModifiedTimeAfterClose;
+}
+
+void CParaFile::SetRestoreLastModifiedTimeAfterClose(bool shouldRestore)
+{
+	m_restoreLastModifiedTimeAfterClose = shouldRestore;
 }
 
 //////////////////////////////////////////////////////////////////////////

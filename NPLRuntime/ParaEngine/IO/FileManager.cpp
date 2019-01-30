@@ -163,10 +163,10 @@ DWORD CFileManager::GetFileSize(FileHandle& handle)
 	return 0;
 }
 
-bool CFileManager::ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead)
+bool CFileManager::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfBytesToRead,LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime)
 {
-	if (handle.m_pArchive)
-		return handle.m_pArchive->ReadFile(handle, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead);
+	if(handle.m_pArchive)
+		return handle.m_pArchive->ReadFile(handle, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpLastWriteTime);
 	return false;
 }
 

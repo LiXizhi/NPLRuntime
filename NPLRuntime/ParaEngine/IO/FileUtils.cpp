@@ -11,6 +11,7 @@
 #include "FileUtils.h"
 #include "StringHelper.h"
 #include "Framework/FileSystem/ParaFileUtils.h"
+#include "ZipWriter.h"
 #include <time.h>
 #include <sys/stat.h>
 
@@ -234,6 +235,10 @@ bool ParaEngine::CFileUtils::CopyFile(const char* src, const char* dest, bool bO
 		if (fileTo.CreateNewFile(dest))
 		{
 			fileTo.write(fileFrom.getBuffer(), (int)(fileFrom.getSize()));
+
+			//try to restore timestamp of the file
+			if(fileFrom.GetLastModifiedTime()>0)
+				fileTo.WriteLastModifiedTime(fileFrom.GetLastModifiedTime());
 			return true;
 		}
 	}
@@ -745,3 +750,29 @@ bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nF
 	return false;
 }
 
+bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle, const std::string& fileName, const time_t& lastModifiedTime)
+{
+	bool op_result = false;
+	if (!fileName.empty())
+	{
+		//platform: mobile
+		time_t platform_time = lastModifiedTime;
+
+		std::string sFilePath;
+		if (IsAbsolutePath(fileName))
+		{
+			sFilePath = GetFullPathForFilename(fileName);
+		}
+		else
+		{
+			sFilePath = GetWritablePath() + fileName;
+			sFilePath = GetFullPathForFilename(sFilePath);
+		}
+		fs::path filePath(sFilePath.c_str());
+		boost::system::error_code err_code;
+		fs::last_write_time(filePath, platform_time, err_code);
+		op_result = (err_code.value() == boost::system::errc::success);
+	}
+
+	return op_result;
+}
