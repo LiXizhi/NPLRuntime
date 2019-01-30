@@ -1385,18 +1385,17 @@ bool ParaEngine::CFileUtils::WriteLastModifiedTimeToDisk(FileHandle& fileHandle,
 		op_result = (err_code.value() == boost::system::errc::success);
 	}
 #else
-	#if defined(WIN32)
+	
 	if (fileHandle.IsValid())
 	{
-
+#if defined(WIN32)
 		//platform: win32
 		FILETIME platform_time;
 		standardtime2osfiletime(lastModifiedTime, &platform_time);
-
 		op_result = (SetFileTime(fileHandle.m_handle, &platform_time, &platform_time, &platform_time) != FALSE);
-	#else
+#else
 		//other platform : not implemented for now
-	#endif
+#endif	
 	}
 #endif
 	return op_result;
