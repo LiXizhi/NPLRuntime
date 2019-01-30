@@ -327,7 +327,7 @@ void ParaEngine::CBatchedElementDraw::DrawBatchedParticles(bool bClear /*= true*
 			
 			pLastRenderPass = &renderPass;
 
-			while (nParticleIndex < (int)renderPass.GetMaxIndex())
+			while (nParticleIndex <= (int)renderPass.GetMaxIndex())
 			{
 				int NumParticlesThisBatch = 0;
 				SPRITEVERTEX* pVertices = (SPRITEVERTEX*)(&s_VertexData[0]);
