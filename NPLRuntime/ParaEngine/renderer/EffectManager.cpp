@@ -1483,7 +1483,8 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		DisableD3DAlphaTesting(true);
 		
 		pEffect->EnableAlphaBlending(true);
-		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
+
+		pd3dDevice->SetRenderState(ERenderState::ALPHABLENDENABLE, TRUE); // force blending
 		break;
 	}
 	case TECH_OCEAN_SIMPLE:
