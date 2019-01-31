@@ -234,5 +234,9 @@ namespace ParaEngine
 
 		/** max number of bones per vertex, currently this is 4. */
 		const static int s_MaxBonesPerVertex = 4;
+
+		Matrix4 mLocalMatrix;
+		Matrix4 mGlobalMatrix;
+		Vector3 mOrigScale;
 	};
 }
