@@ -487,10 +487,11 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 		if(mScanning)
 		{
 			mScanning = false;
-			if(mBluetoothAdapter!=null)
+			if(mBluetoothAdapter != null)
 			{
 				BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-				bluetoothLeScanner.stopScan(mLeScanCallback);
+				if(bluetoothLeScanner != null)
+					bluetoothLeScanner.stopScan(mLeScanCallback);
 				//Log.i(LogTag, "-------------stop scanning");
 			}
 		}		
@@ -504,7 +505,8 @@ public class InterfaceBluetooth implements ParaEnginePluginInterface{
 			if(mBluetoothAdapter!=null)
 			{
 				BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-				bluetoothLeScanner.startScan(mLeScanCallback);
+				if(bluetoothLeScanner != null)
+					bluetoothLeScanner.startScan(mLeScanCallback);
 				//Log.i(LogTag, "-------------start scanning");
 			}
 		}
