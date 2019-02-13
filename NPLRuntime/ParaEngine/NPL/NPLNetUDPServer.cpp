@@ -287,7 +287,8 @@ namespace NPL {
 			}
 
 			// continue with next activation. 
-			m_idle_timer.expires_from_now(boost::chrono::milliseconds(IDLE_TIMEOUT_TIMER_INTERVAL)); // GetIdleTimeoutPeriod()
+			unsigned int time = IDLE_TIMEOUT_TIMER_INTERVAL;
+			m_idle_timer.expires_from_now(boost::chrono::milliseconds(time)); // GetIdleTimeoutPeriod()
 			m_idle_timer.async_wait(boost::bind(&CNPLNetUDPServer::handle_idle_timeout, this, boost::asio::placeholders::error));
 		}
 	}
