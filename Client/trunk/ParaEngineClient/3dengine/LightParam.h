@@ -22,6 +22,8 @@ namespace ParaEngine
 
 		/** make the current light a white point light with default value. */
 		void MakeWhitePointLight();
+		void MakeWhiteSpotLight();
+		void MakeWhiteDirectionalLight();
 
 		/**
 		* return the parameters as a string. This is usually used for serialization. 

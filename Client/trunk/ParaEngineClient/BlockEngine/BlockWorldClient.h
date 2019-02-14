@@ -356,6 +356,9 @@ namespace ParaEngine
 		asset_ptr<CEffectFile> m_normal_mesh_effect_fancy;
 		asset_ptr<CEffectFile> m_bmax_model_effect_fancy;
 		asset_ptr<CEffectFile> m_terrain_fancy;
+		asset_ptr<CEffectFile> m_effect_light_spot;
+		asset_ptr<CEffectFile> m_effect_light_directional;
+		asset_ptr<CEffectFile> m_effect_light_point;
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];

@@ -16,6 +16,7 @@
 #endif
 #include "ParaScriptingPainter.h"
 #include "ParaScriptingGraphics.h"
+#include "Framework/InputSystem/VirtualKey.h"
 
 namespace ParaScripting
 {

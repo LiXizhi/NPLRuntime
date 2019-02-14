@@ -39,6 +39,7 @@
 #include "IO/ResourceEmbedded.h"
 #include "GeosetObject.h"
 #include "AutoRigger.h"
+#include "ScriptParticle.h"
 
 using namespace ParaEngine;
 
@@ -208,6 +209,7 @@ void ParaEngine::CParaEngineAppBase::RegisterObjectClasses()
 	pAttManager->RegisterObjectFactory("CLightObject", new CDefaultObjectFactory<CLightObject>());
 	pAttManager->RegisterObjectFactory("CGeosetObject",new CDefaultObjectFactory<CGeosetObject>());
 	pAttManager->RegisterObjectFactory("CAutoRigger", new CDefaultObjectFactory<CAutoRigger>());
+	pAttManager->RegisterObjectFactory("CScriptParticle",new CDefaultObjectFactory<CScriptParticle>());
 	// TODO add more here: 
 }
 

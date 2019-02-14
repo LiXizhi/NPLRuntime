@@ -1339,6 +1339,19 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pd3dDevice->SetFVF(bmax_vertex::FVF);
 		SetCullingMode(true);
 		break;
+	case TECH_LIGHT_DIRECTIONAL:
+	case TECH_LIGHT_POINT:
+	case TECH_LIGHT_SPOT:
+		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+		pd3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
+
+		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetFVF(mesh_vertex_normal_color::FVF);
+		SetCullingMode(false);
+		break;
 	case TECH_BLOCK_FANCY:
 	case TECH_BLOCK:
 		EnableLocalLighting(bEnableLight);
@@ -1804,6 +1817,9 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 			return false;
 		pd3dDevice->SetVertexDeclaration(pDecl);
 		DisableD3DAlphaTesting(true);
+
+		pEffect->EnableAlphaBlending(true);
+		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
 		break;
 	}
 	case TECH_OCEAN_SIMPLE:
@@ -1966,6 +1982,30 @@ bool EffectManager::BeginEffectShader(int nHandle, CEffectFile** pOutEffect)
 		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
 		SetCullingMode(true);
+		break;
+	}
+	case TECH_LIGHT_DIRECTIONAL:
+	case TECH_LIGHT_POINT:
+	case TECH_LIGHT_SPOT:
+	{
+		pDecl = GetVertexDeclaration(S0_POS_NORM_COLOR);
+		if (pDecl == 0)
+			return false;
+		pd3dDevice->SetVertexDeclaration(pDecl);
+
+		pEffect->EnableAlphaBlending(true);
+		pEffect->EnableAlphaTesting(false);
+
+		applyFogParameters();
+
+		pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+		pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE); // force blending
+		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+		pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP);
+		pd3dDevice->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP);
+		SetCullingMode(false);
 		break;
 	}
 	case TECH_BLOCK_FANCY:
@@ -2455,6 +2495,9 @@ void EffectManager::EndEffect()
 			pd3dDevice->SetRenderState( D3DRS_ZWRITEENABLE,     TRUE );
 			pd3dDevice->SetRenderState( D3DRS_FOGENABLE,        GetScene()->IsFogEnabled() );
 			break;
+		case TECH_LIGHT_DIRECTIONAL:
+		case TECH_LIGHT_POINT:
+		case TECH_LIGHT_SPOT:
 		case TECH_BLOCK_FANCY:
 		case TECH_BLOCK:
 			pd3dDevice->SetSamplerState( 0, D3DSAMP_ADDRESSU,  D3DTADDRESS_WRAP );
@@ -2589,6 +2632,9 @@ void EffectManager::EndEffect()
 			{
 				break;
 			}
+		case TECH_LIGHT_DIRECTIONAL:
+		case TECH_LIGHT_POINT:
+		case TECH_LIGHT_SPOT:
 		case TECH_BLOCK_FANCY:
 		case TECH_BLOCK:
 			{
@@ -2891,6 +2937,9 @@ void EffectManager::SetDefaultEffectMapping(int nLevel)
 		MapHandleToEffect(TECH_BLOCK,pEffect);
 		pEffect = GetEffectByName("block_fancy");
 		MapHandleToEffect(TECH_BLOCK_FANCY,pEffect);
+		MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, pEffect);
+		MapHandleToEffect(TECH_LIGHT_SPOT, pEffect);
+		MapHandleToEffect(TECH_LIGHT_POINT, pEffect);
 
 		//////////////////////////////////////////////////////////////////////////
 		// terrain related
