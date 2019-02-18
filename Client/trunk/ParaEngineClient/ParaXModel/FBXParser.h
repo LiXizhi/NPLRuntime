@@ -44,6 +44,7 @@ namespace ParaEngine
 		* parse as animated model
 		*/
 		CParaXModel* ParseParaXModel(const char* buffer, int nSize);
+		CParaXModel* ParseParaXModel2(const char* buffer, int nSize);
 		/** use current filename if any. */
 		CParaXModel* ParseParaXModel();
 

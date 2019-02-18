@@ -9,6 +9,7 @@
 #ifdef SUPPORT_FBX_MODEL_FILE
 #include "XFileHelper.h"
 #include "FBXParser.h"
+#include "FBXParser2.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "StringHelper.h"
@@ -19,6 +20,7 @@
 #include <math.h>
 
 #include "assimp/scene.h"
+#include "assimp/cimport.h"
 
 extern "C"
 {
@@ -182,6 +184,65 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	else {
 		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), importer.GetErrorString());
 	}
+	return pMesh;
+}
+
+unsigned int fbxImporterFlags =
+aiProcess_CalcTangentSpace | // calculate tangents and bitangents if possible
+// 开启此选项会导致材质球名字带't'时渲染出现异常
+//aiProcess_JoinIdenticalVertices | // join identical vertices/ optimize indexing
+aiProcess_ValidateDataStructure | // perform a full validation of the loader's output
+aiProcess_ImproveCacheLocality | // improve the cache locality of the output vertices
+aiProcess_RemoveRedundantMaterials | // remove redundant materials
+aiProcess_FindDegenerates | // remove degenerated polygons from the import
+aiProcess_FindInvalidData | // detect invalid model data, such as invalid normal vectors
+aiProcess_GenUVCoords | // convert spherical, cylindrical, box and planar mapping to proper UVs
+aiProcess_TransformUVCoords | // preprocess UV transformations (scaling, translation ...)
+aiProcess_FindInstances | // search for instanced meshes and remove them by references to one master
+aiProcess_LimitBoneWeights | // limit bone weights to 4 per vertex
+aiProcess_OptimizeMeshes | // join small meshes, if possible;
+aiProcess_SplitByBoneCount | // split meshes with too many bones. Necessary for our (limited) hardware skinning shader
+aiProcess_SplitLargeMeshes | // split large, unrenderable meshes into submeshes
+aiProcess_SortByPType | // make 'clean' meshes which consist of a single typ of primitives
+aiProcess_Triangulate | // triangulate polygons with more than 3 edges
+aiProcess_GenSmoothNormals | // generate smooth normal vectors if not existing
+aiProcess_ConvertToLeftHanded | // convert everything to D3D left handed space
+0;
+
+ParaEngine::CParaXModel* ParaEngine::FBXParser::ParseParaXModel2(const char* buffer, int nSize)
+{
+	Reset();
+	SetAnimSplitterFilename();
+	//////////////////////////////////////////////////////////////////////////
+	aiPropertyStore* props = aiCreatePropertyStore();
+	//aiSetImportPropertyInteger(props,AI_CONFIG_PP_PTV_KEEP_HIERARCHY,1);
+	aiSetImportPropertyFloat(props, AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, 80.f);
+	aiSetImportPropertyInteger(props, AI_CONFIG_PP_SLM_VERTEX_LIMIT, 65535);
+	aiSetImportPropertyInteger(props, AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, 21845); // 21845 = 65535 / 3
+	aiSetImportPropertyInteger(props, AI_CONFIG_PP_SBP_REMOVE, aiPrimitiveType_LINE | aiPrimitiveType_POINT);
+	// 开启此选项会导致某些带动画模型播放不出来动画
+	aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);
+	const aiScene* pFbxScene = (aiScene*)aiImportFileFromMemoryWithProperties(buffer, nSize, fbxImporterFlags, NULL, props);
+	CParaXModel* pMesh = NULL;
+	if (pFbxScene)
+	{
+		if (pFbxScene->HasAnimations())
+		{
+			// 带动画的模型加载时开启此选项
+			aiSetImportPropertyInteger(props, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 1);
+			// 释放原先的Import
+			aiReleaseImport(pFbxScene);
+			pFbxScene = (aiScene*)aiImportFileFromMemoryWithProperties(buffer, nSize, fbxImporterFlags, NULL, props);
+		}
+
+		FBXParser2 parser2(m_sFilename);
+		pMesh = parser2.Parse(pFbxScene, pFbxScene->mRootNode);
+	}
+	else {
+		OUTPUT_LOG("Error parsing '%s': '%s'\n", m_sFilename.c_str(), aiGetErrorString());
+	}
+	aiReleasePropertyStore(props);
+	aiReleaseImport(pFbxScene);
 	return pMesh;
 }
 

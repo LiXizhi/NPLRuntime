@@ -372,7 +372,7 @@ HRESULT ParaEngine::CParaXProcessor::CopyToResource()
 				{
 					// static or animated fbx model
 					FBXParser parser(iCur->m_sMeshFileName);
-					iCur->m_pParaXMesh = parser.ParseParaXModel(myFile.getBuffer(), myFile.getSize());
+					iCur->m_pParaXMesh = parser.ParseParaXModel2(myFile.getBuffer(), myFile.getSize());
 				}
 #endif
 				else
