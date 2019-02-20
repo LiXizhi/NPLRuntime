@@ -272,7 +272,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 	{
 		AnimIndex blendingAnim;
 		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
-		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f);
+		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
 		ParaEngine::Bone* bones = pMesh->bones;
@@ -314,7 +314,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 				bone.SetStaticTransform(bone.matTransform);
 			}
 		}
-#define COLLAPSE_STATIC_TRANSFORM_NODE true
+#define COLLAPSE_STATIC_TRANSFORM_NODE false
 		if (COLLAPSE_STATIC_TRANSFORM_NODE) 
 		{
 			for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)

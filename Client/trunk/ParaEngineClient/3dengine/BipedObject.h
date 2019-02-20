@@ -648,8 +648,12 @@ namespace ParaEngine
 		* @param nAnimID: 0 is default standing animation. 4 is walking, 5 is running. more information, please see AnimationID */
 		virtual void SetAnimation(int nAnimID);
 
+		virtual void SetUpperAnimation(int nAnimID);
+
 		/** get the scaling. */
 		virtual int GetAnimation();
+
+		virtual int GetUpperAnimation();
 
 		/** whether an animation id exist. this function may have different return value when asset is async loaded.
 		* @param nAnimID: predefined id.
