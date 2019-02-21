@@ -1391,10 +1391,28 @@ HRESULT TextureEntityDirectX::LoadFromMemory(const char* buffer, DWORD nFileSize
 	default:
 	{
 		// TextureEntity::StaticTexture
+
+/** whether to print big directX texture that may take a long time to load into log file */
+#ifdef _DEBUG
+#define PRINT_BIG_TEXTURE
+#endif
+
+#ifdef PRINT_BIG_TEXTURE
+		int64 nTick = GetTickCount();
+#endif
 		hr = D3DXCreateTextureFromFileInMemoryEx(pd3dDevice, buffer, nFileSize,
 			D3DX_DEFAULT, D3DX_DEFAULT, nMipLevels, 0, dwTextureFormat,
 			D3DPOOL_MANAGED, D3DX_DEFAULT, D3DX_DEFAULT,
 			m_dwColorKey, NULL, NULL, &(pTexture));
+		
+#ifdef PRINT_BIG_TEXTURE
+		nTick = GetTickCount() - nTick;
+		if (nTick > 100) {
+			OUTPUT_LOG("%d, %d: %s\n", GetTickCount(), (int)(nTick), GetKey().c_str());
+		}
+#endif
+
+		
 
 		if (SUCCEEDED(hr))
 		{

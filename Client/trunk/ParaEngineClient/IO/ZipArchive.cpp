@@ -1114,7 +1114,6 @@ bool CZipArchive::ReadFile(FileHandle& handle,LPVOID lpBuffer,DWORD nNumberOfByt
 
 			DWORD uncompressedSize = m_FileList[index].m_pEntry->UncompressedSize;			
 			DWORD compressedSize = m_FileList[index].m_pEntry->CompressedSize;
-
 			DWORD lastWriteTime = m_FileList[index].m_pEntry->LastModifiedTime;
 
 			void* pBuf = lpBuffer;

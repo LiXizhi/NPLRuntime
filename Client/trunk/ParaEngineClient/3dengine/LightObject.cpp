@@ -22,8 +22,11 @@ using namespace ParaEngine;
 CLightObject::CLightObject(void)
 	:m_bDeleteLightParams(true), m_pLightParams(NULL)
 {
+	m_pLightParams = new CLightParam();
+	m_pLightParams->MakeWhiteSpotLight();
 	SetMyType(_LocalLight);
 	m_mxLocalTransform = Matrix4::IDENTITY; 
+	SetShadowCaster(false);
 }
 
 CLightObject::~CLightObject(void)
@@ -276,6 +279,11 @@ float CLightObject::GetAttenuation2()
 	return (m_pLightParams!=0) ? m_pLightParams->Attenuation2: 0.f;
 }
 
+int ParaEngine::CLightObject::GetPrimaryTechniqueHandle()
+{
+	return TECH_LIGHT_SPOT;
+}
+
 int ParaEngine::CLightObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
 {
 	if (sceneState->GetScene()->PrepareRenderObject(this, pCamera, *sceneState))
@@ -304,12 +312,12 @@ HRESULT CLightObject::Draw(SceneState * sceneState)
 	// if(CGlobals::GetScene()->IsShowLocalLightMesh())
 	if (IsDeferredLightOnly() && sceneState->IsDeferredShading())
 	{
-		// deferred shading
+		RenderDeferredLightMesh(sceneState);
 	}
 	else if( !IsDeferredLightOnly() )
 	{
 	}
-	RenderMesh(sceneState);
+	// RenderMesh(sceneState);
 	return S_OK;
 }
 
@@ -461,6 +469,9 @@ Matrix4* ParaEngine::CLightObject::GetRenderMatrix(Matrix4& out, int nRenderNumb
 
 void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 {
+	if (sceneState->IsShadowPass())
+		return;
+
 #ifdef USE_DIRECTX_RENDERER
 	if(m_pDeferredShadingMesh==NULL)
 	{
@@ -523,6 +534,10 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 		break;
 		case D3DLIGHT_SPOT:
 		{
+#define TEST_SPOT_LIGHT
+#ifdef TEST_SPOT_LIGHT
+			ppMesh = CGlobals::GetAssetManager()->LoadMesh("", "model/blockworld/Apple/Apple.x");
+#else
 			static auto index=0;
 			ss<<index;
 			std::string name;
@@ -564,17 +579,114 @@ void ParaEngine::CLightObject::RenderDeferredLightMesh(SceneState * sceneState)
 			attr.VertexCount=pos.size();
 			attr.VertexStart=0;
 			((CParaXStaticModelRawPtr)ppMesh->GetMesh())->GetSysMemMesh()->SetAttributeTable(&attr,sizeof(attr));
+#endif
 		}
 		break;
 		}
 		m_pDeferredShadingMesh=ppMesh;
 	}
-	LPDIRECT3DDEVICE9 pd3dDevice=sceneState->m_pd3dDevice;
 	auto pMesh = m_pDeferredShadingMesh->GetMesh();
-	CEffectFile* pEffectFile=CGlobals::GetEffectManager()->GetCurrentEffectFile();
-	CGlobals::GetWorldMatrixStack().push(m_mxLocalTransform);
-	pMesh->Render(sceneState,pEffectFile,true,false);
-	CGlobals::GetWorldMatrixStack().pop();
+	if (pMesh)
+	{
+		sceneState->SetCurrentSceneObject(this);
+		SetFrameNumber(sceneState->m_nRenderCount);
+		// get world transform matrix
+		Matrix4 mxWorld;
+		GetRenderMatrix(mxWorld);
+		mxWorld = m_mxLocalTransform * mxWorld;
+		CGlobals::GetWorldMatrixStack().push(mxWorld);
+		CEffectFile* pEffect = CGlobals::GetEffectManager()->GetCurrentEffectFile();
+
+		struct LightVertex
+		{
+		public:
+			LightVertex() :normal(1, 0, 0), color(0xffffffff) {};
+			Vector3 position;  //4byte
+			Vector3 normal;  //4byte
+							  /** for fixed function: ao_shadow, max_light, max_light, max_light
+							  for shader:  ao_shadow, sun_light, block_light, block_id
+							  */
+			DWORD color;	  //4byte;
+		};
+		std::vector<LightVertex> m_Vertices;
+		m_Vertices.resize(8);
+		m_Vertices[0].position = Vector3(0, 1, 0);
+		m_Vertices[1].position = Vector3(0, 1, 1);
+		m_Vertices[2].position = Vector3(1, 1, 1);
+		m_Vertices[3].position = Vector3(1, 1, 0);
+		uint16 m_indices[6] = { 0,1,2,   0,2,3 };
+
+
+		LightVertex* vb_vertices = NULL;
+		LightVertex *ov = NULL;
+		LightVertex *m_origVertices = &(m_Vertices[0]);
+		auto pDevice = sceneState->GetRenderDevice();
+
+		DynamicVertexBufferEntity* pBufEntity = CGlobals::GetAssetManager()->GetDynamicBuffer(DVB_XYZ_NORM_DIF);
+		pDevice->SetStreamSource(0, pBufEntity->GetBuffer(), 0, sizeof(LightVertex));
+
+		
+
+		if (pEffect && pEffect->begin())
+		{
+			if (pEffect->BeginPass(0))
+			{
+				// set device attribute like this: 
+				// pDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+				pEffect->setParameter(CEffectFile::k_ConstVector0, (const float*)&Vector4(1.f, 0.f, 0.f, 0.0f));
+
+				pEffect->CommitChanges();
+				
+
+				int nNumLockedVertice;
+				int nNumFinishedVertice = 0;
+				int indexCount = (int)m_Vertices.size();
+				do
+				{
+					if ((nNumLockedVertice = pBufEntity->Lock(indexCount - nNumFinishedVertice, (void**)(&vb_vertices))) > 0)
+					{
+						int nLockedNum = nNumLockedVertice / 3;
+
+						int nIndexOffset = nNumFinishedVertice;
+						for (int i = 0; i < nLockedNum; ++i)
+						{
+							int nVB = 3 * i;
+							for (int k = 0; k < 3; ++k, ++nVB)
+							{
+								int a = m_indices[nIndexOffset + nVB];
+								LightVertex& out_vertex = vb_vertices[nVB];
+								// weighted vertex
+								ov = m_origVertices + a;
+								out_vertex.position = ov->position;
+								out_vertex.normal = ov->normal;
+								out_vertex.color = 0xffffffff; // ov->color;
+							}
+						}
+						pBufEntity->Unlock();
+
+						if (pBufEntity->IsMemoryBuffer())
+							RenderDevice::DrawPrimitiveUP(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, nLockedNum, pBufEntity->GetBaseVertexPointer(), pBufEntity->m_nUnitSize);
+						else
+							RenderDevice::DrawPrimitive(pDevice, RenderDevice::DRAW_PERF_TRIANGLES_CHARACTER, D3DPT_TRIANGLELIST, pBufEntity->GetBaseVertex(), nLockedNum);
+					}
+					if ((indexCount - nNumFinishedVertice) > nNumLockedVertice)
+					{
+						nNumFinishedVertice += nNumLockedVertice;
+					}
+					else
+						break;
+
+				} while (1);
+				
+				pEffect->EndPass(0);
+			}
+
+			pEffect->end();
+		}
+
+		// pMesh->Render(sceneState, pEffectFile, true, false);
+		CGlobals::GetWorldMatrixStack().pop();
+	}
 #endif
 }
 
