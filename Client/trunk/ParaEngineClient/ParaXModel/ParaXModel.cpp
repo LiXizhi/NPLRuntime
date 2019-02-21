@@ -699,7 +699,7 @@ bool CParaXModel::SetupTransformByID(int nID)
 }
 
 
-Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, bool bRecalcBone, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance)
+Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone, IAttributeFields* pAnimInstance)
 {
 	int nAttachmentIndex = m_attLookup[nAttachmentID];
 	if (nAttachmentIndex >= 0)

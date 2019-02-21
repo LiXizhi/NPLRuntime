@@ -162,7 +162,7 @@ namespace ParaEngine
 		* @param bRecalcBone: whether we will recalculate bone chains according to the current animation pose.
 		* @return: NULL if not successful, otherwise it is pOut.
 		*/
-		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, bool bRecalcBone = true, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = NULL);
+		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = NULL);
 
 		/** whether we have attachment matrix.
 		* @param nAttachmentID: the attachment id.
