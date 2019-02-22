@@ -188,7 +188,7 @@ namespace ParaEngine
 		virtual bool HasAlphaBlendedObjects();
 		/** look for a valid animation ID for nAnimID. return -1 if no animation is found. e.g. if nAnimId 4 not found, 0 will be returned. */
 		virtual int GetValidAnimID(int nAnimID);
-
+		
 		virtual void SetUpperAnimation(int nAnimID);
 		virtual int GetUpperAnimation();
 
@@ -226,7 +226,6 @@ namespace ParaEngine
 
 		/** current time for dynamic fields. */
 		int m_curTime;
-
 
 		AnimIndex mUpperAnim;
 		AnimIndex mUpperBlendingAnim;

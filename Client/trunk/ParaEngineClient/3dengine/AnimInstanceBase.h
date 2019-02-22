@@ -282,6 +282,5 @@ namespace ParaEngine
 
 		virtual void SetUpperAnimation(int nAnimID){}
 		virtual int GetUpperAnimation() { return -1; }
-
 	};
 }

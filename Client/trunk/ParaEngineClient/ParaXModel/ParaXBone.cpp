@@ -794,7 +794,7 @@ void ParaEngine::Bone::AutoSetBoneInfoFromName()
 		string sAttName = sName.substr(4);
 		if (sAttName == "lefthand")
 		{
-			SetBoneID(- ATT_ID_HAND_LEFT);
+			SetBoneID(-ATT_ID_HAND_LEFT);
 			mIsUpper = true;
 		}
 		else if (sAttName == "righthand")

@@ -365,7 +365,6 @@ namespace ParaEngine
 		/** a mapping from known bone id to bone index. */
 		int m_boneLookup[MAX_KNOWN_BONE_NODE];
 
-
 		AnimIndex mUpperAnim;
 		AnimIndex mUpperBlendingAnim;
 		float mUpperBlendingFactor;
