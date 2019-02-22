@@ -31,7 +31,7 @@ using namespace ParaEngine;
 
 
 CParaXAnimInstance::CParaXAnimInstance(void)
-	:m_modelType(CharacterModel), m_bUseGlobalTime(false), m_curTime(0), m_fBlendingFactor(0), m_nCurrentIdleAnimationID(ANIM_STAND), m_nCustomStandingAnimCount(-1)
+	:m_modelType(CharacterModel), m_bUseGlobalTime(false), m_curTime(0), m_fBlendingFactor(0), m_nCurrentIdleAnimationID(ANIM_STAND), m_nCustomStandingAnimCount(-1), mUpperBlendingFactor(0)
 {
 	// Maybe init from a another function, instead of constructor
 	if (m_modelType == CharacterModel)
@@ -147,6 +147,104 @@ int CParaXAnimInstance::GetValidAnimID(int nAnimID)
 	return -1;
 }
 
+void ParaEngine::CParaXAnimInstance::SetUpperAnimation(int nAnimID)
+{
+	if (m_modelType == CharacterModel)
+	{
+		ParaXEntity* pModelEnity = GetAnimModel();
+		CParaXModel* pModel = (pModelEnity != NULL) ? pModelEnity->GetModel() : NULL;
+		if (pModel == NULL)
+		{
+			return;
+		}
+
+		if (IsAnimIDMapEnabled())
+		{
+			map<int, int>::iterator it = GetAnimIDMap()->find(nAnimID);
+			if (it != GetAnimIDMap()->end())
+			{
+				nAnimID = (*it).second;
+			}
+		}
+
+		if (nAnimID < 0)
+		{
+			mUpperAnim.MakeInvalid();
+			mUpperBlendingAnim.MakeInvalid();
+			mUpperBlendingFactor = 0;
+		}
+		else
+		{
+			AnimIndex IndexAnim(0);
+			bool bHasWalkAnim = false;
+			if (nAnimID < 1000)
+			{
+				// load local model animation
+				do {
+					if (nAnimID == ANIM_WALK)
+						bHasWalkAnim = true;
+					IndexAnim = pModel->GetAnimIndexByID(nAnimID);
+					if (IndexAnim.IsValid() || nAnimID == 0)
+						break;
+					nAnimID = CAnimTable::GetDefaultAnimIDof(nAnimID);
+				} while (true);
+			}
+			else
+			{
+				// load an external animation.
+				CBoneAnimProvider* pProvider = CBoneAnimProvider::GetProviderByID(nAnimID);
+				if (pProvider)
+				{
+					IndexAnim = pProvider->GetAnimIndex(pProvider->GetSubAnimID());
+				}
+			}
+			if (IndexAnim.IsValid() && IndexAnim.Provider == 0)
+			{
+				// scale speed properly
+				auto pModelAnim = pModel->GetModelAnimByIndex(IndexAnim.nIndex);
+				if (pModelAnim)
+				{
+					float moveSpeed = pModelAnim->moveSpeed;
+					if (bHasWalkAnim && moveSpeed == 0.f)
+					{
+						// default to 4 meters/seconds in case walk animation is not inside the file. 
+						moveSpeed = DEFAULT_WALK_SPEED;
+					}
+				}
+			}
+			IndexAnim.nAnimID = nAnimID; // enforce the same ID
+
+			if (mUpperAnim != IndexAnim)
+			{
+				/// If the current animation is looping and bAppend is false, play immediately from the beginning of the new animation.
+				// turn on motion warping
+
+				mUpperBlendingAnim = mUpperAnim;
+				if (!mUpperBlendingAnim.IsValid())
+					mUpperBlendingAnim = m_CurrentAnim;
+				mUpperBlendingFactor = 1.0;
+
+				mUpperAnim = IndexAnim;
+				mUpperAnim.Reset();
+			}
+			else
+			{
+				mUpperAnim.Reset();
+				mUpperBlendingFactor = 0;
+			}
+		}
+	}
+	else
+	{
+		// TODO: other model type goes here
+	}
+}
+
+int ParaEngine::CParaXAnimInstance::GetUpperAnimation()
+{
+	return mUpperAnim.IsValid()?mUpperAnim.nAnimID:-1;
+}
+
 bool CParaXAnimInstance::HasAnimId(int nAnimID)
 {
 	if (m_modelType == CharacterModel)
@@ -173,6 +271,8 @@ void CParaXAnimInstance::ResetAnimation()
 	// external animation are stored in dynamic fields using bone names as key. 
 	RemoveAllDynamicFields();
 	m_curTime = 0;
+
+	mUpperAnim.MakeInvalid();
 }
 
 bool CParaXAnimInstance::ResetBaseModel(ParaXEntity * pModel)
@@ -193,6 +293,8 @@ bool CParaXAnimInstance::ResetBaseModel(ParaXEntity * pModel)
 		m_fBlendingFactor = 0;
 		m_nCurrentIdleAnimationID = ANIM_STAND;
 		m_nCustomStandingAnimCount = -1;
+
+		mUpperAnim.MakeInvalid();
 		return true;
 	}
 	return false;
@@ -449,7 +551,7 @@ Matrix4*  CParaXAnimInstance::GetAttachmentMatrix(Matrix4* pOut, int nAttachment
 			return pOut;
 		}
 	}
-	if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor))
+	if (pModel->GetAttachmentMatrix(pOut, nAttachmentID, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor))
 	{
 		Matrix4 matScale;
 		if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
@@ -640,6 +742,60 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 				m_CurrentAnim.nCurrentFrame = nToDoFrame;
 			}
 		}
+
+		if (mUpperAnim.IsValid())
+		{
+			if (mUpperAnim.nCurrentFrame<(int)mUpperAnim.nStartFrame)
+				mUpperAnim.nCurrentFrame = mUpperAnim.nStartFrame;
+			if (mUpperAnim.nCurrentFrame>(int)mUpperAnim.nEndFrame)
+				mUpperAnim.nCurrentFrame = mUpperAnim.nEndFrame;
+			int nToDoFrame = mUpperAnim.nCurrentFrame + (int)(dTimeDelta * 1000);
+			if (m_bUseGlobalTime)
+			{
+				nToDoFrame = mUpperAnim.nStartFrame + ParaEngine::globalTime % (mUpperAnim.nEndFrame - mUpperAnim.nStartFrame);
+				if (mUpperAnim.nCurrentFrame > nToDoFrame)
+				{
+					// looping
+					if (mUpperAnim.IsUndetermined())
+					{
+						// if current animation is undetermined, possibly because it is still being loaded, we shall try loading it again. 
+						assert(false);
+					}
+				}
+			}
+			if (mUpperBlendingFactor > 0)
+			{
+#ifdef _DEBUG
+				if (dTimeDelta > 0.033)
+				{
+					dTimeDelta = 0.033;
+				}
+#endif
+				mUpperBlendingFactor -= (float)(dTimeDelta / pModel->fBlendingTime); // BLENDING_TIME blending time
+				if (mUpperBlendingFactor < 0)
+					mUpperBlendingFactor = 0;
+			}
+			// check if we have reached the end frame of the current animation
+			if (nToDoFrame > (int)mUpperAnim.nEndFrame)
+			{
+				nToDoFrame -= (mUpperAnim.nEndFrame - mUpperAnim.nStartFrame); // wrap to the beginning
+
+				///  if there is NO queued animation, we will play the default one.
+				if (!mUpperAnim.IsLooping())
+				{/// non-looping, play the default idle animation
+					mUpperAnim.MakeInvalid();
+				}
+				else
+				{/// looping on the current animation
+					mUpperAnim.nCurrentFrame = nToDoFrame;
+					mUpperAnim.AddCycle();
+				}
+			}
+			else
+			{
+				mUpperAnim.nCurrentFrame = nToDoFrame;
+			}
+		}
 	}
 	else
 	{
@@ -659,7 +815,7 @@ void CParaXAnimInstance::BuildShadowVolume(SceneState * sceneState, ShadowVolume
 	CGlobals::GetWorldMatrixStack().push(mat);
 
 	// draw model
-	m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor);
+	m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, NULL);
 	m_pCharModel->BuildShadowVolume(sceneState, pShadowVolume, pLight, &mat); 
 
 	// pop matrix
@@ -683,7 +839,7 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 	if (m_modelType == CharacterModel)
 	{
 		// draw model
-		if (m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor, this))
+		if (m_pCharModel->AnimateModel(sceneState, m_CurrentAnim, m_NextAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, this))
 		{
 			// update the attachment matrix
 			if (!m_AttachmentMatrices.empty() && sceneState)
@@ -704,7 +860,7 @@ bool CParaXAnimInstance::UpdateModel(SceneState * sceneState)
 						{
 							Matrix4 maxOut;
 							if (itCur->second.m_nRenderNumber != nRenderNumber &&
-								pModel->GetAttachmentMatrix(&maxOut, itCur->first, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, false))
+								pModel->GetAttachmentMatrix(&maxOut, itCur->first, m_CurrentAnim, m_BlendingAnim, m_fBlendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, false))
 							{
 								Matrix4 matScale;
 								if (fabs(m_fSizeScale - 1.0f) > FLT_TOLERANCE)
