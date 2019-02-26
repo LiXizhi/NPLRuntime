@@ -52,7 +52,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 	}
 	else
 	{
-		fontFile = sFontName;
+		fontFile = std::string("fonts/") + sFontName + ".ttf";
 	}
 	// TODO: force size to be 14. font-rendering crashes on android with big font.
 	pFontRenderer->m_nFontSize = nFontSize;
@@ -81,7 +81,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			return pFontRenderer;
 		}
 	}
-	OUTPUT_LOG("error: font file%s does not exist or invalid\n", fontFile.c_str());
+	OUTPUT_LOG("error: font file: %s does not exist or invalid\n", fontFile.c_str());
 	return NULL;
 }
 
