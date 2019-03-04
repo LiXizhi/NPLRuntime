@@ -322,9 +322,10 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 #elif defined(USE_BOOST_FILE_API)
 	try
 	{
-		fs::path sSrc(src);
-		fs::copy_file(sSrc, fs::path(dest), fs::copy_option::overwrite_if_exists);
-		return fs::remove(sSrc);
+		boost::system::error_code err_code;
+		fs::rename(sSrc, fs::path(dest), err_code);
+		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src, dest, err_code.message().c_str());
+		return err_code.value() == 0;
 	}
 	catch (...)
 	{
