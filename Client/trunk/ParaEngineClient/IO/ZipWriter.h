@@ -5,7 +5,7 @@
 namespace ParaEngine
 {
 	void dosdatetime2filetime(WORD dosdate, WORD dostime, time_t *ft);
-#if defined(WIN32) && defined(PARAENGINE_CLIENT)
+#ifdef WIN32
 	void standardtime2osfiletime(time_t t, LPFILETIME pft);
 #else
 	void standardtime2osfiletime(time_t source_t, time_t* target_t);

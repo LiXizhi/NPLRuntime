@@ -1098,7 +1098,6 @@ lua_State* FBXParser::ParseScriptString(const char* str)
 
 void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMaterial, CParaXModel *pMesh, const std::string& sMatName, int texture_index)
 {
-	/*
 	auto metaData = pfbxMaterial->mMetaData;
 	if (!metaData || metaData->mNumProperties == 0)
 		return;
@@ -1145,7 +1144,6 @@ void FBXParser::ParseParticleEmitter(ModelRenderPass& pass, aiMaterial* pfbxMate
 
 		break;
 	}
-	*/
 }
 
 void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
