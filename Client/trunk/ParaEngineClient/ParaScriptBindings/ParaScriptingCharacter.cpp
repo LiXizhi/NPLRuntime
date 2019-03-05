@@ -636,7 +636,7 @@ namespace ParaScripting
 		AddAttachment6(ModelAsset,nAttachmentID,nSlotID,fScaling,ReplaceableTexture,2);
 	}
 
-	void ParaCharacter::AddAttachment6( ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture )
+	void ParaCharacter::AddAttachment6(ParaAssetObject ModelAsset,int nAttachmentID,int nSlotID,float fScaling,ParaAssetObject ReplaceableTexture,int replaceableTextureID)
 	{
 		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
 		if(pChar!=0)
