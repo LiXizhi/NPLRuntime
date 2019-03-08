@@ -94,6 +94,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CGUIRoot, SendInputMethodEvent_s, const char*) { cls->SendInputMethodEvent(p1); return S_OK; }
 
 		ATTRIBUTE_METHOD1(CGUIRoot, SetMinimumScreenSize_s, Vector2)		{ cls->SetMinimumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
+
+		ATTRIBUTE_METHOD1(CGUIRoot, SetMaximumScreenSize_s, Vector2)		{ cls->SetMaximumScreenSize((int)(p1.x), (int)(p1.y)); return S_OK; }
 		
 		ATTRIBUTE_METHOD1(CGUIRoot, IsMouseCaptured_s, bool*)	{ *p1 = cls->IsMouseCaptured(); return S_OK; }
 		ATTRIBUTE_METHOD1(CGUIRoot, SetCaptureMouse_s, bool)	{ cls->SetCaptureMouse(p1); return S_OK; }
@@ -120,8 +122,9 @@ namespace ParaEngine
 		* @param fScalingX: x defaults to 1.0
 		* @param fScalingY: y defaults to 1.0
 		* @param bEnsureMinimumScreenSize: if true, we will readjust UI scaling so that minimum screen size is ensured.
+		* @param bEnsureMaximumScreenSize: if true, we will readjust UI scaling so that maximum screen size is ensured.
 		*/
-		void SetUIScale(float fScalingX, float fScalingY, bool bEnsureMinimumScreenSize = true, bool bNotifySizeChange = true);
+		void SetUIScale(float fScalingX, float fScalingY, bool bEnsureMinimumScreenSize = true, bool bEnsureMaximumScreenSize = true, bool bNotifySizeChange = true);
 
 		/** set the UI scaling. This can be useful to render 1024*768 to a 800*600 surface; we can set to fScalingX to 800/1024 and fScalingY to 600/768
 		* @param pfScalingX: out put x scale
@@ -141,6 +144,14 @@ namespace ParaEngine
 		*/
 		void SetMinimumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling = true);
 
+		/** the maximum screen size. if the backbuffer is larger than this, we will use automatically use UI scaling
+		 * for example, if maximum width is 1024, and backbuffer it 1600, then m_fUIScalingX will be automatically set to 1024/1600.
+		 * calling this function will cause OnSize() and UpdateBackbufferSize() to be called. Actually it calls SetUIScale()
+		 * @param nWidth: the new width.
+		 * @param nHeight: the new height.
+		 * @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size.
+		 */
+		void SetMaximumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling = true);
 
 		/** update backbuffer size, in case it is changed. we will automatically multiple backbuffer size using UI scale to obtain the actual size of GUI state
 		* @return true if size has changed.
@@ -540,6 +551,14 @@ namespace ParaEngine
 
 		/** the minimum screen height. if the backbuffer is smaller than this, we will use automatically use UI scaling */
 		float m_fMinScreenHeight;
+
+		/** the maximum screen width. if the backbuffer is larger than this, we will use automatically use UI scaling
+		 * for example, if smaller width is 1024, and backbuffer it 1600, then m_fUIScalingX will be automatically set to 1024/1600.
+		 */
+		float m_fMaxScreenWidth;
+     
+		/** the maximum screen height. if the backbuffer is larger than this, we will use automatically use UI scaling */
+		float m_fMaxScreenHeight;
 
 		/** whether there is a visible IME virtual CGUIIMEEditBox that has key focus. */
 		bool m_bHasIMEFocus;

@@ -2892,6 +2892,11 @@ void ParaUI::SetMinimumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling)
 	CGUIRoot::GetInstance()->SetMinimumScreenSize(nWidth, nHeight, bAutoUIScaling);
 }
 
+void ParaUI::SetMaximumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling)
+{
+	CGUIRoot::GetInstance()->SetMaximumScreenSize(nWidth, nHeight, bAutoUIScaling);
+}
+
 void ParaUI::SetUIScale(float fScalingX, float fScalingY)
 {
 	CGUIRoot::GetInstance()->SetUIScale(fScalingX, fScalingY);

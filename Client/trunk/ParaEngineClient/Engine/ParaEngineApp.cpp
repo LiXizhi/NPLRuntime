@@ -1187,9 +1187,10 @@ bool CParaEngineApp::UpdateScreenDevice()
 			HandlePossibleSizeChange();
 			m_bIgnoreSizeChange = bOldValue;
 
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
+			// ensure both minimum and maximum screen size
+			CGlobals::GetGUI()->SetUIScale(1,1,true,true);
 			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
+			// CGlobals::GetGUI()->SetMaximumScreenSize(-1,-1,true);
 		}
 		else
 		{
@@ -1212,8 +1213,10 @@ bool CParaEngineApp::UpdateScreenDevice()
 				DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
 				return false;
 			}
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
+			// ensure both minimum and maximum screen size
+			CGlobals::GetGUI()->SetUIScale(1,1,true,true);
+			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
+			// CGlobals::GetGUI()->SetMaximumScreenSize(-1,-1,true);
 			Pause( false );
 			if(IsWindowedMode())
 			{
@@ -2290,6 +2293,11 @@ void CParaEngineApp::SetCoreUsage( DWORD dwUsage )
 void CParaEngineApp::SetMinUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
 {
 	CGlobals::GetGUI()->SetMinimumScreenSize(nWidth,nHeight, bAutoUIScaling);
+}
+
+void CParaEngineApp::SetMaxUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
+{
+	CGlobals::GetGUI()->SetMaximumScreenSize(nWidth,nHeight, bAutoUIScaling);
 }
 
 bool CParaEngineApp::IsSlateMode()

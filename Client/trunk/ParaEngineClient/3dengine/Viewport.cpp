@@ -206,7 +206,7 @@ void ParaEngine::CViewport::OnParentSizeChanged(int nWidth, int nHeight)
 	{
 		GetGUIRoot()->UpdateViewport(GetLeft(), GetTop(), GetWidth(), GetHeight(), true);
 		// ensure minimum screen size, with largest UI scaling 
-		GetGUIRoot()->SetUIScale(1, 1, true);
+		GetGUIRoot()->SetUIScale(1, 1, true, true);
 	}
 }
 
