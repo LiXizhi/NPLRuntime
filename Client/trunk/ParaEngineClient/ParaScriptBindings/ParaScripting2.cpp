@@ -459,6 +459,7 @@ void CNPLScriptingState::LoadHAPI_UI()
 				def("SetIMEOpenStatus", & ParaUI::SetIMEOpenStatus),
 				def("SetUIScale", & ParaUI::SetUIScale),
 				def("SetMinimumScreenSize", & ParaUI::SetMinimumScreenSize),
+				def("SetMaximumScreenSize", & ParaUI::SetMaximumScreenSize),
 				def("LockMouse", & ParaUI::LockMouse)
 				//			def("CreateWin", & ParaUI::CreateWin)
 			]
