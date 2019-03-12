@@ -7,6 +7,7 @@
 // Desc: partially cross platformed. 
 //-----------------------------------------------------------------------------
 #include "ParaEngine.h"
+#include "IParaEngineApp.h"
 
 extern "C"
 {
@@ -519,6 +520,12 @@ namespace ParaScripting
 	void CNPL::UnregisterWSCallBack( const char * sWebServiceFile )
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_UnregisterWSCallBack(sWebServiceFile);
+	}
+
+	void CNPL::ShowWindow(bool bShow)
+	{
+		if(CGlobals::GetApp())
+			CGlobals::GetApp()->ShowWindow(bShow);
 	}
 
 	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )

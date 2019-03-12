@@ -700,5 +700,6 @@ namespace ParaScripting
 		* @return: race ID, -1 if error*/
 		int GetRaceID();
 
+		void EnableAutoAnimation(bool enable);
 	};
 }

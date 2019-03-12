@@ -813,6 +813,9 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
+	// restore mouse
+	auto mouse = CGUIRoot::GetInstance()->GetMouse();
+	mouse->SetCursorFromFile(mouse->GetCursorFile(),0,0,true);
 #endif
 	/* -------end of paraworld code ----------------------------*/
 	return S_OK;
@@ -1777,6 +1780,22 @@ void CParaEngineApp::BringWindowToTop()
 			// ::SetWindowPos(CGlobals::GetAppHWND(),HWND_TOP,0,0,0,0,SWP_NOSIZE|SWP_NOMOVE);
 			// this does not work
 			// ::BringWindowToTop(CGlobals::GetAppHWND());
+		}
+	}
+}
+
+void CParaEngineApp::ShowWindow(bool bShow)
+{
+	if(!IsFullScreenMode())
+	{
+		if((GetCoreUsage() & PE_USAGE_WEB_BROWSER)!=0)
+		{
+			OUTPUT_LOG("ShowWindow doesn't know how to respond in web browser mode!\n");
+		}
+		else
+		{
+			// show or hide the main window if it is not from a web browser
+			::ShowWindow(CGlobals::GetAppHWND(), bShow ? SW_SHOW : SW_HIDE);
 		}
 	}
 }
