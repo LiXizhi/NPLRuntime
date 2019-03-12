@@ -117,6 +117,12 @@ namespace ParaEngine
 		*/
 		PE_CORE_DECL bool DoesFileExist(const char* filename);
 
+		/**
+		 * get file original name (in case of name being changed somehow, e.g. CZipArchive may change filename to lower case when case-insensitive).
+		 * @param filename: current file name
+		 */
+		string GetFileOriginalName(const char* filename);
+
 	protected:
 		/** a list of all archives */
 		list <CArchive*> m_archivers;

@@ -209,11 +209,12 @@ namespace ParaEngine
 		* @param nSlotID the slot id of the effect. default value is -1.  if there is already an effect with the same ID
 		*	it will be replaced with this new one.
 		*/
-		void AddAttachment(ParaXEntity* pModelEntity, int nAttachmentID = ATT_ID_HAND_LEFT, int nSlotID = -1, float fScaling = 1.0, TextureEntity* pReplaceableTexture = NULL);
+		void AddAttachment(ParaXEntity* pModelEntity, int nAttachmentID = ATT_ID_HAND_LEFT, int nSlotID = -1, float fScaling = 1.0, TextureEntity* pReplaceableTexture = NULL, int replaceableTextureID=2);
 		void AddAttachment(MeshEntity* pModelEntity, int nAttachmentID = ATT_ID_HAND_LEFT, int nSlotID = -1, float fScaling = 1.0, TextureEntity* pReplaceableTexture = NULL);
 
 		/** get attribute fields of the given attachment ID */
 		IAttributeFields * GetAttachmentAttObj(int nAttachmentID);
+		CParameterBlock * GetAttachmentParamBlock(int attachmentID,int slotID);
 
 		/**
 		* get the current replaceable texture by its ID.
@@ -317,6 +318,7 @@ namespace ParaEngine
 			NUM_TEX
 		};
 		asset_ptr<TextureEntity> m_textures[NUM_TEX];
+		map<unsigned int,asset_ptr<TextureEntity> > mReplaceableTexturesCache;
 
 		enum CharGeosets {
 			CSET_HAIR = 0,

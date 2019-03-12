@@ -165,6 +165,7 @@ namespace ParaScripting
 		/** draw a full screen quad. 
 		* @note: one need to set the vertex declaration to be S0_POS_TEX0 prior to calling this function */
 		static bool DrawQuad();
+		static bool DrawQuad2();
 
 		/** Set declaration by id
 		enum VERTEX_DECLARATION

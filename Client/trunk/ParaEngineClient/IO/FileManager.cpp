@@ -156,6 +156,23 @@ bool CFileManager::DoesFileExist(const char* filename)
 	return bExists;
 }
 
+string CFileManager::GetFileOriginalName(const char* filename)
+{
+	FileHandle handle;
+	string originalNameFull(filename);
+	bool bExists = OpenFile(filename, handle);
+	if(bExists)
+	{
+		string nameInArchive = handle.m_pArchive->GetNameInArchive(handle);
+		int nStart = (int)originalNameFull.size() - (int)nameInArchive.size();
+		int nCount = (int)nameInArchive.size();
+		if (nCount > 0)
+			originalNameFull.replace(nStart, nCount, handle.m_pArchive->GetOriginalNameInArchive(handle));
+	}
+	CloseFile(handle);
+	return originalNameFull;
+}
+
 DWORD CFileManager::GetFileSize(FileHandle& handle)
 {
 	if(handle.m_pArchive)
