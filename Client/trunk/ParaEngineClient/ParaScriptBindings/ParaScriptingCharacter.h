@@ -604,6 +604,7 @@ namespace ParaScripting
 		void AddAttachment4(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling);
 		void AddAttachment5(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture);
 		void AddAttachment6(ParaAssetObject ModelAsset,int nAttachmentID,int nSlotID,float fScaling,ParaAssetObject ReplaceableTexture,int replaceableTextureID);
+
 		/** get the attachment object's attribute field. */
 		ParaAttributeObject GetAttachmentAttObj(int nAttachmentID);
 
@@ -702,6 +703,5 @@ namespace ParaScripting
 		int GetRaceID();
 
 		void EnableAutoAnimation(bool enable);
-
 	};
 }

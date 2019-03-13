@@ -449,7 +449,7 @@ void CNPLScriptingState::LoadParaScene()
 			def("SetShadowMethod", & ParaScene::SetShadowMethod),
 			def("GetShadowMethod", & ParaScene::GetShadowMethod),
 			def("Pick", & ParaScene::Pick),
-			def("MousePick", &ParaScene::MousePick),
+			def("MousePick", & ParaScene::MousePick),
 			def("GetObjectsBySphere", & ParaScene::GetObjectsBySphere),
 			def("GetObjectsByScreenRect", & ParaScene::GetObjectsByScreenRect),
 			def("SelectObject", & ParaScene::SelectObject),

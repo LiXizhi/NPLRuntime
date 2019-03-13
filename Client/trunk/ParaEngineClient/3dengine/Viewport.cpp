@@ -365,6 +365,7 @@ bool ParaEngine::CViewport::DrawQuad2()
 #endif      
 	return bSucceed;
 }
+
 void ParaEngine::CViewport::SetModified()
 {
 	m_bIsModifed = true;

@@ -696,12 +696,16 @@ void ParaEngine::BlockGeneralTessellator::TessellateStdCube(BlockRenderMethod dw
 					tessellatedModel.SetVertexColor(nIndex, dwBlockColor);
 				}
 
-				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_tiling))
+				if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_pos_tiling) || m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_random_tiling))
 				{
 					BlockVertexCompressed* vert = tessellatedModel.GetVertices() + nIndex;
-					Vector2 tran((float)(m_nBlockData % tileSize), (float)(m_nBlockData / tileSize));
-					float u,v;
-					vert->GetTexcoord(u,v);
+					Vector2 tran;
+					if (m_pCurBlockTemplate->IsMatchAttribute(BlockTemplate::batt_pos_tiling))
+						tran = Vector2((float)(m_blockId_cs.x % tileSize), (float)(m_blockId_cs.z % tileSize));
+					else
+						tran = Vector2((float)(m_nBlockData % tileSize), (float)(m_nBlockData / tileSize));
+					float u, v;
+					vert->GetTexcoord(u, v);
 					vert->SetTexcoord((tran.x + u) * uvScale, (tran.y + v) * uvScale);
 				}
 			}

@@ -431,6 +431,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("EnablePassiveRendering", & ParaEngineSettings::EnablePassiveRendering),
 			def("GetRenderTarget", & ParaScripting::CParaEngine::GetRenderTarget),
 			def("SetRenderTarget", & ParaScripting::CParaEngine::SetRenderTarget),
+			def("SetRenderTarget", &ParaScripting::CParaEngine::SetRenderTarget2),
 			def("SetRenderTarget2", &ParaScripting::CParaEngine::SetRenderTarget2),
 			def("StretchRect", & ParaScripting::CParaEngine::StretchRect),
 			def("SetVertexDeclaration", & ParaScripting::CParaEngine::SetVertexDeclaration),
