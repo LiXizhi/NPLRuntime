@@ -315,7 +315,7 @@ int CreateHostApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 	return -1;
 }
 
-#define CHECK_QQ_PARAMS
+//#define CHECK_QQ_PARAMS
 #ifdef CHECK_QQ_PARAMS
 static int split(const std::string& str, std::vector<std::string>& ret_, std::string sep = ",")
 {
