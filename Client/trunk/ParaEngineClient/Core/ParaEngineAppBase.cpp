@@ -635,28 +635,6 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 
 		if (fileList.size() == 0)
 		{
-#ifdef PARAENGINE_MOBILE
-			// File searching in Android APK is invalid, so all the pkgs are hard coded here temporarily
-			if (CParaFile::DoesFileExist("crate900.pkg") || CParaFile::DoesFileExist("crate900.zip"))
-				fileList.push_back("crate900.zip");
-			if (CParaFile::DoesFileExist("crate104.pkg") || CParaFile::DoesFileExist("crate104.zip"))
-				fileList.push_back("crate104.zip");
-			if (CParaFile::DoesFileExist("crate103.pkg") || CParaFile::DoesFileExist("crate103.zip"))
-				fileList.push_back("crate103.zip");
-			if (CParaFile::DoesFileExist("crate102.pkg") || CParaFile::DoesFileExist("crate102.zip"))
-				fileList.push_back("crate102.zip");
-			if (CParaFile::DoesFileExist("crate003.pkg") || CParaFile::DoesFileExist("crate003.zip"))
-				fileList.push_back("crate003.zip");
-			if (CParaFile::DoesFileExist("crate002.pkg") || CParaFile::DoesFileExist("crate002.zip"))
-				fileList.push_back("crate002.zip");
-			if (CParaFile::DoesFileExist("crate001.pkg") || CParaFile::DoesFileExist("crate001.zip"))
-				fileList.push_back("crate001.zip");
-#endif
-			if (CParaFile::DoesFileExist("main_mobile_res.pkg") || CParaFile::DoesFileExist("main_mobile_res.zip"))
-				fileList.push_back("main_mobile_res.zip");
-			if (CParaFile::DoesFileExist("main150727.pkg") || CParaFile::DoesFileExist("main150727.zip"))
-				fileList.push_back("main150727.zip");
-
 			if (CParaFile::DoesFileExist("main.pkg") || CParaFile::DoesFileExist("main.zip"))
 				fileList.push_back("main.zip");
 			if (bIs64Bits && CParaFile::DoesFileExist("main_64bits.pkg"))
@@ -791,18 +769,18 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 		}
 	}
 #ifdef WIN32
-	// AwesomeTruck.sig must be called first, to locate the root dir. 
-	if (!CParaFile::DoesFileExist("AwesomeTruck.sig", false))
+	// ParaEngine.sig must be called first, to locate the root dir. 
+	if (!CParaFile::DoesFileExist("ParaEngine.sig", false))
 	{
 		if (!sModuleDir.empty())
 		{
 			std::string workingDir = m_sModuleDir;
-			std::string sigPath = workingDir + "AwesomeTruck.sig";
+			std::string sigPath = workingDir + "ParaEngine.sig";
 			bool bFoundSigFile = false;
 			if (!CParaFile::DoesFileExist(sigPath.c_str(), false))
 			{
 				// search the parent directory of the module for signature file, if file exist, use it as current working directory. 
-				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "AwesomeTruck.sig";
+				sigPath = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1) + "ParaEngine.sig";
 				if (CParaFile::DoesFileExist(sigPath.c_str(), false))
 				{
 					workingDir = CParaFile::GetParentDirectoryFromPath(m_sModuleDir, 1);
@@ -817,7 +795,7 @@ bool CParaEngineAppBase::FindParaEngineDirectory(const char* sHint)
 			}
 			else
 			{
-				OUTPUT_LOG("AwesomeTruck.sig file not found\n");
+				// OUTPUT_LOG("ParaEngine.sig file not found\n");
 			}
 		}
 		// set the current directory by reading from the registry.

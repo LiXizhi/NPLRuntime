@@ -186,8 +186,8 @@ CParaXModel::~CParaXModel(void)
 		SAFE_DELETE_ARRAY(ribbons);
 
 		ClearFaceGroups();
-}
 	}
+}
 
 void CParaXModel::SetVertexBufferDirty()
 {

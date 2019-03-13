@@ -143,6 +143,7 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
 
 		// RAF stands for _ref_anim_file_: marker for mutual animation file (fbx files with this marker can share the same animation file to avoid meaningless duplication)
+		// RAF check
 		if (m_sFilename.find("_RAF(") != std::string::npos)
 		{
 			m_xheader.IsAnimated = 1;

@@ -618,13 +618,9 @@ namespace ParaEngine
 		PE_CORE_DECL void close();
 
 		DWORD GetLastModifiedTime() const;
-
 		bool SetLastModifiedTime(DWORD lastWriteTime);
-
 		bool WriteLastModifiedTime(DWORD lastWriteTime);
-
 		bool GetRestoreLastModifiedTimeAfterClose() const;
-
 		void SetRestoreLastModifiedTimeAfterClose(bool shouldRestore);
                 
 		//////////////////////////////////////////////////////////////////////////

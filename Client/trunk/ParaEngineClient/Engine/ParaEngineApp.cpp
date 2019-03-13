@@ -384,18 +384,6 @@ HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
-
-#if defined(WIN32) && defined(TRUCK_PARAM_FROM_CMDLINE)
-	std::string sTruckConfigString = "noupdate=\"true\" debug=\"main\" mc=\"true\" bootstrapper=\"script/apps/Aries/main_loop.lua\" mod=\"Truck\" isDevEnv=\"true\"";
-
-	std::string strCmdTruncated = strCmd.substr(0, 113);
-	if(strCmdTruncated != sTruckConfigString)
-	{
-		MessageBoxA(NULL,"Please start the game from Launcher.exe","TruckStar Client Dll",MB_OK);
-		return -1;
-	}
-#endif
-
 	InitApp(strCmd.c_str());
 	// loading packages
 	LoadPackages();
@@ -1827,6 +1815,7 @@ void CParaEngineApp::BringWindowToTop()
 		}
 	}
 }
+
 void CParaEngineApp::ShowWindow(bool bShow)
 {
 	if(!IsFullScreenMode())

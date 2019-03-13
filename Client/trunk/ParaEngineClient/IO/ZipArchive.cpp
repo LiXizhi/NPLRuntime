@@ -797,10 +797,6 @@ bool CZipArchive::ReadEntries_pkg()
 		entry.RefreshHash(m_bIgnoreCase);
 		nameOffset += nNameSize + 1;
 
-#ifdef _DEBUG
-		OUTPUT_LOG("----pkg file read: %s\n", entry.zipFileName);
-#endif
-
 		m_pFile->read(&entry.CompressionMethod, sizeof(WORD));
 		m_pFile->read(&entry.CompressedSize, sizeof(DWORD));
 		m_pFile->read(&entry.UncompressedSize, sizeof(DWORD));
@@ -1383,11 +1379,7 @@ bool CZipArchive::ReadEntries()
 		entry.fileNameLen = CentralDir.NameSize;
 		entry.RefreshHash(m_bIgnoreCase);
 		nameOffset += CentralDir.NameSize + 1;
-
-#ifdef _DEBUG
-		OUTPUT_LOG("----zip file read: %s\n", entry.zipFileName);
-#endif
-
+		
 
 #ifdef SAVE_ZIP_HEADER
 		/// fill header data

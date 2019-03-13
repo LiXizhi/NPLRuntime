@@ -1770,6 +1770,7 @@ namespace ParaScripting
 		* @return :the scene object. if the object is invalid, it means that the ray has hit nothing.
 		*/
 		static ParaObject MousePick(float fMaxDistance, const char* sFilterFunc);
+
 		static ParaObject Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc);
 
 		/**
