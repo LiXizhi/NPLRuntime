@@ -45,7 +45,7 @@ CBipedStateManager::CBipedStateManager(void)
 	
 }
 CBipedStateManager::CBipedStateManager(CBipedObject * pBiped)
-	:m_pBiped(pBiped), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f)
+	:m_pBiped(pBiped), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f), m_EnableAutoAnimation(true)
 {
 }
 
@@ -1021,6 +1021,4 @@ void CBipedStateManager::EnableAutoAnimation(bool enable)
 	auto biped = GetBiped();
 	if (biped)
 		biped->EnableAutoAnimation(m_EnableAutoAnimation);
-
 }
-

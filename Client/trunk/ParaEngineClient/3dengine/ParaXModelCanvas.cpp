@@ -132,17 +132,17 @@ bool ParaXModelCanvas::InitBaseModel(ParaXEntity * pModel)
 /************************************************************************/
 
 CanvasAttachment::CanvasAttachment()
-	:parent(NULL), id(0), slot(-1), scale(1.0f), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0),m_pParamBlock(nullptr)
+	:parent(NULL), id(0), slot(-1), scale(1.0f), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 
 }
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, ParaXEntity *model, int id, int slot, float scale) :
-parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0),m_pParamBlock(nullptr)
+parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 }
 
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, MeshEntity *model, int id, int slot, float scale) :
-parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0),m_pParamBlock(nullptr)
+parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 	SetModel(model);
 }
@@ -191,11 +191,11 @@ void CanvasAttachment::release()
 		delete this;
 }
 
-void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex,int replaceableTextureID)
+void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID)
 {
 	if (pTex)
 	{
-		texReplaceables[replaceableTextureID]= pTex;
+		texReplaceables[replaceableTextureID] = pTex;
 	}
 }
 

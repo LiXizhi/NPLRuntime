@@ -153,7 +153,7 @@ namespace ParaEngine
 	{
 		if(texName)
 		{
-			if (nIndex == 0 && IsMatchAttribute(BlockTemplate::batt_tiling))
+			if (nIndex == 0 && (IsMatchAttribute(BlockTemplate::batt_pos_tiling) || IsMatchAttribute(BlockTemplate::batt_random_tiling)))
 			{
 				regex r("^.+_x(\\d+)\\..+$");
 
@@ -603,7 +603,22 @@ namespace ParaEngine
 		if (m_nTileSize != nTile)
 		{
 			m_nTileSize = nTile;
-			SetAttribute(batt_tiling, m_nTileSize > 1);
+			if (IsMatchAttribute(BlockTemplate::batt_pos_tiling))
+			{
+				SetAttribute(batt_pos_tiling, m_nTileSize > 1);
+				SetAttribute(batt_random_tiling, false);
+			}
+			else if(IsMatchAttribute(BlockTemplate::batt_random_tiling))
+			{
+				SetAttribute(batt_pos_tiling, false);
+				SetAttribute(batt_random_tiling, m_nTileSize > 1);
+			}
+			else
+			{
+				//any case should this happen?
+				SetAttribute(batt_pos_tiling, false);
+				SetAttribute(batt_random_tiling, false);			    
+			}
 		}
 	}
 

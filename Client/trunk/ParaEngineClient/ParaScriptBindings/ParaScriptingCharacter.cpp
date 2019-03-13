@@ -644,21 +644,21 @@ namespace ParaScripting
 
 	void ParaCharacter::AddAttachment6(ParaAssetObject ModelAsset,int nAttachmentID,int nSlotID,float fScaling,ParaAssetObject ReplaceableTexture,int replaceableTextureID)
 	{
-		CharModelInstance* pChar=m_pCharacter->GetCharModelInstance();
+		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
 		if(pChar!=0)
 		{
-			TextureEntity* pTex=NULL;
-			if(ReplaceableTexture.m_pAsset && ReplaceableTexture.m_pAsset->GetType()==AssetEntity::texture)
+			TextureEntity* pTex = NULL;
+			if(ReplaceableTexture.m_pAsset && ReplaceableTexture.m_pAsset->GetType() == AssetEntity::texture)
 			{
-				pTex=(TextureEntity*)(ReplaceableTexture.m_pAsset);
+				pTex = (TextureEntity*)(ReplaceableTexture.m_pAsset);
 			}
-			if(ModelAsset.m_pAsset->GetType()==AssetEntity::parax)
+			if( ModelAsset.m_pAsset->GetType() == AssetEntity::parax)
 			{
-				pChar->AddAttachment((ParaXEntity*)ModelAsset.m_pAsset,nAttachmentID,nSlotID,fScaling,pTex,replaceableTextureID);
+				pChar->AddAttachment( (ParaXEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex, replaceableTextureID);
 			}
-			else if(ModelAsset.m_pAsset->GetType()==AssetEntity::mesh)
+			else if( ModelAsset.m_pAsset->GetType() == AssetEntity::mesh)
 			{
-				pChar->AddAttachment((MeshEntity*)ModelAsset.m_pAsset,nAttachmentID,nSlotID,fScaling,pTex);
+				pChar->AddAttachment( (MeshEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex);
 			}
 		}
 	}

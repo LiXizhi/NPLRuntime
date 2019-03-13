@@ -147,7 +147,7 @@ namespace ParaEngine
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 	
 	public:
-		void SetReplaceableTexture(TextureEntity* pTex,int replaceableTextureID=2);
+		void SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID=2);
 		void SetModel(ParaXEntity* pModel);
 		void SetModel(MeshEntity* pModel);
 
@@ -224,7 +224,6 @@ namespace ParaEngine
 		std::map<int,asset_ptr<TextureEntity> > texReplaceables;
 
 		CParameterBlock * m_pParamBlock;
-		
 
 		/// this id will be used to index into the parent model's attachment lookup table to find the
 		/// actual attachment point in the parent model.
