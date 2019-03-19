@@ -480,7 +480,7 @@ namespace ParaEngine {
 		}
 	}
 	
-	void CParaEngineApp::ShowWindow(bool bShow)
+	void CWindowsApplication::ShowWindow(bool bShow)
 	{
 		if(!IsFullScreenMode())
 		{
