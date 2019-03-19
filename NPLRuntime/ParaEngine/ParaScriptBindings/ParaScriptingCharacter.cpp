@@ -631,23 +631,29 @@ namespace ParaScripting
 		return ParaAttributeObject();
 	}
 
-	void ParaCharacter::AddAttachment5( ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture )
+
+	void ParaCharacter::AddAttachment5(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture)
 	{
-		CharModelInstance* pChar =  m_pCharacter->GetCharModelInstance();
-		if(pChar!=0)
+		AddAttachment6(ModelAsset, nAttachmentID, nSlotID, fScaling, ReplaceableTexture, 2);
+	}
+
+	void ParaCharacter::AddAttachment6(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture, int replaceableTextureID)
+	{
+		CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+		if (pChar != 0)
 		{
 			TextureEntity* pTex = NULL;
-			if(ReplaceableTexture.m_pAsset && ReplaceableTexture.m_pAsset->GetType() == AssetEntity::texture)
+			if (ReplaceableTexture.m_pAsset && ReplaceableTexture.m_pAsset->GetType() == AssetEntity::texture)
 			{
 				pTex = (TextureEntity*)(ReplaceableTexture.m_pAsset);
 			}
-			if( ModelAsset.m_pAsset->GetType() == AssetEntity::parax)
+			if (ModelAsset.m_pAsset->GetType() == AssetEntity::parax)
 			{
-				pChar->AddAttachment( (ParaXEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex);
+				pChar->AddAttachment((ParaXEntity*)ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex, replaceableTextureID);
 			}
-			else if( ModelAsset.m_pAsset->GetType() == AssetEntity::mesh)
+			else if (ModelAsset.m_pAsset->GetType() == AssetEntity::mesh)
 			{
-				pChar->AddAttachment( (MeshEntity*) ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex);
+				pChar->AddAttachment((MeshEntity*)ModelAsset.m_pAsset, nAttachmentID, nSlotID, fScaling, pTex);
 			}
 		}
 	}
@@ -679,6 +685,19 @@ namespace ParaScripting
 		{
 			pChar->AddAttachment((ParaXEntity*)NULL, nAttachmentID, nSlotID);
 		}
+	}
+
+	ParaParamBlock ParaCharacter::GetAttachmentParamBlock(int attachmentID, int slotID)
+	{
+		if (m_pCharacter)
+		{
+			CharModelInstance* pChar = m_pCharacter->GetCharModelInstance();
+			if (pChar != 0)
+			{
+				return ParaParamBlock(pChar->GetAttachmentParamBlock(attachmentID, slotID));
+			}
+		}
+		return ParaParamBlock();
 	}
 
 	void ParaCharacter::CastEffect(int nEffectID)

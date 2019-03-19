@@ -293,6 +293,11 @@ namespace ParaScripting
 		return CGlobals::GetViewportManager()->GetActiveViewPort()->DrawQuad();
 	}
 
+	bool CParaEngine::DrawQuad2()
+	{
+		return CGlobals::GetViewportManager()->GetActiveViewPort()->DrawQuad2();
+	}
+
 	ParaScripting::ParaAttributeObject CParaEngine::GetViewportAttributeObject(int nViewportIndex)
 	{
 		CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(nViewportIndex);

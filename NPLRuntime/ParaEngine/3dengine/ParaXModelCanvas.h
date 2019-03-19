@@ -147,7 +147,7 @@ namespace ParaEngine
 		virtual IAttributeFields* GetChildAttributeObject(int nRowIndex, int nColumnIndex = 0);
 	
 	public:
-		void SetReplaceableTexture(TextureEntity* pTex);
+		void SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID = 2);
 		void SetModel(ParaXEntity* pModel);
 		void SetModel(MeshEntity* pModel);
 
@@ -203,6 +203,7 @@ namespace ParaEngine
 		/** build the shadow volume */
 		void BuildShadowVolume(SceneState * sceneState, ShadowVolume * pShadowVolume, LightParams* pLight, Matrix4* mxWorld);
 
+		CParameterBlock * GetParamBlock(bool bCreateIfNotExist = false);
 	public:
 		/** child models */
 		std::vector< CanvasAttachmentPtr > children;
@@ -219,7 +220,9 @@ namespace ParaEngine
 		ref_ptr<CMeshObject> m_pMeshObject;
 
 		// a replaceable texture for use with the model on this attachment.
-		asset_ptr<TextureEntity> texReplaceable;
+		std::map<int, asset_ptr<TextureEntity> > texReplaceables;
+
+		CParameterBlock * m_pParamBlock;
 		
 
 		/// this id will be used to index into the parent model's attachment lookup table to find the

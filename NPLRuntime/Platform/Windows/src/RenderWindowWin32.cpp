@@ -338,7 +338,7 @@ namespace ParaEngine {
 			L"ParaWorld"
 		};
 		wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-
+		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
 		RegisterClassW(&wndClass);
 
 		DWORD exStyle = WS_EX_APPWINDOW;

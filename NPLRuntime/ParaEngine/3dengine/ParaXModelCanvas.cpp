@@ -132,17 +132,17 @@ bool ParaXModelCanvas::InitBaseModel(ParaXEntity * pModel)
 /************************************************************************/
 
 CanvasAttachment::CanvasAttachment()
-	:parent(NULL), id(0), slot(-1), scale(1.0f), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0)
+	:parent(NULL), id(0), slot(-1), scale(1.0f), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 
 }
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, ParaXEntity *model, int id, int slot, float scale) :
-parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0)
+parent(parent), model(model), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 }
 
 CanvasAttachment::CanvasAttachment(CanvasAttachment *parent, MeshEntity *model, int id, int slot, float scale) :
-parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0)
+parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_vOffset(0, 0, 0), m_pParamBlock(nullptr)
 {
 	SetModel(model);
 }
@@ -150,6 +150,7 @@ parent(parent), id(id), slot(slot), scale(scale), m_bIsAutoCharacter(false), m_v
 CanvasAttachment::~CanvasAttachment()
 {
 	delChildren();
+	SAFE_DELETE(m_pParamBlock);
 }
 
 void CanvasAttachment::SetModel(MeshEntity* pModel)
@@ -190,11 +191,11 @@ void CanvasAttachment::release()
 		delete this;
 }
 
-void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex)
+void CanvasAttachment::SetReplaceableTexture(TextureEntity* pTex, int replaceableTextureID)
 {
 	if (pTex)
 	{
-		texReplaceable = pTex;
+		texReplaceables[replaceableTextureID] = pTex;
 	}
 }
 
@@ -263,11 +264,11 @@ IAttributeFields * CanvasAttachment::GetAttributeObject()
 CanvasAttachment* CanvasAttachment::GetChild(int id, int slot /*= -1*/)
 {
 	for (size_t i = 0; i < children.size(); ++i) {
-		if (children[i]->id == id) {
+		if ((children[i]->id == id) && (children[i]->slot == slot)) {
 			return children[i].get();
 		}
 	}
-	return NULL;
+	return nullptr;
 }
 
 void CanvasAttachment::delChildByID(int nID)
@@ -375,6 +376,20 @@ void CanvasAttachment::BuildShadowVolume(SceneState * sceneState, ShadowVolume *
 #endif
 }
 
+CParameterBlock * CanvasAttachment::GetParamBlock(bool bCreateIfNotExist)
+{
+	if (m_pParamBlock)
+	{
+		return m_pParamBlock;
+	}
+	else
+	{
+		if (bCreateIfNotExist)
+			m_pParamBlock = new CParameterBlock();
+		return m_pParamBlock;
+	}
+}
+
 void CanvasAttachment::SetOffset(float x, float y, float z)
 {
 	m_vOffset.x = x;
@@ -426,19 +441,39 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 
 		if (pModel)
 		{
-			if (texReplaceable)
+			for (auto const & tex_pair : texReplaceables)
 			{
-				pModel->replaceTextures[2] = texReplaceable.get();
+				pModel->replaceTextures[tex_pair.first] = tex_pair.second.get();
 			}
-			
-			pModel->draw(sceneState, materialParams);
+
+			CParameterBlock * param_block = materialParams;
+			if (materialParams && GetParamBlock())
+			{
+				param_block = new CParameterBlock(*materialParams);
+				for (auto const & param : GetParamBlock()->m_params)
+					param_block->SetParameter(param.first, param.second);
+			}
+			else if (GetParamBlock())
+			{
+				param_block = GetParamBlock();
+			}
+
+			pModel->draw(sceneState, param_block);
+
+			if (materialParams && GetParamBlock())
+				delete param_block;
+
+			for (auto const & tex_pair : texReplaceables)
+			{
+				pModel->replaceTextures[tex_pair.first] = nullptr;
+			}
 		}
 	}
 	if (m_pMeshObject)
 	{
-		if (texReplaceable)
+		for (auto const & tex_pair : texReplaceables)
 		{
-			m_pMeshObject->SetReplaceableTexture(2, texReplaceable.get());
+			m_pMeshObject->SetReplaceableTexture(tex_pair.first, tex_pair.second.get());
 		}
 		m_pMeshObject->DrawInner(sceneState, NULL, fCameraToObjectDist, materialParams);
 	}

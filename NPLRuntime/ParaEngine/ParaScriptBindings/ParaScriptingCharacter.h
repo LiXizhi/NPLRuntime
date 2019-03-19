@@ -603,6 +603,7 @@ namespace ParaScripting
 		void AddAttachment3(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID);
 		void AddAttachment4(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling);
 		void AddAttachment5(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture);
+		void AddAttachment6(ParaAssetObject ModelAsset, int nAttachmentID, int nSlotID, float fScaling, ParaAssetObject ReplaceableTexture, int replaceableTextureID);
 
 		/** get the attachment object's attribute field. */
 		ParaAttributeObject GetAttachmentAttObj(int nAttachmentID);
@@ -614,7 +615,7 @@ namespace ParaScripting
 		*/
 		void RemoveAttachment(int nAttachmentID);
 		void RemoveAttachment2(int nAttachmentID, int nSlotID);
-
+		ParaParamBlock GetAttachmentParamBlock(int attachmentID, int slotID);
 		/** stop the biped if it is moving.*/
 		void Stop();
 		/** move (using the current style i.e. walk or run) to a position relative to the current position. */
