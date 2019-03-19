@@ -126,6 +126,10 @@ CParaXModel::CParaXModel(const ParaXHeaderDef& xheader)
 	m_BlendingAnim.Reset();
 	blendingFactor = 0;
 
+	mUpperAnim.Reset();
+	mUpperBlendingAnim.Reset();
+	mUpperBlendingFactor = 0;
+
 	fBlendingTime = 0.25f;	// this is the default value.
 }
 
@@ -705,7 +709,15 @@ bool CParaXModel::SetupTransformByID(int nID)
 }
 
 
-Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, bool bRecalcBone, IAttributeFields* pAnimInstance)
+Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut
+	, int nAttachmentID
+	, const AnimIndex& CurrentAnim
+	, const AnimIndex& BlendingAnim
+	, float blendingFactor, const AnimIndex & upperAnim
+	, const AnimIndex & upperBlendingAnim
+	, float upperBlendingFactor
+	, bool bRecalcBone
+	, IAttributeFields* pAnimInstance)
 {
 	int nAttachmentIndex = m_attLookup[nAttachmentID];
 	if (nAttachmentIndex >= 0)
@@ -725,7 +737,7 @@ Matrix4* CParaXModel::GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, cons
 					bones[i].MakeDirty();
 				}
 			}
-			if (bones[nBoneIndex].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance))
+			if (bones[nBoneIndex].calcMatrix(bones, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid()) ? upperAnim : CurrentAnim, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid()) ? upperBlendingAnim : BlendingAnim, (bones[nBoneIndex].mIsUpper&&upperAnim.IsValid()) ? upperBlendingFactor : blendingFactor, pAnimInstance))
 			{
 				Matrix4 mat, mat1;
 				mat1 = (bones[nBoneIndex].mat);
@@ -767,7 +779,14 @@ void CParaXModel::calcBones()
 	PostCalculateBoneMatrix(nBones);
 }
 
-void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance)
+void CParaXModel::calcBones(CharacterPose* pPose
+	, const AnimIndex& CurrentAnim
+	, const AnimIndex& BlendingAnim
+	, float blendingFactor
+	, const AnimIndex & upperAnim
+	, const AnimIndex & upperBlendingAnim
+	, float upperBlendingFactor
+	, IAttributeFields* pAnimInstance)
 {
 	uint32 nBones = (uint32)GetObjectNum().nBones;
 
@@ -818,7 +837,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 						int nHead = m_boneLookup[Bone_Head];
 						CBoneChain UpperBodyBoneChain(1);
 						UpperBodyBoneChain.SetStartBone(bones, nHead, m_boneLookup);
-						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 					}
 					else
 					{
@@ -827,7 +846,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 
 						CBoneChain UpperBodyBoneChain(nRotateSpineBoneCount);
 						UpperBodyBoneChain.SetStartBone(bones, nNeck, m_boneLookup);
-						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+						UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 					}
 				}
 			}
@@ -838,7 +857,7 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 				{
 					CBoneChain UpperBodyBoneChain(1);
 					UpperBodyBoneChain.SetStartBone(bones, nHeadIndex, m_boneLookup);
-					UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+					UpperBodyBoneChain.RotateBoneChain(m_vNeckYawAxis, bones, nBones, pPose->m_fUpperBodyFacingAngle, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 				}
 			}
 		}
@@ -849,15 +868,35 @@ void CParaXModel::calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, 
 			{
 				CBoneChain UpperBodyBoneChain(1);
 				UpperBodyBoneChain.SetStartBone(bones, nHeadIndex);
-				UpperBodyBoneChain.RotateBoneChain(m_vNeckPitchAxis, bones, nBones, pPose->m_fUpperBodyUpDownAngle, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+				UpperBodyBoneChain.RotateBoneChain(m_vNeckPitchAxis, bones, nBones, pPose->m_fUpperBodyUpDownAngle, CurrentAnim, BlendingAnim, blendingFactor, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
 			}
 		}
 	}
 #ifdef PERFOAMRNCE_TEST_calcBones
 	PERF1("calcBones");
 #endif
+	vector<Matrix4> lower_mats;
+	vector<Matrix4> upper_mats;
+	lower_mats.reserve(nBones);
 	for (uint32 i = 0; i < nBones; i++) {
 		bones[i].calcMatrix(bones, CurrentAnim, BlendingAnim, blendingFactor, pAnimInstance);
+		lower_mats.push_back(bones[i].mat);
+	}
+	if (upperAnim.IsValid())
+	{
+		for (uint32 i = 0; i < nBones; i++) {
+			bones[i].MakeDirty();
+		}
+		for (uint32 i = 0; i < nBones; i++) {
+			bones[i].calcMatrix(bones, upperAnim, upperBlendingAnim, upperBlendingFactor, pAnimInstance);
+			upper_mats.push_back(bones[i].mat);
+		}
+		for (uint32 i = 0; i < nBones; i++) {
+			if (bones[i].mIsUpper)
+				bones[i].mat = upper_mats[i];
+			else
+				bones[i].mat = lower_mats[i];
+		}
 	}
 	PostCalculateBoneMatrix(nBones);
 }
@@ -873,7 +912,7 @@ void CParaXModel::animate(SceneState * pSceneState, CharacterPose* pPose, IAttri
 		return;
 
 	if (animBones) {
-		calcBones(pPose, m_CurrentAnim, m_BlendingAnim, blendingFactor, pAnimInstance);
+		calcBones(pPose, m_CurrentAnim, m_BlendingAnim, blendingFactor, mUpperAnim, mUpperBlendingAnim, mUpperBlendingFactor, pAnimInstance);
 	}
 
 	uint32 nLights = GetObjectNum().nLights;

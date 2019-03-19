@@ -160,7 +160,7 @@ namespace ParaEngine
 		* @return true if model is animation. this function may return false if the model is not loaded and no bones to animate.
 		* Ususally, one should only call Draw() method when the return value is true.
 		*/
-		bool AnimateModel(SceneState * sceneState, const AnimIndex& CurrentFrame, const AnimIndex& NextAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance = NULL);
+		bool AnimateModel(SceneState * sceneState, const AnimIndex& CurrentFrame, const AnimIndex& NextAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = nullptr);
 
 		/** draw the model instance.
 		* Note: call AnimateModel() before calling this function.

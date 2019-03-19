@@ -30,6 +30,6 @@ namespace ParaEngine
 		* @param allBones:
 		* @param: nMaxBoneNum: the size of allBones
 		* @param fAngle: in rads. */
-		void RotateBoneChain(const Vector3& vAxis, Bone* allBones, int nMaxBoneNum, float fAngle, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance = NULL);
+		void RotateBoneChain(const Vector3& vAxis, Bone* allBones, int nMaxBoneNum, float fAngle, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = nullptr);
 	};
 }
