@@ -149,7 +149,7 @@ namespace ParaEngine
 		* 1.0 will use solely the blending frame, whereas 0.0 will use only the current frame.
 		* [0,1), blendingFrame*(blendingFactor)+(1-blendingFactor)*currentFrame
 		*/
-		void calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, IAttributeFields* pAnimInstance = NULL);
+		void calcBones(CharacterPose* pPose, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, IAttributeFields* pAnimInstance = nullptr);
 
 		/** for model without animations, but with bones.*/
 		void calcBones();
@@ -162,7 +162,7 @@ namespace ParaEngine
 		* @param bRecalcBone: whether we will recalculate bone chains according to the current animation pose. 
 		* @return: NULL if not successful, otherwise it is pOut.
 		*/
-		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = NULL);
+		Matrix4* GetAttachmentMatrix(Matrix4* pOut, int nAttachmentID, const AnimIndex& CurrentAnim, const AnimIndex& BlendingAnim, float blendingFactor, const AnimIndex & upperAnim, const AnimIndex & upperBlendingAnim, float upperBlendingFactor, bool bRecalcBone = true, IAttributeFields* pAnimInstance = nullptr);
 
 		/** whether we have attachment matrix. 
 		* @param nAttachmentID: the attachment id. 
@@ -364,6 +364,10 @@ namespace ParaEngine
 
 		/** a mapping from known bone id to bone index. */
 		int m_boneLookup[MAX_KNOWN_BONE_NODE];
+
+		AnimIndex mUpperAnim;
+		AnimIndex mUpperBlendingAnim;
+		float mUpperBlendingFactor;
 
 	private:
 		enum VERTEX_BUFFER_STATE
