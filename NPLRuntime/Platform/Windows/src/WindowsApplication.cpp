@@ -479,5 +479,21 @@ namespace ParaEngine {
 			SetWindowLong(hwnd, GWL_STYLE, dwWindowStyle);
 		}
 	}
+	
+	void CParaEngineApp::ShowWindow(bool bShow)
+	{
+		if(!IsFullScreenMode())
+		{
+			if((GetCoreUsage() & PE_USAGE_WEB_BROWSER)!=0)
+			{
+				OUTPUT_LOG("ShowWindow doesn't know how to respond in web browser mode!\n");
+			}
+			else
+			{
+				// show or hide the main window if it is not from a web browser
+				::ShowWindow(CGlobals::GetAppHWND(), bShow ? SW_SHOW : SW_HIDE);
+			}
+		}
+	}
 
 } // end namespace

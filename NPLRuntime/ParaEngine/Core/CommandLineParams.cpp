@@ -26,6 +26,36 @@ const char* CCommandLineParams::GetAppCommandLine()
 	return m_sAppCmdLine.c_str();
 }
 
+void CCommandLineParams::ConvertToCanonicalForm()
+{
+	//if the params are split by "," ";" or ":", convert them to " "
+	if (!m_sAppCmdLine.empty())
+	{
+		size_t stringLength = m_sAppCmdLine.size();
+		const char* pCmdLineStart = m_sAppCmdLine.c_str();
+		size_t nCurrentPos = 0;
+		while (nCurrentPos < stringLength)
+		{
+			char currentCharacter = *(pCmdLineStart + nCurrentPos);
+			if (currentCharacter == '\"')
+			{
+				//find the closing double quote
+				nCurrentPos++;
+				while (*(pCmdLineStart + nCurrentPos) != '\"' && nCurrentPos < stringLength)
+				{
+					nCurrentPos++;
+				}
+			}
+			else if (currentCharacter == ',' || currentCharacter == ';' || currentCharacter == ':')
+			{
+				//replace it with space
+				m_sAppCmdLine[nCurrentPos] = ' ';
+			}
+			nCurrentPos++;
+		}
+	}
+}
+
 void CCommandLineParams::SetAppCommandLine( const char* pCommandLine )
 {
 	if(pCommandLine)
@@ -33,8 +63,10 @@ void CCommandLineParams::SetAppCommandLine( const char* pCommandLine )
 	else
 		m_sAppCmdLine.clear();
 
-	/// extract parameters
+	// convert alternative splitters with spaces
+	ConvertToCanonicalForm();
 
+	/// extract parameters
 	size_t nPos = 0;
 	size_t nBegin = 0;
 	while((nPos = m_sAppCmdLine.find('=', nBegin))!=string::npos)

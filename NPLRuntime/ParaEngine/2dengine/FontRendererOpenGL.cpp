@@ -84,7 +84,7 @@ CFontRendererOpenGL* ParaEngine::CFontRendererOpenGL::create(const std::string& 
 			return pFontRenderer;
 		}
 	}
-	OUTPUT_LOG("error: font file %s does not exist or invalid\n", fontFile.c_str());
+	OUTPUT_LOG("error: font file: %s does not exist or invalid\n", fontFile.c_str());
 	if (sFontName != "System" && sFontName != "system")
 	{
 		OUTPUT_LOG("non-exist font %s is replaced with system font\n", sFontName.c_str());

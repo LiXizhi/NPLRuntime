@@ -640,7 +640,7 @@ void CParaXAnimInstance::AdvanceTime(double dTimeDelta)
 			// check if we have reached the end frame of the current animation
 			if (nToDoFrame > (int)m_CurrentAnim.nEndFrame)
 			{
-				nToDoFrame -= (m_CurrentAnim.nEndFrame - m_CurrentAnim.nStartFrame); // wrap to the beginning
+				nToDoFrame = (nToDoFrame - m_CurrentAnim.nStartFrame) % (m_CurrentAnim.nEndFrame - m_CurrentAnim.nStartFrame + 1) + m_CurrentAnim.nStartFrame; // wrap to the beginning
 
 				if (m_NextAnim.IsValid())
 				{///  if there is a queued animation, we will play that one.

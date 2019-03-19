@@ -81,6 +81,10 @@ namespace ParaEngine
 		/** get the window title when at windowed mode */
 		virtual const char* GetWindowText() override;
 		virtual void FixWindowSize(bool fixed) override;
+		
+		/** Show or hide current window. This function only works if IsFullScreenMode() is false.
+		 */
+		virtual void ShowWindow(bool bShow) override;
 
 	private:
 		void LoadAndApplySettings();

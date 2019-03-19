@@ -1293,6 +1293,14 @@ namespace ParaScripting
 		return m_pCharacter;
 	}
 
+	void ParaCharacter::EnableAutoAnimation(bool enable)
+	{
+		CBipedStateManager* pCharState = (m_pCharacter)->GetBipedStateManager();
+		if (pCharState)
+		{
+			pCharState->EnableAutoAnimation(enable);
+		}
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	//

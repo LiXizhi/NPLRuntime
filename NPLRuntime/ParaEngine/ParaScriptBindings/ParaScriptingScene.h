@@ -1772,6 +1772,8 @@ namespace ParaScripting
 		*/
 		static ParaObject MousePick(float fMaxDistance, const char* sFilterFunc);
 
+		static ParaObject Pick(float rayX, float rayY, float rayZ, float dirX, float dirY, float dirZ, float fMaxDistance, const char* sFilterFunc);
+
 		/**
 		* select select objects within a given region into a given group. 
 		* @param nGroupIndex: which group to select to. One can get the result from ParaSelection. In most cases, select to group 1; since group 0 is reserved for current selection. 
