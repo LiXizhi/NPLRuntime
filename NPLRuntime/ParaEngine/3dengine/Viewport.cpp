@@ -313,10 +313,6 @@ bool ParaEngine::CViewport::DrawQuad()
 	float fRight = m_rect.right / fWidth;
 	float fBottom = m_rect.bottom / fHeight;
 
-
-
-
-
 #if USE_DIRECTX_RENDERER
 	// D3D9用了像素左上角作为原点,所以需要偏移0.5个像素
 	float fhalfTexelWidth = 0.5f / fWidth;
@@ -345,6 +341,31 @@ bool ParaEngine::CViewport::DrawQuad()
 	
 	bSucceed = pRenderDevice->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
 
+	return bSucceed;
+}
+
+bool ParaEngine::CViewport::DrawQuad2()
+{
+	bool bSucceed = false;
+#ifdef USE_DIRECTX_RENDERER
+	auto CurrentViewport = CGlobals::GetRenderDevice()->GetViewport();
+	auto rt = CGlobals::GetRenderDevice()->GetRenderTarget(0);
+
+	ParaViewport vp;
+	vp.Width = rt->GetWidth();
+	vp.Height = rt->GetHeight();
+	CGlobals::GetRenderDevice()->SetViewport(vp);
+
+	mesh_vertex_plain quadVertices[4] = {
+		{ Vector3(-1, -1, 0), Vector2(0, 1) },
+		{ Vector3(1, -1, 0), Vector2(1, 1) },
+		{ Vector3(-1, 1, 0), Vector2(0, 0) },
+		{ Vector3(1, 1, 0), Vector2(1, 0) },
+	};
+
+	bSucceed = CGlobals::GetRenderDevice()->DrawPrimitiveUP(EPrimitiveType::TRIANGLESTRIP, 2, quadVertices, sizeof(mesh_vertex_plain));
+	CGlobals::GetRenderDevice()->SetViewport(CurrentViewport);
+#endif      
 	return bSucceed;
 }
 

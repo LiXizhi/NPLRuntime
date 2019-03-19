@@ -42,8 +42,9 @@ namespace ParaEngine
 			batt_onload = 0x0040000,	// whether the block has a OnBlockLoaded function.
 			batt_color_data = 0x0080000,	// whether the block contains color in its block data.
 			batt_invisible = 0x0100000,// whether the block is invisible.
-			batt_tiling = 0x0200000,
+			batt_random_tiling = 0x0200000, // whether the block's texture is randomly fetched from its tiled texture
 			batt_color8_data = 0x0400000,	// whether the block uses only the high 8 bits as color in its block data.
+			batt_pos_tiling = 0x0800000,	// whether the block's texture is fetched from its tiled texture according to its coords
 		};
 
 		BlockTemplate(uint16_t id, uint32_t attFlag, uint16_t category_id);

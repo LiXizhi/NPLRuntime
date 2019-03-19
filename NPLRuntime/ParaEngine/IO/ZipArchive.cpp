@@ -979,6 +979,24 @@ DWORD CZipArchive::GetFileSize(FileHandle& handle)
 	return 0;
 }
 
+string CZipArchive::GetNameInArchive(FileHandle& handle)
+{
+	if (handle.m_index != -1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileName;
+	}
+	return "";
+}
+
+string CZipArchive::GetOriginalNameInArchive(FileHandle& handle)
+{
+	if (handle.m_index != -1)
+	{
+		return m_FileList[handle.m_index].m_pEntry->zipFileNameOriginal;
+	}
+	return "";
+}
+
 bool CZipArchive::ReadFileRaw(FileHandle& handle,LPVOID* lppBuffer,LPDWORD pnCompressedSize, LPDWORD pnUncompressedSize)
 {
 	ParaEngine::Lock lock_(m_mutex);
@@ -1359,6 +1377,7 @@ bool CZipArchive::ReadEntries()
 		SZipFileEntry& entry = *(m_FileList[i].m_pEntry);
 
 		entry.zipFileName = &m_nameBlock[nameOffset];
+		entry.zipFileNameOriginal = &m_nameBlock[nameOffset];
 		entry.fileNameLen = CentralDir.NameSize;
 		entry.RefreshHash(m_bIgnoreCase);
 		nameOffset += CentralDir.NameSize + 1;
