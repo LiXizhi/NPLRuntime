@@ -103,6 +103,8 @@ namespace ParaEngine
 		DVector3 m_vPos; // for position user data
 		float m_fAngleDelta; // for angle user data
 		float m_fJumpupSpeed;
+
+		bool m_EnableAutoAnimation;
 	protected:
 		/** remove all occurrence of a given state */
 		void RemoveState(BipedState s);
@@ -204,6 +206,9 @@ namespace ParaEngine
 		* actions according to the current state. 
 		* @param fTimeDelta: the time elapsed since the last time this function is called. Units in seconds.*/
 		void Update(float fTimeDelta);
+
+		void EnableAutoAnimation(bool enable);
+
 		friend class CAutoCamera;
 	};
 }

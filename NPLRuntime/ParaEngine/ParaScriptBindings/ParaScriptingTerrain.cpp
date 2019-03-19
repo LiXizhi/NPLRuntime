@@ -467,7 +467,7 @@ namespace ParaScripting
 			PickResult pickResult;
 			Vector3 rayOrig(rayX,rayY,rayZ);
 			Vector3 rayDir(dirX,dirY,dirZ);
-			
+			rayDir.normalise();
 			if(mgr->Pick(rayOrig,rayDir,fMaxDistance,pickResult,filter))
 			{
 				if(type(result) == LUA_TTABLE)

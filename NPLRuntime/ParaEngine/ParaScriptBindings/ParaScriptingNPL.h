@@ -200,6 +200,9 @@ namespace ParaScripting
 		/** this function is only called by .Net API.*/
 		static void call_(const char * sNPLFilename, const char* sCode);
 
+		/* show or hide the main window */
+		static void ShowWindow(bool bShow);
+
 		/**
 		* NOTE: the function name is "this" in NPL, not "this_". 
 		* associate a user defined function as the activation function of this file.

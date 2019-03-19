@@ -11,7 +11,8 @@
 using namespace ParaEngine;
 
 ParaEngine::CGeosetObject::CGeosetObject()
-	:mParent(nullptr)
+	: mParent(nullptr)
+	, mNeedUpdateGeometry(true)
 {}
 
 ParaEngine::CGeosetObject::~CGeosetObject()
@@ -24,6 +25,13 @@ void ParaEngine::CGeosetObject::SetAssetFileName(const std::string & sFilename)
 
 HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 {
+	if (mNeedUpdateGeometry && mParent &&mEntity->GetModel())
+	{
+		mParent->SetGeometryDirty(true);
+		mParent->UpdateGeometry();
+		mNeedUpdateGeometry = false;
+	}
+
 	if(!ViewTouch()||GetOpacity()==0.f)
 	{
 		return E_FAIL;
@@ -157,7 +165,7 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 			BlockWorldClient* pBlockWorldClient=BlockWorldClient::GetInstance();
 			if(pBlockWorldClient && pBlockWorldClient->IsInBlockWorld())
 			{
-				Vector3 vPos=GetPosition();
+				Vector3 vPos = mParent->GetPosition();
 				vPos.y+=0.1f;
 				Uint16x3 blockId_ws(0,0,0);
 				BlockCommon::ConvertToBlockIndex(vPos.x,vPos.y,vPos.z,blockId_ws.x,blockId_ws.y,blockId_ws.z);
@@ -217,6 +225,18 @@ HRESULT ParaEngine::CGeosetObject::Draw(SceneState * sceneState)
 
 void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,CParameterBlock* params)
 {
+	if (mEntity && mEntity->GetModel())
+	{
+		for (int i = 0; i < CParaXModel::MAX_MODEL_TEXTURES; ++i)
+		{
+			mEntity->GetModel()->replaceTextures[i] = nullptr;
+		}
+		for (auto const & tex : mReplaceTextures)
+		{
+			mEntity->GetModel()->replaceTextures[tex.first] = tex.second;
+		}
+	}
+
 	auto* pAI=static_cast<CParaXAnimInstance*>(mParent->GetAnimInstance());
 	Matrix4 mat;
 	if(pAI->UpdateWorldTransform(sceneState,mat,*mxWorld))
@@ -237,19 +257,22 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 
 		if(pModel)
 		{
-			pModel->animated=true;
-			//pModel->m_CurrentAnim=pAI->m_CurrentAnim;
-			//pModel->m_NextAnim=pAI->m_NextAnim;
-			//pModel->m_BlendingAnim=pAI->m_BlendingAnim;
-			//pModel->blendingFactor=pAI->m_fBlendingFactor;
-			//pModel->animate(sceneState,nullptr,pAI);
+			pModel->animated = true;
+			pModel->m_CurrentAnim = pAI->m_CurrentAnim;
+			pModel->m_NextAnim = pAI->m_NextAnim;
+			pModel->m_BlendingAnim = pAI->m_BlendingAnim;
+			pModel->blendingFactor = pAI->m_fBlendingFactor;
+			pModel->mUpperAnim = pAI->mUpperAnim;
+			pModel->mUpperBlendingAnim = pAI->mUpperBlendingAnim;
+			pModel->mUpperBlendingFactor = pAI->mUpperBlendingFactor;
+			pModel->animate(sceneState, nullptr, pAI);
 
-			auto bones=pModel->bones;
-			pModel->bones=pAI->GetAnimModel()->GetModel()->bones;
-				
-			pModel->draw(sceneState,params);
+			// auto bones=pModel->bones;
+			// pModel->bones=pAI->GetAnimModel()->GetModel()->bones;
 
-			pModel->bones=bones;
+			pModel->draw(sceneState, params);
+
+			// pModel->bones=bones;
 		}
 
 
@@ -257,4 +280,16 @@ void ParaEngine::CGeosetObject::_draw(SceneState * sceneState,Matrix4 * mxWorld,
 		CGlobals::GetWorldMatrixStack().pop();
 		CGlobals::GetWorldMatrixStack().pop();
 	}
+}
+
+bool ParaEngine::CGeosetObject::SetReplaceableTexture(int ReplaceableTextureID, TextureEntity * pTextureEntity)
+{
+	mReplaceTextures[ReplaceableTextureID] = pTextureEntity;
+	return true;
+}
+
+TextureEntity * ParaEngine::CGeosetObject::GetReplaceableTexture(int ReplaceableTextureID)
+{
+	auto iter = mReplaceTextures.find(ReplaceableTextureID);
+	return (mReplaceTextures.end() == iter) ? nullptr : iter->second;
 }

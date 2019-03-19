@@ -40,12 +40,12 @@ namespace ParaEngine
 }
 
 CBipedStateManager::CBipedStateManager(void)
-	:m_pBiped(NULL), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f)
+	:m_pBiped(NULL), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f), m_EnableAutoAnimation(true)
 {
 	
 }
 CBipedStateManager::CBipedStateManager(CBipedObject * pBiped)
-	:m_pBiped(pBiped), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f)
+	:m_pBiped(pBiped), m_fTimer(0), m_bWalkOrRun(false),m_bRecording(false),m_bIsMounted(false),m_fAngleDelta(0), m_vPos(0,0,0), m_fJumpupSpeed(0.f), m_EnableAutoAnimation(true)
 {
 }
 
@@ -460,7 +460,7 @@ CBipedStateManager::BipedState CBipedStateManager::AddAction(ActionSymbols nAct,
 					SetWalkOrRun(false);
 				else if(actionKey->IsToggleToWalk())
 					SetWalkOrRun(true);
-				else
+				else if (m_EnableAutoAnimation)
 				{
 					// play immediately the animation.
 					int nAnimID = actionKey->ToAnimID();
@@ -1006,11 +1006,19 @@ void  CBipedStateManager::Update(float fTimeDelta)
 	if(stateAnim == STATE_JUMP_IN_AIR && m_nLastAnimState == stateAnim)
 	{
 	}
-	else
+	else if (m_EnableAutoAnimation)
 	{
 		/** play animation */
 		if(GetStateAnimName(stateAnim, sAnimName))
 			pBiped->PlayAnimation(sAnimName, bUpdateSpeed);
 	}
 	m_nLastAnimState = stateAnim;
+}
+
+void CBipedStateManager::EnableAutoAnimation(bool enable)
+{
+	m_EnableAutoAnimation = enable;
+	auto biped = GetBiped();
+	if (biped)
+		biped->EnableAutoAnimation(m_EnableAutoAnimation);
 }
