@@ -2885,6 +2885,11 @@ void ParaUI::SetUIScale(float fScalingX, float fScalingY)
 	CGUIRoot::GetInstance()->SetUIScale(fScalingX, fScalingY);
 }
 
+void ParaUI::SetMaximumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling)
+{
+	CGUIRoot::GetInstance()->SetMaximumScreenSize(nWidth, nHeight, bAutoUIScaling);
+}
+
 bool ParaUI::SetHighlightParam(const char* szEffectName, const char* szParamName, const char* szParamValue)
 {
 	CGUIHighlightManager* gm=&CSingleton<CGUIHighlightManager>::Instance();

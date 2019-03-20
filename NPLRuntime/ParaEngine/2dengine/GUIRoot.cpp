@@ -119,7 +119,8 @@ CGUIRoot::CGUIRoot(void)
 	: engine(NULL),
 	m_fUIScalingX(1.f), m_fUIScalingY(1.0f), m_fViewportLeft(0.f), m_fViewportTop(0.f), m_fViewportWidth(0.f), m_fViewportHeight(0.f),
 	m_bMouseInClient(true), m_nLastTouchX(-1000), m_nLastTouchY(-1000), m_bIsNonClient(false), m_bSwapTouchButton(false),
-	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false)
+	m_fMinScreenWidth(400.f), m_fMinScreenHeight(300.f), m_bHasIMEFocus(false), m_bIsCursorClipped(false), m_nFingerSizePixels(60), m_nFingerStepSizePixels(10), m_pActiveWindow(NULL), m_pLastMouseDownObject(NULL), m_bMouseCaptured(false), m_bMouseOverScrollableUI(false),
+	m_fMaxScreenWidth(4096.f), m_fMaxScreenHeight(2160.f)
 {
 	if (!m_type){
 		m_type = IType::GetType("guiroot");
@@ -1771,7 +1772,7 @@ bool CGUIRoot::UpdateViewport(int nLeft, int nTop, int nWidth, int nHeight, bool
 	return bSizeChanged;
 }
 
-void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEnsureMinimumScreenSize, bool bNotifySizeChange)
+void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEnsureMinimumScreenSize, bool bEnsureMaximumScreenSize, bool bNotifySizeChange)
 {
 	if (fScalingX > 0.f)
 		m_fUIScalingX = fScalingX;
@@ -1780,9 +1781,12 @@ void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEn
 
 	if (bNotifySizeChange)
 	{
-		if (bEnsureMinimumScreenSize)
+		if (bEnsureMinimumScreenSize || bEnsureMaximumScreenSize)
 		{
-			SetMinimumScreenSize(-1, -1, true);
+			if (bEnsureMinimumScreenSize)
+				SetMinimumScreenSize(-1, -1, true);
+			if (bEnsureMaximumScreenSize)
+				SetMaximumScreenSize(-1, -1, true);
 		}
 		else
 		{
@@ -1832,11 +1836,42 @@ void ParaEngine::CGUIRoot::SetMinimumScreenSize(int nWidth, int nHeight, bool bA
 				fScaleY = fScaleX;
 			else
 				fScaleX = fScaleY;
-			SetUIScale(fScaleX, fScaleY, false);
+			SetUIScale(fScaleX, fScaleY, false, false);
 		}
 		else
 		{
-			SetUIScale(-1.f, -1.f, false);
+			SetUIScale(-1.f, -1.f, false, false);
+		}
+	}
+}
+
+void ParaEngine::CGUIRoot::SetMaximumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling)
+{
+	if (nWidth > 0)
+		m_fMaxScreenWidth = (float)nWidth;
+	if (nHeight > 0)
+		m_fMaxScreenHeight = (float)nHeight;
+
+	if (bAutoUIScaling)
+	{
+		CViewport* pViewport = CGlobals::GetViewportManager()->CreateGetViewPort(0);
+		float fWidth = (float)pViewport->GetWidth();
+		float fHeight = (float)pViewport->GetHeight();
+
+		float fScaleX = fWidth / m_fMaxScreenWidth;
+		float fScaleY = fHeight / m_fMaxScreenHeight;
+		if (fScaleX > 1.f || fScaleY > 1.f)
+		{
+			// take the smaller one
+			if (fScaleX > fScaleY)
+				fScaleY = fScaleX;
+			else
+				fScaleX = fScaleY;
+			SetUIScale(fScaleX, fScaleY, false, false);
+		}
+		else
+		{
+			SetUIScale(-1.f, -1.f, false, false);
 		}
 	}
 }

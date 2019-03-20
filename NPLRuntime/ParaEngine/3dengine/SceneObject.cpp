@@ -2547,7 +2547,7 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 	
 	float fScaleX, fScaleY;
 	CGUIRoot::GetInstance()->GetUIScale(&fScaleX, &fScaleY);
-	CGUIRoot::GetInstance()->SetUIScale(1, 1, true, false);
+	CGUIRoot::GetInstance()->SetUIScale(1, 1, true, true, false);
 	{
 		// render mesh object with 3d text. 
 		bool bUsePointTexture = CGUIRoot::GetInstance()->GetUsePointTextureFiltering();
@@ -2625,7 +2625,7 @@ int CSceneObject::RenderHeadOnDisplay(int nPass)
 		IHeadOn3D::DrawHeadOnUI(NULL, nObjCount, &sceneState);
 		nTotalCount+=nObjCount;
 	}
-	CGUIRoot::GetInstance()->SetUIScale(fScaleX, fScaleY, true, false);
+	CGUIRoot::GetInstance()->SetUIScale(fScaleX, fScaleY, true, true, false);
 	return nTotalCount;
 }
 
