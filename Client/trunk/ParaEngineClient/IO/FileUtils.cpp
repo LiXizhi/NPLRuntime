@@ -323,8 +323,10 @@ bool ParaEngine::CFileUtils::MoveFile(const char* src, const char* dest)
 	try
 	{
 		fs::path sSrc(src);
-		fs::copy_file(sSrc, fs::path(dest), fs::copy_option::overwrite_if_exists);
-		return fs::remove(sSrc);
+		boost::system::error_code err_code;
+		fs::rename(sSrc, fs::path(dest), err_code);
+		OUTPUT_LOG("info (boost-fs): moved file/directory from %s to %s result message: %s\n", src, dest, err_code.message().c_str());
+		return err_code.value() == 0;
 	}
 	catch (...)
 	{
@@ -501,8 +503,7 @@ bool ParaEngine::CFileUtils::DeleteFile(const char* filename)
 		return false;
 	}
 #else
-	::DeleteFile(filename);
-	return true;
+	return (::DeleteFile(filename) != 0);
 #endif
 }
 
@@ -1182,9 +1183,12 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 		fs::directory_iterator end_itr; // default construction yields past-the-end
 		for (fs::directory_iterator iter(rootPath); iter != end_itr; ++iter)
 		{
+			//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
+			DWORD file_attr = 0;
 			if (fs::is_directory(iter->status()))
 			{
 				// Found directory;
+				file_attr = 16;
 				if (nSubLevel > 0)
 				{
 					FindFiles_Recursive(result, iter->path(), reFilePattern, nSubLevel - 1);
@@ -1196,12 +1200,6 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					auto lastWriteTime = fs::last_write_time(iter->path());
 					FILETIME fileLastWriteTime;
 					TimetToFileTime(lastWriteTime, &fileLastWriteTime);
-					//cellfy: file_attr is only marked with directory(16) and regular_file(32) for now
-					DWORD file_attr = 0;
-					if (fs::is_directory(iter->status()))
-						file_attr = 16;
-					else if (fs::is_regular_file(iter->status()))
-						file_attr = 32;
 
 					std::string sFullPath = iter->path().string();
 #ifdef WIN32
@@ -1222,12 +1220,13 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
 
-					if (!result.AddResult(sFullPath, 0, 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+					if (!result.AddResult(sFullPath, 0, file_attr, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
 			}
 			else if (fs::is_regular_file(iter->status()))
 			{
+				file_attr = 32;
 				if (ParaEngine::StringHelper::MatchWildcard(iter->path().filename().string(), reFilePattern))
 				{
 					// Found file;
@@ -1239,7 +1238,7 @@ void FindFiles_Recursive(ParaEngine::CSearchResult& result, fs::path rootPath, c
 #ifdef WIN32
 					ParaEngine::CParaFile::ToCanonicalFilePath(sFullPath, sFullPath, false);
 #endif
-					if (!result.AddResult(sFullPath, (DWORD)fs::file_size(iter->path()), 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+					if (!result.AddResult(sFullPath, (DWORD)fs::file_size(iter->path()), file_attr, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
 						return;
 				}
 			}

@@ -107,7 +107,7 @@ void ParaScripting::ParaAssetObject::Refresh()
 void ParaScripting::ParaAssetObject::Refresh1(const char* sFilename)
 {
 	if (m_pAsset)
-		m_pAsset->Refresh(sFilename);
+		m_pAsset->Refresh(sFilename, true);
 }
 
 bool ParaScripting::ParaAssetObject::Reload()

@@ -236,9 +236,11 @@ void CNPLScriptingState::LoadParaScene()
 				.def("AddAttachment", &ParaCharacter::AddAttachment3)
 				.def("AddAttachment", &ParaCharacter::AddAttachment4)
 				.def("AddAttachment", &ParaCharacter::AddAttachment5)
+				.def("AddAttachment", &ParaCharacter::AddAttachment6)
 				.def("GetAttachmentAttObj", &ParaCharacter::GetAttachmentAttObj)
 				.def("RemoveAttachment", &ParaCharacter::RemoveAttachment)
 				.def("RemoveAttachment", &ParaCharacter::RemoveAttachment2)
+				.def("GetAttachmentParamBlock", &ParaCharacter::GetAttachmentParamBlock)
 				.def("MountOn", &ParaCharacter::MountOn)
 				.def("MountOn", &ParaCharacter::MountOn_)
 				.def("MountOn", &ParaCharacter::MountOn2)
@@ -263,7 +265,8 @@ void CNPLScriptingState::LoadParaScene()
 				.def("GetAnimID", &ParaCharacter::GetAnimID)
 				.def("GetAnimFileName", &ParaCharacter::GetAnimFileName)
 				.def("HasAnimation", &ParaCharacter::HasAnimation)
-				.def("IsValid", &ParaCharacter::IsValid),
+				.def("IsValid", &ParaCharacter::IsValid)
+				.def("EnableAutoAnimation", &ParaCharacter::EnableAutoAnimation),
 
 			// ParaMovieCtrler class declarations
 			class_<ParaMovieCtrler>("ParaMovieCtrler")
@@ -444,6 +447,7 @@ void CNPLScriptingState::LoadParaScene()
 			def("AddWaterRipple", & ParaScene::AddWaterRipple),
 			def("SetShadowMethod", & ParaScene::SetShadowMethod),
 			def("GetShadowMethod", & ParaScene::GetShadowMethod),
+			def("Pick", & ParaScene::Pick),
 			def("MousePick", & ParaScene::MousePick),
 			def("GetObjectsBySphere", & ParaScene::GetObjectsBySphere),
 			def("GetObjectsByScreenRect", & ParaScene::GetObjectsByScreenRect),

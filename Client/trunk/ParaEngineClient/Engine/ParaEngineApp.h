@@ -141,6 +141,10 @@ namespace ParaEngine
 		*/
 		virtual void BringWindowToTop();
 
+		/** Show or hide current window. This function only works if IsFullScreenMode() is false.
+		 */
+		virtual void ShowWindow(bool bShow);
+
 		/** whether the user can close the window (sending WM_CLOSE message). Default to true.
 		* When set to false, the scripting interface will receive WM_CLOSE message via system event. And can use ParaEngine.Exit() to quit the application after user confirmation, etc.
 		*/
@@ -443,6 +447,16 @@ namespace ParaEngine
 		* @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size.
 		*/
 		virtual void SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true);
+
+		/** set the maximum UI resolution size. if the backbuffer is larger than this, we will use automatically use UI scaling 
+		 * for example, if maximum width is 1024, and backbuffer it 1600, then m_fUIScalingX will be automatically set to 1024/1600. 
+		 * calling this function will cause OnSize() and UpdateBackbufferSize() to be called. Actually it calls SetUIScale()
+		 * [main thread only]
+		 * @param nWidth: the new width. 
+		 * @param nHeight: the new height. 
+		 * @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size. 
+		 */
+		virtual void SetMaxUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true);
 
 		/** Send the exit message, so that the game engine will prepare to exit in the next frame.
 		* this is the recommended way of exiting application.

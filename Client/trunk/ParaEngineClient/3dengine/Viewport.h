@@ -153,6 +153,9 @@ namespace ParaEngine
 		/** draw post processing quad for this viewport's area. */
 		bool DrawQuad();
 
+		/** draw post processing quad for this viewport's area. another approach added by devilwalk*/
+		bool DrawQuad2();
+
 		/** get viewport transform in terms of scale and offset */
 		void GetViewportTransform(Vector2*  pvScale, Vector2* pvOffset = NULL);
 	protected:

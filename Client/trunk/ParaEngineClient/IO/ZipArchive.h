@@ -113,6 +113,7 @@ namespace ParaEngine
 		DWORD UncompressedSize;
 
 		DWORD LastModifiedTime;
+		string zipFileNameOriginal;
 
 #ifdef SAVE_ZIP_HEADER
 		SZIPFileHeader header;
@@ -322,6 +323,12 @@ namespace ParaEngine
 
 		/** get file size. */
 		virtual DWORD GetFileSize(FileHandle& handle);
+
+		/** get file name in the package */
+		virtual string GetNameInArchive(FileHandle& handle);
+
+		/** get file original name in the package (in case the name is converted lower-cases when case-insensitive). */
+		virtual string GetOriginalNameInArchive(FileHandle& handle);
 
 		/** read file. */
 		virtual bool ReadFile(FileHandle& handle, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPDWORD lpLastWriteTime);

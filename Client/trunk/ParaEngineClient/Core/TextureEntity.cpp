@@ -23,6 +23,88 @@ namespace ParaEngine
 	const std::string TextureEntity::DEFAULT_STATIC_TEXTURE = "Texture/whitedot.png";
 
 	const TextureEntity::TextureInfo TextureEntity::TextureInfo::Empty(-1, -1, TextureEntity::TextureInfo::FMT_UNKNOWN, TextureEntity::TextureInfo::TYPE_UNKNOWN);
+
+	namespace MipMapping
+	{
+		inline void average(byte* out, byte* a, byte* b, byte* c, byte* d, int nStride = 3)
+		{
+			for (int i = 0; i < nStride; ++i)
+			{
+				out[i] = (byte)(((int)(a[i]) + (int)(b[i]) + (int)(c[i]) + (int)(d[i])) / 4);
+			}
+		}
+
+		void ScaleMinifyByTwo(byte *Target, byte *Source, int SrcWidth, int SrcHeight, int nStride = 3)
+		{
+			int x, y, x2, y2;
+			int TgtWidth, TgtHeight;
+			TgtWidth = std::max(1, SrcWidth / 2);
+			TgtHeight = std::max(1, SrcHeight / 2);
+
+			if (SrcWidth == 1)
+			{
+				for (y = 0; y < TgtHeight; y++) {
+					y2 = 2 * y;
+					for (x = 0; x < TgtWidth; x++) {
+						average(Target + (y * TgtWidth + x)*nStride, Source + (y2 * SrcWidth + x)*nStride, Source + (y2 * SrcWidth + x)*nStride, Source + ((y2 + 1)*SrcWidth + x)*nStride, Source + ((y2 + 1)*SrcWidth + x)*nStride, nStride);
+					}
+				}
+			}
+			else if (SrcHeight == 1)
+			{
+				for (y = 0; y < TgtHeight; y++) {
+					for (x = 0; x < TgtWidth; x++) {
+						x2 = 2 * x;
+						average(Target + (y * TgtWidth + x)*nStride, Source + (y * SrcWidth + x2)*nStride, Source + (y * SrcWidth + x2 + 1)*nStride, Source + (y*SrcWidth + x2)*nStride, Source + (y*SrcWidth + x2 + 1)*nStride, nStride);
+					}
+				}
+			}
+			else
+			{
+				for (y = 0; y < TgtHeight; y++) {
+					y2 = 2 * y;
+					for (x = 0; x < TgtWidth; x++) {
+						x2 = 2 * x;
+						average(Target + (y * TgtWidth + x)*nStride, Source + (y2 * SrcWidth + x2)*nStride, Source + (y2 * SrcWidth + x2 + 1)*nStride, Source + ((y2 + 1)*SrcWidth + x2)*nStride, Source + ((y2 + 1)*SrcWidth + x2 + 1)*nStride, nStride);
+					}
+				}
+			}
+		};
+
+		int CalculateMipMapPixelCount(int SrcWidth, int SrcHeight, int*pOutLevel = NULL, int nMaxLevel = 10)
+		{
+			int nCount = SrcWidth * SrcHeight;
+			int i = 1;
+			for (; i < nMaxLevel; )
+			{
+				++i;
+				SrcWidth = std::max(1, SrcWidth / 2);
+				SrcHeight = std::max(1, SrcHeight / 2);
+				nCount += SrcWidth * SrcHeight;
+				if (SrcWidth == 1 && SrcHeight == 1)
+					break;
+			}
+			if (pOutLevel)
+				*pOutLevel = i;
+			return nCount;
+		}
+
+		void GenerateMipMap(byte * out, byte *Source, int SrcWidth, int SrcHeight, int nStride = 3, int nMaxLevel = 10)
+		{
+			int i = 1;
+			for (; i < nMaxLevel; ++i)
+			{
+				ScaleMinifyByTwo(out, Source, SrcWidth, SrcHeight, nStride);
+				SrcWidth = std::max(1, SrcWidth / 2);
+				SrcHeight = std::max(1, SrcHeight / 2);
+				Source = out;
+				out = out + SrcWidth * SrcHeight * nStride;
+				if (SrcWidth == 1 && SrcHeight == 1)
+					break;
+			}
+		}
+
+	}
 }
 
 TextureEntity::TextureEntity(const AssetKey& key)

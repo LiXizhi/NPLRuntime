@@ -141,6 +141,13 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 	if (pFbxScene) {
 		ParaXHeaderDef m_xheader;
 		m_xheader.IsAnimated = pFbxScene->HasAnimations() ? 1 : 0;
+
+		// RAF stands for _ref_anim_file_: marker for mutual animation file (fbx files with this marker can share the same animation file to avoid meaningless duplication)
+		// RAF check
+		if (m_sFilename.find("_RAF(") != std::string::npos)
+		{
+			m_xheader.IsAnimated = 1;
+		}
 		pMesh = new CParaXModel(m_xheader);
 
 		if (pFbxScene->HasMaterials())
@@ -156,7 +163,22 @@ CParaXModel* FBXParser::ParseParaXModel(const char* buffer, int nSize)
 		//m_nRootNodeIndex = CreateGetBoneIndex(pFbxScene->mRootNode->mName.C_Str());
 
 		// must be called before ProcessFBXBoneNodes
-		if (pFbxScene->HasAnimations())
+		decltype(m_bones) raf_bones;
+		decltype(m_boneMapping) raf_bonemapping;
+		if (m_sFilename.find("_RAF(") != std::string::npos)
+		{
+			auto ref_file_start=m_sFilename.find("_RAF(")+strlen("_RAF(");
+			auto ref_file_end=m_sFilename.find(')',ref_file_start)-1;
+			std::string anim_file_name = m_sFilename.substr(ref_file_start,ref_file_end-ref_file_start+1)+".fbx";
+			anim_file_name = m_sFilename.substr(0, m_sFilename.find_last_of("/") + 1) + anim_file_name;
+			FBXParser anim_parser(anim_file_name);
+			anim_parser.ParseParaXModel();
+			m_modelInfo.LoadFromFile(std::string(anim_parser.GetFilename().c_str(), anim_parser.GetFilename().size() - 3) + "xml");
+			raf_bonemapping = m_boneMapping = anim_parser.m_boneMapping;
+			raf_bones = m_bones = anim_parser.m_bones;
+			m_anims = anim_parser.m_anims;
+		}
+		else if (pFbxScene->HasAnimations())
 		{
 			int animations_num = pFbxScene->mNumAnimations;
 			for (int i = 0; i < animations_num; i++)
@@ -272,7 +294,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 	{
 		AnimIndex blendingAnim;
 		AnimIndex curAnim = pMesh->GetAnimIndexByID(0);
-		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f);
+		pMesh->calcBones(NULL, curAnim, blendingAnim, 0.f, curAnim, blendingAnim, 0.f);
 
 		ModelVertex *ov = pMesh->m_origVertices;
 		ParaEngine::Bone* bones = pMesh->bones;
@@ -314,7 +336,7 @@ void FBXParser::PostProcessParaXModelData(CParaXModel *pMesh)
 				bone.SetStaticTransform(bone.matTransform);
 			}
 		}
-#define COLLAPSE_STATIC_TRANSFORM_NODE true
+#define COLLAPSE_STATIC_TRANSFORM_NODE false
 		if (COLLAPSE_STATIC_TRANSFORM_NODE) 
 		{
 			for (uint32 i = 0; i < pMesh->m_objNum.nBones; ++i)

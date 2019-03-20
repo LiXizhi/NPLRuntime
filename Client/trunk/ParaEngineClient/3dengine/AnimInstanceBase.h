@@ -279,5 +279,8 @@ namespace ParaEngine
 		/** whether animation is enabled. by default this is true. During movie editing, we may disable animation, set animation frame explicitly by editor logics. */
 		void EnableAnimation(bool bAnimated);
 		bool IsAnimationEnabled() const;
+
+		virtual void SetUpperAnimation(int nAnimID){}
+		virtual int GetUpperAnimation() { return -1; }
 	};
 }

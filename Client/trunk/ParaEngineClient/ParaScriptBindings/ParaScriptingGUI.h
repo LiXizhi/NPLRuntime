@@ -1056,6 +1056,13 @@ namespace ParaScripting
 		*/
 		static void SetMinimumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling);
 
+		/** the maximum screen size. if the backbuffer is larger than this, we will use automatically use UI scaling 
+		 * for example, if maximum width is 1024, and backbuffer it 1600, then m_fUIScalingX will be automatically set to 1024/1600. 
+		 * @param nWidth: the new width. 
+		 * @param nHeight: the new height. 
+		 * @param bAutoUIScaling: usually set to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size. 
+		 */
+		static void SetMaximumScreenSize(int nWidth, int nHeight, bool bAutoUIScaling);
 
 		/** add an receiver to the current receiver list during an drag operation. 
 		* call this function on an dragable UI object's Begin Drag event handler. 

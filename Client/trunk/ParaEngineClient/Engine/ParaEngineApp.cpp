@@ -813,6 +813,9 @@ HRESULT CParaEngineApp::RestoreDeviceObjects()
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MINFILTER, D3DTEXF_LINEAR );
 	pd3dDevice->SetSamplerState( 1, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR );
 
+	// restore mouse
+	auto mouse = CGUIRoot::GetInstance()->GetMouse();
+	mouse->SetCursorFromFile(mouse->GetCursorFile(),0,0,true);
 #endif
 	/* -------end of paraworld code ----------------------------*/
 	return S_OK;
@@ -1143,9 +1146,10 @@ bool CParaEngineApp::UpdateScreenDevice()
 			HandlePossibleSizeChange();
 			m_bIgnoreSizeChange = bOldValue;
 
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
+			// ensure both minimum and maximum screen size
+			CGlobals::GetGUI()->SetUIScale(1,1,true,true);
 			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
+			// CGlobals::GetGUI()->SetMaximumScreenSize(-1,-1,true);
 		}
 		else
 		{
@@ -1168,8 +1172,10 @@ bool CParaEngineApp::UpdateScreenDevice()
 				DisplayErrorMsg( D3DAPPERR_RESETFAILED, MSGERR_APPMUSTEXIT );
 				return false;
 			}
-			// ensure minimum screen size, with largest UI scaling
-			CGlobals::GetGUI()->SetUIScale(1,1,true);
+			// ensure both minimum and maximum screen size
+			CGlobals::GetGUI()->SetUIScale(1,1,true,true);
+			// CGlobals::GetGUI()->SetMinimumScreenSize(-1,-1,true);
+			// CGlobals::GetGUI()->SetMaximumScreenSize(-1,-1,true);
 			Pause( false );
 			if(IsWindowedMode())
 			{
@@ -1781,6 +1787,22 @@ void CParaEngineApp::BringWindowToTop()
 	}
 }
 
+void CParaEngineApp::ShowWindow(bool bShow)
+{
+	if(!IsFullScreenMode())
+	{
+		if((GetCoreUsage() & PE_USAGE_WEB_BROWSER)!=0)
+		{
+			OUTPUT_LOG("ShowWindow doesn't know how to respond in web browser mode!\n");
+		}
+		else
+		{
+			// show or hide the main window if it is not from a web browser
+			::ShowWindow(CGlobals::GetAppHWND(), bShow ? SW_SHOW : SW_HIDE);
+		}
+	}
+}
+
 HKEY GetHKeyByName(const string& root_key)
 {
 	if(root_key == "HKCR" || root_key == "HKEY_CLASSES_ROOT")
@@ -2231,6 +2253,11 @@ void CParaEngineApp::SetCoreUsage( DWORD dwUsage )
 void CParaEngineApp::SetMinUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
 {
 	CGlobals::GetGUI()->SetMinimumScreenSize(nWidth,nHeight, bAutoUIScaling);
+}
+
+void CParaEngineApp::SetMaxUIResolution( int nWidth, int nHeight, bool bAutoUIScaling /*= true*/ )
+{
+	CGlobals::GetGUI()->SetMaximumScreenSize(nWidth,nHeight, bAutoUIScaling);
 }
 
 bool CParaEngineApp::IsSlateMode()
