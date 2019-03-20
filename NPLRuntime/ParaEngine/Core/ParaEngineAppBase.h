@@ -345,6 +345,16 @@ namespace ParaEngine
 		*/
 		virtual void SetMinUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) override { };
 
+		/** set the maximum UI resolution size. if the backbuffer is larger than this, we will use automatically use UI scaling
+		 * for example, if maximum width is 1024, and backbuffer it 1600, then m_fUIScalingX will be automatically set to 1024/1600.
+		 * calling this function will cause OnSize() and UpdateBackbufferSize() to be called. Actually it calls SetUIScale()
+		 * [main thread only]
+		 * @param nWidth: the new width.
+		 * @param nHeight: the new height.
+		 * @param bAutoUIScaling: default to true. whether we will automatically recalculate the UI scaling accordingly with regard to current backbuffer size.
+		 */
+		virtual void SetMaxUIResolution(int nWidth, int nHeight, bool bAutoUIScaling = true) override { };
+
 		/** change the full screen mode, it does not immediately change the device, call UpdateScreenMode() to update the device. */
 		virtual void GetResolution(float* pX, float* pY) override {};
 		virtual void SetResolution(float x, float y)  override {};
