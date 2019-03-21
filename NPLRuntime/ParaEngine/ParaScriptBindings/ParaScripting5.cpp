@@ -586,6 +586,7 @@ void CNPLScriptingState::LoadHAPI_Globals()
 			def("GetFileExtension", & ParaIO::GetFileExtension),
 			def("GetAbsolutePath", & ParaIO::GetAbsolutePath),
 			def("GetFileName", & ParaIO::GetFileName),
+			def("GetFileOriginalName", &ParaIO::GetFileOriginalName),
 			def("ToCanonicalFilePath", & ParaIO::ToCanonicalFilePath),
 			def("UpdateMirrorFiles", & ParaIO::UpdateMirrorFiles),
 			def("CRC32", & ParaIO::CRC32),

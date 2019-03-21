@@ -683,6 +683,11 @@ namespace ParaScripting
 		it uses a static string for the output. so it is not thread-safe.*/
 		static const char* GetFileName_(const char* sFilePath);
 
+		/** get original file name (in case of name being changed somehow, e.g. CZipArchive may change filename to lower case when case-insensitive).
+		* "ABcdEF.x" = GetFileOriginalName("c:/lxzsrc/abcdef.x");
+		*/
+		static string GetFileOriginalName(const char* sFilePath);
+
 		/** The GetFileSize function retrieves the size of the specified file. The file size that can be reported by this function is limited to a DWORD value
 		* @return: size of the file. If the file does not exist or the file size is 0, the return value is 0.
 		* @note: only disk file is searched.files inside zip file are ignored.
