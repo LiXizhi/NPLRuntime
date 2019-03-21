@@ -1151,7 +1151,7 @@ bool CMoviePlatform::EndCapture()
 			for (; iter != records.end(); ++iter)
 			{
 				// simply encode audio record to a string
-				char record[64]; 
+				char record[512]; 
 				std::sprintf(record, "%s,%d,%d,%d,%d,",
 					iter->m_WaveFileName.c_str(),
 					iter->m_nStartTime,
