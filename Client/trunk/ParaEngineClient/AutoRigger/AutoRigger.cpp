@@ -766,8 +766,7 @@ void CAutoRigger::AutoRigModel()
 			OUTPUT_LOG("error: AutoRigModel worker thread error %s\n", e.what());
 			On_AddRiggedFile(0, NULL, "unknown thread error");
 		}
-	}
-	
+	}	
 }
 
 void CAutoRigger::Clear()
@@ -1398,6 +1397,4 @@ void CAutoRigger::BindTargetModelDefault()
 	}
 
 	targetModel->SaveToDisk(m_OutputFilePath.c_str());
-
-
 }
