@@ -593,23 +593,43 @@ void ParaEngine::CParaEngineAppBase::LoadPackagesInFolder(const std::string& sPk
 {
 	/** we will load all packages that matches the following pattern in the order given by their name,
 	* such that "main_001.pkg" is always loaded before "main_002.pkg" */
-#define MAIN_PACKAGE_FILE_PATTERN	"main*.pkg"
-
-	CSearchResult* result = CFileManager::GetInstance()->SearchFiles(
-		sPkgFolder,
-		MAIN_PACKAGE_FILE_PATTERN, "", 0, 1000, 0);
+#define MAIN_PACKAGE_FILE_PATTERN_MAIN	"main*.pkg"
+#define MAIN_PACKAGE_FILE_PATTERN_CRATE	"crate*.pkg"
 
 	bool bIs64Bits = sizeof(void*) > 4;
+
+	std::vector<std::string> fileList;
+	bool result_main_valid = false;
+	bool result_crate_valid = false;
+	CSearchResult* result_main = CFileManager::GetInstance()->SearchFiles(
+		sPkgFolder,
+		MAIN_PACKAGE_FILE_PATTERN_MAIN, "", 0, 1000, 0);
 	int nNum = 0;
-	if (result != 0)
+	if (result_main != 0)
 	{
-		// we will sort by file name
-		std::vector<std::string> fileList;
-		nNum = result->GetNumOfResult();
+		result_main_valid = true;
+		nNum = result_main->GetNumOfResult();
 		for (int i = 0; i < nNum; ++i)
 		{
-			fileList.push_back(result->GetItem(i));
+			fileList.push_back(result_main->GetItem(i));
 		}
+	}
+	CSearchResult* result_crate = CFileManager::GetInstance()->SearchFiles(
+		sPkgFolder,
+		MAIN_PACKAGE_FILE_PATTERN_CRATE, "", 0, 1000, 0);
+	if (result_crate != 0)
+	{
+		result_crate_valid = true;
+		nNum = result_crate->GetNumOfResult();
+		for (int i = 0; i < nNum; ++i)
+		{
+		    fileList.push_back(result_crate->GetItem(i));
+		}
+	}
+
+	if (result_main_valid || result_crate_valid)
+	{
+		// we will sort by file name
 		// we will enqueue in reverse order, so that main_002 is pushed first, and then main_001
 		std::sort(fileList.begin(), fileList.end(), std::greater<std::string>());
 

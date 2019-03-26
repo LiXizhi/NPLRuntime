@@ -65,10 +65,14 @@ void CD3DWindowDefault::DefaultWinThreadProc(HINSTANCE hInstance)
 			NULL, g_sWindowClassName };
 		wndClass.hIcon = (HICON)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PARAWORLD_ICON), IMAGE_ICON, 48, 48, 0);
 		RegisterClassW( &wndClass );
-
+	#define TRUCK_STAR_D
 		// Set the window's initial style
-		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | 
-			WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
+	#ifdef TRUCK_STAR_D
+		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ;
+	#else
+		DWORD dwWindowStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | /*WS_THICKFRAME |*/ WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE ; //disable resizing by dragging window frame on release build
+	#endif
+
 	#ifdef SHOW_DEFAULT_MENU
 		HMENU hMenu = LoadMenuW( hInstance, MAKEINTRESOURCEW(IDR_MENU) );
 	#else
@@ -284,6 +288,22 @@ void CD3DWindowDefault::handle_mainloop_timer(const boost::system::error_code& e
 	if (!err && !m_bQuit)
 	{
 		ParaEngine::Lock lock_(m_win_thread_mutex);
+
+		//duely fetch and dispatch messages
+		//NOTICE: qq game plugin depends on this behavior,
+		//        it won't be able to receive messages from qq game lobby otherwise
+		MSG  msg;
+		while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			//qqgame message id: #define WM_COMMUNICATOR_MSG  (WM_USER + 100)
+			// if (msg.message == WM_USER + 100)
+			// {
+			//	int aabb = 0;
+			//	aabb++;
+			// }
+			TranslateMessage(&msg);
+			DispatchMessageW(&msg);
+		}
 
 		PEAppState dwState = m_pApp->GetAppState();
 		if (dwState == PEAppState_Ready)

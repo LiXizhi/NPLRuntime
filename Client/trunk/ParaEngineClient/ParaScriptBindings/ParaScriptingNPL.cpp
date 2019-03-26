@@ -521,6 +521,23 @@ namespace ParaScripting
 	{
 		NPL::CNPLRuntime::GetInstance()->NPL_UnregisterWSCallBack(sWebServiceFile);
 	}
+    
+	const char* CNPL::GetNPLID()
+	{
+	#define TRUCK_STAR_D
+		//"Truck_Dev" for developer internal use
+		//"Truck" for release
+	#ifdef TRUCK_STAR_D
+		return "Truck_Dev";
+	#else
+		return "Truck";
+	#endif
+	}
+
+	void CNPL::Crash()
+	{
+		*((char*)-1) = 'x';
+	}
 
 	void CNPL::ShowWindow(bool bShow)
 	{

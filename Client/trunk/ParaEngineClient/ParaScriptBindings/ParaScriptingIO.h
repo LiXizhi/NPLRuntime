@@ -682,6 +682,10 @@ namespace ParaScripting
 		/** this should never be called from the scripting interface. it is only for API exportation.
 		it uses a static string for the output. so it is not thread-safe.*/
 		static const char* GetFileName_(const char* sFilePath);
+		/** get original file name (in case of name being changed somehow, e.g. CZipArchive may change filename to lower case when case-insensitive).
+		* "ABcdEF.x" = GetFileOriginalName("c:/lxzsrc/abcdef.x");
+		*/
+		static string GetFileOriginalName(const char* sFilePath);
 
 		/** get original file name (in case of name being changed somehow, e.g. CZipArchive may change filename to lower case when case-insensitive).
 		* "ABcdEF.x" = GetFileOriginalName("c:/lxzsrc/abcdef.x");

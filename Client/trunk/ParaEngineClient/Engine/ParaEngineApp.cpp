@@ -294,12 +294,32 @@ void CParaEngineApp::LoadAndApplySettings()
 	if ((pField = settings.GetDynamicField("ScreenWidth")))
 		m_dwCreationWidth = (int)(*pField);
 	else
-		m_dwCreationWidth = 1020;
+	{
+//#define CHECK_QQ_PARAMS
 
+#if defined(PARAENGINE_MOBILE)
+		//cellfy: this setting has no effect on real mobile devices, it only affects the emulator program
+		//cellfy: now it's modified to 1600x900 since our company's monitors isn't that large. Change it back to 1080p if you have a larger screen to get the best experience
+		m_dwCreationWidth = 1600;
+#elif defined(CHECK_QQ_PARAMS)
+		m_dwCreationWidth = 800;
+#else
+		m_dwCreationWidth = 1280;
+#endif
+	}
+	
 	if ((pField = settings.GetDynamicField("ScreenHeight")))
 		m_dwCreationHeight = (int)(*pField);
 	else
-		m_dwCreationHeight = 680;
+	{
+#if defined(PARAENGINE_MOBILE)
+		m_dwCreationHeight = 900;
+#elif defined(CHECK_QQ_PARAMS)
+		m_dwCreationHeight = 500;
+#else
+		m_dwCreationHeight = 720;
+#endif
+	}
 
 	if (!m_bStartFullscreen)
 	{
@@ -353,6 +373,15 @@ void CParaEngineApp::InitSystemModules()
 HRESULT CParaEngineApp::StartApp(const char* sCommandLine)
 {
 	SetCurrentInstance(this);
+	{
+		bool bLoop = false;
+		int i=0;
+		while(bLoop)
+		{
+			i=(i+1)%512;
+		}
+	}
+
 	std::string strCmd;
 	VerifyCommandLine(sCommandLine, strCmd);
 	InitApp(strCmd.c_str());

@@ -328,6 +328,8 @@ void CNPLScriptingState::LoadHAPI_NPL()
 				def("activate", &CNPL::activate5),
 				def("activate", &CNPL::activate1),
 				def("call",&CNPL::call),
+				def("GetNPLID", &CNPL::GetNPLID),
+				def("Crash", &CNPL::Crash),
 				def("ShowWindow", &CNPL::ShowWindow),
 				def("load", &CNPL::load1),
 				def("load", &CNPL::load),

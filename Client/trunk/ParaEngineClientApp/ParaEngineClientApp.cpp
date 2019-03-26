@@ -314,9 +314,112 @@ int CreateHostApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 	return -1;
 }
 
+//#define CHECK_QQ_PARAMS
+#ifdef CHECK_QQ_PARAMS
+static int split(const std::string& str, std::vector<std::string>& ret_, std::string sep = ",")
+{
+	if (str.empty())
+	{
+		return 0;
+	}
+
+	std::string tmp;
+	std::string::size_type pos_begin = str.find_first_not_of(sep);
+	std::string::size_type comma_pos = 0;
+
+	while (pos_begin != std::string::npos)
+	{
+		comma_pos = str.find(sep, pos_begin);
+		if (comma_pos != std::string::npos)
+		{
+			tmp = str.substr(pos_begin, comma_pos - pos_begin);
+			pos_begin = comma_pos + sep.length();
+		}
+		else
+		{
+			tmp = str.substr(pos_begin);
+			pos_begin = comma_pos;
+		}
+
+		if (!tmp.empty())
+		{
+			ret_.push_back(tmp);
+			tmp.clear();
+		}
+	}
+	return 0;
+}
+
+bool CheckQQPlatformParameters(const std::string& sAppCmdLine)
+{
+	if (sAppCmdLine.length() == 0)
+	{
+		return false;
+	}
+
+	std::vector<std::string> vecPara;
+	split(sAppCmdLine, vecPara);
+
+	typedef std::pair<std::string, std::string> CommandValuePair;
+	std::vector<CommandValuePair> vecKey2Data;
+
+	for (unsigned int i = 0; i < vecPara.size(); ++i)
+	{
+		std::vector<std::string> vecTmp;
+		split(vecPara[i], vecTmp, "=");
+		if (vecTmp.size() == 2)
+		{
+			vecKey2Data.push_back(CommandValuePair(vecTmp[0], vecTmp[1]));
+		}
+	}
+
+	BOOL bHaveID = FALSE;
+	BOOL bHaveKey = FALSE;
+	BOOL bHaveProcPara = FALSE;
+	std::string strProcPara;
+
+	for (unsigned int i = 0; i < vecKey2Data.size(); ++i)
+	{
+		if (vecKey2Data[i].first.compare("ID") == 0 && !vecKey2Data[i].second.empty())
+		{
+			bHaveID = TRUE;
+			continue;
+		}
+
+		if (vecKey2Data[i].first.compare("Key") == 0 && !vecKey2Data[i].second.empty())
+		{
+			bHaveKey = TRUE;
+			continue;
+		}
+
+		if (vecKey2Data[i].first.compare("PROCPARA") == 0 && !vecKey2Data[i].second.empty())
+		{
+			bHaveProcPara = TRUE;
+			strProcPara = vecKey2Data[i].second;
+			continue;
+		}
+	}
+
+	if (!bHaveID || !bHaveKey || !bHaveProcPara)
+	{
+		return false;
+	}
+	return true;
+}
+#endif
+
 /** create a standalone app */
 int CreateStandAloneApp(HINSTANCE hInst, const std::string& sAppCmdLine)
 {
+#ifdef CHECK_QQ_PARAMS
+	bool check_result = CheckQQPlatformParameters(sAppCmdLine);
+	if (!check_result)
+	{
+		OutputDebugString(_T("warning: QQ platform param check failed\n"));
+		return -1;
+	}
+#endif
+
 	if(sAppCmdLine.find("single=\"true\"") != std::string::npos)
 	{
 		// only prevent multiple instance if single is true.

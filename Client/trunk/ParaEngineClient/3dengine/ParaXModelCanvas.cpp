@@ -446,7 +446,7 @@ void CanvasAttachment::draw(SceneState * sceneState, ParaXModelCanvas *c, CParam
 			{
 				pModel->replaceTextures[tex_pair.first] =tex_pair.second.get();
 			}
-			
+
 			CParameterBlock * param_block=materialParams;
 			if(materialParams&&GetParamBlock())
 			{

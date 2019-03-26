@@ -334,7 +334,7 @@ namespace ParaScripting
 		* - it can also be a table of {animID, animID}: currently only two are supported. The first one is usually a non-loop, and second one can be loop or non-loop. 
 		*/
 		void PlayAnimation(const object& anims);
-		
+		void PlayAnimation2(int animid, bool bUpdateSpeed = false, bool bAppend = false);
 
 		/** get the current animation ID of the character. Usually  0-46 is for normal animation like idle and walking; 0-1000 are reserved for internally animation. 1000-2000 are game specific; 
 		* 2000 plus are automatically generated. One should call GetAnimFileName() for id above 2000. 
