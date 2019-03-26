@@ -163,6 +163,7 @@ bool ParaEngine::CParaFileUtilsiOS::Copy(const std::string& src, const std::stri
 
 }
 
+/*
 bool ParaEngine::CParaFileUtilsiOS::Move(const std::string& src, const std::string& dest)
 {
     try
@@ -177,6 +178,7 @@ bool ParaEngine::CParaFileUtilsiOS::Move(const std::string& src, const std::stri
         return false;
     }
 }
+*/
 
 bool ParaEngine::CParaFileUtilsiOS::MakeDirectoryFromFilePath(const std::string filename)
 {
