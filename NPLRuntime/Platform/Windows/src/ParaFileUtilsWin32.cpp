@@ -126,19 +126,19 @@ bool ParaEngine::CParaFileUtilsWin32::Copy(const std::string& src, const std::st
 	return true;
 }
 
-bool ParaEngine::CParaFileUtilsWin32::Move(const std::string& src, const std::string& dest)
-{
-	try
-	{
-		fs::path sSrc(src);
-		fs::copy_file(sSrc, fs::path(dest));
-		return fs::remove(sSrc);
-	}
-	catch (...)
-	{
-		return false;
-	}
-}
+//bool ParaEngine::CParaFileUtilsWin32::Move(const std::string& src, const std::string& dest)
+//{
+//	try
+//	{
+//		fs::path sSrc(src);
+//		fs::copy_file(sSrc, fs::path(dest));
+//		return fs::remove(sSrc);
+//	}
+//	catch (...)
+//	{
+//		return false;
+//	}
+//}
 
 bool ParaEngine::CParaFileUtilsWin32::MakeDirectoryFromFilePath(const std::string filename)
 {
