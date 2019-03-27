@@ -173,7 +173,7 @@ namespace ParaEngine
 	class glTFModelExporter
 	{
 	public:
-		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary);
+		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool encode);
 		~glTFModelExporter();
 
 	private:
@@ -185,10 +185,12 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportNormals();
 		std::shared_ptr<Accessor> ExportColors();
 		std::shared_ptr<Accessor> ExportIndices();
+		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
 		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index);
 		void WriteFile();
+		void WriteRawData();
 		void WriteGLBFile();
 
 		std::string fileName;
@@ -196,8 +198,9 @@ namespace ParaEngine
 		std::shared_ptr<Buffer> buffer;
 		Json::Value root;
 		bool isBinary;
+		bool willEncode;
 
 	public:
-		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary = false);
+		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode = true);
 	};
 }

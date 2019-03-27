@@ -2,15 +2,18 @@
 #include "ParaEngine.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
+#include "StringHelper.h"
+#include "StringBuilder.h"
 
 namespace ParaEngine
 {
 
-	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary)
+	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool encode)
 		: fileName(filename),
 		paraXModel(mesh),
 		buffer(make_shared<Buffer>()),
-		isBinary(binary)
+		isBinary(binary),
+		willEncode(encode)
 	{
 		std::string path = filename.substr(0, filename.rfind(".gltf"));
 		std::string name = path.substr(path.find_last_of("/\\") + 1u);
@@ -301,12 +304,58 @@ namespace ParaEngine
 		return acc;
 	}
 
+	std::string glTFModelExporter::EncodeBuffer()
+	{
+		StringBuilder builder;
+		uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
+		uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			const ModelVertex& vertex = paraXModel->m_origVertices[i];
+			builder.append((const char*)&vertex.pos.x, sizeFloat);
+			builder.append((const char*)&vertex.pos.y, sizeFloat);
+			builder.append((const char*)&vertex.pos.z, sizeFloat);
+		}
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			const ModelVertex& vertex = paraXModel->m_origVertices[i];
+			builder.append((const char*)&vertex.normal.x, sizeFloat);
+			builder.append((const char*)&vertex.normal.y, sizeFloat);
+			builder.append((const char*)&vertex.normal.z, sizeFloat);
+		}
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			DWORD color = paraXModel->m_origVertices[i].color0;
+			float r = ((color >> 16) & 0xff) / 255.0f;
+			float g = ((color >> 8) & 0xff) / 255.0f;
+			float b = (color & 0xff) / 255.0f;
+			builder.append((const char*)&r, sizeFloat);
+			builder.append((const char*)&g, sizeFloat);
+			builder.append((const char*)&b, sizeFloat);
+		}
+		uint32_t numIndices = paraXModel->m_objNum.nIndices;
+		for (uint32_t i = 0; i < numIndices; i++)
+		{
+			uint16_t index = paraXModel->m_indices[i];
+			builder.append((const char*)&index, sizeUShort);
+		}
+		return StringHelper::base64(builder.ToString());
+	}
+
 	void glTFModelExporter::WriteBuffer(Json::Value& obj, uint32_t index)
 	{
 		Json::Value b;
 		b["byteLength"] = buffer->byteLength;
 		if (!isBinary)
-			b["uri"] = buffer->uri;
+		{
+			if (willEncode)
+			{
+				b["uri"] = "data:application/octet-stream;base64," + EncodeBuffer();
+			}
+			else
+				b["uri"] = buffer->uri;
+		}
 		obj[index] = b;
 	}
 
@@ -356,49 +405,55 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			Json::FastWriter writer;
+			Json::StyledWriter writer;
 			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
+			
+			if (!willEncode)
+				WriteRawData();
+		}
+	}
 
-			CParaFile bin;
-			if (bin.CreateNewFile(buffer->filename.c_str()))
+	void glTFModelExporter::WriteRawData()
+	{
+		CParaFile bin;
+		if (bin.CreateNewFile(buffer->filename.c_str()))
+		{
+			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
+			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t numVertices = paraXModel->m_objNum.nVertices;
+			for (uint32_t i = 0; i < numVertices; i++)
 			{
-				uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
-				uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
-				uint32_t numVertices = paraXModel->m_objNum.nVertices;
-				for (uint32_t i = 0 ; i < numVertices; i++)
-				{
-					const ModelVertex& vertex = paraXModel->m_origVertices[i];
-					bin.write(&vertex.pos.x, sizeFloat);
-					bin.write(&vertex.pos.y, sizeFloat);
-					bin.write(&vertex.pos.z, sizeFloat);
-				}
-				for (uint32_t i = 0; i < numVertices; i++)
-				{
-					const ModelVertex& vertex = paraXModel->m_origVertices[i];
-					bin.write(&vertex.normal.x, sizeFloat);
-					bin.write(&vertex.normal.y, sizeFloat);
-					bin.write(&vertex.normal.z, sizeFloat);
-				}
-				for (uint32_t i = 0;i < numVertices; i++)
-				{
-					DWORD color = paraXModel->m_origVertices[i].color0;
-					float r = ((color >> 16) & 0xff) / 255.0f;
-					float g = ((color >> 8) & 0xff) / 255.0f;
-					float b = (color & 0xff) / 255.0f;
-					bin.write(&r, sizeFloat);
-					bin.write(&g, sizeFloat);
-					bin.write(&b, sizeFloat);
-				}
-				uint32_t numIndices = paraXModel->m_objNum.nIndices;
-				for (uint32_t i = 0; i < numIndices; i++)
-				{
-					uint16_t index = paraXModel->m_indices[i];
-					bin.write(&index, sizeUShort);
-				}
-				bin.close();
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				bin.write(&vertex.pos.x, sizeFloat);
+				bin.write(&vertex.pos.y, sizeFloat);
+				bin.write(&vertex.pos.z, sizeFloat);
 			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				bin.write(&vertex.normal.x, sizeFloat);
+				bin.write(&vertex.normal.y, sizeFloat);
+				bin.write(&vertex.normal.z, sizeFloat);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				DWORD color = paraXModel->m_origVertices[i].color0;
+				float r = ((color >> 16) & 0xff) / 255.0f;
+				float g = ((color >> 8) & 0xff) / 255.0f;
+				float b = (color & 0xff) / 255.0f;
+				bin.write(&r, sizeFloat);
+				bin.write(&g, sizeFloat);
+				bin.write(&b, sizeFloat);
+			}
+			uint32_t numIndices = paraXModel->m_objNum.nIndices;
+			for (uint32_t i = 0; i < numIndices; i++)
+			{
+				uint16_t index = paraXModel->m_indices[i];
+				bin.write(&index, sizeUShort);
+			}
+			bin.close();
 		}
 	}
 
@@ -474,7 +529,7 @@ namespace ParaEngine
 		}
 	}
 
-	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary /*= false*/)
+	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode)
 	{
 		CParaFile file(input.c_str());
 		CParaXSerializer serializer;
@@ -482,7 +537,7 @@ namespace ParaEngine
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			ParaEngine::glTFModelExporter exporter(filename, mesh, binary);
+			ParaEngine::glTFModelExporter exporter(filename, mesh, binary, encode);
 		}
 	}
 
