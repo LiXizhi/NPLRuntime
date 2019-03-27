@@ -5,6 +5,25 @@
 
 namespace ParaEngine
 {
+	struct GLBHeader
+	{
+		uint32_t magic;
+		uint32_t version;
+		uint32_t length;
+	};
+
+	struct GLBChunk
+	{
+		uint32_t chunkLength;
+		uint32_t chunkType;
+	};
+
+	enum ChunkType
+	{
+		JSON = 0x4E4F534A,
+		BIN = 0x004E4942
+	};
+
 	enum BufferViewTarget
 	{
 		ArrayBuffer = 34962,
@@ -154,7 +173,7 @@ namespace ParaEngine
 	class glTFModelExporter
 	{
 	public:
-		glTFModelExporter(const std::string& filename, CParaXModel* mesh);
+		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary);
 		~glTFModelExporter();
 
 	private:
@@ -170,11 +189,13 @@ namespace ParaEngine
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
 		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index);
 		void WriteFile();
+		void WriteGLBFile();
 
 		std::string fileName;
 		CParaXModel* paraXModel;
 		std::shared_ptr<Buffer> buffer;
 		Json::Value root;
+		bool isBinary;
 
 	public:
 		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary = false);

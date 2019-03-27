@@ -6,10 +6,11 @@
 namespace ParaEngine
 {
 
-	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh)
+	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary)
 		: fileName(filename),
 		paraXModel(mesh),
-		buffer(make_shared<Buffer>())
+		buffer(make_shared<Buffer>()),
+		isBinary(binary)
 	{
 		std::string path = filename.substr(0, filename.rfind(".gltf"));
 		std::string name = path.substr(path.find_last_of("/\\") + 1u);
@@ -19,7 +20,10 @@ namespace ParaEngine
 
 		ExportMetadata();
 		ExportScene();
-		WriteFile();
+		if (isBinary)
+			WriteGLBFile();
+		else
+			WriteFile();
 	}
 
 	glTFModelExporter::~glTFModelExporter()
@@ -301,7 +305,8 @@ namespace ParaEngine
 	{
 		Json::Value b;
 		b["byteLength"] = buffer->byteLength;
-		b["uri"] = buffer->uri;
+		if (!isBinary)
+			b["uri"] = buffer->uri;
 		obj[index] = b;
 	}
 
@@ -348,11 +353,11 @@ namespace ParaEngine
 
 	void glTFModelExporter::WriteFile()
 	{
-		Json::FastWriter writer;
-		std::string& data = writer.write(root);
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
+			Json::FastWriter writer;
+			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
 
@@ -397,6 +402,78 @@ namespace ParaEngine
 		}
 	}
 
+	void glTFModelExporter::WriteGLBFile()
+	{
+		CParaFile file;
+		if (file.CreateNewFile(fileName.c_str()))
+		{
+			Json::FastWriter writer;
+			std::string& data = writer.write(root);
+			uint32_t jsonLength = (data.length() + 3) & (~3);
+			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
+
+			GLBHeader header;
+			header.magic = 0x46546C67;
+			header.version = 2;
+			header.length = sizeof(GLBHeader) + 2 * sizeof(GLBChunk) + jsonLength + binaryLength;
+			file.write(&header, sizeof(GLBHeader));
+
+			GLBChunk jsonChunk;
+			jsonChunk.chunkLength = jsonLength;
+			jsonChunk.chunkType = ChunkType::JSON;
+			file.write(&jsonChunk, sizeof(GLBChunk));
+			file.write(data.c_str(), data.length());
+			uint8_t jsonPadding = 0x20;
+			uint32_t paddingLength = jsonLength - data.length();
+			for (uint32_t i = 0; i < paddingLength; i++)
+				file.write(&jsonPadding, 1);
+
+			GLBChunk binaryChunk;
+			binaryChunk.chunkLength = binaryLength;
+			binaryChunk.chunkType = ChunkType::BIN;
+			file.write(&binaryChunk, sizeof(GLBChunk));
+			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
+			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t numVertices = paraXModel->m_objNum.nVertices;
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				file.write(&vertex.pos.x, sizeFloat);
+				file.write(&vertex.pos.y, sizeFloat);
+				file.write(&vertex.pos.z, sizeFloat);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				file.write(&vertex.normal.x, sizeFloat);
+				file.write(&vertex.normal.y, sizeFloat);
+				file.write(&vertex.normal.z, sizeFloat);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				DWORD color = paraXModel->m_origVertices[i].color0;
+				float r = ((color >> 16) & 0xff) / 255.0f;
+				float g = ((color >> 8) & 0xff) / 255.0f;
+				float b = (color & 0xff) / 255.0f;
+				file.write(&r, sizeFloat);
+				file.write(&g, sizeFloat);
+				file.write(&b, sizeFloat);
+			}
+			uint32_t numIndices = paraXModel->m_objNum.nIndices;
+			for (uint32_t i = 0; i < numIndices; i++)
+			{
+				uint16_t index = paraXModel->m_indices[i];
+				file.write(&index, sizeUShort);
+			}
+			uint8_t binaryPadding = 0x00;
+			paddingLength = binaryLength - buffer->byteLength;
+			for (uint32_t i = 0; i < paddingLength; i++)
+				file.write(&binaryPadding, 1);
+
+			file.close();
+		}
+	}
+
 	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary /*= false*/)
 	{
 		CParaFile file(input.c_str());
@@ -405,7 +482,7 @@ namespace ParaEngine
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			ParaEngine::glTFModelExporter exporter(filename, mesh);
+			ParaEngine::glTFModelExporter exporter(filename, mesh, binary);
 		}
 	}
 
