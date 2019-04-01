@@ -25,8 +25,8 @@ CLightObject::CLightObject(void)
 
 	m_pLightParams = new CLightParam();
 
-	//m_pLightParams->MakeRedPointLight();
-	m_pLightParams->MakeRedSpotLight();
+	m_pLightParams->MakeRedPointLight();
+	//m_pLightParams->MakeRedSpotLight();
 	//m_pLightParams->MakeRedDirectionalLight();
 
 	m_mxLocalTransform = Matrix4::IDENTITY;

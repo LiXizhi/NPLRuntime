@@ -36,7 +36,7 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CLightObject, GetAmbient_s, Vector3*) { *p1 = *(Vector3*)(&cls->GetAmbient()); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, SetAmbient_s, Vector3) { LinearColor c(p1.x, p1.y, p1.z, 1); cls->SetAmbient(c); return S_OK; }
 
-		ATTRIBUTE_METHOD1(CLightObject, GetPosition_s, DVector3*) { *p1 = *(DVector3*)(&cls->GetPosition()); return S_OK; }
+		ATTRIBUTE_METHOD1(CLightObject, GetPosition_s, DVector3*) { *p1 = DVector3(cls->GetPosition()); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, SetPosition_s, DVector3) { DVector3 c(p1.x, p1.y, p1.z); cls->SetPosition(c); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, GetDirection_s, Vector3*) { *p1 = *(Vector3*)(&cls->GetDirection()); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, SetDirection_s, Vector3) { Vector3 c(p1.x, p1.y, p1.z); cls->SetDirection(c); return S_OK; }
