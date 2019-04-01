@@ -1339,9 +1339,9 @@ bool EffectManager::BeginEffectFF(int nHandle)
 		pd3dDevice->SetFVF(bmax_vertex::FVF);
 		SetCullingMode(true);
 		break;
-	case TECH_LIGHT_DIRECTIONAL:
 	case TECH_LIGHT_POINT:
 	case TECH_LIGHT_SPOT:
+	case TECH_LIGHT_DIRECTIONAL:
 		pd3dDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 		pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
 		pd3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
