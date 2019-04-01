@@ -2,8 +2,6 @@
 #include "BlockWorld.h"
 #include "effect_file.h"
 
-#define MAX_LIGHT_NUM 100
-
 namespace ParaEngine
 {
 	class BlockRegion;
@@ -372,9 +370,6 @@ namespace ParaEngine
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];
-
-		/** parameters that pass into deferred light shaders */
-		float lights_parameters[24 * MAX_LIGHT_NUM];
 #endif
 		CMultiFrameBlockWorldRenderer* m_pMultiFrameRenderer;
 
