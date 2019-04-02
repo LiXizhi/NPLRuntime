@@ -26,7 +26,7 @@ namespace ParaEngine
 		void MakeRedDirectionalLight();
 
 		// calculate direction base on yaw/pitch/roll
-		const Vector3& GetDirection();
+		void RecalculateDirection();
 
 		/**
 		* return the parameters as a string. This is usually used for serialization.

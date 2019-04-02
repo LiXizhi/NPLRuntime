@@ -112,7 +112,7 @@ void ParaEngine::CLightParam::MakeRedDirectionalLight()
 	Phi = 1.0f;
 }
 
-const ParaEngine::Vector3& ParaEngine::CLightParam::GetDirection()
+void ParaEngine::CLightParam::RecalculateDirection()
 {
 	// Yaw - around axis y
 	// Pitch - around axis x
@@ -131,7 +131,6 @@ const ParaEngine::Vector3& ParaEngine::CLightParam::GetDirection()
 		mat = (*ParaMatrixRotationY(&transform, Yaw))*mat;
 
 	Direction = InitDirection.TransformNormal(mat);
-	return Direction;
 }
 
 const char* CLightParam::ToString()
