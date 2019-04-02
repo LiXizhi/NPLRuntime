@@ -445,7 +445,7 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 					}
 				}
 
-				if(strcmp("false", CCommandLineParams::GetAppCommandLineByParam("disable-parent-package-lookup", "false")))
+				if(strcmp("false", CCommandLineParams::GetAppCommandLineByParam("disable-parent-package-lookup", "false")) == 0)
 				{
 					if (sPKGDir.empty() && !m_sModuleDir.empty())
 					{
