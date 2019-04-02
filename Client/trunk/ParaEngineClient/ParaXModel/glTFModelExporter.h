@@ -30,6 +30,29 @@ namespace ParaEngine
 		ElementArrayBuffer = 34963
 	};
 
+	enum SamplerMagFilter
+	{
+		MagNearest = 9728,
+		MagLinear = 9729
+	};
+
+	enum SamplerMinFilter
+	{
+		MinNearest = 9728,
+		MinLinear = 9729,
+		NearestMipMapNearest = 9984,
+		LinearMipMapNearest = 9985,
+		NearestMipMapLinear = 9986,
+		LinearMipMapLinear = 9987
+	};
+
+	enum SamplerWrap
+	{
+		ClampToEdge = 33071,
+		MirroredRepeat = 33648,
+		Repeat = 10497
+	};
+
 	enum PrimitiveMode
 	{
 		Points, Lines, LineLoop, LineStrip, Triangles, Triangle_Strip, Triangle_Fan
@@ -141,6 +164,59 @@ namespace ParaEngine
 		std::vector<float> max;
 		std::vector<float> min;
 	};
+	
+	struct Sampler
+	{
+		SamplerMagFilter magFilter;
+		SamplerMinFilter minFilter;
+		SamplerWrap wrapS;
+		SamplerWrap wrapT;
+		uint32_t index;
+	};
+
+	struct Image
+	{
+		std::string filename;
+		std::string uri;
+		void* bufferPointer;
+		uint32_t bufferSize;
+		uint32_t index;
+	};
+
+	struct Texture
+	{
+		std::shared_ptr<Sampler> sampler;
+		std::shared_ptr<Image> source;
+	};
+
+	struct TextureInfo
+	{
+		std::shared_ptr<Texture> texture;
+		uint32_t index;
+		uint32_t texCoord;
+	};
+
+	struct PbrMetallicRoughness
+	{
+		float baseColorFactor[4];
+		float metallicFactor;
+		float roughnessFactor;
+		TextureInfo baseColorTexture;
+		TextureInfo metallicRoughnessTexture;
+	};
+
+	struct Material
+	{
+		PbrMetallicRoughness metallicRoughness;
+		TextureInfo normalTexture;
+		TextureInfo occlusionTexture;
+		TextureInfo emissiveTexture;
+		float emissiveFactor[3];
+		float alphaCutoff;
+		bool doubleSide;
+		std::string alphaMode;
+		uint32_t index;
+	};
 
 	struct Mesh
 	{
@@ -152,6 +228,7 @@ namespace ParaEngine
 				std::shared_ptr<Accessor> position, normal, texcoord, color;
 			} attributes;
 			std::shared_ptr<Accessor> indices;
+			std::shared_ptr<Material> material;
 		};
 		std::vector<Primitive> primitives;
 		uint32_t index;
@@ -183,12 +260,15 @@ namespace ParaEngine
 		std::shared_ptr<Mesh> ExportMesh();
 		std::shared_ptr<Accessor> ExportVertices();
 		std::shared_ptr<Accessor> ExportNormals();
+		std::shared_ptr<Accessor> ExportTextureCoords();
 		std::shared_ptr<Accessor> ExportColors();
 		std::shared_ptr<Accessor> ExportIndices();
+		std::shared_ptr<Material> ExportMaterials();
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
 		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index);
+		void WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img);
 		void WriteFile();
 		void WriteRawData();
 		void WriteGLBFile();
@@ -197,6 +277,7 @@ namespace ParaEngine
 		CParaXModel* paraXModel;
 		std::shared_ptr<Buffer> buffer;
 		Json::Value root;
+		uint32_t bufferIndex;
 		bool isBinary;
 		bool willEncode;
 

@@ -4,6 +4,7 @@
 #include "ParaXSerializer.h"
 #include "StringHelper.h"
 #include "StringBuilder.h"
+#include "ParaWorldAsset.h"
 
 namespace ParaEngine
 {
@@ -11,15 +12,19 @@ namespace ParaEngine
 	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool encode)
 		: fileName(filename),
 		paraXModel(mesh),
-		buffer(make_shared<Buffer>()),
+		buffer(std::make_shared<Buffer>()),
+		bufferIndex(0),
 		isBinary(binary),
 		willEncode(encode)
 	{
-		std::string path = filename.substr(0, filename.rfind(".gltf"));
-		std::string name = path.substr(path.find_last_of("/\\") + 1u);
+		if (!isBinary)
+		{
+			std::string path = filename.substr(0, filename.rfind(".gltf"));
+			std::string name = path.substr(path.find_last_of("/\\") + 1u);
+			buffer->filename = path + ".bin";
+			buffer->uri = name + ".bin";
+		}
 		buffer->index = 0;
-		buffer->filename = path + ".bin";
-		buffer->uri = name + ".bin";
 
 		ExportMetadata();
 		ExportScene();
@@ -44,7 +49,7 @@ namespace ParaEngine
 
 	void glTFModelExporter::ExportScene()
 	{
-		std::shared_ptr<Scene> scene = make_shared<Scene>();
+		std::shared_ptr<Scene> scene = std::make_shared<Scene>();
 		scene->nodes.push_back(ExportNode());
 
 		root["scene"] = 0;
@@ -54,6 +59,10 @@ namespace ParaEngine
 		Json::Value buffers = Json::Value(Json::arrayValue);
 		Json::Value bufferViews = Json::Value(Json::arrayValue);
 		Json::Value accessors = Json::Value(Json::arrayValue);
+		Json::Value materials = Json::Value(Json::arrayValue);
+		Json::Value textures = Json::Value(Json::arrayValue);
+		Json::Value images = Json::Value(Json::arrayValue);
+		Json::Value samplers = Json::Value(Json::arrayValue);
 
 		Json::Value ns = Json::Value(Json::arrayValue);
 		for (uint32_t i = 0, len = scene->nodes.size(); i < len; i++)
@@ -106,10 +115,13 @@ namespace ParaEngine
 						WriteAccessor(primitive.indices, accessors, index);
 						WriteBufferView(primitive.indices->bufferView, bufferViews, index);
 					}
+
+					WriteMaterial(primitive.material, materials, textures, samplers, images);
 					Json::Value p;
 					p["attributes"] = a;
 					p["indices"] = primitive.indices->index;
 					p["mode"] = primitive.mode;
+					p["material"] = primitive.material->index;
 					ps[k] = p;
 				}
 				Json::Value obj;
@@ -127,11 +139,15 @@ namespace ParaEngine
 		root["buffers"] = buffers;
 		root["bufferViews"] = bufferViews;
 		root["accessors"] = accessors;
+		root["materials"] = materials;
+		root["textures"] = textures;
+		root["samplers"] = samplers;
+		root["images"] = images;
 	}
 
 	std::shared_ptr<Node> glTFModelExporter::ExportNode()
 	{
-		std::shared_ptr<Node> node = make_shared<Node>();
+		std::shared_ptr<Node> node = std::make_shared<Node>();
 		node->meshes.push_back(ExportMesh());
 		node->index = 0;
 		return node;
@@ -139,12 +155,15 @@ namespace ParaEngine
 
 	std::shared_ptr<Mesh> glTFModelExporter::ExportMesh()
 	{
-		std::shared_ptr<Mesh> mesh = make_shared<Mesh>();
+		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
 		mesh->primitives.resize(1);
 		Mesh::Primitive& primitive = mesh->primitives.back();
 		primitive.attributes.position = ExportVertices();
 		primitive.attributes.normal = ExportNormals();
-		primitive.attributes.color = ExportColors();
+		primitive.attributes.texcoord = ExportTextureCoords();
+		if (paraXModel->m_origVertices[0].color0 != 0)
+			primitive.attributes.color = ExportColors();
+		primitive.material = ExportMaterials();
 		primitive.indices = ExportIndices();
 		primitive.mode = PrimitiveMode::Triangles;
 		mesh->index = 0;
@@ -157,31 +176,39 @@ namespace ParaEngine
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 
-		std::shared_ptr<BufferView> bv = make_shared<BufferView>();
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = 0;
+		bv->index = bufferIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
 		bv->target = BufferViewTarget::ArrayBuffer;
 		buffer->Grow(bv->byteLength);
 
-		std::shared_ptr<Accessor> acc = make_shared<Accessor>();
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = 0;
+		acc->index = bufferIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
 		acc->type = AttribType::VEC3;
-		const Vector3& max = paraXModel->m_header.maxExtent;
-		const Vector3& min = paraXModel->m_header.minExtent;
-		acc->max.push_back(max.x);
-		acc->max.push_back(max.y);
-		acc->max.push_back(max.z);
-		acc->min.push_back(min.x);
-		acc->min.push_back(min.y);
-		acc->min.push_back(min.z);
+		acc->max.push_back(FLT_MIN);
+		acc->max.push_back(FLT_MIN);
+		acc->max.push_back(FLT_MIN);
+		acc->min.push_back(FLT_MAX);
+		acc->min.push_back(FLT_MAX);
+		acc->min.push_back(FLT_MAX);
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = paraXModel->m_origVertices[i].pos[j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+		}
 
+		bufferIndex++;
 		return acc;
 	}
 
@@ -191,18 +218,18 @@ namespace ParaEngine
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 
-		std::shared_ptr<BufferView> bv = make_shared<BufferView>();
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = 1;
+		bv->index = bufferIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
 		bv->target = BufferViewTarget::ArrayBuffer;
 		buffer->Grow(bv->byteLength);
 
-		std::shared_ptr<Accessor> acc = make_shared<Accessor>();
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = 1;
+		acc->index = bufferIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -223,27 +250,68 @@ namespace ParaEngine
 			}
 		}
 
+		bufferIndex++;
 		return acc;
 	}
 
-	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportColors()
+	std::shared_ptr<Accessor> glTFModelExporter::ExportTextureCoords()
 	{
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
-		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC2);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 
-		std::shared_ptr<BufferView> bv = make_shared<BufferView>();
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = 2;
+		bv->index = bufferIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numVertices * numComponents * bytesPerComp;
 		bv->byteStride = numComponents * bytesPerComp;
 		bv->target = BufferViewTarget::ArrayBuffer;
 		buffer->Grow(bv->byteLength);
 
-		std::shared_ptr<Accessor> acc = make_shared<Accessor>();
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = 2;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numVertices;
+		acc->type = AttribType::VEC2;
+		acc->max.push_back(0);
+		acc->max.push_back(0);
+		acc->min.push_back(1.0);
+		acc->min.push_back(1.0);
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = paraXModel->m_origVertices[i].texcoords[j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<Accessor> glTFModelExporter::ExportColors()
+	{
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numVertices * numComponents * bytesPerComp;
+		bv->byteStride = numComponents * bytesPerComp;
+		bv->target = BufferViewTarget::ArrayBuffer;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
@@ -268,6 +336,7 @@ namespace ParaEngine
 			if (b > acc->max[2]) acc->max[2] = b;
 		}
 
+		bufferIndex++;
 		return acc;
 	}
 
@@ -277,18 +346,18 @@ namespace ParaEngine
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::UnsignedShort);
 
-		std::shared_ptr<BufferView> bv = make_shared<BufferView>();
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = 3;
+		bv->index = bufferIndex;
 		bv->byteOffset = buffer->byteLength;
 		bv->byteLength = numIndices * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::ElementArrayBuffer;
 		buffer->Grow(bv->byteLength);
 
-		std::shared_ptr<Accessor> acc = make_shared<Accessor>();
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
-		acc->index = 3;
+		acc->index = bufferIndex;
 		acc->byteOffset = 0;
 		acc->componentType = ComponentType::UnsignedShort;
 		acc->type = AttribType::SCALAR;
@@ -301,7 +370,54 @@ namespace ParaEngine
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
 
+		bufferIndex++;
 		return acc;
+	}
+
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials()
+	{
+		std::shared_ptr<Material> material = std::make_shared<Material>();
+		material->index = 0;
+		PbrMetallicRoughness& metallic = material->metallicRoughness;
+		metallic.metallicFactor = 0;
+		metallic.roughnessFactor = 1;
+		metallic.baseColorFactor[0] = 1.0;
+		metallic.baseColorFactor[1] = 1.0;
+		metallic.baseColorFactor[2] = 1.0;
+		metallic.baseColorFactor[3] = 1.0;
+
+		uint32_t numTextures = paraXModel->m_objNum.nTextures;
+		if (numTextures > 0)
+		{
+			std::shared_ptr<Image> img = std::make_shared<Image>();
+			LPD3DXBUFFER texBuffer;
+			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[0]->GetTexture(), nullptr);
+			img->bufferPointer = texBuffer->GetBufferPointer();
+			img->bufferSize = texBuffer->GetBufferSize();
+			if (!isBinary)
+			{
+				std::string path = fileName.substr(0, fileName.rfind(".gltf"));
+				std::string name = path.substr(path.find_last_of("/\\") + 1u);
+				img->filename = path + ".png";
+				img->uri = name + ".png";
+			}
+			img->index = 0;
+
+			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
+			sampler->magFilter = SamplerMagFilter::MagLinear;
+			sampler->minFilter = SamplerMinFilter::LinearMipMapLinear;
+			sampler->wrapS = SamplerWrap::ClampToEdge;
+			sampler->wrapT = SamplerWrap::ClampToEdge;
+			sampler->index = 0;
+
+			std::shared_ptr<Texture> texture = std::make_shared<Texture>();
+			texture->source = img;
+			texture->sampler = sampler;
+			metallic.baseColorTexture.texture = texture;
+			metallic.baseColorTexture.index = 0;
+			metallic.baseColorTexture.texCoord = 0;
+		}
+		return material;
 	}
 
 	std::string glTFModelExporter::EncodeBuffer()
@@ -326,7 +442,14 @@ namespace ParaEngine
 		}
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
+			const ModelVertex& vertex = paraXModel->m_origVertices[i];
+			builder.append((const char*)&vertex.texcoords.x, sizeFloat);
+			builder.append((const char*)&vertex.texcoords.y, sizeFloat);
+		}
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
 			DWORD color = paraXModel->m_origVertices[i].color0;
+			if (color == 0) break;
 			float r = ((color >> 16) & 0xff) / 255.0f;
 			float g = ((color >> 8) & 0xff) / 255.0f;
 			float b = (color & 0xff) / 255.0f;
@@ -400,6 +523,59 @@ namespace ParaEngine
 		obj[index] = acc;
 	}
 
+	void glTFModelExporter::WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img)
+	{
+		PbrMetallicRoughness& pbr = material->metallicRoughness;
+		Json::Value baseTex;
+		baseTex["index"] = pbr.baseColorTexture.index;
+		baseTex["texCoord"] = pbr.baseColorTexture.texCoord;
+		Json::Value baseFac = Json::Value(Json::arrayValue);
+		baseFac[0u] = pbr.baseColorFactor[0];
+		baseFac[1u] = pbr.baseColorFactor[1];
+		baseFac[2u] = pbr.baseColorFactor[2];
+		baseFac[3u] = pbr.baseColorFactor[3];
+		Json::Value metallic;
+		metallic["metallicFactor"] = pbr.metallicFactor;
+		metallic["roughnessFactor"] = pbr.roughnessFactor;
+		metallic["baseColorTexture"] = baseTex;
+		metallic["baseColorFactor"] = baseFac;
+		Json::Value m;
+		m["pbrMetallicRoughness"] = metallic;
+		mat[0u] = m;
+
+		shared_ptr<Texture>& texture = pbr.baseColorTexture.texture;
+		Json::Value t;
+		t["sampler"] = texture->sampler->index;
+		t["source"] = texture->source->index;
+		tex[0u] = t;
+
+		Json::Value s;
+		s["magFilter"] = texture->sampler->magFilter;
+		s["minFilter"] = texture->sampler->minFilter;
+		s["wrapS"] = texture->sampler->wrapS;
+		s["wrapT"] = texture->sampler->wrapT;
+		sampler[0u] = s;
+
+		Json::Value i;
+		if (willEncode)
+		{
+			StringBuilder builder;
+			builder.append((const char*)texture->source->bufferPointer, texture->source->bufferSize);
+			i["uri"] = "data:image/png;base64," + StringHelper::base64(builder.ToString());
+		}
+		else
+		{
+			i["uri"] = texture->source->uri;
+			CParaFile file;
+			if (file.CreateNewFile(texture->source->filename.c_str()))
+			{
+				file.write(texture->source->bufferPointer, texture->source->bufferSize);
+				file.close();
+			}
+		}
+		img[0u] = i;
+	}
+
 	void glTFModelExporter::WriteFile()
 	{
 		CParaFile file;
@@ -411,7 +587,9 @@ namespace ParaEngine
 			file.close();
 			
 			if (!willEncode)
+			{
 				WriteRawData();
+			}
 		}
 	}
 
@@ -439,7 +617,14 @@ namespace ParaEngine
 			}
 			for (uint32_t i = 0; i < numVertices; i++)
 			{
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				bin.write(&vertex.texcoords.x, sizeFloat);
+				bin.write(&vertex.texcoords.y, sizeFloat);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
 				DWORD color = paraXModel->m_origVertices[i].color0;
+				if (color == 0) break;
 				float r = ((color >> 16) & 0xff) / 255.0f;
 				float g = ((color >> 8) & 0xff) / 255.0f;
 				float b = (color & 0xff) / 255.0f;
@@ -506,7 +691,14 @@ namespace ParaEngine
 			}
 			for (uint32_t i = 0; i < numVertices; i++)
 			{
+				const ModelVertex& vertex = paraXModel->m_origVertices[i];
+				file.write(&vertex.texcoords.x, sizeFloat);
+				file.write(&vertex.texcoords.y, sizeFloat);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
 				DWORD color = paraXModel->m_origVertices[i].color0;
+				if (color == 0) break;
 				float r = ((color >> 16) & 0xff) / 255.0f;
 				float g = ((color >> 8) & 0xff) / 255.0f;
 				float b = (color & 0xff) / 255.0f;
@@ -532,12 +724,15 @@ namespace ParaEngine
 	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode)
 	{
 		CParaFile file(input.c_str());
+		CGlobals::GetAssetManager()->SetAsyncLoading(false);
 		CParaXSerializer serializer;
 		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			ParaEngine::glTFModelExporter exporter(filename, mesh, binary, encode);
+			glTFModelExporter exporter(filename, mesh, binary, encode);
+			delete mesh;
+			mesh = nullptr;
 		}
 	}
 
