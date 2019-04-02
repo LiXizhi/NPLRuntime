@@ -63,10 +63,16 @@ namespace ParaEngine
 		virtual float GetRadius();
 
 
-		/** get object Yaw: is facing the positive x axis, if yaw is 0.
+		/** rotation related parameters
 		*/
 		virtual float GetYaw();
 		virtual void SetYaw(float fValue);
+		
+		virtual float GetPitch();
+		virtual void SetPitch(float fValue);
+
+		virtual float GetRoll();
+		virtual void SetRoll(float fValue);
 		
 
 		/** get object height y axis: only for object that has a Height property, usually is height of the bounding box */
@@ -106,8 +112,10 @@ namespace ParaEngine
 		/** bounding box of containing object. This is the local aabb, local center position is usually at (0, height/2, 0). */
 		CShapeAABB m_aabb;
 
-		/** yaw or facing */
+		/** rotation */
 		float m_fYaw;
+		float m_fPitch;
+		float m_fRoll;
 
 		/** radius of m_aabb */
 		float m_fRadius;
