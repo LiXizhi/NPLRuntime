@@ -20,7 +20,7 @@ using namespace ParaEngine;
 #define AUTO_LIGHT_PARAMS_BY_RANGE
 
 CLightObject::CLightObject(void)
-	:m_bDeleteLightParams(true), m_pLightParams(NULL), m_bAutoSetAttenuation(true)
+	:m_bDeleteLightParams(true), m_pLightParams(NULL), m_bAutoSetAttenuation(true), m_bRotationDirty(false)
 {
 
 	m_pLightParams = new CLightParam();
@@ -247,6 +247,12 @@ void CLightObject::SetDirection(const Vector3& dir)
 const Vector3& CLightObject::GetDirection()
 {
 	static const Vector3 g_default = { 1, 1, 1 };
+
+	if (IsRotationDirty()) {
+		m_pLightParams->RecalculateDirection();
+		SetRotationDirty(false);
+	}
+
 	return (m_pLightParams != 0) ? m_pLightParams->Direction : g_default;
 }
 
@@ -255,6 +261,7 @@ void CLightObject::SetYaw(float yaw)
 	if (m_pLightParams != 0)
 	{
 		m_pLightParams->Yaw = yaw;
+		m_bRotationDirty = true;
 	}
 }
 
@@ -268,6 +275,7 @@ void CLightObject::SetPitch(float pitch)
 	if (m_pLightParams != 0)
 	{
 		m_pLightParams->Pitch = pitch;
+		m_bRotationDirty = true;
 	}
 }
 
@@ -281,6 +289,7 @@ void CLightObject::SetRoll(float roll)
 	if (m_pLightParams != 0)
 	{
 		m_pLightParams->Roll = roll;
+		m_bRotationDirty = true;
 	}
 }
 
@@ -605,6 +614,16 @@ void ParaEngine::CLightObject::SetDeferredLightOnly(bool val)
 	m_bDeferredLightOnly = val;
 }
 
+
+bool ParaEngine::CLightObject::IsRotationDirty() const
+{
+	return m_bRotationDirty;
+}
+
+void ParaEngine::CLightObject::SetRotationDirty(bool val)
+{
+	m_bRotationDirty = val;
+}
 
 int CLightObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 {

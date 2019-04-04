@@ -40,7 +40,7 @@ void CLightParam::MakeRedPointLight()
 	Pitch = 0;
 	Roll = 0;
 
-	Range = 2.f;
+	Range = 3.f;
 	/* no Falloff */
 	Falloff = 1.f;
 
@@ -49,9 +49,9 @@ void CLightParam::MakeRedPointLight()
 	Attenuation2 = 1.f;
 
 	/* no Theta */
-	Theta = 0.0f;
+	Theta = 0.8f;
 	/* no Phi */
-	Phi = 0.0f;
+	Phi = 1.0f;
 }
 
 void ParaEngine::CLightParam::MakeRedSpotLight()
@@ -95,24 +95,24 @@ void ParaEngine::CLightParam::MakeRedDirectionalLight()
 	Roll = 0;
 
 	/* no Range */
-	Range = 1.f;
+	Range = 3.f;
 	/* no Falloff */
 	Falloff = 1.f;
 
 	/* no Attenuation0 */
-	Attenuation0 = 0.1f;
+	Attenuation0 = 0.3f;
 	/* no Attenuation1 */
 	Attenuation1 = 0.1f;
 	/* no Attenuation2 */
-	Attenuation2 = 0.1f;
+	Attenuation2 = 1.0f;
 
 	/* no Theta */
-	Theta = 0.0f;
+	Theta = 0.8f;
 	/* no Phi */
-	Phi = 0.0f;
+	Phi = 1.0f;
 }
 
-const ParaEngine::Vector3& ParaEngine::CLightParam::GetDirection()
+void ParaEngine::CLightParam::RecalculateDirection()
 {
 	// Yaw - around axis y
 	// Pitch - around axis x
@@ -131,7 +131,6 @@ const ParaEngine::Vector3& ParaEngine::CLightParam::GetDirection()
 		mat = (*ParaMatrixRotationY(&transform, Yaw))*mat;
 
 	Direction = InitDirection.TransformNormal(mat);
-	return Direction;
 }
 
 const char* CLightParam::ToString()

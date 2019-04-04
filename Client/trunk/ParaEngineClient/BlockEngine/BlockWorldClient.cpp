@@ -3235,7 +3235,7 @@ namespace ParaEngine
 			auto light_ambient = light_param->Ambient;
 
 			auto light_position = light_param->Position;
-			auto light_direction = light_param->GetDirection();
+			auto light_direction = lightObject->GetDirection();
 
 			auto light_range = light_param->Range;
 			auto light_falloff = light_param->Falloff;
