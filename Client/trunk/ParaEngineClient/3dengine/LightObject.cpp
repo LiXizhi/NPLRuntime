@@ -247,6 +247,12 @@ void CLightObject::SetDirection(const Vector3& dir)
 const Vector3& CLightObject::GetDirection()
 {
 	static const Vector3 g_default = { 1, 1, 1 };
+
+	if (IsRotationDirty()) {
+		m_pLightParams->RecalculateDirection();
+		SetRotationDirty(false);
+	}
+
 	return (m_pLightParams != 0) ? m_pLightParams->Direction : g_default;
 }
 

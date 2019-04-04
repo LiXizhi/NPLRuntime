@@ -12,7 +12,7 @@
 using namespace ParaEngine;
 
 ParaEngine::CTileObject::CTileObject()
-	:m_vPos(0, 0, 0), m_fRadius(0), m_fYaw(0), m_fPitch(0), m_fRoll(0), m_aabb(Vector3::ZERO, Vector3::ZERO)
+	:m_vPos(0, 0, 0), m_fRadius(0), m_fYaw(0), m_aabb(Vector3::ZERO, Vector3::ZERO)
 {
 
 }
@@ -215,34 +215,6 @@ void CTileObject::SetYaw(float fValue)
 	if (m_fYaw != fValue)
 	{
 		m_fYaw = fValue;
-		SetGeometryDirty(true);
-	}
-};
-
-float CTileObject::GetPitch()
-{
-	return m_fPitch;
-};
-
-void CTileObject::SetPitch(float fValue)
-{
-	if (m_fPitch != fValue)
-	{
-		m_fPitch = fValue;
-		SetGeometryDirty(true);
-	}
-};
-
-float CTileObject::GetRoll()
-{
-	return m_fRoll;
-};
-
-void CTileObject::SetRoll(float fValue)
-{
-	if (m_fRoll != fValue)
-	{
-		m_fRoll = fValue;
 		SetGeometryDirty(true);
 	}
 };

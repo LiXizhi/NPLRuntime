@@ -68,12 +68,6 @@ namespace ParaEngine
 		virtual float GetYaw();
 		virtual void SetYaw(float fValue);
 		
-		virtual float GetPitch();
-		virtual void SetPitch(float fValue);
-
-		virtual float GetRoll();
-		virtual void SetRoll(float fValue);
-		
 
 		/** get object height y axis: only for object that has a Height property, usually is height of the bounding box */
 		virtual float GetHeight();
@@ -114,8 +108,6 @@ namespace ParaEngine
 
 		/** rotation */
 		float m_fYaw;
-		float m_fPitch;
-		float m_fRoll;
 
 		/** radius of m_aabb */
 		float m_fRadius;

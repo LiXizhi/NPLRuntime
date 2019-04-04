@@ -24,7 +24,7 @@
 namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
-		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_bEnableAnim(true), m_curTime(0),
+		:m_fScale(1.0f), m_fPitch(0.f), m_fRoll(0.f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_bEnableAnim(true), m_curTime(0),
 		m_nPhysicsGroup(0), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS)
 	{
 		SetAttribute(OBJ_VOLUMN_FREESPACE);
@@ -139,6 +139,34 @@ namespace ParaEngine
 			SetGeometryDirty(true);
 		}
 	}
+
+	float BMaxObject::GetPitch()
+	{
+		return m_fPitch;
+	};
+
+	void BMaxObject::SetPitch(float fValue)
+	{
+		if (m_fPitch != fValue)
+		{
+			m_fPitch = fValue;
+			SetGeometryDirty(true);
+		}
+	};
+
+	float BMaxObject::GetRoll()
+	{
+		return m_fRoll;
+	};
+
+	void BMaxObject::SetRoll(float fValue)
+	{
+		if (m_fRoll != fValue)
+		{
+			m_fRoll = fValue;
+			SetGeometryDirty(true);
+		}
+	};
 
 	void BMaxObject::SetAssetFileName(const std::string& sFilename)
 	{

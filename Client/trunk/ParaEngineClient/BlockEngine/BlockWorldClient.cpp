@@ -3235,12 +3235,7 @@ namespace ParaEngine
 			auto light_ambient = light_param->Ambient;
 
 			auto light_position = light_param->Position;
-
-			if (lightObject->IsRotationDirty()) {
-				light_param->RecalculateDirection();
-				lightObject->SetRotationDirty(false);
-			}
-			auto light_direction = light_param->Direction;
+			auto light_direction = lightObject->GetDirection();
 
 			auto light_range = light_param->Range;
 			auto light_falloff = light_param->Falloff;
