@@ -405,9 +405,9 @@ namespace ParaEngine
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			sampler->magFilter = SamplerMagFilter::MagLinear;
-			sampler->minFilter = SamplerMinFilter::LinearMipMapLinear;
-			sampler->wrapS = SamplerWrap::ClampToEdge;
-			sampler->wrapT = SamplerWrap::ClampToEdge;
+			sampler->minFilter = SamplerMinFilter::NearestMipMapLinear;
+			sampler->wrapS = SamplerWrap::Repeat;
+			sampler->wrapT = SamplerWrap::Repeat;
 			sampler->index = 0;
 
 			std::shared_ptr<Texture> texture = std::make_shared<Texture>();
