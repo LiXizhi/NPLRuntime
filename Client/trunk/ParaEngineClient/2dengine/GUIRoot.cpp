@@ -2197,10 +2197,11 @@ void ParaEngine::CGUIRoot::SetUIScale(float fScalingX, float fScalingY, bool bEn
 	{
 		if (bEnsureMinimumScreenSize || bEnsureMaximumScreenSize)
 		{
-			if (bEnsureMinimumScreenSize)
-				SetMinimumScreenSize(-1, -1, true);
+			// calculate scaling factor for minimum screen size last to prioritize it in the case when ensuring both is impossible
 			if (bEnsureMaximumScreenSize)
 				SetMaximumScreenSize(-1, -1, true);
+			if (bEnsureMinimumScreenSize)
+				SetMinimumScreenSize(-1, -1, true);
 		}
 		else
 		{
@@ -2245,7 +2246,7 @@ void ParaEngine::CGUIRoot::SetMinimumScreenSize(int nWidth, int nHeight, bool bA
 		float fScaleY = fHeight / m_fMinScreenHeight;
 		if (fScaleX < 1.f || fScaleY < 1.f)
 		{
-			// take the larger one
+			// take the smaller one
 			if (fScaleX < fScaleY)
 				fScaleY = fScaleX;
 			else
@@ -2276,8 +2277,11 @@ void ParaEngine::CGUIRoot::SetMaximumScreenSize(int nWidth, int nHeight, bool bA
 		float fScaleY = fHeight / m_fMaxScreenHeight;
 		if (fScaleX > 1.f || fScaleY > 1.f)
 		{
-			// take the smaller one
-			if (fScaleX > fScaleY)
+			fScaleX = fScaleX > 1.f ? fScaleX : 1.f;
+			fScaleY = fScaleY > 1.f ? fScaleY : 1.f;
+			// note: not in affinity with SetMinimumScreenSize here
+			// still take the smaller one to ensure all ui elements are on screen
+			if (fScaleX < fScaleY)
 				fScaleY = fScaleX;
 			else
 				fScaleX = fScaleY;
