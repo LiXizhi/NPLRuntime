@@ -33,6 +33,7 @@ using namespace ScreenShot;
 #include "PluginManager.h"
 #include "ViewportManager.h"
 #include "PluginAPI.h"
+#include "ParaImage.h"
 
 
 using namespace ParaEngine;
@@ -375,11 +376,10 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		GSSHOTSYSTEM->TakeScreenShot(filename.c_str());
 #endif
 
-#elif defined(PARAENGINE_MOBILE)
-	//TODO: TakeScreenShot on android.
-	/*string Filename = filename;
+#elif defined(USE_OPENGL_RENDERER)
+    std::string Filename(filename);
 
-	if (filename.empty())
+	if (Filename.empty())
 	{
 		char ValidFilename[256];
 		ZeroMemory(ValidFilename, sizeof(ValidFilename));
@@ -388,10 +388,35 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		snprintf(ValidFilename, 255, "Screen Shots\\ParaEngine_%s_%s.jpg", date_str.c_str(), ParaEngine::GetTimeFormat("hh'H'mm'M'ss tt").c_str());
 		Filename = ValidFilename;
 	}
-	Filename = CParaFile::GetWritablePath() + Filename;
+
+	//Filename = CParaFile::GetWritablePath() + Filename;
+
 	if (CParaFile::CreateDirectory(Filename.c_str()))
 	{
-		int width=cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().width;
+		std::vector<unsigned int> pixels;
+		int width = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+		int height = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+
+		pixels.resize(width*height);
+
+		CGlobals::GetRenderDevice()->ReadPixels(0, 0, width, height, &pixels[0]);
+
+		PE_CHECK_GL_ERROR_DEBUG();
+
+		std::vector<unsigned int> img_pixels;
+		img_pixels.resize(pixels.size());
+
+		for (int row = 0; row < height; ++row)
+		{
+			memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(unsigned int));
+		}
+
+		ParaImage img;
+		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
+		img.saveToFile(Filename);
+
+		/*
+		int width = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().width;
 		int height = cocos2d::Director::getInstance()->getOpenGLView()->getFrameSize().height;
 		std::vector<unsigned int> pixels;
 		pixels.resize(width*height);
@@ -401,13 +426,15 @@ bool CMoviePlatform::TakeScreenShot(const string& filename)
 		img_pixels.resize(pixels.size());
 		for (int row = 0; row < height; ++row)
 		{
-			memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width*sizeof(unsigned int));
+			memcpy(&img_pixels[width*row], &pixels[width*(height - row - 1)], width * sizeof(unsigned int));
 		}
 		cocos2d::CCImage img;
-		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size()*sizeof(unsigned int), width, height, 32);
+		img.initWithRawData(reinterpret_cast<const unsigned char*>(&img_pixels[0]), img_pixels.size() * sizeof(unsigned int), width, height, 32);
 		img.saveToFile(Filename);
+		*/
 		return true;
-	}*/
+	}
+
 #endif
 
 	return false;

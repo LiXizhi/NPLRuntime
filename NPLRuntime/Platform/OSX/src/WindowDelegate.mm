@@ -88,7 +88,7 @@ static WindowDelegate* sInstance = nil;
 - (BOOL) windowShouldClose:(NSWindow *)sender
 {
 #ifdef DEBUG
-    [self closeConsoleWindow];
+    //[self closeConsoleWindow];
 #endif
     return _renderWindow->OnShouldClose();
 }
@@ -255,7 +255,7 @@ static WindowDelegate* sInstance = nil;
 {
     [self InitLanguage];
 #ifdef DEBUG
-    [self openConsoleWindow];
+    //[self openConsoleWindow];
 #endif
     [self startup];
 }

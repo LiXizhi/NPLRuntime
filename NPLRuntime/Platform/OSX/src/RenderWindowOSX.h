@@ -18,6 +18,9 @@ namespace ParaEngine
         virtual intptr_t GetNativeHandle() const override;
         void PollEvents();
         bool ShouldClose() const;
+        
+        void setTitle(const char* title);
+        const char* getTitle();
     public:
         bool OnShouldClose();
         void OnMouseButton(EMouseButton button, EKeyState state,uint32_t x,uint32_t y);
@@ -26,7 +29,7 @@ namespace ParaEngine
         void OnKey(EVirtualKey key, EKeyState state);
         void OnChar(unsigned int character);
         
-
+        
     protected:
         bool m_shouldClose;
         NSWindow* m_window;

@@ -111,10 +111,15 @@ void* CParaXSerializer::LoadParaXMesh(CParaFile &f)
 		p.SetFilename(GetFilename());
 		pMesh = p.ParseParaXModel();
 	}
-	catch (runtime_error* e)
+	catch (runtime_error& e)
 	{
-		OUTPUT_LOG("warn: LoadParaXMesh error:%s\n", e->what());
+		OUTPUT_LOG("warn: LoadParaXMesh error:%s\n", e.what());
 	}
+    catch (...)
+    {
+        OUTPUT_LOG("warn: LoadParaXMesh filename:%s\n", GetFilename().c_str());
+    }
+    
 	return pMesh;
 }
 #ifdef USE_DIRECTX_RENDERER

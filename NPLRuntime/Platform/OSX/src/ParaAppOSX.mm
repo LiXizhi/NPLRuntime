@@ -112,4 +112,18 @@ int ParaEngine::CParaEngineAppOSX::Run(HINSTANCE hInstance)
 	return 0;
 }
 
+/** set the window title when at windowed mode */
+void ParaEngine::CParaEngineAppOSX::SetWindowText(const char* pChar)
+{
+    auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
+    pWindow->setTitle(pChar);
+    
+}
+
+/** get the window title when at windowed mode */
+const char* ParaEngine::CParaEngineAppOSX:: GetWindowText()
+{
+    auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
+    return pWindow->getTitle();
+}
 

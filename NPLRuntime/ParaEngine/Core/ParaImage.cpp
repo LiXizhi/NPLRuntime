@@ -819,8 +819,241 @@ namespace ParaEngine
 
 	bool ParaImage::saveToFile(const std::string &filename, bool isToRGB)
 	{
-		return true;
+        std::string fileExtension = filename.substr(filename.find_last_of('.'));
+        
+        if (fileExtension == ".png")
+        {
+            return saveImageToPNG(filename, isToRGB);
+        }
+        else if (fileExtension == ".jpg")
+        {
+            return saveImageToJPG(filename);
+        }
 	}
+    
+    bool ParaImage::saveImageToPNG(const std::string& filePath, bool isToRGB)
+    {
+        bool ret = false;
+        do
+        {
+            FILE *fp;
+            png_structp png_ptr;
+            png_infop info_ptr;
+            png_colorp palette;
+            png_bytep *row_pointers;
+            
+            fp = fopen(filePath.c_str(), "wb");
+            if(nullptr == fp)
+                break;
+            
+            png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+            
+            if (nullptr == png_ptr)
+            {
+                fclose(fp);
+                break;
+            }
+            
+            info_ptr = png_create_info_struct(png_ptr);
+            if (nullptr == info_ptr)
+            {
+                fclose(fp);
+                png_destroy_write_struct(&png_ptr, nullptr);
+                break;
+            }
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_BADA && CC_TARGET_PLATFORM != CC_PLATFORM_NACL && CC_TARGET_PLATFORM != CC_PLATFORM_TIZEN)
+            if (setjmp(png_jmpbuf(png_ptr)))
+            {
+                fclose(fp);
+                png_destroy_write_struct(&png_ptr, &info_ptr);
+                break;
+            }
+#endif
+            png_init_io(png_ptr, fp);
+            
+            bool hasAlpha = true;
+            if (!isToRGB && hasAlpha)
+            {
+                png_set_IHDR(png_ptr, info_ptr, _width, _height, 8, PNG_COLOR_TYPE_RGB_ALPHA,
+                             PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+            }
+            else
+            {
+                png_set_IHDR(png_ptr, info_ptr, _width, _height, 8, PNG_COLOR_TYPE_RGB,
+                             PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+            }
+            
+            palette = (png_colorp)png_malloc(png_ptr, PNG_MAX_PALETTE_LENGTH * sizeof (png_color));
+            png_set_PLTE(png_ptr, info_ptr, palette, PNG_MAX_PALETTE_LENGTH);
+            
+            png_write_info(png_ptr, info_ptr);
+            
+            png_set_packing(png_ptr);
+            
+            row_pointers = (png_bytep *)malloc(_height * sizeof(png_bytep));
+            if(row_pointers == nullptr)
+            {
+                fclose(fp);
+                png_destroy_write_struct(&png_ptr, &info_ptr);
+                break;
+            }
+            
+            int _width = _width;
+            int _height = _height;
+            
+            if (!hasAlpha)
+            {
+                for (int i = 0; i < (int)_height; i++)
+                {
+                    row_pointers[i] = (png_bytep)_data + i * _width * 3;
+                }
+                
+                png_write_image(png_ptr, row_pointers);
+                
+                free(row_pointers);
+                row_pointers = nullptr;
+            }
+            else
+            {
+                if (isToRGB)
+                {
+                    unsigned char *tempData = static_cast<unsigned char*>(malloc(_width * _height * 3 * sizeof(unsigned char)));
+                    if (nullptr == tempData)
+                    {
+                        fclose(fp);
+                        png_destroy_write_struct(&png_ptr, &info_ptr);
+                        
+                        free(row_pointers);
+                        row_pointers = nullptr;
+                        break;
+                    }
+                    
+                    for (int i = 0; i < _height; ++i)
+                    {
+                        for (int j = 0; j < _width; ++j)
+                        {
+                            tempData[(i * _width + j) * 3] = _data[(i * _width + j) * 4];
+                            tempData[(i * _width + j) * 3 + 1] = _data[(i * _width + j) * 4 + 1];
+                            tempData[(i * _width + j) * 3 + 2] = _data[(i * _width + j) * 4 + 2];
+                        }
+                    }
+                    
+                    for (int i = 0; i < (int)_height; i++)
+                    {
+                        row_pointers[i] = (png_bytep)tempData + i * _width * 3;
+                    }
+                    
+                    png_write_image(png_ptr, row_pointers);
+                    
+                    free(row_pointers);
+                    row_pointers = nullptr;
+                    
+                    if (tempData != nullptr)
+                    {
+                        free(tempData);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < (int)_height; i++)
+                    {
+                        row_pointers[i] = (png_bytep)_data + i * _width * 4;
+                    }
+                    
+                    png_write_image(png_ptr, row_pointers);
+                    
+                    free(row_pointers);
+                    row_pointers = nullptr;
+                }
+            }
+            
+            png_write_end(png_ptr, info_ptr);
+            
+            png_free(png_ptr, palette);
+            palette = nullptr;
+            
+            png_destroy_write_struct(&png_ptr, &info_ptr);
+            
+            fclose(fp);
+            
+            ret = true;
+        } while (0);
+        return ret;
+    }
+
+    bool ParaImage::saveImageToJPG(const std::string& filePath)
+    {
+        bool ret = false;
+        do
+        {
+            struct jpeg_compress_struct cinfo;
+            struct jpeg_error_mgr jerr;
+            FILE * outfile;                 /* target file */
+            JSAMPROW row_pointer[1];        /* pointer to JSAMPLE row[s] */
+            int     row_stride;          /* physical row width in image buffer */
+            
+            cinfo.err = jpeg_std_error(&jerr);
+            /* Now we can initialize the JPEG compression object. */
+            jpeg_create_compress(&cinfo);
+            
+            if((outfile = fopen(filePath.c_str(), "wb")) == nullptr)
+                break;
+            
+            jpeg_stdio_dest(&cinfo, outfile);
+            
+            cinfo.image_width = _width;    /* image width and height, in pixels */
+            cinfo.image_height = _height;
+            cinfo.input_components = 3;       /* # of color components per pixel */
+            cinfo.in_color_space = JCS_RGB;       /* colorspace of input image */
+            
+            jpeg_set_defaults(&cinfo);
+            jpeg_set_quality(&cinfo, 90, TRUE);
+            
+            jpeg_start_compress(&cinfo, TRUE);
+            
+            row_stride = _width * 3; /* JSAMPLEs per row in image_buffer */
+            
+
+            unsigned char *tempData = static_cast<unsigned char*>(malloc(_width * _height * 3 * sizeof(unsigned char)));
+            if (nullptr == tempData)
+            {
+                jpeg_finish_compress(&cinfo);
+                jpeg_destroy_compress(&cinfo);
+                fclose(outfile);
+                break;
+            }
+            
+            for (int i = 0; i < _height; ++i)
+            {
+                for (int j = 0; j < _width; ++j)
+                    
+                {
+                    tempData[(i * (int)_width + j) * 3] = _data[(i * (int)_width + j) * 4];
+                    tempData[(i * (int)_width + j) * 3 + 1] = _data[(i * (int)_width + j) * 4 + 1];
+                    tempData[(i * (int)_width + j) * 3 + 2] = _data[(i * (int)_width + j) * 4 + 2];
+                }
+            }
+            
+            while (cinfo.next_scanline < cinfo.image_height)
+            {
+                row_pointer[0] = & tempData[cinfo.next_scanline * row_stride];
+                (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+            }
+            
+            if (tempData != nullptr)
+            {
+                free(tempData);
+            }
+            
+            
+            jpeg_finish_compress(&cinfo);
+            fclose(outfile);
+            jpeg_destroy_compress(&cinfo);
+            
+            ret = true;
+        } while (0);
+        return ret;
+    }
 
 	void ParaImage::premultipliedAlpha()
 	{

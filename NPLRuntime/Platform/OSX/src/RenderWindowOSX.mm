@@ -172,7 +172,8 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [NSApplication sharedApplication];
     
     // Menu
-    /*NSString* appName = [NSString stringWithFormat:@"%s", "Paracraft"];
+    //*
+    NSString* appName = [NSString stringWithFormat:@"%s", "Paracraft"];
     id menubar = [[NSMenu alloc] initWithTitle:appName];
     id appMenuItem = [NSMenuItem new];
     [menubar addItem: appMenuItem];
@@ -183,7 +184,11 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
                                                  action:@selector(terminate:)
                                           keyEquivalent:@"q"];
     [appMenu addItem:quitMenuItem];
-    [appMenuItem setSubmenu:appMenu];*/
+    [appMenuItem setSubmenu:appMenu];
+    //*/
+    
+    //NSMenu* rootMenu = [NSApp mainMenu];
+    //[rootMenu removeItemAtIndex:0];
     
     
     NSInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
@@ -614,7 +619,17 @@ void RenderWindowOSX::OnMouseMove(uint32_t x, uint32_t y)
     CGUIRoot::GetInstance()->GetMouse()->PushMouseEvent(DeviceMouseEventPtr(new DeviceMouseMoveEvent(x, y)));
 }
 
+void RenderWindowOSX::setTitle(const char* title)
+{
+    NSString* titleNS = [NSString stringWithUTF8String:title];
+    [m_window setTitle:titleNS];
+}
 
+const char*  RenderWindowOSX::getTitle()
+{
+    const char* ret = [[m_window title] UTF8String];
+    return ret;
+}
 
 
 

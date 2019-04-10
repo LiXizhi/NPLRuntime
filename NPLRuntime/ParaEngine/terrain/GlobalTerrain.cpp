@@ -1259,7 +1259,7 @@ int CGlobalTerrain::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("Verbose", FieldType_Bool, (void*)SetVerbose_s, (void*)IsVerbose_s, NULL, NULL, bOverride);
 	pClass->AddField("IsEditor", FieldType_Bool, (void*)SetEditor_s, (void*)IsEditor_s, NULL, NULL, bOverride);
 	pClass->AddField("TessellateMethod", FieldType_Int, (void*)SetTessellateMethod_s, (void*)GetTessellateMethod_s, NULL, NULL, bOverride);
-	pClass->AddField("UseNormals", FieldType_Bool, (void*)SetUseNormals_s, (void*)UseNormals_s, NULL, NULL, bOverride);
+	pClass->AddField("SetUseNormals_s", FieldType_Bool, (void*)SetUseNormals_s, (void*)UseNormals_s, NULL, NULL, bOverride);
 	pClass->AddField("TextureMaskWidth", FieldType_Int, (void*)SetTextureMaskWidth_s, (void*)GetTextureMaskWidth_s, NULL, NULL, bOverride);
 
 	pClass->AddField("UseGeoMipmapLod", FieldType_Bool, (void*)SetGeoMipmapTerrain_s, (void*)IsGeoMipmapTerrain_s, NULL, NULL, bOverride);

@@ -32,7 +32,7 @@ extern "C"
 	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaJavaBridge_cpp(NPL::INPLRuntimeState* pState);
 #endif
 
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 	PE_CORE_DECL NPL::NPLReturnCode NPL_activate_LuaObjcBridge_cpp(NPL::INPLRuntimeState* pState);
 #endif
 }
@@ -50,7 +50,7 @@ NPL::NPL_C_Func_ActivationFile::NPL_C_Func_ActivationFile(const std::string& fil
 	m_callbackTable["NPL_activate_LuaJavaBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaJavaBridge_cpp;
 #endif
 	 
-#ifdef TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE
 	m_callbackTable["NPL_activate_LuaObjcBridge_cpp"] = (NPL_Activate_CallbackFunc)&NPL_activate_LuaObjcBridge_cpp;
 #endif
 

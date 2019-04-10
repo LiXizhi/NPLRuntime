@@ -54,7 +54,9 @@ namespace ParaEngine
 		bool initWithImageData(const unsigned char * data, size_t dataLen);
 		bool initWithRawData(const unsigned char * data, size_t dataLen, int width, int height, int bitsPerComponent, bool preMulti = false);
 		bool saveToFile(const std::string &filename, bool isToRGB = true);
-
+        bool saveImageToJPG(const std::string &filename);
+        bool saveImageToPNG(const std::string& filePath, bool isToRGB);
+        
 		float               getWidth() const { return _width; }
 		float               getHeight() const { return _height; }
 
