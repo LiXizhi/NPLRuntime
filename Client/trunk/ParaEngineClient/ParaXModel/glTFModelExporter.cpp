@@ -378,6 +378,9 @@ namespace ParaEngine
 	{
 		std::shared_ptr<Material> material = std::make_shared<Material>();
 		material->index = 0;
+		material->alphaMode = "MASK";
+		material->alphaCutoff = 0.5;
+		material->doubleSide = true;
 		PbrMetallicRoughness& metallic = material->metallicRoughness;
 		metallic.metallicFactor = 0;
 		metallic.roughnessFactor = 1;
@@ -541,6 +544,9 @@ namespace ParaEngine
 		metallic["baseColorFactor"] = baseFac;
 		Json::Value m;
 		m["pbrMetallicRoughness"] = metallic;
+		m["alphaMode"] = material->alphaMode;
+		m["alphaCutoff"] = material->alphaCutoff;
+		m["doubleSided"] = material->doubleSide;
 		mat[0u] = m;
 
 		shared_ptr<Texture>& texture = pbr.baseColorTexture.texture;
