@@ -1989,6 +1989,14 @@ bool ParaEngine::CGUIRoot::CheckLoadCursor()
 	return true;
 }
 
+void ParaEngine::CGUIRoot::Focus()
+{
+	CGUIContainer::Focus();
+#ifdef WIN32
+	CGlobals::GetApp()->PostWinThreadMessage(PE_WM_SETFOCUS, (WPARAM)(CGlobals::GetAppHWND()), 0);
+#endif
+}
+
 void CGUIRoot::SetMouseInClient(bool bMouseInClient)
 {
 #ifdef PARAENGINE_MOBILE
