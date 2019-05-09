@@ -1,10 +1,10 @@
 #include "glTFModelExporter.h"
-#include "ParaEngine.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
 #include "StringHelper.h"
 #include "StringBuilder.h"
 #include "ParaWorldAsset.h"
+#include "ParaXBone.h"
 
 namespace ParaEngine
 {
@@ -49,13 +49,11 @@ namespace ParaEngine
 
 	void glTFModelExporter::ExportScene()
 	{
-		std::shared_ptr<Scene> scene = std::make_shared<Scene>();
-		scene->nodes.push_back(ExportNode());
-
 		root["scene"] = 0;
 		Json::Value scenes = Json::Value(Json::arrayValue);
 		Json::Value nodes = Json::Value(Json::arrayValue);
 		Json::Value meshes = Json::Value(Json::arrayValue);
+		Json::Value skins = Json::Value(Json::arrayValue);
 		Json::Value buffers = Json::Value(Json::arrayValue);
 		Json::Value bufferViews = Json::Value(Json::arrayValue);
 		Json::Value accessors = Json::Value(Json::arrayValue);
@@ -64,75 +62,141 @@ namespace ParaEngine
 		Json::Value images = Json::Value(Json::arrayValue);
 		Json::Value samplers = Json::Value(Json::arrayValue);
 
+		std::shared_ptr<Node> node = ExportNode();
 		Json::Value ns = Json::Value(Json::arrayValue);
-		for (uint32_t i = 0, len = scene->nodes.size(); i < len; i++)
+		ns[0u] = node->index;
+		std::shared_ptr<Mesh>& mesh = node->mesh;
+		Json::Value m;
+		m["mesh"] = mesh->index;
+		if (node->skin != nullptr)
 		{
-			std::shared_ptr<Node>& node = scene->nodes[i];
-			ns[i] = node->index;
-			for (uint32_t j =  0; j < node->meshes.size(); j++)
+			m["skin"] = node->skin->index;
+			Json::Value c = Json::Value(Json::arrayValue);
+			for (uint32_t i = 0; i < node->children.size(); i++)
 			{
-				std::shared_ptr<Mesh>& mesh = node->meshes[j];
-				Json::Value m;
-				m["mesh"] = mesh->index;
-				nodes[j] = m;
-
-				Json::Value ps = Json::Value(Json::arrayValue);
-				for (uint32_t k = 0; k < mesh->primitives.size(); k++)
-				{
-					Mesh::Primitive& primitive = mesh->primitives[k];
-					Json::Value a;
-					uint32_t index = 0;
-					if (primitive.attributes.position != nullptr)
-					{
-						a["POSITION"] = primitive.attributes.position->index;
-						WriteAccessor(primitive.attributes.position, accessors, index);
-						WriteBufferView(primitive.attributes.position->bufferView, bufferViews, index);
-						index++;
-					}
-					if (primitive.attributes.normal != nullptr)
-					{
-						a["NORMAL"] = primitive.attributes.normal->index;
-						WriteAccessor(primitive.attributes.normal, accessors, index);
-						WriteBufferView(primitive.attributes.normal->bufferView, bufferViews, index);
-						index++;
-					}
-					if (primitive.attributes.texcoord != nullptr)
-					{
-						a["TEXCOORD_0"] = primitive.attributes.texcoord->index;
-						WriteAccessor(primitive.attributes.texcoord, accessors, index);
-						WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews, index);
-						index++;
-					}
-					if (primitive.attributes.color != nullptr)
-					{
-						a["COLOR_0"] = primitive.attributes.color->index;
-						WriteAccessor(primitive.attributes.color, accessors, index);
-						WriteBufferView(primitive.attributes.color->bufferView, bufferViews, index);
-						index++;
-					}
-					if (primitive.indices != nullptr)
-					{
-						WriteAccessor(primitive.indices, accessors, index);
-						WriteBufferView(primitive.indices->bufferView, bufferViews, index);
-					}
-
-					WriteMaterial(primitive.material, materials, textures, samplers, images);
-					Json::Value p;
-					p["attributes"] = a;
-					p["indices"] = primitive.indices->index;
-					p["mode"] = primitive.mode;
-					p["material"] = primitive.material->index;
-					ps[k] = p;
-				}
-				Json::Value obj;
-				obj["primitives"] = ps;
-				meshes[j] = obj;
+				c[i] = node->children[i];
 			}
+			m["children"] = c;
 		}
+		nodes[0u] = m;
+
+		uint32_t index = 0;
+		{
+			Json::Value ps = Json::Value(Json::arrayValue);
+			for (uint32_t k = 0; k < mesh->primitives.size(); k++)
+			{
+				Mesh::Primitive& primitive = mesh->primitives[k];
+				if (primitive.indices != nullptr)
+				{
+					WriteAccessor(primitive.indices, accessors, index);
+					WriteBufferView(primitive.indices->bufferView, bufferViews, index);
+					index++;
+				}
+				Json::Value a;
+				if (primitive.attributes.position != nullptr)
+				{
+					a["POSITION"] = primitive.attributes.position->index;
+					WriteAccessor(primitive.attributes.position, accessors, index);
+					WriteBufferView(primitive.attributes.position->bufferView, bufferViews, index);
+					index++;
+				}
+				if (primitive.attributes.normal != nullptr)
+				{
+					a["NORMAL"] = primitive.attributes.normal->index;
+					WriteAccessor(primitive.attributes.normal, accessors, index);
+					WriteBufferView(primitive.attributes.normal->bufferView, bufferViews, index);
+					index++;
+				}
+				if (primitive.attributes.texcoord != nullptr)
+				{
+					a["TEXCOORD_0"] = primitive.attributes.texcoord->index;
+					WriteAccessor(primitive.attributes.texcoord, accessors, index);
+					WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews, index);
+					index++;
+				}
+				if (primitive.attributes.color != nullptr)
+				{
+					a["COLOR_0"] = primitive.attributes.color->index;
+					WriteAccessor(primitive.attributes.color, accessors, index);
+					WriteBufferView(primitive.attributes.color->bufferView, bufferViews, index);
+					index++;
+				}
+				if (primitive.attributes.joints != nullptr)
+				{
+					a["JOINTS_0"] = primitive.attributes.joints->index;
+					WriteAccessor(primitive.attributes.joints, accessors, index);
+					WriteBufferView(primitive.attributes.joints->bufferView, bufferViews, index);
+					index++;
+				}
+				if (primitive.attributes.weights != nullptr)
+				{
+					a["WEIGHTS_0"] = primitive.attributes.weights->index;
+					WriteAccessor(primitive.attributes.weights, accessors, index);
+					WriteBufferView(primitive.attributes.weights->bufferView, bufferViews, index);
+					index++;
+				}
+
+				WriteMaterial(primitive.material, materials, textures, samplers, images);
+				Json::Value p;
+				p["attributes"] = a;
+				p["indices"] = primitive.indices->index;
+				p["mode"] = primitive.mode;
+				p["material"] = primitive.material->index;
+				ps[k] = p;
+			}
+			Json::Value obj;
+			obj["primitives"] = ps;
+			meshes[0u] = obj;
+		}
+
 		Json::Value obj;
 		obj["nodes"] = ns;
 		scenes[0u] = obj;
 		WriteBuffer(buffers, 0);
+
+		if (node->skin != nullptr)
+		{
+			Json::Value skin;
+			skin["inverseBindMatrices"] = node->skin->inverseBindMatrices->index;
+			WriteAccessor(node->skin->inverseBindMatrices, accessors, index);
+			WriteBufferView(node->skin->inverseBindMatrices->bufferView, bufferViews, index);
+			Json::Value joints = Json::Value(Json::arrayValue);
+			for (uint32_t i = 0; i < node->skin->joints.size(); i++)
+			{
+				std::shared_ptr<Node>& joint = node->skin->joints[i];
+				joints[i] = joint->index;
+				Json::Value t = Json::Value(Json::arrayValue);
+				t[0u] = joint->translation[0];
+				t[1u] = joint->translation[1];
+				t[2u] = joint->translation[2];
+				Json::Value r = Json::Value(Json::arrayValue);
+				r[0u] = joint->rotation[0];
+				r[1u] = joint->rotation[1];
+				r[2u] = joint->rotation[2];
+				r[3u] = joint->rotation[3];
+				Json::Value s = Json::Value(Json::arrayValue);
+				s[0u] = joint->scale[0];
+				s[1u] = joint->scale[1];
+				s[2u] = joint->scale[2];
+				Json::Value child;
+				if (!joint->children.empty())
+				{
+					Json::Value c = Json::Value(Json::arrayValue);
+					for (uint32_t j = 0; j < joint->children.size(); j++)
+					{
+						c[j] = joint->children[j];
+					}
+					child["children"] = c;
+				}
+				child["translation"] = t;
+				child["rotation"] = r;
+				child["scale"] = s;
+				nodes[i + 1] = child;
+			}
+			skin["joints"] = joints;
+			skins[0u] = skin;
+			root["skins"] = skins;
+		}
 		root["scenes"] = scenes;
 		root["nodes"] = nodes;
 		root["meshes"] = meshes;
@@ -148,8 +212,16 @@ namespace ParaEngine
 	std::shared_ptr<Node> glTFModelExporter::ExportNode()
 	{
 		std::shared_ptr<Node> node = std::make_shared<Node>();
-		node->meshes.push_back(ExportMesh());
 		node->index = 0;
+		node->mesh = ExportMesh();
+		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			if (bone.parent == -1)
+				node->children.push_back(bone.nIndex + 1);
+		}
+		if (paraXModel->animated)
+			node->skin = ExportSkin();
 		return node;
 	}
 
@@ -158,16 +230,87 @@ namespace ParaEngine
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
 		mesh->primitives.resize(1);
 		Mesh::Primitive& primitive = mesh->primitives.back();
+		primitive.indices = ExportIndices();
 		primitive.attributes.position = ExportVertices();
 		primitive.attributes.normal = ExportNormals();
 		primitive.attributes.texcoord = ExportTextureCoords();
 		if (paraXModel->m_origVertices[0].color0 != 0)
 			primitive.attributes.color = ExportColors();
+		if (paraXModel->animated)
+		{
+			primitive.attributes.joints = ExportJoints();
+			primitive.attributes.weights = ExportWeights();
+		}
 		primitive.material = ExportMaterials();
-		primitive.indices = ExportIndices();
 		primitive.mode = PrimitiveMode::Triangles;
 		mesh->index = 0;
 		return mesh;
+	}
+
+	std::shared_ptr<ParaEngine::Skin> glTFModelExporter::ExportSkin()
+	{
+		std::shared_ptr<Skin> skin = std::make_shared<Skin>();
+		skin->inverseBindMatrices = ExportMatrices();
+		uint32_t numBones = paraXModel->m_objNum.nBones;
+		for (uint32_t i = 0; i < numBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			std::shared_ptr<Node> node = std::make_shared<Node>();
+			node->index = bone.nIndex + 1;
+			node->translation = bone.m_finalTrans;
+			node->rotation = bone.m_finalRot;
+			node->scale = bone.m_finalScaling;
+			skin->joints.push_back(node);
+		}
+		for (uint32_t i = 0; i < numBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			if (bone.parent != -1)
+				skin->joints[bone.parent]->children.push_back(bone.nIndex + 1);
+		}
+		skin->index = 0;
+		return skin;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportMatrices()
+	{
+		uint32_t numBones = paraXModel->m_objNum.nBones;
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::MAT4);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numBones * numComponents * bytesPerComp;
+		bv->byteStride = 0;
+		bv->target = BufferViewTarget::NotUse;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numBones;
+		acc->type = AttribType::MAT4;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-FLT_MAX);
+			acc->min.push_back(FLT_MAX);
+		}
+		for (uint32_t i = 0; i < numBones; i++)
+		{
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = paraXModel->bones[i].matOffset._m[j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+		}
+
+		bufferIndex++;
+		return acc;
 	}
 
 	std::shared_ptr<Accessor> glTFModelExporter::ExportVertices()
@@ -192,12 +335,11 @@ namespace ParaEngine
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
 		acc->type = AttribType::VEC3;
-		acc->max.push_back(FLT_MIN);
-		acc->max.push_back(FLT_MIN);
-		acc->max.push_back(FLT_MIN);
-		acc->min.push_back(FLT_MAX);
-		acc->min.push_back(FLT_MAX);
-		acc->min.push_back(FLT_MAX);
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-FLT_MAX);
+			acc->min.push_back(FLT_MAX);
+		}
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
@@ -234,12 +376,11 @@ namespace ParaEngine
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
 		acc->type = AttribType::VEC3;
-		acc->max.push_back(-1.0);
-		acc->max.push_back(-1.0);
-		acc->max.push_back(-1.0);
-		acc->min.push_back(1.0);
-		acc->min.push_back(1.0);
-		acc->min.push_back(1.0);
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-1.0);
+			acc->min.push_back(1.0);
+		}
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
@@ -276,10 +417,11 @@ namespace ParaEngine
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
 		acc->type = AttribType::VEC2;
-		acc->max.push_back(0);
-		acc->max.push_back(0);
-		acc->min.push_back(1.0);
-		acc->min.push_back(1.0);
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(0.0);
+			acc->min.push_back(1.0);
+		}
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
 			for (uint32_t j = 0; j < numComponents; j++)
@@ -316,12 +458,11 @@ namespace ParaEngine
 		acc->componentType = ComponentType::Float;
 		acc->count = numVertices;
 		acc->type = AttribType::VEC3;
-		acc->max.push_back(0);
-		acc->max.push_back(0);
-		acc->max.push_back(0);
-		acc->min.push_back(1.0);
-		acc->min.push_back(1.0);
-		acc->min.push_back(1.0);
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(0.0);
+			acc->min.push_back(1.0);
+		}
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
 			DWORD color = paraXModel->m_origVertices[i].color0;
@@ -334,6 +475,102 @@ namespace ParaEngine
 			if (r > acc->max[0]) acc->max[0] = r;
 			if (g > acc->max[1]) acc->max[1] = g;
 			if (b > acc->max[2]) acc->max[2] = b;
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportJoints()
+	{
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC4);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::UnsignedByte);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numVertices * numComponents * bytesPerComp;
+		bv->byteStride = numComponents * bytesPerComp;
+		bv->target = BufferViewTarget::ArrayBuffer;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::UnsignedByte;
+		acc->count = numVertices;
+		acc->type = AttribType::VEC4;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(0);
+			acc->min.push_back(255);
+		}
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			uint8* bone = paraXModel->m_origVertices[i].bones;
+			uint8 a = bone[0];
+			uint8 b = bone[1];
+			uint8 c = bone[2];
+			uint8 d = bone[3];
+			if (a < acc->min[0]) acc->min[0] = a;
+			if (b < acc->min[1]) acc->min[1] = b;
+			if (c < acc->min[2]) acc->min[2] = c;
+			if (d < acc->min[3]) acc->min[3] = d;
+			if (a > acc->max[0]) acc->max[0] = a;
+			if (b > acc->max[1]) acc->max[1] = b;
+			if (c > acc->max[2]) acc->max[2] = c;
+			if (d > acc->max[3]) acc->max[3] = d;
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportWeights()
+	{
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC4);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numVertices * numComponents * bytesPerComp;
+		bv->byteStride = numComponents * bytesPerComp;
+		bv->target = BufferViewTarget::ArrayBuffer;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numVertices;
+		acc->type = AttribType::VEC4;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(0.0);
+			acc->min.push_back(1.0);
+		}
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			uint8* weight = paraXModel->m_origVertices[i].weights;
+			float a = weight[0] * (1 / 255.0f);
+			float b = weight[1] * (1 / 255.0f);
+			float c = weight[2] * (1 / 255.0f);
+			float d = weight[3] * (1 / 255.0f);
+			if (a < acc->min[0]) acc->min[0] = a;
+			if (b < acc->min[1]) acc->min[1] = b;
+			if (c < acc->min[2]) acc->min[2] = c;
+			if (d < acc->min[3]) acc->min[3] = d;
+			if (a > acc->max[0]) acc->max[0] = a;
+			if (b > acc->max[1]) acc->max[1] = b;
+			if (c > acc->max[2]) acc->max[2] = c;
+			if (d > acc->max[3]) acc->max[3] = d;
 		}
 
 		bufferIndex++;
@@ -423,11 +660,24 @@ namespace ParaEngine
 		return material;
 	}
 
+	std::shared_ptr<ParaEngine::Animation> glTFModelExporter::ExportAnimations()
+	{
+		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
+		return animation;
+	}
+
 	std::string glTFModelExporter::EncodeBuffer()
 	{
 		StringBuilder builder;
 		uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 		uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+		uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
+		uint32_t numIndices = paraXModel->m_objNum.nIndices;
+		for (uint32_t i = 0; i < numIndices; i++)
+		{
+			uint16_t index = paraXModel->m_indices[i];
+			builder.append((const char*)&index, sizeUShort);
+		}
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
 		for (uint32_t i = 0; i < numVertices; i++)
 		{
@@ -460,11 +710,33 @@ namespace ParaEngine
 			builder.append((const char*)&g, sizeFloat);
 			builder.append((const char*)&b, sizeFloat);
 		}
-		uint32_t numIndices = paraXModel->m_objNum.nIndices;
-		for (uint32_t i = 0; i < numIndices; i++)
+		if (paraXModel->animated)
 		{
-			uint16_t index = paraXModel->m_indices[i];
-			builder.append((const char*)&index, sizeUShort);
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				uint8* bone = paraXModel->m_origVertices[i].bones;
+				builder.append((const char*)bone, sizeUByte * 4);
+			}
+			for (uint32_t i = 0; i < numVertices; i++)
+			{
+				uint8* weight = paraXModel->m_origVertices[i].weights;
+				float a = weight[0] * (1 / 255.0f);
+				float b = weight[1] * (1 / 255.0f);
+				float c = weight[2] * (1 / 255.0f);
+				float d = weight[3] * (1 / 255.0f);
+				builder.append((const char*)&a, sizeFloat);
+				builder.append((const char*)&b, sizeFloat);
+				builder.append((const char*)&c, sizeFloat);
+				builder.append((const char*)&d, sizeFloat);
+			}
+			for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+			{
+				Matrix4& mat = paraXModel->bones[i].matOffset;
+				for (uint32_t j = 0; j < 16; j++)
+				{
+					builder.append((const char*)&mat._m[j], sizeFloat);
+				}
+			}
 		}
 		return StringHelper::base64(builder.ToString());
 	}
@@ -493,7 +765,8 @@ namespace ParaEngine
 		bv["byteLength"] = bufferView->byteLength;
 		if (bufferView->byteStride != 0)
 			bv["byteStride"] = bufferView->byteStride;
-		bv["target"] = bufferView->target;
+		if (bufferView->target != BufferViewTarget::NotUse)
+			bv["target"] = bufferView->target;
 		obj[index] = bv;
 	}
 
@@ -508,19 +781,41 @@ namespace ParaEngine
 		Json::Value jmax = Json::Value(Json::arrayValue);
 		for (uint32_t i = 0; i < accessor->max.size(); i++)
 		{
-			if (accessor->type == AttribType::SCALAR)
+			switch (accessor->componentType)
+			{
+			case ComponentType::UnsignedByte:
+				jmax[i] = (uint8)accessor->max[i];
+				break;
+			case ComponentType::UnsignedShort:
+				jmax[i] = (uint16_t)accessor->max[i];
+				break;
+			case ComponentType::UnsignedInt:
 				jmax[i] = (uint32_t)accessor->max[i];
-			else
+				break;
+			default:
 				jmax[i] = accessor->max[i];
+				break;
+			}
 		}
 		acc["max"] = jmax;
 		Json::Value jmin = Json::Value(Json::arrayValue);
 		for (uint32_t i = 0; i < accessor->min.size(); i++)
 		{
-			if (accessor->type == AttribType::SCALAR)
+			switch (accessor->componentType)
+			{
+			case ComponentType::UnsignedByte:
+				jmin[i] = (uint8)accessor->min[i];
+				break;
+			case ComponentType::UnsignedShort:
+				jmin[i] = (uint16_t)accessor->min[i];
+				break;
+			case ComponentType::UnsignedInt:
 				jmin[i] = (uint32_t)accessor->min[i];
-			else
+				break;
+			default:
 				jmin[i] = accessor->min[i];
+				break;
+			}
 		}
 		acc["min"] = jmin;
 		obj[index] = acc;
@@ -606,6 +901,13 @@ namespace ParaEngine
 		{
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
+			uint32_t numIndices = paraXModel->m_objNum.nIndices;
+			for (uint32_t i = 0; i < numIndices; i++)
+			{
+				uint16_t index = paraXModel->m_indices[i];
+				bin.write(&index, sizeUShort);
+			}
 			uint32_t numVertices = paraXModel->m_objNum.nVertices;
 			for (uint32_t i = 0; i < numVertices; i++)
 			{
@@ -638,11 +940,33 @@ namespace ParaEngine
 				bin.write(&g, sizeFloat);
 				bin.write(&b, sizeFloat);
 			}
-			uint32_t numIndices = paraXModel->m_objNum.nIndices;
-			for (uint32_t i = 0; i < numIndices; i++)
+			if (paraXModel->animated)
 			{
-				uint16_t index = paraXModel->m_indices[i];
-				bin.write(&index, sizeUShort);
+				for (uint32_t i = 0; i < numVertices; i++)
+				{
+					uint8* bone = paraXModel->m_origVertices[i].bones;
+					bin.write(bone, sizeUByte * 4);
+				}
+				for (uint32_t i = 0; i < numVertices; i++)
+				{
+					uint8* weight = paraXModel->m_origVertices[i].weights;
+					float a = weight[0] * (1 / 255.0f);
+					float b = weight[1] * (1 / 255.0f);
+					float c = weight[2] * (1 / 255.0f);
+					float d = weight[3] * (1 / 255.0f);
+					bin.write(&a, sizeFloat);
+					bin.write(&b, sizeFloat);
+					bin.write(&c, sizeFloat);
+					bin.write(&d, sizeFloat);
+				}
+				for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+				{
+					Matrix4& mat = paraXModel->bones[i].matOffset;
+					for (uint32_t j = 0; j < 16; j++)
+					{
+						bin.write(&mat._m[j], sizeFloat);
+					}
+				}
 			}
 			bin.close();
 		}
@@ -680,6 +1004,13 @@ namespace ParaEngine
 			file.write(&binaryChunk, sizeof(GLBChunk));
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
+			uint32_t numIndices = paraXModel->m_objNum.nIndices;
+			for (uint32_t i = 0; i < numIndices; i++)
+			{
+				uint16_t index = paraXModel->m_indices[i];
+				file.write(&index, sizeUShort);
+			}
 			uint32_t numVertices = paraXModel->m_objNum.nVertices;
 			for (uint32_t i = 0; i < numVertices; i++)
 			{
@@ -712,11 +1043,33 @@ namespace ParaEngine
 				file.write(&g, sizeFloat);
 				file.write(&b, sizeFloat);
 			}
-			uint32_t numIndices = paraXModel->m_objNum.nIndices;
-			for (uint32_t i = 0; i < numIndices; i++)
+			if (paraXModel->animated)
 			{
-				uint16_t index = paraXModel->m_indices[i];
-				file.write(&index, sizeUShort);
+				for (uint32_t i = 0; i < numVertices; i++)
+				{
+					uint8* bone = paraXModel->m_origVertices[i].bones;
+					file.write(bone, sizeUByte * 4);
+				}
+				for (uint32_t i = 0; i < numVertices; i++)
+				{
+					uint8* weight = paraXModel->m_origVertices[i].weights;
+					float a = weight[0] * (1 / 255.0f);
+					float b = weight[1] * (1 / 255.0f);
+					float c = weight[2] * (1 / 255.0f);
+					float d = weight[3] * (1 / 255.0f);
+					file.write(&a, sizeFloat);
+					file.write(&b, sizeFloat);
+					file.write(&c, sizeFloat);
+					file.write(&d, sizeFloat);
+				}
+				for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+				{
+					Matrix4& mat = paraXModel->bones[i].matOffset;
+					for (uint32_t j = 0; j < 16; j++)
+					{
+						file.write(&mat._m[j], sizeFloat);
+					}
+				}
 			}
 			uint8_t binaryPadding = 0x00;
 			paddingLength = binaryLength - buffer->byteLength;

@@ -1,4 +1,7 @@
 #pragma once
+#include "ParaEngine.h"
+#include "ParaVector3.h"
+#include "ParaQuaternion.h"
 #include "json/json.h"
 #include <string>
 #include <memory>
@@ -26,6 +29,7 @@ namespace ParaEngine
 
 	enum BufferViewTarget
 	{
+		NotUse = 0,
 		ArrayBuffer = 34962,
 		ElementArrayBuffer = 34963
 	};
@@ -79,6 +83,16 @@ namespace ParaEngine
 		default: return 0;
 		}
 	}
+
+	enum AnimationPath
+	{
+		Translation, Rotation, Scale, Weights
+	};
+
+	enum Interpolation
+	{
+		LINEAR, STEP, CUBICSPLINE
+	};
 
 	class AttribType
 	{
@@ -225,7 +239,7 @@ namespace ParaEngine
 			PrimitiveMode mode;
 			struct Attributes
 			{
-				std::shared_ptr<Accessor> position, normal, texcoord, color;
+				std::shared_ptr<Accessor> position, normal, texcoord, color, joints, weights;
 			} attributes;
 			std::shared_ptr<Accessor> indices;
 			std::shared_ptr<Material> material;
@@ -234,9 +248,47 @@ namespace ParaEngine
 		uint32_t index;
 	};
 
+	struct Node;
+	struct Skin
+	{
+		std::shared_ptr<Accessor> inverseBindMatrices;
+		std::vector <std::shared_ptr<Node> > joints;
+		uint32_t index;
+	};
+
+	struct Animation
+	{
+		struct Sampler
+		{
+			std::shared_ptr<Accessor> input;
+			std::shared_ptr<Accessor> output;
+			Interpolation interpolation;
+		};
+
+		struct Target
+		{
+			std::shared_ptr<Node> node;
+			AnimationPath path;
+		};
+
+		struct Channel
+		{
+			uint32_t sampler;
+			Target target;
+		};
+
+		std::vector<Sampler> samplers;
+		std::vector<Channel> channels;
+	};
+
 	struct Node
 	{
-		std::vector<std::shared_ptr<Mesh> > meshes;
+		std::shared_ptr<Mesh> mesh;
+		std::vector<uint32_t> children;
+		Vector3 translation;
+		Quaternion rotation;
+		Vector3 scale;
+		std::shared_ptr<Skin> skin;
 		uint32_t index;
 	};
 
@@ -258,12 +310,17 @@ namespace ParaEngine
 		void ExportScene();
 		std::shared_ptr<Node> ExportNode();
 		std::shared_ptr<Mesh> ExportMesh();
+		std::shared_ptr<Skin> ExportSkin();
+		std::shared_ptr<Accessor> ExportMatrices();
 		std::shared_ptr<Accessor> ExportVertices();
 		std::shared_ptr<Accessor> ExportNormals();
 		std::shared_ptr<Accessor> ExportTextureCoords();
 		std::shared_ptr<Accessor> ExportColors();
+		std::shared_ptr<Accessor> ExportJoints();
+		std::shared_ptr<Accessor> ExportWeights();
 		std::shared_ptr<Accessor> ExportIndices();
 		std::shared_ptr<Material> ExportMaterials();
+		std::shared_ptr<Animation> ExportAnimations();
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
