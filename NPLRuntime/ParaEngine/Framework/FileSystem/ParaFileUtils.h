@@ -4,6 +4,8 @@
 #include <string>
 namespace ParaEngine
 {
+	class CSearchResult;
+
 	class CParaFileUtils
 	{
 	public:
@@ -26,7 +28,9 @@ namespace ParaEngine
 		virtual bool Delete(const std::string& filename);
 		virtual int DeleteDirectory(const std::string& filename);
 		virtual std::string GetFullPathForFilename(const std::string &filename);
-
+	
 		virtual std::string GetExternalStoragePath();
+
+		virtual void FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel);
 	};
 }
