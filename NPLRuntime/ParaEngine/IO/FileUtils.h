@@ -221,6 +221,7 @@ namespace ParaEngine
 
 		/** this is a recursive function. @see SearchFiles */
 		static void FindDiskFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel);
+		static void FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel);
 
 		/** fileHandle is for win32, and fileName for other platform, but both needed here for validity check and avoiding re-compile this header */
 		static bool WriteLastModifiedTimeToDisk(FileHandle& fileHandle, const std::string& fileName, const time_t& lastModifiedTime);

@@ -5,6 +5,7 @@
 #include "AsyncLoader.h"
 #include "AssetManifest.h"
 #include "ZipArchive.h"
+#include "StringHelper.h"
 #include "IParaEngineApp.h"
 #include "FileUtils.h"
 #include "util/StringBuilder.h"
@@ -283,21 +284,21 @@ bool ParaEngine::CParaFileUtilsAndroid::Copy(const std::string& src, const std::
 	}
 	return true;
 }
-//
-//bool ParaEngine::CParaFileUtilsAndroid::Move(const std::string& src, const std::string& dest)
-//{
-//	try
-//	{
-//		fs::path sSrc(GetFullPathForFilename(src));
-//		fs::path sDest(GetFullPathForFilename(dest));
-//		fs::copy_file(sSrc,sDest, fs::copy_option::overwrite_if_exists);
-//		return fs::remove(sSrc);
-//	}
-//	catch (...)
-//	{
-//		return false;
-//	}
-//}
+
+bool ParaEngine::CParaFileUtilsAndroid::Move(const std::string& src, const std::string& dest)
+{
+	try
+	{
+		fs::path sSrc(GetFullPathForFilename(src));
+		fs::path sDest(GetFullPathForFilename(dest));
+		fs::copy_file(sSrc,sDest, fs::copy_option::overwrite_if_exists);
+		return fs::remove(sSrc);
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
 
 bool ParaEngine::CParaFileUtilsAndroid::Delete(const std::string& filename)
 {
@@ -331,4 +332,56 @@ std::string ParaEngine::CParaFileUtilsAndroid::GetFullPathForFilename(const std:
 		return filename;
 }
 
+
+void ParaEngine::CParaFileUtilsAndroid::FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
+{
+	if (IsAbsolutePath(sRootPath))
+		return;
+
+	auto app = (CParaEngineAppAndroid*)(CGlobals::GetApp());
+	auto state = app->GetAndroidApp();
+	auto assetManager = state->activity->assetManager;
+
+	if (!assetManager)
+		return;
+
+	const char* s = sRootPath.c_str();
+	// Found "assets/" at the beginning of the path and we don't want it
+	if (sRootPath.find(_defaultResRootPath) == 0)
+		s += strlen("assets/");
+
+	auto assetDir = AAssetManager_openDir(assetManager, s);
+	if (!assetDir)
+		return;
+
+	result.SetRootPath(s);
+
+	FILETIME fileLastWriteTime;
+	auto nextFilename = AAssetDir_getNextFileName(assetDir);
+	while (nextFilename)
+	{
+		if (sFilePattern == "*." || sFilePattern == "*.*")
+		{
+			if (!result.AddResult(nextFilename, 0, 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+			{
+				AAssetDir_close(assetDir);
+				return;
+			}
+				
+		}
+		else if (ParaEngine::StringHelper::MatchWildcard(nextFilename, sFilePattern))
+		{
+			if (!result.AddResult(nextFilename, 0, 0, &fileLastWriteTime, &fileLastWriteTime, &fileLastWriteTime))
+			{
+				AAssetDir_close(assetDir);
+				return;
+			}
+		}
+
+		nextFilename = AAssetDir_getNextFileName(assetDir);
+	}
+
+
+	AAssetDir_close(assetDir);
+}
 

@@ -741,6 +741,11 @@ void ParaEngine::CFileUtils::FindDiskFiles(CSearchResult& result, const std::str
 	FindFiles_Recursive(result, rootPath, sFilePattern, nSubLevel);
 }
 
+void ParaEngine::CFileUtils::FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
+{
+	CParaFileUtils::GetInstance()->FindLocalFiles(result, sRootPath, sFilePattern, nSubLevel);
+}
+
 
 bool ParaEngine::CFileUtils::AddDiskSearchPath(const std::string& sFile, bool nFront /*= false*/)
 {

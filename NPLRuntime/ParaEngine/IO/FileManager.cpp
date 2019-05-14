@@ -211,6 +211,12 @@ void CFileManager::FindDiskFiles(CSearchResult& result, const string& sRootPath,
 	CFileUtils::FindDiskFiles(result, sRootPath, sFilePattern, nSubLevel);
 }
 
+void CFileManager::FindLocalFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel)
+{
+	CFileUtils::FindLocalFiles(result, sRootPath, sFilePattern, nSubLevel);
+}
+
+
 CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& sFilePattern, const string& sZipArchive, int nSubLevel, int nMaxFilesNum, int nFrom)
 {
 	// TODO: allocate result on heap will enable asynchronous calls to this function.
@@ -223,6 +229,7 @@ CSearchResult* CFileManager::SearchFiles(const string& sRootPath, const string& 
 	{
 		// search in disk files
 		FindDiskFiles(result, result.GetRootPath(), sFilePattern, nSubLevel);
+		FindLocalFiles(result, sRootPath, sFilePattern, nSubLevel);
 	}
 	else if (sZipArchive == "*.zip")
 	{

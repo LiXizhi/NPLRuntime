@@ -124,6 +124,7 @@ namespace ParaEngine
 	private:
 		/** this is a recursive function. @see SearchFiles */
 		static void FindDiskFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel);
+		static void FindLocalFiles(CSearchResult& result, const string& sRootPath, const string& sFilePattern, int nSubLevel);
 
 		friend class CParaFile;
 	};

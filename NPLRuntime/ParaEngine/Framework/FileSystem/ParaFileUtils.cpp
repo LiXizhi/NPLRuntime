@@ -206,4 +206,8 @@ bool ParaEngine::CParaFileUtils::SaveBufferToFile(const std::string& filename, b
 	return false;
 }
 
+void ParaEngine::CParaFileUtils::FindLocalFiles(CSearchResult& result, const std::string& sRootPath, const std::string& sFilePattern, int nSubLevel)
+{
+	// TODO
+}
 
