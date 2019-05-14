@@ -61,6 +61,7 @@ namespace ParaEngine
 		Json::Value textures = Json::Value(Json::arrayValue);
 		Json::Value images = Json::Value(Json::arrayValue);
 		Json::Value samplers = Json::Value(Json::arrayValue);
+		Json::Value animations = Json::Value(Json::arrayValue);
 
 		std::shared_ptr<Node> node = ExportNode();
 		Json::Value ns = Json::Value(Json::arrayValue);
@@ -149,17 +150,13 @@ namespace ParaEngine
 			meshes[0u] = obj;
 		}
 
-		Json::Value obj;
-		obj["nodes"] = ns;
-		scenes[0u] = obj;
-		WriteBuffer(buffers, 0);
-
 		if (node->skin != nullptr)
 		{
 			Json::Value skin;
 			skin["inverseBindMatrices"] = node->skin->inverseBindMatrices->index;
 			WriteAccessor(node->skin->inverseBindMatrices, accessors, index);
 			WriteBufferView(node->skin->inverseBindMatrices->bufferView, bufferViews, index);
+			index++;
 			Json::Value joints = Json::Value(Json::arrayValue);
 			for (uint32_t i = 0; i < node->skin->joints.size(); i++)
 			{
@@ -197,6 +194,62 @@ namespace ParaEngine
 			skins[0u] = skin;
 			root["skins"] = skins;
 		}
+
+		if (paraXModel->animated)
+		{
+			std::shared_ptr<Animation> animation = ExportAnimations();
+			Json::Value saj = Json::Value(Json::arrayValue);
+			for (uint32_t i = 0; i < animation->samplers.size(); i++)
+			{
+				Animation::Sampler& sampler = animation->samplers[i];
+				WriteAccessor(sampler.input, accessors, index);
+				WriteBufferView(sampler.input->bufferView, bufferViews, index);
+				index++;
+				WriteAccessor(sampler.output, accessors, index);
+				WriteBufferView(sampler.output->bufferView, bufferViews, index);
+				index++;
+				Json::Value sj;
+				sj["input"] = sampler.input->index;
+				sj["output"] = sampler.output->index;
+				switch (sampler.interpolation)
+				{
+				case Interpolation::LINEAR: sj["interpolation"] = "LINEAR"; break;
+				case Interpolation::STEP: sj["interpolation"] = "STEP"; break;
+				case Interpolation::CUBICSPLINE: sj["interpolation"] = "CUBICSPLINE"; break;
+				default: break;
+				}
+				saj[i] = sj;
+			}
+			Json::Value caj = Json::Value(Json::arrayValue);
+			for (uint32_t i = 0; i < animation->channels.size(); i++)
+			{
+				Animation::Channel& channel = animation->channels[i];
+				Json::Value cj;
+				cj["sampler"] = channel.sampler;
+				Json::Value tj;
+				tj["node"] = channel.target.node;
+				switch (channel.target.path)
+				{
+				case AnimationPath::Translation: tj["path"] = "translation"; break;
+				case AnimationPath::Rotation: tj["path"] = "rotation"; break;
+				case AnimationPath::Scale: tj["path"] = "scale"; break;
+				default: break;
+				}
+				cj["target"] = tj;
+				caj[i] = cj;
+			}
+			Json::Value aj;
+			aj["samplers"] = saj;
+			aj["channels"] = caj;
+			animations[0u] = aj;
+			root["animations"] = animations;
+		}
+
+		Json::Value obj;
+		obj["nodes"] = ns;
+		scenes[0u] = obj;
+		WriteBuffer(buffers, 0);
+
 		root["scenes"] = scenes;
 		root["nodes"] = nodes;
 		root["meshes"] = meshes;
@@ -221,7 +274,9 @@ namespace ParaEngine
 				node->children.push_back(bone.nIndex + 1);
 		}
 		if (paraXModel->animated)
+		{
 			node->skin = ExportSkin();
+		}
 		return node;
 	}
 
@@ -663,7 +718,230 @@ namespace ParaEngine
 	std::shared_ptr<ParaEngine::Animation> glTFModelExporter::ExportAnimations()
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
+
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+		uint32_t numBones = paraXModel->m_objNum.nBones;
+		for (uint32_t i = 0; i < numBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			if (bone.trans.used)
+			{
+				Animation::Sampler sampler;
+				sampler.interpolation = Interpolation::LINEAR;
+				sampler.input = ExportTime(bone.trans.ranges, bone.trans.times);
+				sampler.output = ExportTranslationData(bone.trans.ranges, bone.trans.data);
+				Animation::Channel channel;
+				channel.target.node = bone.nIndex + 1;
+				channel.target.path = AnimationPath::Translation;
+				channel.sampler = animation->samplers.size();
+				animation->samplers.push_back(sampler);
+				animation->channels.push_back(channel);
+			}
+
+			if (bone.rot.used)
+			{
+				Animation::Sampler sampler;
+				sampler.interpolation = Interpolation::LINEAR;
+				sampler.input = ExportTime(bone.rot.ranges, bone.rot.times);
+				sampler.output = ExportRotationData(bone.rot.ranges, bone.rot.data);
+				Animation::Channel channel;
+				channel.target.node = bone.nIndex + 1;
+				channel.target.path = AnimationPath::Rotation;
+				channel.sampler = animation->samplers.size();
+				animation->samplers.push_back(sampler);
+				animation->channels.push_back(channel);
+			}
+
+			if (bone.scale.used)
+			{
+				Animation::Sampler sampler;
+				sampler.interpolation = Interpolation::LINEAR;
+				sampler.input = ExportTime(bone.scale.ranges, bone.scale.times);
+				sampler.output = ExportTranslationData(bone.scale.ranges, bone.scale.data);
+				Animation::Channel channel;
+				channel.target.node = bone.nIndex + 1;
+				channel.target.path = AnimationPath::Scale;
+				channel.sampler = animation->samplers.size();
+				animation->samplers.push_back(sampler);
+				animation->channels.push_back(channel);
+			}
+		}
 		return animation;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportTime(std::vector<AnimRange>& ranges, std::vector<int>& times)
+	{
+		uint32_t numDatas = 0;
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			if (first != second)
+				numDatas += 2;
+			else
+				numDatas++;
+		}
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numDatas * numComponents * bytesPerComp;
+		bv->byteStride = 0;
+		bv->target = BufferViewTarget::NotUse;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numDatas;
+		acc->type = AttribType::SCALAR;
+		acc->max.push_back(-FLT_MAX);
+		acc->min.push_back(FLT_MAX);
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			float val = times[first] * 1.0f / 1000.0f;
+			if (val < acc->min[0]) acc->min[0] = val;
+			if (val > acc->max[0]) acc->max[0] = val;
+			if (first != second)
+			{
+				val = times[second] * 1.0f / 1000.0f;
+				if (val < acc->min[0]) acc->min[0] = val;
+				if (val > acc->max[0]) acc->max[0] = val;
+			}
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportTranslationData(std::vector<AnimRange>& ranges, std::vector<Vector3>& data)
+	{
+		uint32_t numDatas = 0;
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			if (first != second)
+				numDatas += 2;
+			else
+				numDatas++;
+		}
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numDatas * numComponents * bytesPerComp;
+		bv->byteStride = 0;
+		bv->target = BufferViewTarget::NotUse;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numDatas;
+		acc->type = AttribType::VEC3;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-FLT_MAX);
+			acc->min.push_back(FLT_MAX);
+		}
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = data[first][j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+			if (first != second)
+			{
+				for (uint32_t j = 0; j < numComponents; j++)
+				{
+					float val = data[second][j];
+					if (val < acc->min[j]) acc->min[j] = val;
+					if (val > acc->max[j]) acc->max[j] = val;
+				}
+			}
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportRotationData(std::vector<AnimRange>& ranges, std::vector<Quaternion>& data)
+	{
+		uint32_t numDatas = 0;
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			if (first != second)
+				numDatas += 2;
+			else
+				numDatas++;
+		}
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC4);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+
+		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
+		bv->buffer = buffer;
+		bv->index = bufferIndex;
+		bv->byteOffset = buffer->byteLength;
+		bv->byteLength = numDatas * numComponents * bytesPerComp;
+		bv->byteStride = 0;
+		bv->target = BufferViewTarget::NotUse;
+		buffer->Grow(bv->byteLength);
+
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = 0;
+		acc->componentType = ComponentType::Float;
+		acc->count = numDatas;
+		acc->type = AttribType::VEC4;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-FLT_MAX);
+			acc->min.push_back(FLT_MAX);
+		}
+		for (uint32_t i = 0; i < ranges.size(); i++)
+		{
+			uint32_t first = ranges[i].first;
+			uint32_t second = ranges[i].second;
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = data[first][j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+			if (first != second)
+			{
+				for (uint32_t j = 0; j < numComponents; j++)
+				{
+					float val = data[second][j];
+					if (val < acc->min[j]) acc->min[j] = val;
+					if (val > acc->max[j]) acc->max[j] = val;
+				}
+			}
+		}
+
+		bufferIndex++;
+		return acc;
 	}
 
 	std::string glTFModelExporter::EncodeBuffer()
@@ -729,12 +1007,108 @@ namespace ParaEngine
 				builder.append((const char*)&c, sizeFloat);
 				builder.append((const char*)&d, sizeFloat);
 			}
-			for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+			uint32_t numBones = paraXModel->m_objNum.nBones;
+			for (uint32_t i = 0; i < numBones; i++)
 			{
 				Matrix4& mat = paraXModel->bones[i].matOffset;
 				for (uint32_t j = 0; j < 16; j++)
 				{
 					builder.append((const char*)&mat._m[j], sizeFloat);
+				}
+			}
+			for (uint32_t i = 0; i < numBones; i++)
+			{
+				Bone& bone = paraXModel->bones[i];
+				if (bone.trans.used)
+				{
+					for (uint32_t j = 0; j < bone.trans.ranges.size(); j++)
+					{
+						uint32_t first = bone.trans.ranges[j].first;
+						uint32_t second = bone.trans.ranges[j].second;
+						float a = bone.trans.times[first] * 1.0f / 1000.0f;
+						builder.append((const char*)&a, sizeFloat);
+						if (first != second)
+						{
+							float b = bone.trans.times[second] * 1.0f / 1000.0f;
+							builder.append((const char*)&b, sizeFloat);
+						}
+					}
+					for (uint32_t j = 0; j < bone.trans.ranges.size(); j++)
+					{
+						uint32_t first = bone.trans.ranges[j].first;
+						uint32_t second = bone.trans.ranges[j].second;
+						builder.append((const char*)&bone.trans.data[first].x, sizeFloat);
+						builder.append((const char*)&bone.trans.data[first].y, sizeFloat);
+						builder.append((const char*)&bone.trans.data[first].z, sizeFloat);
+						if (first != second)
+						{
+							builder.append((const char*)&bone.trans.data[second].x, sizeFloat);
+							builder.append((const char*)&bone.trans.data[second].y, sizeFloat);
+							builder.append((const char*)&bone.trans.data[second].z, sizeFloat);
+						}
+					}
+				}
+
+				if (bone.rot.used)
+				{
+					for (uint32_t j = 0; j < bone.rot.ranges.size(); j++)
+					{
+						uint32_t first = bone.rot.ranges[j].first;
+						uint32_t second = bone.rot.ranges[j].second;
+						float a = bone.rot.times[first] * 1.0f / 1000.0f;
+						builder.append((const char*)&a, sizeFloat);
+						if (first != second)
+						{
+							float b = bone.rot.times[second] * 1.0f / 1000.0f;
+							builder.append((const char*)&b, sizeFloat);
+						}
+					}
+					for (uint32_t j = 0; j < bone.rot.ranges.size(); j++)
+					{
+						uint32_t first = bone.rot.ranges[j].first;
+						uint32_t second = bone.rot.ranges[j].second;
+						builder.append((const char*)&bone.rot.data[first].x, sizeFloat);
+						builder.append((const char*)&bone.rot.data[first].y, sizeFloat);
+						builder.append((const char*)&bone.rot.data[first].z, sizeFloat);
+						builder.append((const char*)&bone.rot.data[first].w, sizeFloat);
+						if (first != second)
+						{
+							builder.append((const char*)&bone.rot.data[second].x, sizeFloat);
+							builder.append((const char*)&bone.rot.data[second].y, sizeFloat);
+							builder.append((const char*)&bone.rot.data[second].z, sizeFloat);
+							builder.append((const char*)&bone.rot.data[second].w, sizeFloat);
+						}
+					}
+				}
+
+				if (bone.scale.used)
+				{
+					for (uint32_t j = 0; j < bone.scale.ranges.size(); j++)
+					{
+						uint32_t first = bone.scale.ranges[j].first;
+						uint32_t second = bone.scale.ranges[j].second;
+						float a = bone.scale.times[first] * 1.0f / 1000.0f;
+						builder.append((const char*)&a, sizeFloat);
+						if (first != second)
+						{
+							float b = bone.scale.times[second] * 1.0f / 1000.0f;
+							builder.append((const char*)&b, sizeFloat);
+						}
+					}
+					for (uint32_t j = 0; j < bone.scale.ranges.size(); j++)
+					{
+						uint32_t first = bone.scale.ranges[j].first;
+						uint32_t second = bone.scale.ranges[j].second;
+						builder.append((const char*)&bone.scale.data[first].x, sizeFloat);
+						builder.append((const char*)&bone.scale.data[first].y, sizeFloat);
+						builder.append((const char*)&bone.scale.data[first].z, sizeFloat);
+						if (first != second)
+						{
+							builder.append((const char*)&bone.scale.data[second].x, sizeFloat);
+							builder.append((const char*)&bone.scale.data[second].y, sizeFloat);
+							builder.append((const char*)&bone.scale.data[second].z, sizeFloat);
+						}
+					}
 				}
 			}
 		}
