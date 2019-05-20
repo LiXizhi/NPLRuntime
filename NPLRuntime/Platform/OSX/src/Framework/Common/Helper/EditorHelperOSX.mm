@@ -52,7 +52,11 @@ namespace ParaEngine {
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
         std::string cmd =  "open ";
-        cmd += lpFile;
+		
+		if (strcmp(lpParameters, "explorer.exe") == 0)
+			cmd += lpDirectory;
+		else
+			cmd += lpFile;
         
         system(cmd.c_str());
         
