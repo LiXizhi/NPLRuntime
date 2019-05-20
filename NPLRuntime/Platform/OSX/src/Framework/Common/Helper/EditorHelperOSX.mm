@@ -51,20 +51,18 @@ namespace ParaEngine {
     
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-        std::string sCmdName = lpFile;
-        if(sCmdName == "explorer.exe" && lpParameters)
-        {
-            NSString* sFilename = [NSString stringWithCString:lpParameters encoding:[NSString defaultCStringEncoding]];
-            [[NSWorkspace sharedWorkspace] openFile:(sFilename)];
-            [sFilename release];
-        }
-        return false;
+        std::string cmd =  "open ";
+        cmd += lpFile;
+        
+        system(cmd.c_str());
+        
+        return true;
 	}
 
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-		if (strcmp(lpOperation, "open") == 0)
+ 		if (strcmp(lpOperation, "open") == 0)
 		{
 			bool isUrl = false;
 
