@@ -2,7 +2,6 @@
 #include "ParaEngine.h"
 #include "ParaVector3.h"
 #include "ParaQuaternion.h"
-#include "ParaXBone.h"
 #include "animated.h"
 #include "json/json.h"
 #include <string>
@@ -262,7 +261,6 @@ namespace ParaEngine
 	{
 		struct Sampler
 		{
-			bool used;
 			std::shared_ptr<Accessor> input;
 			std::shared_ptr<Accessor> output;
 			Interpolation interpolation;
@@ -324,13 +322,9 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportIndices();
 		std::shared_ptr<Material> ExportMaterials();
 		std::shared_ptr<Animation> ExportAnimations();
-		Vector3 CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot);
-		std::shared_ptr<BufferView> ExportTimeBuffer();
-		std::shared_ptr<BufferView> ExportTranslationBuffer();
-		std::shared_ptr<BufferView> ExportRotationBuffer();
-		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
-		std::shared_ptr<Accessor> ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
-		std::shared_ptr<Accessor> ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
+		std::shared_ptr<Accessor> ExportTime(std::vector<AnimRange>& ranges, std::vector<int>& times);
+		std::shared_ptr<Accessor> ExportTranslationData(std::vector<AnimRange>& ranges, std::vector<Vector3>& data);
+		std::shared_ptr<Accessor> ExportRotationData(std::vector<AnimRange>& ranges, std::vector<Quaternion>& data);
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
@@ -347,13 +341,6 @@ namespace ParaEngine
 		uint32_t bufferIndex;
 		bool isBinary;
 		bool willEncode;
-		std::vector<float> animTimes;
-		std::vector<Vector3> translations;
-		std::vector<Quaternion> rotations;
-		std::vector<std::pair<uint32_t, uint32_t>> animIndices;
-		std::shared_ptr<BufferView> bvTime;
-		std::shared_ptr<BufferView> bvTranslation;
-		std::shared_ptr<BufferView> bvRotation;
 
 	public:
 		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode = true);
