@@ -51,9 +51,11 @@ bool ParaAudio::PlayWaveFile( const char* szWavePath,int nLoopCount )
 	else
 	{
 		// stop last midi sound
-		if (filename.empty())
+		if (filename.empty()){
 			CMidiMsg::PlayMidiFile(filename);
-
+			return true;
+		}
+			
 		if (FAILED(CAudioEngine2::GetInstance()->PlayWaveFile(szWavePath, nLoopCount > 0)))
 		{
 			return false;
