@@ -10,20 +10,31 @@
 namespace ParaEngine
 {
 
-	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool embedded)
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary, bool embedded /*= true*/)
 		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
 		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
 		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
-		fileName(filename),
 		paraXModel(mesh),
 		bufferIndex(0),
 		isBinary(binary),
 		isEmbedded(embedded),
 		buffer(std::make_shared<Buffer>())
 	{
+		buffer->index = 0;
+		ParseParaXModel();
+	}
+
+	glTFModelExporter::~glTFModelExporter()
+	{
+
+	}
+
+	void glTFModelExporter::ExportToFile(const std::string& filename)
+	{
+		fileName = filename;
 		if (!isBinary)
 		{
 			std::string path = filename.substr(0, filename.rfind(".gltf"));
@@ -31,8 +42,6 @@ namespace ParaEngine
 			buffer->filename = path + ".bin";
 			buffer->uri = name + ".bin";
 		}
-		buffer->index = 0;
-		ParseParaXModel();
 
 		ExportMetadata();
 		ExportScene();
@@ -42,9 +51,12 @@ namespace ParaEngine
 			WriteFile();
 	}
 
-	glTFModelExporter::~glTFModelExporter()
+	std::string glTFModelExporter::ExportToBuffer()
 	{
-
+		ExportMetadata();
+		ExportScene();
+		Json::StyledWriter writer;
+		return writer.write(root);
 	}
 
 	void glTFModelExporter::ParseParaXModel()
@@ -1519,10 +1531,31 @@ namespace ParaEngine
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			glTFModelExporter exporter(filename, mesh, binary, embedded);
+			glTFModelExporter exporter(mesh, binary, embedded);
+			exporter.ExportToFile(filename);
 			delete mesh;
 			mesh = nullptr;
 		}
+	}
+
+	luabind::object glTFModelExporter::ExportParaXTo_glTF(const std::string& input, bool binary, lua_State* L)
+	{
+		std::string buffer;
+		CParaFile file(input.c_str());
+		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+		CParaXSerializer serializer;
+		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+		if (mesh != nullptr)
+		{
+			glTFModelExporter exporter(mesh, binary);
+			buffer = exporter.ExportToBuffer();
+			delete mesh;
+			mesh = nullptr;
+		}
+		lua_pushlstring(L, buffer.c_str(), buffer.length());
+		luabind::object o(luabind::from_stack(L, -1));
+		lua_pop(L, 1);
+		return o;
 	}
 
 }

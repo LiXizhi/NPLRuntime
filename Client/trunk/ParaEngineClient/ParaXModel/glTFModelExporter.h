@@ -4,6 +4,7 @@
 #include "ParaXBone.h"
 #include "animated.h"
 #include "json/json.h"
+#include "luabind/object.hpp"
 #include <string>
 #include <memory>
 
@@ -304,8 +305,11 @@ namespace ParaEngine
 	class glTFModelExporter
 	{
 	public:
-		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool embedded);
+		glTFModelExporter(CParaXModel* mesh, bool binary, bool embedded = true);
 		~glTFModelExporter();
+		
+		void ExportToFile(const std::string& filename);
+		std::string ExportToBuffer();
 
 	private:
 		void ParseParaXModel();
@@ -363,8 +367,8 @@ namespace ParaEngine
 		std::vector<Vector3> translations;
 		std::vector<Quaternion> rotations;
 
-		std::string fileName;
 		CParaXModel* paraXModel;
+		std::string fileName;
 		Json::Value root;
 		uint32_t bufferIndex;
 		bool isBinary;
@@ -376,5 +380,6 @@ namespace ParaEngine
 
 	public:
 		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded = true);
+		static luabind::object ExportParaXTo_glTF(const std::string& input, bool binary, lua_State* L);
 	};
 }

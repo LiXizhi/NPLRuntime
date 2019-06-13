@@ -502,7 +502,10 @@ void CNPLScriptingState::LoadParaScene()
 			def("CheckExist", &ParaScene::CheckExist),
 			def("Execute", &ParaScene::Execute),
 			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL),
+			// write to glTF file
 			def("ParaXExportTo_glTF", &glTFModelExporter::ParaXExportTo_glTF)
+			// return glTF Buffer
+			def("ExportParaXTo_glTF", &glTFModelExporter::ExportParaXTo_glTF)
 		]
 	];
 }
