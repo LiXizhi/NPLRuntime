@@ -358,7 +358,7 @@ void IGameObject::MakeGlobal(bool bGlobal)
 
 void IGameObject::SetGroupID(int nGroup)
 {
-	m_nGroup = nGroup%32;
+	m_nGroup = nGroup;
 }
 
 int IGameObject::GetGroupID()
