@@ -299,16 +299,18 @@ namespace ParaEngine
 	{
 		std::vector<std::shared_ptr<Node> > nodes;
 	};
-
+	
 	class CParaXModel;
 
 	class glTFModelExporter
 	{
 	public:
-		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool encode);
+		glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool embedded);
 		~glTFModelExporter();
 
 	private:
+		void ParseParaXModel();
+		Vector3 CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot);
 		void ExportMetadata();
 		void ExportScene();
 		std::shared_ptr<Node> ExportNode();
@@ -324,7 +326,6 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportIndices();
 		std::shared_ptr<Material> ExportMaterials();
 		std::shared_ptr<Animation> ExportAnimations();
-		Vector3 CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot);
 		std::shared_ptr<BufferView> ExportTimeBuffer();
 		std::shared_ptr<BufferView> ExportTranslationBuffer();
 		std::shared_ptr<BufferView> ExportRotationBuffer();
@@ -340,22 +341,41 @@ namespace ParaEngine
 		void WriteRawData();
 		void WriteGLBFile();
 
-		std::string fileName;
-		CParaXModel* paraXModel;
-		std::shared_ptr<Buffer> buffer;
-		Json::Value root;
-		uint32_t bufferIndex;
-		bool isBinary;
-		bool willEncode;
+		std::vector<Vector3> vertices;
+		std::vector<Vector3> normals;
+		std::vector<Vector3> colors;
+		std::vector<Vector2> texcoords;
+		std::vector<Vector4> weights;
+		Vector3 maxVertex;
+		Vector3 minVertex;
+		Vector3 maxNormal;
+		Vector3 minNormal;
+		Vector3 maxColor;
+		Vector3 minColor;
+		Vector2 maxCoord;
+		Vector2 minCoord;
+		Vector4 maxJoint;
+		Vector4 minJoint;
+		Vector4 maxWeight;
+		Vector4 minWeight;
+		std::vector<int> boneIndices;
+		std::vector<uint32_t> animOffsets;
 		std::vector<float> animTimes;
 		std::vector<Vector3> translations;
 		std::vector<Quaternion> rotations;
-		std::vector<std::pair<uint32_t, uint32_t>> animIndices;
+
+		std::string fileName;
+		CParaXModel* paraXModel;
+		Json::Value root;
+		uint32_t bufferIndex;
+		bool isBinary;
+		bool isEmbedded;
+		std::shared_ptr<Buffer> buffer;
 		std::shared_ptr<BufferView> bvTime;
 		std::shared_ptr<BufferView> bvTranslation;
 		std::shared_ptr<BufferView> bvRotation;
 
 	public:
-		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode = true);
+		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded = true);
 	};
 }

@@ -9,13 +9,19 @@
 namespace ParaEngine
 {
 
-	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool encode)
-		: fileName(filename),
+	glTFModelExporter::glTFModelExporter(const std::string& filename, CParaXModel* mesh, bool binary, bool embedded)
+		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
+		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
+		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
+		fileName(filename),
 		paraXModel(mesh),
-		buffer(std::make_shared<Buffer>()),
 		bufferIndex(0),
 		isBinary(binary),
-		willEncode(encode)
+		isEmbedded(embedded),
+		buffer(std::make_shared<Buffer>())
 	{
 		if (!isBinary)
 		{
@@ -25,6 +31,7 @@ namespace ParaEngine
 			buffer->uri = name + ".bin";
 		}
 		buffer->index = 0;
+		ParseParaXModel();
 
 		ExportMetadata();
 		ExportScene();
@@ -37,6 +44,255 @@ namespace ParaEngine
 	glTFModelExporter::~glTFModelExporter()
 	{
 
+	}
+
+	void glTFModelExporter::ParseParaXModel()
+	{
+		float inverse = 1.0f / 255.0f;
+		uint32_t numVertices = paraXModel->m_objNum.nVertices;
+		for (uint32_t i = 0; i < numVertices; i++)
+		{
+			ModelVertex& vertex = paraXModel->m_origVertices[i];
+			Vector3 v = vertex.pos;
+			Vector3 n = vertex.normal;
+			Vector2 coord = vertex.texcoords;
+			DWORD color = vertex.color0;
+
+			for (uint32_t j = 0; j < 3; j++)
+			{
+				float val = v[j];
+				if (val < minVertex[j]) minVertex[j] = val;
+				if (val > maxVertex[j]) maxVertex[j] = val;
+				val = n[j];
+				if (val < minNormal[j]) minNormal[j] = val;
+				if (val > maxNormal[j]) maxNormal[j] = val;
+			}
+			vertices.push_back(v);
+			normals.push_back(n);
+
+			for (uint32_t j = 0; j < 2; j++)
+			{
+				float val = coord[j];
+				if (val < minCoord[j]) minCoord[j] = val;
+				if (val > maxCoord[j]) maxCoord[j] = val;
+			}
+			texcoords.push_back(coord);
+
+			if (color != 0)
+			{
+				float r = ((color >> 16) & 0xff) / 255.0f;
+				float g = ((color >> 8) & 0xff) / 255.0f;
+				float b = (color & 0xff) / 255.0f;
+				if (r < minColor[0]) minColor[0] = r;
+				if (g < minColor[1]) minColor[1] = g;
+				if (b < minColor[2]) minColor[2] = b;
+				if (r > maxColor[0]) maxColor[0] = r;
+				if (g > maxColor[1]) maxColor[1] = g;
+				if (b > maxColor[2]) maxColor[2] = b;
+				colors.push_back(Vector3(r, g, b));
+			}
+
+			uint8* bone = vertex.bones;
+			Vector4 joint(bone[0], bone[1], bone[2], bone[3]);
+			for (uint32_t j = 0; j < 4; j++)
+			{
+				float val = static_cast<float>(joint[j]);
+				if (val < minJoint[j]) minJoint[j] = val;
+				if (val > maxJoint[j]) maxJoint[j] = val;
+			}
+
+			Vector4 weight;
+			for (uint32_t j = 0; j < 4; j++)
+			{
+				float val = vertex.weights[j] * inverse;
+				weight[j] = val;
+				if (val < minWeight[j]) minWeight[j] = val;
+				if (val > maxWeight[j]) maxWeight[j] = val;
+			}
+			weights.push_back(weight);
+		}
+
+		inverse = 1.0f / 1000.0f;
+		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		uint32_t numBones = paraXModel->m_objNum.nBones;
+		for (uint32_t i = 0; i < numBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			uint32_t firstT = bone.trans.ranges[0].first;
+			uint32_t secondT = bone.trans.ranges[0].second;
+			uint32_t firstR = bone.rot.ranges[0].first;
+			uint32_t secondR = bone.rot.ranges[0].second;
+			if (bone.trans.used && bone.rot.used)
+			{
+				if (secondR > secondT)
+				{
+					animOffsets.push_back(secondR - firstR + 1);
+					if (firstT == secondT)
+					{
+						for (uint32_t j = firstR; j <= secondR; j++)
+						{
+							animTimes.push_back(bone.rot.times[j] * inverse);
+							Quaternion q = bone.rot.data[j];
+							q.invertWinding();
+							Vector3 trans = bone.trans.data[firstT];
+							if (bone.bUsePivot)
+								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+							translations.push_back(trans);
+							rotations.push_back(q);
+						}
+					}
+					else
+					{
+						for (uint32_t j = firstR; j <= secondR; j++)
+						{
+							int time = bone.rot.times[j];
+							animTimes.push_back(time * inverse);
+							Quaternion q = bone.rot.data[j];
+							Vector3 trans = bone.trans.getValue(0, time);
+							q.invertWinding();
+							if (bone.bUsePivot)
+								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+							translations.push_back(trans);
+							rotations.push_back(q);
+						}
+					}
+				}
+				else if (secondT > secondR)
+				{
+					animOffsets.push_back(secondT - firstT + 1);
+					if (firstR == secondR)
+					{
+						Quaternion q = bone.rot.data[firstR];
+						for (uint32_t j = firstT; j <= secondT; j++)
+						{
+							animTimes.push_back(bone.trans.times[j] * inverse);
+							Vector3 trans = bone.trans.data[j];
+							q.invertWinding();
+							if (bone.bUsePivot)
+								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+							translations.push_back(trans);
+							rotations.push_back(q);
+						}
+					}
+					else
+					{
+						for (uint32_t j = firstT; j <= secondT; j++)
+						{
+							int time = bone.rot.times[j];
+							animTimes.push_back(time * inverse);
+							Quaternion q = bone.rot.getValue(0, time);
+							Vector3 trans = bone.trans.data[j];
+							q.invertWinding();
+							if (bone.bUsePivot)
+								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+							translations.push_back(trans);
+							rotations.push_back(q);
+						}
+					}
+				}
+				else
+				{
+					if (firstR == secondR)
+					{
+						animOffsets.push_back(2);
+						animTimes.push_back(0);
+						animTimes.push_back(animLength * inverse);
+						Quaternion q = bone.rot.data[firstR];
+						Vector3 trans = bone.trans.data[firstT];
+						q.invertWinding();
+						if (bone.bUsePivot)
+							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+						translations.push_back(trans);
+						translations.push_back(trans);
+						rotations.push_back(q);
+						rotations.push_back(q);
+					}
+					else
+					{
+						animOffsets.push_back(secondR - firstR + 1);
+						for (uint32_t j = firstR; j <= secondR; j++)
+						{
+							animTimes.push_back(bone.rot.times[j] * inverse);
+							Quaternion q = bone.rot.data[j];
+							Vector3 trans = bone.trans.data[j];
+							q.invertWinding();
+							if (bone.bUsePivot)
+								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+							translations.push_back(trans);
+							rotations.push_back(q);
+						}
+					}
+				}
+				boneIndices.push_back(bone.nIndex);
+			}
+			else if (bone.trans.used)
+			{
+				//if (firstT == secondT)
+				//{
+				//	animIndices.push_back(std::make_pair(2, 0));
+				//	animTimes.push_back(0);
+				//	animTimes.push_back(animLength * inverse);
+				//	Vector3 trans = bone.trans.data[firstT];
+				//	translations.push_back(trans);
+				//	translations.push_back(trans);
+				//}
+				//else
+				//{
+				//	animIndices.push_back(std::make_pair(secondT - firstT + 1, 0));
+				//	for (uint32_t j = firstT; j <= secondT; j++)
+				//	{
+				//		animTimes.push_back(bone.rot.times[j] * inverse);
+				//		Vector3 trans = bone.trans.data[j];
+				//		translations.push_back(trans);
+				//	}
+				//}
+				//bones.push_back(bone.nIndex);
+			}
+			else if (bone.rot.used)
+			{
+				if (firstR == secondR)
+				{
+					animOffsets.push_back(2);
+					animTimes.push_back(0);
+					animTimes.push_back(animLength * inverse);
+					Quaternion q = bone.rot.data[firstR];
+					Vector3 trans(0, 0, 0);
+					q.invertWinding();
+					if (bone.bUsePivot)
+						trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+					translations.push_back(trans);
+					translations.push_back(trans);
+					rotations.push_back(q);
+					rotations.push_back(q);
+				}
+				else
+				{
+					animOffsets.push_back(secondR - firstR + 1);
+					for (uint32_t j = firstR; j <= secondR; j++)
+					{
+						animTimes.push_back(bone.rot.times[j] * inverse);
+						Quaternion q = bone.rot.data[j];
+						q.invertWinding();
+						Vector3 trans(0, 0, 0);
+						if (bone.bUsePivot)
+							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+						translations.push_back(trans);
+						rotations.push_back(q);
+					}
+				}
+				boneIndices.push_back(bone.nIndex);
+			}
+		}
+	}
+
+	Vector3 glTFModelExporter::CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot)
+	{
+		Matrix4 m;
+		m.makeTrans(pivot * -1.0f);
+		m = m.Multiply4x3(matRot);
+		m.offsetTrans(trans);
+		m.offsetTrans(pivot);
+		return m.getTrans();
 	}
 
 	void glTFModelExporter::ExportMetadata()
@@ -326,12 +582,6 @@ namespace ParaEngine
 			if (bone.parent != -1)
 				skin->joints[bone.parent]->children.push_back(bone.nIndex + 1);
 		}
-		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
-		//for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
-		//{
-		//	Bone& bone = paraXModel->bones[i];
-		//	bone.calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
-		//}
 		skin->inverseBindMatrices = ExportMatrices();
 		skin->index = 0;
 		return skin;
@@ -402,17 +652,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC3;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(-FLT_MAX);
-			acc->min.push_back(FLT_MAX);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			for (uint32_t j = 0; j < numComponents; j++)
-			{
-				float val = paraXModel->m_origVertices[i].pos[j];
-				if (val < acc->min[j]) acc->min[j] = val;
-				if (val > acc->max[j]) acc->max[j] = val;
-			}
+			acc->max.push_back(maxVertex[i]);
+			acc->min.push_back(minVertex[i]);
 		}
 
 		bufferIndex++;
@@ -443,17 +684,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC3;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(-1.0);
-			acc->min.push_back(1.0);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			for (uint32_t j = 0; j < numComponents; j++)
-			{
-				float val = paraXModel->m_origVertices[i].normal[j];
-				if (val < acc->min[j]) acc->min[j] = val;
-				if (val > acc->max[j]) acc->max[j] = val;
-			}
+			acc->max.push_back(maxNormal[i]);
+			acc->min.push_back(minNormal[i]);
 		}
 
 		bufferIndex++;
@@ -484,17 +716,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC2;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(0.0);
-			acc->min.push_back(1.0);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			for (uint32_t j = 0; j < numComponents; j++)
-			{
-				float val = paraXModel->m_origVertices[i].texcoords[j];
-				if (val < acc->min[j]) acc->min[j] = val;
-				if (val > acc->max[j]) acc->max[j] = val;
-			}
+			acc->max.push_back(maxCoord[i]);
+			acc->min.push_back(minCoord[i]);
 		}
 
 		bufferIndex++;
@@ -525,21 +748,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC3;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(0.0);
-			acc->min.push_back(1.0);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			DWORD color = paraXModel->m_origVertices[i].color0;
-			float r = ((color >> 16) & 0xff) / 255.0f;
-			float g = ((color >> 8) & 0xff) / 255.0f;
-			float b = (color & 0xff) / 255.0f;
-			if (r < acc->min[0]) acc->min[0] = r;
-			if (g < acc->min[1]) acc->min[1] = g;
-			if (b < acc->min[2]) acc->min[2] = b;
-			if (r > acc->max[0]) acc->max[0] = r;
-			if (g > acc->max[1]) acc->max[1] = g;
-			if (b > acc->max[2]) acc->max[2] = b;
+			acc->max.push_back(maxColor[i]);
+			acc->min.push_back(minCoord[i]);
 		}
 
 		bufferIndex++;
@@ -570,24 +780,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC4;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(0);
-			acc->min.push_back(255);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			uint8* bone = paraXModel->m_origVertices[i].bones;
-			uint8 a = bone[0];
-			uint8 b = bone[1];
-			uint8 c = bone[2];
-			uint8 d = bone[3];
-			if (a < acc->min[0]) acc->min[0] = a;
-			if (b < acc->min[1]) acc->min[1] = b;
-			if (c < acc->min[2]) acc->min[2] = c;
-			if (d < acc->min[3]) acc->min[3] = d;
-			if (a > acc->max[0]) acc->max[0] = a;
-			if (b > acc->max[1]) acc->max[1] = b;
-			if (c > acc->max[2]) acc->max[2] = c;
-			if (d > acc->max[3]) acc->max[3] = d;
+			acc->max.push_back(maxJoint[i]);
+			acc->min.push_back(minJoint[i]);
 		}
 
 		bufferIndex++;
@@ -618,24 +812,8 @@ namespace ParaEngine
 		acc->type = AttribType::VEC4;
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
-			acc->max.push_back(0.0);
-			acc->min.push_back(1.0);
-		}
-		for (uint32_t i = 0; i < numVertices; i++)
-		{
-			uint8* weight = paraXModel->m_origVertices[i].weights;
-			float a = weight[0] * (1 / 255.0f);
-			float b = weight[1] * (1 / 255.0f);
-			float c = weight[2] * (1 / 255.0f);
-			float d = weight[3] * (1 / 255.0f);
-			if (a < acc->min[0]) acc->min[0] = a;
-			if (b < acc->min[1]) acc->min[1] = b;
-			if (c < acc->min[2]) acc->min[2] = c;
-			if (d < acc->min[3]) acc->min[3] = d;
-			if (a > acc->max[0]) acc->max[0] = a;
-			if (b > acc->max[1]) acc->max[1] = b;
-			if (c > acc->max[2]) acc->max[2] = c;
-			if (d > acc->max[3]) acc->max[3] = d;
+			acc->max.push_back(maxWeight[i]);
+			acc->min.push_back(minWeight[i]);
 		}
 
 		bufferIndex++;
@@ -729,236 +907,46 @@ namespace ParaEngine
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
 
-		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
-		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
-		uint32_t numBones = paraXModel->m_objNum.nBones;
-		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
-		std::vector<int> bones;
-		for (uint32_t i = 0; i < numBones; i++)
-		{
-			Bone& bone = paraXModel->bones[i];
-			uint32_t firstT = bone.trans.ranges[0].first;
-			uint32_t secondT = bone.trans.ranges[0].second;
-			uint32_t firstR = bone.rot.ranges[0].first;
-			uint32_t secondR = bone.rot.ranges[0].second;
-			if (bone.trans.used && bone.rot.used)
-			{
-				if (secondR > secondT)
-				{
-					animIndices.push_back(std::make_pair(secondR - firstR + 1, secondR - firstR + 1));
-					if (firstT == secondT)
-					{
-						for (uint32_t j = firstR; j <= secondR; j++)
-						{
-							animTimes.push_back(bone.rot.times[j] * 1.0f / 1000.0f);
-							Quaternion q = bone.rot.data[j];
-							q.invertWinding();
-							Vector3 trans = bone.trans.data[firstT];
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-					else
-					{
-						for (uint32_t j = firstR; j <= secondR; j++)
-						{
-							int time = bone.rot.times[j];
-							animTimes.push_back(time * 1.0f / 1000.0f);
-							Quaternion q = bone.rot.data[j];
-							Vector3 trans = bone.trans.getValue(0, time);
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-				}
-				else if (secondT > secondR)
-				{
-					animIndices.push_back(std::make_pair(secondT - firstT + 1, secondT - firstT + 1));
-					if (firstR == secondR)
-					{
-						Quaternion q = bone.rot.data[firstR];
-						for (uint32_t j = firstT; j <= secondT; j++)
-						{
-							animTimes.push_back(bone.trans.times[j] * 1.0f / 1000.0f);
-							Vector3 trans = bone.trans.data[j];
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-					else
-					{
-						for (uint32_t j = firstT; j <= secondT; j++)
-						{
-							int time = bone.rot.times[j];
-							animTimes.push_back(time * 1.0f / 1000.0f);
-							Quaternion q = bone.rot.getValue(0, time);
-							Vector3 trans = bone.trans.data[j];
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-				}
-				else
-				{
-					if (firstR == secondR)
-					{
-						animIndices.push_back(std::make_pair(2, 2));
-						animTimes.push_back(0);
-						animTimes.push_back(animLength * 1.0f / 1000.0f);
-						Quaternion q = bone.rot.data[firstR];
-						Vector3 trans = bone.trans.data[firstT];
-						q.invertWinding();
-						if (bone.bUsePivot)
-							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-						translations.push_back(trans);
-						translations.push_back(trans);
-						rotations.push_back(q);
-						rotations.push_back(q);
-					}
-					else
-					{
-						animIndices.push_back(std::make_pair(secondR - firstR + 1, secondR - firstR + 1));
-						for (uint32_t j = firstR; j <= secondR; j++)
-						{
-							animTimes.push_back(bone.rot.times[j] * 1.0f / 1000.0f);
-							Quaternion q = bone.rot.data[j];
-							Vector3 trans = bone.trans.data[j];
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-				}
-				bones.push_back(bone.nIndex);
-			}
-			else if (bone.trans.used)
-			{
-				//if (firstT == secondT)
-				//{
-				//	animIndices.push_back(std::make_pair(2, 0));
-				//	animTimes.push_back(0);
-				//	animTimes.push_back(animLength * 1.0f / 1000.0f);
-				//	Vector3 trans = bone.trans.data[firstT];
-				//	translations.push_back(trans);
-				//	translations.push_back(trans);
-				//}
-				//else
-				//{
-				//	animIndices.push_back(std::make_pair(secondT - firstT + 1, 0));
-				//	for (uint32_t j = firstT; j <= secondT; j++)
-				//	{
-				//		animTimes.push_back(bone.rot.times[j] * 1.0f / 1000.0f);
-				//		Vector3 trans = bone.trans.data[j];
-				//		translations.push_back(trans);
-				//	}
-				//}
-				//bones.push_back(bone.nIndex);
-			}
-			else if (bone.rot.used)
-			{
-				if (firstR == secondR)
-				{
-					animIndices.push_back(std::make_pair(2, 2));
-					animTimes.push_back(0);
-					animTimes.push_back(animLength * 1.0f / 1000.0f);
-					Quaternion q = bone.rot.data[firstR];
-					Vector3 trans(0, 0, 0);
-					q.invertWinding();
-					if (bone.bUsePivot)
-						trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-					translations.push_back(trans);
-					translations.push_back(trans);
-					rotations.push_back(q);
-					rotations.push_back(q);
-				}
-				else
-				{
-					animIndices.push_back(std::make_pair(secondR - firstR + 1, secondR - firstR + 1));
-					for (uint32_t j = firstR; j <= secondR; j++)
-					{
-						animTimes.push_back(bone.rot.times[j] * 1.0f / 1000.0f);
-						Quaternion q = bone.rot.data[j];
-						q.invertWinding();
-						Vector3 trans(0, 0, 0);
-						if (bone.bUsePivot)
-							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-						translations.push_back(trans);
-						rotations.push_back(q);
-					}
-				}
-				bones.push_back(bone.nIndex);
-			}
-		}
-
 		bvTime = ExportTimeBuffer();
 		bvTranslation = ExportTranslationBuffer();
 		bvRotation = ExportRotationBuffer();
 		uint32_t offsetTime = 0;
-		uint32_t offsetTranslation = 0;
-		uint32_t offsetRotation = 0;
-		for (uint32_t i = 0; i < animIndices.size(); i++)
+		uint32_t offsetData = 0;
+		for (uint32_t i = 0; i < animOffsets.size(); i++)
 		{
-			uint32_t numTranslations = animIndices[i].first;
-			uint32_t numRotations = animIndices[i].second;
-			uint32_t numDatas = std::max(numTranslations, numRotations);
+			uint32_t numDatas = animOffsets[i];
 			std::shared_ptr<Accessor> acTime = ExportTimeAccessor(bvTime, offsetTime, numDatas);
 			offsetTime += numDatas;
 
-			if (numTranslations > 0)
 			{
 				Animation::Sampler sampler;
 				sampler.interpolation = Interpolation::LINEAR;
 				sampler.used = true;
 				sampler.input = acTime;
-				sampler.output = ExportTranslationAccessor(bvTranslation, offsetTranslation, numDatas);
-				offsetTranslation += numDatas;
+				sampler.output = ExportTranslationAccessor(bvTranslation, offsetData, numDatas);
 				Animation::Channel channel;
-				channel.target.node = bones[i] + 1;
+				channel.target.node = boneIndices[i] + 1;
 				channel.target.path = AnimationPath::Translation;
 				channel.sampler = animation->samplers.size();
 				animation->samplers.push_back(sampler);
 				animation->channels.push_back(channel);
 			}
-			if (numRotations > 0)
 			{
 				Animation::Sampler sampler;
 				sampler.interpolation = Interpolation::LINEAR;
-				sampler.used = numTranslations == 0;
+				sampler.used = false;
 				sampler.input = acTime;
-				sampler.output = ExportRotationAccessor(bvRotation, offsetRotation, numDatas);
-				offsetRotation += numDatas;
+				sampler.output = ExportRotationAccessor(bvRotation, offsetData, numDatas);
 				Animation::Channel channel;
-				channel.target.node = bones[i] + 1;
+				channel.target.node = boneIndices[i] + 1;
 				channel.target.path = AnimationPath::Rotation;
 				channel.sampler = animation->samplers.size();
 				animation->samplers.push_back(sampler);
 				animation->channels.push_back(channel);
 			}
+			offsetData += numDatas;
 		}
 		return animation;
-	}
-
-	Vector3 glTFModelExporter::CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot)
-	{
-		Matrix4 m;
-		m.makeTrans(pivot * -1.0f);
-		m = m.Multiply4x3(matRot);
-		m.offsetTrans(trans);
-		m.offsetTrans(pivot);
-		return m.getTrans();
 	}
 
 	std::shared_ptr<BufferView> glTFModelExporter::ExportTimeBuffer()
@@ -1096,71 +1084,59 @@ namespace ParaEngine
 		uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 		uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
 		uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
+
 		uint32_t numIndices = paraXModel->m_objNum.nIndices;
 		for (uint32_t i = 0; i < numIndices; i++)
 		{
 			uint16_t index = paraXModel->m_indices[i];
 			builder.append((const char*)&index, sizeUShort);
 		}
-		uint32_t numVertices = paraXModel->m_objNum.nVertices;
-		for (uint32_t i = 0; i < numVertices; i++)
+
+		for (auto it = vertices.begin(); it != vertices.end(); ++it)
 		{
-			const ModelVertex& vertex = paraXModel->m_origVertices[i];
-			builder.append((const char*)&vertex.pos.x, sizeFloat);
-			builder.append((const char*)&vertex.pos.y, sizeFloat);
-			builder.append((const char*)&vertex.pos.z, sizeFloat);
+			builder.append((const char*)&(it->x), sizeFloat);
+			builder.append((const char*)&(it->y), sizeFloat);
+			builder.append((const char*)&(it->z), sizeFloat);
 		}
-		for (uint32_t i = 0; i < numVertices; i++)
+
+		for (auto it = normals.begin(); it != normals.end(); ++it)
 		{
-			const ModelVertex& vertex = paraXModel->m_origVertices[i];
-			builder.append((const char*)&vertex.normal.x, sizeFloat);
-			builder.append((const char*)&vertex.normal.y, sizeFloat);
-			builder.append((const char*)&vertex.normal.z, sizeFloat);
+			builder.append((const char*)&(it->x), sizeFloat);
+			builder.append((const char*)&(it->y), sizeFloat);
+			builder.append((const char*)&(it->z), sizeFloat);
 		}
-		for (uint32_t i = 0; i < numVertices; i++)
+
+		for (auto it = texcoords.begin(); it != texcoords.end(); ++it)
 		{
-			const ModelVertex& vertex = paraXModel->m_origVertices[i];
-			builder.append((const char*)&vertex.texcoords.x, sizeFloat);
-			builder.append((const char*)&vertex.texcoords.y, sizeFloat);
+			builder.append((const char*)&(it->x), sizeFloat);
+			builder.append((const char*)&(it->y), sizeFloat);
 		}
-		for (uint32_t i = 0; i < numVertices; i++)
+
+		for (auto it = colors.begin(); it != colors.end(); ++it)
 		{
-			DWORD color = paraXModel->m_origVertices[i].color0;
-			if (color == 0) break;
-			float r = ((color >> 16) & 0xff) / 255.0f;
-			float g = ((color >> 8) & 0xff) / 255.0f;
-			float b = (color & 0xff) / 255.0f;
-			builder.append((const char*)&r, sizeFloat);
-			builder.append((const char*)&g, sizeFloat);
-			builder.append((const char*)&b, sizeFloat);
+			builder.append((const char*)&(it->x), sizeFloat);
+			builder.append((const char*)&(it->y), sizeFloat);
+			builder.append((const char*)&(it->z), sizeFloat);
 		}
+
 		if (paraXModel->animated)
 		{
-			for (uint32_t i = 0; i < numVertices; i++)
+			for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 			{
 				uint8* bone = paraXModel->m_origVertices[i].bones;
 				builder.append((const char*)bone, sizeUByte * 4);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+			for (auto it = weights.begin(); it != weights.end(); ++it)
 			{
-				uint8* weight = paraXModel->m_origVertices[i].weights;
-				float a = weight[0] * (1 / 255.0f);
-				float b = weight[1] * (1 / 255.0f);
-				float c = weight[2] * (1 / 255.0f);
-				float d = weight[3] * (1 / 255.0f);
-				builder.append((const char*)&a, sizeFloat);
-				builder.append((const char*)&b, sizeFloat);
-				builder.append((const char*)&c, sizeFloat);
-				builder.append((const char*)&d, sizeFloat);
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+				builder.append((const char*)&(it->w), sizeFloat);
 			}
 			uint32_t numBones = paraXModel->m_objNum.nBones;
 			for (uint32_t i = 0; i < numBones; i++)
 			{
-				Matrix4 mat = paraXModel->bones[i].matOffset;
-				for (uint32_t j = 0; j < 16; j++)
-				{
-					builder.append((const char*)&mat._m[j], sizeFloat);
-				}
+				builder.append((const char*)&paraXModel->bones[i].matOffset, sizeFloat * 16);
 			}
 			for (uint32_t i = 0; i < animTimes.size(); i++)
 			{
@@ -1190,7 +1166,7 @@ namespace ParaEngine
 		b["byteLength"] = buffer->byteLength;
 		if (!isBinary)
 		{
-			if (willEncode)
+			if (isEmbedded)
 			{
 				b["uri"] = "data:application/octet-stream;base64," + EncodeBuffer();
 			}
@@ -1301,7 +1277,7 @@ namespace ParaEngine
 		sampler[0u] = s;
 
 		Json::Value i;
-		if (willEncode)
+		if (isEmbedded)
 		{
 			StringBuilder builder;
 			builder.append((const char*)texture->source->bufferPointer, texture->source->bufferSize);
@@ -1330,7 +1306,7 @@ namespace ParaEngine
 			file.write(data.c_str(), data.length());
 			file.close();
 
-			if (!willEncode)
+			if (!isEmbedded)
 			{
 				WriteRawData();
 			}
@@ -1351,65 +1327,69 @@ namespace ParaEngine
 				uint16_t index = paraXModel->m_indices[i];
 				bin.write(&index, sizeUShort);
 			}
-			uint32_t numVertices = paraXModel->m_objNum.nVertices;
-			for (uint32_t i = 0; i < numVertices; i++)
+			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				bin.write(&vertex.pos.x, sizeFloat);
-				bin.write(&vertex.pos.y, sizeFloat);
-				bin.write(&vertex.pos.z, sizeFloat);
+				bin.write(&(it->x), sizeFloat);
+				bin.write(&(it->y), sizeFloat);
+				bin.write(&(it->z), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = normals.begin(); it != normals.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				bin.write(&vertex.normal.x, sizeFloat);
-				bin.write(&vertex.normal.y, sizeFloat);
-				bin.write(&vertex.normal.z, sizeFloat);
+				bin.write(&(it->x), sizeFloat);
+				bin.write(&(it->y), sizeFloat);
+				bin.write(&(it->z), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = texcoords.begin(); it != texcoords.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				bin.write(&vertex.texcoords.x, sizeFloat);
-				bin.write(&vertex.texcoords.y, sizeFloat);
+				bin.write(&(it->x), sizeFloat);
+				bin.write(&(it->y), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = colors.begin(); it != colors.end(); ++it)
 			{
-				DWORD color = paraXModel->m_origVertices[i].color0;
-				if (color == 0) break;
-				float r = ((color >> 16) & 0xff) / 255.0f;
-				float g = ((color >> 8) & 0xff) / 255.0f;
-				float b = (color & 0xff) / 255.0f;
-				bin.write(&r, sizeFloat);
-				bin.write(&g, sizeFloat);
-				bin.write(&b, sizeFloat);
+				bin.write(&(it->x), sizeFloat);
+				bin.write(&(it->y), sizeFloat);
+				bin.write(&(it->z), sizeFloat);
 			}
+
 			if (paraXModel->animated)
 			{
-				for (uint32_t i = 0; i < numVertices; i++)
+				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{
 					uint8* bone = paraXModel->m_origVertices[i].bones;
 					bin.write(bone, sizeUByte * 4);
 				}
-				for (uint32_t i = 0; i < numVertices; i++)
+				for (auto it = weights.begin(); it != weights.end(); ++it)
 				{
-					uint8* weight = paraXModel->m_origVertices[i].weights;
-					float a = weight[0] * (1 / 255.0f);
-					float b = weight[1] * (1 / 255.0f);
-					float c = weight[2] * (1 / 255.0f);
-					float d = weight[3] * (1 / 255.0f);
-					bin.write(&a, sizeFloat);
-					bin.write(&b, sizeFloat);
-					bin.write(&c, sizeFloat);
-					bin.write(&d, sizeFloat);
+					bin.write(&(it->x), sizeFloat);
+					bin.write(&(it->y), sizeFloat);
+					bin.write(&(it->z), sizeFloat);
+					bin.write(&(it->w), sizeFloat);
 				}
-				for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+				uint32_t numBones = paraXModel->m_objNum.nBones;
+				for (uint32_t i = 0; i < numBones; i++)
 				{
-					Matrix4 mat = paraXModel->bones[i].matOffset;
-					mat.transpose();
-					for (uint32_t j = 0; j < 16; j++)
-					{
-						bin.write(&mat._m[j], sizeFloat);
-					}
+					bin.write(&paraXModel->bones[i].matOffset, sizeFloat * 16);
+				}
+				for (uint32_t i = 0; i < animTimes.size(); i++)
+				{
+					float val = animTimes[i];
+					bin.write(&val, sizeFloat);
+				}
+				for (uint32_t i = 0; i < translations.size(); i++)
+				{
+					bin.write(&translations[i].x, sizeFloat);
+					bin.write(&translations[i].y, sizeFloat);
+					bin.write(&translations[i].z, sizeFloat);
+				}
+				for (uint32_t i = 0; i < rotations.size(); i++)
+				{
+					bin.write(&rotations[i].x, sizeFloat);
+					bin.write(&rotations[i].y, sizeFloat);
+					bin.write(&rotations[i].z, sizeFloat);
+					bin.write(&rotations[i].w, sizeFloat);
 				}
 			}
 			bin.close();
@@ -1455,65 +1435,69 @@ namespace ParaEngine
 				uint16_t index = paraXModel->m_indices[i];
 				file.write(&index, sizeUShort);
 			}
-			uint32_t numVertices = paraXModel->m_objNum.nVertices;
-			for (uint32_t i = 0; i < numVertices; i++)
+			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				file.write(&vertex.pos.x, sizeFloat);
-				file.write(&vertex.pos.y, sizeFloat);
-				file.write(&vertex.pos.z, sizeFloat);
+				file.write(&(it->x), sizeFloat);
+				file.write(&(it->y), sizeFloat);
+				file.write(&(it->z), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = normals.begin(); it != normals.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				file.write(&vertex.normal.x, sizeFloat);
-				file.write(&vertex.normal.y, sizeFloat);
-				file.write(&vertex.normal.z, sizeFloat);
+				file.write(&(it->x), sizeFloat);
+				file.write(&(it->y), sizeFloat);
+				file.write(&(it->z), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = texcoords.begin(); it != texcoords.end(); ++it)
 			{
-				const ModelVertex& vertex = paraXModel->m_origVertices[i];
-				file.write(&vertex.texcoords.x, sizeFloat);
-				file.write(&vertex.texcoords.y, sizeFloat);
+				file.write(&(it->x), sizeFloat);
+				file.write(&(it->y), sizeFloat);
 			}
-			for (uint32_t i = 0; i < numVertices; i++)
+
+			for (auto it = colors.begin(); it != colors.end(); ++it)
 			{
-				DWORD color = paraXModel->m_origVertices[i].color0;
-				if (color == 0) break;
-				float r = ((color >> 16) & 0xff) / 255.0f;
-				float g = ((color >> 8) & 0xff) / 255.0f;
-				float b = (color & 0xff) / 255.0f;
-				file.write(&r, sizeFloat);
-				file.write(&g, sizeFloat);
-				file.write(&b, sizeFloat);
+				file.write(&(it->x), sizeFloat);
+				file.write(&(it->y), sizeFloat);
+				file.write(&(it->z), sizeFloat);
 			}
+
 			if (paraXModel->animated)
 			{
-				for (uint32_t i = 0; i < numVertices; i++)
+				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
 				{
 					uint8* bone = paraXModel->m_origVertices[i].bones;
 					file.write(bone, sizeUByte * 4);
 				}
-				for (uint32_t i = 0; i < numVertices; i++)
+				for (auto it = weights.begin(); it != weights.end(); ++it)
 				{
-					uint8* weight = paraXModel->m_origVertices[i].weights;
-					float a = weight[0] * (1 / 255.0f);
-					float b = weight[1] * (1 / 255.0f);
-					float c = weight[2] * (1 / 255.0f);
-					float d = weight[3] * (1 / 255.0f);
-					file.write(&a, sizeFloat);
-					file.write(&b, sizeFloat);
-					file.write(&c, sizeFloat);
-					file.write(&d, sizeFloat);
+					file.write(&(it->x), sizeFloat);
+					file.write(&(it->y), sizeFloat);
+					file.write(&(it->z), sizeFloat);
+					file.write(&(it->w), sizeFloat);
 				}
-				for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+				uint32_t numBones = paraXModel->m_objNum.nBones;
+				for (uint32_t i = 0; i < numBones; i++)
 				{
-					Matrix4 mat = paraXModel->bones[i].matOffset;
-					mat.transpose();
-					for (uint32_t j = 0; j < 16; j++)
-					{
-						file.write(&mat._m[j], sizeFloat);
-					}
+					file.write(&paraXModel->bones[i].matOffset, sizeFloat * 16);
+				}
+				for (uint32_t i = 0; i < animTimes.size(); i++)
+				{
+					float val = animTimes[i];
+					file.write(&val, sizeFloat);
+				}
+				for (uint32_t i = 0; i < translations.size(); i++)
+				{
+					file.write(&translations[i].x, sizeFloat);
+					file.write(&translations[i].y, sizeFloat);
+					file.write(&translations[i].z, sizeFloat);
+				}
+				for (uint32_t i = 0; i < rotations.size(); i++)
+				{
+					file.write(&rotations[i].x, sizeFloat);
+					file.write(&rotations[i].y, sizeFloat);
+					file.write(&rotations[i].z, sizeFloat);
+					file.write(&rotations[i].w, sizeFloat);
 				}
 			}
 			uint8_t binaryPadding = 0x00;
@@ -1525,7 +1509,7 @@ namespace ParaEngine
 		}
 	}
 
-	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool encode)
+	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded)
 	{
 		CParaFile file(input.c_str());
 		CGlobals::GetAssetManager()->SetAsyncLoading(false);
@@ -1534,7 +1518,7 @@ namespace ParaEngine
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			glTFModelExporter exporter(filename, mesh, binary, encode);
+			glTFModelExporter exporter(filename, mesh, binary, embedded);
 			delete mesh;
 			mesh = nullptr;
 		}
