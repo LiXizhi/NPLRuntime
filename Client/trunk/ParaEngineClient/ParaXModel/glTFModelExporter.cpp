@@ -1538,7 +1538,7 @@ namespace ParaEngine
 		}
 	}
 
-	luabind::object glTFModelExporter::ExportParaXTo_glTF(const std::string& input, bool binary, lua_State* L)
+	luabind::object glTFModelExporter::ParaXExportTo_glTF_String(const std::string& input, bool binary, lua_State* L)
 	{
 		std::string buffer;
 		CParaFile file(input.c_str());

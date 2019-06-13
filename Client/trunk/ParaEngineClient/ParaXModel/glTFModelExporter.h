@@ -380,6 +380,6 @@ namespace ParaEngine
 
 	public:
 		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded = true);
-		static luabind::object ExportParaXTo_glTF(const std::string& input, bool binary, lua_State* L);
+		static luabind::object ParaXExportTo_glTF_String(const std::string& input, bool binary, lua_State* L);
 	};
 }

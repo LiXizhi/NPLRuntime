@@ -503,9 +503,9 @@ void CNPLScriptingState::LoadParaScene()
 			def("Execute", &ParaScene::Execute),
 			def("BmaxExportToSTL", &ParaXModelExporter::BmaxExportToSTL),
 			// write to glTF file
-			def("ParaXExportTo_glTF", &glTFModelExporter::ParaXExportTo_glTF)
+			def("ParaXExportTo_glTF", &glTFModelExporter::ParaXExportTo_glTF),
 			// return glTF Buffer
-			def("ExportParaXTo_glTF", &glTFModelExporter::ExportParaXTo_glTF)
+			def("ParaXExportTo_glTF_String", &glTFModelExporter::ParaXExportTo_glTF_String)
 		]
 	];
 }
