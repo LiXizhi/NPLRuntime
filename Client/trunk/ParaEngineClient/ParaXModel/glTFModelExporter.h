@@ -1,5 +1,4 @@
 #pragma once
-#include "ParaEngine.h"
 #include "ParaVector3.h"
 #include "ParaQuaternion.h"
 #include "ParaXBone.h"

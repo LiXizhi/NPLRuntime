@@ -1,3 +1,4 @@
+#include "ParaEngine.h"
 #include "glTFModelExporter.h"
 #include "ParaXModel.h"
 #include "ParaXSerializer.h"
