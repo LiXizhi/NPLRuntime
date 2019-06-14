@@ -55,8 +55,119 @@ namespace ParaEngine
 	{
 		ExportMetadata();
 		ExportScene();
-		Json::StyledWriter writer;
-		return writer.write(root);
+		if (isBinary)
+		{
+			Json::FastWriter writer;
+			std::string& data = writer.write(root);
+			uint32_t jsonLength = (data.length() + 3) & (~3);
+			uint32_t binaryLength = (buffer->byteLength + 3) & (~3);
+
+			StringBuilder builder;
+			GLBHeader header;
+			header.magic = 0x46546C67;
+			header.version = 2;
+			header.length = sizeof(GLBHeader) + 2 * sizeof(GLBChunk) + jsonLength + binaryLength;
+			builder.append((const char*)&header, sizeof(GLBHeader));
+
+			GLBChunk jsonChunk;
+			jsonChunk.chunkLength = jsonLength;
+			jsonChunk.chunkType = ChunkType::JSON;
+			builder.append((const char*)&jsonChunk, sizeof(GLBChunk));
+			builder.append(data.c_str(), data.length());
+			uint8_t jsonPadding = 0x20;
+			uint32_t paddingLength = jsonLength - data.length();
+			for (uint32_t i = 0; i < paddingLength; i++)
+				builder.append((const char*)&jsonPadding, 1);
+
+			GLBChunk binaryChunk;
+			binaryChunk.chunkLength = binaryLength;
+			binaryChunk.chunkType = ChunkType::BIN;
+			builder.append((const char*)&binaryChunk, sizeof(GLBChunk));
+			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
+			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
+			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
+			uint32_t numIndices = paraXModel->m_objNum.nIndices;
+			for (uint32_t i = 0; i < numIndices; i++)
+			{
+				uint16_t index = paraXModel->m_indices[i];
+				builder.append((const char*)&index, sizeUShort);
+			}
+			for (auto it = vertices.begin(); it != vertices.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
+
+			for (auto it = normals.begin(); it != normals.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
+
+			for (auto it = texcoords.begin(); it != texcoords.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+			}
+
+			for (auto it = colors.begin(); it != colors.end(); ++it)
+			{
+				builder.append((const char*)&(it->x), sizeFloat);
+				builder.append((const char*)&(it->y), sizeFloat);
+				builder.append((const char*)&(it->z), sizeFloat);
+			}
+
+			if (paraXModel->animated)
+			{
+				for (uint32_t i = 0; i < paraXModel->m_objNum.nVertices; i++)
+				{
+					uint8* bone = paraXModel->m_origVertices[i].bones;
+					builder.append((const char*)bone, sizeUByte * 4);
+				}
+				for (auto it = weights.begin(); it != weights.end(); ++it)
+				{
+					builder.append((const char*)&(it->x), sizeFloat);
+					builder.append((const char*)&(it->y), sizeFloat);
+					builder.append((const char*)&(it->z), sizeFloat);
+					builder.append((const char*)&(it->w), sizeFloat);
+				}
+				uint32_t numBones = paraXModel->m_objNum.nBones;
+				for (uint32_t i = 0; i < numBones; i++)
+				{
+					builder.append((const char*)&paraXModel->bones[i].matOffset, sizeFloat * 16);
+				}
+				for (uint32_t i = 0; i < animTimes.size(); i++)
+				{
+					float val = animTimes[i];
+					builder.append((const char*)&val, sizeFloat);
+				}
+				for (uint32_t i = 0; i < translations.size(); i++)
+				{
+					builder.append((const char*)&translations[i].x, sizeFloat);
+					builder.append((const char*)&translations[i].y, sizeFloat);
+					builder.append((const char*)&translations[i].z, sizeFloat);
+				}
+				for (uint32_t i = 0; i < rotations.size(); i++)
+				{
+					builder.append((const char*)&rotations[i].x, sizeFloat);
+					builder.append((const char*)&rotations[i].y, sizeFloat);
+					builder.append((const char*)&rotations[i].z, sizeFloat);
+					builder.append((const char*)&rotations[i].w, sizeFloat);
+				}
+			}
+			uint8_t binaryPadding = 0x00;
+			paddingLength = binaryLength - buffer->byteLength;
+			for (uint32_t i = 0; i < paddingLength; i++)
+				builder.append((const char*)&binaryPadding, 1);
+			return builder.ToString();
+		}
+		else
+		{
+			Json::FastWriter writer;
+			return StringHelper::base64(writer.write(root));
+		}
 	}
 
 	void glTFModelExporter::ParseParaXModel()
@@ -1314,7 +1425,7 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			Json::StyledWriter writer;
+			Json::FastWriter writer;
 			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
