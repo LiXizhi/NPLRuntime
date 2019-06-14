@@ -358,7 +358,7 @@ void IGameObject::MakeGlobal(bool bGlobal)
 
 void IGameObject::SetGroupID(int nGroup)
 {
-	m_nGroup = nGroup%32;
+	m_nGroup = nGroup;
 }
 
 int IGameObject::GetGroupID()
@@ -380,9 +380,9 @@ DWORD IGameObject::GetSentientField()
 
 bool IGameObject::IsSentientWith(const IGameObject * pObj)
 {
-	if(pObj!=NULL)
+	if (pObj != NULL && pObj->m_nGroup < 32)
 	{
-		return (m_dwSentientField & (0x1<<pObj->m_nGroup))>0; // || IsAlwaysSentient();
+		return (m_dwSentientField & (0x1 << pObj->m_nGroup)) > 0; // || IsAlwaysSentient();
 	}
 	else
 		return false;
