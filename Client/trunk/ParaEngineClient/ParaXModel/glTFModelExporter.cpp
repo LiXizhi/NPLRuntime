@@ -166,7 +166,7 @@ namespace ParaEngine
 		else
 		{
 			Json::FastWriter writer;
-			return StringHelper::base64(writer.write(root));
+			return writer.write(root);
 		}
 	}
 
@@ -242,79 +242,139 @@ namespace ParaEngine
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
-			uint32_t firstT = bone.trans.ranges[0].first;
-			uint32_t secondT = bone.trans.ranges[0].second;
-			uint32_t firstR = bone.rot.ranges[0].first;
-			uint32_t secondR = bone.rot.ranges[0].second;
-			if (bone.trans.used && bone.rot.used)
+			if (bone.trans.used || bone.rot.used)
 			{
-				if (secondR > secondT)
+				uint32_t firstT = bone.trans.ranges[0].first;
+				uint32_t secondT = bone.trans.ranges[0].second;
+				uint32_t firstR = bone.rot.ranges[0].first;
+				uint32_t secondR = bone.rot.ranges[0].second;
+				if (bone.trans.used && bone.rot.used)
 				{
-					animOffsets.push_back(secondR - firstR + 1);
-					if (firstT == secondT)
+					if (secondR > secondT)
 					{
-						for (uint32_t j = firstR; j <= secondR; j++)
+						animOffsets.push_back(secondR - firstR + 1);
+						if (firstT == secondT)
 						{
-							animTimes.push_back(bone.rot.times[j] * inverse);
-							Quaternion q = bone.rot.data[j];
-							q.invertWinding();
+							for (uint32_t j = firstR; j <= secondR; j++)
+							{
+								animTimes.push_back(bone.rot.times[j] * inverse);
+								Quaternion q = bone.rot.data[j];
+								q.invertWinding();
+								Vector3 trans = bone.trans.data[firstT];
+								if (bone.bUsePivot)
+									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+								translations.push_back(trans);
+								rotations.push_back(q);
+							}
+						}
+						else
+						{
+							for (uint32_t j = firstR; j <= secondR; j++)
+							{
+								int time = bone.rot.times[j];
+								animTimes.push_back(time * inverse);
+								Quaternion q = bone.rot.data[j];
+								Vector3 trans = bone.trans.getValue(0, time);
+								q.invertWinding();
+								if (bone.bUsePivot)
+									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+								translations.push_back(trans);
+								rotations.push_back(q);
+							}
+						}
+					}
+					else if (secondT > secondR)
+					{
+						animOffsets.push_back(secondT - firstT + 1);
+						if (firstR == secondR)
+						{
+							Quaternion q = bone.rot.data[firstR];
+							for (uint32_t j = firstT; j <= secondT; j++)
+							{
+								animTimes.push_back(bone.trans.times[j] * inverse);
+								Vector3 trans = bone.trans.data[j];
+								q.invertWinding();
+								if (bone.bUsePivot)
+									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+								translations.push_back(trans);
+								rotations.push_back(q);
+							}
+						}
+						else
+						{
+							for (uint32_t j = firstT; j <= secondT; j++)
+							{
+								int time = bone.rot.times[j];
+								animTimes.push_back(time * inverse);
+								Quaternion q = bone.rot.getValue(0, time);
+								Vector3 trans = bone.trans.data[j];
+								q.invertWinding();
+								if (bone.bUsePivot)
+									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+								translations.push_back(trans);
+								rotations.push_back(q);
+							}
+						}
+					}
+					else
+					{
+						if (firstR == secondR)
+						{
+							animOffsets.push_back(2);
+							animTimes.push_back(0);
+							animTimes.push_back(animLength * inverse);
+							Quaternion q = bone.rot.data[firstR];
 							Vector3 trans = bone.trans.data[firstT];
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-					else
-					{
-						for (uint32_t j = firstR; j <= secondR; j++)
-						{
-							int time = bone.rot.times[j];
-							animTimes.push_back(time * inverse);
-							Quaternion q = bone.rot.data[j];
-							Vector3 trans = bone.trans.getValue(0, time);
 							q.invertWinding();
 							if (bone.bUsePivot)
 								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 							translations.push_back(trans);
+							translations.push_back(trans);
+							rotations.push_back(q);
 							rotations.push_back(q);
 						}
+						else
+						{
+							animOffsets.push_back(secondR - firstR + 1);
+							for (uint32_t j = firstR; j <= secondR; j++)
+							{
+								animTimes.push_back(bone.rot.times[j] * inverse);
+								Quaternion q = bone.rot.data[j];
+								Vector3 trans = bone.trans.data[j];
+								q.invertWinding();
+								if (bone.bUsePivot)
+									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
+								translations.push_back(trans);
+								rotations.push_back(q);
+							}
+						}
 					}
+					boneIndices.push_back(bone.nIndex);
 				}
-				else if (secondT > secondR)
+				else if (bone.trans.used)
 				{
-					animOffsets.push_back(secondT - firstT + 1);
-					if (firstR == secondR)
-					{
-						Quaternion q = bone.rot.data[firstR];
-						for (uint32_t j = firstT; j <= secondT; j++)
-						{
-							animTimes.push_back(bone.trans.times[j] * inverse);
-							Vector3 trans = bone.trans.data[j];
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-					else
-					{
-						for (uint32_t j = firstT; j <= secondT; j++)
-						{
-							int time = bone.rot.times[j];
-							animTimes.push_back(time * inverse);
-							Quaternion q = bone.rot.getValue(0, time);
-							Vector3 trans = bone.trans.data[j];
-							q.invertWinding();
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
+					//if (firstT == secondT)
+					//{
+					//	animIndices.push_back(std::make_pair(2, 0));
+					//	animTimes.push_back(0);
+					//	animTimes.push_back(animLength * inverse);
+					//	Vector3 trans = bone.trans.data[firstT];
+					//	translations.push_back(trans);
+					//	translations.push_back(trans);
+					//}
+					//else
+					//{
+					//	animIndices.push_back(std::make_pair(secondT - firstT + 1, 0));
+					//	for (uint32_t j = firstT; j <= secondT; j++)
+					//	{
+					//		animTimes.push_back(bone.rot.times[j] * inverse);
+					//		Vector3 trans = bone.trans.data[j];
+					//		translations.push_back(trans);
+					//	}
+					//}
+					//bones.push_back(bone.nIndex);
 				}
-				else
+				else if (bone.rot.used)
 				{
 					if (firstR == secondR)
 					{
@@ -322,7 +382,7 @@ namespace ParaEngine
 						animTimes.push_back(0);
 						animTimes.push_back(animLength * inverse);
 						Quaternion q = bone.rot.data[firstR];
-						Vector3 trans = bone.trans.data[firstT];
+						Vector3 trans(0, 0, 0);
 						q.invertWinding();
 						if (bone.bUsePivot)
 							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
@@ -338,73 +398,16 @@ namespace ParaEngine
 						{
 							animTimes.push_back(bone.rot.times[j] * inverse);
 							Quaternion q = bone.rot.data[j];
-							Vector3 trans = bone.trans.data[j];
 							q.invertWinding();
+							Vector3 trans(0, 0, 0);
 							if (bone.bUsePivot)
 								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 							translations.push_back(trans);
 							rotations.push_back(q);
 						}
 					}
+					boneIndices.push_back(bone.nIndex);
 				}
-				boneIndices.push_back(bone.nIndex);
-			}
-			else if (bone.trans.used)
-			{
-				//if (firstT == secondT)
-				//{
-				//	animIndices.push_back(std::make_pair(2, 0));
-				//	animTimes.push_back(0);
-				//	animTimes.push_back(animLength * inverse);
-				//	Vector3 trans = bone.trans.data[firstT];
-				//	translations.push_back(trans);
-				//	translations.push_back(trans);
-				//}
-				//else
-				//{
-				//	animIndices.push_back(std::make_pair(secondT - firstT + 1, 0));
-				//	for (uint32_t j = firstT; j <= secondT; j++)
-				//	{
-				//		animTimes.push_back(bone.rot.times[j] * inverse);
-				//		Vector3 trans = bone.trans.data[j];
-				//		translations.push_back(trans);
-				//	}
-				//}
-				//bones.push_back(bone.nIndex);
-			}
-			else if (bone.rot.used)
-			{
-				if (firstR == secondR)
-				{
-					animOffsets.push_back(2);
-					animTimes.push_back(0);
-					animTimes.push_back(animLength * inverse);
-					Quaternion q = bone.rot.data[firstR];
-					Vector3 trans(0, 0, 0);
-					q.invertWinding();
-					if (bone.bUsePivot)
-						trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-					translations.push_back(trans);
-					translations.push_back(trans);
-					rotations.push_back(q);
-					rotations.push_back(q);
-				}
-				else
-				{
-					animOffsets.push_back(secondR - firstR + 1);
-					for (uint32_t j = firstR; j <= secondR; j++)
-					{
-						animTimes.push_back(bone.rot.times[j] * inverse);
-						Quaternion q = bone.rot.data[j];
-						q.invertWinding();
-						Vector3 trans(0, 0, 0);
-						if (bone.bUsePivot)
-							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-						translations.push_back(trans);
-						rotations.push_back(q);
-					}
-				}
-				boneIndices.push_back(bone.nIndex);
 			}
 		}
 	}
@@ -873,7 +876,7 @@ namespace ParaEngine
 		for (uint32_t i = 0; i < numComponents; i++)
 		{
 			acc->max.push_back(maxColor[i]);
-			acc->min.push_back(minCoord[i]);
+			acc->min.push_back(minColor[i]);
 		}
 
 		bufferIndex++;
