@@ -45,10 +45,17 @@ void ParaEngine::CContainerObject::Animate(double dTimeDelta, int nRenderNumber 
 
 int ParaEngine::CContainerObject::PrepareRender(CBaseCamera* pCamera, SceneState* pSceneState)
 {
+	if (!IsVisible())
+		return 0;
+
 	for (auto it = GetChildren().begin(); it != GetChildren().end(); )
 	{
 		CBaseObject* pChild = (*it);
-		pChild->PrepareRender(pCamera, pSceneState);
+
+		if (pChild->IsVisible())
+			pChild->PrepareRender(pCamera, pSceneState);
+
+
 		if (!(pChild->IsDead()))
 			++it;
 		else

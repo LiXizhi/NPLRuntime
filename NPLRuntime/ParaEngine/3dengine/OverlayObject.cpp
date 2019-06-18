@@ -44,7 +44,7 @@ void ParaEngine::COverlayObject::SetTileObject(bool bIsTileObject)
 int ParaEngine::COverlayObject::PrepareRender(CBaseCamera* pCamera, SceneState * sceneState)
 {
 	IViewClippingObject* pViewClippingObject = GetViewClippingObject();
-	if (pViewClippingObject->TestCollision(pCamera))
+	if (IsVisible() && pViewClippingObject->TestCollision(pCamera))
 	{
 		float fObjectToCameraDist = pViewClippingObject->GetObjectToPointDistance(&(sceneState->vEye));
 		if(IsTransparent())
