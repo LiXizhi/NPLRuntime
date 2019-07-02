@@ -240,7 +240,7 @@ bool RenderWindowOSX::ShouldClose() const
 }
 
 
-void RenderWindowOSX::PollEvents() { 
+void RenderWindowOSX::PollEvents() {
     if(m_window == nullptr || ShouldClose()) return;
     NSEvent *event;
     auto untilDate = [NSDate distantPast];
@@ -384,20 +384,25 @@ void RenderWindowOSX::PollEvents() {
         {
             if(event.window == m_window)
             {
+
                 NSString *chrs = [event characters];
-                
+
                 uint32_t keycode = (uint32_t)[event keyCode];
                 EVirtualKey vk = toVirtualKey(keycode);
                 
                 if([chrs length]>0)
                 {
                     int unicode = [chrs characterAtIndex:0];
-                    if((unicode >= 32 && unicode <= 126) || (vk!=EVirtualKey::KEY_UP && vk!=EVirtualKey::KEY_DOWN && vk!=EVirtualKey::KEY_LEFT && vk!=EVirtualKey::KEY_RIGHT && unicode > 255))
+                    if(
+                       !isPressCommand &&
+                       (unicode >= 32 && unicode <= 126) ||
+                       (vk!=EVirtualKey::KEY_UP && vk!=EVirtualKey::KEY_DOWN && vk!=EVirtualKey::KEY_LEFT && vk!=EVirtualKey::KEY_RIGHT && unicode > 255)
+                    )
                     {
                         OnChar(unicode);
                     }
                 }
-                
+
                 OnKey(vk, EKeyState::PRESS);
                 bIsProcessed = true;
             }
@@ -476,27 +481,29 @@ void RenderWindowOSX::PollEvents() {
                 {
                     OnKey(EVirtualKey::KEY_LMENU, EKeyState::RELEASE);
                 }
-                
+
                 /////////
                 if((flags & NSEventModifierFlagControl) && !(last_flags & NSEventModifierFlagControl))
                 {
                     OnKey(EVirtualKey::KEY_LCONTROL,EKeyState::PRESS);
                 }
-                
+
                 if(!(flags & NSEventModifierFlagControl) && (last_flags & NSEventModifierFlagControl))
                 {
                     OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
                 }
-                
+
                 ////////////
                 if((flags & NSEventModifierFlagCommand) && !(last_flags & NSEventModifierFlagCommand))
                 {
-                    OnKey(EVirtualKey::KEY_LWIN, EKeyState::PRESS);
+                    isPressCommand = true;
+                    OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::PRESS);
                 }
                 
                 if(!(flags & NSEventModifierFlagCommand) && (last_flags & NSEventModifierFlagCommand))
                 {
-                    OnKey(EVirtualKey::KEY_LWIN, EKeyState::RELEASE);
+                    isPressCommand = false;
+                    OnKey(EVirtualKey::KEY_LCONTROL, EKeyState::RELEASE);
                 }
                 
                 ///////////////
@@ -585,6 +592,7 @@ void RenderWindowOSX::OnKey(ParaEngine::EVirtualKey key, ParaEngine::EKeyState s
     {
         return;
     }
+
     bool pressed = state == EKeyState::PRESS ? true : false;
     if(pressed)
     {

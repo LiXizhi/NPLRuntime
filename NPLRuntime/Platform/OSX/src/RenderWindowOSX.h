@@ -18,7 +18,8 @@ namespace ParaEngine
         virtual intptr_t GetNativeHandle() const override;
         void PollEvents();
         bool ShouldClose() const;
-        
+        bool isPressCommand = false;
+
         void setTitle(const char* title);
         const char* getTitle();
     public:
