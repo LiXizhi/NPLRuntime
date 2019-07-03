@@ -136,7 +136,7 @@ namespace ParaEngine
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
-					builder.append((const char*)&paraXModel->bones[i].matOffset, sizeFloat * 16);
+					builder.append((const char*)&paraXModel->bones[i].matOffset._m, sizeFloat * 16);
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
@@ -172,6 +172,24 @@ namespace ParaEngine
 
 	void glTFModelExporter::ParseParaXModel()
 	{
+		uint32_t numBones = paraXModel->m_objNum.nBones;
+		// calculate bones' absolute position
+		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
+		//for (uint32_t i = 0; i < numBones; i++)
+		//{
+		//	paraXModel->bones[i].calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
+		//	paraXModel->bones[i].m_finalTrans = paraXModel->bones[i].GetAnimatedPivotPoint();
+		//}
+		//for (uint32_t i = 0; i < numBones; i++)
+		//{
+		//	Bone& bone = paraXModel->bones[i];
+		//	if (bone.parent == -1)
+		//	{
+		//		bone.matTransform.makeTrans(bone.m_finalTrans);
+		//		CalculateJoint(bone.nIndex, bone.m_finalTrans);
+		//	}
+		//}
+
 		float inverse = 1.0f / 255.0f;
 		uint32_t numVertices = paraXModel->m_objNum.nVertices;
 		for (uint32_t i = 0; i < numVertices; i++)
@@ -181,6 +199,26 @@ namespace ParaEngine
 			Vector3 n = vertex.normal;
 			Vector2 coord = vertex.texcoords;
 			DWORD color = vertex.color0;
+			{
+				//float weight = vertex.weights[0] * inverse;
+				//Bone& bone = paraXModel->bones[vertex.bones[0]];
+				//v = (vertex.pos * bone.mat)*weight;
+				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
+				//	weight = vertex.weights[b] * inverse;
+				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
+				//	v += (vertex.pos * bone.mat) * weight;
+				//}
+			}
+			{
+				//float weight = vertex.weights[0] * inverse;
+				//Bone& bone = paraXModel->bones[vertex.bones[0]];
+				//v -= bone.m_finalTrans * weight;
+				//for (int b = 1; b < 4 && vertex.weights[b]>0; b++) {
+				//	weight = vertex.weights[b] * inverse;
+				//	Bone& bone = paraXModel->bones[vertex.bones[b]];
+				//	v -= bone.m_finalTrans * weight;
+				//}
+			}
 
 			for (uint32_t j = 0; j < 3; j++)
 			{
@@ -238,7 +276,6 @@ namespace ParaEngine
 
 		inverse = 1.0f / 1000.0f;
 		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
-		uint32_t numBones = paraXModel->m_objNum.nBones;
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
@@ -274,8 +311,8 @@ namespace ParaEngine
 								int time = bone.rot.times[j];
 								animTimes.push_back(time * inverse);
 								Quaternion q = bone.rot.data[j];
-								Vector3 trans = bone.trans.getValue(0, time);
 								q.invertWinding();
+								Vector3 trans = bone.trans.getValue(0, time);
 								if (bone.bUsePivot)
 									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 								translations.push_back(trans);
@@ -289,11 +326,11 @@ namespace ParaEngine
 						if (firstR == secondR)
 						{
 							Quaternion q = bone.rot.data[firstR];
+							q.invertWinding();
 							for (uint32_t j = firstT; j <= secondT; j++)
 							{
 								animTimes.push_back(bone.trans.times[j] * inverse);
 								Vector3 trans = bone.trans.data[j];
-								q.invertWinding();
 								if (bone.bUsePivot)
 									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 								translations.push_back(trans);
@@ -307,8 +344,8 @@ namespace ParaEngine
 								int time = bone.rot.times[j];
 								animTimes.push_back(time * inverse);
 								Quaternion q = bone.rot.getValue(0, time);
-								Vector3 trans = bone.trans.data[j];
 								q.invertWinding();
+								Vector3 trans = bone.trans.data[j];
 								if (bone.bUsePivot)
 									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 								translations.push_back(trans);
@@ -324,8 +361,8 @@ namespace ParaEngine
 							animTimes.push_back(0);
 							animTimes.push_back(animLength * inverse);
 							Quaternion q = bone.rot.data[firstR];
-							Vector3 trans = bone.trans.data[firstT];
 							q.invertWinding();
+							Vector3 trans = bone.trans.data[firstT];
 							if (bone.bUsePivot)
 								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 							translations.push_back(trans);
@@ -340,8 +377,8 @@ namespace ParaEngine
 							{
 								animTimes.push_back(bone.rot.times[j] * inverse);
 								Quaternion q = bone.rot.data[j];
-								Vector3 trans = bone.trans.data[j];
 								q.invertWinding();
+								Vector3 trans = bone.trans.data[j];
 								if (bone.bUsePivot)
 									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 								translations.push_back(trans);
@@ -351,29 +388,6 @@ namespace ParaEngine
 					}
 					boneIndices.push_back(bone.nIndex);
 				}
-				else if (bone.trans.used)
-				{
-					//if (firstT == secondT)
-					//{
-					//	animIndices.push_back(std::make_pair(2, 0));
-					//	animTimes.push_back(0);
-					//	animTimes.push_back(animLength * inverse);
-					//	Vector3 trans = bone.trans.data[firstT];
-					//	translations.push_back(trans);
-					//	translations.push_back(trans);
-					//}
-					//else
-					//{
-					//	animIndices.push_back(std::make_pair(secondT - firstT + 1, 0));
-					//	for (uint32_t j = firstT; j <= secondT; j++)
-					//	{
-					//		animTimes.push_back(bone.rot.times[j] * inverse);
-					//		Vector3 trans = bone.trans.data[j];
-					//		translations.push_back(trans);
-					//	}
-					//}
-					//bones.push_back(bone.nIndex);
-				}
 				else if (bone.rot.used)
 				{
 					if (firstR == secondR)
@@ -382,8 +396,8 @@ namespace ParaEngine
 						animTimes.push_back(0);
 						animTimes.push_back(animLength * inverse);
 						Quaternion q = bone.rot.data[firstR];
-						Vector3 trans(0, 0, 0);
 						q.invertWinding();
+						Vector3 trans(0, 0, 0);
 						if (bone.bUsePivot)
 							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
 						translations.push_back(trans);
@@ -408,6 +422,20 @@ namespace ParaEngine
 					}
 					boneIndices.push_back(bone.nIndex);
 				}
+			}
+		}
+	}
+
+	void glTFModelExporter::CalculateJoint(int id, const Vector3& pivot)
+	{
+		for (uint32_t i = 1; i < paraXModel->m_objNum.nBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
+			if (bone.parent == id)
+			{
+				Vector3 offset = bone.m_finalTrans - pivot;
+				bone.matTransform.makeTrans(offset);
+				CalculateJoint(bone.nIndex, bone.m_finalTrans);
 			}
 		}
 	}
@@ -698,9 +726,46 @@ namespace ParaEngine
 			Bone& bone = paraXModel->bones[i];
 			std::shared_ptr<Node> node = std::make_shared<Node>();
 			node->index = bone.nIndex + 1;
-			node->translation = bone.m_finalTrans;
-			node->rotation = bone.m_finalRot;
-			node->scale = bone.m_finalScaling;
+			Quaternion q = Quaternion::IDENTITY;
+			Matrix4 m, mLocalRot;
+			if (bone.rot.used || bone.trans.used || bone.scale.used)
+			{
+				if (bone.bUsePivot)
+				{
+					m.makeTrans(bone.pivot * -1.0f);
+					if (bone.rot.used)
+					{
+						q = bone.rot.getValue(0, 0);
+						m = m.Multiply4x3(Matrix4(q.invertWinding()));
+					}
+					if (bone.trans.used)
+					{
+						Vector3 tr = bone.trans.getValue(0, 0);
+						m.offsetTrans(tr);
+					}
+					m.offsetTrans(bone.pivot);
+				}
+				else
+				{
+					if (bone.rot.used)
+					{
+						q = bone.rot.getValue(0, 0);
+						m = Matrix4(q.invertWinding());
+					}
+					else
+						m.identity();
+					if (bone.trans.used)
+					{
+						Vector3 tr = bone.trans.getValue(0, 0);
+						m.offsetTrans(tr);
+					}
+				}
+			}
+			else
+				m.identity();
+			node->translation = m.getTrans();
+			node->rotation = q;
+			node->scale = Vector3(1.0f, 1.0f, 1.0f);
 			skin->joints.push_back(node);
 		}
 		for (uint32_t i = 0; i < numBones; i++)
@@ -1263,7 +1328,7 @@ namespace ParaEngine
 			uint32_t numBones = paraXModel->m_objNum.nBones;
 			for (uint32_t i = 0; i < numBones; i++)
 			{
-				builder.append((const char*)&paraXModel->bones[i].matOffset, sizeFloat * 16);
+				builder.append((const char*)&paraXModel->bones[i].matOffset._m, sizeFloat * 16);
 			}
 			for (uint32_t i = 0; i < animTimes.size(); i++)
 			{
@@ -1498,7 +1563,6 @@ namespace ParaEngine
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
-					bin.write(&paraXModel->bones[i].matOffset, sizeFloat * 16);
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
@@ -1606,7 +1670,7 @@ namespace ParaEngine
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
-					file.write(&paraXModel->bones[i].matOffset, sizeFloat * 16);
+					file.write(&paraXModel->bones[i].matOffset._m, sizeFloat * 16);
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{

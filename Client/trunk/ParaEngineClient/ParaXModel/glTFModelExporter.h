@@ -313,6 +313,7 @@ namespace ParaEngine
 
 	private:
 		void ParseParaXModel();
+		void CalculateJoint(int id, const Vector3& pivot);
 		Vector3 CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot);
 		void ExportMetadata();
 		void ExportScene();
