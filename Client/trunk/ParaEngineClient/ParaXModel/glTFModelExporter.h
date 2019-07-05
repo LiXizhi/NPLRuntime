@@ -2,6 +2,7 @@
 #include "ParaVector3.h"
 #include "ParaQuaternion.h"
 #include "ParaXBone.h"
+#include "ModelRenderPass.h"
 #include "animated.h"
 #include "json/json.h"
 #include "luabind/object.hpp"
@@ -327,20 +328,19 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> ExportColors();
 		std::shared_ptr<Accessor> ExportJoints();
 		std::shared_ptr<Accessor> ExportWeights();
-		std::shared_ptr<Accessor> ExportIndices();
-		std::shared_ptr<Material> ExportMaterials();
+		std::shared_ptr<Accessor> ExportIndices(const ModelRenderPass& pass);
+		std::shared_ptr<Material> ExportMaterials(int tex);
 		std::shared_ptr<Animation> ExportAnimations();
-		std::shared_ptr<BufferView> ExportTimeBuffer();
-		std::shared_ptr<BufferView> ExportTranslationBuffer();
-		std::shared_ptr<BufferView> ExportRotationBuffer();
+		std::shared_ptr<BufferView> ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index);
 		std::shared_ptr<Accessor> ExportTimeAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
 		std::shared_ptr<Accessor> ExportTranslationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
 		std::shared_ptr<Accessor> ExportRotationAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
+		std::shared_ptr<Accessor> ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas);
 		std::string EncodeBuffer();
 		void WriteBuffer(Json::Value& obj, uint32_t index);
 		void WriteBufferView(std::shared_ptr<BufferView>& bufferView, Json::Value& obj, uint32_t index);
 		void WriteAccessor(std::shared_ptr<Accessor>& accessor, Json::Value& obj, uint32_t index);
-		void WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img);
+		void WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img, uint32_t index);
 		void WriteFile();
 		void WriteRawData();
 		void WriteGLBFile();
@@ -366,6 +366,7 @@ namespace ParaEngine
 		std::vector<uint32_t> animOffsets;
 		std::vector<float> animTimes;
 		std::vector<Vector3> translations;
+		std::vector<Vector3> scales;
 		std::vector<Quaternion> rotations;
 
 		CParaXModel* paraXModel;
@@ -378,6 +379,7 @@ namespace ParaEngine
 		std::shared_ptr<BufferView> bvTime;
 		std::shared_ptr<BufferView> bvTranslation;
 		std::shared_ptr<BufferView> bvRotation;
+		std::shared_ptr<BufferView> bvScale;
 
 	public:
 		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded = true);

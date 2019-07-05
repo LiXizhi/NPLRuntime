@@ -86,12 +86,6 @@ namespace ParaEngine
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
-			uint32_t numIndices = paraXModel->m_objNum.nIndices;
-			for (uint32_t i = 0; i < numIndices; i++)
-			{
-				uint16_t index = paraXModel->m_indices[i];
-				builder.append((const char*)&index, sizeUShort);
-			}
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
 				builder.append((const char*)&(it->x), sizeFloat);
@@ -133,6 +127,17 @@ namespace ParaEngine
 					builder.append((const char*)&(it->z), sizeFloat);
 					builder.append((const char*)&(it->w), sizeFloat);
 				}
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						builder.append((const char*)&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						builder.append("\0\0", sizeUShort);
+				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
@@ -156,6 +161,26 @@ namespace ParaEngine
 					builder.append((const char*)&rotations[i].z, sizeFloat);
 					builder.append((const char*)&rotations[i].w, sizeFloat);
 				}
+				for (uint32_t i = 0; i < scales.size(); i++)
+				{
+					builder.append((const char*)&scales[i].x, sizeFloat);
+					builder.append((const char*)&scales[i].y, sizeFloat);
+					builder.append((const char*)&scales[i].z, sizeFloat);
+				}
+			}
+			else
+			{
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						builder.append((const char*)&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						builder.append("\0\0", sizeUShort);
+				}
 			}
 			uint8_t binaryPadding = 0x00;
 			paddingLength = binaryLength - buffer->byteLength;
@@ -173,7 +198,7 @@ namespace ParaEngine
 	void glTFModelExporter::ParseParaXModel()
 	{
 		uint32_t numBones = paraXModel->m_objNum.nBones;
-		// calculate bones' absolute position
+		//// calculate bones' absolute position
 		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
 		//for (uint32_t i = 0; i < numBones; i++)
 		//{
@@ -276,152 +301,71 @@ namespace ParaEngine
 
 		inverse = 1.0f / 1000.0f;
 		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		if (animLength == 0) animLength = 1000;
 		for (uint32_t i = 0; i < numBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
-			if (bone.trans.used || bone.rot.used)
+			if (bone.trans.used || bone.rot.used || bone.scale.used)
 			{
 				uint32_t firstT = bone.trans.ranges[0].first;
 				uint32_t secondT = bone.trans.ranges[0].second;
 				uint32_t firstR = bone.rot.ranges[0].first;
 				uint32_t secondR = bone.rot.ranges[0].second;
-				if (bone.trans.used && bone.rot.used)
+				uint32_t firstS = bone.scale.ranges[0].first;
+				uint32_t secondS = bone.scale.ranges[0].second;
+				uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
+				uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
+
+				animOffsets.push_back(animEnd - animStart + 1);
+				int time = 0;
+				Vector3 t, s;
+				Quaternion q;
+				for (uint32_t j = animStart; j <= animEnd; j++)
 				{
-					if (secondR > secondT)
+					if (secondT == animEnd)
 					{
-						animOffsets.push_back(secondR - firstR + 1);
-						if (firstT == secondT)
-						{
-							for (uint32_t j = firstR; j <= secondR; j++)
-							{
-								animTimes.push_back(bone.rot.times[j] * inverse);
-								Quaternion q = bone.rot.data[j];
-								q.invertWinding();
-								Vector3 trans = bone.trans.data[firstT];
-								if (bone.bUsePivot)
-									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-								translations.push_back(trans);
-								rotations.push_back(q);
-							}
-						}
-						else
-						{
-							for (uint32_t j = firstR; j <= secondR; j++)
-							{
-								int time = bone.rot.times[j];
-								animTimes.push_back(time * inverse);
-								Quaternion q = bone.rot.data[j];
-								q.invertWinding();
-								Vector3 trans = bone.trans.getValue(0, time);
-								if (bone.bUsePivot)
-									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-								translations.push_back(trans);
-								rotations.push_back(q);
-							}
-						}
+						time = bone.trans.times[j];
+						t = bone.trans.data[j];
+						s = bone.scale.getValue(0, time);
+						q = bone.rot.getValue(0, time);
 					}
-					else if (secondT > secondR)
+					else if (secondR == animEnd)
 					{
-						animOffsets.push_back(secondT - firstT + 1);
-						if (firstR == secondR)
-						{
-							Quaternion q = bone.rot.data[firstR];
-							q.invertWinding();
-							for (uint32_t j = firstT; j <= secondT; j++)
-							{
-								animTimes.push_back(bone.trans.times[j] * inverse);
-								Vector3 trans = bone.trans.data[j];
-								if (bone.bUsePivot)
-									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-								translations.push_back(trans);
-								rotations.push_back(q);
-							}
-						}
-						else
-						{
-							for (uint32_t j = firstT; j <= secondT; j++)
-							{
-								int time = bone.rot.times[j];
-								animTimes.push_back(time * inverse);
-								Quaternion q = bone.rot.getValue(0, time);
-								q.invertWinding();
-								Vector3 trans = bone.trans.data[j];
-								if (bone.bUsePivot)
-									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-								translations.push_back(trans);
-								rotations.push_back(q);
-							}
-						}
+						time = bone.rot.times[j];
+						t = bone.trans.getValue(0, time);
+						s = bone.scale.getValue(0, time);
+						q = bone.rot.data[j];
+					}
+					else if (secondS == animEnd)
+					{
+						time = bone.scale.times[j];
+						t = bone.trans.getValue(0, time);
+						s = bone.scale.data[j];
+						q = bone.rot.getValue(0, time);
+					}
+
+					Matrix4 mat;
+					if (bone.bUsePivot)
+					{
+						mat.makeTrans(bone.pivot * -1.0f);
+						mat.setScale(s);
+						mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+						mat.offsetTrans(t);
+						mat.offsetTrans(bone.pivot);
 					}
 					else
 					{
-						if (firstR == secondR)
-						{
-							animOffsets.push_back(2);
-							animTimes.push_back(0);
-							animTimes.push_back(animLength * inverse);
-							Quaternion q = bone.rot.data[firstR];
-							q.invertWinding();
-							Vector3 trans = bone.trans.data[firstT];
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							translations.push_back(trans);
-							rotations.push_back(q);
-							rotations.push_back(q);
-						}
-						else
-						{
-							animOffsets.push_back(secondR - firstR + 1);
-							for (uint32_t j = firstR; j <= secondR; j++)
-							{
-								animTimes.push_back(bone.rot.times[j] * inverse);
-								Quaternion q = bone.rot.data[j];
-								q.invertWinding();
-								Vector3 trans = bone.trans.data[j];
-								if (bone.bUsePivot)
-									trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-								translations.push_back(trans);
-								rotations.push_back(q);
-							}
-						}
+						mat.makeScale(s);
+						mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+						mat.offsetTrans(t);
 					}
-					boneIndices.push_back(bone.nIndex);
+
+					animTimes.push_back(time * inverse);
+					translations.push_back(mat.getTrans());
+					rotations.push_back(q);
+					scales.push_back(s);
 				}
-				else if (bone.rot.used)
-				{
-					if (firstR == secondR)
-					{
-						animOffsets.push_back(2);
-						animTimes.push_back(0);
-						animTimes.push_back(animLength * inverse);
-						Quaternion q = bone.rot.data[firstR];
-						q.invertWinding();
-						Vector3 trans(0, 0, 0);
-						if (bone.bUsePivot)
-							trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-						translations.push_back(trans);
-						translations.push_back(trans);
-						rotations.push_back(q);
-						rotations.push_back(q);
-					}
-					else
-					{
-						animOffsets.push_back(secondR - firstR + 1);
-						for (uint32_t j = firstR; j <= secondR; j++)
-						{
-							animTimes.push_back(bone.rot.times[j] * inverse);
-							Quaternion q = bone.rot.data[j];
-							q.invertWinding();
-							Vector3 trans(0, 0, 0);
-							if (bone.bUsePivot)
-								trans = CalculatePivot(bone.pivot, trans, Matrix4(q));
-							translations.push_back(trans);
-							rotations.push_back(q);
-						}
-					}
-					boneIndices.push_back(bone.nIndex);
-				}
+				boneIndices.push_back(bone.nIndex);
 			}
 		}
 	}
@@ -498,57 +442,75 @@ namespace ParaEngine
 			for (uint32_t k = 0; k < mesh->primitives.size(); k++)
 			{
 				Mesh::Primitive& primitive = mesh->primitives[k];
+				Json::Value a;
+				if (primitive.attributes.position != nullptr)
+				{
+					a["POSITION"] = primitive.attributes.position->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.position, accessors, index);
+						WriteBufferView(primitive.attributes.position->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.normal != nullptr)
+				{
+					a["NORMAL"] = primitive.attributes.normal->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.normal, accessors, index);
+						WriteBufferView(primitive.attributes.normal->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.texcoord != nullptr)
+				{
+					a["TEXCOORD_0"] = primitive.attributes.texcoord->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.texcoord, accessors, index);
+						WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.color != nullptr)
+				{
+					a["COLOR_0"] = primitive.attributes.color->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.color, accessors, index);
+						WriteBufferView(primitive.attributes.color->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.joints != nullptr)
+				{
+					a["JOINTS_0"] = primitive.attributes.joints->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.joints, accessors, index);
+						WriteBufferView(primitive.attributes.joints->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+				if (primitive.attributes.weights != nullptr)
+				{
+					a["WEIGHTS_0"] = primitive.attributes.weights->index;
+					if (k == 0)
+					{
+						WriteAccessor(primitive.attributes.weights, accessors, index);
+						WriteBufferView(primitive.attributes.weights->bufferView, bufferViews, index);
+						index++;
+					}
+				}
+
 				if (primitive.indices != nullptr)
 				{
 					WriteAccessor(primitive.indices, accessors, index);
 					WriteBufferView(primitive.indices->bufferView, bufferViews, index);
 					index++;
 				}
-				Json::Value a;
-				if (primitive.attributes.position != nullptr)
-				{
-					a["POSITION"] = primitive.attributes.position->index;
-					WriteAccessor(primitive.attributes.position, accessors, index);
-					WriteBufferView(primitive.attributes.position->bufferView, bufferViews, index);
-					index++;
-				}
-				if (primitive.attributes.normal != nullptr)
-				{
-					a["NORMAL"] = primitive.attributes.normal->index;
-					WriteAccessor(primitive.attributes.normal, accessors, index);
-					WriteBufferView(primitive.attributes.normal->bufferView, bufferViews, index);
-					index++;
-				}
-				if (primitive.attributes.texcoord != nullptr)
-				{
-					a["TEXCOORD_0"] = primitive.attributes.texcoord->index;
-					WriteAccessor(primitive.attributes.texcoord, accessors, index);
-					WriteBufferView(primitive.attributes.texcoord->bufferView, bufferViews, index);
-					index++;
-				}
-				if (primitive.attributes.color != nullptr)
-				{
-					a["COLOR_0"] = primitive.attributes.color->index;
-					WriteAccessor(primitive.attributes.color, accessors, index);
-					WriteBufferView(primitive.attributes.color->bufferView, bufferViews, index);
-					index++;
-				}
-				if (primitive.attributes.joints != nullptr)
-				{
-					a["JOINTS_0"] = primitive.attributes.joints->index;
-					WriteAccessor(primitive.attributes.joints, accessors, index);
-					WriteBufferView(primitive.attributes.joints->bufferView, bufferViews, index);
-					index++;
-				}
-				if (primitive.attributes.weights != nullptr)
-				{
-					a["WEIGHTS_0"] = primitive.attributes.weights->index;
-					WriteAccessor(primitive.attributes.weights, accessors, index);
-					WriteBufferView(primitive.attributes.weights->bufferView, bufferViews, index);
-					index++;
-				}
-
-				WriteMaterial(primitive.material, materials, textures, samplers, images);
+				WriteMaterial(primitive.material, materials, textures, samplers, images, k);
 				Json::Value p;
 				p["attributes"] = a;
 				p["indices"] = primitive.indices->index;
@@ -612,6 +574,7 @@ namespace ParaEngine
 			WriteBufferView(bvTime, bufferViews, index);
 			WriteBufferView(bvTranslation, bufferViews, index + 1);
 			WriteBufferView(bvRotation, bufferViews, index + 2);
+			WriteBufferView(bvScale, bufferViews, index + 3);
 			Json::Value saj = Json::Value(Json::arrayValue);
 			for (uint32_t i = 0; i < animation->samplers.size(); i++)
 			{
@@ -698,21 +661,29 @@ namespace ParaEngine
 	std::shared_ptr<Mesh> glTFModelExporter::ExportMesh()
 	{
 		std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
-		mesh->primitives.resize(1);
-		Mesh::Primitive& primitive = mesh->primitives.back();
-		primitive.indices = ExportIndices();
-		primitive.attributes.position = ExportVertices();
-		primitive.attributes.normal = ExportNormals();
-		primitive.attributes.texcoord = ExportTextureCoords();
+		std::shared_ptr<Accessor> v = ExportVertices();
+		std::shared_ptr<Accessor> n = ExportNormals();
+		std::shared_ptr<Accessor> t = ExportTextureCoords();
+		std::shared_ptr<Accessor> c = nullptr;
 		if (paraXModel->m_origVertices[0].color0 != 0)
-			primitive.attributes.color = ExportColors();
-		if (paraXModel->animated)
+			c = ExportColors();
+		std::shared_ptr<Accessor> j = ExportJoints();
+		std::shared_ptr<Accessor> w = ExportWeights();
+		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
-			primitive.attributes.joints = ExportJoints();
-			primitive.attributes.weights = ExportWeights();
+			const ModelRenderPass& pass = paraXModel->passes[i];
+			Mesh::Primitive primitive;
+			primitive.indices = ExportIndices(pass);
+			primitive.attributes.position = v;
+			primitive.attributes.normal = n;
+			primitive.attributes.texcoord = t;
+			primitive.attributes.color = c;
+			primitive.attributes.joints = j;
+			primitive.attributes.weights = w;
+			primitive.material = ExportMaterials(pass.tex);
+			primitive.mode = PrimitiveMode::Triangles;
+			mesh->primitives.push_back(primitive);
 		}
-		primitive.material = ExportMaterials();
-		primitive.mode = PrimitiveMode::Triangles;
 		mesh->index = 0;
 		return mesh;
 	}
@@ -728,11 +699,17 @@ namespace ParaEngine
 			node->index = bone.nIndex + 1;
 			Quaternion q = Quaternion::IDENTITY;
 			Matrix4 m, mLocalRot;
+			Vector3 s(1.0f, 1.0f, 1.0f);
 			if (bone.rot.used || bone.trans.used || bone.scale.used)
 			{
 				if (bone.bUsePivot)
 				{
 					m.makeTrans(bone.pivot * -1.0f);
+					if (bone.scale.used)
+					{
+						s = bone.scale.getValue(0, 0);
+						m.setScale(s);
+					}
 					if (bone.rot.used)
 					{
 						q = bone.rot.getValue(0, 0);
@@ -747,13 +724,26 @@ namespace ParaEngine
 				}
 				else
 				{
-					if (bone.rot.used)
+					if (bone.scale.used)
 					{
-						q = bone.rot.getValue(0, 0);
-						m = Matrix4(q.invertWinding());
+						s = bone.scale.getValue(0, 0);
+						m.makeScale(s);
+						if (bone.rot.used)
+						{
+							q = bone.rot.getValue(0, 0);
+							m = m.Multiply4x3(Matrix4(q.invertWinding()));
+						}
 					}
 					else
-						m.identity();
+					{
+						if (bone.rot.used)
+						{
+							q = bone.rot.getValue(0, 0);
+							m = Matrix4(q.invertWinding());
+						}
+						else
+							m.identity();
+					}
 					if (bone.trans.used)
 					{
 						Vector3 tr = bone.trans.getValue(0, 0);
@@ -765,7 +755,7 @@ namespace ParaEngine
 				m.identity();
 			node->translation = m.getTrans();
 			node->rotation = q;
-			node->scale = Vector3(1.0f, 1.0f, 1.0f);
+			node->scale = s;
 			skin->joints.push_back(node);
 		}
 		for (uint32_t i = 0; i < numBones; i++)
@@ -1012,9 +1002,9 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Accessor> glTFModelExporter::ExportIndices()
+	std::shared_ptr<Accessor> glTFModelExporter::ExportIndices(const ModelRenderPass& pass)
 	{
-		uint32_t numIndices = paraXModel->m_objNum.nIndices;
+		uint32_t numIndices = pass.indexCount;
 		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::UnsignedShort);
 
@@ -1025,7 +1015,7 @@ namespace ParaEngine
 		bv->byteLength = numIndices * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::ElementArrayBuffer;
-		buffer->Grow(bv->byteLength);
+		buffer->Grow(bv->byteLength + bv->byteLength % 4);
 
 		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
 		acc->bufferView = bv;
@@ -1035,10 +1025,11 @@ namespace ParaEngine
 		acc->type = AttribType::SCALAR;
 		acc->count = numIndices;
 		acc->max.push_back(0);
-		acc->min.push_back(0);
-		for (unsigned int i = 0; i < numIndices; i++)
+		acc->min.push_back(FLT_MAX);
+		for (uint32_t i = pass.indexStart; i < pass.indexStart + pass.indexCount; i++)
 		{
 			uint16_t val = paraXModel->m_indices[i];
+			if (val < acc->min[0]) acc->min[0] = val;
 			if (val > acc->max[0]) acc->max[0] = val;
 		}
 
@@ -1046,10 +1037,10 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Material> glTFModelExporter::ExportMaterials()
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex)
 	{
 		std::shared_ptr<Material> material = std::make_shared<Material>();
-		material->index = 0;
+		material->index = tex;
 		material->alphaMode = "MASK";
 		material->alphaCutoff = 0.5;
 		material->doubleSide = true;
@@ -1062,11 +1053,11 @@ namespace ParaEngine
 		metallic.baseColorFactor[3] = 1.0;
 
 		uint32_t numTextures = paraXModel->m_objNum.nTextures;
-		if (numTextures > 0)
+		if (numTextures > tex)
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
 			LPD3DXBUFFER texBuffer;
-			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[0]->GetTexture(), nullptr);
+			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
 			img->bufferPointer = texBuffer->GetBufferPointer();
 			img->bufferSize = texBuffer->GetBufferSize();
 			if (!isBinary)
@@ -1076,20 +1067,20 @@ namespace ParaEngine
 				img->filename = path + ".png";
 				img->uri = name + ".png";
 			}
-			img->index = 0;
+			img->index = tex;
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			sampler->magFilter = SamplerMagFilter::MagLinear;
 			sampler->minFilter = SamplerMinFilter::NearestMipMapLinear;
 			sampler->wrapS = SamplerWrap::Repeat;
 			sampler->wrapT = SamplerWrap::Repeat;
-			sampler->index = 0;
+			sampler->index = tex;
 
 			std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 			texture->source = img;
 			texture->sampler = sampler;
 			metallic.baseColorTexture.texture = texture;
-			metallic.baseColorTexture.index = 0;
+			metallic.baseColorTexture.index = tex;
 			metallic.baseColorTexture.texCoord = 0;
 		}
 		return material;
@@ -1099,9 +1090,10 @@ namespace ParaEngine
 	{
 		std::shared_ptr<Animation> animation = std::make_shared<Animation>();
 
-		bvTime = ExportTimeBuffer();
-		bvTranslation = ExportTranslationBuffer();
-		bvRotation = ExportRotationBuffer();
+		bvTime = ExportBufferView(AttribType::SCALAR, animTimes.size(), 0);
+		bvTranslation = ExportBufferView(AttribType::VEC3, translations.size(), 1);
+		bvRotation = ExportBufferView(AttribType::VEC4, rotations.size(), 2);
+		bvScale = ExportBufferView(AttribType::VEC3, scales.size(), 3);
 		uint32_t offsetTime = 0;
 		uint32_t offsetData = 0;
 		for (uint32_t i = 0; i < animOffsets.size(); i++)
@@ -1136,50 +1128,33 @@ namespace ParaEngine
 				animation->samplers.push_back(sampler);
 				animation->channels.push_back(channel);
 			}
+			{
+				Animation::Sampler sampler;
+				sampler.interpolation = Interpolation::LINEAR;
+				sampler.used = false;
+				sampler.input = acTime;
+				sampler.output = ExportScaleAccessor(bvScale, offsetData, numDatas);
+				Animation::Channel channel;
+				channel.target.node = boneIndices[i] + 1;
+				channel.target.path = AnimationPath::Scale;
+				channel.sampler = animation->samplers.size();
+				animation->samplers.push_back(sampler);
+				animation->channels.push_back(channel);
+			}
 			offsetData += numDatas;
 		}
 		return animation;
 	}
 
-	std::shared_ptr<BufferView> glTFModelExporter::ExportTimeBuffer()
+	std::shared_ptr<ParaEngine::BufferView> glTFModelExporter::ExportBufferView(AttribType::Value type, uint32_t length, uint32_t index)
 	{
-		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::SCALAR);
+		const uint32_t numComponents = AttribType::GetNumComponents(type);
 		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
 		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
 		bv->buffer = buffer;
-		bv->index = bufferIndex;
+		bv->index = bufferIndex + index;
 		bv->byteOffset = buffer->byteLength;
-		bv->byteLength = animTimes.size() * numComponents * bytesPerComp;
-		bv->byteStride = 0;
-		bv->target = BufferViewTarget::NotUse;
-		buffer->Grow(bv->byteLength);
-		return bv;
-	}
-
-	std::shared_ptr<BufferView> glTFModelExporter::ExportTranslationBuffer()
-	{
-		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
-		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
-		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
-		bv->buffer = buffer;
-		bv->index = bufferIndex + 1;
-		bv->byteOffset = buffer->byteLength;
-		bv->byteLength = translations.size() * numComponents * bytesPerComp;
-		bv->byteStride = 0;
-		bv->target = BufferViewTarget::NotUse;
-		buffer->Grow(bv->byteLength);
-		return bv;
-	}
-
-	std::shared_ptr<BufferView> glTFModelExporter::ExportRotationBuffer()
-	{
-		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC4);
-		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
-		std::shared_ptr<BufferView> bv = std::make_shared<BufferView>();
-		bv->buffer = buffer;
-		bv->index = bufferIndex + 2;
-		bv->byteOffset = buffer->byteLength;
-		bv->byteLength = rotations.size() * numComponents * bytesPerComp;
+		bv->byteLength = length * numComponents * bytesPerComp;
 		bv->byteStride = 0;
 		bv->target = BufferViewTarget::NotUse;
 		buffer->Grow(bv->byteLength);
@@ -1270,19 +1245,42 @@ namespace ParaEngine
 		return acc;
 	}
 
+	std::shared_ptr<ParaEngine::Accessor> glTFModelExporter::ExportScaleAccessor(std::shared_ptr<BufferView>& bv, uint32_t offset, uint32_t numDatas)
+	{
+		const uint32_t numComponents = AttribType::GetNumComponents(AttribType::VEC3);
+		const uint32_t bytesPerComp = ComponentTypeSize(ComponentType::Float);
+		std::shared_ptr<Accessor> acc = std::make_shared<Accessor>();
+		acc->bufferView = bv;
+		acc->index = bufferIndex;
+		acc->byteOffset = offset * numComponents * bytesPerComp;
+		acc->componentType = ComponentType::Float;
+		acc->count = numDatas;
+		acc->type = AttribType::VEC3;
+		for (uint32_t i = 0; i < numComponents; i++)
+		{
+			acc->max.push_back(-FLT_MAX);
+			acc->min.push_back(FLT_MAX);
+		}
+		for (uint32_t i = offset; i < numDatas + offset; i++)
+		{
+			for (uint32_t j = 0; j < numComponents; j++)
+			{
+				float val = scales[i][j];
+				if (val < acc->min[j]) acc->min[j] = val;
+				if (val > acc->max[j]) acc->max[j] = val;
+			}
+		}
+
+		bufferIndex++;
+		return acc;
+	}
+
 	std::string glTFModelExporter::EncodeBuffer()
 	{
 		StringBuilder builder;
 		uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 		uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
 		uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
-
-		uint32_t numIndices = paraXModel->m_objNum.nIndices;
-		for (uint32_t i = 0; i < numIndices; i++)
-		{
-			uint16_t index = paraXModel->m_indices[i];
-			builder.append((const char*)&index, sizeUShort);
-		}
 
 		for (auto it = vertices.begin(); it != vertices.end(); ++it)
 		{
@@ -1325,6 +1323,18 @@ namespace ParaEngine
 				builder.append((const char*)&(it->z), sizeFloat);
 				builder.append((const char*)&(it->w), sizeFloat);
 			}
+			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+			{
+				const ModelRenderPass& pass = paraXModel->passes[i];
+				for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				{
+					uint16_t index = paraXModel->m_indices[j];
+					builder.append((const char*)&index, sizeUShort);
+				}
+				if (pass.indexCount % 2 != 0)
+					builder.append("\0\0", sizeUShort);
+			}
+
 			uint32_t numBones = paraXModel->m_objNum.nBones;
 			for (uint32_t i = 0; i < numBones; i++)
 			{
@@ -1347,6 +1357,26 @@ namespace ParaEngine
 				builder.append((const char*)&rotations[i].y, sizeFloat);
 				builder.append((const char*)&rotations[i].z, sizeFloat);
 				builder.append((const char*)&rotations[i].w, sizeFloat);
+			}
+			for (uint32_t i = 0; i < scales.size(); i++)
+			{
+				builder.append((const char*)&scales[i].x, sizeFloat);
+				builder.append((const char*)&scales[i].y, sizeFloat);
+				builder.append((const char*)&scales[i].z, sizeFloat);
+			}
+		}
+		else
+		{
+			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+			{
+				const ModelRenderPass& pass = paraXModel->passes[i];
+				for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				{
+					uint16_t index = paraXModel->m_indices[j];
+					builder.append((const char*)&index, sizeUShort);
+				}
+				if (pass.indexCount % 2 != 0)
+					builder.append("\0\0", sizeUShort);
 			}
 		}
 		return StringHelper::base64(builder.ToString());
@@ -1432,7 +1462,7 @@ namespace ParaEngine
 		obj[index] = acc;
 	}
 
-	void glTFModelExporter::WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img)
+	void glTFModelExporter::WriteMaterial(std::shared_ptr<Material>& material, Json::Value& mat, Json::Value& tex, Json::Value& sampler, Json::Value& img, uint32_t index)
 	{
 		PbrMetallicRoughness& pbr = material->metallicRoughness;
 		Json::Value baseTex;
@@ -1453,20 +1483,20 @@ namespace ParaEngine
 		m["alphaMode"] = material->alphaMode;
 		m["alphaCutoff"] = material->alphaCutoff;
 		m["doubleSided"] = material->doubleSide;
-		mat[0u] = m;
+		mat[index] = m;
 
 		shared_ptr<Texture>& texture = pbr.baseColorTexture.texture;
 		Json::Value t;
 		t["sampler"] = texture->sampler->index;
 		t["source"] = texture->source->index;
-		tex[0u] = t;
+		tex[index] = t;
 
 		Json::Value s;
 		s["magFilter"] = texture->sampler->magFilter;
 		s["minFilter"] = texture->sampler->minFilter;
 		s["wrapS"] = texture->sampler->wrapS;
 		s["wrapT"] = texture->sampler->wrapT;
-		sampler[0u] = s;
+		sampler[index] = s;
 
 		Json::Value i;
 		if (isEmbedded)
@@ -1485,7 +1515,7 @@ namespace ParaEngine
 				file.close();
 			}
 		}
-		img[0u] = i;
+		img[index] = i;
 	}
 
 	void glTFModelExporter::WriteFile()
@@ -1493,7 +1523,7 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			Json::FastWriter writer;
+			Json::StyledWriter writer;
 			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
@@ -1513,12 +1543,7 @@ namespace ParaEngine
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
-			uint32_t numIndices = paraXModel->m_objNum.nIndices;
-			for (uint32_t i = 0; i < numIndices; i++)
-			{
-				uint16_t index = paraXModel->m_indices[i];
-				bin.write(&index, sizeUShort);
-			}
+
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
 				bin.write(&(it->x), sizeFloat);
@@ -1560,9 +1585,21 @@ namespace ParaEngine
 					bin.write(&(it->z), sizeFloat);
 					bin.write(&(it->w), sizeFloat);
 				}
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						bin.write(&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						bin.write("\0\0", sizeUShort);
+				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
+					bin.write(&paraXModel->bones[i].matOffset._m, sizeFloat * 16);
 				}
 				for (uint32_t i = 0; i < animTimes.size(); i++)
 				{
@@ -1581,6 +1618,26 @@ namespace ParaEngine
 					bin.write(&rotations[i].y, sizeFloat);
 					bin.write(&rotations[i].z, sizeFloat);
 					bin.write(&rotations[i].w, sizeFloat);
+				}
+				for (uint32_t i = 0; i < scales.size(); i++)
+				{
+					bin.write(&scales[i].x, sizeFloat);
+					bin.write(&scales[i].y, sizeFloat);
+					bin.write(&scales[i].z, sizeFloat);
+				}
+			}
+			else
+			{
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						bin.write(&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						bin.write("\0\0", sizeUShort);
 				}
 			}
 			bin.close();
@@ -1620,12 +1677,7 @@ namespace ParaEngine
 			uint32_t sizeFloat = ComponentTypeSize(ComponentType::Float);
 			uint32_t sizeUShort = ComponentTypeSize(ComponentType::UnsignedShort);
 			uint32_t sizeUByte = ComponentTypeSize(ComponentType::UnsignedByte);
-			uint32_t numIndices = paraXModel->m_objNum.nIndices;
-			for (uint32_t i = 0; i < numIndices; i++)
-			{
-				uint16_t index = paraXModel->m_indices[i];
-				file.write(&index, sizeUShort);
-			}
+
 			for (auto it = vertices.begin(); it != vertices.end(); ++it)
 			{
 				file.write(&(it->x), sizeFloat);
@@ -1667,6 +1719,17 @@ namespace ParaEngine
 					file.write(&(it->z), sizeFloat);
 					file.write(&(it->w), sizeFloat);
 				}
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						file.write(&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						file.write("\0\0", sizeUShort);
+				}
 				uint32_t numBones = paraXModel->m_objNum.nBones;
 				for (uint32_t i = 0; i < numBones; i++)
 				{
@@ -1689,6 +1752,26 @@ namespace ParaEngine
 					file.write(&rotations[i].y, sizeFloat);
 					file.write(&rotations[i].z, sizeFloat);
 					file.write(&rotations[i].w, sizeFloat);
+				}
+				for (uint32_t i = 0; i < scales.size(); i++)
+				{
+					file.write(&scales[i].x, sizeFloat);
+					file.write(&scales[i].y, sizeFloat);
+					file.write(&scales[i].z, sizeFloat);
+				}
+			}
+			else
+			{
+				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
+				{
+					const ModelRenderPass& pass = paraXModel->passes[i];
+					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					{
+						uint16_t index = paraXModel->m_indices[j];
+						file.write(&index, sizeUShort);
+					}
+					if (pass.indexCount % 2 != 0)
+						file.write("\0\0", sizeUShort);
 				}
 			}
 			uint8_t binaryPadding = 0x00;
