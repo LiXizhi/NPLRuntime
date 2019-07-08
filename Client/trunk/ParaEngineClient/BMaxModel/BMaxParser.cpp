@@ -1571,6 +1571,7 @@ namespace ParaEngine
 	void BMaxParser::AutoAddWalkAnimation(int nAnimID, int nStartTime, int nEndTime, float fMoveSpeed, bool bMoveForward)
 	{
 		ModelAnimation anim;
+		memset(&anim, 0, sizeof(ModelAnimation));
 		anim.timeStart = nStartTime;
 		anim.timeEnd = nEndTime;
 		anim.animID = nAnimID;

@@ -2310,12 +2310,12 @@ namespace ParaEngine
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_SPOT, m_effect_light_spot.get());
 			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_LIGHT_DIRECTIONAL, m_effect_light_directional.get());
 
-			if (m_effect_deferred_lighting == 0)
+			/*if (m_effect_deferred_lighting == 0)
 			{
 				m_effect_deferred_lighting = CGlobals::GetAssetManager()->LoadEffectFile("m_effect_deferred_lighting", "script/apps/Aries/Creator/Game/Shaders/DeferredLighting.fxo");
 				m_effect_deferred_lighting->LoadAsset();
 			}
-			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_DEFERRED_LIGHTING, m_effect_deferred_lighting.get());
+			CGlobals::GetEffectManager()->MapHandleToEffect(TECH_DEFERRED_LIGHTING, m_effect_deferred_lighting.get());*/
 
 			if (m_bmax_model_effect_fancy == 0)
 			{
