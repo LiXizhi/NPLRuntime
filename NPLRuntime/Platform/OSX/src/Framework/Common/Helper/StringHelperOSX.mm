@@ -15,18 +15,18 @@ bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
     return true;
 }
 
- const char* ParaEngine::StringHelper::GetTextFromClipboard()
- {
-     NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-     NSArray *types = [pasteboard types];
-     if ([types containsObject:NSPasteboardTypeString]) {
-         NSString *s = [pasteboard stringForType:NSPasteboardTypeString];
+const char* ParaEngine::StringHelper::GetTextFromClipboard()
+{
+    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
+    NSArray *types = [pasteboard types];
+    if ([types containsObject:NSPasteboardTypeString]) {
+        NSString *s = [pasteboard stringForType:NSPasteboardTypeString];
 
-         return [s UTF8String];
-     }
+        return [s UTF8String];
+    }
 
-     return "";
- }
+    return "";
+}
 
 void ParaEngine::CGUIEditBox::CopyToClipboard()
 {
