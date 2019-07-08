@@ -53,8 +53,8 @@ namespace ParaEngine {
 	{
         std::string cmd =  "open ";
 		
-		if (strcmp(lpParameters, "explorer.exe") == 0)
-			cmd += lpDirectory;
+		if (strcmp(lpFile, "explorer.exe") == 0)
+			cmd += lpParameters;
 		else
 			cmd += lpFile;
         
@@ -62,7 +62,6 @@ namespace ParaEngine {
         
         return true;
 	}
-
 
 	bool CEditorHelper::ShellExecute(const char* lpOperation, const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
