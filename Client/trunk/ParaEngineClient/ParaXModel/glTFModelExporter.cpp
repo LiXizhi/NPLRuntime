@@ -680,7 +680,7 @@ namespace ParaEngine
 			primitive.attributes.color = c;
 			primitive.attributes.joints = j;
 			primitive.attributes.weights = w;
-			primitive.material = ExportMaterials(pass.tex);
+			primitive.material = ExportMaterials(pass.tex, i);
 			primitive.mode = PrimitiveMode::Triangles;
 			mesh->primitives.push_back(primitive);
 		}
@@ -1037,10 +1037,10 @@ namespace ParaEngine
 		return acc;
 	}
 
-	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex)
+	std::shared_ptr<Material> glTFModelExporter::ExportMaterials(int tex, int index)
 	{
 		std::shared_ptr<Material> material = std::make_shared<Material>();
-		material->index = tex;
+		material->index = index;
 		material->alphaMode = "MASK";
 		material->alphaCutoff = 0.5;
 		material->doubleSide = true;
@@ -1067,20 +1067,20 @@ namespace ParaEngine
 				img->filename = path + ".png";
 				img->uri = name + ".png";
 			}
-			img->index = tex;
+			img->index = index;
 
 			std::shared_ptr<Sampler> sampler = std::make_shared<Sampler>();
 			sampler->magFilter = SamplerMagFilter::MagLinear;
 			sampler->minFilter = SamplerMinFilter::NearestMipMapLinear;
 			sampler->wrapS = SamplerWrap::Repeat;
 			sampler->wrapT = SamplerWrap::Repeat;
-			sampler->index = tex;
+			sampler->index = index;
 
 			std::shared_ptr<Texture> texture = std::make_shared<Texture>();
 			texture->source = img;
 			texture->sampler = sampler;
 			metallic.baseColorTexture.texture = texture;
-			metallic.baseColorTexture.index = tex;
+			metallic.baseColorTexture.index = index;
 			metallic.baseColorTexture.texCoord = 0;
 		}
 		return material;
@@ -1523,7 +1523,7 @@ namespace ParaEngine
 		CParaFile file;
 		if (file.CreateNewFile(fileName.c_str()))
 		{
-			Json::StyledWriter writer;
+			Json::FastWriter writer;
 			std::string& data = writer.write(root);
 			file.write(data.c_str(), data.length());
 			file.close();
