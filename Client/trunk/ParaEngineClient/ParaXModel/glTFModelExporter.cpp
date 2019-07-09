@@ -349,6 +349,9 @@ namespace ParaEngine
 					{
 						mat.makeTrans(bone.pivot * -1.0f);
 						mat.setScale(s);
+						mat.m[3][0] *= s.x;
+						mat.m[3][1] *= s.y;
+						mat.m[3][2] *= s.z;
 						mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
 						mat.offsetTrans(t);
 						mat.offsetTrans(bone.pivot);
@@ -709,6 +712,9 @@ namespace ParaEngine
 					{
 						s = bone.scale.getValue(0, 0);
 						m.setScale(s);
+						m.m[3][0] *= s.x;
+						m.m[3][1] *= s.y;
+						m.m[3][2] *= s.z;
 					}
 					if (bone.rot.used)
 					{
@@ -753,6 +759,7 @@ namespace ParaEngine
 			}
 			else
 				m.identity();
+
 			node->translation = m.getTrans();
 			node->rotation = q;
 			node->scale = s;
