@@ -752,77 +752,6 @@ void CGUIEditBox::UpdateRects()
 }
 
 
-void CGUIEditBox::CopyToClipboard()
-{
-#ifdef WIN32
-	// Copy the selection text to the clipboard
-	if (m_nCaret != m_nSelStart && OpenClipboard(NULL))
-	{
-		EmptyClipboard();
-
-		HGLOBAL hBlock = GlobalAlloc(GMEM_MOVEABLE, sizeof(WCHAR) * (m_Buffer.GetTextSize() + 1));
-		if (hBlock)
-		{
-			WCHAR *pwszText = (WCHAR*)GlobalLock(hBlock);
-			if (pwszText)
-			{
-				int nFirst = Math::Min(m_nCaret, m_nSelStart);
-				int nLast = Math::Max(m_nCaret, m_nSelStart);
-				if (nLast - nFirst > 0)
-				{
-					if (m_PasswordChar == '\0')
-					{
-						CopyMemory(pwszText, m_Buffer.GetBuffer() + nFirst, (nLast - nFirst) * sizeof(WCHAR));
-					}
-					else
-					{
-						for (int i = 0; i < (nLast - nFirst); ++i)
-						{
-							pwszText[i] = m_PasswordChar;
-						}
-					}
-				}
-				pwszText[nLast - nFirst] = '\0';  // Terminate it
-				GlobalUnlock(hBlock);
-			}
-			SetClipboardData(CF_UNICODETEXT, hBlock);
-		}
-		CloseClipboard();
-		// We must not free the object until CloseClipboard is called.
-		if (hBlock)
-			GlobalFree(hBlock);
-	}
-#endif
-}
-
-
-void CGUIEditBox::PasteFromClipboard()
-{
-	DeleteSelectionText();
-#ifdef WIN32
-	if (OpenClipboard(NULL))
-	{
-		HANDLE handle = GetClipboardData(CF_UNICODETEXT);
-		if (handle)
-		{
-			// Convert the ANSI string to Unicode, then
-			// insert to our buffer.
-			char16_t *pwszText = (char16_t*)GlobalLock(handle);
-			if (pwszText)
-			{
-				// Copy all characters up to null.
-				if (m_Buffer.InsertString(m_nCaret, pwszText))
-					PlaceCaret(m_nCaret + lstrlenW((WCHAR*)pwszText));
-				m_nSelStart = m_nCaret;
-				m_bIsModified = true;
-				GlobalUnlock(handle);
-			}
-		}
-		CloseClipboard();
-	}
-#endif
-}
-
 
 //--------------------------------------------------------------------------------------
 bool CGUIEditBox::OnFocusIn()
@@ -905,6 +834,7 @@ bool CGUIEditBox::MsgProc(MSG *event)
 	pt.x = m_event->m_mouse.x;
 	pt.y = m_event->m_mouse.y;
 	int nEvent = m_event->GetTriggerEvent();
+
 	MSG newMsg;
 	DWORD dCurrTime = event->time;
 	DWORD static dLastTime = 0;
