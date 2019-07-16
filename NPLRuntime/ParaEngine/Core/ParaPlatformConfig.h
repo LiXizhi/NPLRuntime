@@ -87,7 +87,7 @@
 #endif
 #endif
 
-#ifndef WIN32
+#if !defined(WIN32) &&  PARA_TARGET_PLATFORM != PARA_PLATFORM_ANDROID
 /** this will possibly fix the "file size limit exceeded" (signal 25) on linux ext3
 * plus: ADD_DEFINITIONS(-D_FILE_OFFSET_BITS=64) should be defined on linux cmake config.
 */
