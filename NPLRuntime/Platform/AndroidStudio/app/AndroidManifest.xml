@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BEGIN_INCLUDE(manifest) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="com.tatfook.paracraft"
+        android:versionCode="4"
+        android:versionName="1.4">
+    <!-- This is the platform API where NativeActivity was introduced. -->
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CLEAR_APP_USER_DATA" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
+  
+ 	<uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/> 
+	<uses-feature android:name="android.bluetooth.le" android:required="true"/>
+ 
+		
+  <!-- This .apk has no Java code itself, so set hasCode to False. -->
+    <application android:label="@string/app_name" android:hasCode="True" android:icon="@drawable/ic_launcher" android:name="com.tatfook.paracraft.ParaEngineApplication">
+        <!-- Consider:  com.tatfook.paracraft.AppActivity or android.app.NativeActivity -->
+        <activity android:name="com.tatfook.paracraft.AppActivity"
+                android:launchMode="standard"
+                android:label="@string/app_name"
+                android:configChanges="orientation|keyboardHidden|screenSize"
+                android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+                android:screenOrientation="landscape" >
+            <!-- Tell NativeActivity the name of our .so -->
+            <meta-data android:name="android.app.lib_name"
+                    android:value="${libname}" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter> 
+          <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="paracraft" />
+          </intent-filter>
+        </activity>
+
+      <meta-data android:name="PlguinWrapper"
+              android:value="@string/PluginInfo"/>
+
+      <service
+          android:name="io.dcloud.common.adapter.io.MiniServerService"
+          android:exported="true" />
+      <service android:name="plugin.Bluetooth.BluetoothLeService" android:enabled="true"/>
+    </application>
+</manifest> 
+<!-- END_INCLUDE(manifest) -->
