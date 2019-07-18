@@ -6,11 +6,11 @@
 #include "StringBuilder.h"
 #include "ParaWorldAsset.h"
 #include "ParaXBone.h"
+#include "DDSLoader.h"
 
 namespace ParaEngine
 {
-
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, bool binary, bool embedded /*= true*/)
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, std::vector<string>& textures, bool binary, bool embedded /*= true*/)
 		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
@@ -24,7 +24,26 @@ namespace ParaEngine
 		buffer(std::make_shared<Buffer>())
 	{
 		buffer->index = 0;
+		texFiles.assign(textures.begin(), textures.end());
 		ParseParaXModel();
+		ParseAnimationBones();
+	}
+
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary, bool embedded /*= true*/)
+		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
+		maxCoord(-FLT_MAX, -FLT_MAX), minCoord(FLT_MAX, FLT_MAX),
+		maxJoint(0, 0, 0, 0), minJoint(255, 255, 255, 255),
+		maxWeight(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX), minWeight(FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX),
+		paraXModel(mesh),
+		animProvider(anim),
+		bufferIndex(0),
+		isBinary(binary),
+		isEmbedded(embedded),
+		buffer(std::make_shared<Buffer>())
+	{
+		buffer->index = 0;
 	}
 
 	glTFModelExporter::~glTFModelExporter()
@@ -130,7 +149,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						builder.append((const char*)&index, sizeUShort);
@@ -173,7 +192,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						builder.append((const char*)&index, sizeUShort);
@@ -299,10 +318,14 @@ namespace ParaEngine
 			weights.push_back(weight);
 		}
 
-		inverse = 1.0f / 1000.0f;
+	}
+
+	void glTFModelExporter::ParseAnimationBones()
+	{
+		float inverse = 1.0f / 1000.0f;
 		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
 		if (animLength == 0) animLength = 1000;
-		for (uint32_t i = 0; i < numBones; i++)
+		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
 			if (bone.trans.used || bone.rot.used || bone.scale.used)
@@ -371,6 +394,11 @@ namespace ParaEngine
 				boneIndices.push_back(bone.nIndex);
 			}
 		}
+	}
+
+	void glTFModelExporter::ChangeAnimationBones()
+	{
+
 	}
 
 	void glTFModelExporter::CalculateJoint(int id, const Vector3& pivot)
@@ -1033,7 +1061,7 @@ namespace ParaEngine
 		acc->count = numIndices;
 		acc->max.push_back(0);
 		acc->min.push_back(FLT_MAX);
-		for (uint32_t i = pass.indexStart; i < pass.indexStart + pass.indexCount; i++)
+		for (uint16_t i = pass.indexStart; i < pass.indexStart + pass.indexCount; i++)
 		{
 			uint16_t val = paraXModel->m_indices[i];
 			if (val < acc->min[0]) acc->min[0] = val;
@@ -1063,10 +1091,19 @@ namespace ParaEngine
 		if (numTextures > tex)
 		{
 			std::shared_ptr<Image> img = std::make_shared<Image>();
-			LPD3DXBUFFER texBuffer;
-			D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
-			img->bufferPointer = texBuffer->GetBufferPointer();
-			img->bufferSize = texBuffer->GetBufferSize();
+			std::string texPath = paraXModel->textures[tex]->m_key;
+			if (texFiles.size() > tex)
+				texPath = texFiles[tex];
+			DDSLoader loader(texPath);
+			if (loader.ConvertDDSToPng())
+			{
+				img->bufferPointer = loader.GetPngBuffer().get();
+				img->bufferSize = loader.GetPngSize();
+			}
+			//LPD3DXBUFFER texBuffer;
+			//D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
+			//img->bufferPointer = texBuffer->GetBufferPointer();
+			//img->bufferSize = texBuffer->GetBufferSize();
 			if (!isBinary)
 			{
 				std::string path = fileName.substr(0, fileName.rfind(".gltf"));
@@ -1333,7 +1370,7 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				const ModelRenderPass& pass = paraXModel->passes[i];
-				for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 				{
 					uint16_t index = paraXModel->m_indices[j];
 					builder.append((const char*)&index, sizeUShort);
@@ -1377,7 +1414,7 @@ namespace ParaEngine
 			for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 			{
 				const ModelRenderPass& pass = paraXModel->passes[i];
-				for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+				for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 				{
 					uint16_t index = paraXModel->m_indices[j];
 					builder.append((const char*)&index, sizeUShort);
@@ -1595,7 +1632,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						bin.write(&index, sizeUShort);
@@ -1638,7 +1675,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						bin.write(&index, sizeUShort);
@@ -1729,7 +1766,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						file.write(&index, sizeUShort);
@@ -1772,7 +1809,7 @@ namespace ParaEngine
 				for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 				{
 					const ModelRenderPass& pass = paraXModel->passes[i];
-					for (uint32_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
+					for (uint16_t j = pass.indexStart; j < pass.indexStart + pass.indexCount; j++)
 					{
 						uint16_t index = paraXModel->m_indices[j];
 						file.write(&index, sizeUShort);
@@ -1790,7 +1827,26 @@ namespace ParaEngine
 		}
 	}
 
-	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, bool binary, bool embedded)
+	luabind::object glTFModelExporter::GetTextures(const std::string& input, lua_State* L)
+	{
+		CParaFile file(input.c_str());
+		CParaXSerializer serializer;
+		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+		if (mesh != nullptr)
+		{
+			luabind::object o = luabind::newtable(L);
+			for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
+			{
+				mesh->textures[i]->m_key;
+				o[i + 1] = mesh->textures[i]->m_key;
+			}
+			return o;
+		}
+		else
+			return luabind::object();
+	}
+
+	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded)
 	{
 		CParaFile file(input.c_str());
 		CGlobals::GetAssetManager()->SetAsyncLoading(false);
@@ -1799,14 +1855,31 @@ namespace ParaEngine
 		if (mesh != nullptr)
 		{
 			std::string filename = output.empty() ? (input.substr(0, input.rfind(".x")) + ".gltf") : output;
-			glTFModelExporter exporter(mesh, binary, embedded);
+			std::vector<string> textures;
+			int type = luabind::type(texObject);
+			if (type == LUA_TSTRING)
+			{
+				textures.push_back(luabind::object_cast<const char*>(texObject));
+			}
+			else if (type == LUA_TTABLE)
+			{
+				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+				{
+					const luabind::object& item = *itCur;
+					if (luabind::type(item) == LUA_TSTRING)
+					{
+						textures.push_back(luabind::object_cast<const char*>(item));
+					}
+				}
+			}
+			glTFModelExporter exporter(mesh, textures, binary, embedded);
 			exporter.ExportToFile(filename);
 			delete mesh;
 			mesh = nullptr;
 		}
 	}
 
-	luabind::object glTFModelExporter::ParaXExportTo_glTF_String(const std::string& input, bool binary, lua_State* L)
+	luabind::object glTFModelExporter::ParaXExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
 	{
 		std::string buffer;
 		CParaFile file(input.c_str());
@@ -1815,15 +1888,44 @@ namespace ParaEngine
 		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
 		if (mesh != nullptr)
 		{
-			glTFModelExporter exporter(mesh, binary);
+			std::vector<string> textures;
+			int type = luabind::type(texObject);
+			if (type == LUA_TSTRING)
+			{
+				textures.push_back(luabind::object_cast<const char*>(texObject));
+			}
+			else if (type == LUA_TTABLE)
+			{
+				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+				{
+					const luabind::object& item = *itCur;
+					if (luabind::type(item) == LUA_TSTRING)
+					{
+						textures.push_back(luabind::object_cast<const char*>(item));
+					}
+				}
+			}
+			glTFModelExporter exporter(mesh, textures, binary);
 			buffer = exporter.ExportToBuffer();
 			delete mesh;
 			mesh = nullptr;
 		}
-		lua_pushlstring(L, buffer.c_str(), buffer.length());
-		luabind::object o(luabind::from_stack(L, -1));
-		lua_pop(L, 1);
-		return o;
+		return luabind::object(L, buffer.c_str());
+	}
+
+	void glTFModelExporter::ParaXChangeAnimation(const std::string& paraXFile, const std::string& animationFile, lua_State* L)
+	{
+		//CParaXSerializer serializer;
+		//CParaFile xfile(paraXFile.c_str());
+		//CParaXModel* model = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+		//if (model != nullptr)
+		//{
+		//	CParaFile animFile(animationFile.c_str());
+		//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
+		//	if (animation != nullptr)
+		//	{
+		//	}
+		//}
 	}
 
 }
