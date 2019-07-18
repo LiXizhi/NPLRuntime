@@ -1,5 +1,7 @@
+#import <Cocoa/Cocoa.h>
 #include "ParaAppOSX.h"
 #include "RenderWindowOSX.h"
+
 using namespace  ParaEngine;
 
 IParaEngineApp* CreateParaEngineApp()
@@ -112,6 +114,11 @@ int ParaEngine::CParaEngineAppOSX::Run(HINSTANCE hInstance)
 	return 0;
 }
 
+void ParaEngine::CParaEngineAppOSX::Exit(int nReturnCode /*= 0*/)
+{
+    [[NSRunningApplication currentApplication] terminate];
+}
+
 /** set the window title when at windowed mode */
 void ParaEngine::CParaEngineAppOSX::SetWindowText(const char* pChar)
 {
@@ -126,4 +133,3 @@ const char* ParaEngine::CParaEngineAppOSX:: GetWindowText()
     auto pWindow = (RenderWindowOSX*)m_pRenderWindow;
     return pWindow->getTitle();
 }
-

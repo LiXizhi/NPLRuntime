@@ -1,7 +1,7 @@
+#import <Cocoa/Cocoa.h>
 #include "ParaEngine.h"
 #include "Framework/Common/Helper/EditorHelper.h"
 #include "IParaWebView.h"
-#include <Cocoa/Cocoa.h>
 
 namespace ParaEngine {
 
@@ -51,15 +51,25 @@ namespace ParaEngine {
     
 	static bool execute(const char* lpFile, const char* lpParameters, const char* lpDirectory, int nShowCmd)
 	{
-        std::string cmd =  "open ";
+        std::string cmd;
 		
 		if (strcmp(lpFile, "explorer.exe") == 0)
-			cmd += lpParameters;
+			cmd = lpParameters;
 		else
-			cmd += lpFile;
-        
-        system(cmd.c_str());
-        
+			cmd = lpFile;
+
+        NSOpenPanel *panel = [NSOpenPanel openPanel];
+        [panel setDirectory:@(cmd.c_str())];
+
+        [panel setAllowsMultipleSelection:YES];
+        [panel setCanChooseDirectories:YES];
+        [panel setCanChooseFiles:YES];
+        [panel setAllowsOtherFileTypes:YES];
+
+        if ([panel runModal] == NSOKButton) {
+            // NSString *path = [panel.URLs.firstObject path];
+        }
+
         return true;
 	}
 

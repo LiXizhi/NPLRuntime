@@ -71,6 +71,7 @@ namespace ParaEngine
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual int Run(HINSTANCE hInstance) override;
+        virtual void Exit(int nReturnCode /*= 0*/) override;
         /** set the window title when at windowed mode */
         virtual void SetWindowText(const char* pChar) override;
         /** get the window title when at windowed mode */

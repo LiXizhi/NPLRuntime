@@ -7,7 +7,6 @@ using namespace ParaEngine;
 
 bool ParaEngine::StringHelper::CopyTextToClipboard(const string& text_)
 {
-   
     NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
     [pasteboard clearContents];  //必须清空，否则setString会失败。
     [pasteboard setString: @(text_.c_str()) forType: NSStringPboardType];
