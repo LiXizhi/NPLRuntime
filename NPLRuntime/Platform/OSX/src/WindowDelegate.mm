@@ -37,19 +37,15 @@ static WindowDelegate* sInstance = nil;
     [super dealloc];
 }
 
-
-/*
 - (void) windowWillClose:(NSNotification *)notificationƒurl
 {
     [[NSRunningApplication currentApplication] terminate];
 }
- 
 
 - (BOOL) applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender
 {
     return YES;
 }
-*/
 
 - (void) handleNotification : (NSNotification *)note
 {
@@ -92,7 +88,6 @@ static WindowDelegate* sInstance = nil;
 #endif
     return _renderWindow->OnShouldClose();
 }
-
 
 - (void) openConsoleWindow
 {
@@ -260,8 +255,4 @@ static WindowDelegate* sInstance = nil;
     [self startup];
 }
 
-
-
 @end
-
-
