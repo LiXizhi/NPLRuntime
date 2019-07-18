@@ -195,7 +195,7 @@ namespace ParaEngine
 	{
 		std::string filename;
 		std::string uri;
-		void* bufferPointer;
+		std::shared_ptr<uint8_t> bufferPointer;
 		uint32_t bufferSize;
 		uint32_t index;
 	};

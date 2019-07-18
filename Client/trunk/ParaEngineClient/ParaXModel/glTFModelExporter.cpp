@@ -1097,8 +1097,9 @@ namespace ParaEngine
 			DDSLoader loader(texPath);
 			if (loader.ConvertDDSToPng())
 			{
-				img->bufferPointer = loader.GetPngBuffer().get();
 				img->bufferSize = loader.GetPngSize();
+				img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+				memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
 			}
 			//LPD3DXBUFFER texBuffer;
 			//D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
@@ -1546,7 +1547,7 @@ namespace ParaEngine
 		if (isEmbedded)
 		{
 			StringBuilder builder;
-			builder.append((const char*)texture->source->bufferPointer, texture->source->bufferSize);
+			builder.append((const char*)texture->source->bufferPointer.get(), texture->source->bufferSize);
 			i["uri"] = "data:image/png;base64," + StringHelper::base64(builder.ToString());
 		}
 		else
@@ -1555,7 +1556,7 @@ namespace ParaEngine
 			CParaFile file;
 			if (file.CreateNewFile(texture->source->filename.c_str()))
 			{
-				file.write(texture->source->bufferPointer, texture->source->bufferSize);
+				file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
 				file.close();
 			}
 		}
