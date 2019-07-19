@@ -505,7 +505,7 @@ void CNPLScriptingState::LoadParaScene()
 			// write to glTF file
 			def("ParaXExportTo_glTF", &glTFModelExporter::ParaXExportTo_glTF),
 			// return glTF Buffer
-			def("ParaXExportTo_glTF_String", &glTFModelExporter::ParaXExportTo_glTF_String)
+			def("ParaXExportTo_glTF_String", &glTFModelExporter::ParaXExportTo_glTF_String),
 			// return textures of .x file
 			def("GetTextures", &glTFModelExporter::GetTextures)
 		]

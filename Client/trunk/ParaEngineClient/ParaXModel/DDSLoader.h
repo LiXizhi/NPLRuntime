@@ -262,7 +262,9 @@ namespace ParaEngine
 		DDSLoader(const std::string& ddsFile);
 		~DDSLoader();
 
-		void ConvertDDSToPng(const std::string& pngFile);
+		bool ConvertDDSToPng();
+		std::shared_ptr<uint8_t> GetPngBuffer() { return pngBuffer; }
+		uint32_t GetPngSize() { return pngSize; }
 
 	private:
 		bool LoadDDSFile();
@@ -288,11 +290,10 @@ namespace ParaEngine
 		uint32_t miscFlags2;
 		uint32_t rowPitch;
 		uint32_t pixelSize;
+		uint32_t pngSize;
 		std::unique_ptr<uint8_t[]> pixels;
+		std::shared_ptr<uint8_t> pngBuffer;
 		DXGI_FORMAT format;
 		TEX_DIMENSION dimension;
-
-	public:
-		static void DDSToPng(const std::string& ddsFile, const std::string& pngFile);
 	};
 }

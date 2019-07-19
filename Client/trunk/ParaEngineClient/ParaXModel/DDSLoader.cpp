@@ -2010,7 +2010,9 @@ namespace ParaEngine
 	}
 
 	DDSLoader::DDSLoader(const std::string& ddsFile)
-		: fileName(ddsFile), width(0), height(0), depth(0), arraySize(0), mipLevels(0), miscFlags(0), miscFlags2(0), rowPitch(0), pixelSize(0), pixels(nullptr)
+		: fileName(ddsFile),
+		width(0), height(0), depth(0), arraySize(0), mipLevels(0), miscFlags(0), miscFlags2(0), rowPitch(0),
+		pixelSize(0), pngSize(0), pixels(nullptr), pngBuffer(nullptr)
 	{
 
 	}
@@ -2020,53 +2022,25 @@ namespace ParaEngine
 
 	}
 
-	void DDSLoader::ConvertDDSToPng(const std::string& pngFile)
+	bool DDSLoader::ConvertDDSToPng()
 	{
-		if (LoadDDSFile())
-		{
-			FILE *fp = fopen(pngFile.c_str(), "wb");
-			if (fp != nullptr)
-			{
-				uint8_t* buffer = pixels.get();
-				png_structp write_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-				png_infop write_info_ptr = png_create_info_struct(write_ptr);
-				png_infop write_end_info_ptr = png_create_info_struct(write_ptr);
-				if (setjmp(png_jmpbuf(write_ptr)))
-				{
-					png_destroy_info_struct(write_ptr, &write_end_info_ptr);
-					png_destroy_write_struct(&write_ptr, &write_info_ptr);
-					fclose(fp);
-					return;
-				}
+		if (!LoadDDSFile())
+			return false;
 
-				png_init_io(write_ptr, fp);
-				png_set_IHDR(write_ptr, write_info_ptr, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-				png_colorp palette = (png_colorp)png_malloc(write_ptr, PNG_MAX_PALETTE_LENGTH * sizeof(png_color));
-				if (!palette) {
-					png_destroy_info_struct(write_ptr, &write_end_info_ptr);
-					png_destroy_write_struct(&write_ptr, &write_info_ptr);
-					fclose(fp);
-					return;
-				}
-				png_set_PLTE(write_ptr, write_info_ptr, palette, PNG_MAX_PALETTE_LENGTH);
-				png_write_info_before_PLTE(write_ptr, write_info_ptr);
-				png_write_info(write_ptr, write_info_ptr);
-				png_write_info(write_ptr, write_end_info_ptr);
+		png_image image;
+		memset(&image, 0, sizeof(image));
+		image.version = PNG_IMAGE_VERSION;
+		image.width = width;
+		image.height = height;
+		image.format = PNG_FORMAT_RGBA;
+		uint8_t* buffer = pixels.get();
+		if (!png_image_write_to_memory(&image, nullptr, &pngSize, 0, buffer, 0, nullptr))
+			return false;
 
-				png_bytepp rows = (png_bytepp)png_malloc(write_ptr, height * sizeof(png_bytep));
-				for (uint32_t i = 0; i < height; i++)
-					rows[i] = (png_bytep)(buffer + i * width * 4);
-
-				png_write_image(write_ptr, rows);
-				png_write_end(write_ptr, write_end_info_ptr);
-				png_free(write_ptr, rows);
-				png_free(write_ptr, palette);
-				png_destroy_info_struct(write_ptr, &write_end_info_ptr);
-				png_destroy_write_struct(&write_ptr, &write_info_ptr);
-
-				fclose(fp);
-			}
-		}
+		pngBuffer.reset(new uint8_t[pngSize]);
+		if (!png_image_write_to_memory(&image, pngBuffer.get(), &pngSize, 0, buffer, 0, nullptr))
+			return false;
+		return true;
 	}
 
 	bool DDSLoader::LoadDDSFile()
@@ -2830,12 +2804,6 @@ namespace ParaEngine
 		default:
 			return DXGI_FORMAT_UNKNOWN;
 		}
-	}
-
-	void DDSLoader::DDSToPng(const std::string& ddsFile, const std::string& pngFile)
-	{
-		DDSLoader loader(ddsFile);
-		loader.ConvertDDSToPng(pngFile);
 	}
 
 }
