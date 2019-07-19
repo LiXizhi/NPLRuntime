@@ -288,7 +288,8 @@ namespace ParaEngine
 		uint32_t mipLevels;
 		uint32_t miscFlags;
 		uint32_t miscFlags2;
-		uint32_t rowPitch;
+		uint32_t srcRowPitch;
+		uint32_t dstRowPitch;
 		uint32_t pixelSize;
 		uint32_t pngSize;
 		std::unique_ptr<uint8_t[]> pixels;

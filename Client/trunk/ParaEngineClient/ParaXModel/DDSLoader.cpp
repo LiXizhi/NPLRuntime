@@ -2011,8 +2011,8 @@ namespace ParaEngine
 
 	DDSLoader::DDSLoader(const std::string& ddsFile)
 		: fileName(ddsFile),
-		width(0), height(0), depth(0), arraySize(0), mipLevels(0), miscFlags(0), miscFlags2(0), rowPitch(0),
-		pixelSize(0), pngSize(0), pixels(nullptr), pngBuffer(nullptr)
+		width(0), height(0), depth(0), arraySize(0), mipLevels(0), miscFlags(0), miscFlags2(0),
+		srcRowPitch(0), dstRowPitch(0), pixelSize(0), pngSize(0), pixels(nullptr), pngBuffer(nullptr)
 	{
 
 	}
@@ -2082,6 +2082,13 @@ namespace ParaEngine
 
 			if (!InitializeImage(DDS_FLAGS_NONE))
 				return false;
+
+			if (!ComputePitch(srcFormat, width, height, srcRowPitch, pixelSize, flags))
+				return false;
+			if (!ComputePitch(format, width, height, dstRowPitch, pixelSize, flags))
+				return false;
+			pixels.reset(new uint8_t[pixelSize]);
+
 			if (!Decompress(ddsData.get() + offset, srcFormat))
 				return false;
 		}
@@ -2311,10 +2318,6 @@ namespace ParaEngine
 			}
 			if (!CalculateMipLevels(width, height, mipLevels))
 				return false;
-
-			if (!ComputePitch(format, width, height, rowPitch, pixelSize, flags))
-				return false;
-			pixels.reset(new uint8_t[pixelSize]);
 			break;
 		case TEX_DIMENSION_TEXTURE3D:
 			//
@@ -2377,7 +2380,20 @@ namespace ParaEngine
 		case DXGI_FORMAT_BC4_SNORM:
 			assert(IsCompressed(fmt));
 			{
-				//
+				if (flags & CP_FLAGS_BAD_DXTN_TAILS)
+				{
+					uint32_t nbw = width >> 2;
+					uint32_t nbh = height >> 2;
+					pitch = std::max(1u, nbw * 8u);
+					slice = std::max(1u, pitch * nbh);
+				}
+				else
+				{
+					uint32_t nbw = std::max(1u, (width + 3u) / 4u);
+					uint32_t nbh = std::max(1u, (height + 3u) / 4u);
+					pitch = nbw * 8u;
+					slice = pitch * nbh;
+				}
 			}
 			break;
 		case DXGI_FORMAT_BC2_TYPELESS:
@@ -2416,17 +2432,23 @@ namespace ParaEngine
 		case DXGI_FORMAT_R8G8_B8G8_UNORM:
 		case DXGI_FORMAT_G8R8_G8B8_UNORM:
 		case DXGI_FORMAT_YUY2:
+			// will be implemented
+			assert(false);
 			break;
 		case DXGI_FORMAT_Y210:
 		case DXGI_FORMAT_Y216:
+			assert(false);
 			break;
 		case DXGI_FORMAT_NV12:
 		case DXGI_FORMAT_420_OPAQUE:
+			assert(false);
 			break;
 		case DXGI_FORMAT_P010:
 		case DXGI_FORMAT_P016:
+			assert(false);
 			break;
 		case DXGI_FORMAT_NV11:
+			assert(false);
 			break;
 		default:
 			assert(!IsCompressed(fmt));
@@ -2721,7 +2743,7 @@ namespace ParaEngine
 			uint8_t* dptr = pDest;
 			uint32_t ph = std::min<uint32_t>(4, height - h);
 			uint32_t w = 0;
-			for (uint32_t count = 0; (count < rowPitch) && (w < width); count += sbpp, w += 4)
+			for (uint32_t count = 0; (count < srcRowPitch) && (w < width); count += sbpp, w += 4)
 			{
 				pfDecode(temp, sptr);
 				_ConvertScanline(temp, 16, format, cformat, 0);
@@ -2729,22 +2751,22 @@ namespace ParaEngine
 				uint32_t pw = std::min<uint32_t>(4, width - w);
 				assert(pw > 0 && ph > 0);
 
-				if (!_StoreScanline(dptr, rowPitch, format, &temp[0], pw))
+				if (!_StoreScanline(dptr, dstRowPitch, format, &temp[0], pw))
 					return false;
 
 				if (ph > 1)
 				{
-					if (!_StoreScanline(dptr + rowPitch, rowPitch, format, &temp[4], pw))
+					if (!_StoreScanline(dptr + dstRowPitch, dstRowPitch, format, &temp[4], pw))
 						return false;
 
 					if (ph > 2)
 					{
-						if (!_StoreScanline(dptr + rowPitch * 2, rowPitch, format, &temp[8], pw))
+						if (!_StoreScanline(dptr + dstRowPitch * 2, dstRowPitch, format, &temp[8], pw))
 							return false;
 
 						if (ph > 3)
 						{
-							if (!_StoreScanline(dptr + rowPitch * 3, rowPitch, format, &temp[12], pw))
+							if (!_StoreScanline(dptr + dstRowPitch * 3, dstRowPitch, format, &temp[12], pw))
 								return false;
 						}
 					}
@@ -2754,8 +2776,8 @@ namespace ParaEngine
 				dptr += dbpp * 4;
 			}
 
-			pSrc += rowPitch;
-			pDest += rowPitch * 4;
+			pSrc += srcRowPitch;
+			pDest += dstRowPitch * 4;
 		}
 		return true;
 	}
