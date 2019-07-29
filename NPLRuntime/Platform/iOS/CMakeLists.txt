@@ -5,7 +5,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/ucm.cmake)
 
 ucm_add_dirs(src TO app_src RECURSIVE ADDITIONAL_EXT mm m)
 
-set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+set(INFO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/info.plist)
 set(IMAGES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Images.xcassets)
 set(RESOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 set(ASSETS_FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets)
