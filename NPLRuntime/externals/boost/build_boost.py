@@ -18,55 +18,111 @@ BOOST_SRC			= os.getenv("BOOST_ROOT");
 TOOLCHAIN_DIR		= os.path.join(CURRENT_DIR, "prebuild", "android", "toolchain");
 ANDROID_LOG_PATH	= os.path.join(CURRENT_DIR, "prebuild", "android", "android-build.log");
 
+ndk_path 			= "";
+
 def doneSection():
 	print "\nDone\n=================================================================\n\n";
 	
 	
-def updateBoostForAndroid():
+def updateBoostForAndroid(arch):
 	print "Updating boost into %s..." %(BOOST_SRC);
 	
-	jam_path		= os.path.join(BOOST_SRC, "android-config.jam");
+	jam_path		= os.path.join(BOOST_SRC, "android-config_%s.jam" % (arch));
 	
-	toolchain_dir 	= TOOLCHAIN_DIR.replace("\\", "/");
+	toolchain_dir 	= os.path.join(TOOLCHAIN_DIR, arch);
+	toolchain_dir	= toolchain_dir.replace("\\", "/");
 	
 	fo = open(jam_path, "w");
-	fo.write("import os ;\n");
-	fo.write("import option ;\n");
-	fo.write("import build-system ;\n\n");
-	fo.write("option.set layout : system ;\n\n");
-	fo.write("modules.poke : NO_BZIP2 : 1 ; \n\n");
-	fo.write("using clang : android\n");
-	fo.write(":\n");
-	fo.write("%s/bin/clang++\n" %(toolchain_dir));
-	fo.write(":\n");
-	fo.write("<compileflags>-fexceptions\n");
-	fo.write("<compileflags>-frtti\n");
-	fo.write("<compileflags>-fpic\n");
-	fo.write("<compileflags>-ffunction-sections\n");
-	fo.write("<compileflags>-funwind-tables\n");
-	fo.write("<compileflags>-march=armv7-a\n");
-	fo.write("<compileflags>-mfloat-abi=softfp\n");
-	fo.write("<compileflags>-mfpu=vfpv3-d16\n");
-	fo.write("<compileflags>-fomit-frame-pointer\n");
-	fo.write("<compileflags>-fno-strict-aliasing\n");
-	fo.write("<compileflags>-I%s/sysroot/usr/include\n" %(toolchain_dir));
-	fo.write("<compileflags>--sysroot=%s/sysroot\n" %(toolchain_dir));
-	fo.write("<compileflags>-Wa,--noexecstack\n");
-	fo.write("<compileflags>-DANDROID\n");
-	fo.write("<compileflags>-D__ANDROID__\n");
-	fo.write("<compileflags>-DNDEBUG\n");
-	fo.write("<compileflags>-O2\n");
-	fo.write("#<compileflags>-g\n");
-	fo.write("<compileflags>-I%s/include/C++/4.9x\n" %(toolchain_dir));
-	fo.write("<compileflags>-I%s/include/C++/4.9x/arm-linux-androideabi\n" %(toolchain_dir));
-	fo.write("<architecture>arm\n");
-	fo.write("<compileflags>-fvisibility=hidden\n");
-	fo.write("<compileflags>-fvisibility-inlines-hidden\n");
-	fo.write("<compileflags>-fdata-sections\n");
-	fo.write("<cxxflags>-D__arm__\n");
-	fo.write("<archiver>%s/bin/arm-linux-androideabi-ar\n" % (toolchain_dir));
-	fo.write("<ranlib>%s/bin/arm-linux-androideabi-ranlib\n" % (toolchain_dir));
-	fo.write(";\n");
+	
+	if (arch == "armeabi-v7a"):
+		fo.write("import os ;\n");
+		fo.write("import option ;\n");
+		fo.write("import build-system ;\n\n");
+		fo.write("option.set layout : system ;\n\n");
+		fo.write("modules.poke : NO_BZIP2 : 1 ; \n\n");
+		fo.write("using clang : android\n");
+		fo.write(":\n");
+		fo.write("%s/bin/clang++\n" %(toolchain_dir));
+		fo.write(":\n");
+		fo.write("<compileflags>-fexceptions\n");
+		fo.write("<compileflags>-frtti\n");
+		fo.write("<compileflags>-fpic\n");
+		fo.write("<compileflags>-ffunction-sections\n");
+		fo.write("<compileflags>-funwind-tables\n");
+		fo.write("<compileflags>-march=armv7-a\n");
+		fo.write("<compileflags>-mfloat-abi=softfp\n");
+		fo.write("<compileflags>-mfpu=vfpv3-d16\n");
+		fo.write("<compileflags>-fomit-frame-pointer\n");
+		fo.write("<compileflags>-fno-strict-aliasing\n");
+		fo.write("<compileflags>-I%s/sysroot/usr/include\n" %(toolchain_dir));
+		fo.write("<compileflags>--sysroot=%s/sysroot\n" %(toolchain_dir));
+		fo.write("<compileflags>-Wa,--noexecstack\n");
+		fo.write("<compileflags>-DANDROID\n");
+		fo.write("<compileflags>-D__ANDROID__\n");
+		fo.write("<compileflags>-DNDEBUG\n");
+		fo.write("<compileflags>-O2\n");
+		fo.write("<compileflags>-g\n");
+		fo.write("<compileflags>-I%s/include/c++/4.9.x\n" %(toolchain_dir));
+		fo.write("<compileflags>-I%s/include/c++/4.9.x/arm-linux-androideabi\n" %(toolchain_dir));
+		fo.write("<architecture>arm\n");
+		fo.write("<compileflags>-fvisibility=hidden\n");
+		fo.write("<compileflags>-fvisibility-inlines-hidden\n");
+		fo.write("<compileflags>-fdata-sections\n");
+		fo.write("<cxxflags>-D__arm__\n");
+		fo.write("<archiver>%s/bin/arm-linux-androideabi-ar\n" % (toolchain_dir));
+		fo.write("<ranlib>%s/bin/arm-linux-androideabi-ranlib\n" % (toolchain_dir));
+		fo.write(";\n");
+	elif (arch == "arm64-v8a"):
+		fo.write("import os ;\n");
+		fo.write("import option ;\n");
+		fo.write("import build-system ;\n\n");
+		fo.write("option.set layout : system ;\n\n");
+		fo.write("modules.poke : NO_BZIP2 : 1 ; \n\n");
+		fo.write("using clang : android\n");
+		fo.write(":\n");
+		fo.write("%s/bin/clang++\n" %(toolchain_dir));
+		fo.write(":\n");
+		
+		fo.write("<compileflags>-fexceptions\n");
+		fo.write("<compileflags>-frtti\n");
+		fo.write("<compileflags>-fpic\n");
+		fo.write("<compileflags>-D_LITTLE_ENDIAN\n");
+		#fo.write("<compileflags>-D_POSIX_THREADS=1\n");
+		#fo.write("<compileflags>-D_POSIX_SOURCE\n");
+		fo.write("<compileflags>-ffunction-sections\n");
+		fo.write("<compileflags>-funwind-tables\n");
+		fo.write("<compileflags>-fstack-protector\n");
+		fo.write("<compileflags>-fno-short-enums\n");
+		fo.write("<compileflags>-march=armv8-a\n");
+		fo.write("<compileflags>-mtune=cortex-a53\n");
+		fo.write("<compileflags>-fomit-frame-pointer\n");
+		fo.write("<compileflags>-fno-strict-aliasing\n");
+		#fo.write("<compileflags>-finline-limit=64\n");
+		fo.write("<compileflags>--sysroot=%s/sysroot\n" %(toolchain_dir));
+		fo.write("<compileflags>-Wa,--noexecstack\n");
+		fo.write("<compileflags>-target\n");
+		fo.write("<compileflags>aarch64-none-linux-android\n");
+		fo.write("<compileflags>-DANDROID\n");
+		fo.write("<compileflags>-D__ANDROID_API__=21\n");
+		fo.write("<compileflags>-D__ANDROID__\n");
+		fo.write("<compileflags>-DNDEBUG\n");
+		fo.write("<compileflags>-O2\n");
+		fo.write("<compileflags>-Os\n");
+		fo.write("<compileflags>-Wno-psabi\n");
+		fo.write("<compileflags>-g\n");
+		fo.write("<compileflags>-I%s/include/c++/4.9.x\n" %(toolchain_dir));
+		fo.write("<compileflags>-I%s/include/c++/4.9.x/aarch64-linux-android\n" %(toolchain_dir));
+		fo.write("<compileflags>-isystem\n");
+		fo.write("<compileflags>%s/sysroot/usr/include/aarch64-linux-android\n" % (ndk_path));
+		#fo.write("<compileflags>-D__arm__\n");
+		#fo.write("<compileflags>-DARM_NEON\n");
+		#fo.write("<compileflags>-mfpu=neon\n");
+		#fo.write("<compileflags>-D__aarch64__\n");
+		#fo.write("<compileflags>-std=c++11\n");
+		fo.write("<architecture>arm\n");
+		fo.write("<archiver>%s/bin/aarch64-linux-android-ar\n" % (toolchain_dir));
+		fo.write("<ranlib>%s/bin/aarch64-linux-android-ranlib\n" % (toolchain_dir));
+		fo.write(";\n");
 
 	fo.close();
 	
@@ -137,8 +193,12 @@ def checkSrc(boost_version):
 			print " Not found boost src at %s\n" % (BOOST_SRC);
 			exit(1);
 
-def makeToolchain():
-	if (not os.path.exists(TOOLCHAIN_DIR)):
+def makeToolchain(arch):
+	global ndk_path;
+
+	toolchain_dir 	= os.path.join(TOOLCHAIN_DIR, arch)
+
+	if (not os.path.exists(toolchain_dir)):
 		print "Making android ndk toolchain\n";
 		
 		ndk_path = os.getenv("ANDROID_NDK");
@@ -156,23 +216,37 @@ def makeToolchain():
 			print " Not found make_standalone_toolchain at %s\n" % (make_standalone_toolchain);
 			exit(3);
 		
-		cmd =  "python %s --arch arm --api 21 --stl libc++ --force --install-dir %s" % (make_standalone_toolchain, TOOLCHAIN_DIR);
-		os.system(cmd);
+		if (arch == "armeabi-v7a"):
+			cmd =  "python %s --arch arm --api 21 --stl libc++ --force --install-dir %s" % (make_standalone_toolchain, toolchain_dir);
+			os.system(cmd);
+		elif (arch == "arm64-v8a"):
+			cmd =  "python %s --arch arm64 --api 21 --stl libc++ --force --install-dir %s" % (make_standalone_toolchain, toolchain_dir);
+			os.system(cmd);
 		
-def buildAndroid():
-	makeToolchain();
-	updateBoostForAndroid();
+		
+def buildAndroid(arch):
+	build_dir = "android-build/%s" % (arch);
+	stage_dir = "android-build/stage/%s" % (arch);
+
+	makeToolchain(arch);
+	updateBoostForAndroid(arch);
+	
+	address_model = 32;
+	if (arch == "arm64-v8a"):
+		address_model = 64;
 
 	os.chdir(BOOST_SRC);
 	print "Building Boost for Android \n";
 	
-	params = "--user-config=android-config.jam --build-dir=android-build --stagedir=android-build/stage toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=shared ";
+	params = "--user-config=android-config_%s.jam --build-dir=%s --stagedir=%s toolset=clang-android target-os=android threadapi=pthread threading=multi link=static runtime-link=shared address-model=%d abi=aapcs " % (arch, build_dir, stage_dir, address_model);
 	params += "--with-thread --with-date_time --with-filesystem --with-system --with-chrono --with-regex --with-serialization --with-iostreams --with-log";
 	
 	ret = 0;
 	if (platform.system() == "Windows"):
-		os.system("bootstrap --with-toolset=gcc > %s" % (ANDROID_LOG_PATH));
-		ret = os.system("b2 %s --abbreviate-paths >> %s" % (params, ANDROID_LOG_PATH));
+		#os.system("bootstrap --with-toolset=gcc > %s" % (ANDROID_LOG_PATH));
+		os.system("bootstrap > %s" % (ANDROID_LOG_PATH));
+		#ret = os.system("b2 %s --abbreviate-paths >> %s" % (params, ANDROID_LOG_PATH));
+		ret = os.system("b2 %s --abbreviate-paths" % (params));
 	else:
 		os.system("./bootstrap.sh --with-toolset=gcc >> %s 2>&1" % (ANDROID_LOG_PATH));
 		ret = os.system("./b2 %s >> %s 2>&1" % (params, ANDROID_LOG_PATH));
@@ -249,7 +323,8 @@ if __name__ == '__main__':
 	checkSrc(args.boost_version);
 	
 	if (args.platform == "android"):
-		buildAndroid();
+		buildAndroid("arm64-v8a");
+		buildAndroid("armeabi-v7a");
 	elif (args.platform == "win32_x86"):
 		buildWin32(True)
 	elif (args.platform == "win32_x64"):
