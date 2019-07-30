@@ -39,15 +39,7 @@
 
 LJLIB_CF(os_execute)
 {
-  // For iOS 11 
-#if LJ_52
-  errno = ENOSYS;
-  return luaL_fileresult(L, 0, NULL);
-#else
-  lua_pushinteger(L, -1);
-  return 1;
-#endif
-/*#if LJ_NO_SYSTEM
+#if LJ_NO_SYSTEM
 #if LJ_52
   errno = ENOSYS;
   return luaL_fileresult(L, 0, NULL);
@@ -66,7 +58,7 @@ LJLIB_CF(os_execute)
   setintV(L->top++, stat);
 #endif
   return 1;
-#endif*/
+#endif
 }
 
 LJLIB_CF(os_remove)
@@ -213,12 +205,12 @@ LJLIB_CF(os_date)
     setboolfield(L, "isdst", stm->tm_isdst);
   } else if (*s) {
     SBuf *sb = &G(L)->tmpbuf;
-    MSize sz = 0;
+    MSize sz = 0, retry = 4;
     const char *q;
     for (q = s; *q; q++)
       sz += (*q == '%') ? 30 : 1;  /* Overflow doesn't matter. */
     setsbufL(sb, L);
-    for (;;) {
+    while (retry--) {  /* Limit growth for invalid format or empty result. */
       char *buf = lj_buf_need(sb, sz);
       size_t len = strftime(buf, sbufsz(sb), s, stm);
       if (len) {

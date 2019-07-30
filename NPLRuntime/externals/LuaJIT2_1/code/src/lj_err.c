@@ -63,7 +63,7 @@
 
 #if defined(__GNUC__) && (LJ_TARGET_X64 || defined(LUAJIT_UNWIND_EXTERNAL)) && !LJ_NO_UNWIND
 #define LJ_UNWIND_EXT	1
-#elif LJ_TARGET_WINDOWS && !LJ_NO_UNWIND
+#elif LJ_TARGET_WINDOWS
 #define LJ_UNWIND_EXT	1
 #endif
 
@@ -150,6 +150,7 @@ static void *err_unwind(lua_State *L, void *stopcf, int errcode)
     case FRAME_CONT:  /* Continuation frame. */
       if (frame_iscont_fficb(frame))
 	goto unwind_c;
+      /* fallthrough */
     case FRAME_VARG:  /* Vararg frame. */
       frame = frame_prevd(frame);
       break;
