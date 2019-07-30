@@ -252,7 +252,10 @@ typedef void noreturn_t;
  * Defining HAVE_BOOLEAN before including jpeglib.h should make it work.
  */
 
-#ifdef HAVE_BOOLEAN
+#ifndef HAVE_BOOLEAN
+#if defined FALSE || defined TRUE || defined QGLOBAL_H
+/* Qt3 defines FALSE and TRUE as "const" variables in qglobal.h */
+typedef int boolean;
 #ifndef FALSE			/* in case these macros already exist */
 #define FALSE	0		/* values of boolean */
 #endif
@@ -260,19 +263,7 @@ typedef void noreturn_t;
 #define TRUE	1
 #endif
 #else
-
-#ifdef TRUE
-    #define OLD_TRUE TRUE
-    #define OLD_FALSE FALSE
-    #undef TRUE
-    #undef FALSE
-#endif
 typedef enum { FALSE = 0, TRUE = 1 } boolean;
-#ifdef OLD_TRUE
-    #define TRUE OLD_TRUE
-    #define FALSE OLD_FALSE
-    #undef OLD_TRUE
-    #undef OLD_FALSE
 #endif
 #endif
 
