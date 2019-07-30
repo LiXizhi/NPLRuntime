@@ -1385,7 +1385,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	/// draw this object
 	if(bDrawObj || bIsShadowCaster)
 	{
-		float fObjectToCameraDist = pViewClippingObject->GetObjectToPointDistance(& (sceneState.vEye));
+		float fObjectToCameraDist = (pObj->GetObjectToCameraDistance()<=0.f) ?  pViewClippingObject->GetObjectToPointDistance(& (sceneState.vEye)) : pObj->GetObjectToCameraDistance();
 		if(bDrawObj)
 		{
 			if(pObj->IsShowBoundingBox())
