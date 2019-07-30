@@ -8,7 +8,7 @@ endif()
 	
 if (NPLRUNTIME_LUA51)
 	add_subdirectory (Lua5_1 ${PROJECT_BINARY_DIR}/lua-5.1.4)
-	target_include_directories(lua INTERFACE ${PROJECT_BINARY_DIR}/lua-5.1.4/src)
+	target_include_directories(lua INTERFACE Lua5_1/src)
 	list(APPEND LUA_LIB_LIST lua)
 endif()
 		

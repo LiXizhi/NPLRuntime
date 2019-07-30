@@ -191,9 +191,16 @@ void ParaEngine::CScriptParticle::setTexture(const string & filename)
 		memset(&mTextureRect,0,sizeof(mTextureRect));
 		ParaEngine::StringHelper::GetImageAndRect(filename,real_file_name,&mTextureRect);
 	}
-	if((mTexture=CGlobals::GetAssetManager()->GetTexture(real_file_name))==NULL)
+
+	auto pTex = CGlobals::GetAssetManager()->GetTexture(real_file_name);
+	 
+	if(pTex == nullptr)
 	{
 		mTexture=CGlobals::GetAssetManager()->LoadTexture(real_file_name,real_file_name,TextureEntity::StaticTexture);
+	}
+	else
+	{
+		mTexture = pTex;
 	}
 }
 

@@ -1629,7 +1629,7 @@ void FBXParser::ParseParticleParam(ParticleSystem& ps, lua_State* L)
 		}
 		else if (lua_isnil(L, -1))
 		{
-			memset(&ps.pos, sizeof(ps.pos), 0);
+			memset(&ps.pos, 0, sizeof(ps.pos));
 		}
 		else
 		{

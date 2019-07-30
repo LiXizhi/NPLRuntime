@@ -54,7 +54,7 @@ struct Cube
 		LinearColor c1(color);
 		LinearColor c2(other.color);
 
-		if (c1 == LinearColor::Black && c2 != LinearColor::Black || c1 != LinearColor::Black && c2 == LinearColor::Black) return false;
+		if ((c1 == LinearColor::Black && c2 != LinearColor::Black) || (c1 != LinearColor::Black && c2 == LinearColor::Black)) return false;
 
 		std::vector<double> ratio(3, 0.0);
 		if (c1.r > c2.r || c1.g > c2.g || c1.b > c2.b) {

@@ -29,7 +29,7 @@ elseif(WIN32 AND NOT ANDROID)
 		set(BOOST_LIBRARYDIR ${BOOST_ROOT}/build_win32/stage/x86/lib)	
 	endif()
 elseif(ANDROID)
-	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/android-build/stage/lib)
+	set(BOOST_LIBRARYDIR ${BOOST_ROOT}/android-build/stage/${CMAKE_ANDROID_ARCH_ABI}/lib)
 	
 	set(Boost_INCLUDE_DIR ${BOOST_ROOT})
 	set(Boost_LIBRARY_DIR ${BOOST_LIBRARYDIR})
@@ -55,7 +55,7 @@ find_host_package(Boost 1.69.0 REQUIRED
 COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 )
 else()
-find_package(Boost 1.69.0 REQUIRED 
+find_package(Boost 1.65.0 REQUIRED 
 COMPONENTS thread date_time filesystem system chrono regex serialization iostreams log
 ) 
 endif()

@@ -829,6 +829,8 @@ namespace ParaEngine
         {
             return saveImageToJPG(filename);
         }
+
+		return false;
 	}
     
     bool ParaImage::saveImageToPNG(const std::string& filePath, bool isToRGB)

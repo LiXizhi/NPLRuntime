@@ -33,6 +33,8 @@ ELSE()
 ENDIF()
 
 ADD_LIBRARY(luabind STATIC ${luabind_SRCS})
+
+get_property(LUA_LIB_LIST GLOBAL PROPERTY "LUA_LIB_LIST" ) 
 target_link_libraries(luabind ${LUA_LIB_LIST})
 target_include_directories(luabind
 PUBLIC 	${PROJECT_SOURCE_DIR}

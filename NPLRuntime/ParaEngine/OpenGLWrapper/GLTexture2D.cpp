@@ -442,20 +442,33 @@ void GLTexture2D::setGLProgram(GLProgram* shaderProgram)
 
 GLuint GLTexture2D::getName() const
 {
-	if (this == nullptr)
-		return 0;
-	else
-		return _name;
+	return _name;
 }
 
 void GLTexture2D::bind()
 {
-	GL::bindTexture2D(this == nullptr ? 0 : this->_name);
+	GL::bindTexture2D(this->_name);
 }
  
 void GLTexture2D::bindN(GLuint textureUnit)
 {
-	GL::bindTexture2DN(textureUnit, this == nullptr ? 0 : this->_name);
+	GL::bindTexture2DN(textureUnit, this->_name);
+}
+
+
+void GLTexture2D::bind(GLTexture2D* pTex)
+{
+	GL::bindTexture2D(pTex == nullptr ? 0 : pTex->_name);
+}
+
+void GLTexture2D::bindN(GLTexture2D* pTex, GLuint textureUnit)
+{
+	GL::bindTexture2DN(textureUnit, pTex == nullptr ? 0 : pTex->_name);
+}
+
+GLuint GLTexture2D::getName(const GLTexture2D* pTex)
+{
+	return pTex == nullptr ? 0 : pTex->getName();
 }
 
 void GLTexture2D::setTexParameters(const TexParams& texParams)

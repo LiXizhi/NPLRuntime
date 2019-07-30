@@ -551,7 +551,9 @@ FUNC( l_sqlite3_close )
 
 	int result = SQLITE_OK;
 
-	db->m_pDBEntity.reset();
+	//db->m_pDBEntity.reset();
+	db->~DB();
+
 	// db->m_pDBEntity->CloseDB();
 	/*if(!db->m_pDBEntity->IsValid())
 	{
@@ -823,6 +825,7 @@ FUNC( l_sqlite3_open )
 	{
 		//DB * db = (DB *) lua_newuserdata(L, sizeof(DB));
 		char* buffer = (char*)lua_newuserdata(L, sizeof(DB));
+
 		DB * db = new(buffer) DB();
 
 		db->m_pDBEntity = pDBEntity;

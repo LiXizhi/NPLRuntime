@@ -262,14 +262,16 @@ void ParaEngine::XFileParser::ParseHeader()
 		while (P1 + 3 < End)
 		{
 			// read next offset
-			uint16_t ofs = *((uint16_t*)P1);
+			uint16_t ofs;
+			memcpy(&ofs , P1, sizeof(uint16_t));
 			PE_SWAP2(ofs); P1 += 2;
 
 			if (ofs >= MSZIP_BLOCK)
 				throw DeadlyImportError("X: Invalid offset to next MSZIP compressed block");
 
 			// check magic word
-			uint16_t magic = *((uint16_t*)P1);
+			uint16_t magic;
+			memcpy(&magic, P1, sizeof(uint16_t));
 			PE_SWAP2(magic); P1 += 2;
 
 			if (magic != MSZIP_MAGIC)
@@ -288,7 +290,8 @@ void ParaEngine::XFileParser::ParseHeader()
 		char* out = &uncompressed.front();
 		while (P + 3 < End)
 		{
-			uint16_t ofs = *((uint16_t*)P);
+			uint16_t ofs;
+			memcpy(&ofs, P, sizeof(uint16_t));
 			PE_SWAP2(ofs);
 			P += 4;
 

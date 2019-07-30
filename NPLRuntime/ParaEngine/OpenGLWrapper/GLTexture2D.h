@@ -81,6 +81,10 @@ namespace ParaEngine
 
 		static int ccNextPOT(int x);
 
+
+		static void bind(GLTexture2D* pTex);
+		static void bindN(GLTexture2D* pTex, GLuint textureUnit);
+		static GLuint getName(const GLTexture2D* pTex);
 	private:
 		static PixelFormat g_defaultAlphaPixelFormat;
 

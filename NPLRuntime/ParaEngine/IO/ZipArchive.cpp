@@ -1272,7 +1272,8 @@ int CZipArchive::LocateBlockWithSignature(DWORD signature, long endLocation, int
 	{
 		for(int i=nTempBufSize-4; i>=0; --i)
 		{
-			DWORD nSig_LittleEndian = *(DWORD*)(pBuf+i);
+			DWORD nSig_LittleEndian;
+			memcpy(&nSig_LittleEndian, (pBuf + i), sizeof(DWORD));
 			if(nSig_LittleEndian == signature)
 			{
 				pos = giveUpMarker+(i+4);
