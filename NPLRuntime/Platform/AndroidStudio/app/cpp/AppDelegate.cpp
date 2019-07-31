@@ -397,7 +397,7 @@ int32_t AppDelegate::handle_key_input(AppDelegate* app, AInputEvent* event)
 	int32_t keycode = AKeyEvent_getKeyCode(event);
 	key = toVirtualKey(keycode);
 	app->OnKey(key, state);
-	return 0;
+	return 1;
 }
 
 int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* event)
@@ -418,7 +418,7 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 	}
 	else if (eventType == AINPUT_EVENT_TYPE_KEY)
 	{
-		handle_key_input(myApp, event);
+		return handle_key_input(myApp, event);
 	}
 	return 0;
 }
