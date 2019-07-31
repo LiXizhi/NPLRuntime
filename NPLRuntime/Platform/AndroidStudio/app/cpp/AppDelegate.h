@@ -31,6 +31,7 @@ namespace ParaEngine
         static int32_t app_handle_input(struct android_app* app, AInputEvent* event);
 		static int32_t handle_key_input(AppDelegate* app, AInputEvent* event);
 		static void handle_touch_input(AppDelegate* app, AInputEvent* event);
+		static void handle_mouse_input(AppDelegate* app, AInputEvent* event);
 
 		void handle_mainloop_timer(const boost::system::error_code& err);
 		

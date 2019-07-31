@@ -138,6 +138,11 @@ void AppDelegate::handle_touch_input(AppDelegate* app, AInputEvent* event)
 	app->OnTouch(touchEvents);
 }
 
+void AppDelegate::handle_mouse_input(AppDelegate* app, AInputEvent* event)
+{
+	handle_touch_input(app, event);
+}
+
 
 inline EVirtualKey toVirtualKey(int32_t keycode)
 {
@@ -405,6 +410,10 @@ int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* even
 		if (eventSource == AINPUT_SOURCE_TOUCHSCREEN)
 		{
 			handle_touch_input(myApp, event);
+		}
+		else if (eventSource == AINPUT_SOURCE_MOUSE)
+		{
+			handle_mouse_input(myApp, event);
 		}
 	}
 	else if (eventType == AINPUT_EVENT_TYPE_KEY)
