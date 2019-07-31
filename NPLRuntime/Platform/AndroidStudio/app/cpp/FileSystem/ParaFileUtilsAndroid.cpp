@@ -11,6 +11,7 @@
 #include "util/StringBuilder.h"
 #include "ParaEngineSettings.h"
 #include "IO/ParaFile.h"
+#include "IO/MemReadFile.h"
 #include <boost/system/config.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/system/error_code.hpp>
@@ -40,8 +41,8 @@ CParaFileUtils* CParaFileUtils::GetInstance()
 
 ParaEngine::FileData ParaEngine::CParaFileUtilsAndroid::GetDataFromFile(const std::string& filename)
 {
-	auto file = OpenFileForRead(filename);
 	FileData data;
+	auto file = OpenFileForRead(filename);
 	if (file->isOpen())
 	{
 		auto nSize = file->getSize();
@@ -49,10 +50,12 @@ ParaEngine::FileData ParaEngine::CParaFileUtilsAndroid::GetDataFromFile(const st
 		pBuffer[nSize] = '\0'; // always add an ending '\0' for ease for text parsing. 
 		file->read(pBuffer, nSize);
 		file->Release();
-		delete file;
-		file = nullptr;
+
 		data.SetOwnBuffer(pBuffer,nSize);
 	}
+    delete file;
+    file = nullptr;
+
 	return data;
 }
 
@@ -206,6 +209,9 @@ bool ParaEngine::CParaFileUtilsAndroid::Exists(const std::string& filename)
 
 ParaEngine::IReadFile* ParaEngine::CParaFileUtilsAndroid::OpenFileForRead(const std::string& filename)
 {
+    if (filename.empty())
+        return new CMemReadFile();
+
 	std::string fullPath = GetFullPathForFilename(filename);
 	boost::system::error_code err_code;
 	if (fs::exists(fullPath, err_code))
