@@ -65,6 +65,7 @@ settings.json
 /NPLRuntime/Platform/iOS/assets
 /NPLRuntime/Platform/Android/assets*
 /NPLRuntime/externals/boost/prebuild
+/NPLRuntime/BuildPlatform
 NPLRuntime/externals/LuaJIT2_0/log/
 NPLRuntime/externals/LuaJIT2_1/log/
 *.entitlements
