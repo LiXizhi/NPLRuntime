@@ -382,9 +382,12 @@ namespace ParaEngine
 		std::vector<string> texFiles;
 
 	public:
-		static luabind::object GetTextures(const std::string& input, lua_State* L);
-		static void ParaXExportTo_glTF(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
-		static luabind::object ParaXExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
+		static luabind::object GetParaXTexturesFromFile(const std::string& input, lua_State* L);
+		static luabind::object GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L);
+		static void ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
+		static void ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
+		static luabind::object ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
+		static luabind::object ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L);
 		static void ParaXChangeAnimation(const std::string& paraXFile, const std::string& animationFile, lua_State* L);
 	};
 }

@@ -398,7 +398,78 @@ namespace ParaEngine
 
 	void glTFModelExporter::ChangeAnimationBones()
 	{
+		//float inverse = 1.0f / 1000.0f;
+		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		//if (animLength == 0) animLength = 1000;
+		//for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		//{
+		//	Bone& bone = paraXModel->bones[i];
+		//	if (bone.trans.used || bone.rot.used || bone.scale.used)
+		//	{
+		//		uint32_t firstT = bone.trans.ranges[0].first;
+		//		uint32_t secondT = bone.trans.ranges[0].second;
+		//		uint32_t firstR = bone.rot.ranges[0].first;
+		//		uint32_t secondR = bone.rot.ranges[0].second;
+		//		uint32_t firstS = bone.scale.ranges[0].first;
+		//		uint32_t secondS = bone.scale.ranges[0].second;
+		//		uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
+		//		uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
 
+		//		animOffsets.push_back(animEnd - animStart + 1);
+		//		int time = 0;
+		//		Vector3 t, s;
+		//		Quaternion q;
+		//		for (uint32_t j = animStart; j <= animEnd; j++)
+		//		{
+		//			if (secondT == animEnd)
+		//			{
+		//				time = bone.trans.times[j];
+		//				t = bone.trans.data[j];
+		//				s = bone.scale.getValue(0, time);
+		//				q = bone.rot.getValue(0, time);
+		//			}
+		//			else if (secondR == animEnd)
+		//			{
+		//				time = bone.rot.times[j];
+		//				t = bone.trans.getValue(0, time);
+		//				s = bone.scale.getValue(0, time);
+		//				q = bone.rot.data[j];
+		//			}
+		//			else if (secondS == animEnd)
+		//			{
+		//				time = bone.scale.times[j];
+		//				t = bone.trans.getValue(0, time);
+		//				s = bone.scale.data[j];
+		//				q = bone.rot.getValue(0, time);
+		//			}
+
+		//			Matrix4 mat;
+		//			if (bone.bUsePivot)
+		//			{
+		//				mat.makeTrans(bone.pivot * -1.0f);
+		//				mat.setScale(s);
+		//				mat.m[3][0] *= s.x;
+		//				mat.m[3][1] *= s.y;
+		//				mat.m[3][2] *= s.z;
+		//				mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+		//				mat.offsetTrans(t);
+		//				mat.offsetTrans(bone.pivot);
+		//			}
+		//			else
+		//			{
+		//				mat.makeScale(s);
+		//				mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+		//				mat.offsetTrans(t);
+		//			}
+
+		//			animTimes.push_back(time * inverse);
+		//			translations.push_back(mat.getTrans());
+		//			rotations.push_back(q);
+		//			scales.push_back(s);
+		//		}
+		//		boneIndices.push_back(bone.nIndex);
+		//	}
+		//}
 	}
 
 	void glTFModelExporter::CalculateJoint(int id, const Vector3& pivot)
@@ -1828,7 +1899,7 @@ namespace ParaEngine
 		}
 	}
 
-	luabind::object glTFModelExporter::GetTextures(const std::string& input, lua_State* L)
+	luabind::object glTFModelExporter::GetParaXTexturesFromFile(const std::string& input, lua_State* L)
 	{
 		CParaFile file(input.c_str());
 		CParaXSerializer serializer;
@@ -1847,7 +1918,26 @@ namespace ParaEngine
 			return luabind::object();
 	}
 
-	void glTFModelExporter::ParaXExportTo_glTF(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded)
+	luabind::object glTFModelExporter::GetParaXTexturesFromBuffer(const char* buffer, int size, lua_State* L)
+	{
+		CParaFile file(const_cast<char*>(buffer), size);
+		CParaXSerializer serializer;
+		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+		if (mesh != nullptr)
+		{
+			luabind::object o = luabind::newtable(L);
+			for (uint32_t i = 0; i < mesh->m_objNum.nTextures; i++)
+			{
+				mesh->textures[i]->m_key;
+				o[i + 1] = mesh->textures[i]->m_key;
+			}
+			return o;
+		}
+		else
+			return luabind::object();
+	}
+
+	void glTFModelExporter::ParaXFileExportTo_glTF_File(const std::string& input, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
 	{
 		CParaFile file(input.c_str());
 		CGlobals::GetAssetManager()->SetAsyncLoading(false);
@@ -1880,7 +1970,39 @@ namespace ParaEngine
 		}
 	}
 
-	luabind::object glTFModelExporter::ParaXExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
+	void glTFModelExporter::ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded /*= true*/)
+	{
+		CParaFile file(const_cast<char*>(buffer), size);
+		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+		CParaXSerializer serializer;
+		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+		if (mesh != nullptr && !output.empty())
+		{
+			std::vector<string> textures;
+			int type = luabind::type(texObject);
+			if (type == LUA_TSTRING)
+			{
+				textures.push_back(luabind::object_cast<const char*>(texObject));
+			}
+			else if (type == LUA_TTABLE)
+			{
+				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+				{
+					const luabind::object& item = *itCur;
+					if (luabind::type(item) == LUA_TSTRING)
+					{
+						textures.push_back(luabind::object_cast<const char*>(item));
+					}
+				}
+			}
+			glTFModelExporter exporter(mesh, textures, binary, embedded);
+			exporter.ExportToFile(output);
+			delete mesh;
+			mesh = nullptr;
+		}
+	}
+
+	luabind::object glTFModelExporter::ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L)
 	{
 		std::string buffer;
 		CParaFile file(input.c_str());
@@ -1912,6 +2034,40 @@ namespace ParaEngine
 			mesh = nullptr;
 		}
 		return luabind::object(L, buffer.c_str());
+	}
+
+	luabind::object glTFModelExporter::ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L)
+	{
+		std::string gltfBuffer;
+		CParaFile file(const_cast<char*>(buffer), size);
+		CGlobals::GetAssetManager()->SetAsyncLoading(false);
+		CParaXSerializer serializer;
+		CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(file);
+		if (mesh != nullptr)
+		{
+			std::vector<string> textures;
+			int type = luabind::type(texObject);
+			if (type == LUA_TSTRING)
+			{
+				textures.push_back(luabind::object_cast<const char*>(texObject));
+			}
+			else if (type == LUA_TTABLE)
+			{
+				for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+				{
+					const luabind::object& item = *itCur;
+					if (luabind::type(item) == LUA_TSTRING)
+					{
+						textures.push_back(luabind::object_cast<const char*>(item));
+					}
+				}
+			}
+			glTFModelExporter exporter(mesh, textures, binary);
+			gltfBuffer = exporter.ExportToBuffer();
+			delete mesh;
+			mesh = nullptr;
+		}
+		return luabind::object(L, gltfBuffer.c_str());
 	}
 
 	void glTFModelExporter::ParaXChangeAnimation(const std::string& paraXFile, const std::string& animationFile, lua_State* L)
