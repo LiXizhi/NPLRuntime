@@ -29,7 +29,7 @@ namespace ParaEngine
 		ParseAnimationBones();
 	}
 
-	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary, bool embedded /*= true*/)
+	glTFModelExporter::glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, std::vector<string>& textures, bool binary, bool embedded /*= true*/)
 		: maxVertex(-FLT_MAX, -FLT_MAX, -FLT_MAX), minVertex(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxNormal(-FLT_MAX, -FLT_MAX, -FLT_MAX), minNormal(FLT_MAX, FLT_MAX, FLT_MAX),
 		maxColor(-FLT_MAX, -FLT_MAX, -FLT_MAX), minColor(FLT_MAX, FLT_MAX, FLT_MAX),
@@ -44,6 +44,9 @@ namespace ParaEngine
 		buffer(std::make_shared<Buffer>())
 	{
 		buffer->index = 0;
+		texFiles.assign(textures.begin(), textures.end());
+		ParseParaXModel();
+		ChangeAnimationBones();
 	}
 
 	glTFModelExporter::~glTFModelExporter()
@@ -217,8 +220,8 @@ namespace ParaEngine
 	void glTFModelExporter::ParseParaXModel()
 	{
 		uint32_t numBones = paraXModel->m_objNum.nBones;
-		//// calculate bones' absolute position
-		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
+		// calculate bones' absolute position
+		paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
 		//for (uint32_t i = 0; i < numBones; i++)
 		//{
 		//	paraXModel->bones[i].calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
@@ -398,78 +401,169 @@ namespace ParaEngine
 
 	void glTFModelExporter::ChangeAnimationBones()
 	{
-		//float inverse = 1.0f / 1000.0f;
-		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
-		//if (animLength == 0) animLength = 1000;
-		//for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
-		//{
-		//	Bone& bone = paraXModel->bones[i];
-		//	if (bone.trans.used || bone.rot.used || bone.scale.used)
-		//	{
-		//		uint32_t firstT = bone.trans.ranges[0].first;
-		//		uint32_t secondT = bone.trans.ranges[0].second;
-		//		uint32_t firstR = bone.rot.ranges[0].first;
-		//		uint32_t secondR = bone.rot.ranges[0].second;
-		//		uint32_t firstS = bone.scale.ranges[0].first;
-		//		uint32_t secondS = bone.scale.ranges[0].second;
-		//		uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
-		//		uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
+		AnimIndex currentAnim(10000, 1, animProvider->anims[0].timeStart, animProvider->anims[0].timeEnd, animProvider->anims[0].loopType);
+		float inverse = 1.0f / 1000.0f;
+		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		if (animLength == 0) animLength = 1000;
+		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
+		{
+			Bone& bone = paraXModel->bones[i];
 
-		//		animOffsets.push_back(animEnd - animStart + 1);
-		//		int time = 0;
-		//		Vector3 t, s;
-		//		Quaternion q;
-		//		for (uint32_t j = animStart; j <= animEnd; j++)
-		//		{
-		//			if (secondT == animEnd)
-		//			{
-		//				time = bone.trans.times[j];
-		//				t = bone.trans.data[j];
-		//				s = bone.scale.getValue(0, time);
-		//				q = bone.rot.getValue(0, time);
-		//			}
-		//			else if (secondR == animEnd)
-		//			{
-		//				time = bone.rot.times[j];
-		//				t = bone.trans.getValue(0, time);
-		//				s = bone.scale.getValue(0, time);
-		//				q = bone.rot.data[j];
-		//			}
-		//			else if (secondS == animEnd)
-		//			{
-		//				time = bone.scale.times[j];
-		//				t = bone.trans.getValue(0, time);
-		//				s = bone.scale.data[j];
-		//				q = bone.rot.getValue(0, time);
-		//			}
+			Bone* pCurBone = nullptr;
+			if (bone.nBoneID > 0)
+			{
+				pCurBone = GetBoneByID((KNOWN_BONE_NODES)bone.nBoneID);
+			}
+			else
+			{
+				Bone* bone_ = GetBoneByIndex(bone.nIndex);
+				if (bone_ != nullptr && bone_->nBoneID <= 0 && bone.parent == bone_->parent)
+					pCurBone = bone_;
+			}
 
-		//			Matrix4 mat;
-		//			if (bone.bUsePivot)
-		//			{
-		//				mat.makeTrans(bone.pivot * -1.0f);
-		//				mat.setScale(s);
-		//				mat.m[3][0] *= s.x;
-		//				mat.m[3][1] *= s.y;
-		//				mat.m[3][2] *= s.z;
-		//				mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
-		//				mat.offsetTrans(t);
-		//				mat.offsetTrans(bone.pivot);
-		//			}
-		//			else
-		//			{
-		//				mat.makeScale(s);
-		//				mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
-		//				mat.offsetTrans(t);
-		//			}
+			if (pCurBone != nullptr)
+			{
+				if (bone.trans.used || bone.rot.used || bone.scale.used)
+				{
+					uint32_t firstT = bone.trans.ranges[0].first;
+					uint32_t secondT = bone.trans.ranges[0].second;
+					uint32_t firstR = bone.rot.ranges[0].first;
+					uint32_t secondR = bone.rot.ranges[0].second;
+					uint32_t firstS = bone.scale.ranges[0].first;
+					uint32_t secondS = bone.scale.ranges[0].second;
+					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
+					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
 
-		//			animTimes.push_back(time * inverse);
-		//			translations.push_back(mat.getTrans());
-		//			rotations.push_back(q);
-		//			scales.push_back(s);
-		//		}
-		//		boneIndices.push_back(bone.nIndex);
-		//	}
-		//}
+					animOffsets.push_back(animEnd - animStart + 1);
+					int time = 0;
+					Vector3 t, s;
+					Quaternion q;
+					int nCurrentAnim = currentAnim.nIndex;
+					int nBlendingAnim = 0;
+					int blendingFrame = 0;
+					float blendingFactor = 0;
+					for (uint32_t j = animStart; j <= animEnd; j++)
+					{
+						if (secondT == animEnd)
+							time = bone.trans.times[j];
+						else if (secondR == animEnd)
+							time = bone.rot.times[j];
+						else if (secondS == animEnd)
+							time = bone.scale.times[j];
+						if (bone.bUsePivot)
+							q = pCurBone->rot.getValue(0, time);
+						else
+							q = bone.rot.getValue(nCurrentAnim, time, nBlendingAnim, blendingFrame, blendingFactor);
+						s = bone.scale.getValue(currentAnim);
+						t = bone.trans.getValue(currentAnim, paraXModel->m_CurrentAnim, blendingFactor);
+
+						Matrix4 mat;
+						if (bone.bUsePivot)
+						{
+							mat.makeTrans(bone.pivot * -1.0f);
+							mat.setScale(s);
+							mat.m[3][0] *= s.x;
+							mat.m[3][1] *= s.y;
+							mat.m[3][2] *= s.z;
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+							mat.offsetTrans(bone.pivot);
+						}
+						else
+						{
+							mat.makeScale(s);
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+						}
+
+						animTimes.push_back(time * inverse);
+						translations.push_back(mat.getTrans());
+						rotations.push_back(q);
+						scales.push_back(s);
+					}
+					boneIndices.push_back(bone.nIndex);
+				}
+			}
+			else
+			{
+				if (bone.trans.used || bone.rot.used || bone.scale.used)
+				{
+					uint32_t firstT = bone.trans.ranges[0].first;
+					uint32_t secondT = bone.trans.ranges[0].second;
+					uint32_t firstR = bone.rot.ranges[0].first;
+					uint32_t secondR = bone.rot.ranges[0].second;
+					uint32_t firstS = bone.scale.ranges[0].first;
+					uint32_t secondS = bone.scale.ranges[0].second;
+					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
+					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
+
+					animOffsets.push_back(animEnd - animStart + 1);
+					int time = 0;
+					Vector3 t, s;
+					Quaternion q;
+					for (uint32_t j = animStart; j <= animEnd; j++)
+					{
+						if (secondT == animEnd)
+						{
+							time = bone.trans.times[j];
+							t = bone.trans.data[j];
+							s = bone.scale.getValue(0, time);
+							q = bone.rot.getValue(0, time);
+						}
+						else if (secondR == animEnd)
+						{
+							time = bone.rot.times[j];
+							t = bone.trans.getValue(0, time);
+							s = bone.scale.getValue(0, time);
+							q = bone.rot.data[j];
+						}
+						else if (secondS == animEnd)
+						{
+							time = bone.scale.times[j];
+							t = bone.trans.getValue(0, time);
+							s = bone.scale.data[j];
+							q = bone.rot.getValue(0, time);
+						}
+
+						Matrix4 mat;
+						if (bone.bUsePivot)
+						{
+							mat.makeTrans(bone.pivot * -1.0f);
+							mat.setScale(s);
+							mat.m[3][0] *= s.x;
+							mat.m[3][1] *= s.y;
+							mat.m[3][2] *= s.z;
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+							mat.offsetTrans(bone.pivot);
+						}
+						else
+						{
+							mat.makeScale(s);
+							mat = mat.Multiply4x3(Matrix4(q.invertWinding()));
+							mat.offsetTrans(t);
+						}
+
+						animTimes.push_back(time * inverse);
+						translations.push_back(mat.getTrans());
+						rotations.push_back(q);
+						scales.push_back(s);
+					}
+					boneIndices.push_back(bone.nIndex);
+				}
+			}
+		}
+	}
+
+	ParaEngine::Bone* glTFModelExporter::GetBoneByIndex(int nIndex)
+	{
+		return (nIndex >= 0 && nIndex < (int)animProvider->m_objNum.nBones) ? &(animProvider->bones[nIndex]) : nullptr;
+	}
+
+	ParaEngine::Bone* glTFModelExporter::GetBoneByID(KNOWN_BONE_NODES boneID)
+	{
+		int nIndex = animProvider->m_boneLookup[boneID];
+		return (nIndex >= 0) ? &(animProvider->bones[nIndex]) : nullptr;
 	}
 
 	void glTFModelExporter::CalculateJoint(int id, const Vector3& pivot)
@@ -484,16 +578,6 @@ namespace ParaEngine
 				CalculateJoint(bone.nIndex, bone.m_finalTrans);
 			}
 		}
-	}
-
-	Vector3 glTFModelExporter::CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot)
-	{
-		Matrix4 m;
-		m.makeTrans(pivot * -1.0f);
-		m = m.Multiply4x3(matRot);
-		m.offsetTrans(trans);
-		m.offsetTrans(pivot);
-		return m.getTrans();
 	}
 
 	void glTFModelExporter::ExportMetadata()
@@ -2070,19 +2154,144 @@ namespace ParaEngine
 		return luabind::object(L, gltfBuffer.c_str());
 	}
 
-	void glTFModelExporter::ParaXChangeAnimation(const std::string& paraXFile, const std::string& animationFile, lua_State* L)
+	luabind::object glTFModelExporter::ParaXFileChangeAnimation(
+		const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L)
 	{
-		//CParaXSerializer serializer;
-		//CParaFile xfile(paraXFile.c_str());
-		//CParaXModel* model = (CParaXModel*)serializer.LoadParaXMesh(xfile);
-		//if (model != nullptr)
-		//{
-		//	CParaFile animFile(animationFile.c_str());
-		//	CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
-		//	if (animation != nullptr)
-		//	{
-		//	}
-		//}
+		std::string buffer;
+		CParaXSerializer serializer;
+		CParaFile animfile(animFile.c_str());
+		CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animfile);
+		if (animation != nullptr)
+		{
+			CParaFile xfile(paraXFile.c_str());
+			CGlobals::GetAssetManager()->SetAsyncLoading(false);
+			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+			if (mesh != nullptr)
+			{
+				std::vector<string> textures;
+				int type = luabind::type(texObject);
+				if (type == LUA_TSTRING)
+				{
+					textures.push_back(luabind::object_cast<const char*>(texObject));
+				}
+				else if (type == LUA_TTABLE)
+				{
+					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+					{
+						const luabind::object& item = *itCur;
+						if (luabind::type(item) == LUA_TSTRING)
+						{
+							textures.push_back(luabind::object_cast<const char*>(item));
+						}
+					}
+				}
+				glTFModelExporter exporter(mesh, animation, textures, binary);
+				buffer = exporter.ExportToBuffer();
+				delete mesh;
+				mesh = nullptr;
+			}
+		}
+		else
+		{
+			CParaFile xfile(paraXFile.c_str());
+			CGlobals::GetAssetManager()->SetAsyncLoading(false);
+			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+			if (mesh != nullptr)
+			{
+				std::vector<string> textures;
+				int type = luabind::type(texObject);
+				if (type == LUA_TSTRING)
+				{
+					textures.push_back(luabind::object_cast<const char*>(texObject));
+				}
+				else if (type == LUA_TTABLE)
+				{
+					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+					{
+						const luabind::object& item = *itCur;
+						if (luabind::type(item) == LUA_TSTRING)
+						{
+							textures.push_back(luabind::object_cast<const char*>(item));
+						}
+					}
+				}
+				glTFModelExporter exporter(mesh, textures, binary);
+				buffer = exporter.ExportToBuffer();
+				delete mesh;
+				mesh = nullptr;
+			}
+		}
+		return luabind::object(L, buffer.c_str());
+	}
+
+	luabind::object glTFModelExporter::ParaXBufferChangeAnimation(
+		const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L)
+	{
+		std::string buffer;
+		CParaXSerializer serializer;
+		CParaFile animFile(const_cast<char*>(animBuffer), animSize);
+		CParaXModel* animation = (CParaXModel*)serializer.LoadParaXMesh(animFile);
+		if (animation != nullptr)
+		{
+			CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
+			CGlobals::GetAssetManager()->SetAsyncLoading(false);
+			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+			if (mesh != nullptr)
+			{
+				std::vector<string> textures;
+				int type = luabind::type(texObject);
+				if (type == LUA_TSTRING)
+				{
+					textures.push_back(luabind::object_cast<const char*>(texObject));
+				}
+				else if (type == LUA_TTABLE)
+				{
+					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+					{
+						const luabind::object& item = *itCur;
+						if (luabind::type(item) == LUA_TSTRING)
+						{
+							textures.push_back(luabind::object_cast<const char*>(item));
+						}
+					}
+				}
+				glTFModelExporter exporter(mesh, animation, textures, binary);
+				buffer = exporter.ExportToBuffer();
+				delete mesh;
+				mesh = nullptr;
+			}
+		}
+		else
+		{
+			CParaFile xfile(const_cast<char*>(paraXBuffer), paraXSize);
+			CGlobals::GetAssetManager()->SetAsyncLoading(false);
+			CParaXModel* mesh = (CParaXModel*)serializer.LoadParaXMesh(xfile);
+			if (mesh != nullptr)
+			{
+				std::vector<string> textures;
+				int type = luabind::type(texObject);
+				if (type == LUA_TSTRING)
+				{
+					textures.push_back(luabind::object_cast<const char*>(texObject));
+				}
+				else if (type == LUA_TTABLE)
+				{
+					for (luabind::iterator itCur(texObject), itEnd; itCur != itEnd; ++itCur)
+					{
+						const luabind::object& item = *itCur;
+						if (luabind::type(item) == LUA_TSTRING)
+						{
+							textures.push_back(luabind::object_cast<const char*>(item));
+						}
+					}
+				}
+				glTFModelExporter exporter(mesh, textures, binary);
+				buffer = exporter.ExportToBuffer();
+				delete mesh;
+				mesh = nullptr;
+			}
+		}
+		return luabind::object(L, buffer.c_str());
 	}
 
 }

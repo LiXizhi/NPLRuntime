@@ -302,7 +302,7 @@ namespace ParaEngine
 	{
 	public:
 		glTFModelExporter(CParaXModel* mesh, std::vector<string>& textures, bool binary, bool embedded = true);
-		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, bool binary, bool embedded = true);
+		glTFModelExporter(CParaXModel* mesh, CParaXModel* anim, std::vector<string>& textures, bool binary, bool embedded = true);
 		~glTFModelExporter();
 		
 		void ExportToFile(const std::string& filename);
@@ -312,8 +312,9 @@ namespace ParaEngine
 		void ParseParaXModel();
 		void ParseAnimationBones();
 		void ChangeAnimationBones();
+		Bone* GetBoneByIndex(int nIndex);
+		Bone* GetBoneByID(KNOWN_BONE_NODES boneID);
 		void CalculateJoint(int id, const Vector3& pivot);
-		Vector3 CalculatePivot(const Vector3& pivot, const Vector3& trans, const Matrix4& matRot);
 		void ExportMetadata();
 		void ExportScene();
 		std::shared_ptr<Node> ExportNode();
@@ -388,6 +389,9 @@ namespace ParaEngine
 		static void ParaXBufferExportTo_glTF_File(const char* buffer, int size, const std::string& output, const luabind::object& texObject, bool binary, bool embedded = true);
 		static luabind::object ParaXFileExportTo_glTF_String(const std::string& input, bool binary, const luabind::object& texObject, lua_State* L);
 		static luabind::object ParaXBufferExportTo_glTF_String(const char* buffer, int size, bool binary, const luabind::object& texObject, lua_State* L);
-		static void ParaXChangeAnimation(const std::string& paraXFile, const std::string& animationFile, lua_State* L);
+		static luabind::object ParaXFileChangeAnimation(
+			const std::string& paraXFile, const std::string& animFile, bool binary, const luabind::object& texObject, lua_State* L);
+		static luabind::object ParaXBufferChangeAnimation(
+			const char* paraXBuffer, int paraXSize, const char* animBuffer, int animSize, bool binary, const luabind::object& texObject, lua_State* L);
 	};
 }

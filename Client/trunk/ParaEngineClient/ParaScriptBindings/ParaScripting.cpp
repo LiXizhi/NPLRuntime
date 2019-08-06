@@ -510,7 +510,11 @@ void CNPLScriptingState::LoadParaScene()
 			def("ParaXBufferExportTo_glTF_String", &glTFModelExporter::ParaXBufferExportTo_glTF_String),
 			// return textures of .x file
 			def("GetParaXTexturesFromFile", &glTFModelExporter::GetParaXTexturesFromFile),
-			def("GetParaXTexturesFromBuffer", &glTFModelExporter::GetParaXTexturesFromBuffer)
+			def("GetParaXTexturesFromBuffer", &glTFModelExporter::GetParaXTexturesFromBuffer),
+			// replace animations, and return gltf Buffer
+			def("ParaXFileChangeAnimation", &glTFModelExporter::ParaXFileChangeAnimation),
+			def("ParaXBufferChangeAnimation", &glTFModelExporter::ParaXBufferChangeAnimation)
+
 		]
 	];
 }
