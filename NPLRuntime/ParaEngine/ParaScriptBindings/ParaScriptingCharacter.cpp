@@ -415,6 +415,11 @@ namespace ParaScripting
 		}
 	}
 
+	void ParaCharacter::PlayAnimation2(int animid, bool bUpdateSpeed, bool bAppend)
+	{
+		m_pCharacter->PlayAnimation(animid, bUpdateSpeed, bAppend);
+	}
+
 	void ParaCharacter::Stop()
 	{
 		if (m_pCharacter) {
