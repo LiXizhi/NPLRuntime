@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Paracraft</string>
+    <string name="PluginInfo">
+      [{
+      "packname": "plugin.Bluetooth.InterfaceBluetooth",
+      "key": "test",
+      "debug": true
+      }]
+    </string>
+  <!--
+    <string name="PluginInfo">
+      [{
+      "packname": "com.xxx.xxx",
+      "key": "1234",
+      "debug": true
+      },
+
+      {
+      "packname": "com.xxx.xxx2",
+      "key": "1234",
+      "debug": false
+      }
+      ]
+    </string>
+    -->
+
+</resources>
