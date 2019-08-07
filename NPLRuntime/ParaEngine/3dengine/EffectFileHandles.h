@@ -76,6 +76,12 @@ namespace ParaEngine
 		TECH_GUI_TEXT,
 		// block max model
 		TECH_BMAX_MODEL,
+		// deferred shading lights
+		TECH_LIGHT_POINT,
+		TECH_LIGHT_SPOT,
+		TECH_LIGHT_DIRECTIONAL,
+		// deferred lighting
+		TECH_DEFERRED_LIGHTING,
 		// for external unknown effect. 
 		TECH_UNKNOWN,
 	};
