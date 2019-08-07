@@ -52,6 +52,13 @@ namespace ParaEngine
 		/** get the scaling. */
 		virtual float GetScaling();
 
+		/** rotation related */
+		virtual float GetPitch();
+		virtual void SetPitch(float fValue);
+
+ 		virtual float GetRoll();
+		virtual void SetRoll(float fValue);
+
 		/**
 		* return the world matrix of the object for rendering
 		* @param out: the output.
@@ -105,6 +112,11 @@ namespace ParaEngine
 	private:
 		/** size scale */
 		float	m_fScale;
+
+		/** rotation parameters */
+		float m_fPitch;
+        float m_fRoll;
+
 		AnimIndex m_CurrentAnim;
 		ref_ptr<ParaXEntity>      m_pAnimatedMesh;
 

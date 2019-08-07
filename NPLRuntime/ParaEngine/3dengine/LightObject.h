@@ -40,12 +40,8 @@ namespace ParaEngine
 		ATTRIBUTE_METHOD1(CLightObject, SetPosition_s, DVector3) { DVector3 c(p1.x, p1.y, p1.z); cls->SetPosition(c); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, GetDirection_s, Vector3*) { *p1 = *(Vector3*)(&cls->GetDirection()); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, SetDirection_s, Vector3) { Vector3 c(p1.x, p1.y, p1.z); cls->SetDirection(c); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, GetYaw_s, float*) { *p1 = cls->GetYaw(); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, SetYaw_s, float) { cls->SetYaw(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, GetPitch_s, float*) { *p1 = cls->GetPitch(); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, SetPitch_s, float) { cls->SetPitch(p1); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, GetRoll_s, float*) { *p1 = cls->GetRoll(); return S_OK; }
-		ATTRIBUTE_METHOD1(CLightObject, SetRoll_s, float) { cls->SetRoll(p1); return S_OK; }
+
+		/** Yaw Pitch Roll inherit from BaseObject */
 
 		ATTRIBUTE_METHOD1(CLightObject, GetRange_s, float*) { *p1 = cls->GetRange(); return S_OK; }
 		ATTRIBUTE_METHOD1(CLightObject, SetRange_s, float) { cls->SetRange(p1); return S_OK; }
@@ -169,12 +165,13 @@ namespace ParaEngine
 		 */
 		void SetDirection(const Vector3& dir);
 		const Vector3& GetDirection();
-		void SetYaw(float yaw);
-		float GetYaw();
-		void SetPitch(float pitch);
-		float GetPitch();
-		void SetRoll(float roll);
-		float GetRoll();
+		
+		virtual void SetYaw(float yaw);
+		virtual float GetYaw();
+		virtual void SetPitch(float pitch);
+		virtual float GetPitch();
+		virtual void SetRoll(float roll);
+		virtual float GetRoll();
 
 		void SetRange(float range);
 		float GetRange();
@@ -198,6 +195,10 @@ namespace ParaEngine
 		/** whether the light is enabled for deferred render pipeline only. */
 		bool IsDeferredLightOnly() const;
 		void SetDeferredLightOnly(bool val);
+
+		/** whether rotation has happened */
+		bool IsRotationDirty() const;
+		void SetRotationDirty(bool val);
 	protected:
 		/** current position in the map */
 		//Vector3           m_vPos;
@@ -222,5 +223,8 @@ namespace ParaEngine
 
 		/** if true, auto set attenuation{0-2} as the range changes. */
 		bool m_bAutoSetAttenuation;
+
+		/** if rotation has happened */
+		bool m_bRotationDirty;
 	};
 }
