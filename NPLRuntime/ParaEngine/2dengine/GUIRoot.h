@@ -365,6 +365,8 @@ namespace ParaEngine
 		/** just in case the cursor is not loaded successfully in previous frame*/
 		bool CheckLoadCursor();
 
+		virtual void Focus();
+
 		///Activates the GUI Root object
 		void ActivateRoot();
 		///Inactivates the GUI Root object
