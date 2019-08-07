@@ -2237,7 +2237,7 @@ bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)
 		}
 
 		CGlobals::GetEffectManager()->MapHandleToEffect(TECH_BLOCK_FANCY, m_block_effect_fancy.get());
-		if (m_normal_mesh_effect_fancy == 0)
+		/*if (m_normal_mesh_effect_fancy == 0)
 		{
 			m_normal_mesh_effect_fancy = CGlobals::GetAssetManager()->LoadEffectFile("mesh_normal_fancy", "script/apps/Aries/Creator/Game/Shaders/mrt_mesh_normal.fxo");
 			m_normal_mesh_effect_fancy->LoadAsset();
@@ -2248,7 +2248,7 @@ bool BlockWorldClient::PrepareAllRenderTargets(bool bSetRenderTarget /*= true*/)
 			}
 		}
 		CGlobals::GetEffectManager()->MapHandleToEffect(TECH_SIMPLE_MESH_NORMAL, m_normal_mesh_effect_fancy.get());
-		CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());
+		CGlobals::GetEffectManager()->MapHandleToEffect(TECH_CHARACTER, m_normal_mesh_effect_fancy.get());*/
 
 		if (m_bmax_model_effect_fancy == 0)
 		{
