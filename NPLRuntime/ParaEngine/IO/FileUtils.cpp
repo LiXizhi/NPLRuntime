@@ -63,7 +63,11 @@
 #define LSTAT_FUNC lstat
 #endif
 
-
+#ifdef NPLRUNTIME_STATICLIB
+ 	#ifndef USE_BOOST_FILE_API
+		#define USE_BOOST_FILE_API
+	#endif
+#endif
 
 #if defined(PARAENGINE_SERVER) && !defined(WIN32)
 	// the following macro fixed a linking bug if boost lib is not compiled with C++11

@@ -305,7 +305,7 @@ string DBEntity::PrepareDatabaseFile(const string& filename)
 	{
 		return filename;
 	}
-	else if( ParaEngine::CParaFile::DoesFileExist2(filename.c_str(), 0xffff, &sOutputFilename) &&
+	else if( ParaEngine::CParaFile::DoesFileExist2(filename.c_str(), ParaEngine::FILE_ON_DISK | ParaEngine::FILE_ON_SEARCH_PATH, &sOutputFilename) &&
 		((ParaEngine::CParaFile::GetDiskFilePriority()>=0 || !ParaEngine::CParaFile::DoesFileExist2(filename.c_str(), ParaEngine::FILE_ON_ZIP_ARCHIVE))) )
 	{
 		// disk file exist and (disk file has priority or zip file does not contain the file).

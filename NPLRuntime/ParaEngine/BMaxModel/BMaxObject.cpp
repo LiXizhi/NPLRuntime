@@ -24,7 +24,7 @@
 namespace ParaEngine
 {
 	BMaxObject::BMaxObject()
-		:m_fScale(1.0f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_bEnableAnim(true), m_curTime(0),
+		:m_fScale(1.0f), m_fPitch(0.f), m_fRoll(0.f), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_bEnableAnim(true), m_curTime(0),
 		m_nPhysicsGroup(0), m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS)
 	{
 		SetAttribute(OBJ_VOLUMN_FREESPACE);
@@ -140,6 +140,34 @@ namespace ParaEngine
 		}
 	}
 
+	float BMaxObject::GetPitch()
+	{
+		return m_fPitch;
+	};
+
+ 	void BMaxObject::SetPitch(float fValue)
+	{
+		if (m_fPitch != fValue)
+		{
+			m_fPitch = fValue;
+			SetGeometryDirty(true);
+		}
+	};
+
+ 	float BMaxObject::GetRoll()
+	{
+		return m_fRoll;
+	};
+
+ 	void BMaxObject::SetRoll(float fValue)
+	{
+		if (m_fRoll != fValue)
+		{
+			m_fRoll = fValue;
+			SetGeometryDirty(true);
+		}
+	};
+
 	void BMaxObject::SetAssetFileName(const std::string& sFilename)
 	{
 		auto pNewModel = CGlobals::GetAssetManager()->LoadParaX("", sFilename);
@@ -249,12 +277,32 @@ namespace ParaEngine
 	{
 		if (localTransform)
 		{
-			if (GetFacing() != 0)
+			float yaw = GetFacing();
+			float pitch = GetPitch();
+			float roll = GetRoll();
+
+ 			Matrix4 transform = Matrix4::IDENTITY;
+			Matrix4 rot;
+
+			if (yaw != 0)
 			{
-				ParaMatrixRotationY(localTransform, GetFacing());
+				ParaMatrixRotationY(&rot, yaw);
+				transform = rot.Multiply4x3(transform);
 			}
-			else
-				*localTransform = Matrix4::IDENTITY;
+
+			if (pitch != 0)
+			{
+				ParaMatrixRotationX(&rot, pitch);
+				transform = rot.Multiply4x3(transform);
+			}
+
+			if (roll != 0)
+			{
+				ParaMatrixRotationZ(&rot, roll);
+				transform = rot.Multiply4x3(transform);
+			}
+
+			*localTransform = transform;
 		}
 	}
 

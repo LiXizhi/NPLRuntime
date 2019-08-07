@@ -1381,7 +1381,7 @@ bool CSceneObject::PrepareRenderObject(CBaseObject* pObj, CBaseCamera* pCamera, 
 	/// draw this object
 	if(bDrawObj || bIsShadowCaster)
 	{
-		float fObjectToCameraDist = pViewClippingObject->GetObjectToPointDistance(& (sceneState.vEye));
+		float fObjectToCameraDist = (pObj->GetObjectToCameraDistance()<=0.f) ?  pViewClippingObject->GetObjectToPointDistance(& (sceneState.vEye)) : pObj->GetObjectToCameraDistance();
 		if(bDrawObj)
 		{
 			if(pObj->IsShowBoundingBox())
@@ -2355,10 +2355,13 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 		RenderSelection(RENDER_MISSILES);
 	}
 
+	// render light mesh here
+	m_pBlockWorldClient->RenderDeferredLightsMesh();
+
 	//////////////////////////////////////////////////////////////////////////
 	// deferred shading so far. 
-	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
 	m_pBlockWorldClient->Render(BlockRenderPass_ReflectedWater);
+	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_Opaque);
 
 	// draw overlays solid
 	RenderHeadOnDisplay(2);
@@ -2376,7 +2379,8 @@ HRESULT CSceneObject::AdvanceScene(double dTimeDelta, int nPipelineOrder)
 
 	m_pBlockWorldClient->DoPostRenderingProcessing(BlockRenderPass_AlphaBlended);
 
-	m_pBlockWorldClient->RenderDeferredLights();
+	// then do the deferred lighting
+	m_pBlockWorldClient->RenderDeferredLighting();
 
 	// draw the head on display GUI
 	RenderHeadOnDisplay(0);

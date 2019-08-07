@@ -397,7 +397,7 @@ if (PNG_FOUND)
   include_directories(${PNG_INCLUDE_DIRS})
 endif ()
 if (HARFBUZZ_FOUND)
-  #target_link_libraries(freetype ${MAYBE_PRIVATE} ${HARFBUZZ_LIBRARIES})
+  target_link_libraries(freetype ${MAYBE_PRIVATE} ${HARFBUZZ_LIBRARIES})
   include_directories(${HARFBUZZ_INCLUDE_DIRS})
 endif ()
 

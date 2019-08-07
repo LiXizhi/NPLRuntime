@@ -128,7 +128,10 @@ namespace ParaEngine
 		void Render(BlockRenderPass nRenderPass = BlockRenderPass_Opaque, std::vector<BlockRenderTask*>* pCurRenderQueue = NULL, int nRenderMethod = -1);
 
 		/** render light geometry. */
-		void RenderDeferredLights();
+		void RenderDeferredLightsMesh();
+
+		/** do deferred lighting */
+		void RenderDeferredLighting();
 
 		std::vector<BlockRenderTask*>* GetRenderQueueByPass(BlockRenderPass nRenderPass);
 
@@ -356,6 +359,14 @@ namespace ParaEngine
 		asset_ptr<CEffectFile> m_normal_mesh_effect_fancy;
 		asset_ptr<CEffectFile> m_bmax_model_effect_fancy;
 		asset_ptr<CEffectFile> m_terrain_fancy;
+
+		/** 3 kinds of light geometry shader in deferred shading */
+		asset_ptr<CEffectFile> m_effect_light_point;
+		asset_ptr<CEffectFile> m_effect_light_spot;
+		asset_ptr<CEffectFile> m_effect_light_directional;
+
+		/** deferred lighting shader */
+		asset_ptr<CEffectFile> m_effect_deferred_lighting;
 
 		/** deferred light geometry for {D3DLIGHT_POINT, D3DLIGHT_SPOT, D3DLIGHT_DIRECTIONAL} */
 		asset_ptr<CEffectFile> m_lightgeometry_effects[3];

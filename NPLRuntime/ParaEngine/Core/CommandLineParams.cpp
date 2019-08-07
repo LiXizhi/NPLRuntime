@@ -28,7 +28,7 @@ const char* CCommandLineParams::GetAppCommandLine()
 
 void CCommandLineParams::ConvertToCanonicalForm()
 {
-	//if the params are split by "," ";" or ":", convert them to " "
+	//if the params are split by "," ";", convert them to " "
 	if (!m_sAppCmdLine.empty())
 	{
 		size_t stringLength = m_sAppCmdLine.size();
@@ -46,7 +46,7 @@ void CCommandLineParams::ConvertToCanonicalForm()
 					nCurrentPos++;
 				}
 			}
-			else if (currentCharacter == ',' || currentCharacter == ';' || currentCharacter == ':')
+			else if (currentCharacter == ',' || currentCharacter == ';')
 			{
 				//replace it with space
 				m_sAppCmdLine[nCurrentPos] = ' ';

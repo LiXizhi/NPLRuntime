@@ -1591,6 +1591,7 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 	{
 		std::string sTextureName = textureName;
 
+#ifdef USE_TEXTURE_NAME_FOR_BLOCK_TEXTURING
 		if (sTextureName.find("_three") != std::string::npos)
 		{
 			if (pTemplate->IsMatchAttribute(BlockTemplate::batt_singleSideTex))
@@ -1624,6 +1625,8 @@ void CBlockWorld::SetTemplateTexture(uint16_t id, const char* textureName)
 				ClearBlockRenderCache();
 			}
 		}
+#endif
+
 		pTemplate->SetTexture0(textureName);
 	}
 }

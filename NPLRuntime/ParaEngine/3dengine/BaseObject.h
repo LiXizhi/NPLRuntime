@@ -420,6 +420,9 @@ public:
 	ATTRIBUTE_METHOD1(CBaseObject, GetRenderOrder_s, float*)			{ *p1 = cls->GetRenderOrder(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetRenderOrder_s, float)		{ cls->SetRenderOrder(p1); return S_OK; }
 
+	ATTRIBUTE_METHOD1(CBaseObject, GetObjectToCameraDistance_s, float*) { *p1 = cls->GetObjectToCameraDistance(); return S_OK; }
+	ATTRIBUTE_METHOD1(CBaseObject, SetObjectToCameraDistance_s, float) { cls->SetObjectToCameraDistance(p1); return S_OK; }
+
 	ATTRIBUTE_METHOD1(CBaseObject, GetRenderImportance_s, int*)			{ *p1 = cls->GetRenderImportance(); return S_OK; }
 	ATTRIBUTE_METHOD1(CBaseObject, SetRenderImportance_s, int)		{ cls->SetRenderImportance(p1); return S_OK; }
 
@@ -736,6 +739,10 @@ public:
 	*/
 	float GetRenderOrder() const { return m_fRenderOrder; }
 	void SetRenderOrder(float val);
+
+	/** force camera to object distance, when sorting the object. if 0.f (default value), we will use the actual camera to object distance instead. */
+	virtual float GetObjectToCameraDistance();
+	virtual void SetObjectToCameraDistance(float val);
 
 	/// -- Base object functions
 	CChildObjectList_Type&		GetChildren(){ return m_children;};

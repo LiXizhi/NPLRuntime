@@ -776,6 +776,10 @@ namespace ParaEngine
 		*/
 		virtual DWORD GetPhysicsGroupMask();
 
+		/** force camera to object distance, when sorting the object. if 0.f (default value), we will use the actual camera to object distance instead. */
+		virtual float GetObjectToCameraDistance();
+		virtual void SetObjectToCameraDistance(float val);
+
 	public:
 		/* advanced character control functions.*/
 
@@ -936,6 +940,9 @@ namespace ParaEngine
 
 		/** size scale */
 		float	m_fSizeScale;
+
+		/** force camera to object distance*/
+		float	m_fObjectToCameraDistance;
 
 		/** speed scale */
 		float 	m_fSpeedScale;
