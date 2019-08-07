@@ -783,6 +783,15 @@ void ParaEngine::CBaseObject::SetRenderOrder(float val)
 	m_fRenderOrder = val;
 }
 
+float ParaEngine::CBaseObject::GetObjectToCameraDistance()
+{
+	return 0.f;
+}
+
+void ParaEngine::CBaseObject::SetObjectToCameraDistance(float val)
+{
+}
+
 void ParaEngine::CBaseObject::SetRenderDistance( float fDist )
 {
 	m_fRenderDistance = fDist;
@@ -1154,6 +1163,7 @@ int CBaseObject::InstallFields(CAttributeClass* pClass, bool bOverride)
 	pClass->AddField("SelectGroupIndex", FieldType_Int, (void*)SetSelectGroupIndex_s, (void*)GetSelectGroupIndex_s, NULL, NULL, bOverride);
 	pClass->AddField("On_AssetLoaded", FieldType_String, (void*)SetOnAssetLoaded_s, (void*)GetOnAssetLoaded_s, NULL, NULL, bOverride);
 	pClass->AddField("RenderOrder", FieldType_Float, (void*)SetRenderOrder_s, (void*)GetRenderOrder_s, NULL, "", bOverride);
+	pClass->AddField("ObjectToCameraDistance", FieldType_Float, (void*)SetObjectToCameraDistance_s, (void*)GetObjectToCameraDistance_s, NULL, "", bOverride);
 	pClass->AddField("RenderImportance", FieldType_Int, (void*)SetRenderImportance_s, (void*)GetRenderImportance_s, NULL, "", bOverride);
 	pClass->AddField("RenderDistance", FieldType_Float, (void*)SetRenderDistance_s, (void*)GetRenderDistance_s, NULL, "", bOverride);
 	pClass->AddField("reset", FieldType_void, (void*)Reset_s, NULL, NULL, "reset object", bOverride);

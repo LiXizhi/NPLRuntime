@@ -158,6 +158,7 @@ m_dwPhysicsGroupMask(DEFAULT_PHYSICS_GROUP_MASK),
 m_dwPhysicsMethod(PHYSICS_FORCE_NO_PHYSICS), m_nPhysicsGroup(0),
 m_fBootHeight(0.f),
 m_fSizeScale(1.0f),
+m_fObjectToCameraDistance(0.f),
 m_fSpeedScale(1.0f), m_bIsAlwaysAboveTerrain(true), m_bPauseAnimation(false),
 m_gravity(9.18f), m_ignoreSlopeCollision(false), m_readyToLanding(false), m_canFly(false), m_isAlwaysFlying(false), m_bAutoWalkupBlock(true), m_bIsControlledExternally(false),
 m_isFlying(false), m_flyingDir(1, 0, 0), m_fLastBlockLight(0.f), m_dwLastBlockHash(0), m_fAccelerationDist(0), m_fLastSpeed(0.f)
@@ -4760,6 +4761,16 @@ ParaEngine::Vector3 ParaEngine::CBipedObject::GetNormal()
 DWORD ParaEngine::CBipedObject::GetPhysicsGroupMask()
 {
 	return m_dwPhysicsGroupMask;
+}
+
+float ParaEngine::CBipedObject::GetObjectToCameraDistance()
+{
+	return m_fObjectToCameraDistance;
+}
+
+void ParaEngine::CBipedObject::SetObjectToCameraDistance(float val)
+{
+	m_fObjectToCameraDistance = val;
 }
 
 bool ParaEngine::CBipedObject::CanHasPhysics()
