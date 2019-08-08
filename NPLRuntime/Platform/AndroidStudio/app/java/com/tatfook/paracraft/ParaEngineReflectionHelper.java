@@ -9,10 +9,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class ParaEngineReflectionHelper {
-    @org.jetbrains.annotations.Nullable
+    @Nullable
+    @SuppressWarnings("unchecked")
     public static <T> T getConstantValue(final Class aClass, final String constantName) {
         try {
-            return (T)aClass.getDeclaredField(constantName).get(null);
+            Object obj = aClass.getDeclaredField(constantName).get(null);
+            return (T)obj;
         } catch (NoSuchFieldException e) {
             Log.e("error", "can not find " + constantName + " in " + aClass.getName());
         }
@@ -30,13 +32,20 @@ public class ParaEngineReflectionHelper {
     }
 
     @Nullable
+    @SuppressWarnings("unchecked")
     public static <T> T invokeInstanceMethod(@NotNull final Object instance, final String methodName,
                                              final Class[] parameterTypes, final Object[] parameters) {
 
-        final Class aClass = instance.getClass();
+        final Class<?> aClass = instance.getClass();
         try {
-            final Method method = aClass.getMethod(methodName, parameterTypes);
-            return (T)method.invoke(instance, parameters);
+            Method method = aClass.getMethod(methodName, parameterTypes);
+            if (method == null)
+                return null;
+
+            Object obj = method.invoke(instance, parameters);
+            if (obj == null)
+                return null;
+            return (T)obj;
         } catch (NoSuchMethodException e) {
             Log.e("error", "can not find " + methodName + " in " + aClass.getName());
         }
@@ -48,6 +57,9 @@ public class ParaEngineReflectionHelper {
         }
         catch (InvocationTargetException e) {
             Log.e("error", "an exception was thrown by the invoked method when invoking " + methodName);
+        }
+        catch (Exception e) {
+            Log.e("error", "can not get invoke instance method" + methodName);
         }
 
         return null;
