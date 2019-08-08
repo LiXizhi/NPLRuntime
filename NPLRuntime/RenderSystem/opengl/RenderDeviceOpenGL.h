@@ -44,6 +44,7 @@ namespace ParaEngine
 		virtual bool SetClearColor(const Color4f& color) override;
 		virtual bool SetClearDepth(const float depth) override;
 		virtual bool SetClearStencil(const int stencil) override;
+		virtual void Flush() override;
 	protected:
 		void ApplyBlendingModeChange();
 	private:

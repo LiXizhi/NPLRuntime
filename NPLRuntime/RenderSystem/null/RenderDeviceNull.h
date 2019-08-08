@@ -95,6 +95,8 @@ namespace ParaEngine
 
 
 		virtual bool Present() override;
+		
+		virtual void Flush() override;
 	protected:
 		ParaViewport m_ViewPort;
 	};

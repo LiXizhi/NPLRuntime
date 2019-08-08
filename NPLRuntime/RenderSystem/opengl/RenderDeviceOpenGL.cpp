@@ -479,6 +479,10 @@ bool ParaEngine::RenderDeviceOpenGL::EndScene()
 
 }
 
+void ParaEngine::RenderDeviceOpenGL::Flush()
+{
+	glFinish();
+}
 
 
 int ParaEngine::RenderDeviceOpenGL::GetStencilBits()

@@ -103,6 +103,7 @@ namespace ParaEngine
 		virtual bool EndScene() = 0;
 
 		virtual bool Present() = 0;
+		virtual void Flush() = 0;
 
 
 		/** check render error and print to log. only call this in debug mode, since it breaks parallelism between gpu and cpu. */

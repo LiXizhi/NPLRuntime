@@ -210,6 +210,10 @@ namespace ParaEngine {
 		return m_pD3DDevice->Present(NULL, NULL, NULL, NULL) == S_OK;
 	}
 
+	void RenderDeviceD3D9::Flush()
+	{
+		
+	}
 
 
 	uint32_t RenderDeviceD3D9::GetRenderState(const ERenderState& State)

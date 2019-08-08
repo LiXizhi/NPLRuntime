@@ -85,7 +85,8 @@ namespace ParaEngine
 
 
 		virtual bool Present() override;
-
+		
+		virtual void Flush() override;
 
 		virtual uint32_t GetRenderState(const ERenderState& State) override;
 

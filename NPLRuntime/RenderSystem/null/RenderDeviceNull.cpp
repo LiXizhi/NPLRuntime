@@ -157,3 +157,8 @@ bool ParaEngine::RenderDeviceNull::Present()
 {
 	return true;
 }
+
+void ParaEngine::RenderDeviceNull::Flush()
+{
+
+}
