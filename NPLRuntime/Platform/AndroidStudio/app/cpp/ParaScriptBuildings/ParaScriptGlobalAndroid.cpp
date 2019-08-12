@@ -12,4 +12,5 @@
 bool ParaScripting::ParaGlobal::OpenFileDialog(const object& inout)
 {
 	//refact to platform
+	return false;
 }
