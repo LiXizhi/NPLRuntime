@@ -29,6 +29,7 @@ class dir_monitor_impl
 public:
     dir_monitor_impl()
         : run_(true)
+        , runloop_(nullptr)
         , work_thread_(&boost::asio::dir_monitor_impl::work_thread, this)
         , fsevents_(nullptr)
     {}

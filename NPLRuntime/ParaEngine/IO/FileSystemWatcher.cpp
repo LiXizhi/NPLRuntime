@@ -185,14 +185,23 @@ void ParaEngine::CFileSystemWatcher::FileHandler( const boost::system::error_cod
 		if(IsDispatchInMainThread())
 		{
 			m_file_event(ev);
+            {
+                ParaEngine::Lock lock_(m_mutex);
+                if (m_monitor_imp)
+                    // continuously polling
+                    ((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+            }
 		}
 		else
 		{
 			ParaEngine::Lock lock_(m_mutex);
 			m_msg_queue.push(ev);
+            
+            if (m_monitor_imp)
+                // continuously polling
+                ((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
 		}
-		// continuously polling
-		((boost::asio::dir_monitor*)m_monitor_imp)->async_monitor(boost::bind(&ParaEngine::CFileSystemWatcher::FileHandler, this, _1, _2));
+		
 	}
 	else
 	{
@@ -283,6 +292,7 @@ void ParaEngine::CFileSystemWatcher::SetName(const std::string& val)
 
 void ParaEngine::CFileSystemWatcher::Destroy()
 {
+    ParaEngine::Lock lock_(m_mutex);
 	boost::asio::dir_monitor* pObj = (boost::asio::dir_monitor*)m_monitor_imp;
 	SAFE_DELETE(pObj);
 	m_monitor_imp = NULL;
