@@ -15,6 +15,9 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 
 public class ParaEngineEditBox extends EditText {
+
+    public static String sPlaceholder = "P";
+
     /**
      * The user is allowed to enter any text, including line breaks.
      */

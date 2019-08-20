@@ -195,6 +195,7 @@ namespace ParaEngine
 		virtual void didAttachWithIME() override;
 		virtual bool canDetachWithIME() override;
 		virtual void didDetachWithIME() override;
+		virtual void deleteBackward() override;
 		virtual const std::string& getContentText() override;
 		virtual const std::u16string& getContentUTF16Text() override;
 #endif

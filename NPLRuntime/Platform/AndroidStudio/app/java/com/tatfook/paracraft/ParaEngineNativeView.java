@@ -21,11 +21,8 @@ public class ParaEngineNativeView extends SurfaceView {
 	private ParaEngineEditBox mEditText = null;
 	private static ParaTextInputWrapper sParaTextInputWrapper = null;
 
-	/*
 
 	private static native void nativeDeleteBackward();
-	private static native void nativeInsertText(String text);
-	*/
 	private static native void nativeOnUnicodeChar(String text);
 
 	// TODO Static handler -> Potential leak!
@@ -95,6 +92,7 @@ public class ParaEngineNativeView extends SurfaceView {
 							if (mEditText.requestFocus()) {
 								mEditText.removeTextChangedListener(sParaTextInputWrapper);
 								mEditText.setText("");
+								mEditText.append(ParaEngineEditBox.sPlaceholder);
 								mEditText.addTextChangedListener(sParaTextInputWrapper);
 								InputMethodManager imm = (InputMethodManager)sActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
 								imm.showSoftInput(mEditText, 0);
@@ -158,6 +156,14 @@ public class ParaEngineNativeView extends SurfaceView {
 		});
 	}
 
+	public void onDeleteBackward() {
+		sActivity.runOnGLThread(new Runnable() {
+			@Override
+			public void run() {
+				nativeDeleteBackward();
+			}
+		});
+	}
 
 	public static void openIMEKeyboard() {
 		Message msg = new Message();

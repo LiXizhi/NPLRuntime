@@ -29,11 +29,20 @@ public class ParaTextInputWrapper implements TextWatcher, TextView.OnEditorActio
             return;
 
         String text = s.toString();
+
         TextView view = mNativeView.getParaEditText();
         view.removeTextChangedListener(this);
         view.setText("");
+        view.append(ParaEngineEditBox.sPlaceholder);
         view.addTextChangedListener(this);
-        mNativeView.onUnicodeText(text);
+
+        if (text.length() < ParaEngineEditBox.sPlaceholder.length()) {
+            mNativeView.onDeleteBackward();
+        }
+        else {
+            text = text.substring(ParaEngineEditBox.sPlaceholder.length());
+            mNativeView.onUnicodeText(text);
+        }
     }
 
     @Override

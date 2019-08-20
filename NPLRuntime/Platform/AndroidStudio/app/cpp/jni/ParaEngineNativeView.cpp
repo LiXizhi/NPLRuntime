@@ -21,6 +21,11 @@ using namespace ParaEngine;
 extern "C" {
 
 
+JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineNativeView_nativeDeleteBackward(JNIEnv* env, jclass clazz)
+{
+    GUIIMEDispatcher::GetInstance().dispatchDeleteBackward();
+}
+
 JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineNativeView_nativeOnUnicodeChar(JNIEnv* env, jclass clazz, jstring text)
 {
     if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
