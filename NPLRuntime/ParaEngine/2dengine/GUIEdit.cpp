@@ -1800,19 +1800,7 @@ void ParaEngine::CGUIEditBox::didDetachWithIME()
 
 void ParaEngine::CGUIEditBox::deleteBackward()
 {
-	if (m_nCaret != m_nSelStart)
-	{
-		DeleteSelectionText();
-	}
-	else if (m_nCaret > 0)
-	{
-		// Move the caret, then delete the char.
-		PlaceCaret(m_nCaret - 1);
-		m_nSelStart = m_nCaret;
-		m_Buffer.RemoveChar(m_nCaret);
-		m_bIsModified = true;
-	}
-	ResetCaretBlink();
+
 }
 
 
