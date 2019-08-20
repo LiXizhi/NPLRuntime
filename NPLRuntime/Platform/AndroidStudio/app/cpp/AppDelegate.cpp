@@ -216,7 +216,7 @@ inline EVirtualKey toVirtualKey(int32_t keycode)
 		s_keymap[AKEYCODE_EXPLORER] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_ENVELOPE] = EVirtualKey::KEY_UNKNOWN;
 		s_keymap[AKEYCODE_ENTER] = EVirtualKey::KEY_RETURN;
-		s_keymap[AKEYCODE_DEL] = EVirtualKey::KEY_DELETE;
+		s_keymap[AKEYCODE_DEL] = EVirtualKey::KEY_BACK; //EVirtualKey::KEY_DELETE;
 		s_keymap[AKEYCODE_GRAVE] = EVirtualKey::KEY_GRAVE;
 		s_keymap[AKEYCODE_MINUS] = EVirtualKey::KEY_MINUS;
 		s_keymap[AKEYCODE_EQUALS] = EVirtualKey::KEY_EQUALS;
@@ -394,7 +394,9 @@ int32_t AppDelegate::handle_key_input(AppDelegate* app, AInputEvent* event)
 		state = EKeyState::RELEASE;
 	else
 		return 0;
+
 	int32_t keycode = AKeyEvent_getKeyCode(event);
+
 	key = toVirtualKey(keycode);
 	app->OnKey(key, state);
 	return 1;

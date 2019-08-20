@@ -1,136 +1,256 @@
-////----------------------------------------------------------------------
-//// Class: IME delegate
-//// Authors:	LiXizhi
-//// Company: ParaEngine
-//// Date:	2014.9.24
-//// desc: 
-////-----------------------------------------------------------------------
-//#include "ParaEngine.h"
-//#include "GUIIMEDelegate.h"
-//
-//#ifdef PARAENGINE_MOBILE
-////#include "OpenGLWrapper.h"
-//
-//using namespace ParaEngine;
-//
-///* namespace ParaEngine
-//{
-//	// this is just a proxy class to wrapper around the cocos' IMEDelegate, 
-//	//without needing the main header file to include or depends on the cocos' IME related header files.
-//	class CIMEDelegateProxy : public IMEDelegate
-//	{
-//	public:
-//		friend class GUIIMEDelegate;
-//		CIMEDelegateProxy(GUIIMEDelegate* pProxyTarget) :m_pProxyTarget(pProxyTarget){};
-//
-//		virtual void insertText(const char * text, size_t len)
-//		{
-//			m_pProxyTarget->insertText(text, len);
-//		}
-//
-//		virtual void deleteBackward()
-//		{
-//			m_pProxyTarget->deleteBackward();
-//		}
-//
-//		virtual const std::string& getContentText()
-//		{
-//			return m_pProxyTarget->getContentText();
-//		}
-//
-//		virtual bool canAttachWithIME()
-//		{
-//			return m_pProxyTarget->canAttachWithIME();
-//		}
-//
-//		virtual void didAttachWithIME()
-//		{
-//			return m_pProxyTarget->didAttachWithIME();
-//		}
-//
-//		virtual bool canDetachWithIME()
-//		{
-//			return m_pProxyTarget->canDetachWithIME();
-//		}
-//
-//		virtual void didDetachWithIME()
-//		{
-//			return m_pProxyTarget->didDetachWithIME();
-//		}
-//
-//	protected:
-//		GUIIMEDelegate* m_pProxyTarget;
-//	};
-//}
-//
-//ParaEngine::GUIIMEDelegate::GUIIMEDelegate()
-//	:m_delegate(new CIMEDelegateProxy(this))
-//{
-//	
-//}
-//
-//ParaEngine::GUIIMEDelegate::~GUIIMEDelegate()
-//{
-//	
-//}
-//CIMEDelegateProxy* ParaEngine::GUIIMEDelegate::GetIMEDelegateProxy()
-//{
-//	return m_delegate.get();
-//}
-//
-//bool ParaEngine::GUIIMEDelegate::attachWithIME()
-//{
-//	bool ret = m_delegate->attachWithIME();
-//	if (ret)
-//	{
-//		// open keyboard
-//		GLView * pGlView = Director::getInstance()->getOpenGLView();
-//		if (pGlView)
-//		{
-//			pGlView->setIMEKeyboardState(true);
-//		}
-//	}
-//	return ret;
-//}
-//
-//bool ParaEngine::GUIIMEDelegate::detachWithIME()
-//{
-//	bool ret = m_delegate->detachWithIME();
-//	if (ret)
-//	{
-//		// close keyboard
-//		GLView * glView = Director::getInstance()->getOpenGLView();
-//		if (glView)
-//		{
-//			glView->setIMEKeyboardState(false);
-//		}
-//	}
-//	return ret;
-//}
-//
-//#else
-//ParaEngine::GUIIMEDelegate::GUIIMEDelegate()
-//{
-//}
-//
-//bool ParaEngine::GUIIMEDelegate::attachWithIME()
-//{
-//	return false;
-//}
-//
-//bool ParaEngine::GUIIMEDelegate::detachWithIME()
-//{
-//	return false;
-//}
-//
-//ParaEngine::GUIIMEDelegate::~GUIIMEDelegate()
-//{
-//
-//}
-//
-//ParaEngine::CIMEDelegateProxy* ParaEngine::GUIIMEDelegate::GetIMEDelegateProxy()
-//{
-//	return NULL;
-//}
-//*/
-//#endif 
+#ifdef PARAENGINE_MOBILE
+
+#include "ParaEngine.h"
+#include "GUIIMEDelegate.h"
+
+#include <list>
+
+namespace ParaEngine {
+
+	typedef std::list< GUIIMEDelegate * > DelegateList;
+	typedef std::list< GUIIMEDelegate * >::iterator  DelegateIter;
+
+	class GUIIMEDispatcher::Impl
+	{
+	public:
+		Impl()
+			: _delegateWithIme(nullptr)
+		{
+		}
+
+		~Impl()
+		{
+
+		}
+
+		DelegateIter findDelegate(GUIIMEDelegate* delegate)
+		{
+			auto end = _delegateList.end();
+			for (auto iter = _delegateList.begin(); iter != end; ++iter)
+			{
+				if (delegate == *iter)
+				{
+					return iter;
+				}
+			}
+			return end;
+		}
+
+		DelegateList    _delegateList;
+		GUIIMEDelegate*  _delegateWithIme;
+	};
+
+	GUIIMEDispatcher& GUIIMEDispatcher::GetInstance()
+	{
+		static GUIIMEDispatcher s_instance;
+		return s_instance;
+	}
+
+	GUIIMEDispatcher::GUIIMEDispatcher()
+		: _impl(new Impl())
+	{
+
+	}
+
+	GUIIMEDispatcher::~GUIIMEDispatcher()
+	{
+		SAFE_DELETE(_impl);
+	}
+
+	void GUIIMEDispatcher::dispatchInsertText(const std::u16string& text)
+	{
+		do
+		{
+			if (text.empty())
+				break;
+
+			// there is no delegate attached to IME
+			if (!_impl->_delegateWithIme)
+				break;
+
+			_impl->_delegateWithIme->insertText(text);
+		} while (0);
+	}
+
+	void GUIIMEDispatcher::dispatchInsertText(const std::string& text)
+	{
+		do
+		{
+			if (text.empty())
+				break;
+
+			// there is no delegate attached to IME
+			if (!_impl->_delegateWithIme)
+				break;
+
+			_impl->_delegateWithIme->insertText(text);
+		} while (0);
+	}
+
+	void GUIIMEDispatcher::dispatchDeleteBackward()
+	{
+		do
+		{
+			// there is no delegate attached to IME
+			if (!_impl->_delegateWithIme)
+				break;
+
+			_impl->_delegateWithIme->deleteBackward();
+		} while (0);
+	}
+
+	const std::string& GUIIMEDispatcher::getContentText()
+	{
+		if (_impl->_delegateWithIme)
+			return _impl->_delegateWithIme->getContentText();
+
+		return CGlobals::GetString(0);
+	}
+
+	const std::u16string& GUIIMEDispatcher::getContentUTF16Text()
+	{
+		if (_impl->_delegateWithIme)
+			return _impl->_delegateWithIme->getContentUTF16Text();
+
+		return CGlobals::GetUTF16String(0);
+	}
+
+	bool GUIIMEDispatcher::isAnyDelegateAttachedWithIME() const
+	{
+		return _impl->_delegateWithIme != nullptr;
+	}
+
+	void GUIIMEDispatcher::addDelegate(GUIIMEDelegate * delegate)
+	{
+		if (!delegate || !_impl)
+		{
+			return;
+		}
+		if (_impl->_delegateList.end() != _impl->findDelegate(delegate))
+		{
+			// pDelegate already in list
+			return;
+		}
+		_impl->_delegateList.push_front(delegate);
+	}
+
+	bool GUIIMEDispatcher::attachDelegateWithIME(GUIIMEDelegate * delegate)
+	{
+		bool ret = false;
+		do
+		{
+			if (!delegate)
+				break;
+
+			auto end = _impl->_delegateList.begin();
+			auto iter = _impl->findDelegate(delegate);
+
+			// if pDelegate is not in delegate list, return
+			if (iter == end)
+				break;
+
+			if (_impl->_delegateWithIme)
+			{
+				if (_impl->_delegateWithIme != delegate)
+				{
+					// if old delegate canDetachWithIME return false 
+					// or pDelegate canAttachWithIME return false,
+					// do nothing.
+					if (!_impl->_delegateWithIme->canDetachWithIME() || !delegate->canDetachWithIME())
+						break;
+					auto oldDelegate = _impl->_delegateWithIme;
+					_impl->_delegateWithIme = nullptr;
+					oldDelegate->didDetachWithIME();
+
+					_impl->_delegateWithIme = *iter;
+					delegate->didAttachWithIME();
+				}
+
+				ret = true;
+				break;
+			}
+
+			// delegate hasn't attached to IME yet
+			if (!delegate->canAttachWithIME())
+				break;
+
+			_impl->_delegateWithIme = *iter;
+			delegate->didAttachWithIME();
+			ret = true;
+
+		} while (false);
+
+		return ret;
+	}
+
+	bool GUIIMEDispatcher::detachDelegateWithIME(GUIIMEDelegate * delegate)
+	{
+		bool ret = false;
+
+		do
+		{
+			if (!delegate)
+				break;
+
+			if (_impl->_delegateWithIme != delegate)
+				break;
+
+			if (!delegate->canDetachWithIME())
+				break;
+
+			_impl->_delegateWithIme = nullptr;
+			delegate->didDetachWithIME();
+			ret = true;
+
+		} while (false);
+
+		return ret;
+	}
+
+	void GUIIMEDispatcher::removeDelegate(GUIIMEDelegate * delegate)
+	{
+		do
+		{
+			if (!delegate)
+				break;
+
+			auto iter = _impl->findDelegate(delegate);
+			auto end = _impl->_delegateList.end();
+
+			if (iter == end)
+				break;
+
+			if (_impl->_delegateWithIme)
+			{
+				if (delegate == _impl->_delegateWithIme)
+					_impl->_delegateWithIme = nullptr;
+			}
+
+			_impl->_delegateList.erase(iter);
+
+		} while (false);
+	}
+
+	GUIIMEDelegate::GUIIMEDelegate()
+	{
+		GUIIMEDispatcher::GetInstance().addDelegate(this);
+	}
+
+	GUIIMEDelegate::~GUIIMEDelegate()
+	{
+		GUIIMEDispatcher::GetInstance().removeDelegate(this);
+	}
+
+	bool GUIIMEDelegate::attachWithIME()
+	{
+		return GUIIMEDispatcher::GetInstance().attachDelegateWithIME(this);
+	}
+
+	bool GUIIMEDelegate::detachWithIME()
+	{
+		return GUIIMEDispatcher::GetInstance().detachDelegateWithIME(this);
+	}
+
+}// namespace ParaEngine
+
+#endif // PARAENGINE_MOBILE

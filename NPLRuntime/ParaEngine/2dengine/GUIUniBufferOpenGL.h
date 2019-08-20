@@ -21,6 +21,7 @@ namespace ParaEngine {
 		const char16_t* GetBuffer() const;
 
 		const std::string& GetUtf8Text() const;
+		const std::u16string& GetUtf16Text() const;
 
 		/**
 		@param nLength:	[in] Specifies the size, in bytes, of the buffer pointed to by the lpMultiByteStr parameter. If this value is zero, the function returns the number of bytes required for the buffer. (In this case, the lpMultiByteStr buffer is not used.)
@@ -101,6 +102,7 @@ namespace ParaEngine {
 
 
 		const std::string& GetUtf8Text() const;
+		const std::u16string& GetUtf16Text() const;
 
 		void Clear();
 

@@ -285,6 +285,34 @@ namespace ParaEngine {
         return true;
     }
 
+    std::u16string JniHelper::getStringUTF16CharsJNI(JNIEnv* env, jstring srcjStr, bool* ret)
+    {
+        if (srcjStr != nullptr)
+        {
+            const unsigned short * unicodeChar = (const unsigned short *)env->GetStringChars(srcjStr, nullptr);
+            size_t unicodeCharLength = env->GetStringLength(srcjStr);
+            std::u16string unicodeStr((const char16_t *)unicodeChar, unicodeCharLength);
+
+            if (ret)
+            {
+                *ret = true;
+            }
+
+            env->ReleaseStringChars(srcjStr, unicodeChar);
+
+            return unicodeStr;
+        }
+        else
+        {
+            if (ret)
+            {
+                *ret = false;
+            }
+
+            return std::u16string();
+        }
+    }
+
 	std::string JniHelper::getStringUTFCharsJNI(JNIEnv* env, jstring srcjStr, bool* ret)
 	{
 		std::string utf8Str;
@@ -332,6 +360,12 @@ namespace ParaEngine {
 		jstring stringText = env->NewString((const jchar*)utf16Str.data(), utf16Str.length());
 		return stringText;
 	}
+
+    jstring JniHelper::newStringUTF16JNI(JNIEnv* env, const std::u16string& utf16Str)
+    {
+        jstring stringText = env->NewString((const jchar*)utf16Str.data(), utf16Str.length());
+        return stringText;
+    }
 
     std::string JniHelper::jstring2string(jstring jstr) {
         if (jstr == nullptr) {

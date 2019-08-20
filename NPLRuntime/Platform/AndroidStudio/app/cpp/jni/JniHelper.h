@@ -33,7 +33,9 @@ namespace ParaEngine {
 		static jclass getClassID(const char *className);
 
 		static std::string getStringUTFCharsJNI(JNIEnv* env, jstring srcjStr, bool* ret = nullptr);
+		static std::u16string getStringUTF16CharsJNI(JNIEnv* env, jstring srcjStr, bool* ret = nullptr);
 		static jstring newStringUTFJNI(JNIEnv* env, const std::string& utf8Str, bool* ret = nullptr);
+		static jstring newStringUTF16JNI(JNIEnv* env, const std::u16string& utf16Str);
 
 		static bool setClassLoaderFrom(jobject activityInstance);
 		static bool getStaticMethodInfo(JniMethodInfo &methodinfo,

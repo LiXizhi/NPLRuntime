@@ -174,6 +174,16 @@ const string& CGlobals::GetString(int nStringID)
 	return empty;
 }
 
+const std::u16string& CGlobals::GetUTF16String(int nStringID)
+{
+	static std::u16string empty;
+
+	if (nStringID == 0)
+		return empty;
+	//TODO: add other string ID
+	return empty;
+}
+
 ParaEngineSettings& CGlobals::GetSettings()
 {
 	return ParaEngineSettings::GetSingleton();

@@ -15,6 +15,9 @@ namespace ParaEngine
 	// EditBox control
 	//-----------------------------------------------------------------------------
 	class CGUIEditBox : public CGUIBase
+#ifdef PARAENGINE_MOBILE
+		, public GUIIMEDelegate
+#endif
 	{
 	public:
 		//////////////////////////////////////////////////////////////////////////
@@ -185,16 +188,15 @@ namespace ParaEngine
 #ifdef PARAENGINE_MOBILE
 		// ime delegate implementation. 
 	public:
-		virtual bool attachWithIME();
-		virtual bool detachWithIME();
+		virtual bool attachWithIME() override;
+		virtual bool detachWithIME() override;
 	protected:
-		virtual bool canAttachWithIME();
-		virtual void didAttachWithIME();
-		virtual bool canDetachWithIME();
-		virtual void didDetachWithIME();
-		virtual void insertText(const char * text, size_t len);
-		virtual void deleteBackward();
-		virtual const std::string& getContentText();
+		virtual bool canAttachWithIME() override;
+		virtual void didAttachWithIME() override;
+		virtual bool canDetachWithIME() override;
+		virtual void didDetachWithIME() override;
+		virtual const std::string& getContentText() override;
+		virtual const std::u16string& getContentUTF16Text() override;
 #endif
 	protected:
 		static const IType* m_type;

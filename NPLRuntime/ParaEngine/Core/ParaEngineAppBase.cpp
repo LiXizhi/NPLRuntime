@@ -797,6 +797,11 @@ bool ParaEngine::CParaEngineAppBase::InitCommandLineParams()
 	return true;
 }
 
+void ParaEngine::CParaEngineAppBase::setIMEKeyboardState(bool bOpen)
+{
+
+}
+
 bool ParaEngine::CParaEngineAppBase::ForceRender()
 {
 	if (!getRenderEnabled())

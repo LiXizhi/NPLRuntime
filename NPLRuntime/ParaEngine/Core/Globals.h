@@ -60,6 +60,7 @@ namespace ParaEngine
 		/** get static string used in the game engine. 
 		@param nStringID: if this is 0, "" is returned. see GLOBAL_STRING_ID */
 		static const string& GetString(int nStringID=0);
+		static const std::u16string& GetUTF16String(int nStringID = 0);
 		/** return whether frame based report will be generated for a specified item,
 		* @params itemName: name of the report item to check, this can be NULL.
 		* @return: return true if report should be generated.

@@ -1753,23 +1753,30 @@ int ParaEngine::CGUIEditBox::GetTextA(std::string& out)
 void ParaEngine::CGUIEditBox::OnSelectStart()
 {
 #ifdef PARAENGINE_MOBILE
-	//if (m_bHasFocus)
-//		attachWithIME();
+	if (m_bHasFocus)
+		attachWithIME();
 #endif
 }
 
 #ifdef PARAENGINE_MOBILE
 bool ParaEngine::CGUIEditBox::attachWithIME()
 {
-	//bool ret = GUIIMEDelegate::attachWithIME();
-	//return ret;
-	return true;
+	bool ret = GUIIMEDelegate::attachWithIME();
+	if (ret)
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(true);
+	}
+	return ret;
 }
 
 bool ParaEngine::CGUIEditBox::detachWithIME()
 {
-	//bool ret = GUIIMEDelegate::detachWithIME();
-	//return ret;
+	bool ret = GUIIMEDelegate::detachWithIME();
+	if (ret)
+	{
+		CGlobals::GetApp()->setIMEKeyboardState(false);
+	}
+
 	return true;
 }
 
@@ -1791,42 +1798,17 @@ void ParaEngine::CGUIEditBox::didDetachWithIME()
 {
 }
 
-void ParaEngine::CGUIEditBox::insertText(const char * text, size_t len)
-{
-	//OUTPUT_LOG("IME insert text %s\n", text);
-	std::string str;
-	str.reserve(len);
-	for (size_t i = 0; i < len; ++i)
-	{
-		char c = text[i];
-		// skip \r\n character. 
-		if (c != '\r' && c != '\n' && c != '\0')
-			str.push_back(c);
-	}
-	// OUTPUT_LOG("GUI editbox : insert text: %s (count:%d)\n", str.c_str(), (int)str.size());
-	// m_Buffer.SetTextA(str.c_str());
-	m_Buffer.InsertStringA(-1, str.c_str(), str.size());
-	m_bIsModified = true;
-	OnModify();
-	SetCaretPosition(-1);
-}
 
-void ParaEngine::CGUIEditBox::deleteBackward()
+const std::u16string& ParaEngine::CGUIEditBox::getContentUTF16Text()
 {
-	// deletion is handled via MsgProc under win32
-#ifndef WIN32
-	m_Buffer.RemoveChar(-1);
-	SetCaretPosition(-1);
-	m_bIsModified = true;
-	OnModify();
-#endif
+	return m_Buffer.GetUtf16Text();
 }
 
 const std::string& ParaEngine::CGUIEditBox::getContentText()
 {
 	return m_Buffer.GetUtf8Text();
 }
-#endif
+#endif // PARAENGINE_MOBILE
 
 const std::string& ParaEngine::CGUIEditBox::GetEmptyText()
 {

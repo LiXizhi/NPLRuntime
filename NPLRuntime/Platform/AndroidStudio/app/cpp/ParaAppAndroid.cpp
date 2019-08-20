@@ -5,6 +5,7 @@
 // Date: 2018.3
 //-----------------------------------------------------------------------
 #include "ParaAppAndroid.h"
+#include "jni/ParaEngineNativeView.h"
 using namespace  ParaEngine;
 
 IParaEngineApp* CreateParaEngineApp()
@@ -12,12 +13,7 @@ IParaEngineApp* CreateParaEngineApp()
 	return new CParaEngineAppAndroid(nullptr);
 }
 
-void ParaEngine::CParaEngineAppAndroid::GetScreenResolution(Vector2* pOut)
-{
-	// should return full render window 
-	pOut->x = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
-	pOut->y = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
-}
+
 
 ParaEngine::CParaEngineAppAndroid::CParaEngineAppAndroid(struct android_app* state):m_appState(state)
 {
@@ -95,4 +91,16 @@ bool ParaEngine::CParaEngineAppAndroid::GetToggleSoundWhenNotFocused()
 HRESULT ParaEngine::CParaEngineAppAndroid::DoWork()
 {
 	return CParaEngineAppBase::DoWork();
+}
+
+void ParaEngine::CParaEngineAppAndroid::GetScreenResolution(Vector2* pOut)
+{
+	// should return full render window
+	pOut->x = CGlobals::GetApp()->GetRenderWindow()->GetWidth();
+	pOut->y = CGlobals::GetApp()->GetRenderWindow()->GetHeight();
+}
+
+void ParaEngine::CParaEngineAppAndroid::setIMEKeyboardState(bool bOpen)
+{
+	ParaEngineNativeView::setIMEKeyboardState(bOpen);
 }

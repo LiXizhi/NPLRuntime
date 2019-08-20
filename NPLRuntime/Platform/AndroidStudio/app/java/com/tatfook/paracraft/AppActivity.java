@@ -1,34 +1,25 @@
 package com.tatfook.paracraft;
 
-import android.view.KeyEvent;  
+import android.view.KeyEvent;
 import android.content.pm.PackageManager;
 import android.content.pm.ActivityInfo;
-import android.content.pm.ApplicationInfo;
 import android.view.ViewGroup;
-import android.view.View;
+import android.view.Surface;
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.content.pm.PackageManager;
+
 import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
-import android.os.MessageQueue;
-import android.util.AttributeSet;
 import android.view.InputQueue;
-import android.view.Surface;
 import android.view.SurfaceHolder;
-import android.view.View;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import dalvik.system.BaseDexClassLoader;
 import android.app.Activity;
-import android.view.ViewGroup;
 import java.io.File;
-import android.preference.PreferenceManager.OnActivityResultListener;
 import android.util.Log;
 import android.content.Intent;
 import java.lang.reflect.Method;
@@ -106,6 +97,9 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 
 	private ArrayList<Runnable> mEventQueue = new ArrayList<Runnable>();
 
+	public ParaEngineNativeView getNativeContentView() {
+		return mNativeContentView;
+	}
 
 	@Override    
     public boolean onKeyUp(int keyCode, KeyEvent event) {    
@@ -249,8 +243,22 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 		mFrameLayout = new ResizeLayout(this);
 		mFrameLayout.setLayoutParams(framelayout_params);
 
+		// ParaEngineEditBox layout
+		ViewGroup.LayoutParams edittext_layout_params =
+				new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+						ViewGroup.LayoutParams.WRAP_CONTENT);
+		ParaEngineEditBox edittext = new ParaEngineEditBox(this);
+		edittext.setLayoutParams(edittext_layout_params);
+		edittext.setMultilineEnabled(false);
+		edittext.setReturnType(0);
+		edittext.setInputMode(6);
+		edittext.setEnabled(false);
+
+		mFrameLayout.addView(edittext);
+
 		// ...add to FrameLayout
         mFrameLayout.addView(mNativeContentView);
+		mNativeContentView.setParaEditText(edittext);
 
 		// Set framelayout as the content view
         setContentView(mFrameLayout);

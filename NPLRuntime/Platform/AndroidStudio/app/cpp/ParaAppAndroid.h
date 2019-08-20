@@ -71,7 +71,8 @@ namespace ParaEngine
 		virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
 		virtual bool GetToggleSoundWhenNotFocused() override;
 		virtual HRESULT DoWork() override;
-		virtual void GetScreenResolution(Vector2* pOut);
+		virtual void GetScreenResolution(Vector2* pOut) override;
+		virtual void setIMEKeyboardState(bool bOpen) override;
 	protected:
 		struct android_app* m_appState;
 	};

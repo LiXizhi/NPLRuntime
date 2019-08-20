@@ -411,6 +411,11 @@ namespace ParaEngine {
 		return m_utf8Text;
 	}
 
+	const std::u16string& CUniLine::GetUtf16Text() const
+	{
+		return m_utf16Text;
+	}
+
 	//--------------------------------------------------------------------------------------
 	CUniBuffer::CUniBuffer(int nInitialSize)
 		: m_bMultiline(false), m_curLine(NULL),m_pFontNode(nullptr)
@@ -679,6 +684,14 @@ namespace ParaEngine {
 			return m_lines.front()->GetUtf8Text();
 		else
 			return CGlobals::GetString(0);
+	}
+
+	const std::u16string& CUniBuffer::GetUtf16Text() const
+	{
+		if (!m_lines.empty())
+			return m_lines.front()->GetUtf16Text();
+		else
+			return CGlobals::GetUTF16String(0);
 	}
 
 } // end namespace

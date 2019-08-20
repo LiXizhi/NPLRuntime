@@ -58,6 +58,8 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() override;
 
 		virtual void onCmdLine(const std::string& cmd);
+
+		virtual void setIMEKeyboardState(bool bOpen) override;
 		
 		/** return true if this is a render tick, otherwise false.
 		* @param pNextInterval: main_loop timer interval.

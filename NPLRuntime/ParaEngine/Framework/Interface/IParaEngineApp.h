@@ -518,6 +518,8 @@ namespace ParaEngine
 		virtual bool GetToggleSoundWhenNotFocused() = 0;
 
 		virtual CViewportManager* GetViewportManager() = 0;
+
+		virtual void setIMEKeyboardState(bool bOpen) = 0;
 	};
 
 }
