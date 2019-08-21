@@ -18,6 +18,7 @@
 #define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "ParaEngine", __VA_ARGS__))
 #endif
 
+using namespace std;
 
 /** the etc length when too many characters are printed. This is larger then strlen("...\n")*/
 #define LOG_TAIL_ETC_LENGTH		5
@@ -269,11 +270,18 @@ namespace ParaEngine
 			return;
 		}
 #if ANDROID
-		LOGI(pStr);
+	LOGI(pStr);
 #endif
 
 #if __APPLE__
-     printf(pStr);
+    int appleStrLength = strnlen(pStr, 1000);
+	if (appleStrLength > 0 && appleStrLength < 1000) {
+		printf(pStr);
+	} else {
+        char pDest[200] = {""};
+        strncpy(pDest, pStr, 199);
+        printf(pDest);
+	}
 #endif
 
 #if defined(WIN32) && defined(_DEBUG) 
