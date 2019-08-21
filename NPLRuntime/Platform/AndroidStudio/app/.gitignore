@@ -1,5 +1,6 @@
 /build
 /.externalNativeBuild
+/.cxx
 assets
 Paracraft.iml
 .DS_Store
