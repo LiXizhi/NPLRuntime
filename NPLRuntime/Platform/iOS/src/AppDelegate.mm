@@ -13,6 +13,9 @@
 #include "RenderWindowiOS.h"
 #include "ParaEngineSettings.h"
 
+#include "2dengine/GUIIMEDelegate.h"
+#include "2dengine/GUIRoot.h"
+
 using namespace ParaEngine;
 
 @interface AppDelegate ()
@@ -20,6 +23,8 @@ using namespace ParaEngine;
 @end
 
 @implementation AppDelegate
+
+@synthesize mTextField;
 
 - (void)InitLanguage
 {
@@ -163,7 +168,15 @@ using namespace ParaEngine;
     self.displayLink = [CADisplayLink displayLinkWithTarget:self selector:@selector(update)];
     self.displayLink.paused = NO;
     [self.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    
+    //
+    mTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, -10, -10)];
+    mTextField.delegate = self;
+    mTextField.keyboardType = UIKeyboardTypeDefault;
+    mTextField.userInteractionEnabled = NO;
+    [view addSubview:mTextField];
 
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyPressed:) name:UITextFieldTextDidChangeNotification object:nil];
     
     return YES;
 }
@@ -222,5 +235,75 @@ using namespace ParaEngine;
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
 
+- (void)setIMEKeyboardState:(BOOL)bOpen
+{
+    if (bOpen && mTextField.userInteractionEnabled == NO)
+    {
+        mTextField.enablesReturnKeyAutomatically = NO;
+        mTextField.text = @" ";
+        mTextField.clearsOnBeginEditing = NO;
+        mTextField.userInteractionEnabled = YES;
+        [mTextField becomeFirstResponder];
+    }
+    else if (!bOpen && mTextField.userInteractionEnabled == YES)
+    {
+        mTextField.userInteractionEnabled = NO;
+        [mTextField resignFirstResponder];
+    }
+}
+
+- (void)keyPressed:(NSNotification*)notification
+{
+    UITextField* textField = notification.object;
+    
+    if (textField == mTextField && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    {
+        auto size = [textField.text length];
+        if (size > 1)
+        {
+            auto pGUI = CGUIRoot::GetInstance()->GetUIKeyFocus();
+            if (pGUI)
+            {
+                std::wstring s;
+                for (int i = 1; i < size; i++)
+                {
+                    s += (WCHAR)[textField.text characterAtIndex:i];
+                }
+                
+                pGUI->OnHandleWinMsgChars(s);
+            }
+            
+            textField.text = @" ";
+            
+        }
+        else if (size == 0)
+        {
+            auto pGUI = CGUIRoot::GetInstance();
+            if (pGUI)
+            {
+                pGUI->SendKeyDownEvent(EVirtualKey::KEY_BACK);
+                pGUI->SendKeyUpEvent(EVirtualKey::KEY_BACK);
+            }
+            
+            textField.text = @" ";
+        }
+    }
+    
+}
+
+- (BOOL)textFieldShouldReturn:(UITextField *)textField
+{
+    if (textField == mTextField && CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+    {
+        auto pGUI = CGUIRoot::GetInstance();
+        if (pGUI)
+        {
+            pGUI->SendKeyDownEvent(EVirtualKey::KEY_RETURN);
+            pGUI->SendKeyUpEvent(EVirtualKey::KEY_RETURN);
+        }
+    }
+    
+    return NO;
+}
 
 @end

@@ -1,5 +1,6 @@
 
 #pragma once
+#include "AppDelegate.h"
 #include "ParaEngine.h"
 #include "ParaEngineSettings.h"
 #include "util/os_calls.h"
@@ -72,7 +73,7 @@ namespace ParaEngine
         virtual void SetToggleSoundWhenNotFocused(bool bEnabled) override;
         virtual bool GetToggleSoundWhenNotFocused() override;
         virtual int Run(HINSTANCE hInstance) override;
-
+        virtual void setIMEKeyboardState(bool bOpen) override;
 
     protected:
 
