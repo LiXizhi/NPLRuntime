@@ -9,8 +9,8 @@ android {
         applicationId "com.tatfook.paracraft"
         minSdkVersion PROP_MIN_SDK_VERSION
         targetSdkVersion PROP_TARGET_SDK_VERSION
-        versionCode 5
-        versionName "1.4.1"
+        versionCode 6
+        versionName "1.4.2"
 
         externalNativeBuild {
              cmake {
