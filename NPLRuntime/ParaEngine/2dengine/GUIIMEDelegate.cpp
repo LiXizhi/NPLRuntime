@@ -142,7 +142,7 @@ namespace ParaEngine {
 			if (!delegate)
 				break;
 
-			auto end = _impl->_delegateList.begin();
+			auto end = _impl->_delegateList.end();
 			auto iter = _impl->findDelegate(delegate);
 
 			// if pDelegate is not in delegate list, return
