@@ -16,9 +16,11 @@
 #   public *;
 #}
 
-# Proguard Cocos2d-x for release
--keep public class org.cocos2dx.** { *; }
--dontwarn org.cocos2dx.**
+# Proguard paracraft for release
+-keep public class com.tatfook.** { *; }
+-dontwarn com.tatfook.**
+-keep public class plugin.** { *; }
+-dontwarn plugin.**
 -keep public class com.chukong.** { *; }
 -dontwarn com.chukong.**
 -keep public class com.huawei.android.** { *; }

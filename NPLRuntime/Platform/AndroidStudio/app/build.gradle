@@ -60,11 +60,8 @@ android {
             debuggable false
             jniDebuggable false
             renderscriptDebuggable false
-            /*
-                enabled minify and shrink will lead to exceptions
-             */
-            minifyEnabled false
-            shrinkResources false
+            minifyEnabled true
+            shrinkResources true
             zipAlignEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (project.hasProperty("RELEASE_STORE_FILE")) {
