@@ -56,8 +56,29 @@ JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineNativeView_nativeOnU
             pGUI->OnHandleWinMsgChars(s);
         }
     }
-
 }
 
+JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineNativeView_onKeyBack(JNIEnv* env, jobject clazz, jboolean bDown)
+{
+    if (CGlobals::GetApp()->GetAppState() != PEAppState_Ready)
+    {
+        return;
+    }
+    auto pGUI = CGUIRoot::GetInstance();
+    if (pGUI)
+    {
+        if (bDown)
+            pGUI->SendKeyDownEvent(EVirtualKey::KEY_ESCAPE);
+        else
+            pGUI->SendKeyUpEvent(EVirtualKey::KEY_ESCAPE);
+    }
+
+    return;
+}
+
+JNIEXPORT void JNICALL Java_com_tatfook_paracraft_ParaEngineNativeView_onKeyMenu(JNIEnv* env, jobject clazz, jboolean bDown)
+{
+    return;
+}
 
 } // extern "C"

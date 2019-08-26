@@ -24,6 +24,8 @@ public class ParaEngineNativeView extends SurfaceView {
 
 	private static native void nativeDeleteBackward();
 	private static native void nativeOnUnicodeChar(String text);
+	private native void onKeyBack(boolean bDown);
+	private native void onKeyMenu(boolean bDown);
 
 	// TODO Static handler -> Potential leak!
 	private static Handler sHandler = null;
@@ -120,19 +122,60 @@ public class ParaEngineNativeView extends SurfaceView {
 
 
 
-	@Override    
-    public boolean onKeyUp(int keyCode, KeyEvent event) {    
-		boolean bResult = super.onKeyUp(keyCode, event);
-        if ((keyCode == KeyEvent.KEYCODE_BACK)) {    
-			Log.i("ParaEngine", "ParaEngineNativeView::onKeyDown");
-            return false; 
-		}
-		else if (keyCode == KeyEvent.KEYCODE_MENU) {
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event) {
+		if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+
+			sActivity.runOnGLThread(new Runnable() {
+				@Override
+				public void run() {
+					onKeyBack(false);
+				}
+			});
+
+
 			return false;
 		}
-        else {    
-            return bResult;
-        }    
+		else if (keyCode == KeyEvent.KEYCODE_MENU) {
+			sActivity.runOnGLThread(new Runnable() {
+				@Override
+				public void run() {
+					onKeyMenu(false);
+				}
+			});
+
+			return false;
+		}
+		else {
+			return super.onKeyUp(keyCode, event);
+		}
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+			sActivity.runOnGLThread(new Runnable() {
+				@Override
+				public void run() {
+					onKeyBack(true);
+				}
+			});
+
+			return false;
+		}
+		else if (keyCode == KeyEvent.KEYCODE_MENU) {
+			sActivity.runOnGLThread(new Runnable() {
+				@Override
+				public void run() {
+					onKeyMenu(true);
+				}
+			});
+
+			return false;
+		}
+		else {
+			return super.onKeyDown(keyCode, event);
+		}
 	}
 
 	public ParaEngineEditBox getParaEditText() {

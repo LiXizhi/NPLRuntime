@@ -6,6 +6,9 @@
 //----------------------------------------------------------------------
 #include "AppActivity.h"
 #include "JniHelper.h"
+
+#include "2dengine/GUIRoot.h"
+
 #include <jni.h>
 #include <android/log.h>
 #include <android/native_activity.h>
@@ -497,4 +500,11 @@ extern "C" {
 		
 		return (jlong)code.release();
 	}
+
+    JNIEXPORT void JNICALL Java_com_tatfook_paracraft_AppActivity_onKeyBack(JNIEnv* env, jobject clazz, jboolean bDown)
+    {
+        return;
+    }
+
+
 }

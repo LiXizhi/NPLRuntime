@@ -397,9 +397,14 @@ int32_t AppDelegate::handle_key_input(AppDelegate* app, AInputEvent* event)
 
 	int32_t keycode = AKeyEvent_getKeyCode(event);
 
-	key = toVirtualKey(keycode);
-	app->OnKey(key, state);
-	return 1;
+	if (AKEYCODE_BACK == keycode)
+		return 0;
+	else
+	{
+		key = toVirtualKey(keycode);
+		app->OnKey(key, state);
+		return 1;
+	}
 }
 
 int32_t AppDelegate::app_handle_input(struct android_app* app, AInputEvent* event)

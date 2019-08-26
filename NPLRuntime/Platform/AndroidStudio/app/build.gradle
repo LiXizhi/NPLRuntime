@@ -1,6 +1,8 @@
 import org.gradle.internal.os.OperatingSystem;
 
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 
 android {
     compileSdkVersion PROP_COMPILE_SDK_VERSION.toInteger()
@@ -36,7 +38,7 @@ android {
     externalNativeBuild {
 
         cmake {
-            version "3.15.2"
+            version "3.14.5"
             path "../../../CMakeLists.txt"
         }
     }
@@ -109,5 +111,10 @@ android.applicationVariants.all { variant ->
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'org.jetbrains:annotations-java5:15.0'
+    //implementation 'org.jetbrains:annotations-java5:15.0'
+    implementation 'org.jetbrains:annotations:13.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.41"
+}
+repositories {
+    mavenCentral()
 }
