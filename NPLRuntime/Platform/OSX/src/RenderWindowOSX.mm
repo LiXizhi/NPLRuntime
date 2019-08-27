@@ -177,14 +177,17 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     id menubar = [[NSMenu alloc] initWithTitle:appName];
     id appMenuItem = [NSMenuItem new];
     [menubar addItem: appMenuItem];
-    [NSApp setMainMenu:menubar];
+    
     
     id appMenu = [NSMenu new];
     id quitMenuItem = [[NSMenuItem alloc] initWithTitle:@"Quit"
                                                  action:@selector(terminate:)
                                           keyEquivalent:@"q"];
+  
     [appMenu addItem:quitMenuItem];
     [appMenuItem setSubmenu:appMenu];
+    
+    [NSApp setMainMenu:menubar];
     //*/
     
     //NSMenu* rootMenu = [NSApp mainMenu];
@@ -404,7 +407,8 @@ void RenderWindowOSX::PollEvents() {
                 }
 
                 OnKey(vk, EKeyState::PRESS);
-                bIsProcessed = true;
+
+                bIsProcessed = (event.modifierFlags & NSEventModifierFlagCommand) == 0;
             }
         }
             break;
@@ -429,7 +433,8 @@ void RenderWindowOSX::PollEvents() {
                 uint32_t keycode = (uint32_t)[event keyCode];
                 EVirtualKey vk = toVirtualKey(keycode);
                 OnKey(vk, EKeyState::RELEASE);
-                bIsProcessed = true;
+                
+                bIsProcessed = (event.modifierFlags & NSEventModifierFlagCommand) == 0;
             }
         }
             break;
