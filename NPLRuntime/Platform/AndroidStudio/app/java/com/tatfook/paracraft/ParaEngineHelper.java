@@ -5,7 +5,9 @@ import java.util.Locale;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.support.annotation.Keep;
 
+@Keep
 public class ParaEngineHelper {
 
 	public static String getCurrentLanguage() {

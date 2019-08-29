@@ -1,5 +1,6 @@
 package com.tatfook.paracraft;
 
+import android.support.annotation.Keep;
 import android.util.Log;
 
 import org.jetbrains.annotations.NotNull;
@@ -8,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+@Keep
 public class ParaEngineReflectionHelper {
     @Nullable
     @SuppressWarnings("unchecked")

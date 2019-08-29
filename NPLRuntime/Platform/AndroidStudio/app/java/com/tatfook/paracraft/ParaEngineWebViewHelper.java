@@ -2,6 +2,7 @@ package com.tatfook.paracraft;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.Keep;
 import android.util.SparseArray;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -79,6 +80,7 @@ public class ParaEngineWebViewHelper {
 
 	private static WebView mWebView = null;
 
+	@Keep
 	public static void closeWebView() {
 		sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -96,7 +98,7 @@ public class ParaEngineWebViewHelper {
 
 	
    
-
+    @Keep
 	public static void openWebView(final int x, final int y, final int w, final int h, final String url) {
 		sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -153,6 +155,7 @@ public class ParaEngineWebViewHelper {
 		
 	}
 
+	@Keep
 	public static int createWebView(final int x, final int y, final int w, final int h) {
 		final int index = viewTag;
 		
@@ -186,6 +189,7 @@ public class ParaEngineWebViewHelper {
         return viewTag++;
 	}
 
+	@Keep
 	public static void removeWebView(final int index) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -212,6 +216,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void SetHideViewWhenClickBack(final int index, final boolean b) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -224,6 +229,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void setWebViewRect(final int index, final int left, final int top, final int maxWidth, final int maxHeight) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -236,6 +242,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void setJavascriptInterfaceScheme(final int index, final String scheme) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -248,6 +255,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void loadData(final int index, final String data, final String mimeType, final String encoding, final String baseURL) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -260,6 +268,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void loadHTMLString(final int index, final String data, final String baseUrl) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -272,6 +281,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void loadUrl(final int index, final String url, final boolean cleanCachedData) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -286,6 +296,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void loadFile(final int index, final String filePath) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -298,6 +309,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void stopLoading(final int index) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -328,6 +340,7 @@ public class ParaEngineWebViewHelper {
         return task.get();
     }
 
+    @Keep
 	public static boolean canGoBack(final int index) {
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -345,6 +358,7 @@ public class ParaEngineWebViewHelper {
         }
     }
 
+    @Keep
 	public static boolean canGoForward(final int index) {
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -362,6 +376,7 @@ public class ParaEngineWebViewHelper {
         }
     }
 
+    @Keep
 	public static void goBack(final int index) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -374,6 +389,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void goForward(final int index) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -386,6 +402,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void evaluateJS(final int index, final String js) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -398,6 +415,7 @@ public class ParaEngineWebViewHelper {
         });
     }
 
+    @Keep
 	public static void setScalesPageToFit(final int index, final boolean scalesPageToFit) {
         sActivity.runOnUiThread(new Runnable() {
             @Override
@@ -409,8 +427,7 @@ public class ParaEngineWebViewHelper {
             }
         });
     }
-
-
+    @Keep
 	public static void setViewAlpha(final int index, final float alpha) {
 
         sActivity.runOnUiThread(new Runnable() {

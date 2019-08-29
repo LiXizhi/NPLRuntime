@@ -1,5 +1,6 @@
 package com.tatfook.paracraft;
 
+import android.support.annotation.Keep;
 import android.view.KeyEvent;
 import android.content.pm.PackageManager;
 import android.content.pm.ActivityInfo;
@@ -21,6 +22,7 @@ import android.app.Activity;
 import java.io.File;
 import android.util.Log;
 import android.content.Intent;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -225,6 +227,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 
 	}
 
+	@Keep
 	public void processGLEvent() {
 		synchronized(this)
 		{
@@ -238,6 +241,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 
 	private boolean m_bFirstGet = true;
 
+	@Keep
 	public String getLauncherIntentData() {
 		if (m_bFirstGet) {
 			Intent intent = getIntent();
@@ -252,6 +256,7 @@ public class AppActivity extends Activity implements InputQueue.Callback, OnGlob
 		return "";
 	}
 
+	@Keep
 	public String getFileDirsPath() {
 		return getFilesDir().getAbsolutePath();
 	}

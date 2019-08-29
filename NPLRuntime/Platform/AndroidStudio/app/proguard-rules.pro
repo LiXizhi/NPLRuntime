@@ -17,8 +17,8 @@
 #}
 
 # Proguard paracraft for release
--keep public class com.tatfook.** { *; }
--dontwarn com.tatfook.**
+#-keep public class com.tatfook.** { *; }
+#-dontwarn com.tatfook.**
 -keep public class plugin.** { *; }
 -dontwarn plugin.**
 -keep public class com.chukong.** { *; }

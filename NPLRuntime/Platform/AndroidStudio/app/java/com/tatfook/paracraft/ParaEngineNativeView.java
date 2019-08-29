@@ -4,6 +4,7 @@ package com.tatfook.paracraft;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.Keep;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -208,12 +209,14 @@ public class ParaEngineNativeView extends SurfaceView {
 		});
 	}
 
+	@Keep
 	public static void openIMEKeyboard() {
 		Message msg = new Message();
 		msg.what = HANDLER_OPEN_IME_KEYBOARD;
 		sHandler.sendMessage(msg);
 	}
 
+	@Keep
 	public static void closeIMEKeyboard() {
 		Message msg = new Message();
 		msg.what = HANDLER_CLOSE_IME_KEYBOARD;
