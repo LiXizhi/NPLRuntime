@@ -276,11 +276,11 @@ namespace ParaEngine
 #if __APPLE__
     int appleStrLength = strnlen(pStr, MAX_DEBUG_STRING_LENGTH);
 	if (appleStrLength > 0 && appleStrLength < MAX_DEBUG_STRING_LENGTH) {
-        cout << pStr << endl;
+        printf("%s", pStr);
 	} else {
         char pDest[MAX_DEBUG_STRING_LENGTH] = {""};
         strncpy(pDest, pStr, MAX_DEBUG_STRING_LENGTH);
-        cout << pDest << endl;
+        printf("%s", pDest);
 	}
 #endif
 

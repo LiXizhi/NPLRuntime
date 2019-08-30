@@ -389,11 +389,6 @@ void RenderWindowOSX::PollEvents() {
             {
                 NSString *chrs = [event characters];
 
-                if ([chrs isEqualToString:@"q"]) {
-                    [[NSRunningApplication currentApplication] terminate];
-                    return;
-                }
-
                 uint32_t keycode = (uint32_t)[event keyCode];
                 EVirtualKey vk = toVirtualKey(keycode);
                 
