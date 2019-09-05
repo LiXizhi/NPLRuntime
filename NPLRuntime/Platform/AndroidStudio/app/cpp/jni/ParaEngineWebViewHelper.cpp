@@ -28,6 +28,11 @@ namespace ParaEngine {
 		return ParaEngineWebView::createWebView(x, y, w, h);
 	}
 
+	IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+	{
+		return ParaEngineWebView::createWebView(x, y, w, h);
+	}
+
 	ParaEngineWebView::ParaEngineWebView()
 		: m_handle(-1)
 	{

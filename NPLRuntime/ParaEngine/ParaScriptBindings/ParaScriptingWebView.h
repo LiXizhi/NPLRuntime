@@ -15,6 +15,7 @@ namespace ParaScripting
 		ParaWebView(IParaWebView* wv);
 	public:
 		static ParaWebView createWebView(int x, int y, int w, int h);
+		static ParaWebView createSubViewView(int x, int y, int w, int h);
 
 		ParaAttributeObject GetAttributeObject();
 		void loadUrl1(const std::string &url);
