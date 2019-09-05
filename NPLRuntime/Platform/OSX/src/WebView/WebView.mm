@@ -23,8 +23,6 @@
 @interface WebViewWindowController () <WKNavigationDelegate, WKUIDelegate>
 {
     WKWebView *webView;
-
-    
 }
 @property (assign) IBOutlet WKWebView *webView;
 //@property (nonatomic) std::function<void()> onCloseCallback;
@@ -72,7 +70,12 @@ namespace ParaEngine {
     {
         return ParaEngineWebView::createWebView(x, y, w, h);
     }
-    
+
+    IParaWebView* IParaWebView::createSubViewView()
+    {
+        return ParaEngineWebView::createWebView(0, 0, 100, 100);
+    }
+
     ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
     {
         auto  p = new ParaEngineWebView();
