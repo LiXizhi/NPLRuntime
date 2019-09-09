@@ -23,6 +23,7 @@ namespace ParaEngine {
         virtual ~ParaEngineWebView();
         
         static ParaEngineWebView* createWebView(int x, int y, int w, int h);
+        static ParaEngineWebView* createSubWebView(int x, int y, int w, int h);
         
         virtual void loadUrl(const std::string &url, bool cleanCachedData = false) override;
         virtual void setAlpha(float a) override;
@@ -34,7 +35,8 @@ namespace ParaEngine {
         virtual void bringToTop() override;
         
     protected:
-        void openWindow(int x, int y, int w, int h);
+        void openWindow(int x, int y, int w, int h, bool bSub);
+        
         
     protected:
         ParaEngineWebView();

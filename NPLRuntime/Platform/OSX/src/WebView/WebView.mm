@@ -12,7 +12,6 @@
 #include "WebView.h"
 
 
-
 @interface WebViewWindowController : NSWindowController
 {
     std::function<void()> _onCloseCallback;
@@ -23,8 +22,6 @@
 @interface WebViewWindowController () <WKNavigationDelegate, WKUIDelegate>
 {
     WKWebView *webView;
-
-    
 }
 @property (assign) IBOutlet WKWebView *webView;
 //@property (nonatomic) std::function<void()> onCloseCallback;
@@ -41,6 +38,18 @@
 
 - (void) setCloseCB: (const std::function<void()>&) cb {
     _onCloseCallback = cb;
+}
+
+- (void)autoResize  {
+    [[NSNotificationCenter defaultCenter] addObserver:self.window selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:self];
+}
+
+- (void)windowDidResize:(NSNotification*)aNotification {
+    
+    auto windowRect = [self.window frame];
+    auto contentRect = [self.window contentRectForFrameRect:windowRect];
+    [self.window.contentView setFrameSize:contentRect.size];
+    [webView setFrameSize:contentRect.size];
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
@@ -72,22 +81,51 @@ namespace ParaEngine {
     {
         return ParaEngineWebView::createWebView(x, y, w, h);
     }
-    
+
+    IParaWebView* IParaWebView::createSubViewView(int x, int y, int w, int h)
+    {
+        return ParaEngineWebView::createSubWebView(x, y, w, h);
+    }
+
     ParaEngineWebView* ParaEngineWebView::createWebView(int x, int y, int w, int h)
     {
         auto  p = new ParaEngineWebView();
         
-        p->openWindow(x, y, w, h);
+        p->openWindow(x, y, w, h, false);
         
         return p;
     }
     
-    void ParaEngineWebView::openWindow(int x, int y, int w, int h)
+    ParaEngineWebView* ParaEngineWebView::createSubWebView(int x, int y, int w, int h)
+    {
+        auto  p = new ParaEngineWebView();
+        
+        p->openWindow(x, y, w, h, true);
+        
+        return p;
+    }
+    
+    void ParaEngineWebView::openWindow(int x, int y, int w, int h, bool bSub)
     {
         if (!_webViewController)
         {
-            _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindow"];
-
+            if (bSub)
+            {
+                auto renderWindow = (NSWindow*)CGlobals::GetApp()->GetRenderWindow()->GetNativeHandle();
+                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindowWhioutTitleBar"];
+                
+                [renderWindow addChildWindow:_webViewController.window ordered:NSWindowAbove];
+                
+                x += renderWindow.frame.origin.x;
+                y = renderWindow.frame.origin.y + (renderWindow.contentView.frame.size.height - h) - y;
+            }
+            else
+            {
+                _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindow"];
+                [_webViewController autoResize];
+                 y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
+             }
+            
             _webViewController.hideViewWhenClickClose = FALSE;
 
             _webViewController.webView.navigationDelegate = _webViewController;
@@ -110,7 +148,10 @@ namespace ParaEngine {
 
         }
         [_webViewController.window orderFront:nil];
-
+       
+        [_webViewController.webView setFrameSize:NSMakeSize(w, h)];
+        [_webViewController.window setContentSize:_webViewController.webView.frame.size];
+         [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
     }
     
     ParaEngineWebView::ParaEngineWebView()
