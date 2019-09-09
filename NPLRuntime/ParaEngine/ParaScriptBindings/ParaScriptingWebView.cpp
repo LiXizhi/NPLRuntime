@@ -14,6 +14,11 @@ namespace ParaScripting
 		return ParaWebView(pWebView);
 	}
 
+	ParaWebView ParaWebView::createSubViewView(int x, int y, int w, int h)
+	{
+		auto pSubViewView = IParaWebView::createSubViewView(x, y, w, h);
+		return ParaWebView(pSubViewView);
+	}
 
 	ParaWebView::ParaWebView(IParaWebView* wv)
 	{
@@ -63,8 +68,9 @@ namespace ParaScripting
 					.def("GetAttributeObject", &ParaWebView::GetAttributeObject)
 					.def("loadUrl", &ParaWebView::loadUrl1)
 					.def("loadUrl", &ParaWebView::loadUrl2)
-					.def("closeAndRelease", &ParaWebView::closeAndRelease)
-				, def("createWebView", ParaWebView::createWebView)
+					.def("closeAndRelease", &ParaWebView::closeAndRelease),
+				def("createWebView", ParaWebView::createWebView),
+				def("createSubViewView", ParaWebView::createSubViewView)
 			]
 		];
 	}

@@ -387,7 +387,6 @@ void RenderWindowOSX::PollEvents() {
         {
             if(event.window == m_window)
             {
-
                 NSString *chrs = [event characters];
 
                 uint32_t keycode = (uint32_t)[event keyCode];

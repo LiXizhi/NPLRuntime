@@ -40,6 +40,7 @@ namespace ParaEngine {
 		virtual void addCloseListener(onCloseFunc fun) = 0;
 
 		static IParaWebView* createWebView(int x, int y, int w, int h);
+		static IParaWebView* createSubViewView(int x, int y, int w, int h);
 	};
 
 } // end namespace
