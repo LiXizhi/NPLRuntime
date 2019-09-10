@@ -436,4 +436,14 @@ namespace ParaEngine {
     {
         _onClose = fun;
     }
+
+    void ParaEngineWebView::move()
+    {
+        return;
+    }
+
+    void ParaEngineWebView::resize()
+    {
+        return;
+    }
 } // end namespcae

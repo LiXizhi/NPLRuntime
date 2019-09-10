@@ -35,7 +35,6 @@ namespace ParaEngine {
         virtual void bringToTop() override;
         virtual void move() override;
         virtual void resize() override;
-        virtual void close() override;
         
     protected:
         void openWindow(int x, int y, int w, int h, bool bSub);

@@ -245,9 +245,4 @@ namespace ParaEngine {
     {
         return;
     }
-
-    void ParaEngineWebView::close()
-    {
-        return;
-    }
 } // end namespcae
