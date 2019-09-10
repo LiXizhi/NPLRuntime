@@ -221,7 +221,7 @@ namespace ParaEngine
 	{
 		uint32_t numBones = paraXModel->m_objNum.nBones;
 		// calculate bones' absolute position
-		paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
+		//paraXModel->m_CurrentAnim = paraXModel->GetAnimIndexByID(0);
 		//for (uint32_t i = 0; i < numBones; i++)
 		//{
 		//	paraXModel->bones[i].calcMatrix(paraXModel->bones, paraXModel->m_CurrentAnim, paraXModel->m_BlendingAnim, paraXModel->blendingFactor);
@@ -326,8 +326,8 @@ namespace ParaEngine
 	void glTFModelExporter::ParseAnimationBones()
 	{
 		float inverse = 1.0f / 1000.0f;
-		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
-		if (animLength == 0) animLength = 1000;
+		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		//if (animLength == 0) animLength = 1000;
 		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
@@ -403,8 +403,8 @@ namespace ParaEngine
 	{
 		AnimIndex currentAnim(10000, 1, animProvider->anims[0].timeStart, animProvider->anims[0].timeEnd, animProvider->anims[0].loopType);
 		float inverse = 1.0f / 1000.0f;
-		uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
-		if (animLength == 0) animLength = 1000;
+		//uint32_t animLength = paraXModel->anims[0].timeEnd - paraXModel->anims[0].timeStart;
+		//if (animLength == 0) animLength = 1000;
 		for (uint32_t i = 0; i < paraXModel->m_objNum.nBones; i++)
 		{
 			Bone& bone = paraXModel->bones[i];
@@ -425,12 +425,12 @@ namespace ParaEngine
 			{
 				if (bone.trans.used || bone.rot.used || bone.scale.used)
 				{
-					uint32_t firstT = bone.trans.ranges[0].first;
-					uint32_t secondT = bone.trans.ranges[0].second;
-					uint32_t firstR = bone.rot.ranges[0].first;
-					uint32_t secondR = bone.rot.ranges[0].second;
-					uint32_t firstS = bone.scale.ranges[0].first;
-					uint32_t secondS = bone.scale.ranges[0].second;
+					uint32_t firstT = pCurBone->trans.ranges[0].first;
+					uint32_t secondT = pCurBone->trans.ranges[0].second;
+					uint32_t firstR = pCurBone->rot.ranges[0].first;
+					uint32_t secondR = pCurBone->rot.ranges[0].second;
+					uint32_t firstS = pCurBone->scale.ranges[0].first;
+					uint32_t secondS = pCurBone->scale.ranges[0].second;
 					uint32_t animStart = std::min(std::min(firstT, firstR), firstS);
 					uint32_t animEnd = std::max(std::max(secondT, secondR), secondS);
 
@@ -439,23 +439,33 @@ namespace ParaEngine
 					Vector3 t, s;
 					Quaternion q;
 					int nCurrentAnim = currentAnim.nIndex;
-					int nBlendingAnim = 0;
-					int blendingFrame = 0;
-					float blendingFactor = 0;
 					for (uint32_t j = animStart; j <= animEnd; j++)
 					{
 						if (secondT == animEnd)
-							time = bone.trans.times[j];
+							time = pCurBone->trans.times[j];
 						else if (secondR == animEnd)
-							time = bone.rot.times[j];
+							time = pCurBone->rot.times[j];
 						else if (secondS == animEnd)
-							time = bone.scale.times[j];
+							time = pCurBone->scale.times[j];
 						if (bone.bUsePivot)
+						{
 							q = pCurBone->rot.getValue(0, time);
+							if (!(bone.nBoneID == Bone_Root || (bone.nBoneID >= Bone_forehand && bone.nBoneID <= Bone_chin)))
+							{
+								t = bone.trans.getValue(currentAnim);
+							}
+							else
+							{
+								t = pCurBone->trans.getValue(0, time);
+								t *= (bone.pivot.y / pCurBone->pivot.y);
+							}
+						}
 						else
-							q = bone.rot.getValue(nCurrentAnim, time, nBlendingAnim, blendingFrame, blendingFactor);
+						{
+							q = bone.rot.getValue(nCurrentAnim, time);
+							t = bone.trans.getValue(currentAnim);
+						}
 						s = bone.scale.getValue(currentAnim);
-						t = bone.trans.getValue(currentAnim, paraXModel->m_CurrentAnim, blendingFactor);
 
 						Matrix4 mat;
 						if (bone.bUsePivot)
