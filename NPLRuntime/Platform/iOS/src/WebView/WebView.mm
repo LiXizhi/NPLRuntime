@@ -437,12 +437,12 @@ namespace ParaEngine {
         _onClose = fun;
     }
 
-    void ParaEngineWebView::move()
+    void ParaEngineWebView::move(int x, int y)
     {
         return;
     }
 
-    void ParaEngineWebView::resize()
+    void ParaEngineWebView::resize(int width, int height)
     {
         return;
     }

@@ -24,8 +24,8 @@ namespace ParaEngine {
         pClass->AddField("HideCloseButton", FieldType_Bool, (void*)hideCloseButton_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("bringToTop", FieldType_void, (void*)bringToTop_s, nullptr, nullptr, "", bOverride);
 		pClass->AddField("move", FieldType_void, (void*)move_s, nullptr, nullptr, "", bOverride);
-		pClass->AddField("resize", FieldType_void, (void*)resize_s, nullptr, nullptr, "", bOverride);
-		pClass->AddField("close", FieldType_void, (void*)close_s, nullptr, nullptr, "", bOverride);
+		pClass->AddField("resize", FieldType_Float_Float, (void*)resize_s, nullptr, nullptr, "", bOverride);
+		pClass->AddField("close", FieldType_Float_Float, (void*)close_s, nullptr, nullptr, "", bOverride);
 
 		return S_OK;
 	}

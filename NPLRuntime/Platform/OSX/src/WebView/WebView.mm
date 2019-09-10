@@ -236,12 +236,12 @@ namespace ParaEngine {
         
     }
 
-    void ParaEngineWebView::move()
+    void ParaEngineWebView::move(int x, int y)
     {
         return;
     }
 
-    void ParaEngineWebView::resize()
+    void ParaEngineWebView::resize(int width, int height)
     {
         return;
     }
