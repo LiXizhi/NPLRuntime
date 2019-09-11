@@ -24,8 +24,6 @@ namespace ParaEngine {
 		ATTRIBUTE_METHOD(IParaWebView, Refresh_s) { cls->Refresh(); return S_OK; }
         ATTRIBUTE_METHOD1(IParaWebView, hideCloseButton_s, bool) { cls->hideCloseButton(p1); return S_OK; }
 		ATTRIBUTE_METHOD(IParaWebView, bringToTop_s) { cls->bringToTop(); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebView, move_s, float) { cls->move(int x, int y); return S_OK; }
-        ATTRIBUTE_METHOD1(IParaWebView, resize_s, float) { cls->resize(int width, int height); return S_OK; }
 
 		IAttributeFields* GetAttributeObject();
 
