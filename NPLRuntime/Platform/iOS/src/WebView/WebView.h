@@ -31,8 +31,8 @@ namespace ParaEngine {
         virtual void hideCloseButton(bool bHide) override;
         virtual void addCloseListener(onCloseFunc fun) override;
         virtual void bringToTop() override {};
-
-
+        virtual void move(int x, int y) override;
+        virtual void resize(int width, int height) override;
         
     protected:
         ParaEngineWebView();

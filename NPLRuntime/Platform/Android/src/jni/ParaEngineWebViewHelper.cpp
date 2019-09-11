@@ -161,8 +161,15 @@ namespace ParaEngine {
 		return true;
 	}
 
+	void ParaEngineWebView::move()
+    {
+        return;
+    }
 
-
+    void ParaEngineWebView::resize()
+    {
+        return;
+    }
 } // end namespace
 
 

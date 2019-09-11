@@ -11,4 +11,14 @@ namespace ParaEngine {
 	{
 		return nullptr;
 	}
+
+	void ParaEngineWebView::move(int x, int y)
+    {
+        return;
+    }
+
+    void ParaEngineWebView::resize(int width, int height)
+    {
+        return;
+    }
 } // end namespace

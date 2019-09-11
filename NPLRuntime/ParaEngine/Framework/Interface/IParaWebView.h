@@ -34,6 +34,8 @@ namespace ParaEngine {
 		virtual void Refresh() = 0;
         virtual void hideCloseButton(bool bHide) = 0;
 		virtual void bringToTop() = 0;
+        virtual void move(int x, int y) = 0;
+        virtual void resize(int width, int height) = 0;
 
 		// return false IParaWebView must auto release, return ture IParaWebView release by user
 		typedef std::function<bool()> onCloseFunc;

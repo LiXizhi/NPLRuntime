@@ -104,7 +104,7 @@ namespace ParaEngine {
         
         return p;
     }
-    
+
     void ParaEngineWebView::openWindow(int x, int y, int w, int h, bool bSub)
     {
         if (!_webViewController)
@@ -123,15 +123,15 @@ namespace ParaEngine {
             {
                 _webViewController = [[WebViewWindowController alloc] initWithWindowNibName:@"WebViewWindow"];
                 [_webViewController autoResize];
-                 y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
-             }
-            
+                y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
+            }
+
             _webViewController.hideViewWhenClickClose = FALSE;
 
             _webViewController.webView.navigationDelegate = _webViewController;
 
             _webViewController.webView.UIDelegate = _webViewController;
-            
+        
             auto cb = [this]() {
                 
                 if (this->_onClose == nullptr)
@@ -144,16 +144,15 @@ namespace ParaEngine {
             };
 
             [_webViewController setCloseCB:cb];
-
-
         }
+
         [_webViewController.window orderFront:nil];
        
         [_webViewController.webView setFrameSize:NSMakeSize(w, h)];
         [_webViewController.window setContentSize:_webViewController.webView.frame.size];
-         [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
+        [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
     }
-    
+
     ParaEngineWebView::ParaEngineWebView()
         : _webViewController(nil)
     {
@@ -183,7 +182,7 @@ namespace ParaEngine {
            [_webViewController.webView loadRequest:request];
         }
     }
-    
+
     void ParaEngineWebView::setAlpha(float a)
     {
         if (_webViewController)
@@ -235,5 +234,15 @@ namespace ParaEngine {
      void ParaEngineWebView::bringToTop()
     {
         
+    }
+
+    void ParaEngineWebView::move(int x, int y)
+    {
+        return;
+    }
+
+    void ParaEngineWebView::resize(int width, int height)
+    {
+        return;
     }
 } // end namespcae

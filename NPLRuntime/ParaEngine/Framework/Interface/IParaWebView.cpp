@@ -24,7 +24,6 @@ namespace ParaEngine {
         pClass->AddField("HideCloseButton", FieldType_Bool, (void*)hideCloseButton_s, (void*)nullptr, nullptr, nullptr, bOverride);
 		pClass->AddField("bringToTop", FieldType_void, (void*)bringToTop_s, nullptr, nullptr, "", bOverride);
 
-		
 		return S_OK;
 	}
 
