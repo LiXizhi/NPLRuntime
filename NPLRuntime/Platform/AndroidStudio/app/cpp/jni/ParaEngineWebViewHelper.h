@@ -27,6 +27,8 @@ namespace ParaEngine {
 		virtual void Refresh() override;
 		virtual void hideCloseButton(bool bHide) override;
 		virtual void bringToTop() override {};
+		virtual void move(int x, int y) override;
+		virtual void resize(int width, int height) override;
 
 		// test interface
 		static bool openWebView(int x, int y, int w, int h, const std::string& url);

@@ -167,6 +167,16 @@ namespace ParaEngine {
 	}
 
 
+	void ParaEngineWebView::move(int x, int y)
+	{
+		JniHelper::callStaticVoidMethod(classname, "move", m_handle, x, y);
+	}
+
+	void ParaEngineWebView::resize(int width, int height)
+	{
+		JniHelper::callStaticVoidMethod(classname, "resize", m_handle, width, width);
+	}
+
 
 } // end namespace
 

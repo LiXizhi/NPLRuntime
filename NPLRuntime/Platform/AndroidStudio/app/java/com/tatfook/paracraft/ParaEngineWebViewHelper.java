@@ -22,6 +22,7 @@ import com.tatfook.paracraft.AppActivity;
 import com.tatfook.paracraft.ParaEngineWebView;
 
 import android.util.Log;
+import android.widget.RelativeLayout;
 
 class HelloWebViewClient extends WebViewClient { 
 	@Override
@@ -166,22 +167,11 @@ public class ParaEngineWebViewHelper {
 
 				Log.i("ParaEngine", String.format("open web view with %d, %d, %d, %d", x,y, w, h));
 
-				if (x >= 0 && y >= 0)
-				{
-					MarginLayoutParams pa = new MarginLayoutParams(w , h);
-					pa.setMargins(x ,  y ,  0 ,  0);
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(pa);
-					sLayout.addView(webView, params);
-
-					//sActivity.getWindowManager().addView(webView, params);
-				}
-				else
-				{
-					// FrameLayout.LayoutParams.WRAP_CONTENT not supported
-					FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(w, h);   
-				    // params.gravity = Gravity.CENTER | Gravity.CENTER_HORIZONTAL;
-			        sLayout.addView(webView, params);
-				}
+                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(w, h);
+                layoutParams.leftMargin = x;
+                layoutParams.topMargin = y;
+                sLayout.addView(webView, layoutParams);
+                
 				webView.requestFocus();
                 webViews.put(index, webView);
             }
@@ -441,5 +431,37 @@ public class ParaEngineWebViewHelper {
             }
         });
 		
+    }
+
+    @Keep
+    public static void move(final int index, final int x, final int y) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ParaEngineWebView webView = webViews.get(index);
+                if (webView != null) {
+                    RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams)webView.getLayoutParams();
+                    p.leftMargin = x;
+                    p.topMargin = y;
+                    webView.setLayoutParams(p);
+                }
+            }
+        });
+     }
+
+    @Keep
+    public static void resize(final int index, final int w, final int h) {
+        sActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ParaEngineWebView webView = webViews.get(index);
+                if (webView != null) {
+                    RelativeLayout.LayoutParams p = (RelativeLayout.LayoutParams) webView.getLayoutParams();
+                    p.width = w;
+                    p.height = h;
+                    webView.setLayoutParams(p);
+                }
+            }
+        });
     }
 }
