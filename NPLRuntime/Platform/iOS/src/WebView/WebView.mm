@@ -84,6 +84,8 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
 
 - (void)setAlpha:(float)a;
 
+- (void)move:(int)x y:(int)y;
+- (void)resize:(int)width height:(int)height;
 
 
 
@@ -182,6 +184,22 @@ static std::string getFixedBaseUrl(const std::string& baseUrl)
         [self.uiCloseBtn setImage:img forState:UIControlStateNormal];
         [self.uiWebView addSubview:self.uiCloseBtn];
     }
+}
+
+- (void)move:(int)x y:(int)y {
+    auto height = self.uiWebView.frame.size.height;
+    auto btnHeigh = self.uiCloseBtn.frame.size.height;
+    
+    float btnY = (height - btnHeigh) / 2;
+    self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
+    self.uiWebView.frame.origin = CGPointMake(x, y);
+}
+
+- (void)resize:(int)width height:(int)height {
+    auto btnHeigh = self.uiCloseBtn.frame.size.height;
+    float btnY = (height - btnHeigh) / 2;
+    self.uiCloseBtn.frame = CGRectMake(5, btnY, self.uiCloseBtn.frame.size.width, btnHeigh);
+    self.uiWebView.frame.size = CGSizeMake(width, height);
 }
 
 - (void)setAlpha:(float)a
@@ -439,11 +457,11 @@ namespace ParaEngine {
 
     void ParaEngineWebView::move(int x, int y)
     {
-        return;
+        [this->_uiWebViewWrapper move:x y:y];
     }
 
     void ParaEngineWebView::resize(int width, int height)
     {
-        return;
+        [this->_uiWebViewWrapper resize:width height:height];
     }
 } // end namespcae
