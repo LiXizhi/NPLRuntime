@@ -233,16 +233,37 @@ namespace ParaEngine {
     
      void ParaEngineWebView::bringToTop()
     {
-        
+        if (_webViewController)
+            [_webViewController.window orderFront:nil];
     }
 
     void ParaEngineWebView::move(int x, int y)
     {
-        return;
-    }
+        if (_webViewController)
+        {
+            auto pParent = [_webViewController.window parentWindow];
+            auto h = _webViewController.window.frame.size.height;
+            
+            if (pParent)
+            {
+                x += pParent.frame.origin.x;
+                y = pParent.frame.origin.y + (pParent.contentView.frame.size.height - h) - y;
+            }
+            else
+            {
+                 y = [[NSScreen mainScreen] visibleFrame].size.height - h - y;
+            }
+            
+            [_webViewController.window setFrameOrigin:NSMakePoint(x, y)];
+        }
+     }
 
     void ParaEngineWebView::resize(int width, int height)
     {
-        return;
+        if (_webViewController)
+        {
+            [_webViewController.webView setFrameSize:NSMakeSize(width, height)];
+            [_webViewController.window setContentSize:_webViewController.webView.frame.size];
+        }
     }
 } // end namespcae
