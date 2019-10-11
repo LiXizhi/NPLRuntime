@@ -863,8 +863,13 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> c = nullptr;
 		if (paraXModel->m_origVertices[0].color0 != 0)
 			c = ExportColors();
-		std::shared_ptr<Accessor> j = ExportJoints();
-		std::shared_ptr<Accessor> w = ExportWeights();
+		std::shared_ptr<Accessor> j = nullptr;
+		std::shared_ptr<Accessor> w = nullptr;
+		if (paraXModel->animated)
+		{
+			j = ExportJoints();
+			w = ExportWeights();
+		}
 		for (uint32_t i = 0; i < paraXModel->passes.size(); i++)
 		{
 			const ModelRenderPass& pass = paraXModel->passes[i];
@@ -874,8 +879,11 @@ namespace ParaEngine
 			primitive.attributes.normal = n;
 			primitive.attributes.texcoord = t;
 			primitive.attributes.color = c;
-			primitive.attributes.joints = j;
-			primitive.attributes.weights = w;
+			if (paraXModel->animated)
+			{
+				primitive.attributes.joints = j;
+				primitive.attributes.weights = w;
+			}
 			primitive.material = ExportMaterials(pass.tex, i);
 			primitive.mode = PrimitiveMode::Triangles;
 			mesh->primitives.push_back(primitive);
