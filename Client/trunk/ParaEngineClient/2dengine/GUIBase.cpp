@@ -2437,15 +2437,16 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 								if (IsAutoClearBackground())
 									FillClippingRegion(pGUIState);
 
-								{
-									auto pDevice = CGlobals::GetRenderDevice();
-									pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
-									pDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
-									pDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ONE);
-									// do the actual rendering on the clipped area. 
-									DoRender(pGUIState, fElapsedTime);
-									pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
-								}
+								auto pDevice = CGlobals::GetRenderDevice();
+								pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
+								pDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_ONE);
+								pDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_ONE);
+
+								pDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+								pDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+								// do the actual rendering on the clipped area. 
+								DoRender(pGUIState, fElapsedTime);
+								pDevice->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
 							}
 
 							if (painter.GetPendingAssetCount() > 0)
