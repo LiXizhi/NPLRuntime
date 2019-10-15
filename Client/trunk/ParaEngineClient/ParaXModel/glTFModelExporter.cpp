@@ -287,7 +287,7 @@ namespace ParaEngine
 			}
 			texcoords.push_back(coord);
 
-			if (color != 0)
+			if (paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
 			{
 				float r = ((color >> 16) & 0xff) / 255.0f;
 				float g = ((color >> 8) & 0xff) / 255.0f;
@@ -700,18 +700,21 @@ namespace ParaEngine
 					}
 				}
 
+				Json::Value p;
+				p["attributes"] = a;
+				p["mode"] = primitive.mode;
 				if (primitive.indices != nullptr)
 				{
 					WriteAccessor(primitive.indices, accessors, index);
 					WriteBufferView(primitive.indices->bufferView, bufferViews, index);
 					index++;
+					p["indices"] = primitive.indices->index;
 				}
-				WriteMaterial(primitive.material, materials, textures, samplers, images, k);
-				Json::Value p;
-				p["attributes"] = a;
-				p["indices"] = primitive.indices->index;
-				p["mode"] = primitive.mode;
-				p["material"] = primitive.material->index;
+				if (primitive.material != nullptr)
+				{
+					WriteMaterial(primitive.material, materials, textures, samplers, images, k);
+					p["material"] = primitive.material->index;
+				}
 				ps[k] = p;
 			}
 			Json::Value obj;
@@ -830,10 +833,14 @@ namespace ParaEngine
 		root["buffers"] = buffers;
 		root["bufferViews"] = bufferViews;
 		root["accessors"] = accessors;
-		root["materials"] = materials;
-		root["textures"] = textures;
-		root["samplers"] = samplers;
-		root["images"] = images;
+		if (!materials.empty())
+			root["materials"] = materials;
+		if (!textures.empty())
+			root["textures"] = textures;
+		if (!samplers.empty())
+			root["samplers"] = samplers;
+		if (!images.empty())
+			root["images"] = images;
 	}
 
 	std::shared_ptr<Node> glTFModelExporter::ExportNode()
@@ -861,7 +868,7 @@ namespace ParaEngine
 		std::shared_ptr<Accessor> n = ExportNormals();
 		std::shared_ptr<Accessor> t = ExportTextureCoords();
 		std::shared_ptr<Accessor> c = nullptr;
-		if (paraXModel->m_origVertices[0].color0 != 0)
+		if (paraXModel->m_RenderMethod == CParaXModel::BMAX_MODEL)
 			c = ExportColors();
 		std::shared_ptr<Accessor> j = nullptr;
 		std::shared_ptr<Accessor> w = nullptr;
@@ -884,7 +891,8 @@ namespace ParaEngine
 				primitive.attributes.joints = j;
 				primitive.attributes.weights = w;
 			}
-			primitive.material = ExportMaterials(pass.tex, i);
+			if (paraXModel->m_RenderMethod != CParaXModel::BMAX_MODEL)
+				primitive.material = ExportMaterials(pass.tex, i);
 			primitive.mode = PrimitiveMode::Triangles;
 			mesh->primitives.push_back(primitive);
 		}
@@ -1267,12 +1275,30 @@ namespace ParaEngine
 			std::string texPath = paraXModel->textures[tex]->m_key;
 			if (texFiles.size() > tex)
 				texPath = texFiles[tex];
-			DDSLoader loader(texPath);
-			if (loader.ConvertDDSToPng())
+			std::string extension = CParaFile::GetFileExtension(texPath);
+			if (extension == "dds")
 			{
-				img->bufferSize = loader.GetPngSize();
-				img->bufferPointer.reset(new uint8_t[img->bufferSize]);
-				memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
+				DDSLoader loader(texPath);
+				if (loader.ConvertDDSToPng())
+				{
+					img->bufferSize = loader.GetPngSize();
+					img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+					memcpy(img->bufferPointer.get(), loader.GetPngBuffer().get(), img->bufferSize);
+				}
+			}
+			else if (extension == "png")
+			{
+				CParaFile file(texPath.c_str());
+				if (!file.isEof())
+				{
+					img->bufferSize = file.getSize();
+					img->bufferPointer.reset(new uint8_t[img->bufferSize]);
+					memcpy(img->bufferPointer.get(), file.getBuffer(), img->bufferSize);
+				}
+			}
+			else
+			{
+				// to do
 			}
 			//LPD3DXBUFFER texBuffer;
 			//D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
