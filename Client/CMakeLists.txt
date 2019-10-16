@@ -28,6 +28,7 @@ if(WIN32)
 	option(NPLRUNTIME_SUPPORT_FBX "support FBX files (assimp)" ON)
 	option(NPLRUNTIME_PHYSICS "include physics" ON)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" OFF)
+	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 	
 endif()
 # OSX Default Option
@@ -38,7 +39,7 @@ if(APPLE)
 	option(NPLRUNTIME_CAUDIOENGINE "include audioengine plugin" ON)
 	option(NPLRUNTIME_LUAJIT20   "build luajit2.0.4" ON)
 	option(NPLRUNTIME_LUA51   "build lua5.1.5 with coco" ON)	
-
+	option(NPLRUNTIME_HAQI_LAUNCHER "haqi launcher" OFF)
 endif()
 # End of Options
 
@@ -158,7 +159,6 @@ if(WIN32)
 	option(BUILD_CURL_EXE OFF)
 	option(BUILD_CURL_TESTS OFF)
 	add_subdirectory (${SERVER_SOURCE_DIR}curl-7.47.1 ${CLIENT_BINARY_DIR}/curl-7.47.1)
-
 endif()
 
 
@@ -225,7 +225,13 @@ if(PARAENGINE_CLIENT_DLL)
 	endif()
 endif()
 
-	
+if(WIN32)
+	if (NPLRUNTIME_HAQI_LAUNCHER) 
+		add_subdirectory (${CLIENT_SOURCE_DIR}/trunk/HaqiLauncher ${CLIENT_BINARY_DIR}/HaqiLauncher)
+		add_subdirectory (${SERVER_SOURCE_DIR}/AutoUpdater ${CLIENT_BINARY_DIR}/AutoUpdater)
+	endif()
+endif()	
+
 # following are plugins that should be build after main runtime	
 if(NOT NPLRUNTIME_STATIC_LIB) 
 	add_subdirectory (${SERVER_SOURCE_DIR}NPLMono/NPLMono2  ${CLIENT_BINARY_DIR}/NPLMono/NPLMono2)

@@ -335,6 +335,15 @@ namespace ParaScripting
 		*/
 		void PlayAnimation(const object& anims);
 		
+		/** Plat a specified animation by its animation index.
+		* @param nIndex: the animation index.
+		* @param bUpdateSpeed: whether to update the biped's speed according to the one defined in the animation.
+		*	the default value is true.
+		* @param bAppend: if true, the new animation will be appended to the current animation according to the following rules:
+		*		- if the current animation is non-looping, the new animation will be played after the end of the current animation.
+		*		- if the current animation is looping, the new animation will be played immediately.
+		*/
+		void PlayAnimation2(int animid, bool bUpdateSpeed = false, bool bAppend = false);
 
 		/** get the current animation ID of the character. Usually  0-46 is for normal animation like idle and walking; 0-1000 are reserved for internally animation. 1000-2000 are game specific; 
 		* 2000 plus are automatically generated. One should call GetAnimFileName() for id above 2000. 
