@@ -1304,12 +1304,14 @@ namespace ParaEngine
 			//D3DXSaveTextureToFileInMemory(&texBuffer, D3DXIMAGE_FILEFORMAT::D3DXIFF_PNG, paraXModel->textures[tex]->GetTexture(), nullptr);
 			//img->bufferPointer = texBuffer->GetBufferPointer();
 			//img->bufferSize = texBuffer->GetBufferSize();
-			if (!isBinary)
+			if (!isBinary || !isEmbedded)
 			{
-				std::string path = fileName.substr(0, fileName.rfind(".gltf"));
-				std::string name = path.substr(path.find_last_of("/\\") + 1u);
-				img->filename = path + ".png";
-				img->uri = name + ".png";
+				//std::string path = fileName.substr(0, fileName.rfind(".gltf"));
+				//std::string name = path.substr(path.find_last_of("/\\") + 1u);
+				//img->filename = path + ".png";
+				//img->uri = name + ".png";
+				img->filename = texPath;
+				img->uri = texPath;
 			}
 			img->index = index;
 
@@ -1752,11 +1754,14 @@ namespace ParaEngine
 		else
 		{
 			i["uri"] = texture->source->uri;
-			CParaFile file;
-			if (file.CreateNewFile(texture->source->filename.c_str()))
+			if (!isBinary)
 			{
-				file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
-				file.close();
+				CParaFile file;
+				if (file.CreateNewFile(texture->source->filename.c_str()))
+				{
+					file.write(texture->source->bufferPointer.get(), texture->source->bufferSize);
+					file.close();
+				}
 			}
 		}
 		img[index] = i;
@@ -1772,7 +1777,7 @@ namespace ParaEngine
 			file.write(data.c_str(), data.length());
 			file.close();
 
-			if (!isEmbedded)
+			if (!isEmbedded && !isBinary)
 			{
 				WriteRawData();
 			}
