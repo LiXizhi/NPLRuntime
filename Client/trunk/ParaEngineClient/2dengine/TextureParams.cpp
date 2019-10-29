@@ -37,7 +37,7 @@ void ParaEngine::TextureParams::Init(const char * str)
 					filename.append(&(str[0]), i);
 			}
 		}
-		else if (c == ':')
+		else if (c == ':' && i > 2) // this fixed a bug for win32 absolute path like "c:/"
 		{
 			if (sscanf(&(str[i + 1]), "%d %d %d %d", &m_toLeft, &m_toTop, &m_toRight, &m_toBottom) == 4)
 			{
