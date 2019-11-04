@@ -274,14 +274,15 @@ namespace ParaEngine
 #endif
 
 #if __APPLE__
-    int appleStrLength = strnlen(pStr, 1000);
-	if (appleStrLength > 0 && appleStrLength < 1000) {
-		printf(pStr);
-	} else {
-        char pDest[200] = {""};
-        strncpy(pDest, pStr, 199);
-        printf(pDest);
-	}
+    int appleStrLength = strnlen(pStr, MAX_DEBUG_STRING_LENGTH);
+
+    if (appleStrLength > 0 && appleStrLength < MAX_DEBUG_STRING_LENGTH) {
+        printf("%s", pStr);
+    } else {
+        char pDest[MAX_DEBUG_STRING_LENGTH] = {""};
+        strncpy(pDest, pStr, MAX_DEBUG_STRING_LENGTH);
+        printf("%s", pDest);
+    }
 #endif
 
 #if defined(WIN32) && defined(_DEBUG) 
