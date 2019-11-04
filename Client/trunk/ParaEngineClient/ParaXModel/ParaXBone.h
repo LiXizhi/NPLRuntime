@@ -161,6 +161,9 @@ namespace ParaEngine
 		friend class CBVHSerializer;
 
 		Bone& operator=(const Bone& other);
+
+		/** call this before save to disk to compress the size of the file, if it is loaded from FBX files */
+		void RemoveUnusedAnimKeys();
 	
 	public:
 		enum BONE_FLAGS

@@ -43,17 +43,17 @@ namespace ParaEngine
 		// for nonlinear interpolations:
 		std::vector<T> in, out;
 
-		inline static float Absolute1(float v){ return fabs(v); };
-		inline static float Absolute1(double v){ return (float)abs(v); };
-		inline static float Absolute1(const Vector3& v){ return fabs(v.x) + fabs(v.y) + fabs(v.z); };
-		inline static float Absolute1(const Quaternion& v){ return fabs(v.x) + fabs(v.y) + fabs(v.z) + fabs(v.w); };
-		inline static float Absolute1(const Vector2& v){ return fabs(v.x) + fabs(v.y); };
+		inline static float Absolute1(float v) { return fabs(v); };
+		inline static float Absolute1(double v) { return (float)abs(v); };
+		inline static float Absolute1(const Vector3& v) { return fabs(v.x) + fabs(v.y) + fabs(v.z); };
+		inline static float Absolute1(const Quaternion& v) { return fabs(v.x) + fabs(v.y) + fabs(v.z) + fabs(v.w); };
+		inline static float Absolute1(const Vector2& v) { return fabs(v.x) + fabs(v.y); };
 
 		/** check if all key are equal*/
 		bool CheckIsAnimated()
 		{
 			int nSize = (int)data.size();
-			if (used && nSize>0)
+			if (used && nSize > 0)
 			{
 				auto firstValue = data[0];
 				for (int i = 1; i < nSize; ++i)
@@ -114,7 +114,7 @@ namespace ParaEngine
 					else
 						time = 0;
 				}
-				else if (seq == -1){
+				else if (seq == -1) {
 					/// get the range according to the current animation.
 					if (anim >= 0 && anim < (int)ranges.size())
 					{
@@ -200,7 +200,7 @@ namespace ParaEngine
 						return interpolate<T>(r, data[pos], data[pos + 1]);
 					}
 				}
-				else{
+				else {
 					return data[range.first];
 				}
 			}
@@ -421,6 +421,76 @@ namespace ParaEngine
 		virtual int GetTime(int nIndex)
 		{
 			return (nIndex < (int)times.size()) ? times[nIndex] : 0;
+		}
+
+		/** if some keys are never used in ranges, we will remove them */
+		void RemoveUnusedAnimKeys()
+		{
+			int nKeyNum = GetNumKeys();
+			int nRangeCount = ranges.size();
+			if (nRangeCount > 0)
+			{
+				int nLastRangeIndex = 0;
+				auto* pRange = &(ranges[nLastRangeIndex]);
+
+				if (nKeyNum > 10)
+				{
+					std::vector<int> times_;
+					std::vector<T>  data_;
+					std::vector<AnimRange> ranges_;
+					for (int i = 0; i < nKeyNum; i++)
+					{
+						auto time = times[i];
+						if (time < times[pRange->first])
+						{
+							// we should remove it 
+							if ((uint32)(i + 1) > pRange->first)
+							{
+								times_.push_back(time);
+								data_.push_back(data[i]);
+							}
+						}
+						else if (time >= times[pRange->first] && time <= times[pRange->second])
+						{
+							// in range
+							times_.push_back(time);
+							data_.push_back(data[i]);
+
+							if (times[pRange->first] == time) {
+								ranges_.push_back(AnimRange((uint32)times_.size() - 1, (uint32)times_.size() - 1));
+							}
+							if (times[pRange->second] == time) {
+								ranges_.back().second = (uint32)times_.size() - 1;
+							}
+						}
+						else if (time > times[pRange->second])
+						{
+							if ((nLastRangeIndex + 1) < nRangeCount)
+							{
+								nLastRangeIndex = nLastRangeIndex + 1;
+								pRange = &(ranges[nLastRangeIndex]);
+								if (i != 0)
+									i--;
+							}
+							else
+							{
+								// remove all keys at the end
+								if ((uint32)(i - 1) < pRange->second) {
+									times_.push_back(time);
+									data_.push_back(data[i]);
+								}
+								break;
+							}
+						}
+					}
+					if ((int)times_.size() < nKeyNum)
+					{
+						times = times_;
+						data = data_;
+						ranges = ranges_;
+					}
+				}
+			}
 		}
 	};
 
