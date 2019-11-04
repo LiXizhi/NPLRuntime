@@ -29,13 +29,10 @@ namespace ParaEngine
         void OnMouseWhell(float deltaX, float deltaY);
         void OnKey(EVirtualKey key, EKeyState state);
         void OnChar(unsigned int character);
-        
-        
     protected:
         bool m_shouldClose;
         NSWindow* m_window;
         float m_scrollMouseX;
         float m_scrollMouseY;
     };
-    
 }
