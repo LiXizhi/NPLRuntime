@@ -426,70 +426,40 @@ namespace ParaEngine
 		/** if some keys are never used in ranges, we will remove them */
 		void RemoveUnusedAnimKeys()
 		{
-			int nKeyNum = GetNumKeys();
 			int nRangeCount = ranges.size();
-			if (nRangeCount > 0)
+
+			std::vector<int> times_;
+			times_.reserve(times.size());
+			std::vector<T>  data_;
+			data_.reserve(data.size());
+			std::vector<AnimRange> ranges_;
+			ranges_.resize(nRangeCount);
+
+			int nIndex = -1;
+			for (int i=0; i<nRangeCount; ++i)
 			{
-				int nLastRangeIndex = 0;
-				auto* pRange = &(ranges[nLastRangeIndex]);
-
-				if (nKeyNum > 10)
+				const auto& fromRange = (ranges[i]);
+				auto& toRange = (ranges_[i]);
+				
+				toRange.first = nIndex > 0 ? nIndex : 0;
+				for (auto k = fromRange.first; k <= fromRange.second; k++)
 				{
-					std::vector<int> times_;
-					std::vector<T>  data_;
-					std::vector<AnimRange> ranges_;
-					for (int i = 0; i < nKeyNum; i++)
+					auto time = times[k];
+					if (nIndex < 0 || times_[nIndex] != time)
 					{
-						auto time = times[i];
-						if (time < times[pRange->first])
-						{
-							// we should remove it 
-							if ((uint32)(i + 1) > pRange->first)
-							{
-								times_.push_back(time);
-								data_.push_back(data[i]);
-							}
-						}
-						else if (time >= times[pRange->first] && time <= times[pRange->second])
-						{
-							// in range
-							times_.push_back(time);
-							data_.push_back(data[i]);
-
-							if (times[pRange->first] == time) {
-								ranges_.push_back(AnimRange((uint32)times_.size() - 1, (uint32)times_.size() - 1));
-							}
-							if (times[pRange->second] == time) {
-								ranges_.back().second = (uint32)times_.size() - 1;
-							}
-						}
-						else if (time > times[pRange->second])
-						{
-							if ((nLastRangeIndex + 1) < nRangeCount)
-							{
-								nLastRangeIndex = nLastRangeIndex + 1;
-								pRange = &(ranges[nLastRangeIndex]);
-								if (i != 0)
-									i--;
-							}
-							else
-							{
-								// remove all keys at the end
-								if ((uint32)(i - 1) < pRange->second) {
-									times_.push_back(time);
-									data_.push_back(data[i]);
-								}
-								break;
-							}
-						}
-					}
-					if ((int)times_.size() < nKeyNum)
-					{
-						times = times_;
-						data = data_;
-						ranges = ranges_;
+						times_.push_back(time);
+						data_.push_back(data[k]);
+						nIndex ++;
 					}
 				}
+				toRange.second = nIndex > 0 ? nIndex : 0;
+			}
+
+			if (times_.size() < times.size())
+			{
+				times = times_;
+				data = data_;
+				ranges = ranges_;
 			}
 		}
 	};
