@@ -495,7 +495,8 @@ void ParaUIObject::SetBGImageStr(const char * szBackground)
 	int nInnerRectIndex = 0;
 	for (int i=0;szBackground[i]!='\0'; ++i)
 	{
-		if(szBackground[i] == ':')
+		// this fixed a bug for win32 absolute path like "c:/"
+		if(szBackground[i] == ':' && i>2)
 		{
 			nInnerRectIndex = i;
 			break;
