@@ -2441,6 +2441,9 @@ HRESULT ParaEngine::CGUIBase::DoSelfPaint(GUIState* pGUIState, float fElapsedTim
 									pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, TRUE);
 									pDevice->SetRenderState(ERenderState::SRCBLENDALPHA, D3DBLEND_ONE);
 									pDevice->SetRenderState(ERenderState::DESTBLENDALPHA, D3DBLEND_ONE);
+
+									pDevice->SetRenderState(ERenderState::SRCBLEND, D3DBLEND_SRCALPHA);
+									pDevice->SetRenderState(ERenderState::DESTBLEND, D3DBLEND_INVSRCALPHA);
 									// do the actual rendering on the clipped area. 
 									DoRender(pGUIState, fElapsedTime);
 									pDevice->SetRenderState(ERenderState::SEPARATEALPHABLENDENABLE, FALSE);

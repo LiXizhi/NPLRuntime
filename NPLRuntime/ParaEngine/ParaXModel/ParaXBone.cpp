@@ -1095,7 +1095,7 @@ bool ParaEngine::Bone::GetExternalRot(IAttributeFields* pAnimInstance, Quaternio
 			CDynamicAttributeField* pTimeField = pAnimInstance->GetDynamicField(GetTimeName());
 			if (pTimeField != 0) {
 				nTime = (int)((double)(*pTimeField));
-				if(nTime < 0)
+				if (nTime < 0)
 					nTime = pAnimInstance->GetTime();
 			}
 			return pVarField->GetValueByTime(nTime, outQuat);
@@ -1358,4 +1358,11 @@ Bone& ParaEngine::Bone::operator=(const Bone& other)
 	mIsUpper = other.mIsUpper;
 
 	return *this;
+}
+
+void ParaEngine::Bone::RemoveUnusedAnimKeys()
+{
+	rot.RemoveUnusedAnimKeys();
+	trans.RemoveUnusedAnimKeys();
+	scale.RemoveUnusedAnimKeys();
 }

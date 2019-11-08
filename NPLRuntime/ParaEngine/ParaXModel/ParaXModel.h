@@ -237,6 +237,8 @@ namespace ParaEngine
 		HRESULT ClonePhysicsMesh(DWORD* pNumVertices, Vector3 ** ppVerts, DWORD* pNumTriangles, DWORD** ppIndices, int* pnMeshPhysicsGroup = NULL, int* pnTotalMeshGroupCount = NULL);
 
 		void SaveToDisk(const char* path);
+		/** call this before save to disk to compress the size of the file, if it is loaded from FBX files */
+		void RemoveUnusedAnimKeys();
 
 		void SetRenderMethod(RENDER_METHOD method);
 
