@@ -162,6 +162,7 @@ IRenderWindow* CreateParaRenderWindow(const int width, const int height)
 RenderWindowOSX::RenderWindowOSX(const int width, const int height)
 :m_shouldClose(false)
 ,m_window(nullptr)
+,currentBackingScaleFactor(1)
 ,m_scrollMouseX(0)
 ,m_scrollMouseY(0)
 {
@@ -202,6 +203,7 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [m_window makeFirstResponder:m_window];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
 
+    currentBackingScaleFactor = m_window.backingScaleFactor;
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
@@ -248,6 +250,16 @@ void RenderWindowOSX::PollEvents() {
             break;
         }
 
+        // fix for retina screen
+        if (CGlobals::GetApp()->GetAppState() == PEAppState_Ready)
+        {
+            if (currentBackingScaleFactor != m_window.backingScaleFactor) {
+                currentBackingScaleFactor = m_window.backingScaleFactor;
+                
+                CGUIRoot::GetInstance()->SetUIScale(currentBackingScaleFactor, currentBackingScaleFactor, true, true, false);
+            }
+        }
+        
         uint32_t mx = (uint32_t)[event locationInWindow].x * m_window.backingScaleFactor;
         uint32_t my = GetHeight() - (uint32_t)[event locationInWindow].y * m_window.backingScaleFactor;
 
@@ -633,8 +645,3 @@ const char*  RenderWindowOSX::getTitle()
     const char* ret = [[m_window title] UTF8String];
     return ret;
 }
-
-
-
-
-

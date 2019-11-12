@@ -32,6 +32,7 @@ namespace ParaEngine
     protected:
         bool m_shouldClose;
         NSWindow* m_window;
+        float currentBackingScaleFactor = 1;
         float m_scrollMouseX;
         float m_scrollMouseY;
     };
