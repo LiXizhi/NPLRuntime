@@ -202,12 +202,9 @@ RenderWindowOSX::RenderWindowOSX(const int width, const int height)
     [m_window setAcceptsMouseMovedEvents:YES];
     [m_window makeFirstResponder:m_window];
     //[m_window.contentView setAllowedTouchTypes:NSTouchTypeMaskDirect];
-
-    currentBackingScaleFactor = m_window.backingScaleFactor;
     
     WindowDelegate* winDelegate = [WindowDelegate sharedDelegate];
     [m_window setDelegate:winDelegate];
-
 }
 
 RenderWindowOSX::~RenderWindowOSX()
@@ -255,7 +252,7 @@ void RenderWindowOSX::PollEvents() {
         {
             if (currentBackingScaleFactor != m_window.backingScaleFactor) {
                 currentBackingScaleFactor = m_window.backingScaleFactor;
-                
+
                 CGUIRoot::GetInstance()->SetUIScale(currentBackingScaleFactor, currentBackingScaleFactor, true, true, false);
             }
         }

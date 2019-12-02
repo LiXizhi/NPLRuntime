@@ -179,13 +179,19 @@ bool ParaScripting::ParaBlockWorld::RegisterBlockTemplate_(CBlockWorld* pWorld, 
 
 
 			bool bRefreshBlockTemplate = false;
-			bRefreshBlockTemplate = pWorld->SetBlockVisible(templateId, bIsVisible, false) || bRefreshBlockTemplate;
+			if (attFlag != 0 && pTemplate->GetAttFlag() != attFlag)	
+			{
+				pTemplate->Init(attFlag, pTemplate->GetCategoryID());
+				bRefreshBlockTemplate = true;
+			}
+
+			bRefreshBlockTemplate = bRefreshBlockTemplate || pWorld->SetBlockVisible(templateId, bIsVisible, false) || bRefreshBlockTemplate;
 			if (nTorchLight >= 0 && pTemplate->GetTorchLight() != nTorchLight)
 			{
 				pTemplate->SetTorchLight(nTorchLight);
 				bRefreshBlockTemplate = true;
 			}
-
+			
 			if (bRefreshBlockTemplate)
 			{
 				pWorld->RefreshBlockTemplate(templateId);
