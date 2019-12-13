@@ -526,9 +526,77 @@ namespace ParaScripting
 			CGlobals::GetApp()->ShowWindow(bShow);
 	}
 
-	void CNPL::AsyncDownload( const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName )
+	void CNPL::AsyncDownload(const object& urlParams, const char* destFolder, const char* callbackScript, const char* DownloaderName)
 	{
-		NPL::CNPLRuntime::GetInstance()->AsyncDownload(url, destFolder, callbackScript, DownloaderName);
+		// NPL::CNPLRuntime::GetInstance()->AsyncDownload(url, destFolder, callbackScript, DownloaderName);
+
+		// we need to download from the web server.
+		const char* url = NULL;
+		if (type(urlParams) == LUA_TTABLE)
+		{
+			url = object_cast<const char*>(urlParams["url"]);
+		}
+		else if(type(urlParams) == LUA_TSTRING)
+		{
+			url = object_cast<const char*>(urlParams);
+		}
+
+		using namespace ParaEngine;
+		CAsyncLoader* pAsyncLoader = &(CAsyncLoader::GetSingleton());
+		string sTmp = string("NPL.AsyncDownload Started:") + string(url) + "\n";
+		pAsyncLoader->log(sTmp);
+		CUrlLoader* pLoader = new CUrlLoader();
+		CUrlProcessor* pProcessor = new CUrlProcessor();
+
+		pLoader->SetUrl(url);
+		pProcessor->SetUrl(url);
+		pProcessor->SetScriptCallback(callbackScript);
+		pProcessor->SetSaveToFile(destFolder);
+
+		// add headers
+		if (type(urlParams) == LUA_TTABLE)
+		{
+			auto headers = urlParams["headers"];
+			if (type(headers) == LUA_TTABLE)
+			{
+				for (luabind::iterator itCur(headers), itEnd; itCur != itEnd; ++itCur)
+				{
+					// we only serialize item with a string key
+					const object& key = itCur.key();
+					const object& input = *itCur;
+					if (type(key) == LUA_TSTRING)
+					{
+						std::string sKey = object_cast<std::string>(key);
+						if (type(input) == LUA_TSTRING)
+						{
+							std::string sValue = object_cast<std::string>(input);
+							if (sValue.empty()){
+								// remove the curl header 
+								sValue = sKey + ":";
+							}
+							else{
+								sValue = sKey + ": " + sValue;
+							}
+							pProcessor->AppendHTTPHeader(sValue.c_str());
+						}
+					}
+					else if(type(key) == LUA_TNUMBER)
+					{
+						if (type(input) == LUA_TSTRING)
+						{
+							const char* headerText = object_cast<const char*>(input);
+							pProcessor->AppendHTTPHeader(headerText);
+						}
+					}
+				}
+			}
+		}
+
+		if(pAsyncLoader->AddWorkItem( pLoader, pProcessor, NULL, NULL,ResourceRequestID_Asset) != S_OK)
+		{
+			string sTmp = string("NPL.AsyncDownload Failed:") + string(url) + "\n";
+			pAsyncLoader->log(sTmp);
+		}
 	}
 
 	void CNPL::CancelDownload( const char* DownloaderName )
