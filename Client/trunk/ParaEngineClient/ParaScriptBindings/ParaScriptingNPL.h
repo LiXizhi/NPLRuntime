@@ -610,7 +610,7 @@ namespace ParaScripting
 		*    ContentType=string that contains "text/html", Headers=string of {name:value\r\n}, StatusCode=int,  StatusDescription=string, ResponseUri=string of actual url that is responding. 
 		*    totalFileSize=number, currentFileSize=number, PercentDone=number}
 		*/
-		static void AsyncDownload(const char* url, const char* destFolder, const char* callbackScript, const char* DownloaderName);
+		static void AsyncDownload(const object& urlParams, const char* destFolder, const char* callbackScript, const char* DownloaderName);
 
 		/**
 		* cancel all asynchronous downloads that matches a certain downloader name pattern
