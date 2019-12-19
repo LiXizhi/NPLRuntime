@@ -2240,7 +2240,7 @@ void FBXParser::ProcessFBXMesh(const aiScene* pFbxScene, aiMesh *pFbxMesh, aiNod
 				bone.matOffset = offsetMat.transpose();
 				bone.flags |= ParaEngine::Bone::BONE_OFFSET_MATRIX;
 				bone.flags &= ~ParaEngine::Bone::BONE_TRANSFORMATION_NODE;
-				bone.pivot = Vector3(0, 0, 0) * bone.matOffset.InvertPRMatrix();
+				bone.pivot = Vector3(0, 0, 0) * bone.matOffset.inverse();
 			}
 
 			for (int j = 0; j < (int)fbxBone->mNumWeights; j++)
