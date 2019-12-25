@@ -1284,15 +1284,38 @@ bool ParaEngine::CParaEngineAppBase::LoadNPLPackage(const char* sFilePath_, std:
 		{
 			// if package folder is not found, we will search for zip and pkg file with the same name as the folder name.
 			std::string pkgFile = sDirName + ".zip";
-			CArchive* pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
-			if (pArchive == 0)
+
+			CArchive* pArchive = nullptr;
+
+			if (!CParaFile::GetDevDirectory().empty())
 			{
-				if (CFileManager::GetInstance()->OpenArchive(pkgFile, false))
+				std::string sFullDir = CParaFile::GetAbsolutePath(pkgFile, CParaFile::GetDevDirectory());
+				pArchive = CFileManager::GetInstance()->GetArchive(sFullDir);
+				if (pArchive == nullptr)
 				{
-					pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
+					if (CFileManager::GetInstance()->OpenArchive(sFullDir, false))
+					{
+						pArchive = CFileManager::GetInstance()->GetArchive(sFullDir);
+					}
 				}
 			}
-			if (pArchive!=0)
+
+
+			if (pArchive == nullptr)
+			{
+				pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
+
+				if (pArchive == nullptr)
+				{
+					if (CFileManager::GetInstance()->OpenArchive(pkgFile, false))
+					{
+						pArchive = CFileManager::GetInstance()->GetArchive(pkgFile);
+					}
+				}
+
+				
+			}
+			if (pArchive != nullptr)
 			{
 				// locate "package.npl" in root folder of zip file
 				CParaFile file;
