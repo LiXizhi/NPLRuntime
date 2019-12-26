@@ -16,7 +16,7 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(nullptr)
+	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_pParaXModel(0)
 {
 	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
@@ -36,7 +36,7 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	if (m_color == 0)
 	{
 		auto node_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-		if (node_template && node_template->isSolidBlock())
+		if (node_template && isSolid())
 			SetColor(node_template->GetBlockColor(block_data));
 		else
 			SetColor(Color::White);
@@ -47,6 +47,22 @@ DWORD ParaEngine::BMaxNode::GetColor()
 BlockModel * ParaEngine::BMaxNode::GetBlockModel()
 {
 	return m_pBlockModel;
+}
+
+ParaEngine::CParaXModel * BMaxNode::GetParaXModel()
+{
+	return m_pParaXModel;
+}
+
+
+bool ParaEngine::BMaxNode::HasTransform()
+{
+	return false;
+}
+
+ParaEngine::Matrix4 ParaEngine::BMaxNode::GetTransform()
+{
+	return Matrix4::IDENTITY;
 }
 
 void ParaEngine::BMaxNode::SetBlockModel(BlockModel* pModel)
@@ -61,7 +77,7 @@ BMaxFrameNode* ParaEngine::BMaxNode::ToBoneNode()
 
 bool ParaEngine::BMaxNode::HasBoneWeight()
 {
-	return m_nBoneIndex>=0;
+	return m_nBoneIndex >= 0;
 }
 
 int ParaEngine::BMaxNode::GetBoneIndex()
@@ -269,59 +285,88 @@ bool BMaxNode::IsFaceNotUse(int nIndex)
 int ParaEngine::BMaxNode::TessellateBlock(BlockModel* tessellatedModel)
 {
 	int bone_index = GetBoneIndex();
-	// we will assume tessellatedModel is cube model. 
-	// tessellatedModel->LoadCubeModel();
+
 
 	BlockTemplate* block_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-	DWORD dwBlockColor = GetColor();
-
-	//neighbor blocks
-	const int nNearbyBlockCount = 27;
-	BMaxNode* neighborBlocks[nNearbyBlockCount];
-	neighborBlocks[rbp_center] = this;
-	memset(neighborBlocks + 1, 0, sizeof(BMaxNode*) * (nNearbyBlockCount - 1));
-	QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
-
-	//ao
-	uint32 aoFlags = CalculateCubeAO(neighborBlocks);
-
-	// model position offset
-	BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
-	int count = tessellatedModel->GetVerticesCount();
-	const Vector3& vCenter = m_pParser->GetCenterPos();
-	Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
-	for (int k = 0; k < count; k++)
+	
+	if (block_template == 0 || block_template->isSolidBlock() || block_template->GetID() == BMaxParser::BoneBlockId)
 	{
-		pVertices[k].OffsetPosition(vOffset);
-		pVertices[k].SetBlockColor(dwBlockColor);
-	}
+		// standard cube 
+		DWORD dwBlockColor = GetColor();
 
-	for (int face = 0; face < 6; ++face)
-	{
-		int nFirstVertex = face * 4;
+		//neighbor blocks
+		const int nNearbyBlockCount = 27;
+		BMaxNode* neighborBlocks[nNearbyBlockCount];
+		neighborBlocks[rbp_center] = this;
+		memset(neighborBlocks + 1, 0, sizeof(BMaxNode*) * (nNearbyBlockCount - 1));
+		QueryNeighborBlockData(neighborBlocks + 1, 1, nNearbyBlockCount - 1);
 
-		BMaxNode* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+		//ao
+		uint32 aoFlags = CalculateCubeAO(neighborBlocks);
 
-		// we will preserve the face when two bones does not belong to the same bone
-		if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || !pCurBlock->isSolid()))
+		// model position offset
+		BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
+		int count = tessellatedModel->GetVerticesCount();
+		const Vector3& vCenter = m_pParser->GetCenterPos();
+		Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
+		for (int k = 0; k < count; k++)
 		{
-			for (int v = 0; v < 4; ++v)
+			pVertices[k].OffsetPosition(vOffset);
+			pVertices[k].SetBlockColor(dwBlockColor);
+		}
+
+		for (int face = 0; face < 6; ++face)
+		{
+			int nFirstVertex = face * 4;
+
+			BMaxNode* pCurBlock = neighborBlocks[BlockCommon::RBP_SixNeighbors[face]];
+
+			// we will preserve the face when two bones does not belong to the same bone
+			if (!pCurBlock || (pCurBlock->GetBoneIndex() != bone_index || !pCurBlock->isSolid()))
 			{
-				int i = nFirstVertex + v;
-				
-				int nShadowLevel = 0;
-				if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+				for (int v = 0; v < 4; ++v)
 				{
-					Color color(dwBlockColor);
-					float fShadow = (255 - nShadowLevel) / 255.f;
-					color.r = (uint8)(color.r * fShadow);
-					color.g = (uint8)(color.g * fShadow);
-					color.b = (uint8)(color.b * fShadow);
-					tessellatedModel->SetVertexColor(i, (DWORD)color);
+					int i = nFirstVertex + v;
+
+					int nShadowLevel = 0;
+					if (aoFlags > 0 && (nShadowLevel = tessellatedModel->CalculateCubeVertexAOShadowLevel(i, aoFlags)) != 0)
+					{
+						Color color(dwBlockColor);
+						float fShadow = (255 - nShadowLevel) / 255.f;
+						color.r = (uint8)(color.r * fShadow);
+						color.g = (uint8)(color.g * fShadow);
+						color.b = (uint8)(color.b * fShadow);
+						tessellatedModel->SetVertexColor(i, (DWORD)color);
+					}
 				}
+				SetFaceVisible(face);
 			}
-			SetFaceVisible(face);
 		}
 	}
+	else
+	{
+		// custom models like stairs, slabs, button, torch light, etc. 
+
+		tessellatedModel->ClearVertices();
+		BlockModel& blockModel = block_template->GetBlockModelByData(this->block_data);
+		if (blockModel.IsUniformLighting())
+		{
+			DWORD dwBlockColor = GetColor();
+			tessellatedModel->SetUniformLighting(true);
+			tessellatedModel->CloneVertices(blockModel);
+
+			BlockVertexCompressed* pVertices = tessellatedModel->GetVertices();
+			int count = tessellatedModel->GetVerticesCount();
+			const Vector3& vCenter = m_pParser->GetCenterPos();
+			Vector3 vOffset((float)x - vCenter.x, (float)y, (float)z - vCenter.z);
+			for (int k = 0; k < count; k++)
+			{
+				pVertices[k].OffsetPosition(vOffset);
+				pVertices[k].SetBlockColor(dwBlockColor);
+			}
+		}
+	}
+
+
 	return tessellatedModel->GetVerticesCount();
 }

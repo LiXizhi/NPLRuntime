@@ -150,192 +150,196 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 	{
 		doc.Parse(pData, 0, TIXML_DEFAULT_ENCODING);
 		TiXmlElement* pRoot =  doc.RootElement();
+		if (pRoot != 0)
 		{
 			// get mesh file version
 			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/@version");
 			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
 			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
+			if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
 			{
 				const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
 				m_nVersion = att->IntValue();
 			}
-		}
-		if(m_nVersion < SUPPORTED_MESH_FILE_VERSION)
-		{
-			OUTPUT_LOG("can not load para mesh xml file. because of a lower file version.\n");
-		}
-
-		{
-			// get mesh type 
-			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/@type");
-			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
-			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
+			if (m_nVersion < SUPPORTED_MESH_FILE_VERSION)
 			{
-				const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
-				m_nType = (ParaMeshXMLType)att->IntValue();
+				OUTPUT_LOG("can not load para mesh xml file. because of a lower file version.\n");
 			}
-		}
 
-		{
-			// get mesh bounding box
-			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/boundingbox");
-			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
-			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
 			{
-				const TiXmlElement* pElem = pNodeSet->XNp_get_node_in_set(0)->ToElement();
-				// parse attributes
-				const TiXmlAttribute* pAttr = pElem->FirstAttribute();
-				if (pAttr) {
-					m_bHasBoundingBox = true;
-					for (;pAttr;pAttr = pAttr->Next()) 
-					{
-						string sName = pAttr->Name();
-						if(sName == "minx")
-						{
-							m_vMinPos.x = (float)(pAttr->DoubleValue());
-						}
-						else if(sName == "miny")
-						{
-							m_vMinPos.y = (float)(pAttr->DoubleValue());
-						}
-						else if(sName == "minz")
-						{
-							m_vMinPos.z = (float)(pAttr->DoubleValue());
-						}
-						else if(sName == "maxx")
-						{
-							m_vMaxPos.x = (float)(pAttr->DoubleValue());
-						}
-						else if(sName == "maxy")
-						{
-							m_vMaxPos.y = (float)(pAttr->DoubleValue());
-						}
-						else if(sName == "maxz")
-						{
-							m_vMaxPos.z = (float)(pAttr->DoubleValue());
-						}
-					}
-				}
-			}
-		}
-
-		{
-			// get shader index.
-			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/shader/@index");
-			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
-			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
-			{
-				const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
-				m_nPrimaryShader = att->IntValue();
-			}
-		}
-		{
-			// get shader parameters. 
-			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/shader/param");
-			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
-			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
-			{
-				int nCount = pNodeSet->u_get_nb_node_in_set();
-
-				for(int i=0;i<nCount;++i)
+				// get mesh type 
+				TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/@type");
+				TinyXPath::expression_result res = xpathProc.er_compute_xpath();
+				TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
+				if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
 				{
-					// for each parameter
-					const TiXmlNode* node = pNodeSet->XNp_get_node_in_set(i);
+					const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
+					m_nType = (ParaMeshXMLType)att->IntValue();
+				}
+			}
 
-					CParameter p;
-					{
-						// param name
-						TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@name");
-						TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
-						TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
-						if(pNodeSet1!=0 && pNodeSet1->u_get_nb_node_in_set()>0)
+			{
+				// get mesh bounding box
+				TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/boundingbox");
+				TinyXPath::expression_result res = xpathProc.er_compute_xpath();
+				TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
+				if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
+				{
+					const TiXmlElement* pElem = pNodeSet->XNp_get_node_in_set(0)->ToElement();
+					// parse attributes
+					const TiXmlAttribute* pAttr = pElem->FirstAttribute();
+					if (pAttr) {
+						m_bHasBoundingBox = true;
+						for (; pAttr; pAttr = pAttr->Next())
 						{
-							const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
-							p.SetName(att->Value());
+							string sName = pAttr->Name();
+							if (sName == "minx")
+							{
+								m_vMinPos.x = (float)(pAttr->DoubleValue());
+							}
+							else if (sName == "miny")
+							{
+								m_vMinPos.y = (float)(pAttr->DoubleValue());
+							}
+							else if (sName == "minz")
+							{
+								m_vMinPos.z = (float)(pAttr->DoubleValue());
+							}
+							else if (sName == "maxx")
+							{
+								m_vMaxPos.x = (float)(pAttr->DoubleValue());
+							}
+							else if (sName == "maxy")
+							{
+								m_vMaxPos.y = (float)(pAttr->DoubleValue());
+							}
+							else if (sName == "maxz")
+							{
+								m_vMaxPos.z = (float)(pAttr->DoubleValue());
+							}
 						}
 					}
+				}
+			}
 
+			{
+				// get shader index.
+				TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/shader/@index");
+				TinyXPath::expression_result res = xpathProc.er_compute_xpath();
+				TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
+				if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
+				{
+					const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
+					m_nPrimaryShader = att->IntValue();
+				}
+			}
+			{
+				// get shader parameters. 
+				TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/shader/param");
+				TinyXPath::expression_result res = xpathProc.er_compute_xpath();
+				TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
+				if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
+				{
+					int nCount = pNodeSet->u_get_nb_node_in_set();
+
+					for (int i = 0; i < nCount; ++i)
 					{
-						// get type
-						TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@type");
-						TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
-						TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
-						if(pNodeSet1!=0 && pNodeSet1->u_get_nb_node_in_set()>0)
+						// for each parameter
+						const TiXmlNode* node = pNodeSet->XNp_get_node_in_set(i);
+
+						CParameter p;
 						{
-							const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
-							p.SetTypeByString(att->Value());
+							// param name
+							TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@name");
+							TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
+							TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
+							if (pNodeSet1 != 0 && pNodeSet1->u_get_nb_node_in_set() > 0)
+							{
+								const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
+								p.SetName(att->Value());
+							}
+						}
+
+						{
+							// get type
+							TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@type");
+							TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
+							TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
+							if (pNodeSet1 != 0 && pNodeSet1->u_get_nb_node_in_set() > 0)
+							{
+								const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
+								p.SetTypeByString(att->Value());
+							}
+						}
+						const TiXmlElement * pParamElement = node->ToElement();
+						if (pParamElement)
+						{
+							// get text value
+							p.SetValueByString(pParamElement->GetText());
+							m_paramBlock.AddParameter(p);
 						}
 					}
-					const TiXmlElement * pParamElement =  node->ToElement();
-					if(pParamElement)
+				}
+			}
+			{
+				// get mesh info.
+				TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/submesh");
+				TinyXPath::expression_result res = xpathProc.er_compute_xpath();
+				TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
+				if (pNodeSet != 0 && pNodeSet->u_get_nb_node_in_set() > 0)
+				{
+					int nCount = pNodeSet->u_get_nb_node_in_set();
+					m_SubMeshes.resize(nCount);
+
+					for (int i = 0; i < nCount; ++i)
 					{
-						// get text value
-						p.SetValueByString(pParamElement->GetText());
-						m_paramBlock.AddParameter(p);
+						// for each sub meshes
+						const TiXmlNode* node = pNodeSet->XNp_get_node_in_set(i);
+
+						CSubMesh& meshInfo = m_SubMeshes[i];
+
+						{
+							// LOD to camera distance
+							TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@loddist");
+							TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
+							TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
+							if (pNodeSet1 != 0 && pNodeSet1->u_get_nb_node_in_set() > 0)
+							{
+								const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
+								meshInfo.m_fToCameraDist = (float)(att->DoubleValue());
+							}
+						}
+
+						{
+							// file name of the mesh
+							TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@filename");
+							TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
+							TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
+							if (pNodeSet1 != 0 && pNodeSet1->u_get_nb_node_in_set() > 0)
+							{
+								const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
+								string filepath = att->Value();
+								// check if it is relative path or absolute path
+								if (filepath.find('/') != string::npos || filepath.find('\\') != string::npos)
+									meshInfo.m_sFileName = filepath;
+								else
+									meshInfo.m_sFileName = m_sParentDirectory + filepath;
+							}
+						}
 					}
 				}
 			}
 		}
+		else
 		{
-			// get mesh info.
-			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/submesh");
-			TinyXPath::expression_result res = xpathProc.er_compute_xpath();
-			TinyXPath::node_set* pNodeSet = res.nsp_get_node_set();
-			if(pNodeSet!=0 && pNodeSet->u_get_nb_node_in_set()>0)
-			{
-				int nCount = pNodeSet->u_get_nb_node_in_set();
-				m_SubMeshes.resize(nCount);
-
-				for(int i=0;i<nCount;++i)
-				{
-					// for each sub meshes
-					const TiXmlNode* node = pNodeSet->XNp_get_node_in_set(i);
-
-					CSubMesh& meshInfo = m_SubMeshes[i];
-
-					{
-						// LOD to camera distance
-						TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@loddist");
-						TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
-						TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
-						if(pNodeSet1!=0 && pNodeSet1->u_get_nb_node_in_set()>0)
-						{
-							const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
-							meshInfo.m_fToCameraDist = (float)(att->DoubleValue());
-						}
-					}
-
-					{
-						// file name of the mesh
-						TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@filename");
-						TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
-						TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
-						if(pNodeSet1!=0 && pNodeSet1->u_get_nb_node_in_set()>0)
-						{
-							const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
-							string filepath = att->Value();
-							// check if it is relative path or absolute path
-							if(filepath.find('/')!=string::npos || filepath.find('\\')!=string::npos)
-								meshInfo.m_sFileName = filepath;
-							else
-								meshInfo.m_sFileName = m_sParentDirectory + filepath;
-						}
-					}
-				}
-			}
+			OUTPUT_LOG("error parsing xml file %s**.xml \n", m_sParentDirectory.c_str());
 		}
 	}
 	catch (...)
 	{
 		OUTPUT_LOG("error parsing xml file %s**.xml \n", m_sParentDirectory.c_str());
-		return false;
 	}
-	return true;
+	return m_SubMeshes.size() > 0;
 #endif
 }
 

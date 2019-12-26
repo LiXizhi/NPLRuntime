@@ -134,8 +134,8 @@ namespace ParaEngine
 		void ParseBlockAnimationKey(BMaxXMLElement* node,Bone* bone,const std::string propertyType);
 
 		void ClearModel();
-		void FillParaXModelData(CParaXModel *pMesh);
-		void FillVerticesAndIndices();
+		void FillParaXModelData(CParaXModel *pMesh, int32 nMaxTriangleCount = -1);
+		void FillVerticesAndIndices(int32 nMaxTriangleCount = -1);
 		//void ProcessBoneNodes();
 		//int CreateBoneIndex(uint16 x, uint16 y, uint16 z, int parentIndex);
 		int GetBoneIndex(uint16 x, uint16 y, uint16 z);
@@ -177,7 +177,6 @@ namespace ParaEngine
 		bool m_bAutoScale;
 		bool m_bHasBoneBlock;
 		float m_fScale;
-		map<BlockModel*, BMaxNode*> m_blockModelsMapping;
 		vector<ModelAnimation> m_anims;
 		bool m_bHasAnimation;
 
