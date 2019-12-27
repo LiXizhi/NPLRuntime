@@ -36,7 +36,7 @@ DWORD ParaEngine::BMaxNode::GetColor()
 	if (m_color == 0)
 	{
 		auto node_template = BlockWorldClient::GetInstance()->GetBlockTemplate((uint16)template_id);
-		if (node_template && isSolid())
+		if (node_template)
 			SetColor(node_template->GetBlockColor(block_data));
 		else
 			SetColor(Color::White);

@@ -1015,6 +1015,8 @@ namespace ParaEngine
 					BlockModel* model = node->GetBlockModel();
 					if (model != 0 && model->IsUniformLighting())
 					{
+						int nFromVertex = (int)m_vertices.size();
+
 						int nVertices = model->GetVerticesCount();
 						BlockVertexCompressed* pVertices = model->GetVertices();
 						int nFace = model->GetFaceCount();
@@ -1029,8 +1031,7 @@ namespace ParaEngine
 							pass = AddRenderPass();
 							pass->geoset = geoset->id;
 							pass->SetStartIndex(nStartIndex);
-							geoset->SetVertexStart(total_count);
-							nStartVertex = 0;
+							geoset->SetVertexStart((int32)m_vertices.size());
 						}
 
 						geoset->icount += nIndexCount;
@@ -1058,9 +1059,10 @@ namespace ParaEngine
 							aabb.Extend(modelVertex.pos);
 						}
 
+						int nVertexOffset = nFromVertex - geoset->GetVertexStart();
 						for (int k = 0; k < nFace; k++)
 						{
-							int start_index = k * 4 + nStartVertex;
+							int start_index = k * 4 + nVertexOffset;
 							m_indices.push_back(start_index + 0);
 							m_indices.push_back(start_index + 1);
 							m_indices.push_back(start_index + 2);
@@ -1068,8 +1070,6 @@ namespace ParaEngine
 							m_indices.push_back(start_index + 2);
 							m_indices.push_back(start_index + 3);
 						}
-						total_count += nVertices;
-						nStartVertex += nVertices;
 					}
 				}
 				else if (node->GetParaXModel())
