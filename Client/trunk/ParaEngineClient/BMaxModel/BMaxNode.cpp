@@ -16,7 +16,7 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxNode::BMaxNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_) :
-	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_pParaXModel(0)
+	m_pParser(pParser), x(x_), y(y_), z(z_), template_id(template_id_), block_data(block_data_), m_color(0), m_nBoneIndex(-1), m_pBlockModel(0), m_pParaXModel(0), m_bIsSolid(true)
 {
 	memset(m_facesStatus, faceInvisible, sizeof(m_facesStatus));
 }
@@ -109,7 +109,12 @@ BMaxNode* ParaEngine::BMaxNode::GetNeighbourByOffset(Vector3 offset)
 
 bool ParaEngine::BMaxNode::isSolid()
 {
-	return true;
+	return m_bIsSolid;
+}
+
+void ParaEngine::BMaxNode::setSolid(bool bValue)
+{
+	m_bIsSolid = bValue;
 }
 
 void ParaEngine::BMaxNode::QueryNeighborBlockData(BMaxNode** pBlockData, int nFrom /*= 0*/, int nTo /*= 26*/)

@@ -252,6 +252,7 @@ namespace ParaEngine
 				{
 					// non-solid, but obstruction blocks such as slope, stairs, and other custom models
 					BMaxNodePtr node(new BMaxNode(this, x, y, z, template_id, block_data));
+					node->setSolid(false);
 					nodes.push_back(node);
 				}
 				else if(!pBlockTemplate->IsMatchAttribute(BlockTemplate::batt_solid))
@@ -259,6 +260,7 @@ namespace ParaEngine
 					// non-solid non-obstruction blocks,like web, grass, will not be rendered. but can be used to connect bones
 					template_id = TransparentBlockId;
 					BMaxBlockModelNodePtr node(new BMaxBlockModelNode(this, x, y, z, template_id, block_data));
+					node->setSolid(false);
 					nodes.push_back(BMaxNodePtr(node.get()));
 				}
 				else
@@ -1007,7 +1009,7 @@ namespace ParaEngine
 			for (auto& item : m_nodes)
 			{
 				BMaxNode* node = item.second.get();
-				if (node->isSolid() && node->GetParaXModel() == 0)
+				if (!node->isSolid() && node->GetParaXModel() == 0)
 				{
 					// for stairs, slabs, buttons, etc
 					BlockModel* model = node->GetBlockModel();
