@@ -9,8 +9,8 @@
 #include "ParaEngine.h"
 #include "FileManager.h"
 #include "BaseObject.h"
-#ifdef PARAENGINE_MOBILE1
-#include <tinyxml.h>
+#ifdef USE_TINYXML2
+#include <tinyxml2.h>
 #else
 #include <tinyxml.h>
 #include <xpath_processor.h>
@@ -67,7 +67,7 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromFile(const string& filename, const st
 */
 bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 {
-#ifdef PARAENGINE_MOBILE1
+#ifdef USE_TINYXML2
 	namespace TXML = tinyxml2;
 	try
 	{
@@ -150,6 +150,7 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 	{
 		doc.Parse(pData, 0, TIXML_DEFAULT_ENCODING);
 		TiXmlElement* pRoot =  doc.RootElement();
+		if (pRoot != 0)
 		{
 			// get mesh file version
 			TinyXPath::xpath_processor xpathProc(pRoot, "/mesh/@version");
@@ -160,11 +161,10 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 				const TiXmlAttribute* att = pNodeSet->XAp_get_attribute_in_set(0);
 				m_nVersion = att->IntValue();
 			}
-		}
-		if(m_nVersion < SUPPORTED_MESH_FILE_VERSION)
-		{
-			OUTPUT_LOG("can not load para mesh xml file. because of a lower file version.\n");
-		}
+			if (m_nVersion < SUPPORTED_MESH_FILE_VERSION)
+			{
+				OUTPUT_LOG("can not load para mesh xml file. because of a lower file version.\n");
+			}
 
 		{
 			// get mesh type 
@@ -310,32 +310,36 @@ bool ParaEngine::CParaMeshXMLFile::LoadFromBuffer(const char* pData, int nSize)
 						}
 					}
 
-					{
-						// file name of the mesh
-						TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@filename");
-						TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
-						TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
-						if(pNodeSet1!=0 && pNodeSet1->u_get_nb_node_in_set()>0)
 						{
-							const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
-							string filepath = att->Value();
-							// check if it is relative path or absolute path
-							if(filepath.find('/')!=string::npos || filepath.find('\\')!=string::npos)
-								meshInfo.m_sFileName = filepath;
-							else
-								meshInfo.m_sFileName = m_sParentDirectory + filepath;
+							// file name of the mesh
+							TinyXPath::xpath_processor xpathProc1(node->ToElement(), "@filename");
+							TinyXPath::expression_result res1 = xpathProc1.er_compute_xpath();
+							TinyXPath::node_set* pNodeSet1 = res1.nsp_get_node_set();
+							if (pNodeSet1 != 0 && pNodeSet1->u_get_nb_node_in_set() > 0)
+							{
+								const TiXmlAttribute* att = pNodeSet1->XAp_get_attribute_in_set(0);
+								string filepath = att->Value();
+								// check if it is relative path or absolute path
+								if (filepath.find('/') != string::npos || filepath.find('\\') != string::npos)
+									meshInfo.m_sFileName = filepath;
+								else
+									meshInfo.m_sFileName = m_sParentDirectory + filepath;
+							}
 						}
 					}
 				}
 			}
 		}
+		else
+		{
+			OUTPUT_LOG("error parsing xml file %s**.xml \n", m_sParentDirectory.c_str());
+		}
 	}
 	catch (...)
 	{
 		OUTPUT_LOG("error parsing xml file %s**.xml \n", m_sParentDirectory.c_str());
-		return false;
 	}
-	return true;
+	return m_SubMeshes.size() > 0;
 #endif
 }
 

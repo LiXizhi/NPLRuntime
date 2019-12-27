@@ -16,6 +16,10 @@ namespace ParaEngine
 		void SetFilename(const std::string& val);
 		float GetFacing() const;
 		void SetFacing(float val);
+		
+		virtual bool HasTransform();
+		virtual Matrix4 GetTransform();
+		void SetTransform(Matrix4& mat);
 
 		virtual bool isSolid();
 
@@ -23,7 +27,8 @@ namespace ParaEngine
 	public:
 		std::string m_sFilename;
 		float m_fFacing;
-
+		Matrix4 matLocalTrans;
+		bool bHasTransform;
 	};
 	typedef ref_ptr<BMaxBlockModelNode> BMaxBlockModelNodePtr;
 }

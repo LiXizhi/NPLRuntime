@@ -17,9 +17,9 @@
 using namespace ParaEngine;
 
 ParaEngine::BMaxBlockModelNode::BMaxBlockModelNode(BMaxParser* pParser, int16 x_, int16 y_, int16 z_, int32 template_id_, int32 block_data_)
-	:BMaxNode(pParser, x_, y_, z_, template_id_, block_data_), m_fFacing(0.f)
+	:BMaxNode(pParser, x_, y_, z_, template_id_, block_data_), m_fFacing(0.f), bHasTransform(false)
 {
-
+	matLocalTrans.identity();
 }
 
 ParaEngine::BMaxBlockModelNode::~BMaxBlockModelNode()
@@ -35,6 +35,22 @@ const std::string& ParaEngine::BMaxBlockModelNode::GetFilename() const
 void ParaEngine::BMaxBlockModelNode::SetFilename(const std::string& val)
 {
 	m_sFilename = val;
+}
+
+bool ParaEngine::BMaxBlockModelNode::HasTransform()
+{
+	return bHasTransform;
+}
+
+ParaEngine::Matrix4 ParaEngine::BMaxBlockModelNode::GetTransform()
+{
+	return matLocalTrans;
+}
+
+void ParaEngine::BMaxBlockModelNode::SetTransform(Matrix4& mat)
+{
+	bHasTransform = true;
+	matLocalTrans = mat;
 }
 
 float ParaEngine::BMaxBlockModelNode::GetFacing() const
