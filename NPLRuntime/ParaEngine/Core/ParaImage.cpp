@@ -8,6 +8,7 @@
 #include <boost/gil/extension/numeric/sampler.hpp>
 #include <boost/gil/extension/numeric/resample.hpp>
 
+
 #ifdef WIN32
 // just for compatibility with previous version of libpng.lib built by earlier version of visual studio 2015
 extern "C" { FILE __iob_func[3] = { *stdin,*stdout,*stderr }; }
@@ -150,22 +151,21 @@ namespace ParaEngine
 
 	ParaImage::~ParaImage()
 	{
-//		for (int i = 0; i < _numberOfMipmaps; ++i)
-//			SAFE_DELETE_ARRAY(_mipmaps[i].address);
-//		if (_data)
-//		{
-//			free(_data);
-//		}
+		if (_data)
+		{
+			free(_data);
+		}
 		
 	}
 
-	template <typename GrayView>
-	static void gray_image_hist(const GrayView& img_view, unsigned char* data)
+	template <typename AnyView>
+	static void gray_image_hist(const AnyView& img_view, unsigned char* data)
 	{
-		for (typename GrayView::iterator it = img_view.begin(); it != img_view.end(); ++it)
+		for (typename AnyView::iterator it = img_view.begin(); it != img_view.end(); ++it)
 		{
-			*data = (unsigned char)*it;
-			++data;
+			auto color = *it;
+			memcpy(data, &color, sizeof(color));
+			data += sizeof(color);
 		}
 	}
 
@@ -206,13 +206,28 @@ namespace ParaEngine
 				free(_data);
 				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
 
-				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+				gray_image_hist(scale_view, _data);
 			}
 			break;
 		case PixelFormat::R8G8B8:
 			{
 				bytesPerComponent = 3;
-				_dataLen = height * width * bytesPerComponent;
+                _dataLen = height * width * bytesPerComponent;
+				
+				/*
+				unsigned char *tempData = static_cast<unsigned char*>(malloc(old_width * old_height * 3 * sizeof(unsigned char)));
+				
+				for (int i = 0; i < old_width; ++i)
+				{
+					for (int j = 0; j < old_height; ++j)
+
+					{
+						tempData[(i * old_width + j) * 3] = _data[(i * old_width + j) * 4];
+						tempData[(i * old_width + j) * 3 + 1] = _data[(i * old_width + j) * 4 + 1];
+						tempData[(i * old_width + j) * 3 + 2] = _data[(i * old_width + j) * 4 + 2];
+					}
+				}
+				*/
 
 				rgb8c_view_t src_view = interleaved_view((std::size_t)old_width, (std::size_t)old_height, (const rgb8_pixel_t*)_data, old_width * 3);
 				rgb8_image_t scale_img(width, height);
@@ -221,9 +236,10 @@ namespace ParaEngine
 				resize_view(src_view, scale_view, bilinear_sampler());
 
 				free(_data);
+				//free(tempData);
 				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
 
-				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+				gray_image_hist(scale_view, _data);
 			}
 
 			break;
@@ -241,7 +257,7 @@ namespace ParaEngine
 				free(_data);
 				_data = static_cast<unsigned char*>(malloc(_dataLen * sizeof(unsigned char)));
 
-				gray_image_hist(color_converted_view<gray8_pixel_t>(scale_view), _data);
+				gray_image_hist(scale_view, _data);
 			}
 			
 			break;
